@@ -3,9 +3,9 @@ package io.github.vaspyyy.guildmark.block
 import io.github.vaspyyy.guildmark.client.ClientHooks
 import io.github.vaspyyy.guildmark.item.ContractItem
 import io.github.vaspyyy.guildmark.quest.Contracts
-import io.github.vaspyyy.guildmark.quest.QuestGenerator
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
+import net.minecraft.server.level.ServerLevel
 import net.minecraft.network.chat.Component
 import net.minecraft.util.RandomSource
 import net.minecraft.world.InteractionHand
@@ -22,6 +22,8 @@ import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.level.block.EntityBlock
 import net.minecraft.world.level.block.entity.BlockEntity
+import net.minecraft.world.level.block.entity.BlockEntityTicker
+import net.minecraft.world.level.block.entity.BlockEntityType
 import net.minecraft.world.level.block.state.BlockBehaviour
 import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.level.block.state.StateDefinition
@@ -96,11 +98,7 @@ class QuestBoardBlock(properties: BlockBehaviour.Properties) : Block(properties)
             }
         }
         if (!level.isClientSide()) {
-            // Placeholder: fill every cell right away until villagers post notes themselves
-            for (part in BoardPart.entries) {
-                val be = level.getBlockEntity(cellPos(pos, facing, part)) as? QuestBoardBlockEntity
-                be?.updateNote(QuestGenerator.generate(level.random))
-            }
+            VillageBoards.pinStarterNotes(level, pos, facing)
         }
     }
 
@@ -172,4 +170,12 @@ class QuestBoardBlock(properties: BlockBehaviour.Properties) : Block(properties)
     }
 
     override fun newBlockEntity(pos: BlockPos, state: BlockState): BlockEntity = QuestBoardBlockEntity(pos, state)
+
+    override fun <T : BlockEntity> getTicker(level: Level, state: BlockState, type: BlockEntityType<T>): BlockEntityTicker<T>? {
+        // The anchor cell runs the whole board: rotating notes and calling villagers over
+        if (level.isClientSide() || state.getValue(PART) != BoardPart.ANCHOR) return null
+        return BlockEntityTicker { tickLevel, pos, tickState, _ ->
+            if (tickLevel is ServerLevel) VillageBoards.tickBoard(tickLevel, pos, tickState)
+        }
+    }
 }

@@ -21,9 +21,11 @@ object QuestGenerator {
     private val NAMES = listOf("Maren", "Tobin", "Elsbeth", "Garrick", "Wren", "Osric", "Hilde", "Bram", "Isolde", "Pell")
     private val PROFESSIONS = listOf("Farmer", "Fletcher", "Armorer", "Librarian", "Butcher", "Mason", "Cartographer", "Cleric")
 
-    fun generate(random: RandomSource): QuestNote {
+    /** [profession] is the poster's job title; a random one is picked when null. */
+    fun generate(random: RandomSource, profession: String? = null): QuestNote {
         val type = QuestType.entries[random.nextInt(QuestType.entries.size)]
-        val poster = "${NAMES[random.nextInt(NAMES.size)]} the ${PROFESSIONS[random.nextInt(PROFESSIONS.size)]}"
+        val title = profession ?: PROFESSIONS[random.nextInt(PROFESSIONS.size)]
+        val poster = "${NAMES[random.nextInt(NAMES.size)]} the $title"
         val deadline = 2 + random.nextInt(3)
         return when (type) {
             QuestType.FETCH, QuestType.HUNT -> {

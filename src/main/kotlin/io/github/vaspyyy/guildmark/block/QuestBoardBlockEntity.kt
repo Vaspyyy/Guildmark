@@ -19,9 +19,14 @@ class QuestBoardBlockEntity(pos: BlockPos, state: BlockState) :
     var note: QuestNote? = null
         private set
 
+    /** Day index (see [VillageBoards.day]) the current note was pinned; unclaimed notes come down the next day. */
+    var postedDay: Long = 0
+        private set
+
     /** Server side: pin or remove a note, update the cell's paper model and sync to clients. */
     fun updateNote(newNote: QuestNote?) {
         note = newNote
+        level?.let { postedDay = VillageBoards.day(it) }
         setChanged()
         val level = level ?: return
         val state = level.getBlockState(blockPos)
@@ -35,11 +40,13 @@ class QuestBoardBlockEntity(pos: BlockPos, state: BlockState) :
     override fun saveAdditional(output: ValueOutput) {
         super.saveAdditional(output)
         output.storeNullable("note", QuestNote.CODEC, note)
+        output.putLong("posted_day", postedDay)
     }
 
     override fun loadAdditional(input: ValueInput) {
         super.loadAdditional(input)
         note = input.read("note", QuestNote.CODEC).orElse(null)
+        postedDay = input.getLongOr("posted_day", 0L)
     }
 
     override fun getUpdateTag(registries: HolderLookup.Provider): CompoundTag = saveCustomOnly(registries)

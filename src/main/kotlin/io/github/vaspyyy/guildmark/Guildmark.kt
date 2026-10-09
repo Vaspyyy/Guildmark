@@ -1,14 +1,17 @@
 package io.github.vaspyyy.guildmark
 
 import com.mojang.logging.LogUtils
+import io.github.vaspyyy.guildmark.block.VillageBoards
 import io.github.vaspyyy.guildmark.network.TakeNotePayload
 import io.github.vaspyyy.guildmark.quest.Contracts
+import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.registry.ModBlockEntities
 import io.github.vaspyyy.guildmark.registry.ModBlocks
 import io.github.vaspyyy.guildmark.registry.ModCreativeTabs
 import io.github.vaspyyy.guildmark.registry.ModDataComponents
 import io.github.vaspyyy.guildmark.registry.ModItems
 import io.github.vaspyyy.guildmark.registry.ModVillagers
+import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.entity.player.Player
 import net.neoforged.bus.api.IEventBus
 import net.neoforged.fml.ModContainer
@@ -16,6 +19,7 @@ import net.neoforged.fml.common.Mod
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent
 import net.neoforged.neoforge.common.NeoForge
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent
+import net.neoforged.neoforge.event.tick.PlayerTickEvent
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent
 import org.slf4j.Logger
 
@@ -34,10 +38,12 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         ModCreativeTabs.TABS.register(modBus)
         ModVillagers.POI_TYPES.register(modBus)
         ModVillagers.PROFESSIONS.register(modBus)
+        ModAttachments.ATTACHMENTS.register(modBus)
 
         modBus.addListener(FMLCommonSetupEvent::class.java, ::onCommonSetup)
         modBus.addListener(RegisterPayloadHandlersEvent::class.java, ::onRegisterPayloads)
         NeoForge.EVENT_BUS.addListener(LivingDeathEvent::class.java, ::onLivingDeath)
+        NeoForge.EVENT_BUS.addListener(PlayerTickEvent.Post::class.java, ::onPlayerTick)
     }
 
     private fun onCommonSetup(event: FMLCommonSetupEvent) {
@@ -47,6 +53,12 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
     private fun onLivingDeath(event: LivingDeathEvent) {
         val killer = event.source.entity as? Player ?: return
         if (!killer.level().isClientSide()) Contracts.onKill(killer, event.entity)
+    }
+
+    private fun onPlayerTick(event: PlayerTickEvent.Post) {
+        val player = event.entity
+        val level = player.level()
+        if (level is ServerLevel && player.tickCount % 200 == 0) VillageBoards.checkNearbyVillages(level, player.blockPosition())
     }
 
     private fun onRegisterPayloads(event: RegisterPayloadHandlersEvent) {

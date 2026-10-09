@@ -4,7 +4,7 @@ A NeoForge mod for Minecraft 26.3. Villagers post procedurally generated quests 
 
 ## Status
 
-Early prototype: a 3x2 Quest Board covered in placeholder notes. Click a note to read it, take it as a Contract. Quests are random placeholders until the real generator lands.
+Early prototype. Villages get a 3x2 Quest Board near their bell. During the day villagers walk up and pin notes; unclaimed notes come down at the start of each new day. Click a note to read it, take it as a Contract, finish it, and spend Guild Marks at the Guildmaster. Quests are random placeholders until the real generator lands.
 
 ## Stack
 
