@@ -1,0 +1,12 @@
+{
+  "wants": {
+    "id": "guildmark:guild_mark"
+  },
+  "gives": {
+    "id": "minecraft:torch",
+    "count": 16
+  },
+  "max_uses": 16,
+  "xp": 2,
+  "reputation_discount": 0.05
+}

@@ -1,0 +1,12 @@
+{
+  "wants": {
+    "id": "guildmark:guild_mark",
+    "count": 6
+  },
+  "gives": {
+    "id": "minecraft:shield"
+  },
+  "max_uses": 4,
+  "xp": 5,
+  "reputation_discount": 0.05
+}

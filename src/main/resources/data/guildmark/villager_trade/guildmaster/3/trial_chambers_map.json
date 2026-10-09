@@ -1,0 +1,34 @@
+{
+  "wants": {
+    "id": "guildmark:guild_mark",
+    "count": 12
+  },
+  "gives": {
+    "id": "minecraft:buried_trial_chambers_map"
+  },
+  "max_uses": 3,
+  "xp": 10,
+  "reputation_discount": 0.05,
+  "additional_wants": {
+    "id": "minecraft:compass"
+  },
+  "given_item_modifier": [
+    {
+      "type": "minecraft:exploration_map",
+      "decoration": "minecraft:trial_chambers",
+      "destination": "#minecraft:on_buried_trial_chambers_maps",
+      "search_radius": 100
+    },
+    {
+      "type": "minecraft:filtered",
+      "item_filter": {
+        "predicates": {
+          "minecraft:map_id": {}
+        }
+      },
+      "on_fail": {
+        "type": "minecraft:discard"
+      }
+    }
+  ]
+}

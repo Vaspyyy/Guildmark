@@ -1,0 +1,13 @@
+{
+  "wants": {
+    "id": "guildmark:guild_mark",
+    "count": 4
+  },
+  "gives": {
+    "id": "minecraft:golden_carrot",
+    "count": 6
+  },
+  "max_uses": 8,
+  "xp": 5,
+  "reputation_discount": 0.05
+}

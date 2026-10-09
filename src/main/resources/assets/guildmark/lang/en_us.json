@@ -21,5 +21,6 @@
   "message.guildmark.progress": "%s: %s / %s",
   "message.guildmark.not_done": "%s: %s / %s, not done yet",
   "message.guildmark.expired": "%s has expired",
-  "message.guildmark.complete": "Contract complete! +%s Guild Marks"
+  "message.guildmark.complete": "Contract complete! +%s Guild Marks",
+  "entity.guildmark.villager.guildmaster": "Guildmaster"
 }

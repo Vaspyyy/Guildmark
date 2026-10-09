@@ -1,0 +1,12 @@
+{
+  "wants": {
+    "id": "guildmark:guild_mark",
+    "count": 16
+  },
+  "gives": {
+    "id": "minecraft:saddle"
+  },
+  "max_uses": 3,
+  "xp": 30,
+  "reputation_discount": 0.05
+}

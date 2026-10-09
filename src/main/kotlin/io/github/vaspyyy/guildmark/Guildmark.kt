@@ -8,6 +8,7 @@ import io.github.vaspyyy.guildmark.registry.ModBlocks
 import io.github.vaspyyy.guildmark.registry.ModCreativeTabs
 import io.github.vaspyyy.guildmark.registry.ModDataComponents
 import io.github.vaspyyy.guildmark.registry.ModItems
+import io.github.vaspyyy.guildmark.registry.ModVillagers
 import net.minecraft.world.entity.player.Player
 import net.neoforged.bus.api.IEventBus
 import net.neoforged.fml.ModContainer
@@ -31,6 +32,8 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         ModBlockEntities.BLOCK_ENTITIES.register(modBus)
         ModDataComponents.COMPONENTS.register(modBus)
         ModCreativeTabs.TABS.register(modBus)
+        ModVillagers.POI_TYPES.register(modBus)
+        ModVillagers.PROFESSIONS.register(modBus)
 
         modBus.addListener(FMLCommonSetupEvent::class.java, ::onCommonSetup)
         modBus.addListener(RegisterPayloadHandlersEvent::class.java, ::onRegisterPayloads)
