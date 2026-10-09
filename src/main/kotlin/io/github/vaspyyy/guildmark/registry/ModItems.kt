@@ -6,14 +6,15 @@ import net.minecraft.world.item.Item
 import net.minecraft.world.item.Rarity
 import net.neoforged.neoforge.registries.DeferredItem
 import net.neoforged.neoforge.registries.DeferredRegister
+import java.util.function.UnaryOperator
 
 object ModItems {
     val ITEMS: DeferredRegister.Items = DeferredRegister.createItems(Guildmark.MOD_ID)
 
     // Quest currency
-    val GUILD_MARK: DeferredItem<Item> = ITEMS.registerSimpleItem("guild_mark") {
+    val GUILD_MARK: DeferredItem<Item> = ITEMS.registerSimpleItem("guild_mark", UnaryOperator<Item.Properties> {
         it.rarity(Rarity.UNCOMMON)
-    }
+    })
 
     val QUEST_BOARD: DeferredItem<BlockItem> = ITEMS.registerSimpleBlockItem("quest_board", ModBlocks.QUEST_BOARD)
 }
