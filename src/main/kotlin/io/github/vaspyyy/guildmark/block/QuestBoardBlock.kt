@@ -1,11 +1,14 @@
 package io.github.vaspyyy.guildmark.block
 
 import io.github.vaspyyy.guildmark.client.ClientHooks
+import io.github.vaspyyy.guildmark.item.ContractItem
+import io.github.vaspyyy.guildmark.quest.Contracts
 import io.github.vaspyyy.guildmark.quest.QuestGenerator
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.network.chat.Component
 import net.minecraft.util.RandomSource
+import net.minecraft.world.InteractionHand
 import net.minecraft.world.InteractionResult
 import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.player.Player
@@ -140,6 +143,20 @@ class QuestBoardBlock(properties: BlockBehaviour.Properties) : Block(properties)
             }
         }
         return super.playerWillDestroy(level, pos, state, player)
+    }
+
+    override fun useItemOn(
+        stack: ItemStack,
+        state: BlockState,
+        level: Level,
+        pos: BlockPos,
+        player: Player,
+        hand: InteractionHand,
+        hitResult: BlockHitResult,
+    ): InteractionResult {
+        if (stack.item !is ContractItem) return InteractionResult.TRY_WITH_EMPTY_HAND
+        if (!level.isClientSide()) Contracts.turnIn(stack, player, level, pos)
+        return InteractionResult.SUCCESS
     }
 
     override fun useWithoutItem(state: BlockState, level: Level, pos: BlockPos, player: Player, hitResult: BlockHitResult): InteractionResult {

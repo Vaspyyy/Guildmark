@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.registry
 
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.quest.ContractState
 import io.github.vaspyyy.guildmark.quest.QuestNote
 import net.minecraft.core.component.DataComponentType
 import net.minecraft.core.registries.Registries
@@ -17,6 +18,14 @@ object ModDataComponents {
         "quest_note",
         UnaryOperator<DataComponentType.Builder<QuestNote>> {
             it.persistent(QuestNote.CODEC).networkSynchronized(ByteBufCodecs.fromCodec(QuestNote.CODEC))
+        },
+    )
+
+    /** Progress and deadline of a taken contract. */
+    val CONTRACT_STATE: DeferredHolder<DataComponentType<*>, DataComponentType<ContractState>> = COMPONENTS.registerComponentType(
+        "contract_state",
+        UnaryOperator<DataComponentType.Builder<ContractState>> {
+            it.persistent(ContractState.CODEC).networkSynchronized(ByteBufCodecs.fromCodec(ContractState.CODEC))
         },
     )
 }

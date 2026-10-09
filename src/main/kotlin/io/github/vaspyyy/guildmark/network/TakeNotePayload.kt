@@ -2,19 +2,15 @@ package io.github.vaspyyy.guildmark.network
 
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.block.QuestBoardBlockEntity
-import io.github.vaspyyy.guildmark.registry.ModDataComponents
-import io.github.vaspyyy.guildmark.registry.ModItems
+import io.github.vaspyyy.guildmark.quest.Contracts
 import io.netty.buffer.ByteBuf
 import net.minecraft.core.BlockPos
-import net.minecraft.core.component.DataComponents
 import net.minecraft.network.codec.StreamCodec
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload
 import net.minecraft.resources.Identifier
 import net.minecraft.sounds.SoundEvents
 import net.minecraft.sounds.SoundSource
 import net.minecraft.util.Prediction
-import net.minecraft.world.item.ItemStack
-import net.minecraft.world.item.component.ItemLore
 import net.neoforged.neoforge.network.handling.IPayloadContext
 
 /** Client asks to tear the note off the board cell at [pos]. */
@@ -36,10 +32,7 @@ data class TakeNotePayload(val pos: BlockPos) : CustomPacketPayload {
             val note = board.note ?: return
 
             board.updateNote(null)
-            val contract = ItemStack(ModItems.CONTRACT.get())
-            contract.set(ModDataComponents.QUEST_NOTE.get(), note)
-            contract.set(DataComponents.LORE, ItemLore(listOf(note.title(), note.rewardLine())))
-            player.inventory.placeItemBackInInventory(contract, Prediction.SERVER_ONLY)
+            player.inventory.placeItemBackInInventory(Contracts.create(note, level, payload.pos), Prediction.SERVER_ONLY)
             level.playSound(null, payload.pos, SoundEvents.BOOK_PAGE_TURN, SoundSource.BLOCKS, 1.0f, 1.0f)
         }
     }
