@@ -63,7 +63,7 @@ object VillageBoards {
         if (empty.isEmpty()) return
 
         val villagers = level.getEntitiesOfClass(Villager::class.java, AABB(anchor).inflate(VILLAGER_RANGE)) {
-            it.isAlive && !it.isBaby && !it.isSleeping
+            it.isAlive && !it.isBaby && !it.isSleeping && it.getData(ModAttachments.LAST_PINNED_DAY) != today
         }
         if (villagers.isEmpty()) return
 
@@ -80,11 +80,19 @@ object VillageBoards {
     }
 
     private fun pinNote(level: ServerLevel, villager: Villager, cell: QuestBoardBlockEntity, facing: Direction) {
-        cell.updateNote(QuestGenerator.generate(level.random, professionTitle(villager)))
+        cell.updateNote(QuestGenerator.generate(level.random, posterName(villager)))
+        villager.setData(ModAttachments.LAST_PINNED_DAY, day(level))
         villager.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, Vec3.atCenterOf(cell.blockPos))
         val spot = Vec3.atCenterOf(cell.blockPos.relative(facing))
         level.playSound(null, cell.blockPos, SoundEvents.VILLAGER_WORK_CARTOGRAPHER, SoundSource.NEUTRAL, 1.0f, 1.0f)
         level.sendParticles(ParticleTypes.HAPPY_VILLAGER, spot.x, spot.y, spot.z, 4, 0.3, 0.3, 0.3, 0.0)
+    }
+
+    /** Name tag if it has one, otherwise a first name fixed by its UUID: "Maren the Librarian". */
+    private fun posterName(villager: Villager): String {
+        villager.customName?.let { return it.string }
+        val uuid = villager.uuid
+        return "${QuestGenerator.nameFor(uuid.mostSignificantBits xor uuid.leastSignificantBits)} the ${professionTitle(villager)}"
     }
 
     /** "Farmer", "Librarian", ... from the profession id; jobless villagers post as "Villager". */

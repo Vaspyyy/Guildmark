@@ -14,4 +14,9 @@ object ModAttachments {
     val VILLAGE_BOARD_CHECKED: DeferredHolder<AttachmentType<*>, AttachmentType<Boolean>> = ATTACHMENTS.register("village_board_checked") { ->
         AttachmentType.builder { -> false }.serialize(Codec.BOOL.fieldOf("checked")).build()
     }
+
+    /** Day index a villager last pinned a note, so each villager posts at most once a day. */
+    val LAST_PINNED_DAY: DeferredHolder<AttachmentType<*>, AttachmentType<Long>> = ATTACHMENTS.register("last_pinned_day") { ->
+        AttachmentType.builder { -> -1L }.serialize(Codec.LONG.fieldOf("day")).build()
+    }
 }
