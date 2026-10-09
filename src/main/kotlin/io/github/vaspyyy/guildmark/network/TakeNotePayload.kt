@@ -2,6 +2,7 @@ package io.github.vaspyyy.guildmark.network
 
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.block.QuestBoardBlockEntity
+import io.github.vaspyyy.guildmark.progression.Progression
 import io.github.vaspyyy.guildmark.quest.Contracts
 import io.netty.buffer.ByteBuf
 import net.minecraft.core.BlockPos
@@ -32,7 +33,7 @@ data class TakeNotePayload(val pos: BlockPos) : CustomPacketPayload {
             val note = board.note ?: return
 
             board.updateNote(null)
-            player.inventory.placeItemBackInInventory(Contracts.create(note, level, payload.pos), Prediction.SERVER_ONLY)
+            player.inventory.placeItemBackInInventory(Contracts.create(note, level, payload.pos, Progression.bonusDays(player)), Prediction.SERVER_ONLY)
             level.playSound(null, payload.pos, SoundEvents.BOOK_PAGE_TURN, SoundSource.BLOCKS, 1.0f, 1.0f)
         }
     }

@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.quest
 
+import io.github.vaspyyy.guildmark.progression.Progression
 import io.github.vaspyyy.guildmark.registry.ModDataComponents
 import io.github.vaspyyy.guildmark.registry.ModItems
 import net.minecraft.core.BlockPos
@@ -20,9 +21,10 @@ import net.minecraft.world.level.Level
 
 /** Server-side contract rules: creating, progressing and turning in. */
 object Contracts {
-    fun create(note: QuestNote, level: Level, boardPos: BlockPos): ItemStack {
+    /** [bonusDays] comes from the taker's Pathfinder perk. */
+    fun create(note: QuestNote, level: Level, boardPos: BlockPos, bonusDays: Int = 0): ItemStack {
         val stack = ItemStack(ModItems.CONTRACT.get())
-        val state = ContractState(0, level.gameTime + note.deadlineDays * ContractState.TICKS_PER_DAY, boardPos, level.dimension())
+        val state = ContractState(0, level.gameTime + (note.deadlineDays + bonusDays) * ContractState.TICKS_PER_DAY, boardPos, level.dimension())
         stack.set(ModDataComponents.QUEST_NOTE.get(), note)
         stack.set(ModDataComponents.CONTRACT_STATE.get(), state)
         refreshLore(stack, note, state)
@@ -71,9 +73,12 @@ object Contracts {
         }
 
         stack.shrink(1)
-        player.inventory.placeItemBackInInventory(ItemStack(ModItems.GUILD_MARK.get(), note.reward), Prediction.SERVER_ONLY)
-        player.sendOverlayMessage(Component.translatable("message.guildmark.complete", note.reward))
+        val marks = Progression.reward(player, note.reward)
+        val xp = note.reward * Progression.XP_PER_MARK
+        player.inventory.placeItemBackInInventory(ItemStack(ModItems.GUILD_MARK.get(), marks), Prediction.SERVER_ONLY)
+        player.sendOverlayMessage(Component.translatable("message.guildmark.complete", marks, xp))
         level.playSound(null, pos, SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 0.8f, 1.2f)
+        Progression.addXp(player, xp)
     }
 
     private fun counts(note: QuestNote, state: ContractState, victim: LivingEntity): Boolean = when (note.type) {

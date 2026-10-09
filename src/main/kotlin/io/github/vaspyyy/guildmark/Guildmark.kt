@@ -2,7 +2,9 @@ package io.github.vaspyyy.guildmark
 
 import com.mojang.logging.LogUtils
 import io.github.vaspyyy.guildmark.block.VillageBoards
+import io.github.vaspyyy.guildmark.network.SpendPerkPayload
 import io.github.vaspyyy.guildmark.network.TakeNotePayload
+import io.github.vaspyyy.guildmark.progression.Progression
 import io.github.vaspyyy.guildmark.quest.QuestPoolLoader
 import io.github.vaspyyy.guildmark.quest.Contracts
 import io.github.vaspyyy.guildmark.registry.ModAttachments
@@ -21,6 +23,7 @@ import net.neoforged.fml.common.Mod
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent
 import net.neoforged.neoforge.common.NeoForge
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent
+import net.neoforged.neoforge.event.entity.player.PlayerEvent
 import net.neoforged.neoforge.event.tick.PlayerTickEvent
 import net.neoforged.neoforge.event.AddServerReloadListenersEvent
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent
@@ -47,6 +50,9 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         modBus.addListener(RegisterPayloadHandlersEvent::class.java, ::onRegisterPayloads)
         NeoForge.EVENT_BUS.addListener(LivingDeathEvent::class.java, ::onLivingDeath)
         NeoForge.EVENT_BUS.addListener(PlayerTickEvent.Post::class.java, ::onPlayerTick)
+        // Stat perks are transient attribute modifiers, so put them back whenever the player entity is new
+        NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerLoggedInEvent::class.java) { Progression.applyAttributes(it.entity) }
+        NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerRespawnEvent::class.java) { Progression.applyAttributes(it.entity) }
         NeoForge.EVENT_BUS.addListener(AddServerReloadListenersEvent::class.java) { event ->
             event.addListener(Identifier.fromNamespaceAndPath(MOD_ID, "quest_pools"), QuestPoolLoader())
         }
@@ -68,6 +74,8 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
     }
 
     private fun onRegisterPayloads(event: RegisterPayloadHandlersEvent) {
-        event.registrar("1").playToServer(TakeNotePayload.TYPE, TakeNotePayload.STREAM_CODEC, TakeNotePayload::handle)
+        event.registrar("1")
+            .playToServer(TakeNotePayload.TYPE, TakeNotePayload.STREAM_CODEC, TakeNotePayload::handle)
+            .playToServer(SpendPerkPayload.TYPE, SpendPerkPayload.STREAM_CODEC, SpendPerkPayload::handle)
     }
 }

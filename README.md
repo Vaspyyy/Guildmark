@@ -4,7 +4,7 @@ A NeoForge mod for Minecraft 26.3. Villagers post procedurally generated quests 
 
 ## Status
 
-Early prototype. Villages get a 3x2 Quest Board near their bell. During the day villagers walk up and pin notes; unclaimed notes come down at the start of each new day. Click a note to read it, take it as a Contract, finish it, and spend Guild Marks at the Guildmaster. Each villager posts jobs that fit their profession, and villages further from spawn ask for more and pay more.
+Early prototype. Villages get a 3x2 Quest Board near their bell. During the day villagers walk up and pin notes; unclaimed notes come down at the start of each new day. Click a note to read it, take it as a Contract, finish it, and spend Guild Marks at the Guildmaster. Each villager posts jobs that fit their profession, and villages further from spawn ask for more and pay more. Finished contracts give guild XP; each guild level earns a perk point to spend in the Guild Ledger (G).
 
 ## Quest pools (datapacks)
 

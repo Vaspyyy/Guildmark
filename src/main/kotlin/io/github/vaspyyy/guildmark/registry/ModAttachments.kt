@@ -2,6 +2,7 @@ package io.github.vaspyyy.guildmark.registry
 
 import com.mojang.serialization.Codec
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.progression.GuildProgress
 import net.neoforged.neoforge.attachment.AttachmentType
 import net.neoforged.neoforge.registries.DeferredHolder
 import net.neoforged.neoforge.registries.DeferredRegister
@@ -18,5 +19,14 @@ object ModAttachments {
     /** Day index a villager last pinned a note, so each villager posts at most once a day. */
     val LAST_PINNED_DAY: DeferredHolder<AttachmentType<*>, AttachmentType<Long>> = ATTACHMENTS.register("last_pinned_day") { ->
         AttachmentType.builder { -> -1L }.serialize(Codec.LONG.fieldOf("day")).build()
+    }
+
+    /** A player's guild level, XP and perks. Survives death and syncs to its own player only. */
+    val GUILD_PROGRESS: DeferredHolder<AttachmentType<*>, AttachmentType<GuildProgress>> = ATTACHMENTS.register("guild_progress") { ->
+        AttachmentType.builder { -> GuildProgress() }
+            .serialize(GuildProgress.CODEC.fieldOf("progress"))
+            .copyOnDeath()
+            .sync({ holder, player -> holder === player }, GuildProgress.STREAM_CODEC)
+            .build()
     }
 }
