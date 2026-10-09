@@ -41,8 +41,10 @@ class ArcherPostBlock(properties: Properties) : Block(properties), EntityBlock {
         const val SPEED = 2.5
         /** Arrow gravity per tick, as in AbstractArrow. */
         const val GRAVITY = 0.05
-        /** Past the archer tower's corners (2.5 * sqrt 2 from the middle). */
-        const val MUZZLE_REACH = 3.7
+        /** Over the parapet ring, still inside the tower's 5x5 footprint. */
+        const val MUZZLE_REACH = 2.0
+        /** Above the crenellations, which are one block tall at the post's level. */
+        const val MUZZLE_RISE = 0.6
 
         fun tick(level: ServerLevel, pos: BlockPos) {
             if ((level.gameTime + pos.asLong()) % INTERVAL != 0L) return
@@ -68,13 +70,14 @@ class ArcherPostBlock(properties: Properties) : Block(properties), EntityBlock {
         }
 
         /**
-         * Where the arrow starts: out past the tower's parapet on the target's side, so it doesn't
-         * clip the crenellations or the floor edge when shooting down. Falls back to the post's top.
+         * Where the arrow starts: inside the tower, at the parapet on the target's side and just above
+         * the crenellations, like an archer leaning over the edge. Shooting from the middle of the floor,
+         * the parapet hid nearly every mob below. Falls back to the post's top if that spot is solid.
          */
         fun muzzleToward(level: ServerLevel, center: Vec3, target: LivingEntity): Vec3 {
             val flat = Vec3(target.x - center.x, 0.0, target.z - center.z)
             if (flat.lengthSqr() < 1.0E-4) return center.add(0.0, 0.3, 0.0)
-            val out = center.add(flat.normalize().scale(MUZZLE_REACH))
+            val out = center.add(flat.normalize().scale(MUZZLE_REACH)).add(0.0, MUZZLE_RISE, 0.0)
             val block = BlockPos.containing(out)
             return if (level.getBlockState(block).getCollisionShape(level, block).isEmpty) out else center.add(0.0, 0.3, 0.0)
         }
