@@ -37,6 +37,10 @@ class ArcherPostBlock(properties: Properties) : Block(properties), EntityBlock {
     private companion object {
         const val RANGE = 28.0
         const val INTERVAL = 25L
+        /** Blocks per tick; faster than a skeleton's 1.6 so the arc stays flat. */
+        const val SPEED = 2.5
+        /** Arrow gravity per tick, as in AbstractArrow. */
+        const val GRAVITY = 0.05
 
         fun tick(level: ServerLevel, pos: BlockPos) {
             if ((level.gameTime + pos.asLong()) % INTERVAL != 0L) return
@@ -48,10 +52,13 @@ class ArcherPostBlock(properties: Properties) : Block(properties), EntityBlock {
             val arrow = Arrow(level, muzzle.x, muzzle.y, muzzle.z, ItemStack(Items.ARROW), null)
             arrow.pickup = AbstractArrow.Pickup.DISALLOWED
             arrow.setBaseDamage(4.0)
-            val dx = target.x - muzzle.x
-            val dy = target.getY(0.5) - muzzle.y
-            val dz = target.z - muzzle.z
-            arrow.shoot(dx, dy + sqrt(dx * dx + dz * dz) * 0.12, dz, 1.8f, 2.0f)
+            // Lead the target by its velocity, then aim above it by how far the arrow drops on the way
+            val aim = target.position().add(0.0, target.bbHeight * 0.5, 0.0)
+            var flightTicks = sqrt(aim.distanceToSqr(muzzle)) / SPEED
+            val led = aim.add(target.deltaMovement.x * flightTicks, 0.0, target.deltaMovement.z * flightTicks)
+            flightTicks = sqrt(led.distanceToSqr(muzzle)) / SPEED
+            val drop = 0.5 * GRAVITY * flightTicks * flightTicks
+            arrow.shoot(led.x - muzzle.x, led.y - muzzle.y + drop, led.z - muzzle.z, SPEED.toFloat(), 1.0f)
             level.addFreshEntity(arrow)
             level.playSound(null, pos, SoundEvents.ARROW_SHOOT, SoundSource.BLOCKS, 1.0f, 1.0f)
         }

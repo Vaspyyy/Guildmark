@@ -106,5 +106,6 @@
   "message.guildmark.advance_progress": "+%s toward %s (%s / %s). Sneak and use the board to see village advances.",
   "message.guildmark.advance_complete": "The village has finished its %s!",
   "message.guildmark.advance_no_room": "%s is funded, but the builders can't find room. Clear some flat ground near the bell, then turn in another contract.",
-  "commands.guildmark.no_board": "Stand within 8 blocks of a Quest Board"
+  "commands.guildmark.no_board": "Stand within 8 blocks of a Quest Board",
+  "commands.guildmark.advance_reset": "This village's advances start over (built structures stay)"
 }

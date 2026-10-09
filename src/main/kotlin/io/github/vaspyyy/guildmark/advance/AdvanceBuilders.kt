@@ -66,21 +66,59 @@ object AdvanceBuilders {
         return posts.isNotEmpty()
     }
 
-    /** A ring of upright logs around the village; paths through it stay open as gates. */
+    /**
+     * A log wall that hugs the village's walkable land. Starting at the bell, it spreads over ground a
+     * mob could walk (steps of one block, no water) out to [radius]; water and cliffs stop the spread
+     * and need no wall. Walls go only where walkable ground carries on past the edge, and paths
+     * crossing that edge stay open as gates.
+     */
     private fun palisade(level: ServerLevel, center: BlockPos, radius: Int): Boolean {
         val log = Blocks.STRIPPED_SPRUCE_LOG.defaultBlockState().setValue(RotatedPillarBlock.AXIS, Direction.Axis.Y)
-        val columns = LinkedHashSet<Pair<Int, Int>>()
-        val steps = (radius * 2 * Math.PI * 2).toInt()
-        for (i in 0 until steps) {
-            val angle = 2 * Math.PI * i / steps
-            columns.add(Pair(center.x + Math.round(radius * cos(angle)).toInt(), center.z + Math.round(radius * sin(angle)).toInt()))
+        val reach = radius + 8
+        val tops = HashMap<Long, BlockPos>()
+        fun top(x: Int, z: Int): BlockPos = tops.getOrPut(BlockPos.asLong(x, 0, z)) { surface(level, x, z) }
+        fun water(top: BlockPos) = !level.getFluidState(top.below()).isEmpty
+        fun walkable(from: BlockPos, to: BlockPos) = !water(to) && abs(to.y - from.y) <= 1
+        fun inside(x: Int, z: Int): Boolean {
+            val dx = x - center.x
+            val dz = z - center.z
+            return dx * dx + dz * dz <= reach * reach
         }
+
+        // Flood fill the village's walkable land
+        val start = top(center.x, center.z)
+        val area = HashSet<Long>()
+        val queue = ArrayDeque<BlockPos>()
+        area.add(BlockPos.asLong(start.x, 0, start.z))
+        queue.add(start)
+        while (queue.isNotEmpty()) {
+            val here = queue.removeFirst()
+            for (direction in Direction.Plane.HORIZONTAL) {
+                val x = here.x + direction.stepX
+                val z = here.z + direction.stepZ
+                val key = BlockPos.asLong(x, 0, z)
+                if (key in area || !inside(x, z)) continue
+                val next = top(x, z)
+                if (!walkable(here, next)) continue
+                area.add(key)
+                queue.add(next)
+            }
+        }
+
+        // Wall the edge cells where walkable ground continues outward
         var placed = 0
-        for ((x, z) in columns) {
-            val top = surface(level, x, z)
-            if (abs(top.y - center.y) > 10 || !solidGround(level, top)) continue
-            if (!(0..2).all { free(level, top.above(it)) }) continue
-            for (i in 0..2) place(level, top.above(i), log)
+        for (key in area) {
+            val x = BlockPos.getX(key)
+            val z = BlockPos.getZ(key)
+            val here = top(x, z)
+            val open = Direction.Plane.HORIZONTAL.any { direction ->
+                val nx = x + direction.stepX
+                val nz = z + direction.stepZ
+                !inside(nx, nz) && walkable(here, top(nx, nz))
+            }
+            if (!open || !solidGround(level, here)) continue
+            if (!(0..2).all { free(level, here.above(it)) }) continue
+            for (i in 0..2) place(level, here.above(i), log)
             placed++
         }
         return placed > 0
