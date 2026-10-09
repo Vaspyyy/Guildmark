@@ -50,6 +50,27 @@
         "quest.guildmark.story.cartographer.fetch.0",
         "quest.guildmark.story.cartographer.fetch.1"
       ]
+    },
+    {
+      "type": "deliver",
+      "min": 1,
+      "max": 1,
+      "reward_per": 7,
+      "weight": 12,
+      "stories": [
+        "quest.guildmark.story.cartographer.deliver.0",
+        "quest.guildmark.story.cartographer.deliver.1"
+      ]
+    },
+    {
+      "type": "escort",
+      "min": 1,
+      "max": 1,
+      "reward_per": 10,
+      "weight": 4,
+      "stories": [
+        "quest.guildmark.story.cartographer.escort.0"
+      ]
     }
   ]
 }

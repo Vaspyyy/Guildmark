@@ -68,6 +68,18 @@
       "stories": [
         "quest.guildmark.story.weaponsmith.hunt.0"
       ]
+    },
+    {
+      "type": "champion",
+      "min": 1,
+      "max": 1,
+      "reward_per": 20,
+      "target": "minecraft:pillager",
+      "weight": 4,
+      "min_tier": 2,
+      "stories": [
+        "quest.guildmark.story.weaponsmith.champion.0"
+      ]
     }
   ]
 }

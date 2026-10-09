@@ -50,7 +50,8 @@ enum class Advance(
         val vanilla = note.target.namespace == Identifier.DEFAULT_NAMESPACE
         return when (note.type) {
             QuestType.CLEAR -> countsClear
-            QuestType.HUNT -> vanilla && note.target.path in huntTargets
+            QuestType.HUNT, QuestType.CHAMPION -> vanilla && note.target.path in huntTargets
+            QuestType.DELIVER, QuestType.ESCORT -> false
             QuestType.FETCH -> (vanilla && note.target.path in fetchItems) ||
                 (countsLogs && ItemStack(BuiltInRegistries.ITEM.getValue(note.target)).`is`(ItemTags.LOGS))
         }

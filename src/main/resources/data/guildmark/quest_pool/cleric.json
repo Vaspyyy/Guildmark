@@ -106,6 +106,17 @@
       "stories": [
         "quest.guildmark.story.cleric.hunt.0"
       ]
+    },
+    {
+      "type": "champion",
+      "min": 1,
+      "max": 1,
+      "reward_per": 15,
+      "target": "minecraft:zombie",
+      "weight": 4,
+      "stories": [
+        "quest.guildmark.story.cleric.champion.0"
+      ]
     }
   ]
 }

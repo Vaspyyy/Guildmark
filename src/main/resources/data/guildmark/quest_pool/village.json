@@ -138,6 +138,66 @@
       "stories": [
         "quest.guildmark.story.village.fetch.0"
       ]
+    },
+    {
+      "type": "deliver",
+      "min": 1,
+      "max": 1,
+      "reward_per": 6,
+      "weight": 5,
+      "stories": [
+        "quest.guildmark.story.village.deliver.0",
+        "quest.guildmark.story.village.deliver.1"
+      ]
+    },
+    {
+      "type": "escort",
+      "min": 1,
+      "max": 1,
+      "reward_per": 10,
+      "weight": 3,
+      "stories": [
+        "quest.guildmark.story.village.escort.0",
+        "quest.guildmark.story.village.escort.1"
+      ]
+    },
+    {
+      "type": "champion",
+      "min": 1,
+      "max": 1,
+      "reward_per": 14,
+      "target": "minecraft:zombie",
+      "weight": 3,
+      "stories": [
+        "quest.guildmark.story.village.champion.0",
+        "quest.guildmark.story.village.champion.1"
+      ]
+    },
+    {
+      "type": "champion",
+      "min": 1,
+      "max": 1,
+      "reward_per": 16,
+      "target": "minecraft:skeleton",
+      "weight": 2,
+      "min_tier": 2,
+      "stories": [
+        "quest.guildmark.story.village.champion.0",
+        "quest.guildmark.story.village.champion.1"
+      ]
+    },
+    {
+      "type": "champion",
+      "min": 1,
+      "max": 1,
+      "reward_per": 22,
+      "target": "minecraft:vindicator",
+      "weight": 2,
+      "min_tier": 3,
+      "stories": [
+        "quest.guildmark.story.village.champion.0",
+        "quest.guildmark.story.village.champion.1"
+      ]
     }
   ]
 }

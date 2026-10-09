@@ -3,8 +3,11 @@ package io.github.vaspyyy.guildmark.quest
 import com.mojang.serialization.Codec
 import com.mojang.serialization.codecs.RecordCodecBuilder
 import net.minecraft.core.BlockPos
+import net.minecraft.core.UUIDUtil
 import net.minecraft.resources.ResourceKey
 import net.minecraft.world.level.Level
+import java.util.Optional
+import java.util.UUID
 
 /** Per-contract progress: kills counted so far, when it expires, and the board it was taken from. */
 data class ContractState(
@@ -13,6 +16,12 @@ data class ContractState(
     val deadline: Long,
     val boardPos: BlockPos,
     val dimension: ResourceKey<Level>,
+    /** Delivery and escort: the village to reach. Champion: where it was last seen. */
+    val destination: BlockPos? = null,
+    /** Escort: the traveller. Champion: the champion. */
+    val bound: UUID? = null,
+    /** The traveller's or champion's name. */
+    val label: String = "",
 ) {
     fun isExpired(gameTime: Long): Boolean = gameTime > deadline
 
@@ -28,8 +37,11 @@ data class ContractState(
                 Codec.LONG.fieldOf("deadline").forGetter(ContractState::deadline),
                 BlockPos.CODEC.fieldOf("board_pos").forGetter(ContractState::boardPos),
                 Level.RESOURCE_KEY_CODEC.fieldOf("dimension").forGetter(ContractState::dimension),
-            ).apply(i) { progress, deadline, boardPos, dimension ->
-                ContractState(progress, deadline, boardPos, dimension)
+                BlockPos.CODEC.optionalFieldOf("destination").forGetter { Optional.ofNullable(it.destination) },
+                UUIDUtil.CODEC.optionalFieldOf("bound").forGetter { Optional.ofNullable(it.bound) },
+                Codec.STRING.optionalFieldOf("label", "").forGetter(ContractState::label),
+            ).apply(i) { progress, deadline, boardPos, dimension, destination, bound, label ->
+                ContractState(progress, deadline, boardPos, dimension, destination.orElse(null), bound.orElse(null), label)
             }
         }
     }

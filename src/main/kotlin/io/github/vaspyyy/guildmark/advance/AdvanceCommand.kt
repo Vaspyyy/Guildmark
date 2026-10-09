@@ -4,7 +4,11 @@ import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import io.github.vaspyyy.guildmark.block.QuestBoardBlock
 import io.github.vaspyyy.guildmark.block.QuestBoardBlockEntity
+import com.mojang.brigadier.arguments.StringArgumentType
+import io.github.vaspyyy.guildmark.quest.QuestGenerator
+import io.github.vaspyyy.guildmark.quest.QuestType
 import net.minecraft.commands.CommandSourceStack
+import net.minecraft.commands.SharedSuggestionProvider
 import net.minecraft.commands.Commands
 import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
@@ -27,6 +31,27 @@ object AdvanceCommand {
         dispatcher.register(
             Commands.literal("guildmark")
                 .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                .then(
+                    Commands.literal("note").then(
+                        Commands.argument("type", StringArgumentType.word())
+                            .suggests { _, builder -> SharedSuggestionProvider.suggest(QuestType.entries.map { it.serializedName }, builder) }
+                            .executes { context ->
+                                val source = context.source
+                                val level = source.level
+                                val anchor = nearestAnchor(source)
+                                val type = QuestType.entries.firstOrNull { it.serializedName == StringArgumentType.getString(context, "type") }
+                                val note = type?.let { QuestGenerator.generateOfType(level.random, it, QuestGenerator.tierAt(source.playerOrException.blockX, source.playerOrException.blockZ)) }
+                                val board = anchor?.let { level.getBlockEntity(it) as? QuestBoardBlockEntity }
+                                if (board == null || note == null) {
+                                    source.sendFailure(Component.translatable("commands.guildmark.no_note"))
+                                    0
+                                } else {
+                                    board.updateNote(note)
+                                    1
+                                }
+                            }
+                    )
+                )
                 .then(
                     Commands.literal("advance")
                         .then(

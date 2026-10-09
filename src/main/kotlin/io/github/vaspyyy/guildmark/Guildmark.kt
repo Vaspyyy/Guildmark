@@ -73,7 +73,9 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
     private fun onPlayerTick(event: PlayerTickEvent.Post) {
         val player = event.entity
         val level = player.level()
-        if (level is ServerLevel && player.tickCount % 200 == 0) VillageBoards.checkNearbyVillages(level, player.blockPosition())
+        if (level !is ServerLevel) return
+        if (player.tickCount % 200 == 0) VillageBoards.checkNearbyVillages(level, player.blockPosition())
+        if (player.tickCount % 10 == 0) Contracts.tickEscorts(level, player)
     }
 
     private fun onRegisterPayloads(event: RegisterPayloadHandlersEvent) {

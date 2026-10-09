@@ -53,6 +53,14 @@ object QuestGenerator {
         return build(random, pick(random, pool?.entries.orEmpty(), tier), poster, tier)
     }
 
+    /** A note of one specific type from any pool, for testing. Null if no pool offers that type. */
+    fun generateOfType(random: RandomSource, type: QuestType, tier: Int): QuestNote? {
+        val entries = QuestPools.pools.flatMap { it.entries }.filter { it.type == type }
+        if (entries.isEmpty()) return null
+        val poster = "${NAMES[random.nextInt(NAMES.size)]} the Guildmaster"
+        return build(random, pick(random, entries, MAX_TIER), poster, tier)
+    }
+
     private fun pick(random: RandomSource, entries: List<QuestPool.Entry>, tier: Int): QuestPool.Entry {
         val open = entries.filter { it.minTier <= tier }
         if (open.isEmpty()) return FALLBACK
@@ -68,7 +76,7 @@ object QuestGenerator {
         val countScale = 1.0f + 0.25f * (tier - 1)
         val rewardScale = 1.0f + 0.5f * (tier - 1)
         val base = entry.min + random.nextInt(entry.max - entry.min + 1)
-        val count = (base * countScale).roundToInt().coerceAtLeast(1)
+        val count = if (entry.type.isSingle) 1 else (base * countScale).roundToInt().coerceAtLeast(1)
         val reward = BASE_REWARD + (count * entry.rewardPer * rewardScale).roundToInt()
         val deadline = 2 + random.nextInt(3)
         val story = entry.stories.randomOrNull(random).orEmpty()

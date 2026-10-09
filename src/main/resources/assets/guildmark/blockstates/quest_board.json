@@ -350,6 +350,123 @@
         "model": "guildmark:block/quest_note_clear",
         "y": 270
       }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "note": "deliver"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_deliver"
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "note": "deliver"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_deliver",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "note": "deliver"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_deliver",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "note": "deliver"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_deliver",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "note": "escort"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_escort"
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "note": "escort"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_escort",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "note": "escort"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_escort",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "note": "escort"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_escort",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "note": "champion"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_champion"
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "note": "champion"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_champion",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "note": "champion"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_champion",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "note": "champion"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_champion",
+        "y": 270
+      }
     }
   ]
 }

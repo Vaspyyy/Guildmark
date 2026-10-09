@@ -2,6 +2,7 @@ package io.github.vaspyyy.guildmark.client
 
 import io.github.vaspyyy.guildmark.network.TakeNotePayload
 import io.github.vaspyyy.guildmark.quest.ContractState
+import io.github.vaspyyy.guildmark.quest.Contracts
 import io.github.vaspyyy.guildmark.quest.QuestNote
 import io.github.vaspyyy.guildmark.quest.QuestType
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -79,7 +80,8 @@ class NoteScreen(
     private fun contractLines(state: ContractState): List<Component> {
         val gameTime = minecraft.level?.gameTime ?: 0L
         val lines = mutableListOf<Component>()
-        if (note.type != QuestType.FETCH) {
+        lines.addAll(Contracts.contractDetails(note, state))
+        if (note.type.showsProgress) {
             lines.add(Component.translatable("quest.guildmark.progress", state.progress, note.count))
         }
         lines.add(

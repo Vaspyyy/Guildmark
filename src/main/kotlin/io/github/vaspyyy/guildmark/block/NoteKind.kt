@@ -8,7 +8,10 @@ enum class NoteKind(private val id: String) : StringRepresentable {
     NONE("none"),
     FETCH("fetch"),
     HUNT("hunt"),
-    CLEAR("clear");
+    CLEAR("clear"),
+    DELIVER("deliver"),
+    ESCORT("escort"),
+    CHAMPION("champion");
 
     override fun getSerializedName(): String = id
 
@@ -18,6 +21,9 @@ enum class NoteKind(private val id: String) : StringRepresentable {
             QuestType.FETCH -> FETCH
             QuestType.HUNT -> HUNT
             QuestType.CLEAR -> CLEAR
+            QuestType.DELIVER -> DELIVER
+            QuestType.ESCORT -> ESCORT
+            QuestType.CHAMPION -> CHAMPION
         }
     }
 }

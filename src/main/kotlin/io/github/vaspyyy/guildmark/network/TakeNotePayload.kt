@@ -2,13 +2,14 @@ package io.github.vaspyyy.guildmark.network
 
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.block.QuestBoardBlockEntity
-import io.github.vaspyyy.guildmark.progression.Progression
+import io.github.vaspyyy.guildmark.block.QuestBoardBlock
 import io.github.vaspyyy.guildmark.quest.Contracts
 import io.netty.buffer.ByteBuf
 import net.minecraft.core.BlockPos
 import net.minecraft.network.codec.StreamCodec
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload
 import net.minecraft.resources.Identifier
+import net.minecraft.server.level.ServerLevel
 import net.minecraft.sounds.SoundEvents
 import net.minecraft.sounds.SoundSource
 import net.minecraft.util.Prediction
@@ -32,8 +33,11 @@ data class TakeNotePayload(val pos: BlockPos) : CustomPacketPayload {
             val board = level.getBlockEntity(payload.pos) as? QuestBoardBlockEntity ?: return
             val note = board.note ?: return
 
+            val serverLevel = level as? ServerLevel ?: return
+            val facing = level.getBlockState(payload.pos).getValue(QuestBoardBlock.FACING)
+            val contract = Contracts.take(note, serverLevel, payload.pos, facing, player) ?: return
             board.updateNote(null)
-            player.inventory.placeItemBackInInventory(Contracts.create(note, level, payload.pos, Progression.bonusDays(player)), Prediction.SERVER_ONLY)
+            player.inventory.placeItemBackInInventory(contract, Prediction.SERVER_ONLY)
             level.playSound(null, payload.pos, SoundEvents.BOOK_PAGE_TURN, SoundSource.BLOCKS, 1.0f, 1.0f)
         }
     }

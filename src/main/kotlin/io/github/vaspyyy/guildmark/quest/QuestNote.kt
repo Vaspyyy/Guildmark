@@ -23,12 +23,18 @@ data class QuestNote(
         QuestType.FETCH -> Component.translatable("quest.guildmark.fetch.title", count, targetName())
         QuestType.HUNT -> Component.translatable("quest.guildmark.hunt.title", count, targetName())
         QuestType.CLEAR -> Component.translatable("quest.guildmark.clear.title")
+        QuestType.DELIVER -> Component.translatable("quest.guildmark.deliver.title")
+        QuestType.ESCORT -> Component.translatable("quest.guildmark.escort.title")
+        QuestType.CHAMPION -> Component.translatable("quest.guildmark.champion.title", targetName())
     }
 
     fun description(): Component = when (type) {
         QuestType.FETCH -> Component.translatable("quest.guildmark.fetch.desc", count, targetName())
         QuestType.HUNT -> Component.translatable("quest.guildmark.hunt.desc", count, targetName())
         QuestType.CLEAR -> Component.translatable("quest.guildmark.clear.desc", count, CLEAR_RADIUS)
+        QuestType.DELIVER -> Component.translatable("quest.guildmark.deliver.desc")
+        QuestType.ESCORT -> Component.translatable("quest.guildmark.escort.desc")
+        QuestType.CHAMPION -> Component.translatable("quest.guildmark.champion.desc", targetName())
     }
 
     fun storyLine(): Component? = if (story.isEmpty()) null else Component.translatable(story)
@@ -39,8 +45,8 @@ data class QuestNote(
 
     private fun targetName(): Component = when (type) {
         QuestType.FETCH -> ItemStack(BuiltInRegistries.ITEM.getValue(target)).hoverName
-        QuestType.HUNT -> BuiltInRegistries.ENTITY_TYPE.getValue(target).description
-        QuestType.CLEAR -> Component.empty()
+        QuestType.HUNT, QuestType.CHAMPION -> BuiltInRegistries.ENTITY_TYPE.getValue(target).description
+        QuestType.CLEAR, QuestType.DELIVER, QuestType.ESCORT -> Component.empty()
     }
 
     companion object {
