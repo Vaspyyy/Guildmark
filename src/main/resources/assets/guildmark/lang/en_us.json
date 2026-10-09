@@ -64,8 +64,8 @@
   "key.guildmark.ledger": "Open Guild Ledger",
   "key.category.guildmark.main": "Guildmark",
   "gui.guildmark.ledger": "Guild Ledger",
-  "gui.guildmark.ledger.level": "Guild Level %s",
-  "gui.guildmark.ledger.points": "Perk points: %s",
+  "gui.guildmark.ledger.level": "Level %s",
+  "gui.guildmark.ledger.points": "%s perk points",
   "gui.guildmark.ledger.xp": "%s / %s XP",
   "gui.guildmark.ledger.max": "Max level",
   "perk.guildmark.vitality": "Vitality",
@@ -83,5 +83,8 @@
   "perk.guildmark.haggler": "Haggler",
   "perk.guildmark.haggler.desc": "+10% Guild Marks from contracts per rank",
   "perk.guildmark.pathfinder": "Pathfinder",
-  "perk.guildmark.pathfinder.desc": "+1 day on contract deadlines per rank"
+  "perk.guildmark.pathfinder.desc": "+1 day on contract deadlines per rank",
+  "gui.guildmark.ledger.perk_buy": "Click to spend a perk point",
+  "gui.guildmark.ledger.perk_no_points": "Earn a guild level for a perk point",
+  "gui.guildmark.ledger.perk_maxed": "Fully learned"
 }
