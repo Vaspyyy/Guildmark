@@ -3,6 +3,7 @@ package io.github.vaspyyy.guildmark
 import com.mojang.logging.LogUtils
 import io.github.vaspyyy.guildmark.block.VillageBoards
 import io.github.vaspyyy.guildmark.network.TakeNotePayload
+import io.github.vaspyyy.guildmark.quest.QuestPoolLoader
 import io.github.vaspyyy.guildmark.quest.Contracts
 import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.registry.ModBlockEntities
@@ -11,6 +12,7 @@ import io.github.vaspyyy.guildmark.registry.ModCreativeTabs
 import io.github.vaspyyy.guildmark.registry.ModDataComponents
 import io.github.vaspyyy.guildmark.registry.ModItems
 import io.github.vaspyyy.guildmark.registry.ModVillagers
+import net.minecraft.resources.Identifier
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.entity.player.Player
 import net.neoforged.bus.api.IEventBus
@@ -20,6 +22,7 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent
 import net.neoforged.neoforge.common.NeoForge
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent
 import net.neoforged.neoforge.event.tick.PlayerTickEvent
+import net.neoforged.neoforge.event.AddServerReloadListenersEvent
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent
 import org.slf4j.Logger
 
@@ -44,6 +47,9 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         modBus.addListener(RegisterPayloadHandlersEvent::class.java, ::onRegisterPayloads)
         NeoForge.EVENT_BUS.addListener(LivingDeathEvent::class.java, ::onLivingDeath)
         NeoForge.EVENT_BUS.addListener(PlayerTickEvent.Post::class.java, ::onPlayerTick)
+        NeoForge.EVENT_BUS.addListener(AddServerReloadListenersEvent::class.java) { event ->
+            event.addListener(Identifier.fromNamespaceAndPath(MOD_ID, "quest_pools"), QuestPoolLoader())
+        }
     }
 
     private fun onCommonSetup(event: FMLCommonSetupEvent) {

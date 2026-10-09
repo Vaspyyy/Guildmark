@@ -1,0 +1,62 @@
+{
+  "professions": [
+    "minecraft:fletcher"
+  ],
+  "entries": [
+    {
+      "type": "fetch",
+      "target": "minecraft:stick",
+      "min": 16,
+      "max": 32,
+      "reward_per": 0.08,
+      "stories": [
+        "quest.guildmark.story.fletcher.fetch.0",
+        "quest.guildmark.story.fletcher.fetch.1"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:feather",
+      "min": 8,
+      "max": 16,
+      "reward_per": 0.25,
+      "stories": [
+        "quest.guildmark.story.fletcher.fetch.0",
+        "quest.guildmark.story.fletcher.fetch.1"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:flint",
+      "min": 8,
+      "max": 16,
+      "reward_per": 0.25,
+      "stories": [
+        "quest.guildmark.story.fletcher.fetch.0",
+        "quest.guildmark.story.fletcher.fetch.1"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:string",
+      "min": 8,
+      "max": 16,
+      "reward_per": 0.25,
+      "stories": [
+        "quest.guildmark.story.fletcher.fetch.0",
+        "quest.guildmark.story.fletcher.fetch.1"
+      ]
+    },
+    {
+      "type": "hunt",
+      "target": "minecraft:skeleton",
+      "min": 3,
+      "max": 6,
+      "reward_per": 1.2,
+      "weight": 8,
+      "stories": [
+        "quest.guildmark.story.fletcher.hunt.0"
+      ]
+    }
+  ]
+}

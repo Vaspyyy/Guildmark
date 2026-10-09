@@ -1,0 +1,77 @@
+{
+  "professions": [
+    "minecraft:fisherman"
+  ],
+  "entries": [
+    {
+      "type": "fetch",
+      "target": "minecraft:cod",
+      "min": 8,
+      "max": 16,
+      "reward_per": 0.3,
+      "stories": [
+        "quest.guildmark.story.fisherman.fetch.0",
+        "quest.guildmark.story.fisherman.fetch.1"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:salmon",
+      "min": 6,
+      "max": 12,
+      "reward_per": 0.4,
+      "stories": [
+        "quest.guildmark.story.fisherman.fetch.0",
+        "quest.guildmark.story.fisherman.fetch.1"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:tropical_fish",
+      "min": 2,
+      "max": 4,
+      "reward_per": 1.2,
+      "weight": 4,
+      "stories": [
+        "quest.guildmark.story.fisherman.fetch.0",
+        "quest.guildmark.story.fisherman.fetch.1"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:pufferfish",
+      "min": 2,
+      "max": 4,
+      "reward_per": 1.2,
+      "weight": 4,
+      "stories": [
+        "quest.guildmark.story.fisherman.fetch.0",
+        "quest.guildmark.story.fisherman.fetch.1"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:string",
+      "min": 8,
+      "max": 16,
+      "reward_per": 0.2,
+      "weight": 6,
+      "stories": [
+        "quest.guildmark.story.fisherman.fetch.0",
+        "quest.guildmark.story.fisherman.fetch.1"
+      ]
+    },
+    {
+      "type": "hunt",
+      "target": "minecraft:drowned",
+      "min": 3,
+      "max": 6,
+      "reward_per": 1.4,
+      "weight": 6,
+      "min_tier": 2,
+      "stories": [
+        "quest.guildmark.story.fisherman.hunt.0"
+      ]
+    }
+  ]
+}

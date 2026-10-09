@@ -16,6 +16,8 @@ data class QuestNote(
     val count: Int,
     val reward: Int,
     val deadlineDays: Int,
+    /** Translation key of the poster's flavor line; empty for none. */
+    val story: String = "",
 ) {
     fun title(): Component = when (type) {
         QuestType.FETCH -> Component.translatable("quest.guildmark.fetch.title", count, targetName())
@@ -28,6 +30,8 @@ data class QuestNote(
         QuestType.HUNT -> Component.translatable("quest.guildmark.hunt.desc", count, targetName())
         QuestType.CLEAR -> Component.translatable("quest.guildmark.clear.desc", count, CLEAR_RADIUS)
     }
+
+    fun storyLine(): Component? = if (story.isEmpty()) null else Component.translatable(story)
 
     fun posterLine(): Component = Component.translatable("quest.guildmark.posted_by", poster)
     fun rewardLine(): Component = Component.translatable("quest.guildmark.reward", reward)
@@ -50,8 +54,9 @@ data class QuestNote(
                 Codec.INT.fieldOf("count").forGetter(QuestNote::count),
                 Codec.INT.fieldOf("reward").forGetter(QuestNote::reward),
                 Codec.INT.fieldOf("deadline_days").forGetter(QuestNote::deadlineDays),
-            ).apply(i) { type, poster, target, count, reward, deadline ->
-                QuestNote(type, poster, target, count, reward, deadline)
+                Codec.STRING.optionalFieldOf("story", "").forGetter(QuestNote::story),
+            ).apply(i) { type, poster, target, count, reward, deadline, story ->
+                QuestNote(type, poster, target, count, reward, deadline, story)
             }
         }
     }

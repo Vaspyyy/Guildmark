@@ -1,0 +1,143 @@
+{
+  "entries": [
+    {
+      "type": "hunt",
+      "target": "minecraft:zombie",
+      "min": 4,
+      "max": 8,
+      "reward_per": 1.0,
+      "stories": [
+        "quest.guildmark.story.village.hunt.0",
+        "quest.guildmark.story.village.hunt.1"
+      ]
+    },
+    {
+      "type": "hunt",
+      "target": "minecraft:skeleton",
+      "min": 4,
+      "max": 8,
+      "reward_per": 1.1,
+      "stories": [
+        "quest.guildmark.story.village.hunt.0",
+        "quest.guildmark.story.village.hunt.1"
+      ]
+    },
+    {
+      "type": "hunt",
+      "target": "minecraft:spider",
+      "min": 3,
+      "max": 6,
+      "reward_per": 1.1,
+      "stories": [
+        "quest.guildmark.story.village.hunt.0",
+        "quest.guildmark.story.village.hunt.1"
+      ]
+    },
+    {
+      "type": "hunt",
+      "target": "minecraft:creeper",
+      "min": 2,
+      "max": 4,
+      "reward_per": 2.0,
+      "weight": 6,
+      "stories": [
+        "quest.guildmark.story.village.hunt.0",
+        "quest.guildmark.story.village.hunt.1"
+      ]
+    },
+    {
+      "type": "hunt",
+      "target": "minecraft:slime",
+      "min": 4,
+      "max": 8,
+      "reward_per": 0.8,
+      "weight": 4,
+      "stories": [
+        "quest.guildmark.story.village.hunt.0",
+        "quest.guildmark.story.village.hunt.1"
+      ]
+    },
+    {
+      "type": "hunt",
+      "target": "minecraft:enderman",
+      "min": 1,
+      "max": 2,
+      "reward_per": 4.0,
+      "weight": 4,
+      "min_tier": 2,
+      "stories": [
+        "quest.guildmark.story.village.hunt.0",
+        "quest.guildmark.story.village.hunt.1"
+      ]
+    },
+    {
+      "type": "hunt",
+      "target": "minecraft:witch",
+      "min": 1,
+      "max": 2,
+      "reward_per": 4.0,
+      "weight": 3,
+      "min_tier": 2,
+      "stories": [
+        "quest.guildmark.story.village.hunt.0",
+        "quest.guildmark.story.village.hunt.1"
+      ]
+    },
+    {
+      "type": "clear",
+      "min": 6,
+      "max": 12,
+      "reward_per": 1.0,
+      "weight": 12,
+      "stories": [
+        "quest.guildmark.story.village.clear.0",
+        "quest.guildmark.story.village.clear.1"
+      ]
+    },
+    {
+      "type": "clear",
+      "min": 10,
+      "max": 16,
+      "reward_per": 1.1,
+      "weight": 6,
+      "min_tier": 2,
+      "stories": [
+        "quest.guildmark.story.village.clear.0",
+        "quest.guildmark.story.village.clear.1"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:bread",
+      "min": 6,
+      "max": 12,
+      "reward_per": 0.3,
+      "weight": 4,
+      "stories": [
+        "quest.guildmark.story.village.fetch.0"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:apple",
+      "min": 6,
+      "max": 12,
+      "reward_per": 0.3,
+      "weight": 4,
+      "stories": [
+        "quest.guildmark.story.village.fetch.0"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:torch",
+      "min": 16,
+      "max": 32,
+      "reward_per": 0.08,
+      "weight": 4,
+      "stories": [
+        "quest.guildmark.story.village.fetch.0"
+      ]
+    }
+  ]
+}

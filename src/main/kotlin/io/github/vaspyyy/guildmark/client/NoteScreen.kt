@@ -59,16 +59,19 @@ class NoteScreen(
         super.extractRenderState(graphics, mouseX, mouseY, a)
         val x = left + TEXT_X
         var y = top + TEXT_Y
-        y = graphics.textWithWordWrap(font, note.title().copy().withStyle { it.withBold(true) }, x, y, TEXT_WIDTH, INK, false) + 8
-        y = graphics.textWithWordWrap(font, note.description(), x, y, TEXT_WIDTH, INK, false) + 12
+        y = graphics.textWithWordWrap(font, note.title().copy().withStyle { it.withBold(true) }, x, y, TEXT_WIDTH, INK, false) + 6
+        note.storyLine()?.let {
+            y = graphics.textWithWordWrap(font, it.copy().withStyle { s -> s.withItalic(true) }, x, y, TEXT_WIDTH, FADED_INK, false) + 6
+        }
+        y = graphics.textWithWordWrap(font, note.description(), x, y, TEXT_WIDTH, INK, false) + 8
         y = graphics.textWithWordWrap(font, note.rewardLine(), x, y, TEXT_WIDTH, INK, false) + 2
         if (contract == null) {
-            y = graphics.textWithWordWrap(font, note.deadlineLine(), x, y, TEXT_WIDTH, INK, false) + 12
+            y = graphics.textWithWordWrap(font, note.deadlineLine(), x, y, TEXT_WIDTH, INK, false) + 8
         } else {
             for (line in contractLines(contract)) {
                 y = graphics.textWithWordWrap(font, line, x, y, TEXT_WIDTH, INK, false) + 2
             }
-            y += 10
+            y += 6
         }
         graphics.textWithWordWrap(font, note.posterLine(), x, y, TEXT_WIDTH, FADED_INK, false)
     }

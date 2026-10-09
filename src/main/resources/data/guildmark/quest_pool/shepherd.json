@@ -1,0 +1,61 @@
+{
+  "professions": [
+    "minecraft:shepherd"
+  ],
+  "entries": [
+    {
+      "type": "fetch",
+      "target": "minecraft:white_wool",
+      "min": 8,
+      "max": 16,
+      "reward_per": 0.25,
+      "stories": [
+        "quest.guildmark.story.shepherd.fetch.0"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:black_wool",
+      "min": 4,
+      "max": 8,
+      "reward_per": 0.5,
+      "weight": 5,
+      "stories": [
+        "quest.guildmark.story.shepherd.fetch.0"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:shears",
+      "min": 1,
+      "max": 1,
+      "reward_per": 3.0,
+      "weight": 3,
+      "stories": [
+        "quest.guildmark.story.shepherd.fetch.0"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:wheat",
+      "min": 12,
+      "max": 24,
+      "reward_per": 0.12,
+      "weight": 6,
+      "stories": [
+        "quest.guildmark.story.shepherd.fetch.0"
+      ]
+    },
+    {
+      "type": "hunt",
+      "target": "minecraft:wolf",
+      "min": 2,
+      "max": 4,
+      "reward_per": 1.5,
+      "weight": 5,
+      "stories": [
+        "quest.guildmark.story.shepherd.hunt.0"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "professions": [
+    "minecraft:toolsmith"
+  ],
+  "entries": [
+    {
+      "type": "fetch",
+      "target": "minecraft:iron_ingot",
+      "min": 4,
+      "max": 10,
+      "reward_per": 0.6,
+      "stories": [
+        "quest.guildmark.story.toolsmith.fetch.0"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:coal",
+      "min": 12,
+      "max": 24,
+      "reward_per": 0.2,
+      "stories": [
+        "quest.guildmark.story.toolsmith.fetch.0"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:stick",
+      "min": 16,
+      "max": 32,
+      "reward_per": 0.08,
+      "weight": 6,
+      "stories": [
+        "quest.guildmark.story.toolsmith.fetch.0"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:copper_ingot",
+      "min": 8,
+      "max": 16,
+      "reward_per": 0.25,
+      "weight": 6,
+      "stories": [
+        "quest.guildmark.story.toolsmith.fetch.0"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:diamond",
+      "min": 1,
+      "max": 2,
+      "reward_per": 6.0,
+      "weight": 2,
+      "min_tier": 3,
+      "stories": [
+        "quest.guildmark.story.toolsmith.fetch.0"
+      ]
+    }
+  ]
+}

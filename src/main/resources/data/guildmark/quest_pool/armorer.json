@@ -1,0 +1,65 @@
+{
+  "professions": [
+    "minecraft:armorer"
+  ],
+  "entries": [
+    {
+      "type": "fetch",
+      "target": "minecraft:iron_ingot",
+      "min": 4,
+      "max": 10,
+      "reward_per": 0.6,
+      "stories": [
+        "quest.guildmark.story.armorer.fetch.0",
+        "quest.guildmark.story.armorer.fetch.1"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:coal",
+      "min": 12,
+      "max": 24,
+      "reward_per": 0.2,
+      "stories": [
+        "quest.guildmark.story.armorer.fetch.0",
+        "quest.guildmark.story.armorer.fetch.1"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:lava_bucket",
+      "min": 1,
+      "max": 1,
+      "reward_per": 3.0,
+      "weight": 4,
+      "stories": [
+        "quest.guildmark.story.armorer.fetch.0",
+        "quest.guildmark.story.armorer.fetch.1"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:diamond",
+      "min": 1,
+      "max": 2,
+      "reward_per": 6.0,
+      "weight": 2,
+      "min_tier": 3,
+      "stories": [
+        "quest.guildmark.story.armorer.fetch.0",
+        "quest.guildmark.story.armorer.fetch.1"
+      ]
+    },
+    {
+      "type": "hunt",
+      "target": "minecraft:zombie",
+      "min": 4,
+      "max": 8,
+      "reward_per": 1.0,
+      "weight": 6,
+      "stories": [
+        "quest.guildmark.story.armorer.hunt.0"
+      ]
+    }
+  ]
+}

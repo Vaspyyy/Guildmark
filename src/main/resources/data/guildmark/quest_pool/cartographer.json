@@ -1,0 +1,55 @@
+{
+  "professions": [
+    "minecraft:cartographer"
+  ],
+  "entries": [
+    {
+      "type": "fetch",
+      "target": "minecraft:paper",
+      "min": 12,
+      "max": 24,
+      "reward_per": 0.15,
+      "stories": [
+        "quest.guildmark.story.cartographer.fetch.0",
+        "quest.guildmark.story.cartographer.fetch.1"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:compass",
+      "min": 1,
+      "max": 2,
+      "reward_per": 2.0,
+      "weight": 6,
+      "stories": [
+        "quest.guildmark.story.cartographer.fetch.0",
+        "quest.guildmark.story.cartographer.fetch.1"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:glass_pane",
+      "min": 8,
+      "max": 16,
+      "reward_per": 0.2,
+      "weight": 6,
+      "stories": [
+        "quest.guildmark.story.cartographer.fetch.0",
+        "quest.guildmark.story.cartographer.fetch.1"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:amethyst_shard",
+      "min": 4,
+      "max": 8,
+      "reward_per": 0.6,
+      "weight": 4,
+      "min_tier": 2,
+      "stories": [
+        "quest.guildmark.story.cartographer.fetch.0",
+        "quest.guildmark.story.cartographer.fetch.1"
+      ]
+    }
+  ]
+}

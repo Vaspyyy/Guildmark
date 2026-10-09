@@ -1,0 +1,87 @@
+{
+  "professions": [
+    "minecraft:butcher"
+  ],
+  "entries": [
+    {
+      "type": "fetch",
+      "target": "minecraft:beef",
+      "min": 6,
+      "max": 12,
+      "reward_per": 0.4,
+      "stories": [
+        "quest.guildmark.story.butcher.fetch.0",
+        "quest.guildmark.story.butcher.fetch.1"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:porkchop",
+      "min": 6,
+      "max": 12,
+      "reward_per": 0.4,
+      "stories": [
+        "quest.guildmark.story.butcher.fetch.0",
+        "quest.guildmark.story.butcher.fetch.1"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:mutton",
+      "min": 6,
+      "max": 12,
+      "reward_per": 0.4,
+      "stories": [
+        "quest.guildmark.story.butcher.fetch.0",
+        "quest.guildmark.story.butcher.fetch.1"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:chicken",
+      "min": 6,
+      "max": 12,
+      "reward_per": 0.35,
+      "stories": [
+        "quest.guildmark.story.butcher.fetch.0",
+        "quest.guildmark.story.butcher.fetch.1"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:rabbit",
+      "min": 3,
+      "max": 6,
+      "reward_per": 0.8,
+      "weight": 6,
+      "stories": [
+        "quest.guildmark.story.butcher.fetch.0",
+        "quest.guildmark.story.butcher.fetch.1"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:coal",
+      "min": 8,
+      "max": 16,
+      "reward_per": 0.25,
+      "weight": 6,
+      "stories": [
+        "quest.guildmark.story.butcher.fetch.0",
+        "quest.guildmark.story.butcher.fetch.1"
+      ]
+    },
+    {
+      "type": "hunt",
+      "target": "minecraft:wolf",
+      "min": 2,
+      "max": 4,
+      "reward_per": 1.5,
+      "weight": 3,
+      "min_tier": 2,
+      "stories": [
+        "quest.guildmark.story.butcher.hunt.0"
+      ]
+    }
+  ]
+}

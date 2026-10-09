@@ -1,0 +1,107 @@
+{
+  "professions": [
+    "minecraft:farmer"
+  ],
+  "entries": [
+    {
+      "type": "fetch",
+      "target": "minecraft:wheat",
+      "min": 16,
+      "max": 32,
+      "reward_per": 0.12,
+      "stories": [
+        "quest.guildmark.story.farmer.fetch.0",
+        "quest.guildmark.story.farmer.fetch.1",
+        "quest.guildmark.story.farmer.fetch.2"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:carrot",
+      "min": 12,
+      "max": 24,
+      "reward_per": 0.15,
+      "stories": [
+        "quest.guildmark.story.farmer.fetch.0",
+        "quest.guildmark.story.farmer.fetch.1",
+        "quest.guildmark.story.farmer.fetch.2"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:potato",
+      "min": 12,
+      "max": 24,
+      "reward_per": 0.15,
+      "stories": [
+        "quest.guildmark.story.farmer.fetch.0",
+        "quest.guildmark.story.farmer.fetch.1",
+        "quest.guildmark.story.farmer.fetch.2"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:beetroot",
+      "min": 12,
+      "max": 24,
+      "reward_per": 0.15,
+      "stories": [
+        "quest.guildmark.story.farmer.fetch.0",
+        "quest.guildmark.story.farmer.fetch.1",
+        "quest.guildmark.story.farmer.fetch.2"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:pumpkin",
+      "min": 4,
+      "max": 8,
+      "reward_per": 0.5,
+      "weight": 6,
+      "stories": [
+        "quest.guildmark.story.farmer.fetch.0",
+        "quest.guildmark.story.farmer.fetch.1",
+        "quest.guildmark.story.farmer.fetch.2"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:melon_slice",
+      "min": 12,
+      "max": 24,
+      "reward_per": 0.12,
+      "weight": 6,
+      "stories": [
+        "quest.guildmark.story.farmer.fetch.0",
+        "quest.guildmark.story.farmer.fetch.1",
+        "quest.guildmark.story.farmer.fetch.2"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:bone_meal",
+      "min": 8,
+      "max": 16,
+      "reward_per": 0.25,
+      "weight": 6,
+      "stories": [
+        "quest.guildmark.story.farmer.fetch.0",
+        "quest.guildmark.story.farmer.fetch.1",
+        "quest.guildmark.story.farmer.fetch.2"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:egg",
+      "min": 8,
+      "max": 16,
+      "reward_per": 0.2,
+      "weight": 5,
+      "stories": [
+        "quest.guildmark.story.farmer.fetch.0",
+        "quest.guildmark.story.farmer.fetch.1",
+        "quest.guildmark.story.farmer.fetch.2"
+      ]
+    }
+  ]
+}

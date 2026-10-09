@@ -1,0 +1,56 @@
+{
+  "professions": [
+    "minecraft:leatherworker"
+  ],
+  "entries": [
+    {
+      "type": "fetch",
+      "target": "minecraft:leather",
+      "min": 6,
+      "max": 12,
+      "reward_per": 0.4,
+      "stories": [
+        "quest.guildmark.story.leatherworker.fetch.0",
+        "quest.guildmark.story.leatherworker.fetch.1"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:rabbit_hide",
+      "min": 4,
+      "max": 8,
+      "reward_per": 0.5,
+      "weight": 6,
+      "stories": [
+        "quest.guildmark.story.leatherworker.fetch.0",
+        "quest.guildmark.story.leatherworker.fetch.1"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:turtle_scute",
+      "min": 1,
+      "max": 3,
+      "reward_per": 3.0,
+      "weight": 3,
+      "min_tier": 2,
+      "stories": [
+        "quest.guildmark.story.leatherworker.fetch.0",
+        "quest.guildmark.story.leatherworker.fetch.1"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:armadillo_scute",
+      "min": 2,
+      "max": 4,
+      "reward_per": 1.5,
+      "weight": 3,
+      "min_tier": 2,
+      "stories": [
+        "quest.guildmark.story.leatherworker.fetch.0",
+        "quest.guildmark.story.leatherworker.fetch.1"
+      ]
+    }
+  ]
+}

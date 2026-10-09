@@ -1,0 +1,78 @@
+{
+  "professions": [
+    "minecraft:mason"
+  ],
+  "entries": [
+    {
+      "type": "fetch",
+      "target": "minecraft:clay_ball",
+      "min": 12,
+      "max": 24,
+      "reward_per": 0.15,
+      "stories": [
+        "quest.guildmark.story.mason.fetch.0",
+        "quest.guildmark.story.mason.fetch.1"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:stone",
+      "min": 32,
+      "max": 64,
+      "reward_per": 0.05,
+      "stories": [
+        "quest.guildmark.story.mason.fetch.0",
+        "quest.guildmark.story.mason.fetch.1"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:andesite",
+      "min": 16,
+      "max": 32,
+      "reward_per": 0.08,
+      "weight": 6,
+      "stories": [
+        "quest.guildmark.story.mason.fetch.0",
+        "quest.guildmark.story.mason.fetch.1"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:granite",
+      "min": 16,
+      "max": 32,
+      "reward_per": 0.08,
+      "weight": 6,
+      "stories": [
+        "quest.guildmark.story.mason.fetch.0",
+        "quest.guildmark.story.mason.fetch.1"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:diorite",
+      "min": 16,
+      "max": 32,
+      "reward_per": 0.08,
+      "weight": 6,
+      "stories": [
+        "quest.guildmark.story.mason.fetch.0",
+        "quest.guildmark.story.mason.fetch.1"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:quartz",
+      "min": 8,
+      "max": 16,
+      "reward_per": 0.4,
+      "weight": 3,
+      "min_tier": 2,
+      "stories": [
+        "quest.guildmark.story.mason.fetch.0",
+        "quest.guildmark.story.mason.fetch.1"
+      ]
+    }
+  ]
+}

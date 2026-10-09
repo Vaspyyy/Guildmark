@@ -1,0 +1,111 @@
+{
+  "professions": [
+    "minecraft:cleric"
+  ],
+  "entries": [
+    {
+      "type": "fetch",
+      "target": "minecraft:rotten_flesh",
+      "min": 12,
+      "max": 24,
+      "reward_per": 0.1,
+      "stories": [
+        "quest.guildmark.story.cleric.fetch.0",
+        "quest.guildmark.story.cleric.fetch.1"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:glass_bottle",
+      "min": 4,
+      "max": 8,
+      "reward_per": 0.3,
+      "stories": [
+        "quest.guildmark.story.cleric.fetch.0",
+        "quest.guildmark.story.cleric.fetch.1"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:redstone",
+      "min": 8,
+      "max": 16,
+      "reward_per": 0.25,
+      "stories": [
+        "quest.guildmark.story.cleric.fetch.0",
+        "quest.guildmark.story.cleric.fetch.1"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:gold_ingot",
+      "min": 3,
+      "max": 6,
+      "reward_per": 0.8,
+      "weight": 6,
+      "stories": [
+        "quest.guildmark.story.cleric.fetch.0",
+        "quest.guildmark.story.cleric.fetch.1"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:rabbit_foot",
+      "min": 1,
+      "max": 2,
+      "reward_per": 2.5,
+      "weight": 3,
+      "stories": [
+        "quest.guildmark.story.cleric.fetch.0",
+        "quest.guildmark.story.cleric.fetch.1"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "minecraft:nether_wart",
+      "min": 4,
+      "max": 8,
+      "reward_per": 0.6,
+      "weight": 3,
+      "min_tier": 2,
+      "stories": [
+        "quest.guildmark.story.cleric.fetch.0",
+        "quest.guildmark.story.cleric.fetch.1"
+      ]
+    },
+    {
+      "type": "hunt",
+      "target": "minecraft:zombie",
+      "min": 4,
+      "max": 8,
+      "reward_per": 1.0,
+      "weight": 8,
+      "stories": [
+        "quest.guildmark.story.cleric.hunt.0"
+      ]
+    },
+    {
+      "type": "hunt",
+      "target": "minecraft:husk",
+      "min": 3,
+      "max": 6,
+      "reward_per": 1.2,
+      "weight": 4,
+      "stories": [
+        "quest.guildmark.story.cleric.hunt.0"
+      ]
+    },
+    {
+      "type": "hunt",
+      "target": "minecraft:phantom",
+      "min": 2,
+      "max": 4,
+      "reward_per": 2.0,
+      "weight": 4,
+      "min_tier": 2,
+      "stories": [
+        "quest.guildmark.story.cleric.hunt.0"
+      ]
+    }
+  ]
+}

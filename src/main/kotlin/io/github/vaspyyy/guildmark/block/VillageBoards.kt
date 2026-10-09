@@ -7,6 +7,7 @@ import io.github.vaspyyy.guildmark.registry.ModVillagers
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.core.particles.ParticleTypes
+import net.minecraft.resources.Identifier
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.sounds.SoundEvents
 import net.minecraft.sounds.SoundSource
@@ -40,7 +41,7 @@ object VillageBoards {
         val cells = BoardPart.entries.shuffled().take(STARTER_NOTES)
         for (part in cells) {
             val cell = level.getBlockEntity(QuestBoardBlock.cellPos(anchor, facing, part)) as? QuestBoardBlockEntity
-            cell?.updateNote(QuestGenerator.generate(level.random))
+            cell?.updateNote(QuestGenerator.generateAnonymous(level.random, QuestGenerator.tierAt(anchor.x, anchor.z)))
         }
     }
 
@@ -80,7 +81,9 @@ object VillageBoards {
     }
 
     private fun pinNote(level: ServerLevel, villager: Villager, cell: QuestBoardBlockEntity, facing: Direction) {
-        cell.updateNote(QuestGenerator.generate(level.random, posterName(villager)))
+        val profession = villager.villagerData.profession().unwrapKey().orElse(null)?.identifier()
+        val tier = QuestGenerator.tierAt(cell.blockPos.x, cell.blockPos.z)
+        cell.updateNote(QuestGenerator.generate(level.random, profession, posterName(villager, profession), tier))
         villager.setData(ModAttachments.LAST_PINNED_DAY, day(level))
         villager.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, Vec3.atCenterOf(cell.blockPos))
         val spot = Vec3.atCenterOf(cell.blockPos.relative(facing))
@@ -89,19 +92,12 @@ object VillageBoards {
     }
 
     /** Name tag if it has one, otherwise a first name fixed by its UUID: "Maren the Librarian". */
-    private fun posterName(villager: Villager): String {
+    private fun posterName(villager: Villager, profession: Identifier?): String {
         villager.customName?.let { return it.string }
         val uuid = villager.uuid
-        return "${QuestGenerator.nameFor(uuid.mostSignificantBits xor uuid.leastSignificantBits)} the ${professionTitle(villager)}"
+        return "${QuestGenerator.nameFor(uuid.mostSignificantBits xor uuid.leastSignificantBits)} the ${QuestGenerator.title(profession)}"
     }
 
-    /** "Farmer", "Librarian", ... from the profession id; jobless villagers post as "Villager". */
-    private fun professionTitle(villager: Villager): String {
-        val key = villager.villagerData.profession().unwrapKey().orElse(null) ?: return "Villager"
-        val path = key.identifier().path
-        if (path == "none" || path == "nitwit") return "Villager"
-        return path.split('_').joinToString(" ") { word -> word.replaceFirstChar { it.uppercase() } }
-    }
 
     /** Called periodically per player: give each nearby village without a board one, once. */
     fun checkNearbyVillages(level: ServerLevel, around: BlockPos) {
