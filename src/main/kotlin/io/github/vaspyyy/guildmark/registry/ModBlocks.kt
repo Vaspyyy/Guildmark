@@ -15,6 +15,6 @@ object ModBlocks {
 
     // Explicit UnaryOperator: a bare lambda is ambiguous with the Supplier overload in Kotlin.
     val QUEST_BOARD: DeferredBlock<QuestBoardBlock> = BLOCKS.registerBlock("quest_board", ::QuestBoardBlock, UnaryOperator<BlockBehaviour.Properties> {
-        it.mapColor(MapColor.WOOD).strength(2.5f).sound(SoundType.WOOD).noOcclusion().pushReaction(PushReaction.BLOCK)
+        it.mapColor(MapColor.WOOD).strength(2.5f).sound(SoundType.WOOD).noOcclusion().pushReaction(PushReaction.IMMOVEABLE)
     })
 }
