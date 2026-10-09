@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.registry
 
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.block.ArcherPostBlockEntity
 import io.github.vaspyyy.guildmark.block.QuestBoardBlockEntity
 import net.minecraft.core.registries.Registries
 import net.minecraft.world.level.block.entity.BlockEntityType
@@ -12,5 +13,9 @@ object ModBlockEntities {
 
     val QUEST_BOARD: DeferredHolder<BlockEntityType<*>, BlockEntityType<QuestBoardBlockEntity>> = BLOCK_ENTITIES.register("quest_board") { ->
         BlockEntityType(BlockEntityType.BlockEntitySupplier(::QuestBoardBlockEntity), ModBlocks.QUEST_BOARD.get())
+    }
+
+    val ARCHER_POST: DeferredHolder<BlockEntityType<*>, BlockEntityType<ArcherPostBlockEntity>> = BLOCK_ENTITIES.register("archer_post") { ->
+        BlockEntityType(BlockEntityType.BlockEntitySupplier(::ArcherPostBlockEntity), ModBlocks.ARCHER_POST.get())
     }
 }

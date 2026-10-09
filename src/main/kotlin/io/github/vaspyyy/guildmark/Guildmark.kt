@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark
 
 import com.mojang.logging.LogUtils
+import io.github.vaspyyy.guildmark.advance.AdvanceCommand
 import io.github.vaspyyy.guildmark.block.VillageBoards
 import io.github.vaspyyy.guildmark.network.SpendPerkPayload
 import io.github.vaspyyy.guildmark.network.TakeNotePayload
@@ -26,6 +27,7 @@ import net.neoforged.neoforge.event.entity.living.LivingDeathEvent
 import net.neoforged.neoforge.event.entity.player.PlayerEvent
 import net.neoforged.neoforge.event.tick.PlayerTickEvent
 import net.neoforged.neoforge.event.AddServerReloadListenersEvent
+import net.neoforged.neoforge.event.RegisterCommandsEvent
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent
 import org.slf4j.Logger
 
@@ -53,6 +55,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         // Stat perks are transient attribute modifiers, so put them back whenever the player entity is new
         NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerLoggedInEvent::class.java) { Progression.applyAttributes(it.entity) }
         NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerRespawnEvent::class.java) { Progression.applyAttributes(it.entity) }
+        NeoForge.EVENT_BUS.addListener(RegisterCommandsEvent::class.java) { AdvanceCommand.register(it.dispatcher) }
         NeoForge.EVENT_BUS.addListener(AddServerReloadListenersEvent::class.java) { event ->
             event.addListener(Identifier.fromNamespaceAndPath(MOD_ID, "quest_pools"), QuestPoolLoader())
         }

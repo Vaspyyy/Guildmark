@@ -1,5 +1,7 @@
 package io.github.vaspyyy.guildmark.quest
 
+import io.github.vaspyyy.guildmark.advance.Advances
+import io.github.vaspyyy.guildmark.block.QuestBoardBlock
 import io.github.vaspyyy.guildmark.progression.Progression
 import io.github.vaspyyy.guildmark.registry.ModDataComponents
 import io.github.vaspyyy.guildmark.registry.ModItems
@@ -7,6 +9,7 @@ import net.minecraft.core.BlockPos
 import net.minecraft.core.component.DataComponents
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.network.chat.Component
+import net.minecraft.server.level.ServerLevel
 import net.minecraft.sounds.SoundEvents
 import net.minecraft.sounds.SoundSource
 import net.minecraft.util.Prediction
@@ -79,6 +82,10 @@ object Contracts {
         player.sendOverlayMessage(Component.translatable("message.guildmark.complete", marks, xp))
         level.playSound(null, pos, SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 0.8f, 1.2f)
         Progression.addXp(player, xp)
+        if (level is ServerLevel) {
+            val state = level.getBlockState(pos)
+            if (state.block is QuestBoardBlock) Advances.contribute(level, QuestBoardBlock.anchorPos(pos, state), note, player)
+        }
     }
 
     private fun counts(note: QuestNote, state: ContractState, victim: LivingEntity): Boolean = when (note.type) {

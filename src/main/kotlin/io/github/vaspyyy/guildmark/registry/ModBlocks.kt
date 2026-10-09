@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.registry
 
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.block.ArcherPostBlock
 import io.github.vaspyyy.guildmark.block.QuestBoardBlock
 import net.minecraft.world.level.block.SoundType
 import net.minecraft.world.level.block.state.BlockBehaviour
@@ -16,5 +17,10 @@ object ModBlocks {
     // Explicit UnaryOperator: a bare lambda is ambiguous with the Supplier overload in Kotlin.
     val QUEST_BOARD: DeferredBlock<QuestBoardBlock> = BLOCKS.registerBlock("quest_board", ::QuestBoardBlock, UnaryOperator<BlockBehaviour.Properties> {
         it.mapColor(MapColor.WOOD).strength(2.5f).sound(SoundType.WOOD).noOcclusion().pushReaction(PushReaction.IMMOVEABLE)
+    })
+
+    /** Placed by the Archer Tower advance; not craftable. */
+    val ARCHER_POST: DeferredBlock<ArcherPostBlock> = BLOCKS.registerBlock("archer_post", ::ArcherPostBlock, UnaryOperator<BlockBehaviour.Properties> {
+        it.mapColor(MapColor.WOOD).strength(2.5f).sound(SoundType.WOOD)
     })
 }

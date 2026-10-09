@@ -16,4 +16,9 @@ object ClientHooks {
     fun openContract(note: QuestNote, state: ContractState?) {
         Minecraft.getInstance().gui.setScreen(NoteScreen(note, null, state))
     }
+
+    /** The village advances of the board whose anchor cell is [anchor]. */
+    fun openAdvances(anchor: BlockPos) {
+        Minecraft.getInstance().gui.setScreen(AdvanceScreen(anchor))
+    }
 }

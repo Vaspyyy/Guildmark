@@ -158,7 +158,9 @@ class QuestBoardBlock(properties: BlockBehaviour.Properties) : Block(properties)
     }
 
     override fun useWithoutItem(state: BlockState, level: Level, pos: BlockPos, player: Player, hitResult: BlockHitResult): InteractionResult {
-        if (level.isClientSide()) {
+        if (level.isClientSide() && player.isShiftKeyDown) {
+            ClientHooks.openAdvances(anchorPos(pos, state))
+        } else if (level.isClientSide()) {
             val note = (level.getBlockEntity(pos) as? QuestBoardBlockEntity)?.note
             if (note != null) {
                 ClientHooks.openNote(note, pos)

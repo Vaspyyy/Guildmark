@@ -23,6 +23,19 @@ class QuestBoardBlockEntity(pos: BlockPos, state: BlockState) :
     var postedDay: Long = 0
         private set
 
+    /** Anchor cell only: how many village advances are built, and progress toward the next. */
+    var advanceIndex: Int = 0
+        private set
+    var advancePoints: Int = 0
+        private set
+
+    fun setAdvanceProgress(index: Int, points: Int) {
+        advanceIndex = index
+        advancePoints = points
+        setChanged()
+        level?.let { it.sendBlockUpdated(blockPos, blockState, blockState, Block.UPDATE_CLIENTS) }
+    }
+
     /** Server side: pin or remove a note, update the cell's paper model and sync to clients. */
     fun updateNote(newNote: QuestNote?) {
         note = newNote
@@ -41,12 +54,16 @@ class QuestBoardBlockEntity(pos: BlockPos, state: BlockState) :
         super.saveAdditional(output)
         output.storeNullable("note", QuestNote.CODEC, note)
         output.putLong("posted_day", postedDay)
+        output.putInt("advance_index", advanceIndex)
+        output.putInt("advance_points", advancePoints)
     }
 
     override fun loadAdditional(input: ValueInput) {
         super.loadAdditional(input)
         note = input.read("note", QuestNote.CODEC).orElse(null)
         postedDay = input.getLongOr("posted_day", 0L)
+        advanceIndex = input.getIntOr("advance_index", 0)
+        advancePoints = input.getIntOr("advance_points", 0)
     }
 
     override fun getUpdateTag(registries: HolderLookup.Provider): CompoundTag = saveCustomOnly(registries)
