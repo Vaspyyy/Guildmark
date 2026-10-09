@@ -41,13 +41,17 @@ class ArcherPostBlock(properties: Properties) : Block(properties), EntityBlock {
         const val SPEED = 2.5
         /** Arrow gravity per tick, as in AbstractArrow. */
         const val GRAVITY = 0.05
+        /** Past the archer tower's corners (2.5 * sqrt 2 from the middle). */
+        const val MUZZLE_REACH = 3.7
 
         fun tick(level: ServerLevel, pos: BlockPos) {
             if ((level.gameTime + pos.asLong()) % INTERVAL != 0L) return
-            val muzzle = Vec3(pos.x + 0.5, pos.y + 1.3, pos.z + 0.5)
-            val target = level.getEntitiesOfClass(LivingEntity::class.java, AABB(pos).inflate(RANGE)) {
-                it.isAlive && it.type.category == MobCategory.MONSTER && it.distanceToSqr(muzzle) <= RANGE * RANGE
-            }.filter { canSee(level, muzzle, it) }.minByOrNull { it.distanceToSqr(muzzle) } ?: return
+            val center = Vec3(pos.x + 0.5, pos.y + 1.0, pos.z + 0.5)
+            val (target, muzzle) = level.getEntitiesOfClass(LivingEntity::class.java, AABB(pos).inflate(RANGE)) {
+                it.isAlive && it.type.category == MobCategory.MONSTER && it.distanceToSqr(center) <= RANGE * RANGE
+            }.sortedBy { it.distanceToSqr(center) }
+                .map { Pair(it, muzzleToward(level, center, it)) }
+                .firstOrNull { (mob, from) -> canSee(level, from, mob) } ?: return
 
             val arrow = Arrow(level, muzzle.x, muzzle.y, muzzle.z, ItemStack(Items.ARROW), null)
             arrow.pickup = AbstractArrow.Pickup.DISALLOWED
@@ -61,6 +65,18 @@ class ArcherPostBlock(properties: Properties) : Block(properties), EntityBlock {
             arrow.shoot(led.x - muzzle.x, led.y - muzzle.y + drop, led.z - muzzle.z, SPEED.toFloat(), 1.0f)
             level.addFreshEntity(arrow)
             level.playSound(null, pos, SoundEvents.ARROW_SHOOT, SoundSource.BLOCKS, 1.0f, 1.0f)
+        }
+
+        /**
+         * Where the arrow starts: out past the tower's parapet on the target's side, so it doesn't
+         * clip the crenellations or the floor edge when shooting down. Falls back to the post's top.
+         */
+        fun muzzleToward(level: ServerLevel, center: Vec3, target: LivingEntity): Vec3 {
+            val flat = Vec3(target.x - center.x, 0.0, target.z - center.z)
+            if (flat.lengthSqr() < 1.0E-4) return center.add(0.0, 0.3, 0.0)
+            val out = center.add(flat.normalize().scale(MUZZLE_REACH))
+            val block = BlockPos.containing(out)
+            return if (level.getBlockState(block).getCollisionShape(level, block).isEmpty) out else center.add(0.0, 0.3, 0.0)
         }
 
         fun canSee(level: ServerLevel, from: Vec3, target: LivingEntity): Boolean =
