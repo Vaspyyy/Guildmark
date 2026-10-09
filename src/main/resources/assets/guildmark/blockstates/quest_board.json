@@ -1,0 +1,5 @@
+{
+  "variants": {
+    "": { "model": "guildmark:block/quest_board" }
+  }
+}
