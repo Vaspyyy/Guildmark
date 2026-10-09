@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "condition": {
+        "type": "minecraft:survives_explosion"
+      },
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "guildmark:quest_board",
+          "condition": {
+            "type": "minecraft:match_block",
+            "blocks": "guildmark:quest_board",
+            "state": {
+              "part": "bottom_middle"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "random_sequence": "guildmark:blocks/quest_board"
+}

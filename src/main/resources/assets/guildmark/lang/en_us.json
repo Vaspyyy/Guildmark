@@ -1,5 +1,19 @@
 {
   "itemGroup.guildmark": "Guildmark",
   "block.guildmark.quest_board": "Quest Board",
-  "item.guildmark.guild_mark": "Guild Mark"
+  "item.guildmark.guild_mark": "Guild Mark",
+  "item.guildmark.contract": "Contract",
+
+  "quest.guildmark.fetch.title": "Wanted: %s %s",
+  "quest.guildmark.fetch.desc": "Bring %s %s to this board.",
+  "quest.guildmark.hunt.title": "Bounty: %s %s",
+  "quest.guildmark.hunt.desc": "Slay %s %s.",
+  "quest.guildmark.clear.title": "Clear the Outskirts",
+  "quest.guildmark.clear.desc": "Defeat %s hostile mobs within %s blocks of this board.",
+  "quest.guildmark.posted_by": "Posted by %s",
+  "quest.guildmark.reward": "Reward: %s Guild Marks",
+  "quest.guildmark.deadline": "Deadline: %s days once taken",
+
+  "gui.guildmark.take_contract": "Take Contract",
+  "message.guildmark.no_note": "Nothing is pinned here"
 }

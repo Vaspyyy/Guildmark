@@ -4,7 +4,7 @@ A NeoForge mod for Minecraft 26.3. Villagers post procedurally generated quests 
 
 ## Status
 
-Scaffold only: a placeholder Quest Board block and the Guild Mark item. Placeholder art reuses vanilla oak planks and the gold nugget.
+Early prototype: a 3x2 Quest Board covered in placeholder notes. Click a note to read it, take it as a Contract. Quests are random placeholders until the real generator lands.
 
 ## Stack
 

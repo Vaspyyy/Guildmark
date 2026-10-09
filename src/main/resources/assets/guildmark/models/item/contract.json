@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "guildmark:item/guild_mark"
+    "layer0": "guildmark:item/contract"
   }
 }

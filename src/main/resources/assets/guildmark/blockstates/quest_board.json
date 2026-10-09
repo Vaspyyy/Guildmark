@@ -1,5 +1,355 @@
 {
-  "variants": {
-    "": { "model": "guildmark:block/quest_board" }
-  }
+  "multipart": [
+    {
+      "when": {
+        "facing": "north",
+        "part": "bottom_left"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_board_bottom_left"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "part": "bottom_middle"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_board_bottom_middle"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "part": "bottom_right"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_board_bottom_right"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "part": "top_left"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_board_top_left"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "part": "top_middle"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_board_top_middle"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "part": "top_right"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_board_top_right"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "note": "fetch"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_fetch"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "note": "hunt"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_hunt"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "note": "clear"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_clear"
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "part": "bottom_left"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_board_bottom_left",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "part": "bottom_middle"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_board_bottom_middle",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "part": "bottom_right"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_board_bottom_right",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "part": "top_left"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_board_top_left",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "part": "top_middle"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_board_top_middle",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "part": "top_right"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_board_top_right",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "note": "fetch"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_fetch",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "note": "hunt"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_hunt",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "note": "clear"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_clear",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "part": "bottom_left"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_board_bottom_left",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "part": "bottom_middle"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_board_bottom_middle",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "part": "bottom_right"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_board_bottom_right",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "part": "top_left"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_board_top_left",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "part": "top_middle"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_board_top_middle",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "part": "top_right"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_board_top_right",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "note": "fetch"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_fetch",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "note": "hunt"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_hunt",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "note": "clear"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_clear",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "part": "bottom_left"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_board_bottom_left",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "part": "bottom_middle"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_board_bottom_middle",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "part": "bottom_right"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_board_bottom_right",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "part": "top_left"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_board_top_left",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "part": "top_middle"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_board_top_middle",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "part": "top_right"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_board_top_right",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "note": "fetch"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_fetch",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "note": "hunt"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_hunt",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "note": "clear"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_clear",
+        "y": 270
+      }
+    }
+  ]
 }

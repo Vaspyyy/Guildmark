@@ -1,6 +1,6 @@
 {
   "model": {
     "type": "minecraft:model",
-    "model": "guildmark:item/guild_mark"
+    "model": "guildmark:item/contract"
   }
 }
