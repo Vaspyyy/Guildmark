@@ -14,6 +14,7 @@ import io.github.vaspyyy.guildmark.network.ReceptionActionPayload
 import io.github.vaspyyy.guildmark.road.Bandits
 import io.github.vaspyyy.guildmark.road.RoadNetwork
 import io.github.vaspyyy.guildmark.road.Traffic
+import io.github.vaspyyy.guildmark.siege.Sieges
 import io.github.vaspyyy.guildmark.quest.Contracts
 import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.registry.ModBlockEntities
@@ -70,7 +71,10 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
             if (level is ServerLevel) {
                 RoadNetwork.get(level).tick(level)
                 if (level.gameTime % 10L == 0L) Traffic.tick(level)
-                if (level.gameTime % 20L == 0L) Lairs.get(level).tick(level)
+                if (level.gameTime % 20L == 0L) {
+                    Lairs.get(level).tick(level)
+                    Sieges.tick(level)
+                }
             }
         }
         // Stat perks are transient attribute modifiers, so put them back whenever the player entity is new
@@ -90,6 +94,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         val victim = event.entity
         val level = victim.level()
         if (level is ServerLevel && victim is PathfinderMob) Bandits.onDeath(level, victim)
+        if (level is ServerLevel) Sieges.onDeath(level, victim)
         if (level is ServerLevel && victim.hasData(ModAttachments.LAIR_BOSS)) Lairs.get(level).onBossDeath(level, victim.getData(ModAttachments.LAIR_BOSS))
         val killer = event.source.entity as? Player ?: return
         if (!killer.level().isClientSide()) Contracts.onKill(killer, event.entity)
@@ -102,6 +107,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         if (player.tickCount % 200 == 0) VillageBoards.checkNearbyVillages(level, player.blockPosition())
         if (player.tickCount % 10 == 0) Contracts.tickEscorts(level, player)
         Traffic.trySpawn(level, player)
+        Sieges.maybeStart(level, player)
     }
 
     private fun onRegisterPayloads(event: RegisterPayloadHandlersEvent) {

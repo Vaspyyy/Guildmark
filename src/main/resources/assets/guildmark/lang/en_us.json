@@ -260,5 +260,17 @@
   "lore.guildmark.6.page1": "While the shards are apart, the King cannot wake. If they were ever brought together, he would rise wherever they met.",
   "lore.guildmark.7.title": "Lore: The Last Warden",
   "lore.guildmark.7.page0": "The last Warden was named Maren. She carried the torn page of the Ledger away from the final battle, and walked off the end of every map.",
-  "lore.guildmark.7.page1": "Old travellers swear they have met her on the roads at dusk, asking each adventurer the same question: 'What rank are you, and is it enough?'"
+  "lore.guildmark.7.page1": "Old travellers swear they have met her on the roads at dusk, asking each adventurer the same question: 'What rank are you, and is it enough?'",
+  "message.guildmark.siege_start": "A horde is marching on the village near %s, %s from the %s! Defend it until dawn.",
+  "message.guildmark.siege_wave": "Wave %s of %s is coming!",
+  "message.guildmark.siege_won": "The horde is broken! The village pays its defenders %s Guild Marks.",
+  "message.guildmark.siege_lost": "The village fell to the horde. Walls and lamps are torn down and its project has stalled.",
+  "gui.guildmark.siege_bar": "Siege: wave %s of %s, %s monsters left",
+  "news.guildmark.siege_won": "The village near %s, %s held off a monster siege.",
+  "news.guildmark.siege_lost": "The village near %s, %s was overrun by a horde.",
+  "direction.guildmark.north": "north",
+  "direction.guildmark.south": "south",
+  "direction.guildmark.east": "east",
+  "direction.guildmark.west": "west",
+  "commands.guildmark.no_siege": "No village with a board within 64 blocks, or it's already been besieged today"
 }

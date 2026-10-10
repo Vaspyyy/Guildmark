@@ -12,6 +12,7 @@ import io.github.vaspyyy.guildmark.progression.GuildProgress
 import io.github.vaspyyy.guildmark.progression.Progression
 import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.road.Traffic
+import io.github.vaspyyy.guildmark.siege.Sieges
 import io.github.vaspyyy.guildmark.village.Standing
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.SharedSuggestionProvider
@@ -94,6 +95,15 @@ object AdvanceCommand {
                             1
                         }
                     )
+                )
+                .then(
+                    Commands.literal("siege").executes { context ->
+                        if (Sieges.start(context.source.level, context.source.playerOrException.blockPosition())) 1
+                        else {
+                            context.source.sendFailure(Component.translatable("commands.guildmark.no_siege"))
+                            0
+                        }
+                    }
                 )
                 .then(
                     Commands.literal("traffic")

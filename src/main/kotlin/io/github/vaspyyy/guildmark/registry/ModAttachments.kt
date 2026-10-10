@@ -65,6 +65,11 @@ object ModAttachments {
         AttachmentType.builder { -> -1L }.serialize(Codec.LONG.fieldOf("day")).build()
     }
 
+    /** Marks a monster marching in a siege, with the siege's id. */
+    val SIEGE: DeferredHolder<AttachmentType<*>, AttachmentType<Int>> = ATTACHMENTS.register("siege") { ->
+        AttachmentType.builder { -> -1 }.build()
+    }
+
     /** Marks a lair boss with the id of its lair. */
     val LAIR_BOSS: DeferredHolder<AttachmentType<*>, AttachmentType<Int>> = ATTACHMENTS.register("lair_boss") { ->
         AttachmentType.builder { -> -1 }.serialize(Codec.INT.fieldOf("lair")).build()
