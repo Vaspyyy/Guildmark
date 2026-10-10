@@ -165,5 +165,13 @@
   "gui.guildmark.tracker.count": "%s/%s",
   "gui.guildmark.tracker.travel": "On the road",
   "gui.guildmark.tracker.days": "%s days left",
-  "gui.guildmark.tracker.status": "%s · %s"
+  "gui.guildmark.tracker.status": "%s · %s",
+  "entity.guildmark.bandit": "Bandit",
+  "entity.guildmark.merchant": "Merchant %s",
+  "entity.guildmark.traveller": "Traveller %s",
+  "message.guildmark.ambush": "Bandits are attacking %s on the road!",
+  "message.guildmark.ambush_defended_paid": "The bandits are beaten. %s pays you %s Guild Marks for the protection.",
+  "message.guildmark.ambush_defended": "The bandits are beaten. %s can travel on.",
+  "message.guildmark.ambush_lost": "%s was lost to the bandits.",
+  "commands.guildmark.no_road_near": "No finished road runs 40 to 96 blocks from you"
 }

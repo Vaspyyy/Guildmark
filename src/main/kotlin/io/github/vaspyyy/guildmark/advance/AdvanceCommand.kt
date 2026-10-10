@@ -7,6 +7,7 @@ import io.github.vaspyyy.guildmark.block.QuestBoardBlockEntity
 import com.mojang.brigadier.arguments.StringArgumentType
 import io.github.vaspyyy.guildmark.quest.QuestGenerator
 import io.github.vaspyyy.guildmark.quest.QuestType
+import io.github.vaspyyy.guildmark.road.Traffic
 import io.github.vaspyyy.guildmark.village.Standing
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.SharedSuggestionProvider
@@ -17,7 +18,8 @@ import net.minecraft.network.chat.Component
 /**
  * Testing commands for the nearest board's village: `/guildmark advance <points>` funds the current
  * project, `/guildmark advance reset` starts the chain over (already built structures stay),
- * `/guildmark standing <points>` changes your standing there.
+ * `/guildmark standing <points>` changes your standing there, `/guildmark traffic [ambush]` sends a
+ * caravan or traveller along a road 40 to 96 blocks away.
  */
 object AdvanceCommand {
     private fun nearestAnchor(source: CommandSourceStack): BlockPos? {
@@ -27,6 +29,12 @@ object AdvanceCommand {
             .filter { level.getBlockState(it).block is QuestBoardBlock }
             .findFirst().map { it.immutable() }.orElse(null) ?: return null
         return QuestBoardBlock.anchorPos(board, level.getBlockState(board))
+    }
+
+    private fun spawnTraffic(source: CommandSourceStack, ambush: Boolean): Int {
+        if (Traffic.spawnNear(source.level, source.playerOrException, ambush)) return 1
+        source.sendFailure(Component.translatable("commands.guildmark.no_road_near"))
+        return 0
     }
 
     fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
@@ -53,6 +61,11 @@ object AdvanceCommand {
                                 }
                             }
                     )
+                )
+                .then(
+                    Commands.literal("traffic")
+                        .executes { context -> spawnTraffic(context.source, false) }
+                        .then(Commands.literal("ambush").executes { context -> spawnTraffic(context.source, true) })
                 )
                 .then(
                     Commands.literal("standing").then(

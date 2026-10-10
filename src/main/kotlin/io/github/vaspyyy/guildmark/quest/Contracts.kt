@@ -3,6 +3,7 @@ package io.github.vaspyyy.guildmark.quest
 import io.github.vaspyyy.guildmark.advance.Advances
 import io.github.vaspyyy.guildmark.block.QuestBoardBlock
 import io.github.vaspyyy.guildmark.progression.Progression
+import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.registry.ModDataComponents
 import io.github.vaspyyy.guildmark.road.RoadNetwork
 import io.github.vaspyyy.guildmark.road.Travellers
@@ -59,6 +60,11 @@ object Contracts {
                 if (note.type == QuestType.ESCORT) {
                     val name = "Traveller ${QuestGenerator.nameFor(level.random.nextLong())}"
                     val traveller = Expeditions.spawnTraveller(level, boardPos, facing, name) ?: return null
+                    // Half of all escorts meet bandits somewhere in the middle stretch of the road
+                    if (level.random.nextBoolean()) {
+                        val waypoints = road.points.size
+                        traveller.setData(ModAttachments.AMBUSH_AT, waypoints * (40 + level.random.nextInt(31)) / 100)
+                    }
                     state = state.copy(bound = traveller.uuid, label = name)
                 }
             }

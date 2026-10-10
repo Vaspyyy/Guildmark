@@ -3,11 +3,14 @@ package io.github.vaspyyy.guildmark.registry
 import com.mojang.serialization.Codec
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.progression.GuildProgress
+import io.github.vaspyyy.guildmark.road.TrafficState
 import io.github.vaspyyy.guildmark.road.TravelProgress
+import net.minecraft.core.UUIDUtil
 import net.neoforged.neoforge.attachment.AttachmentType
 import net.neoforged.neoforge.registries.DeferredHolder
 import net.neoforged.neoforge.registries.DeferredRegister
 import net.neoforged.neoforge.registries.NeoForgeRegistries
+import java.util.UUID
 
 object ModAttachments {
     val ATTACHMENTS: DeferredRegister<AttachmentType<*>> = DeferredRegister.create(NeoForgeRegistries.Keys.ATTACHMENT_TYPES, Guildmark.MOD_ID)
@@ -34,5 +37,20 @@ object ModAttachments {
     /** An escorted traveller's progress along its road. */
     val TRAVEL_PROGRESS: DeferredHolder<AttachmentType<*>, AttachmentType<TravelProgress>> = ATTACHMENTS.register("travel_progress") { ->
         AttachmentType.builder { -> TravelProgress() }.serialize(TravelProgress.CODEC.fieldOf("progress")).build()
+    }
+
+    /** Waypoint where bandits lie in wait for this traveller or caravan, or -1 for a quiet trip. */
+    val AMBUSH_AT: DeferredHolder<AttachmentType<*>, AttachmentType<Int>> = ATTACHMENTS.register("ambush_at") { ->
+        AttachmentType.builder { -> -1 }.serialize(Codec.INT.fieldOf("waypoint")).build()
+    }
+
+    /** The bandits currently attacking this traveller or caravan. */
+    val AMBUSHERS: DeferredHolder<AttachmentType<*>, AttachmentType<List<UUID>>> = ATTACHMENTS.register("ambushers") { ->
+        AttachmentType.builder { -> listOf<UUID>() }.serialize(UUIDUtil.CODEC.listOf().fieldOf("bandits")).build()
+    }
+
+    /** Marks a merchant or traveller walking the roads on its own (see Traffic). */
+    val TRAFFIC: DeferredHolder<AttachmentType<*>, AttachmentType<TrafficState>> = ATTACHMENTS.register("traffic") { ->
+        AttachmentType.builder { -> TrafficState() }.serialize(TrafficState.CODEC.fieldOf("traffic")).build()
     }
 }

@@ -7,6 +7,7 @@ import io.github.vaspyyy.guildmark.registry.ModAttachments
 import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.entity.PathfinderMob
 import net.minecraft.world.entity.ai.memory.MemoryModuleType
 import net.minecraft.world.entity.ai.memory.WalkTarget
 import net.minecraft.world.entity.npc.villager.Villager
@@ -27,7 +28,7 @@ data class TravelProgress(val waypoint: Int = 0, val stuckChecks: Int = 0, val b
 }
 
 /**
- * Escorted travellers walk the road to their destination on their own; the player is their guard.
+ * Travellers walk the road to their destination on their own; the player is their guard.
  * They wait if their guard falls too far behind, and hop ahead a waypoint if they get stuck on terrain.
  */
 object Travellers {
@@ -41,38 +42,63 @@ object Travellers {
     fun tick(level: ServerLevel, guard: Player, villager: Villager, points: List<BlockPos>) {
         val brain = villager.brain
         Expeditions.keepOnTheRoad(villager)
+        // Bandits on the road: the traveller stays put until they're dealt with
+        if (Bandits.tick(level, villager)) {
+            brain.eraseMemory(MemoryModuleType.WALK_TARGET)
+            return
+        }
         if (villager.distanceTo(guard) > GUARD_RANGE) {
             brain.eraseMemory(MemoryModuleType.WALK_TARGET)
             if (level.gameTime % 100L == 0L) guard.sendOverlayMessage(Component.translatable("message.guildmark.traveller_waiting", villager.name))
             return
         }
+        walk(level, villager, points) { target ->
+            if (target != null) brain.setMemory(MemoryModuleType.WALK_TARGET, WalkTarget(target, 0.6f, 1))
+            else brain.eraseMemory(MemoryModuleType.WALK_TARGET)
+        }
+    }
 
-        var progress = villager.getData(ModAttachments.TRAVEL_PROGRESS)
+    /**
+     * Move [mob] one check further along [points]: advance to the next waypoint when it's close, hop it
+     * ahead if it's stuck, and point [steer] at where to walk next (null once it has arrived). Springs an
+     * ambush if one is planned for the waypoint it just reached. Returns true once it's at the end.
+     */
+    fun walk(level: ServerLevel, mob: PathfinderMob, points: List<BlockPos>, steer: (BlockPos?) -> Unit): Boolean {
+        var progress = mob.getData(ModAttachments.TRAVEL_PROGRESS)
         val last = points.size - 1
-        if (progress.waypoint > last) return
+        if (progress.waypoint > last) {
+            steer(null)
+            return true
+        }
         val target = surface(level, points[progress.waypoint])
-        val distance = horizontalDistance(villager.blockPosition(), target)
+        val distance = horizontalDistance(mob.blockPosition(), target)
 
         progress = when {
             distance <= ARRIVED -> TravelProgress(progress.waypoint + 1)
             distance < progress.bestDistance -> progress.copy(bestDistance = distance, stuckChecks = 0)
             progress.stuckChecks + 1 >= STUCK_LIMIT -> {
-                villager.teleportTo(target.x + 0.5, target.y.toDouble(), target.z + 0.5)
+                mob.teleportTo(target.x + 0.5, target.y.toDouble(), target.z + 0.5)
                 TravelProgress(progress.waypoint + 1)
             }
             else -> progress.copy(stuckChecks = progress.stuckChecks + 1)
         }
-        villager.setData(ModAttachments.TRAVEL_PROGRESS, progress)
-
-        if (progress.waypoint <= last) {
-            brain.setMemory(MemoryModuleType.WALK_TARGET, WalkTarget(surface(level, points[progress.waypoint]), 0.6f, 1))
-        } else {
-            brain.eraseMemory(MemoryModuleType.WALK_TARGET)
+        mob.setData(ModAttachments.TRAVEL_PROGRESS, progress)
+        val ambushAt = mob.getData(ModAttachments.AMBUSH_AT)
+        if (ambushAt >= 0 && progress.waypoint >= ambushAt && Bandits.anyoneWatching(level, mob)) {
+            mob.setData(ModAttachments.AMBUSH_AT, -1)
+            Bandits.ambush(level, mob)
         }
+
+        if (progress.waypoint > last) {
+            steer(null)
+            return true
+        }
+        steer(surface(level, points[progress.waypoint]))
+        return false
     }
 
     /** The real ground height at a waypoint if its chunk is loaded, otherwise the planned height. */
-    private fun surface(level: ServerLevel, point: BlockPos): BlockPos =
+    fun surface(level: ServerLevel, point: BlockPos): BlockPos =
         if (level.chunkSource.getChunkNow(point.x shr 4, point.z shr 4) != null) {
             level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, point)
         } else point
