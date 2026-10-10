@@ -12,7 +12,10 @@ import io.github.vaspyyy.guildmark.guild.Reception
 import io.github.vaspyyy.guildmark.guild.Recruiting
 import io.github.vaspyyy.guildmark.registry.ModEntities
 import io.github.vaspyyy.guildmark.lair.Lairs
+import io.github.vaspyyy.guildmark.network.AcceptChapterPayload
 import io.github.vaspyyy.guildmark.network.FoundGuildPayload
+import io.github.vaspyyy.guildmark.network.OpenCharacterPayload
+import io.github.vaspyyy.guildmark.story.Characters
 import io.github.vaspyyy.guildmark.network.OpenReceptionPayload
 import io.github.vaspyyy.guildmark.network.ReceptionActionPayload
 import io.github.vaspyyy.guildmark.road.Bandits
@@ -72,6 +75,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         NeoForge.EVENT_BUS.addListener(LivingDeathEvent::class.java, ::onLivingDeath)
         NeoForge.EVENT_BUS.addListener(PlayerTickEvent.Post::class.java, ::onPlayerTick)
         NeoForge.EVENT_BUS.addListener(EntityJoinLevelEvent::class.java) { Traffic.onJoin(it.entity) }
+        NeoForge.EVENT_BUS.addListener(PlayerInteractEvent.EntityInteract::class.java, Characters::onInteract)
         NeoForge.EVENT_BUS.addListener(PlayerInteractEvent.EntityInteract::class.java, Reception::onInteract)
         NeoForge.EVENT_BUS.addListener(LevelTickEvent.Post::class.java) { event ->
             val level = event.level
@@ -113,6 +117,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         val level = player.level()
         if (level !is ServerLevel) return
         if (player.tickCount % 200 == 0) VillageBoards.checkNearbyVillages(level, player.blockPosition())
+        if (player.tickCount % 200 == 100) Characters.tick(level, player)
         if (player.tickCount % 10 == 0) Contracts.tickEscorts(level, player)
         Traffic.trySpawn(level, player)
         Sieges.maybeStart(level, player)
@@ -124,6 +129,8 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
             .playToServer(SpendPerkPayload.TYPE, SpendPerkPayload.STREAM_CODEC, SpendPerkPayload::handle)
             .playToServer(ReceptionActionPayload.TYPE, ReceptionActionPayload.STREAM_CODEC, ReceptionActionPayload::handle)
             .playToServer(FoundGuildPayload.TYPE, FoundGuildPayload.STREAM_CODEC, FoundGuildPayload::handle)
+            .playToServer(AcceptChapterPayload.TYPE, AcceptChapterPayload.STREAM_CODEC, AcceptChapterPayload::handle)
+            .playToClient(OpenCharacterPayload.TYPE, OpenCharacterPayload.STREAM_CODEC, OpenCharacterPayload::handle)
             .playToClient(OpenReceptionPayload.TYPE, OpenReceptionPayload.STREAM_CODEC, OpenReceptionPayload::handle)
     }
 }

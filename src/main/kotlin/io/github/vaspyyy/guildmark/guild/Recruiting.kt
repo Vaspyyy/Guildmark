@@ -69,7 +69,7 @@ object Recruiting {
     /** Sneak-use on a villager: try to swear it into the player's guild. */
     fun onInteract(level: ServerLevel, player: Player, villager: Villager, hand: InteractionHand): InteractionResult? {
         if (!player.isSecondaryUseActive || villager is GuildMember || villager.isBaby) return null
-        if (villager.hasData(ModAttachments.RECEPTIONIST) || villager.hasData(ModAttachments.TRAFFIC)) return null
+        if (villager.hasData(ModAttachments.RECEPTIONIST) || villager.hasData(ModAttachments.TRAFFIC) || villager.hasData(ModAttachments.CHARACTER)) return null
         val guild = Guilds.get(level).ledBy(player.uuid) ?: return null
         if (hand != InteractionHand.MAIN_HAND) return InteractionResult.SUCCESS
 

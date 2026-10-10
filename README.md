@@ -4,7 +4,16 @@ A NeoForge mod for Minecraft 26.3. Villagers post procedurally generated quests 
 
 ## Status
 
-Early prototype. Villages get a 3x2 Quest Board near their bell. During the day villagers walk up and pin notes; unclaimed notes come down at the start of each new day. Click a note to read it, take it as a Contract, finish it, and spend Guild Marks at the Guildmaster. Each villager posts jobs that fit their profession, and villages further from spawn ask for more and pay more. Finished contracts give guild XP; each guild level earns a perk point to spend in the Guild Ledger (G). Contracts also fund village Advances (sneak and use a board): lamp posts, then a palisade wall, then an archer tower that shoots monsters. Harder jobs: deliver a letter or guard a traveller on the way to another village, or hunt a named champion. Deliveries and escorts plan a road between the two villages (A* over the world generator's terrain heights), paved chunk by chunk as those chunks load; escorted travellers walk it themselves. Ops can test with `/guildmark advance <points>`, `/guildmark advance reset` and `/guildmark note <type>` near a board.
+Early prototype, played and tested in-game by hand.
+
+- **Boards and contracts.** Villages get a 3x2 Quest Board near their bell. During the day villagers pin notes that fit their profession (fetch, hunt, clear, deliver, escort, champion, lair); unclaimed notes come down each new day. Take a note as a Contract, finish it, and turn it in for Guild Marks. Press H for the contract tracker.
+- **Progression.** Contracts give guild XP and perk points for the Guild Ledger (G). Adventurer ranks F to S are earned through rank trials at a guild hall; notes are rated by rank.
+- **Villages.** Each village remembers your standing (Stranger to Hero). Contracts fund village Advances (sneak and use a board): lamp posts, a guild hall with a receptionist, a Trade Road to the nearest village, a palisade and an archer tower. Roads carry caravans and travellers, and bandits ambush them.
+- **Danger.** Lair hunts send you to a monster den with a boss, loot and a torn page of lore. At night, villages you have built up can be besieged by monster waves; lose and the village loses some of what it built.
+- **Your own guild.** Found a guild at a hall receptionist (E rank, 50 Marks), then sneak and use a villager in a village that trusts you to swear them in. Members follow you and fight beside you; use one to make it hold or follow.
+- **Named characters.** Wren, Tobin and Sister Ilsa turn up in villages that know you, each with a three-chapter story that ends in lore and a keepsake.
+
+Ops can test with `/guildmark advance <points>`, `/guildmark note <type>`, `/guildmark standing <points>`, `/guildmark rank <letter>`, `/guildmark level <n>`, `/guildmark siege`, `/guildmark traffic [ambush]` and `/guildmark character <id>` near a board.
 
 ## Quest pools (datapacks)
 

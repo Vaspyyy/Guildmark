@@ -13,6 +13,9 @@ import io.github.vaspyyy.guildmark.progression.Progression
 import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.road.Traffic
 import io.github.vaspyyy.guildmark.siege.Sieges
+import io.github.vaspyyy.guildmark.story.Characters
+import io.github.vaspyyy.guildmark.story.StoryCharacter
+import io.github.vaspyyy.guildmark.block.VillageBoards
 import io.github.vaspyyy.guildmark.village.Standing
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.SharedSuggestionProvider
@@ -24,7 +27,8 @@ import net.minecraft.network.chat.Component
  * Testing commands for the nearest board's village: `/guildmark advance <points>` funds the current
  * project, `/guildmark advance reset` starts the chain over (already built structures stay),
  * `/guildmark standing <points>` changes your standing there, `/guildmark traffic [ambush]` sends a
- * caravan or traveller along a road 40 to 96 blocks away.
+ * caravan or traveller along a road 40 to 96 blocks away, `/guildmark character <id>` brings a named
+ * character to the nearest village.
  */
 object AdvanceCommand {
     private fun nearestAnchor(source: CommandSourceStack): BlockPos? {
@@ -104,6 +108,21 @@ object AdvanceCommand {
                             0
                         }
                     }
+                )
+                .then(
+                    Commands.literal("character").then(
+                        Commands.argument("id", StringArgumentType.word())
+                            .suggests { _, builder -> SharedSuggestionProvider.suggest(StoryCharacter.entries.map { it.id }, builder) }
+                            .executes { context ->
+                                val source = context.source
+                                val character = StoryCharacter.byId(StringArgumentType.getString(context, "id"))
+                                val board = VillageBoards.villageBoard(source.level, source.playerOrException.blockPosition())
+                                if (character == null || board == null || !Characters.spawn(source.level, character, board)) {
+                                    source.sendFailure(Component.translatable("commands.guildmark.no_character"))
+                                    0
+                                } else 1
+                            }
+                    )
                 )
                 .then(
                     Commands.literal("traffic")

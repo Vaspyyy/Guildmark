@@ -10,6 +10,8 @@ import io.github.vaspyyy.guildmark.registry.ModDataComponents
 import io.github.vaspyyy.guildmark.road.RoadNetwork
 import io.github.vaspyyy.guildmark.road.Travellers
 import io.github.vaspyyy.guildmark.village.Standing
+import io.github.vaspyyy.guildmark.story.Characters
+import io.github.vaspyyy.guildmark.story.StoryCharacter
 import net.minecraft.world.entity.npc.villager.Villager
 import io.github.vaspyyy.guildmark.registry.ModItems
 import net.minecraft.core.BlockPos
@@ -136,10 +138,19 @@ object Contracts {
         }
     }
 
-    /** Hand in [stack] at a board. Pays out when done, discards it when expired. */
-    fun turnIn(stack: ItemStack, player: Player, level: Level, pos: BlockPos) {
+    /**
+     * Hand in [stack] at a board, or to the named [character] it belongs to. Pays out when done, discards
+     * it when expired.
+     */
+    fun turnIn(stack: ItemStack, player: Player, level: Level, pos: BlockPos, character: StoryCharacter? = null) {
         val note = stack.get(ModDataComponents.QUEST_NOTE.get()) ?: return
         val state = stack.get(ModDataComponents.CONTRACT_STATE.get()) ?: return
+        val chapter = StoryCharacter.parseChain(note.chain)
+        if (chapter != null && chapter.first != character) {
+            player.sendOverlayMessage(Component.translatable("message.guildmark.story_return", chapter.first.title))
+            level.playSound(null, pos, SoundEvents.VILLAGER_NO, SoundSource.BLOCKS, 1.0f, 1.0f)
+            return
+        }
 
         if (state.isExpired(level.gameTime)) {
             stack.shrink(1)
@@ -188,6 +199,7 @@ object Contracts {
         level.playSound(null, pos, SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 0.8f, 1.2f)
         Progression.addXp(player, xp)
         if (note.trial) Progression.promote(player, note.rank)
+        if (chapter != null) Characters.onChapterDone(serverLevel, player, chapter.first, chapter.second)
         if (origin != null) Standing.add(serverLevel, origin, player, note.reward)
         // Deliveries and escorts also make a name with the village at the other end of the road
         if (note.type.needsRoad) Standing.add(serverLevel, pos, player, note.reward / 2)

@@ -24,6 +24,8 @@ data class QuestNote(
     val rank: Int = 0,
     /** A rank trial: beating it promotes the adventurer to [rank]. */
     val trial: Boolean = false,
+    /** A named character's story chapter, as "<character>:<step>"; empty for ordinary jobs. */
+    val chain: String = "",
 ) {
     val rankLetter: String get() = AdventurerRank.of(rank).letter
     fun rankLine(): Component = Component.translatable(if (trial) "quest.guildmark.trial_rank" else "quest.guildmark.rank", rankLetter)
@@ -74,8 +76,9 @@ data class QuestNote(
                 Codec.STRING.optionalFieldOf("story", "").forGetter(QuestNote::story),
                 Codec.INT.optionalFieldOf("rank", 0).forGetter(QuestNote::rank),
                 Codec.BOOL.optionalFieldOf("trial", false).forGetter(QuestNote::trial),
-            ).apply(i) { type, poster, target, count, reward, deadline, story, rank, trial ->
-                QuestNote(type, poster, target, count, reward, deadline, story, rank, trial)
+                Codec.STRING.optionalFieldOf("chain", "").forGetter(QuestNote::chain),
+            ).apply(i) { type, poster, target, count, reward, deadline, story, rank, trial, chain ->
+                QuestNote(type, poster, target, count, reward, deadline, story, rank, trial, chain)
             }
         }
     }

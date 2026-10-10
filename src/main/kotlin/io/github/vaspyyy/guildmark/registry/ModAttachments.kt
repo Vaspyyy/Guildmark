@@ -55,6 +55,19 @@ object ModAttachments {
         AttachmentType.builder { -> BlockPos.ZERO }.serialize(BlockPos.CODEC.fieldOf("board")).build()
     }
 
+    /** Marks one of the named story characters, by id (see StoryCharacter). */
+    val CHARACTER: DeferredHolder<AttachmentType<*>, AttachmentType<String>> = ATTACHMENTS.register("character") { ->
+        AttachmentType.builder { -> "" }.serialize(Codec.STRING.fieldOf("id")).build()
+    }
+
+    /** How many chapters of each named character's story a player has finished. */
+    val STORY: DeferredHolder<AttachmentType<*>, AttachmentType<Map<String, Int>>> = ATTACHMENTS.register("story") { ->
+        AttachmentType.builder { -> mapOf<String, Int>() }
+            .serialize(Codec.unboundedMap(Codec.STRING, Codec.INT).fieldOf("chapters"))
+            .copyOnDeath()
+            .build()
+    }
+
     /** Day index a player last took a guild hall contract (one a day). */
     val HALL_CONTRACT_DAY: DeferredHolder<AttachmentType<*>, AttachmentType<Long>> = ATTACHMENTS.register("hall_contract_day") { ->
         AttachmentType.builder { -> -1L }.serialize(Codec.LONG.fieldOf("day")).build()
