@@ -1,5 +1,7 @@
 package io.github.vaspyyy.guildmark.quest
 
+import io.github.vaspyyy.guildmark.village.StandingTier
+
 import com.mojang.serialization.Codec
 import net.minecraft.util.StringRepresentable
 
@@ -19,6 +21,9 @@ enum class QuestType(private val id: String) : StringRepresentable {
 
     /** One-off jobs: a single letter, traveller or champion rather than a count. */
     val isSingle: Boolean get() = this == DELIVER || this == ESCORT || this == CHAMPION
+
+    /** Villages only trust these jobs to people they know. */
+    val minStanding: StandingTier get() = if (this == CHAMPION) StandingTier.KNOWN else StandingTier.STRANGER
 
     /** Jobs that travel a road to another village; locked until the village has a Trade Road. */
     val needsRoad: Boolean get() = this == DELIVER || this == ESCORT

@@ -7,6 +7,7 @@ import io.github.vaspyyy.guildmark.block.QuestBoardBlockEntity
 import com.mojang.brigadier.arguments.StringArgumentType
 import io.github.vaspyyy.guildmark.quest.QuestGenerator
 import io.github.vaspyyy.guildmark.quest.QuestType
+import io.github.vaspyyy.guildmark.village.Standing
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.SharedSuggestionProvider
 import net.minecraft.commands.Commands
@@ -15,7 +16,8 @@ import net.minecraft.network.chat.Component
 
 /**
  * Testing commands for the nearest board's village: `/guildmark advance <points>` funds the current
- * project, `/guildmark advance reset` starts the chain over (already built structures stay).
+ * project, `/guildmark advance reset` starts the chain over (already built structures stay),
+ * `/guildmark standing <points>` changes your standing there.
  */
 object AdvanceCommand {
     private fun nearestAnchor(source: CommandSourceStack): BlockPos? {
@@ -50,6 +52,23 @@ object AdvanceCommand {
                                     1
                                 }
                             }
+                    )
+                )
+                .then(
+                    Commands.literal("standing").then(
+                        Commands.argument("points", IntegerArgumentType.integer(-1000, 1000)).executes { context ->
+                            val source = context.source
+                            val anchor = nearestAnchor(source)
+                            if (anchor == null) {
+                                source.sendFailure(Component.translatable("commands.guildmark.no_board"))
+                                0
+                            } else {
+                                val player = source.playerOrException
+                                Standing.add(source.level, anchor, player, IntegerArgumentType.getInteger(context, "points"))
+                                source.sendSuccess({ Component.translatable("commands.guildmark.standing", Standing.points(source.level, anchor, player)) }, false)
+                                1
+                            }
+                        }
                     )
                 )
                 .then(

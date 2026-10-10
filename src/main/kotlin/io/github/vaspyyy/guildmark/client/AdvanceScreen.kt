@@ -3,6 +3,7 @@ package io.github.vaspyyy.guildmark.client
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.advance.Advance
 import io.github.vaspyyy.guildmark.block.QuestBoardBlockEntity
+import io.github.vaspyyy.guildmark.village.StandingTier
 import net.minecraft.ChatFormatting
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.components.Button
@@ -18,7 +19,7 @@ import net.minecraft.resources.Identifier
 class AdvanceScreen(private val anchor: BlockPos) : Screen(Component.translatable("gui.guildmark.advances")) {
     private companion object {
         const val PADDING = 12
-        const val HEADER_HEIGHT = 40
+        const val HEADER_HEIGHT = 52
         val INK = 0xFF2B1D0E.toInt()
         val SOFT_INK = 0xFF4A3622.toInt()
         val PANEL: Identifier = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "ledger/panel")
@@ -74,6 +75,17 @@ class AdvanceScreen(private val anchor: BlockPos) : Screen(Component.translatabl
         graphics.centeredText(font, title.copy().withStyle(ChatFormatting.BOLD).withColor(INK), width / 2, panelY + 10, INK)
         val hint = Component.translatable("gui.guildmark.advances.hint")
         graphics.text(font, hint, width / 2 - font.width(hint) / 2, panelY + 24, SOFT_INK, false)
+        val standing = standingLine()
+        graphics.text(font, standing, width / 2 - font.width(standing) / 2, panelY + 36, INK, false)
+    }
+
+    /** "Your standing: Trusted (82 / 200)" for whoever is looking. */
+    private fun standingLine(): Component {
+        val points = minecraft.player?.let { board()?.standingOf(it.uuid) } ?: 0
+        val tier = StandingTier.of(points)
+        val next = tier.next
+        return if (next == null) Component.translatable("gui.guildmark.standing.max", tier.title, points)
+        else Component.translatable("gui.guildmark.standing", tier.title, points, next.threshold)
     }
 
     override fun isPauseScreen(): Boolean = false

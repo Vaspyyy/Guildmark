@@ -6,6 +6,7 @@ import io.github.vaspyyy.guildmark.progression.Progression
 import io.github.vaspyyy.guildmark.registry.ModDataComponents
 import io.github.vaspyyy.guildmark.road.RoadNetwork
 import io.github.vaspyyy.guildmark.road.Travellers
+import io.github.vaspyyy.guildmark.village.Standing
 import net.minecraft.world.entity.npc.villager.Villager
 import io.github.vaspyyy.guildmark.registry.ModItems
 import net.minecraft.core.BlockPos
@@ -35,6 +36,11 @@ object Contracts {
      */
     fun take(taken: QuestNote, level: ServerLevel, boardPos: BlockPos, facing: Direction, player: Player): ItemStack? {
         var note = taken
+        val needed = note.type.minStanding
+        if (Standing.tier(level, boardPos, player) < needed) {
+            player.sendOverlayMessage(Component.translatable("message.guildmark.standing_needed", needed.title))
+            return null
+        }
         val deadline = level.gameTime + (note.deadlineDays + Progression.bonusDays(player)) * ContractState.TICKS_PER_DAY
         var state = ContractState(0, deadline, boardPos, level.dimension())
 
@@ -116,6 +122,8 @@ object Contracts {
 
         if (state.isExpired(level.gameTime)) {
             stack.shrink(1)
+            // The village that posted it remembers
+            if (level is ServerLevel && level.dimension() == state.dimension) Standing.add(level, state.boardPos, player, -(note.reward / 2).coerceAtLeast(3))
             player.sendOverlayMessage(Component.translatable("message.guildmark.expired", note.title()))
             level.playSound(null, pos, SoundEvents.VILLAGER_NO, SoundSource.BLOCKS, 1.0f, 1.0f)
             return
@@ -150,12 +158,17 @@ object Contracts {
         }
 
         stack.shrink(1)
-        val marks = Progression.reward(player, note.reward)
+        val origin = state.boardPos.takeIf { level.dimension() == state.dimension }
+        val bonus = origin?.let { Standing.bonus(level, it, player, note.reward) } ?: 0
+        val marks = Progression.reward(player, note.reward + bonus)
         val xp = note.reward * Progression.XP_PER_MARK
         player.inventory.placeItemBackInInventory(ItemStack(ModItems.GUILD_MARK.get(), marks), Prediction.SERVER_ONLY)
         player.sendOverlayMessage(Component.translatable("message.guildmark.complete", marks, xp))
         level.playSound(null, pos, SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 0.8f, 1.2f)
         Progression.addXp(player, xp)
+        if (origin != null) Standing.add(serverLevel, origin, player, note.reward)
+        // Deliveries and escorts also make a name with the village at the other end of the road
+        if (note.type.needsRoad) Standing.add(serverLevel, pos, player, note.reward / 2)
         if (level is ServerLevel) {
             val state = level.getBlockState(pos)
             if (state.block is QuestBoardBlock) Advances.contribute(level, QuestBoardBlock.anchorPos(pos, state), note, player)

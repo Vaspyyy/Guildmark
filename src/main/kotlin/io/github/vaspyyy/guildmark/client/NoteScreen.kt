@@ -5,6 +5,7 @@ import io.github.vaspyyy.guildmark.quest.ContractState
 import io.github.vaspyyy.guildmark.quest.Contracts
 import io.github.vaspyyy.guildmark.quest.QuestNote
 import io.github.vaspyyy.guildmark.quest.QuestType
+import io.github.vaspyyy.guildmark.village.StandingTier
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.screens.Screen
@@ -67,7 +68,13 @@ class NoteScreen(
         lines.add(Line(note.description(), INK, 8))
         lines.add(Line(note.rewardLine(), INK, 2))
         if (contract == null) {
-            lines.add(Line(note.deadlineLine(), INK, 8))
+            val needed = note.type.minStanding
+            if (needed > StandingTier.STRANGER) {
+                lines.add(Line(note.deadlineLine(), INK, 2))
+                lines.add(Line(Component.translatable("quest.guildmark.needs_standing", needed.title), FADED_INK, 8))
+            } else {
+                lines.add(Line(note.deadlineLine(), INK, 8))
+            }
         } else {
             val details = contractLines(contract)
             details.forEachIndexed { i, line -> lines.add(Line(line, INK, if (i == details.size - 1) 8 else 2)) }
