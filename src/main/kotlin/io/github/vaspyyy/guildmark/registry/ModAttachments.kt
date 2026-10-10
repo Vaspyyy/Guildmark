@@ -3,6 +3,7 @@ package io.github.vaspyyy.guildmark.registry
 import com.mojang.serialization.Codec
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.progression.GuildProgress
+import io.github.vaspyyy.guildmark.road.TravelProgress
 import net.neoforged.neoforge.attachment.AttachmentType
 import net.neoforged.neoforge.registries.DeferredHolder
 import net.neoforged.neoforge.registries.DeferredRegister
@@ -28,5 +29,10 @@ object ModAttachments {
             .copyOnDeath()
             .sync({ holder, player -> holder === player }, GuildProgress.STREAM_CODEC)
             .build()
+    }
+
+    /** An escorted traveller's progress along its road. */
+    val TRAVEL_PROGRESS: DeferredHolder<AttachmentType<*>, AttachmentType<TravelProgress>> = ATTACHMENTS.register("travel_progress") { ->
+        AttachmentType.builder { -> TravelProgress() }.serialize(TravelProgress.CODEC.fieldOf("progress")).build()
     }
 }

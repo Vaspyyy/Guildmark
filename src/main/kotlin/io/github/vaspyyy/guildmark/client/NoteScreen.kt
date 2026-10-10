@@ -29,6 +29,8 @@ class NoteScreen(
         const val TEXT_X = 36
         const val TEXT_Y = 30
         const val TEXT_WIDTH = 114
+        /** Room between the top text margin and the page's bottom edge. */
+        const val TEXT_HEIGHT = 136
         val INK = 0xFF3B2A1A.toInt()
         val FADED_INK = 0xFF6B5A44.toInt()
     }
@@ -56,25 +58,41 @@ class NoteScreen(
         graphics.blit(RenderPipelines.GUI_TEXTURED, BookViewScreen.BOOK_LOCATION, left, top, 0.0f, 0.0f, PAGE_SIZE, PAGE_SIZE, 256, 256)
     }
 
+    /** One block of text on the page: its color and the gap left below it. */
+    private class Line(val text: Component, val color: Int, val gapAfter: Int)
+
+    private fun pageLines(): List<Line> {
+        val lines = mutableListOf(Line(note.title().copy().withStyle { it.withBold(true) }, INK, 6))
+        note.storyLine()?.let { lines.add(Line(it.copy().withStyle { s -> s.withItalic(true) }, FADED_INK, 6)) }
+        lines.add(Line(note.description(), INK, 8))
+        lines.add(Line(note.rewardLine(), INK, 2))
+        if (contract == null) {
+            lines.add(Line(note.deadlineLine(), INK, 8))
+        } else {
+            val details = contractLines(contract)
+            details.forEachIndexed { i, line -> lines.add(Line(line, INK, if (i == details.size - 1) 8 else 2)) }
+        }
+        lines.add(Line(note.posterLine(), FADED_INK, 0))
+        return lines
+    }
+
     override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, a: Float) {
         super.extractRenderState(graphics, mouseX, mouseY, a)
-        val x = left + TEXT_X
-        var y = top + TEXT_Y
-        y = graphics.textWithWordWrap(font, note.title().copy().withStyle { it.withBold(true) }, x, y, TEXT_WIDTH, INK, false) + 6
-        note.storyLine()?.let {
-            y = graphics.textWithWordWrap(font, it.copy().withStyle { s -> s.withItalic(true) }, x, y, TEXT_WIDTH, FADED_INK, false) + 6
+        val lines = pageLines()
+        // Long notes (escorts, contracts with details) shrink to fit the page instead of running off it
+        val height = lines.sumOf { font.wordWrapHeight(it.text, TEXT_WIDTH) + it.gapAfter }
+        val scale = (TEXT_HEIGHT.toFloat() / height).coerceAtMost(1.0f)
+        val wrapWidth = (TEXT_WIDTH / scale).toInt()
+
+        val pose = graphics.pose()
+        pose.pushMatrix()
+        pose.translate((left + TEXT_X).toFloat(), (top + TEXT_Y).toFloat())
+        pose.scale(scale, scale)
+        var y = 0
+        for (line in lines) {
+            y = graphics.textWithWordWrap(font, line.text, 0, y, wrapWidth, line.color, false) + line.gapAfter
         }
-        y = graphics.textWithWordWrap(font, note.description(), x, y, TEXT_WIDTH, INK, false) + 8
-        y = graphics.textWithWordWrap(font, note.rewardLine(), x, y, TEXT_WIDTH, INK, false) + 2
-        if (contract == null) {
-            y = graphics.textWithWordWrap(font, note.deadlineLine(), x, y, TEXT_WIDTH, INK, false) + 8
-        } else {
-            for (line in contractLines(contract)) {
-                y = graphics.textWithWordWrap(font, line, x, y, TEXT_WIDTH, INK, false) + 2
-            }
-            y += 6
-        }
-        graphics.textWithWordWrap(font, note.posterLine(), x, y, TEXT_WIDTH, FADED_INK, false)
+        pose.popMatrix()
     }
 
     private fun contractLines(state: ContractState): List<Component> {

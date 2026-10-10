@@ -122,9 +122,9 @@
   "quest.guildmark.story.weaponsmith.champion.0": "A raider captain has been testing our defences.",
   "quest.guildmark.story.armorer.champion.0": "An armoured skeleton keeps picking off our guards.",
   "quest.guildmark.deliver.title": "Deliver a Letter",
-  "quest.guildmark.deliver.desc": "Carry a sealed letter to the Quest Board of another village. You learn where when you take it.",
+  "quest.guildmark.deliver.desc": "Carry a sealed letter to another village's Quest Board.",
   "quest.guildmark.escort.title": "Escort a Traveller",
-  "quest.guildmark.escort.desc": "Bring a traveller safely to the Quest Board of another village. They follow you; keep them alive.",
+  "quest.guildmark.escort.desc": "Guard a traveller on the road to another village. Keep them alive.",
   "quest.guildmark.champion.title": "Champion: %s",
   "quest.guildmark.champion.desc": "A named, armoured %s lurks near this village. Slay it.",
   "quest.guildmark.destination": "Destination: village near %s, %s",
@@ -134,5 +134,7 @@
   "message.guildmark.no_champion_spot": "The champion couldn't be found nearby. Try again later.",
   "message.guildmark.wrong_village": "This is for the village near %s, %s",
   "message.guildmark.traveller_missing": "%s needs to be here with you",
-  "commands.guildmark.no_note": "Stand within 8 blocks of a Quest Board and name a quest type: fetch, hunt, clear, deliver, escort or champion"
+  "commands.guildmark.no_note": "Stand within 8 blocks of a Quest Board and name a quest type: fetch, hunt, clear, deliver, escort or champion",
+  "quest.guildmark.road": "A road leads there",
+  "message.guildmark.traveller_waiting": "%s is waiting for you"
 }

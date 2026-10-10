@@ -31,8 +31,8 @@ import kotlin.math.sqrt
 object Expeditions {
     /** How close to the destination a board must be to count as "that village". */
     const val ARRIVAL_RADIUS = 128
-    /** How close the traveller must be to the board on arrival. */
-    const val TRAVELLER_RADIUS = 16.0
+    /** How close the traveller must be to the board on arrival (the road ends at the village bell). */
+    const val TRAVELLER_RADIUS = 32.0
 
     private val CHAMPION_HEALTH = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "champion_health")
     private val CHAMPION_DAMAGE = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "champion_damage")
@@ -43,7 +43,7 @@ object Expeditions {
     )
     private val CHAMPION_NAMES = listOf("Grimbold", "Morvane", "Skarr", "Vex", "Ulgrim", "Draven", "Korrik", "Sable", "Thane", "Mordecai")
 
-    /** Another village 200 to 2000 blocks away, searched for in a few random directions. */
+    /** Another village 200 to 1200 blocks away, searched for in a few random directions. */
     fun findVillage(level: ServerLevel, from: BlockPos): BlockPos? {
         val random = level.random
         repeat(4) {
@@ -51,7 +51,7 @@ object Expeditions {
             val probe = from.offset((cos(angle) * 600).toInt(), 0, (sin(angle) * 600).toInt())
             val found = level.findNearestMapStructure(StructureTags.VILLAGE, probe, 40, false) ?: return@repeat
             val distance = horizontalDistance(from, found)
-            if (distance in 200.0..2000.0) return BlockPos(found.x, 0, found.z)
+            if (distance in 200.0..1200.0) return BlockPos(found.x, 0, found.z)
         }
         return null
     }
@@ -123,14 +123,21 @@ object Expeditions {
     }
 
     /** Keep an escorted traveller with the player carrying its contract; called every 10 ticks. */
-    fun followPlayer(level: ServerLevel, player: Player, travellerId: java.util.UUID) {
-        val villager = level.getEntity(travellerId) as? Villager ?: return
+    fun followPlayer(level: ServerLevel, player: Player, villager: Villager) {
+        keepOnTheRoad(villager)
         val distance = villager.distanceTo(player)
         if (distance > 24f) {
             villager.teleportTo(player.x, player.y, player.z)
         } else if (distance > 3f) {
             villager.brain.setMemory(MemoryModuleType.WALK_TARGET, WalkTarget(player, 0.7f, 2))
         }
+    }
+
+    /** A traveller doesn't settle down mid-journey: no claiming beds or job sites, no napping. */
+    fun keepOnTheRoad(villager: Villager) {
+        if (villager.isSleeping) villager.stopSleeping()
+        villager.brain.eraseMemory(MemoryModuleType.HOME)
+        villager.brain.eraseMemory(MemoryModuleType.POTENTIAL_JOB_SITE)
     }
 
     fun travellerNear(level: ServerLevel, travellerId: java.util.UUID?, boardPos: BlockPos): Boolean {

@@ -22,6 +22,8 @@ data class ContractState(
     val bound: UUID? = null,
     /** The traveller's or champion's name. */
     val label: String = "",
+    /** Delivery and escort: the road to the destination (see RoadNetwork), or -1 if there isn't one. */
+    val road: Int = -1,
 ) {
     fun isExpired(gameTime: Long): Boolean = gameTime > deadline
 
@@ -40,8 +42,9 @@ data class ContractState(
                 BlockPos.CODEC.optionalFieldOf("destination").forGetter { Optional.ofNullable(it.destination) },
                 UUIDUtil.CODEC.optionalFieldOf("bound").forGetter { Optional.ofNullable(it.bound) },
                 Codec.STRING.optionalFieldOf("label", "").forGetter(ContractState::label),
-            ).apply(i) { progress, deadline, boardPos, dimension, destination, bound, label ->
-                ContractState(progress, deadline, boardPos, dimension, destination.orElse(null), bound.orElse(null), label)
+                Codec.INT.optionalFieldOf("road", -1).forGetter(ContractState::road),
+            ).apply(i) { progress, deadline, boardPos, dimension, destination, bound, label, road ->
+                ContractState(progress, deadline, boardPos, dimension, destination.orElse(null), bound.orElse(null), label, road)
             }
         }
     }

@@ -4,6 +4,9 @@ import io.github.vaspyyy.guildmark.advance.Advances
 import io.github.vaspyyy.guildmark.block.QuestBoardBlock
 import io.github.vaspyyy.guildmark.progression.Progression
 import io.github.vaspyyy.guildmark.registry.ModDataComponents
+import io.github.vaspyyy.guildmark.road.RoadNetwork
+import io.github.vaspyyy.guildmark.road.Travellers
+import net.minecraft.world.entity.npc.villager.Villager
 import io.github.vaspyyy.guildmark.registry.ModItems
 import net.minecraft.core.BlockPos
 import net.minecraft.core.component.DataComponents
@@ -43,7 +46,10 @@ object Contracts {
                 }
                 val distance = Expeditions.horizontalDistance(boardPos, destination)
                 note = note.copy(reward = note.reward + (distance / 100).toInt())
-                state = state.copy(destination = destination)
+                // Plan (or reuse) the road between the two villages; it gets paved as its chunks load
+                val origin = Advances.villageCenter(level, boardPos)
+                val road = RoadNetwork.get(level).connect(level, origin, destination)
+                state = state.copy(destination = destination, road = road?.id ?: -1)
                 if (note.type == QuestType.ESCORT) {
                     val name = "Traveller ${QuestGenerator.nameFor(level.random.nextLong())}"
                     val traveller = Expeditions.spawnTraveller(level, boardPos, facing, name) ?: return null
@@ -78,7 +84,10 @@ object Contracts {
             if (note.type != QuestType.ESCORT) continue
             val state = stack.get(ModDataComponents.CONTRACT_STATE.get()) ?: continue
             if (state.isExpired(level.gameTime)) continue
-            Expeditions.followPlayer(level, player, state.bound ?: continue)
+            val villager = level.getEntity(state.bound ?: continue) as? Villager ?: continue
+            val road = RoadNetwork.get(level).road(state.road)
+            // With a road the traveller walks it on their own; without one they tag along behind the player
+            if (road != null) Travellers.tick(level, player, villager, road) else Expeditions.followPlayer(level, player, villager)
         }
     }
 
@@ -191,6 +200,7 @@ object Contracts {
         when (note.type) {
             QuestType.DELIVER, QuestType.ESCORT -> if (destination != null) {
                 lines.add(Component.translatable("quest.guildmark.destination", destination.x, destination.z))
+                if (state.road >= 0) lines.add(Component.translatable("quest.guildmark.road"))
             }
             QuestType.CHAMPION -> if (destination != null) {
                 lines.add(Component.translatable("quest.guildmark.champion_seen", state.label, destination.x, destination.z))
