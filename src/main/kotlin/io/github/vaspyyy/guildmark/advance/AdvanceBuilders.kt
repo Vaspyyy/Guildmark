@@ -57,30 +57,64 @@ object AdvanceBuilders {
         level.setBlock(pos, state, Block.UPDATE_ALL)
     }
 
-    /** Fence posts topped with lanterns beside the village paths, spaced out. */
+    /**
+     * Fence posts topped with lanterns beside the village paths, spaced out. Villages without dirt paths
+     * (desert streets are plain sand) get them on open ground between the houses instead.
+     */
     private fun lampPosts(level: ServerLevel, center: BlockPos, radius: Int): Boolean {
         val paths = mutableListOf<BlockPos>()
+        val open = mutableListOf<BlockPos>()
         for (dx in -radius..radius) for (dz in -radius..radius) {
             if (dx * dx + dz * dz > radius * radius) continue
             val top = surface(level, center.x + dx, center.z + dz)
             if (level.getBlockState(top.below()).`is`(Blocks.DIRT_PATH)) paths.add(top)
+            else if (dx * dx + dz * dz >= 36 && openGround(level, top)) open.add(top)
         }
         paths.shuffle()
+        open.shuffle()
 
         val posts = mutableListOf<BlockPos>()
+        fun spaced(pos: BlockPos) = posts.none { it.distSqr(pos) < 10.0 * 10.0 }
+        fun post(base: BlockPos) {
+            for (i in 0..2) place(level, base.above(i), Blocks.SPRUCE_FENCE.defaultBlockState())
+            place(level, base.above(3), Blocks.LANTERN.defaultBlockState().setValue(LanternBlock.HANGING, false))
+            posts.add(base)
+        }
         for (path in paths) {
             if (posts.size >= 20) break
-            if (posts.any { it.distSqr(path) < 10.0 * 10.0 }) continue
+            if (!spaced(path)) continue
             val spot = Direction.Plane.HORIZONTAL.map { path.relative(it) }.firstOrNull { side ->
                 val top = surface(level, side.x, side.z)
                 abs(top.y - path.y) <= 1 && solidGround(level, top) && (0..3).all { free(level, top.above(it)) }
             } ?: continue
-            val base = surface(level, spot.x, spot.z)
-            for (i in 0..2) place(level, base.above(i), Blocks.SPRUCE_FENCE.defaultBlockState())
-            place(level, base.above(3), Blocks.LANTERN.defaultBlockState().setValue(LanternBlock.HANGING, false))
-            posts.add(path)
+            post(surface(level, spot.x, spot.z))
+        }
+        if (paths.isEmpty()) {
+            for (spot in open) {
+                if (posts.size >= 12) break
+                if (spaced(spot)) post(spot)
+            }
         }
         return posts.isNotEmpty()
+    }
+
+    private val NATURAL_GROUND = setOf(
+        Blocks.SAND, Blocks.RED_SAND, Blocks.GRASS_BLOCK, Blocks.DIRT, Blocks.COARSE_DIRT, Blocks.PODZOL,
+        Blocks.SNOW_BLOCK, Blocks.GRAVEL, Blocks.TERRACOTTA, Blocks.MUD,
+    )
+
+    /**
+     * Natural, level ground with nothing built within a block of it: somewhere a lamp post won't block a
+     * door or sit on a roof.
+     */
+    private fun openGround(level: ServerLevel, top: BlockPos): Boolean {
+        if (level.getBlockState(top.below()).block !in NATURAL_GROUND || !solidGround(level, top)) return false
+        for (dx in -1..1) for (dz in -1..1) {
+            val side = surface(level, top.x + dx, top.z + dz)
+            if (abs(side.y - top.y) > 1) return false
+            for (dy in 0..3) if (!free(level, top.offset(dx, dy, dz))) return false
+        }
+        return true
     }
 
     /**
