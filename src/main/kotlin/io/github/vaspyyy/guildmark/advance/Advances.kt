@@ -20,14 +20,14 @@ object Advances {
     /** [anchor] is the board's anchor cell, which holds the village's progress. */
     fun contribute(level: ServerLevel, anchor: BlockPos, note: QuestNote, player: Player) {
         val board = level.getBlockEntity(anchor) as? QuestBoardBlockEntity ?: return
-        val advance = Advance.at(board.advanceIndex) ?: return
+        val advance = Advance.at(board.advanceIndex)
         addPoints(level, anchor, advance.pointsFor(note), player)
     }
 
     /** Add progress to the village's current advance, building it once it's fully funded. */
     fun addPoints(level: ServerLevel, anchor: BlockPos, amount: Int, player: Player) {
         val board = level.getBlockEntity(anchor) as? QuestBoardBlockEntity ?: return
-        val advance = Advance.at(board.advanceIndex) ?: return
+        val advance = Advance.at(board.advanceIndex)
         val points = (board.advancePoints + amount).coerceAtMost(advance.cost)
         board.setAdvanceProgress(board.advanceIndex, points)
         player.sendSystemMessage(Component.translatable("message.guildmark.advance_progress", amount, advance.title, points, advance.cost))
@@ -36,8 +36,9 @@ object Advances {
 
     private fun tryComplete(level: ServerLevel, anchor: BlockPos, board: QuestBoardBlockEntity, advance: Advance) {
         val center = villageCenter(level, anchor)
-        if (!AdvanceBuilders.build(advance, level, center, villageRadius(level, center))) {
-            announce(level, center, Component.translatable("message.guildmark.advance_no_room", advance.title))
+        val failure = AdvanceBuilders.build(advance, level, center, villageRadius(level, center)) { announce(level, center, it) }
+        if (failure != null) {
+            announce(level, center, Component.translatable(failure, advance.title))
             return
         }
         board.setAdvanceProgress(board.advanceIndex + 1, 0)
@@ -46,7 +47,7 @@ object Advances {
         level.sendParticles(ParticleTypes.HAPPY_VILLAGER, center.x + 0.5, center.y + 1.5, center.z + 0.5, 40, 3.0, 1.5, 3.0, 0.0)
     }
 
-    private fun announce(level: ServerLevel, center: BlockPos, message: Component) {
+    fun announce(level: ServerLevel, center: BlockPos, message: Component) {
         for (player in level.players()) {
             if (player.blockPosition().closerThan(center, 96.0)) player.sendSystemMessage(message)
         }

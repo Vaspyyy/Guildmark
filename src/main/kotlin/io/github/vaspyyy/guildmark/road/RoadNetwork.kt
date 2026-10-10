@@ -4,6 +4,7 @@ import com.mojang.serialization.Codec
 import com.mojang.serialization.codecs.RecordCodecBuilder
 import io.github.vaspyyy.guildmark.Guildmark
 import net.minecraft.core.BlockPos
+import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.tags.BlockTags
@@ -22,37 +23,70 @@ import java.util.function.Supplier
 class RoadNetwork(val roads: MutableList<Road> = mutableListOf()) : SavedData() {
     fun road(id: Int): Road? = roads.firstOrNull { it.id == id }
 
-    /** An existing road between these two village centres, or a newly planned one. Null if no route. */
-    fun connect(level: ServerLevel, a: BlockPos, b: BlockPos): Road? {
-        roads.firstOrNull { it.connects(a, b, 64.0) }?.let { return it }
+    /** Finished roads (or ones being built) that start or end at this village centre. */
+    fun roadsFrom(center: BlockPos): List<Road> = roads.filter { it.touches(center) && (it.finished || it.underConstruction) }
+
+    fun isConnected(a: BlockPos, b: BlockPos): Boolean = roads.any { it.connects(a, b, 64.0) }
+
+    /** Plan a road between two village centres and start building all of it. Null if there's no route. */
+    fun build(level: ServerLevel, a: BlockPos, b: BlockPos): Road? {
         val points = RoadPlanner.plan(level, a, b) ?: return null
-        val road = Road((roads.maxOfOrNull { it.id } ?: 0) + 1, a, b, points, mutableSetOf())
+        val road = Road((roads.maxOfOrNull { it.id } ?: 0) + 1, a, b, points, mutableSetOf(), true)
         road.unpaved.addAll(road.columnsByChunk.keys)
         roads.add(road)
         setDirty()
         return road
     }
 
-    /** Pave the parts of roads whose chunks are loaded now; a few chunks per call. */
-    fun paveLoaded(level: ServerLevel) {
+    /**
+     * Every tick: roads under construction load their next chunk (generating it if needed) and pave it,
+     * one chunk per tick so the server keeps up. Every 20 ticks, any other unpaved stretch whose chunk
+     * happens to be loaded is paved too.
+     */
+    fun tick(level: ServerLevel) {
+        val building = roads.firstOrNull { it.underConstruction && !it.finished }
+        if (building != null) {
+            val chunkKey = building.unpaved.first()
+            val chunkPos = ChunkPos.unpack(chunkKey)
+            level.getChunk(chunkPos.x, chunkPos.z)
+            pave(level, building, chunkKey)
+            if (building.finished) finish(level, building)
+        }
+        if (level.gameTime % 20L != 0L) return
         var budget = 4
         for (road in roads) {
-            val iterator = road.unpaved.iterator()
-            while (iterator.hasNext() && budget > 0) {
-                val chunkKey = iterator.next()
+            for (chunkKey in road.unpaved.toList()) {
+                if (budget == 0) return
                 val chunkPos = ChunkPos.unpack(chunkKey)
                 if (level.chunkSource.getChunkNow(chunkPos.x, chunkPos.z) == null) continue
-                for ((x, z) in road.columnsByChunk[chunkKey].orEmpty()) paveColumn(level, x, z)
-                iterator.remove()
+                pave(level, road, chunkKey)
                 budget--
-                setDirty()
             }
-            if (budget == 0) return
+        }
+    }
+
+    private fun pave(level: ServerLevel, road: Road, chunkKey: Long) {
+        for ((x, z) in road.columnsByChunk[chunkKey].orEmpty()) paveColumn(level, x, z)
+        road.unpaved.remove(chunkKey)
+        setDirty()
+    }
+
+    private fun finish(level: ServerLevel, road: Road) {
+        road.underConstruction = false
+        setDirty()
+        val message = Component.translatable("message.guildmark.road_finished", road.to.x, road.to.z)
+        for (player in level.players()) {
+            if (road.touches(player.blockPosition(), 160.0)) player.sendSystemMessage(message)
         }
     }
 
     private fun paveColumn(level: ServerLevel, x: Int, z: Int) {
-        val top = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, BlockPos(x, 0, z))
+        var top = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, BlockPos(x, 0, z))
+        // A village palisade in the way: open a gate in it
+        while (level.getBlockState(top.below()).`is`(Blocks.STRIPPED_SPRUCE_LOG)) {
+            top = top.below()
+            level.setBlock(top, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL)
+        }
         val ground = top.below()
         val state = level.getBlockState(ground)
         val surface = when {

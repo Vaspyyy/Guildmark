@@ -20,6 +20,9 @@ enum class QuestType(private val id: String) : StringRepresentable {
     /** One-off jobs: a single letter, traveller or champion rather than a count. */
     val isSingle: Boolean get() = this == DELIVER || this == ESCORT || this == CHAMPION
 
+    /** Jobs that travel a road to another village; locked until the village has a Trade Road. */
+    val needsRoad: Boolean get() = this == DELIVER || this == ESCORT
+
     /** Jobs counted by kills, which show "Progress: x / y". */
     val showsProgress: Boolean get() = this == HUNT || this == CLEAR || this == CHAMPION
 

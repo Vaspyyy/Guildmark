@@ -40,16 +40,16 @@ object Contracts {
 
         when (note.type) {
             QuestType.DELIVER, QuestType.ESCORT -> {
-                val destination = Expeditions.findVillage(level, boardPos) ?: run {
-                    player.sendOverlayMessage(Component.translatable("message.guildmark.no_village"))
+                // Deliveries and escorts travel the village's roads, so they need a Trade Road first
+                val origin = Advances.villageCenter(level, boardPos)
+                val road = RoadNetwork.get(level).roadsFrom(origin).randomOrNull() ?: run {
+                    player.sendOverlayMessage(Component.translatable("message.guildmark.no_road"))
                     return null
                 }
+                val destination = road.otherEnd(origin)
                 val distance = Expeditions.horizontalDistance(boardPos, destination)
                 note = note.copy(reward = note.reward + (distance / 100).toInt())
-                // Plan (or reuse) the road between the two villages; it gets paved as its chunks load
-                val origin = Advances.villageCenter(level, boardPos)
-                val road = RoadNetwork.get(level).connect(level, origin, destination)
-                state = state.copy(destination = destination, road = road?.id ?: -1)
+                state = state.copy(destination = destination, road = road.id)
                 if (note.type == QuestType.ESCORT) {
                     val name = "Traveller ${QuestGenerator.nameFor(level.random.nextLong())}"
                     val traveller = Expeditions.spawnTraveller(level, boardPos, facing, name) ?: return null
@@ -87,7 +87,7 @@ object Contracts {
             val villager = level.getEntity(state.bound ?: continue) as? Villager ?: continue
             val road = RoadNetwork.get(level).road(state.road)
             // With a road the traveller walks it on their own; without one they tag along behind the player
-            if (road != null) Travellers.tick(level, player, villager, road) else Expeditions.followPlayer(level, player, villager)
+            if (road != null) Travellers.tick(level, player, villager, road.pointsFrom(state.boardPos)) else Expeditions.followPlayer(level, player, villager)
         }
     }
 

@@ -17,7 +17,20 @@ class Road(
     val to: BlockPos,
     val points: List<BlockPos>,
     val unpaved: MutableSet<Long>,
+    /** Being built all at once by a Trade Road project: chunks get loaded for it rather than waited on. */
+    var underConstruction: Boolean = false,
 ) {
+    val finished: Boolean get() = unpaved.isEmpty()
+
+    /** Does this road start or end at this village centre? */
+    fun touches(center: BlockPos, slack: Double = 64.0): Boolean = near(from, center, slack) || near(to, center, slack)
+
+    /** The far end of the road, seen from [center]. */
+    fun otherEnd(center: BlockPos): BlockPos = if (center.distSqr(from) <= center.distSqr(to)) to else from
+
+    /** Waypoints in walking order, starting from the end nearest [start]. */
+    fun pointsFrom(start: BlockPos): List<BlockPos> = if (start.distSqr(from) <= start.distSqr(to)) points else points.reversed()
+
     /** Road columns (x, z) grouped by chunk, three blocks wide. Worked out once per session. */
     val columnsByChunk: Map<Long, List<Pair<Int, Int>>> by lazy {
         val columns = LinkedHashSet<Pair<Int, Int>>()
@@ -42,9 +55,13 @@ class Road(
     }
 
     /** Is this road between these two places (in either direction)? */
-    fun connects(a: BlockPos, b: BlockPos, slack: Double): Boolean {
-        fun near(p: BlockPos, q: BlockPos) = p.distToLowCornerSqr(q.x.toDouble(), p.y.toDouble(), q.z.toDouble()) <= slack * slack
-        return (near(from, a) && near(to, b)) || (near(from, b) && near(to, a))
+    fun connects(a: BlockPos, b: BlockPos, slack: Double): Boolean =
+        (near(from, a, slack) && near(to, b, slack)) || (near(from, b, slack) && near(to, a, slack))
+
+    private fun near(p: BlockPos, q: BlockPos, slack: Double): Boolean {
+        val dx = (p.x - q.x).toDouble()
+        val dz = (p.z - q.z).toDouble()
+        return dx * dx + dz * dz <= slack * slack
     }
 
     companion object {
@@ -55,7 +72,8 @@ class Road(
                 BlockPos.CODEC.fieldOf("to").forGetter(Road::to),
                 BlockPos.CODEC.listOf().fieldOf("points").forGetter(Road::points),
                 Codec.LONG.listOf().fieldOf("unpaved").forGetter { it.unpaved.toList() },
-            ).apply(i) { id, from, to, points, unpaved -> Road(id, from, to, points, unpaved.toMutableSet()) }
+                Codec.BOOL.optionalFieldOf("under_construction", false).forGetter(Road::underConstruction),
+            ).apply(i) { id, from, to, points, unpaved, building -> Road(id, from, to, points, unpaved.toMutableSet(), building) }
         }
     }
 }

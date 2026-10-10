@@ -38,19 +38,20 @@ object QuestGenerator {
     }
 
     /** A note from a specific villager. */
-    fun generate(random: RandomSource, profession: Identifier?, poster: String, tier: Int): QuestNote {
+    fun generate(random: RandomSource, profession: Identifier?, poster: String, tier: Int, hasRoad: Boolean): QuestNote {
         val entries = QuestPools.pools
             .filter { it.professions.isEmpty() || profession in it.professions }
             .flatMap { it.entries }
+            .filter { hasRoad || !it.type.needsRoad }
         return build(random, pick(random, entries, tier), poster, tier)
     }
 
     /** A note with no villager behind it yet, e.g. the first notes on a new board. */
-    fun generateAnonymous(random: RandomSource, tier: Int): QuestNote {
+    fun generateAnonymous(random: RandomSource, tier: Int, hasRoad: Boolean): QuestNote {
         val pool = QuestPools.pools.randomOrNull(random)
         val profession = pool?.professions?.randomOrNull(random)
         val poster = "${NAMES[random.nextInt(NAMES.size)]} the ${title(profession)}"
-        return build(random, pick(random, pool?.entries.orEmpty(), tier), poster, tier)
+        return build(random, pick(random, pool?.entries.orEmpty().filter { hasRoad || !it.type.needsRoad }, tier), poster, tier)
     }
 
     /** A note of one specific type from any pool, for testing. Null if no pool offers that type. */

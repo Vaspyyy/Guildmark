@@ -136,5 +136,13 @@
   "message.guildmark.traveller_missing": "%s needs to be here with you",
   "commands.guildmark.no_note": "Stand within 8 blocks of a Quest Board and name a quest type: fetch, hunt, clear, deliver, escort or champion",
   "quest.guildmark.road": "A road leads there",
-  "message.guildmark.traveller_waiting": "%s is waiting for you"
+  "message.guildmark.traveller_waiting": "%s is waiting for you",
+  "advance.guildmark.trade_road": "Trade Road",
+  "advance.guildmark.trade_road.desc": "A road to the nearest unconnected village",
+  "advance.guildmark.trade_road.wants": "stone, gravel, logs, deliveries and escorts",
+  "message.guildmark.no_road": "This village has no road yet. Fund a Trade Road: sneak and use the board.",
+  "message.guildmark.no_road_target": "%s is funded, but there's no unconnected village within reach. Turn in another contract after exploring further.",
+  "message.guildmark.no_road_route": "%s is funded, but no route could be found. Turn in another contract to try a different way.",
+  "message.guildmark.road_started": "Road crews set out for the village near %s, %s",
+  "message.guildmark.road_finished": "The road to the village near %s, %s is finished"
 }

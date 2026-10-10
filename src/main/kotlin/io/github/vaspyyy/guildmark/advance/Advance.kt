@@ -12,7 +12,8 @@ import net.minecraft.world.item.Items
 
 /**
  * A village project. Every contract turned in at the village board adds its pay as progress;
- * contracts that fit the project count triple. Villages work through these in order.
+ * contracts that fit the project count triple. Villages work through these in order, then keep
+ * building Trade Roads to further villages.
  */
 enum class Advance(
     val id: String,
@@ -22,11 +23,18 @@ enum class Advance(
     private val countsLogs: Boolean = false,
     private val huntTargets: Set<String> = setOf(),
     private val countsClear: Boolean = false,
+    private val countsTravel: Boolean = false,
 ) {
     LAMP_POSTS(
         "lamp_posts", 60, { Items.LANTERN },
         fetchItems = setOf("coal", "torch", "iron_ingot", "iron_nugget", "copper_ingot", "glowstone_dust"),
         countsClear = true,
+    ),
+    TRADE_ROAD(
+        "trade_road", 120, { Items.DIRT_PATH },
+        fetchItems = setOf("cobblestone", "stone", "gravel", "flint", "torch"),
+        countsLogs = true,
+        countsTravel = true,
     ),
     PALISADE(
         "palisade", 150, { Items.SPRUCE_LOG },
@@ -51,7 +59,7 @@ enum class Advance(
         return when (note.type) {
             QuestType.CLEAR -> countsClear
             QuestType.HUNT, QuestType.CHAMPION -> vanilla && note.target.path in huntTargets
-            QuestType.DELIVER, QuestType.ESCORT -> false
+            QuestType.DELIVER, QuestType.ESCORT -> countsTravel
             QuestType.FETCH -> (vanilla && note.target.path in fetchItems) ||
                 (countsLogs && ItemStack(BuiltInRegistries.ITEM.getValue(note.target)).`is`(ItemTags.LOGS))
         }
@@ -61,6 +69,7 @@ enum class Advance(
     fun pointsFor(note: QuestNote): Int = if (matches(note)) note.reward * 3 else note.reward
 
     companion object {
-        fun at(index: Int): Advance? = entries.getOrNull(index)
+        /** Once the fixed chain is done, every further project is another Trade Road to the next village. */
+        fun at(index: Int): Advance = entries.getOrNull(index) ?: TRADE_ROAD
     }
 }

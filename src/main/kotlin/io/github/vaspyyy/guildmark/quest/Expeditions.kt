@@ -56,6 +56,26 @@ object Expeditions {
         return null
     }
 
+    /**
+     * The nearest village 150 to 1200 blocks from [center] that has no road to it yet. Structure search
+     * only gives the single nearest village to a point, so it probes around the village in rings.
+     */
+    fun findUnconnectedVillage(level: ServerLevel, center: BlockPos, network: io.github.vaspyyy.guildmark.road.RoadNetwork): BlockPos? {
+        val candidates = mutableListOf<BlockPos>()
+        for (ring in listOf(0, 250, 500)) {
+            val probes = if (ring == 0) 1 else 8
+            for (i in 0 until probes) {
+                val angle = 2 * Math.PI * i / probes
+                val probe = center.offset((cos(angle) * ring).toInt(), 0, (sin(angle) * ring).toInt())
+                val found = level.findNearestMapStructure(StructureTags.VILLAGE, probe, 24, false) ?: continue
+                candidates.add(BlockPos(found.x, 0, found.z))
+            }
+        }
+        return candidates
+            .filter { horizontalDistance(center, it) in 150.0..1200.0 && !network.isConnected(center, it) }
+            .minByOrNull { horizontalDistance(center, it) }
+    }
+
     fun horizontalDistance(a: BlockPos, b: BlockPos): Double {
         val dx = (a.x - b.x).toDouble()
         val dz = (a.z - b.z).toDouble()

@@ -1,6 +1,8 @@
 package io.github.vaspyyy.guildmark.block
 
+import io.github.vaspyyy.guildmark.advance.Advances
 import io.github.vaspyyy.guildmark.quest.QuestGenerator
+import io.github.vaspyyy.guildmark.road.RoadNetwork
 import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.registry.ModBlocks
 import io.github.vaspyyy.guildmark.registry.ModVillagers
@@ -41,7 +43,7 @@ object VillageBoards {
         val cells = BoardPart.entries.shuffled().take(STARTER_NOTES)
         for (part in cells) {
             val cell = level.getBlockEntity(QuestBoardBlock.cellPos(anchor, facing, part)) as? QuestBoardBlockEntity
-            cell?.updateNote(QuestGenerator.generateAnonymous(level.random, QuestGenerator.tierAt(anchor.x, anchor.z)))
+            cell?.updateNote(QuestGenerator.generateAnonymous(level.random, QuestGenerator.tierAt(anchor.x, anchor.z), hasRoad(level, anchor)))
         }
     }
 
@@ -83,12 +85,18 @@ object VillageBoards {
     private fun pinNote(level: ServerLevel, villager: Villager, cell: QuestBoardBlockEntity, facing: Direction) {
         val profession = villager.villagerData.profession().unwrapKey().orElse(null)?.identifier()
         val tier = QuestGenerator.tierAt(cell.blockPos.x, cell.blockPos.z)
-        cell.updateNote(QuestGenerator.generate(level.random, profession, posterName(villager, profession), tier))
+        cell.updateNote(QuestGenerator.generate(level.random, profession, posterName(villager, profession), tier, hasRoad(level, cell.blockPos)))
         villager.setData(ModAttachments.LAST_PINNED_DAY, day(level))
         villager.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, Vec3.atCenterOf(cell.blockPos))
         val spot = Vec3.atCenterOf(cell.blockPos.relative(facing))
         level.playSound(null, cell.blockPos, SoundEvents.VILLAGER_WORK_CARTOGRAPHER, SoundSource.NEUTRAL, 1.0f, 1.0f)
         level.sendParticles(ParticleTypes.HAPPY_VILLAGER, spot.x, spot.y, spot.z, 4, 0.3, 0.3, 0.3, 0.0)
+    }
+
+    /** Does this board's village have a road yet? Deliveries and escorts are only posted once it does. */
+    private fun hasRoad(level: Level, boardPos: BlockPos): Boolean {
+        val serverLevel = level as? ServerLevel ?: return false
+        return RoadNetwork.get(serverLevel).roadsFrom(Advances.villageCenter(serverLevel, boardPos)).isNotEmpty()
     }
 
     /** Name tag if it has one, otherwise a first name fixed by its UUID: "Maren the Librarian". */

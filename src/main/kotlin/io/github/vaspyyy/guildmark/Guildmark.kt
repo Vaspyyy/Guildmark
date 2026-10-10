@@ -56,7 +56,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         NeoForge.EVENT_BUS.addListener(PlayerTickEvent.Post::class.java, ::onPlayerTick)
         NeoForge.EVENT_BUS.addListener(LevelTickEvent.Post::class.java) { event ->
             val level = event.level
-            if (level is ServerLevel && level.gameTime % 20L == 0L) RoadNetwork.get(level).paveLoaded(level)
+            if (level is ServerLevel) RoadNetwork.get(level).tick(level)
         }
         // Stat perks are transient attribute modifiers, so put them back whenever the player entity is new
         NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerLoggedInEvent::class.java) { Progression.applyAttributes(it.entity) }

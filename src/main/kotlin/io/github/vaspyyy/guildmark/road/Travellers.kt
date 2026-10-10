@@ -38,7 +38,7 @@ object Travellers {
     private const val STUCK_LIMIT = 15
 
     /** Called every 10 ticks for each escort contract the player carries. */
-    fun tick(level: ServerLevel, guard: Player, villager: Villager, road: Road) {
+    fun tick(level: ServerLevel, guard: Player, villager: Villager, points: List<BlockPos>) {
         val brain = villager.brain
         Expeditions.keepOnTheRoad(villager)
         if (villager.distanceTo(guard) > GUARD_RANGE) {
@@ -48,9 +48,9 @@ object Travellers {
         }
 
         var progress = villager.getData(ModAttachments.TRAVEL_PROGRESS)
-        val last = road.points.size - 1
+        val last = points.size - 1
         if (progress.waypoint > last) return
-        val target = surface(level, road.points[progress.waypoint])
+        val target = surface(level, points[progress.waypoint])
         val distance = horizontalDistance(villager.blockPosition(), target)
 
         progress = when {
@@ -65,7 +65,7 @@ object Travellers {
         villager.setData(ModAttachments.TRAVEL_PROGRESS, progress)
 
         if (progress.waypoint <= last) {
-            brain.setMemory(MemoryModuleType.WALK_TARGET, WalkTarget(surface(level, road.points[progress.waypoint]), 0.6f, 1))
+            brain.setMemory(MemoryModuleType.WALK_TARGET, WalkTarget(surface(level, points[progress.waypoint]), 0.6f, 1))
         } else {
             brain.eraseMemory(MemoryModuleType.WALK_TARGET)
         }

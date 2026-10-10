@@ -46,6 +46,7 @@ class AdvanceScreen(private val anchor: BlockPos) : Screen(Component.translatabl
             }
             content.addChild(AdvanceRow(advance, state, points))
         }
+        if (index >= Advance.entries.size) content.addChild(AdvanceRow(Advance.TRADE_ROAD, AdvanceRow.State.CURRENT, points))
         content.addChild(Button.builder(CommonComponents.GUI_DONE) { onClose() }.width(100).build()) { it.alignHorizontallyCenter().paddingTop(4) }
         content.arrangeElements()
 
