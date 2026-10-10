@@ -2,6 +2,8 @@ package io.github.vaspyyy.guildmark.advance
 
 import io.github.vaspyyy.guildmark.block.QuestBoardBlockEntity
 import io.github.vaspyyy.guildmark.quest.QuestNote
+import io.github.vaspyyy.guildmark.quest.Expeditions
+import io.github.vaspyyy.guildmark.road.RoadNetwork
 import net.minecraft.core.BlockPos
 import net.minecraft.core.particles.ParticleTypes
 import net.minecraft.network.chat.Component
@@ -36,13 +38,42 @@ object Advances {
 
     private fun tryComplete(level: ServerLevel, anchor: BlockPos, board: QuestBoardBlockEntity, advance: Advance) {
         val center = villageCenter(level, anchor)
-        val failure = AdvanceBuilders.build(advance, level, center, villageRadius(level, center)) { announce(level, center, it) }
+        if (advance == Advance.TRADE_ROAD) return startTradeRoad(level, anchor, board, center)
+        val failure = AdvanceBuilders.build(advance, level, center, villageRadius(level, center))
         if (failure != null) {
             announce(level, center, Component.translatable(failure, advance.title))
             return
         }
         board.setAdvanceProgress(board.advanceIndex + 1, 0)
         announce(level, center, Component.translatable("message.guildmark.advance_complete", advance.title))
+        celebrate(level, center)
+    }
+
+    /**
+     * Send surveyors to the nearest unconnected village. The survey runs in the background; once it
+     * finds a route the whole road is built, and if it can't, the funding goes back on the board.
+     */
+    private fun startTradeRoad(level: ServerLevel, anchor: BlockPos, board: QuestBoardBlockEntity, center: BlockPos) {
+        val network = RoadNetwork.get(level)
+        val destination = Expeditions.findUnconnectedVillage(level, center, network) ?: run {
+            announce(level, center, Component.translatable("message.guildmark.no_road_target", Advance.TRADE_ROAD.title))
+            return
+        }
+        val index = board.advanceIndex
+        board.setAdvanceProgress(index + 1, 0)
+        announce(level, center, Component.translatable("message.guildmark.road_surveying", destination.x, destination.z))
+        network.survey(level, center, destination) { road ->
+            if (road == null) {
+                (level.getBlockEntity(anchor) as? QuestBoardBlockEntity)?.let { if (it.advanceIndex == index + 1) it.setAdvanceProgress(index, Advance.TRADE_ROAD.cost) }
+                announce(level, center, Component.translatable("message.guildmark.no_road_route", Advance.TRADE_ROAD.title))
+                return@survey
+            }
+            announce(level, center, Component.translatable("message.guildmark.road_started", destination.x, destination.z))
+            celebrate(level, center)
+        }
+    }
+
+    private fun celebrate(level: ServerLevel, center: BlockPos) {
         level.playSound(null, center, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.NEUTRAL, 1.0f, 1.0f)
         level.sendParticles(ParticleTypes.HAPPY_VILLAGER, center.x + 0.5, center.y + 1.5, center.z + 0.5, 40, 3.0, 1.5, 3.0, 0.0)
     }

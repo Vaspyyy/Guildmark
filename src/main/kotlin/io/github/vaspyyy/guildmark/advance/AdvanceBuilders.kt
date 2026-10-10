@@ -1,9 +1,6 @@
 package io.github.vaspyyy.guildmark.advance
 
-import io.github.vaspyyy.guildmark.quest.Expeditions
 import io.github.vaspyyy.guildmark.registry.ModBlocks
-import io.github.vaspyyy.guildmark.road.RoadNetwork
-import net.minecraft.network.chat.Component
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.server.level.ServerLevel
@@ -21,23 +18,14 @@ import kotlin.math.sin
 /** Builds each [Advance] into the village. */
 object AdvanceBuilders {
     /** Returns null once building has started, or the translation key explaining why it couldn't. */
-    fun build(advance: Advance, level: ServerLevel, center: BlockPos, radius: Int, announce: (Component) -> Unit): String? {
+    fun build(advance: Advance, level: ServerLevel, center: BlockPos, radius: Int): String? {
         val built = when (advance) {
             Advance.LAMP_POSTS -> lampPosts(level, center, radius)
-            Advance.TRADE_ROAD -> return tradeRoad(level, center, announce)
+            Advance.TRADE_ROAD -> error("Trade Roads are surveyed by Advances.startTradeRoad")
             Advance.PALISADE -> palisade(level, center, radius)
             Advance.ARCHER_TOWER -> archerTower(level, center)
         }
         return if (built) null else "message.guildmark.advance_no_room"
-    }
-
-    /** Plan a road to the nearest village not yet connected, and send the road crew out to build all of it. */
-    private fun tradeRoad(level: ServerLevel, center: BlockPos, announce: (Component) -> Unit): String? {
-        val network = RoadNetwork.get(level)
-        val destination = Expeditions.findUnconnectedVillage(level, center, network) ?: return "message.guildmark.no_road_target"
-        network.build(level, center, destination) ?: return "message.guildmark.no_road_route"
-        announce(Component.translatable("message.guildmark.road_started", destination.x, destination.z))
-        return null
     }
 
     /** First free block above the ground at this column. */

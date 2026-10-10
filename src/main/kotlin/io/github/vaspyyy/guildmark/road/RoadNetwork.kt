@@ -8,12 +8,16 @@ import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.tags.BlockTags
+import net.minecraft.util.Util
 import net.minecraft.world.level.ChunkPos
 import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.Blocks
+import net.minecraft.world.level.block.LeavesBlock
+import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.level.levelgen.Heightmap
 import net.minecraft.world.level.saveddata.SavedData
 import net.minecraft.world.level.saveddata.SavedDataType
+import java.util.concurrent.CompletableFuture
 import java.util.function.Supplier
 
 /**
@@ -28,14 +32,21 @@ class RoadNetwork(val roads: MutableList<Road> = mutableListOf()) : SavedData() 
 
     fun isConnected(a: BlockPos, b: BlockPos): Boolean = roads.any { it.connects(a, b, 64.0) }
 
-    /** Plan a road between two village centres and start building all of it. Null if there's no route. */
-    fun build(level: ServerLevel, a: BlockPos, b: BlockPos): Road? {
-        val points = RoadPlanner.plan(level, a, b) ?: return null
-        val road = Road((roads.maxOfOrNull { it.id } ?: 0) + 1, a, b, points, mutableSetOf(), true)
-        road.unpaved.addAll(road.columnsByChunk.keys)
-        roads.add(road)
-        setDirty()
-        return road
+    /**
+     * Survey a road between two village centres in the background, then start building all of it.
+     * [done] runs back on the server thread with the new road, or null if there's no route.
+     */
+    fun survey(level: ServerLevel, a: BlockPos, b: BlockPos, done: (Road?) -> Unit) {
+        CompletableFuture.supplyAsync({ RoadPlanner.plan(level, a, b) }, Util.backgroundExecutor())
+            .exceptionally { error -> Guildmark.LOGGER.error("Road survey failed", error); null }
+            .thenAcceptAsync({ points ->
+                if (points == null) return@thenAcceptAsync done(null)
+                val road = Road((roads.maxOfOrNull { it.id } ?: 0) + 1, a, b, points, mutableSetOf(), true)
+                road.unpaved.addAll(road.columnsByChunk.keys)
+                roads.add(road)
+                setDirty()
+                done(road)
+            }, level.server)
     }
 
     /**
@@ -82,8 +93,10 @@ class RoadNetwork(val roads: MutableList<Road> = mutableListOf()) : SavedData() 
 
     private fun paveColumn(level: ServerLevel, x: Int, z: Int) {
         var top = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, BlockPos(x, 0, z))
-        // A village palisade in the way: open a gate in it
-        while (level.getBlockState(top.below()).`is`(Blocks.STRIPPED_SPRUCE_LOG)) {
+        // A village palisade or a tree trunk in the way: cut through it down to the ground
+        while (true) {
+            val below = level.getBlockState(top.below())
+            if (!below.`is`(Blocks.STRIPPED_SPRUCE_LOG) && !(below.`is`(BlockTags.LOGS) && isTree(level, top.below()))) break
             top = top.below()
             level.setBlock(top, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL)
         }
@@ -97,20 +110,36 @@ class RoadNetwork(val roads: MutableList<Road> = mutableListOf()) : SavedData() 
             state.`is`(Blocks.RED_SAND) -> Blocks.SMOOTH_RED_SANDSTONE
             state.`is`(BlockTags.BASE_STONE_OVERWORLD) || state.`is`(Blocks.GRAVEL) -> Blocks.COBBLESTONE
             state.`is`(Blocks.SNOW_BLOCK) -> Blocks.PACKED_ICE
-            else -> null // trees, buildings, farmland: leave them be
+            else -> null // buildings, farmland: leave them be
         } ?: return
-        // Clear grass and flowers off the road
-        for (i in 0..1) {
+        // Clear plants, leaves and branches out of the way, leaving headroom to walk and ride
+        for (i in 0 until HEADROOM) {
             val above = top.above(i)
             val aboveState = level.getBlockState(above)
-            if (!aboveState.isAir && aboveState.canBeReplaced() && level.getFluidState(above).isEmpty) {
-                level.setBlock(above, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL)
-            }
+            if (aboveState.isAir || !level.getFluidState(above).isEmpty) continue
+            val natural = aboveState.canBeReplaced() || isWildLeaves(aboveState) || (aboveState.`is`(BlockTags.LOGS) && isTree(level, above))
+            if (natural) level.setBlock(above, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL)
         }
         level.setBlock(ground, surface.defaultBlockState(), Block.UPDATE_ALL)
     }
 
+    private fun isWildLeaves(state: BlockState): Boolean =
+        state.`is`(BlockTags.LEAVES) && state.hasProperty(LeavesBlock.PERSISTENT) && !state.getValue(LeavesBlock.PERSISTENT)
+
+    /** A log that belongs to a grown tree (wild leaves around the top of its trunk), not a house beam. */
+    private fun isTree(level: ServerLevel, log: BlockPos): Boolean {
+        var top = log
+        while (level.getBlockState(top.above()).`is`(BlockTags.LOGS) && top.y - log.y < 32) top = top.above()
+        for (dx in -1..1) for (dy in 0..1) for (dz in -1..1) {
+            if (isWildLeaves(level.getBlockState(top.offset(dx, dy, dz)))) return true
+        }
+        return false
+    }
+
     companion object {
+        /** Blocks of open space kept above a road. */
+        private const val HEADROOM = 4
+
         private val CODEC: Codec<RoadNetwork> = RecordCodecBuilder.create { i ->
             i.group(Road.CODEC.listOf().fieldOf("roads").forGetter { it.roads })
                 .apply(i) { roads -> RoadNetwork(roads.toMutableList()) }

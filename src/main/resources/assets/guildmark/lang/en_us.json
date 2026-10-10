@@ -142,7 +142,8 @@
   "advance.guildmark.trade_road.wants": "stone, gravel, logs, deliveries and escorts",
   "message.guildmark.no_road": "This village has no road yet. Fund a Trade Road: sneak and use the board.",
   "message.guildmark.no_road_target": "%s is funded, but there's no unconnected village within reach. Turn in another contract after exploring further.",
-  "message.guildmark.no_road_route": "%s is funded, but no route could be found. Turn in another contract to try a different way.",
-  "message.guildmark.road_started": "Road crews set out for the village near %s, %s",
-  "message.guildmark.road_finished": "The road to the village near %s, %s is finished"
+  "message.guildmark.no_road_route": "The surveyors found no gentle route for the %s. Turn in another contract to send them out again.",
+  "message.guildmark.road_started": "The route is set. Road crews are building the road to the village near %s, %s",
+  "message.guildmark.road_finished": "The road to the village near %s, %s is finished",
+  "message.guildmark.road_surveying": "Surveyors set out to find a route to the village near %s, %s"
 }

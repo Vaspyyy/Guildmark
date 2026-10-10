@@ -10,13 +10,16 @@ import kotlin.math.sqrt
 /**
  * Finds a road route between two places with A* over a coarse grid, reading terrain height straight
  * from the world generator so it works across land nobody has visited yet. Gentle slopes are cheap,
- * steep ones and water cost more, so roads wind around hills and lakes like a real track.
+ * steep ones and water cost more, and anything steeper than a walkable grade is ruled out, so roads
+ * wind around hills and lakes like a real track. Thread-safe: runs off the server thread.
  */
 object RoadPlanner {
     /** Grid spacing in blocks; also the spacing of the waypoints travellers walk between. */
-    private const val STEP = 12
-    // Each new cell reads the generator twice, so this keeps a worst-case plan to a fraction of a second
-    private const val MAX_EXPANSIONS = 6000
+    private const val STEP = 8
+    /** Most height change allowed over half a step (4 blocks, or about 6 on a diagonal). */
+    private const val MAX_HALF_CLIMB = 3
+    // Plans run in the background, so this only bounds how long a hopeless search keeps trying
+    private const val MAX_EXPANSIONS = 20000
     /** How far the route may stray sideways from the straight line, in blocks. */
     private const val CORRIDOR = 400.0
 
@@ -27,11 +30,21 @@ object RoadPlanner {
         val randomState = level.chunkSource.randomState()
         val cells = HashMap<Long, Cell>()
         fun cell(gx: Int, gz: Int): Cell = cells.getOrPut(pack(gx, gz)) {
-            val x = gx * STEP
-            val z = gz * STEP
+            // Sampled at the cell centre, where the waypoint goes
+            val x = gx * STEP + STEP / 2
+            val z = gz * STEP + STEP / 2
             val surface = generator.getBaseHeight(x, z, Heightmap.Types.WORLD_SURFACE_WG, level, randomState)
             val floor = generator.getBaseHeight(x, z, Heightmap.Types.OCEAN_FLOOR_WG, level, randomState)
             Cell(gx, gz, surface, surface - floor)
+        }
+        // Ground height halfway between two cells, so a cliff between them isn't missed
+        val midpoints = HashMap<Long, Int>()
+        fun midHeight(a: Cell, b: Cell): Int {
+            val hx = a.x * 2 + (b.x - a.x)
+            val hz = a.z * 2 + (b.z - a.z)
+            return midpoints.getOrPut(pack(hx, hz)) {
+                generator.getBaseHeight(hx * STEP / 2 + STEP / 2, hz * STEP / 2 + STEP / 2, Heightmap.Types.WORLD_SURFACE_WG, level, randomState)
+            }
         }
 
         val start = cell(Math.floorDiv(from.x, STEP), Math.floorDiv(from.z, STEP))
@@ -67,7 +80,7 @@ object RoadPlanner {
                 val gz = here.z + dz
                 if (!inCorridor(gx, gz)) continue
                 val next = cell(gx, gz)
-                val step = stepCost(here, next, if (dx != 0 && dz != 0) 1.414 else 1.0) ?: continue
+                val step = stepCost(here, midHeight(here, next), next, if (dx != 0 && dz != 0) 1.414 else 1.0) ?: continue
                 val nextKey = pack(gx, gz)
                 val total = hereCost + step
                 if (total < (costSoFar[nextKey] ?: Double.MAX_VALUE)) {
@@ -80,11 +93,13 @@ object RoadPlanner {
         return null
     }
 
-    /** Cost to walk between neighbouring cells, or null if it's a cliff. */
-    private fun stepCost(a: Cell, b: Cell, diagonal: Double): Double? {
-        val climb = abs(b.height - a.height)
-        if (climb > STEP) return null
-        var cost = STEP * diagonal * (1.0 + climb * climb * 0.15)
+    /** Cost to walk between neighbouring cells, or null if it's too steep for a road. */
+    private fun stepCost(a: Cell, mid: Int, b: Cell, diagonal: Double): Double? {
+        // Water levels out the surface, so only dry ground is checked for climbing
+        val first = if (a.water > 0 && mid <= a.height) 0 else abs(mid - a.height)
+        val second = if (b.water > 0 && mid <= b.height) 0 else abs(b.height - mid)
+        if (first > MAX_HALF_CLIMB || second > MAX_HALF_CLIMB) return null
+        var cost = STEP * diagonal * (1.0 + (first * first + second * second) * 0.35 / diagonal)
         if (b.water > 0) cost += if (b.water > 4) 400.0 else 60.0
         return cost
     }
