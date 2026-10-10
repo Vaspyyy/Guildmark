@@ -93,6 +93,16 @@ object VillageBoards {
         level.sendParticles(ParticleTypes.HAPPY_VILLAGER, spot.x, spot.y, spot.z, 4, 0.3, 0.3, 0.3, 0.0)
     }
 
+    /** The board (anchor cell) of the village whose bell is nearest [near], within 48 blocks. */
+    fun villageBoard(level: ServerLevel, near: BlockPos): BlockPos? {
+        val bell = level.poiManager.findClosest({ it.`is`(PoiTypes.MEETING) }, near, 48, PoiManager.Occupancy.ANY).orElse(null) ?: return null
+        for (pos in BlockPos.betweenClosed(bell.offset(-10, -5, -10), bell.offset(10, 5, 10))) {
+            val state = level.getBlockState(pos)
+            if (state.block is QuestBoardBlock) return QuestBoardBlock.anchorPos(pos.immutable(), state)
+        }
+        return null
+    }
+
     /** Does this board's village have a road yet? Deliveries and escorts are only posted once it does. */
     fun hasRoad(level: Level, boardPos: BlockPos): Boolean {
         val serverLevel = level as? ServerLevel ?: return false

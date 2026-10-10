@@ -23,6 +23,11 @@ object ClientHooks {
         Minecraft.getInstance().gui.setScreen(ReceptionScreen(payload))
     }
 
+    /** Naming a new guild at the hall desk. */
+    fun openFoundGuild(entityId: Int) {
+        Minecraft.getInstance().gui.setScreen(FoundGuildScreen(entityId))
+    }
+
     /** The village advances of the board whose anchor cell is [anchor]. */
     fun openAdvances(anchor: BlockPos) {
         Minecraft.getInstance().gui.setScreen(AdvanceScreen(anchor))

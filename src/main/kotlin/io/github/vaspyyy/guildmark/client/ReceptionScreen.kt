@@ -1,6 +1,8 @@
 package io.github.vaspyyy.guildmark.client
 
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.guild.Recruiting
+import net.minecraft.world.item.DyeColor
 import io.github.vaspyyy.guildmark.network.OpenReceptionPayload
 import io.github.vaspyyy.guildmark.network.ReceptionActionPayload
 import io.github.vaspyyy.guildmark.registry.ModAttachments
@@ -38,6 +40,7 @@ class ReceptionScreen(private val data: OpenReceptionPayload) : Screen(Component
     private var panelHeight = 0
     private var buttonsY = 0
     private var newsY = 0
+    private var guildY = 0
 
     private val receptionistName: Component
         get() = minecraft.level?.getEntity(data.entityId)?.name ?: Component.empty()
@@ -65,11 +68,12 @@ class ReceptionScreen(private val data: OpenReceptionPayload) : Screen(Component
     }
 
     override fun init() {
-        panelHeight = 30 + 34 + 26 + 14 + newsHeight() + 32
+        panelHeight = 30 + 34 + 26 + 24 + 14 + newsHeight() + 32
         panelX = (width - PANEL_WIDTH) / 2
         panelY = (height - panelHeight) / 2
         buttonsY = panelY + 30 + 34
-        newsY = buttonsY + 26 + 14
+        guildY = buttonsY + 26
+        newsY = guildY + 24 + 14
 
         val progress = progress()
         val next = progress.rank.next
@@ -109,6 +113,14 @@ class ReceptionScreen(private val data: OpenReceptionPayload) : Screen(Component
         )))
         addRenderableWidget(lairButton)
 
+        if (data.guildName.isEmpty()) {
+            val foundButton = Button.builder(Component.translatable("gui.guildmark.hall.found")) {
+                ClientHooks.openFoundGuild(data.entityId)
+            }.bounds(panelX + PANEL_WIDTH - PADDING - BUTTON_WIDTH, guildY, BUTTON_WIDTH, 20).build()
+            foundButton.setTooltip(Tooltip.create(Component.translatable("gui.guildmark.hall.found_tip", Recruiting.MIN_FOUNDING_RANK.letter, Recruiting.FOUNDING_FEE)))
+            addRenderableWidget(foundButton)
+        }
+
         addRenderableWidget(
             Button.builder(CommonComponents.GUI_DONE) { onClose() }
                 .bounds(width / 2 - 50, panelY + panelHeight - PADDING - 20, 100, 20).build()
@@ -139,6 +151,15 @@ class ReceptionScreen(private val data: OpenReceptionPayload) : Screen(Component
             else -> Pair(Component.translatable("gui.guildmark.hall.next", next.letter, next.minLevel), SOFT_INK)
         }
         graphics.text(font, status, left + RankBadge.WIDTH + 6, rowY + 14, color, false)
+
+        // Your guild
+        if (data.guildName.isEmpty()) {
+            graphics.text(font, Component.translatable("gui.guildmark.hall.no_guild"), left, guildY + 6, FADED_INK, false)
+        } else {
+            val color = DyeColor.byId(data.guildColor).textColor
+            graphics.text(font, Component.literal(data.guildName).withStyle(ChatFormatting.BOLD).withColor(color), left, guildY, INK, false)
+            graphics.text(font, Component.translatable("gui.guildmark.hall.guild_members", data.guildMembers, data.guildCap), left, guildY + 11, SOFT_INK, false)
+        }
 
         // The news
         graphics.text(font, Component.translatable("gui.guildmark.hall.news").withStyle(ChatFormatting.BOLD), left, newsY - 12, INK, false)

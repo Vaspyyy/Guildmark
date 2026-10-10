@@ -3,7 +3,10 @@ package io.github.vaspyyy.guildmark.client
 import com.mojang.blaze3d.platform.InputConstants
 import io.github.vaspyyy.guildmark.Guildmark
 import net.minecraft.client.KeyMapping
+import io.github.vaspyyy.guildmark.registry.ModEntities
 import net.minecraft.client.Minecraft
+import net.minecraft.client.renderer.entity.VillagerRenderer
+import net.neoforged.neoforge.client.event.EntityRenderersEvent
 import net.minecraft.resources.Identifier
 import net.neoforged.api.distmarker.Dist
 import net.neoforged.bus.api.IEventBus
@@ -26,6 +29,9 @@ class GuildmarkClient(modBus: IEventBus) {
             event.registerCategory(category)
             event.register(ledgerKey)
             event.register(trackerKey)
+        }
+        modBus.addListener(EntityRenderersEvent.RegisterRenderers::class.java) { event ->
+            event.registerEntityRenderer(ModEntities.GUILD_MEMBER.get(), ::VillagerRenderer)
         }
         modBus.addListener(RegisterGuiLayersEvent::class.java) { event ->
             event.registerAbove(VanillaGuiLayers.EFFECTS, ContractTracker.ID, ContractTracker)

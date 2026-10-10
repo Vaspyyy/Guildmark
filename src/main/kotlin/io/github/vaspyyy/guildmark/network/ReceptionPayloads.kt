@@ -4,6 +4,7 @@ import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.client.ClientHooks
 import io.github.vaspyyy.guildmark.guild.NewsItem
 import io.github.vaspyyy.guildmark.guild.Reception
+import io.github.vaspyyy.guildmark.guild.Recruiting
 import io.netty.buffer.ByteBuf
 import net.minecraft.network.codec.ByteBufCodecs
 import net.minecraft.network.codec.StreamCodec
@@ -18,6 +19,11 @@ data class OpenReceptionPayload(
     val hallContractReady: Boolean,
     val lairHuntReady: Boolean,
     val today: Long,
+    /** The player's own guild: empty name if they haven't founded one. */
+    val guildName: String,
+    val guildColor: Int,
+    val guildMembers: Int,
+    val guildCap: Int,
 ) : CustomPacketPayload {
     override fun type(): CustomPacketPayload.Type<OpenReceptionPayload> = TYPE
 
@@ -31,6 +37,10 @@ data class OpenReceptionPayload(
             ByteBufCodecs.BOOL, OpenReceptionPayload::hallContractReady,
             ByteBufCodecs.BOOL, OpenReceptionPayload::lairHuntReady,
             ByteBufCodecs.VAR_LONG, OpenReceptionPayload::today,
+            ByteBufCodecs.STRING_UTF8, OpenReceptionPayload::guildName,
+            ByteBufCodecs.VAR_INT, OpenReceptionPayload::guildColor,
+            ByteBufCodecs.VAR_INT, OpenReceptionPayload::guildMembers,
+            ByteBufCodecs.VAR_INT, OpenReceptionPayload::guildCap,
             ::OpenReceptionPayload,
         )
 
@@ -60,6 +70,27 @@ data class ReceptionActionPayload(val entityId: Int, val action: Int) : CustomPa
 
         fun handle(payload: ReceptionActionPayload, context: IPayloadContext) {
             Reception.handleAction(context.player(), payload.entityId, payload.action)
+        }
+    }
+}
+
+/** Client asks the receptionist [entityId] to found a guild called [name] under the dye colour [color]. */
+data class FoundGuildPayload(val entityId: Int, val name: String, val color: Int) : CustomPacketPayload {
+    override fun type(): CustomPacketPayload.Type<FoundGuildPayload> = TYPE
+
+    companion object {
+        val TYPE: CustomPacketPayload.Type<FoundGuildPayload> =
+            CustomPacketPayload.Type(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "found_guild"))
+
+        val STREAM_CODEC: StreamCodec<ByteBuf, FoundGuildPayload> = StreamCodec.composite(
+            ByteBufCodecs.VAR_INT, FoundGuildPayload::entityId,
+            ByteBufCodecs.stringUtf8(32), FoundGuildPayload::name,
+            ByteBufCodecs.VAR_INT, FoundGuildPayload::color,
+            ::FoundGuildPayload,
+        )
+
+        fun handle(payload: FoundGuildPayload, context: IPayloadContext) {
+            Reception.handleFound(context.player(), payload.entityId, payload.name, payload.color)
         }
     }
 }

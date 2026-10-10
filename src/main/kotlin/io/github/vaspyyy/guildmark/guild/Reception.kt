@@ -32,6 +32,11 @@ object Reception {
     fun onInteract(event: PlayerInteractEvent.EntityInteract) {
         val villager = event.target as? Villager ?: return
         val level = event.level as? ServerLevel ?: return
+        Recruiting.onInteract(level, event.entity, villager, event.hand)?.let { result ->
+            event.isCanceled = true
+            event.cancellationResult = result
+            return
+        }
         if (!villager.hasData(ModAttachments.RECEPTIONIST)) return
         event.isCanceled = true
         event.cancellationResult = InteractionResult.SUCCESS
@@ -46,7 +51,19 @@ object Reception {
         val today = VillageBoards.day(level)
         val ready = player.getData(ModAttachments.HALL_CONTRACT_DAY) != today
         val lairReady = player.getData(ModAttachments.LAIR_HUNT_DAY) != today
-        PacketDistributor.sendToPlayer(player, OpenReceptionPayload(villager.id, GuildNews.get(level).items.toList(), ready, lairReady, today))
+        val guild = Guilds.get(level).ledBy(player.uuid)
+        PacketDistributor.sendToPlayer(player, OpenReceptionPayload(
+            villager.id, GuildNews.get(level).items.toList(), ready, lairReady, today,
+            guild?.name ?: "", guild?.color?.id ?: 0, guild?.members?.size ?: 0,
+            Guilds.memberCap(Progression.get(player).adventurerRank),
+        ))
+    }
+
+    fun handleFound(player: Player, entityId: Int, name: String, color: Int) {
+        val level = player.level() as? ServerLevel ?: return
+        val villager = level.getEntity(entityId) as? Villager ?: return
+        if (!villager.hasData(ModAttachments.RECEPTIONIST) || player.distanceTo(villager) > DESK_RANGE) return
+        Recruiting.found(level, player, name, color)
     }
 
     fun handleAction(player: Player, entityId: Int, action: Int) {

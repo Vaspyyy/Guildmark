@@ -7,8 +7,12 @@ import io.github.vaspyyy.guildmark.network.SpendPerkPayload
 import io.github.vaspyyy.guildmark.network.TakeNotePayload
 import io.github.vaspyyy.guildmark.progression.Progression
 import io.github.vaspyyy.guildmark.quest.QuestPoolLoader
+import io.github.vaspyyy.guildmark.guild.GuildMember
 import io.github.vaspyyy.guildmark.guild.Reception
+import io.github.vaspyyy.guildmark.guild.Recruiting
+import io.github.vaspyyy.guildmark.registry.ModEntities
 import io.github.vaspyyy.guildmark.lair.Lairs
+import io.github.vaspyyy.guildmark.network.FoundGuildPayload
 import io.github.vaspyyy.guildmark.network.OpenReceptionPayload
 import io.github.vaspyyy.guildmark.network.ReceptionActionPayload
 import io.github.vaspyyy.guildmark.road.Bandits
@@ -32,6 +36,7 @@ import net.neoforged.fml.ModContainer
 import net.neoforged.fml.common.Mod
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent
 import net.neoforged.neoforge.common.NeoForge
+import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent
 import net.neoforged.neoforge.event.entity.player.PlayerEvent
@@ -59,6 +64,8 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         ModVillagers.POI_TYPES.register(modBus)
         ModVillagers.PROFESSIONS.register(modBus)
         ModAttachments.ATTACHMENTS.register(modBus)
+        ModEntities.ENTITIES.register(modBus)
+        modBus.addListener(EntityAttributeCreationEvent::class.java) { it.put(ModEntities.GUILD_MEMBER.get(), GuildMember.createAttributes().build()) }
 
         modBus.addListener(FMLCommonSetupEvent::class.java, ::onCommonSetup)
         modBus.addListener(RegisterPayloadHandlersEvent::class.java, ::onRegisterPayloads)
@@ -95,6 +102,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         val level = victim.level()
         if (level is ServerLevel && victim is PathfinderMob) Bandits.onDeath(level, victim)
         if (level is ServerLevel) Sieges.onDeath(level, victim)
+        if (level is ServerLevel && victim is GuildMember) Recruiting.onMemberDeath(level, victim)
         if (level is ServerLevel && victim.hasData(ModAttachments.LAIR_BOSS)) Lairs.get(level).onBossDeath(level, victim.getData(ModAttachments.LAIR_BOSS))
         val killer = event.source.entity as? Player ?: return
         if (!killer.level().isClientSide()) Contracts.onKill(killer, event.entity)
@@ -115,6 +123,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
             .playToServer(TakeNotePayload.TYPE, TakeNotePayload.STREAM_CODEC, TakeNotePayload::handle)
             .playToServer(SpendPerkPayload.TYPE, SpendPerkPayload.STREAM_CODEC, SpendPerkPayload::handle)
             .playToServer(ReceptionActionPayload.TYPE, ReceptionActionPayload.STREAM_CODEC, ReceptionActionPayload::handle)
+            .playToServer(FoundGuildPayload.TYPE, FoundGuildPayload.STREAM_CODEC, FoundGuildPayload::handle)
             .playToClient(OpenReceptionPayload.TYPE, OpenReceptionPayload.STREAM_CODEC, OpenReceptionPayload::handle)
     }
 }
