@@ -5,6 +5,7 @@ import io.github.vaspyyy.guildmark.quest.ContractState
 import io.github.vaspyyy.guildmark.quest.Contracts
 import io.github.vaspyyy.guildmark.quest.QuestNote
 import io.github.vaspyyy.guildmark.quest.QuestType
+import io.github.vaspyyy.guildmark.progression.AdventurerRank
 import io.github.vaspyyy.guildmark.village.StandingTier
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.components.Button
@@ -66,6 +67,7 @@ class NoteScreen(
         val lines = mutableListOf(Line(note.title().copy().withStyle { it.withBold(true) }, INK, 6))
         note.storyLine()?.let { lines.add(Line(it.copy().withStyle { s -> s.withItalic(true) }, FADED_INK, 6)) }
         lines.add(Line(note.description(), INK, 8))
+        lines.add(Line(note.rankLine(), AdventurerRank.of(note.rank).color, 2))
         lines.add(Line(note.rewardLine(), INK, 2))
         if (contract == null) {
             val needed = note.type.minStanding

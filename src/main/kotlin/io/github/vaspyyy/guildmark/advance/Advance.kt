@@ -30,6 +30,11 @@ enum class Advance(
         fetchItems = setOf("coal", "torch", "iron_ingot", "iron_nugget", "copper_ingot", "glowstone_dust"),
         countsClear = true,
     ),
+    GUILD_HALL(
+        "guild_hall", 100, { Items.LECTERN },
+        fetchItems = setOf("oak_planks", "spruce_planks", "glass", "glass_pane", "book", "paper", "bookshelf", "lantern", "stone_bricks"),
+        countsLogs = true,
+    ),
     TRADE_ROAD(
         "trade_road", 120, { Items.DIRT_PATH },
         fetchItems = setOf("cobblestone", "stone", "gravel", "flint", "torch"),

@@ -13,7 +13,14 @@ data class GuildProgress(
     val xp: Int = 0,
     val points: Int = 0,
     val perks: Map<String, Int> = mapOf(),
+    /** Adventurer rank index, see [AdventurerRank]. */
+    val adventurerRank: Int = 0,
 ) {
+    val rank: AdventurerRank get() = AdventurerRank.of(adventurerRank)
+
+    /** The next rank, if the guild level for its trial has been reached. */
+    fun trialReady(): AdventurerRank? = rank.next?.takeIf { level >= it.minLevel }
+
     fun rank(perk: Perk): Int = perks[perk.id] ?: 0
     fun xpToNext(): Int = xpToNext(level)
     fun isMaxLevel(): Boolean = level >= MAX_LEVEL
@@ -29,6 +36,7 @@ data class GuildProgress(
                 Codec.INT.optionalFieldOf("xp", 0).forGetter(GuildProgress::xp),
                 Codec.INT.optionalFieldOf("points", 0).forGetter(GuildProgress::points),
                 Codec.unboundedMap(Codec.STRING, Codec.INT).optionalFieldOf("perks", mapOf()).forGetter(GuildProgress::perks),
+                Codec.INT.optionalFieldOf("adventurer_rank", 0).forGetter(GuildProgress::adventurerRank),
             ).apply(i, ::GuildProgress)
         }
 

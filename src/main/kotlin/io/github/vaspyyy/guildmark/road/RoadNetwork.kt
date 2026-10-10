@@ -3,6 +3,7 @@ package io.github.vaspyyy.guildmark.road
 import com.mojang.serialization.Codec
 import com.mojang.serialization.codecs.RecordCodecBuilder
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.guild.GuildNews
 import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
@@ -85,6 +86,7 @@ class RoadNetwork(val roads: MutableList<Road> = mutableListOf()) : SavedData() 
     private fun finish(level: ServerLevel, road: Road) {
         road.underConstruction = false
         setDirty()
+        GuildNews.add(level, "news.guildmark.road", road.from.x.toString(), road.from.z.toString(), road.to.x.toString(), road.to.z.toString())
         val message = Component.translatable("message.guildmark.road_finished", road.to.x, road.to.z)
         for (player in level.players()) {
             if (road.touches(player.blockPosition(), 160.0)) player.sendSystemMessage(message)

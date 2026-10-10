@@ -7,6 +7,9 @@ import io.github.vaspyyy.guildmark.network.SpendPerkPayload
 import io.github.vaspyyy.guildmark.network.TakeNotePayload
 import io.github.vaspyyy.guildmark.progression.Progression
 import io.github.vaspyyy.guildmark.quest.QuestPoolLoader
+import io.github.vaspyyy.guildmark.guild.Reception
+import io.github.vaspyyy.guildmark.network.OpenReceptionPayload
+import io.github.vaspyyy.guildmark.network.ReceptionActionPayload
 import io.github.vaspyyy.guildmark.road.Bandits
 import io.github.vaspyyy.guildmark.road.RoadNetwork
 import io.github.vaspyyy.guildmark.road.Traffic
@@ -30,6 +33,7 @@ import net.neoforged.neoforge.common.NeoForge
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent
 import net.neoforged.neoforge.event.entity.player.PlayerEvent
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent
 import net.neoforged.neoforge.event.tick.LevelTickEvent
 import net.neoforged.neoforge.event.tick.PlayerTickEvent
 import net.neoforged.neoforge.event.AddServerReloadListenersEvent
@@ -59,6 +63,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         NeoForge.EVENT_BUS.addListener(LivingDeathEvent::class.java, ::onLivingDeath)
         NeoForge.EVENT_BUS.addListener(PlayerTickEvent.Post::class.java, ::onPlayerTick)
         NeoForge.EVENT_BUS.addListener(EntityJoinLevelEvent::class.java) { Traffic.onJoin(it.entity) }
+        NeoForge.EVENT_BUS.addListener(PlayerInteractEvent.EntityInteract::class.java, Reception::onInteract)
         NeoForge.EVENT_BUS.addListener(LevelTickEvent.Post::class.java) { event ->
             val level = event.level
             if (level is ServerLevel) {
@@ -100,5 +105,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         event.registrar("1")
             .playToServer(TakeNotePayload.TYPE, TakeNotePayload.STREAM_CODEC, TakeNotePayload::handle)
             .playToServer(SpendPerkPayload.TYPE, SpendPerkPayload.STREAM_CODEC, SpendPerkPayload::handle)
+            .playToServer(ReceptionActionPayload.TYPE, ReceptionActionPayload.STREAM_CODEC, ReceptionActionPayload::handle)
+            .playToClient(OpenReceptionPayload.TYPE, OpenReceptionPayload.STREAM_CODEC, OpenReceptionPayload::handle)
     }
 }

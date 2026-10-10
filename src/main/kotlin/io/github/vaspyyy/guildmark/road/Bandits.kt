@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.road
 
+import io.github.vaspyyy.guildmark.guild.GuildNews
 import io.github.vaspyyy.guildmark.progression.Progression
 import io.github.vaspyyy.guildmark.quest.QuestGenerator
 import io.github.vaspyyy.guildmark.registry.ModAttachments
@@ -68,6 +69,7 @@ object Bandits {
             }
         }
         level.playSound(null, victim.blockPosition(), SoundEvents.VILLAGER_CELEBRATE, SoundSource.NEUTRAL, 1.0f, 1.0f)
+        if (guards.isNotEmpty()) GuildNews.add(level, "news.guildmark.ambush", guards.joinToString(", ") { it.name.string }, victim.name.string)
         return false
     }
 

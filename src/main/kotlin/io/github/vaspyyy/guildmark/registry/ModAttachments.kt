@@ -5,6 +5,7 @@ import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.progression.GuildProgress
 import io.github.vaspyyy.guildmark.road.TrafficState
 import io.github.vaspyyy.guildmark.road.TravelProgress
+import net.minecraft.core.BlockPos
 import net.minecraft.core.UUIDUtil
 import net.neoforged.neoforge.attachment.AttachmentType
 import net.neoforged.neoforge.registries.DeferredHolder
@@ -47,6 +48,16 @@ object ModAttachments {
     /** The bandits currently attacking this traveller or caravan. */
     val AMBUSHERS: DeferredHolder<AttachmentType<*>, AttachmentType<List<UUID>>> = ATTACHMENTS.register("ambushers") { ->
         AttachmentType.builder { -> listOf<UUID>() }.serialize(UUIDUtil.CODEC.listOf().fieldOf("bandits")).build()
+    }
+
+    /** Marks a guild hall receptionist, holding the board anchor of the village they serve. */
+    val RECEPTIONIST: DeferredHolder<AttachmentType<*>, AttachmentType<BlockPos>> = ATTACHMENTS.register("receptionist") { ->
+        AttachmentType.builder { -> BlockPos.ZERO }.serialize(BlockPos.CODEC.fieldOf("board")).build()
+    }
+
+    /** Day index a player last took a guild hall contract (one a day). */
+    val HALL_CONTRACT_DAY: DeferredHolder<AttachmentType<*>, AttachmentType<Long>> = ATTACHMENTS.register("hall_contract_day") { ->
+        AttachmentType.builder { -> -1L }.serialize(Codec.LONG.fieldOf("day")).build()
     }
 
     /** Marks a merchant or traveller walking the roads on its own (see Traffic). */

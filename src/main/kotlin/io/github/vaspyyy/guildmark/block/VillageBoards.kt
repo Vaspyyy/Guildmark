@@ -94,7 +94,7 @@ object VillageBoards {
     }
 
     /** Does this board's village have a road yet? Deliveries and escorts are only posted once it does. */
-    private fun hasRoad(level: Level, boardPos: BlockPos): Boolean {
+    fun hasRoad(level: Level, boardPos: BlockPos): Boolean {
         val serverLevel = level as? ServerLevel ?: return false
         return RoadNetwork.get(serverLevel).roadsFrom(Advances.villageCenter(serverLevel, boardPos)).isNotEmpty()
     }

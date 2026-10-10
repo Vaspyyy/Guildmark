@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.progression
 
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.guild.GuildNews
 import io.github.vaspyyy.guildmark.registry.ModAttachments
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
@@ -39,6 +40,17 @@ object Progression {
             player.sendSystemMessage(Component.translatable("message.guildmark.level_up", level, Component.keybind("key.guildmark.ledger")))
             player.level().playSound(null, player.blockPosition(), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.PLAYERS, 0.6f, 1.0f)
         }
+    }
+
+    /** A passed trial: the adventurer moves up to [rank]. */
+    fun promote(player: Player, rank: Int) {
+        val progress = get(player)
+        if (rank <= progress.adventurerRank) return
+        player.setData(ModAttachments.GUILD_PROGRESS, progress.copy(adventurerRank = rank))
+        val title = AdventurerRank.of(rank).title
+        player.sendSystemMessage(Component.translatable("message.guildmark.promoted", title))
+        player.level().playSound(null, player.blockPosition(), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.PLAYERS, 1.0f, 0.8f)
+        GuildNews.add(player.level(), "news.guildmark.promoted", player.name.string, AdventurerRank.of(rank).letter)
     }
 
     /** Spend one point on [perk]. Returns false if there's no point or the perk is maxed. */

@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.quest
 
+import io.github.vaspyyy.guildmark.progression.AdventurerRank
 import net.minecraft.resources.Identifier
 import net.minecraft.util.RandomSource
 import kotlin.math.roundToInt
@@ -43,7 +44,8 @@ object QuestGenerator {
             .filter { it.professions.isEmpty() || profession in it.professions }
             .flatMap { it.entries }
             .filter { hasRoad || !it.type.needsRoad }
-        return build(random, pick(random, entries, tier), poster, tier)
+        val entry = pick(random, entries, tier)
+        return build(random, entry, poster, rankFor(random, entry, tier))
     }
 
     /** A note with no villager behind it yet, e.g. the first notes on a new board. */
@@ -51,7 +53,8 @@ object QuestGenerator {
         val pool = QuestPools.pools.randomOrNull(random)
         val profession = pool?.professions?.randomOrNull(random)
         val poster = "${NAMES[random.nextInt(NAMES.size)]} the ${title(profession)}"
-        return build(random, pick(random, pool?.entries.orEmpty().filter { hasRoad || !it.type.needsRoad }, tier), poster, tier)
+        val entry = pick(random, pool?.entries.orEmpty().filter { hasRoad || !it.type.needsRoad }, tier)
+        return build(random, entry, poster, rankFor(random, entry, tier))
     }
 
     /** A note of one specific type from any pool, for testing. Null if no pool offers that type. */
@@ -59,7 +62,31 @@ object QuestGenerator {
         val entries = QuestPools.pools.flatMap { it.entries }.filter { it.type == type }
         if (entries.isEmpty()) return null
         val poster = "${NAMES[random.nextInt(NAMES.size)]} the Guildmaster"
-        return build(random, pick(random, entries, MAX_TIER), poster, tier)
+        val entry = pick(random, entries, MAX_TIER)
+        return build(random, entry, poster, rankFor(random, entry, tier))
+    }
+
+    /**
+     * A guild hall contract: any job from any pool, rated at the adventurer's own rank and paying half
+     * again as much as a board note.
+     */
+    fun generateHall(random: RandomSource, rank: Int, hasRoad: Boolean, poster: String): QuestNote {
+        val entries = QuestPools.pools.flatMap { it.entries }.filter { hasRoad || !it.type.needsRoad }
+        val note = build(random, pick(random, entries, MAX_TIER), poster, rank)
+        return note.copy(reward = note.reward * 3 / 2)
+    }
+
+    /** A rank trial: a champion rated at the rank it promotes to. */
+    fun generateTrial(rank: AdventurerRank, poster: String): QuestNote =
+        QuestNote(QuestType.CHAMPION, poster, rank.trialEntity, 1, 5 + rank.ordinal * 5, 3, "", rank.ordinal, trial = true)
+
+    /**
+     * Notes near spawn are mostly F and E rank; further out they spread up to A. Champions rate a rank
+     * higher than other jobs in the same place.
+     */
+    private fun rankFor(random: RandomSource, entry: QuestPool.Entry, tier: Int): Int {
+        val base = (tier - 1) * 2 + random.nextInt(4) - 2 + if (entry.type == QuestType.CHAMPION) 1 else 0
+        return base.coerceIn(0, AdventurerRank.A.ordinal)
     }
 
     private fun pick(random: RandomSource, entries: List<QuestPool.Entry>, tier: Int): QuestPool.Entry {
@@ -73,15 +100,16 @@ object QuestGenerator {
         return open.last()
     }
 
-    private fun build(random: RandomSource, entry: QuestPool.Entry, poster: String, tier: Int): QuestNote {
-        val countScale = 1.0f + 0.25f * (tier - 1)
-        val rewardScale = 1.0f + 0.5f * (tier - 1)
+    /** Bigger jobs and better pay the higher the rank. */
+    private fun build(random: RandomSource, entry: QuestPool.Entry, poster: String, rank: Int): QuestNote {
+        val countScale = 1.0f + 0.15f * rank
+        val rewardScale = 1.0f + 0.35f * rank
         val base = entry.min + random.nextInt(entry.max - entry.min + 1)
         val count = if (entry.type.isSingle) 1 else (base * countScale).roundToInt().coerceAtLeast(1)
         val reward = BASE_REWARD + (count * entry.rewardPer * rewardScale).roundToInt()
         val deadline = 2 + random.nextInt(3)
         val story = entry.stories.randomOrNull(random).orEmpty()
-        return QuestNote(entry.type, poster, entry.target, count, reward, deadline, story)
+        return QuestNote(entry.type, poster, entry.target, count, reward, deadline, story, rank)
     }
 
     private fun <T> List<T>.randomOrNull(random: RandomSource): T? = if (isEmpty()) null else this[random.nextInt(size)]

@@ -7,6 +7,10 @@ import io.github.vaspyyy.guildmark.block.QuestBoardBlockEntity
 import com.mojang.brigadier.arguments.StringArgumentType
 import io.github.vaspyyy.guildmark.quest.QuestGenerator
 import io.github.vaspyyy.guildmark.quest.QuestType
+import io.github.vaspyyy.guildmark.progression.AdventurerRank
+import io.github.vaspyyy.guildmark.progression.GuildProgress
+import io.github.vaspyyy.guildmark.progression.Progression
+import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.road.Traffic
 import io.github.vaspyyy.guildmark.village.Standing
 import net.minecraft.commands.CommandSourceStack
@@ -60,6 +64,35 @@ object AdvanceCommand {
                                     1
                                 }
                             }
+                    )
+                )
+                .then(
+                    Commands.literal("rank").then(
+                        Commands.argument("rank", StringArgumentType.word())
+                            .suggests { _, builder -> SharedSuggestionProvider.suggest(AdventurerRank.entries.map { it.letter }, builder) }
+                            .executes { context ->
+                                val rank = AdventurerRank.entries.firstOrNull { it.letter.equals(StringArgumentType.getString(context, "rank"), true) }
+                                val player = context.source.playerOrException
+                                if (rank == null) {
+                                    context.source.sendFailure(Component.translatable("commands.guildmark.no_rank"))
+                                    0
+                                } else {
+                                    player.setData(ModAttachments.GUILD_PROGRESS, Progression.get(player).copy(adventurerRank = rank.ordinal))
+                                    context.source.sendSuccess({ Component.translatable("commands.guildmark.rank", rank.title) }, false)
+                                    1
+                                }
+                            }
+                    )
+                )
+                .then(
+                    Commands.literal("level").then(
+                        Commands.argument("level", IntegerArgumentType.integer(1, GuildProgress.MAX_LEVEL)).executes { context ->
+                            val player = context.source.playerOrException
+                            val level = IntegerArgumentType.getInteger(context, "level")
+                            player.setData(ModAttachments.GUILD_PROGRESS, Progression.get(player).copy(level = level, xp = 0))
+                            context.source.sendSuccess({ Component.translatable("commands.guildmark.level", level) }, false)
+                            1
+                        }
                     )
                 )
                 .then(

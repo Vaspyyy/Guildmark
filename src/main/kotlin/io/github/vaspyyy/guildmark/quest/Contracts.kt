@@ -2,6 +2,7 @@ package io.github.vaspyyy.guildmark.quest
 
 import io.github.vaspyyy.guildmark.advance.Advances
 import io.github.vaspyyy.guildmark.block.QuestBoardBlock
+import io.github.vaspyyy.guildmark.progression.AdventurerRank
 import io.github.vaspyyy.guildmark.progression.Progression
 import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.registry.ModDataComponents
@@ -35,10 +36,16 @@ object Contracts {
      * (paying more the further it is), escorts spawn their traveller and champions spawn the champion.
      * Returns null, with a message to the player, if there's nowhere to send them or nowhere to spawn.
      */
-    fun take(taken: QuestNote, level: ServerLevel, boardPos: BlockPos, facing: Direction, player: Player): ItemStack? {
+    fun take(taken: QuestNote, level: ServerLevel, boardPos: BlockPos, facing: Direction, player: Player, fromHall: Boolean = false): ItemStack? {
         var note = taken
+        // Anything up to one rank above your own; trials are always yours to attempt
+        val rank = Progression.get(player).adventurerRank
+        if (!note.trial && note.rank > rank + 1) {
+            player.sendOverlayMessage(Component.translatable("message.guildmark.rank_needed", AdventurerRank.of(note.rank - 1).letter))
+            return null
+        }
         val needed = note.type.minStanding
-        if (Standing.tier(level, boardPos, player) < needed) {
+        if (!fromHall && Standing.tier(level, boardPos, player) < needed) {
             player.sendOverlayMessage(Component.translatable("message.guildmark.standing_needed", needed.title))
             return null
         }
@@ -70,7 +77,7 @@ object Contracts {
             }
             QuestType.CHAMPION -> {
                 val name = Expeditions.championName(level)
-                val tier = QuestGenerator.tierAt(boardPos.x, boardPos.z)
+                val tier = AdventurerRank.of(note.rank).championTier
                 val champion = Expeditions.spawnChampion(level, boardPos, note.target, name, tier) ?: run {
                     player.sendOverlayMessage(Component.translatable("message.guildmark.no_champion_spot"))
                     return null
@@ -172,6 +179,7 @@ object Contracts {
         player.sendOverlayMessage(Component.translatable("message.guildmark.complete", marks, xp))
         level.playSound(null, pos, SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 0.8f, 1.2f)
         Progression.addXp(player, xp)
+        if (note.trial) Progression.promote(player, note.rank)
         if (origin != null) Standing.add(serverLevel, origin, player, note.reward)
         // Deliveries and escorts also make a name with the village at the other end of the road
         if (note.type.needsRoad) Standing.add(serverLevel, pos, player, note.reward / 2)

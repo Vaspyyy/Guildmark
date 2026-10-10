@@ -4,6 +4,7 @@ import io.github.vaspyyy.guildmark.block.QuestBoardBlockEntity
 import io.github.vaspyyy.guildmark.quest.QuestNote
 import io.github.vaspyyy.guildmark.quest.Expeditions
 import io.github.vaspyyy.guildmark.road.RoadNetwork
+import io.github.vaspyyy.guildmark.guild.GuildNews
 import net.minecraft.core.BlockPos
 import net.minecraft.core.particles.ParticleTypes
 import net.minecraft.network.chat.Component
@@ -39,13 +40,14 @@ object Advances {
     private fun tryComplete(level: ServerLevel, anchor: BlockPos, board: QuestBoardBlockEntity, advance: Advance) {
         val center = villageCenter(level, anchor)
         if (advance == Advance.TRADE_ROAD) return startTradeRoad(level, anchor, board, center)
-        val failure = AdvanceBuilders.build(advance, level, center, villageRadius(level, center))
+        val failure = AdvanceBuilders.build(advance, level, center, villageRadius(level, center), anchor)
         if (failure != null) {
             announce(level, center, Component.translatable(failure, advance.title))
             return
         }
         board.setAdvanceProgress(board.advanceIndex + 1, 0)
         announce(level, center, Component.translatable("message.guildmark.advance_complete", advance.title))
+        GuildNews.add(level, "news.guildmark.advance", center.x.toString(), center.z.toString(), "#advance.guildmark.${advance.id}")
         celebrate(level, center)
     }
 

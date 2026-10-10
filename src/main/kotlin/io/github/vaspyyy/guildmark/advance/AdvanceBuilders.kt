@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.advance
 
+import io.github.vaspyyy.guildmark.guild.GuildHall
 import io.github.vaspyyy.guildmark.registry.ModBlocks
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
@@ -18,9 +19,10 @@ import kotlin.math.sin
 /** Builds each [Advance] into the village. */
 object AdvanceBuilders {
     /** Returns null once building has started, or the translation key explaining why it couldn't. */
-    fun build(advance: Advance, level: ServerLevel, center: BlockPos, radius: Int): String? {
+    fun build(advance: Advance, level: ServerLevel, center: BlockPos, radius: Int, anchor: BlockPos): String? {
         val built = when (advance) {
             Advance.LAMP_POSTS -> lampPosts(level, center, radius)
+            Advance.GUILD_HALL -> GuildHall.build(level, center, radius, anchor)
             Advance.TRADE_ROAD -> error("Trade Roads are surveyed by Advances.startTradeRoad")
             Advance.PALISADE -> palisade(level, center, radius)
             Advance.ARCHER_TOWER -> archerTower(level, center)

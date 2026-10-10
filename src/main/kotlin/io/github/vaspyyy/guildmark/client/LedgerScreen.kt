@@ -101,6 +101,9 @@ class LedgerScreen : Screen(Component.translatable("gui.guildmark.ledger")) {
         val right = panelX + panelWidth - PADDING
 
         graphics.centeredText(font, title.copy().withStyle(ChatFormatting.BOLD).withColor(INK), width / 2, panelY + 10, INK)
+        // Adventurer rank, top right of the header
+        val rankText = progress.rank.title.copy().withStyle(ChatFormatting.BOLD)
+        graphics.text(font, rankText, right - font.width(rankText), panelY + 10, progress.rank.color, false)
 
         val rowY = panelY + 24
         graphics.text(font, Component.translatable("gui.guildmark.ledger.level", progress.level), left, rowY, INK, false)

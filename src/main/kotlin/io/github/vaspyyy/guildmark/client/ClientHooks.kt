@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.client
 
+import io.github.vaspyyy.guildmark.network.OpenReceptionPayload
 import io.github.vaspyyy.guildmark.quest.ContractState
 import io.github.vaspyyy.guildmark.quest.QuestNote
 import net.minecraft.client.Minecraft
@@ -15,6 +16,11 @@ object ClientHooks {
     /** A taken contract, with its progress if it has any. */
     fun openContract(note: QuestNote, state: ContractState?) {
         Minecraft.getInstance().gui.setScreen(NoteScreen(note, null, state))
+    }
+
+    /** The guild hall desk. */
+    fun openReception(payload: OpenReceptionPayload) {
+        Minecraft.getInstance().gui.setScreen(ReceptionScreen(payload))
     }
 
     /** The village advances of the board whose anchor cell is [anchor]. */

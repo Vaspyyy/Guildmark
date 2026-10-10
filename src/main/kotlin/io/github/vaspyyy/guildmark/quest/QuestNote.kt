@@ -2,6 +2,7 @@ package io.github.vaspyyy.guildmark.quest
 
 import com.mojang.serialization.Codec
 import com.mojang.serialization.codecs.RecordCodecBuilder
+import io.github.vaspyyy.guildmark.progression.AdventurerRank
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
@@ -18,7 +19,14 @@ data class QuestNote(
     val deadlineDays: Int,
     /** Translation key of the poster's flavor line; empty for none. */
     val story: String = "",
+    /** Adventurer rank index the job is rated at (see AdventurerRank). */
+    val rank: Int = 0,
+    /** A rank trial: beating it promotes the adventurer to [rank]. */
+    val trial: Boolean = false,
 ) {
+    val rankLetter: String get() = AdventurerRank.of(rank).letter
+    fun rankLine(): Component = Component.translatable(if (trial) "quest.guildmark.trial_rank" else "quest.guildmark.rank", rankLetter)
+
     fun title(): Component = when (type) {
         QuestType.FETCH -> Component.translatable("quest.guildmark.fetch.title", count, targetName())
         QuestType.HUNT -> Component.translatable("quest.guildmark.hunt.title", count, targetName())
@@ -61,8 +69,10 @@ data class QuestNote(
                 Codec.INT.fieldOf("reward").forGetter(QuestNote::reward),
                 Codec.INT.fieldOf("deadline_days").forGetter(QuestNote::deadlineDays),
                 Codec.STRING.optionalFieldOf("story", "").forGetter(QuestNote::story),
-            ).apply(i) { type, poster, target, count, reward, deadline, story ->
-                QuestNote(type, poster, target, count, reward, deadline, story)
+                Codec.INT.optionalFieldOf("rank", 0).forGetter(QuestNote::rank),
+                Codec.BOOL.optionalFieldOf("trial", false).forGetter(QuestNote::trial),
+            ).apply(i) { type, poster, target, count, reward, deadline, story, rank, trial ->
+                QuestNote(type, poster, target, count, reward, deadline, story, rank, trial)
             }
         }
     }
