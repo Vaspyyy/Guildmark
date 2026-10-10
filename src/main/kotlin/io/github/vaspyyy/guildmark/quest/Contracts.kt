@@ -187,7 +187,7 @@ object Contracts {
     private fun isFetchItem(note: QuestNote, stack: ItemStack): Boolean =
         stack.`is`(BuiltInRegistries.ITEM.getValue(note.target))
 
-    private fun countFetchItems(player: Player, note: QuestNote): Int =
+    fun countFetchItems(player: Player, note: QuestNote): Int =
         ContainerHelper.clearOrCountMatchingItems(player.inventory, { isFetchItem(note, it) }, Int.MAX_VALUE, true)
 
     private fun takeFetchItems(player: Player, note: QuestNote): Boolean {

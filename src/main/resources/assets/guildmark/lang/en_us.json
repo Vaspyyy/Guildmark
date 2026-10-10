@@ -157,5 +157,13 @@
   "message.guildmark.standing_down": "Word of the failed contract spreads. This village now counts you as %s.",
   "message.guildmark.standing_needed": "The village only trusts this job to someone it knows. Needs %s standing here.",
   "quest.guildmark.needs_standing": "Needs %s standing",
-  "commands.guildmark.standing": "Your standing here is now %s"
+  "commands.guildmark.standing": "Your standing here is now %s",
+  "key.guildmark.tracker": "Show/Hide Contract Tracker",
+  "gui.guildmark.tracker.more": "+%s more contracts",
+  "gui.guildmark.tracker.expired": "Expired",
+  "gui.guildmark.tracker.return": "Done! Return to the board",
+  "gui.guildmark.tracker.count": "%s/%s",
+  "gui.guildmark.tracker.travel": "On the road",
+  "gui.guildmark.tracker.days": "%s days left",
+  "gui.guildmark.tracker.status": "%s · %s"
 }
