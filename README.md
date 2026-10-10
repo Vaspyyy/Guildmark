@@ -28,7 +28,7 @@ Jobs come from `data/<namespace>/quest_pool/<name>.json`, so datapacks and other
 ```
 
 - `professions`: who can post these. Leave it out to let every villager post them.
-- `type`: `fetch` (item), `hunt` (mob), `clear` (any hostile mobs near the board), `deliver` or `escort` (to another village; no target) or `champion` (one named mob of `target`). Single jobs use `min`/`max` 1; deliveries and escorts also pay 1 Guild Mark per 100 blocks.
+- `type`: `fetch` (item), `hunt` (mob), `clear` (any hostile mobs near the board), `deliver` or `escort` (to another village; no target), `champion` (one named mob of `target`) or `lair` (a monster den built out in the wild, themed by the note's rank; no target). Single jobs use `min`/`max` 1; deliveries and escorts also pay 1 Guild Mark per 100 blocks.
 - `reward_per`: Guild Marks per item or kill, on top of a base of 2.
 - `weight` (default 10): how often it's picked compared to other entries.
 - `min_tier` (default 1): tier 1 near spawn, 2 from 1500 blocks, 3 from 3000. Each tier raises counts by 25% and pay by 50%.

@@ -467,6 +467,45 @@
         "model": "guildmark:block/quest_note_champion",
         "y": 270
       }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "note": "lair"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_lair"
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "note": "lair"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_lair",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "note": "lair"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_lair",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "note": "lair"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_lair",
+        "y": 270
+      }
     }
   ]
 }

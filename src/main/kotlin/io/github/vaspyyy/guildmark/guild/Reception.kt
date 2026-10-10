@@ -45,7 +45,8 @@ object Reception {
         }
         val today = VillageBoards.day(level)
         val ready = player.getData(ModAttachments.HALL_CONTRACT_DAY) != today
-        PacketDistributor.sendToPlayer(player, OpenReceptionPayload(villager.id, GuildNews.get(level).items.toList(), ready, today))
+        val lairReady = player.getData(ModAttachments.LAIR_HUNT_DAY) != today
+        PacketDistributor.sendToPlayer(player, OpenReceptionPayload(villager.id, GuildNews.get(level).items.toList(), ready, lairReady, today))
     }
 
     fun handleAction(player: Player, entityId: Int, action: Int) {
@@ -78,6 +79,17 @@ object Reception {
                 val note = QuestGenerator.generateHall(level.random, Progression.get(player).adventurerRank, VillageBoards.hasRoad(level, anchor), poster)
                 val stack = Contracts.take(note, level, anchor, Direction.NORTH, player, fromHall = true) ?: return
                 player.setData(ModAttachments.HALL_CONTRACT_DAY, today)
+                stack
+            }
+            ReceptionActionPayload.LAIR_HUNT -> {
+                val today = VillageBoards.day(level)
+                if (player.getData(ModAttachments.LAIR_HUNT_DAY) == today) {
+                    player.sendOverlayMessage(Component.translatable("message.guildmark.lair_hunt_taken"))
+                    return
+                }
+                val note = QuestGenerator.generateLair(level.random, Progression.get(player).adventurerRank, poster)
+                val stack = Contracts.take(note, level, anchor, Direction.NORTH, player, fromHall = true) ?: return
+                player.setData(ModAttachments.LAIR_HUNT_DAY, today)
                 stack
             }
             else -> return

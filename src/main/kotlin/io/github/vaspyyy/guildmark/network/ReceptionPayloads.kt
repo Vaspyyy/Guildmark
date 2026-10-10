@@ -12,7 +12,13 @@ import net.minecraft.resources.Identifier
 import net.neoforged.neoforge.network.handling.IPayloadContext
 
 /** Server tells the client to open the guild hall desk of the receptionist [entityId]. */
-data class OpenReceptionPayload(val entityId: Int, val news: List<NewsItem>, val hallContractReady: Boolean, val today: Long) : CustomPacketPayload {
+data class OpenReceptionPayload(
+    val entityId: Int,
+    val news: List<NewsItem>,
+    val hallContractReady: Boolean,
+    val lairHuntReady: Boolean,
+    val today: Long,
+) : CustomPacketPayload {
     override fun type(): CustomPacketPayload.Type<OpenReceptionPayload> = TYPE
 
     companion object {
@@ -23,6 +29,7 @@ data class OpenReceptionPayload(val entityId: Int, val news: List<NewsItem>, val
             ByteBufCodecs.VAR_INT, OpenReceptionPayload::entityId,
             NewsItem.STREAM_CODEC.apply(ByteBufCodecs.list(16)), OpenReceptionPayload::news,
             ByteBufCodecs.BOOL, OpenReceptionPayload::hallContractReady,
+            ByteBufCodecs.BOOL, OpenReceptionPayload::lairHuntReady,
             ByteBufCodecs.VAR_LONG, OpenReceptionPayload::today,
             ::OpenReceptionPayload,
         )
@@ -33,13 +40,14 @@ data class OpenReceptionPayload(val entityId: Int, val news: List<NewsItem>, val
     }
 }
 
-/** Client asks the receptionist [entityId] for something: a rank trial or today's hall contract. */
+/** Client asks the receptionist [entityId] for something: a rank trial, today's hall contract or a lair hunt. */
 data class ReceptionActionPayload(val entityId: Int, val action: Int) : CustomPacketPayload {
     override fun type(): CustomPacketPayload.Type<ReceptionActionPayload> = TYPE
 
     companion object {
         const val TRIAL = 0
         const val HALL_CONTRACT = 1
+        const val LAIR_HUNT = 2
 
         val TYPE: CustomPacketPayload.Type<ReceptionActionPayload> =
             CustomPacketPayload.Type(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "reception_action"))

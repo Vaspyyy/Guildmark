@@ -23,7 +23,7 @@ class QuestPoolLoader : SimpleJsonResourceReloadListener<QuestPool>(QuestPool.CO
     private fun targetExists(entry: QuestPool.Entry): Boolean = when (entry.type) {
         QuestType.FETCH -> BuiltInRegistries.ITEM.containsKey(entry.target)
         QuestType.HUNT, QuestType.CHAMPION -> BuiltInRegistries.ENTITY_TYPE.containsKey(entry.target)
-        QuestType.CLEAR, QuestType.DELIVER, QuestType.ESCORT -> true
+        QuestType.CLEAR, QuestType.DELIVER, QuestType.ESCORT, QuestType.LAIR -> true
     }
 
     private companion object {

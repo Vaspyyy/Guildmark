@@ -25,6 +25,7 @@ class ReceptionScreen(private val data: OpenReceptionPayload) : Screen(Component
         const val PANEL_WIDTH = 260
         const val PADDING = 12
         const val NEWS_SHOWN = 5
+        const val BUTTON_WIDTH = 76
         val INK = 0xFF2B1D0E.toInt()
         val SOFT_INK = 0xFF4A3622.toInt()
         val FADED_INK = 0xFF6B5236.toInt()
@@ -78,7 +79,7 @@ class ReceptionScreen(private val data: OpenReceptionPayload) : Screen(Component
         val trialButton = Button.builder(trialLabel) {
             ClientPacketDistributor.sendToServer(ReceptionActionPayload(data.entityId, ReceptionActionPayload.TRIAL))
             onClose()
-        }.bounds(panelX + PADDING, buttonsY, 114, 20).build()
+        }.bounds(panelX + PADDING, buttonsY, BUTTON_WIDTH, 20).build()
         trialButton.active = ready != null && !carriesTrial()
         trialButton.setTooltip(Tooltip.create(when {
             next == null -> Component.translatable("gui.guildmark.hall.trial_tip_max")
@@ -91,12 +92,22 @@ class ReceptionScreen(private val data: OpenReceptionPayload) : Screen(Component
         val hallButton = Button.builder(Component.translatable("gui.guildmark.hall.contract")) {
             ClientPacketDistributor.sendToServer(ReceptionActionPayload(data.entityId, ReceptionActionPayload.HALL_CONTRACT))
             onClose()
-        }.bounds(panelX + PANEL_WIDTH - PADDING - 114, buttonsY, 114, 20).build()
+        }.bounds(width / 2 - BUTTON_WIDTH / 2, buttonsY, BUTTON_WIDTH, 20).build()
         hallButton.active = data.hallContractReady
         hallButton.setTooltip(Tooltip.create(Component.translatable(
             if (data.hallContractReady) "gui.guildmark.hall.contract_tip" else "gui.guildmark.hall.contract_tip_taken", progress.rank.letter
         )))
         addRenderableWidget(hallButton)
+
+        val lairButton = Button.builder(Component.translatable("gui.guildmark.hall.lair")) {
+            ClientPacketDistributor.sendToServer(ReceptionActionPayload(data.entityId, ReceptionActionPayload.LAIR_HUNT))
+            onClose()
+        }.bounds(panelX + PANEL_WIDTH - PADDING - BUTTON_WIDTH, buttonsY, BUTTON_WIDTH, 20).build()
+        lairButton.active = data.lairHuntReady
+        lairButton.setTooltip(Tooltip.create(Component.translatable(
+            if (data.lairHuntReady) "gui.guildmark.hall.lair_tip" else "gui.guildmark.hall.lair_tip_taken", progress.rank.letter
+        )))
+        addRenderableWidget(lairButton)
 
         addRenderableWidget(
             Button.builder(CommonComponents.GUI_DONE) { onClose() }

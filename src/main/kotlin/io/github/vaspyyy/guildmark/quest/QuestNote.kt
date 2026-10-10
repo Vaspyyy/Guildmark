@@ -2,6 +2,7 @@ package io.github.vaspyyy.guildmark.quest
 
 import com.mojang.serialization.Codec
 import com.mojang.serialization.codecs.RecordCodecBuilder
+import io.github.vaspyyy.guildmark.lair.LairTheme
 import io.github.vaspyyy.guildmark.progression.AdventurerRank
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.network.chat.Component
@@ -34,6 +35,7 @@ data class QuestNote(
         QuestType.DELIVER -> Component.translatable("quest.guildmark.deliver.title")
         QuestType.ESCORT -> Component.translatable("quest.guildmark.escort.title")
         QuestType.CHAMPION -> Component.translatable("quest.guildmark.champion.title", targetName())
+        QuestType.LAIR -> Component.translatable("quest.guildmark.lair.title", LairTheme.forRank(rank).title)
     }
 
     fun description(): Component = when (type) {
@@ -43,6 +45,7 @@ data class QuestNote(
         QuestType.DELIVER -> Component.translatable("quest.guildmark.deliver.desc")
         QuestType.ESCORT -> Component.translatable("quest.guildmark.escort.desc")
         QuestType.CHAMPION -> Component.translatable("quest.guildmark.champion.desc", targetName())
+        QuestType.LAIR -> Component.translatable("quest.guildmark.lair.desc", LairTheme.forRank(rank).title, LairTheme.forRank(rank).bossTitle)
     }
 
     fun storyLine(): Component? = if (story.isEmpty()) null else Component.translatable(story)
@@ -54,7 +57,7 @@ data class QuestNote(
     private fun targetName(): Component = when (type) {
         QuestType.FETCH -> ItemStack(BuiltInRegistries.ITEM.getValue(target)).hoverName
         QuestType.HUNT, QuestType.CHAMPION -> BuiltInRegistries.ENTITY_TYPE.getValue(target).description
-        QuestType.CLEAR, QuestType.DELIVER, QuestType.ESCORT -> Component.empty()
+        QuestType.CLEAR, QuestType.DELIVER, QuestType.ESCORT, QuestType.LAIR -> Component.empty()
     }
 
     companion object {

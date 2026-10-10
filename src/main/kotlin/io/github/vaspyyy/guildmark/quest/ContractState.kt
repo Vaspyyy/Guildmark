@@ -24,6 +24,8 @@ data class ContractState(
     val label: String = "",
     /** Delivery and escort: the road to the destination (see RoadNetwork), or -1 if there isn't one. */
     val road: Int = -1,
+    /** Lair hunt: the lair to clear (see Lairs), or -1. */
+    val lair: Int = -1,
 ) {
     fun isExpired(gameTime: Long): Boolean = gameTime > deadline
 
@@ -43,8 +45,9 @@ data class ContractState(
                 UUIDUtil.CODEC.optionalFieldOf("bound").forGetter { Optional.ofNullable(it.bound) },
                 Codec.STRING.optionalFieldOf("label", "").forGetter(ContractState::label),
                 Codec.INT.optionalFieldOf("road", -1).forGetter(ContractState::road),
-            ).apply(i) { progress, deadline, boardPos, dimension, destination, bound, label, road ->
-                ContractState(progress, deadline, boardPos, dimension, destination.orElse(null), bound.orElse(null), label, road)
+                Codec.INT.optionalFieldOf("lair", -1).forGetter(ContractState::lair),
+            ).apply(i) { progress, deadline, boardPos, dimension, destination, bound, label, road, lair ->
+                ContractState(progress, deadline, boardPos, dimension, destination.orElse(null), bound.orElse(null), label, road, lair)
             }
         }
     }

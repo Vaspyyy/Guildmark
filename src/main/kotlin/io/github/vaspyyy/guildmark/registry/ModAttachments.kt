@@ -60,6 +60,16 @@ object ModAttachments {
         AttachmentType.builder { -> -1L }.serialize(Codec.LONG.fieldOf("day")).build()
     }
 
+    /** Day index a player last took a lair hunt from a guild hall (one a day). */
+    val LAIR_HUNT_DAY: DeferredHolder<AttachmentType<*>, AttachmentType<Long>> = ATTACHMENTS.register("lair_hunt_day") { ->
+        AttachmentType.builder { -> -1L }.serialize(Codec.LONG.fieldOf("day")).build()
+    }
+
+    /** Marks a lair boss with the id of its lair. */
+    val LAIR_BOSS: DeferredHolder<AttachmentType<*>, AttachmentType<Int>> = ATTACHMENTS.register("lair_boss") { ->
+        AttachmentType.builder { -> -1 }.serialize(Codec.INT.fieldOf("lair")).build()
+    }
+
     /** Marks a merchant or traveller walking the roads on its own (see Traffic). */
     val TRAFFIC: DeferredHolder<AttachmentType<*>, AttachmentType<TrafficState>> = ATTACHMENTS.register("traffic") { ->
         AttachmentType.builder { -> TrafficState() }.serialize(TrafficState.CODEC.fieldOf("traffic")).build()

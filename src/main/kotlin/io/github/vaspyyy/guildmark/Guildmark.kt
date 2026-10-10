@@ -8,6 +8,7 @@ import io.github.vaspyyy.guildmark.network.TakeNotePayload
 import io.github.vaspyyy.guildmark.progression.Progression
 import io.github.vaspyyy.guildmark.quest.QuestPoolLoader
 import io.github.vaspyyy.guildmark.guild.Reception
+import io.github.vaspyyy.guildmark.lair.Lairs
 import io.github.vaspyyy.guildmark.network.OpenReceptionPayload
 import io.github.vaspyyy.guildmark.network.ReceptionActionPayload
 import io.github.vaspyyy.guildmark.road.Bandits
@@ -69,6 +70,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
             if (level is ServerLevel) {
                 RoadNetwork.get(level).tick(level)
                 if (level.gameTime % 10L == 0L) Traffic.tick(level)
+                if (level.gameTime % 20L == 0L) Lairs.get(level).tick(level)
             }
         }
         // Stat perks are transient attribute modifiers, so put them back whenever the player entity is new
@@ -88,6 +90,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         val victim = event.entity
         val level = victim.level()
         if (level is ServerLevel && victim is PathfinderMob) Bandits.onDeath(level, victim)
+        if (level is ServerLevel && victim.hasData(ModAttachments.LAIR_BOSS)) Lairs.get(level).onBossDeath(level, victim.getData(ModAttachments.LAIR_BOSS))
         val killer = event.source.entity as? Player ?: return
         if (!killer.level().isClientSide()) Contracts.onKill(killer, event.entity)
     }

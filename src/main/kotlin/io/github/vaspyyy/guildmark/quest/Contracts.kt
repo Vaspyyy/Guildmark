@@ -2,6 +2,7 @@ package io.github.vaspyyy.guildmark.quest
 
 import io.github.vaspyyy.guildmark.advance.Advances
 import io.github.vaspyyy.guildmark.block.QuestBoardBlock
+import io.github.vaspyyy.guildmark.lair.Lairs
 import io.github.vaspyyy.guildmark.progression.AdventurerRank
 import io.github.vaspyyy.guildmark.progression.Progression
 import io.github.vaspyyy.guildmark.registry.ModAttachments
@@ -74,6 +75,13 @@ object Contracts {
                     }
                     state = state.copy(bound = traveller.uuid, label = name)
                 }
+            }
+            QuestType.LAIR -> {
+                val lair = Lairs.get(level).create(level, boardPos, note.rank) ?: run {
+                    player.sendOverlayMessage(Component.translatable("message.guildmark.no_lair_spot"))
+                    return null
+                }
+                state = state.copy(destination = lair.pos, lair = lair.id)
             }
             QuestType.CHAMPION -> {
                 val name = Expeditions.championName(level)
@@ -160,7 +168,7 @@ object Contracts {
 
         val done = when (note.type) {
             QuestType.FETCH -> takeFetchItems(player, note)
-            QuestType.HUNT, QuestType.CLEAR, QuestType.CHAMPION -> state.progress >= note.count
+            QuestType.HUNT, QuestType.CLEAR, QuestType.CHAMPION, QuestType.LAIR -> state.progress >= note.count
             QuestType.DELIVER, QuestType.ESCORT -> true
         }
         if (!done) {
@@ -195,7 +203,24 @@ object Contracts {
             victim.level().dimension() == state.dimension &&
             victim.blockPosition().closerThan(state.boardPos, QuestNote.CLEAR_RADIUS.toDouble())
         QuestType.CHAMPION -> victim.uuid == state.bound
-        QuestType.FETCH, QuestType.DELIVER, QuestType.ESCORT -> false
+        // Lair bosses are credited to everyone nearby by onLairCleared instead
+        QuestType.FETCH, QuestType.DELIVER, QuestType.ESCORT, QuestType.LAIR -> false
+    }
+
+    /** A lair fell: every hunter nearby holding its contract gets the job marked done. */
+    fun onLairCleared(players: List<Player>, lairId: Int) {
+        for (player in players) {
+            val inventory = player.inventory
+            for (slot in 0 until inventory.containerSize) {
+                val stack = inventory.getItem(slot)
+                val note = stack.get(ModDataComponents.QUEST_NOTE.get()) ?: continue
+                val state = stack.get(ModDataComponents.CONTRACT_STATE.get()) ?: continue
+                if (note.type != QuestType.LAIR || state.lair != lairId || state.progress >= note.count) continue
+                val updated = state.copy(progress = note.count)
+                stack.set(ModDataComponents.CONTRACT_STATE.get(), updated)
+                refreshLore(stack, note, updated)
+            }
+        }
     }
 
     private fun isFetchItem(note: QuestNote, stack: ItemStack): Boolean =
@@ -231,6 +256,9 @@ object Contracts {
             }
             QuestType.CHAMPION -> if (destination != null) {
                 lines.add(Component.translatable("quest.guildmark.champion_seen", state.label, destination.x, destination.z))
+            }
+            QuestType.LAIR -> if (destination != null) {
+                lines.add(Component.translatable("quest.guildmark.lair_at", destination.x, destination.z))
             }
             else -> {}
         }

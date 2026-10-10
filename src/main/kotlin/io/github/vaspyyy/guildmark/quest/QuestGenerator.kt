@@ -76,6 +76,10 @@ object QuestGenerator {
         return note.copy(reward = note.reward * 3 / 2)
     }
 
+    /** A lair hunt at the adventurer's own rank: one boss, paid well. */
+    fun generateLair(random: RandomSource, rank: Int, poster: String): QuestNote =
+        QuestNote(QuestType.LAIR, poster, Identifier.withDefaultNamespace("zombie"), 1, 12 + rank * 8 + random.nextInt(5), 4, "", rank)
+
     /** A rank trial: a champion rated at the rank it promotes to. */
     fun generateTrial(rank: AdventurerRank, poster: String): QuestNote =
         QuestNote(QuestType.CHAMPION, poster, rank.trialEntity, 1, 5 + rank.ordinal * 5, 3, "", rank.ordinal, trial = true)
