@@ -1,5 +1,8 @@
 package io.github.vaspyyy.guildmark
 
+import io.github.vaspyyy.guildmark.network.ClaimVillagePayload
+import io.github.vaspyyy.guildmark.network.OpenAdvancesPayload
+import io.github.vaspyyy.guildmark.guild.TownControl
 import io.github.vaspyyy.guildmark.progression.Milestones
 import com.mojang.logging.LogUtils
 import io.github.vaspyyy.guildmark.advance.AdvanceCommand
@@ -101,6 +104,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
                     Sieges.tick(level)
                     if (level.dimension() == Level.OVERWORLD) HollowThrone.get(level).tick(level)
                 }
+                if (level.dimension() == Level.OVERWORLD) TownControl.tick(level)
             }
         }
         // Stat perks are transient attribute modifiers, so put them back whenever the player entity is new
@@ -135,6 +139,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         val level = player.level()
         if (level !is ServerLevel) return
         if (player.tickCount % 200 == 0) VillageBoards.checkNearbyVillages(level, player.blockPosition())
+        if (player.tickCount % 200 == 50) TownControl.visit(level, player)
         if (player.tickCount % 200 == 100) Characters.tick(level, player)
         if (player.tickCount % 10 == 0) Contracts.tickEscorts(level, player)
         Milestones.tick(player)
@@ -151,5 +156,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
             .playToServer(AcceptChapterPayload.TYPE, AcceptChapterPayload.STREAM_CODEC, AcceptChapterPayload::handle)
             .playToClient(OpenCharacterPayload.TYPE, OpenCharacterPayload.STREAM_CODEC, OpenCharacterPayload::handle)
             .playToClient(OpenReceptionPayload.TYPE, OpenReceptionPayload.STREAM_CODEC, OpenReceptionPayload::handle)
+            .playToClient(OpenAdvancesPayload.TYPE, OpenAdvancesPayload.STREAM_CODEC, OpenAdvancesPayload::handle)
+            .playToServer(ClaimVillagePayload.TYPE, ClaimVillagePayload.STREAM_CODEC, ClaimVillagePayload::handle)
     }
 }

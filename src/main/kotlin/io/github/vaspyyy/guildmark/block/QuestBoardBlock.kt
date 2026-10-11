@@ -1,5 +1,7 @@
 package io.github.vaspyyy.guildmark.block
 
+import net.minecraft.server.level.ServerPlayer
+import io.github.vaspyyy.guildmark.guild.TownControl
 import io.github.vaspyyy.guildmark.client.ClientHooks
 import io.github.vaspyyy.guildmark.item.ContractItem
 import io.github.vaspyyy.guildmark.quest.Contracts
@@ -158,8 +160,8 @@ class QuestBoardBlock(properties: BlockBehaviour.Properties) : Block(properties)
     }
 
     override fun useWithoutItem(state: BlockState, level: Level, pos: BlockPos, player: Player, hitResult: BlockHitResult): InteractionResult {
-        if (level.isClientSide() && player.isShiftKeyDown) {
-            ClientHooks.openAdvances(anchorPos(pos, state))
+        if (player.isShiftKeyDown) {
+            if (level is ServerLevel && player is ServerPlayer) TownControl.openAdvances(level, player, anchorPos(pos, state))
         } else if (level.isClientSide()) {
             val note = (level.getBlockEntity(pos) as? QuestBoardBlockEntity)?.note
             if (note != null) {

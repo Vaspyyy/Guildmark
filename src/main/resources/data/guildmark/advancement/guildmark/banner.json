@@ -1,0 +1,23 @@
+{
+  "parent": "guildmark:guildmark/guild_founded",
+  "display": {
+    "icon": {
+      "id": "minecraft:red_banner"
+    },
+    "title": {
+      "translate": "advancements.guildmark.banner.title"
+    },
+    "description": {
+      "translate": "advancements.guildmark.banner.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

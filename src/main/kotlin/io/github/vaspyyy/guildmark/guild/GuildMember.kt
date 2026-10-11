@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.guild
 
+import net.minecraft.core.BlockPos
 import net.minecraft.core.UUIDUtil
 import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerLevel
@@ -38,11 +39,14 @@ class GuildMember(type: EntityType<out Villager>, level: Level) : Villager(type,
     var leader: UUID? = null
     var guild: Int = -1
     var following: Boolean = true
+    /** Where a member holding position stands guard; it wanders back here after a fight. */
+    var post: BlockPos? = null
 
     override fun registerGoals() {
         goalSelector.addGoal(0, FloatGoal(this))
         goalSelector.addGoal(2, MeleeAttackGoal(this, 0.75, true))
         goalSelector.addGoal(3, FollowLeaderGoal(this))
+        goalSelector.addGoal(4, GuardPostGoal(this))
         goalSelector.addGoal(7, LookAtPlayerGoal(this, Player::class.java, 8.0f))
         goalSelector.addGoal(8, RandomLookAroundGoal(this))
         targetSelector.addGoal(1, HurtByTargetGoal(this, Player::class.java, GuildMember::class.java))
@@ -66,6 +70,7 @@ class GuildMember(type: EntityType<out Villager>, level: Level) : Villager(type,
             return InteractionResult.SUCCESS
         }
         following = !following
+        post = if (following) null else blockPosition()
         if (!following) navigation.stop()
         player.sendOverlayMessage(Component.translatable(if (following) "message.guildmark.member_follow" else "message.guildmark.member_hold", name))
         playSound(SoundEvents.VILLAGER_YES, 1.0f, 1.0f)
@@ -77,6 +82,7 @@ class GuildMember(type: EntityType<out Villager>, level: Level) : Villager(type,
         output.storeNullable("guild_leader", UUIDUtil.CODEC, leader)
         output.putInt("guild_id", guild)
         output.putBoolean("following", following)
+        output.storeNullable("post", BlockPos.CODEC, post)
     }
 
     override fun readAdditionalSaveData(input: ValueInput) {
@@ -84,6 +90,7 @@ class GuildMember(type: EntityType<out Villager>, level: Level) : Villager(type,
         leader = input.read("guild_leader", UUIDUtil.CODEC).orElse(null)
         guild = input.getIntOr("guild_id", -1)
         following = input.getBooleanOr("following", true)
+        post = input.read("post", BlockPos.CODEC).orElse(null)
     }
 
     /** Keep up with the leader, and catch up by teleport if left far behind. */
@@ -108,6 +115,32 @@ class GuildMember(type: EntityType<out Villager>, level: Level) : Villager(type,
             } else {
                 member.navigation.moveTo(leader, 0.7)
             }
+        }
+
+        override fun stop() {
+            member.navigation.stop()
+        }
+    }
+
+    /** A member on guard walks back to its post once nothing needs fighting. */
+    private class GuardPostGoal(private val member: GuildMember) : Goal() {
+        init {
+            flags = EnumSet.of(Flag.MOVE)
+        }
+
+        override fun canUse(): Boolean {
+            val post = member.post ?: return false
+            return !member.following && member.target == null && !post.closerToCenterThan(member.position(), 6.0)
+        }
+
+        override fun canContinueToUse(): Boolean {
+            val post = member.post ?: return false
+            return canUse() && !post.closerToCenterThan(member.position(), 2.5)
+        }
+
+        override fun tick() {
+            val post = member.post ?: return
+            if (member.navigation.isDone) member.navigation.moveTo(post.x + 0.5, post.y.toDouble(), post.z + 0.5, 0.7)
         }
 
         override fun stop() {

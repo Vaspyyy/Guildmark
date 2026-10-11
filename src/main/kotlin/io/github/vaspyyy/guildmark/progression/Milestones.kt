@@ -32,6 +32,7 @@ object Milestones {
     const val LEGENDARY = "legendary"
     const val GUILD_FOUNDED = "guild_founded"
     const val RECRUIT = "recruit"
+    const val BANNER = "banner"
     const val CHARACTER = "character"
     const val FIRST_SHARD = "first_shard"
     const val MAREN = "maren"

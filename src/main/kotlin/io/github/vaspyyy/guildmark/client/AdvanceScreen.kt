@@ -3,6 +3,11 @@ package io.github.vaspyyy.guildmark.client
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.advance.Advance
 import io.github.vaspyyy.guildmark.block.QuestBoardBlockEntity
+import io.github.vaspyyy.guildmark.guild.TownControl
+import io.github.vaspyyy.guildmark.network.ClaimVillagePayload
+import io.github.vaspyyy.guildmark.network.OpenAdvancesPayload
+import net.minecraft.client.gui.components.Tooltip
+import net.neoforged.neoforge.client.network.ClientPacketDistributor
 import io.github.vaspyyy.guildmark.village.StandingTier
 import net.minecraft.ChatFormatting
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -16,10 +21,12 @@ import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
 
 /** Shows a village's advances: what's built, what contracts are funding now, and what's next. */
-class AdvanceScreen(private val anchor: BlockPos) : Screen(Component.translatable("gui.guildmark.advances")) {
+class AdvanceScreen(private val info: OpenAdvancesPayload) : Screen(Component.translatable("gui.guildmark.advances.village", info.village)) {
+    private val anchor: BlockPos = info.anchor
+
     private companion object {
         const val PADDING = 12
-        const val HEADER_HEIGHT = 52
+        const val HEADER_HEIGHT = 64
         val INK = 0xFF2B1D0E.toInt()
         val SOFT_INK = 0xFF4A3622.toInt()
         val PANEL: Identifier = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "ledger/panel")
@@ -48,6 +55,7 @@ class AdvanceScreen(private val anchor: BlockPos) : Screen(Component.translatabl
             content.addChild(AdvanceRow(advance, state, points))
         }
         if (index >= Advance.entries.size) content.addChild(AdvanceRow(Advance.TRADE_ROAD, AdvanceRow.State.CURRENT, points))
+        claimButton()?.let { content.addChild(it) { s -> s.alignHorizontallyCenter().paddingTop(4) } }
         content.addChild(Button.builder(CommonComponents.GUI_DONE) { onClose() }.width(100).build()) { it.alignHorizontallyCenter().paddingTop(4) }
         content.arrangeElements()
 
@@ -57,6 +65,19 @@ class AdvanceScreen(private val anchor: BlockPos) : Screen(Component.translatabl
         panelY = (height - panelHeight) / 2
         content.setPosition(panelX + PADDING, panelY + HEADER_HEIGHT)
         content.visitWidgets { addRenderableWidget(it) }
+    }
+
+    /** "Raise your banner" for guild leaders, greyed out with the reason when they can't yet. */
+    private fun claimButton(): Button? {
+        val status = TownControl.ClaimStatus.entries.getOrNull(info.claimStatus) ?: return null
+        if (status == TownControl.ClaimStatus.NO_GUILD || status == TownControl.ClaimStatus.YOURS) return null
+        val button = Button.builder(Component.translatable("gui.guildmark.claim", info.claimFee)) {
+            ClientPacketDistributor.sendToServer(ClaimVillagePayload(anchor))
+            onClose()
+        }.width(200).build()
+        button.active = status == TownControl.ClaimStatus.OK
+        if (!button.active) button.setTooltip(Tooltip.create(Component.translatable("gui.guildmark.claim.${status.key}", info.claimFee, info.holdingCap)))
+        return button
     }
 
     /** Someone turned in a contract while this was open: refresh the bars. */
@@ -77,6 +98,9 @@ class AdvanceScreen(private val anchor: BlockPos) : Screen(Component.translatabl
         graphics.text(font, hint, width / 2 - font.width(hint) / 2, panelY + 24, SOFT_INK, false)
         val standing = standingLine()
         graphics.text(font, standing, width / 2 - font.width(standing) / 2, panelY + 36, INK, false)
+        val holder = if (info.holder.isEmpty()) Component.translatable("gui.guildmark.holder.none", info.village).withColor(SOFT_INK)
+        else Component.translatable("gui.guildmark.holder", Component.literal(info.holder).withColor(darken(info.holderColor)), info.loyalty).withColor(INK)
+        graphics.text(font, holder, width / 2 - font.width(holder) / 2, panelY + 48, INK, false)
     }
 
     /** "Your standing: Trusted (82 / 200)" for whoever is looking. */
@@ -86,6 +110,14 @@ class AdvanceScreen(private val anchor: BlockPos) : Screen(Component.translatabl
         val next = tier.next
         return if (next == null) Component.translatable("gui.guildmark.standing.max", tier.title, points)
         else Component.translatable("gui.guildmark.standing", tier.title, points, next.threshold)
+    }
+
+    /** Dye colours are bright; on parchment they read better a shade darker. */
+    private fun darken(rgb: Int): Int {
+        val r = (rgb shr 16 and 0xFF) * 3 / 4
+        val g = (rgb shr 8 and 0xFF) * 3 / 4
+        val b = (rgb and 0xFF) * 3 / 4
+        return (0xFF shl 24) or (r shl 16) or (g shl 8) or b
     }
 
     override fun isPauseScreen(): Boolean = false

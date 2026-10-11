@@ -4,6 +4,7 @@ import io.github.vaspyyy.guildmark.network.OpenCharacterPayload
 import io.github.vaspyyy.guildmark.network.OpenReceptionPayload
 import io.github.vaspyyy.guildmark.quest.ContractState
 import io.github.vaspyyy.guildmark.quest.QuestNote
+import io.github.vaspyyy.guildmark.network.OpenAdvancesPayload
 import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
 
@@ -34,8 +35,8 @@ object ClientHooks {
         Minecraft.getInstance().gui.setScreen(FoundGuildScreen(entityId))
     }
 
-    /** The village advances of the board whose anchor cell is [anchor]. */
-    fun openAdvances(anchor: BlockPos) {
-        Minecraft.getInstance().gui.setScreen(AdvanceScreen(anchor))
+    /** A village's advances and who holds it, as the server sent them. */
+    fun openAdvances(info: OpenAdvancesPayload) {
+        Minecraft.getInstance().gui.setScreen(AdvanceScreen(info))
     }
 }

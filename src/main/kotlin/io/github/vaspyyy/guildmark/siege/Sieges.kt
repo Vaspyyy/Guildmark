@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.siege
 
+import io.github.vaspyyy.guildmark.guild.TownControl
 import io.github.vaspyyy.guildmark.progression.Milestones
 import io.github.vaspyyy.guildmark.loot.Relics
 import io.github.vaspyyy.guildmark.advance.Advances
@@ -105,6 +106,7 @@ object Sieges {
         level.playSound(null, bell, SoundEvents.RAID_HORN.value(), SoundSource.HOSTILE, 64.0f, 1.0f)
         val message = Component.translatable("message.guildmark.siege_start", bell.x, bell.z, Component.translatable("direction.guildmark.${siege.from.serializedName}"))
         for (player in watchers(level, siege)) player.sendSystemMessage(message)
+        TownControl.onSiegeStart(level, anchor, bell)
         nextWave(level, siege)
         return true
     }
@@ -196,6 +198,7 @@ object Sieges {
         sieges.remove(siege.id)
         siege.bar.removeAllPlayers()
         val defenders = watchers(level, siege)
+        TownControl.onSiegeEnd(level, siege.anchor, won)
         if (won) {
             val marks = 6 + siege.tier * 4 + siege.totalWaves * 2
             for (player in defenders) {
