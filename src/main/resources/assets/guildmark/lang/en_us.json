@@ -583,7 +583,7 @@
   "handbook.guildmark.page7": "DANGER\n\nBandits wait along the Trade Roads.\n\nLair notes lead to monster dens with a boss inside. Villages you build up draw sieges at night. Hold the line, or lose what you built.",
   "handbook.guildmark.page8": "RELICS\n\nBosses, champions and sieges drop Relics, from Common to Legendary, each with its own affixes.\n\nSealed Caches open into one. Read the lines carefully: a Kingslaying blade is worth keeping.",
   "handbook.guildmark.page9": "YOUR OWN GUILD\n\nAt rank E, found a guild at a hall receptionist for 50 Marks.\n\nThen sneak and use a villager in a village that trusts you to swear them in. Members follow you and fight beside you.",
-  "handbook.guildmark.page10": "FAMILIAR FACES\n\nSome folk need an adventurer more than most. Wren the cartographer, Tobin the old soldier and Sister Ilsa may find you once a village knows your name.\n\nHear them out.",
+  "handbook.guildmark.page10": "FAMILIAR FACES\n\nSome folk need an adventurer more than most. Wren the cartographer, Tobin the old soldier, Sister Ilsa and Pip the bard may find you once a village knows your name.\n\nHear them out.",
   "handbook.guildmark.page11": "HOLDING VILLAGES\n\nA guild leader the village honours can raise the guild's banner there, once it has a Guild Hall.\n\nHeld villages pay tribute when you visit and call your members to the bell in a siege.",
   "item.guildmark.handbook": "Adventurer's Handbook",
   "message.guildmark.welcome": "The Guild has your name now. Your Adventurer's Handbook explains the rest.",
@@ -703,7 +703,7 @@
   "advancements.guildmark.party.description": "Form a party with another adventurer",
   "handbook.guildmark.page12": "RIVAL GUILDS\n\nThe Iron Hounds, the Scarlet Ledger, the Gilded Stag and the Ashen Crows want villages too.\n\nWhen one challenges your hold, meet their captain at the bell. Beat a captain to take their village.",
   "handbook.guildmark.page13": "PARTIES\n\nAdventure together: /party invite a friend.\n\nMembers close by share kills for contracts and a cut of each other's pay, and can't hurt each other.",
-  "handbook.guildmark.page14": "And if Wren ever hands you a broken piece of a crown, follow the compass.\n\nSome stories are bigger than a notice board.\n\n- The Guild Clerk",
+  "handbook.guildmark.page14": "ROADS AND REVELS\n\nCoaches run along finished Trade Roads: /coach.\n\nOn festival days, contracts pay more.\n\nMilestones earn titles: /title.",
   "situation.guildmark.rebuild.0": "The siege tore through %s. Half the east wall is splinters. Anything you can bring helps.",
   "situation.guildmark.rebuild.1": "We buried two last night. Now we rebuild %s, board by board.",
   "situation.guildmark.rebuild.2": "The monsters left %s in pieces. The houses won't fix themselves.",
@@ -894,5 +894,7 @@
   "message.guildmark.errand.lost": "%s never came back from the errand (%s). Their name is struck from the rolls.",
   "message.guildmark.errand.no_guild": "Only a guild leader can send members on errands.",
   "message.guildmark.errand.no_members": "None of your guild's members are close by or away. Stand near the ones you want to send.",
-  "message.guildmark.errand.gone": "That member isn't close by any more."
+  "message.guildmark.errand.gone": "That member isn't close by any more.",
+  "handbook.guildmark.page15": "ERRANDS\n\nA guild leader can send sworn members away on errands with /guild. They come back richer and tougher.\n\nMostly.",
+  "handbook.guildmark.page16": "And if Wren ever hands you a broken piece of a crown, follow the compass.\n\nSome stories are bigger than a notice board.\n\n- The Guild Clerk"
 }
