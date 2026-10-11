@@ -9,7 +9,7 @@ import net.minecraft.world.item.component.WrittenBookContent
 
 /** The Adventurer's Handbook: a short written guide to everything Guildmark adds. Also craftable (book + Guild Mark). */
 object Handbook {
-    const val PAGES = 12
+    const val PAGES = 15
 
     fun create(): ItemStack {
         val stack = ItemStack(Items.WRITTEN_BOOK)

@@ -202,6 +202,7 @@ object Sieges {
         siege.bar.removeAllPlayers()
         val defenders = watchers(level, siege)
         TownControl.onSiegeEnd(level, siege.anchor, won)
+        (level.getBlockEntity(siege.anchor) as? QuestBoardBlockEntity)?.recordSiege(won, VillageBoards.day(level))
         if (won) {
             val marks = 6 + siege.tier * 4 + siege.totalWaves * 2
             for (player in defenders) {

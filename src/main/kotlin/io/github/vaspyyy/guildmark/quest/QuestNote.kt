@@ -50,7 +50,12 @@ data class QuestNote(
         QuestType.LAIR -> Component.translatable("quest.guildmark.lair.desc", LairTheme.forRank(rank).title, LairTheme.forRank(rank).bossTitle)
     }
 
-    fun storyLine(): Component? = if (story.isEmpty()) null else Component.translatable(story)
+    /** The flavour line; situational notes carry their arguments after the key, as "key|arg|arg". */
+    fun storyLine(): Component? {
+        if (story.isEmpty()) return null
+        val parts = story.split('|')
+        return Component.translatable(parts[0], *parts.drop(1).toTypedArray())
+    }
 
     fun posterLine(): Component = Component.translatable("quest.guildmark.posted_by", poster)
     fun rewardLine(): Component = Component.translatable("quest.guildmark.reward", reward)

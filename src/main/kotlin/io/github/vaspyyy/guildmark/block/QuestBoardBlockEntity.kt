@@ -32,6 +32,17 @@ class QuestBoardBlockEntity(pos: BlockPos, state: BlockState) :
     var advancePoints: Int = 0
         private set
 
+    /** Anchor cell only: the last day the village lost or won a siege (situational notes follow both). */
+    var lastSiegeLost: Long = -100
+        private set
+    var lastSiegeWon: Long = -100
+        private set
+
+    fun recordSiege(won: Boolean, day: Long) {
+        if (won) lastSiegeWon = day else lastSiegeLost = day
+        setChanged()
+    }
+
     /** Anchor cell only: each player's standing with this village (see [Standing]). Synced so the board can show it. */
     private val standing = HashMap<UUID, Int>()
 
@@ -73,6 +84,8 @@ class QuestBoardBlockEntity(pos: BlockPos, state: BlockState) :
         output.putLong("posted_day", postedDay)
         output.putInt("advance_index", advanceIndex)
         output.putInt("advance_points", advancePoints)
+        output.putLong("siege_lost", lastSiegeLost)
+        output.putLong("siege_won", lastSiegeWon)
         if (standing.isNotEmpty()) output.store("standing", STANDING_CODEC, standing)
     }
 
@@ -82,6 +95,8 @@ class QuestBoardBlockEntity(pos: BlockPos, state: BlockState) :
         postedDay = input.getLongOr("posted_day", 0L)
         advanceIndex = input.getIntOr("advance_index", 0)
         advancePoints = input.getIntOr("advance_points", 0)
+        lastSiegeLost = input.getLongOr("siege_lost", -100L)
+        lastSiegeWon = input.getLongOr("siege_won", -100L)
         standing.clear()
         input.read("standing", STANDING_CODEC).ifPresent { standing.putAll(it) }
     }

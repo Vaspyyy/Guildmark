@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.block
 
+import io.github.vaspyyy.guildmark.quest.Situations
 import io.github.vaspyyy.guildmark.GuildmarkConfig
 import io.github.vaspyyy.guildmark.advance.Advances
 import io.github.vaspyyy.guildmark.quest.QuestGenerator
@@ -86,7 +87,10 @@ object VillageBoards {
     private fun pinNote(level: ServerLevel, villager: Villager, cell: QuestBoardBlockEntity, facing: Direction) {
         val profession = villager.villagerData.profession().unwrapKey().orElse(null)?.identifier()
         val tier = QuestGenerator.tierAt(cell.blockPos.x, cell.blockPos.z)
-        cell.updateNote(QuestGenerator.generate(level.random, profession, posterName(villager, profession), tier, hasRoad(level, cell.blockPos)))
+        val poster = posterName(villager, profession)
+        val anchor = QuestBoardBlock.anchorPos(cell.blockPos, cell.blockState)
+        cell.updateNote(Situations.note(level, villager, anchor, poster, tier)
+            ?: QuestGenerator.generate(level.random, profession, poster, tier, hasRoad(level, cell.blockPos)))
         villager.setData(ModAttachments.LAST_PINNED_DAY, day(level))
         villager.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, Vec3.atCenterOf(cell.blockPos))
         val spot = Vec3.atCenterOf(cell.blockPos.relative(facing))
