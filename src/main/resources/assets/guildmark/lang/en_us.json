@@ -875,5 +875,10 @@
   "character.guildmark.pip.verse.city": "A hamlet once, a city now, with a keep of stone, built note by note by %s.",
   "character.guildmark.pip.verse.takeover": "%s challenged a rival's captain for a town, and won it fair, with the whole town watching.",
   "character.guildmark.pip.verse.seven_shards": "Seven shards of the Hollow Crown, seven courtiers fallen, and %s holding the lot.",
-  "character.guildmark.pip.verse.hollow_king": "The Hollow King sat on a throne of nothing, until %s came and broke the crown. Sing it loud, sing it long: the Wardens live again."
+  "character.guildmark.pip.verse.hollow_king": "The Hollow King sat on a throne of nothing, until %s came and broke the crown. Sing it loud, sing it long: the Wardens live again.",
+  "festival.guildmark.0": "the Harvest Fair",
+  "festival.guildmark.1": "Lantern Night",
+  "festival.guildmark.2": "Founders' Day",
+  "festival.guildmark.3": "the Midsummer Feast",
+  "message.guildmark.festival": "It's %s in %s! Contracts here pay %s%% more today, and there'll be fireworks at dusk."
 }

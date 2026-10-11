@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.quest
 
 import io.github.vaspyyy.guildmark.GuildmarkConfig
+import io.github.vaspyyy.guildmark.village.Festivals
 import io.github.vaspyyy.guildmark.lair.LairTheme
 import io.github.vaspyyy.guildmark.party.Parties
 import io.github.vaspyyy.guildmark.guild.TownControl
@@ -199,7 +200,10 @@ object Contracts {
 
         stack.shrink(1)
         val origin = state.boardPos.takeIf { level.dimension() == state.dimension }
-        val bonus = origin?.let { Standing.bonus(level, it, player, note.reward) + (if (level is ServerLevel) TownControl.bonus(level, it, player, note.reward) else 0) } ?: 0
+        val bonus = origin?.let {
+            Standing.bonus(level, it, player, note.reward) +
+                (if (level is ServerLevel) TownControl.bonus(level, it, player, note.reward) + Festivals.bonus(level, it, note.reward) else 0)
+        } ?: 0
         val marks = (Progression.reward(player, note.reward + bonus) * GuildmarkConfig.PAY_MULTIPLIER.get()).toInt().coerceAtLeast(1)
         val xp = note.reward * Progression.XP_PER_MARK
         player.inventory.placeItemBackInInventory(ItemStack(ModItems.GUILD_MARK.get(), marks), Prediction.SERVER_ONLY)

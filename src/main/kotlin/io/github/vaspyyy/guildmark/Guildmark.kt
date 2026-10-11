@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark
 
 import net.neoforged.fml.config.ModConfig
+import io.github.vaspyyy.guildmark.village.Festivals
 import io.github.vaspyyy.guildmark.progression.Titles
 import io.github.vaspyyy.guildmark.road.Coaches
 import net.minecraft.server.level.ServerPlayer
@@ -172,6 +173,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         if (player.tickCount % 200 == 50) TownControl.visit(level, player)
         if (player.tickCount % 200 == 150) Rivals.tickPlayer(level, player)
         if (player.tickCount % 40 == 20) Rivals.syncChallenges(level, player)
+        if (player.tickCount % 100 == 75 && player is ServerPlayer) Festivals.tick(level, player)
         if (player.tickCount % 200 == 100) Characters.tick(level, player)
         if (player.tickCount % 10 == 0) Contracts.tickEscorts(level, player)
         Milestones.tick(player)

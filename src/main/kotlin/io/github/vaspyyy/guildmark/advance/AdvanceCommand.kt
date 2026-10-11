@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.advance
 
 import io.github.vaspyyy.guildmark.guild.TownControl
+import io.github.vaspyyy.guildmark.village.Festivals
 import io.github.vaspyyy.guildmark.guild.Rivals
 import io.github.vaspyyy.guildmark.guild.RivalGuild
 import io.github.vaspyyy.guildmark.guild.Holdings
@@ -140,6 +141,18 @@ object AdvanceCommand {
                         })
                 )
                 .then(
+                    Commands.literal("festival").executes { context ->
+                        val source = context.source
+                        val anchor = nearestAnchor(source)
+                        if (anchor == null) {
+                            source.sendFailure(Component.translatable("commands.guildmark.no_board_near"))
+                            0
+                        } else {
+                            Festivals.force(anchor, VillageBoards.day(source.level))
+                            1
+                        }
+                    },
+                ).then(
                     Commands.literal("claim").executes { context ->
                         val source = context.source
                         val player = source.playerOrException
