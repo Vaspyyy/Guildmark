@@ -53,6 +53,7 @@ object Progression {
         player.level().playSound(null, player.blockPosition(), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.PLAYERS, 1.0f, 0.8f)
         GuildNews.add(player.level(), "news.guildmark.promoted", player.name.string, AdventurerRank.of(rank).letter)
         MainQuest.onPromoted(player)
+        Milestones.onRank(player, rank)
     }
 
     /** Spend one point on [perk]. Returns false if there's no point or the perk is maxed. */
@@ -63,6 +64,7 @@ object Progression {
         player.setData(ModAttachments.GUILD_PROGRESS, progress.copy(points = progress.points - 1, perks = progress.perks + (perk.id to rank + 1)))
         applyAttributes(player)
         player.level().playSound(null, player.blockPosition(), SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 0.6f, 1.4f)
+        Milestones.award(player, Milestones.LEDGER)
         return true
     }
 

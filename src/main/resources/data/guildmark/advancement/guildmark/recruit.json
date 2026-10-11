@@ -1,0 +1,23 @@
+{
+  "parent": "guildmark:guildmark/guild_founded",
+  "display": {
+    "icon": {
+      "id": "minecraft:emerald"
+    },
+    "title": {
+      "translate": "advancements.guildmark.recruit.title"
+    },
+    "description": {
+      "translate": "advancements.guildmark.recruit.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

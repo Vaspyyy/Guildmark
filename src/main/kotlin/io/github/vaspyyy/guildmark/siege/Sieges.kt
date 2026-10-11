@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.siege
 
+import io.github.vaspyyy.guildmark.progression.Milestones
 import io.github.vaspyyy.guildmark.loot.Relics
 import io.github.vaspyyy.guildmark.advance.Advances
 import io.github.vaspyyy.guildmark.block.QuestBoardBlock
@@ -204,6 +205,7 @@ object Sieges {
                 Progression.addXp(player, marks * Progression.XP_PER_MARK)
                 Standing.add(level, siege.anchor, player, 10)
                 player.sendSystemMessage(Component.translatable("message.guildmark.siege_won", paid))
+                Milestones.award(player, Milestones.SIEGE)
             }
             level.playSound(null, siege.center, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.NEUTRAL, 2.0f, 1.0f)
             GuildNews.add(level, "news.guildmark.siege_won", siege.center.x.toString(), siege.center.z.toString())

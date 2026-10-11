@@ -1,0 +1,23 @@
+{
+  "parent": "guildmark:guildmark/root",
+  "display": {
+    "icon": {
+      "id": "guildmark:contract"
+    },
+    "title": {
+      "translate": "advancements.guildmark.signed_on.title"
+    },
+    "description": {
+      "translate": "advancements.guildmark.signed_on.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

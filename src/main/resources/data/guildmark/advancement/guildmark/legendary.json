@@ -1,0 +1,23 @@
+{
+  "parent": "guildmark:guildmark/relic",
+  "display": {
+    "icon": {
+      "id": "minecraft:netherite_sword"
+    },
+    "title": {
+      "translate": "advancements.guildmark.legendary.title"
+    },
+    "description": {
+      "translate": "advancements.guildmark.legendary.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

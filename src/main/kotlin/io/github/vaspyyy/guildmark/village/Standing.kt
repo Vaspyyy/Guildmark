@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.village
 
+import io.github.vaspyyy.guildmark.progression.Milestones
 import io.github.vaspyyy.guildmark.advance.Advances
 import io.github.vaspyyy.guildmark.block.QuestBoardBlock
 import io.github.vaspyyy.guildmark.block.QuestBoardBlockEntity
@@ -62,6 +63,7 @@ object Standing {
         if (after == before) return
         if (after > before) {
             player.sendSystemMessage(Component.translatable("message.guildmark.standing_up", after.title))
+            if (after == StandingTier.HERO) Milestones.award(player, Milestones.HERO)
             level.playSound(null, player.blockPosition(), SoundEvents.VILLAGER_CELEBRATE, SoundSource.NEUTRAL, 1.0f, 1.0f)
         } else {
             player.sendSystemMessage(Component.translatable("message.guildmark.standing_down", after.title))

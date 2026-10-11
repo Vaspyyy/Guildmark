@@ -1,0 +1,23 @@
+{
+  "parent": "guildmark:guildmark/first_shard",
+  "display": {
+    "icon": {
+      "id": "minecraft:soul_lantern"
+    },
+    "title": {
+      "translate": "advancements.guildmark.maren.title"
+    },
+    "description": {
+      "translate": "advancements.guildmark.maren.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

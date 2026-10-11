@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.advance
 
+import io.github.vaspyyy.guildmark.progression.Milestones
 import io.github.vaspyyy.guildmark.block.QuestBoardBlockEntity
 import io.github.vaspyyy.guildmark.quest.QuestNote
 import io.github.vaspyyy.guildmark.quest.Expeditions
@@ -34,7 +35,12 @@ object Advances {
         val points = (board.advancePoints + amount).coerceAtMost(advance.cost)
         board.setAdvanceProgress(board.advanceIndex, points)
         player.sendSystemMessage(Component.translatable("message.guildmark.advance_progress", amount, advance.title, points, advance.cost))
-        if (points >= advance.cost) tryComplete(level, anchor, board, advance)
+        Milestones.award(player, Milestones.BUILDER)
+        if (points >= advance.cost) {
+            Milestones.award(player, Milestones.ADVANCE_BUILT)
+            if (advance == Advance.TRADE_ROAD) Milestones.award(player, Milestones.TRADE_ROAD)
+            tryComplete(level, anchor, board, advance)
+        }
     }
 
     private fun tryComplete(level: ServerLevel, anchor: BlockPos, board: QuestBoardBlockEntity, advance: Advance) {

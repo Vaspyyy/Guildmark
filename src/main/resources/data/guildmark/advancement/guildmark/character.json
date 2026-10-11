@@ -1,0 +1,23 @@
+{
+  "parent": "guildmark:guildmark/root",
+  "display": {
+    "icon": {
+      "id": "minecraft:book"
+    },
+    "title": {
+      "translate": "advancements.guildmark.character.title"
+    },
+    "description": {
+      "translate": "advancements.guildmark.character.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

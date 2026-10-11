@@ -6,6 +6,7 @@ A NeoForge mod for Minecraft 26.3. Villagers post procedurally generated quests 
 
 Early prototype, played and tested in-game by hand.
 
+- **Getting started.** New players get the Adventurer's Handbook on first join (craft another from a book and a Guild Mark). The Guildmark advancement tab tracks 26 milestones, from your first contract to the Hollow King.
 - **Boards and contracts.** Villages get a 3x2 Quest Board near their bell. During the day villagers pin notes that fit their profession (fetch, hunt, clear, deliver, escort, champion, lair); unclaimed notes come down each new day. Take a note as a Contract, finish it, and turn it in for Guild Marks. Press H for the contract tracker.
 - **Progression.** Contracts give guild XP and perk points for the Guild Ledger (G). Adventurer ranks F to S are earned through rank trials at a guild hall; notes are rated by rank.
 - **Villages.** Each village remembers your standing (Stranger to Hero). Contracts fund village Advances (sneak and use a board): lamp posts, a guild hall with a receptionist, a Trade Road to the nearest village, a palisade and an archer tower. Roads carry caravans and travellers, and bandits ambush them.

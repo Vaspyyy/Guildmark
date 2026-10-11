@@ -1,0 +1,23 @@
+{
+  "parent": "guildmark:guildmark/builder",
+  "display": {
+    "icon": {
+      "id": "minecraft:bell"
+    },
+    "title": {
+      "translate": "advancements.guildmark.hero.title"
+    },
+    "description": {
+      "translate": "advancements.guildmark.hero.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

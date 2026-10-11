@@ -1,0 +1,23 @@
+{
+  "parent": "guildmark:guildmark/root",
+  "display": {
+    "icon": {
+      "id": "minecraft:oak_planks"
+    },
+    "title": {
+      "translate": "advancements.guildmark.builder.title"
+    },
+    "description": {
+      "translate": "advancements.guildmark.builder.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

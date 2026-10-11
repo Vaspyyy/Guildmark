@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.quest
 
+import io.github.vaspyyy.guildmark.progression.Milestones
 import io.github.vaspyyy.guildmark.loot.Relics
 import io.github.vaspyyy.guildmark.advance.Advances
 import io.github.vaspyyy.guildmark.block.QuestBoardBlock
@@ -102,6 +103,7 @@ object Contracts {
         stack.set(ModDataComponents.QUEST_NOTE.get(), note)
         stack.set(ModDataComponents.CONTRACT_STATE.get(), state)
         refreshLore(stack, note, state)
+        Milestones.award(player, Milestones.SIGNED_ON)
         return stack
     }
 
@@ -135,6 +137,7 @@ object Contracts {
             stack.set(ModDataComponents.CONTRACT_STATE.get(), updated)
             refreshLore(stack, note, updated)
             player.sendOverlayMessage(Component.translatable("message.guildmark.progress", note.title(), updated.progress, note.count))
+            if (note.type == QuestType.CHAMPION) Milestones.award(player, Milestones.CHAMPION)
             return
         }
     }
@@ -200,6 +203,9 @@ object Contracts {
         level.playSound(null, pos, SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 0.8f, 1.2f)
         Progression.addXp(player, xp)
         if (note.trial) Progression.promote(player, note.rank)
+        Milestones.award(player, Milestones.PAID)
+        if (note.type == QuestType.DELIVER) Milestones.award(player, Milestones.COURIER)
+        if (note.type == QuestType.ESCORT) Milestones.award(player, Milestones.BODYGUARD)
         // Trials always pay a relic cache; other contracts sometimes do, more often at higher ranks
         if (note.trial || level.random.nextFloat() < 0.08f + 0.03f * note.rank) {
             player.inventory.placeItemBackInInventory(Relics.cacheForRank(note.rank), Prediction.SERVER_ONLY)

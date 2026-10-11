@@ -1,0 +1,23 @@
+{
+  "parent": "guildmark:guildmark/root",
+  "display": {
+    "icon": {
+      "id": "guildmark:relic_cache"
+    },
+    "title": {
+      "translate": "advancements.guildmark.relic.title"
+    },
+    "description": {
+      "translate": "advancements.guildmark.relic.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

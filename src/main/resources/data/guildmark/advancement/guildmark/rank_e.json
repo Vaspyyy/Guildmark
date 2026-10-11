@@ -1,0 +1,23 @@
+{
+  "parent": "guildmark:guildmark/paid",
+  "display": {
+    "icon": {
+      "id": "minecraft:copper_ingot"
+    },
+    "title": {
+      "translate": "advancements.guildmark.rank_e.title"
+    },
+    "description": {
+      "translate": "advancements.guildmark.rank_e.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "display": {
+    "icon": {
+      "id": "guildmark:guild_mark"
+    },
+    "title": {
+      "translate": "advancements.guildmark.root.title"
+    },
+    "description": {
+      "translate": "advancements.guildmark.root.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false,
+    "background": "minecraft:block/spruce_planks"
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

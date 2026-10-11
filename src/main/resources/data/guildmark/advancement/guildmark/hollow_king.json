@@ -1,0 +1,23 @@
+{
+  "parent": "guildmark:guildmark/seven_shards",
+  "display": {
+    "icon": {
+      "id": "minecraft:netherite_helmet"
+    },
+    "title": {
+      "translate": "advancements.guildmark.hollow_king.title"
+    },
+    "description": {
+      "translate": "advancements.guildmark.hollow_king.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "parent": "guildmark:guildmark/lair",
+  "display": {
+    "icon": {
+      "id": "minecraft:shield"
+    },
+    "title": {
+      "translate": "advancements.guildmark.siege.title"
+    },
+    "description": {
+      "translate": "advancements.guildmark.siege.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

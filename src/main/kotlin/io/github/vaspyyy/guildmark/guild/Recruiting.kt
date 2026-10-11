@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.guild
 
+import io.github.vaspyyy.guildmark.progression.Milestones
 import io.github.vaspyyy.guildmark.block.VillageBoards
 import io.github.vaspyyy.guildmark.progression.AdventurerRank
 import io.github.vaspyyy.guildmark.progression.Progression
@@ -63,6 +64,7 @@ object Recruiting {
         player.sendSystemMessage(Component.translatable("message.guildmark.guild_founded", guild.name))
         level.playSound(null, player.blockPosition(), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.PLAYERS, 1.0f, 1.0f)
         GuildNews.add(level, "news.guildmark.guild_founded", player.name.string, guild.name)
+        Milestones.award(player, Milestones.GUILD_FOUNDED)
         return true
     }
 
@@ -110,6 +112,7 @@ object Recruiting {
         level.sendParticles(ParticleTypes.HAPPY_VILLAGER, member.x, member.y + 1.2, member.z, 20, 0.5, 0.6, 0.5, 0.0)
         member.playSound(SoundEvents.VILLAGER_CELEBRATE, 1.0f, 1.0f)
         player.sendSystemMessage(Component.translatable("message.guildmark.recruited", member.name, guild.name, guild.members.size, cap))
+        Milestones.award(player, Milestones.RECRUIT)
         return InteractionResult.SUCCESS
     }
 

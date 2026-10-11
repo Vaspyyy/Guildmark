@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark
 
+import io.github.vaspyyy.guildmark.progression.Milestones
 import com.mojang.logging.LogUtils
 import io.github.vaspyyy.guildmark.advance.AdvanceCommand
 import io.github.vaspyyy.guildmark.block.VillageBoards
@@ -103,7 +104,10 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
             }
         }
         // Stat perks are transient attribute modifiers, so put them back whenever the player entity is new
-        NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerLoggedInEvent::class.java) { Progression.applyAttributes(it.entity) }
+        NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerLoggedInEvent::class.java) {
+            Progression.applyAttributes(it.entity)
+            Milestones.onLogin(it.entity)
+        }
         NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerRespawnEvent::class.java) { Progression.applyAttributes(it.entity) }
         NeoForge.EVENT_BUS.addListener(RegisterCommandsEvent::class.java) { AdvanceCommand.register(it.dispatcher) }
         NeoForge.EVENT_BUS.addListener(AddServerReloadListenersEvent::class.java) { event ->
@@ -133,6 +137,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         if (player.tickCount % 200 == 0) VillageBoards.checkNearbyVillages(level, player.blockPosition())
         if (player.tickCount % 200 == 100) Characters.tick(level, player)
         if (player.tickCount % 10 == 0) Contracts.tickEscorts(level, player)
+        Milestones.tick(player)
         Traffic.trySpawn(level, player)
         Sieges.maybeStart(level, player)
     }

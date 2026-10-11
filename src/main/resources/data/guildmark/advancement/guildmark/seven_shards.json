@@ -1,0 +1,23 @@
+{
+  "parent": "guildmark:guildmark/maren",
+  "display": {
+    "icon": {
+      "id": "minecraft:amethyst_cluster"
+    },
+    "title": {
+      "translate": "advancements.guildmark.seven_shards.title"
+    },
+    "description": {
+      "translate": "advancements.guildmark.seven_shards.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

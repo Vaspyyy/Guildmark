@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.story
 
+import io.github.vaspyyy.guildmark.progression.Milestones
 import com.mojang.serialization.Codec
 import com.mojang.serialization.codecs.RecordCodecBuilder
 import io.github.vaspyyy.guildmark.guild.GuildNews
@@ -68,7 +69,12 @@ data class MainQuestState(
  */
 object MainQuest {
     fun get(player: Player): MainQuestState = player.getData(ModAttachments.MAIN_QUEST)
-    private fun set(player: Player, state: MainQuestState) = player.setData(ModAttachments.MAIN_QUEST, state)
+    private fun set(player: Player, state: MainQuestState) {
+        player.setData(ModAttachments.MAIN_QUEST, state)
+        if (state.found >= 1) Milestones.award(player, Milestones.FIRST_SHARD)
+        if (state.found >= MainQuestState.SHARDS) Milestones.award(player, Milestones.SEVEN_SHARDS)
+        if (state.finished) Milestones.award(player, Milestones.HOLLOW_KING)
+    }
 
     /** Wren hands over the first shard and her compass. */
     fun start(level: ServerLevel, player: Player) {

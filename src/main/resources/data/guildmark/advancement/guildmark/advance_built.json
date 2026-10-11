@@ -1,0 +1,23 @@
+{
+  "parent": "guildmark:guildmark/builder",
+  "display": {
+    "icon": {
+      "id": "minecraft:lantern"
+    },
+    "title": {
+      "translate": "advancements.guildmark.advance_built.title"
+    },
+    "description": {
+      "translate": "advancements.guildmark.advance_built.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

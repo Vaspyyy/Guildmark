@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.lair
 
+import io.github.vaspyyy.guildmark.progression.Milestones
 import com.mojang.serialization.Codec
 import com.mojang.serialization.codecs.RecordCodecBuilder
 import io.github.vaspyyy.guildmark.Guildmark
@@ -267,7 +268,10 @@ class Lairs(val lairs: MutableList<Lair> = mutableListOf()) : SavedData() {
         level.playSound(null, chestPos, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.HOSTILE, 1.0f, 1.0f)
         val message = Component.translatable("message.guildmark.lair_cleared", lair.theme.title)
         val heroes = level.players().filter { it.blockPosition().closerThan(lair.pos, BAR_RANGE) }
-        for (player in heroes) player.sendSystemMessage(message)
+        for (player in heroes) {
+            player.sendSystemMessage(message)
+            Milestones.award(player, Milestones.LAIR)
+        }
         Contracts.onLairCleared(heroes, lair.id)
         if (lair.shard >= 0) MainQuest.onVaultCleared(level, lair, heroes)
         GuildNews.add(level, "news.guildmark.lair", heroes.joinToString(", ") { it.name.string }.ifEmpty { "?" }, "#lair.guildmark.${lair.theme.id}", lair.pos.x.toString(), lair.pos.z.toString())

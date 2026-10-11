@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.story
 
+import io.github.vaspyyy.guildmark.progression.Milestones
 import com.mojang.serialization.Codec
 import com.mojang.serialization.codecs.RecordCodecBuilder
 import io.github.vaspyyy.guildmark.Guildmark
@@ -175,6 +176,7 @@ class Characters(val placements: MutableList<Placement> = mutableListOf()) : Sav
                     else -> 0
                 }
                 PacketDistributor.sendToPlayer(player, OpenCharacterPayload(npc.id, character.id, scene, false))
+                Milestones.award(player, Milestones.MAREN)
                 return
             }
             val held = player.mainHandItem
@@ -225,6 +227,7 @@ class Characters(val placements: MutableList<Placement> = mutableListOf()) : Sav
                 return
             }
             player.sendSystemMessage(Component.translatable("gui.guildmark.character.says", character.title, character.line("finale")))
+            Milestones.award(player, Milestones.CHARACTER)
             for (index in character.lore) player.inventory.placeItemBackInInventory(LoreBooks.fragment(index), Prediction.SERVER_ONLY)
             if (character == StoryCharacter.WREN) MainQuest.start(level, player)
             else player.inventory.placeItemBackInInventory(gift(level, character), Prediction.SERVER_ONLY)

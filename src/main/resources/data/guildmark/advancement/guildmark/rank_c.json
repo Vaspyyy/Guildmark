@@ -1,0 +1,23 @@
+{
+  "parent": "guildmark:guildmark/rank_e",
+  "display": {
+    "icon": {
+      "id": "minecraft:iron_ingot"
+    },
+    "title": {
+      "translate": "advancements.guildmark.rank_c.title"
+    },
+    "description": {
+      "translate": "advancements.guildmark.rank_c.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

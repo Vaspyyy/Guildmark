@@ -1,0 +1,23 @@
+{
+  "parent": "guildmark:guildmark/character",
+  "display": {
+    "icon": {
+      "id": "guildmark:crown_shard"
+    },
+    "title": {
+      "translate": "advancements.guildmark.first_shard.title"
+    },
+    "description": {
+      "translate": "advancements.guildmark.first_shard.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:book",
+    "guildmark:guild_mark"
+  ],
+  "result": {
+    "id": "minecraft:written_book",
+    "count": 1,
+    "components": {
+      "minecraft:written_book_content": {
+        "title": "Adventurer's Handbook",
+        "author": "The Guild",
+        "generation": 0,
+        "pages": [
+          {
+            "translate": "handbook.guildmark.page0"
+          },
+          {
+            "translate": "handbook.guildmark.page1"
+          },
+          {
+            "translate": "handbook.guildmark.page2"
+          },
+          {
+            "translate": "handbook.guildmark.page3"
+          },
+          {
+            "translate": "handbook.guildmark.page4"
+          },
+          {
+            "translate": "handbook.guildmark.page5"
+          },
+          {
+            "translate": "handbook.guildmark.page6"
+          },
+          {
+            "translate": "handbook.guildmark.page7"
+          },
+          {
+            "translate": "handbook.guildmark.page8"
+          },
+          {
+            "translate": "handbook.guildmark.page9"
+          },
+          {
+            "translate": "handbook.guildmark.page10"
+          },
+          {
+            "translate": "handbook.guildmark.page11"
+          }
+        ],
+        "resolved": true
+      },
+      "minecraft:custom_name": {
+        "translate": "item.guildmark.handbook",
+        "italic": false,
+        "color": "gold"
+      }
+    }
+  }
+}

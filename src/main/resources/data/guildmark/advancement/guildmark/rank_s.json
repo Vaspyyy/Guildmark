@@ -1,0 +1,23 @@
+{
+  "parent": "guildmark:guildmark/rank_a",
+  "display": {
+    "icon": {
+      "id": "minecraft:nether_star"
+    },
+    "title": {
+      "translate": "advancements.guildmark.rank_s.title"
+    },
+    "description": {
+      "translate": "advancements.guildmark.rank_s.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}
