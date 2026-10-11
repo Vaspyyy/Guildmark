@@ -30,6 +30,8 @@ data class OpenAdvancesPayload(
     /** A rival guild holds the village: the button challenges its captain instead of claiming. */
     val rivalHeld: Boolean,
     val advanceIndex: Int,
+    /** How many villages a coach from here can reach along finished roads. */
+    val coachStops: Int,
 ) : CustomPacketPayload {
     override fun type(): CustomPacketPayload.Type<OpenAdvancesPayload> = TYPE
 
@@ -48,6 +50,7 @@ data class OpenAdvancesPayload(
             ByteBufCodecs.VAR_INT, OpenAdvancesPayload::holdingCap,
             ByteBufCodecs.BOOL, OpenAdvancesPayload::rivalHeld,
             ByteBufCodecs.VAR_INT, OpenAdvancesPayload::advanceIndex,
+            ByteBufCodecs.VAR_INT, OpenAdvancesPayload::coachStops,
             ::OpenAdvancesPayload,
         )
 

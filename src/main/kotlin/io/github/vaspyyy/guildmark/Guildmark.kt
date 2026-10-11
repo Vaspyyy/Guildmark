@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark
 
 import net.neoforged.fml.config.ModConfig
+import io.github.vaspyyy.guildmark.road.Coaches
 import net.minecraft.server.level.ServerPlayer
 import io.github.vaspyyy.guildmark.party.PartyCommand
 import io.github.vaspyyy.guildmark.party.Parties
@@ -130,6 +131,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         NeoForge.EVENT_BUS.addListener(RegisterCommandsEvent::class.java) {
             AdvanceCommand.register(it.dispatcher)
             PartyCommand.register(it.dispatcher)
+            Coaches.register(it.dispatcher)
         }
         NeoForge.EVENT_BUS.addListener(AddServerReloadListenersEvent::class.java) { event ->
             event.addListener(Identifier.fromNamespaceAndPath(MOD_ID, "quest_pools"), QuestPoolLoader())

@@ -63,7 +63,15 @@ class AdvanceScreen(private val info: OpenAdvancesPayload) : Screen(Component.tr
             content.addChild(line) { it.alignHorizontallyCenter() }
         }
         claimButton()?.let { content.addChild(it) { s -> s.alignHorizontallyCenter().paddingTop(4) } }
-        content.addChild(Button.builder(CommonComponents.GUI_DONE) { onClose() }.width(100).build()) { it.alignHorizontallyCenter().paddingTop(4) }
+        val buttons = LinearLayout.horizontal().spacing(4)
+        if (info.coachStops > 0) {
+            buttons.addChild(Button.builder(Component.translatable("gui.guildmark.coach", info.coachStops)) {
+                minecraft.player?.connection?.sendCommand("coach")
+                onClose()
+            }.width(100).build())
+        }
+        buttons.addChild(Button.builder(CommonComponents.GUI_DONE) { onClose() }.width(100).build())
+        content.addChild(buttons) { it.alignHorizontallyCenter().paddingTop(4) }
         content.arrangeElements()
 
         panelWidth = content.width + PADDING * 2

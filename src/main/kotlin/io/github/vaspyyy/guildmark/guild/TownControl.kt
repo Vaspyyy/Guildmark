@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.guild
 
 import net.minecraft.world.level.Level
+import io.github.vaspyyy.guildmark.road.Coaches
 import io.github.vaspyyy.guildmark.block.QuestBoardBlock
 import io.github.vaspyyy.guildmark.advance.Advance
 import io.github.vaspyyy.guildmark.block.QuestBoardBlockEntity
@@ -101,6 +102,7 @@ object TownControl {
             holdingCap(Progression.get(player).adventurerRank),
             holding != null && RivalGuild.byId(holding.guild) != null,
             (level.getBlockEntity(anchor) as? QuestBoardBlockEntity)?.advanceIndex ?: 0,
+            Coaches.stops(level, anchor)?.size ?: 0,
         ))
     }
 

@@ -802,5 +802,16 @@
   "quest.guildmark.story.lair.witch_hollow.2": "The well water smells of mushrooms, and the frogs have started talking.",
   "quest.guildmark.story.lair.ashen_pit.0": "The ground split open beyond the river and it's still burning.",
   "quest.guildmark.story.lair.ashen_pit.1": "Black-boned things climb out of the ash at night. The forest is half gone.",
-  "quest.guildmark.story.lair.ashen_pit.2": "Something down in the pit is keeping the fire fed. Put it out."
+  "quest.guildmark.story.lair.ashen_pit.2": "Something down in the pit is keeping the fire fed. Put it out.",
+  "gui.guildmark.coach": "Coach (%s)",
+  "message.guildmark.coach.header": "The coach goes to:",
+  "message.guildmark.coach.stop": " %s, %s Guild Marks %s",
+  "message.guildmark.coach.ride_button": "[Ride]",
+  "message.guildmark.coach.ride_hover": "Ride to %s for %s Guild Marks. Nearby party members and your following guild members come too.",
+  "message.guildmark.coach.unknown": "the village at %s, %s",
+  "message.guildmark.coach.none": "No coach stops here. Coaches run along finished Trade Roads, from villages that have one.",
+  "message.guildmark.coach.gone": "No coach from here goes there.",
+  "message.guildmark.coach.escort": "Your charge won't ride a coach. Walk them there.",
+  "message.guildmark.coach.fare": "The fare is %s Guild Marks.",
+  "message.guildmark.coach.arrived": "The coach rattles down the Trade Road and sets you down at %s."
 }
