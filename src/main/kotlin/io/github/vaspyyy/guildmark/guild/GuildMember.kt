@@ -1,6 +1,8 @@
 package io.github.vaspyyy.guildmark.guild
 
 import net.minecraft.core.BlockPos
+import net.minecraft.resources.Identifier
+import net.minecraft.world.entity.ai.attributes.AttributeModifier
 import net.minecraft.core.UUIDUtil
 import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerLevel
@@ -41,6 +43,19 @@ class GuildMember(type: EntityType<out Villager>, level: Level) : Villager(type,
     var following: Boolean = true
     /** Where a member holding position stands guard; it wanders back here after a fight. */
     var post: BlockPos? = null
+    /** Errands survived (see Errands): each makes the member tougher and harder-hitting. */
+    var veteran: Int = 0
+        set(value) {
+            field = value
+            getAttribute(Attributes.MAX_HEALTH)?.let { health ->
+                health.removeModifier(VETERAN_HEALTH)
+                if (value > 0) health.addPermanentModifier(AttributeModifier(VETERAN_HEALTH, 4.0 * value, AttributeModifier.Operation.ADD_VALUE))
+            }
+            getAttribute(Attributes.ATTACK_DAMAGE)?.let { attack ->
+                attack.removeModifier(VETERAN_ATTACK)
+                if (value > 0) attack.addPermanentModifier(AttributeModifier(VETERAN_ATTACK, 1.0 * value, AttributeModifier.Operation.ADD_VALUE))
+            }
+        }
 
     override fun registerGoals() {
         goalSelector.addGoal(0, FloatGoal(this))
@@ -83,6 +98,7 @@ class GuildMember(type: EntityType<out Villager>, level: Level) : Villager(type,
         output.putInt("guild_id", guild)
         output.putBoolean("following", following)
         output.storeNullable("post", BlockPos.CODEC, post)
+        output.putInt("veteran", veteran)
     }
 
     override fun readAdditionalSaveData(input: ValueInput) {
@@ -91,6 +107,7 @@ class GuildMember(type: EntityType<out Villager>, level: Level) : Villager(type,
         guild = input.getIntOr("guild_id", -1)
         following = input.getBooleanOr("following", true)
         post = input.read("post", BlockPos.CODEC).orElse(null)
+        veteran = input.getIntOr("veteran", 0)
     }
 
     /** Keep up with the leader, and catch up by teleport if left far behind. */
@@ -175,6 +192,9 @@ class GuildMember(type: EntityType<out Villager>, level: Level) : Villager(type,
     }
 
     companion object {
+        private val VETERAN_HEALTH = Identifier.fromNamespaceAndPath("guildmark", "veteran_health")
+        private val VETERAN_ATTACK = Identifier.fromNamespaceAndPath("guildmark", "veteran_attack")
+
         fun createAttributes(): AttributeSupplier.Builder = Villager.createAttributes()
             .add(Attributes.MAX_HEALTH, 30.0)
             .add(Attributes.ATTACK_DAMAGE, 3.0)

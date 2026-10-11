@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark
 
 import net.neoforged.fml.config.ModConfig
+import io.github.vaspyyy.guildmark.guild.Errands
 import io.github.vaspyyy.guildmark.village.Festivals
 import io.github.vaspyyy.guildmark.progression.Titles
 import io.github.vaspyyy.guildmark.road.Coaches
@@ -140,6 +141,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
             PartyCommand.register(it.dispatcher)
             Coaches.register(it.dispatcher)
             Titles.register(it.dispatcher)
+            Errands.register(it.dispatcher)
         }
         NeoForge.EVENT_BUS.addListener(AddServerReloadListenersEvent::class.java) { event ->
             event.addListener(Identifier.fromNamespaceAndPath(MOD_ID, "quest_pools"), QuestPoolLoader())
@@ -174,6 +176,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         if (player.tickCount % 200 == 150) Rivals.tickPlayer(level, player)
         if (player.tickCount % 40 == 20) Rivals.syncChallenges(level, player)
         if (player.tickCount % 100 == 75 && player is ServerPlayer) Festivals.tick(level, player)
+        if (player.tickCount % 200 == 25 && player is ServerPlayer) Errands.tick(level, player)
         if (player.tickCount % 200 == 100) Characters.tick(level, player)
         if (player.tickCount % 10 == 0) Contracts.tickEscorts(level, player)
         Milestones.tick(player)

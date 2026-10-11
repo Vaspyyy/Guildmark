@@ -880,5 +880,19 @@
   "festival.guildmark.1": "Lantern Night",
   "festival.guildmark.2": "Founders' Day",
   "festival.guildmark.3": "the Midsummer Feast",
-  "message.guildmark.festival": "It's %s in %s! Contracts here pay %s%% more today, and there'll be fireworks at dusk."
+  "message.guildmark.festival": "It's %s in %s! Contracts here pay %s%% more today, and there'll be fireworks at dusk.",
+  "errand.guildmark.patrol": "Patrol",
+  "errand.guildmark.nest": "Clear a nest",
+  "errand.guildmark.ruin": "Raid a ruin",
+  "message.guildmark.errand.header": "%s: send a member on an errand",
+  "message.guildmark.errand.member": " %s (veteran %s):%s",
+  "message.guildmark.errand.hover": "%s: gone %s day(s), %s%% chance they don't come back, pays %s to %s Guild Marks",
+  "message.guildmark.errand.away": " %s is away (%s), back in %s day(s)",
+  "message.guildmark.errand.sent": "%s sets off: %s. Back in %s day(s), if all goes well.",
+  "message.guildmark.errand.back": "%s is back from the errand (%s) with %s Guild Marks. Veteran %s now.",
+  "message.guildmark.errand.back_cache": "%s is back from the errand (%s) with %s Guild Marks and a sealed relic cache. Veteran %s now.",
+  "message.guildmark.errand.lost": "%s never came back from the errand (%s). Their name is struck from the rolls.",
+  "message.guildmark.errand.no_guild": "Only a guild leader can send members on errands.",
+  "message.guildmark.errand.no_members": "None of your guild's members are close by or away. Stand near the ones you want to send.",
+  "message.guildmark.errand.gone": "That member isn't close by any more."
 }
