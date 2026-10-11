@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.client
 
+import io.github.vaspyyy.guildmark.village.VillageNames
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.advance.Advance
 import io.github.vaspyyy.guildmark.block.QuestBoardBlockEntity
@@ -21,7 +22,7 @@ import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
 
 /** Shows a village's advances: what's built, what contracts are funding now, and what's next. */
-class AdvanceScreen(private val info: OpenAdvancesPayload) : Screen(Component.translatable("gui.guildmark.advances.village", info.village)) {
+class AdvanceScreen(private val info: OpenAdvancesPayload) : Screen(Component.translatable("gui.guildmark.advances.village", info.village, VillageNames.size(info.advanceIndex))) {
     private val anchor: BlockPos = info.anchor
 
     private companion object {
@@ -46,15 +47,21 @@ class AdvanceScreen(private val info: OpenAdvancesPayload) : Screen(Component.tr
         shown = Pair(index, points)
 
         val content = LinearLayout.vertical().spacing(4)
-        Advance.entries.forEachIndexed { i, advance ->
+        val rows = Advance.entries.mapIndexed { i, advance ->
             val state = when {
                 i < index -> AdvanceRow.State.BUILT
                 i == index -> AdvanceRow.State.CURRENT
                 else -> AdvanceRow.State.LOCKED
             }
-            content.addChild(AdvanceRow(advance, state, points))
+            AdvanceRow(advance, state, points)
+        }.toMutableList()
+        if (index >= Advance.entries.size) rows.add(AdvanceRow(Advance.TRADE_ROAD, AdvanceRow.State.CURRENT, points))
+        // Two columns, so a grown town's list still fits the screen
+        for (pair in rows.chunked(2)) {
+            val line = LinearLayout.horizontal().spacing(4)
+            for (row in pair) line.addChild(row)
+            content.addChild(line) { it.alignHorizontallyCenter() }
         }
-        if (index >= Advance.entries.size) content.addChild(AdvanceRow(Advance.TRADE_ROAD, AdvanceRow.State.CURRENT, points))
         claimButton()?.let { content.addChild(it) { s -> s.alignHorizontallyCenter().paddingTop(4) } }
         content.addChild(Button.builder(CommonComponents.GUI_DONE) { onClose() }.width(100).build()) { it.alignHorizontallyCenter().paddingTop(4) }
         content.arrangeElements()

@@ -51,6 +51,22 @@ enum class Advance(
         "archer_tower", 300, { Items.BOW },
         fetchItems = setOf("stick", "feather", "flint", "string", "iron_ingot", "stone", "cobblestone"),
         huntTargets = setOf("skeleton", "pillager", "vindicator", "witch"),
+    ),
+    MARKET(
+        "market", 240, { Items.EMERALD },
+        fetchItems = setOf("wheat", "carrot", "potato", "beetroot", "melon_slice", "pumpkin", "leather", "white_wool", "string", "emerald", "bread"),
+        countsTravel = true,
+    ),
+    STONE_WALLS(
+        "stone_walls", 400, { Items.STONE_BRICKS },
+        fetchItems = setOf("stone", "cobblestone", "stone_bricks", "andesite", "deepslate", "cobbled_deepslate", "iron_ingot", "lantern"),
+        huntTargets = setOf("zombie", "husk", "skeleton", "creeper", "spider"),
+        countsClear = true,
+    ),
+    KEEP(
+        "keep", 600, { Items.CHISELED_STONE_BRICKS },
+        fetchItems = setOf("iron_ingot", "gold_ingot", "stone_bricks", "obsidian", "diamond", "chain", "iron_block"),
+        huntTargets = setOf("pillager", "vindicator", "evoker", "witch", "enderman", "ravager"),
     );
 
     val title: Component get() = Component.translatable("advance.guildmark.$id")

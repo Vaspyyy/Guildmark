@@ -39,6 +39,7 @@ object Advances {
         if (points >= advance.cost) {
             Milestones.award(player, Milestones.ADVANCE_BUILT)
             if (advance == Advance.TRADE_ROAD) Milestones.award(player, Milestones.TRADE_ROAD)
+            if (advance == Advance.KEEP) Milestones.award(player, Milestones.CITY)
             tryComplete(level, anchor, board, advance)
         }
     }

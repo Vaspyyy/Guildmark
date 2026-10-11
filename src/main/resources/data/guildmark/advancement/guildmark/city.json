@@ -1,0 +1,23 @@
+{
+  "parent": "guildmark:guildmark/advance_built",
+  "display": {
+    "icon": {
+      "id": "minecraft:chiseled_stone_bricks"
+    },
+    "title": {
+      "translate": "advancements.guildmark.city.title"
+    },
+    "description": {
+      "translate": "advancements.guildmark.city.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

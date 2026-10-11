@@ -25,6 +25,7 @@ object Milestones {
     const val BUILDER = "builder"
     const val ADVANCE_BUILT = "advance_built"
     const val TRADE_ROAD = "trade_road"
+    const val CITY = "city"
     const val HERO = "hero"
     const val LAIR = "lair"
     const val SIEGE = "siege"

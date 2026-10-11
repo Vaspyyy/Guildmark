@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.village
 
+import net.minecraft.network.chat.Component
 import net.minecraft.core.BlockPos
 
 /** Every village gets a stable name from where its board stands, so no name has to be saved. */
@@ -12,6 +13,16 @@ object VillageNames {
     private val BACK = listOf(
         "ford", "brook", "stead", "wick", "ton", "holm", "by", "field", "mere", "cross", "bridge", "well", "dale",
         "gate", "haven", "moor", "crest", "barrow", "combe", "hithe", "ley", "worth",
+    )
+
+    /** Hamlet, village, town or city, by how many advances it has built. */
+    fun size(advanceIndex: Int): Component = Component.translatable(
+        "village.guildmark.size." + when {
+            advanceIndex <= 1 -> "hamlet"
+            advanceIndex <= 5 -> "village"
+            advanceIndex <= 7 -> "town"
+            else -> "city"
+        }
     )
 
     fun of(anchor: BlockPos): String {

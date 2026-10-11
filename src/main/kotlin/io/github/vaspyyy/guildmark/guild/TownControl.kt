@@ -94,6 +94,7 @@ object TownControl {
             CLAIM_FEE,
             holdingCap(Progression.get(player).adventurerRank),
             holding != null && RivalGuild.byId(holding.guild) != null,
+            (level.getBlockEntity(anchor) as? QuestBoardBlockEntity)?.advanceIndex ?: 0,
         ))
     }
 

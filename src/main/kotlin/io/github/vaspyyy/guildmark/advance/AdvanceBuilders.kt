@@ -26,24 +26,27 @@ object AdvanceBuilders {
             Advance.TRADE_ROAD -> error("Trade Roads are surveyed by Advances.startTradeRoad")
             Advance.PALISADE -> palisade(level, center, radius)
             Advance.ARCHER_TOWER -> archerTower(level, center)
+            Advance.MARKET -> GrandBuilders.market(level, center)
+            Advance.STONE_WALLS -> palisade(level, center, radius, stone = true)
+            Advance.KEEP -> GrandBuilders.keep(level, center)
         }
         return if (built) null else "message.guildmark.advance_no_room"
     }
 
     /** First free block above the ground at this column. */
-    private fun surface(level: ServerLevel, x: Int, z: Int): BlockPos =
+    fun surface(level: ServerLevel, x: Int, z: Int): BlockPos =
         level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, BlockPos(x, 0, z))
 
-    private fun free(level: ServerLevel, pos: BlockPos): Boolean =
+    fun free(level: ServerLevel, pos: BlockPos): Boolean =
         level.getBlockState(pos).canBeReplaced() && level.getFluidState(pos).isEmpty
 
-    private fun solidGround(level: ServerLevel, top: BlockPos): Boolean {
+    fun solidGround(level: ServerLevel, top: BlockPos): Boolean {
         val ground = top.below()
         val state = level.getBlockState(ground)
         return !state.`is`(Blocks.DIRT_PATH) && level.getFluidState(ground).isEmpty && state.isFaceSturdy(level, ground, Direction.UP)
     }
 
-    private fun place(level: ServerLevel, pos: BlockPos, state: BlockState) {
+    fun place(level: ServerLevel, pos: BlockPos, state: BlockState) {
         level.setBlock(pos, state, Block.UPDATE_ALL)
     }
 
@@ -113,8 +116,16 @@ object AdvanceBuilders {
      * and need no wall. Walls go only where walkable ground carries on past the edge, and paths
      * crossing that edge stay open as gates.
      */
-    private fun palisade(level: ServerLevel, center: BlockPos, radius: Int): Boolean {
+    private fun palisade(level: ServerLevel, center: BlockPos, radius: Int, stone: Boolean = false): Boolean {
         val log = Blocks.STRIPPED_SPRUCE_LOG.defaultBlockState().setValue(RotatedPillarBlock.AXIS, Direction.Axis.Y)
+        val random = level.random
+        fun brick(): BlockState = when (random.nextInt(6)) {
+            0 -> Blocks.MOSSY_STONE_BRICKS.defaultBlockState()
+            1 -> Blocks.CRACKED_STONE_BRICKS.defaultBlockState()
+            else -> Blocks.STONE_BRICKS.defaultBlockState()
+        }
+        // Stone walls replace the palisade where it stands
+        fun clear(pos: BlockPos) = free(level, pos) || (stone && level.getBlockState(pos).`is`(Blocks.STRIPPED_SPRUCE_LOG))
         val reach = radius + 8
         val tops = HashMap<Long, BlockPos>()
         fun top(x: Int, z: Int): BlockPos = tops.getOrPut(BlockPos.asLong(x, 0, z)) { surface(level, x, z) }
@@ -151,15 +162,36 @@ object AdvanceBuilders {
         for (key in area) {
             val x = BlockPos.getX(key)
             val z = BlockPos.getZ(key)
-            val here = top(x, z)
+            // The palisade's own logs read as the surface; stone walls look under them
+            var here = top(x, z)
+            if (stone) while (level.getBlockState(here.below()).`is`(Blocks.STRIPPED_SPRUCE_LOG)) here = here.below()
             val open = Direction.Plane.HORIZONTAL.any { direction ->
                 val nx = x + direction.stepX
                 val nz = z + direction.stepZ
                 !inside(nx, nz) && walkable(here, top(nx, nz))
             }
-            if (!open || !solidGround(level, here)) continue
-            if (!(0..2).all { free(level, here.above(it)) }) continue
-            for (i in 0..2) place(level, here.above(i), log)
+            if (!open) continue
+            if (stone && level.getBlockState(here.below()).`is`(Blocks.DIRT_PATH)) {
+                // A gate: an arch over the road with lanterns hanging under it
+                if ((0..2).all { clear(here.above(it)) } && clear(here.above(3))) {
+                    place(level, here.above(3), Blocks.STONE_BRICKS.defaultBlockState())
+                    place(level, here.above(4), Blocks.STONE_BRICK_WALL.defaultBlockState())
+                }
+                continue
+            }
+            if (!solidGround(level, here)) continue
+            if (stone) {
+                if (!(0..3).all { clear(here.above(it)) }) continue
+                for (i in 0..3) place(level, here.above(i), brick())
+                if ((x + z) % 2 == 0 && free(level, here.above(4))) place(level, here.above(4), Blocks.STONE_BRICK_WALL.defaultBlockState())
+                if ((x * 7 + z * 13) % 17 == 0 && free(level, here.above(5))) {
+                    place(level, here.above(4), Blocks.STONE_BRICK_WALL.defaultBlockState())
+                    place(level, here.above(5), Blocks.LANTERN.defaultBlockState().setValue(LanternBlock.HANGING, false))
+                }
+            } else {
+                if (!(0..2).all { free(level, here.above(it)) }) continue
+                for (i in 0..2) place(level, here.above(i), log)
+            }
             placed++
         }
         return placed > 0

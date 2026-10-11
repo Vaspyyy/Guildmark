@@ -3,6 +3,7 @@ package io.github.vaspyyy.guildmark.siege
 import io.github.vaspyyy.guildmark.guild.TownControl
 import io.github.vaspyyy.guildmark.progression.Milestones
 import io.github.vaspyyy.guildmark.loot.Relics
+import io.github.vaspyyy.guildmark.advance.Advance
 import io.github.vaspyyy.guildmark.advance.Advances
 import io.github.vaspyyy.guildmark.block.QuestBoardBlock
 import io.github.vaspyyy.guildmark.block.QuestBoardBlockEntity
@@ -128,7 +129,9 @@ object Sieges {
         siege.waveStarted = level.gameTime
         val radius = Advances.villageRadius(level, siege.center)
         val gather = siege.center.relative(siege.from, radius + 18)
-        val count = 5 + siege.tier * 2 + siege.wave
+        val walled = ((level.getBlockEntity(siege.anchor) as? QuestBoardBlockEntity)?.advanceIndex ?: 0) > Advance.STONE_WALLS.ordinal
+        // Stone walls keep a quarter of every wave out
+        val count = (5 + siege.tier * 2 + siege.wave).let { if (walled) it * 3 / 4 else it }
         repeat(count) {
             val x = gather.x + level.random.nextInt(13) - 6
             val z = gather.z + level.random.nextInt(13) - 6
