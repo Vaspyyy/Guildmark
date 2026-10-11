@@ -86,6 +86,15 @@ object ModAttachments {
             .build()
     }
 
+    /** The title a player wears after their name (see Title), or empty. Everyone nearby sees it. */
+    val TITLE: DeferredHolder<AttachmentType<*>, AttachmentType<String>> = ATTACHMENTS.register("title") { ->
+        AttachmentType.builder { -> "" }
+            .serialize(Codec.STRING.fieldOf("title"))
+            .copyOnDeath()
+            .sync({ _, _ -> true }, ByteBufCodecs.STRING_UTF8)
+            .build()
+    }
+
     /** How many chapters of each named character's story a player has finished. */
     val STORY: DeferredHolder<AttachmentType<*>, AttachmentType<Map<String, Int>>> = ATTACHMENTS.register("story") { ->
         AttachmentType.builder { -> mapOf<String, Int>() }

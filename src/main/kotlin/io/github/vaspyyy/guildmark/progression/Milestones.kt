@@ -59,6 +59,7 @@ object Milestones {
         val progress = server.advancements.getOrStartProgress(holder)
         if (progress.isDone) return
         for (criterion in progress.remainingCriteria.toList()) server.advancements.award(holder, criterion)
+        Titles.onMilestone(server, id)
     }
 
     /** The rank trials worth a milestone. */
