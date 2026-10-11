@@ -5,7 +5,12 @@ import io.github.vaspyyy.guildmark.quest.ContractState
 import io.github.vaspyyy.guildmark.quest.Contracts
 import io.github.vaspyyy.guildmark.quest.QuestNote
 import io.github.vaspyyy.guildmark.quest.QuestType
+import io.github.vaspyyy.guildmark.progression.AdventurerRank
+import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.registry.ModDataComponents
+import io.github.vaspyyy.guildmark.story.MainQuest
+import io.github.vaspyyy.guildmark.story.MainQuestState
+import net.minecraft.world.level.Level
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -46,6 +51,12 @@ object ContractTracker : GuiLayer {
 
     private class Entry(val stack: ItemStack, val note: QuestNote, val state: ContractState)
 
+    /** One line of the tracker: a contract, or the main story's next step. */
+    private class Row(val icon: ItemStack, val title: Component, val status: Component, val color: Int, val target: BlockPos?)
+
+    private val SHARD_ICON: ItemStack by lazy { MainQuest.shard(0) }
+    private val STORY_INK = 0xFF6A3A9A.toInt()
+
     override fun render(graphics: GuiGraphicsExtractor, delta: DeltaTracker) {
         val minecraft = Minecraft.getInstance()
         val player = minecraft.player ?: return
@@ -59,10 +70,16 @@ object ContractTracker : GuiLayer {
                 Entry(stack, note, state)
             }
             .sortedBy { it.state.deadline }
-        if (entries.isEmpty()) return
+        val rows = mutableListOf<Row>()
+        storyRow(player)?.let { rows.add(it) }
+        for (entry in entries) {
+            val (status, color) = status(player, entry)
+            rows.add(Row(entry.stack, entry.note.title(), status, color, target(player, entry)))
+        }
+        if (rows.isEmpty()) return
 
-        val shownEntries = entries.take(MAX_SHOWN)
-        val extra = entries.size - shownEntries.size
+        val shownEntries = rows.take(MAX_SHOWN)
+        val extra = rows.size - shownEntries.size
         val height = PADDING * 2 + shownEntries.size * ROW_HEIGHT - 4 + if (extra > 0) 10 else 0
         val left = 4
         val top = 4
@@ -72,15 +89,14 @@ object ContractTracker : GuiLayer {
         shownEntries.forEachIndexed { i, entry ->
             val y = top + PADDING + i * ROW_HEIGHT
             val x = left + PADDING
-            graphics.item(entry.stack, x, y + 2)
+            graphics.item(entry.icon, x, y + 2)
 
             val textWidth = WIDTH - PADDING * 2 - 20 - 26
-            val title = font.substrByWidth(entry.note.title(), textWidth)
+            val title = font.substrByWidth(entry.title, textWidth)
             graphics.text(font, Language.getInstance().getVisualOrder(title), x + 20, y + 1, INK, false)
-            val (status, color) = status(player, entry)
-            graphics.text(font, Language.getInstance().getVisualOrder(font.substrByWidth(status, textWidth)), x + 20, y + 11, color, false)
+            graphics.text(font, Language.getInstance().getVisualOrder(font.substrByWidth(entry.status, textWidth)), x + 20, y + 11, entry.color, false)
 
-            val target = target(player, entry) ?: return@forEachIndexed
+            val target = entry.target ?: return@forEachIndexed
             val dx = target.x + 0.5 - player.x
             val dz = target.z + 0.5 - player.z
             val distance = sqrt(dx * dx + dz * dz)
@@ -93,6 +109,20 @@ object ContractTracker : GuiLayer {
         if (extra > 0) {
             graphics.text(font, Component.translatable("gui.guildmark.tracker.more", extra), left + PADDING, top + height - PADDING - 8, FADED_INK, false)
         }
+    }
+
+    /** The main story's next step, while it's under way. */
+    private fun storyRow(player: Player): Row? {
+        val state = player.getData(ModAttachments.MAIN_QUEST)
+        if (!state.active || player.level().dimension() != Level.OVERWORLD) return null
+        val title = Component.translatable("gui.guildmark.tracker.story", state.found, MainQuestState.SHARDS)
+        val courtier = state.nextCourtier
+        val status: Component = when {
+            courtier == null -> Component.translatable("gui.guildmark.tracker.story.throne")
+            state.target.isEmpty -> Component.translatable("gui.guildmark.tracker.story.rank", AdventurerRank.of(courtier.minRank).letter)
+            else -> Component.translatable("gui.guildmark.tracker.story.vault", courtier.title)
+        }
+        return Row(SHARD_ICON, title, status, STORY_INK, state.target.orElse(null))
     }
 
     /** An arrow centred on (x, y), turned [degrees] clockwise from straight ahead. */

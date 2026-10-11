@@ -14,6 +14,7 @@ import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.road.Traffic
 import io.github.vaspyyy.guildmark.siege.Sieges
 import io.github.vaspyyy.guildmark.story.Characters
+import io.github.vaspyyy.guildmark.story.MainQuest
 import io.github.vaspyyy.guildmark.story.StoryCharacter
 import io.github.vaspyyy.guildmark.block.VillageBoards
 import io.github.vaspyyy.guildmark.village.Standing
@@ -28,7 +29,8 @@ import net.minecraft.network.chat.Component
  * project, `/guildmark advance reset` starts the chain over (already built structures stay),
  * `/guildmark standing <points>` changes your standing there, `/guildmark traffic [ambush]` sends a
  * caravan or traveller along a road 40 to 96 blocks away, `/guildmark character <id>` brings a named
- * character to the nearest village.
+ * character to the nearest village, `/guildmark story <shards>` jumps the main story to that many
+ * shards found and `/guildmark story tp` teleports to where the shard compass points.
  */
 object AdvanceCommand {
     private fun nearestAnchor(source: CommandSourceStack): BlockPos? {
@@ -108,6 +110,26 @@ object AdvanceCommand {
                             0
                         }
                     }
+                )
+                .then(
+                    Commands.literal("story")
+                        .then(Commands.argument("shards", IntegerArgumentType.integer(0, 7)).executes { context ->
+                            val player = context.source.playerOrException
+                            MainQuest.setFound(context.source.level, player, IntegerArgumentType.getInteger(context, "shards"))
+                            1
+                        })
+                        .then(Commands.literal("tp").executes { context ->
+                            val player = context.source.playerOrException
+                            val target = MainQuest.get(player).target.orElse(null)
+                            if (target == null) {
+                                context.source.sendFailure(Component.translatable("commands.guildmark.no_story_target"))
+                                0
+                            } else {
+                                val overworld = context.source.server.overworld()
+                                player.teleportTo(overworld, target.x + 0.5, target.y + 1.0, target.z + 4.5, setOf(), player.yRot, player.xRot, true)
+                                1
+                            }
+                        })
                 )
                 .then(
                     Commands.literal("character").then(

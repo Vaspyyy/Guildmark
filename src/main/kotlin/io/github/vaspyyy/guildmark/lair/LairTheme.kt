@@ -22,6 +22,8 @@ enum class LairTheme(
     val minions: List<String>,
     val boss: String,
     val loot: ResourceKey<LootTable>,
+    /** Only built as a shard vault for the main quest, never for an ordinary lair hunt. */
+    val vaultOnly: Boolean = false,
 ) {
     SPIDER_DEN("spider_den", 0, { Blocks.COARSE_DIRT }, { Blocks.MOSSY_COBBLESTONE }, { Blocks.COBWEB },
         listOf("spider", "cave_spider"), "spider", BuiltInLootTables.SIMPLE_DUNGEON),
@@ -30,7 +32,11 @@ enum class LairTheme(
     WITCH_HOLLOW("witch_hollow", 3, { Blocks.PODZOL }, { Blocks.DARK_OAK_LOG }, { Blocks.RED_MUSHROOM_BLOCK },
         listOf("witch", "slime", "zombie_villager"), "witch", BuiltInLootTables.WOODLAND_MANSION),
     ASHEN_PIT("ashen_pit", 5, { Blocks.BLACKSTONE }, { Blocks.POLISHED_BLACKSTONE_BRICKS }, { Blocks.MAGMA_BLOCK },
-        listOf("wither_skeleton", "blaze"), "wither_skeleton", BuiltInLootTables.BASTION_TREASURE);
+        listOf("wither_skeleton", "blaze"), "wither_skeleton", BuiltInLootTables.BASTION_TREASURE),
+    SUNKEN_SHRINE("sunken_shrine", 4, { Blocks.PRISMARINE_BRICKS }, { Blocks.DARK_PRISMARINE }, { Blocks.SEA_LANTERN },
+        listOf("drowned", "drowned", "zombie"), "drowned", BuiltInLootTables.UNDERWATER_RUIN_BIG, vaultOnly = true),
+    RIME_VAULT("rime_vault", 5, { Blocks.PACKED_ICE }, { Blocks.BLUE_ICE }, { Blocks.POWDER_SNOW },
+        listOf("stray", "stray", "skeleton"), "stray", BuiltInLootTables.IGLOO_CHEST, vaultOnly = true);
 
     val title: Component get() = Component.translatable("lair.guildmark.$id")
     val bossTitle: Component get() = Component.translatable("lair.guildmark.$id.boss")
@@ -38,6 +44,6 @@ enum class LairTheme(
     fun bossId(): Identifier = Identifier.withDefaultNamespace(boss)
 
     companion object {
-        fun forRank(rank: Int): LairTheme = entries.last { it.minRank <= rank }
+        fun forRank(rank: Int): LairTheme = entries.last { !it.vaultOnly && it.minRank <= rank }
     }
 }

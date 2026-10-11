@@ -5,6 +5,7 @@ import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.progression.GuildProgress
 import io.github.vaspyyy.guildmark.road.TrafficState
 import io.github.vaspyyy.guildmark.road.TravelProgress
+import io.github.vaspyyy.guildmark.story.MainQuestState
 import net.minecraft.core.BlockPos
 import net.minecraft.core.UUIDUtil
 import net.neoforged.neoforge.attachment.AttachmentType
@@ -58,6 +59,15 @@ object ModAttachments {
     /** Marks one of the named story characters, by id (see StoryCharacter). */
     val CHARACTER: DeferredHolder<AttachmentType<*>, AttachmentType<String>> = ATTACHMENTS.register("character") { ->
         AttachmentType.builder { -> "" }.serialize(Codec.STRING.fieldOf("id")).build()
+    }
+
+    /** How far a player has got in the main story, the hunt for the Hollow Crown. */
+    val MAIN_QUEST: DeferredHolder<AttachmentType<*>, AttachmentType<MainQuestState>> = ATTACHMENTS.register("main_quest") { ->
+        AttachmentType.builder { -> MainQuestState() }
+            .serialize(MainQuestState.CODEC.fieldOf("state"))
+            .copyOnDeath()
+            .sync({ holder, player -> holder === player }, MainQuestState.STREAM_CODEC)
+            .build()
     }
 
     /** How many chapters of each named character's story a player has finished. */

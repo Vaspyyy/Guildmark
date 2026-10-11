@@ -21,5 +21,10 @@ object ModItems {
         it.stacksTo(1)
     })
 
+    /** One of the seven shards of the Hollow Crown; which one is in its SHARD component. */
+    val CROWN_SHARD: DeferredItem<Item> = ITEMS.registerSimpleItem("crown_shard", UnaryOperator<Item.Properties> {
+        it.stacksTo(1).rarity(Rarity.EPIC).fireResistant()
+    })
+
     val QUEST_BOARD: DeferredItem<BlockItem> = ITEMS.registerSimpleBlockItem("quest_board", ModBlocks.QUEST_BOARD)
 }

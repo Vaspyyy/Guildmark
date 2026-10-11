@@ -10,6 +10,7 @@ import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.renderer.RenderPipelines
 import net.minecraft.network.chat.Component
+import net.minecraft.locale.Language
 import net.minecraft.resources.Identifier
 import net.neoforged.neoforge.client.network.ClientPacketDistributor
 
@@ -30,6 +31,10 @@ class CharacterScreen(private val data: OpenCharacterPayload) : Screen(Component
 
     private val character = StoryCharacter.byId(data.character)
     private val finished get() = character == null || data.chapters >= character.steps.size
+    /** Characters without jobs (Maren) play a scene instead: data.chapters is the scene number. */
+    private val scene get() = character != null && !character.givesJobs
+    /** The scene where Maren waits at the throne for the shards. */
+    private val ritual get() = scene && data.chapters == 1
 
     private var panelX = 0
     private var panelY = 0
@@ -38,6 +43,11 @@ class CharacterScreen(private val data: OpenCharacterPayload) : Screen(Component
     /** What they say, in paragraphs. */
     private fun speech(): List<Component> {
         val c = character ?: return emptyList()
+        if (scene) {
+            val language = Language.getInstance()
+            return (0 until 6).map { "character.guildmark.${c.id}.scene${data.chapters}.p$it" }
+                .filter { language.has(it) }.map { Component.translatable(it) }
+        }
         return when {
             finished -> listOf(c.line("done"))
             data.carrying -> listOf(c.line("waiting"))
@@ -49,7 +59,7 @@ class CharacterScreen(private val data: OpenCharacterPayload) : Screen(Component
     /** The job on offer, if any. */
     private fun offer(): List<Component> {
         val c = character ?: return emptyList()
-        if (finished || data.carrying) return emptyList()
+        if (scene || finished || data.carrying) return emptyList()
         val note = c.note(data.chapters)
         return listOf(
             Component.translatable("gui.guildmark.character.chapter", data.chapters + 1, c.steps.size, note.title()).withStyle(ChatFormatting.BOLD),
@@ -68,7 +78,14 @@ class CharacterScreen(private val data: OpenCharacterPayload) : Screen(Component
         val buttonY = panelY + panelHeight - PADDING - 20
         val half = textWidth / 2 - 2
 
-        if (!finished && !data.carrying) {
+        if (ritual) {
+            addRenderableWidget(Button.builder(Component.translatable("gui.guildmark.character.ritual")) {
+                ClientPacketDistributor.sendToServer(AcceptChapterPayload(data.entityId))
+                onClose()
+            }.bounds(panelX + PADDING, buttonY, half, 20).build())
+            addRenderableWidget(Button.builder(Component.translatable("gui.guildmark.character.not_yet")) { onClose() }
+                .bounds(panelX + PANEL_WIDTH - PADDING - half, buttonY, half, 20).build())
+        } else if (!scene && !finished && !data.carrying) {
             addRenderableWidget(Button.builder(Component.translatable("gui.guildmark.character.accept")) {
                 ClientPacketDistributor.sendToServer(AcceptChapterPayload(data.entityId))
                 onClose()

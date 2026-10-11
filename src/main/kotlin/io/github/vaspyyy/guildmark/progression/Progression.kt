@@ -3,6 +3,7 @@ package io.github.vaspyyy.guildmark.progression
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.guild.GuildNews
 import io.github.vaspyyy.guildmark.registry.ModAttachments
+import io.github.vaspyyy.guildmark.story.MainQuest
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
 import net.minecraft.sounds.SoundEvents
@@ -51,6 +52,7 @@ object Progression {
         player.sendSystemMessage(Component.translatable("message.guildmark.promoted", title))
         player.level().playSound(null, player.blockPosition(), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.PLAYERS, 1.0f, 0.8f)
         GuildNews.add(player.level(), "news.guildmark.promoted", player.name.string, AdventurerRank.of(rank).letter)
+        MainQuest.onPromoted(player)
     }
 
     /** Spend one point on [perk]. Returns false if there's no point or the perk is maxed. */

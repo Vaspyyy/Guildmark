@@ -16,6 +16,9 @@ import io.github.vaspyyy.guildmark.network.AcceptChapterPayload
 import io.github.vaspyyy.guildmark.network.FoundGuildPayload
 import io.github.vaspyyy.guildmark.network.OpenCharacterPayload
 import io.github.vaspyyy.guildmark.story.Characters
+import io.github.vaspyyy.guildmark.story.HollowKing
+import io.github.vaspyyy.guildmark.story.HollowThrone
+import io.github.vaspyyy.guildmark.story.StoryNpc
 import io.github.vaspyyy.guildmark.network.OpenReceptionPayload
 import io.github.vaspyyy.guildmark.network.ReceptionActionPayload
 import io.github.vaspyyy.guildmark.road.Bandits
@@ -32,6 +35,7 @@ import io.github.vaspyyy.guildmark.registry.ModItems
 import io.github.vaspyyy.guildmark.registry.ModVillagers
 import net.minecraft.resources.Identifier
 import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.level.Level
 import net.minecraft.world.entity.PathfinderMob
 import net.minecraft.world.entity.player.Player
 import net.neoforged.bus.api.IEventBus
@@ -68,14 +72,18 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         ModVillagers.PROFESSIONS.register(modBus)
         ModAttachments.ATTACHMENTS.register(modBus)
         ModEntities.ENTITIES.register(modBus)
-        modBus.addListener(EntityAttributeCreationEvent::class.java) { it.put(ModEntities.GUILD_MEMBER.get(), GuildMember.createAttributes().build()) }
+        modBus.addListener(EntityAttributeCreationEvent::class.java) {
+            it.put(ModEntities.GUILD_MEMBER.get(), GuildMember.createAttributes().build())
+            it.put(ModEntities.STORY_NPC.get(), StoryNpc.createAttributes().build())
+            it.put(ModEntities.HOLLOW_KING.get(), HollowKing.createAttributes().build())
+        }
 
         modBus.addListener(FMLCommonSetupEvent::class.java, ::onCommonSetup)
         modBus.addListener(RegisterPayloadHandlersEvent::class.java, ::onRegisterPayloads)
         NeoForge.EVENT_BUS.addListener(LivingDeathEvent::class.java, ::onLivingDeath)
         NeoForge.EVENT_BUS.addListener(PlayerTickEvent.Post::class.java, ::onPlayerTick)
         NeoForge.EVENT_BUS.addListener(EntityJoinLevelEvent::class.java) { Traffic.onJoin(it.entity) }
-        NeoForge.EVENT_BUS.addListener(PlayerInteractEvent.EntityInteract::class.java, Characters::onInteract)
+        NeoForge.EVENT_BUS.addListener(PlayerInteractEvent.RightClickBlock::class.java, HollowThrone::onUseBlock)
         NeoForge.EVENT_BUS.addListener(PlayerInteractEvent.EntityInteract::class.java, Reception::onInteract)
         NeoForge.EVENT_BUS.addListener(LevelTickEvent.Post::class.java) { event ->
             val level = event.level
@@ -85,6 +93,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
                 if (level.gameTime % 20L == 0L) {
                     Lairs.get(level).tick(level)
                     Sieges.tick(level)
+                    if (level.dimension() == Level.OVERWORLD) HollowThrone.get(level).tick(level)
                 }
             }
         }

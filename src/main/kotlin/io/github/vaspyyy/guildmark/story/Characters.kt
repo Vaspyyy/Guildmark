@@ -11,6 +11,7 @@ import io.github.vaspyyy.guildmark.progression.Progression
 import io.github.vaspyyy.guildmark.quest.Contracts
 import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.registry.ModDataComponents
+import io.github.vaspyyy.guildmark.registry.ModEntities
 import io.github.vaspyyy.guildmark.village.Standing
 import io.github.vaspyyy.guildmark.village.StandingTier
 import net.minecraft.core.BlockPos
@@ -96,71 +97,116 @@ class Characters(val placements: MutableList<Placement> = mutableListOf()) : Sav
                 val character = StoryCharacter.byId(placed.id) ?: return
                 val entity = level.getEntity(placed.entity)
                 when {
+                    // Characters from before they had their own looks were villagers: swap them over
+                    entity != null && entity !is StoryNpc -> spawn(level, character, board)
                     entity == null && player.blockPosition().closerThan(board, 40.0) -> spawn(level, character, board)
-                    entity != null && !entity.blockPosition().closerThan(board, 64.0) -> standNear(level, entity as Villager, board)
+                    entity != null && !entity.blockPosition().closerThan(board, 64.0) -> standNear(level, entity as StoryNpc, board)
                 }
                 return
             }
             if (Standing.tier(level, board, player) < StandingTier.KNOWN) return
             val rank = Progression.get(player).adventurerRank
-            val next = StoryCharacter.entries.firstOrNull { characters.of(it) == null && it.minRank <= rank } ?: return
+            val next = StoryCharacter.entries.firstOrNull { it.givesJobs && characters.of(it) == null && it.minRank <= rank } ?: return
             if (spawn(level, next, board)) {
                 player.sendSystemMessage(Component.translatable("message.guildmark.character_arrived", next.title))
                 GuildNews.add(level, "news.guildmark.character_arrived", next.displayName)
             }
         }
 
-        /** Bring [character] to the village of [board], wherever they were before. */
+        /** Bring [character] to live in the village of [board], wherever they were before. */
         fun spawn(level: ServerLevel, character: StoryCharacter, board: BlockPos): Boolean {
             get(level).of(character)?.let { old -> level.getEntity(old.entity)?.discard() }
-            val villager = EntityTypes.VILLAGER.create(level, EntitySpawnReason.EVENT) ?: return false
-            standNear(level, villager, board)
-            villager.finalizeSpawn(level, level.getCurrentDifficultyAt(board), EntitySpawnReason.EVENT, null)
-            val profession = level.registryAccess().lookupOrThrow(Registries.VILLAGER_PROFESSION).getOrThrow(character.profession)
-            villager.villagerData = villager.villagerData.withProfession(profession).withLevel(5)
-            villager.customName = character.title
-            villager.isCustomNameVisible = true
-            villager.isPermanentlyInvulnerable = true
-            villager.setPersistenceRequired()
-            villager.setData(ModAttachments.CHARACTER, character.id)
-            level.addFreshEntity(villager)
-            level.sendParticles(ParticleTypes.HAPPY_VILLAGER, villager.x, villager.y + 1.0, villager.z, 12, 0.4, 0.5, 0.4, 0.0)
-            get(level).place(Placement(character.id, board, villager.uuid))
+            val npc = create(level, character) ?: return false
+            standNear(level, npc, board)
+            npc.setHomeTo(board, 24)
+            level.addFreshEntity(npc)
+            level.sendParticles(ParticleTypes.HAPPY_VILLAGER, npc.x, npc.y + 1.0, npc.z, 12, 0.4, 0.5, 0.4, 0.0)
+            get(level).place(Placement(character.id, board, npc.uuid))
             return true
         }
 
-        private fun standNear(level: ServerLevel, villager: Villager, board: BlockPos) {
-            val offset = BlockPos(level.random.nextInt(7) - 3, 0, 3 + level.random.nextInt(3))
-            val ground = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, board.offset(offset))
-            villager.snapTo(ground.x + 0.5, ground.y.toDouble(), ground.z + 0.5, level.random.nextFloat() * 360f, 0f)
+        /** A character steps into the world at [pos] for a scene, leaving after [lifespan] ticks (or never, if -1). */
+        fun appear(level: ServerLevel, character: StoryCharacter, pos: BlockPos, lifespan: Int): StoryNpc? {
+            val npc = create(level, character) ?: return null
+            val ground = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, pos)
+            npc.snapTo(ground.x + 0.5, ground.y.toDouble(), ground.z + 0.5, level.random.nextFloat() * 360f, 0f)
+            npc.setHomeTo(ground, 6)
+            if (lifespan > 0) npc.leaveAt = level.gameTime + lifespan
+            level.addFreshEntity(npc)
+            level.sendParticles(ParticleTypes.SOUL, npc.x, npc.y + 1.0, npc.z, 30, 0.4, 0.8, 0.4, 0.02)
+            level.playSound(null, npc.blockPosition(), SoundEvents.SOUL_ESCAPE.value(), SoundSource.NEUTRAL, 1.5f, 0.8f)
+            for (player in level.players()) {
+                if (player.blockPosition().closerThan(npc.blockPosition(), 48.0)) {
+                    player.sendSystemMessage(Component.translatable("message.guildmark.character_appears", character.title))
+                }
+            }
+            return npc
         }
 
-        fun onInteract(event: PlayerInteractEvent.EntityInteract) {
-            val villager = event.target as? Villager ?: return
-            if (!villager.hasData(ModAttachments.CHARACTER)) return
-            val character = StoryCharacter.byId(villager.getData(ModAttachments.CHARACTER)) ?: return
-            event.isCanceled = true
-            event.cancellationResult = InteractionResult.SUCCESS
-            val level = event.level as? ServerLevel ?: return
-            if (event.hand != InteractionHand.MAIN_HAND) return
-            val player = event.entity as? ServerPlayer ?: return
+        /** A visiting character leaves the way they came. */
+        fun fade(level: ServerLevel, npc: StoryNpc) {
+            level.sendParticles(ParticleTypes.SOUL, npc.x, npc.y + 1.0, npc.z, 30, 0.4, 0.8, 0.4, 0.02)
+            level.playSound(null, npc.blockPosition(), SoundEvents.SOUL_ESCAPE.value(), SoundSource.NEUTRAL, 1.5f, 1.2f)
+            npc.discard()
+        }
 
+        private fun create(level: ServerLevel, character: StoryCharacter): StoryNpc? {
+            val npc = ModEntities.STORY_NPC.get().create(level, EntitySpawnReason.EVENT) ?: return null
+            npc.character = character.id
+            npc.customName = character.title
+            npc.isCustomNameVisible = true
+            return npc
+        }
+
+        private fun standNear(level: ServerLevel, npc: StoryNpc, board: BlockPos) {
+            val offset = BlockPos(level.random.nextInt(7) - 3, 0, 3 + level.random.nextInt(3))
+            val ground = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, board.offset(offset))
+            npc.snapTo(ground.x + 0.5, ground.y.toDouble(), ground.z + 0.5, level.random.nextFloat() * 360f, 0f)
+        }
+
+        /** Someone used a character: hand in their story contract, or start talking. */
+        fun talk(level: ServerLevel, player: ServerPlayer, npc: StoryNpc) {
+            val character = StoryCharacter.byId(npc.character) ?: return
+            if (character == StoryCharacter.MAREN) {
+                val state = MainQuest.get(player)
+                val scene = when {
+                    state.finished -> 2
+                    state.found >= MainQuestState.SHARDS -> 1
+                    else -> 0
+                }
+                PacketDistributor.sendToPlayer(player, OpenCharacterPayload(npc.id, character.id, scene, false))
+                return
+            }
             val held = player.mainHandItem
             val heldChain = held.get(ModDataComponents.QUEST_NOTE.get())?.chain
             if (held.has(ModDataComponents.CONTRACT_STATE.get()) && heldChain != null && StoryCharacter.parseChain(heldChain)?.first == character) {
-                Contracts.turnIn(held, player, level, villager.blockPosition(), character)
+                Contracts.turnIn(held, player, level, npc.blockPosition(), character)
                 return
             }
-            villager.playSound(SoundEvents.VILLAGER_AMBIENT, 1.0f, 1.0f)
-            PacketDistributor.sendToPlayer(player, OpenCharacterPayload(villager.id, character.id, chapters(player, character), carries(player, character)))
+            // Wren keeps the main story going: the first shard if it was missed, and a new compass if one was lost
+            if (character == StoryCharacter.WREN && chapters(player, character) >= character.steps.size) {
+                val state = MainQuest.get(player)
+                if (!state.started) MainQuest.start(level, player)
+                else if (state.active && !MainQuest.carriesCompass(player)) {
+                    player.inventory.placeItemBackInInventory(MainQuest.compass(), Prediction.SERVER_ONLY)
+                    MainQuest.say(player, character, "main.guildmark.new_compass")
+                    MainQuest.refreshCompasses(player)
+                }
+            }
+            npc.playSound(SoundEvents.VILLAGER_AMBIENT, 1.0f, 1.2f)
+            PacketDistributor.sendToPlayer(player, OpenCharacterPayload(npc.id, character.id, chapters(player, character), carries(player, character)))
         }
 
         /** The player said yes to the next chapter of [villager]'s story. */
         fun accept(player: Player, entityId: Int) {
             val level = player.level() as? ServerLevel ?: return
-            val villager = level.getEntity(entityId) as? Villager ?: return
-            val character = StoryCharacter.byId(villager.getData(ModAttachments.CHARACTER)) ?: return
+            val villager = level.getEntity(entityId) as? StoryNpc ?: return
+            val character = StoryCharacter.byId(villager.character) ?: return
             if (player.distanceTo(villager) > INTERACT_RANGE) return
+            if (character == StoryCharacter.MAREN) {
+                HollowThrone.get(level).begin(level, player)
+                return
+            }
             val step = chapters(player, character)
             if (step >= character.steps.size || carries(player, character)) return
             val board = get(level).of(character)?.board ?: villager.blockPosition()
@@ -180,7 +226,8 @@ class Characters(val placements: MutableList<Placement> = mutableListOf()) : Sav
             }
             player.sendSystemMessage(Component.translatable("gui.guildmark.character.says", character.title, character.line("finale")))
             for (index in character.lore) player.inventory.placeItemBackInInventory(LoreBooks.fragment(index), Prediction.SERVER_ONLY)
-            player.inventory.placeItemBackInInventory(gift(level, character), Prediction.SERVER_ONLY)
+            if (character == StoryCharacter.WREN) MainQuest.start(level, player)
+            else player.inventory.placeItemBackInInventory(gift(level, character), Prediction.SERVER_ONLY)
             level.playSound(null, player.blockPosition(), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.PLAYERS, 1.0f, 1.0f)
             GuildNews.add(level, "news.guildmark.story_done", player.name.string, character.displayName)
         }
@@ -188,7 +235,7 @@ class Characters(val placements: MutableList<Placement> = mutableListOf()) : Sav
         /** The keepsake a character gives when their story ends. */
         private fun gift(level: ServerLevel, character: StoryCharacter): ItemStack {
             val stack = when (character) {
-                StoryCharacter.WREN -> ItemStack(Items.AMETHYST_SHARD)
+                StoryCharacter.WREN, StoryCharacter.MAREN -> ItemStack(Items.AMETHYST_SHARD)
                 StoryCharacter.TOBIN -> ItemStack(Items.IRON_SWORD).also {
                     val enchantments = level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT)
                     it.enchant(enchantments.getOrThrow(Enchantments.SHARPNESS), 3)
@@ -198,7 +245,6 @@ class Characters(val placements: MutableList<Placement> = mutableListOf()) : Sav
             }
             stack.set(DataComponents.CUSTOM_NAME, character.line("gift"))
             stack.set(DataComponents.LORE, ItemLore(listOf(character.line("gift.lore"))))
-            if (character == StoryCharacter.WREN) stack.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true)
             return stack
         }
 

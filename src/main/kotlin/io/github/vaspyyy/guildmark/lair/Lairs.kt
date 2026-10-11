@@ -7,6 +7,8 @@ import io.github.vaspyyy.guildmark.guild.GuildNews
 import io.github.vaspyyy.guildmark.quest.Contracts
 import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.registry.ModItems
+import io.github.vaspyyy.guildmark.story.Courtier
+import io.github.vaspyyy.guildmark.story.MainQuest
 import net.minecraft.core.BlockPos
 import net.minecraft.core.UUIDUtil
 import net.minecraft.core.registries.BuiltInRegistries
@@ -47,7 +49,11 @@ data class Lair(
     var awake: Boolean = false,
     var cleared: Boolean = false,
     var boss: UUID? = null,
+    /** A main-story shard vault: which shard it holds (see Courtier), or -1 for an ordinary lair. */
+    val shard: Int = -1,
 ) {
+    val courtier: Courtier? get() = Courtier.forShard(shard)
+
     companion object {
         private val THEME_CODEC: Codec<LairTheme> = Codec.STRING.xmap({ id -> LairTheme.entries.first { it.id == id } }, LairTheme::id)
 
@@ -60,7 +66,8 @@ data class Lair(
                 Codec.BOOL.optionalFieldOf("awake", false).forGetter(Lair::awake),
                 Codec.BOOL.optionalFieldOf("cleared", false).forGetter(Lair::cleared),
                 UUIDUtil.CODEC.optionalFieldOf("boss").forGetter { Optional.ofNullable(it.boss) },
-            ).apply(i) { id, pos, theme, rank, awake, cleared, boss -> Lair(id, pos, theme, rank, awake, cleared, boss.orElse(null)) }
+                Codec.INT.optionalFieldOf("shard", -1).forGetter(Lair::shard),
+            ).apply(i) { id, pos, theme, rank, awake, cleared, boss, shard -> Lair(id, pos, theme, rank, awake, cleared, boss.orElse(null), shard) }
         }
     }
 }
@@ -72,23 +79,29 @@ data class Lair(
  */
 class Lairs(val lairs: MutableList<Lair> = mutableListOf()) : SavedData() {
     private val bars = HashMap<Int, ServerBossEvent>()
+    private val fights = HashMap<Int, BossState>()
 
     fun lair(id: Int): Lair? = lairs.firstOrNull { it.id == id }
 
     /** Find open ground 120 to 220 blocks from [near] and build a lair of the right rank there. */
-    fun create(level: ServerLevel, near: BlockPos, rank: Int): Lair? {
-        val theme = LairTheme.forRank(rank)
+    fun create(level: ServerLevel, near: BlockPos, rank: Int): Lair? = build(level, near, LairTheme.forRank(rank), rank, -1, 120, 100)
+
+    /** A courtier's vault for the main story, a long walk (300 to 500 blocks) from [near]. */
+    fun createVault(level: ServerLevel, near: BlockPos, courtier: Courtier): Lair? =
+        build(level, near, courtier.theme, courtier.vaultRank, courtier.shard, 300, 200)
+
+    private fun build(level: ServerLevel, near: BlockPos, theme: LairTheme, rank: Int, shard: Int, minDistance: Int, spread: Int): Lair? {
         repeat(10) {
             val angle = level.random.nextDouble() * Math.PI * 2
-            val distance = 120 + level.random.nextInt(100)
+            val distance = minDistance + level.random.nextInt(spread)
             val x = near.x + (cos(angle) * distance).toInt()
             val z = near.z + (sin(angle) * distance).toInt()
             // Generate the land if nobody has been there yet
             for (dx in listOf(-RADIUS - 1, RADIUS + 1)) for (dz in listOf(-RADIUS - 1, RADIUS + 1)) level.getChunk((x + dx) shr 4, (z + dz) shr 4)
             val top = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, BlockPos(x, 0, z))
             if (!level.getFluidState(top.below()).isEmpty || !level.getFluidState(top).isEmpty) return@repeat
-            val lair = Lair((lairs.maxOfOrNull { it.id } ?: 0) + 1, top, theme, rank)
-            build(level, lair)
+            val lair = Lair((lairs.maxOfOrNull { it.id } ?: 0) + 1, top, theme, rank, shard = shard)
+            buildArena(level, lair)
             lairs.add(lair)
             setDirty()
             return lair
@@ -97,7 +110,7 @@ class Lairs(val lairs: MutableList<Lair> = mutableListOf()) : SavedData() {
     }
 
     /** A sunken arena: themed floor, a broken ring wall, four pillars and an altar in the middle. */
-    private fun build(level: ServerLevel, lair: Lair) {
+    private fun buildArena(level: ServerLevel, lair: Lair) {
         val theme = lair.theme
         val center = lair.pos
         val random = level.random
@@ -138,6 +151,15 @@ class Lairs(val lairs: MutableList<Lair> = mutableListOf()) : SavedData() {
             }
         }
         set(center.below(), theme.wall())
+        if (lair.shard >= 0) {
+            // A vault: crying obsidian caps the pillars and soul fire burns around the altar
+            for (i in 0 until 4) {
+                val angle = Math.PI / 2 * i + Math.PI / 4
+                set(center.offset((cos(angle) * 5).toInt(), 4, (sin(angle) * 5).toInt()), Blocks.CRYING_OBSIDIAN)
+                set(center.offset((cos(angle + Math.PI / 4) * 3).toInt(), -1, (sin(angle + Math.PI / 4) * 3).toInt()), Blocks.SOUL_SOIL)
+                set(center.offset((cos(angle + Math.PI / 4) * 3).toInt(), 0, (sin(angle + Math.PI / 4) * 3).toInt()), Blocks.SOUL_FIRE)
+            }
+        }
     }
 
     /** Every 20 ticks: wake lairs players walk up to, and keep each awake boss's bar up to date. */
@@ -153,13 +175,18 @@ class Lairs(val lairs: MutableList<Lair> = mutableListOf()) : SavedData() {
                 ServerBossEvent(UUID.randomUUID(), bossName(lair), BossEvent.BossBarColor.PURPLE, BossEvent.BossBarOverlay.NOTCHED_10)
             }
             val boss = lair.boss?.let { level.getEntity(it) } as? Mob
-            if (boss != null) bar.progress = (boss.health / boss.maxHealth).coerceIn(0.0f, 1.0f)
+            if (boss != null) {
+                bar.progress = (boss.health / boss.maxHealth).coerceIn(0.0f, 1.0f)
+                val fighters = near.filter { !it.isCreative && it.blockPosition().closerThan(lair.pos, WAKE_RANGE * 1.5) }
+                BossAbilities.tick(level, boss, lair.theme, lair.rank, fighters, fights.getOrPut(lair.id) { BossState() })
+            }
             for (player in bar.players.toList()) if (player !in near) bar.removePlayer(player)
             for (player in near) if (player is ServerPlayer && player !in bar.players) bar.addPlayer(player)
         }
     }
 
-    private fun bossName(lair: Lair): Component = Component.translatable("lair.guildmark.boss_name", lair.theme.bossTitle, lair.theme.title)
+    private fun bossName(lair: Lair): Component =
+        lair.courtier?.title ?: Component.translatable("lair.guildmark.boss_name", lair.theme.bossTitle, lair.theme.title)
 
     /** Someone came close: the minions pour out and the master shows itself. */
     private fun wake(level: ServerLevel, lair: Lair) {
@@ -176,7 +203,8 @@ class Lairs(val lairs: MutableList<Lair> = mutableListOf()) : SavedData() {
         }
         setDirty()
         level.playSound(null, lair.pos, SoundEvents.WITHER_SPAWN, SoundSource.HOSTILE, 0.6f, 1.4f)
-        val message = Component.translatable("message.guildmark.lair_awake", lair.theme.title)
+        val message = lair.courtier?.let { Component.translatable("message.guildmark.vault_awake", it.title) }
+            ?: Component.translatable("message.guildmark.lair_awake", lair.theme.title)
         for (player in level.players()) if (player.blockPosition().closerThan(lair.pos, BAR_RANGE)) player.sendSystemMessage(message)
     }
 
@@ -202,6 +230,15 @@ class Lairs(val lairs: MutableList<Lair> = mutableListOf()) : SavedData() {
             AttributeModifier(BOSS_DAMAGE, 0.3 * (1 + lair.rank), AttributeModifier.Operation.ADD_MULTIPLIED_BASE)
         )
         boss.getAttribute(Attributes.ARMOR)?.addPermanentModifier(AttributeModifier(BOSS_ARMOR, 2.0 + lair.rank * 2, AttributeModifier.Operation.ADD_VALUE))
+        // Bosses loom over their minions; courtiers loom more
+        boss.getAttribute(Attributes.SCALE)?.addPermanentModifier(
+            AttributeModifier(BOSS_SCALE, if (lair.shard >= 0) 0.6 else 0.3, AttributeModifier.Operation.ADD_MULTIPLIED_BASE)
+        )
+        boss.getAttribute(Attributes.KNOCKBACK_RESISTANCE)?.addPermanentModifier(AttributeModifier(BOSS_KNOCKBACK, 0.6, AttributeModifier.Operation.ADD_VALUE))
+        if (lair.shard >= 0) {
+            boss.getAttribute(Attributes.MAX_HEALTH)?.addPermanentModifier(AttributeModifier(VAULT_HEALTH, 2.0, AttributeModifier.Operation.ADD_MULTIPLIED_BASE))
+            if (lair.theme == LairTheme.SUNKEN_SHRINE) boss.setItemSlot(EquipmentSlot.MAINHAND, ItemStack(Items.TRIDENT))
+        }
         boss.health = boss.maxHealth
         boss.setItemSlot(EquipmentSlot.HEAD, ItemStack(Items.GOLDEN_HELMET))
         boss.setData(ModAttachments.LAIR_BOSS, lair.id)
@@ -214,11 +251,12 @@ class Lairs(val lairs: MutableList<Lair> = mutableListOf()) : SavedData() {
         lair.cleared = true
         setDirty()
         bars.remove(lair.id)?.removeAllPlayers()
+        fights.remove(lair.id)
 
         val chestPos = lair.pos
         level.setBlock(chestPos, Blocks.CHEST.defaultBlockState(), Block.UPDATE_ALL)
         (level.getBlockEntity(chestPos) as? ChestBlockEntity)?.let { chest ->
-            chest.setItem(0, LoreBooks.random(level.random))
+            chest.setItem(0, lair.courtier?.let { LoreBooks.fragment(it.lore) } ?: LoreBooks.random(level.random))
             chest.setItem(1, ItemStack(ModItems.GUILD_MARK.get(), 5 + lair.rank * 5))
             chest.setLootTable(lair.theme.loot, level.random.nextLong())
         }
@@ -227,6 +265,7 @@ class Lairs(val lairs: MutableList<Lair> = mutableListOf()) : SavedData() {
         val heroes = level.players().filter { it.blockPosition().closerThan(lair.pos, BAR_RANGE) }
         for (player in heroes) player.sendSystemMessage(message)
         Contracts.onLairCleared(heroes, lair.id)
+        if (lair.shard >= 0) MainQuest.onVaultCleared(level, lair, heroes)
         GuildNews.add(level, "news.guildmark.lair", heroes.joinToString(", ") { it.name.string }.ifEmpty { "?" }, "#lair.guildmark.${lair.theme.id}", lair.pos.x.toString(), lair.pos.z.toString())
     }
 
@@ -237,6 +276,9 @@ class Lairs(val lairs: MutableList<Lair> = mutableListOf()) : SavedData() {
         private val BOSS_HEALTH = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "lair_boss_health")
         private val BOSS_DAMAGE = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "lair_boss_damage")
         private val BOSS_ARMOR = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "lair_boss_armor")
+        private val BOSS_SCALE = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "lair_boss_scale")
+        private val BOSS_KNOCKBACK = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "lair_boss_knockback")
+        private val VAULT_HEALTH = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "vault_boss_health")
 
         private val CODEC: Codec<Lairs> = RecordCodecBuilder.create { i ->
             i.group(Lair.CODEC.listOf().fieldOf("lairs").forGetter { it.lairs })

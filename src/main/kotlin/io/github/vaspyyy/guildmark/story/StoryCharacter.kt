@@ -4,22 +4,20 @@ import io.github.vaspyyy.guildmark.quest.QuestNote
 import io.github.vaspyyy.guildmark.quest.QuestType
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
-import net.minecraft.resources.ResourceKey
-import net.minecraft.world.entity.npc.villager.VillagerProfession
 
 /** One chapter of a character's story: the job they ask for, rated and paid like a board note. */
 data class StoryStep(val type: QuestType, val target: String, val count: Int, val reward: Int, val rank: Int)
 
 /**
- * The named characters of the world. Each turns up in a village that knows the adventurer, has a
- * story told over three jobs, and hands over a piece of the world's lore when it ends. Their words live
+ * The named characters of the world. Wren, Tobin and Ilsa each turn up in a village that knows the
+ * adventurer, tell a story over three jobs, and hand over a piece of the world's lore when it ends.
+ * Maren only appears in the main story. Their words live
  * in the language file under character.guildmark.<id>.*.
  */
 enum class StoryCharacter(
     val id: String,
     /** Plain name, also used as the poster on their contracts. */
     val displayName: String,
-    val profession: ResourceKey<VillagerProfession>,
     /** Adventurer rank index they wait for before showing up. */
     val minRank: Int,
     val color: Int,
@@ -28,7 +26,7 @@ enum class StoryCharacter(
     val steps: List<StoryStep>,
 ) {
     WREN(
-        "wren", "Wren Ashdown", VillagerProfession.CARTOGRAPHER, 0, 0x2E7D9A, listOf(6),
+        "wren", "Wren Ashdown", 0, 0x2E7D9A, listOf(6),
         listOf(
             StoryStep(QuestType.FETCH, "paper", 12, 8, 0),
             StoryStep(QuestType.HUNT, "spider", 6, 12, 0),
@@ -36,7 +34,7 @@ enum class StoryCharacter(
         ),
     ),
     TOBIN(
-        "tobin", "Tobin Greaves", VillagerProfession.WEAPONSMITH, 1, 0x8A4B1E, listOf(1, 4),
+        "tobin", "Tobin Greaves", 1, 0x8A4B1E, listOf(1, 4),
         listOf(
             StoryStep(QuestType.HUNT, "zombie", 12, 12, 1),
             StoryStep(QuestType.FETCH, "iron_ingot", 16, 16, 1),
@@ -44,14 +42,19 @@ enum class StoryCharacter(
         ),
     ),
     ILSA(
-        "ilsa", "Sister Ilsa Venn", VillagerProfession.CLERIC, 2, 0x7A3E9D, listOf(2, 3),
+        "ilsa", "Sister Ilsa Venn", 2, 0x7A3E9D, listOf(2, 3),
         listOf(
             StoryStep(QuestType.HUNT, "skeleton", 10, 15, 2),
             StoryStep(QuestType.FETCH, "amethyst_shard", 8, 18, 2),
             StoryStep(QuestType.LAIR, "zombie", 1, 50, 3),
         ),
     ),
+    /** The Last Warden. Never settles in a village: she appears where the story needs her. */
+    MAREN("maren", "Maren", Int.MAX_VALUE, 0x7FE8D0, listOf(), listOf()),
     ;
+
+    /** Has a story of jobs to give, rather than only scenes in the main quest. */
+    val givesJobs: Boolean get() = steps.isNotEmpty()
 
     val title: Component get() = Component.literal(displayName).withColor(color)
     val epithet: Component get() = Component.translatable("character.guildmark.$id.epithet")
