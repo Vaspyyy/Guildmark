@@ -1,6 +1,11 @@
 package io.github.vaspyyy.guildmark.road
 
 import com.mojang.serialization.Codec
+import net.minecraft.world.entity.ai.village.poi.PoiTypes
+import net.minecraft.world.entity.ai.village.poi.PoiManager
+import io.github.vaspyyy.guildmark.block.QuestBoardBlockEntity
+import io.github.vaspyyy.guildmark.block.QuestBoardBlock
+import io.github.vaspyyy.guildmark.advance.Advance
 import com.mojang.serialization.codecs.RecordCodecBuilder
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.guild.GuildNews
@@ -93,14 +98,39 @@ class RoadNetwork(val roads: MutableList<Road> = mutableListOf()) : SavedData() 
         }
     }
 
+    /** A short stack of wall blocks standing on natural ground, like a village wall (not a house). */
+    private fun isWallStack(level: ServerLevel, top: BlockPos): Boolean {
+        var pos = top.below()
+        var height = 0
+        while (height < 7 && level.getBlockState(pos).block in WALL_BLOCKS) {
+            pos = pos.below()
+            height++
+        }
+        val ground = level.getBlockState(pos)
+        return height in 1..6 && (ground.`is`(BlockTags.DIRT) || ground.`is`(BlockTags.SAND) || ground.`is`(Blocks.GRAVEL) ||
+            ground.`is`(Blocks.SNOW_BLOCK) || ground.`is`(BlockTags.BASE_STONE_OVERWORLD) || ground.`is`(Blocks.DIRT_PATH))
+    }
+
+    /** Is [pos] at a village that has built its stone walls? Only those walls get a road cut through them. */
+    private fun insideStoneWalls(level: ServerLevel, pos: BlockPos): Boolean {
+        val bell = level.poiManager.findClosest({ it.`is`(PoiTypes.MEETING) }, pos, 80, PoiManager.Occupancy.ANY).orElse(null) ?: return false
+        val anchor = BlockPos.betweenClosed(bell.offset(-10, -5, -10), bell.offset(10, 5, 10))
+            .firstOrNull { level.getBlockState(it).block is QuestBoardBlock }?.let { QuestBoardBlock.anchorPos(it.immutable(), level.getBlockState(it)) } ?: return false
+        return ((level.getBlockEntity(anchor) as? QuestBoardBlockEntity)?.advanceIndex ?: 0) > Advance.STONE_WALLS.ordinal
+    }
+
     private fun paveColumn(level: ServerLevel, x: Int, z: Int) {
         var top = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, BlockPos(x, 0, z))
-        // A village palisade or a tree trunk in the way: cut through it down to the ground
-        while (true) {
+        // A village palisade, stone wall or a tree trunk in the way: cut through it down to the ground
+        var walled: Boolean? = null
+        var cut = 0
+        while (cut < 8) {
             val below = level.getBlockState(top.below())
-            if (!below.`is`(Blocks.STRIPPED_SPRUCE_LOG) && !(below.`is`(BlockTags.LOGS) && isTree(level, top.below()))) break
+            val wall = below.block in WALL_BLOCKS && (walled ?: (isWallStack(level, top) && insideStoneWalls(level, top)).also { walled = it })
+            if (!wall && !below.`is`(Blocks.STRIPPED_SPRUCE_LOG) && !(below.`is`(BlockTags.LOGS) && isTree(level, top.below()))) break
             top = top.below()
             level.setBlock(top, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL)
+            cut++
         }
         val ground = top.below()
         val state = level.getBlockState(ground)
@@ -139,6 +169,9 @@ class RoadNetwork(val roads: MutableList<Road> = mutableListOf()) : SavedData() 
     }
 
     companion object {
+        /** What a village's stone walls are made of. */
+        private val WALL_BLOCKS = setOf(Blocks.STONE_BRICKS, Blocks.MOSSY_STONE_BRICKS, Blocks.CRACKED_STONE_BRICKS, Blocks.STONE_BRICK_WALL, Blocks.LANTERN)
+
         /** Blocks of open space kept above a road. */
         private const val HEADROOM = 4
 

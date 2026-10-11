@@ -71,6 +71,7 @@ object Sieges {
         var spawnedTotal = 0
         var villagersLost = 0
         var waveStarted = 0L
+        var waveSize = 1
         val bar = ServerBossEvent(UUID.randomUUID(), Component.empty(), BossEvent.BossBarColor.RED, BossEvent.BossBarOverlay.PROGRESS)
     }
 
@@ -113,12 +114,14 @@ object Sieges {
         val untilDawn = (DAWN - timeOfDay(level)).coerceAtLeast(0L)
         val endsAt = level.gameTime + if (untilDawn in 1L..12000L) untilDawn else 6000L
         val siege = Siege(nextId++, bell, anchor, Direction.Plane.HORIZONTAL.getRandomDirection(level.random), QuestGenerator.tierAt(bell.x, bell.z), waves, endsAt)
+        // The horde gathers out of sight; if none of it could (unloaded or flooded land), there's no siege tonight
+        nextWave(level, siege)
+        if (siege.mobs.isEmpty()) return false
         sieges[siege.id] = siege
         level.playSound(null, bell, SoundEvents.RAID_HORN.value(), SoundSource.HOSTILE, 64.0f, 1.0f)
         val message = Component.translatable("message.guildmark.siege_start", VillageNames.of(anchor), Component.translatable("direction.guildmark.${siege.from.serializedName}"))
         for (player in watchers(level, siege)) player.sendSystemMessage(message)
         TownControl.onSiegeStart(level, anchor, bell)
-        nextWave(level, siege)
         return true
     }
 
@@ -142,6 +145,7 @@ object Sieges {
         val walled = ((level.getBlockEntity(siege.anchor) as? QuestBoardBlockEntity)?.advanceIndex ?: 0) > Advance.STONE_WALLS.ordinal
         // Stone walls keep a quarter of every wave out
         val count = (5 + siege.tier * 2 + siege.wave).let { if (walled) it * 3 / 4 else it }
+        siege.waveSize = count
         repeat(count) {
             val x = gather.x + level.random.nextInt(13) - 6
             val z = gather.z + level.random.nextInt(13) - 6
@@ -175,7 +179,8 @@ object Sieges {
 
     /** Every 20 ticks: march the horde on the bell, send later waves, and settle sieges that are over. */
     fun tick(level: ServerLevel) {
-        if (sieges.isEmpty()) return
+        // Sieges happen in the overworld; other dimensions would see no mobs and call every siege won
+        if (sieges.isEmpty() || level.dimension() != net.minecraft.world.level.Level.OVERWORLD) return
         for (siege in sieges.values.toList()) {
             val alive = siege.mobs.mapNotNull { level.getEntity(it) as? Mob }.filter { it.isAlive }
             siege.mobs.retainAll(alive.map { it.uuid }.toSet())
@@ -185,7 +190,7 @@ object Sieges {
 
             val watchers = watchers(level, siege)
             siege.bar.name = Component.translatable("gui.guildmark.siege_bar", siege.wave, siege.totalWaves, alive.size)
-            siege.bar.progress = if (siege.spawnedTotal == 0) 0.0f else (alive.size.toFloat() / (5 + siege.tier * 2 + siege.wave)).coerceIn(0.0f, 1.0f)
+            siege.bar.progress = if (siege.spawnedTotal == 0) 0.0f else (alive.size.toFloat() / siege.waveSize).coerceIn(0.0f, 1.0f)
             for (player in siege.bar.players.toList()) if (player !in watchers) siege.bar.removePlayer(player)
             for (player in watchers) if (player is ServerPlayer && player !in siege.bar.players) siege.bar.addPlayer(player)
 
@@ -201,7 +206,7 @@ object Sieges {
 
     /** A villager died: if it was in a besieged village, the defence is failing. */
     fun onDeath(level: ServerLevel, victim: LivingEntity) {
-        if (victim !is Villager) return
+        if (victim !is Villager || level.dimension() != net.minecraft.world.level.Level.OVERWORLD) return
         for (siege in sieges.values) {
             if (victim.blockPosition().closerThan(siege.center, WATCH_RANGE)) siege.villagersLost++
         }

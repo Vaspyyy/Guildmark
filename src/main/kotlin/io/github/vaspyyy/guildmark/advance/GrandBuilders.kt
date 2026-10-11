@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.advance
 
 import io.github.vaspyyy.guildmark.advance.AdvanceBuilders.free
+import io.github.vaspyyy.guildmark.advance.AdvanceBuilders.naturalGround
 import io.github.vaspyyy.guildmark.advance.AdvanceBuilders.place
 import io.github.vaspyyy.guildmark.advance.AdvanceBuilders.solidGround
 import io.github.vaspyyy.guildmark.advance.AdvanceBuilders.surface
@@ -54,7 +55,7 @@ object GrandBuilders {
             if (stalls.any { abs(it.x - x) < 6 && abs(it.z - z) < 6 }) return@repeat
             val tops = (-1..1).flatMap { dx -> (-1..1).map { dz -> surface(level, x + dx, z + dz) } }
             val base = tops[4].y
-            if (tops.any { it.y != base || !solidGround(level, it) }) return@repeat
+            if (tops.any { it.y != base || !solidGround(level, it) || !naturalGround(level, it) }) return@repeat
             if (tops.any { top -> (0..3).any { !free(level, top.above(it)) } }) return@repeat
             val facing = Direction.getApproximateNearest((center.x - x).toFloat(), 0f, (center.z - z).toFloat())
             buildStall(level, BlockPos(x, base, z), facing, stalls.size)
@@ -97,14 +98,15 @@ object GrandBuilders {
      */
     fun keep(level: ServerLevel, center: BlockPos): Boolean {
         val random = level.random
-        repeat(120) {
+        repeat(200) {
             val angle = random.nextDouble() * 2 * Math.PI
-            val distance = 12 + random.nextInt(14)
+            val distance = 10 + random.nextInt(20)
             val x = center.x + (distance * cos(angle)).toInt()
             val z = center.z + (distance * sin(angle)).toInt()
             val tops = (-4..4).flatMap { dx -> (-4..4).map { dz -> surface(level, x + dx, z + dz) } }
             val base = tops.maxOf { it.y }
-            if (tops.any { base - it.y > 3 || !solidGround(level, it) }) return@repeat
+            // Paths may run under it (foundations fill in), but not houses
+            if (tops.any { base - it.y > 4 || !naturalGround(level, it) || (!solidGround(level, it) && !level.getBlockState(it.below()).`is`(Blocks.DIRT_PATH)) }) return@repeat
             if (tops.any { top -> (top.y until base + 18).any { !free(level, BlockPos(top.x, it, top.z)) } }) return@repeat
             val door = Direction.getApproximateNearest((center.x - x).toFloat(), 0f, (center.z - z).toFloat())
             buildKeep(level, BlockPos(x, base, z), tops, door, center)
@@ -143,21 +145,33 @@ object GrandBuilders {
         place(level, doorway.above(0), Blocks.STONE_BRICKS.defaultBlockState())
         val side = door.clockWise
         for (s in listOf(side, side.opposite)) {
-            val post = doorway.relative(door).relative(s, 2)
-            if (free(level, post)) {
+            val column = doorway.relative(door).relative(s, 2)
+            val post = surface(level, column.x, column.z)
+            if (abs(post.y - (base.y + 1)) <= 3 && solidGround(level, post) && free(level, post) && free(level, post.above())) {
                 place(level, post, Blocks.STONE_BRICK_WALL.defaultBlockState())
-                if (free(level, post.above())) place(level, post.above(), Blocks.LANTERN.defaultBlockState().setValue(LanternBlock.HANGING, false))
+                place(level, post.above(), Blocks.LANTERN.defaultBlockState().setValue(LanternBlock.HANGING, false))
             }
         }
-        // Ladder up the back wall through every floor
+        // Steps down to the ground in front of the door
+        for (i in 1..5) {
+            val column = doorway.relative(door, i)
+            val ground = surface(level, column.x, column.z)
+            val stepY = base.y - i + 1
+            if (ground.y >= stepY) break
+            val stair = BlockPos(column.x, stepY, column.z)
+            if (!free(level, stair)) break
+            for (y in ground.y until stepY) place(level, BlockPos(column.x, y, column.z), Blocks.COBBLESTONE.defaultBlockState())
+            place(level, stair, Blocks.STONE_BRICK_STAIRS.defaultBlockState().setValue(StairBlock.FACING, door.opposite))
+        }
+        // Ladder up the back wall through every floor, one block off the arrow slits so it always has wall behind it
         val ladderWall = door.opposite
-        val ladder = base.relative(ladderWall, 3)
+        val ladder = base.relative(ladderWall, 3).relative(side)
         val ladderState = Blocks.LADDER.defaultBlockState().setValue(LadderBlock.FACING, door)
-        for (dy in 1..height) place(level, ladder.above(dy), ladderState)
+        for (dy in 1 until height) place(level, ladder.above(dy), ladderState)
         // Furnishing: a hall below, a barracks, a lookout
         place(level, base.offset(0, 1, 0).relative(side, 2), Blocks.CRAFTING_TABLE.defaultBlockState())
         place(level, base.offset(0, 1, 0).relative(side.opposite, 2), Blocks.CHEST.defaultBlockState())
-        place(level, base.offset(0, 6, 0).relative(side, 2), Blocks.BARREL.defaultBlockState())
+        place(level, base.offset(0, 5, 0).relative(side, 2), Blocks.BARREL.defaultBlockState())
         for (dy in listOf(3, 8, 13)) place(level, base.above(dy), Blocks.LANTERN.defaultBlockState().setValue(LanternBlock.HANGING, true))
         // Battlements, corner lanterns, Archer Posts on the roof
         for (dx in -4..4) for (dz in -4..4) {

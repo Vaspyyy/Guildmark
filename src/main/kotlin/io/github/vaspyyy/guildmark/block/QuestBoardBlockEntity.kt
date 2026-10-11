@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.block
 
 import com.mojang.serialization.Codec
+import io.github.vaspyyy.guildmark.advance.Advance
 import io.github.vaspyyy.guildmark.quest.QuestNote
 import io.github.vaspyyy.guildmark.registry.ModBlockEntities
 import net.minecraft.core.BlockPos
@@ -83,6 +84,7 @@ class QuestBoardBlockEntity(pos: BlockPos, state: BlockState) :
         output.storeNullable("note", QuestNote.CODEC, note)
         output.putLong("posted_day", postedDay)
         output.putInt("advance_index", advanceIndex)
+        output.putInt("advance_version", ADVANCE_VERSION)
         output.putInt("advance_points", advancePoints)
         output.putLong("siege_lost", lastSiegeLost)
         output.putLong("siege_won", lastSiegeWon)
@@ -94,6 +96,8 @@ class QuestBoardBlockEntity(pos: BlockPos, state: BlockState) :
         note = input.read("note", QuestNote.CODEC).orElse(null)
         postedDay = input.getLongOr("posted_day", 0L)
         advanceIndex = input.getIntOr("advance_index", 0)
+        // Before the market, walls and keep, every advance past the archer tower was another trade road
+        if (input.getIntOr("advance_version", 1) < ADVANCE_VERSION) advanceIndex = advanceIndex.coerceAtMost(Advance.MARKET.ordinal)
         advancePoints = input.getIntOr("advance_points", 0)
         lastSiegeLost = input.getLongOr("siege_lost", -100L)
         lastSiegeWon = input.getLongOr("siege_won", -100L)
@@ -106,6 +110,9 @@ class QuestBoardBlockEntity(pos: BlockPos, state: BlockState) :
     override fun getUpdatePacket(): ClientboundBlockEntityDataPacket = ClientboundBlockEntityDataPacket.create(this)
 
     private companion object {
+        /** Bumped when the chain of advances changes, so older boards can be moved onto the new one. */
+        const val ADVANCE_VERSION = 2
+
         val STANDING_CODEC: Codec<Map<UUID, Int>> = Codec.unboundedMap(UUIDUtil.STRING_CODEC, Codec.INT)
     }
 }

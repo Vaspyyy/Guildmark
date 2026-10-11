@@ -47,8 +47,8 @@ object Situations {
 
         val rival = Holdings.get(level).at(anchor)?.let { RivalGuild.byId(it.guild) }
         val (jobs, key, args, bonus) = when {
-            today - board.lastSiegeLost <= 3 -> Quad(REBUILD, "rebuild", listOf(village), 1.6f)
-            today - board.lastSiegeWon <= 2 -> Quad(FEAST, "feast", listOf(village), 1.3f)
+            today - board.lastSiegeLost in 0..3 -> Quad(REBUILD, "rebuild", listOf(village), 1.6f)
+            today - board.lastSiegeWon in 0..2 -> Quad(FEAST, "feast", listOf(village), 1.3f)
             rival != null && random.nextBoolean() -> Quad(RIVAL, "rival", listOf(village, rival.displayName), 1.4f)
             random.nextInt(4) == 0 -> return QuestGenerator.generateLair(random, rank, poster).copy(story = story("den", random, listOf(village)))
             else -> {

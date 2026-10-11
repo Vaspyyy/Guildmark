@@ -1,6 +1,8 @@
 package io.github.vaspyyy.guildmark.advance
 
 import io.github.vaspyyy.guildmark.guild.GuildHall
+import net.minecraft.tags.BlockTags
+import io.github.vaspyyy.guildmark.road.RoadNetwork
 import io.github.vaspyyy.guildmark.registry.ModBlocks
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
@@ -39,6 +41,13 @@ object AdvanceBuilders {
 
     fun free(level: ServerLevel, pos: BlockPos): Boolean =
         level.getBlockState(pos).canBeReplaced() && level.getFluidState(pos).isEmpty
+
+    /** Ground that grew there rather than was built: not a roof, a floor or a farm. */
+    fun naturalGround(level: ServerLevel, top: BlockPos): Boolean {
+        val state = level.getBlockState(top.below())
+        return state.block in NATURAL_GROUND || state.`is`(BlockTags.DIRT) || state.`is`(BlockTags.SAND) ||
+            state.`is`(BlockTags.BASE_STONE_OVERWORLD) || state.`is`(Blocks.DIRT_PATH) || state.`is`(Blocks.SNOW_BLOCK)
+    }
 
     fun solidGround(level: ServerLevel, top: BlockPos): Boolean {
         val ground = top.below()
@@ -142,6 +151,10 @@ object AdvanceBuilders {
             return dx * dx + dz * dz <= reach * reach
         }
 
+        // Trade roads leave through gates, whatever they're paved with
+        val roads = RoadNetwork.get(level).roads.filter { it.touches(center, reach + 64.0) }
+            .flatMap { road -> road.columnsByChunk.values.flatten() }.toHashSet()
+
         // Flood fill the village's walkable land
         val start = top(center.x, center.z)
         val area = HashSet<Long>()
@@ -174,7 +187,8 @@ object AdvanceBuilders {
                 !inside(nx, nz) && walkable(here, top(nx, nz))
             }
             if (!open) continue
-            if (stone && level.getBlockState(here.below()).`is`(Blocks.DIRT_PATH)) {
+            if (Pair(x, z) in roads && !stone) continue
+            if (stone && (level.getBlockState(here.below()).`is`(Blocks.DIRT_PATH) || Pair(x, z) in roads)) {
                 // A gate: an arch over the road with lanterns hanging under it
                 if ((0..2).all { clear(here.above(it)) } && clear(here.above(3))) {
                     place(level, here.above(3), Blocks.STONE_BRICKS.defaultBlockState())
