@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.client
 
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.guild.RivalGuild
 import io.github.vaspyyy.guildmark.quest.ContractState
 import io.github.vaspyyy.guildmark.quest.Contracts
 import io.github.vaspyyy.guildmark.quest.QuestNote
@@ -22,6 +23,7 @@ import net.minecraft.resources.Identifier
 import net.minecraft.util.Mth
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.item.ItemStack
+import net.minecraft.world.level.block.Blocks
 import net.neoforged.neoforge.client.gui.GuiLayer
 import kotlin.math.atan2
 import kotlin.math.sqrt
@@ -71,6 +73,7 @@ object ContractTracker : GuiLayer {
             }
             .sortedBy { it.state.deadline }
         val rows = mutableListOf<Row>()
+        challengeRows(player).forEach { rows.add(it) }
         storyRow(player)?.let { rows.add(it) }
         for (entry in entries) {
             val (status, color) = status(player, entry)
@@ -143,6 +146,17 @@ object ContractTracker : GuiLayer {
             val distance = "${mate.distanceTo(player).toInt()}m"
             graphics.text(font, Component.literal(distance), left + WIDTH - PADDING - font.width(distance), y, FADED_INK, false)
         }
+    }
+
+    /** Rival challenges against villages the player's guild holds: beat the captain at the bell in time. */
+    private fun challengeRows(player: Player): List<Row> = player.getData(ModAttachments.CHALLENGES).map { challenge ->
+        val rival = RivalGuild.byKey(challenge.rival)
+        val icon = ItemStack(Blocks.BANNER.pick(rival?.color ?: net.minecraft.world.item.DyeColor.WHITE))
+        val title = Component.translatable("gui.guildmark.tracker.challenge", rival?.displayName ?: "?", challenge.village)
+        val status = if (challenge.daysLeft <= 0) Component.translatable("gui.guildmark.tracker.challenge.today")
+            else Component.translatable("gui.guildmark.tracker.status", Component.translatable("gui.guildmark.tracker.challenge.duel"),
+                Component.translatable("gui.guildmark.tracker.days", challenge.daysLeft))
+        Row(icon, title, status, LATE_INK, if (player.level().dimension() == Level.OVERWORLD) challenge.anchor else null)
     }
 
     /** The main story's next step, while it's under way. */

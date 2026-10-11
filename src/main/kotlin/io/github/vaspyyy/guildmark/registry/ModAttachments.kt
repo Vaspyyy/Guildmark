@@ -3,6 +3,7 @@ package io.github.vaspyyy.guildmark.registry
 import net.minecraft.network.codec.ByteBufCodecs
 import com.mojang.serialization.Codec
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.guild.RivalChallenge
 import io.github.vaspyyy.guildmark.progression.GuildProgress
 import io.github.vaspyyy.guildmark.road.TrafficState
 import io.github.vaspyyy.guildmark.road.TravelProgress
@@ -75,6 +76,13 @@ object ModAttachments {
     val PARTY: DeferredHolder<AttachmentType<*>, AttachmentType<List<UUID>>> = ATTACHMENTS.register("party") { ->
         AttachmentType.builder { -> listOf<UUID>() }
             .sync({ holder, player -> holder === player }, UUIDUtil.STREAM_CODEC.apply(ByteBufCodecs.list()))
+            .build()
+    }
+
+    /** Open rival challenges against villages the player's guild holds, synced for the tracker. Rebuilt every few seconds. */
+    val CHALLENGES: DeferredHolder<AttachmentType<*>, AttachmentType<List<RivalChallenge>>> = ATTACHMENTS.register("challenges") { ->
+        AttachmentType.builder { -> listOf<RivalChallenge>() }
+            .sync({ holder, player -> holder === player }, RivalChallenge.STREAM_CODEC.apply(ByteBufCodecs.list()))
             .build()
     }
 

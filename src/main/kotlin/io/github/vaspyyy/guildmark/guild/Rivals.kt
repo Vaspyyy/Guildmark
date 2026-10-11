@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.guild
 
 import net.minecraft.world.level.Level
+import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.GuildmarkConfig
 import io.github.vaspyyy.guildmark.block.VillageBoards
 import io.github.vaspyyy.guildmark.loot.Rarity
@@ -95,6 +96,19 @@ object Rivals {
             }
         }
         holdings.changed()
+    }
+
+    /** Keeps a guild leader's tracker showing the challenges against their villages. */
+    fun syncChallenges(level: ServerLevel, player: Player) {
+        val guild = Guilds.get(level).ledBy(player.uuid)
+        val today = VillageBoards.day(level)
+        val challenges = guild?.let { g ->
+            Holdings.get(level).of(g.id).filter { it.challenger >= 0 }.mapNotNull { holding ->
+                val rival = RivalGuild.byId(holding.challenger) ?: return@mapNotNull null
+                RivalChallenge(holding.anchor, VillageNames.of(holding.anchor), rival.key, (holding.challengeDeadline - today).toInt().coerceAtLeast(0))
+            }
+        } ?: listOf()
+        if (player.getData(ModAttachments.CHALLENGES) != challenges) player.setData(ModAttachments.CHALLENGES, challenges)
     }
 
     /** Every 200 ticks for each player: rivals turn up at the village they're in. */

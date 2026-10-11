@@ -736,5 +736,8 @@
   "situation.guildmark.land.jungle.2": "The vines around %s crawl at night. Not the vines. The spiders.",
   "situation.guildmark.land.plains.0": "The dead walk the fields of %s every night now.",
   "situation.guildmark.land.plains.1": "Zombies at the doors of %s again. We've run out of planks to nail.",
-  "situation.guildmark.land.plains.2": "Somebody please make the nights in %s quiet again."
+  "situation.guildmark.land.plains.2": "Somebody please make the nights in %s quiet again.",
+  "gui.guildmark.tracker.challenge": "%s challenge %s",
+  "gui.guildmark.tracker.challenge.duel": "Beat their captain",
+  "gui.guildmark.tracker.challenge.today": "Beat their captain today!"
 }
