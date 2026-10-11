@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.lair
 
 import net.minecraft.core.BlockPos
+import net.minecraft.world.entity.monster.PatrollingMonster
 import net.minecraft.core.particles.ParticleTypes
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.network.chat.Component
@@ -124,7 +125,9 @@ object BossAbilities {
         val angle = level.random.nextDouble() * Math.PI * 2
         val spot = Vec3(boss.x + cos(angle) * 2.5, boss.y, boss.z + sin(angle) * 2.5)
         mob.snapTo(spot.x, spot.y, spot.z, level.random.nextFloat() * 360f, 0f)
-        mob.finalizeSpawn(level, level.getCurrentDifficultyAt(BlockPos.containing(spot)), EntitySpawnReason.MOB_SUMMONED, null)
+        // Illagers summoned as anything but an event can roll a raid captain (banner, Ominous Bottle)
+        val reason = if (mob is PatrollingMonster) EntitySpawnReason.EVENT else EntitySpawnReason.MOB_SUMMONED
+        mob.finalizeSpawn(level, level.getCurrentDifficultyAt(BlockPos.containing(spot)), reason, null)
         mob.setPersistenceRequired()
         boss.target?.let { mob.target = it }
         level.addFreshEntity(mob)

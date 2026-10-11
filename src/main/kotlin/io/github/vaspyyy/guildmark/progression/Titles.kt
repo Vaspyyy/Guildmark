@@ -15,7 +15,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent
 
 /**
  * Titles a player earns from milestones and can wear after their name ("Steve, Lairbreaker"), in chat,
- * the tab list and over their head. `/title` lists the ones earned; each milestone that grants one says so.
+ * the tab list and over their head. `/titles` lists the ones earned; each milestone that grants one says so.
  */
 enum class Title(val id: String, val milestone: String) {
     HIRELING("hireling", Milestones.PAID),
@@ -64,7 +64,7 @@ object Titles {
 
     private fun wearButton(title: Title): Component = Component.translatable("message.guildmark.title.wear_button").withStyle {
         it.withColor(0x7FD87F).withUnderlined(true)
-            .withClickEvent(ClickEvent.RunCommand("/title wear ${title.id}"))
+            .withClickEvent(ClickEvent.RunCommand("/titles wear ${title.id}"))
             .withHoverEvent(HoverEvent.ShowText(Component.translatable("message.guildmark.title.wear_hover", title.label)))
     }
 
@@ -83,7 +83,7 @@ object Titles {
         }
         if (worn.isNotEmpty()) {
             player.sendSystemMessage(Component.translatable("message.guildmark.title.remove_button").withStyle {
-                it.withColor(0xB0A080).withUnderlined(true).withClickEvent(ClickEvent.RunCommand("/title clear"))
+                it.withColor(0xB0A080).withUnderlined(true).withClickEvent(ClickEvent.RunCommand("/titles clear"))
             })
         }
     }
@@ -94,9 +94,16 @@ object Titles {
         event.displayname = Component.translatable("title.guildmark.format", event.displayname, title.label.copy().withStyle(ChatFormatting.GOLD))
     }
 
+    /** Server: the tab list shows the same "Name, Title" (it doesn't use the display name on its own). */
+    fun onTabListName(event: PlayerEvent.TabListNameFormat) {
+        if (Title.byId(event.entity.getData(ModAttachments.TITLE)) == null) return
+        event.displayName = event.entity.displayName
+    }
+
+    /** `/titles`, since vanilla's `/title` is ops-only and keeps its permission when another mod adds to it. */
     fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
         dispatcher.register(
-            Commands.literal("title")
+            Commands.literal("titles")
                 .executes { context ->
                     list(context.source.playerOrException)
                     1

@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.guild
 
 import com.mojang.brigadier.CommandDispatcher
+import net.minecraft.world.level.Level
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.serialization.Codec
 import com.mojang.serialization.codecs.RecordCodecBuilder
@@ -141,8 +142,9 @@ class Errands(val errands: MutableList<Errand> = mutableListOf()) : SavedData() 
             return true
         }
 
-        /** Every 200 ticks per player: members whose errand is over come back to their leader, or don't. */
+        /** Every 200 ticks per player: members whose errand is over come back to their leader, or don't. They wait until the leader is in the overworld. */
         fun tick(level: ServerLevel, player: ServerPlayer) {
+            if (level.dimension() != Level.OVERWORLD) return
             val errands = get(level)
             val today = VillageBoards.day(level)
             val due = errands.errands.filter { it.leader == player.uuid && today >= it.returnDay }

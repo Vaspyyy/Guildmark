@@ -131,6 +131,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
             }
         }
         NeoForge.EVENT_BUS.addListener(PlayerEvent.NameFormat::class.java) { Titles.onNameFormat(it) }
+        NeoForge.EVENT_BUS.addListener(PlayerEvent.TabListNameFormat::class.java) { Titles.onTabListName(it) }
         NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerRespawnEvent::class.java) {
             Progression.applyAttributes(it.entity)
             // The party list isn't copied to the new player entity

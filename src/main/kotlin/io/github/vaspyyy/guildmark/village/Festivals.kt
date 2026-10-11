@@ -42,6 +42,8 @@ object Festivals {
     private val greeted = HashMap<UUID, Pair<BlockPos, Long>>()
     /** The day each village last had its festival trader. */
     private val traderDay = HashMap<BlockPos, Long>()
+    /** The 100-tick slot each village last celebrated in, so a crowd of players doesn't multiply the show. */
+    private val showSlot = HashMap<BlockPos, Long>()
 
     private fun seed(anchor: BlockPos): Int = (anchor.x * 73856093) xor (anchor.z * 19349663)
 
@@ -77,6 +79,9 @@ object Festivals {
             player.sendSystemMessage(Component.translatable("message.guildmark.festival", name(anchor), VillageNames.of(anchor), PAY_BONUS_PERCENT).withStyle { it.withColor(0xE8C26A) })
             level.playSound(null, player.blockPosition(), SoundEvents.VILLAGER_CELEBRATE, SoundSource.NEUTRAL, 1.0f, 1.0f)
         }
+        val slot = level.gameTime / 100
+        if (showSlot[anchor] == slot) return
+        showSlot[anchor] = slot
         for (villager in level.getEntitiesOfClass(Villager::class.java, AABB(bell).inflate(24.0))) {
             if (random.nextInt(4) != 0 || villager.isSleeping) continue
             level.playSound(null, villager.blockPosition(), SoundEvents.VILLAGER_CELEBRATE, SoundSource.NEUTRAL, 0.6f, 0.9f + random.nextFloat() * 0.3f)
