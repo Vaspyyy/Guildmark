@@ -13,12 +13,18 @@ head = Part('head', cubes=[C((-4, -8, -4), (8, 8, 8), 'face')], children=[
     Part('tobin_beard', cubes=[C((-4, -2, -4.75), (8, 6, 1), 'beard')]),
     Part('ilsa_hood', cubes=[C((-4.5, -8.5, -4.5), (9, 9, 9), 'ihood')]),
     Part('maren_hood', cubes=[C((-4.6, -8.6, -4.6), (9, 9, 9), 'mhood', inflate=0.1), C((-2, -8, 4.4), (4, 4, 2), 'mpoint')]),
+    # Pip's floppy beret, slumped to one side, with a long plume stuck in the band
+    Part('pip_cap', (0, -8, 0), (0, 0, -12), cubes=[C((-5, -2, -5), (10, 2, 10), 'beret'), C((-4.5, -0.5, -4.5), (9, 1, 9), 'capband'),
+                                                    C((3.5, -7, 1), (1, 6, 1), 'plume')]),
 ])
 body = Part('body', cubes=[C((-4, 0, -2), (8, 12, 4), 'torso')], children=[
     Part('wren_bag', cubes=[C((-3, 3, 2), (6, 6, 2), 'satchel'), C((-4.5, 1.5, 2.5), (9, 2, 2), 'maps')]),
     Part('ilsa_robe', cubes=[C((-4.5, 10, -2.5), (9, 12, 5), 'robe')]),
     Part('maren_cloak', (0, 0, 2), (5, 0, 0), cubes=[C((-5, 0, 0), (10, 21, 1), 'cloak')]),
     Part('maren_quiver', (2.5, 1, 3.2), (0, 0, 25), cubes=[C((-1, -1, 0), (2, 10, 2), 'quiver'), C((-1, -3, 0.25), (2, 2, 1.5), 'fletch')]),
+    # A lute slung across the back, neck over the left shoulder
+    Part('pip_lute', (0, 7, 2.6), (0, 0, -35), cubes=[C((-2.5, -2, 0), (5, 6, 2), 'lutebody'), C((-0.5, -10, 0.5), (1, 8, 1), 'luteneck'),
+                                                      C((-1, -12, 0.25), (2, 2, 1.5), 'lutehead')]),
 ])
 right_arm = Part('right_arm', (-5, 2, 0), cubes=[C((-3, -2, -2), (4, 12, 4), 'rarm')],
                  children=[Part('tobin_rpaul', cubes=[C((-3.5, -2.5, -2.5), (5, 3, 5), 'rpaul')])])
@@ -156,14 +162,49 @@ maren = {
     'lleg': limb(["llll"] * 7 + ["BBBB"] * 5, PM, fill(LEAD)),
 }
 
+# ---------------- Pip Larkspur, bard ----------------
+PS = (240, 200, 168); PHR = (232, 196, 96); PHRD = (196, 156, 64); CRIM = (176, 38, 52); CRIMD = (126, 26, 40)
+SAF = (236, 186, 52); SAFD = (196, 146, 34); FOR = (58, 112, 64); FORD = (40, 82, 46); WOOD = (152, 96, 46); WOODD = (108, 66, 32)
+PP = {'H': PHR, 'h': PHRD, 'S': PS, 'W': (250, 250, 250), 'e': (60, 100, 180), 'f': (234, 160, 140), 'n': (222, 178, 148),
+      'm': (190, 84, 84), 'R': CRIM, 'r': CRIMD, 'Y': SAF, 'y': SAFD, 'G': FOR, 'g': FORD, 'L': (82, 52, 30), 'O': (66, 44, 28),
+      'K': (40, 28, 20), 'w': WOOD, 'd': WOODD, 'c': (230, 220, 200), '.': CL, 'F': (250, 250, 250), 'B': (196, 160, 70)}
+pip = {
+    'face': grid({
+        'front': ["HHHHHHHH", "HHHhHHHH", "HSSSSSHH", "SSSSSSSS", "SWeSSeWS", "SfSnnSfS", "SSSmmSSS", "SSSSSSSS"],
+        'right': ["HHHHHHHH", "HHHHHHHH", "HHHHhHHH", "HHHHSSSS", "HHHSSSSS", "HHHSSSSS", "HhHSSSSS", "hHSSSSSS"],
+        'left': ["HHHHHHHH", "HHHHHHHH", "HHHhHHHH", "SSSSHHHH", "SSSSSHHH", "SSSSSHHH", "SSSSSHhH", "SSSSSShh"],
+        'back': ["HHHHHHHH", "HHhHHHHH", "HHHHHhHH", "HHHHHHHH", "HhHHHHhH", "HHHHHHHH", "hHHhHHHh", "hHhhHhhh"],
+        'top': ["HHHHHHHH"] * 8,
+    }, PP, default=fill(PS)),
+    'beret': grid({'top': ["RRRRRRRRRR", "RRRRRRRRRR", "RRRrRRRRRR", "RRRRRRRRrR", "RRRRRRRRRR", "RrRRRRRRRR", "RRRRRRrRRR",
+                           "RRRRRRRRRR", "RRRRrRRRRR", "RRRRRRRRRR"]}, PP, default=fill(CRIMD, 4)),
+    'capband': grid({'front': ["YYYYYYYYY"], 'back': ["YYYYYYYYY"], 'left': ["YYYYYYYYY"], 'right': ["YYYYYYYYY"]}, PP, default=fill(SAFD, 4)),
+    'plume': grid({'front': ["F", "F", "F", "c", "c", "Y"], 'back': ["F", "F", "F", "c", "c", "Y"]}, PP, default=fill((240, 240, 236), 6)),
+    'torso': grid({
+        'front': ["RRYYYYRR", "RRRYYRRR", "YYYRRYYY", "YYYRRYYY", "RRRYYRRR", "RRRYYRRR", "YYYRRYYY", "LLLBLLLL",
+                  "RRRYYYYY", "RRRYYYYY", "rrrYYYYY", "rrryyyyy"],
+        'back': ["RRRRYYYY"] * 7 + ["LLLLLLLL"] + ["RRRRYYYY"] * 3 + ["rrrryyyy"],
+        'left': ["YYYY"] * 7 + ["LLLL"] + ["YYYY"] * 3 + ["yyyy"], 'right': ["RRRR"] * 7 + ["LLLL"] + ["RRRR"] * 3 + ["rrrr"],
+    }, PP, default=fill(SAF)),
+    'rarm': limb(["RRRR"] * 6 + ["YYYY", "RRRR", "rrrr", "cccc", "SSSS", "SSSS"], PP, fill(PS)),
+    'larm': limb(["YYYY"] * 6 + ["RRRR", "YYYY", "yyyy", "cccc", "SSSS", "SSSS"], PP, fill(PS)),
+    'rleg': limb(["GGGG"] * 7 + ["gggg", "OOOO", "OOOO", "OOOO", "KKKK"], PP, fill(FORD)),
+    'lleg': limb(["GGGG"] * 7 + ["gggg", "OOOO", "OOOO", "OOOO", "KKKK"], PP, fill(FORD)),
+    'lutebody': grid({'back': ["dwwwd", "wwwww", "wwKww", "wKKKw", "wwKww", "dwwwd"],
+                      'front': ["ddddd", "dwwwd", "dwwwd", "dwwwd", "dwwwd", "ddddd"]}, PP, default=fill(WOODD, 4)),
+    'luteneck': grid({'back': ["d", "w", "c", "w", "c", "w", "c", "w"]}, PP, default=fill(WOODD, 4)),
+    'lutehead': fill(WOODD, 5),
+}
+
 out, prev, art = sys.argv[1], sys.argv[2], sys.argv[3]
 shown = {
     'wren': {'wren_hat', 'wren_bag'}, 'tobin': {'tobin_beard', 'tobin_rpaul', 'tobin_lpaul'},
     'ilsa': {'ilsa_hood', 'ilsa_robe'}, 'maren': {'maren_hood', 'maren_cloak', 'maren_quiver'},
+    'pip': {'pip_cap', 'pip_lute'},
 }
 optional = set().union(*shown.values())
-sheet = Image.new('RGBA', (1024, 640))
-for i, (name, painters) in enumerate([('wren', wren), ('tobin', tobin), ('ilsa', ilsa), ('maren', maren)]):
+sheet = Image.new('RGBA', (1280, 640))
+for i, (name, painters) in enumerate([('wren', wren), ('tobin', tobin), ('ilsa', ilsa), ('maren', maren), ('pip', pip)]):
     tex = model.paint({c.name: painters.get(c.name) for c in model.all_cubes()})
     arr = np.array(tex)
     glow_mask = np.all(arr == np.array(GLOW), axis=-1)

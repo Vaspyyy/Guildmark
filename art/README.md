@@ -7,7 +7,7 @@ and Kotlin model code always agree.
   UVs, paints the textures, writes the Kotlin `LayerDefinition`, renders previews and saves a
   `.bbmodel` you can open in Blockbench.
 - `scripts/hollow_king.py` is the Hollow King (main story final boss).
-- `scripts/story_npc.py` is the named characters: Wren, Tobin, Ilsa and Maren share one model and each
+- `scripts/story_npc.py` is the named characters: Wren, Tobin, Ilsa, Maren and Pip share one model and each
   shows only their own pieces.
 - `scripts/shard_art.py` is the crown shard item texture.
 

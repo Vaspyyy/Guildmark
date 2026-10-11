@@ -9,7 +9,7 @@ import net.minecraft.resources.Identifier
 data class StoryStep(val type: QuestType, val target: String, val count: Int, val reward: Int, val rank: Int)
 
 /**
- * The named characters of the world. Wren, Tobin and Ilsa each turn up in a village that knows the
+ * The named characters of the world. Wren, Tobin, Ilsa and Pip each turn up in a village that knows the
  * adventurer, tell a story over three jobs, and hand over a piece of the world's lore when it ends.
  * Maren only appears in the main story. Their words live
  * in the language file under character.guildmark.<id>.*.
@@ -47,6 +47,14 @@ enum class StoryCharacter(
             StoryStep(QuestType.HUNT, "skeleton", 10, 15, 2),
             StoryStep(QuestType.FETCH, "amethyst_shard", 8, 18, 2),
             StoryStep(QuestType.LAIR, "zombie", 1, 50, 3),
+        ),
+    ),
+    PIP(
+        "pip", "Pip Larkspur", 1, 0xC23A48, listOf(5),
+        listOf(
+            StoryStep(QuestType.FETCH, "string", 12, 10, 1),
+            StoryStep(QuestType.HUNT, "creeper", 6, 16, 1),
+            StoryStep(QuestType.LAIR, "zombie", 1, 40, 2),
         ),
     ),
     /** The Last Warden. Never settles in a village: she appears where the story needs her. */

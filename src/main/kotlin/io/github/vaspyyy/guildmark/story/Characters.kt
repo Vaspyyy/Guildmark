@@ -196,6 +196,11 @@ class Characters(val placements: MutableList<Placement> = mutableListOf()) : Sav
                     MainQuest.refreshCompasses(player)
                 }
             }
+            // Pip, story done, sings of the adventurer's greatest deed so far
+            if (character == StoryCharacter.PIP && chapters(player, character) >= character.steps.size) {
+                player.sendSystemMessage(Component.translatable("gui.guildmark.character.says", character.title, Ballads.verse(player)))
+                level.playSound(null, npc.blockPosition(), SoundEvents.NOTE_BLOCK_GUITAR.value(), SoundSource.NEUTRAL, 1.0f, 1.0f + level.random.nextFloat() * 0.3f)
+            }
             npc.playSound(SoundEvents.VILLAGER_AMBIENT, 1.0f, 1.2f)
             PacketDistributor.sendToPlayer(player, OpenCharacterPayload(npc.id, character.id, chapters(player, character), carries(player, character)))
         }
@@ -231,7 +236,7 @@ class Characters(val placements: MutableList<Placement> = mutableListOf()) : Sav
             Milestones.award(player, Milestones.CHARACTER)
             for (index in character.lore) player.inventory.placeItemBackInInventory(LoreBooks.fragment(index), Prediction.SERVER_ONLY)
             if (character == StoryCharacter.WREN) MainQuest.start(level, player)
-            else player.inventory.placeItemBackInInventory(gift(level, character), Prediction.SERVER_ONLY)
+            else player.inventory.placeItemBackInInventory(if (character == StoryCharacter.PIP) Ballads.book(player) else gift(level, character), Prediction.SERVER_ONLY)
             level.playSound(null, player.blockPosition(), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.PLAYERS, 1.0f, 1.0f)
             GuildNews.add(level, "news.guildmark.story_done", player.name.string, character.displayName)
         }
@@ -246,6 +251,7 @@ class Characters(val placements: MutableList<Placement> = mutableListOf()) : Sav
                     it.enchant(enchantments.getOrThrow(Enchantments.UNBREAKING), 3)
                 }
                 StoryCharacter.ILSA -> ItemStack(Items.TOTEM_OF_UNDYING)
+                StoryCharacter.PIP -> ItemStack(Items.WRITABLE_BOOK)
             }
             stack.set(DataComponents.CUSTOM_NAME, character.line("gift"))
             stack.set(DataComponents.LORE, ItemLore(listOf(character.line("gift.lore"))))
