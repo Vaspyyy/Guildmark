@@ -64,7 +64,9 @@ object GrandBuilders {
         for (stall in stalls) {
             EntityTypes.VILLAGER.create(level, EntitySpawnReason.EVENT)?.let { villager ->
                 val spot = stall.relative(Direction.Plane.HORIZONTAL.getRandomDirection(random), 2)
-                villager.snapTo(spot.x + 0.5, surface(level, spot.x, spot.z).y.toDouble(), spot.z + 0.5)
+                val ground = surface(level, spot.x, spot.z)
+                villager.snapTo(spot.x + 0.5, ground.y.toDouble(), spot.z + 0.5)
+                villager.finalizeSpawn(level, level.getCurrentDifficultyAt(ground), EntitySpawnReason.EVENT, null)
                 level.addFreshEntity(villager)
             }
         }

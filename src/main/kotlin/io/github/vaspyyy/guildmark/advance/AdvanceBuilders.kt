@@ -128,7 +128,12 @@ object AdvanceBuilders {
         fun clear(pos: BlockPos) = free(level, pos) || (stone && level.getBlockState(pos).`is`(Blocks.STRIPPED_SPRUCE_LOG))
         val reach = radius + 8
         val tops = HashMap<Long, BlockPos>()
-        fun top(x: Int, z: Int): BlockPos = tops.getOrPut(BlockPos.asLong(x, 0, z)) { surface(level, x, z) }
+        // Stone walls read the ground under the palisade's logs, so they follow the same line
+        fun top(x: Int, z: Int): BlockPos = tops.getOrPut(BlockPos.asLong(x, 0, z)) {
+            var top = surface(level, x, z)
+            if (stone) while (level.getBlockState(top.below()).`is`(Blocks.STRIPPED_SPRUCE_LOG)) top = top.below()
+            top
+        }
         fun water(top: BlockPos) = !level.getFluidState(top.below()).isEmpty
         fun walkable(from: BlockPos, to: BlockPos) = !water(to) && abs(to.y - from.y) <= 1
         fun inside(x: Int, z: Int): Boolean {
@@ -162,9 +167,7 @@ object AdvanceBuilders {
         for (key in area) {
             val x = BlockPos.getX(key)
             val z = BlockPos.getZ(key)
-            // The palisade's own logs read as the surface; stone walls look under them
-            var here = top(x, z)
-            if (stone) while (level.getBlockState(here.below()).`is`(Blocks.STRIPPED_SPRUCE_LOG)) here = here.below()
+            val here = top(x, z)
             val open = Direction.Plane.HORIZONTAL.any { direction ->
                 val nx = x + direction.stepX
                 val nz = z + direction.stepZ

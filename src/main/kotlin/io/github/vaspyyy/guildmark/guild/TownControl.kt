@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.guild
 
+import net.minecraft.world.level.Level
 import io.github.vaspyyy.guildmark.advance.Advance
 import io.github.vaspyyy.guildmark.block.QuestBoardBlockEntity
 import io.github.vaspyyy.guildmark.block.VillageBoards
@@ -68,6 +69,8 @@ object TownControl {
 
     fun status(level: ServerLevel, player: Player, anchor: BlockPos): ClaimStatus {
         val guild = Guilds.get(level).ledBy(player.uuid) ?: return ClaimStatus.NO_GUILD
+        // Only overworld villages can be held (a board crafted in the Nether is not a village)
+        if (level.dimension() != Level.OVERWORLD) return ClaimStatus.NO_HALL
         val holding = Holdings.get(level).at(anchor)
         if (holding?.guild == guild.id) return ClaimStatus.YOURS
         val rival = holding?.let { RivalGuild.byId(it.guild) }
@@ -143,6 +146,7 @@ object TownControl {
 
     /** Every 200 ticks for each player: a leader near one of their villages collects its tribute. */
     fun visit(level: ServerLevel, player: Player) {
+        if (level.dimension() != Level.OVERWORLD) return
         val holdings = Holdings.get(level)
         // Villages taken while nobody was near get their banners once someone comes by
         for (holding in holdings.holdings) {

@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.guild
 
+import net.minecraft.world.level.Level
 import io.github.vaspyyy.guildmark.GuildmarkConfig
 import io.github.vaspyyy.guildmark.block.VillageBoards
 import io.github.vaspyyy.guildmark.loot.Rarity
@@ -98,7 +99,7 @@ object Rivals {
 
     /** Every 200 ticks for each player: rivals turn up at the village they're in. */
     fun tickPlayer(level: ServerLevel, player: Player) {
-        if (!GuildmarkConfig.RIVALS.get()) return
+        if (!GuildmarkConfig.RIVALS.get() || level.dimension() != Level.OVERWORLD) return
         val anchor = VillageBoards.villageBoard(level, player.blockPosition()) ?: return
         val holdings = Holdings.get(level)
         holdings.remember(anchor)

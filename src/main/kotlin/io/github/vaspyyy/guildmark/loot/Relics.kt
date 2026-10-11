@@ -215,6 +215,8 @@ object Relics {
                     bolt.setVisualOnly(true)
                     level.addFreshEntity(bolt)
                 }
+                // The blow that called the lightning just landed; let the bolt's damage through too
+                victim.invulnerableTime = 0
                 victim.hurtServer(level, level.damageSources().magic(), 6f)
             }
         }
