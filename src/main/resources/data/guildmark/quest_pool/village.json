@@ -114,7 +114,8 @@
       "reward_per": 0.3,
       "weight": 4,
       "stories": [
-        "quest.guildmark.story.village.fetch.0"
+        "quest.guildmark.story.village.fetch.0",
+        "quest.guildmark.story.village.fetch.bread.0"
       ]
     },
     {
@@ -125,7 +126,8 @@
       "reward_per": 0.3,
       "weight": 4,
       "stories": [
-        "quest.guildmark.story.village.fetch.0"
+        "quest.guildmark.story.village.fetch.0",
+        "quest.guildmark.story.village.fetch.apple.0"
       ]
     },
     {
@@ -136,7 +138,8 @@
       "reward_per": 0.08,
       "weight": 4,
       "stories": [
-        "quest.guildmark.story.village.fetch.0"
+        "quest.guildmark.story.village.fetch.torch.0",
+        "quest.guildmark.story.village.fetch.torch.1"
       ]
     },
     {

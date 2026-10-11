@@ -10,7 +10,8 @@
       "max": 16,
       "reward_per": 0.25,
       "stories": [
-        "quest.guildmark.story.shepherd.fetch.0"
+        "quest.guildmark.story.shepherd.fetch.0",
+        "quest.guildmark.story.shepherd.fetch.white_wool.0"
       ]
     },
     {
@@ -21,7 +22,8 @@
       "reward_per": 0.5,
       "weight": 5,
       "stories": [
-        "quest.guildmark.story.shepherd.fetch.0"
+        "quest.guildmark.story.shepherd.fetch.black_wool.0",
+        "quest.guildmark.story.shepherd.fetch.black_wool.1"
       ]
     },
     {
@@ -32,7 +34,8 @@
       "reward_per": 3.0,
       "weight": 3,
       "stories": [
-        "quest.guildmark.story.shepherd.fetch.0"
+        "quest.guildmark.story.shepherd.fetch.shears.0",
+        "quest.guildmark.story.shepherd.fetch.shears.1"
       ]
     },
     {
@@ -43,7 +46,8 @@
       "reward_per": 0.12,
       "weight": 6,
       "stories": [
-        "quest.guildmark.story.shepherd.fetch.0"
+        "quest.guildmark.story.shepherd.fetch.wheat.0",
+        "quest.guildmark.story.shepherd.fetch.wheat.1"
       ]
     },
     {
@@ -54,7 +58,8 @@
       "reward_per": 1.5,
       "weight": 5,
       "stories": [
-        "quest.guildmark.story.shepherd.hunt.0"
+        "quest.guildmark.story.shepherd.hunt.0",
+        "quest.guildmark.story.shepherd.hunt.wolf.0"
       ]
     }
   ]

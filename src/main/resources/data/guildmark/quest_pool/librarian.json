@@ -70,7 +70,8 @@
       "weight": 4,
       "min_tier": 2,
       "stories": [
-        "quest.guildmark.story.librarian.hunt.0"
+        "quest.guildmark.story.librarian.hunt.0",
+        "quest.guildmark.story.librarian.hunt.witch.0"
       ]
     },
     {
@@ -80,7 +81,8 @@
       "reward_per": 6,
       "weight": 6,
       "stories": [
-        "quest.guildmark.story.librarian.deliver.0"
+        "quest.guildmark.story.librarian.deliver.0",
+        "quest.guildmark.story.librarian.deliver.any.0"
       ]
     }
   ]

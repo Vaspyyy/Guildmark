@@ -10,7 +10,8 @@
       "max": 10,
       "reward_per": 0.6,
       "stories": [
-        "quest.guildmark.story.weaponsmith.fetch.0"
+        "quest.guildmark.story.weaponsmith.fetch.0",
+        "quest.guildmark.story.weaponsmith.fetch.iron_ingot.0"
       ]
     },
     {
@@ -20,7 +21,8 @@
       "max": 24,
       "reward_per": 0.2,
       "stories": [
-        "quest.guildmark.story.weaponsmith.fetch.0"
+        "quest.guildmark.story.weaponsmith.fetch.coal.0",
+        "quest.guildmark.story.weaponsmith.fetch.coal.1"
       ]
     },
     {
@@ -31,7 +33,8 @@
       "reward_per": 0.25,
       "weight": 6,
       "stories": [
-        "quest.guildmark.story.weaponsmith.fetch.0"
+        "quest.guildmark.story.weaponsmith.fetch.flint.0",
+        "quest.guildmark.story.weaponsmith.fetch.flint.1"
       ]
     },
     {
@@ -43,7 +46,8 @@
       "weight": 4,
       "min_tier": 2,
       "stories": [
-        "quest.guildmark.story.weaponsmith.hunt.0"
+        "quest.guildmark.story.weaponsmith.hunt.0",
+        "quest.guildmark.story.weaponsmith.hunt.vindicator.0"
       ]
     },
     {
@@ -55,7 +59,8 @@
       "weight": 6,
       "min_tier": 2,
       "stories": [
-        "quest.guildmark.story.weaponsmith.hunt.0"
+        "quest.guildmark.story.weaponsmith.hunt.0",
+        "quest.guildmark.story.weaponsmith.hunt.pillager.0"
       ]
     },
     {
@@ -66,7 +71,8 @@
       "reward_per": 1.1,
       "weight": 6,
       "stories": [
-        "quest.guildmark.story.weaponsmith.hunt.0"
+        "quest.guildmark.story.weaponsmith.hunt.skeleton.0",
+        "quest.guildmark.story.weaponsmith.hunt.skeleton.1"
       ]
     },
     {
@@ -78,7 +84,8 @@
       "weight": 4,
       "min_tier": 2,
       "stories": [
-        "quest.guildmark.story.weaponsmith.champion.0"
+        "quest.guildmark.story.weaponsmith.champion.0",
+        "quest.guildmark.story.weaponsmith.champion.pillager.0"
       ]
     }
   ]

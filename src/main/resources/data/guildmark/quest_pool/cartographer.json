@@ -69,7 +69,8 @@
       "reward_per": 10,
       "weight": 4,
       "stories": [
-        "quest.guildmark.story.cartographer.escort.0"
+        "quest.guildmark.story.cartographer.escort.0",
+        "quest.guildmark.story.cartographer.escort.any.0"
       ]
     }
   ]

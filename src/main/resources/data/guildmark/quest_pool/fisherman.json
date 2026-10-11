@@ -70,7 +70,8 @@
       "weight": 6,
       "min_tier": 2,
       "stories": [
-        "quest.guildmark.story.fisherman.hunt.0"
+        "quest.guildmark.story.fisherman.hunt.0",
+        "quest.guildmark.story.fisherman.hunt.drowned.0"
       ]
     }
   ]

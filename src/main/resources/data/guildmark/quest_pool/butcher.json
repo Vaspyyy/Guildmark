@@ -80,7 +80,8 @@
       "weight": 3,
       "min_tier": 2,
       "stories": [
-        "quest.guildmark.story.butcher.hunt.0"
+        "quest.guildmark.story.butcher.hunt.0",
+        "quest.guildmark.story.butcher.hunt.wolf.0"
       ]
     }
   ]

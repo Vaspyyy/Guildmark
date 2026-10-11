@@ -55,7 +55,8 @@
       "reward_per": 1.2,
       "weight": 8,
       "stories": [
-        "quest.guildmark.story.fletcher.hunt.0"
+        "quest.guildmark.story.fletcher.hunt.0",
+        "quest.guildmark.story.fletcher.hunt.skeleton.0"
       ]
     }
   ]

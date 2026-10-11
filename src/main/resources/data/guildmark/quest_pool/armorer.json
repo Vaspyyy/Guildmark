@@ -58,7 +58,9 @@
       "reward_per": 1.0,
       "weight": 6,
       "stories": [
-        "quest.guildmark.story.armorer.hunt.0"
+        "quest.guildmark.story.armorer.hunt.0",
+        "quest.guildmark.story.armorer.hunt.zombie.0",
+        "quest.guildmark.story.armorer.hunt.zombie.1"
       ]
     },
     {
@@ -69,7 +71,8 @@
       "target": "minecraft:skeleton",
       "weight": 3,
       "stories": [
-        "quest.guildmark.story.armorer.champion.0"
+        "quest.guildmark.story.armorer.champion.0",
+        "quest.guildmark.story.armorer.champion.skeleton.0"
       ]
     }
   ]
