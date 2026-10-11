@@ -23,6 +23,10 @@ data class Holding(
     var lastVisit: Long,
     var loyalty: Int,
     val banners: MutableList<BlockPos> = mutableListOf(),
+    /** A rival guild (id) that has challenged this hold, or -1. */
+    var challenger: Int = -1,
+    /** The day the challenge must be answered by, or the rival takes the village. */
+    var challengeDeadline: Long = -1,
 ) {
     companion object {
         const val MAX_LOYALTY = 100
@@ -36,13 +40,26 @@ data class Holding(
                 Codec.LONG.fieldOf("last_visit").forGetter(Holding::lastVisit),
                 Codec.INT.fieldOf("loyalty").forGetter(Holding::loyalty),
                 BlockPos.CODEC.listOf().optionalFieldOf("banners", listOf()).forGetter { it.banners.toList() },
-            ).apply(i) { anchor, guild, since, tribute, visit, loyalty, banners -> Holding(anchor, guild, since, tribute, visit, loyalty, banners.toMutableList()) }
+                Codec.INT.optionalFieldOf("challenger", -1).forGetter(Holding::challenger),
+                Codec.LONG.optionalFieldOf("challenge_deadline", -1L).forGetter(Holding::challengeDeadline),
+            ).apply(i) { anchor, guild, since, tribute, visit, loyalty, banners, challenger, deadline ->
+                Holding(anchor, guild, since, tribute, visit, loyalty, banners.toMutableList(), challenger, deadline)
+            }
         }
     }
 }
 
 /** Every held village in the overworld. */
-class Holdings(val holdings: MutableList<Holding> = mutableListOf(), var lastDay: Long = -1) : SavedData() {
+class Holdings(
+    val holdings: MutableList<Holding> = mutableListOf(),
+    var lastDay: Long = -1,
+    /** Every village board anchor anyone has been near, so rivals know where villages are. */
+    val known: MutableSet<BlockPos> = mutableSetOf(),
+) : SavedData() {
+    fun remember(anchor: BlockPos) {
+        if (known.add(anchor)) setDirty()
+    }
+
     fun at(anchor: BlockPos): Holding? = holdings.firstOrNull { it.anchor == anchor }
     fun of(guild: Int): List<Holding> = holdings.filter { it.guild == guild }
 
@@ -63,7 +80,8 @@ class Holdings(val holdings: MutableList<Holding> = mutableListOf(), var lastDay
             i.group(
                 Holding.CODEC.listOf().fieldOf("holdings").forGetter { it.holdings },
                 Codec.LONG.optionalFieldOf("last_day", -1L).forGetter { it.lastDay },
-            ).apply(i) { holdings, day -> Holdings(holdings.toMutableList(), day) }
+                BlockPos.CODEC.listOf().optionalFieldOf("known", listOf()).forGetter { it.known.toList() },
+            ).apply(i) { holdings, day, known -> Holdings(holdings.toMutableList(), day, known.toMutableSet()) }
         }
 
         private val TYPE = SavedDataType(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "holdings"), Supplier { Holdings() }, CODEC)

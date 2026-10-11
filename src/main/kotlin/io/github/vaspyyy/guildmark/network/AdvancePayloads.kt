@@ -2,6 +2,9 @@ package io.github.vaspyyy.guildmark.network
 
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.client.ClientHooks
+import io.github.vaspyyy.guildmark.guild.Holdings
+import io.github.vaspyyy.guildmark.guild.RivalGuild
+import io.github.vaspyyy.guildmark.guild.Rivals
 import io.github.vaspyyy.guildmark.guild.TownControl
 import io.netty.buffer.ByteBuf
 import net.minecraft.core.BlockPos
@@ -24,6 +27,8 @@ data class OpenAdvancesPayload(
     val claimStatus: Int,
     val claimFee: Int,
     val holdingCap: Int,
+    /** A rival guild holds the village: the button challenges its captain instead of claiming. */
+    val rivalHeld: Boolean,
 ) : CustomPacketPayload {
     override fun type(): CustomPacketPayload.Type<OpenAdvancesPayload> = TYPE
 
@@ -40,6 +45,7 @@ data class OpenAdvancesPayload(
             ByteBufCodecs.VAR_INT, OpenAdvancesPayload::claimStatus,
             ByteBufCodecs.VAR_INT, OpenAdvancesPayload::claimFee,
             ByteBufCodecs.VAR_INT, OpenAdvancesPayload::holdingCap,
+            ByteBufCodecs.BOOL, OpenAdvancesPayload::rivalHeld,
             ::OpenAdvancesPayload,
         )
 
@@ -64,7 +70,9 @@ data class ClaimVillagePayload(val anchor: BlockPos) : CustomPacketPayload {
             val player = context.player()
             val level = player.level() as? ServerLevel ?: return
             if (!player.blockPosition().closerThan(payload.anchor, 12.0)) return
-            TownControl.claim(level, player, payload.anchor)
+            val holding = Holdings.get(level).at(payload.anchor)
+            if (holding != null && RivalGuild.byId(holding.guild) != null) Rivals.challenge(level, player, payload.anchor)
+            else TownControl.claim(level, player, payload.anchor)
             TownControl.openAdvances(level, player as net.minecraft.server.level.ServerPlayer, payload.anchor)
         }
     }

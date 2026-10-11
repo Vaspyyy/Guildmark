@@ -1,0 +1,23 @@
+{
+  "parent": "guildmark:guildmark/banner",
+  "display": {
+    "icon": {
+      "id": "minecraft:golden_sword"
+    },
+    "title": {
+      "translate": "advancements.guildmark.takeover.title"
+    },
+    "description": {
+      "translate": "advancements.guildmark.takeover.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

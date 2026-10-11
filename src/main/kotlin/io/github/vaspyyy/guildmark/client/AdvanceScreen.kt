@@ -70,12 +70,13 @@ class AdvanceScreen(private val info: OpenAdvancesPayload) : Screen(Component.tr
     /** "Raise your banner" for guild leaders, greyed out with the reason when they can't yet. */
     private fun claimButton(): Button? {
         val status = TownControl.ClaimStatus.entries.getOrNull(info.claimStatus) ?: return null
-        if (status == TownControl.ClaimStatus.NO_GUILD || status == TownControl.ClaimStatus.YOURS) return null
-        val button = Button.builder(Component.translatable("gui.guildmark.claim", info.claimFee)) {
+        if (status == TownControl.ClaimStatus.NO_GUILD || status == TownControl.ClaimStatus.YOURS || status == TownControl.ClaimStatus.HELD) return null
+        val label = if (info.rivalHeld) Component.translatable("gui.guildmark.challenge", info.holder) else Component.translatable("gui.guildmark.claim", info.claimFee)
+        val button = Button.builder(label) {
             ClientPacketDistributor.sendToServer(ClaimVillagePayload(anchor))
             onClose()
         }.width(200).build()
-        button.active = status == TownControl.ClaimStatus.OK
+        button.active = status == TownControl.ClaimStatus.OK || status == TownControl.ClaimStatus.RIVAL
         if (!button.active) button.setTooltip(Tooltip.create(Component.translatable("gui.guildmark.claim.${status.key}", info.claimFee, info.holdingCap)))
         return button
     }

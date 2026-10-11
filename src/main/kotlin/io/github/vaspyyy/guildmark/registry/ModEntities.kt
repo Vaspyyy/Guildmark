@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.registry
 
+import io.github.vaspyyy.guildmark.guild.RivalAdventurer
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.guild.GuildMember
 import io.github.vaspyyy.guildmark.story.HollowKing
@@ -31,6 +32,15 @@ object ModEntities {
             .eyeHeight(1.62f)
             .clientTrackingRange(10)
             .build(ResourceKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "story_npc")))
+    }
+
+    /** An adventurer (or captain) of a rival guild. */
+    val RIVAL: DeferredHolder<EntityType<*>, EntityType<RivalAdventurer>> = ENTITIES.register("rival_adventurer") { ->
+        EntityType.Builder.of(::RivalAdventurer, MobCategory.MISC)
+            .sized(0.6f, 1.95f)
+            .eyeHeight(1.62f)
+            .clientTrackingRange(10)
+            .build(ResourceKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "rival_adventurer")))
     }
 
     /** The final boss of the main story, risen at the Hollow Throne. Drawn 1.6 times humanoid size. */

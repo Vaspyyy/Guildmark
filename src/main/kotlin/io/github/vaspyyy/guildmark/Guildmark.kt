@@ -1,5 +1,7 @@
 package io.github.vaspyyy.guildmark
 
+import io.github.vaspyyy.guildmark.guild.Rivals
+import io.github.vaspyyy.guildmark.guild.RivalAdventurer
 import io.github.vaspyyy.guildmark.network.ClaimVillagePayload
 import io.github.vaspyyy.guildmark.network.OpenAdvancesPayload
 import io.github.vaspyyy.guildmark.guild.TownControl
@@ -83,6 +85,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
             it.put(ModEntities.GUILD_MEMBER.get(), GuildMember.createAttributes().build())
             it.put(ModEntities.STORY_NPC.get(), StoryNpc.createAttributes().build())
             it.put(ModEntities.HOLLOW_KING.get(), HollowKing.createAttributes().build())
+            it.put(ModEntities.RIVAL.get(), RivalAdventurer.createAttributes().build())
         }
 
         modBus.addListener(FMLCommonSetupEvent::class.java, ::onCommonSetup)
@@ -140,6 +143,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         if (level !is ServerLevel) return
         if (player.tickCount % 200 == 0) VillageBoards.checkNearbyVillages(level, player.blockPosition())
         if (player.tickCount % 200 == 50) TownControl.visit(level, player)
+        if (player.tickCount % 200 == 150) Rivals.tickPlayer(level, player)
         if (player.tickCount % 200 == 100) Characters.tick(level, player)
         if (player.tickCount % 10 == 0) Contracts.tickEscorts(level, player)
         Milestones.tick(player)

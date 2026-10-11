@@ -1,5 +1,10 @@
 package io.github.vaspyyy.guildmark.advance
 
+import io.github.vaspyyy.guildmark.guild.TownControl
+import io.github.vaspyyy.guildmark.guild.Rivals
+import io.github.vaspyyy.guildmark.guild.RivalGuild
+import io.github.vaspyyy.guildmark.guild.Holdings
+import io.github.vaspyyy.guildmark.guild.Guilds
 import net.minecraft.util.Prediction
 import io.github.vaspyyy.guildmark.loot.Relics
 import io.github.vaspyyy.guildmark.loot.Rarity
@@ -133,6 +138,54 @@ object AdvanceCommand {
                                 1
                             }
                         })
+                )
+                .then(
+                    Commands.literal("claim").executes { context ->
+                        val source = context.source
+                        val player = source.playerOrException
+                        val guild = Guilds.get(source.level).ledBy(player.uuid)
+                        val anchor = nearestAnchor(source)
+                        if (guild == null || anchor == null) {
+                            source.sendFailure(Component.translatable("commands.guildmark.no_claim"))
+                            0
+                        } else {
+                            TownControl.take(source.level, anchor, guild.id)
+                            1
+                        }
+                    }
+                )
+                .then(
+                    Commands.literal("rival").then(
+                        Commands.argument("action", StringArgumentType.word())
+                            .suggests { _, builder -> SharedSuggestionProvider.suggest(listOf("take", "challenge", "spawn", "daily"), builder) }
+                            .then(Commands.argument("guild", StringArgumentType.word())
+                                .suggests { _, builder -> SharedSuggestionProvider.suggest(RivalGuild.entries.map { it.key }, builder) }
+                                .executes { context ->
+                                    val source = context.source
+                                    val level = source.level
+                                    val rival = RivalGuild.byKey(StringArgumentType.getString(context, "guild")) ?: RivalGuild.IRON_HOUNDS
+                                    val anchor = nearestAnchor(source)
+                                    if (anchor == null) {
+                                        source.sendFailure(Component.translatable("commands.guildmark.no_board_near"))
+                                        return@executes 0
+                                    }
+                                    when (StringArgumentType.getString(context, "action")) {
+                                        "take" -> TownControl.take(level, anchor, rival.id)
+                                        "challenge" -> Holdings.get(level).at(anchor)?.let {
+                                            it.challenger = rival.id
+                                            it.loyalty = minOf(it.loyalty, 35)
+                                            it.challengeDeadline = VillageBoards.day(level) + 2
+                                            Holdings.get(level).changed()
+                                        }
+                                        "spawn" -> Rivals.spawnAdventurer(level, rival, anchor, source.playerOrException.blockPosition(), 2400)
+                                        "daily" -> {
+                                            Holdings.get(level).lastDay = -1
+                                            Rivals.daily(level, VillageBoards.day(level))
+                                        }
+                                    }
+                                    1
+                                })
+                    )
                 )
                 .then(
                     Commands.literal("relic").then(

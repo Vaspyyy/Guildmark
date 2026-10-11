@@ -1,0 +1,23 @@
+{
+  "parent": "guildmark:guildmark/banner",
+  "display": {
+    "icon": {
+      "id": "minecraft:shield"
+    },
+    "title": {
+      "translate": "advancements.guildmark.repelled.title"
+    },
+    "description": {
+      "translate": "advancements.guildmark.repelled.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.client
 
+import io.github.vaspyyy.guildmark.client.model.RivalModel
 import com.mojang.blaze3d.platform.InputConstants
 import io.github.vaspyyy.guildmark.Guildmark
 import net.minecraft.client.KeyMapping
@@ -36,10 +37,12 @@ class GuildmarkClient(modBus: IEventBus) {
             event.registerEntityRenderer(ModEntities.GUILD_MEMBER.get(), ::VillagerRenderer)
             event.registerEntityRenderer(ModEntities.STORY_NPC.get(), ::StoryNpcRenderer)
             event.registerEntityRenderer(ModEntities.HOLLOW_KING.get(), ::HollowKingRenderer)
+            event.registerEntityRenderer(ModEntities.RIVAL.get(), ::RivalRenderer)
         }
         modBus.addListener(EntityRenderersEvent.RegisterLayerDefinitions::class.java) { event ->
             event.registerLayerDefinition(StoryNpcModel.LAYER, StoryNpcModel::createBodyLayer)
             event.registerLayerDefinition(HollowKingModel.LAYER, HollowKingModel::createBodyLayer)
+            event.registerLayerDefinition(RivalModel.LAYER, RivalModel::createBodyLayer)
         }
         modBus.addListener(RegisterGuiLayersEvent::class.java) { event ->
             event.registerAbove(VanillaGuiLayers.EFFECTS, ContractTracker.ID, ContractTracker)

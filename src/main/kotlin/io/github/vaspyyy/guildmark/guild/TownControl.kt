@@ -51,7 +51,11 @@ object TownControl {
     private const val RALLY_RANGE = 160.0
     private const val CONTRACT_BONUS_PERCENT = 10
 
-    enum class ClaimStatus(val key: String) { OK("ok"), NO_GUILD("no_guild"), NO_HALL("no_hall"), STANDING("standing"), CAP("cap"), FEE("fee"), YOURS("yours"), HELD("held") }
+    enum class ClaimStatus(val key: String) {
+        OK("ok"), NO_GUILD("no_guild"), NO_HALL("no_hall"), STANDING("standing"), CAP("cap"), FEE("fee"), YOURS("yours"), HELD("held"),
+        /** Held by a rival guild, and the player may challenge its captain for it. */
+        RIVAL("rival"),
+    }
 
     /** How many villages a guild led by an adventurer of this rank index can hold. */
     fun holdingCap(rank: Int): Int = 1 + rank / 2
@@ -66,11 +70,13 @@ object TownControl {
         val guild = Guilds.get(level).ledBy(player.uuid) ?: return ClaimStatus.NO_GUILD
         val holding = Holdings.get(level).at(anchor)
         if (holding?.guild == guild.id) return ClaimStatus.YOURS
-        if (holding != null) return ClaimStatus.HELD
+        val rival = holding?.let { RivalGuild.byId(it.guild) }
+        if (holding != null && rival == null) return ClaimStatus.HELD
         val board = level.getBlockEntity(anchor) as? QuestBoardBlockEntity ?: return ClaimStatus.NO_HALL
         if (board.advanceIndex <= Advance.GUILD_HALL.ordinal) return ClaimStatus.NO_HALL
         if (Standing.tier(level, anchor, player) < StandingTier.HONORED) return ClaimStatus.STANDING
         if (Holdings.get(level).of(guild.id).size >= holdingCap(Progression.get(player).adventurerRank)) return ClaimStatus.CAP
+        if (rival != null) return ClaimStatus.RIVAL
         if (marks(player) < CLAIM_FEE) return ClaimStatus.FEE
         return ClaimStatus.OK
     }
@@ -87,6 +93,7 @@ object TownControl {
             status(level, player, anchor).ordinal,
             CLAIM_FEE,
             holdingCap(Progression.get(player).adventurerRank),
+            holding != null && RivalGuild.byId(holding.guild) != null,
         ))
     }
 
@@ -110,7 +117,7 @@ object TownControl {
         holdings.at(anchor)?.let { lowerBanners(level, it) }
         val today = VillageBoards.day(level)
         val holding = Holding(anchor, guild, today, today, today, START_LOYALTY)
-        raiseBanners(level, holding, holderColor(level, guild))
+        if (level.isLoaded(anchor)) raiseBanners(level, holding, holderColor(level, guild))
         holdings.put(holding)
         val name = VillageNames.of(anchor)
         val center = bell(level, anchor) ?: anchor
@@ -135,8 +142,15 @@ object TownControl {
 
     /** Every 200 ticks for each player: a leader near one of their villages collects its tribute. */
     fun visit(level: ServerLevel, player: Player) {
-        val guild = Guilds.get(level).ledBy(player.uuid) ?: return
         val holdings = Holdings.get(level)
+        // Villages taken while nobody was near get their banners once someone comes by
+        for (holding in holdings.holdings) {
+            if (holding.banners.isEmpty() && player.blockPosition().closerThan(holding.anchor, VISIT_RANGE)) {
+                raiseBanners(level, holding, holderColor(level, holding.guild))
+                holdings.changed()
+            }
+        }
+        val guild = Guilds.get(level).ledBy(player.uuid) ?: return
         val today = VillageBoards.day(level)
         for (holding in holdings.of(guild.id)) {
             if (!player.blockPosition().closerThan(holding.anchor, VISIT_RANGE)) continue
@@ -177,11 +191,13 @@ object TownControl {
         Rivals.daily(level, today)
     }
 
-    /** Extra pay for a guild leader turning in a contract at one of their own villages. */
+    /** Extra pay for a guild leader at one of their own villages; a rival guild takes its cut at theirs. */
     fun bonus(level: ServerLevel, anchor: BlockPos, player: Player, reward: Int): Int {
+        val holder = Holdings.get(level).at(anchor)?.guild ?: return 0
+        val cut = (reward * CONTRACT_BONUS_PERCENT / 100.0).roundToInt().coerceAtLeast(1)
+        if (RivalGuild.byId(holder) != null) return -cut
         val guild = Guilds.get(level).ledBy(player.uuid) ?: return 0
-        if (Holdings.get(level).at(anchor)?.guild != guild.id) return 0
-        return (reward * CONTRACT_BONUS_PERCENT / 100.0).roundToInt().coerceAtLeast(1)
+        return if (holder == guild.id) cut else 0
     }
 
     /** A held village is besieged: its guild's members march to the bell and take up arms. */
@@ -216,7 +232,7 @@ object TownControl {
         level.poiManager.findClosest({ it.`is`(PoiTypes.MEETING) }, anchor, 32, PoiManager.Occupancy.ANY).orElse(null)
 
     /** Banners in the holder's colour on four sides of the village bell. */
-    private fun raiseBanners(level: ServerLevel, holding: Holding, color: DyeColor) {
+    fun raiseBanners(level: ServerLevel, holding: Holding, color: DyeColor) {
         val bell = bell(level, holding.anchor) ?: holding.anchor
         for (direction in Direction.Plane.HORIZONTAL) {
             for (distance in 2..4) {
