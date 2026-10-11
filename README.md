@@ -12,9 +12,10 @@ Early prototype, played and tested in-game by hand.
 - **Danger.** Lair hunts send you to a monster den with a boss, loot and a torn page of lore. At night, villages you have built up can be besieged by monster waves; lose and the village loses some of what it built.
 - **Your own guild.** Found a guild at a hall receptionist (E rank, 50 Marks), then sneak and use a villager in a village that trusts you to swear them in. Members follow you and fight beside you; use one to make it hold or follow.
 - **Named characters.** Wren, Tobin and Sister Ilsa (each with their own model) turn up in villages that know you, each with a three-chapter story that ends in lore and a keepsake.
+- **Relics.** Lairs, vaults, champions, won sieges, the Hollow King and Sealed Relic Caches drop relics: rolled weapons and armour from Common to Legendary, each with a name, enchantments and affixes (lifesteal, thunder, frost, execute, warding, bramble and more). Caches come from contract pay (always from rank trials) and from the Guildmaster.
 - **Main story: The Hollow Crown.** Wren's story ends with the first of seven crown shards and a compass that points to the next. Six courtiers of the Hollow King guard the rest in vaults, each a boss fight with its own tricks, unlocked as your rank grows. Halfway through you meet Maren, the Last Warden. With all seven, the compass leads to the Hollow Throne and a three-phase fight against the Hollow King. Win and you become a Warden.
 
-Ops can test with `/guildmark advance <points>`, `/guildmark note <type>`, `/guildmark standing <points>`, `/guildmark rank <letter>`, `/guildmark level <n>`, `/guildmark siege`, `/guildmark traffic [ambush]`, `/guildmark character <id>`, `/guildmark story <shards>` and `/guildmark story tp` near a board.
+Ops can test with `/guildmark advance <points>`, `/guildmark note <type>`, `/guildmark standing <points>`, `/guildmark rank <letter>`, `/guildmark level <n>`, `/guildmark siege`, `/guildmark traffic [ambush]`, `/guildmark character <id>`, `/guildmark story <shards>`, `/guildmark story tp` and `/guildmark relic <rarity>` near a board.
 
 ## Quest pools (datapacks)
 

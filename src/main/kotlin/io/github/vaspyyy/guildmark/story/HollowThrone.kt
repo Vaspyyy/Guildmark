@@ -3,6 +3,8 @@ package io.github.vaspyyy.guildmark.story
 import com.mojang.serialization.Codec
 import com.mojang.serialization.codecs.RecordCodecBuilder
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.loot.Rarity
+import io.github.vaspyyy.guildmark.loot.Relics
 import io.github.vaspyyy.guildmark.guild.GuildNews
 import io.github.vaspyyy.guildmark.progression.AdventurerRank
 import io.github.vaspyyy.guildmark.progression.Progression
@@ -252,6 +254,7 @@ class HollowThrone(var altar: Optional<BlockPos> = Optional.empty(), var defeate
             if (hero is ServerPlayer) title(hero, Component.translatable("title.guildmark.crown_broken"), Component.translatable("title.guildmark.crown_broken.sub"))
             give(hero, crownOfTheWarden(level))
             give(hero, lastPage(hero))
+            give(hero, Relics.generate(level.random, Rarity.LEGENDARY, level.registryAccess()))
             repeat(5) { give(hero, ItemStack(ModItems.GUILD_MARK.get(), 64)) }
             Progression.addXp(hero, 5000)
             Progression.promote(hero, AdventurerRank.S.ordinal)

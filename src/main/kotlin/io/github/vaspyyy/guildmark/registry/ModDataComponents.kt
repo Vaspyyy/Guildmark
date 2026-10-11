@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.registry
 
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.loot.RelicData
 import io.github.vaspyyy.guildmark.quest.ContractState
 import io.github.vaspyyy.guildmark.quest.QuestNote
 import com.mojang.serialization.Codec
@@ -25,6 +26,18 @@ object ModDataComponents {
     /** Which shard of the Hollow Crown (0 to 6) a crown shard is. */
     val SHARD: DeferredHolder<DataComponentType<*>, DataComponentType<Int>> = COMPONENTS.registerComponentType(
         "shard",
+        UnaryOperator<DataComponentType.Builder<Int>> { it.persistent(Codec.INT).networkSynchronized(ByteBufCodecs.VAR_INT) },
+    )
+
+    /** A relic's rarity and affixes. */
+    val RELIC: DeferredHolder<DataComponentType<*>, DataComponentType<RelicData>> = COMPONENTS.registerComponentType(
+        "relic",
+        UnaryOperator<DataComponentType.Builder<RelicData>> { it.persistent(RelicData.CODEC).networkSynchronized(ByteBufCodecs.fromCodec(RelicData.CODEC)) },
+    )
+
+    /** The least rarity (see Rarity) a sealed relic cache opens into. */
+    val CACHE_TIER: DeferredHolder<DataComponentType<*>, DataComponentType<Int>> = COMPONENTS.registerComponentType(
+        "cache_tier",
         UnaryOperator<DataComponentType.Builder<Int>> { it.persistent(Codec.INT).networkSynchronized(ByteBufCodecs.VAR_INT) },
     )
 

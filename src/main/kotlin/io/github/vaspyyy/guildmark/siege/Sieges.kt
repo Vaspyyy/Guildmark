@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.siege
 
+import io.github.vaspyyy.guildmark.loot.Relics
 import io.github.vaspyyy.guildmark.advance.Advances
 import io.github.vaspyyy.guildmark.block.QuestBoardBlock
 import io.github.vaspyyy.guildmark.block.QuestBoardBlockEntity
@@ -199,6 +200,7 @@ object Sieges {
             for (player in defenders) {
                 val paid = Progression.reward(player, marks)
                 player.inventory.placeItemBackInInventory(ItemStack(ModItems.GUILD_MARK.get(), paid), Prediction.SERVER_ONLY)
+                player.inventory.placeItemBackInInventory(Relics.roll(level, siege.tier + 1), Prediction.SERVER_ONLY)
                 Progression.addXp(player, marks * Progression.XP_PER_MARK)
                 Standing.add(level, siege.anchor, player, 10)
                 player.sendSystemMessage(Component.translatable("message.guildmark.siege_won", paid))

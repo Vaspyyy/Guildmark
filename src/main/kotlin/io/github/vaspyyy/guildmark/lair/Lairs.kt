@@ -3,6 +3,8 @@ package io.github.vaspyyy.guildmark.lair
 import com.mojang.serialization.Codec
 import com.mojang.serialization.codecs.RecordCodecBuilder
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.loot.Rarity
+import io.github.vaspyyy.guildmark.loot.Relics
 import io.github.vaspyyy.guildmark.guild.GuildNews
 import io.github.vaspyyy.guildmark.quest.Contracts
 import io.github.vaspyyy.guildmark.registry.ModAttachments
@@ -258,6 +260,8 @@ class Lairs(val lairs: MutableList<Lair> = mutableListOf()) : SavedData() {
         (level.getBlockEntity(chestPos) as? ChestBlockEntity)?.let { chest ->
             chest.setItem(0, lair.courtier?.let { LoreBooks.fragment(it.lore) } ?: LoreBooks.random(level.random))
             chest.setItem(1, ItemStack(ModItems.GUILD_MARK.get(), 5 + lair.rank * 5))
+            chest.setItem(2, Relics.roll(level, lair.rank + 1, if (lair.shard >= 0) Rarity.RARE else Rarity.COMMON))
+            if (lair.shard >= 0) chest.setItem(3, Relics.cache(Rarity.UNCOMMON))
             chest.setLootTable(lair.theme.loot, level.random.nextLong())
         }
         level.playSound(null, chestPos, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.HOSTILE, 1.0f, 1.0f)

@@ -1,5 +1,8 @@
 package io.github.vaspyyy.guildmark.advance
 
+import net.minecraft.util.Prediction
+import io.github.vaspyyy.guildmark.loot.Relics
+import io.github.vaspyyy.guildmark.loot.Rarity
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import io.github.vaspyyy.guildmark.block.QuestBoardBlock
@@ -130,6 +133,20 @@ object AdvanceCommand {
                                 1
                             }
                         })
+                )
+                .then(
+                    Commands.literal("relic").then(
+                        Commands.argument("rarity", StringArgumentType.word())
+                            .suggests { _, builder -> SharedSuggestionProvider.suggest(Rarity.entries.map { it.id }, builder) }
+                            .executes { context ->
+                                val player = context.source.playerOrException
+                                val rarity = Rarity.entries.firstOrNull { it.id == StringArgumentType.getString(context, "rarity") } ?: Rarity.COMMON
+                                val level = context.source.level
+                                player.inventory.placeItemBackInInventory(Relics.generate(level.random, rarity, level.registryAccess()), Prediction.SERVER_ONLY)
+                                player.inventory.placeItemBackInInventory(Relics.cache(rarity), Prediction.SERVER_ONLY)
+                                1
+                            }
+                    )
                 )
                 .then(
                     Commands.literal("character").then(

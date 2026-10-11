@@ -1,0 +1,12 @@
+{
+  "wants": {
+    "id": "guildmark:guild_mark",
+    "count": 24
+  },
+  "gives": {
+    "id": "guildmark:relic_cache"
+  },
+  "max_uses": 3,
+  "xp": 15,
+  "reputation_discount": 0.05
+}

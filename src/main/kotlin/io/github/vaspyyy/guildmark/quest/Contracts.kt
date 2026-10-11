@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.quest
 
+import io.github.vaspyyy.guildmark.loot.Relics
 import io.github.vaspyyy.guildmark.advance.Advances
 import io.github.vaspyyy.guildmark.block.QuestBoardBlock
 import io.github.vaspyyy.guildmark.lair.Lairs
@@ -199,6 +200,11 @@ object Contracts {
         level.playSound(null, pos, SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 0.8f, 1.2f)
         Progression.addXp(player, xp)
         if (note.trial) Progression.promote(player, note.rank)
+        // Trials always pay a relic cache; other contracts sometimes do, more often at higher ranks
+        if (note.trial || level.random.nextFloat() < 0.08f + 0.03f * note.rank) {
+            player.inventory.placeItemBackInInventory(Relics.cacheForRank(note.rank), Prediction.SERVER_ONLY)
+            player.sendSystemMessage(Component.translatable("message.guildmark.cache_found"))
+        }
         if (chapter != null) Characters.onChapterDone(serverLevel, player, chapter.first, chapter.second)
         if (origin != null) Standing.add(serverLevel, origin, player, note.reward)
         // Deliveries and escorts also make a name with the village at the other end of the road

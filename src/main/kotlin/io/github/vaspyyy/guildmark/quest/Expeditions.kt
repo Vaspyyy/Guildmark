@@ -23,6 +23,7 @@ import net.minecraft.world.item.Items
 import net.minecraft.world.level.levelgen.Heightmap
 import net.minecraft.resources.Identifier
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.loot.Relics
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
@@ -114,6 +115,7 @@ object Expeditions {
         mob.setItemSlot(EquipmentSlot.CHEST, ItemStack(if (tier >= 2) Items.DIAMOND_CHESTPLATE else Items.IRON_CHESTPLATE))
         if (mob.getItemBySlot(EquipmentSlot.MAINHAND).isEmpty) mob.setItemSlot(EquipmentSlot.MAINHAND, ItemStack(Items.IRON_SWORD))
         mob.setGuaranteedDrop(EquipmentSlot.HEAD)
+        Relics.armChampion(level, mob, tier)
 
         mob.getAttribute(Attributes.MAX_HEALTH)?.addPermanentModifier(
             AttributeModifier(CHAMPION_HEALTH, 1.0 + tier, AttributeModifier.Operation.ADD_MULTIPLIED_BASE)

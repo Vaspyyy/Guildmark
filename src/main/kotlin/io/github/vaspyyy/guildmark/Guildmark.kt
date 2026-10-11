@@ -15,6 +15,7 @@ import io.github.vaspyyy.guildmark.lair.Lairs
 import io.github.vaspyyy.guildmark.network.AcceptChapterPayload
 import io.github.vaspyyy.guildmark.network.FoundGuildPayload
 import io.github.vaspyyy.guildmark.network.OpenCharacterPayload
+import io.github.vaspyyy.guildmark.loot.Relics
 import io.github.vaspyyy.guildmark.story.Characters
 import io.github.vaspyyy.guildmark.story.HollowKing
 import io.github.vaspyyy.guildmark.story.HollowThrone
@@ -45,7 +46,9 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent
 import net.neoforged.neoforge.common.NeoForge
 import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent
+import net.neoforged.neoforge.event.entity.living.LivingDamageEvent
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent
 import net.neoforged.neoforge.event.entity.player.PlayerEvent
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent
 import net.neoforged.neoforge.event.tick.LevelTickEvent
@@ -84,6 +87,8 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         NeoForge.EVENT_BUS.addListener(PlayerTickEvent.Post::class.java, ::onPlayerTick)
         NeoForge.EVENT_BUS.addListener(EntityJoinLevelEvent::class.java) { Traffic.onJoin(it.entity) }
         NeoForge.EVENT_BUS.addListener(PlayerInteractEvent.RightClickBlock::class.java, HollowThrone::onUseBlock)
+        NeoForge.EVENT_BUS.addListener(LivingIncomingDamageEvent::class.java, Relics::onIncomingDamage)
+        NeoForge.EVENT_BUS.addListener(LivingDamageEvent.Post::class.java, Relics::onDamaged)
         NeoForge.EVENT_BUS.addListener(PlayerInteractEvent.EntityInteract::class.java, Reception::onInteract)
         NeoForge.EVENT_BUS.addListener(LevelTickEvent.Post::class.java) { event ->
             val level = event.level
