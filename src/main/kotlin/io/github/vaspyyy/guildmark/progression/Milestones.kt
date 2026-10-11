@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.progression
 
+import io.github.vaspyyy.guildmark.GuildmarkConfig
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.loot.Rarity
 import io.github.vaspyyy.guildmark.registry.ModDataComponents
@@ -71,7 +72,7 @@ object Milestones {
     /** First join: the Guild hands over the Handbook. */
     fun onLogin(player: Player) {
         if (player !is ServerPlayer || done(player, ROOT) || holder(player, ROOT) == null) return
-        player.inventory.placeItemBackInInventory(Handbook.create(), Prediction.SERVER_ONLY)
+        if (GuildmarkConfig.HANDBOOK.get()) player.inventory.placeItemBackInInventory(Handbook.create(), Prediction.SERVER_ONLY)
         player.sendSystemMessage(Component.translatable("message.guildmark.welcome").withStyle { it.withColor(0xE8C26A) })
         award(player, ROOT)
     }

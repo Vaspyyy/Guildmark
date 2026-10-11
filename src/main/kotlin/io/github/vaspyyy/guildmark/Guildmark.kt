@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark
 
+import net.neoforged.fml.config.ModConfig
 import net.minecraft.server.level.ServerPlayer
 import io.github.vaspyyy.guildmark.party.PartyCommand
 import io.github.vaspyyy.guildmark.party.Parties
@@ -75,6 +76,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
     }
 
     init {
+        container.registerConfig(ModConfig.Type.SYNCED, GuildmarkConfig.SPEC)
         ModBlocks.BLOCKS.register(modBus)
         ModItems.ITEMS.register(modBus)
         ModBlockEntities.BLOCK_ENTITIES.register(modBus)

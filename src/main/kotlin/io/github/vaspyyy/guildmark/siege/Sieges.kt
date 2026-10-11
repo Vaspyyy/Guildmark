@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.siege
 
+import io.github.vaspyyy.guildmark.GuildmarkConfig
 import io.github.vaspyyy.guildmark.guild.TownControl
 import io.github.vaspyyy.guildmark.progression.Milestones
 import io.github.vaspyyy.guildmark.loot.Relics
@@ -47,7 +48,6 @@ import java.util.UUID
 object Sieges {
     /** Players need this guild level before hordes start coming for their villages. */
     private const val MIN_LEVEL = 3
-    private const val CHANCE_PERCENT = 20
     private const val WATCH_RANGE = 96.0
     private const val VILLAGERS_LOST_LIMIT = 3
     /** Night runs from about 13000 to 23000 ticks into the day; sieges start early in it. */
@@ -82,11 +82,11 @@ object Sieges {
 
     /** Player tick, every 400 ticks: early in the night, maybe send a horde at the village they're in. */
     fun maybeStart(level: ServerLevel, player: Player) {
-        if (player.tickCount % 400 != 0 || level.dimension() != net.minecraft.world.level.Level.OVERWORLD) return
+        if (player.tickCount % 400 != 0 || level.dimension() != net.minecraft.world.level.Level.OVERWORLD || !GuildmarkConfig.SIEGES.get()) return
         val time = timeOfDay(level)
         if (time !in NIGHT_START..NIGHT_START + NIGHT_START_WINDOW) return
         if (Progression.get(player).level < MIN_LEVEL) return
-        if (level.random.nextInt(100) >= CHANCE_PERCENT) return
+        if (level.random.nextInt(100) >= GuildmarkConfig.SIEGE_CHANCE.get()) return
         start(level, player.blockPosition())
     }
 

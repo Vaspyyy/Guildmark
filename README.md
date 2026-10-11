@@ -21,6 +21,10 @@ Early prototype, played and tested in-game by hand.
 
 Ops can test with `/guildmark advance <points>`, `/guildmark note <type>`, `/guildmark standing <points>`, `/guildmark rank <letter>`, `/guildmark level <n>`, `/guildmark siege`, `/guildmark traffic [ambush]`, `/guildmark character <id>`, `/guildmark story <shards>`, `/guildmark story tp`, `/guildmark relic <rarity>`, `/guildmark claim` and `/guildmark rival <take|challenge|spawn|daily> <guild>` near a board.
 
+## Config
+
+Per-world settings live in the world's `serverconfig` folder (`guildmark` file): contract pay and XP multipliers, the relic cache chance, and switches for auto-placed boards, the handbook, sieges and their chance, bandits, rival guilds and the named characters.
+
 ## Quest pools (datapacks)
 
 Jobs come from `data/<namespace>/quest_pool/<name>.json`, so datapacks and other mods can add their own. Entries whose item or mob isn't installed are skipped.

@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.story
 
+import io.github.vaspyyy.guildmark.GuildmarkConfig
 import io.github.vaspyyy.guildmark.progression.Milestones
 import com.mojang.serialization.Codec
 import com.mojang.serialization.codecs.RecordCodecBuilder
@@ -90,7 +91,7 @@ class Characters(val placements: MutableList<Placement> = mutableListOf()) : Sav
 
         /** Every 200 ticks per player: keep the nearby village's character in place, or bring a new one. */
         fun tick(level: ServerLevel, player: Player) {
-            if (level.dimension() != net.minecraft.world.level.Level.OVERWORLD) return
+            if (level.dimension() != net.minecraft.world.level.Level.OVERWORLD || !GuildmarkConfig.CHARACTERS.get()) return
             val board = VillageBoards.villageBoard(level, player.blockPosition()) ?: return
             val characters = get(level)
             val placed = characters.at(board)

@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.road
 
+import io.github.vaspyyy.guildmark.GuildmarkConfig
 import com.mojang.serialization.Codec
 import com.mojang.serialization.codecs.RecordCodecBuilder
 import io.github.vaspyyy.guildmark.quest.Expeditions
@@ -86,7 +87,7 @@ object Travellers {
         val ambushAt = mob.getData(ModAttachments.AMBUSH_AT)
         if (ambushAt >= 0 && progress.waypoint >= ambushAt && Bandits.anyoneWatching(level, mob)) {
             mob.setData(ModAttachments.AMBUSH_AT, -1)
-            Bandits.ambush(level, mob)
+            if (GuildmarkConfig.BANDITS.get()) Bandits.ambush(level, mob)
         }
 
         if (progress.waypoint > last) {

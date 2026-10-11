@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.block
 
+import io.github.vaspyyy.guildmark.GuildmarkConfig
 import io.github.vaspyyy.guildmark.advance.Advances
 import io.github.vaspyyy.guildmark.quest.QuestGenerator
 import io.github.vaspyyy.guildmark.road.RoadNetwork
@@ -119,6 +120,7 @@ object VillageBoards {
 
     /** Called periodically per player: give each nearby village without a board one, once. */
     fun checkNearbyVillages(level: ServerLevel, around: BlockPos) {
+        if (!GuildmarkConfig.AUTO_BOARDS.get()) return
         val poi = level.poiManager
         val bells = poi.findAll({ it.`is`(PoiTypes.MEETING) }, { true }, around, BELL_SEARCH_RADIUS, PoiManager.Occupancy.ANY).toList()
         for (bell in bells) {

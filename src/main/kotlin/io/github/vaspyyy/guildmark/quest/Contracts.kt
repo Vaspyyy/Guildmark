@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.quest
 
+import io.github.vaspyyy.guildmark.GuildmarkConfig
 import io.github.vaspyyy.guildmark.party.Parties
 import io.github.vaspyyy.guildmark.guild.TownControl
 import io.github.vaspyyy.guildmark.progression.Milestones
@@ -198,7 +199,7 @@ object Contracts {
         stack.shrink(1)
         val origin = state.boardPos.takeIf { level.dimension() == state.dimension }
         val bonus = origin?.let { Standing.bonus(level, it, player, note.reward) + (if (level is ServerLevel) TownControl.bonus(level, it, player, note.reward) else 0) } ?: 0
-        val marks = Progression.reward(player, note.reward + bonus)
+        val marks = (Progression.reward(player, note.reward + bonus) * GuildmarkConfig.PAY_MULTIPLIER.get()).toInt().coerceAtLeast(1)
         val xp = note.reward * Progression.XP_PER_MARK
         player.inventory.placeItemBackInInventory(ItemStack(ModItems.GUILD_MARK.get(), marks), Prediction.SERVER_ONLY)
         player.sendOverlayMessage(Component.translatable("message.guildmark.complete", marks, xp))
@@ -210,7 +211,7 @@ object Contracts {
         if (note.type == QuestType.DELIVER) Milestones.award(player, Milestones.COURIER)
         if (note.type == QuestType.ESCORT) Milestones.award(player, Milestones.BODYGUARD)
         // Trials always pay a relic cache; other contracts sometimes do, more often at higher ranks
-        if (note.trial || level.random.nextFloat() < 0.08f + 0.03f * note.rank) {
+        if (note.trial || level.random.nextFloat() < GuildmarkConfig.RELIC_CACHE_CHANCE.get() + 0.03 * note.rank) {
             player.inventory.placeItemBackInInventory(Relics.cacheForRank(note.rank), Prediction.SERVER_ONLY)
             player.sendSystemMessage(Component.translatable("message.guildmark.cache_found"))
         }

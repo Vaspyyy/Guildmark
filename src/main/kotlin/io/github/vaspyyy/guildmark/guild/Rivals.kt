@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.guild
 
+import io.github.vaspyyy.guildmark.GuildmarkConfig
 import io.github.vaspyyy.guildmark.block.VillageBoards
 import io.github.vaspyyy.guildmark.loot.Rarity
 import io.github.vaspyyy.guildmark.loot.Relics
@@ -53,6 +54,7 @@ object Rivals {
     fun captainName(rival: RivalGuild): Component = Component.translatable("rival.guildmark.${rival.key}.captain")
 
     fun daily(level: ServerLevel, today: Long) {
+        if (!GuildmarkConfig.RIVALS.get()) return
         val holdings = Holdings.get(level)
         val random = level.random
         // Challenges nobody answered: the rival takes the village
@@ -96,6 +98,7 @@ object Rivals {
 
     /** Every 200 ticks for each player: rivals turn up at the village they're in. */
     fun tickPlayer(level: ServerLevel, player: Player) {
+        if (!GuildmarkConfig.RIVALS.get()) return
         val anchor = VillageBoards.villageBoard(level, player.blockPosition()) ?: return
         val holdings = Holdings.get(level)
         holdings.remember(anchor)

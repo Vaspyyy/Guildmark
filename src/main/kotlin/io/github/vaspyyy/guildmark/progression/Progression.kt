@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.progression
 
+import io.github.vaspyyy.guildmark.GuildmarkConfig
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.guild.GuildNews
 import io.github.vaspyyy.guildmark.registry.ModAttachments
@@ -21,7 +22,8 @@ object Progression {
 
     fun rank(player: Player, perk: Perk): Int = get(player).rank(perk)
 
-    fun addXp(player: Player, amount: Int) {
+    fun addXp(player: Player, base: Int) {
+        val amount = (base * GuildmarkConfig.XP_MULTIPLIER.get()).toInt()
         var progress = get(player)
         if (progress.isMaxLevel()) return
         var xp = progress.xp + amount
