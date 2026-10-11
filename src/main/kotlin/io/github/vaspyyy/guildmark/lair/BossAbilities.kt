@@ -54,6 +54,17 @@ object BossAbilities {
                 }
                 level.playSound(null, boss.blockPosition(), SoundEvents.SPIDER_AMBIENT, SoundSource.HOSTILE, 1.5f, 0.6f)
             }
+            LairTheme.BANDIT_CAMP -> {
+                // Blows the horn: the gang gets its blood up, and a smoke bomb lands at someone's feet
+                for (minion in level.getEntitiesOfClass(Mob::class.java, boss.boundingBox.inflate(16.0)) { it != boss && it is net.minecraft.world.entity.monster.illager.AbstractIllager }) {
+                    minion.addEffect(MobEffectInstance(MobEffects.SPEED, 20 * 6, 0))
+                    minion.addEffect(MobEffectInstance(MobEffects.STRENGTH, 20 * 6, 0))
+                    minion.target = target
+                }
+                target.addEffect(MobEffectInstance(MobEffects.BLINDNESS, 20 * 3, 0))
+                level.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, target.x, target.y + 0.5, target.z, 20, 1.0, 0.5, 1.0, 0.02)
+                level.playSound(null, boss.blockPosition(), SoundEvents.RAID_HORN.value(), SoundSource.HOSTILE, 1.2f, 1.3f)
+            }
             LairTheme.BARROW -> {
                 // The dead climb out of the floor, and the lord's bones harden
                 repeat(2) { summon(level, boss, Identifier.withDefaultNamespace(if (level.random.nextBoolean()) "skeleton" else "zombie")) }

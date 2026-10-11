@@ -785,5 +785,22 @@
   "quest.guildmark.story.village.fetch.bread.0": "Harvest feast tomorrow and the oven broke. Bread, please!",
   "quest.guildmark.story.village.fetch.apple.0": "Apples for the children's games at the fair.",
   "quest.guildmark.story.village.fetch.torch.0": "The nights are getting longer. Torches for the lanes.",
-  "quest.guildmark.story.village.fetch.torch.1": "Monsters avoid the light. We want a lot more of it."
+  "quest.guildmark.story.village.fetch.torch.1": "Monsters avoid the light. We want a lot more of it.",
+  "lair.guildmark.bandit_camp": "Bandit Camp",
+  "lair.guildmark.bandit_camp.boss": "Bandit Chief",
+  "quest.guildmark.story.lair.spider_den.0": "Webs over the old mine mouth, thick as sailcloth. Something big spins them.",
+  "quest.guildmark.story.lair.spider_den.1": "The goats wander into the hills and come back as husks of skin.",
+  "quest.guildmark.story.lair.spider_den.2": "A hunter came back babbling about eyes. Lots of eyes.",
+  "quest.guildmark.story.lair.bandit_camp.0": "WANTED, dead or alive: the chief of the camp in the hills. Reward on proof.",
+  "quest.guildmark.story.lair.bandit_camp.1": "They took the tax cart and the man driving it. We know where they sleep.",
+  "quest.guildmark.story.lair.bandit_camp.2": "Smoke from a camp where no camp should be. Their chief has a price on his head.",
+  "quest.guildmark.story.lair.barrow.0": "The old barrow on the ridge has opened. The dead want their things back.",
+  "quest.guildmark.story.lair.barrow.1": "Grave goods are turning up in the market. Somebody, or something, is digging.",
+  "quest.guildmark.story.lair.barrow.2": "Bells ring under the hill at night. There are no bells under the hill.",
+  "quest.guildmark.story.lair.witch_hollow.0": "A crone in the hollow sells cures that turn people green. Close her shop.",
+  "quest.guildmark.story.lair.witch_hollow.1": "Three children followed a light into the woods. Two came back.",
+  "quest.guildmark.story.lair.witch_hollow.2": "The well water smells of mushrooms, and the frogs have started talking.",
+  "quest.guildmark.story.lair.ashen_pit.0": "The ground split open beyond the river and it's still burning.",
+  "quest.guildmark.story.lair.ashen_pit.1": "Black-boned things climb out of the ash at night. The forest is half gone.",
+  "quest.guildmark.story.lair.ashen_pit.2": "Something down in the pit is keeping the fire fed. Put it out."
 }

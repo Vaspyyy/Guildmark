@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.quest
 
 import io.github.vaspyyy.guildmark.progression.AdventurerRank
+import io.github.vaspyyy.guildmark.lair.LairTheme
 import net.minecraft.resources.Identifier
 import net.minecraft.util.RandomSource
 import kotlin.math.roundToInt
@@ -77,8 +78,14 @@ object QuestGenerator {
     }
 
     /** A lair hunt at the adventurer's own rank: one boss, paid well. */
-    fun generateLair(random: RandomSource, rank: Int, poster: String): QuestNote =
-        QuestNote(QuestType.LAIR, poster, Identifier.withDefaultNamespace("zombie"), 1, 12 + rank * 8 + random.nextInt(5), 4, "", rank)
+    fun generateLair(random: RandomSource, rank: Int, poster: String): QuestNote {
+        val theme = LairTheme.pick(random, rank)
+        return QuestNote(QuestType.LAIR, poster, theme.target, 1, 12 + rank * 8 + random.nextInt(5), 4, lairStory(random, theme), rank)
+    }
+
+    /** Every lair theme has its own rumours, used when a lair note doesn't bring its own. */
+    private fun lairStory(random: RandomSource, theme: LairTheme): String = "quest.guildmark.story.lair.${theme.id}.${random.nextInt(LAIR_STORIES)}"
+    private const val LAIR_STORIES = 3
 
     /** A rank trial: a champion rated at the rank it promotes to. */
     fun generateTrial(rank: AdventurerRank, poster: String): QuestNote =
@@ -112,6 +119,12 @@ object QuestGenerator {
         val count = if (entry.type.isSingle) 1 else (base * countScale).roundToInt().coerceAtLeast(1)
         val reward = BASE_REWARD + (count * entry.rewardPer * rewardScale).roundToInt()
         val deadline = 2 + random.nextInt(3)
+        if (entry.type == QuestType.LAIR) {
+            // Lair hunts pick their den now, so the note can say what's out there
+            val theme = LairTheme.pick(random, rank)
+            val story = entry.stories.randomOrNull(random) ?: lairStory(random, theme)
+            return QuestNote(entry.type, poster, theme.target, count, reward, deadline, story, rank)
+        }
         val story = entry.stories.randomOrNull(random).orEmpty()
         return QuestNote(entry.type, poster, entry.target, count, reward, deadline, story, rank)
     }

@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.lair
 
 import net.minecraft.core.registries.Registries
+import net.minecraft.util.RandomSource
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
 import net.minecraft.resources.ResourceKey
@@ -27,6 +28,8 @@ enum class LairTheme(
 ) {
     SPIDER_DEN("spider_den", 0, { Blocks.COARSE_DIRT }, { Blocks.MOSSY_COBBLESTONE }, { Blocks.COBWEB },
         listOf("spider", "cave_spider"), "spider", BuiltInLootTables.SIMPLE_DUNGEON),
+    BANDIT_CAMP("bandit_camp", 1, { Blocks.COARSE_DIRT }, { Blocks.SPRUCE_LOG }, { Blocks.CAMPFIRE },
+        listOf("pillager", "vindicator", "pillager"), "vindicator", BuiltInLootTables.PILLAGER_OUTPOST),
     BARROW("barrow", 2, { Blocks.CRACKED_STONE_BRICKS }, { Blocks.MOSSY_STONE_BRICKS }, { Blocks.SOUL_LANTERN },
         listOf("zombie", "skeleton", "zombie"), "husk", BuiltInLootTables.BURIED_TREASURE),
     WITCH_HOLLOW("witch_hollow", 3, { Blocks.PODZOL }, { Blocks.DARK_OAK_LOG }, { Blocks.RED_MUSHROOM_BLOCK },
@@ -43,7 +46,21 @@ enum class LairTheme(
     fun minionIds(): List<Identifier> = minions.map { Identifier.withDefaultNamespace(it) }
     fun bossId(): Identifier = Identifier.withDefaultNamespace(boss)
 
+    /** The note target that marks a lair hunt as this theme. */
+    val target: Identifier get() = Identifier.fromNamespaceAndPath("guildmark", id)
+
     companion object {
-        fun forRank(rank: Int): LairTheme = entries.last { !it.vaultOnly && it.minRank <= rank }
+        /** The nastiest theme open at [rank]; lair notes from before themes were picked per note use this. */
+        fun forRank(rank: Int): LairTheme = entries.filter { !it.vaultOnly && it.minRank <= rank }.maxBy { it.minRank }
+
+        /** One of the two nastiest themes open at [rank], so lair hunts of the same rank vary. */
+        fun pick(random: RandomSource, rank: Int): LairTheme {
+            val open = entries.filter { !it.vaultOnly && it.minRank <= rank }.sortedByDescending { it.minRank }.take(2)
+            return open[random.nextInt(open.size)]
+        }
+
+        /** The theme a lair note's target names, or the rank's default for older notes. */
+        fun of(target: Identifier, rank: Int): LairTheme =
+            entries.firstOrNull { !it.vaultOnly && target.namespace == "guildmark" && it.id == target.path } ?: forRank(rank)
     }
 }

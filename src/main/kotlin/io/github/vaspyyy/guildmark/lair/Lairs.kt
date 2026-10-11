@@ -87,7 +87,7 @@ class Lairs(val lairs: MutableList<Lair> = mutableListOf()) : SavedData() {
     fun lair(id: Int): Lair? = lairs.firstOrNull { it.id == id }
 
     /** Find open ground 120 to 220 blocks from [near] and build a lair of the right rank there. */
-    fun create(level: ServerLevel, near: BlockPos, rank: Int): Lair? = build(level, near, LairTheme.forRank(rank), rank, -1, 120, 100)
+    fun create(level: ServerLevel, near: BlockPos, rank: Int, theme: LairTheme = LairTheme.forRank(rank)): Lair? = build(level, near, theme, rank, -1, 120, 100)
 
     /** A courtier's vault for the main story, a long walk (300 to 500 blocks) from [near]. */
     fun createVault(level: ServerLevel, near: BlockPos, courtier: Courtier): Lair? =
@@ -149,7 +149,7 @@ class Lairs(val lairs: MutableList<Lair> = mutableListOf()) : SavedData() {
             if (dx * dx + dz * dz in 5..(RADIUS - 2) * (RADIUS - 2)) {
                 val accent = theme.accent()
                 // Lanterns and webs sit on the floor; blocks like magma replace it
-                if (accent == Blocks.COBWEB || accent == Blocks.SOUL_LANTERN) set(center.offset(dx, 0, dz), accent)
+                if (accent == Blocks.COBWEB || accent == Blocks.SOUL_LANTERN || accent == Blocks.CAMPFIRE) set(center.offset(dx, 0, dz), accent)
                 else set(center.offset(dx, -1, dz), accent)
             }
         }

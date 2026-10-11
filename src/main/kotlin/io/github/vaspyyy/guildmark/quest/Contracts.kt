@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.quest
 
 import io.github.vaspyyy.guildmark.GuildmarkConfig
+import io.github.vaspyyy.guildmark.lair.LairTheme
 import io.github.vaspyyy.guildmark.party.Parties
 import io.github.vaspyyy.guildmark.guild.TownControl
 import io.github.vaspyyy.guildmark.progression.Milestones
@@ -84,7 +85,7 @@ object Contracts {
                 }
             }
             QuestType.LAIR -> {
-                val lair = Lairs.get(level).create(level, boardPos, note.rank) ?: run {
+                val lair = Lairs.get(level).create(level, boardPos, note.rank, LairTheme.of(note.target, note.rank)) ?: run {
                     player.sendOverlayMessage(Component.translatable("message.guildmark.no_lair_spot"))
                     return null
                 }

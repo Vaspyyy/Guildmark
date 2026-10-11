@@ -37,7 +37,7 @@ data class QuestNote(
         QuestType.DELIVER -> Component.translatable("quest.guildmark.deliver.title")
         QuestType.ESCORT -> Component.translatable("quest.guildmark.escort.title")
         QuestType.CHAMPION -> Component.translatable("quest.guildmark.champion.title", targetName())
-        QuestType.LAIR -> Component.translatable("quest.guildmark.lair.title", LairTheme.forRank(rank).title)
+        QuestType.LAIR -> Component.translatable("quest.guildmark.lair.title", LairTheme.of(target, rank).title)
     }
 
     fun description(): Component = when (type) {
@@ -47,7 +47,7 @@ data class QuestNote(
         QuestType.DELIVER -> Component.translatable("quest.guildmark.deliver.desc")
         QuestType.ESCORT -> Component.translatable("quest.guildmark.escort.desc")
         QuestType.CHAMPION -> Component.translatable("quest.guildmark.champion.desc", targetName())
-        QuestType.LAIR -> Component.translatable("quest.guildmark.lair.desc", LairTheme.forRank(rank).title, LairTheme.forRank(rank).bossTitle)
+        QuestType.LAIR -> LairTheme.of(target, rank).let { Component.translatable("quest.guildmark.lair.desc", it.title, it.bossTitle) }
     }
 
     /** The flavour line; situational notes carry their arguments after the key, as "key|arg|arg". */
