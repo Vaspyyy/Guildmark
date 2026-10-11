@@ -53,18 +53,18 @@ enum class Advance(
         huntTargets = setOf("skeleton", "pillager", "vindicator", "witch"),
     ),
     MARKET(
-        "market", 240, { Items.EMERALD },
+        "market", 200, { Items.EMERALD },
         fetchItems = setOf("wheat", "carrot", "potato", "beetroot", "melon_slice", "pumpkin", "leather", "white_wool", "string", "emerald", "bread"),
         countsTravel = true,
     ),
     STONE_WALLS(
-        "stone_walls", 400, { Items.STONE_BRICKS },
+        "stone_walls", 320, { Items.STONE_BRICKS },
         fetchItems = setOf("stone", "cobblestone", "stone_bricks", "andesite", "deepslate", "cobbled_deepslate", "iron_ingot", "lantern"),
         huntTargets = setOf("zombie", "husk", "skeleton", "creeper", "spider"),
         countsClear = true,
     ),
     KEEP(
-        "keep", 600, { Items.CHISELED_STONE_BRICKS },
+        "keep", 450, { Items.CHISELED_STONE_BRICKS },
         fetchItems = setOf("iron_ingot", "gold_ingot", "stone_bricks", "obsidian", "diamond", "chain", "iron_block"),
         huntTargets = setOf("pillager", "vindicator", "evoker", "witch", "enderman", "ravager"),
     );

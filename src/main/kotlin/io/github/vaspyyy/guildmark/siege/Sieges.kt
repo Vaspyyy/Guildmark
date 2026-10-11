@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.siege
 
 import io.github.vaspyyy.guildmark.GuildmarkConfig
+import io.github.vaspyyy.guildmark.village.VillageNames
 import io.github.vaspyyy.guildmark.guild.TownControl
 import io.github.vaspyyy.guildmark.progression.Milestones
 import io.github.vaspyyy.guildmark.loot.Relics
@@ -86,9 +87,18 @@ object Sieges {
         val time = timeOfDay(level)
         if (time !in NIGHT_START..NIGHT_START + NIGHT_START_WINDOW) return
         if (Progression.get(player).level < MIN_LEVEL) return
+        // One roll per player per night, and only at villages that have built something worth defending
+        val today = VillageBoards.day(level)
+        if (rolledDay[player.uuid] == today) return
+        val bell = level.poiManager.findClosest({ it.`is`(PoiTypes.MEETING) }, player.blockPosition(), 64, PoiManager.Occupancy.ANY).orElse(null) ?: return
+        val board = findBoard(level, bell)?.let { level.getBlockEntity(it) as? QuestBoardBlockEntity } ?: return
+        if (board.advanceIndex < 1) return
+        rolledDay[player.uuid] = today
         if (level.random.nextInt(100) >= GuildmarkConfig.SIEGE_CHANCE.get()) return
         start(level, player.blockPosition())
     }
+
+    private val rolledDay = HashMap<java.util.UUID, Long>()
 
     /** Start a siege on the village nearest [near]. Returns false if there's no village with a board, or it's already under siege. */
     fun start(level: ServerLevel, near: BlockPos): Boolean {
@@ -105,7 +115,7 @@ object Sieges {
         val siege = Siege(nextId++, bell, anchor, Direction.Plane.HORIZONTAL.getRandomDirection(level.random), QuestGenerator.tierAt(bell.x, bell.z), waves, endsAt)
         sieges[siege.id] = siege
         level.playSound(null, bell, SoundEvents.RAID_HORN.value(), SoundSource.HOSTILE, 64.0f, 1.0f)
-        val message = Component.translatable("message.guildmark.siege_start", bell.x, bell.z, Component.translatable("direction.guildmark.${siege.from.serializedName}"))
+        val message = Component.translatable("message.guildmark.siege_start", VillageNames.of(anchor), Component.translatable("direction.guildmark.${siege.from.serializedName}"))
         for (player in watchers(level, siege)) player.sendSystemMessage(message)
         TownControl.onSiegeStart(level, anchor, bell)
         nextWave(level, siege)
@@ -211,18 +221,18 @@ object Sieges {
                 player.inventory.placeItemBackInInventory(Relics.roll(level, siege.tier + 1), Prediction.SERVER_ONLY)
                 Progression.addXp(player, marks * Progression.XP_PER_MARK)
                 Standing.add(level, siege.anchor, player, 10)
-                player.sendSystemMessage(Component.translatable("message.guildmark.siege_won", paid))
+                player.sendSystemMessage(Component.translatable("message.guildmark.siege_won", VillageNames.of(siege.anchor), paid))
                 Milestones.award(player, Milestones.SIEGE)
             }
             level.playSound(null, siege.center, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.NEUTRAL, 2.0f, 1.0f)
-            GuildNews.add(level, "news.guildmark.siege_won", siege.center.x.toString(), siege.center.z.toString())
+            GuildNews.add(level, "news.guildmark.siege_won", VillageNames.of(siege.anchor))
         } else {
             damage(level, siege)
             for (player in defenders) {
                 Standing.add(level, siege.anchor, player, -10)
-                player.sendSystemMessage(Component.translatable("message.guildmark.siege_lost"))
+                player.sendSystemMessage(Component.translatable("message.guildmark.siege_lost", VillageNames.of(siege.anchor)))
             }
-            GuildNews.add(level, "news.guildmark.siege_lost", siege.center.x.toString(), siege.center.z.toString())
+            GuildNews.add(level, "news.guildmark.siege_lost", VillageNames.of(siege.anchor))
         }
         // Stragglers melt away at the end
         for (id in siege.mobs) (level.getEntity(id) as? Mob)?.let { if (!won) it.discard() }

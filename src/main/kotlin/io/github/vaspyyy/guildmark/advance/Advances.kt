@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.advance
 
 import io.github.vaspyyy.guildmark.progression.Milestones
+import io.github.vaspyyy.guildmark.village.VillageNames
 import io.github.vaspyyy.guildmark.block.QuestBoardBlockEntity
 import io.github.vaspyyy.guildmark.quest.QuestNote
 import io.github.vaspyyy.guildmark.quest.Expeditions
@@ -54,7 +55,7 @@ object Advances {
         }
         board.setAdvanceProgress(board.advanceIndex + 1, 0)
         announce(level, center, Component.translatable("message.guildmark.advance_complete", advance.title))
-        GuildNews.add(level, "news.guildmark.advance", center.x.toString(), center.z.toString(), "#advance.guildmark.${advance.id}")
+        GuildNews.add(level, "news.guildmark.advance", VillageNames.of(anchor), "#advance.guildmark.${advance.id}")
         celebrate(level, center)
     }
 

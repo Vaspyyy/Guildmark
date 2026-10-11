@@ -22,8 +22,8 @@ object GuildmarkConfig {
         .comment("Monster sieges on villages players have built up.")
         .define("sieges", true)
     val SIEGE_CHANCE: ModConfigSpec.IntValue = BUILDER
-        .comment("Percent chance a night starts a siege near a player (checked a few times each dusk).")
-        .defineInRange("siegeChancePercent", 20, 0, 100)
+        .comment("Percent chance each night that a siege starts on a built-up village a player is in at dusk.")
+        .defineInRange("siegeChancePercent", 25, 0, 100)
     val BANDITS: ModConfigSpec.BooleanValue = BUILDER
         .comment("Bandits ambush caravans and travellers on Trade Roads.")
         .define("bandits", true)
