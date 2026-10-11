@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.quest
 
+import io.github.vaspyyy.guildmark.party.Parties
 import io.github.vaspyyy.guildmark.guild.TownControl
 import io.github.vaspyyy.guildmark.progression.Milestones
 import io.github.vaspyyy.guildmark.loot.Relics
@@ -203,6 +204,7 @@ object Contracts {
         player.sendOverlayMessage(Component.translatable("message.guildmark.complete", marks, xp))
         level.playSound(null, pos, SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 0.8f, 1.2f)
         Progression.addXp(player, xp)
+        Parties.sharePay(player, marks, xp)
         if (note.trial) Progression.promote(player, note.rank)
         Milestones.award(player, Milestones.PAID)
         if (note.type == QuestType.DELIVER) Milestones.award(player, Milestones.COURIER)

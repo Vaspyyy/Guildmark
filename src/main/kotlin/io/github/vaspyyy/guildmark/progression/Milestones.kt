@@ -34,6 +34,7 @@ object Milestones {
     const val GUILD_FOUNDED = "guild_founded"
     const val RECRUIT = "recruit"
     const val BANNER = "banner"
+    const val PARTY = "party"
     const val TAKEOVER = "takeover"
     const val REPELLED = "repelled"
     const val CHARACTER = "character"

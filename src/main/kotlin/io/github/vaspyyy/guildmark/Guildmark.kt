@@ -1,5 +1,8 @@
 package io.github.vaspyyy.guildmark
 
+import net.minecraft.server.level.ServerPlayer
+import io.github.vaspyyy.guildmark.party.PartyCommand
+import io.github.vaspyyy.guildmark.party.Parties
 import io.github.vaspyyy.guildmark.guild.Rivals
 import io.github.vaspyyy.guildmark.guild.RivalAdventurer
 import io.github.vaspyyy.guildmark.network.ClaimVillagePayload
@@ -95,6 +98,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         NeoForge.EVENT_BUS.addListener(EntityJoinLevelEvent::class.java) { Traffic.onJoin(it.entity) }
         NeoForge.EVENT_BUS.addListener(PlayerInteractEvent.RightClickBlock::class.java, HollowThrone::onUseBlock)
         NeoForge.EVENT_BUS.addListener(LivingIncomingDamageEvent::class.java, Relics::onIncomingDamage)
+        NeoForge.EVENT_BUS.addListener(LivingIncomingDamageEvent::class.java, Parties::onIncomingDamage)
         NeoForge.EVENT_BUS.addListener(LivingDamageEvent.Post::class.java, Relics::onDamaged)
         NeoForge.EVENT_BUS.addListener(PlayerInteractEvent.EntityInteract::class.java, Reception::onInteract)
         NeoForge.EVENT_BUS.addListener(LevelTickEvent.Post::class.java) { event ->
@@ -114,9 +118,13 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerLoggedInEvent::class.java) {
             Progression.applyAttributes(it.entity)
             Milestones.onLogin(it.entity)
+            (it.entity as? ServerPlayer)?.let { player -> Parties.onLogin(player) }
         }
         NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerRespawnEvent::class.java) { Progression.applyAttributes(it.entity) }
-        NeoForge.EVENT_BUS.addListener(RegisterCommandsEvent::class.java) { AdvanceCommand.register(it.dispatcher) }
+        NeoForge.EVENT_BUS.addListener(RegisterCommandsEvent::class.java) {
+            AdvanceCommand.register(it.dispatcher)
+            PartyCommand.register(it.dispatcher)
+        }
         NeoForge.EVENT_BUS.addListener(AddServerReloadListenersEvent::class.java) { event ->
             event.addListener(Identifier.fromNamespaceAndPath(MOD_ID, "quest_pools"), QuestPoolLoader())
         }
@@ -134,7 +142,10 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         if (level is ServerLevel && victim is GuildMember) Recruiting.onMemberDeath(level, victim)
         if (level is ServerLevel && victim.hasData(ModAttachments.LAIR_BOSS)) Lairs.get(level).onBossDeath(level, victim.getData(ModAttachments.LAIR_BOSS))
         val killer = event.source.entity as? Player ?: return
-        if (!killer.level().isClientSide()) Contracts.onKill(killer, event.entity)
+        if (!killer.level().isClientSide()) {
+            Contracts.onKill(killer, event.entity)
+            Parties.onKill(killer, event.entity)
+        }
     }
 
     private fun onPlayerTick(event: PlayerTickEvent.Post) {

@@ -76,7 +76,10 @@ object ContractTracker : GuiLayer {
             val (status, color) = status(player, entry)
             rows.add(Row(entry.stack, entry.note.title(), status, color, target(player, entry)))
         }
-        if (rows.isEmpty()) return
+        if (rows.isEmpty()) {
+            renderParty(graphics, minecraft, player, 4)
+            return
+        }
 
         val shownEntries = rows.take(MAX_SHOWN)
         val extra = rows.size - shownEntries.size
@@ -108,6 +111,37 @@ object ContractTracker : GuiLayer {
         }
         if (extra > 0) {
             graphics.text(font, Component.translatable("gui.guildmark.tracker.more", extra), left + PADDING, top + height - PADDING - 8, FADED_INK, false)
+        }
+        renderParty(graphics, minecraft, player, top + height + 3)
+    }
+
+    /** The party: each other member's name, health and how far away they are. */
+    private fun renderParty(graphics: GuiGraphicsExtractor, minecraft: Minecraft, player: Player, top: Int) {
+        val mates = player.getData(ModAttachments.PARTY)
+        if (mates.isEmpty()) return
+        val font = minecraft.font
+        val left = 4
+        val height = PADDING * 2 + 10 + mates.size * 12
+        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, PANEL, left, top, WIDTH, height)
+        graphics.text(font, Component.translatable("gui.guildmark.tracker.party"), left + PADDING, top + PADDING, FADED_INK, false)
+        mates.forEachIndexed { i, uuid ->
+            val y = top + PADDING + 11 + i * 12
+            val name = minecraft.connection?.getPlayerInfo(uuid)?.profile?.name ?: "?"
+            graphics.text(font, Component.literal(font.plainSubstrByWidth(name, 70)), left + PADDING, y, INK, false)
+            val mate = player.level().getPlayerByUUID(uuid)
+            if (mate == null) {
+                val far = Component.translatable("gui.guildmark.tracker.party.far")
+                graphics.text(font, far, left + WIDTH - PADDING - font.width(far), y, FADED_INK, false)
+                return@forEachIndexed
+            }
+            // Health bar, red when low
+            val barX = left + PADDING + 74
+            val barWidth = 40
+            val fraction = (mate.health / mate.maxHealth).coerceIn(0f, 1f)
+            graphics.fill(barX, y + 2, barX + barWidth, y + 6, 0xFF3A2A1A.toInt())
+            graphics.fill(barX, y + 2, barX + (barWidth * fraction).toInt(), y + 6, if (fraction < 0.35f) LATE_INK else DONE_INK)
+            val distance = "${mate.distanceTo(player).toInt()}m"
+            graphics.text(font, Component.literal(distance), left + WIDTH - PADDING - font.width(distance), y, FADED_INK, false)
         }
     }
 

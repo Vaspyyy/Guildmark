@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.registry
 
+import net.minecraft.network.codec.ByteBufCodecs
 import com.mojang.serialization.Codec
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.progression.GuildProgress
@@ -67,6 +68,13 @@ object ModAttachments {
             .serialize(MainQuestState.CODEC.fieldOf("state"))
             .copyOnDeath()
             .sync({ holder, player -> holder === player }, MainQuestState.STREAM_CODEC)
+            .build()
+    }
+
+    /** The other members of a player's party, synced so the tracker can show them. Rebuilt on login. */
+    val PARTY: DeferredHolder<AttachmentType<*>, AttachmentType<List<UUID>>> = ATTACHMENTS.register("party") { ->
+        AttachmentType.builder { -> listOf<UUID>() }
+            .sync({ holder, player -> holder === player }, UUIDUtil.STREAM_CODEC.apply(ByteBufCodecs.list()))
             .build()
     }
 
