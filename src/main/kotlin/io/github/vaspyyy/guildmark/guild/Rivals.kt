@@ -1,6 +1,10 @@
 package io.github.vaspyyy.guildmark.guild
 
 import net.minecraft.world.level.Level
+import net.minecraft.world.entity.projectile.Projectile
+import net.minecraft.world.entity.Entity
+import io.github.vaspyyy.guildmark.progression.Progression
+import io.github.vaspyyy.guildmark.party.Parties
 import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.GuildmarkConfig
 import io.github.vaspyyy.guildmark.block.VillageBoards
@@ -44,6 +48,9 @@ object Rivals {
     private const val FIRST_DAY = 3
     private const val CHALLENGE_DAYS = 2
     private const val CHALLENGE_LOYALTY = 40
+    /** Ticks before a challenger's captain comes back after leaving. */
+    private const val CAPTAIN_COOLDOWN = 2400L
+    private val captainCooldown = HashMap<BlockPos, Long>()
     private val CAPTAIN_HEALTH = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "captain_health")
     private val CAPTAIN_DAMAGE = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "captain_damage")
     private val CAPTAIN_ARMOR = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "captain_armor")
@@ -56,8 +63,13 @@ object Rivals {
     fun captainName(rival: RivalGuild): Component = Component.translatable("rival.guildmark.${rival.key}.captain")
 
     fun daily(level: ServerLevel, today: Long) {
-        if (!GuildmarkConfig.RIVALS.get()) return
         val holdings = Holdings.get(level)
+        if (!GuildmarkConfig.RIVALS.get()) {
+            // Rivals switched off: drop challenges nobody could answer any more
+            for (holding in holdings.holdings) holding.challenger = -1
+            holdings.changed()
+            return
+        }
         val random = level.random
         // Challenges nobody answered: the rival takes the village
         for (holding in holdings.holdings.toList()) {
@@ -125,7 +137,10 @@ object Rivals {
         val guild = Guilds.get(level).ledBy(player.uuid)
         if (holding != null && holding.challenger >= 0 && guild?.id == holding.guild && near.none { it.captain }) {
             val rival = RivalGuild.byId(holding.challenger) ?: return
-            spawnCaptain(level, rival, anchor, guild.id)?.shout(level, "arrive")
+            // Waits for the leader to come to the bell, and doesn't come straight back after leaving
+            if (!player.blockPosition().closerThan(bell, 24.0) || level.gameTime < (captainCooldown[anchor] ?: 0L)) return
+            captainCooldown[anchor] = level.gameTime + CAPTAIN_COOLDOWN
+            spawnCaptain(level, rival, anchor, guild.id, defending = false)?.shout(level, "arrive")
             return
         }
 
@@ -141,7 +156,7 @@ object Rivals {
     fun challenge(level: ServerLevel, player: Player, anchor: BlockPos) {
         val status = TownControl.status(level, player, anchor)
         if (status != TownControl.ClaimStatus.RIVAL) {
-            player.sendSystemMessage(Component.translatable("message.guildmark.claim.${status.key}", TownControl.CLAIM_FEE, TownControl.holdingCap(0)))
+            player.sendSystemMessage(Component.translatable("message.guildmark.claim.${status.key}", TownControl.CLAIM_FEE, TownControl.holdingCap(Progression.get(player).adventurerRank)))
             return
         }
         val guild = Guilds.get(level).ledBy(player.uuid) ?: return
@@ -151,7 +166,7 @@ object Rivals {
             player.sendSystemMessage(Component.translatable("message.guildmark.captain_waiting", captainName(rival)))
             return
         }
-        spawnCaptain(level, rival, anchor, guild.id)?.shout(level, "accept")
+        spawnCaptain(level, rival, anchor, guild.id, defending = true)?.shout(level, "accept")
     }
 
     fun spawnAdventurer(level: ServerLevel, rival: RivalGuild, anchor: BlockPos, near: BlockPos, lifespan: Int): RivalAdventurer? {
@@ -169,7 +184,7 @@ object Rivals {
         return adventurer
     }
 
-    private fun spawnCaptain(level: ServerLevel, rival: RivalGuild, anchor: BlockPos, foe: Int): RivalAdventurer? {
+    private fun spawnCaptain(level: ServerLevel, rival: RivalGuild, anchor: BlockPos, foe: Int, defending: Boolean): RivalAdventurer? {
         val bell = TownControl.bell(level, anchor) ?: anchor
         val spot = groundNear(level, bell, 2, 6) ?: return null
         val captain = ModEntities.RIVAL.get().create(level, EntitySpawnReason.EVENT) ?: return null
@@ -178,7 +193,8 @@ object Rivals {
         captain.captain = true
         captain.anchor = anchor
         captain.foe = foe
-        captain.setHomeTo(bell, 20)
+        captain.defending = defending
+        captain.home = bell
         captain.customName = Component.translatable("rival.guildmark.captain_of", captainName(rival), rival.displayName)
         captain.isCustomNameVisible = true
         captain.getAttribute(Attributes.MAX_HEALTH)?.addPermanentModifier(AttributeModifier(CAPTAIN_HEALTH, 120.0, AttributeModifier.Operation.ADD_VALUE))
@@ -202,22 +218,32 @@ object Rivals {
         return ItemStack(Items.DIAMOND_SWORD)
     }
 
-    fun onCaptainDefeated(level: ServerLevel, captain: RivalAdventurer, killer: Player?) {
+    fun onCaptainDefeated(level: ServerLevel, captain: RivalAdventurer, killerEntity: Entity?) {
         val holdings = Holdings.get(level)
         val holding = holdings.at(captain.anchor)
         val name = VillageNames.of(captain.anchor)
         val rival = captain.rival
         val foe = Guilds.get(level).byId(captain.foe)
         val leader = foe?.let { level.server.playerList.getPlayer(it.leader) }
+        // Only the foe's side wins the fight: its leader, the leader's party, or its sworn members
+        val killer = (killerEntity as? Projectile)?.owner ?: killerEntity
+        val parties = Parties.get(level.server)
+        val won = foe != null && when (killer) {
+            is Player -> killer.uuid == foe.leader || parties.of(foe.leader)?.let { killer.uuid in it.members } == true
+            is GuildMember -> killer.guild == foe.id
+            else -> false
+        }
+        if (!won) return
         when {
-            // Taking a rival's village
-            holding != null && holding.guild == rival.id && foe != null -> {
+            // Taking a rival's village (the leader must still have room for it)
+            captain.defending && holding != null && holding.guild == rival.id && foe != null &&
+                (leader == null || holdings.of(foe.id).size < TownControl.holdingCap(Progression.get(leader).adventurerRank)) -> {
                 TownControl.take(level, captain.anchor, foe.id)
                 leader?.sendSystemMessage(Component.translatable("message.guildmark.rival_village_taken", name, rival.displayName, foe.name).withStyle { it.withColor(foe.color.textColor) })
                 leader?.let { Milestones.award(it, Milestones.TAKEOVER) }
             }
             // Answering a rival's challenge
-            holding != null && holding.guild == captain.foe && holding.challenger == rival.id -> {
+            !captain.defending && holding != null && holding.guild == captain.foe && holding.challenger == rival.id -> {
                 holding.challenger = -1
                 holding.loyalty = (holding.loyalty + 30).coerceAtMost(Holding.MAX_LOYALTY)
                 holdings.changed()
@@ -226,7 +252,7 @@ object Rivals {
                 GuildNews.add(level, "news.guildmark.rival_repelled", foe?.name ?: "?", rival.displayName, name)
             }
         }
-        killer?.inventory?.placeItemBackInInventory(ItemStack(ModItems.GUILD_MARK.get(), 20), Prediction.SERVER_ONLY)
+        (killer as? Player)?.inventory?.placeItemBackInInventory(ItemStack(ModItems.GUILD_MARK.get(), 20), Prediction.SERVER_ONLY)
         // The captain's people leave with them
         for (adventurer in level.getEntitiesOfClass(RivalAdventurer::class.java, AABB(captain.blockPosition()).inflate(64.0)) { it.rival == rival && !it.captain }) {
             adventurer.leaveAt = level.gameTime + 100

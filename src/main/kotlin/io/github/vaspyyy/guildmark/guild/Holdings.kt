@@ -55,6 +55,8 @@ class Holdings(
     var lastDay: Long = -1,
     /** Every village board anchor anyone has been near, so rivals know where villages are. */
     val known: MutableSet<BlockPos> = mutableSetOf(),
+    /** Banners of a lost hold that were in unloaded chunks, taken down once someone comes by. */
+    val staleBanners: MutableSet<BlockPos> = mutableSetOf(),
 ) : SavedData() {
     fun remember(anchor: BlockPos) {
         if (known.add(anchor)) setDirty()
@@ -81,7 +83,8 @@ class Holdings(
                 Holding.CODEC.listOf().fieldOf("holdings").forGetter { it.holdings },
                 Codec.LONG.optionalFieldOf("last_day", -1L).forGetter { it.lastDay },
                 BlockPos.CODEC.listOf().optionalFieldOf("known", listOf()).forGetter { it.known.toList() },
-            ).apply(i) { holdings, day, known -> Holdings(holdings.toMutableList(), day, known.toMutableSet()) }
+                BlockPos.CODEC.listOf().optionalFieldOf("stale_banners", listOf()).forGetter { it.staleBanners.toList() },
+            ).apply(i) { holdings, day, known, stale -> Holdings(holdings.toMutableList(), day, known.toMutableSet(), stale.toMutableSet()) }
         }
 
         private val TYPE = SavedDataType(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "holdings"), Supplier { Holdings() }, CODEC)

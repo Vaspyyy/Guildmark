@@ -70,7 +70,7 @@ class Parties(val parties: MutableList<Party> = mutableListOf()) : SavedData() {
         fun invite(server: MinecraftServer, from: ServerPlayer, to: ServerPlayer): Boolean {
             val parties = get(server)
             if (from == to) return fail(from, "self")
-            if (parties.of(to.uuid) != null) return fail(from, "taken", to.displayName)
+            if (parties.of(to.uuid)?.let { it.members.size > 1 } == true) return fail(from, "taken", to.displayName)
             val party = parties.of(from.uuid) ?: Party((parties.parties.maxOfOrNull { it.id } ?: 0) + 1, from.uuid, mutableListOf(from.uuid)).also {
                 parties.parties.add(it)
                 parties.setDirty()
@@ -92,7 +92,10 @@ class Parties(val parties: MutableList<Party> = mutableListOf()) : SavedData() {
             val parties = get(server)
             val party = parties.of(inviter.uuid)
             if (party == null || parties.invites[player.uuid] != party.id) return fail(player, "no_invite", inviter.displayName)
-            if (parties.of(player.uuid) != null) return fail(player, "already")
+            val own = parties.of(player.uuid)
+            if (own != null && own.members.size > 1) return fail(player, "already")
+            // A party of one (an invite nobody answered) is no party: fold it into the new one
+            if (own != null) disband(parties, own)
             if (party.members.size >= MAX_SIZE) return fail(player, "full", MAX_SIZE)
             parties.invites.remove(player.uuid)
             party.members.add(player.uuid)
@@ -127,7 +130,7 @@ class Parties(val parties: MutableList<Party> = mutableListOf()) : SavedData() {
             party.members.remove(member)
             server.playerList.getPlayer(member)?.setData(ModAttachments.PARTY, listOf())
             if (party.members.size <= 1) {
-                parties.parties.remove(party)
+                disband(parties, party)
                 for (rest in party.members) server.playerList.getPlayer(rest)?.let {
                     it.setData(ModAttachments.PARTY, listOf())
                     it.sendSystemMessage(Component.translatable("message.guildmark.party.disbanded"))
@@ -177,6 +180,13 @@ class Parties(val parties: MutableList<Party> = mutableListOf()) : SavedData() {
         /** A kill counts for every nearby party member's contracts, not just the killer's. */
         fun onKill(killer: Player, victim: LivingEntity) {
             for (mate in nearbyMates(killer)) Contracts.onKill(mate, victim)
+        }
+
+        private fun disband(parties: Parties, party: Party) {
+            parties.parties.remove(party)
+            // Ids get reused, so old invites to this party mustn't open a new one
+            parties.invites.values.removeIf { it == party.id }
+            parties.setDirty()
         }
 
         /** A finished contract pays nearby party members a quarter of its marks and XP on top. */

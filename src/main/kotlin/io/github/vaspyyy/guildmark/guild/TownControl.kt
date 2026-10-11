@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.guild
 
 import net.minecraft.world.level.Level
+import io.github.vaspyyy.guildmark.block.QuestBoardBlock
 import io.github.vaspyyy.guildmark.advance.Advance
 import io.github.vaspyyy.guildmark.block.QuestBoardBlockEntity
 import io.github.vaspyyy.guildmark.block.VillageBoards
@@ -49,6 +50,8 @@ object TownControl {
     private const val TRIBUTE_DAYS_CAP = 7
     private const val NEGLECT_DAYS = 7
     private const val VISIT_RANGE = 64.0
+    private const val BANNER_RETRY = 2400L
+    private val bannerRetry = HashMap<BlockPos, Long>()
     private const val RALLY_RANGE = 160.0
     private const val CONTRACT_BONUS_PERCENT = 10
 
@@ -148,11 +151,21 @@ object TownControl {
     fun visit(level: ServerLevel, player: Player) {
         if (level.dimension() != Level.OVERWORLD) return
         val holdings = Holdings.get(level)
-        // Villages taken while nobody was near get their banners once someone comes by
+        // Banners of lost holds that were out of reach come down now
+        if (holdings.staleBanners.isNotEmpty()) {
+            val reached = holdings.staleBanners.filter { player.blockPosition().closerThan(it, VISIT_RANGE) && level.isLoaded(it) }
+            for (pos in reached) {
+                if (holdings.holdings.none { pos in it.banners } && level.getBlockState(pos).block is BannerBlock) level.destroyBlock(pos, false)
+                holdings.staleBanners.remove(pos)
+            }
+            if (reached.isNotEmpty()) holdings.changed()
+        }
+        // Villages taken while nobody was near get their banners once someone comes by (tried now and then, not every visit)
         for (holding in holdings.holdings) {
-            if (holding.banners.isEmpty() && player.blockPosition().closerThan(holding.anchor, VISIT_RANGE)) {
+            if (holding.banners.isEmpty() && player.blockPosition().closerThan(holding.anchor, VISIT_RANGE) && level.gameTime >= (bannerRetry[holding.anchor] ?: 0L)) {
+                bannerRetry[holding.anchor] = level.gameTime + BANNER_RETRY
                 raiseBanners(level, holding, holderColor(level, holding.guild))
-                holdings.changed()
+                if (holding.banners.isNotEmpty()) holdings.changed()
             }
         }
         val guild = Guilds.get(level).ledBy(player.uuid) ?: return
@@ -197,7 +210,10 @@ object TownControl {
     }
 
     /** Extra pay for a guild leader at one of their own villages; a rival guild takes its cut at theirs. */
-    fun bonus(level: ServerLevel, anchor: BlockPos, player: Player, reward: Int): Int {
+    fun bonus(level: ServerLevel, boardPos: BlockPos, player: Player, reward: Int): Int {
+        // Contracts remember the board cell they came from; holdings are keyed by the board's anchor cell
+        val state = level.getBlockState(boardPos)
+        val anchor = if (state.block is QuestBoardBlock) QuestBoardBlock.anchorPos(boardPos, state) else boardPos
         val holder = Holdings.get(level).at(anchor)?.guild ?: return 0
         val cut = (reward * CONTRACT_BONUS_PERCENT / 100.0).roundToInt().coerceAtLeast(1)
         if (RivalGuild.byId(holder) != null) return -cut
@@ -242,6 +258,7 @@ object TownControl {
         for (direction in Direction.Plane.HORIZONTAL) {
             for (distance in 2..4) {
                 val column = bell.relative(direction, distance)
+                if (!level.isLoaded(column)) continue
                 val top = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, column)
                 if (!level.getBlockState(top).canBeReplaced() || !level.getBlockState(top.above()).canBeReplaced()) continue
                 if (!level.getBlockState(top.below()).isFaceSturdy(level, top.below(), Direction.UP)) continue
@@ -254,12 +271,13 @@ object TownControl {
     }
 
     private fun lowerBanners(level: ServerLevel, holding: Holding) {
+        val holdings = Holdings.get(level)
         for (pos in holding.banners) {
-            if (level.isLoaded(pos) && level.getBlockState(pos).block is BannerBlock) {
-                level.destroyBlock(pos, false)
-            }
+            if (!level.isLoaded(pos)) holdings.staleBanners.add(pos)
+            else if (level.getBlockState(pos).block is BannerBlock) level.destroyBlock(pos, false)
         }
         holding.banners.clear()
+        holdings.changed()
     }
 
     fun marks(player: Player): Int =

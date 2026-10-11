@@ -202,7 +202,7 @@ object Contracts {
         val marks = (Progression.reward(player, note.reward + bonus) * GuildmarkConfig.PAY_MULTIPLIER.get()).toInt().coerceAtLeast(1)
         val xp = note.reward * Progression.XP_PER_MARK
         player.inventory.placeItemBackInInventory(ItemStack(ModItems.GUILD_MARK.get(), marks), Prediction.SERVER_ONLY)
-        player.sendOverlayMessage(Component.translatable("message.guildmark.complete", marks, xp))
+        player.sendOverlayMessage(Component.translatable("message.guildmark.complete", marks, (xp * GuildmarkConfig.XP_MULTIPLIER.get()).toInt()))
         level.playSound(null, pos, SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 0.8f, 1.2f)
         Progression.addXp(player, xp)
         Parties.sharePay(player, marks, xp)

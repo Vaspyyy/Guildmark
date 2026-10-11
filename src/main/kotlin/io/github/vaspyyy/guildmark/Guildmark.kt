@@ -122,7 +122,11 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
             Milestones.onLogin(it.entity)
             (it.entity as? ServerPlayer)?.let { player -> Parties.onLogin(player) }
         }
-        NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerRespawnEvent::class.java) { Progression.applyAttributes(it.entity) }
+        NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerRespawnEvent::class.java) {
+            Progression.applyAttributes(it.entity)
+            // The party list isn't copied to the new player entity
+            (it.entity as? ServerPlayer)?.let { player -> Parties.onLogin(player) }
+        }
         NeoForge.EVENT_BUS.addListener(RegisterCommandsEvent::class.java) {
             AdvanceCommand.register(it.dispatcher)
             PartyCommand.register(it.dispatcher)
@@ -143,7 +147,8 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         if (level is ServerLevel) Sieges.onDeath(level, victim)
         if (level is ServerLevel && victim is GuildMember) Recruiting.onMemberDeath(level, victim)
         if (level is ServerLevel && victim.hasData(ModAttachments.LAIR_BOSS)) Lairs.get(level).onBossDeath(level, victim.getData(ModAttachments.LAIR_BOSS))
-        val killer = event.source.entity as? Player ?: return
+        // Kills by fire, lightning and the like still count for whoever last hit the victim
+        val killer = event.source.entity as? Player ?: victim.killCredit as? Player ?: return
         if (!killer.level().isClientSide()) {
             Contracts.onKill(killer, event.entity)
             Parties.onKill(killer, event.entity)

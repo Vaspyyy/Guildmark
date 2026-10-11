@@ -65,6 +65,8 @@ class RivalAdventurer(type: EntityType<out RivalAdventurer>, level: Level) : Pat
     var leaveAt: Long = -1
     /** For a captain: the player guild it is fighting for the village. */
     var foe: Int = -1
+    /** For a captain: true if it defends its guild's village against [foe]; false if it came to take [foe]'s village. */
+    var defending: Boolean = false
     private var tookNote = false
     private var bashTimer = 80
     private var rallied = false
@@ -155,6 +157,8 @@ class RivalAdventurer(type: EntityType<out RivalAdventurer>, level: Level) : Pat
             val foePlayer = level.getEntitiesOfClass(Player::class.java, AABB(blockPosition()).inflate(32.0)) { !it.isSpectator && !it.isCreative && Guilds.get(level).ledBy(it.uuid)?.id == foe }.firstOrNull()
             if (foePlayer != null) target = foePlayer
             else if (++lonelyTicks > 1200) leave(level)
+            // Wandered off chasing someone: walk back to the bell
+            else if (navigation.isDone && !blockPosition().closerThan(home, 24.0)) navigation.moveTo(home.x + 0.5, home.y.toDouble(), home.z + 0.5, 0.8)
         }
     }
 
@@ -180,11 +184,18 @@ class RivalAdventurer(type: EntityType<out RivalAdventurer>, level: Level) : Pat
         return InteractionResult.SUCCESS
     }
 
+    /** For a captain: the bell it guards, so it can find its way back after a chase. */
+    var home: BlockPos = BlockPos.ZERO
+
     override fun die(source: DamageSource) {
         super.die(source)
         val level = level()
-        if (level is ServerLevel && captain) Rivals.onCaptainDefeated(level, this, source.entity as? Player)
+        // Another mod can cancel the death; only a real one counts
+        if (level is ServerLevel && captain && dead) Rivals.onCaptainDefeated(level, this, source.entity ?: killCredit)
     }
+
+    /** Captains only exist while their fight is on: they aren't saved, and come back when the leader does. */
+    override fun shouldBeSaved(): Boolean = !captain && super.shouldBeSaved()
 
     override fun startSeenByPlayer(player: ServerPlayer) {
         super.startSeenByPlayer(player)
@@ -214,6 +225,7 @@ class RivalAdventurer(type: EntityType<out RivalAdventurer>, level: Level) : Pat
         output.store("anchor", BlockPos.CODEC, anchor)
         output.putLong("leave_at", leaveAt)
         output.putInt("foe", foe)
+        output.putBoolean("defending", defending)
         output.putBoolean("took_note", tookNote)
     }
 
@@ -224,6 +236,7 @@ class RivalAdventurer(type: EntityType<out RivalAdventurer>, level: Level) : Pat
         anchor = input.read("anchor", BlockPos.CODEC).orElse(BlockPos.ZERO)
         leaveAt = input.getLongOr("leave_at", -1)
         foe = input.getIntOr("foe", -1)
+        defending = input.getBooleanOr("defending", false)
         tookNote = input.getBooleanOr("took_note", false)
     }
 

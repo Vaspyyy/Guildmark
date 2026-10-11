@@ -203,7 +203,8 @@ object Relics {
         val level = victim.level() as? ServerLevel ?: return
         val attacker = event.source.entity as? LivingEntity
         val dealt = event.inflictedDamage
-        if (!fromWeapon(event.source)) return
+        // A shield that stopped the blow stops its tricks too
+        if (dealt <= 0f || !fromWeapon(event.source)) return
         relicOf(event.source.weaponItem)?.let { relic ->
             if (relic.has(Affix.LIFESTEAL) && attacker != null) attacker.heal(dealt * 0.12f)
             if (relic.has(Affix.FROST)) victim.addEffect(MobEffectInstance(MobEffects.SLOWNESS, 60, 1))
@@ -215,9 +216,11 @@ object Relics {
                     bolt.setVisualOnly(true)
                     level.addFreshEntity(bolt)
                 }
-                // The blow that called the lightning just landed; let the bolt's damage through too
+                // The blow that called the lightning just landed; let the bolt's damage through too, credited to the wielder
                 victim.invulnerableTime = 0
-                victim.hurtServer(level, level.damageSources().magic(), 6f)
+                victim.damageCooldownTime = 0
+                val source = if (attacker != null) level.damageSources().indirectMagic(attacker, attacker) else level.damageSources().magic()
+                victim.hurtServer(level, source, 6f)
             }
         }
         if (attacker != null && attacker != victim && event.source.directEntity == attacker) {
