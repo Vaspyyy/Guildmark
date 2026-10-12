@@ -477,8 +477,15 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
         for ((id, at) in AtlasClient.partyMates(player)) {
             out.add(Spot(at.x, at.z, PARTY, Component.literal(AtlasClient.mateName(id)), listOf(Component.translatable("gui.guildmark.map.tip.party")), 4))
         }
-        AtlasClient.deathPoint(player)?.let {
-            out.add(Spot(it.x + 0.5, it.z + 0.5, DEATH, Component.translatable("atlas.guildmark.death"), listOf(), 4))
+        val lost = AtlasClient.lostMarks(player)
+        if (lost != null) {
+            val (at, amount) = lost
+            out.add(Spot(at.x + 0.5, at.z + 0.5, LOST_MARKS, Component.translatable("atlas.guildmark.lost_marks", amount),
+                listOf(Component.translatable("gui.guildmark.map.tip.lost_marks")), 4))
+        } else {
+            AtlasClient.deathPoint(player)?.let {
+                out.add(Spot(it.x + 0.5, it.z + 0.5, DEATH, Component.translatable("atlas.guildmark.death"), listOf(), 4))
+            }
         }
         return out
     }
@@ -810,6 +817,7 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
         private val PLAYER = sprite("player")
         private val PIN = sprite("pin")
         private val WARDFIRE = sprite("wardfire")
+        private val LOST_MARKS = sprite("lost_marks")
         private val ROSE = sprite("rose")
         private val VIGNETTE = sprite("frame")
         private val COACH_BADGE = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "compass/coach")
@@ -819,7 +827,7 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
         private val LEGEND = listOf(
             VILLAGE to "village", TOWN to "town", CITY to "city", HALL to "hall", LAIR to "lair", LAIR_CLEARED to "lair_cleared",
             VAULT to "vault", WARDFIRE to "wardfire", COACH to "coach", CONTRACT to "objective", PIN to "pin", PARTY to "party",
-            DEATH to "death", PLAYER to "you",
+            DEATH to "death", LOST_MARKS to "lost_marks", PLAYER to "you",
         )
         private val SCALES = intArrayOf(10, 20, 50, 100, 200, 500, 1000, 2000, 5000)
         private val HINTS = listOf("drag", "zoom", "pin", "home", "legend").map { "gui.guildmark.map.hint.$it" }

@@ -271,6 +271,8 @@ COMPASS_ICONS = {
     "pin": [".ooooo.", "oqPPqqo", "oqPqqQo", "oqqqqQo", ".oqqQo.", "..oQo..", "...o..."],
     # a flame on its ring of stones: a Wardfire you've kindled
     "wardfire": ["...o...", "..oRo..", ".oRGRo.", "oRGWGRo", "oRGWGRo", "ossssso", ".ooooo."],
+    # a gold coin with a bright star struck in it: the Guild Marks you lost when you fell
+    "lost_marks": ["..ooo..", ".oGGgo.", "oGGggdo", "oGgdgdo", "oggggdo", ".odddo.", "..ooo.."],
 }
 
 # ink icons for the map, 11x11, drawn on parchment
@@ -448,6 +450,20 @@ MAP_ICONS = {
         "....k.k....",
         "....kkk....",
         "...........",
+    ],
+    # two coins, one fallen against the other: the Guild Marks you lost
+    "lost_marks": [
+        "...........",
+        "....kkkkk..",
+        "...kgggggk.",
+        "..kgggggggk",
+        "..kgggkgggk",
+        ".kkkkggggk.",
+        "kgggggkkk..",
+        "kgggkgggk..",
+        "kgggggggk..",
+        ".kgggggk...",
+        "..kkkkk....",
     ],
     # a sword planted in a fire on its ring of stones
     "wardfire": [

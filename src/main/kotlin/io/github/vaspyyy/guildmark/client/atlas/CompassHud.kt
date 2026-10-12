@@ -49,6 +49,7 @@ object CompassHud : GuiLayer {
     private val ICON_DEATH = sprite("death")
     private val ICON_PIN = sprite("pin")
     private val ICON_WARDFIRE = sprite("wardfire")
+    private val ICON_LOST_MARKS = sprite("lost_marks")
 
     private const val TOP = 3
     private const val HEIGHT = 13
@@ -208,8 +209,14 @@ object CompassHud : GuiLayer {
         for (mate in AtlasClient.partyMates(player)) {
             out.add(Marker(mate.second, ICON_PARTY, Component.literal(AtlasClient.mateName(mate.first)), 3, 4.0))
         }
-        AtlasClient.deathPoint(player)?.let {
-            out.add(Marker(Vec3.atCenterOf(it), ICON_DEATH, Component.translatable("atlas.guildmark.death"), 3, 4.0))
+        // Lost Marks stand in for where you fell: they're what's worth going back for
+        val lost = AtlasClient.lostMarks(player)
+        if (lost != null) {
+            out.add(Marker(Vec3.atCenterOf(lost.first), ICON_LOST_MARKS, Component.translatable("atlas.guildmark.lost_marks", lost.second), 3, 2.0))
+        } else {
+            AtlasClient.deathPoint(player)?.let {
+                out.add(Marker(Vec3.atCenterOf(it), ICON_DEATH, Component.translatable("atlas.guildmark.death"), 3, 4.0))
+            }
         }
         for (waypoint in ContractTracker.waypoints(player)) {
             val icon = when (waypoint.kind) {

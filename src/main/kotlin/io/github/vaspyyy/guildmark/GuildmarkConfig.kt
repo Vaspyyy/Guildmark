@@ -10,6 +10,10 @@ object GuildmarkConfig {
         .comment("The new action combat: stamina, dodge rolls, light and heavy attacks, parries, poise and lock-on. Turn it off to keep vanilla combat.")
         .define("actionCombat", true)
 
+    val LOSE_MARKS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Falling leaves the Guild Marks you carry where you fell; reach them to win them back, or fall again first and they're gone. Applies with keepInventory too.")
+        .define("loseMarksOnDeath", true)
+
     val PAY_MULTIPLIER: ModConfigSpec.DoubleValue = BUILDER
         .comment("Multiplies the Guild Marks every contract pays.")
         .defineInRange("payMultiplier", 1.0, 0.1, 10.0)

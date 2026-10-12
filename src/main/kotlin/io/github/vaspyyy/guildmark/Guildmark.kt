@@ -1,5 +1,7 @@
 package io.github.vaspyyy.guildmark
 
+import net.neoforged.bus.api.EventPriority
+import io.github.vaspyyy.guildmark.death.Purses
 import net.neoforged.fml.config.ModConfig
 import io.github.vaspyyy.guildmark.combat.Combat
 import io.github.vaspyyy.guildmark.combat.Stance
@@ -149,6 +151,8 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         modBus.addListener(FMLCommonSetupEvent::class.java, ::onCommonSetup)
         modBus.addListener(RegisterPayloadHandlersEvent::class.java, ::onRegisterPayloads)
         NeoForge.EVENT_BUS.addListener(LivingDeathEvent::class.java, ::onLivingDeath)
+        // Last, so a fall another mod undoes doesn't cost the player their Marks
+        NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, LivingDeathEvent::class.java, Purses::onDeath)
         NeoForge.EVENT_BUS.addListener(PlayerTickEvent.Post::class.java, ::onPlayerTick)
         NeoForge.EVENT_BUS.addListener(EntityJoinLevelEvent::class.java) { Traffic.onJoin(it.entity) }
         NeoForge.EVENT_BUS.addListener(PlayerInteractEvent.RightClickBlock::class.java, HollowThrone::onUseBlock)
@@ -242,6 +246,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         val level = player.level()
         if (level !is ServerLevel) return
         if (player is ServerPlayer) Combat.tick(player)
+        if (player is ServerPlayer) Purses.tick(player)
         if (player.tickCount % 200 == 0) VillageBoards.checkNearbyVillages(level, player.blockPosition())
         if (player.tickCount % 200 == 50) TownControl.visit(level, player)
         if (player.tickCount % 200 == 150) Rivals.tickPlayer(level, player)

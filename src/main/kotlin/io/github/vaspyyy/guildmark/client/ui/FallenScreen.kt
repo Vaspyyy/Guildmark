@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.client.ui
 
+import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.client.GuildmarkClientConfig
 import io.github.vaspyyy.guildmark.registry.ModSounds
@@ -153,7 +154,22 @@ class FallenScreen(private val cause: Component?, private val hardcore: Boolean,
 
         val words = Mth.clamp((t - 30f) / 16f, 0f, 1f)
         if (words > 0f) {
-            graphics.centeredText(font, epitaph, width / 2, slipTop() + SLIP_HEIGHT + 12, ARGB.color((255 * words).toInt(), 0xB4, 0xA8, 0x8E))
+            val alpha = (255 * words).toInt()
+            val cost = cost()
+            if (cost != null) graphics.centeredText(font, cost, width / 2, slipTop() + SLIP_HEIGHT + 12, ARGB.color(alpha, 0xE8, 0xC2, 0x6A))
+            else graphics.centeredText(font, epitaph, width / 2, slipTop() + SLIP_HEIGHT + 12, ARGB.color(alpha, 0xB4, 0xA8, 0x8E))
+        }
+    }
+
+    /** What this fall cost in Guild Marks, if anything: what was left behind, or what an earlier fall's purse took with it. */
+    private fun cost(): Component? {
+        val purse = player.getExistingDataOrNull(ModAttachments.PURSE) ?: return null
+        return when {
+            purse.at.isPresent && purse.amount > 0 && purse.forfeited > 0 ->
+                Component.translatable("gui.guildmark.fallen.marks_both", purse.amount, purse.forfeited)
+            purse.at.isPresent && purse.amount > 0 -> Component.translatable("gui.guildmark.fallen.marks", purse.amount)
+            purse.forfeited > 0 -> Component.translatable("gui.guildmark.fallen.marks_gone", purse.forfeited)
+            else -> null
         }
     }
 

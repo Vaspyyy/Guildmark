@@ -2,6 +2,7 @@ package io.github.vaspyyy.guildmark.registry
 
 import io.github.vaspyyy.guildmark.guild.RivalAdventurer
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.death.LostMarks
 import io.github.vaspyyy.guildmark.enemy.FallenWarden
 import io.github.vaspyyy.guildmark.enemy.HollowSoldier
 import io.github.vaspyyy.guildmark.guild.GuildMember
@@ -53,6 +54,18 @@ object ModEntities {
             .fireImmune()
             .clientTrackingRange(12)
             .build(ResourceKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "hollow_king")))
+    }
+
+    /** The Guild Marks a player dropped when they fell, waiting where they fell (see Purses). */
+    val LOST_MARKS: DeferredHolder<EntityType<*>, EntityType<LostMarks>> = ENTITIES.register("lost_marks") { ->
+        EntityType.Builder.of(::LostMarks, MobCategory.MISC)
+            .sized(0.5f, 0.5f)
+            .fireImmune()
+            .noSummon()
+            .noLootTable()
+            .clientTrackingRange(8)
+            .updateInterval(20)
+            .build(ResourceKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "lost_marks")))
     }
 
     /** A soldier of the Hollow King's fallen army, still holding the roads at night. Fights with the new combat. */

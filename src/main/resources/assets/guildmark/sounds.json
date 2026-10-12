@@ -803,5 +803,11 @@
       "guildmark:flask/drink2"
     ],
     "subtitle": "subtitles.guildmark.flask.drink"
+  },
+  "marks.recover": {
+    "sounds": [
+      "guildmark:marks/recover1"
+    ],
+    "subtitle": "subtitles.guildmark.marks.recover"
   }
 }

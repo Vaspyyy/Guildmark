@@ -94,6 +94,14 @@ object AtlasClient {
 
     fun mateName(id: UUID): String = Minecraft.getInstance().connection?.getPlayerInfo(id)?.profile?.name ?: "?"
 
+    /** Where the player's lost Guild Marks lie in this dimension, and how many, until they're won back or gone. */
+    fun lostMarks(player: Player): Pair<BlockPos, Int>? {
+        val purse = player.getExistingDataOrNull(ModAttachments.PURSE) ?: return null
+        val at = purse.at.orElse(null) ?: return null
+        if (purse.amount <= 0 || at.dimension() != player.level().dimension()) return null
+        return at.pos() to purse.amount
+    }
+
     /** Where the player last fell, while it's still worth going back to: recent, and not yet revisited. */
     fun deathPoint(player: Player): BlockPos? {
         val last = player.lastDeathLocation.orElse(null) ?: return null

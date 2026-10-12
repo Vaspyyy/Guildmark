@@ -1004,6 +1004,29 @@ def flask_drink(v, rng):
     return reverb(lp(y, 9500), wet=0.14, rt60=0.9, predelay=0.008, hf_damp=0.5, seed=64 + v)
 
 
+@recipe("marks/recover", variants=1, fade_out=0.3, max_len=1.6)
+def marks_recover(v, rng):
+    """Guild Marks won back: a spill of coins into the purse, then a warm two-note chime"""
+    dur = 1.6
+    out = Mix(dur)
+    tt = 0.0
+    for i in range(13):
+        f = np.exp(rng.uniform(np.log(2600), np.log(5600)))
+        c = clank(0.3, f, rng, "plate", n=7, t60_lo=rng.uniform(0.12, 0.25), t60_hi=0.03, beat=0.004)
+        out.add(c, tt, np.exp(-tt / 0.35) * rng.uniform(0.55, 1.0))
+        tt += rng.uniform(0.018, 0.055)
+    coins = out.out()
+    t = tvec(dur)
+    low = chime(dur, 783.99, rng, t60=1.0, bright=0.45)
+    high = chime(dur, 1174.66, rng, t60=1.2, bright=0.4)
+    lag = ns(0.16)
+    high = np.concatenate([np.zeros(lag), high[: len(t) - lag]])
+    lag2 = ns(0.06)
+    low = np.concatenate([np.zeros(lag2), low[: len(t) - lag2]])
+    y = 0.6 * nrm(coins) + 0.38 * nrm(low) + 0.34 * nrm(high)
+    return reverb(lp(y, 11000), wet=0.16, rt60=0.9, predelay=0.01, hf_damp=0.5, seed=71)
+
+
 # =========================================================================== main
 def main():
     ap = argparse.ArgumentParser()

@@ -141,6 +141,7 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
             event.registerEntityRenderer(ModEntities.RIVAL.get(), ::RivalRenderer)
             event.registerEntityRenderer(ModEntities.HOLLOW_SOLDIER.get(), ::HollowSoldierRenderer)
             event.registerEntityRenderer(ModEntities.FALLEN_WARDEN.get(), ::FallenWardenRenderer)
+            event.registerEntityRenderer(ModEntities.LOST_MARKS.get(), ::LostMarksRenderer)
         }
         modBus.addListener(EntityRenderersEvent.RegisterLayerDefinitions::class.java) { event ->
             event.registerLayerDefinition(StoryNpcModel.LAYER, StoryNpcModel::createBodyLayer)

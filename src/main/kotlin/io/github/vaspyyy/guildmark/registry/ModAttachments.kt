@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.registry
 
+import io.github.vaspyyy.guildmark.death.PurseState
 import net.minecraft.network.codec.ByteBufCodecs
 import com.mojang.serialization.Codec
 import io.github.vaspyyy.guildmark.Guildmark
@@ -113,6 +114,15 @@ object ModAttachments {
             .serialize(FlaskState.CODEC.fieldOf("flask"))
             .copyOnDeath()
             .sync({ holder, player -> holder === player }, FlaskState.STREAM_CODEC)
+            .build()
+    }
+
+    /** Where a player's lost Guild Marks lie (see Purses). Kept through death, synced to its player for the map and death screen. */
+    val PURSE: DeferredHolder<AttachmentType<*>, AttachmentType<PurseState>> = ATTACHMENTS.register("purse") { ->
+        AttachmentType.builder { -> PurseState() }
+            .serialize(PurseState.CODEC.fieldOf("purse"))
+            .copyOnDeath()
+            .sync({ holder, player -> holder === player }, PurseState.STREAM_CODEC)
             .build()
     }
 
