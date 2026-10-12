@@ -51,8 +51,12 @@ class DuskRiderModel(root: ModelPart) : EntityModel<DuskRiderRenderState>(root) 
     private val arm = Quaternionf()
     private val look = Quaternionf()
     private val swung = Quaternionf()
+    /** The state it was last posed for: the body, its layers and its glow each ask for the same pose in a frame. */
+    private var posed: DuskRiderRenderState? = null
 
     override fun setupAnim(state: DuskRiderRenderState) {
+        if (state === posed) return
+        posed = state
         super.setupAnim(state)
         rig.begin()
         // Under everything, it breathes and shifts; over that its gaits, by how fast it's going

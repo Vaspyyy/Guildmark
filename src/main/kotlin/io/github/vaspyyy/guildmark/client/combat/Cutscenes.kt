@@ -2,6 +2,7 @@ package io.github.vaspyyy.guildmark.client.combat
 
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.client.GuildmarkClientConfig
+import io.github.vaspyyy.guildmark.combat.CombatEnemy
 import io.github.vaspyyy.guildmark.enemy.FallenWarden
 import io.github.vaspyyy.guildmark.enemy.DuskRider
 import io.github.vaspyyy.guildmark.enemy.HillTroll
@@ -601,11 +602,19 @@ object Cutscenes : GuiLayer {
     private fun findFieldBoss(minecraft: Minecraft) {
         val player = minecraft.player
         val level = minecraft.level
-        fieldBossId = if (player == null || level == null) -1 else {
-            level.getEntitiesOfClass(LivingEntity::class.java, player.boundingBox.inflate(48.0)) { it.isAlive && fightingFieldBoss(it) }
-                .minByOrNull { it.distanceToSqr(player) }?.id ?: -1
+        if (player == null || level == null) {
+            fieldBossId = -1
+            return
         }
+        // The boss whose theme is playing keeps it while its fight goes on near you, so two at once don't trade themes
+        val current = level.getEntity(fieldBossId) as? LivingEntity
+        if (current != null && current.isAlive && fightingFieldBoss(current) && current.distanceToSqr(player) < KEEP_THEME_RANGE * KEEP_THEME_RANGE) return
+        fieldBossId = level.getEntitiesOfClass(CombatEnemy::class.java, player.boundingBox.inflate(48.0)) { it.isAlive && fightingFieldBoss(it) }
+            .minByOrNull { it.distanceToSqr(player) }?.id ?: -1
     }
+
+    /** How near a field boss whose theme is playing has to stay for it to keep playing. */
+    private const val KEEP_THEME_RANGE = 56.0
 
     // ---- Hooks ----
 

@@ -5,6 +5,7 @@ import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.client.combat.Clips
 import io.github.vaspyyy.guildmark.client.model.DuskRiderModel
 import io.github.vaspyyy.guildmark.client.model.DuskRiderRenderState
+import io.github.vaspyyy.guildmark.combat.EnemyAttack
 import io.github.vaspyyy.guildmark.enemy.DuskRider
 import net.minecraft.client.renderer.SubmitNodeCollector
 import net.minecraft.client.renderer.entity.EntityRendererProvider
@@ -16,6 +17,7 @@ import net.minecraft.client.renderer.texture.OverlayTexture
 import net.minecraft.resources.Identifier
 import net.minecraft.util.ARGB
 import net.minecraft.util.Mth
+import net.minecraft.world.phys.AABB
 
 /**
  * The Dusk Rider, a little over a horse's size. Its visor and lantern glow from the start; once it's ignited, so
@@ -28,10 +30,10 @@ class DuskRiderRenderer(context: EntityRendererProvider.Context) :
         addLayer(object : RenderLayer<DuskRiderRenderState, DuskRiderModel>(this) {
             override fun submit(poseStack: PoseStack, collector: SubmitNodeCollector, light: Int, state: DuskRiderRenderState, yRot: Float, xRot: Float) {
                 if (state.fade <= 0.02f) return
-                val shine = (state.fade * 255f).toInt()
+                // The glow blends by its alpha, so it fades with the rest of it
                 collector.order(1).submitModel(
                     parentModel, state, poseStack, RenderTypes.eyes(if (state.ignited) GLOW_2 else GLOW), light, OverlayTexture.NO_OVERLAY,
-                    ARGB.color(255, shine, shine, shine), null, state.outlineColor,
+                    ARGB.white(state.fade), null, state.outlineColor,
                 )
             }
         })
@@ -52,18 +54,24 @@ class DuskRiderRenderer(context: EntityRendererProvider.Context) :
         state.cut = null
         state.attack = null
         entity.cutShortAttack(partialTicks)?.let { (attack, time, fade) ->
-            val clip = Clips.get(DuskRider.ANIMATIONS + "/" + attack.anim) ?: return@let
+            val clip = Clips.get(clipName(attack)) ?: return@let
             state.cut = clip
             state.cutTime = time
             state.cutWeight = clip.weight(time) * fade
         }
         entity.shownAttack(partialTicks)?.let { (attack, time) ->
-            val clip = Clips.get(DuskRider.ANIMATIONS + "/" + attack.anim) ?: return@let
+            val clip = Clips.get(clipName(attack)) ?: return@let
             state.attack = clip
             state.attackTime = time
             state.attackWeight = clip.weight(time)
         }
     }
+
+    private fun clipName(attack: EnemyAttack): String = clipNames.getOrPut(attack) { DuskRider.ANIMATIONS + "/" + attack.anim }
+
+    // Its halberd reaches well past its body: 6 blocks up as it rears, 3 out to the side as it rides past
+    override fun getBoundingBoxForCulling(entity: DuskRider, partialTicks: Float): AABB =
+        super.getBoundingBoxForCulling(entity, partialTicks).inflate(2.3, 0.0, 2.3).expandTowards(0.0, 2.5, 0.0)
 
     override fun getRenderType(state: DuskRiderRenderState, isBodyVisible: Boolean, forceTransparent: Boolean, appearGlowing: Boolean): RenderType? =
         if (isBodyVisible && state.fade < 1f) RenderTypes.entityTranslucent(getTextureLocation(state))
@@ -81,6 +89,7 @@ class DuskRiderRenderer(context: EntityRendererProvider.Context) :
 
     companion object {
         const val SCALE = 1.15f
+        private val clipNames = HashMap<EnemyAttack, String>()
         private val TEXTURE = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "textures/entity/dusk_rider.png")
         private val GLOW = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "textures/entity/dusk_rider_glow.png")
         private val GLOW_2 = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "textures/entity/dusk_rider_glow2.png")

@@ -10,7 +10,6 @@ import net.minecraft.util.Mth
 import net.minecraft.util.profiling.ProfilerFiller
 import org.joml.Quaternionf
 import org.joml.Vector3f
-import kotlin.math.floor
 
 /**
  * One animation, baked by art/scripts/animations.py into samples [rate] times a tick. Each bone holds a
@@ -26,17 +25,21 @@ class Clip(val length: Float, val rate: Int, val blendIn: Float, val blendOut: F
         fun rotation(clip: Clip, time: Float, out: Quaternionf): Quaternionf {
             val r = rot ?: return out.identity()
             val count = r.size / 4
-            val (i, f) = clip.index(time, count)
+            val at = clip.sample(time, count)
+            val i = at.toInt()
+            val f = at - i
             val j = minOf(i + 1, count - 1)
             out.set(r[i * 4], r[i * 4 + 1], r[i * 4 + 2], r[i * 4 + 3])
-            if (f > 0f && j != i) out.slerp(Quaternionf(r[j * 4], r[j * 4 + 1], r[j * 4 + 2], r[j * 4 + 3]), f)
+            if (f > 0f && j != i) out.slerp(NEXT.set(r[j * 4], r[j * 4 + 1], r[j * 4 + 2], r[j * 4 + 3]), f)
             return out
         }
 
         fun position(clip: Clip, time: Float, out: Vector3f): Vector3f {
             val p = pos ?: return out.zero()
             val count = p.size / 3
-            val (i, f) = clip.index(time, count)
+            val at = clip.sample(time, count)
+            val i = at.toInt()
+            val f = at - i
             val j = minOf(i + 1, count - 1)
             return out.set(
                 Mth.lerp(f, p[i * 3], p[j * 3]),
@@ -46,13 +49,15 @@ class Clip(val length: Float, val rate: Int, val blendIn: Float, val blendOut: F
         }
 
         val hasPosition: Boolean get() = pos != null
+
+        private companion object {
+            /** The sample after, for blending toward (the render thread only, so one will do). */
+            val NEXT = Quaternionf()
+        }
     }
 
-    private fun index(time: Float, count: Int): Pair<Int, Float> {
-        val at = (time * rate).coerceIn(0f, (count - 1).toFloat())
-        val i = floor(at).toInt()
-        return i to (at - i)
-    }
+    /** Where [time] falls among [count] samples: the whole part is the sample before it, the rest how far toward the next. */
+    private fun sample(time: Float, count: Int): Float = (time * rate).coerceIn(0f, (count - 1).toFloat())
 
     /** How strongly the clip shows at [time]: it eases in from the pose before and out to the pose after. */
     fun weight(time: Float): Float {
