@@ -449,6 +449,11 @@ class DialogueScreen(private val data: OpenCharacterPayload) : Screen(Component.
 
     override fun isPauseScreen(): Boolean = false
 
+
+    /** Subtitles are drawn over this screen, not hidden under its shade. */
+
+    override fun isInGameUi(): Boolean = true
+
     private companion object {
         const val PAD = 14
         const val LINE = 11

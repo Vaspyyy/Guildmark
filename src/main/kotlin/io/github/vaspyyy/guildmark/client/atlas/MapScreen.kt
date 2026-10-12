@@ -143,6 +143,11 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
 
     override fun isPauseScreen(): Boolean = false
 
+
+    /** Subtitles are drawn over this screen, not hidden under its shade. */
+
+    override fun isInGameUi(): Boolean = true
+
     // ---- Where things are ----
 
     private fun screenX(x: Double): Double = midX + (x - centerX) * scale

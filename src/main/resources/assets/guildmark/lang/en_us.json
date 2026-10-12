@@ -799,6 +799,7 @@
   "gui.guildmark.status.relics.none": "None worn",
   "gui.guildmark.status.relics.none.tip": "Relics are rolled weapons and armour found in lairs, vaults and caches. The powers of those you wear and hold show here.",
   "gui.guildmark.status.more": "and %s more",
+  "gui.guildmark.status.also": "Also: %s",
   "advance.guildmark.market": "Market Square",
   "advance.guildmark.market.desc": "Market stalls, and new villagers to run them",
   "advance.guildmark.market.wants": "crops, wool, leather, emeralds and deliveries",

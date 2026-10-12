@@ -7,6 +7,7 @@ import io.github.vaspyyy.guildmark.combat.WeaponClass
 import io.github.vaspyyy.guildmark.combat.Weapons
 import io.github.vaspyyy.guildmark.guild.TownControl
 import io.github.vaspyyy.guildmark.loot.Affix
+import io.github.vaspyyy.guildmark.progression.Perk
 import io.github.vaspyyy.guildmark.progression.Title
 import io.github.vaspyyy.guildmark.story.MainQuestState
 import io.github.vaspyyy.guildmark.registry.ModAttachments
@@ -22,8 +23,10 @@ import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
 import net.minecraft.util.ARGB
 import net.minecraft.world.entity.EquipmentSlot
+import net.minecraft.world.entity.ai.attributes.AttributeModifier
 import net.minecraft.world.entity.ai.attributes.Attributes
 import net.minecraft.world.item.ItemStack
+import net.minecraft.world.item.ProjectileWeaponItem
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -42,6 +45,8 @@ class CharacterScreen : Screen(Component.translatable("gui.guildmark.status")) {
     private var panelHeight = 0
     private var side = 0
     private var middle = 0
+    private var pad = PAD
+    private var gap = GAP
     private var ticks = 0
 
     /** One line of a section: what it is, its value, and what hovering it explains. */
@@ -59,9 +64,17 @@ class CharacterScreen : Screen(Component.translatable("gui.guildmark.status")) {
         panelHeight = min(MAX_HEIGHT, height - 24)
         panelX = (width - panelWidth) / 2
         panelY = (height - panelHeight) / 2 + 4
-        val inner = panelWidth - PAD * 2
-        middle = (inner * 0.34f).toInt().coerceIn(112, 150)
-        side = (inner - middle - GAP * 2) / 2
+        // On a narrow screen the margins and the middle column give way first, so the lines keep their words
+        val narrow = panelWidth < NARROW
+        pad = if (narrow) PAD_NARROW else PAD
+        gap = if (narrow) GAP_NARROW else GAP
+        val inner = panelWidth - pad * 2
+        middle = (inner * 0.34f).toInt().coerceIn(MIDDLE_MIN, MIDDLE_MAX)
+        side = (inner - middle - gap * 2) / 2
+        if (side < SIDE_MIN) {
+            middle = max(MIDDLE_MIN, inner - gap * 2 - SIDE_MIN * 2)
+            side = (inner - middle - gap * 2) / 2
+        }
     }
 
     override fun added() {
@@ -79,6 +92,9 @@ class CharacterScreen : Screen(Component.translatable("gui.guildmark.status")) {
     }
 
     override fun isPauseScreen(): Boolean = false
+
+    /** Subtitles are drawn over this screen, not hidden under its shade. */
+    override fun isInGameUi(): Boolean = true
 
     override fun keyPressed(event: KeyEvent): Boolean {
         if (KEY.matches(event)) {
@@ -129,13 +145,47 @@ class CharacterScreen : Screen(Component.translatable("gui.guildmark.status")) {
         return Section(Component.translatable("gui.guildmark.status.defence"), rows)
     }
 
+    /**
+     * Attack damage as the server works it out. The server never sends this one to the client, so it's
+     * put together here the same way: the base value, plus what's held and worn, the Might perk and any
+     * effects on you.
+     */
+    private fun attackDamage(player: LocalPlayer): Double {
+        val instance = player.getAttribute(Attributes.ATTACK_DAMAGE) ?: return 1.0
+        // Keyed by id, as the attribute itself keeps them, so nothing counts twice
+        val modifiers = LinkedHashMap<Identifier, AttributeModifier>()
+        for (modifier in instance.modifiers) modifiers[modifier.id()] = modifier
+        for (slot in EquipmentSlot.entries) {
+            player.getItemBySlot(slot).forEachModifier(slot) { attribute, modifier ->
+                if (attribute.`is`(Attributes.ATTACK_DAMAGE)) modifiers[modifier.id()] = modifier
+            }
+        }
+        val might = player.getData(ModAttachments.GUILD_PROGRESS).rank(Perk.MIGHT)
+        if (might > 0) {
+            val id = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "perk/${Perk.MIGHT.id}")
+            modifiers[id] = AttributeModifier(id, Perk.MIGHT.perRank * might, Perk.MIGHT.operation)
+        }
+        for (effect in player.activeEffects) {
+            effect.effect.value().createModifiers(effect.amplifier) { attribute, modifier ->
+                if (attribute.`is`(Attributes.ATTACK_DAMAGE)) modifiers[modifier.id()] = modifier
+            }
+        }
+        var base = instance.baseValue
+        for (modifier in modifiers.values) if (modifier.operation() == AttributeModifier.Operation.ADD_VALUE) base += modifier.amount()
+        var total = base
+        for (modifier in modifiers.values) if (modifier.operation() == AttributeModifier.Operation.ADD_MULTIPLIED_BASE) total += base * modifier.amount()
+        for (modifier in modifiers.values) if (modifier.operation() == AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL) total *= 1.0 + modifier.amount()
+        return Attributes.ATTACK_DAMAGE.value().sanitizeValue(total)
+    }
+
     private fun offence(player: LocalPlayer): Section {
         val rows = arrayListOf(
-            row("attack", number(player.getAttributeValue(Attributes.ATTACK_DAMAGE))),
+            row("attack", number(attackDamage(player))),
             row("speed", number(player.getAttributeValue(Attributes.ATTACK_SPEED))),
         )
         if (CombatClient.active()) {
-            val style = when (Weapons.classOf(player.mainHandItem)) {
+            val weapon = Weapons.classOf(player.mainHandItem)
+            val style = when (weapon) {
                 WeaponClass.STRAIGHT_SWORD -> "sword"
                 null -> "plain"
             }
@@ -143,7 +193,8 @@ class CharacterScreen : Screen(Component.translatable("gui.guildmark.status")) {
                 Component.translatable("gui.guildmark.status.style"), Component.translatable("gui.guildmark.status.style.$style"), Ui.TEXT,
                 Component.translatable("gui.guildmark.status.style.$style.tip"),
             ))
-            rows.add(row("tempo", "${(Weapons.tempo(player) * 100).roundToInt()}%"))
+            // Only a weapon the moves work with has a tempo
+            if (weapon != null) rows.add(row("tempo", "${(Weapons.tempo(player) * 100).roundToInt()}%"))
         }
         return Section(Component.translatable("gui.guildmark.status.offence"), rows)
     }
@@ -187,16 +238,24 @@ class CharacterScreen : Screen(Component.translatable("gui.guildmark.status")) {
         return Section(Component.translatable("gui.guildmark.status.journey"), listOf(shards, row("milestones", milestones.toString())))
     }
 
-    /** The affixes on what's worn and held, with how many pieces carry each. */
+    /**
+     * The affixes at work on what's worn and held, with how many pieces carry each. A weapon's powers
+     * work in the main hand (and a bow's or crossbow's from the off hand too, on what it shoots); armour's
+     * only when it's worn.
+     */
     private fun relics(player: LocalPlayer): Section {
         val counts = LinkedHashMap<Affix, Int>()
         for (slot in WORN) {
-            val relic = player.getItemBySlot(slot).get(ModDataComponents.RELIC.get()) ?: continue
+            val stack = player.getItemBySlot(slot)
+            val relic = stack.get(ModDataComponents.RELIC.get()) ?: continue
             for (id in relic.affixes) {
                 val affix = Affix.byId(id) ?: continue
-                // A weapon's powers only work in the hand that swings it
-                if (affix.weapon && slot != EquipmentSlot.MAINHAND) continue
-                counts[affix] = (counts[affix] ?: 0) + 1
+                val working = when {
+                    !affix.weapon -> slot in ARMOR
+                    slot == EquipmentSlot.MAINHAND -> true
+                    else -> slot == EquipmentSlot.OFFHAND && stack.item is ProjectileWeaponItem && !affix.meleeOnly
+                }
+                if (working) counts[affix] = (counts[affix] ?: 0) + 1
             }
         }
         val rows = counts.map { (affix, count) ->
@@ -239,17 +298,13 @@ class CharacterScreen : Screen(Component.translatable("gui.guildmark.status")) {
 
         val top = panelY + BODY_TOP
         val bottom = panelY + panelHeight - 9
-        val left = panelX + PAD
-        val mid = left + side + GAP
-        val right = mid + middle + GAP
+        val left = panelX + pad
+        val mid = left + side + gap
+        val right = mid + middle + gap
 
-        var y = top
-        for (section in listOf(guild(player), journey(player), relics(player))) y = drawSection(graphics, section, left, y, side, bottom)
-
+        drawColumn(graphics, listOf(guild(player), journey(player), relics(player)), left, top, side, bottom)
         drawDoll(graphics, player, mid, top, middle, bottom - top, mouseX, mouseY)
-
-        y = top
-        for (section in listOf(vitals(player), defence(player), offence(player))) y = drawSection(graphics, section, right, y, side, bottom)
+        drawColumn(graphics, listOf(vitals(player), defence(player), offence(player)), right, top, side, bottom)
 
         val hot = hots.lastOrNull { mouseX >= it.x0 && mouseX < it.x1 && mouseY >= it.y0 && mouseY < it.y1 } ?: return
         val stack = hot.stack
@@ -261,11 +316,36 @@ class CharacterScreen : Screen(Component.translatable("gui.guildmark.status")) {
     }
 
     /**
+     * Sections one under another. A section with no room left even for its heading and a line is folded
+     * into a last faint line, and hovering that lists what's in it.
+     */
+    private fun drawColumn(graphics: GuiGraphicsExtractor, sections: List<Section>, x: Int, top: Int, w: Int, bottom: Int) {
+        var y = top
+        for ((i, section) in sections.withIndex()) {
+            if (y + HEADING + ROW <= bottom) {
+                y = drawSection(graphics, section, x, y, w, bottom)
+                continue
+            }
+            if (y + ROW > bottom) return
+            val rest = sections.drop(i)
+            val tip = rest.joinToString("\n") { hidden ->
+                hidden.title.string + ": " + hidden.rows.filter { it.label.string.isNotEmpty() }.joinToString(", ") { row ->
+                    if (row.value.string.isEmpty()) row.label.string else row.label.string + " " + row.value.string
+                }
+            }
+            val names = rest.joinToString(", ") { it.title.string }
+            val line = font.plainSubstrByWidth(Component.translatable("gui.guildmark.status.also", names).string, w - 2)
+            graphics.text(font, line, x + 2, y, Ui.TEXT_FAINT, false)
+            hots.add(Hot(x, y - 1, x + w, y + ROW - 1, Component.literal(tip)))
+            return
+        }
+    }
+
+    /**
      * A heading and its rows; returns where the next section starts. When the rows run out of room, the
      * last line that fits says how many more there are, and hovering it names them.
      */
     private fun drawSection(graphics: GuiGraphicsExtractor, section: Section, x: Int, y: Int, w: Int, bottom: Int): Int {
-        if (y + HEADING + ROW > bottom) return y
         Ui.headingAt(graphics, font, section.title, x, y, Ui.GOLD)
         graphics.fill(x, y + 10, x + w, y + 11, RULE)
         var cy = y + HEADING
@@ -287,7 +367,10 @@ class CharacterScreen : Screen(Component.translatable("gui.guildmark.status")) {
                 continue
             }
             val value = font.width(row.value)
-            val label = font.plainSubstrByWidth(row.label.string, w - value - 8)
+            val room = w - value - 8
+            val full = row.label.string
+            // A label too long for its line ends in an ellipsis rather than mid-word
+            val label = if (font.width(full) <= room) full else font.plainSubstrByWidth(full, room - font.width(ELLIPSIS)).trimEnd() + ELLIPSIS
             graphics.text(font, label, x + 2, cy, if (row.color == Ui.TEXT_FAINT) Ui.TEXT_FAINT else Ui.TEXT_SOFT, false)
             graphics.text(font, row.value, x + w - value, cy, row.color, false)
             hots.add(Hot(x, cy - 1, x + w, cy + ROW - 1, row.tip))
@@ -346,6 +429,15 @@ class CharacterScreen : Screen(Component.translatable("gui.guildmark.status")) {
         private const val MAX_HEIGHT = 228
         private const val PAD = 14
         private const val GAP = 12
+        /** Below this panel width the margins tighten and the middle column narrows. */
+        private const val NARROW = 380
+        private const val PAD_NARROW = 9
+        private const val GAP_NARROW = 7
+        private const val MIDDLE_MIN = 80
+        private const val MIDDLE_MAX = 150
+        /** The side columns are kept at least this wide while the middle can still give way. */
+        private const val SIDE_MIN = 100
+        private const val ELLIPSIS = "…"
         private const val BODY_TOP = 34
         private const val HEADING = 14
         private const val ROW = 10
@@ -356,7 +448,7 @@ class CharacterScreen : Screen(Component.translatable("gui.guildmark.status")) {
         private val BAR_BACK = 0xFF15131A.toInt()
 
         private val ARMOR = listOf(EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET)
-        private val WORN = ARMOR + EquipmentSlot.MAINHAND
+        private val WORN = ARMOR + EquipmentSlot.MAINHAND + EquipmentSlot.OFFHAND
         private val EMPTY = mapOf(
             EquipmentSlot.HEAD to Identifier.withDefaultNamespace("container/slot/helmet"),
             EquipmentSlot.CHEST to Identifier.withDefaultNamespace("container/slot/chestplate"),

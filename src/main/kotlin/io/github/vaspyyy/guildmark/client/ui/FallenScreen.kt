@@ -159,6 +159,8 @@ class FallenScreen(private val cause: Component?, private val hardcore: Boolean,
 
     override fun shouldCloseOnEsc(): Boolean = false
     override fun isPauseScreen(): Boolean = false
+    /** Subtitles are drawn over this screen, not hidden under its shade. */
+    override fun isInGameUi(): Boolean = true
     override fun isAllowedInPortal(): Boolean = true
 
     companion object {

@@ -56,6 +56,8 @@ object MapData {
     private const val MAGIC = 0x474D4131
     private const val VERSION = 1
     private const val MAX_PINS = 64
+    /** More chunks than any map holds: a file claiming more is damaged. */
+    private const val MAX_SAVED_CHUNKS = 1 shl 22
     /** Chunks sketched per call, and how far around the player to look. */
     private const val BUDGET = 3
     private const val MAX_RADIUS = 16
@@ -516,14 +518,18 @@ object MapData {
 
     /**
      * The folder for this world's maps: in the save for a single-player world (so it goes when the world
-     * does), or by address and world id for a server. Null until a server has said which world it is.
+     * does), or by address and world id for a server (by world id alone for a LAN world). Null until a
+     * server has said which world it is.
      */
     private fun worldFolder(minecraft: Minecraft): Path? {
         minecraft.singleplayerServer?.let { return it.getWorldPath(LevelResource.ROOT).resolve("guildmark").resolve("map") }
-        val address = minecraft.currentServer?.ip ?: return null
+        val data = minecraft.currentServer ?: return null
         val id = worldId ?: return null
-        // The address cleaned for a folder name, plus a hash of it as written so two addresses never meet
-        val server = address.replace(Regex("[^A-Za-z0-9._-]"), "_").take(48) + "_" + Integer.toHexString(address.hashCode())
+        // The address cleaned for a folder name, plus a hash of it as written so two addresses never meet.
+        // A world opened to LAN gets a new port each time, so those go by the world's id alone.
+        val address = data.ip
+        val server = if (data.isLan) "lan"
+            else address.replace(Regex("[^A-Za-z0-9._-]"), "_").take(48) + "_" + Integer.toHexString(address.hashCode())
         return minecraft.gameDirectory.toPath().resolve("guildmark").resolve("maps").resolve(server)
             .resolve(id.replace(Regex("[^A-Za-z0-9-]"), "_").take(64))
     }
@@ -536,6 +542,9 @@ object MapData {
 
     /** What a map file holds. */
     private class Saved(val chunks: Map<Long, ByteArray>, val pins: List<Pin>)
+
+    /** Stands for a map file that couldn't be read, nor moved out of the way. */
+    private val UNREADABLE = Saved(mapOf(), listOf())
 
     /** Show another world or dimension: the one being left is written out, and the new one read in the background. */
     private fun switchTo(key: Path, newDimension: ResourceKey<Level>) {
@@ -556,36 +565,54 @@ object MapData {
         }
     }
 
+    /**
+     * The map in [path]: null if there's no file yet. A file that can't be read is moved aside (kept as
+     * ".broken") so this visit starts afresh without writing over it; if even that fails, [UNREADABLE]
+     * comes back and nothing is saved for this visit.
+     */
     private fun read(path: Path): Saved? {
         if (!Files.exists(path)) return null
         val chunks = HashMap<Long, ByteArray>()
         val pins = ArrayList<Pin>()
         try {
             DataInputStream(BufferedInputStream(GZIPInputStream(Files.newInputStream(path)))).use { input ->
-                if (input.readInt() != MAGIC) return null
+                if (input.readInt() != MAGIC) throw IOException("not a map file")
                 input.readInt()
-                repeat(input.readInt()) {
+                val count = input.readInt()
+                if (count < 0 || count > MAX_SAVED_CHUNKS) throw IOException("bad chunk count $count")
+                repeat(count) {
                     val chunk = input.readLong()
                     val data = ByteArray(BYTES)
                     input.readFully(data)
                     chunks[chunk] = data
                 }
-                repeat(input.readInt()) {
+                val pinCount = input.readInt()
+                if (pinCount < 0 || pinCount > MAX_PINS) throw IOException("bad pin count $pinCount")
+                repeat(pinCount) {
                     val x = input.readInt()
                     val z = input.readInt()
                     val color = input.readInt()
                     pins.add(Pin(x, z, color, input.readUTF()))
                 }
             }
-        } catch (e: IOException) {
-            Guildmark.LOGGER.warn("Couldn't read the map at {}", path, e)
-            return null
+        } catch (e: Exception) {
+            val aside = path.resolveSibling(path.fileName.toString() + ".broken")
+            return try {
+                Files.move(path, aside, StandardCopyOption.REPLACE_EXISTING)
+                Guildmark.LOGGER.warn("Couldn't read the map at {}, so it was moved to {} and a new one begun", path, aside, e)
+                null
+            } catch (moveFailed: IOException) {
+                Guildmark.LOGGER.warn("Couldn't read the map at {}; it won't be saved over this time", path, e)
+                UNREADABLE
+            }
         }
         return Saved(chunks, pins)
     }
 
     /** The map read from disk, merged under whatever was sketched while it was being read. */
     private fun loaded(saved: Saved?) {
+        // A file that couldn't be read or moved aside is left alone: nothing is written this visit
+        if (saved === UNREADABLE) return
         ready = true
         if (saved == null) return
         for ((chunk, data) in saved.chunks) {

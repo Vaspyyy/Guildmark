@@ -16,10 +16,10 @@ import java.util.WeakHashMap
 
 /**
  * Each coach request searches the village around the player, so a client asking faster than a person
- * could click is ignored rather than allowed to stall the server.
+ * could click is held back rather than allowed to stall the server. Asking where the coaches go and
+ * boarding one are counted apart, so opening the map and clicking Ride straight away still works.
  */
-private object CoachThrottle {
-    private const val TICKS = 10
+private class CoachThrottle {
     private val last = WeakHashMap<ServerPlayer, Long>()
 
     fun allow(player: ServerPlayer): Boolean {
@@ -28,6 +28,14 @@ private object CoachThrottle {
         if (before != null && now - before in 0 until TICKS) return false
         last[player] = now
         return true
+    }
+
+    companion object {
+        const val TICKS = 10
+        val STOPS = CoachThrottle()
+        val RIDE = CoachThrottle()
+        /** The stops each player was last told of, sent again when they ask too soon to look afresh. */
+        val lastStops = WeakHashMap<ServerPlayer, List<CoachStop>>()
     }
 }
 
@@ -42,11 +50,16 @@ object CoachStopsRequestPayload : CustomPacketPayload {
 
     fun handle(payload: CoachStopsRequestPayload, context: IPayloadContext) {
         val player = context.player() as? ServerPlayer ?: return
-        if (!CoachThrottle.allow(player)) return
-        val stops = Coaches.stops(player.level(), player.blockPosition()) ?: listOf()
-        PacketDistributor.sendToPlayer(player, CoachStopsPayload(stops.map { stop ->
+        if (!CoachThrottle.STOPS.allow(player)) {
+            // The map was closed and opened again at once: it still needs an answer
+            CoachThrottle.lastStops[player]?.let { PacketDistributor.sendToPlayer(player, CoachStopsPayload(it)) }
+            return
+        }
+        val stops = (Coaches.stops(player.level(), player.blockPosition()) ?: listOf()).map { stop ->
             CoachStop(stop.to.x, stop.to.z, stop.fare, stop.village?.let { VillageNames.of(it) } ?: "")
-        }))
+        }
+        CoachThrottle.lastStops[player] = stops
+        PacketDistributor.sendToPlayer(player, CoachStopsPayload(stops))
     }
 }
 
@@ -94,7 +107,7 @@ data class RideCoachPayload(val x: Int, val z: Int) : CustomPacketPayload {
 
         fun handle(payload: RideCoachPayload, context: IPayloadContext) {
             val player = context.player() as? ServerPlayer ?: return
-            if (!CoachThrottle.allow(player)) return
+            if (!CoachThrottle.RIDE.allow(player)) return
             Coaches.ride(player, payload.x, payload.z)
         }
     }
