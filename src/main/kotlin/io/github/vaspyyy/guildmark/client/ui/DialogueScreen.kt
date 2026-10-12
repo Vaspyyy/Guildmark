@@ -120,6 +120,7 @@ class DialogueScreen(private val data: OpenCharacterPayload) : Screen(Component.
         if (character == null) return emptyList()
         if (scene) return numbered("scene${data.chapters}", ".p").map(::line)
         return when {
+            data.finale -> listOf(line("finale"))
             finished -> listOf(line("done"))
             data.carrying -> listOf(line("waiting"))
             data.chapters == 0 -> listOf(line("intro"), line("step0"))

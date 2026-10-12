@@ -184,7 +184,15 @@ class Characters(val placements: MutableList<Placement> = mutableListOf()) : Sav
             val held = player.mainHandItem
             val heldChain = held.get(ModDataComponents.QUEST_NOTE.get())?.chain
             if (held.has(ModDataComponents.CONTRACT_STATE.get()) && heldChain != null && StoryCharacter.parseChain(heldChain)?.first == character) {
+                val before = chapters(player, character)
                 Contracts.turnIn(held, player, level, npc.blockPosition(), character)
+                val after = chapters(player, character)
+                // The story moved on: they have the next chapter to tell, or their goodbye
+                if (after > before) {
+                    npc.listen(player)
+                    val finale = after >= character.steps.size
+                    PacketDistributor.sendToPlayer(player, OpenCharacterPayload(npc.id, character.id, after, carries(player, character), finale))
+                }
                 return
             }
             // Wren keeps the main story going: the first shard if it was missed, and a new compass if one was lost
@@ -240,7 +248,6 @@ class Characters(val placements: MutableList<Placement> = mutableListOf()) : Sav
                 player.sendSystemMessage(Component.translatable("message.guildmark.story_chapter", character.title, chapters, character.steps.size))
                 return
             }
-            player.sendSystemMessage(Component.translatable("gui.guildmark.character.says", character.title, character.line("finale")))
             Milestones.award(player, Milestones.CHARACTER)
             for (index in character.lore) player.inventory.placeItemBackInInventory(LoreBooks.fragment(index), Prediction.SERVER_ONLY)
             if (character == StoryCharacter.WREN) MainQuest.start(level, player)

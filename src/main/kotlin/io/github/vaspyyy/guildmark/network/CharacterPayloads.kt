@@ -11,7 +11,14 @@ import net.minecraft.resources.Identifier
 import net.neoforged.neoforge.network.handling.IPayloadContext
 
 /** Server tells the client to open a conversation with the named character [entityId]. */
-data class OpenCharacterPayload(val entityId: Int, val character: String, val chapters: Int, val carrying: Boolean) : CustomPacketPayload {
+data class OpenCharacterPayload(
+    val entityId: Int,
+    val character: String,
+    val chapters: Int,
+    val carrying: Boolean,
+    /** The player just finished this character's story: they say goodbye instead. */
+    val finale: Boolean = false,
+) : CustomPacketPayload {
     override fun type(): CustomPacketPayload.Type<OpenCharacterPayload> = TYPE
 
     companion object {
@@ -23,6 +30,7 @@ data class OpenCharacterPayload(val entityId: Int, val character: String, val ch
             ByteBufCodecs.STRING_UTF8, OpenCharacterPayload::character,
             ByteBufCodecs.VAR_INT, OpenCharacterPayload::chapters,
             ByteBufCodecs.BOOL, OpenCharacterPayload::carrying,
+            ByteBufCodecs.BOOL, OpenCharacterPayload::finale,
             ::OpenCharacterPayload,
         )
 

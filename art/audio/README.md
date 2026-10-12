@@ -2,19 +2,23 @@
 
 Every sound in `src/main/resources/assets/guildmark/sounds/` is made by these scripts. Nothing is
 sampled: the effects are synthesised with numpy/scipy, the music is composed in code and played by
-FluidSynth, and the boss voice is Kokoro TTS processed into a hollow undead knight.
+FluidSynth, and the voices are Kokoro TTS: Halvard processed into a hollow undead knight, the named
+characters (Wren, Tobin, Ilsa, Pip and Maren) given a lighter touch.
 
 - `sfxkit.py`: the shared DSP toolkit (noise, filters, modal metal, creature voice source, room
   reverb, finalising and Ogg export).
-- `make_sfx.py`: the 50 mono sound effects (`combat/`, `hollow_soldier/`, `fallen_warden/`). Each sound
-  is one `@recipe(...)` function that sets its variant count, length cap and fade-out.
+- `make_sfx.py`: the 61 mono sound effects (`combat/`, `hollow_soldier/`, `fallen_warden/` and the menu
+  sounds in `ui/`). Each sound is one `@recipe(...)` function that sets its variant count, length cap and
+  fade-out.
 - `make_music.py`: the two boss tracks (`music/`) and the two stingers (`ui/`), all built on Halvard's
   leitmotif. Each piece is a `compose_*` function, and the stem balance lives in `PHASE1_MIX`,
   `PHASE2_MIX` and `STINGER_MIX`.
 - `make_voice.py`: Halvard's three lines (`voice/`). It has two stages, `tts` and `process`.
+- `make_cast_voices.py`: the named characters' 55 dialogue lines (`voice/<character>/`), read from the
+  language file. It has three stages, `tts`, `process` and `sounds`.
 
-All randomness is seeded, so a rerun gives bit-identical files. The scripts do not touch `sounds.json`.
-If you add or remove a variant, update that file by hand.
+All randomness is seeded, so a rerun gives bit-identical files. Only `make_cast_voices.py sounds` touches
+`sounds.json`. For everything else, if you add or remove a variant, update that file by hand.
 
 ## Requirements
 
@@ -66,3 +70,32 @@ The game times its captions to the voice files' lengths:
 
 A new voice, speed or text changes these lengths. Check the new lengths with `soxi -D` and update the
 caption timings in the code.
+
+### Character voices
+
+The dialogue screen speaks every line it shows: introductions, each chapter's request, the "still
+waiting", "all done" and goodbye lines, the topics, and Maren's scenes. The words come from
+`en_us.json`, so after changing a character's line, voice it again. Use the same virtualenv, model files
+and `--espeak-data` as for Halvard:
+
+```
+<venv>/bin/python -I -B art/audio/make_cast_voices.py tts --model <dl>/kokoro-v1.0.onnx --voices <dl>/voices-v1.0.bin --out <raw-dir> [--only tobin] [--keys '^intro$']
+python3 -B art/audio/make_cast_voices.py process --raw <raw-dir> --assets src/main/resources/assets/guildmark [--only tobin] [--keys '^intro$']
+python3 -B art/audio/make_cast_voices.py sounds --assets src/main/resources/assets/guildmark
+```
+
+`--only` takes character ids and `--keys` a regex on the line key (`step1`, `topic.maps.0`, `scene0.p2`).
+`sounds` adds a `voice.<character>.<line>` event for every recorded line; a line without a recording
+falls back to the typed-text ticks in game.
+
+| Character | Kokoro voice | Speed | Processing |
+|---|---|---|---|
+| Wren | `af_heart` | 1.06 | small room |
+| Tobin | `bm_george` | 0.9 | down 1 semitone, a little grit, small room |
+| Ilsa | `bf_emma` | 0.94 | chapel reverb |
+| Pip | `bm_fable` | 1.06 | small room |
+| Maren | `af_bella` | 0.9 | down 0.6 semitone, a faint chorused octave above, large cold hall |
+
+`SAY_AS` in the script respells words the TTS gets wrong ("Hmph" was spelled out letter by letter, and
+"Halvard" came out as "Harvard"). Every line was checked with Whisper base.en: 98% of words come back
+as written.

@@ -277,5 +277,500 @@
     "sounds": [
       "guildmark:ui/seal1"
     ]
+  },
+  "voice.wren.intro": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/wren/intro",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.wren"
+  },
+  "voice.wren.step0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/wren/step0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.wren"
+  },
+  "voice.wren.step1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/wren/step1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.wren"
+  },
+  "voice.wren.step2": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/wren/step2",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.wren"
+  },
+  "voice.wren.waiting": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/wren/waiting",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.wren"
+  },
+  "voice.wren.finale": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/wren/finale",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.wren"
+  },
+  "voice.wren.done": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/wren/done",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.wren"
+  },
+  "voice.wren.topic.maps.0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/wren/topic_maps_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.wren"
+  },
+  "voice.wren.topic.maps.1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/wren/topic_maps_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.wren"
+  },
+  "voice.wren.topic.king.0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/wren/topic_king_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.wren"
+  },
+  "voice.wren.topic.king.1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/wren/topic_king_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.wren"
+  },
+  "voice.tobin.intro": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/tobin/intro",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.tobin"
+  },
+  "voice.tobin.step0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/tobin/step0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.tobin"
+  },
+  "voice.tobin.step1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/tobin/step1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.tobin"
+  },
+  "voice.tobin.step2": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/tobin/step2",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.tobin"
+  },
+  "voice.tobin.waiting": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/tobin/waiting",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.tobin"
+  },
+  "voice.tobin.finale": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/tobin/finale",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.tobin"
+  },
+  "voice.tobin.done": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/tobin/done",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.tobin"
+  },
+  "voice.tobin.topic.wardens.0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/tobin/topic_wardens_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.tobin"
+  },
+  "voice.tobin.topic.wardens.1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/tobin/topic_wardens_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.tobin"
+  },
+  "voice.tobin.topic.halvard.0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/tobin/topic_halvard_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.tobin"
+  },
+  "voice.tobin.topic.halvard.1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/tobin/topic_halvard_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.tobin"
+  },
+  "voice.ilsa.intro": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/ilsa/intro",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.ilsa"
+  },
+  "voice.ilsa.step0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/ilsa/step0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.ilsa"
+  },
+  "voice.ilsa.step1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/ilsa/step1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.ilsa"
+  },
+  "voice.ilsa.step2": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/ilsa/step2",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.ilsa"
+  },
+  "voice.ilsa.waiting": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/ilsa/waiting",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.ilsa"
+  },
+  "voice.ilsa.finale": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/ilsa/finale",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.ilsa"
+  },
+  "voice.ilsa.done": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/ilsa/done",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.ilsa"
+  },
+  "voice.ilsa.topic.bell.0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/ilsa/topic_bell_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.ilsa"
+  },
+  "voice.ilsa.topic.bell.1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/ilsa/topic_bell_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.ilsa"
+  },
+  "voice.ilsa.topic.court.0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/ilsa/topic_court_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.ilsa"
+  },
+  "voice.ilsa.topic.court.1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/ilsa/topic_court_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.ilsa"
+  },
+  "voice.pip.intro": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/pip/intro",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.pip"
+  },
+  "voice.pip.step0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/pip/step0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.pip"
+  },
+  "voice.pip.step1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/pip/step1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.pip"
+  },
+  "voice.pip.step2": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/pip/step2",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.pip"
+  },
+  "voice.pip.waiting": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/pip/waiting",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.pip"
+  },
+  "voice.pip.finale": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/pip/finale",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.pip"
+  },
+  "voice.pip.done": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/pip/done",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.pip"
+  },
+  "voice.pip.topic.songs.0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/pip/topic_songs_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.pip"
+  },
+  "voice.pip.topic.songs.1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/pip/topic_songs_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.pip"
+  },
+  "voice.pip.topic.fame.0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/pip/topic_fame_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.pip"
+  },
+  "voice.pip.topic.fame.1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/pip/topic_fame_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.pip"
+  },
+  "voice.maren.scene0.p0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/maren/scene0_p0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.maren"
+  },
+  "voice.maren.scene0.p1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/maren/scene0_p1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.maren"
+  },
+  "voice.maren.scene0.p2": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/maren/scene0_p2",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.maren"
+  },
+  "voice.maren.scene0.p3": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/maren/scene0_p3",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.maren"
+  },
+  "voice.maren.scene1.p0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/maren/scene1_p0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.maren"
+  },
+  "voice.maren.scene1.p1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/maren/scene1_p1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.maren"
+  },
+  "voice.maren.scene1.p2": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/maren/scene1_p2",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.maren"
+  },
+  "voice.maren.scene2.p0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/maren/scene2_p0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.maren"
+  },
+  "voice.maren.scene2.p1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/maren/scene2_p1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.maren"
+  },
+  "voice.maren.topic.oath.0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/maren/topic_oath_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.maren"
+  },
+  "voice.maren.topic.oath.1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/maren/topic_oath_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.maren"
   }
 }
