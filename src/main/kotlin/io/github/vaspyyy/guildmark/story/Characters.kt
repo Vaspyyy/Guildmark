@@ -176,6 +176,7 @@ class Characters(val placements: MutableList<Placement> = mutableListOf()) : Sav
                     state.found >= MainQuestState.SHARDS -> 1
                     else -> 0
                 }
+                npc.listen(player)
                 PacketDistributor.sendToPlayer(player, OpenCharacterPayload(npc.id, character.id, scene, false))
                 Milestones.award(player, Milestones.MAREN)
                 return
@@ -202,6 +203,7 @@ class Characters(val placements: MutableList<Placement> = mutableListOf()) : Sav
                 level.playSound(null, npc.blockPosition(), SoundEvents.NOTE_BLOCK_GUITAR.value(), SoundSource.NEUTRAL, 1.0f, 1.0f + level.random.nextFloat() * 0.3f)
             }
             npc.playSound(SoundEvents.VILLAGER_AMBIENT, 1.0f, 1.2f)
+            npc.listen(player)
             PacketDistributor.sendToPlayer(player, OpenCharacterPayload(npc.id, character.id, chapters(player, character), carries(player, character)))
         }
 
@@ -211,6 +213,7 @@ class Characters(val placements: MutableList<Placement> = mutableListOf()) : Sav
             val villager = level.getEntity(entityId) as? StoryNpc ?: return
             val character = StoryCharacter.byId(villager.character) ?: return
             if (player.distanceTo(villager) > INTERACT_RANGE) return
+            villager.stopListening(player)
             if (character == StoryCharacter.MAREN) {
                 HollowThrone.get(level).begin(level, player)
                 return
@@ -222,6 +225,11 @@ class Characters(val placements: MutableList<Placement> = mutableListOf()) : Sav
             player.inventory.placeItemBackInInventory(stack, Prediction.SERVER_ONLY)
             player.sendSystemMessage(Component.translatable("message.guildmark.story_accepted", character.title, step + 1, character.steps.size))
             level.playSound(null, villager.blockPosition(), SoundEvents.BOOK_PAGE_TURN, SoundSource.NEUTRAL, 1.0f, 1.0f)
+        }
+
+        /** The player closed the conversation with [entityId]: they go back to what they were doing. */
+        fun endTalk(player: Player, entityId: Int) {
+            (player.level().getEntity(entityId) as? StoryNpc)?.stopListening(player)
         }
 
         /** A story contract was handed in: move the story on, and finish it with a gift. */

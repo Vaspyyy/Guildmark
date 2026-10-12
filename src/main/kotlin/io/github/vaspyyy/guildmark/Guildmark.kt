@@ -42,6 +42,7 @@ import io.github.vaspyyy.guildmark.guild.Recruiting
 import io.github.vaspyyy.guildmark.registry.ModEntities
 import io.github.vaspyyy.guildmark.lair.Lairs
 import io.github.vaspyyy.guildmark.network.AcceptChapterPayload
+import io.github.vaspyyy.guildmark.network.EndTalkPayload
 import io.github.vaspyyy.guildmark.network.FoundGuildPayload
 import io.github.vaspyyy.guildmark.network.OpenCharacterPayload
 import io.github.vaspyyy.guildmark.loot.Relics
@@ -234,6 +235,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
             .playToServer(ReceptionActionPayload.TYPE, ReceptionActionPayload.STREAM_CODEC, ReceptionActionPayload::handle)
             .playToServer(FoundGuildPayload.TYPE, FoundGuildPayload.STREAM_CODEC, FoundGuildPayload::handle)
             .playToServer(AcceptChapterPayload.TYPE, AcceptChapterPayload.STREAM_CODEC, AcceptChapterPayload::handle)
+            .playToServer(EndTalkPayload.TYPE, EndTalkPayload.STREAM_CODEC, EndTalkPayload::handle)
             .playToClient(OpenCharacterPayload.TYPE, OpenCharacterPayload.STREAM_CODEC, OpenCharacterPayload::handle)
             .playToClient(OpenReceptionPayload.TYPE, OpenReceptionPayload.STREAM_CODEC, OpenReceptionPayload::handle)
             .playToClient(OpenAdvancesPayload.TYPE, OpenAdvancesPayload.STREAM_CODEC, OpenAdvancesPayload::handle)

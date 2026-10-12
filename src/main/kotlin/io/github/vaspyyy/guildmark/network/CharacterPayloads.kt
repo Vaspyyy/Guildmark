@@ -48,3 +48,20 @@ data class AcceptChapterPayload(val entityId: Int) : CustomPacketPayload {
         }
     }
 }
+
+/** Client closed the conversation with the named character [entityId]. */
+data class EndTalkPayload(val entityId: Int) : CustomPacketPayload {
+    override fun type(): CustomPacketPayload.Type<EndTalkPayload> = TYPE
+
+    companion object {
+        val TYPE: CustomPacketPayload.Type<EndTalkPayload> =
+            CustomPacketPayload.Type(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "end_talk"))
+
+        val STREAM_CODEC: StreamCodec<ByteBuf, EndTalkPayload> =
+            ByteBufCodecs.VAR_INT.map(::EndTalkPayload, EndTalkPayload::entityId)
+
+        fun handle(payload: EndTalkPayload, context: IPayloadContext) {
+            Characters.endTalk(context.player(), payload.entityId)
+        }
+    }
+}

@@ -64,6 +64,18 @@ enum class StoryCharacter(
     /** Has a story of jobs to give, rather than only scenes in the main quest. */
     val givesJobs: Boolean get() = steps.isNotEmpty()
 
+    /**
+     * What the player can ask them about. The question is character.guildmark.<id>.topic.<name> and the
+     * answer topic.<name>.0, .1 and so on.
+     */
+    val topics: List<String> get() = when (this) {
+        WREN -> listOf("maps", "king")
+        TOBIN -> listOf("wardens", "halvard")
+        ILSA -> listOf("bell", "court")
+        PIP -> listOf("songs", "fame")
+        MAREN -> listOf("oath")
+    }
+
     val title: Component get() = Component.literal(displayName).withColor(color)
     val epithet: Component get() = Component.translatable("character.guildmark.$id.epithet")
     fun line(key: String): Component = Component.translatable("character.guildmark.$id.$key")

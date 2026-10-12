@@ -12,6 +12,7 @@ import net.minecraft.world.entity.PathfinderMob
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier
 import net.minecraft.world.entity.ai.attributes.Attributes
 import net.minecraft.world.entity.ai.goal.FloatGoal
+import net.minecraft.world.entity.ai.goal.Goal
 import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal
 import net.minecraft.world.entity.ai.goal.WaterAvoidingRandomStrollGoal
@@ -19,6 +20,7 @@ import net.minecraft.world.entity.player.Player
 import net.minecraft.world.level.Level
 import net.minecraft.world.level.storage.ValueInput
 import net.minecraft.world.level.storage.ValueOutput
+import java.util.EnumSet
 
 /**
  * One of the story's named characters, with their own look (see StoryNpcModel). They wander near home,
@@ -32,6 +34,10 @@ class StoryNpc(type: EntityType<out StoryNpc>, level: Level) : PathfinderMob(typ
     /** Game time this character leaves the world, or -1 to stay. */
     var leaveAt: Long = -1
 
+    /** Who this character is talking with, and the game time they stop waiting for them to say something. */
+    private var listener: Player? = null
+    private var listenUntil = 0L
+
     init {
         isPermanentlyInvulnerable = true
         setPersistenceRequired()
@@ -44,6 +50,7 @@ class StoryNpc(type: EntityType<out StoryNpc>, level: Level) : PathfinderMob(typ
 
     override fun registerGoals() {
         goalSelector.addGoal(0, FloatGoal(this))
+        goalSelector.addGoal(1, ListenGoal())
         goalSelector.addGoal(2, LookAtPlayerGoal(this, Player::class.java, 8.0f, 0.6f))
         goalSelector.addGoal(3, WaterAvoidingRandomStrollGoal(this, 0.45, 0.004f))
         goalSelector.addGoal(4, RandomLookAroundGoal(this))
@@ -52,6 +59,42 @@ class StoryNpc(type: EntityType<out StoryNpc>, level: Level) : PathfinderMob(typ
     override fun customServerAiStep(level: ServerLevel) {
         super.customServerAiStep(level)
         if (leaveAt >= 0 && level.gameTime >= leaveAt) Characters.fade(level, this)
+    }
+
+    /** Stops and turns to [player] for a conversation. */
+    fun listen(player: Player) {
+        listener = player
+        listenUntil = level().gameTime + LISTEN_TICKS
+        navigation.stop()
+    }
+
+    /** The conversation with [player] is over. */
+    fun stopListening(player: Player) {
+        if (listener === player) listener = null
+    }
+
+    private fun listening(): Boolean {
+        val player = listener ?: return false
+        if (!player.isAlive || player.level() !== level() || level().gameTime > listenUntil || distanceToSqr(player) > 144.0) {
+            listener = null
+            return false
+        }
+        return true
+    }
+
+    /** Stands still and faces whoever they're talking with. */
+    private inner class ListenGoal : Goal() {
+        init {
+            setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK))
+        }
+
+        override fun canUse(): Boolean = listening()
+        override fun start() = navigation.stop()
+        override fun requiresUpdateEveryTick(): Boolean = true
+
+        override fun tick() {
+            listener?.let { lookControl.setLookAt(it, 30f, 30f) }
+        }
     }
 
     override fun removeWhenFarAway(distance: Double): Boolean = false
@@ -78,6 +121,8 @@ class StoryNpc(type: EntityType<out StoryNpc>, level: Level) : PathfinderMob(typ
 
     companion object {
         private val CHARACTER: EntityDataAccessor<String> = SynchedEntityData.defineId(StoryNpc::class.java, EntityDataSerializers.STRING)
+        /** The longest a character waits on someone who opened a conversation and walked off without closing it. */
+        private const val LISTEN_TICKS = 1200L
 
         fun createAttributes(): AttributeSupplier.Builder = createMobAttributes()
             .add(Attributes.MAX_HEALTH, 20.0)

@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.client
 
+import io.github.vaspyyy.guildmark.client.ui.DialogueScreen
 import io.github.vaspyyy.guildmark.network.OpenCharacterPayload
 import io.github.vaspyyy.guildmark.network.OpenReceptionPayload
 import io.github.vaspyyy.guildmark.quest.ContractState
@@ -27,7 +28,7 @@ object ClientHooks {
 
     /** A conversation with a named character. */
     fun openCharacter(payload: OpenCharacterPayload) {
-        Minecraft.getInstance().gui.setScreen(CharacterScreen(payload))
+        Minecraft.getInstance().gui.setScreen(DialogueScreen(payload))
     }
 
     /** Naming a new guild at the hall desk. */

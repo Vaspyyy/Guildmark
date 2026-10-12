@@ -12,6 +12,7 @@ import net.minecraft.client.entity.ClientAvatarEntity
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.PauseScreen
+import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.multiplayer.ClientLevel
 import net.minecraft.client.player.LocalPlayer
 import net.minecraft.client.renderer.entity.state.AvatarRenderState
@@ -27,6 +28,7 @@ import net.minecraft.util.ARGB
 import net.minecraft.util.Mth
 import net.minecraft.util.context.ContextKey
 import net.minecraft.world.entity.Avatar
+import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.EntityDimensions
 import net.minecraft.world.entity.EntityTypes
 import net.minecraft.world.entity.Marker
@@ -54,13 +56,17 @@ import kotlin.math.sqrt
  * fall) and the scene plays out here: black bars, a camera that leaves the player to frame him, his voice
  * with captions, then the title card as the fight begins or the banner as it ends. The camera work can be
  * turned off in the client config and skipped with Esc or jump; his words and the cards always play.
- * His music lives here too.
+ * His music lives here too, and the quieter camera that settles over the player's shoulder while a
+ * character talks (see [talk]).
  */
 object Cutscenes : GuiLayer {
     val ID: Identifier = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "cutscene")
 
     /** Ticks the camera takes to glide back to the player's eyes. */
     private const val RETURN = 14
+    /** Ticks the talk camera takes to settle over the player's shoulder, and its field of view there. */
+    private const val TALK_IN = 12
+    private const val TALK_FOV = 58f
     private const val BLACK = 0xFF000000.toInt()
     private const val GOLD = 0xC9A45C
     private const val BONE = 0xF2E8D0
@@ -151,6 +157,7 @@ object Cutscenes : GuiLayer {
     }
 
     private var scene: Scene? = null
+    private var talk: Talk? = null
     private var ticks = 0
     private var silenceUntil = 0
     private var wardenId = -1
@@ -160,8 +167,10 @@ object Cutscenes : GuiLayer {
 
     private fun camerasOn(): Boolean = !GuildmarkClientConfig.SPEC.isLoaded || GuildmarkClientConfig.CUTSCENES.get()
 
+    private fun talkCameraOn(): Boolean = !GuildmarkClientConfig.SPEC.isLoaded || GuildmarkClientConfig.DIALOGUE_CAMERA.get()
+
     /** The camera is away from the player: no moving, fighting or HUD until it's back. */
-    fun holdsCamera(): Boolean = scene?.rig != null
+    fun holdsCamera(): Boolean = scene?.rig != null || talk != null
 
     // ---- Cues ----
 
@@ -171,6 +180,7 @@ object Cutscenes : GuiLayer {
         val level = minecraft.level ?: return
         val boss = level.getEntity(payload.entityId) as? FallenWarden
         end()
+        releaseTalk()
         val pos = boss?.position() ?: player.position()
         val yaw = boss?.yBodyRot ?: 0f
         val a = Math.toRadians(yaw.toDouble())
@@ -331,9 +341,10 @@ object Cutscenes : GuiLayer {
     }
 
     /** Turns the player to face him, so the camera comes back looking his way. */
-    private fun faceBoss(s: Scene) {
-        val player = s.player
-        val d = s.bossPos.add(0.0, 1.8, 0.0).subtract(player.eyePosition)
+    private fun faceBoss(s: Scene) = face(s.player, s.bossPos.add(0.0, 1.8, 0.0))
+
+    private fun face(player: LocalPlayer, at: Vec3) {
+        val d = at.subtract(player.eyePosition)
         val yaw = player.yRot + Mth.wrapDegrees(Math.toDegrees(atan2(-d.x, d.z)).toFloat() - player.yRot)
         val pitch = Math.toDegrees(-atan2(d.y, sqrt(d.x * d.x + d.z * d.z))).toFloat().coerceIn(-30f, 30f)
         player.yRot = yaw
@@ -348,6 +359,111 @@ object Cutscenes : GuiLayer {
 
     private fun ease(k: Float): Float = if (k < 0.5f) 4f * k * k * k else 1f - (-2f * k + 2f).let { it * it * it } / 2f
 
+    // ---- Talking ----
+
+    /** The camera while a character talks, for as long as [screen] stays open. */
+    private class Talk(
+        val speaker: Entity,
+        val player: LocalPlayer,
+        val level: ClientLevel,
+        val screen: Screen,
+        val rig: CameraRig,
+        var savedType: CameraType,
+    ) {
+        var time = 0
+        /** When the camera started back to the player's eyes, or -1 while the talk goes on. */
+        var closingAt = -1
+        var from: View? = null
+        var view: View? = null
+        /** How far the field of view is the player's own (1) rather than the shot's (0). */
+        var fovBlend = 1f
+    }
+
+    /**
+     * Settles the camera over the player's shoulder, looking at [speaker], while [screen] (their
+     * conversation) is open; it glides back to the player's eyes when the screen closes. Nothing happens
+     * if a boss scene has the camera, the player is looking through something else, or it's turned off.
+     */
+    fun talk(speaker: Entity, screen: Screen) {
+        val minecraft = Minecraft.getInstance()
+        val player = minecraft.player ?: return
+        val level = minecraft.level ?: return
+        if (scene != null || talk != null || !talkCameraOn() || !player.isAlive || minecraft.cameraEntity !== player) return
+        face(player, speaker.eyePosition)
+        val rig = CameraRig(level, player.eyeHeight)
+        rig.place(View(player.eyePosition, player.yRot, player.xRot, TALK_FOV))
+        talk = Talk(speaker, player, level, screen, rig, minecraft.options.cameraType)
+        minecraft.options.cameraType = CameraType.FIRST_PERSON
+        LockOn.release()
+        minecraft.setCameraEntity(rig)
+        player.isSprinting = false
+        holdStill(player)
+    }
+
+    private fun tickTalk(minecraft: Minecraft) {
+        val t = talk ?: return
+        val player = minecraft.player
+        if (player == null || player !== t.player || minecraft.level !== t.level || !player.isAlive) {
+            releaseTalk()
+            return
+        }
+        holdStill(player)
+        t.time++
+        val gone = !t.speaker.isAlive || t.speaker.isRemoved || t.speaker.distanceToSqr(player) > 144.0
+        if (t.closingAt < 0 && (minecraft.gui.screen() !== t.screen || gone)) {
+            t.closingAt = t.time
+            t.from = t.view
+        }
+        if (t.closingAt >= 0 && t.time >= t.closingAt + RETURN) releaseTalk()
+    }
+
+    private fun releaseTalk() {
+        val t = talk ?: return
+        val minecraft = Minecraft.getInstance()
+        talk = null
+        if (minecraft.cameraEntity === t.rig) minecraft.setCameraEntity(minecraft.player)
+        minecraft.options.cameraType = t.savedType
+    }
+
+    /** From the player's eyes to over their shoulder and, once the talk is over, back again. */
+    private fun talkView(t: Talk, partial: Float): View {
+        val player = t.player
+        val eyes = View(player.getEyePosition(partial), player.getViewYRot(partial), player.getViewXRot(partial), TALK_FOV)
+        val time = t.time + partial
+        if (t.closingAt >= 0) {
+            val k = ease(((time - t.closingAt) / RETURN).coerceIn(0f, 1f))
+            t.fovBlend = k
+            return blend(t.from ?: shoulder(t, partial), eyes, k)
+        }
+        val k = ease((time / TALK_IN).coerceIn(0f, 1f))
+        t.fovBlend = 1f - k
+        return if (k >= 1f) shoulder(t, partial) else blend(eyes, shoulder(t, partial), k)
+    }
+
+    /**
+     * Behind the player and off their right shoulder, a little above their eyes, looking at the speaker's
+     * chest: their face sits in the upper half of the screen, clear of the conversation panel below.
+     */
+    private fun shoulder(t: Talk, partial: Float): View {
+        val eye = t.player.getEyePosition(partial)
+        val face = t.speaker.getEyePosition(partial)
+        var d = Vec3(face.x - eye.x, 0.0, face.z - eye.z)
+        d = if (d.lengthSqr() < 1.0E-4) Vec3.directionFromRotation(0f, t.player.yRot).multiply(1.0, 0.0, 1.0).normalize() else d.normalize()
+        val right = Vec3(-d.z, 0.0, d.x)
+        var cam = eye.add(d.scale(-1.25)).add(right.scale(0.85)).add(0.0, 0.15, 0.0)
+        val look = face.add(right.scale(-0.3)).add(0.0, -0.5, 0.0)
+        val hit = t.level.clip(ClipContext(eye, cam, ClipContext.Block.VISUAL, ClipContext.Fluid.NONE, CollisionContext.empty()))
+        if (hit.type != HitResult.Type.MISS) cam = hit.location.add(eye.subtract(hit.location).normalize().scale(0.25))
+        return looking(cam, look, TALK_FOV)
+    }
+
+    private fun blend(a: View, b: View, k: Float): View = View(
+        a.pos.lerp(b.pos, k.toDouble()),
+        a.yaw + Mth.wrapDegrees(b.yaw - a.yaw) * k,
+        Mth.lerp(k, a.pitch, b.pitch),
+        Mth.lerp(k, a.fov, b.fov),
+    )
+
     // ---- Every tick ----
 
     fun onTick() {
@@ -355,6 +471,7 @@ object Cutscenes : GuiLayer {
         if (minecraft.isPaused) return
         ticks++
         if (ticks % 10 == 0) findWarden(minecraft)
+        tickTalk(minecraft)
         val s = scene ?: return
         val player = minecraft.player
         if (player == null || player !== s.player || minecraft.level !== s.level || !player.isAlive) {
@@ -402,6 +519,7 @@ object Cutscenes : GuiLayer {
 
     fun reset() {
         end()
+        releaseTalk()
         silenceUntil = 0
         wardenId = -1
     }
@@ -428,15 +546,22 @@ object Cutscenes : GuiLayer {
 
     /** Places the camera for this frame, as the game asks where it's looking. */
     fun onAngles(event: ViewportEvent.ComputeCameraAngles) {
+        talk?.let { t ->
+            if (event.camera.entity() !== t.rig) return
+            firstPerson { t.savedType = it }
+            val v = talkView(t, event.partialTick)
+            t.view = v
+            t.rig.place(v)
+            event.yaw = v.yaw
+            event.pitch = v.pitch
+            event.roll = 0f
+            return
+        }
         val s = scene ?: return
         val rig = s.rig ?: return
         if (event.camera.entity() !== rig) return
-        val minecraft = Minecraft.getInstance()
         // Through the rig's eyes even if the view is switched mid-scene; the choice is kept for afterwards
-        if (minecraft.options.cameraType != CameraType.FIRST_PERSON) {
-            s.savedType = minecraft.options.cameraType
-            minecraft.options.cameraType = CameraType.FIRST_PERSON
-        }
+        firstPerson { s.savedType = it }
         val v = view(s, event.partialTick)
         s.view = v
         rig.place(v)
@@ -445,7 +570,20 @@ object Cutscenes : GuiLayer {
         event.roll = 0f
     }
 
+    /** Back to looking through the camera's own eyes if the view was switched; [saved] keeps the player's choice. */
+    private fun firstPerson(saved: (CameraType) -> Unit) {
+        val options = Minecraft.getInstance().options
+        if (options.cameraType != CameraType.FIRST_PERSON) {
+            saved(options.cameraType)
+            options.cameraType = CameraType.FIRST_PERSON
+        }
+    }
+
     fun onFov(event: ViewportEvent.ComputeFov) {
+        talk?.let { t ->
+            event.fov = Mth.lerp(t.fovBlend, TALK_FOV, event.fov)
+            return
+        }
         val s = scene ?: return
         val v = s.view ?: return
         if (s.rig == null) return
@@ -470,6 +608,12 @@ object Cutscenes : GuiLayer {
     }
 
     fun onRenderPre(event: RenderLivingEvent.Pre<*, *, *>) {
+        talk?.let { t ->
+            // Over the shoulder the player is in the shot; only as the camera nears their eyes do they go
+            val at = t.view?.pos ?: return
+            if (event.renderState.getRenderData(SELF) == true && at.distanceToSqr(t.player.eyePosition) < 0.9) event.isCanceled = true
+            return
+        }
         val s = scene ?: return
         if (s.rig == null || event.renderState.getRenderData(SELF) != true) return
         val t = s.time.toFloat()
