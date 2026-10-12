@@ -2,6 +2,7 @@ package io.github.vaspyyy.guildmark.registry
 
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.item.ContractItem
+import io.github.vaspyyy.guildmark.item.DuskBridleItem
 import io.github.vaspyyy.guildmark.item.RelicCacheItem
 import io.github.vaspyyy.guildmark.item.WardensFlaskItem
 import net.minecraft.world.item.BlockItem
@@ -43,6 +44,14 @@ object ModItems {
         it.stacksTo(1).rarity(Rarity.RARE).fireResistant()
     })
 
+    /** Taken from a fallen Dusk Rider: calls a spectral steed to ride. */
+    val DUSK_BRIDLE: DeferredItem<DuskBridleItem> = ITEMS.registerItem("dusk_bridle", ::DuskBridleItem, UnaryOperator<Item.Properties> {
+        it.stacksTo(1).rarity(Rarity.EPIC).fireResistant()
+    })
+
+    /** Only what a Dusk Rider's lantern wisp looks like in flight; never given out. */
+    val LANTERN_WISP: DeferredItem<Item> = ITEMS.registerSimpleItem("lantern_wisp")
+
     // Spawn eggs for the new combat's creatures
     val HOLLOW_SOLDIER_SPAWN_EGG: DeferredItem<SpawnEggItem> = ITEMS.registerItem("hollow_soldier_spawn_egg", ::SpawnEggItem, UnaryOperator<Item.Properties> {
         it.spawnEgg(ModEntities.HOLLOW_SOLDIER.get())
@@ -52,5 +61,8 @@ object ModItems {
     })
     val HILL_TROLL_SPAWN_EGG: DeferredItem<SpawnEggItem> = ITEMS.registerItem("hill_troll_spawn_egg", ::SpawnEggItem, UnaryOperator<Item.Properties> {
         it.spawnEgg(ModEntities.HILL_TROLL.get())
+    })
+    val DUSK_RIDER_SPAWN_EGG: DeferredItem<SpawnEggItem> = ITEMS.registerItem("dusk_rider_spawn_egg", ::SpawnEggItem, UnaryOperator<Item.Properties> {
+        it.spawnEgg(ModEntities.DUSK_RIDER.get())
     })
 }

@@ -31,6 +31,7 @@ import io.github.vaspyyy.guildmark.block.VillageBoards
 import io.github.vaspyyy.guildmark.village.Standing
 import io.github.vaspyyy.guildmark.enemy.HillTroll
 import io.github.vaspyyy.guildmark.field.FieldBosses
+import io.github.vaspyyy.guildmark.field.NightRiders
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.SharedSuggestionProvider
 import net.minecraft.commands.Commands
@@ -62,6 +63,22 @@ object AdvanceCommand {
         if (Traffic.spawnNear(source.level, source.playerOrException, ambush)) return 1
         source.sendFailure(Component.translatable("commands.guildmark.no_road_near"))
         return 0
+    }
+
+    /** A Dusk Rider for the player, 20 to 30 blocks off; one that came with the [night] fades at dawn. */
+    private fun sendRider(source: CommandSourceStack, night: Boolean): Int {
+        val player = source.playerOrException
+        if (source.level.dimension() != Level.OVERWORLD) {
+            source.sendFailure(Component.translatable("commands.guildmark.dusk_rider_overworld"))
+            return 0
+        }
+        val rider = NightRiders.send(source.level, player, true, night)
+        if (rider == null) {
+            source.sendFailure(Component.translatable("commands.guildmark.no_dusk_rider"))
+            return 0
+        }
+        source.sendSuccess({ Component.translatable("commands.guildmark.dusk_rider", rider.title, player.distanceTo(rider).toInt()) }, false)
+        return 1
     }
 
     fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
@@ -192,6 +209,11 @@ object AdvanceCommand {
                             1
                         }
                     },
+                )
+                .then(
+                    Commands.literal("duskrider")
+                        .executes { context -> sendRider(context.source, false) }
+                        .then(Commands.literal("night").executes { context -> sendRider(context.source, true) }),
                 )
                 .then(
                     Commands.literal("festival").executes { context ->

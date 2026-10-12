@@ -24,6 +24,8 @@ object ModCreativeTabs {
                 output.accept(ModItems.HOLLOW_SOLDIER_SPAWN_EGG.get())
                 output.accept(ModItems.FALLEN_WARDEN_SPAWN_EGG.get())
                 output.accept(ModItems.HILL_TROLL_SPAWN_EGG.get())
+                output.accept(ModItems.DUSK_RIDER_SPAWN_EGG.get())
+                output.accept(ModItems.DUSK_BRIDLE.get())
             }
             .build()
     }

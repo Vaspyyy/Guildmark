@@ -3,6 +3,7 @@ package io.github.vaspyyy.guildmark.client.combat
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.client.GuildmarkClientConfig
 import io.github.vaspyyy.guildmark.enemy.FallenWarden
+import io.github.vaspyyy.guildmark.enemy.DuskRider
 import io.github.vaspyyy.guildmark.enemy.HillTroll
 import net.minecraft.world.entity.LivingEntity
 import io.github.vaspyyy.guildmark.network.BossCuePayload
@@ -174,6 +175,7 @@ object Cutscenes : GuiLayer {
     private val PHASE_ONE by lazy { Music(ModSounds.MUSIC_WARDEN, 0, 0, true) }
     private val PHASE_TWO by lazy { Music(ModSounds.MUSIC_WARDEN_2, 0, 0, true) }
     private val FIELD_BOSS by lazy { Music(ModSounds.MUSIC_FIELD_BOSS, 0, 0, true) }
+    private val DUSK_RIDER by lazy { Music(ModSounds.MUSIC_DUSK_RIDER, 0, 0, true) }
 
     private fun camerasOn(): Boolean = !GuildmarkClientConfig.SPEC.isLoaded || GuildmarkClientConfig.CUTSCENES.get()
 
@@ -592,11 +594,15 @@ object Cutscenes : GuiLayer {
         }
     }
 
+    /** A field boss with a fight on: a hill troll, or a Dusk Rider that isn't fading away. */
+    private fun fightingFieldBoss(entity: LivingEntity): Boolean =
+        (entity is HillTroll && entity.fighting) || (entity is DuskRider && entity.fighting && !entity.fading)
+
     private fun findFieldBoss(minecraft: Minecraft) {
         val player = minecraft.player
         val level = minecraft.level
         fieldBossId = if (player == null || level == null) -1 else {
-            level.getEntitiesOfClass(HillTroll::class.java, player.boundingBox.inflate(48.0)) { it.isAlive && it.fighting }
+            level.getEntitiesOfClass(LivingEntity::class.java, player.boundingBox.inflate(48.0)) { it.isAlive && fightingFieldBoss(it) }
                 .minByOrNull { it.distanceToSqr(player) }?.id ?: -1
         }
     }
@@ -704,14 +710,14 @@ object Cutscenes : GuiLayer {
             event.overrideMusic(if (!warden.fighting) null else if (warden.phaseTwo) PHASE_TWO else PHASE_ONE)
             return
         }
-        val field = level?.getEntity(fieldBossId) as? HillTroll
-        if (field != null && field.isAlive && field.fighting) {
-            event.overrideMusic(FIELD_BOSS)
+        val field = level?.getEntity(fieldBossId) as? LivingEntity
+        if (field != null && field.isAlive && fightingFieldBoss(field)) {
+            event.overrideMusic(if (field is DuskRider) DUSK_RIDER else FIELD_BOSS)
             return
         }
         val playing = event.playingMusic?.identifier
         if (playing == ModSounds.MUSIC_WARDEN.get().location() || playing == ModSounds.MUSIC_WARDEN_2.get().location() ||
-            playing == ModSounds.MUSIC_FIELD_BOSS.get().location()) event.overrideMusic(null)
+            playing == ModSounds.MUSIC_FIELD_BOSS.get().location() || playing == ModSounds.MUSIC_DUSK_RIDER.get().location()) event.overrideMusic(null)
     }
 
     // ---- On screen ----

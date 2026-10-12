@@ -3,11 +3,14 @@ package io.github.vaspyyy.guildmark.registry
 import io.github.vaspyyy.guildmark.guild.RivalAdventurer
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.death.LostMarks
+import io.github.vaspyyy.guildmark.enemy.DuskRider
 import io.github.vaspyyy.guildmark.enemy.FallenWarden
 import io.github.vaspyyy.guildmark.enemy.HillTroll
 import io.github.vaspyyy.guildmark.enemy.HollowSoldier
+import io.github.vaspyyy.guildmark.enemy.LanternWisp
 import io.github.vaspyyy.guildmark.enemy.TrollBoulder
 import io.github.vaspyyy.guildmark.guild.GuildMember
+import io.github.vaspyyy.guildmark.item.SpectralSteed
 import io.github.vaspyyy.guildmark.story.HollowKing
 import io.github.vaspyyy.guildmark.story.StoryNpc
 import net.minecraft.core.registries.Registries
@@ -106,5 +109,38 @@ object ModEntities {
             .clientTrackingRange(8)
             .updateInterval(2)
             .build(ResourceKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "troll_boulder")))
+    }
+
+    /** The Dusk Rider, a field boss on a black destrier that rides out at night. Drawn 1.15 times its model's size. */
+    val DUSK_RIDER: DeferredHolder<EntityType<*>, EntityType<DuskRider>> = ENTITIES.register("dusk_rider") { ->
+        EntityType.Builder.of(::DuskRider, MobCategory.MONSTER)
+            .sized(1.4f, 3.2f)
+            .eyeHeight(2.9f)
+            .fireImmune()
+            .noLootTable()
+            .clientTrackingRange(12)
+            .build(ResourceKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "dusk_rider")))
+    }
+
+    /** A wisp of cold light cast from a Dusk Rider's lantern. */
+    val LANTERN_WISP: DeferredHolder<EntityType<*>, EntityType<LanternWisp>> = ENTITIES.register("lantern_wisp") { ->
+        EntityType.Builder.of(::LanternWisp, MobCategory.MISC)
+            .sized(0.5f, 0.5f)
+            .noLootTable()
+            .clientTrackingRange(8)
+            .updateInterval(2)
+            .build(ResourceKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "lantern_wisp")))
+    }
+
+    /** The ghost of a horse a Dusk Bridle calls; sized and saddled like a skeleton horse. */
+    val SPECTRAL_STEED: DeferredHolder<EntityType<*>, EntityType<SpectralSteed>> = ENTITIES.register("spectral_steed") { ->
+        EntityType.Builder.of(::SpectralSteed, MobCategory.MISC)
+            .sized(1.3964844f, 1.6f)
+            .eyeHeight(1.52f)
+            .passengerAttachments(1.31875f)
+            .noSummon()
+            .noLootTable()
+            .clientTrackingRange(10)
+            .build(ResourceKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "spectral_steed")))
     }
 }

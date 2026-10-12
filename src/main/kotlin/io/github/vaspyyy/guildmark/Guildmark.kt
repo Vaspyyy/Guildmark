@@ -96,8 +96,11 @@ import net.neoforged.neoforge.common.NeoForge
 import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent
 import net.neoforged.neoforge.event.entity.RegisterSpawnPlacementsEvent
 import io.github.vaspyyy.guildmark.enemy.FallenWarden
+import io.github.vaspyyy.guildmark.enemy.DuskRider
 import io.github.vaspyyy.guildmark.enemy.HillTroll
 import io.github.vaspyyy.guildmark.field.FieldBosses
+import io.github.vaspyyy.guildmark.field.NightRiders
+import io.github.vaspyyy.guildmark.item.SpectralSteed
 import io.github.vaspyyy.guildmark.enemy.HollowSoldier
 import net.minecraft.world.entity.SpawnPlacementTypes
 import net.minecraft.world.entity.monster.Monster
@@ -144,6 +147,8 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
             it.put(ModEntities.HOLLOW_SOLDIER.get(), HollowSoldier.createAttributes().build())
             it.put(ModEntities.FALLEN_WARDEN.get(), FallenWarden.createAttributes().build())
             it.put(ModEntities.HILL_TROLL.get(), HillTroll.createAttributes().build())
+            it.put(ModEntities.DUSK_RIDER.get(), DuskRider.createAttributes().build())
+            it.put(ModEntities.SPECTRAL_STEED.get(), SpectralSteed.createAttributes().build())
         }
         // Hollow Soldiers spawn like other monsters, on the ground in the dark (biome_modifier/hollow_soldier.json)
         modBus.addListener(RegisterSpawnPlacementsEvent::class.java) {
@@ -184,6 +189,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
                     Sieges.tick(level)
                     if (level.dimension() == Level.OVERWORLD) HollowThrone.get(level).tick(level)
                     if (level.dimension() == Level.OVERWORLD) FieldBosses.get(level).tick(level)
+                    if (level.dimension() == Level.OVERWORLD) NightRiders.tick(level)
                 }
                 if (level.dimension() == Level.OVERWORLD) TownControl.tick(level)
             }

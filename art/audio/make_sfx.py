@@ -1295,6 +1295,349 @@ def troll_boulder(v, rng):
     return fit(outdoors(y, 0.14, seed=110 + v), ns(dur))
 
 
+# =========================================================================== dusk rider
+def horse_env(f):
+    """a whinny's spectral envelope: a thin fundamental, a bright nasal body round 1 to 3 kHz, dark above 4.5 kHz"""
+    f = np.maximum(f, 1.0)
+    e = 1 / (1 + (350 / f) ** 2) / np.sqrt(1 + (f / 4500) ** 4)
+    e = e * (1 + 1.0 * np.exp(-((f - 1200) / 500) ** 2) + 0.7 * np.exp(-((f - 2700) / 700) ** 2))
+    return e * (1 - 0.5 * np.exp(-((f - 1850) / 250) ** 2))
+
+
+def harmonics(f0, rng, env=horse_env, tilt=1.3, nmax=40, shimmer=0.0):
+    """an additive voice: every harmonic of the pitch curve f0, shaped by env as the pitch moves"""
+    n = len(f0)
+    ph = phase_from_freq(f0, n)
+    y = np.zeros(n)
+    for k in range(1, nmax + 1):
+        fk = f0 * k
+        if np.min(fk) > 11000:
+            break
+        a = env(fk) / k ** (tilt - 1.0) * (fk < 11000)
+        if shimmer:
+            a = a * (1 + shimmer * (2 * smooth_random(n / SR, rng, 18) - 1))
+        y += a * np.sin(k * ph + rng.uniform(0, 6.28))
+    return y
+
+
+def whinny(dur, rng, peak, end, hold=0.3, rise=0.07, trill_hz=(11.0, 8.0), trill_fm=(0.05, 0.09), trill_am=0.75,
+           g0=2.45, g0_gain=0.22, breath=0.06, nicker=3, rough=0.0):
+    """a horse's whinny: a quick rise to a shrill held note, a long shuddering fall, and a low 'huh-huh' to end on.
+    The second, higher voice riding on it (g0 times the pitch, wandering on its own) is what makes it a horse."""
+    nick = 0.1 * nicker
+    main = dur - nick
+    t = tvec(main)
+    u_fall = np.clip((t - hold) / (main - hold), 0, 1)
+    top = peak * (0.55 + 0.45 * np.sin(np.pi / 2 * np.clip(t / rise, 0, 1)))
+    centre = top * (1 - 0.07 * np.clip(t / hold, 0, 1)) * ((end / (peak * 0.93)) ** (u_fall ** 1.1))
+    rate = trill_hz[0] + (trill_hz[1] - trill_hz[0]) * u_fall
+    tph = phase_from_freq(rate, len(t)) + rng.uniform(0, 6)
+    on = np.clip((t - hold) / 0.12, 0, 1)
+    fm = (trill_fm[0] + (trill_fm[1] - trill_fm[0]) * u_fall) * on
+    vib = 1 + 0.012 * np.sin(2 * np.pi * 5.5 * t) * (1 - on)
+    f0 = centre * vib * (1 + fm * np.sin(tph)) * (1 + 0.004 * (2 * smooth_random(main, rng, 9) - 1))
+    v = harmonics(f0, rng, shimmer=0.15)
+    g = f0 * g0 * (1 + 0.03 * (2 * smooth_random(main, rng, 4) - 1))
+    v2 = harmonics(g, rng, env=lambda f: 1 / np.sqrt(1 + (f / 5000) ** 4), tilt=2.0, nmax=4)
+    am = 1 - trill_am * on * (0.5 - 0.5 * np.sin(tph))
+    if rough:  # a scream's rasp
+        am = am * (1 - rough * (0.5 + 0.5 * np.sin(phase_from_freq(f0 * 0.5, len(t)))))
+    env = np.clip(t / 0.025, 0, 1) * (1 - 0.45 * u_fall) * np.clip((main - t) / 0.06, 0, 1)
+    nz = tvf(colored(main, rng, -1.0), "bp", np.clip(f0 * 2.2, 400, 6000), 1.2)
+    y = (nrm(v) + g0_gain * nrm(v2) * (0.4 + 0.6 * np.clip(t / max(hold, 0.01), 0, 1)) + breath * nrm(nz)) * am * env
+    out = Mix(dur)
+    out.add(y, 0.0, 1.0)
+    for i in range(nicker):
+        d = 0.075
+        tt = tvec(d)
+        fp = end * 0.42 * (1 - 0.1 * i)
+        p = harmonics(np.full(len(tt), fp), rng, tilt=2.0) * 0.6 + 0.5 * nrm(tvf(colored(d, rng, -1.0), "bp", 800, 0.8))
+        p = lp(nrm(p), 1600) * np.sin(np.pi * tt / d) ** 1.5
+        out.add(nrm(p), main - 0.02 + i * 0.1, 0.32 * (0.8 ** i))
+    return nrm(fit(out.out(), ns(dur)))
+
+
+def spectral(x, rng, detune=0.007, delay=0.022, gain=0.35):
+    """the steed's ghost: a second voice a hair sharp and a beat late, and a hollow ring, as if from inside armour"""
+    ghost = varispeed(x, 1 + detune)
+    y = Mix(len(x) / SR + delay + 0.01)
+    y.add(x, 0.0, 1.0)
+    y.add(ghost, delay, gain)
+    return hollow(nrm(y.out()), delay=0.0042, fb=0.22, mix=0.15)
+
+
+def cold_air(x, wet=0.22, seed=150):
+    """night air over open ground, a little too long and too still: the rider's own space"""
+    return reverb(x, wet=wet, rt60=2.2, predelay=0.05, hf_damp=0.6, seed=seed, early_span=0.09)
+
+
+@recipe("dusk_rider/neigh", variants=3, fade_out=0.5, tail_db=-66)
+def rider_neigh(v, rng):
+    """a war-horse's challenge: shrill and rising, a long shuddering fall, a 'huh-huh' through the nose"""
+    dur = [2.2, 1.8, 2.4][v]
+    dv = [1.45, 1.0, 1.6][v]
+    peak, end = [(760, 330), (880, 460), (620, 260)][v]
+    y = whinny(dv, rng, peak, end, hold=[0.3, 0.18, 0.3][v], trill_hz=[(11.0, 8.0), (12.5, 10.0), (9.5, 7.0)][v],
+               trill_fm=[(0.05, 0.09), (0.04, 0.07), (0.06, 0.11)][v], g0=[2.45, 2.31, 2.58][v],
+               g0_gain=[0.22, 0.3, 0.18][v], nicker=[3, 2, 3][v], rough=[0.0, 0.25, 0.1][v])
+    m = Mix(dur)
+    m.add(spectral(y, rng), 0.0, 1.0)
+    return fit(cold_air(nrm(fit(m.out(), ns(dur))), 0.24, seed=150 + v), ns(dur))
+
+
+@recipe("dusk_rider/snort", variants=3, fade_out=0.25, max_len=[0.9, 0.8, 1.4])
+def rider_snort(v, rng):
+    """a hard snort, a double snort, or a long blow through fluttering nostrils; breath you can see"""
+    dur = [0.9, 0.8, 1.4][v]
+    m = Mix(dur)
+    shots = [[(0.0, 0.32, 1.0)], [(0.0, 0.16, 0.8), (0.21, 0.3, 1.0)], [(0.0, 0.9, 1.0)]][v]
+    for at, d, g in shots:
+        t = tvec(d)
+        rate = ([62, 70, 34][v]) * (1 + 0.2 * (2 * smooth_random(d, rng, 12) - 1))
+        flutter = (0.5 + 0.5 * np.sin(phase_from_freq(rate, len(t)))) ** [2, 2, 3][v]
+        src = colored(d, rng, -0.8) * (0.35 + 0.65 * flutter)
+        y = formants(src, "u", "uh", scale=0.78, curve=np.clip(t / d, 0, 1)) + 0.4 * hp(src, 1500)
+        env = np.clip(t / 0.012, 0, 1) * np.exp(-t / (d * [0.4, 0.45, 0.45][v]))
+        m.add(nrm(lp(y, 5500)) * env, at, g)
+    if v == 2:  # the lips loose at the end of a long blow
+        tl = tvec(0.25)
+        lips = glottal(0.25, 30 + 6 * tl, rng, jitter=0.15, shimmer=0.4, breath=0.9, fry=0.3)
+        m.add(nrm(lp(lips, 900)) * np.exp(-tl / 0.09), 0.7, 0.4)
+    y = nrm(fit(m.out(), ns(dur)))
+    return fit(cold_air(y, 0.16, seed=153 + v), ns(dur))
+
+
+def hoof(dur, rng, f_body, f_knock, hard=0.5, dirt=0.5):
+    """an iron-shod hoof meeting the ground: the weight of the horse behind a dull thud, the knock of horn and
+    iron, and earth spat out from under it"""
+    t = tvec(dur)
+    th = thump(dur, f_body, f_body * 0.45, rng, decay=0.05, click=0.1, noise=0.9, nlp=500)
+    ex = fit(burst(0.006, rng, 400, 9000, 0.0012), ns(dur))
+    knock = resonators(ex, [f_knock, f_knock * 1.71, f_knock * 2.63, f_knock * 4.1], [0.05, 0.035, 0.025, 0.012],
+                       [1.0, 0.6, 0.35, 0.2])
+    shoe = clank(min(dur, 0.12), f_knock * 3.3, rng, "plate", n=6, t60_lo=0.05, t60_hi=0.015, beat=0)
+    grit = crackle(dur, rng, 2500 * np.exp(-t / 0.02), decay=0.0009, f_lo=500, f_hi=5000)
+    m = Mix(dur)
+    m.add(nrm(drive(nrm(th), 1.8)), 0.0, 1.0)
+    m.add(nrm(knock), 0.0, 0.55 + 0.3 * hard)
+    m.add(fit(shoe, ns(dur)), 0.0, 0.12 * hard)
+    m.add(nrm(grit), 0.002, 0.4 * dirt)
+    return fit(m.out(), ns(dur))
+
+
+@recipe("dusk_rider/hoof", variants=4, fade_out=0.06, max_len=0.3)
+def rider_hoof(v, rng):
+    """one hoofbeat (its gaits play one for every hoof that lands)"""
+    dur = 0.3
+    fb, fk = [(118, 520), (104, 470), (126, 560), (110, 500)][v]
+    y = hoof(dur, rng, fb, fk, hard=[0.5, 0.35, 0.65, 0.45][v], dirt=[0.5, 0.65, 0.4, 0.55][v])
+    y = y + clods(dur, rng, 3, start=0.02, spread=0.05) * 0.2
+    return fit(outdoors(lp(y, 7000), 0.08, seed=157 + v), ns(dur))
+
+
+@recipe("dusk_rider/hurt", variants=3, fade_out=0.15, max_len=0.8)
+def rider_hurt(v, rng):
+    """the steed's shriek cut short, and the rider's empty armour ringing with the blow"""
+    dur = 0.8
+    dv = [0.36, 0.3, 0.42][v]
+    y = whinny(dv, rng, [980, 1080, 900][v], [620, 700, 540][v], hold=0.02, rise=0.02, trill_hz=(16.0, 14.0),
+               trill_fm=(0.03, 0.05), trill_am=0.4, g0=[2.29, 2.41, 2.18][v], g0_gain=0.35, nicker=0, rough=0.35)
+    m = Mix(dur)
+    m.add(spectral(y, rng, gain=0.25), 0.0, 1.0)
+    m.add(clank(0.5, [620, 700, 560][v], rng, "plate", n=11, t60_lo=0.4, t60_hi=0.06), 0.0, 0.35)
+    m.add(nrm(jingle(0.5, rng, 18, 2600, 8000, t60=(0.02, 0.06), start=0.0, spread=0.2)), 0.0, 0.18)
+    return fit(cold_air(nrm(fit(m.out(), ns(dur))), 0.14, seed=160 + v), ns(dur))
+
+
+@recipe("dusk_rider/death", variants=1, fade_out=0.8, tail_db=-70)
+def rider_death(v, rng):
+    """the steed's last scream sinking into a long, shuddering fall, the breath going out of it, and a cold sigh
+    as whatever held them together lets go"""
+    dur = 3.4
+    dv = 2.0
+    y = whinny(dv, rng, 840, 190, hold=0.22, trill_hz=(10.0, 5.5), trill_fm=(0.06, 0.13), trill_am=0.8, g0=2.33,
+               g0_gain=0.25, nicker=2, rough=0.15)
+    m = Mix(dur)
+    m.add(spectral(y, rng), 0.0, 1.0)
+    de = 0.9
+    te = tvec(de)
+    exh = formants(colored(de, rng, -1.2), "a", "u", scale=0.75) * np.clip(te / 0.08, 0, 1) * np.exp(-te / 0.3)
+    m.add(nrm(lp(exh, 2500)), dv - 0.1, 0.3)
+    sigh = spirit_pad(1.6, rng, [146.83, 174.61, 220.0], vowel="u") * bell(1.6, 0.35, 1.5, 2.2)
+    m.add(nrm(sigh), 1.5, 0.22)
+    return fit(cold_air(nrm(fit(m.out(), ns(dur))), 0.26, seed=164), ns(dur))
+
+
+@recipe("dusk_rider/swing", variants=2, fade_out=0.12, max_len=0.8)
+def rider_swing(v, rng):
+    """a halberd swung from horseback: a long haft through the air and the blade's edge singing on it"""
+    dur = 0.75
+    peak = [0.52, 0.58][v]
+    w = whoosh(dur, rng, peak=peak, f_lo=140, f_hi=[1500, 1700][v], q=0.85, power=2.3, rise=1.7, fall=1.3,
+               whistle=0.35, whistle_mult=1.6, whistle_q=14.0, body=0.8, body_lp=220, flutter_hz=[9, 11][v],
+               flutter_depth=0.35, color=-2.5)
+    s = bell(dur, peak, 1.7, 1.3)
+    rattle_ = clank(0.3, [1250, 1400][v], rng, "plate", n=7, t60_lo=0.08, t60_hi=0.02, beat=0)
+    m = Mix(dur)
+    m.add(nrm(w), 0.0, 1.0)
+    m.add(nrm(lp(brown(dur, rng), 110, order=4) * s ** 2), 0.0, 0.3)
+    m.add(rattle_, 0.02, 0.06)
+    return outdoors(fit(m.out(), ns(dur)), 0.1, seed=166 + v)
+
+
+@recipe("dusk_rider/slam", variants=2, fade_out=0.25, max_len=1.1)
+def rider_slam(v, rng):
+    """hooves brought down hard (or the halberd's blade into the ground): two blows, the earth breaking under
+    them and showering back"""
+    dur = 1.1
+    t = tvec(dur)
+    m = Mix(dur)
+    gap = [0.045, 0.03][v]
+    for i, (at, g) in enumerate(((0.0, 0.8), (gap, 1.0))):
+        th = thump(0.7, [92, 84][v] - 8 * i, 30, rng, decay=0.17, click=0.35, noise=1.0, nlp=600, sweep_curve=3.5)
+        m.add(nrm(lp(drive(nrm(th), 3.0), 2400)), at, g)
+        m.add(hoof(0.3, rng, 120, 480 + 40 * i, hard=0.8, dirt=0.8), at, 0.45 * g)
+    if v == 1:  # iron in the dirt
+        m.add(clank(0.7, 410, rng, "plate", n=12, t60_lo=0.55, t60_hi=0.08), gap, 0.18)
+    crunch = crackle(0.3, rng, 5000 * np.exp(-tvec(0.3) / 0.05), decay=0.0012, f_lo=200, f_hi=3500, size_var=1.0)
+    m.add(nrm(crunch), 0.003, 0.5)
+    rubble = crackle(dur, rng, 400 * np.exp(-t / 0.2) + 30 * np.exp(-t / 0.5), decay=0.003, f_lo=150, f_hi=2500)
+    m.add(nrm(rubble), 0.03, 0.45)
+    m.add(clods(dur, rng, 14, start=0.07, spread=0.22), 0.0, 0.35)
+    y = drive(nrm(fit(m.out(), ns(dur))), 1.4)
+    return fit(outdoors(y, 0.14, seed=168 + v), ns(dur))
+
+
+@recipe("dusk_rider/wisp", variants=2, fade_out=0.4, max_len=1.6)
+def rider_wisp(v, rng):
+    """the lantern giving up a wisp of cold light: a breath of cold air drawn in and let go, a few voices with
+    no throats, a glassy shimmer"""
+    dur = 1.6
+    m = Mix(dur)
+    rush = whoosh(0.9, rng, peak=0.55, f_lo=500, f_hi=4200, q=1.0, power=2.0, rise=1.8, fall=1.4, color=-1.5,
+                  doppler=0.0, whistle=0.25, whistle_mult=1.2, whistle_q=12.0)
+    m.add(nrm(rush), 0.0, 0.55)
+    chord = [[587.33, 698.46, 880.0], [554.37, 698.46, 830.61]][v]
+    voices = spirit_pad(1.4, rng, chord, vowel="o", vib=6.0) * bell(1.4, 0.3, 1.4, 2.0)
+    m.add(nrm(voices), 0.12, 0.35)
+    shimmer = sum(chime(1.2, f, rng, t60=0.9, bright=0.7) for f in ([1760.0, 2349.32, 2793.83], [1661.22, 2217.46, 2793.83])[v])
+    m.add(nrm(shimmer) * bell(1.2, 0.08, 1.2, 1.6), 0.4, 0.15)
+    y = m.buf[: ns(dur)]
+    return reverb(lp(y, 9000), wet=0.32, rt60=2.0, predelay=0.03, hf_damp=0.5, seed=170 + v)
+
+
+@recipe("dusk_rider/wisp_burst", variants=2, fade_out=0.35, max_len=1.2)
+def rider_wisp_burst(v, rng):
+    """a wisp breaking on something: cold light bursting with a hiss, a crackle of frost, the shimmer falling"""
+    dur = 1.2
+    t = tvec(dur)
+    m = Mix(dur)
+    pop = thump(0.3, [180, 160][v], 60, rng, decay=0.05, click=0.5, noise=0.6, nlp=1200)
+    m.add(nrm(pop), 0.0, 0.6)
+    hiss = whoosh(0.6, rng, peak=0.08, f_lo=1200, f_hi=6000, q=0.8, power=1.6, rise=0.8, fall=2.2, color=-0.5,
+                  doppler=0.0)
+    m.add(nrm(hiss), 0.0, 0.6)
+    frost = crackle(0.8, rng, 3000 * np.exp(-tvec(0.8) / 0.12), decay=0.0006, f_lo=2500, f_hi=12000, size_var=0.8)
+    m.add(nrm(frost), 0.005, 0.4)
+    fall = sum(chime(1.0, f, rng, t60=0.7, bright=0.8) for f in ([2349.32, 1760.0, 1396.91], [2217.46, 1661.22, 1396.91])[v])
+    m.add(nrm(fall) * np.exp(-tvec(1.0) / 0.35), 0.02, 0.2)
+    y = m.buf[: len(t)]
+    return reverb(lp(y, 11000), wet=0.28, rt60=1.6, predelay=0.02, hf_damp=0.5, seed=172 + v)
+
+
+@recipe("dusk_rider/ignite", variants=1, fade_out=0.8, tail_db=-70)
+def rider_ignite(v, rng):
+    """cold fire taking the steed: the night air sucked in, a great blue whoomph, the flames roaring up through
+    mane and tail, and something like a choir coming out of them"""
+    dur = 3.0
+    m = Mix(dur)
+    suck = whoosh(0.5, rng, peak=0.92, f_lo=300, f_hi=2600, q=0.8, power=2.2, rise=1.3, fall=0.6, color=-1.5,
+                  doppler=0.0)
+    m.add(nrm(suck), 0.0, 0.35)
+    boom = thump(1.2, 70, 28, rng, decay=0.35, click=0.2, noise=1.0, nlp=400, sweep_curve=3.0)
+    m.add(nrm(lp(drive(nrm(boom), 2.5), 1500)), 0.45, 0.85)
+    fd = 2.4
+    tf = tvec(fd)
+    s = bell(fd, 0.12, 0.9, 1.8)
+    fire = tvf(pink(fd, rng), "bp", 300 * 2 ** (2.6 * s), 0.7) * s ** 1.2 * (0.6 + 0.4 * smooth_random(fd, rng, 14))
+    roar = lp(brown(fd, rng), 170, order=4) * s
+    crk = crackle(fd, rng, 200 + 900 * s, decay=0.0008, f_lo=2000, f_hi=10000) * s
+    m.add(nrm(fire), 0.45, 0.9)
+    m.add(nrm(roar), 0.45, 0.5)
+    m.add(nrm(crk), 0.45, 0.25)
+    choir = spirit_pad(2.3, rng, [73.42, 146.83, 174.61, 220.0, 233.08], vowel="a", vib=5.2) * bell(2.3, 0.3, 1.5, 2.0)
+    m.add(nrm(choir), 0.55, 0.42)
+    ghost = sum(tvf(white(fd, rng), "bp", f * (1 + 0.1 * s), 26) for f in (1174.66, 1760.0, 2349.32)) * s ** 1.6
+    m.add(nrm(ghost), 0.45, 0.12)
+    y = drive(nrm(fit(m.out(), ns(dur))), 1.3)
+    return fit(hall(y, 0.22, rt60=2.4, seed=174), ns(dur))
+
+
+@recipe("dusk_rider/vanish", variants=1, fade_out=0.8, tail_db=-70)
+def rider_vanish(v, rng):
+    """dawn takes it: a long sigh going out of the world, the cold voices rising and thinning to nothing"""
+    dur = 3.0
+    m = Mix(dur)
+    sd = 1.8
+    ts = tvec(sd)
+    sigh = formants(colored(sd, rng, -1.0), "a", "u", scale=0.8, curve=np.clip(ts / sd, 0, 1))
+    m.add(nrm(lp(sigh, 3000)) * bell(sd, 0.25, 1.4, 2.0), 0.0, 0.5)
+    pd = 2.6
+    tp = tvec(pd)
+    rise = 1 + 0.5 * np.clip(tp / pd, 0, 1) ** 2
+    voices = np.zeros(len(tp))
+    for f in (293.66, 349.23, 440.0, 587.33):
+        ph = phase_from_freq(f * rise * (1 + 0.004 * np.sin(2 * np.pi * 5 * tp + rng.uniform(0, 6))), len(tp))
+        for k in range(1, 7):
+            voices += np.sin(k * ph + rng.uniform(0, 6)) / k ** 1.5
+    voices = formants(voices, "o", "i", scale=1.0) * bell(pd, 0.3, 1.4, 1.6)
+    m.add(nrm(voices), 0.1, 0.35)
+    shimmer = sum(chime(2.0, f, rng, t60=1.6, bright=0.5) for f in (1760.0, 2349.32, 2637.02, 3520.0))
+    m.add(nrm(shimmer) * bell(2.0, 0.15, 1.2, 1.8), 0.5, 0.14)
+    y = m.buf[: ns(dur)]
+    return reverb(lp(y, 9000), wet=0.38, rt60=2.8, predelay=0.03, hf_damp=0.45, seed=176)
+
+
+def brass(dur, rng, f0, loud, n=36):
+    """a horn's note: harmonics that open up as it's blown harder (loud, 0..1 per sample), lip buzz in the attack"""
+    t = tvec(dur)
+    f0 = np.broadcast_to(np.asarray(f0, dtype=float), (len(t),))
+    ph = phase_from_freq(f0 * (1 + 0.003 * (2 * smooth_random(dur, rng, 5) - 1)), len(t))
+    y = np.zeros(len(t))
+    bright = 2.0 + 9.0 * loud
+    for k in range(1, n + 1):
+        if np.max(f0) * k > 12000:
+            break
+        y += np.exp(-(k - 1) / bright) * np.sin(k * ph + rng.uniform(0, 6))
+    buzz = bp(white(dur, rng), 600, 3500) * np.exp(-t / 0.08) * 0.25
+    y = nrm(y) * loud + buzz * np.clip(loud * 3, 0, 1)
+    return eq(eq(y, "peak", 520, 1.2, 4.0), "peak", 1250, 1.5, 3.0)
+
+
+@recipe("dusk_rider/horn", variants=1, fade_out=1.5, tail_db=-72)
+def rider_horn(v, rng):
+    """the horn it sounds when it rides out for someone: a long, low call, a fifth and then the root, rolling back
+    off the hills"""
+    dur = 7.0
+    m = Mix(dur)
+    notes = [(0.0, 1.5, 110.0, 0.92), (1.45, 2.6, 73.42, 1.0)]
+    for at, d, f, g in notes:
+        t = tvec(d)
+        f0 = f * (1 - 0.06 * np.exp(-t / 0.05)) * (1 - 0.012 * np.clip((t - d + 0.5) / 0.5, 0, 1))
+        f0 = f0 * (1 + 0.004 * np.clip((t - 0.6) / 0.6, 0, 1) * np.sin(2 * np.pi * 5.0 * t))
+        loud = np.clip(t / 0.12, 0, 1) ** 1.5 * (0.85 + 0.15 * np.clip(t / 0.6, 0, 1))
+        loud = loud * np.clip((d - t) / 0.4, 0, 1) ** 1.2
+        m.add(brass(d, rng, f0, loud), at, g)
+    y = nrm(fit(m.out(), ns(dur)))
+    y = lp(y, 5000)
+    echo = Mix(dur)
+    echo.add(y, 0.0, 1.0)
+    for delay, g in ((0.38, 0.3), (0.83, 0.18), (1.4, 0.1)):
+        echo.add(lp(y, 2200), delay, g)
+    y = fit(echo.out(), ns(dur))
+    return fit(reverb(y, wet=0.4, rt60=3.6, predelay=0.06, hf_damp=0.65, seed=178, early_span=0.12), ns(dur))
+
+
 # =========================================================================== main
 def main():
     ap = argparse.ArgumentParser()

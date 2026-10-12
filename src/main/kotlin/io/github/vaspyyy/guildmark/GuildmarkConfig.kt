@@ -32,6 +32,9 @@ object GuildmarkConfig {
     val FIELD_BOSSES: ModConfigSpec.BooleanValue = BUILDER
         .comment("Field bosses in the wild: hill trolls asleep by the fires of their camps, found as players explore. Camps already built stay.")
         .define("fieldBosses", true)
+    val DUSK_RIDERS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Dusk Riders: now and then at night a horn sounds and a mounted field boss rides for a player out in the wild. It fades at dawn.")
+        .define("duskRiders", true)
     val HANDBOOK: ModConfigSpec.BooleanValue = BUILDER
         .comment("Give new players the Adventurer's Handbook.")
         .define("handbookOnJoin", true)

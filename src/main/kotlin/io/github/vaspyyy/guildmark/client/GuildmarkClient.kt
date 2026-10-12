@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.client
 
 import io.github.vaspyyy.guildmark.client.model.RivalModel
+import io.github.vaspyyy.guildmark.client.model.DuskRiderModel
 import io.github.vaspyyy.guildmark.client.model.FallenWardenModel
 import io.github.vaspyyy.guildmark.client.model.HillTrollModel
 import io.github.vaspyyy.guildmark.client.model.HollowSoldierModel
@@ -146,6 +147,9 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
             event.registerEntityRenderer(ModEntities.HILL_TROLL.get(), ::HillTrollRenderer)
             event.registerEntityRenderer(ModEntities.TROLL_BOULDER.get()) { ThrownItemRenderer(it, 3.0f, false) }
             event.registerEntityRenderer(ModEntities.LOST_MARKS.get(), ::LostMarksRenderer)
+            event.registerEntityRenderer(ModEntities.DUSK_RIDER.get(), ::DuskRiderRenderer)
+            event.registerEntityRenderer(ModEntities.LANTERN_WISP.get()) { ThrownItemRenderer(it, 1.2f, true) }
+            event.registerEntityRenderer<net.minecraft.world.entity.animal.equine.AbstractHorse>(ModEntities.SPECTRAL_STEED.get(), ::SpectralSteedRenderer)
         }
         modBus.addListener(EntityRenderersEvent.RegisterLayerDefinitions::class.java) { event ->
             event.registerLayerDefinition(StoryNpcModel.LAYER, StoryNpcModel::createBodyLayer)
@@ -154,6 +158,7 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
             event.registerLayerDefinition(HollowSoldierModel.LAYER, HollowSoldierModel::createBodyLayer)
             event.registerLayerDefinition(FallenWardenModel.LAYER, FallenWardenModel::createBodyLayer)
             event.registerLayerDefinition(HillTrollModel.LAYER, HillTrollModel::createBodyLayer)
+            event.registerLayerDefinition(DuskRiderModel.LAYER, DuskRiderModel::createBodyLayer)
         }
         modBus.addListener(RegisterGuiLayersEvent::class.java) { event ->
             event.registerAbove(VanillaGuiLayers.EFFECTS, ContractTracker.ID, ContractTracker)

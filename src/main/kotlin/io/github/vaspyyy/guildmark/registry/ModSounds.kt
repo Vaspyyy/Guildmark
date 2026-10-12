@@ -80,7 +80,21 @@ object ModSounds {
     val TROLL_THROW = sound("hill_troll.throw")
     val TROLL_BOULDER = sound("hill_troll.boulder")
 
+    val RIDER_NEIGH = sound("dusk_rider.neigh")
+    val RIDER_SNORT = sound("dusk_rider.snort")
+    val RIDER_HOOF = sound("dusk_rider.hoof")
+    val RIDER_HURT = sound("dusk_rider.hurt")
+    val RIDER_DEATH = sound("dusk_rider.death")
+    val RIDER_HORN = sound("dusk_rider.horn")
+    val RIDER_SWING = sound("dusk_rider.swing")
+    val RIDER_SLAM = sound("dusk_rider.slam")
+    val RIDER_WISP = sound("dusk_rider.wisp")
+    val RIDER_WISP_BURST = sound("dusk_rider.wisp_burst")
+    val RIDER_IGNITE = sound("dusk_rider.ignite")
+    val RIDER_VANISH = sound("dusk_rider.vanish")
+
     val MUSIC_WARDEN = sound("music.fallen_warden")
     val MUSIC_WARDEN_2 = sound("music.fallen_warden_2")
     val MUSIC_FIELD_BOSS = sound("music.field_boss")
+    val MUSIC_DUSK_RIDER = sound("music.dusk_rider")
 }

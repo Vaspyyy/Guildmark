@@ -361,6 +361,8 @@ def compose_phase1():
     ohh = s.part("ohh", 53, "choir", pan=74, volume=100, hum=0.02)
     timp = s.part("timp", 47, "perc", pan=58, volume=112, hum=0.005, vjit=3)
     taiko = s.part("taiko", 116, "perc", pan=66, volume=100, hum=0.005, vjit=4)
+    # Drum kit 48 is FluidR3's Orchestra Kit: 35/36 bass drum, 38 snare, 55 splash, 57/59 crash; 41 to 53 are
+    # tuned timpani (45 is A, 49 is C#), not toms or cymbals
     kit = s.part("kit", 48, "perc", drum=True, pan=64, volume=104, hum=0.004, vjit=4)
     harp = s.part("harp", 46, "color", pan=28, volume=96, hum=0.008)
     bells = s.part("bells", 14, "color", pan=62, volume=80)
@@ -1158,7 +1160,7 @@ def compose_field_boss():
     roll(timp, s, s.b(36), 3.5, T(36), 44, 116)
 
     for bar in (5, 13, 21, 25, 33):
-        kit.n(s.b(bar), 2, 49 if bar != 33 else 57, 108)
+        kit.n(s.b(bar), 2, 55 if bar == 21 else 57, 108)
     for bar in range(1, 37):
         kit.n(s.b(bar), 1, 36, V(70, 104)(bar))
         if bar >= 5:
@@ -1174,6 +1176,185 @@ FIELD_MIX = {"low": (3.0, 0.15), "high": (1.0, 0.3), "brass": (-2.0, 0.24), "cho
              "perc": (2.5, 0.16)}
 
 
+# ================================================================== the dusk rider
+RIDER_CALL = "A3:4 D3:2 D3:6 A3:4 D3:1 F3:1 E3:4 C#3:2"  # the rider's horn: a fifth down, then the leading tone
+
+
+def compose_dusk_rider():
+    """The Dusk Rider's ride: D minor in 6/8 at a gallop (a beat here is an eighth note). Its horn call (the
+    fifth A to D, as the horn in the game sounds it) opens and closes the piece; the strings never stop
+    galloping (long-short, long-short), with a lament bass falling D C Bb A under the horns' theme. The
+    middle opens out over Bb and F, then everything stops dead on the beat while a cor anglais mourns
+    over the choir, before the gallop comes back with the theme in octaves. It ends on A, so the loop
+    falls back home to D."""
+    s = Song("dusk_rider", bpm=216, bars=36, bpb=6, tail=1.4)
+    prog = (["Dm", "Dm", "Dm", "A"]
+            + ["Dm", "C", "Bb", "A", "Dm", "C", "Gm", "A"]
+            + ["Bb", "F", "Gm", "Dm", "Bb", "F", "Gm", "A"]
+            + ["Bb", "Gm", "A", "A"]
+            + ["Dm", "C", "Bb", "A", "Dm", "C", "Gm", "A"]
+            + ["Dm", "Dm", "Dm", "A"])
+    assert len(prog) == 36
+    INTRO = [1, 2, 3, 4]
+    A = list(range(5, 13))
+    B = list(range(13, 21))
+    BRIDGE = list(range(21, 25))
+    A2 = list(range(25, 33))
+    OUT = list(range(33, 37))
+    GALLOP = A + B + A2 + OUT
+
+    cb = s.part("cb", 43, "low", pan=86, volume=112, hum=0.005, vjit=4)
+    vc = s.part("vc", 42, "low", pan=74, volume=104, hum=0.006, vjit=4)
+    lowtrem = s.part("lowtrem", 44, "low", pan=70, volume=96, hum=0.01)
+    vla = s.part("vla", 48, "high", pan=58, volume=96, hum=0.006, vjit=4)
+    vn = s.part("vn", 48, "high", pan=40, volume=100, hum=0.008, vjit=4)
+    pad = s.part("pad", 49, "high", pan=50, volume=90, hum=0.02)
+    trem = s.part("trem", 44, "high", pan=34, volume=86, hum=0.01)
+    hn1 = s.part("hn1", 60, "brass", pan=42, volume=112, lag=0.012)
+    hn2 = s.part("hn2", 60, "brass", pan=54, volume=104, lag=0.014)
+    tpt = s.part("tpt", 56, "brass", pan=62, volume=92, lag=0.008)
+    tbn = s.part("tbn", 57, "brass", pan=78, volume=106, lag=0.01)
+    tuba = s.part("tuba", 58, "brass", pan=88, volume=100, lag=0.01)
+    ca = s.part("ca", 69, "high", pan=46, volume=100, hum=0.012)
+    ohh = s.part("ohh", 53, "choir", pan=70, volume=98, hum=0.02)
+    ahh = s.part("ahh", 52, "choir", pan=56, volume=104, hum=0.02)
+    timp = s.part("timp", 47, "perc", pan=58, volume=112, hum=0.004, vjit=3)
+    taiko = s.part("taiko", 116, "perc", pan=64, volume=110, hum=0.004, vjit=4)
+    kit = s.part("kit", 48, "perc", drum=True, pan=64, volume=104, hum=0.004, vjit=4)
+
+    inten = np.interp(np.arange(1, 37), [1, 4, 5, 12, 13, 20, 21, 24, 25, 32, 33, 36],
+                      [.45, .62, .7, .8, .74, .86, .6, .9, .92, 1.0, .72, .8])
+
+    def V(lo, hi):
+        return lambda bar: lo + (hi - lo) * inten[bar - 1]
+
+    def root(bar, lo, hi):
+        return in_range(pcs(prog[bar - 1])[0], lo, hi)
+
+    def fifth(bar, lo, hi):
+        return in_range(pcs(prog[bar - 1])[2], lo, hi)
+
+    def brass_bed(bars, vel):
+        """the tuba on the root, the trombones holding the harmony above it"""
+        for bar in bars:
+            tuba.n(s.b(bar), 6.1, root(bar, 31, 42), vel(bar))
+        pads([(tbn, [0, 1])], s, bars, prog, [(45, 56), (50, 62)], vel, dur_beats=6)
+
+    # ---- the gallop: contrabasses long-short on the root, cellos turning on root and fifth in eighths
+    for bar in GALLOP:
+        r = root(bar, 29, 40)
+        v = V(64, 104)(bar)
+        for at, d, a in ((0, 1.8, 14), (2, 0.9, 0), (3, 1.8, 10), (5, 0.9, 0)):
+            cb.n(s.b(bar) + at, d, r, v + a)
+        r2 = root(bar, 41, 52)
+        f2 = fifth(bar, r2, r2 + 11)
+        for i, q in enumerate((r2, r2, f2, r2 + 12, f2, r2)):
+            vc.n(s.b(bar) + i, 0.85, q, V(56, 92)(bar) + (14 if i in (0, 3) else 0))
+    # the violas join the gallop in the second half of each section, a sixth above the cellos
+    for bar in A[4:] + B + A2 + OUT[:2]:
+        r = root(bar, 50, 61)
+        third = pcs(prog[bar - 1])[1]
+        t3 = in_range(third, r, r + 11)
+        for i, q in enumerate((r, t3, r, r, t3, r + 12 if bar in A2 else r)):
+            vla.n(s.b(bar) + i, 0.8, q, V(50, 84)(bar) + (12 if i in (0, 3) else 0))
+
+    # ---- intro and outro: a low tremolo on D under the rider's horn, and the first hoofbeats
+    for bar in INTRO:
+        lowtrem.n(s.b(bar), 6.1, root(bar, 38, 49), 60 + 8 * (bar - 1))
+    lowtrem.expr([(0, 40), (s.b(4, 6), 118)])
+    hn1.line(s.b(1), RIDER_CALL, 84, tr=12, leg=0.98)
+    hn2.line(s.b(1), RIDER_CALL, 76, leg=0.98)
+    hn1.expr([(0, 70), (s.b(2), 100), (s.b(3), 76), (s.b(4, 6), 116)])
+    hn2.expr([(0, 70), (s.b(2), 100), (s.b(3), 76), (s.b(4, 6), 116)])
+    hn1.line(s.b(33), RIDER_CALL, 96, tr=12, leg=0.98)
+    hn2.line(s.b(33), RIDER_CALL, 90, leg=0.98)
+    tbn.line(s.b(33), "D3:12 D3:6 C#3:6", 82, leg=0.98)
+    tuba.line(s.b(33), "D2:18 A1:6", 78, leg=0.98)
+
+    # ---- A: the horns' theme over the falling bass, trombones holding the harmony
+    theme = ("D4:2 A3:1 D4:2 F4:1 E4:2 D4:1 E4:2 G4:1 F4:2 E4:1 D4:2 Bb3:1 A3:3 C#4:3 "
+             "D4:2 A3:1 D4:2 F4:1 G4:2 F4:1 E4:2 C4:1 D4:2 Bb3:1 G3:2 Bb3:1 A3:6")
+    hn1.line(s.b(5), theme, 96, leg=0.97, accent=8)
+    hn2.line(s.b(5), theme, 88, tr=-12, leg=0.97)
+    for p_ in (hn1, hn2):
+        p_.expr([(s.b(5), 100), (s.b(9), 112), (s.b(12, 6), 104), (s.b(13), 96)])
+    brass_bed(A, V(52, 76))
+
+    # ---- B: the trumpet and violins take a wider tune over Bb and F; the choir comes in underneath
+    tuneB = ("F4:3 D5:3 C5:2 A4:1 F4:3 G4:2 A4:1 Bb4:2 D5:1 A4:6 "
+             "F4:3 D5:3 C5:2 A4:1 C5:2 F5:1 G5:2 F5:1 D5:2 Bb4:1 A4:3 C#5:3")
+    tpt.line(s.b(13), tuneB, 90, leg=0.97, accent=6)
+    vn.line(s.b(13), tuneB, 84, leg=1.0)
+    tpt.expr([(s.b(13), 96), (s.b(16), 112), (s.b(17), 100), (s.b(20, 6), 120)])
+    hn1.line(s.b(13), "D4:6 C4:6 Bb3:6 A3:6 D4:6 C4:6 Bb3:6 C#4:6", 80, leg=0.99)
+    hn2.line(s.b(13), "Bb3:6 A3:6 G3:6 F3:6 Bb3:6 A3:6 G3:6 E3:6", 76, leg=0.99)
+    choir_rng = [(48, 60), (53, 64), (57, 69), (62, 74)]
+    pads([(ohh, [0, 1, 2, 3])], s, B, prog, choir_rng, V(42, 78), dur_beats=6)
+    swell(ohh, s, B, lo=64, hi=112)
+    pads([(pad, [1, 2, 3])], s, B, prog, [(50, 62), (55, 67), (60, 72), (64, 76)], V(40, 70), dur_beats=6)
+
+    # ---- the bridge: everything stops dead on the beat; a cor anglais mourns over the choir
+    for bar in BRIDGE:
+        r = root(bar, 29, 40)
+        for p_, q, v in ((cb, r, 104), (tuba, r + 12, 96), (tbn, r + 24, 92), (vc, r + 12, 96)):
+            p_.n(s.b(bar), 1.2, q, v + (bar - 21) * 4)
+    tv = voice_lead([prog[b - 1] for b in BRIDGE], [(62, 72), (67, 77)])
+    for bar, voicing in zip(BRIDGE, tv):
+        trem.chord(s.b(bar), 6.05, voicing, 60 + (bar - 21) * 10)
+    trem.expr([(s.b(21), 60), (s.b(24, 6), 124)])
+    ca.line(s.b(21), "F5:3 E5:2 D5:1 D5:3 C5:2 Bb4:1 Bb4:2 A4:1 G4:2 F4:1 E4:4 C#4:2", 92, leg=1.0)
+    ca.expr([(s.b(21), 96), (s.b(22), 110), (s.b(23), 100), (s.b(24, 4), 116), (s.b(25) - 0.1, 90)])
+    pads([(ahh, [0, 1, 2, 3])], s, BRIDGE, prog, choir_rng, V(54, 96), dur_beats=6)
+    swell(ahh, s, BRIDGE, lo=60, hi=120, every=4, shape="cresc")
+
+    # ---- A again: the theme in octaves on horns, trumpet and violins, the choir crying over it
+    hn1.line(s.b(25), theme, 104, leg=0.97, accent=10)
+    hn2.line(s.b(25), theme, 96, tr=-12, leg=0.97)
+    tpt.line(s.b(25), theme, 92, tr=12, leg=0.96, accent=6)
+    vn.line(s.b(25), theme, 88, tr=12, leg=1.0)
+    for p_ in (hn1, hn2, tpt):
+        p_.expr([(s.b(25), 108), (s.b(29), 118), (s.b(31), 124), (s.b(32, 6), 112)])
+    brass_bed(A2, V(60, 88))
+    pads([(ahh, [0, 1, 2, 3])], s, A2, prog, choir_rng, V(60, 100), dur_beats=6)
+    swell(ahh, s, A2, lo=76, hi=122)
+
+    # ---- percussion: the hoofbeats never stop until the bridge
+    for bar in range(2, 37):
+        if bar in BRIDGE:
+            taiko.n(s.b(bar), 1, "D2", 110)
+            continue
+        v = V(70, 116)(bar)
+        taiko.n(s.b(bar), 1, "D2", v)
+        taiko.n(s.b(bar, 4), 1, "D2", v - 8)
+        if bar >= 5:
+            kit.n(s.b(bar, 3), 0.5, 38, v - 46)
+            kit.n(s.b(bar, 6), 0.5, 38, v - 40)
+    T = lambda bar: root(bar, 38, 49)  # noqa: E731
+    for bar in GALLOP:
+        if bar in (12, 20, 32, 36):
+            continue
+        timp.n(s.b(bar), 2.6, T(bar), V(72, 108)(bar))
+        timp.n(s.b(bar, 4), 2.0, fifth(bar, 40, 51), V(62, 96)(bar))
+    roll(timp, s, s.b(4), 6, T(4), 40, 112, rate=0.25)
+    roll(timp, s, s.b(12, 4), 3, T(12), 56, 108, rate=0.25)
+    roll(timp, s, s.b(20, 1), 6, T(20), 50, 116, rate=0.25)
+    roll(timp, s, s.b(24), 6, T(24), 50, 124, rate=0.25)
+    roll(timp, s, s.b(32, 4), 3, T(32), 60, 112, rate=0.25)
+    roll(timp, s, s.b(36), 5.5, T(36), 44, 114, rate=0.25)
+    # (in the orchestra kit 41-53 are tuned timpani, so the cymbals are 55 splash and 57 crash)
+    for bar in (5, 13, 25):
+        kit.n(s.b(bar), 4, 57, 106)
+    for bar in BRIDGE:
+        kit.n(s.b(bar), 4, 57 if bar % 2 else 55, 90 + (bar - 21) * 8)
+    roll(kit, s, s.b(12, 4), 3, 38, 40, 100, rate=0.25)
+    roll(kit, s, s.b(24, 1), 6, 38, 36, 118, rate=0.25)
+    return s
+
+
+RIDER_MIX = {"low": (3.0, 0.16), "high": (0.5, 0.32), "brass": (-1.5, 0.26), "choir": (2.0, 0.4),
+             "perc": (2.0, 0.16)}
+
+
 # ================================================================== driver
 PIECES = {
     "fallen_warden": dict(fn=compose_phase1, mix=PHASE1_MIX, out="music/fallen_warden", ir=(2.4, 101),
@@ -1181,6 +1362,8 @@ PIECES = {
     "fallen_warden_2": dict(fn=compose_phase2, mix=PHASE2_MIX, out="music/fallen_warden_2", ir=(2.1, 102),
                             fade_out=1.0, quality=5),
     "field_boss": dict(fn=compose_field_boss, mix=FIELD_MIX, out="music/field_boss", ir=(2.0, 105),
+                       fade_out=1.0, quality=5),
+    "dusk_rider": dict(fn=compose_dusk_rider, mix=RIDER_MIX, out="music/dusk_rider", ir=(2.2, 106),
                        fade_out=1.0, quality=5),
     "boss_appear": dict(fn=compose_boss_appear, mix=STINGER_MIX, out="ui/boss_appear", ir=(2.6, 103),
                         fade_out=0.45, quality=6, length=3.0),

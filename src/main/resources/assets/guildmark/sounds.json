@@ -243,6 +243,14 @@
       }
     ]
   },
+  "music.dusk_rider": {
+    "sounds": [
+      {
+        "name": "guildmark:music/dusk_rider",
+        "stream": true
+      }
+    ]
+  },
   "ui.open": {
     "sounds": [
       "guildmark:ui/open1"
@@ -905,5 +913,90 @@
       "guildmark:hill_troll/boulder2"
     ],
     "subtitle": "subtitles.guildmark.hill_troll.boulder"
+  },
+  "dusk_rider.neigh": {
+    "sounds": [
+      "guildmark:dusk_rider/neigh1",
+      "guildmark:dusk_rider/neigh2",
+      "guildmark:dusk_rider/neigh3"
+    ],
+    "subtitle": "subtitles.guildmark.dusk_rider.neigh"
+  },
+  "dusk_rider.snort": {
+    "sounds": [
+      "guildmark:dusk_rider/snort1",
+      "guildmark:dusk_rider/snort2",
+      "guildmark:dusk_rider/snort3"
+    ],
+    "subtitle": "subtitles.guildmark.dusk_rider.snort"
+  },
+  "dusk_rider.hoof": {
+    "sounds": [
+      "guildmark:dusk_rider/hoof1",
+      "guildmark:dusk_rider/hoof2",
+      "guildmark:dusk_rider/hoof3",
+      "guildmark:dusk_rider/hoof4"
+    ],
+    "subtitle": "subtitles.guildmark.dusk_rider.hoof"
+  },
+  "dusk_rider.hurt": {
+    "sounds": [
+      "guildmark:dusk_rider/hurt1",
+      "guildmark:dusk_rider/hurt2",
+      "guildmark:dusk_rider/hurt3"
+    ],
+    "subtitle": "subtitles.guildmark.dusk_rider.hurt"
+  },
+  "dusk_rider.death": {
+    "sounds": [
+      "guildmark:dusk_rider/death1"
+    ],
+    "subtitle": "subtitles.guildmark.dusk_rider.death"
+  },
+  "dusk_rider.horn": {
+    "sounds": [
+      "guildmark:dusk_rider/horn1"
+    ],
+    "subtitle": "subtitles.guildmark.dusk_rider.horn"
+  },
+  "dusk_rider.swing": {
+    "sounds": [
+      "guildmark:dusk_rider/swing1",
+      "guildmark:dusk_rider/swing2"
+    ],
+    "subtitle": "subtitles.guildmark.dusk_rider.swing"
+  },
+  "dusk_rider.slam": {
+    "sounds": [
+      "guildmark:dusk_rider/slam1",
+      "guildmark:dusk_rider/slam2"
+    ],
+    "subtitle": "subtitles.guildmark.dusk_rider.slam"
+  },
+  "dusk_rider.wisp": {
+    "sounds": [
+      "guildmark:dusk_rider/wisp1",
+      "guildmark:dusk_rider/wisp2"
+    ],
+    "subtitle": "subtitles.guildmark.dusk_rider.wisp"
+  },
+  "dusk_rider.wisp_burst": {
+    "sounds": [
+      "guildmark:dusk_rider/wisp_burst1",
+      "guildmark:dusk_rider/wisp_burst2"
+    ],
+    "subtitle": "subtitles.guildmark.dusk_rider.wisp_burst"
+  },
+  "dusk_rider.ignite": {
+    "sounds": [
+      "guildmark:dusk_rider/ignite1"
+    ],
+    "subtitle": "subtitles.guildmark.dusk_rider.ignite"
+  },
+  "dusk_rider.vanish": {
+    "sounds": [
+      "guildmark:dusk_rider/vanish1"
+    ],
+    "subtitle": "subtitles.guildmark.dusk_rider.vanish"
   }
 }
