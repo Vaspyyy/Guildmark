@@ -1158,6 +1158,7 @@
   "guildmark.configuration.payMultiplier": "Contract Pay Multiplier",
   "guildmark.configuration.xpMultiplier": "Guild XP Multiplier",
   "guildmark.configuration.autoPlaceBoards": "Quest Boards in Villages",
+  "guildmark.configuration.wardfires": "Wardfires in the World",
   "guildmark.configuration.handbookOnJoin": "Handbook for New Players",
   "guildmark.configuration.sieges": "Village Sieges",
   "guildmark.configuration.siegeChancePercent": "Nightly Siege Chance (%)",

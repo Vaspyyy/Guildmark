@@ -23,6 +23,9 @@ object GuildmarkConfig {
     val AUTO_BOARDS: ModConfigSpec.BooleanValue = BUILDER
         .comment("Place a Quest Board in every village players come near.")
         .define("autoPlaceBoards", true)
+    val WARDFIRES: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Raise Wardfires in the world: by every village players come near, outside lairs and the Hollow Throne, and here and there in newly explored wilds.")
+        .define("wardfires", true)
     val HANDBOOK: ModConfigSpec.BooleanValue = BUILDER
         .comment("Give new players the Adventurer's Handbook.")
         .define("handbookOnJoin", true)

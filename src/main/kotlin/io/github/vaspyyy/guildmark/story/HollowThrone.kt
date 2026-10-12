@@ -10,6 +10,7 @@ import io.github.vaspyyy.guildmark.progression.AdventurerRank
 import io.github.vaspyyy.guildmark.progression.Progression
 import io.github.vaspyyy.guildmark.registry.ModEntities
 import io.github.vaspyyy.guildmark.registry.ModItems
+import io.github.vaspyyy.guildmark.wardfire.WardfireSites
 import it.unimi.dsi.fastutil.ints.IntList
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
@@ -58,7 +59,7 @@ import kotlin.math.sqrt
  * dais, the throne at its north edge and the Shattering Stone (a lodestone) at its heart. Using the
  * stone with all seven shards wakes the King.
  */
-class HollowThrone(var altar: Optional<BlockPos> = Optional.empty(), var defeated: Int = 0) : SavedData() {
+class HollowThrone(var altar: Optional<BlockPos> = Optional.empty(), var defeated: Int = 0, var fire: Boolean = false) : SavedData() {
     /** The King currently walking, if any. Not saved: the entity saves itself. */
     private var king: UUID? = null
 
@@ -142,6 +143,12 @@ class HollowThrone(var altar: Optional<BlockPos> = Optional.empty(), var defeate
     fun tick(level: ServerLevel) {
         val altar = altar.orElse(null) ?: return
         if (level.chunkSource.getChunkNow(altar.x shr 4, altar.z shr 4) == null) return
+        // The last Wardfire before the King, raised the first time anyone comes near (thrones from before Wardfires too)
+        if (!fire && WardfireSites.enabled()) {
+            fire = true
+            setDirty()
+            if (!WardfireSites.near(level, altar, 40)) WardfireSites.placeNear(level, altar, RADIUS + 10, RADIUS + 18)
+        }
         val living = king?.let { level.getEntity(it) } as? HollowKing
         if (king != null && living == null) king = null
         val maren = level.getEntitiesOfClass(StoryNpc::class.java, net.minecraft.world.phys.AABB(altar).inflate(40.0)) { it.character == StoryCharacter.MAREN.id }.firstOrNull()
@@ -212,7 +219,8 @@ class HollowThrone(var altar: Optional<BlockPos> = Optional.empty(), var defeate
             i.group(
                 BlockPos.CODEC.optionalFieldOf("altar").forGetter { it.altar },
                 Codec.INT.optionalFieldOf("defeated", 0).forGetter { it.defeated },
-            ).apply(i) { altar, defeated -> HollowThrone(altar, defeated) }
+                Codec.BOOL.optionalFieldOf("fire", false).forGetter { it.fire },
+            ).apply(i) { altar, defeated, fire -> HollowThrone(altar, defeated, fire) }
         }
 
         private val TYPE = SavedDataType(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "hollow_throne"), Supplier { HollowThrone() }, CODEC)

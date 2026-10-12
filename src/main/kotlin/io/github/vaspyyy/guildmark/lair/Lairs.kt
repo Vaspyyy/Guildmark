@@ -12,6 +12,7 @@ import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.registry.ModItems
 import io.github.vaspyyy.guildmark.story.Courtier
 import io.github.vaspyyy.guildmark.story.MainQuest
+import io.github.vaspyyy.guildmark.wardfire.WardfireSites
 import net.minecraft.core.BlockPos
 import net.minecraft.core.UUIDUtil
 import net.minecraft.core.registries.BuiltInRegistries
@@ -106,6 +107,8 @@ class Lairs(val lairs: MutableList<Lair> = mutableListOf()) : SavedData() {
             if (!level.getFluidState(top.below()).isEmpty || !level.getFluidState(top).isEmpty) return@repeat
             val lair = Lair((lairs.maxOfOrNull { it.id } ?: 0) + 1, top, theme, rank, shard = shard)
             buildArena(level, lair)
+            // A Wardfire on the way in, beyond where the lair wakes
+            if (WardfireSites.enabled() && !WardfireSites.near(level, top, 40)) WardfireSites.placeNear(level, top, 24, 32)
             lairs.add(lair)
             setDirty()
             return lair

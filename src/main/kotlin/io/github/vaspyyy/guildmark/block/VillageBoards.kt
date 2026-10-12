@@ -8,6 +8,7 @@ import io.github.vaspyyy.guildmark.road.RoadNetwork
 import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.registry.ModBlocks
 import io.github.vaspyyy.guildmark.registry.ModVillagers
+import io.github.vaspyyy.guildmark.wardfire.WardfireSites
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.core.particles.ParticleTypes
@@ -122,19 +123,27 @@ object VillageBoards {
     }
 
 
-    /** Called periodically per player: give each nearby village without a board one, once. */
+    /** Called periodically per player: give each nearby village without a board one, and a Wardfire, once. */
     fun checkNearbyVillages(level: ServerLevel, around: BlockPos) {
-        if (!GuildmarkConfig.AUTO_BOARDS.get()) return
+        val boards = GuildmarkConfig.AUTO_BOARDS.get()
+        val fires = GuildmarkConfig.WARDFIRES.get()
+        if (!boards && !fires) return
         val poi = level.poiManager
         val bells = poi.findAll({ it.`is`(PoiTypes.MEETING) }, { true }, around, BELL_SEARCH_RADIUS, PoiManager.Occupancy.ANY).toList()
         for (bell in bells) {
             val chunk = level.getChunkAt(bell)
-            if (chunk.getData(ModAttachments.VILLAGE_BOARD_CHECKED)) continue
-            chunk.setData(ModAttachments.VILLAGE_BOARD_CHECKED, true)
-            chunk.markUnsaved()
-
-            val hasBoard = poi.getCountInRange({ it.`is`(ModVillagers.GUILDMASTER_POI.key!!) }, bell, VILLAGE_BOARD_RADIUS, PoiManager.Occupancy.ANY) > 0
-            if (!hasBoard) placeNear(level, bell)
+            if (boards && !chunk.getData(ModAttachments.VILLAGE_BOARD_CHECKED)) {
+                chunk.setData(ModAttachments.VILLAGE_BOARD_CHECKED, true)
+                chunk.markUnsaved()
+                val hasBoard = poi.getCountInRange({ it.`is`(ModVillagers.GUILDMASTER_POI.key!!) }, bell, VILLAGE_BOARD_RADIUS, PoiManager.Occupancy.ANY) > 0
+                if (!hasBoard) placeNear(level, bell)
+            }
+            // Villages from before Wardfires get theirs too
+            if (fires && !chunk.getData(ModAttachments.WARDFIRE_CHECKED)) {
+                chunk.setData(ModAttachments.WARDFIRE_CHECKED, true)
+                chunk.markUnsaved()
+                WardfireSites.forVillage(level, bell)
+            }
         }
     }
 

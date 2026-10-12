@@ -29,6 +29,11 @@ object ModAttachments {
         AttachmentType.builder { -> false }.serialize(Codec.BOOL.fieldOf("checked")).build()
     }
 
+    /** Set on a village's bell chunk once the village has been given its Wardfire (or found to have one). */
+    val WARDFIRE_CHECKED: DeferredHolder<AttachmentType<*>, AttachmentType<Boolean>> = ATTACHMENTS.register("wardfire_checked") { ->
+        AttachmentType.builder { -> false }.serialize(Codec.BOOL.fieldOf("checked")).build()
+    }
+
     /** Day index a villager last pinned a note, so each villager posts at most once a day. */
     val LAST_PINNED_DAY: DeferredHolder<AttachmentType<*>, AttachmentType<Long>> = ATTACHMENTS.register("last_pinned_day") { ->
         AttachmentType.builder { -> -1L }.serialize(Codec.LONG.fieldOf("day")).build()

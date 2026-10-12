@@ -30,6 +30,11 @@ object ModVillagers {
         PoiType(states, 1, 1)
     }
 
+    /** Every Wardfire, lit or cold, so a village or lair can tell whether one already stands near. Nobody works there. */
+    val WARDFIRE_POI: DeferredHolder<PoiType, PoiType> = POI_TYPES.register("wardfire") { ->
+        PoiType(ModBlocks.WARDFIRE.get().stateDefinition.possibleStates.toSet(), 0, 1)
+    }
+
     val GUILDMASTER: DeferredHolder<VillagerProfession, VillagerProfession> = PROFESSIONS.register("guildmaster") { ->
         val tradeSets: Int2ObjectMap<ResourceKey<TradeSet>> = Int2ObjectOpenHashMap()
         for (level in 1..5) {
