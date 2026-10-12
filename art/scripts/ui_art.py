@@ -269,6 +269,8 @@ COMPASS_ICONS = {
     "death": ["..ooo..", "..owo..", "ooowooo", "owwwwwo", "ooowooo", "..owo..", "..ooo.."],
     # a pin standing on its point, white so the pin's own colour can be laid over it
     "pin": [".ooooo.", "oqPPqqo", "oqPqqQo", "oqqqqQo", ".oqqQo.", "..oQo..", "...o..."],
+    # a flame on its ring of stones: a Wardfire you've kindled
+    "wardfire": ["...o...", "..oRo..", ".oRGRo.", "oRGWGRo", "oRGWGRo", "ossssso", ".ooooo."],
 }
 
 # ink icons for the map, 11x11, drawn on parchment
@@ -446,6 +448,20 @@ MAP_ICONS = {
         "....k.k....",
         "....kkk....",
         "...........",
+    ],
+    # a sword planted in a fire on its ring of stones
+    "wardfire": [
+        ".....k.....",
+        "....kkk....",
+        "..r..k..r..",
+        "..rr.k.rr..",
+        ".rRr.k.rRr.",
+        ".rRgrkrgRr.",
+        "rRggRkRggRr",
+        ".rRggkggRr.",
+        "..rRgkgRr..",
+        ".kkkkkkkkk.",
+        "ksk.ksk.ksk",
     ],
 }
 

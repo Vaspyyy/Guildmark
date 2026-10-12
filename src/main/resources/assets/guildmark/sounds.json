@@ -778,5 +778,30 @@
       }
     ],
     "subtitle": "subtitles.guildmark.voice.maren"
+  },
+  "wardfire.kindle": {
+    "sounds": [
+      "guildmark:wardfire/kindle1"
+    ],
+    "subtitle": "subtitles.guildmark.wardfire.kindle"
+  },
+  "wardfire.rest": {
+    "sounds": [
+      "guildmark:wardfire/rest1"
+    ],
+    "subtitle": "subtitles.guildmark.wardfire.rest"
+  },
+  "wardfire.travel": {
+    "sounds": [
+      "guildmark:wardfire/travel1"
+    ],
+    "subtitle": "subtitles.guildmark.wardfire.travel"
+  },
+  "flask.drink": {
+    "sounds": [
+      "guildmark:flask/drink1",
+      "guildmark:flask/drink2"
+    ],
+    "subtitle": "subtitles.guildmark.flask.drink"
   }
 }

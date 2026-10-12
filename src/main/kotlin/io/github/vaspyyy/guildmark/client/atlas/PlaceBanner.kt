@@ -38,7 +38,9 @@ object PlaceBanner : GuiLayer {
 
     fun discovered(mark: AtlasMark) {
         val level = Minecraft.getInstance().level ?: return
-        show(mark, Component.translatable("atlas.guildmark.discovered", AtlasClient.kindName(mark)), 5.5f)
+        val subtitle = if (mark.kind == AtlasPlace.WARDFIRE) Component.translatable("atlas.guildmark.kindled")
+            else Component.translatable("atlas.guildmark.discovered", AtlasClient.kindName(mark))
+        show(mark, subtitle, 5.5f)
         inside = mark.pos
         lastShown[mark.pos] = level.gameTime
         Ui.play(ModSounds.UI_DISCOVER.get(), 1f, 0.8f)
@@ -51,6 +53,7 @@ object PlaceBanner : GuiLayer {
     private fun arriveRadius(mark: AtlasMark): Double = when (mark.kind) {
         AtlasPlace.VILLAGE -> 40.0
         AtlasPlace.THRONE -> 32.0
+        AtlasPlace.WARDFIRE -> 10.0
         else -> 20.0
     }
 

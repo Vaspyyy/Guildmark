@@ -48,6 +48,7 @@ object CompassHud : GuiLayer {
     private val ICON_PARTY = sprite("party")
     private val ICON_DEATH = sprite("death")
     private val ICON_PIN = sprite("pin")
+    private val ICON_WARDFIRE = sprite("wardfire")
 
     private const val TOP = 3
     private const val HEIGHT = 13
@@ -179,11 +180,13 @@ object CompassHud : GuiLayer {
             val range = when {
                 mark.kind == AtlasPlace.THRONE -> 2000.0
                 mark.kind == AtlasPlace.VILLAGE -> 640.0
+                mark.kind == AtlasPlace.WARDFIRE -> 512.0
                 mark.has(AtlasMark.CLEARED) -> 192.0
                 else -> 384.0
             }
             if (at.subtract(here).horizontalDistance() > range) continue
             val icon = when {
+                mark.kind == AtlasPlace.WARDFIRE -> ICON_WARDFIRE
                 mark.kind == AtlasPlace.VILLAGE && mark.has(AtlasMark.YOURS) -> ICON_HALL
                 mark.kind == AtlasPlace.VILLAGE -> if (mark.size > 5) ICON_TOWN else ICON_VILLAGE
                 mark.kind == AtlasPlace.THRONE || mark.has(AtlasMark.VAULT) -> ICON_VAULT
@@ -194,6 +197,7 @@ object CompassHud : GuiLayer {
             val hide = when (mark.kind) {
                 AtlasPlace.VILLAGE -> 40.0
                 AtlasPlace.THRONE -> 24.0
+                AtlasPlace.WARDFIRE -> 6.0
                 else -> 12.0
             }
             out.add(Marker(at, icon, AtlasClient.name(mark), if (mark.kind == AtlasPlace.VILLAGE) 0 else 1, hide))

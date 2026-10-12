@@ -11,6 +11,12 @@ import io.github.vaspyyy.guildmark.network.CoachStopsPayload
 import io.github.vaspyyy.guildmark.network.CoachStopsRequestPayload
 import io.github.vaspyyy.guildmark.network.RideCoachPayload
 import io.github.vaspyyy.guildmark.network.WorldIdPayload
+import io.github.vaspyyy.guildmark.network.OpenWardfirePayload
+import io.github.vaspyyy.guildmark.network.WardfireActionPayload
+import io.github.vaspyyy.guildmark.network.WardfireTravelPayload
+import io.github.vaspyyy.guildmark.network.WardfireTravelledPayload
+import io.github.vaspyyy.guildmark.registry.ModParticles
+import io.github.vaspyyy.guildmark.wardfire.WardensFlask
 import net.neoforged.neoforge.network.PacketDistributor
 import io.github.vaspyyy.guildmark.atlas.WorldId
 import io.github.vaspyyy.guildmark.network.ReleaseChargePayload
@@ -122,6 +128,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         ModAttachments.ATTACHMENTS.register(modBus)
         ModEntities.ENTITIES.register(modBus)
         ModSounds.SOUNDS.register(modBus)
+        ModParticles.PARTICLES.register(modBus)
         modBus.addListener(EntityAttributeCreationEvent::class.java) {
             it.put(ModEntities.GUILD_MEMBER.get(), GuildMember.createAttributes().build())
             it.put(ModEntities.STORY_NPC.get(), StoryNpc.createAttributes().build())
@@ -190,6 +197,8 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerRespawnEvent::class.java) {
             Progression.applyAttributes(it.entity)
             Combat.reset(it.entity)
+            // Waking after a fall fills the flask, as a rest would
+            if (!it.isEndConquered) WardensFlask.refill(it.entity)
             // The party list isn't copied to the new player entity
             (it.entity as? ServerPlayer)?.let { player ->
                 Parties.onLogin(player)
@@ -272,5 +281,9 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
             .playToClient(CoachStopsPayload.TYPE, CoachStopsPayload.STREAM_CODEC, CoachStopsPayload::handle)
             .playToClient(WorldIdPayload.TYPE, WorldIdPayload.STREAM_CODEC, WorldIdPayload::handle)
             .playToServer(RideCoachPayload.TYPE, RideCoachPayload.STREAM_CODEC, RideCoachPayload::handle)
+            .playToClient(OpenWardfirePayload.TYPE, OpenWardfirePayload.STREAM_CODEC, OpenWardfirePayload::handle)
+            .playToServer(WardfireActionPayload.TYPE, WardfireActionPayload.STREAM_CODEC, WardfireActionPayload::handle)
+            .playToServer(WardfireTravelPayload.TYPE, WardfireTravelPayload.STREAM_CODEC, WardfireTravelPayload::handle)
+            .playToClient(WardfireTravelledPayload.TYPE, WardfireTravelledPayload.STREAM_CODEC, WardfireTravelledPayload::handle)
     }
 }

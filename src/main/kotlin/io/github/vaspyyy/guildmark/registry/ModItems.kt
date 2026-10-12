@@ -3,6 +3,7 @@ package io.github.vaspyyy.guildmark.registry
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.item.ContractItem
 import io.github.vaspyyy.guildmark.item.RelicCacheItem
+import io.github.vaspyyy.guildmark.item.WardensFlaskItem
 import net.minecraft.world.item.BlockItem
 import net.minecraft.world.item.Item
 import net.minecraft.world.item.Rarity
@@ -34,6 +35,13 @@ object ModItems {
     })
 
     val QUEST_BOARD: DeferredItem<BlockItem> = ITEMS.registerSimpleBlockItem("quest_board", ModBlocks.QUEST_BOARD)
+
+    val WARDFIRE: DeferredItem<BlockItem> = ITEMS.registerSimpleBlockItem("wardfire", ModBlocks.WARDFIRE)
+
+    /** Handed over at the first Wardfire you kindle; its draughts are kept on the player (see WardensFlask). */
+    val WARDENS_FLASK: DeferredItem<WardensFlaskItem> = ITEMS.registerItem("wardens_flask", ::WardensFlaskItem, UnaryOperator<Item.Properties> {
+        it.stacksTo(1).rarity(Rarity.RARE).fireResistant()
+    })
 
     // Spawn eggs for the new combat's creatures
     val HOLLOW_SOLDIER_SPAWN_EGG: DeferredItem<SpawnEggItem> = ITEMS.registerItem("hollow_soldier_spawn_egg", ::SpawnEggItem, UnaryOperator<Item.Properties> {

@@ -59,6 +59,12 @@ object ModSounds {
     val UI_DEATH_TOLL = sound("ui.death_toll")
     val UI_SEAL = sound("ui.seal")
     val UI_DISCOVER = sound("ui.discover")
+
+    val WARDFIRE_KINDLE = sound("wardfire.kindle")
+    val WARDFIRE_REST = sound("wardfire.rest")
+    val WARDFIRE_TRAVEL = sound("wardfire.travel")
+    val FLASK_DRINK = sound("flask.drink")
+
     val MUSIC_WARDEN = sound("music.fallen_warden")
     val MUSIC_WARDEN_2 = sound("music.fallen_warden_2")
 }

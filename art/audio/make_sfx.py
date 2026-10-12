@@ -922,6 +922,88 @@ def ui_discover(v, rng):
     return reverb(lp(y, 9000), wet=0.3, rt60=2.4, predelay=0.02, hf_damp=0.55, seed=45)
 
 
+# =========================================================================== wardfires
+def fire_bed(dur, rng, s, lo=300.0, hi=1400.0):
+    """a small fire's breath: banded pink noise opening with the swell s, and a soft low roar"""
+    fc = lo * (hi / lo) ** s
+    breath = tvf(pink(dur, rng), "bp", fc, 0.6) * s ** 1.3 * (0.7 + 0.3 * smooth_random(dur, rng, 9))
+    roar = lp(brown(dur, rng), 160, order=4) * s
+    return nrm(breath) + 0.45 * nrm(roar)
+
+
+@recipe("wardfire/kindle", variants=1, fade_out=0.9, max_len=3.0)
+def wf_kindle(v, rng):
+    """a cold Wardfire catching: a breath drawn in, the flames leaping up with a whump, embers
+    crackling, and a low warm chord with one bell rising out of the fire"""
+    dur = 3.0
+    t = tvec(dur)
+    m = Mix(dur)
+    draw = whoosh(0.5, rng, peak=0.92, f_lo=250, f_hi=1600, q=0.9, power=2.0, rise=1.4, fall=0.6, color=-2.0, doppler=0.0)
+    m.add(nrm(draw), 0.0, 0.35)
+    m.add(nrm(thump(0.6, 84, 46, rng, decay=0.16, click=0.05, noise=0.7, nlp=420)), 0.44, 0.7)
+    s = bell(dur, 0.2, 1.2, 1.6)
+    m.add(nrm(fire_bed(dur, rng, s)), 0.4, 0.8)
+    m.add(nrm(crackle(dur, rng, 40 + 260 * s, decay=0.0012, f_lo=1200, f_hi=7000) * s), 0.42, 0.32)
+    pad = spirit_pad(dur, rng, [130.81, 196.0, 261.63], vowel="o") * bell(dur, 0.45, 1.8, 2.2)
+    m.add(nrm(pad), 0.5, 0.3)
+    m.add(nrm(chime(2.4, 523.25, rng, t60=1.8, bright=0.3)), 0.62, 0.32)
+    y = m.buf[: len(t)]
+    return reverb(lp(y, 9000), wet=0.24, rt60=1.9, predelay=0.018, hf_damp=0.5, seed=61)
+
+
+@recipe("wardfire/rest", variants=1, fade_out=0.8, max_len=2.6)
+def wf_rest(v, rng):
+    """sitting down at a Wardfire: the fire settles with a soft rush and a warm fifth hums under it"""
+    dur = 2.6
+    t = tvec(dur)
+    m = Mix(dur)
+    s = bell(dur, 0.3, 1.6, 1.8)
+    m.add(nrm(fire_bed(dur, rng, s * 0.8, lo=260, hi=900)), 0.0, 0.55)
+    m.add(nrm(crackle(dur, rng, 30 + 90 * s, decay=0.001, f_lo=1500, f_hi=6500) * s), 0.0, 0.22)
+    pad = spirit_pad(dur, rng, [146.83, 220.0, 293.66], vowel="a") * bell(dur, 0.4, 1.6, 2.4)
+    m.add(nrm(pad), 0.0, 0.42)
+    m.add(nrm(chime(2.0, 440.0, rng, t60=1.5, bright=0.25)), 0.32, 0.22)
+    m.add(nrm(chime(1.7, 659.25, rng, t60=1.3, bright=0.22)), 0.5, 0.16)
+    y = m.buf[: len(t)]
+    return reverb(lp(y, 8000), wet=0.26, rt60=2.0, predelay=0.02, hf_damp=0.55, seed=62)
+
+
+@recipe("wardfire/travel", variants=1, fade_out=0.6, max_len=2.0)
+def wf_travel(v, rng):
+    """carried off in the embers: a rising rush of sparks and air, a choir climbing, a soft bloom"""
+    dur = 2.0
+    t = tvec(dur)
+    m = Mix(dur)
+    rush = whoosh(1.3, rng, peak=0.75, f_lo=400, f_hi=4200, q=1.0, power=2.2, rise=1.2, fall=1.6, color=-1.2, doppler=0.0)
+    m.add(nrm(rush), 0.0, 0.6)
+    s = bell(dur, 0.4, 1.4, 1.6)
+    m.add(nrm(crackle(dur, rng, 80 + 900 * s, decay=0.0008, f_lo=2500, f_hi=9000) * s), 0.0, 0.28)
+    rise = spirit_pad(dur, rng, [261.63, 392.0, 523.25], vowel="o")
+    rise = varispeed(rise, 1.0 + 0.25 * np.clip(t / dur, 0, 1))
+    m.add(nrm(fit(rise, ns(dur))) * bell(dur, 0.55, 1.8, 2.0), 0.0, 0.34)
+    m.add(nrm(chime(1.4, 783.99, rng, t60=1.1, bright=0.3)), 0.62, 0.26)
+    y = m.buf[: len(t)]
+    return reverb(lp(y, 10000), wet=0.32, rt60=2.2, predelay=0.02, hf_damp=0.45, seed=63)
+
+
+@recipe("flask/drink", variants=2, fade_out=0.3, max_len=[1.0, 1.05])
+def flask_drink(v, rng):
+    """a long draught from the flask: two swallows, then the warmth taking hold in a glassy shimmer"""
+    dur = 1.0 + 0.05 * v
+    t = tvec(dur)
+    m = Mix(dur)
+    for i, at in enumerate((0.05, 0.3 + 0.03 * v)):
+        gulp = formants(glottal(0.16, 110 + 15 * i, rng, breath=0.6, open_q=0.5), "u", "o", scale=0.8)
+        gulp = lp(gulp, 900) * bell(0.16, 0.3, 1.5, 2.0)
+        m.add(nrm(gulp), at, 0.55)
+        m.add(nrm(squelch(0.08, rng, f0=700, f1=320, decay=0.03, density=1800, lo=250, hi=1500)), at + 0.06, 0.18)
+    glow = sum(chime(0.7, f, rng, t60=0.6, bright=0.5) for f in (1046.5, 1318.5, 1568.0))
+    m.add(nrm(glow) * 0.8, 0.52, 0.3)
+    m.add(nrm(crackle(0.5, rng, 160, decay=0.0007, f_lo=3000, f_hi=9000)) * bell(0.5, 0.3, 1.2, 1.6), 0.5, 0.12)
+    y = m.buf[: len(t)]
+    return reverb(lp(y, 9500), wet=0.14, rt60=0.9, predelay=0.008, hf_damp=0.5, seed=64 + v)
+
+
 # =========================================================================== main
 def main():
     ap = argparse.ArgumentParser()

@@ -8,6 +8,7 @@ import io.github.vaspyyy.guildmark.network.PartyMark
 import io.github.vaspyyy.guildmark.network.PartyPositionsPayload
 import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.village.VillageNames
+import io.github.vaspyyy.guildmark.wardfire.WardfireNames
 import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
 import net.minecraft.core.GlobalPos
@@ -62,12 +63,16 @@ object AtlasClient {
 
     fun roads(): List<AtlasRoad> = if (here()) roads else listOf()
 
-    fun name(mark: AtlasMark): Component =
-        if (mark.kind == AtlasPlace.VILLAGE) Component.literal(VillageNames.of(mark.pos)) else Component.translatable(mark.label)
+    fun name(mark: AtlasMark): Component = when (mark.kind) {
+        AtlasPlace.VILLAGE -> Component.literal(VillageNames.of(mark.pos))
+        AtlasPlace.WARDFIRE -> Component.literal(WardfireNames.of(mark.pos))
+        else -> Component.translatable(mark.label)
+    }
 
-    /** Hamlet, town, lair, shard vault and so on. */
+    /** Hamlet, town, lair, shard vault, Wardfire and so on. */
     fun kindName(mark: AtlasMark): Component = when {
         mark.kind == AtlasPlace.VILLAGE -> VillageNames.size(mark.size)
+        mark.kind == AtlasPlace.WARDFIRE -> Component.translatable("atlas.guildmark.kind.wardfire")
         mark.kind == AtlasPlace.THRONE -> Component.translatable("atlas.guildmark.kind.throne")
         mark.has(AtlasMark.VAULT) -> Component.translatable("atlas.guildmark.kind.vault")
         else -> Component.translatable("atlas.guildmark.kind.lair")

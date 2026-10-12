@@ -91,7 +91,8 @@ object Coaches {
         }
     }
 
-    private fun escorting(player: ServerPlayer): Boolean = (0 until player.inventory.containerSize).any { slot ->
+    /** The player is escorting someone, who would be left behind if they rode or travelled off. */
+    fun escorting(player: ServerPlayer): Boolean = (0 until player.inventory.containerSize).any { slot ->
         val stack = player.inventory.getItem(slot)
         stack.get(ModDataComponents.QUEST_NOTE.get())?.type == QuestType.ESCORT && stack.has(ModDataComponents.CONTRACT_STATE.get())
     }

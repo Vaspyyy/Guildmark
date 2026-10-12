@@ -19,6 +19,12 @@ import net.neoforged.bus.api.IEventBus
 import net.neoforged.fml.common.Mod
 import net.neoforged.neoforge.client.event.ClientTickEvent
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent
+import net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent
+import io.github.vaspyyy.guildmark.client.wardfire.FlaskFill
+import io.github.vaspyyy.guildmark.client.wardfire.TravelFade
+import net.neoforged.neoforge.client.event.RegisterRangeSelectItemModelPropertyEvent
+import io.github.vaspyyy.guildmark.client.wardfire.WardEmberParticle
+import io.github.vaspyyy.guildmark.registry.ModParticles
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers
 import net.neoforged.neoforge.common.NeoForge
@@ -109,6 +115,7 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
             AtlasClient.reset()
             PlaceBanner.reset()
             MapData.reset()
+            TravelFade.reset()
         }
         // The compass pushes vanilla's boss bars down while it's up; last in line, so the pop always follows the push
         NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, RenderGuiLayerEvent.Pre::class.java, CompassHud::onLayerPre)
@@ -146,7 +153,15 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
             event.registerBelow(VanillaGuiLayers.BOSS_OVERLAY, CompassHud.ID, CompassHud)
             event.registerBelow(VanillaGuiLayers.TITLE, PlaceBanner.ID, PlaceBanner)
             event.registerAboveAll(Cutscenes.ID, Cutscenes)
+            event.registerAboveAll(TravelFade.ID, TravelFade)
         }
+        modBus.addListener(RegisterParticleProvidersEvent::class.java) { event ->
+            event.registerSpriteSet(ModParticles.WARD_EMBER.get()) { sprites -> WardEmberParticle.Provider(sprites) }
+        }
+        modBus.addListener(RegisterRangeSelectItemModelPropertyEvent::class.java) { event ->
+            event.register(FlaskFill.ID, FlaskFill.MAP_CODEC)
+        }
+        NeoForge.EVENT_BUS.addListener(ClientTickEvent.Post::class.java) { _ -> TravelFade.tick() }
         NeoForge.EVENT_BUS.addListener(ClientTickEvent.Post::class.java) { _ ->
             val minecraft = Minecraft.getInstance()
             while (ledgerKey.consumeClick()) {

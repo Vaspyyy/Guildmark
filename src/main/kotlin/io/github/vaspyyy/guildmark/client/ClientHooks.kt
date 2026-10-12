@@ -13,6 +13,10 @@ import io.github.vaspyyy.guildmark.network.OpenReceptionPayload
 import io.github.vaspyyy.guildmark.quest.ContractState
 import io.github.vaspyyy.guildmark.quest.QuestNote
 import io.github.vaspyyy.guildmark.network.OpenAdvancesPayload
+import io.github.vaspyyy.guildmark.network.OpenWardfirePayload
+import io.github.vaspyyy.guildmark.network.WardfireTravelledPayload
+import io.github.vaspyyy.guildmark.client.wardfire.TravelFade
+import io.github.vaspyyy.guildmark.client.wardfire.WardfireScreen
 import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
 
@@ -69,5 +73,15 @@ object ClientHooks {
     /** A village's advances and who holds it, as the server sent them. */
     fun openAdvances(info: OpenAdvancesPayload) {
         Minecraft.getInstance().gui.setScreen(AdvanceScreen(info))
+    }
+
+    /** The player sat down at a Wardfire. */
+    fun openWardfire(payload: OpenWardfirePayload) {
+        WardfireScreen.open(payload)
+    }
+
+    /** The server's answer to a journey between Wardfires. */
+    fun travelled(payload: WardfireTravelledPayload) {
+        TravelFade.travelled(payload.arrived)
     }
 }

@@ -6,6 +6,8 @@ import com.mojang.renderpearl.api.textures.FilterMode
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.atlas.AtlasPlace
 import io.github.vaspyyy.guildmark.client.ContractTracker
+import io.github.vaspyyy.guildmark.client.combat.CombatClient
+import io.github.vaspyyy.guildmark.client.wardfire.TravelFade
 import io.github.vaspyyy.guildmark.client.ui.Ui
 import io.github.vaspyyy.guildmark.guild.TownControl
 import io.github.vaspyyy.guildmark.network.AtlasMark
@@ -23,6 +25,7 @@ import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.input.KeyEvent
 import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.client.renderer.RenderPipelines
+import net.minecraft.core.BlockPos
 import net.minecraft.locale.Language
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.ComponentUtils
@@ -44,7 +47,8 @@ import kotlin.math.roundToInt
  * The world map (M): the land you've seen, painted as watercolour on parchment, with the places in your
  * Atlas, the roads between them, your contracts, your party, your own pins and where you last fell.
  * Drag to move about, scroll to zoom, right-click to pin a spot. Standing in a village with a coach,
- * the places its roads lead are marked with a wheel: click one to ride there.
+ * the places its roads lead are marked with a wheel: click one to ride there. Click a Wardfire you've
+ * kindled to travel to it.
  */
 class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
     private var centerX = 0.0
@@ -76,7 +80,7 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
     private var naming: MapData.Pin? = null
     private var placing = false
     private var nameBox: EditBox? = null
-    /** The coach stop being asked about. */
+    /** The coach stop or Wardfire being asked about. */
     private var riding: Spot? = null
     private val rideButtons = ArrayList<Ui.KitButton>()
 
@@ -95,6 +99,8 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
         /** Its name in the carved capitals, as towns are lettered. */
         val carved: Boolean = false,
         val coach: CoachStop? = null,
+        /** A Wardfire to travel to: where it stands. */
+        val wardfire: BlockPos? = null,
         val pin: MapData.Pin? = null,
         /** The colour of the guild holding it, for the wash of its lands (0 if nobody does). */
         val territory: Int = 0,
@@ -290,6 +296,7 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
             val pin = spot?.pin
             when {
                 spot?.coach != null -> openRide(spot)
+                spot?.wardfire != null -> openRide(spot)
                 pin != null -> openNameBox(pin, false, pin.name)
             }
         }
@@ -356,16 +363,24 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
     // ---- Taking a coach ----
 
     private fun openRide(spot: Spot) {
-        val stop = spot.coach ?: return
         val player = minecraft.player ?: return
+        val fire = spot.wardfire
+        val stop = spot.coach
+        if (fire == null && stop == null) return
         closeRide()
         riding = spot
         val (x, y, w, h) = ridePanel()
-        val go = Ui.button(Component.translatable("gui.guildmark.map.ride.go"), 80) {
-            ClientPacketDistributor.sendToServer(RideCoachPayload(stop.x, stop.z))
-            onClose()
+        val go = if (fire != null) {
+            Ui.button(Component.translatable("gui.guildmark.map.travel.go"), 80) {
+                TravelFade.begin(fire)
+                onClose()
+            }.also { it.active = travelBlock(fire, player) == null }
+        } else {
+            Ui.button(Component.translatable("gui.guildmark.map.ride.go"), 80) {
+                ClientPacketDistributor.sendToServer(RideCoachPayload(stop!!.x, stop.z))
+                onClose()
+            }.also { it.active = TownControl.marks(player) >= stop!!.fare }
         }
-        go.active = TownControl.marks(player) >= stop.fare
         go.setPosition(x + w / 2 - 84, y + h - 30)
         val stay = Ui.button(Component.translatable("gui.guildmark.map.ride.stay"), 80) { closeRide() }
         stay.setPosition(x + w / 2 + 4, y + h - 30)
@@ -422,6 +437,10 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
                     x, z, icon, name, lines, if (major) 2 else 1, label = name, labelFrom = if (major) 0.0 else 0.5, carved = true,
                     coach = coach, territory = if (mark.has(AtlasMark.HELD)) mark.color else 0,
                 ))
+            } else if (mark.kind == AtlasPlace.WARDFIRE) {
+                lines.add(AtlasClient.kindName(mark))
+                if (mark.has(AtlasMark.RESTED)) lines.add(Component.translatable("gui.guildmark.map.tip.rested"))
+                out.add(Spot(x, z, WARDFIRE, name, lines, 2, label = name, labelFrom = 1.0, wardfire = mark.pos))
             } else {
                 val throne = mark.kind == AtlasPlace.THRONE
                 val icon = when {
@@ -712,6 +731,7 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
         for (line in spot.lines) rows.add(line to Ui.TEXT_SOFT)
         rows.add(Component.translatable("gui.guildmark.map.tip.distance", far(flat(spot.x, spot.z, player.x, player.z))) to Ui.TEXT_FAINT)
         spot.coach?.let { rows.add(Component.translatable("gui.guildmark.map.tip.coach", it.fare) to Ui.GREEN) }
+        if (spot.wardfire != null) rows.add(Component.translatable("gui.guildmark.map.tip.travel") to Ui.GREEN)
         val title = Ui.heading(spot.name)
         val w = max(font.width(title), rows.maxOf { font.width(it.first) }) + 20
         val h = 27 + rows.size * 10
@@ -724,19 +744,37 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
         for ((i, row) in rows.withIndex()) graphics.text(font, row.first, x + 10, y + 24 + i * 10, row.second, false)
     }
 
+    /** Why travelling to the Wardfire at [fire] can't happen right now, as far as the client can tell, or null. */
+    private fun travelBlock(fire: BlockPos, player: Player): Component? = when {
+        TravelFade.busy -> Component.translatable("gui.guildmark.map.travel.busy")
+        flat(fire.x + 0.5, fire.z + 0.5, player.x, player.z) < HERE -> Component.translatable("gui.guildmark.map.travel.here")
+        CombatClient.active() && CombatClient.inCombat() -> Component.translatable("gui.guildmark.map.travel.foes")
+        else -> null
+    }
+
     private fun drawRide(graphics: GuiGraphicsExtractor, spot: Spot, player: Player) {
-        val stop = spot.coach ?: return
         val (x, y, w, h) = ridePanel()
+        val fire = spot.wardfire
+        val stop = spot.coach
+        val lines = if (fire != null) {
+            val block = travelBlock(fire, player)
+            listOf(
+                Component.translatable("gui.guildmark.map.ride.to", spot.name) to Ui.TEXT,
+                (block ?: Component.translatable("gui.guildmark.map.travel.note")) to if (block != null) Ui.RED else Ui.TEXT_SOFT,
+            )
+        } else if (stop != null) {
+            val marks = TownControl.marks(player)
+            listOf(
+                Component.translatable("gui.guildmark.map.ride.to", spot.name) to Ui.TEXT,
+                Component.translatable("gui.guildmark.map.ride.fare", stop.fare) to Ui.GOLD,
+                Component.translatable("gui.guildmark.map.ride.purse", marks) to if (marks >= stop.fare) Ui.TEXT_SOFT else Ui.RED,
+            )
+        } else return
         graphics.fill(0, 0, width, height, SHADE)
         Ui.panel(graphics, x, y, w, h)
-        Ui.centeredHeading(graphics, font, Component.translatable("gui.guildmark.map.ride.title"), x + w / 2, y + 11)
+        val heading = if (fire != null) "gui.guildmark.map.travel.title" else "gui.guildmark.map.ride.title"
+        Ui.centeredHeading(graphics, font, Component.translatable(heading), x + w / 2, y + 11)
         Ui.divider(graphics, x + 16, y + 25, w - 32)
-        val marks = TownControl.marks(player)
-        val lines = listOf(
-            Component.translatable("gui.guildmark.map.ride.to", spot.name) to Ui.TEXT,
-            Component.translatable("gui.guildmark.map.ride.fare", stop.fare) to Ui.GOLD,
-            Component.translatable("gui.guildmark.map.ride.purse", marks) to if (marks >= stop.fare) Ui.TEXT_SOFT else Ui.RED,
-        )
         for ((i, line) in lines.withIndex()) {
             val shown = font.substrByWidth(line.first, w - 24)
             graphics.text(font, Language.getInstance().getVisualOrder(shown), x + w / 2 - font.width(shown) / 2, y + 33 + i * 11, line.second, false)
@@ -771,6 +809,7 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
         private val DEATH = sprite("death")
         private val PLAYER = sprite("player")
         private val PIN = sprite("pin")
+        private val WARDFIRE = sprite("wardfire")
         private val ROSE = sprite("rose")
         private val VIGNETTE = sprite("frame")
         private val COACH_BADGE = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "compass/coach")
@@ -779,7 +818,8 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
 
         private val LEGEND = listOf(
             VILLAGE to "village", TOWN to "town", CITY to "city", HALL to "hall", LAIR to "lair", LAIR_CLEARED to "lair_cleared",
-            VAULT to "vault", COACH to "coach", CONTRACT to "objective", PIN to "pin", PARTY to "party", DEATH to "death", PLAYER to "you",
+            VAULT to "vault", WARDFIRE to "wardfire", COACH to "coach", CONTRACT to "objective", PIN to "pin", PARTY to "party",
+            DEATH to "death", PLAYER to "you",
         )
         private val SCALES = intArrayOf(10, 20, 50, 100, 200, 500, 1000, 2000, 5000)
         private val HINTS = listOf("drag", "zoom", "pin", "home", "legend").map { "gui.guildmark.map.hint.$it" }
@@ -800,6 +840,8 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
         private const val NAME_WIDTH = 110
         private const val RIDE_WIDTH = 210
         private const val RIDE_HEIGHT = 100
+        /** Closer than this to a Wardfire (in blocks) and you're already there. */
+        private const val HERE = 12.0
         private const val KEY_NUMPAD_MINUS = 86
 
         private val BACKDROP = 0xEC0C0B0E.toInt()

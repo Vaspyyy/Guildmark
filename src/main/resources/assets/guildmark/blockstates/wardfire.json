@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "lit=false": {
+      "model": "guildmark:block/wardfire"
+    },
+    "lit=true": {
+      "model": "guildmark:block/wardfire_lit"
+    }
+  }
+}

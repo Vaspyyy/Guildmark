@@ -13,6 +13,7 @@ import io.github.vaspyyy.guildmark.road.TravelProgress
 import io.github.vaspyyy.guildmark.story.MainQuestState
 import net.minecraft.core.BlockPos
 import net.minecraft.core.UUIDUtil
+import io.github.vaspyyy.guildmark.wardfire.FlaskState
 import net.neoforged.neoforge.attachment.AttachmentType
 import net.neoforged.neoforge.registries.DeferredHolder
 import net.neoforged.neoforge.registries.DeferredRegister
@@ -103,6 +104,15 @@ object ModAttachments {
         AttachmentType.builder { -> mapOf<String, Int>() }
             .serialize(Codec.unboundedMap(Codec.STRING, Codec.INT).fieldOf("chapters"))
             .copyOnDeath()
+            .build()
+    }
+
+    /** A player's Warden's Flask and its draughts (see WardensFlask). Kept through death, synced to its player for the HUD. */
+    val FLASK: DeferredHolder<AttachmentType<*>, AttachmentType<FlaskState>> = ATTACHMENTS.register("flask") { ->
+        AttachmentType.builder { -> FlaskState() }
+            .serialize(FlaskState.CODEC.fieldOf("flask"))
+            .copyOnDeath()
+            .sync({ holder, player -> holder === player }, FlaskState.STREAM_CODEC)
             .build()
     }
 

@@ -19,6 +19,8 @@ object ModCreativeTabs {
             .displayItems { _, output ->
                 output.accept(ModItems.QUEST_BOARD.get())
                 output.accept(ModItems.GUILD_MARK.get())
+                output.accept(ModItems.WARDFIRE.get())
+                output.accept(ModItems.WARDENS_FLASK.get())
                 output.accept(ModItems.HOLLOW_SOLDIER_SPAWN_EGG.get())
                 output.accept(ModItems.FALLEN_WARDEN_SPAWN_EGG.get())
             }

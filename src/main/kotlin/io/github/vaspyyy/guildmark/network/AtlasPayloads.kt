@@ -42,6 +42,8 @@ data class AtlasMark(
         const val AWAKE = 16
         const val VAULT = 32
         const val ROAD = 64
+        /** The Wardfire the player last rested at, where they'll wake. */
+        const val RESTED = 128
 
         val STREAM_CODEC: StreamCodec<ByteBuf, AtlasMark> = StreamCodec.composite(
             ByteBufCodecs.VAR_INT, AtlasMark::kind,

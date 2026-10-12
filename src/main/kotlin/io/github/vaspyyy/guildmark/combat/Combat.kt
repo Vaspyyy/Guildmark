@@ -488,6 +488,13 @@ object Combat {
         s.sentStamina = -1f
     }
 
+    /** A rest at a Wardfire: stamina and focus full again. */
+    fun refill(player: Player) {
+        val s = state(player)
+        s.stamina = s.maxStamina
+        s.focus = s.maxFocus
+    }
+
     /** True while [entity] (a player) is mid-move in a way that should block vanilla attacks, for other systems. */
     fun isBusy(entity: Entity): Boolean = entity is ServerPlayer && state(entity).busy(entity.level().gameTime)
 }
