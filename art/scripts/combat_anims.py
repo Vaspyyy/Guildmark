@@ -582,6 +582,41 @@ for name, length, drop in (('stagger', 14, 0.12), ('guard_break', 26, 0.25)):
         f.key('offhand', 26, I, pos=(0, 0, 0), ease='inout')
     fps.append(f)
 
+# ------------------------------------------------------------------ drink: the flask to the lips, head back, and down again
+c = tp('drink', 30, blend_in=2.0, blend_out=5.0).mark('drink', 15)
+c.key('torso', 0)
+c.key('torso', 9, qeuler(x=-3), ease='inout')
+c.key('torso', 15, qeuler(x=-8), ease='inout')
+c.key('torso', 21, qeuler(x=-6), ease='inout')
+c.key('torso', 30, qeuler(x=0), ease='inout')
+# the head keeps looking where the player looks, tipped back while the draught goes down
+c.mode('head', 'add')
+c.key('head', 0)
+c.key('head', 8, qeuler(x=-5), ease='inout')
+c.key('head', 13, qeuler(x=-28), ease='inout')
+c.key('head', 18, qeuler(x=-32), ease='linear')
+c.key('head', 24, qeuler(x=-4), ease='inout')
+c.key('head', 30, qeuler(x=0), ease='inout')
+c.key('left_arm', 0, free_arm(D))
+c.key('left_arm', 6, free_arm(v(f=1.0, u=0.1, r=0.35), v(u=1.0, f=0.2)), ease='out')
+c.key('left_arm', 11, free_arm(v(f=0.55, u=0.6, r=0.55), v(u=0.8, f=-0.6)), ease='inout')
+c.key('left_arm', 18, free_arm(v(f=0.4, u=0.75, r=0.5), v(u=0.5, f=-0.9)), ease='inout')
+c.key('left_arm', 24, free_arm(v(f=1.0, u=-0.2, r=0.3), v(u=1.0, f=0.2)), ease='inout')
+c.key('left_arm', 30, free_arm(D), ease='inout')
+c.key('right_arm', 0, rest_arm())
+c.key('right_arm', 8, arm(v(f=0.15, u=-1.0, r=0.2), F), ease='inout')
+c.key('right_arm', 30, rest_arm(), ease='inout')
+clips.append(c)
+
+# first person: the weapon drops out of the way; the flask itself is placed by FirstPersonCombat
+f = Clip('drink', 30, blend_in=2.0, blend_out=5.0)
+low = (0.5, -0.8, -0.55)
+fk(f, 0, fp_rest(), FP_BLADE)
+fk(f, 7, low, vv(f=0.8, u=0.6), vv(f=-0.3, u=1.0), ease='inout')
+fk(f, 22, low, vv(f=0.8, u=0.6), vv(f=-0.3, u=1.0), ease='linear')
+fk(f, 30, fp_rest(), FP_BLADE)
+fps.append(f)
+
 # ------------------------------------------------------------------ output
 
 if __name__ == '__main__':

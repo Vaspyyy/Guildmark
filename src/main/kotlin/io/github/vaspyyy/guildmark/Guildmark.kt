@@ -15,6 +15,7 @@ import io.github.vaspyyy.guildmark.network.OpenWardfirePayload
 import io.github.vaspyyy.guildmark.network.WardfireActionPayload
 import io.github.vaspyyy.guildmark.network.WardfireTravelPayload
 import io.github.vaspyyy.guildmark.network.WardfireTravelledPayload
+import io.github.vaspyyy.guildmark.network.DrinkFlaskPayload
 import io.github.vaspyyy.guildmark.registry.ModParticles
 import io.github.vaspyyy.guildmark.wardfire.WardensFlask
 import net.neoforged.neoforge.network.PacketDistributor
@@ -285,5 +286,6 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
             .playToServer(WardfireActionPayload.TYPE, WardfireActionPayload.STREAM_CODEC, WardfireActionPayload::handle)
             .playToServer(WardfireTravelPayload.TYPE, WardfireTravelPayload.STREAM_CODEC, WardfireTravelPayload::handle)
             .playToClient(WardfireTravelledPayload.TYPE, WardfireTravelledPayload.STREAM_CODEC, WardfireTravelledPayload::handle)
+            .playToServer(DrinkFlaskPayload.TYPE, DrinkFlaskPayload.STREAM_CODEC, DrinkFlaskPayload::handle)
     }
 }

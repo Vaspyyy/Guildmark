@@ -4,7 +4,11 @@ import com.mojang.math.Axis
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.combat.Move
 import io.github.vaspyyy.guildmark.combat.Stance
+import io.github.vaspyyy.guildmark.registry.ModItems
+import net.minecraft.client.Minecraft
 import net.minecraft.client.model.HumanoidModel
+import net.minecraft.world.item.ItemDisplayContext
+import net.minecraft.world.item.ItemStack
 import net.minecraft.client.model.geom.ModelPart
 import net.minecraft.client.renderer.entity.state.AvatarRenderState
 import net.minecraft.client.renderer.entity.state.HumanoidRenderState
@@ -54,6 +58,7 @@ object CombatAnimator {
     val FRAME: ContextKey<Frame> = ContextKey(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "combat_frame"))
 
     private val armPose: HumanoidModel.ArmPose by lazy { CombatArmPose.PROXY.value }
+    private val flask: ItemStack by lazy { ItemStack(ModItems.WARDENS_FLASK.get()) }
 
     /** Fills in the frame for a player doing a move. */
     val AVATAR = object : AvatarRenderStateModifier() {
@@ -76,6 +81,11 @@ object CombatAnimator {
             state.rightArmPose = armPose
             state.leftArmPose = armPose
             state.swingAnimation = 0f
+            // The clip raises the left arm to the lips, so that's the hand the flask is in
+            if (action.move == Move.DRINK) {
+                Minecraft.getInstance().itemModelResolver.updateForLiving(state.leftHandItemState, flask, ItemDisplayContext.THIRD_PERSON_LEFT_HAND, entity)
+                state.leftHandItemStack = flask
+            }
             state.isCrouching = false
             if (action.move.isRoll || from != null && action.from?.isRoll == true) state.showCape = false
         }

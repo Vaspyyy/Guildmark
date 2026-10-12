@@ -2,6 +2,7 @@ package io.github.vaspyyy.guildmark.network
 
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.client.ClientHooks
+import io.github.vaspyyy.guildmark.wardfire.WardensFlask
 import io.github.vaspyyy.guildmark.wardfire.Wardfires
 import io.netty.buffer.ByteBuf
 import net.minecraft.core.BlockPos
@@ -92,6 +93,23 @@ data class WardfireTravelledPayload(val arrived: Boolean) : CustomPacketPayload 
 
         fun handle(payload: WardfireTravelledPayload, context: IPayloadContext) {
             ClientHooks.travelled(payload)
+        }
+    }
+}
+
+/** The flask key, pressed with the new combat off: drink a draught now. */
+class DrinkFlaskPayload : CustomPacketPayload {
+    override fun type(): CustomPacketPayload.Type<DrinkFlaskPayload> = TYPE
+
+    companion object {
+        val TYPE: CustomPacketPayload.Type<DrinkFlaskPayload> =
+            CustomPacketPayload.Type(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "drink_flask"))
+
+        val STREAM_CODEC: StreamCodec<ByteBuf, DrinkFlaskPayload> = StreamCodec.unit(DrinkFlaskPayload())
+
+        fun handle(payload: DrinkFlaskPayload, context: IPayloadContext) {
+            val player = context.player() as? ServerPlayer ?: return
+            WardensFlask.sip(player)
         }
     }
 }

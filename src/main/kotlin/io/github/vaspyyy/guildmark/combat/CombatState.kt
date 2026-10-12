@@ -25,6 +25,8 @@ class CombatState {
     var criticalTarget = -1
     /** How many of the critical's blows have landed. */
     var criticalHits = 0
+    /** The flask draught of a [Move.DRINK] has been taken. */
+    var drank = false
 
     var invulnerableFrom = 0L
     var invulnerableUntil = 0L
@@ -75,6 +77,7 @@ class CombatState {
         struck.clear()
         criticalTarget = -1
         criticalHits = 0
+        drank = false
         if (current.iFrom >= 0) {
             // The client started the roll a moment ago; count its frames from now, a tick early for fairness
             invulnerableFrom = now + (current.iFrom / tempo).toLong() - 1

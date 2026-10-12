@@ -109,4 +109,10 @@ srows = [
 SP = {'.': CL, 'o': (14, 12, 14, 235), 'W': (255, 248, 222, 255), 'L': (236, 200, 104, 255), 'M': (204, 160, 62, 255),
       'D': (140, 100, 36, 255)}
 save(from_rows(srows, SP), 'stance_broken')
+# ---- flask_slot 24x24: the quick slot for the Warden's Flask, the bar frames' iron and gold round a dark well ----
+frows = frame_rows(24, 24, 18)
+for y in (11, 12):
+    frows[y] = 'oGG' + frows[y][3:-3] + 'GGo'   # gold rivets on the sides
+save(from_rows(frows, PAL), 'flask_slot')
+
 print('written to', out)

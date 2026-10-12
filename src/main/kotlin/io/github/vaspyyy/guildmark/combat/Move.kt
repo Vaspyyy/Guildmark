@@ -60,6 +60,8 @@ enum class Move(
     ROLL("roll", 12, stamina = 18f, chainFrom = 9, dodgeFrom = 10, moveSpeed = 0f, iFrom = 1, iTo = 8),
     ROLL_HEAVY("roll_heavy", 15, stamina = 18f, chainFrom = 12, dodgeFrom = 13, moveSpeed = 0f, iFrom = 2, iTo = 7),
     BACKSTEP("backstep", 9, stamina = 12f, chainFrom = 6, dodgeFrom = 7, moveSpeed = 0f, iFrom = 1, iTo = 4),
+    /** A draught from the Warden's Flask: slow on your feet until it's down, and staggered before [DRINK_AT], nothing is drunk. */
+    DRINK("drink", 30, chainFrom = 26, dodgeFrom = 22, moveSpeed = 0.35f),
     RIPOSTE("riposte", 32, 12, 22, damage = 1.5f, knockback = 0.1f, moveSpeed = 0f, iFrom = 0, iTo = 32, requestable = false),
     BACKSTAB("backstab", 28, 12, 12, damage = 2.5f, moveSpeed = 0f, iFrom = 0, iTo = 28, requestable = false),
     PARRY("parry", 9, moveSpeed = 0.4f, chainFrom = 3, dodgeFrom = 3, requestable = false),
@@ -76,6 +78,9 @@ enum class Move(
     companion object {
         private val BY_ID = entries.toTypedArray()
         fun byId(id: Int): Move? = BY_ID.getOrNull(id)
+
+        /** The tick a flask draught takes hold. Knocked out of the move before it, the draught stays in the flask. */
+        const val DRINK_AT = 15
 
         /** The riposte's two blows: the stab and the wrench free. */
         val RIPOSTE_HITS = intArrayOf(12, 22)

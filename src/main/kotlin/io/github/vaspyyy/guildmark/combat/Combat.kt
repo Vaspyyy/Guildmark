@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.combat
 
+import io.github.vaspyyy.guildmark.wardfire.WardensFlask
 import io.github.vaspyyy.guildmark.GuildmarkConfig
 import io.github.vaspyyy.guildmark.network.MovePayload
 import io.github.vaspyyy.guildmark.network.ReleaseChargePayload
@@ -85,7 +86,8 @@ object Combat {
         }
         s.spendStamina(move.stamina, now)
         s.focus = (s.focus - move.focus).coerceAtLeast(0f)
-        if (move.isAttack && player.isUsingItem) player.stopUsingItem()
+        if ((move.isAttack || move == Move.DRINK) && player.isUsingItem) player.stopUsingItem()
+        if (move == Move.DRINK) player.isSprinting = false
 
         // A guard counter needs a blow just blocked; otherwise it's an ordinary slash
         var actual = if (move == Move.GUARD_COUNTER && s.guardCounterUntil + 4 < now) Move.LIGHT_1 else move
@@ -157,6 +159,7 @@ object Combat {
     private fun allowed(player: ServerPlayer, move: Move, s: CombatState, now: Long): Boolean {
         if (!move.requestable || player.isSpectator || player.isPassenger || player.isFallFlying || player.isSleeping) return false
         if (move.isAttack && Weapons.classOf(player.mainHandItem) == null) return false
+        if (move == Move.DRINK && !WardensFlask.canDrink(player)) return false
         if (move.stamina > 0f && s.stamina < 1f && !player.isCreative) return false
         if (move.focus > 0f && s.focus < move.focus && !player.isCreative) return false
         if (!s.busy(now)) return true
@@ -282,6 +285,10 @@ object Combat {
         val now = level.gameTime
         s.move?.let { move ->
             if (move.isCritical) tickCritical(player, s, move, s.elapsed(now))
+            if (move == Move.DRINK && !s.drank && s.elapsed(now) >= Move.DRINK_AT) {
+                s.drank = true
+                WardensFlask.drink(player)
+            }
             if (!s.busy(now)) {
                 if (move.isCritical) (level.getEntity(s.criticalTarget) as? LivingEntity)?.let { if (it.isAlive) Stance.release(it) }
                 s.clear()

@@ -2,6 +2,8 @@ package io.github.vaspyyy.guildmark.wardfire
 
 import com.mojang.serialization.Codec
 import com.mojang.serialization.codecs.RecordCodecBuilder
+import io.github.vaspyyy.guildmark.combat.Combat
+import io.github.vaspyyy.guildmark.combat.Move
 import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.registry.ModItems
 import io.github.vaspyyy.guildmark.registry.ModParticles
@@ -54,7 +56,7 @@ object WardensFlask {
         if (get(player).owned) return
         player.setData(ModAttachments.FLASK, FlaskState(true, FlaskState.BASE_CHARGES, FlaskState.BASE_CHARGES))
         player.inventory.placeItemBackInInventory(ItemStack(ModItems.WARDENS_FLASK.get()), Prediction.SERVER_ONLY)
-        player.sendSystemMessage(Component.translatable("message.guildmark.flask.received").withColor(GOLD))
+        player.sendSystemMessage(Component.translatable("message.guildmark.flask.received", Component.keybind("key.guildmark.flask")).withColor(GOLD))
     }
 
     fun refill(player: Player) {
@@ -62,11 +64,17 @@ object WardensFlask {
         if (flask.owned && flask.charges < flask.max) player.setData(ModAttachments.FLASK, flask.copy(charges = flask.max))
     }
 
+    /** There's a draught to drink: the flask is yours and not empty (creative players never run dry). */
+    fun canDrink(player: Player): Boolean {
+        val flask = get(player)
+        return player.isAlive && flask.owned && (flask.charges > 0 || player.isCreative)
+    }
+
     /** One draught: heals [player] and spends a charge. False when there's nothing left to drink. */
     fun drink(player: ServerPlayer): Boolean {
+        if (!canDrink(player)) return false
         val flask = get(player)
-        if (!flask.owned || flask.charges <= 0 || !player.isAlive) return false
-        player.setData(ModAttachments.FLASK, flask.copy(charges = flask.charges - 1))
+        if (!player.isCreative) player.setData(ModAttachments.FLASK, flask.copy(charges = flask.charges - 1))
         player.heal(player.maxHealth * HEAL)
         val level = player.level()
         level.playSound(null, player.x, player.y, player.z, ModSounds.FLASK_DRINK.get(), SoundSource.PLAYERS, 0.9f, 0.95f + player.random.nextFloat() * 0.1f)
@@ -74,10 +82,24 @@ object WardensFlask {
         return true
     }
 
+    /**
+     * The flask key when the new combat is off: a quick draught with no drinking to sit through, then a
+     * short wait before the next. With the new combat on, the key starts [Move.DRINK] instead.
+     */
+    fun sip(player: ServerPlayer) {
+        if (Combat.enabled() || player.isSpectator || !get(player).owned) return
+        val bottle = ItemStack(ModItems.WARDENS_FLASK.get())
+        if (player.cooldowns.isOnCooldown(bottle)) return
+        if (!drink(player)) return empty(player)
+        player.cooldowns.addCooldown(bottle, SIP_COOLDOWN)
+    }
+
     fun empty(player: ServerPlayer) {
         player.sendOverlayMessage(Component.translatable("message.guildmark.flask.empty").withColor(RED))
     }
 
+    /** Ticks between quick draughts when the new combat is off. */
+    private const val SIP_COOLDOWN = 30
     private const val GOLD = 0xE8C26A
     private const val RED = 0xE05A4A
 }

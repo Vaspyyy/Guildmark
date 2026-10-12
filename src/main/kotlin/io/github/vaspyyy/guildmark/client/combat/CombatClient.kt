@@ -9,13 +9,17 @@ import io.github.vaspyyy.guildmark.combat.CombatState
 import io.github.vaspyyy.guildmark.combat.Move
 import io.github.vaspyyy.guildmark.combat.Stance
 import io.github.vaspyyy.guildmark.combat.Weapons
+import io.github.vaspyyy.guildmark.network.DrinkFlaskPayload
 import io.github.vaspyyy.guildmark.network.MovePayload
 import io.github.vaspyyy.guildmark.network.ReleaseChargePayload
 import io.github.vaspyyy.guildmark.network.StaggerPayload
 import io.github.vaspyyy.guildmark.network.StartMovePayload
 import io.github.vaspyyy.guildmark.network.StrikePayload
 import io.github.vaspyyy.guildmark.network.VitalsPayload
+import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.registry.ModSounds
+import net.minecraft.network.chat.Component
+import net.minecraft.sounds.SoundEvents
 import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet
@@ -62,6 +66,7 @@ object CombatClient {
     val DODGE = KeyMapping("key.guildmark.dodge", InputConstants.Type.KEYBOARD, InputConstants.KEY_LALT, CATEGORY)
     val LOCK_ON = KeyMapping("key.guildmark.lock_on", InputConstants.Type.MOUSE, InputConstants.MOUSE_BUTTON_MIDDLE, CATEGORY)
     val SKILL = KeyMapping("key.guildmark.weapon_skill", InputConstants.Type.KEYBOARD, InputConstants.KEY_R, CATEGORY)
+    val FLASK = KeyMapping("key.guildmark.flask", InputConstants.Type.KEYBOARD, InputConstants.KEY_V, CATEGORY)
 
     /** Presses wait this long for the move under way to reach the point where they can follow. */
     private const val BUFFER_TICKS = 8
@@ -122,7 +127,7 @@ object CombatClient {
 
     private class Stagger(val start: Long, val ticks: Int, val kind: Int)
     private class Pending(val seq: Int, val stamina: Float, val focus: Float)
-    private enum class Press { LIGHT, HEAVY, SKILL, DODGE }
+    private enum class Press { LIGHT, HEAVY, SKILL, DODGE, DRINK }
 
     /** Ticks this client has run with a world loaded and unpaused. */
     var ticks = 0L
@@ -221,6 +226,8 @@ object CombatClient {
         if (!active()) {
             action = null
             ownsAttack = false
+            // Without the new combat the flask key is a quick draught, no drinking to sit through
+            while (FLASK.consumeClick()) if (minecraft.gui.screen() == null && !Cutscenes.holdsCamera()) sip(local)
             drain()
             return
         }
@@ -237,6 +244,7 @@ object CombatClient {
             while (LOCK_ON.consumeClick()) if (!screenOpen) LockOn.toggle(local)
             while (DODGE.consumeClick()) if (!screenOpen) press(Press.DODGE)
             while (SKILL.consumeClick()) if (!screenOpen) press(Press.SKILL)
+            while (FLASK.consumeClick()) if (!screenOpen) press(Press.DRINK)
             ownsAttack = !screenOpen && ownsAttack(local)
             if (ownsAttack) {
                 val heavy = minecraft.options.keyShift.isDown
@@ -256,6 +264,7 @@ object CombatClient {
     private fun drain() {
         while (DODGE.consumeClick()) Unit
         while (SKILL.consumeClick()) Unit
+        while (FLASK.consumeClick()) Unit
         while (LOCK_ON.consumeClick()) Unit
         LockOn.release()
     }
@@ -345,6 +354,7 @@ object CombatClient {
         return when (press) {
             Press.DODGE -> if (moveKeys().let { it.first != 0f || it.second != 0f }) Weapons.rollFor(local) else Move.BACKSTEP
             Press.SKILL -> if (armed) Move.SKILL else null
+            Press.DRINK -> if (flaskReady(local)) Move.DRINK else null
             Press.HEAVY -> if (armed) Move.HEAVY else null
             Press.LIGHT -> when {
                 !armed -> null
@@ -429,7 +439,7 @@ object CombatClient {
             }
             move.isAttack -> comboUntil = 0L
         }
-        if (move.isAttack || move.isRoll || move.isCritical) {
+        if (move.isAttack || move.isRoll || move.isCritical || move == Move.DRINK) {
             if (local.isUsingItem) minecraft.gameMode?.releaseUsingItem(local)
             if (move != Move.RUNNING) local.isSprinting = false
         }
@@ -439,6 +449,31 @@ object CombatClient {
         }
         if (move.isCritical) target?.let { face(local, it) }
         moveSound(move)?.let { local.playSound(it, 0.9f, 0.9f + local.random.nextFloat() * 0.2f) }
+    }
+
+    /**
+     * Whether there's a draught in the flask to drink. An empty flask says so instead; with no flask at
+     * all the key does nothing.
+     */
+    private fun flaskReady(local: LocalPlayer): Boolean {
+        val flask = local.getExistingDataOrNull(ModAttachments.FLASK) ?: return false
+        if (!flask.owned) return false
+        if (flask.charges > 0 || local.isCreative) return true
+        emptyFlask(local)
+        return false
+    }
+
+    private fun emptyFlask(local: LocalPlayer) {
+        local.sendOverlayMessage(Component.translatable("message.guildmark.flask.empty").withColor(0xE05A4A))
+        local.playSound(SoundEvents.BOTTLE_EMPTY, 0.5f, 0.8f)
+    }
+
+    /** The flask key with the new combat off: the server drinks at once, if the flask isn't resting. */
+    private fun sip(local: LocalPlayer) {
+        val flask = local.getExistingDataOrNull(ModAttachments.FLASK) ?: return
+        if (!flask.owned) return
+        if (flask.charges <= 0 && !local.isCreative) return emptyFlask(local)
+        ClientPacketDistributor.sendToServer(DrinkFlaskPayload())
     }
 
     private fun Move.isLight(): Boolean =

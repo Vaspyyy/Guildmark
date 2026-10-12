@@ -21,6 +21,7 @@ import net.neoforged.neoforge.client.event.ClientTickEvent
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent
 import net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent
 import io.github.vaspyyy.guildmark.client.wardfire.FlaskFill
+import io.github.vaspyyy.guildmark.client.wardfire.FlaskHud
 import io.github.vaspyyy.guildmark.client.wardfire.TravelFade
 import net.neoforged.neoforge.client.event.RegisterRangeSelectItemModelPropertyEvent
 import io.github.vaspyyy.guildmark.client.wardfire.WardEmberParticle
@@ -88,6 +89,7 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
             event.register(CombatClient.DODGE)
             event.register(CombatClient.LOCK_ON)
             event.register(CombatClient.SKILL)
+            event.register(CombatClient.FLASK)
         }
         NeoForge.EVENT_BUS.addListener(ClientTickEvent.Pre::class.java, CombatClient::onTick)
         NeoForge.EVENT_BUS.addListener(MovementInputUpdateEvent::class.java, CombatClient::onMovementInput)
@@ -154,6 +156,7 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
             event.registerBelow(VanillaGuiLayers.TITLE, PlaceBanner.ID, PlaceBanner)
             event.registerAboveAll(Cutscenes.ID, Cutscenes)
             event.registerAboveAll(TravelFade.ID, TravelFade)
+            event.registerAbove(VanillaGuiLayers.HOTBAR, FlaskHud.ID, FlaskHud)
         }
         modBus.addListener(RegisterParticleProvidersEvent::class.java) { event ->
             event.registerSpriteSet(ModParticles.WARD_EMBER.get()) { sprites -> WardEmberParticle.Provider(sprites) }
