@@ -104,6 +104,12 @@ dependencies {
         }
     }
 
+    // Sodium's faster renderer in the dev runs only, so Guildmark is played and tested with it. Never
+    // required or shipped: players who want it add it themselves.
+    if (companion("sodium")) {
+        localRuntime "maven.modrinth:sodium:${sodium_version}"
+    }
+
     // Kotlin runs without Kotlin for Forge: the stdlib ships inside our jar.
     // Jar-in-Jar picks one copy if several mods bundle it.
     jarJar(implementation("org.jetbrains.kotlin:kotlin-stdlib")) {

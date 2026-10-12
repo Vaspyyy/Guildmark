@@ -20,7 +20,8 @@ import java.util.Properties
 enum class CompanionMod(val id: String, val modId: String, val devKey: String?, page: String) {
     DISTANT_HORIZONS("distant_horizons", "distanthorizons", "distant_horizons", "https://modrinth.com/mod/distanthorizons"),
     SEEDGEN("seedgen", "seedrenderer", null, "https://modrinth.com/mod/distant-horizons-seedgen"),
-    TECTONIC("tectonic", "tectonic", "tectonic", "https://modrinth.com/mod/tectonic");
+    TECTONIC("tectonic", "tectonic", "tectonic", "https://modrinth.com/mod/tectonic"),
+    SODIUM("sodium", "sodium", "sodium", "https://modrinth.com/mod/sodium");
 
     val page: URI = URI.create(page)
 

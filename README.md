@@ -65,6 +65,7 @@ Jobs come from `data/<namespace>/quest_pool/<name>.json`, so datapacks and other
 - [Tectonic](https://modrinth.com/mod/tectonic) (it needs [Lithostitched](https://modrinth.com/mod/lithostitched)): mountain ranges, deep valleys, underground rivers and tiered plateaus. Recommended, not required.
 - [Distant Horizons](https://modrinth.com/mod/distanthorizons): see far past your render distance. To see capitals on the horizon, use its generator mode that runs Minecraft's full world generator. The fast surface mode skips structures.
 - [Distant Horizons SeedGen](https://modrinth.com/mod/distant-horizons-seedgen) works too, but it draws far land from the seed: it builds capitals into its own idea of the terrain, so far-off cities can sit on unflattened land or among its stand-in trees until you get close. Its settings only open from inside Distant Horizons' own; Guildmark's Companions page opens them directly and has its on/off switch.
+- [Sodium](https://modrinth.com/mod/sodium): a much faster renderer for the world around you. Distant Horizons doesn't need it, but the two together leave more frame time for the far view. Recommended, not required.
 
 ## Stack
 
@@ -79,6 +80,6 @@ Jobs come from `data/<namespace>/quest_pool/<name>.json`, so datapacks and other
 ./gradlew build       # jar ends up in build/libs
 ```
 
-`runClient` also loads Tectonic (with Lithostitched), Distant Horizons and SeedGen from Modrinth. None of them ship in the Guildmark jar. In a dev run, Guildmark's settings > Companions chooses which of Tectonic and Distant Horizons the next run loads: it writes `run/config/guildmark/dev-runs.properties`, which `build.gradle` reads when the game next starts. `-Pwith_tectonic=false`, `-Pwith_distant_horizons=false` and `-Pwith_seedgen=false` on the command line win over that, and `gradle.properties` holds the defaults. SeedGen comes with Distant Horizons; its own switch (on the same page) decides whether it draws the far land.
+`runClient` also loads Tectonic (with Lithostitched), Distant Horizons, SeedGen and Sodium from Modrinth. None of them ship in the Guildmark jar. In a dev run, Guildmark's settings > Companions chooses which of Tectonic, Distant Horizons and Sodium the next run loads: it writes `run/config/guildmark/dev-runs.properties`, which `build.gradle` reads when the game next starts. `-Pwith_tectonic=false`, `-Pwith_distant_horizons=false`, `-Pwith_seedgen=false` and `-Pwith_sodium=false` on the command line win over that, and `gradle.properties` holds the defaults. SeedGen comes with Distant Horizons; its own switch (on the same page) decides whether it draws the far land.
 
 Quest logic should stay free of NeoForge imports where practical, so a Fabric port stays possible later.
