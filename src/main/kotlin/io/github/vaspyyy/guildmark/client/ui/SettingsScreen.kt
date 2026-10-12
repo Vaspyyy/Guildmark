@@ -160,7 +160,7 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
                 DevRuns.pending(mod) -> if (DevRuns.chosen(mod)) "loads_next" else "gone_next"
                 !mod.loaded -> when {
                     !DevRuns.offered -> "missing"
-                    mod.devKey != null -> "off"
+                    mod.devKey != null || CompanionMod.DISTANT_HORIZONS.loaded -> "off"
                     else -> "with_dh"
                 }
                 mod == CompanionMod.SEEDGEN && !CompanionMod.DISTANT_HORIZONS.loaded -> "needs_dh"
@@ -393,7 +393,14 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
             for (part in row.parts) {
                 val widget = part.widget
                 widget.visible = shown
-                if (!shown) continue
+                if (!shown) {
+                    // A slider scrolled out of sight mustn't go on taking arrow keys or a drag
+                    if (getFocused() === widget) {
+                        clearFocus()
+                        setDragging(false)
+                    }
+                    continue
+                }
                 widget.setPosition(if (part.fromRight) bodyX + bodyWidth - part.dx else bodyX + part.dx, y + part.dy)
             }
             if (shown) y += row.height
@@ -412,8 +419,9 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
         page = next
         lastPage = next
         first = 0
-        Ui.page()
         rebuildWidgets()
+        // Chosen from the keyboard: stay on its tab, so the next key doesn't land on the first one
+        if (minecraft.lastInputType.isKeyboard) setInitialFocus(tabs[page.ordinal])
     }
 
     override fun mouseScrolled(x: Double, y: Double, scrollX: Double, scrollY: Double): Boolean {
@@ -494,7 +502,7 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
         val w = (lines.maxOfOrNull { font.width(it) } ?: 0) + 16
         val h = lines.size * 10 + 10
         var x = mouseX + 10
-        if (x + w > width - 4) x = mouseX - 10 - w
+        if (x + w > width - 4) x = (mouseX - 10 - w).coerceAtLeast(4)
         val y = (mouseY + 12).let { if (it + h > height - 4) mouseY - 6 - h else it }.coerceAtLeast(4)
         graphics.nextStratum()
         graphics.blitSprite(RenderPipelines.GUI_TEXTURED, Ui.PANEL_PLAIN, x, y, w, h)
@@ -520,7 +528,9 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
             if (current) graphics.blitSprite(RenderPipelines.GUI_TEXTURED, Ui.DIAMOND, x + width / 2 - 2, y + 11, 5, 5)
         }
 
-        override fun playDownSound(manager: SoundManager) {}
+        override fun playDownSound(manager: SoundManager) {
+            if (target != page) Ui.turn(manager)
+        }
     }
 
     companion object {
@@ -671,7 +681,7 @@ class Slider(private val label: Component, private val steps: List<Double>, star
     override fun createNarrationMessage(): MutableComponent = Component.translatable("gui.narrate.slider", CommonComponents.optionNameValue(label, message))
 
     override fun keyPressed(event: KeyEvent): Boolean {
-        if (active && canChangeValue && (event.isLeft || event.isRight)) {
+        if (isActive && canChangeValue && (event.isLeft || event.isRight)) {
             val i = (index() + if (event.isLeft) -1 else 1).coerceIn(0, steps.size - 1)
             setValue(i.toDouble() / (steps.size - 1))
             return true
@@ -689,6 +699,10 @@ class Slider(private val label: Component, private val steps: List<Double>, star
         val font = Minecraft.getInstance().font
         graphics.centeredText(font, message, x + width / 2, y + (height - 8) / 2 + 1, if (active) Ui.TEXT else Ui.TEXT_FAINT)
         handleCursor(graphics)
+    }
+
+    override fun onDrag(event: MouseButtonEvent, dx: Double, dy: Double) {
+        if (visible) super.onDrag(event, dx, dy)
     }
 
     override fun onRelease(event: MouseButtonEvent) {

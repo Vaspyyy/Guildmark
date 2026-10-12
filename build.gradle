@@ -87,6 +87,14 @@ def companion = { String name ->
     def chosen = gradle.startParameter.projectProperties["with_" + name] ?: devRuns.getProperty(name) ?: project.findProperty("with_" + name)
     chosen == null || chosen.toString().trim() != "false"
 }
+// The Companions page shows what the next run loads: for a companion never switched there, that's gradle.properties' say
+def projectDefaults = new Properties()
+projectDefaults.load(new StringReader(providers.fileContents(layout.projectDirectory.file("gradle.properties")).asText.get()))
+neoForge.runs.configureEach {
+    for (name in ["tectonic", "distant_horizons", "sodium"]) {
+        systemProperty "guildmark.devRuns." + name, (projectDefaults.getProperty("with_" + name) ?: "true").trim()
+    }
+}
 
 dependencies {
     // Tectonic's grander terrain in the dev runs only (never shipped; players add it themselves)

@@ -120,10 +120,14 @@ object DevRuns {
         choices = read
     }
 
-    /** Whether the next dev run loads [mod]: as chosen here, or as this run does when nothing's been chosen. */
+    /**
+     * Whether the next dev run loads [mod]: as chosen here, or else as gradle.properties has it (build.gradle
+     * hands that over as a system property), or else as this run does.
+     */
     fun chosen(mod: CompanionMod): Boolean {
         val key = mod.devKey ?: return mod.loaded
-        return choices().getProperty(key)?.trim()?.let { it != "false" } ?: mod.loaded
+        val choice = choices().getProperty(key) ?: System.getProperty("guildmark.devRuns.$key")
+        return choice?.trim()?.let { it != "false" } ?: mod.loaded
     }
 
     /** True when the next run will load [mod] and this one hasn't, or the other way round. */
@@ -131,9 +135,8 @@ object DevRuns {
 
     fun choose(mod: CompanionMod, load: Boolean) {
         val key = mod.devKey ?: return
+        // Only what was switched here is written down: a one-off -P for this run mustn't stick
         val chosen = choices()
-        // Every switch is written down, so the file reads as what the next run will be
-        for (other in CompanionMod.entries) other.devKey?.let { if (chosen.getProperty(it) == null) chosen.setProperty(it, other.loaded.toString()) }
         chosen.setProperty(key, load.toString())
         try {
             Files.createDirectories(file.parent)

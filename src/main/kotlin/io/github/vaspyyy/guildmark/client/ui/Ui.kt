@@ -101,12 +101,18 @@ object Ui {
     fun open() = menu(ModSounds.UI_OPEN.get(), 1f, 0.5f)
     fun close() = menu(ModSounds.UI_CLOSE.get(), 1f, 0.45f)
     fun hover() = menu(ModSounds.UI_HOVER.get(), 0.95f + Math.random().toFloat() * 0.1f, 0.25f)
-    fun select() = menu(ModSounds.UI_SELECT.get(), 1f, 0.45f)
+    /** Something chosen (a line of dialogue, a pin on the map): the kit's sound, or the usual click with the menu sounds off. */
+    fun select() = clickOr(Minecraft.getInstance().soundManager, ModSounds.UI_SELECT.get(), 1f, 0.45f)
     fun page() = menu(ModSounds.UI_PAGE.get(), 1f, 0.5f)
 
     /** A kit button's press: its own sound, or the usual click with the menu sounds off. */
-    fun click(manager: SoundManager) {
-        if (menuSounds()) manager.play(SimpleSoundInstance.forUI(ModSounds.UI_SELECT.get(), 1f, 0.35f))
+    fun click(manager: SoundManager) = clickOr(manager, ModSounds.UI_SELECT.get(), 1f, 0.35f)
+
+    /** A page turned by a button (a settings tab): the page sound, or the usual click with the menu sounds off. */
+    fun turn(manager: SoundManager) = clickOr(manager, ModSounds.UI_PAGE.get(), 1f, 0.5f)
+
+    private fun clickOr(manager: SoundManager, sound: SoundEvent, pitch: Float, volume: Float) {
+        if (menuSounds()) manager.play(SimpleSoundInstance.forUI(sound, pitch, volume))
         else AbstractWidget.playButtonClickSound(manager)
     }
 
