@@ -144,7 +144,7 @@ class HollowThrone(var altar: Optional<BlockPos> = Optional.empty(), var defeate
         val altar = altar.orElse(null) ?: return
         if (level.chunkSource.getChunkNow(altar.x shr 4, altar.z shr 4) == null) return
         // The last Wardfire before the King, raised the first time anyone comes near (thrones from before Wardfires too)
-        if (!fire && WardfireSites.enabled()) {
+        if (!fire && WardfireSites.enabled() && level.players().any { it.blockPosition().closerThan(altar, 80.0) }) {
             fire = true
             setDirty()
             if (!WardfireSites.near(level, altar, 40)) WardfireSites.placeNear(level, altar, RADIUS + 10, RADIUS + 18)

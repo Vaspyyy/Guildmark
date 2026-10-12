@@ -54,7 +54,8 @@ object WardfireSites {
 
     /**
      * Raises a Wardfire somewhere between [min] and [max] blocks from [center], on the first spot that
-     * suits one. Returns where it stands, or null if none did.
+     * suits one. Only land that's already loaded is tried, so this never generates chunks. Returns where
+     * the Wardfire stands, or null if no spot did.
      */
     fun placeNear(level: ServerLevel, center: BlockPos, min: Int, max: Int): BlockPos? {
         val random = level.random
@@ -63,6 +64,7 @@ object WardfireSites {
             val distance = min + random.nextDouble() * (max - min)
             val x = center.x + (cos(angle) * distance).roundToInt()
             val z = center.z + (sin(angle) * distance).roundToInt()
+            if (!loaded(level, x, z)) return@repeat
             val pos = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, BlockPos(x, 0, z))
             if (fits(level, pos)) {
                 build(level, pos, random)
@@ -70,6 +72,15 @@ object WardfireSites {
             }
         }
         return null
+    }
+
+    /** The land within the clearing and stones of a fire at [x], [z] is loaded. */
+    private fun loaded(level: ServerLevel, x: Int, z: Int): Boolean {
+        val reach = CLEARING + 2
+        for (dx in intArrayOf(-reach, reach)) for (dz in intArrayOf(-reach, reach)) {
+            if (!level.hasChunk((x + dx) shr 4, (z + dz) shr 4)) return false
+        }
+        return true
     }
 
     /**

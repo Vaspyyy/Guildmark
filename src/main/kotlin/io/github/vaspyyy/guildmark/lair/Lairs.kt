@@ -56,6 +56,8 @@ data class Lair(
     var boss: UUID? = null,
     /** A main-story shard vault: which shard it holds (see Courtier), or -1 for an ordinary lair. */
     val shard: Int = -1,
+    /** Whether its Wardfire has been raised (or tried for). */
+    var fire: Boolean = false,
 ) {
     val courtier: Courtier? get() = Courtier.forShard(shard)
 
@@ -72,7 +74,8 @@ data class Lair(
                 Codec.BOOL.optionalFieldOf("cleared", false).forGetter(Lair::cleared),
                 UUIDUtil.CODEC.optionalFieldOf("boss").forGetter { Optional.ofNullable(it.boss) },
                 Codec.INT.optionalFieldOf("shard", -1).forGetter(Lair::shard),
-            ).apply(i) { id, pos, theme, rank, awake, cleared, boss, shard -> Lair(id, pos, theme, rank, awake, cleared, boss.orElse(null), shard) }
+                Codec.BOOL.optionalFieldOf("fire", false).forGetter(Lair::fire),
+            ).apply(i) { id, pos, theme, rank, awake, cleared, boss, shard, fire -> Lair(id, pos, theme, rank, awake, cleared, boss.orElse(null), shard, fire) }
         }
     }
 }
@@ -107,8 +110,6 @@ class Lairs(val lairs: MutableList<Lair> = mutableListOf()) : SavedData() {
             if (!level.getFluidState(top.below()).isEmpty || !level.getFluidState(top).isEmpty) return@repeat
             val lair = Lair((lairs.maxOfOrNull { it.id } ?: 0) + 1, top, theme, rank, shard = shard)
             buildArena(level, lair)
-            // A Wardfire on the way in, beyond where the lair wakes
-            if (WardfireSites.enabled() && !WardfireSites.near(level, top, 40)) WardfireSites.placeNear(level, top, 24, 32)
             lairs.add(lair)
             setDirty()
             return lair
@@ -175,6 +176,7 @@ class Lairs(val lairs: MutableList<Lair> = mutableListOf()) : SavedData() {
             if (lair.cleared) continue
             if (level.chunkSource.getChunkNow(lair.pos.x shr 4, lair.pos.z shr 4) == null) continue
             val near = level.players().filter { it.blockPosition().closerThan(lair.pos, BAR_RANGE) && !it.isSpectator }
+            if (!lair.fire && level.players().any { it.blockPosition().closerThan(lair.pos, FIRE_RANGE) }) raiseFire(level, lair)
             if (!lair.awake && near.any { it.blockPosition().closerThan(lair.pos, WAKE_RANGE) }) wake(level, lair)
             if (!lair.awake) continue
             // A boss of our own keeps its own bar and fights its own fight
@@ -192,6 +194,16 @@ class Lairs(val lairs: MutableList<Lair> = mutableListOf()) : SavedData() {
             for (player in bar.players.toList()) if (player !in near) bar.removePlayer(player)
             for (player in near) if (player is ServerPlayer && player !in bar.players) bar.addPlayer(player)
         }
+    }
+
+    /**
+     * A Wardfire on the way in, beyond where the lair wakes. It's raised as the first player comes near
+     * (lairs from before Wardfires get one too), so the land round the lair is already there.
+     */
+    private fun raiseFire(level: ServerLevel, lair: Lair) {
+        lair.fire = true
+        setDirty()
+        if (WardfireSites.enabled() && !WardfireSites.near(level, lair.pos, 40)) WardfireSites.placeNear(level, lair.pos, 24, 32)
     }
 
     private fun bossName(lair: Lair): Component =
@@ -294,6 +306,8 @@ class Lairs(val lairs: MutableList<Lair> = mutableListOf()) : SavedData() {
 
     companion object {
         const val RADIUS = 8
+        /** How close the first player comes before the lair's Wardfire is raised. */
+        private const val FIRE_RANGE = 80.0
         private const val WAKE_RANGE = 20.0
         private const val BAR_RANGE = 48.0
         private val BOSS_HEALTH = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "lair_boss_health")
