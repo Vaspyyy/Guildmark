@@ -681,6 +681,33 @@ def seal(r, seed):
     return img
 
 
+def crest():
+    """the guild's shield with the mark's diamond on a night-blue field, for the button that opens the settings"""
+    rows = [".ooooooooooooo.",
+            "oGGGGGGGGGGGGGo",
+            "oGd#########dGo",
+            "oG#####g#####Go",
+            "oG####gLg####Go",
+            "oG###gLLLg###Go",
+            "oG##gLLWLLg##Go",
+            "oG###gLLLg###Go",
+            "oG####gLg####Go",
+            ".oG####g####Go.",
+            ".oGd#######dGo.",
+            "..oG#######Go..",
+            "...oGd###dGo...",
+            "....ooGGGoo....",
+            "......ooo......"]
+    img = from_rows(rows, {".": CL, "o": OUT, "G": GOLD_L, "d": GOLD_D, "#": (34, 38, 64, 255), "g": GOLD,
+                           "L": GOLD_L, "W": (246, 226, 160, 255)})
+    # the field darkens towards the point
+    for y in range(img.height):
+        for x in range(img.width):
+            if rows[y][x] == "#":
+                img.putpixel((x, y), shade((34, 38, 64, 255), 1.15 - 0.45 * y / (img.height - 1)))
+    return img
+
+
 # ---------------------------------------------------------------- main
 def main():
     global SPRITES
@@ -701,6 +728,7 @@ def main():
     save(inset(18, 18, (10, 9, 12, 210), 7), "ui/slot")
     save(socket(18, 8), "ui/socket")
     save(glow(64, (226, 176, 92), 92), "ui/glow", STRETCH)
+    save(crest(), "ui/crest")
 
     # the name plate: a dark ribbon edged in gold
     plate = ["..oooooooooooooooooooo..",

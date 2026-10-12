@@ -2,6 +2,7 @@ package io.github.vaspyyy.guildmark.client.atlas
 
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.atlas.AtlasPlace
+import io.github.vaspyyy.guildmark.client.GuildmarkClientConfig
 import io.github.vaspyyy.guildmark.client.ui.Ui
 import io.github.vaspyyy.guildmark.network.AtlasMark
 import io.github.vaspyyy.guildmark.registry.ModSounds
@@ -47,6 +48,7 @@ object PlaceBanner : GuiLayer {
     }
 
     private fun show(mark: AtlasMark, subtitle: Component, seconds: Float) {
+        if (GuildmarkClientConfig.SPEC.isLoaded && !GuildmarkClientConfig.PLACE_BANNERS.get()) return
         banner = Banner(AtlasClient.name(mark), subtitle, Util.getMillis(), seconds)
     }
 

@@ -77,19 +77,29 @@ repositories {
     }
 }
 
+// Which companion mods the dev runs load. Guildmark Settings > Companions in game writes the choice to
+// run/config/guildmark/dev-runs.properties, read here the next time the game starts from Gradle;
+// -Pwith_<name>=true|false on the command line wins over it, and gradle.properties gives the defaults.
+def devRuns = new Properties()
+def devRunsText = providers.fileContents(layout.projectDirectory.file("run/config/guildmark/dev-runs.properties")).asText.getOrNull()
+if (devRunsText != null) devRuns.load(new StringReader(devRunsText))
+def companion = { String name ->
+    def chosen = gradle.startParameter.projectProperties["with_" + name] ?: devRuns.getProperty(name) ?: project.findProperty("with_" + name)
+    chosen == null || chosen.toString().trim() != "false"
+}
+
 dependencies {
-    // Tectonic's grander terrain in the dev runs only (never shipped; players add it themselves).
-    // Run with -Pwith_tectonic=false, or set it in gradle.properties, to test on vanilla terrain.
-    if (project.findProperty("with_tectonic") != "false") {
+    // Tectonic's grander terrain in the dev runs only (never shipped; players add it themselves)
+    if (companion("tectonic")) {
         localRuntime "maven.modrinth:tectonic:${tectonic_version}"
         localRuntime "maven.modrinth:lithostitched:${lithostitched_version}"
     }
 
-    // Distant Horizons' far view in the dev runs only, the same way. -Pwith_distant_horizons=false leaves it
-    // out; -Pwith_seedgen=true adds the SeedGen add-on, which draws the far land from the seed instead.
-    if (project.findProperty("with_distant_horizons") != "false") {
+    // Distant Horizons' far view in the dev runs only, the same way, with the SeedGen add-on, which draws
+    // the far land from the seed instead. SeedGen's own switch (also under Companions) decides whether it does.
+    if (companion("distant_horizons")) {
         localRuntime "maven.modrinth:distanthorizons:${distant_horizons_version}"
-        if (project.findProperty("with_seedgen") == "true") {
+        if (companion("seedgen")) {
             localRuntime "maven.modrinth:distant-horizons-seedgen:${seedgen_version}"
         }
     }

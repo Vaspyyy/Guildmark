@@ -1,0 +1,709 @@
+package io.github.vaspyyy.guildmark.client.ui
+
+import com.mojang.blaze3d.platform.InputConstants
+import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.GuildmarkConfig
+import io.github.vaspyyy.guildmark.client.GuildmarkClientConfig
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.components.AbstractSliderButton
+import net.minecraft.client.gui.components.AbstractWidget
+import net.minecraft.client.gui.components.Button
+import net.minecraft.client.gui.components.SpriteIconButton
+import net.minecraft.client.gui.screens.ConfirmLinkScreen
+import net.minecraft.client.gui.screens.PauseScreen
+import net.minecraft.client.gui.screens.Screen
+import net.minecraft.client.gui.screens.TitleScreen
+import net.minecraft.client.input.InputWithModifiers
+import net.minecraft.client.input.KeyEvent
+import net.minecraft.client.input.MouseButtonEvent
+import net.minecraft.client.renderer.RenderPipelines
+import net.minecraft.client.sounds.SoundManager
+import net.minecraft.network.chat.CommonComponents
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.MutableComponent
+import net.minecraft.resources.Identifier
+import net.minecraft.util.ARGB
+import net.minecraft.util.FormattedCharSequence
+import net.neoforged.neoforge.client.event.ScreenEvent
+import net.neoforged.neoforge.client.gui.widget.ModsButton
+import net.neoforged.neoforge.common.ModConfigSpec
+import kotlin.math.abs
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.roundToInt
+import kotlin.math.sign
+
+/**
+ * Guildmark's settings, in the kit's look: what this player sees and hears (Interface), the rules of
+ * the worlds they play (World), and the mods Guildmark plays well with (Companions), with SeedGen's
+ * switch, each companion's own settings, and in a dev run which of them load next. Opened from the
+ * crest by the Mods button on the title screen and the pause menu, and from Mods > Guildmark > Config.
+ */
+class SettingsScreen(private val parent: Screen?) : Screen(Component.translatable("guildmark.configuration.title")) {
+    enum class Page(val key: String) { INTERFACE("interface"), WORLD("world"), COMPANIONS("companions") }
+
+    private var page = lastPage
+    private var panelX = 0
+    private var panelY = 0
+    private var panelWidth = 0
+    private var panelHeight = 0
+    private var bodyX = 0
+    private var bodyTop = 0
+    private var bodyWidth = 0
+    private var bodyBottom = 0
+    private var ticks = 0
+
+    private val rows = ArrayList<Row>()
+    /** The first row shown; the list moves a row at a time, so a row is always shown whole or not at all. */
+    private var first = 0
+    private val tabs = ArrayList<Tab>()
+
+    /** Something hovering explains, found while drawing. */
+    private class Hot(val x0: Int, val y0: Int, val x1: Int, val y1: Int, val tip: Component)
+
+    private val hots = ArrayList<Hot>()
+    /** Settings moved by a slider, saved as the screen goes rather than at every step of a drag. */
+    private val unsaved = HashSet<ModConfigSpec>()
+
+    // ---- Rows ----
+
+    /** One line of a page, [height] tall, with the widgets it places at offsets from its corner. */
+    private abstract inner class Row(var height: Int) {
+        val parts = ArrayList<Part>()
+        var y = 0
+
+        open fun draw(graphics: GuiGraphicsExtractor, x: Int, y: Int, w: Int) {}
+    }
+
+    private class Part(val widget: AbstractWidget, val dx: Int, val dy: Int, val fromRight: Boolean)
+
+    private inner class Header(private val title: Component) : Row(HEADER) {
+        override fun draw(graphics: GuiGraphicsExtractor, x: Int, y: Int, w: Int) {
+            Ui.headingAt(graphics, font, title, x, y + 4)
+            graphics.fill(x, y + 15, x + w, y + 16, RULE)
+        }
+    }
+
+    private inner class Note(text: Component, private val color: Int, width: Int) : Row(0) {
+        private val lines: List<FormattedCharSequence> = font.split(text, width - 4)
+
+        init {
+            height = lines.size * 10 + 6
+        }
+
+        override fun draw(graphics: GuiGraphicsExtractor, x: Int, y: Int, w: Int) {
+            for ((i, line) in lines.withIndex()) graphics.text(font, line, x + 2, y + 3 + i * 10, color, false)
+        }
+    }
+
+    /** A setting: its name on the left, its control on the right, and hovering it says what it does. */
+    private inner class Setting(private val label: Component, private val tip: Component?, control: AbstractWidget) : Row(SETTING) {
+        init {
+            parts.add(Part(control, control.width, (SETTING - control.height) / 2, true))
+        }
+
+        override fun draw(graphics: GuiGraphicsExtractor, x: Int, y: Int, w: Int) {
+            val control = parts[0].widget
+            val room = w - control.width - 12
+            val full = label.string
+            val shown = if (font.width(full) <= room) full else font.plainSubstrByWidth(full, room - font.width(ELLIPSIS)).trimEnd() + ELLIPSIS
+            graphics.text(font, shown, x + 2, y + (SETTING - 8) / 2, if (control.active) Ui.TEXT else Ui.TEXT_SOFT, false)
+            tip?.let { hots.add(Hot(x, y, x + w, y + SETTING, it)) }
+        }
+    }
+
+    /** A companion mod: its name and how it stands, what it does with Guildmark, and what can be done about it. */
+    private inner class Card(private val mod: CompanionMod, width: Int) : Row(0) {
+        private val name = Component.translatable("gui.guildmark.settings.companion.${mod.id}.name")
+        private val about: List<FormattedCharSequence> = font.split(Component.translatable("gui.guildmark.settings.companion.${mod.id}"), width - 4)
+        private val switchLabel: Component?
+        private val switchTip: Component?
+
+        init {
+            height = 14 + about.size * 10 + 4 + CARD_BUTTONS + 8
+            val buttonsY = 14 + about.size * 10 + 4
+            var left = 2
+            if (mod.loaded && mod.hasSettings()) {
+                val settings = Ui.KitButton(0, 0, 64, CARD_BUTTONS, Component.translatable("gui.guildmark.settings.open")) {
+                    mod.settings(this@SettingsScreen)?.let { minecraft.gui.setScreen(it) }
+                }
+                parts.add(Part(settings, left, buttonsY, false))
+                left += settings.width + 4
+            }
+            if (!mod.loaded && !DevRuns.offered) {
+                val get = Ui.KitButton(0, 0, 64, CARD_BUTTONS, Component.translatable("gui.guildmark.settings.get")) {
+                    ConfirmLinkScreen.confirmLinkNow(this@SettingsScreen, mod.page)
+                }
+                parts.add(Part(get, left, buttonsY, false))
+            }
+            // SeedGen's own switch, or in a dev run whether the next one loads this mod
+            var label: Component? = null
+            var tip: Component? = null
+            if (mod == CompanionMod.SEEDGEN && mod.loaded && SeedGen.enabled() != null) {
+                label = Component.translatable("gui.guildmark.settings.seedgen")
+                tip = Component.translatable("gui.guildmark.settings.seedgen.tip")
+                val switch = Switch(label, { SeedGen.enabled() == true }) { SeedGen.setEnabled(it) }
+                parts.add(Part(switch, switch.width, buttonsY + (CARD_BUTTONS - switch.height) / 2, true))
+            } else if (DevRuns.offered && mod.devKey != null) {
+                label = Component.translatable("gui.guildmark.settings.load")
+                tip = Component.translatable("gui.guildmark.settings.load.tip", mod.devKey)
+                val switch = Switch(label, { DevRuns.chosen(mod) }) { DevRuns.choose(mod, it) }
+                parts.add(Part(switch, switch.width, buttonsY + (CARD_BUTTONS - switch.height) / 2, true))
+            }
+            switchLabel = label
+            switchTip = tip
+        }
+
+        private fun status(): Pair<Component, Int> {
+            val key = when {
+                DevRuns.pending(mod) -> if (DevRuns.chosen(mod)) "loads_next" else "gone_next"
+                !mod.loaded -> when {
+                    !DevRuns.offered -> "missing"
+                    mod.devKey != null -> "off"
+                    else -> "with_dh"
+                }
+                mod == CompanionMod.SEEDGEN && !CompanionMod.DISTANT_HORIZONS.loaded -> "needs_dh"
+                mod == CompanionMod.SEEDGEN -> when (SeedGen.enabled()) {
+                    true -> "on"
+                    false -> "off"
+                    null -> "loaded"
+                }
+                else -> "loaded"
+            }
+            val color = when (key) {
+                "loaded", "on" -> Ui.GREEN
+                "loads_next", "gone_next" -> Ui.GOLD_BRIGHT
+                "needs_dh" -> Ui.RED
+                "off" -> Ui.TEXT_SOFT
+                else -> Ui.TEXT_FAINT
+            }
+            return Component.translatable("gui.guildmark.settings.status.$key") to color
+        }
+
+        override fun draw(graphics: GuiGraphicsExtractor, x: Int, y: Int, w: Int) {
+            Ui.headingAt(graphics, font, name, x + 2, y + 1, Ui.GOLD)
+            val (status, color) = status()
+            val statusX = x + w - font.width(status) - 2
+            graphics.text(font, status, statusX, y + 3, color, false)
+            graphics.fill(statusX - 7, y + 5, statusX - 3, y + 9, color)
+            for ((i, line) in about.withIndex()) graphics.text(font, line, x + 2, y + 15 + i * 10, Ui.TEXT_SOFT, false)
+            val switch = parts.lastOrNull()?.takeIf { it.fromRight }?.widget ?: return
+            val label = switchLabel ?: return
+            val labelX = switch.x - 6 - font.width(label)
+            graphics.text(font, label, labelX, switch.y + (switch.height - 8) / 2, if (switch.active) Ui.TEXT else Ui.TEXT_SOFT, false)
+            switchTip?.let { hots.add(Hot(labelX - 2, switch.y - 3, switch.x + switch.width, switch.y + switch.height + 3, it)) }
+        }
+    }
+
+    // ---- Building a page ----
+
+    /** A switch for a setting in [spec], saved as soon as it's flipped. */
+    private fun toggle(value: ModConfigSpec.BooleanValue, spec: ModConfigSpec, editable: Boolean): Setting {
+        val label = label(value)
+        val switch = Switch(label, { spec.isLoaded && value.get() }) {
+            value.set(it)
+            spec.save()
+        }
+        switch.active = editable
+        return Setting(label, tip(value), switch)
+    }
+
+    /** A slider for a number in [spec], moving through [steps]; saved as the screen closes. */
+    private fun slider(value: ModConfigSpec.ConfigValue<out Number>, spec: ModConfigSpec, editable: Boolean, steps: List<Double>, text: (Double) -> String, set: (Double) -> Unit): Setting {
+        val label = label(value)
+        val start = if (spec.isLoaded) value.get().toDouble() else value.default.toDouble()
+        val slider = Slider(label, steps, start, text) { set(it); unsaved.add(spec) }
+        slider.active = editable
+        return Setting(label, tip(value), slider)
+    }
+
+    private fun label(value: ModConfigSpec.ConfigValue<*>): Component = Component.translatable("guildmark.configuration.${value.path.last()}")
+
+    private fun tip(value: ModConfigSpec.ConfigValue<*>): Component? = value.spec.comment?.takeIf { it.isNotBlank() }?.let { Component.literal(it) }
+
+    private fun header(key: String) = Header(Component.translatable("gui.guildmark.settings.section.$key"))
+
+    private fun interfacePage(width: Int): List<Row> {
+        val c = GuildmarkClientConfig
+        val spec = c.SPEC
+        val listed = listOf(c.COMPASS, c.CONTRACT_TRACKER, c.PLACE_BANNERS, c.COMBAT_HUD, c.DEATH_SCREEN, c.CAMERA_SHAKE, c.CUTSCENES, c.DIALOGUE_CAMERA, c.MENU_SOUNDS)
+        return listOf(
+            header("screen"),
+            toggle(c.COMPASS, spec, true),
+            toggle(c.CONTRACT_TRACKER, spec, true),
+            toggle(c.PLACE_BANNERS, spec, true),
+            toggle(c.COMBAT_HUD, spec, true),
+            toggle(c.DEATH_SCREEN, spec, true),
+            header("camera"),
+            toggle(c.CAMERA_SHAKE, spec, true),
+            toggle(c.CUTSCENES, spec, true),
+            toggle(c.DIALOGUE_CAMERA, spec, true),
+            header("sound"),
+            toggle(c.MENU_SOUNDS, spec, true),
+        ) + others(c, spec, listed, true)
+    }
+
+    private fun worldPage(width: Int): List<Row> {
+        val c = GuildmarkConfig
+        val spec = c.SPEC
+        val local = minecraft.singleplayerServer?.isPublished == true
+        val note = when {
+            !spec.isLoaded -> "unloaded"
+            minecraft.currentServer != null && !local -> "online"
+            local -> "lan"
+            else -> "local"
+        }
+        // As NeoForge's own settings screen allows: only where nobody else is playing by these rules
+        val editable = note == "local"
+        val listed = listOf(
+            c.COMBAT, c.LOSE_MARKS, c.PAY_MULTIPLIER, c.XP_MULTIPLIER, c.RELIC_CACHE_CHANCE, c.HANDBOOK, c.AUTO_BOARDS, c.WARDFIRES,
+            c.DUNGEONS, c.FIELD_BOSSES, c.CAPITALS, c.DUSK_RIDERS, c.SIEGES, c.SIEGE_CHANCE, c.BANDITS, c.RIVALS, c.CHARACTERS,
+        )
+        val rows = arrayListOf<Row>(Note(Component.translatable("gui.guildmark.settings.world.$note"), if (editable) Ui.TEXT_FAINT else Ui.GOLD, width))
+        if (!spec.isLoaded) return rows
+        rows += listOf(
+            header("combat"),
+            toggle(c.COMBAT, spec, editable),
+            toggle(c.LOSE_MARKS, spec, editable),
+            header("rewards"),
+            slider(c.PAY_MULTIPLIER, spec, editable, MULTIPLIERS, ::times) { c.PAY_MULTIPLIER.set(it) },
+            slider(c.XP_MULTIPLIER, spec, editable, MULTIPLIERS, ::times) { c.XP_MULTIPLIER.set(it) },
+            slider(c.RELIC_CACHE_CHANCE, spec, editable, CHANCES, ::percentOf) { c.RELIC_CACHE_CHANCE.set(it) },
+            toggle(c.HANDBOOK, spec, editable),
+            header("world"),
+            toggle(c.AUTO_BOARDS, spec, editable),
+            toggle(c.WARDFIRES, spec, editable),
+            toggle(c.DUNGEONS, spec, editable),
+            toggle(c.FIELD_BOSSES, spec, editable),
+            toggle(c.CAPITALS, spec, editable),
+            toggle(c.DUSK_RIDERS, spec, editable),
+            header("threats"),
+            toggle(c.SIEGES, spec, editable),
+            slider(c.SIEGE_CHANCE, spec, editable, PERCENTS, ::percent) { c.SIEGE_CHANCE.set(it.roundToInt()) },
+            toggle(c.BANDITS, spec, editable),
+            toggle(c.RIVALS, spec, editable),
+            header("story"),
+            toggle(c.CHARACTERS, spec, editable),
+        )
+        rows += others(c, spec, listed, editable)
+        return rows
+    }
+
+    /**
+     * Any setting [holder] declares that the page above doesn't place yet, found by looking through its
+     * fields, so one added later is never out of reach.
+     */
+    private fun others(holder: Any, spec: ModConfigSpec, listed: List<ModConfigSpec.ConfigValue<*>>, editable: Boolean): List<Row> {
+        val rows = ArrayList<Row>()
+        val declared = holder.javaClass.declaredFields.mapNotNull { field ->
+            if (!ModConfigSpec.ConfigValue::class.java.isAssignableFrom(field.type)) return@mapNotNull null
+            try {
+                field.isAccessible = true
+                field.get(holder) as? ModConfigSpec.ConfigValue<*>
+            } catch (e: ReflectiveOperationException) {
+                null
+            } catch (e: RuntimeException) {
+                null
+            }
+        }
+        for (value in declared) {
+            if (listed.any { it === value }) continue
+            val row: Row = when (value) {
+                is ModConfigSpec.BooleanValue -> toggle(value, spec, editable)
+                is ModConfigSpec.IntValue -> {
+                    val range = value.spec.getRange<Int>() ?: continue
+                    slider(value, spec, editable, linear(range.min.toDouble(), range.max.toDouble(), true), ::plain) { value.set(it.roundToInt()) }
+                }
+                is ModConfigSpec.DoubleValue -> {
+                    val range = value.spec.getRange<Double>() ?: continue
+                    slider(value, spec, editable, linear(range.min, range.max, false), ::plain) { value.set(it) }
+                }
+                else -> continue
+            }
+            if (rows.isEmpty()) rows.add(header("other"))
+            rows.add(row)
+        }
+        return rows
+    }
+
+    private fun companionsPage(width: Int): List<Row> {
+        val rows = arrayListOf<Row>(Note(Component.translatable("gui.guildmark.settings.companions.note"), Ui.TEXT_FAINT, width))
+        if (DevRuns.offered) rows.add(Note(Component.translatable("gui.guildmark.settings.companions.dev"), Ui.GOLD, width))
+        for (mod in CompanionMod.entries) rows.add(Card(mod, width))
+        return rows
+    }
+
+    // ---- The screen ----
+
+    override fun init() {
+        panelWidth = min(MAX_WIDTH, width - 16)
+        panelHeight = min(MAX_HEIGHT, height - 20)
+        panelX = (width - panelWidth) / 2
+        panelY = (height - panelHeight) / 2 + 4
+        bodyX = panelX + PAD
+        bodyTop = panelY + BODY_TOP
+        bodyWidth = panelWidth - PAD * 2 - SCROLLBAR
+        bodyBottom = panelY + panelHeight - FOOTER
+
+        tabs.clear()
+        val labels = Page.entries.map { Ui.heading(Component.translatable("gui.guildmark.settings.page.${it.key}")) }
+        val tabWidths = labels.map { font.width(it) + 12 }
+        var tabX = panelX + (panelWidth - tabWidths.sum() - TAB_GAP * (labels.size - 1)) / 2
+        for ((i, which) in Page.entries.withIndex()) {
+            val tab = Tab(which, labels[i], tabWidths[i])
+            tab.setPosition(tabX, panelY + TABS_Y)
+            tabs.add(addRenderableWidget(tab))
+            tabX += tabWidths[i] + TAB_GAP
+        }
+
+        rows.clear()
+        rows.addAll(when (page) {
+            Page.INTERFACE -> interfacePage(bodyWidth)
+            Page.WORLD -> worldPage(bodyWidth)
+            Page.COMPANIONS -> companionsPage(bodyWidth)
+        })
+        for (row in rows) for (part in row.parts) addRenderableWidget(part.widget)
+        // Coming back from a companion's own settings (or a resize) keeps the place in the list
+        first = first.coerceIn(0, maxFirst())
+        place()
+
+        val done = Ui.KitButton(width / 2 - 60, panelY + panelHeight - 26, 120, 20, CommonComponents.GUI_DONE) { onClose() }
+        addRenderableWidget(done)
+    }
+
+    private fun maxFirst(): Int {
+        var room = bodyBottom - bodyTop
+        var i = rows.size
+        while (i > 0 && room - rows[i - 1].height >= 0) {
+            room -= rows[i - 1].height
+            i--
+        }
+        return i
+    }
+
+    /** Lays the shown rows down the body from [first], and hides every widget of the rest. */
+    private fun place() {
+        var y = bodyTop
+        var full = false
+        for ((i, row) in rows.withIndex()) {
+            val shown = !full && i >= first && y + row.height <= bodyBottom
+            if (i >= first && !shown) full = true
+            row.y = if (shown) y else Int.MIN_VALUE
+            for (part in row.parts) {
+                val widget = part.widget
+                widget.visible = shown
+                if (!shown) continue
+                widget.setPosition(if (part.fromRight) bodyX + bodyWidth - part.dx else bodyX + part.dx, y + part.dy)
+            }
+            if (shown) y += row.height
+        }
+    }
+
+    private fun scroll(by: Int) {
+        val next = (first + by).coerceIn(0, maxFirst())
+        if (next == first) return
+        first = next
+        place()
+    }
+
+    private fun turnTo(next: Page) {
+        if (next == page) return
+        page = next
+        lastPage = next
+        first = 0
+        Ui.page()
+        rebuildWidgets()
+    }
+
+    override fun mouseScrolled(x: Double, y: Double, scrollX: Double, scrollY: Double): Boolean {
+        if (scrollY != 0.0) scroll(-sign(scrollY).toInt())
+        return true
+    }
+
+    override fun keyPressed(event: KeyEvent): Boolean {
+        when (event.key()) {
+            InputConstants.KEY_PAGEUP -> { scroll(-4); return true }
+            InputConstants.KEY_PAGEDOWN -> { scroll(4); return true }
+        }
+        return super.keyPressed(event)
+    }
+
+    override fun added() {
+        super.added()
+        Ui.open()
+    }
+
+    override fun removed() {
+        for (spec in unsaved) if (spec.isLoaded) spec.save()
+        unsaved.clear()
+        super.removed()
+    }
+
+    override fun onClose() {
+        Ui.close()
+        minecraft.gui.setScreen(parent)
+    }
+
+    override fun tick() {
+        ticks++
+    }
+
+    override fun extractBackground(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, a: Float) {
+        if (minecraft.level == null) super.extractBackground(graphics, mouseX, mouseY, a)
+        else {
+            val k = min(1f, (ticks + a) / 5f)
+            graphics.fill(0, 0, width, height, ARGB.color((150 * k).toInt(), 0, 0, 0))
+            minecraft.gui.hud.extractDeferredSubtitles()
+        }
+        Ui.panel(graphics, panelX, panelY, panelWidth, panelHeight)
+        // The name on a plate across the top edge, the pages under it
+        val name = Ui.heading(title)
+        val plateWidth = font.width(name) + 24
+        val center = panelX + panelWidth / 2
+        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, Ui.NAME_PLATE, center - plateWidth / 2, panelY - 7, plateWidth, 15)
+        graphics.text(font, name, center - plateWidth / 2 + 12, panelY - 4 + Ui.HEADING_RISE, Ui.GOLD_BRIGHT, true)
+        Ui.divider(graphics, panelX + 16, panelY + DIVIDER_Y, panelWidth - 32, gem = false)
+        Ui.divider(graphics, panelX + 16, panelY + panelHeight - FOOTER + 1, panelWidth - 32, gem = false)
+    }
+
+    override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, a: Float) {
+        hots.clear()
+        for (row in rows) if (row.y != Int.MIN_VALUE) row.draw(graphics, bodyX, row.y, bodyWidth)
+        drawScrollbar(graphics)
+        super.extractRenderState(graphics, mouseX, mouseY, a)
+        val hot = hots.lastOrNull { mouseX >= it.x0 && mouseX < it.x1 && mouseY >= it.y0 && mouseY < it.y1 } ?: return
+        drawTip(graphics, hot.tip, mouseX, mouseY)
+    }
+
+    private fun drawScrollbar(graphics: GuiGraphicsExtractor) {
+        val last = maxFirst()
+        if (last == 0) return
+        val x = bodyX + bodyWidth + SCROLLBAR - 3
+        val h = bodyBottom - bodyTop
+        graphics.fill(x, bodyTop, x + 2, bodyBottom, TRACK)
+        val shown = rows.count { it.y != Int.MIN_VALUE }.coerceAtLeast(1)
+        val thumb = max(12, h * shown / rows.size)
+        val top = bodyTop + (h - thumb) * first / last
+        graphics.fill(x, top, x + 2, top + thumb, Ui.GOLD)
+    }
+
+    /** What a line means, in a small dark panel by the cursor. */
+    private fun drawTip(graphics: GuiGraphicsExtractor, tip: Component, mouseX: Int, mouseY: Int) {
+        val lines = font.split(tip, TIP_WIDTH)
+        val w = (lines.maxOfOrNull { font.width(it) } ?: 0) + 16
+        val h = lines.size * 10 + 10
+        var x = mouseX + 10
+        if (x + w > width - 4) x = mouseX - 10 - w
+        val y = (mouseY + 12).let { if (it + h > height - 4) mouseY - 6 - h else it }.coerceAtLeast(4)
+        graphics.nextStratum()
+        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, Ui.PANEL_PLAIN, x, y, w, h)
+        for ((i, line) in lines.withIndex()) graphics.text(font, line, x + 8, y + 6 + i * 10, Ui.TEXT, false)
+    }
+
+    // ---- Widgets ----
+
+    /** A page's name along the top; the page shown is lit, with a gem under it. */
+    private inner class Tab(private val target: Page, message: Component, width: Int) :
+        Button(0, 0, width, 13, message, Button.OnPress { }, Button.CreateNarration { it.get() }) {
+
+        override fun onPress(input: InputWithModifiers) = turnTo(target)
+
+        override fun extractContents(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, a: Float) {
+            val current = target == page
+            val color = when {
+                current -> Ui.GOLD_BRIGHT
+                isHoveredOrFocused -> Ui.GOLD
+                else -> Ui.TEXT_SOFT
+            }
+            graphics.text(font, message, x + (width - font.width(message)) / 2, y + Ui.HEADING_RISE, color, true)
+            if (current) graphics.blitSprite(RenderPipelines.GUI_TEXTURED, Ui.DIAMOND, x + width / 2 - 2, y + 11, 5, 5)
+        }
+
+        override fun playDownSound(manager: SoundManager) {}
+    }
+
+    companion object {
+        /** The page the screen opens on: the one last looked at. */
+        private var lastPage = Page.INTERFACE
+
+        private const val MAX_WIDTH = 340
+        private const val MAX_HEIGHT = 262
+        private const val PAD = 14
+        private const val SCROLLBAR = 6
+        private const val TABS_Y = 11
+        private const val TAB_GAP = 8
+        private const val DIVIDER_Y = 28
+        private const val BODY_TOP = 34
+        private const val FOOTER = 32
+        private const val HEADER = 19
+        private const val SETTING = 18
+        private const val CARD_BUTTONS = 16
+        private const val TIP_WIDTH = 190
+        private const val ELLIPSIS = "…"
+
+        private val RULE = 0x50D9B46A
+        private val TRACK = 0x60D9B46A
+
+        /** The contract pay and guild XP multipliers: fine steps near 1, coarser ones out at the ends. */
+        private val MULTIPLIERS = listOf(0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.75, 0.9, 1.0, 1.1, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0)
+        private val PERCENTS = (0..20).map { it * 5.0 }
+        private val CHANCES = (0..20).map { it / 100.0 } + listOf(0.25, 0.3, 0.4, 0.5, 0.75, 1.0)
+
+        private fun linear(min: Double, max: Double, whole: Boolean): List<Double> =
+            (0..20).map { min + (max - min) * it / 20.0 }.map { if (whole) it.roundToInt().toDouble() else it }.distinct()
+
+        private fun trimmed(value: Double): String =
+            if (abs(value - value.roundToInt()) < 1e-6) value.roundToInt().toString() else "%.2f".format(value).trimEnd('0').trimEnd('.', ',')
+
+        private fun times(value: Double) = trimmed(value) + "×"
+        private fun percent(value: Double) = "${value.roundToInt()}%"
+        private fun percentOf(value: Double) = "${(value * 100).roundToInt()}%"
+        private fun plain(value: Double) = trimmed(value)
+
+        val CREST: Identifier = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "ui/crest")
+
+        /**
+         * The crest that opens these settings, put at the end of the row of small buttons the Mods
+         * button sits in on the title screen and the pause menu (the row stays centred).
+         */
+        fun onScreenInit(event: ScreenEvent.Init.Post) {
+            val screen = event.screen
+            if (screen !is TitleScreen && screen !is PauseScreen) return
+            val mods = event.listenersList.filterIsInstance<ModsButton>().firstOrNull() ?: return
+            val row = event.listenersList.filterIsInstance<AbstractWidget>().filter { it.y == mods.y && it.width == mods.width && it.height == mods.height }
+            val crest = SpriteIconButton.builder(Component.translatable("guildmark.configuration.title"), { Minecraft.getInstance().gui.setScreen(SettingsScreen(screen)) }, true)
+                .width(mods.width)
+                .sprite(CREST, 15, 15)
+                .withTootip()
+                .build()
+            val shift = (crest.width + 4) / 2
+            crest.setPosition(row.maxOf { it.x + it.width } + 4 - shift, mods.y)
+            for (widget in row) widget.x -= shift
+            event.addListener(crest)
+        }
+    }
+}
+
+/** An on/off switch in the kit's look: a dark track that fills with gold, its knob sliding across. */
+class Switch(private val label: Component, private val read: () -> Boolean, private val write: (Boolean) -> Unit) :
+    Button(0, 0, WIDTH, HEIGHT, label, Button.OnPress { }, Button.CreateNarration { it.get() }) {
+    private var knob = if (read()) 1f else 0f
+
+    override fun onPress(input: InputWithModifiers) {
+        if (active) write(!read())
+    }
+
+    override fun createNarrationMessage(): MutableComponent = CommonComponents.optionStatus(label, read())
+
+    override fun extractContents(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, a: Float) {
+        val on = read()
+        knob += ((if (on) 1f else 0f) - knob) * 0.4f
+        if (abs(knob - (if (on) 1f else 0f)) < 0.02f) knob = if (on) 1f else 0f
+        val font = Minecraft.getInstance().font
+        val lit = active && isHoveredOrFocused
+        val word = Component.translatable(if (on) "gui.guildmark.settings.on" else "gui.guildmark.settings.off")
+        val wordColor = when {
+            !active -> Ui.TEXT_FAINT
+            on -> Ui.GOLD_BRIGHT
+            else -> Ui.TEXT_SOFT
+        }
+        val trackX = x + width - TRACK_WIDTH
+        graphics.text(font, word, trackX - 5 - font.width(word), y + (height - 8) / 2, wordColor, false)
+        val top = y + (height - TRACK_HEIGHT) / 2
+        graphics.fill(trackX, top, trackX + TRACK_WIDTH, top + TRACK_HEIGHT, if (lit) Ui.GOLD_BRIGHT else EDGE)
+        graphics.fill(trackX + 1, top + 1, trackX + TRACK_WIDTH - 1, top + TRACK_HEIGHT - 1, BACK)
+        val fill = ((TRACK_WIDTH - 2) * knob).roundToInt()
+        if (fill > 0) graphics.fill(trackX + 1, top + 1, trackX + 1 + fill, top + TRACK_HEIGHT - 1, if (active) FILL else FILL_FAINT)
+        val knobX = trackX + 1 + ((TRACK_WIDTH - 2 - KNOB) * knob).roundToInt()
+        graphics.fill(knobX, top + 1, knobX + KNOB, top + TRACK_HEIGHT - 1, if (!active) KNOB_FAINT else if (on) Ui.GOLD_BRIGHT else KNOB_OFF)
+        graphics.fill(knobX + 1, top + 2, knobX + KNOB - 1, top + 3, if (!active) KNOB_FAINT else if (on) SHINE else KNOB_SHINE)
+    }
+
+    override fun playDownSound(manager: SoundManager) = Ui.click(manager)
+
+    companion object {
+        const val WIDTH = 48
+        const val HEIGHT = 12
+        private const val TRACK_WIDTH = 22
+        private const val TRACK_HEIGHT = 10
+        private const val KNOB = 8
+        private val EDGE = 0xFF5A4B30.toInt()
+        private val BACK = 0xFF15131A.toInt()
+        private val FILL = 0xFF6A5226.toInt()
+        private val FILL_FAINT = 0xFF33302E.toInt()
+        private val KNOB_OFF = 0xFF5D5A66.toInt()
+        private val KNOB_SHINE = 0xFF7F7C8A.toInt()
+        private val KNOB_FAINT = 0xFF3A3840.toInt()
+        private val SHINE = 0xFFFFF0C4.toInt()
+    }
+}
+
+/**
+ * A slider in the kit's look that moves through set [steps], so a value always lands somewhere sensible;
+ * the arrow keys move it a step at a time.
+ */
+class Slider(private val label: Component, private val steps: List<Double>, start: Double, private val text: (Double) -> String, private val set: (Double) -> Unit) :
+    AbstractSliderButton(0, 0, WIDTH, HEIGHT, Component.empty(), 0.0) {
+    private var current = start
+
+    init {
+        value = steps.indexOf(nearest(start)).toDouble() / (steps.size - 1)
+        updateMessage()
+    }
+
+    private fun nearest(target: Double): Double = steps.minBy { abs(it - target) }
+
+    private fun index(): Int = (value * (steps.size - 1)).roundToInt().coerceIn(0, steps.size - 1)
+
+    override fun updateMessage() {
+        message = Component.literal(text(current))
+    }
+
+    override fun applyValue() {
+        val next = steps[index()]
+        value = index().toDouble() / (steps.size - 1)
+        if (next == current) return
+        current = next
+        set(next)
+    }
+
+    override fun createNarrationMessage(): MutableComponent = Component.translatable("gui.narrate.slider", CommonComponents.optionNameValue(label, message))
+
+    override fun keyPressed(event: KeyEvent): Boolean {
+        if (active && canChangeValue && (event.isLeft || event.isRight)) {
+            val i = (index() + if (event.isLeft) -1 else 1).coerceIn(0, steps.size - 1)
+            setValue(i.toDouble() / (steps.size - 1))
+            return true
+        }
+        return super.keyPressed(event)
+    }
+
+    override fun extractWidgetRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, a: Float) {
+        val lit = active && (isHoveredOrFocused || dragging)
+        graphics.fill(x, y, x + width, y + height, if (lit) Ui.GOLD_BRIGHT else EDGE)
+        graphics.fill(x + 1, y + 1, x + width - 1, y + height - 1, BACK)
+        val knobX = x + 1 + ((width - 2 - KNOB) * value).roundToInt()
+        if (knobX > x + 1) graphics.fill(x + 1, y + 1, knobX, y + height - 1, if (active) FILL else FILL_FAINT)
+        graphics.fill(knobX, y + 1, knobX + KNOB, y + height - 1, if (!active) KNOB_FAINT else if (lit) Ui.GOLD_BRIGHT else Ui.GOLD)
+        val font = Minecraft.getInstance().font
+        graphics.centeredText(font, message, x + width / 2, y + (height - 8) / 2 + 1, if (active) Ui.TEXT else Ui.TEXT_FAINT)
+        handleCursor(graphics)
+    }
+
+    override fun onRelease(event: MouseButtonEvent) {
+        dragging = false
+        Ui.click(Minecraft.getInstance().soundManager)
+    }
+
+    companion object {
+        const val WIDTH = 110
+        const val HEIGHT = 12
+        private const val KNOB = 6
+        private val EDGE = 0xFF5A4B30.toInt()
+        private val BACK = 0xFF15131A.toInt()
+        private val FILL = 0xFF4A3A1E.toInt()
+        private val FILL_FAINT = 0xFF2A2826.toInt()
+        private val KNOB_FAINT = 0xFF3A3840.toInt()
+    }
+}

@@ -1,10 +1,12 @@
 package io.github.vaspyyy.guildmark.client.ui
 
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.client.GuildmarkClientConfig
 import io.github.vaspyyy.guildmark.registry.ModSounds
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.components.AbstractWidget
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.WidgetSprites
 import net.minecraft.client.renderer.RenderPipelines
@@ -89,11 +91,24 @@ object Ui {
         Minecraft.getInstance().soundManager.play(SimpleSoundInstance.forUI(sound, pitch, volume))
     }
 
-    fun open() = play(ModSounds.UI_OPEN.get(), 1f, 0.5f)
-    fun close() = play(ModSounds.UI_CLOSE.get(), 1f, 0.45f)
-    fun hover() = play(ModSounds.UI_HOVER.get(), 0.95f + Math.random().toFloat() * 0.1f, 0.25f)
-    fun select() = play(ModSounds.UI_SELECT.get(), 1f, 0.45f)
-    fun page() = play(ModSounds.UI_PAGE.get(), 1f, 0.5f)
+    /** Whether the screens make their own sounds (Guildmark Settings > Interface). */
+    private fun menuSounds(): Boolean = !GuildmarkClientConfig.SPEC.isLoaded || GuildmarkClientConfig.MENU_SOUNDS.get()
+
+    private fun menu(sound: SoundEvent, pitch: Float, volume: Float) {
+        if (menuSounds()) play(sound, pitch, volume)
+    }
+
+    fun open() = menu(ModSounds.UI_OPEN.get(), 1f, 0.5f)
+    fun close() = menu(ModSounds.UI_CLOSE.get(), 1f, 0.45f)
+    fun hover() = menu(ModSounds.UI_HOVER.get(), 0.95f + Math.random().toFloat() * 0.1f, 0.25f)
+    fun select() = menu(ModSounds.UI_SELECT.get(), 1f, 0.45f)
+    fun page() = menu(ModSounds.UI_PAGE.get(), 1f, 0.5f)
+
+    /** A kit button's press: its own sound, or the usual click with the menu sounds off. */
+    fun click(manager: SoundManager) {
+        if (menuSounds()) manager.play(SimpleSoundInstance.forUI(ModSounds.UI_SELECT.get(), 1f, 0.35f))
+        else AbstractWidget.playButtonClickSound(manager)
+    }
 
     /** A button in the kit's look: dark iron with a gold line that brightens under the cursor. */
     class KitButton(x: Int, y: Int, width: Int, height: Int, message: Component, onPress: OnPress) :
@@ -111,9 +126,7 @@ object Ui {
             graphics.centeredText(font, message, x + width / 2, y + (height - 8) / 2, color)
         }
 
-        override fun playDownSound(manager: SoundManager) {
-            manager.play(SimpleSoundInstance.forUI(ModSounds.UI_SELECT.get(), 1f, 0.35f))
-        }
+        override fun playDownSound(manager: SoundManager) = click(manager)
     }
 
     fun button(message: Component, width: Int = 120, height: Int = 20, onPress: (Button) -> Unit): KitButton =

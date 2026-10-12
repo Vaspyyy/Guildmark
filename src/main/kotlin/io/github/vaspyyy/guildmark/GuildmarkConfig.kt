@@ -2,7 +2,10 @@ package io.github.vaspyyy.guildmark
 
 import net.neoforged.neoforge.common.ModConfigSpec
 
-/** Per-world gameplay settings, kept in the world's serverconfig folder and synced to clients. */
+/**
+ * Gameplay settings, kept in config/guildmark-synced.toml (a world's syncedconfig folder can hold its own)
+ * and synced to clients. Changed in game under Guildmark Settings > World, in singleplayer.
+ */
 object GuildmarkConfig {
     private val BUILDER = ModConfigSpec.Builder()
 

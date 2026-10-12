@@ -49,8 +49,14 @@ object ContractTracker : GuiLayer {
     private val DONE_INK = 0xFF2E6B1F.toInt()
     private val LATE_INK = 0xFF9A2A1A.toInt()
 
-    /** Toggled with the tracker key. */
-    var shown = true
+    /** Toggled with the tracker key or in Guildmark's settings, and kept between games. */
+    var shown: Boolean
+        get() = !GuildmarkClientConfig.SPEC.isLoaded || GuildmarkClientConfig.CONTRACT_TRACKER.get()
+        set(value) {
+            if (!GuildmarkClientConfig.SPEC.isLoaded) return
+            GuildmarkClientConfig.CONTRACT_TRACKER.set(value)
+            GuildmarkClientConfig.SPEC.save()
+        }
 
     private class Entry(val stack: ItemStack, val note: QuestNote, val state: ContractState)
 

@@ -24,6 +24,15 @@ object GuildmarkClientConfig {
     val DEATH_SCREEN: ModConfigSpec.BooleanValue = BUILDER
         .comment("Show Guildmark's own death screen instead of the vanilla one.")
         .define("deathScreen", true)
+    val CONTRACT_TRACKER: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Show the contract tracker: your contracts, a rival's challenge and the story's next step. The tracker key shows and hides it too.")
+        .define("contractTracker", true)
+    val PLACE_BANNERS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Show a place's name across the screen when you find it, and again when you come back after a while.")
+        .define("placeBanners", true)
+    val MENU_SOUNDS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Play Guildmark's own sounds as its screens open, close and turn pages, and as their buttons are pressed. Off gives the usual click.")
+        .define("menuSounds", true)
 
     val SPEC: ModConfigSpec = BUILDER.build()
 }

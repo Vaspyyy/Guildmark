@@ -42,6 +42,7 @@ import io.github.vaspyyy.guildmark.client.combat.CombatHud
 import io.github.vaspyyy.guildmark.client.combat.Cutscenes
 import io.github.vaspyyy.guildmark.client.ui.CharacterScreen
 import io.github.vaspyyy.guildmark.client.ui.FallenScreen
+import io.github.vaspyyy.guildmark.client.ui.SettingsScreen
 import io.github.vaspyyy.guildmark.client.atlas.AtlasClient
 import io.github.vaspyyy.guildmark.client.atlas.CompassHud
 import io.github.vaspyyy.guildmark.client.atlas.MapData
@@ -62,7 +63,6 @@ import net.neoforged.neoforge.client.event.RenderLivingEvent
 import net.neoforged.neoforge.client.renderstate.RegisterRenderStateModifiersEvent
 import net.neoforged.fml.ModContainer
 import net.neoforged.fml.config.ModConfig
-import net.neoforged.neoforge.client.gui.ConfigurationScreen
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory
 import net.neoforged.neoforge.client.event.InputEvent
 import net.neoforged.neoforge.client.event.MovementInputUpdateEvent
@@ -80,8 +80,9 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
 
     init {
         container.registerConfig(ModConfig.Type.CLIENT, GuildmarkClientConfig.SPEC)
-        // Mods > Guildmark > Config: the action combat switch and the rest, editable in game
-        container.registerExtensionPoint(IConfigScreenFactory::class.java, IConfigScreenFactory { mod, parent -> ConfigurationScreen(mod, parent) })
+        // Mods > Guildmark > Config opens Guildmark's own settings, as the crest by the Mods button does
+        container.registerExtensionPoint(IConfigScreenFactory::class.java, IConfigScreenFactory { _, parent -> SettingsScreen(parent) })
+        NeoForge.EVENT_BUS.addListener(ScreenEvent.Init.Post::class.java, SettingsScreen::onScreenInit)
         modBus.addListener(RegisterKeyMappingsEvent::class.java) { event ->
             event.registerCategory(category)
             event.register(ledgerKey)
