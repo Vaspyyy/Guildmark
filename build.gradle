@@ -85,6 +85,15 @@ dependencies {
         localRuntime "maven.modrinth:lithostitched:${lithostitched_version}"
     }
 
+    // Distant Horizons' far view in the dev runs only, the same way. -Pwith_distant_horizons=false leaves it
+    // out; -Pwith_seedgen=true adds the SeedGen add-on, which draws the far land from the seed instead.
+    if (project.findProperty("with_distant_horizons") != "false") {
+        localRuntime "maven.modrinth:distanthorizons:${distant_horizons_version}"
+        if (project.findProperty("with_seedgen") == "true") {
+            localRuntime "maven.modrinth:distant-horizons-seedgen:${seedgen_version}"
+        }
+    }
+
     // Kotlin runs without Kotlin for Forge: the stdlib ships inside our jar.
     // Jar-in-Jar picks one copy if several mods bundle it.
     jarJar(implementation("org.jetbrains.kotlin:kotlin-stdlib")) {

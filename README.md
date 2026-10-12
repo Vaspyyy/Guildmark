@@ -63,6 +63,8 @@ Jobs come from `data/<namespace>/quest_pool/<name>.json`, so datapacks and other
 ## Plays well with
 
 - [Tectonic](https://modrinth.com/mod/tectonic) (it needs [Lithostitched](https://modrinth.com/mod/lithostitched)): mountain ranges, deep valleys, underground rivers and tiered plateaus. Recommended, not required.
+- [Distant Horizons](https://modrinth.com/mod/distanthorizons): see far past your render distance. To see capitals on the horizon, use its generator mode that runs Minecraft's full world generator. The fast surface mode skips structures.
+- [Distant Horizons SeedGen](https://modrinth.com/mod/distant-horizons-seedgen) works too, but it draws far land from the seed: it builds capitals into its own idea of the terrain, so far-off cities can sit on unflattened land or among its stand-in trees until you get close.
 
 ## Stack
 
@@ -77,6 +79,6 @@ Jobs come from `data/<namespace>/quest_pool/<name>.json`, so datapacks and other
 ./gradlew build       # jar ends up in build/libs
 ```
 
-`runClient` also loads Tectonic and Lithostitched from Modrinth, so new worlds get Tectonic's terrain. Run with `-Pwith_tectonic=false` (or set it in `gradle.properties`) for vanilla terrain. Neither ships in the Guildmark jar.
+`runClient` also loads Tectonic and Lithostitched from Modrinth, so new worlds get Tectonic's terrain. Run with `-Pwith_tectonic=false` (or set it in `gradle.properties`) for vanilla terrain. It loads Distant Horizons the same way: `-Pwith_distant_horizons=false` leaves it out, and `-Pwith_seedgen=true` adds SeedGen. None of these ship in the Guildmark jar.
 
 Quest logic should stay free of NeoForge imports where practical, so a Fabric port stays possible later.

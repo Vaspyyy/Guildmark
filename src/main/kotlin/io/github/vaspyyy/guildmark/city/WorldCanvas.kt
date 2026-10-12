@@ -18,6 +18,8 @@ import net.minecraft.core.Direction
 import net.minecraft.core.registries.Registries
 import net.minecraft.resources.Identifier
 import net.minecraft.resources.ResourceKey
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.server.level.WorldGenRegion
 import net.minecraft.tags.BlockTags
 import net.minecraft.util.Mth
 import net.minecraft.util.RandomSource
@@ -52,6 +54,13 @@ class WorldCanvas(
     private val random: RandomSource,
 ) : Canvas {
     private val style = piece.style
+
+    /**
+     * A chunk really being generated (or the world itself, under /place), rather than a stand-in world some
+     * far-view mods build structures in to draw them in the distance. Only a real one gets townsfolk, and
+     * only there do joined-up blocks get fixed up afterwards.
+     */
+    private val real = level is WorldGenRegion || level is ServerLevel
 
     override val clip: Rect = run {
         val (ax, az) = piece.local(chunk.minX(), chunk.minZ())
@@ -118,7 +127,7 @@ class WorldCanvas(
 
     override fun spawn(what: Spawn, x: Int, y: Int, z: Int, facing: Dir) {
         val pos = piece.world(x, y, z)
-        if (!writable(pos)) return
+        if (!real || !writable(pos)) return
         val server = level.level
         val mob: Mob = when (what) {
             Spawn.VILLAGER, Spawn.RECEPTIONIST -> EntityTypes.VILLAGER.create(server, EntitySpawnReason.STRUCTURE)
@@ -139,6 +148,7 @@ class WorldCanvas(
 
     private fun place(pos: BlockPos, state: BlockState) {
         level.setBlock(pos, state, Block.UPDATE_CLIENTS)
+        if (!real) return
         val fluid = state.fluidState
         if (!fluid.isEmpty) level.scheduleTick(pos, fluid.type, 0)
         // Fences, walls, panes and stairs join up with their neighbours once the chunk is finished
