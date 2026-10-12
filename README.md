@@ -25,7 +25,7 @@ Anyone can use `/party`, `/coach`, `/titles` and (guild leaders) `/guild`. Ops c
 
 ## Config
 
-Mods > Guildmark > Config edits everything in game. Per-world settings live in the world's `serverconfig` folder (`guildmark` file): the action combat switch, contract pay and XP multipliers, the relic cache chance, and switches for auto-placed boards, the handbook, sieges and their chance, bandits, rival guilds and the named characters. Each player's own settings (the combat bars, camera shake, boss cutscenes, the dialogue camera, the compass and the death screen) live in `config/guildmark-client.toml`. The world map keeps what you've seen, and your pins, in `guildmark/maps/` in the game folder, one folder per world or server.
+Mods > Guildmark > Config edits everything in game. Per-world settings live in the world's `serverconfig` folder (`guildmark` file): the action combat switch, contract pay and XP multipliers, the relic cache chance, and switches for auto-placed boards, the handbook, sieges and their chance, bandits, rival guilds and the named characters. Each player's own settings (the combat bars, camera shake, boss cutscenes, the dialogue camera, the compass and the death screen) live in `config/guildmark-client.toml`. The world map keeps what you've seen, and your pins, inside each single-player save (`guildmark/map`) and, for servers, in `guildmark/maps/` in the game folder.
 
 ## Quest pools (datapacks)
 

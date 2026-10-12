@@ -12,6 +12,24 @@ import net.minecraft.resources.Identifier
 import net.minecraft.server.level.ServerPlayer
 import net.neoforged.neoforge.network.PacketDistributor
 import net.neoforged.neoforge.network.handling.IPayloadContext
+import java.util.WeakHashMap
+
+/**
+ * Each coach request searches the village around the player, so a client asking faster than a person
+ * could click is ignored rather than allowed to stall the server.
+ */
+private object CoachThrottle {
+    private const val TICKS = 10
+    private val last = WeakHashMap<ServerPlayer, Long>()
+
+    fun allow(player: ServerPlayer): Boolean {
+        val now = player.level().gameTime
+        val before = last[player]
+        if (before != null && now - before in 0 until TICKS) return false
+        last[player] = now
+        return true
+    }
+}
 
 /** Client opened the map and asks where the coaches from the village it's standing in can take it. */
 object CoachStopsRequestPayload : CustomPacketPayload {
@@ -24,6 +42,7 @@ object CoachStopsRequestPayload : CustomPacketPayload {
 
     fun handle(payload: CoachStopsRequestPayload, context: IPayloadContext) {
         val player = context.player() as? ServerPlayer ?: return
+        if (!CoachThrottle.allow(player)) return
         val stops = Coaches.stops(player.level(), player.blockPosition()) ?: listOf()
         PacketDistributor.sendToPlayer(player, CoachStopsPayload(stops.map { stop ->
             CoachStop(stop.to.x, stop.to.z, stop.fare, stop.village?.let { VillageNames.of(it) } ?: "")
@@ -75,6 +94,7 @@ data class RideCoachPayload(val x: Int, val z: Int) : CustomPacketPayload {
 
         fun handle(payload: RideCoachPayload, context: IPayloadContext) {
             val player = context.player() as? ServerPlayer ?: return
+            if (!CoachThrottle.allow(player)) return
             Coaches.ride(player, payload.x, payload.z)
         }
     }

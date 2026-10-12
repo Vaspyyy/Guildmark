@@ -106,6 +106,7 @@ class FallenScreen(private val cause: Component?, private val hardcore: Boolean,
         val mid = height / 2 - 64
         graphics.fillGradient(0, mid - 24, width, mid + 18, 0, ARGB.color((150 * band).toInt(), 0, 0, 0))
         graphics.fillGradient(0, mid + 18, width, mid + 60, ARGB.color((150 * band).toInt(), 0, 0, 0), 0)
+        minecraft.gui.hud.extractDeferredSubtitles()
     }
 
     override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, a: Float) {

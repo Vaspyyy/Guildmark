@@ -463,6 +463,7 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
 
     override fun extractBackground(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, a: Float) {
         graphics.fill(0, 0, width, height, BACKDROP)
+        minecraft.gui.hud.extractDeferredSubtitles()
     }
 
     override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, a: Float) {

@@ -213,6 +213,7 @@ class CharacterScreen : Screen(Component.translatable("gui.guildmark.status")) {
     override fun extractBackground(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, a: Float) {
         val k = min(1f, (ticks + a) / 5f)
         graphics.fill(0, 0, width, height, ARGB.color((150 * k).toInt(), 0, 0, 0))
+        minecraft.gui.hud.extractDeferredSubtitles()
     }
 
     override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, a: Float) {

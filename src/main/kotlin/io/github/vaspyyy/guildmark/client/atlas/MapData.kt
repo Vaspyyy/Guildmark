@@ -8,7 +8,6 @@ import net.minecraft.client.multiplayer.ClientLevel
 import net.minecraft.client.renderer.texture.DynamicTexture
 import net.minecraft.core.BlockPos
 import net.minecraft.resources.ResourceKey
-import net.minecraft.util.Util
 import net.minecraft.world.level.ChunkPos
 import net.minecraft.world.level.Level
 import net.minecraft.world.level.chunk.LevelChunk
@@ -24,6 +23,8 @@ import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 import kotlin.math.abs
@@ -35,7 +36,8 @@ import kotlin.math.min
 /**
  * The land the player has seen, for the map. Every chunk the game has loaded around them is sketched
  * (the colour and height of its surface every two blocks) and kept on disk for each world and dimension,
- * along with the pins they've put on the map. The sketches are painted as watercolour on parchment, with
+ * along with the pins they've put on the map: in the save itself for a single-player world, or under the
+ * game folder by server address and world id (see WorldId) for a server. The sketches are painted as watercolour on parchment, with
  * the roads the Atlas knows inked over them, in tiles of 32 by 32 chunks that are drawn only while the map
  * is open.
  */
@@ -64,11 +66,19 @@ object MapData {
 
     val PIN_COLORS = intArrayOf(0xFFE0B04A.toInt(), 0xFFD0503C.toInt(), 0xFF5C8FD6.toInt(), 0xFF6DB65A.toInt(), 0xFFA46BD0.toInt(), 0xFFEDE6D6.toInt())
 
-    private var world: String? = null
+    /** The server's id for its world, sent on login. Single-player maps live in the save and don't need it. */
+    var worldId: String? = null
+    /** The folder this world's maps are kept in, and the dimension shown. */
+    private var world: Path? = null
     private var dimension: ResourceKey<Level>? = null
-    /** The level the world's name was last worked out for. */
+    /** The level and world id the folder was last worked out for. */
     private var keyedLevel: ClientLevel? = null
-    private var levelKey: String? = null
+    private var keyedId: String? = null
+    private var levelKey: Path? = null
+    /** False while the dimension's map is still being read from disk: until then it isn't written back. */
+    private var ready = false
+    /** Bumped on every switch, so a read that finishes after the player has moved on is dropped. */
+    private var loads = 0
     private val chunks = HashMap<Long, ByteArray>()
     /** Tiles with at least one chunk sketched, and those a known road crosses. */
     private val landTiles = HashSet<Long>()
@@ -78,7 +88,8 @@ object MapData {
     val pins: List<Pin> get() = pinList
     private var unsaved = false
     private var ticks = 0
-    private val saveLock = Any()
+    /** One thread for every read and write, so they happen in the order they were asked for. */
+    private val io: ExecutorService = Executors.newSingleThreadExecutor { Thread(it, "Guildmark map").apply { isDaemon = true } }
 
     // ---- Each tick ----
 
@@ -87,9 +98,10 @@ object MapData {
         val level = minecraft.level
         val player = minecraft.player
         if (level == null || player == null) return
-        if (level !== keyedLevel) {
+        if (level !== keyedLevel || worldId != keyedId) {
             keyedLevel = level
-            levelKey = worldKey(minecraft)
+            keyedId = worldId
+            levelKey = worldFolder(minecraft)
         }
         val key = levelKey ?: return
         if (key != world || level.dimension() != dimension) switchTo(key, level.dimension())
@@ -101,7 +113,7 @@ object MapData {
         if (ticks % 200 == 0) for (dx in -1..1) for (dz in -1..1) loaded(level, cx + dx, cz + dz)?.let { store(cx + dx, cz + dz, sketch(level, it)) }
         var budget = BUDGET
         val radius = min(minecraft.options.effectiveRenderDistance, MAX_RADIUS)
-        for (r in 0..radius) {
+        scan@ for (r in 0..radius) {
             for (dx in -r..r) for (dz in -r..r) {
                 if (max(Math.abs(dx), Math.abs(dz)) != r) continue
                 val x = cx + dx
@@ -109,9 +121,8 @@ object MapData {
                 if (chunks.containsKey(ChunkPos.pack(x, z))) continue
                 val chunk = loaded(level, x, z) ?: continue
                 store(x, z, sketch(level, chunk))
-                if (--budget == 0) break
+                if (--budget == 0) break@scan
             }
-            if (budget == 0) break
         }
         if (unsaved && ticks % SAVE_EVERY == 0) save(false)
     }
@@ -120,9 +131,12 @@ object MapData {
     fun reset() {
         save(true)
         clear()
+        loads++
         world = null
         dimension = null
+        worldId = null
         keyedLevel = null
+        keyedId = null
         levelKey = null
     }
 
@@ -500,92 +514,134 @@ object MapData {
 
     // ---- On disk ----
 
-    /** A name for the world being played, for its folder: the save's folder name, or the server's address. */
-    private fun worldKey(minecraft: Minecraft): String? {
-        val server = minecraft.singleplayerServer
-        val raw = when {
-            server != null -> "local_" + (server.getWorldPath(LevelResource.ROOT).toAbsolutePath().normalize().fileName?.toString() ?: "world")
-            minecraft.currentServer != null -> "server_" + minecraft.currentServer!!.ip
-            else -> return null
-        }
-        return raw.replace(Regex("[^A-Za-z0-9._-]"), "_").take(96)
+    /**
+     * The folder for this world's maps: in the save for a single-player world (so it goes when the world
+     * does), or by address and world id for a server. Null until a server has said which world it is.
+     */
+    private fun worldFolder(minecraft: Minecraft): Path? {
+        minecraft.singleplayerServer?.let { return it.getWorldPath(LevelResource.ROOT).resolve("guildmark").resolve("map") }
+        val address = minecraft.currentServer?.ip ?: return null
+        val id = worldId ?: return null
+        // The address cleaned for a folder name, plus a hash of it as written so two addresses never meet
+        val server = address.replace(Regex("[^A-Za-z0-9._-]"), "_").take(48) + "_" + Integer.toHexString(address.hashCode())
+        return minecraft.gameDirectory.toPath().resolve("guildmark").resolve("maps").resolve(server)
+            .resolve(id.replace(Regex("[^A-Za-z0-9-]"), "_").take(64))
     }
 
     private fun file(): Path? {
         val w = world ?: return null
         val d = dimension ?: return null
-        return Minecraft.getInstance().gameDirectory.toPath().resolve("guildmark").resolve("maps").resolve(w).resolve(d.identifier().toDebugFileName() + ".dat")
+        return w.resolve(d.identifier().toDebugFileName() + ".dat")
     }
 
-    private fun switchTo(key: String, newDimension: ResourceKey<Level>) {
-        save(true)
+    /** What a map file holds. */
+    private class Saved(val chunks: Map<Long, ByteArray>, val pins: List<Pin>)
+
+    /** Show another world or dimension: the one being left is written out, and the new one read in the background. */
+    private fun switchTo(key: Path, newDimension: ResourceKey<Level>) {
+        save(false)
         clear()
         world = key
         dimension = newDimension
-        val path = file() ?: return
-        if (!Files.exists(path)) return
+        val load = ++loads
+        val path = file()
+        if (path == null) {
+            ready = true
+            return
+        }
+        ready = false
+        io.execute {
+            val saved = read(path)
+            Minecraft.getInstance().execute { if (load == loads) loaded(saved) }
+        }
+    }
+
+    private fun read(path: Path): Saved? {
+        if (!Files.exists(path)) return null
+        val chunks = HashMap<Long, ByteArray>()
+        val pins = ArrayList<Pin>()
         try {
             DataInputStream(BufferedInputStream(GZIPInputStream(Files.newInputStream(path)))).use { input ->
-                if (input.readInt() != MAGIC) return
+                if (input.readInt() != MAGIC) return null
                 input.readInt()
                 repeat(input.readInt()) {
                     val chunk = input.readLong()
                     val data = ByteArray(BYTES)
                     input.readFully(data)
                     chunks[chunk] = data
-                    landTiles.add(tileOf(ChunkPos.getX(chunk), ChunkPos.getZ(chunk)))
                 }
                 repeat(input.readInt()) {
                     val x = input.readInt()
                     val z = input.readInt()
                     val color = input.readInt()
-                    pinList.add(Pin(x, z, color, input.readUTF()))
+                    pins.add(Pin(x, z, color, input.readUTF()))
                 }
             }
         } catch (e: IOException) {
             Guildmark.LOGGER.warn("Couldn't read the map at {}", path, e)
+            return null
         }
+        return Saved(chunks, pins)
     }
 
-    /** Write the map out: now ([sync]), or in the background with a copy of it. */
+    /** The map read from disk, merged under whatever was sketched while it was being read. */
+    private fun loaded(saved: Saved?) {
+        ready = true
+        if (saved == null) return
+        for ((chunk, data) in saved.chunks) {
+            if (chunks.putIfAbsent(chunk, data) == null) landTiles.add(tileOf(ChunkPos.getX(chunk), ChunkPos.getZ(chunk)))
+        }
+        val placed = ArrayList(pinList)
+        pinList.clear()
+        pinList.addAll(saved.pins)
+        for (pin in placed) if (pinList.size < MAX_PINS) pinList.add(pin)
+        // Anything painted before now was painted without what was read
+        releaseTiles()
+    }
+
+    /** Write the map out with a copy of it: in the background, or waiting for it to finish ([sync]). */
     private fun save(sync: Boolean) {
-        if (!unsaved) return
+        if (!unsaved || !ready) return
         val path = file() ?: return
         unsaved = false
         val snapshot = HashMap(chunks)
         val pinsNow = pinList.map { Pin(it.x, it.z, it.color, it.name) }
-        val write = Runnable {
-            synchronized(saveLock) {
-                try {
-                    Files.createDirectories(path.parent)
-                    val temp = path.resolveSibling(path.fileName.toString() + ".tmp")
-                    DataOutputStream(BufferedOutputStream(GZIPOutputStream(Files.newOutputStream(temp)))).use { out ->
-                        out.writeInt(MAGIC)
-                        out.writeInt(VERSION)
-                        out.writeInt(snapshot.size)
-                        for ((chunk, data) in snapshot) {
-                            out.writeLong(chunk)
-                            out.write(data)
-                        }
-                        out.writeInt(pinsNow.size)
-                        for (pin in pinsNow) {
-                            out.writeInt(pin.x)
-                            out.writeInt(pin.z)
-                            out.writeInt(pin.color)
-                            out.writeUTF(pin.name)
-                        }
+        val task = io.submit {
+            try {
+                Files.createDirectories(path.parent)
+                val temp = path.resolveSibling(path.fileName.toString() + ".tmp")
+                DataOutputStream(BufferedOutputStream(GZIPOutputStream(Files.newOutputStream(temp)))).use { out ->
+                    out.writeInt(MAGIC)
+                    out.writeInt(VERSION)
+                    out.writeInt(snapshot.size)
+                    for ((chunk, data) in snapshot) {
+                        out.writeLong(chunk)
+                        out.write(data)
                     }
-                    try {
-                        Files.move(temp, path, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
-                    } catch (_: IOException) {
-                        Files.move(temp, path, StandardCopyOption.REPLACE_EXISTING)
+                    out.writeInt(pinsNow.size)
+                    for (pin in pinsNow) {
+                        out.writeInt(pin.x)
+                        out.writeInt(pin.z)
+                        out.writeInt(pin.color)
+                        out.writeUTF(pin.name)
                     }
-                } catch (e: IOException) {
-                    Guildmark.LOGGER.warn("Couldn't save the map to {}", path, e)
                 }
+                try {
+                    Files.move(temp, path, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
+                } catch (_: IOException) {
+                    Files.move(temp, path, StandardCopyOption.REPLACE_EXISTING)
+                }
+            } catch (e: IOException) {
+                Guildmark.LOGGER.warn("Couldn't save the map to {}", path, e)
             }
         }
-        if (sync) write.run() else Util.ioPool().execute(write)
+        if (sync) {
+            try {
+                task.get()
+            } catch (e: Exception) {
+                Guildmark.LOGGER.warn("Couldn't save the map to {}", path, e)
+            }
+        }
     }
 
     /** Pins changed, or the map closed: save soon rather than at the next autosave. */

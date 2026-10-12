@@ -10,6 +10,9 @@ import io.github.vaspyyy.guildmark.network.PartyPositionsPayload
 import io.github.vaspyyy.guildmark.network.CoachStopsPayload
 import io.github.vaspyyy.guildmark.network.CoachStopsRequestPayload
 import io.github.vaspyyy.guildmark.network.RideCoachPayload
+import io.github.vaspyyy.guildmark.network.WorldIdPayload
+import net.neoforged.neoforge.network.PacketDistributor
+import io.github.vaspyyy.guildmark.atlas.WorldId
 import io.github.vaspyyy.guildmark.network.ReleaseChargePayload
 import io.github.vaspyyy.guildmark.network.StaggerPayload
 import io.github.vaspyyy.guildmark.network.BossCuePayload
@@ -176,6 +179,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
                 player.refreshDisplayName()
                 player.refreshTabListName()
                 Atlas.resend(player)
+                PacketDistributor.sendToPlayer(player, WorldIdPayload(WorldId.of(player.level().server)))
             }
         }
         NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerChangedDimensionEvent::class.java) {
@@ -266,6 +270,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
             .playToClient(PartyPositionsPayload.TYPE, PartyPositionsPayload.STREAM_CODEC, PartyPositionsPayload::handle)
             .playToServer(CoachStopsRequestPayload.TYPE, CoachStopsRequestPayload.STREAM_CODEC, CoachStopsRequestPayload::handle)
             .playToClient(CoachStopsPayload.TYPE, CoachStopsPayload.STREAM_CODEC, CoachStopsPayload::handle)
+            .playToClient(WorldIdPayload.TYPE, WorldIdPayload.STREAM_CODEC, WorldIdPayload::handle)
             .playToServer(RideCoachPayload.TYPE, RideCoachPayload.STREAM_CODEC, RideCoachPayload::handle)
     }
 }
