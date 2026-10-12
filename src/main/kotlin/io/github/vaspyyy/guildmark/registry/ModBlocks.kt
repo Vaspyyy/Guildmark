@@ -2,6 +2,7 @@ package io.github.vaspyyy.guildmark.registry
 
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.block.ArcherPostBlock
+import io.github.vaspyyy.guildmark.block.MistGateBlock
 import io.github.vaspyyy.guildmark.block.QuestBoardBlock
 import io.github.vaspyyy.guildmark.block.WardfireBlock
 import net.minecraft.world.level.block.SoundType
@@ -25,6 +26,13 @@ object ModBlocks {
     val WARDFIRE: DeferredBlock<WardfireBlock> = BLOCKS.registerBlock("wardfire", ::WardfireBlock, UnaryOperator<BlockBehaviour.Properties> {
         it.mapColor(MapColor.STONE).instrument(NoteBlockInstrument.BASEDRUM).strength(-1.0f, 3600000.0f).noLootTable()
             .sound(SoundType.STONE).noOcclusion().pushReaction(PushReaction.IMMOVEABLE).lightLevel(WardfireBlock::light)
+    })
+
+    /** Across a dungeon boss hall's door; placed by dungeons, can't be mined, glows faintly in the dark. */
+    val MIST_GATE: DeferredBlock<MistGateBlock> = BLOCKS.registerBlock("mist_gate", ::MistGateBlock, UnaryOperator<BlockBehaviour.Properties> {
+        it.mapColor(MapColor.SNOW).strength(-1.0f, 3600000.0f).noLootTable().sound(SoundType.WOOL).noOcclusion()
+            .pushReaction(PushReaction.IMMOVEABLE).lightLevel { 7 }.emissiveRendering { true }
+            .isSuffocating { _, _, _ -> false }.isViewBlocking { _, _, _, _ -> false }.isRedstoneConductor { _, _, _ -> false }
     })
 
     /** Placed by the Archer Tower advance; not craftable. */

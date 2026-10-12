@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "guildmark:block/mist_gate"
+    },
+    "facing=south": {
+      "model": "guildmark:block/mist_gate"
+    },
+    "facing=east": {
+      "model": "guildmark:block/mist_gate"
+    },
+    "facing=west": {
+      "model": "guildmark:block/mist_gate"
+    }
+  }
+}

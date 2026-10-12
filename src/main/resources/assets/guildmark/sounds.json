@@ -809,5 +809,24 @@
       "guildmark:marks/recover1"
     ],
     "subtitle": "subtitles.guildmark.marks.recover"
+  },
+  "dungeon.mist_pass": {
+    "sounds": [
+      "guildmark:dungeon/mist_pass1"
+    ],
+    "subtitle": "subtitles.guildmark.dungeon.mist_pass"
+  },
+  "dungeon.mist_deny": {
+    "sounds": [
+      "guildmark:dungeon/mist_deny1"
+    ],
+    "subtitle": "subtitles.guildmark.dungeon.mist_deny"
+  },
+  "dungeon.stir": {
+    "sounds": [
+      "guildmark:dungeon/stir1",
+      "guildmark:dungeon/stir2"
+    ],
+    "subtitle": "subtitles.guildmark.dungeon.stir"
   }
 }

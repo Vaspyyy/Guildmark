@@ -26,6 +26,9 @@ object GuildmarkConfig {
     val WARDFIRES: ModConfigSpec.BooleanValue = BUILDER
         .comment("Raise Wardfires in the world: by every village players come near, outside lairs and the Hollow Throne, and here and there in newly explored wilds.")
         .define("wardfires", true)
+    val DUNGEONS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Dig lairs as dungeons underground: a stairwell down, halls, treasure rooms and a boss hall behind a mist gate. Off gives the old ring on the surface. Only lairs found after a change are affected.")
+        .define("dungeons", true)
     val HANDBOOK: ModConfigSpec.BooleanValue = BUILDER
         .comment("Give new players the Adventurer's Handbook.")
         .define("handbookOnJoin", true)

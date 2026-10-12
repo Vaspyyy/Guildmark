@@ -65,6 +65,9 @@ object ModSounds {
     val WARDFIRE_TRAVEL = sound("wardfire.travel")
     val FLASK_DRINK = sound("flask.drink")
     val MARKS_RECOVER = sound("marks.recover")
+    val MIST_PASS = sound("dungeon.mist_pass")
+    val MIST_DENY = sound("dungeon.mist_deny")
+    val DUNGEON_STIR = sound("dungeon.stir")
 
     val MUSIC_WARDEN = sound("music.fallen_warden")
     val MUSIC_WARDEN_2 = sound("music.fallen_warden_2")

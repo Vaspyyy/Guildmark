@@ -1027,6 +1027,52 @@ def marks_recover(v, rng):
     return reverb(lp(y, 11000), wet=0.16, rt60=0.9, predelay=0.01, hf_damp=0.5, seed=71)
 
 
+# =========================================================================== dungeons
+@recipe("dungeon/mist_pass", variants=1, fade_out=0.5, max_len=1.8)
+def mist_pass(v, rng):
+    """stepping through the mist: a soft breathy rush closing round you, a low hollow swell, a cold shimmer"""
+    dur = 1.8
+    t = tvec(dur)
+    m = Mix(dur)
+    rush = whoosh(1.1, rng, peak=0.5, f_lo=220, f_hi=2600, q=0.8, power=2.0, rise=1.4, fall=1.8, color=-2.5, doppler=0.0)
+    m.add(nrm(rush), 0.0, 0.6)
+    swell = spirit_pad(dur, rng, [98.0, 146.83, 196.0], vowel="u") * bell(dur, 0.45, 1.6, 2.2)
+    m.add(nrm(swell), 0.0, 0.32)
+    shimmer = sum(chime(1.2, f, rng, t60=1.0, bright=0.6) for f in (1567.98, 2093.0, 2637.0))
+    m.add(nrm(shimmer) * bell(1.2, 0.2, 1.4, 2.0), 0.35, 0.12)
+    y = m.buf[: len(t)]
+    return reverb(lp(y, 7000), wet=0.35, rt60=2.4, predelay=0.03, hf_damp=0.5, seed=81)
+
+
+@recipe("dungeon/mist_deny", variants=1, fade_out=0.4, max_len=1.3)
+def mist_deny(v, rng):
+    """the mist holds fast: a dull push back, a breath hissed out and a low hum a semitone sour"""
+    dur = 1.3
+    t = tvec(dur)
+    m = Mix(dur)
+    m.add(nrm(thump(0.5, 70, 40, rng, decay=0.14, click=0.02, noise=0.6, nlp=300)), 0.0, 0.6)
+    hiss = whoosh(0.7, rng, peak=0.25, f_lo=1800, f_hi=600, q=0.9, power=2.0, rise=1.0, fall=1.6, color=-1.5, doppler=0.0)
+    m.add(nrm(hiss), 0.05, 0.35)
+    hum = spirit_pad(dur, rng, [87.31, 92.5], vowel="u") * bell(dur, 0.3, 1.4, 2.0)
+    m.add(nrm(hum), 0.0, 0.3)
+    y = m.buf[: len(t)]
+    return reverb(lp(y, 6000), wet=0.28, rt60=1.6, predelay=0.02, hf_damp=0.55, seed=82)
+
+
+@recipe("dungeon/stir", variants=2, fade_out=0.8, max_len=[2.4, 2.4])
+def dungeon_stir(v, rng):
+    """something wakes in the dark: stone settling with a low rumble, dust trickling, a dry rattle of bones"""
+    dur = 2.4
+    t = tvec(dur)
+    m = Mix(dur)
+    rumble = lp(brown(dur, rng), 120, order=4) * bell(dur, 0.35, 1.5, 2.0)
+    m.add(nrm(rumble), 0.0, 0.7)
+    m.add(nrm(crackle(1.6, rng, 90, decay=0.0015, f_lo=900, f_hi=5000)) * bell(1.6, 0.3, 1.4, 2.0), 0.3, 0.25)
+    m.add(nrm(rattle(0.8, rng, 0.0, 0.7, rate=24.0, f_lo=700, f_hi=2600, decay_tau=0.25)), 0.9 + 0.1 * v, 0.3)
+    y = m.buf[: len(t)]
+    return reverb(lp(y, 6500), wet=0.3, rt60=2.2, predelay=0.025, hf_damp=0.55, seed=83 + v)
+
+
 # =========================================================================== main
 def main():
     ap = argparse.ArgumentParser()

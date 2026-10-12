@@ -46,6 +46,8 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent
 import net.neoforged.neoforge.network.PacketDistributor
 import java.util.UUID
 import java.util.function.Supplier
+import kotlin.math.abs
+import kotlin.math.max
 
 /** Where a named character lives: the board of their village, and their villager. */
 data class Placement(val id: String, val board: BlockPos, val entity: UUID) {
@@ -130,7 +132,7 @@ class Characters(val placements: MutableList<Placement> = mutableListOf()) : Sav
         /** A character steps into the world at [pos] for a scene, leaving after [lifespan] ticks (or never, if -1). */
         fun appear(level: ServerLevel, character: StoryCharacter, pos: BlockPos, lifespan: Int): StoryNpc? {
             val npc = create(level, character) ?: return null
-            val ground = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, pos)
+            val ground = footing(level, pos)
             npc.snapTo(ground.x + 0.5, ground.y.toDouble(), ground.z + 0.5, level.random.nextFloat() * 360f, 0f)
             npc.setHomeTo(ground, 6)
             if (lifespan > 0) npc.leaveAt = level.gameTime + lifespan
@@ -158,6 +160,22 @@ class Characters(val placements: MutableList<Placement> = mutableListOf()) : Sav
             npc.customName = character.title
             npc.isCustomNameVisible = true
             return npc
+        }
+
+        /**
+         * Where someone can stand at or beside [pos], a step up or down at most, so a scene underground
+         * stays underground. Only with nowhere like that close by is it the open ground above.
+         */
+        private fun footing(level: ServerLevel, pos: BlockPos): BlockPos {
+            for (r in 0..3) for (dx in -r..r) for (dz in -r..r) {
+                if (max(abs(dx), abs(dz)) != r) continue
+                for (dy in intArrayOf(0, -1, 1)) {
+                    val at = pos.offset(dx, dy, dz)
+                    if (level.getBlockState(at).getCollisionShape(level, at).isEmpty && level.getBlockState(at.above()).getCollisionShape(level, at.above()).isEmpty &&
+                        level.getBlockState(at.below()).isFaceSturdy(level, at.below(), Direction.UP) && level.getFluidState(at).isEmpty) return at
+                }
+            }
+            return level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, pos)
         }
 
         private fun standNear(level: ServerLevel, npc: StoryNpc, board: BlockPos) {

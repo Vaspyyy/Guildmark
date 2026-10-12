@@ -8,6 +8,8 @@ import io.github.vaspyyy.guildmark.guild.Holdings
 import io.github.vaspyyy.guildmark.guild.Guilds
 import net.minecraft.util.Prediction
 import io.github.vaspyyy.guildmark.loot.Relics
+import io.github.vaspyyy.guildmark.lair.LairTheme
+import io.github.vaspyyy.guildmark.lair.Lairs
 import io.github.vaspyyy.guildmark.loot.Rarity
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.IntegerArgumentType
@@ -39,7 +41,8 @@ import net.minecraft.network.chat.Component
  * `/guildmark standing <points>` changes your standing there, `/guildmark traffic [ambush]` sends a
  * caravan or traveller along a road 40 to 96 blocks away, `/guildmark character <id>` brings a named
  * character to the nearest village, `/guildmark story <shards>` jumps the main story to that many
- * shards found and `/guildmark story tp` teleports to where the shard compass points.
+ * shards found, `/guildmark story tp` teleports to where the shard compass points and
+ * `/guildmark dungeon <theme>` digs a lair of that theme close by and takes you to its door.
  */
 object AdvanceCommand {
     private fun nearestAnchor(source: CommandSourceStack): BlockPos? {
@@ -135,10 +138,37 @@ object AdvanceCommand {
                                 0
                             } else {
                                 val overworld = context.source.server.overworld()
-                                player.teleportTo(overworld, target.x + 0.5, target.y + 1.0, target.z + 4.5, setOf(), player.yRot, player.xRot, true)
+                                val lairs = Lairs.get(overworld)
+                                val vault = lairs.lairs.firstOrNull { it.pos == target }
+                                if (vault == null) player.teleportTo(overworld, target.x + 0.5, target.y + 1.0, target.z + 4.5, setOf(), player.yRot, player.xRot, true)
+                                else {
+                                    val (spot, yaw) = lairs.doorstep(overworld, vault)
+                                    player.teleportTo(overworld, spot.x, spot.y, spot.z, setOf(), yaw, 0f, true)
+                                }
                                 1
                             }
                         })
+                )
+                .then(
+                    Commands.literal("dungeon").then(
+                        Commands.argument("theme", StringArgumentType.word())
+                            .suggests { _, builder -> SharedSuggestionProvider.suggest(LairTheme.entries.filter { it.style != null }.map { it.id }, builder) }
+                            .executes { context ->
+                                val source = context.source
+                                val player = source.playerOrException
+                                val theme = LairTheme.entries.firstOrNull { it.style != null && it.id == StringArgumentType.getString(context, "theme") }
+                                val lairs = Lairs.get(source.level)
+                                val lair = theme?.let { lairs.createNear(source.level, player.blockPosition(), it) }
+                                if (lair == null) {
+                                    source.sendFailure(Component.translatable("commands.guildmark.no_dungeon"))
+                                    0
+                                } else {
+                                    val (spot, yaw) = lairs.doorstep(source.level, lair)
+                                    player.teleportTo(source.level, spot.x, spot.y, spot.z, setOf(), yaw, 0f, true)
+                                    1
+                                }
+                            }
+                    )
                 )
                 .then(
                     Commands.literal("festival").executes { context ->

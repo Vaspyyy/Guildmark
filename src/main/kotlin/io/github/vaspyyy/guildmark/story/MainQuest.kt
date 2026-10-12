@@ -112,8 +112,8 @@ object MainQuest {
         refreshCompasses(player)
     }
 
-    /** A vault's courtier died: everyone there who was hunting that shard takes it. */
-    fun onVaultCleared(level: ServerLevel, lair: Lair, heroes: List<Player>) {
+    /** A vault's courtier died at [site]: everyone there who was hunting that shard takes it. */
+    fun onVaultCleared(level: ServerLevel, lair: Lair, heroes: List<Player>, site: BlockPos) {
         val courtier = Courtier.forShard(lair.shard) ?: return
         for (hero in heroes) {
             val state = get(hero)
@@ -131,7 +131,7 @@ object MainQuest {
             }
         }
         // Halfway there, the Last Warden shows herself
-        if (courtier == Courtier.BARROW_LORD && heroes.isNotEmpty()) Characters.appear(level, StoryCharacter.MAREN, lair.pos.above(), 20 * 150)
+        if (courtier == Courtier.BARROW_LORD && heroes.isNotEmpty()) Characters.appear(level, StoryCharacter.MAREN, site, 20 * 150)
     }
 
     /** Rank changed: a vault that was waiting on it can now be found. */

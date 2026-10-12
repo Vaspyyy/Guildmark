@@ -29,23 +29,27 @@ enum class LairTheme(
     val guards: Int = -1,
     /** The boss is one of our own, with its own bar, fight and size; the lair leaves it as it is. */
     val ownBoss: Boolean = false,
+    /** How the lair is dug as a dungeon underground; null keeps it a ring on the surface. */
+    val style: DungeonStyle? = null,
 ) {
     SPIDER_DEN("spider_den", 0, { Blocks.COARSE_DIRT }, { Blocks.MOSSY_COBBLESTONE }, { Blocks.COBWEB },
-        listOf("spider", "cave_spider"), "spider", BuiltInLootTables.SIMPLE_DUNGEON),
+        listOf("spider", "cave_spider"), "spider", BuiltInLootTables.SIMPLE_DUNGEON, style = DungeonStyle.CAVE),
+    OLD_MINE("old_mine", 1, { Blocks.COBBLESTONE }, { Blocks.SPRUCE_PLANKS }, { Blocks.LANTERN },
+        listOf("zombie", "skeleton", "cave_spider"), "zombie", BuiltInLootTables.ABANDONED_MINESHAFT, style = DungeonStyle.MINE),
     BANDIT_CAMP("bandit_camp", 1, { Blocks.COARSE_DIRT }, { Blocks.SPRUCE_LOG }, { Blocks.CAMPFIRE },
         listOf("pillager", "vindicator", "pillager"), "vindicator", BuiltInLootTables.PILLAGER_OUTPOST),
     BARROW("barrow", 2, { Blocks.CRACKED_STONE_BRICKS }, { Blocks.MOSSY_STONE_BRICKS }, { Blocks.SOUL_LANTERN },
-        listOf("zombie", "skeleton", "zombie"), "husk", BuiltInLootTables.BURIED_TREASURE),
+        listOf("zombie", "skeleton", "zombie"), "husk", BuiltInLootTables.BURIED_TREASURE, style = DungeonStyle.CRYPT),
     WARDENS_WATCH("wardens_watch", 2, { Blocks.CRACKED_STONE_BRICKS }, { Blocks.STONE_BRICKS }, { Blocks.SOUL_LANTERN },
         listOf("guildmark:hollow_soldier"), "guildmark:fallen_warden", BuiltInLootTables.SIMPLE_DUNGEON, guards = 2, ownBoss = true),
     WITCH_HOLLOW("witch_hollow", 3, { Blocks.PODZOL }, { Blocks.DARK_OAK_LOG }, { Blocks.RED_MUSHROOM_BLOCK },
-        listOf("witch", "slime", "zombie_villager"), "witch", BuiltInLootTables.WOODLAND_MANSION),
+        listOf("witch", "slime", "zombie_villager"), "witch", BuiltInLootTables.WOODLAND_MANSION, style = DungeonStyle.GROTTO),
     ASHEN_PIT("ashen_pit", 5, { Blocks.BLACKSTONE }, { Blocks.POLISHED_BLACKSTONE_BRICKS }, { Blocks.MAGMA_BLOCK },
-        listOf("wither_skeleton", "blaze"), "wither_skeleton", BuiltInLootTables.BASTION_TREASURE),
+        listOf("wither_skeleton", "blaze"), "wither_skeleton", BuiltInLootTables.BASTION_TREASURE, style = DungeonStyle.PIT),
     SUNKEN_SHRINE("sunken_shrine", 4, { Blocks.PRISMARINE_BRICKS }, { Blocks.DARK_PRISMARINE }, { Blocks.SEA_LANTERN },
-        listOf("drowned", "drowned", "zombie"), "drowned", BuiltInLootTables.UNDERWATER_RUIN_BIG, vaultOnly = true),
+        listOf("drowned", "drowned", "zombie"), "drowned", BuiltInLootTables.UNDERWATER_RUIN_BIG, vaultOnly = true, style = DungeonStyle.SHRINE),
     RIME_VAULT("rime_vault", 5, { Blocks.PACKED_ICE }, { Blocks.BLUE_ICE }, { Blocks.POWDER_SNOW },
-        listOf("stray", "stray", "skeleton"), "stray", BuiltInLootTables.IGLOO_CHEST, vaultOnly = true);
+        listOf("stray", "stray", "skeleton"), "stray", BuiltInLootTables.IGLOO_CHEST, vaultOnly = true, style = DungeonStyle.RIME);
 
     val title: Component get() = Component.translatable("lair.guildmark.$id")
     val bossTitle: Component get() = Component.translatable("lair.guildmark.$id.boss")
@@ -59,9 +63,9 @@ enum class LairTheme(
         /** The nastiest theme open at [rank]; lair notes from before themes were picked per note use this. */
         fun forRank(rank: Int): LairTheme = entries.filter { !it.vaultOnly && it.minRank <= rank }.maxBy { it.minRank }
 
-        /** One of the three nastiest themes open at [rank], so lair hunts of the same rank vary. */
+        /** One of the four nastiest themes open at [rank], so lair hunts of the same rank vary. */
         fun pick(random: RandomSource, rank: Int): LairTheme {
-            val open = entries.filter { !it.vaultOnly && it.minRank <= rank }.sortedByDescending { it.minRank }.take(3)
+            val open = entries.filter { !it.vaultOnly && it.minRank <= rank }.sortedByDescending { it.minRank }.take(4)
             return open[random.nextInt(open.size)]
         }
 
