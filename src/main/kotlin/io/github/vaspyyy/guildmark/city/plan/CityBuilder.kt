@@ -63,6 +63,8 @@ class CityBuilder(private val plan: CityPlan, private val canvas: Canvas) {
             Use.YARD -> canvas.ground(x, z, 0, YARD, FILL)
             Use.GARDEN -> canvas.ground(x, z, 0, GRASS, FILL)
             Use.FREE -> canvas.ground(x, z, 0, YARD, FILL)
+            Use.GLACIS -> canvas.clearing(x, z, plan.level(x, z))
+            Use.ROAD -> canvas.ground(x, z, plan.level(x, z), B(M.PAVE_LANE, v = 1), FILL)
             // Outside the walls, the harbour and the farms draw their own
             else -> {}
         }

@@ -190,17 +190,50 @@ class CityPlan(val seed: Long, val layout: Layout = Layout.DEFAULT, val land: La
         stairsUpTheWalls()
         furnish()
 
+        outerWalls()
+
         // Outside the walls, last: they fit round everything else
         harbour?.lay(Random(seed * 7 + 1))
         outskirts.lay(Random(seed * 7 + 2))
     }
 
     /**
+     * The outer walls, their gatehouses and corner towers, the glacis and the roads out across it: for
+     * now only marked on the grid (the town inside is still the old capital's), so the harbour and the
+     * farms have their real neighbours to fit round.
+     */
+    private fun outerWalls() {
+        for (x in -levelled..levelled) for (z in -levelled..levelled) {
+            val ring = max(abs(x), abs(z))
+            if (ring in outer - WALL_THICK + 1..outer) grid[x, z] = Use.WALL
+            else if (ring > outer && (layout.harbour == null || Survey.sideOf(x, z) != layout.harbour)) grid[x, z] = Use.GLACIS
+        }
+        for (sx in intArrayOf(-1, 1)) for (sz in intArrayOf(-1, 1)) {
+            for (x in -8..8) for (z in -8..8) if (inRound(x, z, OUTER_CORNER_RADIUS)) grid[sx * outer + x, sz * outer + z] = Use.TOWER
+        }
+        for (side in OUTER_GATES) {
+            grid.fill(sideRect(side, -GATE_HALF, GATE_HALF, outer - WALL_THICK + 1, outer + GATE_OUT), Use.GATE)
+            if (side != layout.harbour) grid.fill(sideRect(side, -2, 2, outer + GATE_OUT + 1, levelled), Use.ROAD)
+        }
+    }
+
+    /** Where a road leaves the outer wall: the middle of each side. */
+    val outerGates: List<Dir> get() = OUTER_GATES
+
+    /**
      * The standing height of the city's ground at a column, over the lower town's: 0 in the lower town,
      * higher on the old town's and the citadel's terraces, sloping to the land across the glacis, and the
      * land's own height past it.
      */
-    fun level(x: Int, z: Int): Int = if (max(abs(x), abs(z)) <= CLEAR) 0 else land.height(x, z)
+    fun level(x: Int, z: Int): Int {
+        val ring = max(abs(x), abs(z))
+        return when {
+            ring <= outer -> 0
+            ring <= levelled && grid[x, z].let { it == Use.GLACIS || it == Use.ROAD || it == Use.GATE || it == Use.TOWER } ->
+                Math.round(land.height(x, z) * (ring - outer).toDouble() / (levelled - outer)).toInt()
+            else -> land.height(x, z)
+        }
+    }
 
     /**
      * The city's flat terraces, each at one height: where the land is cut down or built up to it before
@@ -430,6 +463,14 @@ class CityPlan(val seed: Long, val layout: Layout = Layout.DEFAULT, val land: La
         const val KEEP_ROAD = -30
         val KEEP_WARD = Rect(-32, -58, 32, -31)
         const val STAIR_STEPS = 10
+
+        /** The outer walls' thickness, and how far a gatehouse stands out past their outer face. */
+        const val WALL_THICK = 4
+        const val GATE_OUT = 8
+        /** Half a gatehouse's width along the wall, its passage's half-width being 2. */
+        const val GATE_HALF = 8
+        const val OUTER_CORNER_RADIUS = 7.5
+        val OUTER_GATES = listOf(Dir.S, Dir.E, Dir.W, Dir.N)
         private const val MIN_WIDTH = 5
         private const val MAX_WIDTH = 9
         private const val MIN_DEPTH = 6
