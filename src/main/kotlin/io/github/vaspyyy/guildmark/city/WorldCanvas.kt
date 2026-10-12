@@ -148,7 +148,8 @@ class WorldCanvas(
 
     /** Everything standing in the column from standing height up comes away. */
     private fun clearAbove(base: BlockPos) {
-        val top = level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, base.x, base.z)
+        // The finished heightmap: the worldgen one still shows the bare land, under the trees that grew since
+        val top = level.getHeight(Heightmap.Types.WORLD_SURFACE, base.x, base.z)
         val cursor = base.mutable()
         val air = Blocks.AIR.defaultBlockState()
         while (cursor.y < top) {
@@ -156,10 +157,6 @@ class WorldCanvas(
             cursor.move(Direction.UP)
         }
     }
-
-    /** Air, water, plants and trees: what the ground under a city is filled through. */
-    private fun loose(state: BlockState): Boolean =
-        state.canBeReplaced() || !state.fluidState.isEmpty || state.`is`(BlockTags.LEAVES) || state.`is`(BlockTags.LOGS)
 
     private fun lootTable(loot: Loot): ResourceKey<LootTable> = ResourceKey.create(
         Registries.LOOT_TABLE,
@@ -171,10 +168,14 @@ class WorldCanvas(
         },
     )
 
-    private companion object {
+    companion object {
         /** Deepest a dip under the city is filled; anything deeper is a cave, left as it is. */
-        const val MAX_FILL = 40
+        private const val MAX_FILL = 40
 
-        fun hash(pos: BlockPos): Int = (Mth.getSeed(pos.x, pos.y, pos.z) ushr 8).toInt()
+        private fun hash(pos: BlockPos): Int = (Mth.getSeed(pos.x, pos.y, pos.z) ushr 8).toInt()
+
+        /** Air, water, plants and trees: what the ground under a city is filled through. */
+        fun loose(state: BlockState): Boolean =
+            state.canBeReplaced() || !state.fluidState.isEmpty || state.`is`(BlockTags.LEAVES) || state.`is`(BlockTags.LOGS)
     }
 }

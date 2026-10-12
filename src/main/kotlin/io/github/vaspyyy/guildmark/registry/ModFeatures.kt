@@ -2,6 +2,7 @@ package io.github.vaspyyy.guildmark.registry
 
 import com.mojang.serialization.MapCodec
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.city.CapitalGroundwork
 import io.github.vaspyyy.guildmark.wardfire.WardfireFeature
 import net.minecraft.core.registries.Registries
 import net.minecraft.world.level.levelgen.feature.Feature
@@ -13,4 +14,7 @@ object ModFeatures {
     val FEATURE_TYPES: DeferredRegister<MapCodec<out Feature>> = DeferredRegister.create(Registries.FEATURE_TYPE, Guildmark.MOD_ID)
 
     val WARDFIRE: DeferredHolder<MapCodec<out Feature>, MapCodec<WardfireFeature>> = FEATURE_TYPES.register("wardfire") { -> WardfireFeature.CODEC }
+
+    val CAPITAL_GROUNDWORK: DeferredHolder<MapCodec<out Feature>, MapCodec<CapitalGroundwork>> =
+        FEATURE_TYPES.register("capital_groundwork") { -> CapitalGroundwork.CODEC }
 }

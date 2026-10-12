@@ -3,6 +3,7 @@ package io.github.vaspyyy.guildmark.city
 import io.github.vaspyyy.guildmark.city.plan.CityBuilder
 import io.github.vaspyyy.guildmark.city.plan.CityPlan
 import io.github.vaspyyy.guildmark.city.plan.Dir
+import io.github.vaspyyy.guildmark.city.plan.Use
 import io.github.vaspyyy.guildmark.registry.ModStructures
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
@@ -11,8 +12,11 @@ import net.minecraft.util.RandomSource
 import net.minecraft.world.level.ChunkPos
 import net.minecraft.world.level.StructureManager
 import net.minecraft.world.level.WorldGenLevel
+import net.minecraft.world.level.block.Block
+import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.level.block.Rotation
 import net.minecraft.world.level.chunk.ChunkGenerator
+import net.minecraft.world.level.levelgen.Heightmap
 import net.minecraft.world.level.levelgen.structure.BoundingBox
 import net.minecraft.world.level.levelgen.structure.StructurePiece
 import net.minecraft.world.level.levelgen.structure.TerrainAdjustment
@@ -63,6 +67,32 @@ class CapitalPiece : StructurePiece, PieceBeardifierModifier {
     ) {
         val plan = plan
         CityBuilder(plan, WorldCanvas(level, this, plan, chunkBB, random)).draw()
+    }
+
+    /**
+     * Before anything grows in a chunk: a course of stone just over the land wherever the city will stand,
+     * so no tree or plant takes root there. The city is drawn after the trees (so it can clear the ones
+     * already standing), and a tree that grew afterwards in a chunk next door would be cut in half by its
+     * share of the city, its crown left hanging. The city's ground replaces the course, or buries it.
+     */
+    fun groundwork(level: WorldGenLevel, chunk: ChunkPos) {
+        val grid = plan.grid
+        val course = Blocks.STONE.defaultBlockState()
+        val cursor = BlockPos.MutableBlockPos()
+        for (wx in chunk.minBlockX..chunk.maxBlockX) for (wz in chunk.minBlockZ..chunk.maxBlockZ) {
+            val (x, z) = local(wx, wz)
+            if (grid[x, z] == Use.OUTSIDE) continue
+            // Down to the land through anything loose; nothing roots under water, so a pond is left be
+            var y = level.getHeight(Heightmap.Types.WORLD_SURFACE, wx, wz) - 1
+            var wet = false
+            while (y > level.minY) {
+                val state = level.getBlockState(cursor.set(wx, y, wz))
+                if (!WorldCanvas.loose(state)) break
+                if (!state.fluidState.isEmpty) wet = true
+                y--
+            }
+            if (!wet) level.setBlock(cursor.set(wx, y + 1, wz), course, Block.UPDATE_CLIENTS)
+        }
     }
 
     // The land is drawn down (or up) to the plaza's height out to the edge of the clearing round the walls
