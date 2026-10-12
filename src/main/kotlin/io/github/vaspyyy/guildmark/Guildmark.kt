@@ -59,6 +59,7 @@ import io.github.vaspyyy.guildmark.guild.Reception
 import io.github.vaspyyy.guildmark.guild.Recruiting
 import io.github.vaspyyy.guildmark.registry.ModEntities
 import io.github.vaspyyy.guildmark.registry.ModFeatures
+import io.github.vaspyyy.guildmark.registry.ModStructures
 import io.github.vaspyyy.guildmark.lair.Lairs
 import io.github.vaspyyy.guildmark.network.AcceptChapterPayload
 import io.github.vaspyyy.guildmark.network.EndTalkPayload
@@ -134,6 +135,8 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         ModCreativeTabs.TABS.register(modBus)
         ModVillagers.POI_TYPES.register(modBus)
         ModFeatures.FEATURE_TYPES.register(modBus)
+        ModStructures.STRUCTURE_TYPES.register(modBus)
+        ModStructures.PIECE_TYPES.register(modBus)
         ModVillagers.PROFESSIONS.register(modBus)
         ModAttachments.ATTACHMENTS.register(modBus)
         ModEntities.ENTITIES.register(modBus)

@@ -4,9 +4,11 @@ import io.github.vaspyyy.guildmark.quest.QuestGenerator
 import io.github.vaspyyy.guildmark.registry.ModAttachments
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
+import net.minecraft.core.RegistryAccess
 import net.minecraft.core.registries.Registries
 import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerLevel
+import net.minecraft.util.RandomSource
 import net.minecraft.world.entity.EntitySpawnReason
 import net.minecraft.world.item.DyeColor
 import net.minecraft.world.entity.EntityTypes
@@ -224,16 +226,21 @@ object GuildHall {
         val spot = frame.at(WIDTH / 2, floor - frame.origin.y, DEPTH - 3)
         villager.snapTo(spot.x + 0.5, spot.y.toDouble(), spot.z + 0.5, frame.front.toYRot(), 0.0f)
         villager.finalizeSpawn(level, level.getCurrentDifficultyAt(spot), EntitySpawnReason.EVENT, null)
-        val librarian = level.registryAccess().lookupOrThrow(Registries.VILLAGER_PROFESSION).getOrThrow(VillagerProfession.LIBRARIAN)
-        villager.villagerData = villager.villagerData.withProfession(librarian).withLevel(5)
         villager.yHeadRot = frame.front.toYRot()
-        villager.customName = Component.translatable("entity.guildmark.receptionist", QuestGenerator.nameFor(level.random.nextLong()))
+        makeReceptionist(villager, level.registryAccess(), level.random, anchor)
+        level.addFreshEntity(villager)
+    }
+
+    /** Turns [villager] into the hall's receptionist, serving the board at [anchor]. */
+    fun makeReceptionist(villager: Villager, registries: RegistryAccess, random: RandomSource, anchor: BlockPos) {
+        val librarian = registries.lookupOrThrow(Registries.VILLAGER_PROFESSION).getOrThrow(VillagerProfession.LIBRARIAN)
+        villager.villagerData = villager.villagerData.withProfession(librarian).withLevel(5)
+        villager.customName = Component.translatable("entity.guildmark.receptionist", QuestGenerator.nameFor(random.nextLong()))
         villager.isCustomNameVisible = true
         // Stays at the desk: no wandering, no harm, never despawns
         villager.isNoAi = true
         villager.isPermanentlyInvulnerable = true
         villager.setPersistenceRequired()
         villager.setData(ModAttachments.RECEPTIONIST, anchor)
-        level.addFreshEntity(villager)
     }
 }

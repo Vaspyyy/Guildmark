@@ -62,7 +62,29 @@ configurations {
     runtimeClasspath.extendsFrom localRuntime
 }
 
+repositories {
+    // Mods we play alongside in the dev runs, from Modrinth's maven
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = "Modrinth"
+                url = "https://api.modrinth.com/maven"
+            }
+        }
+        filter {
+            includeGroup "maven.modrinth"
+        }
+    }
+}
+
 dependencies {
+    // Tectonic's grander terrain in the dev runs only (never shipped; players add it themselves).
+    // Run with -Pwith_tectonic=false, or set it in gradle.properties, to test on vanilla terrain.
+    if (project.findProperty("with_tectonic") != "false") {
+        localRuntime "maven.modrinth:tectonic:${tectonic_version}"
+        localRuntime "maven.modrinth:lithostitched:${lithostitched_version}"
+    }
+
     // Kotlin runs without Kotlin for Forge: the stdlib ships inside our jar.
     // Jar-in-Jar picks one copy if several mods bundle it.
     jarJar(implementation("org.jetbrains.kotlin:kotlin-stdlib")) {

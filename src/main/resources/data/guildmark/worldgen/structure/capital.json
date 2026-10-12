@@ -1,0 +1,12 @@
+{
+  "type": "guildmark:capital",
+  "biomes": "#guildmark:has_structure/capital",
+  "spawn_overrides": {
+    "monster": {
+      "bounding_box": "full",
+      "spawns": []
+    }
+  },
+  "step": "top_layer_modification",
+  "terrain_adaptation": "beard_box"
+}

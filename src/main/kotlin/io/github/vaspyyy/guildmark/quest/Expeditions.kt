@@ -1,11 +1,11 @@
 package io.github.vaspyyy.guildmark.quest
 
+import io.github.vaspyyy.guildmark.city.Capitals
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerLevel
-import net.minecraft.tags.StructureTags
 import net.minecraft.world.effect.MobEffectInstance
 import net.minecraft.world.effect.MobEffects
 import net.minecraft.world.entity.EntitySpawnReason
@@ -44,15 +44,15 @@ object Expeditions {
     )
     private val CHAMPION_NAMES = listOf("Grimbold", "Morvane", "Skarr", "Vex", "Ulgrim", "Draven", "Korrik", "Sable", "Thane", "Mordecai")
 
-    /** Another village 200 to 1200 blocks away, searched for in a few random directions. */
+    /** Another village (or capital) 200 to 1200 blocks away, searched for in a few random directions. */
     fun findVillage(level: ServerLevel, from: BlockPos): BlockPos? {
         val random = level.random
         repeat(4) {
             val angle = random.nextDouble() * 2 * Math.PI
             val probe = from.offset((cos(angle) * 600).toInt(), 0, (sin(angle) * 600).toInt())
-            val found = level.findNearestMapStructure(StructureTags.VILLAGE, probe, 40, false) ?: return@repeat
+            val found = level.findNearestMapStructure(Capitals.DESTINATIONS, probe, 40, false) ?: return@repeat
             val distance = horizontalDistance(from, found)
-            if (distance in 200.0..1200.0) return BlockPos(found.x, 0, found.z)
+            if (distance in 200.0..1200.0) return Capitals.at(level, found)?.bell ?: BlockPos(found.x, 0, found.z)
         }
         return null
     }
@@ -68,8 +68,9 @@ object Expeditions {
             for (i in 0 until probes) {
                 val angle = 2 * Math.PI * i / probes
                 val probe = center.offset((cos(angle) * ring).toInt(), 0, (sin(angle) * ring).toInt())
-                val found = level.findNearestMapStructure(StructureTags.VILLAGE, probe, 24, false) ?: continue
-                candidates.add(BlockPos(found.x, 0, found.z))
+                val found = level.findNearestMapStructure(Capitals.DESTINATIONS, probe, 24, false) ?: continue
+                // A capital's road runs to its bell, in the plaza, like a village's
+                candidates.add(Capitals.at(level, found)?.bell ?: BlockPos(found.x, 0, found.z))
             }
         }
         return candidates

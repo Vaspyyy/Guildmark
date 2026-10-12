@@ -114,11 +114,12 @@ object Atlas {
             if (level.poiManager.findClosest({ it.`is`(PoiTypes.MEETING) }, anchor, BELL_RANGE, PoiManager.Occupancy.ANY).isEmpty) continue
             val size = board.advanceIndex
             val standing = StandingTier.of(board.standingOf(player.uuid)).ordinal
+            val ref = if (board.capital) AtlasPlace.CAPITAL_REF else -1
             val index = places.indexOfFirst { it.kind == AtlasPlace.VILLAGE && it.dimension == dimension && it.pos == anchor }
             if (index < 0) {
-                found(AtlasPlace(AtlasPlace.VILLAGE, dimension, anchor, size = size, standing = standing, found = now))
-            } else if (places[index].size != size || places[index].standing != standing) {
-                places[index] = places[index].copy(size = size, standing = standing)
+                found(AtlasPlace(AtlasPlace.VILLAGE, dimension, anchor, ref = ref, size = size, standing = standing, found = now))
+            } else if (places[index].size != size || places[index].standing != standing || places[index].ref != ref) {
+                places[index] = places[index].copy(ref = ref, size = size, standing = standing)
                 changed = true
             }
         }
@@ -186,6 +187,7 @@ object Atlas {
                     val holding = holdings?.at(place.pos)
                     var flags = 0
                     if (place.size > Advance.GUILD_HALL.ordinal) flags = flags or AtlasMark.HALL
+                    if (place.ref == AtlasPlace.CAPITAL_REF) flags = flags or AtlasMark.CAPITAL
                     if (holding != null) flags = flags or AtlasMark.HELD
                     if (holding != null && holding.guild == ours) flags = flags or AtlasMark.YOURS
                     if (network.roads.any { it.finished && it.touches(place.pos, ROAD_SLACK) }) flags = flags or AtlasMark.ROAD

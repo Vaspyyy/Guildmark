@@ -8,6 +8,7 @@ import io.github.vaspyyy.guildmark.block.QuestBoardBlock
 import io.github.vaspyyy.guildmark.advance.Advance
 import com.mojang.serialization.codecs.RecordCodecBuilder
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.city.Capitals
 import io.github.vaspyyy.guildmark.guild.GuildNews
 import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
@@ -43,7 +44,17 @@ class RoadNetwork(val roads: MutableList<Road> = mutableListOf()) : SavedData() 
      * [done] runs back on the server thread with the new road, or null if there's no route.
      */
     fun survey(level: ServerLevel, a: BlockPos, b: BlockPos, done: (Road?) -> Unit) {
-        CompletableFuture.supplyAsync({ RoadPlanner.plan(level, a, b) }, Util.backgroundExecutor())
+        // A capital's road leaves by its gate, down the avenue from the plaza, and keeps off its walls outside
+        val capitalA = Capitals.at(level, a)
+        val capitalB = Capitals.at(level, b)
+        val leaving = capitalA?.let { Capitals.wayOut(it, b) } ?: listOf()
+        val arriving = capitalB?.let { Capitals.wayOut(it, a).reversed() } ?: listOf()
+        val avoid = listOfNotNull(capitalA, capitalB).map(Capitals::grounds)
+        val from = leaving.lastOrNull() ?: a
+        val to = arriving.firstOrNull() ?: b
+        CompletableFuture.supplyAsync({
+            RoadPlanner.plan(level, from, to, avoid)?.let { leaving.dropLast(1) + it + arriving.drop(1) }
+        }, Util.backgroundExecutor())
             .exceptionally { error -> Guildmark.LOGGER.error("Road survey failed", error); null }
             .thenAcceptAsync({ points ->
                 if (points == null) return@thenAcceptAsync done(null)

@@ -39,6 +39,30 @@ class QuestBoardBlockEntity(pos: BlockPos, state: BlockState) :
     var lastSiegeWon: Long = -100
         private set
 
+    /** Anchor cell only: the board of a capital, which stood there since the land was made. */
+    var capital: Boolean = false
+        private set
+
+    /** Anchor cell only: a board made with the land, still waiting for its first notes. */
+    private var starterNotesDue = false
+
+    /** Sets up a capital's board as the world generates it: every fixed advance already built, notes to come. */
+    fun foundCapital() {
+        capital = true
+        starterNotesDue = true
+        advanceIndex = Advance.entries.size
+        advancePoints = 0
+        setChanged()
+    }
+
+    /** True once, for a board still waiting for its first notes. */
+    fun takeStarterNotes(): Boolean {
+        if (!starterNotesDue) return false
+        starterNotesDue = false
+        setChanged()
+        return true
+    }
+
     fun recordSiege(won: Boolean, day: Long) {
         if (won) lastSiegeWon = day else lastSiegeLost = day
         setChanged()
@@ -88,6 +112,8 @@ class QuestBoardBlockEntity(pos: BlockPos, state: BlockState) :
         output.putInt("advance_points", advancePoints)
         output.putLong("siege_lost", lastSiegeLost)
         output.putLong("siege_won", lastSiegeWon)
+        if (capital) output.putBoolean("capital", true)
+        if (starterNotesDue) output.putBoolean("starter_notes", true)
         if (standing.isNotEmpty()) output.store("standing", STANDING_CODEC, standing)
     }
 
@@ -101,6 +127,8 @@ class QuestBoardBlockEntity(pos: BlockPos, state: BlockState) :
         advancePoints = input.getIntOr("advance_points", 0)
         lastSiegeLost = input.getLongOr("siege_lost", -100L)
         lastSiegeWon = input.getLongOr("siege_won", -100L)
+        capital = input.getBooleanOr("capital", false)
+        starterNotesDue = input.getBooleanOr("starter_notes", false)
         standing.clear()
         input.read("standing", STANDING_CODEC).ifPresent { standing.putAll(it) }
     }

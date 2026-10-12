@@ -54,6 +54,8 @@ object VillageBoards {
     fun tickBoard(level: ServerLevel, anchor: BlockPos, state: BlockState) {
         if ((level.gameTime + anchor.asLong()) % BOARD_TICK_INTERVAL != 0L) return
         val facing = state.getValue(QuestBoardBlock.FACING)
+        // A board that came with the land (a capital's) gets its first notes once it's loaded
+        if ((level.getBlockEntity(anchor) as? QuestBoardBlockEntity)?.takeStarterNotes() == true) pinStarterNotes(level, anchor, facing)
         val cells = BoardPart.entries.mapNotNull {
             level.getBlockEntity(QuestBoardBlock.cellPos(anchor, facing, it)) as? QuestBoardBlockEntity
         }

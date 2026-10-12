@@ -3,6 +3,7 @@ package io.github.vaspyyy.guildmark.road
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.level.levelgen.Heightmap
+import net.minecraft.world.level.levelgen.structure.BoundingBox
 import java.util.PriorityQueue
 import kotlin.math.abs
 import kotlin.math.sqrt
@@ -25,7 +26,8 @@ object RoadPlanner {
 
     private class Cell(val x: Int, val z: Int, val height: Int, val water: Int)
 
-    fun plan(level: ServerLevel, from: BlockPos, to: BlockPos): List<BlockPos>? {
+    /** A route from [from] to [to], never through [avoid] (a capital's walls and clearing), or null if there isn't one. */
+    fun plan(level: ServerLevel, from: BlockPos, to: BlockPos, avoid: List<BoundingBox> = listOf()): List<BlockPos>? {
         val generator = level.chunkSource.generator
         val randomState = level.chunkSource.randomState()
         val cells = HashMap<Long, Cell>()
@@ -79,6 +81,7 @@ object RoadPlanner {
                 val gx = here.x + dx
                 val gz = here.z + dz
                 if (!inCorridor(gx, gz)) continue
+                if (avoid.any { it.minX() <= gx * STEP + STEP / 2 && gx * STEP + STEP / 2 <= it.maxX() && it.minZ() <= gz * STEP + STEP / 2 && gz * STEP + STEP / 2 <= it.maxZ() }) continue
                 val next = cell(gx, gz)
                 val step = stepCost(here, midHeight(here, next), next, if (dx != 0 && dz != 0) 1.414 else 1.0) ?: continue
                 val nextKey = pack(gx, gz)

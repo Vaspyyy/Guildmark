@@ -29,6 +29,9 @@ data class AtlasPlace(
         /** A field boss's camp; [ref] is its site in FieldBosses. */
         const val FIELD_BOSS = 4
 
+        /** A village's [ref] when it's a capital city. */
+        const val CAPITAL_REF = 1
+
         val CODEC: Codec<AtlasPlace> = RecordCodecBuilder.create { i ->
             i.group(
                 Codec.INT.fieldOf("kind").forGetter(AtlasPlace::kind),
