@@ -30,6 +30,7 @@ import io.github.vaspyyy.guildmark.client.combat.CombatAnimator
 import io.github.vaspyyy.guildmark.client.combat.FirstPersonCombat
 import io.github.vaspyyy.guildmark.client.combat.CombatHud
 import io.github.vaspyyy.guildmark.client.combat.Cutscenes
+import io.github.vaspyyy.guildmark.client.ui.CharacterScreen
 import io.github.vaspyyy.guildmark.client.ui.FallenScreen
 import io.github.vaspyyy.guildmark.client.atlas.AtlasClient
 import io.github.vaspyyy.guildmark.client.atlas.CompassHud
@@ -76,6 +77,7 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
             event.register(ledgerKey)
             event.register(trackerKey)
             event.register(MapScreen.KEY)
+            event.register(CharacterScreen.KEY)
             event.registerCategory(CombatClient.CATEGORY)
             event.register(CombatClient.DODGE)
             event.register(CombatClient.LOCK_ON)
@@ -153,6 +155,9 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
             while (trackerKey.consumeClick()) ContractTracker.shown = !ContractTracker.shown
             while (MapScreen.KEY.consumeClick()) {
                 if (minecraft.gui.screen() == null && minecraft.player != null) minecraft.gui.setScreen(MapScreen())
+            }
+            while (CharacterScreen.KEY.consumeClick()) {
+                if (minecraft.gui.screen() == null && minecraft.player != null) minecraft.gui.setScreen(CharacterScreen())
             }
             // Titles arrive as synced data: names are cached, so redo them when a title changes
             val level = minecraft.level

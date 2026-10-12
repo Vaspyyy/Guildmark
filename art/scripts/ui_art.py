@@ -157,6 +157,31 @@ def button(w, h, fill, line, top_hi, seed):
     return img
 
 
+def socket(size, seed):
+    """an equipment socket: a dark hollow ringed in iron, with a fleck of gold at each corner"""
+    img = Image.new("RGBA", (size, size), CL)
+    noisy_fill(img, 2, 2, size - 2, size - 2, (12, 11, 14, 226), 0.08, seed)
+    for i in range(1, size - 1):
+        for x, y, c in ((i, 0, OUT), (i, size - 1, OUT), (0, i, OUT), (size - 1, i, OUT),
+                        (i, 1, IRON_D), (1, i, IRON_D), (i, size - 2, IRON), (size - 2, i, IRON)):
+            img.putpixel((x, y), c)
+    for x, y in ((1, 1), (size - 2, 1), (1, size - 2), (size - 2, size - 2)):
+        img.putpixel((x, y), GOLD_D)
+    return img
+
+
+def glow(size, color, peak):
+    """a soft round light, strongest in the middle"""
+    img = Image.new("RGBA", (size, size), CL)
+    r = size / 2
+    for y in range(size):
+        for x in range(size):
+            d = math.hypot(x + 0.5 - r, y + 0.5 - r) / r
+            if d < 1:
+                img.putpixel((x, y), color[:3] + (int(peak * (1 - d) ** 1.5),))
+    return img
+
+
 def gradient_band(w, h, color, a0, a1, power=1.0):
     img = Image.new("RGBA", (w, h), CL)
     for x in range(w):
@@ -610,6 +635,8 @@ def main():
     save(diamond(2, OUT, GOLD, GOLD_L), "ui/diamond")
     save(diamond(3, OUT, GOLD, GOLD_L), "ui/diamond_large")
     save(inset(18, 18, (10, 9, 12, 210), 7), "ui/slot")
+    save(socket(18, 8), "ui/socket")
+    save(glow(64, (226, 176, 92), 92), "ui/glow", STRETCH)
 
     # the name plate: a dark ribbon edged in gold
     plate = ["..oooooooooooooooooooo..",

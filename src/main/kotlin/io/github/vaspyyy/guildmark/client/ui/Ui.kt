@@ -28,6 +28,8 @@ object Ui {
     val PANEL_PLAIN = sprite("ui/panel_plain")
     val INSET = sprite("ui/inset")
     val SLOT = sprite("ui/slot")
+    val SOCKET = sprite("ui/socket")
+    val GLOW = sprite("ui/glow")
     val NAME_PLATE = sprite("ui/name_plate")
     val CHOICE_GLOW = sprite("ui/choice_glow")
     val DIVIDER = sprite("ui/divider")
