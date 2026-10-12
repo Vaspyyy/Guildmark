@@ -234,5 +234,48 @@
         "stream": true
       }
     ]
+  },
+  "ui.open": {
+    "sounds": [
+      "guildmark:ui/open1"
+    ]
+  },
+  "ui.close": {
+    "sounds": [
+      "guildmark:ui/close1"
+    ]
+  },
+  "ui.hover": {
+    "sounds": [
+      "guildmark:ui/hover1"
+    ]
+  },
+  "ui.select": {
+    "sounds": [
+      "guildmark:ui/select1"
+    ]
+  },
+  "ui.page": {
+    "sounds": [
+      "guildmark:ui/page1",
+      "guildmark:ui/page2"
+    ]
+  },
+  "ui.text": {
+    "sounds": [
+      "guildmark:ui/text1",
+      "guildmark:ui/text2",
+      "guildmark:ui/text3"
+    ]
+  },
+  "ui.death_toll": {
+    "sounds": [
+      "guildmark:ui/death_toll1"
+    ]
+  },
+  "ui.seal": {
+    "sounds": [
+      "guildmark:ui/seal1"
+    ]
   }
 }

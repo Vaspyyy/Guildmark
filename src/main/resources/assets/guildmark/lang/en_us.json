@@ -972,5 +972,17 @@
   "guildmark.configuration.relicCacheChance": "Relic Cache Chance",
   "guildmark.configuration.combatHud": "Combat Bars",
   "guildmark.configuration.cameraShake": "Camera Shake",
-  "guildmark.configuration.cutscenes": "Boss Cutscenes"
+  "guildmark.configuration.cutscenes": "Boss Cutscenes",
+  "gui.guildmark.fallen": "Fallen",
+  "gui.guildmark.fallen.hardcore": "Fallen for good",
+  "gui.guildmark.fallen.rise": "Rise again",
+  "gui.guildmark.fallen.unknown": "Struck down by something unseen",
+  "gui.guildmark.fallen.epitaph.0": "The road claims another. It usually gives them back.",
+  "gui.guildmark.fallen.epitaph.1": "Your name is struck from the guild's roll. In pencil.",
+  "gui.guildmark.fallen.epitaph.2": "Somewhere a Guildmaster sighs and reaches for the ledger.",
+  "gui.guildmark.fallen.epitaph.3": "Not every contract ends in pay.",
+  "gui.guildmark.fallen.epitaph.4": "Get up. The guild has work for you yet.",
+  "gui.guildmark.fallen.epitaph.5": "Even the Wardens fell, once. They rose again, too.",
+  "gui.guildmark.fallen.epitaph_hardcore": "Your tale ends here. The guild will remember it.",
+  "guildmark.configuration.deathScreen": "Guildmark Death Screen"
 }

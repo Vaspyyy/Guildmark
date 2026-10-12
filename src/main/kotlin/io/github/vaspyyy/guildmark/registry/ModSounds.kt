@@ -50,6 +50,14 @@ object ModSounds {
 
     val BOSS_APPEAR = sound("ui.boss_appear")
     val FOE_VANQUISHED = sound("ui.foe_vanquished")
+    val UI_OPEN = sound("ui.open")
+    val UI_CLOSE = sound("ui.close")
+    val UI_HOVER = sound("ui.hover")
+    val UI_SELECT = sound("ui.select")
+    val UI_PAGE = sound("ui.page")
+    val UI_TEXT = sound("ui.text")
+    val UI_DEATH_TOLL = sound("ui.death_toll")
+    val UI_SEAL = sound("ui.seal")
     val MUSIC_WARDEN = sound("music.fallen_warden")
     val MUSIC_WARDEN_2 = sound("music.fallen_warden_2")
 }

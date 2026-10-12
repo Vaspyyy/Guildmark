@@ -15,6 +15,9 @@ object GuildmarkClientConfig {
     val CUTSCENES: ModConfigSpec.BooleanValue = BUILDER
         .comment("Play boss introductions as short cutscenes.")
         .define("cutscenes", true)
+    val DEATH_SCREEN: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Show Guildmark's own death screen instead of the vanilla one.")
+        .define("deathScreen", true)
 
     val SPEC: ModConfigSpec = BUILDER.build()
 }

@@ -800,6 +800,109 @@ def fw_step(v, rng):
     return reverb(y, wet=0.13, rt60=0.6, predelay=0.01, hf_damp=0.5, seed=38)
 
 
+# =========================================================================== screens
+def paper(dur, rng, peak=0.4, lo=900, hi=6000, grain=900):
+    """a sheet of paper sliding: soft band noise with a crackle of fibres riding the motion"""
+    s = bell(dur, peak, 1.6, 1.8)
+    slide = bp(colored(dur, rng, -1.0), lo, hi) * s ** 1.5
+    fibres = crackle(dur, rng, grain, decay=0.0012, f_lo=1500, f_hi=7000, amp_curve=s)
+    return nrm(slide) + 0.35 * nrm(fibres)
+
+
+def chime(dur, f0, rng, t60=0.9, bright=0.5):
+    """a small struck brass bell: bell partials, the upper ones dying first"""
+    ratios = metal_partials(1.0, "bell", n=8)
+    freqs = [f0 * r for r in ratios[1:7]]
+    t60s = [t60 * (1.0 - 0.11 * i) for i in range(len(freqs))]
+    amps = [1.0, 0.55, 0.4 * bright + 0.1, 0.3 * bright, 0.2 * bright, 0.12 * bright]
+    return modal(dur, freqs, t60s, amps, rng)
+
+
+@recipe("ui/open", variants=1, fade_out=0.08, max_len=0.6)
+def ui_open(v, rng):
+    dur = 0.6
+    t = tvec(dur)
+    sheet = paper(0.32, rng, peak=0.45)
+    tone = chime(dur, 523.25, rng, t60=0.7, bright=0.35) * np.clip((t - 0.05) / 0.004, 0, 1)
+    y = 0.55 * fit(sheet, ns(dur)) + 0.4 * nrm(tone)
+    return reverb(lp(y, 9000), wet=0.12, rt60=0.5, predelay=0.006, hf_damp=0.55, seed=41)
+
+
+@recipe("ui/close", variants=1, fade_out=0.06, max_len=0.35)
+def ui_close(v, rng):
+    dur = 0.35
+    sheet = paper(0.22, rng, peak=0.3, lo=600, hi=4000)
+    knock = thump(dur, 190, 120, rng, decay=0.045, click=0.15, noise=0.2, nlp=900)
+    y = 0.5 * fit(sheet, ns(dur)) + 0.5 * nrm(knock)
+    return reverb(lp(y, 7000), wet=0.1, rt60=0.35, predelay=0.004, seed=42)
+
+
+@recipe("ui/hover", variants=1, fade_out=0.02, max_len=0.07)
+def ui_hover(v, rng):
+    dur = 0.07
+    ex = bp(white(0.001, rng), 800, 9000)
+    wood = resonators(fit(ex, ns(dur)), [1820, 3150, 4900], [0.03, 0.02, 0.012], [1, .5, .25])
+    return lp(nrm(wood), 8000)
+
+
+@recipe("ui/select", variants=1, fade_out=0.1, max_len=0.9)
+def ui_select(v, rng):
+    dur = 0.9
+    t = tvec(dur)
+    first = chime(dur, 659.25, rng, t60=0.6, bright=0.5)
+    second = chime(dur, 987.77, rng, t60=0.8, bright=0.45) * np.clip((t - 0.07) / 0.003, 0, 1)
+    second = np.concatenate([np.zeros(ns(0.07)), second[: len(t) - ns(0.07)]])
+    y = 0.55 * nrm(first) + 0.5 * nrm(second)
+    return reverb(lp(y, 10000), wet=0.16, rt60=0.7, predelay=0.008, hf_damp=0.5, seed=43)
+
+
+@recipe("ui/page", variants=2, fade_out=0.06, max_len=0.42)
+def ui_page(v, rng):
+    dur = 0.42
+    y = paper(dur, rng, peak=0.35 + 0.1 * v, lo=700 + 200 * v, hi=7000, grain=1300)
+    flick = bp(white(dur, rng), 2500, 9000) * np.exp(-tvec(dur) / 0.01)
+    return small_room(fit(y, ns(dur)) + 0.2 * nrm(flick), 0.08)
+
+
+@recipe("ui/text", variants=3, peak_db=-12.0, fade_out=0.01, max_len=0.04)
+def ui_text(v, rng):
+    """a quill nib's tick as words appear: very short and quiet, a little different each time"""
+    dur = 0.04
+    ex = bp(white(0.0008, rng), 1500, 10000)
+    f = 2400 + 260 * v
+    nib = resonators(fit(ex, ns(dur)), [f, f * 1.73], [0.012, 0.008], [1, .4])
+    return lp(nrm(nib), 9000)
+
+
+@recipe("ui/death_toll", variants=1, fade_out=1.2, max_len=5.0)
+def ui_death_toll(v, rng):
+    """a great bell tolls once, far off, over a low swell: the ledger closes on another name"""
+    dur = 5.0
+    t = tvec(dur)
+    ratios = metal_partials(1.0, "bell", n=12)
+    f0 = 98.0
+    freqs = [f0 * r * 2 for r in ratios]
+    t60s = [3.8 * (1.0 - 0.07 * i) for i in range(len(freqs))]
+    amps = [0.9, 1.0, 0.6, 0.45, 0.5, 0.3, 0.25, 0.2, 0.12, 0.08, 0.05, 0.04]
+    toll = modal(dur, freqs, t60s, amps, rng) * np.clip(t / 0.003, 0, 1)
+    strike = thump(dur, 140, 70, rng, decay=0.12, click=0.25, noise=0.5, nlp=600)
+    swell = lp(colored(dur, rng, -4.0), 220) * bell(dur, 0.35, 2.0, 2.2)
+    hum = (np.sin(2 * np.pi * 49 * t) + 0.5 * np.sin(2 * np.pi * 73.5 * t)) * bell(dur, 0.3, 1.5, 2.5)
+    y = nrm(toll) + 0.35 * nrm(strike) + 0.25 * nrm(swell) + 0.22 * nrm(hum)
+    return reverb(y, wet=0.45, rt60=3.2, predelay=0.03, hf_damp=0.6, seed=44)
+
+
+@recipe("ui/seal", variants=1, fade_out=0.08, max_len=0.5)
+def ui_seal(v, rng):
+    """the wax seal pressed onto the page: a soft heavy thud and a sticky lift"""
+    dur = 0.5
+    t = tvec(dur)
+    press = thump(dur, 120, 60, rng, decay=0.07, click=0.1, noise=0.6, nlp=500)
+    lift = bp(white(dur, rng), 400, 2500) * np.exp(-np.maximum(0, t - 0.18) / 0.02) * (t > 0.18)
+    y = nrm(press) + 0.18 * nrm(lift)
+    return small_room(lp(y, 6000), 0.1)
+
+
 # =========================================================================== main
 def main():
     ap = argparse.ArgumentParser()
