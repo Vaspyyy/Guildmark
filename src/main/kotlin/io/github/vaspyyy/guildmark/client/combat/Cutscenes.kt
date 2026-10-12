@@ -1,0 +1,580 @@
+package io.github.vaspyyy.guildmark.client.combat
+
+import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.client.GuildmarkClientConfig
+import io.github.vaspyyy.guildmark.enemy.FallenWarden
+import io.github.vaspyyy.guildmark.network.BossCuePayload
+import io.github.vaspyyy.guildmark.registry.ModSounds
+import net.minecraft.client.CameraType
+import net.minecraft.client.DeltaTracker
+import net.minecraft.client.Minecraft
+import net.minecraft.client.entity.ClientAvatarEntity
+import net.minecraft.client.gui.Font
+import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.screens.PauseScreen
+import net.minecraft.client.multiplayer.ClientLevel
+import net.minecraft.client.player.LocalPlayer
+import net.minecraft.client.renderer.entity.state.AvatarRenderState
+import net.minecraft.client.resources.sounds.SimpleSoundInstance
+import net.minecraft.client.resources.sounds.SoundInstance
+import net.minecraft.network.chat.Component
+import net.minecraft.resources.Identifier
+import net.minecraft.sounds.Music
+import net.minecraft.sounds.SoundEvent
+import net.minecraft.sounds.SoundSource
+import net.minecraft.util.ARGB
+import net.minecraft.util.Mth
+import net.minecraft.util.context.ContextKey
+import net.minecraft.world.entity.Avatar
+import net.minecraft.world.entity.EntityDimensions
+import net.minecraft.world.entity.EntityTypes
+import net.minecraft.world.entity.Marker
+import net.minecraft.world.level.ClipContext
+import net.minecraft.world.phys.HitResult
+import net.minecraft.world.phys.Vec3
+import net.minecraft.world.phys.shapes.CollisionContext
+import net.neoforged.neoforge.client.event.RenderGuiLayerEvent
+import net.neoforged.neoforge.client.event.RenderHandEvent
+import net.neoforged.neoforge.client.event.RenderLivingEvent
+import net.neoforged.neoforge.client.event.ScreenEvent
+import net.neoforged.neoforge.client.event.SelectMusicEvent
+import net.neoforged.neoforge.client.event.ViewportEvent
+import net.neoforged.neoforge.client.gui.GuiLayer
+import net.neoforged.neoforge.client.renderstate.AvatarRenderStateModifier
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.min
+import kotlin.math.roundToInt
+import kotlin.math.sin
+import kotlin.math.sqrt
+
+/**
+ * Boss moments told on screen. The server cues each one (Halvard waking, the crown's fire taking him, his
+ * fall) and the scene plays out here: black bars, a camera that leaves the player to frame him, his voice
+ * with captions, then the title card as the fight begins or the banner as it ends. The camera work can be
+ * turned off in the client config and skipped with Esc or jump; his words and the cards always play.
+ * His music lives here too.
+ */
+object Cutscenes : GuiLayer {
+    val ID: Identifier = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "cutscene")
+
+    /** Ticks the camera takes to glide back to the player's eyes. */
+    private const val RETURN = 14
+    private const val BLACK = 0xFF000000.toInt()
+    private const val GOLD = 0xC9A45C
+    private const val BONE = 0xF2E8D0
+
+    private class View(val pos: Vec3, val yaw: Float, val pitch: Float, val fov: Float)
+
+    /**
+     * Camera work from [start] to [end] ticks. Where the camera sits and what it looks at are given in the
+     * boss's own frame (blocks forward, right and up from his feet) as k runs from 0 to 1.
+     */
+    private class Shot(
+        val start: Int,
+        val end: Int,
+        /** Close shots leave the player out, so their own body never blocks the view. */
+        val hideSelf: Boolean,
+        val fov: (Float) -> Float,
+        val cam: (Float) -> Vec3,
+        val look: (Float) -> Vec3,
+    )
+
+    private class Line(val from: Int, val until: Int, val key: String)
+
+    private class Scene(
+        val cue: Int,
+        val bossId: Int,
+        var bossPos: Vec3,
+        val yaw: Float,
+        /** 1 or -1: the camera keeps to the boss's side away from the player. */
+        val side: Double,
+        val player: LocalPlayer,
+        val level: ClientLevel,
+    ) {
+        var time = 0
+        var length = 0
+        var shots: List<Shot> = emptyList()
+        /** When the camera starts back to the player. */
+        var returnAt = -1
+        var lines: List<Line> = emptyList()
+        var voice: SoundEvent? = null
+        var voiceAt = -1
+        var stinger: SoundEvent? = null
+        var stingerAt = -1
+        var title = -1
+        var banner = -1
+        var shakeAt = -1
+
+        var rig: CameraRig? = null
+        var savedType: CameraType? = null
+        var returnFrom: View? = null
+        var voiceSound: SoundInstance? = null
+        /** This frame's camera while it's ours, and how far the field of view has gone back to the player's. */
+        var view: View? = null
+        var fovBlend = 0f
+
+        val camera: Boolean get() = shots.isNotEmpty()
+
+        /** A point in the boss's frame, in the world. */
+        fun world(local: Vec3): Vec3 {
+            val a = Math.toRadians(yaw.toDouble())
+            val s = sin(a)
+            val c = cos(a)
+            val r = local.y * side
+            return Vec3(bossPos.x - s * local.x - c * r, bossPos.y + local.z, bossPos.z + c * local.x - s * r)
+        }
+    }
+
+    /** The camera while it's away from the player: an entity that's never added to the world, only looked through. */
+    private class CameraRig(level: ClientLevel, private val eye: Float) : Marker(EntityTypes.MARKER, level) {
+        init {
+            refreshDimensions()
+        }
+
+        // Its eye height matches the player's, so the view doesn't drift as the camera changes hands
+        override fun getDimensions(pose: net.minecraft.world.entity.Pose): EntityDimensions =
+            EntityDimensions.fixed(0f, 0f).withEyeHeight(eye)
+
+        fun place(view: View) {
+            val y = view.pos.y - eye
+            setPos(view.pos.x, y, view.pos.z)
+            xo = view.pos.x
+            yo = y
+            zo = view.pos.z
+            yRot = view.yaw
+            yRotO = view.yaw
+            xRot = view.pitch
+            xRotO = view.pitch
+        }
+    }
+
+    private var scene: Scene? = null
+    private var ticks = 0
+    private var silenceUntil = 0
+    private var wardenId = -1
+
+    private val PHASE_ONE by lazy { Music(ModSounds.MUSIC_WARDEN, 0, 0, true) }
+    private val PHASE_TWO by lazy { Music(ModSounds.MUSIC_WARDEN_2, 0, 0, true) }
+
+    private fun camerasOn(): Boolean = !GuildmarkClientConfig.SPEC.isLoaded || GuildmarkClientConfig.CUTSCENES.get()
+
+    /** The camera is away from the player: no moving, fighting or HUD until it's back. */
+    fun holdsCamera(): Boolean = scene?.rig != null
+
+    // ---- Cues ----
+
+    fun onCue(payload: BossCuePayload) {
+        val minecraft = Minecraft.getInstance()
+        val player = minecraft.player ?: return
+        val level = minecraft.level ?: return
+        val boss = level.getEntity(payload.entityId) as? FallenWarden
+        end()
+        val pos = boss?.position() ?: player.position()
+        val yaw = boss?.yBodyRot ?: 0f
+        val a = Math.toRadians(yaw.toDouble())
+        val right = -(player.x - pos.x) * cos(a) - (player.z - pos.z) * sin(a)
+        val s = Scene(payload.cue, payload.entityId, pos, yaw, if (right > 0) -1.0 else 1.0, player, level)
+        val camera = boss != null && camerasOn() && player.isAlive
+        when (payload.cue) {
+            BossCuePayload.INTRO -> intro(s, camera)
+            BossCuePayload.PHASE_TWO -> phaseTwo(s, camera)
+            BossCuePayload.DEATH -> death(s, camera)
+            else -> return
+        }
+        scene = s
+        if (s.camera) takeCamera(s)
+    }
+
+    /** He wakes, speaks, rises and pulls his sword from the ground; his name as the fight begins. */
+    private fun intro(s: Scene, camera: Boolean) {
+        s.length = 290
+        s.voice = ModSounds.WARDEN_VOICE_INTRO.get()
+        s.voiceAt = 10
+        // Timed to the pauses in halvard_intro.ogg (see art/audio/README.md)
+        s.lines = listOf(Line(10, 66, "halvard.intro.1"), Line(66, 112, "halvard.intro.2"), Line(112, 172, "halvard.intro.3"))
+        s.stinger = ModSounds.BOSS_APPEAR.get()
+        s.stingerAt = 192
+        s.title = 196
+        if (!camera) return
+        s.shots = listOf(
+            // Wide and high: the knight kneeling at his post
+            dolly(0, 60, false, 62f, 58f, Vec3(10.0, 7.0, 5.0), Vec3(8.0, 5.0, 3.8), Vec3(0.0, 0.0, 1.2), Vec3(0.0, 0.0, 1.4)),
+            // Close and low on the bowed helm as he speaks
+            dolly(60, 112, true, 50f, 46f, Vec3(2.4, 1.3, 1.0), Vec3(2.1, 0.7, 1.05), Vec3(0.3, 0.0, 1.95), Vec3(0.3, 0.0, 2.0)),
+            // He rises and pulls the sword free: the camera backs away to take in his height
+            dolly(112, 166, true, 60f, 64f, Vec3(5.5, -2.0, 0.5), Vec3(6.8, -2.6, 0.7), Vec3(0.0, 0.0, 1.6), Vec3(0.0, 0.0, 2.3)),
+            // The roar
+            dolly(166, 184, true, 56f, 48f, Vec3(4.2, 0.4, 1.4), Vec3(3.0, 0.2, 1.9), Vec3(0.2, 0.0, 2.55), Vec3(0.2, 0.0, 2.6)),
+        )
+        s.returnAt = 184
+        s.shakeAt = 170
+    }
+
+    /** He kneels as the crown's fire takes him: a slow turn around him while he speaks. */
+    private fun phaseTwo(s: Scene, camera: Boolean) {
+        s.length = 96
+        s.voice = ModSounds.WARDEN_VOICE_PHASE2.get()
+        s.voiceAt = 6
+        s.lines = listOf(Line(6, 92, "halvard.phase2"))
+        if (!camera) return
+        s.shots = listOf(orbit(0, 44, 55f, 50f, 3.8, 3.3, 30.0, 80.0, 0.8, 1.1, 1.9))
+        s.returnAt = 44
+    }
+
+    /** He falls to a knee, says his last, and is gone; silence, then the banner. */
+    private fun death(s: Scene, camera: Boolean) {
+        s.length = 210
+        s.voice = ModSounds.WARDEN_VOICE_DEATH.get()
+        s.voiceAt = 14
+        s.lines = listOf(Line(14, 100, "halvard.death"))
+        s.stinger = ModSounds.FOE_VANQUISHED.get()
+        s.stingerAt = 100
+        s.banner = 100
+        silenceUntil = ticks + 260
+        if (!camera) return
+        s.shots = listOf(orbit(0, 80, 58f, 52f, 5.2, 4.4, 20.0, 75.0, 2.2, 1.7, 1.3))
+        s.returnAt = 80
+    }
+
+    private fun dolly(start: Int, end: Int, hideSelf: Boolean, fovA: Float, fovB: Float, camA: Vec3, camB: Vec3, lookA: Vec3, lookB: Vec3) =
+        Shot(start, end, hideSelf, { k -> Mth.lerp(k, fovA, fovB) }, { k -> camA.lerp(camB, k.toDouble()) }, { k -> lookA.lerp(lookB, k.toDouble()) })
+
+    /** A turn around him at a [radiusA] to [radiusB] distance, from [angleA] to [angleB] degrees off his front. */
+    private fun orbit(
+        start: Int, end: Int, fovA: Float, fovB: Float, radiusA: Double, radiusB: Double,
+        angleA: Double, angleB: Double, heightA: Double, heightB: Double, lookHeight: Double,
+    ) = Shot(start, end, true, { k -> Mth.lerp(k, fovA, fovB) }, { k ->
+        val d = k.toDouble()
+        val a = Math.toRadians(Mth.lerp(d, angleA, angleB))
+        val r = Mth.lerp(d, radiusA, radiusB)
+        Vec3(cos(a) * r, sin(a) * r, Mth.lerp(d, heightA, heightB))
+    }, { Vec3(0.0, 0.0, lookHeight) })
+
+    // ---- The camera ----
+
+    private fun takeCamera(s: Scene) {
+        val minecraft = Minecraft.getInstance()
+        val rig = CameraRig(s.level, s.player.eyeHeight)
+        rig.place(shotView(s, 0f))
+        s.rig = rig
+        s.savedType = minecraft.options.cameraType
+        minecraft.options.cameraType = CameraType.FIRST_PERSON
+        LockOn.release()
+        minecraft.setCameraEntity(rig)
+    }
+
+    private fun releaseCamera(s: Scene) {
+        val rig = s.rig ?: return
+        val minecraft = Minecraft.getInstance()
+        s.rig = null
+        s.view = null
+        if (minecraft.cameraEntity === rig) minecraft.setCameraEntity(minecraft.player)
+        s.savedType?.let { minecraft.options.cameraType = it }
+    }
+
+    /** Where the camera is at [partial] into this tick. */
+    private fun view(s: Scene, partial: Float): View {
+        val t = s.time + partial
+        if (s.returnAt < 0 || t < s.returnAt) {
+            s.fovBlend = 0f
+            return shotView(s, t)
+        }
+        // Back to the player's eyes
+        val from = s.returnFrom ?: shotView(s, s.returnAt.toFloat()).also { s.returnFrom = it }
+        val player = s.player
+        val k = ease(((t - s.returnAt) / RETURN).coerceIn(0f, 1f))
+        s.fovBlend = k
+        val to = player.getEyePosition(partial)
+        return View(
+            from.pos.lerp(to, k.toDouble()),
+            from.yaw + Mth.wrapDegrees(player.getViewYRot(partial) - from.yaw) * k,
+            Mth.lerp(k, from.pitch, player.getViewXRot(partial)),
+            from.fov,
+        )
+    }
+
+    private fun shotView(s: Scene, t: Float): View {
+        val shot = s.shots.firstOrNull { t < it.end } ?: s.shots.last()
+        val k = gentle(((t - shot.start) / (shot.end - shot.start)).coerceIn(0f, 1f))
+        val look = s.world(shot.look(k))
+        var cam = s.world(shot.cam(k))
+        // Out of walls and hillsides: pull in to just short of whatever's in the way
+        val hit = s.level.clip(ClipContext(look, cam, ClipContext.Block.VISUAL, ClipContext.Fluid.NONE, CollisionContext.empty()))
+        if (hit.type != HitResult.Type.MISS) cam = hit.location.add(look.subtract(hit.location).normalize().scale(0.3))
+        return looking(cam, look, shot.fov(k))
+    }
+
+    private fun looking(cam: Vec3, at: Vec3, fov: Float): View {
+        val d = at.subtract(cam)
+        val yaw = Math.toDegrees(atan2(-d.x, d.z)).toFloat()
+        val pitch = Math.toDegrees(-atan2(d.y, sqrt(d.x * d.x + d.z * d.z))).toFloat()
+        return View(cam, yaw, pitch, fov)
+    }
+
+    /** Turns the player to face him, so the camera comes back looking his way. */
+    private fun faceBoss(s: Scene) {
+        val player = s.player
+        val d = s.bossPos.add(0.0, 1.8, 0.0).subtract(player.eyePosition)
+        val yaw = player.yRot + Mth.wrapDegrees(Math.toDegrees(atan2(-d.x, d.z)).toFloat() - player.yRot)
+        val pitch = Math.toDegrees(-atan2(d.y, sqrt(d.x * d.x + d.z * d.z))).toFloat().coerceIn(-30f, 30f)
+        player.yRot = yaw
+        player.yRotO = yaw
+        player.yHeadRot = yaw
+        player.yHeadRotO = yaw
+        player.xRot = pitch
+        player.xRotO = pitch
+    }
+
+    private fun gentle(k: Float): Float = 0.5f * k + 0.5f * k * k * (3f - 2f * k)
+
+    private fun ease(k: Float): Float = if (k < 0.5f) 4f * k * k * k else 1f - (-2f * k + 2f).let { it * it * it } / 2f
+
+    // ---- Every tick ----
+
+    fun onTick() {
+        val minecraft = Minecraft.getInstance()
+        if (minecraft.isPaused) return
+        ticks++
+        if (ticks % 10 == 0) findWarden(minecraft)
+        val s = scene ?: return
+        val player = minecraft.player
+        if (player == null || player !== s.player || minecraft.level !== s.level || !player.isAlive) {
+            end()
+            return
+        }
+        (s.level.getEntity(s.bossId) as? FallenWarden)?.let { s.bossPos = it.position() }
+        if (s.rig != null && s.time < s.returnAt) {
+            var skip = false
+            while (minecraft.options.keyJump.consumeClick()) skip = true
+            if (skip) skip(s)
+        }
+        s.time++
+        val t = s.time
+        if (t == s.voiceAt) s.voice?.let { s.voiceSound = play(it, SoundSource.VOICE) }
+        if (t == s.stingerAt) s.stinger?.let { play(it, SoundSource.MUSIC) }
+        if (t == s.shakeAt && s.rig != null) CameraFx.shake(0.6f)
+        if (t == s.returnAt && s.cue != BossCuePayload.DEATH) faceBoss(s)
+        if (s.rig != null && t >= s.returnAt + RETURN) releaseCamera(s)
+        if (t >= s.length) end()
+    }
+
+    /** Straight to the camera's way back; everything after keeps its place relative to it. */
+    private fun skip(s: Scene) {
+        s.voiceSound?.let { Minecraft.getInstance().soundManager.stop(it) }
+        s.voice = null
+        s.lines = emptyList()
+        s.returnFrom = s.view
+        val jump = s.returnAt - s.time
+        s.returnAt = s.time
+        if (s.title >= 0) s.title -= jump
+        if (s.banner >= 0) s.banner -= jump
+        if (s.stingerAt >= 0) s.stingerAt -= jump
+        s.length -= jump
+    }
+
+    private fun end() {
+        val s = scene ?: return
+        releaseCamera(s)
+        scene = null
+    }
+
+    fun reset() {
+        end()
+        silenceUntil = 0
+        wardenId = -1
+    }
+
+    private fun play(sound: SoundEvent, source: SoundSource): SoundInstance {
+        val instance = SimpleSoundInstance(
+            sound.location(), source, 1f, 1f, SoundInstance.createUnseededRandom(),
+            false, 0, SoundInstance.Attenuation.NONE, 0.0, 0.0, 0.0, true,
+        )
+        Minecraft.getInstance().soundManager.play(instance)
+        return instance
+    }
+
+    private fun findWarden(minecraft: Minecraft) {
+        val player = minecraft.player
+        val level = minecraft.level
+        wardenId = if (player == null || level == null) -1 else {
+            level.getEntitiesOfClass(FallenWarden::class.java, player.boundingBox.inflate(48.0)) { it.isAlive && !it.dormant }
+                .minByOrNull { it.distanceToSqr(player) }?.id ?: -1
+        }
+    }
+
+    // ---- Hooks ----
+
+    /** Places the camera for this frame, as the game asks where it's looking. */
+    fun onAngles(event: ViewportEvent.ComputeCameraAngles) {
+        val s = scene ?: return
+        val rig = s.rig ?: return
+        if (event.camera.entity() !== rig) return
+        val minecraft = Minecraft.getInstance()
+        // Through the rig's eyes even if the view is switched mid-scene; the choice is kept for afterwards
+        if (minecraft.options.cameraType != CameraType.FIRST_PERSON) {
+            s.savedType = minecraft.options.cameraType
+            minecraft.options.cameraType = CameraType.FIRST_PERSON
+        }
+        val v = view(s, event.partialTick)
+        s.view = v
+        rig.place(v)
+        event.yaw = v.yaw
+        event.pitch = v.pitch
+        event.roll = 0f
+    }
+
+    fun onFov(event: ViewportEvent.ComputeFov) {
+        val s = scene ?: return
+        val v = s.view ?: return
+        if (s.rig == null) return
+        event.fov = Mth.lerp(s.fovBlend, v.fov, event.fov)
+    }
+
+    fun onLayer(event: RenderGuiLayerEvent.Pre) {
+        if (holdsCamera() && event.name != ID) event.isCanceled = true
+    }
+
+    fun onRenderHand(event: RenderHandEvent) {
+        if (holdsCamera()) event.isCanceled = true
+    }
+
+    private val SELF: ContextKey<Boolean> = ContextKey(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "cutscene_self"))
+
+    /** Marks the player's own body, so close shots can leave it out. */
+    val AVATAR = object : AvatarRenderStateModifier() {
+        override fun <T> accept(entity: T, state: AvatarRenderState) where T : Avatar, T : ClientAvatarEntity {
+            state.setRenderData(SELF, if (entity === Minecraft.getInstance().player) true else null)
+        }
+    }
+
+    fun onRenderPre(event: RenderLivingEvent.Pre<*, *, *>) {
+        val s = scene ?: return
+        if (s.rig == null || event.renderState.getRenderData(SELF) != true) return
+        val t = s.time.toFloat()
+        val returning = s.returnAt >= 0 && t >= s.returnAt
+        if (returning || (s.shots.firstOrNull { t < it.end } ?: s.shots.last()).hideSelf) event.isCanceled = true
+    }
+
+    /** Esc skips the camera work instead of pausing (a lost window still pauses). */
+    fun onScreenOpening(event: ScreenEvent.Opening) {
+        val s = scene ?: return
+        if (event.newScreen is PauseScreen && s.rig != null && s.time < s.returnAt && Minecraft.getInstance().isWindowActive) {
+            event.isCanceled = true
+            skip(s)
+        }
+    }
+
+    /** Silence for his words, his music for his fight, and silence again when he falls. */
+    fun onSelectMusic(event: SelectMusicEvent) {
+        if (ticks < silenceUntil) {
+            event.overrideMusic(null)
+            return
+        }
+        val warden = Minecraft.getInstance().level?.getEntity(wardenId) as? FallenWarden
+        if (warden == null || !warden.isAlive || warden.dormant) {
+            val playing = event.playingMusic?.identifier
+            if (playing == ModSounds.MUSIC_WARDEN.get().location() || playing == ModSounds.MUSIC_WARDEN_2.get().location()) event.overrideMusic(null)
+            return
+        }
+        event.overrideMusic(if (!warden.fighting) null else if (warden.phaseTwo) PHASE_TWO else PHASE_ONE)
+    }
+
+    // ---- On screen ----
+
+    override fun render(graphics: GuiGraphicsExtractor, delta: DeltaTracker) {
+        val s = scene ?: return
+        val minecraft = Minecraft.getInstance()
+        val font = minecraft.font
+        val t = s.time + delta.getGameTimeDeltaPartialTick(true)
+        val width = graphics.guiWidth()
+        val height = graphics.guiHeight()
+
+        // Black bars while the camera is away
+        val shown = when {
+            !s.camera -> 0f
+            s.returnAt >= 0 && t >= s.returnAt -> 1f - ease(((t - s.returnAt) / RETURN).coerceIn(0f, 1f))
+            else -> ease((t / 12f).coerceIn(0f, 1f))
+        }
+        val bar = (height * 0.12f * shown).roundToInt()
+        if (bar > 0) {
+            graphics.fill(0, 0, width, bar, BLACK)
+            graphics.fill(0, height - bar, width, height, BLACK)
+        }
+
+        captions(graphics, font, s, t, width, height, bar)
+        if (s.title >= 0) titleCard(graphics, font, t - s.title, width, height)
+        if (s.banner >= 0) banner(graphics, font, t - s.banner, width, height)
+
+        if (s.rig != null && t >= 20f && t < s.returnAt && bar >= 14) {
+            val hint = Component.translatable("cutscene.guildmark.skip", minecraft.options.keyJump.translatedKeyMessage)
+            val alpha = ((t - 20f) / 10f).coerceIn(0f, 1f) * 0.8f
+            graphics.text(font, hint, width - font.width(hint) - 8, height - bar / 2 - 4, ARGB.color(alpha, 0xA0A0A0), false)
+        }
+    }
+
+    /** What he's saying: his name over the line, in the lower bar or above the hotbar. */
+    private fun captions(graphics: GuiGraphicsExtractor, font: Font, s: Scene, t: Float, width: Int, height: Int, bar: Int) {
+        val line = s.lines.firstOrNull { t >= it.from && t < it.until } ?: return
+        val alpha = min(min(1f, (t - line.from) / 4f), (line.until - t) / 4f).coerceIn(0f, 1f)
+        if (alpha < 0.03f) return
+        val speaker = Component.translatable("cutscene.guildmark.halvard")
+        val rows = font.split(Component.translatable("cutscene.guildmark." + line.key), min(width - 40, 320))
+        val blockHeight = 11 + rows.size * 10
+        val top = if (bar >= blockHeight + 4) height - bar / 2 - blockHeight / 2 else height - 74 - blockHeight
+        if (bar < blockHeight + 4) {
+            val wide = rows.maxOf { font.width(it) } + 16
+            graphics.fill(width / 2 - wide / 2, top - 4, width / 2 + wide / 2, top + blockHeight + 2, ARGB.color(alpha * 0.55f, 0x000000))
+        }
+        graphics.text(font, speaker, width / 2 - font.width(speaker) / 2, top, ARGB.color(alpha, GOLD), true)
+        for ((i, row) in rows.withIndex()) {
+            graphics.text(font, row, width / 2 - font.width(row) / 2, top + 11 + i * 10, ARGB.color(alpha, 0xFFFFFF), true)
+        }
+    }
+
+    /** His name, letter-spaced over a rule that opens from the middle, as the fight begins. */
+    private fun titleCard(graphics: GuiGraphicsExtractor, font: Font, t: Float, width: Int, height: Int) {
+        if (t < 0f || t > 95f) return
+        val alpha = min(min(1f, t / 14f), (95f - t) / 20f).coerceIn(0f, 1f)
+        if (alpha < 0.03f) return
+        val y = (height * 0.34f).roundToInt()
+        val half = (110 * ease(min(1f, t / 18f))).roundToInt()
+        graphics.fill(width / 2 - half, y, width / 2 + half, y + 1, ARGB.color(alpha * 0.8f, GOLD))
+        val name = Component.translatable("cutscene.guildmark.halvard").string.uppercase()
+        spaced(graphics, font, name, width / 2f, y - 30f, 3f, 2, ARGB.color(alpha, BONE))
+        spaced(graphics, font, Component.translatable("cutscene.guildmark.halvard.epithet").string, width / 2f, y + 6f, 1.25f, 1, ARGB.color(alpha, GOLD))
+    }
+
+    /** The banner when he falls, across a band of shadow. */
+    private fun banner(graphics: GuiGraphicsExtractor, font: Font, t: Float, width: Int, height: Int) {
+        if (t < 0f || t > 110f) return
+        val alpha = min(min(1f, t / 10f), (110f - t) / 25f).coerceIn(0f, 1f)
+        if (alpha < 0.03f) return
+        val y = (height * 0.42f).roundToInt()
+        val shade = ARGB.color(alpha * 0.6f, 0x000000)
+        val clear = ARGB.color(0f, 0x000000)
+        graphics.fillGradient(0, y - 30, width, y - 14, clear, shade)
+        graphics.fill(0, y - 14, width, y + 14, shade)
+        graphics.fillGradient(0, y + 14, width, y + 30, shade, clear)
+        val text = Component.translatable("cutscene.guildmark.foe_vanquished").string.uppercase()
+        val scale = 2.4f + 0.3f * (t / 110f)
+        // A soft glow behind the letters
+        spaced(graphics, font, text, width / 2f, y - 4.5f * scale * 1.06f, scale * 1.06f, 2, ARGB.color(alpha * 0.25f, 0xF5D58A))
+        spaced(graphics, font, text, width / 2f, y - 4.5f * scale, scale, 2, ARGB.color(alpha, 0xE8C468))
+    }
+
+    private fun spaced(graphics: GuiGraphicsExtractor, font: Font, text: String, centre: Float, y: Float, scale: Float, spacing: Int, color: Int) {
+        val widths = text.map { font.width(it.toString()) }
+        val total = widths.sum() + spacing * (text.length - 1)
+        val pose = graphics.pose()
+        pose.pushMatrix()
+        pose.translate(centre, y)
+        pose.scale(scale, scale)
+        var x = -total / 2f
+        for ((i, ch) in text.withIndex()) {
+            graphics.text(font, ch.toString(), x.roundToInt(), 0, color, true)
+            x += widths[i] + spacing
+        }
+        pose.popMatrix()
+    }
+}

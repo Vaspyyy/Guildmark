@@ -6,6 +6,10 @@ import net.neoforged.neoforge.common.ModConfigSpec
 object GuildmarkConfig {
     private val BUILDER = ModConfigSpec.Builder()
 
+    val COMBAT: ModConfigSpec.BooleanValue = BUILDER
+        .comment("The new action combat: stamina, dodge rolls, light and heavy attacks, parries, poise and lock-on. Turn it off to keep vanilla combat.")
+        .define("actionCombat", true)
+
     val PAY_MULTIPLIER: ModConfigSpec.DoubleValue = BUILDER
         .comment("Multiplies the Guild Marks every contract pays.")
         .defineInRange("payMultiplier", 1.0, 0.1, 10.0)

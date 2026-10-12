@@ -66,6 +66,8 @@ object BossAbilities {
                 level.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, target.x, target.y + 0.5, target.z, 20, 1.0, 0.5, 1.0, 0.02)
                 level.playSound(null, boss.blockPosition(), SoundEvents.RAID_HORN.value(), SoundSource.HOSTILE, 1.2f, 1.3f)
             }
+            // Halvard fights his own fight (FallenWarden); the lair never calls on him
+            LairTheme.WARDENS_WATCH -> {}
             LairTheme.BARROW -> {
                 // The dead climb out of the floor, and the lord's bones harden
                 repeat(2) { summon(level, boss, Identifier.withDefaultNamespace(if (level.random.nextBoolean()) "skeleton" else "zombie")) }

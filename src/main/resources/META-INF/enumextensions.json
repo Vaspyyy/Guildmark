@@ -1,0 +1,13 @@
+{
+  "entries": [
+    {
+      "enum": "net/minecraft/client/model/HumanoidModel$ArmPose",
+      "name": "GUILDMARK_COMBAT",
+      "constructor": "(ZZLnet/neoforged/neoforge/client/IArmPoseTransformer;)V",
+      "parameters": {
+        "class": "io/github/vaspyyy/guildmark/client/combat/CombatArmPose",
+        "field": "PROXY"
+      }
+    }
+  ]
+}

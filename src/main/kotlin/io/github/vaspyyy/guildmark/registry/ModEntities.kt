@@ -2,6 +2,8 @@ package io.github.vaspyyy.guildmark.registry
 
 import io.github.vaspyyy.guildmark.guild.RivalAdventurer
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.enemy.FallenWarden
+import io.github.vaspyyy.guildmark.enemy.HollowSoldier
 import io.github.vaspyyy.guildmark.guild.GuildMember
 import io.github.vaspyyy.guildmark.story.HollowKing
 import io.github.vaspyyy.guildmark.story.StoryNpc
@@ -51,5 +53,24 @@ object ModEntities {
             .fireImmune()
             .clientTrackingRange(12)
             .build(ResourceKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "hollow_king")))
+    }
+
+    /** A soldier of the Hollow King's fallen army, still holding the roads at night. Fights with the new combat. */
+    val HOLLOW_SOLDIER: DeferredHolder<EntityType<*>, EntityType<HollowSoldier>> = ENTITIES.register("hollow_soldier") { ->
+        EntityType.Builder.of(::HollowSoldier, MobCategory.MONSTER)
+            .sized(0.6f, 1.95f)
+            .eyeHeight(1.62f)
+            .clientTrackingRange(8)
+            .build(ResourceKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "hollow_soldier")))
+    }
+
+    /** Halvard, the Fallen Warden: a boss who kneels at his post until someone comes near. Drawn 1.5 times humanoid size. */
+    val FALLEN_WARDEN: DeferredHolder<EntityType<*>, EntityType<FallenWarden>> = ENTITIES.register("fallen_warden") { ->
+        EntityType.Builder.of(::FallenWarden, MobCategory.MONSTER)
+            .sized(0.9f, 2.9f)
+            .eyeHeight(2.5f)
+            .fireImmune()
+            .clientTrackingRange(12)
+            .build(ResourceKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "fallen_warden")))
     }
 }

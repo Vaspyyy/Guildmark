@@ -1,0 +1,238 @@
+{
+  "combat.swing_light": {
+    "sounds": [
+      "guildmark:combat/swing_light1",
+      "guildmark:combat/swing_light2",
+      "guildmark:combat/swing_light3"
+    ],
+    "subtitle": "subtitles.guildmark.combat.swing_light"
+  },
+  "combat.swing_heavy": {
+    "sounds": [
+      "guildmark:combat/swing_heavy1",
+      "guildmark:combat/swing_heavy2"
+    ],
+    "subtitle": "subtitles.guildmark.combat.swing_heavy"
+  },
+  "combat.whirl": {
+    "sounds": [
+      "guildmark:combat/whirl1"
+    ],
+    "subtitle": "subtitles.guildmark.combat.whirl"
+  },
+  "combat.charge": {
+    "sounds": [
+      "guildmark:combat/charge1"
+    ],
+    "subtitle": "subtitles.guildmark.combat.charge"
+  },
+  "combat.hit_flesh": {
+    "sounds": [
+      "guildmark:combat/hit_flesh1",
+      "guildmark:combat/hit_flesh2",
+      "guildmark:combat/hit_flesh3"
+    ],
+    "subtitle": "subtitles.guildmark.combat.hit_flesh"
+  },
+  "combat.hit_armor": {
+    "sounds": [
+      "guildmark:combat/hit_armor1",
+      "guildmark:combat/hit_armor2",
+      "guildmark:combat/hit_armor3"
+    ],
+    "subtitle": "subtitles.guildmark.combat.hit_armor"
+  },
+  "combat.critical": {
+    "sounds": [
+      "guildmark:combat/critical1",
+      "guildmark:combat/critical2"
+    ],
+    "subtitle": "subtitles.guildmark.combat.critical"
+  },
+  "combat.roll": {
+    "sounds": [
+      "guildmark:combat/roll1",
+      "guildmark:combat/roll2"
+    ],
+    "subtitle": "subtitles.guildmark.combat.roll"
+  },
+  "combat.backstep": {
+    "sounds": [
+      "guildmark:combat/backstep1"
+    ],
+    "subtitle": "subtitles.guildmark.combat.backstep"
+  },
+  "combat.parry": {
+    "sounds": [
+      "guildmark:combat/parry1",
+      "guildmark:combat/parry2"
+    ],
+    "subtitle": "subtitles.guildmark.combat.parry"
+  },
+  "combat.guard": {
+    "sounds": [
+      "guildmark:combat/guard1",
+      "guildmark:combat/guard2",
+      "guildmark:combat/guard3"
+    ],
+    "subtitle": "subtitles.guildmark.combat.guard"
+  },
+  "combat.guard_break": {
+    "sounds": [
+      "guildmark:combat/guard_break1"
+    ],
+    "subtitle": "subtitles.guildmark.combat.guard_break"
+  },
+  "combat.stance_break": {
+    "sounds": [
+      "guildmark:combat/stance_break1",
+      "guildmark:combat/stance_break2"
+    ],
+    "subtitle": "subtitles.guildmark.combat.stance_break"
+  },
+  "combat.stagger": {
+    "sounds": [
+      "guildmark:combat/stagger1"
+    ],
+    "subtitle": "subtitles.guildmark.combat.stagger"
+  },
+  "combat.lock_on": {
+    "sounds": [
+      "guildmark:combat/lock_on1"
+    ],
+    "subtitle": "subtitles.guildmark.combat.lock_on"
+  },
+  "combat.out_of_stamina": {
+    "sounds": [
+      "guildmark:combat/out_of_stamina1"
+    ],
+    "subtitle": "subtitles.guildmark.combat.out_of_stamina"
+  },
+  "hollow_soldier.ambient": {
+    "sounds": [
+      "guildmark:hollow_soldier/ambient1",
+      "guildmark:hollow_soldier/ambient2",
+      "guildmark:hollow_soldier/ambient3"
+    ],
+    "subtitle": "subtitles.guildmark.hollow_soldier.ambient"
+  },
+  "hollow_soldier.hurt": {
+    "sounds": [
+      "guildmark:hollow_soldier/hurt1",
+      "guildmark:hollow_soldier/hurt2"
+    ],
+    "subtitle": "subtitles.guildmark.hollow_soldier.hurt"
+  },
+  "hollow_soldier.death": {
+    "sounds": [
+      "guildmark:hollow_soldier/death1"
+    ],
+    "subtitle": "subtitles.guildmark.hollow_soldier.death"
+  },
+  "hollow_soldier.attack": {
+    "sounds": [
+      "guildmark:hollow_soldier/attack1",
+      "guildmark:hollow_soldier/attack2"
+    ],
+    "subtitle": "subtitles.guildmark.hollow_soldier.attack"
+  },
+  "fallen_warden.ambient": {
+    "sounds": [
+      "guildmark:fallen_warden/ambient1",
+      "guildmark:fallen_warden/ambient2"
+    ],
+    "subtitle": "subtitles.guildmark.fallen_warden.ambient"
+  },
+  "fallen_warden.hurt": {
+    "sounds": [
+      "guildmark:fallen_warden/hurt1",
+      "guildmark:fallen_warden/hurt2"
+    ],
+    "subtitle": "subtitles.guildmark.fallen_warden.hurt"
+  },
+  "fallen_warden.death": {
+    "sounds": [
+      "guildmark:fallen_warden/death1"
+    ],
+    "subtitle": "subtitles.guildmark.fallen_warden.death"
+  },
+  "fallen_warden.roar": {
+    "sounds": [
+      "guildmark:fallen_warden/roar1"
+    ],
+    "subtitle": "subtitles.guildmark.fallen_warden.roar"
+  },
+  "fallen_warden.slam": {
+    "sounds": [
+      "guildmark:fallen_warden/slam1",
+      "guildmark:fallen_warden/slam2"
+    ],
+    "subtitle": "subtitles.guildmark.fallen_warden.slam"
+  },
+  "fallen_warden.swing": {
+    "sounds": [
+      "guildmark:fallen_warden/swing1",
+      "guildmark:fallen_warden/swing2"
+    ],
+    "subtitle": "subtitles.guildmark.fallen_warden.swing"
+  },
+  "fallen_warden.flame": {
+    "sounds": [
+      "guildmark:fallen_warden/flame1"
+    ],
+    "subtitle": "subtitles.guildmark.fallen_warden.flame"
+  },
+  "fallen_warden.step": {
+    "sounds": [
+      "guildmark:fallen_warden/step1",
+      "guildmark:fallen_warden/step2"
+    ],
+    "subtitle": "subtitles.guildmark.fallen_warden.step"
+  },
+  "fallen_warden.voice_intro": {
+    "sounds": [
+      "guildmark:voice/halvard_intro"
+    ],
+    "subtitle": "subtitles.guildmark.fallen_warden.voice_intro"
+  },
+  "fallen_warden.voice_phase2": {
+    "sounds": [
+      "guildmark:voice/halvard_phase2"
+    ],
+    "subtitle": "subtitles.guildmark.fallen_warden.voice_phase2"
+  },
+  "fallen_warden.voice_death": {
+    "sounds": [
+      "guildmark:voice/halvard_death"
+    ],
+    "subtitle": "subtitles.guildmark.fallen_warden.voice_death"
+  },
+  "ui.boss_appear": {
+    "sounds": [
+      "guildmark:ui/boss_appear"
+    ],
+    "subtitle": "subtitles.guildmark.ui.boss_appear"
+  },
+  "ui.foe_vanquished": {
+    "sounds": [
+      "guildmark:ui/foe_vanquished"
+    ],
+    "subtitle": "subtitles.guildmark.ui.foe_vanquished"
+  },
+  "music.fallen_warden": {
+    "sounds": [
+      {
+        "name": "guildmark:music/fallen_warden",
+        "stream": true
+      }
+    ]
+  },
+  "music.fallen_warden_2": {
+    "sounds": [
+      {
+        "name": "guildmark:music/fallen_warden_2",
+        "stream": true
+      }
+    ]
+  }
+}

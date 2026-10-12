@@ -25,11 +25,17 @@ enum class LairTheme(
     val loot: ResourceKey<LootTable>,
     /** Only built as a shard vault for the main quest, never for an ordinary lair hunt. */
     val vaultOnly: Boolean = false,
+    /** How many minions wake with the boss; -1 for the usual three plus the lair's rank. */
+    val guards: Int = -1,
+    /** The boss is one of our own, with its own bar, fight and size; the lair leaves it as it is. */
+    val ownBoss: Boolean = false,
 ) {
     SPIDER_DEN("spider_den", 0, { Blocks.COARSE_DIRT }, { Blocks.MOSSY_COBBLESTONE }, { Blocks.COBWEB },
         listOf("spider", "cave_spider"), "spider", BuiltInLootTables.SIMPLE_DUNGEON),
     BANDIT_CAMP("bandit_camp", 1, { Blocks.COARSE_DIRT }, { Blocks.SPRUCE_LOG }, { Blocks.CAMPFIRE },
         listOf("pillager", "vindicator", "pillager"), "vindicator", BuiltInLootTables.PILLAGER_OUTPOST),
+    WARDENS_WATCH("wardens_watch", 2, { Blocks.CRACKED_STONE_BRICKS }, { Blocks.STONE_BRICKS }, { Blocks.SOUL_LANTERN },
+        listOf("guildmark:hollow_soldier"), "guildmark:fallen_warden", BuiltInLootTables.SIMPLE_DUNGEON, guards = 2, ownBoss = true),
     BARROW("barrow", 2, { Blocks.CRACKED_STONE_BRICKS }, { Blocks.MOSSY_STONE_BRICKS }, { Blocks.SOUL_LANTERN },
         listOf("zombie", "skeleton", "zombie"), "husk", BuiltInLootTables.BURIED_TREASURE),
     WITCH_HOLLOW("witch_hollow", 3, { Blocks.PODZOL }, { Blocks.DARK_OAK_LOG }, { Blocks.RED_MUSHROOM_BLOCK },
@@ -43,8 +49,8 @@ enum class LairTheme(
 
     val title: Component get() = Component.translatable("lair.guildmark.$id")
     val bossTitle: Component get() = Component.translatable("lair.guildmark.$id.boss")
-    fun minionIds(): List<Identifier> = minions.map { Identifier.withDefaultNamespace(it) }
-    fun bossId(): Identifier = Identifier.withDefaultNamespace(boss)
+    fun minionIds(): List<Identifier> = minions.map { Identifier.parse(it) }
+    fun bossId(): Identifier = Identifier.parse(boss)
 
     /** The note target that marks a lair hunt as this theme. */
     val target: Identifier get() = Identifier.fromNamespaceAndPath("guildmark", id)

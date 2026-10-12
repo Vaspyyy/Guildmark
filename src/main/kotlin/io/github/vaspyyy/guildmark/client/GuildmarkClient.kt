@@ -1,6 +1,8 @@
 package io.github.vaspyyy.guildmark.client
 
 import io.github.vaspyyy.guildmark.client.model.RivalModel
+import io.github.vaspyyy.guildmark.client.model.FallenWardenModel
+import io.github.vaspyyy.guildmark.client.model.HollowSoldierModel
 import io.github.vaspyyy.guildmark.registry.ModAttachments
 import com.mojang.blaze3d.platform.InputConstants
 import io.github.vaspyyy.guildmark.Guildmark
@@ -20,10 +22,39 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers
 import net.neoforged.neoforge.common.NeoForge
+import io.github.vaspyyy.guildmark.client.combat.CameraFx
+import io.github.vaspyyy.guildmark.client.combat.CombatClient
+import io.github.vaspyyy.guildmark.client.combat.LockOn
+import io.github.vaspyyy.guildmark.client.combat.Clips
+import io.github.vaspyyy.guildmark.client.combat.CombatAnimator
+import io.github.vaspyyy.guildmark.client.combat.FirstPersonCombat
+import io.github.vaspyyy.guildmark.client.combat.CombatHud
+import io.github.vaspyyy.guildmark.client.combat.Cutscenes
+import net.neoforged.bus.api.EventPriority
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent
+import net.neoforged.neoforge.client.event.ScreenEvent
+import net.neoforged.neoforge.client.event.SelectMusicEvent
+import net.neoforged.neoforge.client.event.CustomizeGuiOverlayEvent
+import net.neoforged.neoforge.client.event.RenderGuiLayerEvent
+import net.minecraft.client.renderer.entity.LivingEntityRenderer
+import net.minecraft.client.renderer.entity.state.LivingEntityRenderState
+import net.minecraft.world.entity.LivingEntity
+import net.neoforged.neoforge.client.event.AddClientReloadListenersEvent
+import net.neoforged.neoforge.client.event.RenderHandEvent
+import net.neoforged.neoforge.client.event.RenderLivingEvent
+import net.neoforged.neoforge.client.renderstate.RegisterRenderStateModifiersEvent
+import net.neoforged.fml.ModContainer
+import net.neoforged.fml.config.ModConfig
+import net.neoforged.neoforge.client.gui.ConfigurationScreen
+import net.neoforged.neoforge.client.gui.IConfigScreenFactory
+import net.neoforged.neoforge.client.event.InputEvent
+import net.neoforged.neoforge.client.event.MovementInputUpdateEvent
+import net.neoforged.neoforge.client.event.RenderFrameEvent
+import net.neoforged.neoforge.client.event.ViewportEvent
 
-/** Client-only setup: the Guild Ledger and contract tracker keys, and the tracker overlay. */
+/** Client-only setup: keys, renderers, overlays, and the client half of the combat. */
 @Mod(value = Guildmark.MOD_ID, dist = [Dist.CLIENT])
-class GuildmarkClient(modBus: IEventBus) {
+class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
     private val shownTitles = HashMap<java.util.UUID, String>()
 
     private val category = KeyMapping.Category(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "main"))
@@ -31,24 +62,66 @@ class GuildmarkClient(modBus: IEventBus) {
     private val trackerKey = KeyMapping("key.guildmark.tracker", InputConstants.KEY_H, category)
 
     init {
+        container.registerConfig(ModConfig.Type.CLIENT, GuildmarkClientConfig.SPEC)
+        // Mods > Guildmark > Config: the action combat switch and the rest, editable in game
+        container.registerExtensionPoint(IConfigScreenFactory::class.java, IConfigScreenFactory { mod, parent -> ConfigurationScreen(mod, parent) })
         modBus.addListener(RegisterKeyMappingsEvent::class.java) { event ->
             event.registerCategory(category)
             event.register(ledgerKey)
             event.register(trackerKey)
+            event.registerCategory(CombatClient.CATEGORY)
+            event.register(CombatClient.DODGE)
+            event.register(CombatClient.LOCK_ON)
+            event.register(CombatClient.SKILL)
+        }
+        NeoForge.EVENT_BUS.addListener(ClientTickEvent.Pre::class.java, CombatClient::onTick)
+        NeoForge.EVENT_BUS.addListener(MovementInputUpdateEvent::class.java, CombatClient::onMovementInput)
+        NeoForge.EVENT_BUS.addListener(InputEvent.InteractionKeyMappingTriggered::class.java, CombatClient::onInteraction)
+        NeoForge.EVENT_BUS.addListener(RenderFrameEvent.Pre::class.java, LockOn::onFrame)
+        NeoForge.EVENT_BUS.addListener(ViewportEvent.ComputeCameraAngles::class.java, CameraFx::onAngles)
+        NeoForge.EVENT_BUS.addListener(ViewportEvent.ComputeFov::class.java, CameraFx::onFov)
+        NeoForge.EVENT_BUS.addListener(RenderHandEvent::class.java, FirstPersonCombat::onRenderHand)
+        NeoForge.EVENT_BUS.addListener(RenderGuiLayerEvent.Pre::class.java, CombatHud::onLayer)
+        NeoForge.EVENT_BUS.addListener(CustomizeGuiOverlayEvent.BossEventProgress::class.java, CombatHud::onBossBar)
+        NeoForge.EVENT_BUS.addListener(RenderLivingEvent.Pre::class.java) { event: RenderLivingEvent.Pre<*, *, *> -> CombatAnimator.onRenderPre(event) }
+        // Cutscenes: the camera goes first so shakes land on top of it, and hiding the hand or the player wins
+        NeoForge.EVENT_BUS.addListener(ClientTickEvent.Post::class.java) { _ -> Cutscenes.onTick() }
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, ViewportEvent.ComputeCameraAngles::class.java, Cutscenes::onAngles)
+        NeoForge.EVENT_BUS.addListener(EventPriority.LOW, ViewportEvent.ComputeFov::class.java, Cutscenes::onFov)
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, RenderHandEvent::class.java, Cutscenes::onRenderHand)
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, RenderLivingEvent.Pre::class.java) { event: RenderLivingEvent.Pre<*, *, *> -> Cutscenes.onRenderPre(event) }
+        NeoForge.EVENT_BUS.addListener(RenderGuiLayerEvent.Pre::class.java, Cutscenes::onLayer)
+        NeoForge.EVENT_BUS.addListener(SelectMusicEvent::class.java, Cutscenes::onSelectMusic)
+        NeoForge.EVENT_BUS.addListener(ScreenEvent.Opening::class.java, Cutscenes::onScreenOpening)
+        NeoForge.EVENT_BUS.addListener(ClientPlayerNetworkEvent.LoggingOut::class.java) { _ -> Cutscenes.reset() }
+        NeoForge.EVENT_BUS.addListener(RenderLivingEvent.Post::class.java) { event: RenderLivingEvent.Post<*, *, *> -> CombatAnimator.onRenderPost(event) }
+        modBus.addListener(AddClientReloadListenersEvent::class.java) { event -> event.addListener(Clips.ID, Clips) }
+        modBus.addListener(RegisterRenderStateModifiersEvent::class.java) { event ->
+            event.registerAvatarEntityModifier(CombatAnimator.AVATAR)
+            event.registerAvatarEntityModifier(Cutscenes.AVATAR)
+            event.registerEntityModifier<LivingEntity, LivingEntityRenderState>(LivingEntityRenderer::class.java) { entity, state ->
+                CombatAnimator.onLivingState(entity, state)
+            }
         }
         modBus.addListener(EntityRenderersEvent.RegisterRenderers::class.java) { event ->
             event.registerEntityRenderer(ModEntities.GUILD_MEMBER.get(), ::VillagerRenderer)
             event.registerEntityRenderer(ModEntities.STORY_NPC.get(), ::StoryNpcRenderer)
             event.registerEntityRenderer(ModEntities.HOLLOW_KING.get(), ::HollowKingRenderer)
             event.registerEntityRenderer(ModEntities.RIVAL.get(), ::RivalRenderer)
+            event.registerEntityRenderer(ModEntities.HOLLOW_SOLDIER.get(), ::HollowSoldierRenderer)
+            event.registerEntityRenderer(ModEntities.FALLEN_WARDEN.get(), ::FallenWardenRenderer)
         }
         modBus.addListener(EntityRenderersEvent.RegisterLayerDefinitions::class.java) { event ->
             event.registerLayerDefinition(StoryNpcModel.LAYER, StoryNpcModel::createBodyLayer)
             event.registerLayerDefinition(HollowKingModel.LAYER, HollowKingModel::createBodyLayer)
             event.registerLayerDefinition(RivalModel.LAYER, RivalModel::createBodyLayer)
+            event.registerLayerDefinition(HollowSoldierModel.LAYER, HollowSoldierModel::createBodyLayer)
+            event.registerLayerDefinition(FallenWardenModel.LAYER, FallenWardenModel::createBodyLayer)
         }
         modBus.addListener(RegisterGuiLayersEvent::class.java) { event ->
             event.registerAbove(VanillaGuiLayers.EFFECTS, ContractTracker.ID, ContractTracker)
+            event.registerAbove(VanillaGuiLayers.BOSS_OVERLAY, CombatHud.ID, CombatHud)
+            event.registerAboveAll(Cutscenes.ID, Cutscenes)
         }
         NeoForge.EVENT_BUS.addListener(ClientTickEvent.Post::class.java) { _ ->
             val minecraft = Minecraft.getInstance()

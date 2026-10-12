@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.client
 
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.client.combat.CombatHud
 import io.github.vaspyyy.guildmark.guild.RivalGuild
 import io.github.vaspyyy.guildmark.quest.ContractState
 import io.github.vaspyyy.guildmark.quest.Contracts
@@ -62,7 +63,7 @@ object ContractTracker : GuiLayer {
     override fun render(graphics: GuiGraphicsExtractor, delta: DeltaTracker) {
         val minecraft = Minecraft.getInstance()
         val player = minecraft.player ?: return
-        if (!shown) return
+        if (!shown || minecraft.gui.hud.isHidden) return
 
         val entries = (0 until player.inventory.containerSize)
             .map { player.inventory.getItem(it) }
@@ -79,8 +80,10 @@ object ContractTracker : GuiLayer {
             val (status, color) = status(player, entry)
             rows.add(Row(entry.stack, entry.note.title(), status, color, target(player, entry)))
         }
+        // Below the combat bars when they're showing
+        val top = 4 + CombatHud.reservedHeight()
         if (rows.isEmpty()) {
-            renderParty(graphics, minecraft, player, 4)
+            renderParty(graphics, minecraft, player, top)
             return
         }
 
@@ -88,7 +91,6 @@ object ContractTracker : GuiLayer {
         val extra = rows.size - shownEntries.size
         val height = PADDING * 2 + shownEntries.size * ROW_HEIGHT - 4 + if (extra > 0) 10 else 0
         val left = 4
-        val top = 4
         graphics.blitSprite(RenderPipelines.GUI_TEXTURED, PANEL, left, top, WIDTH, height)
 
         val font = minecraft.font

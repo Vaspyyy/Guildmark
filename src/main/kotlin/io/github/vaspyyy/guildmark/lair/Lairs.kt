@@ -39,6 +39,7 @@ import net.minecraft.world.level.saveddata.SavedDataType
 import java.util.Optional
 import java.util.UUID
 import java.util.function.Supplier
+import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
@@ -173,6 +174,8 @@ class Lairs(val lairs: MutableList<Lair> = mutableListOf()) : SavedData() {
             val near = level.players().filter { it.blockPosition().closerThan(lair.pos, BAR_RANGE) && !it.isSpectator }
             if (!lair.awake && near.any { it.blockPosition().closerThan(lair.pos, WAKE_RANGE) }) wake(level, lair)
             if (!lair.awake) continue
+            // A boss of our own keeps its own bar and fights its own fight
+            if (lair.theme.ownBoss) continue
 
             val bar = bars.getOrPut(lair.id) {
                 ServerBossEvent(UUID.randomUUID(), bossName(lair), BossEvent.BossBarColor.PURPLE, BossEvent.BossBarOverlay.NOTCHED_10)
@@ -194,14 +197,23 @@ class Lairs(val lairs: MutableList<Lair> = mutableListOf()) : SavedData() {
     /** Someone came close: the minions pour out and the master shows itself. */
     private fun wake(level: ServerLevel, lair: Lair) {
         lair.awake = true
-        val count = 3 + lair.rank
-        repeat(count) {
-            val type = lair.theme.minionIds()[level.random.nextInt(lair.theme.minions.size)]
-            spawn(level, lair, type, 3 + level.random.nextInt(4))
+        val count = if (lair.theme.guards >= 0) lair.theme.guards else 3 + lair.rank
+        val minions = lair.theme.minionIds()
+        if (minions.isNotEmpty()) repeat(count) {
+            spawn(level, lair, minions[level.random.nextInt(minions.size)], 3 + level.random.nextInt(4))
         }
         val boss = spawn(level, lair, lair.theme.bossId(), 0)
         if (boss != null) {
-            makeBoss(boss, lair)
+            if (lair.theme.ownBoss) {
+                // He kneels facing whoever came
+                level.getNearestPlayer(boss, 48.0)?.let { player ->
+                    val yaw = Math.toDegrees(atan2(-(player.x - boss.x), player.z - boss.z)).toFloat()
+                    boss.yRot = yaw
+                    boss.yBodyRot = yaw
+                    boss.yHeadRot = yaw
+                }
+                boss.setData(ModAttachments.LAIR_BOSS, lair.id)
+            } else makeBoss(boss, lair)
             lair.boss = boss.uuid
         }
         setDirty()

@@ -1,6 +1,21 @@
 package io.github.vaspyyy.guildmark
 
 import net.neoforged.fml.config.ModConfig
+import io.github.vaspyyy.guildmark.combat.Combat
+import io.github.vaspyyy.guildmark.combat.Stance
+import io.github.vaspyyy.guildmark.network.MovePayload
+import io.github.vaspyyy.guildmark.network.ReleaseChargePayload
+import io.github.vaspyyy.guildmark.network.StaggerPayload
+import io.github.vaspyyy.guildmark.network.BossCuePayload
+import io.github.vaspyyy.guildmark.network.StartMovePayload
+import io.github.vaspyyy.guildmark.network.StrikePayload
+import io.github.vaspyyy.guildmark.network.VitalsPayload
+import io.github.vaspyyy.guildmark.registry.ModSounds
+import net.neoforged.neoforge.event.PlayLevelSoundEvent
+import net.neoforged.neoforge.event.entity.living.LivingKnockBackEvent
+import net.neoforged.neoforge.event.entity.living.LivingShieldBlockEvent
+import net.neoforged.neoforge.event.entity.player.CriticalHitEvent
+import net.neoforged.neoforge.event.entity.player.SweepAttackEvent
 import io.github.vaspyyy.guildmark.guild.Errands
 import io.github.vaspyyy.guildmark.village.Festivals
 import io.github.vaspyyy.guildmark.progression.Titles
@@ -59,6 +74,12 @@ import net.neoforged.fml.common.Mod
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent
 import net.neoforged.neoforge.common.NeoForge
 import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent
+import net.neoforged.neoforge.event.entity.RegisterSpawnPlacementsEvent
+import io.github.vaspyyy.guildmark.enemy.FallenWarden
+import io.github.vaspyyy.guildmark.enemy.HollowSoldier
+import net.minecraft.world.entity.SpawnPlacementTypes
+import net.minecraft.world.entity.monster.Monster
+import net.minecraft.world.level.levelgen.Heightmap
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent
@@ -90,11 +111,21 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         ModVillagers.PROFESSIONS.register(modBus)
         ModAttachments.ATTACHMENTS.register(modBus)
         ModEntities.ENTITIES.register(modBus)
+        ModSounds.SOUNDS.register(modBus)
         modBus.addListener(EntityAttributeCreationEvent::class.java) {
             it.put(ModEntities.GUILD_MEMBER.get(), GuildMember.createAttributes().build())
             it.put(ModEntities.STORY_NPC.get(), StoryNpc.createAttributes().build())
             it.put(ModEntities.HOLLOW_KING.get(), HollowKing.createAttributes().build())
             it.put(ModEntities.RIVAL.get(), RivalAdventurer.createAttributes().build())
+            it.put(ModEntities.HOLLOW_SOLDIER.get(), HollowSoldier.createAttributes().build())
+            it.put(ModEntities.FALLEN_WARDEN.get(), FallenWarden.createAttributes().build())
+        }
+        // Hollow Soldiers spawn like other monsters, on the ground in the dark (biome_modifier/hollow_soldier.json)
+        modBus.addListener(RegisterSpawnPlacementsEvent::class.java) {
+            it.register(
+                ModEntities.HOLLOW_SOLDIER.get(), SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                Monster::checkMonsterSpawnRules, RegisterSpawnPlacementsEvent.Operation.REPLACE,
+            )
         }
 
         modBus.addListener(FMLCommonSetupEvent::class.java, ::onCommonSetup)
@@ -106,11 +137,20 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         NeoForge.EVENT_BUS.addListener(LivingIncomingDamageEvent::class.java, Relics::onIncomingDamage)
         NeoForge.EVENT_BUS.addListener(LivingIncomingDamageEvent::class.java, Parties::onIncomingDamage)
         NeoForge.EVENT_BUS.addListener(LivingDamageEvent.Post::class.java, Relics::onDamaged)
+        // The action combat (combat/): damage, guard, poise, knockback and sound hooks
+        NeoForge.EVENT_BUS.addListener(LivingIncomingDamageEvent::class.java, Combat::onIncomingDamage)
+        NeoForge.EVENT_BUS.addListener(LivingShieldBlockEvent::class.java, Combat::onShieldBlock)
+        NeoForge.EVENT_BUS.addListener(LivingDamageEvent.Post::class.java, Combat::onDamaged)
+        NeoForge.EVENT_BUS.addListener(LivingKnockBackEvent::class.java, Combat::onKnockBack)
+        NeoForge.EVENT_BUS.addListener(CriticalHitEvent::class.java, Combat::onCriticalHit)
+        NeoForge.EVENT_BUS.addListener(SweepAttackEvent::class.java, Combat::onSweep)
+        NeoForge.EVENT_BUS.addListener(PlayLevelSoundEvent.AtPosition::class.java, Combat::onSound)
         NeoForge.EVENT_BUS.addListener(PlayerInteractEvent.EntityInteract::class.java, Reception::onInteract)
         NeoForge.EVENT_BUS.addListener(LevelTickEvent.Post::class.java) { event ->
             val level = event.level
             if (level is ServerLevel) {
                 RoadNetwork.get(level).tick(level)
+                Stance.tick(level)
                 if (level.gameTime % 10L == 0L) Traffic.tick(level)
                 if (level.gameTime % 20L == 0L) {
                     Lairs.get(level).tick(level)
@@ -134,6 +174,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         NeoForge.EVENT_BUS.addListener(PlayerEvent.TabListNameFormat::class.java) { Titles.onTabListName(it) }
         NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerRespawnEvent::class.java) {
             Progression.applyAttributes(it.entity)
+            Combat.reset(it.entity)
             // The party list isn't copied to the new player entity
             (it.entity as? ServerPlayer)?.let { player -> Parties.onLogin(player) }
         }
@@ -172,6 +213,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         val player = event.entity
         val level = player.level()
         if (level !is ServerLevel) return
+        if (player is ServerPlayer) Combat.tick(player)
         if (player.tickCount % 200 == 0) VillageBoards.checkNearbyVillages(level, player.blockPosition())
         if (player.tickCount % 200 == 50) TownControl.visit(level, player)
         if (player.tickCount % 200 == 150) Rivals.tickPlayer(level, player)
@@ -196,5 +238,12 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
             .playToClient(OpenReceptionPayload.TYPE, OpenReceptionPayload.STREAM_CODEC, OpenReceptionPayload::handle)
             .playToClient(OpenAdvancesPayload.TYPE, OpenAdvancesPayload.STREAM_CODEC, OpenAdvancesPayload::handle)
             .playToServer(ClaimVillagePayload.TYPE, ClaimVillagePayload.STREAM_CODEC, ClaimVillagePayload::handle)
+            .playToServer(StartMovePayload.TYPE, StartMovePayload.STREAM_CODEC, StartMovePayload::handle)
+            .playToServer(ReleaseChargePayload.TYPE, ReleaseChargePayload.STREAM_CODEC, ReleaseChargePayload::handle)
+            .playToServer(StrikePayload.TYPE, StrikePayload.STREAM_CODEC, StrikePayload::handle)
+            .playToClient(VitalsPayload.TYPE, VitalsPayload.STREAM_CODEC, VitalsPayload::handle)
+            .playToClient(MovePayload.TYPE, MovePayload.STREAM_CODEC, MovePayload::handle)
+            .playToClient(StaggerPayload.TYPE, StaggerPayload.STREAM_CODEC, StaggerPayload::handle)
+            .playToClient(BossCuePayload.TYPE, BossCuePayload.STREAM_CODEC, BossCuePayload::handle)
     }
 }

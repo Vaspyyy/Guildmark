@@ -3,6 +3,8 @@ package io.github.vaspyyy.guildmark.registry
 import net.minecraft.network.codec.ByteBufCodecs
 import com.mojang.serialization.Codec
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.combat.CombatState
+import io.github.vaspyyy.guildmark.combat.StanceState
 import io.github.vaspyyy.guildmark.guild.RivalChallenge
 import io.github.vaspyyy.guildmark.progression.GuildProgress
 import io.github.vaspyyy.guildmark.road.TrafficState
@@ -126,5 +128,15 @@ object ModAttachments {
     /** Marks a merchant or traveller walking the roads on its own (see Traffic). */
     val TRAFFIC: DeferredHolder<AttachmentType<*>, AttachmentType<TrafficState>> = ATTACHMENTS.register("traffic") { ->
         AttachmentType.builder { -> TrafficState() }.serialize(TrafficState.CODEC.fieldOf("traffic")).build()
+    }
+
+    /** A player's stamina, focus and current combat move (server side, never saved). */
+    val COMBAT: DeferredHolder<AttachmentType<*>, AttachmentType<CombatState>> = ATTACHMENTS.register("combat") { ->
+        AttachmentType.builder { -> CombatState() }.build()
+    }
+
+    /** A creature's stance under the new combat (server side, never saved). */
+    val STANCE: DeferredHolder<AttachmentType<*>, AttachmentType<StanceState>> = ATTACHMENTS.register("stance") { ->
+        AttachmentType.builder { -> StanceState() }.build()
     }
 }

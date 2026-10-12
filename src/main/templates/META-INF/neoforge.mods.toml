@@ -5,6 +5,7 @@ modId="${mod_id}"
 version="${mod_version}"
 displayName="${mod_name}"
 authors="Vaspyyy"
+enumExtensions="META-INF/enumextensions.json"
 description='''
 Villagers post procedurally generated quests on bulletin boards. Take a note, finish the job, earn Guild Marks and level up.
 '''

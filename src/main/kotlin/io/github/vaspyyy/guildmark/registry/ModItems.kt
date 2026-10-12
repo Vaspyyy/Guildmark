@@ -6,6 +6,7 @@ import io.github.vaspyyy.guildmark.item.RelicCacheItem
 import net.minecraft.world.item.BlockItem
 import net.minecraft.world.item.Item
 import net.minecraft.world.item.Rarity
+import net.minecraft.world.item.SpawnEggItem
 import net.neoforged.neoforge.registries.DeferredItem
 import net.neoforged.neoforge.registries.DeferredRegister
 import java.util.function.UnaryOperator
@@ -33,4 +34,12 @@ object ModItems {
     })
 
     val QUEST_BOARD: DeferredItem<BlockItem> = ITEMS.registerSimpleBlockItem("quest_board", ModBlocks.QUEST_BOARD)
+
+    // Spawn eggs for the new combat's creatures
+    val HOLLOW_SOLDIER_SPAWN_EGG: DeferredItem<SpawnEggItem> = ITEMS.registerItem("hollow_soldier_spawn_egg", ::SpawnEggItem, UnaryOperator<Item.Properties> {
+        it.spawnEgg(ModEntities.HOLLOW_SOLDIER.get())
+    })
+    val FALLEN_WARDEN_SPAWN_EGG: DeferredItem<SpawnEggItem> = ITEMS.registerItem("fallen_warden_spawn_egg", ::SpawnEggItem, UnaryOperator<Item.Properties> {
+        it.spawnEgg(ModEntities.FALLEN_WARDEN.get())
+    })
 }
