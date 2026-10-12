@@ -13,13 +13,13 @@ import net.minecraft.client.renderer.RenderPipelines
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
 
-/** One village project in the advances list: built, in progress (with a bar) or locked. */
+/** One village project in the advances list: built, in progress (with a bar), waiting for somewhere to go, or locked. */
 class AdvanceRow(
     private val advance: Advance,
     private val state: State,
     private val points: Int,
 ) : AbstractWidget(0, 0, WIDTH, HEIGHT, advance.title) {
-    enum class State { BUILT, CURRENT, LOCKED }
+    enum class State { BUILT, CURRENT, WAITING, LOCKED }
 
     companion object {
         const val WIDTH = 260
@@ -47,7 +47,7 @@ class AdvanceRow(
     override fun extractWidgetRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, a: Float) {
         val card = when (state) {
             State.BUILT -> CARD_DONE
-            State.CURRENT -> CARD
+            State.CURRENT, State.WAITING -> CARD
             State.LOCKED -> CARD_LOCKED
         }
         graphics.blitSprite(RenderPipelines.GUI_TEXTURED, card, x, y, width, height)
@@ -60,6 +60,7 @@ class AdvanceRow(
         val status = when (state) {
             State.BUILT -> Component.translatable("gui.guildmark.advances.built")
             State.CURRENT -> Component.translatable("gui.guildmark.advances.progress", points, advance.cost)
+            State.WAITING -> Component.translatable("gui.guildmark.advances.waiting")
             State.LOCKED -> Component.translatable("gui.guildmark.advances.locked")
         }
         graphics.text(font, status, x + width - 8 - font.width(status), y + 6, if (state == State.LOCKED) LOCKED_INK else SOFT_INK, false)
@@ -76,7 +77,8 @@ class AdvanceRow(
                 graphics.disableScissor()
             }
         } else {
-            graphics.text(font, advance.description, x + 30, y + 19, if (state == State.LOCKED) LOCKED_INK else SOFT_INK, false)
+            val line = if (state == State.WAITING) Component.translatable("gui.guildmark.advances.waiting.desc") else advance.description
+            graphics.text(font, line, x + 30, y + 19, if (state == State.LOCKED) LOCKED_INK else SOFT_INK, false)
         }
     }
 

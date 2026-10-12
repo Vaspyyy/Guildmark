@@ -10,6 +10,7 @@ import net.minecraft.client.gui.components.AbstractSliderButton
 import net.minecraft.client.gui.components.AbstractWidget
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.SpriteIconButton
+import net.minecraft.client.gui.components.events.GuiEventListener
 import net.minecraft.client.gui.screens.ConfirmLinkScreen
 import net.minecraft.client.gui.screens.PauseScreen
 import net.minecraft.client.gui.screens.Screen
@@ -25,14 +26,16 @@ import net.minecraft.network.chat.MutableComponent
 import net.minecraft.resources.Identifier
 import net.minecraft.util.ARGB
 import net.minecraft.util.FormattedCharSequence
+import net.minecraft.util.Util
 import net.neoforged.neoforge.client.event.ScreenEvent
 import net.neoforged.neoforge.client.gui.widget.ModsButton
 import net.neoforged.neoforge.common.ModConfigSpec
+import java.util.Optional
 import kotlin.math.abs
+import kotlin.math.exp
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
-import kotlin.math.sign
 
 /**
  * Guildmark's settings, in the kit's look: what this player sees and hears (Interface), the rules of
@@ -55,8 +58,14 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
     private var ticks = 0
 
     private val rows = ArrayList<Row>()
-    /** The first row shown; the list moves a row at a time, so a row is always shown whole or not at all. */
-    private var first = 0
+    /** The page's own widgets, drawn clipped to the body and only taking the mouse inside it. */
+    private val rowWidgets = HashSet<GuiEventListener>()
+    /** How far down the page the body shows, and where the wheel is gliding it to. */
+    private var scrolled = 0.0
+    private var scrollTo = 0.0
+    private var glidedAt = 0L
+    /** The scrollbar's thumb is being dragged. */
+    private var draggingBar = false
     private val tabs = ArrayList<Tab>()
 
     /** Something hovering explains, found while drawing. */
@@ -71,6 +80,8 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
     /** One line of a page, [height] tall, with the widgets it places at offsets from its corner. */
     private abstract inner class Row(var height: Int) {
         val parts = ArrayList<Part>()
+        /** Down from the top of the page, and on the screen as scrolled. */
+        var top = 0
         var y = 0
 
         open fun draw(graphics: GuiGraphicsExtractor, x: Int, y: Int, w: Int) {}
@@ -363,78 +374,145 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
             Page.WORLD -> worldPage(bodyWidth)
             Page.COMPANIONS -> companionsPage(bodyWidth)
         })
-        for (row in rows) for (part in row.parts) addRenderableWidget(part.widget)
-        // Coming back from a companion's own settings (or a resize) keeps the place in the list
-        first = first.coerceIn(0, maxFirst())
+        rowWidgets.clear()
+        var top = 0
+        for (row in rows) {
+            row.top = top
+            top += row.height
+            for (part in row.parts) rowWidgets.add(addWidget(part.widget))
+        }
+        // Coming back from a companion's own settings (or a resize) keeps the place on the page
+        scrollTo = scrollTo.coerceIn(0.0, maxScroll())
+        scrolled = scrollTo
+        draggingBar = false
         place()
 
         val done = Ui.KitButton(width / 2 - 60, panelY + panelHeight - 26, 120, 20, CommonComponents.GUI_DONE) { onClose() }
         addRenderableWidget(done)
     }
 
-    private fun maxFirst(): Int {
-        var room = bodyBottom - bodyTop
-        var i = rows.size
-        while (i > 0 && room - rows[i - 1].height >= 0) {
-            room -= rows[i - 1].height
-            i--
-        }
-        return i
-    }
+    private fun bodyHeight(): Int = bodyBottom - bodyTop
 
-    /** Lays the shown rows down the body from [first], and hides every widget of the rest. */
+    private fun maxScroll(): Double = max(0, (rows.lastOrNull()?.let { it.top + it.height } ?: 0) - bodyHeight()).toDouble()
+
+    /**
+     * Puts every row where the scroll has it. Widgets out of the body stay where Tab can reach them (and
+     * reaching one scrolls it into view); drawing is clipped to the body, and so is the mouse.
+     */
     private fun place() {
-        var y = bodyTop
-        var full = false
-        for ((i, row) in rows.withIndex()) {
-            val shown = !full && i >= first && y + row.height <= bodyBottom
-            if (i >= first && !shown) full = true
-            row.y = if (shown) y else Int.MIN_VALUE
+        val offset = scrolled.roundToInt()
+        val settled = scrollTo.roundToInt()
+        for (row in rows) {
+            row.y = bodyTop + row.top - offset
             for (part in row.parts) {
                 val widget = part.widget
-                widget.visible = shown
-                if (!shown) {
-                    // A slider scrolled out of sight mustn't go on taking arrow keys or a drag
-                    if (getFocused() === widget) {
-                        clearFocus()
-                        setDragging(false)
-                    }
-                    continue
+                widget.setPosition(if (part.fromRight) bodyX + bodyWidth - part.dx else bodyX + part.dx, row.y + part.dy)
+                // A slider scrolled out of sight mustn't go on taking arrow keys or a drag
+                val y = bodyTop + row.top - settled + part.dy
+                if (getFocused() === widget && (y + widget.height <= bodyTop || y >= bodyBottom)) {
+                    clearFocus()
+                    setDragging(false)
                 }
-                widget.setPosition(if (part.fromRight) bodyX + bodyWidth - part.dx else bodyX + part.dx, y + part.dy)
             }
-            if (shown) y += row.height
         }
     }
 
-    private fun scroll(by: Int) {
-        val next = (first + by).coerceIn(0, maxFirst())
-        if (next == first) return
-        first = next
-        place()
+    private fun scrollBy(by: Double) {
+        scrollTo = (scrollTo + by).coerceIn(0.0, maxScroll())
+    }
+
+    /** Eases the page toward where the wheel sent it. */
+    private fun glide() {
+        val now = Util.getMillis()
+        val dt = (now - glidedAt).coerceIn(0L, 100L)
+        glidedAt = now
+        val gap = scrollTo - scrolled
+        scrolled = if (abs(gap) < 0.5) scrollTo else scrolled + gap * (1.0 - exp(-dt / GLIDE_MS))
     }
 
     private fun turnTo(next: Page) {
         if (next == page) return
         page = next
         lastPage = next
-        first = 0
+        scrolled = 0.0
+        scrollTo = 0.0
         rebuildWidgets()
         // Chosen from the keyboard: stay on its tab, so the next key doesn't land on the first one
         if (minecraft.lastInputType.isKeyboard) setInitialFocus(tabs[page.ordinal])
     }
 
     override fun mouseScrolled(x: Double, y: Double, scrollX: Double, scrollY: Double): Boolean {
-        if (scrollY != 0.0) scroll(-sign(scrollY).toInt())
+        if (scrollY != 0.0) scrollBy(-scrollY * WHEEL_STEP)
         return true
     }
 
     override fun keyPressed(event: KeyEvent): Boolean {
         when (event.key()) {
-            InputConstants.KEY_PAGEUP -> { scroll(-4); return true }
-            InputConstants.KEY_PAGEDOWN -> { scroll(4); return true }
+            InputConstants.KEY_PAGEUP -> { scrollBy(-(bodyHeight() - PAGE_OVERLAP).toDouble()); return true }
+            InputConstants.KEY_PAGEDOWN -> { scrollBy((bodyHeight() - PAGE_OVERLAP).toDouble()); return true }
         }
         return super.keyPressed(event)
+    }
+
+    // The page's widgets can be partly scrolled out of the body: only the part inside it takes the mouse
+    override fun getChildAt(x: Double, y: Double): Optional<GuiEventListener> {
+        val inBody = y >= bodyTop && y < bodyBottom
+        return Optional.ofNullable(children().firstOrNull { (inBody || it !in rowWidgets) && it.isMouseOver(x, y) })
+    }
+
+    // Reached from the keyboard, a setting's whole row is scrolled into view
+    override fun setFocused(focused: GuiEventListener?) {
+        super.setFocused(focused)
+        if (focused == null || focused !in rowWidgets || !minecraft.lastInputType.isKeyboard) return
+        val row = rows.firstOrNull { r -> r.parts.any { it.widget === focused } } ?: return
+        if (row.top < scrollTo) scrollTo = row.top.toDouble()
+        else if (row.top + row.height > scrollTo + bodyHeight()) scrollTo = (row.top + row.height - bodyHeight()).toDouble()
+        scrollTo = scrollTo.coerceIn(0.0, maxScroll())
+    }
+
+    override fun mouseClicked(event: MouseButtonEvent, doubleClick: Boolean): Boolean {
+        if (event.button() == InputConstants.MOUSE_BUTTON_LEFT && overScrollbar(event.x(), event.y())) {
+            draggingBar = true
+            dragBarTo(event.y())
+            return true
+        }
+        return super.mouseClicked(event, doubleClick)
+    }
+
+    override fun mouseDragged(event: MouseButtonEvent, dx: Double, dy: Double): Boolean {
+        if (draggingBar) {
+            dragBarTo(event.y())
+            return true
+        }
+        return super.mouseDragged(event, dx, dy)
+    }
+
+    override fun mouseReleased(event: MouseButtonEvent): Boolean {
+        if (draggingBar) {
+            draggingBar = false
+            return true
+        }
+        return super.mouseReleased(event)
+    }
+
+    private fun scrollbarX(): Int = bodyX + bodyWidth + SCROLLBAR - 3
+
+    private fun thumbHeight(): Int {
+        val h = bodyHeight()
+        val content = h + maxScroll()
+        return (h * h / content).toInt().coerceIn(min(16, h), h)
+    }
+
+    private fun overScrollbar(x: Double, y: Double): Boolean =
+        maxScroll() > 0 && x >= scrollbarX() - 3 && x < scrollbarX() + 5 && y >= bodyTop && y < bodyBottom
+
+    /** Drags the thumb so its middle follows the cursor. */
+    private fun dragBarTo(mouseY: Double) {
+        val travel = bodyHeight() - thumbHeight()
+        if (travel <= 0) return
+        val k = ((mouseY - bodyTop - thumbHeight() / 2.0) / travel).coerceIn(0.0, 1.0)
+        scrollTo = k * maxScroll()
+        scrolled = scrollTo
     }
 
     override fun added() {
@@ -476,24 +554,31 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
     }
 
     override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, a: Float) {
+        if (!draggingBar) glide()
+        place()
         hots.clear()
-        for (row in rows) if (row.y != Int.MIN_VALUE) row.draw(graphics, bodyX, row.y, bodyWidth)
-        drawScrollbar(graphics)
+        // The page, cut off cleanly at the body's top and bottom as it scrolls
+        graphics.enableScissor(panelX + 4, bodyTop, panelX + panelWidth - 4, bodyBottom)
+        for (row in rows) if (row.y + row.height > bodyTop && row.y < bodyBottom) row.draw(graphics, bodyX, row.y, bodyWidth)
+        for (row in rows) for (part in row.parts) part.widget.extractRenderState(graphics, mouseX, mouseY, a)
+        graphics.disableScissor()
+        drawScrollbar(graphics, mouseX, mouseY)
+        // The tabs and Done
         super.extractRenderState(graphics, mouseX, mouseY, a)
+        if (mouseY < bodyTop || mouseY >= bodyBottom || draggingBar) return
         val hot = hots.lastOrNull { mouseX >= it.x0 && mouseX < it.x1 && mouseY >= it.y0 && mouseY < it.y1 } ?: return
         drawTip(graphics, hot.tip, mouseX, mouseY)
     }
 
-    private fun drawScrollbar(graphics: GuiGraphicsExtractor) {
-        val last = maxFirst()
-        if (last == 0) return
-        val x = bodyX + bodyWidth + SCROLLBAR - 3
-        val h = bodyBottom - bodyTop
+    private fun drawScrollbar(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
+        val last = maxScroll()
+        if (last <= 0) return
+        val x = scrollbarX()
+        val travel = bodyHeight() - thumbHeight()
         graphics.fill(x, bodyTop, x + 2, bodyBottom, TRACK)
-        val shown = rows.count { it.y != Int.MIN_VALUE }.coerceAtLeast(1)
-        val thumb = max(12, h * shown / rows.size)
-        val top = bodyTop + (h - thumb) * first / last
-        graphics.fill(x, top, x + 2, top + thumb, Ui.GOLD)
+        val top = bodyTop + (travel * (scrolled / last)).roundToInt()
+        val lit = draggingBar || overScrollbar(mouseX.toDouble(), mouseY.toDouble())
+        graphics.fill(x, top, x + 2, top + thumbHeight(), if (lit) Ui.GOLD_BRIGHT else Ui.GOLD)
     }
 
     /** What a line means, in a small dark panel by the cursor. */
@@ -549,6 +634,10 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
         private const val HEADER = 19
         private const val SETTING = 18
         private const val CARD_BUTTONS = 16
+        /** Pixels a turn of the wheel scrolls, what Page Up and Down leave in view of the last page, and how quickly a scroll glides. */
+        private const val WHEEL_STEP = 24.0
+        private const val PAGE_OVERLAP = 24
+        private const val GLIDE_MS = 45.0
         private const val TIP_WIDTH = 190
         private const val ELLIPSIS = "…"
 

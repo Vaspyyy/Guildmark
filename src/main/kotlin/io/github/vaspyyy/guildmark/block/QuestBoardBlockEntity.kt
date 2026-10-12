@@ -33,6 +33,15 @@ class QuestBoardBlockEntity(pos: BlockPos, state: BlockState) :
     var advancePoints: Int = 0
         private set
 
+    /**
+     * Anchor cell only: the village funded its Trade Road while no other village was in reach. It moved on
+     * to its next advance instead of waiting, and builds the road once there's somewhere for it to go.
+     */
+    var roadOwed: Boolean = false
+        private set
+    /** The day the village last looked for somewhere its owed road could go. */
+    private var roadLookedDay: Long = -1
+
     /** Anchor cell only: the last day the village lost or won a siege (situational notes follow both). */
     var lastSiegeLost: Long = -100
         private set
@@ -82,6 +91,20 @@ class QuestBoardBlockEntity(pos: BlockPos, state: BlockState) :
         return points
     }
 
+    fun oweRoad(owed: Boolean) {
+        roadOwed = owed
+        setChanged()
+        level?.let { it.sendBlockUpdated(blockPos, blockState, blockState, Block.UPDATE_CLIENTS) }
+    }
+
+    /** True the first time it's asked on [day]: the owed road is looked for at most once a day. */
+    fun lookForRoad(day: Long): Boolean {
+        if (roadLookedDay == day) return false
+        roadLookedDay = day
+        setChanged()
+        return true
+    }
+
     fun setAdvanceProgress(index: Int, points: Int) {
         advanceIndex = index
         advancePoints = points
@@ -110,6 +133,8 @@ class QuestBoardBlockEntity(pos: BlockPos, state: BlockState) :
         output.putInt("advance_index", advanceIndex)
         output.putInt("advance_version", ADVANCE_VERSION)
         output.putInt("advance_points", advancePoints)
+        if (roadOwed) output.putBoolean("road_owed", true)
+        if (roadLookedDay >= 0) output.putLong("road_looked", roadLookedDay)
         output.putLong("siege_lost", lastSiegeLost)
         output.putLong("siege_won", lastSiegeWon)
         if (capital) output.putBoolean("capital", true)
@@ -125,6 +150,8 @@ class QuestBoardBlockEntity(pos: BlockPos, state: BlockState) :
         // Before the market, walls and keep, every advance past the archer tower was another trade road
         if (input.getIntOr("advance_version", 1) < ADVANCE_VERSION) advanceIndex = advanceIndex.coerceAtMost(Advance.MARKET.ordinal)
         advancePoints = input.getIntOr("advance_points", 0)
+        roadOwed = input.getBooleanOr("road_owed", false)
+        roadLookedDay = input.getLongOr("road_looked", -1L)
         lastSiegeLost = input.getLongOr("siege_lost", -100L)
         lastSiegeWon = input.getLongOr("siege_won", -100L)
         capital = input.getBooleanOr("capital", false)

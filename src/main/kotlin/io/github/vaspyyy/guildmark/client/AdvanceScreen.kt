@@ -36,22 +36,23 @@ class AdvanceScreen(private val info: OpenAdvancesPayload) : Screen(Component.tr
         val PANEL: Identifier = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "ledger/panel")
     }
 
-    private var shown: Pair<Int, Int>? = null
+    private var shown: Triple<Int, Int, Boolean>? = null
     private var panelX = 0
     private var panelY = 0
     private var panelWidth = 0
     private var panelHeight = 0
 
     private fun board(): QuestBoardBlockEntity? = minecraft.level?.getBlockEntity(anchor) as? QuestBoardBlockEntity
-    private fun progress(): Pair<Int, Int> = board()?.let { Pair(it.advanceIndex, it.advancePoints) } ?: Pair(0, 0)
+    private fun progress(): Triple<Int, Int, Boolean> = board()?.let { Triple(it.advanceIndex, it.advancePoints, it.roadOwed) } ?: Triple(0, 0, false)
 
     override fun init() {
-        val (index, points) = progress()
-        shown = Pair(index, points)
+        val (index, points, roadOwed) = progress()
+        shown = Triple(index, points, roadOwed)
 
         val content = LinearLayout.vertical().spacing(4)
         val rows = Advance.entries.mapIndexed { i, advance ->
             val state = when {
+                i < index && advance == Advance.TRADE_ROAD && roadOwed -> AdvanceRow.State.WAITING
                 i < index -> AdvanceRow.State.BUILT
                 i == index -> AdvanceRow.State.CURRENT
                 else -> AdvanceRow.State.LOCKED
