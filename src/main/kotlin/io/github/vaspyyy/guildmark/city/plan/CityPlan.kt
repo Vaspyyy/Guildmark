@@ -220,6 +220,27 @@ class CityPlan(val seed: Long, val layout: Layout = Layout.DEFAULT, val land: La
     /** Where a road leaves the outer wall: the middle of each side. */
     val outerGates: List<Dir> get() = OUTER_GATES
 
+    /** Is this column (in the city's frame) inside the outer walls? */
+    fun within(x: Int, z: Int): Boolean = max(abs(x), abs(z)) <= outer
+
+    /**
+     * The way from the plaza out through the outer gate on [gate]'s side: points along the streets a step
+     * at a time, skipping any spot under a roof (a gatehouse's arch, where someone looking for the ground
+     * would find the top of the arch), ending on the road just past the farms. Heights are [level]'s.
+     */
+    fun wayOut(gate: Dir): List<Pos> {
+        val points = ArrayList<Pos>()
+        var out = 8
+        while (out < outer - WALL_THICK) {
+            points.add(sidePos(gate, 0, out))
+            out += 8
+        }
+        points.add(sidePos(gate, 0, outer + GATE_OUT + 1))
+        points.add(sidePos(gate, 0, levelled))
+        points.add(sidePos(gate, 0, reach + 5))
+        return points
+    }
+
     /**
      * The standing height of the city's ground at a column, over the lower town's: 0 in the lower town,
      * higher on the old town's and the citadel's terraces, sloping to the land across the glacis, and the
