@@ -7,7 +7,7 @@ characters (Wren, Tobin, Ilsa, Pip and Maren) given a lighter touch.
 
 - `sfxkit.py`: the shared DSP toolkit (noise, filters, modal metal, creature voice source, room
   reverb, finalising and Ogg export).
-- `make_sfx.py`: the 61 mono sound effects (`combat/`, `hollow_soldier/`, `fallen_warden/` and the menu
+- `make_sfx.py`: the 62 mono sound effects (`combat/`, `hollow_soldier/`, `fallen_warden/` and the menu
   sounds in `ui/`). Each sound is one `@recipe(...)` function that sets its variant count, length cap and
   fade-out.
 - `make_music.py`: the two boss tracks (`music/`) and the two stingers (`ui/`), all built on Halvard's

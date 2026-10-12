@@ -48,6 +48,23 @@ python3 art/scripts/enemy_anims.py src/main/resources/assets/guildmark <preview-
 
 `steve.png` and `iron_sword.png` come from the vanilla client jar.
 
+## Screens
+
+The screen art is drawn in code too, from the repo root:
+
+```
+python3 art/scripts/ui_art.py src/main/resources/assets/guildmark [<preview.png>]
+python3 art/scripts/heading_font.py src/main/resources/assets/guildmark [<preview.png>]
+python3 art/scripts/hud_art.py src/main/resources/assets/guildmark/textures/gui/sprites/hud
+```
+
+- `scripts/ui_art.py` is the screen kit: panels, buttons, insets, equipment sockets and dividers (`ui/`), the
+  compass strip and its markers (`compass/`), the world map's icons, compass rose and frame (`map/`), the death
+  screen (`death/`), and the map's parchment and guild-lands wash (`textures/gui/map/`). Each sprite gets its
+  `.mcmeta` scaling. The preview is a contact sheet of every sprite at 4x.
+- `scripts/heading_font.py` is the carved capitals used for headings and names (`font/heading.json`).
+- `scripts/hud_art.py` is the combat HUD: bars, the boss bar frame, the lock-on mark and the stance-broken icon.
+
 ## Other
 
 - `scripts/spawn_eggs.py` recolours vanilla's zombie spawn egg into the two new spawn eggs.
