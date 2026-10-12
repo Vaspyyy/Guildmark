@@ -443,13 +443,20 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
                 out.add(Spot(x, z, WARDFIRE, name, lines, 2, label = name, labelFrom = 1.0, wardfire = mark.pos))
             } else {
                 val throne = mark.kind == AtlasPlace.THRONE
+                val camp = mark.kind == AtlasPlace.FIELD_BOSS
                 val icon = when {
+                    camp -> if (mark.has(AtlasMark.CLEARED)) TROLL_SLAIN else TROLL
                     throne || mark.has(AtlasMark.VAULT) -> VAULT
                     mark.has(AtlasMark.CLEARED) -> LAIR_CLEARED
                     else -> LAIR
                 }
                 lines.add(AtlasClient.kindName(mark))
-                if (mark.has(AtlasMark.CLEARED)) lines.add(Component.translatable(if (throne) "gui.guildmark.map.tip.throne_fallen" else "gui.guildmark.map.tip.cleared"))
+                val done = when {
+                    throne -> "gui.guildmark.map.tip.throne_fallen"
+                    camp -> "gui.guildmark.map.tip.troll_slain"
+                    else -> "gui.guildmark.map.tip.cleared"
+                }
+                if (mark.has(AtlasMark.CLEARED)) lines.add(Component.translatable(done))
                 else if (mark.has(AtlasMark.AWAKE)) lines.add(Component.translatable("gui.guildmark.map.tip.awake"))
                 out.add(Spot(x, z, icon, name, lines, if (throne) 2 else 1, label = name, labelFrom = if (throne) 0.5 else 2.0))
             }
@@ -818,6 +825,8 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
         private val PIN = sprite("pin")
         private val WARDFIRE = sprite("wardfire")
         private val LOST_MARKS = sprite("lost_marks")
+        private val TROLL = sprite("troll_camp")
+        private val TROLL_SLAIN = sprite("troll_camp_slain")
         private val ROSE = sprite("rose")
         private val VIGNETTE = sprite("frame")
         private val COACH_BADGE = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "compass/coach")
@@ -826,7 +835,7 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
 
         private val LEGEND = listOf(
             VILLAGE to "village", TOWN to "town", CITY to "city", HALL to "hall", LAIR to "lair", LAIR_CLEARED to "lair_cleared",
-            VAULT to "vault", WARDFIRE to "wardfire", COACH to "coach", CONTRACT to "objective", PIN to "pin", PARTY to "party",
+            VAULT to "vault", TROLL to "troll_camp", WARDFIRE to "wardfire", COACH to "coach", CONTRACT to "objective", PIN to "pin", PARTY to "party",
             DEATH to "death", LOST_MARKS to "lost_marks", PLAYER to "you",
         )
         private val SCALES = intArrayOf(10, 20, 50, 100, 200, 500, 1000, 2000, 5000)

@@ -8,7 +8,7 @@ import net.minecraft.world.level.Level
 
 /**
  * One place a player has found. A village is known by its board's anchor cell, a lair by its id, the
- * Hollow Throne by its altar, a Wardfire by its own block. [size] and [standing] are what the village looked like on the last visit
+ * Hollow Throne by its altar, a Wardfire by its own block, a field boss's camp by its site. [size] and [standing] are what the village looked like on the last visit
  * (advances built, the player's standing tier), since a far-off village's board can't be read.
  */
 data class AtlasPlace(
@@ -26,6 +26,8 @@ data class AtlasPlace(
         const val LAIR = 1
         const val THRONE = 2
         const val WARDFIRE = 3
+        /** A field boss's camp; [ref] is its site in FieldBosses. */
+        const val FIELD_BOSS = 4
 
         val CODEC: Codec<AtlasPlace> = RecordCodecBuilder.create { i ->
             i.group(

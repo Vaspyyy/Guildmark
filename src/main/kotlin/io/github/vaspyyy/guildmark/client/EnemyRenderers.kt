@@ -5,8 +5,10 @@ import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.client.combat.EnemyAnimation
 import io.github.vaspyyy.guildmark.client.model.EnemyRenderState
 import io.github.vaspyyy.guildmark.client.model.FallenWardenModel
+import io.github.vaspyyy.guildmark.client.model.HillTrollModel
 import io.github.vaspyyy.guildmark.client.model.HollowSoldierModel
 import io.github.vaspyyy.guildmark.enemy.FallenWarden
+import io.github.vaspyyy.guildmark.enemy.HillTroll
 import io.github.vaspyyy.guildmark.enemy.HollowSoldier
 import net.minecraft.client.model.HumanoidModel
 import net.minecraft.client.renderer.SubmitNodeCollector
@@ -93,5 +95,47 @@ class FallenWardenRenderer(context: EntityRendererProvider.Context) :
         private val TEXTURE = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "textures/entity/fallen_warden.png")
         private val GLOW = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "textures/entity/fallen_warden_glow.png")
         private val GLOW_2 = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "textures/entity/fallen_warden_glow2.png")
+    }
+}
+
+/**
+ * A hill troll, drawn 1.6 times its model's size, its eyes glowing like coals under its brow. It sleeps
+ * sitting by its fire, breathing slow and deep, and dies on its knees before pitching onto its face.
+ */
+class HillTrollRenderer(context: EntityRendererProvider.Context) :
+    HumanoidMobRenderer<HillTroll, EnemyRenderState, HillTrollModel>(context, HillTrollModel(context.bakeLayer(HillTrollModel.LAYER)), 1.3f) {
+
+    init {
+        addLayer(EnemyGlowLayer(this) { GLOW })
+    }
+
+    override fun createRenderState(): EnemyRenderState = EnemyRenderState()
+    override fun getTextureLocation(state: EnemyRenderState): Identifier = TEXTURE
+
+    override fun extractRenderState(entity: HillTroll, state: EnemyRenderState, partialTicks: Float) {
+        super.extractRenderState(entity, state, partialTicks)
+        state.phaseTwo = entity.enraged
+        state.hasRedOverlay = entity.hurtTime > 0 && entity.deathTime <= 0
+        EnemyAnimation.extract(entity, state, partialTicks)
+        // The boulder is in its hand from when it tears it up until it lets fly
+        state.holding = entity.shownAttack(partialTicks)?.let { (attack, time) -> attack === HillTroll.THROW && time >= 16f && time < 32f } ?: false
+        when {
+            entity.deathTime > 0 -> EnemyAnimation.hold(state, "hill_troll/death", entity.deathTime + partialTicks)
+            entity.dormant -> EnemyAnimation.hold(state, "hill_troll/sleep", (entity.tickCount + partialTicks) % SLEEP_BREATH)
+        }
+    }
+
+    override fun getFlipDegrees(): Float = 0f
+
+    override fun scale(state: EnemyRenderState, poseStack: PoseStack) {
+        poseStack.scale(SCALE, SCALE, SCALE)
+    }
+
+    companion object {
+        const val SCALE = 1.6f
+        /** Ticks of one slow breath while it sleeps (the sleep clip's length). */
+        private const val SLEEP_BREATH = 60f
+        private val TEXTURE = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "textures/entity/hill_troll.png")
+        private val GLOW = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "textures/entity/hill_troll_glow.png")
     }
 }

@@ -262,17 +262,23 @@ PIVOTS = {'head': (0, 0, 0), 'body': (0, 0, 0), 'right_arm': (-5, 2, 0), 'left_a
           'right_leg': (-1.9, 12, 0), 'left_leg': (1.9, 12, 0)}
 HIPS = np.array([0.0, 12.0, 0.0])
 
-def vanilla_pose(item_pose=True):
-    """What vanilla shows standing still with a sword: everything at rest, the sword arm a little raised."""
-    pose = {p: (I.copy(), np.array(PIVOTS[p], float)) for p in PIVOTS}
+def vanilla_pose(item_pose=True, pivots=None):
+    """What vanilla shows standing still with a sword: everything at rest, the sword arm a little raised.
+    [pivots] are the model's joints, when they aren't a player's."""
+    pivots = pivots or PIVOTS
+    pose = {p: (I.copy(), np.array(pivots[p], float)) for p in pivots}
     if item_pose:
         pose['right_arm'] = (qeuler(x=-18), pose['right_arm'][1])
     pose['root'] = (I.copy(), np.zeros(3))
     return pose
 
-def pose_clip(clip, t, base=None, yaw_deg=0.0):
-    """Part rotations and pivots (root space) for [clip] at [t], blended over [base] by the clip's weight."""
-    base = base or vanilla_pose()
+def pose_clip(clip, t, base=None, yaw_deg=0.0, pivots=None, hips=None):
+    """Part rotations and pivots (root space) for [clip] at [t], blended over [base] by the clip's weight.
+    [pivots] and [hips] are the model's joints, when they aren't a player's (CombatAnimator reads them off
+    the model the same way)."""
+    pivots = pivots or PIVOTS
+    hips = HIPS if hips is None else np.asarray(hips, float)
+    base = base or vanilla_pose(pivots=pivots)
     w = clip.weight(t)
     qt, pt = clip.sample('torso', t)
     out = {}
@@ -280,8 +286,8 @@ def pose_clip(clip, t, base=None, yaw_deg=0.0):
         bq, bp = base[name]
         out[name] = (qslerp(bq, q, w), bp + (p - bp) * w)
     def attached(pivot, offset=np.zeros(3)):
-        return HIPS + qmat(qt) @ (np.array(pivot, float) + offset - HIPS) + pt
-    blend('body', qt, attached(PIVOTS['body']))
+        return hips + qmat(qt) @ (np.array(pivot, float) + offset - hips) + pt
+    blend('body', qt, attached(pivots['body']))
     for a in ('right_arm', 'left_arm'):
         bq = base[a][0]
         if a in clip.keys:
@@ -289,19 +295,19 @@ def pose_clip(clip, t, base=None, yaw_deg=0.0):
             q = qmul(qmul(qt, bq), qa) if clip.modes.get(a) == 'add' else qmul(qt, qa)
         else:
             q, pa = qmul(qt, bq), np.zeros(3)
-        blend(a, q, attached(PIVOTS[a], pa))
+        blend(a, q, attached(pivots[a], pa))
     bq = base['head'][0]
     if 'head' in clip.keys:
         qh, _ = clip.sample('head', t)
         q = qmul(bq, qh) if clip.modes.get('head', 'add') == 'add' else qmul(qt, qh)
     else:
         q = bq
-    blend('head', q, attached(PIVOTS['head']))
+    blend('head', q, attached(pivots['head']))
     for leg in ('right_leg', 'left_leg'):
         if leg in clip.keys:
             ql, pl = clip.sample(leg, t)
             q = qmul(base[leg][0], ql) if clip.modes.get(leg) == 'add' else ql
-            blend(leg, q, np.array(PIVOTS[leg], float) + pl)
+            blend(leg, q, np.array(pivots[leg], float) + pl)
         else:
             out[leg] = base[leg]
     qr, pr = clip.sample('root', t)
@@ -309,7 +315,7 @@ def pose_clip(clip, t, base=None, yaw_deg=0.0):
     if yaw_deg:
         qr = qmul(qaxis((0, 1, 0), yaw_deg * w), qr)
     pr = pr * w
-    out['root'] = (qr, HIPS - qmat(qr) @ HIPS + pr)
+    out['root'] = (qr, hips - qmat(qr) @ hips + pr)
     return out
 
 # ---------------------------------------------------------------- drawing
@@ -360,6 +366,9 @@ class Scene:
     def __init__(self, skin, sword):
         self.skin = np.array(skin.convert('RGBA'), float)
         self.sword = np.array(sword.convert('RGBA'), float)
+
+    def at(self, clip, t):
+        """Told which clip and moment it's about to draw, for parts that come and go."""
 
     def player_world(self, pose, sword=True):
         """Every quad of the posed player (and sword) in model space, with its texture."""
@@ -448,15 +457,17 @@ def fp_sample(clip, t):
     q, p = clip.sample('item', t)
     return p * w, qslerp(I, q, w)
 
-def sheet(scene, clip, fp_clip=None, times=None, yaw_deg=0.0, cell=(190, 230), title=None):
+def sheet(scene, clip, fp_clip=None, times=None, yaw_deg=0.0, cell=(190, 230), title=None, zoom=4.0, center_y=6.0):
     """Rows: three-quarter view, from above, and through the player's own eyes. Columns: moments through
-    the clip. The yellow line is the path of the sword's tip so far."""
+    the clip. The yellow line is the path of the sword's tip so far. A scene with a [skeleton] (its own
+    pivots and hips) is posed with it; [zoom] and [center_y] frame bigger creatures."""
     if times is None:
         n = 9
         times = [clip.length * i / (n - 1) for i in range(n)]
     W, H = cell
     FH = int(W * 9 / 16)
-    views = [ortho(35, -14, 4.0, (W, H), 6.0), ortho(0, 90, 4.0, (W, int(H * 0.8)), 0.0)]
+    views = [ortho(35, -14, zoom, (W, H), center_y), ortho(0, 90, zoom, (W, int(H * 0.8)), 0.0)]
+    skeleton = getattr(scene, 'skeleton', {})
     heights = [H, int(H * 0.8)]
     rows_h = sum(heights) + (FH if fp_clip is not None else 0)
     out = Image.new('RGB', (W * len(times), rows_h + 18), (30, 32, 40))
@@ -465,10 +476,12 @@ def sheet(scene, clip, fp_clip=None, times=None, yaw_deg=0.0, cell=(190, 230), t
     path = []
     k = 0
     while k / 4 <= clip.length:
-        path.append((k / 4, scene.sword_points(pose_clip(clip, k / 4, yaw_deg=yaw_deg))[1]))
+        scene.at(clip, k / 4)
+        path.append((k / 4, scene.sword_points(pose_clip(clip, k / 4, yaw_deg=yaw_deg, **skeleton))[1]))
         k += 1
     for i, t in enumerate(times):
-        pose = pose_clip(clip, t, yaw_deg=yaw_deg)
+        scene.at(clip, t)
+        pose = pose_clip(clip, t, yaw_deg=yaw_deg, **skeleton)
         quads = scene.player_world(pose)
         y = 18
         for project, h in zip(views, heights):

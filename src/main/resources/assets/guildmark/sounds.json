@@ -235,6 +235,14 @@
       }
     ]
   },
+  "music.field_boss": {
+    "sounds": [
+      {
+        "name": "guildmark:music/field_boss",
+        "stream": true
+      }
+    ]
+  },
   "ui.open": {
     "sounds": [
       "guildmark:ui/open1"
@@ -828,5 +836,74 @@
       "guildmark:dungeon/stir2"
     ],
     "subtitle": "subtitles.guildmark.dungeon.stir"
+  },
+  "hill_troll.roar": {
+    "sounds": [
+      "guildmark:hill_troll/roar1",
+      "guildmark:hill_troll/roar2"
+    ],
+    "subtitle": "subtitles.guildmark.hill_troll.roar"
+  },
+  "hill_troll.grunt": {
+    "sounds": [
+      "guildmark:hill_troll/grunt1",
+      "guildmark:hill_troll/grunt2",
+      "guildmark:hill_troll/grunt3"
+    ],
+    "subtitle": "subtitles.guildmark.hill_troll.grunt"
+  },
+  "hill_troll.hurt": {
+    "sounds": [
+      "guildmark:hill_troll/hurt1",
+      "guildmark:hill_troll/hurt2"
+    ],
+    "subtitle": "subtitles.guildmark.hill_troll.hurt"
+  },
+  "hill_troll.death": {
+    "sounds": [
+      "guildmark:hill_troll/death1"
+    ],
+    "subtitle": "subtitles.guildmark.hill_troll.death"
+  },
+  "hill_troll.snore": {
+    "sounds": [
+      "guildmark:hill_troll/snore1",
+      "guildmark:hill_troll/snore2"
+    ],
+    "subtitle": "subtitles.guildmark.hill_troll.snore"
+  },
+  "hill_troll.step": {
+    "sounds": [
+      "guildmark:hill_troll/step1",
+      "guildmark:hill_troll/step2"
+    ],
+    "subtitle": "subtitles.guildmark.hill_troll.step"
+  },
+  "hill_troll.swing": {
+    "sounds": [
+      "guildmark:hill_troll/swing1",
+      "guildmark:hill_troll/swing2"
+    ],
+    "subtitle": "subtitles.guildmark.hill_troll.swing"
+  },
+  "hill_troll.slam": {
+    "sounds": [
+      "guildmark:hill_troll/slam1",
+      "guildmark:hill_troll/slam2"
+    ],
+    "subtitle": "subtitles.guildmark.hill_troll.slam"
+  },
+  "hill_troll.throw": {
+    "sounds": [
+      "guildmark:hill_troll/throw1"
+    ],
+    "subtitle": "subtitles.guildmark.hill_troll.throw"
+  },
+  "hill_troll.boulder": {
+    "sounds": [
+      "guildmark:hill_troll/boulder1",
+      "guildmark:hill_troll/boulder2"
+    ],
+    "subtitle": "subtitles.guildmark.hill_troll.boulder"
   }
 }

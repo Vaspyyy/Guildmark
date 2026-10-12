@@ -1073,6 +1073,228 @@ def dungeon_stir(v, rng):
     return reverb(lp(y, 6500), wet=0.3, rt60=2.2, predelay=0.025, hf_damp=0.55, seed=83 + v)
 
 
+# =========================================================================== hill troll
+def troll_voice(dur, rng, f0, va, vb, scale=0.66, subharm=0.55, breath=0.7, fry=0.08, drive_amt=3.0, curve=None,
+                growl_hz=24.0, growl=0.35, wobble=0.04):
+    """a huge, wet, throaty voice: slow pulses through a long dark throat, with a growl riding on it"""
+    t = tvec(dur)
+    g = creature_voice(dur, rng, f0, va, vb, scale=scale, jitter=0.06, shimmer=0.3, subharm=subharm,
+                       breath=breath, fry=fry, curve=curve, drive_amt=drive_amt, wobble=wobble, double=0.012)
+    rate = growl_hz * (1 + 0.15 * (2 * smooth_random(dur, rng, 3) - 1))
+    mod = 1 - growl * 0.5 * (1 + np.sin(phase_from_freq(rate, len(t)) + rng.uniform(0, 6)))
+    rasp = bp(white(dur, rng), 600, 2600) * smooth_random(dur, rng, 50, 0.3, 1.0)
+    y = nrm(g) * mod + 0.18 * nrm(rasp) * np.abs(nrm(g)) ** 0.5
+    return lp(y, 4200)
+
+
+def outdoors(x, wet=0.12, seed=91):
+    """open ground: a little slap back off the hills and nothing else"""
+    return reverb(x, wet=wet, rt60=1.4, predelay=0.045, hf_damp=0.7, seed=seed, early_span=0.08)
+
+
+def clods(dur, rng, count, start=0.0, spread=0.3):
+    """earth and grit thrown up, pattering back down"""
+    m = Mix(dur)
+    for _ in range(count):
+        tt = start + rng.exponential(spread)
+        if tt > dur - 0.04:
+            continue
+        ex = lp(white(0.004, rng), 3000)
+        f = rng.uniform(250, 1100)
+        c = resonators(fit(ex, ns(0.06)), [f, f * 1.6], [0.025, 0.015], [1, .4])
+        m.add(nrm(c), tt, rng.uniform(0.2, 0.7) * np.exp(-(tt - start) / (spread * 1.5)))
+    return fit(m.out(), ns(dur))
+
+
+@recipe("hill_troll/roar", variants=2, fade_out=0.5, tail_db=-70)
+def troll_roar(v, rng):
+    """a bellow that carries across the hills: low and wet, opening up, growling as it goes"""
+    dur = 2.6
+    dr = [2.0, 1.8][v]
+    t = tvec(dr)
+    f0 = [46, 52][v] + 26 * np.sin(np.pi * np.clip(t / (dr * 0.75), 0, 1)) ** 0.7 - 8 * np.clip((t - dr * 0.6) / (dr * 0.4), 0, 1)
+    curve = np.clip(t / 0.4, 0, 1)
+    y = troll_voice(dr, rng, f0, "o", "a", scale=0.62, subharm=0.6, breath=0.9, drive_amt=4.5, curve=curve,
+                    growl_hz=[19, 23][v], growl=0.4)
+    sub = formants(glottal(dr, f0 / 2, rng, jitter=0.05, shimmer=0.2, breath=0.3), "u", "o", scale=0.6, curve=curve)
+    breath = tvf(colored(dr, rng, -2), "bp", 260 + 420 * curve, 0.9)
+    env = np.clip(t / 0.15, 0, 1) ** 1.2 * np.clip((dr - t) / 0.8, 0, 1) ** 1.2
+    y = (nrm(y) + 0.5 * nrm(sub) + 0.3 * nrm(breath)) * env * (1 - 0.2 * smooth_random(dr, rng, 25))
+    spit = crackle(dr, rng, 60 * env + 1, decay=0.0008, f_lo=1500, f_hi=6000)
+    m = Mix(dur)
+    m.add(nrm(lp(drive(nrm(y), 2.0), 3000)), 0.0, 1.0)
+    m.add(nrm(spit), 0.0, 0.07)
+    return fit(outdoors(fit(m.out(), ns(dur)), 0.16, seed=90 + v), ns(dur))
+
+
+@recipe("hill_troll/grunt", variants=3, fade_out=0.15, max_len=[0.7, 0.8, 0.9])
+def troll_grunt(v, rng):
+    """a low huff through the nose, a rumbling 'hrrm', or a grumble with a snort on the end"""
+    dur = [0.7, 0.8, 0.9][v]
+    dv = [0.32, 0.6, 0.55][v]
+    t = tvec(dv)
+    f0 = [72, 58, 64][v] * (1 - [0.25, 0.12, 0.2][v] * t / dv) + 4 * np.sin(2 * np.pi * 5 * t)
+    y = troll_voice(dv, rng, f0, ["uh", "u", "o"][v], ["o", "o", "uh"][v], scale=0.68, subharm=0.5,
+                    breath=[0.95, 0.6, 0.8][v], drive_amt=2.6, growl_hz=[28, 21, 25][v], growl=[0.25, 0.45, 0.4][v])
+    env = np.clip(t / 0.03, 0, 1) * np.clip((dv - t) / (dv * 0.6), 0, 1) ** 1.3
+    m = Mix(dur)
+    m.add(nrm(y) * env, 0.0, 1.0)
+    puff = formants(colored(0.25, rng, -1.0), "u", "o", scale=0.8) * np.exp(-tvec(0.25) / 0.08)
+    m.add(nrm(puff), [0.0, dv * 0.8, dv - 0.05][v], [0.5, 0.25, 0.55][v])
+    return outdoors(fit(m.out(), ns(dur)), 0.1, seed=93 + v)
+
+
+@recipe("hill_troll/hurt", variants=2, fade_out=0.15, max_len=0.75)
+def troll_hurt(v, rng):
+    """a pained bellow cut short"""
+    dur = 0.75
+    dv = 0.5
+    t = tvec(dv)
+    f0 = [96, 84][v] * np.exp(-t / 0.6) + 10
+    y = troll_voice(dv, rng, f0, "a", "uh", scale=0.66, subharm=0.6, breath=0.6, drive_amt=4.0,
+                    growl_hz=[26, 31][v], growl=0.3, curve=np.clip(t / dv, 0, 1))
+    env = np.clip(t / 0.006, 0, 1) * np.exp(-np.maximum(0, t - 0.08) / 0.16)
+    m = Mix(dur)
+    m.add(nrm(y) * env, 0.0, 1.0)
+    m.add(nrm(thump(0.2, 90, 45, rng, decay=0.05, click=0.2, noise=0.7, nlp=500)), 0.0, 0.35)
+    return outdoors(fit(m.out(), ns(dur)), 0.1, seed=96 + v)
+
+
+@recipe("hill_troll/death", variants=1, fade_out=0.6, tail_db=-70)
+def troll_death(v, rng):
+    """a long groan sinking away to a rattle of breath"""
+    dur = 2.6
+    dv = 2.0
+    t = tvec(dv)
+    f0 = 34 + 46 * np.exp(-t / 0.9)
+    curve = np.clip(t / dv, 0, 1)
+    y = troll_voice(dv, rng, f0, "o", "u", scale=0.64, subharm=0.5, breath=0.85, fry=0.2, drive_amt=3.0,
+                    curve=curve, growl_hz=17, growl=0.3, wobble=0.06)
+    env = np.clip(t / 0.08, 0, 1) * np.clip((dv - t) / 1.1, 0, 1) ** 1.4
+    m = Mix(dur)
+    m.add(nrm(y) * env, 0.0, 1.0)
+    dr = 0.7
+    rattle_ = tvf(white(dr, rng), "bp", 700 - 300 * tvec(dr) / dr, 3) * (0.5 + 0.5 * np.sin(2 * np.pi * 21 * tvec(dr))) ** 2
+    rattle_ *= np.sin(np.pi * tvec(dr) / dr) ** 1.5
+    m.add(nrm(rattle_), 1.75, 0.35)
+    return fit(outdoors(fit(m.out(), ns(dur)), 0.14, seed=98), ns(dur))
+
+
+@recipe("hill_troll/snore", variants=2, fade_out=0.4, max_len=2.2)
+def troll_snore(v, rng):
+    """asleep: a long rattling snore drawn in through the nose, then a slow wet breath out"""
+    dur = 2.2
+    di = [1.1, 1.25][v]
+    ti = tvec(di)
+    flap = [27, 31][v] * (1 + 0.1 * np.sin(np.pi * ti / di))
+    pulses = (0.5 + 0.5 * np.sin(phase_from_freq(flap, len(ti)))) ** 3
+    src = colored(di, rng, -1.5) * pulses + 0.4 * glottal(di, flap * 2, rng, jitter=0.1, shimmer=0.4, breath=0.8, fry=0.5)
+    inh = formants(src, "u", "o", scale=0.62, curve=np.clip(ti / di, 0, 1))
+    inh = lp(inh, 2200) * np.sin(np.pi * np.clip(ti / di, 0, 1)) ** 1.2
+    de = 0.9
+    te = tvec(de)
+    exh = formants(colored(de, rng, -1.2), "o", "uh", scale=0.7) * np.clip(te / 0.1, 0, 1) * np.exp(-te / 0.3)
+    m = Mix(dur)
+    m.add(nrm(inh), 0.0, 1.0)
+    m.add(nrm(lp(exh, 1800)), di + 0.12, 0.45)
+    return outdoors(fit(m.out(), ns(dur)), 0.08, seed=100 + v)
+
+
+@recipe("hill_troll/step", variants=2, max_len=0.42, fade_out=0.1)
+def troll_step(v, rng):
+    """a great bare foot coming down on soil: a deep thud and a crunch of earth"""
+    dur = 0.4
+    th = thump(dur, [74, 66][v], [30, 27][v], rng, decay=0.11, click=0.12, noise=1.0, nlp=380)
+    gt = tvec(0.12)
+    grit = crackle(0.12, rng, 1800, decay=0.001, f_lo=300, f_hi=2600) * np.exp(-gt / 0.035)
+    m = Mix(dur)
+    m.add(nrm(drive(nrm(th), 2.2)), 0, 1.0)
+    m.add(nrm(grit), 0.004, 0.35)
+    m.add(clods(dur, rng, 5, start=0.03, spread=0.08), 0.0, 0.18)
+    return outdoors(lp(fit(m.out(), ns(dur)), 5000), 0.1, seed=102 + v)
+
+
+@recipe("hill_troll/swing", variants=2, fade_out=0.15, max_len=0.9)
+def troll_swing(v, rng):
+    """a tree trunk of a club through the air: slow, deep and heavy"""
+    dur = 0.85
+    peak = [0.55, 0.6][v]
+    m = whoosh(dur, rng, peak=peak, f_lo=80, f_hi=[620, 720][v], q=0.75, power=2.4, rise=1.9, fall=1.3,
+               body=1.2, body_lp=160, flutter_hz=[13, 15][v], flutter_depth=0.55, color=-4.0)
+    s = bell(dur, peak, 1.9, 1.3)
+    air = lp(brown(dur, rng), 80, order=4) * s ** 2
+    y = nrm(m) + 0.45 * nrm(air)
+    return outdoors(y, 0.1, seed=104 + v)
+
+
+@recipe("hill_troll/slam", variants=2, fade_out=0.25, max_len=1.2)
+def troll_slam(v, rng):
+    """the club driven into the ground: a deep boom, the knock of wood, earth breaking up and raining back"""
+    dur = 1.2
+    t = tvec(dur)
+    imp = thump(1.0, [88, 76][v], [26, 24][v], rng, decay=0.26, click=0.4, noise=1.0, nlp=520, sweep_curve=3.5)
+    imp = lp(drive(nrm(imp), 3.2), 2200)
+    knock = resonators(fit(burst(0.01, rng, 300, 4000, 0.002), ns(0.4)), [[150, 340, 610, 980], [135, 310, 560, 900]][v],
+                       [0.18, 0.12, 0.08, 0.05], [1, .7, .45, .3])
+    crunch = crackle(0.25, rng, 4500 * np.exp(-tvec(0.25) / 0.05), decay=0.0012, f_lo=200, f_hi=3500, size_var=1.0)
+    rubble = crackle(dur, rng, 500 * np.exp(-t / 0.2) + 40 * np.exp(-t / 0.6), decay=0.003, f_lo=150, f_hi=2500, size_var=1.0)
+    dust = bp(pink(dur, rng), 300, 2500) * np.exp(-t / 0.4) * np.clip(t / 0.04, 0, 1)
+    m = Mix(dur)
+    m.add(nrm(imp), 0.0, 1.0)
+    m.add(nrm(knock), 0.0, 0.45)
+    m.add(nrm(crunch), 0.002, 0.6)
+    m.add(nrm(rubble), 0.02, 0.55)
+    m.add(clods(dur, rng, 16, start=0.08, spread=0.25), 0.0, 0.4)
+    m.add(nrm(dust), 0.0, 0.25)
+    y = drive(nrm(fit(m.out(), ns(dur))), 1.5)
+    return fit(outdoors(y, 0.15, seed=106 + v), ns(dur))
+
+
+@recipe("hill_troll/throw", variants=1, fade_out=0.2, max_len=1.0)
+def troll_throw(v, rng):
+    """a heave and a bark of effort, and a boulder leaving its hand"""
+    dur = 1.0
+    dv = 0.35
+    t = tvec(dv)
+    f0 = 70 + 30 * np.sin(np.pi * np.clip(t / 0.2, 0, 1))
+    bark = troll_voice(dv, rng, f0, "uh", "a", scale=0.66, subharm=0.6, breath=0.7, drive_amt=4.0, growl=0.3)
+    bark *= np.clip(t / 0.01, 0, 1) * np.clip((dv - t) / 0.2, 0, 1)
+    w = whoosh(0.7, rng, peak=0.3, f_lo=90, f_hi=520, q=0.8, power=2.2, rise=1.4, fall=2.2, body=1.0, body_lp=150, color=-4.0)
+    m = Mix(dur)
+    m.add(nrm(bark), 0.0, 1.0)
+    m.add(nrm(w), 0.12, 0.6)
+    return outdoors(fit(m.out(), ns(dur)), 0.1, seed=108)
+
+
+@recipe("hill_troll/boulder", variants=2, fade_out=0.3, max_len=1.2)
+def troll_boulder(v, rng):
+    """a thrown boulder bursting on the ground: a crack of stone, a heavy thud and the pieces skittering off"""
+    dur = 1.2
+    t = tvec(dur)
+    crack = burst(0.05, rng, 900, 14000, 0.004)
+    imp = thump(0.8, [100, 90][v], [34, 30][v], rng, decay=0.18, click=0.6, noise=1.0, nlp=700)
+    stone = resonators(fit(crackle(0.03, rng, 9000, decay=0.001, f_lo=300, f_hi=7000), ns(0.35)),
+                       [[230, 410, 690, 1120, 1850], [205, 380, 640, 1040, 1720]][v], [0.08, 0.06, 0.05, 0.035, 0.025], [1, .9, .7, .5, .35])
+    shatter = crackle(0.4, rng, 6000 * np.exp(-tvec(0.4) / 0.06), decay=0.0009, f_lo=700, f_hi=9000, size_var=0.9)
+    pebbles = Mix(dur)
+    for _ in range(18):
+        tt = 0.04 + rng.exponential(0.25)
+        if tt > dur - 0.05:
+            continue
+        f = rng.uniform(1100, 4200)
+        p = resonators(fit(bp(white(0.002, rng), 800, 8000), ns(0.05)), [f, f * 1.47, f * 2.3], [0.03, 0.02, 0.015], [1, .6, .4])
+        pebbles.add(nrm(p), tt, rng.uniform(0.2, 0.6) * np.exp(-tt / 0.45))
+    m = Mix(dur)
+    m.add(crack, 0.0, 0.7)
+    m.add(nrm(drive(nrm(imp), 2.5)), 0.001, 0.9)
+    m.add(nrm(stone), 0.001, 0.7)
+    m.add(nrm(shatter), 0.002, 0.6)
+    m.add(fit(pebbles.out(), ns(dur)), 0.0, 0.5)
+    m.add(clods(dur, rng, 10, start=0.05, spread=0.2), 0.0, 0.3)
+    y = drive(nrm(fit(m.out(), ns(dur))), 1.4)
+    return fit(outdoors(y, 0.14, seed=110 + v), ns(dur))
+
+
 # =========================================================================== main
 def main():
     ap = argparse.ArgumentParser()

@@ -50,6 +50,8 @@ object CompassHud : GuiLayer {
     private val ICON_PIN = sprite("pin")
     private val ICON_WARDFIRE = sprite("wardfire")
     private val ICON_LOST_MARKS = sprite("lost_marks")
+    private val ICON_TROLL = sprite("troll_camp")
+    private val ICON_TROLL_SLAIN = sprite("troll_camp_slain")
 
     private const val TOP = 3
     private const val HEIGHT = 13
@@ -191,6 +193,7 @@ object CompassHud : GuiLayer {
                 mark.kind == AtlasPlace.VILLAGE && mark.has(AtlasMark.YOURS) -> ICON_HALL
                 mark.kind == AtlasPlace.VILLAGE -> if (mark.size > 5) ICON_TOWN else ICON_VILLAGE
                 mark.kind == AtlasPlace.THRONE || mark.has(AtlasMark.VAULT) -> ICON_VAULT
+                mark.kind == AtlasPlace.FIELD_BOSS -> if (mark.has(AtlasMark.CLEARED)) ICON_TROLL_SLAIN else ICON_TROLL
                 mark.has(AtlasMark.CLEARED) -> ICON_LAIR_CLEARED
                 mark.has(AtlasMark.AWAKE) -> ICON_BOSS
                 else -> ICON_LAIR

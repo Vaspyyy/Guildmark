@@ -7,12 +7,13 @@ characters (Wren, Tobin, Ilsa, Pip and Maren) given a lighter touch.
 
 - `sfxkit.py`: the shared DSP toolkit (noise, filters, modal metal, creature voice source, room
   reverb, finalising and Ogg export).
-- `make_sfx.py`: the 62 mono sound effects (`combat/`, `hollow_soldier/`, `fallen_warden/` and the menu
-  sounds in `ui/`). Each sound is one `@recipe(...)` function that sets its variant count, length cap and
-  fade-out.
-- `make_music.py`: the two boss tracks (`music/`) and the two stingers (`ui/`), all built on Halvard's
-  leitmotif. Each piece is a `compose_*` function, and the stem balance lives in `PHASE1_MIX`,
-  `PHASE2_MIX` and `STINGER_MIX`.
+- `make_sfx.py`: the 91 mono sound effects (`combat/`, `hollow_soldier/`, `fallen_warden/`, `hill_troll/`,
+  `wardfire/`, `flask/`, `marks/`, `dungeon/` and the menu sounds in `ui/`). Each sound is one `@recipe(...)`
+  function that sets its variant count, length cap and fade-out.
+- `make_music.py`: the three boss tracks (`music/`) and the two stingers (`ui/`). Halvard's two tracks and
+  the stingers are built on his leitmotif; the field boss theme is a piece of its own in E Phrygian. Each
+  piece is a `compose_*` function, and the stem balance lives in `PHASE1_MIX`, `PHASE2_MIX`, `FIELD_MIX` and
+  `STINGER_MIX`.
 - `make_voice.py`: Halvard's three lines (`voice/`). It has two stages, `tts` and `process`.
 - `make_cast_voices.py`: the named characters' 55 dialogue lines (`voice/<character>/`), read from the
   language file. It has three stages, `tts`, `process` and `sounds`.

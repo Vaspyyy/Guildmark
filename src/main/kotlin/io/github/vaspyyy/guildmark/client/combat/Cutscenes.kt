@@ -3,6 +3,8 @@ package io.github.vaspyyy.guildmark.client.combat
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.client.GuildmarkClientConfig
 import io.github.vaspyyy.guildmark.enemy.FallenWarden
+import io.github.vaspyyy.guildmark.enemy.HillTroll
+import net.minecraft.world.entity.LivingEntity
 import io.github.vaspyyy.guildmark.network.BossCuePayload
 import io.github.vaspyyy.guildmark.registry.ModSounds
 import net.minecraft.client.CameraType
@@ -46,6 +48,7 @@ import net.neoforged.neoforge.client.gui.GuiLayer
 import net.neoforged.neoforge.client.renderstate.AvatarRenderStateModifier
 import kotlin.math.atan2
 import kotlin.math.cos
+import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sin
@@ -64,6 +67,9 @@ object Cutscenes : GuiLayer {
 
     /** Ticks the camera takes to glide back to the player's eyes. */
     private const val RETURN = 14
+    /** How long the title card and the banner stay up. */
+    private const val TITLE_TICKS = 95
+    private const val BANNER_TICKS = 110
     /** Ticks the talk camera takes to settle over the player's shoulder, and its field of view there. */
     private const val TALK_IN = 12
     private const val TALK_FOV = 58f
@@ -109,6 +115,7 @@ object Cutscenes : GuiLayer {
         var voiceAt = -1
         var stinger: SoundEvent? = null
         var stingerAt = -1
+        var stingerPlayed = false
         var title = -1
         var banner = -1
         var shakeAt = -1
@@ -161,9 +168,12 @@ object Cutscenes : GuiLayer {
     private var ticks = 0
     private var silenceUntil = 0
     private var wardenId = -1
+    /** The field boss nearest the player that's fighting, for its music. */
+    private var fieldBossId = -1
 
     private val PHASE_ONE by lazy { Music(ModSounds.MUSIC_WARDEN, 0, 0, true) }
     private val PHASE_TWO by lazy { Music(ModSounds.MUSIC_WARDEN_2, 0, 0, true) }
+    private val FIELD_BOSS by lazy { Music(ModSounds.MUSIC_FIELD_BOSS, 0, 0, true) }
 
     private fun camerasOn(): Boolean = !GuildmarkClientConfig.SPEC.isLoaded || GuildmarkClientConfig.CUTSCENES.get()
 
@@ -178,19 +188,25 @@ object Cutscenes : GuiLayer {
         val minecraft = Minecraft.getInstance()
         val player = minecraft.player ?: return
         val level = minecraft.level ?: return
-        val boss = level.getEntity(payload.entityId) as? FallenWarden
+        val felled = payload.cue == BossCuePayload.FELLED
+        // A field boss falling nearby doesn't cut into another boss's scene, nor take the camera from a
+        // conversation: then it only sounds and shows its banner
+        if (felled && scene.let { it != null && it.cue != BossCuePayload.FELLED }) return
+        val talking = felled && talk != null
+        val boss = level.getEntity(payload.entityId) as? LivingEntity
         end()
-        releaseTalk()
+        if (!talking) releaseTalk()
         val pos = boss?.position() ?: player.position()
         val yaw = boss?.yBodyRot ?: 0f
         val a = Math.toRadians(yaw.toDouble())
         val right = -(player.x - pos.x) * cos(a) - (player.z - pos.z) * sin(a)
         val s = Scene(payload.cue, payload.entityId, pos, yaw, if (right > 0) -1.0 else 1.0, player, level)
-        val camera = boss != null && camerasOn() && player.isAlive
+        val camera = boss != null && camerasOn() && player.isAlive && !talking
         when (payload.cue) {
             BossCuePayload.INTRO -> intro(s, camera)
             BossCuePayload.PHASE_TWO -> phaseTwo(s, camera)
             BossCuePayload.DEATH -> death(s, camera)
+            BossCuePayload.FELLED -> felled(s, camera)
             else -> return
         }
         scene = s
@@ -242,10 +258,22 @@ object Cutscenes : GuiLayer {
         s.stinger = ModSounds.FOE_VANQUISHED.get()
         s.stingerAt = 100
         s.banner = 100
-        silenceUntil = ticks + 260
+        silenceUntil = max(silenceUntil, ticks + 260)
         if (!camera) return
         s.shots = listOf(orbit(0, 80, 58f, 52f, 5.2, 4.4, 20.0, 75.0, 2.2, 1.7, 1.3))
         s.returnAt = 80
+    }
+
+    /** A field boss falls: the camera circles wide as it drops to its knees and pitches over, then the banner. */
+    private fun felled(s: Scene, camera: Boolean) {
+        s.length = 150
+        s.stinger = ModSounds.FOE_VANQUISHED.get()
+        s.stingerAt = 40
+        s.banner = 40
+        silenceUntil = max(silenceUntil, ticks + 160)
+        if (!camera) return
+        s.shots = listOf(orbit(0, 62, 62f, 56f, 9.0, 8.0, 25.0, 70.0, 3.4, 2.6, 1.8))
+        s.returnAt = 62
     }
 
     private fun dolly(start: Int, end: Int, hideSelf: Boolean, fovA: Float, fovB: Float, camA: Vec3, camB: Vec3, lookA: Vec3, lookB: Vec3) =
@@ -481,7 +509,10 @@ object Cutscenes : GuiLayer {
         val minecraft = Minecraft.getInstance()
         if (minecraft.isPaused) return
         ticks++
-        if (ticks % 10 == 0) findWarden(minecraft)
+        if (ticks % 10 == 0) {
+            findWarden(minecraft)
+            findFieldBoss(minecraft)
+        }
         tickTalk(minecraft)
         val s = scene ?: return
         val player = minecraft.player
@@ -489,7 +520,7 @@ object Cutscenes : GuiLayer {
             end()
             return
         }
-        (s.level.getEntity(s.bossId) as? FallenWarden)?.let { s.bossPos = it.position() }
+        (s.level.getEntity(s.bossId) as? LivingEntity)?.let { s.bossPos = it.position() }
         if (s.rig != null && s.time < s.returnAt) {
             var skip = false
             while (minecraft.options.keyJump.consumeClick()) skip = true
@@ -499,26 +530,33 @@ object Cutscenes : GuiLayer {
         s.time++
         val t = s.time
         if (t == s.voiceAt) s.voice?.let { s.voiceSound = play(it, SoundSource.VOICE) }
-        if (t == s.stingerAt) s.stinger?.let { play(it, SoundSource.MUSIC) }
+        if (!s.stingerPlayed && s.stingerAt in 0..t) {
+            s.stingerPlayed = true
+            s.stinger?.let { play(it, SoundSource.MUSIC) }
+        }
         if (t == s.shakeAt && s.rig != null) CameraFx.shake(0.6f)
-        if (t == s.returnAt && s.cue != BossCuePayload.DEATH) faceBoss(s)
+        if (t == s.returnAt && !BossCuePayload.ends(s.cue)) faceBoss(s)
         if (s.rig != null && t >= s.returnAt + RETURN) releaseCamera(s)
         if (t >= s.length) end()
     }
 
-    /** Straight to the camera's way back; everything after keeps its place relative to it. */
+    /**
+     * Straight to the camera's way back. What was to come after it keeps its place relative to it; what was to come
+     * before it (a field boss's banner) keeps its time.
+     */
     private fun skip(s: Scene) {
         s.voiceSound?.let { Minecraft.getInstance().soundManager.stop(it) }
         s.voice = null
         s.lines = emptyList()
         s.returnFrom = s.view
-        val jump = s.returnAt - s.time
+        val from = s.returnAt
+        val jump = from - s.time
         s.returnAt = s.time
-        if (s.title >= 0) s.title -= jump
-        if (s.banner >= 0) s.banner -= jump
-        if (s.stingerAt >= 0) s.stingerAt -= jump
-        s.length -= jump
-        if (s.cue != BossCuePayload.DEATH) faceBoss(s)
+        if (s.title >= from) s.title -= jump
+        if (s.banner >= from) s.banner -= jump
+        if (s.stingerAt >= from) s.stingerAt -= jump
+        s.length = maxOf(s.length - jump, if (s.title >= 0) s.title + TITLE_TICKS else 0, if (s.banner >= 0) s.banner + BANNER_TICKS else 0)
+        if (!BossCuePayload.ends(s.cue)) faceBoss(s)
     }
 
     private fun end() {
@@ -533,6 +571,7 @@ object Cutscenes : GuiLayer {
         releaseTalk()
         silenceUntil = 0
         wardenId = -1
+        fieldBossId = -1
     }
 
     private fun play(sound: SoundEvent, source: SoundSource): SoundInstance {
@@ -549,6 +588,15 @@ object Cutscenes : GuiLayer {
         val level = minecraft.level
         wardenId = if (player == null || level == null) -1 else {
             level.getEntitiesOfClass(FallenWarden::class.java, player.boundingBox.inflate(48.0)) { it.isAlive && !it.dormant }
+                .minByOrNull { it.distanceToSqr(player) }?.id ?: -1
+        }
+    }
+
+    private fun findFieldBoss(minecraft: Minecraft) {
+        val player = minecraft.player
+        val level = minecraft.level
+        fieldBossId = if (player == null || level == null) -1 else {
+            level.getEntitiesOfClass(HillTroll::class.java, player.boundingBox.inflate(48.0)) { it.isAlive && it.fighting }
                 .minByOrNull { it.distanceToSqr(player) }?.id ?: -1
         }
     }
@@ -641,19 +689,29 @@ object Cutscenes : GuiLayer {
         }
     }
 
-    /** Silence for his words, his music for his fight, and silence again when he falls. */
+    /**
+     * Silence for his words, his music for his fight, and silence again when he falls. A field boss in a
+     * fight has a battle theme of its own, and its fall brings the same silence.
+     */
     fun onSelectMusic(event: SelectMusicEvent) {
         if (ticks < silenceUntil) {
             event.overrideMusic(null)
             return
         }
-        val warden = Minecraft.getInstance().level?.getEntity(wardenId) as? FallenWarden
-        if (warden == null || !warden.isAlive || warden.dormant) {
-            val playing = event.playingMusic?.identifier
-            if (playing == ModSounds.MUSIC_WARDEN.get().location() || playing == ModSounds.MUSIC_WARDEN_2.get().location()) event.overrideMusic(null)
+        val level = Minecraft.getInstance().level
+        val warden = level?.getEntity(wardenId) as? FallenWarden
+        if (warden != null && warden.isAlive && !warden.dormant) {
+            event.overrideMusic(if (!warden.fighting) null else if (warden.phaseTwo) PHASE_TWO else PHASE_ONE)
             return
         }
-        event.overrideMusic(if (!warden.fighting) null else if (warden.phaseTwo) PHASE_TWO else PHASE_ONE)
+        val field = level?.getEntity(fieldBossId) as? HillTroll
+        if (field != null && field.isAlive && field.fighting) {
+            event.overrideMusic(FIELD_BOSS)
+            return
+        }
+        val playing = event.playingMusic?.identifier
+        if (playing == ModSounds.MUSIC_WARDEN.get().location() || playing == ModSounds.MUSIC_WARDEN_2.get().location() ||
+            playing == ModSounds.MUSIC_FIELD_BOSS.get().location()) event.overrideMusic(null)
     }
 
     // ---- On screen ----
@@ -710,8 +768,8 @@ object Cutscenes : GuiLayer {
 
     /** His name, letter-spaced over a rule that opens from the middle, as the fight begins. */
     private fun titleCard(graphics: GuiGraphicsExtractor, font: Font, t: Float, width: Int, height: Int) {
-        if (t < 0f || t > 95f) return
-        val alpha = min(min(1f, t / 14f), (95f - t) / 20f).coerceIn(0f, 1f)
+        if (t < 0f || t > TITLE_TICKS) return
+        val alpha = min(min(1f, t / 14f), (TITLE_TICKS - t) / 20f).coerceIn(0f, 1f)
         if (alpha < 0.03f) return
         val y = (height * 0.34f).roundToInt()
         val half = (110 * ease(min(1f, t / 18f))).roundToInt()
@@ -723,8 +781,8 @@ object Cutscenes : GuiLayer {
 
     /** The banner when he falls, across a band of shadow. */
     private fun banner(graphics: GuiGraphicsExtractor, font: Font, t: Float, width: Int, height: Int) {
-        if (t < 0f || t > 110f) return
-        val alpha = min(min(1f, t / 10f), (110f - t) / 25f).coerceIn(0f, 1f)
+        if (t < 0f || t > BANNER_TICKS) return
+        val alpha = min(min(1f, t / 10f), (BANNER_TICKS - t) / 25f).coerceIn(0f, 1f)
         if (alpha < 0.03f) return
         val y = (height * 0.42f).roundToInt()
         val shade = ARGB.color(alpha * 0.6f, 0x000000)
@@ -733,7 +791,7 @@ object Cutscenes : GuiLayer {
         graphics.fill(0, y - 14, width, y + 14, shade)
         graphics.fillGradient(0, y + 14, width, y + 30, shade, clear)
         val text = Component.translatable("cutscene.guildmark.foe_vanquished").string.uppercase()
-        val scale = 2.4f + 0.3f * (t / 110f)
+        val scale = 2.4f + 0.3f * (t / BANNER_TICKS)
         // A soft glow behind the letters
         spaced(graphics, font, text, width / 2f, y - 4.5f * scale * 1.06f, scale * 1.06f, 2, ARGB.color(alpha * 0.25f, 0xF5D58A))
         spaced(graphics, font, text, width / 2f, y - 4.5f * scale, scale, 2, ARGB.color(alpha, 0xE8C468))

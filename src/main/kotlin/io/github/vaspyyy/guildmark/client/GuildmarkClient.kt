@@ -2,6 +2,7 @@ package io.github.vaspyyy.guildmark.client
 
 import io.github.vaspyyy.guildmark.client.model.RivalModel
 import io.github.vaspyyy.guildmark.client.model.FallenWardenModel
+import io.github.vaspyyy.guildmark.client.model.HillTrollModel
 import io.github.vaspyyy.guildmark.client.model.HollowSoldierModel
 import io.github.vaspyyy.guildmark.registry.ModAttachments
 import com.mojang.blaze3d.platform.InputConstants
@@ -11,6 +12,7 @@ import io.github.vaspyyy.guildmark.client.model.HollowKingModel
 import io.github.vaspyyy.guildmark.client.model.StoryNpcModel
 import io.github.vaspyyy.guildmark.registry.ModEntities
 import net.minecraft.client.Minecraft
+import net.minecraft.client.renderer.entity.ThrownItemRenderer
 import net.minecraft.client.renderer.entity.VillagerRenderer
 import net.neoforged.neoforge.client.event.EntityRenderersEvent
 import net.minecraft.resources.Identifier
@@ -141,6 +143,8 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
             event.registerEntityRenderer(ModEntities.RIVAL.get(), ::RivalRenderer)
             event.registerEntityRenderer(ModEntities.HOLLOW_SOLDIER.get(), ::HollowSoldierRenderer)
             event.registerEntityRenderer(ModEntities.FALLEN_WARDEN.get(), ::FallenWardenRenderer)
+            event.registerEntityRenderer(ModEntities.HILL_TROLL.get(), ::HillTrollRenderer)
+            event.registerEntityRenderer(ModEntities.TROLL_BOULDER.get()) { ThrownItemRenderer(it, 3.0f, false) }
             event.registerEntityRenderer(ModEntities.LOST_MARKS.get(), ::LostMarksRenderer)
         }
         modBus.addListener(EntityRenderersEvent.RegisterLayerDefinitions::class.java) { event ->
@@ -149,6 +153,7 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
             event.registerLayerDefinition(RivalModel.LAYER, RivalModel::createBodyLayer)
             event.registerLayerDefinition(HollowSoldierModel.LAYER, HollowSoldierModel::createBodyLayer)
             event.registerLayerDefinition(FallenWardenModel.LAYER, FallenWardenModel::createBodyLayer)
+            event.registerLayerDefinition(HillTrollModel.LAYER, HillTrollModel::createBodyLayer)
         }
         modBus.addListener(RegisterGuiLayersEvent::class.java) { event ->
             event.registerAbove(VanillaGuiLayers.EFFECTS, ContractTracker.ID, ContractTracker)

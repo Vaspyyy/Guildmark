@@ -109,9 +109,11 @@ class Model:
         return '\n'.join(out)
 
     # ---- geometry ----
-    def world_faces(self):
-        """Every cube face in model space: (corners A, B along u, D along v), uv rect, face, normal."""
+    def world_faces(self, pose=None):
+        """Every cube face in model space: (corners A, B along u, D along v), uv rect, face, normal. [pose] can
+        give a part its own local rotation matrix and an offset to its pivot: {name: (matrix, offset)}."""
         faces = []
+        pose = pose or {}
         def rotm(rot):
             rx, ry, rz = [math.radians(a) for a in rot]
             X = np.array([[1, 0, 0], [0, math.cos(rx), -math.sin(rx)], [0, math.sin(rx), math.cos(rx)]])
@@ -119,8 +121,9 @@ class Model:
             Z = np.array([[math.cos(rz), -math.sin(rz), 0], [math.sin(rz), math.cos(rz), 0], [0, 0, 1]])
             return Z @ Y @ X
         def go(part, M, T):
-            R = M @ rotm(part.rot)
-            P = T + M @ np.array(part.pivot, float)
+            local, offset = pose.get(part.name, (None, None))
+            R = M @ (rotm(part.rot) if local is None else local)
+            P = T + M @ (np.array(part.pivot, float) + (0 if offset is None else np.asarray(offset, float)))
             for c in part.cubes:
                 g = c.inflate
                 x0, y0, z0 = [o - g for o in c.origin]
@@ -145,7 +148,7 @@ class Model:
             go(p, np.eye(3), np.zeros(3))
         return faces
 
-    def render(self, tex, yaw=30, pitch=-12, scale=8, size=(256, 320), glow=None):
+    def render(self, tex, yaw=30, pitch=-12, scale=8, size=(256, 320), glow=None, y_shift=0.0, faces=None):
         img = np.zeros((size[1], size[0], 4), float)
         img[..., :3] = (58, 64, 80); img[..., 3] = 255
         zbuf = np.full((size[1], size[0]), 1e9)
@@ -157,10 +160,10 @@ class Model:
             x, y, z = p
             x, z = x * cy - z * sy, x * sy + z * cy
             y, z = y * cp - z * sp, y * sp + z * cp
-            return np.array([size[0] / 2 + x * scale, size[1] * 0.08 + (y + 12) * scale * 0.9 + 20, z])
+            return np.array([size[0] / 2 + x * scale, size[1] * 0.08 + (y + 12 + y_shift) * scale * 0.9 + 20, z])
         light = {'top': 1.0, 'front': 0.9, 'back': 0.6, 'right': 0.75, 'left': 0.8, 'bottom': 0.5}
         ys, xs = np.mgrid[0:size[1], 0:size[0]]
-        for A, B, D, (u, v, w, h), face, n in self.world_faces():
+        for A, B, D, (u, v, w, h), face, n in (faces if faces is not None else self.world_faces()):
             if w == 0 or h == 0: continue
             a, b, d = view(A), view(B), view(D)
             e1, e2 = b - a, d - a

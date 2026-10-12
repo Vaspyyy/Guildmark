@@ -124,7 +124,7 @@ class DungeonLayout(val state: DungeonState, val plan: DungeonPlan) {
         var area = box(room).grow(3)
         if (parent >= 0) area = area.union(box(parent).grow(3))
         for (cx in (area.minX shr 4)..(area.maxX shr 4)) for (cz in (area.minZ shr 4)..(area.maxZ shr 4)) {
-            if (!level.hasChunk(cx, cz)) return false
+            if (level.chunkSource.getChunkNow(cx, cz) == null) return false
         }
         return true
     }

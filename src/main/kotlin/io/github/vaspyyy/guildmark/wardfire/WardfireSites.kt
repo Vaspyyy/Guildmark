@@ -9,6 +9,7 @@ import net.minecraft.server.level.ServerLevel
 import net.minecraft.tags.BlockTags
 import net.minecraft.util.RandomSource
 import net.minecraft.world.entity.ai.village.poi.PoiManager
+import net.minecraft.world.level.ChunkPos
 import net.minecraft.world.level.WorldGenLevel
 import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.Blocks
@@ -43,9 +44,17 @@ object WardfireSites {
         true
     }
 
-    /** Is there a Wardfire, lit or cold, within [radius] blocks of [pos]? */
-    fun near(level: ServerLevel, pos: BlockPos, radius: Int): Boolean =
-        level.poiManager.getCountInRange({ it.`is`(ModVillagers.WARDFIRE_POI.key!!) }, pos, radius, PoiManager.Occupancy.ANY) > 0
+    /** Is there a Wardfire, lit or cold, within [radius] blocks of [pos]? Only land that's loaded is looked at (any more would be read from disk). */
+    fun near(level: ServerLevel, pos: BlockPos, radius: Int): Boolean {
+        val within = radius.toDouble() * radius
+        for (cx in ((pos.x - radius) shr 4)..((pos.x + radius) shr 4)) for (cz in ((pos.z - radius) shr 4)..((pos.z + radius) shr 4)) {
+            if (level.chunkSource.getChunkNow(cx, cz) == null) continue
+            val found = level.poiManager.getInChunk({ it.`is`(ModVillagers.WARDFIRE_POI.key!!) }, ChunkPos(cx, cz), PoiManager.Occupancy.ANY)
+                .anyMatch { it.pos.distSqr(pos) <= within }
+            if (found) return true
+        }
+        return false
+    }
 
     /** The village round [bell] gets a Wardfire, unless it already has one. */
     fun forVillage(level: ServerLevel, bell: BlockPos) {
@@ -78,7 +87,7 @@ object WardfireSites {
     private fun loaded(level: ServerLevel, x: Int, z: Int): Boolean {
         val reach = CLEARING + 2
         for (dx in intArrayOf(-reach, reach)) for (dz in intArrayOf(-reach, reach)) {
-            if (!level.hasChunk((x + dx) shr 4, (z + dz) shr 4)) return false
+            if (level.chunkSource.getChunkNow((x + dx) shr 4, (z + dz) shr 4) == null) return false
         }
         return true
     }

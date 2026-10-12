@@ -306,7 +306,7 @@ class Lairs(val lairs: MutableList<Lair> = mutableListOf()) : SavedData() {
     /** All the land within [reach] of [pos] is loaded. */
     private fun loaded(level: ServerLevel, pos: BlockPos, reach: Int): Boolean {
         for (cx in ((pos.x - reach) shr 4)..((pos.x + reach) shr 4)) for (cz in ((pos.z - reach) shr 4)..((pos.z + reach) shr 4)) {
-            if (!level.hasChunk(cx, cz)) return false
+            if (level.chunkSource.getChunkNow(cx, cz) == null) return false
         }
         return true
     }

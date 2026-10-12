@@ -50,4 +50,7 @@ object ModItems {
     val FALLEN_WARDEN_SPAWN_EGG: DeferredItem<SpawnEggItem> = ITEMS.registerItem("fallen_warden_spawn_egg", ::SpawnEggItem, UnaryOperator<Item.Properties> {
         it.spawnEgg(ModEntities.FALLEN_WARDEN.get())
     })
+    val HILL_TROLL_SPAWN_EGG: DeferredItem<SpawnEggItem> = ITEMS.registerItem("hill_troll_spawn_egg", ::SpawnEggItem, UnaryOperator<Item.Properties> {
+        it.spawnEgg(ModEntities.HILL_TROLL.get())
+    })
 }

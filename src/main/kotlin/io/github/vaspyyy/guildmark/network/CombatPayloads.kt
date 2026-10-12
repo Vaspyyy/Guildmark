@@ -185,6 +185,11 @@ data class BossCuePayload(val entityId: Int, val cue: Int) : CustomPacketPayload
         const val INTRO = 0
         const val PHASE_TWO = 1
         const val DEATH = 2
+        /** A field boss goes down: the camera circles it as it falls, then the banner. */
+        const val FELLED = 3
+
+        /** The cues that end a fight, after which the camera leaves the player where they stand. */
+        fun ends(cue: Int): Boolean = cue == DEATH || cue == FELLED
 
         /**
          * How long each cue's camera keeps the player out of the fight, its way back included (see Cutscenes).
@@ -194,6 +199,7 @@ data class BossCuePayload(val entityId: Int, val cue: Int) : CustomPacketPayload
             INTRO -> 200
             PHASE_TWO -> 56
             DEATH -> 95
+            FELLED -> 76
             else -> 0
         }
 

@@ -69,6 +69,18 @@ object ModSounds {
     val MIST_DENY = sound("dungeon.mist_deny")
     val DUNGEON_STIR = sound("dungeon.stir")
 
+    val TROLL_ROAR = sound("hill_troll.roar")
+    val TROLL_GRUNT = sound("hill_troll.grunt")
+    val TROLL_HURT = sound("hill_troll.hurt")
+    val TROLL_DEATH = sound("hill_troll.death")
+    val TROLL_SNORE = sound("hill_troll.snore")
+    val TROLL_STEP = sound("hill_troll.step")
+    val TROLL_SWING = sound("hill_troll.swing")
+    val TROLL_SLAM = sound("hill_troll.slam")
+    val TROLL_THROW = sound("hill_troll.throw")
+    val TROLL_BOULDER = sound("hill_troll.boulder")
+
     val MUSIC_WARDEN = sound("music.fallen_warden")
     val MUSIC_WARDEN_2 = sound("music.fallen_warden_2")
+    val MUSIC_FIELD_BOSS = sound("music.field_boss")
 }

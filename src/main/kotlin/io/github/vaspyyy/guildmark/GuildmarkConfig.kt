@@ -29,6 +29,9 @@ object GuildmarkConfig {
     val DUNGEONS: ModConfigSpec.BooleanValue = BUILDER
         .comment("Dig lairs as dungeons underground: a stairwell down, halls, treasure rooms and a boss hall behind a mist gate. Off gives the old ring on the surface. Only lairs found after a change are affected.")
         .define("dungeons", true)
+    val FIELD_BOSSES: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Field bosses in the wild: hill trolls asleep by the fires of their camps, found as players explore. Camps already built stay.")
+        .define("fieldBosses", true)
     val HANDBOOK: ModConfigSpec.BooleanValue = BUILDER
         .comment("Give new players the Adventurer's Handbook.")
         .define("handbookOnJoin", true)

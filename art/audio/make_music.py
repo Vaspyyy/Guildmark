@@ -50,6 +50,7 @@ CHORDS = {
     "Dm": "D F A", "D": "D F# A", "A": "A C# E", "A7": "A C# E G", "Asus": "A D E", "Gm": "G Bb D",
     "Gm6": "G Bb D E", "Bb": "Bb D F", "F": "F A C", "Eb": "Eb G Bb", "C": "C E G", "Ebm": "Eb Gb Bb",
     "Cm": "C Eb G", "Fm": "F Ab C", "Ab": "Ab C Eb", "Db": "Db F Ab", "Bbm": "Bb Db F", "E": "E G# B",
+    "Em": "E G B", "G": "G B D", "Am": "A C E",
 }
 
 
@@ -975,12 +976,212 @@ def compose_foe_vanquished():
     return s
 
 
+# ================================================================== field bosses
+WHITE = [0, 2, 4, 5, 7, 9, 11]
+
+
+def diatonic(root, steps):
+    """the note [steps] scale steps from [root] along the white notes (E Phrygian here); root is a white note"""
+    octave, pc = divmod(root, 12)
+    o, k = divmod(WHITE.index(pc) + steps, 7)
+    return (octave + o) * 12 + WHITE[k]
+
+
+def compose_field_boss():
+    """The wild's own bosses (the hill trolls first): no leitmotif, only weight. E Phrygian, whose flat
+    second (F over E) gives the stomp its menace; taiko on every first and third beat are the footfalls,
+    a low brass riff lumbers over a string ostinato, the horns sing a short dark tune, the choir shouts
+    the break, and the outro rests on F so the loop falls back into E (the Phrygian cadence)."""
+    s = Song("field_boss", bpm=104, bars=36, tail=1.4)
+    prog = (["Em", "Em", "Em", "F"]
+            + ["Em", "F", "Em", "Dm", "Em", "F", "G", "F"]
+            + ["Am", "Em", "F", "Dm", "Am", "G", "Am", "F"]
+            + ["F", "F", "Em", "Em"]
+            + ["Em", "F", "Em", "Dm", "Em", "F", "G", "F"]
+            + ["Em", "Dm", "F", "F"])
+    assert len(prog) == 36
+    s.chord_at = lambda beat: prog[min(len(prog) - 1, int(beat // 4))]
+    A = list(range(5, 13))
+    B = list(range(13, 21))
+    BREAK = list(range(21, 25))
+    A2 = list(range(25, 33))
+    OUT = list(range(33, 37))
+
+    ost = s.part("ost", 48, "low", pan=74, volume=112, hum=0.006, vjit=4)
+    cb = s.part("cb", 43, "low", pan=86, volume=110, hum=0.006, vjit=4)
+    bsn = s.part("bsn", 70, "low", pan=58, volume=92, hum=0.01)
+    pad1 = s.part("pad1", 49, "high", pan=46, volume=94, hum=0.02)
+    pad2 = s.part("pad2", 49, "high", pan=82, volume=94, hum=0.02)
+    trem = s.part("trem", 44, "high", pan=40, volume=88, hum=0.01)
+    hn1 = s.part("hn1", 60, "brass", pan=40, volume=110, lag=0.012)
+    hn2 = s.part("hn2", 60, "brass", pan=54, volume=104, lag=0.014)
+    tbn = s.part("tbn", 57, "brass", pan=80, volume=110, lag=0.01)
+    tbn2 = s.part("tbn2", 57, "brass", pan=70, volume=102, lag=0.012)
+    tuba = s.part("tuba", 58, "brass", pan=88, volume=108, lag=0.01)
+    tpt = s.part("tpt", 56, "brass", pan=62, volume=88, lag=0.008)
+    ahh = s.part("ahh", 52, "choir", pan=56, volume=104, hum=0.02)
+    ohh = s.part("ohh", 53, "choir", pan=72, volume=96, hum=0.02)
+    timp = s.part("timp", 47, "perc", pan=58, volume=114, hum=0.005, vjit=3)
+    taiko = s.part("taiko", 116, "perc", pan=64, volume=112, hum=0.005, vjit=4)
+    taiko2 = s.part("taiko2", 116, "perc", pan=38, volume=96, hum=0.006, vjit=5)
+    kit = s.part("kit", 48, "perc", drum=True, pan=64, volume=106, hum=0.004, vjit=4)
+
+    inten = np.interp(np.arange(1, 37), [1, 4, 5, 12, 13, 20, 21, 24, 25, 32, 33, 36],
+                      [.55, .66, .72, .82, .72, .86, .74, .94, .95, 1.0, .70, .82])
+
+    def V(lo, hi):
+        return lambda bar: lo + (hi - lo) * inten[bar - 1]
+
+    def root(bar, lo, hi):
+        return in_range(pcs(prog[bar - 1])[0], lo, hi)
+
+    # ---- low strings: an eighth-note ostinato in scale steps from each chord's root, leaning on 1 and 3
+    steps = [0, 0, 1, 0, 0, 0, 2, 1]
+    for bar in list(range(3, 21)) + A2 + OUT[:2]:
+        r = root(bar, 38, 49)
+        for i, st in enumerate(steps):
+            ost.n(s.b(bar) + i * 0.5, 0.42, diatonic(r, st), V(52, 92)(bar) + (16 if i in (0, 4) else 0))
+    for bar in BREAK:  # the break saws on the root alone, rising
+        r = root(bar, 38, 49)
+        for i in range(8):
+            ost.n(s.b(bar) + i * 0.5, 0.4, r, 70 + 4 * i + (bar - 21) * 6)
+    ost.expr([(0, 100), (s.b(21), 96), (s.b(25) - 0.1, 126), (s.b(25), 112), (s.b(37) - 0.1, 112)])
+
+    # ---- contrabasses: the footfalls' roots, with a step up into the next
+    for bar in range(1, 37):
+        r = root(bar, 28, 39)
+        cb.n(s.b(bar), 1.6, r, V(66, 104)(bar))
+        cb.n(s.b(bar, 3), 1.2, r, V(58, 96)(bar))
+        if bar >= 5:
+            cb.n(s.b(bar, 4.5), 0.45, diatonic(r, 1), V(50, 84)(bar))
+
+    # ---- the riff: low brass lumbering, a bassoon growling it an octave up
+    riff_a = [(0, 0.0, 0.7, 1), (0, 0.75, 0.2, 0), (1, 1.0, 0.45, 0), (0, 1.5, 0.45, 0), (2, 2.0, 0.9, 1), (1, 3.0, 0.9, 0)]
+    riff_b = [(0, 0.0, 0.7, 1), (0, 0.75, 0.2, 0), (1, 1.0, 0.45, 0), (0, 1.5, 0.45, 0), (-1, 2.0, 0.9, 1), (-2, 3.0, 0.9, 0)]
+
+    def riff(part, bars, lo, hi, vel, tr=0):
+        for k, bar in enumerate(bars):
+            r = root(bar, lo, hi)
+            for st, at, d, a in (riff_a if k % 2 == 0 else riff_b):
+                part.n(s.b(bar) + at, d, diatonic(r, st) + tr, vel(bar) + (12 if a else 0))
+
+    riff(tbn, A + A2, 38, 49, V(72, 104))
+    riff(tbn2, A2, 38, 49, V(66, 98), tr=12)
+    riff(tuba, A + A2, 26, 37, V(68, 100))
+    riff(bsn, A + A2, 50, 61, V(56, 82))
+    for p_ in (tbn, tbn2, tuba):
+        p_.expr([(s.b(5), 104), (s.b(13) - 0.1, 116), (s.b(25), 112), (s.b(33) - 0.1, 124)])
+
+    # ---- intro: the first footfalls, and a low call
+    tbn.line(s.b(3), "E2:3 F2:1 F2:3.5 R:0.5", 70, leg=0.98)
+    tuba.line(s.b(3), "E1:3 F1:1 F1:3.5 R:0.5", 66, leg=0.98)
+    tbn.expr([(s.b(3), 70), (s.b(5) - 0.1, 118)])
+    tuba.expr([(s.b(3), 70), (s.b(5) - 0.1, 118)])
+
+    # ---- strings and choir underneath
+    rng4 = [(52, 62), (55, 67), (59, 71), (64, 76)]
+    pads([(pad1, [0, 1]), (pad2, [2, 3])], s, list(range(5, 37)), prog, rng4, V(40, 80), dur_beats=4)
+    for p_ in (pad1, pad2):
+        swell(p_, s, list(range(5, 37)), lo=72, hi=112)
+    choir_rng = [(48, 60), (52, 64), (57, 69), (60, 72)]
+    pads([(ohh, [0, 1, 2, 3])], s, B, prog, choir_rng, V(40, 76))
+    pads([(ahh, [0, 1, 2, 3])], s, BREAK + A2, prog, choir_rng, V(62, 100))
+    swell(ohh, s, B, lo=66, hi=112)
+    swell(ahh, s, BREAK + A2, lo=74, hi=122)
+
+    # ---- B: the horns' tune over held trombones
+    melB = ("A4:2 B4:1 C5:1 B4:2 G4:1 E4:1 F4:3 E4:1 D4:2 E4:2 "
+            "A4:2 B4:1 C5:1 D5:2 C5:1 B4:1 A4:3 G4:1 F4:4")
+    hn1.line(s.b(13), melB, 92, leg=0.99, accent=6)
+    hn2.line(s.b(13), melB, 86, tr=-12, leg=0.99)
+    hn1.expr([(s.b(13), 98), (s.b(15), 114), (s.b(17), 102), (s.b(19), 120), (s.b(21) - 0.1, 108)])
+    hn2.expr([(s.b(13), 98), (s.b(15), 114), (s.b(17), 102), (s.b(19), 120), (s.b(21) - 0.1, 108)])
+    pads([(tbn, [0]), (tbn2, [1])], s, B, prog, [(45, 55), (50, 60)], V(56, 80))
+
+    # ---- the break: shouted choir, tremolo climbing, brass hammering the flat second into the tonic
+    tv = voice_lead([prog[b - 1] for b in BREAK], [(64, 74), (69, 79)])
+    for bar, vc in zip(BREAK, tv):
+        trem.chord(s.b(bar), 4.05, vc, 64 + (bar - 21) * 8)
+    trem.expr([(s.b(21), 70), (s.b(25) - 0.1, 124)])
+    for bar in BREAK:
+        r = root(bar, 38, 49)
+        for bt in (1, 2.5, 3, 4.5):
+            tbn.n(s.b(bar, bt), 0.4, r, 92 + (bar - 21) * 6)
+            tuba.n(s.b(bar, bt), 0.4, r - 12, 88 + (bar - 21) * 6)
+    hn1.line(s.b(21), "C5+A4:4 C5+A4:3 D5+B4:1 B4+G4:8", 94, leg=0.98)
+    hn2.line(s.b(21), "F4:8 E4:8", 90, leg=0.98)
+    tpt.line(s.b(23), "B4:2 B4:1 C5:1 B4:4", 86, leg=0.98)
+
+    # ---- A again: everything, the horns and trumpets crying over the riff
+    melA2 = ("B4:1.5 B4:0.5 C5:1 B4:1 A4:2 C5:2 B4:1.5 G4:0.5 E4:2 F4:1 E4:1 D4:2 "
+             "E4:1 G4:1 B4:2 C5:2 A4:1 C5:1 D5:3 B4:1 C5:2 A4:2")
+    hn1.line(s.b(25), melA2, 102, leg=0.99, accent=8)
+    hn2.line(s.b(25), melA2, 96, tr=-12, leg=0.99)
+    tpt.line(s.b(25), melA2, 84, leg=0.98)
+    for p_ in (hn1, hn2, tpt):
+        p_.expr([(s.b(25), 104), (s.b(29), 116), (s.b(31), 124), (s.b(33) - 0.1, 110)])
+
+    # ---- outro: the riff gone, a last call that comes to rest on F
+    hn1.line(s.b(33), "E4:3 F4:1 D4:4 C4:2 A3:2 F3:4", 84, leg=0.99)
+    hn2.line(s.b(33), "B3:3 C4:1 A3:4 A3:2 F3:2 C3:4", 78, leg=0.99)
+    tbn.chord(s.b(35), 7.6, ["F2", "C3"], 82)
+    tuba.n(s.b(35), 7.6, "F1", 80)
+    for p_ in (hn1, hn2, tbn, tuba):
+        p_.expr([(s.b(33), 96), (s.b(35), 90), (s.b(36, 4.4), 124), (s.b(37) - 0.1, 124)])
+
+    # ---- percussion: the footfalls never stop
+    for bar in range(1, 37):
+        v = V(84, 118)(bar)
+        taiko.n(s.b(bar), 0.5, "D2", v)
+        taiko.n(s.b(bar, 3), 0.5, "D2", v - 10)
+        if bar >= 3:
+            taiko.n(s.b(bar, 4.5), 0.5, "D2", v - 26)
+    for bar in A + BREAK + A2:
+        for i in (1, 3, 5, 7):
+            taiko2.n(s.b(bar) + i * 0.5, 0.5, "D2", V(46, 76)(bar) + (10 if i == 7 else 0))
+    for bar in B:
+        taiko2.n(s.b(bar, 2.5), 0.5, "D2", V(50, 72)(bar))
+        taiko2.n(s.b(bar, 4), 0.5, "D2", V(46, 66)(bar))
+
+    T = lambda bar: root(bar, 33, 45)  # noqa: E731
+    for bar in range(1, 37):
+        if bar in (4, 12, 20, 24, 32, 36):
+            continue
+        timp.n(s.b(bar), 1.4, T(bar), V(76, 110)(bar))
+        if bar in A + A2 or bar in BREAK:
+            timp.n(s.b(bar, 3), 1.0, T(bar), V(66, 100)(bar))
+    roll(timp, s, s.b(4), 4, T(4), 46, 112)
+    roll(timp, s, s.b(12, 3), 2, T(12), 60, 108)
+    roll(timp, s, s.b(20, 3), 2, T(20), 60, 112)
+    roll(timp, s, s.b(24), 4, T(24), 54, 122)
+    roll(timp, s, s.b(32, 3), 2, T(32), 64, 112)
+    roll(timp, s, s.b(36), 3.5, T(36), 44, 116)
+
+    for bar in (5, 13, 21, 25, 33):
+        kit.n(s.b(bar), 2, 49 if bar != 33 else 57, 108)
+    for bar in range(1, 37):
+        kit.n(s.b(bar), 1, 36, V(70, 104)(bar))
+        if bar >= 5:
+            kit.n(s.b(bar, 3), 1, 36, V(60, 94)(bar))
+    roll(kit, s, s.b(4, 3), 2, 38, 40, 100, rate=0.125)
+    roll(kit, s, s.b(12, 4), 1, 38, 50, 96, rate=0.125)
+    roll(kit, s, s.b(24), 4, 38, 40, 116, rate=0.125)
+    roll(kit, s, s.b(36, 3), 1.5, 38, 40, 96, rate=0.125)
+    return s
+
+
+FIELD_MIX = {"low": (3.0, 0.15), "high": (1.0, 0.3), "brass": (-2.0, 0.24), "choir": (2.0, 0.38),
+             "perc": (2.5, 0.16)}
+
+
 # ================================================================== driver
 PIECES = {
     "fallen_warden": dict(fn=compose_phase1, mix=PHASE1_MIX, out="music/fallen_warden", ir=(2.4, 101),
                           fade_out=1.1, quality=5),
     "fallen_warden_2": dict(fn=compose_phase2, mix=PHASE2_MIX, out="music/fallen_warden_2", ir=(2.1, 102),
                             fade_out=1.0, quality=5),
+    "field_boss": dict(fn=compose_field_boss, mix=FIELD_MIX, out="music/field_boss", ir=(2.0, 105),
+                       fade_out=1.0, quality=5),
     "boss_appear": dict(fn=compose_boss_appear, mix=STINGER_MIX, out="ui/boss_appear", ir=(2.6, 103),
                         fade_out=0.45, quality=6, length=3.0),
     "foe_vanquished": dict(fn=compose_foe_vanquished, mix=STINGER_MIX, out="ui/foe_vanquished", ir=(2.8, 104),

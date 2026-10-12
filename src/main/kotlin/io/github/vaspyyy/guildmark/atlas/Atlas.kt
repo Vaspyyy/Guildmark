@@ -1,6 +1,8 @@
 package io.github.vaspyyy.guildmark.atlas
 
 import io.github.vaspyyy.guildmark.advance.Advance
+import io.github.vaspyyy.guildmark.enemy.HillTroll
+import io.github.vaspyyy.guildmark.field.FieldBosses
 import io.github.vaspyyy.guildmark.block.QuestBoardBlock
 import io.github.vaspyyy.guildmark.block.QuestBoardBlockEntity
 import io.github.vaspyyy.guildmark.guild.Guilds
@@ -34,8 +36,8 @@ import java.util.WeakHashMap
 
 /**
  * The places each player has found, for the compass and the map. Villages go in once you come within
- * sight of their board, lairs once you're near, the Hollow Throne once you see it, a Wardfire once you
- * kindle it or rest at it (see Wardfires.note). A village's size and
+ * sight of their board, lairs and field bosses' camps once you're near, the Hollow Throne once you see
+ * it, a Wardfire once you kindle it or rest at it (see Wardfires.note). A village's size and
  * your standing there are noted on each visit, and its holder and roads are read fresh, since those
  * are kept with the overworld.
  */
@@ -45,6 +47,7 @@ object Atlas {
     private const val LAIR_SIGHT = 64.0
     private const val THRONE_SIGHT = 96.0
     private const val WARDFIRE_SIGHT = 32.0
+    private const val CAMP_SIGHT = 64.0
     /** How far from a board a road's end can be and still be that village's road. */
     private const val ROAD_SLACK = 96.0
 
@@ -143,6 +146,12 @@ object Atlas {
             if (altar != null && altar.closerThan(here, THRONE_SIGHT) && places.none { it.kind == AtlasPlace.THRONE && it.dimension == dimension }) {
                 found(AtlasPlace(AtlasPlace.THRONE, dimension, altar, found = now))
             }
+            // A field boss's camp, once you're near enough to see its fire
+            for (site in FieldBosses.get(level).sites) {
+                if (!site.built || !site.pos.closerThan(here, CAMP_SIGHT)) continue
+                if (places.any { it.kind == AtlasPlace.FIELD_BOSS && it.dimension == dimension && it.ref == site.id }) continue
+                found(AtlasPlace(AtlasPlace.FIELD_BOSS, dimension, site.pos, ref = site.id, found = now))
+            }
         }
 
         if (changed) player.setData(ModAttachments.ATLAS, AtlasState(places))
@@ -167,6 +176,7 @@ object Atlas {
         val ours = Guilds.get(level).ledBy(player.uuid)?.id
         val people = if (overworld) Characters.get(level).placements.groupBy({ it.board }, { it.id }) else mapOf()
         val lairs = Lairs.get(level)
+        val camps = if (overworld) FieldBosses.get(level) else null
         val network = RoadNetwork.get(level)
         val respawn = player.respawnConfig?.respawnData()?.globalPos()
         val restingAt = if (respawn != null && respawn.dimension() == dimension) respawn.pos() else null
@@ -203,6 +213,12 @@ object Atlas {
                 AtlasPlace.WARDFIRE -> {
                     val flags = if (place.pos == restingAt) AtlasMark.RESTED else 0
                     AtlasMark(AtlasPlace.WARDFIRE, place.pos, "", 0, flags, "", 0, 0, listOf())
+                }
+                AtlasPlace.FIELD_BOSS -> {
+                    val site = camps?.site(place.ref) ?: return@mapNotNull null
+                    val flags = if (site.slain) AtlasMark.CLEARED else 0
+                    // Named for its troll, whose name the label carries
+                    AtlasMark(AtlasPlace.FIELD_BOSS, site.pos, "${HillTroll.NAME_KEY}.${site.name}", 0, flags, "", 0, 0, listOf())
                 }
                 else -> null
             }

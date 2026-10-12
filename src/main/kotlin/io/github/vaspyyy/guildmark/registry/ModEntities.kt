@@ -4,7 +4,9 @@ import io.github.vaspyyy.guildmark.guild.RivalAdventurer
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.death.LostMarks
 import io.github.vaspyyy.guildmark.enemy.FallenWarden
+import io.github.vaspyyy.guildmark.enemy.HillTroll
 import io.github.vaspyyy.guildmark.enemy.HollowSoldier
+import io.github.vaspyyy.guildmark.enemy.TrollBoulder
 import io.github.vaspyyy.guildmark.guild.GuildMember
 import io.github.vaspyyy.guildmark.story.HollowKing
 import io.github.vaspyyy.guildmark.story.StoryNpc
@@ -85,5 +87,24 @@ object ModEntities {
             .fireImmune()
             .clientTrackingRange(12)
             .build(ResourceKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "fallen_warden")))
+    }
+
+    /** A hill troll, a field boss asleep by the fire of its own camp in the wild. Drawn 1.6 times humanoid size. */
+    val HILL_TROLL: DeferredHolder<EntityType<*>, EntityType<HillTroll>> = ENTITIES.register("hill_troll") { ->
+        EntityType.Builder.of(::HillTroll, MobCategory.MONSTER)
+            .sized(1.8f, 3.6f)
+            .eyeHeight(3.2f)
+            .clientTrackingRange(12)
+            .build(ResourceKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "hill_troll")))
+    }
+
+    /** A boulder a hill troll tore up and threw. */
+    val TROLL_BOULDER: DeferredHolder<EntityType<*>, EntityType<TrollBoulder>> = ENTITIES.register("troll_boulder") { ->
+        EntityType.Builder.of(::TrollBoulder, MobCategory.MISC)
+            .sized(0.8f, 0.8f)
+            .noLootTable()
+            .clientTrackingRange(8)
+            .updateInterval(2)
+            .build(ResourceKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "troll_boulder")))
     }
 }

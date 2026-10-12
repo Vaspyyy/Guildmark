@@ -273,6 +273,10 @@ COMPASS_ICONS = {
     "wardfire": ["...o...", "..oRo..", ".oRGRo.", "oRGWGRo", "oRGWGRo", "ossssso", ".ooooo."],
     # a gold coin with a bright star struck in it: the Guild Marks you lost when you fell
     "lost_marks": ["..ooo..", ".oGGgo.", "oGGggdo", "oGgdgdo", "oggggdo", ".odddo.", "..ooo.."],
+    # a mossy troll's head with red eyes and tusks: a field boss's camp
+    "troll_camp": [".ooooo.", "oeeeeeo", "oereReo", "oeeoeeo", "oWeeeWo", ".oWoWo.", "..ooo.."],
+    # the same head gone grey: its troll is slain
+    "troll_camp_slain": [".ooooo.", "osssss.", "osososo", "ossoss.", "oqsssqo", ".oqoqo.", "..ooo.."],
 }
 
 # ink icons for the map, 11x11, drawn on parchment
@@ -464,6 +468,34 @@ MAP_ICONS = {
         "kgggggggk..",
         ".kgggggk...",
         "..kkkkk....",
+    ],
+    # a troll's head: ears out wide, a heavy brow over red eyes, a tusk either side of the jaw
+    "troll_camp": [
+        "...........",
+        "....kkk....",
+        "..kksssskk.",
+        ".ksssssssk.",
+        "kkskkskkskk",
+        ".k.r...r.k.",
+        ".k...k...k.",
+        ".k..kkk..k.",
+        ".kw.....wk.",
+        "..kw.k.wk..",
+        "...kkkkk...",
+    ],
+    # the head in faded ink with a stroke through it: the troll is slain
+    "troll_camp_slain": [
+        "...........",
+        "....sss...k",
+        "..sssssssk.",
+        ".sssssssk..",
+        "sssssssks.s",
+        ".s.s..k..s.",
+        ".s...k...s.",
+        ".s..k.s..s.",
+        ".s.k.....s.",
+        "..k.....s..",
+        ".k.sssss...",
     ],
     # a sword planted in a fire on its ring of stones
     "wardfire": [

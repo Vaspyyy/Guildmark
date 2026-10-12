@@ -317,18 +317,20 @@ class FallenWarden(type: EntityType<out FallenWarden>, level: Level) : CombatEne
     override fun isPushable(): Boolean = !dormant && super.isPushable()
 
     override fun die(source: DamageSource) {
-        val level = level()
-        if (level is ServerLevel) {
-            cue(level, BossCuePayload.DEATH)
-            bossEvent.removeAllPlayers()
-            level.sendParticles(ParticleTypes.SOUL, x, y + 1.5, z, 20, 0.6, 1.2, 0.6, 0.05)
-            // A lair's boss leaves its hoard on the altar; one met elsewhere carries his own
-            if (!hasData(ModAttachments.LAIR_BOSS)) {
-                spawnAtLocation(level, Relics.roll(level, 4, Rarity.RARE))
-                spawnAtLocation(level, ItemStack(ModItems.GUILD_MARK.get(), 20))
-            }
-        }
+        if (isRemoved || dead) return
         super.die(source)
+        // Something kept him from dying after all
+        if (!dead) return
+        val level = level() as? ServerLevel ?: return
+        cue(level, BossCuePayload.DEATH)
+        bossEvent.removeAllPlayers()
+        setFlag(FIGHTING, false)
+        level.sendParticles(ParticleTypes.SOUL, x, y + 1.5, z, 20, 0.6, 1.2, 0.6, 0.05)
+        // A lair's boss leaves its hoard on the altar; one met elsewhere carries his own
+        if (!hasData(ModAttachments.LAIR_BOSS)) {
+            spawnAtLocation(level, Relics.roll(level, 4, Rarity.RARE))
+            spawnAtLocation(level, ItemStack(ModItems.GUILD_MARK.get(), 20))
+        }
     }
 
     /** He sinks to one knee and lingers while he speaks his last, then goes in a gust of souls. */
@@ -345,7 +347,7 @@ class FallenWarden(type: EntityType<out FallenWarden>, level: Level) : CombatEne
 
     override fun startSeenByPlayer(player: ServerPlayer) {
         super.startSeenByPlayer(player)
-        if (fighting) bossEvent.addPlayer(player)
+        if (isAlive && fighting && player.distanceToSqr(this) < FIGHT_RANGE * FIGHT_RANGE) bossEvent.addPlayer(player)
     }
 
     override fun stopSeenByPlayer(player: ServerPlayer) {

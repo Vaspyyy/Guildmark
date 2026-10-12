@@ -29,11 +29,14 @@ import io.github.vaspyyy.guildmark.story.MainQuest
 import io.github.vaspyyy.guildmark.story.StoryCharacter
 import io.github.vaspyyy.guildmark.block.VillageBoards
 import io.github.vaspyyy.guildmark.village.Standing
+import io.github.vaspyyy.guildmark.enemy.HillTroll
+import io.github.vaspyyy.guildmark.field.FieldBosses
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.SharedSuggestionProvider
 import net.minecraft.commands.Commands
 import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
+import net.minecraft.world.level.Level
 
 /**
  * Testing commands for the nearest board's village: `/guildmark advance <points>` funds the current
@@ -42,7 +45,8 @@ import net.minecraft.network.chat.Component
  * caravan or traveller along a road 40 to 96 blocks away, `/guildmark character <id>` brings a named
  * character to the nearest village, `/guildmark story <shards>` jumps the main story to that many
  * shards found, `/guildmark story tp` teleports to where the shard compass points and
- * `/guildmark dungeon <theme>` digs a lair of that theme close by and takes you to its door.
+ * `/guildmark dungeon <theme>` digs a lair of that theme close by and takes you to its door, and
+ * `/guildmark fieldboss` builds a hill troll's camp 20 to 30 blocks away with its troll asleep by the fire.
  */
 object AdvanceCommand {
     private fun nearestAnchor(source: CommandSourceStack): BlockPos? {
@@ -169,6 +173,25 @@ object AdvanceCommand {
                                 }
                             }
                     )
+                )
+                .then(
+                    Commands.literal("fieldboss").executes { context ->
+                        val source = context.source
+                        val player = source.playerOrException
+                        val site = if (source.level.dimension() == Level.OVERWORLD) FieldBosses.get(source.level).createNear(source.level, player.blockPosition()) else null
+                        if (source.level.dimension() != Level.OVERWORLD) {
+                            source.sendFailure(Component.translatable("commands.guildmark.field_boss_overworld"))
+                            0
+                        } else if (site == null) {
+                            source.sendFailure(Component.translatable("commands.guildmark.no_field_boss"))
+                            0
+                        } else {
+                            val name = Component.translatable(HillTroll.BOSS_KEY, Component.translatable("${HillTroll.NAME_KEY}.${site.name}"))
+                            val distance = Math.sqrt(player.distanceToSqr(site.pos.x + 0.5, player.y, site.pos.z + 0.5)).toInt()
+                            source.sendSuccess({ Component.translatable("commands.guildmark.field_boss", name, distance) }, false)
+                            1
+                        }
+                    },
                 )
                 .then(
                     Commands.literal("festival").executes { context ->
