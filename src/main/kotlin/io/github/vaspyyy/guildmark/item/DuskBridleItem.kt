@@ -15,7 +15,8 @@ import java.util.function.Consumer
 /** A Dusk Rider's bridle, taken when it falls: use it to call a spectral steed and ride it (see SpectralSteed). */
 class DuskBridleItem(properties: Properties) : Item(properties) {
     override fun use(level: Level, player: Player, hand: InteractionHand): InteractionResult {
-        if (player.isPassenger) return InteractionResult.FAIL
+        // Called to the ground under you, never to catch a fall
+        if (player.isPassenger || player.isShiftKeyDown || !player.onGround()) return InteractionResult.FAIL
         if (level is ServerLevel) {
             if (SpectralSteed.summon(level, player) == null) {
                 player.sendOverlayMessage(Component.translatable("message.guildmark.bridle_no_room"))

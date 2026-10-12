@@ -95,6 +95,7 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
             event.register(CombatClient.FLASK)
         }
         NeoForge.EVENT_BUS.addListener(ClientTickEvent.Pre::class.java, CombatClient::onTick)
+        NeoForge.EVENT_BUS.addListener(ClientTickEvent.Pre::class.java) { _ -> SpectralSteedControls.onTick() }
         NeoForge.EVENT_BUS.addListener(MovementInputUpdateEvent::class.java, CombatClient::onMovementInput)
         NeoForge.EVENT_BUS.addListener(InputEvent.InteractionKeyMappingTriggered::class.java, CombatClient::onInteraction)
         NeoForge.EVENT_BUS.addListener(RenderFrameEvent.Pre::class.java, LockOn::onFrame)

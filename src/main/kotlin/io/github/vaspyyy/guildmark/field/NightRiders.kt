@@ -34,7 +34,7 @@ import kotlin.math.sqrt
  * The Dusk Riders that ride out at night. At dusk it's settled, for each player, whether a rider comes for them
  * that night and when. At that hour, if they're out under the open sky in the wild (past the land round where
  * the world began, and away from villages), a horn sounds in the dark and a rider comes for them from out of
- * sight. It goes with the night. Nothing here is saved: a restart only means a night without riders.
+ * sight. It goes with the night. Nothing here is saved: after a restart each player's night is settled afresh.
  */
 object NightRiders {
     /** A player's night: which night it is, and the time of day a rider comes for them (-1: none, or sent). */
@@ -55,6 +55,8 @@ object NightRiders {
         val time = clock % DAY
         if (time < DUSK || time > LAST_CALL) return
         val night = clock / DAY
+        // Last night's plans are done with
+        plans.values.removeIf { it.night != night }
         for (player in level.players()) {
             val plan = plans[player.uuid]?.takeIf { it.night == night } ?: Plan(night, plan(level)).also { plans[player.uuid] = it }
             if (plan.at < 0 || time < plan.at) continue
@@ -103,6 +105,8 @@ object NightRiders {
             val z = player.blockZ + (sin(angle) * distance).toInt()
             if (level.chunkSource.getChunkNow(x shr 4, z shr 4) == null) return@repeat
             val top = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, BlockPos(x, 0, z))
+            // Only where the world is running, or it would stand there frozen
+            if (!level.isPositionEntityTicking(top)) return@repeat
             if (top.y <= level.minY + 1 || !level.getFluidState(top).isEmpty || !level.getFluidState(top.below()).isEmpty) return@repeat
             if (!level.getBlockState(top.below()).isFaceSturdy(level, top.below(), Direction.UP)) return@repeat
             val rider = ModEntities.DUSK_RIDER.get().create(level, EntitySpawnReason.EVENT) ?: return null

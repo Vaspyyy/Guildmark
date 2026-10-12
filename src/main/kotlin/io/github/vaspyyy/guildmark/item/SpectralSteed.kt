@@ -11,20 +11,18 @@ import net.minecraft.world.InteractionResult
 import net.minecraft.world.damagesource.DamageSource
 import net.minecraft.world.entity.EntitySpawnReason
 import net.minecraft.world.entity.EntityType
-import net.minecraft.world.entity.EquipmentSlot
 import net.minecraft.world.entity.ai.attributes.Attributes
 import net.minecraft.world.entity.animal.Animal
 import net.minecraft.world.entity.animal.equine.SkeletonHorse
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.item.ItemStack
-import net.minecraft.world.item.Items
 import net.minecraft.world.level.Level
 import java.util.UUID
 
 /**
- * The steed a Dusk Bridle calls: the ghost of a horse, bound to whoever called it. Nothing harms it, nobody else
- * can ride it, and it can't be stripped of its saddle, led, fed or bred. A few seconds after its rider gets down
- * it fades away, and it never outlasts the land it stands in being unloaded.
+ * The steed a Dusk Bridle calls: the ghost of a horse, bound to whoever called it. It needs no saddle, nothing
+ * harms it, nobody else can ride it, and it can't be led, fed or bred. A few seconds after its rider gets down
+ * it fades away, and it never comes back from a save.
  */
 class SpectralSteed(type: EntityType<out SpectralSteed>, level: Level) : SkeletonHorse(type, level) {
     /** Who called it (only known to the server). */
@@ -46,8 +44,13 @@ class SpectralSteed(type: EntityType<out SpectralSteed>, level: Level) : Skeleto
             return
         }
         if (level !is ServerLevel) return
+        // Read back from a save: nobody called this one
+        val caller = rider ?: run {
+            discard()
+            return
+        }
         // Bound to whoever called it: gone with them, and a little after they get down
-        val owner = rider?.let { level.getPlayerByUUID(it) }
+        val owner = level.getPlayerByUUID(caller)
         if (owner == null || !owner.isAlive) {
             fade(level)
             return
@@ -65,12 +68,22 @@ class SpectralSteed(type: EntityType<out SpectralSteed>, level: Level) : Skeleto
         discard()
     }
 
-    // Only the one who called it rides it, and there's nothing else to do with it
+    // Only the one who called it rides it, and there's nothing else to do with it. They can get straight back on
+    // (riding would otherwise keep them off for as long as it waits for them)
     override fun mobInteract(player: Player, hand: InteractionHand): InteractionResult {
-        if (player.uuid != rider || isVehicle) return InteractionResult.PASS
-        doPlayerRide(player)
+        if (player.uuid != rider || isVehicle || player.isShiftKeyDown) return InteractionResult.PASS
+        if (!level().isClientSide) mount(player)
         return InteractionResult.SUCCESS
     }
+
+    private fun mount(player: Player): Boolean {
+        player.yRot = yRot
+        player.xRot = xRot
+        return player.startRiding(this, true, true)
+    }
+
+    // It needs no saddle: it was called to be ridden
+    override fun isSaddled(): Boolean = true
 
     override fun openCustomInventoryScreen(player: Player) {}
 
@@ -87,35 +100,39 @@ class SpectralSteed(type: EntityType<out SpectralSteed>, level: Level) : Skeleto
     override fun hurtServer(level: ServerLevel, source: DamageSource, amount: Float): Boolean =
         source.`is`(DamageTypeTags.BYPASSES_INVULNERABILITY) && super.hurtServer(level, source, amount)
 
-    override fun shouldBeSaved(): Boolean = false
-
     companion object {
         /** Ticks it waits for its rider after they get down. */
         private const val FADE_AFTER = 60
         private const val SPEED = 0.32
         private const val JUMP = 0.85
+        /** Headroom it needs over its back for its rider. */
+        private const val RIDER_ROOM = 1.6
         /** Whose steed is whose, so calling a second sends off the first. */
         private val called = HashMap<UUID, UUID>()
 
         fun createAttributes() = SkeletonHorse.createAttributes()
 
-        /** Calls [player]'s steed to them, sending off any they already had, and sets them on it; null if there's no room. */
+        /**
+         * Calls [player]'s steed to them, sending off any they already had, and sets them on it; null if there's
+         * no room for it with them on its back.
+         */
         fun summon(level: ServerLevel, player: Player): SpectralSteed? {
             val steed = ModEntities.SPECTRAL_STEED.get().create(level, EntitySpawnReason.MOB_SUMMONED) ?: return null
             steed.snapTo(player.x, player.y, player.z, player.yRot, 0f)
-            if (!level.noCollision(steed)) return null
+            if (!level.noCollision(steed, steed.boundingBox.expandTowards(0.0, RIDER_ROOM, 0.0))) return null
             called.remove(player.uuid)?.let { old -> (level.getEntity(old) as? SpectralSteed)?.fade(level) }
             steed.setTamed(true)
             steed.setOwner(player)
             steed.rider = player.uuid
-            steed.setItemSlot(EquipmentSlot.SADDLE, ItemStack(Items.SADDLE))
-            steed.setDropChance(EquipmentSlot.SADDLE, 0f)
             steed.getAttribute(Attributes.MOVEMENT_SPEED)?.baseValue = SPEED
             steed.getAttribute(Attributes.JUMP_STRENGTH)?.baseValue = JUMP
             steed.setPersistenceRequired()
             level.addFreshEntity(steed)
+            if (!steed.mount(player)) {
+                steed.discard()
+                return null
+            }
             called[player.uuid] = steed.uuid
-            player.startRiding(steed)
             level.sendParticles(ParticleTypes.SOUL_FIRE_FLAME, steed.x, steed.y + 0.8, steed.z, 30, 0.6, 0.6, 0.6, 0.03)
             level.playSound(null, steed.x, steed.y, steed.z, ModSounds.RIDER_NEIGH.get(), SoundSource.NEUTRAL, 0.8f, 1.25f)
             return steed

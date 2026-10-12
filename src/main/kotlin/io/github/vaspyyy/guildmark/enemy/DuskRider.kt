@@ -86,12 +86,18 @@ class DuskRider(type: EntityType<out DuskRider>, level: Level) : CombatEnemy(typ
 
     /** The player it rode out for, or null for one that rides where it likes (from an egg). */
     var quarry: UUID? = null
-    /** Came with the night (see NightRiders): it fades at dawn, rides on when nobody is near, and is never saved. */
+    /** Came with the night (see NightRiders): it fades at dawn, rides on when nobody is near, and is gone after a reload. */
     var boundToNight = false
+    /** Read back from a save (a reload, or the land it rode in loading again). */
+    private var reloaded = false
     /** Which of the riders' names it answers to. */
     var nameIndex: Int = 0
         private set
     private var lonely = 0
+    /** Seconds in a row it has had no way to get at whoever it's after. */
+    private var stranded = 0
+    /** Ticks it keeps to itself after giving up a fight it couldn't win (unless someone hurts it). */
+    private var aloof = 0
     private var aimSide = 1.0
     private val trail = ArrayDeque<Ember>()
     /** The players in this fight, each by the entity they were when they joined it (dying makes a new one). */
@@ -156,6 +162,11 @@ class DuskRider(type: EntityType<out DuskRider>, level: Level) : CombatEnemy(typ
     // ---- Every tick ----
 
     override fun tick() {
+        // The night it came with is long over
+        if (reloaded && boundToNight && !level().isClientSide) {
+            discard()
+            return
+        }
         super.tick()
         if (level().isClientSide) {
             // Its gaits play by how far it has gone, and blend by how fast it's going
@@ -213,6 +224,10 @@ class DuskRider(type: EntityType<out DuskRider>, level: Level) : CombatEnemy(typ
     /** Out of a fight: it rides for its quarry (or where it likes), and the first player it sees close by starts one. */
     private fun prowl(level: ServerLevel) {
         target = null
+        if (aloof > 0) {
+            aloof--
+            return
+        }
         if (tickCount % 5 != 0) return
         val seen = level.players()
             .filter { fair(it) && it.distanceToSqr(this) < NOTICE_RANGE * NOTICE_RANGE && hasLineOfSight(it) }
@@ -248,6 +263,20 @@ class DuskRider(type: EntityType<out DuskRider>, level: Level) : CombatEnemy(typ
         // It keeps after whoever it's after while they're in reach; otherwise it goes for the nearest
         val current = target as? Player
         if (current == null || current !in near) target = near.minBy { it.distanceToSqr(this) }
+        // Up a pillar, across a gorge or out on the water, where it can't ride: it won't wait there to be shot.
+        // One that came with the night rides off into it; any other gives up the fight and keeps to itself a while
+        if (tickCount % 20 == 0) {
+            val after = target
+            stranded = if (after == null || canGetAt(after)) 0 else stranded + 1
+            if (stranded >= STRANDED_SECONDS) {
+                if (boundToNight) depart(level, false)
+                else {
+                    calmDown(level)
+                    aloof = ALOOF_TICKS
+                }
+                return
+            }
+        }
         if (Stance.isStaggered(this)) return
 
         // Half its health gone: cold fire takes its steed
@@ -259,6 +288,14 @@ class DuskRider(type: EntityType<out DuskRider>, level: Level) : CombatEnemy(typ
 
     /** Players it would fight. */
     private fun fair(player: Player): Boolean = player.isAlive && !player.isSpectator && !player.isCreative
+
+    /** Whether it can reach [target]: close enough for the halberd, or by a way it can ride. */
+    private fun canGetAt(target: LivingEntity): Boolean {
+        val dx = target.x - x
+        val dz = target.z - z
+        if (dx * dx + dz * dz < 25.0 && target.y - y < REACH_ABOVE && target.y - y > -REACH_BELOW) return true
+        return navigation.createPath(target, 1)?.canReach() == true
+    }
 
     private fun join(player: Player) {
         if (fair(player)) foes[player.uuid] = player.id
@@ -291,6 +328,8 @@ class DuskRider(type: EntityType<out DuskRider>, level: Level) : CombatEnemy(typ
         if (fighting) return
         setFlag(FIGHTING, true)
         lonely = 0
+        stranded = 0
+        aloof = 0
         cooldown = 20
         bossEvent.name = title
         level.playSound(null, x, y, z, ModSounds.RIDER_NEIGH.get(), SoundSource.HOSTILE, 3f, 0.9f)
@@ -299,6 +338,7 @@ class DuskRider(type: EntityType<out DuskRider>, level: Level) : CombatEnemy(typ
     /** The fight is over: it rides on, whole again. */
     private fun calmDown(level: ServerLevel) {
         lonely = 0
+        stranded = 0
         if (attack != null) stopAttack(true)
         bossEvent.removeAllPlayers()
         foes.clear()
@@ -312,6 +352,8 @@ class DuskRider(type: EntityType<out DuskRider>, level: Level) : CombatEnemy(typ
 
     /** It rears once and fades away: with the [dawn], or because nobody it fought is left standing. It leaves nothing behind. */
     private fun depart(level: ServerLevel, dawn: Boolean) {
+        // Nothing holds it back once it's going, not even a broken stance
+        Stance.release(this)
         if (fighting || !dawn) {
             val message = Component.translatable(if (dawn) "message.guildmark.dusk_rider_dawn" else "message.guildmark.dusk_rider_departs", title)
             for (player in level.players()) {
@@ -359,6 +401,8 @@ class DuskRider(type: EntityType<out DuskRider>, level: Level) : CombatEnemy(typ
         if (attack === KICK) return distance < 3.5 && angle > 110f
         if (attack === REAR && angle > 50f) return false
         if ((attack === RIDE_BY || attack === CHARGE || attack === LANTERN) && !hasLineOfSight(target)) return false
+        // Someone up out of the halberd's reach gets its wisps, however near
+        if (attack === LANTERN && target.y - y >= REACH_ABOVE) return distance <= attack.maxRange
         return super.usable(attack, target, distance)
     }
 
@@ -490,8 +534,8 @@ class DuskRider(type: EntityType<out DuskRider>, level: Level) : CombatEnemy(typ
         // Untouchable while cold fire takes it, and while it fades away
         if (attack === IGNITE || attack === VANISH || fading) return false
         val player = attacker(source)
-        // Out of a fight only a player's hand can hurt it: a passing golem won't wear it down for anyone
-        if (!fighting && player == null && source.entity != null) return false
+        // Out of a fight only a player can hurt it: no golem, trap or cactus wears it down for anyone
+        if (!fighting && player == null) return false
         // Whoever it would fight back (a player in creative can still test it, but it pays them no mind)
         val by = player?.takeIf { fair(it) }
         val hurt = super.hurtServer(level, source, amount)
@@ -509,6 +553,9 @@ class DuskRider(type: EntityType<out DuskRider>, level: Level) : CombatEnemy(typ
 
     // It won't ride off a cliff after anyone
     override fun getMaxFallDistance(): Int = minOf(super.getMaxFallDistance(), 4)
+
+    // Nor out of the world it rides in
+    override fun canUsePortal(ignorePassenger: Boolean): Boolean = false
 
     override fun die(source: DamageSource) {
         if (isRemoved || dead) return
@@ -565,9 +612,6 @@ class DuskRider(type: EntityType<out DuskRider>, level: Level) : CombatEnemy(typ
 
     // ---- Saving ----
 
-    // One that came with the night goes with it, and never outlasts the land it rode in being unloaded
-    override fun shouldBeSaved(): Boolean = !boundToNight && super.shouldBeSaved()
-
     override fun checkDespawn() {
         if (level().difficulty == Difficulty.PEACEFUL) discard()
     }
@@ -575,12 +619,15 @@ class DuskRider(type: EntityType<out DuskRider>, level: Level) : CombatEnemy(typ
     override fun addAdditionalSaveData(output: ValueOutput) {
         super.addAdditionalSaveData(output)
         output.putInt("rider_name", nameIndex)
+        output.putBoolean("bound_to_night", boundToNight)
     }
 
-    /** A fight never survives a reload: it's whole again and waiting. */
+    /** A fight never survives a reload: it's whole again and waiting. One that came with the night is gone. */
     override fun readAdditionalSaveData(input: ValueInput) {
         super.readAdditionalSaveData(input)
         nameIndex = input.getIntOr("rider_name", 0).coerceIn(0, NAMES - 1)
+        boundToNight = input.getBooleanOr("bound_to_night", false)
+        reloaded = true
         bossEvent.name = title
         if (health > 0f) {
             setFlag(FIGHTING, false)
@@ -606,6 +653,13 @@ class DuskRider(type: EntityType<out DuskRider>, level: Level) : CombatEnemy(typ
         private const val CHASE_RANGE = 96.0
         /** Ticks with everyone in its fight out of reach before it gives the fight up. */
         private const val LOST_TICKS = 200
+        /** Seconds it will go with no way to get at whoever it's after before it gives the fight up. */
+        private const val STRANDED_SECONDS = 10
+        private const val ALOOF_TICKS = 300
+        /** How far above its feet its blows still land (a little short of the furthest they reach). */
+        private const val REACH_ABOVE = 3.5
+        /** And how far below them (into a pit beside it). */
+        private const val REACH_BELOW = 2.0
         /** With nobody this near, a night rider has ridden on for good. */
         private const val GONE_RANGE = 160.0
         private const val CUE_RANGE = 48.0
