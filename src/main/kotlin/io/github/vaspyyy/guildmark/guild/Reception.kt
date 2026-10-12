@@ -45,7 +45,8 @@ object Reception {
 
         val held = player.mainHandItem
         if (held.has(ModDataComponents.CONTRACT_STATE.get())) {
-            Contracts.turnIn(held, player, level, villager.blockPosition())
+            // Where a traveller is waited for and a delivery counts as arrived: the hall's village board
+            Contracts.turnIn(held, player, level, villager.blockPosition(), village = villager.getData(ModAttachments.RECEPTIONIST))
             return
         }
         val today = VillageBoards.day(level)

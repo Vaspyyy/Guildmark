@@ -72,6 +72,7 @@ object AtlasClient {
 
     /** Hamlet, town, lair, shard vault, Wardfire, troll camp and so on. */
     fun kindName(mark: AtlasMark): Component = when {
+        mark.kind == AtlasPlace.VILLAGE && mark.has(AtlasMark.CAPITAL) -> Component.translatable("village.guildmark.size.capital")
         mark.kind == AtlasPlace.VILLAGE -> VillageNames.size(mark.size)
         mark.kind == AtlasPlace.WARDFIRE -> Component.translatable("atlas.guildmark.kind.wardfire")
         mark.kind == AtlasPlace.THRONE -> Component.translatable("atlas.guildmark.kind.throne")

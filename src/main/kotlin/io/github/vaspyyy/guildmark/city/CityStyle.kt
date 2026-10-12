@@ -195,7 +195,6 @@ enum class CityStyle {
                 Blocks.DEEPSLATE_BRICKS to listOf(Blocks.CRACKED_DEEPSLATE_BRICKS to 8),
                 Blocks.COARSE_DIRT to listOf(Blocks.GRAVEL to 14),
                 Blocks.PODZOL to listOf(Blocks.COARSE_DIRT to 20),
-                Blocks.PACKED_MUD to listOf(Blocks.COARSE_DIRT to 12),
                 Blocks.SANDSTONE to listOf(Blocks.SMOOTH_SANDSTONE to 10),
             )
         }

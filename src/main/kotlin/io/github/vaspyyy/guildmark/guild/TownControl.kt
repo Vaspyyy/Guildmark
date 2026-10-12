@@ -91,6 +91,7 @@ object TownControl {
     /** Sneak-use on a board: the server sends the village's advances along with who holds it. */
     fun openAdvances(level: ServerLevel, player: ServerPlayer, anchor: BlockPos) {
         val holding = Holdings.get(level).at(anchor)
+        val board = level.getBlockEntity(anchor) as? QuestBoardBlockEntity
         PacketDistributor.sendToPlayer(player, OpenAdvancesPayload(
             anchor,
             VillageNames.of(anchor),
@@ -101,8 +102,9 @@ object TownControl {
             CLAIM_FEE,
             holdingCap(Progression.get(player).adventurerRank),
             holding != null && RivalGuild.byId(holding.guild) != null,
-            (level.getBlockEntity(anchor) as? QuestBoardBlockEntity)?.advanceIndex ?: 0,
+            board?.advanceIndex ?: 0,
             Coaches.stops(level, anchor)?.size ?: 0,
+            board?.capital == true,
         ))
     }
 

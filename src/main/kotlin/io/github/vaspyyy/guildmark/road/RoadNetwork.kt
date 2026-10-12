@@ -49,9 +49,13 @@ class RoadNetwork(val roads: MutableList<Road> = mutableListOf()) : SavedData() 
         val capitalB = Capitals.at(level, b)
         val leaving = capitalA?.let { Capitals.wayOut(it, b) } ?: listOf()
         val arriving = capitalB?.let { Capitals.wayOut(it, a).reversed() } ?: listOf()
-        val avoid = listOfNotNull(capitalA, capitalB).map(Capitals::grounds)
         val from = leaving.lastOrNull() ?: a
         val to = arriving.firstOrNull() ?: b
+        // Every capital the route could wander near, not just those at its ends, is gone round
+        val reach = RoadPlanner.CORRIDOR.toInt()
+        val avoid = Capitals.around(
+            level, minOf(from.x, to.x) - reach, minOf(from.z, to.z) - reach, maxOf(from.x, to.x) + reach, maxOf(from.z, to.z) + reach,
+        ) { x, z -> distanceToSegment(x, z, from, to) <= reach + Capitals.START_SLACK }.map(Capitals::grounds)
         CompletableFuture.supplyAsync({
             RoadPlanner.plan(level, from, to, avoid)?.let { leaving.dropLast(1) + it + arriving.drop(1) }
         }, Util.backgroundExecutor())
@@ -64,6 +68,16 @@ class RoadNetwork(val roads: MutableList<Road> = mutableListOf()) : SavedData() 
                 setDirty()
                 done(road)
             }, level.server)
+    }
+
+    private fun distanceToSegment(x: Int, z: Int, a: BlockPos, b: BlockPos): Double {
+        val dx = (b.x - a.x).toDouble()
+        val dz = (b.z - a.z).toDouble()
+        val length = dx * dx + dz * dz
+        val t = if (length == 0.0) 0.0 else (((x - a.x) * dx + (z - a.z) * dz) / length).coerceIn(0.0, 1.0)
+        val px = a.x + dx * t - x
+        val pz = a.z + dz * t - z
+        return Math.sqrt(px * px + pz * pz)
     }
 
     /**

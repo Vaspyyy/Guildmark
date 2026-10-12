@@ -93,7 +93,7 @@ object Sieges {
         if (rolledDay[player.uuid] == today) return
         val bell = level.poiManager.findClosest({ it.`is`(PoiTypes.MEETING) }, player.blockPosition(), 64, PoiManager.Occupancy.ANY).orElse(null) ?: return
         val board = findBoard(level, bell)?.let { level.getBlockEntity(it) as? QuestBoardBlockEntity } ?: return
-        if (board.advanceIndex < 1) return
+        if (board.advanceIndex < 1 || board.capital) return
         rolledDay[player.uuid] = today
         if (level.random.nextInt(100) >= GuildmarkConfig.SIEGE_CHANCE.get()) return
         start(level, player.blockPosition())
@@ -105,6 +105,8 @@ object Sieges {
     fun start(level: ServerLevel, near: BlockPos): Boolean {
         val bell = level.poiManager.findClosest({ it.`is`(PoiTypes.MEETING) }, near, 64, PoiManager.Occupancy.ANY).orElse(null) ?: return false
         val anchor = findBoard(level, bell) ?: return false
+        // A capital's walls and garrison see a village's horde off before it's a siege
+        if ((level.getBlockEntity(anchor) as? QuestBoardBlockEntity)?.capital == true) return false
         val today = VillageBoards.day(level)
         if (lastSiegeDay[anchor] == today || sieges.values.any { it.anchor == anchor }) return false
         lastSiegeDay[anchor] = today

@@ -32,6 +32,8 @@ data class OpenAdvancesPayload(
     val advanceIndex: Int,
     /** How many villages a coach from here can reach along finished roads. */
     val coachStops: Int,
+    /** The board is a capital's. */
+    val capital: Boolean,
 ) : CustomPacketPayload {
     override fun type(): CustomPacketPayload.Type<OpenAdvancesPayload> = TYPE
 
@@ -51,6 +53,7 @@ data class OpenAdvancesPayload(
             ByteBufCodecs.BOOL, OpenAdvancesPayload::rivalHeld,
             ByteBufCodecs.VAR_INT, OpenAdvancesPayload::advanceIndex,
             ByteBufCodecs.VAR_INT, OpenAdvancesPayload::coachStops,
+            ByteBufCodecs.BOOL, OpenAdvancesPayload::capital,
             ::OpenAdvancesPayload,
         )
 

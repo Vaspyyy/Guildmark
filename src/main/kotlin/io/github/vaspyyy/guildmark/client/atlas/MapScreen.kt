@@ -419,7 +419,7 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
                     mark.size > 5 -> TOWN
                     else -> VILLAGE
                 }
-                lines.add(if (mark.has(AtlasMark.CAPITAL)) Component.translatable("village.guildmark.size.capital") else VillageNames.size(mark.size))
+                lines.add(AtlasClient.kindName(mark))
                 if (mark.holder.isNotEmpty()) {
                     val holder = Component.literal(mark.holder).withColor(mark.color and 0xFFFFFF)
                     lines.add(Component.translatable(if (yours) "gui.guildmark.map.tip.yours" else "gui.guildmark.map.tip.held", holder))

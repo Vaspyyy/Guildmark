@@ -151,7 +151,7 @@ object Contracts {
      * Hand in [stack] at a board, or to the named [character] it belongs to. Pays out when done, discards
      * it when expired.
      */
-    fun turnIn(stack: ItemStack, player: Player, level: Level, pos: BlockPos, character: StoryCharacter? = null) {
+    fun turnIn(stack: ItemStack, player: Player, level: Level, pos: BlockPos, character: StoryCharacter? = null, village: BlockPos = pos) {
         val note = stack.get(ModDataComponents.QUEST_NOTE.get()) ?: return
         val state = stack.get(ModDataComponents.CONTRACT_STATE.get()) ?: return
         val chapter = StoryCharacter.parseChain(note.chain)
@@ -172,7 +172,7 @@ object Contracts {
 
         val serverLevel = level as? ServerLevel ?: return
         when (note.type) {
-            QuestType.DELIVER, QuestType.ESCORT -> if (!Expeditions.atDestination(state, pos)) {
+            QuestType.DELIVER, QuestType.ESCORT -> if (!Expeditions.atDestination(state, village)) {
                 val destination = state.destination ?: BlockPos.ZERO
                 player.sendOverlayMessage(Component.translatable("message.guildmark.wrong_village", destination.x, destination.z))
                 level.playSound(null, pos, SoundEvents.VILLAGER_NO, SoundSource.BLOCKS, 1.0f, 1.0f)
@@ -180,7 +180,7 @@ object Contracts {
             }
             else -> {}
         }
-        if (note.type == QuestType.ESCORT && !Expeditions.travellerNear(serverLevel, state.bound, pos)) {
+        if (note.type == QuestType.ESCORT && !Expeditions.travellerNear(serverLevel, state.bound, village)) {
             player.sendOverlayMessage(Component.translatable("message.guildmark.traveller_missing", state.label))
             level.playSound(null, pos, SoundEvents.VILLAGER_NO, SoundSource.BLOCKS, 1.0f, 1.0f)
             return

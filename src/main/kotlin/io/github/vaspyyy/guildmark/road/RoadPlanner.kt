@@ -22,7 +22,7 @@ object RoadPlanner {
     // Plans run in the background, so this only bounds how long a hopeless search keeps trying
     private const val MAX_EXPANSIONS = 20000
     /** How far the route may stray sideways from the straight line, in blocks. */
-    private const val CORRIDOR = 400.0
+    const val CORRIDOR = 400.0
 
     private class Cell(val x: Int, val z: Int, val height: Int, val water: Int)
 

@@ -22,7 +22,10 @@ import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
 
 /** Shows a village's advances: what's built, what contracts are funding now, and what's next. */
-class AdvanceScreen(private val info: OpenAdvancesPayload) : Screen(Component.translatable("gui.guildmark.advances.village", info.village, VillageNames.size(info.advanceIndex))) {
+class AdvanceScreen(private val info: OpenAdvancesPayload) : Screen(Component.translatable(
+    "gui.guildmark.advances.village", info.village,
+    if (info.capital) Component.translatable("village.guildmark.size.capital") else VillageNames.size(info.advanceIndex),
+)) {
     private val anchor: BlockPos = info.anchor
 
     private companion object {
