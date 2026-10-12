@@ -4,16 +4,31 @@ import java.util.Random
 import kotlin.math.abs
 import kotlin.math.max
 
-/** What a column of the city is for. Streets are paved and kept clear. */
-enum class Use(val street: Boolean = false) {
-    OUTSIDE, CLEARING, WALL, TOWER, GATE, KEEP_WALL,
+/**
+ * What a column of the city is for. Streets are paved and kept clear. [laid] columns get the city's own
+ * ground, so nothing may grow there before the city is drawn; the rest keep the land's own.
+ */
+enum class Use(val street: Boolean = false, val laid: Boolean = true) {
+    OUTSIDE(laid = false), CLEARING, WALL, TOWER, GATE, KEEP_WALL,
     POMERIUM(true), AVENUE(true), PLAZA(true), LANE(true), COURT(true),
     LOT, YARD, GARDEN, FREE,
+
+    // Outside the walls: the glacis sloping from the walls' foot to the land, and the roads out
+    GLACIS, ROAD(true),
+
+    // The harbour (see Harbour): quays and yards on land, piers and moorings over the water
+    QUAY, PIER, MOORING(laid = false),
+
+    // The farms (see Outskirts)
+    FIELD, FARMYARD, PASTURE(laid = false), ORCHARD(laid = false), HAMLET,
 }
 
 enum class Kind {
     HOUSE, WORKSHOP, GUILD_HALL, TEMPLE, TAVERN, SMITHY, LIBRARY, MARKET_HALL, COUNTING_HOUSE, BAKERY,
     KEEP, BARRACKS, STABLES,
+
+    // The great buildings of a grand capital (see Landmarks)
+    CATHEDRAL, PALACE, MANOR,
 }
 
 /** A job site a workshop is set up round, so a villager takes up that trade there. */
@@ -22,7 +37,8 @@ enum class Trade(val site: M) {
     LEATHERWORKER(M.CAULDRON), FARMER(M.COMPOSTER), FISHERMAN(M.BARREL), BUTCHER(M.SMOKER),
 }
 
-class Building(val id: Int, val kind: Kind, val lot: Rect, val front: Dir, val seed: Long) {
+/** A building on its [lot], its front toward [front], standing at height [y] (its ground floor's) in the city. */
+class Building(val id: Int, val kind: Kind, val lot: Rect, val front: Dir, val seed: Long, val y: Int = 0) {
     /** Sides, in the building's own frame (north is its front), that back onto another building. */
     val shared = BooleanArray(4)
     var trade: Trade? = null
@@ -54,8 +70,19 @@ enum class PropKind { LAMP, TREE, STALL, WELL, BENCH, PLANTER, TARGET, HAY_CART 
  * plaza in the middle with the guild hall, temple and market round it; avenues out to the gates and
  * lanes between the quarters, lined with houses and workshops, with yards and gardens behind them.
  */
-class CityPlan(val seed: Long) {
-    val grid = Grid(REACH)
+class CityPlan(val seed: Long, val layout: Layout = Layout.DEFAULT, val land: Land = Land.FLAT) {
+    val tier: Tier get() = layout.tier
+
+    /** The furthest any part of the city (its farms included) reaches from its middle. */
+    val reach: Int = layout.tier.reach
+
+    /** The outer wall's outer face, out from the middle along each axis. */
+    val outer: Int = layout.tier.outer
+
+    /** Out to the foot of the glacis: everything nearer stands on the city's own ground. */
+    val levelled: Int = layout.tier.levelled
+
+    val grid = Grid(reach)
     val buildings = ArrayList<Building>()
     val towers = ArrayList<Tower>()
     val gates = listOf(Dir.S, Dir.E, Dir.W)
@@ -63,6 +90,12 @@ class CityPlan(val seed: Long) {
     val props = ArrayList<Prop>()
     private val streets = ArrayList<Pair<Rect, Use>>()
     private val random = Random(seed)
+
+    /** The harbour on the [Layout.harbour] side, if the city has one. */
+    val harbour: Harbour? = if (layout.harbour != null) Harbour(this) else null
+
+    /** The farms and hamlets round the city. */
+    val outskirts = Outskirts(this)
 
     // The plaza's furniture: the bell, the board (its anchor and which way it faces) and the Wardfire
     val bell = Pos(11, -8)
@@ -75,6 +108,9 @@ class CityPlan(val seed: Long) {
     }
 
     data class Pos(val x: Int, val z: Int)
+
+    /** A flat stretch of the city's ground, all at standing height [y]. */
+    class Terrace(val rect: Rect, val y: Int)
 
     private fun lay() {
         // The land round about, the walls and the ring road inside them
@@ -153,7 +189,24 @@ class CityPlan(val seed: Long) {
 
         stairsUpTheWalls()
         furnish()
+
+        // Outside the walls, last: they fit round everything else
+        harbour?.lay(Random(seed * 7 + 1))
+        outskirts.lay(Random(seed * 7 + 2))
     }
+
+    /**
+     * The standing height of the city's ground at a column, over the lower town's: 0 in the lower town,
+     * higher on the old town's and the citadel's terraces, sloping to the land across the glacis, and the
+     * land's own height past it.
+     */
+    fun level(x: Int, z: Int): Int = if (max(abs(x), abs(z)) <= CLEAR) 0 else land.height(x, z)
+
+    /**
+     * The city's flat terraces, each at one height: where the land is cut down or built up to it before
+     * anything is drawn (see CapitalPiece's beard pieces). Between them, the terrace walls.
+     */
+    val terraces: List<Terrace> get() = listOf(Terrace(Rect(-CLEAR, -CLEAR, CLEAR, CLEAR), 0))
 
     private fun street(r: Rect, use: Use) {
         streets.add(Pair(r, use))
@@ -422,8 +475,8 @@ class Grid(val reach: Int) {
 object NullCanvas : Canvas {
     override val clip = Rect(0, 0, -1, -1)
     override fun set(x: Int, y: Int, z: Int, b: B) {}
-    override fun ground(x: Int, z: Int, surface: B, fill: B) {}
-    override fun clearing(x: Int, z: Int) {}
+    override fun ground(x: Int, z: Int, y: Int, surface: B, fill: B) {}
+    override fun clearing(x: Int, z: Int, y: Int) {}
     override fun chest(x: Int, y: Int, z: Int, facing: Dir, loot: Loot) {}
     override fun board(x: Int, y: Int, z: Int, facing: Dir) {}
     override fun spawn(what: Spawn, x: Int, y: Int, z: Int, facing: Dir) {}

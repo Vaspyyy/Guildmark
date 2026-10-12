@@ -5,10 +5,11 @@ import java.util.Random
 /** Draws the city's buildings, each in its own frame (facing north) and from its own seed. */
 class Buildings(private val plan: CityPlan, private val canvas: Canvas) {
     fun draw(b: Building) {
-        val f = Frame(canvas, b.lot, b.front)
+        val f = Frame(canvas, b.lot, b.front, b.y)
         val r = Random(b.seed)
         when (b.kind) {
             Kind.HOUSE, Kind.WORKSHOP -> townhouse(f, b, r)
+            Kind.CATHEDRAL, Kind.PALACE, Kind.MANOR -> Landmarks(f, b, r).draw()
             else -> GreatBuildings(f, b, r).draw()
         }
     }

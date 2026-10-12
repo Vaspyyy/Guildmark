@@ -25,7 +25,8 @@ class GreatBuildings(private val f: Frame, private val b: Building, private val 
             Kind.KEEP -> keep()
             Kind.BARRACKS -> barracks()
             Kind.STABLES -> stables()
-            Kind.HOUSE, Kind.WORKSHOP -> {}
+            // Townhouses and the landmarks are drawn elsewhere
+            else -> {}
         }
     }
 

@@ -5,7 +5,6 @@ import io.github.vaspyyy.guildmark.city.plan.CityPlan.Companion.CORNER_RADIUS
 import io.github.vaspyyy.guildmark.city.plan.CityPlan.Companion.INNER
 import io.github.vaspyyy.guildmark.city.plan.CityPlan.Companion.KEEP_WARD
 import io.github.vaspyyy.guildmark.city.plan.CityPlan.Companion.PLAZA
-import io.github.vaspyyy.guildmark.city.plan.CityPlan.Companion.REACH
 import io.github.vaspyyy.guildmark.city.plan.CityPlan.Companion.WALL_IN
 import io.github.vaspyyy.guildmark.city.plan.CityPlan.Companion.WALL_OUT
 import kotlin.math.abs
@@ -35,10 +34,10 @@ class CityBuilder(private val plan: CityPlan, private val canvas: Canvas) {
     }
 
     fun draw() {
-        val x0 = max(clip.x0, -REACH)
-        val x1 = minOf(clip.x1, REACH)
-        val z0 = max(clip.z0, -REACH)
-        val z1 = minOf(clip.z1, REACH)
+        val x0 = max(clip.x0, -plan.reach)
+        val x1 = minOf(clip.x1, plan.reach)
+        val z0 = max(clip.z0, -plan.reach)
+        val z1 = minOf(clip.z1, plan.reach)
         for (x in x0..x1) for (z in z0..z1) ground(x, z)
         for (x in x0..x1) for (z in z0..z1) fortification(x, z)
         for (s in plan.stairs) wallStair(s)
@@ -47,22 +46,25 @@ class CityBuilder(private val plan: CityPlan, private val canvas: Canvas) {
             if (canvas.touches(b.lot.grow(3))) buildings.draw(b)
         }
         Props(plan, canvas).draw()
+        plan.harbour?.draw(canvas)
+        plan.outskirts.draw(canvas)
     }
 
     // ---- The ground ----
 
     private fun ground(x: Int, z: Int) {
         when (val use = grid[x, z]) {
-            Use.OUTSIDE -> {}
-            Use.CLEARING -> canvas.clearing(x, z)
-            Use.WALL, Use.TOWER, Use.GATE, Use.KEEP_WALL, Use.LOT -> canvas.ground(x, z, FOUNDATION, FOUNDATION)
-            Use.PLAZA -> canvas.ground(x, z, plazaPaving(x, z), FILL)
-            Use.COURT -> canvas.ground(x, z, courtPaving(x, z), FILL)
-            Use.AVENUE -> canvas.ground(x, z, avenuePaving(x, z), FILL)
-            Use.LANE, Use.POMERIUM -> canvas.ground(x, z, if (grid[x, z] == Use.LANE && max(abs(x), abs(z)) > WALL_OUT) B(M.PAVE_LANE, v = 1) else LANE, FILL)
-            Use.YARD -> canvas.ground(x, z, YARD, FILL)
-            Use.GARDEN -> canvas.ground(x, z, GRASS, FILL)
-            Use.FREE -> canvas.ground(x, z, YARD, FILL)
+            Use.CLEARING -> canvas.clearing(x, z, 0)
+            Use.WALL, Use.TOWER, Use.GATE, Use.KEEP_WALL, Use.LOT -> canvas.ground(x, z, 0, FOUNDATION, FOUNDATION)
+            Use.PLAZA -> canvas.ground(x, z, 0, plazaPaving(x, z), FILL)
+            Use.COURT -> canvas.ground(x, z, 0, courtPaving(x, z), FILL)
+            Use.AVENUE -> canvas.ground(x, z, 0, avenuePaving(x, z), FILL)
+            Use.LANE, Use.POMERIUM -> canvas.ground(x, z, 0, if (grid[x, z] == Use.LANE && max(abs(x), abs(z)) > WALL_OUT) B(M.PAVE_LANE, v = 1) else LANE, FILL)
+            Use.YARD -> canvas.ground(x, z, 0, YARD, FILL)
+            Use.GARDEN -> canvas.ground(x, z, 0, GRASS, FILL)
+            Use.FREE -> canvas.ground(x, z, 0, YARD, FILL)
+            // Outside the walls, the harbour and the farms draw their own
+            else -> {}
         }
         // A sloping plinth along the foot of the walls, outside
         if (grid[x, z] == Use.CLEARING && max(abs(x), abs(z)) == WALL_OUT + 1) {
@@ -272,7 +274,7 @@ class CityBuilder(private val plan: CityPlan, private val canvas: Canvas) {
 
     /** The way through: paved, arched, lit, with the portcullis teeth showing at the top of the arch. */
     private fun gatePassage(side: Dir, x: Int, z: Int, along: Int, out: Int) {
-        canvas.ground(x, z, B(M.PAVE_STREET), FILL)
+        canvas.ground(x, z, 0, B(M.PAVE_STREET), FILL)
         for (y in 0 until ARCH) {
             val b = when {
                 y == ARCH - 1 && abs(along) == 2 -> B(M.WALL_STAIRS, plan.sideDir(side, Integer.signum(along)), top = true)
@@ -321,7 +323,7 @@ class CityBuilder(private val plan: CityPlan, private val canvas: Canvas) {
         if (abs(x) == 4 && z == KEEP_WARD.z1 + 1) canvas.set(x, WARD_TOWER - 3, z, B(M.BANNER, Dir.S, color = BANNER_COLOR))
         if (!towerCell) return
         val rim = abs(x) == 3 || abs(x) == 6 || z == KEEP_WARD.z1 - 3 || z == KEEP_WARD.z1
-        canvas.ground(x, z, FOUNDATION, FOUNDATION)
+        canvas.ground(x, z, 0, FOUNDATION, FOUNDATION)
         canvas.set(x, 0, z, B(M.WALL_DARK))
         for (y in 1 until WARD_TOWER) canvas.set(x, y, z, if (rim || y == WARD_TOWER - 1) WALL else AIR)
         if (rim && (x + z) and 1 == 0) canvas.set(x, WARD_TOWER, z, WALL)

@@ -13,8 +13,8 @@ data class Rect(val x0: Int, val z0: Int, val x1: Int, val z1: Int) {
 /** What a chest holds; the style picks the loot table. */
 enum class Loot { HOUSE, TAVERN, SMITH, TEMPLE, LIBRARY, BARRACKS, STABLES, TREASURY, MARKET }
 
-/** Who lives in the city. */
-enum class Spawn { VILLAGER, GOLEM, RECEPTIONIST, HORSE, CAT }
+/** Who lives in the city, and the beasts on its farms. */
+enum class Spawn { VILLAGER, GOLEM, RECEPTIONIST, HORSE, CAT, COW, SHEEP, PIG, CHICKEN }
 
 /** The townsfolk's trades, as far as a city's plan knows them (townsfolk/TownRole). */
 enum class Folk { CITIZEN, SMITH, BAKER, MERCHANT, GUARD, NOBLE, INNKEEPER, BARD, PRIEST, CHILD }
@@ -33,13 +33,13 @@ interface Canvas {
     fun set(x: Int, y: Int, z: Int, b: B)
 
     /**
-     * Lays the ground in a column: [surface] just under standing height (y = -1), solid [fill] under that
-     * down to the land, and nothing the land grew left standing above it.
+     * Lays the ground in a column with its standing height at [y]: [surface] just under it (at y - 1),
+     * solid [fill] under that down to the land, and nothing the land grew left standing from y up.
      */
-    fun ground(x: Int, z: Int, surface: B, fill: B)
+    fun ground(x: Int, z: Int, y: Int, surface: B, fill: B)
 
-    /** Outside the walls: the land's own ground levelled off, with nothing left standing on it. */
-    fun clearing(x: Int, z: Int)
+    /** Outside the walls: the land's own ground made to stand at [y] (cut down or built up), with nothing left standing on it. */
+    fun clearing(x: Int, z: Int, y: Int)
 
     fun chest(x: Int, y: Int, z: Int, facing: Dir, loot: Loot)
 
@@ -56,4 +56,15 @@ interface Canvas {
     fun resident(folk: Folk, at: At, work: At? = null, post: At? = null, facing: Dir? = null, home: At? = null)
 
     fun touches(r: Rect): Boolean = clip.intersects(r)
+}
+
+/** Another canvas, raised [dy] blocks: for drawing something written for standing height 0 on a terrace. */
+class Raised(private val canvas: Canvas, private val dy: Int) : Canvas {
+    override val clip: Rect get() = canvas.clip
+    override fun set(x: Int, y: Int, z: Int, b: B) = canvas.set(x, y + dy, z, b)
+    override fun ground(x: Int, z: Int, y: Int, surface: B, fill: B) = canvas.ground(x, z, y + dy, surface, fill)
+    override fun clearing(x: Int, z: Int, y: Int) = canvas.clearing(x, z, y + dy)
+    override fun chest(x: Int, y: Int, z: Int, facing: Dir, loot: Loot) = canvas.chest(x, y + dy, z, facing, loot)
+    override fun board(x: Int, y: Int, z: Int, facing: Dir) = canvas.board(x, y + dy, z, facing)
+    override fun spawn(what: Spawn, x: Int, y: Int, z: Int, facing: Dir) = canvas.spawn(what, x, y + dy, z, facing)
 }

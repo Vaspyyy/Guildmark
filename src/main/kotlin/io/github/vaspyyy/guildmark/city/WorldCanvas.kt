@@ -79,8 +79,8 @@ class WorldCanvas(
         place(pos, style.state(b, hash(pos)).rotate(piece.turn))
     }
 
-    override fun ground(x: Int, z: Int, surface: B, fill: B) {
-        val base = piece.world(x, 0, z)
+    override fun ground(x: Int, z: Int, y: Int, surface: B, fill: B) {
+        val base = piece.world(x, y, z)
         if (!writable(base)) return
         clearAbove(base)
         place(base.below(), style.state(surface, hash(base)).rotate(piece.turn))
@@ -94,8 +94,8 @@ class WorldCanvas(
         }
     }
 
-    override fun clearing(x: Int, z: Int) {
-        val base = piece.world(x, 0, z)
+    override fun clearing(x: Int, z: Int, y: Int) {
+        val base = piece.world(x, y, z)
         if (!writable(base)) return
         // The land's own top, under anything growing on it
         val cursor = BlockPos.MutableBlockPos(base.x, level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, base.x, base.z) - 1, base.z)
@@ -139,6 +139,10 @@ class WorldCanvas(
             Spawn.GOLEM -> EntityTypes.IRON_GOLEM.create(server, EntitySpawnReason.STRUCTURE)
             Spawn.HORSE -> EntityTypes.HORSE.create(server, EntitySpawnReason.STRUCTURE)
             Spawn.CAT -> EntityTypes.CAT.create(server, EntitySpawnReason.STRUCTURE)
+            Spawn.COW -> EntityTypes.COW.create(server, EntitySpawnReason.STRUCTURE)
+            Spawn.SHEEP -> EntityTypes.SHEEP.create(server, EntitySpawnReason.STRUCTURE)
+            Spawn.PIG -> EntityTypes.PIG.create(server, EntitySpawnReason.STRUCTURE)
+            Spawn.CHICKEN -> EntityTypes.CHICKEN.create(server, EntitySpawnReason.STRUCTURE)
         } ?: return
         val yaw = piece.direction(facing).toYRot()
         mob.snapTo(pos.x + 0.5, pos.y.toDouble(), pos.z + 0.5, yaw, 0.0f)

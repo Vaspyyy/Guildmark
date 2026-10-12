@@ -4,8 +4,9 @@ package io.github.vaspyyy.guildmark.city.plan
  * A building's own frame, drawn as if it faced north: u runs east across the front, v south from the
  * front wall to the back, and (0, 0) is the north-west corner. [front] is the way it really faces;
  * positions and facings are turned to match, so every building is written once, facing north.
+ * Heights count from [y0], the building's standing height in the city.
  */
-class Frame(val canvas: Canvas, val lot: Rect, val front: Dir) {
+class Frame(val canvas: Canvas, val lot: Rect, val front: Dir, val y0: Int = 0) {
     /** Across the front and from front to back. */
     val w: Int = if (front.alongX) lot.depth else lot.width
     val d: Int = if (front.alongX) lot.width else lot.depth
@@ -37,16 +38,19 @@ class Frame(val canvas: Canvas, val lot: Rect, val front: Dir) {
     fun set(u: Int, y: Int, v: Int, b: B) {
         val dir = b.dir
         val turned = if (dir == null && b.axis == Axis.Y) b else B(b.m, dir?.let { turn(it) }, b.top, turn(b.axis), b.color, b.v, b.part, b.open)
-        canvas.set(x(u, v), y, z(u, v), turned)
+        canvas.set(x(u, v), y0 + y, z(u, v), turned)
     }
 
     fun fill(u0: Int, y0: Int, v0: Int, u1: Int, y1: Int, v1: Int, b: B) {
         for (u in minOf(u0, u1)..maxOf(u0, u1)) for (v in minOf(v0, v1)..maxOf(v0, v1)) for (y in minOf(y0, y1)..maxOf(y0, y1)) set(u, y, v, b)
     }
 
-    fun chest(u: Int, y: Int, v: Int, facing: Dir, loot: Loot) = canvas.chest(x(u, v), y, z(u, v), turn(facing), loot)
+    fun chest(u: Int, y: Int, v: Int, facing: Dir, loot: Loot) = canvas.chest(x(u, v), y0 + y, z(u, v), turn(facing), loot)
 
-    fun spawn(what: Spawn, u: Int, y: Int, v: Int, facing: Dir = Dir.N) = canvas.spawn(what, x(u, v), y, z(u, v), turn(facing))
+    fun spawn(what: Spawn, u: Int, y: Int, v: Int, facing: Dir = Dir.N) = canvas.spawn(what, x(u, v), y0 + y, z(u, v), turn(facing))
+
+    /** Lays the ground at ([u], [v]) with its standing height [y] over the building's. */
+    fun ground(u: Int, v: Int, surface: B, fill: B, y: Int = 0) = canvas.ground(x(u, v), z(u, v), y0 + y, surface, fill)
 
     /** Where [u], [y], [v] in this frame is in the city's. */
     fun at(u: Int, y: Int, v: Int): At = At(x(u, v), y, z(u, v))
