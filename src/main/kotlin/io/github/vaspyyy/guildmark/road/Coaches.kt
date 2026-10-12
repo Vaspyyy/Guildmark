@@ -47,7 +47,8 @@ object Coaches {
     private const val FOLLOW_TICKS = 1200L
     private const val FOLLOW_RANGE = 24.0
 
-    class Stop(val road: Road, val from: BlockPos, val to: BlockPos, val name: Component, val fare: Int)
+    /** A road out of the village: where it ends, the village there if anyone has found it, and the fare. */
+    class Stop(val road: Road, val from: BlockPos, val to: BlockPos, val name: Component, val fare: Int, val village: BlockPos?)
 
     /** A party member's offer to ride after their mate: where the coach left from, and where it sets down. */
     private class Boarding(val origin: BlockPos, val drop: BlockPos, val name: Component, val fare: Int, val expires: Long)
@@ -65,9 +66,10 @@ object Coaches {
         return RoadNetwork.get(level).roads.filter { it.finished && it.touches(center) }.map { road ->
             // Road ends are stored at y 0, so compare on the map only
             val end = road.otherEnd(center)
-            val name: Component = known.filter { horizontal(it, end) < 64.0 }.minByOrNull { horizontal(it, end) }?.let { Component.literal(VillageNames.of(it)) }
+            val village = known.filter { horizontal(it, end) < 64.0 }.minByOrNull { horizontal(it, end) }
+            val name: Component = village?.let { Component.literal(VillageNames.of(it)) }
                 ?: Component.translatable("message.guildmark.coach.unknown", end.x, end.z)
-            Stop(road, center, end, name, (horizontal(center, end) / BLOCKS_PER_MARK).toInt().coerceAtLeast(MIN_FARE))
+            Stop(road, center, end, name, (horizontal(center, end) / BLOCKS_PER_MARK).toInt().coerceAtLeast(MIN_FARE), village)
         }
     }
 

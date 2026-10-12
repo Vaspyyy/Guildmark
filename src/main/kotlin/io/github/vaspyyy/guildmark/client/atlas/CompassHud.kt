@@ -28,8 +28,8 @@ import kotlin.math.sqrt
 
 /**
  * The compass strip across the top of the screen: the points of the compass turning as you look about,
- * the places you've found nearby, where your contracts and the main story lead, your party, and where
- * you last fell. Whatever sits under the gold notch is named below the strip, with how far it is.
+ * the places you've found nearby, where your contracts and the main story lead, your party, the pins
+ * you've put on the map, and where you last fell. Whatever sits under the gold notch is named below the strip, with how far it is.
  */
 object CompassHud : GuiLayer {
     val ID: Identifier = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "compass")
@@ -47,6 +47,7 @@ object CompassHud : GuiLayer {
     private val ICON_CONTRACT = sprite("contract")
     private val ICON_PARTY = sprite("party")
     private val ICON_DEATH = sprite("death")
+    private val ICON_PIN = sprite("pin")
 
     private const val TOP = 3
     private const val HEIGHT = 13
@@ -63,7 +64,7 @@ object CompassHud : GuiLayer {
     private val CARDINALS = arrayOf("N", "E", "S", "W")
     private val INTERCARDINALS = arrayOf("NE", "SE", "SW", "NW")
 
-    private class Marker(val at: Vec3, val icon: Identifier, val label: Component, val priority: Int, val hideWithin: Double)
+    private class Marker(val at: Vec3, val icon: Identifier, val label: Component, val priority: Int, val hideWithin: Double, val tint: Int = 0xFFFFFF)
 
     fun enabled(): Boolean = !GuildmarkClientConfig.SPEC.isLoaded || GuildmarkClientConfig.COMPASS.get()
 
@@ -148,7 +149,7 @@ object CompassHud : GuiLayer {
             if (abs(relative) > SPAN / 2 - 3) continue
             val alpha = fade(relative)
             if (alpha < 0.05f) continue
-            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, marker.icon, x(relative) - 3, TOP + 3, 7, 7, alpha)
+            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, marker.icon, x(relative) - 3, TOP + 3, 7, 7, ARGB.color(alpha, marker.tint))
             val off = abs(relative)
             val current = focus
             if (off <= FOCUS && (current == null || marker.priority > current.priority || marker.priority == current.priority && off < focusOff)) {
@@ -196,6 +197,9 @@ object CompassHud : GuiLayer {
                 else -> 12.0
             }
             out.add(Marker(at, icon, AtlasClient.name(mark), if (mark.kind == AtlasPlace.VILLAGE) 0 else 1, hide))
+        }
+        for (pin in MapData.pins) {
+            out.add(Marker(Vec3(pin.x + 0.5, here.y, pin.z + 0.5), ICON_PIN, Component.literal(pin.name), 2, 4.0, pin.color))
         }
         for (mate in AtlasClient.partyMates(player)) {
             out.add(Marker(mate.second, ICON_PARTY, Component.literal(AtlasClient.mateName(mate.first)), 3, 4.0))

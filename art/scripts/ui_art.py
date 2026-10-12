@@ -3,7 +3,7 @@
     python3 art/scripts/ui_art.py src/main/resources/assets/guildmark [preview.png]
 
 Writes sprites to textures/gui/sprites/{ui,compass,map,death}/ (with their .mcmeta scaling), the
-map's parchment to textures/gui/map/parchment.png, and an optional contact sheet of everything at 4x.
+map's parchment and guild-lands wash to textures/gui/map/, and an optional contact sheet of everything at 4x.
 Same palette as hud_art.py: iron frames with a tarnished-gold inner line, dark see-through fills.
 """
 import json
@@ -216,6 +216,7 @@ MARK_PAL = {
     "r": (170, 46, 38, 255), "R": (220, 84, 64, 255), "b": (64, 104, 178, 255), "B": (120, 160, 226, 255),
     "n": (122, 84, 52, 255), "N": (168, 120, 74, 255), "e": (82, 168, 92, 255), "E": (150, 220, 150, 255),
     "i": IRON_L, "I": (120, 118, 130, 255),
+    "P": (255, 255, 255, 255), "q": (218, 218, 218, 255), "Q": (160, 160, 160, 255),
 }
 
 COMPASS_ICONS = {
@@ -241,11 +242,14 @@ COMPASS_ICONS = {
     "coach": [".ooooo.", "onnNnno", "on.N.no", "oNNNNNo", "on.N.no", "onnNnno", ".ooooo."],
     # a pale cross: where you last fell
     "death": ["..ooo..", "..owo..", "ooowooo", "owwwwwo", "ooowooo", "..owo..", "..ooo.."],
+    # a pin standing on its point, white so the pin's own colour can be laid over it
+    "pin": [".ooooo.", "oqPPqqo", "oqPqqQo", "oqqqqQo", ".oqqQo.", "..oQo..", "...o..."],
 }
 
 # ink icons for the map, 11x11, drawn on parchment
 MAP_PAL = {".": CL, "k": INK, "s": INK_SOFT, "r": INK_RED, "R": (190, 60, 44, 255),
-           "g": (176, 136, 60, 255), "b": (52, 82, 140, 255), "e": (54, 120, 64, 255), "w": (240, 228, 196, 255)}
+           "g": (176, 136, 60, 255), "b": (52, 82, 140, 255), "e": (54, 120, 64, 255), "w": (240, 228, 196, 255),
+           "P": (255, 255, 255, 255), "q": (218, 218, 218, 255), "Q": (160, 160, 160, 255)}
 
 MAP_ICONS = {
     "village": [
@@ -391,6 +395,20 @@ MAP_ICONS = {
         "...kkkkk...",
         "...........",
     ],
+    # a pin, white so the pin's own colour can be laid over it; it stands on its point
+    "pin": [
+        "...kkkkk...",
+        "..kqPPqqk..",
+        ".kqPPqqqQk.",
+        ".kqPqqqqQk.",
+        ".kqqqqqqQk.",
+        "..kqqqqQk..",
+        "...kqqQk...",
+        "....kQk....",
+        "....kQk....",
+        ".....k.....",
+        "...........",
+    ],
     "death": [
         "...........",
         "....kkk....",
@@ -405,6 +423,75 @@ MAP_ICONS = {
         "...........",
     ],
 }
+
+
+def rose(r):
+    """a compass rose in ink: four long points and four short, each half dark and half pale, the north
+    point in red; drawn large and scaled down so its edges stay clean"""
+    from PIL import ImageDraw
+    k = 8
+    s = 2 * r + 1
+    big = Image.new("RGBA", (s * k, s * k), CL)
+    draw = ImageDraw.Draw(big)
+    c = (r + 0.5) * k
+    pale = (246, 238, 216, 255)
+    red_pale = (222, 140, 112, 255)
+
+    def at(angle, along, across):
+        th = math.radians(angle)
+        ux, uy = math.sin(th), -math.cos(th)
+        return (c + (ux * along - uy * across) * k, c + (uy * along + ux * across) * k)
+
+    ring = r * 0.46 * k
+    draw.ellipse((c - ring, c - ring, c + ring, c + ring), outline=INK_SOFT[:3] + (190,), width=k)
+    for angle, length, half in [(a, r * 0.62, 2.4) for a in (45, 135, 225, 315)] + [(a, r - 0.5, 3.4) for a in (0, 90, 180, 270)]:
+        north = angle == 0
+        tip = at(angle, length, 0)
+        hub = at(angle, 0, 0)
+        left = at(angle, half * 0.55, -half)
+        right = at(angle, half * 0.55, half)
+        draw.polygon([hub, left, tip], fill=INK_RED if north else INK)
+        draw.polygon([hub, right, tip], fill=red_pale if north else pale)
+        draw.line([hub, left, tip, right, hub], fill=INK, width=k, joint="curve")
+    hub = 1.4 * k
+    draw.ellipse((c - hub, c - hub, c + hub, c + hub), fill=INK)
+    return big.resize((s, s), Image.LANCZOS)
+
+
+def vignette(size, border):
+    """the map's inner shadow: the paper darkening toward the frame, with a fine ink rule round it"""
+    img = Image.new("RGBA", (size, size), CL)
+    for y in range(size):
+        for x in range(size):
+            d = min(x, y, size - 1 - x, size - 1 - y)
+            if d >= border:
+                continue
+            t = 1 - d / border
+            a = int(118 * t ** 2.2)
+            c = (54, 34, 16, a)
+            if d == 3:
+                c = INK[:3] + (150,)
+            img.putpixel((x, y), c)
+    return img
+
+
+def territory(size):
+    """a guild's lands: a soft wash, stronger toward its painted edge (white, to take the guild's colour)"""
+    img = Image.new("RGBA", (size, size), CL)
+    r = size / 2
+    for y in range(size):
+        for x in range(size):
+            d = math.hypot(x + 0.5 - r, y + 0.5 - r) / r
+            if d >= 1:
+                continue
+            if d < 0.78:
+                a = 0.30 + 0.12 * (d / 0.78) ** 2
+            elif d < 0.92:
+                a = 0.42 + 0.5 * (d - 0.78) / 0.14
+            else:
+                a = 0.92 * (1 - (d - 0.92) / 0.08)
+            img.putpixel((x, y), (255, 255, 255, int(255 * max(0.0, a))))
+    return img
 
 
 # ---------------------------------------------------------------- parchment
@@ -549,6 +636,8 @@ def main():
         save(from_rows(rows, MARK_PAL), "compass/" + name)
     for name, rows in MAP_ICONS.items():
         save(from_rows(rows, MAP_PAL), "map/" + name)
+    save(rose(12), "map/rose")
+    save(vignette(32, 12), "map/frame", nine(32, 32, 12))
 
     save(slip(64, 32, 11), "death/slip", nine(64, 32, 8))
     save(seal(9, 12), "death/seal")
@@ -558,6 +647,13 @@ def main():
     paper = parchment(256, 21)
     paper.save(os.path.join(tex, "parchment.png"))
     written.append(("map/parchment (texture)", paper))
+    # smoothed when it's drawn large, since it's washed over whole villages
+    lands = territory(64)
+    lands.save(os.path.join(tex, "territory.png"))
+    with open(os.path.join(tex, "territory.png.mcmeta"), "w") as f:
+        json.dump({"texture": {"blur": True, "clamp": True}}, f, indent=2)
+        f.write("\n")
+    written.append(("map/territory (texture)", lands))
 
     if preview:
         scale = 4

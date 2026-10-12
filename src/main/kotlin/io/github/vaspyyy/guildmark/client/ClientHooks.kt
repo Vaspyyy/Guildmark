@@ -1,8 +1,10 @@
 package io.github.vaspyyy.guildmark.client
 
 import io.github.vaspyyy.guildmark.client.atlas.AtlasClient
+import io.github.vaspyyy.guildmark.client.atlas.MapScreen
 import io.github.vaspyyy.guildmark.client.ui.DialogueScreen
 import io.github.vaspyyy.guildmark.network.AtlasPayload
+import io.github.vaspyyy.guildmark.network.CoachStopsPayload
 import io.github.vaspyyy.guildmark.network.PartyPositionsPayload
 import io.github.vaspyyy.guildmark.network.OpenCharacterPayload
 import io.github.vaspyyy.guildmark.network.OpenReceptionPayload
@@ -50,6 +52,11 @@ object ClientHooks {
     /** Where the player's party mates are. */
     fun partyPositions(payload: PartyPositionsPayload) {
         AtlasClient.receiveParty(payload)
+    }
+
+    /** Where the coaches from the village the player stands in go, for the map. */
+    fun coachStops(payload: CoachStopsPayload) {
+        MapScreen.receiveStops(payload)
     }
 
     /** A village's advances and who holds it, as the server sent them. */

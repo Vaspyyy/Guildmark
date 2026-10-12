@@ -7,6 +7,9 @@ import io.github.vaspyyy.guildmark.network.MovePayload
 import io.github.vaspyyy.guildmark.atlas.Atlas
 import io.github.vaspyyy.guildmark.network.AtlasPayload
 import io.github.vaspyyy.guildmark.network.PartyPositionsPayload
+import io.github.vaspyyy.guildmark.network.CoachStopsPayload
+import io.github.vaspyyy.guildmark.network.CoachStopsRequestPayload
+import io.github.vaspyyy.guildmark.network.RideCoachPayload
 import io.github.vaspyyy.guildmark.network.ReleaseChargePayload
 import io.github.vaspyyy.guildmark.network.StaggerPayload
 import io.github.vaspyyy.guildmark.network.BossCuePayload
@@ -261,5 +264,8 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
             .playToClient(BossCuePayload.TYPE, BossCuePayload.STREAM_CODEC, BossCuePayload::handle)
             .playToClient(AtlasPayload.TYPE, AtlasPayload.STREAM_CODEC, AtlasPayload::handle)
             .playToClient(PartyPositionsPayload.TYPE, PartyPositionsPayload.STREAM_CODEC, PartyPositionsPayload::handle)
+            .playToServer(CoachStopsRequestPayload.TYPE, CoachStopsRequestPayload.STREAM_CODEC, CoachStopsRequestPayload::handle)
+            .playToClient(CoachStopsPayload.TYPE, CoachStopsPayload.STREAM_CODEC, CoachStopsPayload::handle)
+            .playToServer(RideCoachPayload.TYPE, RideCoachPayload.STREAM_CODEC, RideCoachPayload::handle)
     }
 }

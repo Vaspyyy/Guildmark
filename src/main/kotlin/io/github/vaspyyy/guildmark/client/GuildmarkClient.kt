@@ -33,6 +33,8 @@ import io.github.vaspyyy.guildmark.client.combat.Cutscenes
 import io.github.vaspyyy.guildmark.client.ui.FallenScreen
 import io.github.vaspyyy.guildmark.client.atlas.AtlasClient
 import io.github.vaspyyy.guildmark.client.atlas.CompassHud
+import io.github.vaspyyy.guildmark.client.atlas.MapData
+import io.github.vaspyyy.guildmark.client.atlas.MapScreen
 import io.github.vaspyyy.guildmark.client.atlas.PlaceBanner
 import net.neoforged.bus.api.EventPriority
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent
@@ -73,6 +75,7 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
             event.registerCategory(category)
             event.register(ledgerKey)
             event.register(trackerKey)
+            event.register(MapScreen.KEY)
             event.registerCategory(CombatClient.CATEGORY)
             event.register(CombatClient.DODGE)
             event.register(CombatClient.LOCK_ON)
@@ -103,11 +106,14 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
             Cutscenes.reset()
             AtlasClient.reset()
             PlaceBanner.reset()
+            MapData.reset()
         }
         // The compass pushes vanilla's boss bars down while it's up; last in line, so the pop always follows the push
         NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, RenderGuiLayerEvent.Pre::class.java, CompassHud::onLayerPre)
         NeoForge.EVENT_BUS.addListener(RenderGuiLayerEvent.Post::class.java, CompassHud::onLayerPost)
         NeoForge.EVENT_BUS.addListener(ClientTickEvent.Post::class.java) { _ -> PlaceBanner.tick() }
+        // The map sketches the land as it loads around the player
+        NeoForge.EVENT_BUS.addListener(ClientTickEvent.Post::class.java) { _ -> MapData.tick() }
         NeoForge.EVENT_BUS.addListener(RenderLivingEvent.Post::class.java) { event: RenderLivingEvent.Post<*, *, *> -> CombatAnimator.onRenderPost(event) }
         modBus.addListener(AddClientReloadListenersEvent::class.java) { event -> event.addListener(Clips.ID, Clips) }
         modBus.addListener(RegisterRenderStateModifiersEvent::class.java) { event ->
@@ -145,6 +151,9 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
                 if (minecraft.gui.screen() == null && minecraft.player != null) minecraft.gui.setScreen(LedgerScreen())
             }
             while (trackerKey.consumeClick()) ContractTracker.shown = !ContractTracker.shown
+            while (MapScreen.KEY.consumeClick()) {
+                if (minecraft.gui.screen() == null && minecraft.player != null) minecraft.gui.setScreen(MapScreen())
+            }
             // Titles arrive as synced data: names are cached, so redo them when a title changes
             val level = minecraft.level
             if (level != null && level.gameTime % 10L == 0L) {
