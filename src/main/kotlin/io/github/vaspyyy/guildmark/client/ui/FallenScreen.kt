@@ -31,6 +31,8 @@ class FallenScreen(private val cause: Component?, private val hardcore: Boolean,
 
     private val buttons = ArrayList<Button>()
     private var ticks = 0
+    /** Respawn asked for: Rise stays off while it's on its way. */
+    private var rising = false
     private val epitaph: Component = Component.translatable(
         if (hardcore) "gui.guildmark.fallen.epitaph_hardcore" else "gui.guildmark.fallen.epitaph.${player.random.nextInt(EPITAPHS)}"
     )
@@ -41,12 +43,17 @@ class FallenScreen(private val cause: Component?, private val hardcore: Boolean,
         val top = slipTop() + SLIP_HEIGHT + 30
         buttons += addRenderableWidget(Ui.KitButton(width / 2 - 100, top, 200, 20, rise) { button ->
             player.respawn()
+            rising = true
             button.active = false
         })
         buttons += addRenderableWidget(Ui.KitButton(width / 2 - 100, top + 24, 200, 20, Component.translatable("deathScreen.titleScreen")) {
             minecraft.reportingContext.draftReportHandled(minecraft, this, Runnable { leave() }, true)
         })
-        for (button in buttons) button.active = ticks >= BUTTONS_AT
+        enableButtons()
+    }
+
+    private fun enableButtons() {
+        buttons.forEachIndexed { i, button -> button.active = ticks >= BUTTONS_AT && !(i == 0 && rising) }
     }
 
     private fun slipTop(): Int = height / 2 - 18
@@ -61,7 +68,9 @@ class FallenScreen(private val cause: Component?, private val hardcore: Boolean,
                 if (quit) toTitle()
                 else {
                     player.respawn()
-                    minecraft.gui.setScreen(null)
+                    rising = true
+                    // Back to this screen (not a fresh one, which would toll again) until the respawn lands
+                    minecraft.gui.setScreen(this)
                 }
             },
             Component.translatable("deathScreen.quit.confirm"),
@@ -84,7 +93,7 @@ class FallenScreen(private val cause: Component?, private val hardcore: Boolean,
         ticks++
         if (ticks == 1) Ui.play(ModSounds.UI_DEATH_TOLL.get(), 1f, 0.9f)
         if (ticks == SEAL_AT) Ui.play(ModSounds.UI_SEAL.get(), 0.95f, 0.8f)
-        if (ticks == BUTTONS_AT) for (button in buttons) button.active = true
+        if (ticks == BUTTONS_AT) enableButtons()
     }
 
     override fun extractBackground(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, a: Float) {

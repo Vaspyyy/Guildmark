@@ -366,7 +366,7 @@ object Cutscenes : GuiLayer {
         val speaker: Entity,
         val player: LocalPlayer,
         val level: ClientLevel,
-        val screen: Screen,
+        var screen: Screen,
         val rig: CameraRig,
         var savedType: CameraType,
     ) {
@@ -377,6 +377,8 @@ object Cutscenes : GuiLayer {
         var view: View? = null
         /** How far the field of view is the player's own (1) rather than the shot's (0). */
         var fovBlend = 1f
+        /** The field of view's blend when the camera started back, so it eases from there. */
+        var fovFrom = 0f
     }
 
     /**
@@ -388,7 +390,15 @@ object Cutscenes : GuiLayer {
         val minecraft = Minecraft.getInstance()
         val player = minecraft.player ?: return
         val level = minecraft.level ?: return
-        if (scene != null || talk != null || !talkCameraOn() || !player.isAlive || minecraft.cameraEntity !== player) return
+        val current = talk
+        if (current != null && current.speaker === speaker && current.player === player) {
+            // Another conversation with the same character: carry on with this camera
+            current.screen = screen
+            current.closingAt = -1
+            current.from = null
+            return
+        }
+        if (scene != null || current != null || !talkCameraOn() || !player.isAlive || minecraft.cameraEntity !== player) return
         face(player, speaker.eyePosition)
         val rig = CameraRig(level, player.eyeHeight)
         rig.place(View(player.eyePosition, player.yRot, player.xRot, TALK_FOV))
@@ -413,6 +423,7 @@ object Cutscenes : GuiLayer {
         if (t.closingAt < 0 && (minecraft.gui.screen() !== t.screen || gone)) {
             t.closingAt = t.time
             t.from = t.view
+            t.fovFrom = t.fovBlend
         }
         if (t.closingAt >= 0 && t.time >= t.closingAt + RETURN) releaseTalk()
     }
@@ -432,7 +443,7 @@ object Cutscenes : GuiLayer {
         val time = t.time + partial
         if (t.closingAt >= 0) {
             val k = ease(((time - t.closingAt) / RETURN).coerceIn(0f, 1f))
-            t.fovBlend = k
+            t.fovBlend = Mth.lerp(k, t.fovFrom, 1f)
             return blend(t.from ?: shoulder(t, partial), eyes, k)
         }
         val k = ease((time / TALK_IN).coerceIn(0f, 1f))

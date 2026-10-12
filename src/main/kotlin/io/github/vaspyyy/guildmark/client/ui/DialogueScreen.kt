@@ -15,6 +15,7 @@ import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.client.renderer.RenderPipelines
 import net.minecraft.client.resources.sounds.SimpleSoundInstance
 import net.minecraft.client.resources.sounds.SoundInstance
+import net.minecraft.client.sounds.SoundEngine
 import net.minecraft.locale.Language
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.Style
@@ -43,6 +44,9 @@ class DialogueScreen(private val data: OpenCharacterPayload) : Screen(Component.
     private class Choice(val label: Component, val topic: String?, val pick: () -> Unit)
 
     private val character = StoryCharacter.byId(data.character)
+
+    /** Who's talking. */
+    val entityId: Int get() = data.entityId
     private val finished get() = character == null || data.chapters >= character.steps.size
     /** Characters without jobs (Maren) play a scene instead: data.chapters is the scene number. */
     private val scene get() = character != null && !character.givesJobs
@@ -63,6 +67,11 @@ class DialogueScreen(private val data: OpenCharacterPayload) : Screen(Component.
     private var selected = 0
     /** When the answers came up, or -1 while the character is still talking. */
     private var choicesAt = -1
+    /**
+     * Answers can't be picked until the key or button used to skip to them has been let go (held keys
+     * repeat), so skipping fast through the last line can't pick one by accident.
+     */
+    private var armed = false
     private var ticks = 0
     private var voice: SoundInstance? = null
     private var ended = false
@@ -166,7 +175,7 @@ class DialogueScreen(private val data: OpenCharacterPayload) : Screen(Component.
         wait = if (index == 0) 6 else 3
         choicesAt = -1
         stopVoice()
-        speeches[index].voice?.let { voice = playVoice(it) }
+        voice = speeches[index].voice?.let(::playVoice)
     }
 
     private fun paginate(text: Component): List<List<String>> =
@@ -182,13 +191,15 @@ class DialogueScreen(private val data: OpenCharacterPayload) : Screen(Component.
         ticks++
         val player = minecraft.player
         val speaker = minecraft.level?.getEntity(data.entityId)
-        // Walked off, struck, or the character is gone: the talk is over
-        val struck = player != null && lastHurt >= 0 && player.hurtTime > lastHurt
+        // Walked off, struck, or the character is gone: the talk is over. Poison, hunger or fire don't count
+        val blow = player?.getLastDamageSource(2)
+        val struck = player != null && lastHurt >= 0 && player.hurtTime > lastHurt && blow != null && (blow.entity != null || blow.directEntity != null)
         lastHurt = player?.hurtTime ?: 0
         if (character == null || player == null || speaker == null || !speaker.isAlive || speaker.distanceToSqr(player) > 144.0 || struck) {
             onClose()
             return
         }
+        if (choicesAt >= 0 && !armed && ticks - choicesAt >= CHOICE_GUARD && !skipHeld()) armed = true
         if (wait > 0) {
             wait--
             return
@@ -221,8 +232,15 @@ class DialogueScreen(private val data: OpenCharacterPayload) : Screen(Component.
 
     private fun showChoices() {
         choicesAt = ticks
-        selected = choices.indexOfFirst { it.topic == null || it.topic !in heard }.coerceAtLeast(0)
+        armed = false
+        // Never the ritual by default: it can't be taken back
+        selected = if (ritual) choices.indexOfFirst { it.topic != null && it.topic !in heard }.takeIf { it >= 0 } ?: choices.lastIndex
+            else choices.indexOfFirst { it.topic == null || it.topic !in heard }.coerceAtLeast(0)
     }
+
+    private fun skipHeld(): Boolean =
+        InputConstants.isKeyDown(InputConstants.KEY_RETURN) || InputConstants.isKeyDown(InputConstants.KEY_SPACE) ||
+            InputConstants.isKeyDown(InputConstants.KEY_NUMPADENTER) || minecraft.mouseHandler.isLeftPressed
 
     /** Shows the rest of the page, or turns to the next. */
     private fun advance() {
@@ -266,13 +284,13 @@ class DialogueScreen(private val data: OpenCharacterPayload) : Screen(Component.
 
     private fun blip() = Ui.play(ModSounds.UI_TEXT.get(), blipPitch + (Math.random().toFloat() - 0.5f) * 0.08f, 0.2f)
 
-    private fun playVoice(id: Identifier): SoundInstance {
+    /** The line spoken aloud, or null if it can't be heard (voices muted), so the pen ticks instead. */
+    private fun playVoice(id: Identifier): SoundInstance? {
         val instance = SimpleSoundInstance(
             id, SoundSource.VOICE, 1f, 1f, SoundInstance.createUnseededRandom(),
             false, 0, SoundInstance.Attenuation.NONE, 0.0, 0.0, 0.0, true,
         )
-        minecraft.soundManager.play(instance)
-        return instance
+        return instance.takeIf { minecraft.soundManager.play(it) == SoundEngine.PlayResult.STARTED }
     }
 
     private fun stopVoice() {
@@ -293,8 +311,8 @@ class DialogueScreen(private val data: OpenCharacterPayload) : Screen(Component.
         when {
             event.isUp() || key == InputConstants.KEY_W -> move(-1)
             event.isDown() || key == InputConstants.KEY_S -> move(1)
-            event.isSelection() -> pick(selected)
-            key in InputConstants.KEY_1..InputConstants.KEY_9 -> pick(key - InputConstants.KEY_1)
+            event.isSelection() -> if (armed) pick(selected)
+            key in InputConstants.KEY_1..InputConstants.KEY_9 -> if (armed) pick(key - InputConstants.KEY_1)
             else -> return super.keyPressed(event)
         }
         return true
@@ -303,7 +321,7 @@ class DialogueScreen(private val data: OpenCharacterPayload) : Screen(Component.
     override fun mouseClicked(event: MouseButtonEvent, doubleClick: Boolean): Boolean {
         if (event.button() != InputConstants.MOUSE_BUTTON_LEFT) return super.mouseClicked(event, doubleClick)
         if (choicesAt < 0) advance()
-        else rowAt(event.x(), event.y()).takeIf { it >= 0 }?.let(::pick)
+        else if (armed) rowAt(event.x(), event.y()).takeIf { it >= 0 }?.let(::pick)
         return true
     }
 
@@ -440,5 +458,7 @@ class DialogueScreen(private val data: OpenCharacterPayload) : Screen(Component.
         const val ROW = 16
         /** Letters shown each tick. */
         const val SPEED = 2.2f
+        /** Ticks after the answers come up before one can be picked. */
+        const val CHOICE_GUARD = 6
     }
 }

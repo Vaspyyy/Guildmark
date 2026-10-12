@@ -31,7 +31,10 @@ object ClientHooks {
 
     /** A conversation with a named character. */
     fun openCharacter(payload: OpenCharacterPayload) {
-        Minecraft.getInstance().gui.setScreen(DialogueScreen(payload))
+        val minecraft = Minecraft.getInstance()
+        // A held use key can send the same click twice: keep the talk that's already going
+        if ((minecraft.gui.screen() as? DialogueScreen)?.entityId == payload.entityId) return
+        minecraft.gui.setScreen(DialogueScreen(payload))
     }
 
     /** Naming a new guild at the hall desk. */
