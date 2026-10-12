@@ -36,6 +36,7 @@ import net.minecraft.world.entity.monster.skeleton.AbstractSkeleton
 import net.minecraft.world.entity.player.Input
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.phys.BlockHitResult
+import net.minecraft.world.phys.EntityHitResult
 import net.minecraft.world.phys.HitResult
 import net.minecraft.world.phys.Vec2
 import net.minecraft.world.phys.Vec3
@@ -229,6 +230,7 @@ object CombatClient {
         val screenOpen = minecraft.gui.screen() != null
         if (Cutscenes.holdsCamera()) {
             drain()
+            buffered = null
             ownsAttack = false
             while (minecraft.options.keyAttack.consumeClick()) Unit
         } else {
@@ -279,11 +281,16 @@ object CombatClient {
     /**
      * Whether a click of the attack button is a combat move. With a weapon in hand it is, unless the
      * crosshair is on a block and no foe is near: then the sword still cuts cobwebs and breaks bamboo.
+     * Riding, gliding, or striking something that isn't a creature (a boat, an item frame) is the plain
+     * vanilla swing.
      */
     private fun ownsAttack(player: LocalPlayer): Boolean {
         if (player.isSpectator || Weapons.classOf(player.mainHandItem) == null) return action?.let { !it.done() } ?: false
-        if (action?.done() == false || LockOn.target != null) return true
+        if (action?.done() == false) return true
+        if (player.isPassenger || player.isFallFlying) return false
+        if (LockOn.target != null) return true
         val hit = Minecraft.getInstance().hitResult
+        if (hit is EntityHitResult && hit.entity !is LivingEntity) return false
         if (hit is BlockHitResult && hit.type == HitResult.Type.BLOCK) return foeNear(player, 5.0)
         return true
     }
@@ -615,8 +622,16 @@ object CombatClient {
     /** While a move plays, walking slows to the move's pace and jumping, crouching and sprinting wait. */
     fun onMovementInput(event: MovementInputUpdateEvent) {
         val local = event.entity as? LocalPlayer ?: return
-        if (local !== player || !active()) return
+        if (local !== player) return
         val input = event.input
+        // A cutscene has the camera: the keys do nothing, not even a crouch or a sprint the shots would show
+        if (Cutscenes.holdsCamera()) {
+            input.keyPresses = Input.EMPTY
+            moveVector.set(input, Vec2.ZERO)
+            local.isSprinting = false
+            return
+        }
+        if (!active()) return
         val a = action?.takeIf { !it.done() }
         if (a != null) {
             val keys = input.keyPresses
@@ -703,7 +718,7 @@ object CombatClient {
             }
             payload.flags and MovePayload.OVERRIDE != 0 -> {
                 if (current == null || current.seq != payload.seq) return
-                val target = payload.extra.toInt()
+                val target = payload.target
                 if (current.move == move) {
                     current.target = target
                     return

@@ -34,10 +34,10 @@ enum class LairTheme(
         listOf("spider", "cave_spider"), "spider", BuiltInLootTables.SIMPLE_DUNGEON),
     BANDIT_CAMP("bandit_camp", 1, { Blocks.COARSE_DIRT }, { Blocks.SPRUCE_LOG }, { Blocks.CAMPFIRE },
         listOf("pillager", "vindicator", "pillager"), "vindicator", BuiltInLootTables.PILLAGER_OUTPOST),
-    WARDENS_WATCH("wardens_watch", 2, { Blocks.CRACKED_STONE_BRICKS }, { Blocks.STONE_BRICKS }, { Blocks.SOUL_LANTERN },
-        listOf("guildmark:hollow_soldier"), "guildmark:fallen_warden", BuiltInLootTables.SIMPLE_DUNGEON, guards = 2, ownBoss = true),
     BARROW("barrow", 2, { Blocks.CRACKED_STONE_BRICKS }, { Blocks.MOSSY_STONE_BRICKS }, { Blocks.SOUL_LANTERN },
         listOf("zombie", "skeleton", "zombie"), "husk", BuiltInLootTables.BURIED_TREASURE),
+    WARDENS_WATCH("wardens_watch", 2, { Blocks.CRACKED_STONE_BRICKS }, { Blocks.STONE_BRICKS }, { Blocks.SOUL_LANTERN },
+        listOf("guildmark:hollow_soldier"), "guildmark:fallen_warden", BuiltInLootTables.SIMPLE_DUNGEON, guards = 2, ownBoss = true),
     WITCH_HOLLOW("witch_hollow", 3, { Blocks.PODZOL }, { Blocks.DARK_OAK_LOG }, { Blocks.RED_MUSHROOM_BLOCK },
         listOf("witch", "slime", "zombie_villager"), "witch", BuiltInLootTables.WOODLAND_MANSION),
     ASHEN_PIT("ashen_pit", 5, { Blocks.BLACKSTONE }, { Blocks.POLISHED_BLACKSTONE_BRICKS }, { Blocks.MAGMA_BLOCK },
@@ -59,9 +59,9 @@ enum class LairTheme(
         /** The nastiest theme open at [rank]; lair notes from before themes were picked per note use this. */
         fun forRank(rank: Int): LairTheme = entries.filter { !it.vaultOnly && it.minRank <= rank }.maxBy { it.minRank }
 
-        /** One of the two nastiest themes open at [rank], so lair hunts of the same rank vary. */
+        /** One of the three nastiest themes open at [rank], so lair hunts of the same rank vary. */
         fun pick(random: RandomSource, rank: Int): LairTheme {
-            val open = entries.filter { !it.vaultOnly && it.minRank <= rank }.sortedByDescending { it.minRank }.take(2)
+            val open = entries.filter { !it.vaultOnly && it.minRank <= rank }.sortedByDescending { it.minRank }.take(3)
             return open[random.nextInt(open.size)]
         }
 

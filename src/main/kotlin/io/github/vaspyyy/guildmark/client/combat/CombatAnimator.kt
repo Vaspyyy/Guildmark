@@ -129,8 +129,8 @@ object CombatAnimator {
      * Poses the model for its frame. Each part starts from where vanilla put it, eases into the move cut
      * short (if any), then into this one.
      */
-    fun pose(model: HumanoidModel<*>, state: HumanoidRenderState) {
-        val frame = state.getRenderData(FRAME) ?: return
+    fun pose(model: HumanoidModel<*>, state: HumanoidRenderState, frame: Frame? = state.getRenderData(FRAME)) {
+        if (frame == null) return
         val parts = arrayOf(model.body, model.rightArm, model.leftArm, model.head, model.rightLeg, model.leftLeg)
         hips.set(0f, model.rightLeg.initialPose.y, 0f)
         for (i in parts.indices) {

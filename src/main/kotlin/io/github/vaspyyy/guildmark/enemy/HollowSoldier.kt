@@ -59,6 +59,8 @@ class HollowSoldier(type: EntityType<out HollowSoldier>, level: Level) : CombatE
     private var guard = MAX_GUARD
     private var guardTicks = 0
     private var lastBlocked = 0
+    private var lord: FallenWarden? = null
+    private var lordCheckedAt = -100
 
     override fun registerGoals() {
         goalSelector.addGoal(0, FloatGoal(this))
@@ -88,6 +90,22 @@ class HollowSoldier(type: EntityType<out HollowSoldier>, level: Level) : CombatE
         setDropChance(EquipmentSlot.MAINHAND, 0.04f)
         setDropChance(EquipmentSlot.OFFHAND, 0.06f)
     }
+
+    // ---- Standing guard ----
+
+    /**
+     * The Fallen Warden this soldier stands guard for while he kneels at his post or wakes: it holds its
+     * blade until he takes up his own. Looked up twice a second.
+     */
+    private fun heldBy(): FallenWarden? {
+        if (tickCount - lordCheckedAt >= 10) {
+            lordCheckedAt = tickCount
+            lord = level().getEntitiesOfClass(FallenWarden::class.java, boundingBox.inflate(HOLD_RANGE)) { it.isAlive && !it.fighting }.firstOrNull()
+        }
+        return lord?.takeIf { it.isAlive && !it.fighting }
+    }
+
+    override fun canAttack(target: LivingEntity): Boolean = heldBy() == null && super.canAttack(target)
 
     // ---- Attacks ----
 
@@ -144,9 +162,12 @@ class HollowSoldier(type: EntityType<out HollowSoldier>, level: Level) : CombatE
     }
 
     override fun hurtServer(level: ServerLevel, source: DamageSource, amount: Float): Boolean {
+        // Strike one of his guard and the knight they keep watch for wakes
+        if (source.entity is Player) heldBy()?.let { if (it.dormant) it.awaken(level) }
         if (!guarding || !blocks(source)) return super.hurtServer(level, source, amount)
         lastBlocked = tickCount
-        guard -= 6f + amount * 3f
+        // Heavier moves wear the guard down faster: weigh the blow as it will land, not its base damage
+        guard -= 6f + amount * Combat.strikeMultiplier(this, source.entity) * 3f
         if (guard > 0f) {
             level.playSound(null, x, y, z, SoundEvents.SHIELD_BLOCK.value(), SoundSource.HOSTILE, 1f, 0.8f + random.nextFloat() * 0.4f)
             return super.hurtServer(level, source, amount * 0.15f)
@@ -181,6 +202,7 @@ class HollowSoldier(type: EntityType<out HollowSoldier>, level: Level) : CombatE
     companion object {
         private const val GUARDING = 1
         private const val MAX_GUARD = 40f
+        private const val HOLD_RANGE = 32.0
         private val GUARD_SLOW = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "guarding")
 
         // Timings match art/scripts/enemy_anims.py

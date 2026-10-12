@@ -120,9 +120,10 @@ data class VitalsPayload(
 /**
  * Server tells clients that [entityId] started [move]: for other players it's an animation to play, for the
  * mover itself a correction (a riposte instead of a slash, a stagger, a rejected move). [extra] is a roll's
- * world direction in degrees, a released charge in ticks, or the entity id a riposte or backstab is done to.
+ * world direction in degrees or a released charge in ticks; [target] is the entity a riposte or backstab is
+ * done to.
  */
-data class MovePayload(val entityId: Int, val move: Int, val seq: Int, val flags: Int, val extra: Float) : CustomPacketPayload {
+data class MovePayload(val entityId: Int, val move: Int, val seq: Int, val flags: Int, val extra: Float, val target: Int = -1) : CustomPacketPayload {
     override fun type(): CustomPacketPayload.Type<MovePayload> = TYPE
 
     companion object {
@@ -145,6 +146,7 @@ data class MovePayload(val entityId: Int, val move: Int, val seq: Int, val flags
             ByteBufCodecs.VAR_INT, MovePayload::seq,
             ByteBufCodecs.VAR_INT, MovePayload::flags,
             ByteBufCodecs.FLOAT, MovePayload::extra,
+            ByteBufCodecs.VAR_INT, MovePayload::target,
             ::MovePayload,
         )
 
@@ -183,6 +185,17 @@ data class BossCuePayload(val entityId: Int, val cue: Int) : CustomPacketPayload
         const val INTRO = 0
         const val PHASE_TWO = 1
         const val DEATH = 2
+
+        /**
+         * How long each cue's camera keeps the player out of the fight, its way back included (see Cutscenes).
+         * The change of phase ends a little early: the burst that throws everyone back lands 60 ticks in.
+         */
+        fun sceneTicks(cue: Int): Int = when (cue) {
+            INTRO -> 200
+            PHASE_TWO -> 56
+            DEATH -> 95
+            else -> 0
+        }
 
         val TYPE: CustomPacketPayload.Type<BossCuePayload> =
             CustomPacketPayload.Type(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "boss_cue"))

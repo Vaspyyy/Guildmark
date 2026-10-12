@@ -60,6 +60,15 @@ object Combat {
 
     fun state(player: Player): CombatState = player.getData(ModAttachments.COMBAT)
 
+    /** How much harder than its base damage the move landing on [target] from [attacker] hits (1 for anything else). */
+    fun strikeMultiplier(target: LivingEntity, attacker: Entity?): Float =
+        striking?.takeIf { it.target === target && it.player === attacker }?.multiplier ?: 1f
+
+    /** Keeps [player] from harm for [ticks] while a boss's cutscene has their camera. */
+    fun shieldForScene(player: ServerPlayer, ticks: Int) {
+        state(player).sceneUntil = player.level().gameTime + ticks
+    }
+
     // ---- Requests from clients ----
 
     fun onStartMove(sender: Player, payload: StartMovePayload) {
@@ -102,7 +111,7 @@ object Combat {
             else -> move
         }
         if (actual != shown || actual.isCritical) {
-            PacketDistributor.sendToPlayer(player, MovePayload(player.id, actual.ordinal, payload.seq, MovePayload.OVERRIDE, (critical?.id ?: -1).toFloat()))
+            PacketDistributor.sendToPlayer(player, MovePayload(player.id, actual.ordinal, payload.seq, MovePayload.OVERRIDE, 0f, critical?.id ?: -1))
         }
 
         // Everyone else sees the move and hears it
@@ -329,12 +338,18 @@ object Combat {
     // ---- Damage hooks ----
 
     fun onIncomingDamage(event: LivingIncomingDamageEvent) {
-        if (!enabled()) return
         val victim = event.entity
         val level = victim.level() as? ServerLevel ?: return
         val source = event.source
         val attacker = source.entity
         val now = level.gameTime
+        // Watching a boss's cutscene: nothing lands on someone who can't see it coming (until they strike first)
+        if (attacker is ServerPlayer && attacker !== victim) state(attacker).sceneUntil = 0L
+        if (victim is ServerPlayer && now < state(victim).sceneUntil && !source.`is`(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
+            event.isCanceled = true
+            return
+        }
+        if (!enabled()) return
         // A staggered or held creature can't land a blow
         if (attacker is LivingEntity && attacker !is Player && source.directEntity === attacker && Stance.isStaggered(attacker)) {
             event.isCanceled = true

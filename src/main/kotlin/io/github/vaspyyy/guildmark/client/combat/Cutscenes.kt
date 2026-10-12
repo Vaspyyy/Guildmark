@@ -18,6 +18,7 @@ import net.minecraft.client.renderer.entity.state.AvatarRenderState
 import net.minecraft.client.resources.sounds.SimpleSoundInstance
 import net.minecraft.client.resources.sounds.SoundInstance
 import net.minecraft.network.chat.Component
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket
 import net.minecraft.resources.Identifier
 import net.minecraft.sounds.Music
 import net.minecraft.sounds.SoundEvent
@@ -262,6 +263,23 @@ object Cutscenes : GuiLayer {
         minecraft.options.cameraType = CameraType.FIRST_PERSON
         LockOn.release()
         minecraft.setCameraEntity(rig)
+        // Jump skips the scene, and the game never uses up its presses: forget any left from the fight
+        while (minecraft.options.keyJump.consumeClick()) Unit
+        val player = s.player
+        player.isSprinting = false
+        player.deltaMovement = Vec3(0.0, player.deltaMovement.y, 0.0)
+        holdStill(player)
+    }
+
+    /**
+     * Keeps the player where they stand while the camera is away. The game only steers a player by their
+     * keys, and tells the server where they are, while it looks through their eyes, so both happen here.
+     */
+    private fun holdStill(player: LocalPlayer) {
+        player.xxa = 0f
+        player.zza = 0f
+        player.setJumping(false)
+        player.connection.send(ServerboundMovePlayerPacket.PosRot(player.position(), player.yRot, player.xRot, player.onGround(), player.horizontalCollision))
     }
 
     private fun releaseCamera(s: Scene) {
@@ -349,6 +367,7 @@ object Cutscenes : GuiLayer {
             while (minecraft.options.keyJump.consumeClick()) skip = true
             if (skip) skip(s)
         }
+        if (s.rig != null) holdStill(player)
         s.time++
         val t = s.time
         if (t == s.voiceAt) s.voice?.let { s.voiceSound = play(it, SoundSource.VOICE) }
@@ -371,10 +390,12 @@ object Cutscenes : GuiLayer {
         if (s.banner >= 0) s.banner -= jump
         if (s.stingerAt >= 0) s.stingerAt -= jump
         s.length -= jump
+        if (s.cue != BossCuePayload.DEATH) faceBoss(s)
     }
 
     private fun end() {
         val s = scene ?: return
+        s.voiceSound?.let { Minecraft.getInstance().soundManager.stop(it) }
         releaseCamera(s)
         scene = null
     }

@@ -28,6 +28,8 @@ class CombatState {
 
     var invulnerableFrom = 0L
     var invulnerableUntil = 0L
+    /** A boss's cutscene has this player's camera until this time: nothing harms them meanwhile. */
+    var sceneUntil = 0L
 
     /** Last time this player hit or was hit by something living. */
     var lastCombat = -1000L

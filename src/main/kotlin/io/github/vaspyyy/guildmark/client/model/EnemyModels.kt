@@ -20,6 +20,8 @@ import kotlin.math.max
 class EnemyRenderState : HumanoidRenderState() {
     var guarding = false
     var phaseTwo = false
+    /** The attack or held pose to show, if any (kept here: render data set while extracting is cleared after). */
+    var frame: CombatAnimator.Frame? = null
 }
 
 /**
@@ -32,7 +34,7 @@ class HollowSoldierModel(root: ModelPart) : HumanoidModel<EnemyRenderState>(root
 
     override fun setupAnim(state: EnemyRenderState) {
         super.setupAnim(state)
-        CombatAnimator.pose(this, state)
+        CombatAnimator.pose(this, state, state.frame)
         // The tabard hangs straight as the body bends, and kicks out with the stride
         tabard.xRot = -body.xRot * 0.8f - max(abs(rightLeg.xRot), abs(leftLeg.xRot)) * 0.5f
     }
@@ -73,9 +75,9 @@ class FallenWardenModel(root: ModelPart) : HumanoidModel<EnemyRenderState>(root)
         // A heavy, measured walk: the arms swing less than a man's, the sword arm held a little forward
         rightArm.xRot = rightArm.xRot * 0.4f - 0.25f
         leftArm.xRot *= 0.6f
-        CombatAnimator.pose(this, state)
+        CombatAnimator.pose(this, state, state.frame)
         // At rest the blade rides low before him; the clips hold it square to the fist
-        val clip = state.getRenderData(CombatAnimator.FRAME)?.weight ?: 0f
+        val clip = state.frame?.weight ?: 0f
         greatsword.xRot = Mth.lerp(clip, -0.97f, -1.571f)
         // The cloak hangs from his shoulders whichever way he bends, and trails as he walks
         cloak.xRot = max(0.105f + state.walkAnimationSpeed * 0.6f, -body.xRot + 0.06f) + Mth.sin(state.ageInTicks * 0.08) * 0.03f

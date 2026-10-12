@@ -5,6 +5,7 @@ import io.github.vaspyyy.guildmark.combat.Combat
 import io.github.vaspyyy.guildmark.combat.CombatEnemy
 import io.github.vaspyyy.guildmark.combat.EnemyAttack
 import io.github.vaspyyy.guildmark.combat.FightGoal
+import io.github.vaspyyy.guildmark.combat.Stance
 import io.github.vaspyyy.guildmark.loot.Rarity
 import io.github.vaspyyy.guildmark.loot.Relics
 import io.github.vaspyyy.guildmark.network.BossCuePayload
@@ -131,6 +132,8 @@ class FallenWarden(type: EntityType<out FallenWarden>, level: Level) : CombatEne
             return
         }
         lonely = 0
+        // Reeling, or held for a riposte: nothing new starts until he has his feet again
+        if (Stance.isStaggered(this)) return
         if (home != BlockPos.ZERO && attack == null && distanceToSqr(home.x + 0.5, home.y.toDouble(), home.z + 0.5) > LEASH * LEASH) {
             level.sendParticles(ParticleTypes.SOUL, x, y + 1.5, z, 30, 0.5, 1.0, 0.5, 0.05)
             teleportTo(home.x + 0.5, home.y.toDouble(), home.z + 0.5)
@@ -176,7 +179,10 @@ class FallenWarden(type: EntityType<out FallenWarden>, level: Level) : CombatEne
 
     private fun cue(level: ServerLevel, cue: Int) {
         for (player in level.players()) {
-            if (player is ServerPlayer && player.distanceToSqr(this) < CUE_RANGE * CUE_RANGE) PacketDistributor.sendToPlayer(player, BossCuePayload(id, cue))
+            if (player is ServerPlayer && player.distanceToSqr(this) < CUE_RANGE * CUE_RANGE) {
+                PacketDistributor.sendToPlayer(player, BossCuePayload(id, cue))
+                Combat.shieldForScene(player, BossCuePayload.sceneTicks(cue))
+            }
         }
     }
 
@@ -367,10 +373,13 @@ class FallenWarden(type: EntityType<out FallenWarden>, level: Level) : CombatEne
     override fun readAdditionalSaveData(input: ValueInput) {
         super.readAdditionalSaveData(input)
         home = input.read("home", BlockPos.CODEC).orElse(blockPosition())
-        setFlag(DORMANT, true)
-        setFlag(FIGHTING, false)
-        setFlag(PHASE_TWO, false)
-        health = maxHealth
+        // Back at his post, whole and kneeling; saved as he fell, he stays fallen
+        if (health > 0f) {
+            setFlag(DORMANT, true)
+            setFlag(FIGHTING, false)
+            setFlag(PHASE_TWO, false)
+            health = maxHealth
+        }
     }
 
     companion object {
