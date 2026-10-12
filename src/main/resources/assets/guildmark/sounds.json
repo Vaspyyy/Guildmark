@@ -278,6 +278,12 @@
       "guildmark:ui/seal1"
     ]
   },
+  "ui.discover": {
+    "sounds": [
+      "guildmark:ui/discover1"
+    ],
+    "subtitle": "subtitles.guildmark.ui.discover"
+  },
   "voice.wren.intro": {
     "sounds": [
       {

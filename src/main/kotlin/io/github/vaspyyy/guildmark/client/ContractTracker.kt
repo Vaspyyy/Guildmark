@@ -54,8 +54,15 @@ object ContractTracker : GuiLayer {
 
     private class Entry(val stack: ItemStack, val note: QuestNote, val state: ContractState)
 
-    /** One line of the tracker: a contract, or the main story's next step. */
-    private class Row(val icon: ItemStack, val title: Component, val status: Component, val color: Int, val target: BlockPos?)
+    /** One line of the tracker: a contract, a rival's challenge, or the main story's next step. */
+    private class Row(val icon: ItemStack, val title: Component, val status: Component, val color: Int, val target: BlockPos?, val kind: Int)
+
+    /** Somewhere the tracker points, for the compass and the map. */
+    class Waypoint(val pos: BlockPos, val title: Component, val kind: Int)
+
+    const val CONTRACT = 0
+    const val CHALLENGE = 1
+    const val STORY = 2
 
     private val SHARD_ICON: ItemStack by lazy { MainQuest.shard(0) }
     private val STORY_INK = 0xFF6A3A9A.toInt()
@@ -65,21 +72,7 @@ object ContractTracker : GuiLayer {
         val player = minecraft.player ?: return
         if (!shown || minecraft.gui.hud.isHidden) return
 
-        val entries = (0 until player.inventory.containerSize)
-            .map { player.inventory.getItem(it) }
-            .mapNotNull { stack ->
-                val note = stack.get(ModDataComponents.QUEST_NOTE.get()) ?: return@mapNotNull null
-                val state = stack.get(ModDataComponents.CONTRACT_STATE.get()) ?: return@mapNotNull null
-                Entry(stack, note, state)
-            }
-            .sortedBy { it.state.deadline }
-        val rows = mutableListOf<Row>()
-        challengeRows(player).forEach { rows.add(it) }
-        storyRow(player)?.let { rows.add(it) }
-        for (entry in entries) {
-            val (status, color) = status(player, entry)
-            rows.add(Row(entry.stack, entry.note.title(), status, color, target(player, entry)))
-        }
+        val rows = rows(player)
         // Below the combat bars when they're showing
         val top = 4 + CombatHud.reservedHeight()
         if (rows.isEmpty()) {
@@ -120,6 +113,29 @@ object ContractTracker : GuiLayer {
         renderParty(graphics, minecraft, player, top + height + 3)
     }
 
+    /** Rival challenges first, then the main story, then the contracts carried, soonest deadline first. */
+    private fun rows(player: Player): List<Row> {
+        val entries = (0 until player.inventory.containerSize)
+            .map { player.inventory.getItem(it) }
+            .mapNotNull { stack ->
+                val note = stack.get(ModDataComponents.QUEST_NOTE.get()) ?: return@mapNotNull null
+                val state = stack.get(ModDataComponents.CONTRACT_STATE.get()) ?: return@mapNotNull null
+                Entry(stack, note, state)
+            }
+            .sortedBy { it.state.deadline }
+        val rows = mutableListOf<Row>()
+        challengeRows(player).forEach { rows.add(it) }
+        storyRow(player)?.let { rows.add(it) }
+        for (entry in entries) {
+            val (status, color) = status(player, entry)
+            rows.add(Row(entry.stack, entry.note.title(), status, color, target(player, entry), CONTRACT))
+        }
+        return rows
+    }
+
+    /** Where the tracker's rows point, in the dimension the player is in. */
+    fun waypoints(player: Player): List<Waypoint> = rows(player).mapNotNull { row -> row.target?.let { Waypoint(it, row.title, row.kind) } }
+
     /** The party: each other member's name, health and how far away they are. */
     private fun renderParty(graphics: GuiGraphicsExtractor, minecraft: Minecraft, player: Player, top: Int) {
         val mates = player.getData(ModAttachments.PARTY)
@@ -158,7 +174,7 @@ object ContractTracker : GuiLayer {
         val status = if (challenge.daysLeft <= 0) Component.translatable("gui.guildmark.tracker.challenge.today")
             else Component.translatable("gui.guildmark.tracker.status", Component.translatable("gui.guildmark.tracker.challenge.duel"),
                 Component.translatable("gui.guildmark.tracker.days", challenge.daysLeft))
-        Row(icon, title, status, LATE_INK, if (player.level().dimension() == Level.OVERWORLD) challenge.anchor else null)
+        Row(icon, title, status, LATE_INK, if (player.level().dimension() == Level.OVERWORLD) challenge.anchor else null, CHALLENGE)
     }
 
     /** The main story's next step, while it's under way. */
@@ -172,7 +188,7 @@ object ContractTracker : GuiLayer {
             state.target.isEmpty -> Component.translatable("gui.guildmark.tracker.story.rank", AdventurerRank.of(courtier.minRank).letter)
             else -> Component.translatable("gui.guildmark.tracker.story.vault", courtier.title)
         }
-        return Row(SHARD_ICON, title, status, STORY_INK, state.target.orElse(null))
+        return Row(SHARD_ICON, title, status, STORY_INK, state.target.orElse(null), STORY)
     }
 
     /** An arrow centred on (x, y), turned [degrees] clockwise from straight ahead. */

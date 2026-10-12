@@ -192,6 +192,23 @@ def diamond(r, outer, inner, hi):
     return img
 
 
+def compass_strip(w, h):
+    """the compass band: dark and see-through, edged in gold, fading out toward both ends"""
+    img = Image.new("RGBA", (w, h), CL)
+    for x in range(w):
+        t = abs(x - (w - 1) / 2) / ((w - 1) / 2)
+        a = max(0.0, 1.0 - t ** 2.6)
+        for y in range(h):
+            if y in (0, h - 1):
+                c, alpha = GOLD, 225
+            elif y in (1, h - 2):
+                c, alpha = (0, 0, 0), 185
+            else:
+                c, alpha = (12, 11, 14), 150
+            img.putpixel((x, y), c[:3] + (int(alpha * a),))
+    return img
+
+
 # ---------------------------------------------------------------- icons
 MARK_PAL = {
     ".": CL, "o": (10, 9, 12, 255), "g": GOLD, "G": GOLD_L, "d": GOLD_D,
@@ -524,6 +541,10 @@ def main():
     save(from_rows(plate, {".": CL, "o": OUT, "G": GOLD_L, "g": GOLD, "d": GOLD_D, "#": (14, 12, 16, 236)}),
          "ui/name_plate", nine(24, 13, 4))
 
+    save(compass_strip(96, 13), "compass/strip", STRETCH)
+    # the gold notch over the compass's middle
+    save(from_rows(["ooooooo", "oGGGGGo", ".oGgGo.", "..oGo..", "...o..."],
+                   {".": CL, "o": OUT, "G": GOLD_L, "g": GOLD}), "compass/notch")
     for name, rows in COMPASS_ICONS.items():
         save(from_rows(rows, MARK_PAL), "compass/" + name)
     for name, rows in MAP_ICONS.items():

@@ -31,6 +31,9 @@ import io.github.vaspyyy.guildmark.client.combat.FirstPersonCombat
 import io.github.vaspyyy.guildmark.client.combat.CombatHud
 import io.github.vaspyyy.guildmark.client.combat.Cutscenes
 import io.github.vaspyyy.guildmark.client.ui.FallenScreen
+import io.github.vaspyyy.guildmark.client.atlas.AtlasClient
+import io.github.vaspyyy.guildmark.client.atlas.CompassHud
+import io.github.vaspyyy.guildmark.client.atlas.PlaceBanner
 import net.neoforged.bus.api.EventPriority
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent
 import net.neoforged.neoforge.client.event.ScreenEvent
@@ -96,7 +99,15 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
         NeoForge.EVENT_BUS.addListener(SelectMusicEvent::class.java, Cutscenes::onSelectMusic)
         NeoForge.EVENT_BUS.addListener(ScreenEvent.Opening::class.java, Cutscenes::onScreenOpening)
         NeoForge.EVENT_BUS.addListener(ScreenEvent.Opening::class.java) { event: ScreenEvent.Opening -> FallenScreen.onScreenOpening(event) }
-        NeoForge.EVENT_BUS.addListener(ClientPlayerNetworkEvent.LoggingOut::class.java) { _ -> Cutscenes.reset() }
+        NeoForge.EVENT_BUS.addListener(ClientPlayerNetworkEvent.LoggingOut::class.java) { _ ->
+            Cutscenes.reset()
+            AtlasClient.reset()
+            PlaceBanner.reset()
+        }
+        // The compass pushes vanilla's boss bars down while it's up; last in line, so the pop always follows the push
+        NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, RenderGuiLayerEvent.Pre::class.java, CompassHud::onLayerPre)
+        NeoForge.EVENT_BUS.addListener(RenderGuiLayerEvent.Post::class.java, CompassHud::onLayerPost)
+        NeoForge.EVENT_BUS.addListener(ClientTickEvent.Post::class.java) { _ -> PlaceBanner.tick() }
         NeoForge.EVENT_BUS.addListener(RenderLivingEvent.Post::class.java) { event: RenderLivingEvent.Post<*, *, *> -> CombatAnimator.onRenderPost(event) }
         modBus.addListener(AddClientReloadListenersEvent::class.java) { event -> event.addListener(Clips.ID, Clips) }
         modBus.addListener(RegisterRenderStateModifiersEvent::class.java) { event ->
@@ -124,6 +135,8 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
         modBus.addListener(RegisterGuiLayersEvent::class.java) { event ->
             event.registerAbove(VanillaGuiLayers.EFFECTS, ContractTracker.ID, ContractTracker)
             event.registerAbove(VanillaGuiLayers.BOSS_OVERLAY, CombatHud.ID, CombatHud)
+            event.registerBelow(VanillaGuiLayers.BOSS_OVERLAY, CompassHud.ID, CompassHud)
+            event.registerBelow(VanillaGuiLayers.TITLE, PlaceBanner.ID, PlaceBanner)
             event.registerAboveAll(Cutscenes.ID, Cutscenes)
         }
         NeoForge.EVENT_BUS.addListener(ClientTickEvent.Post::class.java) { _ ->

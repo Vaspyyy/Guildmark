@@ -903,6 +903,25 @@ def ui_seal(v, rng):
     return small_room(lp(y, 6000), 0.1)
 
 
+@recipe("ui/discover", variants=1, fade_out=0.9, max_len=3.4)
+def ui_discover(v, rng):
+    """a new place found: a soft drum, three bells climbing a fifth and an octave over a held chord"""
+    dur = 3.4
+    t = tvec(dur)
+
+    def late(x, start):
+        n = ns(start)
+        return np.concatenate([np.zeros(n), x[: len(t) - n]])
+
+    drum = thump(dur, 92, 54, rng, decay=0.2, click=0.06, noise=0.3, nlp=380)
+    first = chime(dur, 392.0, rng, t60=1.3, bright=0.4)
+    second = late(chime(dur, 587.33, rng, t60=1.7, bright=0.42), 0.17)
+    third = late(chime(dur, 783.99, rng, t60=2.1, bright=0.34), 0.34)
+    pad = spirit_pad(dur, rng, [196.0, 293.66, 392.0], vowel="o") * bell(dur, 0.42, 1.6, 2.4)
+    y = 0.5 * nrm(drum) + 0.45 * nrm(first) + 0.42 * nrm(second) + 0.36 * nrm(third) + 0.26 * nrm(pad)
+    return reverb(lp(y, 9000), wet=0.3, rt60=2.4, predelay=0.02, hf_damp=0.55, seed=45)
+
+
 # =========================================================================== main
 def main():
     ap = argparse.ArgumentParser()

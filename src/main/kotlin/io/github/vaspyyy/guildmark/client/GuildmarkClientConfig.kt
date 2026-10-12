@@ -18,6 +18,9 @@ object GuildmarkClientConfig {
     val DIALOGUE_CAMERA: ModConfigSpec.BooleanValue = BUILDER
         .comment("Move the camera over your shoulder while a story character talks.")
         .define("dialogueCamera", true)
+    val COMPASS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Show the compass strip across the top of the screen, with the places you've found and where your contracts lead.")
+        .define("compass", true)
     val DEATH_SCREEN: ModConfigSpec.BooleanValue = BUILDER
         .comment("Show Guildmark's own death screen instead of the vanilla one.")
         .define("deathScreen", true)

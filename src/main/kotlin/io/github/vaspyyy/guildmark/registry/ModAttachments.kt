@@ -3,6 +3,7 @@ package io.github.vaspyyy.guildmark.registry
 import net.minecraft.network.codec.ByteBufCodecs
 import com.mojang.serialization.Codec
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.atlas.AtlasState
 import io.github.vaspyyy.guildmark.combat.CombatState
 import io.github.vaspyyy.guildmark.combat.StanceState
 import io.github.vaspyyy.guildmark.guild.RivalChallenge
@@ -101,6 +102,14 @@ object ModAttachments {
     val STORY: DeferredHolder<AttachmentType<*>, AttachmentType<Map<String, Int>>> = ATTACHMENTS.register("story") { ->
         AttachmentType.builder { -> mapOf<String, Int>() }
             .serialize(Codec.unboundedMap(Codec.STRING, Codec.INT).fieldOf("chapters"))
+            .copyOnDeath()
+            .build()
+    }
+
+    /** The places a player has found, for the compass and the map (see Atlas). Kept through death. */
+    val ATLAS: DeferredHolder<AttachmentType<*>, AttachmentType<AtlasState>> = ATTACHMENTS.register("atlas") { ->
+        AttachmentType.builder { -> AtlasState() }
+            .serialize(AtlasState.CODEC.fieldOf("places"))
             .copyOnDeath()
             .build()
     }

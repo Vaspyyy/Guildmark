@@ -1,6 +1,9 @@
 package io.github.vaspyyy.guildmark.client
 
+import io.github.vaspyyy.guildmark.client.atlas.AtlasClient
 import io.github.vaspyyy.guildmark.client.ui.DialogueScreen
+import io.github.vaspyyy.guildmark.network.AtlasPayload
+import io.github.vaspyyy.guildmark.network.PartyPositionsPayload
 import io.github.vaspyyy.guildmark.network.OpenCharacterPayload
 import io.github.vaspyyy.guildmark.network.OpenReceptionPayload
 import io.github.vaspyyy.guildmark.quest.ContractState
@@ -34,6 +37,16 @@ object ClientHooks {
     /** Naming a new guild at the hall desk. */
     fun openFoundGuild(entityId: Int) {
         Minecraft.getInstance().gui.setScreen(FoundGuildScreen(entityId))
+    }
+
+    /** The places the player has found, for the compass and the map. */
+    fun atlas(payload: AtlasPayload) {
+        AtlasClient.receive(payload)
+    }
+
+    /** Where the player's party mates are. */
+    fun partyPositions(payload: PartyPositionsPayload) {
+        AtlasClient.receiveParty(payload)
     }
 
     /** A village's advances and who holds it, as the server sent them. */

@@ -4,6 +4,9 @@ import net.neoforged.fml.config.ModConfig
 import io.github.vaspyyy.guildmark.combat.Combat
 import io.github.vaspyyy.guildmark.combat.Stance
 import io.github.vaspyyy.guildmark.network.MovePayload
+import io.github.vaspyyy.guildmark.atlas.Atlas
+import io.github.vaspyyy.guildmark.network.AtlasPayload
+import io.github.vaspyyy.guildmark.network.PartyPositionsPayload
 import io.github.vaspyyy.guildmark.network.ReleaseChargePayload
 import io.github.vaspyyy.guildmark.network.StaggerPayload
 import io.github.vaspyyy.guildmark.network.BossCuePayload
@@ -169,7 +172,11 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
                 Parties.onLogin(player)
                 player.refreshDisplayName()
                 player.refreshTabListName()
+                Atlas.resend(player)
             }
+        }
+        NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerChangedDimensionEvent::class.java) {
+            (it.entity as? ServerPlayer)?.let { player -> Atlas.resend(player) }
         }
         NeoForge.EVENT_BUS.addListener(PlayerEvent.NameFormat::class.java) { Titles.onNameFormat(it) }
         NeoForge.EVENT_BUS.addListener(PlayerEvent.TabListNameFormat::class.java) { Titles.onTabListName(it) }
@@ -177,7 +184,10 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
             Progression.applyAttributes(it.entity)
             Combat.reset(it.entity)
             // The party list isn't copied to the new player entity
-            (it.entity as? ServerPlayer)?.let { player -> Parties.onLogin(player) }
+            (it.entity as? ServerPlayer)?.let { player ->
+                Parties.onLogin(player)
+                Atlas.resend(player)
+            }
         }
         NeoForge.EVENT_BUS.addListener(RegisterCommandsEvent::class.java) {
             AdvanceCommand.register(it.dispatcher)
@@ -223,6 +233,8 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         if (player.tickCount % 200 == 25 && player is ServerPlayer) Errands.tick(level, player)
         if (player.tickCount % 200 == 100) Characters.tick(level, player)
         if (player.tickCount % 10 == 0) Contracts.tickEscorts(level, player)
+        if (player.tickCount % 40 == 30 && player is ServerPlayer) Atlas.tick(level, player)
+        if (player.tickCount % 20 == 5 && player is ServerPlayer) Atlas.sendParty(level, player)
         Milestones.tick(player)
         Traffic.trySpawn(level, player)
         Sieges.maybeStart(level, player)
@@ -247,5 +259,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
             .playToClient(MovePayload.TYPE, MovePayload.STREAM_CODEC, MovePayload::handle)
             .playToClient(StaggerPayload.TYPE, StaggerPayload.STREAM_CODEC, StaggerPayload::handle)
             .playToClient(BossCuePayload.TYPE, BossCuePayload.STREAM_CODEC, BossCuePayload::handle)
+            .playToClient(AtlasPayload.TYPE, AtlasPayload.STREAM_CODEC, AtlasPayload::handle)
+            .playToClient(PartyPositionsPayload.TYPE, PartyPositionsPayload.STREAM_CODEC, PartyPositionsPayload::handle)
     }
 }
