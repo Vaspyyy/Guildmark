@@ -20,7 +20,9 @@ enum class Spawn { VILLAGER, GOLEM, RECEPTIONIST, HORSE, CAT, COW, SHEEP, PIG, C
 enum class Folk { CITIZEN, SMITH, BAKER, MERCHANT, GUARD, NOBLE, INNKEEPER, BARD, PRIEST, CHILD }
 
 /** A block in the city's frame. */
-data class At(val x: Int, val y: Int, val z: Int)
+data class At(val x: Int, val y: Int, val z: Int) {
+    fun up(dy: Int): At = if (dy == 0) this else At(x, y + dy, z)
+}
 
 /**
  * Where a city gets drawn. A city is drawn one piece of land at a time ([clip]), so drawing has to
@@ -67,4 +69,6 @@ class Raised(private val canvas: Canvas, private val dy: Int) : Canvas {
     override fun chest(x: Int, y: Int, z: Int, facing: Dir, loot: Loot) = canvas.chest(x, y + dy, z, facing, loot)
     override fun board(x: Int, y: Int, z: Int, facing: Dir) = canvas.board(x, y + dy, z, facing)
     override fun spawn(what: Spawn, x: Int, y: Int, z: Int, facing: Dir) = canvas.spawn(what, x, y + dy, z, facing)
+    override fun resident(folk: Folk, at: At, work: At?, post: At?, facing: Dir?, home: At?) =
+        canvas.resident(folk, at.up(dy), work?.up(dy), post?.up(dy), facing, home?.up(dy))
 }

@@ -134,7 +134,7 @@ class Buildings(private val plan: CityPlan, private val canvas: Canvas) {
             }
         }
         f.set(w / 2, STORY - 2, d / 2 - 1, B(M.LANTERN, top = true))
-        if (bed) f.spawn(Spawn.VILLAGER, w / 2, 0, 1)
+        if (bed && b.tenant) f.spawn(Spawn.VILLAGER, w / 2, 0, 1)
         if (floors > 1) {
             val y = STORY
             f.chest(w - 2, y, 1, Dir.S, Loot.HOUSE)
@@ -142,10 +142,10 @@ class Buildings(private val plan: CityPlan, private val canvas: Canvas) {
             f.set(w / 2, y + STORY - 2, d / 2 - 1, B(M.LANTERN, top = true))
         }
         // Every other workshop has someone working in it; the rest wait for a villager to take them on
-        if (trade != null && b.id % 2 == 0) f.spawn(Spawn.VILLAGER, w / 2, 0, d / 2)
+        if (trade != null && b.id % 2 == 0 && b.tenant) f.spawn(Spawn.VILLAGER, w / 2, 0, d / 2)
         // Townsfolk in some of the houses no villager has: someone working at the bench (now and then a
         // noble instead), and maybe a child
-        if (b.kind == Kind.HOUSE && !bed && r.nextInt(3) == 0) {
+        if (b.kind == Kind.HOUSE && !(bed && b.tenant) && r.nextDouble() < plan.households) {
             if (r.nextInt(5) == 0) f.resident(Folk.NOBLE, w / 2, 0, 1)
             else f.resident(Folk.CITIZEN, w / 2, 0, 1, work = f.at(1, 0, 1))
             if (r.nextBoolean()) f.resident(Folk.CHILD, w / 2, 0, 2)

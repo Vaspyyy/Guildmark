@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.city.plan
 
-import io.github.vaspyyy.guildmark.city.plan.CityPlan.Companion.WALL_IN
+import io.github.vaspyyy.guildmark.city.plan.CityPlan.Companion.INNER_GATES
+import io.github.vaspyyy.guildmark.city.plan.CityPlan.Companion.WALL_THICK
 import java.util.Random
 import kotlin.math.abs
 import kotlin.math.sqrt
@@ -10,10 +11,14 @@ import kotlin.math.sqrt
  * the fountain in the plaza, the bell villagers gather at, the quest board, the Wardfire, and the
  * golems keeping the gates.
  */
-class Props(private val plan: CityPlan, private val canvas: Canvas) {
+class Props(private val plan: CityPlan, private val world: Canvas) {
+    /** The canvas raised to the ground the prop being drawn stands on. */
+    private var canvas: Canvas = world
+
     fun draw() {
         for (p in plan.props) {
-            if (!canvas.touches(Rect(p.x - 4, p.z - 4, p.x + 4, p.z + 4))) continue
+            if (!world.touches(Rect(p.x - 4, p.z - 4, p.x + 4, p.z + 4))) continue
+            canvas = Raised(world, plan.level(p.x, p.z))
             when (p.kind) {
                 PropKind.LAMP -> lamp(p.x, p.z)
                 PropKind.TREE -> tree(p.x, 0, p.z, 4, Random(plan.seed * 31 + p.x * 7919L + p.z * 104729L))
@@ -23,16 +28,22 @@ class Props(private val plan: CityPlan, private val canvas: Canvas) {
                 PropKind.PLANTER -> planter(p.x, p.z)
                 PropKind.TARGET -> target(p.x, p.z)
                 PropKind.HAY_CART -> hayCart(p)
+                PropKind.RING -> ring(p)
             }
         }
+        canvas = Raised(world, plan.upper)
         fountain()
+        canvas = Raised(world, plan.level(plan.bell.x, plan.bell.z))
         bell(plan.bell.x, plan.bell.z)
-        canvas.board(plan.board.x, 0, plan.board.z, plan.boardFacing)
+        world.board(plan.board.x, plan.level(plan.board.x, plan.board.z), plan.board.z, plan.boardFacing)
+        canvas = Raised(world, plan.level(plan.wardfire.x, plan.wardfire.z))
         wardfire(plan.wardfire.x, plan.wardfire.z)
+        canvas = world
         guards()
         watch()
-        // The city's bard plays in the plaza by day and lodges at the tavern
-        canvas.resident(Folk.BARD, BARD, post = BARD, facing = Dir.N, home = plan.inside(Kind.TAVERN, 2, Buildings.STORY, 13))
+        // The city's bard plays in the plaza by day, south of the fountain, and lodges at the tavern
+        val bard = At(plan.fountain.x, plan.upper, plan.fountain.z + plan.fountainRadius + 3)
+        world.resident(Folk.BARD, bard, post = bard, facing = Dir.N, home = plan.inside(Kind.TAVERN, 2, Buildings.STORY, 13))
     }
 
     private fun lamp(x: Int, z: Int) {
@@ -146,22 +157,26 @@ class Props(private val plan: CityPlan, private val canvas: Canvas) {
      * top, and water spilling over the bowl's lip into the basin. Lanterns stand on the rim.
      */
     private fun fountain() {
-        if (!canvas.touches(Rect(-FOUNTAIN - 1, -FOUNTAIN - 1, FOUNTAIN + 1, FOUNTAIN + 1))) return
-        for (x in -FOUNTAIN..FOUNTAIN) for (z in -FOUNTAIN..FOUNTAIN) {
-            val dist = sqrt((x * x + z * z).toDouble())
+        val f = plan.fountain
+        val radius = plan.fountainRadius
+        if (!canvas.touches(Rect(f.x - radius - 1, f.z - radius - 1, f.x + radius + 1, f.z + radius + 1))) return
+        for (dx in -radius..radius) for (dz in -radius..radius) {
+            val dist = sqrt((dx * dx + dz * dz).toDouble())
+            val x = f.x + dx
+            val z = f.z + dz
             when {
-                dist > FOUNTAIN + 0.5 -> {}
-                dist > FOUNTAIN - 0.5 -> canvas.set(x, 0, z, B(M.FINE))
+                dist > radius + 0.5 -> {}
+                dist > radius - 0.5 -> canvas.set(x, 0, z, B(M.FINE))
                 else -> {
                     canvas.set(x, 0, z, B(M.WATER))
                     canvas.set(x, -1, z, B(M.FINE))
                 }
             }
         }
-        for (y in 0..3) canvas.set(0, y, 0, B(M.FINE_PILLAR))
-        for (dx in -1..1) for (dz in -1..1) if (dx != 0 || dz != 0) canvas.set(dx, 3, dz, B(M.FINE_SLAB))
-        canvas.set(0, 4, 0, B(M.WATER))
-        for (dir in Dir.entries) canvas.set(dir.dx * FOUNTAIN, 1, dir.dz * FOUNTAIN, B(M.LANTERN))
+        for (y in 0..3) canvas.set(f.x, y, f.z, B(M.FINE_PILLAR))
+        for (dx in -1..1) for (dz in -1..1) if (dx != 0 || dz != 0) canvas.set(f.x + dx, 3, f.z + dz, B(M.FINE_SLAB))
+        canvas.set(f.x, 4, f.z, B(M.WATER))
+        for (dir in Dir.entries) canvas.set(f.x + dir.dx * radius, 1, f.z + dir.dz * radius, B(M.LANTERN))
     }
 
     /** The city's bell in a little timber frame: the meeting place villagers gather at. */
@@ -183,37 +198,57 @@ class Props(private val plan: CityPlan, private val canvas: Canvas) {
         }
     }
 
-    /** Iron golems keeping each gate, and two more in the plaza. */
-    private fun guards() {
-        for (side in plan.gates) {
-            val p = plan.sidePos(side, 4, WALL_IN - 3)
-            canvas.spawn(Spawn.GOLEM, p.x, 0, p.z, side)
+    /**
+     * A sparring ring: a square of fence posts with a gap to step in by, toward [Prop.facing], and straw
+     * dummies at two of its corners.
+     */
+    private fun ring(p: Prop) {
+        for (dx in -3..3) for (dz in -3..3) {
+            if (maxOf(abs(dx), abs(dz)) != 3) continue
+            val gap = p.facing.dx * dx + p.facing.dz * dz == 3 && abs(dx * p.facing.dz + dz * p.facing.dx) <= 1
+            if (!gap) canvas.set(p.x + dx, 0, p.z + dz, B(M.FENCE))
         }
-        canvas.spawn(Spawn.GOLEM, -8, 0, -6, Dir.S)
-        canvas.spawn(Spawn.GOLEM, 8, 0, 6, Dir.N)
+        for ((dx, dz) in listOf(-2 to -2, 2 to 2)) {
+            canvas.set(p.x + dx, 0, p.z + dz, B(M.HAY))
+            canvas.set(p.x + dx, 1, p.z + dz, B(M.FENCE))
+        }
+    }
+
+    /** Iron golems keeping every gate, two in the plaza and two at the citadel's gate. */
+    private fun guards() {
+        for (side in plan.outerGates) {
+            val p = plan.sidePos(side, 4, plan.outer - WALL_THICK - 2)
+            world.spawn(Spawn.GOLEM, p.x, 0, p.z, side)
+        }
+        for (side in INNER_GATES) {
+            val p = plan.sidePos(side, 5, plan.inner + 3)
+            world.spawn(Spawn.GOLEM, p.x, 0, p.z, side)
+        }
+        val f = plan.fountain
+        world.spawn(Spawn.GOLEM, f.x - plan.fountainRadius - 2, plan.upper, f.z - 2, Dir.S)
+        world.spawn(Spawn.GOLEM, f.x + plan.fountainRadius + 2, plan.upper, f.z + 2, Dir.N)
+        for (sx in intArrayOf(-1, 1)) world.spawn(Spawn.GOLEM, sx * 2, plan.high, plan.citadel.z1 + 2, Dir.S)
     }
 
     /**
-     * The city watch, townsfolk guards at their posts: a pair just inside each gate looking out down the road,
-     * two before the keep's ward, and one up on the walls to the east and west. A third or so keep the night
-     * watch; the others stand down at their posts after the evening.
+     * The city watch, townsfolk guards at their posts: a pair just inside each outer gate looking out down the
+     * road, a pair before each of the old town's gates, two on the landing before the citadel's gate, and one up
+     * on each side of the outer walls beside its gatehouse. A third or so keep the night watch; the others stand
+     * down at their posts after the evening.
      */
     private fun watch() {
-        for (side in plan.gates) for (along in intArrayOf(-2, 2)) post(plan.sidePos(side, along, WALL_IN - 1), 0, side)
-        for (x in intArrayOf(-4, 4)) post(CityPlan.Pos(x, CityPlan.KEEP_WARD.z1 + 1), 0, Dir.S)
-        for (side in listOf(Dir.E, Dir.W)) post(plan.sidePos(side, -20, WALL_IN + 1), CityBuilder.WALK, side)
+        for (side in plan.outerGates) for (along in intArrayOf(-3, 3)) post(plan.sidePos(side, along, plan.outer - WALL_THICK - 1), 0, side)
+        for (side in INNER_GATES) for (along in intArrayOf(-4, 4)) post(plan.sidePos(side, along, plan.inner + 2), 0, side)
+        for (x in intArrayOf(-2, 2)) post(CityPlan.Pos(x, plan.citadel.z1 + 2), plan.high, Dir.S)
+        for (side in Dir.entries) post(plan.sidePos(side, CityPlan.GATE_HALF + 3, plan.outer - WALL_THICK + 2), plan.walk, side)
     }
 
     private fun post(p: CityPlan.Pos, y: Int, facing: Dir) {
         val at = At(p.x, y, p.z)
-        canvas.resident(Folk.GUARD, at, post = at, facing = facing)
+        world.resident(Folk.GUARD, at, post = at, facing = facing)
     }
 
     companion object {
-        /** The fountain's rim, out from the middle of the plaza. */
-        const val FOUNTAIN = 5
-        /** Where the bard plays, between the fountain and the south avenue, facing the fountain. */
-        val BARD = At(0, 0, 9)
         /** What each kind of stall sells: its trade's tools stand in the middle of the counter. */
         val STALL_TRADES = listOf(M.COMPOSTER, M.BARREL, M.SMOKER, M.LOOM, M.FLETCHING_TABLE, M.CAULDRON)
         val STALL_COLORS = listOf(Dye.GREEN, Dye.LIGHT_BLUE, Dye.RED, Dye.PURPLE, Dye.YELLOW, Dye.BROWN)

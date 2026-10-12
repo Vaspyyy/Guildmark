@@ -53,7 +53,7 @@ class Frame(val canvas: Canvas, val lot: Rect, val front: Dir, val y0: Int = 0) 
     fun ground(u: Int, v: Int, surface: B, fill: B, y: Int = 0) = canvas.ground(x(u, v), z(u, v), y0 + y, surface, fill)
 
     /** Where [u], [y], [v] in this frame is in the city's. */
-    fun at(u: Int, y: Int, v: Int): At = At(x(u, v), y, z(u, v))
+    fun at(u: Int, y: Int, v: Int): At = At(x(u, v), y0 + y, z(u, v))
 
     /** One of the townsfolk standing at [u], [y], [v]; with [facing], that's their post, facing that way. */
     fun resident(folk: Folk, u: Int, y: Int, v: Int, work: At? = null, facing: Dir? = null, home: At? = null) {

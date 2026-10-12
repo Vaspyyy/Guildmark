@@ -132,10 +132,10 @@ class CapitalPiece : StructurePiece, PieceBeardifierModifier {
     fun within(x: Int, z: Int): Boolean = abs(x - center.x) <= CityPlan.WALL_OUT && abs(z - center.z) <= CityPlan.WALL_OUT
 
     /** The quest board's anchor cell. */
-    val boardAnchor: BlockPos get() = plan.board.let { world(it.x, 0, it.z) }
+    val boardAnchor: BlockPos get() = plan.board.let { world(it.x, plan.level(it.x, it.z), it.z) }
 
     /** Where the city's bell hangs: the middle of the city as far as villagers (and roads) go. */
-    val bell: BlockPos get() = plan.bell.let { world(it.x, 0, it.z) }
+    val bell: BlockPos get() = plan.bell.let { world(it.x, plan.level(it.x, it.z), it.z) }
 
     companion object {
         /** How far above the plaza the land is drawn down. */

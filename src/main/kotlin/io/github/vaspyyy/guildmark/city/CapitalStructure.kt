@@ -121,7 +121,7 @@ class CapitalStructure(settings: StructureSettings) : Structure(settings) {
         private const val MAX_ROUGHNESS = 3.5
 
         /** Chunks from a city's middle to the edge of its clearing. */
-        private const val CITY_CHUNKS = (CityPlan.CLEAR + 15) / 16
+        private val CITY_CHUNKS = (CityPlan.CLEAR + 15) / 16
         /** Chunks a village or mansion reaches from its start, and anything smaller. */
         private const val BIG_REACH = 6
         private const val SMALL_REACH = 2

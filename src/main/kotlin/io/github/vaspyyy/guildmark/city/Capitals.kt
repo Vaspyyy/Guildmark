@@ -24,15 +24,8 @@ object Capitals {
     /** Villages and capitals: anywhere a road, a delivery or an escort can be bound for. */
     val DESTINATIONS: TagKey<Structure> = TagKey.create(Registries.STRUCTURE, Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "road_destination"))
 
-    /**
-     * Points along the way out, counted from the plaza's middle: past the fountain and down the avenue a
-     * step at a time, then straight through the gatehouse (no point under its roof, where a traveller
-     * looking for the ground would find the top of the arch) to the field and past the clearing.
-     */
-    private val WAY_OUT = listOf(8, 16, 24, 32, 40, 48, 56, CityPlan.WALL_IN + 9, CityPlan.CLEAR + 5)
-
     /** Chunks from where a capital may start to anywhere inside its walls: the site's shift, then the walls. */
-    private const val START_REACH = 2 + (CityPlan.WALL_OUT + 15) / 16
+    private val START_REACH = 2 + (CityPlan.WALL_OUT + 15) / 16
 
     /** Blocks from the middle of the chunk a capital may start in to the far corner of its clearing, and a little over. */
     const val START_SLACK = 160
@@ -91,11 +84,11 @@ object Capitals {
         val dx = (toward.x - capital.center.x).toDouble()
         val dz = (toward.z - capital.center.z).toDouble()
         val plan = capital.plan
-        val gate = plan.gates.maxBy { side ->
+        val gate = plan.outerGates.maxBy { side ->
             val d = capital.direction(side)
             d.stepX * dx + d.stepZ * dz
         }
-        return WAY_OUT.map { out -> plan.sidePos(gate, 0, out).let { capital.world(it.x, 0, it.z) } }
+        return plan.wayOut(gate).map { capital.world(it.x, plan.level(it.x, it.z), it.z) }
     }
 
     /** The city and the clearing round it, which a road outside keeps off. */
