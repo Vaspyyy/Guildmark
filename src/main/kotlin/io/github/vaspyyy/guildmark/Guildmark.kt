@@ -103,6 +103,7 @@ import net.neoforged.neoforge.event.entity.RegisterSpawnPlacementsEvent
 import io.github.vaspyyy.guildmark.enemy.FallenWarden
 import io.github.vaspyyy.guildmark.enemy.DuskRider
 import io.github.vaspyyy.guildmark.enemy.HillTroll
+import io.github.vaspyyy.guildmark.dragon.Dragons
 import io.github.vaspyyy.guildmark.field.FieldBosses
 import io.github.vaspyyy.guildmark.field.NightRiders
 import io.github.vaspyyy.guildmark.item.SpectralSteed
@@ -154,6 +155,8 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         Townsfolk.init(modBus)
         // Named regions: who's where, their titles, music and air, and their borders on the map (region/)
         Regions.register(modBus)
+        // Dragons on the high peaks: the boss, its fire, its roosts and their hoards (dragon/)
+        Dragons.register(modBus)
         // Which part of a capital each player is in, for the city sounds (city/CapitalVisits)
         CapitalVisits.register()
         modBus.addListener(EntityAttributeCreationEvent::class.java) {

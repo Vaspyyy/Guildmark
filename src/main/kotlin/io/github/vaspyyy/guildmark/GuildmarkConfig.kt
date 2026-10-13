@@ -41,6 +41,9 @@ object GuildmarkConfig {
     val DUSK_RIDERS: ModConfigSpec.BooleanValue = BUILDER
         .comment("Dusk Riders: now and then at night a horn sounds and a mounted field boss rides for a player out in the wild. It fades at dawn.")
         .define("duskRiders", true)
+    val DRAGONS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Dragons on the high peaks of the far wilds: each nests on a summit, circles it by day and sleeps there by night, and guards a hoard. A slain dragon's nest is taken by another a week later. Nests already built stay.")
+        .define("dragons", true)
     val REGIONS: ModConfigSpec.BooleanValue = BUILDER
         .comment("Named regions: the overworld is divided into lands with names of their own, announced as you enter them and lettered on the map.")
         .define("regions", true)

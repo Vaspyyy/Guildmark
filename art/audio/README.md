@@ -30,6 +30,13 @@ synthesised the same way, its crowds, criers and night watch built from Kokoro t
   steppe ("Grass and Sky", G mixolydian at a canter), the jungle ("Vine and Ruin", B dorian on marimba and
   pan flute) and the mushroom isles ("Spore and Lantern", a music-box waltz in F lydian). Both master to
   -17 LUFS with true peaks under -1 dBTP. The caverns and the deep dark keep the game's own music.
+- `make_dragon_audio.py` and `make_dragon_music.py`: the dragon, "the Unbowed": its 15 effects and their variants
+  (`dragon/`: roars, growls, snores, hurt, death, wingbeats, footfalls, bite, swipe, slam, inhale, fire stream,
+  fireball, fire burst, flyby), synthesised with `sfxkit.py` and levelled to the Hill Troll's and Dusk Rider's
+  loudness, and its battle theme (`music/dragon.ogg`, 3:14 in C minor, a horn call that keeps returning, its last
+  chord falling back into the first bar so it loops), composed in code and played through `make_music.py`'s
+  parts, stems and hall, its loudness set by measurement like the menu theme's. `make_dragon_audio.py` runs both;
+  `--only` takes effect names and/or `music`. Its variants are listed in `sounds.json` by hand.
 - `make_voice.py`: Halvard's three lines (`voice/`). It has two stages, `tts` and `process`.
 - `make_cast_voices.py`: the named characters' 55 dialogue lines (`voice/<character>/`), read from the
   language file. It has three stages, `tts`, `process` and `sounds`.
@@ -64,6 +71,7 @@ python3 -B art/audio/make_music.py src/main/resources/assets/guildmark --work <t
 python3 -B art/audio/make_menu_music.py src/main/resources/assets/guildmark --work <tmp-dir> [--wav <dir>]
 python3 -B art/audio/make_region_music.py src/main/resources/assets/guildmark --work <tmp-dir> [--wav <dir>] [--only marsh,ashen]
 python3 -B art/audio/make_land_music.py src/main/resources/assets/guildmark --work <tmp-dir> [--wav <dir>] [--only heartland,dunes]
+python3 -B art/audio/make_dragon_audio.py src/main/resources/assets/guildmark --work <tmp-dir> [--wav <dir>] [--only roar,growl,music]
 ```
 
 `--wav` also writes WAV copies for listening. `--work` is where the music script keeps its per-stem

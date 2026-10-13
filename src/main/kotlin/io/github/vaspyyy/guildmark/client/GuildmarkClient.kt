@@ -51,6 +51,7 @@ import io.github.vaspyyy.guildmark.client.atlas.AtlasClient
 import io.github.vaspyyy.guildmark.client.ambience.CityAmbience
 import io.github.vaspyyy.guildmark.client.townsfolk.TownsfolkClient
 import io.github.vaspyyy.guildmark.client.region.RegionClient
+import io.github.vaspyyy.guildmark.client.dragon.DragonClient
 import io.github.vaspyyy.guildmark.client.atlas.CompassHud
 import io.github.vaspyyy.guildmark.client.atlas.MapData
 import io.github.vaspyyy.guildmark.client.atlas.MapScreen
@@ -147,6 +148,8 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
         TownsfolkClient.register(modBus)
         // Regions: the title card, the air, the music and the names on the map (client/region)
         RegionClient.register(modBus)
+        // Dragons: their renderer, their flames, the ground shaking as they land (client/dragon)
+        DragonClient.register(modBus)
         modBus.addListener(RegisterRenderStateModifiersEvent::class.java) { event ->
             event.registerAvatarEntityModifier(CombatAnimator.AVATAR)
             event.registerAvatarEntityModifier(Cutscenes.AVATAR)

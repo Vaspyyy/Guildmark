@@ -4,6 +4,7 @@ import com.mojang.math.Axis
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.combat.Move
 import io.github.vaspyyy.guildmark.combat.Stance
+import io.github.vaspyyy.guildmark.dragon.Dragon
 import io.github.vaspyyy.guildmark.registry.ModItems
 import net.minecraft.client.Minecraft
 import net.minecraft.client.model.HumanoidModel
@@ -282,7 +283,8 @@ object CombatAnimator {
     /** Notes how far each staggered creature leans, while its render state is filled in. */
     fun onLivingState(entity: LivingEntity, state: LivingEntityRenderState) {
         state.setRenderData(LEAN, null)
-        if (entity is Avatar || !CombatClient.active()) return
+        // A dragon reels by its own stagger clip (client/dragon)
+        if (entity is Avatar || entity is Dragon || !CombatClient.active()) return
         val lean = lean(entity, state.partialTick)
         if (lean != 0f) state.setRenderData(LEAN, lean)
     }

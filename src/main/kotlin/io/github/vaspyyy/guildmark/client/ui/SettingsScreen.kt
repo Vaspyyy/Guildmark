@@ -276,7 +276,7 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
         val editable = note == "local"
         val listed = listOf(
             c.COMBAT, c.LOSE_MARKS, c.PAY_MULTIPLIER, c.XP_MULTIPLIER, c.RELIC_CACHE_CHANCE, c.HANDBOOK, c.AUTO_BOARDS, c.WARDFIRES,
-            c.DUNGEONS, c.FIELD_BOSSES, c.CAPITALS, c.DUSK_RIDERS, c.SIEGES, c.SIEGE_CHANCE, c.BANDITS, c.RIVALS, c.CHARACTERS,
+            c.DUNGEONS, c.FIELD_BOSSES, c.CAPITALS, c.DUSK_RIDERS, c.DRAGONS, c.SIEGES, c.SIEGE_CHANCE, c.BANDITS, c.RIVALS, c.CHARACTERS,
             c.TOWNSFOLK_CROWDS, c.TOWNSFOLK_CROWD_DENSITY, c.REGIONS, c.REGION_TERRAIN, c.REGION_ENEMIES,
         )
         val rows = arrayListOf<Row>(Note(Component.translatable("gui.guildmark.settings.world.$note"), if (editable) Ui.TEXT_FAINT else Ui.GOLD, width))
@@ -301,6 +301,7 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
             toggle(c.TOWNSFOLK_CROWDS, spec, editable),
             slider(c.TOWNSFOLK_CROWD_DENSITY, spec, editable, MULTIPLIERS.filter { it in 0.25..3.0 }, ::times) { c.TOWNSFOLK_CROWD_DENSITY.set(it) },
             toggle(c.DUSK_RIDERS, spec, editable),
+            toggle(c.DRAGONS, spec, editable),
             header("threats"),
             toggle(c.SIEGES, spec, editable),
             slider(c.SIEGE_CHANCE, spec, editable, PERCENTS, ::percent) { c.SIEGE_CHANCE.set(it.roundToInt()) },

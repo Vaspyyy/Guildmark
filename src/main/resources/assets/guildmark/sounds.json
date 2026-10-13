@@ -251,6 +251,14 @@
       }
     ]
   },
+  "music.dragon": {
+    "sounds": [
+      {
+        "name": "guildmark:music/dragon",
+        "stream": true
+      }
+    ]
+  },
   "music.menu": {
     "sounds": [
       {
@@ -1102,6 +1110,113 @@
       "guildmark:dusk_rider/vanish1"
     ],
     "subtitle": "subtitles.guildmark.dusk_rider.vanish"
+  },
+  "dragon.roar": {
+    "sounds": [
+      "guildmark:dragon/roar1",
+      "guildmark:dragon/roar2"
+    ],
+    "subtitle": "subtitles.guildmark.dragon.roar"
+  },
+  "dragon.growl": {
+    "sounds": [
+      "guildmark:dragon/growl1",
+      "guildmark:dragon/growl2",
+      "guildmark:dragon/growl3"
+    ],
+    "subtitle": "subtitles.guildmark.dragon.growl"
+  },
+  "dragon.snore": {
+    "sounds": [
+      "guildmark:dragon/snore1",
+      "guildmark:dragon/snore2"
+    ],
+    "subtitle": "subtitles.guildmark.dragon.snore"
+  },
+  "dragon.hurt": {
+    "sounds": [
+      "guildmark:dragon/hurt1",
+      "guildmark:dragon/hurt2",
+      "guildmark:dragon/hurt3"
+    ],
+    "subtitle": "subtitles.guildmark.dragon.hurt"
+  },
+  "dragon.death": {
+    "sounds": [
+      "guildmark:dragon/death1"
+    ],
+    "subtitle": "subtitles.guildmark.dragon.death"
+  },
+  "dragon.wing_flap": {
+    "sounds": [
+      "guildmark:dragon/wing_flap1",
+      "guildmark:dragon/wing_flap2",
+      "guildmark:dragon/wing_flap3"
+    ],
+    "subtitle": "subtitles.guildmark.dragon.wing_flap"
+  },
+  "dragon.step": {
+    "sounds": [
+      "guildmark:dragon/step1",
+      "guildmark:dragon/step2",
+      "guildmark:dragon/step3"
+    ],
+    "subtitle": "subtitles.guildmark.dragon.step"
+  },
+  "dragon.bite": {
+    "sounds": [
+      "guildmark:dragon/bite1",
+      "guildmark:dragon/bite2"
+    ],
+    "subtitle": "subtitles.guildmark.dragon.bite"
+  },
+  "dragon.swipe": {
+    "sounds": [
+      "guildmark:dragon/swipe1",
+      "guildmark:dragon/swipe2"
+    ],
+    "subtitle": "subtitles.guildmark.dragon.swipe"
+  },
+  "dragon.slam": {
+    "sounds": [
+      "guildmark:dragon/slam1",
+      "guildmark:dragon/slam2"
+    ],
+    "subtitle": "subtitles.guildmark.dragon.slam"
+  },
+  "dragon.inhale": {
+    "sounds": [
+      "guildmark:dragon/inhale1"
+    ],
+    "subtitle": "subtitles.guildmark.dragon.inhale"
+  },
+  "dragon.breath": {
+    "sounds": [
+      "guildmark:dragon/breath1",
+      "guildmark:dragon/breath2"
+    ],
+    "subtitle": "subtitles.guildmark.dragon.breath"
+  },
+  "dragon.fireball": {
+    "sounds": [
+      "guildmark:dragon/fireball1",
+      "guildmark:dragon/fireball2"
+    ],
+    "subtitle": "subtitles.guildmark.dragon.fireball"
+  },
+  "dragon.fire_burst": {
+    "sounds": [
+      "guildmark:dragon/fire_burst1",
+      "guildmark:dragon/fire_burst2"
+    ],
+    "subtitle": "subtitles.guildmark.dragon.fire_burst"
+  },
+  "dragon.flyby": {
+    "sounds": [
+      "guildmark:dragon/flyby1",
+      "guildmark:dragon/flyby2"
+    ],
+    "subtitle": "subtitles.guildmark.dragon.flyby"
   },
   "ambience.crowd_day": {
     "sounds": [

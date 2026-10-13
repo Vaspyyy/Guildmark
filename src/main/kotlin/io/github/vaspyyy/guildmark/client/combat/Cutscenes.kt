@@ -6,6 +6,8 @@ import io.github.vaspyyy.guildmark.combat.CombatEnemy
 import io.github.vaspyyy.guildmark.enemy.FallenWarden
 import io.github.vaspyyy.guildmark.enemy.DuskRider
 import io.github.vaspyyy.guildmark.enemy.HillTroll
+import io.github.vaspyyy.guildmark.dragon.Dragon
+import io.github.vaspyyy.guildmark.dragon.DragonRegistry
 import net.minecraft.world.entity.LivingEntity
 import io.github.vaspyyy.guildmark.network.BossCuePayload
 import io.github.vaspyyy.guildmark.registry.ModSounds
@@ -120,6 +122,7 @@ object Cutscenes : GuiLayer {
         var stingerPlayed = false
         var title = -1
         var banner = -1
+        var bannerText = "cutscene.guildmark.foe_vanquished"
         var shakeAt = -1
 
         var rig: CameraRig? = null
@@ -177,6 +180,7 @@ object Cutscenes : GuiLayer {
     private val PHASE_TWO by lazy { Music(ModSounds.MUSIC_WARDEN_2, 0, 0, true) }
     private val FIELD_BOSS by lazy { Music(ModSounds.MUSIC_FIELD_BOSS, 0, 0, true) }
     private val DUSK_RIDER by lazy { Music(ModSounds.MUSIC_DUSK_RIDER, 0, 0, true) }
+    private val DRAGON by lazy { Music(DragonRegistry.MUSIC, 0, 0, true) }
 
     private fun camerasOn(): Boolean = !GuildmarkClientConfig.SPEC.isLoaded || GuildmarkClientConfig.CUTSCENES.get()
 
@@ -269,6 +273,7 @@ object Cutscenes : GuiLayer {
 
     /** A field boss falls: the camera circles wide as it drops to its knees and pitches over, then the banner. */
     private fun felled(s: Scene, camera: Boolean) {
+        if (s.level.getEntity(s.bossId) is Dragon) return dragonFelled(s, camera)
         s.length = 150
         s.stinger = ModSounds.FOE_VANQUISHED.get()
         s.stingerAt = 40
@@ -277,6 +282,20 @@ object Cutscenes : GuiLayer {
         if (!camera) return
         s.shots = listOf(orbit(0, 62, 62f, 56f, 9.0, 8.0, 25.0, 70.0, 3.4, 2.6, 1.8))
         s.returnAt = 62
+    }
+
+    /** A dragon falls: a wider, longer turn about it as it thrashes, crashes down and goes up in smoke, then its own banner. */
+    private fun dragonFelled(s: Scene, camera: Boolean) {
+        s.length = 170
+        s.stinger = ModSounds.FOE_VANQUISHED.get()
+        s.stingerAt = 60
+        s.banner = 60
+        s.bannerText = "cutscene.guildmark.dragon_slain"
+        silenceUntil = max(silenceUntil, ticks + 180)
+        if (!camera) return
+        // Until it's gone to cinders (Dragon.DEATH_TICKS); the server shields those watching as long (Dragon.FELLED_SCENE)
+        s.shots = listOf(orbit(0, 104, 64f, 58f, 17.0, 15.0, 20.0, 80.0, 6.0, 4.5, 2.4))
+        s.returnAt = 104
     }
 
     private fun dolly(start: Int, end: Int, hideSelf: Boolean, fovA: Float, fovB: Float, camA: Vec3, camB: Vec3, lookA: Vec3, lookB: Vec3) =
@@ -597,7 +616,7 @@ object Cutscenes : GuiLayer {
 
     /** A field boss with a fight on: a hill troll, or a Dusk Rider that isn't fading away. */
     private fun fightingFieldBoss(entity: LivingEntity): Boolean =
-        (entity is HillTroll && entity.fighting) || (entity is DuskRider && entity.fighting && !entity.fading)
+        (entity is HillTroll && entity.fighting) || (entity is DuskRider && entity.fighting && !entity.fading) || (entity is Dragon && entity.fighting)
 
     private fun findFieldBoss(minecraft: Minecraft) {
         val player = minecraft.player
@@ -608,13 +627,19 @@ object Cutscenes : GuiLayer {
         }
         // The boss whose theme is playing keeps it while its fight goes on near you, so two at once don't trade themes
         val current = level.getEntity(fieldBossId) as? LivingEntity
-        if (current != null && current.isAlive && fightingFieldBoss(current) && current.distanceToSqr(player) < KEEP_THEME_RANGE * KEEP_THEME_RANGE) return
-        fieldBossId = level.getEntitiesOfClass(CombatEnemy::class.java, player.boundingBox.inflate(48.0)) { it.isAlive && fightingFieldBoss(it) }
-            .minByOrNull { it.distanceToSqr(player) }?.id ?: -1
+        val keep = if (current is Dragon) DRAGON_KEEP_THEME_RANGE else KEEP_THEME_RANGE
+        if (current != null && current.isAlive && fightingFieldBoss(current) && current.distanceToSqr(player) < keep * keep) return
+        // A dragon's fight ranges over its peak and the sky above it, so its theme carries further
+        fieldBossId = (level.getEntitiesOfClass(CombatEnemy::class.java, player.boundingBox.inflate(48.0)) { it.isAlive && fightingFieldBoss(it) }
+            .minByOrNull { it.distanceToSqr(player) }
+            ?: level.getEntitiesOfClass(Dragon::class.java, player.boundingBox.inflate(DRAGON_THEME_RANGE)) { it.isAlive && it.fighting }
+                .minByOrNull { it.distanceToSqr(player) })?.id ?: -1
     }
 
     /** How near a field boss whose theme is playing has to stay for it to keep playing. */
     private const val KEEP_THEME_RANGE = 56.0
+    private const val DRAGON_THEME_RANGE = 96.0
+    private const val DRAGON_KEEP_THEME_RANGE = 112.0
 
     // ---- Hooks ----
 
@@ -721,12 +746,19 @@ object Cutscenes : GuiLayer {
         }
         val field = level?.getEntity(fieldBossId) as? LivingEntity
         if (field != null && field.isAlive && fightingFieldBoss(field)) {
-            event.overrideMusic(if (field is DuskRider) DUSK_RIDER else FIELD_BOSS)
+            event.overrideMusic(
+                when (field) {
+                    is DuskRider -> DUSK_RIDER
+                    is Dragon -> DRAGON
+                    else -> FIELD_BOSS
+                },
+            )
             return
         }
         val playing = event.playingMusic?.identifier
         if (playing == ModSounds.MUSIC_WARDEN.get().location() || playing == ModSounds.MUSIC_WARDEN_2.get().location() ||
-            playing == ModSounds.MUSIC_FIELD_BOSS.get().location() || playing == ModSounds.MUSIC_DUSK_RIDER.get().location()) event.overrideMusic(null)
+            playing == ModSounds.MUSIC_FIELD_BOSS.get().location() || playing == ModSounds.MUSIC_DUSK_RIDER.get().location() ||
+            playing == DragonRegistry.MUSIC.get().location()) event.overrideMusic(null)
     }
 
     // ---- On screen ----
@@ -753,7 +785,7 @@ object Cutscenes : GuiLayer {
 
         captions(graphics, font, s, t, width, height, bar)
         if (s.title >= 0) titleCard(graphics, font, t - s.title, width, height)
-        if (s.banner >= 0) banner(graphics, font, t - s.banner, width, height)
+        if (s.banner >= 0) banner(graphics, font, s.bannerText, t - s.banner, width, height)
 
         if (s.rig != null && t >= 20f && t < s.returnAt && bar >= 14) {
             val hint = Component.translatable("cutscene.guildmark.skip", minecraft.options.keyJump.translatedKeyMessage)
@@ -795,7 +827,7 @@ object Cutscenes : GuiLayer {
     }
 
     /** The banner when he falls, across a band of shadow. */
-    private fun banner(graphics: GuiGraphicsExtractor, font: Font, t: Float, width: Int, height: Int) {
+    private fun banner(graphics: GuiGraphicsExtractor, font: Font, key: String, t: Float, width: Int, height: Int) {
         if (t < 0f || t > BANNER_TICKS) return
         val alpha = min(min(1f, t / 10f), (BANNER_TICKS - t) / 25f).coerceIn(0f, 1f)
         if (alpha < 0.03f) return
@@ -805,7 +837,7 @@ object Cutscenes : GuiLayer {
         graphics.fillGradient(0, y - 30, width, y - 14, clear, shade)
         graphics.fill(0, y - 14, width, y + 14, shade)
         graphics.fillGradient(0, y + 14, width, y + 30, shade, clear)
-        val text = Component.translatable("cutscene.guildmark.foe_vanquished").string.uppercase()
+        val text = Component.translatable(key).string.uppercase()
         val scale = 2.4f + 0.3f * (t / BANNER_TICKS)
         // A soft glow behind the letters
         spaced(graphics, font, text, width / 2f, y - 4.5f * scale * 1.06f, scale * 1.06f, 2, ARGB.color(alpha * 0.25f, 0xF5D58A))
