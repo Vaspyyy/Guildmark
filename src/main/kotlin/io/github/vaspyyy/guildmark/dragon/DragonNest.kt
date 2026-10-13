@@ -242,20 +242,16 @@ object DragonNest {
     /**
      * A way out of the nest through the gap that opens toward [way], three wide, a block higher or lower for each block
      * out, so it can be walked: down where the land falls away (each step on stone down to the ground), up where it rises
-     * (cut into it and open to the sky). It ends where the steps meet the land, where the land is already within a
-     * step of the floor, or where it is too far off to bridge.
+     * (cut into it and open to the sky). It's laid only if its steps meet the land within reach; where the land is
+     * already within a step of the floor there's no need of one, and where it falls away faster than steps can follow
+     * there's none, rather than a causeway ending in mid-air.
      */
     private fun ramp(level: ServerLevel, plan: Plan, rng: Random, way: Direction) {
+        val tops = steps(level, plan, way) ?: return
         val side = way.clockWise
-        var top = plan.floor
-        for (i in 1..RAMP_STEPS) {
-            val x = plan.x + way.stepX * (RIM_EDGE + i)
-            val z = plan.z + way.stepZ * (RIM_EDGE + i)
-            val middle = ground(level, x, z) ?: return
-            if (wet(level, BlockPos(x, middle, z))) return
-            if (i == 1 && abs(middle - top) <= 1) return
-            top += (middle - top).coerceIn(-1, 1)
-            if (top - middle > RAMP_FILL || middle - top > RAMP_CUT) return
+        for ((n, top) in tops.withIndex()) {
+            val x = plan.x + way.stepX * (RIM_EDGE + n + 1)
+            val z = plan.z + way.stepZ * (RIM_EDGE + n + 1)
             for (l in -1..1) {
                 val sx = x + side.stepX * l
                 val sz = z + side.stepZ * l
@@ -265,8 +261,25 @@ object DragonNest {
                 set(level, sx, top, sz, scorched(rng, true))
                 clearAbove(level, sx, sz, top + 1)
             }
-            if (top == middle) return
         }
+    }
+
+    /** The height of each step of a way out toward [way], the last on the level of the land, or null if none is to be laid. */
+    private fun steps(level: ServerLevel, plan: Plan, way: Direction): List<Int>? {
+        val tops = ArrayList<Int>()
+        var top = plan.floor
+        for (i in 1..RAMP_STEPS) {
+            val x = plan.x + way.stepX * (RIM_EDGE + i)
+            val z = plan.z + way.stepZ * (RIM_EDGE + i)
+            val middle = ground(level, x, z) ?: return null
+            if (wet(level, BlockPos(x, middle, z))) return null
+            if (i == 1 && abs(middle - top) <= 1) return null
+            top += (middle - top).coerceIn(-1, 1)
+            if (top - middle > RAMP_FILL || middle - top > RAMP_CUT) return null
+            tops.add(top)
+            if (top == middle) return tops
+        }
+        return null
     }
 
     private fun set(level: ServerLevel, x: Int, y: Int, z: Int, state: BlockState) {
