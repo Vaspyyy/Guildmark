@@ -44,9 +44,9 @@ import net.minecraft.world.level.block.state.BlockState
  * A soldier of the Hollow King's fallen army, still keeping the roads he was sent to hold. Fights with
  * a sword, and sometimes a shield it raises against blows from the front: heavy hits wear the guard down
  * until it breaks and leaves the soldier open. Every attack has a wind-up worth watching for, and the
- * overhead swing waits a beat longer than you'd think.
+ * overhead swing waits a beat longer than you'd think. The wild lands' own Hollows build on it (RegionHollows).
  */
-class HollowSoldier(type: EntityType<out HollowSoldier>, level: Level) : CombatEnemy(type, level) {
+open class HollowSoldier(type: EntityType<out HollowSoldier>, level: Level) : CombatEnemy(type, level) {
     override val attacks: List<EnemyAttack> get() = ATTACKS
     override val animations: String get() = "hollow_soldier"
     override val maxStance: Float get() = 40f

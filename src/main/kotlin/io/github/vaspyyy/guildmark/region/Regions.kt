@@ -68,6 +68,8 @@ object Regions {
             RegionMap.clear()
         }
         NeoForge.EVENT_BUS.addListener(RegisterCommandsEvent::class.java) { event -> RegionCommand.register(event.dispatcher) }
+        // Each wild land's own Hollows in its monster spawns
+        RegionFoes.register()
     }
 
     fun enabled(): Boolean = !GuildmarkConfig.SPEC.isLoaded || GuildmarkConfig.REGIONS.get()

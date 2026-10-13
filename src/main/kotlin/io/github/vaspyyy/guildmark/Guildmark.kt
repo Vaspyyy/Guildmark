@@ -106,8 +106,13 @@ import io.github.vaspyyy.guildmark.enemy.HillTroll
 import io.github.vaspyyy.guildmark.field.FieldBosses
 import io.github.vaspyyy.guildmark.field.NightRiders
 import io.github.vaspyyy.guildmark.item.SpectralSteed
+import io.github.vaspyyy.guildmark.enemy.CinderHollow
+import io.github.vaspyyy.guildmark.enemy.GlimmerHollow
 import io.github.vaspyyy.guildmark.enemy.HollowSoldier
+import io.github.vaspyyy.guildmark.enemy.MireHollow
+import io.github.vaspyyy.guildmark.enemy.RimeHollow
 import net.minecraft.world.entity.SpawnPlacementTypes
+import net.minecraft.world.entity.EntityType
 import net.minecraft.world.entity.monster.Monster
 import net.minecraft.world.level.levelgen.Heightmap
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent
@@ -157,17 +162,27 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
             it.put(ModEntities.HOLLOW_KING.get(), HollowKing.createAttributes().build())
             it.put(ModEntities.RIVAL.get(), RivalAdventurer.createAttributes().build())
             it.put(ModEntities.HOLLOW_SOLDIER.get(), HollowSoldier.createAttributes().build())
+            it.put(ModEntities.MIRE_HOLLOW.get(), MireHollow.createAttributes().build())
+            it.put(ModEntities.CINDER_HOLLOW.get(), CinderHollow.createAttributes().build())
+            it.put(ModEntities.RIME_HOLLOW.get(), RimeHollow.createAttributes().build())
+            it.put(ModEntities.GLIMMER_HOLLOW.get(), GlimmerHollow.createAttributes().build())
             it.put(ModEntities.FALLEN_WARDEN.get(), FallenWarden.createAttributes().build())
             it.put(ModEntities.HILL_TROLL.get(), HillTroll.createAttributes().build())
             it.put(ModEntities.DUSK_RIDER.get(), DuskRider.createAttributes().build())
             it.put(ModEntities.SPECTRAL_STEED.get(), SpectralSteed.createAttributes().build())
         }
-        // Hollow Soldiers spawn like other monsters, on the ground in the dark (biome_modifier/hollow_soldier.json)
-        modBus.addListener(RegisterSpawnPlacementsEvent::class.java) {
-            it.register(
-                ModEntities.HOLLOW_SOLDIER.get(), SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+        // Hollow Soldiers spawn like other monsters, on the ground in the dark (biome_modifier/hollow_soldier.json);
+        // in the wild lands their land's own Hollows take their place (region/RegionFoes)
+        modBus.addListener(RegisterSpawnPlacementsEvent::class.java) { event ->
+            fun <T : Monster> onGround(type: EntityType<T>) = event.register(
+                type, SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
                 Monster::checkMonsterSpawnRules, RegisterSpawnPlacementsEvent.Operation.REPLACE,
             )
+            onGround(ModEntities.HOLLOW_SOLDIER.get())
+            onGround(ModEntities.MIRE_HOLLOW.get())
+            onGround(ModEntities.CINDER_HOLLOW.get())
+            onGround(ModEntities.RIME_HOLLOW.get())
+            onGround(ModEntities.GLIMMER_HOLLOW.get())
         }
 
         modBus.addListener(FMLCommonSetupEvent::class.java, ::onCommonSetup)

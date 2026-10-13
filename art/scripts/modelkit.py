@@ -10,10 +10,20 @@ from PIL import Image
 
 FACES = ['right', 'front', 'left', 'back', 'top', 'bottom']
 
+# The Direction Minecraft gives each face of a cube (model space has y down, so the top is DOWN)
+DIRECTIONS = {'right': 'WEST', 'front': 'NORTH', 'left': 'EAST', 'back': 'SOUTH', 'top': 'DOWN', 'bottom': 'UP'}
+
 class Cube:
-    def __init__(self, origin, size, paint=None, inflate=0.0, mirror=False, name=None):
+    def __init__(self, origin, size, paint=None, inflate=0.0, mirror=False, name=None, faces=None):
+        """[faces], if given, is the only faces drawn (a flat card is one face, seen from both sides)."""
         self.origin, self.size, self.paint, self.inflate, self.mirror, self.name = origin, size, paint, inflate, mirror, name
+        self.faces = faces
+        if faces and inflate:
+            raise SystemExit(f'{name}: a cube with only some faces drawn cannot be inflated')
         self.uv = None
+
+    def shows(self, face):
+        return self.faces is None or face in self.faces
 
     def footprint(self):
         w, h, d = [math.ceil(s) for s in self.size]
@@ -76,7 +86,7 @@ class Model:
             if p is None:
                 continue
             for face, (x, y, w, h) in c.rects().items():
-                p(img, face, x, y, w, h)
+                if c.shows(face): p(img, face, x, y, w, h)
         return img
 
     # ---- Kotlin ----
@@ -93,6 +103,8 @@ class Model:
                 if c.mirror: b += '.mirror()'
                 x, y, z = c.origin; w, h, d = c.size
                 deform = f', CubeDeformation({f(c.inflate)})' if c.inflate else ''
+                if c.faces:
+                    deform = ', EnumSet.of(' + ', '.join(f'Direction.{DIRECTIONS[n]}' for n in FACES if n in c.faces) + ')'
                 b += f'.addBox({f(x)}, {f(y)}, {f(z)}, {f(w)}, {f(h)}, {f(d)}{deform})'
                 if c.mirror: b += '.mirror(false)'
             px, py, pz = part.pivot
@@ -139,6 +151,7 @@ class Model:
                 }
                 rects = c.rects()
                 for face, (A, B, D, n) in quads.items():
+                    if not c.shows(face): continue
                     if c.mirror and face in ('front', 'back', 'top', 'bottom'):
                         A, B = B, A  # mirrored cubes flip the texture across u
                     faces.append((A, B, D, rects[face], face, R @ np.array(n, float)))
@@ -211,8 +224,8 @@ class Model:
                       'autouv': 0, 'color': 0, 'inflate': c.inflate, 'mirror_uv': c.mirror,
                       'origin': group['origin'], 'uv_offset': list(c.uv), 'faces': {}, 'type': 'cube',
                       'uuid': str(uuid.uuid4())}
-                for fname in ['north', 'east', 'south', 'west', 'up', 'down']:
-                    el['faces'][fname] = {'uv': [0, 0, 0, 0], 'texture': 0}
+                for fname, face in [('north', 'front'), ('east', 'right'), ('south', 'back'), ('west', 'left'), ('up', 'top'), ('down', 'bottom')]:
+                    el['faces'][fname] = {'uv': [0, 0, 0, 0], 'texture': 0 if c.shows(face) else None}
                 elements.append(el)
                 group['children'].append(el['uuid'])
             for ch in part.children:

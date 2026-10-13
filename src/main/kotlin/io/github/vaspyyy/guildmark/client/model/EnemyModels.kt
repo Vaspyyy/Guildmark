@@ -24,6 +24,8 @@ class EnemyRenderState : HumanoidRenderState() {
     var frame: CombatAnimator.Frame? = null
     /** Something carried for one attack only, like the boulder a hill troll throws. */
     var holding = false
+    /** Which of a family of looks to show, like each land's Hollow (RegionHollowModel.MIRE and the rest). */
+    var variant = 0
 }
 
 /**
@@ -60,6 +62,45 @@ class HollowSoldierModel(root: ModelPart) : HumanoidModel<EnemyRenderState>(root
             root.addOrReplaceChild("left_leg", CubeListBuilder.create().texOffs(72, 0).addBox(-1.9f, 0f, -2f, 4f, 12f, 4f).texOffs(70, 29).addBox(-1.9f, 9f, -2f, 4f, 3f, 4f, CubeDeformation(0.3f)), PartPose.offset(1.9f, 12f, 0f))
             return LayerDefinition.create(mesh, 128, 64)
         }
+    }
+}
+
+/**
+ * The wild lands' Hollows: the soldier's model with every land's pieces on it, each showing only its own: weed
+ * hanging from the brim and the shoulder plates on the Mire Hollow, icicles in the same places on the Rime Hollow,
+ * crystal through the hat, a shoulder, the back and an arm on the Glimmer Hollow (the Cinder Hollow has none).
+ * Geometry comes from art/scripts/region_hollows.py (RegionHollowMesh); edit the model there.
+ */
+class RegionHollowModel(root: ModelPart) : HumanoidModel<EnemyRenderState>(root) {
+    private val tabard: ModelPart = body.getChild("tabard")
+    private val fringe: ModelPart = head.getChild("fringe")
+    private val fringeCards = listOf("fringe_front", "fringe_right", "fringe_back", "fringe_left").map { fringe.getChild(it) }
+    private val shoulderFringes = listOf(rightArm.getChild("fringe_r"), leftArm.getChild("fringe_l"))
+    private val crystals = listOf(head.getChild("crown"), body.getChild("growth"), rightArm.getChild("shards_r"), leftArm.getChild("shards_l"))
+
+    override fun setupAnim(state: EnemyRenderState) {
+        super.setupAnim(state)
+        CombatAnimator.pose(this, state, state.frame)
+        val stride = max(abs(rightLeg.xRot), abs(leftLeg.xRot))
+        tabard.xRot = -body.xRot * 0.8f - stride * 0.5f
+        val hanging = state.variant == MIRE || state.variant == RIME
+        fringe.visible = hanging
+        for (part in shoulderFringes) part.visible = hanging
+        if (hanging) {
+            // Weed sways out as it walks and stirs as it stands; ice hangs stiff
+            val sway = if (state.variant == MIRE) 0.05f + stride * 0.35f + Mth.sin(state.ageInTicks * 0.09) * 0.04f else 0f
+            for (card in fringeCards) card.xRot = -sway
+            for (part in shoulderFringes) part.xRot = -sway
+        }
+        for (part in crystals) part.visible = state.variant == GLIMMER
+    }
+
+    companion object {
+        const val MIRE = 0
+        const val CINDER = 1
+        const val RIME = 2
+        const val GLIMMER = 3
+        val LAYER = ModelLayerLocation(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "region_hollow"), "main")
     }
 }
 

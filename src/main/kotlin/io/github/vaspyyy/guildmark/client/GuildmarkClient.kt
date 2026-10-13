@@ -5,6 +5,9 @@ import io.github.vaspyyy.guildmark.client.model.DuskRiderModel
 import io.github.vaspyyy.guildmark.client.model.FallenWardenModel
 import io.github.vaspyyy.guildmark.client.model.HillTrollModel
 import io.github.vaspyyy.guildmark.client.model.HollowSoldierModel
+import io.github.vaspyyy.guildmark.client.model.RegionHollowMesh
+import io.github.vaspyyy.guildmark.client.model.RegionHollowModel
+import io.github.vaspyyy.guildmark.enemy.HollowSoldier
 import io.github.vaspyyy.guildmark.registry.ModAttachments
 import com.mojang.blaze3d.platform.InputConstants
 import io.github.vaspyyy.guildmark.Guildmark
@@ -157,6 +160,10 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
             event.registerEntityRenderer(ModEntities.HOLLOW_KING.get(), ::HollowKingRenderer)
             event.registerEntityRenderer(ModEntities.RIVAL.get(), ::RivalRenderer)
             event.registerEntityRenderer(ModEntities.HOLLOW_SOLDIER.get(), ::HollowSoldierRenderer)
+            event.registerEntityRenderer<HollowSoldier>(ModEntities.MIRE_HOLLOW.get()) { RegionHollowRenderer(it, RegionHollowModel.MIRE, "mire_hollow") }
+            event.registerEntityRenderer<HollowSoldier>(ModEntities.CINDER_HOLLOW.get()) { RegionHollowRenderer(it, RegionHollowModel.CINDER, "cinder_hollow") }
+            event.registerEntityRenderer<HollowSoldier>(ModEntities.RIME_HOLLOW.get()) { RegionHollowRenderer(it, RegionHollowModel.RIME, "rime_hollow") }
+            event.registerEntityRenderer<HollowSoldier>(ModEntities.GLIMMER_HOLLOW.get()) { RegionHollowRenderer(it, RegionHollowModel.GLIMMER, "glimmer_hollow") }
             event.registerEntityRenderer(ModEntities.FALLEN_WARDEN.get(), ::FallenWardenRenderer)
             event.registerEntityRenderer(ModEntities.HILL_TROLL.get(), ::HillTrollRenderer)
             event.registerEntityRenderer(ModEntities.TROLL_BOULDER.get()) { ThrownItemRenderer(it, 3.0f, false) }
@@ -170,6 +177,7 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
             event.registerLayerDefinition(HollowKingModel.LAYER, HollowKingModel::createBodyLayer)
             event.registerLayerDefinition(RivalModel.LAYER, RivalModel::createBodyLayer)
             event.registerLayerDefinition(HollowSoldierModel.LAYER, HollowSoldierModel::createBodyLayer)
+            event.registerLayerDefinition(RegionHollowModel.LAYER, RegionHollowMesh::createBodyLayer)
             event.registerLayerDefinition(FallenWardenModel.LAYER, FallenWardenModel::createBodyLayer)
             event.registerLayerDefinition(HillTrollModel.LAYER, HillTrollModel::createBodyLayer)
             event.registerLayerDefinition(DuskRiderModel.LAYER, DuskRiderModel::createBodyLayer)

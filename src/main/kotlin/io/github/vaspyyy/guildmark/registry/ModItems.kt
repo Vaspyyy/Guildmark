@@ -65,4 +65,16 @@ object ModItems {
     val DUSK_RIDER_SPAWN_EGG: DeferredItem<SpawnEggItem> = ITEMS.registerItem("dusk_rider_spawn_egg", ::SpawnEggItem, UnaryOperator<Item.Properties> {
         it.spawnEgg(ModEntities.DUSK_RIDER.get())
     })
+    val MIRE_HOLLOW_SPAWN_EGG: DeferredItem<SpawnEggItem> = ITEMS.registerItem("mire_hollow_spawn_egg", ::SpawnEggItem, UnaryOperator<Item.Properties> {
+        it.spawnEgg(ModEntities.MIRE_HOLLOW.get())
+    })
+    val CINDER_HOLLOW_SPAWN_EGG: DeferredItem<SpawnEggItem> = ITEMS.registerItem("cinder_hollow_spawn_egg", ::SpawnEggItem, UnaryOperator<Item.Properties> {
+        it.spawnEgg(ModEntities.CINDER_HOLLOW.get())
+    })
+    val RIME_HOLLOW_SPAWN_EGG: DeferredItem<SpawnEggItem> = ITEMS.registerItem("rime_hollow_spawn_egg", ::SpawnEggItem, UnaryOperator<Item.Properties> {
+        it.spawnEgg(ModEntities.RIME_HOLLOW.get())
+    })
+    val GLIMMER_HOLLOW_SPAWN_EGG: DeferredItem<SpawnEggItem> = ITEMS.registerItem("glimmer_hollow_spawn_egg", ::SpawnEggItem, UnaryOperator<Item.Properties> {
+        it.spawnEgg(ModEntities.GLIMMER_HOLLOW.get())
+    })
 }

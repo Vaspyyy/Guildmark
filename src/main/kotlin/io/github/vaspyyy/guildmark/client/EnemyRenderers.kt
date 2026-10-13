@@ -7,6 +7,7 @@ import io.github.vaspyyy.guildmark.client.model.EnemyRenderState
 import io.github.vaspyyy.guildmark.client.model.FallenWardenModel
 import io.github.vaspyyy.guildmark.client.model.HillTrollModel
 import io.github.vaspyyy.guildmark.client.model.HollowSoldierModel
+import io.github.vaspyyy.guildmark.client.model.RegionHollowModel
 import io.github.vaspyyy.guildmark.enemy.FallenWarden
 import io.github.vaspyyy.guildmark.enemy.HillTroll
 import io.github.vaspyyy.guildmark.enemy.HollowSoldier
@@ -44,17 +45,45 @@ class HollowSoldierRenderer(context: EntityRendererProvider.Context) :
 
     override fun extractRenderState(entity: HollowSoldier, state: EnemyRenderState, partialTicks: Float) {
         super.extractRenderState(entity, state, partialTicks)
-        state.guarding = entity.guarding
-        if (entity.guarding) {
-            if (entity.mainArm == HumanoidArm.RIGHT) state.leftArmPose = HumanoidModel.ArmPose.BLOCK
-            else state.rightArmPose = HumanoidModel.ArmPose.BLOCK
-        }
-        EnemyAnimation.extract(entity, state, partialTicks)
+        extractSoldier(entity, state, partialTicks)
     }
 
     companion object {
         private val TEXTURE = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "textures/entity/hollow_soldier.png")
         private val GLOW = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "textures/entity/hollow_soldier_glow.png")
+    }
+}
+
+/** What a Hollow Soldier (or a land's Hollow) shows beyond a humanoid's pose: the shield up while it guards, its attacks. */
+private fun extractSoldier(entity: HollowSoldier, state: EnemyRenderState, partialTicks: Float) {
+    state.guarding = entity.guarding
+    if (entity.guarding) {
+        if (entity.mainArm == HumanoidArm.RIGHT) state.leftArmPose = HumanoidModel.ArmPose.BLOCK
+        else state.rightArmPose = HumanoidModel.ArmPose.BLOCK
+    }
+    EnemyAnimation.extract(entity, state, partialTicks)
+}
+
+/**
+ * One of the wild lands' Hollows ([variant] is RegionHollowModel.MIRE and the rest), drawn with its land's
+ * texture, textures/entity/<[name]>.png, and the glow of its eyes (and embers, or crystal) from <[name]>_glow.png.
+ */
+class RegionHollowRenderer(context: EntityRendererProvider.Context, private val variant: Int, name: String) :
+    HumanoidMobRenderer<HollowSoldier, EnemyRenderState, RegionHollowModel>(context, RegionHollowModel(context.bakeLayer(RegionHollowModel.LAYER)), 0.5f) {
+    private val texture = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "textures/entity/$name.png")
+    private val glow = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "textures/entity/${name}_glow.png")
+
+    init {
+        addLayer(EnemyGlowLayer(this) { glow })
+    }
+
+    override fun createRenderState(): EnemyRenderState = EnemyRenderState()
+    override fun getTextureLocation(state: EnemyRenderState): Identifier = texture
+
+    override fun extractRenderState(entity: HollowSoldier, state: EnemyRenderState, partialTicks: Float) {
+        super.extractRenderState(entity, state, partialTicks)
+        state.variant = variant
+        extractSoldier(entity, state, partialTicks)
     }
 }
 

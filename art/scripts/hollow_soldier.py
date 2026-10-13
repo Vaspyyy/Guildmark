@@ -2,8 +2,8 @@
 rusted mail coif, a gaunt grey-blue face with two cold eye points in the brim's shadow, rusted mail and a torn
 crimson tabard with the king's faded crown. Sword and shield come from the vanilla held-item layer, so the
 model has no weapon. Writes the texture, the eye glow map, a .bbmodel, a preview sheet and the Kotlin body."""
-import sys, json, random
-sys.path.insert(0, sys.argv[0].rsplit('/', 1)[0])
+import os, sys, json, random
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from modelkit import *
 from PIL import Image
 import numpy as np
@@ -130,12 +130,17 @@ mask = np.all(arr == np.array(EYE), axis=-1)
 glow = np.zeros_like(arr); glow[mask] = arr[mask]
 glow = Image.fromarray(glow, 'RGBA')
 
-out, prev, art = sys.argv[1], sys.argv[2], sys.argv[3]
-tex.save(f'{out}/textures/entity/hollow_soldier.png'); glow.save(f'{out}/textures/entity/hollow_soldier_glow.png')
-open(f'{prev}/hollow_soldier.kt.txt', 'w').write(model.kotlin())
-json.dump(model.bbmodel(tex, 'hollow_soldier'), open(f'{art}/hollow_soldier.bbmodel', 'w'))
-views = [model.render(tex, yaw=y, glow=glow) for y in (25, 200, -70)]
-sheet = Image.new('RGBA', (768, 320))
-for i, v in enumerate(views): sheet.paste(v, (i * 256, 0))
-sheet.save(f'{prev}/hollow_soldier_preview.png'); sheet.save(f'{art}/hollow_soldier_preview.png')
-tex.resize((512, 256), Image.NEAREST).save(f'{prev}/hollow_soldier_tex.png')
+def main(out, prev, art):
+    tex.save(f'{out}/textures/entity/hollow_soldier.png'); glow.save(f'{out}/textures/entity/hollow_soldier_glow.png')
+    open(f'{prev}/hollow_soldier.kt.txt', 'w').write(model.kotlin())
+    json.dump(model.bbmodel(tex, 'hollow_soldier'), open(f'{art}/hollow_soldier.bbmodel', 'w'))
+    views = [model.render(tex, yaw=y, glow=glow) for y in (25, 200, -70)]
+    sheet = Image.new('RGBA', (768, 320))
+    for i, v in enumerate(views): sheet.paste(v, (i * 256, 0))
+    sheet.save(f'{prev}/hollow_soldier_preview.png'); sheet.save(f'{art}/hollow_soldier_preview.png')
+    tex.resize((512, 256), Image.NEAREST).save(f'{prev}/hollow_soldier_tex.png')
+
+
+# Importable (region_hollows.py builds on the soldier's parts and paint); run it to write the soldier's files
+if __name__ == '__main__':
+    main(sys.argv[1], sys.argv[2], sys.argv[3])

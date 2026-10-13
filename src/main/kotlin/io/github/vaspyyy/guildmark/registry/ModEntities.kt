@@ -3,11 +3,15 @@ package io.github.vaspyyy.guildmark.registry
 import io.github.vaspyyy.guildmark.guild.RivalAdventurer
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.death.LostMarks
+import io.github.vaspyyy.guildmark.enemy.CinderHollow
 import io.github.vaspyyy.guildmark.enemy.DuskRider
 import io.github.vaspyyy.guildmark.enemy.FallenWarden
+import io.github.vaspyyy.guildmark.enemy.GlimmerHollow
 import io.github.vaspyyy.guildmark.enemy.HillTroll
 import io.github.vaspyyy.guildmark.enemy.HollowSoldier
 import io.github.vaspyyy.guildmark.enemy.LanternWisp
+import io.github.vaspyyy.guildmark.enemy.MireHollow
+import io.github.vaspyyy.guildmark.enemy.RimeHollow
 import io.github.vaspyyy.guildmark.enemy.TrollBoulder
 import io.github.vaspyyy.guildmark.guild.GuildMember
 import io.github.vaspyyy.guildmark.item.SpectralSteed
@@ -80,6 +84,45 @@ object ModEntities {
             .eyeHeight(1.62f)
             .clientTrackingRange(8)
             .build(ResourceKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "hollow_soldier")))
+    }
+
+    // The wild lands' own Hollows, which take the soldier's place in their land's spawns (region/RegionFoes)
+
+    /** A Hollow drowned in the marsh: wades the water, and its blows poison. */
+    val MIRE_HOLLOW: DeferredHolder<EntityType<*>, EntityType<MireHollow>> = ENTITIES.register("mire_hollow") { ->
+        EntityType.Builder.of(::MireHollow, MobCategory.MONSTER)
+            .sized(0.6f, 1.95f)
+            .eyeHeight(1.62f)
+            .clientTrackingRange(8)
+            .build(ResourceKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "mire_hollow")))
+    }
+
+    /** A Hollow burnt on the ashen highlands: fire can't hurt it, its blows set you alight, water does it harm. */
+    val CINDER_HOLLOW: DeferredHolder<EntityType<*>, EntityType<CinderHollow>> = ENTITIES.register("cinder_hollow") { ->
+        EntityType.Builder.of(::CinderHollow, MobCategory.MONSTER)
+            .sized(0.6f, 1.95f)
+            .eyeHeight(1.62f)
+            .fireImmune()
+            .clientTrackingRange(8)
+            .build(ResourceKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "cinder_hollow")))
+    }
+
+    /** A Hollow frozen in the peaks: walks on powder snow, and its blows freeze. */
+    val RIME_HOLLOW: DeferredHolder<EntityType<*>, EntityType<RimeHollow>> = ENTITIES.register("rime_hollow") { ->
+        EntityType.Builder.of(::RimeHollow, MobCategory.MONSTER)
+            .sized(0.6f, 1.95f)
+            .eyeHeight(1.62f)
+            .clientTrackingRange(8)
+            .build(ResourceKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "rime_hollow")))
+    }
+
+    /** A Hollow grown through with crystal in the deeps: shrugs off arrows and bursts when it falls. */
+    val GLIMMER_HOLLOW: DeferredHolder<EntityType<*>, EntityType<GlimmerHollow>> = ENTITIES.register("glimmer_hollow") { ->
+        EntityType.Builder.of(::GlimmerHollow, MobCategory.MONSTER)
+            .sized(0.6f, 1.95f)
+            .eyeHeight(1.62f)
+            .clientTrackingRange(8)
+            .build(ResourceKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "glimmer_hollow")))
     }
 
     /** Halvard, the Fallen Warden: a boss who kneels at his post until someone comes near. Drawn 1.5 times humanoid size. */

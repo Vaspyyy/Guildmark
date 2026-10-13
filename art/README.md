@@ -5,12 +5,21 @@ and Kotlin model code always agree.
 
 - `scripts/modelkit.py` describes models as parts and box-UV cubes in Minecraft model space, packs the
   UVs, paints the textures, writes the Kotlin `LayerDefinition`, renders previews and saves a
-  `.bbmodel` you can open in Blockbench.
+  `.bbmodel` you can open in Blockbench. A cube can draw only some of its faces (`faces=`): a flat card is one
+  face, seen from both sides.
 - `scripts/hollow_king.py` is the Hollow King (main story final boss).
 - `scripts/story_npc.py` is the named characters: Wren, Tobin, Ilsa, Maren and Pip share one model and each
   shows only their own pieces.
 - `scripts/hollow_soldier.py` is the Hollow Soldier, a risen foot soldier of the Hollow King's army (the
   `tabard` flap sways; sword and shield come from the held-item layer). Its glow map is just the two eyes.
+- `scripts/region_hollows.py` is the wild lands' own Hollows (Mire, Cinder, Rime and Glimmer): the Hollow Soldier
+  with each land's pieces on one model (a fringe of cards round the brim and under the shoulder plates for the weed
+  and the icicles, crystals through the hat, a shoulder, the back and an arm), each showing only its own. It reads
+  the soldier's painted design back as characters (`hollow_soldier.py` is importable for this) and repaints it at
+  twice the declared 128x64, each material with its own fine detail, then paints each land's weathering over it:
+  moss, mud and rust; char, heat-blued iron and glowing cracks; snow, frost and icicles; crystal and its veins.
+  It writes the four textures and glow maps, the 32x spawn eggs, `client/model/RegionHollowMesh.kt` (straight into
+  the source tree), `art/models/region_hollow.bbmodel` (all four textures) and preview sheets.
 - `scripts/fallen_warden.py` is Halvard, the Fallen Warden (boss, rendered at 1.5x), with a `cloak` and a
   `greatsword`. It writes two glow maps: `_glow` (phase one, the eye slit) and `_glow2` (phase two, eyes,
   armour cracks, chest sigil and sword runes). Cracks and runes are exact marker colours in the base texture.
@@ -32,6 +41,7 @@ python3 art/scripts/story_npc.py src/main/resources/assets/guildmark <preview-di
 python3 art/scripts/hollow_soldier.py src/main/resources/assets/guildmark <preview-dir> art/models
 python3 art/scripts/fallen_warden.py src/main/resources/assets/guildmark <preview-dir> art/models
 python3 -B art/scripts/townsfolk.py src/main/resources/assets/guildmark <preview-dir> art/models
+python3 -B art/scripts/region_hollows.py src/main/resources/assets/guildmark <preview-dir> art/models
 ```
 
 Each run writes the textures into the mod's assets, the `.bbmodel` into `art/models`, and a preview

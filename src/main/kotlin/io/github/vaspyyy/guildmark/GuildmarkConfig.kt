@@ -44,6 +44,9 @@ object GuildmarkConfig {
     val REGIONS: ModConfigSpec.BooleanValue = BUILDER
         .comment("Named regions: the overworld is divided into lands with names of their own, announced as you enter them and lettered on the map.")
         .define("regions", true)
+    val REGION_ENEMIES: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Regional foes: in the marsh, the ashen highlands, the frozen peaks and the crystal deeps, the land's own Hollows take the Hollow Soldiers' place.")
+        .define("regionEnemies", true)
     val HANDBOOK: ModConfigSpec.BooleanValue = BUILDER
         .comment("Give new players the Adventurer's Handbook.")
         .define("handbookOnJoin", true)
