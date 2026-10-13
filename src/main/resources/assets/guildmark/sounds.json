@@ -275,6 +275,86 @@
       }
     ]
   },
+  "music.region.wildwood": {
+    "sounds": [
+      {
+        "name": "guildmark:music/region/wildwood",
+        "stream": true
+      }
+    ]
+  },
+  "music.region.frozen": {
+    "sounds": [
+      {
+        "name": "guildmark:music/region/frozen",
+        "stream": true
+      }
+    ]
+  },
+  "music.region.ashen": {
+    "sounds": [
+      {
+        "name": "guildmark:music/region/ashen",
+        "stream": true
+      }
+    ]
+  },
+  "music.region.crags": {
+    "sounds": [
+      {
+        "name": "guildmark:music/region/crags",
+        "stream": true
+      }
+    ]
+  },
+  "music.region.dunes": {
+    "sounds": [
+      {
+        "name": "guildmark:music/region/dunes",
+        "stream": true
+      }
+    ]
+  },
+  "music.region.steppe": {
+    "sounds": [
+      {
+        "name": "guildmark:music/region/steppe",
+        "stream": true
+      }
+    ]
+  },
+  "music.region.jungle": {
+    "sounds": [
+      {
+        "name": "guildmark:music/region/jungle",
+        "stream": true
+      }
+    ]
+  },
+  "music.region.sea": {
+    "sounds": [
+      {
+        "name": "guildmark:music/region/sea",
+        "stream": true
+      }
+    ]
+  },
+  "music.region.mushroom": {
+    "sounds": [
+      {
+        "name": "guildmark:music/region/mushroom",
+        "stream": true
+      }
+    ]
+  },
+  "music.region.crystal": {
+    "sounds": [
+      {
+        "name": "guildmark:music/region/crystal",
+        "stream": true
+      }
+    ]
+  },
   "ui.open": {
     "sounds": [
       "guildmark:ui/open1"

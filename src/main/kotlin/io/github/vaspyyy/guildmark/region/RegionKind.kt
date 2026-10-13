@@ -29,31 +29,31 @@ enum class RegionKind(
     /** Meadows, fields and the kinder woods: where most villages stand. */
     HEARTLAND("heartland", true, 0xF2DFB0, 0.08f, 0f, 0x5A4220),
     /** Dark forests, pale gardens and the old pine woods. */
-    WILDWOOD("wildwood", false, 0x4C5E4E, 0.28f, 460f, 0x2F4A2A),
+    WILDWOOD("wildwood", true, 0x4C5E4E, 0.28f, 460f, 0x2F4A2A),
     /** Swamps and mangroves, rotting under a green murk. */
     MARSH("marsh", true, 0x5F6B3C, 0.5f, 150f, 0x40502A),
     /** Snowfields, ice and the frozen peaks. */
-    FROZEN("frozen", false, 0xCADCF0, 0.4f, 300f, 0x3A5A7A),
+    FROZEN("frozen", true, 0xCADCF0, 0.4f, 300f, 0x3A5A7A),
     /** Badlands and the high savannas, burnt and falling ash. */
-    ASHEN("ashen", false, 0x8C7464, 0.5f, 210f, 0x6A3420),
+    ASHEN("ashen", true, 0x8C7464, 0.5f, 210f, 0x6A3420),
     /** Windswept hills and stone peaks. */
-    CRAGS("crags", false, 0x9DA7B2, 0.18f, 640f, 0x4A4E58),
+    CRAGS("crags", true, 0x9DA7B2, 0.18f, 640f, 0x4A4E58),
     /** Deserts. */
-    DUNES("dunes", false, 0xE2C890, 0.3f, 380f, 0x7A5A28),
+    DUNES("dunes", true, 0xE2C890, 0.3f, 380f, 0x7A5A28),
     /** The low savannas. */
-    STEPPE("steppe", false, 0xDCC28A, 0.14f, 0f, 0x6E5428),
+    STEPPE("steppe", true, 0xDCC28A, 0.14f, 0f, 0x6E5428),
     /** Jungles. */
-    JUNGLE("jungle", false, 0x6C8E5A, 0.22f, 420f, 0x2E5A2A),
+    JUNGLE("jungle", true, 0x6C8E5A, 0.22f, 420f, 0x2E5A2A),
     /** The open sea. */
-    SEA("sea", false, 0x90A8C2, 0.1f, 0f, 0x2A4A6E),
+    SEA("sea", true, 0x90A8C2, 0.1f, 0f, 0x2A4A6E),
     /** Mushroom isles. */
-    MUSHROOM("mushroom", false, 0x9C7CA4, 0.3f, 360f, 0x5A3A60),
+    MUSHROOM("mushroom", true, 0x9C7CA4, 0.3f, 360f, 0x5A3A60),
     /** Lush, dripstone and sulfur caves. */
     CAVERN("cavern", false, 0x55605A, 0.12f, 0f, 0x3A3A3A, underground = true),
     /** The deep dark. */
     DEEP("deep", false, 0x101820, 0.0f, 0f, 0x1A2A3A, underground = true),
     /** Caves far below some lands, grown through with crystal. */
-    CRYSTAL("crystal", false, 0x8C6CDA, 0.42f, 140f, 0x4A2A7A, underground = true);
+    CRYSTAL("crystal", true, 0x8C6CDA, 0.42f, 140f, 0x4A2A7A, underground = true);
 
     /** Its music, if it has a theme of its own. */
     val musicKey: String get() = "music.region.$id"

@@ -20,9 +20,16 @@ synthesised the same way, its crowds, criers and night watch built from Kokoro t
   about 4 LU under the boss tracks.
 - `make_region_music.py` and `make_land_music.py`: the regions' exploration themes (`music/region/`), one
   per kind of land, each a standalone piece with a soft opening and a real ending (the game plays it once,
-  then waits minutes). `make_region_music.py` has the wild lands' (the marsh, "Murk and Reed", in D
-  wavering between dorian and phrygian); `make_land_music.py` the common lands' (the heartland, "Hearth and
-  Meadow", a walking tune in D major). Both master to -17 LUFS with true peaks under -1 dBTP.
+  then waits minutes). `make_region_music.py` has the wild and far lands': the marsh ("Murk and Reed", D
+  wavering between dorian and phrygian), the ashen highlands ("Ash and Ember", an F minor sarabande on a
+  falling ground), the frozen peaks ("Snow and Silence", E aeolian under falling snow), the crystal deeps
+  ("Glass and Echo", lydian, on vibraphone and celesta), the open sea ("Tide and Sail", a sea song in 6/8)
+  and the windswept crags ("Wind and Stone", horn calls in 5/4). `make_land_music.py` has the common
+  lands': the heartland ("Hearth and Meadow", a walking tune in D major), the wildwood ("Moss and Shadow",
+  C dorian on bassoon and pizzicato), the dunes ("Sand and Mirage", E hijaz on a slow caravan drum), the
+  steppe ("Grass and Sky", G mixolydian at a canter), the jungle ("Vine and Ruin", B dorian on marimba and
+  pan flute) and the mushroom isles ("Spore and Lantern", a music-box waltz in F lydian). Both master to
+  -17 LUFS with true peaks under -1 dBTP. The caverns and the deep dark keep the game's own music.
 - `make_voice.py`: Halvard's three lines (`voice/`). It has two stages, `tts` and `process`.
 - `make_cast_voices.py`: the named characters' 55 dialogue lines (`voice/<character>/`), read from the
   language file. It has three stages, `tts`, `process` and `sounds`.
@@ -55,8 +62,8 @@ These versions were tested: Python 3.13, FluidSynth 2.3.4, SoX 14.4.2 and ffmpeg
 python3 -B art/audio/make_sfx.py src/main/resources/assets/guildmark [--wav <dir>] [--only combat/parry,fallen_warden/]
 python3 -B art/audio/make_music.py src/main/resources/assets/guildmark --work <tmp-dir> [--wav <dir>] [--only boss_appear]
 python3 -B art/audio/make_menu_music.py src/main/resources/assets/guildmark --work <tmp-dir> [--wav <dir>]
-python3 -B art/audio/make_region_music.py src/main/resources/assets/guildmark --work <tmp-dir> [--wav <dir>] [--only marsh]
-python3 -B art/audio/make_land_music.py src/main/resources/assets/guildmark --work <tmp-dir> [--wav <dir>] [--only heartland]
+python3 -B art/audio/make_region_music.py src/main/resources/assets/guildmark --work <tmp-dir> [--wav <dir>] [--only marsh,ashen]
+python3 -B art/audio/make_land_music.py src/main/resources/assets/guildmark --work <tmp-dir> [--wav <dir>] [--only heartland,dunes]
 ```
 
 `--wav` also writes WAV copies for listening. `--work` is where the music script keeps its per-stem

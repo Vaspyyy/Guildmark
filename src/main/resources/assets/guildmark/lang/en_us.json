@@ -1509,5 +1509,15 @@
   "guildmark.configuration.regionMusic": "Region Themes",
   "guildmark.configuration.regionAtmosphere": "Region Fog and Motes",
   "guildmark.music.region.marsh": "Guildmark - Murk and Reed",
-  "guildmark.music.region.heartland": "Guildmark - Hearth and Meadow"
+  "guildmark.music.region.heartland": "Guildmark - Hearth and Meadow",
+  "guildmark.music.region.wildwood": "Guildmark - Moss and Shadow",
+  "guildmark.music.region.frozen": "Guildmark - Snow and Silence",
+  "guildmark.music.region.ashen": "Guildmark - Ash and Ember",
+  "guildmark.music.region.crags": "Guildmark - Wind and Stone",
+  "guildmark.music.region.dunes": "Guildmark - Sand and Mirage",
+  "guildmark.music.region.steppe": "Guildmark - Grass and Sky",
+  "guildmark.music.region.jungle": "Guildmark - Vine and Ruin",
+  "guildmark.music.region.sea": "Guildmark - Tide and Sail",
+  "guildmark.music.region.mushroom": "Guildmark - Spore and Lantern",
+  "guildmark.music.region.crystal": "Guildmark - Glass and Echo"
 }
