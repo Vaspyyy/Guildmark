@@ -145,10 +145,10 @@ class RimeHollow(type: EntityType<out RimeHollow>, level: Level) : HollowSoldier
 
     companion object {
         /**
-         * Ticks of freezing a landed blow adds (it thaws two a tick), and how far past frozen through it can
-         * pile up: two blows close together freeze you through for a moment.
+         * Ticks of freezing a landed blow adds (it thaws two a tick, and 140 is frozen through), and how far
+         * past frozen through it can pile up: two blows within a second freeze you through for a moment.
          */
-        private const val FROST_PER_BLOW = 70
+        private const val FROST_PER_BLOW = 90
         private const val FROST_OVER = 40
 
         fun createAttributes(): AttributeSupplier.Builder = HollowSoldier.createAttributes()
