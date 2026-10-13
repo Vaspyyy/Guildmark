@@ -39,6 +39,24 @@ object GuildmarkClientConfig {
     val MENU_MUSIC: ModConfigSpec.BooleanValue = BUILDER
         .comment("Play Guildmark's own theme in the menus instead of the vanilla menu music.")
         .define("menuMusic", true)
+    val CITY_SOUNDS: ModConfigSpec.IntValue = BUILDER
+        .comment("How loud towns and cities sound, from bells and crowds to the wind on the walls (as a share of the game's Ambient/Environment volume). 0 silences them.")
+        .defineInRange("citySounds", 100, 0, 100)
+    val CITY_BELLS: ModConfigSpec.IntValue = BUILDER
+        .comment("The bells that keep the hours of the day: dawn, noon and dusk struck in full (a big town's chime first), and three strokes at nine, three and nine.")
+        .defineInRange("cityBells", 100, 0, 100)
+    val CITY_CROWDS: ModConfigSpec.IntValue = BUILDER
+        .comment("The crowd's chatter, market criers, coins and carts by day, and the watch calling the hours at night.")
+        .defineInRange("cityCrowds", 100, 0, 100)
+    val CITY_WORKSHOPS: ModConfigSpec.IntValue = BUILDER
+        .comment("Smiths at their anvils, bellows, grindstones and carpenters, wherever a villager is at work.")
+        .defineInRange("cityWorkshops", 100, 0, 100)
+    val CITY_HARBOUR: ModConfigSpec.IntValue = BUILDER
+        .comment("Water lapping at the quays, gulls, creaking moorings and the odd ship's bell, in towns by the water.")
+        .defineInRange("cityHarbour", 100, 0, 100)
+    val CITY_WIND: ModConfigSpec.IntValue = BUILDER
+        .comment("The wind, gusts and cracking banners high on walls and towers.")
+        .defineInRange("cityWind", 100, 0, 100)
 
     val SPEC: ModConfigSpec = BUILDER.build()
 }

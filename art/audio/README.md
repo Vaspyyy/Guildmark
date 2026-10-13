@@ -3,7 +3,8 @@
 Every sound in `src/main/resources/assets/guildmark/sounds/` is made by these scripts. Nothing is
 sampled: the effects are synthesised with numpy/scipy, the music is composed in code and played by
 FluidSynth, and the voices are Kokoro TTS: Halvard processed into a hollow undead knight, the named
-characters (Wren, Tobin, Ilsa, Pip and Maren) given a lighter touch.
+characters (Wren, Tobin, Ilsa, Pip and Maren) given a lighter touch. The city ambience (`ambience/`) is
+synthesised the same way, its crowds, criers and night watch built from Kokoro takes.
 
 - `sfxkit.py`: the shared DSP toolkit (noise, filters, modal metal, creature voice source, room
   reverb, finalising and Ogg export).
@@ -20,9 +21,18 @@ characters (Wren, Tobin, Ilsa, Pip and Maren) given a lighter touch.
 - `make_voice.py`: Halvard's three lines (`voice/`). It has two stages, `tts` and `process`.
 - `make_cast_voices.py`: the named characters' 55 dialogue lines (`voice/<character>/`), read from the
   language file. It has three stages, `tts`, `process` and `sounds`.
+- `ambkit.py`: what the city ambience shares on top of `sfxkit.py`: the `@recipe` registry, seamless
+  stereo loops (the extra tail crossfaded over the head), RMS levelling, street and square reverbs,
+  stereo panning, and waveform and spectrogram pictures for checking a sound by eye.
+- `make_ambience.py`: the city ambience (`ambience/`), one recipe module per part of town in
+  `ambience/`: `bells.py`, `workshops.py`, `harbour.py`, `wind.py` and `voices.py` (the crowds, criers
+  and watch). The four background beds are stereo loops that play unpositioned; everything else is a
+  mono one-shot the game places in the world.
+- `make_city_voices.py`: the raw Kokoro takes behind the crowds, criers and night watch.
 
-All randomness is seeded, so a rerun gives bit-identical files. Only `make_cast_voices.py sounds` touches
-`sounds.json`. For everything else, if you add or remove a variant, update that file by hand.
+All randomness is seeded, so a rerun gives bit-identical files. Only `make_cast_voices.py sounds` and
+`make_ambience.py --sounds` touch `sounds.json`, each rewriting only its own entries. For everything
+else, if you add or remove a variant, update that file by hand.
 
 ## Requirements
 
@@ -44,6 +54,29 @@ python3 -B art/audio/make_menu_music.py src/main/resources/assets/guildmark --wo
 
 `--wav` also writes WAV copies for listening. `--work` is where the music script keeps its per-stem
 MIDI and WAV renders; it defaults to `build/music_work`. A full music render takes about a minute.
+
+### City ambience
+
+```
+python3 -B art/audio/make_ambience.py src/main/resources/assets/guildmark --raw <raw-dir> [--only bell_,gull] [--modules bells,harbour] [--wav <dir>] [--png <dir>]
+python3 -B art/audio/make_ambience.py src/main/resources/assets/guildmark --sounds
+```
+
+`--only` takes sound names or prefixes, `--modules` the recipe modules to load. `--png` draws each
+sound's waveform and spectrogram, the quickest check of a loop's seam or a bell's ring. `--raw` is the
+folder of speech takes from `make_city_voices.py` (below); without it the crowds, criers and watch are
+skipped and keep their files. The second command rewrites the `ambience.*` entries of `sounds.json`
+from the files on disk: `EVENTS` in the script sets how far each sound carries and its subtitle. Run it
+after adding or removing a sound or a variant.
+
+The city's speech uses the same virtualenv, model files and `--espeak-data` as the voice lines below:
+
+```
+<venv>/bin/python -I -B art/audio/make_city_voices.py tts --model <dl>/kokoro-v1.0.onnx --voices <dl>/voices-v1.0.bin --out <raw-dir> [--only hawker_,watch_] [--espeak-data <dir>]
+python3 -B art/audio/make_ambience.py src/main/resources/assets/guildmark --raw <raw-dir> --modules voices
+```
+
+None of the criers or the watchman uses a voice the named characters or Halvard speak with.
 
 ### Voice lines
 

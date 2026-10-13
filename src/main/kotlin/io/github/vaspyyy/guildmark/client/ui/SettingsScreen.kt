@@ -238,7 +238,8 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
     private fun interfacePage(width: Int): List<Row> {
         val c = GuildmarkClientConfig
         val spec = c.SPEC
-        val listed = listOf(c.COMPASS, c.CONTRACT_TRACKER, c.PLACE_BANNERS, c.COMBAT_HUD, c.DEATH_SCREEN, c.TITLE_SCREEN, c.CAMERA_SHAKE, c.CUTSCENES, c.DIALOGUE_CAMERA, c.MENU_SOUNDS, c.MENU_MUSIC)
+        val city = listOf(c.CITY_SOUNDS, c.CITY_BELLS, c.CITY_CROWDS, c.CITY_WORKSHOPS, c.CITY_HARBOUR, c.CITY_WIND)
+        val listed = listOf(c.COMPASS, c.CONTRACT_TRACKER, c.PLACE_BANNERS, c.COMBAT_HUD, c.DEATH_SCREEN, c.TITLE_SCREEN, c.CAMERA_SHAKE, c.CUTSCENES, c.DIALOGUE_CAMERA, c.MENU_SOUNDS, c.MENU_MUSIC) + city
         return listOf(
             header("screen"),
             toggle(c.COMPASS, spec, true),
@@ -254,7 +255,8 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
             header("sound"),
             toggle(c.MENU_SOUNDS, spec, true),
             toggle(c.MENU_MUSIC, spec, true),
-        ) + others(c, spec, listed, true)
+            header("city"),
+        ) + city.map { value -> slider(value, spec, true, PERCENTS, ::percent) { value.set(it.roundToInt()) } } + others(c, spec, listed, true)
     }
 
     private fun worldPage(width: Int): List<Row> {

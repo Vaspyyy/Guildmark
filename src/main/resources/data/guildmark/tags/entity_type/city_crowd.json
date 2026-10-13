@@ -1,0 +1,9 @@
+{
+  "values": [
+    "minecraft:villager",
+    "minecraft:wandering_trader",
+    "guildmark:guild_member",
+    "guildmark:story_npc",
+    "guildmark:rival_adventurer"
+  ]
+}

@@ -6,6 +6,7 @@ import net.neoforged.fml.config.ModConfig
 import io.github.vaspyyy.guildmark.combat.Combat
 import io.github.vaspyyy.guildmark.combat.Stance
 import io.github.vaspyyy.guildmark.network.MovePayload
+import io.github.vaspyyy.guildmark.network.CityDistrictPayload
 import io.github.vaspyyy.guildmark.atlas.Atlas
 import io.github.vaspyyy.guildmark.network.AtlasPayload
 import io.github.vaspyyy.guildmark.network.PartyPositionsPayload
@@ -307,5 +308,6 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
             .playToServer(WardfireTravelPayload.TYPE, WardfireTravelPayload.STREAM_CODEC, WardfireTravelPayload::handle)
             .playToClient(WardfireTravelledPayload.TYPE, WardfireTravelledPayload.STREAM_CODEC, WardfireTravelledPayload::handle)
             .playToServer(DrinkFlaskPayload.TYPE, DrinkFlaskPayload.STREAM_CODEC, DrinkFlaskPayload::handle)
+            .playToClient(CityDistrictPayload.TYPE, CityDistrictPayload.STREAM_CODEC, CityDistrictPayload::handle)
     }
 }

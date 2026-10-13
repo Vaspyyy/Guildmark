@@ -45,6 +45,7 @@ import io.github.vaspyyy.guildmark.client.ui.FallenScreen
 import io.github.vaspyyy.guildmark.client.ui.SettingsScreen
 import io.github.vaspyyy.guildmark.client.ui.title.TitleMenu
 import io.github.vaspyyy.guildmark.client.atlas.AtlasClient
+import io.github.vaspyyy.guildmark.client.ambience.CityAmbience
 import io.github.vaspyyy.guildmark.client.atlas.CompassHud
 import io.github.vaspyyy.guildmark.client.atlas.MapData
 import io.github.vaspyyy.guildmark.client.atlas.MapScreen
@@ -125,6 +126,7 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
             PlaceBanner.reset()
             MapData.reset()
             TravelFade.reset()
+            CityAmbience.reset()
         }
         // The compass pushes vanilla's boss bars down while it's up; last in line, so the pop always follows the push
         NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, RenderGuiLayerEvent.Pre::class.java, CompassHud::onLayerPre)
@@ -132,6 +134,8 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
         NeoForge.EVENT_BUS.addListener(ClientTickEvent.Post::class.java) { _ -> PlaceBanner.tick() }
         // The map sketches the land as it loads around the player
         NeoForge.EVENT_BUS.addListener(ClientTickEvent.Post::class.java) { _ -> MapData.tick() }
+        // The sounds of towns and cities, from what's round the player (client/ambience)
+        NeoForge.EVENT_BUS.addListener(ClientTickEvent.Post::class.java) { _ -> CityAmbience.tick() }
         NeoForge.EVENT_BUS.addListener(RenderLivingEvent.Post::class.java) { event: RenderLivingEvent.Post<*, *, *> -> CombatAnimator.onRenderPost(event) }
         modBus.addListener(AddClientReloadListenersEvent::class.java) { event -> event.addListener(Clips.ID, Clips) }
         modBus.addListener(RegisterRenderStateModifiersEvent::class.java) { event ->
