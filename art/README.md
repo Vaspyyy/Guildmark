@@ -14,6 +14,14 @@ and Kotlin model code always agree.
 - `scripts/fallen_warden.py` is Halvard, the Fallen Warden (boss, rendered at 1.5x), with a `cloak` and a
   `greatsword`. It writes two glow maps: `_glow` (phase one, the eye slit) and `_glow2` (phase two, eyes,
   armour cracks, chest sigil and sword runes). Cracks and runes are exact marker colours in the base texture.
+- `scripts/townsfolk.py` is the townsfolk of the capitals: one humanoid for all twelve roles (citizen, smith, baker,
+  merchant, guard, farmer, fisher, child, noble, innkeeper, bard, priest) carrying every look's pieces (hair, beards,
+  hats, helms, aprons, tabards, capes, skirts...) and the held props of `scripts/townsfolk_tools.py`; each of the 44
+  looks shows only its own pieces and has its own texture. Skirts, robes and coats are one shell split down the
+  middle that rides the legs, their length painted. Textures are HD: box UV declared at 256x128, painted and shipped
+  at 512x256, with one shared glow map (hot iron, lantern). It writes its Kotlin straight into `client/townsfolk/`:
+  `TownsfolkMesh.kt` (the geometry) and `TownsfolkLooks.kt` (every look's texture, voice and pieces). Its previews
+  are contact sheets: every look front and back (also `art/models/townsfolk_preview.png`) and each role up close.
 - `scripts/shard_art.py` is the crown shard item texture.
 
 Rebuild a model (needs Python 3 with Pillow and numpy), from the repo root:
@@ -23,6 +31,7 @@ python3 art/scripts/hollow_king.py src/main/resources/assets/guildmark <preview-
 python3 art/scripts/story_npc.py src/main/resources/assets/guildmark <preview-dir> art/models
 python3 art/scripts/hollow_soldier.py src/main/resources/assets/guildmark <preview-dir> art/models
 python3 art/scripts/fallen_warden.py src/main/resources/assets/guildmark <preview-dir> art/models
+python3 -B art/scripts/townsfolk.py src/main/resources/assets/guildmark <preview-dir> art/models
 ```
 
 Each run writes the textures into the mod's assets, the `.bbmodel` into `art/models`, and a preview
@@ -47,6 +56,19 @@ python3 art/scripts/enemy_anims.py src/main/resources/assets/guildmark <preview-
 ```
 
 `steve.png` and `iron_sword.png` come from the vanilla client jar.
+
+`scripts/townsfolk_anims.py` is the townsfolk's 43 clips (smiths at the anvil, bakers at the oven, guards, farmers,
+fishers, children, nobles, the tavern, and the walk-alongs like carry and stagger), timed to the activities in
+`townsfolk/TownRole.kt` and the events `client/townsfolk/TownsfolkClient.kt` fires, baked to
+`assets/guildmark/animations/townsfolk/`. The held props it poses (hammer, tongs, peel, spear, hoe, rod, mug,
+lute...) are built in `scripts/townsfolk_tools.py`, which `townsfolk.py` puts into the model; the clips solve
+hands, blades and rims onto anvils, ovens, mouths and mugs and print each contact they check. Its contact
+sheets draw the real townsfolk model with the station (anvil, oven, bar, stair, water) beside it; name clips
+to render only theirs.
+
+```
+python3 -B art/scripts/townsfolk_anims.py src/main/resources/assets/guildmark <preview-dir> [clip ...]
+```
 
 ## Screens
 
@@ -73,4 +95,7 @@ python3 art/scripts/title_art.py src/main/resources/assets/guildmark [<preview-d
 ## Other
 
 - `scripts/spawn_eggs.py` recolours vanilla's zombie spawn egg into the two new spawn eggs.
+- `scripts/townsfolk_particles.py` is the sparks off a smith's hammer: the four `forge_spark` sprites, white-hot
+  points that shrink as the spark dies (the particle tints them as they cool), and their particle definition.
+  Run it with `python3 -B art/scripts/townsfolk_particles.py src/main/resources/assets/guildmark`.
 - Sound effects, music and Halvard's voice: see `audio/README.md`.

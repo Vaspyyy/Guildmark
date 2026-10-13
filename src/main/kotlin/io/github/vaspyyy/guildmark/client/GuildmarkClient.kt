@@ -46,6 +46,7 @@ import io.github.vaspyyy.guildmark.client.ui.SettingsScreen
 import io.github.vaspyyy.guildmark.client.ui.title.TitleMenu
 import io.github.vaspyyy.guildmark.client.atlas.AtlasClient
 import io.github.vaspyyy.guildmark.client.ambience.CityAmbience
+import io.github.vaspyyy.guildmark.client.townsfolk.TownsfolkClient
 import io.github.vaspyyy.guildmark.client.atlas.CompassHud
 import io.github.vaspyyy.guildmark.client.atlas.MapData
 import io.github.vaspyyy.guildmark.client.atlas.MapScreen
@@ -138,6 +139,8 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
         NeoForge.EVENT_BUS.addListener(ClientTickEvent.Post::class.java) { _ -> CityAmbience.tick() }
         NeoForge.EVENT_BUS.addListener(RenderLivingEvent.Post::class.java) { event: RenderLivingEvent.Post<*, *, *> -> CombatAnimator.onRenderPost(event) }
         modBus.addListener(AddClientReloadListenersEvent::class.java) { event -> event.addListener(Clips.ID, Clips) }
+        // Townsfolk: their renderer, the sparks off a smith's hammer (client/townsfolk)
+        TownsfolkClient.register(modBus)
         modBus.addListener(RegisterRenderStateModifiersEvent::class.java) { event ->
             event.registerAvatarEntityModifier(CombatAnimator.AVATAR)
             event.registerAvatarEntityModifier(Cutscenes.AVATAR)

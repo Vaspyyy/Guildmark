@@ -63,5 +63,12 @@ object GuildmarkConfig {
         .comment("Base chance a finished contract also pays a Sealed Relic Cache (plus 3% per rank).")
         .defineInRange("relicCacheChance", 0.08, 0.0, 1.0)
 
+    val TOWNSFOLK_CROWDS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Passers-by in towns and cities: when the streets round a player are quiet, townsfolk come walking in out of sight, go about their errands and slip away again.")
+        .define("townsfolkCrowds", true)
+    val TOWNSFOLK_CROWD_DENSITY: ModConfigSpec.DoubleValue = BUILDER
+        .comment("How busy the streets get: 1 is the usual crowd, 0.5 half as many passers-by, 2 twice as many.")
+        .defineInRange("townsfolkCrowdDensity", 1.0, 0.25, 3.0)
+
     val SPEC: ModConfigSpec = BUILDER.build()
 }

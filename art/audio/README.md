@@ -137,3 +137,61 @@ falls back to the typed-text ticks in game.
 `SAY_AS` in the script respells words the TTS gets wrong ("Hmph" was spelled out letter by letter, and
 "Halvard" came out as "Harvard"). Every line was checked with Whisper base.en: 98% of words come back
 as written.
+
+### Townsfolk
+
+The sounds the city's people make (`townsfolk/`): their work and play, the bard's tunes, and what they
+say as you pass.
+
+- `make_townsfolk_sfx.py`: the 40 effects (16 events and their variants), each timed to a townsfolk
+  animation, and the bard's four lute tunes (`townsfolk/bard/tune1..4`). The effects are close-up and dry
+  apart from a small room. Each is set to a loudness target (its loudest 100 ms, K-weighted) instead of by
+  peak: the smith's hammer is the loudest at -12 LUFS, the soft sounds sit at -17 to -18, and peaks stay under
+  -1 dBFS. `@effect(...)` on each recipe sets its variants, subtitle, target and carry distance. The tunes
+  are composed in the script and played by FluidSynth's General MIDI nylon guitar, with a second string a
+  few cents sharp for the lute's paired courses and a small synthesised frame drum in the dances. They are
+  levelled to -18 LUFS integrated.
+- `make_townsfolk_voices.py`: the 193 voice lines (`townsfolk/voice/<timbre>/<line>`) in four Kokoro voices.
+  It also writes the two fragment files the lead merges into `sounds.json` and `en_us.json`:
+  `townsfolk_sounds.json` and `townsfolk_lang.json`.
+
+```
+python3 -B art/audio/make_townsfolk_sfx.py src/main/resources/assets/guildmark [--wav <dir>] [--only smith.hammer,tavern.,tunes] [--work <tmp-dir>]
+<venv>/bin/python -I -B art/audio/make_townsfolk_voices.py tts --model <dl>/kokoro-v1.0.onnx --voices <dl>/voices-v1.0.bin --out <raw-dir> [--only man,child] [--keys '^greet'] [--espeak-data <dir>]
+python3 -B art/audio/make_townsfolk_voices.py process --raw <raw-dir> --assets src/main/resources/assets/guildmark [--only man] [--keys '^greet'] [--wav <dir>]
+python3 -B art/audio/make_townsfolk_voices.py fragments
+```
+
+`--only` takes event names without the `townsfolk.` prefix, a group prefix such as `tavern.`, or `tunes`.
+`--work` holds the tunes' MIDI and FluidSynth renders (default `build/townsfolk_music_work`). The whole
+effects script takes under a minute, and the `tts` stage a few minutes. The voices script's `--only` takes
+timbres and `--keys` a regex on the line name. A `phonemes` stage (the `tts` arguments without `--out`)
+prints what Kokoro will say for each line after `SAY_AS`. `fragments` rewrites both fragment files from the
+two scripts and warns about any voice line that has not been rendered.
+
+| File | Tune | Length |
+|---|---|---|
+| `tune1` | "The Copper Kettle", a double jig in D, 6/8 | 37.1 s |
+| `tune2` | "Over the Market Square", a reel in G | 41.9 s |
+| `tune3` | "The Lantern by the Water", a slow air in A minor, 3/4 | 39.1 s |
+| `tune4` | "The Guildhall Hornpipe", a hornpipe in A | 44.4 s |
+
+Each tune starts on its first note and ends on a chord that dies away to silence, so they can play back to
+back.
+
+| Timbre | Kokoro voice | Speed | Processing | Lines |
+|---|---|---|---|---|
+| `man` | `am_puck` | 1.0 | street | 74 |
+| `woman` | `af_nova` | 1.12 | street | 74 |
+| `old` | `am_adam` | 0.86 | down 1.2 semitones, a slight tremor, a little grit, street | 39 |
+| `child` | `af_jessica` | 1.1 | up 3 semitones, street | 6 |
+
+All four read British phonemes (`en-gb`), as the city's criers do. None of them is a voice used by the named
+characters, Halvard, the criers or the watch. Old women use `woman`, and the game varies the pitch a little
+per townsperson. Each line plays as `townsfolk.voice.<timbre>.<line>` and is subtitled with its own text
+(`say.guildmark.<line>`). Line lengths do not matter: nothing in the game is timed to them, so a line can be
+voiced again freely. `SAY_AS` respells "Hmph" (otherwise spelled out letter by letter) and "Hmm" (otherwise
+a weak, swallowed sound). The processing notches out thin whistles that Kokoro's vocoder leaves at 4.8 and
+9.6 kHz. It sets every line to the named characters' speech level, with cries 1 to 2 dB above it and
+mutters 1 to 3 dB below. No speech recogniser was available, so the lines were checked by their phonemes,
+speaking rate, pitch and spectrograms instead of by Whisper.
