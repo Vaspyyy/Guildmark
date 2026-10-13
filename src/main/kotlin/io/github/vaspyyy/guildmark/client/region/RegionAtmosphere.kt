@@ -21,6 +21,9 @@ object RegionAtmosphere {
     /** Ticks to fade the air in or out. */
     private const val FADE = 60f
 
+    /** A fog end past this many blocks has been switched off on purpose (Minecraft's own defaults to 1024). */
+    private const val FOG_SWITCHED_OFF = 1_000_000f
+
     /** The land whose air is showing, and how strongly (0 to 1), this tick and last. */
     private var kind: RegionKind? = null
     private var strength = 0f
@@ -83,14 +86,21 @@ object RegionAtmosphere {
         event.blue = b + (min(1f, tb * k) - b) * amount
     }
 
-    /** In the wilder lands the haze closes in: the fog's far edge comes no further than the land's own. */
+    /**
+     * In the wilder lands the haze closes in: the fog's far edge comes no further than the land's own.
+     *
+     * Not when another mod has switched the air's fog off by pushing it out of sight (Distant Horizons sets it
+     * to about 4e19 blocks and shades its far lands with its own fog, which still takes the land's colour from
+     * onFogColor). Easing down from there lands on 0 at full strength, as the land's few hundred blocks are lost
+     * in the float, and Sodium then culls every chunk past the fog's end: the near world went blank.
+     */
     fun onRenderFog(event: ViewportEvent.RenderFog) {
         val land = kind ?: return
         if (land.fogEnd <= 0f || event.type != FogType.ATMOSPHERIC || event.environment !is AtmosphericFogEnvironment) return
         val amount = strength(event.partialTick)
         if (amount <= 0.001f) return
         val end = event.farPlaneDistance
-        if (end <= land.fogEnd) return
+        if (end <= land.fogEnd || !end.isFinite() || end > FOG_SWITCHED_OFF) return
         event.farPlaneDistance = end + (land.fogEnd - end) * amount
     }
 }
