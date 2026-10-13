@@ -1,0 +1,30 @@
+{
+  "variants": {
+    "facing=up": {
+      "model": "guildmark:block/glimmer_cluster"
+    },
+    "facing=down": {
+      "model": "guildmark:block/glimmer_cluster",
+      "x": 180
+    },
+    "facing=north": {
+      "model": "guildmark:block/glimmer_cluster",
+      "x": 90
+    },
+    "facing=south": {
+      "model": "guildmark:block/glimmer_cluster",
+      "x": 90,
+      "y": 180
+    },
+    "facing=east": {
+      "model": "guildmark:block/glimmer_cluster",
+      "x": 90,
+      "y": 90
+    },
+    "facing=west": {
+      "model": "guildmark:block/glimmer_cluster",
+      "x": 90,
+      "y": 270
+    }
+  }
+}

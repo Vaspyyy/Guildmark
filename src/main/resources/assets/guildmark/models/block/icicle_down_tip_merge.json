@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cross",
+  "textures": {
+    "cross": "guildmark:block/icicle_down_tip_merge"
+  }
+}

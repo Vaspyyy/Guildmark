@@ -1,0 +1,21 @@
+{
+  "variants": {
+    "": [
+      {
+        "model": "guildmark:block/bog_rot"
+      },
+      {
+        "model": "guildmark:block/bog_rot",
+        "y": 90
+      },
+      {
+        "model": "guildmark:block/bog_rot",
+        "y": 180
+      },
+      {
+        "model": "guildmark:block/bog_rot",
+        "y": 270
+      }
+    ]
+  }
+}

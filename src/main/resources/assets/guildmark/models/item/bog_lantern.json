@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "guildmark:block/bog_lantern",
+    "layer1": "guildmark:block/bog_lantern_glow"
+  }
+}

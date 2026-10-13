@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cross_emissive",
+  "textures": {
+    "cross": "guildmark:block/large_glimmer_cluster",
+    "cross_emissive": "guildmark:block/large_glimmer_cluster_glow"
+  }
+}

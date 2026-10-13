@@ -112,4 +112,9 @@ python3 art/scripts/title_art.py src/main/resources/assets/guildmark [<preview-d
   blown snow, crystal glints, pollen, spores, sand, cave dust and bits of leaf (52 sprites at 16x16, and their
   particle definitions). Most are painted pale and tinted in the game (`client/region/RegionParticles.kt`).
   Run it with `python3 -B art/scripts/region_particles.py src/main/resources/assets/guildmark [preview.png]`.
+- `scripts/region_terrain.py` is the wild lands' own ground cover (`region/terrain/`): bog rot, bog lanterns and
+  cattails for the marsh; ash, charred logs and ember vents for the ashen highlands; icicles and hoarfrost for the
+  frozen peaks; glimmer clusters, glimmerstone and glimmer crystal for the crystal deeps. 32x textures with
+  full-bright glow overlays, and their block and item models, blockstates and item definitions.
+  Run it with `python3 -B art/scripts/region_terrain.py src/main/resources/assets/guildmark [preview-dir]`.
 - Sound effects, music and Halvard's voice: see `audio/README.md`.

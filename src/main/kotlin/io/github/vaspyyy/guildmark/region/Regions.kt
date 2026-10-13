@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.region
 
 import io.github.vaspyyy.guildmark.GuildmarkConfig
+import io.github.vaspyyy.guildmark.region.terrain.RegionTerrain
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Holder
 import net.minecraft.server.level.ServerLevel
@@ -70,6 +71,8 @@ object Regions {
         NeoForge.EVENT_BUS.addListener(RegisterCommandsEvent::class.java) { event -> RegionCommand.register(event.dispatcher) }
         // Each wild land's own Hollows in its monster spawns
         RegionFoes.register()
+        // And its own ground: blocks, and the features that lay them in new land
+        RegionTerrain.register(modBus)
     }
 
     fun enabled(): Boolean = !GuildmarkConfig.SPEC.isLoaded || GuildmarkConfig.REGIONS.get()

@@ -1,0 +1,10 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": "#minecraft:is_overworld",
+  "features": [
+    "guildmark:region_marsh",
+    "guildmark:region_ashen",
+    "guildmark:region_frozen"
+  ],
+  "step": "vegetal_decoration"
+}

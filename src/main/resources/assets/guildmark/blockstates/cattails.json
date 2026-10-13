@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "half=lower": {
+      "model": "guildmark:block/cattails_bottom"
+    },
+    "half=upper": {
+      "model": "guildmark:block/cattails_top"
+    }
+  }
+}

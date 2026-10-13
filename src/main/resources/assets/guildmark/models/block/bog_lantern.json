@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cross_emissive",
+  "textures": {
+    "cross": "guildmark:block/bog_lantern",
+    "cross_emissive": "guildmark:block/bog_lantern_glow"
+  }
+}

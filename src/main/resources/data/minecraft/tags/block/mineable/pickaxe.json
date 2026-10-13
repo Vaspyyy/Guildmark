@@ -1,0 +1,12 @@
+{
+  "replace": false,
+  "values": [
+    "guildmark:ember_vent",
+    "guildmark:icicle",
+    "guildmark:small_glimmer_cluster",
+    "guildmark:glimmer_cluster",
+    "guildmark:large_glimmer_cluster",
+    "guildmark:glimmerstone",
+    "guildmark:glimmer_crystal"
+  ]
+}

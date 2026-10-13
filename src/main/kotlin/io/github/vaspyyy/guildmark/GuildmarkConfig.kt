@@ -47,6 +47,9 @@ object GuildmarkConfig {
     val REGION_ENEMIES: ModConfigSpec.BooleanValue = BUILDER
         .comment("Regional foes: in the marsh, the ashen highlands, the frozen peaks and the crystal deeps, the land's own Hollows take the Hollow Soldiers' place.")
         .define("regionEnemies", true)
+    val REGION_TERRAIN: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Regional ground cover in newly explored land: rot, bog lanterns and cattails in the marsh; ash, burnt trees and ember vents on the ashen highlands; icicles and hoarfrost in the frozen peaks; glimmer crystal in the crystal deeps. Land made before stays as it is.")
+        .define("regionTerrain", true)
     val HANDBOOK: ModConfigSpec.BooleanValue = BUILDER
         .comment("Give new players the Adventurer's Handbook.")
         .define("handbookOnJoin", true)

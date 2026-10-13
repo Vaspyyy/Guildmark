@@ -1514,6 +1514,7 @@
   "commands.guildmark.region.found": "Took you to %s, %s blocks away.",
   "guildmark.configuration.regions": "Named Regions",
   "guildmark.configuration.regionEnemies": "Regional Foes",
+  "guildmark.configuration.regionTerrain": "Regional Terrain",
   "guildmark.configuration.regionTitles": "Region Names on Entering",
   "guildmark.configuration.regionMusic": "Region Themes",
   "guildmark.configuration.regionAtmosphere": "Region Fog and Motes",
@@ -1528,5 +1529,18 @@
   "guildmark.music.region.jungle": "Guildmark - Vine and Ruin",
   "guildmark.music.region.sea": "Guildmark - Tide and Sail",
   "guildmark.music.region.mushroom": "Guildmark - Spore and Lantern",
-  "guildmark.music.region.crystal": "Guildmark - Glass and Echo"
+  "guildmark.music.region.crystal": "Guildmark - Glass and Echo",
+  "block.guildmark.bog_rot": "Bog Rot",
+  "block.guildmark.bog_lantern": "Bog Lantern",
+  "block.guildmark.cattails": "Cattails",
+  "block.guildmark.ash": "Ash",
+  "block.guildmark.charred_log": "Charred Log",
+  "block.guildmark.ember_vent": "Ember Vent",
+  "block.guildmark.icicle": "Icicle",
+  "block.guildmark.hoarfrost": "Hoarfrost",
+  "block.guildmark.small_glimmer_cluster": "Small Glimmer Cluster",
+  "block.guildmark.glimmer_cluster": "Glimmer Cluster",
+  "block.guildmark.large_glimmer_cluster": "Large Glimmer Cluster",
+  "block.guildmark.glimmerstone": "Glimmerstone",
+  "block.guildmark.glimmer_crystal": "Glimmer Crystal"
 }

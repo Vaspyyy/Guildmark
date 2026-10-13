@@ -1,0 +1,88 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "guildmark:block/ember_vent",
+    "base_down": "guildmark:block/ember_vent",
+    "base_up": "guildmark:block/ember_vent_top",
+    "glow_up": "guildmark:block/ember_vent_top_glow",
+    "base_north": "guildmark:block/ember_vent",
+    "glow_north": "guildmark:block/ember_vent_glow",
+    "base_south": "guildmark:block/ember_vent",
+    "glow_south": "guildmark:block/ember_vent_glow",
+    "base_east": "guildmark:block/ember_vent",
+    "glow_east": "guildmark:block/ember_vent_glow",
+    "base_west": "guildmark:block/ember_vent",
+    "glow_west": "guildmark:block/ember_vent_glow"
+  },
+  "elements": [
+    {
+      "from": [0, 0, 0],
+      "to": [16, 16, 16],
+      "faces": {
+        "down": {
+          "uv": [0, 0, 16, 16],
+          "texture": "#base_down",
+          "cullface": "down"
+        },
+        "up": {
+          "uv": [0, 0, 16, 16],
+          "texture": "#base_up",
+          "cullface": "up"
+        },
+        "north": {
+          "uv": [0, 0, 16, 16],
+          "texture": "#base_north",
+          "cullface": "north"
+        },
+        "south": {
+          "uv": [0, 0, 16, 16],
+          "texture": "#base_south",
+          "cullface": "south"
+        },
+        "east": {
+          "uv": [0, 0, 16, 16],
+          "texture": "#base_east",
+          "cullface": "east"
+        },
+        "west": {
+          "uv": [0, 0, 16, 16],
+          "texture": "#base_west",
+          "cullface": "west"
+        }
+      }
+    },
+    {
+      "from": [0, 0, 0],
+      "to": [16, 16, 16],
+      "shade_direction_override": "up",
+      "light_emission": 15,
+      "faces": {
+        "up": {
+          "uv": [0, 0, 16, 16],
+          "texture": "#glow_up",
+          "cullface": "up"
+        },
+        "north": {
+          "uv": [0, 0, 16, 16],
+          "texture": "#glow_north",
+          "cullface": "north"
+        },
+        "south": {
+          "uv": [0, 0, 16, 16],
+          "texture": "#glow_south",
+          "cullface": "south"
+        },
+        "east": {
+          "uv": [0, 0, 16, 16],
+          "texture": "#glow_east",
+          "cullface": "east"
+        },
+        "west": {
+          "uv": [0, 0, 16, 16],
+          "texture": "#glow_west",
+          "cullface": "west"
+        }
+      }
+    }
+  ]
+}

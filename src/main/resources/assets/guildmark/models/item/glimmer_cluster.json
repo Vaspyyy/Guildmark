@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "guildmark:block/glimmer_cluster",
+    "layer1": "guildmark:block/glimmer_cluster_glow"
+  }
+}

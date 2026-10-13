@@ -1,0 +1,78 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "condition": {
+        "type": "minecraft:all_of",
+        "terms": [
+          {
+            "type": "minecraft:match_block",
+            "blocks": "guildmark:cattails",
+            "state": {
+              "half": "lower"
+            }
+          },
+          {
+            "type": "minecraft:location_check",
+            "offsetY": 1,
+            "predicate": {
+              "block": {
+                "blocks": "guildmark:cattails",
+                "state": {
+                  "half": "upper"
+                }
+              }
+            }
+          },
+          {
+            "type": "minecraft:survives_explosion"
+          }
+        ]
+      },
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "guildmark:cattails"
+        }
+      ]
+    },
+    {
+      "rolls": 1,
+      "condition": {
+        "type": "minecraft:all_of",
+        "terms": [
+          {
+            "type": "minecraft:match_block",
+            "blocks": "guildmark:cattails",
+            "state": {
+              "half": "upper"
+            }
+          },
+          {
+            "type": "minecraft:location_check",
+            "offsetY": -1,
+            "predicate": {
+              "block": {
+                "blocks": "guildmark:cattails",
+                "state": {
+                  "half": "lower"
+                }
+              }
+            }
+          },
+          {
+            "type": "minecraft:survives_explosion"
+          }
+        ]
+      },
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "guildmark:cattails"
+        }
+      ]
+    }
+  ],
+  "random_sequence": "guildmark:blocks/cattails"
+}
