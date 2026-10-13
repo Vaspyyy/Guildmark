@@ -349,6 +349,10 @@ class CityPlan(val seed: Long) {
         Dir.E -> Pos(out, along)
     }
 
+    /** Where [u], [y], [v] in the frame of the city's [kind] of building is in the city's, if it has one. */
+    fun inside(kind: Kind, u: Int, y: Int, v: Int): At? =
+        buildings.firstOrNull { it.kind == kind }?.let { Frame(NullCanvas, it.lot, it.front).at(u, y, v) }
+
     /** The direction along [side]'s wall in which "along" grows ([sign] 1) or shrinks. */
     fun sideDir(side: Dir, sign: Int): Dir = if (side.alongX) (if (sign > 0) Dir.S else Dir.N) else (if (sign > 0) Dir.E else Dir.W)
 
@@ -423,4 +427,5 @@ object NullCanvas : Canvas {
     override fun chest(x: Int, y: Int, z: Int, facing: Dir, loot: Loot) {}
     override fun board(x: Int, y: Int, z: Int, facing: Dir) {}
     override fun spawn(what: Spawn, x: Int, y: Int, z: Int, facing: Dir) {}
+    override fun resident(folk: Folk, at: At, work: At?, post: At?, facing: Dir?, home: At?) {}
 }

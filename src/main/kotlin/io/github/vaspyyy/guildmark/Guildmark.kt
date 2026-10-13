@@ -53,6 +53,7 @@ import io.github.vaspyyy.guildmark.progression.Milestones
 import com.mojang.logging.LogUtils
 import io.github.vaspyyy.guildmark.advance.AdvanceCommand
 import io.github.vaspyyy.guildmark.block.VillageBoards
+import io.github.vaspyyy.guildmark.city.CapitalVisits
 import io.github.vaspyyy.guildmark.network.SpendPerkPayload
 import io.github.vaspyyy.guildmark.network.TakeNotePayload
 import io.github.vaspyyy.guildmark.progression.Progression
@@ -148,6 +149,8 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         Townsfolk.init(modBus)
         // Named regions: who's where, their titles, music and air, and their borders on the map (region/)
         Regions.register(modBus)
+        // Which part of a capital each player is in, for the city sounds (city/CapitalVisits)
+        CapitalVisits.register()
         modBus.addListener(EntityAttributeCreationEvent::class.java) {
             it.put(ModEntities.GUILD_MEMBER.get(), GuildMember.createAttributes().build())
             it.put(ModEntities.STORY_NPC.get(), StoryNpc.createAttributes().build())

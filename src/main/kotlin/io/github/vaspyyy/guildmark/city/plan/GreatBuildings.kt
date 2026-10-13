@@ -177,8 +177,11 @@ class GreatBuildings(private val f: Frame, private val b: Building, private val 
         f.set(aisle, 1, altar, B(M.GOLD))
         f.set(aisle + 1, 1, altar, B(M.BREWING_STAND))
         for (v in listOf(7, 11)) chandelier(aisle, v, top, 4)
+        // The priest's lectern at the head of the aisle, read from the nave
+        f.set(aisle, 0, altar - 2, B(M.LECTERN, Dir.N))
         f.chest(w - 2, 0, d - 2, Dir.W, Loot.TEMPLE)
-        f.spawn(Spawn.VILLAGER, aisle, 0, altar - 3, Dir.S)
+        f.spawn(Spawn.VILLAGER, aisle + 1, 0, altar - 4, Dir.S)
+        f.resident(Folk.PRIEST, aisle, 0, altar - 3, work = f.at(aisle, 0, altar - 2), facing = Dir.S, home = f.at(2, 0, 2))
     }
 
     // ---- The tavern ----
@@ -244,6 +247,8 @@ class GreatBuildings(private val f: Frame, private val b: Building, private val 
         for (y in 0..top + 5) f.set(w - 1, y, hearth, STONE)
         f.set(w - 1, top + 6, hearth, B(M.CAMPFIRE))
         f.spawn(Spawn.VILLAGER, 4, 0, d - 3)
+        // The innkeeper behind the bar, with a room upstairs
+        f.resident(Folk.INNKEEPER, door, 0, d - 4, facing = Dir.N, home = f.at(2, STORY, 7))
         // Stairs up the east side to each floor
         for (k in 0 until floors - 1) stairs(w - 2, k * STORY, 1 + k * 5)
 
@@ -313,6 +318,8 @@ class GreatBuildings(private val f: Frame, private val b: Building, private val 
         f.set(door, y1, d - 3, B(M.LECTERN, Dir.N))
         f.set(door, top - 1, 8, B(M.LANTERN, top = true))
         f.spawn(Spawn.VILLAGER, door, 0, 7)
+        // A scholar at the map table
+        f.resident(Folk.CITIZEN, door + 1, 0, 8, work = f.at(door, 0, 9))
     }
 
     // ---- The market hall ----
@@ -356,6 +363,9 @@ class GreatBuildings(private val f: Frame, private val b: Building, private val 
         f.set(w / 2, top - 1, d / 2, B(M.LANTERN, top = true))
         f.spawn(Spawn.VILLAGER, w / 2, 0, d / 2)
         f.spawn(Spawn.VILLAGER, w / 2 - 1, 0, d / 2 + 2)
+        // Townsfolk keep two of the stalls, from behind their tables
+        f.resident(Folk.MERCHANT, 3, 0, 5, facing = Dir.N)
+        f.resident(Folk.MERCHANT, w - 3, 0, d - 4, facing = Dir.N)
     }
 
     // ---- The counting house ----
@@ -403,6 +413,7 @@ class GreatBuildings(private val f: Frame, private val b: Building, private val 
         f.chest(w - 2, y1, 2, Dir.W, Loot.LIBRARY)
         f.set(door, top - 1, 5, B(M.LANTERN, top = true))
         f.spawn(Spawn.VILLAGER, door, 0, 6)
+        f.resident(Folk.NOBLE, door + 1, 0, 2)
     }
 
     // ---- The smithy ----
@@ -461,6 +472,8 @@ class GreatBuildings(private val f: Frame, private val b: Building, private val 
         for (u in listOf(3, w - 4)) f.set(u, 4, 2, B(M.LANTERN, top = true))
         f.spawn(Spawn.VILLAGER, 4, 0, 4)
         f.spawn(Spawn.VILLAGER, w - 4, 0, 4)
+        // The smith at the anvil, the quench and the hearth to hand, living in the shop behind
+        f.resident(Folk.SMITH, 2, 0, 4, work = f.at(2, 0, 3), home = f.at(w / 2, 0, shop + 3))
         // The shop and the smith's room over it
         f.chest(1, 0, d - 2, Dir.E, Loot.SMITH)
         f.set(w - 2, 0, d - 2, B(M.FURNACE, Dir.W))
@@ -500,6 +513,8 @@ class GreatBuildings(private val f: Frame, private val b: Building, private val 
         f.set(w - 3, 0, d - 5, B(M.FURNACE, Dir.N))
         for (y in 3..top + 6) f.set(w - 3, y, d - 3, STONE)
         f.set(w - 3, top + 7, d - 3, B(M.CAMPFIRE))
+        // A table by the oven to knead the dough on
+        f.set(w - 6, 0, d - 6, TABLE)
         // The counter, sacks of flour and barrels, the compost bin out back
         for (u in 2..door + 1) f.set(u, 0, 4, B(M.PLANKS, v = 1))
         f.set(3, 1, 4, B(M.HAY))
@@ -514,6 +529,7 @@ class GreatBuildings(private val f: Frame, private val b: Building, private val 
         f.set(3, top - 1, 6, B(M.LANTERN, top = true))
         f.spawn(Spawn.VILLAGER, 4, 0, 6)
         f.spawn(Spawn.CAT, 3, 0, 9)
+        f.resident(Folk.BAKER, w - 3, 0, d - 6, work = f.at(w - 3, 0, d - 5), home = f.at(door, 0, 8))
     }
 
     // ---- The keep ----
@@ -582,6 +598,8 @@ class GreatBuildings(private val f: Frame, private val b: Building, private val 
         for (u in listOf(5, door, w - 6)) for (v in listOf(4, 8)) f.set(u, floor - 2, v, B(M.LANTERN, top = true))
         f.spawn(Spawn.GOLEM, door - 3, 0, 8)
         f.spawn(Spawn.GOLEM, door + 3, 0, 8)
+        // Lords of the court
+        for (u in listOf(door - 2, door + 2)) f.resident(Folk.NOBLE, u, 0, 4)
 
         // Stairs up the west wall to the lord's floor
         for (k in 0 until floor) {

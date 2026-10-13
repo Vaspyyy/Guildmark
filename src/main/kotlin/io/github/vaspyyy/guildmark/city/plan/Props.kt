@@ -30,6 +30,9 @@ class Props(private val plan: CityPlan, private val canvas: Canvas) {
         canvas.board(plan.board.x, 0, plan.board.z, plan.boardFacing)
         wardfire(plan.wardfire.x, plan.wardfire.z)
         guards()
+        watch()
+        // The city's bard plays in the plaza by day and lodges at the tavern
+        canvas.resident(Folk.BARD, BARD, post = BARD, facing = Dir.N, home = plan.inside(Kind.TAVERN, 2, Buildings.STORY, 13))
     }
 
     private fun lamp(x: Int, z: Int) {
@@ -87,8 +90,10 @@ class Props(private val plan: CityPlan, private val canvas: Canvas) {
         at(1, 0, 1, right)
         at(-1, 1, 0, B(M.BARREL, front))
         for (a in -2..2) for (b in -1..1) at(a, b, 3, B(M.WOOL, color = if (Math.floorMod(a, 2) == 0) stripe else Dye.WHITE))
-        // Half the stalls are kept; villagers looking for work take on the others
-        if (kind % 2 == 0) canvas.spawn(Spawn.VILLAGER, p.x - front.dx, 0, p.z - front.dz, front)
+        // Villagers keep half the stalls and townsfolk the others
+        val behind = At(p.x - front.dx, 0, p.z - front.dz)
+        if (kind % 2 == 0) canvas.spawn(Spawn.VILLAGER, behind.x, 0, behind.z, front)
+        else canvas.resident(Folk.MERCHANT, behind, post = behind, facing = front)
     }
 
     /** A well: a stone curb round deep water, posts at the corners and a little roof of slabs. */
@@ -188,9 +193,27 @@ class Props(private val plan: CityPlan, private val canvas: Canvas) {
         canvas.spawn(Spawn.GOLEM, 8, 0, 6, Dir.N)
     }
 
+    /**
+     * The city watch, townsfolk guards at their posts: a pair just inside each gate looking out down the road,
+     * two before the keep's ward, and one up on the walls to the east and west. A third or so keep the night
+     * watch; the others stand down at their posts after the evening.
+     */
+    private fun watch() {
+        for (side in plan.gates) for (along in intArrayOf(-2, 2)) post(plan.sidePos(side, along, WALL_IN - 1), 0, side)
+        for (x in intArrayOf(-4, 4)) post(CityPlan.Pos(x, CityPlan.KEEP_WARD.z1 + 1), 0, Dir.S)
+        for (side in listOf(Dir.E, Dir.W)) post(plan.sidePos(side, -20, WALL_IN + 1), CityBuilder.WALK, side)
+    }
+
+    private fun post(p: CityPlan.Pos, y: Int, facing: Dir) {
+        val at = At(p.x, y, p.z)
+        canvas.resident(Folk.GUARD, at, post = at, facing = facing)
+    }
+
     companion object {
         /** The fountain's rim, out from the middle of the plaza. */
         const val FOUNTAIN = 5
+        /** Where the bard plays, between the fountain and the south avenue, facing the fountain. */
+        val BARD = At(0, 0, 9)
         /** What each kind of stall sells: its trade's tools stand in the middle of the counter. */
         val STALL_TRADES = listOf(M.COMPOSTER, M.BARREL, M.SMOKER, M.LOOM, M.FLETCHING_TABLE, M.CAULDRON)
         val STALL_COLORS = listOf(Dye.GREEN, Dye.LIGHT_BLUE, Dye.RED, Dye.PURPLE, Dye.YELLOW, Dye.BROWN)

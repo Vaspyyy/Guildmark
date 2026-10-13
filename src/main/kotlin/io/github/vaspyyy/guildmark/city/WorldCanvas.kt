@@ -4,15 +4,20 @@ import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.block.BoardPart
 import io.github.vaspyyy.guildmark.block.QuestBoardBlock
 import io.github.vaspyyy.guildmark.block.QuestBoardBlockEntity
+import io.github.vaspyyy.guildmark.city.plan.At
 import io.github.vaspyyy.guildmark.city.plan.B
 import io.github.vaspyyy.guildmark.city.plan.Canvas
 import io.github.vaspyyy.guildmark.city.plan.CityPlan
 import io.github.vaspyyy.guildmark.city.plan.Dir
+import io.github.vaspyyy.guildmark.city.plan.Folk
 import io.github.vaspyyy.guildmark.city.plan.Loot
 import io.github.vaspyyy.guildmark.city.plan.Rect
 import io.github.vaspyyy.guildmark.city.plan.Spawn
 import io.github.vaspyyy.guildmark.guild.GuildHall
 import io.github.vaspyyy.guildmark.registry.ModBlocks
+import io.github.vaspyyy.guildmark.townsfolk.Town
+import io.github.vaspyyy.guildmark.townsfolk.TownRole
+import io.github.vaspyyy.guildmark.townsfolk.Townsfolk
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.core.registries.Registries
@@ -144,6 +149,20 @@ class WorldCanvas(
         level.addFreshEntityWithPassengers(mob)
     }
 
+    override fun resident(folk: Folk, at: At, work: At?, post: At?, facing: Dir?, home: At?) {
+        val pos = world(at)
+        if (!real || !writable(pos)) return
+        Townsfolk.spawn(
+            level, pos, role(folk), work = work?.let(::world), home = home?.let(::world), post = post?.let(::world),
+            facing = facing?.let(piece::direction), town = town,
+        )
+    }
+
+    private fun world(at: At): BlockPos = piece.world(at.x, at.y, at.z)
+
+    /** The capital as its townsfolk know it: the walls' square, with the bell as its meeting place. */
+    private val town: Town by lazy { Town(piece.center, CityPlan.WALL_OUT, piece.bell) }
+
     private fun writable(pos: BlockPos): Boolean = chunk.isInside(pos) && !level.isOutsideBuildHeight(pos)
 
     private fun place(pos: BlockPos, state: BlockState) {
@@ -183,6 +202,19 @@ class WorldCanvas(
         private const val MAX_FILL = 40
 
         private fun hash(pos: BlockPos): Int = (Mth.getSeed(pos.x, pos.y, pos.z) ushr 8).toInt()
+
+        private fun role(folk: Folk): TownRole = when (folk) {
+            Folk.CITIZEN -> TownRole.CITIZEN
+            Folk.SMITH -> TownRole.SMITH
+            Folk.BAKER -> TownRole.BAKER
+            Folk.MERCHANT -> TownRole.MERCHANT
+            Folk.GUARD -> TownRole.GUARD
+            Folk.NOBLE -> TownRole.NOBLE
+            Folk.INNKEEPER -> TownRole.INNKEEPER
+            Folk.BARD -> TownRole.BARD
+            Folk.PRIEST -> TownRole.PRIEST
+            Folk.CHILD -> TownRole.CHILD
+        }
 
         /** Air, water, plants and trees: what the ground under a city is filled through. */
         fun loose(state: BlockState): Boolean =

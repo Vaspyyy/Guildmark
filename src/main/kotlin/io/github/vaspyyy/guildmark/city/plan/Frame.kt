@@ -48,6 +48,15 @@ class Frame(val canvas: Canvas, val lot: Rect, val front: Dir) {
 
     fun spawn(what: Spawn, u: Int, y: Int, v: Int, facing: Dir = Dir.N) = canvas.spawn(what, x(u, v), y, z(u, v), turn(facing))
 
+    /** Where [u], [y], [v] in this frame is in the city's. */
+    fun at(u: Int, y: Int, v: Int): At = At(x(u, v), y, z(u, v))
+
+    /** One of the townsfolk standing at [u], [y], [v]; with [facing], that's their post, facing that way. */
+    fun resident(folk: Folk, u: Int, y: Int, v: Int, work: At? = null, facing: Dir? = null, home: At? = null) {
+        val here = at(u, y, v)
+        canvas.resident(folk, here, work, if (facing != null) here else null, facing?.let { turn(it) }, home)
+    }
+
     /** A door two blocks high at [u], [v], opening inward (toward +v unless [inward] says otherwise). */
     fun door(u: Int, y: Int, v: Int, inward: Dir = Dir.S, hingeRight: Boolean = false) {
         set(u, y, v, B(M.DOOR, inward, part = 0, v = if (hingeRight) 1 else 0))

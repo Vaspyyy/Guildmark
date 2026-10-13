@@ -16,6 +16,12 @@ enum class Loot { HOUSE, TAVERN, SMITH, TEMPLE, LIBRARY, BARRACKS, STABLES, TREA
 /** Who lives in the city. */
 enum class Spawn { VILLAGER, GOLEM, RECEPTIONIST, HORSE, CAT }
 
+/** The townsfolk's trades, as far as a city's plan knows them (townsfolk/TownRole). */
+enum class Folk { CITIZEN, SMITH, BAKER, MERCHANT, GUARD, NOBLE, INNKEEPER, BARD, PRIEST, CHILD }
+
+/** A block in the city's frame. */
+data class At(val x: Int, val y: Int, val z: Int)
+
 /**
  * Where a city gets drawn. A city is drawn one piece of land at a time ([clip]), so drawing has to
  * come out the same however often it's repeated: everything random comes from the city's seed.
@@ -41,6 +47,13 @@ interface Canvas {
     fun board(x: Int, y: Int, z: Int, facing: Dir)
 
     fun spawn(what: Spawn, x: Int, y: Int, z: Int, facing: Dir)
+
+    /**
+     * One of the townsfolk, a [folk] who lives here, standing at [at]: the block they [work] at (an anvil, an
+     * oven, a workbench), where they stand to work facing [facing] when that's a [post] (a stall's counter, the
+     * bar, a gate), and their [home] if it isn't where they stand.
+     */
+    fun resident(folk: Folk, at: At, work: At? = null, post: At? = null, facing: Dir? = null, home: At? = null)
 
     fun touches(r: Rect): Boolean = clip.intersects(r)
 }

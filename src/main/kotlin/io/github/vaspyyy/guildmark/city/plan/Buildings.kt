@@ -142,6 +142,13 @@ class Buildings(private val plan: CityPlan, private val canvas: Canvas) {
         }
         // Every other workshop has someone working in it; the rest wait for a villager to take them on
         if (trade != null && b.id % 2 == 0) f.spawn(Spawn.VILLAGER, w / 2, 0, d / 2)
+        // Townsfolk in some of the houses no villager has: someone working at the bench (now and then a
+        // noble instead), and maybe a child
+        if (b.kind == Kind.HOUSE && !bed && r.nextInt(3) == 0) {
+            if (r.nextInt(5) == 0) f.resident(Folk.NOBLE, w / 2, 0, 1)
+            else f.resident(Folk.CITIZEN, w / 2, 0, 1, work = f.at(1, 0, 1))
+            if (r.nextBoolean()) f.resident(Folk.CHILD, w / 2, 0, 2)
+        }
     }
 
     /** Timber houses have a post in the middle of a front at least seven wide and odd; windows go round it. */
