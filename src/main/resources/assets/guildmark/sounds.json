@@ -259,6 +259,22 @@
       }
     ]
   },
+  "music.region.marsh": {
+    "sounds": [
+      {
+        "name": "guildmark:music/region/marsh",
+        "stream": true
+      }
+    ]
+  },
+  "music.region.heartland": {
+    "sounds": [
+      {
+        "name": "guildmark:music/region/heartland",
+        "stream": true
+      }
+    ]
+  },
   "ui.open": {
     "sounds": [
       "guildmark:ui/open1"

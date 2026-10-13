@@ -7,6 +7,7 @@ import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.atlas.AtlasPlace
 import io.github.vaspyyy.guildmark.client.ContractTracker
 import io.github.vaspyyy.guildmark.client.combat.CombatClient
+import io.github.vaspyyy.guildmark.client.region.RegionMapLayer
 import io.github.vaspyyy.guildmark.client.wardfire.TravelFade
 import io.github.vaspyyy.guildmark.client.ui.Ui
 import io.github.vaspyyy.guildmark.guild.TownControl
@@ -519,6 +520,7 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
         drawPaper(graphics)
         val ceiling = minecraft.level?.dimensionType()?.hasCeiling() == true
         if (!ceiling) drawLand(graphics)
+        if (!ceiling) RegionMapLayer.drawNames(graphics, font, centerX, centerZ, scale, left, top, right, bottom)
         drawSpots(graphics, player, a)
         drawRose(graphics)
         drawScale(graphics)
@@ -725,7 +727,9 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
         val y = height - BAR + 4
         var room = width - 2 * SIDE - 8
         if (inMap(mouseX.toDouble(), mouseY.toDouble())) {
-            val at = Component.translatable("gui.guildmark.map.cursor", floor(worldX(mouseX.toDouble())).toInt(), floor(worldZ(mouseY.toDouble())).toInt())
+            val x = floor(worldX(mouseX.toDouble())).toInt()
+            val z = floor(worldZ(mouseY.toDouble())).toInt()
+            val at = RegionMapLayer.withRegion(x, z, Component.translatable("gui.guildmark.map.cursor", x, z))
             val w = font.width(at)
             graphics.text(font, at, width - SIDE - 4 - w, y, Ui.TEXT_SOFT, false)
             room -= w + 12

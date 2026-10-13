@@ -41,6 +41,9 @@ object GuildmarkConfig {
     val DUSK_RIDERS: ModConfigSpec.BooleanValue = BUILDER
         .comment("Dusk Riders: now and then at night a horn sounds and a mounted field boss rides for a player out in the wild. It fades at dawn.")
         .define("duskRiders", true)
+    val REGIONS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Named regions: the overworld is divided into lands with names of their own, announced as you enter them and lettered on the map.")
+        .define("regions", true)
     val HANDBOOK: ModConfigSpec.BooleanValue = BUILDER
         .comment("Give new players the Adventurer's Handbook.")
         .define("handbookOnJoin", true)

@@ -83,6 +83,9 @@ object PlaceBanner : GuiLayer {
         show(mark, subtitle, 4f)
     }
 
+    /** Whether a place's name is across the screen. */
+    fun showing(): Boolean = banner != null
+
     fun reset() {
         banner = null
         inside = null

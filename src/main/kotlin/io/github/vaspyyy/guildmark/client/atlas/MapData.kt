@@ -2,6 +2,7 @@ package io.github.vaspyyy.guildmark.client.atlas
 
 import com.mojang.blaze3d.platform.NativeImage
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.client.region.RegionMapLayer
 import io.github.vaspyyy.guildmark.network.AtlasRoad
 import net.minecraft.client.Minecraft
 import net.minecraft.client.multiplayer.ClientLevel
@@ -242,6 +243,12 @@ object MapData {
         far[key]?.stale = true
     }
 
+    /** Something inked over the whole map changed (the regions' borders): paint every tile again as it's next shown. */
+    fun repaintAll() {
+        for (tile in near.values) tile.stale = true
+        for (tile in far.values) tile.stale = true
+    }
+
     /** Call once per frame the map is drawn, before asking for tiles. */
     fun beginFrame() {
         frame++
@@ -453,6 +460,7 @@ object MapData {
             }
             image.setPixel(px, py, argb(alpha, r, g, b))
         }
+        RegionMapLayer.paint(image, tx, tz, step)
         inkRoads(image, tx, tz, step)
     }
 

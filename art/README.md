@@ -98,4 +98,8 @@ python3 art/scripts/title_art.py src/main/resources/assets/guildmark [<preview-d
 - `scripts/townsfolk_particles.py` is the sparks off a smith's hammer: the four `forge_spark` sprites, white-hot
   points that shrink as the spark dies (the particle tints them as they cool), and their particle definition.
   Run it with `python3 -B art/scripts/townsfolk_particles.py src/main/resources/assets/guildmark`.
+- `scripts/region_particles.py` is the motes in the regions' air: ash flakes and embers, marsh wisps and gnats,
+  blown snow, crystal glints, pollen, spores, sand, cave dust and bits of leaf (52 sprites at 16x16, and their
+  particle definitions). Most are painted pale and tinted in the game (`client/region/RegionParticles.kt`).
+  Run it with `python3 -B art/scripts/region_particles.py src/main/resources/assets/guildmark [preview.png]`.
 - Sound effects, music and Halvard's voice: see `audio/README.md`.

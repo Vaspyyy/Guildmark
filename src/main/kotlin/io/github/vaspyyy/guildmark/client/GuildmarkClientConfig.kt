@@ -30,6 +30,15 @@ object GuildmarkClientConfig {
     val PLACE_BANNERS: ModConfigSpec.BooleanValue = BUILDER
         .comment("Show a place's name across the screen when you find it, and again when you come back after a while.")
         .define("placeBanners", true)
+    val REGION_TITLES: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Show a region's name across the screen as you enter it.")
+        .define("regionTitles", true)
+    val REGION_MUSIC: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Play each region's own theme in place of the usual music.")
+        .define("regionMusic", true)
+    val REGION_ATMOSPHERE: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Tint the fog and drift ash, snow, spores or glints through the air in the regions that have them.")
+        .define("regionAtmosphere", true)
     val MENU_SOUNDS: ModConfigSpec.BooleanValue = BUILDER
         .comment("Play Guildmark's own sounds as its screens open, close and turn pages, and as their buttons are pressed. Off gives the usual click.")
         .define("menuSounds", true)

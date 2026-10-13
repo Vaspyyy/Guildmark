@@ -21,6 +21,7 @@ import io.github.vaspyyy.guildmark.network.WardfireTravelledPayload
 import io.github.vaspyyy.guildmark.network.DrinkFlaskPayload
 import io.github.vaspyyy.guildmark.registry.ModParticles
 import io.github.vaspyyy.guildmark.townsfolk.Townsfolk
+import io.github.vaspyyy.guildmark.region.Regions
 import io.github.vaspyyy.guildmark.wardfire.WardensFlask
 import net.neoforged.neoforge.network.PacketDistributor
 import io.github.vaspyyy.guildmark.atlas.WorldId
@@ -145,6 +146,8 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         ModSounds.SOUNDS.register(modBus)
         ModParticles.PARTICLES.register(modBus)
         Townsfolk.init(modBus)
+        // Named regions: who's where, their titles, music and air, and their borders on the map (region/)
+        Regions.register(modBus)
         modBus.addListener(EntityAttributeCreationEvent::class.java) {
             it.put(ModEntities.GUILD_MEMBER.get(), GuildMember.createAttributes().build())
             it.put(ModEntities.STORY_NPC.get(), StoryNpc.createAttributes().build())
