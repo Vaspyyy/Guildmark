@@ -1,0 +1,47 @@
+# Loading-screen tips, one to a line, shown in a shuffled order. Lines starting with # are skipped.
+# Each must be true for the current code. Another language goes in <code>.txt beside this file.
+Villagers pin fresh notes on their village's Quest Board each day, and untaken notes come down at dawn.
+Hunt notes name a monster, Clear notes count any monster near the board, and Fetch notes want goods.
+Every contract has a deadline, and an expired one pays nothing. Keep an eye on the days left.
+Use a finished contract on a Quest Board to be paid in Guild Marks.
+Deliveries and escorts appear once a village has a Trade Road. Escorts often meet bandits on the way.
+Press H to show or hide the contract tracker, with days left and an arrow to your goal.
+Where a Quest Board stands, a villager may become a Guildmaster, selling gear and relic caches for Marks.
+Contracts earn guild XP, and every guild level brings a perk point. Press G to spend it in the Ledger.
+Notes are ranked F to S, like you. You can take any note up to one rank above your own.
+To climb a rank, reach the guild level it needs, then pass a trial from a Guild Hall receptionist.
+Villages remember you, from Stranger up to Hero. Higher standing adds extra Marks to their contracts.
+Sneak and use a Quest Board to see the village's Advances, the projects your contracts help build.
+Contracts that suit a village's current project count triple toward it.
+Coaches run along finished Trade Roads. Use /coach in a village with one, or click a wheel on the map.
+Press M for the world map. It fills in as you explore, and right-click drops a named pin.
+Villages, lairs and troll camps go on your map and compass once you come near them.
+Press K for your character sheet, and hover any line to see what it means.
+With a sword or axe, click to chain up to three attacks. Sneak and click for a heavy blow you can charge.
+Raise your shield just as a blow lands to parry it. Strike the reeling foe for a riposte.
+Block a blow with your shield, then click at once for a guard counter.
+Press Left Alt to dodge roll. Blows, arrows and blasts can't touch you mid-roll.
+Press R for your weapon skill. It spends focus, which comes back faster with every blow you land.
+Press the middle mouse button to lock on. Flick the mouse sideways to switch targets.
+Attacks, rolls, blocks and sprinting in a fight all cost stamina. Ease off a moment to refill it.
+Catch a foe facing away from you and your light attack becomes a backstab.
+Look for cold Wardfires near villages and on the way into lairs. Kindle one to put it on your map.
+The first Wardfire you kindle gives you the Warden's Flask. Press V to drink from it.
+Rest at a lit Wardfire to heal, refill your flask and make it the place you wake if you fall.
+Click a Wardfire you've kindled on the world map to travel there. Following guild members come too.
+Fall carrying Guild Marks and they stay behind. Reach them before you fall again to get them back.
+Most lairs are dungeons dug underground, with a cold Wardfire waiting in the entrance hall.
+Use the mist at a boss hall's door to step through. It won't let you out while its master lives.
+Break the pots in a dungeon. Some hold Guild Marks.
+Lair notes from D rank up may lead to the Warden's Watch, where an old knight still keeps his post.
+Hill Trolls sleep by their fires by day. Sneak close and your first melee blow lands twice as hard.
+Some nights, far out in the wild, a horn sounds in the dark. A Dusk Rider is coming for you.
+A Dusk Rider fades at dawn. Bring it down before then and it leaves its Dusk Bridle behind.
+Capital cities are walled and guarded, and no monsters spawn inside their walls.
+Villages you build up may be besieged at night. Break every wave before dawn to win.
+Rival guilds want villages too. Beat a rival's captain at the village bell to take their village.
+Wren, Tobin, Ilsa and Pip may seek you out once a village knows your name.
+At rank E you can found a guild at a Guild Hall desk, then recruit villagers where you're trusted.
+Raise your guild's banner over a village and it pays you tribute when you visit.
+Each village holds a festival one day in seven, and its contracts pay a quarter more that day.
+Milestones earn titles. Type /titles to wear one after your name.

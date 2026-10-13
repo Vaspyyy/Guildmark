@@ -1,0 +1,81 @@
+# Title-screen splash lines, one to a line. Lines starting with # are skipped.
+# A line written "MM-DD: text" or "MM-DD..MM-DD: text" only shows on those days, and on those days it always does.
+Contracts posted daily!
+Paid in Guild Marks!
+Now hiring brave souls!
+Read the fine print!
+Deadline: yesterday!
+Notes come down at dawn!
+Clear the Outskirts!
+Signed On!
+Special Delivery!
+Ask at the hall desk!
+F-rank today, S-rank someday!
+Perk points for everyone!
+Haggle for more Marks!
+The Ledger always knows!
+From Stranger to Hero!
+Built note by note!
+Lamp posts first!
+From hamlet to city!
+All roads lead somewhere!
+The coach rattles on!
+Mind the bandits!
+Keep the roads clear!
+Keep it dry. Read it twice.
+Issued by the Guild!
+Wren needs more paper!
+Sorry about the ink stains!
+Very brave notes!
+Please don't step on the skulls!
+Pip knows three songs!
+The goat song is a classic!
+Rhymes with creeper: reaper!
+Twine is for parcels!
+Spider silk holds a tune!
+Lovely boots, though!
+Gnarltooth is napping!
+Tiptoe past the troll!
+Big Annet sends regards!
+Giant Slayer!
+A horn sounds in the dark!
+Hooves thunder!
+Aldric Vane rides tonight!
+Watch for the glint!
+Who keeps buying lamp oil?
+Bells ring under the hill!
+The frogs have started talking!
+Held the Line!
+Foe Vanquished!
+Rest at the Wardfire!
+A Light in the Dark!
+Weeping Ford is lovely!
+Greetings from Millworth!
+Capitals have fountains!
+City of Banners!
+The road is the only home we keep.
+Roll, don't run!
+Bring your own stamina!
+Also try vanilla combat!
+Go back for your Marks!
+Fireworks at dusk!
+Lantern Night tonight!
+Hounds rise early!
+Ash and feathers, friend!
+Debts with deadlines!
+Not today, Captain!
+The Silver Lanterns are hiring!
+Something Shiny!
+Break the seal!
+Do not lick the shiny bits!
+Rise again!
+Struck from the roll. In pencil.
+They come back richer. Mostly!
+
+# Holidays
+12-24..12-26: Merry Christmas from the Guild!
+12-24..12-26: Even trolls nap on Christmas!
+01-01: A new year, a new ledger!
+01-01: Happy New Year, adventurer!
+10-31: The dead walk the fields!
+10-31: The bones are humming!

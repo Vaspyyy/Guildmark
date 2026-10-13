@@ -251,6 +251,14 @@
       }
     ]
   },
+  "music.menu": {
+    "sounds": [
+      {
+        "name": "guildmark:music/menu",
+        "stream": true
+      }
+    ]
+  },
   "ui.open": {
     "sounds": [
       "guildmark:ui/open1"

@@ -97,4 +97,5 @@ object ModSounds {
     val MUSIC_WARDEN_2 = sound("music.fallen_warden_2")
     val MUSIC_FIELD_BOSS = sound("music.field_boss")
     val MUSIC_DUSK_RIDER = sound("music.dusk_rider")
+    val MUSIC_MENU = sound("music.menu")
 }

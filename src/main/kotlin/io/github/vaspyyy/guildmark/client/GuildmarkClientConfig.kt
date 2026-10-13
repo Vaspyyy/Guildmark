@@ -33,6 +33,12 @@ object GuildmarkClientConfig {
     val MENU_SOUNDS: ModConfigSpec.BooleanValue = BUILDER
         .comment("Play Guildmark's own sounds as its screens open, close and turn pages, and as their buttons are pressed. Off gives the usual click.")
         .define("menuSounds", true)
+    val TITLE_SCREEN: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Show Guildmark's own title screen and loading screens, with its painted dusk behind the other menus. Off gives the vanilla ones.")
+        .define("titleScreen", true)
+    val MENU_MUSIC: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Play Guildmark's own theme in the menus instead of the vanilla menu music.")
+        .define("menuMusic", true)
 
     val SPEC: ModConfigSpec = BUILDER.build()
 }

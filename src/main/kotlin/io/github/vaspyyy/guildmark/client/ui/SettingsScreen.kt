@@ -238,7 +238,7 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
     private fun interfacePage(width: Int): List<Row> {
         val c = GuildmarkClientConfig
         val spec = c.SPEC
-        val listed = listOf(c.COMPASS, c.CONTRACT_TRACKER, c.PLACE_BANNERS, c.COMBAT_HUD, c.DEATH_SCREEN, c.CAMERA_SHAKE, c.CUTSCENES, c.DIALOGUE_CAMERA, c.MENU_SOUNDS)
+        val listed = listOf(c.COMPASS, c.CONTRACT_TRACKER, c.PLACE_BANNERS, c.COMBAT_HUD, c.DEATH_SCREEN, c.TITLE_SCREEN, c.CAMERA_SHAKE, c.CUTSCENES, c.DIALOGUE_CAMERA, c.MENU_SOUNDS, c.MENU_MUSIC)
         return listOf(
             header("screen"),
             toggle(c.COMPASS, spec, true),
@@ -246,12 +246,14 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
             toggle(c.PLACE_BANNERS, spec, true),
             toggle(c.COMBAT_HUD, spec, true),
             toggle(c.DEATH_SCREEN, spec, true),
+            toggle(c.TITLE_SCREEN, spec, true),
             header("camera"),
             toggle(c.CAMERA_SHAKE, spec, true),
             toggle(c.CUTSCENES, spec, true),
             toggle(c.DIALOGUE_CAMERA, spec, true),
             header("sound"),
             toggle(c.MENU_SOUNDS, spec, true),
+            toggle(c.MENU_MUSIC, spec, true),
         ) + others(c, spec, listed, true)
     }
 

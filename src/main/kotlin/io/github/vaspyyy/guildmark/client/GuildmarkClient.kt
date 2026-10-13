@@ -43,6 +43,7 @@ import io.github.vaspyyy.guildmark.client.combat.Cutscenes
 import io.github.vaspyyy.guildmark.client.ui.CharacterScreen
 import io.github.vaspyyy.guildmark.client.ui.FallenScreen
 import io.github.vaspyyy.guildmark.client.ui.SettingsScreen
+import io.github.vaspyyy.guildmark.client.ui.title.TitleMenu
 import io.github.vaspyyy.guildmark.client.atlas.AtlasClient
 import io.github.vaspyyy.guildmark.client.atlas.CompassHud
 import io.github.vaspyyy.guildmark.client.atlas.MapData
@@ -117,6 +118,7 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
         NeoForge.EVENT_BUS.addListener(SelectMusicEvent::class.java, Cutscenes::onSelectMusic)
         NeoForge.EVENT_BUS.addListener(ScreenEvent.Opening::class.java, Cutscenes::onScreenOpening)
         NeoForge.EVENT_BUS.addListener(ScreenEvent.Opening::class.java) { event: ScreenEvent.Opening -> FallenScreen.onScreenOpening(event) }
+        TitleMenu.register()
         NeoForge.EVENT_BUS.addListener(ClientPlayerNetworkEvent.LoggingOut::class.java) { _ ->
             Cutscenes.reset()
             AtlasClient.reset()
