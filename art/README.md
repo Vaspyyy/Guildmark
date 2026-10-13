@@ -56,6 +56,7 @@ The screen art is drawn in code too, from the repo root:
 python3 art/scripts/ui_art.py src/main/resources/assets/guildmark [<preview.png>]
 python3 art/scripts/heading_font.py src/main/resources/assets/guildmark [<preview.png>]
 python3 art/scripts/hud_art.py src/main/resources/assets/guildmark/textures/gui/sprites/hud
+python3 art/scripts/title_art.py src/main/resources/assets/guildmark [<preview-dir>] [--only sky,logo]
 ```
 
 - `scripts/ui_art.py` is the screen kit: panels, buttons, insets, equipment sockets and dividers (`ui/`), the
@@ -64,6 +65,10 @@ python3 art/scripts/hud_art.py src/main/resources/assets/guildmark/textures/gui/
   `.mcmeta` scaling. The preview is a contact sheet of every sprite at 4x.
 - `scripts/heading_font.py` is the carved capitals used for headings and names (`font/heading.json`).
 - `scripts/hud_art.py` is the combat HUD: bars, the boss bar frame, the lock-on mark and the stance-broken icon.
+- `scripts/title_art.py` is the title screen (`textures/gui/title/`): the painted dusk's layers (sky, clouds, far
+  mountains, hills, the capital and its window lights, mist, the rise with the Wardfire), the fire, ember, smoke
+  and star sprites, the vignette and the Guildmark name. The layers' places on its 1920x1080 canvas match
+  `Backdrop.kt`. The preview dir gets the scene as the game composes it. It needs SciPy too.
 
 ## Other
 

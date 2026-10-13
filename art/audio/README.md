@@ -14,6 +14,9 @@ characters (Wren, Tobin, Ilsa, Pip and Maren) given a lighter touch.
   the stingers are built on his leitmotif; the field boss theme is a piece of its own in E Phrygian, and the
   Dusk Rider's is a 6/8 gallop in D minor on a horn call of its own. Each piece is a `compose_*` function, and
   the stem balance lives in `PHASE1_MIX`, `PHASE2_MIX`, `FIELD_MIX`, `RIDER_MIX` and `STINGER_MIX`.
+- `make_menu_music.py`: the title-screen theme, "Where the Road Begins" (`music/menu.ogg`), Guildmark's own
+  tune in D major built on `make_music.py`'s parts, rendering and mixer. It sets its loudness by measurement,
+  about 4 LU under the boss tracks.
 - `make_voice.py`: Halvard's three lines (`voice/`). It has two stages, `tts` and `process`.
 - `make_cast_voices.py`: the named characters' 55 dialogue lines (`voice/<character>/`), read from the
   language file. It has three stages, `tts`, `process` and `sounds`.
@@ -36,6 +39,7 @@ These versions were tested: Python 3.13, FluidSynth 2.3.4, SoX 14.4.2 and ffmpeg
 ```
 python3 -B art/audio/make_sfx.py src/main/resources/assets/guildmark [--wav <dir>] [--only combat/parry,fallen_warden/]
 python3 -B art/audio/make_music.py src/main/resources/assets/guildmark --work <tmp-dir> [--wav <dir>] [--only boss_appear]
+python3 -B art/audio/make_menu_music.py src/main/resources/assets/guildmark --work <tmp-dir> [--wav <dir>]
 ```
 
 `--wav` also writes WAV copies for listening. `--work` is where the music script keeps its per-stem
