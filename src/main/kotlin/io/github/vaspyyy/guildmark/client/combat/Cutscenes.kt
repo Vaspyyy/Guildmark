@@ -333,12 +333,27 @@ object Cutscenes : GuiLayer {
 
     /**
      * Keeps the player where they stand while the camera is away. The game only steers a player by their
-     * keys, and tells the server where they are, while it looks through their eyes, so both happen here.
+     * keys while it looks through their eyes, so their last steps would carry on; telling the server where
+     * they are is onTickStart's.
      */
     private fun holdStill(player: LocalPlayer) {
         player.xxa = 0f
         player.zza = 0f
         player.setJumping(false)
+    }
+
+    /**
+     * While the camera is away, tells the server where the player is, as the game only does while it looks
+     * through their eyes. Once a tick, at its start, and only if the camera is still away then: the server
+     * drops a player who sends two positions in one tick ("Invalid move player packet"), and the game sends
+     * its own on any tick that starts with the camera back. Nothing here hands it back mid-tick.
+     */
+    fun onTickStart() {
+        val minecraft = Minecraft.getInstance()
+        if (minecraft.isPaused) return
+        val player = minecraft.player ?: return
+        val camera = minecraft.cameraEntity ?: return
+        if (camera !== talk?.rig && camera !== scene?.rig) return
         player.connection.send(ServerboundMovePlayerPacket.PosRot(player.position(), player.yRot, player.xRot, player.onGround(), player.horizontalCollision))
     }
 

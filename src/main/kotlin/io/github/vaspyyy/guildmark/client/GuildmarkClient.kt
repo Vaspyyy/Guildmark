@@ -116,6 +116,7 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
         // Last in line, so nothing cancels the render (and its Post, which pops the pose) after the lean is pushed
         NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, RenderLivingEvent.Pre::class.java) { event: RenderLivingEvent.Pre<*, *, *> -> CombatAnimator.onRenderPre(event) }
         // Cutscenes: the camera goes first so shakes land on top of it, and hiding the hand or the player wins
+        NeoForge.EVENT_BUS.addListener(ClientTickEvent.Pre::class.java) { _ -> Cutscenes.onTickStart() }
         NeoForge.EVENT_BUS.addListener(ClientTickEvent.Post::class.java) { _ -> Cutscenes.onTick() }
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, ViewportEvent.ComputeCameraAngles::class.java, Cutscenes::onAngles)
         NeoForge.EVENT_BUS.addListener(EventPriority.LOW, ViewportEvent.ComputeFov::class.java, Cutscenes::onFov)
