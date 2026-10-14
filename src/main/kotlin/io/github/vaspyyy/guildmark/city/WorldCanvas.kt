@@ -101,7 +101,7 @@ class WorldCanvas(
         val cursor = BlockPos.MutableBlockPos(base.x, level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, base.x, base.z) - 1, base.z)
         while (cursor.y > level.minY && loose(level.getBlockState(cursor))) cursor.move(Direction.DOWN)
         val land = level.getBlockState(cursor)
-        val natural = land.`is`(BlockTags.DIRT) || land.`is`(BlockTags.SAND) || land.`is`(Blocks.SNOW_BLOCK)
+        val natural = land.`is`(BlockTags.SUBSTRATE_OVERWORLD) || land.`is`(BlockTags.SAND) || land.`is`(Blocks.SNOW_BLOCK)
         val top = if (natural) land.trySetValue(BlockStateProperties.SNOWY, false) else style.palette.ground.defaultBlockState()
         clearAbove(base)
         // A dip is filled up to the plaza's height; a rise was just cut down to it

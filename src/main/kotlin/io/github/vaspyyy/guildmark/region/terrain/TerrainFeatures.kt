@@ -267,8 +267,8 @@ class Ashfall : Feature {
 
     /** Natural ground fire could have scorched: rock, clay, soil and sand. */
     private fun scorchable(state: BlockState): Boolean =
-        state.`is`(BlockTags.BASE_STONE_OVERWORLD) || state.`is`(BlockTags.TERRACOTTA) || state.`is`(BlockTags.DIRT) ||
-            state.`is`(Blocks.GRASS_BLOCK) || state.`is`(BlockTags.SAND) || state.`is`(Blocks.GRAVEL)
+        state.`is`(BlockTags.BASE_STONE_OVERWORLD) || state.`is`(BlockTags.TERRACOTTA) || state.`is`(BlockTags.SUBSTRATE_OVERWORLD) ||
+            state.`is`(BlockTags.SAND) || state.`is`(Blocks.GRAVEL)
 
     companion object {
         val CODEC: MapCodec<Ashfall> = MapCodec.unit(Ashfall())

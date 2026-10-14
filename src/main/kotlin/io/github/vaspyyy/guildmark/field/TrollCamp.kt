@@ -202,7 +202,7 @@ object TrollCamp {
 
     /** Ground and plants that may be cleared or trodden over: never anything a player built. */
     private fun natural(state: BlockState): Boolean =
-        state.`is`(BlockTags.DIRT) || state.`is`(BlockTags.BASE_STONE_OVERWORLD) || state.`is`(BlockTags.SAND) ||
+        state.`is`(BlockTags.SUBSTRATE_OVERWORLD) || state.`is`(BlockTags.BASE_STONE_OVERWORLD) || state.`is`(BlockTags.SAND) ||
             state.`is`(Blocks.GRAVEL) || state.`is`(BlockTags.SNOW) || state.`is`(Blocks.CLAY)
 
     /**

@@ -45,7 +45,7 @@ object AdvanceBuilders {
     /** Ground that grew there rather than was built: not a roof, a floor or a farm. */
     fun naturalGround(level: ServerLevel, top: BlockPos): Boolean {
         val state = level.getBlockState(top.below())
-        return state.block in NATURAL_GROUND || state.`is`(BlockTags.DIRT) || state.`is`(BlockTags.SAND) ||
+        return state.block in NATURAL_GROUND || state.`is`(BlockTags.SUBSTRATE_OVERWORLD) || state.`is`(BlockTags.SAND) ||
             state.`is`(BlockTags.BASE_STONE_OVERWORLD) || state.`is`(Blocks.DIRT_PATH) || state.`is`(Blocks.SNOW_BLOCK)
     }
 

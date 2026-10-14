@@ -179,7 +179,7 @@ class FieldBosses(
     private fun suits(level: ServerLevel, pos: BlockPos): Boolean {
         if (!level.getFluidState(pos).isEmpty || !level.getFluidState(pos.below()).isEmpty) return false
         val floor = level.getBlockState(pos.below())
-        if (!(floor.`is`(BlockTags.DIRT) || floor.`is`(BlockTags.BASE_STONE_OVERWORLD) || floor.`is`(BlockTags.SNOW))) return false
+        if (!(floor.`is`(BlockTags.SUBSTRATE_OVERWORLD) || floor.`is`(BlockTags.BASE_STONE_OVERWORLD) || floor.`is`(BlockTags.SNOW))) return false
         val r = TrollCamp.RADIUS
         var even = 0
         var columns = 0

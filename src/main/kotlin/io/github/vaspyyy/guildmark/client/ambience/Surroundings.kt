@@ -294,7 +294,7 @@ class Surroundings {
 
         /** The land as the world made it, as opposed to anything laid by hand. */
         private fun natural(state: BlockState): Boolean =
-            state.`is`(BlockTags.DIRT) || state.`is`(BlockTags.BASE_STONE_OVERWORLD) || state.`is`(BlockTags.SAND) ||
+            state.`is`(BlockTags.SUBSTRATE_OVERWORLD) || state.`is`(BlockTags.BASE_STONE_OVERWORLD) || state.`is`(BlockTags.SAND) ||
                 state.`is`(BlockTags.LEAVES) || state.`is`(BlockTags.ICE) || state.`is`(BlockTags.SNOW) ||
                 state.`is`(BlockTags.TERRACOTTA) || state.`is`(Blocks.GRAVEL) || state.`is`(Blocks.SANDSTONE) ||
                 !state.fluidState.isEmpty

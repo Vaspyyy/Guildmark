@@ -132,7 +132,7 @@ class RoadNetwork(val roads: MutableList<Road> = mutableListOf()) : SavedData() 
             height++
         }
         val ground = level.getBlockState(pos)
-        return height in 1..6 && (ground.`is`(BlockTags.DIRT) || ground.`is`(BlockTags.SAND) || ground.`is`(Blocks.GRAVEL) ||
+        return height in 1..6 && (ground.`is`(BlockTags.SUBSTRATE_OVERWORLD) || ground.`is`(BlockTags.SAND) || ground.`is`(Blocks.GRAVEL) ||
             ground.`is`(Blocks.SNOW_BLOCK) || ground.`is`(BlockTags.BASE_STONE_OVERWORLD) || ground.`is`(Blocks.DIRT_PATH))
     }
 
