@@ -1,8 +1,8 @@
 {
   "textures": {
-    "panel": "minecraft:block/spruce_planks",
-    "frame": "minecraft:block/stripped_dark_oak_log",
-    "particle": "minecraft:block/spruce_planks"
+    "panel": "guildmark:block/quest_board_panel",
+    "frame": "guildmark:block/quest_board_frame",
+    "particle": "guildmark:block/quest_board_panel"
   },
   "elements": [
     {

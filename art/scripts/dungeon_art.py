@@ -14,7 +14,7 @@ import sys
 import numpy as np
 from PIL import Image
 
-SIZE = 16
+SIZE = 32
 FRAMES = 32
 FRAME_TIME = 2
 
@@ -52,10 +52,11 @@ def shifted(field, dx, dy):
 
 
 def frames():
-    big = tile_noise(SIZE, 8, 8, 11)
-    # Tall, thin streaks: the fog rising in strands
-    streak = tile_noise(SIZE, 4, 8, 12)
-    drift = tile_noise(SIZE, 8, 4, 13)
+    big = tile_noise(SIZE, 16, 16, 11)
+    # Tall, thin streaks: the fog rising in strands, and finer wisps through them
+    streak = tile_noise(SIZE, 8, 16, 12)
+    drift = tile_noise(SIZE, 16, 8, 13)
+    wisp = tile_noise(SIZE, 4, 16, 14)
     out = []
     for f in range(FRAMES):
         t = f / FRAMES
@@ -63,7 +64,8 @@ def frames():
         a = shifted(big, 0, -t * SIZE)
         b = shifted(streak, 0, -2 * t * SIZE)
         c = shifted(drift, t * SIZE, -t * SIZE)
-        fog = 0.45 * a + 0.35 * b + 0.2 * c
+        e = shifted(wisp, 0, -3 * t * SIZE)
+        fog = 0.4 * a + 0.3 * b + 0.18 * c + 0.12 * e
         light = np.clip(0.6 + 0.8 * (fog - 0.5), 0, 1)
         r = 168 + 80 * light
         g = 172 + 78 * light

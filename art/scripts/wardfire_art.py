@@ -16,230 +16,201 @@ import sys
 import numpy as np
 from PIL import Image
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from hdkit import PAL, GEMS, Canvas, grid, vnoise, fbm, rand, tone, ramp, bands, rect, path_dist, light
+
 CL = (0, 0, 0, 0)
 
 
-# ---- Painting ----
+# ---- Painting (32x, with the HD art kit; the models' UVs stay in 16ths, so every region is simply twice as fine) ----
 
-def value_noise(w, h, cell, seed):
-    """Smooth noise in 0..1, tiling at the texture's edges."""
-    rng = random.Random(seed)
-    gw, gh = max(1, w // cell), max(1, h // cell)
-    grid = [[rng.random() for _ in range(gw)] for _ in range(gh)]
-    out = np.zeros((h, w))
-    for y in range(h):
-        for x in range(w):
-            fx, fy = x / cell, y / cell
-            x0, y0 = int(fx) % gw, int(fy) % gh
-            x1, y1 = (x0 + 1) % gw, (y0 + 1) % gh
-            tx, ty = fx - int(fx), fy - int(fy)
-            tx, ty = tx * tx * (3 - 2 * tx), ty * ty * (3 - 2 * ty)
-            a = grid[y0][x0] * (1 - tx) + grid[y0][x1] * tx
-            b = grid[y1][x0] * (1 - tx) + grid[y1][x1] * tx
-            out[y, x] = a * (1 - ty) + b * ty
-    return out
+T = 32
 
 
-def ramp(colors, t):
-    """A colour from a list of stops, for t in 0..1."""
-    t = min(max(t, 0.0), 0.9999) * (len(colors) - 1)
-    i = int(t)
-    f = t - i
-    a, b = colors[i], colors[i + 1]
-    return tuple(int(a[k] * (1 - f) + b[k] * f) for k in range(3)) + (255,)
+def stone(seed, mossy):
+    """Weathered standing stone: chipped faces lit from the upper left, a crack or two, lichen, and moss
+    gathering along the top (more on the mossy stones)."""
+    xs, ys = grid(T)
+    h = fbm(T, T, 10, seed) * 1.6 + fbm(T, T, 4, seed + 1) * 0.5
+    # Flat chisel facets: the height snapped to steps, so the light breaks into planes
+    facets = np.round(h * 5) / 5
+    t = 0.48 + 0.6 * light(facets * 3.0, 1.0) + 0.16 * (fbm(T, T, 3, seed + 2) - 0.5)
+    t = t - 0.25 * (ys > T - 2) + 0.12 * (ys < 2)
+    cv = Canvas(T)
+    cv.put(np.ones((T, T), bool), bands(PAL['stone'], t, 0.3))
+    rng = np.random.default_rng(seed)
+    for _ in range(3):
+        x, y = int(rng.integers(4, T - 4)), int(rng.integers(6, T - 8))
+        for _ in range(int(rng.integers(6, 13))):
+            cv.px(x, y, PAL['stone'][0])
+            cv.px(min(T - 1, x + 1), y, tone(PAL['stone'][1], 0.1))
+            if 0 <= x - 1 and rng.random() < 0.5:
+                cv.px(x - 1, y, PAL['stone'][4])
+            x = int(np.clip(x + rng.choice((-1, 0, 0, 1)), 1, T - 2))
+            y = min(T - 1, y + 1)
+    lichen = fbm(T, T, 3, seed + 5)
+    cv.over((lichen > 0.7) & (ys > 8), (120, 118, 84), 0.45)
+    moss = fbm(T, T, 4, seed + 7) + vnoise(T, T, 2, seed + 8) * 0.25
+    reach = 13 if mossy else 7
+    grow_m = moss > 0.48 + ys / reach * 0.42
+    cv.put(grow_m, bands(PAL['moss'], 0.35 + 0.8 * (moss - 0.5) + 0.25 * (ys < 3), 0.4))
+    cv.put(grow_m & ~np.roll(grow_m, -1, axis=0) & (ys > 1), PAL['moss'][0])
+    return cv.image()
 
 
-STONE = [(70, 66, 62), (96, 91, 85), (122, 116, 107), (146, 140, 129), (166, 160, 148)]
-MOSS = [(52, 70, 38), (70, 92, 50), (92, 116, 62)]
-
-
-def stone(seed):
-    """Weathered grey-brown stone, a crack or two, moss gathering along the top."""
-    w = h = 16
-    n = value_noise(w, h, 4, seed) * 0.6 + value_noise(w, h, 2, seed + 1) * 0.3 + value_noise(w, h, 8, seed + 2) * 0.1
-    img = Image.new("RGBA", (w, h))
-    rng = random.Random(seed)
-    for y in range(h):
-        for x in range(w):
-            img.putpixel((x, y), ramp(STONE, 0.15 + n[y, x] * 0.75))
-    # Chipped edges catch the light, hollows don't
-    for x in range(w):
-        if rng.random() < 0.55:
-            img.putpixel((x, 0), ramp(STONE, 0.95))
-        if rng.random() < 0.5:
-            img.putpixel((x, h - 1), ramp(STONE, 0.1))
-    # Cracks: short random walks in near-black
-    for _ in range(2):
-        x, y = rng.randrange(2, w - 2), rng.randrange(3, h - 3)
-        for _ in range(rng.randrange(4, 8)):
-            img.putpixel((x, y), (48, 45, 42, 255))
-            if 0 <= x + 1 < w:
-                img.putpixel((x + 1, y), ramp(STONE, 0.35))
-            x = min(w - 1, max(0, x + rng.choice((-1, 0, 1))))
-            y = min(h - 1, max(0, y + 1))
-    # Moss along the top, thinning downward
-    moss = value_noise(w, h, 3, seed + 7)
-    for y in range(6):
-        for x in range(w):
-            if moss[y, x] > 0.42 + y * 0.09:
-                img.putpixel((x, y), ramp(MOSS, moss[y, x]))
-    return img
-
-
+# Each rune as strokes in the 32x texture's middle (it's laid over a standing stone's face at twice the density)
 def rune_glyph(seed):
-    """A carved Warden's rune, as a mask of groove pixels. It's drawn in the middle 8x12 of a 16x16
-    texture and laid over a standing stone's face at twice the usual texel density."""
     rng = random.Random(seed)
-    mask = np.zeros((16, 16), bool)
-    cx = 8
-    top, bottom = 3, 13
-    # A spine, a pair of arms, and a foot that differs on each stone
-    for y in range(top, bottom):
-        mask[y, cx] = True
-    arm = rng.randrange(6, 9)
-    for i in range(1, 4):
-        mask[arm - i + 1, cx - i] = mask[arm - i + 1, cx + i] = True
+    cx, top, bottom = 16, 6, 26
+    strokes = [[(cx, top), (cx, bottom)]]
+    arm = rng.randrange(12, 18)
+    strokes.append([(cx - 6, arm - 6), (cx, arm)])
+    strokes.append([(cx + 6, arm - 6), (cx, arm)])
     foot = rng.randrange(3)
     if foot == 0:
-        for x in range(cx - 2, cx + 3):
-            mask[bottom - 1, x] = True
+        strokes.append([(cx - 5, bottom - 1), (cx + 5, bottom - 1)])
     elif foot == 1:
-        mask[bottom - 2, cx - 2] = mask[bottom - 2, cx + 2] = True
-        mask[bottom - 1, cx - 1] = mask[bottom - 1, cx + 1] = True
+        strokes.append([(cx - 5, bottom - 5), (cx, bottom - 1), (cx + 5, bottom - 5)])
     else:
-        for y in range(bottom - 4, bottom - 1):
-            mask[y, cx - 3] = mask[y, cx + 3] = True
-    mask[top - 1, cx - 1] = mask[top - 1, cx + 1] = True
-    return mask
+        strokes.append([(cx - 6, bottom - 9), (cx - 6, bottom - 3)])
+        strokes.append([(cx + 6, bottom - 9), (cx + 6, bottom - 3)])
+    strokes.append([(cx - 2.5, top - 2), (cx - 1, top)])
+    strokes.append([(cx + 2.5, top - 2), (cx + 1, top)])
+    d = np.full((T, T), 9.0)
+    for st in strokes:
+        dd, _ = path_dist(st, T)
+        d = np.minimum(d, dd)
+    return d
 
 
-def rune_decal(mask, lit):
-    """Just the groove pixels, for a plane laid over the stone: dark when cold, gold when lit."""
-    img = Image.new("RGBA", (16, 16), CL)
-    for y in range(16):
-        for x in range(16):
-            if mask[y, x]:
-                img.putpixel((x, y), ((255, 210, 112, 255) if y % 3 else (255, 236, 170, 255)) if lit else (40, 37, 35, 255))
-    return img
+def rune_decal(d, lit):
+    """The groove alone, for a plane laid over the stone: cut dark when cold, with a lit lower lip; filled
+    with gold light when the fire burns."""
+    cv = Canvas(T)
+    groove = d < 1.15
+    if lit:
+        cv.put(groove, bands(PAL['ember'], 0.62 + 0.45 * (d < 0.5) - 0.1 * (d > 0.9), 0))
+    else:
+        cv.put(groove, PAL['stone'][0])
+        lip = groove & ~np.roll(groove, -1, axis=0)
+        cv.put(lip, PAL['stone'][1])
+        cv.put(groove & ~np.roll(groove, 1, axis=0), (14, 13, 18))
+    return cv.image()
 
 
 def ash(seed, lit):
-    """The bed of ash: grey and black, with charcoal chunks, and live embers when lit."""
-    w = h = 16
-    rng = random.Random(seed)
-    n = value_noise(w, h, 3, seed) * 0.7 + value_noise(w, h, 2, seed + 3) * 0.3
-    img = Image.new("RGBA", (w, h))
-    for y in range(h):
-        for x in range(w):
-            v = n[y, x]
-            img.putpixel((x, y), ramp([(40, 38, 37), (62, 59, 57), (86, 82, 78), (112, 107, 101)], v) if not lit
-                         else ramp([(28, 26, 26), (46, 43, 42), (66, 62, 60), (92, 88, 84)], v))
-    for _ in range(9):
-        x, y = rng.randrange(w), rng.randrange(h)
-        img.putpixel((x, y), (20, 18, 18, 255))
-        if x + 1 < w:
-            img.putpixel((x + 1, y), (34, 31, 30, 255))
+    """The bed of ash: soft grey drifts, lumps of charcoal, and live embers glowing through when lit."""
+    xs, ys = grid(T)
+    n = fbm(T, T, 7, seed) * 0.8 + vnoise(T, T, 2, seed + 3) * 0.2
+    t = 0.32 + 0.55 * (n - 0.3) + 0.3 * light(n * 4, 1.0)
     if lit:
-        heat = value_noise(w, h, 3, seed + 11)
-        for y in range(h):
-            for x in range(w):
-                # Hottest in the middle of the bed
-                d = math.hypot(x - 7.5, y - 7.5) / 8
-                t = heat[y, x] * (1.25 - d * 0.8)
-                if t > 0.5:
-                    img.putpixel((x, y), ramp([(150, 52, 18), (226, 110, 30), (255, 178, 70), (255, 230, 150)], (t - 0.5) / 0.5))
-    return img
-
-
-STEEL = [(54, 56, 64), (88, 92, 102), (124, 128, 138), (162, 166, 174), (196, 200, 206)]
+        t = t - 0.15
+    cv = Canvas(T)
+    cv.put(np.ones((T, T), bool), bands(PAL['ash'], t, 0.4))
+    rng = np.random.default_rng(seed)
+    for _ in range(16):
+        x, y = int(rng.integers(0, T - 2)), int(rng.integers(0, T - 2))
+        w, h = int(rng.integers(2, 4)), int(rng.integers(1, 3))
+        m = rect(x, y, x + w, y + h, T)
+        cv.put(m, (16, 14, 16))
+        cv.px(x, y, (52, 46, 46))
+        if lit and rng.random() < 0.5:
+            cv.px(x + w - 1, y + h - 1, PAL['ember'][2])
+    if lit:
+        heat = fbm(T, T, 5, seed + 11)
+        d = np.hypot(xs - 16, ys - 16) / 16
+        h2 = heat * (1.3 - d * 0.9)
+        glow = h2 > 0.62
+        cv.put(glow, bands(PAL['ember'], (h2 - 0.62) / 0.42, 0.5))
+        # Glowing seams between the lumps
+        seam = (np.abs(vnoise(T, T, 4, seed + 13) - 0.5) < 0.04) & (d < 0.8)
+        cv.put(seam & ~glow, PAL['ember'][2])
+    return cv.image()
 
 
 def sword_sheet(seed):
-    """Every part of the planted sword on one 16x16 texture (regions listed in SWORD_UV)."""
+    """Every part of the planted sword on one 32x32 texture (the regions are the 16x layout doubled)."""
+    xs, ys = grid(T)
     rng = random.Random(seed)
-    img = Image.new("RGBA", (16, 16), CL)
-    # Blade flat [0,0,2,12]: a fuller down the middle, darker toward the tip, notches and rust
+    cv = Canvas(T)
+    steel = PAL['steel']
+    # Blade flat [0,0,4,24]: a fuller down the middle, darker toward the tip, rust and pitting
+    flat = rect(0, 0, 4, 24, T)
+    t = 0.7 - ys * 0.012 + 0.12 * (xs < 1) - 0.08 * (xs > 3)
+    t = np.where((xs > 1) & (xs < 3) & (ys > 1) & (ys < 20), t - 0.3, t)
+    cv.put(flat, bands(steel, t, 0.3))
+    for _ in range(5):
+        x, y = rng.randrange(4), rng.randrange(3, 23)
+        cv.px(x, y, (98, 62, 40))
+        cv.px(x, y + 1, (70, 44, 32))
+    # Blade edge [4,0,6,24]: bright, with nicks
+    for y in range(24):
+        nick = rng.random() < 0.18
+        cv.px(4, y, steel[3] if nick else steel[5])
+        cv.px(5, y, steel[2] if nick else steel[4])
+    # Blade end [6,0,8,4]
+    cv.put(rect(6, 0, 8, 4, T), steel[3])
+    # Guard [8,0,20,4]: tarnished bronze-gold, a boss in the middle, darker underneath
+    guard = rect(8, 0, 20, 4, T)
+    gt = 0.62 - 0.35 * (ys > 2) - 0.12 * ((xs < 9) | (xs > 19)) + 0.15 * (ys < 1)
+    cv.put(guard, bands(PAL['gold'], gt, 0))
+    cv.put(rect(13, 0, 15, 2, T), PAL['gold'][5])
+    cv.px(14, 1, GEMS['amber'][3])
+    # Grip [20,0,22,12]: dark leather in a spiral wrap
     for y in range(12):
-        for x in range(2):
-            t = 0.75 - y * 0.02 + (0.12 if x == 0 else -0.05)
-            img.putpixel((x, y), ramp(STEEL, t))
-    for y in range(1, 10):
-        img.putpixel((1, y), ramp(STEEL, 0.38))
-    for y in rng.sample(range(2, 11), 3):
-        img.putpixel((rng.randrange(2), y), (108, 70, 44, 255))
-    # Blade edge [2,0,3,12]: bright, nicked
-    for y in range(12):
-        img.putpixel((2, y), ramp(STEEL, 0.95 if rng.random() > 0.2 else 0.55))
-    # Blade end [3,0,4,2]: the cut face where it meets the ash, and the top under the guard
-    for y in range(2):
-        img.putpixel((3, y), ramp(STEEL, 0.5))
-    # Guard [4,0,10,2]: tarnished bronze, a gold boss in the middle
-    for y in range(2):
-        for x in range(4, 10):
-            img.putpixel((x, y), ramp([(96, 68, 32), (140, 102, 48), (182, 140, 70)], 0.75 - y * 0.35 - (0.15 if x in (4, 9) else 0)))
-    img.putpixel((6, 0), (214, 176, 96, 255))
-    img.putpixel((7, 0), (214, 176, 96, 255))
-    # Grip [10,0,11,6]: leather with a spiral wrap
-    for y in range(6):
-        img.putpixel((10, y), (88, 58, 36, 255) if (y % 2 == 0) else (58, 38, 24, 255))
-    # Pommel [12,0,14,2]: gold
-    for y in range(2):
-        for x in range(12, 14):
-            img.putpixel((x, y), ramp([(120, 88, 40), (176, 138, 66), (220, 184, 104)], 0.8 - y * 0.4 - (x - 12) * 0.2))
-    # Cloth [4,4,8,12]: a faded crimson strip, frayed at the end
-    for y in range(4, 12):
-        for x in range(4, 8):
-            if y >= 10 and rng.random() < 0.35 + (y - 10) * 0.25:
-                continue
-            fold = 0.55 + (0.2 if x == 5 else 0) - (0.2 if x == 7 else 0) - (y - 4) * 0.03
-            img.putpixel((x, y), ramp([(70, 18, 20), (112, 30, 30), (150, 46, 40), (176, 70, 56)], fold))
-    return img
+        cv.px(20, y, PAL['leather'][3] if y % 3 != 2 else PAL['leather'][1])
+        cv.px(21, y, PAL['leather'][2] if y % 3 != 0 else PAL['leather'][0])
+    # Pommel [24,0,28,4]: gold, lit at the upper left
+    cv.put(rect(24, 0, 28, 4, T), bands(PAL['gold'], 0.75 - 0.12 * (xs - 24) - 0.1 * ys, 0))
+    # Cloth [8,8,16,24]: a faded crimson strip with a gold thread, frayed at the end
+    cloth = rect(8, 8, 16, 24, T)
+    fray = (ys > 20) & (rand(T, T, seed) < 0.3 + (ys - 20) * 0.15)
+    ct = 0.55 + 0.18 * (np.abs(xs - 10.5) < 1) - 0.25 * (xs > 14) - (ys - 8) * 0.012 + 0.08 * (vnoise(T, T, 2, seed) - 0.5)
+    cv.put(cloth & ~fray, bands(PAL['crimson'], ct, 0.3))
+    cv.put(cloth & ~fray & (np.abs(ys - 11.5) < 0.6), PAL['gold'][3])
+    return cv.image()
 
 
-def flame_frames(frames=8, w=16, h=16, seed=5):
-    """Golden flames licking up round the blade: thin tongues, amber at the edges, pale gold at the heart.
-    Every tongue moves at a whole number of cycles per loop, so the last frame runs into the first."""
+def flame_frames(frames=8, seed=5):
+    """Golden flames licking up round the blade: thin tongues, ember-red at the edges, pale gold at the heart.
+    Every tongue moves a whole number of cycles per loop, so the last frame runs into the first."""
     rng = random.Random(seed)
+    w = h = T
     tongues = []
-    for i in range(5):
-        tongues.append((4.4 + i * 1.8 + rng.uniform(-0.4, 0.4), rng.uniform(0, math.tau), rng.choice((1, 2)), rng.uniform(9, 14.5)))
-    sheet = Image.new("RGBA", (w, h * frames), CL)
+    for i in range(7):
+        tongues.append((8.6 + i * 2.5 + rng.uniform(-0.6, 0.6), rng.uniform(0, math.tau), rng.choice((1, 2)), rng.uniform(21, 31)))
+    sheet = Canvas(w, h * frames)
+    xs, ys = grid(w, h)
+    lift = h - ys
     for f in range(frames):
         t = f / frames * math.tau
-        for y in range(h):
-            lift = h - 1 - y
-            for x in range(w):
-                heat = 0.0
-                for cx, phase, speed, tall in tongues:
-                    top = tall * (0.8 + 0.2 * math.sin(t * speed + phase))
-                    if lift > top:
-                        continue
-                    k = lift / top
-                    sway = math.sin(t * speed + phase + k * 2.5) * 1.3 * k
-                    half = 1.6 * (1 - k) ** 0.6 + 0.3
-                    heat += math.exp(-((x - cx - sway) / half) ** 2) * (1 - k ** 1.5)
-                # The bed of the fire, where the tongues meet
-                heat += max(0.0, 1 - lift / 3.0) * math.exp(-((x - 7.5) / 4.5) ** 2) * 0.9
-                if heat > 0.45:
-                    sheet.putpixel((x, f * h + y), ramp([(196, 74, 20), (236, 124, 34), (252, 172, 58), (255, 210, 102), (255, 236, 168)],
-                                                        min(1.0, (heat - 0.45) / 1.3)))
-    return sheet
+        heat = np.zeros((h, w))
+        for cx, phase, speed, tall in tongues:
+            top = tall * (0.8 + 0.2 * math.sin(t * speed + phase))
+            k = np.clip(lift / top, 0, 1)
+            sway = np.sin(t * speed + phase + k * 2.5) * 2.4 * k
+            half = 3.2 * (1 - k) ** 0.6 + 0.6
+            heat += np.where(lift <= top, np.exp(-((xs - cx - sway) / half) ** 2) * (1 - k ** 1.5), 0)
+        heat += np.clip(1 - lift / 6.0, 0, None) * np.exp(-((xs - 16) / 9) ** 2) * 0.9
+        m = heat > 0.42
+        layer = Canvas(w, h)
+        layer.put(m, bands(PAL['ember'][1:], np.clip((heat - 0.42) / 1.25, 0, 1), 0.5))
+        sheet.rgb[f * h:(f + 1) * h] = layer.rgb
+        sheet.a[f * h:(f + 1) * h] = layer.a
+    return sheet.image()
 
 
 def ember_frames():
-    """Four frames of a drifting ember, 8x8: a hot point in a soft halo, dimming and shrinking."""
+    """Four frames of a drifting ember, 16x16: a hot point in a soft halo, dimming and shrinking."""
     out = []
-    for i, (r, core) in enumerate([(3.2, 1.6), (2.6, 1.2), (2.0, 0.9), (1.4, 0.6)]):
-        img = Image.new("RGBA", (8, 8), CL)
-        for y in range(8):
-            for x in range(8):
-                d = math.hypot(x - 3.5, y - 3.5)
-                if d < core:
-                    img.putpixel((x, y), (255, 244, 200, 255))
-                elif d < r:
-                    k = 1 - (d - core) / (r - core)
-                    img.putpixel((x, y), (255, int(160 + 60 * k), int(60 + 40 * k), int(70 + 170 * k)))
-        out.append(img)
+    xs, ys = grid(16)
+    for (r, core) in [(6.0, 2.6), (5.0, 2.0), (4.0, 1.5), (3.0, 1.0)]:
+        cv = Canvas(16)
+        d = np.hypot(xs - 8, ys - 8)
+        k = np.clip(1 - (d - core) / (r - core), 0, 1)
+        cv.put(d < r, ramp([(220, 90, 30), (255, 170, 70), (255, 220, 140)], k), 0.25 + 0.75 * k ** 1.3)
+        cv.put(d < core, (255, 246, 214), 1.0)
+        out.append(cv.image())
     return out
 
 
@@ -471,8 +442,8 @@ def main():
         os.makedirs(d, exist_ok=True)
 
     textures = {
-        "guildmark:block/wardfire_stone": stone(21),
-        "guildmark:block/wardfire_stone_mossy": stone(34),
+        "guildmark:block/wardfire_stone": stone(21, False),
+        "guildmark:block/wardfire_stone_mossy": stone(34, True),
         "guildmark:block/wardfire_ash": ash(3, False),
         "guildmark:block/wardfire_ash_lit": ash(3, True),
         "guildmark:block/wardfire_sword": sword_sheet(9),
@@ -511,7 +482,7 @@ def main():
     if preview:
         shots = [render(cold, textures, yaw=35), render(lit, textures, yaw=35, frame=0),
                  render(lit, textures, yaw=-130, frame=3), render(lit, textures, yaw=80, pitch=12, frame=5)]
-        flames = textures["guildmark:block/wardfire_flame"].resize((16 * 6, 128 * 6), Image.NEAREST)
+        flames = textures["guildmark:block/wardfire_flame"].resize((T * 3, T * 8 * 3), Image.NEAREST)
         sheet = Image.new("RGBA", (300 * 4 + flames.width + 20, max(320, flames.height)), (40, 44, 54, 255))
         for i, s in enumerate(shots):
             sheet.paste(s, (i * 300, 0))
@@ -519,10 +490,10 @@ def main():
         parts = [textures[k] for k in ("guildmark:block/wardfire_stone", "guildmark:block/wardfire_stone_mossy",
                                        "guildmark:block/wardfire_ash", "guildmark:block/wardfire_ash_lit",
                                        "guildmark:block/wardfire_sword", "guildmark:block/wardfire_rune_0_lit")] + embers
-        strip = Image.new("RGBA", (sum(p.width * 6 + 8 for p in parts) + 10, 110), (40, 44, 54, 255))
+        strip = Image.new("RGBA", (sum(p.width * 4 + 8 for p in parts) + 10, 140), (40, 44, 54, 255))
         x = 10
         for p in parts:
-            big = p.resize((p.width * 6, p.height * 6), Image.NEAREST)
+            big = p.resize((p.width * 4, p.height * 4), Image.NEAREST)
             strip.paste(big, (x, 6), big)
             x += big.width + 8
         out = Image.new("RGBA", (max(sheet.width, strip.width), sheet.height + strip.height), (40, 44, 54, 255))

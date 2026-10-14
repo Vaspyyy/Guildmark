@@ -31,7 +31,15 @@ and Kotlin model code always agree.
   at 512x256, with one shared glow map (hot iron, lantern). It writes its Kotlin straight into `client/townsfolk/`:
   `TownsfolkMesh.kt` (the geometry) and `TownsfolkLooks.kt` (every look's texture, voice and pieces). Its previews
   are contact sheets: every look front and back (also `art/models/townsfolk_preview.png`) and each role up close.
-- `scripts/shard_art.py` is the crown shard item texture.
+- `scripts/hdkit.py` is the HD art kit the 32x blocks and items are painted with, in the dark-fantasy look the
+  shader sets: material palettes (cool shadows, warm light, a few hard tones each), height fields lit from the upper
+  left, ordered dither where tones meet, bevels for stamped and carved shapes, and the dark outline round items.
+- `scripts/items_hd.py` is every Guildmark item at 32x (the Guild Mark, contract, quest board, relic caches, the
+  Warden's Flask at its four levels, crown shard, Dusk Bridle, Lantern Wisp and the four older creatures' spawn
+  eggs), the seven quest notes and the quest board's own planks and frame. It writes textures only; the models
+  and item definitions already point at them. It replaces the old 16x scripts (`cache_art.py`, `flask_art.py`,
+  `shard_art.py`, `rider_items.py`, `spawn_eggs.py`).
+- `scripts/wardfire_art.py` and `scripts/dungeon_art.py` paint the Wardfire and the mist gate at 32x too.
 
 Rebuild a model (needs Python 3 with Pillow and numpy), from the repo root:
 
@@ -42,6 +50,7 @@ python3 art/scripts/hollow_soldier.py src/main/resources/assets/guildmark <previ
 python3 art/scripts/fallen_warden.py src/main/resources/assets/guildmark <preview-dir> art/models
 python3 -B art/scripts/townsfolk.py src/main/resources/assets/guildmark <preview-dir> art/models
 python3 -B art/scripts/region_hollows.py src/main/resources/assets/guildmark <preview-dir> art/models
+python3 -B art/scripts/items_hd.py src/main/resources/assets/guildmark [preview-dir]
 ```
 
 Each run writes the textures into the mod's assets, the `.bbmodel` into `art/models`, and a preview
