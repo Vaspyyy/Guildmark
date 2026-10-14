@@ -54,6 +54,12 @@ and Kotlin model code always agree.
   compass band are repainted outright, with gilt corner brackets on the panels. The sprites' `.mcmeta` stay as they
   are: nine-slice sizes and borders are in screen pixels, so the finer textures draw at the same size. Frames and
   icons are 2x rather than 4x so one-texel lines still show at GUI scale 2 and 3.
+- `scripts/vanilla_hd.py` builds the optional Guildmark HD resource pack (`resourcepacks/guildmark_hd`, listed in
+  Options > Resource Packs, off by default; `client/HdPack.kt` registers it). It takes 53 vanilla blocks (stone and
+  its variants, dirt and grass, sand, logs, planks and leaves, the ores) straight from the Minecraft jar and remasters
+  them at 32x so they sit next to Guildmark's own blocks: Scale2x with wrap so they still tile, a bevel where shapes
+  meet, fine grain per material, and a dark fantasy grade (a little desaturated, cool shadows, warm highlights). Tinted
+  textures (grass, leaves) stay grey so biome colours still apply, and ore crystals keep their colour.
 
 Rebuild a model (needs Python 3 with Pillow and numpy), from the repo root:
 
@@ -67,6 +73,7 @@ python3 -B art/scripts/region_hollows.py src/main/resources/assets/guildmark <pr
 python3 -B art/scripts/items_hd.py src/main/resources/assets/guildmark [preview-dir]
 python3 -B art/scripts/ui_hd.py src/main/resources/assets/guildmark [preview-dir]
 python3 -B art/scripts/creature_hd.py src/main/resources/assets/guildmark [preview-dir]
+python3 -B art/scripts/vanilla_hd.py <minecraft-26.3 jar> src/main/resources/resourcepacks/guildmark_hd [preview-dir]
 ```
 
 Each run writes the textures into the mod's assets, the `.bbmodel` into `art/models`, and a preview

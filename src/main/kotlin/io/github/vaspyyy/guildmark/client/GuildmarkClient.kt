@@ -151,6 +151,7 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
         RegionClient.register(modBus)
         // Dragons: their renderer, their flames, the ground shaking as they land (client/dragon)
         DragonClient.register(modBus)
+        HdPack.register(modBus)
         modBus.addListener(RegisterRenderStateModifiersEvent::class.java) { event ->
             event.registerAvatarEntityModifier(CombatAnimator.AVATAR)
             event.registerAvatarEntityModifier(Cutscenes.AVATAR)

@@ -62,13 +62,13 @@ def face_rects(model):
 
 # ================================================================ Scale2x as a map of where each pixel comes from
 
-def epx_map(a):
+def epx_map(a, wrap=False):
     """For a face's texels, which neighbour each of the 2x pixels copies (dy, dx in -1..1), by Scale2x's rule.
     The face's edge repeats outward, so nothing comes from beyond it; and a see-through texel never spreads over
     a solid one."""
     h, w = a.shape[:2]
     key = (a[..., 0].astype(np.int64) << 24) | (a[..., 1].astype(np.int64) << 16) | (a[..., 2].astype(np.int64) << 8) | a[..., 3]
-    pad = np.pad(key, 1, mode='edge')
+    pad = np.pad(key, 1, mode='wrap' if wrap else 'edge')
     P = key
     A, B, C, D = pad[:-2, 1:-1], pad[1:-1, 2:], pad[1:-1, :-2], pad[2:, 1:-1]
     solid = a[..., 3] > 0
@@ -87,10 +87,12 @@ def epx_map(a):
     return dy, dx
 
 
-def apply_map(a, dy, dx):
+def apply_map(a, dy, dx, wrap=False):
     h, w = a.shape[:2]
     Y = np.repeat(np.arange(h), 2)[:, None] + dy
     X = np.repeat(np.arange(w), 2)[None, :] + dx
+    if wrap:
+        return a[Y % h, X % w]
     return a[np.clip(Y, 0, h - 1), np.clip(X, 0, w - 1)]
 
 

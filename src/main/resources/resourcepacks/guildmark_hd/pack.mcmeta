@@ -1,0 +1,7 @@
+{
+  "pack": {
+    "description": "Guildmark HD: vanilla stone, wood, grass, leaves and ores at 32x, in Guildmark's dark fantasy palette",
+    "min_format": 97,
+    "max_format": [97, 1]
+  }
+}
