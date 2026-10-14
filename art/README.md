@@ -40,6 +40,13 @@ and Kotlin model code always agree.
   and item definitions already point at them. It replaces the old 16x scripts (`cache_art.py`, `flask_art.py`,
   `shard_art.py`, `rider_items.py`, `spawn_eggs.py`).
 - `scripts/wardfire_art.py` and `scripts/dungeon_art.py` paint the Wardfire and the mist gate at 32x too.
+- `scripts/creature_hd.py` ships the older creatures at twice their declared size: the Hollow Soldier, the Hollow
+  King, Halvard, the Hill Troll, the Dusk Rider and steed, the five named characters, the four rival guilds and the
+  Guildmaster's villager coat. It remasters each 1x design one cube face at a time (read from the model scripts, so
+  nothing bleeds between faces): Scale2x inside the face, each material's own fine surface (scratched metal, threads
+  in cloth, grain in leather, mottled skin and moss), and a lit edge where a lighter piece meets a darker one. Glow
+  maps follow the same pixels. The 1x designs are kept in `entity_1x/`; rerun a model script, then this one, and it
+  picks up the fresh 1x texture by its size.
 - `scripts/ui_hd.py` is every screen, HUD, compass and map sprite at 2x. The 1x designs are kept in `ui_1x/`
   (`ui_art.py` and `hud_art.py` draw most of them, into a folder you give them; the ledger and tracker ones were drawn
   by hand), and `ui_hd.py` remasters each one: Scale2x for clean diagonals, outlines thinned to one fine line (the
@@ -59,6 +66,7 @@ python3 -B art/scripts/townsfolk.py src/main/resources/assets/guildmark <preview
 python3 -B art/scripts/region_hollows.py src/main/resources/assets/guildmark <preview-dir> art/models
 python3 -B art/scripts/items_hd.py src/main/resources/assets/guildmark [preview-dir]
 python3 -B art/scripts/ui_hd.py src/main/resources/assets/guildmark [preview-dir]
+python3 -B art/scripts/creature_hd.py src/main/resources/assets/guildmark [preview-dir]
 ```
 
 Each run writes the textures into the mod's assets, the `.bbmodel` into `art/models`, and a preview
