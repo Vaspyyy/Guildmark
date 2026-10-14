@@ -1,10 +1,13 @@
 package io.github.vaspyyy.guildmark.client.shader
 
+import com.mojang.blaze3d.platform.InputConstants
 import io.github.vaspyyy.guildmark.Guildmark
+import net.minecraft.client.KeyMapping
 import net.minecraft.client.Minecraft
 import net.neoforged.fml.ModList
 import net.neoforged.fml.loading.FMLPaths
 import net.neoforged.neoforge.client.event.ClientTickEvent
+import net.neoforged.neoforge.client.settings.KeyModifier
 import net.neoforged.neoforge.common.NeoForge
 import java.nio.file.Files
 import java.nio.file.Path
@@ -35,10 +38,13 @@ object GuildmarkShaders {
     private var outcome = Outcome.UNCHANGED
     private var settled = false
 
+    /** Keys an Iris binding moves to when it sits on one of Guildmark's: the first that nothing else uses. */
+    private val SPARE_KEYS = intArrayOf(InputConstants.KEY_J, InputConstants.KEY_U, InputConstants.KEY_Y, InputConstants.KEY_Z)
+
     fun register() {
         if (!shaderModLoaded) return
         outcome = install()
-        if (outcome != Outcome.UNCHANGED && ModList.get().isLoaded("iris")) {
+        if (ModList.get().isLoaded("iris")) {
             NeoForge.EVENT_BUS.addListener(ClientTickEvent.Post::class.java) { _ -> settle() }
         }
     }
@@ -99,16 +105,52 @@ object GuildmarkShaders {
     }
 
     /**
-     * Once the game is up: a first copy is chosen in Iris when no pack has been chosen yet there, and a pack
-     * Iris is running that this launch rewrote is reloaded, since Iris may have read the old files first.
+     * Once the game is up: Iris's keys are moved off Guildmark's, a first copy is chosen in Iris when no pack has
+     * been chosen yet there, and a pack Iris is running that this launch rewrote is reloaded, since Iris may have
+     * read the old files first.
      */
     private fun settle() {
-        if (settled || !Minecraft.getInstance().isGameLoadFinished) return
+        val mc = Minecraft.getInstance()
+        if (settled || !mc.isGameLoadFinished) return
         settled = true
+        moveIrisKeys(mc)
+        if (outcome == Outcome.UNCHANGED) return
         val name = Iris.packName()
         when {
             outcome == Outcome.FIRST && name == null -> Iris.choose(PACK)
-            outcome != Outcome.UNCHANGED && name == PACK && Iris.enabled() -> Iris.reload()
+            name == PACK && Iris.enabled() -> Iris.reload()
+        }
+    }
+
+    /**
+     * Iris binds R to reload the pack and K to turn shaders on and off, which are Guildmark's weapon skill and
+     * character sheet, and a press reaches every binding on its key: a weapon skill would also reload the pack and
+     * hang the game mid-fight. So an Iris binding that shares a key with one of Guildmark's moves off it, the reload
+     * to no key at all and the others to a spare key.
+     */
+    private fun moveIrisKeys(mc: Minecraft) {
+        val mappings = mc.options.keyMappings
+        val ours = mappings.filter { it.name.startsWith("key.${Guildmark.MOD_ID}.") && !it.isUnbound }
+        var moved = false
+        for (theirs in mappings) {
+            if (!theirs.name.startsWith("iris.") || theirs.isUnbound) continue
+            val clash = ours.firstOrNull { theirs.same(it) } ?: continue
+            val to = if (theirs.name.endsWith(".reload")) {
+                InputConstants.UNKNOWN
+            } else {
+                SPARE_KEYS.map { InputConstants.Type.KEYBOARD.getOrCreate(it) }
+                    .firstOrNull { key -> mappings.none { it.matches(key) } } ?: InputConstants.UNKNOWN
+            }
+            Guildmark.LOGGER.info(
+                "Moved Iris's {} off {}, which is Guildmark's {}, to {}",
+                theirs.name, theirs.translatedKeyMessage.string, clash.name, to.displayName.string,
+            )
+            theirs.setKeyModifierAndCode(KeyModifier.NONE, to)
+            moved = true
+        }
+        if (moved) {
+            KeyMapping.resetMapping()
+            mc.options.save()
         }
     }
 
