@@ -168,6 +168,8 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
 
         private fun status(): Pair<Component, Int> {
             val key = when {
+                // Iris won't load without Sodium, and the dev runs leave it out then
+                mod == CompanionMod.IRIS && DevRuns.offered && DevRuns.chosen(mod) && !DevRuns.chosen(CompanionMod.SODIUM) -> "needs_sodium"
                 DevRuns.pending(mod) -> if (DevRuns.chosen(mod)) "loads_next" else "gone_next"
                 !mod.loaded -> when {
                     !DevRuns.offered -> "missing"
@@ -185,7 +187,7 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
             val color = when (key) {
                 "loaded", "on" -> Ui.GREEN
                 "loads_next", "gone_next" -> Ui.GOLD_BRIGHT
-                "needs_dh" -> Ui.RED
+                "needs_dh", "needs_sodium" -> Ui.RED
                 "off" -> Ui.TEXT_SOFT
                 else -> Ui.TEXT_FAINT
             }

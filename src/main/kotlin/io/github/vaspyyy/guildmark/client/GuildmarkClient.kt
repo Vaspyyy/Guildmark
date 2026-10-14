@@ -47,6 +47,7 @@ import io.github.vaspyyy.guildmark.client.ui.CharacterScreen
 import io.github.vaspyyy.guildmark.client.ui.FallenScreen
 import io.github.vaspyyy.guildmark.client.ui.SettingsScreen
 import io.github.vaspyyy.guildmark.client.ui.title.TitleMenu
+import io.github.vaspyyy.guildmark.client.shader.GuildmarkShaders
 import io.github.vaspyyy.guildmark.client.atlas.AtlasClient
 import io.github.vaspyyy.guildmark.client.ambience.CityAmbience
 import io.github.vaspyyy.guildmark.client.townsfolk.TownsfolkClient
@@ -127,6 +128,7 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
         NeoForge.EVENT_BUS.addListener(ScreenEvent.Opening::class.java, Cutscenes::onScreenOpening)
         NeoForge.EVENT_BUS.addListener(ScreenEvent.Opening::class.java) { event: ScreenEvent.Opening -> FallenScreen.onScreenOpening(event) }
         TitleMenu.register()
+        GuildmarkShaders.register()
         NeoForge.EVENT_BUS.addListener(ClientPlayerNetworkEvent.LoggingOut::class.java) { _ ->
             Cutscenes.reset()
             AtlasClient.reset()

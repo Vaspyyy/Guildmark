@@ -91,8 +91,16 @@ def companion = { String name ->
 def projectDefaults = new Properties()
 projectDefaults.load(new StringReader(providers.fileContents(layout.projectDirectory.file("gradle.properties")).asText.get()))
 neoForge.runs.configureEach {
-    for (name in ["tectonic", "distant_horizons", "sodium"]) {
+    for (name in ["tectonic", "distant_horizons", "sodium", "iris"]) {
         systemProperty "guildmark.devRuns." + name, (projectDefaults.getProperty("with_" + name) ?: "true").trim()
+    }
+}
+
+// Iris draws through OpenGL alone and crashes on Minecraft's Vulkan backend, so with it loaded the client run
+// asks for OpenGL, whatever the video settings say
+if (companion("sodium") && companion("iris")) {
+    neoForge.runs.named("client") {
+        programArguments.addAll '--graphicsBackend', 'opengl'
     }
 }
 
@@ -116,6 +124,12 @@ dependencies {
     // required or shipped: players who want it add it themselves.
     if (companion("sodium")) {
         localRuntime "maven.modrinth:sodium:${sodium_version}"
+
+        // Iris on top of it, which needs it, so Guildmark's own shader pack is played and tested in the dev runs
+        // too. Never required or shipped either.
+        if (companion("iris")) {
+            localRuntime "maven.modrinth:iris:${iris_version}"
+        }
     }
 
     // Kotlin runs without Kotlin for Forge: the stdlib ships inside our jar.

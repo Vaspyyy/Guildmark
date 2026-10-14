@@ -134,6 +134,11 @@ python3 art/scripts/title_art.py src/main/resources/assets/guildmark [<preview-d
   and star sprites, the vignette and the Guildmark name. The layers' places on its 1920x1080 canvas match
   `Backdrop.kt`. The preview dir gets the scene as the game composes it. It needs SciPy too.
 
+## Shader pack
+
+Guildmark's own shader pack for Iris is in `src/main/resources/shaderpack/Guildmark/`. `shaderkit/` checks it and
+renders previews of it without the game: see `shaderkit/README.md`.
+
 ## Other
 
 - `scripts/spawn_eggs.py` recolours vanilla's zombie spawn egg into the two new spawn eggs.

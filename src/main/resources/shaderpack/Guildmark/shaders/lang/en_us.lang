@@ -1,0 +1,87 @@
+profile.comment=How much of your graphics card the pack asks for. High is the look as made.
+
+screen.LIGHT=Light
+screen.SHADOWS=Shadows
+screen.ATMOSPHERE=Mist, Sky and Weather
+screen.WATER=Water
+screen.CAMERA=Colour and Camera
+screen.MOTION=Wind
+
+option.SUN_STRENGTH=Sunlight
+option.SUN_STRENGTH.comment=How strongly the sun lights what it reaches.
+option.AMBIENT_STRENGTH=Light in the Shade
+option.AMBIENT_STRENGTH.comment=How much the open sky fills in what the sun doesn't reach. Lower is grimmer.
+option.NIGHT_BRIGHTNESS=Night Brightness
+option.NIGHT_BRIGHTNESS.comment=Moonlight and the night sky. Nights are meant to be dark.
+option.CAVE_DARKNESS=Cave Darkness
+option.CAVE_DARKNESS.comment=How dark places with no light at all get. 0 keeps them faintly visible.
+option.TORCH_STRENGTH=Firelight
+option.TORCH_STRENGTH.comment=Torches, lanterns, campfires and Wardfires.
+option.TORCH_FLICKER=Flickering Flames
+option.HELD_LIGHT=Light in Hand
+option.HELD_LIGHT.comment=A torch or lantern in your hand lights the way around you.
+option.EMISSIVE_STRENGTH=Glow
+option.EMISSIVE_STRENGTH.comment=How bright flames, lava and glowing blocks are.
+option.SSAO=Ambient Occlusion
+option.SSAO.comment=Deeper shade in corners, under eaves and around creatures.
+option.SSAO_STRENGTH=Occlusion Strength
+option.FOLIAGE_SSS=Light Through Leaves
+option.FOLIAGE_SSS.comment=Leaves and grass glow with the sun behind them.
+
+option.shadowMapResolution=Shadow Detail
+option.shadowMapResolution.comment=Sharper shadows cost more.
+option.shadowDistance=Shadow Distance
+option.shadowDistance.comment=How far out shadows are drawn, in blocks.
+option.SHADOW_FILTER=Shadow Smoothness
+value.SHADOW_FILTER.1=Low
+value.SHADOW_FILTER.2=Medium
+value.SHADOW_FILTER.3=High
+option.SHADOW_SOFTNESS=Shadow Softness
+option.SHADOW_SOFTNESS.comment=How much shadows blur the farther they fall from what casts them.
+option.COLORED_SHADOWS=Coloured Shadows
+option.COLORED_SHADOWS.comment=Light through stained glass and water takes its colour.
+option.CLOUD_SHADOWS=Cloud Shadows
+option.sunPathRotation=Sun Path Tilt
+option.sunPathRotation.comment=How far the sun's path leans away from straight overhead.
+
+option.MIST_DENSITY=Mist
+option.MIST_DENSITY.comment=How thick the haze is everywhere.
+option.VALLEY_MIST=Valley Mist
+option.VALLEY_MIST.comment=Ground mist pooling in low land, heaviest at dawn, at night and in rain.
+option.LIGHT_SHAFTS=Light Shafts
+option.LIGHT_SHAFTS.comment=Sun and moonlight caught in the mist, cut into beams by trees and walls.
+option.SHAFT_STRENGTH=Shaft Strength
+option.SHAFT_STEPS=Shaft Quality
+option.SUN_RAYS=Sun Rays
+option.SUN_RAYS.comment=Rays streaming out from the sun or moon where it shines between trees and walls.
+option.CLOUDS=Clouds
+option.CLOUD_COVERAGE=Cloud Cover
+option.CLOUD_HEIGHT=Cloud Height
+option.STARS=Stars
+option.RAIN_WETNESS=Wet Ground
+option.RAIN_WETNESS.comment=Rain darkens stone and soil, leaves puddles and makes them shine.
+
+option.WATER_WAVES=Waves
+option.WATER_MURK=Murk
+option.WATER_MURK.comment=How quickly water swallows what lies below.
+option.WATER_REFLECTIONS=Reflections
+option.WATER_REFLECTIONS.comment=The shore and sky mirrored in water.
+
+option.EXPOSURE=Exposure
+option.AUTO_EXPOSURE=Eye Adjustment
+option.AUTO_EXPOSURE.comment=Eyes adjust between caves and open sky, but never all the way.
+option.BLOOM=Bloom
+option.BLOOM_STRENGTH=Bloom Strength
+option.SATURATION=Colour
+option.SATURATION.comment=Lower is more muted.
+option.GREEN_MUTE=Muted Greens
+option.GREEN_MUTE.comment=Pulls Minecraft's bright greens toward olive and moss.
+option.CONTRAST=Contrast
+option.SPLIT_TONE=Cold Shade, Warm Light
+option.VIGNETTE=Vignette
+option.FILM_GRAIN=Film Grain
+option.FXAA=Smooth Edges (FXAA)
+
+option.WAVING_PLANTS=Swaying Plants
+option.WAVING_LEAVES=Swaying Leaves
+option.WIND_STRENGTH=Wind

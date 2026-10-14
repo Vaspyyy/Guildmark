@@ -21,7 +21,9 @@ enum class CompanionMod(val id: String, val modId: String, val devKey: String?, 
     DISTANT_HORIZONS("distant_horizons", "distanthorizons", "distant_horizons", "https://modrinth.com/mod/distanthorizons"),
     SEEDGEN("seedgen", "seedrenderer", null, "https://modrinth.com/mod/distant-horizons-seedgen"),
     TECTONIC("tectonic", "tectonic", "tectonic", "https://modrinth.com/mod/tectonic"),
-    SODIUM("sodium", "sodium", "sodium", "https://modrinth.com/mod/sodium");
+    SODIUM("sodium", "sodium", "sodium", "https://modrinth.com/mod/sodium"),
+    /** Runs Guildmark's own shader pack (client/shader/GuildmarkShaders); it needs Sodium and OpenGL. */
+    IRIS("iris", "iris", "iris", "https://modrinth.com/mod/iris");
 
     val page: URI = URI.create(page)
 
