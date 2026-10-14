@@ -40,6 +40,13 @@ and Kotlin model code always agree.
   and item definitions already point at them. It replaces the old 16x scripts (`cache_art.py`, `flask_art.py`,
   `shard_art.py`, `rider_items.py`, `spawn_eggs.py`).
 - `scripts/wardfire_art.py` and `scripts/dungeon_art.py` paint the Wardfire and the mist gate at 32x too.
+- `scripts/ui_hd.py` is every screen, HUD, compass and map sprite at 2x. The 1x designs are kept in `ui_1x/`
+  (`ui_art.py` and `hud_art.py` draw most of them, into a folder you give them; the ledger and tracker ones were drawn
+  by hand), and `ui_hd.py` remasters each one: Scale2x for clean diagonals, outlines thinned to one fine line (the
+  compass markers keep their full outline), a bevel of light and a little grain. The frames, buttons, bars and the
+  compass band are repainted outright, with gilt corner brackets on the panels. The sprites' `.mcmeta` stay as they
+  are: nine-slice sizes and borders are in screen pixels, so the finer textures draw at the same size. Frames and
+  icons are 2x rather than 4x so one-texel lines still show at GUI scale 2 and 3.
 
 Rebuild a model (needs Python 3 with Pillow and numpy), from the repo root:
 
@@ -51,6 +58,7 @@ python3 art/scripts/fallen_warden.py src/main/resources/assets/guildmark <previe
 python3 -B art/scripts/townsfolk.py src/main/resources/assets/guildmark <preview-dir> art/models
 python3 -B art/scripts/region_hollows.py src/main/resources/assets/guildmark <preview-dir> art/models
 python3 -B art/scripts/items_hd.py src/main/resources/assets/guildmark [preview-dir]
+python3 -B art/scripts/ui_hd.py src/main/resources/assets/guildmark [preview-dir]
 ```
 
 Each run writes the textures into the mod's assets, the `.bbmodel` into `art/models`, and a preview
