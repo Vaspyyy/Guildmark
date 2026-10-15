@@ -2,7 +2,6 @@ package io.github.vaspyyy.guildmark.city
 
 import io.github.vaspyyy.guildmark.ambience.CityDistricts
 import io.github.vaspyyy.guildmark.ambience.District
-import io.github.vaspyyy.guildmark.city.plan.CityBuilder
 import io.github.vaspyyy.guildmark.city.plan.CityPlan
 import io.github.vaspyyy.guildmark.city.plan.Kind
 import io.github.vaspyyy.guildmark.city.plan.Use
@@ -14,11 +13,13 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent
 import net.neoforged.neoforge.event.server.ServerStoppedEvent
 import net.neoforged.neoforge.event.tick.PlayerTickEvent
 import java.util.UUID
+import kotlin.math.abs
 
 /**
  * Tells each player's city sounds where they stand in a capital (ambience/CityDistricts): in one at all, and
- * in which part of it: the plaza and the market hall, up on the walls, or the hush of the temple, the library
- * and the keep's ward. Each player is looked at twice a second and told only when that changes.
+ * in which part of it: the plaza, the market and its hall, the harbour, up on the walls, or the hush of the
+ * cathedral, the library, the noble quarter and the citadel. Each player is looked at twice a second and told
+ * only when that changes.
  */
 object CapitalVisits {
     /** Ticks between looks at where each player is. */
@@ -67,17 +68,27 @@ object CapitalVisits {
         return district(capital.plan, x, pos.y - capital.center.y, z)
     }
 
-    /** The part of the city at [x], [z] in its own frame, [y] above the plaza. */
+    /** The part of the city at [x], [z] in its own frame, [y] over the lower town's standing height. */
     private fun district(plan: CityPlan, x: Int, y: Int, z: Int): District {
-        val use = plan.grid[x, z]
-        val fortified = use == Use.WALL || use == Use.TOWER || use == Use.GATE || use == Use.KEEP_WALL
-        if (fortified && y >= CityBuilder.WARD_WALK) return District.WALLS
-        if (CityPlan.KEEP_WARD.contains(x, z)) return District.QUIET
-        if (use == Use.PLAZA) return District.MARKET
+        when (plan.grid[x, z]) {
+            Use.WALL, Use.TOWER, Use.GATE, Use.INNER_WALL, Use.KEEP_WALL -> if (y >= wallWalk(plan, x, z) - 1) return District.WALLS
+            Use.QUAY, Use.PIER, Use.MOORING -> return District.HARBOUR
+            Use.PLAZA -> return District.MARKET
+            else -> {}
+        }
+        if (plan.market.contains(x, z)) return District.MARKET
+        if (plan.citadel.contains(x, z) || plan.nobleQuarter.contains(x, z)) return District.QUIET
         return when (plan.buildings.getOrNull(plan.grid.owner(x, z))?.kind) {
             Kind.MARKET_HALL -> District.MARKET
-            Kind.TEMPLE, Kind.LIBRARY -> District.QUIET
+            Kind.TEMPLE, Kind.LIBRARY, Kind.CATHEDRAL -> District.QUIET
             else -> District.NONE
         }
+    }
+
+    /** The standing height on the walk of whichever wall stands at [x], [z]: the outer walls', the old town's or the citadel's. */
+    private fun wallWalk(plan: CityPlan, x: Int, z: Int): Int = when {
+        maxOf(abs(x), abs(z)) > plan.outer - CityPlan.WALL_THICK -> plan.walk
+        plan.citadel.grow(CityPlan.CITADEL_TOWER_RADIUS.toInt()).contains(x, z) -> plan.high + CityPlan.CITADEL_PARAPET
+        else -> plan.upper + CityPlan.INNER_PARAPET
     }
 }

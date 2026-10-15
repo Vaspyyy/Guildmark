@@ -408,10 +408,12 @@ class CityPlan(val seed: Long, val layout: Layout = Layout.DEFAULT, val land: La
         special(Kind.STABLES, sideRect(training, yard + 1, yard + 12, bandIn + 1, bandIn + 14), Dir.N)
     }
 
-    /** The noble quarter: manors with their gardens along the old town's streets south-west of the plaza. */
+    /** The noble quarter, south-west of the plaza in the old town. */
+    val nobleQuarter: Rect get() = (inner - INNER_THICK - RING_ROAD).let { Rect(-it, 4, -4, it) }
+
+    /** The noble quarter: manors with their gardens along the old town's streets there. */
     private fun manors() {
-        val oldRing = inner - INNER_THICK - RING_ROAD
-        val quarter = Rect(-oldRing, 4, -4, oldRing)
+        val quarter = nobleQuarter
         for (s in streets.filter { it.rect.intersects(quarter.grow(1)) }) {
             for (side in Dir.entries) pack(s.rect, side, Kind.MANOR, MANOR_WIDTH, MANOR_DEPTH, quarter)
         }
