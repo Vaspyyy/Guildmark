@@ -7,6 +7,10 @@ import io.github.vaspyyy.guildmark.network.ReleaseChargePayload
 import io.github.vaspyyy.guildmark.network.StartMovePayload
 import io.github.vaspyyy.guildmark.network.StrikePayload
 import io.github.vaspyyy.guildmark.network.VitalsPayload
+import io.github.vaspyyy.guildmark.progression.Bonus
+import io.github.vaspyyy.guildmark.progression.Skill
+import io.github.vaspyyy.guildmark.progression.Skills
+import io.github.vaspyyy.guildmark.progression.Talents
 import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.registry.ModSounds
 import net.minecraft.core.component.DataComponents
@@ -84,8 +88,8 @@ object Combat {
             PacketDistributor.sendToPlayer(player, MovePayload(player.id, move.ordinal, payload.seq, MovePayload.REJECT, 0f))
             return
         }
-        s.spendStamina(move.stamina, now)
-        s.focus = (s.focus - move.focus).coerceAtLeast(0f)
+        s.spendStamina(Talents.staminaCost(player, move), now)
+        s.focus = (s.focus - Talents.focusCost(player, move)).coerceAtLeast(0f)
         if ((move.isAttack || move == Move.DRINK) && player.isUsingItem) player.stopUsingItem()
         if (move == Move.DRINK) player.isSprinting = false
 
@@ -101,6 +105,11 @@ object Combat {
         val holding = actual.chargeAt >= 0 && payload.flags and StartMovePayload.HOLDING != 0
         s.start(actual, now, payload.seq, if (actual.isAttack) Weapons.tempo(player) else 1f, holding)
         s.ackSeq = max(s.ackSeq, payload.seq)
+        if (actual.isRoll) {
+            // Evasion's nodes stretch the moment a roll can't be touched
+            s.invulnerableUntil += Talents[player, Bonus.IFRAMES].toLong()
+            if (s.inCombat(now)) Skills.gain(player, Skill.EVASION, 1.0)
+        }
         critical?.let {
             s.criticalTarget = it.id
             s.criticalHits = 0
@@ -117,7 +126,8 @@ object Combat {
         }
 
         // Everyone else sees the move and hears it
-        val extra = if (actual.isRoll) payload.yaw else 0f
+        // Rolls carry their direction; attacks their speed, which the watchers can't work out from the mover's skills
+        val extra = if (actual.isRoll) payload.yaw else if (actual.isAttack) s.tempo else 0f
         PacketDistributor.sendToPlayersTrackingEntity(player, MovePayload(player.id, actual.ordinal, payload.seq, if (holding) MovePayload.CHARGING else 0, extra))
         moveSound(actual)?.let { player.level().playSound(player, player.x, player.y, player.z, it, SoundSource.PLAYERS, 0.9f, 0.9f + player.random.nextFloat() * 0.2f) }
         if (actual.isCritical) {
@@ -161,7 +171,7 @@ object Combat {
         if (move.isAttack && Weapons.classOf(player.mainHandItem) == null) return false
         if (move == Move.DRINK && !WardensFlask.canDrink(player)) return false
         if (move.stamina > 0f && s.stamina < 1f && !player.isCreative) return false
-        if (move.focus > 0f && s.focus < move.focus && !player.isCreative) return false
+        if (move.focus > 0f && s.focus < Talents.focusCost(player, move) && !player.isCreative) return false
         if (!s.busy(now)) return true
         val current = s.move ?: return true
         // Forced and critical moves play out in full; otherwise a move may cut in at its chain or dodge point
@@ -199,7 +209,7 @@ object Combat {
         val level = player.level() as ServerLevel
         val before = target.health
         val previous = striking
-        striking = Strike(player, target, move, multiplier, knockback)
+        striking = Strike(player, target, move, multiplier * Talents.moveDamage(player, move), knockback)
         try {
             attackStrengthTicker.setInt(player, 1000)
             target.damageCooldownTime = 0
@@ -210,8 +220,9 @@ object Combat {
         if (target.health >= before && target.isAlive) return
         val s = state(player)
         s.lastCombat = level.gameTime
-        s.focus = min(s.maxFocus, s.focus + 1.5f)
-        if (target.isAlive) Stance.damage(target, stance)
+        s.focus = min(s.maxFocus, s.focus + 1.5f + Talents[player, Bonus.FOCUS_ON_HIT].toFloat())
+        if (target.isAlive) Stance.damage(target, stance * Talents.stanceDamage(player))
+        if (move == Move.BACKSTAB) Skills.gain(player, Skill.STEALTH, 12.0)
         val sound = when {
             move.isCritical -> ModSounds.CRITICAL.get()
             armored(target) -> ModSounds.HIT_ARMOR.get()
@@ -302,12 +313,15 @@ object Combat {
             s.stamina = s.maxStamina
             s.focus = s.maxFocus
         } else if (player.isSprinting && inCombat) {
-            s.spendStamina(CombatState.SPRINT_COST, now)
+            s.spendStamina(CombatState.SPRINT_COST * (1f + Talents[player, Bonus.SPRINT_COST].toFloat()).coerceAtLeast(0f), now)
         } else if (now - s.lastSpend >= CombatState.REGEN_DELAY) {
-            val guarding = player.isUsingItem && player.useItem.has(DataComponents.BLOCKS_ATTACKS)
-            s.stamina = min(s.maxStamina, s.stamina + CombatState.REGEN_PER_TICK * (if (guarding) 0.35f else 1f))
+            val build = Talents.build(player)
+            // Bulwark: a raised shield doesn't slow the stamina coming back
+            val guarding = player.isUsingItem && player.useItem.has(DataComponents.BLOCKS_ATTACKS) && !build.has(Bonus.GUARD_REGEN)
+            val regen = CombatState.REGEN_PER_TICK * (1f + build[Bonus.STAMINA_REGEN].toFloat()).coerceAtLeast(0.2f)
+            s.stamina = min(s.maxStamina, s.stamina + regen * (if (guarding) 0.35f else 1f))
         }
-        s.focus = min(s.maxFocus, s.focus + CombatState.FOCUS_PER_TICK)
+        s.focus = min(s.maxFocus, s.focus + CombatState.FOCUS_PER_TICK * (1f + Talents[player, Bonus.FOCUS_REGEN].toFloat()).coerceAtLeast(0.2f))
         sendVitals(player, s, now, inCombat)
     }
 
@@ -336,7 +350,8 @@ object Combat {
 
     /** Poise: base 25, plus armour and toughness. Heavy moves add hyper armour while they swing. */
     private fun poise(player: ServerPlayer, s: CombatState, now: Long): Float {
-        val base = 25f + player.armorValue * 1.5f + player.getAttributeValue(Attributes.ARMOR_TOUGHNESS).toFloat() * 2f
+        val base = (25f + player.armorValue * 1.5f + player.getAttributeValue(Attributes.ARMOR_TOUGHNESS).toFloat() * 2f +
+            Talents[player, Bonus.POISE].toFloat()).coerceAtLeast(5f)
         val move = s.move ?: return base
         val t = s.elapsed(now)
         return if (move.poise > 1f && s.busy(now) && t >= 2f && t <= move.hitTo + 1) base * move.poise else base
@@ -367,6 +382,9 @@ object Combat {
             val s = state(victim)
             if (now >= s.invulnerableFrom && now <= s.invulnerableUntil && dodgeable(source)) {
                 event.isCanceled = true
+                // Slipstream and its kind: slipping a blow gives breath back
+                s.stamina = min(s.maxStamina, s.stamina + Talents[victim, Bonus.DODGE_STAMINA].toFloat())
+                if (source.entity is LivingEntity) Skills.gain(victim, Skill.EVASION, 4.0 + min(event.amount, 20f) * 0.3)
                 return
             }
             if (tryParry(victim, s, source, now)) {
@@ -386,7 +404,7 @@ object Combat {
     /** A melee blow in the first moments of raising a shield is parried: no damage, and the attacker reels. */
     private fun tryParry(player: ServerPlayer, s: CombatState, source: DamageSource, now: Long): Boolean {
         if (!player.isUsingItem || !player.useItem.has(DataComponents.BLOCKS_ATTACKS)) return false
-        if (player.ticksUsingItem > CombatState.PARRY_WINDOW) return false
+        if (player.ticksUsingItem > CombatState.PARRY_WINDOW + Talents[player, Bonus.PARRY_WINDOW].toInt()) return false
         if (source.`is`(DamageTypeTags.IS_PROJECTILE) || source.`is`(DamageTypeTags.IS_EXPLOSION)) return false
         val attacker = source.directEntity as? LivingEntity ?: return false
         if (attacker === player || attacker.distanceTo(player) > 5f + attacker.bbWidth) return false
@@ -397,8 +415,9 @@ object Combat {
         val between = player.position().add(attacker.position()).scale(0.5)
         level.sendParticles(ParticleTypes.ELECTRIC_SPARK, between.x, player.getY(0.6), between.z, 16, 0.25, 0.25, 0.25, 0.4)
         if (attacker is ServerPlayer) force(attacker, Move.STAGGER) else Stance.stagger(attacker, Stance.PARRY_TICKS, Stance.PARRIED)
-        s.stamina = min(s.maxStamina, s.stamina + 10f)
+        s.stamina = min(s.maxStamina, s.stamina + 10f + Talents[player, Bonus.PARRY_STAMINA].toFloat())
         s.lastCombat = now
+        Skills.gain(player, Skill.GUARDING, 8.0)
         force(player, Move.PARRY)
         return true
     }
@@ -412,8 +431,10 @@ object Combat {
         val level = player.level() as ServerLevel
         val now = level.gameTime
         val source = event.damageSource
-        val cost = if (source.`is`(DamageTypeTags.IS_PROJECTILE)) 4f + event.blockedDamage * 2f
+        val base = if (source.`is`(DamageTypeTags.IS_PROJECTILE)) 4f + event.blockedDamage * 2f
         else (8f + event.blockedDamage * 3.5f) * ((source.entity as? CombatMob)?.guardDamage() ?: 1f)
+        val cost = base * (1f + Talents[player, Bonus.BLOCK_COST].toFloat()).coerceAtLeast(0.1f)
+        Skills.gain(player, Skill.GUARDING, 1.5 + min(event.blockedDamage, 20f) * 0.5)
         s.lastCombat = now
         if (s.stamina >= cost || player.isCreative) {
             s.spendStamina(cost, now)

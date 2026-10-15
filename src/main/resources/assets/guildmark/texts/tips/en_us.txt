@@ -7,7 +7,12 @@ Use a finished contract on a Quest Board to be paid in Guild Marks.
 Deliveries and escorts appear once a village has a Trade Road. Escorts often meet bandits on the way.
 Press H to show or hide the contract tracker, with days left and an arrow to your goal.
 Where a Quest Board stands, a villager may become a Guildmaster, selling gear and relic caches for Marks.
-Contracts earn guild XP, and every guild level brings a perk point. Press G to spend it in the Ledger.
+Contracts earn guild XP. Bank it, then rest at a Wardfire to Grow Stronger: a level, a stat point and a tree point.
+Skills grow as you use them: mine for Mining, brew for Alchemy, fight for your weapon's skill.
+Every skill reaching 25, 50, 75 and 100 gives a skill tree point. Press G for the tree.
+In the Guild Ledger, click a far-off node to plan the whole way to it, then press Learn.
+Branches of the skill tree open further as their skill grows. Hover a node to see what it needs.
+Forget a skill tree node for 3 Guild Marks at a Wardfire, or start the whole tree over.
 Notes are ranked F to S, like you. You can take any note up to one rank above your own.
 To climb a rank, reach the guild level it needs, then pass a trial from a Guild Hall receptionist.
 Villages remember you, from Stranger up to Hero. Higher standing adds extra Marks to their contracts.

@@ -7,7 +7,10 @@ import io.github.vaspyyy.guildmark.combat.WeaponClass
 import io.github.vaspyyy.guildmark.combat.Weapons
 import io.github.vaspyyy.guildmark.guild.TownControl
 import io.github.vaspyyy.guildmark.loot.Affix
-import io.github.vaspyyy.guildmark.progression.Perk
+import io.github.vaspyyy.guildmark.progression.Bonus
+import io.github.vaspyyy.guildmark.progression.Scaling
+import io.github.vaspyyy.guildmark.progression.SkillTree
+import io.github.vaspyyy.guildmark.progression.Talents
 import io.github.vaspyyy.guildmark.progression.Title
 import io.github.vaspyyy.guildmark.story.MainQuestState
 import io.github.vaspyyy.guildmark.registry.ModAttachments
@@ -126,20 +129,22 @@ class CharacterScreen : Screen(Component.translatable("gui.guildmark.status")) {
     private fun defence(player: LocalPlayer): Section {
         val armor = player.armorValue
         val toughness = player.getAttributeValue(Attributes.ARMOR_TOUGHNESS)
-        // As Combat works it out: base 25, plus armour and toughness
-        val poise = 25.0 + armor * 1.5 + toughness * 2.0
+        // As Combat works it out: base 25, plus armour, toughness and the build's poise
+        val poise = (25.0 + armor * 1.5 + toughness * 2.0 + Talents[player, Bonus.POISE]).coerceAtLeast(5.0)
         val rows = arrayListOf(
             row("armor", armor.toString()),
             row("toughness", number(toughness)),
         )
         if (CombatClient.active()) {
             rows.add(row("poise", poise.roundToInt().toString()))
-            val heavy = armor > Weapons.HEAVY_ROLL_ARMOR
+            val always = Talents.build(player).has(Bonus.HEAVY_ROLL)
+            val heavy = always || armor > Weapons.rollLoad(player)
             rows.add(Row(
                 Component.translatable("gui.guildmark.status.roll"),
                 Component.translatable(if (heavy) "gui.guildmark.status.roll.heavy" else "gui.guildmark.status.roll.quick"),
                 if (heavy) Ui.RED else Ui.GREEN,
-                Component.translatable("gui.guildmark.status.roll.tip", Weapons.HEAVY_ROLL_ARMOR, armor),
+                if (always) Component.translatable("gui.guildmark.status.roll.always.tip")
+                else Component.translatable("gui.guildmark.status.roll.tip", Weapons.rollLoad(player), armor),
             ))
         }
         return Section(Component.translatable("gui.guildmark.status.defence"), rows)
@@ -147,8 +152,8 @@ class CharacterScreen : Screen(Component.translatable("gui.guildmark.status")) {
 
     /**
      * Attack damage as the server works it out. The server never sends this one to the client, so it's
-     * put together here the same way: the base value, plus what's held and worn, the Might perk and any
-     * effects on you.
+     * put together here the same way: the base value, plus what's held and worn, the skill tree's flat
+     * damage and any effects on you.
      */
     private fun attackDamage(player: LocalPlayer): Double {
         val instance = player.getAttribute(Attributes.ATTACK_DAMAGE) ?: return 1.0
@@ -160,10 +165,10 @@ class CharacterScreen : Screen(Component.translatable("gui.guildmark.status")) {
                 if (attribute.`is`(Attributes.ATTACK_DAMAGE)) modifiers[modifier.id()] = modifier
             }
         }
-        val might = player.getData(ModAttachments.GUILD_PROGRESS).rank(Perk.MIGHT)
-        if (might > 0) {
-            val id = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "perk/${Perk.MIGHT.id}")
-            modifiers[id] = AttributeModifier(id, Perk.MIGHT.perRank * might, Perk.MIGHT.operation)
+        val build = Talents[player, Bonus.ATTACK_DAMAGE]
+        if (build != 0.0) {
+            val id = Talents.modifierId(Bonus.ATTACK_DAMAGE)
+            modifiers[id] = AttributeModifier(id, build, Bonus.ATTACK_DAMAGE.operation)
         }
         for (effect in player.activeEffects) {
             effect.effect.value().createModifiers(effect.amplifier) { attribute, modifier ->
@@ -196,6 +201,18 @@ class CharacterScreen : Screen(Component.translatable("gui.guildmark.status")) {
             // Only a weapon the moves work with has a tempo
             if (weapon != null) rows.add(row("tempo", "${(Weapons.tempo(player) * 100).roundToInt()}%"))
         }
+        // The stats the weapon in hand grows with, and what they add to it now
+        val stack = player.mainHandItem
+        val grades = Scaling.grades(stack)
+        if (grades.isNotEmpty()) {
+            val sheet = Talents.sheet(player)
+            val bonus = (Scaling.bonus(sheet, stack) * 100).roundToInt()
+            val named = grades.joinToString(", ") { (stat, grade) -> stat.title.string + " " + grade.name }
+            rows.add(Row(
+                Component.translatable("gui.guildmark.status.scaling"), Component.literal("+$bonus%"), Ui.GOLD,
+                Component.translatable("gui.guildmark.status.scaling.tip", named, bonus),
+            ))
+        }
         return Section(Component.translatable("gui.guildmark.status.offence"), rows)
     }
 
@@ -214,7 +231,8 @@ class CharacterScreen : Screen(Component.translatable("gui.guildmark.status")) {
             Component.translatable("gui.guildmark.status.xp.tip", progress.xp, progress.xpToNext()),
             progress.xp.toFloat() / max(1, progress.xpToNext()),
         ))
-        rows.add(row("points", progress.points.toString(), if (progress.points > 0) Ui.GOLD_BRIGHT else Ui.TEXT))
+        val points = SkillTree.available(progress, player.getData(ModAttachments.SKILLS), Talents.sheet(player)).coerceAtLeast(0)
+        rows.add(row("points", points.toString(), if (points > 0) Ui.GOLD_BRIGHT else Ui.TEXT))
         rows.add(row("marks", TownControl.marks(player).toString(), Ui.GOLD))
         return Section(Component.translatable("gui.guildmark.status.guild"), rows)
     }

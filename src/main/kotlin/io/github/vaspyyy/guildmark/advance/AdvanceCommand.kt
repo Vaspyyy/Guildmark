@@ -21,6 +21,10 @@ import io.github.vaspyyy.guildmark.quest.QuestType
 import io.github.vaspyyy.guildmark.progression.AdventurerRank
 import io.github.vaspyyy.guildmark.progression.GuildProgress
 import io.github.vaspyyy.guildmark.progression.Progression
+import io.github.vaspyyy.guildmark.progression.Skill
+import io.github.vaspyyy.guildmark.progression.SkillState
+import io.github.vaspyyy.guildmark.progression.Skills
+import io.github.vaspyyy.guildmark.progression.Talents
 import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.road.Traffic
 import io.github.vaspyyy.guildmark.siege.Sieges
@@ -134,6 +138,57 @@ object AdvanceCommand {
                             1
                         }
                     )
+                )
+                .then(
+                    Commands.literal("xp").then(
+                        Commands.argument("amount", IntegerArgumentType.integer(1, 1_000_000)).executes { context ->
+                            val player = context.source.playerOrException
+                            val amount = IntegerArgumentType.getInteger(context, "amount")
+                            val progress = Progression.get(player)
+                            player.setData(ModAttachments.GUILD_PROGRESS, progress.copy(xp = (progress.xp.toLong() + amount).coerceAtMost(10_000_000L).toInt()))
+                            context.source.sendSuccess({ Component.translatable("commands.guildmark.xp", amount) }, false)
+                            1
+                        }
+                    )
+                )
+                .then(
+                    Commands.literal("skill").then(
+                        Commands.argument("skill", StringArgumentType.word())
+                            .suggests { _, builder -> SharedSuggestionProvider.suggest(Skill.entries.map { it.id }, builder) }
+                            .then(Commands.argument("level", IntegerArgumentType.integer(1, Skill.MAX)).executes { context ->
+                                val player = context.source.playerOrException
+                                val skill = Skill.byId(StringArgumentType.getString(context, "skill"))
+                                if (skill == null) {
+                                    context.source.sendFailure(Component.translatable("commands.guildmark.no_skill"))
+                                    0
+                                } else {
+                                    val level = IntegerArgumentType.getInteger(context, "level")
+                                    val skills = Skills.get(player)
+                                    player.setData(ModAttachments.SKILLS, SkillState(skills.xp + (skill.id to Skill.xpAt(level))))
+                                    Talents.apply(player)
+                                    context.source.sendSuccess({ Component.translatable("commands.guildmark.skill", skill.title, level) }, false)
+                                    1
+                                }
+                            })
+                    )
+                )
+                .then(
+                    Commands.literal("tree").then(Commands.literal("reset").executes { context ->
+                        val player = context.source.playerOrException
+                        player.setData(ModAttachments.SHEET, Talents.sheet(player).copy(nodes = listOf()))
+                        Talents.apply(player)
+                        context.source.sendSuccess({ Component.translatable("commands.guildmark.tree_reset") }, false)
+                        1
+                    })
+                )
+                .then(
+                    Commands.literal("stats").then(Commands.literal("reset").executes { context ->
+                        val player = context.source.playerOrException
+                        player.setData(ModAttachments.SHEET, Talents.sheet(player).copy(stats = mapOf()))
+                        Talents.apply(player)
+                        context.source.sendSuccess({ Component.translatable("commands.guildmark.stats_reset") }, false)
+                        1
+                    })
                 )
                 .then(
                     Commands.literal("siege").executes { context ->

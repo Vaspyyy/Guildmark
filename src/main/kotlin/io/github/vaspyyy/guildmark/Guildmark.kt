@@ -55,9 +55,12 @@ import io.github.vaspyyy.guildmark.advance.AdvanceCommand
 import io.github.vaspyyy.guildmark.block.VillageBoards
 import io.github.vaspyyy.guildmark.city.CapitalVisits
 import io.github.vaspyyy.guildmark.city.Capitals
-import io.github.vaspyyy.guildmark.network.SpendPerkPayload
+import io.github.vaspyyy.guildmark.network.GrowPayload
+import io.github.vaspyyy.guildmark.network.TreePayload
 import io.github.vaspyyy.guildmark.network.TakeNotePayload
-import io.github.vaspyyy.guildmark.progression.Progression
+import io.github.vaspyyy.guildmark.progression.Skills
+import io.github.vaspyyy.guildmark.progression.Talents
+import io.github.vaspyyy.guildmark.progression.Work
 import io.github.vaspyyy.guildmark.quest.QuestPoolLoader
 import io.github.vaspyyy.guildmark.guild.GuildMember
 import io.github.vaspyyy.guildmark.guild.Reception
@@ -120,6 +123,20 @@ import net.minecraft.world.level.levelgen.Heightmap
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent
+import net.neoforged.neoforge.event.entity.living.AnimalTameEvent
+import net.neoforged.neoforge.event.entity.living.BabyEntitySpawnEvent
+import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent
+import net.neoforged.neoforge.event.entity.living.LivingEvent
+import net.neoforged.neoforge.event.entity.player.AnvilCraftEvent
+import net.neoforged.neoforge.event.entity.player.ArrowLooseEvent
+import net.neoforged.neoforge.event.entity.player.ItemFishedEvent
+import net.neoforged.neoforge.event.entity.player.PlayerEnchantItemEvent
+import net.neoforged.neoforge.event.entity.player.PlayerXpEvent
+import net.neoforged.neoforge.event.entity.player.TradeWithVillagerEvent
+import net.neoforged.neoforge.event.AnvilUpdateEvent
+import net.neoforged.neoforge.event.brewing.PlayerBrewedPotionEvent
+import net.neoforged.neoforge.event.level.BlockDropsEvent
+import net.neoforged.neoforge.event.level.block.BreakBlockEvent
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent
 import net.neoforged.neoforge.event.entity.player.PlayerEvent
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent
@@ -211,6 +228,30 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         NeoForge.EVENT_BUS.addListener(CriticalHitEvent::class.java, Combat::onCriticalHit)
         NeoForge.EVENT_BUS.addListener(SweepAttackEvent::class.java, Combat::onSweep)
         NeoForge.EVENT_BUS.addListener(PlayLevelSoundEvent.AtPosition::class.java, Combat::onSound)
+        // Stats, skills and the skill tree (progression/): what the build does in a fight...
+        NeoForge.EVENT_BUS.addListener(LivingIncomingDamageEvent::class.java, Talents::onIncomingDamage)
+        NeoForge.EVENT_BUS.addListener(LivingDamageEvent.Post::class.java, Talents::onDamaged)
+        // First, so a fall Undying turns aside isn't counted as a death by anything else
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, LivingDeathEvent::class.java, Talents::onDeath)
+        NeoForge.EVENT_BUS.addListener(LivingEvent.LivingVisibilityEvent::class.java, Talents::onVisibility)
+        NeoForge.EVENT_BUS.addListener(PlayerXpEvent.PickupXp::class.java, Talents::onPickupXp)
+        NeoForge.EVENT_BUS.addListener(LivingEntityUseItemEvent.Finish::class.java, Talents::onFinishUsing)
+        NeoForge.EVENT_BUS.addListener(LivingEntityUseItemEvent.Tick::class.java, Talents::onUsingTick)
+        NeoForge.EVENT_BUS.addListener(ArrowLooseEvent::class.java, Talents::onArrowLoose)
+        // ...and the skills that grow by working (after other mods have had their say on a broken block)
+        NeoForge.EVENT_BUS.addListener(EventPriority.LOW, BreakBlockEvent::class.java, Work::onBreak)
+        NeoForge.EVENT_BUS.addListener(PlayerEvent.BreakSpeed::class.java, Work::onBreakSpeed)
+        NeoForge.EVENT_BUS.addListener(BlockDropsEvent::class.java, Work::onDrops)
+        NeoForge.EVENT_BUS.addListener(PlayerEvent.ItemCraftedEvent::class.java, Work::onCrafted)
+        NeoForge.EVENT_BUS.addListener(PlayerEvent.ItemSmeltedEvent::class.java, Work::onSmelted)
+        NeoForge.EVENT_BUS.addListener(PlayerBrewedPotionEvent::class.java, Work::onBrewed)
+        NeoForge.EVENT_BUS.addListener(PlayerEnchantItemEvent::class.java, Work::onEnchanted)
+        NeoForge.EVENT_BUS.addListener(AnvilUpdateEvent::class.java, Work::onAnvilUpdate)
+        NeoForge.EVENT_BUS.addListener(AnvilCraftEvent.Post::class.java, Work::onAnvilCrafted)
+        NeoForge.EVENT_BUS.addListener(ItemFishedEvent::class.java, Work::onFished)
+        NeoForge.EVENT_BUS.addListener(TradeWithVillagerEvent::class.java, Work::onTrade)
+        NeoForge.EVENT_BUS.addListener(BabyEntitySpawnEvent::class.java, Work::onBreed)
+        NeoForge.EVENT_BUS.addListener(AnimalTameEvent::class.java, Work::onTame)
         NeoForge.EVENT_BUS.addListener(PlayerInteractEvent.EntityInteract::class.java, Reception::onInteract)
         NeoForge.EVENT_BUS.addListener(LevelTickEvent.Post::class.java) { event ->
             val level = event.level
@@ -228,9 +269,9 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
                 if (level.dimension() == Level.OVERWORLD) TownControl.tick(level)
             }
         }
-        // Stat perks are transient attribute modifiers, so put them back whenever the player entity is new
+        // The build's attribute modifiers are transient, so put them back whenever the player entity is new
         NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerLoggedInEvent::class.java) {
-            Progression.applyAttributes(it.entity)
+            Talents.apply(it.entity)
             Milestones.onLogin(it.entity)
             (it.entity as? ServerPlayer)?.let { player ->
                 Parties.onLogin(player)
@@ -246,7 +287,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         NeoForge.EVENT_BUS.addListener(PlayerEvent.NameFormat::class.java) { Titles.onNameFormat(it) }
         NeoForge.EVENT_BUS.addListener(PlayerEvent.TabListNameFormat::class.java) { Titles.onTabListName(it) }
         NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerRespawnEvent::class.java) {
-            Progression.applyAttributes(it.entity)
+            Talents.apply(it.entity)
             Combat.reset(it.entity)
             // Waking after a fall fills the flask, as a rest would
             if (!it.isEndConquered) WardensFlask.refill(it.entity)
@@ -284,6 +325,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         if (!killer.level().isClientSide()) {
             Contracts.onKill(killer, event.entity)
             Parties.onKill(killer, event.entity)
+            if (killer is ServerPlayer) Work.onKill(killer, victim, event.source)
         }
     }
 
@@ -292,6 +334,8 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         val level = player.level()
         if (level !is ServerLevel) return
         if (player is ServerPlayer) Combat.tick(player)
+        if (player is ServerPlayer) Talents.tick(player)
+        if (player is ServerPlayer) Skills.tick(player)
         if (player is ServerPlayer) Purses.tick(player)
         if (player.tickCount % 200 == 0) VillageBoards.checkNearbyVillages(level, player.blockPosition())
         if (player.tickCount % 200 == 50) TownControl.visit(level, player)
@@ -311,7 +355,8 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
     private fun onRegisterPayloads(event: RegisterPayloadHandlersEvent) {
         event.registrar("1")
             .playToServer(TakeNotePayload.TYPE, TakeNotePayload.STREAM_CODEC, TakeNotePayload::handle)
-            .playToServer(SpendPerkPayload.TYPE, SpendPerkPayload.STREAM_CODEC, SpendPerkPayload::handle)
+            .playToServer(GrowPayload.TYPE, GrowPayload.STREAM_CODEC, GrowPayload::handle)
+            .playToServer(TreePayload.TYPE, TreePayload.STREAM_CODEC, TreePayload::handle)
             .playToServer(ReceptionActionPayload.TYPE, ReceptionActionPayload.STREAM_CODEC, ReceptionActionPayload::handle)
             .playToServer(FoundGuildPayload.TYPE, FoundGuildPayload.STREAM_CODEC, FoundGuildPayload::handle)
             .playToServer(AcceptChapterPayload.TYPE, AcceptChapterPayload.STREAM_CODEC, AcceptChapterPayload::handle)

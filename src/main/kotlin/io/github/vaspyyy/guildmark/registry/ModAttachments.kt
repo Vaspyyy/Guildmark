@@ -8,7 +8,11 @@ import io.github.vaspyyy.guildmark.atlas.AtlasState
 import io.github.vaspyyy.guildmark.combat.CombatState
 import io.github.vaspyyy.guildmark.combat.StanceState
 import io.github.vaspyyy.guildmark.guild.RivalChallenge
+import io.github.vaspyyy.guildmark.progression.BuildCache
+import io.github.vaspyyy.guildmark.progression.CharacterSheet
 import io.github.vaspyyy.guildmark.progression.GuildProgress
+import io.github.vaspyyy.guildmark.progression.SkillBuffer
+import io.github.vaspyyy.guildmark.progression.SkillState
 import io.github.vaspyyy.guildmark.road.TrafficState
 import io.github.vaspyyy.guildmark.road.TravelProgress
 import io.github.vaspyyy.guildmark.story.MainQuestState
@@ -39,13 +43,41 @@ object ModAttachments {
         AttachmentType.builder { -> -1L }.serialize(Codec.LONG.fieldOf("day")).build()
     }
 
-    /** A player's guild level, XP and perks. Survives death and syncs to its own player only. */
+    /** A player's guild level, banked guild XP and adventurer rank. Survives death and syncs to its own player only. */
     val GUILD_PROGRESS: DeferredHolder<AttachmentType<*>, AttachmentType<GuildProgress>> = ATTACHMENTS.register("guild_progress") { ->
         AttachmentType.builder { -> GuildProgress() }
             .serialize(GuildProgress.CODEC.fieldOf("progress"))
             .copyOnDeath()
             .sync({ holder, player -> holder === player }, GuildProgress.STREAM_CODEC)
             .build()
+    }
+
+    /** A player's stats and learned skill tree nodes (see CharacterSheet). Kept through death, synced to its player. */
+    val SHEET: DeferredHolder<AttachmentType<*>, AttachmentType<CharacterSheet>> = ATTACHMENTS.register("sheet") { ->
+        AttachmentType.builder { -> CharacterSheet() }
+            .serialize(CharacterSheet.CODEC.fieldOf("sheet"))
+            .copyOnDeath()
+            .sync({ holder, player -> holder === player }, CharacterSheet.STREAM_CODEC)
+            .build()
+    }
+
+    /** A player's skill XP (see Skills). Kept through death, synced to its player. */
+    val SKILLS: DeferredHolder<AttachmentType<*>, AttachmentType<SkillState>> = ATTACHMENTS.register("skills") { ->
+        AttachmentType.builder { -> SkillState() }
+            .serialize(SkillState.CODEC.fieldOf("xp"))
+            .copyOnDeath()
+            .sync({ holder, player -> holder === player }, SkillState.STREAM_CODEC)
+            .build()
+    }
+
+    /** What a player's stats, skills and nodes add up to, worked out again when they change (never saved). */
+    val BUILD: DeferredHolder<AttachmentType<*>, AttachmentType<BuildCache>> = ATTACHMENTS.register("build") { ->
+        AttachmentType.builder { -> BuildCache() }.build()
+    }
+
+    /** Skill XP earned but not yet added up, and the timers of the passive bonuses (server side, never saved). */
+    val SKILL_BUFFER: DeferredHolder<AttachmentType<*>, AttachmentType<SkillBuffer>> = ATTACHMENTS.register("skill_buffer") { ->
+        AttachmentType.builder { -> SkillBuffer() }.build()
     }
 
     /** An escorted traveller's progress along its road. */

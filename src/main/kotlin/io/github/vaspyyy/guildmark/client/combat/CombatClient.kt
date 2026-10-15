@@ -16,6 +16,7 @@ import io.github.vaspyyy.guildmark.network.StaggerPayload
 import io.github.vaspyyy.guildmark.network.StartMovePayload
 import io.github.vaspyyy.guildmark.network.StrikePayload
 import io.github.vaspyyy.guildmark.network.VitalsPayload
+import io.github.vaspyyy.guildmark.progression.Talents
 import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.registry.ModSounds
 import net.minecraft.network.chat.Component
@@ -338,7 +339,7 @@ object CombatClient {
     private fun tryStart(local: LocalPlayer, press: Press): Boolean {
         val move = choose(local, press) ?: return true
         if (!canStart(local, move)) return false
-        if (!local.isCreative && (move.stamina > 0f && shownStamina() < 1f || move.focus > 0f && shownFocus() < move.focus)) {
+        if (!local.isCreative && (move.stamina > 0f && shownStamina() < 1f || move.focus > 0f && shownFocus() < Talents.focusCost(local, move))) {
             if (ticks - exhaustedAt > 10) {
                 local.playSound(ModSounds.OUT_OF_STAMINA.get(), 0.6f, 1f)
             }
@@ -424,7 +425,7 @@ object CombatClient {
         // The first tick of the move plays at once
         next.t = tempo
         action = next.replacing(action)
-        pending.add(Pending(seq, if (local.isCreative) 0f else move.stamina, if (local.isCreative) 0f else move.focus))
+        pending.add(Pending(seq, if (local.isCreative) 0f else Talents.staminaCost(local, move), if (local.isCreative) 0f else Talents.focusCost(local, move)))
         ClientPacketDistributor.sendToServer(StartMovePayload(seq, requested.ordinal, yaw, flags))
 
         when {
@@ -737,8 +738,9 @@ object CombatClient {
             remote.get(payload.entityId)?.let { if (it.seq == payload.seq) it.charging = false }
             return
         }
-        val tempo = if (move.isAttack) Weapons.tempo(entity) else 1f
-        val a = Action(move, payload.seq, ticks, tempo, payload.extra)
+        // An attack carries its mover's tempo: their stats and skills aren't known on this side
+        val tempo = if (!move.isAttack) 1f else if (payload.extra > 0f) payload.extra else Weapons.tempo(entity)
+        val a = Action(move, payload.seq, ticks, tempo, if (move.isAttack) 0f else payload.extra)
         a.charging = payload.flags and MovePayload.CHARGING != 0
         a.t = tempo
         remote.put(payload.entityId, a.replacing(remote.get(payload.entityId)))

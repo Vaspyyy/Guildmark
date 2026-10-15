@@ -1,5 +1,7 @@
 package io.github.vaspyyy.guildmark.combat
 
+import io.github.vaspyyy.guildmark.progression.Bonus
+import io.github.vaspyyy.guildmark.progression.Talents
 import net.minecraft.tags.ItemTags
 import net.minecraft.util.Mth
 import net.minecraft.world.entity.ai.attributes.Attributes
@@ -114,11 +116,19 @@ object Weapons {
         else -> null
     }
 
-    /** How fast moves play with the held weapon: swords at full speed, axes and slower weapons down to 70%. */
-    fun tempo(player: Player): Float =
-        Mth.clamp((player.getAttributeValue(Attributes.ATTACK_SPEED) / 1.6).toFloat(), 0.7f, 1.15f)
+    /**
+     * How fast moves play with the held weapon: swords at full speed, axes and slower weapons down to 70%,
+     * then quicker with Finesse and the tree's tempo nodes.
+     */
+    fun tempo(player: Player): Float {
+        val weapon = Mth.clamp((player.getAttributeValue(Attributes.ATTACK_SPEED) / 1.6).toFloat(), 0.7f, 1.15f)
+        return Mth.clamp(weapon * (1f + Talents[player, Bonus.TEMPO].toFloat()), 0.6f, 1.4f)
+    }
 
-    /** Rolls get slower and shorter in heavy armour. */
+    /** Armor points a player can wear before rolls turn heavy: more with Endurance and the armour nodes. */
+    fun rollLoad(player: Player): Int = HEAVY_ROLL_ARMOR + Talents[player, Bonus.ROLL_LOAD].toInt()
+
+    /** Rolls get slower and shorter in heavy armour (always, under Iron Fortress). */
     fun rollFor(player: Player): Move =
-        if (player.armorValue > HEAVY_ROLL_ARMOR) Move.ROLL_HEAVY else Move.ROLL
+        if (player.armorValue > rollLoad(player) || Talents.build(player).has(Bonus.HEAVY_ROLL)) Move.ROLL_HEAVY else Move.ROLL
 }

@@ -1,7 +1,8 @@
 package io.github.vaspyyy.guildmark.client.wardfire
 
-import io.github.vaspyyy.guildmark.client.LedgerScreen
 import io.github.vaspyyy.guildmark.client.atlas.MapScreen
+import io.github.vaspyyy.guildmark.client.ui.GrowScreen
+import io.github.vaspyyy.guildmark.client.ui.LedgerScreen
 import io.github.vaspyyy.guildmark.client.ui.Ui
 import io.github.vaspyyy.guildmark.network.OpenWardfirePayload
 import io.github.vaspyyy.guildmark.network.WardfireActionPayload
@@ -18,19 +19,24 @@ import kotlin.math.min
 
 /**
  * Sitting at a Wardfire. The world stays in view behind a warm shade from the left, where a small
- * panel names the fire and offers what can be done here: travel to another fire, wait for morning or
- * nightfall (when you're alone in the world), open the Guild Ledger, or get up and go.
+ * panel names the fire and offers what can be done here: grow stronger with the guild XP banked, travel
+ * to another fire, wait for morning or nightfall (when you're alone in the world), open the Guild Ledger
+ * to learn and forget skill tree nodes, or get up and go.
  */
 class WardfireScreen(private val pos: BlockPos, private val canWait: Boolean) : Screen(Component.translatable("gui.guildmark.wardfire")) {
     private val name: Component = Component.literal(WardfireNames.of(pos))
     private var ticks = 0
     private var waitButton: Ui.KitButton? = null
+    private var growButton: Ui.KitButton? = null
     private var panelX = 0
     private var panelY = 0
     private var panelHeight = 0
 
     override fun init() {
         val buttons = ArrayList<Ui.KitButton>()
+        val grow = Ui.button(growLabel(), BUTTON_WIDTH) { minecraft.gui.setScreen(GrowScreen(pos, this)) }
+        growButton = grow
+        buttons += grow
         buttons += Ui.button(Component.translatable("gui.guildmark.wardfire.travel"), BUTTON_WIDTH) {
             minecraft.gui.setScreen(MapScreen())
         }
@@ -42,7 +48,7 @@ class WardfireScreen(private val pos: BlockPos, private val canWait: Boolean) : 
             buttons += wait
         }
         buttons += Ui.button(Component.translatable("gui.guildmark.wardfire.ledger"), BUTTON_WIDTH) {
-            minecraft.gui.setScreen(LedgerScreen())
+            minecraft.gui.setScreen(LedgerScreen(pos, this))
         }
         buttons += Ui.button(Component.translatable("gui.guildmark.wardfire.leave"), BUTTON_WIDTH) { onClose() }
 
@@ -53,6 +59,14 @@ class WardfireScreen(private val pos: BlockPos, private val canWait: Boolean) : 
             button.setPosition(panelX + (PANEL_WIDTH - BUTTON_WIDTH) / 2, panelY + HEAD + i * (BUTTON_HEIGHT + 4))
             addRenderableWidget(button)
         }
+    }
+
+    /** Grow stronger, with the stat raises banked guild XP (and any owed from before) will pay for. */
+    private fun growLabel(): Component {
+        val player = minecraft.player ?: return Component.translatable("gui.guildmark.ledger.grow")
+        val progress = player.getData(ModAttachments.GUILD_PROGRESS)
+        val raises = progress.levelsBanked() + player.getData(ModAttachments.SHEET).owed(progress.level)
+        return if (raises > 0) Component.translatable("gui.guildmark.ledger.grow.count", raises) else Component.translatable("gui.guildmark.ledger.grow")
     }
 
     private fun waitLabel(): Component = Component.translatable(
@@ -73,6 +87,7 @@ class WardfireScreen(private val pos: BlockPos, private val canWait: Boolean) : 
             return
         }
         waitButton?.message = waitLabel()
+        growButton?.message = growLabel()
     }
 
     override fun onClose() {

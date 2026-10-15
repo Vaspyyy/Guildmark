@@ -23,6 +23,9 @@ object GuildmarkConfig {
     val XP_MULTIPLIER: ModConfigSpec.DoubleValue = BUILDER
         .comment("Multiplies the guild XP everything gives.")
         .defineInRange("xpMultiplier", 1.0, 0.1, 10.0)
+    val SKILL_XP_MULTIPLIER: ModConfigSpec.DoubleValue = BUILDER
+        .comment("Multiplies the skill XP that mining, fighting, crafting, trading and the rest give.")
+        .defineInRange("skillXpMultiplier", 1.0, 0.1, 10.0)
     val AUTO_BOARDS: ModConfigSpec.BooleanValue = BUILDER
         .comment("Place a Quest Board in every village players come near.")
         .define("autoPlaceBoards", true)

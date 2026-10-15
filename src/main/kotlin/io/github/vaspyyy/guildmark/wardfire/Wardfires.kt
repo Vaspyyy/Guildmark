@@ -9,6 +9,7 @@ import io.github.vaspyyy.guildmark.network.OpenWardfirePayload
 import io.github.vaspyyy.guildmark.network.WardfireActionPayload
 import io.github.vaspyyy.guildmark.network.WardfireTravelledPayload
 import io.github.vaspyyy.guildmark.progression.Milestones
+import io.github.vaspyyy.guildmark.progression.Talents
 import io.github.vaspyyy.guildmark.registry.ModParticles
 import io.github.vaspyyy.guildmark.registry.ModSounds
 import io.github.vaspyyy.guildmark.road.Coaches
@@ -60,6 +61,12 @@ object Wardfires {
 
     fun isLit(state: BlockState): Boolean = state.block is WardfireBlock && state.getValue(WardfireBlock.LIT)
 
+    /** [player] is close enough to the lit Wardfire at [pos] to work its menu. */
+    fun near(player: ServerPlayer, pos: BlockPos): Boolean {
+        val level = player.level()
+        return level.isLoaded(pos) && isLit(level.getBlockState(pos)) && player.distanceToSqr(Vec3.atCenterOf(pos)) <= REACH * REACH
+    }
+
     fun use(level: ServerLevel, pos: BlockPos, state: BlockState, player: ServerPlayer) {
         if (!player.isAlive || player.isSpectator) return
         if (!state.getValue(WardfireBlock.LIT)) kindle(level, pos, state, player) else rest(level, pos, player)
@@ -106,6 +113,7 @@ object Wardfires {
         player.airSupply = player.maxAirSupply
         Combat.refill(player)
         WardensFlask.refill(player)
+        Talents.onRest(player)
     }
 
     /**
@@ -146,7 +154,7 @@ object Wardfires {
     fun onAction(player: ServerPlayer, pos: BlockPos, action: Int) {
         if (!allow(player) || !player.isAlive) return
         val level = player.level()
-        if (!level.isLoaded(pos) || !isLit(level.getBlockState(pos)) || player.distanceToSqr(Vec3.atCenterOf(pos)) > REACH * REACH) return
+        if (!near(player, pos)) return
         when (action) {
             WardfireActionPayload.WAIT -> {
                 if (!canWait(level) || threatened(level, player)) return

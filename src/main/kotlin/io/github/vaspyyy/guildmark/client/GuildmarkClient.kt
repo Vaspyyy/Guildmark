@@ -45,6 +45,7 @@ import io.github.vaspyyy.guildmark.client.combat.CombatHud
 import io.github.vaspyyy.guildmark.client.combat.Cutscenes
 import io.github.vaspyyy.guildmark.client.ui.CharacterScreen
 import io.github.vaspyyy.guildmark.client.ui.FallenScreen
+import io.github.vaspyyy.guildmark.client.ui.LedgerScreen
 import io.github.vaspyyy.guildmark.client.ui.SettingsScreen
 import io.github.vaspyyy.guildmark.client.ui.title.TitleMenu
 import io.github.vaspyyy.guildmark.client.shader.GuildmarkShaders
@@ -84,7 +85,6 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
     private val shownTitles = HashMap<java.util.UUID, String>()
 
     private val category = KeyMapping.Category(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "main"))
-    private val ledgerKey = KeyMapping("key.guildmark.ledger", InputConstants.KEY_G, category)
     private val trackerKey = KeyMapping("key.guildmark.tracker", InputConstants.KEY_H, category)
 
     init {
@@ -94,7 +94,7 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
         NeoForge.EVENT_BUS.addListener(ScreenEvent.Init.Post::class.java, SettingsScreen::onScreenInit)
         modBus.addListener(RegisterKeyMappingsEvent::class.java) { event ->
             event.registerCategory(category)
-            event.register(ledgerKey)
+            event.register(LedgerScreen.KEY)
             event.register(trackerKey)
             event.register(MapScreen.KEY)
             event.register(CharacterScreen.KEY)
@@ -207,7 +207,7 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
         NeoForge.EVENT_BUS.addListener(ClientTickEvent.Post::class.java) { _ -> TravelFade.tick() }
         NeoForge.EVENT_BUS.addListener(ClientTickEvent.Post::class.java) { _ ->
             val minecraft = Minecraft.getInstance()
-            while (ledgerKey.consumeClick()) {
+            while (LedgerScreen.KEY.consumeClick()) {
                 if (minecraft.gui.screen() == null && minecraft.player != null) minecraft.gui.setScreen(LedgerScreen())
             }
             while (trackerKey.consumeClick()) ContractTracker.shown = !ContractTracker.shown

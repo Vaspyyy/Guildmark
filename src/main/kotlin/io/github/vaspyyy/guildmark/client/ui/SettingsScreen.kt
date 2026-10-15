@@ -277,7 +277,7 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
         // As NeoForge's own settings screen allows: only where nobody else is playing by these rules
         val editable = note == "local"
         val listed = listOf(
-            c.COMBAT, c.LOSE_MARKS, c.PAY_MULTIPLIER, c.XP_MULTIPLIER, c.RELIC_CACHE_CHANCE, c.HANDBOOK, c.AUTO_BOARDS, c.WARDFIRES,
+            c.COMBAT, c.LOSE_MARKS, c.PAY_MULTIPLIER, c.XP_MULTIPLIER, c.SKILL_XP_MULTIPLIER, c.RELIC_CACHE_CHANCE, c.HANDBOOK, c.AUTO_BOARDS, c.WARDFIRES,
             c.DUNGEONS, c.FIELD_BOSSES, c.CAPITALS, c.DUSK_RIDERS, c.DRAGONS, c.SIEGES, c.SIEGE_CHANCE, c.BANDITS, c.RIVALS, c.CHARACTERS,
             c.TOWNSFOLK_CROWDS, c.TOWNSFOLK_CROWD_DENSITY, c.REGIONS, c.REGION_TERRAIN, c.REGION_ENEMIES,
         )
@@ -290,6 +290,7 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
             header("rewards"),
             slider(c.PAY_MULTIPLIER, spec, editable, MULTIPLIERS, ::times) { c.PAY_MULTIPLIER.set(it) },
             slider(c.XP_MULTIPLIER, spec, editable, MULTIPLIERS, ::times) { c.XP_MULTIPLIER.set(it) },
+            slider(c.SKILL_XP_MULTIPLIER, spec, editable, MULTIPLIERS, ::times) { c.SKILL_XP_MULTIPLIER.set(it) },
             slider(c.RELIC_CACHE_CHANCE, spec, editable, CHANCES, ::percentOf) { c.RELIC_CACHE_CHANCE.set(it) },
             toggle(c.HANDBOOK, spec, editable),
             header("world"),
