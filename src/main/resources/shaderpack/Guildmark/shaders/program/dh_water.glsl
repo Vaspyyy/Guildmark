@@ -1,4 +1,6 @@
 // Distant Horizons' far water: like gbuffers_water's, its wave normal for composite, nothing in colortex0.
+// DH tests it against its own land only, never against Minecraft's: so where the real world stands in front, it
+// has to leave the pixel alone itself, or the far sea is painted over the near land.
 
 #include "/lib/settings.glsl"
 #include "/lib/common.glsl"
@@ -29,6 +31,8 @@ void main() {
 #include "/lib/atmosphere.glsl"
 #include "/lib/water.glsl"
 
+uniform sampler2D depthtex1;
+
 in vec3 normal;
 in vec2 lmcoord;
 in vec3 playerPos;
@@ -42,6 +46,12 @@ void main() {
     float dist = length(playerPos);
     float noise = dither(gl_FragCoord.xy, frameCounter);
     if (dist < far * (0.82 + 0.12 * noise)) discard;
+    // Minecraft's own land, nearer than this water: it hides it
+    float worldDepth = texelFetch(depthtex1, ivec2(gl_FragCoord.xy), 0).r;
+    if (worldDepth < 1.0) {
+        vec3 world = screenToView(gl_FragCoord.xy / vec2(viewWidth, viewHeight), worldDepth, gbufferProjectionInverse);
+        if (length(world) < dist) discard;
+    }
     vec3 n = normalize(normal);
     if (material == DH_BLOCK_WATER && n.y > 0.5) n = waveNormal(playerPos.xz + cameraPosition.xz);
     outWater = vec4(encodeNormal(n), material == DH_BLOCK_WATER ? 0.5 + 0.5 * lmcoord.y : 0.25, 1.0);

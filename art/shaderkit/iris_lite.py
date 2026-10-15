@@ -125,6 +125,13 @@ uniform mat4 iris_TextureMatrix1;
 #define ftransform() (iris_ProjectionMatrix * (iris_ModelViewMatrix * vec4(iris_Position, 1.0)))
 """
 
+# Distant Horizons' programs: the material attribute and the block kinds Iris defines for them
+DH_PRELUDE_VSH = "in int dhMaterialId;\n"
+DH_DEFINES = {"DH_BLOCK_UNKNOWN": "0", "DH_BLOCK_LEAVES": "1", "DH_BLOCK_STONE": "2", "DH_BLOCK_WOOD": "3",
+              "DH_BLOCK_METAL": "4", "DH_BLOCK_DIRT": "5", "DH_BLOCK_LAVA": "6", "DH_BLOCK_DEEPSLATE": "7",
+              "DH_BLOCK_SNOW": "8", "DH_BLOCK_SAND": "9", "DH_BLOCK_TERRACOTTA": "10", "DH_BLOCK_NETHER_STONE": "11",
+              "DH_BLOCK_WATER": "12", "DH_BLOCK_GRASS": "13", "DH_BLOCK_AIR": "14", "DH_BLOCK_ILLUMINATED": "15"}
+
 FRAGMENT_PRELUDE = """
 uniform mat4 iris_ModelViewMatrix;
 uniform mat4 iris_ProjectionMatrix;
@@ -347,7 +354,10 @@ class Pipeline:
         self.depth = ctx.depth_texture(size)
         self.depth1 = ctx.depth_texture(size)
         self.depth2 = ctx.depth_texture(size)
-        for t in (self.depth, self.depth1, self.depth2):
+        # Distant Horizons draws into its own depth: dhDepthTex0 with its water, dhDepthTex1 without
+        self.dh_depth0 = ctx.depth_texture(size)
+        self.dh_depth1 = ctx.depth_texture(size)
+        for t in (self.depth, self.depth1, self.depth2, self.dh_depth0, self.dh_depth1):
             t.repeat_x = t.repeat_y = False
         res = self.consts.get("shadowMapResolution", 2048)
         self.shadow_res = res
@@ -401,8 +411,13 @@ class Pipeline:
         vsh = self._source(os.path.join(self.folder, chosen + ".vsh"))
         fsh = self._source(os.path.join(self.folder, chosen + ".fsh"))
         defines = dict(self.defines)
+        if chosen.startswith("dh_"):
+            defines.update(DH_DEFINES)
+        vcore = to_core(vsh, "vsh", defines)
+        if chosen.startswith("dh_"):
+            vcore = vcore.replace("#line 1", DH_PRELUDE_VSH + "#line 1", 1)
         try:
-            prog = self.ctx.program(vertex_shader=to_core(vsh, "vsh", defines), fragment_shader=to_core(fsh, "fsh", defines))
+            prog = self.ctx.program(vertex_shader=vcore, fragment_shader=to_core(fsh, "fsh", defines))
         except Exception as e:
             raise RuntimeError("%s/%s failed to compile:\n%s" % (self.world or "root", chosen, e))
         active = active_source(fsh, defines)
@@ -473,7 +488,8 @@ class Pipeline:
              "shadowcolor": self.shadowcolor0, "watershadow": self.shadow0, "shadow": self.shadow0}
         if stage != "shadow":
             t.update({"depthtex0": self.depth, "depthtex1": self.depth1, "depthtex2": self.depth2,
-                      "gdepthtex": self.depth})
+                      "gdepthtex": self.depth, "dhDepthTex": self.dh_depth0, "dhDepthTex0": self.dh_depth0,
+                      "dhDepthTex1": self.dh_depth1})
             for i, b in self.buffers.items():
                 t["colortex%d" % i] = b.current
             t["gcolor"] = self.buffers[0].current
@@ -569,8 +585,8 @@ class Pipeline:
             self.ctx.disable(moderngl.CULL_FACE)
         self.shadow0.compare_func = ""
         self.shadow1.compare_func = ""
-        self.depth.compare_func = ""
-        self.depth1.compare_func = ""
+        for t in (self.depth, self.depth1, self.dh_depth0, self.dh_depth1):
+            t.compare_func = ""
         textures = self.textures(stage)
         textures.update(self.scene_textures)
         textures.update(own_textures or {})
@@ -613,8 +629,8 @@ class Pipeline:
         self.ctx.disable(moderngl.CULL_FACE)
         self.shadow0.compare_func = ""
         self.shadow1.compare_func = ""
-        self.depth.compare_func = ""
-        self.depth1.compare_func = ""
+        for t in (self.depth, self.depth1, self.dh_depth0, self.dh_depth1):
+            t.compare_func = ""
         ident = np.identity(4)
         self.bind(entry, uniforms, self.textures("composite"), ident, ortho(0, 1, 0, 1, -1, 1))
         prog = entry["prog"]
@@ -658,13 +674,34 @@ class Pipeline:
         self.draw_geometry("shadow", scene.meshes.get("translucent"), u, mv, proj, None, cull=False, fbo=fbo0, stage="shadow")
         fbo0.release()
 
-    def render(self, scene, frame):
-        """One frame of scene as frame (see uniforms_for) sees it; returns the final image as uint8 HxWx3."""
+    def dh_fbo(self, name):
+        """Distant Horizons' framebuffer for a dh_ program: its render targets over DH's own depth."""
+        entry = self.program(name)
+        if entry is None:
+            return None, None
+        return entry, self.ctx.framebuffer([self.buffers[i].current for i in entry["targets"]], self.dh_depth0)
+
+    def render(self, scene, frame, dh=None):
+        """
+        One frame of scene as frame (see frame_uniforms) sees it; returns the final image as uint8 HxWx3.
+        dh: Distant Horizons' far land, as {"solid": DhMesh, "water": DhMesh}. Its programs draw the way Iris has DH
+        draw them: the land before Minecraft's terrain, the water among the translucents, both tested against DH's
+        own depth only (dhDepthTex0, with dhProjection), never Minecraft's.
+        """
         u = frame
         self.scene_textures = scene.gbuffer_textures()
         self.clear_buffers(u["fogColor"])
+        for t in (self.dh_depth0, self.dh_depth1):
+            fbo = self.ctx.framebuffer(depth_attachment=t)
+            fbo.clear(depth=1.0)
+            fbo.release()
         self.shadow_pass(scene, u)
         mv, proj = u["gbufferModelView"], u["gbufferProjection"]
+        if dh:
+            entry, fbo = self.dh_fbo("dh_terrain")
+            if entry is not None:
+                self.draw_geometry("dh_terrain", dh.get("solid"), u, mv, u["dhProjection"], None, fbo=fbo)
+            self.copy_depth(self.dh_depth0, self.dh_depth1)
         # Opaque: terrain (solid then cutout), then deferred
         self.draw_geometry("gbuffers_terrain_solid", scene.meshes.get("solid"), u, mv, proj, None)
         self.draw_geometry("gbuffers_terrain_cutout", scene.meshes.get("cutout"), u, mv, proj, None, cull=False)
@@ -677,6 +714,10 @@ class Pipeline:
         alpha = (moderngl.SRC_ALPHA, moderngl.ONE_MINUS_SRC_ALPHA, moderngl.ONE, moderngl.ONE_MINUS_SRC_ALPHA)
         # Minecraft draws the water's surface from below too (a second, reversed face)
         self.draw_geometry("gbuffers_water", scene.meshes.get("translucent"), u, mv, proj, alpha, cull=False)
+        if dh:
+            entry, fbo = self.dh_fbo("dh_water")
+            if entry is not None:
+                self.draw_geometry("dh_water", dh.get("water"), u, mv, u["dhProjection"], alpha, cull=False, fbo=fbo)
         self.draw_geometry("gbuffers_particles", scene.meshes.get("particles"), u, mv, proj, alpha, cull=False)
         self.draw_geometry("gbuffers_weather", scene.meshes.get("weather"), u, mv, proj, alpha, cull=False,
                            own_textures=getattr(scene, "mesh_textures", {}).get("weather"))
@@ -693,13 +734,16 @@ class Pipeline:
 def frame_uniforms(camera, world_time, size, *, far=192.0, rain=0.0, thunder=0.0, frame_counter=0, time_s=0.0,
                    sun_path_rotation=0.0, shadow_distance=128.0, shadow_interval=2.0, eye_brightness=(0, 240),
                    eye_in_water=0, fog_color=None, sky_color=None, fog_start=None, fog_end=None, moon_phase=0,
-                   held_light=0, dimension="overworld", lightning=None, temperature=0.8, rainfall=0.4):
+                   held_light=0, dimension="overworld", lightning=None, temperature=0.8, rainfall=0.4,
+                   dh_near=8.0, dh_far=4096.0):
     """Every uniform the pack reads for one frame, worked out as Iris documents them."""
     w, h = size
     cx, cy, cz = camera["pos"]
     yaw, pitch = camera["yaw"], camera["pitch"]
     mv = rot_x(pitch) @ rot_y(yaw + 180.0)
     proj = perspective(camera.get("fov", 70.0), w / h, 0.05, max(far * 4.0, 1024.0))
+    # Distant Horizons' own projection: the same view, its own near and far planes
+    dh_proj = perspective(camera.get("fov", 70.0), w / h, dh_near, dh_far)
     angle = sky_angle(world_time)
     sun_angle = angle + 0.25 if angle < 0.75 else angle - 0.75
     celestial = mv @ rot_y(-90.0) @ rot_z(sun_path_rotation) @ rot_x(angle * 360.0)
@@ -749,5 +793,7 @@ def frame_uniforms(camera, world_time, size, *, far=192.0, rain=0.0, thunder=0.0
         "entityColor": (0.0, 0.0, 0.0, 0.0), "blockEntityId": 0, "entityId": 0, "renderStage": 0,
         "alphaTestRef": 0.1, "temperature": temperature, "rainfall": rainfall, "playerMood": 0.0,
         "hideGUI": 1, "atlasSize": (1024, 1024),
+        "dhProjection": dh_proj, "dhProjectionInverse": np.linalg.inv(dh_proj), "dhPreviousProjection": dh_proj,
+        "dhNearPlane": dh_near, "dhFarPlane": dh_far, "dhRenderDistance": dh_far,
     }
     return u

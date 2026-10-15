@@ -76,7 +76,7 @@ float sunRays(vec2 uv, Atmos a, float noise) {
 void main() {
     vec2 uv = texcoord;
     float depth = texture(depthtex0, uv).r;
-    vec3 view;
+    vec3 view = vec3(0.0);
     bool sky = false;
     if (depth >= 1.0) {
         sky = true;

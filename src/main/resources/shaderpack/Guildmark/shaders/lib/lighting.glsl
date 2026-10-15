@@ -77,7 +77,10 @@ vec3 shade(Surface s, Atmos a, vec3 viewDir, vec3 visibility, float occlusion) {
     // Fill light from the open sky: it fades fast toward the inside of buildings and caves
     float skyReach = pow(s.light.y, 2.4);
     float facingUp = 0.68 + 0.32 * n.y;
-    vec3 ambient = a.ambient * skyReach * facingUp * occlusion;
+    vec3 ambient = a.ambient * skyReach * facingUp;
+    // The sunlit ground throws some of it back up: walls and overhangs turned from the sun stay dark, not black
+    ambient += a.direct * 0.12 * saturate(l.y) * (0.6 - 0.4 * n.y) * skyReach * AMBIENT_STRENGTH;
+    ambient *= occlusion;
     vec3 fire = blockLight(s.light.x, s.playerPos + cameraPosition) * mix(0.55, 1.0, occlusion);
     fire += heldLight(s.playerPos, n);
     vec3 light = direct + ambient + fire + minimumLight() * occlusion;

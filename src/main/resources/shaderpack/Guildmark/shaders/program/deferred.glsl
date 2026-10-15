@@ -80,7 +80,7 @@ void main() {
     float depth = texture(depthtex0, uv).r;
     Atmos a = atmosphere();
     bool dh = false;
-    vec3 viewPos;
+    vec3 viewPos = vec3(0.0);
     if (depth >= 1.0) {
 #ifdef DISTANT_HORIZONS
         float dhDepth = texture(dhDepthTex0, uv).r;

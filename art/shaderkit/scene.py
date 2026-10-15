@@ -224,6 +224,44 @@ class Mesh:
         return v
 
 
+class DhMesh(Mesh):
+    """Distant Horizons' far land or water: plain coloured quads with DH's material id, no texture."""
+
+    def __init__(self):
+        super().__init__()
+        self.data["material"] = []
+
+    def flat(self, corners, color, normal, sky, material):
+        """One quad of colour (r, g, b, a) at sky light sky (0..15), DH block kind material (DH_BLOCK_*)."""
+        for i in (0, 1, 2, 0, 2, 3):
+            self.data["pos"].append(corners[i])
+            self.data["color"].append(color)
+            self.data["uv0"].append((0.0, 0.0))
+            self.data["uv2"].append((0.0, float(sky)))
+            self.data["normal"].append(normal)
+            self.data["entity"].append((0, 0, 0, 0))
+            self.data["mid"].append((0.0, 0.0))
+            self.data["tangent"].append((1.0, 0.0, 0.0, 1.0))
+            self.data["material"].append(material)
+        self.count += 6
+
+    def finish(self):
+        material = np.asarray(self.data.pop("material"), dtype="i4")
+        super().finish()
+        self.arrays["material"] = material
+
+    def vao(self, ctx, prog):
+        if self.count == 0:
+            return None
+        key = id(prog)
+        if key not in self._vaos:
+            names = {"pos": ("iris_Position", "3f"), "color": ("iris_Color", "4f"), "uv2": ("iris_UV2", "2f"),
+                     "normal": ("iris_Normal", "3f"), "material": ("dhMaterialId", "1i")}
+            content = [(self._vbos[k], fmt, attr) for k, (attr, fmt) in names.items() if attr in prog]
+            self._vaos[key] = ctx.vertex_array(prog, content)
+        return self._vaos[key]
+
+
 class World:
     def __init__(self, sx, sy, sz, y0):
         self.sx, self.sy, self.sz, self.y0 = sx, sy, sz, y0
@@ -657,8 +695,9 @@ def mesh_world(w, atlas, ids, area=None):
 
 
 class Scene:
-    def __init__(self, ctx, mcjar, repo_assets, block_properties, seed=7, size=256):
-        self.world = build_vale(seed, size)
+    def __init__(self, ctx, mcjar, repo_assets, block_properties, seed=7, size=256, world=None):
+        """world: a World to mesh instead of the preview vale."""
+        self.world = world if world is not None else build_vale(seed, size)
         self.atlas = Atlas(mcjar, repo_assets)
         self.ids = read_block_ids(block_properties)
         self.meshes = mesh_world(self.world, self.atlas, self.ids)

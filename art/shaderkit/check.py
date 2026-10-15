@@ -16,11 +16,8 @@ import moderngl  # noqa: E402
 
 import iris_lite  # noqa: E402
 
-DH_PRELUDE_VSH = "in int dhMaterialId;\n"
-DH_DEFINES = {"DH_BLOCK_UNKNOWN": "0", "DH_BLOCK_LEAVES": "1", "DH_BLOCK_STONE": "2", "DH_BLOCK_WOOD": "3",
-              "DH_BLOCK_METAL": "4", "DH_BLOCK_DIRT": "5", "DH_BLOCK_LAVA": "6", "DH_BLOCK_DEEPSLATE": "7",
-              "DH_BLOCK_SNOW": "8", "DH_BLOCK_SAND": "9", "DH_BLOCK_TERRACOTTA": "10", "DH_BLOCK_NETHER_STONE": "11",
-              "DH_BLOCK_WATER": "12", "DH_BLOCK_GRASS": "13", "DH_BLOCK_AIR": "14", "DH_BLOCK_ILLUMINATED": "15"}
+DH_PRELUDE_VSH = iris_lite.DH_PRELUDE_VSH
+DH_DEFINES = iris_lite.DH_DEFINES
 
 
 def switches(shaders):
