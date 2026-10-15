@@ -58,6 +58,8 @@ class Ships(private val f: Frame, private val r: Random) {
         f.set(mid + by, 3, castle - 1, B(M.CRATE))
         f.set(mid - by, 2, main - 2, B(M.CARPET, color = Dye.BROWN))
         if (r.nextBoolean()) f.set(mid + by, 2, main - 2, B(M.BARREL, Dir.E))
+        // A hand left aboard to mind her
+        f.resident(Folk.CITIZEN, mid, 2, main + 4)
     }
 
     /** How far the hull reaches either side of the keel, [v] blocks back from the stem. */
