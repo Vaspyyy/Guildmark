@@ -17,7 +17,15 @@ enum class Loot { HOUSE, TAVERN, SMITH, TEMPLE, LIBRARY, BARRACKS, STABLES, TREA
 enum class Spawn { VILLAGER, GOLEM, RECEPTIONIST, HORSE, CAT, COW, SHEEP, PIG, CHICKEN }
 
 /** The townsfolk's trades, as far as a city's plan knows them (townsfolk/TownRole). */
-enum class Folk { CITIZEN, SMITH, BAKER, MERCHANT, GUARD, NOBLE, INNKEEPER, BARD, PRIEST, CHILD }
+enum class Folk {
+    CITIZEN, SMITH, BAKER, MERCHANT, GUARD, NOBLE, INNKEEPER, BARD, PRIEST, CHILD,
+
+    /** Works the fields round a composter: give them the composter as their work. */
+    FARMER,
+
+    /** Fishes off a quay or pier: give them the edge to stand on as their post, facing the water. */
+    FISHER,
+}
 
 /** A block in the city's frame. */
 data class At(val x: Int, val y: Int, val z: Int) {

@@ -237,6 +237,8 @@ class WorldCanvas(
             Folk.BARD -> TownRole.BARD
             Folk.PRIEST -> TownRole.PRIEST
             Folk.CHILD -> TownRole.CHILD
+            Folk.FARMER -> TownRole.FARMER
+            Folk.FISHER -> TownRole.FISHER
         }
 
         /** Air, water, plants and trees: what the ground under a city is filled through. */
