@@ -8,8 +8,8 @@ import java.util.Random
  *
  * The farms put some of these in tight corners (a woodpile against a garden fence, a haystack at a yard's edge, a
  * compost heap in the back corner of a plot), so those keep to a narrow patch: the haystack to the spot and the row
- * behind it, the woodpile to the line through it, the compost to the spot, the cell ahead and the one on its right.
- * The cart is the widest, five across, and keeps a block back from the front of its reach.
+ * behind it, three across, the woodpile to the line through it, the compost to the spot, the cell ahead and the one
+ * on its right. The cart is the widest, five across, and keeps a block back from the front of its reach.
  */
 internal class FarmYard(private val f: Frame, private val r: Random) {
     fun draw(p: FarmProp) {
@@ -113,21 +113,20 @@ internal class FarmYard(private val f: Frame, private val r: Random) {
     }
 
     /**
-     * A haystack on the spot and the row behind it (the row ahead only at its middle: it may be a fence line): a
-     * rick, stepped up to a point, or (for variant 1, now one, now the other) a pyramid of bales; the earth under it
-     * bare.
+     * A haystack on the spot and the row behind it, three across: a rick, stepped up to a point, or (for variant
+     * 1, now one, now the other) a pyramid of bales; the earth under it bare.
      */
     private fun haystack(variant: Int) {
-        for (u in -1..1) for (v in -1..1) if (v >= 0 || u == 0) f.set(u, -1, v, B(M.SOIL))
+        for (u in -1..1) for (v in 0..1) f.set(u, -1, v, B(M.SOIL))
         if (variant == 1 && r.nextBoolean()) bales() else rick()
     }
 
     private fun rick() {
-        for (u in -1..1) for (v in -1..1) {
-            if (v == -1 && u != 0 || (u != 0 && v == 1 && r.nextInt(4) == 0)) continue
-            f.set(u, 0, v, bale(if (u == 0 && v == 0) Axis.Y else if ((u + v) % 2 == 0) Axis.X else Axis.Z))
+        for (u in -1..1) for (v in 0..1) {
+            if (u != 0 && v == 1 && r.nextInt(4) == 0) continue
+            f.set(u, 0, v, bale(if (u == 0) Axis.Y else if ((u + v) % 2 == 0) Axis.X else Axis.Z))
         }
-        for ((u, v) in listOf(1 to 0, -1 to 0, 0 to 1, 0 to -1)) if (r.nextInt(4) != 0) f.set(u, 1, v, bale(Axis.Y))
+        for ((u, v) in listOf(1 to 0, -1 to 0, 0 to 1)) if (r.nextInt(4) != 0) f.set(u, 1, v, bale(Axis.Y))
         f.set(0, 1, 0, bale(Axis.Y))
         f.set(0, 2, 0, bale(Axis.Y))
     }

@@ -23,8 +23,8 @@ enum class Use(val street: Boolean = false, val laid: Boolean = true) {
     // The harbour (see Harbour): quays and yards on land, piers and moorings over the water
     QUAY, PIER, MOORING(laid = false),
 
-    // The farms (see Outskirts)
-    FIELD, FARMYARD, PASTURE(laid = false), ORCHARD(laid = false), HAMLET,
+    // The farms (see Outskirts); a verge is the land's own ground kept for a tree by a road
+    FIELD, FARMYARD, PASTURE(laid = false), ORCHARD(laid = false), HAMLET, VERGE(laid = false),
 }
 
 enum class Kind {

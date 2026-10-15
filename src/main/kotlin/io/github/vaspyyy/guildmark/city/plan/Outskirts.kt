@@ -55,10 +55,11 @@ class Beast(val what: Spawn, val x: Int, val y: Int, val z: Int, val facing: Dir
 
 /**
  * The country round a capital, past the foot of its glacis: the roads out from the gates, each with a hamlet
- * of cottages along it by the walls and the inn on the main road; farmsteads down their own lanes, a
- * farmhouse and a great barn round a yard; windmills on the rises by the roads and a watermill where a road
- * bridges a stream; and between them fields of crops in long strips, pastures and orchards, all following
- * the lie of the land, with nothing on water, on a side a village has taken, or on ground too steep for it.
+ * of cottages along it by the walls and trees along it past them, and the inn by the main road; farmsteads
+ * down their own lanes, a farmhouse and a great barn round a yard; windmills on the rises by the roads and a
+ * watermill where a road bridges a stream; and between them fields of crops in long strips, pastures and
+ * orchards, all following the lie of the land, with nothing on water, on a side a village has taken, or on
+ * ground too steep for it.
  *
  * Everything is worked out once, in [lay], into what each column of the ring holds (a road, a crop, a ditch,
  * a hedge) and the buildings and things set down on it; [draw] then draws only what falls in a canvas's clip.
@@ -103,13 +104,14 @@ class Outskirts(private val plan: CityPlan) {
         val sides = plan.outerGates.filter { it != plan.layout.harbour && it !in plan.layout.crowded }
         val main = if (Dir.S in sides) Dir.S else sides.firstOrNull()
         for (side in sides.sortedBy { if (it == main) 0 else 1 }) road(side, side == main, Random(random.nextLong()))
+        // The inn before the hamlets, so that it has its pick of the ground by the road and the cottages fill in round it
+        inn(Random(random.nextLong()))
         for (road in roads) hamlet(road, Random(random.nextLong()))
-        val innRandom = Random(random.nextLong())
-        roads.firstOrNull { it.main }?.let { inn(it, innRandom) }
         windmills(Random(random.nextLong()))
         farmsteads(Random(random.nextLong()))
         watermill(Random(random.nextLong()))
         waystones(Random(random.nextLong()))
+        roadsideTrees(Random(random.nextLong()))
         parcels(Random(random.nextLong()))
         landHeights = IntArray(0)
         landWet = BooleanArray(0)
@@ -139,7 +141,7 @@ class Outskirts(private val plan: CityPlan) {
     override fun toString(): String =
         "${roads.size} roads, $bridges bridges, ${count(FarmKind.FARMHOUSE)} farmsteads, ${count(FarmKind.COTTAGE)} cottages, " +
             "${count(FarmKind.INN)} inn, ${count(FarmKind.WINDMILL)} windmills, ${count(FarmKind.MILL)} watermills, " +
-            "$fields fields, $pastures pastures, $orchards orchards, ${beasts.size} beasts"
+            "$fields fields, $pastures pastures, $orchards orchards, ${props.count { it.kind == FarmPropKind.TREE }} trees, ${beasts.size} beasts"
 
     private fun count(kind: FarmKind) = buildings.count { it.kind == kind }
 
@@ -510,7 +512,7 @@ class Outskirts(private val plan: CityPlan) {
             var i = 1 + r.nextInt(2)
             while (i < hamletRows - 5) {
                 val frontage = 8 + r.nextInt(3)
-                val depth = 13 + r.nextInt(3)
+                val depth = 14 + r.nextInt(3)
                 i += if (cottage(road, sign, i, frontage, depth, Random(r.nextLong()))) frontage + 1 + r.nextInt(3) else 2
             }
         }
@@ -527,15 +529,16 @@ class Outskirts(private val plan: CityPlan) {
 
     /**
      * A plot by [road] on side [sign] of it, rows [i] on for [frontage], [depth] deep: a verge, a fence and gate
-     * on the road, a front garden of flowers, the cottage, and a vegetable patch behind. The plot is levelled
-     * a block at most from the road; false if the land won't allow it.
+     * on the road, a front garden of flowers, the cottage, and a vegetable patch behind, three rows at least,
+     * then a row for the compost and the woodpile. The plot is levelled a block at most from the road; false if
+     * the land won't allow it.
      */
     private fun cottage(road: CountryRoad, sign: Int, i: Int, frontage: Int, depth: Int, r: Random): Boolean {
         val plot = plotRect(road, sign, i, frontage, depth) ?: return false
         val y = plotHeight(road, i, frontage, plot) ?: return false
         val front = crossDir(road.side, -sign)
         val f = Frame(NullCanvas, plot, front)
-        val house = 6 + r.nextInt(3)
+        val house = min(6 + r.nextInt(3), depth - 8)
         val hedged = r.nextInt(3) == 0
         val door = (frontage - 1) / 2
         for (u in 0 until frontage) for (v in 0 until depth) {
@@ -573,24 +576,31 @@ class Outskirts(private val plan: CityPlan) {
     private fun edge(road: CountryRoad, i: Int, sign: Int): Int =
         if (sign > 0) road.centres[i] + road.halves[i] else -(road.centres[i] - road.halves[i])
 
-    /** A height for a plot along [road] (rows [i] on for [frontage]): near the land, at most a block from the road. */
-    private fun plotHeight(road: CountryRoad, i: Int, frontage: Int, plot: Rect): Int? {
+    /**
+     * A height for a plot along [road] (rows [i] on for [frontage]): near the land, at most a block from the road,
+     * and cut into the land or built up from it no more than [cut].
+     */
+    private fun plotHeight(road: CountryRoad, i: Int, frontage: Int, plot: Rect, cut: Int = MAX_PLOT_CUT): Int? {
         val (mid, stray) = lie(plot)
         val lo = (i until i + frontage).maxOf { road.heights[it] } - 1
         val hi = (i until i + frontage).minOf { road.heights[it] } + 1
         if (lo > hi) return null
         val y = mid.coerceIn(lo, hi)
-        return if (stray + abs(y - mid) > MAX_PLOT_CUT) null else y
+        return if (stray + abs(y - mid) > cut) null else y
     }
 
-    /** The inn on the main road just past its hamlet, on whichever side the land suits: its forecourt, stable and yard. */
-    private fun inn(road: CountryRoad, r: Random) {
+    /**
+     * The inn by the main road at the end of its hamlet, on whichever side the land suits: its forecourt, stable
+     * and yard. Where the main road's too steep or broken for it all the way out, it goes further out, then in
+     * among the hamlet's plots, then by another road.
+     */
+    private fun inn(r: Random) {
         val frontage = 21
         val depth = 18
         val signs = if (r.nextBoolean()) intArrayOf(1, -1) else intArrayOf(-1, 1)
-        for (i in hamletRows - 4..hamletRows + 6) for (sign in signs) {
+        for (road in roads) for (i in (hamletRows - 4 until road.rows) + (hamletRows - 5 downTo 1)) for (sign in signs) {
             val plot = plotRect(road, sign, i, frontage, depth) ?: continue
-            val y = plotHeight(road, i, frontage, plot) ?: continue
+            val y = plotHeight(road, i, frontage, plot, MAX_YARD_CUT) ?: continue
             val front = crossDir(road.side, -sign)
             val f = Frame(NullCanvas, plot, front)
             for (u in 0 until frontage) for (v in 0 until depth) {
@@ -604,6 +614,7 @@ class Outskirts(private val plan: CityPlan) {
                     else -> put(x, z, Use.HAMLET, Cell.GROUND, y, if (noise(x, z) % 3 == 0) GRASS else EARTH)
                 }
             }
+            bank(plot, y)
             buildings.add(FarmBuilding(FarmKind.INN, frameRect(f, 1, 2, 13, 10), front, y, r.nextLong()))
             buildings.add(FarmBuilding(FarmKind.STABLE, frameRect(f, 15, 2, 19, 12), front, y, r.nextLong()))
             // Lamps on the road; in the yard a well, a cart, a haystack and the woodpile
@@ -611,7 +622,7 @@ class Outskirts(private val plan: CityPlan) {
             props.add(FarmProp(FarmPropKind.WELL, f.x(5, 14), f.z(5, 14), y))
             props.add(FarmProp(FarmPropKind.CART, f.x(10, 14), f.z(10, 14), y, f.turn(Dir.W), 1))
             props.add(FarmProp(FarmPropKind.HAYSTACK, f.x(17, 15), f.z(17, 15), y, front))
-            props.add(FarmProp(FarmPropKind.WOODPILE, f.x(2, 12), f.z(2, 12), y, f.turn(Dir.S)))
+            props.add(FarmProp(FarmPropKind.WOODPILE, f.x(2, 14), f.z(2, 14), y, f.turn(Dir.S)))
             return
         }
     }
@@ -677,7 +688,13 @@ class Outskirts(private val plan: CityPlan) {
         }
         val front = crossDir(road.side, -sign)
         buildings.add(FarmBuilding(FarmKind.WINDMILL, lot, front, y, r.nextLong()))
+        // A cart of sacks by the door, out past the round top where it must, so the ground under it is levelled too
         props.add(FarmProp(FarmPropKind.CART, c.x + front.dx * 3 + front.cw.dx * 4, c.z + front.dz * 3 + front.cw.dz * 4, y, front.opposite, 2))
+        for (ahead in 2..5) for (aside in 2..6) {
+            val x = c.x + front.dx * ahead + front.cw.dx * aside
+            val z = c.z + front.dz * ahead + front.cw.dz * aside
+            if (cell(x, z) == Cell.BANK) put(x, z, Use.FARMYARD, Cell.GROUND, y, if (noise(x, z) % 4 == 0) EARTH else GRASS)
+        }
         return true
     }
 
@@ -694,8 +711,8 @@ class Outskirts(private val plan: CityPlan) {
             Tier.GRAND -> 5 + r.nextInt(2)
         }
         val big = plan.tier != Tier.MEDIUM
-        val width = if (big) 26 else 21
-        val depth = if (big) 21 else 18
+        val width = if (big) 26 else 23
+        val depth = if (big) 21 else 19
         class Spot(val road: CountryRoad, val sign: Int, val row: Int, val outer: Boolean, val a: Int, val score: Double)
         val spots = ArrayList<Spot>()
         for (road in roads) for (sign in intArrayOf(-1, 1)) for (row in hamletRows + 3 until road.rows - 3) {
@@ -740,7 +757,8 @@ class Outskirts(private val plan: CityPlan) {
     /**
      * A farmstead beside the lane along row [row] off [road] (on its [sign] side, past the lane if [outer]),
      * [width] across from [a0] and [depth] deep: the farmhouse and the great barn facing each other across the
-     * yard, the gate onto the lane between them, a kitchen garden, and a pen with its coop behind the house.
+     * yard, the gate onto the lane between them, a kitchen garden, and a pen with its coop behind the house; in
+     * the yard a well and a cart, and haystacks before and behind the barn.
      */
     private fun farmstead(road: CountryRoad, sign: Int, row: Int, outer: Boolean, a0: Int, width: Int, depth: Int, r: Random): Boolean {
         val n0 = if (outer) row + 2 else row - 1 - depth
@@ -801,21 +819,22 @@ class Outskirts(private val plan: CityPlan) {
         buildings.add(FarmBuilding(FarmKind.BARN, frameRect(f, mu(width - 1 - barnDepth), 3, mu(width - 2), 2 + barnLength), east.opposite, y, r.nextLong()))
         // The coop in the pen's far corner, hens before it and pigs or sheep in the rest
         buildings.add(FarmBuilding(FarmKind.COOP, frameRect(f, mu(1), depth - 4, mu(3), depth - 2), east, y, r.nextLong()))
+        // Pigs or sheep by the pen's gate; the hens out before the coop's door, clear of its eaves
         val penned = if (r.nextBoolean()) Spawn.PIG else Spawn.SHEEP
         for (k in 0 until 2 + r.nextInt(2)) {
-            val u = mu(4 + k % 3)
-            val v = penTop + 2 + k / 3
+            val u = mu(6 + k % 2)
+            val v = penTop + 1 + k / 2
             beasts.add(Beast(penned, f.x(u, v), y, f.z(u, v), Dir.entries[r.nextInt(4)]))
         }
-        for (k in 0 until 3) beasts.add(Beast(Spawn.CHICKEN, f.x(mu(2 + k), depth - 5), y, f.z(mu(2 + k), depth - 5), Dir.entries[r.nextInt(4)]))
-        // The yard: a well, a hay cart, haystacks by the barn, lamps at the gate, the farmer at the compost
+        for (k in 0 until 3) beasts.add(Beast(Spawn.CHICKEN, f.x(mu(5), depth - 4 + k), y, f.z(mu(5), depth - 4 + k), Dir.entries[r.nextInt(4)]))
+        // The yard: a well, a hay cart, haystacks before and behind the barn, lamps at the gate, the farmer at the compost
         val mid = houseDepth + 1 + yard / 2
         props.add(FarmProp(FarmPropKind.WELL, f.x(mu(mid), depth / 2 - 1), f.z(mu(mid), depth / 2 - 1), y))
         props.add(FarmProp(FarmPropKind.CART, f.x(mu(mid), depth - 4), f.z(mu(mid), depth - 4), y, f.turn(Dir.N), 1))
-        for (v in listOf(1, depth - 3)) {
-            val u = mu(width - 2 - barnDepth / 2 - (if (v == 1) 2 else 0))
-            props.add(FarmProp(FarmPropKind.HAYSTACK, f.x(u, v), f.z(u, v), y, front, r.nextInt(2)))
-        }
+        // Before the barn's end and behind it, to one side of the torches on its ends; the one behind faces the back fence
+        val hay = mu(width - 4 - barnDepth / 2)
+        props.add(FarmProp(FarmPropKind.HAYSTACK, f.x(hay, 1), f.z(hay, 1), y, front, r.nextInt(2)))
+        props.add(FarmProp(FarmPropKind.HAYSTACK, f.x(hay, depth - 2), f.z(hay, depth - 2), y, front.opposite, r.nextInt(2)))
         for (u0 in intArrayOf(gate - 1, gate + 3)) props.add(FarmProp(FarmPropKind.LAMP, f.x(mu(u0), 0), f.z(mu(u0), 0), y))
         props.add(FarmProp(FarmPropKind.COMPOST, f.x(mu(houseDepth + 1), 2 + houseWidth), f.z(mu(houseDepth + 1), 2 + houseWidth), y, east, 1))
         props.add(FarmProp(FarmPropKind.WOODPILE, f.x(mu(houseDepth + 1), 2), f.z(mu(houseDepth + 1), 2), y, f.turn(Dir.S)))
@@ -889,6 +908,46 @@ class Outskirts(private val plan: CityPlan) {
             put(p.x, p.z, Use.ROAD, Cell.GROUND, road.heights[i], GRASS)
             props.add(FarmProp(FarmPropKind.WAYSTONE, p.x, p.z, road.heights[i], crossDir(road.side, -sign)))
         }
+    }
+
+    // ---- Trees by the roads ----
+
+    /**
+     * Trees along the roads past the hamlets, a few rows apart and now one side, now the other: broad oaks most of
+     * all and now and then a fir, or down the main road as often as not an avenue of tall poplars, a pair to a
+     * row. Each stands on the land's own ground a verge's width off the road, where nothing else is.
+     */
+    private fun roadsideTrees(r: Random) {
+        for (road in roads) {
+            val avenue = road.main && r.nextBoolean()
+            var i = hamletRows + 6 + r.nextInt(4)
+            while (i < road.rows - 4) {
+                if (avenue) {
+                    for (sign in intArrayOf(-1, 1)) roadTree(road, i, sign, 1)
+                    i += AVENUE_STEP
+                } else {
+                    val variant = if (r.nextInt(6) == 0) 2 else 0
+                    i += if (roadTree(road, i, if (r.nextBoolean()) 1 else -1, variant)) 6 + r.nextInt(8) else 2
+                }
+            }
+        }
+    }
+
+    /**
+     * A tree of [variant] beside [road]'s row [i] on its [sign] side, if the ground there's free and even and no
+     * higher than the road but a little (a fir's lowest boughs, over the road's edge, hang lower); false if not.
+     */
+    private fun roadTree(road: CountryRoad, i: Int, sign: Int, variant: Int): Boolean {
+        val p = road.at(i, sign * (road.halves[i] + 3))
+        val spot = Rect(p.x - 1, p.z - 1, p.x + 1, p.z + 1)
+        val y = land(p.x, p.z)
+        val rise = if (variant == 2) 0 else 1
+        if (!free(spot) || !even(p.x, p.z) || road.heights[i] > y + rise || y - road.heights[i] > 2 || !crownClear(p.x, p.z, rise)) return false
+        val bounds = spot.grow(FarmPropKind.TREE.reach - 1)
+        if (props.any { it.bounds.intersects(bounds) } || buildings.any { it.bounds.intersects(bounds) }) return false
+        for (x in spot.x0..spot.x1) for (z in spot.z0..spot.z1) plan.grid[x, z] = Use.VERGE
+        props.add(FarmProp(FarmPropKind.TREE, p.x, p.z, y, Dir.entries[noise(p.x, p.z) % 4], variant))
+        return true
     }
 
     // ---- Fields, pastures and orchards ----
@@ -1160,7 +1219,8 @@ class Outskirts(private val plan: CityPlan) {
 
     /**
      * A pasture on the land's own ground: a fence round it following the ground, a gate onto a road or lane if
-     * one runs by, a water trough, a field shelter if it's big, and cattle, sheep or horses out at grass.
+     * one runs by, a field shelter if it's big, a water trough and an oak or two for shade, each well clear of
+     * the fence and the shelter, and cattle, sheep or horses out at grass between them.
      */
     private fun pasture(rect: Rect, mask: BooleanArray, r: Random) {
         val d = rect.depth
@@ -1195,13 +1255,50 @@ class Outskirts(private val plan: CityPlan) {
             roll < 92 -> Spawn.HORSE
             else -> Spawn.PIG
         }
+        // Nothing but grass for [by] round a spot, on the pasture's own ground
+        fun open(p: CityPlan.Pos, by: Int) = (-by..by).all { dx -> (-by..by).all { dz -> inside(p.x + dx, p.z + dz) && cell(p.x + dx, p.z + dz) == Cell.NONE } }
+        val taken = ArrayList<Rect>()
+        if (inner.size >= 260 && kind != Spawn.PIG) shelter(rect, ::inside, r)?.let { taken.add(it.grow(FarmKind.SHELTER.reach)) }
+        val troughs = inner.filter { open(it, 2) && settled(it.x, it.z) }
+        if (troughs.isNotEmpty()) {
+            val t = troughs[r.nextInt(troughs.size)]
+            props.add(FarmProp(FarmPropKind.TROUGH, t.x, t.z, land(t.x, t.z), if (r.nextBoolean()) Dir.N else Dir.E))
+            taken.add(Rect(t.x - 1, t.z - 1, t.x + 1, t.z + 1))
+        }
+        for (k in 0 until if (kind == Spawn.PIG) 0 else min(2, inner.size / SHADE_AREA)) {
+            val spots = inner.filter { p -> open(p, 3) && taken.none { it.grow(4).contains(p.x, p.z) } && even(p.x, p.z) && crownClear(p.x, p.z, 1) }
+            if (spots.isEmpty()) break
+            val t = spots[r.nextInt(spots.size)]
+            props.add(FarmProp(FarmPropKind.TREE, t.x, t.z, land(t.x, t.z), Dir.entries[r.nextInt(4)], 0))
+            taken.add(Rect(t.x - 1, t.z - 1, t.x + 1, t.z + 1))
+        }
+        val grazing = inner.filter { p -> open(p, 1) && taken.none { it.contains(p.x, p.z) } }
+        if (grazing.isEmpty()) return
         for (k in 0 until (inner.size / 110).coerceIn(2, 5)) {
-            val p = inner[r.nextInt(inner.size)]
+            val p = grazing[r.nextInt(grazing.size)]
             beasts.add(Beast(kind, p.x, land(p.x, p.z), p.z, Dir.entries[r.nextInt(4)]))
         }
-        val trough = inner[r.nextInt(inner.size)]
-        props.add(FarmProp(FarmPropKind.TROUGH, trough.x, trough.z, land(trough.x, trough.z), if (r.nextBoolean()) Dir.N else Dir.E))
-        if (inner.size >= 260 && kind != Spawn.PIG) shelter(rect, ::inside, r)
+    }
+
+    /** Whether the ground round a column is level with it or a block lower, so a trough stands on it without sinking in. */
+    private fun settled(x: Int, z: Int): Boolean {
+        val y = land(x, z)
+        return (-1..1).all { dx -> (-1..1).all { dz -> land(x + dx, z + dz) in y - 1..y } }
+    }
+
+    /**
+     * Whether nothing under a tree's crown at [x], [z] (three each way) stands more than [rise] over the foot of
+     * its trunk, the ground or anything laid on it, so the lowest leaves hang clear.
+     */
+    private fun crownClear(x: Int, z: Int, rise: Int): Boolean {
+        val y = land(x, z)
+        return (-3..3).all { dx -> (-3..3).all { dz -> !inSquare(x + dx, z + dz) || (level(x + dx, z + dz) ?: land(x + dx, z + dz)) <= y + rise } }
+    }
+
+    /** Whether the ground round a column is within a block of it, for a tree to stand on. */
+    private fun even(x: Int, z: Int): Boolean {
+        val y = land(x, z)
+        return (-1..1).all { dx -> (-1..1).all { dz -> abs(land(x + dx, z + dz) - y) <= 1 } }
     }
 
     /** How far the ground climbs from a fence post to its highest neighbour inside, so the post can stand taller there. */
@@ -1211,8 +1308,8 @@ class Outskirts(private val plan: CityPlan) {
         return high - land(x, z)
     }
 
-    /** An open-fronted field shelter on a little levelled spot well inside a pasture. */
-    private fun shelter(rect: Rect, inside: (Int, Int) -> Boolean, r: Random) {
+    /** An open-fronted field shelter on a little levelled spot well inside a pasture; its lot, or null if there's no room. */
+    private fun shelter(rect: Rect, inside: (Int, Int) -> Boolean, r: Random): Rect? {
         for (tries in 0 until 12) {
             val x0 = rect.x0 + 2 + r.nextInt(max(1, rect.width - 8))
             val z0 = rect.z0 + 2 + r.nextInt(max(1, rect.depth - 8))
@@ -1223,8 +1320,9 @@ class Outskirts(private val plan: CityPlan) {
             if (stray > 1) continue
             for (x in lot.x0..lot.x1) for (z in lot.z0..lot.z1) put(x, z, Use.FARMYARD, Cell.GROUND, y, EARTH)
             buildings.add(FarmBuilding(FarmKind.SHELTER, lot, Dir.entries[r.nextInt(4)], y, r.nextLong()))
-            return
+            return lot
         }
+        return null
     }
 
     /** An orchard of fruit trees in rows on the land's own ground, fenced or open, now and then with sheep under the trees. */
@@ -1246,8 +1344,10 @@ class Outskirts(private val plan: CityPlan) {
         val trees = ArrayList<CityPlan.Pos>()
         for (x in rect.x0..rect.x1) for (z in rect.z0..rect.z1) {
             if (Math.floorMod(x - rect.x0 - ox, spacing) != 0 || Math.floorMod(z - rect.z0 - oz, spacing) != 0) continue
-            // Clear of the edge by a crown's width, on ground level enough to stand a tree
+            // Clear of the edge by a crown's width, on ground level enough to stand a tree, and no rail under the
+            // crown standing high enough to reach into it
             if ((-2..2).any { dx -> (-2..2).any { dz -> !inside(x + dx, z + dz) } }) continue
+            if ((-2..2).any { dx -> (-2..2).any { dz -> cell(x + dx, z + dz) == Cell.RAIL && land(x + dx, z + dz) > land(x, z) } }) continue
             var lo = Int.MAX_VALUE
             var hi = Int.MIN_VALUE
             for (dx in -1..1) for (dz in -1..1) {
@@ -1259,10 +1359,14 @@ class Outskirts(private val plan: CityPlan) {
             props.add(FarmProp(FarmPropKind.FRUIT_TREE, x, z, land(x, z), Dir.entries[r.nextInt(4)], variant))
             trees.add(CityPlan.Pos(x, z))
         }
+        // Sheep in the gaps between the trees, where no bough hangs
         if (trees.size >= 4 && r.nextInt(3) == 0) for (k in 0 until 3) {
             val p = trees[r.nextInt(trees.size)]
             val bx = p.x + if (r.nextBoolean()) 2 else -2
-            if (inside(bx, p.z) && cell(bx, p.z) == Cell.NONE) beasts.add(Beast(Spawn.SHEEP, bx, land(bx, p.z), p.z, Dir.entries[r.nextInt(4)]))
+            val bz = p.z + if (r.nextBoolean()) 2 else -2
+            if (inside(bx, bz) && cell(bx, bz) == Cell.NONE && abs(land(bx, bz) - land(p.x, p.z)) <= 1) {
+                beasts.add(Beast(Spawn.SHEEP, bx, land(bx, bz), bz, Dir.entries[r.nextInt(4)]))
+            }
         }
     }
 
@@ -1409,6 +1513,10 @@ class Outskirts(private val plan: CityPlan) {
         const val ORCHARD_SHARE = 10
         /** A parcel with more of its ground than this in steps is left wild. */
         const val MAX_CLIFFS = 0.12
+
+        /** Rows between the pairs of poplars down an avenue; a pasture's ground for each shade tree in it. */
+        const val AVENUE_STEP = 5
+        const val SHADE_AREA = 220
 
         /** A windmill's lot, out from its middle, and how far apart two stand at least. */
         const val WINDMILL_HALF = 6
