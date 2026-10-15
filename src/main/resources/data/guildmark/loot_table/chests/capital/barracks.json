@@ -59,6 +59,26 @@
         },
         {
           "type": "minecraft:item",
+          "name": "guildmark:iron_greatsword",
+          "weight": 2
+        },
+        {
+          "type": "minecraft:item",
+          "name": "guildmark:iron_dagger",
+          "weight": 3
+        },
+        {
+          "type": "minecraft:item",
+          "name": "guildmark:iron_sabre",
+          "weight": 3
+        },
+        {
+          "type": "minecraft:item",
+          "name": "guildmark:iron_war_hammer",
+          "weight": 2
+        },
+        {
+          "type": "minecraft:item",
           "name": "minecraft:shield",
           "weight": 5
         },
@@ -157,6 +177,24 @@
           "type": "minecraft:item",
           "name": "minecraft:iron_sword",
           "weight": 2,
+          "modifier": {
+            "type": "minecraft:enchant_randomly",
+            "options": "#minecraft:on_random_loot"
+          }
+        },
+        {
+          "type": "minecraft:item",
+          "name": "guildmark:iron_sabre",
+          "weight": 1,
+          "modifier": {
+            "type": "minecraft:enchant_randomly",
+            "options": "#minecraft:on_random_loot"
+          }
+        },
+        {
+          "type": "minecraft:item",
+          "name": "guildmark:iron_greatsword",
+          "weight": 1,
           "modifier": {
             "type": "minecraft:enchant_randomly",
             "options": "#minecraft:on_random_loot"

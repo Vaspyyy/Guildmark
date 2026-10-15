@@ -13,7 +13,9 @@ import io.github.vaspyyy.guildmark.progression.Skills
 import io.github.vaspyyy.guildmark.progression.Talents
 import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.registry.ModSounds
+import net.minecraft.core.BlockPos
 import net.minecraft.core.component.DataComponents
+import net.minecraft.core.particles.BlockParticleOption
 import net.minecraft.core.particles.ParticleTypes
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
@@ -31,6 +33,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes
 import net.minecraft.world.entity.monster.Enemy
 import net.minecraft.world.entity.monster.skeleton.AbstractSkeleton
 import net.minecraft.world.entity.player.Player
+import net.minecraft.world.level.block.LevelEvent
 import net.minecraft.world.phys.Vec3
 import net.neoforged.neoforge.event.PlayLevelSoundEvent
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent
@@ -93,8 +96,8 @@ object Combat {
         if ((move.isAttack || move == Move.DRINK) && player.isUsingItem) player.stopUsingItem()
         if (move == Move.DRINK) player.isSprinting = false
 
-        // A guard counter needs a blow just blocked; otherwise it's an ordinary slash
-        var actual = if (move == Move.GUARD_COUNTER && s.guardCounterUntil + 4 < now) Move.LIGHT_1 else move
+        // A guard counter needs a blow just blocked; otherwise it's the combo's opening blow
+        var actual = if (move.kind == MoveKind.COUNTER && s.guardCounterUntil + 4 < now) WeaponClass.of(move)?.lights?.first() ?: move else move
         var critical: LivingEntity? = null
         if (actual.canBecomeCritical) {
             findCritical(player)?.let { (target, crit) ->
@@ -130,7 +133,8 @@ object Combat {
         // Rolls carry their direction; attacks their speed, which the watchers can't work out from the mover's skills
         val extra = if (actual.isRoll) payload.yaw else if (actual.isAttack) s.tempo else 0f
         PacketDistributor.sendToPlayersTrackingEntity(player, MovePayload(player.id, actual.ordinal, payload.seq, if (holding) MovePayload.CHARGING else 0, extra))
-        moveSound(actual)?.let { player.level().playSound(player, player.x, player.y, player.z, it, SoundSource.PLAYERS, 0.9f, 0.9f + player.random.nextFloat() * 0.2f) }
+        // An attack's swing is heard as it comes round (see tick); a roll at once
+        if (!actual.isAttack) moveSound(actual)?.let { player.level().playSound(player, player.x, player.y, player.z, it, SoundSource.PLAYERS, 0.9f, 0.9f + player.random.nextFloat() * 0.2f) }
         if (actual.isCritical) {
             player.level().playSound(null, player.x, player.y, player.z, ModSounds.SWING_HEAVY.get(), SoundSource.PLAYERS, 1f, 0.8f)
         }
@@ -151,12 +155,19 @@ object Combat {
         val s = state(player)
         val move = s.move ?: return
         if (payload.seq != s.seq || !move.isAttack) return
+        // Each of the move's blows can hit a creature once, and they come in order
+        val window = payload.window
+        if (window < s.window || window >= move.windows) return
         val level = player.level() as ServerLevel
         val now = level.gameTime
         // Generous timing: the client's clock runs a little ahead of or behind ours
         val t = s.elapsed(now)
         val charge = s.charge.coerceAtLeast(0)
-        if (t < move.hitFrom - 5 || t > move.hitTo + 10 + (if (s.charge < 0) move.maxCharge else 0)) return
+        if (t < move.windowFrom(window) - 5 || t > move.windowTo(window) + 10 + (if (s.charge < 0) move.maxCharge else 0)) return
+        if (window > s.window) {
+            s.window = window
+            s.struck.clear()
+        }
         val chargeBonus = if (move.maxCharge > 0) charge.toFloat() / move.maxCharge else 0f
         for (id in payload.targets.take(8)) {
             if (!s.struck.add(id)) continue
@@ -169,7 +180,8 @@ object Combat {
 
     private fun allowed(player: ServerPlayer, move: Move, s: CombatState, now: Long): Boolean {
         if (!move.requestable || player.isSpectator || player.isPassenger || player.isFallFlying || player.isSleeping) return false
-        if (move.isAttack && Weapons.classOf(player.mainHandItem) == null) return false
+        // Each weapon makes its own moves only
+        if (move.isAttack && (Weapons.classOf(player.mainHandItem) ?: return false) != WeaponClass.of(move)) return false
         if (move == Move.DRINK && !WardensFlask.canDrink(player)) return false
         if (move.stamina > 0f && s.stamina < 1f && !player.isCreative) return false
         if (move.focus > 0f && s.focus < Talents.focusCost(player, move) && !player.isCreative) return false
@@ -210,7 +222,9 @@ object Combat {
         val level = player.level() as ServerLevel
         val before = target.health
         val previous = striking
-        striking = Strike(player, target, move, multiplier * Talents.moveDamage(player, move), knockback)
+        val weapon = player.mainHandItem
+        val critical = if (move.isCritical) Weapons.classOf(weapon)?.critical ?: 1f else 1f
+        striking = Strike(player, target, move, multiplier * Talents.moveDamage(player, move) * Weapons.damageFactor(weapon) * critical, knockback)
         try {
             attackStrengthTicker.setInt(player, 1000)
             target.damageCooldownTime = 0
@@ -297,6 +311,16 @@ object Combat {
         val now = level.gameTime
         s.move?.let { move ->
             if (move.isCritical) tickCritical(player, s, move, s.elapsed(now))
+            // Everyone else hears each swing as it comes round, and sees the ground split or shake under the big blows
+            val t = s.shown(now)
+            while (move.isAttack && s.swings < move.windows && t >= move.swingAt(s.swings)) {
+                s.swings++
+                moveSound(move)?.let { level.playSound(player, player.x, player.y, player.z, it, SoundSource.PLAYERS, 0.9f, pitch(move) * (0.9f + player.random.nextFloat() * 0.2f)) }
+            }
+            if (move.impact != Impact.NONE && !s.impacted && t >= move.hitFrom) {
+                s.impacted = true
+                impact(player, move)
+            }
             if (move == Move.DRINK && !s.drank && s.elapsed(now) >= Move.DRINK_AT) {
                 s.drank = true
                 WardensFlask.drink(player)
@@ -355,7 +379,7 @@ object Combat {
             Talents[player, Bonus.POISE].toFloat()).coerceAtLeast(5f)
         val move = s.move ?: return base
         val t = s.elapsed(now)
-        return if (move.poise > 1f && s.busy(now) && t >= 2f && t <= move.hitTo + 1) base * move.poise else base
+        return if (move.poise > 1f && s.busy(now) && t >= 2f && t <= move.lastHit + 1) base * move.poise else base
     }
 
     // ---- Damage hooks ----
@@ -500,13 +524,55 @@ object Combat {
         )
     }
 
-    private fun moveSound(move: Move): SoundEvent? = when (move) {
-        Move.LIGHT_1, Move.LIGHT_2, Move.LIGHT_3, Move.RUNNING, Move.JUMP -> ModSounds.SWING_LIGHT.get()
-        Move.HEAVY, Move.GUARD_COUNTER -> ModSounds.SWING_HEAVY.get()
-        Move.SKILL -> ModSounds.WHIRL.get()
-        Move.ROLL, Move.ROLL_HEAVY -> ModSounds.ROLL.get()
-        Move.BACKSTEP -> ModSounds.BACKSTEP.get()
-        else -> null
+    /** The sound of [move]'s swing, or of a roll. Heavy weapons swing heavy even in their light attacks. */
+    fun moveSound(move: Move): SoundEvent? {
+        val heavy = (WeaponClass.of(move)?.heft ?: 0) > 0
+        return when (move.kind) {
+            MoveKind.LIGHT, MoveKind.RUNNING, MoveKind.JUMP -> if (heavy) ModSounds.SWING_HEAVY.get() else ModSounds.SWING_LIGHT.get()
+            MoveKind.HEAVY, MoveKind.COUNTER -> ModSounds.SWING_HEAVY.get()
+            MoveKind.SKILL -> when (move) {
+                Move.SKILL, Move.SABRE_SKILL -> ModSounds.WHIRL.get()
+                Move.DAGGER_SKILL -> ModSounds.SWING_LIGHT.get()
+                else -> ModSounds.SWING_HEAVY.get()
+            }
+            MoveKind.DODGE -> if (move == Move.BACKSTEP) ModSounds.BACKSTEP.get() else ModSounds.ROLL.get()
+            else -> null
+        }
+    }
+
+    /** How high [move]'s swing sounds: big weapons lower, small ones higher. */
+    fun pitch(move: Move): Float = WeaponClass.of(move)?.pitch ?: 1f
+
+    /** A blow that splits the ground in a line ahead, or shakes it all around: dust thrown up, and the crash of it. */
+    private fun impact(player: ServerPlayer, move: Move) {
+        val level = player.level() as ServerLevel
+        val ground = groundUnder(level, player.blockPosition()) ?: return
+        when (move.impact) {
+            Impact.RING -> level.levelEvent(LevelEvent.PARTICLES_SMASH_ATTACK, ground, 750)
+            Impact.LINE -> {
+                val look = Vec3.directionFromRotation(0f, player.yRot)
+                for (i in 1..6) {
+                    val at = player.position().add(look.scale(i * 0.9))
+                    val pos = groundUnder(level, BlockPos.containing(at.x, player.y + 0.5, at.z)) ?: continue
+                    val dust = BlockParticleOption(ParticleTypes.DUST_PILLAR, level.getBlockState(pos))
+                    level.sendParticles(dust, at.x, pos.y + 1.05, at.z, 6 + i, 0.2, 0.02, 0.2, 0.12)
+                    level.sendParticles(BlockParticleOption(ParticleTypes.BLOCK, level.getBlockState(pos)), at.x, pos.y + 1.05, at.z, 4, 0.2, 0.05, 0.2, 0.1)
+                }
+            }
+            Impact.NONE -> return
+        }
+        level.playSound(null, player.x, player.y, player.z, SoundEvents.MACE_SMASH_GROUND_HEAVY, SoundSource.PLAYERS, 1f, pitch(move) * (0.95f + player.random.nextFloat() * 0.1f))
+    }
+
+    /** The first solid block at or a few below [from], or null over a drop. */
+    private fun groundUnder(level: ServerLevel, from: BlockPos): BlockPos? {
+        var pos = from
+        repeat(4) {
+            val state = level.getBlockState(pos)
+            if (!state.isAir && !state.getCollisionShape(level, pos).isEmpty) return pos
+            pos = pos.below()
+        }
+        return null
     }
 
     /** Resets a player's move and refills them, e.g. after respawning. */

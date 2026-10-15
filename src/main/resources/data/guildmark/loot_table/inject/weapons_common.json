@@ -1,0 +1,53 @@
+{
+  "type": "minecraft:chest",
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "guildmark:iron_greatsword",
+          "weight": 2
+        },
+        {
+          "type": "minecraft:item",
+          "name": "guildmark:iron_dagger",
+          "weight": 3
+        },
+        {
+          "type": "minecraft:item",
+          "name": "guildmark:iron_sabre",
+          "weight": 3
+        },
+        {
+          "type": "minecraft:item",
+          "name": "guildmark:iron_war_hammer",
+          "weight": 2
+        },
+        {
+          "type": "minecraft:item",
+          "name": "guildmark:iron_sabre",
+          "weight": 1,
+          "modifier": {
+            "type": "minecraft:enchant_randomly",
+            "options": "#minecraft:on_random_loot"
+          }
+        },
+        {
+          "type": "minecraft:item",
+          "name": "guildmark:iron_dagger",
+          "weight": 1,
+          "modifier": {
+            "type": "minecraft:enchant_randomly",
+            "options": "#minecraft:on_random_loot"
+          }
+        },
+        {
+          "type": "minecraft:empty",
+          "weight": 18
+        }
+      ]
+    }
+  ],
+  "random_sequence": "guildmark:inject/weapons_common"
+}

@@ -3,7 +3,6 @@ package io.github.vaspyyy.guildmark.client.ui
 import com.mojang.blaze3d.platform.InputConstants
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.client.combat.CombatClient
-import io.github.vaspyyy.guildmark.combat.WeaponClass
 import io.github.vaspyyy.guildmark.combat.Weapons
 import io.github.vaspyyy.guildmark.guild.TownControl
 import io.github.vaspyyy.guildmark.loot.Affix
@@ -190,16 +189,19 @@ class CharacterScreen : Screen(Component.translatable("gui.guildmark.status")) {
         )
         if (CombatClient.active()) {
             val weapon = Weapons.classOf(player.mainHandItem)
-            val style = when (weapon) {
-                WeaponClass.STRAIGHT_SWORD -> "sword"
-                null -> "plain"
-            }
+            val style = weapon?.id ?: "plain"
             rows.add(Row(
                 Component.translatable("gui.guildmark.status.style"), Component.translatable("gui.guildmark.status.style.$style"), Ui.TEXT,
                 Component.translatable("gui.guildmark.status.style.$style.tip"),
             ))
-            // Only a weapon the moves work with has a tempo
-            if (weapon != null) rows.add(row("tempo", "${(Weapons.tempo(player) * 100).roundToInt()}%"))
+            // Only a weapon the moves work with has a tempo and a skill
+            if (weapon != null) {
+                rows.add(row("tempo", "${(Weapons.tempo(player) * 100).roundToInt()}%"))
+                rows.add(Row(
+                    Component.translatable("gui.guildmark.status.weapon_skill"), Component.translatable("weapon_skill.guildmark.${weapon.id}"), Ui.GOLD,
+                    Component.translatable("weapon_skill.guildmark.${weapon.id}.tip"),
+                ))
+            }
         }
         // The stats the weapon in hand grows with, and what they add to it now
         val stack = player.mainHandItem

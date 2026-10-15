@@ -4,6 +4,7 @@ import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.combat.Combat
 import io.github.vaspyyy.guildmark.combat.CombatState
 import io.github.vaspyyy.guildmark.combat.Move
+import io.github.vaspyyy.guildmark.combat.MoveKind
 import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.wardfire.WardensFlask
 import net.minecraft.core.component.DataComponents
@@ -136,17 +137,17 @@ object Talents {
     }
 
     fun focusCost(player: Player, move: Move): Float =
-        (move.focus * (1.0 + (if (move == Move.SKILL) build(player)[Bonus.SKILL_COST] else 0.0))).toFloat().coerceAtLeast(0f)
+        (move.focus * (1.0 + (if (move.kind == MoveKind.SKILL) build(player)[Bonus.SKILL_COST] else 0.0))).toFloat().coerceAtLeast(0f)
 
     /** How much harder [move] hits, from the nodes for ripostes, backstabs, weapon skills, charged heavies and guard counters. */
     fun moveDamage(player: Player, move: Move): Float {
         val build = build(player)
-        val bonus = when (move) {
-            Move.RIPOSTE -> build[Bonus.RIPOSTE_DAMAGE]
-            Move.BACKSTAB -> build[Bonus.BACKSTAB_DAMAGE]
-            Move.SKILL -> build[Bonus.SKILL_DAMAGE]
-            Move.HEAVY -> build[Bonus.CHARGED_DAMAGE]
-            Move.GUARD_COUNTER -> build[Bonus.COUNTER_DAMAGE]
+        val bonus = when {
+            move == Move.RIPOSTE -> build[Bonus.RIPOSTE_DAMAGE]
+            move == Move.BACKSTAB -> build[Bonus.BACKSTAB_DAMAGE]
+            move.kind == MoveKind.SKILL -> build[Bonus.SKILL_DAMAGE]
+            move.kind == MoveKind.HEAVY -> build[Bonus.CHARGED_DAMAGE]
+            move.kind == MoveKind.COUNTER -> build[Bonus.COUNTER_DAMAGE]
             else -> 0.0
         }
         return (1.0 + bonus).toFloat().coerceAtLeast(0.1f)

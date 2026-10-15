@@ -30,6 +30,7 @@ object ModCreativeTabs {
                 output.accept(ModItems.HILL_TROLL_SPAWN_EGG.get())
                 output.accept(ModItems.DUSK_RIDER_SPAWN_EGG.get())
                 output.accept(ModItems.DUSK_BRIDLE.get())
+                ModItems.WEAPONS.forEach { output.accept(it.get()) }
             }
             .build()
     }

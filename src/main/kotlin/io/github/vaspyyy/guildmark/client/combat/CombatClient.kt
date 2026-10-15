@@ -6,8 +6,11 @@ import io.github.vaspyyy.guildmark.GuildmarkConfig
 import io.github.vaspyyy.guildmark.combat.Combat
 import io.github.vaspyyy.guildmark.combat.CombatMob
 import io.github.vaspyyy.guildmark.combat.CombatState
+import io.github.vaspyyy.guildmark.combat.Impact
 import io.github.vaspyyy.guildmark.combat.Move
+import io.github.vaspyyy.guildmark.combat.MoveKind
 import io.github.vaspyyy.guildmark.combat.Stance
+import io.github.vaspyyy.guildmark.combat.WeaponClass
 import io.github.vaspyyy.guildmark.combat.Weapons
 import io.github.vaspyyy.guildmark.network.DrinkFlaskPayload
 import io.github.vaspyyy.guildmark.network.MovePayload
@@ -85,10 +88,15 @@ object CombatClient {
         var charge = 0
         /** Ticks the move stays frozen on impact. */
         var hitstop = 0
+        /** What the move's current blow ([window]) has hit, and whether it has landed on anything yet. */
         val struck = IntOpenHashSet()
+        var window = 0
+        var landed = false
         /** A riposte or backstab's victim. */
         var target = -1
-        var landed = false
+        /** Ticks of forward push given so far, and swings heard. */
+        var lunges = 0
+        var swings = 0
         /** The move this one cut short, held where it stopped, so the animations can ease out of it. */
         var from: Move? = null
         var fromTime = 0f
@@ -162,7 +170,8 @@ object CombatClient {
     private var seq = 0
     private var buffered: Press? = null
     private var bufferedAt = 0L
-    private var comboStep = 0
+    /** The last move of the combo under way, which the next light attack follows on from until [comboUntil]. */
+    private var comboLast: Move? = null
     private var comboUntil = 0L
     private var lastBlockTick = -1000L
     /** Whether the attack button belongs to combat this tick (otherwise vanilla mines and punches). */
@@ -350,26 +359,20 @@ object CombatClient {
         return true
     }
 
+    /** The move [press] stands for with the weapon in hand: each class has its own. */
     private fun choose(local: LocalPlayer, press: Press): Move? {
-        val armed = Weapons.classOf(local.mainHandItem) != null
+        val weapon = Weapons.classOf(local.mainHandItem)
         return when (press) {
             Press.DODGE -> if (moveKeys().let { it.first != 0f || it.second != 0f }) Weapons.rollFor(local) else Move.BACKSTEP
-            Press.SKILL -> if (armed) Move.SKILL else null
+            Press.SKILL -> weapon?.skill
             Press.DRINK -> if (flaskReady(local)) Move.DRINK else null
-            Press.HEAVY -> if (armed) Move.HEAVY else null
+            Press.HEAVY -> weapon?.heavy
             Press.LIGHT -> when {
-                !armed -> null
-                vitalsFlags and VitalsPayload.GUARD_COUNTER != 0 && ticks - lastBlockTick < 12 -> Move.GUARD_COUNTER
-                local.isSprinting && local.onGround() -> Move.RUNNING
-                !local.onGround() && !local.isInWater && !local.abilities.flying && local.deltaMovement.y < 0.3 -> Move.JUMP
-                else -> {
-                    val step = if (ticks <= comboUntil) comboStep % 3 + 1 else 1
-                    when (step) {
-                        2 -> Move.LIGHT_2
-                        3 -> Move.LIGHT_3
-                        else -> Move.LIGHT_1
-                    }
-                }
+                weapon == null -> null
+                vitalsFlags and VitalsPayload.GUARD_COUNTER != 0 && ticks - lastBlockTick < 12 -> weapon.counter
+                local.isSprinting && local.onGround() -> weapon.running
+                !local.onGround() && !local.isInWater && !local.abilities.flying && local.deltaMovement.y < 0.3 -> weapon.jump
+                else -> weapon.lightAfter(if (ticks <= comboUntil) comboLast else null)
             }
         }
     }
@@ -430,26 +433,31 @@ object CombatClient {
 
         when {
             move.isLight() -> {
-                comboStep = when (move) {
-                    Move.LIGHT_2 -> 2
-                    Move.LIGHT_3 -> 3
-                    Move.RUNNING, Move.JUMP, Move.GUARD_COUNTER -> 1
-                    else -> 1
-                }
+                comboLast = move
                 comboUntil = ticks + (move.length / tempo).toLong() + COMBO_GRACE
             }
             move.isAttack -> comboUntil = 0L
         }
         if (move.isAttack || move.isRoll || move.isCritical || move == Move.DRINK) {
             if (local.isUsingItem) minecraft.gameMode?.releaseUsingItem(local)
-            if (move != Move.RUNNING) local.isSprinting = false
+            if (move.kind != MoveKind.RUNNING) local.isSprinting = false
         }
         if (move.isRoll) {
             applyDodge(local, next, 0)
             CameraFx.onDodge(move, yaw - local.yRot)
         }
         if (move.isCritical) target?.let { face(local, it) }
-        moveSound(move)?.let { local.playSound(it, 0.9f, 0.9f + local.random.nextFloat() * 0.2f) }
+        // An attack's swing is heard as it comes round; a roll at once
+        if (move.isAttack) swing(local, next) else Combat.moveSound(move)?.let { local.playSound(it, 0.9f, 0.9f + local.random.nextFloat() * 0.2f) }
+    }
+
+    /** Plays each of the move's swings as it comes round, a moment before the blow lands. */
+    private fun swing(local: LocalPlayer, a: Action) {
+        val move = a.move
+        while (a.swings < move.windows && a.t >= move.swingAt(a.swings)) {
+            a.swings++
+            Combat.moveSound(move)?.let { local.playSound(it, 0.9f, Combat.pitch(move) * (0.9f + local.random.nextFloat() * 0.2f)) }
+        }
     }
 
     /**
@@ -477,8 +485,9 @@ object CombatClient {
         ClientPacketDistributor.sendToServer(DrinkFlaskPayload())
     }
 
+    /** The moves a light attack press makes, which the combo carries on from. */
     private fun Move.isLight(): Boolean =
-        this == Move.LIGHT_1 || this == Move.LIGHT_2 || this == Move.LIGHT_3 || this == Move.RUNNING || this == Move.JUMP || this == Move.GUARD_COUNTER
+        kind == MoveKind.LIGHT || kind == MoveKind.RUNNING || kind == MoveKind.JUMP || kind == MoveKind.COUNTER
 
     /** The same test the server makes: a staggered foe in front, or an unready one from behind. */
     private fun guessCritical(local: LocalPlayer): Pair<LivingEntity, Move>? {
@@ -538,7 +547,11 @@ object CombatClient {
             val tick = (ticks - a.startTick).toInt()
             applyDodge(local, a, tick)
         }
-        if (move.lunge > 0f && before < move.lungeAt && now >= move.lungeAt) lunge(local, a)
+        // The forward push, given each tick for as many ticks as the move pushes
+        if (move.lunge > 0f && now > before && now >= move.lungeAt && a.lunges < move.lungeFor) {
+            a.lunges++
+            lunge(local, a)
+        }
         if (move.isCritical) {
             val target = local.level().getEntity(a.target)
             if (target != null && target.isAlive) face(local, target)
@@ -551,8 +564,25 @@ object CombatClient {
             }
             return
         }
-        if (move.isAttack && now >= move.hitFrom && before <= move.hitTo) strike(local, a)
+        if (!move.isAttack) return
+        swing(local, a)
+        // The big blows shake the ground, whether or not they land on anything
+        if (move.impact != Impact.NONE && before < move.hitFrom && now >= move.hitFrom) {
+            CameraFx.shake(0.4f + 0.15f * heft(move))
+        }
+        for (w in 0 until move.windows) {
+            if (now < move.windowFrom(w) || before > move.windowTo(w) || w < a.window) continue
+            if (w > a.window) {
+                // The next blow: whatever the last one hit can be hit again
+                a.window = w
+                a.struck.clear()
+                a.landed = false
+            }
+            strike(local, a)
+        }
     }
+
+    private fun heft(move: Move): Int = WeaponClass.of(move)?.heft ?: 0
 
     /** The move's forward push: towards the locked target, stopping short of it. */
     private fun lunge(local: LocalPlayer, a: Action) {
@@ -608,19 +638,22 @@ object CombatClient {
             a.struck.add(it)
             engaged.put(it, ticks)
         }
-        ClientPacketDistributor.sendToServer(StrikePayload(a.seq, ids))
+        ClientPacketDistributor.sendToServer(StrikePayload(a.seq, a.window, ids))
         if (!a.landed) {
             a.landed = true
             val first = found[0]
             val sound = if (first.armorValue >= 6 || first is AbstractSkeleton || first is CombatMob) ModSounds.HIT_ARMOR.get() else ModSounds.HIT_FLESH.get()
             local.level().playLocalSound(first.x, first.getY(0.6), first.z, sound, SoundSource.PLAYERS, 1f, 0.9f + local.random.nextFloat() * 0.2f, false)
-            val heavy = move == Move.HEAVY || move == Move.SKILL || move == Move.GUARD_COUNTER || move == Move.JUMP
-            a.hitstop = when {
+            // The heavier the weapon and the blow, the longer it bites and the harder the screen shakes
+            val heft = heft(move)
+            val heavy = move.kind == MoveKind.HEAVY || move.kind == MoveKind.SKILL || move.kind == MoveKind.COUNTER || move.kind == MoveKind.JUMP
+            val bite = when {
                 a.chargeFraction() > 0.9f -> 4
                 heavy -> 3
                 else -> 2
             }
-            CameraFx.shake(if (heavy) 0.3f + 0.3f * a.chargeFraction() else 0.15f)
+            a.hitstop = max(1, bite + heft.coerceIn(-1, 1))
+            CameraFx.shake((if (heavy) 0.3f + 0.3f * a.chargeFraction() else 0.15f) * (1f + 0.3f * heft))
         }
     }
 
@@ -642,15 +675,6 @@ object CombatClient {
             val s = staggerIterator.next().value
             if (ticks - s.start > s.ticks + 20) staggerIterator.remove()
         }
-    }
-
-    private fun moveSound(move: Move) = when (move) {
-        Move.LIGHT_1, Move.LIGHT_2, Move.LIGHT_3, Move.RUNNING, Move.JUMP -> ModSounds.SWING_LIGHT.get()
-        Move.HEAVY, Move.GUARD_COUNTER -> ModSounds.SWING_HEAVY.get()
-        Move.SKILL -> ModSounds.WHIRL.get()
-        Move.ROLL, Move.ROLL_HEAVY -> ModSounds.ROLL.get()
-        Move.BACKSTEP -> ModSounds.BACKSTEP.get()
-        else -> null
     }
 
     // ---- Input hooks ----
@@ -675,7 +699,7 @@ object CombatClient {
             val scale = if (a.charging) 0.2f else a.move.moveSpeed
             val vector = input.moveVector
             moveVector.set(input, Vec2(vector.x * scale, vector.y * scale))
-            if (a.move != Move.RUNNING) local.isSprinting = false
+            if (a.move.kind != MoveKind.RUNNING) local.isSprinting = false
         }
         // Out of breath: no sprinting until a fifth of the stamina is back
         val shown = shownStamina()
@@ -767,6 +791,9 @@ object CombatClient {
                 replaced.t = elapsed * tempo
                 replaced.prev = replaced.t - tempo
                 replaced.target = target
+                // What the guess already did isn't done again
+                replaced.swings = current.swings
+                replaced.lunges = current.lunges
                 replaced.from = current.from
                 replaced.fromTime = current.fromTime
                 replaced.fromYaw = current.fromYaw

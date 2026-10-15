@@ -1,0 +1,76 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "guildmark:item/diamond_sabre"
+  },
+  "display": {
+    "thirdperson_righthand": {
+      "rotation": [
+        0.0,
+        -90.0,
+        62.695
+      ],
+      "translation": [
+        0.0,
+        5.31,
+        -0.208
+      ],
+      "scale": [
+        0.9158,
+        0.9158,
+        0.85
+      ]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [
+        0.0,
+        90.0,
+        -62.695
+      ],
+      "translation": [
+        0.0,
+        5.31,
+        -0.208
+      ],
+      "scale": [
+        0.9158,
+        0.9158,
+        0.85
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0.0,
+        -90.0,
+        32.695
+      ],
+      "translation": [
+        1.13,
+        4.391,
+        1.163
+      ],
+      "scale": [
+        0.7326,
+        0.7326,
+        0.68
+      ]
+    },
+    "firstperson_lefthand": {
+      "rotation": [
+        0.0,
+        90.0,
+        -32.695
+      ],
+      "translation": [
+        1.13,
+        4.391,
+        1.163
+      ],
+      "scale": [
+        0.7326,
+        0.7326,
+        0.68
+      ]
+    }
+  }
+}

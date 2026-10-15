@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark
 
+import net.minecraft.world.item.CreativeModeTabs
 import net.neoforged.bus.api.EventPriority
 import io.github.vaspyyy.guildmark.death.Purses
 import net.neoforged.fml.config.ModConfig
@@ -23,6 +24,7 @@ import io.github.vaspyyy.guildmark.registry.ModParticles
 import io.github.vaspyyy.guildmark.townsfolk.Townsfolk
 import io.github.vaspyyy.guildmark.region.Regions
 import io.github.vaspyyy.guildmark.wardfire.WardensFlask
+import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent
 import net.neoforged.neoforge.network.PacketDistributor
 import io.github.vaspyyy.guildmark.atlas.WorldId
 import io.github.vaspyyy.guildmark.network.ReleaseChargePayload
@@ -163,6 +165,10 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         ModBlockEntities.BLOCK_ENTITIES.register(modBus)
         ModDataComponents.COMPONENTS.register(modBus)
         ModCreativeTabs.TABS.register(modBus)
+        // The new weapons sit with vanilla's too
+        modBus.addListener(BuildCreativeModeTabContentsEvent::class.java) { event ->
+            if (event.tabKey == CreativeModeTabs.COMBAT) ModItems.WEAPONS.forEach { event.accept(it.get()) }
+        }
         ModVillagers.POI_TYPES.register(modBus)
         ModFeatures.FEATURE_TYPES.register(modBus)
         ModStructures.STRUCTURE_TYPES.register(modBus)

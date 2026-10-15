@@ -1,0 +1,8 @@
+{
+  "type": "neoforge:add_table",
+  "condition": {
+    "loot_table_id": "minecraft:chests/bastion_treasure",
+    "type": "neoforge:loot_table_id"
+  },
+  "table": "guildmark:inject/weapons_rich"
+}

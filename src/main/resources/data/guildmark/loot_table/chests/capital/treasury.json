@@ -162,6 +162,15 @@
               "max": 2
             }
           }
+        },
+        {
+          "type": "minecraft:item",
+          "name": "guildmark:diamond_sabre",
+          "weight": 1,
+          "modifier": {
+            "type": "minecraft:enchant_randomly",
+            "options": "#minecraft:on_random_loot"
+          }
         }
       ]
     }

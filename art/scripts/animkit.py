@@ -109,26 +109,135 @@ def rot_xyz(x, y, z):
 def apply(m, p):
     return (m @ np.array([*p, 1.0]))[:3]
 
+# ---------------------------------------------------------------- weapons: how each one sits in the hand
+
+def display(rot, trans, scale):
+    """An item model's display transform (rotation degrees, translation in 1/16, scale), as ItemTransform.apply
+    does it, then the model's own -0.5 centring."""
+    sc = np.eye(4)
+    sc[0, 0], sc[1, 1], sc[2, 2] = scale
+    return T(*(np.asarray(trans, float) / 16)) @ Rq(rot_xyz(*rot)) @ sc @ T(-0.5, -0.5, -0.5)
+
+def hand_chain(left=False):
+    """ItemInHandLayer's turn and nudge from the arm to where a held item's display transform starts."""
+    sx = -1 if left else 1
+    return Rq(qaxis((1, 0, 0), -90)) @ Rq(qaxis((0, 1, 0), 180)) @ T(sx / 16, 2 / 16, -10 / 16)
+
+class Geo:
+    """One kind of weapon in the hand: the display transforms its item model uses in third and first person
+    (rotation, translation, scale, as in the model json) and the points on its sprite the moves aim with, in item
+    space (0..1, y up): where the main hand closes, the tip (or head) that leads the swing, where the off hand
+    closes on a two-handed weapon, and which way the cutting edge or striking face points (default up-left)."""
+
+    def __init__(self, name, tp, fp, grip, tip, second=None, edge=(-1.0, 1.0)):
+        self.name, self.tp, self.fp = name, tp, fp
+        self.grip = np.array([*grip[:2], 0.5])
+        self.tip = np.array([*tip[:2], 0.5])
+        self.second = None if second is None else np.array([*second[:2], 0.5])
+        self.edge_item = unit([*edge, 0.0])
+
+    def tp_item(self, left=False):
+        """Arm-local transform (blocks) from item space, as ItemInHandLayer and the model's display place it. In the
+        left hand the game turns the model's left entry back (ItemTransform.apply's left-hand fix), so with entries
+        written as model_display writes them the item keeps the right hand's turn and only its offset is mirrored."""
+        rot, trans, scale = self.tp
+        if left:
+            trans = (-trans[0], trans[1], trans[2])
+        return hand_chain(left) @ display(rot, trans, scale)
+
+    def fp_display(self):
+        return display(*self.fp)
+
+    # In first person, measured from FP_BASE: the game turns the item about fp_grip
+    @property
+    def fp_grip(self):
+        return apply(self.fp_display(), self.grip)
+
+    @property
+    def fp_blade(self):
+        return unit(apply(self.fp_display(), self.tip) - self.fp_grip)
+
+    @property
+    def fp_flat(self):
+        M = self.fp_display()
+        return unit(apply(M, (0.5, 0.5, 1.0)) - apply(M, (0.5, 0.5, 0.0)))
+
+    @property
+    def fp_edge(self):
+        """The edge's direction made square to the blade."""
+        M = self.fp_display()
+        e = apply(M, self.grip + self.edge_item * 0.1) - self.fp_grip
+        b = self.fp_blade
+        return unit(e - np.dot(e, b) * b)
+
+    # In third person, in the arm's own frame
+    @property
+    def tp_blade(self):
+        M = self.tp_item()
+        return unit(apply(M, self.tip) - apply(M, self.grip))
+
+    def tp_point(self, p, left=False):
+        """A point of the sprite in the arm's frame, in model pixels."""
+        return apply(S(16) @ self.tp_item(left), p)
+
+    def length(self):
+        """Grip to tip in the hand, in model pixels."""
+        return float(np.linalg.norm(self.tp_point(self.tip) - self.tp_point(self.grip)))
+
+    def model_display(self):
+        """The four hand transforms for an item model json, the left hands written as vanilla's handheld model writes
+        them: the turn mirrored, the offset as the right hand's (the game mirrors both back and forth again)."""
+        def entry(rot, trans, scale):
+            return {'rotation': [round(float(r), 3) for r in rot], 'translation': [round(float(t), 3) for t in trans],
+                    'scale': [round(float(c), 4) for c in scale]}
+        (tr, tt, ts), (fr, ft, fs) = self.tp, self.fp
+        mirror = lambda r, t: ((r[0], -r[1], -r[2]), tuple(t))
+        return {
+            'thirdperson_righthand': entry(tr, tt, ts), 'thirdperson_lefthand': entry(*mirror(tr, tt), ts),
+            'firstperson_righthand': entry(fr, ft, fs), 'firstperson_lefthand': entry(*mirror(fr, ft), fs),
+        }
+
+def aligned(name, ref, grip, tip, scale, second=None, edge=(-1.0, 1.0)):
+    """A weapon of our own whose display transforms are solved so its grip lands where [ref]'s grip does and its
+    blade (grip to tip) points the same way, at [scale] times [ref]'s size in the hand: the clips made for one
+    work for the other, only the reach differs. The sprite may lie at a slightly different angle; the display
+    turns it about the item's z to match."""
+    grip3 = np.array([*grip[:2], 0.5]); tip3 = np.array([*tip[:2], 0.5])
+    def ang(v):
+        return math.degrees(math.atan2(v[1], v[0]))
+    delta = ang(ref.tip - ref.grip) - ang(tip3 - grip3)
+    def solve(t_ref):
+        rot, trans, sc = t_ref
+        rot2 = (rot[0], rot[1], rot[2] + delta)
+        sc2 = (sc[0] * scale, sc[1] * scale, sc[2])
+        want = apply(display(rot, trans, sc), ref.grip)
+        have = apply(display(rot2, (0.0, 0.0, 0.0), sc2), grip3)
+        return rot2, tuple((want - have) * 16), sc2
+    return Geo(name, solve(ref.tp), solve(ref.fp), grip, tip, second, edge)
+
+# The vanilla sword (and every handheld item: axes too), its grip just above the pommel
+SWORD = Geo('sword', ((0, -90, 55), (0, 4, 0.5), (0.85, 0.85, 0.85)), ((0, -90, 25), (1.13, 3.2, 1.13), (0.68, 0.68, 0.68)),
+            grip=(0.19, 0.21), tip=(0.97, 0.97))
+
 # Points on the sword sprite, in item model space (0..1, y up)
-GRIP_ITEM = (0.19, 0.21, 0.5)
-TIP_ITEM = (0.97, 0.97, 0.5)
+GRIP_ITEM = tuple(SWORD.grip)
+TIP_ITEM = tuple(SWORD.tip)
 
 def third_person_item(left=False):
     """Arm-local transform (blocks) from item space, as ItemInHandLayer and the handheld model place a sword."""
     sx = -1 if left else 1
     disp = rot_xyz(0, 90, -55) if left else rot_xyz(0, -90, 55)
-    return (Rq(qaxis((1, 0, 0), -90)) @ Rq(qaxis((0, 1, 0), 180)) @ T(sx / 16, 2 / 16, -10 / 16)
-            @ T(0, 4 / 16, 0.5 / 16) @ Rq(disp) @ S(0.85) @ T(-0.5, -0.5, -0.5))
+    return hand_chain(left) @ T(0, 4 / 16, 0.5 / 16) @ Rq(disp) @ S(0.85) @ T(-0.5, -0.5, -0.5)
 
 FP_BASE = np.array([0.56, -0.52, -0.72])
 
 def first_person_display():
-    return T(1.13 / 16, 3.2 / 16, 1.13 / 16) @ Rq(rot_xyz(0, -90, 25)) @ S(0.68) @ T(-0.5, -0.5, -0.5)
+    return SWORD.fp_display()
 
 # The sword in its vanilla first-person place, measured from FP_BASE: the game turns it about FP_GRIP
-FP_GRIP = apply(first_person_display(), GRIP_ITEM)
-FP_BLADE = unit(apply(first_person_display(), TIP_ITEM) - FP_GRIP)
-FP_FLAT = unit(apply(first_person_display(), (0.5, 0.5, 1.0)) - apply(first_person_display(), (0.5, 0.5, 0.0)))
+FP_GRIP = SWORD.fp_grip
+FP_BLADE = SWORD.fp_blade
+FP_FLAT = SWORD.fp_flat
 FP_EDGE = unit(np.cross(FP_FLAT, FP_BLADE))
 
 # The sword in the arm's own frame (third person): blade and edge directions
@@ -141,31 +250,73 @@ VF = np.array([0.0, 0.0, -1.0]); VU = np.array([0.0, 1.0, 0.0]); VR = np.array([
 def vv(f=0.0, u=0.0, r=0.0):
     return unit(f * VF + u * VU + r * VR)
 
-def fp(hand, blade, edge=None):
+def fp(hand, blade, edge=None, geo=None):
     """First-person item key: the grip at [hand] (camera space, blocks), the blade along [blade] and its
-    cutting edge facing [edge]. Returns (offset, rotation) the way FirstPersonCombat applies them."""
+    cutting edge facing [edge]. Returns (offset, rotation) the way FirstPersonCombat applies them. [geo] is the
+    weapon's geometry when it isn't a sword's."""
     blade = unit(blade)
+    if geo is None or geo is SWORD:
+        base_blade, base_edge, grip = FP_BLADE, FP_EDGE, FP_GRIP
+    else:
+        base_blade, base_edge, grip = geo.fp_blade, geo.fp_edge, geo.fp_grip
     if edge is None:
-        edge = FP_EDGE
-    q = frame_to(FP_BLADE, FP_EDGE, blade, edge)
-    offset = np.asarray(hand, float) - FP_BASE - FP_GRIP
+        edge = base_edge
+    q = frame_to(base_blade, base_edge, blade, edge)
+    offset = np.asarray(hand, float) - FP_BASE - grip
     return offset, q
 
-def fp_rest():
-    return FP_BASE + FP_GRIP
+def fp_rest(geo=None):
+    return FP_BASE + (FP_GRIP if geo is None or geo is SWORD else geo.fp_grip)
 
 # ---------------------------------------------------------------- arms
 
-def arm(direction, blade, left=False):
+def arm(direction, blade, left=False, geo=None):
     """Arm rotation (relative to the torso) pointing the arm along [direction] with the sword's blade
-    turned as near [blade] as the grip allows. The blade sits square-ish to the arm, like a fist round a hilt."""
-    blade_local = TP_BLADE if not left else TP_BLADE * np.array([-1, 1, 1])
+    turned as near [blade] as the grip allows. The blade sits square-ish to the arm, like a fist round a hilt.
+    [geo] is the weapon's geometry when it isn't a sword's."""
+    tp_blade = TP_BLADE if geo is None or geo is SWORD else geo.tp_blade
+    blade_local = tp_blade if not left else tp_blade * np.array([-1, 1, 1])
     return frame_to(np.array([0.0, 1.0, 0.0]), blade_local, direction, blade)
 
 def free_arm(direction, palm=None):
     """A hand with nothing in it: just point the arm."""
     palm = F if palm is None else palm
     return frame_to(np.array([0.0, 1.0, 0.0]), np.array([0.0, 0.0, -1.0]), direction, palm)
+
+def fist(left=False):
+    """Where the hand closes, in the arm's own frame (model pixels): the middle of the arm's end."""
+    return np.array([1.0 if left else -1.0, 8.5, 0.0])
+
+def off_hand(right_q, geo, right_pos=None, left_pos=None):
+    """The left arm's rotation (relative to the torso) that closes its hand on [geo]'s second grip while the
+    right arm is turned [right_q] (relative to the torso, its pivot moved by [right_pos]), knuckles the way the
+    right hand's face; and how many pixels the hand misses the hilt by (the arms are rigid, so a hilt held too
+    near or too far from the left shoulder can't be reached exactly)."""
+    zero = np.zeros(3)
+    hilt = np.array(PIVOTS['right_arm'], float) + (zero if right_pos is None else right_pos) + qmat(right_q) @ geo.tp_point(geo.second)
+    shoulder = np.array(PIVOTS['left_arm'], float) + (zero if left_pos is None else left_pos)
+    d = hilt - shoulder
+    reach = fist(left=True)
+    q = frame_to(reach, F, d, qmat(right_q) @ F)
+    return q, abs(float(np.linalg.norm(d)) - float(np.linalg.norm(reach)))
+
+def hold_with_both(clip, geo, start=0.0, end=None, step=0.5):
+    """Keys the left arm onto the hilt of a two-handed weapon for the whole clip (or [start] to [end]), following
+    the right arm sample by sample. Call it once the right arm's keys are all in. Returns the worst miss in pixels;
+    keep it under about 2 by holding the hilt within reach of both shoulders."""
+    end = clip.length if end is None else end
+    keys = [k for k in clip.keys.get('left_arm', []) if k[0] < start or k[0] > end]
+    worst = 0.0
+    t = start
+    while t <= end + 1e-6:
+        qr, pr = clip.sample('right_arm', t)
+        q, miss = off_hand(qr, geo, pr if clip.has_pos('right_arm') else None)
+        worst = max(worst, miss)
+        keys.append((float(t), q, None, 'linear'))
+        t += step
+    clip.keys['left_arm'] = sorted(keys, key=lambda k: k[0])
+    clip.modes.pop('left_arm', None)
+    return worst
 
 # ---------------------------------------------------------------- clips
 
@@ -350,8 +501,9 @@ PLAYER = {
     'left_leg': [((-2, 0, -2), (4, 12, 4), (16, 48), 0.0), ((-2, 0, -2), (4, 12, 4), (0, 48), 0.25)],
 }
 
-def sprite_quads(sub=1):
-    """The flat sword sprite as front and back faces (item space), split for perspective views."""
+def sprite_quads(sub=1, size=16):
+    """The flat sword sprite as front and back faces (item space), split for perspective views. [size] is the
+    texture's width in pixels."""
     quads = []
     for z in (7.5 / 16, 8.5 / 16):
         for i in range(sub):
@@ -359,13 +511,15 @@ def sprite_quads(sub=1):
                 x0, x1 = i / sub, (i + 1) / sub
                 y0, y1 = 1 - j / sub, 1 - (j + 1) / sub
                 quads.append((np.array([x0, y0, z]), np.array([x1, y0, z]), np.array([x0, y1, z]),
-                              (16 * x0, 16 * j / sub, 16 / sub, 16 / sub), 'front'))
+                              (size * x0, size * j / sub, size / sub, size / sub), 'front'))
     return quads
 
 class Scene:
-    def __init__(self, skin, sword):
+    def __init__(self, skin, sword, geo=None):
+        """[sword] is the held weapon's texture; [geo] how it sits in the hand (a sword's by default)."""
         self.skin = np.array(skin.convert('RGBA'), float)
         self.sword = np.array(sword.convert('RGBA'), float)
+        self.geo = geo or SWORD
 
     def at(self, clip, t):
         """Told which clip and moment it's about to draw, for parts that come and go."""
@@ -383,16 +537,16 @@ class Scene:
                     quads.append((apply(M, A), apply(M, Bq), apply(M, Dq), rect, FACE_LIGHT[face], self.skin))
         if sword:
             q, p = pose['right_arm']
-            M = Mroot @ T(*p) @ Rq(q) @ S(16) @ third_person_item()
-            for A, Bq, Dq, rect, face in sprite_quads():
+            M = Mroot @ T(*p) @ Rq(q) @ S(16) @ self.geo.tp_item()
+            for A, Bq, Dq, rect, face in sprite_quads(size=self.sword.shape[1]):
                 quads.append((apply(M, A), apply(M, Bq), apply(M, Dq), rect, 0.95, self.sword))
         return quads
 
     def sword_points(self, pose):
         qr, pr = pose['root']
         q, p = pose['right_arm']
-        M = T(*pr) @ Rq(qr) @ T(*p) @ Rq(q) @ S(16) @ third_person_item()
-        return apply(M, GRIP_ITEM), apply(M, TIP_ITEM)
+        M = T(*pr) @ Rq(qr) @ T(*p) @ Rq(q) @ S(16) @ self.geo.tp_item()
+        return apply(M, self.geo.grip), apply(M, self.geo.tip)
 
 def raster(quads, project, size, bg=(58, 64, 80)):
     W, H = size
@@ -448,8 +602,11 @@ def perspective(size, fov=70.0):
     return project
 
 def first_person_quads(scene, offset, q):
-    M = T(*FP_BASE) @ T(*offset) @ T(*FP_GRIP) @ Rq(q) @ T(*(-FP_GRIP)) @ first_person_display()
-    return [(apply(M, A), apply(M, Bq), apply(M, Dq), rect, 0.95, scene.sword) for A, Bq, Dq, rect, face in sprite_quads(4)]
+    geo = getattr(scene, 'geo', SWORD)
+    grip = geo.fp_grip
+    M = T(*FP_BASE) @ T(*offset) @ T(*grip) @ Rq(q) @ T(*(-grip)) @ geo.fp_display()
+    return [(apply(M, A), apply(M, Bq), apply(M, Dq), rect, 0.95, scene.sword)
+            for A, Bq, Dq, rect, face in sprite_quads(4, scene.sword.shape[1])]
 
 def fp_sample(clip, t):
     """The first-person item transform at [t], as FirstPersonCombat blends it."""

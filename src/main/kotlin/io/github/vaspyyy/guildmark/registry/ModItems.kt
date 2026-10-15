@@ -5,10 +5,18 @@ import io.github.vaspyyy.guildmark.item.ContractItem
 import io.github.vaspyyy.guildmark.item.DuskBridleItem
 import io.github.vaspyyy.guildmark.item.RelicCacheItem
 import io.github.vaspyyy.guildmark.item.WardensFlaskItem
+import net.minecraft.core.component.DataComponents
+import net.minecraft.world.entity.EquipmentSlotGroup
+import net.minecraft.world.entity.ai.attributes.AttributeModifier
+import net.minecraft.world.entity.ai.attributes.Attributes
 import net.minecraft.world.item.BlockItem
 import net.minecraft.world.item.Item
 import net.minecraft.world.item.Rarity
 import net.minecraft.world.item.SpawnEggItem
+import net.minecraft.world.item.ToolMaterial
+import net.minecraft.world.item.component.ItemAttributeModifiers
+import net.minecraft.world.item.component.Tool
+import net.minecraft.world.item.component.Weapon
 import net.neoforged.neoforge.registries.DeferredItem
 import net.neoforged.neoforge.registries.DeferredRegister
 import java.util.function.UnaryOperator
@@ -77,4 +85,64 @@ object ModItems {
     val GLIMMER_HOLLOW_SPAWN_EGG: DeferredItem<SpawnEggItem> = ITEMS.registerItem("glimmer_hollow_spawn_egg", ::SpawnEggItem, UnaryOperator<Item.Properties> {
         it.spawnEgg(ModEntities.GLIMMER_HOLLOW.get())
     })
+
+    // Weapons for the classes vanilla has none of (see combat/Weapons): iron and diamond made at the crafting
+    // table, netherite at the smithing table. Damage counts the fist's 1; speed is attacks a second.
+
+    /** Greatswords: 9, 10, 11 damage at 0.8. */
+    val IRON_GREATSWORD = blade("iron_greatsword", ToolMaterial.IRON, 6f, -3.2f)
+    val DIAMOND_GREATSWORD = blade("diamond_greatsword", ToolMaterial.DIAMOND, 6f, -3.2f)
+    val NETHERITE_GREATSWORD = blade("netherite_greatsword", ToolMaterial.NETHERITE, 6f, -3.2f)
+
+    /** Daggers: 4, 5, 6 damage at 2.2. */
+    val IRON_DAGGER = blade("iron_dagger", ToolMaterial.IRON, 1f, -1.8f)
+    val DIAMOND_DAGGER = blade("diamond_dagger", ToolMaterial.DIAMOND, 1f, -1.8f)
+    val NETHERITE_DAGGER = blade("netherite_dagger", ToolMaterial.NETHERITE, 1f, -1.8f)
+
+    /** Sabres: 5, 6, 7 damage at 1.8. */
+    val IRON_SABRE = blade("iron_sabre", ToolMaterial.IRON, 2f, -2.2f)
+    val DIAMOND_SABRE = blade("diamond_sabre", ToolMaterial.DIAMOND, 2f, -2.2f)
+    val NETHERITE_SABRE = blade("netherite_sabre", ToolMaterial.NETHERITE, 2f, -2.2f)
+
+    /** War hammers: 10, 11, 12 damage at 0.65. */
+    val IRON_WAR_HAMMER = warHammer("iron_war_hammer", ToolMaterial.IRON)
+    val DIAMOND_WAR_HAMMER = warHammer("diamond_war_hammer", ToolMaterial.DIAMOND)
+    val NETHERITE_WAR_HAMMER = warHammer("netherite_war_hammer", ToolMaterial.NETHERITE)
+
+    /** Every weapon above, in the order the creative tab shows them. */
+    val WEAPONS: List<DeferredItem<Item>> = listOf(
+        IRON_GREATSWORD, DIAMOND_GREATSWORD, NETHERITE_GREATSWORD,
+        IRON_DAGGER, DIAMOND_DAGGER, NETHERITE_DAGGER,
+        IRON_SABRE, DIAMOND_SABRE, NETHERITE_SABRE,
+        IRON_WAR_HAMMER, DIAMOND_WAR_HAMMER, NETHERITE_WAR_HAMMER,
+    )
+
+    /** A blade made like vanilla's swords: it cuts cobwebs, takes sword enchantments, and [damage] and [speed] are vanilla's baselines. */
+    private fun blade(name: String, material: ToolMaterial, damage: Float, speed: Float): DeferredItem<Item> =
+        ITEMS.registerSimpleItem(name, UnaryOperator<Item.Properties> { tiered(material, it.sword(material, damage, speed)) })
+
+    /** A hammer made like the mace, without its smash: all its weight goes into the swing. */
+    private fun warHammer(name: String, material: ToolMaterial): DeferredItem<Item> =
+        ITEMS.registerSimpleItem(name, UnaryOperator<Item.Properties> {
+            val attributes = ItemAttributeModifiers.builder()
+                .add(
+                    Attributes.ATTACK_DAMAGE,
+                    AttributeModifier(Item.BASE_ATTACK_DAMAGE_ID, 7.0 + material.attackDamageBonus(), AttributeModifier.Operation.ADD_VALUE),
+                    EquipmentSlotGroup.MAINHAND,
+                )
+                .add(
+                    Attributes.ATTACK_SPEED,
+                    AttributeModifier(Item.BASE_ATTACK_SPEED_ID, -3.35, AttributeModifier.Operation.ADD_VALUE),
+                    EquipmentSlotGroup.MAINHAND,
+                )
+                .build()
+            tiered(material, it.durability(material.durability()).repairable(material.repairItems()).enchantable(material.enchantmentValue())
+                .component(DataComponents.TOOL, Tool(listOf(), 1f, 2, false))
+                .attributes(attributes)
+                .component(DataComponents.WEAPON, Weapon(1)))
+        })
+
+    /** Netherite doesn't burn. */
+    private fun tiered(material: ToolMaterial, properties: Item.Properties): Item.Properties =
+        if (material == ToolMaterial.NETHERITE) properties.fireResistant() else properties
 }

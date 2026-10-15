@@ -4,6 +4,7 @@ import com.mojang.math.Axis
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.combat.Move
 import io.github.vaspyyy.guildmark.combat.Stance
+import io.github.vaspyyy.guildmark.combat.WeaponClass
 import io.github.vaspyyy.guildmark.dragon.Dragon
 import io.github.vaspyyy.guildmark.registry.ModItems
 import net.minecraft.client.Minecraft
@@ -52,9 +53,13 @@ object CombatArmPose {
 object CombatAnimator {
     /**
      * What the model should show this frame, worked out while the render state is filled in. [from] is
-     * the move this one cut short, which the model eases out of while this one eases in.
+     * the move this one cut short, which the model eases out of while this one eases in. A two-handed
+     * swing with something in the off hand ([offHandFull]) leaves the left arm to hold it.
      */
-    class Frame(val clip: Clip, val time: Float, val weight: Float, val yaw: Float, val tremble: Float, val seed: Float, val from: Frame?)
+    class Frame(
+        val clip: Clip, val time: Float, val weight: Float, val yaw: Float, val tremble: Float, val seed: Float, val from: Frame?,
+        val offHandFull: Boolean = false,
+    )
 
     val FRAME: ContextKey<Frame> = ContextKey(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "combat_frame"))
 
@@ -70,15 +75,19 @@ object CombatAnimator {
             val clip = Clips.get("player/" + action.move.anim) ?: return
             val time = action.time(state.partialTick)
             val weight = clip.weight(time)
+            val offHand = !entity.offhandItem.isEmpty
             val from = action.from?.takeIf { time < clip.blendIn }?.let { move ->
                 val fromClip = Clips.get("player/" + move.anim) ?: return@let null
                 val fromWeight = fromClip.weight(action.fromTime)
                 if (fromWeight <= 0f) null
-                else Frame(fromClip, action.fromTime, fromWeight, rollYaw(move, action.fromYaw, state.bodyRot), 0f, 0f, null)
+                else Frame(fromClip, action.fromTime, fromWeight, rollYaw(move, action.fromYaw, state.bodyRot), 0f, 0f, null, offHand && twoHanded(move))
             }
             if (weight <= 0f && from == null) return
             val tremble = if (action.charging && action.charge > 0) action.chargeFraction() else 0f
-            state.setRenderData(FRAME, Frame(clip, time, weight, rollYaw(action.move, action.yaw, state.bodyRot), tremble, state.ageInTicks, from))
+            state.setRenderData(FRAME, Frame(
+                clip, time, weight, rollYaw(action.move, action.yaw, state.bodyRot), tremble, state.ageInTicks, from,
+                offHand && twoHanded(action.move),
+            ))
             state.rightArmPose = armPose
             state.leftArmPose = armPose
             state.swingAnimation = 0f
@@ -91,6 +100,9 @@ object CombatAnimator {
             if (action.move.isRoll || from != null && action.from?.isRoll == true) state.showCape = false
         }
     }
+
+    /** Whether [move] swings its weapon in both hands. */
+    private fun twoHanded(move: Move): Boolean = WeaponClass.of(move)?.twoHanded == true
 
     /** Which way a roll heads, relative to where the body faces. */
     private fun rollYaw(move: Move, yaw: Float, bodyRot: Float): Float =
@@ -183,7 +195,7 @@ object CombatAnimator {
         }
         carried(BODY, model.body, null, false, frame)
         carried(RIGHT_ARM, model.rightArm, clip.bones["right_arm"], true, frame)
-        carried(LEFT_ARM, model.leftArm, clip.bones["left_arm"], true, frame)
+        carried(LEFT_ARM, model.leftArm, if (frame.offHandFull) null else clip.bones["left_arm"], true, frame)
         head(model.head, clip.bones["head"], frame)
         leg(RIGHT_LEG, model.rightLeg, clip.bones["right_leg"], frame)
         leg(LEFT_LEG, model.leftLeg, clip.bones["left_leg"], frame)

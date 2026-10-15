@@ -2,6 +2,8 @@ package io.github.vaspyyy.guildmark.client.combat
 
 import com.mojang.math.Axis
 import io.github.vaspyyy.guildmark.combat.Move
+import io.github.vaspyyy.guildmark.combat.WeaponClass
+import io.github.vaspyyy.guildmark.combat.Weapons
 import io.github.vaspyyy.guildmark.registry.ModItems
 import net.minecraft.client.Minecraft
 import net.minecraft.client.player.LocalPlayer
@@ -23,8 +25,19 @@ import org.joml.Vector3f
  * item follows the "item" or "offhand" bone of the move's first-person clip, turning about the grip.
  */
 object FirstPersonCombat {
-    /** Where a sword's grip sits relative to vanilla's hand position; clips turn the item about it. */
-    private val GRIP = Vector3f(0.0706f, -0.0678f, -0.0371f)
+    /**
+     * How a class's weapon sits in first person: where its grip is relative to vanilla's hand position (clips
+     * turn the item about it), and the turn that lines its blade up with a sword's. The moves every weapon shares
+     * were made for the sword and are turned to fit; each class's own moves were made for its weapon.
+     * Worked out in art/scripts/weaponkit.py.
+     */
+    private class Hold(val grip: Vector3f, val fromSword: Quaternionf)
+
+    private val SWORD = Hold(Vector3f(0.0706f, -0.0678f, -0.0371f), Quaternionf())
+    private val HOLDS = mapOf(
+        WeaponClass.HAMMER to Hold(Vector3f(0f, -0.1294f, -0.0654f), Quaternionf()),
+        WeaponClass.SPEAR to Hold(Vector3f(0.1956f, -0.072f, 0.0429f), Quaternionf(0.2651f, 0f, 0f, 0.9642f).normalize()),
+    )
 
     private val itemState = ItemStackRenderState()
     private val flask: ItemStack by lazy { ItemStack(ModItems.WARDENS_FLASK.get()) }
@@ -47,9 +60,11 @@ object FirstPersonCombat {
         val stack = event.itemStack
         if (stack.isEmpty) return
         val clip = Clips.get("first_person/" + action.move.anim) ?: return
-        val bone = if (event.hand == InteractionHand.MAIN_HAND) "item" else "offhand"
+        val main = event.hand == InteractionHand.MAIN_HAND
+        val bone = if (main) "item" else "offhand"
         val track = clip.bones[bone] ?: return
         event.isCanceled = true
+        val hold = (if (main) Weapons.classOf(stack)?.let { HOLDS[it] } else null) ?: SWORD
 
         val time = action.time(event.partialTick)
         val arm = if (event.hand == InteractionHand.MAIN_HAND) player.mainArm else player.mainArm.opposite
@@ -57,18 +72,21 @@ object FirstPersonCombat {
         // From the rest pose, or from the move this one cut short, into this move
         offset.zero()
         rotation.identity()
-        if (time < clip.blendIn) {
-            val from = action.from?.let { Clips.get("first_person/" + it.anim) }
+        val fromMove = action.from
+        if (time < clip.blendIn && fromMove != null) {
+            val from = Clips.get("first_person/" + fromMove.anim)
             val fromTrack = from?.bones?.get(bone)
             if (from != null && fromTrack != null) {
                 val w = from.weight(action.fromTime)
-                offset.set(fromTrack.position(from, action.fromTime, goal)).mul(w)
-                rotation.slerp(fromTrack.rotation(from, action.fromTime, sample), w)
+                sample(fromTrack, from, action.fromTime, hold.takeIf { WeaponClass.of(fromMove) == null })
+                offset.set(goal).mul(w)
+                rotation.slerp(sample, w)
             }
         }
         val weight = clip.weight(time)
-        offset.lerp(track.position(clip, time, goal), weight)
-        rotation.slerp(track.rotation(clip, time, sample), weight)
+        sample(track, clip, time, hold.takeIf { WeaponClass.of(action.move) == null })
+        offset.lerp(goal, weight)
+        rotation.slerp(sample, weight)
         if (side < 0f) rotation.set(rotation.x, -rotation.y, -rotation.z, rotation.w)
         if (action.charging && action.charge > 0) {
             val shake = action.chargeFraction() * 0.012f
@@ -80,13 +98,24 @@ object FirstPersonCombat {
         pose.pushPose()
         pose.translate(side * 0.56f, -0.52f, -0.72f)
         pose.translate(side * offset.x, offset.y, offset.z)
-        pose.translate(side * GRIP.x, GRIP.y, GRIP.z)
+        val grip = hold.grip
+        pose.translate(side * grip.x, grip.y, grip.z)
         pose.rotate(rotation)
-        pose.translate(-side * GRIP.x, -GRIP.y, -GRIP.z)
+        pose.translate(-side * grip.x, -grip.y, -grip.z)
         val context = if (arm == HumanoidArm.RIGHT) ItemDisplayContext.FIRST_PERSON_RIGHT_HAND else ItemDisplayContext.FIRST_PERSON_LEFT_HAND
         minecraft.itemModelResolver.updateForTopItem(itemState, stack, context, player.level(), player, player.id + context.ordinal)
         itemState.submit(pose, event.submitNodeCollector, event.packedLight, OverlayTexture.NO_OVERLAY, 0)
         pose.popPose()
+    }
+
+    /** [track] at [time] into [goal] and [sample]; a sword's clip turned to fit [fit]'s weapon, when that's another. */
+    private fun sample(track: Clip.Track, clip: Clip, time: Float, fit: Hold?) {
+        track.position(clip, time, goal)
+        track.rotation(clip, time, sample)
+        if (fit == null || fit === SWORD) return
+        // The weapon's grip goes where the sword's would, its blade along the sword's
+        goal.add(SWORD.grip).sub(fit.grip)
+        sample.mul(fit.fromSword)
     }
 
     /**

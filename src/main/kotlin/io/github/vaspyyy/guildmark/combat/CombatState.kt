@@ -19,8 +19,13 @@ class CombatState {
     var seq = 0
     /** Ticks the heavy attack was held for, once the client reports the release (-1 while still held). */
     var charge = 0
-    /** Entity ids this move has already hit. */
+    /** Entity ids the move's current blow has already hit, and which of its blows that is. */
     val struck = IntOpenHashSet()
+    var window = 0
+    /** The move's blow has split or shaken the ground. */
+    var impacted = false
+    /** How many of the move's swings others have heard. */
+    var swings = 0
     /** The entity a riposte or backstab is being done to. */
     var criticalTarget = -1
     /** How many of the critical's blows have landed. */
@@ -60,6 +65,13 @@ class CombatState {
         return (now - moveStart - held) * tempo
     }
 
+    /** Like [elapsed], but a charge still held stays at its peak. */
+    fun shown(now: Long): Float {
+        val t = elapsed(now)
+        val current = move ?: return t
+        return if (charge < 0 && current.chargeAt >= 0) minOf(t, current.chargeAt.toFloat()) else t
+    }
+
     fun busy(now: Long): Boolean {
         val current = move ?: return false
         // Still charging: it can be held up to the move's full charge
@@ -75,6 +87,9 @@ class CombatState {
         this.tempo = tempo
         charge = if (current.chargeAt >= 0 && holding) -1 else 0
         struck.clear()
+        window = 0
+        impacted = false
+        swings = 0
         criticalTarget = -1
         criticalHits = 0
         drank = false
@@ -89,6 +104,7 @@ class CombatState {
         move = null
         charge = 0
         struck.clear()
+        window = 0
         criticalTarget = -1
     }
 

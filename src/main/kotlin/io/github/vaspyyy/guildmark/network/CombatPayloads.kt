@@ -60,8 +60,8 @@ data class ReleaseChargePayload(val seq: Int, val charge: Int) : CustomPacketPay
     }
 }
 
-/** Client's swing for move [seq] reached [targets] (entity ids); the server checks and applies each. */
-data class StrikePayload(val seq: Int, val targets: List<Int>) : CustomPacketPayload {
+/** Client's swing for move [seq] reached [targets] (entity ids) with the move's blow number [window]; the server checks and applies each. */
+data class StrikePayload(val seq: Int, val window: Int, val targets: List<Int>) : CustomPacketPayload {
     override fun type(): CustomPacketPayload.Type<StrikePayload> = TYPE
 
     companion object {
@@ -70,6 +70,7 @@ data class StrikePayload(val seq: Int, val targets: List<Int>) : CustomPacketPay
 
         val STREAM_CODEC: StreamCodec<ByteBuf, StrikePayload> = StreamCodec.composite(
             ByteBufCodecs.VAR_INT, StrikePayload::seq,
+            ByteBufCodecs.VAR_INT, StrikePayload::window,
             ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list(16)), StrikePayload::targets,
             ::StrikePayload,
         )

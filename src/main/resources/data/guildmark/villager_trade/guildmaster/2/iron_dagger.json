@@ -1,0 +1,12 @@
+{
+  "wants": {
+    "id": "guildmark:guild_mark",
+    "count": 5
+  },
+  "gives": {
+    "id": "guildmark:iron_dagger"
+  },
+  "max_uses": 3,
+  "xp": 5,
+  "reputation_discount": 0.05
+}

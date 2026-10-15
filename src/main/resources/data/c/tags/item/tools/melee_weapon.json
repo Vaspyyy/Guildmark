@@ -1,0 +1,17 @@
+{
+  "replace": false,
+  "values": [
+    "guildmark:iron_greatsword",
+    "guildmark:diamond_greatsword",
+    "guildmark:netherite_greatsword",
+    "guildmark:iron_dagger",
+    "guildmark:diamond_dagger",
+    "guildmark:netherite_dagger",
+    "guildmark:iron_sabre",
+    "guildmark:diamond_sabre",
+    "guildmark:netherite_sabre",
+    "guildmark:iron_war_hammer",
+    "guildmark:diamond_war_hammer",
+    "guildmark:netherite_war_hammer"
+  ]
+}
