@@ -1,0 +1,19 @@
+{
+  "wants": {
+    "id": "minecraft:emerald",
+    "count": 12
+  },
+  "additional_wants": {
+    "id": "minecraft:glowstone_dust",
+    "count": 4
+  },
+  "gives": {
+    "id": "guildmark:prayer_scroll",
+    "components": {
+      "guildmark:spell": "flare"
+    }
+  },
+  "max_uses": 1,
+  "xp": 20,
+  "reputation_discount": 0.05
+}

@@ -1218,6 +1218,171 @@
     ],
     "subtitle": "subtitles.guildmark.dragon.flyby"
   },
+  "magic.arcane_charge": {
+    "sounds": [
+      "guildmark:magic/arcane_charge1"
+    ],
+    "subtitle": "subtitles.guildmark.magic.arcane_charge"
+  },
+  "magic.arc_bolt_cast": {
+    "sounds": [
+      "guildmark:magic/arc_bolt_cast1",
+      "guildmark:magic/arc_bolt_cast2",
+      "guildmark:magic/arc_bolt_cast3"
+    ],
+    "subtitle": "subtitles.guildmark.magic.arc_bolt_cast"
+  },
+  "magic.arc_bolt_impact": {
+    "sounds": [
+      "guildmark:magic/arc_bolt_impact1",
+      "guildmark:magic/arc_bolt_impact2"
+    ],
+    "subtitle": "subtitles.guildmark.magic.arc_bolt_impact"
+  },
+  "magic.splinter_cast": {
+    "sounds": [
+      "guildmark:magic/splinter_cast1",
+      "guildmark:magic/splinter_cast2"
+    ],
+    "subtitle": "subtitles.guildmark.magic.splinter_cast"
+  },
+  "magic.splinter_impact": {
+    "sounds": [
+      "guildmark:magic/splinter_impact1",
+      "guildmark:magic/splinter_impact2",
+      "guildmark:magic/splinter_impact3"
+    ],
+    "subtitle": "subtitles.guildmark.magic.splinter_impact"
+  },
+  "magic.rime_cast": {
+    "sounds": [
+      "guildmark:magic/rime_cast1",
+      "guildmark:magic/rime_cast2"
+    ],
+    "subtitle": "subtitles.guildmark.magic.rime_cast"
+  },
+  "magic.rime_impact": {
+    "sounds": [
+      "guildmark:magic/rime_impact1",
+      "guildmark:magic/rime_impact2"
+    ],
+    "subtitle": "subtitles.guildmark.magic.rime_impact"
+  },
+  "magic.undertow_open": {
+    "sounds": [
+      "guildmark:magic/undertow_open1"
+    ],
+    "subtitle": "subtitles.guildmark.magic.undertow_open"
+  },
+  "magic.undertow_loop": {
+    "sounds": [
+      "guildmark:magic/undertow_loop1"
+    ],
+    "subtitle": "subtitles.guildmark.magic.undertow_loop"
+  },
+  "magic.flicker": {
+    "sounds": [
+      "guildmark:magic/flicker1",
+      "guildmark:magic/flicker2"
+    ],
+    "subtitle": "subtitles.guildmark.magic.flicker"
+  },
+  "magic.star_call": {
+    "sounds": [
+      "guildmark:magic/star_call1"
+    ],
+    "subtitle": "subtitles.guildmark.magic.star_call"
+  },
+  "magic.star_fall": {
+    "sounds": [
+      "guildmark:magic/star_fall1"
+    ],
+    "subtitle": "subtitles.guildmark.magic.star_fall"
+  },
+  "magic.star_impact": {
+    "sounds": [
+      "guildmark:magic/star_impact1",
+      "guildmark:magic/star_impact2"
+    ],
+    "subtitle": "subtitles.guildmark.magic.star_impact"
+  },
+  "magic.prayer_charge": {
+    "sounds": [
+      "guildmark:magic/prayer_charge1"
+    ],
+    "subtitle": "subtitles.guildmark.magic.prayer_charge"
+  },
+  "magic.hearthlight": {
+    "sounds": [
+      "guildmark:magic/hearthlight1",
+      "guildmark:magic/hearthlight2"
+    ],
+    "subtitle": "subtitles.guildmark.magic.hearthlight"
+  },
+  "magic.flare": {
+    "sounds": [
+      "guildmark:magic/flare1",
+      "guildmark:magic/flare2"
+    ],
+    "subtitle": "subtitles.guildmark.magic.flare"
+  },
+  "magic.vigil": {
+    "sounds": [
+      "guildmark:magic/vigil1"
+    ],
+    "subtitle": "subtitles.guildmark.magic.vigil"
+  },
+  "magic.wayflame_cast": {
+    "sounds": [
+      "guildmark:magic/wayflame_cast1",
+      "guildmark:magic/wayflame_cast2"
+    ],
+    "subtitle": "subtitles.guildmark.magic.wayflame_cast"
+  },
+  "magic.wayflame_impact": {
+    "sounds": [
+      "guildmark:magic/wayflame_impact1",
+      "guildmark:magic/wayflame_impact2"
+    ],
+    "subtitle": "subtitles.guildmark.magic.wayflame_impact"
+  },
+  "magic.hallowed_ground": {
+    "sounds": [
+      "guildmark:magic/hallowed_ground1"
+    ],
+    "subtitle": "subtitles.guildmark.magic.hallowed_ground"
+  },
+  "magic.dawnburst": {
+    "sounds": [
+      "guildmark:magic/dawnburst1"
+    ],
+    "subtitle": "subtitles.guildmark.magic.dawnburst"
+  },
+  "magic.learn": {
+    "sounds": [
+      "guildmark:magic/learn1"
+    ],
+    "subtitle": "subtitles.guildmark.magic.learn"
+  },
+  "magic.attune": {
+    "sounds": [
+      "guildmark:magic/attune1"
+    ],
+    "subtitle": "subtitles.guildmark.magic.attune"
+  },
+  "magic.cycle": {
+    "sounds": [
+      "guildmark:magic/cycle1",
+      "guildmark:magic/cycle2"
+    ],
+    "subtitle": "subtitles.guildmark.magic.cycle"
+  },
+  "magic.fizzle": {
+    "sounds": [
+      "guildmark:magic/fizzle1"
+    ],
+    "subtitle": "subtitles.guildmark.magic.fizzle"
+  },
   "ambience.crowd_day": {
     "sounds": [
       "guildmark:ambience/crowd_day1"

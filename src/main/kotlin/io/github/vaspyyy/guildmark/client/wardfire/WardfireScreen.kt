@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.client.wardfire
 
 import io.github.vaspyyy.guildmark.client.atlas.MapScreen
+import io.github.vaspyyy.guildmark.client.magic.AttuneScreen
 import io.github.vaspyyy.guildmark.client.ui.GrowScreen
 import io.github.vaspyyy.guildmark.client.ui.LedgerScreen
 import io.github.vaspyyy.guildmark.client.ui.Ui
@@ -19,8 +20,8 @@ import kotlin.math.min
 
 /**
  * Sitting at a Wardfire. The world stays in view behind a warm shade from the left, where a small
- * panel names the fire and offers what can be done here: grow stronger with the guild XP banked, travel
- * to another fire, wait for morning or nightfall (when you're alone in the world), open the Guild Ledger
+ * panel names the fire and offers what can be done here: grow stronger with the guild XP banked, attune
+ * spells, travel to another fire, wait for morning or nightfall (when you're alone in the world), open the Guild Ledger
  * to learn and forget skill tree nodes, or get up and go.
  */
 class WardfireScreen(private val pos: BlockPos, private val canWait: Boolean) : Screen(Component.translatable("gui.guildmark.wardfire")) {
@@ -37,6 +38,9 @@ class WardfireScreen(private val pos: BlockPos, private val canWait: Boolean) : 
         val grow = Ui.button(growLabel(), BUTTON_WIDTH) { minecraft.gui.setScreen(GrowScreen(pos, this)) }
         growButton = grow
         buttons += grow
+        buttons += Ui.button(Component.translatable("gui.guildmark.wardfire.attune"), BUTTON_WIDTH) {
+            minecraft.gui.setScreen(AttuneScreen(pos, this))
+        }
         buttons += Ui.button(Component.translatable("gui.guildmark.wardfire.travel"), BUTTON_WIDTH) {
             minecraft.gui.setScreen(MapScreen())
         }

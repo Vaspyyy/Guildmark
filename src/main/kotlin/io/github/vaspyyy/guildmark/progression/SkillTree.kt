@@ -283,10 +283,11 @@ class TreeBuilder {
         fun glyphOf(effects: List<Effect>): String = "glyph/" + when (effects.firstOrNull()?.bonus) {
             Bonus.MAX_HEALTH, Bonus.HEALTH_PCT, Bonus.REGEN -> "health"
             Bonus.STAMINA, Bonus.STAMINA_REGEN, Bonus.ATTACK_COST, Bonus.ROLL_COST, Bonus.SPRINT_COST, Bonus.DODGE_STAMINA, Bonus.PARRY_STAMINA -> "stamina"
-            Bonus.FOCUS, Bonus.FOCUS_REGEN, Bonus.FOCUS_ON_HIT, Bonus.SKILL_COST -> "focus"
+            Bonus.FOCUS, Bonus.FOCUS_REGEN, Bonus.FOCUS_ON_HIT, Bonus.SKILL_COST, Bonus.SPELL_COST, Bonus.SPELL_SLOTS -> "focus"
             Bonus.ARMOR, Bonus.TOUGHNESS, Bonus.POISE, Bonus.BLOCK_COST, Bonus.DAMAGE_TAKEN, Bonus.KNOCKBACK_RESIST, Bonus.ROLL_LOAD -> "defence"
             Bonus.MAGIC_TAKEN, Bonus.FIRE_TAKEN, Bonus.BLAST_TAKEN, Bonus.PROJECTILE_TAKEN, Bonus.BURN_TIME -> "resist"
-            Bonus.MOVE_SPEED, Bonus.SNEAK_SPEED, Bonus.SWIM_SPEED, Bonus.JUMP, Bonus.TEMPO, Bonus.DRAW_SPEED, Bonus.SURE_FOOTED, Bonus.SAFE_FALL -> "speed"
+            Bonus.MOVE_SPEED, Bonus.SNEAK_SPEED, Bonus.SWIM_SPEED, Bonus.JUMP, Bonus.TEMPO, Bonus.DRAW_SPEED, Bonus.SURE_FOOTED, Bonus.SAFE_FALL,
+            Bonus.CAST_SPEED -> "speed"
             Bonus.CRAFT_DURABILITY, Bonus.SMELT_EXTRA, Bonus.ANVIL_COST, Bonus.POTION_DURATION, Bonus.POTION_POTENCY,
             Bonus.FOOD_SATURATION, Bonus.FOOD_HEAL, Bonus.COOK_EXTRA -> "craft"
             Bonus.STONE_SPEED, Bonus.ORE_DOUBLE, Bonus.LOG_SPEED, Bonus.LOG_DOUBLE, Bonus.DIRT_SPEED, Bonus.BREAK_SPEED,

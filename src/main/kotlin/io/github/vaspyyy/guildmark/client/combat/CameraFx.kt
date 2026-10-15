@@ -26,6 +26,11 @@ object CameraFx {
         if (enabled()) trauma = min(1f, trauma + amount)
     }
 
+    /** A quick widening of the view that eases back, for a sudden burst of speed. */
+    fun punch(amount: Float) {
+        punch = max(punch, amount)
+    }
+
     /** A roll or backstep began, [relativeYaw] degrees from where the player faces. */
     fun onDodge(move: Move, relativeYaw: Float) {
         rollSide = if (move == Move.BACKSTEP) 0f else sin(Math.toRadians(Mth.wrapDegrees(relativeYaw).toDouble())).toFloat()

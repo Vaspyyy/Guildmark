@@ -1,0 +1,76 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "guildmark:item/gilded_censer"
+  },
+  "display": {
+    "thirdperson_righthand": {
+      "rotation": [
+        0.0,
+        -90.0,
+        55.0
+      ],
+      "translation": [
+        0.0,
+        5.389,
+        0.755
+      ],
+      "scale": [
+        1.087,
+        1.087,
+        1.0
+      ]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [
+        0.0,
+        90.0,
+        -55.0
+      ],
+      "translation": [
+        0.0,
+        5.389,
+        0.755
+      ],
+      "scale": [
+        1.087,
+        1.087,
+        1.0
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0.0,
+        -90.0,
+        25.0
+      ],
+      "translation": [
+        0.0,
+        4.192,
+        1.234
+      ],
+      "scale": [
+        0.9783,
+        0.9783,
+        0.9
+      ]
+    },
+    "firstperson_lefthand": {
+      "rotation": [
+        0.0,
+        90.0,
+        -25.0
+      ],
+      "translation": [
+        0.0,
+        4.192,
+        1.234
+      ],
+      "scale": [
+        0.9783,
+        0.9783,
+        0.9
+      ]
+    }
+  }
+}

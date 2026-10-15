@@ -2,6 +2,9 @@ package io.github.vaspyyy.guildmark.combat
 
 import io.github.vaspyyy.guildmark.wardfire.WardensFlask
 import io.github.vaspyyy.guildmark.GuildmarkConfig
+import io.github.vaspyyy.guildmark.magic.Magic
+import io.github.vaspyyy.guildmark.magic.MagicRegistry
+import io.github.vaspyyy.guildmark.magic.Spell
 import io.github.vaspyyy.guildmark.network.MovePayload
 import io.github.vaspyyy.guildmark.network.ReleaseChargePayload
 import io.github.vaspyyy.guildmark.network.StartMovePayload
@@ -93,7 +96,7 @@ object Combat {
         }
         s.spendStamina(Talents.staminaCost(player, move), now)
         s.focus = (s.focus - Talents.focusCost(player, move)).coerceAtLeast(0f)
-        if ((move.isAttack || move == Move.DRINK) && player.isUsingItem) player.stopUsingItem()
+        if ((move.isAttack || move.isSpell || move == Move.DRINK) && player.isUsingItem) player.stopUsingItem()
         if (move == Move.DRINK) player.isSprinting = false
 
         // A guard counter needs a blow just blocked; otherwise it's the combo's opening blow
@@ -106,7 +109,14 @@ object Combat {
             }
         }
         val holding = actual.chargeAt >= 0 && payload.flags and StartMovePayload.HOLDING != 0
-        s.start(actual, now, payload.seq, if (actual.isAttack) Weapons.tempo(player) else 1f, holding)
+        // A cast cut short just as it went off on the client still goes off here
+        s.move?.let { if (it.isSpell && s.cast == 0 && s.charge >= 0 && s.elapsed(now) >= it.castAt - 3) release(player, s, it) }
+        val tempo = when {
+            actual.isAttack -> Weapons.tempo(player)
+            actual.isSpell -> Magic.tempo(player)
+            else -> 1f
+        }
+        s.start(actual, now, payload.seq, tempo, holding)
         s.ackSeq = max(s.ackSeq, payload.seq)
         if (actual.isRoll) {
             // Evasion's nodes stretch the moment a roll can't be touched
@@ -131,8 +141,11 @@ object Combat {
 
         // Everyone else sees the move and hears it
         // Rolls carry their direction; attacks their speed, which the watchers can't work out from the mover's skills
-        val extra = if (actual.isRoll) payload.yaw else if (actual.isAttack) s.tempo else 0f
+        val extra = if (actual.isRoll) payload.yaw else if (actual.isAttack || actual.isSpell) s.tempo else 0f
         PacketDistributor.sendToPlayersTrackingEntity(player, MovePayload(player.id, actual.ordinal, payload.seq, if (holding) MovePayload.CHARGING else 0, extra))
+        if (actual.isSpell && holding) Spell.of(actual)?.let {
+            player.level().playSound(player, player.x, player.y, player.z, Magic.chargeSound(it.school), SoundSource.PLAYERS, 0.8f, 1f)
+        }
         // An attack's swing is heard as it comes round (see tick); a roll at once
         if (!actual.isAttack) moveSound(actual)?.let { player.level().playSound(player, player.x, player.y, player.z, it, SoundSource.PLAYERS, 0.9f, 0.9f + player.random.nextFloat() * 0.2f) }
         if (actual.isCritical) {
@@ -183,6 +196,8 @@ object Combat {
         // Each weapon makes its own moves only
         if (move.isAttack && (Weapons.classOf(player.mainHandItem) ?: return false) != WeaponClass.of(move)) return false
         if (move == Move.DRINK && !WardensFlask.canDrink(player)) return false
+        // A spell needs to be attuned, a catalyst of its school in hand, and the stat it asks for
+        if (move.isSpell && Magic.problem(player, Spell.of(move) ?: return false) != null) return false
         if (move.stamina > 0f && s.stamina < 1f && !player.isCreative) return false
         if (move.focus > 0f && s.focus < Talents.focusCost(player, move) && !player.isCreative) return false
         if (!s.busy(now)) return true
@@ -325,6 +340,7 @@ object Combat {
                 s.drank = true
                 WardensFlask.drink(player)
             }
+            if (move.isSpell) tickCast(player, s, move, now)
             if (!s.busy(now)) {
                 if (move.isCritical) (level.getEntity(s.criticalTarget) as? LivingEntity)?.let { if (it.isAlive) Stance.release(it) }
                 s.clear()
@@ -362,6 +378,23 @@ object Combat {
         PacketDistributor.sendToPlayer(player, VitalsPayload(s.stamina, s.maxStamina, s.focus, s.maxFocus, flags, s.ackSeq))
     }
 
+    /** A cast under way: the spell goes off at its release, once the button's let go of a charge (see magic/Magic). */
+    private fun tickCast(player: ServerPlayer, s: CombatState, move: Move, now: Long) {
+        if (s.charge < 0) return
+        val t = s.elapsed(now)
+        if (s.cast == 0 && t >= move.castAt) release(player, s, move)
+        if (s.cast == 1) Spell.of(move)?.let { if (Magic.afterRelease(player, it, t - move.castAt)) s.cast = 2 }
+    }
+
+    private fun release(player: ServerPlayer, s: CombatState, move: Move) {
+        val spell = Spell.of(move) ?: return
+        s.cast = 1
+        val charged = if (move.maxCharge > 0) s.charge.coerceAtLeast(0).toFloat() / move.maxCharge else 0f
+        Magic.release(player, spell, charged, predicted = true)
+        // Every cast teaches its school a little; its blows and mending teach more (see Skills, Magic.heal)
+        Skills.gain(player, spell.school.skill, move.focus * 0.3)
+    }
+
     /** Makes [player] do [move] right now, whatever they were doing (a stagger, a guard break, a parry). */
     fun force(player: ServerPlayer, move: Move) {
         val s = state(player)
@@ -376,10 +409,10 @@ object Combat {
     /** Poise: base 25, plus armour and toughness. Heavy moves add hyper armour while they swing. */
     private fun poise(player: ServerPlayer, s: CombatState, now: Long): Float {
         val base = (25f + player.armorValue * 1.5f + player.getAttributeValue(Attributes.ARMOR_TOUGHNESS).toFloat() * 2f +
-            Talents[player, Bonus.POISE].toFloat()).coerceAtLeast(5f)
+            Talents[player, Bonus.POISE].toFloat() + (if (player.hasEffect(MagicRegistry.VIGIL)) VIGIL_POISE else 0f)).coerceAtLeast(5f)
         val move = s.move ?: return base
         val t = s.elapsed(now)
-        return if (move.poise > 1f && s.busy(now) && t >= 2f && t <= move.lastHit + 1) base * move.poise else base
+        return if (move.poise > 1f && s.busy(now) && t >= 2f && t <= max(move.lastHit, move.castAt) + 1) base * move.poise else base
     }
 
     // ---- Damage hooks ----
@@ -593,4 +626,7 @@ object Combat {
 
     /** True while [entity] (a player) is mid-move in a way that should block vanilla attacks, for other systems. */
     fun isBusy(entity: Entity): Boolean = entity is ServerPlayer && state(entity).busy(entity.level().gameTime)
+
+    /** Poise Vigil's vow adds while it lasts. */
+    private const val VIGIL_POISE = 15f
 }

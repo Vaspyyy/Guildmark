@@ -159,7 +159,16 @@ enum class Bonus(
 
     // ---- Stealth ----
     /** How much harder you are to notice while sneaking. */
-    STEALTH("stealth", Shown.PERCENT);
+    STEALTH("stealth", Shown.PERCENT),
+
+    // ---- Magic ----
+    SORCERY_DAMAGE("sorcery_damage", Shown.PERCENT),
+    /** Prayers hurt more and heal more. */
+    PRAYER_POWER("prayer_power", Shown.PERCENT),
+    SPELL_COST("spell_cost", Shown.PERCENT, good = false),
+    CAST_SPEED("cast_speed", Shown.PERCENT),
+    /** More spells attuned at once. */
+    SPELL_SLOTS("spell_slots", Shown.FLAT);
 
     companion object {
         private val BY_ID = entries.associateBy { it.id }

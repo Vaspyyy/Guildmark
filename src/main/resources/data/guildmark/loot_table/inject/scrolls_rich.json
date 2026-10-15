@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:chest",
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "guildmark:sorcery_scroll",
+          "weight": 3
+        },
+        {
+          "type": "minecraft:item",
+          "name": "guildmark:prayer_scroll",
+          "weight": 3
+        },
+        {
+          "type": "minecraft:empty",
+          "weight": 8
+        }
+      ]
+    }
+  ],
+  "random_sequence": "guildmark:inject/scrolls_rich"
+}

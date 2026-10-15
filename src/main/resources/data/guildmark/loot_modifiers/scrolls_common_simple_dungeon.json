@@ -1,0 +1,8 @@
+{
+  "type": "neoforge:add_table",
+  "condition": {
+    "loot_table_id": "minecraft:chests/simple_dungeon",
+    "type": "neoforge:loot_table_id"
+  },
+  "table": "guildmark:inject/scrolls_common"
+}

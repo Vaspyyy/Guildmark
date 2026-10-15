@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "N": "minecraft:iron_chain",
+    "I": "minecraft:iron_ingot",
+    "C": "#minecraft:coals"
+  },
+  "pattern": [
+    " N ",
+    "ICI",
+    " I "
+  ],
+  "result": {
+    "id": "guildmark:iron_censer"
+  }
+}

@@ -5,7 +5,7 @@ import io.github.vaspyyy.guildmark.progression.Bonus.*
 /**
  * What every node of the skill tree gives. The slots run clockwise from the top: the fighting skills
  * across the top, the crafts down the right, coin and the guild at the bottom, the wild trades up the
- * left. Slots 4 and 16 are kept for the two schools of magic, slot 11 for later.
+ * left, with the two schools of magic at slots 4 (prayer) and 16 (sorcery). Slot 11 is kept for later.
  *
  * Node ids end up in save files: rename a node's effects freely, never its id.
  */
@@ -152,6 +152,28 @@ object TreeContent {
             notable("slipstream", e(DODGE_STAMINA, 8.0), e(ROLL_COST, -0.08))
             notable("acrobat", e(STEP, 0.5), e(FALL_DAMAGE, -0.25), e(JUMP, 0.08))
             keystone("wraith_step", e(IFRAMES, 2.0), e(MOVE_SPEED, 0.08), e(ROLL_COST, -0.20), e(HEALTH_PCT, -0.15))
+        }
+
+        // ---- Magic ----
+        t.branch(SORCERY, "sorcery", Skill.SORCERY) {
+            a(e(SORCERY_DAMAGE, 0.04))
+            b(e(SPELL_COST, -0.04))
+            c(e(SORCERY_DAMAGE, 0.05), e(FOCUS_REGEN, 0.03))
+            notable("spellweaver", e(CAST_SPEED, 0.10), e(SPELL_SLOTS, 1.0))
+            notable("deep_reserves", e(FOCUS, 10.0), e(FOCUS_REGEN, 0.10))
+            notable("starseer", e(SORCERY_DAMAGE, 0.10), e(BOSS_DAMAGE, 0.05))
+            notable("still_mind", e(MAGIC_TAKEN, -0.10), e(SPELL_SLOTS, 1.0))
+            keystone("archmage", e(SORCERY_DAMAGE, 0.30), e(SPELL_COST, -0.15), e(SPELL_SLOTS, 1.0), e(MELEE_DAMAGE, -0.25), e(HEALTH_PCT, -0.10))
+        }
+        t.branch(PRAYER, "prayer", Skill.PRAYER) {
+            a(e(PRAYER_POWER, 0.04))
+            b(e(SPELL_COST, -0.04))
+            c(e(PRAYER_POWER, 0.05), e(UNDEAD_DAMAGE, 0.03))
+            notable("devout", e(SPELL_SLOTS, 1.0), e(FOCUS, 8.0))
+            notable("mercy", e(PRAYER_POWER, 0.10), e(FLASK_HEAL, 0.05))
+            notable("bane_of_the_hollow", e(UNDEAD_DAMAGE, 0.25))
+            notable("zealot", e(CAST_SPEED, 0.10), e(PRAYER_POWER, 0.08))
+            keystone("lightbearer", e(PRAYER_POWER, 0.30), e(UNDEAD_DAMAGE, 0.20), e(SPELL_SLOTS, 1.0), e(STEALTH, -0.30))
         }
 
         // ---- Crafts ----

@@ -1,0 +1,8 @@
+{
+  "type": "neoforge:add_table",
+  "condition": {
+    "loot_table_id": "minecraft:chests/end_city_treasure",
+    "type": "neoforge:loot_table_id"
+  },
+  "table": "guildmark:inject/scrolls_rich"
+}

@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.progression
 
+import io.github.vaspyyy.guildmark.magic.MagicRegistry
 import io.github.vaspyyy.guildmark.GuildmarkConfig
 import io.github.vaspyyy.guildmark.registry.ModAttachments
 import net.minecraft.network.chat.Component
@@ -85,6 +86,9 @@ object Skills {
         val direct = source.directEntity
         val kind = Scaling.kindOf(source.weaponItem ?: ItemStack.EMPTY)
         when {
+            // Spells teach their school, whatever's in hand
+            source.`is`(MagicRegistry.SORCERY_DAMAGE) -> gain(player, Skill.SORCERY, xp)
+            source.`is`(MagicRegistry.PRAYER_DAMAGE) -> gain(player, Skill.PRAYER, xp)
             direct is AbstractArrow -> gain(player, if (kind == WeaponKind.HEAVY) Skill.HEAVY_ARMS else Skill.ARCHERY, xp * 1.2)
             direct === player -> kind.skill?.let { if (it != Skill.ARCHERY) gain(player, it, xp) }
         }
@@ -98,6 +102,8 @@ object Skills {
         val xp = min(victim.maxHealth * 0.4, MAX_KILL_XP.toDouble())
         val kind = Scaling.kindOf(source.weaponItem ?: ItemStack.EMPTY)
         val skill = when {
+            source.`is`(MagicRegistry.SORCERY_DAMAGE) -> Skill.SORCERY
+            source.`is`(MagicRegistry.PRAYER_DAMAGE) -> Skill.PRAYER
             source.directEntity is AbstractArrow && kind != WeaponKind.HEAVY -> Skill.ARCHERY
             else -> kind.skill
         } ?: return

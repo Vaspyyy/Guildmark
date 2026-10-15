@@ -54,6 +54,7 @@ import io.github.vaspyyy.guildmark.client.ambience.CityAmbience
 import io.github.vaspyyy.guildmark.client.townsfolk.TownsfolkClient
 import io.github.vaspyyy.guildmark.client.region.RegionClient
 import io.github.vaspyyy.guildmark.client.dragon.DragonClient
+import io.github.vaspyyy.guildmark.client.magic.MagicClient
 import io.github.vaspyyy.guildmark.client.atlas.CompassHud
 import io.github.vaspyyy.guildmark.client.atlas.MapData
 import io.github.vaspyyy.guildmark.client.atlas.MapScreen
@@ -103,6 +104,7 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
             event.register(CombatClient.LOCK_ON)
             event.register(CombatClient.SKILL)
             event.register(CombatClient.FLASK)
+            event.register(MagicClient.NEXT_SPELL)
         }
         NeoForge.EVENT_BUS.addListener(ClientTickEvent.Pre::class.java, CombatClient::onTick)
         NeoForge.EVENT_BUS.addListener(ClientTickEvent.Pre::class.java) { _ -> SpectralSteedControls.onTick() }
@@ -153,6 +155,7 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
         RegionClient.register(modBus)
         // Dragons: their renderer, their flames, the ground shaking as they land (client/dragon)
         DragonClient.register(modBus)
+        MagicClient.register(modBus)
         HdPack.register(modBus)
         modBus.addListener(RegisterRenderStateModifiersEvent::class.java) { event ->
             event.registerAvatarEntityModifier(CombatAnimator.AVATAR)

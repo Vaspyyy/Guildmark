@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "equipment",
+  "ingredients": [
+    "guildmark:iron_censer",
+    "minecraft:gold_ingot",
+    "minecraft:gold_ingot",
+    "minecraft:gold_ingot"
+  ],
+  "result": {
+    "id": "guildmark:gilded_censer"
+  }
+}

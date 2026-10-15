@@ -35,6 +35,8 @@ enum class Skill(
     EVASION("evasion", SkillGroup.COMBAT, Bonus.ROLL_COST, -0.002),
     ARMOR("armor", SkillGroup.COMBAT, Bonus.DAMAGE_TAKEN, -0.001),
     STEALTH("stealth", SkillGroup.COMBAT, Bonus.STEALTH, 0.0025),
+    SORCERY("sorcery", SkillGroup.COMBAT, Bonus.SORCERY_DAMAGE, 0.0025),
+    PRAYER("prayer", SkillGroup.COMBAT, Bonus.PRAYER_POWER, 0.0025),
     SMITHING("smithing", SkillGroup.CRAFT, Bonus.CRAFT_DURABILITY, 0.003),
     ALCHEMY("alchemy", SkillGroup.CRAFT, Bonus.POTION_DURATION, 0.003),
     COOKING("cooking", SkillGroup.CRAFT, Bonus.FOOD_SATURATION, 0.003),

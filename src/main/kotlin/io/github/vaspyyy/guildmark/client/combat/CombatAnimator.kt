@@ -54,11 +54,12 @@ object CombatAnimator {
     /**
      * What the model should show this frame, worked out while the render state is filled in. [from] is
      * the move this one cut short, which the model eases out of while this one eases in. A two-handed
-     * swing with something in the off hand ([offHandFull]) leaves the left arm to hold it.
+     * swing with something in the off hand ([offHandFull]) leaves the left arm to hold it. A cast from the
+     * off hand plays its clip [mirror]ed, left for right.
      */
     class Frame(
         val clip: Clip, val time: Float, val weight: Float, val yaw: Float, val tremble: Float, val seed: Float, val from: Frame?,
-        val offHandFull: Boolean = false,
+        val offHandFull: Boolean = false, val mirror: Boolean = false,
     )
 
     val FRAME: ContextKey<Frame> = ContextKey(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "combat_frame"))
@@ -86,7 +87,7 @@ object CombatAnimator {
             val tremble = if (action.charging && action.charge > 0) action.chargeFraction() else 0f
             state.setRenderData(FRAME, Frame(
                 clip, time, weight, rollYaw(action.move, action.yaw, state.bodyRot), tremble, state.ageInTicks, from,
-                offHand && twoHanded(action.move),
+                offHand && twoHanded(action.move), action.offhand,
             ))
             state.rightArmPose = armPose
             state.leftArmPose = armPose
@@ -187,25 +188,28 @@ object CombatAnimator {
 
         // The torso bends about the hips; the body, arms and head ride on it
         val torso = clip.bones["torso"]
-        if (torso != null) torso.rotation(clip, t, qTorso) else qTorso.identity()
-        if (torso != null) torso.position(clip, t, vTorso) else vTorso.zero()
+        if (torso != null) rot(torso, frame, qTorso) else qTorso.identity()
+        if (torso != null) pos(torso, frame, vTorso) else vTorso.zero()
         if (frame.tremble > 0f) {
             val shake = frame.tremble * 0.02f
             qTorso.rotateX(sin(frame.seed * 7.1f) * shake).rotateZ(sin(frame.seed * 9.3f) * shake)
         }
+        // Mirrored, each side plays the other's track
+        val right = if (frame.mirror) "left" else "right"
+        val left = if (frame.mirror) "right" else "left"
         carried(BODY, model.body, null, false, frame)
-        carried(RIGHT_ARM, model.rightArm, clip.bones["right_arm"], true, frame)
-        carried(LEFT_ARM, model.leftArm, if (frame.offHandFull) null else clip.bones["left_arm"], true, frame)
+        carried(RIGHT_ARM, model.rightArm, clip.bones["${right}_arm"], true, frame)
+        carried(LEFT_ARM, model.leftArm, if (frame.offHandFull) null else clip.bones["${left}_arm"], true, frame)
         head(model.head, clip.bones["head"], frame)
-        leg(RIGHT_LEG, model.rightLeg, clip.bones["right_leg"], frame)
-        leg(LEFT_LEG, model.leftLeg, clip.bones["left_leg"], frame)
+        leg(RIGHT_LEG, model.rightLeg, clip.bones["${right}_leg"], frame)
+        leg(LEFT_LEG, model.leftLeg, clip.bones["${left}_leg"], frame)
 
         // The root turns the whole body: rolls, and a roll's direction
         val root = clip.bones["root"]
         val g = goal[ROOT]
-        if (root != null) root.rotation(clip, t, g.q) else g.q.identity()
+        if (root != null) rot(root, frame, g.q) else g.q.identity()
         if (frame.yaw != 0f) g.q.premul(qClip.rotationY(frame.yaw))
-        if (root != null) root.position(clip, t, g.v) else g.v.zero()
+        if (root != null) pos(root, frame, g.v) else g.v.zero()
     }
 
     /** A part carried by the torso: the body itself, or an arm with its own track. */
@@ -215,13 +219,13 @@ object CombatAnimator {
         when {
             !limb -> g.q.set(qTorso)
             track == null -> g.q.set(qTorso).mul(vanilla[i].q)
-            track.add -> g.q.set(qTorso).mul(vanilla[i].q).mul(track.rotation(frame.clip, frame.time, qClip))
-            else -> g.q.set(qTorso).mul(track.rotation(frame.clip, frame.time, qClip))
+            track.add -> g.q.set(qTorso).mul(vanilla[i].q).mul(rot(track, frame, qClip))
+            else -> g.q.set(qTorso).mul(rot(track, frame, qClip))
         }
         // Pivot: where the joint sits once the torso has moved
         val initial = part.initialPose
         g.v.set(initial.x, initial.y, initial.z)
-        if (track != null && track.hasPosition) g.v.add(track.position(frame.clip, frame.time, vClip))
+        if (track != null && track.hasPosition) g.v.add(pos(track, frame, vClip))
         g.v.sub(hips)
         qTorso.transform(g.v)
         g.v.add(hips).add(vTorso)
@@ -232,8 +236,8 @@ object CombatAnimator {
         val g = goal[HEAD]
         when {
             track == null -> g.q.set(vanilla[HEAD].q)
-            track.add -> g.q.set(vanilla[HEAD].q).mul(track.rotation(frame.clip, frame.time, qClip))
-            else -> g.q.set(qTorso).mul(track.rotation(frame.clip, frame.time, qClip))
+            track.add -> g.q.set(vanilla[HEAD].q).mul(rot(track, frame, qClip))
+            else -> g.q.set(qTorso).mul(rot(track, frame, qClip))
         }
         val initial = part.initialPose
         g.v.set(initial.x, initial.y, initial.z).sub(hips)
@@ -248,11 +252,23 @@ object CombatAnimator {
             g.set(vanilla[i])
             return
         }
-        if (track.add) g.q.set(vanilla[i].q).mul(track.rotation(frame.clip, frame.time, qClip))
-        else track.rotation(frame.clip, frame.time, g.q)
+        if (track.add) g.q.set(vanilla[i].q).mul(rot(track, frame, qClip))
+        else rot(track, frame, g.q)
         val initial = part.initialPose
         g.v.set(initial.x, initial.y, initial.z)
-        if (track.hasPosition) g.v.add(track.position(frame.clip, frame.time, vClip))
+        if (track.hasPosition) g.v.add(pos(track, frame, vClip))
+    }
+
+    /** [track]'s rotation at [frame]'s time into [out], turned left for right when the frame is mirrored. */
+    private fun rot(track: Clip.Track, frame: Frame, out: Quaternionf): Quaternionf {
+        track.rotation(frame.clip, frame.time, out)
+        return if (frame.mirror) out.set(out.x, -out.y, -out.z, out.w) else out
+    }
+
+    private fun pos(track: Clip.Track, frame: Frame, out: Vector3f): Vector3f {
+        track.position(frame.clip, frame.time, out)
+        if (frame.mirror) out.x = -out.x
+        return out
     }
 
     private fun write(part: ModelPart, q: Quaternionf, v: Vector3f) {

@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.client.ui
 
 import com.mojang.blaze3d.platform.InputConstants
+import io.github.vaspyyy.guildmark.client.magic.AttuneScreen
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.GuildmarkConfig
 import io.github.vaspyyy.guildmark.guild.TownControl
@@ -86,6 +87,7 @@ class LedgerScreen(private val restAt: BlockPos? = null, private val back: Scree
     private var clearButton: Ui.KitButton? = null
     private var resetButton: Ui.KitButton? = null
     private var growButton: Ui.KitButton? = null
+    private var attuneButton: Ui.KitButton? = null
     private val askButtons = ArrayList<Ui.KitButton>()
 
     /** A question waiting on a yes (forgetting costs Marks). */
@@ -101,9 +103,9 @@ class LedgerScreen(private val restAt: BlockPos? = null, private val back: Scree
 
     /** How tightly the sidebar packs, from what the screen's height allows (heights without the foot). */
     private enum class Density(val needs: Int) {
-        FULL(343),
+        FULL(363),
         /** Rows a pixel tighter, and the skills in two columns of icons and levels. */
-        COMPACT(248),
+        COMPACT(257),
         /** The stats in two columns and the skills in three; the Marks left out. */
         TINY(193),
     }
@@ -251,6 +253,9 @@ class LedgerScreen(private val restAt: BlockPos? = null, private val back: Scree
             resetButton = addRenderableWidget(Ui.button(Component.empty(), RESET_WIDTH) { askReset() }.also {
                 it.setPosition(viewX1 - RESET_WIDTH - 8, viewY0 + 8)
             })
+            attuneButton = addRenderableWidget(Ui.button(Component.translatable("gui.guildmark.wardfire.attune"), sideW - 20) {
+                minecraft.gui.setScreen(AttuneScreen(restAt, this))
+            }.also { it.setPosition(sideX + 10, sideY + sideH - 51) })
             growButton = addRenderableWidget(Ui.button(Component.empty(), sideW - 20) {
                 minecraft.gui.setScreen(GrowScreen(restAt, this))
             }.also { it.setPosition(sideX + 10, sideY + sideH - 27) })
@@ -274,6 +279,7 @@ class LedgerScreen(private val restAt: BlockPos? = null, private val back: Scree
             it.width = max(RESET_WIDTH, font.width(it.message) + 16)
             it.x = viewX1 - it.width - 8
         }
+        attuneButton?.active = idle
         growButton?.let {
             it.active = idle
             it.message = if (s.raises > 0) Component.translatable("gui.guildmark.ledger.grow.count", s.raises)
@@ -1047,8 +1053,8 @@ class LedgerScreen(private val restAt: BlockPos? = null, private val back: Scree
         private const val MARGIN = 6
         private const val SIDE_MIN = 132
         private const val SIDE_MAX = 172
-        /** Room kept under the sidebar's rows: for Grow stronger at rest, or for the levels-ready line. */
-        private const val GROW_FOOT = 32
+        /** Room kept under the sidebar's rows: for Attune spells and Grow stronger at rest, or for the levels-ready line. */
+        private const val GROW_FOOT = 56
         private const val READY_FOOT = 16
         private const val RESET_WIDTH = 116
         private const val ASK_WIDTH = 232

@@ -32,6 +32,8 @@ class CombatState {
     var criticalHits = 0
     /** The flask draught of a [Move.DRINK] has been taken. */
     var drank = false
+    /** How far a cast has got: 0 before its release, 1 once its spell has gone off, 2 when all that follows is done. */
+    var cast = 0
 
     var invulnerableFrom = 0L
     var invulnerableUntil = 0L
@@ -93,6 +95,7 @@ class CombatState {
         criticalTarget = -1
         criticalHits = 0
         drank = false
+        cast = 0
         if (current.iFrom >= 0) {
             // The client started the roll a moment ago; count its frames from now, a tick early for fairness
             invulnerableFrom = now + (current.iFrom / tempo).toLong() - 1

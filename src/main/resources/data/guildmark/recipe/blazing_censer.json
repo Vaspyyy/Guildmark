@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "equipment",
+  "ingredients": [
+    "guildmark:gilded_censer",
+    "minecraft:blaze_rod",
+    "minecraft:blaze_rod"
+  ],
+  "result": {
+    "id": "guildmark:blazing_censer"
+  }
+}

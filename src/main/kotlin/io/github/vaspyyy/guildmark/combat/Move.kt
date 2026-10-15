@@ -18,6 +18,8 @@ enum class MoveKind {
     DODGE,
     /** Ripostes and backstabs. */
     CRITICAL,
+    /** A sorcery or prayer cast with a catalyst (see magic/Spell): costs focus. */
+    SPELL,
     OTHER,
 }
 
@@ -77,6 +79,8 @@ enum class Move(
     val more: IntArray = IntArray(0),
     val lungeFor: Int = 1,
     val impact: Impact = Impact.NONE,
+    /** A spell's release: the tick it leaves the catalyst (see magic/Magic), or -1. */
+    val castAt: Int = -1,
 ) {
     // ---- The straight sword (vanilla's swords, and modded ones that sweep)
     LIGHT_1("light_1", 13, 4, 5, stamina = 12f, stance = 12f, knockback = 0.35f, chainFrom = 7, dodgeFrom = 7, moveSpeed = 0.3f, lunge = 0.12f, lungeAt = 2, kind = MoveKind.LIGHT),
@@ -163,12 +167,30 @@ enum class Move(
     SPEAR_JUMP("spear/jump", 16, 6, 8, stamina = 18f, damage = 1.45f, stance = 26f, knockback = 0.6f, reach = 3.8, arc = 30f, chainFrom = 12, dodgeFrom = 12, moveSpeed = 0.6f, poise = 1.5f, kind = MoveKind.JUMP),
     SPEAR_COUNTER("spear/guard_counter", 18, 7, 8, stamina = 18f, damage = 1.5f, stance = 32f, knockback = 1.1f, reach = 4.3, arc = 30f, chainFrom = 13, dodgeFrom = 12, moveSpeed = 0.2f, lunge = 0.3f, lungeAt = 5, poise = 1.5f, kind = MoveKind.COUNTER),
     /** Piercing Charge: a run with the spear levelled, through everything in the way. */
-    SPEAR_SKILL("spear/skill", 26, 6, 14, stamina = 22f, focus = 14f, damage = 1.5f, stance = 26f, knockback = 1.6f, reach = 3.6, arc = 25f, chainFrom = 20, dodgeFrom = 18, moveSpeed = 0f, lunge = 0.2f, lungeAt = 4, poise = 2.0f, kind = MoveKind.SKILL, lungeFor = 10);
+    SPEAR_SKILL("spear/skill", 26, 6, 14, stamina = 22f, focus = 14f, damage = 1.5f, stance = 26f, knockback = 1.6f, reach = 3.6, arc = 25f, chainFrom = 20, dodgeFrom = 18, moveSpeed = 0f, lunge = 0.2f, lungeAt = 4, poise = 2.0f, kind = MoveKind.SKILL, lungeFor = 10),
+
+    // ---- Sorceries, cast with a staff (see magic/Spell). Several spells share a cast's clip and timing.
+    CAST_ARC_BOLT("staff/cast", 16, focus = 5f, chainFrom = 11, dodgeFrom = 9, moveSpeed = 0.45f, kind = MoveKind.SPELL, castAt = 6),
+    CAST_SPLINTER_HAIL("staff/fan", 18, focus = 9f, chainFrom = 12, dodgeFrom = 10, moveSpeed = 0.4f, kind = MoveKind.SPELL, castAt = 7),
+    CAST_RIME_LANCE("staff/charged", 26, focus = 12f, chainFrom = 18, dodgeFrom = 16, moveSpeed = 0.3f, chargeAt = 9, maxCharge = 20, poise = 1.4f, kind = MoveKind.SPELL, castAt = 12),
+    CAST_UNDERTOW("staff/cast", 16, focus = 14f, chainFrom = 11, dodgeFrom = 9, moveSpeed = 0.45f, kind = MoveKind.SPELL, castAt = 6),
+    /** Flicker: the blink happens at its release; nothing touches the caster from the crouch until they're through. */
+    CAST_FLICKER("staff/flicker", 12, focus = 8f, chainFrom = 8, dodgeFrom = 8, moveSpeed = 0f, iFrom = 1, iTo = 6, kind = MoveKind.SPELL, castAt = 3),
+    CAST_STARBREAK("staff/raise", 30, focus = 24f, chainFrom = 22, dodgeFrom = 20, moveSpeed = 0.1f, chargeAt = 10, maxCharge = 20, poise = 1.8f, kind = MoveKind.SPELL, castAt = 16),
+
+    // ---- Prayers, said over a censer
+    CAST_HEARTHLIGHT("censer/raise", 26, focus = 10f, chainFrom = 19, dodgeFrom = 16, moveSpeed = 0.3f, kind = MoveKind.SPELL, castAt = 12),
+    CAST_FLARE("censer/swing", 14, focus = 6f, chainFrom = 9, dodgeFrom = 8, moveSpeed = 0.4f, kind = MoveKind.SPELL, castAt = 5),
+    CAST_VIGIL("censer/raise", 26, focus = 14f, chainFrom = 19, dodgeFrom = 16, moveSpeed = 0.3f, kind = MoveKind.SPELL, castAt = 12),
+    CAST_WAYFLAME("censer/swing", 14, focus = 10f, chainFrom = 9, dodgeFrom = 8, moveSpeed = 0.4f, kind = MoveKind.SPELL, castAt = 5),
+    CAST_HALLOWED_GROUND("censer/ground", 24, focus = 18f, chainFrom = 17, dodgeFrom = 15, moveSpeed = 0.15f, poise = 1.4f, kind = MoveKind.SPELL, castAt = 11),
+    CAST_DAWNBURST("censer/charged", 30, focus = 26f, chainFrom = 22, dodgeFrom = 20, moveSpeed = 0.1f, chargeAt = 9, maxCharge = 20, poise = 2.0f, kind = MoveKind.SPELL, castAt = 14);
 
     val hits: Boolean get() = hitFrom >= 0
     val isRoll: Boolean get() = kind == MoveKind.DODGE
     val isAttack: Boolean get() = hits && requestable
     val isCritical: Boolean get() = kind == MoveKind.CRITICAL
+    val isSpell: Boolean get() = kind == MoveKind.SPELL
     /** Light-type presses that can turn into a riposte or backstab when the server finds an opening. */
     val canBecomeCritical: Boolean get() = kind == MoveKind.LIGHT || kind == MoveKind.RUNNING || kind == MoveKind.COUNTER
 

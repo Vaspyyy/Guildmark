@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "equipment",
+  "ingredients": [
+    "guildmark:ender_staff",
+    "minecraft:echo_shard",
+    "minecraft:echo_shard"
+  ],
+  "result": {
+    "id": "guildmark:echo_staff"
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:custom_model_data",
+    "cases": [
+      {
+        "when": "arc_bolt",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/spell/arc_bolt"
+        }
+      },
+      {
+        "when": "splinter",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/spell/splinter"
+        }
+      },
+      {
+        "when": "rime_lance",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/spell/rime_lance"
+        }
+      },
+      {
+        "when": "undertow",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/spell/undertow"
+        }
+      },
+      {
+        "when": "star",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/spell/star"
+        }
+      },
+      {
+        "when": "wayflame",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/spell/wayflame"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "guildmark:item/spell/arc_bolt"
+    }
+  }
+}

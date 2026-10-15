@@ -1,0 +1,19 @@
+{
+  "wants": {
+    "id": "minecraft:emerald",
+    "count": 26
+  },
+  "additional_wants": {
+    "id": "minecraft:amethyst_shard",
+    "count": 6
+  },
+  "gives": {
+    "id": "guildmark:sorcery_scroll",
+    "components": {
+      "guildmark:spell": "rime_lance"
+    }
+  },
+  "max_uses": 1,
+  "xp": 30,
+  "reputation_discount": 0.05
+}

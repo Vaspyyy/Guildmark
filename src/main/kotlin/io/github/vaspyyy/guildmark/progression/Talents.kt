@@ -5,6 +5,8 @@ import io.github.vaspyyy.guildmark.combat.Combat
 import io.github.vaspyyy.guildmark.combat.CombatState
 import io.github.vaspyyy.guildmark.combat.Move
 import io.github.vaspyyy.guildmark.combat.MoveKind
+import io.github.vaspyyy.guildmark.magic.MagicRegistry
+import io.github.vaspyyy.guildmark.magic.Spellbook
 import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.wardfire.WardensFlask
 import net.minecraft.core.component.DataComponents
@@ -121,6 +123,8 @@ object Talents {
         combat.stamina = min(combat.stamina, combat.maxStamina)
         combat.focus = min(combat.focus, combat.maxFocus)
         WardensFlask.resize(player)
+        // Spell slots lost with a node: the last spells attuned fall out
+        if (player is ServerPlayer) Spellbook.fit(player)
     }
 
     // ---- For the combat ----
@@ -136,8 +140,14 @@ object Talents {
         return (move.stamina * (1.0 + change)).toFloat().coerceAtLeast(0f)
     }
 
-    fun focusCost(player: Player, move: Move): Float =
-        (move.focus * (1.0 + (if (move.kind == MoveKind.SKILL) build(player)[Bonus.SKILL_COST] else 0.0))).toFloat().coerceAtLeast(0f)
+    fun focusCost(player: Player, move: Move): Float {
+        val change = when (move.kind) {
+            MoveKind.SKILL -> build(player)[Bonus.SKILL_COST]
+            MoveKind.SPELL -> build(player)[Bonus.SPELL_COST]
+            else -> 0.0
+        }
+        return (move.focus * (1.0 + change)).toFloat().coerceAtLeast(0f)
+    }
 
     /** How much harder [move] hits, from the nodes for ripostes, backstabs, weapon skills, charged heavies and guard counters. */
     fun moveDamage(player: Player, move: Move): Float {
@@ -157,11 +167,13 @@ object Talents {
 
     // ---- Damage ----
 
-    private fun isBoss(entity: LivingEntity): Boolean =
+    fun isBoss(entity: LivingEntity): Boolean =
         entity.typeHolder().`is`(Tags.EntityTypes.BOSSES) || entity.hasData(ModAttachments.LAIR_BOSS)
 
+    /** Magic, for the resistances: and spells, which reckon their own bonuses (see magic/Magic.hurt). */
     private fun isMagic(source: DamageSource): Boolean =
-        source.`is`(DamageTypeTags.WITCH_RESISTANT_TO) || source.`is`(DamageTypes.WITHER) || source.`is`(DamageTypes.DRAGON_BREATH)
+        source.`is`(DamageTypeTags.WITCH_RESISTANT_TO) || source.`is`(DamageTypes.WITHER) || source.`is`(DamageTypes.DRAGON_BREATH) ||
+            source.`is`(MagicRegistry.IS_SPELL)
 
     /** Before damage lands: the attacker's bonuses and the victim's resistances. */
     fun onIncomingDamage(event: LivingIncomingDamageEvent) {
@@ -222,6 +234,8 @@ object Talents {
         if (source.`is`(DamageTypeTags.IS_EXPLOSION)) change += build[Bonus.BLAST_TAKEN]
         if (source.`is`(DamageTypeTags.IS_PROJECTILE)) change += build[Bonus.PROJECTILE_TAKEN]
         if (isMagic(source)) change += build[Bonus.MAGIC_TAKEN]
+        // Vigil's vow
+        if (player.hasEffect(MagicRegistry.VIGIL)) change -= VIGIL_GUARD
         return (1.0 + change).coerceIn(0.1, 3.0)
     }
 
@@ -374,4 +388,6 @@ object Talents {
 
     /** Ticks between Regen's mending. */
     private const val REGEN_TICKS = 100
+    /** The share of damage Vigil keeps off. */
+    private const val VIGIL_GUARD = 0.2
 }

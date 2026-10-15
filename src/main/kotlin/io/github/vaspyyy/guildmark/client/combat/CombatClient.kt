@@ -12,6 +12,11 @@ import io.github.vaspyyy.guildmark.combat.MoveKind
 import io.github.vaspyyy.guildmark.combat.Stance
 import io.github.vaspyyy.guildmark.combat.WeaponClass
 import io.github.vaspyyy.guildmark.combat.Weapons
+import io.github.vaspyyy.guildmark.client.magic.MagicClient
+import io.github.vaspyyy.guildmark.magic.CatalystItem
+import io.github.vaspyyy.guildmark.magic.Magic
+import io.github.vaspyyy.guildmark.magic.Spell
+import net.minecraft.world.InteractionHand
 import io.github.vaspyyy.guildmark.network.DrinkFlaskPayload
 import io.github.vaspyyy.guildmark.network.MovePayload
 import io.github.vaspyyy.guildmark.network.ReleaseChargePayload
@@ -97,6 +102,8 @@ object CombatClient {
         /** Ticks of forward push given so far, and swings heard. */
         var lunges = 0
         var swings = 0
+        /** A cast made with the catalyst in the off hand: its clips play mirrored. */
+        var offhand = false
         /** The move this one cut short, held where it stopped, so the animations can ease out of it. */
         var from: Move? = null
         var fromTime = 0f
@@ -136,7 +143,7 @@ object CombatClient {
 
     private class Stagger(val start: Long, val ticks: Int, val kind: Int)
     private class Pending(val seq: Int, val stamina: Float, val focus: Float)
-    private enum class Press { LIGHT, HEAVY, SKILL, DODGE, DRINK }
+    private enum class Press { LIGHT, HEAVY, SKILL, DODGE, DRINK, CAST }
 
     /** Ticks this client has run with a world loaded and unpaused. */
     var ticks = 0L
@@ -366,6 +373,7 @@ object CombatClient {
             Press.DODGE -> if (moveKeys().let { it.first != 0f || it.second != 0f }) Weapons.rollFor(local) else Move.BACKSTEP
             Press.SKILL -> weapon?.skill
             Press.DRINK -> if (flaskReady(local)) Move.DRINK else null
+            Press.CAST -> MagicClient.castMove(local)
             Press.HEAVY -> weapon?.heavy
             Press.LIGHT -> when {
                 weapon == null -> null
@@ -407,12 +415,12 @@ object CombatClient {
                 flags = flags or (if (crit == Move.RIPOSTE) StartMovePayload.GUESS_RIPOSTE else StartMovePayload.GUESS_BACKSTAB)
             }
         }
-        val holding = move.chargeAt >= 0 && minecraft.options.keyAttack.isDown
+        val holding = move.chargeAt >= 0 && holdKey(move).isDown
         if (holding) flags = flags or StartMovePayload.HOLDING
 
-        // Which way a roll goes: the movement keys, turned by where the player faces
+        // Which way a roll (or a blink) goes: the movement keys, turned by where the player faces
         var yaw = local.yRot
-        if (move == Move.ROLL || move == Move.ROLL_HEAVY) {
+        if (move == Move.ROLL || move == Move.ROLL_HEAVY || move == Move.CAST_FLICKER && moveKeys().let { it.first != 0f || it.second != 0f }) {
             val (forward, strafe) = moveKeys()
             val r = Math.toRadians(local.yRot.toDouble())
             val dx = strafe * cos(r) - forward * sin(r)
@@ -421,9 +429,10 @@ object CombatClient {
         }
 
         seq++
-        val tempo = if (move.isAttack) Weapons.tempo(local) else 1f
+        val tempo = tempoOf(local, move)
         val next = Action(move, seq, ticks, tempo, yaw)
         next.charging = holding
+        next.offhand = castOffhand(local, move)
         next.target = target?.id ?: -1
         // The first tick of the move plays at once
         next.t = tempo
@@ -438,7 +447,7 @@ object CombatClient {
             }
             move.isAttack -> comboUntil = 0L
         }
-        if (move.isAttack || move.isRoll || move.isCritical || move == Move.DRINK) {
+        if (move.isAttack || move.isRoll || move.isCritical || move.isSpell || move == Move.DRINK) {
             if (local.isUsingItem) minecraft.gameMode?.releaseUsingItem(local)
             if (move.kind != MoveKind.RUNNING) local.isSprinting = false
         }
@@ -450,6 +459,25 @@ object CombatClient {
         // An attack's swing is heard as it comes round; a roll at once
         if (move.isAttack) swing(local, next) else Combat.moveSound(move)?.let { local.playSound(it, 0.9f, 0.9f + local.random.nextFloat() * 0.2f) }
     }
+
+    /** The button a charge move is held on: the use button for a cast, the attack button for a blow. */
+    private fun holdKey(move: Move): KeyMapping {
+        val options = Minecraft.getInstance().options
+        return if (move.isSpell) options.keyUse else options.keyAttack
+    }
+
+    private fun tempoOf(player: Player, move: Move): Float = when {
+        move.isAttack -> Weapons.tempo(player)
+        move.isSpell -> Magic.tempo(player)
+        else -> 1f
+    }
+
+    /** Whether [player] casts [move] from the off hand (no catalyst of its school in the main hand). */
+    private fun castOffhand(player: Player, move: Move): Boolean =
+        Spell.of(move)?.let { CatalystItem.handFor(player, it.school) == InteractionHand.OFF_HAND } ?: false
+
+    /** A cast press, from the catalyst in hand (see client/magic/MagicClient). */
+    fun cast() = press(Press.CAST)
 
     /** Plays each of the move's swings as it comes round, a moment before the blow lands. */
     private fun swing(local: LocalPlayer, a: Action) {
@@ -533,14 +561,17 @@ object CombatClient {
     private fun tickAction(local: LocalPlayer, a: Action) {
         val move = a.move
         val minecraft = Minecraft.getInstance()
-        if (a.charging && (!minecraft.options.keyAttack.isDown || a.charge >= move.maxCharge || !local.isAlive)) {
+        if (a.charging && (!holdKey(move).isDown || a.charge >= move.maxCharge || !local.isAlive)) {
             a.charging = false
             ClientPacketDistributor.sendToServer(ReleaseChargePayload(a.seq, a.charge))
         }
         val before = a.t
         val wasCharging = a.charging && a.t >= move.chargeAt && a.charge == 0
         a.advance()
-        if (wasCharging && a.charge == 1) local.playSound(ModSounds.CHARGE.get(), 0.7f, 1f)
+        if (wasCharging && a.charge == 1) {
+            val spell = Spell.of(move)
+            local.playSound(if (spell != null) Magic.chargeSound(spell.school) else ModSounds.CHARGE.get(), if (spell != null) 0.8f else 0.7f, 1f)
+        }
         val now = a.t
 
         if (move.isRoll) {
@@ -562,6 +593,10 @@ object CombatClient {
                     CameraFx.shake(if (i == hits.size - 1) 0.7f else 0.35f)
                 }
             }
+            return
+        }
+        if (move.isSpell) {
+            MagicClient.tickCast(local, a, before, now)
             return
         }
         if (!move.isAttack) return
@@ -762,10 +797,16 @@ object CombatClient {
             remote.get(payload.entityId)?.let { if (it.seq == payload.seq) it.charging = false }
             return
         }
-        // An attack carries its mover's tempo: their stats and skills aren't known on this side
-        val tempo = if (!move.isAttack) 1f else if (payload.extra > 0f) payload.extra else Weapons.tempo(entity)
-        val a = Action(move, payload.seq, ticks, tempo, if (move.isAttack) 0f else payload.extra)
+        // An attack or cast carries its mover's tempo: their stats and skills aren't known on this side
+        val tempo = when {
+            move.isSpell -> if (payload.extra > 0f) payload.extra else 1f
+            !move.isAttack -> 1f
+            payload.extra > 0f -> payload.extra
+            else -> Weapons.tempo(entity)
+        }
+        val a = Action(move, payload.seq, ticks, tempo, if (move.isAttack || move.isSpell) 0f else payload.extra)
         a.charging = payload.flags and MovePayload.CHARGING != 0
+        a.offhand = castOffhand(entity, move)
         a.t = tempo
         remote.put(payload.entityId, a.replacing(remote.get(payload.entityId)))
     }

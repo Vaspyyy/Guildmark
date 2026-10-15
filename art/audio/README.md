@@ -37,6 +37,12 @@ synthesised the same way, its crowds, criers and night watch built from Kokoro t
   chord falling back into the first bar so it loops), composed in code and played through `make_music.py`'s
   parts, stems and hall, its loudness set by measurement like the menu theme's. `make_dragon_audio.py` runs both;
   `--only` takes effect names and/or `music`. Its variants are listed in `sounds.json` by hand.
+- `make_magic_audio.py`: the two schools of magic, sorcery and prayer: its 25 effects and 40 files (`magic/`). Sorcery
+  is cold and glassy (struck crystal, clumped sparks, rushing air, frost crackle), prayer warm (bells and gongs struck
+  soft, a small choir humming on a vowel, fire). Synthesised with `sfxkit.py` like the dragon's effects, one-shots
+  peaking at -3 dBFS (the soft swells lower, the cycle tick at -12 dBFS). `--only` takes effect names; `--mp3 <file>`
+  joins what was rendered into one listen-through MP3, a chapter mark at each sound. Its variants are listed in
+  `sounds.json` by hand.
 - `make_voice.py`: Halvard's three lines (`voice/`). It has two stages, `tts` and `process`.
 - `make_cast_voices.py`: the named characters' 55 dialogue lines (`voice/<character>/`), read from the
   language file. It has three stages, `tts`, `process` and `sounds`.
@@ -72,6 +78,7 @@ python3 -B art/audio/make_menu_music.py src/main/resources/assets/guildmark --wo
 python3 -B art/audio/make_region_music.py src/main/resources/assets/guildmark --work <tmp-dir> [--wav <dir>] [--only marsh,ashen]
 python3 -B art/audio/make_land_music.py src/main/resources/assets/guildmark --work <tmp-dir> [--wav <dir>] [--only heartland,dunes]
 python3 -B art/audio/make_dragon_audio.py src/main/resources/assets/guildmark --work <tmp-dir> [--wav <dir>] [--only roar,growl,music]
+python3 -B art/audio/make_magic_audio.py src/main/resources/assets/guildmark [--wav <dir>] [--only arc_bolt_cast,flare] [--mp3 <file>]
 ```
 
 `--wav` also writes WAV copies for listening. `--work` is where the music script keeps its per-stem
