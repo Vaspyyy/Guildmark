@@ -1001,8 +1001,7 @@ class Landmarks(private val f: Frame, private val b: Building, private val r: Ra
                 set(mid + n, y, cv + sgn * reach, WINDOW)
             }
             set(mid, top + 6, cv, B(M.LANTERN, top = true))
-            spire(mid.toDouble(), cv.toDouble(), rad, top + 8, stone = stoneSpires, height = spireHeight, finial = false)
-            val tip = top + 8 + spireHeight
+            val tip = spire(mid.toDouble(), cv.toDouble(), rad, top + 8, stone = stoneSpires, height = spireHeight, finial = false)
             set(mid, tip, cv, B(M.GOLD))
             for (y in tip + 1..tip + 5) set(mid, y, cv, B(M.FENCE))
             for (n in 1..3) for (y in tip + 3..tip + 4) set(mid + n, y, cv, B(M.WOOL, color = BANNER))
@@ -2579,11 +2578,12 @@ class Landmarks(private val f: Frame, private val b: Building, private val r: Ra
      * An eight-sided spire round ([cu], [cv]) (halves for an even width), [radius] out at its foot on [y] and
      * tapering to a point [height] high (six times the radius, unless said otherwise): solid slate (or stone)
      * stepped in with stairs as it narrows, and a finial on top (unless [finial] is false, for a needle of its own to rise from it).
+     * Returns the height just over its point, which round a half-block centre comes short of [height].
      */
     private fun spire(
         cu: Double, cv: Double, radius: Double, y: Int, stone: Boolean = false,
         height: Int = (radius * 6).roundToInt() + 1, finial: Boolean = true,
-    ) {
+    ): Int {
         val block = if (stone) WALL else B(M.ROOF, v = SLATE)
         fun stairs(dir: Dir) = if (stone) B(M.WALL_STAIRS, dir) else B(M.ROOF_STAIRS, dir, v = SLATE)
         fun inside(du: Double, dv: Double, rad: Double): Boolean =
@@ -2591,6 +2591,7 @@ class Landmarks(private val f: Frame, private val b: Building, private val r: Ra
         val reach = radius.toInt() + 2
         val u0 = floor(cu).toInt() - reach
         val v0 = floor(cv).toInt() - reach
+        var point = y
         for (k in 0 until height) {
             val rk = radius * (1 - k.toDouble() / height)
             val next = radius * (1 - (k + 1).toDouble() / height)
@@ -2598,16 +2599,18 @@ class Landmarks(private val f: Frame, private val b: Building, private val r: Ra
                 val du = u - cu
                 val dv = v - cv
                 if (!inside(du, dv, rk)) continue
+                point = y + k + 1
                 if (inside(du, dv, next)) set(u, y + k, v, block)
                 else set(u, y + k, v, stairs(if (abs(du) >= abs(dv)) (if (du > 0) Dir.W else Dir.E) else (if (dv > 0) Dir.N else Dir.S)))
             }
         }
-        if (!finial) return
+        if (!finial) return point
         val fu = cu.roundToInt()
         val fv = cv.roundToInt()
-        set(fu, y + height, fv, B(M.WALL_POST))
-        set(fu, y + height + 1, fv, B(M.FENCE))
-        set(fu, y + height + 2, fv, B(M.FENCE))
+        set(fu, point, fv, B(M.WALL_POST))
+        set(fu, point + 1, fv, B(M.FENCE))
+        set(fu, point + 2, fv, B(M.FENCE))
+        return point
     }
 
     /**

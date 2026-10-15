@@ -150,6 +150,8 @@ internal class FarmYard(private val f: Frame, private val r: Random) {
         f.set(flip, 0, 0, bale(Axis.X))
         for (u in -1..1) worn(u, 0)
         worn(0, -1)
+        // The rail behind, its posts on worn ground too so they reach it where the land dips
+        for (u in -1..1) worn(u, 1)
         for (u in intArrayOf(-1, 1)) for (y in 0..1) f.set(u, y, 1, FENCE)
         f.set(0, 1, 1, FENCE)
     }

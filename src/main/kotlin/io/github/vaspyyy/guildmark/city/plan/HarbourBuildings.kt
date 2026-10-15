@@ -61,8 +61,10 @@ class HarbourBuildings(private val f: Frame, private val r: Random, private val 
         // The doorway, its lintel, and the lamps either side
         for (u in mid - opening..mid + opening) for (y in 0..2) f.set(u, y, 0, AIR)
         for (u in mid - opening - 1..mid + opening + 1) f.set(u, 3, 0, B(M.TIMBER, axis = Axis.X))
-        for (u in listOf(mid - opening - 1, mid + opening + 1)) f.set(u, 2, -1, B(M.LANTERN))
-        for (u in listOf(mid - opening - 1, mid + opening + 1)) f.set(u, 1, -1, B(M.WALL_POST))
+        for (u in listOf(mid - opening - 1, mid + opening + 1)) {
+            for (y in 0..1) f.set(u, y, -1, B(M.WALL_POST))
+            f.set(u, 2, -1, B(M.LANTERN))
+        }
         // The loft door with its shutters open, and the hoist over it
         for (y in STORY..STORY + 1) {
             f.set(mid, y, 0, AIR)
@@ -90,6 +92,8 @@ class HarbourBuildings(private val f: Frame, private val r: Random, private val 
         for (u in 1..w - 3) if (r.nextInt(3) > 0) f.set(u, STORY, d - 2, cargo())
         f.set(mid - 1, STORY, 1, B(M.CRATE))
         f.set(mid + 1, STORY, 1, B(M.HAY))
+        // A tie beam across the loft under the roof, the loft's lamp hanging from it
+        for (u in 1..w - 2) f.set(u, top, d / 2, B(M.TIMBER, axis = Axis.X))
         f.set(mid, top - 1, d / 2, B(M.LANTERN, top = true))
         if (r.nextBoolean()) f.spawn(Spawn.VILLAGER, mid, 0, d / 2)
         f.resident(Folk.CITIZEN, mid, 0, 3)
@@ -127,7 +131,11 @@ class HarbourBuildings(private val f: Frame, private val r: Random, private val 
         for (y in 0..loft) f.set(1, y, d / 2 + 1, B(M.LADDER, Dir.E))
         for (u in 2..w - 2) if (r.nextInt(3) > 0) f.set(u, loft + 1, d - 2, cargo())
         for (u in 2..w - 3) for (v in d / 2 + 1..d - 2) if (r.nextInt(4) == 0) f.set(u, 0, v, cargo())
-        // Goods below, a cart, a lantern on each beam
+        // Goods below, a cart, a lantern on each beam: a tie beam over the front at the loft's height, another up over the loft
+        for (u in 1..w - 2) {
+            f.set(u, loft, 2, B(M.TIMBER, axis = Axis.X))
+            f.set(u, top, d - 3, B(M.TIMBER, axis = Axis.X))
+        }
         for (u in listOf(2, w - 3)) {
             f.set(u, 0, 2, cargo())
             f.set(u, 1, 2, cargo())
@@ -171,7 +179,8 @@ class HarbourBuildings(private val f: Frame, private val r: Random, private val 
         f.door(door, 0, 0, hingeRight = true)
         f.set(door, 2, 0, TRIM)
         for (u in door - 1..door + 1) f.set(u, 3, -1, B(M.STONE_SLAB, top = true))
-        f.set(door - 1, 1, -1, B(M.LANTERN))
+        for (y in 0..1) f.set(door - 1, y, -1, B(M.WALL_POST))
+        f.set(door - 1, 2, -1, B(M.LANTERN))
         f.set(door + 1, 2, -1, B(M.BANNER, Dir.N, color = CityBuilder.BANNER_COLOR))
         // Windows: small below, broad on the timbered floors, with shutters
         for (u in listOf(1, 2, w - 3, w - 2)) if (u != door) f.set(u, 1, 0, WINDOW)
@@ -259,8 +268,9 @@ class HarbourBuildings(private val f: Frame, private val r: Random, private val 
             } else if (pier) for (y in 0 until top) f.set(u, y, v, if (y == 0) DARK else STONE)
             f.set(u, top, v, B(M.TIMBER, axis = if (v == 0 || v == d - 1) Axis.X else Axis.Z))
         }
-        // Tie beams across, the roof over all
+        // Tie beams across and one down the middle for the lamps' chains, the roof over all
         for (v in 4 until d - 1 step 4) for (u in 1 until w - 1) f.set(u, top, v, B(M.TIMBER, axis = Axis.X))
+        for (v in 1 until d - 1) if (v % 4 != 0) f.set(mid, top, v, B(M.TIMBER, axis = Axis.Z))
         hip(-1, -1, w, d, top + 1, r.nextInt(2))
         // The stalls down both sides of the aisle: counters with the catch on them, the fishmongers behind
         for (v in 2..d - 3) for (u in listOf(2, w - 3)) {
@@ -311,7 +321,8 @@ class HarbourBuildings(private val f: Frame, private val r: Random, private val 
         for (u in 1..3) f.set(u, 1, 0, WINDOW)
         for (u in 1..w - 2) for (h in 0..1) if (u != w / 2) f.set(u, STORY + h, 0, WINDOW)
         f.set(door, 2, -1, B(M.BANNER, Dir.N, color = Dye.BROWN))
-        f.set(1, 2, -1, B(M.LANTERN))
+        f.set(1, 3, -1, B(M.TIMBER, axis = Axis.Z))
+        f.set(1, 2, -1, B(M.LANTERN, top = true))
         sideWindows(listOf(STORY, STORY + 1))
         // The counter in the window, rope and stores behind it
         for (u in 1..3) f.set(u, 0, 2, TABLE)

@@ -750,10 +750,11 @@ class Harbour(private val plan: CityPlan) {
                 for (y in y0 until gallery) {
                     val b = when {
                         !shell -> B.AIR
+                        // The door, facing back down the pier, right through the wall
+                        dOut < 0 && da == 0 && y < y0 + 2 -> B.AIR
                         y == y0 -> B(M.WALL_DARK)
-                        // The door, facing back down the pier
-                        dOut == -r.toInt() && da == 0 && y < y0 + 2 -> B.AIR
-                        (y - y0) % 4 == 3 && (da == 0 || dOut == 0) && y > y0 + 2 -> B(M.WINDOW)
+                        // Slit windows, but none just over the door where its lamp hangs
+                        (y - y0) % 4 == 3 && (da == 0 || dOut == 0) && y > y0 + 2 && !(dOut < 0 && da == 0 && y == y0 + 3) -> B(M.WINDOW)
                         (y - y0) % BAND == 0 -> B(M.WALL_TRIM)
                         else -> B(M.FINE)
                     }
@@ -788,8 +789,11 @@ class Harbour(private val plan: CityPlan) {
         val ladder = r.toInt() - 1
         for (y in y0 until gallery) at(0, ladder, y, B(M.LADDER, inward))
         at(0, ladder, gallery, B(M.TRAPDOOR, inward, top = true))
-        at(0, 0, y0 + SHAFT / 2, B(M.LANTERN, top = true))
-        at(0, 0, y0 + 2, B(M.LANTERN, top = true))
+        // Two lamps up the shaft, each hung from a beam across it clear of the ladder
+        for (y in intArrayOf(y0 + 3, y0 + SHAFT / 2)) {
+            for (da in -ladder..ladder) at(da, 0, y + 1, B(M.TIMBER, axis = if (side.alongX) Axis.Z else Axis.X))
+            at(0, 0, y, B(M.LANTERN, top = true))
+        }
     }
 
     /** The way from the middle of something to one of its cells, the nearest of the four. */
@@ -860,6 +864,8 @@ class Harbour(private val plan: CityPlan) {
         for (k in hook + 1 until CRANE_HEIGHT) f.set(1, k, -CRANE_JIB, B(M.CHAIN))
         f.set(1, hook, -CRANE_JIB, B(M.HOOK))
         f.set(1, hook - 1, -CRANE_JIB, B(M.CRATE))
+        // A lamp in the tower on a chain from the jib
+        for (k in CRANE_HEIGHT - 3 until CRANE_HEIGHT) f.set(1, k, 1, B(M.CHAIN))
         f.set(1, CRANE_HEIGHT - 4, 1, B(M.LANTERN, top = true))
     }
 
