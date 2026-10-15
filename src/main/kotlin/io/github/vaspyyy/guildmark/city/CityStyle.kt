@@ -159,7 +159,8 @@ enum class CityStyle {
                 else Blocks.BANNER.pick(dye(b.color)).defaultBlockState()
             M.FLOWER_POT -> POTS[Math.floorMod(b.v, POTS.size)].defaultBlockState()
             M.FLOWER -> FLOWERS[Math.floorMod(b.v, FLOWERS.size)].defaultBlockState()
-            M.LEAVES -> p.leaves.defaultBlockState().trySetValue(BlockStateProperties.PERSISTENT, true)
+            M.LEAVES -> (if (b.v == 1) Blocks.FLOWERING_AZALEA_LEAVES else p.leaves).defaultBlockState()
+                .trySetValue(BlockStateProperties.PERSISTENT, true)
             M.LOG -> pillar(p.log, b.axis)
             M.HAY -> pillar(Blocks.HAY_BLOCK, b.axis)
             M.BELL -> facing(Blocks.BELL, b.dir)
@@ -169,9 +170,25 @@ enum class CityStyle {
             M.CANDLE -> Blocks.CANDLE.defaultBlockState()
                 .setValue(BlockStateProperties.CANDLES, 1 + Math.floorMod(hash, 3))
                 .setValue(BlockStateProperties.LIT, true)
-            M.CROP -> Blocks.WHEAT.defaultBlockState().setValue(BlockStateProperties.AGE_7, 7)
+            M.CROP -> crop(b.v, hash)
             M.WARDFIRE -> ModBlocks.WARDFIRE.get().defaultBlockState()
             M.TARGET -> Blocks.TARGET.defaultBlockState()
+            M.CRATE -> Blocks.NOTE_BLOCK.defaultBlockState()
+            M.HOOK -> Blocks.LIGHTNING_ROD.waxed().exposed().defaultBlockState().setValue(BlockStateProperties.FACING, Direction.DOWN)
+
+            M.FARMLAND -> Blocks.FARMLAND.defaultBlockState().setValue(BlockStateProperties.MOISTURE, 7)
+            // Gravel worn through to the earth here and there; sandstone grit in the desert
+            M.TRACK -> when {
+                this == DESERT -> if (Math.floorMod(hash, 4) == 0) Blocks.SANDSTONE else Blocks.SMOOTH_SANDSTONE
+                Math.floorMod(hash, 4) == 0 -> Blocks.COARSE_DIRT
+                else -> Blocks.GRAVEL
+            }.defaultBlockState()
+            M.PUMPKIN -> when (b.v) {
+                1 -> facing(Blocks.CARVED_PUMPKIN, b.dir)
+                2 -> facing(Blocks.JACK_O_LANTERN, b.dir)
+                3 -> Blocks.MELON.defaultBlockState()
+                else -> Blocks.PUMPKIN.defaultBlockState()
+            }
         }
     }
 
@@ -204,6 +221,22 @@ enum class CityStyle {
             biome.`is`(BiomeTags.IS_SAVANNA) -> SAVANNA
             biome.`is`(BiomeTags.IS_TAIGA) || biome.`is`(Biomes.SNOWY_PLAINS) || biome.`is`(Biomes.SNOWY_TAIGA) -> NORTHERN
             else -> TEMPERATE
+        }
+
+        /**
+         * A crop by kind ([v]'s low two bits: wheat, carrots, potatoes, beetroot), fully grown at 0 and younger as
+         * [v] counts up by fours, the younger ones a little uneven.
+         */
+        private fun crop(v: Int, hash: Int): BlockState {
+            val young = (v shr 2) and 3
+            val uneven = if (young > 0) Math.floorMod(hash, 2) else 0
+            if (v and 3 == 3) return Blocks.BEETROOTS.defaultBlockState().setValue(BlockStateProperties.AGE_3, 3 - young)
+            val block = when (v and 3) {
+                1 -> Blocks.CARROTS
+                2 -> Blocks.POTATOES
+                else -> Blocks.WHEAT
+            }
+            return block.defaultBlockState().setValue(BlockStateProperties.AGE_7, 7 - young * 2 + uneven)
         }
 
         private fun weathered(block: Block, hash: Int): BlockState {

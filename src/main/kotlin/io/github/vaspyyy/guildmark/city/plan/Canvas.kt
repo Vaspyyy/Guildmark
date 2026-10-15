@@ -11,7 +11,7 @@ data class Rect(val x0: Int, val z0: Int, val x1: Int, val z1: Int) {
 }
 
 /** What a chest holds; the style picks the loot table. */
-enum class Loot { HOUSE, TAVERN, SMITH, TEMPLE, LIBRARY, BARRACKS, STABLES, TREASURY, MARKET }
+enum class Loot { HOUSE, TAVERN, SMITH, TEMPLE, LIBRARY, BARRACKS, STABLES, TREASURY, MARKET, HARBOUR }
 
 /** Who lives in the city, and the beasts on its farms. */
 enum class Spawn { VILLAGER, GOLEM, RECEPTIONIST, HORSE, CAT, COW, SHEEP, PIG, CHICKEN }

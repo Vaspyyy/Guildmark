@@ -61,6 +61,12 @@ enum class M(val rgb: Int, val solid: Boolean = true) {
     FLOWER_POT(0xA05A3A, false), FLOWER(0xE04060, false), LEAVES(0x3E7A2E), LOG(0x5A4028), HAY(0xC8A83A),
     BELL(0xE8C040, false), WATER(0x3A6AD0, false), GOLD(0xF0D040), CANDLE(0xE8E0C8, false),
     SOUL_LANTERN(0x60D0E0, false), CROP(0x8AB040, false), WARDFIRE(0x404048, false), TARGET(0xE0D0C0),
+
+    // The harbour: crates of goods on the quays, and the hook on a crane's chain
+    CRATE(0x8A6A3A), HOOK(0xA27A62, false),
+    // The farms. A crop's [B.v] picks it (wheat, carrots, potatoes, beetroot) and, by fours, how far it is from
+    // ripe; a pumpkin's is plain, carved (facing [B.dir]), lit or a melon; leaves' 1 is a fruit tree in blossom
+    FARMLAND(0x6A4A2E), TRACK(0x8E8880), PUMPKIN(0xE08020),
 }
 
 /**
