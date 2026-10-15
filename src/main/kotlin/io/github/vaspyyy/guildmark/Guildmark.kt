@@ -147,6 +147,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         ModFeatures.FEATURE_TYPES.register(modBus)
         ModStructures.STRUCTURE_TYPES.register(modBus)
         ModStructures.PIECE_TYPES.register(modBus)
+        ModStructures.PLACEMENTS.register(modBus)
         ModVillagers.PROFESSIONS.register(modBus)
         ModAttachments.ATTACHMENTS.register(modBus)
         ModEntities.ENTITIES.register(modBus)

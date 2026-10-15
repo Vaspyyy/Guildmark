@@ -47,29 +47,24 @@ import net.minecraft.world.level.levelgen.structure.BoundingBox
 import net.minecraft.world.level.storage.loot.LootTable
 
 /**
- * Draws a capital's plan into one generating chunk: turns the city's frame to the world, picks the
- * style's blocks, levels the land, fills chests from loot tables, and brings the townsfolk in.
- * Only [chunk] is written, so each chunk draws exactly its own share.
+ * Draws a capital's plan into one generating chunk (or, in a far-view mod's stand-in world, one whole cell of
+ * the city): turns the city's frame to the world, picks the style's blocks, levels the land, fills chests from
+ * loot tables, and brings the townsfolk in. Only the columns of [area] are written, so each chunk draws exactly
+ * its own share.
  */
 class WorldCanvas(
     private val level: WorldGenLevel,
     private val piece: CapitalPiece,
     private val plan: CityPlan,
-    private val chunk: BoundingBox,
+    private val area: BoundingBox,
     private val random: RandomSource,
 ) : Canvas {
     private val style = piece.style
-
-    /**
-     * A chunk really being generated (or the world itself, under /place), rather than a stand-in world some
-     * far-view mods build structures in to draw them in the distance. Only a real one gets townsfolk, and
-     * only there do joined-up blocks get fixed up afterwards.
-     */
-    private val real = level is WorldGenRegion || level is ServerLevel
+    private val real = isReal(level)
 
     override val clip: Rect = run {
-        val (ax, az) = piece.local(chunk.minX(), chunk.minZ())
-        val (bx, bz) = piece.local(chunk.maxX(), chunk.maxZ())
+        val (ax, az) = piece.local(area.minX(), area.minZ())
+        val (bx, bz) = piece.local(area.maxX(), area.maxZ())
         Rect(minOf(ax, bx), minOf(az, bz), maxOf(ax, bx), maxOf(az, bz))
     }
 
@@ -98,7 +93,7 @@ class WorldCanvas(
         val base = piece.world(x, y, z)
         if (!writable(base)) return
         // The land's own top, under anything growing on it
-        val cursor = BlockPos.MutableBlockPos(base.x, level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, base.x, base.z) - 1, base.z)
+        val cursor = BlockPos.MutableBlockPos(base.x, top(Heightmap.Types.WORLD_SURFACE_WG, base) - 1, base.z)
         while (cursor.y > level.minY && loose(level.getBlockState(cursor))) cursor.move(Direction.DOWN)
         val land = level.getBlockState(cursor)
         val natural = land.`is`(BlockTags.SUBSTRATE_OVERWORLD) || land.`is`(BlockTags.SAND) || land.`is`(Blocks.SNOW_BLOCK)
@@ -149,7 +144,7 @@ class WorldCanvas(
         mob.yHeadRot = yaw
         mob.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), EntitySpawnReason.STRUCTURE, null)
         mob.setPersistenceRequired()
-        if (what == Spawn.RECEPTIONIST && mob is Villager) GuildHall.makeReceptionist(mob, level.registryAccess(), random, piece.boardAnchor)
+        if (what == Spawn.RECEPTIONIST && mob is Villager) GuildHall.makeReceptionist(mob, level.registryAccess(), random, piece.boardAnchor(plan))
         level.addFreshEntityWithPassengers(mob)
     }
 
@@ -165,9 +160,10 @@ class WorldCanvas(
     private fun world(at: At): BlockPos = piece.world(at.x, at.y, at.z)
 
     /** The capital as its townsfolk know it: the walls' square, with the bell as its meeting place. */
-    private val town: Town by lazy { Town(piece.center, CityPlan.WALL_OUT, piece.bell) }
+    private val town: Town by lazy { Town(piece.center, plan.outer, piece.bell) }
 
-    private fun writable(pos: BlockPos): Boolean = chunk.isInside(pos) && !level.isOutsideBuildHeight(pos)
+    private fun writable(pos: BlockPos): Boolean =
+        pos.x >= area.minX() && pos.x <= area.maxX() && pos.z >= area.minZ() && pos.z <= area.maxZ() && !level.isOutsideBuildHeight(pos)
 
     private fun place(pos: BlockPos, state: BlockState) {
         level.setBlock(pos, state, Block.UPDATE_CLIENTS)
@@ -182,12 +178,25 @@ class WorldCanvas(
     /** Everything standing in the column from standing height up comes away. */
     private fun clearAbove(base: BlockPos) {
         // The finished heightmap: the worldgen one still shows the bare land, under the trees that grew since
-        val top = level.getHeight(Heightmap.Types.WORLD_SURFACE, base.x, base.z)
+        val top = top(Heightmap.Types.WORLD_SURFACE, base)
         val cursor = base.mutable()
         val air = Blocks.AIR.defaultBlockState()
         while (cursor.y < top) {
             if (!level.getBlockState(cursor).isAir) level.setBlock(cursor, air, Block.UPDATE_CLIENTS)
             cursor.move(Direction.UP)
+        }
+    }
+
+    /**
+     * The top of the column [base] stands in, by [type]. A stand-in world may keep no heightmaps, and then the
+     * ground is cleared some way up and filled from a little under it.
+     */
+    private fun top(type: Heightmap.Types, base: BlockPos): Int {
+        if (real) return level.getHeight(type, base.x, base.z)
+        return try {
+            level.getHeight(type, base.x, base.z)
+        } catch (e: RuntimeException) {
+            if (type == Heightmap.Types.WORLD_SURFACE) base.y + GUESS_ABOVE else base.y
         }
     }
 
@@ -204,6 +213,16 @@ class WorldCanvas(
     companion object {
         /** Deepest a dip under the city is filled; anything deeper is a cave, left as it is. */
         private const val MAX_FILL = 40
+
+        /** How far over the city's ground a stand-in world with no heightmaps is cleared. */
+        private const val GUESS_ABOVE = 32
+
+        /**
+         * A chunk really being generated (or the world itself, under /place), rather than a stand-in world some
+         * far-view mods build structures in to draw them in the distance. Only a real one gets townsfolk, and
+         * only there do joined-up blocks get fixed up afterwards.
+         */
+        fun isReal(level: WorldGenLevel): Boolean = level is WorldGenRegion || level is ServerLevel
 
         private fun hash(pos: BlockPos): Int = (Mth.getSeed(pos.x, pos.y, pos.z) ushr 8).toInt()
 
