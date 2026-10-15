@@ -96,6 +96,31 @@ neoForge.runs.configureEach {
     }
 }
 
+// A companion jar from Modrinth fetched the plain Java way, for jars with a "+" in their name (Sodium's, Iris's).
+// Modrinth's maven redirects to its CDN with the "+" escaped as %2B, Gradle's HTTP client unescapes it when it
+// follows, and the CDN at times answers 404 for the bare "+" while serving the escaped name fine (2026-10-15:
+// "Could not find iris-Ag5S66CF.jar"). Java's own client keeps the escape. Each version is fetched once into
+// .gradle/companions; if the fetch fails, the run goes without that companion rather than not at all.
+def modrinthJar = { String slug, String version ->
+    def jar = layout.projectDirectory.file(".gradle/companions/${slug}-${version}.jar").asFile
+    if (!jar.exists()) {
+        def part = new File(jar.path + ".part")
+        try {
+            jar.parentFile.mkdirs()
+            def connection = new URI("https://api.modrinth.com/maven/maven/modrinth/${slug}/${version}/${slug}-${version}.jar").toURL().openConnection()
+            connection.connectTimeout = 15000
+            connection.readTimeout = 60000
+            connection.inputStream.withStream { input -> part.withOutputStream { it << input } }
+            java.nio.file.Files.move(part.toPath(), jar.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+        } catch (Exception e) {
+            part.delete()
+            logger.warn("Guildmark dev runs: couldn't fetch ${slug} ${version} from Modrinth, so this run goes without it: ${e}")
+            return files()
+        }
+    }
+    files(jar)
+}
+
 // Iris draws through OpenGL alone and crashes on Minecraft's Vulkan backend, so with it loaded the client run
 // asks for OpenGL, whatever the video settings say
 if (companion("sodium") && companion("iris")) {
@@ -123,12 +148,12 @@ dependencies {
     // Sodium's faster renderer in the dev runs only, so Guildmark is played and tested with it. Never
     // required or shipped: players who want it add it themselves.
     if (companion("sodium")) {
-        localRuntime "maven.modrinth:sodium:${sodium_version}"
+        localRuntime modrinthJar("sodium", sodium_version)
 
         // Iris on top of it, which needs it, so Guildmark's own shader pack is played and tested in the dev runs
         // too. Never required or shipped either.
         if (companion("iris")) {
-            localRuntime "maven.modrinth:iris:${iris_version}"
+            localRuntime modrinthJar("iris", iris_version)
         }
     }
 
