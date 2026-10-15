@@ -29,7 +29,7 @@ class Family(val block: Block, val stairs: Block, val slab: Block)
 
 /**
  * The real blocks a capital is built of, by what each is for. Paving lists run plain, border, inlay;
- * [planks] runs upper floors, ground floor; [roofs] runs slate, red, wood (see GreatBuildings).
+ * [planks] runs upper floors, ground floor; [roofs] runs slate, red, wood, thatch (see GreatBuildings).
  */
 class Palette(
     val plaza: List<Block>,
@@ -102,9 +102,9 @@ enum class CityStyle {
             M.PLANKS -> p.planks[b.v.coerceIn(0, 1)].defaultBlockState()
             M.PLANK_STAIRS -> stairs(p.plankStairs, b)
             M.PLANK_SLAB -> slab(p.plankSlab, b)
-            M.ROOF -> p.roofs[b.v.coerceIn(0, 2)].block.defaultBlockState()
-            M.ROOF_STAIRS -> stairs(p.roofs[b.v.coerceIn(0, 2)].stairs, b)
-            M.ROOF_SLAB -> slab(p.roofs[b.v.coerceIn(0, 2)].slab, b)
+            M.ROOF -> p.roofs[b.v.coerceIn(0, 3)].block.defaultBlockState()
+            M.ROOF_STAIRS -> stairs(p.roofs[b.v.coerceIn(0, 3)].stairs, b)
+            M.ROOF_SLAB -> slab(p.roofs[b.v.coerceIn(0, 3)].slab, b)
             M.FINE -> FINE.block.defaultBlockState()
             M.FINE_PILLAR -> pillar(Blocks.QUARTZ_PILLAR, b.axis)
             M.FINE_STAIRS -> stairs(FINE.stairs, b)
@@ -195,6 +195,9 @@ enum class CityStyle {
     companion object {
         /** Marble for temples, fountains and thrones, whatever the style. */
         private val FINE by lazy { Family(Blocks.SMOOTH_QUARTZ, Blocks.SMOOTH_QUARTZ_STAIRS, Blocks.SMOOTH_QUARTZ_SLAB) }
+
+        /** Golden bamboo for the thatched roofs of the country, whatever the style. */
+        private val THATCH by lazy { Family(Blocks.BAMBOO_MOSAIC, Blocks.BAMBOO_MOSAIC_STAIRS, Blocks.BAMBOO_MOSAIC_SLAB) }
 
         private val POTS by lazy {
             listOf(
@@ -307,6 +310,7 @@ enum class CityStyle {
                     Family(Blocks.DEEPSLATE_TILES, Blocks.DEEPSLATE_TILE_STAIRS, Blocks.DEEPSLATE_TILE_SLAB),
                     Family(Blocks.BRICKS, Blocks.BRICK_STAIRS, Blocks.BRICK_SLAB),
                     Family(Blocks.DARK_OAK_PLANKS, Blocks.DARK_OAK_STAIRS, Blocks.DARK_OAK_SLAB),
+                    THATCH,
                 ),
                 wood = Wood(Blocks.SPRUCE_DOOR, Blocks.SPRUCE_TRAPDOOR, Blocks.SPRUCE_FENCE, Blocks.SPRUCE_FENCE_GATE),
                 log = Blocks.OAK_LOG,
@@ -336,6 +340,7 @@ enum class CityStyle {
                     Family(Blocks.MUD_BRICKS, Blocks.MUD_BRICK_STAIRS, Blocks.MUD_BRICK_SLAB),
                     Family(Blocks.SMOOTH_RED_SANDSTONE, Blocks.SMOOTH_RED_SANDSTONE_STAIRS, Blocks.SMOOTH_RED_SANDSTONE_SLAB),
                     Family(Blocks.JUNGLE_PLANKS, Blocks.JUNGLE_STAIRS, Blocks.JUNGLE_SLAB),
+                    THATCH,
                 ),
                 wood = Wood(Blocks.JUNGLE_DOOR, Blocks.JUNGLE_TRAPDOOR, Blocks.JUNGLE_FENCE, Blocks.JUNGLE_FENCE_GATE),
                 log = Blocks.JUNGLE_LOG,
@@ -365,6 +370,7 @@ enum class CityStyle {
                     Family(Blocks.DEEPSLATE_TILES, Blocks.DEEPSLATE_TILE_STAIRS, Blocks.DEEPSLATE_TILE_SLAB),
                     Family(Blocks.SPRUCE_PLANKS, Blocks.SPRUCE_STAIRS, Blocks.SPRUCE_SLAB),
                     Family(Blocks.DARK_OAK_PLANKS, Blocks.DARK_OAK_STAIRS, Blocks.DARK_OAK_SLAB),
+                    THATCH,
                 ),
                 wood = Wood(Blocks.SPRUCE_DOOR, Blocks.SPRUCE_TRAPDOOR, Blocks.SPRUCE_FENCE, Blocks.SPRUCE_FENCE_GATE),
                 log = Blocks.SPRUCE_LOG,
@@ -394,6 +400,7 @@ enum class CityStyle {
                     Family(Blocks.MUD_BRICKS, Blocks.MUD_BRICK_STAIRS, Blocks.MUD_BRICK_SLAB),
                     Family(Blocks.BRICKS, Blocks.BRICK_STAIRS, Blocks.BRICK_SLAB),
                     Family(Blocks.ACACIA_PLANKS, Blocks.ACACIA_STAIRS, Blocks.ACACIA_SLAB),
+                    THATCH,
                 ),
                 wood = Wood(Blocks.ACACIA_DOOR, Blocks.ACACIA_TRAPDOOR, Blocks.ACACIA_FENCE, Blocks.ACACIA_FENCE_GATE),
                 log = Blocks.ACACIA_LOG,
