@@ -88,7 +88,8 @@ object Skills {
             direct is AbstractArrow -> gain(player, if (kind == WeaponKind.HEAVY) Skill.HEAVY_ARMS else Skill.ARCHERY, xp * 1.2)
             direct === player -> kind.skill?.let { if (it != Skill.ARCHERY) gain(player, it, xp) }
         }
-        if (victim is Mob && victim.target !== player && player.isCrouching) gain(player, Skill.STEALTH, xp * 0.6)
+        // A blow from the shadows on a foe that hadn't seen you; livestock never looks
+        if (victim is Mob && victim is Enemy && victim.target !== player && player.isCrouching) gain(player, Skill.STEALTH, xp * 0.6)
     }
 
     /** A kill: a little more XP for the weapon's skill on top of the blows. */
@@ -103,17 +104,28 @@ object Skills {
         gain(player, skill, xp)
     }
 
-    /** Sneaking about near monsters that haven't noticed you. */
+    /**
+     * Sneaking about near monsters that could see you and haven't noticed. Crouching in one spot, or behind
+     * a wall from them, doesn't count.
+     */
     private fun sneaking(player: ServerPlayer) {
         if (!player.isCrouching || player.isSpectator) return
         val near = player.level().getEntitiesOfClass(Mob::class.java, player.boundingBox.inflate(12.0)) { it is Enemy && it.isAlive }
         if (near.isEmpty() || near.any { it.target === player }) return
-        gain(player, Skill.STEALTH, 1.0 + min(near.size, 4) * 0.25)
+        val watching = near.count { it.hasLineOfSight(player) }
+        if (watching == 0) return
+        val buffer = player.getData(ModAttachments.SKILL_BUFFER)
+        val from = buffer.sneakFrom
+        if (from != null && from.distanceToSqr(player.position()) < SNEAK_MOVE * SNEAK_MOVE) return
+        buffer.sneakFrom = player.position()
+        gain(player, Skill.STEALTH, 1.0 + min(watching, 4) * 0.25)
     }
 
     /** Ticks between skill XP counts. */
     private const val FLUSH_TICKS = 10
     private const val STEALTH_TICKS = 40
+    /** Blocks a sneaking player has to have moved since the last stealth XP for more. */
+    private const val SNEAK_MOVE = 2.0
     private const val MAX_HIT_XP = 30.0
     private const val MAX_KILL_XP = 60
     private const val GOLD = 0xE8C26A

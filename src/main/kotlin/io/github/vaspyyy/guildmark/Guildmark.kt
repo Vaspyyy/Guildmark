@@ -136,6 +136,8 @@ import net.neoforged.neoforge.event.entity.player.TradeWithVillagerEvent
 import net.neoforged.neoforge.event.AnvilUpdateEvent
 import net.neoforged.neoforge.event.brewing.PlayerBrewedPotionEvent
 import net.neoforged.neoforge.event.level.BlockDropsEvent
+import net.neoforged.neoforge.event.level.BlockEvent
+import net.neoforged.neoforge.event.level.PistonEvent
 import net.neoforged.neoforge.event.level.block.BreakBlockEvent
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent
 import net.neoforged.neoforge.event.entity.player.PlayerEvent
@@ -242,6 +244,9 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         NeoForge.EVENT_BUS.addListener(EventPriority.LOW, BreakBlockEvent::class.java, Work::onBreak)
         NeoForge.EVENT_BUS.addListener(PlayerEvent.BreakSpeed::class.java, Work::onBreakSpeed)
         NeoForge.EVENT_BUS.addListener(BlockDropsEvent::class.java, Work::onDrops)
+        // Last, and only if nothing stopped them: a block that wasn't put down mustn't be remembered as placed
+        NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, false, BlockEvent.EntityPlaceEvent::class.java, Work::onPlaced)
+        NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, false, PistonEvent.Pre::class.java, Work::onPiston)
         NeoForge.EVENT_BUS.addListener(PlayerEvent.ItemCraftedEvent::class.java, Work::onCrafted)
         NeoForge.EVENT_BUS.addListener(PlayerEvent.ItemSmeltedEvent::class.java, Work::onSmelted)
         NeoForge.EVENT_BUS.addListener(PlayerBrewedPotionEvent::class.java, Work::onBrewed)
@@ -269,7 +274,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
                 if (level.dimension() == Level.OVERWORLD) TownControl.tick(level)
             }
         }
-        // The build's attribute modifiers are transient, so put them back whenever the player entity is new
+        // The build's attribute modifiers aren't copied to a respawned player, and the build may have changed since the last visit
         NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerLoggedInEvent::class.java) {
             Talents.apply(it.entity)
             Milestones.onLogin(it.entity)
@@ -289,8 +294,11 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerRespawnEvent::class.java) {
             Talents.apply(it.entity)
             Combat.reset(it.entity)
-            // Waking after a fall fills the flask, as a rest would
-            if (!it.isEndConquered) WardensFlask.refill(it.entity)
+            // Waking after a fall fills the flask and readies Undying, as a rest would
+            if (!it.isEndConquered) {
+                WardensFlask.refill(it.entity)
+                (it.entity as? ServerPlayer)?.let { player -> Talents.onRest(player) }
+            }
             // The party list isn't copied to the new player entity
             (it.entity as? ServerPlayer)?.let { player ->
                 Parties.onLogin(player)

@@ -9,6 +9,7 @@ import net.minecraft.server.level.ServerPlayer
 import net.minecraft.tags.BlockTags
 import net.minecraft.tags.ItemTags
 import net.minecraft.util.Prediction
+import net.minecraft.world.Container
 import net.minecraft.world.damagesource.DamageSource
 import net.minecraft.world.entity.AgeableMob
 import net.minecraft.world.entity.LivingEntity
@@ -43,6 +44,8 @@ import net.neoforged.neoforge.event.entity.player.PlayerEnchantItemEvent
 import net.neoforged.neoforge.event.entity.player.PlayerEvent
 import net.neoforged.neoforge.event.entity.player.TradeWithVillagerEvent
 import net.neoforged.neoforge.event.level.BlockDropsEvent
+import net.neoforged.neoforge.event.level.BlockEvent
+import net.neoforged.neoforge.event.level.PistonEvent
 import net.neoforged.neoforge.event.level.block.BreakBlockEvent
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -79,8 +82,18 @@ object Work {
         else -> 4.0
     }
 
-    /** A log in a living tree: leaves that grew there (not placed ones) are close by. */
+    /**
+     * A log in a living tree: leaves that grew there (not placed ones) are close by, or atop its trunk. A
+     * giant spruce or jungle tree carries its leaves well above the ground, so the trunk is climbed to them.
+     */
     private fun natural(level: ServerLevel, pos: BlockPos): Boolean {
+        if (leavesNear(level, pos)) return true
+        var top = pos
+        while (top.y - pos.y < TRUNK_CLIMB && level.getBlockState(top.above()).`is`(BlockTags.LOGS)) top = top.above()
+        return top != pos && leavesNear(level, top)
+    }
+
+    private fun leavesNear(level: ServerLevel, pos: BlockPos): Boolean {
         for (dy in -1..4) for (dx in -3..3) for (dz in -3..3) {
             val state = level.getBlockState(pos.offset(dx, dy, dz))
             if (state.block is LeavesBlock && !state.getValue(LeavesBlock.PERSISTENT)) return true
@@ -103,13 +116,33 @@ object Work {
         }
     }
 
+    /** An ore or log put down is remembered, so breaking it again isn't mining or woodcutting. */
+    fun onPlaced(event: BlockEvent.EntityPlaceEvent) {
+        val level = event.level as? ServerLevel ?: return
+        if (PlacedBlocks.tracked(event.placedBlock)) PlacedBlocks.mark(level, event.pos)
+    }
+
+    /** A piston carries a placed block's mark along with it, so pushing it aside doesn't make it natural. */
+    fun onPiston(event: PistonEvent.Pre) {
+        val level = event.level as? ServerLevel ?: return
+        val resolver = event.structureHelper ?: return
+        if (!resolver.resolve()) return
+        val moved = resolver.toPush.filter { PlacedBlocks.has(level, it) }
+        if (moved.isEmpty()) return
+        for (pos in moved) PlacedBlocks.take(level, pos)
+        for (pos in moved) PlacedBlocks.mark(level, pos.relative(resolver.pushDirection))
+    }
+
     fun onBreak(event: BreakBlockEvent) {
         if (event.isCanceled) return
         val player = event.player as? ServerPlayer ?: return
-        if (player.isCreative || player.isSpectator) return
         val level = player.level()
         val state = event.state
         val pos = event.pos
+        val placed = PlacedBlocks.has(level, pos)
+        // Nothing drops from a creative or bare-handed break to clear the mark, so it goes now
+        if (placed && (player.isCreative || !player.hasCorrectToolForDrops(state))) PlacedBlocks.take(level, pos)
+        if (player.isCreative || player.isSpectator || placed) return
         val tool = player.mainHandItem
         val silk = silkTouch(tool)
         val ore = state.`is`(Tags.Blocks.ORES)
@@ -125,18 +158,20 @@ object Work {
         if (chaining || player.isShiftKeyDown) return
         val build = Talents.build(player)
         when {
+            // The tree's own logs from the cut up: not the stump below, nor a cabin's beam that touches it
             log && build.has(Bonus.FELLER) && tool.`is`(ItemTags.AXES) && natural(level, pos) ->
-                chain(player, level, pos, FELL_LIMIT, 8, 40) { it.`is`(BlockTags.LOGS) }
+                chain(player, level, pos, FELL_LIMIT, 8, 40) { at, it -> at.y >= pos.y && it.`is`(BlockTags.LOGS) && !PlacedBlocks.has(level, at) && natural(level, at) }
             ore && build.has(Bonus.VEIN_MINER) && tool.`is`(ItemTags.PICKAXES) && player.hasCorrectToolForDrops(state) ->
-                chain(player, level, pos, VEIN_LIMIT, 5, 5) { it.block === state.block }
+                chain(player, level, pos, VEIN_LIMIT, 5, 5) { at, it -> it.block === state.block && !PlacedBlocks.has(level, at) }
         }
     }
 
     /**
      * Breaks up to [limit] blocks joined to [origin] that [matches] accepts, as the player would, one
-     * by one: the tool wears for each and stops short of breaking.
+     * by one: the tool wears for each and stops short of breaking. Spawn protection and the world
+     * border hold, as they would for a block broken by hand.
      */
-    private fun chain(player: ServerPlayer, level: ServerLevel, origin: BlockPos, limit: Int, wide: Int, high: Int, matches: (BlockState) -> Boolean) {
+    private fun chain(player: ServerPlayer, level: ServerLevel, origin: BlockPos, limit: Int, wide: Int, high: Int, matches: (BlockPos, BlockState) -> Boolean) {
         val found = ArrayList<BlockPos>()
         val seen = HashSet<BlockPos>()
         val queue = ArrayDeque<BlockPos>()
@@ -148,7 +183,7 @@ object Work {
                 val next = at.offset(dx, dy, dz)
                 if (!seen.add(next)) continue
                 if (abs(next.x - origin.x) > wide || abs(next.z - origin.z) > wide || next.y - origin.y > high || origin.y - next.y > wide) continue
-                if (!matches(level.getBlockState(next))) continue
+                if (!level.mayInteract(player, next) || !matches(next, level.getBlockState(next))) continue
                 found.add(next)
                 queue.add(next)
                 if (found.size >= limit) break@search
@@ -182,15 +217,19 @@ object Work {
 
     /** More ore, logs and crops than the block would give, and crops that plant themselves again. */
     fun onDrops(event: BlockDropsEvent) {
+        val level = event.level
+        val pos = event.pos
+        // Put down by hand, it gives back itself and no more
+        if (PlacedBlocks.take(level, pos)) return
         val player = event.breaker as? ServerPlayer ?: return
         val drops = event.drops
         if (drops.isEmpty()) return
-        val level = event.level
         val state = event.state
-        val pos = event.pos
         val build = Talents.build(player)
         when {
-            state.`is`(Tags.Blocks.ORES) -> if (!silkTouch(event.tool) && chance(player, build[Bonus.ORE_DOUBLE])) double(level, drops)
+            // As with Fortune, an ore that drops itself (ancient debris) isn't doubled
+            state.`is`(Tags.Blocks.ORES) -> if (!silkTouch(event.tool) && drops.none { it.item.`is`(state.block.asItem()) } &&
+                chance(player, build[Bonus.ORE_DOUBLE])) double(level, drops)
             state.`is`(BlockTags.LOGS) -> if (chance(player, build[Bonus.LOG_DOUBLE])) double(level, drops)
             ripeDropped(state) -> {
                 if (chance(player, build[Bonus.CROP_EXTRA])) {
@@ -243,13 +282,26 @@ object Work {
         val player = event.entity as? ServerPlayer ?: return
         val stack = event.crafting
         if (stack.isEmpty) return
+        val grid = event.inventory
+        // Dyeing it, mending two into one, a banner on a shield: the thing was already made, and tempered
+        if ((0 until grid.containerSize).any { grid.getItem(it).`is`(stack.item) }) return
         when {
             stack.isDamageableItem -> {
                 Skills.gain(player, Skill.SMITHING, (4.0 + stack.maxDamage / 60.0).coerceAtMost(30.0))
                 temper(player, stack)
             }
-            stack.has(DataComponents.FOOD) || stack.`is`(Items.CAKE) -> Skills.gain(player, Skill.COOKING, 2.0 * stack.count)
+            stack.has(DataComponents.FOOD) || stack.`is`(Items.CAKE) -> if (!unpacked(grid, stack)) Skills.gain(player, Skill.COOKING, 2.0 * stack.count)
         }
+    }
+
+    /**
+     * Food taken back out of what it was packed into: dried kelp from its block, honey from a honey block, a
+     * crate of carrots emptied. It could go round and round, and none of it is cooking.
+     */
+    private fun unpacked(grid: Container, result: ItemStack): Boolean {
+        if (result.`is`(Items.DRIED_KELP) || result.`is`(Items.HONEY_BOTTLE)) return true
+        val filled = (0 until grid.containerSize).count { !grid.getItem(it).isEmpty }
+        return filled == 1 && result.count > 1
     }
 
     /**
@@ -416,6 +468,8 @@ object Work {
     }
 
     private const val FELL_LIMIT = 96
+    /** How far up a bare trunk [natural] looks for its leaves. */
+    private const val TRUNK_CLIMB = 32
     private const val VEIN_LIMIT = 24
     /** Potions' worth of alchemy XP that can be stored, and ticks for each to come back. */
     private const val BREW_STORE = 6

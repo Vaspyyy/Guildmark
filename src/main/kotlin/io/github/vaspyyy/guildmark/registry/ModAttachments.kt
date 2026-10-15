@@ -11,6 +11,7 @@ import io.github.vaspyyy.guildmark.guild.RivalChallenge
 import io.github.vaspyyy.guildmark.progression.BuildCache
 import io.github.vaspyyy.guildmark.progression.CharacterSheet
 import io.github.vaspyyy.guildmark.progression.GuildProgress
+import io.github.vaspyyy.guildmark.progression.PlacedBlocks
 import io.github.vaspyyy.guildmark.progression.SkillBuffer
 import io.github.vaspyyy.guildmark.progression.SkillState
 import io.github.vaspyyy.guildmark.road.TrafficState
@@ -36,6 +37,11 @@ object ModAttachments {
     /** Set on a village's bell chunk once the village has been given its Wardfire (or found to have one). */
     val WARDFIRE_CHECKED: DeferredHolder<AttachmentType<*>, AttachmentType<Boolean>> = ATTACHMENTS.register("wardfire_checked") { ->
         AttachmentType.builder { -> false }.serialize(Codec.BOOL.fieldOf("checked")).build()
+    }
+
+    /** Ores and logs put down in a chunk, so breaking them again pays no skill XP (see PlacedBlocks). */
+    val PLACED_BLOCKS: DeferredHolder<AttachmentType<*>, AttachmentType<PlacedBlocks>> = ATTACHMENTS.register("placed_blocks") { ->
+        AttachmentType.builder { -> PlacedBlocks() }.serialize(PlacedBlocks.CODEC.fieldOf("positions")) { !it.positions.isEmpty() }.build()
     }
 
     /** Day index a villager last pinned a note, so each villager posts at most once a day. */

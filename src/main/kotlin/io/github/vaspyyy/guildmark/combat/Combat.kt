@@ -108,7 +108,8 @@ object Combat {
         if (actual.isRoll) {
             // Evasion's nodes stretch the moment a roll can't be touched
             s.invulnerableUntil += Talents[player, Bonus.IFRAMES].toLong()
-            if (s.inCombat(now)) Skills.gain(player, Skill.EVASION, 1.0)
+            // Only rolls in a real exchange count, not ones made at a monster that can't reach you
+            if (now - s.lastCombat < CombatState.COMBAT_MEMORY) Skills.gain(player, Skill.EVASION, 1.0)
         }
         critical?.let {
             s.criticalTarget = it.id
@@ -424,17 +425,18 @@ object Combat {
 
     /** Blocking costs stamina; a shield that runs out of it breaks the guard and lets most of the blow through. */
     fun onShieldBlock(event: LivingShieldBlockEvent) {
-        if (!enabled()) return
         val player = event.entity as? ServerPlayer ?: return
         if (!event.blocked || event.blockedDamage <= 0f) return
+        val source = event.damageSource
+        // Guarding grows with or without the action combat, from blows a creature meant (not a dispenser's arrows)
+        if (source.entity is LivingEntity) Skills.gain(player, Skill.GUARDING, 1.5 + min(event.blockedDamage, 20f) * 0.5)
+        if (!enabled()) return
         val s = state(player)
         val level = player.level() as ServerLevel
         val now = level.gameTime
-        val source = event.damageSource
         val base = if (source.`is`(DamageTypeTags.IS_PROJECTILE)) 4f + event.blockedDamage * 2f
         else (8f + event.blockedDamage * 3.5f) * ((source.entity as? CombatMob)?.guardDamage() ?: 1f)
         val cost = base * (1f + Talents[player, Bonus.BLOCK_COST].toFloat()).coerceAtLeast(0.1f)
-        Skills.gain(player, Skill.GUARDING, 1.5 + min(event.blockedDamage, 20f) * 0.5)
         s.lastCombat = now
         if (s.stamina >= cost || player.isCreative) {
             s.spendStamina(cost, now)

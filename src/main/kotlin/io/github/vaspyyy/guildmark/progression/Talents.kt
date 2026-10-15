@@ -30,6 +30,7 @@ import net.minecraft.world.item.BowItem
 import net.minecraft.world.item.CrossbowItem
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
+import net.minecraft.world.phys.Vec3
 import net.neoforged.neoforge.common.Tags
 import net.neoforged.neoforge.common.damagesource.DamageContainer
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent
@@ -55,8 +56,8 @@ class BuildCache {
 class SkillBuffer {
     val pending = DoubleArray(Skill.entries.size)
     var regenTimer = 0
-    /** Game time sneaking near foes next gives stealth XP. */
-    var sneakXpAt = 0L
+    /** Where sneaking near foes last gave stealth XP: more needs the player to have moved on. */
+    var sneakFrom: Vec3? = null
     /** Already told that there's guild XP enough to grow at a Wardfire. */
     var toldReady = false
     /** An arrow that may come back: its item and how many the player had when it flew. */
@@ -94,6 +95,7 @@ object Talents {
     /** Puts the build in place: attribute modifiers, stamina, focus and the flask's size. On login, respawn and every change. */
     fun apply(player: Player) {
         val build = build(player)
+        val before = player.maxHealth
         for (bonus in Bonus.entries) {
             val attribute = bonus.attribute ?: continue
             val instance = player.getAttribute(attribute) ?: continue
@@ -104,10 +106,14 @@ object Talents {
             if (abs(amount) < 1e-9) {
                 if (existing != null) instance.removeModifier(id)
             } else if (existing == null || existing.amount() != amount || existing.operation() != bonus.operation) {
-                instance.addOrUpdateTransientModifier(AttributeModifier(id, amount, bonus.operation))
+                // Saved with the player, so health loads against the right maximum at login
+                instance.addOrReplacePermanentModifier(AttributeModifier(id, amount, bonus.operation))
             }
         }
-        if (player.health > player.maxHealth) player.health = player.maxHealth
+        // Health the build adds comes filled: after a respawn, a stat raised or a node learned
+        val after = player.maxHealth
+        if (player.isAlive && after > before) player.health = min(after, player.health + (after - before))
+        if (player.health > after) player.health = after
         val combat = Combat.state(player)
         combat.maxStamina = CombatState.MAX_STAMINA + build[Bonus.STAMINA].toFloat().coerceAtLeast(-50f)
         combat.maxFocus = CombatState.MAX_FOCUS + build[Bonus.FOCUS].toFloat().coerceAtLeast(-20f)
@@ -315,7 +321,8 @@ object Talents {
         val orb = event.orb
         val extra = orb.value * bonus
         val whole = floor(extra).toInt() + (if (player.random.nextDouble() < extra - floor(extra)) 1 else 0)
-        if (whole > 0) orb.value = orb.value + whole
+        // Paid apart from the orb: a merged orb pays its value once per touch, so raising it would compound
+        if (whole > 0) player.giveExperiencePoints(whole)
     }
 
     /** Food fills more and can heal; potions you drink last longer and sometimes come out stronger. */
