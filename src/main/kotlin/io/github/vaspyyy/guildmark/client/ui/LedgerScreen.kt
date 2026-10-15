@@ -239,8 +239,11 @@ class LedgerScreen(private val restAt: BlockPos? = null, private val back: Scree
 
         val center = (viewX0 + viewX1) / 2
         val buttonY = viewY1 - 28
-        learnButton = addRenderableWidget(Ui.button(Component.empty(), 100) { learn() }.also { it.setPosition(center - 103, buttonY) })
-        clearButton = addRenderableWidget(Ui.button(Component.translatable("gui.guildmark.tree.clear"), 70) {
+        // On a narrow view the two buttons shrink rather than run off its edges
+        val half = (viewX1 - viewX0) / 2 - 7
+        val learnW = min(100, half)
+        learnButton = addRenderableWidget(Ui.button(Component.empty(), learnW) { learn() }.also { it.setPosition(center - 3 - learnW, buttonY) })
+        clearButton = addRenderableWidget(Ui.button(Component.translatable("gui.guildmark.tree.clear"), min(70, half)) {
             planned.clear()
             refreshButtons()
         }.also { it.setPosition(center + 3, buttonY) })
@@ -267,6 +270,9 @@ class LedgerScreen(private val restAt: BlockPos? = null, private val back: Scree
         resetButton?.let {
             it.visible = s.sheet.nodes.isNotEmpty() && idle
             it.message = Component.translatable("gui.guildmark.tree.reset", Levelling.resetCost(s.sheet))
+            // A big tree's cost runs to three figures: the button widens to hold it, keeping to the corner
+            it.width = max(RESET_WIDTH, font.width(it.message) + 16)
+            it.x = viewX1 - it.width - 8
         }
         growButton?.let {
             it.active = idle
@@ -302,6 +308,9 @@ class LedgerScreen(private val restAt: BlockPos? = null, private val back: Scree
         if (restAt != null && (player.hurtTime > 0 || player.distanceToSqr(Vec3.atCenterOf(restAt)) > REACH * REACH)) {
             val away = LedgerScreen()
             away.planned.addAll(planned)
+            // Nodes on their way to the server still show as learning on the new screen
+            away.sent = sent
+            away.sentAt = sentAt - ticks
             minecraft.gui.setScreen(away)
             return
         }
@@ -316,7 +325,8 @@ class LedgerScreen(private val restAt: BlockPos? = null, private val back: Scree
         for (part in planned.chunked(TreePayload.MAX_IDS)) {
             ClientPacketDistributor.sendToServer(TreePayload(TreePayload.LEARN, part, Optional.empty()))
         }
-        sent = planned.toList()
+        // A second Learn before the first is answered keeps both batches showing as learning
+        sent = (sent + planned).distinct()
         sentAt = ticks
         planned.clear()
         refreshButtons()
@@ -397,12 +407,13 @@ class LedgerScreen(private val restAt: BlockPos? = null, private val back: Scree
         askButtons.clear()
         val cx = (viewX0 + viewX1) / 2
         val cy = (viewY0 + viewY1) / 2
-        val yes = Ui.button(question.yes, 84) {
+        val bw = min(84, (askWidth() - 20) / 2)
+        val yes = Ui.button(question.yes, bw) {
             question.action()
             closeAsk()
         }
-        val no = Ui.button(Component.translatable("gui.guildmark.tree.keep"), 84) { closeAsk() }
-        yes.setPosition(cx - 88, cy + 12)
+        val no = Ui.button(Component.translatable("gui.guildmark.tree.keep"), bw) { closeAsk() }
+        yes.setPosition(cx - bw - 4, cy + 12)
         no.setPosition(cx + 4, cy + 12)
         askButtons.add(addRenderableWidget(yes))
         askButtons.add(addRenderableWidget(no))
@@ -522,6 +533,8 @@ class LedgerScreen(private val restAt: BlockPos? = null, private val back: Scree
         val ty = centerY + ((y - midY) / before).toFloat()
         centerX = tx - ((x - midX) / zoom).toFloat()
         centerY = ty - ((y - midY) / zoom).toFloat()
+        // Zooming about a point near the edge can carry the centre past the tree; bring it back in
+        pan(0f, 0f)
     }
 
     /** Puts [skill]'s branch in the middle of the view. */
@@ -712,10 +725,14 @@ class LedgerScreen(private val restAt: BlockPos? = null, private val back: Scree
 
     private fun drawHints(graphics: GuiGraphicsExtractor, s: Standing) {
         val key = if (canRest && s.sheet.nodes.isNotEmpty()) "gui.guildmark.tree.hint.rest" else "gui.guildmark.tree.hint"
-        val room = viewX1 - viewX0 - 16 - (if (resetButton?.visible == true) RESET_WIDTH + 8 else 0)
-        val hint = font.plainSubstrByWidth(Component.translatable(key).string, room)
-        backing(graphics, viewX0 + 8, viewY0 + 8, font.width(hint))
-        graphics.text(font, hint, viewX0 + 8, viewY0 + 8, Ui.TEXT_FAINT, false)
+        val reset = resetButton?.takeIf { it.visible }
+        val room = viewX1 - viewX0 - 16 - (if (reset != null) reset.width + 8 else 0)
+        // Wrapped rather than cut, so a narrow view still reads the whole hint
+        val lines = font.split(Component.translatable(key), max(40, room)).take(HINT_LINES)
+        if (lines.isNotEmpty()) {
+            backing(graphics, viewX0 + 8, viewY0 + 8, lines.maxOf { font.width(it) }, lines.size)
+            for ((i, line) in lines.withIndex()) graphics.text(font, line, viewX0 + 8, viewY0 + 8 + i * 10, Ui.TEXT_FAINT, false)
+        }
         if (planned.isNotEmpty() && asking == null) {
             val line = Component.translatable("gui.guildmark.tree.planned", planned.size, max(0, s.points))
             val center = (viewX0 + viewX1) / 2
@@ -725,9 +742,9 @@ class LedgerScreen(private val restAt: BlockPos? = null, private val back: Scree
         }
     }
 
-    /** A dark band behind a line of text laid over the tree, so the nodes under it don't swallow it. */
-    private fun backing(graphics: GuiGraphicsExtractor, x: Int, y: Int, w: Int) {
-        graphics.fill(x - 4, y - 3, x + w + 4, y + 11, TEXT_BACK)
+    /** A dark band behind [lines] of text laid over the tree, so the nodes under it don't swallow it. */
+    private fun backing(graphics: GuiGraphicsExtractor, x: Int, y: Int, w: Int, lines: Int = 1) {
+        graphics.fill(x - 4, y - 3, x + w + 4, y + 1 + lines * 10, TEXT_BACK)
     }
 
     // ---- The sidebar ----
@@ -980,21 +997,25 @@ class LedgerScreen(private val restAt: BlockPos? = null, private val back: Scree
         val w = wrapped.maxOf { font.width(it.first) } + 16
         val h = wrapped.size * 10 + 10
         var x = mouseX + 12
-        if (x + w > width - 4) x = mouseX - 12 - w
+        if (x + w > width - 4) x = max(4, mouseX - 12 - w)
         val y = (mouseY - 6).coerceIn(4, max(4, height - h - 4))
         graphics.nextStratum()
         graphics.blitSprite(RenderPipelines.GUI_TEXTURED, Ui.PANEL_PLAIN, x, y, w, h)
         for ((i, line) in wrapped.withIndex()) graphics.text(font, line.first, x + 8, y + 6 + i * 10, line.second, false)
     }
 
+    /** The question panel's width: its usual size, or narrower on a small view. */
+    private fun askWidth(): Int = min(ASK_WIDTH, viewX1 - viewX0 - 8)
+
     private fun drawAsk(graphics: GuiGraphicsExtractor, question: Ask) {
         val cx = (viewX0 + viewX1) / 2
         val cy = (viewY0 + viewY1) / 2
-        val lines = font.split(question.text, ASK_WIDTH - 24)
+        val aw = askWidth()
+        val lines = font.split(question.text, aw - 24)
         val h = lines.size * 10 + 48
         graphics.nextStratum()
         graphics.fill(viewX0, viewY0, viewX1, viewY1, SHADE)
-        Ui.panel(graphics, cx - ASK_WIDTH / 2, cy + 40 - h, ASK_WIDTH, h)
+        Ui.panel(graphics, cx - aw / 2, cy + 40 - h, aw, h)
         for ((i, line) in lines.withIndex()) graphics.centeredText(font, line, cx, cy + 50 - h + i * 10, Ui.TEXT)
     }
 
@@ -1031,6 +1052,8 @@ class LedgerScreen(private val restAt: BlockPos? = null, private val back: Scree
         private const val READY_FOOT = 16
         private const val RESET_WIDTH = 116
         private const val ASK_WIDTH = 232
+        /** The most lines the hint at the top of the view wraps to. */
+        private const val HINT_LINES = 3
         private const val EDGE_WIDTH = 3
         /** The sidebar's stat and skill icons: half their art's size, so they stay crisp at GUI scale 2. */
         private const val ROW_ICON = 8

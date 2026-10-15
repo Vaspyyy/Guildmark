@@ -137,7 +137,7 @@ class WardfireScreen(private val pos: BlockPos, private val canWait: Boolean) : 
         /** Where the buttons start below the panel's top. */
         private const val HEAD = 66
         /** How far from the fire the menu stays open. */
-        private const val REACH = 7.0
+        private const val REACH = 6.0
 
         fun open(payload: OpenWardfirePayload) {
             val minecraft = net.minecraft.client.Minecraft.getInstance()

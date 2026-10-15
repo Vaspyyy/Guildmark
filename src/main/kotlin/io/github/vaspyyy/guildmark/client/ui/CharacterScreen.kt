@@ -433,7 +433,7 @@ class CharacterScreen : Screen(Component.translatable("gui.guildmark.status")) {
         val w = (lines.maxOfOrNull { font.width(it) } ?: 0) + 16
         val h = lines.size * 10 + 10
         var x = mouseX + 10
-        if (x + w > width - 4) x = mouseX - 10 - w
+        if (x + w > width - 4) x = max(4, mouseX - 10 - w)
         val y = (mouseY - 6).coerceIn(4, max(4, height - h - 4))
         graphics.nextStratum()
         graphics.blitSprite(RenderPipelines.GUI_TEXTURED, Ui.PANEL_PLAIN, x, y, w, h)
