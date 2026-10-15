@@ -27,7 +27,8 @@ class SpellBoltRenderState : EntityRenderState() {
 
 /**
  * A spell in flight: its glowing sprite, always facing the camera and lit as if by day. Each kind is drawn at
- * its own size; the orbs and the star turn slowly and pulse, the splinters and the lance point the way they fly.
+ * its own size; the orbs and the star turn slowly and pulse, the ember pulses upright like a flame, and the splinters
+ * and the lance point the way they fly.
  */
 class SpellBoltRenderer(context: EntityRendererProvider.Context) : EntityRenderer<SpellBolt, SpellBoltRenderState>(context) {
     private val itemModelResolver: ItemModelResolver = context.itemModelResolver
@@ -45,15 +46,15 @@ class SpellBoltRenderer(context: EntityRendererProvider.Context) : EntityRendere
     override fun submit(state: SpellBoltRenderState, poseStack: PoseStack, collector: SubmitNodeCollector, camera: CameraRenderState) {
         val kind = state.kind
         val t = state.ageInTicks
-        val turns = kind == BoltKind.ARC_BOLT || kind == BoltKind.UNDERTOW || kind == BoltKind.STAR || kind == BoltKind.WAYFLAME
-        val pulse = if (turns) 1f + 0.08f * sin(t * 0.6f) else 1f
+        val turns = kind == BoltKind.ARC_BOLT || kind == BoltKind.UNDERTOW || kind == BoltKind.STAR
+        val pulse = if (turns || kind == BoltKind.WAYFLAME) 1f + 0.08f * sin(t * 0.6f) else 1f
         val scale = kind.scale * pulse
         poseStack.pushPose()
         poseStack.translate(0f, 0.2f, 0f)
         poseStack.scale(scale, scale, scale)
         poseStack.rotate(camera.orientation)
         if (turns) poseStack.rotateDegrees(Axis.ZP, t * (if (kind == BoltKind.UNDERTOW) -14f else 6f))
-        else if (state.velocity.lengthSquared() > 1e-6f) {
+        else if (kind != BoltKind.WAYFLAME && state.velocity.lengthSquared() > 1e-6f) {
             // Turned so the sprite's diagonal (painted pointing up and right) lies along its flight as seen on screen
             val seen = camera.orientation.conjugate(Quaternionf()).transform(Vector3f(state.velocity))
             poseStack.rotateDegrees(Axis.ZP, Math.toDegrees(atan2(seen.y, seen.x).toDouble()).toFloat() - 45f)
