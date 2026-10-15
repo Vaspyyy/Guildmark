@@ -79,9 +79,10 @@ class Survey(private val ground: Ground) {
 
     /**
      * The sites round ([x0], [z0]), best first: as big as [random] says this capital wants to be, then
-     * smaller. Worked out lazily, so a caller that takes the first site it can use pays for no more.
+     * smaller, each kept whole within [room] blocks of ([x0], [z0]) along both axes, its farms and all.
+     * Worked out lazily, so a caller that takes the first site it can use pays for no more.
      */
-    fun sites(x0: Int, z0: Int, random: Random): Sequence<Site> = sequence {
+    fun sites(x0: Int, z0: Int, random: Random, room: Int): Sequence<Site> = sequence {
         val roll = random.nextInt(100)
         val wanted = when {
             roll < Tier.GRAND.chance -> Tier.GRAND
@@ -93,7 +94,10 @@ class Survey(private val ground: Ground) {
             // A first look on a coarse grid, then a closer one at the most promising few
             val coarse = ArrayList<Pair<Int, Int>>()
             val scores = HashMap<Pair<Int, Int>, Double>()
-            for (i in -SHIFT_STEPS..SHIFT_STEPS) for (j in -SHIFT_STEPS..SHIFT_STEPS) {
+            // How far its middle may move and still keep all of it in the room
+            val steps = (room - tier.reach) / COARSE
+            if (steps < 0) continue
+            for (i in -steps..steps) for (j in -steps..steps) {
                 val cx = x0 + i * COARSE
                 val cz = z0 + j * COARSE
                 val score = glance(tier, cx, cz) ?: continue
@@ -227,11 +231,10 @@ class Survey(private val ground: Ground) {
     }
 
     companion object {
-        /** The first look's grid, and how far (in its steps) a capital may move from where it was due. */
+        /** The first look's grid. */
         const val COARSE = 32
-        const val SHIFT_STEPS = 4
         /** How many of the first look's best spots get a closer look, per size. */
-        const val CLOSE_LOOKS = 3
+        const val CLOSE_LOOKS = 6
         /** The closer look's grid, by size. */
         val FINE = intArrayOf(16, 20, 24)
         /** Kept dry past the walls' outer faces, for the plinth and the wall's foot. */

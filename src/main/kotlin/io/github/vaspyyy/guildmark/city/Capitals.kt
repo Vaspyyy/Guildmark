@@ -8,12 +8,17 @@ import net.minecraft.core.registries.Registries
 import net.minecraft.resources.Identifier
 import net.minecraft.resources.ResourceKey
 import net.minecraft.server.level.ServerLevel
+import net.minecraft.server.level.ServerPlayer
 import net.minecraft.tags.TagKey
 import net.minecraft.world.level.ChunkPos
+import net.minecraft.world.level.Level
 import net.minecraft.world.level.chunk.status.ChunkStatus
 import net.minecraft.world.level.levelgen.structure.BoundingBox
 import net.minecraft.world.level.levelgen.structure.Structure
 import net.minecraft.world.level.levelgen.structure.StructureCheckResult
+import net.neoforged.neoforge.common.NeoForge
+import net.neoforged.neoforge.event.server.ServerStoppedEvent
+import net.neoforged.neoforge.event.tick.PlayerTickEvent
 import kotlin.math.ceil
 import kotlin.math.sqrt
 
@@ -34,6 +39,22 @@ object Capitals {
     /** Blocks from the middle of a capital's centre chunk to the far corner of its farms, and a little over. */
     val START_SLACK: Int = ceil(CapitalPlacement.MAX_REACH * sqrt(2.0)).toInt() + 16
 
+    /** Ticks between working out the capitals round each player ahead of time. */
+    private const val LOOK_AHEAD_EVERY = 200
+
+    fun register() {
+        // Surveying a capital's region takes a while, so it's done off the server thread before anything asks
+        NeoForge.EVENT_BUS.addListener(PlayerTickEvent.Post::class.java) { event ->
+            val player = event.entity as? ServerPlayer ?: return@addListener
+            if (player.tickCount % LOOK_AHEAD_EVERY != 0) return@addListener
+            val level = player.level()
+            if (level.dimension() != Level.OVERWORLD) return@addListener
+            val structure = level.registryAccess().lookupOrThrow(Registries.STRUCTURE).getValue(KEY) as? CapitalStructure ?: return@addListener
+            structure.lookAhead(level, player.blockPosition())
+        }
+        NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> CapitalStructure.forget() }
+    }
+
     fun enabled(): Boolean = try {
         GuildmarkConfig.CAPITALS.get()
     } catch (e: IllegalStateException) {
@@ -48,6 +69,24 @@ object Capitals {
         val chunk = ChunkPos.containing(pos)
         return starts(level, pos.x, pos.z, pos.x, pos.z) { _, _ -> true }
             .firstOrNull { (centre, capital) -> centre == chunk || capital.within(pos.x, pos.z) }?.second
+    }
+
+    /**
+     * The capital whose ground, its farms included, takes in [pos], found from what its chunk was told while it
+     * generated: nothing is surveyed or generated to answer, and a chunk not generated yet has none.
+     */
+    fun covering(level: ServerLevel, pos: BlockPos): CapitalPiece? {
+        val structure = level.registryAccess().lookupOrThrow(Registries.STRUCTURE).getValue(KEY) ?: return null
+        val chunk = level.getChunk(SectionPos.blockToSectionCoord(pos.x), SectionPos.blockToSectionCoord(pos.z), ChunkStatus.STRUCTURE_REFERENCES, false) ?: return null
+        for (key in chunk.getReferencesForStructure(structure)) {
+            val home = ChunkPos.unpack(key)
+            val start = level.getChunk(home.x, home.z, ChunkStatus.STRUCTURE_STARTS).getStartForStructure(structure) ?: continue
+            // A start's first piece is its own cell of the city; the centre's copies for far-view mods come after
+            val capital = start.takeIf { it.isValid }?.pieces?.firstOrNull() as? CapitalPiece ?: continue
+            if (capital.layout == null || capital.proxy || !capital.reaches(pos.x, pos.z)) continue
+            return capital.inWorld(level)
+        }
+        return null
     }
 
     /**

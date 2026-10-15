@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.city
 
 import com.mojang.serialization.MapCodec
+import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.city.CapitalPlacement.Companion.CELLS
 import io.github.vaspyyy.guildmark.city.plan.CityPlan
 import io.github.vaspyyy.guildmark.city.plan.Dir
@@ -13,9 +14,14 @@ import io.github.vaspyyy.guildmark.registry.ModStructures
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Holder
 import net.minecraft.core.QuartPos
+import net.minecraft.core.RegistryAccess
+import net.minecraft.core.SectionPos
 import net.minecraft.core.registries.Registries
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.util.Util
 import net.minecraft.world.level.ChunkPos
 import net.minecraft.world.level.biome.Biome
+import net.minecraft.world.level.biome.BiomeResolver
 import net.minecraft.world.level.block.Rotation
 import net.minecraft.world.level.levelgen.GenerationStep
 import net.minecraft.world.level.levelgen.LegacyRandomSource
@@ -30,13 +36,15 @@ import java.util.EnumSet
 import java.util.Optional
 import java.util.Random
 import java.util.WeakHashMap
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.abs
 import kotlin.math.max
 
 /**
  * A capital city. Where one may start is up to data/guildmark/worldgen/structure_set/capitals.json, whose
- * placement ([CapitalPlacement]) gives each capital a grid of starts round a centre. Every one of them looks
- * round the centre for open, level, dry land in the right country with no village or other surface structure
+ * placement ([CapitalPlacement]) gives each region a grid of starts round its middle. Every one of them looks
+ * over the region for open, level, dry land in the right country with no village or other surface structure
  * due nearby, comes to the same site, and holds the pieces of its own cell of the city.
  */
 class CapitalStructure(settings: StructureSettings) : Structure(settings) {
@@ -46,12 +54,15 @@ class CapitalStructure(settings: StructureSettings) : Structure(settings) {
     // once (any other thread asking meanwhile waits for it) and kept for a while, by world and centre
     private val foundings = WeakHashMap<RandomState, LinkedHashMap<Long, Lazy<Founding?>>>()
 
+    /** Surveys being worked out ahead of time, so none is set going twice. */
+    private val surveying = ConcurrentHashMap<Lazy<Founding?>, Boolean>()
+
     override fun findGenerationPoint(context: GenerationContext): Optional<GenerationStub> {
         if (!Capitals.enabled()) return Optional.empty()
-        val placement = placement(context) ?: return Optional.empty()
+        val placement = placement(context.registryAccess()) ?: return Optional.empty()
         val chunk = context.chunkPos()
         val centre = placement.centreOf(context.seed(), chunk.x, chunk.z) ?: return Optional.empty()
-        val founding = founding(context, centre) ?: return Optional.empty()
+        val founding = founding(Country.of(context), centre) ?: return Optional.empty()
         val cellX = CapitalPlacement.cell(chunk.x - centre.x)
         val cellZ = CapitalPlacement.cell(chunk.z - centre.z)
         // Where the city doesn't reach into this start's cell, there's nothing for it to hold
@@ -73,45 +84,69 @@ class CapitalStructure(settings: StructureSettings) : Structure(settings) {
         )
     }
 
+    /**
+     * Works out, off the server thread, where the capitals of the regions round [pos] stand (or that they have
+     * none), so that the server, asking about one later (a delivery's destination, a road's way round), finds
+     * the answer waiting rather than surveying the land while the game stands still.
+     */
+    fun lookAhead(level: ServerLevel, pos: BlockPos) {
+        if (!Capitals.enabled()) return
+        val placement = placement(level.registryAccess()) ?: return
+        val spacing = placement.spacing()
+        val country = Country.of(level)
+        val chunkX = SectionPos.blockToSectionCoord(pos.x)
+        val chunkZ = SectionPos.blockToSectionCoord(pos.z)
+        for (i in -LOOK_AHEAD..LOOK_AHEAD) for (j in -LOOK_AHEAD..LOOK_AHEAD) {
+            val centre = placement.getPotentialStructureChunk(country.seed, chunkX + i * spacing, chunkZ + j * spacing)
+            if (!placement.applyAdditionalChunkRestrictions(centre.x, centre.z, country.seed)) continue
+            val held = held(country, centre)
+            if (held.isInitialized() || surveying.putIfAbsent(held, true) != null) continue
+            CompletableFuture.runAsync({ held.value }, Util.backgroundExecutor())
+                .whenComplete { _, error ->
+                    surveying.remove(held)
+                    if (error != null) Guildmark.LOGGER.error("Surveying the capital at {} failed", centre, error)
+                }
+        }
+    }
+
     /** The placement of the structure set that places this structure, if it's a capital's. */
-    private fun placement(context: GenerationContext): CapitalPlacement? {
-        for (set in context.registryAccess().lookupOrThrow(Registries.STRUCTURE_SET).listElements()) {
+    private fun placement(registries: RegistryAccess): CapitalPlacement? {
+        for (set in registries.lookupOrThrow(Registries.STRUCTURE_SET).listElements()) {
             val placement = set.value().placement() as? CapitalPlacement ?: continue
             if (set.value().structures().any { it.structure().value() === this }) return placement
         }
         return null
     }
 
-    private fun founding(context: GenerationContext, centre: ChunkPos): Founding? {
-        val held = synchronized(foundings) {
-            val known = foundings.getOrPut(context.randomState()) {
-                object : LinkedHashMap<Long, Lazy<Founding?>>(16, 0.75f, true) {
-                    override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Long, Lazy<Founding?>>?): Boolean = size > FOUNDINGS_KEPT
-                }
+    private fun founding(country: Country, centre: ChunkPos): Founding? = held(country, centre).value
+
+    private fun held(country: Country, centre: ChunkPos): Lazy<Founding?> = synchronized(foundings) {
+        val known = foundings.getOrPut(country.randomState) {
+            object : LinkedHashMap<Long, Lazy<Founding?>>(16, 0.75f, true) {
+                override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Long, Lazy<Founding?>>?): Boolean = size > FOUNDINGS_KEPT
             }
-            known.getOrPut(centre.pack()) { lazy { found(context, centre) } }
         }
-        return held.value
+        known.getOrPut(centre.pack()) { lazy { found(country, centre) } }
     }
 
     /**
-     * Where the capital centred on chunk [centre] stands, if anywhere: the first site the survey finds round the
-     * centre that no other structure crowds. Everything comes from the world's seed and the centre, never from
+     * Where the capital centred on chunk [centre] stands, if anywhere: the first site the survey finds in its
+     * region that no other structure crowds. Everything comes from the world's seed and the centre, never from
      * the start asking, so all of a capital's starts come to the same answer.
      */
-    private fun found(context: GenerationContext, centre: ChunkPos): Founding? {
+    private fun found(country: Country, centre: ChunkPos): Founding? {
         val random = WorldgenRandom(LegacyRandomSource(0L))
-        random.setLargeFeatureSeed(context.seed(), centre.x, centre.z)
+        random.setLargeFeatureSeed(country.seed, centre.x, centre.z)
         val sizes = Random(random.nextLong())
         val seed = random.nextLong()
-        val land = GeneratedLand.of(context)
+        val land = country.land
         val survey = Survey(
             object : Ground {
                 override fun height(x: Int, z: Int): Int = land.surface(x, z)
 
-                // The structure's own country rather than the context's, which /place opens to anywhere: the site
+                // The structure's own country rather than a context's, which /place opens to anywhere: the site
                 // is shared by every start, however it came to be asked for
-                override fun fits(x: Int, z: Int, y: Int): Boolean = biomes().contains(biome(context, x, y, z))
+                override fun fits(x: Int, z: Int, y: Int): Boolean = biomes().contains(country.biome(x, y, z))
 
                 override fun wet(x: Int, z: Int, surface: Int): Boolean = land.floor(x, z) < surface
 
@@ -119,11 +154,13 @@ class CapitalStructure(settings: StructureSettings) : Structure(settings) {
             },
         )
         var tries = 0
-        for (site in survey.sites(centre.middleBlockX, centre.middleBlockZ, sizes)) {
-            val crowded = crowding(context, survey, site)
+        for (site in survey.sites(centre.middleBlockX, centre.middleBlockZ, sizes, CapitalPlacement.ROOM)) {
+            val crowded = crowding(country, survey, site)
             if (crowded != null) {
-                val style = CityStyle.forBiome(biome(context, site.x, site.ground, site.z))
-                return Founding(site, crowded, style, seed, top(survey, site))
+                val style = CityStyle.forBiome(country.biome(site.x, site.ground, site.z))
+                val founding = Founding(site, crowded, style, seed, top(survey, site))
+                LOCATED[centre.pack()] = BlockPos(site.x, 0, site.z)
+                return founding
             }
             if (++tries >= MAX_TRIES) break
         }
@@ -145,9 +182,9 @@ class CapitalStructure(settings: StructureSettings) : Structure(settings) {
      * frame) where one would stand among its farms, which the farms leave to it. Each spreads its starts on a
      * grid of its own, one possible start to a square, so only a handful of spots have to be looked at.
      */
-    private fun crowding(context: GenerationContext, survey: Survey, site: Site): Set<Dir>? {
+    private fun crowding(country: Country, survey: Survey, site: Site): Set<Dir>? {
         val sides = EnumSet.noneOf(Dir::class.java)
-        for (set in context.registryAccess().lookupOrThrow(Registries.STRUCTURE_SET).listElements()) {
+        for (set in country.registries.lookupOrThrow(Registries.STRUCTURE_SET).listElements()) {
             // A ruined portal is a scatter of rubble that can stand anywhere
             if (set.`is`(BuiltinStructureSets.RUINED_PORTALS)) continue
             val placement = set.value().placement() as? RandomSpreadStructurePlacement ?: continue
@@ -165,14 +202,14 @@ class CapitalStructure(settings: StructureSettings) : Structure(settings) {
             val chunkZ = site.z shr 4
             for (rx in Math.floorDiv(chunkX - chunks, spacing)..Math.floorDiv(chunkX + chunks, spacing)) {
                 for (rz in Math.floorDiv(chunkZ - chunks, spacing)..Math.floorDiv(chunkZ + chunks, spacing)) {
-                    val start = placement.getPotentialStructureChunk(context.seed(), rx * spacing, rz * spacing)
+                    val start = placement.getPotentialStructureChunk(country.seed, rx * spacing, rz * spacing)
                     val dx = start.middleBlockX - site.x
                     val dz = start.middleBlockZ - site.z
                     val distance = max(abs(dx), abs(dz))
                     if (distance > reach) continue
-                    if (!placement.applyAdditionalChunkRestrictions(start.x, start.z, context.seed())) continue
+                    if (!placement.applyAdditionalChunkRestrictions(start.x, start.z, country.seed)) continue
                     val y = survey.height(start.middleBlockX, start.middleBlockZ)
-                    val biome = biome(context, start.middleBlockX, y, start.middleBlockZ)
+                    val biome = country.biome(start.middleBlockX, y, start.middleBlockZ)
                     if (structures.none { it.value().biomes().contains(biome) }) continue
                     if (distance <= site.tier.levelled + margin) return null
                     // Its side of the city, turned from the world's frame to the city's
@@ -183,14 +220,45 @@ class CapitalStructure(settings: StructureSettings) : Structure(settings) {
         return sides
     }
 
-    private fun biome(context: GenerationContext, x: Int, y: Int, z: Int): Holder<Biome> =
-        context.biomeResolver().getNoiseBiome(QuartPos.fromBlock(x), QuartPos.fromBlock(y), QuartPos.fromBlock(z))
+    /** What a capital's site is worked out from, whoever asks: one of its starts, or the server looking ahead. */
+    private class Country(
+        val seed: Long,
+        val randomState: RandomState,
+        val land: GeneratedLand,
+        val biomes: BiomeResolver,
+        val registries: RegistryAccess,
+    ) {
+        fun biome(x: Int, y: Int, z: Int): Holder<Biome> = biomes.getNoiseBiome(QuartPos.fromBlock(x), QuartPos.fromBlock(y), QuartPos.fromBlock(z))
+
+        companion object {
+            fun of(context: GenerationContext): Country =
+                Country(context.seed(), context.randomState(), GeneratedLand.of(context), context.biomeResolver(), context.registryAccess())
+
+            fun of(level: ServerLevel): Country {
+                val source = level.chunkSource
+                return Country(
+                    level.seed, source.randomState(), GeneratedLand.of(level),
+                    source.generator.biomeSource.createUncachedResolver(source.randomState()), level.registryAccess(),
+                )
+            }
+        }
+    }
 
     companion object {
         val CODEC: MapCodec<CapitalStructure> = simpleCodec(::CapitalStructure)
 
-        /** Capitals whose site each world keeps at hand. */
-        private const val FOUNDINGS_KEPT = 32
+        /** Capitals whose site each world keeps at hand: all those round a few players, looking ahead. */
+        private const val FOUNDINGS_KEPT = 160
+
+        /** Regions each way round a player whose capitals are worked out ahead of time. */
+        private const val LOOK_AHEAD = 1
+
+        /** Where each capital worked out so far stands, by its centre chunk, for /locate; forgotten when the server stops. */
+        private val LOCATED = ConcurrentHashMap<Long, BlockPos>()
+
+        fun siteOf(centre: ChunkPos): BlockPos? = LOCATED[centre.pack()]
+
+        fun forget() = LOCATED.clear()
 
         /** Sites tried, best first, before giving up on a capital as hemmed in by other structures. */
         private const val MAX_TRIES = 8

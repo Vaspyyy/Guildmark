@@ -4,8 +4,7 @@ import com.mojang.serialization.Codec
 import com.mojang.serialization.DataResult
 import com.mojang.serialization.MapCodec
 import com.mojang.serialization.codecs.RecordCodecBuilder
-import io.github.vaspyyy.guildmark.city.plan.Survey
-import io.github.vaspyyy.guildmark.city.plan.Tier
+import net.minecraft.core.BlockPos
 import net.minecraft.core.Vec3i
 import net.minecraft.world.level.ChunkPos
 import net.minecraft.world.level.chunk.ChunkGeneratorStructureState
@@ -17,11 +16,13 @@ import java.util.Optional
 import kotlin.math.abs
 
 /**
- * Where capitals start. A capital is far too big for one structure start: the game only looks eight chunks
- * round a chunk for the starts whose pieces reach into it. So each capital is a five by five grid of starts
- * eight chunks apart: its centre, one to a region of [spacing] chunks as with any random spread, and the
- * satellites round it. Every start finds the same site (see CapitalStructure) and holds the pieces of its own
- * cell of the city. Only the centre counts as where the capital is, for /locate, maps and [Capitals].
+ * Where capitals start. The world is cut into square regions of [spacing] chunks, as for any spread of
+ * structures, and each region may hold one capital, kept whole within [DOMAIN] chunks of the region's middle
+ * chunk, so two capitals never meet; the survey looks over all of that for the best site (see CapitalStructure).
+ * A capital is far too big for one structure start: the game only looks eight chunks round a chunk for the
+ * starts whose pieces reach into it. So each region has a five by five grid of starts [STEP] chunks apart round
+ * its middle chunk, the centre; every start comes to the same site and holds the pieces of its own cell of the
+ * city. Only the centre counts as where the capital is, for /locate, maps and [Capitals].
  */
 @Suppress("DEPRECATION") // ExclusionZone, which every spread placement still takes
 class CapitalPlacement(
@@ -35,21 +36,18 @@ class CapitalPlacement(
     spreadType: RandomSpreadType,
 ) : RandomSpreadStructurePlacement(locateOffset, frequencyReductionMethod, frequency, salt, exclusionZone, spacing, separation, spreadType) {
 
-    /**
-     * The centre start of the capital whose grid chunk [chunkX], [chunkZ] is on, as the centre itself or one of
-     * its satellites, or null if it's on none. Grids never share a chunk (see [CODEC]'s check on separation).
-     */
-    fun centreOf(seed: Long, chunkX: Int, chunkZ: Int): ChunkPos? {
+    /** The middle chunk of the region chunk [x], [z] is in: where that region's capital is centred, if it has one. */
+    override fun getPotentialStructureChunk(seed: Long, x: Int, z: Int): ChunkPos {
         val spacing = spacing()
-        for (rx in Math.floorDiv(chunkX - GRID, spacing)..Math.floorDiv(chunkX + GRID, spacing)) {
-            for (rz in Math.floorDiv(chunkZ - GRID, spacing)..Math.floorDiv(chunkZ + GRID, spacing)) {
-                val centre = getPotentialStructureChunk(seed, rx * spacing, rz * spacing)
-                val dx = chunkX - centre.x
-                val dz = chunkZ - centre.z
-                if (abs(dx) <= GRID && abs(dz) <= GRID && dx % STEP == 0 && dz % STEP == 0) return centre
-            }
-        }
-        return null
+        return ChunkPos(Math.floorDiv(x, spacing) * spacing + spacing / 2, Math.floorDiv(z, spacing) * spacing + spacing / 2)
+    }
+
+    /** The centre start of the capital whose grid chunk [chunkX], [chunkZ] is on, as the centre itself or a satellite, or null if it's on none. */
+    fun centreOf(seed: Long, chunkX: Int, chunkZ: Int): ChunkPos? {
+        val centre = getPotentialStructureChunk(seed, chunkX, chunkZ)
+        val dx = chunkX - centre.x
+        val dz = chunkZ - centre.z
+        return if (abs(dx) <= GRID && abs(dz) <= GRID && dx % STEP == 0 && dz % STEP == 0) centre else null
     }
 
     override fun isPlacementChunk(state: ChunkGeneratorStructureState, x: Int, z: Int): Boolean = centreOf(state.levelSeed, x, z) != null
@@ -65,13 +63,16 @@ class CapitalPlacement(
         return super.applyInteractionsWithOtherStructures(state, centre.x, centre.z)
     }
 
+    // /locate leads to the city's own middle once its site has been worked out, rather than to its region's
+    override fun getLocatePos(chunkPos: ChunkPos): BlockPos = CapitalStructure.siteOf(chunkPos) ?: super.getLocatePos(chunkPos)
+
     // The placement registry finds a placement's type by its codec, so this must be the one registered
     @Suppress("UNCHECKED_CAST")
     override fun codec(): MapCodec<RandomSpreadStructurePlacement> = CODEC as MapCodec<RandomSpreadStructurePlacement>
 
     companion object {
         /** Chunks between neighbouring starts of one capital. */
-        const val STEP = 8
+        const val STEP = 12
 
         /** Cells each way from the centre: the grid is twice this plus one starts to a side. */
         const val CELLS = 2
@@ -79,16 +80,20 @@ class CapitalPlacement(
         /** Chunks from the centre start to the furthest satellite, along each axis. */
         const val GRID = STEP * CELLS
 
-        /**
-         * Furthest a capital may reach from its centre chunk's middle, in blocks: the site search's shift
-         * and the biggest city's reach. The outermost cells take all of the city beyond them, and must still
-         * lie within [STEP] chunks of their own start.
-         */
-        val MAX_REACH: Int = Survey.SHIFT_STEPS * Survey.COARSE + Tier.entries.maxOf { it.reach }
+        /** How far round a start, in chunks, the game looks for its pieces. */
+        private const val REFERENCE = 8
 
-        init {
-            check(8 + MAX_REACH < (GRID + STEP + 1) * 16) { "A capital may reach $MAX_REACH blocks, too far for its grid of starts" }
-        }
+        /**
+         * Chunks a capital may take each way from its centre, from DOMAIN before it up to DOMAIN - 1 after: as far
+         * as the outermost starts can hold, and so the middle 64 chunks of its region.
+         */
+        const val DOMAIN = GRID + REFERENCE
+
+        /** Furthest any of a capital may lie from the middle of its centre chunk, along either axis, in blocks. */
+        const val MAX_REACH = DOMAIN * 16 + 8
+
+        /** Room for a capital's site and its reach, each way along both axes from the middle of its centre chunk. */
+        const val ROOM = DOMAIN * 16 - 9
 
         /**
          * Which cell of its capital's grid a chunk falls in, along one axis, from its offset in chunks from the
@@ -119,8 +124,8 @@ class CapitalPlacement(
         }.validate { placement ->
             when {
                 placement.spacing() <= placement.separation() -> DataResult.error { "Spacing has to be larger than separation" }
-                // Centres are at least separation + 1 chunks apart, so two grids can't share a chunk
-                placement.separation() < 2 * GRID -> DataResult.error { "Separation has to be at least ${2 * GRID} so capitals' grids of starts don't meet" }
+                // Every capital keeps to the middle of its own region, which must be big enough to hold one
+                placement.spacing() < 2 * DOMAIN -> DataResult.error { "Spacing has to be at least ${2 * DOMAIN} to hold a capital" }
                 else -> DataResult.success(placement)
             }
         }

@@ -5,6 +5,7 @@ import io.github.vaspyyy.guildmark.city.plan.CityPlan
 import io.github.vaspyyy.guildmark.city.plan.Dir
 import io.github.vaspyyy.guildmark.city.plan.Layout
 import io.github.vaspyyy.guildmark.city.plan.Tier
+import io.github.vaspyyy.guildmark.city.plan.Use
 import io.github.vaspyyy.guildmark.registry.ModStructures
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
@@ -198,10 +199,23 @@ class CapitalPiece : StructurePiece, PieceBeardifierModifier {
 
     /** Is this world column inside the city's outer walls? */
     fun within(x: Int, z: Int): Boolean {
-        val layout = layout ?: return false
-        if (maxOf(abs(x - center.x), abs(z - center.z)) > layout.tier.reach) return false
+        if (!reaches(x, z)) return false
         val (lx, lz) = local(x, z)
         return plan.within(lx, lz)
+    }
+
+    /** Is this world column any of the city's ground, its farms included? */
+    fun reaches(x: Int, z: Int): Boolean {
+        val layout = layout ?: return false
+        return maxOf(abs(x - center.x), abs(z - center.z)) <= layout.tier.reach
+    }
+
+    /** Is this world column part of the town itself: inside the outer walls, or on the harbour below them? */
+    fun inTown(x: Int, z: Int): Boolean {
+        if (!reaches(x, z)) return false
+        val (lx, lz) = local(x, z)
+        val plan = plan
+        return plan.within(lx, lz) || plan.grid[lx, lz].let { it == Use.QUAY || it == Use.PIER || it == Use.MOORING }
     }
 
     /** The quest board's anchor cell. */

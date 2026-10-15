@@ -24,10 +24,11 @@ import kotlin.math.abs
 object CapitalVisits {
     /** Ticks between looks at where each player is. */
     private const val CHECK = 10
-    /** Ticks between looking for a capital round a player who isn't in one. */
+    /** Ticks between looking for a capital round a player who isn't on one's ground. */
     private const val SEARCH = 40
 
     private class Visit {
+        /** The capital whose ground the player was last on, farms and all. */
         var capital: CapitalPiece? = null
         var searched = Long.MIN_VALUE
         /** What the player's side was last told; null until it's been told anything. */
@@ -50,13 +51,15 @@ object CapitalVisits {
         val level = player.level()
         val visit = visits.getOrPut(player.uuid) { Visit() }
         val pos = player.blockPosition()
-        var capital = visit.capital?.takeIf { it.within(pos.x, pos.z) }
+        var capital = visit.capital?.takeIf { it.reaches(pos.x, pos.z) }
         if (capital == null && level.dimension() == Level.OVERWORLD && Capitals.enabled() && level.gameTime - visit.searched >= SEARCH) {
             visit.searched = level.gameTime
-            capital = Capitals.at(level, pos)
+            capital = Capitals.covering(level, pos)
         }
         visit.capital = capital
-        val now = Pair(capital != null, capital?.let { districtAt(it, pos) } ?: District.NONE)
+        // Out among the farms is the country, not the town
+        val town = capital?.takeIf { it.inTown(pos.x, pos.z) }
+        val now = Pair(town != null, town?.let { districtAt(it, pos) } ?: District.NONE)
         if (now == visit.told) return
         visit.told = now
         CityDistricts.tell(player, now.first, now.second)

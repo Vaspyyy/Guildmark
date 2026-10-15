@@ -31,24 +31,13 @@ object Towns {
     private class Seen(val at: Long, val town: Town?)
 
     private val byPlayer = HashMap<UUID, Seen>()
-    private val capitalReach = HashMap<BlockPos, Int>()
 
     /** The town at [pos], if any. Looking up a capital costs a little, so ask [around] for players. */
     fun at(level: ServerLevel, pos: BlockPos): Town? {
         TownZones.get(level).zones.firstOrNull { it.contains(pos) }?.let { return it.town() }
         if (level.dimension() != Level.OVERWORLD || !Capitals.enabled()) return null
-        val capital = Capitals.at(level, pos) ?: return null
-        val reach = capitalReach.getOrPut(capital.center) {
-            // How far the walls reach from the middle, found by asking the capital itself
-            var lo = 0
-            var hi = 1024
-            while (lo < hi) {
-                val mid = (lo + hi + 1) / 2
-                if (capital.within(capital.center.x + mid, capital.center.z)) lo = mid else hi = mid - 1
-            }
-            lo
-        }
-        return Town(capital.center, reach, capital.bell)
+        val capital = Capitals.covering(level, pos)?.takeIf { it.within(pos.x, pos.z) } ?: return null
+        return Town(capital.center, capital.plan.outer, capital.bell)
     }
 
     /** The town round [player]'s position, looked up at most every few seconds. */
