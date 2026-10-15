@@ -7,6 +7,7 @@ import io.github.vaspyyy.guildmark.city.plan.Layout
 import io.github.vaspyyy.guildmark.city.plan.Tier
 import io.github.vaspyyy.guildmark.city.plan.Use
 import io.github.vaspyyy.guildmark.registry.ModStructures
+import io.github.vaspyyy.guildmark.townsfolk.Town
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.nbt.CompoundTag
@@ -216,6 +217,22 @@ class CapitalPiece : StructurePiece, PieceBeardifierModifier {
         val (lx, lz) = local(x, z)
         val plan = plan
         return plan.within(lx, lz) || plan.grid[lx, lz].let { it == Use.QUAY || it == Use.PIER || it == Use.MOORING }
+    }
+
+    /** The capital as its townsfolk know it (see [town]). */
+    val town: Town get() = town(plan)
+
+    /**
+     * The capital as its townsfolk know it: the square of its outer walls, the bell as its meeting place, and the
+     * quays and piers of its harbour, if it has one.
+     */
+    fun town(plan: CityPlan): Town {
+        val harbour = plan.harbour?.area?.let { r ->
+            val a = world(r.x0, 0, r.z0)
+            val b = world(r.x1, 0, r.z1)
+            BoundingBox(minOf(a.x, b.x), 0, minOf(a.z, b.z), maxOf(a.x, b.x), 0, maxOf(a.z, b.z))
+        }
+        return Town(center, plan.outer, standing(plan, plan.bell), harbour)
     }
 
     /** The quest board's anchor cell. */

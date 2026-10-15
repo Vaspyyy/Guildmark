@@ -159,8 +159,8 @@ class WorldCanvas(
 
     private fun world(at: At): BlockPos = piece.world(at.x, at.y, at.z)
 
-    /** The capital as its townsfolk know it: the walls' square, with the bell as its meeting place. */
-    private val town: Town by lazy { Town(piece.center, plan.outer, piece.bell) }
+    /** The capital as its townsfolk know it (see [CapitalPiece.town]). */
+    private val town: Town by lazy { piece.town(plan) }
 
     private fun writable(pos: BlockPos): Boolean =
         pos.x >= area.minX() && pos.x <= area.maxX() && pos.z >= area.minZ() && pos.z <= area.maxZ() && !level.isOutsideBuildHeight(pos)

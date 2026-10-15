@@ -8,6 +8,7 @@ import net.minecraft.core.BlockPos
 import net.minecraft.resources.Identifier
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.level.Level
+import net.minecraft.world.level.levelgen.structure.BoundingBox
 import net.minecraft.world.level.saveddata.SavedData
 import net.minecraft.world.level.saveddata.SavedDataType
 import java.util.UUID
@@ -16,10 +17,14 @@ import kotlin.math.abs
 
 /**
  * A place with townsfolk: a square of [radius] blocks round [center], with a [square] where people gather
- * (a capital's bell, or the middle of a town zone).
+ * (a capital's bell, or the middle of a town zone), and the quays and piers of a capital's [harbour] below its
+ * walls, if it has one.
  */
-class Town(val center: BlockPos, val radius: Int, val square: BlockPos) {
-    fun contains(x: Int, z: Int): Boolean = abs(x - center.x) <= radius && abs(z - center.z) <= radius
+class Town(val center: BlockPos, val radius: Int, val square: BlockPos, val harbour: BoundingBox? = null) {
+    fun contains(x: Int, z: Int): Boolean =
+        abs(x - center.x) <= radius && abs(z - center.z) <= radius ||
+            harbour != null && x >= harbour.minX() && x <= harbour.maxX() && z >= harbour.minZ() && z <= harbour.maxZ()
+
     fun contains(pos: BlockPos): Boolean = contains(pos.x, pos.z)
 }
 
@@ -36,8 +41,7 @@ object Towns {
     fun at(level: ServerLevel, pos: BlockPos): Town? {
         TownZones.get(level).zones.firstOrNull { it.contains(pos) }?.let { return it.town() }
         if (level.dimension() != Level.OVERWORLD || !Capitals.enabled()) return null
-        val capital = Capitals.covering(level, pos)?.takeIf { it.within(pos.x, pos.z) } ?: return null
-        return Town(capital.center, capital.plan.outer, capital.bell)
+        return Capitals.covering(level, pos)?.takeIf { it.inTown(pos.x, pos.z) }?.town
     }
 
     /** The town round [player]'s position, looked up at most every few seconds. */

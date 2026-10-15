@@ -37,6 +37,7 @@ import net.minecraft.world.entity.player.Player
 import net.minecraft.world.level.Level
 import net.minecraft.world.level.ServerLevelAccessor
 import net.minecraft.world.level.block.StairBlock
+import net.minecraft.world.level.levelgen.structure.BoundingBox
 import net.minecraft.world.level.storage.ValueInput
 import net.minecraft.world.level.storage.ValueOutput
 import net.minecraft.world.phys.Vec3
@@ -439,6 +440,7 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
             output.store("town", BlockPos.CODEC, it.center)
             output.putInt("town_radius", it.radius)
             output.store("square", BlockPos.CODEC, it.square)
+            output.storeNullable("town_harbour", BoundingBox.CODEC, it.harbour)
         }
         output.putBoolean("crowd", crowd)
         output.putInt("shift", shift)
@@ -458,7 +460,10 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
         postFacing = input.read("post_facing", Direction.CODEC).orElse(null)
         evening = input.read("evening", BlockPos.CODEC).orElse(null)
         town = input.read("town", BlockPos.CODEC).orElse(null)?.let { center ->
-            Town(center, input.getIntOr("town_radius", 48), input.read("square", BlockPos.CODEC).orElse(center))
+            Town(
+                center, input.getIntOr("town_radius", 48), input.read("square", BlockPos.CODEC).orElse(center),
+                input.read("town_harbour", BoundingBox.CODEC).orElse(null),
+            )
         }
         crowd = input.getBooleanOr("crowd", false)
         // Passers-by only ever live while someone is near to see them

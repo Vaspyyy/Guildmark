@@ -65,6 +65,10 @@ class Harbour(private val plan: CityPlan) {
     /** Everything the harbour draws, for a quick look whether a piece of land has any of it. */
     private var bounds = Rect(0, 0, -1, -1)
 
+    /** The columns the harbour lays (quays, piers, moorings) on the plan; null if it found no sea to lay them by. */
+    var area: Rect? = null
+        private set
+
     /** Lays the harbour out on the plan: called once, after the walls and the town. */
     fun lay(random: Random) {
         val half = min(outer - TOWER_CLEAR, outer * 3 / 5)
@@ -423,11 +427,89 @@ class Harbour(private val plan: CityPlan) {
                 things.add(Thing(ThingKind.STALL, sign * 7, o, if (sign > 0) up else down, k + (if (sign > 0) 2 else 0)))
             }
         }
-        // Townsfolk about the quay, and a cat or two
+        // Townsfolk about the quay, and a cat or two; dockers to carry the goods about, and fishers out on the piers
         things.add(Thing(ThingKind.FOLK, -4, wharf + 2, side))
         things.add(Thing(ThingKind.FOLK, 5, front - 3, side))
         things.add(Thing(ThingKind.CAT, if (random.nextBoolean()) 9 else -9, wharf + 1, side))
+        things.add(Thing(ThingKind.DOCKER, 4, wharf + 2, side))
+        things.add(Thing(ThingKind.DOCKER, -6, front - 3, side))
+        fishers()
     }
+
+    /**
+     * Fishers at the ends of the piers nearest the square, then along their sides and round the lighthouse's
+     * head, each facing open water with nothing moored in it; at most two to a pier.
+     */
+    private fun fishers() {
+        val wanted = when (plan.tier) {
+            Tier.MEDIUM -> 2
+            Tier.LARGE -> 3
+            Tier.GRAND -> 5
+        }
+        val order = piers.sortedBy { abs(it.mid) }
+        val spots = ArrayList<Pair<Pier?, Thing>>()
+        for (pier in order) if (light?.a != pier.mid) spots.add(Pair(pier, Thing(ThingKind.FISHER, pier.mid, pier.end, side)))
+        light?.let { l ->
+            val r = l.radius.toInt()
+            spots.add(Pair(null, Thing(ThingKind.FISHER, l.a, l.o + r, side)))
+            spots.add(Pair(null, Thing(ThingKind.FISHER, l.a + r, l.o, down)))
+            spots.add(Pair(null, Thing(ThingKind.FISHER, l.a - r, l.o, up)))
+        }
+        for (pier in order) {
+            spots.add(Pair(pier, Thing(ThingKind.FISHER, pier.a1, pier.end - 2, down)))
+            spots.add(Pair(pier, Thing(ThingKind.FISHER, pier.a0, pier.end - 3, up)))
+        }
+        val taken = HashSet<Long>()
+        for (t in things) {
+            taken.add(cellKey(t.a, t.o))
+            // Goods stack out over the next column too
+            if (t.kind == ThingKind.GOODS) taken.add(cellKey(t.a, t.o + 1))
+        }
+        val perPier = HashMap<Pier, Int>()
+        var placed = 0
+        for ((pier, spot) in spots) {
+            if (placed >= wanted) break
+            if (pier != null && (perPier[pier] ?: 0) >= 2) continue
+            if (!fishable(spot, taken)) continue
+            things.add(spot)
+            taken.add(cellKey(spot.a, spot.o))
+            if (pier != null) perPier[pier] = (perPier[pier] ?: 0) + 1
+            placed++
+        }
+    }
+
+    /**
+     * Whether someone can fish from [spot]: standing on a pier, the mole or a landing, clear of the lighthouse and
+     * of anything else standing there, with three blocks of open sea ahead.
+     */
+    private fun fishable(spot: Thing, taken: Set<Long>): Boolean {
+        val i = index(spot.a, spot.o) ?: return false
+        if (lays[i].toInt() !in PIER_LAYS || cellKey(spot.a, spot.o) in taken) return false
+        light?.let { l ->
+            val da = spot.a - l.a
+            val dOut = spot.o - l.o
+            if (da * da + dOut * dOut <= (TOWER_RADIUS + 1.0) * (TOWER_RADIUS + 1.0)) return false
+        }
+        for (k in 1..3) {
+            val a = spot.a + k * alongStep(spot.facing)
+            val o = spot.o + k * outStep(spot.facing)
+            if (!isSea(a, o) || !isFree(a, o)) return false
+        }
+        return true
+    }
+
+    /**
+     * A roof for those who work out on the quay, to go to in the rain and at night: just inside the warehouse,
+     * shed or fish market nearest [a] down the quay. Null if the quay has none.
+     */
+    private fun shelter(a: Int): At? {
+        val shed = sheds.filter { it.kind == ShedKind.WAREHOUSE || it.kind == ShedKind.SHED || it.kind == ShedKind.FISH_MARKET }
+            .minByOrNull { abs((it.a0 + it.a1) / 2 - a) } ?: return null
+        val mid = (shed.a0 + shed.a1) / 2
+        return At(x(mid, shedFront - 2), quay, z(mid, shedFront - 2))
+    }
+
+    private fun cellKey(a: Int, o: Int): Long = (a.toLong() shl 32) or (o.toLong() and 0xFFFFFFFFL)
 
     /**
      * Where the quayside meets the land it was cut into or built out over: stone faces where it stands over
@@ -491,7 +573,11 @@ class Harbour(private val plan: CityPlan) {
             maxX = max(maxX, x)
             maxZ = max(maxZ, z)
         }
-        if (minX <= maxX) bounds = Rect(minX, minZ, maxX, maxZ).grow(BOUNDS_MARGIN)
+        if (minX <= maxX) {
+            val laid = Rect(minX, minZ, maxX, maxZ)
+            area = laid
+            bounds = laid.grow(BOUNDS_MARGIN)
+        }
     }
 
     /** Marks open water where a ship or boat lies, digging it out where the shore ran into it. */
@@ -638,7 +724,6 @@ class Harbour(private val plan: CityPlan) {
 
     /** The mole's top: a kerb down each side, flags between. */
     private fun molePaving(a: Int, o: Int): B {
-        val i = at(a, o)
         val edge = Dir.entries.any { d -> index(a + alongStep(d), o + outStep(d))?.let { lays[it].toInt() != Lay.MOLE.ordinal } ?: true }
         return if (edge) B(M.WALL_TRIM) else if (Math.floorMod(o, 5) == 0) B(M.PAVE_STREET, v = 1) else B(M.PAVE_STREET)
     }
@@ -739,6 +824,11 @@ class Harbour(private val plan: CityPlan) {
             ThingKind.STALL -> stall(canvas, t, y)
             ThingKind.FOLK -> canvas.spawn(Spawn.VILLAGER, x(t.a, t.o), y, z(t.a, t.o), t.facing)
             ThingKind.CAT -> canvas.spawn(Spawn.CAT, x(t.a, t.o), y, z(t.a, t.o), t.facing)
+            ThingKind.DOCKER -> canvas.resident(Folk.CITIZEN, At(x(t.a, t.o), y, z(t.a, t.o)), home = shelter(t.a))
+            ThingKind.FISHER -> {
+                val post = At(x(t.a, t.o), y, z(t.a, t.o))
+                canvas.resident(Folk.FISHER, post, post = post, facing = t.facing, home = shelter(t.a))
+            }
         }
     }
 
@@ -813,7 +903,10 @@ class Harbour(private val plan: CityPlan) {
         at(-1, 1, 0, B(M.BARREL))
         at(1, 1, 0, B(M.SMOKER, front))
         for (a in -2..2) for (b in -1..1) at(a, b, 3, B(M.WOOL, color = if (Math.floorMod(a, 2) == 0) stripe else Dye.WHITE))
-        if (t.v % 2 == 0) canvas.spawn(Spawn.VILLAGER, x(t.a, t.o) - front.dx, y, z(t.a, t.o) - front.dz, front)
+        // Half the stalls are kept by villagers to trade with, the rest by fishmongers crying the catch
+        val behind = At(x(t.a, t.o) - front.dx, y, z(t.a, t.o) - front.dz)
+        if (t.v % 2 == 0) canvas.spawn(Spawn.VILLAGER, behind.x, y, behind.z, front)
+        else canvas.resident(Folk.MERCHANT, behind, post = behind, facing = front)
     }
 
     /** A gangway of planks from a ship's deck across to the pier or the quay. */
@@ -892,7 +985,7 @@ class Harbour(private val plan: CityPlan) {
     /** A rowing boat lying from [a0] to [a1] down the wall and [o0] to [o1] out, its bow toward [bow]. */
     private class Boat(val a0: Int, val a1: Int, val o0: Int, val o1: Int, val bow: Dir, val seed: Long)
 
-    private enum class ThingKind { BOLLARD, LAMP, PILLAR_LAMP, POST_LAMP, CRANE, GOODS, STALL, FOLK, CAT }
+    private enum class ThingKind { BOLLARD, LAMP, PILLAR_LAMP, POST_LAMP, CRANE, GOODS, STALL, FOLK, CAT, DOCKER, FISHER }
 
     /** Something standing on the quayside at [a], [o], facing [facing]. */
     private class Thing(val kind: ThingKind, val a: Int, val o: Int, val facing: Dir, val v: Int = 0)

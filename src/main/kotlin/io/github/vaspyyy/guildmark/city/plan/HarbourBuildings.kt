@@ -14,8 +14,9 @@ enum class ShedKind(val widths: IntArray) {
 /**
  * The harbour's buildings, each drawn facing the water in its own frame (see [Frame]) on the quay: stone
  * warehouses and timber sheds full of goods, the harbourmaster's house with its lookout, the fish market,
- * and the chandlers' shops. [shared] says which sides (west and east in the frame) back onto another
- * building, so they get no windows; [square] which side, if any, looks onto the harbour square.
+ * and the chandlers' shops, with the dockers, fishmongers and chandlers who work in them. [shared] says which
+ * sides (west and east in the frame) back onto another building, so they get no windows; [square] which side,
+ * if any, looks onto the harbour square.
  */
 class HarbourBuildings(private val f: Frame, private val r: Random, private val shared: BooleanArray, private val square: Dir?) {
     private val w = f.w
@@ -91,6 +92,7 @@ class HarbourBuildings(private val f: Frame, private val r: Random, private val 
         f.set(mid + 1, STORY, 1, B(M.HAY))
         f.set(mid, top - 1, d / 2, B(M.LANTERN, top = true))
         if (r.nextBoolean()) f.spawn(Spawn.VILLAGER, mid, 0, d / 2)
+        f.resident(Folk.CITIZEN, mid, 0, 3)
     }
 
     /**
@@ -134,6 +136,7 @@ class HarbourBuildings(private val f: Frame, private val r: Random, private val 
         f.set(mid, loft - 1, 2, B(M.LANTERN, top = true))
         f.set(mid, top - 1, d - 3, B(M.LANTERN, top = true))
         f.set(mid, loft - 1, d / 2 + 1, B(M.LANTERN, top = true))
+        if (r.nextBoolean()) f.resident(Folk.CITIZEN, mid, 0, 2)
     }
 
     /** Something to stack: a crate, a barrel or a bale. */
@@ -193,6 +196,8 @@ class HarbourBuildings(private val f: Frame, private val r: Random, private val 
         f.chest(w - 3, 0, d - 2, Dir.N, Loot.HARBOUR)
         f.set(door, STORY - 2, d / 2, B(M.LANTERN, top = true))
         f.spawn(Spawn.VILLAGER, door, 0, desk + 2, Dir.N)
+        // The harbourmaster, over the charts
+        f.resident(Folk.CITIZEN, 2, 0, desk + 1, work = f.at(1, 0, desk))
         // Up the back to the rooms above: the harbourmaster's bed, a chest, a lamp in each
         for (y in 0 until top) f.set(w - 2, y, d - 2, B(M.LADDER, Dir.N))
         f.bed(1, STORY, d - 2, Dir.E, Dye.BLUE)
@@ -270,6 +275,7 @@ class HarbourBuildings(private val f: Frame, private val r: Random, private val 
             if (stall == 1) f.set(behind, 0, v, B(M.BARREL, if (u < mid) Dir.E else Dir.W))
         }
         for (u in listOf(1, w - 2)) f.spawn(Spawn.VILLAGER, u, 0, 4, if (u < mid) Dir.E else Dir.W)
+        for (u in listOf(1, w - 2)) f.resident(Folk.MERCHANT, u, 0, 2, facing = if (u < mid) Dir.E else Dir.W)
         // The cold store along the back: barrels of salt and ice, the fisherman's own barrel by the door
         for (u in 1..w - 2) if (u != mid) f.set(u, 0, d - 2, B(M.BARREL, Dir.N))
         for (u in 1..w - 2 step 2) f.set(u, 1, d - 2, B(M.BARREL))
@@ -315,6 +321,7 @@ class HarbourBuildings(private val f: Frame, private val r: Random, private val 
         for (v in 5..d - 3) f.set(1, 0, v, if (v % 2 == 0) B(M.BARREL, Dir.E) else B(M.CRATE))
         f.set(2, 0, 4, B(M.BARREL))
         f.spawn(Spawn.VILLAGER, 2, 0, 3, Dir.N)
+        f.resident(Folk.MERCHANT, 3, 0, 3, facing = Dir.N)
         f.set(w / 2, STORY - 2, d / 2, B(M.LANTERN, top = true))
         for (y in 0 until STORY) f.set(w - 2, y, d - 2, B(M.LADDER, Dir.N))
         f.bed(1, STORY, d - 2, Dir.E, Dye.BROWN)
