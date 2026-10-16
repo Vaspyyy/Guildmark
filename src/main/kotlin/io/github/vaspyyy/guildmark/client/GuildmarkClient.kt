@@ -160,12 +160,15 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
         io.github.vaspyyy.guildmark.client.companion.CompanionClient.register(modBus)
         // Ships: the cog's renderer, the sailing HUD, her wake and the sounds aboard (client/ship)
         io.github.vaspyyy.guildmark.client.ship.ShipClient.register(modBus)
+        // The sea monsters: their renderers, the sea round them, whoever an arm has caught (client/sea)
+        io.github.vaspyyy.guildmark.client.sea.SeaClient.register(modBus)
         HdPack.register(modBus)
         modBus.addListener(RegisterRenderStateModifiersEvent::class.java) { event ->
             event.registerAvatarEntityModifier(CombatAnimator.AVATAR)
             event.registerAvatarEntityModifier(Cutscenes.AVATAR)
             // After the combat animator's, which clears the frame this one fills when no move is playing
             event.registerAvatarEntityModifier(io.github.vaspyyy.guildmark.client.ship.ShipClient.AVATAR)
+            event.registerAvatarEntityModifier(io.github.vaspyyy.guildmark.client.sea.SeaClient.AVATAR)
             event.registerEntityModifier<LivingEntity, LivingEntityRenderState>(LivingEntityRenderer::class.java) { entity, state ->
                 CombatAnimator.onLivingState(entity, state)
             }

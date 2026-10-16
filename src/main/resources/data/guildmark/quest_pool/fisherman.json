@@ -73,6 +73,31 @@
         "quest.guildmark.story.fisherman.hunt.0",
         "quest.guildmark.story.fisherman.hunt.drowned.0"
       ]
+    },
+    {
+      "type": "hunt",
+      "target": "guildmark:gnashfin",
+      "min": 2,
+      "max": 4,
+      "reward_per": 2.0,
+      "weight": 5,
+      "min_tier": 2,
+      "stories": [
+        "quest.guildmark.story.fisherman.hunt.gnashfin.0",
+        "quest.guildmark.story.fisherman.hunt.gnashfin.1"
+      ]
+    },
+    {
+      "type": "fetch",
+      "target": "guildmark:gnashfin_fang",
+      "min": 3,
+      "max": 6,
+      "reward_per": 1.5,
+      "weight": 4,
+      "min_tier": 2,
+      "stories": [
+        "quest.guildmark.story.fisherman.fetch.gnashfin_fang.0"
+      ]
     }
   ]
 }

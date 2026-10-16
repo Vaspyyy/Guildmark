@@ -64,6 +64,23 @@ Kokoro voices of their own, and the renegade Silvan Marrow made cold and a littl
   the questioning figure), the fall, the revive and the oath at -4.
   `--only` takes effect names; `--mp3 <file>` joins what was rendered into one listen-through MP3, a chapter mark at
   each sound. Their events are listed in `sounds.json` by hand.
+- `make_ship_audio.py`: the cog's 19 events and 40 files (`ship/`): her oak creaking, the sail filling and luffing,
+  the halyard, the wake, lapping water and the wind in her rigging (the three loops), the anchor going down and coming
+  up, the bell, grounding and knocks, the wheel and the hold. `--only` takes event names; `--mp3 <file>` joins what was
+  rendered into one listen-through MP3, and `--fragments <dir>` writes the `sounds.json` entries and subtitles for
+  merging. Its variants are listed in `sounds.json` by hand.
+- `make_sea_audio.py` and `make_sea_music.py`: the sea monsters, the Gnashfins and the Maelgrasp: 31 effects and 55
+  files (`sea/`: the Gnashfins' fin, leap, dive, snap, bite, gnaw, flop, hurt and death; the Maelgrasp's omens,
+  bubbles, surge, bursting, rearing, slamming, sweeping and gripping arms, hurt and severed arms, the ship's timbers
+  groaning, and its head rising, roaring, blinking, biting, spewing ink, diving and dying), synthesised with
+  `sfxkit.py` and the cog's parts from `make_ship_audio.py` (bubbles, oak under strain, flesh and sucker squelches, a
+  throat the size of a hold) and levelled by the loudest 100 ms like the cog's and the dragon's, and the Maelgrasp's
+  battle theme (`music/maelgrasp.ogg`, 2:28 in F sharp minor, a heaving 6/8 on a three-note call, built as exactly one
+  turn of a loop so that its last heartbeat runs into its first), composed in code and played through
+  `make_music.py`'s parts, stems and hall, its loudness set by measurement like the dragon's. `make_sea_audio.py` runs
+  both; `--only` takes effect names (`gnashfin_snap`, `sea.maelgrasp.roar`) and/or `music`; `--mp3 <file>` joins what
+  was rendered into one listen-through MP3, a chapter mark at each file, and `--fragments <dir>` writes
+  `sea_sounds.json` and `sea_subtitles.json` for merging. Its variants are listed in `sounds.json` by hand.
 - `make_voice.py`: Halvard's three lines (`voice/`). It has two stages, `tts` and `process`.
 - `make_renegade_voice.py`: the renegade Silvan Marrow's three lines (`voice/renegade_<line>.ogg`), in a blend of
   three American men's voices and cold, thin processing: a faint whispered double, a stone slap and wind (out on a
@@ -108,6 +125,8 @@ python3 -B art/audio/make_land_music.py src/main/resources/assets/guildmark --wo
 python3 -B art/audio/make_dragon_audio.py src/main/resources/assets/guildmark --work <tmp-dir> [--wav <dir>] [--only roar,growl,music]
 python3 -B art/audio/make_magic_audio.py src/main/resources/assets/guildmark [--wav <dir>] [--only arc_bolt_cast,flare] [--mp3 <file>]
 python3 -B art/audio/make_faction_audio.py src/main/resources/assets/guildmark [--wav <dir>] [--only ward_light,heist.alarm] [--mp3 <file>]
+python3 -B art/audio/make_ship_audio.py src/main/resources/assets/guildmark [--wav <dir>] [--only creak,wake] [--mp3 <file>] [--fragments <dir>]
+python3 -B art/audio/make_sea_audio.py src/main/resources/assets/guildmark [--wav <dir>] [--only gnashfin_snap,music] [--mp3 <file>] [--fragments <dir>] [--theme-mp3 <file>]
 ```
 
 `--wav` also writes WAV copies for listening. `--work` is where the music script keeps its per-stem

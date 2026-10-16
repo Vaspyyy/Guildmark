@@ -66,6 +66,11 @@ class CogModel(root: ModelPart) : EntityModel<CogRenderState>(root, RenderTypes:
     private val ropes = Array(ROPE_SEGS) { part(if (it == 0) "anchor_rope" else "anchor_rope${it + 1}") }
     private val capstan = part("capstan")
 
+    // The figurehead (a slain Maelgrasp's beak lashed on the bowsprit, shown when the ship carries one) and the two loose ends of its lashing
+    private val figurehead = part("figurehead")
+    private val figureJaw = part("fh_jaw")
+    private val figureTails = arrayOf(part("fh_tail_s"), part("fh_tail_p"))
+
     // Scratch for the sail (the part of each row let down, and how far aft each seam between rows lies): nothing allocated per frame
     private val down = FloatArray(5)
     private val seam = FloatArray(6)
@@ -82,6 +87,7 @@ class CogModel(root: ModelPart) : EntityModel<CogRenderState>(root, RenderTypes:
         wheel.zRot = -state.wheel * DEG
         rudder.yRot = -state.rudder * DEG
         hang(state, t, wind, shake)
+        figurehead.visible = state.figurehead
     }
 
     /** The yard turns on the mast (above 0 its starboard arm swings aft); each brace and lift is turned and stretched to its arm. */
@@ -222,6 +228,14 @@ class CogModel(root: ModelPart) : EntityModel<CogRenderState>(root, RenderTypes:
             ropes[i].yScale = (out / ROPE_SEG).coerceIn(0f, 1f)
         }
         capstan.yRot = d / 4f
+        // The figurehead's lower jaw hangs on its hinge and swings with her pitch; the loose ends of its lashing hang plumb as she pitches and
+        // heels, and stream a little in the wind
+        figureJaw.xRot = FIGURE_JAW + 0.8f * px + (0.02f + 0.05f * wind) * sin(t * 0.37f + 1.3f)
+        val flap = 0.05f + 0.22f * wind
+        for (i in 0..1) {
+            figureTails[i].xRot = FIGURE_TAIL + px + flap * sin(t * (0.43f + 0.04f * i) + 0.6f + 3.1f * i)
+            figureTails[i].zRot = pz + 0.6f * flap * sin(t * (0.37f - 0.04f * i) + 2.1f + 3.1f * i)
+        }
     }
 
     companion object {
@@ -265,6 +279,10 @@ class CogModel(root: ModelPart) : EntityModel<CogRenderState>(root, RenderTypes:
         private const val ROPE_SEG = 8f
         private const val ROPE_SEGS = 7
 
+        // The figurehead: how far its lower jaw hangs open, and how far the loose ends of its lashing are turned back (the bowsprit's rise) to hang plumb from the tilted part
+        private const val FIGURE_JAW = 0.227f
+        private const val FIGURE_TAIL = 0.267f
+
         @Suppress("LocalVariableName", "UNUSED_VARIABLE")
         fun createBodyLayer(): LayerDefinition {
             val mesh = MeshDefinition()
@@ -279,6 +297,7 @@ class CogModel(root: ModelPart) : EntityModel<CogRenderState>(root, RenderTypes:
             buildFittings(root)
             buildCargo(root)
             buildLines(root)
+            buildFigurehead(root)
             return LayerDefinition.create(mesh, 512, 512)
         }
 
@@ -965,6 +984,15 @@ class CogModel(root: ModelPart) : EntityModel<CogRenderState>(root, RenderTypes:
             root.addOrReplaceChild("lift_s", CubeListBuilder.create().texOffs(123, 42).addBox(-0.45f, 0f, -0.45f, 1f, 57f, 1f), PartPose.offsetAndRotation(-1.6f, -183f, -9f, -0.046f, 0f, 1.019f))
             root.addOrReplaceChild("brace_p", CubeListBuilder.create().texOffs(485, 0).addBox(-0.5f, 0f, -0.5f, 1f, 128f, 1f), PartPose.offsetAndRotation(23.1f, -44f, 50f, -0.497f, 0f, -2.863f))
             root.addOrReplaceChild("lift_p", CubeListBuilder.create().texOffs(268, 19).addBox(-0.45f, 0f, -0.45f, 1f, 57f, 1f), PartPose.offsetAndRotation(1.6f, -183f, -9f, -0.046f, 0f, -1.019f))
+        }
+
+        @Suppress("LocalVariableName", "UNUSED_VARIABLE")
+        private fun buildFigurehead(root: PartDefinition) {
+            val figurehead = root.addOrReplaceChild("figurehead", CubeListBuilder.create().texOffs(200, 361).addBox(-2.75f, -1.2f, 0.2f, 5.5f, 4f, 1.5f).texOffs(317, 361).addBox(-2.75f, -1.2f, -4.4f, 5.5f, 4f, 1.5f), PartPose.offsetAndRotation(0f, -30.537f, -82f, -0.267f, 0f, 0f))
+            val fh_beak = figurehead.addOrReplaceChild("fh_beak", CubeListBuilder.create().texOffs(387, 361).addBox(-3.5f, -6f, -1.5f, 7f, 3f, 1.5f).texOffs(119, 363).addBox(-3f, -8.5f, -1.5f, 6f, 2.5f, 1.5f).texOffs(39, 366).addBox(-2f, -10.5f, -1.5f, 4f, 2f, 1.5f).texOffs(174, 362).addBox(-3.25f, -6f, -3f, 6.5f, 3f, 1.5f).texOffs(100, 311).addBox(-2.75f, -8.5f, -3f, 5.5f, 2.5f, 1.5f).texOffs(50, 366).addBox(-2f, -10.5f, -3f, 4f, 2f, 1.5f).texOffs(265, 363).addBox(-3f, -5.5f, -4.5f, 6f, 2.5f, 1.5f).texOffs(495, 363).addBox(-2.5f, -8f, -4.5f, 5f, 2.5f, 1.5f).texOffs(435, 339).addBox(-1.75f, -10f, -4.5f, 3.5f, 2f, 1.5f).texOffs(280, 363).addBox(-3f, -5.5f, -6f, 6f, 2.5f, 1.5f).texOffs(0, 364).addBox(-2.5f, -8f, -6f, 5f, 2.5f, 1.5f).texOffs(27, 349).addBox(-1.75f, -10f, -6f, 3.5f, 2f, 1.5f).texOffs(295, 363).addBox(-2.75f, -5.5f, -7.5f, 5.5f, 2.5f, 1.5f).texOffs(88, 292).addBox(-2.25f, -8f, -7.5f, 4.5f, 2.5f, 1.5f).texOffs(62, 181).addBox(-1.75f, -9.5f, -7.5f, 3.5f, 1.5f, 1.5f).texOffs(13, 364).addBox(-2.5f, -5.5f, -9f, 5f, 2.5f, 1.5f).texOffs(146, 366).addBox(-2f, -7.5f, -9f, 4f, 2f, 1.5f).texOffs(438, 153).addBox(-1.5f, -9.5f, -9f, 3f, 2f, 1.5f).texOffs(189, 365).addBox(-2.25f, -5f, -10.5f, 4.5f, 2f, 1.5f).texOffs(330, 366).addBox(-2f, -7f, -10.5f, 4f, 2f, 1.5f).texOffs(486, 193).addBox(-1.25f, -9f, -10.5f, 2.5f, 2f, 1.5f).texOffs(387, 366).addBox(-2f, -5f, -12f, 4f, 2f, 1.5f).texOffs(493, 218).addBox(-1.75f, -6.5f, -12f, 3.5f, 1.5f, 1.5f).texOffs(435, 193).addBox(-1.25f, -8f, -12f, 2.5f, 1.5f, 1.5f).texOffs(132, 358).addBox(-1.75f, -4.5f, -13.5f, 3.5f, 2f, 1.5f).texOffs(424, 226).addBox(-1.5f, -6f, -13.5f, 3f, 1.5f, 1.5f).texOffs(32, 181).addBox(-1f, -7.5f, -13.5f, 2f, 1.5f, 1.5f).texOffs(214, 361).addBox(-1.5f, -3.5f, -15f, 3f, 2f, 1.5f).texOffs(428, 205).addBox(-1.25f, -5f, -15f, 2.5f, 1.5f, 1.5f).texOffs(188, 182).addBox(-1f, -6f, -15f, 2f, 1f, 1.5f).texOffs(305, 183).addBox(-1.25f, -2f, -16.5f, 2.5f, 1.5f, 1.5f).texOffs(306, 159).addBox(-1f, -3f, -16.5f, 2f, 1f, 1.5f).texOffs(123, 126).addBox(-0.75f, -4f, -16.5f, 1.5f, 1f, 1.5f).texOffs(360, 359).addBox(-3.5f, -9.5f, 0f, 7f, 9.5f, 1.5f).texOffs(42, 361).addBox(-3.5f, -6f, -4.5f, 7f, 3.5f, 1.5f).texOffs(331, 361).addBox(-3f, -8.5f, -4.5f, 6f, 3.5f, 1.5f).texOffs(288, 339).addBox(-2.25f, -10.5f, -4.5f, 4.5f, 3f, 1.5f).texOffs(66, 360).addBox(-4f, -8f, 0.2f, 8f, 8f, 1.5f), PartPose.offsetAndRotation(0f, -1.6f, 0f, -0.279f, 0f, 0f))
+            fh_beak.addOrReplaceChild("fh_jaw", CubeListBuilder.create().texOffs(404, 363).addBox(-3f, -1f, -0.5f, 6f, 2f, 1.5f).texOffs(419, 363).addBox(-3f, -1f, -2f, 6f, 2f, 1.5f).texOffs(26, 364).addBox(-2.75f, -1f, -3.5f, 5.5f, 2f, 1.5f).texOffs(134, 364).addBox(-2.5f, -1f, -5f, 5f, 2f, 1.5f).texOffs(346, 364).addBox(-2.5f, -1f, -6.5f, 5f, 2f, 1.5f).texOffs(480, 364).addBox(-2.25f, -1f, -8f, 4.5f, 2f, 1.5f).texOffs(171, 333).addBox(-2f, -1f, -9.5f, 4f, 2f, 1.5f).texOffs(383, 179).addBox(-1.75f, -1f, -11f, 3.5f, 2f, 1.5f).texOffs(246, 219).addBox(-1.5f, -0.5f, -12.5f, 3f, 1.5f, 1.5f).texOffs(414, 357).addBox(-1f, -1.5f, -6f, 2f, 0.5f, 5f), PartPose.offsetAndRotation(0f, -1f, -1f, 0.227f, 0f, 0f))
+            figurehead.addOrReplaceChild("fh_tail_s", CubeListBuilder.create().texOffs(377, 359).addBox(-0.5f, 0f, -0.5f, 1f, 5.5f, 1f).texOffs(50, 190).addBox(-1f, 5f, -1f, 2f, 2f, 2f), PartPose.offsetAndRotation(-2.4f, 2.3f, 0.95f, 0.267f, 0f, 0f))
+            figurehead.addOrReplaceChild("fh_tail_p", CubeListBuilder.create().texOffs(493, 318).addBox(-0.5f, 0f, -0.5f, 1f, 5.5f, 1f).texOffs(24, 189).addBox(-1f, 5f, -1f, 2f, 2f, 2f), PartPose.offsetAndRotation(2.4f, 2.3f, 0.95f, 0.267f, 0f, 0f))
         }
     }
 }

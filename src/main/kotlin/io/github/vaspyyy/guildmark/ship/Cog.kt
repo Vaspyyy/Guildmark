@@ -54,6 +54,7 @@ import net.minecraft.world.level.storage.loot.LootTable
 import net.minecraft.world.phys.Vec3
 import net.minecraft.util.Prediction
 import net.minecraft.world.entity.ContainerUser
+import io.github.vaspyyy.guildmark.sea.SeaRegistry
 import net.neoforged.neoforge.entity.PartEntity
 import java.util.UUID
 import kotlin.math.abs
@@ -123,6 +124,14 @@ class Cog(type: EntityType<out Cog>, level: Level) : VehicleEntity(type, level),
     /** The station a player boarding by clicking asked for. */
     private var wanted: CogStation? = null
 
+    /** Ticks left of whatever holds her fast (a Maelgrasp's arms): she makes no way and won't answer her helm. */
+    private var heldTicks = 0
+    /** How much of her way a still, wrong sea takes off her (0 to 1), and the ticks it lasts. */
+    private var becalmed = 0f
+    private var becalmTicks = 0
+    /** Ticks left of her being hauled over (see [list]). */
+    private var listTicks = 0
+
     // ---- What the clients see, worked out on their side ----
 
     /** Degrees the yard is braced, how the sail fills and luffs, and the heel, each with last tick's. */
@@ -168,6 +177,17 @@ class Cog(type: EntityType<out Cog>, level: Level) : VehicleEntity(type, level),
     /** The game time (low bits) the bell was last struck, or -1. */
     val bellStruck: Int get() = entityData.get(DATA_BELL)
 
+    /** Degrees she's hauled over by something heavy on her side (toward port above 0, as [heel]). */
+    val list: Float get() = entityData.get(DATA_LIST)
+
+    /** Whether something holds her fast. */
+    val held: Boolean get() = entityData.get(DATA_HELD)
+
+    /** Whether a slain Maelgrasp's beak is lashed to her stem: Gnashfins give her a wide berth. */
+    var figurehead: Boolean
+        get() = entityData.get(DATA_FIGUREHEAD)
+        private set(value) = entityData.set(DATA_FIGUREHEAD, value)
+
     override fun defineSynchedData(builder: SynchedEntityData.Builder) {
         super.defineSynchedData(builder)
         builder.define(DATA_SAIL_ORDER, 0f)
@@ -175,6 +195,9 @@ class Cog(type: EntityType<out Cog>, level: Level) : VehicleEntity(type, level),
         builder.define(DATA_ANCHORED, false)
         builder.define(DATA_HULL, MAX_HULL)
         builder.define(DATA_BELL, -1)
+        builder.define(DATA_LIST, 0f)
+        builder.define(DATA_HELD, false)
+        builder.define(DATA_FIGUREHEAD, false)
         for (station in DATA_STATIONS) builder.define(station, -1)
     }
 
@@ -425,6 +448,10 @@ class Cog(type: EntityType<out Cog>, level: Level) : VehicleEntity(type, level),
         if (bumpCooldown > 0) bumpCooldown--
         if (hoistCooldown > 0) hoistCooldown--
         if (bellCooldown > 0) bellCooldown--
+        if (heldTicks > 0) heldTicks--
+        if (becalmTicks > 0) becalmTicks-- else becalmed = 0f
+        if (listTicks > 0) listTicks-- else if (list != 0f) entityData.set(DATA_LIST, 0f)
+        if (held != heldTicks > 0) entityData.set(DATA_HELD, heldTicks > 0)
 
         // The helmsman's orders
         val helmsman = occupant(CogStation.HELM) as? ServerPlayer
@@ -462,16 +489,20 @@ class Cog(type: EntityType<out Cog>, level: Level) : VehicleEntity(type, level),
         val rel = Mth.wrapDegrees(windFrom - yRot)
         val pushingOff = helmsman != null && sail < 0.05f && input.backward() && !anchored
         val target = when {
-            anchored || helmsman == null -> 0.0
+            heldTicks > 0 || anchored || helmsman == null -> 0.0
             pushingOff -> -PUSH_OFF
             else -> Sailing.speed(rel, sail, strength)
-        }
+        } * (1.0 - becalmed)
         speed += (target - speed) * (if (abs(target) > abs(speed)) ACCEL else DECEL)
         if (anchored) speed *= 0.9
+        // Held fast, she's stopped dead in a few heartbeats
+        if (heldTicks > 0) speed *= 0.6
         if (abs(speed) < 1.0e-4) speed = 0.0
 
         // The helm bites harder the faster she goes; at anchor she swings her bow round into the wind
-        val turn = if (anchored) {
+        val turn = if (heldTicks > 0) {
+            0f
+        } else if (anchored) {
             Mth.clamp(Mth.wrapDegrees(windFrom - yRot) * 0.004f, -0.25f, 0.25f) * anchorDrop
         } else {
             rudder * (TURN_SLOW + TURN_FAST * min(1.0, abs(speed) / 0.25).toFloat()) * (if (speed < 0) -1f else 1f)
@@ -479,7 +510,7 @@ class Cog(type: EntityType<out Cog>, level: Level) : VehicleEntity(type, level),
         yawRate += (turn - yawRate) * 0.25f
 
         // Leeway: the wind sets her a little to leeward with her sail set
-        val leeway = if (anchored || helmsman == null) 0.0 else LEEWAY * strength * sail * sin(rel * Mth.DEG_TO_RAD)
+        val leeway = if (anchored || helmsman == null || heldTicks > 0) 0.0 else LEEWAY * strength * sail * sin(rel * Mth.DEG_TO_RAD)
         val yawNew = yRot + yawRate
         val dx = forwardX(yawNew) * speed - rightX(yawNew) * leeway
         val dz = forwardZ(yawNew) * speed - rightZ(yawNew) * leeway
@@ -525,7 +556,7 @@ class Cog(type: EntityType<out Cog>, level: Level) : VehicleEntity(type, level),
         seenSpeed += (moved - seenSpeed) * 0.3f
         // Heeled by the wind in her sail, and leaning out of a turn
         val turning = Mth.wrapDegrees(yRot - yRotO)
-        heel += (Sailing.heel(rel, fill, strength) + turning * seenSpeed * 9f - heel) * 0.05f
+        heel += (Sailing.heel(rel, fill, strength) + turning * seenSpeed * 9f + list - heel) * 0.05f
         clientEffects?.invoke(this)
     }
 
@@ -660,6 +691,32 @@ class Cog(type: EntityType<out Cog>, level: Level) : VehicleEntity(type, level),
         level.playSound(null, bell.x, bell.y, bell.z, ShipRegistry.BELL.get(), SoundSource.NEUTRAL, 1.2f, 1f)
     }
 
+    // ---- Seized ----
+
+    /** Holds her fast for the next [ticks]: she loses her way at once and her helm does nothing. */
+    fun holdFast(ticks: Int = 5) {
+        heldTicks = kotlin.math.max(heldTicks, ticks)
+    }
+
+    /** For the next [ticks] a still, wrong sea takes [strength] (0 to 1) of her way off her. */
+    fun becalm(strength: Float, ticks: Int = 5) {
+        becalmed = kotlin.math.max(becalmed, strength.coerceIn(0f, 1f))
+        becalmTicks = kotlin.math.max(becalmTicks, ticks)
+    }
+
+    /** Hauls her over [degrees] (toward port above 0) for the next [ticks]. */
+    fun haulOver(degrees: Float, ticks: Int = 5) {
+        if (degrees != list) entityData.set(DATA_LIST, degrees)
+        listTicks = ticks
+    }
+
+    /** Her timbers give under a strain (gnawed, crushed): the hull takes [amount] without the knock of a blow. */
+    fun strain(level: ServerLevel, amount: Float) {
+        if (isRemoved || amount <= 0f) return
+        setHurtTime(4)
+        damageHull(level, amount, null)
+    }
+
     // ---- Clicked on ----
 
     override fun interact(player: Player, hand: InteractionHand, location: Vec3): InteractionResult =
@@ -668,6 +725,10 @@ class Cog(type: EntityType<out Cog>, level: Level) : VehicleEntity(type, level),
     /** Someone clicked on her at [at] (a point in the world, on her hull or one of her parts). */
     fun interactAt(player: Player, hand: InteractionHand, at: Vec3): InteractionResult {
         val stack = player.getItemInHand(hand)
+        if (stack.`is`(SeaRegistry.MAELGRASP_BEAK.get()) && !figurehead) {
+            if (!level().isClientSide) mountFigurehead(player, stack)
+            return InteractionResult.SUCCESS
+        }
         if (stack.`is`(ItemTags.PLANKS) && hull < MAX_HULL) {
             if (!level().isClientSide) repair(player, stack)
             return InteractionResult.SUCCESS
@@ -718,6 +779,18 @@ class Cog(type: EntityType<out Cog>, level: Level) : VehicleEntity(type, level),
             }
         }
         return best
+    }
+
+    /** Lashes the beak [player] holds to her stem. */
+    private fun mountFigurehead(player: Player, stack: ItemStack) {
+        figurehead = true
+        if (!player.abilities.instabuild) stack.shrink(1)
+        val level = level() as? ServerLevel ?: return
+        val stem = localToWorld(0.0, 1.5, 4.3)
+        level.playSound(null, stem.x, stem.y, stem.z, ShipRegistry.REPAIR.get(), SoundSource.NEUTRAL, 1f, 0.7f)
+        level.sendParticles(BlockParticleOption(ParticleTypes.BLOCK, Blocks.SPRUCE_PLANKS.defaultBlockState()), stem.x, stem.y, stem.z, 10, 0.3, 0.3, 0.3, 0.05)
+        strikeBell(level)
+        player.sendOverlayMessage(Component.translatable("message.guildmark.ship.figurehead"))
     }
 
     private fun repair(player: Player, stack: ItemStack) {
@@ -772,6 +845,26 @@ class Cog(type: EntityType<out Cog>, level: Level) : VehicleEntity(type, level),
     override fun getItemStacks(): NonNullList<ItemStack> = itemStacks
     override fun clearItemStacks() { itemStacks = NonNullList.withSize(HOLD_SIZE, ItemStack.EMPTY) }
 
+    /** Stows [stack] in her hold, in with what's like it first: gives back what won't fit. */
+    fun stow(stack: ItemStack): ItemStack {
+        val left = stack.copy()
+        for (i in 0 until HOLD_SIZE) {
+            if (left.isEmpty) return ItemStack.EMPTY
+            val here = getChestVehicleItem(i)
+            if (here.isEmpty || !ItemStack.isSameItemSameComponents(here, left) || here.count >= here.maxStackSize) continue
+            val n = min(left.count, here.maxStackSize - here.count)
+            here.grow(n)
+            left.shrink(n)
+        }
+        for (i in 0 until HOLD_SIZE) {
+            if (left.isEmpty) return ItemStack.EMPTY
+            if (!getChestVehicleItem(i).isEmpty) continue
+            setChestVehicleItem(i, left.copy())
+            return ItemStack.EMPTY
+        }
+        return left
+    }
+
     /** Fills the hold from a packed cog's item. */
     fun loadHold(contents: ItemContainerContents) {
         clearItemStacks()
@@ -788,7 +881,9 @@ class Cog(type: EntityType<out Cog>, level: Level) : VehicleEntity(type, level),
         if (attacker is Player) {
             // Players' blows (and arrows) never harm her: struck crouching by her owner, she's packed away
             if (source.directEntity === attacker && attacker.isShiftKeyDown) {
-                if (mayPack(attacker)) pack(level, attacker)
+                // Not with something holding her fast: she can't be got out of the water
+                if (held) attacker.sendOverlayMessage(Component.translatable("message.guildmark.ship.held_fast"))
+                else if (mayPack(attacker)) pack(level, attacker)
                 else attacker.sendOverlayMessage(Component.translatable("message.guildmark.ship.not_yours"))
             } else if (source.directEntity === attacker) {
                 attacker.sendOverlayMessage(Component.translatable("message.guildmark.ship.pack_hint"))
@@ -818,6 +913,7 @@ class Cog(type: EntityType<out Cog>, level: Level) : VehicleEntity(type, level),
         customName?.let { stack.set(DataComponents.CUSTOM_NAME, it) }
         if (!isChestVehicleEmpty) stack.set(DataComponents.CONTAINER, ItemContainerContents.fromItems(itemStacks))
         if (hull < MAX_HULL) stack.set(ShipRegistry.HULL.get(), hull)
+        if (figurehead) stack.set(ShipRegistry.FIGUREHEAD.get(), true)
         clearItemStacks()
         ejectPassengers()
         level.playSound(null, x, y + 1.0, z, ShipRegistry.PACK.get(), SoundSource.NEUTRAL, 1f, 1f)
@@ -834,6 +930,7 @@ class Cog(type: EntityType<out Cog>, level: Level) : VehicleEntity(type, level),
         level.sendParticles(ParticleTypes.SPLASH, x, y + 0.1, z, 60, 2.0, 0.1, 4.0, 0.3)
         ejectPassengers()
         Containers.dropContents(level, this, this)
+        if (figurehead) spawnAtLocation(level, ItemStack(SeaRegistry.MAELGRASP_BEAK.get()))
         if (level.gameRules.get(GameRules.ENTITY_DROPS)) {
             spawnAtLocation(level, ItemStack(Items.SPRUCE_PLANKS, 10))
             spawnAtLocation(level, ItemStack(Items.STICK, 6))
@@ -852,6 +949,7 @@ class Cog(type: EntityType<out Cog>, level: Level) : VehicleEntity(type, level),
         output.putFloat("sail_order", sailOrder)
         output.putBoolean("anchored", anchored)
         output.putFloat("hull", hull)
+        output.putBoolean("figurehead", figurehead)
     }
 
     override fun readAdditionalSaveData(input: ValueInput) {
@@ -864,6 +962,7 @@ class Cog(type: EntityType<out Cog>, level: Level) : VehicleEntity(type, level),
         anchored = input.getBooleanOr("anchored", false)
         anchorDrop = if (anchored) 1f else 0f
         hull = input.getFloatOr("hull", MAX_HULL)
+        figurehead = input.getBooleanOr("figurehead", false)
     }
 
     /** Set on the water from her item: her name, her hold and her hull come with it. */
@@ -872,6 +971,7 @@ class Cog(type: EntityType<out Cog>, level: Level) : VehicleEntity(type, level),
         stack.get(DataComponents.CUSTOM_NAME)?.let { customName = it }
         stack.get(DataComponents.CONTAINER)?.let { loadHold(it) }
         hull = stack.get(ShipRegistry.HULL.get()) ?: MAX_HULL
+        figurehead = stack.get(ShipRegistry.FIGUREHEAD.get()) == true
     }
 
     companion object {
@@ -880,6 +980,9 @@ class Cog(type: EntityType<out Cog>, level: Level) : VehicleEntity(type, level),
         private val DATA_ANCHORED: EntityDataAccessor<Boolean> = SynchedEntityData.defineId(Cog::class.java, EntityDataSerializers.BOOLEAN)
         private val DATA_HULL: EntityDataAccessor<Float> = SynchedEntityData.defineId(Cog::class.java, EntityDataSerializers.FLOAT)
         private val DATA_BELL: EntityDataAccessor<Int> = SynchedEntityData.defineId(Cog::class.java, EntityDataSerializers.INT)
+        private val DATA_LIST: EntityDataAccessor<Float> = SynchedEntityData.defineId(Cog::class.java, EntityDataSerializers.FLOAT)
+        private val DATA_HELD: EntityDataAccessor<Boolean> = SynchedEntityData.defineId(Cog::class.java, EntityDataSerializers.BOOLEAN)
+        private val DATA_FIGUREHEAD: EntityDataAccessor<Boolean> = SynchedEntityData.defineId(Cog::class.java, EntityDataSerializers.BOOLEAN)
 
         /** Who's at each station, by entity id, or -1. */
         private val DATA_STATIONS: Array<EntityDataAccessor<Int>> =

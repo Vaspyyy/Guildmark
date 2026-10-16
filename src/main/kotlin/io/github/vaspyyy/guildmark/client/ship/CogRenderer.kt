@@ -59,6 +59,7 @@ class CogRenderer(context: EntityRendererProvider.Context) : EntityRenderer<Cog,
         state.pitch = pitch
         state.heel = heel
         state.bob = bob
+        state.figurehead = entity.figurehead
         state.hurtTime = entity.hurtTime - partialTicks
         state.hurtDir = entity.hurtDir
         // Her name over the stern castle, not her middle

@@ -53,6 +53,12 @@ object ShipRegistry {
         UnaryOperator<DataComponentType.Builder<Float>> { it.persistent(Codec.FLOAT).networkSynchronized(ByteBufCodecs.FLOAT) },
     )
 
+    /** Whether a packed cog carries a Maelgrasp's beak on her stem. */
+    val FIGUREHEAD: DeferredHolder<DataComponentType<*>, DataComponentType<Boolean>> = COMPONENTS.registerComponentType(
+        "cog_figurehead",
+        UnaryOperator<DataComponentType.Builder<Boolean>> { it.persistent(Codec.BOOL).networkSynchronized(ByteBufCodecs.BOOL) },
+    )
+
     /** Where a player last left their cog, for the compass and the map. Kept through death, synced to its player. */
     val BERTH: DeferredHolder<AttachmentType<*>, AttachmentType<Berth>> = ATTACHMENTS.register("berth") { ->
         AttachmentType.builder { -> Berth() }

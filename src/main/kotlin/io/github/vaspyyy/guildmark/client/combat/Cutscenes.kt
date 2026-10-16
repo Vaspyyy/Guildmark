@@ -8,6 +8,8 @@ import io.github.vaspyyy.guildmark.enemy.DuskRider
 import io.github.vaspyyy.guildmark.enemy.HillTroll
 import io.github.vaspyyy.guildmark.dragon.Dragon
 import io.github.vaspyyy.guildmark.dragon.DragonRegistry
+import io.github.vaspyyy.guildmark.sea.Maelgrasp
+import io.github.vaspyyy.guildmark.sea.SeaRegistry
 import io.github.vaspyyy.guildmark.faction.FactionRegistry
 import io.github.vaspyyy.guildmark.faction.Renegade
 import net.minecraft.world.entity.LivingEntity
@@ -126,6 +128,8 @@ object Cutscenes : GuiLayer {
         var banner = -1
         var bannerText = "cutscene.guildmark.foe_vanquished"
         var shakeAt = -1
+        /** Whether the camera's shots keep following the boss about, or stay where it was when the scene began. */
+        var follow = true
         /** Whose words and name these are (cutscene.guildmark.<speaker>). */
         var speaker = "halvard"
 
@@ -185,6 +189,7 @@ object Cutscenes : GuiLayer {
     private val FIELD_BOSS by lazy { Music(ModSounds.MUSIC_FIELD_BOSS, 0, 0, true) }
     private val DUSK_RIDER by lazy { Music(ModSounds.MUSIC_DUSK_RIDER, 0, 0, true) }
     private val DRAGON by lazy { Music(DragonRegistry.MUSIC, 0, 0, true) }
+    private val MAELGRASP by lazy { Music(SeaRegistry.MUSIC, 0, 0, true) }
 
     private fun camerasOn(): Boolean = !GuildmarkClientConfig.SPEC.isLoaded || GuildmarkClientConfig.CUTSCENES.get()
 
@@ -339,6 +344,7 @@ object Cutscenes : GuiLayer {
     /** A field boss falls: the camera circles wide as it drops to its knees and pitches over, then the banner. */
     private fun felled(s: Scene, camera: Boolean) {
         if (s.level.getEntity(s.bossId) is Dragon) return dragonFelled(s, camera)
+        if (s.level.getEntity(s.bossId) is Maelgrasp) return maelgraspFelled(s, camera)
         s.length = 150
         s.stinger = ModSounds.FOE_VANQUISHED.get()
         s.stingerAt = 40
@@ -361,6 +367,24 @@ object Cutscenes : GuiLayer {
         // Until it's gone to cinders (Dragon.DEATH_TICKS); the server shields those watching as long (Dragon.FELLED_SCENE)
         s.shots = listOf(orbit(0, 104, 64f, 58f, 17.0, 15.0, 20.0, 80.0, 6.0, 4.5, 2.4))
         s.returnAt = 104
+    }
+
+    /**
+     * The Maelgrasp is slain: the camera stands off over the water and turns slowly about it as it sinks into the dark,
+     * staying above the waves while it goes under them, then its own banner.
+     */
+    private fun maelgraspFelled(s: Scene, camera: Boolean) {
+        s.length = 170
+        s.stinger = ModSounds.FOE_VANQUISHED.get()
+        s.stingerAt = 56
+        s.banner = 56
+        s.bannerText = "cutscene.guildmark.maelgrasp_slain"
+        s.follow = false
+        silenceUntil = max(silenceUntil, ticks + 180)
+        if (!camera) return
+        // While it sinks (Maelgrasp.DEATH_TICKS); the server shields those watching for its FELLED_SCENE
+        s.shots = listOf(orbit(0, 100, 60f, 54f, 14.0, 12.5, 60.0, 128.0, 6.5, 4.5, 1.2))
+        s.returnAt = 100
     }
 
     private fun dolly(start: Int, end: Int, hideSelf: Boolean, fovA: Float, fovB: Float, camA: Vec3, camB: Vec3, lookA: Vec3, lookB: Vec3) =
@@ -622,7 +646,7 @@ object Cutscenes : GuiLayer {
             end()
             return
         }
-        (s.level.getEntity(s.bossId) as? LivingEntity)?.let { s.bossPos = it.position() }
+        if (s.follow) (s.level.getEntity(s.bossId) as? LivingEntity)?.let { s.bossPos = it.position() }
         if (s.rig != null && s.time < s.returnAt) {
             var skip = false
             while (minecraft.options.keyJump.consumeClick()) skip = true
@@ -697,7 +721,7 @@ object Cutscenes : GuiLayer {
     /** A field boss with a fight on: a hill troll, or a Dusk Rider that isn't fading away. */
     private fun fightingFieldBoss(entity: LivingEntity): Boolean =
         (entity is HillTroll && entity.fighting) || (entity is DuskRider && entity.fighting && !entity.fading) || (entity is Dragon && entity.fighting) ||
-            (entity is Renegade && entity.fighting)
+            (entity is Renegade && entity.fighting) || (entity is Maelgrasp && entity.fighting)
 
     private fun findFieldBoss(minecraft: Minecraft) {
         val player = minecraft.player
@@ -714,6 +738,8 @@ object Cutscenes : GuiLayer {
         fieldBossId = (level.getEntitiesOfClass(CombatEnemy::class.java, player.boundingBox.inflate(48.0)) { it.isAlive && fightingFieldBoss(it) }
             .minByOrNull { it.distanceToSqr(player) }
             ?: level.getEntitiesOfClass(Dragon::class.java, player.boundingBox.inflate(DRAGON_THEME_RANGE)) { it.isAlive && it.fighting }
+                .minByOrNull { it.distanceToSqr(player) }
+            ?: level.getEntitiesOfClass(Maelgrasp::class.java, player.boundingBox.inflate(48.0)) { it.isAlive && it.fighting }
                 .minByOrNull { it.distanceToSqr(player) })?.id ?: -1
     }
 
@@ -831,6 +857,7 @@ object Cutscenes : GuiLayer {
                 when (field) {
                     is DuskRider -> DUSK_RIDER
                     is Dragon -> DRAGON
+                    is Maelgrasp -> MAELGRASP
                     else -> FIELD_BOSS
                 },
             )
@@ -839,7 +866,7 @@ object Cutscenes : GuiLayer {
         val playing = event.playingMusic?.identifier
         if (playing == ModSounds.MUSIC_WARDEN.get().location() || playing == ModSounds.MUSIC_WARDEN_2.get().location() ||
             playing == ModSounds.MUSIC_FIELD_BOSS.get().location() || playing == ModSounds.MUSIC_DUSK_RIDER.get().location() ||
-            playing == DragonRegistry.MUSIC.get().location()) event.overrideMusic(null)
+            playing == DragonRegistry.MUSIC.get().location() || playing == SeaRegistry.MUSIC.get().location()) event.overrideMusic(null)
     }
 
     // ---- On screen ----

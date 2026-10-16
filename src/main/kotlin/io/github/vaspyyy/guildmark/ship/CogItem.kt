@@ -70,6 +70,7 @@ class CogItem(properties: Properties) : Item(properties) {
         stack.get(ShipRegistry.HULL.get())?.let {
             adder.accept(Component.translatable("item.guildmark.cog.hull", (it / Cog.MAX_HULL * 100f).toInt()).withStyle(ChatFormatting.GRAY))
         }
+        if (stack.get(ShipRegistry.FIGUREHEAD.get()) == true) adder.accept(Component.translatable("item.guildmark.cog.figurehead").withStyle(ChatFormatting.DARK_AQUA))
         adder.accept(Component.translatable("item.guildmark.cog.tip").withStyle(ChatFormatting.DARK_GRAY))
     }
 

@@ -30,12 +30,13 @@ texture sheet, and a report of how far the model reaches and what the riders' sp
 
     python3 -B art/scripts/ship.py src/main/resources/assets/guildmark <preview-dir> art/models [kotlin-dir] [--no-previews]
 """
-import sys, os, json, math, zlib, re, itertools, time
+import sys, os, json, math, zlib, re, itertools, time, contextlib, functools
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import numpy as np
 from PIL import Image, ImageDraw
 from modelkit import Cube, Part, Model
+import glnoise
 
 TEX_W, TEX_H = 512, 512      # what the model declares
 HD = 2                       # the PNG is painted at twice that
@@ -120,24 +121,55 @@ def sstep(e0, e1, x):
 
 
 def hash01(ix, iy=0, iz=0, seed=0):
-    """A repeatable pseudo-random number in [0, 1) for each integer lattice point."""
-    a = np.asarray(ix, np.int64).astype(np.uint64)
-    b = np.asarray(iy, np.int64).astype(np.uint64)
-    c = np.asarray(iz, np.int64).astype(np.uint64)
-    m32 = np.uint64(0xFFFFFFFF)
+    """A repeatable pseudo-random number in [0, 1) for each integer lattice point. Worked in 32-bit unsigned arithmetic,
+    which wraps as the hash means it to (and as glnoise's shader does)."""
+    a = np.asarray(ix, np.int64).astype(np.uint32)
+    b = np.asarray(iy, np.int64).astype(np.uint32)
+    c = np.asarray(iz, np.int64).astype(np.uint32)
     with np.errstate(over='ignore'):
-        h = (a * np.uint64(73856093)) ^ (b * np.uint64(19349663)) ^ (c * np.uint64(83492791)) ^ np.uint64((int(seed) * 2654435761) & 0xFFFFFFFF)
-        h = h & m32
-        h = h ^ (h >> np.uint64(15))
-        h = (h * np.uint64(2246822519)) & m32
-        h = h ^ (h >> np.uint64(13))
-        h = (h * np.uint64(3266489917)) & m32
-        h = h ^ (h >> np.uint64(16))
+        h = (a * np.uint32(73856093)) ^ (b * np.uint32(19349663)) ^ (c * np.uint32(83492791)) ^ np.uint32((int(seed) * 2654435761) & 0xFFFFFFFF)
+        h = h ^ (h >> np.uint32(15))
+        h = h * np.uint32(2246822519)
+        h = h ^ (h >> np.uint32(13))
+        h = h * np.uint32(3266489917)
+        h = h ^ (h >> np.uint32(16))
     return h.astype(np.float64) / 4294967296.0
+
+
+# How deep inside fast_noise() we are, and the fewest points worth handing to the shader
+_FAST = [0]
+GPU_MIN = 4096
+
+
+@contextlib.contextmanager
+def fast_noise():
+    """Within it, big arrays of noise are worked out by glnoise's compute shader on all cores: about fifty times faster,
+    and true to float32 rather than float64, so a pixel may come out one step different. For previews; textures are
+    painted outside it, so they come out the same every time. Where there's no EGL, numpy does the work as before."""
+    _FAST[0] += 1
+    try:
+        yield
+    finally:
+        _FAST[0] -= 1
+
+
+def previewing(fn):
+    """Runs [fn] (something that draws a preview) within fast_noise()."""
+    @functools.wraps(fn)
+    def run(*args, **kwargs):
+        with fast_noise():
+            return fn(*args, **kwargs)
+    return run
+
+
+def _on_gpu(a):
+    return _FAST[0] > 0 and np.size(a) >= GPU_MIN and glnoise.available()
 
 
 def vnoise(x, y, z, seed=0):
     """Smooth value noise in 0..1 at lattice coordinates (one random value per integer point, eased between them)."""
+    if _on_gpu(np.broadcast(x, y, z)):
+        return glnoise.fbm(x, y, z, seed=seed)
     x = np.asarray(x, float); y = np.asarray(y, float); z = np.asarray(z, float)
     x0 = np.floor(x); y0 = np.floor(y); z0 = np.floor(z)
     fx = sstep(0, 1, x - x0); fy = sstep(0, 1, y - y0); fz = sstep(0, 1, z - z0)
@@ -153,6 +185,9 @@ def vnoise(x, y, z, seed=0):
 
 def fbm(P, cell, seed=0, octaves=3):
     """Fractal noise in 0..1 over model-space points [P] (..., 3): features about [cell] model px across."""
+    if _on_gpu(np.asarray(P)[..., 0]):
+        k = 1.0 / cell
+        return glnoise.fbm(P[..., 0], P[..., 1], P[..., 2], (k, k, k), (17.3, 5.1, 11.7), seed, octaves)
     tot = 0.0; amp = 1.0; norm = 0.0; k = 1.0 / cell
     for o in range(octaves):
         tot = tot + amp * vnoise(P[..., 0] * k + 17.3 * o, P[..., 1] * k + 5.1 * o, P[..., 2] * k + 11.7 * o, seed + 31 * o)
@@ -162,6 +197,8 @@ def fbm(P, cell, seed=0, octaves=3):
 
 def fbm2(a, b, cell_a, cell_b, seed=0, octaves=3):
     """Fractal noise over two coordinates with different feature sizes (stretched grain: long along [a], fine across [b])."""
+    if _on_gpu(np.broadcast(a, b)):
+        return glnoise.fbm(a, b, 0.0, (1.0 / cell_a, 1.0 / cell_b, 1.0), (17.3, 5.1, 3.7), seed, octaves)
     tot = 0.0; amp = 1.0; norm = 0.0; ka = 1.0 / cell_a; kb = 1.0 / cell_b
     z = np.zeros_like(np.asarray(a, float))
     for o in range(octaves):
@@ -207,6 +244,9 @@ RAMP = {
     'lamp': [(60, 20, 6), (130, 56, 12), (200, 100, 24), (240, 152, 48), (255, 200, 100), (255, 232, 160)],
     'glassdark': [(6, 9, 12), (12, 18, 24), (20, 30, 38), (32, 46, 56), (50, 68, 80), (80, 102, 116)],
     'stone': [(20, 20, 24), (40, 40, 46), (62, 62, 68), (88, 88, 92), (116, 114, 114), (146, 142, 136)],
+    'chitin': [(5, 5, 9), (12, 11, 18), (24, 22, 34), (42, 38, 56), (68, 62, 88), (104, 98, 130), (146, 140, 176), (190, 186, 218)],
+    'bruise': [(18, 12, 24), (34, 24, 44), (54, 40, 66), (80, 60, 92), (108, 84, 118), (138, 112, 146)],
+    'amber': [(40, 20, 8), (84, 44, 16), (130, 72, 24), (176, 108, 38), (216, 150, 66), (244, 190, 106)],
 }
 RAMP = {k: np.array(v, float) for k, v in RAMP.items()}
 
@@ -445,16 +485,60 @@ def face_corners(c):
     }
 
 
+class Atlas:
+    """Which texels of an atlas (at HD) are taken, and their running sums S (S[r, c]: how many are taken above row r and left
+    of column c), which say at once whether any rectangle is free. The sums are kept up to date as pieces are taken, rather
+    than summed afresh for every cube: a 795-cube cog packs in a second or two instead of twenty."""
+
+    def __init__(self, tex_w, tex_h):
+        self.W, self.H = tex_w, tex_h
+        self.occ = np.zeros((tex_h * HD, tex_w * HD), bool)
+        self.S = np.zeros((tex_h * HD + 1, tex_w * HD + 1), np.int32)
+
+    def first_free(self, pieces, tw, th):
+        """The first spot (x, y) on the declared grid, top to bottom then left to right, where a layout [tw] x [th] declared
+        texels fits with every one of its [pieces] (dx, dy, w, h at HD from the spot's corner) free; None if there's none."""
+        nv, nu = self.H - th + 1, self.W - tw + 1
+        if nv <= 0 or nu <= 0:
+            return None
+        S = self.S
+        at = lambda r, q: S[r:r + HD * (nv - 1) + 1:HD, q:q + HD * (nu - 1) + 1:HD]
+        ok = np.ones((nv, nu), bool)
+        for dx, dy, pw, ph in pieces:
+            ok &= at(dy + ph, dx + pw) - at(dy, dx + pw) - at(dy + ph, dx) + at(dy, dx) == 0
+        i = int(ok.argmax())
+        if not ok.flat[i]:
+            return None
+        y, x = divmod(i, nu)
+        return x, y
+
+    def take(self, x, y, pieces):
+        """Marks [pieces] taken at the spot (x, y). They must be free (as first_free finds them) and not overlap each other."""
+        for dx, dy, pw, ph in pieces:
+            y0, x0 = HD * y + dy, HD * x + dx
+            assert not self.occ[y0:y0 + ph, x0:x0 + pw].any(), 'taking texels already taken'
+            self.occ[y0:y0 + ph, x0:x0 + pw] = True
+            # every sum below and right of the piece's corner grows by the part of the piece above and left of it
+            rows = np.minimum(np.arange(1, self.S.shape[0] - y0, dtype=np.int32), ph)
+            cols = np.minimum(np.arange(1, self.S.shape[1] - x0, dtype=np.int32), pw)
+            self.S[y0 + 1:, x0 + 1:] += rows[:, None] * cols[None, :]
+
+    def used(self):
+        """(declared rows used, share of the atlas taken)."""
+        return int(np.nonzero(self.occ.any(axis=1))[0].max()) // HD + 1, float(self.occ.mean())
+
+
 def pack_atlas(m):
     """Place every cube's box-UV layout in the atlas: big ones first, each at the first spot (top to bottom, left to right on the
     declared grid) where the two strips it really occupies (the cross's arms, at HD, from the true fractional sizes) are free,
     so small cubes drop into the voids at the corners of big ones. Raises if the atlas is too small."""
     W, H = m.tex_w, m.tex_h
-    occ = np.zeros((H * HD, W * HD), bool)
+    atlas = Atlas(W, H)
     area = lambda c: (2 * c.size[2] + 2 * c.size[0]) * (c.size[2] + c.size[1])
-    cubes = sorted(m.all_cubes(), key=lambda c: (-area(c), c.name))
+    # cubes marked `late` (the figurehead's, added after the ship was settled) go last, so everything packed before them stays where it was
+    late = lambda c: bool(getattr(c, 'kw', {}).get('late'))
+    cubes = sorted((c for c in m.all_cubes() if not late(c)), key=lambda c: (-area(c), c.name)) + sorted((c for c in m.all_cubes() if late(c)), key=lambda c: (-area(c), c.name))
     hd = lambda v: int(round(v * HD))
-    first_free = 0
     for c in cubes:
         w, h, d = c.size
         for v in (w, h, d):
@@ -462,25 +546,14 @@ def pack_atlas(m):
         pieces = [(hd(d), 0, hd(2 * w), hd(d)), (0, hd(d), hd(2 * d + 2 * w), hd(h))]
         pieces = [q for q in pieces if q[2] > 0 and q[3] > 0]
         tw, th = math.ceil(2 * d + 2 * w), math.ceil(d + h)
-        S = np.zeros((H * HD + 1, W * HD + 1), np.int32)
-        S[1:, 1:] = occ.cumsum(0).cumsum(1)
-        nv, nu = H - th + 1, W - tw + 1
-        if nv <= 0 or nu <= 0:
+        if H - th + 1 <= 0 or W - tw + 1 <= 0:
             raise SystemExit(f'{m.name}: {c.name} is bigger than the texture')
-        ok = np.ones((nv, nu), bool)
-        for dx, dy, pw, ph in pieces:
-            ys = HD * np.arange(nv)[:, None] + dy
-            xs = HD * np.arange(nu)[None, :] + dx
-            win = S[ys + ph, xs + pw] - S[ys, xs + pw] - S[ys + ph, xs] + S[ys, xs]
-            ok &= win == 0
-        pos = np.argwhere(ok)
-        if not len(pos):
+        spot = atlas.first_free(pieces, tw, th)
+        if spot is None:
             raise SystemExit(f'{m.name}: texture too small for {c.name}')
-        y, x = pos[0]
-        for dx, dy, pw, ph in pieces:
-            occ[HD * y + dy:HD * y + dy + ph, HD * x + dx:HD * x + dx + pw] = True
-        c.uv = (int(x), int(y))
-    return int(np.nonzero(occ.any(axis=1))[0].max()) // HD + 1, float(occ.mean())
+        atlas.take(*spot, pieces)
+        c.uv = spot
+    return atlas.used()
 
 
 class Scene:
@@ -1014,6 +1087,103 @@ def bow_bitts():
     return parts
 
 
+# ================================================================== the figurehead: a slain Maelgrasp's beak on the bowsprit
+
+# Shown only when the ship carries one (CogRenderState.figurehead). The bow's centre line is crowded: the bow lantern hangs under the
+# bowsprit's heel in front of the stem head and the bobstay runs from the sprit's tip down to the stem's foot, so a beak hung under the
+# sprit would have to pass through one or the other. It stands on the bowsprit instead, just ahead of the heel's lashings: its rear
+# lashed down to the wood, its head reared up off the sprit and its lower jaw hanging open on a hinge of sinew (the jaw swings with
+# her pitch), two loose ends of the lashing streaming beside it.
+FIG_AT = (0.0, -30.537, -82.0)                      # on the bowsprit's centre line where the beak's rear lies
+FIG_TILT = -math.degrees(math.atan2(11.2, 41.0))    # the part is turned about x by this (the bowsprit's rise: 15.3 degrees), so its -z runs up the sprit
+FIG_TAIL_REST = round(math.radians(-FIG_TILT), 3)   # radians: what a loose end of the lashing is turned back by to hang plumb from the tilted part
+BEAK_N = 11                                         # the beak is built in this many slices
+BEAK_SLICE = 1.5                                    # each this deep (px)
+BEAK_L = BEAK_N * BEAK_SLICE                        # the beak, rear to point (px)
+BEAK_BASE = -1.6                                    # its rear-bottom corner in the part's frame: a hair into the sprit's top (the sprit is 1.4 to 1.8 thick to its half there)
+BEAK_RAISE = 16.0                                   # degrees the beak is reared up off the bowsprit, about its rear-bottom corner
+JAW_AT = (0.0, -1.0, -1.0)                          # the lower jaw's hinge in the beak's frame
+JAW_OPEN = 13.0                                     # degrees it hangs open at rest
+FIG_JAW_REST = round(math.radians(JAW_OPEN), 3)
+
+
+def beak_top(s):
+    """How high the culmen stands over the beak's underside at [s] (0 at its rear, 1 at its point; scalar or array): a hood that hooks over at the end."""
+    return 1.2 + 9.2 * np.sqrt(np.clip(1.0 - np.asarray(s, float) ** 2.2, 0.0, 1.0))
+
+
+def beak_cut(s):
+    """How high the cutting edge of the upper mandible lies: level, then the inner curve of the hook coming down to the point."""
+    s = np.asarray(s, float)
+    return 3.0 * np.clip(1.0 - (np.clip(s - 0.7, 0.0, None) / 0.3) ** 1.4, 0.0, 1.0)
+
+
+def beak_half(s):
+    """Half the beak's width at [s]."""
+    return 3.5 - 2.3 * np.asarray(s, float) ** 1.2
+
+
+def r2(v):
+    """A length on the half-px grid the HD texture needs."""
+    return round(v * 2.0) / 2.0
+
+
+def fcu(name, x0, y0, z0, w, h, d, mat, **kw):
+    return Cu((x0, y0, z0), (w, h, d), mat, name, late=True, **kw)
+
+
+def beak_slice_boxes(k, grow=0.0):
+    """The boxes of slice [k] of the upper mandible in the beak's frame (y up is negative, 0 at the underside), bottom to top: (layer, x0, y0, z0,
+    w, h, d). [grow] swells each by that much to every side but its underside (a lashing is the same boxes a little bigger)."""
+    s = (k + 0.5) / BEAK_N
+    hc, ht, hw = beak_cut(s), beak_top(s), beak_half(s)
+    span = ht - hc
+    b = [r2(hc), r2(hc + 0.38 * span), r2(hc + 0.72 * span), r2(ht)]
+    out = []
+    z1 = -BEAK_SLICE * (k + 1)
+    for li, frac in enumerate((1.0, 0.84, 0.6)):
+        lo, hi = b[li], b[li + 1]
+        if hi - lo < 0.5:
+            continue
+        w = max(1.0, r2(2.0 * hw * frac))
+        out.append((li, -w / 2 - grow, -hi - grow, z1, w + 2 * grow, hi - lo + (2 * grow if li else grow), BEAK_SLICE))
+    return out
+
+
+def figurehead_parts():
+    """The beak (ten slices of the upper mandible reared up off the sprit, the scrap of mantle it was cut from on its rear, a turn of hemp round its
+    neck), its lower jaw on a hinge with a tongue in it, and on the bowsprit a lashing round the scrap with its two loose ends hanging."""
+    cubes = []
+    for k in range(BEAK_N):
+        for (li, x0, y0, z0, w, h, d) in beak_slice_boxes(k):
+            cubes.append(fcu(f'fh_u{k}_{li}', x0, y0, z0, w, h, d, 'beak', part='upper', layer=li, k=k))
+    cubes.append(fcu('fh_flesh', -3.5, -9.5, 0.0, 7.0, 9.5, 1.5, 'beak', part='flesh'))
+    # a turn of hemp round the beak's neck, and one round the scrap
+    for (li, x0, y0, z0, w, h, d) in beak_slice_boxes(2, 0.5):
+        cubes.append(fcu(f'fh_lash_b{li}', x0, y0, z0, w, r2(h + (0.5 if li == 0 else 0.0)), d, 'rope', lash=True, axis='y'))
+    cubes.append(fcu('fh_lash_a', -4.0, -8.0, 0.2, 8.0, 8.0, 1.5, 'rope', lash=True, axis='y'))
+    # the lower jaw, in its own frame (the hinge at JAW_AT): slices under the cutting edge, shorter and blunter, and a tongue
+    jx, jy, jz = JAW_AT
+    jaw = []
+    for k, lh in enumerate((2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 1.5)):
+        s = (k + 0.5) / BEAK_N
+        w = max(1.0, r2(2.0 * beak_half(s) * 0.88))
+        jaw.append(fcu(f'fh_l{k}', -w / 2, -lh - jy, -BEAK_SLICE * (k + 1) - jz, w, lh, BEAK_SLICE, 'beak', part='lower', k=k))
+    jaw.append(fcu('fh_tongue', -1.0, -2.5 - jy, -7.0 - jz, 2.0, 0.5, 5.0, 'beak', part='flesh'))
+    jaw_part = mkpart('fh_jaw', JAW_AT, (JAW_OPEN, 0, 0), jaw)
+    beak = mkpart('fh_beak', (0.0, BEAK_BASE, 0.0), (-BEAK_RAISE, 0, 0), cubes, [jaw_part])
+    # on the bowsprit: the lashing round the sprit under the scrap, and the loose ends hanging from it
+    root = [fcu('fh_lash_a_under', -2.75, BEAK_BASE + 0.4, 0.2, 5.5, 4.0, 1.5, 'rope', lash=True, axis='y'),
+            fcu('fh_lash_b_under', -2.75, BEAK_BASE + 0.4, -4.4, 5.5, 4.0, 1.5, 'rope', lash=True, axis='y')]
+    tails = []
+    for side, sx in (('s', -1.0), ('p', 1.0)):
+        nm = f'fh_tail_{side}'
+        tails.append(mkpart(nm, (sx * 2.4, 2.3, 0.95), (-FIG_TILT, 0, 0), [
+            Cu((-0.5, 0.0, -0.5), (1.0, 5.5, 1.0), 'rope', nm, axis='y', thick=1.0, late=True),
+            Cu((-1.0, 5.0, -1.0), (2.0, 2.0, 2.0), 'rope', nm + '_knot', lash=True, axis='y', late=True)]))
+    return [mkpart('figurehead', FIG_AT, (FIG_TILT, 0, 0), root, [beak] + tails)]
+
+
 # ================================================================== fittings: wheel, bell, lanterns, rudder, anchor, capstan
 
 WHEEL_AT = (0.0, -45.0, 47.0)
@@ -1268,6 +1438,7 @@ def build():
     group('fittings', fittings())
     group('cargo', cargo())
     group('lines', follow_lines())
+    group('figurehead', figurehead_parts())
     return Model('cog', TEX_W, TEX_H, parts)
 
 
@@ -1292,6 +1463,7 @@ class CogState:
         self.sail = 1.0; self.fill = 0.0; self.luff = 0.0; self.brace = 0.0; self.windYaw = 0.0; self.wind = 0.3
         self.wheel = 0.0; self.rudder = 0.0; self.anchor = 0.0; self.lanterns = 0.0; self.bell = -1.0
         self.time = 0.0; self.speed = 0.0; self.pitch = 0.0; self.heel = 0.0; self.bob = 0.0; self.hurtTime = 0.0; self.hurtDir = 1
+        self.figurehead = False
         for k, v in kw.items():
             if not hasattr(self, k):
                 raise AttributeError(k)
@@ -1413,6 +1585,13 @@ def pose(st, lens):
         vis(nm, out > 0.01)
         scl(nm, 1.0, clampf(out / ROPE_SEG, 0.0, 1.0), 1.0)
     rot('capstan', 0.0, d / 4.0, 0.0)
+    # ---- the figurehead: shown when a beak is mounted; its lower jaw swings with her pitch and the loose ends of its lashing hang plumb as she leans and stream in the wind
+    vis('figurehead', st.figurehead)
+    rot('fh_jaw', FIG_JAW_REST + 0.8 * px + (0.02 + 0.05 * wind) * math.sin(t * 0.37 + 1.3), 0.0, 0.0)
+    flap = 0.05 + 0.22 * wind
+    for i, nm in enumerate(('fh_tail_s', 'fh_tail_p')):
+        rot(nm, FIG_TAIL_REST + px + flap * math.sin(t * (0.43 + 0.04 * i) + 0.6 + 3.1 * i), 0.0,
+            pz + 0.6 * flap * math.sin(t * (0.37 - 0.04 * i) + 2.1 + 3.1 * i))
     return P
 
 
@@ -2568,11 +2747,71 @@ def paint_pennant(f):
     return Out(rgb, alive.astype(float))
 
 
+def paint_beak(f):
+    """A Maelgrasp's beak: black lacquered chitin laminated in fine ridges that lean with its hood, a hard light along its edges and the
+    tops of its cheeks, amber where the black wears thin (the slit's lips and the point of the hook), a few white barnacles, a dark mouth in
+    the slit and, on its rear, the torn bruise-purple scrap of mantle it was cut from with the rings of the suckers still on it."""
+    kw = f.kw
+    part = kw.get('part', 'upper')
+    seed = f.seed()
+    P = f.P
+    X, Y, Z = P[..., 0], P[..., 1], P[..., 2]
+    if part == 'lower':                       # the jaw's own frame: back to the beak's
+        Y = Y + JAW_AT[1]
+        Z = Z + JAW_AT[2]
+    s = np.clip(-Z / BEAK_L, 0.0, 1.0)
+    h = -Y
+    ed = edge_dist(f)
+    up = np.clip(-f.nw[1], 0.0, 1.0)
+    down = np.clip(f.nw[1], 0.0, 1.0)
+    if part == 'mouth':
+        return Out(tone_rgb('bruise', 0.02 + 0.05 * fbm(P, 1.2, seed, 2)) * 0.6)
+    if part == 'flesh':
+        n = fbm(P, 1.8, seed, 3)
+        rgb = tone_rgb('bruise', 0.34 + 0.40 * (n - 0.5) + 0.12 * up)
+        if f.face == 'back':
+            bd, bv = worley(X, Y, 3.0, seed)
+            on = bv > 0.25
+            rgb = over(rgb, tone_rgb('bruise', 0.88), (np.abs(bd * 3.0 - 1.15) < 0.34) * on * 0.8)
+            rgb = over(rgb, tone_rgb('bruise', 0.02), (bd * 3.0 < 0.7) * on * 0.85)
+        rgb = rgb * (1.0 - 0.35 * np.exp(-ed / 0.5))[..., None]
+        return Out(rgb)
+    lam = 0.5 + 0.5 * np.sin((s * BEAK_L * 0.9 + h * 0.75) * (2 * math.pi / 2.2))
+    if (f.face == 'bottom' and part == 'upper') or (f.face == 'top' and part == 'lower'):
+        # inside the open mouth: dark bruise-purple, amber along the cutting edges
+        rgb = tone_rgb('bruise', 0.10 + 0.18 * fbm(P, 1.6, seed, 2))
+        rgb = over(rgb, tone_rgb('amber', 0.40 + 0.35 * lam), np.exp(-ed / 0.6) * 0.9)
+        return Out(rgb)
+    # the lacquer is read off where a texel lies on the beak (how far up the cheek toward the culmen, how far along), not off its own box, so the
+    # stacked boxes shade as one rounded form: dark by the cutting edge, lighter up the cheek, a long hard streak of light just under the ridge
+    sf = beak_cut(s)
+    top_h = beak_top(s)
+    if part == 'lower':
+        u = np.clip(h / 2.0, 0.0, 1.0)
+    else:
+        u = np.clip((h - sf) / np.maximum(top_h - sf, 0.5), 0.0, 1.0)
+    t = 0.26 + 0.26 * u + 0.05 * up - 0.05 * down + 0.05 * (lam - 0.5) + 0.05 * (fbm(P, 2.4, seed, 2) - 0.5)
+    t = t + 0.40 * np.exp(-((u - 0.80) / 0.10) ** 2) * (0.5 + 0.5 * sstep(0.95, 0.0, s)) + 0.14 * sstep(0.85, 1.0, u)
+    rgb = tone_rgb('chitin', t)
+    if part == 'upper':
+        lip = (1.0 - sstep(0.0, 0.9, h - sf)) * (1.0 if kw.get('layer', 0) == 0 else 0.0)
+        tip = sstep(0.84, 0.97, s) * (1.0 - sstep(1.2, 3.2, h))
+        amber = np.clip(np.maximum(lip, tip), 0.0, 1.0)
+        bd, bv = worley(X + Z * 0.7, Y + Z * 0.3, 2.8, seed + 3)
+        on = (bv > 0.86) & (s > 0.12) & (s < 0.85)
+        rgb = over(rgb, (60, 62, 58), (bd * 2.8 < 0.62) * on * 0.7)
+        rgb = over(rgb, (176, 176, 162), (bd * 2.8 < 0.40) * on * 0.9)
+    else:
+        amber = 1.0 - sstep(0.0, 0.7, 2.0 - h)
+    rgb = over(rgb, tone_rgb('amber', 0.30 + 0.5 * up + 0.2 * lam), amber * 0.85)
+    return Out(rgb)
+
+
 MATS.update({
     'hull': paint_hull, 'deck': paint_deck, 'grate': paint_grate, 'timber': paint_timber, 'mast': paint_mast, 'rope': paint_rope,
     'hemp_block': paint_hemp_block, 'iron': paint_iron, 'brass': paint_brass, 'lamp': paint_lamp, 'rudder': paint_rudder,
     'barrel': paint_barrel, 'crate': paint_crate, 'chest': paint_chest, 'coil': paint_coil, 'sack': paint_sack,
-    'canvas': paint_canvas, 'furl': paint_furl, 'pennant': paint_pennant,
+    'canvas': paint_canvas, 'furl': paint_furl, 'pennant': paint_pennant, 'beak': paint_beak,
 })
 
 
@@ -2718,6 +2957,7 @@ class Preview:
         self.sc, self.tex, self.glow, self.lens = scene, tex, glow, lens
         self.seas = {}
 
+    @previewing
     def frame(self, st, yaw, elev, scale, size, center, sky='dusk', ss=2, glow_gain=None, bloom=1.0, extras=(), sea_t=None, sea_speed=0.0, plain=False, mask=False, light_follow=False):
         """One picture. [sea_t] freezes the sea at that time and [sea_speed] its foam (an animation's sea stays still, so a GIF holds
         only what moves); without it the sea keeps the state's time. [plain] is a smooth sea. [light_follow] keeps the light where it is
@@ -2905,6 +3145,11 @@ class CogModel(root: ModelPart) : EntityModel<CogRenderState>(root, RenderTypes:
     private val ropes = Array(ROPE_SEGS) { part(if (it == 0) "anchor_rope" else "anchor_rope${it + 1}") }
     private val capstan = part("capstan")
 
+    // The figurehead (a slain Maelgrasp's beak lashed on the bowsprit, shown when the ship carries one) and the two loose ends of its lashing
+    private val figurehead = part("figurehead")
+    private val figureJaw = part("fh_jaw")
+    private val figureTails = arrayOf(part("fh_tail_s"), part("fh_tail_p"))
+
     // Scratch for the sail (the part of each row let down, and how far aft each seam between rows lies): nothing allocated per frame
     private val down = FloatArray(5)
     private val seam = FloatArray(6)
@@ -2921,6 +3166,7 @@ class CogModel(root: ModelPart) : EntityModel<CogRenderState>(root, RenderTypes:
         wheel.zRot = -state.wheel * DEG
         rudder.yRot = -state.rudder * DEG
         hang(state, t, wind, shake)
+        figurehead.visible = state.figurehead
     }
 
     /** The yard turns on the mast (above 0 its starboard arm swings aft); each brace and lift is turned and stretched to its arm. */
@@ -3061,6 +3307,14 @@ class CogModel(root: ModelPart) : EntityModel<CogRenderState>(root, RenderTypes:
             ropes[i].yScale = (out / ROPE_SEG).coerceIn(0f, 1f)
         }
         capstan.yRot = d / 4f
+        // The figurehead's lower jaw hangs on its hinge and swings with her pitch; the loose ends of its lashing hang plumb as she pitches and
+        // heels, and stream a little in the wind
+        figureJaw.xRot = FIGURE_JAW + 0.8f * px + (0.02f + 0.05f * wind) * sin(t * 0.37f + 1.3f)
+        val flap = 0.05f + 0.22f * wind
+        for (i in 0..1) {
+            figureTails[i].xRot = FIGURE_TAIL + px + flap * sin(t * (0.43f + 0.04f * i) + 0.6f + 3.1f * i)
+            figureTails[i].zRot = pz + 0.6f * flap * sin(t * (0.37f - 0.04f * i) + 2.1f + 3.1f * i)
+        }
     }
 
     companion object {
@@ -3120,6 +3374,10 @@ def kt_constants():
         f'        private const val ANCHOR_DROP = {f(ANCHOR_DROP)}',
         f'        private const val ROPE_SEG = {f(ROPE_SEG)}',
         f'        private const val ROPE_SEGS = {ROPE_SEGS}',
+        '',
+        '        // The figurehead: how far its lower jaw hangs open, and how far the loose ends of its lashing are turned back (the bowsprit\'s rise) to hang plumb from the tilted part',
+        f'        private const val FIGURE_JAW = {f(FIG_JAW_REST)}',
+        f'        private const val FIGURE_TAIL = {f(FIG_TAIL_REST)}',
         '',
     ]
     return '\n'.join(L)

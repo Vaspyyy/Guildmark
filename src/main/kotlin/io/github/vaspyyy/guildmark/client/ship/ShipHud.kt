@@ -24,7 +24,7 @@ import kotlin.math.sin
  * up), the wind's arrow streaming the way it blows and swelling with its gusts, a red wedge where the wind is too
  * far ahead to sail; beside it a gauge of how far the sail is let down, with a notch where it's been ordered to;
  * the anchor, lit when it's down; her name over it all, and under it her speed in knots (or why she isn't
- * making any) and her hull.
+ * making any: at anchor, head to wind, or held fast by something from the deep) and her hull.
  */
 object ShipHud : GuiLayer {
     val ID: Identifier = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "ship")
@@ -182,6 +182,10 @@ object ShipHud : GuiLayer {
         val status: Component
         var color = 0xFFFFFF
         when {
+            cog.held -> {
+                status = Component.translatable("hud.guildmark.ship.held")
+                color = WARN
+            }
             cog.anchored -> {
                 status = Component.translatable("hud.guildmark.ship.anchored")
                 color = GOLD

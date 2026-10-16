@@ -47,6 +47,9 @@ object GuildmarkConfig {
     val DRAGONS: ModConfigSpec.BooleanValue = BUILDER
         .comment("Dragons on the high peaks of the far wilds: each nests on a summit, circles it by day and sleeps there by night, and guards a hoard. A slain dragon's nest is taken by another a week later. Nests already built stay.")
         .define("dragons", true)
+    val SEA_MONSTERS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Sea monsters: packs of Gnashfins hunt anyone out on the open sea by night or in a storm, and far out over the deeps the Maelgrasp rises under a ship and takes hold of her.")
+        .define("seaMonsters", true)
     val REGIONS: ModConfigSpec.BooleanValue = BUILDER
         .comment("Named regions: the overworld is divided into lands with names of their own, announced as you enter them and lettered on the map.")
         .define("regions", true)

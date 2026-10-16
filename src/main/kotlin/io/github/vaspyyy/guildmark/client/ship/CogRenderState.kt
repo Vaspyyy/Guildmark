@@ -64,4 +64,7 @@ class CogRenderState : EntityRenderState() {
     /** Ticks left of the shudder when something strikes the hull, and which way it rocks. */
     var hurtTime = 0f
     var hurtDir = 1
+
+    /** Whether a slain Maelgrasp's beak is mounted on her stem as a figurehead. */
+    var figurehead = false
 }

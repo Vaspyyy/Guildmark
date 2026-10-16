@@ -6939,5 +6939,388 @@
       }
     ],
     "subtitle": "subtitles.guildmark.ship.hold_close"
+  },
+  "sea.gnashfin.fin": {
+    "sounds": [
+      {
+        "name": "guildmark:sea/gnashfin_fin1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:sea/gnashfin_fin2",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:sea/gnashfin_fin3",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.sea.gnashfin.fin"
+  },
+  "sea.gnashfin.leap": {
+    "sounds": [
+      {
+        "name": "guildmark:sea/gnashfin_leap1",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:sea/gnashfin_leap2",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "subtitles.guildmark.sea.gnashfin.leap"
+  },
+  "sea.gnashfin.dive": {
+    "sounds": [
+      {
+        "name": "guildmark:sea/gnashfin_dive1",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:sea/gnashfin_dive2",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "subtitles.guildmark.sea.gnashfin.dive"
+  },
+  "sea.gnashfin.snap": {
+    "sounds": [
+      {
+        "name": "guildmark:sea/gnashfin_snap1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:sea/gnashfin_snap2",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:sea/gnashfin_snap3",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.sea.gnashfin.snap"
+  },
+  "sea.gnashfin.bite": {
+    "sounds": [
+      {
+        "name": "guildmark:sea/gnashfin_bite1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:sea/gnashfin_bite2",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.sea.gnashfin.bite"
+  },
+  "sea.gnashfin.gnaw": {
+    "sounds": [
+      {
+        "name": "guildmark:sea/gnashfin_gnaw1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:sea/gnashfin_gnaw2",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:sea/gnashfin_gnaw3",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.sea.gnashfin.gnaw"
+  },
+  "sea.gnashfin.flop": {
+    "sounds": [
+      {
+        "name": "guildmark:sea/gnashfin_flop1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:sea/gnashfin_flop2",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:sea/gnashfin_flop3",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.sea.gnashfin.flop"
+  },
+  "sea.gnashfin.hurt": {
+    "sounds": [
+      {
+        "name": "guildmark:sea/gnashfin_hurt1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:sea/gnashfin_hurt2",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.sea.gnashfin.hurt"
+  },
+  "sea.gnashfin.death": {
+    "sounds": [
+      {
+        "name": "guildmark:sea/gnashfin_death",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "subtitles.guildmark.sea.gnashfin.death"
+  },
+  "sea.maelgrasp.omen": {
+    "sounds": [
+      {
+        "name": "guildmark:sea/maelgrasp_omen1",
+        "attenuation_distance": 96
+      },
+      {
+        "name": "guildmark:sea/maelgrasp_omen2",
+        "attenuation_distance": 96
+      },
+      {
+        "name": "guildmark:sea/maelgrasp_omen3",
+        "attenuation_distance": 96
+      }
+    ],
+    "subtitle": "subtitles.guildmark.sea.maelgrasp.omen"
+  },
+  "sea.maelgrasp.bubbles": {
+    "sounds": [
+      {
+        "name": "guildmark:sea/maelgrasp_bubbles1",
+        "attenuation_distance": 48
+      },
+      {
+        "name": "guildmark:sea/maelgrasp_bubbles2",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "subtitles.guildmark.sea.maelgrasp.bubbles"
+  },
+  "sea.maelgrasp.surge": {
+    "sounds": [
+      {
+        "name": "guildmark:sea/maelgrasp_surge",
+        "attenuation_distance": 64
+      }
+    ],
+    "subtitle": "subtitles.guildmark.sea.maelgrasp.surge"
+  },
+  "sea.maelgrasp.burst": {
+    "sounds": [
+      {
+        "name": "guildmark:sea/maelgrasp_burst1",
+        "attenuation_distance": 64
+      },
+      {
+        "name": "guildmark:sea/maelgrasp_burst2",
+        "attenuation_distance": 64
+      }
+    ],
+    "subtitle": "subtitles.guildmark.sea.maelgrasp.burst"
+  },
+  "sea.maelgrasp.writhe": {
+    "sounds": [
+      {
+        "name": "guildmark:sea/maelgrasp_writhe1",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:sea/maelgrasp_writhe2",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:sea/maelgrasp_writhe3",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "subtitles.guildmark.sea.maelgrasp.writhe"
+  },
+  "sea.maelgrasp.rear": {
+    "sounds": [
+      {
+        "name": "guildmark:sea/maelgrasp_rear",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "subtitles.guildmark.sea.maelgrasp.rear"
+  },
+  "sea.maelgrasp.slam": {
+    "sounds": [
+      {
+        "name": "guildmark:sea/maelgrasp_slam1",
+        "attenuation_distance": 64
+      },
+      {
+        "name": "guildmark:sea/maelgrasp_slam2",
+        "attenuation_distance": 64
+      }
+    ],
+    "subtitle": "subtitles.guildmark.sea.maelgrasp.slam"
+  },
+  "sea.maelgrasp.sweep": {
+    "sounds": [
+      {
+        "name": "guildmark:sea/maelgrasp_sweep",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "subtitles.guildmark.sea.maelgrasp.sweep"
+  },
+  "sea.maelgrasp.grab": {
+    "sounds": [
+      {
+        "name": "guildmark:sea/maelgrasp_grab",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "subtitles.guildmark.sea.maelgrasp.grab"
+  },
+  "sea.maelgrasp.squeeze": {
+    "sounds": [
+      {
+        "name": "guildmark:sea/maelgrasp_squeeze",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "subtitles.guildmark.sea.maelgrasp.squeeze"
+  },
+  "sea.maelgrasp.hurl": {
+    "sounds": [
+      {
+        "name": "guildmark:sea/maelgrasp_hurl",
+        "attenuation_distance": 40
+      }
+    ],
+    "subtitle": "subtitles.guildmark.sea.maelgrasp.hurl"
+  },
+  "sea.maelgrasp.arm_hurt": {
+    "sounds": [
+      {
+        "name": "guildmark:sea/maelgrasp_arm_hurt1",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:sea/maelgrasp_arm_hurt2",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "subtitles.guildmark.sea.maelgrasp.arm_hurt"
+  },
+  "sea.maelgrasp.sever": {
+    "sounds": [
+      {
+        "name": "guildmark:sea/maelgrasp_sever1",
+        "attenuation_distance": 48
+      },
+      {
+        "name": "guildmark:sea/maelgrasp_sever2",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "subtitles.guildmark.sea.maelgrasp.sever"
+  },
+  "sea.maelgrasp.sink": {
+    "sounds": [
+      {
+        "name": "guildmark:sea/maelgrasp_sink",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "subtitles.guildmark.sea.maelgrasp.sink"
+  },
+  "sea.maelgrasp.crush": {
+    "sounds": [
+      {
+        "name": "guildmark:sea/maelgrasp_crush1",
+        "attenuation_distance": 48
+      },
+      {
+        "name": "guildmark:sea/maelgrasp_crush2",
+        "attenuation_distance": 48
+      },
+      {
+        "name": "guildmark:sea/maelgrasp_crush3",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "subtitles.guildmark.sea.maelgrasp.crush"
+  },
+  "sea.maelgrasp.rise": {
+    "sounds": [
+      {
+        "name": "guildmark:sea/maelgrasp_rise",
+        "attenuation_distance": 96
+      }
+    ],
+    "subtitle": "subtitles.guildmark.sea.maelgrasp.rise"
+  },
+  "sea.maelgrasp.roar": {
+    "sounds": [
+      {
+        "name": "guildmark:sea/maelgrasp_roar1",
+        "attenuation_distance": 128
+      },
+      {
+        "name": "guildmark:sea/maelgrasp_roar2",
+        "attenuation_distance": 128
+      }
+    ],
+    "subtitle": "subtitles.guildmark.sea.maelgrasp.roar"
+  },
+  "sea.maelgrasp.blink": {
+    "sounds": [
+      {
+        "name": "guildmark:sea/maelgrasp_blink",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.sea.maelgrasp.blink"
+  },
+  "sea.maelgrasp.bite": {
+    "sounds": [
+      {
+        "name": "guildmark:sea/maelgrasp_bite",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "subtitles.guildmark.sea.maelgrasp.bite"
+  },
+  "sea.maelgrasp.ink": {
+    "sounds": [
+      {
+        "name": "guildmark:sea/maelgrasp_ink",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "subtitles.guildmark.sea.maelgrasp.ink"
+  },
+  "sea.maelgrasp.dive": {
+    "sounds": [
+      {
+        "name": "guildmark:sea/maelgrasp_dive",
+        "attenuation_distance": 64
+      }
+    ],
+    "subtitle": "subtitles.guildmark.sea.maelgrasp.dive"
+  },
+  "sea.maelgrasp.death": {
+    "sounds": [
+      {
+        "name": "guildmark:sea/maelgrasp_death",
+        "attenuation_distance": 128
+      }
+    ],
+    "subtitle": "subtitles.guildmark.sea.maelgrasp.death"
+  },
+  "music.maelgrasp": {
+    "sounds": [
+      {
+        "name": "guildmark:music/maelgrasp",
+        "stream": true
+      }
+    ]
   }
 }
