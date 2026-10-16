@@ -35,6 +35,8 @@ import kotlin.math.sqrt
 class Hold(player: ServerPlayer) : TrialRun(player) {
     private var fire: BlockPos? = null
     private var lookedAt = -1000
+    /** Looks for ground to raise the fire on that found none, each looking a little further out. */
+    private var misses = 0
     private val knights = ArrayList<SwornKnight>()
     private val hollows = ArrayList<HollowSoldier>()
     private var night = false
@@ -75,7 +77,12 @@ class Hold(player: ServerPlayer) : TrialRun(player) {
             lose(level, "message.guildmark.hold_far", clock)
             return true
         }
-        hollows.removeIf { !it.isAlive || it.isRemoved || it.distanceToSqr(at) > STRAY * STRAY }
+        hollows.removeIf { hollow ->
+            // One that wandered off is lost to the dark, not left roaming after the player
+            val strayed = hollow.isAlive && !hollow.isRemoved && hollow.distanceToSqr(at) > STRAY * STRAY
+            if (strayed) hollow.discard()
+            strayed || !hollow.isAlive || hollow.isRemoved
+        }
         knights.removeIf { !it.isAlive || it.isRemoved }
         // The Hollows at the fire drain it; the rest come for it, and for whoever stands in their way
         var draining = 0
@@ -120,10 +127,13 @@ class Hold(player: ServerPlayer) : TrialRun(player) {
         lookedAt = player.tickCount
         if (!Places.loaded(level, destination, 20)) return null
         val wardfire = ModBlocks.WARDFIRE.get()
+        // Somewhere tidy if it can, further out each time it can't; in the end, any firm dry ground will do
         val found = BlockPos.betweenClosedStream(destination.offset(-14, -10, -14), destination.offset(14, 10, 14))
             .filter { level.getBlockState(it).`is`(wardfire) }
             .findFirst().map { it.immutable() }.orElse(null)
-            ?: WardfireSites.placeNear(level, destination, 0, 12)
+            ?: WardfireSites.placeNear(level, destination, 0, 12 + 8 * misses.coerceAtMost(3))
+            ?: if (misses >= 3) WardfireSites.placeAnywhere(level, destination, 24) else null
+        if (found == null) misses++
         fire = found
         return found
     }

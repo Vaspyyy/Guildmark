@@ -104,6 +104,7 @@ object Heists {
         /** Each townsperson's suspicion of the player, out of 100, by entity id. */
         private val suspicion = HashMap<Int, Float>()
         private val suspecting = HashSet<Int>()
+        /** Whether this run put a prize in the chest (and so takes one out again when it stands down). */
         private var placed = false
         private var taken = false
         private var shown = -1
@@ -119,7 +120,8 @@ object Heists {
                 return true
             }
             if (far < NEAR * NEAR && Places.loaded(level, site.chest, 12)) {
-                if (!placed) placed = place(level, site)
+                // Looked at now and then, not once: another player on the same job may have taken theirs, or taken it in
+                if (player.tickCount % 20 == 7) place(level, site)
                 if (watchers.isEmpty()) post(level, site)
             }
             watchers.removeIf { !it.isAlive || it.isRemoved }
@@ -128,6 +130,8 @@ object Heists {
             val holding = carries(player, heist)
             if (holding && !taken) {
                 taken = true
+                // What this run put out is in their hands now: nothing of its own left in the chest to take back
+                placed = false
                 player.sendSystemMessage(Component.translatable("message.guildmark.heist_taken", heist.prizeName, owner?.title ?: Component.empty()))
                 level.playSound(null, player.x, player.y, player.z, FactionRegistry.HEIST_LOOT.get(), SoundSource.PLAYERS, 0.7f, 1f)
             } else if (!holding) {
@@ -245,29 +249,32 @@ object Heists {
 
         // ---- Setting out and taking in ----
 
-        /** Puts the prize in the building's chest (a chest set down if it's gone); false if it can't be put there. */
-        private fun place(level: ServerLevel, site: Site): Boolean {
+        /**
+         * Puts the prize in the building's chest (a chest set down if it's gone), unless one is there already (from
+         * before, or another player's) or the player has it.
+         */
+        private fun place(level: ServerLevel, site: Site) {
+            if (carries(player, heist)) return
             var container = level.getBlockEntity(site.chest) as? Container
             if (container == null) {
-                if (!level.getBlockState(site.chest).canBeReplaced()) return false
+                if (!level.getBlockState(site.chest).canBeReplaced()) return
                 level.setBlock(site.chest, Blocks.CHEST.defaultBlockState(), Block.UPDATE_ALL)
-                container = level.getBlockEntity(site.chest) as? Container ?: return false
+                container = level.getBlockEntity(site.chest) as? Container ?: return
             }
-            // Never two: one may still be there from before
-            if ((0 until container.containerSize).any { container.getItem(it).get(FactionRegistry.PRIZE.get()) == heist.prize }) return true
-            if (carries(player, heist)) return true
+            if ((0 until container.containerSize).any { container.getItem(it).get(FactionRegistry.PRIZE.get()) == heist.prize }) return
             val slot = (0 until container.containerSize).firstOrNull { container.getItem(it).isEmpty } ?: (container.containerSize / 2)
             container.setItem(slot, HeistPrizeItem.of(heist.prize))
             container.setChanged()
-            return true
+            placed = true
         }
 
+        /** Takes back the prize this run put out, if it's still there: never one another player's job put there. */
         private fun unplace(level: ServerLevel, site: Site) {
-            if (!level.isLoaded(site.chest)) return
+            if (!placed || !level.isLoaded(site.chest)) return
+            placed = false
             val container = level.getBlockEntity(site.chest) as? Container ?: return
-            for (slot in 0 until container.containerSize) {
-                if (container.getItem(slot).get(FactionRegistry.PRIZE.get()) == heist.prize) container.setItem(slot, ItemStack.EMPTY)
-            }
+            val slot = (0 until container.containerSize).firstOrNull { container.getItem(it).get(FactionRegistry.PRIZE.get()) == heist.prize } ?: return
+            container.setItem(slot, ItemStack.EMPTY)
             container.setChanged()
         }
 
@@ -307,8 +314,7 @@ object Heists {
         private fun standDown(level: ServerLevel) {
             if (watchers.isEmpty() && !placed) return
             release(level)
-            if (placed && !carries(player, heist)) site?.let { unplace(level, it) }
-            placed = false
+            site?.let { unplace(level, it) }
             suspicion.clear()
             suspecting.clear()
             show(0, -1)
@@ -316,7 +322,7 @@ object Heists {
 
         override fun stop(level: ServerLevel) {
             release(level)
-            site?.let { if (!carries(player, heist)) unplace(level, it) }
+            site?.let { unplace(level, it) }
             for (p in level.getEntitiesOfClass(Townsperson::class.java, player.boundingBox.inflate(FAR))) if (p.suspect === player) p.suspect = null
             show(0, -1)
         }

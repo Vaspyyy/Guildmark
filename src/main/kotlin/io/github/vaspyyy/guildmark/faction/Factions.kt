@@ -23,6 +23,7 @@ import net.minecraft.server.level.ServerPlayer
 import net.minecraft.sounds.SoundEvents
 import net.minecraft.sounds.SoundSource
 import net.minecraft.util.Prediction
+import net.minecraft.world.Difficulty
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.component.ItemLore
@@ -41,6 +42,7 @@ import net.neoforged.neoforge.event.server.ServerStoppedEvent
 import net.neoforged.neoforge.event.tick.PlayerTickEvent
 import net.neoforged.neoforge.network.PacketDistributor
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent
+import java.util.UUID
 
 /**
  * The factions' rules: joining, ranks, the rivalry, the leaders' talk and the work they give. Each faction's
@@ -88,6 +90,7 @@ object Factions {
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ ->
             Trials.clear()
             FactionSeats.forget()
+            refused.clear()
         }
         NeoForge.EVENT_BUS.addListener(RegisterCommandsEvent::class.java) { FactionCommand.register(it.dispatcher) }
     }
@@ -175,7 +178,22 @@ object Factions {
         val state = state(player)
         val step = state.chapters(faction)
         if (state.isShut(faction) || step >= character.steps.size || carries(player, character, work = false) || gated(player, character, step)) return
-        val stack = Contracts.take(character.note(step), level, leader.blockPosition(), Direction.NORTH, player, fromHall = true) ?: return
+        // Nothing hostile walks a Peaceful world: a chapter that wants a fight (or the rider) is let go, never left in the way
+        if (level.difficulty == Difficulty.PEACEFUL && fights(character.note(step))) {
+            letGo(level, player, leader, faction, step, "message.guildmark.chapter_peaceful")
+            return
+        }
+        val chain = "${character.id}:$step"
+        val stack = Contracts.take(character.note(step), level, leader.blockPosition(), Direction.NORTH, player, fromHall = true)
+        if (stack == null) {
+            // It couldn't be set up (and they've been told why): twice running, and it's let go rather than block the rest
+            if (refused.put(player.uuid, chain) == chain) {
+                refused.remove(player.uuid)
+                letGo(level, player, leader, faction, step, "message.guildmark.chapter_let_go")
+            }
+            return
+        }
+        refused.remove(player.uuid)
         player.inventory.placeItemBackInInventory(stack, Prediction.SERVER_ONLY)
         player.sendSystemMessage(Component.translatable("message.guildmark.story_accepted", character.title, step + 1, character.steps.size))
         level.playSound(null, leader.blockPosition(), SoundEvents.BOOK_PAGE_TURN, SoundSource.NEUTRAL, 1.0f, 1.0f)
@@ -188,7 +206,9 @@ object Factions {
         val character = faction.leader
         if (!state(player).member(faction) || carries(player, character, work = true)) return
         val rank = Progression.get(player).adventurerRank
-        val stack = Contracts.take(work(faction, rank, level.random.nextInt(4)), level, leader.blockPosition(), Direction.NORTH, player, fromHall = true) ?: return
+        // Never a hunt in a Peaceful world, where there'd be nothing to hunt
+        val jobs = (0 until 4).map { work(faction, rank, it) }.filter { level.difficulty != Difficulty.PEACEFUL || !fights(it) }
+        val stack = Contracts.take(jobs[level.random.nextInt(jobs.size)], level, leader.blockPosition(), Direction.NORTH, player, fromHall = true) ?: return
         player.inventory.placeItemBackInInventory(stack, Prediction.SERVER_ONLY)
         player.sendSystemMessage(Component.translatable("message.guildmark.faction_work", character.title))
         level.playSound(null, leader.blockPosition(), SoundEvents.BOOK_PAGE_TURN, SoundSource.NEUTRAL, 1.0f, 1.1f)
@@ -217,6 +237,23 @@ object Factions {
         )
     }
 
+    /** Each player's chapter that couldn't be set up at their last try, by its chain tag. */
+    private val refused = HashMap<UUID, String>()
+
+    /** Whether [note] is a job only something hostile can give: a hunt, a lair, the Dusk Rider. */
+    private fun fights(note: QuestNote): Boolean =
+        note.type == QuestType.HUNT || note.type == QuestType.LAIR || note.type == QuestType.TRIAL && Trials.kind(note) == "dusk_rider"
+
+    /**
+     * [leader] lets chapter [step] go (saying why, by [why]): it counts as done, with its rank and anything that comes
+     * with it, though not its pay, and they go on to the next.
+     */
+    private fun letGo(level: ServerLevel, player: Player, leader: Townsperson, faction: Faction, step: Int, why: String) {
+        player.sendSystemMessage(Component.translatable(why, faction.leader.title))
+        onChapterDone(level, player, faction, step)
+        if (player is ServerPlayer) open(player, leader, faction, finale = state(player).chapters(faction) >= faction.leader.steps.size)
+    }
+
     /** The player closed the conversation with [entityId]: the leader goes back to what they were at. */
     fun endTalk(player: Player, entityId: Int) {
         (player.level().getEntity(entityId) as? Townsperson)?.stopListening(player)
@@ -238,6 +275,7 @@ object Factions {
         if (step == Faction.RIVAL_CHAPTER && rival != null && !next.isShut(rival)) {
             val wasIn = next.chapters(rival) > 0
             next = next.shutOut(rival)
+            void(level, player, rival)
             player.sendSystemMessage(Component.translatable(if (wasIn) "message.guildmark.faction_expelled" else "message.guildmark.faction_barred", rival.title))
             level.playSound(null, player.blockPosition(), FactionRegistry.EXPELLED.get(), SoundSource.PLAYERS, 0.9f, 1f)
             if (wasIn) GuildNews.add(level, "news.guildmark.faction_expelled", player.name.string, rival.title.string)
@@ -255,6 +293,20 @@ object Factions {
         player.inventory.placeItemBackInInventory(gift(level, faction), Prediction.SERVER_ONLY)
         level.playSound(null, player.blockPosition(), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.PLAYERS, 1.0f, 1.0f)
         GuildNews.add(level, "news.guildmark.faction_done", player.name.string, faction.title.string)
+    }
+
+    /** [faction] has shut [player] out: the chapters and work of its they carry are worthless, and whatever those set up goes. */
+    private fun void(level: ServerLevel, player: Player, faction: Faction) {
+        val inventory = player.inventory
+        var torn = false
+        for (slot in 0 until inventory.containerSize) {
+            val note = inventory.getItem(slot).get(ModDataComponents.QUEST_NOTE.get()) ?: continue
+            if (StoryCharacter.ownerOf(note.chain) != faction.leader) continue
+            if (note.type == QuestType.TRIAL) Trials.finish(level, player, note)
+            inventory.setItem(slot, ItemStack.EMPTY)
+            torn = true
+        }
+        if (torn) player.sendSystemMessage(Component.translatable("message.guildmark.faction_contracts_void", faction.title))
     }
 
     /** Repeatable work for [owner] was handed in. */

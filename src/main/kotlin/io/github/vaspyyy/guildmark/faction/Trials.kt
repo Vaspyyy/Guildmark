@@ -21,6 +21,7 @@ import net.minecraft.server.level.ServerPlayer
 import net.minecraft.sounds.SoundEvents
 import net.minecraft.sounds.SoundSource
 import net.minecraft.util.Prediction
+import net.minecraft.world.Difficulty
 import net.minecraft.world.damagesource.DamageSource
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.LivingEntity
@@ -123,6 +124,12 @@ object Trials {
             val key = key(note)
             if (!seen.add(key)) continue
             var run = mine?.get(key)
+            // Set up for who they were before they died: a respawned player is a new one, so it starts again for them
+            if (run != null && run.player !== player) {
+                run.stop(level)
+                mine?.remove(key)
+                run = null
+            }
             if (run == null) {
                 if (state.progress >= note.count || state.isExpired(level.gameTime)) continue
                 run = start(level, player, note, state) ?: continue
@@ -226,8 +233,11 @@ object Trials {
 
     // ---- Handing it in ----
 
-    /** Hands over what the job was for: a heist's prize goes with the contract. False if it's not there to hand over. */
-    fun handOver(player: Player, note: QuestNote): Boolean {
+    /**
+     * Hands over what the job in [contract] was for: a heist's prize goes with the contract. False if it's not there to
+     * hand over, when the heist is to do again (lost, dropped or burnt, the prize is back where it was taken from).
+     */
+    fun handOver(player: Player, contract: ItemStack, note: QuestNote): Boolean {
         val heist = Heist.byKind(kind(note)) ?: return true
         val inventory = player.inventory
         for (slot in 0 until inventory.containerSize) {
@@ -237,8 +247,17 @@ object Trials {
                 return true
             }
         }
-        player.sendOverlayMessage(Component.translatable("message.guildmark.heist_no_prize", Component.translatable("item.guildmark.heist_prize.${heist.prize}")))
+        Contracts.setProgress(contract, 0)
+        player.sendSystemMessage(Component.translatable("message.guildmark.heist_no_prize", heist.prizeName))
         return false
+    }
+
+    /** Whether [player] carries an unfinished faction job of one of [kinds]. */
+    fun wants(player: Player, vararg kinds: String): Boolean = (0 until player.inventory.containerSize).any { slot ->
+        val stack = player.inventory.getItem(slot)
+        val note = stack.get(ModDataComponents.QUEST_NOTE.get()) ?: return@any false
+        val state = stack.get(ModDataComponents.CONTRACT_STATE.get()) ?: return@any false
+        note.type == QuestType.TRIAL && kind(note) in kinds && state.progress < note.count && !state.isExpired(player.level().gameTime)
     }
 
     /** A faction job was handed in: anything it left standing goes. */
@@ -274,7 +293,8 @@ class RiderHunt(player: ServerPlayer) : TrialRun(player) {
     private var rider: UUID? = null
 
     override fun tick(level: ServerLevel, stack: ItemStack, note: QuestNote, state: ContractState): Boolean {
-        if (player.tickCount % 20 != 0 || level.dimension() != Level.OVERWORLD) return true
+        // In Peaceful the rider never comes (and the leader lets the job go: Factions.accept)
+        if (player.tickCount % 20 != 0 || level.dimension() != Level.OVERWORLD || level.difficulty == Difficulty.PEACEFUL) return true
         val clock = level.overworldClockTime
         val time = Math.floorMod(clock, 24000L)
         val tonight = clock / 24000L

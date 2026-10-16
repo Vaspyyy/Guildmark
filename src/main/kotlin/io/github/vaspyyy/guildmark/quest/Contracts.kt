@@ -201,11 +201,14 @@ object Contracts {
             QuestType.HUNT, QuestType.CLEAR, QuestType.CHAMPION, QuestType.LAIR -> state.progress >= note.count
             QuestType.DELIVER, QuestType.ESCORT -> true
             // A stolen prize is handed over with the contract
-            QuestType.TRIAL -> state.progress >= note.count && Trials.handOver(player, note)
+            QuestType.TRIAL -> state.progress >= note.count && Trials.handOver(player, stack, note)
         }
         if (!done) {
             val have = if (note.type == QuestType.FETCH) countFetchItems(player, note) else state.progress
-            player.sendOverlayMessage(Component.translatable("message.guildmark.not_done", note.title(), have, note.count))
+            // A heist done but its prize missing has already said so
+            if (note.type != QuestType.TRIAL || state.progress < note.count) {
+                player.sendOverlayMessage(Component.translatable("message.guildmark.not_done", note.title(), have, note.count))
+            }
             level.playSound(null, pos, SoundEvents.VILLAGER_NO, SoundSource.BLOCKS, 1.0f, 1.0f)
             return
         }

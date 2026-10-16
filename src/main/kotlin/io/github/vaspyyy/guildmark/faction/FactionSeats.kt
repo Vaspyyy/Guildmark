@@ -33,6 +33,7 @@ import net.minecraft.resources.Identifier
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.entity.EntitySpawnReason
+import net.minecraft.world.level.ChunkPos
 import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.levelgen.structure.BoundingBox
 import net.minecraft.world.level.saveddata.SavedData
@@ -92,21 +93,31 @@ object FactionSeats {
     private const val STORY = Buildings.STORY
     /** How near a player comes before a seat is filled. */
     private const val NEAR = 80.0
+    /** How near anyone may be for a lost leader's place to be filled. */
+    private const val WATCHED = 24.0
     private val MEMBERS = mapOf(Faction.STARWATCH to 4, Faction.HEARTHSWORN to 4, Faction.QUIET_HAND to 3)
 
     private val layouts = HashMap<BlockPos, SeatLayout?>()
+    /** Seats whose leader wasn't about at the last look, by [SeatData.key]. */
+    private val unseen = HashSet<String>()
 
-    fun forget() = layouts.clear()
+    fun forget() {
+        layouts.clear()
+        unseen.clear()
+    }
 
-    /** The seats and sites of [capital], worked out once and remembered. */
-    fun layout(capital: CapitalPiece): SeatLayout? = synchronized(layouts) {
-        layouts.getOrPut(capital.center) {
-            try {
+    /** The seats and sites of [capital], worked out once and remembered (a capital that has none, as none). */
+    fun layout(capital: CapitalPiece): SeatLayout? {
+        synchronized(layouts) {
+            if (layouts.containsKey(capital.center)) return layouts[capital.center]
+            val layout = try {
                 build(capital)
             } catch (e: RuntimeException) {
                 Guildmark.LOGGER.warn("Couldn't work out the faction seats of the capital at {}", capital.center, e)
                 null
             }
+            layouts[capital.center] = layout
+            return layout
         }
     }
 
@@ -136,34 +147,67 @@ object FactionSeats {
 
     // ---- Filling the seats ----
 
-    /** Every couple of seconds per player: fills the seats near them that have never been filled. */
+    /**
+     * Every couple of seconds per player: fills the seats near them that have never been filled, and gives a seat
+     * whose leader is gone for good (killed, lost to the void) a new one.
+     */
     fun tick(level: ServerLevel, player: ServerPlayer) {
         if (player.isSpectator) return
         val capital = Capitals.covering(level, player.blockPosition()) ?: return
         val layout = layout(capital) ?: return
         val data = SeatData.get(level)
         for (seat in layout.seats.values) {
-            if (data.isFilled(seat)) continue
             if (player.distanceToSqr(Vec3.atCenterOf(seat.door)) > NEAR * NEAR || !Places.loaded(level, seat.door, 24)) continue
-            fill(level, layout, seat, data)
+            if (!data.isFilled(seat)) fill(level, layout, seat, data)
+            else if (lost(level, seat, data) && unwatched(level, seat)) seatLeader(level, layout, seat)?.let { data.filled(seat, it.uuid) }
         }
+    }
+
+    /**
+     * Whether [seat]'s leader is gone: not about at two looks running, with the land round their post loaded and the
+     * people in it too (they come in a little after the land does).
+     */
+    private fun lost(level: ServerLevel, seat: Seat, data: SeatData): Boolean {
+        val key = data.key(seat)
+        val id = data.leader(seat)
+        val about = id != null && level.getEntity(id)?.isAlive == true || leaderPresent(level, seat) ||
+            !level.areEntitiesLoaded(ChunkPos.pack(seat.leader.pos))
+        if (about) {
+            unseen.remove(key)
+            return false
+        }
+        if (unseen.add(key)) return false
+        unseen.remove(key)
+        return true
+    }
+
+    /** Nobody is close enough to [seat]'s post to see a new leader walk in out of nowhere. */
+    private fun unwatched(level: ServerLevel, seat: Seat): Boolean {
+        val post = Vec3.atCenterOf(seat.leader.pos)
+        return level.players().none { it.distanceToSqr(post) < WATCHED * WATCHED }
     }
 
     /** Furnishes [seat]'s hall where it needs it and brings in its leader and members. */
     fun fill(level: ServerLevel, layout: SeatLayout, seat: Seat, data: SeatData = SeatData.get(level)) {
         furnish(level, layout.capital, seat)
-        val leader = spawn(level, layout, seat, seat.leaderSeat ?: seat.leader.pos, 0, seat.leader.pos) ?: return
-        leader.isLeader = true
-        leader.post = seat.leader.pos
-        leader.postFacing = seat.leader.facing
-        leader.customName = seat.faction.leader.title
-        leader.face(seat.leader.facing)
+        val leader = seatLeader(level, layout, seat) ?: return
         repeat(MEMBERS[seat.faction] ?: 3) { i ->
             val home = seat.homes[i % seat.homes.size]
             val member = spawn(level, layout, seat, home, 1 + i % (seat.faction.role.looks - 1), home) ?: return@repeat
             member.work = seat.stations.getOrNull(i % seat.stations.size.coerceAtLeast(1))
         }
         data.filled(seat, leader.uuid)
+    }
+
+    /** [seat]'s leader, brought in to their post. */
+    private fun seatLeader(level: ServerLevel, layout: SeatLayout, seat: Seat): Townsperson? {
+        val leader = spawn(level, layout, seat, seat.leaderSeat ?: seat.leader.pos, 0, seat.leader.pos) ?: return null
+        leader.isLeader = true
+        leader.post = seat.leader.pos
+        leader.postFacing = seat.leader.facing
+        leader.customName = seat.faction.leader.title
+        leader.face(seat.leader.facing)
+        return leader
     }
 
     private fun spawn(level: ServerLevel, layout: SeatLayout, seat: Seat, at: BlockPos, look: Int, home: BlockPos): Townsperson? {
@@ -183,7 +227,7 @@ object FactionSeats {
     /** Whether [seat]'s leader is about within a little way of their post (when its chunk is loaded). */
     fun leaderPresent(level: ServerLevel, seat: Seat): Boolean =
         level.getEntitiesOfClass(Townsperson::class.java, BoundingBox(seat.leader.pos).inflatedBy(24).let { net.minecraft.world.phys.AABB.of(it) }) {
-            it.isLeader && it.role == seat.faction.role
+            it.isLeader && it.isAlive && it.role == seat.faction.role
         }.isNotEmpty()
 
     /** The few things a hall lacks: chairs round the library's table; a table, chairs and beds in the tavern's attic. */
@@ -390,7 +434,7 @@ object FactionSeats {
 
 /** Which faction seats in which capitals have been filled, and by whom, kept with the world. */
 class SeatData(val filled: MutableMap<String, UUID> = HashMap()) : SavedData() {
-    private fun key(seat: Seat): String = "${seat.capital.x},${seat.capital.y},${seat.capital.z}:${seat.faction.id}"
+    fun key(seat: Seat): String = "${seat.capital.x},${seat.capital.y},${seat.capital.z}:${seat.faction.id}"
 
     fun isFilled(seat: Seat): Boolean = key(seat) in filled
 

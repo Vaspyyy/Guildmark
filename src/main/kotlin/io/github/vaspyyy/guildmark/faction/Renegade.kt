@@ -563,13 +563,22 @@ class Renegade(type: EntityType<out Renegade>, level: Level) : CombatEnemy(type,
             .add(Attributes.FOLLOW_RANGE, 40.0)
             .add(Attributes.STEP_HEIGHT, 1.0)
 
-        /** Sets up a newly taken hunt: the old observatory lies some way off from the city, in no set direction. */
+        /**
+         * Sets up a newly taken hunt: the old observatory lies some way off from the city, in no set direction, on dry
+         * land (the ground there read as the world will make it, without making it; a few ways round are tried).
+         */
         fun begin(level: ServerLevel, player: Player, state: ContractState): ContractState {
             val random = level.random
             val from = state.boardPos
-            val angle = random.nextDouble() * Math.PI * 2
-            val distance = 340.0 + random.nextDouble() * 140.0
-            val spot = BlockPos.containing(from.x + cos(angle) * distance, from.y.toDouble(), from.z + sin(angle) * distance)
+            val generator = level.chunkSource.generator
+            val shape = level.chunkSource.randomState()
+            var spot = from
+            for (attempt in 0 until 24) {
+                val angle = random.nextDouble() * Math.PI * 2
+                val distance = 340.0 + random.nextDouble() * 140.0
+                spot = BlockPos.containing(from.x + cos(angle) * distance, from.y.toDouble(), from.z + sin(angle) * distance)
+                if (generator.getBaseHeight(spot.x, spot.z, Heightmap.Types.OCEAN_FLOOR_WG, level, shape) > level.seaLevel + 1) break
+            }
             return state.copy(destination = spot)
         }
 

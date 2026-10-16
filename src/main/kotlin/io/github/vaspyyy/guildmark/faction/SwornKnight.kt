@@ -29,6 +29,7 @@ import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal
 import net.minecraft.world.entity.monster.Creeper
 import net.minecraft.world.entity.monster.Enemy
 import net.minecraft.world.entity.monster.Monster
+import net.minecraft.world.entity.animal.golem.IronGolem
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
@@ -127,8 +128,9 @@ class SwornKnight(type: EntityType<out SwornKnight>, level: Level) : HollowSoldi
     override fun removeWhenFarAway(distance: Double): Boolean = false
     override fun shouldDropExperience(): Boolean = false
 
+    // The city's iron golems too, who'd otherwise take a knight in the yard for a monster (they ask both ways)
     override fun considersEntityAsAlly(other: net.minecraft.world.entity.Entity): Boolean =
-        other is SwornKnight || mode == Mode.ALLY && (other is Player || other is Townsperson) || super.considersEntityAsAlly(other)
+        other is SwornKnight || other is IronGolem || mode == Mode.ALLY && (other is Player || other is Townsperson) || super.considersEntityAsAlly(other)
 
     /** Walks back to their post when there's nothing to fight, and faces the way they should there. */
     private class KeepPostGoal(private val knight: SwornKnight) : Goal() {

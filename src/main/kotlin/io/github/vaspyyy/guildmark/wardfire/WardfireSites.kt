@@ -83,6 +83,28 @@ object WardfireSites {
         return null
     }
 
+    /**
+     * Raises a Wardfire on the firm, dry ground nearest [center] within [radius] blocks, however uneven or worked
+     * it is: for a fire that has to stand somewhere once [placeNear] has found nowhere tidy. Only loaded land is
+     * tried. Returns where it stands, or null if there was no such ground at all.
+     */
+    fun placeAnywhere(level: ServerLevel, center: BlockPos, radius: Int): BlockPos? {
+        for (r in 0..radius) for (dx in -r..r) for (dz in -r..r) {
+            if (maxOf(abs(dx), abs(dz)) != r) continue
+            val x = center.x + dx
+            val z = center.z + dz
+            if (!loaded(level, x, z)) continue
+            val pos = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, BlockPos(x, 0, z))
+            val below = pos.below()
+            if (level.isOutsideBuildHeight(below) || level.isOutsideBuildHeight(pos.above(2))) continue
+            if (!open(level, pos) || !open(level, pos.above()) || !level.getFluidState(below).isEmpty) continue
+            if (!level.getBlockState(below).isFaceSturdy(level, below, Direction.UP)) continue
+            build(level, pos, level.random)
+            return pos
+        }
+        return null
+    }
+
     /** The land within the clearing and stones of a fire at [x], [z] is loaded. */
     private fun loaded(level: ServerLevel, x: Int, z: Int): Boolean {
         val reach = CLEARING + 2
