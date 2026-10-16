@@ -1,8 +1,8 @@
 package io.github.vaspyyy.guildmark.network
 
 import io.github.vaspyyy.guildmark.Guildmark
-import io.github.vaspyyy.guildmark.block.QuestBoardBlockEntity
-import io.github.vaspyyy.guildmark.block.QuestBoardBlock
+import io.github.vaspyyy.guildmark.block.NoticeBoardBlock
+import io.github.vaspyyy.guildmark.block.NoticeBoardBlockEntity
 import io.github.vaspyyy.guildmark.quest.Contracts
 import io.netty.buffer.ByteBuf
 import net.minecraft.core.BlockPos
@@ -30,11 +30,11 @@ data class TakeNotePayload(val pos: BlockPos) : CustomPacketPayload {
             val player = context.player()
             val level = player.level()
             if (!player.isWithinBlockInteractionRange(payload.pos, 1.0)) return
-            val board = level.getBlockEntity(payload.pos) as? QuestBoardBlockEntity ?: return
+            val board = level.getBlockEntity(payload.pos) as? NoticeBoardBlockEntity ?: return
             val note = board.note ?: return
 
             val serverLevel = level as? ServerLevel ?: return
-            val facing = level.getBlockState(payload.pos).getValue(QuestBoardBlock.FACING)
+            val facing = level.getBlockState(payload.pos).getValue(NoticeBoardBlock.FACING)
             val contract = Contracts.take(note, serverLevel, payload.pos, facing, player) ?: return
             board.updateNote(null)
             player.inventory.placeItemBackInInventory(contract, Prediction.SERVER_ONLY)

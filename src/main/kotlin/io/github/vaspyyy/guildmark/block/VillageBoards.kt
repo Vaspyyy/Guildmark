@@ -66,7 +66,9 @@ object VillageBoards {
         // Unclaimed notes from another day come down (also covers /time set going backwards)
         val today = day(level)
         for (cell in cells) {
-            if (cell.note != null && cell.postedDay != today) cell.updateNote(null)
+            val note = cell.note ?: continue
+            // A wanted note comes down too once its captain has fallen
+            if (cell.postedDay != today || Bounties.stale(level, note)) cell.updateNote(null)
         }
 
         if (!level.isBrightOutside) return
@@ -160,11 +162,17 @@ object VillageBoards {
                 chunk.markUnsaved()
                 WardfireSites.forVillage(level, bell)
             }
+            // With outlaws camped in reach, the village puts up a bounty board by its bell too
+            if (boards && !chunk.getData(ModAttachments.BOUNTY_BOARD_CHECKED) && Bounties.wanted(level, bell).isNotEmpty()) {
+                chunk.setData(ModAttachments.BOUNTY_BOARD_CHECKED, true)
+                chunk.markUnsaved()
+                placeNear(level, bell, ModBlocks.BOUNTY_BOARD.get())
+            }
         }
     }
 
-    /** Try spots in a ring around the bell, facing it, on solid ground with room for 3x2. */
-    private fun placeNear(level: ServerLevel, bell: BlockPos): Boolean {
+    /** Try spots in a ring around the bell, facing it, on solid ground with room for 3x2, for a board of [block]. */
+    private fun placeNear(level: ServerLevel, bell: BlockPos, block: NoticeBoardBlock = ModBlocks.QUEST_BOARD.get()): Boolean {
         val random = level.random
         repeat(48) {
             val dx = random.nextInt(17) - 8
@@ -177,14 +185,14 @@ object VillageBoards {
                 if (dz > 0) Direction.NORTH else Direction.SOUTH
             }
             if (fits(level, anchor, facing)) {
-                val state = ModBlocks.QUEST_BOARD.get().defaultBlockState().setValue(QuestBoardBlock.FACING, facing)
+                val state = block.defaultBlockState().setValue(NoticeBoardBlock.FACING, facing)
                 level.setBlock(anchor, state, Block.UPDATE_ALL)
                 for (part in BoardPart.entries) {
                     if (part != BoardPart.ANCHOR) {
-                        level.setBlock(QuestBoardBlock.cellPos(anchor, facing, part), state.setValue(QuestBoardBlock.PART, part), Block.UPDATE_ALL)
+                        level.setBlock(NoticeBoardBlock.cellPos(anchor, facing, part), state.setValue(NoticeBoardBlock.PART, part), Block.UPDATE_ALL)
                     }
                 }
-                pinStarterNotes(level, anchor, facing)
+                block.fill(level, anchor, facing)
                 return true
             }
         }

@@ -34,6 +34,17 @@ object Bounties {
         return OutlawCamps.get(level).wanted(board, RANGE).map(::notice)
     }
 
+    /** [note] made out against [notice]'s band: whose head, what for, and the price on it if that's more. */
+    fun dress(note: QuestNote, notice: Wanted): QuestNote =
+        note.copy(subject = notice.subject, site = notice.site, reward = maxOf(note.reward, notice.reward), story = notice.story)
+
+    /** A wanted note on a band that's no longer at large: its captain fallen, or the band gone. */
+    fun stale(level: ServerLevel, note: QuestNote): Boolean {
+        if (note.type != QuestType.BOUNTY || note.site < 0 || level.dimension() != Level.OVERWORLD) return false
+        val band = OutlawCamps.get(level).band(note.site)
+        return band == null || band.slain
+    }
+
     private fun notice(band: OutlawBand): Wanted {
         val crime = band.latestCrime()?.id ?: "nothing"
         val where = band.region.ifEmpty { "#${Outlaws.WILDS}" }

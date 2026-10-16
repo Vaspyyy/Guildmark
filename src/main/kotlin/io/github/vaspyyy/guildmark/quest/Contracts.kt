@@ -63,7 +63,7 @@ object Contracts {
             return null
         }
         val needed = note.type.minStanding
-        if (!fromHall && Standing.tier(level, boardPos, player) < needed) {
+        if (!fromHall && Standing.asksStanding(level, boardPos) && Standing.tier(level, boardPos, player) < needed) {
             player.sendOverlayMessage(Component.translatable("message.guildmark.standing_needed", needed.title))
             return null
         }

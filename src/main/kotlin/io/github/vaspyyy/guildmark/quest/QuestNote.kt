@@ -71,7 +71,7 @@ data class QuestNote(
         return Labels.text("#$story")
     }
 
-    fun posterLine(): Component = Component.translatable("quest.guildmark.posted_by", poster)
+    fun posterLine(): Component = Component.translatable("quest.guildmark.posted_by", Labels.text(poster))
     fun rewardLine(): Component = Component.translatable("quest.guildmark.reward", reward)
     fun deadlineLine(): Component = Component.translatable("quest.guildmark.deadline", deadlineDays)
 

@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "P": "minecraft:paper",
+    "I": "minecraft:iron_ingot",
+    "#": "#minecraft:planks",
+    "S": "minecraft:stick"
+  },
+  "pattern": [
+    "PIP",
+    "###",
+    "S S"
+  ],
+  "result": {
+    "count": 1,
+    "id": "guildmark:bounty_board"
+  }
+}

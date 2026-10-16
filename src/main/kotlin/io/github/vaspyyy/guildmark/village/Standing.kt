@@ -49,6 +49,12 @@ object Standing {
         return level.getBlockEntity(QuestBoardBlock.anchorPos(boardPos, state)) as? QuestBoardBlockEntity
     }
 
+    /**
+     * Whether the board at [boardPos] is a village's own, which trusts its dangerous jobs only to those it knows; the
+     * watch's bounty board posts for anyone.
+     */
+    fun asksStanding(level: Level, boardPos: BlockPos): Boolean = level.getBlockState(boardPos).block is QuestBoardBlock
+
     fun points(level: Level, boardPos: BlockPos, player: Player): Int = board(level, boardPos)?.standingOf(player.uuid) ?: 0
 
     fun tier(level: Level, boardPos: BlockPos, player: Player): StandingTier = StandingTier.of(points(level, boardPos, player))

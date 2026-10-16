@@ -34,6 +34,11 @@ object ModAttachments {
         AttachmentType.builder { -> false }.serialize(Codec.BOOL.fieldOf("checked")).build()
     }
 
+    /** On a village bell's chunk: the village has put up its bounty board, or found no room for one. */
+    val BOUNTY_BOARD_CHECKED: DeferredHolder<AttachmentType<*>, AttachmentType<Boolean>> = ATTACHMENTS.register("bounty_board_checked") { ->
+        AttachmentType.builder { -> false }.serialize(Codec.BOOL.fieldOf("checked")).build()
+    }
+
     /** Set on a village's bell chunk once the village has been given its Wardfire (or found to have one). */
     val WARDFIRE_CHECKED: DeferredHolder<AttachmentType<*>, AttachmentType<Boolean>> = ATTACHMENTS.register("wardfire_checked") { ->
         AttachmentType.builder { -> false }.serialize(Codec.BOOL.fieldOf("checked")).build()

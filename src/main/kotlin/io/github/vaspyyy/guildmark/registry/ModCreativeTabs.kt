@@ -18,6 +18,7 @@ object ModCreativeTabs {
             .icon { ModItems.GUILD_MARK.get().defaultInstance }
             .displayItems { _, output ->
                 output.accept(ModItems.QUEST_BOARD.get())
+                output.accept(ModItems.BOUNTY_BOARD.get())
                 output.accept(ModItems.GUILD_MARK.get())
                 output.accept(ModItems.WARDFIRE.get())
                 output.accept(ModItems.WARDENS_FLASK.get())

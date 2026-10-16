@@ -1,0 +1,53 @@
+package io.github.vaspyyy.guildmark.block
+
+import io.github.vaspyyy.guildmark.quest.QuestNote
+import net.minecraft.core.BlockPos
+import net.minecraft.core.HolderLookup
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket
+import net.minecraft.world.level.block.Block
+import net.minecraft.world.level.block.entity.BlockEntity
+import net.minecraft.world.level.block.entity.BlockEntityType
+import net.minecraft.world.level.block.state.BlockState
+import net.minecraft.world.level.storage.ValueInput
+import net.minecraft.world.level.storage.ValueOutput
+
+/** Holds the note pinned to one cell of a notice board. Synced to clients so clicking can open it without a round trip. */
+open class NoticeBoardBlockEntity(type: BlockEntityType<*>, pos: BlockPos, state: BlockState) : BlockEntity(type, pos, state) {
+    var note: QuestNote? = null
+        private set
+
+    /** Day index (see [VillageBoards.day]) the current note was pinned; unclaimed notes come down the next day. */
+    var postedDay: Long = 0
+        private set
+
+    /** Server side: pin or remove a note, update the cell's paper model and sync to clients. */
+    fun updateNote(newNote: QuestNote?) {
+        note = newNote
+        level?.let { postedDay = VillageBoards.day(it) }
+        setChanged()
+        val level = level ?: return
+        val state = level.getBlockState(blockPos)
+        if (state.block is NoticeBoardBlock) {
+            val newState = state.setValue(NoticeBoardBlock.NOTE, NoteKind.of(newNote?.type))
+            level.setBlock(blockPos, newState, Block.UPDATE_ALL)
+            level.sendBlockUpdated(blockPos, state, newState, Block.UPDATE_ALL)
+        }
+    }
+
+    override fun saveAdditional(output: ValueOutput) {
+        super.saveAdditional(output)
+        output.storeNullable("note", QuestNote.CODEC, note)
+        output.putLong("posted_day", postedDay)
+    }
+
+    override fun loadAdditional(input: ValueInput) {
+        super.loadAdditional(input)
+        note = input.read("note", QuestNote.CODEC).orElse(null)
+        postedDay = input.getLongOr("posted_day", 0L)
+    }
+
+    override fun getUpdateTag(registries: HolderLookup.Provider): CompoundTag = saveCustomOnly(registries)
+
+    override fun getUpdatePacket(): ClientboundBlockEntityDataPacket = ClientboundBlockEntityDataPacket.create(this)
+}

@@ -6,6 +6,7 @@ import io.github.vaspyyy.guildmark.quest.Contracts
 import io.github.vaspyyy.guildmark.quest.QuestNote
 import io.github.vaspyyy.guildmark.quest.QuestType
 import io.github.vaspyyy.guildmark.progression.AdventurerRank
+import io.github.vaspyyy.guildmark.village.Standing
 import io.github.vaspyyy.guildmark.village.StandingTier
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.components.Button
@@ -70,7 +71,8 @@ class NoteScreen(
         lines.add(Line(note.rankLine(), AdventurerRank.of(note.rank).color, 2))
         lines.add(Line(note.rewardLine(), INK, 2))
         if (contract == null) {
-            val needed = note.type.minStanding
+            val asks = boardPos == null || minecraft.level?.let { Standing.asksStanding(it, boardPos) } != false
+            val needed = if (asks) note.type.minStanding else StandingTier.STRANGER
             if (needed > StandingTier.STRANGER) {
                 lines.add(Line(note.deadlineLine(), INK, 2))
                 lines.add(Line(Component.translatable("quest.guildmark.needs_standing", needed.title), FADED_INK, 8))

@@ -802,6 +802,95 @@ def board_frame():
     return cv.image()
 
 
+# ================================================================ the bounty board
+
+def bounty_board_item():
+    """The town watch's board: tarred planks bound in iron under a dark roof, wanted posters pinned across it."""
+    xs, ys = grid(N)
+    cv = Canvas(N)
+    for px in (5, 24):
+        m = rect(px, 9, px + 3, 31, N)
+        t = 0.36 + 0.2 * (xs - px < 1) - 0.16 * (xs - px >= 2) + 0.08 * (vnoise(N, N, 2, px + 40) - 0.5)
+        cv.put(m, bands(PAL['darkwood'], t))
+    frame = rect(3, 9, 29, 26, N)
+    inner = rect(5, 11, 27, 24, N)
+    ft = 0.34 + 0.24 * (ys < 10) - 0.18 * (ys > 24.5) + 0.1 * (vnoise(N, N, 3, 44) - 0.5)
+    cv.put(frame, bands(PAL['blacksteel'], ft))
+    planks(cv, inner, 5, 11, 27, 24, 4.4, PAL['darkwood'], 19, lift=0.12)
+    cv.over(inner & (ys < 12.2), PAL['darkwood'][0], 0.6)
+    # Iron straps across the planks, riveted
+    for sy in (14, 21):
+        cv.put(rect(5, sy, 27, sy + 1, N), PAL['iron'][2])
+        for sx in (6, 12, 19, 25):
+            cv.px(sx, sy, PAL['iron'][4])
+    # The roof: dark boards under an iron ridge
+    roof = poly([(1, 10.5), (16, 2.0), (31, 10.5), (29, 11.5), (16, 4.4), (3, 11.5)], N) | poly([(1.4, 10.2), (16, 1.8), (30.6, 10.2), (16, 6.8)], N)
+    row = np.floor((ys - 2) / 2.2)
+    board = ((xs + row * 2.5) % 5.0) < 0.8
+    rt = 0.46 - 0.03 * row + 0.12 * (xs < 16) - 0.22 * board + 0.1 * (vnoise(N, N, 2, 3) - 0.5)
+    cv.put(roof, bands(PAL['darkwood'], rt))
+    ridge = poly([(15, 1.4), (17, 1.4), (17.4, 3.4), (14.6, 3.4)], N)
+    cv.put(ridge, PAL['iron'][3])
+    # Three wanted posters: a black heading, a red rule under it and a hooded likeness
+    for (nx, ny, k) in ((6, 13, 0), (13, 12, 1), (20, 13, 2)):
+        m = rect(nx, ny, nx + 6, ny + 9, N)
+        nt = 0.66 + 0.15 * (vnoise(N, N, 2, 50 + k) - 0.5) - 0.18 * (xs > nx + 5) - 0.2 * (ys > ny + 7)
+        cv.put(m, bands(PAL['parchment'], nt))
+        cv.put(rect(nx + 1, ny + 1, nx + 5, ny + 2, N), PAL['ink'][0])
+        cv.put(rect(nx + 1, ny + 2, nx + 5, ny + 3, N), PAL['crimson'][3])
+        cv.put(rect(nx + 2, ny + 4, nx + 4, ny + 6, N), PAL['ink'][1])
+        cv.put(rect(nx + 1, ny + 6, nx + 5, ny + 8, N), PAL['ink'][1])
+        cv.px(nx + 2, ny + 5, PAL['parchment'][4])
+        cv.px(nx + 3, ny, PAL['iron'][4])
+        cv.over(rect(nx + 6, ny + 1, nx + 7, ny + 10, N) & inner, PAL['darkwood'][0], 0.6)
+        cv.over(rect(nx + 1, ny + 9, nx + 7, ny + 10, N) & inner, PAL['darkwood'][0], 0.6)
+    for (bx, by) in ((3, 9), (27, 9), (3, 24), (27, 24)):
+        cv.put(rect(bx, by, bx + 2, by + 2, N), PAL['iron'][3])
+        cv.px(bx, by, PAL['iron'][4])
+    outline(cv, 0.8)
+    return cv.image()
+
+
+def bounty_panel():
+    """A cell of the bounty board: tarred planks with two riveted iron straps across, and scraps of old notices."""
+    cv = Canvas(N)
+    xs, ys = grid(N)
+    planks(cv, np.ones((N, N), bool), 0, 0, N, N, 8, PAL['darkwood'], 23, lift=0.1)
+    rng = np.random.default_rng(12)
+    for y0 in (5, 23):
+        strap = rect(0, y0, N, y0 + 3, N)
+        st = 0.52 + 0.2 * (ys < y0 + 1) - 0.24 * (ys >= y0 + 2) + 0.1 * (vnoise(N, N, 3, y0) - 0.5)
+        cv.put(strap, bands(PAL['iron'], st, 0))
+        for x in (3, 11, 19, 27):
+            cv.px(x, y0 + 1, PAL['iron'][5])
+            cv.px(x + 1, y0 + 1, PAL['iron'][3])
+            cv.px(x, y0 + 2, PAL['iron'][1])
+        # Rust run down from under the strap
+        for x in rng.integers(1, 31, 3):
+            run = int(rng.integers(2, 5))
+            cv.over(rect(int(x), y0 + 3, int(x) + 1, y0 + 3 + run, N), (96, 46, 28), 0.4)
+    # Torn corners of old notices, still under their nails
+    for (x, y, w, h) in ((7, 10, 3, 3), (21, 15, 3, 2), (13, 27, 2, 2)):
+        m = rect(x, y, x + w, y + h, N)
+        cv.put(m, bands(PAL['parchment'], 0.42 + 0.2 * (rand(N, N, x) > 0.5)))
+        cv.px(x + w - 1, y + h - 1, PAL['ink'][1])
+        cv.px(x + w // 2, y, PAL['iron'][3])
+    return cv.image()
+
+
+def bounty_frame():
+    """The bounty board's frame: blackened timber studded with iron."""
+    cv = Canvas(N)
+    n = fbm(N, N, 6, 35)
+    grain = vnoise(N, N, 2, 37)
+    t = 0.36 + 0.28 * (n - 0.5) + 0.12 * (grain - 0.5)
+    cv.put(np.ones((N, N), bool), bands(PAL['darkwood'], t, 0.2))
+    for (x, y) in ((4, 4), (20, 4), (12, 12), (28, 12), (4, 20), (20, 20), (12, 28), (28, 28)):
+        cv.px(x, y, PAL['iron'][4])
+        cv.px(x + 1, y + 1, PAL['iron'][1])
+    return cv.image()
+
+
 # ================================================================ main
 
 def build():
@@ -824,6 +913,9 @@ def build():
         out[f'block/quest_note_{kind}'] = quest_note(kind)
     out['block/quest_board_panel'] = board_panel()
     out['block/quest_board_frame'] = board_frame()
+    out['item/bounty_board'] = bounty_board_item()
+    out['block/bounty_board_panel'] = bounty_panel()
+    out['block/bounty_board_frame'] = bounty_frame()
     return out
 
 

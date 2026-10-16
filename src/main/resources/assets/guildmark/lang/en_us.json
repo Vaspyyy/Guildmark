@@ -1,6 +1,7 @@
 {
   "itemGroup.guildmark": "Guildmark",
   "block.guildmark.quest_board": "Quest Board",
+  "block.guildmark.bounty_board": "Bounty Board",
   "item.guildmark.guild_mark": "Guild Mark",
   "block.guildmark.wardfire": "Wardfire",
   "item.guildmark.wardens_flask": "Warden's Flask",
@@ -12,6 +13,7 @@
   "quest.guildmark.clear.title": "Clear the Outskirts",
   "quest.guildmark.clear.desc": "Defeat %s hostile mobs within %s blocks of this board.",
   "quest.guildmark.posted_by": "Posted by %s",
+  "quest.guildmark.poster.watch": "the Town Watch",
   "quest.guildmark.reward": "Reward: %s Guild Marks",
   "quest.guildmark.deadline": "Deadline: %s days once taken",
   "gui.guildmark.take_contract": "Take Contract",

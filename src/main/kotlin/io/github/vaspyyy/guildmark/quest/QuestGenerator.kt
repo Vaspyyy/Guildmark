@@ -66,7 +66,7 @@ object QuestGenerator {
         fun dress(random: RandomSource, note: QuestNote): QuestNote {
             if (note.type != QuestType.BOUNTY) return note
             val notice = wanted.randomOrNull(random) ?: return note
-            return note.copy(subject = notice.subject, site = notice.site, reward = maxOf(note.reward, notice.reward), story = notice.story)
+            return Bounties.dress(note, notice)
         }
     }
 
@@ -87,6 +87,14 @@ object QuestGenerator {
         val poster = "${NAMES[random.nextInt(NAMES.size)]} the ${title(profession)}"
         val entry = pick(random, pool?.entries.orEmpty().filter(around::allows), tier)
         return around.dress(random, build(random, entry, poster, rankFor(random, entry, tier)))
+    }
+
+    /** A note from any pool's entries that [around] allows and [which] picks, signed by [poster]; null if there's none. */
+    fun generateWhere(random: RandomSource, tier: Int, around: Surroundings, poster: String, which: (QuestPool.Entry) -> Boolean): QuestNote? {
+        val entries = QuestPools.pools.flatMap { it.entries }.filter { it.minTier <= tier && which(it) && around.allows(it) }
+        if (entries.isEmpty()) return null
+        val entry = pick(random, entries, tier)
+        return build(random, entry, poster, rankFor(random, entry, tier))
     }
 
     /** A note of one specific type from any pool, for testing. Null if no pool offers that type. */

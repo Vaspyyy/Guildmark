@@ -1,0 +1,8 @@
+{
+  "parent": "guildmark:block/quest_board_bottom_left",
+  "textures": {
+    "panel": "guildmark:block/bounty_board_panel",
+    "frame": "guildmark:block/bounty_board_frame",
+    "particle": "guildmark:block/bounty_board_panel"
+  }
+}
