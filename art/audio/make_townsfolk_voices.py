@@ -1,6 +1,7 @@
 """The townsfolk's voices: what the people of the city say as you pass (greetings, trade cries, gossip,
-replies, a laugh, a cry for help), read by Kokoro TTS in four voices, one per timbre, then given a light
-touch of processing so they sit in the street (a little age for the old man, a child's pitch for the child).
+replies, a laugh, a cry for help, and what the three factions' members and a heist's watchmen say), read by
+Kokoro TTS in four voices, one per timbre, then given a light touch of processing so they sit in the street
+(a little age for the old man, a child's pitch for the child).
 
 The game picks the timbre from the townsperson (old women use "woman") and varies the pitch a little per
 person, so one voice per timbre is enough. Line lengths do not matter to the game.
@@ -16,7 +17,7 @@ Stages (run from the repo root):
    python3 -B art/audio/make_townsfolk_voices.py process --raw <raw_dir> \\
        --assets src/main/resources/assets/guildmark [--only ...] [--keys ...] [--wav <dir>]
 
-3) Phonemes: prints what Kokoro will say for each line (after SAY_AS), to catch misreadings
+3) Phonemes: prints what Kokoro will say for each line (after SAY_AS, or the line's PHONEMES), to catch misreadings
    <venv>/bin/python -I -B art/audio/make_townsfolk_voices.py phonemes [--only ...] [--keys ...] [--espeak-data <dir>]
 
 4) Fragments: writes art/audio/townsfolk_sounds.json (the sounds.json entries for every townsfolk effect, the
@@ -138,6 +139,49 @@ TRADES = {
     "tavern_4": "My round next time.",
 }
 
+# man, woman and old: the faction members' street lines (the Starwatch's mages, the Hearthsworn's knights, the
+# Quiet Hand's thieves: their everyday lines, what they say to kin and to the expelled) and what a heist's
+# watchmen say (alarm: shouts, suspect: wary, calm: muttered, purse: a victim's cries). The text is the language
+# file's say.guildmark.<line>, character for character
+FACTION = {
+    "mage_0": "The stars were clear last night. Rare, these days.",
+    "mage_1": "Mind the lecterns.",
+    "mage_2": "Has anyone seen my quill? I had it a moment ago.",
+    "mage_3": "Four hundred years of star charts, and no two nights alike.",
+    "mage_4": "Patience. The weave rewards it.",
+    "mage_5": "Light bends, if you ask it nicely.",
+    "mage_kin_0": "Well met, friend of the Starwatch.",
+    "mage_kin_1": "Light keep you, colleague.",
+    "knight_0": "Keep the fire. Keep the road.",
+    "knight_1": "Ring's open, if you fancy a bout.",
+    "knight_2": "Watch your feet. Most fights are lost at the feet.",
+    "knight_3": "The Hollow walked again last night.",
+    "knight_4": "Shield up. Always shield up.",
+    "knight_5": "The Commander had us drilling before dawn.",
+    "knight_kin_0": "Hearth and road, friend.",
+    "knight_kin_1": "Good to have you with us.",
+    "knight_cold_0": "We have nothing to say to thieves.",
+    "thief_0": "Didn't see me. Nobody ever does.",
+    "thief_1": "Nice boots. Shame if they walked off.",
+    "thief_2": "Keep your voice down.",
+    "thief_3": "Lovely night for it.",
+    "thief_4": "I've a cousin who can get you one of those. Cheap.",
+    "thief_5": "Mind your purse round here. Not everyone's as honest as me.",
+    "thief_kin_0": "Quietly does it.",
+    "thief_kin_1": "The Widow speaks well of you. Don't let it go to your head.",
+    "thief_cold_0": "Keep walking, knight's dog.",
+    "alarm_0": "Thief! Stop, thief!",
+    "alarm_1": "Guards! Guards!",
+    "alarm_2": "Someone's in here!",
+    "suspect_0": "Hm? Who's there?",
+    "suspect_1": "Did you hear that?",
+    "suspect_2": "I know someone's there.",
+    "calm_0": "Must've been the wind.",
+    "calm_1": "Rats, I suppose.",
+    "purse_0": "My purse! Where's my purse?",
+    "purse_1": "Hey! That's mine!",
+}
+
 # the child only
 CHILD = {
     "child_0": "You're it!",
@@ -152,13 +196,52 @@ CHILD = {
 SAY_AS = {
     "Hmph.": "Humph.",  # otherwise spelled out, H-M-P-H
     "Hmm.": "Hmmm.",  # otherwise a weak, swallowed 'h'm'
+    "Hm?": "Hmm?",  # otherwise spelled out, H-M
+    "Commander": "Commarnder",  # otherwise an American "a"
+    # a comma where the line breathes keeps the recogniser (and a listener) on the words
+    "The weave rewards it": "The weave, rewards it",  # otherwise "the weaver wads it"
+    "lost at the feet": "lost, at the feet",  # otherwise "lost to the feet"
+    "Shield up. Always shield up.": "Shield, up. Always, shield up.",  # otherwise "shield app"
+    "Where's my purse": "Where is my purse",  # otherwise "was", "with" or "wears" my purse
+    "Light keep you, colleague.": "Light, keep you colleague.",  # otherwise "like keep you"
+    "knight's dog": "knight's... dog",  # otherwise "night's dog" with the first word lost
 }
+
+# Lines no respelling gets right, with their phonemes written out as Kokoro reads them. The American voices turn
+# the British long "a" of "stars", "charts", "guards", "Starwatch" and "hearth" into an "o" ("stalls", "star shots",
+# "gods", "Hawthorne") unless the r is sounded; "lecterns" came out as "lect turns" (two stresses) and "Hollow" as
+# "holler".
+PHONEMES = {
+    "mage_0": "ðə stˈɑːɹz wɜː klˈiə lˈast nˈaɪt. ɹˈeə, ðiːz dˈeɪz.",
+    "mage_1": "mˈaɪnd ðə lˈɛktɚnz.",
+    "mage_3": "fˈɔː hˈʌndɹɪd jˈiəz ɒv stˈɑːɹ tʃˈɑːɹts, and nˈəʊ tˈuː nˈaɪts ɐlˈaɪk.",
+    "mage_kin_0": "wˈɛl mˈɛt, fɹˈɛnd ɒvðə stˈɑːɹwɒtʃ.",
+    "knight_3": "ðə hˈɒloʊ wˈɔːkt ɐɡˈɛn lˈast nˈaɪt.",
+    "knight_kin_0": "hˈɑːɹθ ænd ɹˈəʊd, fɹˈɛnd.",
+    "alarm_1": "ɡˈɑːɹdz! ɡˈɑːɹdz!",
+    "alarm_0": "θˈiːf! stˈɒp, θˈiːf!",  # as the text reads; written out because its LEAD_IN is phonemes
+}
+# The same for one timbre only. With the plain "f" the woman's and the old man's first "Thief" came out as "Thieve":
+# the woman's reads right with an aspirated "f" and a full stop, the old man's with a longer one and a comma.
+PHONEMES_FOR = {
+    ("alarm_0", "woman"): "θˈiːfʰ. stˈɒp, θˈiːf!",
+    ("alarm_0", "old"): "θˈiːff, stˈɒp, θˈiːf!",
+}
+
+# Kokoro lets the first word of a take go: the "th" of a "Thief" that opens an utterance is almost silent ("Leave!
+# Stop, leave!"), though the same word in the middle of a sentence is fine. For such a line a throw-away "oh" is read
+# in front of it (as phonemes if the line is, else as text) and cut off again in the `tts` stage (cut_lead_in), where
+# its vowel ends, so the raw take starts with the "th".
+LEAD_IN = {"alarm_0": "ˈəʊ! "}
 
 # Level offsets (dB) from the common speech level: cries carry, mutters don't
 LEVEL = {
     "flee_0": 2.0, "flee_1": 2.0, "flee_2": 2.0, "baker_0": 1.0, "baker_1": 1.0, "merchant_0": 1.0,
     "merchant_1": 1.0, "merchant_2": 1.0, "merchant_3": 1.0, "merchant_4": 1.0, "merchant_5": 1.0,
     "reply_1": -3.0, "fisher_1": -2.5, "night_1": -1.0,
+    # a heist's watchmen: shouts must carry, a victim cries out, the wary and the muttering are quieter
+    "alarm_0": 3.0, "alarm_1": 3.0, "alarm_2": 3.0, "purse_0": 2.0, "purse_1": 2.0,
+    "suspect_0": -1.0, "suspect_1": -1.0, "suspect_2": -1.0, "calm_0": -2.0, "calm_1": -2.0, "thief_2": -3.0,
 }
 
 OUT_SR = 32000
@@ -177,6 +260,7 @@ def lines(only=None, keys=None):
             d = dict(CHILD)
         else:
             d = dict(COMMON, **(TRADES if timbre in ("man", "woman") else {}))
+            d.update(FACTION)
         out[timbre] = {k: v for k, v in d.items() if not keys or re.search(keys, k)}
     return out
 
@@ -185,6 +269,38 @@ def spoken(text):
     for a, b in SAY_AS.items():
         text = text.replace(a, b)
     return text
+
+
+def say(key, text, timbre=None):
+    """what Kokoro is given for a line: its written-out phonemes (the timbre's own, else the line's) if it has any,
+    else its text after SAY_AS, with the line's lead-in in front -> (text or phonemes, is_phonemes)"""
+    ph = PHONEMES_FOR.get((key, timbre)) or PHONEMES.get(key)
+    said, is_ph = (ph, True) if ph else (spoken(text), False)
+    return LEAD_IN.get(key, "") + said, is_ph
+
+
+def cut_lead_in(x, sr, frame=0.005, floor_db=-22.0, min_run=0.04, fade=0.008):
+    """cuts a lead-in (the first voiced stretch of the take: its low band, 80 to 800 Hz, within floor_db of its
+    loudest) off the front, with a short fade in so that nothing clicks"""
+    x = np.asarray(x, dtype=np.float64)
+    f = np.fft.rfftfreq(len(x), 1.0 / sr)
+    band = np.exp(-(np.maximum(0.0, 80.0 - f) / 40.0) ** 2) * np.exp(-(np.maximum(0.0, f - 800.0) / 200.0) ** 2)
+    low = np.fft.irfft(np.fft.rfft(x) * band, len(x))
+    n = int(frame * sr)
+    rms = np.sqrt(np.mean(low[:len(low) // n * n].reshape(-1, n) ** 2, axis=1))
+    voiced = 20 * np.log10(rms / (rms.max() + 1e-12) + 1e-9) > floor_db
+    i = int(np.argmax(voiced))
+    while True:
+        j = i
+        while j < len(voiced) and voiced[j]:
+            j += 1
+        if (j - i) * frame >= min_run or not voiced[j:].any():
+            break
+        i = j + int(np.argmax(voiced[j:]))  # a click, not the lead-in's vowel: on to the next stretch
+    y = x[j * n:].copy()
+    nf = min(len(y), int(fade * sr))
+    y[:nf] *= 0.5 - 0.5 * np.cos(np.pi * np.arange(nf) / max(1, nf))
+    return y
 
 
 def kokoro(a):
@@ -204,7 +320,10 @@ def cmd_tts(a):
         folder = os.path.join(a.out, timbre)
         os.makedirs(folder, exist_ok=True)
         for key, text in keys.items():
-            audio, sr = k.create(spoken(text), voice=t["voice"], speed=t["speed"], lang=t["lang"])
+            said, is_ph = say(key, text, timbre)
+            audio, sr = k.create(said, voice=t["voice"], speed=t["speed"], lang=t["lang"], is_phonemes=is_ph)
+            if key in LEAD_IN:
+                audio = cut_lead_in(audio, sr)
             fn = os.path.join(folder, key + ".wav")
             sf.write(fn, np.asarray(audio, dtype=np.float32), sr, subtype="FLOAT")  # Kokoro can peak over 1.0
             print(fn, f"{len(audio) / sr:.2f}s", flush=True)
@@ -214,7 +333,8 @@ def cmd_phonemes(a):
     k = kokoro(a)
     for timbre, keys in lines(a.only, a.keys).items():
         for key, text in keys.items():
-            ph = k.tokenizer.phonemize(spoken(text), TIMBRES[timbre]["lang"])
+            said, is_ph = say(key, text, timbre)
+            ph = said if is_ph else k.tokenizer.phonemize(said, TIMBRES[timbre]["lang"])
             print(f"{timbre:6s} {key:12s} {text:45s} {ph}")
 
 

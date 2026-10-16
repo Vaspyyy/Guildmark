@@ -289,24 +289,27 @@ object Cutscenes : GuiLayer {
      * Renegade.INTRO_SCENE ticks, so the camera is back by then.
      */
     private fun renegadeIntro(s: Scene, camera: Boolean) {
-        s.length = 195
+        s.length = 200
         s.voice = FactionRegistry.RENEGADE_VOICE_INTRO.get()
         s.voiceAt = 6
-        s.lines = listOf(Line(6, 44, "renegade.intro.1"), Line(44, 86, "renegade.intro.2"))
+        // Timed to the pause in renegade_intro.ogg (2.05 to 2.35 s in)
+        s.lines = listOf(Line(6, 50, "renegade.intro.1"), Line(53, 100, "renegade.intro.2"))
         s.stinger = ModSounds.BOSS_APPEAR.get()
-        s.stingerAt = 92
-        s.title = 96
+        s.stingerAt = 100
+        s.title = 104
         if (!camera) return
         s.shots = listOf(
             // Wide and high over the ring as he turns
-            dolly(0, 40, false, 64f, 60f, Vec3(9.0, 4.5, 4.2), Vec3(7.6, 3.6, 3.4), Vec3(0.0, 0.0, 1.3), Vec3(0.0, 0.0, 1.5)),
+            dolly(0, 36, false, 64f, 60f, Vec3(9.0, 4.5, 4.2), Vec3(7.6, 3.6, 3.4), Vec3(0.0, 0.0, 1.3), Vec3(0.0, 0.0, 1.5)),
             // Close on the hood while he talks of Idris
-            dolly(40, 70, true, 50f, 46f, Vec3(2.3, 0.9, 1.75), Vec3(1.95, 0.7, 1.85), Vec3(0.2, 0.0, 1.85), Vec3(0.2, 0.0, 1.9)),
-            // Low and backing off as the staff goes up and the stones answer
-            dolly(70, 88, true, 58f, 66f, Vec3(5.2, -2.6, 0.5), Vec3(7.4, -3.4, 0.9), Vec3(0.0, 0.0, 1.8), Vec3(0.0, 0.0, 2.6)),
+            dolly(36, 62, true, 50f, 46f, Vec3(2.3, 0.9, 1.75), Vec3(1.95, 0.7, 1.85), Vec3(0.2, 0.0, 1.85), Vec3(0.2, 0.0, 1.9)),
+            // Pulling back as his arms spread and he looks up at the dark
+            dolly(62, 84, true, 54f, 60f, Vec3(4.0, 1.6, 1.4), Vec3(5.6, 2.2, 1.6), Vec3(0.0, 0.0, 1.5), Vec3(0.0, 0.0, 1.7)),
+            // Low and looking up as the staff goes high and the stones answer
+            dolly(84, 96, true, 58f, 66f, Vec3(4.6, -2.4, 0.4), Vec3(6.2, -3.0, 0.7), Vec3(0.0, 0.0, 1.9), Vec3(0.0, 0.0, 2.7)),
         )
-        s.returnAt = 88
-        s.shakeAt = 50
+        s.returnAt = 96
+        s.shakeAt = 90
     }
 
     /** He cries out to the sky as the stars begin to fall: only his words, since the fight goes on around them. */
@@ -314,7 +317,7 @@ object Cutscenes : GuiLayer {
         s.length = 64
         s.voice = FactionRegistry.RENEGADE_VOICE_PHASE2.get()
         s.voiceAt = 2
-        s.lines = listOf(Line(2, 60, "renegade.phase2"))
+        s.lines = listOf(Line(2, 62, "renegade.phase2"))
     }
 
     /** He sinks to his knees among his stones with a word for Idris; then the banner. */
@@ -322,7 +325,7 @@ object Cutscenes : GuiLayer {
         s.length = 190
         s.voice = FactionRegistry.RENEGADE_VOICE_DEATH.get()
         s.voiceAt = 10
-        s.lines = listOf(Line(10, 70, "renegade.death"))
+        s.lines = listOf(Line(10, 62, "renegade.death"))
         s.stinger = ModSounds.FOE_VANQUISHED.get()
         s.stingerAt = 76
         s.banner = 76

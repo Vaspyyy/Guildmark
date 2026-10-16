@@ -2468,5 +2468,11 @@
   "subtitles.guildmark.faction.renegade.ambient": "Cold breath whispers",
   "subtitles.guildmark.faction.renegade.hurt": "Ward cracks",
   "subtitles.guildmark.faction.renegade.shove": "Air blast throws you back",
-  "subtitles.guildmark.faction.renegade.death": "Wards come apart"
+  "subtitles.guildmark.faction.renegade.death": "Wards come apart",
+  "subtitles.guildmark.renegade.voice_intro": "Silvan Marrow speaks",
+  "subtitles.guildmark.renegade.voice_phase2": "Silvan Marrow cries out",
+  "subtitles.guildmark.renegade.voice_death": "Silvan Marrow's last words",
+  "subtitles.guildmark.voice.idris": "Idris Vael speaks",
+  "subtitles.guildmark.voice.corra": "Corra Wystan speaks",
+  "subtitles.guildmark.voice.odile": "Odile Fenn speaks"
 }

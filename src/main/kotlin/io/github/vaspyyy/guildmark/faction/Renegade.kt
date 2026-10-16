@@ -271,7 +271,8 @@ class Renegade(type: EntityType<out Renegade>, level: Level) : CombatEnemy(type,
                     setFlag(PHASE_TWO, true)
                 }
             }
-            INTRO -> if (tick == 50) level.playSound(null, x, y, z, FactionRegistry.RENEGADE_STONES.get(), SoundSource.HOSTILE, 1.5f, 1f)
+            // The stones wake as his staff goes up
+            INTRO -> if (tick == 90) level.playSound(null, x, y, z, FactionRegistry.RENEGADE_STONES.get(), SoundSource.HOSTILE, 1.5f, 1f)
         }
     }
 
@@ -524,7 +525,8 @@ class Renegade(type: EntityType<out Renegade>, level: Level) : CombatEnemy(type,
         private const val STARS = 4
         private const val STAR_RADIUS = 4.5
         /** How long his introduction keeps those watching out of the fight, and his death (Cutscenes times its scenes to them). */
-        const val INTRO_SCENE = 104
+        /** Ticks his introduction keeps the players watching out of the fight: the camera is back with them by then. */
+        const val INTRO_SCENE = 112
         const val DEATH_SCENE = 80
         const val DEATH_TICKS = 70
 

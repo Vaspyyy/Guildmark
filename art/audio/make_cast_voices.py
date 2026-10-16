@@ -1,16 +1,19 @@
-"""The named characters' voices: Wren, Tobin, Ilsa, Pip and Maren read by Kokoro TTS, each in their own
-voice, then given a light touch of processing (a room around them, a little age for Tobin, a chapel for
-Ilsa, a ghost's chill for Maren).
+"""The named characters' voices: Wren, Tobin, Ilsa, Pip and Maren, and the three faction leaders (Idris Vael,
+Corra Wystan and Odile Fenn), read by Kokoro TTS, each in their own voice, then given a light touch of
+processing (a room around them, a little age for Tobin and Idris, a chapel for Ilsa, a ghost's chill for Maren, a
+library, a barracks and an attic for the leaders).
 
 The words come straight from the language file, so a voice always says what the dialogue shows. Every
 line the dialogue screen speaks is voiced: the introductions, each chapter's request, the "still
-waiting" and "all done" lines, the goodbyes when a story ends, the topics, and Maren's scenes.
+waiting" and "all done" lines, the goodbyes when a story ends, the topics, Maren's scenes, and a leader's
+"work" offer, the grumble when woken, and the words for a rival or an expelled member.
 
 Stages (run from the repo root):
 
 1) TTS with Kokoro (kokoro-onnx, Apache-2.0) -> raw 24 kHz WAVs, one folder per character
    <venv>/bin/python -I -B art/audio/make_cast_voices.py tts --model kokoro-v1.0.onnx \\
        --voices voices-v1.0.bin --out <raw_dir> [--only wren,pip] [--keys 'topic'] [--espeak-data <dir>]
+   (a character's voice may be a blend of Kokoro voices, such as "bm_daniel*0.6+bm_lewis*0.4")
 
 2) Processing (numpy/scipy + sox) -> mono 32 kHz Ogg Vorbis in the mod's assets
    python3 -B art/audio/make_cast_voices.py process --raw <raw_dir> \\
@@ -34,31 +37,59 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# Kokoro voice, speed and accent per character
+# Kokoro voice, speed and accent per character. A voice may be a blend, "name*weight+name*weight" (see
+# parse_voice). The three leaders' blends are theirs alone: no other line in the game is read with them.
 CAST = {
     "wren": dict(voice="af_heart", speed=1.06, lang="en-us"),
     "tobin": dict(voice="bm_george", speed=0.9, lang="en-gb"),
     "ilsa": dict(voice="bf_emma", speed=0.94, lang="en-gb"),
     "pip": dict(voice="bm_fable", speed=1.06, lang="en-gb"),
     "maren": dict(voice="af_bella", speed=0.9, lang="en-us"),
+    "idris": dict(voice="bm_daniel*0.6+am_echo*0.4", speed=0.8, lang="en-gb"),  # old, dry, slow
+    "corra": dict(voice="bf_isabella*0.7+bm_george*0.3", speed=1.0, lang="en-gb"),  # low and firm
+    "odile": dict(voice="bf_alice*0.55+af_nicole*0.45", speed=0.92, lang="en-gb"),  # silky, close, unhurried
 }
 
-# Processing per character: pitch shift in cents (duration kept), room (rt60 s, wet), grit, ghost
+# Processing per character: pitch shift in cents (duration kept), room (rt60 s, wet), grit, ghost. Optional:
+# tremor (cents of age in the voice), room shape (predelay, early_span in s, hf_damp 0..1) and eq, a list of extra
+# (kind, Hz, Q, dB) bands after the standard tone. Without them a character's processing is what it always was.
 STYLE = {
     "wren": dict(pitch=0, rt60=0.45, wet=0.06, grit=0.0, ghost=False),
     "tobin": dict(pitch=-100, rt60=0.6, wet=0.07, grit=0.12, ghost=False),
     "ilsa": dict(pitch=0, rt60=1.6, wet=0.13, grit=0.0, ghost=False),
     "pip": dict(pitch=0, rt60=0.5, wet=0.06, grit=0.0, ghost=False),
     "maren": dict(pitch=-60, rt60=3.2, wet=0.28, grit=0.0, ghost=True),
+    # Idris: the library, books soaking up the highs, a little stone
+    "idris": dict(pitch=-60, rt60=0.9, wet=0.11, grit=0.06, ghost=False, tremor=9, predelay=0.014,
+                  early_span=0.035, hf_damp=0.8),
+    # Corra: a stone barracks, hard walls, a bright tail
+    "corra": dict(pitch=-200, rt60=1.3, wet=0.14, grit=0.0, ghost=False, predelay=0.022, early_span=0.075,
+                  hf_damp=0.25),
+    # Odile: a small attic, close and dry, a velvet top
+    "odile": dict(pitch=-100, rt60=0.28, wet=0.05, grit=0.0, ghost=False, predelay=0.006, early_span=0.02,
+                  hf_damp=0.65, eq=[("lowshelf", 180, 0.7, 2.0), ("peak", 3000, 0.9, -1.5),
+                                    ("highshelf", 7000, 0.7, -2.0)]),
 }
 
-# The lines the dialogue screen speaks (step0..2.note and the like are written, never spoken)
-VOICED = re.compile(r"^(intro|step\d|waiting|done|finale|scene\d\.p\d|topic\.[a-z_]+\.\d)$")
+# The lines the dialogue screen speaks (step0..2.note and the like are written, never spoken; "gated" has a %s in it
+# and is not voiced either)
+VOICED = re.compile(r"^(intro|step\d|waiting|done|finale|work|woken|rival|expelled|scene\d\.p\d|topic\.[a-z_]+\.\d)$")
 
 # Spelling the TTS reads better than the written text
 SAY_AS = {
     "Hmph.": "Humph.",  # otherwise spelled out, H-M-P-H
     "Halvard": "Hal-vard",  # otherwise it comes out as "Harvard"
+    "Hm?": "Hmmm?",  # otherwise spelled out, H-M
+    "Mm?": "Hmmm?",  # otherwise spelled out, M-M
+    "Mm,": "Hmmm,",
+    "Idris": "Ydris",  # otherwise "Eye-dris"
+    "Odile": "Odeel",  # otherwise "Oh-dyle"
+    "lecterns": "lec-terns",  # otherwise "lectins"
+    "Hearthsworn": "Hearth-sworn",  # otherwise the TH and the S run together ("Hathsworn")
+    "Commander": "Commarnder",  # otherwise an American "a"
+    "Close the hatch": "Cloze the hatch",  # otherwise "close" is read as the adjective, with an S
+    "Use it kindly": "Uze it kindly",  # otherwise "use" is read as the noun, with an S
+    "lapis": "lap-iss",  # otherwise "lap-eez"
 }
 
 OUT_SR = 32000
@@ -90,6 +121,18 @@ def spoken(text):
 
 
 # ------------------------------------------------------------------ stage 1: TTS
+def parse_voice(k, spec):
+    """A Kokoro voice name, or a blend such as "bm_daniel*0.6+bm_lewis*0.4": the voices' styles added in proportion."""
+    if "*" not in spec and "+" not in spec:
+        return spec
+    style = None
+    for part in spec.split("+"):
+        name, _, w = part.partition("*")
+        s = k.get_voice_style(name.strip()) * float(w or 1.0)
+        style = s if style is None else style + s
+    return style
+
+
 def cmd_tts(a):
     import soundfile as sf
     import espeakng_loader
@@ -99,10 +142,11 @@ def cmd_tts(a):
     k = Kokoro(a.model, a.voices, espeak_config=cfg)
     for cid, keys in lines(a.only, a.keys).items():
         cast = CAST[cid]
+        voice = parse_voice(k, cast["voice"])
         folder = os.path.join(a.out, cid)
         os.makedirs(folder, exist_ok=True)
         for key, text in keys.items():
-            audio, sr = k.create(spoken(text), voice=cast["voice"], speed=cast["speed"], lang=cast["lang"])
+            audio, sr = k.create(spoken(text), voice=voice, speed=cast["speed"], lang=cast["lang"])
             fn = os.path.join(folder, file_name(key) + ".wav")
             sf.write(fn, np.asarray(audio, dtype=np.float32), sr)
             print(fn, f"{len(audio) / sr:.2f}s", flush=True)
@@ -127,8 +171,20 @@ def fit_len(x, n):
     return x[:n] if len(x) >= n else np.concatenate([x, np.zeros(n - len(x))])
 
 
-def process_line(x, sr_in, st):
-    from sfxkit import SR, hp, lp, eq, compress, drive, room_ir, limiter, fade, db, ns
+def tremor(y, cents, rng, rate=5.3):
+    """An old voice's unsteadiness: the pitch wobbles a few cents (the read-out speed swings around 1, so the
+    length is kept) and the level with it."""
+    from sfxkit import SR, smooth_random
+    n = len(y)
+    t = np.arange(n) / SR
+    depth = (2 ** (cents / 1200.0) - 1) * (0.6 + 0.4 * smooth_random(n / SR, rng, 1.2))
+    wob = np.sin(2 * np.pi * rate * t + rng.uniform(0, 2 * np.pi) + 0.8 * smooth_random(n / SR, rng, 2.0))
+    pos = np.clip(np.cumsum(1.0 + depth * wob) - 1.0, 0, n - 1)
+    return np.interp(pos, np.arange(n), y) * (1.0 + 0.06 * wob)
+
+
+def process_line(x, sr_in, st, seed=("cast",)):
+    from sfxkit import SR, hp, lp, eq, compress, drive, room_ir, limiter, fade, db, ns, rng_for
     from scipy import signal
     from scipy.ndimage import uniform_filter1d
     # Trim the TTS silence (keep a breath at each end)
@@ -138,11 +194,15 @@ def process_line(x, sr_in, st):
     x = 0.7 * x / (np.max(np.abs(x)) + 1e-12)
     effects = ["pitch", st["pitch"]] if st["pitch"] else []
     y = sox(x, sr_in, *effects, out_sr=SR)
+    if st.get("tremor"):
+        y = tremor(y, st["tremor"], rng_for("cast", "voice", *seed))
     y = hp(y, 70, order=2)
     # Tone: less mud, a little presence and air so the words cut through the game
     y = eq(y, "peak", 320, 1.0, -1.5)
     y = eq(y, "peak", 3000, 0.9, 2.0)
     y = eq(y, "highshelf", 8000, 0.7, 1.0)
+    for kind, f, q, gain in st.get("eq", ()):
+        y = eq(y, kind, f, q, gain)
     y /= np.max(np.abs(y)) + 1e-12
     y = compress(y, thresh_db=-20, ratio=2.5, attack=0.005, release=0.12)
     if st["grit"]:
@@ -159,8 +219,8 @@ def process_line(x, sr_in, st):
         y = 0.5 * y / (np.max(np.abs(y)) + 1e-12)
         y = sox(y, SR, "chorus", 0.8, 0.9, 38, 0.25, 0.2, 1.6, "-s")
     # The room, ducked under the dry voice so the words stay clear
-    ir = room_ir(rt60=st["rt60"], predelay=0.012 if st["rt60"] < 1 else 0.03, early=12, early_span=0.05,
-                 hf_damp=0.5, seed=17, density_ms=30)
+    ir = room_ir(rt60=st["rt60"], predelay=st.get("predelay", 0.012 if st["rt60"] < 1 else 0.03), early=12,
+                 early_span=st.get("early_span", 0.05), hf_damp=st.get("hf_damp", 0.5), seed=17, density_ms=30)
     send = hp(lp(y, 7000), 200)
     wet = signal.fftconvolve(send, ir)
     tail = ns(min(1.2, st["rt60"] * 0.5))
@@ -191,7 +251,7 @@ def cmd_process(a):
             x = x.astype(np.float64)
             if x.ndim > 1:
                 x = x.mean(axis=1)
-            y = process_line(x, sr, STYLE[cid])
+            y = process_line(x, sr, STYLE[cid], (cid, key))
             y = sox(y, SR, out_sr=OUT_SR)
             out = os.path.join(a.assets, "sounds", "voice", cid, file_name(key) + ".ogg")
             write_ogg(out, y, sr=OUT_SR, quality=3)

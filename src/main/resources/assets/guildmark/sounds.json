@@ -412,501 +412,6 @@
     ],
     "subtitle": "subtitles.guildmark.ui.discover"
   },
-  "voice.wren.intro": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/wren/intro",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.wren"
-  },
-  "voice.wren.step0": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/wren/step0",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.wren"
-  },
-  "voice.wren.step1": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/wren/step1",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.wren"
-  },
-  "voice.wren.step2": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/wren/step2",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.wren"
-  },
-  "voice.wren.waiting": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/wren/waiting",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.wren"
-  },
-  "voice.wren.finale": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/wren/finale",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.wren"
-  },
-  "voice.wren.done": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/wren/done",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.wren"
-  },
-  "voice.wren.topic.maps.0": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/wren/topic_maps_0",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.wren"
-  },
-  "voice.wren.topic.maps.1": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/wren/topic_maps_1",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.wren"
-  },
-  "voice.wren.topic.king.0": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/wren/topic_king_0",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.wren"
-  },
-  "voice.wren.topic.king.1": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/wren/topic_king_1",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.wren"
-  },
-  "voice.tobin.intro": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/tobin/intro",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.tobin"
-  },
-  "voice.tobin.step0": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/tobin/step0",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.tobin"
-  },
-  "voice.tobin.step1": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/tobin/step1",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.tobin"
-  },
-  "voice.tobin.step2": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/tobin/step2",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.tobin"
-  },
-  "voice.tobin.waiting": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/tobin/waiting",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.tobin"
-  },
-  "voice.tobin.finale": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/tobin/finale",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.tobin"
-  },
-  "voice.tobin.done": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/tobin/done",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.tobin"
-  },
-  "voice.tobin.topic.wardens.0": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/tobin/topic_wardens_0",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.tobin"
-  },
-  "voice.tobin.topic.wardens.1": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/tobin/topic_wardens_1",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.tobin"
-  },
-  "voice.tobin.topic.halvard.0": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/tobin/topic_halvard_0",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.tobin"
-  },
-  "voice.tobin.topic.halvard.1": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/tobin/topic_halvard_1",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.tobin"
-  },
-  "voice.ilsa.intro": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/ilsa/intro",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.ilsa"
-  },
-  "voice.ilsa.step0": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/ilsa/step0",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.ilsa"
-  },
-  "voice.ilsa.step1": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/ilsa/step1",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.ilsa"
-  },
-  "voice.ilsa.step2": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/ilsa/step2",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.ilsa"
-  },
-  "voice.ilsa.waiting": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/ilsa/waiting",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.ilsa"
-  },
-  "voice.ilsa.finale": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/ilsa/finale",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.ilsa"
-  },
-  "voice.ilsa.done": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/ilsa/done",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.ilsa"
-  },
-  "voice.ilsa.topic.bell.0": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/ilsa/topic_bell_0",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.ilsa"
-  },
-  "voice.ilsa.topic.bell.1": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/ilsa/topic_bell_1",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.ilsa"
-  },
-  "voice.ilsa.topic.court.0": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/ilsa/topic_court_0",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.ilsa"
-  },
-  "voice.ilsa.topic.court.1": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/ilsa/topic_court_1",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.ilsa"
-  },
-  "voice.pip.intro": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/pip/intro",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.pip"
-  },
-  "voice.pip.step0": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/pip/step0",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.pip"
-  },
-  "voice.pip.step1": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/pip/step1",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.pip"
-  },
-  "voice.pip.step2": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/pip/step2",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.pip"
-  },
-  "voice.pip.waiting": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/pip/waiting",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.pip"
-  },
-  "voice.pip.finale": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/pip/finale",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.pip"
-  },
-  "voice.pip.done": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/pip/done",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.pip"
-  },
-  "voice.pip.topic.songs.0": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/pip/topic_songs_0",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.pip"
-  },
-  "voice.pip.topic.songs.1": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/pip/topic_songs_1",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.pip"
-  },
-  "voice.pip.topic.fame.0": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/pip/topic_fame_0",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.pip"
-  },
-  "voice.pip.topic.fame.1": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/pip/topic_fame_1",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.pip"
-  },
-  "voice.maren.scene0.p0": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/maren/scene0_p0",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.maren"
-  },
-  "voice.maren.scene0.p1": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/maren/scene0_p1",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.maren"
-  },
-  "voice.maren.scene0.p2": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/maren/scene0_p2",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.maren"
-  },
-  "voice.maren.scene0.p3": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/maren/scene0_p3",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.maren"
-  },
-  "voice.maren.scene1.p0": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/maren/scene1_p0",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.maren"
-  },
-  "voice.maren.scene1.p1": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/maren/scene1_p1",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.maren"
-  },
-  "voice.maren.scene1.p2": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/maren/scene1_p2",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.maren"
-  },
-  "voice.maren.scene2.p0": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/maren/scene2_p0",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.maren"
-  },
-  "voice.maren.scene2.p1": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/maren/scene2_p1",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.maren"
-  },
-  "voice.maren.topic.oath.0": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/maren/topic_oath_0",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.maren"
-  },
-  "voice.maren.topic.oath.1": {
-    "sounds": [
-      {
-        "name": "guildmark:voice/maren/topic_oath_1",
-        "stream": true
-      }
-    ],
-    "subtitle": "subtitles.guildmark.voice.maren"
-  },
   "wardfire.kindle": {
     "sounds": [
       "guildmark:wardfire/kindle1"
@@ -3289,48 +2794,24 @@
   },
   "townsfolk.mage.page": {
     "sounds": [
-      {
-        "name": "guildmark:townsfolk/mage/page1",
-        "attenuation_distance": 16
-      },
-      {
-        "name": "guildmark:townsfolk/mage/page2",
-        "attenuation_distance": 16
-      },
-      {
-        "name": "guildmark:townsfolk/mage/page3",
-        "attenuation_distance": 16
-      }
+      "guildmark:townsfolk/mage/page1",
+      "guildmark:townsfolk/mage/page2",
+      "guildmark:townsfolk/mage/page3"
     ],
     "subtitle": "subtitles.guildmark.townsfolk.mage.page"
   },
   "townsfolk.mage.quill": {
     "sounds": [
-      {
-        "name": "guildmark:townsfolk/mage/quill1",
-        "attenuation_distance": 16
-      },
-      {
-        "name": "guildmark:townsfolk/mage/quill2",
-        "attenuation_distance": 16
-      },
-      {
-        "name": "guildmark:townsfolk/mage/quill3",
-        "attenuation_distance": 16
-      }
+      "guildmark:townsfolk/mage/quill1",
+      "guildmark:townsfolk/mage/quill2",
+      "guildmark:townsfolk/mage/quill3"
     ],
     "subtitle": "subtitles.guildmark.townsfolk.mage.quill"
   },
   "townsfolk.mage.conjure": {
     "sounds": [
-      {
-        "name": "guildmark:townsfolk/mage/conjure1",
-        "attenuation_distance": 16
-      },
-      {
-        "name": "guildmark:townsfolk/mage/conjure2",
-        "attenuation_distance": 16
-      }
+      "guildmark:townsfolk/mage/conjure1",
+      "guildmark:townsfolk/mage/conjure2"
     ],
     "subtitle": "subtitles.guildmark.townsfolk.mage.conjure"
   },
@@ -3359,94 +2840,1657 @@
     "sounds": [
       {
         "name": "guildmark:townsfolk/knight/post1",
-        "attenuation_distance": 24
+        "attenuation_distance": 20
       },
       {
         "name": "guildmark:townsfolk/knight/post2",
-        "attenuation_distance": 24
+        "attenuation_distance": 20
       },
       {
         "name": "guildmark:townsfolk/knight/post3",
-        "attenuation_distance": 24
+        "attenuation_distance": 20
       }
     ],
     "subtitle": "subtitles.guildmark.townsfolk.knight.post"
   },
   "townsfolk.knight.whetstone": {
     "sounds": [
-      {
-        "name": "guildmark:townsfolk/knight/whetstone1",
-        "attenuation_distance": 16
-      },
-      {
-        "name": "guildmark:townsfolk/knight/whetstone2",
-        "attenuation_distance": 16
-      }
+      "guildmark:townsfolk/knight/whetstone1",
+      "guildmark:townsfolk/knight/whetstone2"
     ],
     "subtitle": "subtitles.guildmark.townsfolk.knight.whetstone"
   },
   "townsfolk.thief.shake": {
     "sounds": [
-      {
-        "name": "guildmark:townsfolk/thief/shake1",
-        "attenuation_distance": 16
-      },
-      {
-        "name": "guildmark:townsfolk/thief/shake2",
-        "attenuation_distance": 16
-      }
+      "guildmark:townsfolk/thief/shake1",
+      "guildmark:townsfolk/thief/shake2"
     ],
     "subtitle": "subtitles.guildmark.townsfolk.thief.shake"
   },
   "townsfolk.thief.dice": {
     "sounds": [
-      {
-        "name": "guildmark:townsfolk/thief/dice1",
-        "attenuation_distance": 16
-      },
-      {
-        "name": "guildmark:townsfolk/thief/dice2",
-        "attenuation_distance": 16
-      },
-      {
-        "name": "guildmark:townsfolk/thief/dice3",
-        "attenuation_distance": 16
-      }
+      "guildmark:townsfolk/thief/dice1",
+      "guildmark:townsfolk/thief/dice2",
+      "guildmark:townsfolk/thief/dice3"
     ],
     "subtitle": "subtitles.guildmark.townsfolk.thief.dice"
   },
   "townsfolk.thief.coin": {
     "sounds": [
-      {
-        "name": "guildmark:townsfolk/thief/coin1",
-        "attenuation_distance": 16
-      },
-      {
-        "name": "guildmark:townsfolk/thief/coin2",
-        "attenuation_distance": 16
-      },
-      {
-        "name": "guildmark:townsfolk/thief/coin3",
-        "attenuation_distance": 16
-      }
+      "guildmark:townsfolk/thief/coin1",
+      "guildmark:townsfolk/thief/coin2",
+      "guildmark:townsfolk/thief/coin3"
     ],
     "subtitle": "subtitles.guildmark.townsfolk.thief.coin"
   },
   "townsfolk.thief.lockpick": {
     "sounds": [
-      {
-        "name": "guildmark:townsfolk/thief/lockpick1",
-        "attenuation_distance": 16
-      },
-      {
-        "name": "guildmark:townsfolk/thief/lockpick2",
-        "attenuation_distance": 16
-      },
-      {
-        "name": "guildmark:townsfolk/thief/lockpick3",
-        "attenuation_distance": 16
-      }
+      "guildmark:townsfolk/thief/lockpick1",
+      "guildmark:townsfolk/thief/lockpick2",
+      "guildmark:townsfolk/thief/lockpick3"
     ],
     "subtitle": "subtitles.guildmark.townsfolk.thief.lockpick"
+  },
+  "townsfolk.voice.man.mage_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/mage_0"
+    ],
+    "subtitle": "say.guildmark.mage_0"
+  },
+  "townsfolk.voice.man.mage_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/mage_1"
+    ],
+    "subtitle": "say.guildmark.mage_1"
+  },
+  "townsfolk.voice.man.mage_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/mage_2"
+    ],
+    "subtitle": "say.guildmark.mage_2"
+  },
+  "townsfolk.voice.man.mage_3": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/mage_3"
+    ],
+    "subtitle": "say.guildmark.mage_3"
+  },
+  "townsfolk.voice.man.mage_4": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/mage_4"
+    ],
+    "subtitle": "say.guildmark.mage_4"
+  },
+  "townsfolk.voice.man.mage_5": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/mage_5"
+    ],
+    "subtitle": "say.guildmark.mage_5"
+  },
+  "townsfolk.voice.man.mage_kin_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/mage_kin_0"
+    ],
+    "subtitle": "say.guildmark.mage_kin_0"
+  },
+  "townsfolk.voice.man.mage_kin_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/mage_kin_1"
+    ],
+    "subtitle": "say.guildmark.mage_kin_1"
+  },
+  "townsfolk.voice.man.knight_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/knight_0"
+    ],
+    "subtitle": "say.guildmark.knight_0"
+  },
+  "townsfolk.voice.man.knight_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/knight_1"
+    ],
+    "subtitle": "say.guildmark.knight_1"
+  },
+  "townsfolk.voice.man.knight_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/knight_2"
+    ],
+    "subtitle": "say.guildmark.knight_2"
+  },
+  "townsfolk.voice.man.knight_3": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/knight_3"
+    ],
+    "subtitle": "say.guildmark.knight_3"
+  },
+  "townsfolk.voice.man.knight_4": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/knight_4"
+    ],
+    "subtitle": "say.guildmark.knight_4"
+  },
+  "townsfolk.voice.man.knight_5": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/knight_5"
+    ],
+    "subtitle": "say.guildmark.knight_5"
+  },
+  "townsfolk.voice.man.knight_kin_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/knight_kin_0"
+    ],
+    "subtitle": "say.guildmark.knight_kin_0"
+  },
+  "townsfolk.voice.man.knight_kin_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/knight_kin_1"
+    ],
+    "subtitle": "say.guildmark.knight_kin_1"
+  },
+  "townsfolk.voice.man.knight_cold_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/knight_cold_0"
+    ],
+    "subtitle": "say.guildmark.knight_cold_0"
+  },
+  "townsfolk.voice.man.thief_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/thief_0"
+    ],
+    "subtitle": "say.guildmark.thief_0"
+  },
+  "townsfolk.voice.man.thief_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/thief_1"
+    ],
+    "subtitle": "say.guildmark.thief_1"
+  },
+  "townsfolk.voice.man.thief_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/thief_2"
+    ],
+    "subtitle": "say.guildmark.thief_2"
+  },
+  "townsfolk.voice.man.thief_3": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/thief_3"
+    ],
+    "subtitle": "say.guildmark.thief_3"
+  },
+  "townsfolk.voice.man.thief_4": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/thief_4"
+    ],
+    "subtitle": "say.guildmark.thief_4"
+  },
+  "townsfolk.voice.man.thief_5": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/thief_5"
+    ],
+    "subtitle": "say.guildmark.thief_5"
+  },
+  "townsfolk.voice.man.thief_kin_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/thief_kin_0"
+    ],
+    "subtitle": "say.guildmark.thief_kin_0"
+  },
+  "townsfolk.voice.man.thief_kin_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/thief_kin_1"
+    ],
+    "subtitle": "say.guildmark.thief_kin_1"
+  },
+  "townsfolk.voice.man.thief_cold_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/thief_cold_0"
+    ],
+    "subtitle": "say.guildmark.thief_cold_0"
+  },
+  "townsfolk.voice.man.alarm_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/alarm_0"
+    ],
+    "subtitle": "say.guildmark.alarm_0"
+  },
+  "townsfolk.voice.man.alarm_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/alarm_1"
+    ],
+    "subtitle": "say.guildmark.alarm_1"
+  },
+  "townsfolk.voice.man.alarm_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/alarm_2"
+    ],
+    "subtitle": "say.guildmark.alarm_2"
+  },
+  "townsfolk.voice.man.suspect_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/suspect_0"
+    ],
+    "subtitle": "say.guildmark.suspect_0"
+  },
+  "townsfolk.voice.man.suspect_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/suspect_1"
+    ],
+    "subtitle": "say.guildmark.suspect_1"
+  },
+  "townsfolk.voice.man.suspect_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/suspect_2"
+    ],
+    "subtitle": "say.guildmark.suspect_2"
+  },
+  "townsfolk.voice.man.calm_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/calm_0"
+    ],
+    "subtitle": "say.guildmark.calm_0"
+  },
+  "townsfolk.voice.man.calm_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/calm_1"
+    ],
+    "subtitle": "say.guildmark.calm_1"
+  },
+  "townsfolk.voice.man.purse_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/purse_0"
+    ],
+    "subtitle": "say.guildmark.purse_0"
+  },
+  "townsfolk.voice.man.purse_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/purse_1"
+    ],
+    "subtitle": "say.guildmark.purse_1"
+  },
+  "townsfolk.voice.woman.mage_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/mage_0"
+    ],
+    "subtitle": "say.guildmark.mage_0"
+  },
+  "townsfolk.voice.woman.mage_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/mage_1"
+    ],
+    "subtitle": "say.guildmark.mage_1"
+  },
+  "townsfolk.voice.woman.mage_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/mage_2"
+    ],
+    "subtitle": "say.guildmark.mage_2"
+  },
+  "townsfolk.voice.woman.mage_3": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/mage_3"
+    ],
+    "subtitle": "say.guildmark.mage_3"
+  },
+  "townsfolk.voice.woman.mage_4": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/mage_4"
+    ],
+    "subtitle": "say.guildmark.mage_4"
+  },
+  "townsfolk.voice.woman.mage_5": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/mage_5"
+    ],
+    "subtitle": "say.guildmark.mage_5"
+  },
+  "townsfolk.voice.woman.mage_kin_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/mage_kin_0"
+    ],
+    "subtitle": "say.guildmark.mage_kin_0"
+  },
+  "townsfolk.voice.woman.mage_kin_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/mage_kin_1"
+    ],
+    "subtitle": "say.guildmark.mage_kin_1"
+  },
+  "townsfolk.voice.woman.knight_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/knight_0"
+    ],
+    "subtitle": "say.guildmark.knight_0"
+  },
+  "townsfolk.voice.woman.knight_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/knight_1"
+    ],
+    "subtitle": "say.guildmark.knight_1"
+  },
+  "townsfolk.voice.woman.knight_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/knight_2"
+    ],
+    "subtitle": "say.guildmark.knight_2"
+  },
+  "townsfolk.voice.woman.knight_3": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/knight_3"
+    ],
+    "subtitle": "say.guildmark.knight_3"
+  },
+  "townsfolk.voice.woman.knight_4": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/knight_4"
+    ],
+    "subtitle": "say.guildmark.knight_4"
+  },
+  "townsfolk.voice.woman.knight_5": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/knight_5"
+    ],
+    "subtitle": "say.guildmark.knight_5"
+  },
+  "townsfolk.voice.woman.knight_kin_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/knight_kin_0"
+    ],
+    "subtitle": "say.guildmark.knight_kin_0"
+  },
+  "townsfolk.voice.woman.knight_kin_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/knight_kin_1"
+    ],
+    "subtitle": "say.guildmark.knight_kin_1"
+  },
+  "townsfolk.voice.woman.knight_cold_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/knight_cold_0"
+    ],
+    "subtitle": "say.guildmark.knight_cold_0"
+  },
+  "townsfolk.voice.woman.thief_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/thief_0"
+    ],
+    "subtitle": "say.guildmark.thief_0"
+  },
+  "townsfolk.voice.woman.thief_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/thief_1"
+    ],
+    "subtitle": "say.guildmark.thief_1"
+  },
+  "townsfolk.voice.woman.thief_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/thief_2"
+    ],
+    "subtitle": "say.guildmark.thief_2"
+  },
+  "townsfolk.voice.woman.thief_3": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/thief_3"
+    ],
+    "subtitle": "say.guildmark.thief_3"
+  },
+  "townsfolk.voice.woman.thief_4": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/thief_4"
+    ],
+    "subtitle": "say.guildmark.thief_4"
+  },
+  "townsfolk.voice.woman.thief_5": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/thief_5"
+    ],
+    "subtitle": "say.guildmark.thief_5"
+  },
+  "townsfolk.voice.woman.thief_kin_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/thief_kin_0"
+    ],
+    "subtitle": "say.guildmark.thief_kin_0"
+  },
+  "townsfolk.voice.woman.thief_kin_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/thief_kin_1"
+    ],
+    "subtitle": "say.guildmark.thief_kin_1"
+  },
+  "townsfolk.voice.woman.thief_cold_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/thief_cold_0"
+    ],
+    "subtitle": "say.guildmark.thief_cold_0"
+  },
+  "townsfolk.voice.woman.alarm_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/alarm_0"
+    ],
+    "subtitle": "say.guildmark.alarm_0"
+  },
+  "townsfolk.voice.woman.alarm_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/alarm_1"
+    ],
+    "subtitle": "say.guildmark.alarm_1"
+  },
+  "townsfolk.voice.woman.alarm_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/alarm_2"
+    ],
+    "subtitle": "say.guildmark.alarm_2"
+  },
+  "townsfolk.voice.woman.suspect_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/suspect_0"
+    ],
+    "subtitle": "say.guildmark.suspect_0"
+  },
+  "townsfolk.voice.woman.suspect_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/suspect_1"
+    ],
+    "subtitle": "say.guildmark.suspect_1"
+  },
+  "townsfolk.voice.woman.suspect_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/suspect_2"
+    ],
+    "subtitle": "say.guildmark.suspect_2"
+  },
+  "townsfolk.voice.woman.calm_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/calm_0"
+    ],
+    "subtitle": "say.guildmark.calm_0"
+  },
+  "townsfolk.voice.woman.calm_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/calm_1"
+    ],
+    "subtitle": "say.guildmark.calm_1"
+  },
+  "townsfolk.voice.woman.purse_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/purse_0"
+    ],
+    "subtitle": "say.guildmark.purse_0"
+  },
+  "townsfolk.voice.woman.purse_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/purse_1"
+    ],
+    "subtitle": "say.guildmark.purse_1"
+  },
+  "townsfolk.voice.old.mage_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/mage_0"
+    ],
+    "subtitle": "say.guildmark.mage_0"
+  },
+  "townsfolk.voice.old.mage_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/mage_1"
+    ],
+    "subtitle": "say.guildmark.mage_1"
+  },
+  "townsfolk.voice.old.mage_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/mage_2"
+    ],
+    "subtitle": "say.guildmark.mage_2"
+  },
+  "townsfolk.voice.old.mage_3": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/mage_3"
+    ],
+    "subtitle": "say.guildmark.mage_3"
+  },
+  "townsfolk.voice.old.mage_4": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/mage_4"
+    ],
+    "subtitle": "say.guildmark.mage_4"
+  },
+  "townsfolk.voice.old.mage_5": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/mage_5"
+    ],
+    "subtitle": "say.guildmark.mage_5"
+  },
+  "townsfolk.voice.old.mage_kin_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/mage_kin_0"
+    ],
+    "subtitle": "say.guildmark.mage_kin_0"
+  },
+  "townsfolk.voice.old.mage_kin_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/mage_kin_1"
+    ],
+    "subtitle": "say.guildmark.mage_kin_1"
+  },
+  "townsfolk.voice.old.knight_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/knight_0"
+    ],
+    "subtitle": "say.guildmark.knight_0"
+  },
+  "townsfolk.voice.old.knight_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/knight_1"
+    ],
+    "subtitle": "say.guildmark.knight_1"
+  },
+  "townsfolk.voice.old.knight_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/knight_2"
+    ],
+    "subtitle": "say.guildmark.knight_2"
+  },
+  "townsfolk.voice.old.knight_3": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/knight_3"
+    ],
+    "subtitle": "say.guildmark.knight_3"
+  },
+  "townsfolk.voice.old.knight_4": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/knight_4"
+    ],
+    "subtitle": "say.guildmark.knight_4"
+  },
+  "townsfolk.voice.old.knight_5": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/knight_5"
+    ],
+    "subtitle": "say.guildmark.knight_5"
+  },
+  "townsfolk.voice.old.knight_kin_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/knight_kin_0"
+    ],
+    "subtitle": "say.guildmark.knight_kin_0"
+  },
+  "townsfolk.voice.old.knight_kin_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/knight_kin_1"
+    ],
+    "subtitle": "say.guildmark.knight_kin_1"
+  },
+  "townsfolk.voice.old.knight_cold_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/knight_cold_0"
+    ],
+    "subtitle": "say.guildmark.knight_cold_0"
+  },
+  "townsfolk.voice.old.thief_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/thief_0"
+    ],
+    "subtitle": "say.guildmark.thief_0"
+  },
+  "townsfolk.voice.old.thief_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/thief_1"
+    ],
+    "subtitle": "say.guildmark.thief_1"
+  },
+  "townsfolk.voice.old.thief_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/thief_2"
+    ],
+    "subtitle": "say.guildmark.thief_2"
+  },
+  "townsfolk.voice.old.thief_3": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/thief_3"
+    ],
+    "subtitle": "say.guildmark.thief_3"
+  },
+  "townsfolk.voice.old.thief_4": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/thief_4"
+    ],
+    "subtitle": "say.guildmark.thief_4"
+  },
+  "townsfolk.voice.old.thief_5": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/thief_5"
+    ],
+    "subtitle": "say.guildmark.thief_5"
+  },
+  "townsfolk.voice.old.thief_kin_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/thief_kin_0"
+    ],
+    "subtitle": "say.guildmark.thief_kin_0"
+  },
+  "townsfolk.voice.old.thief_kin_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/thief_kin_1"
+    ],
+    "subtitle": "say.guildmark.thief_kin_1"
+  },
+  "townsfolk.voice.old.thief_cold_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/thief_cold_0"
+    ],
+    "subtitle": "say.guildmark.thief_cold_0"
+  },
+  "townsfolk.voice.old.alarm_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/alarm_0"
+    ],
+    "subtitle": "say.guildmark.alarm_0"
+  },
+  "townsfolk.voice.old.alarm_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/alarm_1"
+    ],
+    "subtitle": "say.guildmark.alarm_1"
+  },
+  "townsfolk.voice.old.alarm_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/alarm_2"
+    ],
+    "subtitle": "say.guildmark.alarm_2"
+  },
+  "townsfolk.voice.old.suspect_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/suspect_0"
+    ],
+    "subtitle": "say.guildmark.suspect_0"
+  },
+  "townsfolk.voice.old.suspect_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/suspect_1"
+    ],
+    "subtitle": "say.guildmark.suspect_1"
+  },
+  "townsfolk.voice.old.suspect_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/suspect_2"
+    ],
+    "subtitle": "say.guildmark.suspect_2"
+  },
+  "townsfolk.voice.old.calm_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/calm_0"
+    ],
+    "subtitle": "say.guildmark.calm_0"
+  },
+  "townsfolk.voice.old.calm_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/calm_1"
+    ],
+    "subtitle": "say.guildmark.calm_1"
+  },
+  "townsfolk.voice.old.purse_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/purse_0"
+    ],
+    "subtitle": "say.guildmark.purse_0"
+  },
+  "townsfolk.voice.old.purse_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/purse_1"
+    ],
+    "subtitle": "say.guildmark.purse_1"
+  },
+  "voice.wren.intro": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/wren/intro",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.wren"
+  },
+  "voice.wren.step0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/wren/step0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.wren"
+  },
+  "voice.wren.step1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/wren/step1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.wren"
+  },
+  "voice.wren.step2": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/wren/step2",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.wren"
+  },
+  "voice.wren.waiting": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/wren/waiting",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.wren"
+  },
+  "voice.wren.finale": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/wren/finale",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.wren"
+  },
+  "voice.wren.done": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/wren/done",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.wren"
+  },
+  "voice.wren.topic.maps.0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/wren/topic_maps_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.wren"
+  },
+  "voice.wren.topic.maps.1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/wren/topic_maps_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.wren"
+  },
+  "voice.wren.topic.king.0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/wren/topic_king_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.wren"
+  },
+  "voice.wren.topic.king.1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/wren/topic_king_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.wren"
+  },
+  "voice.tobin.intro": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/tobin/intro",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.tobin"
+  },
+  "voice.tobin.step0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/tobin/step0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.tobin"
+  },
+  "voice.tobin.step1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/tobin/step1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.tobin"
+  },
+  "voice.tobin.step2": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/tobin/step2",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.tobin"
+  },
+  "voice.tobin.waiting": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/tobin/waiting",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.tobin"
+  },
+  "voice.tobin.finale": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/tobin/finale",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.tobin"
+  },
+  "voice.tobin.done": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/tobin/done",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.tobin"
+  },
+  "voice.tobin.topic.wardens.0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/tobin/topic_wardens_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.tobin"
+  },
+  "voice.tobin.topic.wardens.1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/tobin/topic_wardens_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.tobin"
+  },
+  "voice.tobin.topic.halvard.0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/tobin/topic_halvard_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.tobin"
+  },
+  "voice.tobin.topic.halvard.1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/tobin/topic_halvard_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.tobin"
+  },
+  "voice.ilsa.intro": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/ilsa/intro",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.ilsa"
+  },
+  "voice.ilsa.step0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/ilsa/step0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.ilsa"
+  },
+  "voice.ilsa.step1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/ilsa/step1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.ilsa"
+  },
+  "voice.ilsa.step2": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/ilsa/step2",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.ilsa"
+  },
+  "voice.ilsa.waiting": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/ilsa/waiting",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.ilsa"
+  },
+  "voice.ilsa.finale": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/ilsa/finale",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.ilsa"
+  },
+  "voice.ilsa.done": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/ilsa/done",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.ilsa"
+  },
+  "voice.ilsa.topic.bell.0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/ilsa/topic_bell_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.ilsa"
+  },
+  "voice.ilsa.topic.bell.1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/ilsa/topic_bell_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.ilsa"
+  },
+  "voice.ilsa.topic.court.0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/ilsa/topic_court_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.ilsa"
+  },
+  "voice.ilsa.topic.court.1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/ilsa/topic_court_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.ilsa"
+  },
+  "voice.pip.intro": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/pip/intro",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.pip"
+  },
+  "voice.pip.step0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/pip/step0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.pip"
+  },
+  "voice.pip.step1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/pip/step1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.pip"
+  },
+  "voice.pip.step2": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/pip/step2",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.pip"
+  },
+  "voice.pip.waiting": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/pip/waiting",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.pip"
+  },
+  "voice.pip.finale": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/pip/finale",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.pip"
+  },
+  "voice.pip.done": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/pip/done",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.pip"
+  },
+  "voice.pip.topic.songs.0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/pip/topic_songs_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.pip"
+  },
+  "voice.pip.topic.songs.1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/pip/topic_songs_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.pip"
+  },
+  "voice.pip.topic.fame.0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/pip/topic_fame_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.pip"
+  },
+  "voice.pip.topic.fame.1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/pip/topic_fame_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.pip"
+  },
+  "voice.maren.scene0.p0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/maren/scene0_p0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.maren"
+  },
+  "voice.maren.scene0.p1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/maren/scene0_p1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.maren"
+  },
+  "voice.maren.scene0.p2": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/maren/scene0_p2",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.maren"
+  },
+  "voice.maren.scene0.p3": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/maren/scene0_p3",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.maren"
+  },
+  "voice.maren.scene1.p0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/maren/scene1_p0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.maren"
+  },
+  "voice.maren.scene1.p1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/maren/scene1_p1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.maren"
+  },
+  "voice.maren.scene1.p2": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/maren/scene1_p2",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.maren"
+  },
+  "voice.maren.scene2.p0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/maren/scene2_p0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.maren"
+  },
+  "voice.maren.scene2.p1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/maren/scene2_p1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.maren"
+  },
+  "voice.maren.topic.oath.0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/maren/topic_oath_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.maren"
+  },
+  "voice.maren.topic.oath.1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/maren/topic_oath_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.maren"
+  },
+  "voice.idris.intro": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/idris/intro",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.idris"
+  },
+  "voice.idris.step0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/idris/step0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.idris"
+  },
+  "voice.idris.step1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/idris/step1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.idris"
+  },
+  "voice.idris.step2": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/idris/step2",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.idris"
+  },
+  "voice.idris.step3": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/idris/step3",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.idris"
+  },
+  "voice.idris.step4": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/idris/step4",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.idris"
+  },
+  "voice.idris.waiting": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/idris/waiting",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.idris"
+  },
+  "voice.idris.finale": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/idris/finale",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.idris"
+  },
+  "voice.idris.done": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/idris/done",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.idris"
+  },
+  "voice.idris.work": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/idris/work",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.idris"
+  },
+  "voice.idris.woken": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/idris/woken",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.idris"
+  },
+  "voice.idris.topic.starwatch.0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/idris/topic_starwatch_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.idris"
+  },
+  "voice.idris.topic.starwatch.1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/idris/topic_starwatch_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.idris"
+  },
+  "voice.idris.topic.omens.0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/idris/topic_omens_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.idris"
+  },
+  "voice.idris.topic.omens.1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/idris/topic_omens_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.idris"
+  },
+  "voice.corra.intro": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/corra/intro",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.corra"
+  },
+  "voice.corra.step0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/corra/step0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.corra"
+  },
+  "voice.corra.step1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/corra/step1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.corra"
+  },
+  "voice.corra.step2": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/corra/step2",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.corra"
+  },
+  "voice.corra.step3": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/corra/step3",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.corra"
+  },
+  "voice.corra.step4": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/corra/step4",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.corra"
+  },
+  "voice.corra.waiting": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/corra/waiting",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.corra"
+  },
+  "voice.corra.finale": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/corra/finale",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.corra"
+  },
+  "voice.corra.done": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/corra/done",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.corra"
+  },
+  "voice.corra.work": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/corra/work",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.corra"
+  },
+  "voice.corra.woken": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/corra/woken",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.corra"
+  },
+  "voice.corra.rival": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/corra/rival",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.corra"
+  },
+  "voice.corra.expelled": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/corra/expelled",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.corra"
+  },
+  "voice.corra.topic.oath.0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/corra/topic_oath_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.corra"
+  },
+  "voice.corra.topic.oath.1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/corra/topic_oath_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.corra"
+  },
+  "voice.corra.topic.wardens.0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/corra/topic_wardens_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.corra"
+  },
+  "voice.corra.topic.wardens.1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/corra/topic_wardens_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.corra"
+  },
+  "voice.odile.intro": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/odile/intro",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.odile"
+  },
+  "voice.odile.step0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/odile/step0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.odile"
+  },
+  "voice.odile.step1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/odile/step1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.odile"
+  },
+  "voice.odile.step2": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/odile/step2",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.odile"
+  },
+  "voice.odile.step3": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/odile/step3",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.odile"
+  },
+  "voice.odile.step4": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/odile/step4",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.odile"
+  },
+  "voice.odile.waiting": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/odile/waiting",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.odile"
+  },
+  "voice.odile.finale": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/odile/finale",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.odile"
+  },
+  "voice.odile.done": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/odile/done",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.odile"
+  },
+  "voice.odile.work": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/odile/work",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.odile"
+  },
+  "voice.odile.woken": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/odile/woken",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.odile"
+  },
+  "voice.odile.rival": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/odile/rival",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.odile"
+  },
+  "voice.odile.expelled": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/odile/expelled",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.odile"
+  },
+  "voice.odile.topic.hand.0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/odile/topic_hand_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.odile"
+  },
+  "voice.odile.topic.hand.1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/odile/topic_hand_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.odile"
+  },
+  "voice.odile.topic.widow.0": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/odile/topic_widow_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.odile"
+  },
+  "voice.odile.topic.widow.1": {
+    "sounds": [
+      {
+        "name": "guildmark:voice/odile/topic_widow_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.guildmark.voice.odile"
+  },
+  "renegade.voice_intro": {
+    "sounds": [
+      "guildmark:voice/renegade_intro"
+    ],
+    "subtitle": "subtitles.guildmark.renegade.voice_intro"
+  },
+  "renegade.voice_phase2": {
+    "sounds": [
+      "guildmark:voice/renegade_phase2"
+    ],
+    "subtitle": "subtitles.guildmark.renegade.voice_phase2"
+  },
+  "renegade.voice_death": {
+    "sounds": [
+      "guildmark:voice/renegade_death"
+    ],
+    "subtitle": "subtitles.guildmark.renegade.voice_death"
   }
 }

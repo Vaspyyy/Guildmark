@@ -3,8 +3,9 @@
 Every sound in `src/main/resources/assets/guildmark/sounds/` is made by these scripts. Nothing is
 sampled: the effects are synthesised with numpy/scipy, the music is composed in code and played by
 FluidSynth, and the voices are Kokoro TTS: Halvard processed into a hollow undead knight, the named
-characters (Wren, Tobin, Ilsa, Pip and Maren) given a lighter touch. The city ambience (`ambience/`) is
-synthesised the same way, its crowds, criers and night watch built from Kokoro takes.
+characters (Wren, Tobin, Ilsa, Pip and Maren) given a lighter touch, the three faction leaders each in a blend of
+Kokoro voices of their own, and the renegade Silvan Marrow made cold and a little uncanny. The city ambience
+(`ambience/`) is synthesised the same way, its crowds, criers and night watch built from Kokoro takes.
 
 - `sfxkit.py`: the shared DSP toolkit (noise, filters, modal metal, creature voice source, room
   reverb, finalising and Ogg export).
@@ -43,9 +44,24 @@ synthesised the same way, its crowds, criers and night watch built from Kokoro t
   peaking at -3 dBFS (the soft swells lower, the cycle tick at -12 dBFS). `--only` takes effect names; `--mp3 <file>`
   joins what was rendered into one listen-through MP3, a chapter mark at each sound. Its variants are listed in
   `sounds.json` by hand.
+- `make_faction_audio.py`: the three factions' and the renegade's sounds: its 25 effects and 37 files (`faction/`).
+  The Starwatch's ward-lights are cold glass like the sorcery (a hum, a shimmer where a blade passes through, a falling
+  chime when one is put out, a cold mote spat); the Hearthsworn steel, gravel, brass and fire (blades tapped, a sword set
+  down, a low horn, a Wardfire choked, a dawn swell and one bell stroke, a warm bell chord); the Quiet Hand cloth,
+  leather, coin and a brass hand bell (a purse lifted and opened, a wrist seized, a watcher's suspicion, the alarm, a
+  plucked figure and a flicked coin); the renegade stone and cold glass (the standing stones waking, a cold whisper, a
+  ward cracking, a palm blast, a long fall). Synthesised with `sfxkit.py` like the magic effects, one-shots peaking at
+  -3 dBFS (the ward-light's hum at -14, the lifted purse at -12). `--only` takes effect names or a group such as
+  `heist`; `--mp3 <file>` joins what was rendered into one listen-through MP3, a chapter mark at each sound, and a full
+  run adds the members' new work sounds from `make_townsfolk_sfx.py`. Its variants are listed in `sounds.json` by hand.
 - `make_voice.py`: Halvard's three lines (`voice/`). It has two stages, `tts` and `process`.
-- `make_cast_voices.py`: the named characters' 55 dialogue lines (`voice/<character>/`), read from the
-  language file. It has three stages, `tts`, `process` and `sounds`.
+- `make_renegade_voice.py`: the renegade Silvan Marrow's three lines (`voice/renegade_<line>.ogg`), in a blend of
+  three American men's voices and cold, thin processing: a faint whispered double, a stone slap and wind (out on a
+  hill of standing stones, not in a hall), and a glassy shimmer on his phase-two cry. Two stages, `tts` and
+  `process`, as for Halvard.
+- `make_cast_voices.py`: the named characters' 104 dialogue lines (`voice/<character>/`), read from the
+  language file: Wren, Tobin, Ilsa, Pip and Maren, and the faction leaders Idris, Corra and Odile. It has three
+  stages, `tts`, `process` and `sounds`.
 - `ambkit.py`: what the city ambience shares on top of `sfxkit.py`: the `@recipe` registry, seamless
   stereo loops (the extra tail crossfaded over the head), RMS levelling, street and square reverbs,
   stereo panning, and waveform and spectrogram pictures for checking a sound by eye.
@@ -79,6 +95,7 @@ python3 -B art/audio/make_region_music.py src/main/resources/assets/guildmark --
 python3 -B art/audio/make_land_music.py src/main/resources/assets/guildmark --work <tmp-dir> [--wav <dir>] [--only heartland,dunes]
 python3 -B art/audio/make_dragon_audio.py src/main/resources/assets/guildmark --work <tmp-dir> [--wav <dir>] [--only roar,growl,music]
 python3 -B art/audio/make_magic_audio.py src/main/resources/assets/guildmark [--wav <dir>] [--only arc_bolt_cast,flare] [--mp3 <file>]
+python3 -B art/audio/make_faction_audio.py src/main/resources/assets/guildmark [--wav <dir>] [--only ward_light,heist.alarm] [--mp3 <file>]
 ```
 
 `--wav` also writes WAV copies for listening. `--work` is where the music script keeps its per-stem
@@ -127,6 +144,11 @@ espeak-ng refuses a data path longer than 160 characters. If the `tts` stage fai
 `Error processing file .../phontab`, copy the `espeak-ng-data` folder from the `espeakng_loader`
 package to a short path and pass it as `--espeak-data <dir>`.
 
+Silvan Marrow's lines (`make_renegade_voice.py`) run the same way, `tts` then `process`. His voice is the blend
+`am_liam*0.4+am_fenrir*0.3+am_santa*0.3`, read as American English (the American voices turned "dark" into "dock"
+and "chart" into "shot" when given British phonemes), and he speaks up, 1 to 2 dB under Halvard's level. Whisper
+base.en reads all three lines back exactly as written.
+
 The game times its captions to the voice files' lengths:
 
 | File | Length |
@@ -134,6 +156,9 @@ The game times its captions to the voice files' lengths:
 | `halvard_intro` | 8.802 s |
 | `halvard_phase2` | 4.356 s |
 | `halvard_death` | 4.521 s |
+| `renegade_intro` | 5.478 s |
+| `renegade_phase2` | 3.234 s |
+| `renegade_death` | 2.720 s |
 
 A new voice, speed or text changes these lengths. Check the new lengths with `soxi -D` and update the
 caption timings in the code.
@@ -141,7 +166,8 @@ caption timings in the code.
 ### Character voices
 
 The dialogue screen speaks every line it shows: introductions, each chapter's request, the "still
-waiting", "all done" and goodbye lines, the topics, and Maren's scenes. The words come from
+waiting", "all done" and goodbye lines, the topics, Maren's scenes, and a leader's "work" offer, the grumble when
+woken and the words for a rival or an expelled member. The words come from
 `en_us.json`, so after changing a character's line, voice it again. Use the same virtualenv, model files
 and `--espeak-data` as for Halvard:
 
@@ -162,25 +188,35 @@ falls back to the typed-text ticks in game.
 | Ilsa | `bf_emma` | 0.94 | chapel reverb |
 | Pip | `bm_fable` | 1.06 | small room |
 | Maren | `af_bella` | 0.9 | down 0.6 semitone, a faint chorused octave above, large cold hall |
+| Idris | `bm_daniel*0.6+am_echo*0.4` | 0.8 | down 0.6 semitone, a slight tremor, a little grit, a library (books soak up the highs) |
+| Corra | `bf_isabella*0.7+bm_george*0.3` | 1.0 | down 2 semitones, a stone barracks with a bright tail |
+| Odile | `bf_alice*0.55+af_nicole*0.45` | 0.92 | down 1 semitone, a velvet top, a small close attic |
+
+A voice may be a blend of Kokoro voices (`name*weight+name*weight`, as `--voice` takes for Halvard). The three
+leaders' blends are theirs alone: no other line in the game is read with them. `.note` lines are written notes,
+never spoken, and the "gated" line is not voiced.
 
 `SAY_AS` in the script respells words the TTS gets wrong ("Hmph" was spelled out letter by letter, and
 "Halvard" came out as "Harvard"). Every line was checked with Whisper base.en: 98% of words come back
-as written.
+as written (99% for the leaders' 49 lines, 42 of them exactly).
 
 ### Townsfolk
 
 The sounds the city's people make (`townsfolk/`): their work and play, the bard's tunes, and what they
 say as you pass.
 
-- `make_townsfolk_sfx.py`: the 40 effects (16 events and their variants), each timed to a townsfolk
-  animation, and the bard's four lute tunes (`townsfolk/bard/tune1..4`). The effects are close-up and dry
+- `make_townsfolk_sfx.py`: the 68 effects (26 events and their variants, the factions' mages, knights and
+  thieves among them), each timed to a townsfolk animation, and the bard's four lute tunes
+  (`townsfolk/bard/tune1..4`). The effects are close-up and dry
   apart from a small room. Each is set to a loudness target (its loudest 100 ms, K-weighted) instead of by
   peak: the smith's hammer is the loudest at -12 LUFS, the soft sounds sit at -17 to -18, and peaks stay under
   -1 dBFS. `@effect(...)` on each recipe sets its variants, subtitle, target and carry distance. The tunes
   are composed in the script and played by FluidSynth's General MIDI nylon guitar, with a second string a
   few cents sharp for the lute's paired courses and a small synthesised frame drum in the dances. They are
   levelled to -18 LUFS integrated.
-- `make_townsfolk_voices.py`: the 193 voice lines (`townsfolk/voice/<timbre>/<line>`) in four Kokoro voices.
+- `make_townsfolk_voices.py`: the 301 voice lines (`townsfolk/voice/<timbre>/<line>`) in four Kokoro voices, 108 of
+  them what the three factions' members say in the street (`mage_`, `knight_`, `thief_`, `alarm_`, `suspect_`, `calm_`
+  and `purse_` lines, in the man's, the woman's and the old man's timbres).
   It also writes the two fragment files the lead merges into `sounds.json` and `en_us.json`:
   `townsfolk_sounds.json` and `townsfolk_lang.json`.
 
@@ -210,9 +246,9 @@ back.
 
 | Timbre | Kokoro voice | Speed | Processing | Lines |
 |---|---|---|---|---|
-| `man` | `am_puck` | 1.0 | street | 74 |
-| `woman` | `af_nova` | 1.12 | street | 74 |
-| `old` | `am_adam` | 0.86 | down 1.2 semitones, a slight tremor, a little grit, street | 39 |
+| `man` | `am_puck` | 1.0 | street | 110 |
+| `woman` | `af_nova` | 1.12 | street | 110 |
+| `old` | `am_adam` | 0.86 | down 1.2 semitones, a slight tremor, a little grit, street | 75 |
 | `child` | `af_jessica` | 1.1 | up 3 semitones, street | 6 |
 
 All four read British phonemes (`en-gb`), as the city's criers do. None of them is a voice used by the named
@@ -220,7 +256,18 @@ characters, Halvard, the criers or the watch. Old women use `woman`, and the gam
 per townsperson. Each line plays as `townsfolk.voice.<timbre>.<line>` and is subtitled with its own text
 (`say.guildmark.<line>`). Line lengths do not matter: nothing in the game is timed to them, so a line can be
 voiced again freely. `SAY_AS` respells "Hmph" (otherwise spelled out letter by letter) and "Hmm" (otherwise
-a weak, swallowed sound). The processing notches out thin whistles that Kokoro's vocoder leaves at 4.8 and
+a weak, swallowed sound), and puts a comma where a line breathes when the recogniser lost a word without it.
+`PHONEMES` gives the IPA outright for the eight lines no respelling fixed: the American voices turn the British
+long "a" of "stars", "guards" and "hearth" into an "o" ("stalls", "gods", "Hawthorne") unless the r is sounded,
+and `alarm_0` ("Thief! Stop, thief!") is written out so that its lead-in can be. `PHONEMES_FOR` gives a line other
+phonemes for one timbre only (the woman's and the old man's `alarm_0`, whose first "Thief" came out as "Thieve"
+with a plain "f"). Kokoro also lets the first word of a take go (an opening "th" is almost silent), so `LEAD_IN`
+has a throw-away "oh" read in front of such a line and the `tts` stage cuts it off again where its vowel ends
+(`cut_lead_in`, with an 8 ms fade-in): "Thief" then starts as it would in the middle of a sentence.
+The processing notches out thin whistles that Kokoro's vocoder leaves at 4.8 and
 9.6 kHz. It sets every line to the named characters' speech level, with cries 1 to 2 dB above it and
-mutters 1 to 3 dB below. No speech recogniser was available, so the lines were checked by their phonemes,
-speaking rate, pitch and spectrograms instead of by Whisper.
+mutters 1 to 3 dB below. The first 193 lines were checked by their phonemes, speaking rate, pitch and spectrograms,
+the 108 faction lines also with Whisper base.en (the encoded files, with a retry when its decoder loops on a word):
+107 of them come back exactly as written. The one that does not is the man's `knight_kin_0` ("Hearth and road,
+friend." is heard as "Harthing Road, friend"); the larger fp32 model of Whisper also hears the old man's `alarm_0`
+as "Thieve, stop thief".
