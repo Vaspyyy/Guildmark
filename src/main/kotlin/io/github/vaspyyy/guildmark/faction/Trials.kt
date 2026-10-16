@@ -56,7 +56,8 @@ abstract class TrialRun(val player: ServerPlayer) {
  * - `heist_manor`, `heist_reliquary`, `heist_vault`, `heist_den`: a prize stolen from a watched building (Heists);
  * - `hold`: a Wardfire on the road held from nightfall against three waves of Hollows (Hold);
  * - `dusk_rider`: the Dusk Rider brought down;
- * - `renegade`: Silvan Marrow defeated in his ring of stones (Renegade).
+ * - `renegade`: Silvan Marrow defeated in his ring of stones (Renegade);
+ * - `kindle`: Wardfires gone cold lit again (a companion's chapter, Ysolde's: see CompanionKind).
  */
 object Trials {
     /** Each player's runs, by contract (its chain and kind). */
@@ -91,6 +92,10 @@ object Trials {
                 state
             }
             "renegade" -> Renegade.begin(level, player, state)
+            "kindle" -> {
+                player.sendSystemMessage(Component.translatable("message.guildmark.kindle_trial"))
+                state
+            }
             else -> {
                 val heist = Heist.byKind(kind) ?: return state
                 Heists.begin(level, player, heist, state, owner) ?: noSeat(player)
@@ -268,7 +273,7 @@ object Trials {
     // ---- Words ----
 
     fun describe(note: QuestNote): Component = when (val kind = kind(note)) {
-        "ward_lights", "pickpocket", "purses" -> Component.translatable("quest.guildmark.trial.$kind.desc", note.count)
+        "ward_lights", "pickpocket", "purses", "kindle" -> Component.translatable("quest.guildmark.trial.$kind.desc", note.count)
         "spar", "hold", "dusk_rider", "renegade" -> Component.translatable("quest.guildmark.trial.$kind.desc")
         else -> Heist.byKind(kind)?.let { Component.translatable("quest.guildmark.trial.heist.desc", it.prizeName) }
             ?: Component.translatable("quest.guildmark.trial.$kind.desc")

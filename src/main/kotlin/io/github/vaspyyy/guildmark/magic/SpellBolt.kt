@@ -1,6 +1,8 @@
 package io.github.vaspyyy.guildmark.magic
 
 import io.github.vaspyyy.guildmark.client.magic.MagicClient
+import io.github.vaspyyy.guildmark.companion.CompanionEntity
+import io.github.vaspyyy.guildmark.companion.CompanionFighting
 import io.github.vaspyyy.guildmark.registry.ModParticles
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet
 import net.minecraft.core.component.DataComponents
@@ -163,15 +165,19 @@ class SpellBolt : ThrowableItemProjectile {
 
     // A spell passes by its caster, the caster's own creatures, and other spells
     override fun canHitEntity(target: Entity): Boolean {
-        if (!super.canHitEntity(target) || target is SpellBolt || target === owner || pierced.contains(target.id)) return false
-        if (target is OwnableEntity && target.owner === owner) return false
+        // getOwner(): inside a projectile, plain owner is the EntityReference field rather than the caster
+        val caster = getOwner()
+        if (!super.canHitEntity(target) || target is SpellBolt || target === caster || pierced.contains(target.id)) return false
+        if (target is OwnableEntity && target.owner === caster) return false
+        // A companion's bolts pass by everyone on their side
+        if (caster is CompanionEntity && target is LivingEntity && !CompanionFighting.isFoe(caster, target)) return false
         return true
     }
 
     override fun onHitEntity(hit: EntityHitResult) {
         val level = level() as? ServerLevel ?: return
         val struck = hit.entity as? LivingEntity ?: return
-        val caster = owner as? LivingEntity
+        val caster = getOwner() as? LivingEntity
         if (kind == BoltKind.RIME_LANCE) {
             // It runs through a few foes, freezing each, before it shatters
             pierced.add(struck.id)
@@ -204,7 +210,7 @@ class SpellBolt : ThrowableItemProjectile {
     private fun land(level: ServerLevel, at: Vec3, struck: LivingEntity?) {
         if (spent) return
         spent = true
-        val caster = owner as? LivingEntity
+        val caster = getOwner() as? LivingEntity
         when (kind) {
             BoltKind.ARC_BOLT -> {
                 struck?.let { Magic.hurt(caster, it, damage, spell, this) }

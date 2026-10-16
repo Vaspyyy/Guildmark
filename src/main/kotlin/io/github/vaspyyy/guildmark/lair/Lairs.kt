@@ -454,8 +454,10 @@ class Lairs(val lairs: MutableList<Lair> = mutableListOf()) : SavedData() {
         level.playSound(null, pos, ModSounds.MIST_PASS.get(), SoundSource.BLOCKS, 1.0f, 1.0f)
     }
 
+    /** A courtier's own title, a story lair's master by name ("Harl Voss, the Turncoat"), or the master of its kind of den. */
     private fun bossName(lair: Lair): Component =
-        lair.courtier?.title ?: Component.translatable("lair.guildmark.boss_name", lair.theme.bossTitle, lair.theme.title)
+        lair.courtier?.title ?: if (lair.theme.storyOnly) lair.theme.bossTitle
+        else Component.translatable("lair.guildmark.boss_name", lair.theme.bossTitle, lair.theme.title)
 
     /** Someone came close: the minions pour out round [center] and the master shows itself. */
     private fun wake(level: ServerLevel, lair: Lair, center: BlockPos, audience: List<ServerPlayer>) {

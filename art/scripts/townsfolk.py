@@ -1,6 +1,8 @@
 """
 The townsfolk: the people of the capitals (citizens, smiths, bakers, merchants, guards, farmers, fishers, children,
-nobles, innkeepers, bards, priests, and the factions' mages, knights and thieves). One humanoid model carries every
+nobles, innkeepers, bards, priests, and the factions' mages, knights and thieves), and the four travelling companions
+(role 'companion': Bram, Ysolde, Kestrel and Lucan, looks 0 to 3 in that order; no town role, they never stand in a town
+and whatever they hold the game's item layer draws). One humanoid model carries every
 look's pieces (hair, beards, hats, helms, hoods, aprons, skirts, capes, tabards, robes, scabbards, creels...) plus the
 held tools from townsfolk_tools.py; each look shows only its own pieces and has its own texture.
 
@@ -109,7 +111,52 @@ def _pieces():
     return {'head': head, 'body': body, 'right_arm': right_arm, 'left_arm': left_arm, 'right_leg': right_leg, 'left_leg': left_leg}
 
 
+def _companion_pieces():
+    """The pieces only the four companions wear (Bram's pauldron and wolf-fur collar, Ysolde's plait, satchel and lamp
+    charm, Kestrel's quiver, short cape and knife, Lucan's tufts of hair, satchel, papers and long scarf). Look pieces,
+    never held tools. They pack their box UV after every older cube (see pack_uv), so no older look's texture moves."""
+    head = [
+        # Lucan's unruly hair: tufts standing off the crown and over the right ear, a lock behind the left ear
+        Part('messy_hair', cubes=[C((-2.5, -9.75, -3.25), (3, 2.5, 3), 'tuft_fore'), C((0.5, -10.25, -0.75), (3, 3, 3), 'tuft_crown'),
+                                  C((-4.75, -8.5, -1.5), (1.5, 3, 3), 'tuft_right'), C((3.25, -8.75, -2.5), (1.5, 2.5, 2.5), 'tuft_left'),
+                                  C((-2.5, -3.5, 3.9), (5, 3.5, 1.5), 'tuft_nape')]),
+    ]
+    body = [
+        # Bram's wolf pelt over the shoulders, thicker and higher than the common collar
+        Part('fur_collar', cubes=[C((-5, -1.75, -3.25), (10, 3.5, 6.5), 'fur_collar')]),
+        # Kestrel's short cape, hanging still behind the quiver (the common cape swings)
+        Part('short_cape', cubes=[C((-5, -0.5, 1.9), (10, 7.5, 1), 'short_cape')]),
+        # her quiver on the back, leaning along the baldric, the grey fletching standing out of its mouth
+        Part('quiver', (-1.8, 1.0, 2.8), (0, 0, -20), cubes=[C((-1.5, 0, 0), (3, 10, 3), 'quiver_body'),
+                                                              C((-1.25, -2.5, 0.5), (2.5, 3, 2), 'quiver_arrows')]),
+        # and her knife, hilt up at the right of the belt
+        Part('knife', (-3.4, 9.0, -2.4), (0, 0, 8), cubes=[C((-0.5, -2.5, -0.5), (1, 2.5, 1), 'knife_grip'),
+                                                            C((-1, -0.5, -0.75), (2, 0.5, 1.5), 'knife_guard'),
+                                                            C((-0.75, 0, -0.5), (1.5, 4.5, 1), 'knife_sheath')]),
+        # the satchel at the left hip (Ysolde's, Lucan's), its flap, and the papers Lucan stuffs it with
+        Part('satchel', cubes=[C((1.4, 6, -4.4), (4.5, 4.5, 2.5), 'satchel')]),
+        Part('satchel_papers', cubes=[C((2.0, 5.0, -4.0), (3.5, 1.5, 2), 'satchel_papers')]),
+        # Ysolde's plait down her back and the small brass lamp on its cord at her throat
+        Part('plait', cubes=[C((-1, 0.8, 1.9), (2, 10.5, 1.5), 'plait')]),
+        Part('lamp_charm', cubes=[C((-1, 3.4, -2.8), (2, 2.5, 1), 'lamp_charm')]),
+        # Lucan's long scarf, the end hanging down his back
+        Part('long_scarf', cubes=[C((0.6, 1.0, 1.9), (3, 10.5, 1.5), 'scarf_tail')]),
+    ]
+    left_arm = [
+        # Bram's pauldron on the left shoulder: a crown, the domed plate with the hart's head, a lame below
+        Part('pauldron', cubes=[C((-1.25, -3.5, -2.5), (5.5, 1.5, 5), 'pauldron_crown'), C((-1.75, -2.25, -3.25), (6.5, 4.5, 6.5), 'pauldron_plate'),
+                                C((-1.5, 1.75, -3.0), (6, 1.5, 6), 'pauldron_lame')]),
+    ]
+    return {'head': head, 'body': body, 'left_arm': left_arm}
+
+
+# the cubes of those pieces: packed after all the others
+LATE_CUBES = {c.name for ps in _companion_pieces().values() for p in ps for q in p.walk() for c in q.cubes}
+
+# the older pieces in their old (sorted) order, then the companions' (which the older looks never show)
 PIECES = sorted(p.name for ps in _pieces().values() for p in ps)
+COMPANION_PIECES = sorted(p.name for ps in _companion_pieces().values() for p in ps)
+PIECES = PIECES + COMPANION_PIECES
 
 
 def _tools():
@@ -129,6 +176,8 @@ def tool_names():
 def build_model():
     """The townsfolk model: the humanoid at the standard pivots, every look piece and every tool, UV packed."""
     pieces = _pieces()
+    for parent, more in _companion_pieces().items():
+        pieces[parent] = pieces[parent] + more
     tools = _tools()[0]
     def kids(name): return pieces.get(name, []) + list(tools.get(name, []))
     head = Part('head', cubes=[C((-4, -8, -4), (8, 8, 8), 'head')],
@@ -149,52 +198,61 @@ def build_model():
 
 def pack_uv(model):
     """Box-UV pack every cube with a skyline (lowest fit first): tighter than modelkit's shelves, so the looks' pieces
-    and the tools share TEX_W x TEX_H with room to spare. Deterministic."""
+    and the tools share TEX_W x TEX_H with room to spare. Deterministic. The companions' cubes (LATE_CUBES) are packed
+    last, onto the skyline the older cubes leave, so adding them never moves an older cube."""
     W = model.tex_w
-    cubes = sorted(model.all_cubes(), key=lambda c: (-c.footprint()[1], -c.footprint()[0], c.name))
+    cubes = list(model.all_cubes())
     sky = [[0, 0, W]]              # segments: x, height, width
-    for c in cubes:
-        fw, fh = c.footprint()
-        best = None
-        for i in range(len(sky)):
-            x = sky[i][0]
-            if x + fw > W:
-                break
-            y, j, room = 0, i, 0
-            while room < fw:
-                y = max(y, sky[j][1])
-                room += sky[j][2]
-                j += 1
-            key = (y + fh, y, x)
-            if best is None or key < best[0]:
-                best = (key, i, x, y)
-        if best is None:
-            raise SystemExit(f'{model.name}: {c.name} ({fw}x{fh}) does not fit')
-        _, i, x, y = best
-        c.uv = (x, y)
-        # raise the skyline under the new rect
-        new, end = [], x + fw
-        for sx, sy, sw in sky:
-            if sx + sw <= x or sx >= end:
-                new.append([sx, sy, sw])
-                continue
-            if sx < x:
-                new.append([sx, sy, x - sx])
-            if sx + sw > end:
-                new.append([end, sy, sx + sw - end])
-        new.append([x, y + fh, fw])
-        new.sort()
-        merged = []
-        for seg in new:
-            if merged and merged[-1][1] == seg[1] and merged[-1][0] + merged[-1][2] == seg[0]:
-                merged[-1][2] += seg[2]
-            else:
-                merged.append(seg)
-        sky = merged
+    for late in (False, True):
+        group = [c for c in cubes if (c.name in LATE_CUBES) == late]
+        for c in sorted(group, key=lambda c: (-c.footprint()[1], -c.footprint()[0], c.name)):
+            sky = _skyline_place(model, sky, c)
     used = max(c.uv[1] + c.footprint()[1] for c in model.all_cubes())
     if used > model.tex_h:
         raise SystemExit(f'{model.name}: texture too small, need {used} rows of {model.tex_h}')
     return used
+
+
+def _skyline_place(model, sky, c):
+    """Put cube [c] at the lowest, leftmost spot of the skyline it fits; returns the raised skyline."""
+    W = model.tex_w
+    fw, fh = c.footprint()
+    best = None
+    for i in range(len(sky)):
+        x = sky[i][0]
+        if x + fw > W:
+            break
+        y, j, room = 0, i, 0
+        while room < fw:
+            y = max(y, sky[j][1])
+            room += sky[j][2]
+            j += 1
+        key = (y + fh, y, x)
+        if best is None or key < best[0]:
+            best = (key, i, x, y)
+    if best is None:
+        raise SystemExit(f'{model.name}: {c.name} ({fw}x{fh}) does not fit')
+    _, i, x, y = best
+    c.uv = (x, y)
+    # raise the skyline under the new rect
+    new, end = [], x + fw
+    for sx, sy, sw in sky:
+        if sx + sw <= x or sx >= end:
+            new.append([sx, sy, sw])
+            continue
+        if sx < x:
+            new.append([sx, sy, x - sx])
+        if sx + sw > end:
+            new.append([end, sy, sx + sw - end])
+    new.append([x, y + fh, fw])
+    new.sort()
+    merged = []
+    for seg in new:
+        if merged and merged[-1][1] == seg[1] and merged[-1][0] + merged[-1][2] == seg[0]:
+            merged[-1][2] += seg[2]
+        else:
+            merged.append(seg)
+    return merged
 
 
 def rects2x(c, s=SCALE):
@@ -1354,7 +1412,7 @@ def hat_layer_painter(h):
             else:
                 m = depth_mask([h.get('layer_back', 12)] * W, H)
             if h.get('layer_ragged'):
-                rng = random.Random(seed + hash(face) % 7)
+                rng = random.Random(seed + zlib.crc32(face.encode()) % 7)     # (not hash(): that differs from run to run)
                 for x in range(W):
                     col_rows = np.where(m[:, x])[0]
                     if len(col_rows) and face != 'top':
@@ -2217,6 +2275,8 @@ def arm_painter(a, h, side):
     for y in range(8):
         bot.shade(0, y, -0.4); bot.shade(7, y, -0.4)
     faces['bottom'] = bot
+    if a.get('extra'):
+        a['extra'](faces, side, sk)
     return lambda face, w, hh: faces[face]
 
 
@@ -2373,6 +2433,8 @@ def leg_painter(l, h, side):
     sole = Canvas(8, 8, tone(bt.get('sole', bcol), -1.8))
     sole.shade_rect(1, 0, 7, 3, 0.5)
     faces['bottom'] = sole
+    if l.get('extra'):
+        l['extra'](faces, side, sk)
     return lambda face, w, hh: faces[face]
 
 
@@ -2706,7 +2768,7 @@ BEARDS = {
 }
 
 
-def beard_painter(col, style, seed, sk, curly=False):
+def beard_painter(col, style, seed, sk, curly=False, grey=None, closed=False):
     rows = BEARDS[style]
     front = mask_rows(rows)
 
@@ -2719,12 +2781,25 @@ def beard_painter(col, style, seed, sk, curly=False):
                 for x in range(W):
                     if front[y, x]:
                         cv.shade(x, y, 0.3 if y <= 2 else -0.08 * max(0, y - 6))
+            if grey:
+                # an older man's beard: grey strands through it, most at the corners of the mouth and on the chin
+                rng = random.Random(seed + 5)
+                for y in range(H):
+                    for x in range(W):
+                        if front[y, x]:
+                            p = 0.04 + (0.12 if y >= 5 else 0.0) + (0.16 if y in (2, 3, 4) and (x <= 5 or x >= 10) else 0.0)
+                            if rng.random() < p:
+                                cv.a[y, x] = mix(cv.get(x, y), grey, 0.4 + 0.2 * rng.random())
             if style != 'chin':
                 # the mouth set in the beard: a dark line, the lower lip below it
                 for x in range(6, 10):
-                    cv.set(x, 3, sk['mouth'] if x in (7, 8) else mix(sk['mouth'], col, 0.5))
+                    if closed:       # a closed mouth in a thick beard is only a darker seam, not a red bar
+                        cv.set(x, 3, mix(sk['mouth'], col, 0.62 if x in (7, 8) else 0.85))
+                    else:
+                        cv.set(x, 3, sk['mouth'] if x in (7, 8) else mix(sk['mouth'], col, 0.5))
                 if front[4, 7]:
-                    cv.set(7, 4, mix(sk['lip'], col, 0.25)); cv.set(8, 4, mix(sk['lip'], col, 0.4))
+                    lip_t = (0.8, 0.85) if closed else (0.25, 0.4)       # a closed mouth: the lip under the moustache stays dark
+                    cv.set(7, 4, mix(sk['lip'], col, lip_t[0])); cv.set(8, 4, mix(sk['lip'], col, lip_t[1]))
             return cv
         if face in ('right', 'left'):
             # the beard's thickness shows only where it reaches its outer edge
@@ -2735,6 +2810,12 @@ def beard_painter(col, style, seed, sk, curly=False):
             if m.any():
                 paint_hair(cv, m, col, seed + 1, edge=False, curly=curly)
                 cv.shade_rect(0, 0, W, H, -0.4)
+                if grey:
+                    rng = random.Random(seed + 6)
+                    for y in range(H):
+                        for x in range(W):
+                            if m[y, x] and rng.random() < 0.2:
+                                cv.a[y, x] = mix(cv.get(x, y), grey, 0.4)
             return cv
         return cv
     return faces_of(fn)
@@ -3851,10 +3932,1084 @@ def scabbard_painters(leather=(74, 30, 32), fitting=GOLD, grip=(150, 32, 38)):
             'scabbard_sheath': faces_of(sheath)}
 
 
+# ================================================================ the companions
+
+# Bram Hale, Ysolde Marsh, Kestrel Vey and Lucan Dray (role 'companion', looks 0 to 3 in that order). They are drawn with
+# the rest of the townsfolk machinery; what is theirs alone lives here: hairstyles, faces, hooks into the torso, arm, leg
+# and skirt painters, and the painters of the pieces in _companion_pieces().
+
+BRIG = (64, 50, 44)               # Bram's brigandine: dark leather
+BRIG_L = (98, 78, 60)             # worn through to the lighter leather at its edges
+BLACKSTEEL = (74, 79, 92)          # blackened steel: his pauldron, studs and mail
+HART_GREY = (166, 170, 176)       # the Greyhart Company's badge, painted long ago
+COMPANY = (112, 114, 122)         # the company sash
+WOLF = (112, 106, 98)
+PILGRIM = (92, 108, 98)           # Ysolde's pilgrim grey-green
+HEMP = (178, 154, 110)
+WAX = (226, 214, 180)
+BRASS = (190, 148, 62)
+RANGER = (40, 66, 50)             # Kestrel's dark green
+JERKIN = (100, 72, 50)
+FADED = (74, 82, 112)             # Lucan's Starwatch midnight, faded to grey
+INK = (22, 26, 60)
+LUCAN_HAIR = (156, 88, 50)        # unruly copper-brown
+SCARF_WOOL = (188, 170, 134)         # Lucan's long scarf: undyed wool, with stripes of the old midnight
+SCARF_STRIPE = (70, 82, 124)
+
+STYLES['choppy'] = {      # Kestrel's short hair, chopped with a knife: a ragged fringe, uneven locks over the ears
+    'front': [6, 5, 4, 4, 5, 3, 4, 6, 5, 3, 4, 5, 4, 4, 5, 6],
+    'side': ["################", "################", "################", "################", "################",
+             "#############...", "############....", "############....", "######...###....", "######...##.....",
+             "######...#......", "#####...........", "####............", "#.#.............", "................",
+             "................"],
+    'back': 12, 'sheen': (1, 3),
+}
+STYLES['unruly'] = {      # Lucan's: forelocks hanging at different lengths, never combed
+    'front': [5, 7, 4, 5, 6, 3, 4, 6, 4, 6, 3, 4, 6, 5, 7, 5],
+    'side': ["################", "################", "################", "################", "################",
+             "################", "#############.#.", "############....", "######...###....", "######...##.....",
+             "######...#......", "#####...........", "#####...........", "###.#...........", "................",
+             "................"],
+    'back': 14, 'sheen': (1, 3),
+}
+
+
+def chain(*hooks):
+    """Several hooks (head, torso, arm, leg or skirt extras) run one after the other."""
+    def run(*args):
+        for h in hooks:
+            h(*args)
+    return run
+
+
+def grey_temples(style, col=(160, 158, 156), amount=1.0, seed=0):
+    """A head_extra hook: the hair above and in front of the ears shot with grey, in strands that run down the way the hair
+    lies: runs of two to four pale texels with dark hair between them, thick at the very edge and thinning out toward the crown."""
+    st = STYLES[style]
+
+    def strands(rng, n, dens):
+        rows, y = [], rng.randrange(0, 2)
+        while y < n:
+            ln = rng.randint(2, 4)
+            if rng.random() < dens:
+                rows.extend(range(y, min(n, y + ln)))
+            y += ln + rng.randint(1, 2)
+        return rows
+
+    def hook(faces, sk):
+        rng = random.Random(seed)
+        F = faces['front']
+        m = depth_mask(st['front'], 16)
+        for x0, step in ((0, 1), (15, -1)):
+            for d, dens in enumerate((0.95, 0.7, 0.4)):
+                x = x0 + step * d
+                for y in strands(rng, 12, min(1.0, dens * amount)):
+                    if m[y, x] and y >= 2 + d:
+                        F.set(x, y, mix(F.get(x, y), col, 0.5 + 0.25 * rng.random()))
+        side = _side(st['side'])
+        for face, flip in (('right', False), ('left', True)):
+            S = faces[face]
+            for d, dens in enumerate((0.9, 0.75, 0.55, 0.35)):
+                xx = 13 - d                                    # the right face's own coordinates, the front at 15
+                x = 15 - xx if flip else xx
+                for y in strands(rng, 10, min(1.0, dens * amount)):
+                    if y >= 3 and side[y, xx]:
+                        S.set(x, y, mix(S.get(x, y), col, 0.45 + 0.25 * rng.random()))
+    return hook
+
+
+def bram_face(faces, sk):
+    """Bram: eyes sunk under a heavy brow, tired lids, crow's feet, a nose broken more than once (a lump at the bridge, the
+    lower half knocked sideways, the skin there red), and a scar that runs down through his left eyebrow."""
+    F = faces['front']
+    for x in (2, 3, 4, 5, 10, 11, 12, 13):
+        F.shade(x, 7, -0.45)
+    for x in (3, 4, 5, 10, 11, 12):
+        F.shade(x, 10, -0.35)
+    for x, y in ((1, 8), (1, 9), (14, 8), (14, 9)):
+        F.shade(x, y, -0.45)
+    red = (206, 118, 108)
+    F.shade(7, 8, 0.8); F.shade(7, 9, 0.8)               # the bridge, lit
+    F.shade(8, 9, -1.1)                                   # the shadow behind the lump
+    F.shade(7, 10, -1.1); F.shade(8, 10, 1.3)             # the lower half knocked to one side
+    F.shade(9, 10, -0.8); F.shade(6, 10, -0.5)
+    F.shade(5, 11, -0.3); F.shade(10, 11, -0.9)
+    F.tint(7, 9, red, 0.3); F.tint(8, 10, red, 0.3)
+    pale = mix(sk['s'], (244, 226, 218), 0.75)
+    pink = mix(sk['s'], red, 0.55)
+    for x, y in ((13, 3), (12, 4)):
+        F.set(x, y, pink)
+    for x, y in ((12, 5), (11, 6), (11, 7)):
+        F.set(x, y, pale)
+    for x, y in ((13, 5), (12, 6), (10, 7)):
+        F.shade(x, y, -0.6)                               # the dent beside it
+
+
+def ysolde_face(faces, sk):
+    """Ysolde: the Lamplighters' ash thumbed across her brow, a wry mouth, laugh lines, a pink nose from the cold."""
+    F = faces['front']
+    ash = (86, 82, 84)
+    for x, y, t in ((7, 2, .2), (8, 2, .25), (6, 3, .22), (7, 3, .5), (8, 3, .55), (9, 3, .28), (7, 4, .5),
+                    (8, 4, .42), (8, 5, .22)):
+        F.tint(x, y, ash, t)
+    for x, y in ((9, 12), (10, 11)):                # the corner of her mouth drawn up on one side
+        F.shade(x, y, -0.6)
+    F.set(10, 12, tone(sk['lip'], -0.2))
+    F.tint(7, 11, (220, 110, 110), 0.2); F.tint(8, 11, (220, 110, 110), 0.2)
+    for x, y in ((1, 10), (14, 10)):
+        F.shade(x, y, -0.4)
+
+
+def kestrel_face(faces, sk):
+    """Kestrel: high cheekbones, hollow cheeks and a narrow jaw, a keen nose, one corner of the mouth drawn up."""
+    F = faces['front']
+    for x, y, k in ((3, 10, .6), (4, 10, .6), (11, 10, .6), (12, 10, .6)):
+        F.shade(x, y, k)
+    for x, y, k in ((2, 11, -.5), (3, 12, -.8), (4, 12, -.6), (11, 12, -.6), (12, 12, -.8), (13, 11, -.5), (5, 12, -.3), (10, 12, -.3)):
+        F.shade(x, y, k)
+    for x, y, k in ((2, 13, -.8), (3, 14, -.8), (3, 15, -.9), (4, 15, -.5), (12, 14, -.8), (12, 15, -.9), (11, 15, -.5), (13, 13, -.8),
+                    (1, 14, -.6), (14, 14, -.6)):
+        F.shade(x, y, k)
+    F.shade(7, 14, 0.5); F.shade(8, 14, 0.4)
+    # the sardonic mouth: the line a little crooked, the corner on her left drawn up into a dimple
+    for x in range(6, 10):
+        F.set(x, 12, mix(sk['mouth'], sk['s'], 0.15))
+    F.set(10, 11, mix(sk['sh'], sk['mouth'], 0.45)); F.set(9, 12, sk['mouth']); F.set(10, 12, tone(sk['sh'], -0.4))
+    F.set(5, 13, tone(sk['s'], -0.35))
+    F.shade(7, 13, 0.4); F.shade(8, 13, 0.3)
+    # a keen, narrow nose
+    F.shade(7, 8, 0.4); F.shade(7, 9, 0.5); F.shade(7, 10, 0.6); F.shade(6, 11, -0.2); F.shade(9, 11, -0.2)
+    F.shade(8, 9, -0.5); F.shade(8, 10, -0.7)
+    for fc in ('right', 'left'):
+        faces[fc].shade(13, 11, -0.3)
+
+
+def lucan_face(faces, sk):
+    """Lucan: thin and pale, the eyes ringed with sleeplessness, the brows drawn up in the middle (he is worried), ink
+    where he rubbed his cheek, a stub of chalk tucked behind his right ear."""
+    F = faces['front']
+    ring = (118, 100, 150)
+    for x in (3, 4, 5, 10, 11, 12):
+        F.tint(x, 10, ring, 0.3)
+    for x in (4, 11):
+        F.tint(x, 11, ring, 0.15)
+    for x, y, k in ((3, 12, -.6), (4, 12, -.4), (11, 12, -.4), (12, 12, -.6), (2, 11, -.4), (13, 11, -.4)):
+        F.shade(x, y, k)
+    bc = brow_colour({'hair': LUCAN_HAIR})
+    for x, y in ((5, 5), (10, 5)):                   # the inner ends of the brows lifted
+        F.set(x, y, bc)
+    for x, y in ((2, 6), (13, 6)):
+        F.set(x, y, mix(bc, sk['s'], 0.45))
+    for x, y, t in ((12, 11, .6), (13, 11, .45), (12, 12, .35), (13, 10, .3)):
+        F.tint(x, y, INK, t)
+    R = faces['right']
+    for x in (5, 6, 7):
+        R.set(x, 7, (236, 234, 226) if x < 7 else (206, 204, 198))
+    R.set(5, 8, tone(R.get(5, 8), -0.5)); R.set(6, 8, tone(R.get(6, 8), -0.9)); R.set(7, 8, tone(R.get(7, 8), -0.6))
+
+
+# ---- cloth, leather and steel the companions share
+
+def patch(cv, x0, y0, w, h, col, thread=None, lit=0.3, rough=0):
+    """A square of mended cloth sewn on over the garment: its own colour, the top edge catching the light, the hem turned,
+    a dashed stitch round it in [thread] (the patch's cloth a step lighter when it has none)."""
+    th = thread or tone(col, 0.9)
+    for y in range(y0, y0 + h):
+        for x in range(x0, x0 + w):
+            if not cv.opaque(x, y):
+                continue
+            k = lit if y == y0 else -0.5 if y == y0 + h - 1 else 0.0
+            if x in (x0, x0 + w - 1):
+                k -= 0.2
+            cv.a[y, x] = tone(col, k + (0.12 if (x + y) % 3 == 0 else 0))
+    for x in range(x0 + 1, x0 + w - 1):
+        if (x - x0) % 2 == 1:
+            for yy in (y0 + 1, y0 + h - 2):
+                if cv.opaque(x, yy):
+                    cv.a[yy, x] = rgba(th)
+    for y in range(y0 + 1, y0 + h - 1):
+        if (y - y0) % 2 == 0:
+            for xx in (x0 + 1, x0 + w - 2):
+                if cv.opaque(xx, y):
+                    cv.a[y, xx] = rgba(th)
+
+
+def wax_on(cv, x, y, length=2, col=WAX):
+    """A splash of candle wax: a pale blob with a drip hanging from it, a gleam on its lit side."""
+    for dy in range(length + 1):
+        for dx in range(2 if dy == 0 else 1):
+            cv.tint(x + dx, y + dy, col, 0.62 - 0.08 * dy)
+    cv.shade(x + 1, y + length + 1, -0.3)
+
+
+def scuffs(cv, rng, col, n, area, length=(2, 4), t=(0.3, 0.6)):
+    """[n] short worn streaks in [col] (a scuff of leather worn through to a paler layer, a scratch in steel) in [area]."""
+    x0, y0, x1, y1 = area
+    for _ in range(n):
+        x, y = rng.randrange(x0, max(x0 + 1, x1)), rng.randrange(y0, max(y0 + 1, y1))
+        dx = rng.choice((-1, 0, 1))
+        for i in range(rng.randint(*length)):
+            cv.tint(x + (dx * i) // 2, y + i, col, rng.uniform(*t))
+
+
+def rivet(cv, x, y, lit=(176, 182, 194), shade_k=-1.0):
+    """A steel rivet head: a bright texel with a dark one under it where it casts its shadow."""
+    if cv.opaque(x, y):
+        cv.a[y, x] = rgba(lit)
+        cv.shade(x, y + 1, shade_k)
+
+
+def buckle(cv, x, y, col=(176, 182, 194), strap=None):
+    """A small square buckle, 4 x 3 texels, with the strap showing through it."""
+    for i in range(4):
+        put(cv, x + i, y, tone(col, 0.9))
+        put(cv, x + i, y + 2, tone(col, -0.9))
+    put(cv, x, y + 1, tone(col, 0.3)); put(cv, x + 3, y + 1, tone(col, -0.5))
+    put(cv, x + 1, y + 1, tone(strap, -0.4) if strap else tone(col, -1.6))
+    put(cv, x + 2, y + 1, tone(col, 0.5))
+
+
+# ---- Bram: brigandine, mail, gauntlets, the pauldron's hart
+
+def brigandine(col=BRIG, edge=BRIG_L, stud=(138, 144, 156), seed=0, top=3, bottom=16):
+    """A torso hook: Bram's brigandine. Panels of dark leather riveted all over with steel studs in staggered rows, the
+    lames overlapping each other down the chest, three buckled straps up the front and three on the left side, scuffed
+    at the edges, cut across the chest and mended."""
+    def hook(faces, sk):
+        rng = random.Random(seed)
+        F, B, R, L = faces['front'], faces['back'], faces['right'], faces['left']
+        lames = (top + 4, top + 9)                                   # where one lame overlaps the next
+        studs_y = (top + 1, top + 3, top + 6, top + 8, top + 11)
+        for cv, face in ((F, 'front'), (B, 'back'), (R, 'right'), (L, 'left')):
+            W = cv.W
+            for y in range(top, bottom):
+                t = (y - top) / (bottom - top)
+                for x in range(W):
+                    k = 0.5 - 0.95 * t
+                    if x == 0 or x == W - 1:
+                        k -= 0.8
+                    elif x == 1 or x == W - 2:
+                        k -= 0.25
+                    if face in ('front', 'back') and 2 <= x <= 3:
+                        k += 0.35
+                    if face in ('right', 'left') and x in (2, 3):
+                        k += 0.2
+                    if y in lames:
+                        k -= 1.0
+                    elif y - 1 in lames:
+                        k += 0.45
+                    cv.set(x, y, tone(col, k))
+            for i, y in enumerate(studs_y):
+                if face in ('front', 'back'):
+                    xs = [x for x in range(1, 15) if x % 3 == 1 + (i % 2) and x not in (7, 8, 6, 9)]
+                else:
+                    xs = [2, 5] if i % 2 == 0 else [3, 6]
+                for x in xs:
+                    rivet(cv, x, y, stud)
+            # the seam up the middle of the chest and the back
+            if face in ('front', 'back'):
+                for y in range(top, bottom):
+                    cv.set(7, y, tone(col, -1.4)); cv.set(8, y, tone(col, 0.35))
+        # the front buckles up the chest, and the side ones on the left
+        for y in (top + 2, top + 6, top + 10):
+            for x in range(4, 12):
+                F.set(x, y, tone(col, -0.9)); F.set(x, y + 1, tone(col, -0.4))
+            buckle(F, 6, y, (132, 138, 150), col)
+            for x in range(1, 7):
+                L.set(x, y, tone(col, -0.9)); L.set(x, y + 1, tone(col, -0.4))
+            buckle(L, 2, y, (132, 138, 150), col)
+        # worn: edges rubbed pale, scuffs, a darker stain at the belt
+        for cv in (F, B):
+            scuffs(cv, rng, edge, 9, (1, top, 15, bottom - 2))
+            for x in range(1, 15):
+                if rng.random() < 0.35:
+                    cv.tint(x, top, edge, 0.35)
+        # a cut slanting across the right of the chest, laced shut with thread
+        for i, (x, y) in enumerate(((2, top + 4), (3, top + 5), (3, top + 6), (4, top + 7), (5, top + 8))):
+            F.set(x, y, tone(col, -2.0)); F.shade(x + 1, y, 0.5)
+        for x, y in ((2, top + 5), (4, top + 6), (3, top + 8)):
+            F.set(x, y, (150, 130, 100))
+        # mail showing at the collar: the standing neck of the brigandine
+        for x in range(2, 14):
+            F.set(x, top - 1, tone(col, 0.4)); F.set(x, top, tone(col, 0.9))
+    return hook
+
+
+def mail_skirt(col=BLACKSTEEL, leather=BRIG, seed=0):
+    """A skirt hook: a short mail skirt, split at the front for the saddle, a leather band at the waist, a ragged hem."""
+    def hook(front, back, side, n):
+        for cv in (front, back, side):
+            m = np.zeros((cv.H, cv.W), bool)
+            m[2:n - 1] = True
+            mail(cv, m, base=col, lit=0.15)
+            for x in range(cv.W):
+                cv.set(x, 0, tone(leather, 0.2)); cv.set(x, 1, tone(leather, -0.8))
+                cv.set(x, n - 1, tone(leather, -0.3))
+                if x % 3 == 1:
+                    cv.set(x, n - 1, tone(col, 1.0))
+                if x % 2 == 0 and n >= 3:
+                    cv.clear(x, n - 1)
+        for y in range(1, n - 1):
+            front.shade(9, y, -0.9); front.shade(10, y, -0.9)
+            back.shade(9, y, -0.4)
+    return hook
+
+
+def sash_ends(col=COMPANY, seed=0):
+    """A skirt hook: the ends of a sash knotted at the left hip, hanging down the front of the skirt over the mail, one longer than
+    the other, the cloth creased and the ends fringed."""
+    def hook(front, back, side, n):
+        for x0, ln, k0 in ((14, n, 0.0), (16, n - 3, -0.35)):
+            for y in range(0, ln):
+                for x in range(x0, x0 + 3):
+                    k = k0 + (0.45 if x == x0 else -0.55 if x == x0 + 2 else 0.0) - 0.3 * y / max(1, ln)
+                    if y < 2:
+                        k -= 0.5                               # the fold under the knot
+                    front.set(x, y, tone(col, k + (0.2 if (x + y) % 4 == 0 else 0)))
+            for x in range(x0, x0 + 3):
+                front.set(x, ln, tone(col, -0.9) if x != x0 + 1 else tone(col, 0.3))        # the fringe
+            front.shade(x0 + 1, ln // 2, -0.6); front.shade(x0 + 1, ln // 2 + 1, -0.3)
+    return hook
+
+
+def gauntlet(col=(52, 42, 36), stud=(138, 144, 156), top=15, bottom=21, seed=0):
+    """An arm hook: a fingerless gauntlet of dark leather with a flared cuff, steel studs, a buckled strap and a cut edge across
+    the knuckles; the fingers are bare below."""
+    def hook(faces, side, sk):
+        rng = random.Random(seed + (1 if side == 'r' else 2))
+        outer, inner = ('right', 'left') if side == 'r' else ('left', 'right')
+        for face in ('front', 'back', 'right', 'left'):
+            cv = faces[face]
+            for y in range(top, bottom + 1):
+                for x in range(8):
+                    k = 0.7 if y == top else -0.5 if y == top + 1 else 0.0
+                    if x in (0, 7):
+                        k -= 0.45
+                    if face == inner:
+                        k -= 0.35
+                    if y >= bottom:
+                        k -= 0.4
+                    cv.set(x, y, tone(col, k + (0.15 if (x + y) % 4 == 0 else 0)))
+            if face in (outer, 'front'):
+                for x, y in ((2, top + 2), (5, top + 2), (2, bottom - 1), (5, bottom - 1)):
+                    rivet(cv, x, y, stud)
+                for x in range(8):
+                    cv.set(x, top + 3, tone(col, -1.0)); cv.set(x, top + 4, tone(col, 0.4))
+                buckle(cv, 2, top + 3, (132, 138, 150), col)
+            scuffs(cv, rng, BRIG_L, 2, (1, top + 1, 7, bottom - 1), length=(2, 3))
+    return hook
+
+
+HART = [".#.#.....#.#.",
+        ".#.#.....#.#.",
+        ".##.#...#.##.",
+        "..#.#...#.#..",
+        "..##.###.##..",
+        "...#######...",
+        "....#o#o#....",
+        ".....###.....",
+        "......#......"]       # the Greyhart Company's hart's head, 13 x 9: two antlers of three tines, the face, the muzzle
+
+
+def steel_wear(cv, rng, scratches=3, dents=2, lit=1.5):
+    """Worn blackened steel: a few bright scratches across it and dents with a lit rim and a dark pit."""
+    for _ in range(scratches):
+        x, y = rng.randrange(cv.W), rng.randrange(max(1, cv.H - 2))
+        dx = rng.choice((-1, 1))
+        for i in range(rng.choice((2, 3, 4))):
+            xx, yy = x + dx * i, y + (i + 1) // 2
+            if cv.opaque(xx, yy):
+                cv.a[yy, xx] = mix(cv.get(xx, yy), tone(cv.get(xx, yy), lit), 0.7)
+    for _ in range(dents):
+        x, y = rng.randrange(1, max(2, cv.W - 2)), rng.randrange(1, max(2, cv.H - 2))
+        cv.shade(x, y, -1.4); cv.shade(x + 1, y, -0.8); cv.shade(x, y - 1, 0.9); cv.shade(x - 1, y, 0.7)
+
+
+def pauldron_painters(col=BLACKSTEEL, paint=HART_GREY, seed=0, wear=0.8):
+    """Bram's pauldron: blackened steel, dented and scratched; the plate carries the Greyhart Company's hart's head in grey paint
+    that has flaked away in places, on its front and on its outer face."""
+    stud = (150, 156, 168)
+
+    def crown(face, W, H):
+        rng = random.Random(seed + 1 + len(face))
+        cv = Canvas(W, H, col)
+        if face == 'bottom':
+            cv.fill(tone(col, -2.2))
+            return cv
+        if face == 'top':
+            for y in range(H):
+                for x in range(W):
+                    d = min(x, y, W - 1 - x, H - 1 - y)
+                    k = (1.2 if d > 2 else 0.7 if d == 2 else 0.2 if d == 1 else -1.2) - 0.8 * (x + y) / (W + H)
+                    cv.set(x, y, tone(col, k))
+            cv.shade(3, 3, 1.6); cv.shade(4, 3, 1.2); cv.shade(3, 4, 0.9)
+            steel_wear(cv, rng, 3, 1)
+            return cv
+        for y in range(H):
+            for x in range(W):
+                k = (1.4, 0.3, -0.9)[min(y, 2)]
+                if x in (0, W - 1):
+                    k -= 1.0
+                cv.set(x, y, tone(col, k))
+        for x in range(2, W - 1, 3):
+            rivet(cv, x, 1, stud, -0.8)
+        return cv
+
+    def plate(face, W, H):
+        rng = random.Random(seed + 2 + len(face))
+        cv = Canvas(W, H, col)
+        if face == 'bottom':
+            cv.fill(tone(col, -2.4))
+            return cv
+        if face == 'top':
+            cv.fill(tone(col, 0.4))
+            return cv
+        for y in range(H):
+            for x in range(W):
+                k = 0.6 - 1.7 * y / max(1, H - 1)
+                if x == 0 or x == W - 1:
+                    k -= 1.0
+                elif x in (1, W - 2):
+                    k -= 0.3
+                if face in ('front', 'left') and 2 <= x <= 4:
+                    k += 0.5
+                cv.set(x, y, tone(col, k))
+        for x in range(W):                                    # the rolled lower edge: a bright lip over its shadow
+            cv.shade(x, H - 2, 0.9); cv.shade(x, H - 1, -1.2)
+        steel_wear(cv, rng, 3, 2)
+        if face in ('front', 'left') and W >= 13 and H >= 9:
+            x0, y0 = (W - 13) // 2, (H - 9) // 2
+            for j, row in enumerate(HART):
+                for i, ch in enumerate(row):
+                    x, y = x0 + i, y0 + j
+                    if ch == '#':
+                        if rng.random() < 0.16:
+                            continue                           # flaked away
+                        cv.a[y, x] = mix(cv.get(x, y), paint, 0.9 - 0.1 * rng.random())
+                        cv.shade(x, y, 0.2 - 0.1 * j)
+                    elif ch == 'o':
+                        cv.set(x, y, tone(col, -1.8))
+        for x, y in ((2, 1), (W - 3, 1)):
+            rivet(cv, x, y, stud, -0.8)
+        return cv
+
+    def lame(face, W, H):
+        rng = random.Random(seed + 3 + len(face))
+        cv = Canvas(W, H, col)
+        if face in ('top', 'bottom'):
+            cv.fill(tone(col, -2.0))
+            return cv
+        for y in range(H):
+            for x in range(W):
+                k = (1.2, 0.2, -1.6)[min(y, 2)]
+                if x in (0, W - 1):
+                    k -= 1.0
+                cv.set(x, y, tone(col, k))
+        for x in range(2, W - 1, 4):
+            rivet(cv, x, 1, stud, -0.8)
+        steel_wear(cv, rng, 2, 1)
+        return cv
+    return {'pauldron_crown': faces_of(crown), 'pauldron_plate': faces_of(plate), 'pauldron_lame': faces_of(lame)}
+
+
+def wolf_pelt_painter(col=WOLF, seed=0):
+    """A wolf's pelt over the shoulders: two staggered layers of long guard-hair tufts, each pale in the middle and dark at its
+    root and its tip, over a dark undercoat; the tips make the ragged lower edge."""
+    def fn(face, W, H):
+        rng = random.Random(seed + len(face) * 13 + W)
+        if face == 'bottom':
+            return Canvas(W, H, tone(col, -2.4))
+        cv = Canvas(W, H, tone(col, -1.4))                       # the dark undercoat
+
+        def tuft(cx, y0, w, h, k0):
+            for dy in range(h):
+                if y0 + dy < 0 or y0 + dy >= H:
+                    continue
+                half = (w / 2.0) * (1.0 - 0.8 * dy / max(1, h - 1))
+                for x in range(int(math.ceil(cx - half)), int(math.floor(cx + half)) + 1):
+                    if not 0 <= x < W:
+                        continue
+                    t = dy / max(1, h - 1)
+                    k = k0 + (-1.0 if t < 0.2 else 0.9 if t < 0.65 else -0.6 if t < 0.9 else -1.3)
+                    if x < cx - half * 0.35:
+                        k -= 0.35
+                    elif x > cx + half * 0.35:
+                        k -= 0.15
+                    else:
+                        k += 0.3
+                    cv.set(x, y0 + dy, tone(col, k))
+        if face == 'top':
+            rows = [(0, 5, 0.0), (3, 5, 1.5), (6, 5, 0.0), (9, 5, 1.5)]
+        else:
+            rows = [(-1, 5, 0.0), (2, 5, 1.5)]
+        for y0, h, off in rows:
+            x = -off
+            while x < W + 2:
+                w = rng.choice((3, 3, 4))
+                tuft(x + w / 2.0, y0 + rng.choice((-1, 0, 0, 1)), w, h + rng.choice((0, 0, 1)), rng.choice((-0.7, -0.3, 0.2, 0.6, 1.1)))
+                x += w - 0.5
+        return cv
+    return faces_of(fn)
+
+
+def short_cape_painter(col=RANGER, seed=0):
+    """Kestrel's short cape hanging behind the quiver: a hunter's dark green wool, creased, its edges worn pale, a ragged hem, a
+    mended tear low down on one side."""
+    def fn(face, W, H):
+        rng = random.Random(seed + len(face))
+        if face in ('right', 'left', 'top', 'bottom'):
+            return Canvas(W, H, tone(col, -0.6))
+        if face == 'front':
+            return drape(Canvas(W, H), tone(col, -0.9), face, 0.2, -0.5, -0.3)
+        cv = drape(Canvas(W, H), col, face, 0.55, -0.5, -0.45)
+        for x0 in (3, 7, 12, 16):
+            for y in range(2, H - 1):
+                cv.shade(x0, y, -0.7 if y > 6 else -0.45); cv.shade(x0 - 1, y, 0.4)
+        for y in range(H):
+            if rng.random() < 0.5:
+                cv.tint(0, y, tone(col, 1.6), 0.5)
+                cv.tint(W - 1, y, tone(col, 1.6), 0.4)
+        for x in range(W):
+            cv.shade(x, H - 3, -0.4)
+            cv.set(x, H - 1, tone(col, -1.4))
+            if rng.random() < 0.4:
+                cv.clear(x, H - 1)
+            if x % 4 == 1:
+                cv.shade(x, H - 2, 0.5)
+        stitches(cv, [(x, 11) for x in range(12, 18)], 0.9)       # a tear, sewn up
+        cv.set(14, 10, tone(col, -2.0)); cv.set(15, 11, tone(col, -2.0)); cv.set(13, 9, tone(col, -2.0))
+        smudge(cv, rng, (96, 86, 60), 2, (1, 8, W - 1, H - 2), size=(1, 2), t=(0.12, 0.25))
+        return cv
+    return faces_of(fn)
+
+
+def quiver_painters(leather=(88, 62, 42), seed=0):
+    """Kestrel's quiver: a stitched leather tube with a rim, a studded band, a bronze ring for the strap and a capped foot, and the
+    arrows standing out of its mouth, three of them, grey-fletched."""
+    def body(face, W, H):
+        rng = random.Random(seed + len(face))
+        cv = Canvas(W, H, leather)
+        if face == 'top':
+            cv.fill(tone(leather, -1.8))
+            for x in range(W):
+                cv.set(x, 0, tone(leather, 0.4)); cv.set(x, H - 1, tone(leather, -0.2))
+            for y in range(H):
+                cv.set(0, y, tone(leather, 0.3)); cv.set(W - 1, y, tone(leather, -0.4))
+            return cv
+        if face == 'bottom':
+            cv.fill(tone(leather, -1.6))
+            return cv
+        for y in range(H):
+            for x in range(W):
+                k = 0.45 - 0.9 * y / H
+                if x == 0:
+                    k += 0.4
+                elif x == W - 1:
+                    k -= 0.55
+                cv.set(x, y, tone(leather, k + (0.2 if (x * 3 + y) % 7 == 0 else 0)))
+        for x in range(W):
+            cv.set(x, 0, tone(leather, 1.1)); cv.set(x, 1, tone(leather, -0.3)); cv.set(x, 2, tone(leather, -1.1))   # the rim
+            cv.set(x, 8, tone(leather, 0.7)); cv.set(x, 9, tone(leather, -0.5)); cv.set(x, 10, tone(leather, -1.0))   # a band
+        for x in range(1, W - 1, 2):
+            rivet(cv, x, 9, (206, 168, 84), -0.8)
+        for y in range(H - 4, H):                                # the capped foot
+            for x in range(W):
+                cv.set(x, y, tone((70, 52, 38), (0.5, -0.1, -0.6, -1.2)[y - (H - 4)]))
+        if face in ('back', 'right', 'left'):
+            for y in range(3, H - 4, 2):
+                cv.shade(W - 2, y, 0.9)                           # the stitched seam
+        if face == 'back':
+            cv.stamp(1, 4, ["aa", "ab", ".b"], {'a': (206, 168, 84), 'b': tone((206, 168, 84), -1.0)})   # the ring for the strap
+        scuffs(cv, rng, tone(leather, 1.5), 4, (0, 4, W, H - 5), length=(2, 3))
+        return cv
+
+    def arrows(face, W, H):
+        cv = Canvas(W, H)
+        shaft, grey, greyd, dark = (150, 114, 72), (170, 172, 178), (104, 106, 116), (54, 42, 34)
+        if face == 'bottom':
+            cv.fill(dark)
+            return cv
+        if face == 'top':
+            cv.fill(dark)
+            for x, y in ((0, 0), (2, 1), (3, 0), (1, 2)):
+                cv.set(x, y, tone(shaft, 0.6))
+            return cv
+        cols = [0, 1, 2, 3][:W]
+        starts = {0: 1, 1: 0, 2: 1, 3: 0}                         # the three arrows stand at different heights
+        for x in cols:
+            for y in range(H):
+                y0 = starts.get(x, 0)
+                if y < y0:
+                    continue
+                if y < y0 + 3:                                      # the fletching: a grey vane, barbs showing
+                    cv.set(x, y, tone(grey if (x + y) % 2 == 0 else greyd, 0.2 if y == y0 else 0))
+                else:
+                    cv.set(x, y, tone(shaft, 0.3 if x % 2 else -0.3))
+            cv.set(x, starts.get(x, 0), tone(dark, 0.6))          # the nock
+        if face in ('right', 'left'):
+            for y in range(H):
+                for x in range(W):
+                    if cv.opaque(x, y):
+                        cv.shade(x, y, -0.3)
+        return cv
+    return {'quiver_body': faces_of(body), 'quiver_arrows': faces_of(arrows)}
+
+
+def knife_painters(seed=0):
+    """Kestrel's knife: a grip wrapped in cord with a steel pommel, a small guard, a dark leather sheath with brass at its mouth and
+    its tip."""
+    steel = (176, 182, 194)
+    brass = (190, 148, 62)
+    wrap = (96, 70, 48)
+
+    def grip(face, W, H):
+        cv = Canvas(W, H, wrap)
+        for y in range(H):
+            for x in range(W):
+                cv.set(x, y, tone(wrap, (0.5, -0.5)[(y + x) % 2] - (0.4 if x == W - 1 else 0)))
+        for x in range(W):
+            cv.set(x, 0, tone(steel, 0.8 if face != 'bottom' else -0.5))
+            if H > 3:
+                cv.set(x, 1, tone(steel, -0.3))
+        if face in ('top', 'bottom'):
+            cv.fill(tone(steel, 0.2))
+        return cv
+
+    def guard(face, W, H):
+        return drape(Canvas(W, H), steel, face, 0.8, -0.6, -0.5)
+
+    def sheath(face, W, H):
+        cv = Canvas(W, H, (60, 46, 36))
+        if face in ('top', 'bottom'):
+            cv.fill(tone(brass, -0.4))
+            return cv
+        for y in range(H):
+            for x in range(W):
+                cv.set(x, y, tone((60, 46, 36), (0.4 if x == 0 else -0.5 if x == W - 1 else 0) - 0.4 * y / H))
+        for x in range(W):
+            cv.set(x, 0, tone(brass, 0.8)); cv.set(x, 1, tone(brass, -0.4))
+            cv.set(x, H - 1, tone(brass, -0.6)); cv.set(x, H - 2, tone(brass, 0.5))
+        if face in ('front', 'back'):
+            for y in range(3, H - 3, 2):
+                cv.shade(W // 2, y, 0.6)
+        return cv
+    return {'knife_grip': faces_of(grip), 'knife_guard': faces_of(guard), 'knife_sheath': faces_of(sheath)}
+
+
+def satchel_painter(col=(104, 74, 48), flap=None, seed=0, wear=1.0, buckle_col=(190, 148, 62)):
+    """A leather satchel: a flap over its upper half with a buckled strap, stitched edges, a gusset down each side, rubbed pale
+    where it knocks against things. Seen from the front, its left side and above."""
+    flap = flap or tone(col, 0.25)
+
+    def fn(face, W, H):
+        rng = random.Random(seed + len(face) * 5)
+        cv = Canvas(W, H, col)
+        if face == 'bottom':
+            cv.fill(tone(col, -1.8))
+            return cv
+        if face == 'top':
+            for y in range(H):
+                for x in range(W):
+                    d = min(x, y, W - 1 - x, H - 1 - y)
+                    cv.set(x, y, tone(flap, 0.4 if d == 0 else -0.2 if d == 1 else 0.1))
+            return cv
+        for y in range(H):
+            for x in range(W):
+                k = 0.4 - 0.9 * y / H
+                if x == 0:
+                    k += 0.3
+                elif x == W - 1:
+                    k -= 0.5
+                cv.set(x, y, tone(col, k))
+        if face in ('front', 'back'):
+            fh = 5 if face == 'front' else 3                    # how far the flap hangs
+            for y in range(fh):
+                for x in range(W):
+                    edge = y == fh - 1
+                    cv.set(x, y, tone(flap, 0.5 if y == 0 else -0.5 if edge else (0.1 if x > 0 else 0.4)))
+            if face == 'front':
+                for x in range(1, W - 1):
+                    if x % 2 == 1:
+                        cv.shade(x, fh - 2, 0.7)                  # stitching along the flap
+                cv.set(W // 2, fh, tone((60, 44, 34), 0.0)); cv.set(W // 2, fh + 1, tone((60, 44, 34), -0.3))
+                cv.set(W // 2 - 1, fh, tone(buckle_col, 0.9)); cv.set(W // 2 + 1, fh, tone(buckle_col, 0.9))
+                cv.set(W // 2 - 1, fh + 1, tone(buckle_col, -0.7)); cv.set(W // 2 + 1, fh + 1, tone(buckle_col, -0.7))
+                cv.set(W // 2, fh - 1, tone(buckle_col, 0.3))
+        else:
+            for x in range(W):
+                cv.set(x, 0, tone(flap, 0.4)); cv.set(x, 1, tone(flap, -0.4))
+            cv.rect(W // 2 - 1, 0, W // 2 + 1, 4, tone((70, 52, 38), 0.3))                   # the strap's loop
+        scuffs(cv, rng, tone(col, 1.6), int(5 * wear), (0, 3, W, H), length=(2, 3))
+        for x in range(W):
+            cv.shade(x, H - 1, -0.6)
+        return cv
+    return faces_of(fn)
+
+
+def papers_painter(seed=0):
+    """Papers stuffed into Lucan's satchel: sheets of different cream, curled, ink on their edges, and lines of tiny writing."""
+    cream = (226, 216, 186)
+
+    def fn(face, W, H):
+        rng = random.Random(seed + len(face))
+        cv = Canvas(W, H, cream)
+        if face == 'bottom':
+            cv.fill(tone(cream, -1.5))
+            return cv
+        if face == 'top':
+            for y in range(H):
+                for x in range(W):
+                    cv.set(x, y, tone(cream, 0.3 + (-0.5 if (x // 2 + y // 2) % 3 == 0 else 0.0) - (0.4 if y == H - 1 else 0)))
+            for y in range(1, H - 1, 2):
+                for x in range(1, W - 1):
+                    if (x + y) % 5 != 0:
+                        cv.tint(x, y, INK, 0.45)                # lines of writing
+            cv.set(0, 0, tone(cream, -0.6)); cv.set(W - 1, 0, tone(cream, -0.3))
+            return cv
+        for y in range(H):
+            for x in range(W):
+                sheet = (x + y // 2 + (1 if face == 'back' else 0)) % 3
+                cv.set(x, y, tone(cream, (0.5, 0.0, -0.5)[sheet] - 0.25 * y / H))
+        for x in range(W):
+            cv.shade(x, 0, 0.4)
+        smudge(cv, rng, INK, 1, (0, 0, W, H), size=(1,), t=(0.3, 0.5))
+        return cv
+    return faces_of(fn)
+
+
+def plait_painter(col, tie=HEMP, seed=0):
+    """A long plait: three strands crossing, each plait a lit and a shadowed lobe, tied off near the end with a bit of cord and
+    the loose ends below it."""
+    def fn(face, W, H):
+        cv = Canvas(W, H, col)
+        if face in ('top', 'bottom'):
+            cv.shade_rect(0, 0, W, H, -0.5 if face == 'top' else -0.2)
+            return cv
+        for y in range(H):
+            for x in range(W):
+                lobe = (y // 3) % 2
+                r = y % 3
+                left = x < W // 2
+                if left == (lobe == 0):
+                    k = (0.9, 0.3, -0.5)[r]
+                else:
+                    k = (-0.9, -0.3, 0.1)[r]
+                if face in ('right', 'left'):
+                    k = (0.4, -0.2, -0.6)[r] + (0.2 if lobe else 0)
+                cv.set(x, y, tone(col, k))
+        for x in range(W):                                           # the tie, and the tuft below it
+            cv.set(x, H - 5, tone(tie, 0.7)); cv.set(x, H - 4, tone(tie, -0.2))
+            cv.shade(x, H - 3, -0.4)
+            if x in (0, W - 1):
+                cv.clear(x, H - 1)
+                cv.clear(x, H - 2)
+        if W >= 4:
+            cv.clear(1 if face == 'front' else 2, H - 1)
+        return cv
+    return faces_of(fn)
+
+
+def lamp_charm_painter(seed=0):
+    """Ysolde's lamp charm: a small brass oil lamp, a round belly, a spout, a loop to hang it by, a glint of gold on its shoulder
+    and a pin of flame at the spout's tip."""
+    def fn(face, W, H):
+        cv = Canvas(W, H)
+        b = BRASS
+        if face in ('front', 'back'):
+            rows = [".bb.", "bBBs", "bBBb", ".bb.", "..b."] if W == 4 and H == 5 else None
+            if rows:
+                pal = {'b': tone(b, -0.3), 'B': tone(b, 0.5), 's': tone(b, 1.2)}
+                cv.stamp(0, 0, rows, pal)
+                cv.set(3, 1, (255, 214, 120))
+                cv.set(1, 1, tone(b, 1.5))
+            else:
+                cv.fill(b)
+        else:
+            cv.fill(tone(b, -0.6))
+            cv.clear(0, 0)
+        return cv
+    return faces_of(fn)
+
+
+def scarf_tail_painter(col=SCARF_WOOL, stripe=SCARF_STRIPE, seed=0):
+    """Lucan's long scarf, the end of it hanging down his back: oatmeal knit with two stripes of faded midnight, a fringe, a few moth holes."""
+    def fn(face, W, H):
+        rng = random.Random(seed + len(face))
+        cv = Canvas(W, H, col)
+        if face in ('top', 'bottom'):
+            cv.fill(tone(col, -0.6))
+            return cv
+        for y in range(H):
+            for x in range(W):
+                k = (0.4 if (x + (y // 2)) % 2 == 0 else -0.3) + (0.3 if y == 0 else 0)
+                if face in ('right', 'left'):
+                    k -= 0.35
+                c = stripe if y in (H - 8, H - 7, H - 5, H - 4) else col
+                cv.set(x, y, tone(c, k))
+        if face in ('front', 'back'):
+            for x in range(0, W, 2):
+                cv.clear(x, H - 1)
+            for x in range(1, W, 2):
+                cv.shade(x, H - 2, -0.5)
+            for _ in range(3):
+                cv.set(rng.randrange(0, W), rng.randrange(2, H - 9), tone(col, -2.0))      # moth holes
+        return cv
+    return faces_of(fn)
+
+
+def tuft_painter(col, seed=0):
+    """A tuft of unruly hair: strands in clumps, lit along the top, the tips ragged."""
+    def fn(face, W, H):
+        cv = Canvas(W, H)
+        m = np.ones((H, W), bool)
+        if face != 'top' and H >= 4:
+            for x in range(W):
+                if (x * 5 + seed) % 3 == 0:
+                    m[H - 1, x] = False
+            if W >= 3:
+                m[0, 0] = False
+                m[0, W - 1] = False
+        paint_hair(cv, m, col, seed + len(face), sheen=(0, 1), edge=False)
+        if face == 'bottom':
+            cv.shade_rect(0, 0, W, H, -0.8)
+        return cv
+    return faces_of(fn)
+
+
+# ---- Ysolde: a mended pilgrim's robe, candle wax, wrapped feet
+
+PATCH_A = (126, 110, 86)          # the patches on Ysolde's robe: a brown-grey, a blue-grey, a linen
+PATCH_B = (82, 98, 112)
+PATCH_C = (152, 144, 120)
+
+
+def pilgrim_robe(seed=0):
+    """A torso hook: Ysolde's robe mended with patches of other greys, the stitches showing, spattered with candle wax, the fine
+    chain of her lamp charm running down from her neck."""
+    def hook(faces, sk):
+        F, B = faces['front'], faces['back']
+        patch(F, 2, 9, 4, 4, PATCH_A)
+        patch(F, 11, 19, 4, 4, PATCH_B, thread=tone(PATCH_B, 1.6))
+        patch(B, 4, 7, 5, 5, PATCH_C)
+        patch(B, 10, 14, 4, 3, PATCH_A)
+        wax_on(F, 13, 14, 1)
+        for pts in (((4, 1), (4, 2), (5, 3), (5, 4), (6, 5), (7, 6)), ((11, 1), (11, 2), (10, 3), (10, 4), (9, 5), (8, 6))):
+            for i, (x, y) in enumerate(pts):
+                F.set(x, y, tone(BRASS, 0.9) if i % 2 == 0 else tone(BRASS, -0.7))
+    return hook
+
+
+def pilgrim_skirt(seed=0):
+    """A skirt hook: patches low on Ysolde's robe, wax on the lap, a hem let down and sewn."""
+    def hook(front, back, side, n):
+        patch(front, 12, n - 11, 5, 5, PATCH_B, thread=tone(PATCH_B, 1.6))
+        patch(front, 3, n - 8, 4, 4, PATCH_C)
+        patch(back, 6, n - 12, 5, 5, PATCH_A)
+        patch(side, 3, n - 9, 4, 4, PATCH_B)
+        for x, y, ln in ((6, 4, 2), (14, 6, 1)):
+            wax_on(front, x, y, ln)
+        for x in range(0, front.W, 2):
+            front.tint(x, n - 4, tone(PILGRIM, 1.3), 0.35)               # the let-down hem's old crease
+    return hook
+
+
+def pilgrim_sleeves(seed=0):
+    """An arm hook: wax on Ysolde's sleeves, a patch at each elbow, the cuffs fraying."""
+    def hook(faces, side, sk):
+        rng = random.Random(seed + (3 if side == 'r' else 4))
+        outer, inner = ('right', 'left') if side == 'r' else ('left', 'right')
+        for face in ('front', 'back', outer):
+            cv = faces[face]
+            if face != inner:
+                patch(cv, 2, 9, 4, 4, PATCH_A if side == 'r' else PATCH_B, lit=0.2)
+        for face in ('front', outer):
+            cv = faces[face]
+            wax_on(cv, rng.randrange(1, 6), rng.randrange(13, 16), 2)
+            wax_on(cv, rng.randrange(1, 6), rng.randrange(17, 19), 1)
+        for face in ('front', 'back', 'right', 'left'):
+            cv = faces[face]
+            for x in range(8):
+                if x % 2 == 0:
+                    cv.tint(x, 19, tone(PILGRIM, 1.8), 0.45)                       # a frayed cuff
+    return hook
+
+
+def pilgrim_feet(wrap=(206, 198, 174), strap=(112, 80, 52), sole=(72, 52, 38), top=19):
+    """A leg hook: sandals over feet wrapped in linen strips, the wraps winding up the ankle, the straps crossing the instep."""
+    def hook(faces, side, sk):
+        outer, inner = ('right', 'left') if side == 'r' else ('left', 'right')
+        for face in ('front', 'back', 'right', 'left'):
+            cv = faces[face]
+            for y in range(top, 23):
+                for x in range(8):
+                    k = (0.55, 0.1, -0.35, -0.75, -0.25, 0.3)[(x + y) % 6]
+                    if x in (0, 7):
+                        k -= 0.35
+                    if face == inner:
+                        k -= 0.3
+                    if y == top:
+                        k += 0.4
+                    cv.set(x, y, tone(wrap, k))
+            for x in range(8):
+                cv.set(x, 23, tone(sole, -0.8 if face != 'front' else -0.4))
+            if face in ('front', outer):
+                for x in range(8):
+                    cv.set(x, 21, tone(strap, 0.4 if x % 2 else -0.4))
+                cv.set(4 if face == 'front' else 3, 21, tone(BRASS, 0.6))
+            if face == 'back':
+                for x in range(1, 7):
+                    cv.set(x, 22, tone(strap, -0.2))
+    return hook
+
+
+# ---- Kestrel: the ranger's leathers, a necklace of teeth, a bracer with a tally
+
+def ranger_jerkin(seed=0):
+    """A torso hook: Kestrel's jerkin rubbed pale at its edges and scratched, a mended seam, and her cord necklace of beast teeth."""
+    def hook(faces, sk):
+        rng = random.Random(seed)
+        F, B = faces['front'], faces['back']
+        for cv in (F, B):
+            scuffs(cv, rng, tone(JERKIN, 1.8), 11, (1, 6, 15, 17))
+            for y in range(4, 17):
+                if rng.random() < 0.5:
+                    cv.tint(0, y, tone(JERKIN, 1.6), 0.45)
+                    cv.tint(15, y, tone(JERKIN, 1.6), 0.35)
+        stitches(F, [(11, y) for y in range(8, 15)], 0.9)
+        cord, tooth = (56, 42, 32), (238, 230, 208)
+        pts = [(4, 0), (4, 1), (5, 2), (5, 3), (6, 4), (7, 4), (8, 4), (9, 4), (10, 3), (10, 2), (11, 1), (11, 0)]
+        for x, y in pts:
+            F.set(x, y, cord)
+        for x, y, ln in ((5, 4, 2), (6, 5, 2), (7, 5, 3), (8, 5, 2), (9, 5, 2), (10, 4, 2)):
+            for i in range(ln):
+                F.set(x, y + i, tone(tooth, 0.4 if i == 0 else -0.3 - 0.4 * i))
+    return hook
+
+
+def ranger_arms(seed=0):
+    """An arm hook: Kestrel's left bracer, laced up the outside, a tally of kills scratched into it, studded; a plain leather
+    strap round her right wrist."""
+    def hook(faces, side, sk):
+        rng = random.Random(seed + (5 if side == 'r' else 6))
+        outer, inner = ('right', 'left') if side == 'r' else ('left', 'right')
+        leather = (76, 54, 38)
+        if side == 'l':
+            top, bottom = 11, 19
+            for face in ('front', 'back', 'right', 'left'):
+                cv = faces[face]
+                for y in range(top, bottom + 1):
+                    for x in range(8):
+                        k = 0.7 if y == top else -0.6 if y == bottom else 0.0
+                        if x in (0, 7):
+                            k -= 0.4
+                        if face == inner:
+                            k -= 0.35
+                        cv.set(x, y, tone(leather, k + (0.15 if (x * 3 + y) % 5 == 0 else 0)))
+                for x, y in ((1, top + 1), (6, top + 1), (1, bottom - 1), (6, bottom - 1)):
+                    rivet(cv, x, y, (190, 156, 80), -0.8)
+                scuffs(cv, rng, tone(leather, 1.8), 2, (1, top + 1, 7, bottom - 1), length=(2, 3))
+            cv = faces[outer]
+            for i, y in enumerate(range(top + 2, bottom - 1)):          # the lacing: crossed laces up the outside
+                lc = (196, 178, 140)
+                cv.set(2 + (i % 2) * 3, y, lc); cv.set(3 + (i % 2) * 2, y, tone(lc, -0.8))
+            cv = faces['front']
+            for x, y0 in ((2, 13), (3, 13), (5, 13)):                    # the tally: the scratches of her kills
+                for dy in range(4):
+                    cv.tint(x, y0 + dy, (206, 190, 150), 0.7)
+            for i in range(5):
+                cv.tint(1 + i, 17 - i // 2, (206, 190, 150), 0.6)
+        else:
+            for face in ('front', 'back', 'right', 'left'):
+                cv = faces[face]
+                for y in (17, 18):
+                    for x in range(8):
+                        cv.set(x, y, tone(leather, 0.5 if y == 17 else -0.5))
+                if face in (outer, 'front'):
+                    cv.set(4, 17, (190, 156, 80)); cv.set(4, 18, tone((190, 156, 80), -0.9))
+    return hook
+
+
+# ---- Lucan: a robe with its stars unpicked, ink-stained fingers
+
+GHOST = (44, 56, 108)             # the blue under a star that sat on the cloth for years, unfaded
+
+
+def unpicked_star(cv, x, y, rng):
+    """Where a silver star was unpicked: a darker, bluer ghost of its shape in the faded cloth, a few pinholes where its stitches
+    went through, an end of thread left behind."""
+    for dx, dy in ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)):
+        cv.tint(x + dx, y + dy, GHOST, 0.75 if (dx, dy) == (0, 0) else 0.5)
+    for dx, dy in rng.sample([(-1, -1), (1, -1), (-1, 1), (1, 1), (2, 0), (-2, 0), (0, 2), (0, -2)], 3):
+        cv.shade(x + dx, y + dy, -1.9)
+    if rng.random() < 0.5:
+        cv.tint(x + rng.choice((-1, 1)), y + 1, (176, 184, 206), 0.7)
+
+
+def unpicked_band(cv, y, x0, x1, step, phase, rng):
+    for x in range(x0 + phase, x1, step):
+        unpicked_star(cv, x, y, rng)
+        if x + step // 2 < x1:
+            cv.shade(x + step // 2, y + 2, -1.6)                       # a hole of the thread that ran between them
+
+
+def faded_robe(seed=0):
+    """A torso hook: the robe of Lucan's old college, ink on the front where he wipes his fingers, chalk dust, the pin-holes of the
+    trim that was unpicked along the neck, and the long end of his scarf hanging over the chest."""
+    tail = scarf_tail(SCARF_WOOL, SCARF_STRIPE, x0=10, y0=2, length=14, width=3)
+
+    def hook(faces, sk):
+        rng = random.Random(seed)
+        F, B = faces['front'], faces['back']
+        for x in range(4, 12):
+            if (x + 1) % 2 == 0:
+                F.shade(x, 3, -1.6)                              # where the neck trim was
+        smudge(F, rng, INK, 3, (2, 8, 8, 18), size=(1, 2), t=(0.25, 0.45))
+        smudge(F, rng, (200, 200, 196), 2, (2, 8, 14, 20), size=(1, 2), t=(0.12, 0.25))
+        smudge(B, rng, (200, 200, 196), 1, (2, 8, 14, 20), size=(1, 2), t=(0.1, 0.2))
+        tail(faces, sk)
+    return hook
+
+
+def unpicked_skirt(seed=0):
+    """A skirt hook: the hem of Lucan's robe where the silver stars were unpicked, the ghosts and pinholes of them in a band, a few
+    scattered higher up; a seam mended, ink at the knee."""
+    def hook(front, back, side, n):
+        rng = random.Random(seed)
+        for cv, ph in ((front, 1), (back, 4), (side, 2)):
+            unpicked_band(cv, n - 7, 1, cv.W - 1, 6, ph, rng)
+        for cv, k in ((front, 6), (back, 5), (side, 2)):
+            for _ in range(k):
+                x, y = rng.randrange(2, cv.W - 2), rng.randrange(max(4, n // 2), n - 10)
+                unpicked_star(cv, x, y, rng)
+        smudge(front, rng, INK, 2, (3, n - 14, 17, n - 6), size=(1, 2), t=(0.2, 0.4))
+        for x in range(front.W):
+            if rng.random() < 0.2:
+                front.tint(x, n - 3, (176, 184, 206), 0.4)
+    return hook
+
+
+def inked_hands(ink=INK, seed=0):
+    """An arm hook: ink on the fingers, thick at the tips and the side of the forefinger, a smear down the wrist, drops on the cuff."""
+    def hook(faces, side, sk):
+        rng = random.Random(seed + (7 if side == 'r' else 8))
+        outer, inner = ('right', 'left') if side == 'r' else ('left', 'right')
+        for face in ('front', 'back', 'right', 'left'):
+            cv = faces[face]
+            for y in range(21, 24):
+                for x in range(1, 7):
+                    t = (0.35 + 0.2 * (y - 21)) * (0.6 + 0.8 * rng.random())
+                    cv.tint(x, y, ink, min(0.85, t))
+            for _ in range(2):
+                cv.tint(rng.randrange(0, 8), rng.randrange(18, 21), ink, rng.uniform(0.3, 0.6))
+        for _ in range(3):
+            faces[outer].tint(rng.randrange(1, 7), rng.randrange(14, 20), ink, rng.uniform(0.5, 0.8))
+    return hook
+
+
 # ================================================================ looks
 
 ROLES = ['citizen', 'smith', 'baker', 'merchant', 'guard', 'farmer', 'fisher', 'child', 'noble', 'innkeeper', 'bard', 'priest',
-         'mage', 'knight', 'thief']
+         'mage', 'knight', 'thief', 'companion']
 
 # Which cubes each piece paints (pieces with two sides list both parts)
 PIECE_CUBES = {
@@ -3918,7 +5073,7 @@ def piece_painters(look, torso_p):
             out['bow'] = bow_painter(col)
         elif name == 'beard':
             out['beard'] = beard_painter(col or h.get('beard_col') or h['hair'], spec.get('style', 'full'), seed + 15, sk,
-                                         spec.get('curly', False))
+                                         spec.get('curly', False), spec.get('grey'), spec.get('closed', False))
         elif name == 'kerchief_knot':
             out['knot'] = knot_painter(col or h.get('layer_col'))
         elif name == 'straw_hat':
@@ -4022,6 +5177,29 @@ def piece_painters(look, torso_p):
             out['skirt_r'], out['skirt_l'] = r, l
         elif name == 'boots':
             out['boot_r'] = out['boot_l'] = boot_cuff_painter(col)
+        elif name == 'messy_hair':
+            for i, cube in enumerate(('tuft_fore', 'tuft_crown', 'tuft_right', 'tuft_left', 'tuft_nape')):
+                out[cube] = tuft_painter(col or h['hair'], seed + 50 + i)
+        elif name == 'fur_collar':
+            out['fur_collar'] = wolf_pelt_painter(col or WOLF, seed + 51)
+        elif name == 'short_cape':
+            out['short_cape'] = short_cape_painter(col or RANGER, seed + 52)
+        elif name == 'quiver':
+            out.update(quiver_painters(col or (88, 62, 42), seed + 53))
+        elif name == 'knife':
+            out.update(knife_painters(seed + 54))
+        elif name == 'satchel':
+            out['satchel'] = satchel_painter(col or (104, 74, 48), spec.get('flap'), seed + 55, spec.get('wear', 1.0))
+        elif name == 'satchel_papers':
+            out['satchel_papers'] = papers_painter(seed + 56)
+        elif name == 'plait':
+            out['plait'] = plait_painter(col or h['hair'], spec.get('tie', HEMP), seed + 57)
+        elif name == 'lamp_charm':
+            out['lamp_charm'] = lamp_charm_painter(seed + 58)
+        elif name == 'long_scarf':
+            out['scarf_tail'] = scarf_tail_painter(col or SCARF_WOOL, spec.get('stripe', SCARF_STRIPE), seed + 59)
+        elif name == 'pauldron':
+            out.update(pauldron_painters(col or BLACKSTEEL, spec.get('paint', HART_GREY), seed + 60, spec.get('wear', 0.8)))
         else:
             raise SystemExit(f'townsfolk: no painter for piece {name}')
     return out
@@ -4669,6 +5847,50 @@ def _looks():
         dict(col=DEEP_GREEN, boots=dict(col=BOOT_B)),
         {'belly': {}, 'puffs': dict(col=OXBLOOD, kind='pad'), 'pouch': dict(col=LEATHER_D), 'rolls': dict(col=CHARCOAL)},
         note='big bruiser with a shaved head in a leather jerkin')
+    # ---------------------------------------------------------------- the companions (the game's four travelling companions: no TownRole,
+    # never in a town; whatever they hold is drawn by the game's item layer, so no tool of the townsfolk is shown): Bram, Ysolde, Kestrel, Lucan
+    bram_hair = (52, 42, 38)
+    add('companion', 'man',
+        man('light', bram_hair, 'crop', 'brown', lines=0.9, blush=0.14, brow_style='straight', brows=(62, 50, 44), stubble=0.25,
+            mouth='stern', beard_side=True, beard_col=(46, 38, 34), head_extra=chain(grey_temples('crop', amount=0.55, seed=3), bram_face)),
+        dict(col=BRIG, neck='none', belt=LEATHER_D, buckle=(124, 130, 142), belt_y=17, sash=dict(col=COMPANY, y=19),
+             extra=brigandine(seed=5)),
+        dict(col=BLACKSTEEL, mail=True, mail_col=tone(BLACKSTEEL, -0.2), len='long', extra=gauntlet(seed=6)),
+        dict(col=(60, 54, 52), boots=dict(col=BOOT_B, kind='tall', top=10, cuff_col=BOOT, strap=(72, 54, 40), mud=True)),
+        {'beard': dict(style='short', col=(46, 38, 34), grey=(176, 172, 166), closed=True), 'fur_collar': dict(col=WOLF), 'pauldron': {},
+         'pouch': dict(col=LEATHER_D),
+         'skirt': dict(col=BRIG, kind='robe', len=11, folds=False, extra=chain(mail_skirt(seed=7), sash_ends(seed=17)))},
+        note='Bram Hale, the Last Greyhart: a battered brigandine over mail, one pauldron with the grey hart, a wolf-fur collar')
+    add('companion', 'woman',
+        woman('fair', 'auburn', 'parted', 'hazel', freckles=1, hat_shadow=2, brow_style='soft', head_extra=ysolde_face),
+        dict(col=PILGRIM, neck='crew', under=(222, 214, 190), cord=HEMP, belt_y=16, strap=(98, 70, 46), extra=pilgrim_robe(seed=8)),
+        dict(col=PILGRIM, len='long', cuff=tone(PILGRIM, -0.7), extra=pilgrim_sleeves(seed=9)),
+        dict(col=tone(PILGRIM, -1.2), kind='hose', boots=dict(col=BOOT, kind='shoe'), extra=pilgrim_feet()),
+        {'veil': dict(col=PILGRIM, kind='hood', edge=tone(PILGRIM, 0.7), opening=(3, 4)), 'plait': dict(col=HAIR['auburn'], tie=HEMP),
+         'satchel': dict(col=(112, 82, 54)), 'lamp_charm': {},
+         'skirt': dict(col=PILGRIM, kind='robe', len=20, mud=True, extra=pilgrim_skirt(seed=10))},
+        note='Ysolde Marsh, Pilgrim of the Lamplighters: a patched grey-green robe, a hood, a long plait, ash on her brow')
+    add('companion', 'woman',
+        woman('tan', 'raven', 'choppy', 'amber', freckles=0, blush=0.06, brow_style='arched', nose='long', head_extra=kestrel_face),
+        dict(col=(62, 76, 64), neck='v', vest=dict(kind='jerkin', col=JERKIN, laces=(196, 176, 138)), belt=LEATHER_D, buckle=True,
+             strap=(66, 48, 34), belt_y=18, extra=ranger_jerkin(seed=11)),
+        dict(col=(62, 76, 64), len='long', cuff=tone((62, 76, 64), -0.6), extra=ranger_arms(seed=12)),
+        dict(col=(56, 52, 44), boots=dict(col=BOOT, kind='tall', top=11, laces=(180, 160, 120), mud=True)),
+        {'collar': dict(col=RANGER, kind='hood', edge=tone(RANGER, 0.9)), 'short_cape': dict(col=RANGER), 'quiver': {}, 'knife': {}},
+        note='Kestrel Vey, Ranger of the Thornwood: a green hooded cape, a quiver of grey-fletched arrows, a bracer, a necklace of teeth')
+    add('companion', 'man',
+        man('porcelain', LUCAN_HAIR, 'unruly', 'grey', layer='volume', layer_col=LUCAN_HAIR, layer_ragged=True,
+            layer_front=[5, 6, 4, 4, 5, 3, 3, 5, 4, 5, 3, 3, 5, 4, 6, 5], layer_back=13,
+            layer_side=["################"] * 6 + ["############....", "#####...........", "#####...........", "#####...........",
+                                                     "####............", "###............."] + ["................"] * 4,
+            brow_style='soft', head_extra=lucan_face),
+        dict(col=FADED, neck='crew', strap=(98, 70, 46), belt=LEATHER_D, buckle=False, belt_y=16, extra=faded_robe(seed=13)),
+        dict(col=FADED, len='long', cuff=tone(FADED, -0.7), extra=inked_hands(seed=14)),
+        dict(col=(44, 42, 52), kind='hose', boots=dict(col=BOOT_D, kind='shoe')),
+        {'messy_hair': dict(col=LUCAN_HAIR), 'collar': dict(col=SCARF_WOOL, kind='scarf', col2=SCARF_STRIPE), 'long_scarf': {},
+         'satchel': dict(col=(96, 70, 48), wear=1.4), 'satchel_papers': {},
+         'skirt': dict(col=FADED, kind='robe', len=22, extra=unpicked_skirt(seed=15))},
+        note='Lucan Dray, the Expelled: a faded Starwatch robe, the stars unpicked, a long scarf, a satchel of papers')
     return L
 
 
@@ -4738,6 +5960,24 @@ def sheet_leaders(model, glow, scale=11, cell=(210, 410)):
             sheet.paste(im, (4 + j * cw, y))
         face = render_look(model, look, tex, glow, yaw=18, pitch=-6, scale=24, size=(cw, ch), only={'head'}, y_shift=-0.2)
         sheet.paste(face, (4 + 3 * cw, y))
+        d.text((8, y + 4), look.note, fill=(226, 228, 236, 255))
+    return sheet
+
+
+def sheet_companions(model, glow, scale=11, cell=(210, 410)):
+    """The four companions close up, a row each: front, three-quarter, side, back, and the face (drawn at the leaders' scale)."""
+    cw, ch = cell
+    looks = LOOKS['companion']
+    sheet = Image.new('RGBA', (5 * cw + 8, len(looks) * (ch + 4) + 4), BG)
+    d = ImageDraw.Draw(sheet)
+    for i, look in enumerate(looks):
+        tex = look_texture('companion', i, model)
+        y = 4 + i * (ch + 4)
+        for j, yaw in enumerate((0, 35, 90, 180)):
+            im = render_look(model, look, tex, glow, yaw=yaw, pitch=-6, scale=scale, size=(cw, ch), y_shift=-1.0)
+            sheet.paste(im, (4 + j * cw, y))
+        face = render_look(model, look, tex, glow, yaw=18, pitch=-6, scale=24, size=(cw, ch), only={'head'}, y_shift=-0.2)
+        sheet.paste(face, (4 + 4 * cw, y))
         d.text((8, y + 4), look.note, fill=(226, 228, 236, 255))
     return sheet
 
@@ -4892,6 +6132,7 @@ def main(assets, previews, models):
         sheet_role(model, glow, role).save(os.path.join(previews, f'townsfolk_{role}.png'))
     sheet_all(model, glow, roles=['mage', 'knight', 'thief']).save(os.path.join(previews, 'townsfolk_factions.png'))
     sheet_leaders(model, glow).save(os.path.join(previews, 'townsfolk_leaders.png'))
+    sheet_companions(model, glow).save(os.path.join(previews, 'townsfolk_companions.png'))
     n = sum(len(v) for v in LOOKS.values())
     print(f'townsfolk: {n} looks, texture {model.tex_w}x{model.tex_h} (PNGs {model.tex_w * SCALE}x{model.tex_h * SCALE}), '
           f'{rows} rows packed, {len(list(model.all_cubes()))} cubes')

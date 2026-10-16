@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.region
 
 import io.github.vaspyyy.guildmark.GuildmarkConfig
+import io.github.vaspyyy.guildmark.companion.Companions
 import io.github.vaspyyy.guildmark.region.terrain.RegionTerrain
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Holder
@@ -149,6 +150,8 @@ object Regions {
         val first = here.id !in found
         if (first) player.setData(RegionData.FOUND, (found + here.id).takeLast(MAX_FOUND))
         PacketDistributor.sendToPlayer(player, RegionEnteredPayload(here.id, here.kind.id, here.name, first))
+        // Whoever travels with the player has something to say about new country
+        if (first && current != null) Companions.onNewLand(player)
     }
 
     /** The cells within [NEAR] of the player: wanted by their client, and remembered for their next visit. */

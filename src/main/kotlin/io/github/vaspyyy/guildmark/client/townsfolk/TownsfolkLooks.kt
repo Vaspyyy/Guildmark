@@ -15,7 +15,8 @@ object TownsfolkLooks {
         "creel", "face_scarf", "hair_bow", "hair_bun", "hair_long", "head_wrap", "kerchief_knot", "kettle_helm",
         "pigtails", "plumed_hat", "ponytail", "pouch", "puff_l", "puff_r", "roll_l", "roll_r", "sash_tails",
         "scabbard", "shoulder_rag", "skirt_l", "skirt_r", "skullcap", "sleeve_l", "sleeve_r", "souwester",
-        "straw_hat", "tabard", "tabard_back", "veil", "wide_hat", "widow_hat",
+        "straw_hat", "tabard", "tabard_back", "veil", "wide_hat", "widow_hat", "fur_collar", "knife", "lamp_charm",
+        "long_scarf", "messy_hair", "pauldron", "plait", "quiver", "satchel", "satchel_papers", "short_cape",
     )
 
     /** By role id (lowercase role name), in look order. */
@@ -105,6 +106,12 @@ object TownsfolkLooks {
             Look("thief_1", "man", setOf("cape", "face_scarf", "pouch", "veil")),
             Look("thief_2", "woman", setOf("cape", "collar", "pouch")),
             Look("thief_3", "man", setOf("belly", "pouch", "puff_l", "puff_r", "roll_l", "roll_r")),
+        ),
+        "companion" to listOf(
+            Look("companion_0", "man", setOf("beard", "fur_collar", "pauldron", "pouch", "skirt_l", "skirt_r")),
+            Look("companion_1", "woman", setOf("lamp_charm", "plait", "satchel", "skirt_l", "skirt_r", "veil")),
+            Look("companion_2", "woman", setOf("collar", "knife", "quiver", "short_cape")),
+            Look("companion_3", "man", setOf("collar", "long_scarf", "messy_hair", "satchel", "satchel_papers", "skirt_l", "skirt_r")),
         ),
     )
 }

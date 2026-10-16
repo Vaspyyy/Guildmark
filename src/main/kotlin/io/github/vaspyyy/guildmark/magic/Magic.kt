@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.magic
 
+import io.github.vaspyyy.guildmark.companion.Companions
 import io.github.vaspyyy.guildmark.faction.SwornKnight
 import io.github.vaspyyy.guildmark.faction.WardLight
 import io.github.vaspyyy.guildmark.combat.Combat
@@ -157,6 +158,7 @@ object Magic {
             Spell.HALLOWED_GROUND -> SpellZone.open(level, player, SpellZone.HALLOWED, spell, groundAhead(level, player), 1f * power)
             Spell.DAWNBURST -> dawnburst(level, player, spell, 14f * grow * power)
         }
+        Companions.onSpell(player, spell.school)
     }
 
     /** What follows a spell's release while its cast plays on: Flicker's caster arriving where they blinked to. */

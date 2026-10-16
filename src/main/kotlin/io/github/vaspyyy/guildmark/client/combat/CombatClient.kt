@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.client.combat
 
+import io.github.vaspyyy.guildmark.companion.CompanionEntity
 import io.github.vaspyyy.guildmark.faction.SwornKnight
 import io.github.vaspyyy.guildmark.faction.WardLight
 import com.mojang.blaze3d.platform.InputConstants
@@ -334,6 +335,7 @@ object CombatClient {
      */
     fun isFoe(entity: LivingEntity): Boolean = when (entity) {
         is SwornKnight -> entity.inBout
+        is CompanionEntity -> false
         is WardLight -> true
         else -> entity is Enemy || (entity as? Mob)?.isAggressive == true || entity is CombatMob || isOpen(entity)
     }

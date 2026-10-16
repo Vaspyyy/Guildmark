@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.progression
 
+import io.github.vaspyyy.guildmark.companion.Companions
 import io.github.vaspyyy.guildmark.faction.FactionRegistry
 import io.github.vaspyyy.guildmark.faction.FactionState
 import io.github.vaspyyy.guildmark.Guildmark
@@ -151,7 +152,9 @@ object Talents {
             MoveKind.SPELL -> build(player)[Bonus.SPELL_COST]
             else -> 0.0
         }
-        return (move.focus * (1.0 + change)).toFloat().coerceAtLeast(0f)
+        // Lucan, Sworn and beside them, shares the weight of a spell
+        val shared = if (move.kind == MoveKind.SPELL) Companions.focusFactor(player) else 1f
+        return (move.focus * (1.0 + change)).toFloat().coerceAtLeast(0f) * shared
     }
 
     /** How much harder [move] hits, from the nodes for ripostes, backstabs, weapon skills, charged heavies and guard counters. */

@@ -4,6 +4,9 @@ import io.github.vaspyyy.guildmark.atlas.Atlas
 import io.github.vaspyyy.guildmark.atlas.AtlasPlace
 import io.github.vaspyyy.guildmark.block.WardfireBlock
 import io.github.vaspyyy.guildmark.combat.Combat
+import io.github.vaspyyy.guildmark.companion.Companions
+import io.github.vaspyyy.guildmark.companion.Deed
+import io.github.vaspyyy.guildmark.faction.Trials
 import io.github.vaspyyy.guildmark.guild.GuildMember
 import io.github.vaspyyy.guildmark.network.OpenWardfirePayload
 import io.github.vaspyyy.guildmark.network.WardfireActionPayload
@@ -81,6 +84,9 @@ object Wardfires {
         know(level, pos, player)
         Milestones.award(player, Milestones.WARDFIRE)
         WardensFlask.onKindle(player)
+        // A cold fire lit again: Ysolde's chapter counts it, and those who keep the roads are glad of it
+        Trials.credit(player, "kindle")
+        Companions.deed(player, Deed.KINDLE)
     }
 
     /** Puts the Wardfire at [pos] on the player's map, if it isn't already. */
@@ -97,6 +103,7 @@ object Wardfires {
         }
         restore(player)
         resetFoes(level, pos)
+        Companions.onRest(level, pos, player)
         player.setRespawnPosition(ServerPlayer.RespawnConfig(LevelData.RespawnData(GlobalPos.of(level.dimension(), pos), 0f, 0f), false), false)
         Atlas.refresh(player)
         level.playSound(null, pos, ModSounds.WARDFIRE_REST.get(), SoundSource.PLAYERS, 0.9f, 1f)
@@ -198,6 +205,7 @@ object Wardfires {
             val at = RespawnAnchorBlock.findStandUpPosition(member.type, level, to).orElse(spot)
             member.teleportTo(level, at.x, at.y, at.z, setOf(), member.yRot, member.xRot, false)
         }
+        Companions.onTravel(player, spot)
         level.playSound(player, to, ModSounds.WARDFIRE_TRAVEL.get(), SoundSource.PLAYERS, 0.9f, 1.1f)
         PacketDistributor.sendToPlayer(player, WardfireTravelledPayload(true))
     }

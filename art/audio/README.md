@@ -54,13 +54,25 @@ Kokoro voices of their own, and the renegade Silvan Marrow made cold and a littl
   -3 dBFS (the ward-light's hum at -14, the lifted purse at -12). `--only` takes effect names or a group such as
   `heist`; `--mp3 <file>` joins what was rendered into one listen-through MP3, a chapter mark at each sound, and a full
   run adds the members' new work sounds from `make_townsfolk_sfx.py`. Its variants are listed in `sounds.json` by hand.
+- `make_companion_audio.py`: the companions' six small cues, one file each (`companion/<name>.ogg`): two soft bells
+  rising a third for approval and one low note sagging a fourth for disapproval, a body going down on one knee in its
+  kit (the knee, steel and leather, a breath let out), a breath drawn in with a hand slapped into a hand and a small
+  ember swell for a revive, a short questioning figure of three plucked lute notes (a companion has something to ask)
+  and a warm swell of lute and low strings for the oath. Synthesised with `sfxkit.py` from the prayers' bells, the
+  factions' plucked and bowed strings and the townsfolk's and combat's steel, leather and ground, in D major, the
+  Wardfires' key; the cues that come often are quiet (peaks at -11 and -12 dBFS for approval and disapproval, -7 for
+  the questioning figure), the fall, the revive and the oath at -4.
+  `--only` takes effect names; `--mp3 <file>` joins what was rendered into one listen-through MP3, a chapter mark at
+  each sound. Their events are listed in `sounds.json` by hand.
 - `make_voice.py`: Halvard's three lines (`voice/`). It has two stages, `tts` and `process`.
 - `make_renegade_voice.py`: the renegade Silvan Marrow's three lines (`voice/renegade_<line>.ogg`), in a blend of
   three American men's voices and cold, thin processing: a faint whispered double, a stone slap and wind (out on a
   hill of standing stones, not in a hall), and a glassy shimmer on his phase-two cry. Two stages, `tts` and
   `process`, as for Halvard.
-- `make_cast_voices.py`: the named characters' 104 dialogue lines (`voice/<character>/`), read from the
-  language file: Wren, Tobin, Ilsa, Pip and Maren, and the faction leaders Idris, Corra and Odile. It has three
+- `make_cast_voices.py`: the named characters' 344 dialogue lines (`voice/<character>/`), read from the
+  language file: Wren, Tobin, Ilsa, Pip and Maren, the faction leaders Idris, Corra and Odile, and the four
+  companions Bram, Ysolde, Kestrel and Lucan (240 of the lines: everything a companion says but their written notes,
+  barks on the road included, each in a blend of Kokoro voices of their own, dry and close). It has three
   stages, `tts`, `process` and `sounds`.
 - `ambkit.py`: what the city ambience shares on top of `sfxkit.py`: the `@recipe` registry, seamless
   stereo loops (the extra tail crossfaded over the head), RMS levelling, street and square reverbs,

@@ -30,15 +30,21 @@ and Kotlin model code always agree.
   glow map for his eyes and the mantle's cracked star sigils. It writes the two textures, `client/model/RenegadeModel.kt`
   (straight into the source tree; the mantle and its strips swing after `CombatAnimator`), `art/models/renegade.bbmodel`
   and previews.
-- `scripts/townsfolk.py` is the townsfolk of the capitals: one humanoid for all fifteen roles (citizen, smith, baker,
-  merchant, guard, farmer, fisher, child, noble, innkeeper, bard, priest, and the factions' mage, knight, thief)
-  carrying every look's pieces (hair, beards, hats, helms, hoods, aprons, tabards, capes, skirts, scabbards...) and the
-  held props of `scripts/townsfolk_tools.py`; each of the 56 looks shows only its own pieces and has its own texture
-  (look 0 of mage, knight and thief is the faction leader, drawn closer up in `townsfolk_leaders.png`). Skirts, robes and coats are one shell split down the
-  middle that rides the legs, their length painted. Textures are HD: box UV declared at 256x128, painted and shipped
-  at 512x256, with one shared glow map (hot iron, lantern). It writes its Kotlin straight into `client/townsfolk/`:
-  `TownsfolkMesh.kt` (the geometry) and `TownsfolkLooks.kt` (every look's texture, voice and pieces). Its previews
-  are contact sheets: every look front and back (also `art/models/townsfolk_preview.png`) and each role up close.
+- `scripts/townsfolk.py` is the townsfolk of the capitals: one humanoid for all sixteen roles (citizen, smith, baker,
+  merchant, guard, farmer, fisher, child, noble, innkeeper, bard, priest, the factions' mage, knight, thief, and the four
+  travelling companions) carrying every look's pieces (hair, beards, hats, helms, hoods, aprons, tabards, capes, skirts,
+  scabbards...) and the held props of `scripts/townsfolk_tools.py`; each of the 60 looks shows only its own pieces and
+  has its own texture (look 0 of mage, knight and thief is the faction leader, drawn closer up in
+  `townsfolk_leaders.png`). The role `companion` is Bram, Ysolde, Kestrel and Lucan, looks 0 to 3 in that order and the
+  most detailed of all, drawn closer up in `townsfolk_companions.png`; it is no town role (nothing spawns it in a town,
+  so it has no props: what they hold is drawn by the item layer), and its look-only pieces (`messy_hair`, `fur_collar`,
+  `short_cape`, `quiver`, `knife`, `satchel`, `satchel_papers`, `plait`, `lamp_charm`, `long_scarf`, `pauldron`) have
+  names of their own and are packed into the atlas after the older cubes, so no older look moved a texel. Skirts, robes
+  and coats are one shell split down the middle that rides the legs, their length painted. Textures are HD: box UV
+  declared at 256x128, painted and shipped at 512x256, with one shared glow map (hot iron, lantern). It writes its
+  Kotlin straight into `client/townsfolk/`: `TownsfolkMesh.kt` (the geometry) and `TownsfolkLooks.kt` (every look's
+  texture, voice and pieces). Its previews are contact sheets: every look front and back (also
+  `art/models/townsfolk_preview.png`), each role up close, the faction leaders and the companions.
 - `scripts/hdkit.py` is the HD art kit the 32x blocks and items are painted with, in the dark-fantasy look the
   shader sets: material palettes (cool shadows, warm light, a few hard tones each), height fields lit from the upper
   left, ordered dither where tones meet, bevels for stamped and carved shapes, and the dark outline round items.
@@ -54,6 +60,16 @@ and Kotlin model code always agree.
   Kiss and Hearthbrand (staff and dagger on `weaponkit.py`'s layouts, the sword a vanilla-style handheld), and the
   ward-light (`entity/ward_light.png`, a soft full-bright orb with a faint star cross, for a camera-facing quad). It
   writes the textures, models and item definitions, and preview sheets.
+- `scripts/companion_art.py` is the companions' keepsake weapons, the gifts they give once Sworn, painted at 32x with
+  `hdkit.py` the way `faction_art.py` paints its staff and daggers: `greyhart` (Bram's reforged greatsword: blackened
+  steel, a grey hart etched on the blade above the guard, grey leather grip; the greatswords' own layout and model),
+  `lamplighters_censer` (Ysolde's: blackened brass, a small flame steady in the fretwork; the iron censer's layout and
+  model), `thornwood_bow` (Kestrel's: black yew, a green leather grip, pale hart-horn tips; the vanilla bow's four
+  textures, `thornwood_bow` and `thornwood_bow_pulling_0` to `_2`, its models and display transforms, and its item
+  definition that switches them by how long the bow has been drawn) and `unpicked_star` (Lucan's: pale ash wound with
+  faded midnight-blue cloth, a silver star sewn at the head, a cold light caged there; the amethyst staff's layout and
+  model). It writes the textures, models and item definitions (no Kotlin), and a preview sheet: each keepsake large, then
+  in a hotbar beside the older weapons.
 - `scripts/creature_hd.py` ships the older creatures at twice their declared size: the Hollow Soldier, the Hollow
   King, Halvard, the Hill Troll, the Dusk Rider and steed, the five named characters, the four rival guilds and the
   Guildmaster's villager coat. It remasters each 1x design one cube face at a time (read from the model scripts, so
@@ -87,6 +103,7 @@ python3 -B art/scripts/region_hollows.py src/main/resources/assets/guildmark <pr
 python3 -B art/scripts/renegade.py src/main/resources/assets/guildmark <preview-dir> art/models
 python3 -B art/scripts/items_hd.py src/main/resources/assets/guildmark [preview-dir]
 python3 -B art/scripts/faction_art.py src/main/resources/assets/guildmark [preview-dir]
+python3 -B art/scripts/companion_art.py src/main/resources/assets/guildmark [preview-dir]
 python3 -B art/scripts/ui_hd.py src/main/resources/assets/guildmark [preview-dir]
 python3 -B art/scripts/creature_hd.py src/main/resources/assets/guildmark [preview-dir]
 python3 -B art/scripts/vanilla_hd.py <minecraft-26.3 jar> src/main/resources/resourcepacks/guildmark_hd [preview-dir]
@@ -134,6 +151,17 @@ python3 -B art/scripts/townsfolk_anims.py src/main/resources/assets/guildmark <p
   like `enemy_anims.py`:
   `python3 -B art/scripts/renegade_anims.py src/main/resources/assets/guildmark <preview-dir> [clip ...]`.
   `townsfolk_anims.py` also holds the sixteen faction clips (reading, sparring, lurking and the rest).
+- `scripts/companion_anims.py` is the four companions' eleven clips, baked to `assets/guildmark/animations/companion/`
+  for the townsfolk model (role `companion`): `sit_fire` (a loop) and `stand_up` at a Wardfire, `downed` (ticks 16 to 28 are
+  its held loop) and `revive`, the upper-body `approve` and `disapprove` that play over a walk, `bow_release` (added over the
+  vanilla bow pose) and an idle each (`idle_bram` rests the greatsword on a shoulder, `idle_ysolde` swings the censer and
+  blesses, `idle_kestrel` scans and tests the string, `idle_lucan` reads his book). It imports `animkit.py` and
+  `townsfolk_anims.py`, draws every clip with the item the companion really holds (Bram's iron greatsword, Ysolde's iron
+  censer, Kestrel's vanilla bow, Lucan's amethyst staff, placed as the item layer does) and checks it against the body, the
+  look's own pieces (the pauldron, the knife) and the ground, every loop's seam and which bones the upper-body clips touch. With
+  no clip named it also writes `companion_moves.gif`, all eleven in a row (set `GUILDMARK_VANILLA_BOW` to the vanilla client's
+  `textures/item/bow.png` to draw the real bow). Run it like `renegade_anims.py`:
+  `python3 -B art/scripts/companion_anims.py src/main/resources/assets/guildmark <preview-dir> [clip ...]`.
 
 ## Screens
 

@@ -47,7 +47,8 @@ class TrollBoulder : ThrowableItemProjectile {
 
     private fun burst(level: ServerLevel, hit: HitResult) {
         val at = hit.location
-        val owner = owner as? LivingEntity
+        // getOwner(): inside a projectile, plain owner is the EntityReference field rather than the troll
+        val owner = getOwner() as? LivingEntity
         val damage = owner?.getAttributeValue(Attributes.ATTACK_DAMAGE)?.toFloat() ?: 10f
         val source = damageSources().thrown(this, owner)
         val struck = (hit as? EntityHitResult)?.entity

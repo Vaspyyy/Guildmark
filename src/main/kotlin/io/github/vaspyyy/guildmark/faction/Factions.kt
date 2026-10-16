@@ -1,5 +1,7 @@
 package io.github.vaspyyy.guildmark.faction
 
+import io.github.vaspyyy.guildmark.companion.Companions
+import io.github.vaspyyy.guildmark.companion.Deed
 import io.github.vaspyyy.guildmark.guild.GuildNews
 import io.github.vaspyyy.guildmark.network.OpenCharacterPayload
 import io.github.vaspyyy.guildmark.progression.Milestones
@@ -284,6 +286,8 @@ object Factions {
         if (before.chapters(faction) == 0) {
             player.sendSystemMessage(Component.translatable("message.guildmark.faction_joined", faction.title, faction.rankTitle(chapters)))
             GuildNews.add(level, "news.guildmark.faction_joined", player.name.string, faction.title.string)
+            // The companions hear of it, wherever they are, and have their opinions
+            Companions.deed(player, Deed.join(faction))
         } else {
             player.sendSystemMessage(Component.translatable("message.guildmark.faction_rank", character.title, faction.rankTitle(chapters)))
         }
@@ -293,6 +297,7 @@ object Factions {
         player.inventory.placeItemBackInInventory(gift(level, faction), Prediction.SERVER_ONLY)
         level.playSound(null, player.blockPosition(), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.PLAYERS, 1.0f, 1.0f)
         GuildNews.add(level, "news.guildmark.faction_done", player.name.string, faction.title.string)
+        if (faction == Faction.STARWATCH) Companions.deed(player, Deed.STARWATCH_DONE)
     }
 
     /** [faction] has shut [player] out: the chapters and work of its they carry are worthless, and whatever those set up goes. */

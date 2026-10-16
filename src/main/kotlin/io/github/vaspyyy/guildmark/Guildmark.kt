@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark
 
+import io.github.vaspyyy.guildmark.companion.CompanionEntity
 import net.minecraft.world.item.CreativeModeTabs
 import net.neoforged.bus.api.EventPriority
 import io.github.vaspyyy.guildmark.death.Purses
@@ -188,6 +189,8 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         Magic.register(modBus)
         // The Starwatch, the Hearthsworn and the Quiet Hand: joining, ranks, questlines and their trials (faction/)
         io.github.vaspyyy.guildmark.faction.Factions.register(modBus)
+        // Bram, Ysolde, Kestrel and Lucan: who travels with the player, loyalty, chapters and Sworn perks (companion/)
+        io.github.vaspyyy.guildmark.companion.Companions.register(modBus)
         // Which part of a capital each player is in, for the city sounds (city/CapitalVisits)
         CapitalVisits.register()
         // Capitals' sites worked out ahead of the players (city/Capitals)
@@ -339,7 +342,16 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         if (level is ServerLevel && victim is GuildMember) Recruiting.onMemberDeath(level, victim)
         if (level is ServerLevel && victim.hasData(ModAttachments.LAIR_BOSS)) Lairs.get(level).onBossDeath(level, victim.getData(ModAttachments.LAIR_BOSS))
         // Kills by fire, lightning and the like still count for whoever last hit the victim
-        val killer = event.source.entity as? Player ?: victim.killCredit as? Player ?: return
+        val killer = event.source.entity as? Player ?: victim.killCredit as? Player
+        if (killer == null) {
+            // A companion's kill counts towards their player's contracts and party, though it teaches the player nothing
+            val owner = (event.source.entity as? CompanionEntity)?.player ?: return
+            if (!owner.level().isClientSide()) {
+                Contracts.onKill(owner, event.entity)
+                Parties.onKill(owner, event.entity)
+            }
+            return
+        }
         if (!killer.level().isClientSide()) {
             Contracts.onKill(killer, event.entity)
             Parties.onKill(killer, event.entity)

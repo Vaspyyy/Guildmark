@@ -3,6 +3,8 @@ package io.github.vaspyyy.guildmark.client.ui
 import com.mojang.blaze3d.platform.InputConstants
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.client.combat.Cutscenes
+import io.github.vaspyyy.guildmark.companion.CompanionOrderPayload
+import io.github.vaspyyy.guildmark.companion.Companions
 import io.github.vaspyyy.guildmark.faction.FactionWorkPayload
 import io.github.vaspyyy.guildmark.faction.Factions
 import io.github.vaspyyy.guildmark.network.AcceptChapterPayload
@@ -38,7 +40,8 @@ import kotlin.math.sin
  * something, or say goodbye. Enter, Space or a click moves the talk on; the arrow keys, W and S, the
  * wheel or the number keys pick an answer. A faction's leader has more to say: a word if they were dozing, a
  * warning about their rivals, a refusal if the player isn't rated high enough or has been thrown out, and work to
- * give between chapters.
+ * give between chapters. A companion is asked along, told to follow, wait or go their own way, given a gift, asked
+ * how things stand, and opens their next chapter only once they trust the player enough.
  */
 class DialogueScreen(private val data: OpenCharacterPayload) : Screen(Component.translatable("gui.guildmark.character")) {
 
@@ -61,8 +64,16 @@ class DialogueScreen(private val data: OpenCharacterPayload) : Screen(Component.
     private val leads = character?.faction != null
     private fun flag(bit: Int): Boolean = leads && data.flags and bit != 0
     private val shut get() = flag(Factions.SHUT)
-    private val gated get() = flag(Factions.GATED)
-    private val offering get() = character != null && !scene && !finished && !data.carrying && !shut && !gated
+    private val gated get() = flag(Factions.GATED) || has(Companions.GATED)
+    private val offering get() = character != null && !scene && !finished && !data.carrying && !shut && !gated &&
+        (companion == null || has(Companions.OFFER))
+    /** A companion, with their own say: met or not, with the player or not, how they feel (data.flags: Companions.STRANGER and the rest). */
+    private val companion = character?.companion
+    private fun has(bit: Int): Boolean = companion != null && data.flags and bit != 0
+    /** Something they were told this talk (to wait, to come along): they answer, and all that's left is goodbye. */
+    private var settled = false
+    /** A gift handed over this talk. */
+    private var gave = false
     /** The player has asked for work this talk (it's in their pack now). */
     private var workTaken = false
 
@@ -139,6 +150,7 @@ class DialogueScreen(private val data: OpenCharacterPayload) : Screen(Component.
 
     private fun opening(): List<Speech> {
         if (character == null) return emptyList()
+        if (companion != null) return companionOpening()
         if (scene) return numbered("scene${data.chapters}", ".p").map(::line)
         if (shut) return listOf(line("expelled"))
         val woken = if (flag(Factions.WOKEN)) listOf(line("woken")) else emptyList()
@@ -165,8 +177,84 @@ class DialogueScreen(private val data: OpenCharacterPayload) : Screen(Component.
         )
     }
 
+    /** What a companion opens with: the state of things between them and the player. */
+    private fun companionOpening(): List<Speech> = when {
+        has(Companions.COLD) -> listOf(line("cold"))
+        has(Companions.LEFT) -> listOf(line("return"))
+        data.finale -> listOf(line("finale"))
+        // A chapter just handed in: how it sits with them, and the next if they're ready to ask
+        has(Companions.TURNED_IN) -> listOfNotNull(lineIf("step${data.chapters - 1}.done")) + (if (offering) listOf(line("step${data.chapters}")) else emptyList())
+        has(Companions.STRANGER) -> listOf(line("intro"))
+        data.carrying -> listOf(line("waiting"))
+        offering -> listOf(line("step${data.chapters}"))
+        finished -> listOf(line("done"))
+        else -> listOf(line(numbered("hello").randomOrNull() ?: "done"))
+    }
+
+    private fun lineIf(key: String): Speech? = line(key).takeIf { Language.getInstance().has("character.guildmark.${character!!.id}.$key") }
+
+    private fun companionChoices(c: StoryCharacter): List<Choice> {
+        val list = ArrayList<Choice>()
+        val farewell = Choice(Component.translatable(if (offering && !settled) "gui.guildmark.character.later" else "gui.guildmark.character.farewell"), null) { onClose() }
+        if (settled) return listOf(farewell)
+        fun order(label: String, order: Int, reply: String) {
+            list += Choice(Component.translatable(label), null) { tell(order, reply) }
+        }
+        val swap = has(Companions.SWAP)
+        when {
+            has(Companions.COLD) -> return listOf(farewell)
+            has(Companions.LEFT) -> order("gui.guildmark.companion.return", CompanionOrderPayload.RETURN, "follow")
+            has(Companions.STRANGER) -> {
+                order(if (swap) "gui.guildmark.companion.join_swap" else "gui.guildmark.companion.join", CompanionOrderPayload.JOIN, "join")
+                list += Choice(Component.translatable("gui.guildmark.companion.decline"), null) { answer("decline") }
+            }
+            else -> {
+                if (offering) list += Choice(Component.translatable("gui.guildmark.character.accept"), null) { accept() }
+                else if (gated && !data.carrying) list += Choice(Component.translatable("gui.guildmark.companion.favour"), "favour") { heard += "favour"; say(listOf(line("gated"))) }
+                when {
+                    has(Companions.FOLLOWING) -> {
+                        order("gui.guildmark.companion.wait", CompanionOrderPayload.WAIT, "wait")
+                        order("gui.guildmark.companion.part", CompanionOrderPayload.PART, "part")
+                    }
+                    has(Companions.WAITING) -> {
+                        order("gui.guildmark.companion.follow", CompanionOrderPayload.FOLLOW, "follow")
+                        order("gui.guildmark.companion.part", CompanionOrderPayload.PART, "part")
+                    }
+                    has(Companions.PARTED) ->
+                        order(if (swap) "gui.guildmark.companion.rejoin_swap" else "gui.guildmark.companion.rejoin", CompanionOrderPayload.REJOIN, "rejoin")
+                }
+                if (has(Companions.GIFT) && !gave) {
+                    val held = minecraft.player?.mainHandItem?.hoverName ?: Component.empty()
+                    list += Choice(Component.translatable("gui.guildmark.companion.gift", held), null) {
+                        gave = true
+                        if (has(Companions.GIFTED)) answer("gift_again", settle = false)
+                        else tell(CompanionOrderPayload.GIFT, "gift", settle = false)
+                    }
+                }
+                val band = data.flags shr Companions.BAND_SHIFT and 7
+                list += Choice(Component.translatable("gui.guildmark.companion.standing"), "standing") { heard += "standing"; say(listOf(line("standing.$band"))) }
+            }
+        }
+        for (topic in c.topics) list += Choice(c.line("topic.$topic"), topic) { ask(topic) }
+        list += farewell
+        return list
+    }
+
+    /** The player tells their companion something ([order]): they answer with [reply]. */
+    private fun tell(order: Int, reply: String, settle: Boolean = true) {
+        ClientPacketDistributor.sendToServer(CompanionOrderPayload(data.entityId, order))
+        answer(reply, settle)
+    }
+
+    private fun answer(reply: String, settle: Boolean = true) {
+        if (settle) settled = true
+        choices = choices()
+        say(listOf(line(reply)))
+    }
+
     private fun choices(): List<Choice> {
         val c = character ?: return emptyList()
+        if (companion != null) return companionChoices(c)
         val list = ArrayList<Choice>()
         if (ritual) list += Choice(Component.translatable("gui.guildmark.character.ritual"), null) { accept() }
         else if (offering) {
@@ -322,6 +410,10 @@ class DialogueScreen(private val data: OpenCharacterPayload) : Screen(Component.
         StoryCharacter.IDRIS -> 0.85f
         StoryCharacter.CORRA -> 0.95f
         StoryCharacter.ODILE -> 1.1f
+        StoryCharacter.BRAM -> 0.74f
+        StoryCharacter.YSOLDE -> 1.15f
+        StoryCharacter.KESTREL -> 1.06f
+        StoryCharacter.LUCAN -> 0.95f
         null -> 1f
     }
 

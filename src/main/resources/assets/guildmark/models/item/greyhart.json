@@ -1,0 +1,76 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "guildmark:item/greyhart"
+  },
+  "display": {
+    "thirdperson_righthand": {
+      "rotation": [
+        0.0,
+        -90.0,
+        54.256
+      ],
+      "translation": [
+        0.0,
+        6.029,
+        0.05
+      ],
+      "scale": [
+        1.2428,
+        1.2428,
+        0.85
+      ]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [
+        0.0,
+        90.0,
+        -54.256
+      ],
+      "translation": [
+        0.0,
+        6.029,
+        0.05
+      ],
+      "scale": [
+        1.2428,
+        1.2428,
+        0.85
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0.0,
+        -90.0,
+        24.256
+      ],
+      "translation": [
+        1.13,
+        4.785,
+        1.63
+      ],
+      "scale": [
+        0.9942,
+        0.9942,
+        0.68
+      ]
+    },
+    "firstperson_lefthand": {
+      "rotation": [
+        0.0,
+        90.0,
+        -24.256
+      ],
+      "translation": [
+        1.13,
+        4.785,
+        1.63
+      ],
+      "scale": [
+        0.9942,
+        0.9942,
+        0.68
+      ]
+    }
+  }
+}

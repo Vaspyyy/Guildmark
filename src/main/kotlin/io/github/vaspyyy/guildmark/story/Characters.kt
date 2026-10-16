@@ -6,6 +6,8 @@ import com.mojang.serialization.Codec
 import com.mojang.serialization.codecs.RecordCodecBuilder
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.block.VillageBoards
+import io.github.vaspyyy.guildmark.companion.CompanionEntity
+import io.github.vaspyyy.guildmark.companion.Companions
 import io.github.vaspyyy.guildmark.faction.Factions
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import io.github.vaspyyy.guildmark.guild.GuildNews
@@ -238,8 +240,9 @@ class Characters(val placements: MutableList<Placement> = mutableListOf()) : Sav
         /** The player said yes to the next chapter of [villager]'s story. */
         fun accept(player: Player, entityId: Int) {
             val level = player.level() as? ServerLevel ?: return
-            // The faction leaders are townsfolk at their seats
+            // The faction leaders are townsfolk at their seats, and the companions their own kind
             (level.getEntity(entityId) as? Townsperson)?.let { return Factions.accept(player, it) }
+            (level.getEntity(entityId) as? CompanionEntity)?.let { return Companions.accept(player, it) }
             val villager = level.getEntity(entityId) as? StoryNpc ?: return
             val character = StoryCharacter.byId(villager.character) ?: return
             if (player.distanceTo(villager) > INTERACT_RANGE) return
@@ -262,6 +265,7 @@ class Characters(val placements: MutableList<Placement> = mutableListOf()) : Sav
             when (val entity = player.level().getEntity(entityId)) {
                 is StoryNpc -> entity.stopListening(player)
                 is Townsperson -> Factions.endTalk(player, entityId)
+                is CompanionEntity -> if (entity.ownerId == player.uuid) Companions.endTalk(entity)
             }
         }
 
@@ -269,6 +273,8 @@ class Characters(val placements: MutableList<Placement> = mutableListOf()) : Sav
         fun onChapterDone(level: ServerLevel, player: Player, character: StoryCharacter, step: Int) {
             // A faction leader's chapters are the faction's questline, kept with the player's standing in it
             character.faction?.let { return Factions.onChapterDone(level, player, it, step) }
+            // A companion's are their loyalty questline
+            character.companion?.let { return Companions.onChapterDone(level, player, it, step) }
             val chapters = maxOf(chapters(player, character), step + 1)
             player.setData(ModAttachments.STORY, player.getData(ModAttachments.STORY) + (character.id to chapters))
             if (chapters < character.steps.size) {
@@ -296,6 +302,8 @@ class Characters(val placements: MutableList<Placement> = mutableListOf()) : Sav
                 StoryCharacter.PIP -> ItemStack(Items.WRITABLE_BOOK)
                 // The leaders' gifts are the factions' own (see Factions)
                 StoryCharacter.IDRIS, StoryCharacter.CORRA, StoryCharacter.ODILE -> ItemStack(Items.AMETHYST_SHARD)
+                // As are the companions' (see Companions)
+                StoryCharacter.BRAM, StoryCharacter.YSOLDE, StoryCharacter.KESTREL, StoryCharacter.LUCAN -> ItemStack(Items.AMETHYST_SHARD)
             }
             stack.set(DataComponents.CUSTOM_NAME, character.line("gift"))
             stack.set(DataComponents.LORE, ItemLore(listOf(character.line("gift.lore"))))

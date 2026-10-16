@@ -2,6 +2,8 @@ package io.github.vaspyyy.guildmark.faction
 
 import io.github.vaspyyy.guildmark.block.VillageBoards
 import io.github.vaspyyy.guildmark.combat.Combat
+import io.github.vaspyyy.guildmark.companion.Companions
+import io.github.vaspyyy.guildmark.companion.Deed
 import io.github.vaspyyy.guildmark.progression.Bonus
 import io.github.vaspyyy.guildmark.progression.Skill
 import io.github.vaspyyy.guildmark.progression.Skills
@@ -95,6 +97,7 @@ object Pickpocket {
         player.sendOverlayMessage(Component.translatable("message.guildmark.pickpocket_lifted", victim.displayName))
         Skills.gain(player, Skill.STEALTH, 4.0 + marks * 0.3)
         Trials.onPurse(player, victim)
+        Companions.deed(player, Deed.THEFT)
     }
 
     private fun caught(level: ServerLevel, player: Player, victim: Townsperson) {

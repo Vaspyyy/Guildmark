@@ -83,7 +83,8 @@ class LanternWisp : ThrowableItemProjectile {
         val level = level() as? ServerLevel ?: return
         val struck = (hit as? EntityHitResult)?.entity as? LivingEntity
         if (struck != null) {
-            val owner = owner as? LivingEntity
+            // getOwner(): inside a projectile, plain owner is the EntityReference field rather than the rider
+            val owner = getOwner() as? LivingEntity
             val damage = (owner?.getAttributeValue(Attributes.ATTACK_DAMAGE)?.toFloat() ?: 9f) * DAMAGE
             if (struck.hurtServer(level, damageSources().mobProjectile(this, owner), damage)) {
                 struck.addEffect(MobEffectInstance(MobEffects.SLOWNESS, 60, 1), owner ?: this)

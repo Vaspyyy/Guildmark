@@ -83,7 +83,8 @@ class DragonFireball : ThrowableProjectile {
 
     /** Bursts at [at]: [struck] takes the bolt full on, anyone near takes the splash, and the ground there burns. */
     private fun burst(level: ServerLevel, at: Vec3, struck: LivingEntity?) {
-        val dragon = owner as? Dragon
+        // getOwner(): inside a projectile, plain owner is the EntityReference field rather than the dragon
+        val dragon = getOwner() as? Dragon
         val damage = dragon?.getAttributeValue(Attributes.ATTACK_DAMAGE)?.toFloat() ?: FALLBACK_DAMAGE
         if (struck != null && struck.isAlive && scorches(dragon, struck)) burn(level, dragon, struck, damage * DIRECT)
         for (victim in level.getEntitiesOfClass(LivingEntity::class.java, AABB(at, at).inflate(SPLASH))) {

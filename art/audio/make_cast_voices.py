@@ -1,12 +1,15 @@
-"""The named characters' voices: Wren, Tobin, Ilsa, Pip and Maren, and the three faction leaders (Idris Vael,
-Corra Wystan and Odile Fenn), read by Kokoro TTS, each in their own voice, then given a light touch of
-processing (a room around them, a little age for Tobin and Idris, a chapel for Ilsa, a ghost's chill for Maren, a
-library, a barracks and an attic for the leaders).
+"""The named characters' voices: Wren, Tobin, Ilsa, Pip and Maren, the three faction leaders (Idris Vael,
+Corra Wystan and Odile Fenn) and the four companions (Bram, Ysolde, Kestrel and Lucan), read by Kokoro TTS, each in
+their own voice, then given a light touch of processing (a room around them, a little age for Tobin and Idris, a
+chapel for Ilsa, a ghost's chill for Maren, a library, a barracks and an attic for the leaders, and for the companions,
+who talk beside the player on the road, hardly any room at all).
 
 The words come straight from the language file, so a voice always says what the dialogue shows. Every
 line the dialogue screen speaks is voiced: the introductions, each chapter's request, the "still
 waiting" and "all done" lines, the goodbyes when a story ends, the topics, Maren's scenes, and a leader's
-"work" offer, the grumble when woken, and the words for a rival or an expelled member.
+"work" offer, the grumble when woken, and the words for a rival or an expelled member. A companion speaks every
+line they have but the written notes: meeting, joining, waiting and parting, their stories, gifts, how the two
+of you stand, and every bark they call out on the road.
 
 Stages (run from the repo root):
 
@@ -48,6 +51,12 @@ CAST = {
     "idris": dict(voice="bm_daniel*0.6+am_echo*0.4", speed=0.8, lang="en-gb"),  # old, dry, slow
     "corra": dict(voice="bf_isabella*0.7+bm_george*0.3", speed=1.0, lang="en-gb"),  # low and firm
     "odile": dict(voice="bf_alice*0.55+af_nicole*0.45", speed=0.92, lang="en-gb"),  # silky, close, unhurried
+    # The companions' blends are theirs alone too: no other line in the game is read with them. Kestrel is read with
+    # American phonemes, which the American women's voices come out best with
+    "bram": dict(voice="bm_lewis*0.4+am_fenrir*0.35+bm_fable*0.25", speed=0.78, lang="en-gb"),  # deep, gravelly, unhurried
+    "ysolde": dict(voice="bf_lily*0.5+af_bella*0.25+af_aoede*0.25", speed=0.92, lang="en-gb"),  # soft, warm, quick to smile
+    "kestrel": dict(voice="af_nicole*0.25+af_aoede*0.4+af_jessica*0.35", speed=1.15, lang="en-us"),  # bright, quick, husky
+    "lucan": dict(voice="bm_fable*0.5+am_eric*0.5", speed=1.2, lang="en-gb"),  # young, quick, well-spoken, nervous
 }
 
 # Processing per character: pitch shift in cents (duration kept), room (rt60 s, wet), grit, ghost. Optional:
@@ -69,11 +78,37 @@ STYLE = {
     "odile": dict(pitch=-100, rt60=0.28, wet=0.05, grit=0.0, ghost=False, predelay=0.006, early_span=0.02,
                   hf_damp=0.65, eq=[("lowshelf", 180, 0.7, 2.0), ("peak", 3000, 0.9, -1.5),
                                     ("highshelf", 7000, 0.7, -2.0)]),
+    # The companions walk beside the player: dry and close, no hall, a little air round them
+    # Bram: down 2.5 semitones for his weight and a little grit in his voice, a camp by the road at night (hardly a room,
+    # the open air about him)
+    "bram": dict(pitch=-250, rt60=0.4, wet=0.035, grit=0.28, ghost=False, predelay=0.004, early_span=0.014,
+                 hf_damp=0.3, eq=[("lowshelf", 160, 0.7, 2.5)]),
+    # Ysolde: close and light, a little warmth in the low mids
+    "ysolde": dict(pitch=0, rt60=0.25, wet=0.04, grit=0.0, ghost=False, predelay=0.004, early_span=0.012,
+                   hf_damp=0.4, eq=[("lowshelf", 200, 0.7, 1.5)]),
+    # Kestrel: up 2.5 semitones for her brightness, a touch of edge (a little grit and some air on top)
+    "kestrel": dict(pitch=250, rt60=0.25, wet=0.04, grit=0.07, ghost=False, predelay=0.004, early_span=0.012,
+                    hf_damp=0.3, eq=[("highshelf", 6500, 0.7, 1.5)]),
+    # Lucan: up 2 semitones, close and clear
+    "lucan": dict(pitch=200, rt60=0.25, wet=0.04, grit=0.0, ghost=False, predelay=0.004, early_span=0.012,
+                  hf_damp=0.3, eq=[("highshelf", 7000, 0.7, 1.0)]),
 }
 
-# The lines the dialogue screen speaks (step0..2.note and the like are written, never spoken; "gated" has a %s in it
-# and is not voiced either)
+# The lines the dialogue screen speaks (step0..2.note and the like are written, never spoken; the leaders' "gated" has a
+# %s in it and is not voiced either)
 VOICED = re.compile(r"^(intro|step\d|waiting|done|finale|work|woken|rival|expelled|scene\d\.p\d|topic\.[a-z_]+\.\d)$")
+
+# A companion speaks more: everything that is not a written note (the epithet, the .note lines and the topics'
+# questions, which the player says), their "gated" line included (it has no %s: it is theirs alone), and every bark
+COMPANIONS = {"bram", "ysolde", "kestrel", "lucan"}
+COMPANION_VOICED = re.compile(r"^(meet|join|decline|hello\.\d|follow|wait|part|rejoin|step\d\.done|gated|standing\.\d|"
+                              r"gift|gift_again|leave|cold|return|bark\.[a-z_.\d]+)$")
+
+
+def voiced(cid, key):
+    """is this line of this character spoken? VOICED says so for everyone; for a companion COMPANION_VOICED does too (the
+    same key names mean other things for the others: a Wren's "gift" is the name of an item, not speech)"""
+    return bool(VOICED.match(key) or (cid in COMPANIONS and COMPANION_VOICED.match(key)))
 
 # Spelling the TTS reads better than the written text
 SAY_AS = {
@@ -84,6 +119,17 @@ SAY_AS = {
     "Mm,": "Hmmm,",
     "Idris": "Ydris",  # otherwise "Eye-dris"
     "Odile": "Odeel",  # otherwise "Oh-dyle"
+    "Ysolde": "Is-olda",  # otherwise "Uh-sold"
+    "and wound the haft": "and wownd the haft",  # otherwise "wound" is the wound that bleeds
+    "and read me his notes": "and red me his notes",  # otherwise the present tense, "reed"
+    "I used to hate": "I yoost to hate",  # otherwise "used" is the verb, "yoozd"
+    "He used to say": "He yoost to say",
+    "get used to presents": "get yoost to presents",
+    "Ow. Ow ow. Down.": "Ouw. Ouw ouw. Down.",  # otherwise "Oh. Oh oh."
+    "The rich can spare it.": "The rich can spare it",  # a full stop there runs it together: "conspire it"
+    "Woodsmoke and wet": "Woodsmoke, and wet",  # otherwise "wood-smokin'"
+    "You're hurt! Stand still and": "You are hurt! Stand still, and",  # otherwise "your heart stands"
+    "You're back! Light be": "You are back! Light be",  # otherwise "your back might be"
     "lecterns": "lec-terns",  # otherwise "lectins"
     "Hearthsworn": "Hearth-sworn",  # otherwise the TH and the S run together ("Hathsworn")
     "Commander": "Commarnder",  # otherwise an American "a"
@@ -106,7 +152,8 @@ def lines(only=None, keys=None):
             continue
         prefix = f"character.guildmark.{cid}."
         out[cid] = {k[len(prefix):]: v for k, v in data.items()
-                    if k.startswith(prefix) and VOICED.match(k[len(prefix):]) and (not keys or re.search(keys, k[len(prefix):]))}
+                    if k.startswith(prefix) and voiced(cid, k[len(prefix):])
+                    and (not keys or re.search(keys, k[len(prefix):]))}
     return out
 
 

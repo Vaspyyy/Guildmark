@@ -1,0 +1,6 @@
+{
+  "parent": "guildmark:item/thornwood_bow",
+  "textures": {
+    "layer0": "guildmark:item/thornwood_bow_pulling_1"
+  }
+}

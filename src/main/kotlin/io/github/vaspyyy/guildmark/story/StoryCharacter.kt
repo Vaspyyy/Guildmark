@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.story
 
+import io.github.vaspyyy.guildmark.companion.CompanionKind
 import io.github.vaspyyy.guildmark.faction.Faction
 import io.github.vaspyyy.guildmark.quest.QuestNote
 import io.github.vaspyyy.guildmark.quest.QuestType
@@ -16,7 +17,8 @@ data class StoryStep(val type: QuestType, val target: String, val count: Int, va
  * The named characters of the world. Wren, Tobin, Ilsa and Pip each turn up in a village that knows the
  * adventurer, tell a story over three jobs, and hand over a piece of the world's lore when it ends.
  * Maren only appears in the main story. Idris, Corra and Odile lead the factions (see [Faction]): they
- * keep their seat in a capital, and their chapters are the factions' questlines. Their words live in the
+ * keep their seat in a capital, and their chapters are the factions' questlines. Bram, Ysolde, Kestrel and Lucan
+ * are the companions (see [CompanionKind]), whose chapters are their loyalty questlines. Their words live in the
  * language file under character.guildmark.<id>.*.
  */
 enum class StoryCharacter(
@@ -100,6 +102,46 @@ enum class StoryCharacter(
             StoryStep(QuestType.TRIAL, "guildmark:heist_vault", 1, 70, 4),
         ),
     ),
+
+    // The companions, who travel with the player (see CompanionKind): their chapters are their loyalty questlines,
+    // opened by trust rather than rank, so a chapter's rank only rates and pays it
+
+    /** Bram Hale, the last of the Greyhart Company. */
+    BRAM(
+        "bram", "Bram Hale", Int.MAX_VALUE, 0xA8A39A, listOf(),
+        listOf(
+            StoryStep(QuestType.HUNT, "pillager", 8, 15, 1),
+            StoryStep(QuestType.LAIR, "guildmark:turncoat_camp", 1, 30, 2),
+            StoryStep(QuestType.HUNT, "guildmark:hill_troll", 1, 45, 3),
+        ),
+    ),
+    /** Ysolde Marsh, a pilgrim of the Lamplighters. */
+    YSOLDE(
+        "ysolde", "Ysolde Marsh", Int.MAX_VALUE, 0xE8B866, listOf(),
+        listOf(
+            StoryStep(QuestType.HUNT, "guildmark:hollow_soldier", 8, 15, 1),
+            StoryStep(QuestType.TRIAL, "guildmark:kindle", 3, 25, 2),
+            StoryStep(QuestType.LAIR, "guildmark:wardens_watch", 1, 45, 3),
+        ),
+    ),
+    /** Kestrel Vey, a ranger out of the Thornwood. */
+    KESTREL(
+        "kestrel", "Kestrel Vey", Int.MAX_VALUE, 0x6FA05A, listOf(),
+        listOf(
+            StoryStep(QuestType.LAIR, "guildmark:spider_den", 1, 15, 1),
+            StoryStep(QuestType.TRIAL, "guildmark:dusk_rider", 1, 35, 3),
+            StoryStep(QuestType.HUNT, "guildmark:dragon", 1, 60, 4),
+        ),
+    ),
+    /** Lucan Dray, thrown out of the Starwatch. */
+    LUCAN(
+        "lucan", "Lucan Dray", Int.MAX_VALUE, 0x8FA8D8, listOf(),
+        listOf(
+            StoryStep(QuestType.HUNT, "enderman", 3, 15, 1),
+            StoryStep(QuestType.LAIR, "guildmark:witch_hollow", 1, 30, 3),
+            StoryStep(QuestType.LAIR, "guildmark:ashe_archive", 1, 50, 4),
+        ),
+    ),
     ;
 
     /** Has a story of jobs to give, rather than only scenes in the main quest. */
@@ -107,6 +149,9 @@ enum class StoryCharacter(
 
     /** The faction they lead, if they lead one. */
     val faction: Faction? get() = Faction.ledBy(this)
+
+    /** The companion they are, if they travel with the player. */
+    val companion: CompanionKind? get() = CompanionKind.of(this)
 
     /**
      * What the player can ask them about. The question is character.guildmark.<id>.topic.<name> and the
@@ -121,6 +166,10 @@ enum class StoryCharacter(
         IDRIS -> listOf("starwatch", "omens")
         CORRA -> listOf("oath", "wardens")
         ODILE -> listOf("hand", "widow")
+        BRAM -> listOf("greyharts", "coin")
+        YSOLDE -> listOf("lamplighters", "shrine")
+        KESTREL -> listOf("thornwood", "rider")
+        LUCAN -> listOf("starwatch", "marrow")
     }
 
     val title: Component get() = Component.literal(displayName).withColor(color)

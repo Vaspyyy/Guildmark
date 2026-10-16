@@ -1,5 +1,7 @@
 package io.github.vaspyyy.guildmark.faction
 
+import io.github.vaspyyy.guildmark.companion.Companions
+import io.github.vaspyyy.guildmark.companion.Deed
 import io.github.vaspyyy.guildmark.progression.Bonus
 import io.github.vaspyyy.guildmark.progression.Talents
 import io.github.vaspyyy.guildmark.quest.ContractState
@@ -110,6 +112,9 @@ object Heists {
         private var shown = -1
         private var shownBy = -1
 
+        /** The job is under way about the player: they're at the building, and its watchers are posted. */
+        val underWay: Boolean get() = watchers.isNotEmpty()
+
         override fun tick(level: ServerLevel, stack: ItemStack, note: QuestNote, state: ContractState): Boolean {
             val site = site ?: FactionSeats.site(level, heist, state.destination ?: state.boardPos)?.also { site = it } ?: return true
             if (state.progress >= note.count) return true
@@ -143,6 +148,7 @@ object Heists {
                 return false
             }
             if (taken && suspecting.isEmpty() && !AABB.of(site.box).inflate(CLEAR).contains(player.position())) {
+                Companions.deed(player, Deed.HEIST)
                 Trials.complete(player, stack)
                 return false
             }

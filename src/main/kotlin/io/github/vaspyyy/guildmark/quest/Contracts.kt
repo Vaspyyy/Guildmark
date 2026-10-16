@@ -1,6 +1,8 @@
 package io.github.vaspyyy.guildmark.quest
 
 import io.github.vaspyyy.guildmark.GuildmarkConfig
+import io.github.vaspyyy.guildmark.companion.Companions
+import io.github.vaspyyy.guildmark.companion.Deed
 import io.github.vaspyyy.guildmark.enemy.HollowSoldier
 import io.github.vaspyyy.guildmark.faction.Factions
 import io.github.vaspyyy.guildmark.faction.SwornKnight
@@ -239,6 +241,8 @@ object Contracts {
         if (note.type == QuestType.TRIAL) Trials.finish(serverLevel, player, note)
         if (chapter != null) Characters.onChapterDone(serverLevel, player, chapter.first, chapter.second)
         else if (owner != null) Factions.onWorkDone(serverLevel, player, owner)
+        // Honest work, seen done (a companion's own chapter is thanks enough)
+        if (owner?.companion == null) Companions.deed(player, Deed.CONTRACT)
         if (origin != null) Standing.add(serverLevel, origin, player, note.reward)
         // Deliveries and escorts also make a name with the village at the other end of the road
         if (note.type.needsRoad) Standing.add(serverLevel, pos, player, note.reward / 2)

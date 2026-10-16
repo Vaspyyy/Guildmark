@@ -31,6 +31,8 @@ enum class LairTheme(
     val ownBoss: Boolean = false,
     /** How the lair is dug as a dungeon underground; null keeps it a ring on the surface. */
     val style: DungeonStyle? = null,
+    /** Only ever built for a character's chapter that names it, never for a lair hunt off a board. */
+    val storyOnly: Boolean = false,
 ) {
     SPIDER_DEN("spider_den", 0, { Blocks.COARSE_DIRT }, { Blocks.MOSSY_COBBLESTONE }, { Blocks.COBWEB },
         listOf("spider", "cave_spider"), "spider", BuiltInLootTables.SIMPLE_DUNGEON, style = DungeonStyle.CAVE),
@@ -49,7 +51,13 @@ enum class LairTheme(
     SUNKEN_SHRINE("sunken_shrine", 4, { Blocks.PRISMARINE_BRICKS }, { Blocks.DARK_PRISMARINE }, { Blocks.SEA_LANTERN },
         listOf("drowned", "drowned", "zombie"), "drowned", BuiltInLootTables.UNDERWATER_RUIN_BIG, vaultOnly = true, style = DungeonStyle.SHRINE),
     RIME_VAULT("rime_vault", 5, { Blocks.PACKED_ICE }, { Blocks.BLUE_ICE }, { Blocks.POWDER_SNOW },
-        listOf("stray", "stray", "skeleton"), "stray", BuiltInLootTables.IGLOO_CHEST, vaultOnly = true, style = DungeonStyle.RIME);
+        listOf("stray", "stray", "skeleton"), "stray", BuiltInLootTables.IGLOO_CHEST, vaultOnly = true, style = DungeonStyle.RIME),
+    /** Harl Voss's camp, for Bram's second chapter: the raiders he rides with, and the turncoat himself. */
+    TURNCOAT_CAMP("turncoat_camp", 2, { Blocks.COARSE_DIRT }, { Blocks.SPRUCE_LOG }, { Blocks.CAMPFIRE },
+        listOf("pillager", "vindicator", "pillager"), "vindicator", BuiltInLootTables.PILLAGER_OUTPOST, storyOnly = true),
+    /** The Ashe Archive, for Lucan's last chapter: an old Starwatch archive under Corvin Ashe, who stole his notebook. */
+    ASHE_ARCHIVE("ashe_archive", 4, { Blocks.POLISHED_DEEPSLATE }, { Blocks.DEEPSLATE_BRICKS }, { Blocks.SOUL_LANTERN },
+        listOf("vindicator", "witch", "skeleton"), "evoker", BuiltInLootTables.STRONGHOLD_LIBRARY, storyOnly = true, style = DungeonStyle.CRYPT);
 
     val title: Component get() = Component.translatable("lair.guildmark.$id")
     val bossTitle: Component get() = Component.translatable("lair.guildmark.$id.boss")
@@ -61,11 +69,11 @@ enum class LairTheme(
 
     companion object {
         /** The nastiest theme open at [rank]; lair notes from before themes were picked per note use this. */
-        fun forRank(rank: Int): LairTheme = entries.filter { !it.vaultOnly && it.minRank <= rank }.maxBy { it.minRank }
+        fun forRank(rank: Int): LairTheme = entries.filter { !it.vaultOnly && !it.storyOnly && it.minRank <= rank }.maxBy { it.minRank }
 
         /** One of the four nastiest themes open at [rank], so lair hunts of the same rank vary. */
         fun pick(random: RandomSource, rank: Int): LairTheme {
-            val open = entries.filter { !it.vaultOnly && it.minRank <= rank }.sortedByDescending { it.minRank }.take(4)
+            val open = entries.filter { !it.vaultOnly && !it.storyOnly && it.minRank <= rank }.sortedByDescending { it.minRank }.take(4)
             return open[random.nextInt(open.size)]
         }
 

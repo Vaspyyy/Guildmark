@@ -5,6 +5,7 @@ import io.github.vaspyyy.guildmark.ambience.District
 import io.github.vaspyyy.guildmark.city.plan.CityPlan
 import io.github.vaspyyy.guildmark.city.plan.Kind
 import io.github.vaspyyy.guildmark.city.plan.Use
+import io.github.vaspyyy.guildmark.companion.Companions
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.level.Level
@@ -61,6 +62,8 @@ object CapitalVisits {
         val town = capital?.takeIf { it.inTown(pos.x, pos.z) }
         val now = Pair(town != null, town?.let { districtAt(it, pos) } ?: District.NONE)
         if (now == visit.told) return
+        // In through the gates: whoever travels with the player has a word about the place
+        if (now.first && visit.told?.first != true) Companions.onCapital(player)
         visit.told = now
         CityDistricts.tell(player, now.first, now.second)
     }

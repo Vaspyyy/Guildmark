@@ -135,6 +135,42 @@ object BossAbilities {
                 level.sendParticles(ParticleTypes.SPLASH, boss.x, boss.y + 1.0, boss.z, 60, 3.0, 0.5, 3.0, 0.1)
                 level.playSound(null, boss.blockPosition(), SoundEvents.ELDER_GUARDIAN_CURSE, SoundSource.HOSTILE, 0.8f, 1.2f)
             }
+            LairTheme.TURNCOAT_CAMP -> {
+                // Harl fights like the shield-brother he was: guard up while his raiders are called in on the one
+                // he's after, or a firepot flung at their feet
+                if (level.random.nextBoolean()) {
+                    boss.addEffect(MobEffectInstance(MobEffects.RESISTANCE, 20 * 3, 1))
+                    for (minion in level.getEntitiesOfClass(Mob::class.java, boss.boundingBox.inflate(16.0)) { it != boss && it is net.minecraft.world.entity.monster.illager.AbstractIllager }) {
+                        minion.addEffect(MobEffectInstance(MobEffects.SPEED, 20 * 5, 0))
+                        minion.target = target
+                    }
+                    level.playSound(null, boss.blockPosition(), SoundEvents.SHIELD_BLOCK.value(), SoundSource.HOSTILE, 1.4f, 0.7f)
+                    level.playSound(null, boss.blockPosition(), SoundEvents.VINDICATOR_CELEBRATE, SoundSource.HOSTILE, 1.4f, 0.8f)
+                } else {
+                    val from = boss.eyePosition
+                    val to = target.position().add(0.0, 0.3, 0.0)
+                    for (i in 1..8) {
+                        val k = i / 8.0
+                        val p = from.lerp(to, k).add(0.0, sin(k * Math.PI) * 1.5, 0.0)
+                        level.sendParticles(ParticleTypes.SMOKE, p.x, p.y, p.z, 2, 0.05, 0.05, 0.05, 0.0)
+                    }
+                    level.sendParticles(ParticleTypes.FLAME, to.x, to.y, to.z, 30, 0.8, 0.2, 0.8, 0.04)
+                    level.sendParticles(ParticleTypes.LARGE_SMOKE, to.x, to.y + 0.4, to.z, 8, 0.6, 0.3, 0.6, 0.02)
+                    for (player in players) if (player.distanceToSqr(to) < 4.0) player.igniteForSeconds(4f)
+                    level.playSound(null, target.blockPosition(), SoundEvents.FIRECHARGE_USE, SoundSource.HOSTILE, 1.4f, 0.8f)
+                }
+            }
+            LairTheme.ASHE_ARCHIVE -> {
+                // Corvin reads from a stolen page: loose pages whirl up round whoever he's after and their sight
+                // goes dark, and he's gone between the shelves
+                level.sendParticles(ParticleTypes.ENCHANT, target.x, target.y + 1.2, target.z, 60, 0.8, 0.8, 0.8, 0.6)
+                target.addEffect(MobEffectInstance(MobEffects.DARKNESS, 20 * 4, 0))
+                target.addEffect(MobEffectInstance(MobEffects.SLOWNESS, 20 * 2, 0))
+                level.sendParticles(ParticleTypes.SOUL, boss.x, boss.y + 1.0, boss.z, 16, 0.3, 0.6, 0.3, 0.02)
+                blink(level, boss, hall)
+                level.playSound(null, target.blockPosition(), SoundEvents.BOOK_PAGE_TURN, SoundSource.HOSTILE, 1.6f, 0.6f)
+                level.playSound(null, boss.blockPosition(), SoundEvents.ILLUSIONER_MIRROR_MOVE, SoundSource.HOSTILE, 1.2f, 0.9f)
+            }
             LairTheme.RIME_VAULT -> {
                 // A frost nova: everyone close freezes up
                 for (player in players) {
