@@ -1,6 +1,10 @@
 package io.github.vaspyyy.guildmark.quest
 
 import io.github.vaspyyy.guildmark.GuildmarkConfig
+import io.github.vaspyyy.guildmark.enemy.HollowSoldier
+import io.github.vaspyyy.guildmark.faction.Factions
+import io.github.vaspyyy.guildmark.faction.SwornKnight
+import io.github.vaspyyy.guildmark.faction.Trials
 import io.github.vaspyyy.guildmark.village.Festivals
 import io.github.vaspyyy.guildmark.lair.LairTheme
 import io.github.vaspyyy.guildmark.party.Parties
@@ -103,6 +107,8 @@ object Contracts {
                 }
                 state = state.copy(destination = champion.blockPosition(), bound = champion.uuid, label = name)
             }
+            // A faction's own kind of job sets itself up (and may find it can't, with word why)
+            QuestType.TRIAL -> state = Trials.begin(level, player, note, state) ?: return null
             else -> {}
         }
 
@@ -157,8 +163,10 @@ object Contracts {
         val note = stack.get(ModDataComponents.QUEST_NOTE.get()) ?: return
         val state = stack.get(ModDataComponents.CONTRACT_STATE.get()) ?: return
         val chapter = StoryCharacter.parseChain(note.chain)
-        if (chapter != null && chapter.first != character) {
-            player.sendOverlayMessage(Component.translatable("message.guildmark.story_return", chapter.first.title))
+        // A character's chapters, and any other work they gave, go back to them
+        val owner = chapter?.first ?: StoryCharacter.ownerOf(note.chain)
+        if (owner != null && owner != character) {
+            player.sendOverlayMessage(Component.translatable("message.guildmark.story_return", owner.title))
             level.playSound(null, pos, SoundEvents.VILLAGER_NO, SoundSource.BLOCKS, 1.0f, 1.0f)
             return
         }
@@ -192,6 +200,8 @@ object Contracts {
             QuestType.FETCH -> takeFetchItems(player, note)
             QuestType.HUNT, QuestType.CLEAR, QuestType.CHAMPION, QuestType.LAIR -> state.progress >= note.count
             QuestType.DELIVER, QuestType.ESCORT -> true
+            // A stolen prize is handed over with the contract
+            QuestType.TRIAL -> state.progress >= note.count && Trials.handOver(player, note)
         }
         if (!done) {
             val have = if (note.type == QuestType.FETCH) countFetchItems(player, note) else state.progress
@@ -223,7 +233,9 @@ object Contracts {
             player.inventory.placeItemBackInInventory(Relics.cacheForRank(note.rank), Prediction.SERVER_ONLY)
             player.sendSystemMessage(Component.translatable("message.guildmark.cache_found"))
         }
+        if (note.type == QuestType.TRIAL) Trials.finish(serverLevel, player, note)
         if (chapter != null) Characters.onChapterDone(serverLevel, player, chapter.first, chapter.second)
+        else if (owner != null) Factions.onWorkDone(serverLevel, player, owner)
         if (origin != null) Standing.add(serverLevel, origin, player, note.reward)
         // Deliveries and escorts also make a name with the village at the other end of the road
         if (note.type.needsRoad) Standing.add(serverLevel, pos, player, note.reward / 2)
@@ -234,13 +246,33 @@ object Contracts {
     }
 
     private fun counts(note: QuestNote, state: ContractState, victim: LivingEntity): Boolean = when (note.type) {
-        QuestType.HUNT -> EntityType.getKey(victim.type) == note.target
+        // Any land's Hollow counts as a Hollow soldier (the wild lands have their own in its place); a knight never does
+        QuestType.HUNT -> EntityType.getKey(victim.type) == note.target ||
+            note.target == HOLLOW_SOLDIER && victim is HollowSoldier && victim !is SwornKnight
         QuestType.CLEAR -> victim.type.category == MobCategory.MONSTER &&
             victim.level().dimension() == state.dimension &&
             victim.blockPosition().closerThan(state.boardPos, QuestNote.CLEAR_RADIUS.toDouble())
         QuestType.CHAMPION -> victim.uuid == state.bound
-        // Lair bosses are credited to everyone nearby by onLairCleared instead
-        QuestType.FETCH, QuestType.DELIVER, QuestType.ESCORT, QuestType.LAIR -> false
+        // Lair bosses are credited to everyone nearby by onLairCleared instead, and faction jobs by their own rules
+        QuestType.FETCH, QuestType.DELIVER, QuestType.ESCORT, QuestType.LAIR, QuestType.TRIAL -> false
+    }
+
+    private val HOLLOW_SOLDIER = net.minecraft.resources.Identifier.fromNamespaceAndPath("guildmark", "hollow_soldier")
+
+    /** Sets the progress of the contract in [stack] to [progress] (a faction job's own count), and its tooltip with it. */
+    fun setProgress(stack: ItemStack, progress: Int) {
+        val note = stack.get(ModDataComponents.QUEST_NOTE.get()) ?: return
+        val state = stack.get(ModDataComponents.CONTRACT_STATE.get()) ?: return
+        val updated = state.copy(progress = progress.coerceIn(0, note.count))
+        stack.set(ModDataComponents.CONTRACT_STATE.get(), updated)
+        refreshLore(stack, note, updated)
+    }
+
+    /** Swaps the state of the contract in [stack] for [state] (a faction job's own), and its tooltip with it. */
+    fun setState(stack: ItemStack, state: ContractState) {
+        val note = stack.get(ModDataComponents.QUEST_NOTE.get()) ?: return
+        stack.set(ModDataComponents.CONTRACT_STATE.get(), state)
+        refreshLore(stack, note, state)
     }
 
     /** A lair fell: every hunter nearby holding its contract gets the job marked done. */
@@ -296,6 +328,7 @@ object Contracts {
             QuestType.LAIR -> if (destination != null) {
                 lines.add(Component.translatable("quest.guildmark.lair_at", destination.x, destination.z))
             }
+            QuestType.TRIAL -> lines.addAll(Trials.details(note, state))
             else -> {}
         }
         if (note.type == QuestType.ESCORT && state.label.isNotEmpty()) {

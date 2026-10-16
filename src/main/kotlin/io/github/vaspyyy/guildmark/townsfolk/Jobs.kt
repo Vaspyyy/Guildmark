@@ -26,7 +26,10 @@ object Jobs {
     const val RUN = 0.75
 
     fun next(p: Townsperson, phase: Phase): Task {
+        if (p.watcher) return Watch(p)
         if (p.crowd) return Leisure.next(p, crowd = true)
+        // The factions' own: the leaders at their post, the members at the faction's work in its seat
+        FactionWork.next(p, phase)?.let { return it }
         if (Schedule.sheltering(p, phase)) return shelter(p)
         return when (phase) {
             Phase.WAKE -> wake(p)
@@ -65,6 +68,8 @@ object Jobs {
         TownRole.BARD -> bard(p, evening = false)
         TownRole.PRIEST -> priest(p)
         TownRole.CITIZEN -> craft(p)
+        // Away from their seat, faction members have no trade to keep (FactionWork has them at it there)
+        TownRole.MAGE, TownRole.KNIGHT, TownRole.THIEF -> null
     }
 
     /** The block they work at: [Townsperson.work] if it still is one, else the nearest such block to home. */

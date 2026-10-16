@@ -1,8 +1,11 @@
 package io.github.vaspyyy.guildmark.progression
 
+import io.github.vaspyyy.guildmark.faction.Faction
+import io.github.vaspyyy.guildmark.faction.FactionState
+
 /**
- * Everything a player's stats, skill levels and learned nodes add up to, bonus by bonus. Worked out
- * from the synced data, so the client's copy matches the server's.
+ * Everything a player's stats, skill levels, learned nodes and faction ranks add up to, bonus by bonus.
+ * Worked out from the synced data, so the client's copy matches the server's.
  */
 class Build private constructor(
     private val totals: DoubleArray,
@@ -20,7 +23,7 @@ class Build private constructor(
     companion object {
         val EMPTY = Build(DoubleArray(Bonus.entries.size), DoubleArray(SkillGroup.entries.size), DoubleArray(Skill.entries.size))
 
-        fun of(skills: SkillState, sheet: CharacterSheet): Build {
+        fun of(skills: SkillState, sheet: CharacterSheet, factions: FactionState = FactionState()): Build {
             val totals = DoubleArray(Bonus.entries.size)
             val xpGroup = DoubleArray(SkillGroup.entries.size)
             val xpSkill = DoubleArray(Skill.entries.size)
@@ -35,6 +38,10 @@ class Build private constructor(
             for (effect in SkillTree.effects(sheet.nodes)) add(effect)
             for (skill in Skill.entries) add(skill.passiveAt(skills.level(skill)))
             for (stat in Stat.entries) for (effect in stat.effectsAt(sheet.stat(stat))) add(effect)
+            for (faction in Faction.entries) {
+                val rank = factions.rank(faction)
+                if (rank > 0) for ((bonus, amount) in faction.perks) totals[bonus.ordinal] += amount * rank
+            }
             return Build(totals, xpGroup, xpSkill)
         }
     }

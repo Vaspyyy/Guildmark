@@ -186,6 +186,8 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         // Dragons on the high peaks: the boss, its fire, its roosts and their hoards (dragon/)
         Dragons.register(modBus)
         Magic.register(modBus)
+        // The Starwatch, the Hearthsworn and the Quiet Hand: joining, ranks, questlines and their trials (faction/)
+        io.github.vaspyyy.guildmark.faction.Factions.register(modBus)
         // Which part of a capital each player is in, for the city sounds (city/CapitalVisits)
         CapitalVisits.register()
         // Capitals' sites worked out ahead of the players (city/Capitals)

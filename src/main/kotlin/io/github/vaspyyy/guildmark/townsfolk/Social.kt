@@ -1,5 +1,7 @@
 package io.github.vaspyyy.guildmark.townsfolk
 
+import io.github.vaspyyy.guildmark.faction.Faction
+import io.github.vaspyyy.guildmark.faction.Factions
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
@@ -34,13 +36,29 @@ object Lines {
         TownRole.FARMER -> pick(p, "farmer_", 3)
         TownRole.FISHER -> pick(p, "fisher_", 3)
         TownRole.CHILD -> pick(p, "child_", 6)
+        TownRole.MAGE -> pick(p, "mage_", 6)
+        TownRole.KNIGHT -> pick(p, "knight_", 6)
+        TownRole.THIEF -> pick(p, "thief_", 6)
         TownRole.CITIZEN -> null
     }
 
     /** What they say to a player who speaks to them. */
-    fun talk(p: Townsperson): String {
+    fun talk(p: Townsperson, player: Player? = null): String {
+        player?.let { kin(p, it) }?.let { return it }
         if (p.role == TownRole.CITIZEN && p.random.nextInt(3) == 0) return gossip(p)
         return trade(p)?.takeIf { p.random.nextInt(3) != 0 } ?: greet(p)
+    }
+
+    /**
+     * A faction member's word for [player]: warm to one of their own, cold to someone their faction threw out
+     * or who sides with its rival (the Starwatch is cold to nobody). Null for everyone else.
+     */
+    fun kin(p: Townsperson, player: Player): String? {
+        val faction = Faction.of(p.role) ?: return null
+        val state = Factions.state(player)
+        if (state.member(faction)) return pick(p, "${p.role.id}_kin_", 2)
+        val cold = state.isShut(faction) || faction.rival?.let { state.member(it) } == true
+        return if (cold && faction != Faction.STARWATCH) "${p.role.id}_cold_0" else null
     }
 
     fun gossip(p: Townsperson): String = if (p.role == TownRole.CHILD) pick(p, "child_", 6) else pick(p, "gossip_", 12)
@@ -70,7 +88,8 @@ object Social {
         greeted[player.uuid] = level.gameTime
         if (greeted.size > 256) greeted.clear()
         if (level.random.nextInt(3) == 0) return
-        val line = if (folk.routine.anchored || level.random.nextInt(3) == 0) Lines.trade(folk) ?: Lines.greet(folk) else Lines.greet(folk)
+        val line = Lines.kin(folk, player)?.takeIf { level.random.nextBoolean() }
+            ?: if (folk.routine.anchored || level.random.nextInt(3) == 0) Lines.trade(folk) ?: Lines.greet(folk) else Lines.greet(folk)
         if (!folk.say(line)) return
         val task = folk.routine.task
         if (task == null || task.leisure && !folk.routine.anchored) {
@@ -100,10 +119,10 @@ object Social {
         return Chat(p, partner, talking = true, length = turns, seated = seated)
     }
 
-    /** A bard playing within earshot, if there is one. */
+    /** A bard playing within earshot, or a mage of the Starwatch conjuring lights in the square, if there is one. */
     fun performingBard(p: Townsperson): Townsperson? =
         p.level().getEntitiesOfClass(Townsperson::class.java, p.boundingBox.inflate(16.0, 4.0, 16.0)) {
-            it.role == TownRole.BARD && it.activity == Activity.LUTE && it !== p
+            it !== p && (it.role == TownRole.BARD && it.activity == Activity.LUTE || it.role == TownRole.MAGE && it.activity == Activity.CONJURE)
         }.firstOrNull()
 
     /** The tavern [p] goes to of an evening: theirs if set, else where the nearest innkeeper keeps the bar. */

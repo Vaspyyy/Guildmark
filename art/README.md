@@ -23,10 +23,18 @@ and Kotlin model code always agree.
 - `scripts/fallen_warden.py` is Halvard, the Fallen Warden (boss, rendered at 1.5x), with a `cloak` and a
   `greatsword`. It writes two glow maps: `_glow` (phase one, the eye slit) and `_glow2` (phase two, eyes,
   armour cracks, chest sigil and sword runes). Cracks and runes are exact marker colours in the base texture.
-- `scripts/townsfolk.py` is the townsfolk of the capitals: one humanoid for all twelve roles (citizen, smith, baker,
-  merchant, guard, farmer, fisher, child, noble, innkeeper, bard, priest) carrying every look's pieces (hair, beards,
-  hats, helms, aprons, tabards, capes, skirts...) and the held props of `scripts/townsfolk_tools.py`; each of the 44
-  looks shows only its own pieces and has its own texture. Skirts, robes and coats are one shell split down the
+- `scripts/renegade.py` is Silvan Marrow, the Unbound (the renegade Starwatch mage, the questline's final boss): a
+  gaunt man in a tattered midnight-blue robe with a deep pointed `hood` on the head and a long `mantle` on the body whose
+  hem is torn into six strips (`hem_0` to `hem_5`); the humanoid parts keep their standard names, so the animation
+  clips drive him, and his staff is the held item. Box UV declared 128x64, painted and shipped at 256x128, with a
+  glow map for his eyes and the mantle's cracked star sigils. It writes the two textures, `client/model/RenegadeModel.kt`
+  (straight into the source tree; the mantle and its strips swing after `CombatAnimator`), `art/models/renegade.bbmodel`
+  and previews.
+- `scripts/townsfolk.py` is the townsfolk of the capitals: one humanoid for all fifteen roles (citizen, smith, baker,
+  merchant, guard, farmer, fisher, child, noble, innkeeper, bard, priest, and the factions' mage, knight, thief)
+  carrying every look's pieces (hair, beards, hats, helms, hoods, aprons, tabards, capes, skirts, scabbards...) and the
+  held props of `scripts/townsfolk_tools.py`; each of the 56 looks shows only its own pieces and has its own texture
+  (look 0 of mage, knight and thief is the faction leader, drawn closer up in `townsfolk_leaders.png`). Skirts, robes and coats are one shell split down the
   middle that rides the legs, their length painted. Textures are HD: box UV declared at 256x128, painted and shipped
   at 512x256, with one shared glow map (hot iron, lantern). It writes its Kotlin straight into `client/townsfolk/`:
   `TownsfolkMesh.kt` (the geometry) and `TownsfolkLooks.kt` (every look's texture, voice and pieces). Its previews
@@ -40,6 +48,12 @@ and Kotlin model code always agree.
   and item definitions already point at them. It replaces the old 16x scripts (`cache_art.py`, `flask_art.py`,
   `shard_art.py`, `rider_items.py`, `spawn_eggs.py`).
 - `scripts/wardfire_art.py` and `scripts/dungeon_art.py` paint the Wardfire and the mist gate at 32x too.
+- `scripts/faction_art.py` is the factions' other art: the sworn knight (`sworn_knight.png`, a living Hearthsworn knight
+  painted on the Hollow Soldier's own model and UV layout at the same 2x size), the 32x purse, the four heist prizes
+  (`item/heist/`, which `items/heist_prize.json` picks between by custom model data), the Starwatch staff, the Widow's
+  Kiss and Hearthbrand (staff and dagger on `weaponkit.py`'s layouts, the sword a vanilla-style handheld), and the
+  ward-light (`entity/ward_light.png`, a soft full-bright orb with a faint star cross, for a camera-facing quad). It
+  writes the textures, models and item definitions, and preview sheets.
 - `scripts/creature_hd.py` ships the older creatures at twice their declared size: the Hollow Soldier, the Hollow
   King, Halvard, the Hill Troll, the Dusk Rider and steed, the five named characters, the four rival guilds and the
   Guildmaster's villager coat. It remasters each 1x design one cube face at a time (read from the model scripts, so
@@ -70,7 +84,9 @@ python3 art/scripts/hollow_soldier.py src/main/resources/assets/guildmark <previ
 python3 art/scripts/fallen_warden.py src/main/resources/assets/guildmark <preview-dir> art/models
 python3 -B art/scripts/townsfolk.py src/main/resources/assets/guildmark <preview-dir> art/models
 python3 -B art/scripts/region_hollows.py src/main/resources/assets/guildmark <preview-dir> art/models
+python3 -B art/scripts/renegade.py src/main/resources/assets/guildmark <preview-dir> art/models
 python3 -B art/scripts/items_hd.py src/main/resources/assets/guildmark [preview-dir]
+python3 -B art/scripts/faction_art.py src/main/resources/assets/guildmark [preview-dir]
 python3 -B art/scripts/ui_hd.py src/main/resources/assets/guildmark [preview-dir]
 python3 -B art/scripts/creature_hd.py src/main/resources/assets/guildmark [preview-dir]
 python3 -B art/scripts/vanilla_hd.py <minecraft-26.3 jar> src/main/resources/resourcepacks/guildmark_hd [preview-dir]

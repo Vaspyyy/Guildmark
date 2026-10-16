@@ -77,6 +77,25 @@ object Schedule {
                 t < 12500 -> Phase.HOME
                 else -> Phase.SLEEP
             }
+            // The Quiet Hand keep a thief's hours: up late, dice in the attic, the taproom, then the night's work
+            TownRole.THIEF -> when {
+                t < 4000 -> Phase.SLEEP
+                t < 4500 -> Phase.WAKE
+                t < 11000 -> Phase.WORK
+                t < 15500 -> Phase.EVENING
+                t < 22000 -> Phase.FREE
+                t < 22500 -> Phase.HOME
+                else -> Phase.SLEEP
+            }
+            // The Starwatch read on into the night, when the sky shows, and nod off over their books before dawn
+            TownRole.MAGE -> when {
+                t < 1500 -> Phase.SLEEP
+                t < 2000 -> Phase.WAKE
+                t < 11500 -> Phase.WORK
+                t < 14500 -> Phase.EVENING
+                t < 20000 -> Phase.FREE
+                else -> Phase.SLEEP
+            }
             else -> when {
                 t >= 23500 || t < 1000 -> Phase.WAKE
                 t < 10000 -> Phase.WORK
@@ -130,7 +149,8 @@ class Routine(private val p: Townsperson) {
                 phase = now
                 if (!first) end()
             }
-            p.lantern = !p.isSleeping && Schedule.dark(p) && now != Phase.SLEEP &&
+            // Thieves keep to the dark, and the leaders to their post
+            p.lantern = !p.isSleeping && Schedule.dark(p) && now != Phase.SLEEP && p.role != TownRole.THIEF && !p.isLeader &&
                 (p.role == TownRole.GUARD || task !is Sit && task !is Work)
         }
         val other = p.attending

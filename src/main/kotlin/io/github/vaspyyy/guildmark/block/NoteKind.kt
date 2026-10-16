@@ -26,6 +26,8 @@ enum class NoteKind(private val id: String) : StringRepresentable {
             QuestType.ESCORT -> ESCORT
             QuestType.CHAMPION -> CHAMPION
             QuestType.LAIR -> LAIR
+            // Never posted on a board; drawn like a champion's notice if one ever is
+            QuestType.TRIAL -> CHAMPION
         }
     }
 }

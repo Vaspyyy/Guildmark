@@ -3,9 +3,12 @@ package io.github.vaspyyy.guildmark.client.ui
 import com.mojang.blaze3d.platform.InputConstants
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.client.combat.Cutscenes
+import io.github.vaspyyy.guildmark.faction.FactionWorkPayload
+import io.github.vaspyyy.guildmark.faction.Factions
 import io.github.vaspyyy.guildmark.network.AcceptChapterPayload
 import io.github.vaspyyy.guildmark.network.EndTalkPayload
 import io.github.vaspyyy.guildmark.network.OpenCharacterPayload
+import io.github.vaspyyy.guildmark.progression.AdventurerRank
 import io.github.vaspyyy.guildmark.registry.ModSounds
 import io.github.vaspyyy.guildmark.story.StoryCharacter
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -33,7 +36,9 @@ import kotlin.math.sin
  * the character's words type out in a panel at the foot of the screen, in their own voice where a
  * recording exists, and the player's answers come up beside it: take the job on offer, ask about
  * something, or say goodbye. Enter, Space or a click moves the talk on; the arrow keys, W and S, the
- * wheel or the number keys pick an answer.
+ * wheel or the number keys pick an answer. A faction's leader has more to say: a word if they were dozing, a
+ * warning about their rivals, a refusal if the player isn't rated high enough or has been thrown out, and work to
+ * give between chapters.
  */
 class DialogueScreen(private val data: OpenCharacterPayload) : Screen(Component.translatable("gui.guildmark.character")) {
 
@@ -52,7 +57,14 @@ class DialogueScreen(private val data: OpenCharacterPayload) : Screen(Component.
     private val scene get() = character != null && !character.givesJobs
     /** The scene where Maren waits at the throne for the shards. */
     private val ritual get() = scene && data.chapters == 1
-    private val offering get() = character != null && !scene && !finished && !data.carrying
+    /** A faction's leader, with their own say on the talk (data.flags: Factions.GATED and the rest). */
+    private val leads = character?.faction != null
+    private fun flag(bit: Int): Boolean = leads && data.flags and bit != 0
+    private val shut get() = flag(Factions.SHUT)
+    private val gated get() = flag(Factions.GATED)
+    private val offering get() = character != null && !scene && !finished && !data.carrying && !shut && !gated
+    /** The player has asked for work this talk (it's in their pack now). */
+    private var workTaken = false
 
     private var speeches: List<Speech> = emptyList()
     private var speech = 0
@@ -128,21 +140,41 @@ class DialogueScreen(private val data: OpenCharacterPayload) : Screen(Component.
     private fun opening(): List<Speech> {
         if (character == null) return emptyList()
         if (scene) return numbered("scene${data.chapters}", ".p").map(::line)
-        return when {
+        if (shut) return listOf(line("expelled"))
+        val woken = if (flag(Factions.WOKEN)) listOf(line("woken")) else emptyList()
+        val said = when {
             data.finale -> listOf(line("finale"))
             finished -> listOf(line("done"))
             data.carrying -> listOf(line("waiting"))
+            gated -> (if (data.chapters == 0) listOf(line("intro")) else emptyList()) + notYet(character)
             data.chapters == 0 -> listOf(line("intro"), line("step0"))
             else -> listOf(line("step${data.chapters}"))
         }
+        // Before a job against their rivals, a word to someone who runs with them
+        val rival = if (offering && flag(Factions.RIVAL)) listOf(line("rival")) else emptyList()
+        return woken + said + rival
+    }
+
+    /** A leader's chapter wants an adventurer rated higher: they say what rank. */
+    private fun notYet(c: StoryCharacter): Speech {
+        val needed = AdventurerRank.entries[(c.steps[data.chapters].rank - 1).coerceIn(0, AdventurerRank.entries.lastIndex)]
+        val id = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "voice.${c.id}.gated")
+        return Speech(
+            Component.translatable("character.guildmark.${c.id}.gated", needed.letter),
+            id.takeIf { minecraft.soundManager.getSoundEvent(it) != null },
+        )
     }
 
     private fun choices(): List<Choice> {
         val c = character ?: return emptyList()
         val list = ArrayList<Choice>()
         if (ritual) list += Choice(Component.translatable("gui.guildmark.character.ritual"), null) { accept() }
-        else if (offering) list += Choice(Component.translatable("gui.guildmark.character.accept"), null) { accept() }
-        for (topic in c.topics) list += Choice(c.line("topic.$topic"), topic) { ask(topic) }
+        else if (offering) {
+            val label = if (leads && data.chapters == 0) "gui.guildmark.character.join" else "gui.guildmark.character.accept"
+            list += Choice(Component.translatable(label), null) { accept() }
+        }
+        if (!shut) for (topic in c.topics) list += Choice(c.line("topic.$topic"), topic) { ask(topic) }
+        if (flag(Factions.WORK) && !workTaken) list += Choice(Component.translatable("gui.guildmark.character.work"), null) { work() }
         val leave = when {
             ritual -> "gui.guildmark.character.not_yet"
             offering -> "gui.guildmark.character.later"
@@ -160,6 +192,14 @@ class DialogueScreen(private val data: OpenCharacterPayload) : Screen(Component.
     private fun accept() {
         ClientPacketDistributor.sendToServer(AcceptChapterPayload(data.entityId))
         onClose()
+    }
+
+    /** A leader's work between chapters: they hand it over with a word, and the talk goes on. */
+    private fun work() {
+        workTaken = true
+        ClientPacketDistributor.sendToServer(FactionWorkPayload(data.entityId))
+        choices = choices()
+        say(listOf(line("work")))
     }
 
     private fun say(list: List<Speech>) {
@@ -279,6 +319,9 @@ class DialogueScreen(private val data: OpenCharacterPayload) : Screen(Component.
         StoryCharacter.ILSA -> 1.05f
         StoryCharacter.PIP -> 1.35f
         StoryCharacter.MAREN -> 0.9f
+        StoryCharacter.IDRIS -> 0.85f
+        StoryCharacter.CORRA -> 0.95f
+        StoryCharacter.ODILE -> 1.1f
         null -> 1f
     }
 

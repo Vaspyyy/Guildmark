@@ -2,6 +2,7 @@ package io.github.vaspyyy.guildmark.quest
 
 import com.mojang.serialization.Codec
 import com.mojang.serialization.codecs.RecordCodecBuilder
+import io.github.vaspyyy.guildmark.faction.Trials
 import io.github.vaspyyy.guildmark.lair.LairTheme
 import io.github.vaspyyy.guildmark.progression.AdventurerRank
 import net.minecraft.core.registries.BuiltInRegistries
@@ -38,6 +39,7 @@ data class QuestNote(
         QuestType.ESCORT -> Component.translatable("quest.guildmark.escort.title")
         QuestType.CHAMPION -> Component.translatable("quest.guildmark.champion.title", targetName())
         QuestType.LAIR -> Component.translatable("quest.guildmark.lair.title", LairTheme.of(target, rank).title)
+        QuestType.TRIAL -> Component.translatable("quest.guildmark.trial.${target.path}")
     }
 
     fun description(): Component = when (type) {
@@ -48,6 +50,7 @@ data class QuestNote(
         QuestType.ESCORT -> Component.translatable("quest.guildmark.escort.desc")
         QuestType.CHAMPION -> Component.translatable("quest.guildmark.champion.desc", targetName())
         QuestType.LAIR -> LairTheme.of(target, rank).let { Component.translatable("quest.guildmark.lair.desc", it.title, it.bossTitle) }
+        QuestType.TRIAL -> Trials.describe(this)
     }
 
     /** The flavour line; situational notes carry their arguments after the key, as "key|arg|arg". */
@@ -64,7 +67,7 @@ data class QuestNote(
     private fun targetName(): Component = when (type) {
         QuestType.FETCH -> ItemStack(BuiltInRegistries.ITEM.getValue(target)).hoverName
         QuestType.HUNT, QuestType.CHAMPION -> BuiltInRegistries.ENTITY_TYPE.getValue(target).description
-        QuestType.CLEAR, QuestType.DELIVER, QuestType.ESCORT, QuestType.LAIR -> Component.empty()
+        QuestType.CLEAR, QuestType.DELIVER, QuestType.ESCORT, QuestType.LAIR, QuestType.TRIAL -> Component.empty()
     }
 
     companion object {

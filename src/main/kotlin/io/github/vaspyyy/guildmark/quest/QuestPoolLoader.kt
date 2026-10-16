@@ -24,6 +24,8 @@ class QuestPoolLoader : SimpleJsonResourceReloadListener<QuestPool>(QuestPool.CO
         QuestType.FETCH -> BuiltInRegistries.ITEM.containsKey(entry.target)
         QuestType.HUNT, QuestType.CHAMPION -> BuiltInRegistries.ENTITY_TYPE.containsKey(entry.target)
         QuestType.CLEAR, QuestType.DELIVER, QuestType.ESCORT, QuestType.LAIR -> true
+        // Faction jobs are set up by the factions, never drawn from a pool
+        QuestType.TRIAL -> false
     }
 
     private companion object {

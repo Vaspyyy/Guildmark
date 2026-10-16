@@ -10,6 +10,10 @@ bard/tune1..4.ogg. --only takes event names such as smith.hammer, a group prefix
 (or bard.tune). --wav also writes 16-bit WAV copies for listening; --work is where the tunes' MIDI and
 FluidSynth renders go (default build/townsfolk_music_work).
 
+The members of the three factions have work sounds too: a scholar's mage.page, mage.quill and mage.conjure, a knight's
+knight.clash, knight.post and knight.whetstone, a thief's thief.shake, thief.dice, thief.coin and thief.lockpick
+(make_faction_audio.py makes the factions' own sounds).
+
 Everything is synthesised (numpy/scipy through sfxkit) or, for the tunes, composed here and played by
 FluidSynth's General MIDI nylon guitar. These are close-up sounds timed to the townsfolk's animations (the
 event fires on the tick the hammer meets the anvil), so each one is dry apart from a small room. They are not
@@ -181,6 +185,27 @@ def grains(dur, rng, count, start, spread, f_lo, f_hi, t60=(0.01, 0.03), amp_dec
                   [1, .6, .4][:len(partials)], rng, lo=600, hi=12000, ex_len=0.0006)
         m.add(nrm(p), tt, rng.uniform(0.3, 1.0) * np.exp(-(tt - start) / max(amp_decay, 1e-3)))
     return fit(m.out(), ns(dur))
+
+
+def coin(dur, rng, f0=3300.0, t60=0.25, bright=1.0, click=0.35):
+    """a coin struck: the modes of a thin metal disc (1, 1.73, 2.33, 3.91 and 5.95 times the lowest, the upper ones dying
+    first), each a close pair that beats (no coin is quite round), and the tick of the blow. t60 is how long the lowest
+    mode rings (a coin set on a stack is damped to a few hundredths of a second, one on stone rings for a quarter) and
+    bright the level of the upper modes"""
+    r = np.array([1.0, 1.73, 2.33, 3.91, 5.95]) * rng.uniform(0.992, 1.008, 5)
+    amps = np.array([1.0, 0.7, 0.5, 0.3, 0.16]) * np.array([1.0, bright, bright, bright, bright])
+    y = ring(dur, f0 * r, t60 * np.array([1.0, 0.78, 0.6, 0.4, 0.25]), amps, rng, doublet=0.004, doublet_amp=0.7)
+    tt = tvec(0.004)  # the tick comes in over a fifth of a millisecond, so that it starts from zero
+    tick = fit(bp(white(0.004, rng), 2500, 14000) * np.exp(-tt / 0.0005) * np.clip(tt / 0.0002, 0, 1), len(y))
+    return nrm(nrm(y) + click * nrm(tick))
+
+
+def lead_in(x, t=0.002):
+    """x with a couple of milliseconds of silence in front of it. The file's own 25 Hz zero-phase high-pass pads a sound's
+    ends with an odd extension, as if its first few samples had always been there, so a sound that starts on a loud sample
+    comes out with a low thump after its start; with silence in front there is no such thump (and finalize() trims the
+    silence off again)"""
+    return np.concatenate([np.zeros(ns(t)), np.asarray(x, dtype=float)])
 
 
 # =========================================================================== the smith
@@ -746,6 +771,317 @@ def hiccup(v, rng):
     y = fit(m.out(), ns(dur))
     # the squeak ends dead at the click (its source is only vd long); the high-pass keeps out breath rumble
     return small_room(hp(y, 120), wet=0.08, rt60=0.38, seed=82 + v)
+
+
+# =========================================================================== the mage
+@effect("mage.page", variants=3, subtitle="Pages turn", loud=-18.0, max_len=0.55, fade_out=0.12)
+def mage_page(v, rng):
+    """a page of a big book turned: the corner caught up between finger and thumb (a dry crinkle), the heavy vellum leaf
+    swung over (the air it pushes aside, the skin flexing with a crackle, a fine flutter along its edge) and laid down on
+    the other side with a soft flop and a settling rustle. v1 an ordinary leaf, v2 a quick one, v3 a thick, slow one that
+    lands heavily"""
+    dur = 0.56
+    m = Mix(dur)
+    sd = [0.2, 0.15, 0.25][v]
+    cd = 0.08
+    crinkle = crackle(cd, rng, 1500, decay=0.0006, f_lo=1800, f_hi=7500, size_var=0.8) * bell(cd, 0.45, 1.0, 1.5)
+    m.add(nrm(crinkle), 0.0, 0.3)
+    s = bell(sd, 0.4, 1.4, 1.4)
+    air = bp(colored(sd, rng, -1.5), 500, 4800) * s ** 1.3
+    flex = crackle(sd, rng, 650 * s + 10, decay=0.0007, f_lo=1500, f_hi=7000, size_var=0.8) * s
+    flutter = bp(white(sd, rng), 2500, 7000) * s ** 1.6 * smooth_random(sd, rng, 70, 0.2, 1.0)
+    m.add(nrm(nrm(air) + 0.7 * nrm(flex) + 0.3 * nrm(flutter)), 0.04, 0.8)
+    at = 0.04 + sd - 0.02  # the leaf comes down as the swing ends
+    m.add(thud(0.14, rng, f=[190, 215, 160][v], decay=0.014, tone=0.15), at, 0.45)
+    m.add(nrm(bp(white(0.03, rng), 500, 3500) * np.exp(-tvec(0.03) / 0.005)), at, 0.4)
+    rd = 0.14
+    m.add(nrm(crackle(rd, rng, 500 * bell(rd, 0.2, 1.0, 1.6) + 10, decay=0.0008, f_lo=1200, f_hi=6000, size_var=1.0)),
+          at + 0.01, 0.3)
+    y = fit(m.out(), ns(dur))
+    return lead_in(small_room(lp(y, 9000), wet=0.08, rt60=0.38, seed=100 + v))
+
+
+def quill_stroke(dur, rng, speed=1.0):
+    """one stroke of a nib over parchment: the point catching and slipping on the grain of the skin (a fine, dry scratch,
+    broken up by the stick and slip at a hundred or so times a second, with a little hard grit in it) and the faint hollow
+    of the desk under it; the quicker the stroke, the louder and brighter"""
+    s = bell(dur, 0.35, 1.0, 1.7)
+    slip = 0.3 + 0.7 * smooth_random(dur, rng, 110 * speed, 0.0, 1.0) ** 1.5
+    scratch = bp(colored(dur, rng, -1.0), 1600, 6500) * slip * s
+    grit = crackle(dur, rng, 1300 * speed * s + 30, decay=0.00035, f_lo=2200, f_hi=7500, size_var=0.5) * s
+    desk = hp(resonators(colored(dur, rng, -2.0) * s, [430, 760, 1250], [0.012, 0.01, 0.008], [1, .7, .4]), 300)
+    return nrm(nrm(scratch) + 0.6 * nrm(grit) + 0.18 * nrm(desk)) * speed ** 0.6
+
+
+@effect("mage.quill", variants=3, subtitle="Quill scratches", loud=-19.0, max_len=0.75, fade_out=0.1)
+def mage_quill(v, rng):
+    """a quill writing: the nib dragged over parchment in a few short strokes, each a dry, fine scratch that swells and
+    tails off with the hand, with the hand's small pauses between them"""
+    dur = 0.78
+    plan = [[(0.0, 0.07, 1.0), (0.1, 0.05, 0.8), (0.19, 0.09, 1.1), (0.34, 0.06, 0.9), (0.45, 0.11, 1.2)],
+            [(0.02, 0.1, 1.0), (0.17, 0.06, 0.9), (0.29, 0.08, 1.0), (0.43, 0.13, 1.1)],
+            [(0.0, 0.05, 0.9), (0.08, 0.07, 1.0), (0.18, 0.05, 0.9), (0.27, 0.08, 1.1), (0.4, 0.07, 1.0),
+             (0.5, 0.09, 1.2)]][v]
+    m = Mix(dur)
+    for at, d, speed in plan:
+        m.add(quill_stroke(d, rng, speed), at, rng.uniform(0.8, 1.0))
+    y = fit(m.out(), ns(dur))
+    return lead_in(small_room(hp(y, 100), wet=0.07, rt60=0.35, seed=104 + v))
+
+
+def mote(rng, f, t60=0.3):
+    """one tiny glass bead struck: a few bar modes (1, 2.76, 5.4 times the lowest) with a soft attack, ringing for a
+    moment"""
+    return nrm(ring(min(0.6, t60 * 2.2), f * np.array([1.0, 2.76, 5.4]), t60 * np.array([1.0, 0.5, 0.25]),
+                    [1.0, 0.4, 0.15], rng, doublet=0.003, attack=0.004))
+
+
+def glint_cloud(dur, rng, f_lo, f_hi, count=7, rate=9.0, rise=None):
+    """a cluster of glassy high partials, each fading in and out at a rate of its own: light shifting in cut crystal"""
+    n = ns(dur)
+    out = np.zeros(n)
+    for j in range(count):
+        f = f_lo * (f_hi / f_lo) ** ((j + rng.uniform(-0.3, 0.3)) / max(1, count - 1))
+        env = smooth_random(dur, rng, rate * rng.uniform(0.7, 1.4), 0.0, 1.0) ** 2
+        fv = f * (rise if rise is not None else 1.0)
+        out += env * np.sin(phase_from_freq(fv, n) + rng.uniform(0, 6.28)) / (1 + 0.15 * j)
+    return nrm(out)
+
+
+@effect("mage.conjure", variants=2, subtitle="Motes shimmer", loud=-20.0, max_len=1.3, fade_out=0.4)
+def mage_conjure(v, rng):
+    """glowing motes rising from a mage's palm: a soft glassy shimmer, a scatter of tiny glass pings (more of them as the
+    motes lift, each a little higher than the last on the whole, none on a note: a handful of glass beads, not a tune), a
+    faint cluster of glass partials holding it together and a breath of air under it, all much gentler than a spell's"""
+    dur = 1.3
+    n = ns(dur)
+    t = tvec(dur)
+    u = t / dur
+    swell = np.sin(np.pi / 2 * np.clip(t / 0.3, 0, 1)) ** 2 * np.clip((dur - t) / 0.55, 0, 1) ** 1.2
+    m = Mix(dur)
+    rate = 10.0 + 22.0 * np.sin(np.pi * np.clip(u / 0.95, 0, 1)) ** 1.3  # pings a second
+    for i in np.nonzero(rng.random(n) < rate / SR)[0]:
+        f = rng.uniform(2300, 4600) * (1.0 + 0.45 * u[i]) * [1.0, 1.12][v]
+        m.add(mote(rng, f, rng.uniform(0.12, 0.35)), i / SR, swell[i] * rng.uniform(0.25, 0.7))
+    cloud = glint_cloud(dur, rng, [1900, 2300][v], [6200, 7200][v], count=8, rate=6.0,
+                        rise=1 + 0.25 * np.clip(t / 0.9, 0, 1))
+    m.add(cloud * swell, 0.0, 0.3)
+    air = bp(colored(dur, rng, -1.0), 1800, 6500, order=3) * swell ** 1.5 * smooth_random(dur, rng, 14, 0.3, 1.0)
+    m.add(air, 0.0, 0.09)
+    y = fit(m.out(), n)
+    return lead_in(small_room(y, wet=0.1, rt60=0.5, seed=108 + v))
+
+
+# =========================================================================== the knight
+def blade(dur, rng, f0, t60=0.3, gain=1.0):
+    """a steel blade ringing after a blow: the modes of a free-free bar (1, 2.76, 5.40, 8.93, 13.3 and 18.6 times the
+    lowest, the upper ones dying first), each a close pair, the weight in the middle ones so that it clanks and does not
+    sing a note"""
+    r = np.array([1.0, 2.756, 5.404, 8.933, 13.344, 18.64]) * rng.uniform(0.99, 1.01, 6)
+    return nrm(ring(dur, f0 * r, t60 * np.array([0.9, 1.0, 0.8, 0.6, 0.4, 0.25]),
+                    gain * np.array([0.35, 0.8, 1.0, 0.8, 0.5, 0.3]), rng, doublet=0.002))
+
+
+@effect("knight.clash", variants=4, subtitle="Sword rings on shield", loud=-14.0, max_len=0.5, fade_out=0.15, limit=3.0,
+        attenuation=24)
+def knight_clash(v, rng):
+    """a practice sword meeting a shield in a spar: the blow on the shield's wood (a short, dense 'thock' with the board's
+    modes in it and the whole shield answering low behind it), the blunted steel ringing above it for a moment. v1 on the
+    face, v2 on the rim (more ring), v3 a hard cut, v4 glancing off with a scrape"""
+    dur = 0.5
+    m = Mix(dur)
+    k = [1.0, 1.1, 0.93, 1.05][v]
+    wood = knock(dur, np.array([330, 520, 790, 1150, 1700, 2500]) * k, [0.05, 0.045, 0.04, 0.03, 0.025, 0.02],
+                 [1, .85, .65, .45, .3, .2], rng, lo=150, hi=6000, ex_len=0.002)
+    m.add(wood, 0.0, [1.0, 0.55, 1.0, 0.8][v])
+    m.add(thud(0.14, rng, f=[150, 175, 135, 160][v], decay=0.03, tone=0.4), 0.0, [0.35, 0.2, 0.5, 0.3][v])
+    m.add(blade(dur, rng, [440, 520, 400, 480][v], t60=[0.45, 0.6, 0.4, 0.5][v]), 0.0005, [0.7, 0.9, 0.7, 0.6][v])
+    m.add(nrm(bp(white(0.004, rng), 2000, 10000) * np.hanning(ns(0.004) + 2)[1:-1]), 0.0, 0.22)
+    if v == 3:  # the blade skating off the face: a short rasp of steel on wood
+        sd = 0.13
+        sl = bell(sd, 0.3, 1.2, 1.5)
+        m.add(nrm(crackle(sd, rng, 1500 * sl + 30, decay=0.0006, f_lo=500, f_hi=6000, size_var=0.6) * sl), 0.012, 0.35)
+    y = fit(m.out(), ns(dur))
+    return lead_in(small_room(lp(y, 12000), wet=0.1, rt60=0.45, seed=112 + v))
+
+
+@effect("knight.post", variants=3, subtitle="Sword bites the post", loud=-15.0, max_len=0.38, fade_out=0.1, limit=3.0,
+        attenuation=20)
+def knight_post(v, rng):
+    """a sword biting a wooden practice post: the edge driven into oak (a hard, dull 'chock', fibres crunching and tearing
+    under it), the post's long body answering low, a few chips dropping. v1 a clean cut, v2 a harder blow that jars the
+    blade (a short ring), v3 a glancing cut that skips off with a scrape"""
+    dur = 0.38
+    m = Mix(dur)
+    m.add(thud(0.2, rng, f=[135, 120, 145][v], decay=0.028, tone=0.45), 0.0, 0.7)
+    m.add(nrm(knock(0.25, [220, 380, 610, 950, 1500], [0.07, 0.05, 0.04, 0.03, 0.02], [1, .8, .6, .4, .25], rng, lo=100,
+                    hi=3800, ex_len=0.003)), 0.0, 0.9)
+    ct = tvec(0.1)
+    m.add(nrm(crackle(0.1, rng, 6000 * np.exp(-ct / 0.02), decay=0.0009, f_lo=300, f_hi=4200, size_var=0.7)), 0.001, 0.9)
+    m.add(nrm(bp(white(0.012, rng), 1200, 7000) * np.exp(-tvec(0.012) / 0.002)), 0.0, 0.3)
+    for _ in range([4, 6, 3][v]):  # chips dropping on the dirt
+        m.add(thud(0.04, rng, f=rng.uniform(300, 800), decay=0.005, tone=0.1), 0.06 + rng.exponential(0.07),
+              rng.uniform(0.15, 0.4))
+    if v == 1:
+        m.add(blade(0.3, rng, 400, t60=0.18), 0.0, 0.3)
+    if v == 2:
+        sd = 0.12
+        sl = bell(sd, 0.3, 1.2, 1.5)
+        m.add(nrm(crackle(sd, rng, 1200 * sl + 30, decay=0.0007, f_lo=400, f_hi=5000, size_var=0.6) * sl), 0.05, 0.35)
+    y = fit(m.out(), ns(dur))
+    return lead_in(small_room(lp(y, 10000), wet=0.08, rt60=0.36, seed=116 + v))
+
+
+@effect("knight.whetstone", variants=2, subtitle="Whetstone rasps on steel", loud=-17.0, max_len=0.75, fade_out=0.12)
+def knight_whetstone(v, rng):
+    """a whetstone drawn along a blade: a long rasp of grit on steel, a gritty hiss with a coarse crackle in it and the
+    scrape of the stone's weight lower down, the blade singing faintly on its own notes as the stone drags over it,
+    loudest near the start of the stroke and tailing off with a tiny ring. v1 one long stroke, v2 a shorter one and a
+    quick second"""
+    dur = 0.78
+    m = Mix(dur)
+    for at, sd in [[(0.02, 0.56)], [(0.02, 0.32), (0.4, 0.26)]][v]:
+        s = bell(sd, 0.38, 1.2, 1.6)
+        hiss = tvf(colored(sd, rng, -1.0), "bp", 2300 + 1800 * s, 0.5) * s ** 1.2 * \
+            (0.4 + 0.6 * smooth_random(sd, rng, 90))
+        rough = crackle(sd, rng, 1800 * s + 40, decay=0.0004, f_lo=1500, f_hi=7500, size_var=0.9) * s
+        sing = resonators(colored(sd, rng, -0.5), [2420, 3860, 5390, 6910], [0.12, 0.09, 0.06, 0.04],
+                          [1, 0.8, 0.5, 0.3]) * s ** 1.3
+        body = bp(colored(sd, rng, -2.0), 250, 1400) * s ** 1.5 * (0.5 + 0.5 * smooth_random(sd, rng, 40))
+        m.add(nrm(nrm(hiss) + 0.8 * nrm(rough) + 0.4 * nrm(sing) + 0.5 * nrm(body)), at, 1.0)
+        tail = ring(0.2, [2420, 3860, 5390], [0.1, 0.07, 0.05], [1, .6, .3], rng, doublet=0.002)
+        m.add(nrm(tail), at + sd - 0.03, 0.06)
+    y = fit(m.out(), ns(dur))
+    return lead_in(small_room(y, wet=0.07, rt60=0.36, seed=120 + v))
+
+
+# =========================================================================== the thief
+def die(dur, rng, f=2300.0):
+    """one die knocking on something hard: bone or hardwood is dense and stiff, so the knock is a short, dry tick with a
+    little ring in it (a few modes, each gone in a few thousandths of a second)"""
+    return knock(dur, [f, f * 1.62, f * 2.45, f * 3.4], [0.007, 0.005, 0.0035, 0.0025], [1, .7, .45, .25], rng, lo=800,
+                 hi=9500, ex_len=0.0007)
+
+
+@effect("thief.shake", variants=2, subtitle="Dice rattle in a cup", loud=-18.0, max_len=0.85, fade_out=0.12, limit=3.0)
+def thief_shake(v, rng):
+    """dice rattled in a leather cup: three or four small cubes flung back and forth inside it by the hand, a cluster of
+    dry clacks at each end of every shake (the dull give of the leather in each, the hollow of the cup under them) and the
+    rub of the cup in the palm; v2 shakes fewer times, harder"""
+    dur = 0.88
+    m = Mix(dur)
+    strokes = [[(0.05, 1.0), (0.24, 1.1), (0.43, 1.0), (0.62, 0.6)], [(0.04, 1.2), (0.22, 1.3), (0.41, 0.8)]][v]
+    for t0, st in strokes:
+        for half, g in ((0.0, 1.0), (0.095, 0.75)):
+            for _ in range(int(rng.integers(4, 8))):
+                at = t0 + half + rng.uniform(0.0, 0.045)
+                f = rng.uniform(1700, 2700)
+                body = knock(0.05, [420 * rng.uniform(0.9, 1.1), 780, 1250], [0.02, 0.012, 0.008], [1, .6, .3], rng,
+                             lo=200, hi=3000, ex_len=0.001)
+                click = 0.8 * nrm(die(0.05, rng, f)) + 0.5 * nrm(body)
+                m.add(click, at, st * g * rng.uniform(0.45, 1.0))
+    rd = 0.8
+    rub = bp(colored(rd, rng, -1.5), 200, 1800) * smooth_random(rd, rng, 9, 0.2, 1.0)
+    m.add(nrm(rub), 0.04, 0.16)
+    y = fit(m.out(), ns(dur))
+    return lead_in(small_room(lp(hp(y, 100), 9000), wet=0.07, rt60=0.36, seed=124 + v))
+
+
+def table(dur, rng, size=1.0):
+    """a heavy wooden tabletop under a blow: its boards' low modes, a dull knock"""
+    return knock(dur, np.array([210, 340, 560, 900, 1500]) * size, [0.05, 0.04, 0.03, 0.02, 0.012],
+                 [1, .8, .6, .4, .25], rng, lo=100, hi=3000, ex_len=0.002)
+
+
+@effect("thief.dice", variants=3, subtitle="Dice clatter on a table", loud=-16.0, max_len=0.65, fade_out=0.12, limit=3.0)
+def thief_dice(v, rng):
+    """the dice thrown clattering on a table: each cube lands with a knock of the wood and a dry tick of its own and
+    bounces on, each bounce shorter and softer than the one before, then tumbles over its corners and settles. v1 three
+    dice, v2 two with one skittering off further, v3 four, heavily thrown"""
+    dur = 0.65
+    m = Mix(dur)
+    count = [3, 2, 4][v]
+    for i in range(count):
+        t0 = rng.uniform(0.0, 0.05) + (0.07 if (v == 1 and i == 1) else 0.0)
+        d = rng.uniform(0.07, 0.1) * (1.25 if (v == 1 and i == 1) else 1.0)
+        r = rng.uniform(0.6, 0.72)
+        f = rng.uniform(2000, 2900)
+        a = rng.uniform(0.8, 1.0) * [1.0, 0.9, 1.15][v]
+        at = t0
+        for k in range(6):
+            if at > 0.52:
+                break
+            m.add(nrm(die(0.05, rng, f * rng.uniform(0.96, 1.04))), at, 0.7 * a)
+            m.add(nrm(table(0.12, rng, rng.uniform(0.9, 1.1))), at, 0.6 * a)
+            a *= 0.55
+            at += d
+            d *= r
+        for _ in range(int(rng.integers(2, 5))):  # tumbling over its corners
+            tt = at + rng.exponential(0.05)
+            if tt < 0.6:
+                m.add(nrm(die(0.04, rng, f * rng.uniform(0.9, 1.1))), tt, 0.22 * rng.uniform(0.4, 1.0))
+    y = fit(m.out(), ns(dur))
+    return lead_in(small_room(hp(y, 80), wet=0.08, rt60=0.38, seed=128 + v))
+
+
+@effect("thief.coin", variants=3, subtitle="Coin clinks on a stack", loud=-17.0, max_len=0.27, fade_out=0.08, limit=3.0)
+def thief_coin(v, rng):
+    """a coin set down on a stack: the coin's short, bright ring (damped by the stack it lands on) and the tick of the
+    blow, the coins under it shifting in a faint second and third clink as they settle against each other"""
+    dur = 0.3
+    f0 = [3050, 3450, 3850][v]
+    m = Mix(dur)
+    m.add(coin(0.28, rng, f0=f0, t60=0.16, bright=0.8, click=0.4), 0.0, 1.0)
+    m.add(coin(0.15, rng, f0=f0 * rng.uniform(0.88, 1.12), t60=0.06, bright=0.5, click=0.3), 0.018 + 0.008 * v, 0.35)
+    m.add(coin(0.12, rng, f0=f0 * rng.uniform(0.88, 1.12), t60=0.05, bright=0.4, click=0.3), 0.046 + 0.01 * v, 0.2)
+    stack = knock(0.03, [900, 1500, 2300], [0.006, 0.004, 0.003], [1, .6, .3], rng, lo=500, hi=4000, ex_len=0.001)
+    m.add(nrm(stack), 0.0, 0.15)
+    y = fit(m.out(), ns(dur))
+    return lead_in(small_room(lp(hp(y, 150), 12000), wet=0.07, rt60=0.34, seed=132 + v))
+
+
+def pin_click(rng, f=2600.0):
+    """a tiny click of brass on brass: a pin setting in the cylinder, a high dry tick with the lock's small ring behind
+    it"""
+    hi_ = knock(0.04, [f, f * 1.7, f * 2.6, f * 3.9], [0.006, 0.005, 0.0035, 0.0025], [1, .7, .45, .3], rng, lo=1200,
+                hi=10500, ex_len=0.0007)
+    lo_ = knock(0.04, [820 * rng.uniform(0.9, 1.1), 1350, 2100], [0.012, 0.009, 0.006], [1, .6, .3], rng, lo=400, hi=4000,
+                ex_len=0.0008)
+    return nrm(hi_) + 0.4 * nrm(lo_)
+
+
+def pick_rake(dur, rng, rate=70.0, lo=1800.0, hi=4800.0):
+    """the pick raked over the pins: a run of tiny ticks of metal on metal, one for each pin it flicks (quicker in the
+    middle of the stroke, each a little different in pitch), a faint scrape of steel joining them"""
+    n = ns(dur)
+    s = bell(dur, 0.5, 1.2, 1.3)
+    m = Mix(dur)
+    for i in np.nonzero(rng.random(n) < rate * s / SR)[0]:
+        f = float(np.exp(rng.uniform(np.log(lo), np.log(hi))))
+        m.add(nrm(knock(0.012, [f, f * 1.7, f * 2.5], [0.0025, 0.002, 0.0015], [1, .5, .25], rng, lo=1200, hi=9500,
+                        ex_len=0.0006)), i / SR, rng.uniform(0.3, 1.0) * s[i] ** 0.5)
+    scr = bp(colored(dur, rng, -1.0), 2000, 7000) * s ** 1.5 * smooth_random(dur, rng, 70, 0.3, 1.0)
+    m.add(nrm(scr), 0.0, 0.2)
+    return fit(m.out(), n)
+
+
+@effect("thief.lockpick", variants=3, subtitle="Lockpick clicks", loud=-20.0, max_len=0.85, fade_out=0.12, limit=3.0)
+def thief_lockpick(v, rng):
+    """a lock picked: tiny metal clicks and scrapes, the pick raked over the pins in a run of tiny ticks and a pin set now
+    and then with a small brass click. v1 a rake, a click, a rake and two clicks, v2 clicks first and a long rake, v3 slow
+    and careful"""
+    dur = 0.85
+    m = Mix(dur)
+    plan = [[("s", 0.02, 0.14), ("c", 0.19, 1.0), ("s", 0.3, 0.11), ("c", 0.46, 0.8), ("c", 0.58, 0.6)],
+            [("c", 0.02, 0.7), ("c", 0.12, 1.0), ("s", 0.22, 0.28), ("c", 0.55, 0.9)],
+            [("s", 0.02, 0.22), ("c", 0.28, 1.0), ("s", 0.4, 0.2), ("c", 0.66, 0.8)]][v]
+    for kind, at, x in plan:
+        if kind == "s":
+            m.add(pick_rake(x, rng, rate=rng.uniform(60, 110)), at, 0.6)
+        else:
+            m.add(pin_click(rng, f=rng.uniform(2300, 3300)), at, 0.6 * x)
+    y = fit(m.out(), ns(dur))
+    return lead_in(small_room(lp(hp(y, 120), 9500), wet=0.06, rt60=0.34, seed=136 + v))
 
 
 # =========================================================================== the bard's tunes

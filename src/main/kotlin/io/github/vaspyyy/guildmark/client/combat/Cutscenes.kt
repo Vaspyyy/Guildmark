@@ -8,6 +8,8 @@ import io.github.vaspyyy.guildmark.enemy.DuskRider
 import io.github.vaspyyy.guildmark.enemy.HillTroll
 import io.github.vaspyyy.guildmark.dragon.Dragon
 import io.github.vaspyyy.guildmark.dragon.DragonRegistry
+import io.github.vaspyyy.guildmark.faction.FactionRegistry
+import io.github.vaspyyy.guildmark.faction.Renegade
 import net.minecraft.world.entity.LivingEntity
 import io.github.vaspyyy.guildmark.network.BossCuePayload
 import io.github.vaspyyy.guildmark.registry.ModSounds
@@ -124,6 +126,8 @@ object Cutscenes : GuiLayer {
         var banner = -1
         var bannerText = "cutscene.guildmark.foe_vanquished"
         var shakeAt = -1
+        /** Whose words and name these are (cutscene.guildmark.<speaker>). */
+        var speaker = "halvard"
 
         var rig: CameraRig? = null
         var savedType: CameraType? = null
@@ -209,7 +213,15 @@ object Cutscenes : GuiLayer {
         val right = -(player.x - pos.x) * cos(a) - (player.z - pos.z) * sin(a)
         val s = Scene(payload.cue, payload.entityId, pos, yaw, if (right > 0) -1.0 else 1.0, player, level)
         val camera = boss != null && camerasOn() && player.isAlive && !talking
-        when (payload.cue) {
+        if (boss is Renegade) {
+            s.speaker = "renegade"
+            when (payload.cue) {
+                BossCuePayload.INTRO -> renegadeIntro(s, camera)
+                BossCuePayload.PHASE_TWO -> renegadePhaseTwo(s)
+                BossCuePayload.DEATH -> renegadeDeath(s, camera)
+                else -> return
+            }
+        } else when (payload.cue) {
             BossCuePayload.INTRO -> intro(s, camera)
             BossCuePayload.PHASE_TWO -> phaseTwo(s, camera)
             BossCuePayload.DEATH -> death(s, camera)
@@ -269,6 +281,56 @@ object Cutscenes : GuiLayer {
         if (!camera) return
         s.shots = listOf(orbit(0, 80, 58f, 52f, 5.2, 4.4, 20.0, 75.0, 2.2, 1.7, 1.3))
         s.returnAt = 80
+    }
+
+    /**
+     * Silvan Marrow turns from his stones to whoever came, says his piece about the man who sent them, and lifts his
+     * staff as the stones wake; his name as the fight begins. The server keeps the player out of it for
+     * Renegade.INTRO_SCENE ticks, so the camera is back by then.
+     */
+    private fun renegadeIntro(s: Scene, camera: Boolean) {
+        s.length = 195
+        s.voice = FactionRegistry.RENEGADE_VOICE_INTRO.get()
+        s.voiceAt = 6
+        s.lines = listOf(Line(6, 44, "renegade.intro.1"), Line(44, 86, "renegade.intro.2"))
+        s.stinger = ModSounds.BOSS_APPEAR.get()
+        s.stingerAt = 92
+        s.title = 96
+        if (!camera) return
+        s.shots = listOf(
+            // Wide and high over the ring as he turns
+            dolly(0, 40, false, 64f, 60f, Vec3(9.0, 4.5, 4.2), Vec3(7.6, 3.6, 3.4), Vec3(0.0, 0.0, 1.3), Vec3(0.0, 0.0, 1.5)),
+            // Close on the hood while he talks of Idris
+            dolly(40, 70, true, 50f, 46f, Vec3(2.3, 0.9, 1.75), Vec3(1.95, 0.7, 1.85), Vec3(0.2, 0.0, 1.85), Vec3(0.2, 0.0, 1.9)),
+            // Low and backing off as the staff goes up and the stones answer
+            dolly(70, 88, true, 58f, 66f, Vec3(5.2, -2.6, 0.5), Vec3(7.4, -3.4, 0.9), Vec3(0.0, 0.0, 1.8), Vec3(0.0, 0.0, 2.6)),
+        )
+        s.returnAt = 88
+        s.shakeAt = 50
+    }
+
+    /** He cries out to the sky as the stars begin to fall: only his words, since the fight goes on around them. */
+    private fun renegadePhaseTwo(s: Scene) {
+        s.length = 64
+        s.voice = FactionRegistry.RENEGADE_VOICE_PHASE2.get()
+        s.voiceAt = 2
+        s.lines = listOf(Line(2, 60, "renegade.phase2"))
+    }
+
+    /** He sinks to his knees among his stones with a word for Idris; then the banner. */
+    private fun renegadeDeath(s: Scene, camera: Boolean) {
+        s.length = 190
+        s.voice = FactionRegistry.RENEGADE_VOICE_DEATH.get()
+        s.voiceAt = 10
+        s.lines = listOf(Line(10, 70, "renegade.death"))
+        s.stinger = ModSounds.FOE_VANQUISHED.get()
+        s.stingerAt = 76
+        s.banner = 76
+        silenceUntil = max(silenceUntil, ticks + 230)
+        if (!camera) return
+        // Until he's gone to motes (Renegade.DEATH_TICKS); the server shields those watching for Renegade.DEATH_SCENE
+        s.shots = listOf(orbit(0, 64, 58f, 52f, 5.0, 4.2, 20.0, 80.0, 2.0, 1.6, 1.2))
+        s.returnAt = 64
     }
 
     /** A field boss falls: the camera circles wide as it drops to its knees and pitches over, then the banner. */
@@ -631,7 +693,8 @@ object Cutscenes : GuiLayer {
 
     /** A field boss with a fight on: a hill troll, or a Dusk Rider that isn't fading away. */
     private fun fightingFieldBoss(entity: LivingEntity): Boolean =
-        (entity is HillTroll && entity.fighting) || (entity is DuskRider && entity.fighting && !entity.fading) || (entity is Dragon && entity.fighting)
+        (entity is HillTroll && entity.fighting) || (entity is DuskRider && entity.fighting && !entity.fading) || (entity is Dragon && entity.fighting) ||
+            (entity is Renegade && entity.fighting)
 
     private fun findFieldBoss(minecraft: Minecraft) {
         val player = minecraft.player
@@ -799,7 +862,7 @@ object Cutscenes : GuiLayer {
         }
 
         captions(graphics, font, s, t, width, height, bar)
-        if (s.title >= 0) titleCard(graphics, font, t - s.title, width, height)
+        if (s.title >= 0) titleCard(graphics, font, s.speaker, t - s.title, width, height)
         if (s.banner >= 0) banner(graphics, font, s.bannerText, t - s.banner, width, height)
 
         if (s.rig != null && t >= 20f && t < s.returnAt && bar >= 14) {
@@ -814,7 +877,7 @@ object Cutscenes : GuiLayer {
         val line = s.lines.firstOrNull { t >= it.from && t < it.until } ?: return
         val alpha = min(min(1f, (t - line.from) / 4f), (line.until - t) / 4f).coerceIn(0f, 1f)
         if (alpha < 0.03f) return
-        val speaker = Component.translatable("cutscene.guildmark.halvard")
+        val speaker = Component.translatable("cutscene.guildmark." + s.speaker)
         val rows = font.split(Component.translatable("cutscene.guildmark." + line.key), min(width - 40, 320))
         val blockHeight = 11 + rows.size * 10
         val top = if (bar >= blockHeight + 4) height - bar / 2 - blockHeight / 2 else height - 74 - blockHeight
@@ -829,16 +892,16 @@ object Cutscenes : GuiLayer {
     }
 
     /** His name, letter-spaced over a rule that opens from the middle, as the fight begins. */
-    private fun titleCard(graphics: GuiGraphicsExtractor, font: Font, t: Float, width: Int, height: Int) {
+    private fun titleCard(graphics: GuiGraphicsExtractor, font: Font, speaker: String, t: Float, width: Int, height: Int) {
         if (t < 0f || t > TITLE_TICKS) return
         val alpha = min(min(1f, t / 14f), (TITLE_TICKS - t) / 20f).coerceIn(0f, 1f)
         if (alpha < 0.03f) return
         val y = (height * 0.34f).roundToInt()
         val half = (110 * ease(min(1f, t / 18f))).roundToInt()
         graphics.fill(width / 2 - half, y, width / 2 + half, y + 1, ARGB.color(alpha * 0.8f, GOLD))
-        val name = Component.translatable("cutscene.guildmark.halvard").string.uppercase()
+        val name = Component.translatable("cutscene.guildmark.$speaker").string.uppercase()
         spaced(graphics, font, name, width / 2f, y - 30f, 3f, 2, ARGB.color(alpha, BONE))
-        spaced(graphics, font, Component.translatable("cutscene.guildmark.halvard.epithet").string, width / 2f, y + 6f, 1.25f, 1, ARGB.color(alpha, GOLD))
+        spaced(graphics, font, Component.translatable("cutscene.guildmark.$speaker.epithet").string, width / 2f, y + 6f, 1.25f, 1, ARGB.color(alpha, GOLD))
     }
 
     /** The banner when he falls, across a band of shadow. */

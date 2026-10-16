@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.client.townsfolk
 
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.magic.MagicRegistry
 import io.github.vaspyyy.guildmark.townsfolk.Activity
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import io.github.vaspyyy.guildmark.townsfolk.Townsfolk
@@ -144,6 +145,35 @@ object TownsfolkClient {
                 val lute = at(p, 0.45, 0.95, 0.04)
                 level.addParticle(ParticleTypes.NOTE, lute.x, lute.y + 0.25, lute.z, p.random.nextInt(25) / 24.0, 0.0, 0.0)
             }
+            Activity.READ -> if (t == 88) sound(p, "mage.page", 0.5f)
+            Activity.SCRIBE -> if (t == 4 || t == 16 || t == 28) sound(p, "mage.quill", 0.35f)
+            Activity.CONJURE -> {
+                // Motes gather over the open palm and burst upward
+                val palm = at(p, 0.42, 1.15, -0.22)
+                if (t in 8..60 && t % 4 == 0) puff(level, ParticleTypes.END_ROD, palm, 0.12, 0.03, 0.01)
+                if (t == 40) {
+                    sound(p, "mage.conjure", 0.6f)
+                    repeat(8) { puff(level, MagicRegistry.ARCANE_MOTE.get(), palm, 0.2, 0.06, 0.03) }
+                }
+            }
+            Activity.SPAR_ATTACK -> if (t == 10 || t == 26) {
+                sound(p, "knight.clash", 0.8f)
+                sparks(level, at(p, 1.0, 1.25), 3 + p.random.nextInt(3))
+            }
+            Activity.DRILL -> if (t == 12 || t == 26) {
+                sound(p, "knight.post", 0.7f)
+                repeat(3) { puff(level, BlockParticleOption(ParticleTypes.BLOCK, Blocks.HAY_BLOCK.defaultBlockState()), at(p, 1.0, 1.1), 0.2, 0.06, 0.04) }
+            }
+            Activity.SHARPEN -> if (t == 10 || t == 28) {
+                sound(p, "knight.whetstone", 0.45f)
+                sparks(level, at(p, 0.45, 1.05), 2)
+            }
+            Activity.DICE -> {
+                if (t == 2) sound(p, "thief.shake", 0.45f)
+                if (t == 24) sound(p, "thief.dice", 0.5f)
+            }
+            Activity.COUNT -> if (t == 12 || t == 24 || t == 36) sound(p, "thief.coin", 0.4f)
+            Activity.PICK_LOCK -> if (t == 6 || t == 30) sound(p, "thief.lockpick", 0.35f)
             else -> {}
         }
     }

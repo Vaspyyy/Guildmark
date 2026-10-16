@@ -18,6 +18,8 @@ data class OpenCharacterPayload(
     val carrying: Boolean,
     /** The player just finished this character's story: they say goodbye instead. */
     val finale: Boolean = false,
+    /** For a faction's leader, what else bears on the talk (see Factions.GATED and the rest). */
+    val flags: Int = 0,
 ) : CustomPacketPayload {
     override fun type(): CustomPacketPayload.Type<OpenCharacterPayload> = TYPE
 
@@ -31,6 +33,7 @@ data class OpenCharacterPayload(
             ByteBufCodecs.VAR_INT, OpenCharacterPayload::chapters,
             ByteBufCodecs.BOOL, OpenCharacterPayload::carrying,
             ByteBufCodecs.BOOL, OpenCharacterPayload::finale,
+            ByteBufCodecs.VAR_INT, OpenCharacterPayload::flags,
             ::OpenCharacterPayload,
         )
 

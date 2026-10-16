@@ -1,6 +1,9 @@
 package io.github.vaspyyy.guildmark.townsfolk
 
 import io.github.vaspyyy.guildmark.client.townsfolk.TownsfolkClient
+import io.github.vaspyyy.guildmark.faction.Factions
+import io.github.vaspyyy.guildmark.faction.Pickpocket
+import io.github.vaspyyy.guildmark.faction.SwornKnight
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.network.chat.Component
@@ -8,6 +11,8 @@ import net.minecraft.network.syncher.EntityDataAccessor
 import net.minecraft.network.syncher.EntityDataSerializers
 import net.minecraft.network.syncher.SynchedEntityData
 import net.minecraft.server.level.ServerLevel
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.tags.DamageTypeTags
 import net.minecraft.world.DifficultyInstance
 import net.minecraft.world.InteractionHand
 import net.minecraft.world.InteractionResult
@@ -79,6 +84,29 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
             val flags = entityData.get(FLAGS).toInt()
             entityData.set(FLAGS, (if (value) flags or FLAG_LANTERN else flags and FLAG_LANTERN.inv()).toByte())
         }
+
+    /**
+     * One of the faction leaders (look 0 of a mage, a knight or a thief): Idris, Corra or Odile. They keep their
+     * post at every hour, can't be hurt, never run, and using them opens their conversation (see Factions).
+     */
+    var isLeader: Boolean
+        get() = entityData.get(FLAGS).toInt() and FLAG_LEADER != 0
+        set(value) {
+            val flags = entityData.get(FLAGS).toInt()
+            entityData.set(FLAGS, (if (value) flags or FLAG_LEADER else flags and FLAG_LEADER.inv()).toByte())
+        }
+
+    /** A leader nodding off at their post in the small hours: using them wakes them with a grumble. */
+    val dozing: Boolean get() = isLeader && Schedule.phase(this) == Phase.SLEEP
+
+    /** A watcher set to keep an eye on a heist's building while it's on (see Heists); never kept when saved. */
+    var watcher = false
+
+    /** Who a watcher has their eye on, while they're suspicious of someone. */
+    var suspect: Player? = null
+
+    /** The day their purse was lifted (or someone tried), so it's once a day each (see Pickpocket). */
+    var pursedDay = -1L
 
     /** Where they live: their beds are found near here. */
     var home: BlockPos? = null
@@ -193,21 +221,24 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
     override fun registerGoals() {
         goalSelector.addGoal(0, FloatGoal(this))
         goalSelector.addGoal(1, object : MeleeAttackGoal(this, 0.8, true) {
-            override fun canUse(): Boolean = role == TownRole.GUARD && super.canUse()
-            override fun canContinueToUse(): Boolean = role == TownRole.GUARD && super.canContinueToUse()
+            override fun canUse(): Boolean = fights && super.canUse()
+            override fun canContinueToUse(): Boolean = fights && super.canContinueToUse()
         })
         goalSelector.addGoal(1, FleeGoal())
         goalSelector.addGoal(2, OpenDoorGoal(this, true))
         goalSelector.addGoal(3, RoutineGoal())
         targetSelector.addGoal(1, object : HurtByTargetGoal(this, Townsperson::class.java) {
-            override fun canUse(): Boolean = role == TownRole.GUARD && super.canUse()
+            override fun canUse(): Boolean = fights && super.canUse()
         })
         targetSelector.addGoal(2, object : NearestAttackableTargetGoal<Mob>(
-            this, Mob::class.java, 10, true, false, { target, _ -> target is Enemy && target !is Creeper },
+            this, Mob::class.java, 10, true, false, { target, _ -> target is Enemy && target !is Creeper && target !is SwornKnight },
         ) {
-            override fun canUse(): Boolean = role == TownRole.GUARD && super.canUse()
+            override fun canUse(): Boolean = fights && super.canUse()
         })
     }
+
+    /** The guards stand and fight, and so do the Hearthsworn's knights; their leaders keep their post. */
+    val fights: Boolean get() = (role == TownRole.GUARD || role == TownRole.KNIGHT) && !isLeader && !watcher
 
     override fun finalizeSpawn(level: ServerLevelAccessor, difficulty: DifficultyInstance, reason: EntitySpawnReason, data: SpawnGroupData?): SpawnGroupData? {
         val result = super.finalizeSpawn(level, difficulty, reason, data)
@@ -266,6 +297,8 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
     /** Says [line] (a key under say.guildmark.) if a player is near enough to hear it. */
     fun say(line: String, force: Boolean = false): Boolean {
         val level = level() as? ServerLevel ?: return false
+        // The leaders keep their own voices for talking properly (Factions)
+        if (isLeader) return false
         if (!force && (level.gameTime < nextSpeech || speech.isNotEmpty())) return false
         if (level.getNearestPlayer(this, HEARING) == null) return false
         entityData.set(SPEECH, line)
@@ -278,6 +311,14 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
     fun attend(player: Player, ticks: Int = 80) {
         attending = player
         attendUntil = level().gameTime + ticks
+    }
+
+    /** A leader turns to [player] for a conversation, which lasts until they leave it ([stopListening]). */
+    fun listen(player: Player) = attend(player, LISTEN_TICKS)
+
+    /** [player] left the conversation: back to what they were doing. */
+    fun stopListening(player: Player) {
+        if (attending === player) attending = null
     }
 
     /** Sits down on the stair at [pos], facing away from its back. */
@@ -320,6 +361,7 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
             }
         }
         if (crowd && tickCount % 40 == 0) Crowds.maybeLeave(level, this)
+        suspect?.let { if (!it.isAlive || it.level() !== level || distanceToSqr(it) > 48.0 * 48.0) suspect = null }
         // A resident placed without word of their town looks it up once
         if (town == null && !townLooked && tickCount % 100 == 13) {
             townLooked = true
@@ -354,7 +396,7 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
         }
 
         override fun canUse(): Boolean {
-            if (role == TownRole.GUARD || isSleeping || tickCount % 5 != 0) return false
+            if (fights || isLeader || isSleeping || tickCount % 5 != 0) return false
             from = threat() ?: return false
             return true
         }
@@ -388,7 +430,7 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
     /** Whoever hurt them lately, or a monster close by in sight. */
     private fun threat(): LivingEntity? {
         lastHurtByMob?.let { if (it.isAlive && tickCount - lastHurtByMobTimestamp < 100 && distanceToSqr(it) < 256.0) return it }
-        return level().getEntitiesOfClass(Mob::class.java, boundingBox.inflate(8.0, 4.0, 8.0)) { it is Enemy && it.isAlive && it !is Townsperson }
+        return level().getEntitiesOfClass(Mob::class.java, boundingBox.inflate(8.0, 4.0, 8.0)) { it is Enemy && it.isAlive && it !is Townsperson && it !is SwornKnight }
             .filter { hasLineOfSight(it) }
             .minByOrNull { distanceToSqr(it) }
     }
@@ -396,15 +438,29 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
     // --- Being a person -----------------------------------------------------------------------------------------
 
     override fun mobInteract(player: Player, hand: InteractionHand): InteractionResult {
-        if (hand != InteractionHand.MAIN_HAND || isSleeping) return InteractionResult.PASS
-        if (level() is ServerLevel) {
+        if (hand != InteractionHand.MAIN_HAND) return InteractionResult.PASS
+        val level = level()
+        // A faction's leader talks properly
+        if (isLeader) {
+            if (level is ServerLevel && player is ServerPlayer) Factions.talk(level, player, this)
+            return InteractionResult.SUCCESS
+        }
+        // Crouched behind them: a hand in their purse
+        if (player.isShiftKeyDown && !watcher) {
+            if (level is ServerLevel) Pickpocket.tryLift(level, player, this)
+            return InteractionResult.SUCCESS
+        }
+        if (isSleeping) return InteractionResult.PASS
+        if (level is ServerLevel) {
             attend(player)
-            say(Lines.talk(this), force = true)
+            say(Lines.talk(this, player), force = true)
         }
         return InteractionResult.SUCCESS
     }
 
     override fun hurtServer(level: ServerLevel, source: DamageSource, amount: Float): Boolean {
+        // The leaders are beyond harm: the factions need them
+        if (isLeader && !source.`is`(DamageTypeTags.BYPASSES_INVULNERABILITY)) return false
         val hurt = super.hurtServer(level, source, amount)
         if (hurt) {
             if (seat != null) standUp()
@@ -416,10 +472,10 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
 
     override fun getTypeName(): Component = Component.translatable("entity.guildmark.townsperson.${role.id}")
 
-    override fun isPushable(): Boolean = !isSleeping && seat == null && !routine.anchored
+    override fun isPushable(): Boolean = !isSleeping && seat == null && !routine.anchored && !isLeader
     // Passers-by leave on their own when nobody's looking (Crowds.maybeLeave); the game only clears them once far off
     override fun removeWhenFarAway(distance: Double): Boolean = crowd && distance > 96.0 * 96.0
-    override fun requiresCustomPersistence(): Boolean = !crowd
+    override fun requiresCustomPersistence(): Boolean = !crowd && !watcher
 
     override fun remove(reason: Entity.RemovalReason) {
         seat?.let { Claims.release(level(), it, this) }
@@ -446,6 +502,9 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
         output.putInt("shift", shift)
         output.putBoolean("night_watch", nightWatch)
         if (patrol.isNotEmpty()) output.store("patrol", BlockPos.CODEC.listOf(), patrol)
+        if (isLeader) output.putBoolean("leader", true)
+        if (watcher) output.putBoolean("watcher", true)
+        if (pursedDay >= 0) output.putLong("pursed_day", pursedDay)
     }
 
     override fun readAdditionalSaveData(input: ValueInput) {
@@ -471,6 +530,10 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
         shift = input.getIntOr("shift", 0)
         nightWatch = input.getBooleanOr("night_watch", false)
         patrol = input.read("patrol", BlockPos.CODEC.listOf()).orElse(listOf())
+        isLeader = input.getBooleanOr("leader", false)
+        // A heist's watchers only keep watch while it's on
+        if (input.getBooleanOr("watcher", false)) discardOnLoad = true
+        pursedDay = input.getLongOr("pursed_day", -1L)
     }
 
     companion object {
@@ -480,6 +543,10 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
         private val SPEECH: EntityDataAccessor<String> = SynchedEntityData.defineId(Townsperson::class.java, EntityDataSerializers.STRING)
         private val FLAGS: EntityDataAccessor<Byte> = SynchedEntityData.defineId(Townsperson::class.java, EntityDataSerializers.BYTE)
         private const val FLAG_LANTERN = 1
+        private const val FLAG_LEADER = 2
+
+        /** How long a leader keeps their eyes on someone talking to them before giving up on them. */
+        private const val LISTEN_TICKS = 2400
 
         /** Children are drawn and sized this much smaller. */
         const val CHILD_SCALE = 0.6f

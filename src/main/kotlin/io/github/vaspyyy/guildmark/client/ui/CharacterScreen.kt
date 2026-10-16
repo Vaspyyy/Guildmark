@@ -1,5 +1,7 @@
 package io.github.vaspyyy.guildmark.client.ui
 
+import io.github.vaspyyy.guildmark.faction.Faction
+import io.github.vaspyyy.guildmark.faction.Factions
 import com.mojang.blaze3d.platform.InputConstants
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.client.combat.CombatClient
@@ -258,6 +260,32 @@ class CharacterScreen : Screen(Component.translatable("gui.guildmark.status")) {
         return Section(Component.translatable("gui.guildmark.status.journey"), listOf(shards, row("milestones", milestones.toString())))
     }
 
+    /** Where the player stands with the factions: their rank in each they've joined, and any closed to them. */
+    private fun factions(player: LocalPlayer): Section {
+        val state = Factions.state(player)
+        val rows = ArrayList<Row>()
+        for (faction in Faction.entries) {
+            val chapters = state.chapters(faction)
+            val shut = state.isShut(faction)
+            if (chapters == 0 && !shut) continue
+            val value = when {
+                shut && chapters > 0 -> Component.translatable("faction.guildmark.status.expelled")
+                shut -> Component.translatable("faction.guildmark.status.barred")
+                else -> faction.rankTitle(chapters)
+            }
+            val tip = Component.translatable(
+                "gui.guildmark.status.faction.tip", Component.translatable("faction.guildmark.${faction.id}.desc"),
+                Component.translatable("faction.guildmark.${faction.id}.perk"), chapters, Faction.RANKS,
+            )
+            rows.add(Row(Component.translatable("faction.guildmark.${faction.id}"), value, if (shut) Ui.RED else ARGB.opaque(faction.color), tip))
+        }
+        if (rows.isEmpty()) rows.add(Row(
+            Component.translatable("faction.guildmark.status.none"), Component.empty(), Ui.TEXT_FAINT,
+            Component.translatable("gui.guildmark.status.factions.none.tip"),
+        ))
+        return Section(Component.translatable("gui.guildmark.status.factions"), rows)
+    }
+
     /**
      * The affixes at work on what's worn and held, with how many pieces carry each. A weapon's powers
      * work in the main hand (and a bow's or crossbow's from the off hand too, on what it shoots); armour's
@@ -322,7 +350,7 @@ class CharacterScreen : Screen(Component.translatable("gui.guildmark.status")) {
         val mid = left + side + gap
         val right = mid + middle + gap
 
-        drawColumn(graphics, listOf(guild(player), journey(player), relics(player)), left, top, side, bottom)
+        drawColumn(graphics, listOf(guild(player), journey(player), factions(player), relics(player)), left, top, side, bottom)
         drawDoll(graphics, player, mid, top, middle, bottom - top, mouseX, mouseY)
         drawColumn(graphics, listOf(vitals(player), defence(player), offence(player)), right, top, side, bottom)
 

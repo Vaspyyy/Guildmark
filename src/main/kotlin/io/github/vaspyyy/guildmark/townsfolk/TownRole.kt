@@ -30,6 +30,12 @@ enum class TownRole(val looks: Int, val health: Double = 20.0) {
     BARD(2),
     /** Prays at the altar or lectern and blesses passers-by. */
     PRIEST(2),
+    /** A Starwatch mage: reads and writes in the library, practises conjuring in the plaza, lectures. Look 0 is Idris. */
+    MAGE(4),
+    /** A Hearthsworn knight: spars, drills and stands at the barracks, kneels at dawn. Look 0 is Corra. */
+    KNIGHT(4, 30.0),
+    /** One of the Quiet Hand: dice and coin in the tavern attic by day, lurking and picking locks at night. Look 0 is Odile. */
+    THIEF(4),
     ;
 
     /** The role's name in commands, textures and line keys. */
@@ -93,10 +99,26 @@ enum class Activity(val clip: String, val ticks: Int, val loop: Boolean, val ove
     FLEE("flee", 12, true, true),
     STAGGER("stagger", 60, true, true),
     LANTERN("lantern", 40, true, true),
+    READ("read", 120, true),
+    SCRIBE("scribe", 60, true),
+    CONJURE("conjure", 80, true),
+    LECTURE("lecture", 60, true),
+    SPAR_ATTACK("spar_attack", 40, true),
+    SPAR_GUARD("spar_guard", 40, true),
+    DRILL("drill", 32, true),
+    SHARPEN("sharpen", 40, true),
+    KNEEL("kneel", 120, true),
+    DICE("dice", 50, true),
+    COUNT("count", 60, true),
+    LURK("lurk", 100, true),
+    PICK_LOCK("pick_lock", 60, true),
+    WHISPER("whisper", 50, true),
+    SHOUT("shout", 30, false),
+    SEARCH("search", 40, true),
     ;
 
     /** Seated activities keep the townsperson on their seat. */
-    val seated: Boolean get() = this == SIT || this == SIT_DRINK || this == SIT_TALK
+    val seated: Boolean get() = this == SIT || this == SIT_DRINK || this == SIT_TALK || this == SCRIBE || this == DICE
 
     companion object {
         fun byId(id: Int): Activity = entries.getOrElse(id) { NONE }

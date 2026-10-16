@@ -1,5 +1,7 @@
 package io.github.vaspyyy.guildmark.progression
 
+import io.github.vaspyyy.guildmark.faction.FactionRegistry
+import io.github.vaspyyy.guildmark.faction.FactionState
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.combat.Combat
 import io.github.vaspyyy.guildmark.combat.CombatState
@@ -52,6 +54,7 @@ import kotlin.math.min
 class BuildCache {
     var skills: SkillState? = null
     var sheet: CharacterSheet? = null
+    var factions: FactionState? = null
     var build: Build = Build.EMPTY
 }
 
@@ -80,10 +83,12 @@ object Talents {
         val cache = player.getData(ModAttachments.BUILD)
         val skills = player.getData(ModAttachments.SKILLS)
         val sheet = player.getData(ModAttachments.SHEET)
-        if (cache.skills !== skills || cache.sheet !== sheet) {
-            cache.build = Build.of(skills, sheet)
+        val factions = player.getData(FactionRegistry.FACTIONS)
+        if (cache.skills !== skills || cache.sheet !== sheet || cache.factions !== factions) {
+            cache.build = Build.of(skills, sheet, factions)
             cache.skills = skills
             cache.sheet = sheet
+            cache.factions = factions
         }
         return cache.build
     }

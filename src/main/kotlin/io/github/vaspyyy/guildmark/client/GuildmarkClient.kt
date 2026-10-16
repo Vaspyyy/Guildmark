@@ -156,6 +156,7 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
         // Dragons: their renderer, their flames, the ground shaking as they land (client/dragon)
         DragonClient.register(modBus)
         MagicClient.register(modBus)
+        io.github.vaspyyy.guildmark.client.faction.FactionClient.register(modBus)
         HdPack.register(modBus)
         modBus.addListener(RegisterRenderStateModifiersEvent::class.java) { event ->
             event.registerAvatarEntityModifier(CombatAnimator.AVATAR)

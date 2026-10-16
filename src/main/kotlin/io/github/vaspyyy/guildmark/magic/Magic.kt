@@ -1,5 +1,7 @@
 package io.github.vaspyyy.guildmark.magic
 
+import io.github.vaspyyy.guildmark.faction.SwornKnight
+import io.github.vaspyyy.guildmark.faction.WardLight
 import io.github.vaspyyy.guildmark.combat.Combat
 import io.github.vaspyyy.guildmark.progression.Bonus
 import io.github.vaspyyy.guildmark.progression.Skills
@@ -324,10 +326,22 @@ object Magic {
         if (caster is ServerPlayer) Skills.gain(caster, School.PRAYER.skill, min(amount, missing) * 0.8)
     }
 
-    /** Monsters, and anything out for [caster]'s blood or that they're fighting. Never a player: spells don't catch friends. */
+    /**
+     * Monsters, and anything out for [caster]'s blood or that they're fighting. Never a player: spells don't catch
+     * friends. A hostile caster's (the renegade's) are the other way about: players, and whatever it's fighting.
+     */
     fun isFoe(caster: LivingEntity, entity: LivingEntity): Boolean {
-        if (entity === caster || !entity.isAlive || entity.isSpectator || entity is Player) return false
+        if (entity === caster || !entity.isAlive || entity.isSpectator) return false
+        if (caster is Enemy) {
+            if (entity is Player) return !entity.isCreative
+            return entity !is WardLight && (caster is Mob && caster.target === entity || entity is Mob && entity.target === caster)
+        }
+        if (entity is Player) return false
         if (entity is OwnableEntity && entity.owner === caster) return false
+        // A test light is only its own player's to put out, a renegade's sentry anyone's who's fighting him; a sworn
+        // knight is nobody's foe but the one sparring them
+        if (entity is WardLight) return entity.owner?.let { it == caster.uuid } ?: entity.summoner.let { it == null || isFoe(caster, it) }
+        if (entity is SwornKnight) return entity.inBout && entity.sparring == caster.uuid
         if (entity is Enemy) return true
         if (entity is Mob && entity.target === caster) return true
         return caster.lastHurtMob === entity && caster.tickCount - caster.lastHurtMobTimestamp < FOE_MEMORY

@@ -1,0 +1,40 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:custom_model_data",
+    "cases": [
+      {
+        "when": "varn_ledger",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/heist/varn_ledger"
+        }
+      },
+      {
+        "when": "hearth_ember",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/heist/hearth_ember"
+        }
+      },
+      {
+        "when": "regent_seal",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/heist/regent_seal"
+        }
+      },
+      {
+        "when": "widows_ledger",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/heist/widows_ledger"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "guildmark:item/heist/varn_ledger"
+    }
+  }
+}

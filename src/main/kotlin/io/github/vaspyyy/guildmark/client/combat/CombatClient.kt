@@ -1,5 +1,7 @@
 package io.github.vaspyyy.guildmark.client.combat
 
+import io.github.vaspyyy.guildmark.faction.SwornKnight
+import io.github.vaspyyy.guildmark.faction.WardLight
 import com.mojang.blaze3d.platform.InputConstants
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.GuildmarkConfig
@@ -326,9 +328,15 @@ object CombatClient {
             it !== player && it.isAlive && isFoe(it) && Combat.angleTo(player.yRot, it.x - player.x, it.z - player.z) < 70f
         }.isNotEmpty()
 
-    /** A creature that's out to fight: monsters, and anything angry enough to be attacking. */
-    fun isFoe(entity: LivingEntity): Boolean =
-        entity is Enemy || (entity as? Mob)?.isAggressive == true || entity is CombatMob || isOpen(entity)
+    /**
+     * A creature that's out to fight: monsters, and anything angry enough to be attacking. A sworn knight is one only
+     * while sparring; a ward-light always is (there to be shot down).
+     */
+    fun isFoe(entity: LivingEntity): Boolean = when (entity) {
+        is SwornKnight -> entity.inBout
+        is WardLight -> true
+        else -> entity is Enemy || (entity as? Mob)?.isAggressive == true || entity is CombatMob || isOpen(entity)
+    }
 
     private fun press(press: Press) {
         val local = player ?: return

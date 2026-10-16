@@ -106,11 +106,12 @@ object Props {
     val ALL = listOf(
         "hammer", "tongs", "hot_iron", "peel", "spear", "lantern", "hoe", "rod", "line", "cane", "fan", "rag", "mug",
         "jug", "lute", "lute_slung", "book", "crate", "sack", "broom", "basket",
+        "staff", "quill", "sword", "shield", "whetstone", "dice_cup", "coin_purse", "lockpick",
     )
 
     // Which hand each is held in (the rest hang on the body)
-    private val RIGHT = setOf("hammer", "peel", "spear", "hoe", "rod", "cane", "mug", "broom")
-    private val LEFT = setOf("tongs", "lantern", "fan", "rag", "jug", "book", "basket")
+    private val RIGHT = setOf("hammer", "peel", "spear", "hoe", "rod", "cane", "mug", "broom", "staff", "quill", "sword", "dice_cup", "lockpick")
+    private val LEFT = setOf("tongs", "lantern", "fan", "rag", "jug", "book", "basket", "shield", "whetstone", "coin_purse")
 
     /** Things a look may carry in hand (named among its pieces). */
     private val CARRIED_LOOKS = listOf("cane", "fan", "basket")
@@ -136,6 +137,17 @@ object Props {
         Activity.CARRY to setOf("crate"),
         Activity.CARRY_SACK to setOf("sack"),
         Activity.LANTERN to setOf("lantern"),
+        Activity.SCRIBE to setOf("quill"),
+        Activity.CONJURE to setOf("staff"),
+        Activity.LECTURE to setOf("staff"),
+        Activity.SPAR_ATTACK to setOf("sword", "shield"),
+        Activity.SPAR_GUARD to setOf("sword", "shield"),
+        Activity.DRILL to setOf("sword", "shield"),
+        Activity.SHARPEN to setOf("sword", "whetstone"),
+        Activity.KNEEL to setOf("sword"),
+        Activity.DICE to setOf("dice_cup"),
+        Activity.COUNT to setOf("coin_purse"),
+        Activity.PICK_LOCK to setOf("lockpick"),
     )
 
     /** Work for both hands: nothing else is held meanwhile. */
@@ -144,10 +156,15 @@ object Props {
         Activity.HOE, Activity.HARVEST, Activity.CAST, Activity.FISH, Activity.REEL, Activity.PLAY, Activity.JUMP, Activity.SPIN,
         Activity.CLAP, Activity.LAUGH, Activity.LISTEN, Activity.SIT, Activity.SIT_TALK, Activity.WIPE, Activity.POUR,
         Activity.LUTE, Activity.PRAY, Activity.SWEEP, Activity.CARRY,
+        Activity.READ, Activity.KNEEL, Activity.COUNT, Activity.DICE, Activity.SCRIBE, Activity.CONJURE, Activity.LECTURE,
+        Activity.PICK_LOCK, Activity.LURK,
     )
 
     /** Work for the right hand only (waving, a mug, the sack on the shoulder). */
-    private val RIGHT_HAND = setOf(Activity.WAVE, Activity.BECKON, Activity.DRINK, Activity.CHEER, Activity.SIT_DRINK, Activity.CARRY_SACK)
+    private val RIGHT_HAND = setOf(
+        Activity.WAVE, Activity.BECKON, Activity.DRINK, Activity.CHEER, Activity.SIT_DRINK, Activity.CARRY_SACK,
+        Activity.SEARCH, Activity.SHOUT,
+    )
 
     fun held(role: TownRole, activity: Activity, lantern: Boolean, pieces: Set<String>): Set<String> {
         val out = HashSet<String>(OWN[activity] ?: emptySet())
@@ -164,6 +181,7 @@ object Props {
             TownRole.FISHER -> carry("rod")
             TownRole.PRIEST -> carry("book")
             TownRole.BARD -> if (activity != Activity.LUTE) out += "lute_slung"
+            TownRole.MAGE -> carry("staff")
             else -> {}
         }
         if (lantern) carry("lantern")

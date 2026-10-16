@@ -209,7 +209,7 @@ object ContractTracker : GuiLayer {
 
     private fun isDone(player: Player, entry: Entry): Boolean = when (entry.note.type) {
         QuestType.FETCH -> Contracts.countFetchItems(player, entry.note) >= entry.note.count
-        QuestType.HUNT, QuestType.CLEAR, QuestType.CHAMPION, QuestType.LAIR -> entry.state.progress >= entry.note.count
+        QuestType.HUNT, QuestType.CLEAR, QuestType.CHAMPION, QuestType.LAIR, QuestType.TRIAL -> entry.state.progress >= entry.note.count
         QuestType.DELIVER, QuestType.ESCORT -> false
     }
 
@@ -220,7 +220,7 @@ object ContractTracker : GuiLayer {
         val days = entry.state.daysLeft(gameTime)
         val progress: Component = when (entry.note.type) {
             QuestType.FETCH -> Component.translatable("gui.guildmark.tracker.count", Contracts.countFetchItems(player, entry.note), entry.note.count)
-            QuestType.HUNT, QuestType.CLEAR, QuestType.CHAMPION -> Component.translatable("gui.guildmark.tracker.count", entry.state.progress, entry.note.count)
+            QuestType.HUNT, QuestType.CLEAR, QuestType.CHAMPION, QuestType.TRIAL -> Component.translatable("gui.guildmark.tracker.count", entry.state.progress, entry.note.count)
             QuestType.DELIVER, QuestType.ESCORT -> Component.translatable("gui.guildmark.tracker.travel")
             QuestType.LAIR -> Component.translatable("gui.guildmark.tracker.lair")
         }
@@ -235,7 +235,7 @@ object ContractTracker : GuiLayer {
         if (isDone(player, entry)) return state.boardPos
         return when (entry.note.type) {
             QuestType.CLEAR -> state.boardPos
-            QuestType.DELIVER, QuestType.ESCORT, QuestType.CHAMPION, QuestType.LAIR -> state.destination
+            QuestType.DELIVER, QuestType.ESCORT, QuestType.CHAMPION, QuestType.LAIR, QuestType.TRIAL -> state.destination
             QuestType.FETCH, QuestType.HUNT -> null
         }
     }

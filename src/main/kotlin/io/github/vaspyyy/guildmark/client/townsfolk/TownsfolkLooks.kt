@@ -12,10 +12,10 @@ object TownsfolkLooks {
     /** Every look piece some look shows and others hide (never the tools the lead toggles). */
     val OPTIONAL: Set<String> = setOf(
         "apron", "baker_cap", "bard_cap", "beard", "belly", "boot_l", "boot_r", "cap", "cape", "circlet", "collar",
-        "creel", "hair_bow", "hair_bun", "hair_long", "head_wrap", "kerchief_knot", "kettle_helm", "pigtails",
-        "plumed_hat", "ponytail", "pouch", "puff_l", "puff_r", "roll_l", "roll_r", "sash_tails", "shoulder_rag",
-        "skirt_l", "skirt_r", "skullcap", "sleeve_l", "sleeve_r", "souwester", "straw_hat", "tabard", "tabard_back",
-        "veil", "wide_hat",
+        "creel", "face_scarf", "hair_bow", "hair_bun", "hair_long", "head_wrap", "kerchief_knot", "kettle_helm",
+        "pigtails", "plumed_hat", "ponytail", "pouch", "puff_l", "puff_r", "roll_l", "roll_r", "sash_tails",
+        "scabbard", "shoulder_rag", "skirt_l", "skirt_r", "skullcap", "sleeve_l", "sleeve_r", "souwester",
+        "straw_hat", "tabard", "tabard_back", "veil", "wide_hat", "widow_hat",
     )
 
     /** By role id (lowercase role name), in look order. */
@@ -87,6 +87,24 @@ object TownsfolkLooks {
         "priest" to listOf(
             Look("priest_0", "man", setOf("beard", "skirt_l", "skirt_r", "skullcap", "sleeve_l", "sleeve_r")),
             Look("priest_1", "woman", setOf("skirt_l", "skirt_r", "sleeve_l", "sleeve_r", "veil")),
+        ),
+        "mage" to listOf(
+            Look("mage_0", "old", setOf("beard", "skirt_l", "skirt_r", "sleeve_l", "sleeve_r", "veil")),
+            Look("mage_1", "woman", setOf("ponytail", "skirt_l", "skirt_r", "sleeve_l", "sleeve_r")),
+            Look("mage_2", "man", setOf("cape", "collar", "skirt_l", "skirt_r", "sleeve_l", "sleeve_r")),
+            Look("mage_3", "woman", setOf("cape", "hair_bun", "sash_tails", "skirt_l", "skirt_r", "sleeve_l", "sleeve_r")),
+        ),
+        "knight" to listOf(
+            Look("knight_0", "woman", setOf("cape", "collar", "puff_l", "puff_r", "scabbard", "tabard", "tabard_back")),
+            Look("knight_1", "man", setOf("collar", "puff_l", "puff_r", "scabbard", "tabard", "tabard_back")),
+            Look("knight_2", "woman", setOf("collar", "ponytail", "puff_l", "puff_r", "scabbard", "tabard", "tabard_back")),
+            Look("knight_3", "old", setOf("beard", "collar", "puff_l", "puff_r", "scabbard", "tabard", "tabard_back")),
+        ),
+        "thief" to listOf(
+            Look("thief_0", "woman", setOf("hair_bun", "pouch", "skirt_l", "skirt_r", "widow_hat")),
+            Look("thief_1", "man", setOf("cape", "face_scarf", "pouch", "veil")),
+            Look("thief_2", "woman", setOf("cape", "collar", "pouch")),
+            Look("thief_3", "man", setOf("belly", "pouch", "puff_l", "puff_r", "roll_l", "roll_r")),
         ),
     )
 }

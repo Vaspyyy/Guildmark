@@ -325,7 +325,8 @@ class Sit(p: Townsperson, private val seatPos: BlockPos, private val ticks: Int,
             p.act(mood)
             nextMood = age + if (mood.loop) mood.ticks * (2 + p.random.nextInt(3)) else mood.ticks
         }
-        if (p.attending == null) p.level().getNearestPlayer(p, 6.0)?.let { if (p.random.nextInt(4) == 0) p.lookAt(it) }
+        val other = p.attending
+        if (other != null) p.lookAt(other) else p.level().getNearestPlayer(p, 6.0)?.let { if (p.random.nextInt(4) == 0) p.lookAt(it) }
         return age < ticks
     }
 
@@ -444,7 +445,7 @@ class Audience(p: Townsperson, private val bard: Townsperson) : Task(p) {
     }
 
     override fun run(): Boolean {
-        if (!bard.isAlive || bard.activity != Activity.LUTE && bard.activity != Activity.SALUTE) {
+        if (!bard.isAlive || bard.activity != Activity.LUTE && bard.activity != Activity.SALUTE && bard.activity != Activity.CONJURE) {
             // The song's over: applause, then on their way
             if (p.activity != Activity.CLAP && p.activity != Activity.CHEER) {
                 p.act(if (p.role == TownRole.CHILD) Activity.JUMP else if (p.random.nextInt(4) == 0) Activity.CHEER else Activity.CLAP)

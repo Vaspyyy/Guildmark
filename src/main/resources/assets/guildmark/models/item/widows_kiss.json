@@ -1,0 +1,76 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "guildmark:item/widows_kiss"
+  },
+  "display": {
+    "thirdperson_righthand": {
+      "rotation": [
+        0.0,
+        -90.0,
+        54.256
+      ],
+      "translation": [
+        -0.0,
+        1.411,
+        0.803
+      ],
+      "scale": [
+        0.672,
+        0.672,
+        0.85
+      ]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [
+        0.0,
+        90.0,
+        -54.256
+      ],
+      "translation": [
+        -0.0,
+        1.411,
+        0.803
+      ],
+      "scale": [
+        0.672,
+        0.672,
+        0.85
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0.0,
+        -90.0,
+        24.256
+      ],
+      "translation": [
+        1.13,
+        1.285,
+        0.304
+      ],
+      "scale": [
+        0.5376,
+        0.5376,
+        0.68
+      ]
+    },
+    "firstperson_lefthand": {
+      "rotation": [
+        0.0,
+        90.0,
+        -24.256
+      ],
+      "translation": [
+        1.13,
+        1.285,
+        0.304
+      ],
+      "scale": [
+        0.5376,
+        0.5376,
+        0.68
+      ]
+    }
+  }
+}

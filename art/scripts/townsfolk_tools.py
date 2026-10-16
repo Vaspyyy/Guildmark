@@ -876,6 +876,485 @@ def bail_painter(key):
         return a
     return painter(key, fn)
 
+# ---- the factions' tools: the mage's staff and quill, the knight's sword, shield and whetstone, the thief's picks, cup
+#      and purse ---------------------------------------------------------------------------------------------------------
+
+SILVER = (206, 212, 226); SILVER_D = (122, 130, 152); SILVER_L = (250, 252, 255)
+NIGHTWOOD = (66, 46, 52); NIGHTWOOD_D = (34, 24, 30); NIGHTWOOD_L = (116, 86, 90)             # the scholar's staff
+AMETHYST = [(44, 18, 84), (88, 42, 142), (140, 80, 202), (190, 140, 238), (238, 218, 255)]
+FEATHER = (248, 246, 242); FEATHER_D = (204, 204, 218); HORN = (234, 222, 192); HORN_D = (190, 172, 130); INK = (36, 32, 56)
+BRASS = (208, 158, 62); BRASS_D = (136, 94, 32); BRASS_L = (252, 220, 128)                    # the sword's hilt
+RED_GRIP = (146, 30, 36); RED_GRIP_D = (84, 16, 24); RED_GRIP_L = (196, 70, 64)
+FIELD = (134, 24, 34); FIELD_D = (82, 14, 26); FIELD_L = (182, 52, 52)                        # the shield's deep red
+SHIELD_WOOD = (112, 80, 54); SHIELD_WOOD_D = (70, 48, 34); SHIELD_WOOD_L = (150, 112, 78)
+STONE = (138, 140, 146); STONE_D = (88, 90, 100); STONE_L = (184, 186, 192)                   # the whetstone
+CUP = (136, 90, 52); CUP_D = (82, 52, 30); CUP_L = (182, 134, 84)                             # the dice cup
+PURSE = (128, 86, 50); PURSE_D = (78, 50, 30); PURSE_L = (170, 122, 76); CORD = (224, 208, 166)
+PICK = (176, 182, 196); PICK_D = (96, 102, 118); PICK_L = (238, 242, 250)
+FACE_ORDER = {'front': 0, 'left': 1, 'back': 2, 'right': 3}       # going round a post, for spirals that wrap it
+
+
+def erode(mask, n=1):
+    """A boolean mask shrunk by [n] texels (four-neighbour)."""
+    m = mask.copy()
+    for _ in range(n):
+        p = np.pad(m, 1, constant_values=False)
+        m = m & p[:-2, 1:-1] & p[2:, 1:-1] & p[1:-1, :-2] & p[1:-1, 2:]
+    return m
+
+
+def silver_painter(key, wear=0.05):
+    def fn(face, w, h, rng):
+        return metal(w, h, SILVER, SILVER_D, SILVER_L, rng, wear=wear, polish=0.2)
+    return painter(key, fn)
+
+
+def brass_painter(key):
+    """The sword's cross-guard and pommel: warm brass, bevelled, with a glint where the light catches."""
+    def fn(face, w, h, rng):
+        a = metal(w, h, BRASS, BRASS_D, BRASS_L, rng, wear=0.1)
+        if min(w, h) >= 3:
+            U, V = uv(w, h)
+            glint = np.exp(-((U - 0.3) ** 2 + (V - 0.3) ** 2) * 14)
+            a[..., :3] = mix(a[..., :3], (255, 240, 190), (glint * 0.7)[..., None])
+        return a
+    return painter(key, fn)
+
+# ---- the Hearthsworn flame, shared by the shield here and the knights' tabards and capes in townsfolk.py ------------
+
+
+def _tongue(X, Y, tip, base, half_w, curve=0.0, power=0.8):
+    """A flame's tongue from its tip to its base: half-width grows from nothing at the tip, along an axis that bows by [curve]."""
+    t = (Y - tip[1]) / (base[1] - tip[1])
+    axis = tip[0] + (base[0] - tip[0]) * t + curve * np.sin(np.pi * np.clip(t, 0, 1))
+    return (t >= 0) & (t <= 1) & (np.abs(X - axis) <= half_w * np.clip(t, 0, 1) ** power)
+
+
+def _blob(X, Y, c, r):
+    return ((X - c[0]) / r[0]) ** 2 + ((Y - c[1]) / r[1]) ** 2 <= 1
+
+
+def flame_masks(W, H, ss=4):
+    """The Hearthsworn's hearth flame on a W x H grid of texels: (outer, inner) boolean masks. The outer is a flame of three
+    tongues, the tallest leaning right, rising from a round bulb; the inner is a smaller flame hollowed out of it."""
+    X, Y = np.meshgrid(((np.arange(W * ss) + 0.5) / (W * ss)) * 2 - 1, (np.arange(H * ss) + 0.5) / (H * ss))
+    outer = (_tongue(X, Y, (0.14, 0.0), (0.0, 0.70), 0.52, curve=-0.14) | _tongue(X, Y, (0.80, 0.22), (0.30, 0.78), 0.30, curve=0.14)
+             | _tongue(X, Y, (-0.76, 0.36), (-0.30, 0.80), 0.26, curve=-0.10) | _blob(X, Y, (0.0, 0.78), (0.76, 0.22)))
+    inner = (_tongue(X, Y, (0.08, 0.38), (0.0, 0.86), 0.22, curve=-0.06) | _blob(X, Y, (0.0, 0.84), (0.34, 0.10))) & erode(outer, ss)
+
+    def down(m):
+        return m.reshape(H, ss, W, ss).mean(axis=(1, 3)) >= 0.5
+    return down(outer), down(inner)
+
+
+def paint_flame(a, x0, y0, W, H, hollow=True):
+    """Paint the flame into the float RGBA array [a] with its top left at (x0, y0): gold, lit from the upper left, a dark
+    rim, and (when it is big enough) the field showing through the hollow."""
+    outer, inner = flame_masks(W, H)
+    if not hollow or W < 9 or H < 12:
+        inner = np.zeros_like(outer)
+    body = outer & ~inner
+    ys, xs = np.mgrid[0:H, 0:W]
+    rim = outer & ~erode(outer, 1)
+    t = np.clip(0.62 + 0.5 * ((0.5 - xs / max(1, W - 1)) * 0.6 + (0.5 - ys / max(1, H - 1)) * 0.5), 0, 1)
+    gold = ramp([GOLD_D, GOLD, GOLD_L], t)
+    sub = a[y0:y0 + H, x0:x0 + W]
+    hh, ww = sub.shape[:2]
+    gold, body, rim, inner = gold[:hh, :ww], body[:hh, :ww], rim[:hh, :ww], inner[:hh, :ww]
+    sub[..., :3] = np.where(body[..., None], gold, sub[..., :3])
+    sub[..., :3] = np.where((body & rim)[..., None], mix(sub[..., :3], GOLD_D, 0.55), sub[..., :3])
+    # the hollow: the field, in the flame's own shadow, with a lit lip on the side the light comes from
+    sub[..., :3] = np.where(inner[..., None], sub[..., :3] * 0.78, sub[..., :3])
+    lip = np.zeros_like(inner)
+    lip[:, 1:] = body[:, 1:] & inner[:, :-1]
+    lip[1:, :] |= body[1:, :] & inner[:-1, :]
+    sub[..., :3] = np.where(lip[..., None], mix(sub[..., :3], GOLD_L, 0.6), sub[..., :3])
+    sub[..., 3] = np.where(outer[:hh, :ww], 255, sub[..., 3])
+
+# ---- the mage ---------------------------------------------------------------------------------------------------------
+
+
+def staff_shaft_painter(key):
+    """Dark wood with a violet cast and a long, quiet grain; silver wire spirals round its upper part, silver bands under the
+    head and above the foot. The shaft runs from y -14 (V 0) to y 11 (V 1)."""
+    def fn(face, w, h, rng):
+        along = AXIS_ON_FACE['y'][face]
+        a = grain(w, h, along if along else 'v', NIGHTWOOD, NIGHTWOOD_D, NIGHTWOOD_L, rng, streak=0.4)
+        if along != 'v':
+            return shade_edges(a, 0.16)
+        y = -14.0 + 25.0 * (np.arange(h) + 0.5) / h
+        for lo, hi in ((-13.5, -12.5), (-11.6, -11.1), (7.9, 8.9), (9.4, 9.9)):
+            rows = np.where((y >= lo) & (y < hi))[0]
+            for k, r in enumerate(rows):
+                a[r, :, :3] = mix(SILVER_L, SILVER_D, (k / max(1, len(rows) - 1)) ** 1.2) if len(rows) > 1 else SILVER
+        order = FACE_ORDER[face]
+        for r in range(h):
+            if -10.6 <= y[r] <= -2.2:
+                x = int((r * 0.5) % (4 * w)) - order * w
+                if 0 <= x < w:
+                    a[r, x, :3] = SILVER if r % 2 == 0 else mix(SILVER, SILVER_D, 0.5)
+                    if x + 1 < w:
+                        a[r, x + 1, :3] *= 0.72
+        return shade_edges(a, 0.14)
+    return painter(key, fn)
+
+
+def crystal_painter(key):
+    """A cut amethyst: a lit facet on the left, a bright one in the middle, a shadowed one on the right, a glint high up."""
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        if face == 'top':
+            t = np.full((h, w), 0.86)
+        elif face == 'bottom':
+            t = np.full((h, w), 0.22)
+        else:
+            col = np.minimum((U * w * 1.0).astype(int), w - 1)
+            n = max(w, 3)
+            third = (U * n).astype(int)
+            facet = np.where(third == 0, 0.68, np.where(third >= n - 1, 0.38, 0.84))
+            t = facet + {'front': 0.0, 'back': -0.08, 'right': -0.12, 'left': 0.08}[face] + 0.16 * (0.5 - V)
+            if h >= 4:
+                t[-1, :] -= 0.22
+                t[0, :] += 0.10
+        t = np.clip(t + rng.normal(0, 0.02, (h, w)), 0, 1)
+        a = np.zeros((h, w, 4), float)
+        a[..., :3] = ramp(AMETHYST, t)
+        a[..., 3] = 255
+        if face in ('front', 'right') and h >= 5 and w >= 3:
+            a[1, 1, :3] = AMETHYST[4]
+        return a
+    return painter(key, fn, light=False)
+
+
+def vane_painter(key, broad=('front', 'back')):
+    """A white feather's vane on a flat card: the rachis down its middle, barbs slanting out toward the tip, widest a third of
+    the way down from the tip and narrowing to the bare quill; clear outside the leaf. [broad] are the card's broad faces."""
+    def profile(V):
+        up = np.sin(np.clip(V / 0.32, 0, 1) * math.pi / 2) ** 0.9
+        return np.where(V < 0.32, up, 1 - 0.62 * np.clip((V - 0.32) / 0.68, 0, 1) ** 1.3)
+
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        hw = profile(V)
+        a = np.zeros((h, w, 4), float)
+        if face in ('top', 'bottom'):
+            return a
+        if face in broad:
+            dist = np.abs(U - 0.5) * 2
+            inside = dist <= hw
+        else:                      # a thin edge: only where the leaf is at its widest
+            inside = np.broadcast_to(hw > 0.9, (h, w)).copy()
+            dist = np.full((h, w), 0.9)
+        barb = ((V * h + dist * w * 0.8) % 3.0) < 1.0
+        col = np.where(barb[..., None], mix(FEATHER, FEATHER_D, 0.55), np.array(FEATHER, float))
+        col = col * (1 + rng.normal(0, 0.012, (h, w, 1)))
+        # a cool shadow on the outer edge of the vane, the quill's cream down its middle
+        edge = inside & (dist > hw - max(0.2, 1.1 / w))
+        col = np.where(edge[..., None], mix(col, FEATHER_D, 0.45), col)
+        spine = (np.abs(U - 0.5) * w < 0.55) & (face in broad)
+        col = np.where(spine[..., None], np.array(HORN, float), col)
+        a[..., :3] = col
+        a[..., 3] = np.where(inside, 255, 0)
+        return a
+    return painter(key, fn)
+
+
+def calamus_painter(key):
+    """The bare quill: pale horn, the nib end stained with ink and cut to a point."""
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        a = solid(w, h, HORN)
+        a[..., :3] = mix(HORN, HORN_D, (np.abs(U - 0.5) * 1.2 + 0.2 * V)[..., None] * 0.6)
+        ink = V > 0.84
+        a[..., :3] = np.where(ink[..., None], np.array(INK, float), a[..., :3])
+        if face == 'bottom':
+            a[..., :3] = INK
+        return a
+    return painter(key, fn)
+
+# ---- the knight --------------------------------------------------------------------------------------------------------
+
+
+def blade_painter(key, broad=('right', 'left')):
+    """A longsword's blade in polished steel: bright cutting edges, a fuller down the middle, the point ground in at the tip.
+    [broad] are the flat faces (the sword is modelled with its blade's flats facing +-x, its edges +-z); the thin edges stop
+    where the blade tapers."""
+    taper = 0.8
+
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        a = metal(w, h, STEEL, STEEL_D, STEEL_L, rng, bevel=False, wear=0.03)
+        tip = np.clip((V - taper) / (1 - taper), 0, 1)
+        if face in broad:
+            hw = 1 - tip ** 1.4
+            dist = np.abs(U - 0.5) * 2
+            inside = dist <= hw
+            edge = dist > hw - max(0.2, 1.1 / w)
+            fuller = (dist < 0.2) & (V < taper + 0.04)
+            side = np.where(U < 0.5, 1.07, 0.84)[..., None]
+            a[..., :3] = a[..., :3] * side
+            a[..., :3] = np.where(edge[..., None], mix(a[..., :3], STEEL_L, 0.75), a[..., :3])
+            a[..., :3] = np.where(fuller[..., None], mix(a[..., :3], STEEL_D, 0.62), a[..., :3])
+            a[..., :3] = np.where((fuller & (np.abs(U - 0.5) * w < 0.5) & (V < 0.1))[..., None], a[..., :3] * 1.1, a[..., :3])
+            a[~inside] = 0
+        elif face in ('front', 'back'):
+            a[..., :3] = mix(STEEL, STEEL_L, 0.6)
+            a[V >= taper] = 0
+        elif face == 'bottom':
+            a[:] = 0
+        else:
+            a[..., :3] = STEEL_D
+        return a
+    return painter(key, fn)
+
+
+def sword_grip_painter(key):
+    """Red leather wrapped on a diagonal, the cord showing as a darker spiral, a thin brass wire at each end."""
+    def fn(face, w, h, rng):
+        along = AXIS_ON_FACE['y'][face]
+        a = noise_fill(w, h, RED_GRIP, rng, 0.05)
+        if along == 'v':
+            ys, xs = np.mgrid[0:h, 0:w]
+            wrap = (ys + xs * 2 + FACE_ORDER[face] * 2) % 4 < 1
+            a[..., :3] = np.where(wrap[..., None], mix(a[..., :3], RED_GRIP_D, 0.7), a[..., :3])
+            lit = (ys + xs * 2 + FACE_ORDER[face] * 2) % 4 == 2
+            a[..., :3] = np.where(lit[..., None], mix(a[..., :3], RED_GRIP_L, 0.3), a[..., :3])
+            a[0, :, :3] = BRASS
+            a[-1, :, :3] = BRASS_D
+        return shade_edges(a, 0.12)
+    return painter(key, fn)
+
+
+def heater_profile(V):
+    """Half-width (0..1) of a heater shield at V down its face: straight sides to a third of the way, then curving in to the point."""
+    s = np.clip((V - 0.34) / 0.66, 0, 1)
+    return np.where(V < 0.34, 1.0, (1 - s ** 2.2) ** 0.62)
+
+
+def _heater(w, h):
+    U, V = uv(w, h)
+    inside = np.abs(U - 0.5) * 2 <= heater_profile(V)
+    inside[0, 0] = inside[0, -1] = False
+    return U, V, inside
+
+
+def shield_painter(key):
+    """The heater shield. Its face (front): a deep red field lit from the upper left, a steel rim with rivets, the gold hearth
+    flame over two crossed logs. Its back: grey-brown planks and a leather band. Its edges are steel down the straight sides
+    and clear below (the point is a card)."""
+    def face_front(w, h, rng):
+        U, V, inside = _heater(w, h)
+        a = np.zeros((h, w, 4), float)
+        rw = max(1, round(w / 10))
+        field_m = erode(inside, rw)
+        rim = inside & ~field_m
+        t = np.clip(0.50 + 0.34 * (0.42 - V) + 0.20 * (0.5 - U), 0, 1)
+        a[..., :3] = ramp([FIELD_D, FIELD, FIELD_L], t) * (1 + rng.normal(0, 0.035, (h, w, 1)))
+        a[..., 3] = 255
+        chips = rng.random((h, w)) < 0.012
+        a[..., :3] = np.where(chips[..., None], mix(a[..., :3], (60, 36, 30), 0.7), a[..., :3])
+        # the rim: steel, bright where it faces the light (upper left), dark on the far side
+        nx, ny = U - 0.5, V - 0.42
+        lightness = np.clip(0.5 - 0.95 * (nx + ny), 0, 1)
+        rimc = ramp([STEEL_D, STEEL, STEEL_L], lightness) * (1 + rng.normal(0, 0.03, (h, w, 1)))
+        a[..., :3] = np.where(rim[..., None], rimc, a[..., :3])
+        outline = inside & ~erode(inside, 1)
+        a[..., :3] = np.where(outline[..., None], a[..., :3] * 0.62, a[..., :3])
+        shade_in = field_m & ~erode(field_m, 1)
+        a[..., :3] = np.where(shade_in[..., None], a[..., :3] * 0.7, a[..., :3])
+        ys, xs = np.mgrid[0:h, 0:w]
+        riv = rim & ~outline & ((xs * 3 + ys * 5) % 11 == 0)
+        a[..., :3] = np.where(riv[..., None], mix(a[..., :3], STEEL_L, 0.85), a[..., :3])
+        # the hearth flame, over two crossed logs
+        fw, fh = max(8, round(w * 0.52)), max(10, round(h * 0.50))
+        fx, fy = (w - fw) // 2, round(h * 0.13)
+        paint_flame(a, fx, fy, fw, fh)
+        ly = fy + fh + 1
+        for k in range(2):
+            lo = ly + k
+            if lo < h:
+                span = round(fw * (0.78 - 0.18 * k))
+                x_a = (w - span) // 2
+                seg = slice(x_a, x_a + span)
+                a[lo, seg, :3] = np.where(inside[lo, seg, None], np.array(GOLD_D if k == 0 else GOLD, float), a[lo, seg, :3])
+        a[~inside] = 0
+        return a
+
+    def face_back(w, h, rng):
+        U, V, inside = _heater(w, h)
+        a = grain(w, h, 'v', SHIELD_WOOD, SHIELD_WOOD_D, SHIELD_WOOD_L, rng, streak=0.5)
+        seam = (np.abs(U * 3 - np.round(U * 3)) < max(0.04, 0.5 / w)) & (U > 0.2) & (U < 0.8)
+        a[..., :3] = np.where(seam[..., None], mix(a[..., :3], SHIELD_WOOD_D, 0.7), a[..., :3])
+        for c in (0.22, 0.52):
+            band = np.abs(V - c) < max(0.03, 0.9 / h)
+            a[..., :3] = np.where(band[..., None], np.array((86, 54, 36), float) * (1 + 0.2 * (V < c)[..., None]), a[..., :3])
+        outline = inside & ~erode(inside, 1)
+        a[..., :3] = np.where(outline[..., None], mix(a[..., :3], STEEL_D, 0.8), a[..., :3])
+        a[~inside] = 0
+        return a
+
+    def fn(face, w, h, rng):
+        if face == 'front':
+            return face_front(w, h, rng)
+        if face == 'back':
+            return face_back(w, h, rng)
+        if face == 'bottom':
+            return np.zeros((h, w, 4), float)
+        a = metal(w, h, STEEL, STEEL_D, STEEL_L, rng, bevel=face == 'top')
+        if face in ('right', 'left'):
+            U, V = uv(w, h)
+            a[V > 0.37] = 0
+        return a
+    return painter(key, fn)
+
+
+def leather_painter(key, base=PURSE, dark=PURSE_D, light=PURSE_L, along='u', stitch=True):
+    """Plain leather on a small piece: fine grain, a darker edge, optionally a row of stitches down the middle."""
+    def fn(face, w, h, rng):
+        a = noise_fill(w, h, base, rng, 0.05)
+        U, V = uv(w, h)
+        a[..., :3] = mix(a[..., :3], dark, np.clip(0.55 * np.abs(V - 0.5 if along == 'u' else U - 0.5) * 2 - 0.12, 0, 0.5)[..., None])
+        if stitch and min(w, h) >= 4:
+            xs = np.arange(w)[None, :]
+            ys = np.arange(h)[:, None]
+            run = (xs if along == 'u' else ys) % 3 == 0
+            mid = (np.abs(V - 0.5) * h < 0.6) if along == 'u' else (np.abs(U - 0.5) * w < 0.6)
+            a[..., :3] = np.where((run & mid)[..., None], mix(a[..., :3], light, 0.7), a[..., :3])
+        return shade_edges(a, 0.14)
+    return painter(key, fn)
+
+
+def whetstone_painter(key):
+    """A hand whetstone: grey stone flecked with grit, its working face (the underside) smooth and pale and scored along its length."""
+    def fn(face, w, h, rng):
+        a = noise_fill(w, h, STONE, rng, 0.06)
+        grit = rng.random((h, w))
+        a[..., :3] = np.where((grit < 0.10)[..., None], mix(a[..., :3], STONE_D, 0.7), a[..., :3])
+        a[..., :3] = np.where((grit > 0.93)[..., None], mix(a[..., :3], STONE_L, 0.7), a[..., :3])
+        if face == 'bottom':
+            a[..., :3] = mix(a[..., :3], STONE_L, 0.5)
+            ys = np.arange(h)[:, None]
+            score = (rng.random((1, w)) < 0.35) & (ys % 7 != 3)
+            a[..., :3] = np.where(score[..., None], mix(a[..., :3], STONE_D, 0.4), a[..., :3])
+        return shade_edges(a, 0.2)
+    return painter(key, fn)
+
+# ---- the thief ---------------------------------------------------------------------------------------------------------
+
+
+def cup_painter(key, part):
+    """The dice cup, boiled leather: a base disc, a stitched body, a flared rim whose mouth shows dark inside with a die in it."""
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        a = noise_fill(w, h, CUP, rng, 0.05)
+        grainy = rng.random((h, w)) < 0.07
+        a[..., :3] = np.where(grainy[..., None], mix(a[..., :3], CUP_D, 0.5), a[..., :3])
+        if face == 'top':
+            if part == 'rim':
+                ring = erode(np.ones((h, w), bool), max(1, round(w / 5)))
+                hollow = np.where(ring, 1.0, 0.0)
+                a[..., :3] = np.where(ring[..., None], mix((30, 20, 16), (54, 38, 28), (np.hypot(U - 0.5, V - 0.5) * 1.6)[..., None]), mix(CUP_L, CUP, 0.2))
+                if w >= 7:
+                    dx, dy = round(w * 0.45), round(h * 0.45)
+                    a[dy:dy + 2, dx:dx + 2, :3] = (238, 234, 224)
+                    a[dy, dx, :3] = (60, 40, 40)
+            else:
+                a[..., :3] = mix(CUP_L, CUP, 0.3)
+            return a
+        if face == 'bottom':
+            a[..., :3] = a[..., :3] * 0.5
+            return a
+        if part == 'body' and face in ('front', 'back', 'right', 'left'):
+            # a stitched seam down one corner and a tooled band near the top
+            a[..., :3] = np.where((np.abs(V - 0.2) < max(0.07, 0.6 / h))[..., None], mix(a[..., :3], CUP_D, 0.6), a[..., :3])
+            if face == 'front':
+                seam = (np.abs(U - 0.5) * w < 0.6) & (np.arange(h)[:, None] % 3 != 2)
+                a[..., :3] = np.where(seam[..., None], mix(a[..., :3], CUP_L, 0.65), a[..., :3])
+        if part == 'rim':
+            a[..., :3] = mix(a[..., :3], CUP_L, 0.32)
+            a[0, :, :3] = mix(a[0, :, :3], (255, 236, 200), 0.3)
+            a[-1:, :, :3] *= 0.7
+        if part == 'base':
+            a[..., :3] = a[..., :3] * 0.85
+        return shade_edges(a, 0.12)
+    return painter(key, fn)
+
+
+def coin_painter(key):
+    """A gold coin on a flat card: a round face with a beaded rim, a bright mark in the middle, a glint; clear at the corners."""
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        a = metal(w, h, GOLD, GOLD_D, GOLD_L, rng, bevel=False, wear=0.05)
+        if face in ('front', 'back', 'right', 'left') and min(w, h) >= 3:
+            r = np.hypot((U - 0.5) * w, (V - 0.5) * h) / (min(w, h) / 2)
+            a[r > 1.0] = 0
+            a[..., :3] = np.where(((r > 0.78) & (r <= 1.0))[..., None], mix(a[..., :3], GOLD_D, 0.5), a[..., :3])
+            a[..., :3] = np.where((r < 0.36)[..., None], mix(a[..., :3], GOLD_L, 0.55), a[..., :3])
+            glint = np.exp(-((U - 0.32) ** 2 + (V - 0.3) ** 2) * 22)
+            a[..., :3] = mix(a[..., :3], (255, 246, 210), (glint * 0.7)[..., None])
+        return a
+    return painter(key, fn)
+
+
+def purse_top_painter(key):
+    """The purse's open mouth seen from above: leather folded back round a dark hollow with gold coins heaped in it."""
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        a = noise_fill(w, h, PURSE_L, rng, 0.05)
+        if face == 'top' and w >= 6:
+            hollow = erode(np.ones((h, w), bool), max(1, round(w / 6)))
+            a[..., :3] = np.where(hollow[..., None], (34, 22, 16), a[..., :3])
+            ys, xs = np.mgrid[0:h, 0:w]
+            for cx, cy, r in ((0.38, 0.45, 0.2), (0.60, 0.40, 0.19), (0.50, 0.62, 0.2), (0.66, 0.62, 0.16)):
+                d = np.hypot((U - cx) * w, (V - cy) * h) / (r * min(w, h))
+                coin = d < 1.0
+                a[..., :3] = np.where(coin[..., None], mix(GOLD_L, GOLD, np.clip(d, 0, 1)[..., None] ** 2), a[..., :3])
+                a[..., :3] = np.where(((d > 0.8) & coin)[..., None], mix(a[..., :3], GOLD_D, 0.6), a[..., :3])
+        elif face == 'bottom':
+            a[..., :3] *= 0.55
+        else:
+            a[..., :3] = mix(a[..., :3], PURSE, 0.4)
+            a[-1:, :, :3] *= 0.75
+        return shade_edges(a, 0.1)
+    return painter(key, fn)
+
+
+def purse_body_painter(key):
+    """A leather bag, gathered at the neck: folds radiating down from the top, a stitched seam, darker toward the bottom."""
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        a = noise_fill(w, h, PURSE, rng, 0.05)
+        if face in ('top', 'bottom'):
+            a[..., :3] *= 0.6 if face == 'bottom' else 1.0
+            return shade_edges(a, 0.2)
+        folds = (np.sin(U * w * 1.9) * 0.5 + 0.5) * np.clip(1 - V * 1.3, 0, 1)
+        a[..., :3] = mix(a[..., :3], PURSE_D, (folds * 0.5)[..., None])
+        a[..., :3] *= (1.1 - 0.35 * V)[..., None]
+        if face == 'front' and h >= 4:
+            seam = (np.abs(U - 0.5) * w < 0.6) & (np.arange(h)[:, None] % 3 != 2) & (V > 0.3)
+            a[..., :3] = np.where(seam[..., None], mix(a[..., :3], PURSE_L, 0.6), a[..., :3])
+        return shade_edges(a, 0.16)
+    return painter(key, fn)
+
+
+def pick_painter(key):
+    """A thin lock tool in bright steel."""
+    def fn(face, w, h, rng):
+        a = metal(w, h, PICK, PICK_D, PICK_L, rng, wear=0.04, bevel=min(w, h) >= 2)
+        return a
+    return painter(key, fn)
+
+
+def wrapped_painter(key, base=(70, 46, 34), light=(120, 84, 60)):
+    """A leather-wrapped handle: dark cord in a diagonal wind."""
+    def fn(face, w, h, rng):
+        a = noise_fill(w, h, base, rng, 0.05)
+        ys, xs = np.mgrid[0:h, 0:w]
+        a[..., :3] = np.where(((ys + xs) % 3 == 0)[..., None], mix(a[..., :3], light, 0.5), a[..., :3])
+        return a
+    return painter(key, fn)
+
+
 # ================================================================== the tools
 
 def C(origin, size, name, paint, inflate=0.0):
@@ -1079,8 +1558,115 @@ def _basket():
     ])
 
 
+def _staff():
+    # A scholar's staff of dark wood as tall as the person (35.5 px with its finial), held upright in front of the fist
+    # along the arm exactly like the watch's spear (the same pivot), so with the arm hanging its foot stands on the ground
+    # beside the right foot. The head is a silver cage, four posts between a collar and a ring, round an amethyst.
+    cubes = [
+        C((-0.75, -14.0, -0.75), (1.5, 25, 1.5), 't_staff_shaft', staff_shaft_painter('t_staff_shaft')),
+        C((-0.75, 11.0, -0.75), (1.5, 1.0, 1.5), 't_staff_foot', silver_painter('t_staff_foot')),
+        C((-1.0, -15.0, -1.0), (2.0, 1.0, 2.0), 't_staff_neck', silver_painter('t_staff_neck')),
+        C((-1.75, -16.0, -1.75), (3.5, 1.0, 3.5), 't_staff_collar', silver_painter('t_staff_collar')),
+        C((-1.75, -21.0, -1.75), (0.5, 5.0, 0.5), 't_staff_post_a', silver_painter('t_staff_post_a')),
+        C((1.25, -21.0, -1.75), (0.5, 5.0, 0.5), 't_staff_post_b', silver_painter('t_staff_post_b')),
+        C((-1.75, -21.0, 1.25), (0.5, 5.0, 0.5), 't_staff_post_c', silver_painter('t_staff_post_c')),
+        C((1.25, -21.0, 1.25), (0.5, 5.0, 0.5), 't_staff_post_d', silver_painter('t_staff_post_d')),
+        C((-1.0, -20.0, -1.0), (2.0, 3.0, 2.0), 't_staff_crystal', crystal_painter('t_staff_crystal')),
+        C((-0.5, -21.0, -0.5), (1.0, 1.0, 1.0), 't_staff_crystal_tip', crystal_painter('t_staff_crystal_tip')),
+        C((-0.5, -17.0, -0.5), (1.0, 0.5, 1.0), 't_staff_crystal_foot', crystal_painter('t_staff_crystal_foot')),
+        C((-1.75, -22.0, -1.75), (3.5, 1.0, 3.5), 't_staff_ring', silver_painter('t_staff_ring')),
+        C((-0.75, -22.5, -0.75), (1.5, 0.5, 1.5), 't_staff_finial', silver_painter('t_staff_finial')),
+        C((-0.25, -23.5, -0.25), (0.5, 1.0, 0.5), 't_staff_pin', silver_painter('t_staff_pin')),
+    ]
+    return 'right_arm', Part('staff', (-1.0, 10.0, -2.6), (0, 0, 0), cubes=cubes)
+
+
+def _quill():
+    # A long white quill held like a pen: the bare quill (the nib at part (0, 4, 0)) through the fist, the vane (tip at
+    # (0, -12, 0)) sweeping away over the wrist. Tilted 45 degrees on the arm so that with the arm reaching forward level
+    # the nib points down and forward at 45 degrees, a writing hand's pen.
+    return 'right_arm', Part('quill', RIGHT_GRIP, (45, 0, 0), cubes=[
+        C((-0.25, -1.0, -0.25), (0.5, 5.0, 0.5), 't_quill_shaft', calamus_painter('t_quill_shaft')),
+        C((-1.0, -12.0, -0.25), (2.0, 11.0, 0.5), 't_quill_vane_a', vane_painter('t_quill_vane_a', ('front', 'back'))),
+        C((-0.25, -11.0, -0.75), (0.5, 10.0, 1.5), 't_quill_vane_b', vane_painter('t_quill_vane_b', ('right', 'left'))),
+    ])
+
+
+def _sword():
+    # A knight's longsword, 23.5 px pommel to point, held like the rod: out of the fist at 90 degrees to the arm, so with
+    # the arm hanging the blade points straight ahead and with the arm raised level it points straight up. The hand is on
+    # the grip (part y -4 .. 2.5), the pommel behind it, the cross-guard (z -3.5 .. 3.5: up and down when the blade points
+    # forward) in front of it, the blade's flats facing left and right.
+    return 'right_arm', Part('sword', RIGHT_GRIP, (-90, 0, 0), cubes=[
+        C((-1.0, -5.5, -1.0), (2.0, 1.5, 2.0), 't_sword_pommel', brass_painter('t_sword_pommel')),
+        C((-0.75, -4.0, -0.75), (1.5, 6.5, 1.5), 't_sword_grip', sword_grip_painter('t_sword_grip')),
+        C((-0.75, 2.5, -3.5), (1.5, 1.0, 7.0), 't_sword_guard', brass_painter('t_sword_guard')),
+        C((-0.75, 3.5, 2.5), (1.5, 1.0, 1.0), 't_sword_quillon_a', brass_painter('t_sword_quillon_a')),
+        C((-0.75, 3.5, -3.5), (1.5, 1.0, 1.0), 't_sword_quillon_b', brass_painter('t_sword_quillon_b')),
+        C((-0.25, 3.5, -1.25), (0.5, 14.5, 2.5), 't_sword_blade', blade_painter('t_sword_blade')),
+    ])
+
+
+def _shield():
+    # A heater shield strapped to the forearm, face forward: 10 px wide and 14 tall, in front of the left arm (the plate's
+    # back is 0.5 px off the arm's front face). Tilted 40 degrees on the arm so it stands upright with the arm reaching
+    # 40 degrees forward; hanging, its upper edge leans out.
+    return 'left_arm', Part('shield', LEFT_GRIP, (40, 0, 0), cubes=[
+        C((-5.0, -9.0, -3.5), (10, 14, 1.0), 't_shield_plate', shield_painter('t_shield_plate')),
+        C((-2.5, -7.0, -2.5), (5.0, 1.0, 1.0), 't_shield_strap_a', leather_painter('t_shield_strap_a', (92, 58, 36), (60, 38, 24), (150, 112, 74))),
+        C((-2.5, -2.0, -2.5), (5.0, 1.0, 1.0), 't_shield_strap_b', leather_painter('t_shield_strap_b', (92, 58, 36), (60, 38, 24), (150, 112, 74))),
+    ])
+
+
+def _whetstone():
+    # A small grey stone gripped in the left fist across the hand (its length front to back), its smooth working face
+    # underneath.
+    return 'left_arm', Part('whetstone', LEFT_GRIP, (0, 0, 0), cubes=[
+        C((-1.25, -0.5, -2.5), (2.5, 1.5, 5.0), 't_whetstone', whetstone_painter('t_whetstone')),
+    ])
+
+
+def _dice_cup():
+    # A small leather cup held by its body in front of the fist, like the mug: tilted 45 degrees on the arm so it stands
+    # upright, mouth up, with the arm reaching 45 degrees forward. Mouth centre at part (0, -2.5, -2.6).
+    return 'right_arm', Part('dice_cup', RIGHT_GRIP, (45, 0, 0), cubes=[
+        C((-1.5, 1.0, -4.1), (3.0, 1.0, 3.0), 't_cup_base', cup_painter('t_cup_base', 'base')),
+        C((-1.75, -1.5, -4.35), (3.5, 2.5, 3.5), 't_cup_body', cup_painter('t_cup_body', 'body')),
+        C((-2.0, -2.5, -4.6), (4.0, 1.0, 4.0), 't_cup_rim', cup_painter('t_cup_rim', 'rim')),
+    ])
+
+
+def _coin_purse():
+    # A small leather purse in the left hand, its body on the thumb side like the jug, tilted 45 degrees on the arm so
+    # the mouth is up with the arm reaching 45 degrees forward: a frill of leather round a dark mouth, gold coins heaped
+    # in it and two standing up out of it. Mouth centre at part (0, -2.5, -2.75).
+    coin = lambda n: coin_painter(n)
+    return 'left_arm', Part('coin_purse', LEFT_GRIP, (45, 0, 0), cubes=[
+        C((-2.0, -0.5, -4.5), (4.0, 3.0, 3.5), 't_purse_body', purse_body_painter('t_purse_body')),
+        C((-1.25, -1.5, -3.75), (2.5, 1.0, 2.0), 't_purse_neck', purse_body_painter('t_purse_neck')),
+        C((-1.5, -1.25, -4.0), (3.0, 0.5, 2.5), 't_purse_cord', cord_painter('t_purse_cord')),
+        C((-2.0, -2.5, -4.5), (4.0, 1.0, 3.5), 't_purse_mouth', purse_top_painter('t_purse_mouth')),
+        C((-0.5, -3.7, -3.0), (1.5, 1.5, 0.5), 't_purse_coin_a', coin('t_purse_coin_a')),
+        C((-1.0, -3.2, -2.4), (0.5, 1.5, 1.5), 't_purse_coin_b', coin('t_purse_coin_b')),
+    ])
+
+
+def _lockpick():
+    # A thin pick and a tension wrench side by side in the right fist, pointing out along the arm's line (the pick's tip
+    # at part (0, 8, 0), its hook turned forward; the wrench's foot at (-1, 5, -0.5)): with the arm reaching forward they
+    # reach into a keyhole.
+    return 'right_arm', Part('lockpick', RIGHT_GRIP, (0, 0, 0), cubes=[
+        C((-0.5, -1.5, -0.5), (1.0, 3.5, 1.0), 't_pick_handle', wrapped_painter('t_pick_handle')),
+        C((-0.25, 2.0, -0.25), (0.5, 6.0, 0.5), 't_pick_shaft', pick_painter('t_pick_shaft')),
+        C((-0.25, 7.5, -0.75), (0.5, 0.5, 0.5), 't_pick_hook', pick_painter('t_pick_hook')),
+        C((-1.25, 1.0, -0.25), (0.5, 4.0, 0.5), 't_pick_wrench', pick_painter('t_pick_wrench')),
+        C((-1.25, 4.5, -1.25), (0.5, 0.5, 1.5), 't_pick_wrench_foot', pick_painter('t_pick_wrench_foot')),
+    ])
+
+
 BUILDERS = [_hammer, _tongs, _peel, _spear, _lantern, _hoe, _rod, _cane, _fan, _rag, _mug, _jug, _lute, _lute_slung,
-            _book, _crate, _sack, _broom, _basket]
+            _book, _crate, _sack, _broom, _basket,
+            _staff, _quill, _sword, _shield, _whetstone, _dice_cup, _coin_purse, _lockpick]
 
 GLOW_CUBES = {'t_hot_iron', 't_lantern_glass'}
 
@@ -1099,6 +1685,22 @@ TOOL_NOTES = {
     'jug': 'left hand; spout lip at part space (0, -3.7, -7.2)',
     'broom': 'right hand, the left on the handle 4.5 px ahead; bristle ends at part space (0, 18.2, 0)',
     'lute': 'on the body (played); lute_slung on the body otherwise; both have child pieces (head, strap)',
+    'staff': 'right hand, upright in front of the fist like the spear (same pivot); butt at part space (0, 12, 0) (on the ground '
+             'with the arm hanging), the amethyst at (0, -18.5, 0), the finial\'s pin at (0, -23.5, 0)',
+    'quill': 'right hand, tilted 45 degrees (nib down and forward when the arm reaches forward level); nib at part space '
+             '(0, 4, 0), vane tip at (0, -12, 0), the pen\'s axis the part\'s y',
+    'sword': 'right hand, 90 degrees like the rod: hanging, the blade points ahead; the grip spans part y -4..2.5 (the hand at 0, '
+             'the left hand takes y -4..-2 and the pommel), pommel centre (0, -4.75, 0), guard at y 2.5..3.5 (z +-3.5), '
+             'blade y 3.5..18, point at (0, 18, 0), the blade\'s flats facing +-x',
+    'shield': 'left hand, a plate in front of the forearm tilted 40 degrees: upright with the arm reaching 40 degrees forward; '
+              'plate x +-5, y -9..5, z -3.5..-2.5 (face to -z), hanging its upper edge leans out',
+    'whetstone': 'left hand, across the fist (z -2.5..2.5), x +-1.25, y -0.5..1; the working face is its underside (+y)',
+    'dice_cup': 'right hand, tilted 45 degrees (upright with the arm reaching forward 45 degrees); mouth centre at part space '
+                '(0, -2.5, -2.6), base at y 2',
+    'coin_purse': 'left hand, tilted 45 degrees (mouth up with the arm reaching forward 45 degrees); mouth centre at part '
+                  'space (0, -2.5, -2.75), the coins stand up to y -3.7',
+    'lockpick': 'right hand, along the arm: pick tip at part space (0, 8, 0) with its hook turned forward, wrench foot at '
+                '(-1, 5, -0.5)',
 }
 
 
