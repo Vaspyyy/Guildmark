@@ -1086,7 +1086,18 @@ BG_LIGHT = (206, 204, 198)
 BACKDROPS = (('dark', BG_DARK), ('light', BG_LIGHT))
 
 
+def as_in_game(tex, model):
+    """The knight's texture with the two arrow cubes cleared: the renderer hides them, so the previews do too."""
+    shown = np.array(tex)
+    for c in model.all_cubes():
+        if c.name in KEEP:
+            for x, y, w, h in c.rects().values():
+                shown[y * S:(y + h) * S, x * S:(x + w) * S] = 0
+    return Image.fromarray(shown, 'RGBA')
+
+
 def knight_views(tex, model, bg, yaws=(25, 160, 200, -70)):
+    tex = as_in_game(tex, model)
     faces = [(A, B, D, (u * S, v * S, w * S, h * S), face, n) for A, B, D, (u, v, w, h), face, n in model.world_faces()]
     sh = Image.new('RGBA', (300 * len(yaws), 400), (*bg, 255))
     for i, y in enumerate(yaws):

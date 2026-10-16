@@ -347,10 +347,15 @@ object AdvanceCommand {
                 .then(
                     Commands.literal("character").then(
                         Commands.argument("id", StringArgumentType.word())
-                            .suggests { _, builder -> SharedSuggestionProvider.suggest(StoryCharacter.entries.map { it.id }, builder) }
+                            .suggests { _, builder -> SharedSuggestionProvider.suggest(StoryCharacter.entries.filter { it.faction == null }.map { it.id }, builder) }
                             .executes { context ->
                                 val source = context.source
                                 val character = StoryCharacter.byId(StringArgumentType.getString(context, "id"))
+                                // Faction leaders keep their seats in the grand capitals, and never come to village boards
+                                if (character?.faction != null) {
+                                    source.sendFailure(Component.translatable("commands.guildmark.character_seated", character.title))
+                                    return@executes 0
+                                }
                                 val board = VillageBoards.villageBoard(source.level, source.playerOrException.blockPosition())
                                 if (character == null || board == null || !Characters.spawn(source.level, character, board)) {
                                     source.sendFailure(Component.translatable("commands.guildmark.no_character"))

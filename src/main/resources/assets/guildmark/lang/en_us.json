@@ -835,6 +835,7 @@
   "news.guildmark.character_arrived": "%s has arrived in a village nearby.",
   "news.guildmark.story_done": "%s finished %s's story.",
   "commands.guildmark.no_character": "Unknown character, or no village with a board nearby",
+  "commands.guildmark.character_seated": "%s keeps their faction's seat in a grand capital. /guildmark faction seat shows where.",
   "entity.guildmark.story_npc": "Story Character",
   "entity.guildmark.hollow_king": "The Hollow King",
   "entity.guildmark.hollow_knight": "Hollow Knight",
