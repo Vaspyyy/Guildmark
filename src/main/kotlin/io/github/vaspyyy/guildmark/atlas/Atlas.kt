@@ -10,6 +10,7 @@ import io.github.vaspyyy.guildmark.guild.Holdings
 import io.github.vaspyyy.guildmark.guild.TownControl
 import io.github.vaspyyy.guildmark.island.IslandMarks
 import io.github.vaspyyy.guildmark.island.Islands
+import io.github.vaspyyy.guildmark.quest.SeaWork
 import io.github.vaspyyy.guildmark.lair.Lairs
 import io.github.vaspyyy.guildmark.network.AtlasMark
 import io.github.vaspyyy.guildmark.network.AtlasPayload
@@ -64,6 +65,9 @@ object Atlas {
     /** Every two seconds: note what the player has come upon, and bring their copy up to date. */
     fun tick(level: ServerLevel, player: ServerPlayer) {
         val found = discover(level, player)
+        // Isles sighted for the first time count toward a chart contract
+        val isles = found.count { it.kind == AtlasPlace.ISLAND }
+        if (isles > 0) SeaWork.onCharted(player, isles)
         send(level, player, found, force = false)
     }
 

@@ -4,6 +4,7 @@ import io.github.vaspyyy.guildmark.quest.Situations
 import io.github.vaspyyy.guildmark.GuildmarkConfig
 import io.github.vaspyyy.guildmark.advance.Advances
 import io.github.vaspyyy.guildmark.quest.QuestGenerator
+import io.github.vaspyyy.guildmark.quest.SeaWork
 import io.github.vaspyyy.guildmark.road.RoadNetwork
 import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.registry.ModBlocks
@@ -46,7 +47,7 @@ object VillageBoards {
         val cells = BoardPart.entries.shuffled().take(STARTER_NOTES)
         for (part in cells) {
             val cell = level.getBlockEntity(QuestBoardBlock.cellPos(anchor, facing, part)) as? QuestBoardBlockEntity
-            cell?.updateNote(QuestGenerator.generateAnonymous(level.random, QuestGenerator.tierAt(anchor.x, anchor.z), hasRoad(level, anchor)))
+            cell?.updateNote(QuestGenerator.generateAnonymous(level.random, QuestGenerator.tierAt(anchor.x, anchor.z), surroundings(level, anchor)))
         }
     }
 
@@ -93,7 +94,7 @@ object VillageBoards {
         val poster = posterName(villager, profession)
         val anchor = QuestBoardBlock.anchorPos(cell.blockPos, cell.blockState)
         cell.updateNote(Situations.note(level, villager, anchor, poster, tier)
-            ?: QuestGenerator.generate(level.random, profession, poster, tier, hasRoad(level, cell.blockPos)))
+            ?: QuestGenerator.generate(level.random, profession, poster, tier, surroundings(level, anchor)))
         villager.setData(ModAttachments.LAST_PINNED_DAY, day(level))
         villager.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, Vec3.atCenterOf(cell.blockPos))
         val spot = Vec3.atCenterOf(cell.blockPos.relative(facing))
@@ -115,6 +116,12 @@ object VillageBoards {
     fun hasRoad(level: Level, boardPos: BlockPos): Boolean {
         val serverLevel = level as? ServerLevel ?: return false
         return RoadNetwork.get(serverLevel).roadsFrom(Advances.villageCenter(serverLevel, boardPos)).isNotEmpty()
+    }
+
+    /** What the board at [anchor] has round it to post jobs about: its village's roads, and the sea. */
+    fun surroundings(level: Level, anchor: BlockPos): QuestGenerator.Surroundings {
+        val serverLevel = level as? ServerLevel ?: return QuestGenerator.Surroundings(false)
+        return QuestGenerator.Surroundings(hasRoad(level, anchor)) { SeaWork.reach(serverLevel, anchor) }
     }
 
     /** Name tag if it has one, otherwise a first name fixed by its UUID: "Maren the Librarian". */

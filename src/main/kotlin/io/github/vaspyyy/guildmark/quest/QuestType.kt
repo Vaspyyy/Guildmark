@@ -22,14 +22,23 @@ enum class QuestType(private val id: String) : StringRepresentable {
     /** Clear a monster lair built out in the wild when the contract is taken, by killing its master. */
     LAIR("lair"),
 
+    /** Sail out and sight islands you've never seen. */
+    CHART("chart"),
+
+    /**
+     * Sail to an island of one kind (the target's path: wreck, cove or shrine), picked when the contract is taken,
+     * and get into the chest at its heart: the captain's chest, the smugglers' strongbox, the shrine's altar chest.
+     */
+    SALVAGE("salvage"),
+
     /**
      * A faction's own kind of job, set up when it's taken (see faction/Trials): its kind is the target's path,
      * guildmark:<kind>, and its progress is counted by that kind's own rules. Never posted on a board.
      */
     TRIAL("trial");
 
-    /** One-off jobs: a single letter, traveller, champion or lair rather than a count. */
-    val isSingle: Boolean get() = this == DELIVER || this == ESCORT || this == CHAMPION || this == LAIR
+    /** One-off jobs: a single letter, traveller, champion, lair or island rather than a count. */
+    val isSingle: Boolean get() = this == DELIVER || this == ESCORT || this == CHAMPION || this == LAIR || this == SALVAGE
 
     /** Villages only trust these jobs to people they know. */
     val minStanding: StandingTier get() = if (this == CHAMPION || this == LAIR) StandingTier.KNOWN else StandingTier.STRANGER
@@ -37,8 +46,11 @@ enum class QuestType(private val id: String) : StringRepresentable {
     /** Jobs that travel a road to another village; locked until the village has a Trade Road. */
     val needsRoad: Boolean get() = this == DELIVER || this == ESCORT
 
+    /** Jobs out at sea, only posted where the sea is near. */
+    val needsSea: Boolean get() = this == CHART || this == SALVAGE
+
     /** Jobs counted by kills, which show "Progress: x / y". */
-    val showsProgress: Boolean get() = this == HUNT || this == CLEAR || this == CHAMPION || this == TRIAL
+    val showsProgress: Boolean get() = this == HUNT || this == CLEAR || this == CHAMPION || this == TRIAL || this == CHART
 
     override fun getSerializedName(): String = id
 

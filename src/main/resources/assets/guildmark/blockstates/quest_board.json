@@ -506,6 +506,84 @@
         "model": "guildmark:block/quest_note_lair",
         "y": 270
       }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "note": "chart"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_chart"
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "note": "chart"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_chart",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "note": "chart"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_chart",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "note": "chart"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_chart",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "note": "salvage"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_salvage"
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "note": "salvage"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_salvage",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "note": "salvage"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_salvage",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "note": "salvage"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_salvage",
+        "y": 270
+      }
     }
   ]
 }

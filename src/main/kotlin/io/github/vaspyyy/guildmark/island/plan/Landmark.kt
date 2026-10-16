@@ -37,6 +37,9 @@ abstract class Landmark(val plan: IslandPlan) {
     /** Draws its share of itself in [canvas]: only what falls in the canvas's columns lands. */
     open fun draw(canvas: IslandCanvas) = made.draw(canvas)
 
+    /** Where its first chest (or pot, or sand) filled from [table] stands, as x, y and z, if it has one. */
+    open fun find(table: String): IntArray? = made.find(table)
+
     fun touches(canvas: IslandCanvas): Boolean = canvas.touches(minX, minZ, maxX, maxZ)
 
     /** The y of the first block over the ground (air or water) in a world column, as the plan leaves it. */
@@ -284,6 +287,10 @@ class Build {
         loots.add(Loot(x, y, z, table))
     }
 
+    /** Where the first chest (or pot, or sand) filled from [table] stands, as x, y and z, if there's one. */
+    fun find(table: String): IntArray? =
+        chests.firstOrNull { it.loot == table }?.let { intArrayOf(it.x, it.y, it.z) } ?: loots.firstOrNull { it.table == table }?.let { intArrayOf(it.x, it.y, it.z) }
+
     fun spawn(what: String, x: Double, y: Double, z: Double, yaw: Float = 0f) {
         spawns.add(IslandPlan.Spawn(what, x, y, z, yaw))
         widen(floor(x).toInt(), floor(z).toInt())
@@ -341,6 +348,17 @@ enum class SoundSpot {
     SHRINE,
     /** Where a drowned shrine's air bubbles up through the water. */
     BUBBLES,
+}
+
+/**
+ * The loot table of the chest at the heart of an island of [kind], the one a salvage contract sends you for: a wreck's
+ * captain's chest, the smugglers' strongbox, the drowned shrine's altar.
+ */
+fun heartLootOf(kind: IslandKind): String? = when (kind) {
+    IslandKind.WRECK -> Wreck.LOOT_CAPTAIN
+    IslandKind.COVE -> CoveDen.LOOT_HOARD
+    IslandKind.SHRINE -> Shrine.LOOT_ALTAR
+    else -> null
 }
 
 /** What an island of the plan's kind has built on it. */

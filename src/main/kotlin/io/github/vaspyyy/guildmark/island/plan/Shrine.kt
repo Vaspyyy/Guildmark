@@ -136,7 +136,6 @@ class Shrine(plan: IslandPlan) : Landmark(plan) {
                 }
             }
         }
-        System.err.println("SHRINE site " + ax + "," + az + " out " + out + " score " + best + " centre " + plan.spec.cx + "," + plan.spec.cz + " pit " + pit + " lift " + lift)
     }
 
     /** How well the shrine would sit with its pit's middle at [x], [z] and its steps running out [d]: higher is better. */

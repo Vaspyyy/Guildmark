@@ -83,7 +83,8 @@ enum class Advance(
             // Clearing a lair near the village makes everyone safer
             QuestType.LAIR -> countsClear || huntTargets.isNotEmpty()
             QuestType.TRIAL -> false
-            QuestType.DELIVER, QuestType.ESCORT -> countsTravel
+            // Sea work is a journey too
+            QuestType.DELIVER, QuestType.ESCORT, QuestType.CHART, QuestType.SALVAGE -> countsTravel
             QuestType.FETCH -> (vanilla && note.target.path in fetchItems) ||
                 (countsLogs && ItemStack(BuiltInRegistries.ITEM.getValue(note.target)).`is`(ItemTags.LOGS))
         }

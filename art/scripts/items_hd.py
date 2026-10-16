@@ -1,7 +1,7 @@
 """Guildmark's items, the quest notes and the quest board at 32x, painted with the HD art kit (hdkit.py) in the
 dark-fantasy look: the Guild Mark coin, the contract scroll, the quest board, the relic caches, the Warden's
 Flask at its four levels, the crown shard, the Dusk Bridle, the Lantern Wisp, the four older creatures'
-spawn eggs, the seven quest notes and the board's own planks and frame.
+spawn eggs, the nine quest notes and the board's own planks and frame.
 
     python3 -B art/scripts/items_hd.py src/main/resources/assets/guildmark [preview-dir]
 
@@ -550,7 +550,7 @@ def rider_egg():
 # ================================================================ quest notes (the board's notes)
 
 # The note's face is the block texture's middle 24x24 (the model shows uv 2..14 of 16).
-NOTE_TYPES = ['champion', 'clear', 'deliver', 'escort', 'fetch', 'hunt', 'lair']
+NOTE_TYPES = ['champion', 'clear', 'deliver', 'escort', 'fetch', 'hunt', 'lair', 'chart', 'salvage']
 
 
 def note_paper(kind, seed):
@@ -601,6 +601,10 @@ def note_paper(kind, seed):
     return cv, paper, ink
 
 
+# The washed blue of the sea on an old chart
+SEA_INK = [(26, 36, 48), (40, 58, 72), (60, 86, 98), (88, 118, 124), (124, 152, 150), (164, 186, 176)]
+
+
 def note_icon(kind):
     """The stamp in the lower half of a note, outlined in ink so it reads on the paper."""
     xs, ys = grid(N)
@@ -646,6 +650,46 @@ def note_icon(kind):
         cv.put(sack, bands(PAL['hide'], 0.75 + 0.25 * bevel(sack) - 0.3 * (xs > 18.5), 0))
         cv.put(rect(13, 19, 19, 20, N), PAL['crimson'][3])
         cv.put(rect(17, 22, 18, 25, N), PAL['hide'][1])
+    elif kind == 'chart':
+        # A scrap of sea chart: washed blue water, an isle drawn in at its far corner, and a compass star
+        sea = rect(9, 17, 24, 27, N)
+        wash = 0.55 + 0.14 * (fbm(N, N, 5, 71) - 0.5) - 0.08 * (ys > 24.5) + 0.06 * (xs < 12)
+        cv.put(sea, bands(SEA_INK, wash, 0))
+        # Swell lines drawn across the water
+        for (wy, x0, x1) in ((19, 10, 15), (24, 17, 22), (26, 19, 23)):
+            cv.over(rect(x0, wy, x1, wy + 1, N), SEA_INK[4], 0.7)
+        isle = ellipse(20.0, 20.0, 3.4, 2.4, N)[0] | ellipse(17.8, 21.2, 1.8, 1.3, N)[0]
+        cv.put(isle, bands(PAL['parchment'], 0.8 + 0.15 * bevel(isle) - 0.12 * (ys > 21), 0))
+        cv.put(ellipse(20.4, 19.6, 1.8, 1.2, N)[0], PAL['moss'][3])
+        cv.px(20, 19, PAL['moss'][4])
+        cv.put(grow(isle, 1) & ~isle & sea, SEA_INK[1])
+        # The chart's compass star in the open water: four long points and four short, north picked out in red
+        for k in range(-3, 4):
+            cv.px(12 + k, 23, PAL['gold'][4 if k < 0 else 3])
+            cv.px(12, 23 + k, PAL['gold'][4 if k < 0 else 3])
+        for (dx, dy) in ((-1, -1), (1, -1), (-1, 1), (1, 1)):
+            cv.px(12 + dx, 23 + dy, PAL['gold'][2])
+        cv.px(12, 23, PAL['gold'][5])
+        cv.px(12, 20, PAL['crimson'][4])
+        cv.put(edge(sea) & ~sea, PAL['ink'][1])
+        return cv
+    elif kind == 'salvage':
+        # An anchor hauled up out of the swell, a turn of rope still on its ring
+        shank = rect(15, 18, 17, 26, N)
+        ring = disc(16, 16.8, 1.9, N)[0] & ~disc(16, 16.8, 0.9, N)[0]
+        stock = rect(11, 19, 21, 21, N)
+        arc = (np.abs(np.hypot(xs - 16, ys - 21.0) - 5.0) < 0.95) & (ys > 22.6)
+        flukes = poly([(9.6, 22.4), (12.8, 22.0), (11.2, 25.0)], N) | poly([(22.4, 22.4), (19.2, 22.0), (20.8, 25.0)], N)
+        anchor = shank | ring | stock | arc | flukes
+        cv.put(anchor, bands(PAL['steel'], 0.62 + 0.3 * bevel(anchor) - 0.14 * (xs > 16.5) + 0.08 * (ys < 21), 0))
+        cv.put(rect(11, 20, 21, 21, N), PAL['steel'][2])
+        rope = path_dist([(17.4, 17.4), (19.4, 18.0), (20.0, 19.0)], N)[0] < 0.6
+        cv.put(rope & ~shank & ~stock, PAL['cork'][4])
+        # The swell it's coming up out of, foam along its crest
+        crest = 26.2 + 0.6 * np.sin(xs * 1.1)
+        swell = (ys > crest) & (ys < 28.5) & (xs > 8) & (xs < 24)
+        cv.put(swell, bands(SEA_INK, 0.42 - 0.12 * (ys > 27.2), 0))
+        cv.put(swell & (ys < crest + 1.0), SEA_INK[5])
     elif kind == 'hunt':
         # Three claw rakes torn through the paper
         for x0 in (11, 15, 19):

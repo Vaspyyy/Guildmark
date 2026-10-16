@@ -14,7 +14,7 @@ import net.minecraft.world.item.ItemStack
 data class QuestNote(
     val type: QuestType,
     val poster: String,
-    /** Item to fetch or entity to hunt; unused for CLEAR. */
+    /** Item to fetch, entity to hunt or (salvage) the kind of island; unused for CLEAR and CHART. */
     val target: Identifier,
     val count: Int,
     val reward: Int,
@@ -40,6 +40,8 @@ data class QuestNote(
         QuestType.CHAMPION -> Component.translatable("quest.guildmark.champion.title", targetName())
         QuestType.LAIR -> Component.translatable("quest.guildmark.lair.title", LairTheme.of(target, rank).title)
         QuestType.TRIAL -> Component.translatable("quest.guildmark.trial.${target.path}")
+        QuestType.CHART -> Component.translatable("quest.guildmark.chart.title", count)
+        QuestType.SALVAGE -> Component.translatable("quest.guildmark.salvage.${target.path}.title")
     }
 
     fun description(): Component = when (type) {
@@ -51,6 +53,8 @@ data class QuestNote(
         QuestType.CHAMPION -> Component.translatable("quest.guildmark.champion.desc", targetName())
         QuestType.LAIR -> LairTheme.of(target, rank).let { Component.translatable("quest.guildmark.lair.desc", it.title, it.bossTitle) }
         QuestType.TRIAL -> Trials.describe(this)
+        QuestType.CHART -> Component.translatable("quest.guildmark.chart.desc", count)
+        QuestType.SALVAGE -> Component.translatable("quest.guildmark.salvage.${target.path}.desc")
     }
 
     /** The flavour line; situational notes carry their arguments after the key, as "key|arg|arg". */
@@ -67,7 +71,7 @@ data class QuestNote(
     private fun targetName(): Component = when (type) {
         QuestType.FETCH -> ItemStack(BuiltInRegistries.ITEM.getValue(target)).hoverName
         QuestType.HUNT, QuestType.CHAMPION -> BuiltInRegistries.ENTITY_TYPE.getValue(target).description
-        QuestType.CLEAR, QuestType.DELIVER, QuestType.ESCORT, QuestType.LAIR, QuestType.TRIAL -> Component.empty()
+        QuestType.CLEAR, QuestType.DELIVER, QuestType.ESCORT, QuestType.LAIR, QuestType.TRIAL, QuestType.CHART, QuestType.SALVAGE -> Component.empty()
     }
 
     companion object {

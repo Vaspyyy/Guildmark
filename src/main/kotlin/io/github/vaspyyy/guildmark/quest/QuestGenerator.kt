@@ -39,22 +39,36 @@ object QuestGenerator {
         return (1 + (distance / BLOCKS_PER_TIER).toInt()).coerceAtMost(MAX_TIER)
     }
 
+    /**
+     * What lies round a board, deciding which jobs it can post: a Trade Road to other villages, and work out at sea
+     * (looked into only once a job that wants the sea comes up).
+     */
+    class Surroundings(val hasRoad: Boolean, sea: () -> SeaWork.Reach = { SeaWork.Reach.NONE }) {
+        private val sea by lazy(sea)
+
+        fun allows(entry: QuestPool.Entry): Boolean = when (entry.type) {
+            QuestType.CHART -> sea.chart
+            QuestType.SALVAGE -> SeaWork.kindOf(entry.target) in sea.salvage
+            else -> hasRoad || !entry.type.needsRoad
+        }
+    }
+
     /** A note from a specific villager. */
-    fun generate(random: RandomSource, profession: Identifier?, poster: String, tier: Int, hasRoad: Boolean): QuestNote {
+    fun generate(random: RandomSource, profession: Identifier?, poster: String, tier: Int, around: Surroundings): QuestNote {
         val entries = QuestPools.pools
             .filter { it.professions.isEmpty() || profession in it.professions }
             .flatMap { it.entries }
-            .filter { hasRoad || !it.type.needsRoad }
+            .filter(around::allows)
         val entry = pick(random, entries, tier)
         return build(random, entry, poster, rankFor(random, entry, tier))
     }
 
     /** A note with no villager behind it yet, e.g. the first notes on a new board. */
-    fun generateAnonymous(random: RandomSource, tier: Int, hasRoad: Boolean): QuestNote {
+    fun generateAnonymous(random: RandomSource, tier: Int, around: Surroundings): QuestNote {
         val pool = QuestPools.pools.randomOrNull(random)
         val profession = pool?.professions?.randomOrNull(random)
         val poster = "${NAMES[random.nextInt(NAMES.size)]} the ${title(profession)}"
-        val entry = pick(random, pool?.entries.orEmpty().filter { hasRoad || !it.type.needsRoad }, tier)
+        val entry = pick(random, pool?.entries.orEmpty().filter(around::allows), tier)
         return build(random, entry, poster, rankFor(random, entry, tier))
     }
 
@@ -71,8 +85,8 @@ object QuestGenerator {
      * A guild hall contract: any job from any pool, rated at the adventurer's own rank and paying half
      * again as much as a board note.
      */
-    fun generateHall(random: RandomSource, rank: Int, hasRoad: Boolean, poster: String): QuestNote {
-        val entries = QuestPools.pools.flatMap { it.entries }.filter { hasRoad || !it.type.needsRoad }
+    fun generateHall(random: RandomSource, rank: Int, around: Surroundings, poster: String): QuestNote {
+        val entries = QuestPools.pools.flatMap { it.entries }.filter(around::allows)
         val note = build(random, pick(random, entries, MAX_TIER), poster, rank)
         return note.copy(reward = note.reward * 3 / 2)
     }
@@ -118,7 +132,8 @@ object QuestGenerator {
         val base = entry.min + random.nextInt(entry.max - entry.min + 1)
         val count = if (entry.type.isSingle) 1 else (base * countScale).roundToInt().coerceAtLeast(1)
         val reward = BASE_REWARD + (count * entry.rewardPer * rewardScale).roundToInt()
-        val deadline = 2 + random.nextInt(3)
+        // A voyage gets two days more
+        val deadline = 2 + random.nextInt(3) + if (entry.type.needsSea) 2 else 0
         if (entry.type == QuestType.LAIR) {
             // Lair hunts pick their den now, so the note can say what's out there
             val theme = LairTheme.pick(random, rank)

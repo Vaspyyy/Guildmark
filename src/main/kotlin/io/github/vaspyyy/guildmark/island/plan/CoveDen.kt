@@ -264,6 +264,9 @@ class CoveDen(plan: IslandPlan) : Landmark(plan) {
         super.draw(canvas)
     }
 
+    /** The den's chests first (it's laid out with the plan), then the surface's. */
+    override fun find(table: String): IntArray? = denBuild.find(table) ?: made.find(table)
+
     // ---- the den
 
     /** What a column of the den's floor is. */

@@ -88,6 +88,7 @@ import io.github.vaspyyy.guildmark.road.RoadNetwork
 import io.github.vaspyyy.guildmark.road.Traffic
 import io.github.vaspyyy.guildmark.siege.Sieges
 import io.github.vaspyyy.guildmark.quest.Contracts
+import io.github.vaspyyy.guildmark.quest.SeaWork
 import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.registry.ModBlockEntities
 import io.github.vaspyyy.guildmark.registry.ModBlocks
@@ -143,6 +144,7 @@ import net.neoforged.neoforge.event.level.BlockDropsEvent
 import net.neoforged.neoforge.event.level.BlockEvent
 import net.neoforged.neoforge.event.level.PistonEvent
 import net.neoforged.neoforge.event.level.block.BreakBlockEvent
+import net.neoforged.neoforge.event.server.ServerStoppedEvent
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent
 import net.neoforged.neoforge.event.entity.player.PlayerEvent
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent
@@ -238,6 +240,10 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         NeoForge.EVENT_BUS.addListener(PlayerTickEvent.Post::class.java, ::onPlayerTick)
         NeoForge.EVENT_BUS.addListener(EntityJoinLevelEvent::class.java) { Traffic.onJoin(it.entity) }
         NeoForge.EVENT_BUS.addListener(PlayerInteractEvent.RightClickBlock::class.java, HollowThrone::onUseBlock)
+        // Sea work (quest/SeaWork): the chest a salvage contract was for, opened or broken into
+        NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, false, PlayerInteractEvent.RightClickBlock::class.java, SeaWork::onUseBlock)
+        NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, false, BreakBlockEvent::class.java, SeaWork::onBreak)
+        NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> SeaWork.forget() }
         NeoForge.EVENT_BUS.addListener(LivingIncomingDamageEvent::class.java, Relics::onIncomingDamage)
         NeoForge.EVENT_BUS.addListener(LivingIncomingDamageEvent::class.java, Parties::onIncomingDamage)
         NeoForge.EVENT_BUS.addListener(LivingDamageEvent.Post::class.java, Relics::onDamaged)

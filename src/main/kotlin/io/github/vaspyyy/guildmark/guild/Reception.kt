@@ -94,7 +94,7 @@ object Reception {
                     player.sendOverlayMessage(Component.translatable("message.guildmark.hall_contract_taken"))
                     return
                 }
-                val note = QuestGenerator.generateHall(level.random, Progression.get(player).adventurerRank, VillageBoards.hasRoad(level, anchor), poster)
+                val note = QuestGenerator.generateHall(level.random, Progression.get(player).adventurerRank, VillageBoards.surroundings(level, anchor), poster)
                 val stack = Contracts.take(note, level, anchor, Direction.NORTH, player, fromHall = true) ?: return
                 player.setData(ModAttachments.HALL_CONTRACT_DAY, today)
                 stack

@@ -23,7 +23,9 @@ class QuestPoolLoader : SimpleJsonResourceReloadListener<QuestPool>(QuestPool.CO
     private fun targetExists(entry: QuestPool.Entry): Boolean = when (entry.type) {
         QuestType.FETCH -> BuiltInRegistries.ITEM.containsKey(entry.target)
         QuestType.HUNT, QuestType.CHAMPION -> BuiltInRegistries.ENTITY_TYPE.containsKey(entry.target)
-        QuestType.CLEAR, QuestType.DELIVER, QuestType.ESCORT, QuestType.LAIR -> true
+        QuestType.CLEAR, QuestType.DELIVER, QuestType.ESCORT, QuestType.LAIR, QuestType.CHART -> true
+        // The kind of island to salvage on: guildmark:wreck, guildmark:cove or guildmark:shrine
+        QuestType.SALVAGE -> SeaWork.kindOf(entry.target) != null
         // Faction jobs are set up by the factions, never drawn from a pool
         QuestType.TRIAL -> false
     }

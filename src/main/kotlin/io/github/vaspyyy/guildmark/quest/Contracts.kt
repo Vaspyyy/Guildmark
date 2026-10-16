@@ -109,6 +109,16 @@ object Contracts {
                 }
                 state = state.copy(destination = champion.blockPosition(), bound = champion.uuid, label = name)
             }
+            QuestType.SALVAGE -> {
+                // A real isle of the kind, out on the board's sea; the further it is, the better it pays
+                val isle = SeaWork.kindOf(note.target)?.let { SeaWork.chooseIsle(level, boardPos, it, player) } ?: run {
+                    player.sendOverlayMessage(Component.translatable("message.guildmark.no_isle"))
+                    return null
+                }
+                val distance = Expeditions.horizontalDistance(boardPos, isle.chest)
+                note = note.copy(reward = note.reward + (distance / 100).toInt())
+                state = state.copy(destination = isle.chest, label = isle.name)
+            }
             // A faction's own kind of job sets itself up (and may find it can't, with word why)
             QuestType.TRIAL -> state = Trials.begin(level, player, note, state) ?: return null
             else -> {}
@@ -200,7 +210,7 @@ object Contracts {
 
         val done = when (note.type) {
             QuestType.FETCH -> takeFetchItems(player, note)
-            QuestType.HUNT, QuestType.CLEAR, QuestType.CHAMPION, QuestType.LAIR -> state.progress >= note.count
+            QuestType.HUNT, QuestType.CLEAR, QuestType.CHAMPION, QuestType.LAIR, QuestType.CHART, QuestType.SALVAGE -> state.progress >= note.count
             QuestType.DELIVER, QuestType.ESCORT -> true
             // A stolen prize is handed over with the contract
             QuestType.TRIAL -> state.progress >= note.count && Trials.handOver(player, stack, note)
@@ -260,8 +270,9 @@ object Contracts {
             victim.level().dimension() == state.dimension &&
             victim.blockPosition().closerThan(state.boardPos, QuestNote.CLEAR_RADIUS.toDouble())
         QuestType.CHAMPION -> victim.uuid == state.bound
-        // Lair bosses are credited to everyone nearby by onLairCleared instead, and faction jobs by their own rules
-        QuestType.FETCH, QuestType.DELIVER, QuestType.ESCORT, QuestType.LAIR, QuestType.TRIAL -> false
+        // Lair bosses are credited to everyone nearby by onLairCleared instead, faction jobs by their own rules and sea
+        // work by SeaWork
+        QuestType.FETCH, QuestType.DELIVER, QuestType.ESCORT, QuestType.LAIR, QuestType.TRIAL, QuestType.CHART, QuestType.SALVAGE -> false
     }
 
     private val HOLLOW_SOLDIER = net.minecraft.resources.Identifier.fromNamespaceAndPath("guildmark", "hollow_soldier")
@@ -334,6 +345,9 @@ object Contracts {
             }
             QuestType.LAIR -> if (destination != null) {
                 lines.add(Component.translatable("quest.guildmark.lair_at", destination.x, destination.z))
+            }
+            QuestType.SALVAGE -> if (destination != null) {
+                lines.add(Component.translatable("quest.guildmark.salvage_at", state.label, destination.x, destination.z))
             }
             QuestType.TRIAL -> lines.addAll(Trials.details(note, state))
             else -> {}

@@ -102,6 +102,12 @@ class IslandPlan(val spec: IslandSpec) {
     /** Where the island's own sounds come from: everything built on it, worked out (once) if it isn't yet. */
     fun sounds(): List<Build.Sound> = landmarks.flatMap { it.made.sounds }
 
+    /** Where the chest at the island's heart stands (see [heartLootOf]), as x, y and z, if it has one. */
+    fun heart(): IntArray? {
+        val table = heartLootOf(spec.kind) ?: return null
+        return landmarks.firstNotNullOfOrNull { it.find(table) }
+    }
+
     init {
         for (l in landmarks) l.lay()
         for (i in 0 until size) for (j in 0 until size) ground[i * size + j] = classify(terrain.x0 + i, terrain.z0 + j).ordinal.toByte()

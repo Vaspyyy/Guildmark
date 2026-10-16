@@ -50,7 +50,8 @@ and Kotlin model code always agree.
   left, ordered dither where tones meet, bevels for stamped and carved shapes, and the dark outline round items.
 - `scripts/items_hd.py` is every Guildmark item at 32x (the Guild Mark, contract, quest board, relic caches, the
   Warden's Flask at its four levels, crown shard, Dusk Bridle, Lantern Wisp and the four older creatures' spawn
-  eggs), the seven quest notes and the quest board's own planks and frame. It writes textures only; the models
+  eggs), the nine quest notes (new kinds go on the end of `NOTE_TYPES`, which seeds each note's paper) and the
+  quest board's own planks and frame. It writes textures only; the models
   and item definitions already point at them. It replaces the old 16x scripts (`cache_art.py`, `flask_art.py`,
   `shard_art.py`, `rider_items.py`, `spawn_eggs.py`).
 - `scripts/wardfire_art.py` and `scripts/dungeon_art.py` paint the Wardfire and the mist gate at 32x too.

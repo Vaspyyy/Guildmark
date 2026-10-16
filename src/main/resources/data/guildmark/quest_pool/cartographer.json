@@ -72,6 +72,42 @@
         "quest.guildmark.story.cartographer.escort.0",
         "quest.guildmark.story.cartographer.escort.any.0"
       ]
+    },
+    {
+      "type": "chart",
+      "min": 2,
+      "max": 4,
+      "reward_per": 4.0,
+      "weight": 10,
+      "stories": [
+        "quest.guildmark.story.cartographer.chart.0",
+        "quest.guildmark.story.cartographer.chart.1",
+        "quest.guildmark.story.cartographer.chart.2"
+      ]
+    },
+    {
+      "type": "salvage",
+      "target": "guildmark:wreck",
+      "min": 1,
+      "max": 1,
+      "reward_per": 14.0,
+      "weight": 4,
+      "stories": [
+        "quest.guildmark.story.cartographer.salvage.wreck.0"
+      ]
+    },
+    {
+      "type": "salvage",
+      "target": "guildmark:shrine",
+      "min": 1,
+      "max": 1,
+      "reward_per": 20.0,
+      "weight": 4,
+      "min_tier": 2,
+      "stories": [
+        "quest.guildmark.story.cartographer.salvage.shrine.0",
+        "quest.guildmark.story.cartographer.salvage.shrine.1"
+      ]
     }
   ]
 }
