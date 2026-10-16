@@ -128,6 +128,13 @@ to render only theirs.
 python3 -B art/scripts/townsfolk_anims.py src/main/resources/assets/guildmark <preview-dir> [clip ...]
 ```
 
+- `scripts/renegade_anims.py` is Silvan Marrow's ten clips (his six spells, strike, shove, the 108-tick intro timed
+  to his voice line, and the death), timed to `faction/Renegade.kt` and baked to
+  `assets/guildmark/animations/renegade/`; its sheets draw his model with the Amethyst Staff in his hand. Run it
+  like `enemy_anims.py`:
+  `python3 -B art/scripts/renegade_anims.py src/main/resources/assets/guildmark <preview-dir> [clip ...]`.
+  `townsfolk_anims.py` also holds the sixteen faction clips (reading, sparring, lurking and the rest).
+
 ## Screens
 
 The screen art is drawn in code too, from the repo root:
