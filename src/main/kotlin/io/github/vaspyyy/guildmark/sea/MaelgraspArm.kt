@@ -750,7 +750,8 @@ class MaelgraspArm(type: EntityType<out MaelgraspArm>, level: Level) : Monster(t
         val at = ship.localToWorld(side * (Seas.beam(z) + 0.8), 1.6, z)
         victim.teleportTo(at.x, at.y, at.z)
         victim.deltaMovement = Vec3(Cog.rightX(ship.yRot) * side * KNOCK_OUT, KNOCK_UP, Cog.rightZ(ship.yRot) * side * KNOCK_OUT)
-        victim.needsSync = true
+        // A player moves themselves: their own client has to be sent the blow (needsSync only tells those watching)
+        victim.syncVelocity = true
     }
 
     // ---- Holding someone ----
@@ -803,7 +804,7 @@ class MaelgraspArm(type: EntityType<out MaelgraspArm>, level: Level) : Monster(t
         seized = null
         if (throwAt != null) {
             held.deltaMovement = throwAt
-            held.needsSync = true
+            held.syncVelocity = true
         }
     }
 

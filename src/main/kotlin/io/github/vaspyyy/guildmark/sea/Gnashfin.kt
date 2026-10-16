@@ -408,7 +408,10 @@ class Gnashfin(type: EntityType<out Gnashfin>, level: Level) : Monster(type, lev
         val attacker = source.entity
         if (mode == Mode.LEAP && attacker is Player) knockDown(level)
         // Struck from the deck while it gnaws, it lets go
-        if (mode == Mode.GNAW && attacker is Player && random.nextFloat() < 0.5f) mode = Mode.CIRCLE
+        if (mode == Mode.GNAW && attacker is Player && random.nextFloat() < 0.5f) {
+            SeaHunts.pack(packId)?.doneGnawing(id)
+            mode = Mode.CIRCLE
+        }
         return hurt
     }
 
@@ -587,13 +590,26 @@ class Gnashfin(type: EntityType<out Gnashfin>, level: Level) : Monster(type, lev
         if (isRemoved || dead) return
         super.die(source)
         if (!dead) return
-        if (mode == Mode.GNAW) SeaHunts.pack(packId)?.doneGnawing(id)
+        SeaHunts.pack(packId)?.doneGnawing(id)
         (level() as? ServerLevel)?.let { SeaHunts.lost(it, packId, this) }
     }
 
+    override fun remove(reason: RemovalReason) {
+        super.remove(reason)
+        // However it goes (despawned far out, discarded), its place at the planks is free again
+        if (!level().isClientSide) SeaHunts.pack(packId)?.doneGnawing(id)
+    }
+
     override fun tickDeath() {
-        // Belly up, it sinks away; on a deck, it lies where it died
-        if (!level().isClientSide && mode != Mode.STRANDED && isInWater) setPos(x, y - DEAD_SINK, z)
+        // Belly up, it sinks away; on a deck, it lies where it died; struck dead in the air, it falls
+        if (!level().isClientSide && mode != Mode.STRANDED) {
+            if (isInWater) setPos(x, y - DEAD_SINK, z)
+            else if (!onGround()) {
+                val v = Vec3(deltaMovement.x * 0.9, deltaMovement.y - DEAD_FALL, deltaMovement.z * 0.9)
+                deltaMovement = v
+                move(MoverType.SELF, v)
+            }
+        }
         super.tickDeath()
     }
 
@@ -671,8 +687,9 @@ class Gnashfin(type: EntityType<out Gnashfin>, level: Level) : Monster(type, lev
         /** Hurt this badly, it flees; fleeing, it's gone after a while. */
         private const val FLEE_HEALTH = 0.35f
         private const val FLEE_TICKS = 120
-        /** Blocks a tick it sinks, dead. */
+        /** Blocks a tick it sinks, dead, and how fast it falls if it dies in the air. */
         private const val DEAD_SINK = 0.03
+        private const val DEAD_FALL = 0.08
         /** Farther than this from its quarry, or its quarry ashore this long, and it gives up. */
         private const val GIVE_UP = 80.0
         private const val ASHORE_TICKS = 200

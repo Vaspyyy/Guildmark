@@ -159,6 +159,8 @@ object SeaHunts {
         // Out after them on a contract, they find you the sooner (as if you knew where to look)
         if (onTheirTrail(player, now)) chance = (chance / CONTRACT_LURE).coerceAtLeast(1)
         if (random.nextInt(chance) != 0) return
+        // While the Maelgrasp is up, the packs keep clear
+        if (level.getEntitiesOfClass(Maelgrasp::class.java, player.boundingBox.inflate(MAELGRASP_CLEAR)).isNotEmpty()) return
         val pos = player.blockPosition()
         if (!level.getBiome(pos).`is`(BiomeTags.IS_OCEAN)) return
         if (!openSea(level, player.x, player.z, PACK_OPEN)) return
@@ -275,6 +277,8 @@ object SeaHunts {
     private const val CONTRACT_LURE = 4
     /** Ticks after a pack finds someone before another can. */
     private const val PACK_COOLDOWN = 3600L
+    /** Within this of the Maelgrasp no new pack comes. */
+    private const val MAELGRASP_CLEAR = 96.0
     /** Ticks a pack hunts before it gives up. */
     private const val PACK_LIFE = 6000L
     /** Blocks of open water all round that make the open sea, for a pack and for the Maelgrasp. */

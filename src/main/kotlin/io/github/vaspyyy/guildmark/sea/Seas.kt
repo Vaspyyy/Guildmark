@@ -49,8 +49,13 @@ object Seas {
         }
         // Caught in an arm, you can't just step off it: you struggle free (see MaelgraspArm.holding)
         NeoForge.EVENT_BUS.addListener(EntityMountEvent::class.java) { event ->
-            val arm = event.entityBeingMounted as? MaelgraspArm ?: return@addListener
-            if (event.isDismounting && !arm.letsGo(event.entityMounting)) event.isCanceled = true
+            val arm = event.entityBeingMounted as? MaelgraspArm
+            if (arm != null) {
+                if (event.isDismounting && !arm.letsGo(event.entityMounting)) event.isCanceled = true
+            } else if (event.isMounting && !event.level.isClientSide && event.entityMounting.vehicle is MaelgraspArm) {
+                // Nor can they board anything while it holds them (the ship, a steed): they'd still hang on the arm too
+                event.isCanceled = true
+            }
         }
         NeoForge.EVENT_BUS.addListener(RegisterCommandsEvent::class.java) { SeaCommand.register(it.dispatcher) }
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> SeaHunts.clear() }

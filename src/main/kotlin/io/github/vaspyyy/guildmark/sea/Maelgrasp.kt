@@ -759,10 +759,11 @@ class Maelgrasp(type: EntityType<out Maelgrasp>, level: Level) : Monster(type, l
         spoils.add(ItemStack(Items.GLOW_INK_SAC, 4 + random.nextInt(5)))
         spoils.add(ItemStack(Items.INK_SAC, 8 + random.nextInt(7)))
         for (stack in spoils) {
-            var left = ship?.stow(stack) ?: stack
+            val left = ship?.stow(stack) ?: stack
             if (left.isEmpty) continue
             val hero = heroes.firstOrNull()
-            if (hero != null && hero.inventory.add(left)) continue
+            // Whatever the hero hasn't room for is dropped at their feet (add takes what fits and leaves the rest)
+            hero?.inventory?.add(left)
             if (!left.isEmpty) (hero ?: this).spawnAtLocation(level, left)
         }
         val orbsAt = ship?.localToWorld(0.0, 1.6, 0.0) ?: position()

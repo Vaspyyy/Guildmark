@@ -128,7 +128,8 @@ object BossAbilities {
                     if (player.distanceTo(boss) > 16) continue
                     val pull = boss.position().subtract(player.position()).normalize().scale(1.1)
                     player.push(pull.x, 0.4, pull.z)
-                    player.needsSync = true
+                    // Sent to the player's own client too, or the tide never drags them
+                    player.syncVelocity = true
                     player.addEffect(MobEffectInstance(MobEffects.MINING_FATIGUE, 20 * 6, 1))
                 }
                 summon(level, boss, Identifier.withDefaultNamespace("drowned"))

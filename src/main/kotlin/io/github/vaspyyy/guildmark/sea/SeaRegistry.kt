@@ -36,6 +36,7 @@ object SeaRegistry {
             .clientTrackingRange(8)
             // It leaps clear across a deck in a second: every tick, so it flies rather than jumps
             .updateInterval(1)
+            .notInPeaceful()
             .build(key("gnashfin"))
     }
 
@@ -47,6 +48,7 @@ object SeaRegistry {
             .noSummon()
             .clientTrackingRange(10)
             .updateInterval(1)
+            .notInPeaceful()
             .build(key("maelgrasp_arm"))
     }
 
@@ -59,6 +61,7 @@ object SeaRegistry {
             .noSummon()
             .clientTrackingRange(12)
             .updateInterval(1)
+            .notInPeaceful()
             .build(key("maelgrasp"))
     }
 

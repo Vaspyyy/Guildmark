@@ -147,7 +147,7 @@ class HollowKing(type: EntityType<out HollowKing>, level: Level) : Monster(type,
             player.hurtServer(level, damageSources().mobAttack(this), 6.0f + phase * 2)
             val away = player.position().subtract(position()).normalize()
             player.push(away.x * 1.2, 0.8, away.z * 1.2)
-            player.needsSync = true
+            player.syncVelocity = true
         }
     }
 
