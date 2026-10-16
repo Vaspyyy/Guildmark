@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "B": "#minecraft:boats",
+    "C": "minecraft:chest",
+    "L": "#minecraft:logs",
+    "W": "#minecraft:wool"
+  },
+  "pattern": [
+    "WWW",
+    "LCL",
+    "BBB"
+  ],
+  "result": {
+    "id": "guildmark:cog"
+  }
+}

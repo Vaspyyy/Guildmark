@@ -52,6 +52,7 @@ object CompassHud : GuiLayer {
     private val ICON_LOST_MARKS = sprite("lost_marks")
     private val ICON_TROLL = sprite("troll_camp")
     private val ICON_TROLL_SLAIN = sprite("troll_camp_slain")
+    private val ICON_SHIP = sprite("ship")
 
     private const val TOP = 3
     private const val HEIGHT = 13
@@ -221,6 +222,8 @@ object CompassHud : GuiLayer {
                 out.add(Marker(Vec3.atCenterOf(it), ICON_DEATH, Component.translatable("atlas.guildmark.death"), 3, 4.0))
             }
         }
+        // Your ship, where you stepped off her
+        io.github.vaspyyy.guildmark.client.ship.ShipClient.berth(player)?.let { (at, name) -> out.add(Marker(at, ICON_SHIP, name, 3, 6.0)) }
         for (waypoint in ContractTracker.waypoints(player)) {
             val icon = when (waypoint.kind) {
                 ContractTracker.STORY -> ICON_VAULT

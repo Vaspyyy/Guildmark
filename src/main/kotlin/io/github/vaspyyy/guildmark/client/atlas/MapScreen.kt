@@ -495,6 +495,9 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
                 out.add(Spot(it.x + 0.5, it.z + 0.5, DEATH, Component.translatable("atlas.guildmark.death"), listOf(), 4))
             }
         }
+        io.github.vaspyyy.guildmark.client.ship.ShipClient.berth(player)?.let { (at, name) ->
+            out.add(Spot(at.x, at.z, SHIP, name, listOf(Component.translatable("gui.guildmark.map.tip.ship")), 4))
+        }
         return out
     }
 
@@ -831,6 +834,7 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
         private val LOST_MARKS = sprite("lost_marks")
         private val TROLL = sprite("troll_camp")
         private val TROLL_SLAIN = sprite("troll_camp_slain")
+        private val SHIP = sprite("ship")
         private val ROSE = sprite("rose")
         private val VIGNETTE = sprite("frame")
         private val COACH_BADGE = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "compass/coach")
@@ -840,7 +844,7 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
         private val LEGEND = listOf(
             VILLAGE to "village", TOWN to "town", CITY to "city", HALL to "hall", LAIR to "lair", LAIR_CLEARED to "lair_cleared",
             VAULT to "vault", TROLL to "troll_camp", WARDFIRE to "wardfire", COACH to "coach", CONTRACT to "objective", PIN to "pin", PARTY to "party",
-            DEATH to "death", LOST_MARKS to "lost_marks", PLAYER to "you",
+            DEATH to "death", LOST_MARKS to "lost_marks", SHIP to "ship", PLAYER to "you",
         )
         private val SCALES = intArrayOf(10, 20, 50, 100, 200, 500, 1000, 2000, 5000)
         private val HINTS = listOf("drag", "zoom", "pin", "home", "legend").map { "gui.guildmark.map.hint.$it" }

@@ -11,6 +11,7 @@ import io.github.vaspyyy.guildmark.client.townsfolk.TownsfolkRenderer
 import io.github.vaspyyy.guildmark.companion.CompanionEntity
 import io.github.vaspyyy.guildmark.companion.Effect
 import io.github.vaspyyy.guildmark.registry.ModItems
+import io.github.vaspyyy.guildmark.ship.Cog
 import net.minecraft.client.model.HumanoidModel
 import net.minecraft.client.renderer.entity.EntityRendererProvider
 import net.minecraft.client.renderer.entity.HumanoidMobRenderer
@@ -43,6 +44,8 @@ class CompanionRenderer(context: EntityRendererProvider.Context) :
         state.child = false
         state.glows = false
         val now = entity.tickCount + partialTicks
+        // Their sitting aboard is a clip of its own, not vanilla's rider's legs
+        if (entity.vehicle is Cog) state.isPassenger = false
         val playing = choose(entity, now, state.walkAnimationSpeed > 0.08f)
         state.frame = frame(entity, playing, now)
         // Lucan reads while he waits
@@ -97,6 +100,8 @@ class CompanionRenderer(context: EntityRendererProvider.Context) :
             return Playing(gesture.clip, entity.shownGestureStart.toFloat(), loop = false)
         }
         if (entity.isSitting) return Playing("companion/sit_fire", entity.sittingSince.toFloat(), loop = true)
+        // Aboard ship they sit where they've been given a place, its seat under them and their feet on the deck
+        if (entity.vehicle is Cog) return Playing(SIT_ABOARD, 0f, loop = true)
         val act = entity.shownAct
         if (act != null && now - entity.shownActStart < act.length) {
             val from = entity.shownActStart + act.clipFrom.toFloat()
@@ -167,6 +172,8 @@ class CompanionRenderer(context: EntityRendererProvider.Context) :
         /** Where the downed clip has them on one knee, breathing: it loops from here to its end. */
         const val DOWNED_HOLD = 16f
         val BOOK = setOf("book")
+        /** Sitting on a bench, as townsfolk do: the seat's top under them, the floor half a block below. */
+        const val SIT_ABOARD = "townsfolk/sit"
 
         val textures = HashMap<String, Identifier>()
 

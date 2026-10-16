@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.companion
 
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.ship.Cog
 import io.github.vaspyyy.guildmark.combat.Stance
 import io.github.vaspyyy.guildmark.faction.SwornKnight
 import io.github.vaspyyy.guildmark.guild.GuildMember
@@ -310,6 +311,21 @@ class CompanionEntity(type: EntityType<out CompanionEntity>, level: Level) : Pat
     /** Far behind, or left on the other side of a wall: they catch up the way a player's pet would. */
     private fun keepUp(level: ServerLevel, owner: Player) {
         if (owner.level() !== level || owner.isSpectator) return
+        // Aboard ship with them, and off again when they step ashore
+        val ship = owner.vehicle as? Cog
+        if (ship != null) {
+            if (vehicle !== ship && !isTalking && tickCount % 10 == 0) {
+                stopAct()
+                if (isSitting) setFlag(SITTING, false)
+                ship.takeAboard(this)
+            }
+            return
+        }
+        if (vehicle is Cog) {
+            stopRiding()
+            if (!teleportNear(owner.blockPosition())) snapTo(owner.x, owner.y, owner.z, owner.yRot, 0f)
+            return
+        }
         val d2 = distanceToSqr(owner)
         val lost = d2 > TELEPORT_FAR * TELEPORT_FAR || d2 > TELEPORT_UNSEEN * TELEPORT_UNSEEN && !owner.hasLineOfSight(this)
         if (lost && !isTalking && tickCount % 10 == 0) {

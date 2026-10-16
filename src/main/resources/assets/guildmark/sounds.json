@@ -6688,5 +6688,256 @@
       "guildmark:companion/sworn"
     ],
     "subtitle": "subtitles.guildmark.companion.sworn"
+  },
+  "ship.creak": {
+    "sounds": [
+      {
+        "name": "guildmark:ship/creak_1",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:ship/creak_2",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:ship/creak_3",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:ship/creak_4",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:ship/creak_5",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:ship/creak_6",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "subtitles.guildmark.ship.creak"
+  },
+  "ship.sail_fill": {
+    "sounds": [
+      {
+        "name": "guildmark:ship/sail_fill_1",
+        "attenuation_distance": 40
+      },
+      {
+        "name": "guildmark:ship/sail_fill_2",
+        "attenuation_distance": 40
+      },
+      {
+        "name": "guildmark:ship/sail_fill_3",
+        "attenuation_distance": 40
+      }
+    ],
+    "subtitle": "subtitles.guildmark.ship.sail_fill"
+  },
+  "ship.luff": {
+    "sounds": [
+      {
+        "name": "guildmark:ship/luff_1",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:ship/luff_2",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:ship/luff_3",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:ship/luff_4",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "subtitles.guildmark.ship.luff"
+  },
+  "ship.hoist": {
+    "sounds": [
+      {
+        "name": "guildmark:ship/hoist_1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:ship/hoist_2",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:ship/hoist_3",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.ship.hoist"
+  },
+  "ship.wake": {
+    "sounds": [
+      {
+        "name": "guildmark:ship/wake",
+        "stream": false,
+        "attenuation_distance": 24
+      }
+    ]
+  },
+  "ship.lap": {
+    "sounds": [
+      {
+        "name": "guildmark:ship/lap",
+        "stream": false
+      }
+    ]
+  },
+  "ship.rigging": {
+    "sounds": [
+      {
+        "name": "guildmark:ship/rigging",
+        "stream": false,
+        "attenuation_distance": 24
+      }
+    ]
+  },
+  "ship.anchor_drop": {
+    "sounds": [
+      {
+        "name": "guildmark:ship/anchor_drop",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "subtitles.guildmark.ship.anchor_drop"
+  },
+  "ship.anchor_raise": {
+    "sounds": [
+      {
+        "name": "guildmark:ship/anchor_raise",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "subtitles.guildmark.ship.anchor_raise"
+  },
+  "ship.bell": {
+    "sounds": [
+      {
+        "name": "guildmark:ship/bell_1",
+        "attenuation_distance": 64
+      },
+      {
+        "name": "guildmark:ship/bell_2",
+        "attenuation_distance": 64
+      }
+    ],
+    "subtitle": "subtitles.guildmark.ship.bell"
+  },
+  "ship.scrape": {
+    "sounds": [
+      {
+        "name": "guildmark:ship/scrape_1",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:ship/scrape_2",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:ship/scrape_3",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "subtitles.guildmark.ship.scrape"
+  },
+  "ship.bump": {
+    "sounds": [
+      {
+        "name": "guildmark:ship/bump_1",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:ship/bump_2",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:ship/bump_3",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "subtitles.guildmark.ship.bump"
+  },
+  "ship.launch": {
+    "sounds": [
+      {
+        "name": "guildmark:ship/launch",
+        "attenuation_distance": 64
+      }
+    ],
+    "subtitle": "subtitles.guildmark.ship.launch"
+  },
+  "ship.pack": {
+    "sounds": [
+      {
+        "name": "guildmark:ship/pack",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.ship.pack"
+  },
+  "ship.wheel": {
+    "sounds": [
+      {
+        "name": "guildmark:ship/wheel_1",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:ship/wheel_2",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:ship/wheel_3",
+        "attenuation_distance": 12
+      }
+    ]
+  },
+  "ship.repair": {
+    "sounds": [
+      {
+        "name": "guildmark:ship/repair_1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:ship/repair_2",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:ship/repair_3",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.ship.repair"
+  },
+  "ship.wreck": {
+    "sounds": [
+      {
+        "name": "guildmark:ship/wreck",
+        "attenuation_distance": 64
+      }
+    ],
+    "subtitle": "subtitles.guildmark.ship.wreck"
+  },
+  "ship.hold_open": {
+    "sounds": [
+      {
+        "name": "guildmark:ship/hold_open"
+      }
+    ],
+    "subtitle": "subtitles.guildmark.ship.hold_open"
+  },
+  "ship.hold_close": {
+    "sounds": [
+      {
+        "name": "guildmark:ship/hold_close"
+      }
+    ],
+    "subtitle": "subtitles.guildmark.ship.hold_close"
   }
 }

@@ -191,6 +191,8 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         io.github.vaspyyy.guildmark.faction.Factions.register(modBus)
         // Bram, Ysolde, Kestrel and Lucan: who travels with the player, loyalty, chapters and Sworn perks (companion/)
         io.github.vaspyyy.guildmark.companion.Companions.register(modBus)
+        // The cog: sailing by the wind, her hold, and where each player left theirs (ship/)
+        io.github.vaspyyy.guildmark.ship.Ships.register(modBus)
         // Which part of a capital each player is in, for the city sounds (city/CapitalVisits)
         CapitalVisits.register()
         // Capitals' sites worked out ahead of the players (city/Capitals)
