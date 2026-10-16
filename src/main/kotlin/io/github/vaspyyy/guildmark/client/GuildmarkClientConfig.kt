@@ -66,6 +66,9 @@ object GuildmarkClientConfig {
     val CITY_WIND: ModConfigSpec.IntValue = BUILDER
         .comment("The wind, gusts and cracking banners high on walls and towers.")
         .defineInRange("cityWind", 100, 0, 100)
+    val ISLAND_SOUNDS: ModConfigSpec.IntValue = BUILDER
+        .comment("How loud the islands sound: surf on their shores, the wind over them, gull colonies, foghorns, creaking wrecks and the rest (as a share of the game's Ambient/Environment volume). 0 silences them.")
+        .defineInRange("islandSounds", 100, 0, 100)
 
     val SPEC: ModConfigSpec = BUILDER.build()
 }

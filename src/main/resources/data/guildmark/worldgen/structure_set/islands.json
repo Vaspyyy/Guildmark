@@ -1,0 +1,18 @@
+{
+  "placement": {
+    "type": "minecraft:random_spread",
+    "salt": 1517283941,
+    "separation": 11,
+    "spacing": 22,
+    "exclusion_zone": {
+      "other_set": "minecraft:ocean_monuments",
+      "chunk_count": 6
+    }
+  },
+  "structures": [
+    {
+      "structure": "guildmark:island",
+      "weight": 1
+    }
+  ]
+}

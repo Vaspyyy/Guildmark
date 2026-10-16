@@ -185,6 +185,24 @@ python3 art/scripts/title_art.py src/main/resources/assets/guildmark [<preview-d
   and star sprites, the vignette and the Guildmark name. The layers' places on its 1920x1080 canvas match
   `Backdrop.kt`. The preview dir gets the scene as the game composes it. It needs SciPy too.
 
+## Islands
+
+- `scripts/island_gull.py` is the island gull: its model, its three textures (herring gull, black-backed gull and
+  a mottled young one, HD on one atlas), `client/island/GullModel.kt`, `models/gull.bbmodel` and the previews.
+  GullModel.kt is GENERATED: edit the scripts, never the Kotlin. The parts are in `island_gull_geo.py`, the
+  painting in `island_gull_paint.py`, and what the bird does in `island_gull_anim.py`, written once in the small
+  Python subset that `island_kit.py` turns into `setupAnim`; `island_gull_previews.py` draws the GIFs with the very
+  same functions. `--model` makes the assets and the Kotlin only, `--previews` only the pictures, and `--check`
+  compiles the Kotlin and compares its poses with the Python ones.
+  Run it with `python3 -B art/scripts/island_gull.py` from the repo root.
+- `scripts/island_art.py` is the islands' small art: the map icons and compass marks of the island kinds, the gull
+  egg and the seared egg, the gull nest (four egg counts) and the lighthouse lamp, lit and unlit, with their models
+  and blockstates, and the lighthouse's beam textures.
+  Run it with `python3 -B art/scripts/island_art.py [assets dir [preview dir]]`.
+- `scripts/island_lamp_flare.py` is the glare of the lighthouse lamp's lens (`textures/entity/island/lamp_flare.png`).
+- `scripts/island_blockview.py` draws a block model the way the game does, to look at one without the game:
+  `python3 -B art/scripts/island_blockview.py <assets dir> <model name> [out.png]`.
+
 ## Shader pack
 
 Guildmark's own shader pack for Iris is in `src/main/resources/shaderpack/Guildmark/`. `shaderkit/` checks it and

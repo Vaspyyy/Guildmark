@@ -1,0 +1,7 @@
+{
+  "type": "guildmark:island",
+  "biomes": "#guildmark:has_structure/island",
+  "spawn_overrides": {},
+  "step": "surface_structures",
+  "terrain_adaptation": "none"
+}

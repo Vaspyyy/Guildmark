@@ -6,6 +6,7 @@ import io.github.vaspyyy.guildmark.client.ContractTracker
 import io.github.vaspyyy.guildmark.client.GuildmarkClientConfig
 import io.github.vaspyyy.guildmark.client.combat.Cutscenes
 import io.github.vaspyyy.guildmark.client.ui.Ui
+import io.github.vaspyyy.guildmark.island.IslandMarks
 import io.github.vaspyyy.guildmark.network.AtlasMark
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
@@ -34,7 +35,8 @@ import kotlin.math.sqrt
 object CompassHud : GuiLayer {
     val ID: Identifier = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "compass")
 
-    private fun sprite(name: String) = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "compass/$name")
+    private val sprites = HashMap<String, Identifier>()
+    private fun sprite(name: String): Identifier = sprites.getOrPut(name) { Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "compass/$name") }
     private val STRIP = sprite("strip")
     private val NOTCH = sprite("notch")
     private val ICON_VILLAGE = sprite("village")
@@ -183,6 +185,8 @@ object CompassHud : GuiLayer {
             val at = Vec3(mark.pos.x + 0.5, mark.pos.y.toDouble(), mark.pos.z + 0.5)
             val range = when {
                 mark.kind == AtlasPlace.THRONE -> 2000.0
+                // Islands are what you steer by at sea
+                mark.kind == AtlasPlace.ISLAND -> 900.0
                 mark.kind == AtlasPlace.VILLAGE -> 640.0
                 mark.kind == AtlasPlace.WARDFIRE -> 512.0
                 mark.has(AtlasMark.CLEARED) -> 192.0
@@ -190,6 +194,7 @@ object CompassHud : GuiLayer {
             }
             if (at.subtract(here).horizontalDistance() > range) continue
             val icon = when {
+                mark.kind == AtlasPlace.ISLAND -> sprite(IslandMarks.icon(mark.standing))
                 mark.kind == AtlasPlace.WARDFIRE -> ICON_WARDFIRE
                 mark.kind == AtlasPlace.VILLAGE && mark.has(AtlasMark.YOURS) -> ICON_HALL
                 mark.kind == AtlasPlace.VILLAGE -> if (mark.size > 5) ICON_TOWN else ICON_VILLAGE
@@ -201,6 +206,8 @@ object CompassHud : GuiLayer {
             }
             val hide = when (mark.kind) {
                 AtlasPlace.VILLAGE -> 40.0
+                // Once you're on it, its middle is no way to point
+                AtlasPlace.ISLAND -> mark.size.toDouble()
                 AtlasPlace.THRONE -> 24.0
                 AtlasPlace.WARDFIRE -> 6.0
                 else -> 12.0

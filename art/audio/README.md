@@ -81,6 +81,27 @@ Kokoro voices of their own, and the renegade Silvan Marrow made cold and a littl
   both; `--only` takes effect names (`gnashfin_snap`, `sea.maelgrasp.roar`) and/or `music`; `--mp3 <file>` joins what
   was rendered into one listen-through MP3, a chapter mark at each file, and `--fragments <dir>` writes
   `sea_sounds.json` and `sea_subtitles.json` for merging. Its variants are listed in `sounds.json` by hand.
+- `make_island_audio.py`: the islands' 28 events and 101 files (`island/`): the surf on the sand, on rock and in a cave,
+  the wind (a stereo bed and six gusts), the gulls (calls, cries, alarms, wings, squabbles, splashes and a colony loop),
+  the lighthouse (a clockwork loop, the fog horn and the fog bell), the wreck (groaning timbers, the torn sail, the
+  drowned bell), the smugglers' cove (drips, whistled signals, the camp), the drowned shrine (a drone loop, chimes,
+  bubbles, whispers), the fishing haven (boats and rope) and the discovery sting. Synthesised with `sfxkit.py`, the cog's
+  parts from `make_ship_audio.py` and the harbour's gull voice, one-shots peaking at -3 dBFS and levelled by the loudest
+  100 ms like the cog's, the four loops (the wind bed, the gull colony, the lighthouse clockwork and the shrine's drone,
+  8 to 12 s) exact at -27 dBFS RMS; how far each sound carries is in its recipe (`reach`, 16 to 128 blocks) and in the
+  script's header, with the lengths. The surf's files also have marks (`break`, `stall`, `impact`: moments in seconds a
+  particle can sync to). `--only` takes names or groups (`surf`, `gull`, `island.wreck.bell`); `--mp3 <file>` joins the
+  sounds into one listen-through MP3, place by place, at about their pace and levels in the game; `--variants-mp3 <file>`
+  joins every file, a chapter mark at each; `--fragments <dir>` writes `island_sounds_entries.json` (the `sounds.json`
+  entries, with `music.isles`), `island_subtitles.json` and `island_marks.json` for merging. Its variants are listed in
+  `sounds.json` by hand.
+- `make_island_music.py`: the islands' theme, "Sun and Spindrift" (`music/isles.ogg`, 2:33.6, 48 bars of A major at 75
+  beats a minute): a harp, plucked strings and a wooden flute over soft strings and a light hand drum, on a tune made
+  of the gull's leap of a fourth, built as exactly one turn of a loop (its last chord, E, A, B, is its first moved a
+  fourth) so that it joins itself. Composed in code and played through `make_music.py`'s parts, stems and hall, its
+  loudness set by measurement like the sea theme's (-18 LUFS, true peak under -1 dBTP in the encoded file). `--work <dir>`
+  keeps the per-stem renders and `--reuse` mixes again from them, `--mp3 <file>` writes it to listen to, a chapter mark at
+  each section and the loop's join once more at the end.
 - `make_voice.py`: Halvard's three lines (`voice/`). It has two stages, `tts` and `process`.
 - `make_renegade_voice.py`: the renegade Silvan Marrow's three lines (`voice/renegade_<line>.ogg`), in a blend of
   three American men's voices and cold, thin processing: a faint whispered double, a stone slap and wind (out on a
@@ -127,6 +148,8 @@ python3 -B art/audio/make_magic_audio.py src/main/resources/assets/guildmark [--
 python3 -B art/audio/make_faction_audio.py src/main/resources/assets/guildmark [--wav <dir>] [--only ward_light,heist.alarm] [--mp3 <file>]
 python3 -B art/audio/make_ship_audio.py src/main/resources/assets/guildmark [--wav <dir>] [--only creak,wake] [--mp3 <file>] [--fragments <dir>]
 python3 -B art/audio/make_sea_audio.py src/main/resources/assets/guildmark [--wav <dir>] [--only gnashfin_snap,music] [--mp3 <file>] [--fragments <dir>] [--theme-mp3 <file>]
+python3 -B art/audio/make_island_audio.py src/main/resources/assets/guildmark [--wav <dir>] [--only surf,gull,island.wreck.bell] [--mp3 <file>] [--variants-mp3 <file>] [--fragments <dir>]
+python3 -B art/audio/make_island_music.py src/main/resources/assets/guildmark [--work <tmp-dir>] [--wav <dir>] [--mp3 <file>] [--reuse]
 ```
 
 `--wav` also writes WAV copies for listening. `--work` is where the music script keeps its per-stem

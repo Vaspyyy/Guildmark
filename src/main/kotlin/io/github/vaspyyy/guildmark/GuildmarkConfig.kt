@@ -50,6 +50,9 @@ object GuildmarkConfig {
     val SEA_MONSTERS: ModConfigSpec.BooleanValue = BUILDER
         .comment("Sea monsters: packs of Gnashfins hunt anyone out on the open sea by night or in a storm, and far out over the deeps the Maelgrasp rises under a ship and takes hold of her.")
         .define("seaMonsters", true)
+    val ISLANDS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Islands out at sea in newly explored ocean: wild isles with beaches, cliffs and woods of their own, sea stacks thick with gulls, coves, atolls and reefs. Islands already grown stay.")
+        .define("islands", true)
     val REGIONS: ModConfigSpec.BooleanValue = BUILDER
         .comment("Named regions: the overworld is divided into lands with names of their own, announced as you enter them and lettered on the map.")
         .define("regions", true)

@@ -8,8 +8,10 @@ import net.minecraft.world.level.Level
 
 /**
  * One place a player has found. A village is known by its board's anchor cell, a lair by its id, the
- * Hollow Throne by its altar, a Wardfire by its own block, a field boss's camp by its site. [size] and [standing] are what the village looked like on the last visit
- * (advances built, the player's standing tier), since a far-off village's board can't be read.
+ * Hollow Throne by its altar, a Wardfire by its own block, a field boss's camp by its site, an island by its middle at
+ * the sea's surface. [size] and [standing] are what the village looked like on the last visit (advances built, the
+ * player's standing tier), since a far-off village's board can't be read. An island's [ref] is what it is
+ * (IslandMarks.ref) and its [size] how far its land reaches.
  */
 data class AtlasPlace(
     val kind: Int,
@@ -28,6 +30,8 @@ data class AtlasPlace(
         const val WARDFIRE = 3
         /** A field boss's camp; [ref] is its site in FieldBosses. */
         const val FIELD_BOSS = 4
+        /** An island out at sea; [ref] says what it is (IslandMarks), [size] how far its land reaches. */
+        const val ISLAND = 5
 
         /** A village's [ref] when it's a capital city. */
         const val CAPITAL_REF = 1

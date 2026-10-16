@@ -19,15 +19,15 @@ import java.util.UUID
 data class AtlasMark(
     val kind: Int,
     val pos: BlockPos,
-    /** A lair's or the throne's name key. Villages are named from where their board stands (VillageNames). */
+    /** A lair's or the throne's name key, or an island's name. Villages are named from where their board stands (VillageNames). */
     val label: String,
-    /** How many advances a village has built, or a lair's rank. */
+    /** How many advances a village has built, a lair's rank, or how far an island's land reaches (blocks). */
     val size: Int,
     val flags: Int,
     /** The guild holding the village and its colour, or "" and 0. */
     val holder: String,
     val color: Int,
-    /** The player's standing tier with the village. */
+    /** The player's standing tier with the village; for an island, what sort it is (IslandMarks.ref). */
     val standing: Int,
     /** The named characters who live there. */
     val people: List<String>,

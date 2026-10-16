@@ -241,7 +241,7 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
         val c = GuildmarkClientConfig
         val spec = c.SPEC
         val city = listOf(c.CITY_SOUNDS, c.CITY_BELLS, c.CITY_CROWDS, c.CITY_WORKSHOPS, c.CITY_HARBOUR, c.CITY_WIND)
-        val listed = listOf(c.COMPASS, c.CONTRACT_TRACKER, c.PLACE_BANNERS, c.REGION_TITLES, c.REGION_ATMOSPHERE, c.COMBAT_HUD, c.DEATH_SCREEN, c.TITLE_SCREEN, c.CAMERA_SHAKE, c.CUTSCENES, c.DIALOGUE_CAMERA, c.MENU_SOUNDS, c.MENU_MUSIC, c.REGION_MUSIC) + city
+        val listed = listOf(c.COMPASS, c.CONTRACT_TRACKER, c.PLACE_BANNERS, c.REGION_TITLES, c.REGION_ATMOSPHERE, c.COMBAT_HUD, c.DEATH_SCREEN, c.TITLE_SCREEN, c.CAMERA_SHAKE, c.CUTSCENES, c.DIALOGUE_CAMERA, c.MENU_SOUNDS, c.MENU_MUSIC, c.REGION_MUSIC, c.ISLAND_SOUNDS) + city
         return listOf(
             header("screen"),
             toggle(c.COMPASS, spec, true),
@@ -260,6 +260,7 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
             toggle(c.MENU_SOUNDS, spec, true),
             toggle(c.MENU_MUSIC, spec, true),
             toggle(c.REGION_MUSIC, spec, true),
+            slider(c.ISLAND_SOUNDS, spec, true, PERCENTS, ::percent) { c.ISLAND_SOUNDS.set(it.roundToInt()) },
             header("city"),
         ) + city.map { value -> slider(value, spec, true, PERCENTS, ::percent) { value.set(it.roundToInt()) } } + others(c, spec, listed, true)
     }
@@ -278,7 +279,7 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
         val editable = note == "local"
         val listed = listOf(
             c.COMBAT, c.LOSE_MARKS, c.PAY_MULTIPLIER, c.XP_MULTIPLIER, c.SKILL_XP_MULTIPLIER, c.RELIC_CACHE_CHANCE, c.HANDBOOK, c.AUTO_BOARDS, c.WARDFIRES,
-            c.DUNGEONS, c.FIELD_BOSSES, c.CAPITALS, c.DUSK_RIDERS, c.DRAGONS, c.SEA_MONSTERS, c.SIEGES, c.SIEGE_CHANCE, c.BANDITS, c.RIVALS, c.CHARACTERS,
+            c.DUNGEONS, c.FIELD_BOSSES, c.CAPITALS, c.ISLANDS, c.DUSK_RIDERS, c.DRAGONS, c.SEA_MONSTERS, c.SIEGES, c.SIEGE_CHANCE, c.BANDITS, c.RIVALS, c.CHARACTERS,
             c.TOWNSFOLK_CROWDS, c.TOWNSFOLK_CROWD_DENSITY, c.REGIONS, c.REGION_TERRAIN, c.REGION_ENEMIES,
         )
         val rows = arrayListOf<Row>(Note(Component.translatable("gui.guildmark.settings.world.$note"), if (editable) Ui.TEXT_FAINT else Ui.GOLD, width))
@@ -299,6 +300,7 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
             toggle(c.DUNGEONS, spec, editable),
             toggle(c.FIELD_BOSSES, spec, editable),
             toggle(c.CAPITALS, spec, editable),
+            toggle(c.ISLANDS, spec, editable),
             toggle(c.REGIONS, spec, editable),
             toggle(c.REGION_TERRAIN, spec, editable),
             toggle(c.TOWNSFOLK_CROWDS, spec, editable),

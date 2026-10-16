@@ -98,6 +98,31 @@
       "stories": [
         "quest.guildmark.story.fisherman.fetch.gnashfin_fang.0"
       ]
+    },
+    {
+      "type": "fetch",
+      "target": "guildmark:gull_egg",
+      "min": 3,
+      "max": 6,
+      "reward_per": 1.0,
+      "weight": 5,
+      "stories": [
+        "quest.guildmark.story.fisherman.fetch.gull_egg.0",
+        "quest.guildmark.story.fisherman.fetch.gull_egg.1"
+      ]
+    },
+    {
+      "type": "hunt",
+      "target": "minecraft:vindicator",
+      "min": 1,
+      "max": 2,
+      "reward_per": 5.0,
+      "weight": 3,
+      "min_tier": 2,
+      "stories": [
+        "quest.guildmark.story.fisherman.hunt.smugglers.0",
+        "quest.guildmark.story.fisherman.hunt.smugglers.1"
+      ]
     }
   ]
 }

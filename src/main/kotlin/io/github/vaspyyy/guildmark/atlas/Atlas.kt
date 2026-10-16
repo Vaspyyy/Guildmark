@@ -8,6 +8,8 @@ import io.github.vaspyyy.guildmark.block.QuestBoardBlockEntity
 import io.github.vaspyyy.guildmark.guild.Guilds
 import io.github.vaspyyy.guildmark.guild.Holdings
 import io.github.vaspyyy.guildmark.guild.TownControl
+import io.github.vaspyyy.guildmark.island.IslandMarks
+import io.github.vaspyyy.guildmark.island.Islands
 import io.github.vaspyyy.guildmark.lair.Lairs
 import io.github.vaspyyy.guildmark.network.AtlasMark
 import io.github.vaspyyy.guildmark.network.AtlasPayload
@@ -37,7 +39,7 @@ import java.util.WeakHashMap
 /**
  * The places each player has found, for the compass and the map. Villages go in once you come within
  * sight of their board, lairs and field bosses' camps once you're near, the Hollow Throne once you see
- * it, a Wardfire once you kindle it or rest at it (see Wardfires.note). A village's size and
+ * it, a Wardfire once you kindle it or rest at it (see Wardfires.note), an island once it's in sight over the sea. A village's size and
  * your standing there are noted on each visit, and its holder and roads are read fresh, since those
  * are kept with the overworld.
  */
@@ -48,6 +50,9 @@ object Atlas {
     private const val THRONE_SIGHT = 96.0
     private const val WARDFIRE_SIGHT = 32.0
     private const val CAMP_SIGHT = 64.0
+    /** How far past an island's shore it's seen from out at sea, and the furthest any island's middle is looked for. */
+    private const val ISLAND_SIGHT = 96
+    private const val ISLAND_LOOK = ISLAND_SIGHT + 56
     /** How far from a board a road's end can be and still be that village's road. */
     private const val ROAD_SLACK = 96.0
 
@@ -153,6 +158,15 @@ object Atlas {
                 if (places.any { it.kind == AtlasPlace.FIELD_BOSS && it.dimension == dimension && it.ref == site.id }) continue
                 found(AtlasPlace(AtlasPlace.FIELD_BOSS, dimension, site.pos, ref = site.id, found = now))
             }
+            // An island, once it's in sight over the sea
+            for (spec in Islands.near(level, here, ISLAND_LOOK)) {
+                val middle = BlockPos(spec.cx, spec.sea, spec.cz)
+                val dx = (spec.cx - here.x).toDouble()
+                val dz = (spec.cz - here.z).toDouble()
+                if (Math.sqrt(dx * dx + dz * dz) > spec.radius + ISLAND_SIGHT) continue
+                if (places.any { it.kind == AtlasPlace.ISLAND && it.dimension == dimension && it.pos == middle }) continue
+                found(AtlasPlace(AtlasPlace.ISLAND, dimension, middle, ref = IslandMarks.ref(spec), size = spec.radius, found = now))
+            }
         }
 
         if (changed) player.setData(ModAttachments.ATLAS, AtlasState(places))
@@ -222,6 +236,8 @@ object Atlas {
                     // Named for its troll, whose name the label carries
                     AtlasMark(AtlasPlace.FIELD_BOSS, site.pos, "${HillTroll.NAME_KEY}.${site.name}", 0, flags, "", 0, 0, listOf())
                 }
+                // Named from what it is; the client tells what sort of island it is from the same number
+                AtlasPlace.ISLAND -> AtlasMark(AtlasPlace.ISLAND, place.pos, IslandMarks.name(place.ref), place.size, 0, "", 0, place.ref, listOf())
                 else -> null
             }
         }

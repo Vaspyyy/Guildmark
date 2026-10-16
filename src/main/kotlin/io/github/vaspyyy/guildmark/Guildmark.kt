@@ -195,6 +195,8 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         io.github.vaspyyy.guildmark.ship.Ships.register(modBus)
         // Gnashfins and the Maelgrasp: what hunts the open sea, and when it comes (sea/)
         io.github.vaspyyy.guildmark.sea.Seas.register(modBus)
+        // Islands out at sea: wild isles, sea stacks, coves, atolls and reefs, grown with new ocean (island/)
+        io.github.vaspyyy.guildmark.island.Islands.register(modBus)
         // Which part of a capital each player is in, for the city sounds (city/CapitalVisits)
         CapitalVisits.register()
         // Capitals' sites worked out ahead of the players (city/Capitals)

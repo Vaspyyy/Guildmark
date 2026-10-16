@@ -162,6 +162,8 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
         io.github.vaspyyy.guildmark.client.ship.ShipClient.register(modBus)
         // The sea monsters: their renderers, the sea round them, whoever an arm has caught (client/sea)
         io.github.vaspyyy.guildmark.client.sea.SeaClient.register(modBus)
+        // The islands: their sounds and music, the gulls, the lighthouse lamps' beams
+        io.github.vaspyyy.guildmark.client.island.IslandClient.register(modBus)
         HdPack.register(modBus)
         modBus.addListener(RegisterRenderStateModifiersEvent::class.java) { event ->
             event.registerAvatarEntityModifier(CombatAnimator.AVATAR)

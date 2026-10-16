@@ -4,6 +4,7 @@ import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.atlas.AtlasPlace
 import io.github.vaspyyy.guildmark.client.GuildmarkClientConfig
 import io.github.vaspyyy.guildmark.client.ui.Ui
+import io.github.vaspyyy.guildmark.island.IslandRegistry
 import io.github.vaspyyy.guildmark.network.AtlasMark
 import io.github.vaspyyy.guildmark.registry.ModSounds
 import net.minecraft.client.DeltaTracker
@@ -44,7 +45,8 @@ object PlaceBanner : GuiLayer {
         show(mark, subtitle, 5.5f)
         inside = mark.pos
         lastShown[mark.pos] = level.gameTime
-        Ui.play(ModSounds.UI_DISCOVER.get(), 1f, 0.8f)
+        // An island sighted over the sea has its own call
+        if (mark.kind == AtlasPlace.ISLAND) Ui.play(IslandRegistry.DISCOVER.get(), 1f, 1f) else Ui.play(ModSounds.UI_DISCOVER.get(), 1f, 0.8f)
     }
 
     private fun show(mark: AtlasMark, subtitle: Component, seconds: Float) {
@@ -54,6 +56,8 @@ object PlaceBanner : GuiLayer {
 
     private fun arriveRadius(mark: AtlasMark): Double = when (mark.kind) {
         AtlasPlace.VILLAGE -> 40.0
+        // Coming into its shallows
+        AtlasPlace.ISLAND -> mark.size + 16.0
         AtlasPlace.THRONE -> 32.0
         AtlasPlace.WARDFIRE -> 10.0
         else -> 20.0

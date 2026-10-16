@@ -5,6 +5,7 @@ import com.mojang.blaze3d.systems.RenderSystem
 import com.mojang.renderpearl.api.textures.FilterMode
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.atlas.AtlasPlace
+import io.github.vaspyyy.guildmark.island.IslandMarks
 import io.github.vaspyyy.guildmark.client.ContractTracker
 import io.github.vaspyyy.guildmark.client.combat.CombatClient
 import io.github.vaspyyy.guildmark.client.region.RegionMapLayer
@@ -438,6 +439,10 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
                     x, z, icon, name, lines, if (major) 2 else 1, label = name, labelFrom = if (major) 0.0 else 0.5, carved = true,
                     coach = coach, territory = if (mark.has(AtlasMark.HELD)) mark.color else 0,
                 ))
+            } else if (mark.kind == AtlasPlace.ISLAND) {
+                lines.add(AtlasClient.kindName(mark))
+                // The bigger islands are named sooner as you zoom out
+                out.add(Spot(x, z, sprite(IslandMarks.icon(mark.standing)), name, lines, 1, label = name, labelFrom = if (mark.size >= 30) 0.5 else 1.0))
             } else if (mark.kind == AtlasPlace.WARDFIRE) {
                 lines.add(AtlasClient.kindName(mark))
                 if (mark.has(AtlasMark.RESTED)) lines.add(Component.translatable("gui.guildmark.map.tip.rested"))
@@ -816,7 +821,8 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
             stops = payload.stops
         }
 
-        private fun sprite(name: String) = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "map/$name")
+        private val sprites = HashMap<String, Identifier>()
+        private fun sprite(name: String): Identifier = sprites.getOrPut(name) { Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "map/$name") }
         private val VILLAGE = sprite("village")
         private val TOWN = sprite("town")
         private val CITY = sprite("city")
@@ -835,6 +841,7 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
         private val TROLL = sprite("troll_camp")
         private val TROLL_SLAIN = sprite("troll_camp_slain")
         private val SHIP = sprite("ship")
+        private val ISLAND = sprite("island")
         private val ROSE = sprite("rose")
         private val VIGNETTE = sprite("frame")
         private val COACH_BADGE = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "compass/coach")
@@ -844,7 +851,7 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
         private val LEGEND = listOf(
             VILLAGE to "village", TOWN to "town", CITY to "city", HALL to "hall", LAIR to "lair", LAIR_CLEARED to "lair_cleared",
             VAULT to "vault", TROLL to "troll_camp", WARDFIRE to "wardfire", COACH to "coach", CONTRACT to "objective", PIN to "pin", PARTY to "party",
-            DEATH to "death", LOST_MARKS to "lost_marks", SHIP to "ship", PLAYER to "you",
+            DEATH to "death", LOST_MARKS to "lost_marks", SHIP to "ship", ISLAND to "island", PLAYER to "you",
         )
         private val SCALES = intArrayOf(10, 20, 50, 100, 200, 500, 1000, 2000, 5000)
         private val HINTS = listOf("drag", "zoom", "pin", "home", "legend").map { "gui.guildmark.map.hint.$it" }

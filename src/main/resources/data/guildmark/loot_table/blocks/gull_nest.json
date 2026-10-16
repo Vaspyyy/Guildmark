@@ -1,0 +1,76 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "condition": {
+        "type": "minecraft:survives_explosion"
+      },
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "guildmark:gull_nest"
+        }
+      ]
+    },
+    {
+      "rolls": 1,
+      "condition": {
+        "type": "minecraft:survives_explosion"
+      },
+      "entries": [
+        {
+          "type": "minecraft:alternatives",
+          "children": [
+            {
+              "type": "minecraft:item",
+              "name": "guildmark:gull_egg",
+              "condition": {
+                "type": "minecraft:match_block",
+                "blocks": "guildmark:gull_nest",
+                "state": {
+                  "eggs": "1"
+                }
+              },
+              "modifier": {
+                "type": "minecraft:set_count",
+                "count": 1
+              }
+            },
+            {
+              "type": "minecraft:item",
+              "name": "guildmark:gull_egg",
+              "condition": {
+                "type": "minecraft:match_block",
+                "blocks": "guildmark:gull_nest",
+                "state": {
+                  "eggs": "2"
+                }
+              },
+              "modifier": {
+                "type": "minecraft:set_count",
+                "count": 2
+              }
+            },
+            {
+              "type": "minecraft:item",
+              "name": "guildmark:gull_egg",
+              "condition": {
+                "type": "minecraft:match_block",
+                "blocks": "guildmark:gull_nest",
+                "state": {
+                  "eggs": "3"
+                }
+              },
+              "modifier": {
+                "type": "minecraft:set_count",
+                "count": 3
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "random_sequence": "guildmark:blocks/gull_nest"
+}

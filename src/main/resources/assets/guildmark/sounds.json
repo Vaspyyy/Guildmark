@@ -7322,5 +7322,539 @@
         "stream": true
       }
     ]
+  },
+  "island.surf.lap": {
+    "sounds": [
+      {
+        "name": "guildmark:island/surf_lap_1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:island/surf_lap_2",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:island/surf_lap_3",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:island/surf_lap_4",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:island/surf_lap_5",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:island/surf_lap_6",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.island.surf.lap"
+  },
+  "island.surf.crash": {
+    "sounds": [
+      {
+        "name": "guildmark:island/surf_crash_1",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:island/surf_crash_2",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:island/surf_crash_3",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:island/surf_crash_4",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:island/surf_crash_5",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:island/surf_crash_6",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "subtitles.guildmark.island.surf.crash"
+  },
+  "island.surf.cave": {
+    "sounds": [
+      {
+        "name": "guildmark:island/surf_cave_1",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:island/surf_cave_2",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:island/surf_cave_3",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:island/surf_cave_4",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "subtitles.guildmark.island.surf.cave"
+  },
+  "island.wind.bed": {
+    "sounds": [
+      {
+        "name": "guildmark:island/wind_bed",
+        "stream": false
+      }
+    ]
+  },
+  "island.wind.gust": {
+    "sounds": [
+      {
+        "name": "guildmark:island/wind_gust_1",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:island/wind_gust_2",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:island/wind_gust_3",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:island/wind_gust_4",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:island/wind_gust_5",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:island/wind_gust_6",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "subtitles.guildmark.island.wind.gust"
+  },
+  "island.gull.call": {
+    "sounds": [
+      {
+        "name": "guildmark:island/gull_call_1",
+        "attenuation_distance": 64
+      },
+      {
+        "name": "guildmark:island/gull_call_2",
+        "attenuation_distance": 64
+      },
+      {
+        "name": "guildmark:island/gull_call_3",
+        "attenuation_distance": 64
+      },
+      {
+        "name": "guildmark:island/gull_call_4",
+        "attenuation_distance": 64
+      },
+      {
+        "name": "guildmark:island/gull_call_5",
+        "attenuation_distance": 64
+      },
+      {
+        "name": "guildmark:island/gull_call_6",
+        "attenuation_distance": 64
+      }
+    ],
+    "subtitle": "subtitles.guildmark.island.gull.call"
+  },
+  "island.gull.cry": {
+    "sounds": [
+      {
+        "name": "guildmark:island/gull_cry_1",
+        "attenuation_distance": 48
+      },
+      {
+        "name": "guildmark:island/gull_cry_2",
+        "attenuation_distance": 48
+      },
+      {
+        "name": "guildmark:island/gull_cry_3",
+        "attenuation_distance": 48
+      },
+      {
+        "name": "guildmark:island/gull_cry_4",
+        "attenuation_distance": 48
+      },
+      {
+        "name": "guildmark:island/gull_cry_5",
+        "attenuation_distance": 48
+      },
+      {
+        "name": "guildmark:island/gull_cry_6",
+        "attenuation_distance": 48
+      },
+      {
+        "name": "guildmark:island/gull_cry_7",
+        "attenuation_distance": 48
+      },
+      {
+        "name": "guildmark:island/gull_cry_8",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "subtitles.guildmark.island.gull.cry"
+  },
+  "island.gull.alarm": {
+    "sounds": [
+      {
+        "name": "guildmark:island/gull_alarm_1",
+        "attenuation_distance": 48
+      },
+      {
+        "name": "guildmark:island/gull_alarm_2",
+        "attenuation_distance": 48
+      },
+      {
+        "name": "guildmark:island/gull_alarm_3",
+        "attenuation_distance": 48
+      },
+      {
+        "name": "guildmark:island/gull_alarm_4",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "subtitles.guildmark.island.gull.alarm"
+  },
+  "island.gull.flap": {
+    "sounds": [
+      {
+        "name": "guildmark:island/gull_flap_1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:island/gull_flap_2",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:island/gull_flap_3",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:island/gull_flap_4",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.island.gull.flap"
+  },
+  "island.gull.squabble": {
+    "sounds": [
+      {
+        "name": "guildmark:island/gull_squabble_1",
+        "attenuation_distance": 40
+      },
+      {
+        "name": "guildmark:island/gull_squabble_2",
+        "attenuation_distance": 40
+      },
+      {
+        "name": "guildmark:island/gull_squabble_3",
+        "attenuation_distance": 40
+      }
+    ],
+    "subtitle": "subtitles.guildmark.island.gull.squabble"
+  },
+  "island.gull.splash": {
+    "sounds": [
+      {
+        "name": "guildmark:island/gull_splash_1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:island/gull_splash_2",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:island/gull_splash_3",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.island.gull.splash"
+  },
+  "island.gull.colony": {
+    "sounds": [
+      {
+        "name": "guildmark:island/gull_colony",
+        "stream": false,
+        "attenuation_distance": 48
+      }
+    ]
+  },
+  "island.lighthouse.turn": {
+    "sounds": [
+      {
+        "name": "guildmark:island/lighthouse_turn",
+        "stream": false,
+        "attenuation_distance": 24
+      }
+    ]
+  },
+  "island.lighthouse.horn": {
+    "sounds": [
+      {
+        "name": "guildmark:island/lighthouse_horn_1",
+        "attenuation_distance": 128
+      },
+      {
+        "name": "guildmark:island/lighthouse_horn_2",
+        "attenuation_distance": 128
+      }
+    ],
+    "subtitle": "subtitles.guildmark.island.lighthouse.horn"
+  },
+  "island.lighthouse.bell": {
+    "sounds": [
+      {
+        "name": "guildmark:island/lighthouse_bell_1",
+        "attenuation_distance": 64
+      },
+      {
+        "name": "guildmark:island/lighthouse_bell_2",
+        "attenuation_distance": 64
+      },
+      {
+        "name": "guildmark:island/lighthouse_bell_3",
+        "attenuation_distance": 64
+      }
+    ],
+    "subtitle": "subtitles.guildmark.island.lighthouse.bell"
+  },
+  "island.wreck.creak": {
+    "sounds": [
+      {
+        "name": "guildmark:island/wreck_creak_1",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:island/wreck_creak_2",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:island/wreck_creak_3",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:island/wreck_creak_4",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:island/wreck_creak_5",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:island/wreck_creak_6",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "subtitles.guildmark.island.wreck.creak"
+  },
+  "island.wreck.sail": {
+    "sounds": [
+      {
+        "name": "guildmark:island/wreck_sail_1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:island/wreck_sail_2",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:island/wreck_sail_3",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.island.wreck.sail"
+  },
+  "island.wreck.bell": {
+    "sounds": [
+      {
+        "name": "guildmark:island/wreck_bell_1",
+        "attenuation_distance": 48
+      },
+      {
+        "name": "guildmark:island/wreck_bell_2",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "subtitles.guildmark.island.wreck.bell"
+  },
+  "island.cove.drip": {
+    "sounds": [
+      {
+        "name": "guildmark:island/cove_drip_1"
+      },
+      {
+        "name": "guildmark:island/cove_drip_2"
+      },
+      {
+        "name": "guildmark:island/cove_drip_3"
+      },
+      {
+        "name": "guildmark:island/cove_drip_4"
+      },
+      {
+        "name": "guildmark:island/cove_drip_5"
+      },
+      {
+        "name": "guildmark:island/cove_drip_6"
+      }
+    ],
+    "subtitle": "subtitles.guildmark.island.cove.drip"
+  },
+  "island.cove.signal": {
+    "sounds": [
+      {
+        "name": "guildmark:island/cove_signal_1",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:island/cove_signal_2",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:island/cove_signal_3",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "subtitles.guildmark.island.cove.signal"
+  },
+  "island.cove.camp": {
+    "sounds": [
+      {
+        "name": "guildmark:island/cove_camp_1"
+      },
+      {
+        "name": "guildmark:island/cove_camp_2"
+      },
+      {
+        "name": "guildmark:island/cove_camp_3"
+      },
+      {
+        "name": "guildmark:island/cove_camp_4"
+      }
+    ],
+    "subtitle": "subtitles.guildmark.island.cove.camp"
+  },
+  "island.shrine.drone": {
+    "sounds": [
+      {
+        "name": "guildmark:island/shrine_drone",
+        "stream": false,
+        "attenuation_distance": 32
+      }
+    ]
+  },
+  "island.shrine.chime": {
+    "sounds": [
+      {
+        "name": "guildmark:island/shrine_chime_1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:island/shrine_chime_2",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:island/shrine_chime_3",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:island/shrine_chime_4",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.island.shrine.chime"
+  },
+  "island.shrine.bubbles": {
+    "sounds": [
+      {
+        "name": "guildmark:island/shrine_bubbles_1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:island/shrine_bubbles_2",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:island/shrine_bubbles_3",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.island.shrine.bubbles"
+  },
+  "island.shrine.whisper": {
+    "sounds": [
+      {
+        "name": "guildmark:island/shrine_whisper_1"
+      },
+      {
+        "name": "guildmark:island/shrine_whisper_2"
+      },
+      {
+        "name": "guildmark:island/shrine_whisper_3"
+      }
+    ],
+    "subtitle": "subtitles.guildmark.island.shrine.whisper"
+  },
+  "island.haven.boats": {
+    "sounds": [
+      {
+        "name": "guildmark:island/haven_boats_1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:island/haven_boats_2",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:island/haven_boats_3",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:island/haven_boats_4",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.island.haven.boats"
+  },
+  "island.haven.rope": {
+    "sounds": [
+      {
+        "name": "guildmark:island/haven_rope_1"
+      },
+      {
+        "name": "guildmark:island/haven_rope_2"
+      },
+      {
+        "name": "guildmark:island/haven_rope_3"
+      }
+    ],
+    "subtitle": "subtitles.guildmark.island.haven.rope"
+  },
+  "island.discover": {
+    "sounds": [
+      {
+        "name": "guildmark:island/discover"
+      }
+    ],
+    "subtitle": "subtitles.guildmark.island.discover"
+  },
+  "music.isles": {
+    "sounds": [
+      {
+        "name": "guildmark:music/isles",
+        "stream": true
+      }
+    ]
   }
 }

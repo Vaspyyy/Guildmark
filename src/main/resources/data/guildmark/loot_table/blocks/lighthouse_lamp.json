@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "condition": {
+        "type": "minecraft:survives_explosion"
+      },
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "guildmark:lighthouse_lamp"
+        }
+      ]
+    }
+  ],
+  "random_sequence": "guildmark:blocks/lighthouse_lamp"
+}

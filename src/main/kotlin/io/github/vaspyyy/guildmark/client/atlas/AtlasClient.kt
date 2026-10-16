@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.client.atlas
 
 import io.github.vaspyyy.guildmark.atlas.AtlasPlace
+import io.github.vaspyyy.guildmark.island.IslandMarks
 import io.github.vaspyyy.guildmark.network.AtlasMark
 import io.github.vaspyyy.guildmark.network.AtlasPayload
 import io.github.vaspyyy.guildmark.network.AtlasRoad
@@ -67,16 +68,18 @@ object AtlasClient {
         AtlasPlace.VILLAGE -> Component.literal(VillageNames.of(mark.pos))
         AtlasPlace.WARDFIRE -> Component.literal(WardfireNames.of(mark.pos))
         AtlasPlace.FIELD_BOSS -> Component.translatable("atlas.guildmark.troll_camp", Component.translatable(mark.label))
+        AtlasPlace.ISLAND -> Component.literal(mark.label)
         else -> Component.translatable(mark.label)
     }
 
-    /** Hamlet, town, lair, shard vault, Wardfire, troll camp and so on. */
+    /** Hamlet, town, lair, shard vault, Wardfire, troll camp, lighthouse and so on. */
     fun kindName(mark: AtlasMark): Component = when {
         mark.kind == AtlasPlace.VILLAGE && mark.has(AtlasMark.CAPITAL) -> Component.translatable("village.guildmark.size.capital")
         mark.kind == AtlasPlace.VILLAGE -> VillageNames.size(mark.size)
         mark.kind == AtlasPlace.WARDFIRE -> Component.translatable("atlas.guildmark.kind.wardfire")
         mark.kind == AtlasPlace.THRONE -> Component.translatable("atlas.guildmark.kind.throne")
         mark.kind == AtlasPlace.FIELD_BOSS -> Component.translatable("atlas.guildmark.kind.troll_camp")
+        mark.kind == AtlasPlace.ISLAND -> Component.translatable(IslandMarks.kindKey(mark.standing))
         mark.has(AtlasMark.VAULT) -> Component.translatable("atlas.guildmark.kind.vault")
         else -> Component.translatable("atlas.guildmark.kind.lair")
     }

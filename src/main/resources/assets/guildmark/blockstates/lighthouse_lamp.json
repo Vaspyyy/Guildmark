@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "lit=false": {
+      "model": "guildmark:block/lighthouse_lamp_unlit"
+    },
+    "lit=true": {
+      "model": "guildmark:block/lighthouse_lamp"
+    }
+  }
+}
