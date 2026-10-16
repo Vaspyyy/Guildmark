@@ -40,15 +40,21 @@ object QuestGenerator {
     }
 
     /**
-     * What lies round a board, deciding which jobs it can post: a Trade Road to other villages, and work out at sea
-     * (looked into only once a job that wants the sea comes up).
+     * What lies round a board, deciding which jobs it can post: a Trade Road to other villages, work out at sea
+     * (looked into only once a job that wants the sea comes up) and the beasts living in reach ([quarry] says whether
+     * there's one of the kind a hunt's target names).
      */
-    class Surroundings(val hasRoad: Boolean, sea: () -> SeaWork.Reach = { SeaWork.Reach.NONE }) {
+    class Surroundings(
+        val hasRoad: Boolean,
+        sea: () -> SeaWork.Reach = { SeaWork.Reach.NONE },
+        private val quarry: (Identifier) -> Boolean = { false },
+    ) {
         private val sea by lazy(sea)
 
         fun allows(entry: QuestPool.Entry): Boolean = when (entry.type) {
             QuestType.CHART -> sea.chart
             QuestType.SALVAGE -> SeaWork.kindOf(entry.target) in sea.salvage
+            QuestType.SLAY -> quarry(entry.target)
             else -> hasRoad || !entry.type.needsRoad
         }
     }
@@ -107,10 +113,14 @@ object QuestGenerator {
 
     /**
      * Notes near spawn are mostly F and E rank; further out they spread up to A. Champions rate a rank
-     * higher than other jobs in the same place.
+     * higher than other jobs in the same place, and a field boss's hunt two higher.
      */
     private fun rankFor(random: RandomSource, entry: QuestPool.Entry, tier: Int): Int {
-        val base = (tier - 1) * 2 + random.nextInt(4) - 2 + if (entry.type == QuestType.CHAMPION) 1 else 0
+        val base = (tier - 1) * 2 + random.nextInt(4) - 2 + when (entry.type) {
+            QuestType.CHAMPION -> 1
+            QuestType.SLAY -> 2
+            else -> 0
+        }
         return base.coerceIn(0, AdventurerRank.A.ordinal)
     }
 

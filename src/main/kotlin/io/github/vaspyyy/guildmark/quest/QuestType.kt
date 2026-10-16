@@ -32,16 +32,22 @@ enum class QuestType(private val id: String) : StringRepresentable {
     SALVAGE("salvage"),
 
     /**
+     * Slay a field boss that keeps a place of its own (the target: guildmark:hill_troll or guildmark:dragon), the
+     * nearest to the board when the contract is taken, in its camp or on its roost.
+     */
+    SLAY("slay"),
+
+    /**
      * A faction's own kind of job, set up when it's taken (see faction/Trials): its kind is the target's path,
      * guildmark:<kind>, and its progress is counted by that kind's own rules. Never posted on a board.
      */
     TRIAL("trial");
 
-    /** One-off jobs: a single letter, traveller, champion, lair or island rather than a count. */
-    val isSingle: Boolean get() = this == DELIVER || this == ESCORT || this == CHAMPION || this == LAIR || this == SALVAGE
+    /** One-off jobs: a single letter, traveller, champion, lair, island or beast rather than a count. */
+    val isSingle: Boolean get() = this == DELIVER || this == ESCORT || this == CHAMPION || this == LAIR || this == SALVAGE || this == SLAY
 
     /** Villages only trust these jobs to people they know. */
-    val minStanding: StandingTier get() = if (this == CHAMPION || this == LAIR) StandingTier.KNOWN else StandingTier.STRANGER
+    val minStanding: StandingTier get() = if (this == CHAMPION || this == LAIR || this == SLAY) StandingTier.KNOWN else StandingTier.STRANGER
 
     /** Jobs that travel a road to another village; locked until the village has a Trade Road. */
     val needsRoad: Boolean get() = this == DELIVER || this == ESCORT

@@ -10,6 +10,7 @@ import io.github.vaspyyy.guildmark.city.plan.CityPlan
 import io.github.vaspyyy.guildmark.field.FieldBosses
 import io.github.vaspyyy.guildmark.guild.GuildNews
 import io.github.vaspyyy.guildmark.lair.Lairs
+import io.github.vaspyyy.guildmark.quest.BossHunts
 import io.github.vaspyyy.guildmark.quest.QuestGenerator
 import io.github.vaspyyy.guildmark.story.HollowThrone
 import io.github.vaspyyy.guildmark.wardfire.WardfireSites
@@ -604,6 +605,7 @@ class DragonRoosts(
                 },
             )
         }
+        if (roost != null) BossHunts.onSlain(heroes, BossHunts.DRAGON, roost.id)
         GuildNews.add(level, "news.guildmark.dragon_slain", heroes.joinToString(", ") { it.name.string }.ifEmpty { "?" },
             "#${Dragon.NAME_KEY}.${dragon.nameIndex}", at.x.toString(), at.z.toString())
     }

@@ -81,7 +81,7 @@ enum class Advance(
             QuestType.CLEAR -> countsClear
             QuestType.HUNT, QuestType.CHAMPION -> vanilla && note.target.path in huntTargets
             // Clearing a lair near the village makes everyone safer
-            QuestType.LAIR -> countsClear || huntTargets.isNotEmpty()
+            QuestType.LAIR, QuestType.SLAY -> countsClear || huntTargets.isNotEmpty()
             QuestType.TRIAL -> false
             // Sea work is a journey too
             QuestType.DELIVER, QuestType.ESCORT, QuestType.CHART, QuestType.SALVAGE -> countsTravel

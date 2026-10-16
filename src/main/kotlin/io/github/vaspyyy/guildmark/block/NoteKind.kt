@@ -14,7 +14,8 @@ enum class NoteKind(private val id: String) : StringRepresentable {
     CHAMPION("champion"),
     LAIR("lair"),
     CHART("chart"),
-    SALVAGE("salvage");
+    SALVAGE("salvage"),
+    SLAY("slay");
 
     override fun getSerializedName(): String = id
 
@@ -30,6 +31,7 @@ enum class NoteKind(private val id: String) : StringRepresentable {
             QuestType.LAIR -> LAIR
             QuestType.CHART -> CHART
             QuestType.SALVAGE -> SALVAGE
+            QuestType.SLAY -> SLAY
             // Never posted on a board; drawn like a champion's notice if one ever is
             QuestType.TRIAL -> CHAMPION
         }

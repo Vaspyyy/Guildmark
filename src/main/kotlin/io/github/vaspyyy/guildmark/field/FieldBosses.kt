@@ -9,6 +9,7 @@ import io.github.vaspyyy.guildmark.guild.GuildNews
 import io.github.vaspyyy.guildmark.lair.Lairs
 import io.github.vaspyyy.guildmark.loot.Rarity
 import io.github.vaspyyy.guildmark.loot.Relics
+import io.github.vaspyyy.guildmark.quest.BossHunts
 import io.github.vaspyyy.guildmark.quest.QuestGenerator
 import io.github.vaspyyy.guildmark.registry.ModEntities
 import io.github.vaspyyy.guildmark.registry.ModItems
@@ -251,6 +252,7 @@ class FieldBosses(
         for (player in heroes) {
             (player as? ServerPlayer)?.sendSystemMessage(Component.translatable("message.guildmark.field_boss_slain", troll.title))
         }
+        if (site != null) BossHunts.onSlain(heroes, BossHunts.TROLL, site.id)
         GuildNews.add(level, "news.guildmark.field_boss", heroes.joinToString(", ") { it.name.string }.ifEmpty { "?" },
             "#${HillTroll.NAME_KEY}.${troll.nameIndex}", troll.blockX.toString(), troll.blockZ.toString())
     }

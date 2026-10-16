@@ -5,6 +5,7 @@ import io.github.vaspyyy.guildmark.GuildmarkConfig
 import io.github.vaspyyy.guildmark.advance.Advances
 import io.github.vaspyyy.guildmark.quest.QuestGenerator
 import io.github.vaspyyy.guildmark.quest.SeaWork
+import io.github.vaspyyy.guildmark.quest.BossHunts
 import io.github.vaspyyy.guildmark.road.RoadNetwork
 import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.registry.ModBlocks
@@ -118,10 +119,14 @@ object VillageBoards {
         return RoadNetwork.get(serverLevel).roadsFrom(Advances.villageCenter(serverLevel, boardPos)).isNotEmpty()
     }
 
-    /** What the board at [anchor] has round it to post jobs about: its village's roads, and the sea. */
+    /** What the board at [anchor] has round it to post jobs about: its village's roads, the sea and the beasts about. */
     fun surroundings(level: Level, anchor: BlockPos): QuestGenerator.Surroundings {
         val serverLevel = level as? ServerLevel ?: return QuestGenerator.Surroundings(false)
-        return QuestGenerator.Surroundings(hasRoad(level, anchor)) { SeaWork.reach(serverLevel, anchor) }
+        return QuestGenerator.Surroundings(
+            hasRoad(level, anchor),
+            { SeaWork.reach(serverLevel, anchor) },
+            { target -> BossHunts.quarries(serverLevel, anchor, target).isNotEmpty() },
+        )
     }
 
     /** Name tag if it has one, otherwise a first name fixed by its UUID: "Maren the Librarian". */

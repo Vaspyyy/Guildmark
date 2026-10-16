@@ -4,6 +4,7 @@ import com.mojang.serialization.Codec
 import com.mojang.serialization.codecs.RecordCodecBuilder
 import net.minecraft.core.BlockPos
 import net.minecraft.core.UUIDUtil
+import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceKey
 import net.minecraft.world.level.Level
 import java.util.Optional
@@ -26,8 +27,13 @@ data class ContractState(
     val road: Int = -1,
     /** Lair hunt: the lair to clear (see Lairs), or -1. */
     val lair: Int = -1,
+    /** A field boss's hunt: its camp or roost (see FieldBosses, DragonRoosts), or -1. */
+    val site: Int = -1,
 ) {
     fun isExpired(gameTime: Long): Boolean = gameTime > deadline
+
+    /** The [label] to show: a name as it is, or one marked with "#" looked up as a lang key (a field boss's name). */
+    fun labelText(): Component = if (label.startsWith("#")) Component.translatable(label.drop(1)) else Component.literal(label)
 
     /** Whole in-game days left, rounded up. */
     fun daysLeft(gameTime: Long): Long = (deadline - gameTime + TICKS_PER_DAY - 1) / TICKS_PER_DAY
@@ -46,8 +52,9 @@ data class ContractState(
                 Codec.STRING.optionalFieldOf("label", "").forGetter(ContractState::label),
                 Codec.INT.optionalFieldOf("road", -1).forGetter(ContractState::road),
                 Codec.INT.optionalFieldOf("lair", -1).forGetter(ContractState::lair),
-            ).apply(i) { progress, deadline, boardPos, dimension, destination, bound, label, road, lair ->
-                ContractState(progress, deadline, boardPos, dimension, destination.orElse(null), bound.orElse(null), label, road, lair)
+                Codec.INT.optionalFieldOf("site", -1).forGetter(ContractState::site),
+            ).apply(i) { progress, deadline, boardPos, dimension, destination, bound, label, road, lair, site ->
+                ContractState(progress, deadline, boardPos, dimension, destination.orElse(null), bound.orElse(null), label, road, lair, site)
             }
         }
     }

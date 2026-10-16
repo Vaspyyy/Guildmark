@@ -26,6 +26,7 @@ class QuestPoolLoader : SimpleJsonResourceReloadListener<QuestPool>(QuestPool.CO
         QuestType.CLEAR, QuestType.DELIVER, QuestType.ESCORT, QuestType.LAIR, QuestType.CHART -> true
         // The kind of island to salvage on: guildmark:wreck, guildmark:cove or guildmark:shrine
         QuestType.SALVAGE -> SeaWork.kindOf(entry.target) != null
+        QuestType.SLAY -> BossHunts.isQuarry(entry.target)
         // Faction jobs are set up by the factions, never drawn from a pool
         QuestType.TRIAL -> false
     }

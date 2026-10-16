@@ -584,6 +584,45 @@
         "model": "guildmark:block/quest_note_salvage",
         "y": 270
       }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "note": "slay"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_slay"
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "note": "slay"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_slay",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "note": "slay"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_slay",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "note": "slay"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_slay",
+        "y": 270
+      }
     }
   ]
 }

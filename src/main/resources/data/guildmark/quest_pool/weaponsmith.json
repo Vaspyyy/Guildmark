@@ -87,6 +87,18 @@
         "quest.guildmark.story.weaponsmith.champion.0",
         "quest.guildmark.story.weaponsmith.champion.pillager.0"
       ]
+    },
+    {
+      "type": "slay",
+      "target": "guildmark:hill_troll",
+      "min": 1,
+      "max": 1,
+      "reward_per": 30.0,
+      "weight": 4,
+      "stories": [
+        "quest.guildmark.story.weaponsmith.slay.hill_troll.0",
+        "quest.guildmark.story.weaponsmith.slay.hill_troll.1"
+      ]
     }
   ]
 }

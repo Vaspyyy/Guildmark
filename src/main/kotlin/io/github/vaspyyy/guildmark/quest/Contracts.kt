@@ -94,10 +94,17 @@ object Contracts {
                 }
             }
             QuestType.LAIR -> {
-                val lair = Lairs.get(level).create(level, boardPos, note.rank, LairTheme.of(note.target, note.rank)) ?: run {
-                    player.sendOverlayMessage(Component.translatable("message.guildmark.no_lair_spot"))
-                    return null
-                }
+                // A lair of the kind and rank already standing near, left uncleared by an earlier hunt, is sent after
+                // first; failing that, the scouts find a new one
+                val theme = LairTheme.of(note.target, note.rank)
+                val lairs = Lairs.get(level)
+                val lair = lairs.lairs
+                    .filter { !it.cleared && it.shard < 0 && it.theme == theme && it.rank == note.rank && Expeditions.horizontalDistance(it.pos, boardPos) < LAIR_REUSE }
+                    .minByOrNull { Expeditions.horizontalDistance(it.pos, boardPos) }
+                    ?: lairs.create(level, boardPos, note.rank, theme) ?: run {
+                        player.sendOverlayMessage(Component.translatable("message.guildmark.no_lair_spot"))
+                        return null
+                    }
                 state = state.copy(destination = lair.pos, lair = lair.id)
             }
             QuestType.CHAMPION -> {
@@ -118,6 +125,15 @@ object Contracts {
                 val distance = Expeditions.horizontalDistance(boardPos, isle.chest)
                 note = note.copy(reward = note.reward + (distance / 100).toInt())
                 state = state.copy(destination = isle.chest, label = isle.name)
+            }
+            QuestType.SLAY -> {
+                // The nearest of its kind still living in reach of the board; the further, the better it pays
+                val quarry = BossHunts.quarries(level, boardPos, note.target).firstOrNull() ?: run {
+                    player.sendOverlayMessage(Component.translatable("message.guildmark.no_quarry"))
+                    return null
+                }
+                note = note.copy(reward = note.reward + (Expeditions.horizontalDistance(boardPos, quarry.pos) / 100).toInt())
+                state = state.copy(destination = quarry.pos, site = quarry.site, label = quarry.label)
             }
             // A faction's own kind of job sets itself up (and may find it can't, with word why)
             QuestType.TRIAL -> state = Trials.begin(level, player, note, state) ?: return null
@@ -210,7 +226,7 @@ object Contracts {
 
         val done = when (note.type) {
             QuestType.FETCH -> takeFetchItems(player, note)
-            QuestType.HUNT, QuestType.CLEAR, QuestType.CHAMPION, QuestType.LAIR, QuestType.CHART, QuestType.SALVAGE -> state.progress >= note.count
+            QuestType.HUNT, QuestType.CLEAR, QuestType.CHAMPION, QuestType.LAIR, QuestType.CHART, QuestType.SALVAGE, QuestType.SLAY -> state.progress >= note.count
             QuestType.DELIVER, QuestType.ESCORT -> true
             // A stolen prize is handed over with the contract
             QuestType.TRIAL -> state.progress >= note.count && Trials.handOver(player, stack, note)
@@ -270,12 +286,15 @@ object Contracts {
             victim.level().dimension() == state.dimension &&
             victim.blockPosition().closerThan(state.boardPos, QuestNote.CLEAR_RADIUS.toDouble())
         QuestType.CHAMPION -> victim.uuid == state.bound
-        // Lair bosses are credited to everyone nearby by onLairCleared instead, faction jobs by their own rules and sea
-        // work by SeaWork
-        QuestType.FETCH, QuestType.DELIVER, QuestType.ESCORT, QuestType.LAIR, QuestType.TRIAL, QuestType.CHART, QuestType.SALVAGE -> false
+        // Lair bosses are credited to everyone nearby by onLairCleared instead, field bosses by BossHunts, faction
+        // jobs by their own rules and sea work by SeaWork
+        QuestType.FETCH, QuestType.DELIVER, QuestType.ESCORT, QuestType.LAIR, QuestType.TRIAL, QuestType.CHART, QuestType.SALVAGE, QuestType.SLAY -> false
     }
 
     private val HOLLOW_SOLDIER = net.minecraft.resources.Identifier.fromNamespaceAndPath("guildmark", "hollow_soldier")
+
+    /** How far from a board a lair left standing may be for a new lair hunt to send you to it instead. */
+    private const val LAIR_REUSE = 400.0
 
     /** Sets the progress of the contract in [stack] to [progress] (a faction job's own count), and its tooltip with it. */
     fun setProgress(stack: ItemStack, progress: Int) {
@@ -348,6 +367,9 @@ object Contracts {
             }
             QuestType.SALVAGE -> if (destination != null) {
                 lines.add(Component.translatable("quest.guildmark.salvage_at", state.label, destination.x, destination.z))
+            }
+            QuestType.SLAY -> if (destination != null) {
+                lines.add(Component.translatable("quest.guildmark.slay_at", state.labelText(), destination.x, destination.z))
             }
             QuestType.TRIAL -> lines.addAll(Trials.details(note, state))
             else -> {}

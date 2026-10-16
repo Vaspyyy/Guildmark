@@ -1,7 +1,7 @@
 """Guildmark's items, the quest notes and the quest board at 32x, painted with the HD art kit (hdkit.py) in the
 dark-fantasy look: the Guild Mark coin, the contract scroll, the quest board, the relic caches, the Warden's
 Flask at its four levels, the crown shard, the Dusk Bridle, the Lantern Wisp, the four older creatures'
-spawn eggs, the nine quest notes and the board's own planks and frame.
+spawn eggs, the ten quest notes and the board's own planks and frame.
 
     python3 -B art/scripts/items_hd.py src/main/resources/assets/guildmark [preview-dir]
 
@@ -550,7 +550,7 @@ def rider_egg():
 # ================================================================ quest notes (the board's notes)
 
 # The note's face is the block texture's middle 24x24 (the model shows uv 2..14 of 16).
-NOTE_TYPES = ['champion', 'clear', 'deliver', 'escort', 'fetch', 'hunt', 'lair', 'chart', 'salvage']
+NOTE_TYPES = ['champion', 'clear', 'deliver', 'escort', 'fetch', 'hunt', 'lair', 'chart', 'salvage', 'slay']
 
 
 def note_paper(kind, seed):
@@ -581,6 +581,10 @@ def note_paper(kind, seed):
     elif kind == 'champion':
         border = paper & (dist_in(paper, 3) == 2)
         cv.put(border, bands(PAL['gold'], 0.6 + 0.25 * bevel(paper & (dist_in(paper, 3) >= 2)), 0))
+    elif kind == 'slay':
+        # A field boss's bounty: ruled round in red ink
+        border = paper & (dist_in(paper, 3) == 2)
+        cv.put(border, bands(PAL['crimson'], 0.55 + 0.25 * bevel(paper & (dist_in(paper, 3) >= 2)), 0))
     # A heading and two lines of faded hand-writing
     ink = (160, 70, 72) if dark else (70, 50, 40)
     rng = np.random.default_rng(seed)
@@ -690,6 +694,32 @@ def note_icon(kind):
         swell = (ys > crest) & (ys < 28.5) & (xs > 8) & (xs < 24)
         cv.put(swell, bands(SEA_INK, 0.42 - 0.12 * (ys > 27.2), 0))
         cv.put(swell & (ys < crest + 1.0), SEA_INK[5])
+    elif kind == 'slay':
+        # A great beast's horned skull, a long muzzle and fangs, embers still in its eyes
+        for side in (-1, 1):
+            pts = [(16 + side * 3.4, 20.6), (16 + side * 5.6, 19.4), (16 + side * 6.8, 17.4), (16 + side * 6.4, 15.4)]
+            d, run = path_dist(pts, N)
+            w = 1.25 - 0.85 * np.clip(run / 6.6, 0, 1)
+            horn = d < w
+            cv.put(horn, bands(PAL['ash'], 0.5 + 0.3 * np.clip(run / 6.6, 0, 1) + 0.2 * bevel(horn) - 0.1 * (side > 0), 0))
+            # Ridges round the horn
+            cv.put(horn & (np.abs(run - 2.2) < 0.45), PAL['ash'][1])
+            cv.put(horn & (np.abs(run - 4.0) < 0.4), PAL['ash'][1])
+        crown = ellipse(16, 21.2, 4.4, 3.3, N)[0]
+        muzzle = poly([(12.7, 22.0), (19.3, 22.0), (18.5, 26.8), (13.5, 26.8)], N)
+        skull = crown | muzzle
+        cv.put(skull, bands(PAL['bone'], 0.7 + 0.25 * bevel(skull) - 0.15 * (xs > 18.5) - 0.1 * (ys > 25.5), 0))
+        # The brow juts over slanted sockets
+        for side in (-1, 1):
+            eye = poly([(16 + side * 3.1, 21.0), (16 + side * 0.8, 22.0), (16 + side * 0.9, 23.2), (16 + side * 2.9, 22.7)], N)
+            cv.put(eye, PAL['ink'][0])
+            cv.px(16 + side * 2 - (side > 0), 22, (196, 36, 30))
+        cv.put(rect(13, 21, 19, 22, N) & skull & ~disc(16, 21.5, 0.8, N)[0], PAL['bone'][2])
+        cv.px(15, 25, PAL['ink'][0])
+        cv.px(16, 25, PAL['ink'][1])
+        cv.px(17, 25, PAL['ink'][0])
+        for fx in (14.2, 17.8):
+            cv.put(poly([(fx - 0.9, 26.4), (fx + 0.9, 26.4), (fx, 28.6)], N), PAL['bone'][4])
     elif kind == 'hunt':
         # Three claw rakes torn through the paper
         for x0 in (11, 15, 19):
