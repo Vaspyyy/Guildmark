@@ -41,21 +41,32 @@ object QuestGenerator {
 
     /**
      * What lies round a board, deciding which jobs it can post: a Trade Road to other villages, work out at sea
-     * (looked into only once a job that wants the sea comes up) and the beasts living in reach ([quarry] says whether
-     * there's one of the kind a hunt's target names).
+     * (looked into only once a job that wants the sea comes up), the beasts living in reach ([quarry] says whether
+     * there's one of the kind a hunt's target names) and the outlaw bands camped in reach, whose notices [dress]
+     * writes onto wanted notes.
      */
     class Surroundings(
         val hasRoad: Boolean,
         sea: () -> SeaWork.Reach = { SeaWork.Reach.NONE },
         private val quarry: (Identifier) -> Boolean = { false },
+        wanted: () -> List<Bounties.Wanted> = { listOf() },
     ) {
         private val sea by lazy(sea)
+        private val wanted by lazy(wanted)
 
         fun allows(entry: QuestPool.Entry): Boolean = when (entry.type) {
             QuestType.CHART -> sea.chart
             QuestType.SALVAGE -> SeaWork.kindOf(entry.target) in sea.salvage
             QuestType.SLAY -> quarry(entry.target)
+            QuestType.BOUNTY -> wanted.isNotEmpty()
             else -> hasRoad || !entry.type.needsRoad
+        }
+
+        /** A wanted note names one of the bands in reach, the price on them and what for; any other note is left be. */
+        fun dress(random: RandomSource, note: QuestNote): QuestNote {
+            if (note.type != QuestType.BOUNTY) return note
+            val notice = wanted.randomOrNull(random) ?: return note
+            return note.copy(subject = notice.subject, site = notice.site, reward = maxOf(note.reward, notice.reward), story = notice.story)
         }
     }
 
@@ -66,7 +77,7 @@ object QuestGenerator {
             .flatMap { it.entries }
             .filter(around::allows)
         val entry = pick(random, entries, tier)
-        return build(random, entry, poster, rankFor(random, entry, tier))
+        return around.dress(random, build(random, entry, poster, rankFor(random, entry, tier)))
     }
 
     /** A note with no villager behind it yet, e.g. the first notes on a new board. */
@@ -75,7 +86,7 @@ object QuestGenerator {
         val profession = pool?.professions?.randomOrNull(random)
         val poster = "${NAMES[random.nextInt(NAMES.size)]} the ${title(profession)}"
         val entry = pick(random, pool?.entries.orEmpty().filter(around::allows), tier)
-        return build(random, entry, poster, rankFor(random, entry, tier))
+        return around.dress(random, build(random, entry, poster, rankFor(random, entry, tier)))
     }
 
     /** A note of one specific type from any pool, for testing. Null if no pool offers that type. */
@@ -93,7 +104,7 @@ object QuestGenerator {
      */
     fun generateHall(random: RandomSource, rank: Int, around: Surroundings, poster: String): QuestNote {
         val entries = QuestPools.pools.flatMap { it.entries }.filter(around::allows)
-        val note = build(random, pick(random, entries, MAX_TIER), poster, rank)
+        val note = around.dress(random, build(random, pick(random, entries, MAX_TIER), poster, rank))
         return note.copy(reward = note.reward * 3 / 2)
     }
 
@@ -112,12 +123,12 @@ object QuestGenerator {
         QuestNote(QuestType.CHAMPION, poster, rank.trialEntity, 1, 5 + rank.ordinal * 5, 3, "", rank.ordinal, trial = true)
 
     /**
-     * Notes near spawn are mostly F and E rank; further out they spread up to A. Champions rate a rank
-     * higher than other jobs in the same place, and a field boss's hunt two higher.
+     * Notes near spawn are mostly F and E rank; further out they spread up to A. Champions and outlaw captains rate a
+     * rank higher than other jobs in the same place, and a field boss's hunt two higher.
      */
     private fun rankFor(random: RandomSource, entry: QuestPool.Entry, tier: Int): Int {
         val base = (tier - 1) * 2 + random.nextInt(4) - 2 + when (entry.type) {
-            QuestType.CHAMPION -> 1
+            QuestType.CHAMPION, QuestType.BOUNTY -> 1
             QuestType.SLAY -> 2
             else -> 0
         }

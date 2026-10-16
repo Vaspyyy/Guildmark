@@ -38,16 +38,22 @@ enum class QuestType(private val id: String) : StringRepresentable {
     SLAY("slay"),
 
     /**
+     * Bring down an outlaw band's captain (the target is always guildmark:outlaw): the band the note names, posted while
+     * it's camped within reach of the board, or for a note naming no one, the nearest such band when it's taken.
+     */
+    BOUNTY("bounty"),
+
+    /**
      * A faction's own kind of job, set up when it's taken (see faction/Trials): its kind is the target's path,
      * guildmark:<kind>, and its progress is counted by that kind's own rules. Never posted on a board.
      */
     TRIAL("trial");
 
-    /** One-off jobs: a single letter, traveller, champion, lair, island or beast rather than a count. */
-    val isSingle: Boolean get() = this == DELIVER || this == ESCORT || this == CHAMPION || this == LAIR || this == SALVAGE || this == SLAY
+    /** One-off jobs: a single letter, traveller, champion, lair, island, beast or outlaw rather than a count. */
+    val isSingle: Boolean get() = this == DELIVER || this == ESCORT || this == CHAMPION || this == LAIR || this == SALVAGE || this == SLAY || this == BOUNTY
 
     /** Villages only trust these jobs to people they know. */
-    val minStanding: StandingTier get() = if (this == CHAMPION || this == LAIR || this == SLAY) StandingTier.KNOWN else StandingTier.STRANGER
+    val minStanding: StandingTier get() = if (this == CHAMPION || this == LAIR || this == SLAY || this == BOUNTY) StandingTier.KNOWN else StandingTier.STRANGER
 
     /** Jobs that travel a road to another village; locked until the village has a Trade Road. */
     val needsRoad: Boolean get() = this == DELIVER || this == ESCORT

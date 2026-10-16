@@ -623,6 +623,45 @@
         "model": "guildmark:block/quest_note_slay",
         "y": 270
       }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "note": "wanted"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_wanted"
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "note": "wanted"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_wanted",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "note": "wanted"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_wanted",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "note": "wanted"
+      },
+      "apply": {
+        "model": "guildmark:block/quest_note_wanted",
+        "y": 270
+      }
     }
   ]
 }

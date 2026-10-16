@@ -6,6 +6,7 @@ import io.github.vaspyyy.guildmark.advance.Advances
 import io.github.vaspyyy.guildmark.quest.QuestGenerator
 import io.github.vaspyyy.guildmark.quest.SeaWork
 import io.github.vaspyyy.guildmark.quest.BossHunts
+import io.github.vaspyyy.guildmark.quest.Bounties
 import io.github.vaspyyy.guildmark.road.RoadNetwork
 import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.registry.ModBlocks
@@ -126,6 +127,7 @@ object VillageBoards {
             hasRoad(level, anchor),
             { SeaWork.reach(serverLevel, anchor) },
             { target -> BossHunts.quarries(serverLevel, anchor, target).isNotEmpty() },
+            { Bounties.wanted(serverLevel, anchor) },
         )
     }
 

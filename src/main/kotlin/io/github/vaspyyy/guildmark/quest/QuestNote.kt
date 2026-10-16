@@ -27,6 +27,10 @@ data class QuestNote(
     val trial: Boolean = false,
     /** A named character's story chapter, as "<character>:<step>"; empty for ordinary jobs. */
     val chain: String = "",
+    /** Wanted: whose head it is, as a label (see Labels); empty for a note naming no one. */
+    val subject: String = "",
+    /** Wanted: the band the note was posted on (see outlaw/OutlawCamps), or -1. */
+    val site: Int = -1,
 ) {
     val rankLetter: String get() = AdventurerRank.of(rank).letter
     fun rankLine(): Component = Component.translatable(if (trial) "quest.guildmark.trial_rank" else "quest.guildmark.rank", rankLetter)
@@ -43,6 +47,7 @@ data class QuestNote(
         QuestType.CHART -> Component.translatable("quest.guildmark.chart.title", count)
         QuestType.SALVAGE -> Component.translatable("quest.guildmark.salvage.${target.path}.title")
         QuestType.SLAY -> Component.translatable("quest.guildmark.slay.title", targetName())
+        QuestType.BOUNTY -> if (subject.isEmpty()) Component.translatable("quest.guildmark.bounty.title_any") else Component.translatable("quest.guildmark.bounty.title", Labels.text(subject))
     }
 
     fun description(): Component = when (type) {
@@ -57,13 +62,13 @@ data class QuestNote(
         QuestType.CHART -> Component.translatable("quest.guildmark.chart.desc", count)
         QuestType.SALVAGE -> Component.translatable("quest.guildmark.salvage.${target.path}.desc")
         QuestType.SLAY -> Component.translatable("quest.guildmark.slay.${target.path}.desc")
+        QuestType.BOUNTY -> Component.translatable("quest.guildmark.bounty.desc")
     }
 
-    /** The flavour line; situational notes carry their arguments after the key, as "key|arg|arg". */
+    /** The flavour line; situational notes carry their arguments after the key, as "key|arg|arg" (see Labels). */
     fun storyLine(): Component? {
         if (story.isEmpty()) return null
-        val parts = story.split('|')
-        return Component.translatable(parts[0], *parts.drop(1).toTypedArray())
+        return Labels.text("#$story")
     }
 
     fun posterLine(): Component = Component.translatable("quest.guildmark.posted_by", poster)
@@ -73,7 +78,7 @@ data class QuestNote(
     private fun targetName(): Component = when (type) {
         QuestType.FETCH -> ItemStack(BuiltInRegistries.ITEM.getValue(target)).hoverName
         QuestType.HUNT, QuestType.CHAMPION, QuestType.SLAY -> BuiltInRegistries.ENTITY_TYPE.getValue(target).description
-        QuestType.CLEAR, QuestType.DELIVER, QuestType.ESCORT, QuestType.LAIR, QuestType.TRIAL, QuestType.CHART, QuestType.SALVAGE -> Component.empty()
+        QuestType.CLEAR, QuestType.DELIVER, QuestType.ESCORT, QuestType.LAIR, QuestType.TRIAL, QuestType.CHART, QuestType.SALVAGE, QuestType.BOUNTY -> Component.empty()
     }
 
     companion object {
@@ -91,8 +96,10 @@ data class QuestNote(
                 Codec.INT.optionalFieldOf("rank", 0).forGetter(QuestNote::rank),
                 Codec.BOOL.optionalFieldOf("trial", false).forGetter(QuestNote::trial),
                 Codec.STRING.optionalFieldOf("chain", "").forGetter(QuestNote::chain),
-            ).apply(i) { type, poster, target, count, reward, deadline, story, rank, trial, chain ->
-                QuestNote(type, poster, target, count, reward, deadline, story, rank, trial, chain)
+                Codec.STRING.optionalFieldOf("subject", "").forGetter(QuestNote::subject),
+                Codec.INT.optionalFieldOf("site", -1).forGetter(QuestNote::site),
+            ).apply(i) { type, poster, target, count, reward, deadline, story, rank, trial, chain, subject, site ->
+                QuestNote(type, poster, target, count, reward, deadline, story, rank, trial, chain, subject, site)
             }
         }
     }

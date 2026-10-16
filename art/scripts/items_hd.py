@@ -550,7 +550,7 @@ def rider_egg():
 # ================================================================ quest notes (the board's notes)
 
 # The note's face is the block texture's middle 24x24 (the model shows uv 2..14 of 16).
-NOTE_TYPES = ['champion', 'clear', 'deliver', 'escort', 'fetch', 'hunt', 'lair', 'chart', 'salvage', 'slay']
+NOTE_TYPES = ['champion', 'clear', 'deliver', 'escort', 'fetch', 'hunt', 'lair', 'chart', 'salvage', 'slay', 'wanted']
 
 
 def note_paper(kind, seed):
@@ -585,18 +585,31 @@ def note_paper(kind, seed):
         # A field boss's bounty: ruled round in red ink
         border = paper & (dist_in(paper, 3) == 2)
         cv.put(border, bands(PAL['crimson'], 0.55 + 0.25 * bevel(paper & (dist_in(paper, 3) >= 2)), 0))
+    elif kind == 'wanted':
+        # A printed notice, ruled round in black ink
+        cv.put(paper & (dist_in(paper, 3) == 2), bands(PAL['ink'], 0.3 + 0.2 * (st > 0.6), 0))
     # A heading and two lines of faded hand-writing
     ink = (160, 70, 72) if dark else (70, 50, 40)
     rng = np.random.default_rng(seed)
-    for (ly, x0, x1, a) in ((10, 10, 22, 0.85), (13, 8, 23, 0.5), (15, 8, 19, 0.5)):
-        x = x0
-        while x < x1:
-            word = int(rng.integers(2, 5))
-            for i in range(min(word, x1 - x)):
-                cv.over(rect(x + i, ly, x + i + 1, ly + 1, N), ink, a)
-                if ly == 10 and rng.random() < 0.3:
-                    cv.over(rect(x + i, ly - 1, x + i + 1, ly, N), ink, a * 0.8)
-            x += word + 1
+    if kind == 'wanted':
+        # The heading in bold printed letters, a notch knocked out of each so they read as letters, and a red rule
+        # under it
+        for k in range(5):
+            x = 9 + k * 3
+            cv.put(rect(x, 9, x + 2, 12, N), PAL['ink'][0])
+            cv.over(rect(x + int(rng.integers(0, 2)), 10, x + 1 + int(rng.integers(0, 2)), 11, N), pal[3], 0.8)
+        cv.put(rect(9, 13, 23, 14, N), PAL['crimson'][3])
+        cv.px(22, 13, PAL['crimson'][2])
+    else:
+        for (ly, x0, x1, a) in ((10, 10, 22, 0.85), (13, 8, 23, 0.5), (15, 8, 19, 0.5)):
+            x = x0
+            while x < x1:
+                word = int(rng.integers(2, 5))
+                for i in range(min(word, x1 - x)):
+                    cv.over(rect(x + i, ly, x + i + 1, ly + 1, N), ink, a)
+                    if ly == 10 and rng.random() < 0.3:
+                        cv.over(rect(x + i, ly - 1, x + i + 1, ly, N), ink, a * 0.8)
+                x += word + 1
     # The pin: an iron tack, its shadow on the paper
     cv.put(rect(15, 6, 17, 8, N), PAL['iron'][3])
     cv.px(15, 6, PAL['iron'][5])
@@ -720,6 +733,24 @@ def note_icon(kind):
         cv.px(17, 25, PAL['ink'][0])
         for fx in (14.2, 17.8):
             cv.put(poly([(fx - 0.9, 26.4), (fx + 0.9, 26.4), (fx, 28.6)], N), PAL['bone'][4])
+    elif kind == 'wanted':
+        # The outlaw's likeness in a printed frame: a hood pulled low, eyes glinting out of its shadow and a red
+        # kerchief over the mouth, with a gold mark at its corner for the price on their head
+        frame = rect(11, 15, 22, 25, N)
+        cv.put(frame, bands(PAL['parchment'], 0.86 - 0.1 * (ys > 22) + 0.04 * (xs < 14), 0))
+        hood = ellipse(16.5, 19.4, 3.6, 3.4, N)[0]
+        shoulders = poly([(11, 25.5), (12.8, 21.6), (20.2, 21.6), (22, 25.5)], N)
+        cloak = (hood | shoulders) & frame
+        cv.put(cloak, bands(PAL['blackleather'], 0.5 + 0.4 * bevel(cloak) - 0.12 * (xs > 18.5), 0))
+        shade = ellipse(16.5, 20.0, 2.3, 2.4, N)[0]
+        cv.put(shade, PAL['ink'][0])
+        cv.px(15, 19, (226, 204, 152))
+        cv.px(17, 19, (178, 160, 120))
+        kerchief = rect(13, 21, 21, 23, N) & (shade | grow(shade, 1)) & frame
+        cv.put(kerchief, bands(PAL['crimson'], 0.5 + 0.35 * bevel(kerchief) - 0.1 * (xs > 17.5), 0))
+        coin, dome = disc(21.0, 24.0, 1.9, N)
+        cv.put(coin, bands(PAL['gold'], 0.4 + 0.45 * dome + 0.15 * bevel(coin), 0))
+        cv.px(20, 23, PAL['gold'][5])
     elif kind == 'hunt':
         # Three claw rakes torn through the paper
         for x0 in (11, 15, 19):

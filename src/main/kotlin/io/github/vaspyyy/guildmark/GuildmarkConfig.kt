@@ -74,6 +74,9 @@ object GuildmarkConfig {
     val BANDITS: ModConfigSpec.BooleanValue = BUILDER
         .comment("Bandits ambush caravans and travellers on Trade Roads.")
         .define("bandits", true)
+    val OUTLAWS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Outlaw bands camped in the wild, found as players explore: a captain with a price on their head, a lookout on the tower and the band about the fire. Boards post wanted notes on them. Camps already built stay.")
+        .define("outlaws", true)
     val RIVALS: ModConfigSpec.BooleanValue = BUILDER
         .comment("Rival guilds claim villages, challenge yours and send adventurers to boards.")
         .define("rivalGuilds", true)

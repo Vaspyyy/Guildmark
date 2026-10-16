@@ -135,6 +135,20 @@ object Contracts {
                 note = note.copy(reward = note.reward + (Expeditions.horizontalDistance(boardPos, quarry.pos) / 100).toInt())
                 state = state.copy(destination = quarry.pos, site = quarry.site, label = quarry.label)
             }
+            QuestType.BOUNTY -> {
+                // The captain the notice names, while they're still at large; it pays what's on their head now
+                val band = Bounties.quarry(level, boardPos, note) ?: run {
+                    player.sendOverlayMessage(Component.translatable("message.guildmark.no_outlaw"))
+                    return null
+                }
+                if (Bounties.holds(player, band.id)) {
+                    player.sendOverlayMessage(Component.translatable("message.guildmark.bounty_held", band.title()))
+                    return null
+                }
+                val distance = Expeditions.horizontalDistance(boardPos, band.pos)
+                note = note.copy(subject = band.label, site = band.id, reward = maxOf(note.reward, band.bounty) + (distance / 100).toInt())
+                state = state.copy(destination = band.pos, site = band.id, label = band.label)
+            }
             // A faction's own kind of job sets itself up (and may find it can't, with word why)
             QuestType.TRIAL -> state = Trials.begin(level, player, note, state) ?: return null
             else -> {}
@@ -226,7 +240,7 @@ object Contracts {
 
         val done = when (note.type) {
             QuestType.FETCH -> takeFetchItems(player, note)
-            QuestType.HUNT, QuestType.CLEAR, QuestType.CHAMPION, QuestType.LAIR, QuestType.CHART, QuestType.SALVAGE, QuestType.SLAY -> state.progress >= note.count
+            QuestType.HUNT, QuestType.CLEAR, QuestType.CHAMPION, QuestType.LAIR, QuestType.CHART, QuestType.SALVAGE, QuestType.SLAY, QuestType.BOUNTY -> state.progress >= note.count
             QuestType.DELIVER, QuestType.ESCORT -> true
             // A stolen prize is handed over with the contract
             QuestType.TRIAL -> state.progress >= note.count && Trials.handOver(player, stack, note)
@@ -286,9 +300,9 @@ object Contracts {
             victim.level().dimension() == state.dimension &&
             victim.blockPosition().closerThan(state.boardPos, QuestNote.CLEAR_RADIUS.toDouble())
         QuestType.CHAMPION -> victim.uuid == state.bound
-        // Lair bosses are credited to everyone nearby by onLairCleared instead, field bosses by BossHunts, faction
-        // jobs by their own rules and sea work by SeaWork
-        QuestType.FETCH, QuestType.DELIVER, QuestType.ESCORT, QuestType.LAIR, QuestType.TRIAL, QuestType.CHART, QuestType.SALVAGE, QuestType.SLAY -> false
+        // Lair bosses are credited to everyone nearby by onLairCleared instead, field bosses by BossHunts, outlaw
+        // captains by Bounties, faction jobs by their own rules and sea work by SeaWork
+        QuestType.FETCH, QuestType.DELIVER, QuestType.ESCORT, QuestType.LAIR, QuestType.TRIAL, QuestType.CHART, QuestType.SALVAGE, QuestType.SLAY, QuestType.BOUNTY -> false
     }
 
     private val HOLLOW_SOLDIER = net.minecraft.resources.Identifier.fromNamespaceAndPath("guildmark", "hollow_soldier")
@@ -370,6 +384,9 @@ object Contracts {
             }
             QuestType.SLAY -> if (destination != null) {
                 lines.add(Component.translatable("quest.guildmark.slay_at", state.labelText(), destination.x, destination.z))
+            }
+            QuestType.BOUNTY -> if (destination != null) {
+                lines.add(Component.translatable("quest.guildmark.bounty_at", state.labelText(), destination.x, destination.z))
             }
             QuestType.TRIAL -> lines.addAll(Trials.details(note, state))
             else -> {}

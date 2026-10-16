@@ -197,6 +197,11 @@ object ModAttachments {
         AttachmentType.builder { -> -1 }.serialize(Codec.INT.fieldOf("lair")).build()
     }
 
+    /** Marks one of an outlaw band, captain or not, with the id of its band (see outlaw/OutlawCamps). */
+    val OUTLAW: DeferredHolder<AttachmentType<*>, AttachmentType<Int>> = ATTACHMENTS.register("outlaw") { ->
+        AttachmentType.builder { -> -1 }.serialize(Codec.INT.fieldOf("band")).build()
+    }
+
     /** Marks a merchant or traveller walking the roads on its own (see Traffic). */
     val TRAFFIC: DeferredHolder<AttachmentType<*>, AttachmentType<TrafficState>> = ATTACHMENTS.register("traffic") { ->
         AttachmentType.builder { -> TrafficState() }.serialize(TrafficState.CODEC.fieldOf("traffic")).build()
