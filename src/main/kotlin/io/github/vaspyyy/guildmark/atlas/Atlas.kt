@@ -17,6 +17,8 @@ import io.github.vaspyyy.guildmark.network.AtlasPayload
 import io.github.vaspyyy.guildmark.network.AtlasRoad
 import io.github.vaspyyy.guildmark.network.PartyMark
 import io.github.vaspyyy.guildmark.network.PartyPositionsPayload
+import io.github.vaspyyy.guildmark.outlaw.OutlawCamps
+import io.github.vaspyyy.guildmark.outlaw.Outlaws
 import io.github.vaspyyy.guildmark.party.Parties
 import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.registry.ModVillagers
@@ -162,6 +164,12 @@ object Atlas {
                 if (places.any { it.kind == AtlasPlace.FIELD_BOSS && it.dimension == dimension && it.ref == site.id }) continue
                 found(AtlasPlace(AtlasPlace.FIELD_BOSS, dimension, site.pos, ref = site.id, found = now))
             }
+            // An outlaw band's camp, the same
+            for (band in OutlawCamps.get(level).bands) {
+                if (!band.built || !band.pos.closerThan(here, CAMP_SIGHT)) continue
+                if (places.any { it.kind == AtlasPlace.OUTLAW_CAMP && it.dimension == dimension && it.ref == band.id }) continue
+                found(AtlasPlace(AtlasPlace.OUTLAW_CAMP, dimension, band.pos, ref = band.id, found = now))
+            }
             // An island, once it's in sight over the sea
             for (spec in Islands.near(level, here, ISLAND_LOOK)) {
                 val middle = BlockPos(spec.cx, spec.sea, spec.cz)
@@ -196,6 +204,7 @@ object Atlas {
         val people = if (overworld) Characters.get(level).placements.groupBy({ it.board }, { it.id }) else mapOf()
         val lairs = Lairs.get(level)
         val camps = if (overworld) FieldBosses.get(level) else null
+        val outlaws = if (overworld) OutlawCamps.get(level) else null
         val network = RoadNetwork.get(level)
         val respawn = player.respawnConfig?.respawnData()?.globalPos()
         val restingAt = if (respawn != null && respawn.dimension() == dimension) respawn.pos() else null
@@ -239,6 +248,12 @@ object Atlas {
                     val flags = if (site.slain) AtlasMark.CLEARED else 0
                     // Named for its troll, whose name the label carries
                     AtlasMark(AtlasPlace.FIELD_BOSS, site.pos, "${HillTroll.NAME_KEY}.${site.name}", 0, flags, "", 0, 0, listOf())
+                }
+                // Named for its captain, whose name the label carries, as a troll's camp is
+                AtlasPlace.OUTLAW_CAMP -> {
+                    val band = outlaws?.band(place.ref) ?: return@mapNotNull null
+                    val flags = if (band.slain) AtlasMark.CLEARED else 0
+                    AtlasMark(AtlasPlace.OUTLAW_CAMP, band.pos, "${Outlaws.NAME_KEY}.${band.name}", 0, flags, "", 0, 0, listOf())
                 }
                 // Named from what it is; the client tells what sort of island it is from the same number
                 AtlasPlace.ISLAND -> AtlasMark(AtlasPlace.ISLAND, place.pos, IslandMarks.name(place.ref), place.size, 0, "", 0, place.ref, listOf())

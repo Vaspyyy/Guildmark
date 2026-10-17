@@ -32,6 +32,8 @@ data class AtlasPlace(
         const val FIELD_BOSS = 4
         /** An island out at sea; [ref] says what it is (IslandMarks), [size] how far its land reaches. */
         const val ISLAND = 5
+        /** An outlaw band's camp; [ref] is its band in OutlawCamps. */
+        const val OUTLAW_CAMP = 6
 
         /** A village's [ref] when it's a capital city. */
         const val CAPITAL_REF = 1

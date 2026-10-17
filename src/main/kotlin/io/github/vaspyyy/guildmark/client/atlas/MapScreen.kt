@@ -450,8 +450,10 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
             } else {
                 val throne = mark.kind == AtlasPlace.THRONE
                 val camp = mark.kind == AtlasPlace.FIELD_BOSS
+                val outlaws = mark.kind == AtlasPlace.OUTLAW_CAMP
                 val icon = when {
                     camp -> if (mark.has(AtlasMark.CLEARED)) TROLL_SLAIN else TROLL
+                    outlaws -> if (mark.has(AtlasMark.CLEARED)) OUTLAW_SLAIN else OUTLAW
                     throne || mark.has(AtlasMark.VAULT) -> VAULT
                     mark.has(AtlasMark.CLEARED) -> LAIR_CLEARED
                     else -> LAIR
@@ -460,6 +462,7 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
                 val done = when {
                     throne -> "gui.guildmark.map.tip.throne_fallen"
                     camp -> "gui.guildmark.map.tip.troll_slain"
+                    outlaws -> "gui.guildmark.map.tip.captain_fallen"
                     else -> "gui.guildmark.map.tip.cleared"
                 }
                 if (mark.has(AtlasMark.CLEARED)) lines.add(Component.translatable(done))
@@ -840,6 +843,8 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
         private val LOST_MARKS = sprite("lost_marks")
         private val TROLL = sprite("troll_camp")
         private val TROLL_SLAIN = sprite("troll_camp_slain")
+        private val OUTLAW = sprite("outlaw_camp")
+        private val OUTLAW_SLAIN = sprite("outlaw_camp_slain")
         private val SHIP = sprite("ship")
         private val ISLAND = sprite("island")
         private val ROSE = sprite("rose")
@@ -850,7 +855,7 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
 
         private val LEGEND = listOf(
             VILLAGE to "village", TOWN to "town", CITY to "city", HALL to "hall", LAIR to "lair", LAIR_CLEARED to "lair_cleared",
-            VAULT to "vault", TROLL to "troll_camp", WARDFIRE to "wardfire", COACH to "coach", CONTRACT to "objective", PIN to "pin", PARTY to "party",
+            VAULT to "vault", TROLL to "troll_camp", OUTLAW to "outlaw_camp", WARDFIRE to "wardfire", COACH to "coach", CONTRACT to "objective", PIN to "pin", PARTY to "party",
             DEATH to "death", LOST_MARKS to "lost_marks", SHIP to "ship", ISLAND to "island", PLAYER to "you",
         )
         private val SCALES = intArrayOf(10, 20, 50, 100, 200, 500, 1000, 2000, 5000)

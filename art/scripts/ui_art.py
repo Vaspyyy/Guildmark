@@ -277,6 +277,10 @@ COMPASS_ICONS = {
     "troll_camp": [".ooooo.", "oeeeeeo", "oereReo", "oeeoeeo", "oWeeeWo", ".oWoWo.", "..ooo.."],
     # the same head gone grey: its troll is slain
     "troll_camp_slain": [".ooooo.", "osssss.", "osososo", "ossoss.", "oqsssqo", ".oqoqo.", "..ooo.."],
+    # a brown hood over a shadowed face, eyes glinting above a red mask: an outlaw band's camp
+    "outlaw_camp": ["..ooo..", ".onnno.", "onooono", "onWoWno", "onrrrno", ".orRro.", "..ooo.."],
+    # the same hood gone grey: its captain has fallen
+    "outlaw_camp_slain": ["..ooo..", ".osss..", "osooos.", "osoooso", "osqqqso", ".oqsqo.", "..oo..."],
 }
 
 # ink icons for the map, 11x11, drawn on parchment
@@ -496,6 +500,34 @@ MAP_ICONS = {
         ".s.k.....s.",
         "..k.....s..",
         ".k.sssss...",
+    ],
+    # a hood with a shadowed face, two eyes and a red mask: an outlaw band's camp
+    "outlaw_camp": [
+        "...........",
+        ".....k.....",
+        "....ksk....",
+        "...ksssk...",
+        "..kskkksk..",
+        ".kskwkwksk.",
+        ".kskkkkksk.",
+        ".ksrrrrrsk.",
+        ".kssrRrssk.",
+        "kssssrssssk",
+        "kkkkkkkkkkk",
+    ],
+    # the hood in faded ink with a stroke through it: its captain has fallen
+    "outlaw_camp_slain": [
+        "...........",
+        ".....s....k",
+        "....s.s..k.",
+        "...s...sk..",
+        "..s.sssks..",
+        ".s.s.sks.s.",
+        ".s.sskss.s.",
+        ".s..k....s.",
+        ".s.k.....s.",
+        "s.k.......s",
+        "sksssssssss",
     ],
     # a sword planted in a fire on its ring of stones
     "wardfire": [
