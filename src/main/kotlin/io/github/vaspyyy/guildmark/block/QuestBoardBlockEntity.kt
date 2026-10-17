@@ -5,13 +5,17 @@ import io.github.vaspyyy.guildmark.advance.Advance
 import io.github.vaspyyy.guildmark.registry.ModBlockEntities
 import net.minecraft.core.BlockPos
 import net.minecraft.core.UUIDUtil
+import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.level.storage.ValueInput
 import net.minecraft.world.level.storage.ValueOutput
 import java.util.UUID
 
-/** One cell of a village's quest board, its note and, on the anchor cell, the village's own state. */
+/**
+ * One cell of a village's quest board, its note and, on the anchor cell, the village's own state. When the anchor comes
+ * down that state goes into [VillageRecords], for the village's next board to take back.
+ */
 class QuestBoardBlockEntity(pos: BlockPos, state: BlockState) :
     NoticeBoardBlockEntity(ModBlockEntities.QUEST_BOARD.get(), pos, state) {
 
@@ -98,6 +102,35 @@ class QuestBoardBlockEntity(pos: BlockPos, state: BlockState) :
         advancePoints = points
         setChanged()
         level?.let { it.sendBlockUpdated(blockPos, blockState, blockState, Block.UPDATE_CLIENTS) }
+    }
+
+    /** Anchor cell only: everything the village knows, as [VillageRecords] keeps it once the board has come down on [day]. */
+    fun record(day: Long): VillageRecord = VillageRecord(
+        blockPos, day, advanceIndex, ADVANCE_VERSION, advancePoints, roadOwed, roadLookedDay, lastSiegeLost, lastSiegeWon, capital, HashMap(standing),
+    )
+
+    /** Anchor cell only: a board put up where its village's last one came down takes back what that one knew. */
+    fun restore(record: VillageRecord) {
+        advanceIndex = record.advanceIndex
+        if (record.advanceVersion < ADVANCE_VERSION) advanceIndex = advanceIndex.coerceAtMost(Advance.MARKET.ordinal)
+        advancePoints = record.advancePoints
+        roadOwed = record.roadOwed
+        roadLookedDay = record.roadLooked
+        lastSiegeLost = record.siegeLost
+        lastSiegeWon = record.siegeWon
+        capital = record.capital
+        standing.clear()
+        standing.putAll(record.standing)
+        setChanged()
+        level?.let { it.sendBlockUpdated(blockPos, blockState, blockState, Block.UPDATE_CLIENTS) }
+    }
+
+    // The anchor going, however it goes (broken, blown up, built over): what the village knew is kept for its next board
+    override fun preRemoveSideEffects(pos: BlockPos, state: BlockState) {
+        super.preRemoveSideEffects(pos, state)
+        val level = level as? ServerLevel ?: return
+        if (state.getValue(NoticeBoardBlock.PART) != BoardPart.ANCHOR) return
+        VillageRecords.get(level).keep(record(VillageBoards.day(level)))
     }
 
     override fun saveAdditional(output: ValueOutput) {

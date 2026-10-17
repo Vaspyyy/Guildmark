@@ -60,11 +60,20 @@ object VillageBoards {
     }
 
     /**
-     * A board just put up: a few villagers about who haven't pinned their note today pin it there at once, so the board
-     * isn't bare. It's the note they'd have pinned anyway; however many boards go up, nobody pins twice in a day.
+     * A board just put up. Where a village's board came down before, it takes back all that one knew (see
+     * VillageRecords) and its villagers come by as on any day. Otherwise a few villagers about who haven't pinned their
+     * note today pin it there at once, so the board isn't bare. It's the note they'd have pinned anyway; however many
+     * boards go up, nobody pins twice in a day.
      */
     fun setUp(level: Level, anchor: BlockPos, facing: Direction) {
         val serverLevel = level as? ServerLevel ?: return
+        val board = serverLevel.getBlockEntity(anchor) as? QuestBoardBlockEntity ?: return
+        val bell = serverLevel.poiManager.findClosest({ it.`is`(PoiTypes.MEETING) }, anchor, VILLAGE_BOARD_RADIUS, PoiManager.Occupancy.ANY).orElse(null)
+        val record = VillageRecords.get(serverLevel).take(anchor, bell)
+        if (record != null) {
+            board.restore(record)
+            return
+        }
         val today = day(serverLevel)
         val cells = BoardPart.entries.mapNotNull {
             serverLevel.getBlockEntity(QuestBoardBlock.cellPos(anchor, facing, it)) as? QuestBoardBlockEntity
