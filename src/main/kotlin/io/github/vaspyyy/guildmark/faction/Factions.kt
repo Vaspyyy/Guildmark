@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.faction
 
+import io.github.vaspyyy.guildmark.block.VillageBoards
 import io.github.vaspyyy.guildmark.companion.Companions
 import io.github.vaspyyy.guildmark.companion.Deed
 import io.github.vaspyyy.guildmark.guild.GuildNews
@@ -57,6 +58,10 @@ object Factions {
     private const val TALK_RANGE = 8.0
     /** Days to do repeatable work in. */
     private const val WORK_DAYS = 3
+    /** Jobs between chapters a faction gives one player in a day, at most: work for its people, not a living. */
+    private const val WORK_PER_DAY = 3
+    /** How many kinds of job each faction gives between chapters (see [work]). */
+    private const val JOBS = 4
 
     fun register(modBus: IEventBus) {
         FactionRegistry.ITEMS.register(modBus)
@@ -146,7 +151,10 @@ object Factions {
         if (chapters < character.steps.size && !carrying && gated(player, character, chapters)) flags = flags or GATED
         val rival = faction.rival
         if (rival != null && chapters == Faction.RIVAL_CHAPTER && state.member(rival)) flags = flags or RIVAL
-        if (state.member(faction) && !carries(player, character, work = true)) flags = flags or WORK
+        if (state.member(faction) && !carries(player, character, work = true)) {
+            if (hasWork(player.level(), player, faction)) flags = flags or WORK
+            else player.sendOverlayMessage(Component.translatable("message.guildmark.faction_work_none", character.title))
+        }
         leader.listen(player)
         leader.playSound(SoundEvents.VILLAGER_AMBIENT, 0.6f, 0.9f)
         PacketDistributor.sendToPlayer(player, OpenCharacterPayload(leader.id, character.id, chapters, carrying, finale, flags))
@@ -201,27 +209,51 @@ object Factions {
         level.playSound(null, leader.blockPosition(), SoundEvents.BOOK_PAGE_TURN, SoundSource.NEUTRAL, 1.0f, 1.0f)
     }
 
-    /** The player asked [entityId] for work between chapters: a job in the faction's own line of work. */
+    /**
+     * The player asked [entityId] for work between chapters: a job in the faction's own line of work. The faction keeps
+     * the job it gave (see [WorkOrders]), so asking again with its note put away or lost brings back a fresh copy of the
+     * same job, not a new one; and it gives no more than [WORK_PER_DAY] jobs a day.
+     */
     fun giveWork(player: Player, entityId: Int) {
         val level = player.level() as? ServerLevel ?: return
         val (leader, faction) = leaderNear(player, entityId) ?: return
         val character = faction.leader
         if (!state(player).member(faction) || carries(player, character, work = true)) return
-        val rank = Progression.get(player).adventurerRank
-        // Never a hunt in a Peaceful world, where there'd be nothing to hunt
-        val jobs = (0 until 4).map { work(faction, rank, it) }.filter { level.difficulty != Difficulty.PEACEFUL || !fights(it) }
-        val stack = Contracts.take(jobs[level.random.nextInt(jobs.size)], level, leader.blockPosition(), Direction.NORTH, player, fromHall = true) ?: return
+        val order = orders(player).of(faction)
+        val contract = order.contract
+        val stack: ItemStack
+        if (order.open(level.gameTime) && contract != null) {
+            stack = Contracts.copyOf(work(faction, order.rank, order.pick, order.serial), contract.copy(progress = 0))
+            player.sendSystemMessage(Component.translatable("message.guildmark.faction_work_again", character.title))
+        } else {
+            val today = VillageBoards.day(level)
+            if (order.givenOn(today) >= WORK_PER_DAY) {
+                player.sendSystemMessage(Component.translatable("message.guildmark.faction_work_none", character.title))
+                return
+            }
+            val rank = Progression.get(player).adventurerRank
+            val serial = order.serial + 1
+            // Never a hunt in a Peaceful world, where there'd be nothing to hunt
+            val picks = (0 until JOBS).filter { level.difficulty != Difficulty.PEACEFUL || !fights(work(faction, rank, it, serial)) }
+            val pick = picks[level.random.nextInt(picks.size)]
+            stack = Contracts.take(work(faction, rank, pick, serial), level, leader.blockPosition(), Direction.NORTH, player, fromHall = true) ?: return
+            val taken = stack.get(ModDataComponents.CONTRACT_STATE.get()) ?: return
+            setOrder(player, faction, WorkOrder(serial, pick, rank, taken, today, order.givenOn(today) + 1))
+            player.sendSystemMessage(Component.translatable("message.guildmark.faction_work", character.title))
+        }
         player.inventory.placeItemBackInInventory(stack, Prediction.SERVER_ONLY)
-        player.sendSystemMessage(Component.translatable("message.guildmark.faction_work", character.title))
         level.playSound(null, leader.blockPosition(), SoundEvents.BOOK_PAGE_TURN, SoundSource.NEUTRAL, 1.0f, 1.1f)
     }
 
-    /** One of four jobs [faction] gives between chapters ([pick]), rated at the player's own [rank]. */
-    private fun work(faction: Faction, rank: Int, pick: Int): QuestNote {
+    /**
+     * Job [pick] of the [JOBS] [faction] gives between chapters, rated at the player's own [rank], the [serial]th it's
+     * given them. What it asks for can't be bought for less than it pays: no emeralds, no lapis from the cleric.
+     */
+    private fun work(faction: Faction, rank: Int, pick: Int, serial: Int): QuestNote {
         val pay = 8 + 3 * rank
         val (type, target, count) = when (faction) {
             Faction.STARWATCH -> listOf(
-                Triple(QuestType.FETCH, "lapis_lazuli", 12), Triple(QuestType.FETCH, "amethyst_shard", 8),
+                Triple(QuestType.FETCH, "ink_sac", 8), Triple(QuestType.FETCH, "amethyst_shard", 8),
                 Triple(QuestType.HUNT, "phantom", 4), Triple(QuestType.TRIAL, "guildmark:ward_lights", 5),
             )
             Faction.HEARTHSWORN -> listOf(
@@ -230,13 +262,40 @@ object Factions {
             )
             Faction.QUIET_HAND -> listOf(
                 Triple(QuestType.TRIAL, "guildmark:purses", 3), Triple(QuestType.FETCH, "gold_ingot", 8),
-                Triple(QuestType.HUNT, "pillager", 5), Triple(QuestType.FETCH, "emerald", 6),
+                Triple(QuestType.HUNT, "pillager", 5), Triple(QuestType.FETCH, "spider_eye", 6),
             )
         }[pick]
         return QuestNote(
             type, faction.leader.displayName, Identifier.parse(target), count, pay, WORK_DAYS,
-            "character.guildmark.${faction.leader.id}.work", rank, chain = "${faction.leader.id}:work",
+            "character.guildmark.${faction.leader.id}.work", rank, chain = "${faction.leader.id}:work:$serial",
         )
+    }
+
+    /** The work between chapters the factions have given [player]. */
+    fun orders(player: Player): WorkOrders = player.getData(FactionRegistry.WORK_ORDERS)
+
+    private fun setOrder(player: Player, faction: Faction, order: WorkOrder) {
+        player.setData(FactionRegistry.WORK_ORDERS, orders(player).with(faction, order))
+    }
+
+    /** Whether [faction] has work for [player] now: the job they're on, or a new one while it hasn't given its day's share. */
+    private fun hasWork(level: ServerLevel, player: Player, faction: Faction): Boolean {
+        val order = orders(player).of(faction)
+        return order.open(level.gameTime) || order.givenOn(VillageBoards.day(level)) < WORK_PER_DAY
+    }
+
+    /**
+     * Whether a contract with [chain] from [owner] is [player]'s current work for the faction they lead: false for an
+     * old copy, of a job handed in already or of one before it. A note from before jobs were kept on the player
+     * ("<leader>:work") counts while none has been given since. Anything else of [owner]'s counts as it is.
+     */
+    fun isCurrentWork(player: Player, owner: StoryCharacter, chain: String): Boolean {
+        val faction = owner.faction ?: return true
+        val tag = chain.substringAfter(':')
+        if (tag != "work" && !tag.startsWith("work:")) return true
+        val order = orders(player).of(faction)
+        val serial = tag.removePrefix("work").removePrefix(":").toIntOrNull() ?: return order.serial == 0
+        return order.pick >= 0 && serial == order.serial
     }
 
     /** Each player's chapter that couldn't be set up at their last try, by its chain tag. */
@@ -311,12 +370,15 @@ object Factions {
             inventory.setItem(slot, ItemStack.EMPTY)
             torn = true
         }
+        // A copy left in a chest is no better
+        setOrder(player, faction, orders(player).of(faction).closed())
         if (torn) player.sendSystemMessage(Component.translatable("message.guildmark.faction_contracts_void", faction.title))
     }
 
-    /** Repeatable work for [owner] was handed in. */
+    /** Repeatable work for [owner] was handed in: the job is done with, and any other copy of it worth nothing. */
     fun onWorkDone(level: ServerLevel, player: Player, owner: StoryCharacter) {
         val faction = owner.faction ?: return
+        setOrder(player, faction, orders(player).of(faction).closed())
         level.playSound(null, player.blockPosition(), FactionRegistry.rankSound(faction), SoundSource.PLAYERS, 0.35f, 1.2f)
     }
 

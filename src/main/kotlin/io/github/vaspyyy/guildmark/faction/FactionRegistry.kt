@@ -43,6 +43,14 @@ object FactionRegistry {
             .build()
     }
 
+    /** The work between chapters each faction has given a player (see WorkOrders). Kept through death. */
+    val WORK_ORDERS: DeferredHolder<AttachmentType<*>, AttachmentType<WorkOrders>> = ATTACHMENTS.register("work_orders") { ->
+        AttachmentType.builder { -> WorkOrders() }
+            .serialize(WorkOrders.CODEC.fieldOf("orders"))
+            .copyOnDeath()
+            .build()
+    }
+
     /** The Guild Marks in a lifted purse, rolled when it was lifted. */
     val PURSE_MARKS: DeferredHolder<DataComponentType<*>, DataComponentType<Int>> = COMPONENTS.registerComponentType(
         "purse_marks",

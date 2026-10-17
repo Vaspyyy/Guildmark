@@ -179,11 +179,17 @@ object Contracts {
             else -> {}
         }
 
+        val stack = copyOf(note, state)
+        Milestones.award(player, Milestones.SIGNED_ON)
+        return stack
+    }
+
+    /** The contract item for [note], set up as [state] already (a faction's job given again): its tooltip written. */
+    fun copyOf(note: QuestNote, state: ContractState): ItemStack {
         val stack = ItemStack(ModItems.CONTRACT.get())
         stack.set(ModDataComponents.QUEST_NOTE.get(), note)
         stack.set(ModDataComponents.CONTRACT_STATE.get(), state)
         refreshLore(stack, note, state)
-        Milestones.award(player, Milestones.SIGNED_ON)
         return stack
     }
 
@@ -259,6 +265,13 @@ object Contracts {
         }
         if (note.type == QuestType.ESCORT && !Expeditions.travellerNear(serverLevel, state.bound, village)) {
             player.sendOverlayMessage(Component.translatable("message.guildmark.traveller_missing", state.label))
+            level.playSound(null, pos, SoundEvents.VILLAGER_NO, SoundSource.BLOCKS, 1.0f, 1.0f)
+            return
+        }
+        // A faction pays for the job it gave last, once: an old copy of it, or of one before it, is worth nothing
+        if (chapter == null && owner != null && !Factions.isCurrentWork(player, owner, note.chain)) {
+            stack.shrink(1)
+            player.sendOverlayMessage(Component.translatable("message.guildmark.faction_work_stale", owner.title))
             level.playSound(null, pos, SoundEvents.VILLAGER_NO, SoundSource.BLOCKS, 1.0f, 1.0f)
             return
         }
