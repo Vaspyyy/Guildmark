@@ -1,5 +1,7 @@
 package io.github.vaspyyy.guildmark.quest
 
+import io.github.vaspyyy.guildmark.atlas.Atlas
+import io.github.vaspyyy.guildmark.atlas.AtlasPlace
 import io.github.vaspyyy.guildmark.GuildmarkConfig
 import io.github.vaspyyy.guildmark.companion.Companions
 import io.github.vaspyyy.guildmark.companion.Deed
@@ -35,6 +37,7 @@ import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.core.Direction
 import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerLevel
+import net.minecraft.server.level.ServerPlayer
 import net.minecraft.sounds.SoundEvents
 import net.minecraft.sounds.SoundSource
 import net.minecraft.util.Prediction
@@ -148,6 +151,10 @@ object Contracts {
                 val distance = Expeditions.horizontalDistance(boardPos, band.pos)
                 note = note.copy(subject = band.label, site = band.id, reward = maxOf(note.reward, band.bounty) + (distance / 100).toInt())
                 state = state.copy(destination = band.pos, site = band.id, label = band.label)
+                // The notice says where they're camped: it goes on the map and compass at once
+                if (player is ServerPlayer) {
+                    Atlas.note(player, AtlasPlace(AtlasPlace.OUTLAW_CAMP, Level.OVERWORLD, band.pos, ref = band.id, found = level.gameTime))
+                }
             }
             // A faction's own kind of job sets itself up (and may find it can't, with word why)
             QuestType.TRIAL -> state = Trials.begin(level, player, note, state) ?: return null
