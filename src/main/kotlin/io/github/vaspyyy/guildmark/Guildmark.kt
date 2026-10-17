@@ -200,6 +200,8 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         io.github.vaspyyy.guildmark.sea.Seas.register(modBus)
         // Islands out at sea: wild isles, sea stacks, coves, atolls and reefs, grown with new ocean (island/)
         io.github.vaspyyy.guildmark.island.Islands.register(modBus)
+        // Seasons and their festivals: the calendar, the crops' pace, winter's snow and the four grand festivals (season/, festival/)
+        io.github.vaspyyy.guildmark.season.Seasons.register(modBus)
         // Outlaw bands camped in the wild: their camps, their day, their crimes and the price on their captains (outlaw/)
         io.github.vaspyyy.guildmark.outlaw.Outlaws.register()
         // Players' homesteads: the charter, the plot, the builders and the tiers going up (homestead/)

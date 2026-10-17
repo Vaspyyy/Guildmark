@@ -69,6 +69,15 @@ object GuildmarkClientConfig {
     val ISLAND_SOUNDS: ModConfigSpec.IntValue = BUILDER
         .comment("How loud the islands sound: surf on their shores, the wind over them, gull colonies, foghorns, creaking wrecks and the rest (as a share of the game's Ambient/Environment volume). 0 silences them.")
         .defineInRange("islandSounds", 100, 0, 100)
+    val SEASON_COLOURS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Turn the grass and leaves with the seasons: fresh greens in spring, deep in summer, golds and reds in autumn, pale and frosted in winter.")
+        .define("seasonColours", true)
+    val SEASON_PARTICLES: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Blossom petals in spring, falling leaves in autumn, breath on the air and frost glinting in winter.")
+        .define("seasonParticles", true)
+    val FESTIVAL_MUSIC: ModConfigSpec.IntValue = BUILDER
+        .comment("How loud the festivals' own music is in a town's square (as a share of the game's Jukebox/Note Blocks volume). 0 silences it.")
+        .defineInRange("festivalMusic", 100, 0, 100)
 
     val SPEC: ModConfigSpec = BUILDER.build()
 }

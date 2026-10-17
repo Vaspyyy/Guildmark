@@ -79,6 +79,12 @@ object CompassHud : GuiLayer {
 
     fun enabled(): Boolean = !GuildmarkClientConfig.SPEC.isLoaded || GuildmarkClientConfig.COMPASS.get()
 
+    /** Where the strip's left end was drawn this frame, and the left of the name under it (or Int.MAX_VALUE), for what hangs below it. */
+    var stripLeft = 0
+        private set
+    var labelLeft = Int.MAX_VALUE
+        private set
+
     /** Whether the strip is up this frame. */
     fun shown(): Boolean {
         val minecraft = Minecraft.getInstance()
@@ -169,6 +175,8 @@ object CompassHud : GuiLayer {
             }
         }
         graphics.blitSprite(RenderPipelines.GUI_TEXTURED, NOTCH, center - 3, TOP - 2, 7, 5)
+        stripLeft = center - half
+        labelLeft = Int.MAX_VALUE
 
         val named = focus ?: return
         val distance = named.at.subtract(player.position()).horizontalDistance()
@@ -177,6 +185,7 @@ object CompassHud : GuiLayer {
         val labelWidth = font.width(label)
         val total = labelWidth + 6 + font.width(far)
         val left = center - total / 2
+        labelLeft = left
         graphics.text(font, Language.getInstance().getVisualOrder(label), left, TOP + HEIGHT + 3, Ui.TEXT, true)
         graphics.text(font, far, left + labelWidth + 6, TOP + HEIGHT + 3, Ui.GOLD, true)
     }

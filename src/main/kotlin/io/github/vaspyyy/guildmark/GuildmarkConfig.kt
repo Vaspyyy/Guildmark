@@ -124,5 +124,22 @@ object GuildmarkConfig {
         .comment("The capitals' mills turn: a windmill's sails while its millstones grind (braked in a storm, one with a sail hanging broken while the mill is broken), a watermill's wheel with its stream, harder while it grinds. Older capitals' block-built sails and wheels are swapped for turning ones out of sight. Off, they stand still.")
         .define("turningMills", true)
 
+    // Seasons and festivals (season/, festival/)
+    val SEASONS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Seasons in the overworld: spring, summer, autumn and winter turn the land's colours, bring blossom, falling leaves and winter snow, and pace the crops. Off, the calendar still counts (for the festivals) but nothing changes with it.")
+        .define("seasons", true)
+    val SEASON_LENGTH: ModConfigSpec.IntValue = BUILDER
+        .comment("Days in each season; four seasons make a year. Each season's festival falls on its middle day.")
+        .defineInRange("seasonLength", 9, 3, 60)
+    val SEASONAL_CROPS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Crops grow faster in their own seasons and slower out of them (never stopping, and at full pace under a roof or by a lit hearth), and animals often have twins in spring.")
+        .define("seasonalCrops", true)
+    val SEASONAL_SNOW: ModConfigSpec.BooleanValue = BUILDER
+        .comment("In winter the temperate lands get snow instead of rain, and a light snow cover that melts again in spring.")
+        .define("seasonalSnow", true)
+    val FESTIVALS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("A grand festival in every capital and village once a season: decorations, music, dancing townsfolk, a contest with prizes and fireworks at dusk.")
+        .define("festivals", true)
+
     val SPEC: ModConfigSpec = BUILDER.build()
 }

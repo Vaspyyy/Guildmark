@@ -174,6 +174,8 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
         io.github.vaspyyy.guildmark.client.economy.WaresClient.register(modBus)
         // The mills: the windmills' sails and the watermills' wheels turning on their hubs, and their sounds (client/mill)
         io.github.vaspyyy.guildmark.client.mill.MillClient.register(modBus)
+        // The seasons' colours, air, compass medallion, banner and Almanac, and the festivals' music and trim (client/season, client/festival)
+        io.github.vaspyyy.guildmark.client.season.SeasonClient.register(modBus)
         HdPack.register(modBus)
         modBus.addListener(RegisterRenderStateModifiersEvent::class.java) { event ->
             event.registerAvatarEntityModifier(CombatAnimator.AVATAR)
