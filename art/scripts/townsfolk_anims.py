@@ -3452,15 +3452,16 @@ seal(c)
 cap_floor_check(c, 0, 't=0')
 
 # ---- plead (40): a player is near. He leans in toward them, the head comes up, the shoulders shake as he calls out
-# (twice: 8 and 21) and he settles back into bound. The ends are bound's first pose exactly (the arms, legs, root and
+# (twice: 4 and 13, with the voice line, which the game starts on tick 0: its words fall in the first 15 to 25 ticks) and
+# he stays hopeful a while, then settles back into bound. The ends are bound's first pose exactly (the arms, legs, root and
 # torso keys; the head is 'add' here, bound's 'set', and rests at the same angle), so the crossfades are clean.
 PLEAD_REST = cap_torso(0.0)                                  # the bound loop's calm start: where plead starts and ends
 PLEAD_REST_ROLL = 1.2 * math.sin(0.8)
-PLEAD_LEAN = [(0, 0.0), (4, 5.0), (8, 13.0), (12, 14.0), (17, 12.0), (21, 12.5), (26, 8.0), (33, 3.0), (40, 0.0)]       # more forward lean, deg
-PLEAD_SHAKE = [(0, 0.0), (6, 0.0), (8, 7.0), (10, -6.0), (12, 4.0), (14, -1.0), (16, 0.0), (19, 0.0), (21, 5.0), (23, -4.0), (25, 1.0), (27, 0.0), (40, 0.0)]
-PLEAD_UP = [(0, 0.0), (5, 0.45), (8, 1.0), (13, 0.95), (19, 0.9), (22, 0.85), (28, 0.5), (34, 0.15), (40, 0.0)]      # how far the head has come up (0 hung, 1 up)
+PLEAD_LEAN = [(0, 0.0), (2, 5.0), (4.5, 12.0), (7, 14.0), (12, 14.0), (18, 12.0), (24, 8.0), (31, 3.0), (40, 0.0)]       # more forward lean, deg
+PLEAD_SHAKE = [(0, 0.0), (2, 0.0), (3.5, 7.0), (5.5, -6.0), (7.5, 4.0), (9, -1.0), (10.5, 0.0), (11, 0.0), (12.5, 5.0), (14.5, -4.0), (16.5, 1.5), (18, 0.0), (40, 0.0)]
+PLEAD_UP = [(0, 0.0), (2, 0.5), (4, 1.0), (12, 0.95), (18, 0.9), (23, 0.7), (29, 0.35), (35, 0.1), (40, 0.0)]      # how far the head has come up (0 hung, 1 up)
 
-c = clip('plead', 40, False, look=('citizen', 0), events=[('call', 8), ('call', 21)], views=((32, -12), (90, -2), (212, -12)))
+c = clip('plead', 40, False, look=('citizen', 0), events=[('call', 4), ('call', 13)], views=((32, -12), (90, -2), (212, -12)))
 q_rest_head = qmul(PLEAD_REST['qt'], qeuler(x=CAP_HEAD[1]))      # the head's rest rotation as 'add' needs it (vanilla looking ahead)
 for t in ticks(0, 40, 1):
     lean = float(spline_keys(PLEAD_LEAN, t))
