@@ -27,7 +27,7 @@ object Jobs {
 
     fun next(p: Townsperson, phase: Phase): Task {
         if (p.watcher) return Watch(p)
-        if (p.crowd) return Leisure.next(p, crowd = true)
+        if (p.crowd) return Visitors.next(p) ?: Leisure.next(p, crowd = true)
         // The factions' own: the leaders at their post, the members at the faction's work in its seat
         FactionWork.next(p, phase)?.let { return it }
         if (Schedule.sheltering(p, phase)) return shelter(p)
@@ -55,7 +55,8 @@ object Jobs {
 
     // --- Work -----------------------------------------------------------------------------------------------
 
-    private fun work(p: Townsperson): Task? = when (p.role) {
+    /** A bout of [p]'s trade at its place, or null if they've none or it can't be found. */
+    fun work(p: Townsperson): Task? = when (p.role) {
         TownRole.SMITH -> smith(p)
         TownRole.BAKER -> baker(p)
         TownRole.MERCHANT -> merchant(p)
@@ -237,7 +238,8 @@ object Jobs {
         ))
     }
 
-    private fun guard(p: Townsperson): Task {
+    /** A guard's watch: at their post a while, or a walk of their beat. */
+    fun guard(p: Townsperson): Task {
         val post = p.post
         if (post != null && r(p, 2) == 0) {
             val facing = p.postFacing ?: Direction.NORTH
@@ -294,7 +296,8 @@ object Jobs {
         return Idle(p, 100 + r(p, 200))
     }
 
-    private fun evening(p: Townsperson): Task {
+    /** An evening out: the tavern, or the square where there's none. */
+    fun evening(p: Townsperson): Task {
         if (p.role == TownRole.BARD) bard(p, evening = true)?.let { return it }
         if (!p.role.adult) return goHome(p)
         val level = level(p)

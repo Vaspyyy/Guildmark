@@ -2,6 +2,7 @@ package io.github.vaspyyy.guildmark.townsfolk
 
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.item.ItemStack
 
 /** The parts of a townsperson's day. */
 enum class Phase {
@@ -124,8 +125,10 @@ object Schedule {
 }
 
 /**
- * Runs a townsperson's day: one [Task] at a time, the next chosen by [Jobs] for the part of the day it is and
- * their role. A new part of the day ends whatever they were at.
+ * Runs a townsperson's day: one [Task] at a time. A capital's people follow the day's agenda ([Days]), each
+ * stretch's parts in turn ([Acts]); a new stretch lets what they're at finish (or a little longer) before they
+ * move on. Everyone else has the next task chosen by [Jobs] for the part of the day it is and their role, and a
+ * new part of the day ends whatever they were at.
  */
 class Routine(private val p: Townsperson) {
     var task: Task? = null
@@ -140,19 +143,28 @@ class Routine(private val p: Townsperson) {
     private val known = HashMap<String, BlockPos>()
     private val missed = HashMap<String, Long>()
 
+    /** Tick by which what they were at when a new stretch began must be done; 0 if nothing is winding down. */
+    private var windDown = 0
+    private var startedAt = 0
+
     fun tick() {
         val level = p.level() as? ServerLevel ?: return
+        val life = Days.life(p)
         if (phase == null || p.tickCount % 20 == 0) {
-            val now = Schedule.phase(p)
-            if (now != phase) {
-                val first = phase == null
-                phase = now
-                if (!first) end()
+            val now = if (life != null) agenda(level, life) else Schedule.phase(p).also { now ->
+                if (now != phase) {
+                    val first = phase == null
+                    phase = now
+                    if (!first) end()
+                }
             }
+            phase = now
+            val indoors = (life ?: p.life)?.places?.lodgingAt(p.blockPosition())?.contains(p.blockPosition()) == true
             // Thieves keep to the dark, and the leaders to their post
-            p.lantern = !p.isSleeping && Schedule.dark(p) && now != Phase.SLEEP && p.role != TownRole.THIEF && !p.isLeader &&
+            p.lantern = !p.isSleeping && Schedule.dark(p) && now != Phase.SLEEP && p.role != TownRole.THIEF && !p.isLeader && !indoors &&
                 (p.role == TownRole.GUARD || task !is Sit && task !is Work)
         }
+        if (windDown != 0 && p.tickCount >= windDown) end()
         val other = p.attending
         if (other != null && task?.anchored != true) {
             // Stopped in the street by a player
@@ -161,8 +173,10 @@ class Routine(private val p: Townsperson) {
             if (!p.activity.overlay) p.act(Activity.NONE)
             return
         }
-        val current = task ?: Jobs.next(p, phase ?: Phase.FREE).also {
+        val current = task ?: (if (life != null) Days.next(p, life, life.stretch ?: Days.stretch(life, level.overworldClockTime)) else Jobs.next(p, phase ?: Phase.FREE)).also {
             task = it
+            windDown = 0
+            startedAt = p.tickCount
             it.start()
         }
         val going = current.tick()
@@ -170,9 +184,36 @@ class Routine(private val p: Townsperson) {
         if (task !== current) return
         if (!going) {
             current.stop()
+            // Something that ended as soon as it began: somewhere they couldn't get to, a seat already taken
+            if (life != null && !current.instant && current !is Climb && (current !is Walk || current.failed)) {
+                if (p.tickCount - startedAt <= 5) life.balked++ else life.balked = 0
+            }
             task = current.then
+            startedAt = p.tickCount
             task?.start()
         }
+    }
+
+    /** Keeps [life] in step with their agenda; a new stretch winds down what they were at. Gives the part of the day it is. */
+    private fun agenda(level: ServerLevel, life: Life): Phase {
+        val stretch = Days.stretch(life, level.overworldClockTime)
+        val was = life.stretch
+        if (stretch !== was) {
+            if (was != null && was.doing == stretch.doing) life.stretch = stretch
+            else {
+                Days.begin(p, life, stretch)
+                if (was != null) windDown(stretch.doing)
+            }
+        }
+        return stretch.doing.phase
+    }
+
+    /** A new stretch began: standing about or on the way somewhere ends now; anything else gets a little longer to finish. */
+    private fun windDown(doing: Doing) {
+        val current = task ?: return
+        // Already in bed for the night that's starting
+        if (current is Sleep && doing == Doing.SLEEP) return
+        if (current is Idle || current is Walk) end() else windDown = p.tickCount + WIND_DOWN
     }
 
     /** Drops whatever they were doing (fleeing, fighting, a new part of the day). */
@@ -182,12 +223,16 @@ class Routine(private val p: Townsperson) {
     fun replace(next: Task) {
         task?.stop()
         task = next
+        windDown = 0
+        startedAt = p.tickCount
         next.start()
     }
 
     private fun end() {
         task?.stop()
         task = null
+        windDown = 0
+        p.carried = ItemStack.EMPTY
     }
 
     /**
@@ -206,5 +251,10 @@ class Routine(private val p: Townsperson) {
     /** Forgets [key], so it's looked for afresh. */
     fun forget(key: String) {
         known.remove(key)
+    }
+
+    private companion object {
+        /** Ticks what they were at may run on into a new stretch of their day. */
+        const val WIND_DOWN = 200
     }
 }

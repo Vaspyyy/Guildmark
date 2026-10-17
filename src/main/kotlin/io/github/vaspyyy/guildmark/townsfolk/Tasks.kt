@@ -18,6 +18,9 @@ abstract class Task(val p: Townsperson) {
     /** Idle enough to break off for a chat, a song or a wave. */
     open val leisure: Boolean get() = false
 
+    /** Done the moment it starts (something set in hand, a block changed), so ending at once isn't balking. */
+    open val instant: Boolean get() = false
+
     /** What follows straight after, if anything. */
     var then: Task? = null
 
@@ -47,7 +50,8 @@ abstract class Task(val p: Townsperson) {
 
 /**
  * Gets a townsperson somewhere on foot. Long ways are walked in legs; someone who can't get there tries a few
- * times, and if no player is about to see it, simply turns up there (a resident must get to work somehow).
+ * times, and if no player is about to see it, simply turns up there (a resident must get to work somehow). Out of
+ * everyone's sight at both ends there's no walking it at all: they're there, as their day would have them.
  */
 class Walker(private val p: Townsperson) {
     enum class State { WALKING, ARRIVED, FAILED }
@@ -70,7 +74,19 @@ class Walker(private val p: Townsperson) {
         tries = 0
         bestDist = Double.MAX_VALUE
         lastProgress = p.tickCount
+        val level = p.level()
+        if (unseen(pos) && level.isLoaded(pos) && Places.standable(level, pos)) {
+            p.navigation.stop()
+            p.snapTo(pos.x + 0.5, pos.y.toDouble(), pos.z + 0.5, p.yRot, 0f)
+            return
+        }
         path()
+    }
+
+    private fun unseen(goal: BlockPos): Boolean {
+        val level = p.level()
+        return level.getNearestPlayer(p.x, p.y, p.z, SEEN, false) == null &&
+            level.getNearestPlayer(goal.x + 0.5, goal.y.toDouble(), goal.z + 0.5, SEEN, false) == null
     }
 
     fun tick(): State {
@@ -118,6 +134,11 @@ class Walker(private val p: Townsperson) {
         p.navigation.moveTo(goal.x + 0.5, goal.y.toDouble(), goal.z + 0.5, if (exact) 0 else 1, speed)
     }
 
+    private companion object {
+        /** How near a player must be for a walk to be walked rather than simply done. */
+        const val SEEN = 80.0
+    }
+
     private fun giveUp(goal: BlockPos): State {
         val level = p.level()
         val seen = level.getNearestPlayer(p.x, p.y, p.z, 40.0, false) != null ||
@@ -128,6 +149,36 @@ class Walker(private val p: Townsperson) {
             return State.ARRIVED
         }
         return State.FAILED
+    }
+}
+
+/**
+ * A task (or a run of them) worked out only when its turn comes, from wherever they are by then: the way to a
+ * seat in a house they've just knocked at, say.
+ */
+class Later(p: Townsperson, private val make: () -> Task?) : Task(p) {
+    private var inner: Task? = null
+
+    override val anchored: Boolean get() = inner?.anchored == true
+    override val leisure: Boolean get() = inner?.leisure == true
+
+    override fun start() {
+        inner = make()
+        inner?.start()
+    }
+
+    override fun run(): Boolean {
+        val current = inner ?: return false
+        if (current.tick()) return true
+        current.stop()
+        inner = current.then
+        inner?.start()
+        return inner != null
+    }
+
+    override fun stop() {
+        inner?.stop()
+        inner = null
     }
 }
 
@@ -217,6 +268,9 @@ class Work(
     private var arrived = false
     private var index = 0
     private var step: Step? = null
+
+    /** Where they stand to work. */
+    val target: BlockPos get() = spot.pos
     private var stepAge = 0
     private var refused = false
 
@@ -338,15 +392,16 @@ class Sit(p: Townsperson, private val seatPos: BlockPos, private val ticks: Int,
     }
 }
 
-/** Goes to bed at [bed] and sleeps until the night is over. */
-class Sleep(p: Townsperson, private val bed: BlockPos) : Task(p) {
+/** Goes to bed at [bed] and sleeps until the night is over (or for as long as [keep] says, if given). */
+class Sleep(p: Townsperson, private val bed: BlockPos, private val keep: (() -> Boolean)? = null) : Task(p) {
     private val walker = Walker(p)
     private var asleep = false
 
     override val anchored: Boolean get() = asleep
 
     override fun start() {
-        if (!Claims.claim(level, bed, p, 400)) {
+        // Already abed (as they were when the world was saved), or the bed is someone else's
+        if (p.isSleeping || !Claims.claim(level, bed, p, 400)) {
             asleep = true
             return
         }
@@ -368,7 +423,7 @@ class Sleep(p: Townsperson, private val bed: BlockPos) : Task(p) {
             }
         }
         if (age % 100 == 0) Claims.claim(level, bed, p, 400)
-        return p.isSleeping && Schedule.phase(p) == Phase.SLEEP
+        return p.isSleeping && (keep?.invoke() ?: (Schedule.phase(p) == Phase.SLEEP))
     }
 
     override fun stop() {

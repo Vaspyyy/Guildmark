@@ -93,6 +93,9 @@ object GuildmarkConfig {
     val TOWNSFOLK_CROWD_DENSITY: ModConfigSpec.DoubleValue = BUILDER
         .comment("How busy the streets get: 1 is the usual crowd, 0.5 half as many passers-by, 2 twice as many.")
         .defineInRange("townsfolkCrowdDensity", 1.0, 0.25, 3.0)
+    val LIVING_WORLD: ModConfigSpec.BooleanValue = BUILDER
+        .comment("The capitals' people live real days: each has a name, a home and a bed, and goes about a day of their own (work at their trade, meals at home, the market, the well, the temple, the tavern, up the ladder to bed). Off, they keep the old round of chance errands.")
+        .define("livingWorld", true)
 
     val SPEC: ModConfigSpec = BUILDER.build()
 }

@@ -163,6 +163,10 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
     /** Who they are among their town's people (see [Residents]), or -1 until they've been taken in. */
     var resident = -1
 
+    /** Their life in a capital, with its days (see [Days.life]); not saved, it's looked up again. */
+    var life: Life? = null
+    var lifeLooked = 0
+
     /** A guard's beat, if set; otherwise they walk the streets round their post. */
     var patrol: List<BlockPos> = listOf()
 
@@ -582,6 +586,8 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
         pursedDay = input.getLongOr("pursed_day", -1L)
         captiveOf = input.getIntOr("captive_of", -1)
         rescuer = input.read("rescuer", UUIDUtil.CODEC).orElse(null)
+        // Saved halfway up a ladder: they come down it again
+        isNoGravity = false
     }
 
     override fun die(source: DamageSource) {

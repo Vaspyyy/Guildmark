@@ -72,6 +72,10 @@ class Resident(
     fun has(trait: Trait): Boolean = traits and trait.bit != 0
 
     companion object {
+        /** Someone in from outside for the day (see [Visitors]): no one the town keeps a record of. */
+        fun visitor(capital: BlockPos, role: TownRole): Resident =
+            Resident(-1, null, capital, -1, "", "", role, 0, -1, null, true, 0, true, -1L, 0L)
+
         val CODEC: Codec<Resident> = RecordCodecBuilder.create { i ->
             i.group(
                 Codec.INT.fieldOf("id").forGetter(Resident::id),
