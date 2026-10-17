@@ -83,8 +83,7 @@ object QuestGenerator {
             .filter { it.professions.isEmpty() || profession in it.professions }
             .flatMap { it.entries }
             .filter(around::allows)
-        val entry = pick(random, entries, tier)
-        return around.dress(random, build(random, entry, poster, rankFor(random, entry, tier)))
+        return around.dress(random, pickAndBuild(random, entries, tier, poster) { rankFor(random, it, tier) })
     }
 
     /** A note with no villager behind it yet, e.g. the first notes on a new board. */
@@ -92,16 +91,15 @@ object QuestGenerator {
         val pool = QuestPools.pools.randomOrNull(random)
         val profession = pool?.professions?.randomOrNull(random)
         val poster = "${NAMES[random.nextInt(NAMES.size)]} the ${title(profession)}"
-        val entry = pick(random, pool?.entries.orEmpty().filter(around::allows), tier)
-        return around.dress(random, build(random, entry, poster, rankFor(random, entry, tier)))
+        val entries = pool?.entries.orEmpty().filter(around::allows)
+        return around.dress(random, pickAndBuild(random, entries, tier, poster) { rankFor(random, it, tier) })
     }
 
     /** A note from any pool's entries that [around] allows and [which] picks, signed by [poster]; null if there's none. */
     fun generateWhere(random: RandomSource, tier: Int, around: Surroundings, poster: String, which: (QuestPool.Entry) -> Boolean): QuestNote? {
         val entries = QuestPools.pools.flatMap { it.entries }.filter { it.minTier <= tier && which(it) && around.allows(it) }
         if (entries.isEmpty()) return null
-        val entry = pick(random, entries, tier)
-        return build(random, entry, poster, rankFor(random, entry, tier))
+        return pickAndBuild(random, entries, tier, poster) { rankFor(random, it, tier) }
     }
 
     /** A note of one specific type from any pool, for testing. Null if no pool offers that type. */
@@ -109,18 +107,30 @@ object QuestGenerator {
         val entries = QuestPools.pools.flatMap { it.entries }.filter { it.type == type }
         if (entries.isEmpty()) return null
         val poster = "${NAMES[random.nextInt(NAMES.size)]} the Guildmaster"
-        val entry = pick(random, entries, MAX_TIER)
-        return build(random, entry, poster, rankFor(random, entry, tier))
+        return pickAndBuild(random, entries, MAX_TIER, poster) { rankFor(random, it, tier) }
     }
 
     /**
      * A guild hall contract: any job from any pool, rated at the adventurer's own rank and paying half
-     * again as much as a board note.
+     * again as much as a board note (a fetch, no more than its goods allow: see GoodsPrices).
      */
     fun generateHall(random: RandomSource, rank: Int, around: Surroundings, poster: String): QuestNote {
         val entries = QuestPools.pools.flatMap { it.entries }.filter(around::allows)
-        val note = around.dress(random, build(random, pick(random, entries, MAX_TIER), poster, rank))
-        return note.copy(reward = note.reward * 3 / 2)
+        val note = around.dress(random, pickAndBuild(random, entries, MAX_TIER, poster) { rank })
+        return GoodsPrices.capped(note.copy(reward = note.reward * 3 / 2))
+    }
+
+    /**
+     * Picks one of [entries] and builds its note, rated at [rank]. A fetch for goods that can be bought pays no more than
+     * half what they cost, and one that would be left paying next to nothing is passed over for another (see GoodsPrices).
+     */
+    private fun pickAndBuild(random: RandomSource, entries: List<QuestPool.Entry>, tier: Int, poster: String, rank: (QuestPool.Entry) -> Int): QuestNote {
+        var open = entries
+        while (true) {
+            val entry = pick(random, open, tier)
+            GoodsPrices.fit(build(random, entry, poster, rank(entry)))?.let { return it }
+            open = open.filter { it !== entry }
+        }
     }
 
     /** A lair hunt at the adventurer's own rank: one boss, paid well. */

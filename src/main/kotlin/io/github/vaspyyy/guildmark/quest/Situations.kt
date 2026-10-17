@@ -21,10 +21,11 @@ object Situations {
 
     private class Job(val type: QuestType, val target: String, val min: Int, val max: Int, val rewardPer: Float)
 
+    // Goods nobody sells, so handing in what was bought never pays (see GoodsPrices): no glass, bread, beef, cake or pie
     private val REBUILD = listOf(Job(QuestType.FETCH, "oak_planks", 32, 64, 0.15f), Job(QuestType.FETCH, "cobblestone", 32, 64, 0.12f),
-        Job(QuestType.FETCH, "glass", 8, 16, 0.4f), Job(QuestType.FETCH, "oak_log", 16, 32, 0.25f))
-    private val FEAST = listOf(Job(QuestType.FETCH, "bread", 12, 24, 0.3f), Job(QuestType.FETCH, "cooked_beef", 8, 16, 0.5f),
-        Job(QuestType.FETCH, "cake", 1, 2, 4.0f), Job(QuestType.FETCH, "pumpkin_pie", 4, 8, 0.8f))
+        Job(QuestType.FETCH, "stone_bricks", 16, 32, 0.25f), Job(QuestType.FETCH, "oak_log", 16, 32, 0.25f))
+    private val FEAST = listOf(Job(QuestType.FETCH, "baked_potato", 12, 24, 0.3f), Job(QuestType.FETCH, "cooked_mutton", 8, 16, 0.5f),
+        Job(QuestType.FETCH, "mushroom_stew", 1, 2, 4.0f), Job(QuestType.FETCH, "cooked_salmon", 4, 8, 0.8f))
     private val LAND = mapOf(
         "desert" to listOf(Job(QuestType.HUNT, "husk", 6, 12, 0.8f)),
         "snow" to listOf(Job(QuestType.HUNT, "stray", 5, 10, 1.0f)),
@@ -61,7 +62,7 @@ object Situations {
         val base = job.min + random.nextInt(job.max - job.min + 1)
         val count = if (job.type.isSingle) 1 else (base * countScale).toInt().coerceAtLeast(1)
         val reward = 3 + (count * job.rewardPer * (1.0f + 0.35f * rank) * bonus).toInt()
-        return QuestNote(job.type, poster, Identifier.withDefaultNamespace(job.target), count, reward, 3, story(key, random, args), rank)
+        return GoodsPrices.fit(QuestNote(job.type, poster, Identifier.withDefaultNamespace(job.target), count, reward, 3, story(key, random, args), rank))
     }
 
     /** "key|arg|arg": QuestNote.storyLine fills the arguments in. */
