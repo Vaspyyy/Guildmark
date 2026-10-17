@@ -1,6 +1,7 @@
 """
 The townsfolk's clips: the smith at the anvil, the baker at the oven, the merchant, the watch, the farmer, the fisher,
-children at play, nobles, the tavern, the bard and the priest. Same skeleton and kit as the combat clips (animkit.py),
+children at play, nobles, the tavern, the bard and the priest, and the captive in an outlaw camp (bound, plead,
+freed, thank). Same skeleton and kit as the combat clips (animkit.py),
 played by the game's CombatAnimator on the townsfolk model (art/scripts/townsfolk.py, standard humanoid pivots) with
 the held props from art/scripts/townsfolk_tools.py. Run from the repo root:
 
@@ -3272,6 +3273,403 @@ check(c, 'pick tip in the keyhole (t=24)', fk(c, 24, 'lockpick', PICK_TIP), KEYH
 check(c, 'left hand on the hip (t=10)', fk(c, 10, 'left_arm', GRIP['left_arm']), torso_to_world(frame_at(c, 10), HIP_T), tol=0.8)
 
 # ================================================================== faction clips: end
+
+
+# ================================================================== the captive: a villager held in an outlaw camp
+
+# Four clips. bound (a loop): kneeling sat back on his heels, both wrists tied behind him, breathing, glancing about, and
+# once a loop hauling at the rope. plead (once, 40): a player is near; he leans toward them, head up, shoulders shaking
+# as he calls out twice, and settles back into bound (it starts and ends exactly on bound's first pose). freed (once,
+# 50): the arms come round, each wrist rubbed in turn, then up off his knees (a step, the hips rising on the legs
+# that unfold) to the standing pose. thank (once, 40): standing, hands clasped at the chest, a small bow, a step of
+# relief back to standing. freed and thank end in the plain standing pose (legs, torso and root at rest, the arms
+# `relaxed`, the head following the look), so whatever the game plays next fades from there.
+# A rigid arm cannot reach behind the back or across the belly without sinking into the torso, so those poses come from
+# cap_arm_to: a least-squares solve that lets the shoulder shift a little (the arm key's own offset) to keep the arm's
+# box out of the body's. The poses are solved once (the right arm; the left is its mirror) and blended with cap_mix.
+
+CAP_DROP = 8.0                                  # the hips sunk this far: the torso sits on the shins
+CAP_HAND = np.array([-2.4, 11.0, 7.5])           # torso space: where the tied right wrist rests, a hand's width behind the small of the back
+CAP_PITCH = 6.0                                 # slumped a little forward
+CAP_HEAD = (0.0, 12.0, 0.0)                     # (yaw, pitch, roll) at rest: the head hangs
+CAP_TORSO_LO, CAP_TORSO_HI = np.array([-4.0, 0.0, -2.0]), np.array([4.0, 12.0, 2.0])
+CAP_ARM_BOX = (np.array([-3.0, -2.0, -2.0]), np.array([4.0, 12.0, 4.0]))       # the right arm's box in arm space: origin, size
+_CAP_GRID = {}
+
+
+def cap_arm_samples(side):
+    """Points over an arm's box, faces and edges included (arm space), to measure how far it sinks into the body (the
+    left arm's are the right arm's mirrored, so the two sides measure alike)."""
+    if not _CAP_GRID:
+        o, s = CAP_ARM_BOX
+        axes = [np.linspace(o[i], o[i] + s[i], int(round(s[i])) + 1) for i in range(3)]
+        pts = np.stack(np.meshgrid(*axes, indexing='ij'), -1).reshape(-1, 3)
+        _CAP_GRID['right_arm'] = pts
+        _CAP_GRID['left_arm'] = pts * np.array([-1.0, 1.0, 1.0])
+    return _CAP_GRID[side]
+
+
+def cap_arm_to(side, target, start=None, p=None, max_off=2.0, pen_w=3.0, off_w=(0.15, 0.6, 0.1), y_min=-0.3, palm=None, palm_w=0.2,
+               w=4.0, env=None, env_w=1.0, off_pref=None, fixed_off=None):
+    """An arm key and shoulder offset that bring the grip (or the arm-space point [p]) to [target] (torso space) with the
+    arm clear of the body: the shoulder may move a little (up to [max_off] px, never up: [y_min]; [off_pref] is where it
+    likes to be: (inward, down, back) px; [fixed_off] pins it there) as the arm's own track offset. [palm]: the way the
+    arm's front should face. [env]: an envelope the arm's box is kept inside: no further out than env[0] (toward its own
+    side), no higher than env[1], no further forward than env[2]. Returns (key, offset)."""
+    grip = np.array(GRIP[side] if p is None else p, float)
+    pivot = np.array(PIVOTS[side], float)
+    ow = np.array(off_w)
+    target = np.asarray(target, float)
+    palm = None if palm is None else unit(palm)
+
+    sx = 1.0 if side == 'right_arm' else -1.0          # inward is +x for the right arm, -x for the left
+    fo = None if fixed_off is None else np.array([sx * fixed_off[0], fixed_off[1], fixed_off[2]], float)
+
+    def res(x):
+        q, off = rvec_q(x[:3]), (x[3:6] if fo is None else fo)
+        Rm = qmat(q)
+        P = pivot + off + cap_arm_samples(side) @ Rm.T
+        d = np.maximum(0.0, np.minimum(P - CAP_TORSO_LO, CAP_TORSO_HI - P).min(axis=1))
+        n = float(np.linalg.norm(off))
+        out = list((pivot + off + Rm @ grip - target) * w)
+        out += [float(np.sqrt(np.mean(d * d))) * pen_w * 3.0, float(d.max()) * pen_w]
+        out += list((off - (0.0 if off_pref is None else np.array([sx * off_pref[0], off_pref[1], off_pref[2]]))) * ow)
+        out += [max(0.0, y_min - off[1]) * 5.0]
+        out += list(off / max(n, 1e-9) * max(0.0, n - max_off) * 6.0)
+        if palm is not None:
+            out += list((Rm @ np.array([0.0, 0.0, -1.0]) - palm) * palm_w)
+        if env is not None:
+            side_x = -P[:, 0] if side == 'right_arm' else P[:, 0]
+            ex = np.maximum(0.0, side_x - env[0])
+            ey = np.maximum(0.0, env[1] - P[:, 1])
+            ez = np.maximum(0.0, env[2] - P[:, 2])
+            for e in (ex, ey, ez):
+                out += [float(np.sqrt(np.mean(e * e))) * env_w * 2.0, float(e.max()) * env_w]
+        return out
+    if start is not None:
+        starts = [list(q_rvec(start[0])) + list(start[1])]
+    else:
+        starts = [[-1, 0.3, 0.3, 0, 0, 0], [-1.2, -0.3, 0.5, 0, 0, 1], [-0.8, 0.6, -0.4, -1, 0, 1], [0.5, 0, 0, 0, 0, 0]]
+    best = None
+    for s0 in starts:
+        r = least_squares(res, np.array(s0, float))
+        if best is None or r.cost < best.cost:
+            best = r
+    return rvec_q(best.x[:3]), (best.x[3:6].copy() if fo is None else fo.copy())
+
+
+def cap_mix(a, b, w):
+    """Between two (key, offset) arm poses."""
+    return qslerp(a[0], b[0], w), a[1] + (b[1] - a[1]) * w
+
+
+def cap_mirror(p):
+    """A (key, offset) arm pose mirrored left for right."""
+    return mirror_q(p[0]), mirror_dir(p[1])
+
+
+def cap_pair_mix(a, b, w):
+    """Between two pairs of ((right key, offset), (left key, offset))."""
+    return cap_mix(a[0], b[0], w), cap_mix(a[1], b[1], w)
+
+
+def cap_aim(axis, palm=F, off=(0.0, 0.0, 0.0)):
+    """A right-arm (key, offset) pointing its length along torso-space [axis], its front facing [palm] as near as it goes."""
+    return frame_to(np.array([0.0, 1.0, 0.0]), np.array([0.0, 0.0, -1.0]), unit(axis), unit(palm)), np.asarray(off, float)
+
+
+def cap_legs(c, t, ease='linear', drop=CAP_DROP):
+    """Both legs folded flat under him (the shins on the ground trailing back), the knees a touch apart."""
+    ly = 24.0 - 2.0 - (12.0 + drop)
+    c.key('right_leg', t, qeuler(x=90.0, y=-7.0), pos=(-0.8, ly, -3.5), ease=ease)
+    c.key('left_leg', t, qeuler(x=90.0, y=7.0), pos=(0.8, ly, -3.5), ease=ease)
+
+
+CAP_TIED_ARGS = dict(env=(7.9, -0.6, -2.4), env_w=1.0, max_off=4.0, y_min=-0.5, pen_w=12.0)
+CAP_SHOULDERS_REST = (1.2, 0.9, 2.9)       # tied, the shoulders draw in and back (px: inward, down, back)
+CAP_SHOULDERS_PULL = (1.2, 0.3, 3.6)
+_CAP_TIED = {}
+
+
+def cap_tied(pull=0.0, shift=(0.0, -2.2, 2.0)):
+    """(right key, offset, left key, offset): both wrists tied together behind the back, at rest ([pull] 0) or hauling
+    against the rope ([pull] 1: the hands [shift] px up and back, the shoulders drawn further back)."""
+    if 'rest' not in _CAP_TIED:
+        for name, s_, sh in (('rest', np.zeros(3), CAP_SHOULDERS_REST), ('pull', np.array(shift), CAP_SHOULDERS_PULL)):
+            r0 = _CAP_TIED.get('rest')
+            pr_ = cap_arm_to('right_arm', CAP_HAND + s_, start=None if r0 is None else r0[0], palm=L, fixed_off=sh, **CAP_TIED_ARGS)
+            _CAP_TIED[name] = (pr_, cap_mirror(pr_))
+    (r0, l0), (r1, l1) = _CAP_TIED['rest'], _CAP_TIED['pull']
+    k = min(1.0, max(0.0, pull))
+    return (*cap_mix(r0, r1, k), *cap_mix(l0, l1, k))
+
+
+def cap_tied_arms(c, t, pull=0.0, ease='linear'):
+    qr, orr, ql, ol = cap_tied(pull)
+    c.key('right_arm', t, qr, pos=orr, ease=ease)
+    c.key('left_arm', t, ql, pos=ol, ease=ease)
+
+
+def cap_breath(t, period=60.0):
+    return 0.5 - 0.5 * math.cos(2 * math.pi * t / period)
+
+
+def cap_torso(t, pull=0.0, yaw=0.0):
+    """The bound captive's torso at tick [t] of his loop: calm (a slow breath, a slow sway), or [pull]ing at the rope and
+    twisting [yaw] degrees (the right shoulder back is positive). Returns the frame."""
+    br = cap_breath(t)
+    pitch = CAP_PITCH - 1.6 * br + 4.0 * pull
+    roll = 1.2 * math.sin(2 * math.pi * t / 120.0 + 0.8)
+    return F_(qt=bend(pitch, yaw, roll), vt=(0.0, sink_for(pitch) - 0.35 * br, 0.0), pr=(0.0, CAP_DROP, 0.0))
+
+
+def cap_floor_check(c, t, label):
+    """Both legs' undersides on the ground (the flat legs of the kneel: the underside's middle point)."""
+    for side in ('right_leg', 'left_leg'):
+        check(c, f'{side} lies on the ground ({label})', (fk(c, t, side, (0.0, 6.0, -2.0))[1],), (24.0,), tol=0.4)
+
+
+# ---- bound: the loop (120). Head glances (t, yaw, pitch, roll), the struggle's twist of the shoulders (yaw) and the
+# pulls of the hands on the rope: one struggle, three hauls, at 76-92
+BOUND_HEAD = [(0, 0.0, 12.0, 0.0), (8, 0.0, 12.0, 0.0), (15, 30.0, 4.0, -2.0), (24, 34.0, 5.0, -2.0), (31, 32.0, 6.0, -1.0),
+              (40, 6.0, 11.0, 0.0), (50, -4.0, 13.0, 0.0), (58, -4.0, 13.0, 0.0), (64, -26.0, 3.0, 2.0), (71, -30.0, 2.0, 2.0),
+              (76, -12.0, 16.0, 6.0), (80, 14.0, 16.0, -5.0), (84, 22.0, 14.0, -6.0), (88, 6.0, 16.0, 4.0), (92, -14.0, 18.0, 7.0),
+              (97, 0.0, 19.0, 2.0), (104, 0.0, 20.0, 0.0), (112, 0.0, 14.0, 0.0), (120, 0.0, 12.0, 0.0)]
+BOUND_YAW = [(0, 0.0), (68, 0.0), (72, 3.0), (76, 10.0), (80, 0.0), (84, -10.0), (88, 0.0), (92, 6.0), (97, -2.0), (104, 0.0), (120, 0.0)]
+BOUND_PULLS = [(76.0, 1.0), (84.0, 1.0), (92.0, 0.7)]
+
+c = clip('bound', 120, True, look=('citizen', 0), events=[('struggle', 76)], views=((32, -12), (90, -2), (212, -12)))
+for t in ticks(0, 120, 1):
+    pull = min(1.0, sum(s * bump(t, tk_ - 3.0, tk_ + 4.0) for tk_, s in BOUND_PULLS))
+    fr = cap_torso(t, pull, float(spline_keys(BOUND_YAW, t, period=120.0)))
+    key_frame(c, t, fr, ease='linear')
+    cap_tied_arms(c, t, pull)
+    cap_legs(c, t)
+    hy, hp, hr = [float(x) for x in spline_keys([(a_, np.array([b_, c_, d_])) for a_, b_, c_, d_ in BOUND_HEAD], t, period=120.0)]
+    c.key('head', t, qeuler(x=hp, y=hy, z=hr), ease='linear')
+c.mode('head', 'set')
+seal(c)
+cap_floor_check(c, 0, 't=0')
+
+# ---- plead (40): a player is near. He leans in toward them, the head comes up, the shoulders shake as he calls out
+# (twice: 8 and 21) and he settles back into bound. The ends are bound's first pose exactly (the arms, legs, root and
+# torso keys; the head is 'add' here, bound's 'set', and rests at the same angle), so the crossfades are clean.
+PLEAD_REST = cap_torso(0.0)                                  # the bound loop's calm start: where plead starts and ends
+PLEAD_REST_ROLL = 1.2 * math.sin(0.8)
+PLEAD_LEAN = [(0, 0.0), (4, 5.0), (8, 13.0), (12, 14.0), (17, 12.0), (21, 12.5), (26, 8.0), (33, 3.0), (40, 0.0)]       # more forward lean, deg
+PLEAD_SHAKE = [(0, 0.0), (6, 0.0), (8, 7.0), (10, -6.0), (12, 4.0), (14, -1.0), (16, 0.0), (19, 0.0), (21, 5.0), (23, -4.0), (25, 1.0), (27, 0.0), (40, 0.0)]
+PLEAD_UP = [(0, 0.0), (5, 0.45), (8, 1.0), (13, 0.95), (19, 0.9), (22, 0.85), (28, 0.5), (34, 0.15), (40, 0.0)]      # how far the head has come up (0 hung, 1 up)
+
+c = clip('plead', 40, False, look=('citizen', 0), events=[('call', 8), ('call', 21)], views=((32, -12), (90, -2), (212, -12)))
+q_rest_head = qmul(PLEAD_REST['qt'], qeuler(x=CAP_HEAD[1]))      # the head's rest rotation as 'add' needs it (vanilla looking ahead)
+for t in ticks(0, 40, 1):
+    lean = float(spline_keys(PLEAD_LEAN, t))
+    shake = float(spline_keys(PLEAD_SHAKE, t))
+    pitch = CAP_PITCH + lean
+    fr = F_(qt=bend(pitch, shake, PLEAD_REST_ROLL - 0.3 * shake),
+            vt=(0.0, sink_for(pitch) - sink_for(CAP_PITCH) + PLEAD_REST['vt'][1] - 0.6 * abs(shake) / 7.0, -1.1 * lean / 14.0), pr=PLEAD_REST['pr'])
+    key_frame(c, t, fr, ease='linear')
+    cap_tied_arms(c, t, pull=0.22 * abs(shake) / 7.0)
+    cap_legs(c, t)
+    up = float(spline_keys(PLEAD_UP, t))
+    peak = qmul(qeuler(z=5.0 * up), qeuler(x=-3.0, y=0.0))
+    c.key('head', t, qslerp(q_rest_head, peak, smooth(up)), ease='linear')
+c.mode('head', 'add')
+cap_floor_check(c, 20, 't=20')
+for tk_ in (0.0, 40.0):
+    for side in ('right_arm', 'left_arm'):
+        check(c, f'{side} hand at tick {tk_:g} is where bound has it at 0', fk(c, tk_, side, GRIP[side]),
+              fk(getc('bound'), 0, side, GRIP[side]), tol=0.05)
+
+# ---- thank (40): standing, the hands come up and clasp at the chest, a small bow of head and shoulders with a slight
+# sway, then a step of relief (the right foot back and returned) as he straightens and the hands drop. Starts and ends in
+# the standing pose.
+THANK_HANG = np.array([-6.0, 11.5, -0.5])       # the right hand's end, hanging at the side (torso space)
+THANK_CLASP = np.array([-1.5, 5.0, -7.6])       # clasped at the chest
+THANK_OUT = np.array([-7.5, 7.5, -4.5])         # the way round: out to the side first
+THANK_PITCH = [(0, 0.0), (6, 3.0), (10, 5.0), (14, 11.0), (18, 16.0), (21, 16.0), (25, 8.0), (28, -2.5), (32, -2.0), (36, 0.0), (40, 0.0)]
+THANK_HEAD = [(0, 0.0), (8, 6.0), (14, 16.0), (19, 24.0), (22, 22.0), (27, -3.0), (32, -4.0), (37, -1.0), (40, 0.0)]    # extra to the bow, 'add'
+THANK_ARMS = [(0, 0.0), (9, 1.0), (27, 1.0), (37, 0.0), (40, 0.0)]                  # how far the hands have come up
+THANK_STEP = [(0, 0.0), (21, 0.0), (24, 12.0), (28, 14.0), (33, 4.0), (37, 0.0), (40, 0.0)]       # the right foot back (deg)
+_THANK_PATH = {}
+
+
+def thank_arm(s):
+    """The right arm (key, offset) [s] of the way from hanging at the side (0) to the hands clasped at the chest (1):
+    solved at steps of 1/16 (the hand along a curve out to the side and in), each warm-started from the one before, and
+    blended between; the left arm is its mirror."""
+    if not _THANK_PATH:
+        _THANK_PATH[0] = (relaxed(F_(), 'right_arm'), np.zeros(3))
+        prev = _THANK_PATH[0]
+        for i in range(1, 17):
+            u = i / 16.0
+            target = (1 - u) ** 2 * THANK_HANG + 2 * (1 - u) * u * THANK_OUT + u * u * THANK_CLASP
+            prev = cap_arm_to('right_arm', target, start=prev, palm=L if i > 10 else None, palm_w=0.3, max_off=3.0, w=4.0)
+            _THANK_PATH[i] = prev
+    k0 = min(15, int(math.floor(max(0.0, min(1.0, s)) * 16)))
+    return cap_mix(_THANK_PATH[k0], _THANK_PATH[k0 + 1], max(0.0, min(1.0, s)) * 16 - k0)
+
+
+c = clip('thank', 40, False, look=('citizen', 0), events=[('bow', 19)])
+for t in ticks(0, 40, 1):
+    pitch = float(spline_keys(THANK_PITCH, t))
+    roll = 1.5 * bump(t, 22.0, 36.0) * math.sin(math.pi * (t - 22.0) / 14.0 * 2)
+    key_frame(c, t, F_(qt=bend(pitch, 0.0, roll)), ease='linear')
+    qa = thank_arm(smooth(float(spline_keys(THANK_ARMS, t))))
+    c.key('right_arm', t, qa[0], pos=qa[1], ease='linear')
+    c.key('left_arm', t, mirror_q(qa[0]), pos=mirror_dir(qa[1]), ease='linear')
+    c.key('head', t, qeuler(x=pitch + float(spline_keys(THANK_HEAD, t))), ease='linear')
+    th = float(spline_keys(THANK_STEP, t))
+    low = 12.0 * math.cos(math.radians(th)) + 2.0 * math.sin(math.radians(th)) - 12.0     # the stepping leg, raised to clear the ground
+    c.key('right_leg', t, qeuler(x=th), pos=(0.0, -max(0.0, low), 0.0), ease='linear')
+    c.key('left_leg', t, I, ease='linear')
+c.mode('head', 'add')
+for tk_ in (0.0, 40.0):
+    for side in ('right_leg', 'left_leg'):
+        check(c, f'{side} foot on the ground (t={tk_:g})', (fk(c, tk_, side, (0.0, 12.0, 0.0))[1],), (24.0,), tol=0.4)
+
+# ---- freed (50): the rope off. The arms come round (to the sides, then both hands in front) and rub one wrist then the
+# other (18, 27), the head down at them; then the hands go to the thighs, he leans on them and gets up: the left leg (the
+# one that bears him, the toe dragging) unfolds as the hips rise on it, the right steps through ahead of him, the feet
+# come together, and he stands (`up` at 40), the arms swinging free and falling into `relaxed`.
+FREED_REL, FREED_SIDE, FREED_CLASP, FREED_RUB1, FREED_SWAP, FREED_RUB2, FREED_PUSH, FREED_HOLD, FREED_SWING = 6.0, 9.0, 14.0, 22.0, 24.0, 30.0, 32.0, 35.0, 42.0
+FREED_LEG_L = [(0, 90.0), (32, 90.0), (34, 80.0), (36, 64.0), (38, 46.0), (40, 30.0), (42, 16.0), (44, 6.0), (46, 0.0), (50, 0.0)]      # the bearing leg: toe dragging
+FREED_LEG_R = [(0, 90.0), (33, 90.0), (35, 70.0), (37, 40.0), (38.5, 8.0), (40, -16.0), (41.5, -20.0), (43, -14.0), (45, -6.0), (47, 0.0), (50, 0.0)]   # the stepping leg
+FREED_PITCH = [(0, 6.0), (6, 3.0), (14, 8.0), (22, 10.0), (30, 9.0), (33, 14.0), (36, 16.0), (39, 12.0), (42, 5.0), (45, 1.0), (47, 0.0), (50, 0.0)]
+FREED_YAW = [(0, 0.0), (14, 0.0), (16, 3.0), (19, -3.0), (22, 2.0), (25, -2.0), (27, 3.0), (30, 0.0), (50, 0.0)]
+FREED_HEAD = [(0, 18.0), (5, 2.0), (10, 4.0), (15, 26.0), (31, 28.0), (36, 10.0), (42, 0.0), (50, 0.0)]       # the head's pitch, 'add': down at his wrists, then up
+
+
+def mono_keys(keys, t):
+    """[keys] (t, value) interpolated monotonically (a cubic Hermite spline whose tangents never overshoot a key), at rest at both ends."""
+    ks = [(float(a_), float(b_)) for a_, b_ in keys]
+    if t <= ks[0][0]:
+        return ks[0][1]
+    if t >= ks[-1][0]:
+        return ks[-1][1]
+    n = len(ks)
+    d = [(ks[i + 1][1] - ks[i][1]) / (ks[i + 1][0] - ks[i][0]) for i in range(n - 1)]
+    m = [0.0] * n
+    for i in range(1, n - 1):
+        if d[i - 1] * d[i] > 0:
+            h0, h1 = ks[i][0] - ks[i - 1][0], ks[i + 1][0] - ks[i][0]
+            w1, w2 = 2 * h1 + h0, h1 + 2 * h0
+            m[i] = (w1 + w2) / (w1 / d[i - 1] + w2 / d[i])
+    for i in range(n - 1):
+        if ks[i][0] <= t <= ks[i + 1][0]:
+            h = ks[i + 1][0] - ks[i][0]
+            u = (t - ks[i][0]) / h
+            u2, u3 = u * u, u * u * u
+            return ((2 * u3 - 3 * u2 + 1) * ks[i][1] + (u3 - 2 * u2 + u) * m[i] * h
+                    + (-2 * u3 + 3 * u2) * ks[i + 1][1] + (u3 - u2) * m[i + 1] * h)
+    return ks[-1][1]
+
+
+def freed_drop(theta):
+    """How far the hips are down when a leg turned [theta] degrees back has its lowest corner on the ground (the leg's pivot
+    carried down 2 sin(theta) under the torso): 12 - 12 cos - 4 sin."""
+    th = math.radians(theta)
+    return max(0.0, min(8.0, 12.0 - 12.0 * math.cos(th) - 4.0 * math.sin(th)))
+
+
+def freed_leg(c, side, t, theta, drop):
+    """A leg turned [theta] degrees back from standing (90: folded flat under him, the shin trailing; negative: the foot
+    ahead), its splay drawn in as it comes up and the leg held up into the body as far as it takes to clear the ground
+    while the hips are down [drop]."""
+    th = math.radians(abs(theta))
+    s_ = -1.0 if side == 'right_leg' else 1.0
+    lowest = 12.0 * math.cos(th) + 2.0 * math.sin(th)
+    ly = min(2.0 * math.sin(th), 24.0 - (12.0 + drop) - lowest)
+    zf = -3.5 * math.sin(th) * (1.0 if theta >= 0 else 0.0)
+    c.key(side, t, qeuler(x=theta, y=s_ * 7.0 * math.sin(th)), pos=(s_ * 0.8 * math.sin(th), ly, zf), ease='linear')
+
+
+def freed_frame(t):
+    """The torso and root: the hips follow the bearing leg up, the torso leans over the push and comes upright."""
+    d_ = freed_drop(mono_keys(FREED_LEG_L, t))
+    pitch = mono_keys(FREED_PITCH, t)
+    roll = 1.2 * math.sin(0.8) * (1.0 - smooth(t / 6.0))          # the bound torso's slight roll at tick 0, let go
+    return F_(qt=bend(pitch, mono_keys(FREED_YAW, t), roll), vt=(0.0, sink_for(pitch) * min(1.0, d_ / 8.0), 0.0), pr=(0.0, d_, 0.0))
+
+
+c = clip('freed', 50, False, look=('citizen', 0), events=[('rub', 18), ('rub', 27), ('up', 40)])
+# the arm poses (the right arm solved, the left its mirror): tied, hanging, out to the side, a hand over the other's
+# wrist (the left over the right, sliding up and down it as they rub; then the right over the left), the hands on the thighs
+# as the body is when they land, a swing, at rest
+FREED_TIED = cap_tied(0.0)
+FREED_K_TIED = ((FREED_TIED[0], FREED_TIED[1]), (FREED_TIED[2], FREED_TIED[3]))
+FREED_K_HANG = (lambda p: (p, cap_mirror(p)))(cap_aim((0.02, 0.96, 0.28)))
+FREED_K_SIDE = (lambda p: (p, cap_mirror(p)))(cap_aim((-0.55, 0.74, -0.38), off=(-1.2, 0.0, 0.0)))
+FREED_KW = dict(palm_w=0.3, max_off=1.5, pen_w=4.0)
+FREED_WRIST_R = cap_arm_to('right_arm', np.array([-1.7, 8.4, -5.6]), start=FREED_K_SIDE[0], palm=L, **FREED_KW)
+FREED_RUB = {}
+_prev = cap_mirror(FREED_K_SIDE[0])
+for _s in (-1.0, 0.0, 1.0):
+    FREED_RUB[_s] = cap_arm_to('left_arm', np.array([-0.4, 7.4 + 1.3 * _s, -6.3]), start=_prev, palm=R, **FREED_KW)
+    _prev = FREED_RUB[_s]
+
+
+def freed_rub(s):
+    """The left arm [s] of the way up (-1) or down (1) the right wrist."""
+    s = max(-1.0, min(1.0, s))
+    return cap_mix(FREED_RUB[-1.0], FREED_RUB[0.0], s + 1.0) if s < 0 else cap_mix(FREED_RUB[0.0], FREED_RUB[1.0], s)
+
+
+FREED_K_CLASP = (FREED_WRIST_R, freed_rub(0.0))                                   # the left hand over the right wrist
+FREED_K_CLASP2 = (cap_mirror(freed_rub(0.0)), cap_mirror(FREED_WRIST_R))          # the right hand over the left wrist
+FREED_FRAMES = {t: freed_frame(t) for t in ticks(0, 50, 1)}
+
+
+def freed_push(side):
+    """The arm with its hand on the thigh, just ahead of the knee, as the body is placed when the push begins."""
+    s_ = -1.0 if side == 'right_arm' else 1.0
+    return cap_arm_to(side, torso_local(FREED_FRAMES[FREED_PUSH], np.array([s_ * 3.4, 18.6, -4.2])), palm=None, max_off=1.5, pen_w=4.0)
+
+
+FREED_K_PUSH = (freed_push('right_arm'), freed_push('left_arm'))
+FREED_K_SWING = (lambda p: (p, cap_mirror(p)))(cap_aim((-0.22, 0.93, -0.30)))
+FREED_K_RELAX = (lambda p: (p, cap_mirror(p)))((relaxed(F_(), 'right_arm'), np.zeros(3)))
+
+
+def freed_arms(t):
+    if t <= FREED_REL:
+        return cap_pair_mix(FREED_K_TIED, FREED_K_HANG, smooth(t / FREED_REL))
+    if t <= FREED_SIDE:
+        return cap_pair_mix(FREED_K_HANG, FREED_K_SIDE, smooth((t - FREED_REL) / (FREED_SIDE - FREED_REL)))
+    if t <= FREED_CLASP:
+        return cap_pair_mix(FREED_K_SIDE, FREED_K_CLASP, smooth((t - FREED_SIDE) / (FREED_CLASP - FREED_SIDE)))
+    if t <= FREED_RUB1:
+        return (FREED_WRIST_R, freed_rub(math.sin(2 * math.pi * 1.5 * (t - FREED_CLASP) / (FREED_RUB1 - FREED_CLASP))))
+    if t <= FREED_SWAP:
+        return cap_pair_mix((FREED_WRIST_R, freed_rub(0.0)), FREED_K_CLASP2, smooth((t - FREED_RUB1) / (FREED_SWAP - FREED_RUB1)))
+    if t <= FREED_RUB2:
+        return (cap_mirror(freed_rub(math.sin(2 * math.pi * 1.25 * (t - FREED_SWAP) / (FREED_RUB2 - FREED_SWAP)))), cap_mirror(FREED_WRIST_R))
+    if t <= FREED_PUSH:
+        return cap_pair_mix(FREED_K_CLASP2, FREED_K_PUSH, smooth((t - FREED_RUB2) / (FREED_PUSH - FREED_RUB2)))
+    if t <= FREED_HOLD:
+        return FREED_K_PUSH
+    if t <= FREED_SWING:
+        return cap_pair_mix(FREED_K_PUSH, FREED_K_SWING, smooth((t - FREED_HOLD) / (FREED_SWING - FREED_HOLD)))
+    return cap_pair_mix(FREED_K_SWING, FREED_K_RELAX, smooth((t - FREED_SWING) / (50.0 - FREED_SWING)))
+
+
+for t in ticks(0, 50, 1):
+    fr = FREED_FRAMES[t]
+    key_frame(c, t, fr, ease='linear')
+    pr_, pl_ = freed_arms(t)
+    c.key('right_arm', t, pr_[0], pos=pr_[1], ease='linear')
+    c.key('left_arm', t, pl_[0], pos=pl_[1], ease='linear')
+    freed_leg(c, 'right_leg', t, mono_keys(FREED_LEG_R, t), float(fr['pr'][1]))
+    freed_leg(c, 'left_leg', t, mono_keys(FREED_LEG_L, t), float(fr['pr'][1]))
+    c.key('head', t, qeuler(x=mono_keys(FREED_HEAD, t)), ease='linear')
+c.mode('head', 'add')
+cap_floor_check(c, 0, 't=0')
+for side in ('right_arm', 'left_arm'):
+    check(c, f'{side} hand at tick 0 is where bound has it', fk(c, 0, side, GRIP[side]), fk(getc('bound'), 0, side, GRIP[side]), tol=0.05)
+for side in ('right_leg', 'left_leg'):
+    check(c, f'{side} foot on the ground (t=50)', (fk(c, 50, side, (0.0, 12.0, 0.0))[1],), (24.0,), tol=0.4)
+
+# ================================================================== the captive: end
 
 
 if __name__ == '__main__':

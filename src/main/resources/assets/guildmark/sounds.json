@@ -3539,6 +3539,132 @@
     ],
     "subtitle": "say.guildmark.purse_1"
   },
+  "townsfolk.voice.man.captive_help_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/captive_help_0"
+    ],
+    "subtitle": "say.guildmark.captive_help_0"
+  },
+  "townsfolk.voice.man.captive_help_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/captive_help_1"
+    ],
+    "subtitle": "say.guildmark.captive_help_1"
+  },
+  "townsfolk.voice.man.captive_help_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/captive_help_2"
+    ],
+    "subtitle": "say.guildmark.captive_help_2"
+  },
+  "townsfolk.voice.man.captive_freed_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/captive_freed_0"
+    ],
+    "subtitle": "say.guildmark.captive_freed_0"
+  },
+  "townsfolk.voice.man.captive_freed_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/captive_freed_1"
+    ],
+    "subtitle": "say.guildmark.captive_freed_1"
+  },
+  "townsfolk.voice.man.captive_home_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/captive_home_0"
+    ],
+    "subtitle": "say.guildmark.captive_home_0"
+  },
+  "townsfolk.voice.man.captive_home_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/captive_home_1"
+    ],
+    "subtitle": "say.guildmark.captive_home_1"
+  },
+  "townsfolk.voice.woman.captive_help_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/captive_help_0"
+    ],
+    "subtitle": "say.guildmark.captive_help_0"
+  },
+  "townsfolk.voice.woman.captive_help_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/captive_help_1"
+    ],
+    "subtitle": "say.guildmark.captive_help_1"
+  },
+  "townsfolk.voice.woman.captive_help_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/captive_help_2"
+    ],
+    "subtitle": "say.guildmark.captive_help_2"
+  },
+  "townsfolk.voice.woman.captive_freed_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/captive_freed_0"
+    ],
+    "subtitle": "say.guildmark.captive_freed_0"
+  },
+  "townsfolk.voice.woman.captive_freed_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/captive_freed_1"
+    ],
+    "subtitle": "say.guildmark.captive_freed_1"
+  },
+  "townsfolk.voice.woman.captive_home_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/captive_home_0"
+    ],
+    "subtitle": "say.guildmark.captive_home_0"
+  },
+  "townsfolk.voice.woman.captive_home_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/captive_home_1"
+    ],
+    "subtitle": "say.guildmark.captive_home_1"
+  },
+  "townsfolk.voice.old.captive_help_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/captive_help_0"
+    ],
+    "subtitle": "say.guildmark.captive_help_0"
+  },
+  "townsfolk.voice.old.captive_help_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/captive_help_1"
+    ],
+    "subtitle": "say.guildmark.captive_help_1"
+  },
+  "townsfolk.voice.old.captive_help_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/captive_help_2"
+    ],
+    "subtitle": "say.guildmark.captive_help_2"
+  },
+  "townsfolk.voice.old.captive_freed_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/captive_freed_0"
+    ],
+    "subtitle": "say.guildmark.captive_freed_0"
+  },
+  "townsfolk.voice.old.captive_freed_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/captive_freed_1"
+    ],
+    "subtitle": "say.guildmark.captive_freed_1"
+  },
+  "townsfolk.voice.old.captive_home_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/captive_home_0"
+    ],
+    "subtitle": "say.guildmark.captive_home_0"
+  },
+  "townsfolk.voice.old.captive_home_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/captive_home_1"
+    ],
+    "subtitle": "say.guildmark.captive_home_1"
+  },
   "renegade.voice_intro": {
     "sounds": [
       "guildmark:voice/renegade_intro"
