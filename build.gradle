@@ -48,6 +48,8 @@ neoForge {
         configureEach {
             systemProperty 'forge.logging.markers', 'REGISTRIES'
             logLevel = org.slf4j.event.Level.DEBUG
+            // ZGC instead of G1: Distant Horizons stutters on G1's pauses. Generational by default on Java 25
+            jvmArgument '-XX:+UseZGC'
         }
     }
 
