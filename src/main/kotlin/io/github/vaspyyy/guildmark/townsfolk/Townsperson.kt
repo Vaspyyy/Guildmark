@@ -160,6 +160,9 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
     /** A guard who keeps the night watch rather than the day's. */
     var nightWatch = false
 
+    /** Who they are among their town's people (see [Residents]), or -1 until they've been taken in. */
+    var resident = -1
+
     /** A guard's beat, if set; otherwise they walk the streets round their post. */
     var patrol: List<BlockPos> = listOf()
 
@@ -392,6 +395,8 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
             townLooked = true
             town = Towns.at(level, home ?: blockPosition())
         }
+        // Passers-by, captives and the named are no one's neighbours
+        if (resident < 0 && !crowd && !watcher && captiveOf < 0 && customName == null && tickCount % 40 == 7) Residents.adopt(level, this)
     }
 
     private var townLooked = false
@@ -538,6 +543,7 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
         output.putBoolean("crowd", crowd)
         output.putInt("shift", shift)
         output.putBoolean("night_watch", nightWatch)
+        if (resident >= 0) output.putInt("resident", resident)
         if (patrol.isNotEmpty()) output.store("patrol", BlockPos.CODEC.listOf(), patrol)
         if (isLeader) output.putBoolean("leader", true)
         if (watcher) output.putBoolean("watcher", true)
@@ -568,6 +574,7 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
         if (crowd) discardOnLoad = true
         shift = input.getIntOr("shift", 0)
         nightWatch = input.getBooleanOr("night_watch", false)
+        resident = input.getIntOr("resident", -1)
         patrol = input.read("patrol", BlockPos.CODEC.listOf()).orElse(listOf())
         isLeader = input.getBooleanOr("leader", false)
         // A heist's watchers only keep watch while it's on
@@ -580,6 +587,7 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
     override fun die(source: DamageSource) {
         val level = level()
         if (captiveOf >= 0 && level is ServerLevel) Captives.onDeath(level, this)
+        if (resident >= 0 && level is ServerLevel) Residents.died(level, this)
         super.die(source)
     }
 

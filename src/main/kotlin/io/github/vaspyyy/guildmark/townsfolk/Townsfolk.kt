@@ -21,6 +21,7 @@ import net.neoforged.bus.api.IEventBus
 import net.neoforged.neoforge.common.NeoForge
 import net.neoforged.neoforge.event.RegisterCommandsEvent
 import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent
+import net.neoforged.neoforge.event.server.ServerStoppedEvent
 import net.neoforged.neoforge.event.tick.PlayerTickEvent
 import net.neoforged.neoforge.registries.DeferredHolder
 import net.neoforged.neoforge.registries.DeferredRegister
@@ -64,6 +65,7 @@ object Townsfolk {
             if (player != null && level != null) Crowds.tick(level, player)
         }
         NeoForge.EVENT_BUS.addListener(RegisterCommandsEvent::class.java) { TownsfolkCommand.register(it.dispatcher) }
+        NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> CityPlaces.forget() }
     }
 
     /** A townsperson of [role] standing at [at], not yet added to the world. */
