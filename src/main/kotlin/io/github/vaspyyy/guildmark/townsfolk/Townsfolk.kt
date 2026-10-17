@@ -65,6 +65,7 @@ object Townsfolk {
             if (player != null && level != null) Crowds.tick(level, player)
         }
         NeoForge.EVENT_BUS.addListener(RegisterCommandsEvent::class.java) { TownsfolkCommand.register(it.dispatcher) }
+        Furnish.register()
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> CityPlaces.forget() }
     }
 

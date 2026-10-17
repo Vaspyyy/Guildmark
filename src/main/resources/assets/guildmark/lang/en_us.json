@@ -2290,6 +2290,7 @@
   "entity.guildmark.townsperson.thief": "Rogue",
   "guildmark.configuration.townsfolkCrowds": "Passers-by in Towns",
   "guildmark.configuration.townsfolkCrowdDensity": "How Busy the Streets Get",
+  "guildmark.configuration.townsfolkBeds": "Beds for Townsfolk",
   "commands.guildmark.townsfolk.demo": "Built a town square with %s townsfolk. Passers-by gather within %s blocks",
   "commands.guildmark.townsfolk.zone": "Passers-by now gather within %s blocks of here",
   "commands.guildmark.townsfolk.zone_removed": "This is no longer a town for passers-by",

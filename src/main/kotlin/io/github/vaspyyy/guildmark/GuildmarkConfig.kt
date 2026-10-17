@@ -96,6 +96,9 @@ object GuildmarkConfig {
     val LIVING_WORLD: ModConfigSpec.BooleanValue = BUILDER
         .comment("The capitals' people live real days: each has a name, a home and a bed, and goes about a day of their own (work at their trade, meals at home, the market, the well, the temple, the tavern, up the ladder to bed). Off, they keep the old round of chance errands.")
         .define("livingWorld", true)
+    val TOWNSFOLK_BEDS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("A bed for everyone in the capitals: anyone the city left with nowhere to sleep has a bed made up in their home, out of sight of players.")
+        .define("townsfolkBeds", true)
 
     val SPEC: ModConfigSpec = BUILDER.build()
 }
