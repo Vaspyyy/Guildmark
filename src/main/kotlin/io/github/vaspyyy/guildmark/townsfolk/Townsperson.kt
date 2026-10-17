@@ -120,6 +120,12 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
     /** Tied up in an outlaw camp, waiting for someone to free them. */
     val bound: Boolean get() = captiveOf >= 0 && rescuer == null
 
+    /**
+     * Something outside their day's round that has charge of them for now (a builder's job on a homestead, a part
+     * in a festival): while set, it runs each tick in place of the round. Never saved; whoever sets it clears it.
+     */
+    var director: Director? = null
+
     /** Where they live: their beds are found near here. */
     var home: BlockPos? = null
 
@@ -394,7 +400,14 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
         override fun canUse(): Boolean = isAlive
         override fun canContinueToUse(): Boolean = isAlive
         override fun requiresUpdateEveryTick(): Boolean = true
-        override fun tick() = if (captiveOf >= 0) Captives.tick(this@Townsperson) else routine.tick()
+        override fun tick() {
+            val director = director
+            when {
+                director != null -> director.tick(this@Townsperson)
+                captiveOf >= 0 -> Captives.tick(this@Townsperson)
+                else -> routine.tick()
+            }
+        }
         override fun stop() = routine.interrupt()
     }
 
@@ -452,6 +465,9 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
     override fun mobInteract(player: Player, hand: InteractionHand): InteractionResult {
         if (hand != InteractionHand.MAIN_HAND) return InteractionResult.PASS
         val level = level()
+        // Whoever has charge of them for now may answer for them
+        val director = director
+        if (director != null && level is ServerLevel && player is ServerPlayer && director.interact(this, player)) return InteractionResult.SUCCESS
         // A captive: cut loose, or asked to keep close
         if (captiveOf >= 0) {
             if (level is ServerLevel && player is ServerPlayer) Captives.interact(level, player, this)
@@ -585,4 +601,13 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
             .add(Attributes.ATTACK_DAMAGE, 5.0)
             .add(Attributes.FOLLOW_RANGE, 48.0)
     }
+}
+
+/** Takes charge of a townsperson in place of their day's round (see [Townsperson.director]). */
+interface Director {
+    /** Each tick, in place of the round. */
+    fun tick(p: Townsperson)
+
+    /** A player used them; true if this dealt with it (otherwise they talk as usual). */
+    fun interact(p: Townsperson, player: ServerPlayer): Boolean = false
 }
