@@ -106,6 +106,10 @@ and Kotlin model code always agree.
   live writing from: change the layout in the script, not the Kotlin. Given a preview dir and the Minecraft client
   jar (for the goods' icons), `scripts/market_board_preview.py` renders the face offline with the same numbers: the
   textures, a filled-in face, close-ups, the board in 3D front and back, and `crier_at_work.gif`.
+- `scripts/season_art.py` is the seasons' and festivals' art: the compass medallion and the four season glyphs, the
+  festival emblems, the Almanac's wheel of the year, needle and drifting motes (row designs put through
+  `ui_hd.remaster`, the wheel painted at 2x), the season particles (petals, leaves, breath and frost glints, 16x16,
+  painted pale where the game tints them) and the 32x Almanac item. With a preview dir it writes a contact sheet.
 
 Rebuild a model (needs Python 3 with Pillow and numpy), from the repo root:
 
@@ -124,6 +128,7 @@ python3 -B art/scripts/ui_hd.py src/main/resources/assets/guildmark [preview-dir
 python3 -B art/scripts/creature_hd.py src/main/resources/assets/guildmark [preview-dir]
 python3 -B art/scripts/vanilla_hd.py <minecraft-26.3 jar> src/main/resources/resourcepacks/guildmark_hd [preview-dir]
 python3 -B art/scripts/market_board_art.py src/main/resources/assets/guildmark [preview-dir [minecraft-26.3 jar]]
+python3 -B art/scripts/season_art.py src/main/resources/assets/guildmark [preview-dir]
 ```
 
 Each run writes the textures into the mod's assets, the `.bbmodel` into `art/models`, and a preview

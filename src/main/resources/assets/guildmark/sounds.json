@@ -1,4 +1,130 @@
 {
+  "festival.ribbonwake.0": {
+    "sounds": [
+      "guildmark:festival/ribbonwake_0"
+    ]
+  },
+  "festival.ribbonwake.1": {
+    "sounds": [
+      "guildmark:festival/ribbonwake_1"
+    ]
+  },
+  "festival.ribbonwake.2": {
+    "sounds": [
+      "guildmark:festival/ribbonwake_2"
+    ]
+  },
+  "festival.ribbonwake.3": {
+    "sounds": [
+      "guildmark:festival/ribbonwake_3"
+    ]
+  },
+  "festival.ribbonwake.finale": {
+    "sounds": [
+      "guildmark:festival/ribbonwake_finale"
+    ]
+  },
+  "festival.sunhearth.0": {
+    "sounds": [
+      "guildmark:festival/sunhearth_0"
+    ]
+  },
+  "festival.sunhearth.1": {
+    "sounds": [
+      "guildmark:festival/sunhearth_1"
+    ]
+  },
+  "festival.sunhearth.2": {
+    "sounds": [
+      "guildmark:festival/sunhearth_2"
+    ]
+  },
+  "festival.sunhearth.3": {
+    "sounds": [
+      "guildmark:festival/sunhearth_3"
+    ]
+  },
+  "festival.sunhearth.finale": {
+    "sounds": [
+      "guildmark:festival/sunhearth_finale"
+    ]
+  },
+  "festival.sheafmoot.0": {
+    "sounds": [
+      "guildmark:festival/sheafmoot_0"
+    ]
+  },
+  "festival.sheafmoot.1": {
+    "sounds": [
+      "guildmark:festival/sheafmoot_1"
+    ]
+  },
+  "festival.sheafmoot.2": {
+    "sounds": [
+      "guildmark:festival/sheafmoot_2"
+    ]
+  },
+  "festival.sheafmoot.3": {
+    "sounds": [
+      "guildmark:festival/sheafmoot_3"
+    ]
+  },
+  "festival.sheafmoot.finale": {
+    "sounds": [
+      "guildmark:festival/sheafmoot_finale"
+    ]
+  },
+  "festival.lanternrise.0": {
+    "sounds": [
+      "guildmark:festival/lanternrise_0"
+    ]
+  },
+  "festival.lanternrise.1": {
+    "sounds": [
+      "guildmark:festival/lanternrise_1"
+    ]
+  },
+  "festival.lanternrise.2": {
+    "sounds": [
+      "guildmark:festival/lanternrise_2"
+    ]
+  },
+  "festival.lanternrise.3": {
+    "sounds": [
+      "guildmark:festival/lanternrise_3"
+    ]
+  },
+  "festival.lanternrise.finale": {
+    "sounds": [
+      "guildmark:festival/lanternrise_finale"
+    ]
+  },
+  "festival.fanfare": {
+    "sounds": [
+      "guildmark:festival/fanfare"
+    ],
+    "subtitle": "subtitles.guildmark.festival.fanfare"
+  },
+  "season.sting.spring": {
+    "sounds": [
+      "guildmark:season/sting_spring"
+    ]
+  },
+  "season.sting.summer": {
+    "sounds": [
+      "guildmark:season/sting_summer"
+    ]
+  },
+  "season.sting.autumn": {
+    "sounds": [
+      "guildmark:season/sting_autumn"
+    ]
+  },
+  "season.sting.winter": {
+    "sounds": [
+      "guildmark:season/sting_winter"
+    ]
+  },
   "combat.swing_light": {
     "sounds": [
       "guildmark:combat/swing_light1",

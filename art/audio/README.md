@@ -102,6 +102,12 @@ Kokoro voices of their own, and the renegade Silvan Marrow made cold and a littl
   loudness set by measurement like the sea theme's (-18 LUFS, true peak under -1 dBTP in the encoded file). `--work <dir>`
   keeps the per-stem renders and `--reuse` mixes again from them, `--mp3 <file>` writes it to listen to, a chapter mark at
   each section and the loop's join once more at the end.
+- `make_festival_music.py`: the four grand festivals' dance music (`festival/<festival>_<0-3|finale>.ogg`), the
+  prize-giving fanfare (`festival/fanfare.ogg`) and the seasons' arrival stings (`season/sting_<season>.ogg`). Each
+  festival has its own band and tune at 120 beats a minute, so a bar is the forty ticks a dance figure takes; a set is
+  four eight-bar phrases and a finale, one file each, so the game can start each phrase on its own tick and a late
+  arrival hears the next one on time. A festival's five files share one gain (the set at -17 LUFS, every file's true
+  peak under -1 dBTP). `--mp3 <dir>` writes each set as the game plays it, with chapters, and the stings in a row.
 - `make_voice.py`: Halvard's three lines (`voice/`). It has two stages, `tts` and `process`.
 - `make_renegade_voice.py`: the renegade Silvan Marrow's three lines (`voice/renegade_<line>.ogg`), in a blend of
   three American men's voices and cold, thin processing: a faint whispered double, a stone slap and wind (out on a
@@ -159,6 +165,7 @@ python3 -B art/audio/make_sea_audio.py src/main/resources/assets/guildmark [--wa
 python3 -B art/audio/make_island_audio.py src/main/resources/assets/guildmark [--wav <dir>] [--only surf,gull,island.wreck.bell] [--mp3 <file>] [--variants-mp3 <file>] [--fragments <dir>]
 python3 -B art/audio/make_island_music.py src/main/resources/assets/guildmark [--work <tmp-dir>] [--wav <dir>] [--mp3 <file>] [--reuse]
 python3 -B art/audio/make_mill_audio.py src/main/resources/assets/guildmark [--wav <dir>] [--only sails,wheel] [--mp3 <file>]
+python3 -B art/audio/make_festival_music.py src/main/resources/assets/guildmark [--work <tmp-dir>] [--only ribbonwake,stings,fanfare] [--mp3 <dir>]
 ```
 
 `--wav` also writes WAV copies for listening. `--work` is where the music script keeps its per-stem
