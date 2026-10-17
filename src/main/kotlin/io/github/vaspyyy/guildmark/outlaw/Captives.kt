@@ -268,7 +268,7 @@ object Captives {
         player.sendOverlayMessage(Component.translatable("message.guildmark.captive_freed", p.name, villageName(level, home)))
     }
 
-    /** Back in their village: thanks for whoever brought them, the contracts on them done, and word goes round. */
+    /** Back in their village: thanks for whoever brought them, one contract on them done, and word goes round. */
     private fun homecoming(level: ServerLevel, p: Townsperson, home: BlockPos) {
         p.navigation.stop()
         val rescuer = p.rescuer?.let { level.getPlayerByUUID(it) }
@@ -277,14 +277,15 @@ object Captives {
         p.say("captive_home_${p.random.nextInt(2)}", force = true)
         level.playSound(null, p.blockPosition(), SoundEvents.VILLAGER_CELEBRATE, SoundSource.NEUTRAL, 1f, 1f)
         level.sendParticles(ParticleTypes.HAPPY_VILLAGER, p.x, p.y + 1.2, p.z, 12, 0.6, 0.5, 0.6, 0.0)
-        for (player in level.players()) {
-            if (player.distanceToSqr(p) > 48.0 * 48.0) continue
-            for (stack in contracts(player, p.uuid)) {
-                val note = stack.get(ModDataComponents.QUEST_NOTE.get()) ?: continue
+        // One homecoming, one job done: the rescuer's own contract on them if they hold one, else the one running out
+        // soonest of those held close by
+        val held = level.players().filter { it.distanceToSqr(p) <= 48.0 * 48.0 }.flatMap { player -> contracts(player, p.uuid).map { player to it } }
+        held.minWithOrNull(compareBy({ it.first.uuid != p.rescuer }, { it.second.get(ModDataComponents.CONTRACT_STATE.get())?.deadline ?: Long.MAX_VALUE }))
+            ?.let { (player, stack) ->
+                val note = stack.get(ModDataComponents.QUEST_NOTE.get()) ?: return@let
                 Contracts.setProgress(stack, note.count)
                 player.sendOverlayMessage(Component.translatable("message.guildmark.rescue_done", p.name))
             }
-        }
         if (rescuer != null && level.getBlockState(home).block is QuestBoardBlock) Standing.add(level, home, rescuer, STANDING_GAIN)
         GuildNews.add(level, "news.guildmark.outlaw.rescued", p.name.string, villageName(level, home).string)
     }

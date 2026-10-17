@@ -16,7 +16,8 @@ import net.minecraft.world.level.Level
  * Wanted notes on the outlaw bands camped out in the wild (see outlaw/OutlawCamps). A board posts one only while a band
  * at large has made camp within reach of it: the note names the captain, says what they're wanted for and what's on
  * their head, which goes up the longer they're left at it. Taking it points the way to their camp, and the captain's
- * fall counts for everyone close by who holds a note on them.
+ * fall counts for everyone close by who holds a note on them. The bounty itself is paid once, to the first note brought
+ * in; any other copy only says it's been claimed.
  */
 object Bounties {
     /** How far from its board a wanted note reaches. */
@@ -75,7 +76,21 @@ object Bounties {
         return false
     }
 
-    /** The captain of band [site] fell: every one of [players] with a contract on them has the job done. */
+    /** Whether the bounty on band [site] has been paid already. It's paid once, to whoever brings a contract on them in first. */
+    fun claimed(level: ServerLevel, site: Int): Boolean = site >= 0 && OutlawCamps.get(level).band(site)?.claimed == true
+
+    /** The bounty on band [site] is being paid: any other contract on them is worth nothing now. */
+    fun claim(level: ServerLevel, site: Int) {
+        val camps = OutlawCamps.get(level)
+        val band = camps.band(site) ?: return
+        band.claimed = true
+        camps.setDirty()
+    }
+
+    /**
+     * The captain of band [site] fell: every one of [players] with a contract on them has the job done, though the
+     * bounty is paid only once (see [claimed]).
+     */
     fun onSlain(players: List<Player>, site: Int) {
         for (player in players) {
             val inventory = player.inventory

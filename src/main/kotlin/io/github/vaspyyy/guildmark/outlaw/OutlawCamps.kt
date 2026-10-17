@@ -137,6 +137,8 @@ class OutlawBand(
     val captives: MutableList<Captive> = mutableListOf(),
     /** The day the band last raided a village (see Raids). */
     var raided: Long = -1,
+    /** The bounty on the captain has been paid, to the first to bring a contract on them in; it's paid once. */
+    var claimed: Boolean = false,
 ) {
     val tier: Int get() = QuestGenerator.tierAt(pos.x, pos.z)
 
@@ -167,8 +169,9 @@ class OutlawBand(
                 Codec.LONG.optionalFieldOf("recruited", -1L).forGetter(OutlawBand::recruited),
                 Captive.CODEC.listOf().optionalFieldOf("captives", listOf()).forGetter { it.captives },
                 Codec.LONG.optionalFieldOf("raided", -1L).forGetter(OutlawBand::raided),
-            ).apply(i) { id, pos, facing, built, slain, name, epithet, bounty, crimes, members, region, recruited, captives, raided ->
-                OutlawBand(id, pos, facing, built, slain, name, epithet, bounty, crimes.toMutableList(), members.toMutableList(), region, recruited, captives.toMutableList(), raided)
+                Codec.BOOL.optionalFieldOf("claimed", false).forGetter(OutlawBand::claimed),
+            ).apply(i) { id, pos, facing, built, slain, name, epithet, bounty, crimes, members, region, recruited, captives, raided, claimed ->
+                OutlawBand(id, pos, facing, built, slain, name, epithet, bounty, crimes.toMutableList(), members.toMutableList(), region, recruited, captives.toMutableList(), raided, claimed)
             }
         }
     }

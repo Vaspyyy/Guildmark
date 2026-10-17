@@ -262,6 +262,13 @@ object Contracts {
             level.playSound(null, pos, SoundEvents.VILLAGER_NO, SoundSource.BLOCKS, 1.0f, 1.0f)
             return
         }
+        // A captain's bounty is paid once, for the first contract on them brought in; any other copy is worth nothing
+        if (note.type == QuestType.BOUNTY && Bounties.claimed(serverLevel, state.site)) {
+            stack.shrink(1)
+            player.sendOverlayMessage(Component.translatable("message.guildmark.bounty_claimed", state.labelText()))
+            level.playSound(null, pos, SoundEvents.VILLAGER_NO, SoundSource.BLOCKS, 1.0f, 1.0f)
+            return
+        }
 
         val done = when (note.type) {
             QuestType.FETCH -> takeFetchItems(player, note)
@@ -281,6 +288,7 @@ object Contracts {
         }
 
         stack.shrink(1)
+        if (note.type == QuestType.BOUNTY) Bounties.claim(serverLevel, state.site)
         val origin = state.boardPos.takeIf { level.dimension() == state.dimension }
         val bonus = origin?.let {
             Standing.bonus(level, it, player, note.reward) +

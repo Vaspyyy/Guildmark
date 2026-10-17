@@ -3087,6 +3087,7 @@
   "message.guildmark.no_outlaw": "That band's been broken, or has moved on: there's no one left to collect on.",
   "message.guildmark.bounty_held": "You already hold the bounty on %s.",
   "message.guildmark.bounty_done": "%s is dead: the bounty's yours. Take the contract back to its board.",
+  "message.guildmark.bounty_claimed": "The bounty on %s has already been claimed, so this contract pays nothing.",
   "message.guildmark.outlaw_rally": "%s calls the band to arms!",
   "message.guildmark.outlaw_slain": "%s is dead. The band is broken.",
   "message.guildmark.outlaw_rout": "With %s dead, the band breaks and runs!",
