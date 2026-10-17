@@ -1,5 +1,8 @@
 package io.github.vaspyyy.guildmark.block
 
+import io.github.vaspyyy.guildmark.quest.QuestType
+import io.github.vaspyyy.guildmark.quest.QuestNote
+import io.github.vaspyyy.guildmark.outlaw.Captives
 import io.github.vaspyyy.guildmark.quest.Situations
 import io.github.vaspyyy.guildmark.GuildmarkConfig
 import io.github.vaspyyy.guildmark.advance.Advances
@@ -67,8 +70,8 @@ object VillageBoards {
         val today = day(level)
         for (cell in cells) {
             val note = cell.note ?: continue
-            // A wanted note comes down too once its captain has fallen
-            if (cell.postedDay != today || Bounties.stale(level, note)) cell.updateNote(null)
+            // A wanted note comes down too once its captain has fallen, and a plea once its captive's free
+            if (cell.postedDay != today || Bounties.stale(level, note) || Captives.stale(level, note)) cell.updateNote(null)
         }
 
         if (!level.isBrightOutside) return
@@ -85,25 +88,34 @@ object VillageBoards {
             cells.any { villager.position().closerThan(Vec3.atCenterOf(it.blockPos.relative(facing)), PIN_REACH) }
         }
         if (atBoard != null) {
-            pinNote(level, atBoard, empty.random(), facing)
+            pinNote(level, atBoard, empty.random(), facing, cells)
         } else if (level.random.nextInt(4) == 0) {
             // Nudge someone over; their own routine may win, which is fine
             villagers.random().brain.setMemory(MemoryModuleType.WALK_TARGET, WalkTarget(front, 0.5f, 1))
         }
     }
 
-    private fun pinNote(level: ServerLevel, villager: Villager, cell: QuestBoardBlockEntity, facing: Direction) {
+    private fun pinNote(level: ServerLevel, villager: Villager, cell: QuestBoardBlockEntity, facing: Direction, cells: List<QuestBoardBlockEntity>) {
         val profession = villager.villagerData.profession().unwrapKey().orElse(null)?.identifier()
         val tier = QuestGenerator.tierAt(cell.blockPos.x, cell.blockPos.z)
         val poster = posterName(villager, profession)
         val anchor = QuestBoardBlock.anchorPos(cell.blockPos, cell.blockState)
-        cell.updateNote(Situations.note(level, villager, anchor, poster, tier)
+        cell.updateNote(plea(level, anchor, cells, poster, tier)
+            ?: Situations.note(level, villager, anchor, poster, tier)
             ?: QuestGenerator.generate(level.random, profession, poster, tier, surroundings(level, anchor)))
         villager.setData(ModAttachments.LAST_PINNED_DAY, day(level))
         villager.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, Vec3.atCenterOf(cell.blockPos))
         val spot = Vec3.atCenterOf(cell.blockPos.relative(facing))
         level.playSound(null, cell.blockPos, SoundEvents.VILLAGER_WORK_CARTOGRAPHER, SoundSource.NEUTRAL, 1.0f, 1.0f)
         level.sendParticles(ParticleTypes.HAPPY_VILLAGER, spot.x, spot.y, spot.z, 4, 0.3, 0.3, 0.3, 0.0)
+    }
+
+    /** A plea for someone of this village an outlaw band holds, while no note on the board asks it already. */
+    private fun plea(level: ServerLevel, anchor: BlockPos, cells: List<QuestBoardBlockEntity>, poster: String, tier: Int): QuestNote? {
+        val pinned = cells.mapNotNull { it.note }
+        val held = Captives.held(level, anchor).firstOrNull { held -> pinned.none { it.type == QuestType.RESCUE && it.subject == held.name } } ?: return null
+        val note = QuestGenerator.generateWhere(level.random, tier, surroundings(level, anchor), poster) { it.type == QuestType.RESCUE } ?: return null
+        return Captives.dress(note, held)
     }
 
     /** The board (anchor cell) of the village whose bell is nearest [near], within 48 blocks. */
@@ -130,6 +142,7 @@ object VillageBoards {
             { SeaWork.reach(serverLevel, anchor) },
             { target -> BossHunts.quarries(serverLevel, anchor, target).isNotEmpty() },
             { Bounties.wanted(serverLevel, anchor) },
+            { Captives.held(serverLevel, anchor) },
         )
     }
 

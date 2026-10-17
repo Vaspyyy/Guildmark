@@ -48,6 +48,7 @@ data class QuestNote(
         QuestType.SALVAGE -> Component.translatable("quest.guildmark.salvage.${target.path}.title")
         QuestType.SLAY -> Component.translatable("quest.guildmark.slay.title", targetName())
         QuestType.BOUNTY -> if (subject.isEmpty()) Component.translatable("quest.guildmark.bounty.title_any") else Component.translatable("quest.guildmark.bounty.title", Labels.text(subject))
+        QuestType.RESCUE -> if (subject.isEmpty()) Component.translatable("quest.guildmark.rescue.title_any") else Component.translatable("quest.guildmark.rescue.title", subject)
     }
 
     fun description(): Component = when (type) {
@@ -63,6 +64,7 @@ data class QuestNote(
         QuestType.SALVAGE -> Component.translatable("quest.guildmark.salvage.${target.path}.desc")
         QuestType.SLAY -> Component.translatable("quest.guildmark.slay.${target.path}.desc")
         QuestType.BOUNTY -> Component.translatable("quest.guildmark.bounty.desc")
+        QuestType.RESCUE -> Component.translatable("quest.guildmark.rescue.desc")
     }
 
     /** The flavour line; situational notes carry their arguments after the key, as "key|arg|arg" (see Labels). */
@@ -78,7 +80,7 @@ data class QuestNote(
     private fun targetName(): Component = when (type) {
         QuestType.FETCH -> ItemStack(BuiltInRegistries.ITEM.getValue(target)).hoverName
         QuestType.HUNT, QuestType.CHAMPION, QuestType.SLAY -> BuiltInRegistries.ENTITY_TYPE.getValue(target).description
-        QuestType.CLEAR, QuestType.DELIVER, QuestType.ESCORT, QuestType.LAIR, QuestType.TRIAL, QuestType.CHART, QuestType.SALVAGE, QuestType.BOUNTY -> Component.empty()
+        QuestType.CLEAR, QuestType.DELIVER, QuestType.ESCORT, QuestType.LAIR, QuestType.TRIAL, QuestType.CHART, QuestType.SALVAGE, QuestType.BOUNTY, QuestType.RESCUE -> Component.empty()
     }
 
     companion object {

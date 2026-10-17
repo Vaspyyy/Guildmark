@@ -34,6 +34,8 @@ enum class NoteKind(private val id: String) : StringRepresentable {
             QuestType.SALVAGE -> SALVAGE
             QuestType.SLAY -> SLAY
             QuestType.BOUNTY -> WANTED
+            // A plea for someone taken: the same folded paper as asking someone to see a traveller home
+            QuestType.RESCUE -> ESCORT
             // Never posted on a board; drawn like a champion's notice if one ever is
             QuestType.TRIAL -> CHAMPION
         }

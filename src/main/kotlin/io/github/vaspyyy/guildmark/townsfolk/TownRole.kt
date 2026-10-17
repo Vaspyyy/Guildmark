@@ -115,6 +115,10 @@ enum class Activity(val clip: String, val ticks: Int, val loop: Boolean, val ove
     WHISPER("whisper", 50, true),
     SHOUT("shout", 30, false),
     SEARCH("search", 40, true),
+    BOUND("bound", 120, true),
+    PLEAD("plead", 40, false),
+    FREED("freed", 50, false),
+    THANK("thank", 40, false),
     ;
 
     /** Seated activities keep the townsperson on their seat. */

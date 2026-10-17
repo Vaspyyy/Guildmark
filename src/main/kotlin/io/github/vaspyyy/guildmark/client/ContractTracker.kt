@@ -209,7 +209,7 @@ object ContractTracker : GuiLayer {
 
     private fun isDone(player: Player, entry: Entry): Boolean = when (entry.note.type) {
         QuestType.FETCH -> Contracts.countFetchItems(player, entry.note) >= entry.note.count
-        QuestType.HUNT, QuestType.CLEAR, QuestType.CHAMPION, QuestType.LAIR, QuestType.TRIAL, QuestType.CHART, QuestType.SALVAGE, QuestType.SLAY, QuestType.BOUNTY -> entry.state.progress >= entry.note.count
+        QuestType.HUNT, QuestType.CLEAR, QuestType.CHAMPION, QuestType.LAIR, QuestType.TRIAL, QuestType.CHART, QuestType.SALVAGE, QuestType.SLAY, QuestType.BOUNTY, QuestType.RESCUE -> entry.state.progress >= entry.note.count
         QuestType.DELIVER, QuestType.ESCORT -> false
     }
 
@@ -226,6 +226,12 @@ object ContractTracker : GuiLayer {
             QuestType.SALVAGE -> Component.translatable("gui.guildmark.tracker.salvage", entry.state.label)
             QuestType.SLAY -> Component.translatable("gui.guildmark.tracker.slay", entry.state.labelText())
             QuestType.BOUNTY -> Component.translatable("gui.guildmark.tracker.bounty", entry.state.labelText())
+            // Freed, they're headed home; until then, to the camp that holds them
+            QuestType.RESCUE -> if (entry.state.destination?.closerThan(entry.state.boardPos, 96.0) == true) {
+                Component.translatable("gui.guildmark.tracker.rescue_home", entry.state.label)
+            } else {
+                Component.translatable("gui.guildmark.tracker.rescue", entry.state.label)
+            }
         }
         val text = Component.translatable("gui.guildmark.tracker.status", progress, Component.translatable("gui.guildmark.tracker.days", days))
         return Pair(text, if (days <= 1) LATE_INK else FADED_INK)
@@ -238,7 +244,7 @@ object ContractTracker : GuiLayer {
         if (isDone(player, entry)) return state.boardPos
         return when (entry.note.type) {
             QuestType.CLEAR -> state.boardPos
-            QuestType.DELIVER, QuestType.ESCORT, QuestType.CHAMPION, QuestType.LAIR, QuestType.TRIAL, QuestType.SALVAGE, QuestType.SLAY, QuestType.BOUNTY -> state.destination
+            QuestType.DELIVER, QuestType.ESCORT, QuestType.CHAMPION, QuestType.LAIR, QuestType.TRIAL, QuestType.SALVAGE, QuestType.SLAY, QuestType.BOUNTY, QuestType.RESCUE -> state.destination
             // Any isle no one's charted will do, wherever it is
             QuestType.FETCH, QuestType.HUNT, QuestType.CHART -> null
         }

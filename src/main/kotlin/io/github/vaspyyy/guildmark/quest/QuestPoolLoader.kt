@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.quest
 
+import io.github.vaspyyy.guildmark.outlaw.Captives
 import com.mojang.logging.LogUtils
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.resources.FileToIdConverter
@@ -28,6 +29,7 @@ class QuestPoolLoader : SimpleJsonResourceReloadListener<QuestPool>(QuestPool.CO
         QuestType.SALVAGE -> SeaWork.kindOf(entry.target) != null
         QuestType.SLAY -> BossHunts.isQuarry(entry.target)
         QuestType.BOUNTY -> entry.target == Bounties.OUTLAW
+        QuestType.RESCUE -> entry.target == Captives.CAPTIVE
         // Faction jobs are set up by the factions, never drawn from a pool
         QuestType.TRIAL -> false
     }

@@ -13,6 +13,7 @@ import io.github.vaspyyy.guildmark.loot.Relics
 import io.github.vaspyyy.guildmark.quest.Bounties
 import io.github.vaspyyy.guildmark.quest.QuestGenerator
 import io.github.vaspyyy.guildmark.region.Regions
+import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.registry.ModItems
 import io.github.vaspyyy.guildmark.wardfire.WardfireSites
@@ -92,16 +93,21 @@ data class Outlaw(val id: UUID, val role: OutlawRole) {
 }
 
 /** What a band does to the land round it, as its wanted posters and the news tell it. */
-enum class Crime(val id: String) {
+enum class Crime(val id: String, val daily: Boolean = true) {
     CARAVAN("caravan"),
     FARM("farm"),
     BARN("barn"),
     TRAVELLER("traveller"),
     TITHE("tithe"),
-    PATROL("patrol");
+    PATROL("patrol"),
+    /** A raid on a village: done in the open, never just told of (see Raids). */
+    RAID("raid", false);
 
     companion object {
         fun of(id: String): Crime? = entries.firstOrNull { it.id == id }
+
+        /** The crimes a band may be told to have done on any day. */
+        val DAILY: List<Crime> = entries.filter { it.daily }
     }
 }
 
@@ -127,6 +133,10 @@ class OutlawBand(
     var region: String = "",
     /** The day the band last took someone on. */
     var recruited: Long = -1,
+    /** Villagers they're holding in camp (see Captives). */
+    val captives: MutableList<Captive> = mutableListOf(),
+    /** The day the band last raided a village (see Raids). */
+    var raided: Long = -1,
 ) {
     val tier: Int get() = QuestGenerator.tierAt(pos.x, pos.z)
 
@@ -155,8 +165,10 @@ class OutlawBand(
                 Outlaw.CODEC.listOf().optionalFieldOf("members", listOf()).forGetter { it.members },
                 Codec.STRING.optionalFieldOf("region", "").forGetter(OutlawBand::region),
                 Codec.LONG.optionalFieldOf("recruited", -1L).forGetter(OutlawBand::recruited),
-            ).apply(i) { id, pos, facing, built, slain, name, epithet, bounty, crimes, members, region, recruited ->
-                OutlawBand(id, pos, facing, built, slain, name, epithet, bounty, crimes.toMutableList(), members.toMutableList(), region, recruited)
+                Captive.CODEC.listOf().optionalFieldOf("captives", listOf()).forGetter { it.captives },
+                Codec.LONG.optionalFieldOf("raided", -1L).forGetter(OutlawBand::raided),
+            ).apply(i) { id, pos, facing, built, slain, name, epithet, bounty, crimes, members, region, recruited, captives, raided ->
+                OutlawBand(id, pos, facing, built, slain, name, epithet, bounty, crimes.toMutableList(), members.toMutableList(), region, recruited, captives.toMutableList(), raided)
             }
         }
     }
@@ -220,6 +232,7 @@ class OutlawCamps(
                 moods[band.id]?.let { calm(it) }
                 continue
             }
+            if (!band.slain) Captives.tend(level, band)
             live(level, band, near)
         }
     }
@@ -275,11 +288,16 @@ class OutlawCamps(
         // Wanted already for a thing or two before anyone came this way
         band.bounty = Outlaws.baseBounty(band.tier)
         repeat(1 + random.nextInt(2)) {
-            band.crimes.add(0, Crime.entries[random.nextInt(Crime.entries.size)].id)
+            band.crimes.add(0, Crime.DAILY[random.nextInt(Crime.DAILY.size)].id)
             band.bounty = raised(band)
         }
         band.recruited = VillageBoards.day(level)
         muster(level, band)
+        // Some bands already have someone from the nearest village tied up by the fire
+        if (random.nextFloat() < CAPTIVE_CHANCE) Raids.nearestBell(level, spot, CAPTIVE_RANGE)?.let { bell ->
+            val role = CAPTIVE_ROLES[random.nextInt(CAPTIVE_ROLES.size)]
+            Captives.take(level, band, Raids.strangerName(level), Captives.homeOf(level, bell), role, random.nextInt(role.looks))
+        }
         GuildNews.add(level, "news.guildmark.outlaw.camp", "#${Outlaws.NAME_KEY}.${band.name}", "#${Outlaws.EPITHET_KEY}.${band.epithet}", where(band))
         // Far enough out that someone who falls here and wakes there isn't still in the fight
         if (WardfireSites.enabled() && !WardfireSites.near(level, spot, FIRE_MAX)) WardfireSites.placeNear(level, spot, FIRE_MIN, FIRE_MAX)
@@ -814,7 +832,7 @@ class OutlawCamps(
         for (band in bands) {
             if (!band.built || band.slain || band.captain() == null) continue
             if (level.random.nextFloat() >= CRIME_CHANCE) continue
-            commit(level, band, Crime.entries[level.random.nextInt(Crime.entries.size)])
+            commit(level, band, Crime.DAILY[level.random.nextInt(Crime.DAILY.size)])
         }
     }
 
@@ -865,6 +883,10 @@ class OutlawCamps(
     companion object {
         /** The side of a cell, in blocks; each holds at most one band. */
         private const val CELL = 768
+        /** The chance a band's camp is raised with a villager already held in it, and how far off the village may be. */
+        private const val CAPTIVE_CHANCE = 0.4f
+        private const val CAPTIVE_RANGE = 400
+        private val CAPTIVE_ROLES = listOf(TownRole.CITIZEN, TownRole.CITIZEN, TownRole.FARMER, TownRole.FISHER, TownRole.SMITH, TownRole.BAKER)
         private const val MARGIN = 96
         private const val CHANCE = 0.5f
         private const val SALT = 0x0B7A3C29L

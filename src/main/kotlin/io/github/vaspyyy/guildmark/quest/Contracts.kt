@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.quest
 
+import io.github.vaspyyy.guildmark.outlaw.Captives
 import io.github.vaspyyy.guildmark.atlas.Atlas
 import io.github.vaspyyy.guildmark.atlas.AtlasPlace
 import io.github.vaspyyy.guildmark.GuildmarkConfig
@@ -156,6 +157,23 @@ object Contracts {
                     Atlas.note(player, AtlasPlace(AtlasPlace.OUTLAW_CAMP, Level.OVERWORLD, band.pos, ref = band.id, found = level.gameTime))
                 }
             }
+            QuestType.RESCUE -> {
+                // The one the plea names, while they're still held; the contract leads to the camp that holds them
+                val (band, captive) = Captives.quarry(level, boardPos, note) ?: run {
+                    player.sendOverlayMessage(Component.translatable("message.guildmark.no_captive"))
+                    return null
+                }
+                if (Captives.contracts(player, captive.id).isNotEmpty()) {
+                    player.sendOverlayMessage(Component.translatable("message.guildmark.rescue_held", captive.name))
+                    return null
+                }
+                val distance = Expeditions.horizontalDistance(boardPos, band.pos)
+                note = note.copy(subject = captive.name, site = band.id, reward = note.reward + (distance / 100).toInt())
+                state = state.copy(destination = band.pos, site = band.id, bound = captive.id, label = captive.name)
+                if (player is ServerPlayer) {
+                    Atlas.note(player, AtlasPlace(AtlasPlace.OUTLAW_CAMP, Level.OVERWORLD, band.pos, ref = band.id, found = level.gameTime))
+                }
+            }
             // A faction's own kind of job sets itself up (and may find it can't, with word why)
             QuestType.TRIAL -> state = Trials.begin(level, player, note, state) ?: return null
             else -> {}
@@ -247,7 +265,7 @@ object Contracts {
 
         val done = when (note.type) {
             QuestType.FETCH -> takeFetchItems(player, note)
-            QuestType.HUNT, QuestType.CLEAR, QuestType.CHAMPION, QuestType.LAIR, QuestType.CHART, QuestType.SALVAGE, QuestType.SLAY, QuestType.BOUNTY -> state.progress >= note.count
+            QuestType.HUNT, QuestType.CLEAR, QuestType.CHAMPION, QuestType.LAIR, QuestType.CHART, QuestType.SALVAGE, QuestType.SLAY, QuestType.BOUNTY, QuestType.RESCUE -> state.progress >= note.count
             QuestType.DELIVER, QuestType.ESCORT -> true
             // A stolen prize is handed over with the contract
             QuestType.TRIAL -> state.progress >= note.count && Trials.handOver(player, stack, note)
@@ -308,8 +326,8 @@ object Contracts {
             victim.blockPosition().closerThan(state.boardPos, QuestNote.CLEAR_RADIUS.toDouble())
         QuestType.CHAMPION -> victim.uuid == state.bound
         // Lair bosses are credited to everyone nearby by onLairCleared instead, field bosses by BossHunts, outlaw
-        // captains by Bounties, faction jobs by their own rules and sea work by SeaWork
-        QuestType.FETCH, QuestType.DELIVER, QuestType.ESCORT, QuestType.LAIR, QuestType.TRIAL, QuestType.CHART, QuestType.SALVAGE, QuestType.SLAY, QuestType.BOUNTY -> false
+        // captains by Bounties, rescues by Captives, faction jobs by their own rules and sea work by SeaWork
+        QuestType.FETCH, QuestType.DELIVER, QuestType.ESCORT, QuestType.LAIR, QuestType.TRIAL, QuestType.CHART, QuestType.SALVAGE, QuestType.SLAY, QuestType.BOUNTY, QuestType.RESCUE -> false
     }
 
     private val HOLLOW_SOLDIER = net.minecraft.resources.Identifier.fromNamespaceAndPath("guildmark", "hollow_soldier")
@@ -361,6 +379,13 @@ object Contracts {
         return true
     }
 
+    /** Sets [stack]'s contract state to [state] (somewhere new to head, say) and rewrites its lore to match. */
+    fun retarget(stack: ItemStack, state: ContractState) {
+        val note = stack.get(ModDataComponents.QUEST_NOTE.get()) ?: return
+        stack.set(ModDataComponents.CONTRACT_STATE.get(), state)
+        refreshLore(stack, note, state)
+    }
+
     private fun refreshLore(stack: ItemStack, note: QuestNote, state: ContractState) {
         val lines = mutableListOf(note.title())
         lines.addAll(contractDetails(note, state))
@@ -394,6 +419,9 @@ object Contracts {
             }
             QuestType.BOUNTY -> if (destination != null) {
                 lines.add(Component.translatable("quest.guildmark.bounty_at", state.labelText(), destination.x, destination.z))
+            }
+            QuestType.RESCUE -> if (destination != null) {
+                lines.add(Component.translatable("quest.guildmark.rescue_at", state.label, destination.x, destination.z))
             }
             QuestType.TRIAL -> lines.addAll(Trials.details(note, state))
             else -> {}

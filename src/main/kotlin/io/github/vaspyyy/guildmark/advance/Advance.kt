@@ -85,6 +85,8 @@ enum class Advance(
             QuestType.TRIAL -> false
             // Sea work is a journey too
             QuestType.DELIVER, QuestType.ESCORT, QuestType.CHART, QuestType.SALVAGE -> countsTravel
+            // Bringing someone home from an outlaw camp clears the road of a band's menace and is a journey besides
+            QuestType.RESCUE -> countsClear || countsTravel
             QuestType.FETCH -> (vanilla && note.target.path in fetchItems) ||
                 (countsLogs && ItemStack(BuiltInRegistries.ITEM.getValue(note.target)).`is`(ItemTags.LOGS))
         }

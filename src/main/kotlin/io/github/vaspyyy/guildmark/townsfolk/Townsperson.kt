@@ -4,8 +4,10 @@ import io.github.vaspyyy.guildmark.client.townsfolk.TownsfolkClient
 import io.github.vaspyyy.guildmark.faction.Factions
 import io.github.vaspyyy.guildmark.faction.Pickpocket
 import io.github.vaspyyy.guildmark.faction.SwornKnight
+import io.github.vaspyyy.guildmark.outlaw.Captives
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
+import net.minecraft.core.UUIDUtil
 import net.minecraft.network.chat.Component
 import net.minecraft.network.syncher.EntityDataAccessor
 import net.minecraft.network.syncher.EntityDataSerializers
@@ -47,6 +49,7 @@ import net.minecraft.world.level.storage.ValueInput
 import net.minecraft.world.level.storage.ValueOutput
 import net.minecraft.world.phys.Vec3
 import java.util.EnumSet
+import java.util.UUID
 import kotlin.math.atan2
 
 /**
@@ -107,6 +110,15 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
 
     /** The day their purse was lifted (or someone tried), so it's once a day each (see Pickpocket). */
     var pursedDay = -1L
+
+    /** The outlaw band holding them captive (see Captives), or -1. */
+    var captiveOf = -1
+
+    /** Whoever cut a captive loose and is seeing them home. */
+    var rescuer: UUID? = null
+
+    /** Tied up in an outlaw camp, waiting for someone to free them. */
+    val bound: Boolean get() = captiveOf >= 0 && rescuer == null
 
     /** Where they live: their beds are found near here. */
     var home: BlockPos? = null
@@ -382,7 +394,7 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
         override fun canUse(): Boolean = isAlive
         override fun canContinueToUse(): Boolean = isAlive
         override fun requiresUpdateEveryTick(): Boolean = true
-        override fun tick() = routine.tick()
+        override fun tick() = if (captiveOf >= 0) Captives.tick(this@Townsperson) else routine.tick()
         override fun stop() = routine.interrupt()
     }
 
@@ -396,7 +408,7 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
         }
 
         override fun canUse(): Boolean {
-            if (fights || isLeader || isSleeping || tickCount % 5 != 0) return false
+            if (fights || isLeader || isSleeping || bound || tickCount % 5 != 0) return false
             from = threat() ?: return false
             return true
         }
@@ -440,6 +452,11 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
     override fun mobInteract(player: Player, hand: InteractionHand): InteractionResult {
         if (hand != InteractionHand.MAIN_HAND) return InteractionResult.PASS
         val level = level()
+        // A captive: cut loose, or asked to keep close
+        if (captiveOf >= 0) {
+            if (level is ServerLevel && player is ServerPlayer) Captives.interact(level, player, this)
+            return InteractionResult.SUCCESS
+        }
         // A faction's leader talks properly
         if (isLeader) {
             if (level is ServerLevel && player is ServerPlayer) Factions.talk(level, player, this)
@@ -469,7 +486,7 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
 
     override fun getTypeName(): Component = Component.translatable("entity.guildmark.townsperson.${role.id}")
 
-    override fun isPushable(): Boolean = !isSleeping && seat == null && !routine.anchored && !isLeader
+    override fun isPushable(): Boolean = !isSleeping && seat == null && !routine.anchored && !isLeader && !bound
     // Passers-by leave on their own when nobody's looking (Crowds.maybeLeave); the game only clears them once far off
     override fun removeWhenFarAway(distance: Double): Boolean = crowd && distance > 96.0 * 96.0
     override fun requiresCustomPersistence(): Boolean = !crowd && !watcher
@@ -502,6 +519,8 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
         if (isLeader) output.putBoolean("leader", true)
         if (watcher) output.putBoolean("watcher", true)
         if (pursedDay >= 0) output.putLong("pursed_day", pursedDay)
+        if (captiveOf >= 0) output.putInt("captive_of", captiveOf)
+        output.storeNullable("rescuer", UUIDUtil.CODEC, rescuer)
     }
 
     override fun readAdditionalSaveData(input: ValueInput) {
@@ -531,6 +550,14 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
         // A heist's watchers only keep watch while it's on
         if (input.getBooleanOr("watcher", false)) discardOnLoad = true
         pursedDay = input.getLongOr("pursed_day", -1L)
+        captiveOf = input.getIntOr("captive_of", -1)
+        rescuer = input.read("rescuer", UUIDUtil.CODEC).orElse(null)
+    }
+
+    override fun die(source: DamageSource) {
+        val level = level()
+        if (captiveOf >= 0 && level is ServerLevel) Captives.onDeath(level, this)
+        super.die(source)
     }
 
     companion object {

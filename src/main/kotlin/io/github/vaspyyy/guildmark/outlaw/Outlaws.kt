@@ -8,6 +8,8 @@ import net.minecraft.world.level.Level
 import net.neoforged.neoforge.common.NeoForge
 import net.neoforged.neoforge.event.RegisterCommandsEvent
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent
+import net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent
 import net.neoforged.neoforge.event.tick.LevelTickEvent
 
@@ -45,12 +47,20 @@ object Outlaws {
     fun register() {
         NeoForge.EVENT_BUS.addListener(LevelTickEvent.Post::class.java) { event ->
             val level = event.level as? ServerLevel ?: return@addListener
-            if (level.dimension() == Level.OVERWORLD && level.gameTime % 10L == 0L) OutlawCamps.get(level).tick(level)
+            if (level.dimension() == Level.OVERWORLD && level.gameTime % 10L == 0L && enabled()) {
+                OutlawCamps.get(level).tick(level)
+                Raids.tick(level)
+            }
         }
         NeoForge.EVENT_BUS.addListener(LivingDeathEvent::class.java) { event ->
             val victim = event.entity
             val level = victim.level() as? ServerLevel ?: return@addListener
             if (victim.hasData(ModAttachments.OUTLAW)) OutlawCamps.get(level).onDeath(level, victim)
+            Raids.onDeath(level, victim)
+        }
+        NeoForge.EVENT_BUS.addListener(EntityJoinLevelEvent::class.java) { Raids.onJoin(it.entity) }
+        NeoForge.EVENT_BUS.addListener(LivingChangeTargetEvent::class.java) { event ->
+            if (Raids.spares(event.entity, event.newAboutToBeSetTarget)) event.isCanceled = true
         }
         NeoForge.EVENT_BUS.addListener(LivingDamageEvent.Post::class.java) { event ->
             val victim = event.entity

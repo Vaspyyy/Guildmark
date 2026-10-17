@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.quest
 
+import io.github.vaspyyy.guildmark.outlaw.Captives
 import io.github.vaspyyy.guildmark.progression.AdventurerRank
 import io.github.vaspyyy.guildmark.lair.LairTheme
 import net.minecraft.resources.Identifier
@@ -50,23 +51,29 @@ object QuestGenerator {
         sea: () -> SeaWork.Reach = { SeaWork.Reach.NONE },
         private val quarry: (Identifier) -> Boolean = { false },
         wanted: () -> List<Bounties.Wanted> = { listOf() },
+        held: () -> List<Captives.Held> = { listOf() },
     ) {
         private val sea by lazy(sea)
         private val wanted by lazy(wanted)
+        private val held by lazy(held)
 
         fun allows(entry: QuestPool.Entry): Boolean = when (entry.type) {
             QuestType.CHART -> sea.chart
             QuestType.SALVAGE -> SeaWork.kindOf(entry.target) in sea.salvage
             QuestType.SLAY -> quarry(entry.target)
             QuestType.BOUNTY -> wanted.isNotEmpty()
+            QuestType.RESCUE -> held.isNotEmpty()
             else -> hasRoad || !entry.type.needsRoad
         }
 
-        /** A wanted note names one of the bands in reach, the price on them and what for; any other note is left be. */
-        fun dress(random: RandomSource, note: QuestNote): QuestNote {
-            if (note.type != QuestType.BOUNTY) return note
-            val notice = wanted.randomOrNull(random) ?: return note
-            return Bounties.dress(note, notice)
+        /**
+         * A wanted note names one of the bands in reach, the price on them and what for, and a plea for a captive names
+         * someone held; any other note is left be.
+         */
+        fun dress(random: RandomSource, note: QuestNote): QuestNote = when (note.type) {
+            QuestType.BOUNTY -> wanted.randomOrNull(random)?.let { Bounties.dress(note, it) } ?: note
+            QuestType.RESCUE -> held.randomOrNull(random)?.let { Captives.dress(note, it) } ?: note
+            else -> note
         }
     }
 
@@ -136,7 +143,7 @@ object QuestGenerator {
      */
     private fun rankFor(random: RandomSource, entry: QuestPool.Entry, tier: Int): Int {
         val base = (tier - 1) * 2 + random.nextInt(4) - 2 + when (entry.type) {
-            QuestType.CHAMPION, QuestType.BOUNTY -> 1
+            QuestType.CHAMPION, QuestType.BOUNTY, QuestType.RESCUE -> 1
             QuestType.SLAY -> 2
             else -> 0
         }

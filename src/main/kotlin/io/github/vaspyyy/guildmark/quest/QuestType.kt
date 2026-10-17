@@ -47,10 +47,16 @@ enum class QuestType(private val id: String) : StringRepresentable {
      * A faction's own kind of job, set up when it's taken (see faction/Trials): its kind is the target's path,
      * guildmark:<kind>, and its progress is counted by that kind's own rules. Never posted on a board.
      */
-    TRIAL("trial");
+    TRIAL("trial"),
 
-    /** One-off jobs: a single letter, traveller, champion, lair, island, beast or outlaw rather than a count. */
-    val isSingle: Boolean get() = this == DELIVER || this == ESCORT || this == CHAMPION || this == LAIR || this == SALVAGE || this == SLAY || this == BOUNTY
+    /**
+     * Free a villager an outlaw band holds in its camp (the target is always guildmark:captive) and see them home: the
+     * one the note names, posted while they're held, or for a note naming no one, whoever's held nearest the board.
+     */
+    RESCUE("rescue");
+
+    /** One-off jobs: a single letter, traveller, champion, lair, island, beast, outlaw or captive rather than a count. */
+    val isSingle: Boolean get() = this == DELIVER || this == ESCORT || this == CHAMPION || this == LAIR || this == SALVAGE || this == SLAY || this == BOUNTY || this == RESCUE
 
     /** Villages only trust these jobs to people they know. */
     val minStanding: StandingTier get() = if (this == CHAMPION || this == LAIR || this == SLAY || this == BOUNTY) StandingTier.KNOWN else StandingTier.STRANGER
