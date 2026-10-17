@@ -273,7 +273,7 @@
   "bonus.guildmark.skill_xp.skill": "%s %s XP",
   "bonus.guildmark.skill_xp.group": "%s XP for %s skills",
   "bonus.guildmark.standing": "%s village standing earned",
-  "bonus.guildmark.trade_refund": "%s chance a trade's price comes back",
+  "bonus.guildmark.trade_refund": "%s chance a trade's price comes back (not trades in Guild Marks)",
   "bonus.guildmark.ore_double": "%s chance of double ore",
   "bonus.guildmark.stone_speed": "%s pickaxe speed",
   "bonus.guildmark.log_speed": "%s axe speed",

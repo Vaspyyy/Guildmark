@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.progression
 
 import io.github.vaspyyy.guildmark.registry.ModAttachments
+import io.github.vaspyyy.guildmark.registry.ModItems
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.core.component.DataComponents
@@ -21,6 +22,7 @@ import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 import net.minecraft.world.item.alchemy.Potions
 import net.minecraft.world.item.enchantment.Enchantments
+import net.minecraft.world.item.trading.MerchantOffer
 import net.minecraft.world.level.block.AttachedStemBlock
 import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.Blocks
@@ -428,10 +430,18 @@ object Work {
         val player = event.entity as? ServerPlayer ?: return
         val offer = event.merchantOffer
         Skills.gain(player, Skill.TRADE, 3.0 + offer.xp * 0.5)
+        // Village traders can be talked down, the Guild's own prices can't: Marks handed back would be Marks from nothing
+        if (inMarks(offer)) return
         if (chance(player, Talents.build(player)[Bonus.TRADE_REFUND])) {
             val price = offer.costA
             if (!price.isEmpty) player.inventory.placeItemBackInInventory(price.copy(), Prediction.SERVER_ONLY)
         }
+    }
+
+    /** Whether [offer] is priced in, or pays out, Guild Marks. */
+    private fun inMarks(offer: MerchantOffer): Boolean {
+        val mark = ModItems.GUILD_MARK.get()
+        return offer.costA.`is`(mark) || offer.costB.`is`(mark) || offer.result.`is`(mark)
     }
 
     fun onBreed(event: BabyEntitySpawnEvent) {
