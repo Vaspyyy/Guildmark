@@ -119,10 +119,42 @@ enum class Activity(val clip: String, val ticks: Int, val loop: Boolean, val ove
     PLEAD("plead", 40, false),
     FREED("freed", 50, false),
     THANK("thank", 40, false),
+    // A day with real places in it, and goods that change hands (the Living World)
+    SIT_DOWN("sit_down", 16, false),
+    STAND_UP("stand_up", 14, false),
+    YAWN("yawn", 40, false),
+    STRETCH("stretch", 40, false),
+    CLIMB("climb", 16, true),
+    EAT("eat", 60, true),
+    SIT_EAT("sit_eat", 60, true),
+    WASH("wash", 50, false),
+    DRAW_WATER("draw_water", 80, false),
+    PICK_UP("pick_up", 20, false),
+    PUT_DOWN("put_down", 20, false),
+    HAND_OVER("hand_over", 30, false),
+    RECEIVE("receive", 30, false),
+    PAY("pay", 30, false),
+    BOW("bow", 30, false),
+    NOD("nod", 20, false),
+    SHRUG("shrug", 24, false),
+    POINT("point", 30, false),
+    BROWSE("browse", 60, true),
+    SET_UP("set_up", 60, true),
+    SOW("sow", 40, true, true),
+    SCYTHE("scythe", 32, true),
+    GATHER("gather", 40, false),
+    CARRY_BASKET("carry_basket", 40, true, true),
+    GRIND("grind", 40, true),
+    POUR_SACK("pour_sack", 40, false),
+    CHOP("chop", 30, true),
+    RING_BELL("ring_bell", 30, true),
+    ANNOUNCE("announce", 80, true),
+    LIGHT_LAMP("light_lamp", 50, false),
+    KNOCK("knock", 24, false),
     ;
 
     /** Seated activities keep the townsperson on their seat. */
-    val seated: Boolean get() = this == SIT || this == SIT_DRINK || this == SIT_TALK || this == SCRIBE || this == DICE
+    val seated: Boolean get() = this == SIT || this == SIT_DRINK || this == SIT_TALK || this == SCRIBE || this == DICE || this == SIT_EAT
 
     companion object {
         fun byId(id: Int): Activity = entries.getOrElse(id) { NONE }

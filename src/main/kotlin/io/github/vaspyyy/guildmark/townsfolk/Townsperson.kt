@@ -41,6 +41,7 @@ import net.minecraft.world.entity.monster.Creeper
 import net.minecraft.world.entity.monster.Enemy
 import net.minecraft.world.entity.npc.Npc
 import net.minecraft.world.entity.player.Player
+import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.Level
 import net.minecraft.world.level.ServerLevelAccessor
 import net.minecraft.world.level.block.StairBlock
@@ -79,6 +80,11 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
 
     /** The line they're saying (a key under say.guildmark.), or empty. */
     val speech: String get() = entityData.get(SPEECH)
+
+    /** The goods in their hands (a loaf being handed over, a sack on its way to the mill), drawn by the client; empty if none. */
+    var carried: ItemStack
+        get() = entityData.get(CARRIED)
+        set(value) = entityData.set(CARRIED, value)
 
     /** Carrying a lantern (after dark). */
     var lantern: Boolean
@@ -193,6 +199,7 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
         builder.define(ACTION, 0)
         builder.define(SPEECH, "")
         builder.define(FLAGS, 0)
+        builder.define(CARRIED, ItemStack.EMPTY)
     }
 
     override fun onSyncedDataUpdated(key: EntityDataAccessor<*>) {
@@ -582,6 +589,7 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
         private val ACTION: EntityDataAccessor<Int> = SynchedEntityData.defineId(Townsperson::class.java, EntityDataSerializers.INT)
         private val SPEECH: EntityDataAccessor<String> = SynchedEntityData.defineId(Townsperson::class.java, EntityDataSerializers.STRING)
         private val FLAGS: EntityDataAccessor<Byte> = SynchedEntityData.defineId(Townsperson::class.java, EntityDataSerializers.BYTE)
+        private val CARRIED: EntityDataAccessor<ItemStack> = SynchedEntityData.defineId(Townsperson::class.java, EntityDataSerializers.ITEM_STACK)
         private const val FLAG_LANTERN = 1
         private const val FLAG_LEADER = 2
 
