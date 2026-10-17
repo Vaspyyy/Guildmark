@@ -17,6 +17,7 @@ import io.github.vaspyyy.guildmark.registry.ModVillagers
 import io.github.vaspyyy.guildmark.wardfire.WardfireSites
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
+import net.minecraft.core.Holder
 import net.minecraft.core.particles.ParticleTypes
 import net.minecraft.resources.Identifier
 import net.minecraft.server.level.ServerLevel
@@ -25,6 +26,7 @@ import net.minecraft.sounds.SoundSource
 import net.minecraft.world.entity.ai.memory.MemoryModuleType
 import net.minecraft.world.entity.ai.memory.WalkTarget
 import net.minecraft.world.entity.ai.village.poi.PoiManager
+import net.minecraft.world.entity.ai.village.poi.PoiType
 import net.minecraft.world.entity.ai.village.poi.PoiTypes
 import net.minecraft.world.entity.npc.villager.Villager
 import net.minecraft.world.level.Level
@@ -33,6 +35,7 @@ import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.level.levelgen.Heightmap
 import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
+import java.util.function.Predicate
 import kotlin.math.abs
 
 /** Boards as part of village life: daily rotation, villagers pinning notes, and a board for every village. */
@@ -47,13 +50,40 @@ object VillageBoards {
     /** Index of the current in-game day; sleeping through the night advances it. */
     fun day(level: Level): Long = level.overworldClockTime / 24000L
 
-    /** Pin a few notes on a fresh board so it isn't bare before villagers find it. */
-    fun pinStarterNotes(level: Level, anchor: BlockPos, facing: Direction) {
+    /** A capital's board, made with the land: a few notes so it isn't bare before anyone finds it. Once, ever. */
+    private fun pinStarterNotes(level: Level, anchor: BlockPos, facing: Direction) {
         val cells = BoardPart.entries.shuffled().take(STARTER_NOTES)
         for (part in cells) {
             val cell = level.getBlockEntity(QuestBoardBlock.cellPos(anchor, facing, part)) as? QuestBoardBlockEntity
             cell?.updateNote(QuestGenerator.generateAnonymous(level.random, QuestGenerator.tierAt(anchor.x, anchor.z), surroundings(level, anchor)))
         }
+    }
+
+    /**
+     * A board just put up: a few villagers about who haven't pinned their note today pin it there at once, so the board
+     * isn't bare. It's the note they'd have pinned anyway; however many boards go up, nobody pins twice in a day.
+     */
+    fun setUp(level: Level, anchor: BlockPos, facing: Direction) {
+        val serverLevel = level as? ServerLevel ?: return
+        val today = day(serverLevel)
+        val cells = BoardPart.entries.mapNotNull {
+            serverLevel.getBlockEntity(QuestBoardBlock.cellPos(anchor, facing, it)) as? QuestBoardBlockEntity
+        }
+        val villagers = serverLevel.getEntitiesOfClass(Villager::class.java, AABB(anchor).inflate(VILLAGER_RANGE)) {
+            it.isAlive && !it.isBaby && !it.isSleeping && it.getData(ModAttachments.LAST_PINNED_DAY) != today
+        }
+        for ((villager, cell) in villagers.shuffled().zip(cells.shuffled()).take(STARTER_NOTES)) {
+            pinNote(serverLevel, villager, cell, facing, cells)
+        }
+    }
+
+    /** The board (anchor cell) already serving where [pos] is: one in reach of it, or of its village's bell. */
+    fun boardInReach(level: ServerLevel, pos: BlockPos): BlockPos? {
+        val poi = level.poiManager
+        val board = Predicate<Holder<PoiType>> { it.`is`(ModVillagers.GUILDMASTER_POI.key!!) }
+        poi.findClosest(board, pos, VILLAGE_BOARD_RADIUS, PoiManager.Occupancy.ANY).orElse(null)?.let { return it }
+        val bell = poi.findClosest({ it.`is`(PoiTypes.MEETING) }, pos, VILLAGE_BOARD_RADIUS, PoiManager.Occupancy.ANY).orElse(null) ?: return null
+        return poi.findClosest(board, bell, VILLAGE_BOARD_RADIUS, PoiManager.Occupancy.ANY).orElse(null)
     }
 
     /** Runs on the anchor cell of every loaded board. */

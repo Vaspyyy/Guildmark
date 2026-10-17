@@ -11,8 +11,10 @@ import net.minecraft.core.particles.ParticleTypes
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.sounds.SoundEvents
 import net.minecraft.sounds.SoundSource
+import net.minecraft.util.RandomSource
 import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.phys.Vec3
+import java.util.SplittableRandom
 
 /**
  * What the bounty boards post. Each day a board puts up a notice on every outlaw captain at large within reach, nearest
@@ -51,20 +53,29 @@ object BountyBoards {
         val pinned = cells.mapNotNull { it.note }
         val tier = QuestGenerator.tierAt(anchor.x, anchor.z)
         val around = VillageBoards.surroundings(level, anchor)
-        val random = level.random
+        // Each notice reads the same all day, on every board and however often it goes up: no board to put up and
+        // break again until a better one shows
         for (notice in Bounties.wanted(level, anchor)) {
             if (empty.isEmpty()) return
             if (pinned.any { it.type == QuestType.BOUNTY && it.site == notice.site }) continue
-            val note = QuestGenerator.generateWhere(random, tier, around, POSTER) { it.type == QuestType.BOUNTY } ?: break
+            val note = QuestGenerator.generateWhere(daily(level, today, notice.site.toLong()), tier, around, POSTER) { it.type == QuestType.BOUNTY } ?: break
             empty.removeFirst().updateNote(Bounties.dress(note, notice))
         }
         val hunted = pinned.filter { it.type == QuestType.SLAY }.mapTo(HashSet()) { it.target }
         while (empty.isNotEmpty()) {
-            val note = QuestGenerator.generateWhere(random, tier, around, POSTER) { it.type == QuestType.SLAY && it.target !in hunted } ?: break
+            val key = HUNTS + hunted.map { it.toString() }.sorted().hashCode()
+            val note = QuestGenerator.generateWhere(daily(level, today, key), tier, around, POSTER) { it.type == QuestType.SLAY && it.target !in hunted } ?: break
             hunted.add(note.target)
             empty.removeFirst().updateNote(note)
         }
     }
+
+    /** Sets the hunts' notices apart from the outlaws', which go by their band's number. */
+    private const val HUNTS = 1L shl 40
+
+    /** The same every time it's asked for [key] on [day]. */
+    private fun daily(level: ServerLevel, day: Long, key: Long): RandomSource =
+        RandomSource.create(SplittableRandom(level.seed xor day * 0x2545F4914F6CDD1DL xor key * 0x9E3779B97F4A7C15uL.toLong()).nextLong())
 
     /** A hunt whose beast no longer lives in reach. */
     private fun huntOver(level: ServerLevel, anchor: BlockPos, note: QuestNote): Boolean =

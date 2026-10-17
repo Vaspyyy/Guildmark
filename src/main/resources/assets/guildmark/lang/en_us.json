@@ -18,6 +18,7 @@
   "quest.guildmark.deadline": "Deadline: %s days once taken",
   "gui.guildmark.take_contract": "Take Contract",
   "message.guildmark.no_note": "Nothing is pinned here",
+  "message.guildmark.village_has_board": "This village already has a quest board. Its villagers pin their notes there.",
   "quest.guildmark.progress": "Progress: %s / %s",
   "quest.guildmark.due_in": "Due in %s days",
   "quest.guildmark.expired": "Expired",

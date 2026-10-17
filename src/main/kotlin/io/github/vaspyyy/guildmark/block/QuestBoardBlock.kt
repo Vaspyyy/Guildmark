@@ -3,8 +3,10 @@ package io.github.vaspyyy.guildmark.block
 import io.github.vaspyyy.guildmark.guild.TownControl
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
+import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.item.context.BlockPlaceContext
 import net.minecraft.world.level.Level
 import net.minecraft.world.level.block.entity.BlockEntity
 import net.minecraft.world.level.block.state.BlockBehaviour
@@ -28,7 +30,23 @@ class QuestBoardBlock(properties: BlockBehaviour.Properties) : NoticeBoardBlock(
         fun anchorPos(pos: BlockPos, state: BlockState): BlockPos = NoticeBoardBlock.anchorPos(pos, state)
     }
 
-    override fun fill(level: Level, anchor: BlockPos, facing: Direction) = VillageBoards.pinStarterNotes(level, anchor, facing)
+    override fun fill(level: Level, anchor: BlockPos, facing: Direction) = VillageBoards.setUp(level, anchor, facing)
+
+    /**
+     * One board to a village: a second near the same villagers would only split it in two, its standing, its advances,
+     * its notes and its Guildmaster. Only the server knows where the boards are, so it refuses, says why and puts the
+     * board back in the hand the client already took it from.
+     */
+    override fun getStateForPlacement(context: BlockPlaceContext): BlockState? {
+        val state = super.getStateForPlacement(context) ?: return null
+        val level = context.level as? ServerLevel ?: return state
+        if (VillageBoards.boardInReach(level, context.clickedPos) == null) return state
+        (context.player as? ServerPlayer)?.let {
+            it.sendOverlayMessage(Component.translatable("message.guildmark.village_has_board"))
+            it.containerMenu.sendAllDataToRemote()
+        }
+        return null
+    }
 
     // Rotating notes and calling villagers over
     override fun tick(level: ServerLevel, anchor: BlockPos, state: BlockState) = VillageBoards.tickBoard(level, anchor, state)
