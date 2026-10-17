@@ -157,7 +157,7 @@ object Props {
         Activity.CLAP, Activity.LAUGH, Activity.LISTEN, Activity.SIT, Activity.SIT_TALK, Activity.WIPE, Activity.POUR,
         Activity.LUTE, Activity.PRAY, Activity.SWEEP, Activity.CARRY,
         Activity.READ, Activity.KNEEL, Activity.COUNT, Activity.DICE, Activity.SCRIBE, Activity.CONJURE, Activity.LECTURE,
-        Activity.PICK_LOCK, Activity.LURK,
+        Activity.PICK_LOCK, Activity.LURK, Activity.BOUND, Activity.PLEAD, Activity.FREED, Activity.THANK,
     )
 
     /** Work for the right hand only (waving, a mug, the sack on the shoulder). */
