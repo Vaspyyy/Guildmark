@@ -127,6 +127,12 @@ object HomesteadRegistry {
     val LEDGER = sound("homestead.ledger", 12f)
     /** Scaffolding poles clattering up or down. */
     val SCAFFOLD = sound("homestead.scaffold", 24f)
+    /** The carter's handcart on its way, its wheels knocking and creaking (art/audio/make_stall_audio.py, as the rest of shipping's). */
+    val CARTER_WHEELS = sound("homestead.carter.wheels", 24f)
+    /** A sack heaped onto the carter's cart. */
+    val CARTER_LOAD = sound("homestead.carter.load", 16f)
+    /** The Marks in the Charter Post's purse, counted out into its owner's hand. */
+    val PURSE = sound("homestead.purse", 12f)
 
     fun id(name: String): Identifier = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, name)
 

@@ -115,7 +115,7 @@ class Homesteads(
             true
         }
 
-        /** Everything homesteads hook into: their registries, payloads, the server tick, the land's protection, the command. */
+        /** Everything homesteads hook into: their registries, payloads, the server tick, the land's protection, shipping, the command. */
         fun register(modBus: IEventBus) {
             HomesteadRegistry.BLOCKS.register(modBus)
             HomesteadRegistry.ITEMS.register(modBus)
@@ -146,6 +146,7 @@ class Homesteads(
             bus.addListener(BlockEvent.FarmlandTrampleEvent::class.java, HomesteadProtection::onTrample)
             bus.addListener(BlockDropsEvent::class.java, HomesteadProtection::onDrops)
             bus.addListener(PlayerSetSpawnEvent::class.java, HomesteadProtection::onSpawnSet)
+            HomesteadShipping.register()
         }
 
         // ---- For the rest of the game ----

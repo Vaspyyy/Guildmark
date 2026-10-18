@@ -21,7 +21,8 @@ import java.util.UUID
 
 /**
  * The ledger kept at a homestead's Charter Post: its owner and their party open it there to see the plot, the tier and
- * the next, what the build needs and has, and how the crew is getting on; the owner commissions the next tier from it,
+ * the next, what the build needs and has, and how the crew is getting on, and on its shipping page what the carters
+ * have taken to market (see [HomesteadShipping]); the owner commissions the next tier from it, empties the post's purse
  * or gives the charter up. Anyone else using the post is told whose land it is.
  */
 object HomesteadLedger {
@@ -30,6 +31,8 @@ object HomesteadLedger {
     const val REFRESH = 2
     /** Builds round whatever holds the build up (the ledger's button, when something can't be moved). */
     const val BUILD_ROUND = 3
+    /** The owner takes the Marks the carters have left in the post's purse. */
+    const val COLLECT = 4
 
     private val lastCheck = HashMap<UUID, Long>()
 
@@ -69,7 +72,7 @@ object HomesteadLedger {
         val payload = LedgerPayload(
             h.id, h.ownerName, h.owner == player.uuid, h.tier, if (h.building) h.build.tier else h.tier, site?.stage?.ordinal ?: -1,
             laid, total, next?.marks ?: 0, TownControl.marks(player), going?.crew ?: 0, BuilderCrew.builders(h.id).count { !it.leaving },
-            eta, bill, left, crate, short, site?.blocked, h.facing.get2DDataValue(), h.post, map(level, h),
+            eta, bill, left, crate, short, site?.blocked, h.facing.get2DDataValue(), h.post, map(level, h), HomesteadShipping.view(level, h),
         )
         PacketDistributor.sendToPlayer(player, payload)
     }
@@ -103,6 +106,10 @@ object HomesteadLedger {
                 val site = HomesteadWorks.live(h.id) ?: return
                 val step = site.blockedAt
                 if (step >= 0) site.skip(step)
+                send(level, player, h)
+            }
+            COLLECT -> {
+                HomesteadShipping.collect(level, player, h)
                 send(level, player, h)
             }
         }

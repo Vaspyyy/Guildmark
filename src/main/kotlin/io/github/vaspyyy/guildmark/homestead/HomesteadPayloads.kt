@@ -130,9 +130,59 @@ data class ClaimCheckPayload(val post: BlockPos, val facing: Int) : CustomPacket
 }
 
 /**
+ * A homestead's shipping as its ledger shows it (see [HomesteadShipping]): whether shipping is on, the Marks in the
+ * post's purse, whether a capital's market is within the carters' reach and the capital's name ([place]; empty if it
+ * couldn't be found), the ticks until the carter next comes ([next]; 0 while the morning's shipment is due), the carter
+ * at the crates now ([carter], an entity id, or -1), where the shipping crates stand, what's in them (of each good the
+ * market deals in, by [io.github.vaspyyy.guildmark.economy.Good] ordinal, and how many other things, which stay), and
+ * the latest shipments as the ledger words them.
+ */
+class ShippingView(
+    val on: Boolean,
+    val purse: Int,
+    val reach: Boolean,
+    val place: String,
+    val next: Int,
+    val carter: Int,
+    val crates: List<BlockPos>,
+    val goods: IntArray,
+    val others: Int,
+    val notes: List<Component>,
+) {
+    fun write(buf: RegistryFriendlyByteBuf) {
+        buf.writeBoolean(on)
+        buf.writeVarInt(purse)
+        buf.writeBoolean(reach)
+        buf.writeUtf(place)
+        buf.writeVarInt(next)
+        buf.writeVarInt(carter + 1)
+        val shown = crates.take(MAX_CRATES)
+        buf.writeVarInt(shown.size)
+        for (pos in shown) buf.writeBlockPos(pos)
+        buf.writeInts(goods)
+        buf.writeVarInt(others)
+        val told = notes.take(MAX_NOTES)
+        buf.writeVarInt(told.size)
+        for (note in told) ComponentSerialization.STREAM_CODEC.encode(buf, note)
+    }
+
+    companion object {
+        /** The most crates and shipments a ledger shows. */
+        private const val MAX_CRATES = 64
+        private const val MAX_NOTES = 16
+
+        fun read(buf: RegistryFriendlyByteBuf): ShippingView = ShippingView(
+            buf.readBoolean(), buf.readVarInt(), buf.readBoolean(), buf.readUtf(), buf.readVarInt(), buf.readVarInt() - 1,
+            List(buf.readVarInt().coerceIn(0, MAX_CRATES)) { buf.readBlockPos() }, buf.readInts(), buf.readVarInt(),
+            List(buf.readVarInt().coerceIn(0, MAX_NOTES)) { ComponentSerialization.STREAM_CODEC.decode(buf) },
+        )
+    }
+}
+
+/**
  * The homestead's ledger, for its owner or one of their party at the post: the plot as it stands from above ([map]:
  * a packed map colour per column of the charter's land), the tier and the one after it, what the build going up (or the
- * next tier) costs and what's still to come of it, what the supply crate holds, and the crew.
+ * next tier) costs and what's still to come of it, what the supply crate holds, the crew, and its [shipping].
  */
 data class LedgerPayload(
     val id: Int,
@@ -161,6 +211,7 @@ data class LedgerPayload(
     val facing: Int,
     val post: BlockPos,
     val map: ByteArray,
+    val shipping: ShippingView,
 ) : CustomPacketPayload {
     override fun type(): CustomPacketPayload.Type<LedgerPayload> = TYPE
 
@@ -191,6 +242,7 @@ data class LedgerPayload(
                 buf.writeByte(p.facing)
                 buf.writeBlockPos(p.post)
                 buf.writeByteArray(p.map)
+                p.shipping.write(buf)
             },
             { buf ->
                 LedgerPayload(
@@ -198,6 +250,7 @@ data class LedgerPayload(
                     buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(),
                     buf.readVarInt(), buf.readInts(), buf.readInts(), buf.readInts(), buf.readVarInt() - 1,
                     if (buf.readBoolean()) buf.readBlockPos() else null, buf.readByte().toInt(), buf.readBlockPos(), buf.readByteArray(8192),
+                    ShippingView.read(buf),
                 )
             },
         )

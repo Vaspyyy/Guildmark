@@ -3,6 +3,7 @@ package io.github.vaspyyy.guildmark.homestead
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.context.CommandContext
+import io.github.vaspyyy.guildmark.economy.GoodsList
 import io.github.vaspyyy.guildmark.homestead.plan.PlotShape
 import io.github.vaspyyy.guildmark.homestead.plan.Stuff
 import net.minecraft.commands.CommandSourceStack
@@ -27,6 +28,8 @@ import net.minecraft.world.level.Level
  *     /guildmark homestead supply      fills the supply crate with what's still to come of the build
  *     /guildmark homestead rush        the crew works ten times as fast for the rest of this tier
  *     /guildmark homestead info        how the homestead you're on (or yours) stands
+ *     /guildmark homestead ship        empties its shipping crates to market now, whether or not this morning's went
+ *                                      ("ship carter" sends the carter up the road to do it)
  *     /guildmark homestead stranger    the land treats you as a stranger (again to stop)
  *     /guildmark homestead remove      gives up the homestead you're on (or yours)
  */
@@ -44,6 +47,7 @@ object HomesteadCommand {
                         .then(Commands.literal("supply").executes { supply(it) })
                         .then(Commands.literal("rush").executes { rush(it) })
                         .then(Commands.literal("info").executes { info(it) })
+                        .then(Commands.literal("ship").executes { ship(it, false) }.then(Commands.literal("carter").executes { ship(it, true) }))
                         .then(Commands.literal("stranger").executes { stranger(it) })
                         .then(Commands.literal("remove").executes { remove(it) }),
                 ),
@@ -199,6 +203,44 @@ object HomesteadCommand {
                 )
             }, false)
         }
+        val book = ShippingBooks.get(level).open(h, HomesteadShipping.today(level))
+        val crates = HomesteadShipping.crates(level, h, book, load = false).size
+        val market = HomesteadShipping.target(level, h)?.let { HomesteadShipping.placeName(it.place) } ?: Component.literal("-")
+        source.sendSuccess({
+            Component.translatable("commands.guildmark.homestead.info_ship", book.purse, book.day, HomesteadShipping.today(level), crates, market)
+        }, false)
+        return 1
+    }
+
+    private fun ship(context: CommandContext<CommandSourceStack>, carter: Boolean): Int {
+        val source = context.source
+        val player = source.playerOrException
+        val level = overworld(source) ?: return 0
+        val h = target(source, level, player) ?: return 0
+        if (!HomesteadShipping.enabled()) {
+            source.sendFailure(Component.translatable("commands.guildmark.homestead.ship_off"))
+            return 0
+        }
+        val market = HomesteadShipping.target(level, h)
+        if (market == null) {
+            source.sendFailure(Component.translatable("commands.guildmark.homestead.ship_no_market"))
+            return 0
+        }
+        val book = ShippingBooks.get(level).open(h, HomesteadShipping.today(level))
+        if (carter) {
+            if (!Carter.send(level, h, book, forced = true)) {
+                source.sendFailure(Component.translatable("commands.guildmark.homestead.carter_failed"))
+                return 0
+            }
+            source.sendSuccess({ Component.translatable("commands.guildmark.homestead.carter") }, true)
+            return 1
+        }
+        val s = HomesteadShipping.ship(level, h, book, market).shipment
+        val place = HomesteadShipping.placeName(market.place)
+        source.sendSuccess({
+            if (s.nothing) Component.translatable("commands.guildmark.homestead.ship_nothing", place, GoodsList.of(s.left))
+            else Component.translatable("commands.guildmark.homestead.ship", GoodsList.of(s.sold), place, s.marks, book.purse)
+        }, true)
         return 1
     }
 
