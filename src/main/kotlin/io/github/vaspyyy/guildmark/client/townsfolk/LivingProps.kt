@@ -53,9 +53,13 @@ internal object LivingProps {
     private val LEFT_CARRIED = setOf("lantern", "fan", "book", "basket")
 
     /** Work for the right hand only (the left keeps a lantern or a book): every other Living World clip uses both. */
-    private val RIGHT_ONLY = setOf(Activity.KNOCK, Activity.POINT, Activity.YAWN)
+    private val RIGHT_ONLY = setOf(
+        Activity.KNOCK, Activity.POINT, Activity.YAWN,
+        // The talking gestures that use one hand, the other hanging or walking
+        Activity.GOSSIP, Activity.SHUSH, Activity.WAVE_OFF, Activity.TIP_HAT, Activity.INTRODUCE, Activity.WAVE_WALK, Activity.NOD_WALK,
+    )
     private val LEFT_ONLY = setOf(Activity.CARRY_BASKET)
-    private val FREE = setOf(Activity.NOD)
+    private val FREE = setOf(Activity.NOD, Activity.SIGH)
 
     private val defaults = HashMap<String, ItemStack>()
 

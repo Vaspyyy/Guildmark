@@ -127,7 +127,8 @@ class Talking private constructor(
     /** The body turns to [at] at [TURN] degrees a tick, the head following [who]'s eyes; seated, only the head turns. */
     private fun turn(p: Townsperson, at: Vec3, who: Entity?) {
         if (who != null) p.lookControl.setLookAt(who, 30f, 30f) else p.lookControl.setLookAt(at.x, at.y, at.z, 30f, 30f)
-        if (seated || station && paused < 0) return
+        // At work the hands lift off it before they turn (PAUSE_WORK's first ticks)
+        if (seated || station && (paused < 0 || p.level().gameTime - paused < LIFT)) return
         p.face(Mth.approachDegrees(p.yBodyRot, p.yawTo(at), TURN))
     }
 
@@ -211,6 +212,9 @@ class Talking private constructor(
         /** The most ticks they finish the move they're in before setting their work down, and how far into that they speak. */
         private const val SETTLE = 30
         private const val SET_DOWN = 12
+
+        /** Ticks into setting their work down before they begin to turn, the hands off it. */
+        private const val LIFT = 5
 
         /** The most ticks a farewell plays before they turn back to their day. */
         private const val FAREWELL = 40

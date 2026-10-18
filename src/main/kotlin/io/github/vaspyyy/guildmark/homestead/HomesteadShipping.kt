@@ -11,6 +11,7 @@ import io.github.vaspyyy.guildmark.economy.Lot
 import io.github.vaspyyy.guildmark.economy.Lots
 import io.github.vaspyyy.guildmark.economy.Markets
 import io.github.vaspyyy.guildmark.economy.SupplierLink
+import io.github.vaspyyy.guildmark.economy.Suppliers
 import io.github.vaspyyy.guildmark.registry.ModItems
 import io.github.vaspyyy.guildmark.village.VillageNames
 import net.minecraft.ChatFormatting
@@ -240,7 +241,8 @@ object HomesteadShipping {
     /** Whether [h]'s crates (those loaded) hold anything [target]'s market would take now: else no carter comes for it. */
     private fun wanted(level: ServerLevel, h: Homestead, book: Book, target: Target): Boolean {
         val held = held(crates(level, h, book, load = false))
-        return Good.TRADED.any { held[it.ordinal] > 0 && Lots.sell(target.entry.market, target.entry.town, it) != null }
+        val share = Suppliers.share(level, target.entry.capital, h.owner)
+        return Good.TRADED.any { held[it.ordinal] > 0 && Lots.sell(target.entry.market, target.entry.town, it, share) != null }
     }
 
     // ---- Where the goods go ----
@@ -359,10 +361,12 @@ object HomesteadShipping {
         val held = held(crates)
         val sold = IntArray(Good.entries.size)
         val earned = IntArray(Good.entries.size)
+        // The owner's standing as a supplier there pays a little more, as it does selling by hand
+        val share = Suppliers.share(level, target.entry.capital, h.owner)
         for (good in Good.TRADED) {
             var have = held[good.ordinal]
             while (have > 0) {
-                val lot = Lots.sell(m, town, good) ?: break
+                val lot = Lots.sell(m, town, good, share) ?: break
                 val part = if (lot.count <= have) lot else Lot(have, floor(have * lot.each).toInt())
                 if (part.marks < 1) break
                 Lots.sold(m, good, part)
