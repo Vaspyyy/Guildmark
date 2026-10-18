@@ -367,3 +367,18 @@ word in a short line: "Cod" as "Caught" (the man's both, the woman's cheap), the
 "Mutton" as "Martin", the man's "Wheat is dear" as "We is dear", "hens are laying" as "hands" and "want of flour" as
 "one of flour", and the woman's "ovens" as "oven". The 226 takes were also checked for clicks (none) and clipping
 (none).
+
+`make_festival_voices.py` voices the grand festivals' 38 townsfolk lines (`fest_*`: the host's calls through the day,
+the helpers putting up the decorations, what dancers and the crowd say to a player, and the prize-giving) the same way,
+in the man's, the woman's and the old man's timbres (a child borrows the woman's, pitched up). Calls are read a little
+quicker, 35 cents higher and 2 dB over the speech level, with a touch more of the square's reverb. `PHONEMES` sounds the
+r of "targets", "archers", "start", "harvest", "barns", "dark", "lantern" and "answers" for the reason above. Checked
+with Whisper base.en on the encoded files: 105 of the 114 come back exactly as written, and the rest are heard as
+near-homophones ("Mind the latter, who's got the penance?", "Harvest in", "Upper bit"). Its `sounds` stage prints the
+`sounds.json` entries.
+
+```
+<venv>/bin/python -I -B art/audio/make_festival_voices.py tts --model <dl>/kokoro-v1.0.onnx --voices <dl>/voices-v1.0.bin --out <raw-dir> [--timbres man] [--keys chat] [--espeak-data <dir>]
+python3 -B art/audio/make_festival_voices.py process --raw <raw-dir> --assets src/main/resources/assets/guildmark [--timbres ...] [--keys ...] [--wav <dir>]
+python3 -B art/audio/make_festival_voices.py sounds
+```

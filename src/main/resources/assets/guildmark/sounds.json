@@ -125,6 +125,690 @@
       "guildmark:season/sting_winter"
     ]
   },
+  "townsfolk.voice.man.fest_setup_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_setup_0"
+    ],
+    "subtitle": "say.guildmark.fest_setup_0"
+  },
+  "townsfolk.voice.man.fest_setup_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_setup_1"
+    ],
+    "subtitle": "say.guildmark.fest_setup_1"
+  },
+  "townsfolk.voice.man.fest_setup_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_setup_2"
+    ],
+    "subtitle": "say.guildmark.fest_setup_2"
+  },
+  "townsfolk.voice.man.fest_setup_3": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_setup_3"
+    ],
+    "subtitle": "say.guildmark.fest_setup_3"
+  },
+  "townsfolk.voice.man.fest_ribbonwake_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_ribbonwake_0"
+    ],
+    "subtitle": "say.guildmark.fest_ribbonwake_0"
+  },
+  "townsfolk.voice.man.fest_ribbonwake_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_ribbonwake_1"
+    ],
+    "subtitle": "say.guildmark.fest_ribbonwake_1"
+  },
+  "townsfolk.voice.man.fest_ribbonwake_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_ribbonwake_2"
+    ],
+    "subtitle": "say.guildmark.fest_ribbonwake_2"
+  },
+  "townsfolk.voice.man.fest_sunhearth_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_sunhearth_0"
+    ],
+    "subtitle": "say.guildmark.fest_sunhearth_0"
+  },
+  "townsfolk.voice.man.fest_sunhearth_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_sunhearth_1"
+    ],
+    "subtitle": "say.guildmark.fest_sunhearth_1"
+  },
+  "townsfolk.voice.man.fest_sunhearth_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_sunhearth_2"
+    ],
+    "subtitle": "say.guildmark.fest_sunhearth_2"
+  },
+  "townsfolk.voice.man.fest_sheafmoot_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_sheafmoot_0"
+    ],
+    "subtitle": "say.guildmark.fest_sheafmoot_0"
+  },
+  "townsfolk.voice.man.fest_sheafmoot_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_sheafmoot_1"
+    ],
+    "subtitle": "say.guildmark.fest_sheafmoot_1"
+  },
+  "townsfolk.voice.man.fest_sheafmoot_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_sheafmoot_2"
+    ],
+    "subtitle": "say.guildmark.fest_sheafmoot_2"
+  },
+  "townsfolk.voice.man.fest_lanternrise_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_lanternrise_0"
+    ],
+    "subtitle": "say.guildmark.fest_lanternrise_0"
+  },
+  "townsfolk.voice.man.fest_lanternrise_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_lanternrise_1"
+    ],
+    "subtitle": "say.guildmark.fest_lanternrise_1"
+  },
+  "townsfolk.voice.man.fest_lanternrise_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_lanternrise_2"
+    ],
+    "subtitle": "say.guildmark.fest_lanternrise_2"
+  },
+  "townsfolk.voice.man.fest_evening_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_evening_0"
+    ],
+    "subtitle": "say.guildmark.fest_evening_0"
+  },
+  "townsfolk.voice.man.fest_evening_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_evening_1"
+    ],
+    "subtitle": "say.guildmark.fest_evening_1"
+  },
+  "townsfolk.voice.man.fest_evening_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_evening_2"
+    ],
+    "subtitle": "say.guildmark.fest_evening_2"
+  },
+  "townsfolk.voice.man.fest_host_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_host_0"
+    ],
+    "subtitle": "say.guildmark.fest_host_0"
+  },
+  "townsfolk.voice.man.fest_host_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_host_1"
+    ],
+    "subtitle": "say.guildmark.fest_host_1"
+  },
+  "townsfolk.voice.man.fest_host_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_host_2"
+    ],
+    "subtitle": "say.guildmark.fest_host_2"
+  },
+  "townsfolk.voice.man.fest_busy_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_busy_0"
+    ],
+    "subtitle": "say.guildmark.fest_busy_0"
+  },
+  "townsfolk.voice.man.fest_busy_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_busy_1"
+    ],
+    "subtitle": "say.guildmark.fest_busy_1"
+  },
+  "townsfolk.voice.man.fest_chat_ribbonwake_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_chat_ribbonwake_0"
+    ],
+    "subtitle": "say.guildmark.fest_chat_ribbonwake_0"
+  },
+  "townsfolk.voice.man.fest_chat_ribbonwake_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_chat_ribbonwake_1"
+    ],
+    "subtitle": "say.guildmark.fest_chat_ribbonwake_1"
+  },
+  "townsfolk.voice.man.fest_chat_ribbonwake_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_chat_ribbonwake_2"
+    ],
+    "subtitle": "say.guildmark.fest_chat_ribbonwake_2"
+  },
+  "townsfolk.voice.man.fest_chat_sunhearth_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_chat_sunhearth_0"
+    ],
+    "subtitle": "say.guildmark.fest_chat_sunhearth_0"
+  },
+  "townsfolk.voice.man.fest_chat_sunhearth_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_chat_sunhearth_1"
+    ],
+    "subtitle": "say.guildmark.fest_chat_sunhearth_1"
+  },
+  "townsfolk.voice.man.fest_chat_sunhearth_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_chat_sunhearth_2"
+    ],
+    "subtitle": "say.guildmark.fest_chat_sunhearth_2"
+  },
+  "townsfolk.voice.man.fest_chat_sheafmoot_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_chat_sheafmoot_0"
+    ],
+    "subtitle": "say.guildmark.fest_chat_sheafmoot_0"
+  },
+  "townsfolk.voice.man.fest_chat_sheafmoot_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_chat_sheafmoot_1"
+    ],
+    "subtitle": "say.guildmark.fest_chat_sheafmoot_1"
+  },
+  "townsfolk.voice.man.fest_chat_sheafmoot_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_chat_sheafmoot_2"
+    ],
+    "subtitle": "say.guildmark.fest_chat_sheafmoot_2"
+  },
+  "townsfolk.voice.man.fest_chat_lanternrise_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_chat_lanternrise_0"
+    ],
+    "subtitle": "say.guildmark.fest_chat_lanternrise_0"
+  },
+  "townsfolk.voice.man.fest_chat_lanternrise_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_chat_lanternrise_1"
+    ],
+    "subtitle": "say.guildmark.fest_chat_lanternrise_1"
+  },
+  "townsfolk.voice.man.fest_chat_lanternrise_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_chat_lanternrise_2"
+    ],
+    "subtitle": "say.guildmark.fest_chat_lanternrise_2"
+  },
+  "townsfolk.voice.man.fest_gather": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_gather"
+    ],
+    "subtitle": "say.guildmark.fest_gather"
+  },
+  "townsfolk.voice.man.fest_winner": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/fest_winner"
+    ],
+    "subtitle": "say.guildmark.fest_winner"
+  },
+  "townsfolk.voice.woman.fest_setup_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_setup_0"
+    ],
+    "subtitle": "say.guildmark.fest_setup_0"
+  },
+  "townsfolk.voice.woman.fest_setup_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_setup_1"
+    ],
+    "subtitle": "say.guildmark.fest_setup_1"
+  },
+  "townsfolk.voice.woman.fest_setup_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_setup_2"
+    ],
+    "subtitle": "say.guildmark.fest_setup_2"
+  },
+  "townsfolk.voice.woman.fest_setup_3": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_setup_3"
+    ],
+    "subtitle": "say.guildmark.fest_setup_3"
+  },
+  "townsfolk.voice.woman.fest_ribbonwake_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_ribbonwake_0"
+    ],
+    "subtitle": "say.guildmark.fest_ribbonwake_0"
+  },
+  "townsfolk.voice.woman.fest_ribbonwake_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_ribbonwake_1"
+    ],
+    "subtitle": "say.guildmark.fest_ribbonwake_1"
+  },
+  "townsfolk.voice.woman.fest_ribbonwake_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_ribbonwake_2"
+    ],
+    "subtitle": "say.guildmark.fest_ribbonwake_2"
+  },
+  "townsfolk.voice.woman.fest_sunhearth_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_sunhearth_0"
+    ],
+    "subtitle": "say.guildmark.fest_sunhearth_0"
+  },
+  "townsfolk.voice.woman.fest_sunhearth_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_sunhearth_1"
+    ],
+    "subtitle": "say.guildmark.fest_sunhearth_1"
+  },
+  "townsfolk.voice.woman.fest_sunhearth_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_sunhearth_2"
+    ],
+    "subtitle": "say.guildmark.fest_sunhearth_2"
+  },
+  "townsfolk.voice.woman.fest_sheafmoot_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_sheafmoot_0"
+    ],
+    "subtitle": "say.guildmark.fest_sheafmoot_0"
+  },
+  "townsfolk.voice.woman.fest_sheafmoot_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_sheafmoot_1"
+    ],
+    "subtitle": "say.guildmark.fest_sheafmoot_1"
+  },
+  "townsfolk.voice.woman.fest_sheafmoot_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_sheafmoot_2"
+    ],
+    "subtitle": "say.guildmark.fest_sheafmoot_2"
+  },
+  "townsfolk.voice.woman.fest_lanternrise_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_lanternrise_0"
+    ],
+    "subtitle": "say.guildmark.fest_lanternrise_0"
+  },
+  "townsfolk.voice.woman.fest_lanternrise_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_lanternrise_1"
+    ],
+    "subtitle": "say.guildmark.fest_lanternrise_1"
+  },
+  "townsfolk.voice.woman.fest_lanternrise_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_lanternrise_2"
+    ],
+    "subtitle": "say.guildmark.fest_lanternrise_2"
+  },
+  "townsfolk.voice.woman.fest_evening_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_evening_0"
+    ],
+    "subtitle": "say.guildmark.fest_evening_0"
+  },
+  "townsfolk.voice.woman.fest_evening_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_evening_1"
+    ],
+    "subtitle": "say.guildmark.fest_evening_1"
+  },
+  "townsfolk.voice.woman.fest_evening_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_evening_2"
+    ],
+    "subtitle": "say.guildmark.fest_evening_2"
+  },
+  "townsfolk.voice.woman.fest_host_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_host_0"
+    ],
+    "subtitle": "say.guildmark.fest_host_0"
+  },
+  "townsfolk.voice.woman.fest_host_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_host_1"
+    ],
+    "subtitle": "say.guildmark.fest_host_1"
+  },
+  "townsfolk.voice.woman.fest_host_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_host_2"
+    ],
+    "subtitle": "say.guildmark.fest_host_2"
+  },
+  "townsfolk.voice.woman.fest_busy_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_busy_0"
+    ],
+    "subtitle": "say.guildmark.fest_busy_0"
+  },
+  "townsfolk.voice.woman.fest_busy_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_busy_1"
+    ],
+    "subtitle": "say.guildmark.fest_busy_1"
+  },
+  "townsfolk.voice.woman.fest_chat_ribbonwake_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_chat_ribbonwake_0"
+    ],
+    "subtitle": "say.guildmark.fest_chat_ribbonwake_0"
+  },
+  "townsfolk.voice.woman.fest_chat_ribbonwake_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_chat_ribbonwake_1"
+    ],
+    "subtitle": "say.guildmark.fest_chat_ribbonwake_1"
+  },
+  "townsfolk.voice.woman.fest_chat_ribbonwake_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_chat_ribbonwake_2"
+    ],
+    "subtitle": "say.guildmark.fest_chat_ribbonwake_2"
+  },
+  "townsfolk.voice.woman.fest_chat_sunhearth_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_chat_sunhearth_0"
+    ],
+    "subtitle": "say.guildmark.fest_chat_sunhearth_0"
+  },
+  "townsfolk.voice.woman.fest_chat_sunhearth_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_chat_sunhearth_1"
+    ],
+    "subtitle": "say.guildmark.fest_chat_sunhearth_1"
+  },
+  "townsfolk.voice.woman.fest_chat_sunhearth_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_chat_sunhearth_2"
+    ],
+    "subtitle": "say.guildmark.fest_chat_sunhearth_2"
+  },
+  "townsfolk.voice.woman.fest_chat_sheafmoot_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_chat_sheafmoot_0"
+    ],
+    "subtitle": "say.guildmark.fest_chat_sheafmoot_0"
+  },
+  "townsfolk.voice.woman.fest_chat_sheafmoot_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_chat_sheafmoot_1"
+    ],
+    "subtitle": "say.guildmark.fest_chat_sheafmoot_1"
+  },
+  "townsfolk.voice.woman.fest_chat_sheafmoot_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_chat_sheafmoot_2"
+    ],
+    "subtitle": "say.guildmark.fest_chat_sheafmoot_2"
+  },
+  "townsfolk.voice.woman.fest_chat_lanternrise_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_chat_lanternrise_0"
+    ],
+    "subtitle": "say.guildmark.fest_chat_lanternrise_0"
+  },
+  "townsfolk.voice.woman.fest_chat_lanternrise_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_chat_lanternrise_1"
+    ],
+    "subtitle": "say.guildmark.fest_chat_lanternrise_1"
+  },
+  "townsfolk.voice.woman.fest_chat_lanternrise_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_chat_lanternrise_2"
+    ],
+    "subtitle": "say.guildmark.fest_chat_lanternrise_2"
+  },
+  "townsfolk.voice.woman.fest_gather": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_gather"
+    ],
+    "subtitle": "say.guildmark.fest_gather"
+  },
+  "townsfolk.voice.woman.fest_winner": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/fest_winner"
+    ],
+    "subtitle": "say.guildmark.fest_winner"
+  },
+  "townsfolk.voice.old.fest_setup_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_setup_0"
+    ],
+    "subtitle": "say.guildmark.fest_setup_0"
+  },
+  "townsfolk.voice.old.fest_setup_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_setup_1"
+    ],
+    "subtitle": "say.guildmark.fest_setup_1"
+  },
+  "townsfolk.voice.old.fest_setup_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_setup_2"
+    ],
+    "subtitle": "say.guildmark.fest_setup_2"
+  },
+  "townsfolk.voice.old.fest_setup_3": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_setup_3"
+    ],
+    "subtitle": "say.guildmark.fest_setup_3"
+  },
+  "townsfolk.voice.old.fest_ribbonwake_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_ribbonwake_0"
+    ],
+    "subtitle": "say.guildmark.fest_ribbonwake_0"
+  },
+  "townsfolk.voice.old.fest_ribbonwake_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_ribbonwake_1"
+    ],
+    "subtitle": "say.guildmark.fest_ribbonwake_1"
+  },
+  "townsfolk.voice.old.fest_ribbonwake_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_ribbonwake_2"
+    ],
+    "subtitle": "say.guildmark.fest_ribbonwake_2"
+  },
+  "townsfolk.voice.old.fest_sunhearth_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_sunhearth_0"
+    ],
+    "subtitle": "say.guildmark.fest_sunhearth_0"
+  },
+  "townsfolk.voice.old.fest_sunhearth_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_sunhearth_1"
+    ],
+    "subtitle": "say.guildmark.fest_sunhearth_1"
+  },
+  "townsfolk.voice.old.fest_sunhearth_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_sunhearth_2"
+    ],
+    "subtitle": "say.guildmark.fest_sunhearth_2"
+  },
+  "townsfolk.voice.old.fest_sheafmoot_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_sheafmoot_0"
+    ],
+    "subtitle": "say.guildmark.fest_sheafmoot_0"
+  },
+  "townsfolk.voice.old.fest_sheafmoot_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_sheafmoot_1"
+    ],
+    "subtitle": "say.guildmark.fest_sheafmoot_1"
+  },
+  "townsfolk.voice.old.fest_sheafmoot_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_sheafmoot_2"
+    ],
+    "subtitle": "say.guildmark.fest_sheafmoot_2"
+  },
+  "townsfolk.voice.old.fest_lanternrise_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_lanternrise_0"
+    ],
+    "subtitle": "say.guildmark.fest_lanternrise_0"
+  },
+  "townsfolk.voice.old.fest_lanternrise_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_lanternrise_1"
+    ],
+    "subtitle": "say.guildmark.fest_lanternrise_1"
+  },
+  "townsfolk.voice.old.fest_lanternrise_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_lanternrise_2"
+    ],
+    "subtitle": "say.guildmark.fest_lanternrise_2"
+  },
+  "townsfolk.voice.old.fest_evening_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_evening_0"
+    ],
+    "subtitle": "say.guildmark.fest_evening_0"
+  },
+  "townsfolk.voice.old.fest_evening_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_evening_1"
+    ],
+    "subtitle": "say.guildmark.fest_evening_1"
+  },
+  "townsfolk.voice.old.fest_evening_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_evening_2"
+    ],
+    "subtitle": "say.guildmark.fest_evening_2"
+  },
+  "townsfolk.voice.old.fest_host_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_host_0"
+    ],
+    "subtitle": "say.guildmark.fest_host_0"
+  },
+  "townsfolk.voice.old.fest_host_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_host_1"
+    ],
+    "subtitle": "say.guildmark.fest_host_1"
+  },
+  "townsfolk.voice.old.fest_host_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_host_2"
+    ],
+    "subtitle": "say.guildmark.fest_host_2"
+  },
+  "townsfolk.voice.old.fest_busy_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_busy_0"
+    ],
+    "subtitle": "say.guildmark.fest_busy_0"
+  },
+  "townsfolk.voice.old.fest_busy_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_busy_1"
+    ],
+    "subtitle": "say.guildmark.fest_busy_1"
+  },
+  "townsfolk.voice.old.fest_chat_ribbonwake_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_chat_ribbonwake_0"
+    ],
+    "subtitle": "say.guildmark.fest_chat_ribbonwake_0"
+  },
+  "townsfolk.voice.old.fest_chat_ribbonwake_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_chat_ribbonwake_1"
+    ],
+    "subtitle": "say.guildmark.fest_chat_ribbonwake_1"
+  },
+  "townsfolk.voice.old.fest_chat_ribbonwake_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_chat_ribbonwake_2"
+    ],
+    "subtitle": "say.guildmark.fest_chat_ribbonwake_2"
+  },
+  "townsfolk.voice.old.fest_chat_sunhearth_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_chat_sunhearth_0"
+    ],
+    "subtitle": "say.guildmark.fest_chat_sunhearth_0"
+  },
+  "townsfolk.voice.old.fest_chat_sunhearth_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_chat_sunhearth_1"
+    ],
+    "subtitle": "say.guildmark.fest_chat_sunhearth_1"
+  },
+  "townsfolk.voice.old.fest_chat_sunhearth_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_chat_sunhearth_2"
+    ],
+    "subtitle": "say.guildmark.fest_chat_sunhearth_2"
+  },
+  "townsfolk.voice.old.fest_chat_sheafmoot_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_chat_sheafmoot_0"
+    ],
+    "subtitle": "say.guildmark.fest_chat_sheafmoot_0"
+  },
+  "townsfolk.voice.old.fest_chat_sheafmoot_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_chat_sheafmoot_1"
+    ],
+    "subtitle": "say.guildmark.fest_chat_sheafmoot_1"
+  },
+  "townsfolk.voice.old.fest_chat_sheafmoot_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_chat_sheafmoot_2"
+    ],
+    "subtitle": "say.guildmark.fest_chat_sheafmoot_2"
+  },
+  "townsfolk.voice.old.fest_chat_lanternrise_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_chat_lanternrise_0"
+    ],
+    "subtitle": "say.guildmark.fest_chat_lanternrise_0"
+  },
+  "townsfolk.voice.old.fest_chat_lanternrise_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_chat_lanternrise_1"
+    ],
+    "subtitle": "say.guildmark.fest_chat_lanternrise_1"
+  },
+  "townsfolk.voice.old.fest_chat_lanternrise_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_chat_lanternrise_2"
+    ],
+    "subtitle": "say.guildmark.fest_chat_lanternrise_2"
+  },
+  "townsfolk.voice.old.fest_gather": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_gather"
+    ],
+    "subtitle": "say.guildmark.fest_gather"
+  },
+  "townsfolk.voice.old.fest_winner": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/fest_winner"
+    ],
+    "subtitle": "say.guildmark.fest_winner"
+  },
   "combat.swing_light": {
     "sounds": [
       "guildmark:combat/swing_light1",
