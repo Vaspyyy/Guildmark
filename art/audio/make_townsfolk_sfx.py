@@ -12,7 +12,8 @@ FluidSynth renders go (default build/townsfolk_music_work).
 
 The members of the three factions have work sounds too: a scholar's mage.page, mage.quill and mage.conjure, a knight's
 knight.clash, knight.post and knight.whetstone, a thief's thief.shake, thief.dice, thief.coin and thief.lockpick
-(make_faction_audio.py makes the factions' own sounds).
+(make_faction_audio.py makes the factions' own sounds). The town crier has the market board's and their scroll's:
+crier.chalk, crier.chalk_tap, crier.pin, crier.unroll and crier.roll_up.
 
 Everything is synthesised (numpy/scipy through sfxkit) or, for the tunes, composed here and played by
 FluidSynth's General MIDI nylon guitar. These are close-up sounds timed to the townsfolk's animations (the
@@ -1515,6 +1516,224 @@ def perform_tune(n, work, sf2, detune=8.0):
     x, over, short = level(x, TUNE_LOUDNESS, measure="integrated")
     return x, dict(title=TUNES[n - 1].__doc__.split("'")[1], over=over, short=short, notes=len(notes),
                    hits=len(hits))
+
+
+# =========================================================================== the town crier and the market board
+# At noon a townsperson cries the day's news in a capital's market square, reading from a parchment scroll (their
+# words are make_townsfolk_voices.py's CRIER lines), and pins it up on the market board, whose slate has the prices
+# chalked on it. These are the sounds of their hands: a line of chalk on the slate, the chalk tapped for a full stop,
+# a notice tacked to the board, the scroll opened and rolled shut. Like the voices they have no registry entries: the
+# game plays them by id (townsfolk.crier.chalk and so on). They happen out in the square, so each has the street's
+# slap off the house fronts instead of a room.
+SLATE = [640.0, 1170.0, 1890.0, 2760.0, 3910.0, 5300.0]  # the lowest modes of a writing slate in its frame (Hz)
+SLATE_T60 = [0.034, 0.028, 0.022, 0.017, 0.012, 0.009]
+SLATE_AMPS = [1.0, 0.8, 0.6, 0.45, 0.3, 0.2]
+ROLLER = [470.0, 1020.0, 1760.0]  # the scroll's wooden roller knocking in the hand
+
+
+def chalk_stroke(dur, rng, speed=1.0):
+    """one line of chalk drawn over slate: the stick dragged over the stone in a dry, gritty scratch (the chalk
+    catching and slipping on the slate a couple of hundred times a second, which buzzes, and crumbs breaking off it),
+    the slate ringing faintly under it; louder and brighter where the hand moves fastest"""
+    n = ns(dur)
+    s = bell(dur, rng.uniform(0.3, 0.42), 1.2, 1.6)
+    slip = 0.25 + 0.75 * smooth_random(dur, rng, 130 * speed, 0.0, 1.0) ** 2
+    scratch = bp(colored(dur, rng, -1.0), 900, 6500) * slip * s
+    grit = crackle(dur, rng, 1100 * speed * s + 40, decay=0.0003, f_lo=1800, f_hi=8500, size_var=0.7) * s
+    # the stick and slip: a jittering train of tiny catches, quicker as the hand speeds up, through the slate
+    chatter = np.zeros(n)
+    i = 0.0
+    while i < n:
+        k = int(i)
+        chatter[k] = s[k] * rng.uniform(0.5, 1.0)
+        i += SR / (190.0 * speed * (0.75 + 0.5 * s[k])) * rng.uniform(0.8, 1.2)
+    chatter = resonators(chatter, SLATE, SLATE_T60, SLATE_AMPS)
+    board = resonators(0.5 * nrm(scratch) + nrm(grit), SLATE, SLATE_T60, SLATE_AMPS)
+    y = nrm(scratch) + 0.5 * nrm(grit) + 0.35 * nrm(chatter) + 0.25 * nrm(board)
+    return nrm(y) * speed ** 0.5
+
+
+def chalk_squeak(dur, rng, f0):
+    """the chalk biting for a moment and squealing: stick and slip so quick it sings, a thin high note with a few
+    harmonics that wavers with the pressure of the hand, its loudness flickering"""
+    t = tvec(dur)
+    f = f0 * (1.0 + 0.025 * smooth_random(dur, rng, 30, -1.0, 1.0) + 0.02 * np.linspace(1.0, -1.0, len(t)))
+    ph = 2 * np.pi * np.cumsum(f) / SR
+    y = np.sin(ph) + 0.45 * np.sin(2 * ph + 0.7) + 0.18 * np.sin(3 * ph + 1.9) + 0.07 * np.sin(4 * ph + 0.3)
+    return y * bell(dur, 0.25, 1.0, 1.4) * (0.65 + 0.35 * smooth_random(dur, rng, 70, 0.0, 1.0))
+
+
+@effect("crier.chalk", variants=4, subtitle="Chalk scratches on slate", loud=-18.0, max_len=0.66, fade_out=0.08)
+def crier_chalk(v, rng):
+    """a price chalked on the market board's slate: one quick line, the chalk's tip touching down with a tick, then a
+    dry, gritty scratch and a little squeak where the chalk bites. v1 a line that squeaks as it ends, v2 a quick
+    stroke that squeaks as it starts, v3 a long one with a squeak in its middle, v4 a short, soft one"""
+    stroke, speed, sq_at, sq_f, sq_len, sq_lev = [(0.36, 1.0, 0.74, 2650.0, 0.07, 0.24),
+                                                  (0.24, 1.25, 0.04, 2900.0, 0.05, 0.24),
+                                                  (0.46, 0.9, 0.45, 2350.0, 0.06, 0.2),
+                                                  (0.3, 0.8, 0.8, 2100.0, 0.05, 0.14)][v]
+    dur = stroke + 0.2
+    m = Mix(dur)
+    tick = knock(0.03, [f * 1.4 for f in SLATE[2:]], [0.004, 0.003, 0.0025, 0.002], [1, .7, .5, .3], rng, lo=1500,
+                 hi=11000, ex_len=0.0004)
+    m.add(nrm(tick), 0.0, 0.3)
+    m.add(chalk_stroke(stroke, rng, speed), 0.003, 1.0)
+    m.add(nrm(chalk_squeak(sq_len, rng, sq_f)), 0.003 + sq_at * (stroke - sq_len), sq_lev)
+    y = fit(m.out(), ns(dur))
+    return lead_in(street(lp(hp(y, 300), 10500), wet=0.06, seed=150 + v))
+
+
+def chalk_tick(rng, hard=1.0):
+    """the chalk's tip knocked on the slate: a hard little click with the slate's short ring behind it, the dull knock
+    of the board's wooden frame, and a crumb or two of chalk"""
+    tip = knock(0.04, [3100.0, 4700.0, 6900.0], [0.003, 0.0025, 0.002], [1, .7, .5], rng, lo=1500, hi=12000,
+                ex_len=0.0003)
+    ring = knock(0.15, SLATE, [t * 1.2 for t in SLATE_T60], SLATE_AMPS, rng, lo=500, hi=9000, ex_len=0.0006)
+    frame = knock(0.12, [185.0, 330.0, 590.0], [0.035, 0.028, 0.02], [1, .55, .3], rng, lo=90, hi=1800, ex_len=0.0012)
+    crumbs = grains(0.1, rng, 3 + int(3 * hard), 0.006, 0.02, 2500, 8000, t60=(0.002, 0.006))
+    m = Mix(0.2)
+    m.add(nrm(tip), 0.0, 0.5 * hard)
+    m.add(nrm(ring), 0.0, 0.55)
+    m.add(nrm(frame), 0.0005, 0.35)
+    m.add(nrm(crumbs), 0.004, 0.08)
+    return fit(m.out(), ns(0.2))
+
+
+@effect("crier.chalk_tap", variants=2, subtitle="Chalk taps the slate", loud=-22.0, max_len=0.3, fade_out=0.06,
+        limit=3.0)
+def crier_chalk_tap(v, rng):
+    """the chalk tapped on the slate for a full stop: v1 one firm tap, v2 a lighter one that bounces once"""
+    m = Mix(0.3)
+    m.add(chalk_tick(rng, [1.0, 0.8][v]), 0.0, 1.0)
+    if v == 1:
+        m.add(chalk_tick(rng, 0.4), 0.032, 0.22)
+    return lead_in(street(hp(fit(m.out(), ns(0.3)), 80), wet=0.06, seed=152 + v))
+
+
+def paper_flap(dur, rng, size=1.0):
+    """a slip of paper flapped flat against the board: a quick papery flutter (its edge shivering in the air it
+    pushes aside), a crisp crackle as it bends, and a soft slap as it meets the wood"""
+    s = bell(dur, 0.6, 1.2, 0.8)
+    flutter = bp(white(dur, rng), 900, 7000) * s * (0.55 + 0.45 * np.sin(2 * np.pi * rng.uniform(18, 26) / size *
+                                                                         tvec(dur) + rng.uniform(0, 6.3)) ** 2)
+    crack = crackle(dur, rng, 450 * s + 20, decay=0.0005, f_lo=1500, f_hi=8000, size_var=0.8)
+    slap_ = bp(white(0.04, rng), 300, 4000) * np.exp(-tvec(0.04) / 0.006)
+    wood = resonators(slap_, [210.0, 470.0, 830.0, 1350.0], [0.03, 0.025, 0.018, 0.012], [1, .7, .45, .25])
+    m = Mix(dur + 0.12)
+    m.add(nrm(flutter), 0.0, 0.55)
+    m.add(nrm(crack), 0.0, 0.3)
+    m.add(nrm(slap_), dur, 0.8 * size)
+    m.add(nrm(wood), dur, 0.35 * size)
+    return m.out()
+
+
+def tack(rng, push=1.0):
+    """a tack pushed through the paper into the board with a thumb: the point piercing the paper (a small, dry tick
+    and a tear), biting into the wood with a short creak of the grain, then the head pushed home with a dull knock
+    and a faint tick of iron"""
+    pierce = knock(0.03, [3600.0, 5200.0, 7400.0], [0.004, 0.003, 0.002], [1, .6, .4], rng, lo=2000, hi=12000,
+                   ex_len=0.0004)
+    tear = crackle(0.025, rng, 2500, decay=0.0003, f_lo=2000, f_hi=9000, size_var=0.5) * bell(0.025, 0.2, 1.0, 2.0)
+    n = ns(0.045)
+    grain = np.zeros(n)
+    i = 0.0
+    while i < n:  # the point catching and slipping in the wood's grain
+        grain[int(i)] = rng.uniform(0.5, 1.0)
+        i += SR / rng.uniform(330.0, 430.0)
+    creak = resonators(grain, [520.0, 980.0, 1650.0, 2400.0], [0.012, 0.01, 0.008, 0.006], [1, .7, .5, .3])
+    creak *= bell(0.045, 0.4, 1.0, 1.5)
+    home = knock(0.12, [230.0, 520.0, 900.0, 1450.0], [0.035, 0.028, 0.02, 0.014], [1, .7, .45, .25], rng, lo=120,
+                 hi=3500, ex_len=0.002)
+    head = modal(0.06, [4300.0, 6100.0], [0.03, 0.02], [1, .5], rng)
+    m = Mix(0.25)
+    m.add(nrm(pierce), 0.0, 0.35)
+    m.add(nrm(tear), 0.002, 0.25)
+    m.add(nrm(creak), 0.012, 0.3 * push)
+    m.add(nrm(home), 0.05, 0.8 * push)
+    m.add(thud(0.08, rng, f=240, decay=0.01, tone=0.2), 0.05, 0.4 * push)
+    m.add(nrm(head), 0.0505, 0.07)
+    return m.out()
+
+
+@effect("crier.pin", variants=3, subtitle="Notice pinned to the board", loud=-17.0, max_len=0.7, fade_out=0.12)
+def crier_pin(v, rng):
+    """the day's news put up on the market board: the slip of paper flapped flat against the boards, then a tack
+    pushed through it with a thumb. v1 a quick slap and one firm push, v2 a slower flap and the thumb pressing twice,
+    v3 a smaller slip, tacked lightly"""
+    flap_d = [0.12, 0.17, 0.1][v]
+    m = Mix(0.7)
+    m.add(paper_flap(flap_d, rng, size=[1.0, 1.15, 0.8][v]), 0.0, 1.0)
+    at = flap_d + [0.07, 0.09, 0.06][v]
+    m.add(tack(rng, [1.0, 0.9, 0.75][v]), at, [0.9, 0.85, 0.7][v])
+    if v == 1:  # pressed home again, harder: only the knock of the head and the thumb
+        again = knock(0.12, [235.0, 525.0, 910.0, 1460.0], [0.035, 0.028, 0.02, 0.014], [1, .7, .45, .25], rng,
+                      lo=120, hi=3500, ex_len=0.002)
+        m.add(nrm(again), at + 0.19, 0.5)
+        m.add(thud(0.08, rng, f=230, decay=0.01, tone=0.2), at + 0.19, 0.3)
+    return lead_in(street(fit(m.out(), ns(0.7)), wet=0.07, seed=154 + v))
+
+
+def parchment(dur, rng, rate, crisp=1.0, turns=7.0):
+    """parchment on the move: a dry rustle of the stiff skin (rate, a 0..1 curve, is how fast it moves), the crackle
+    of it bending (fine and dense where it moves fast; crisp sets how much), a few bigger crinkles, and a swell for
+    each turn of the roll as it comes off or goes on"""
+    n = ns(dur)
+    spin = 2 * np.pi * np.cumsum(turns * (0.5 + 0.5 * rate)) / SR + rng.uniform(0, 2 * np.pi)
+    turn = 0.35 + 0.65 * np.sin(spin) ** 2
+    rustle = bp(colored(dur, rng, -1.5), 450, 6500) * rate ** 1.2 * turn * smooth_random(dur, rng, 40, 0.6, 1.0)
+    fine = crackle(dur, rng, 900 * rate * crisp + 20, decay=0.0005, f_lo=1500, f_hi=8000, size_var=0.9) * rate
+    big = Mix(dur)
+    for i in np.nonzero(rng.random(n) < 16.0 * crisp * rate / SR)[0]:
+        f = float(np.exp(rng.uniform(np.log(1200.0), np.log(3500.0))))
+        k = knock(0.03, [f, f * 1.6, f * 2.3], [0.007, 0.005, 0.004], [1, .6, .35], rng, lo=800, hi=9000,
+                  ex_len=0.0015)
+        big.add(nrm(k), i / SR, rng.uniform(0.4, 1.0) * rate[i])
+    return nrm(0.6 * nrm(rustle) + nrm(fine) + 0.7 * nrm(fit(big.out(), n)))
+
+
+@effect("crier.unroll", variants=2, subtitle="Scroll unrolls", loud=-18.0, max_len=1.25, fade_out=0.15)
+def crier_unroll(v, rng):
+    """the crier's parchment scroll opened to read from: the roll sprung loose with a crackle and its wooden roller
+    knocking in the hand, the stiff skin unrolled between the hands in a dry, crisp rustle that quickens as it goes (a
+    swell for each turn that comes off the roll), then pulled taut with a soft snap. v1 opened in one smooth pull, v2
+    in two, with a catch between"""
+    dur = 1.2
+    m = Mix(dur)
+    m.add(nrm(crackle(0.06, rng, 1800, decay=0.0006, f_lo=1500, f_hi=8000) * bell(0.06, 0.3, 1.0, 1.5)), 0.0, 0.55)
+    m.add(nrm(knock(0.08, ROLLER, [0.025, 0.018, 0.012], [1, .6, .35], rng, lo=200, hi=4000)), 0.005, 0.3)
+    od = [0.8, 0.86][v]
+    pts = [[(0.0, 0.15), (0.15, 0.5), (0.55, 1.0), (0.72, 0.8), (od, 0.0)],
+           [(0.0, 0.2), (0.2, 0.75), (0.34, 0.25), (0.42, 0.3), (0.64, 1.0), (0.78, 0.8), (od, 0.0)]][v]
+    m.add(parchment(od, rng, env_points(pts, od), crisp=1.0, turns=7.0), 0.04, 0.85)
+    at = 0.04 + od - 0.03  # pulled taut: the sheet snapping flat between the hands, a soft, low thwap with a crackle
+    m.add(nrm(bp(white(0.03, rng), 250, 3000) * np.exp(-tvec(0.03) / 0.006)), at, 0.75)
+    m.add(nrm(sine_sweep(0.05, 170, 95, 3.0) * np.exp(-tvec(0.05) / 0.012)), at, 0.35)
+    m.add(nrm(crackle(0.05, rng, 1200, decay=0.0005, f_lo=2000, f_hi=8000) * np.exp(-tvec(0.05) / 0.015)), at + 0.003,
+          0.35)
+    return lead_in(street(lp(fit(m.out(), ns(dur)), 10000), wet=0.07, seed=158 + v))
+
+
+@effect("crier.roll_up", variants=2, subtitle="Scroll rolls shut", loud=-18.0, max_len=1.1, fade_out=0.15)
+def crier_roll_up(v, rng):
+    """the scroll rolled shut again: the skin curled over on itself and wound up between the palms in a softer,
+    sliding rustle (fewer crackles, its turns slipping over one another), then the roll squared off with a pat of the
+    hand and its roller knocking in the palm. v1 rolled briskly, v2 more slowly, patted twice"""
+    od = [0.72, 0.82][v]
+    dur = od + 0.3
+    m = Mix(dur)
+    pts = [[(0.0, 0.0), (0.08, 0.7), (0.4, 0.9), (0.62, 0.6), (od, 0.0)],
+           [(0.0, 0.0), (0.1, 0.55), (0.45, 0.75), (0.7, 0.5), (od, 0.0)]][v]
+    rate = env_points(pts, od)
+    m.add(parchment(od, rng, rate, crisp=0.55, turns=[5.0, 4.0][v]), 0.0, 0.85)
+    m.add(nrm(bp(colored(od, rng, -2.5), 300, 3000) * rate ** 1.5), 0.0, 0.3)
+    pats = [[od + 0.04], [od + 0.03, od + 0.16]][v]
+    for k, at in enumerate(pats):
+        g = 1.0 if k == 0 else 0.6
+        m.add(thud(0.12, rng, f=150, decay=0.014, tone=0.15), at, 0.6 * g)
+        m.add(nrm(bp(white(0.025, rng), 400, 4000) * np.exp(-tvec(0.025) / 0.005)), at, 0.3 * g)
+        m.add(nrm(knock(0.08, ROLLER, [0.025, 0.018, 0.012], [1, .6, .35], rng, lo=200, hi=4000)), at + 0.008,
+              0.35 * g)
+    return lead_in(street(lp(fit(m.out(), ns(dur)), 10000), wet=0.07, seed=160 + v))
 
 
 # =========================================================================== main
