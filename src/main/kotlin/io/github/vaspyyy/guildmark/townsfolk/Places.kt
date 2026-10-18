@@ -128,8 +128,12 @@ object Places {
         return access(level, pos, state) != null
     }
 
-    /** Where to stand to sit down on (and get up from) the seat at [pos]: the front if it's free, else a side. */
+    /**
+     * Where to stand to sit down on (and get up from) the seat at [pos]: the front if it's free, else a side; null
+     * if it's no longer a stair (broken or built over since the seat was picked).
+     */
     fun access(level: Level, pos: BlockPos, state: BlockState = level.getBlockState(pos)): BlockPos? {
+        if (state.block !is StairBlock) return null
         val front = seatFacing(state)
         return listOf(front, front.clockWise, front.counterClockWise)
             .map { pos.relative(it) }
