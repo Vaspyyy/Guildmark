@@ -3263,5 +3263,13 @@ import lamp_clips  # noqa: E402
 lamp_clips.make(sys.modules[__name__])
 
 
+# ================================================================== the caravan crew (art/scripts/road_clips.py)
+
+# Built on this kit, written with the rest: their clips, their props' tracks and moments into LivingSchedule.kt, and
+# CrewMoves.kt (the numbers the game places them by).
+import road_clips  # noqa: E402
+road_clips.build(sys.modules[__name__])
+
+
 if __name__ == '__main__':
     main(sys.argv)

@@ -177,6 +177,11 @@ object Props {
         Activity.PULL_CART,
         Activity.MINSTREL, Activity.CLAP_ALONG, Activity.FEST_HURRAH, Activity.TWIRL, Activity.COUPLE_TURN, Activity.RING_IN,
         Activity.HANG, Activity.RING_STEP, Activity.RING_STEP_L,
+        // The caravan crew (art/scripts/road_clips.py): the reins and the brake, the spear across the knees, the climbs
+        // down and up, the knife and the shaft, the load handed down, the arms over the head, the hands on the knees, the
+        // telling of it, the folded arms. (wounded, an overlay, keeps the right hand's)
+        Activity.DRIVE, Activity.DRIVE_URGE, Activity.DRIVE_BRAKE, Activity.RIDE_TAIL, Activity.JUMP_DOWN, Activity.CLIMB_UP,
+        Activity.CUT_LOOSE, Activity.COWER, Activity.HAND_DOWN, Activity.CATCH_BREATH, Activity.RECOUNT, Activity.GRUMBLE,
     )
 
     /** Work for the right hand only (waving, a mug, the sack on the shoulder). */
