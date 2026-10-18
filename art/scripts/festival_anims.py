@@ -352,9 +352,9 @@ c.mode('head', 'add')
 seal(c)
 
 
-# ---- hang (loop): up on the toes, both hands up before them at a garland's knot, working it in turn, and a tug to
+# ---- hang (loop): up on the toes, both hands up over the head at a garland's knot, working it in turn, and a tug to
 # pull it tight at the end of the bar
-KNOT = np.array([0.0, -9.5, -7.5])
+KNOT = np.array([0.0, -12.5, -4.5])
 c = fest('fest_hang', BAR, True, look=('citizen', 1), traces=hands_trace())
 for t in ticks(0, BAR, 2.5):
     ph = 2 * math.pi * t / BEAT
@@ -364,8 +364,8 @@ for t in ticks(0, BAR, 2.5):
     key_frame(c, t, fr, ease='linear')
     tug = bump(t, 28.0, 40.0)
     work = 1.0 - tug
-    rt = KNOT + np.array([-1.6 + 0.8 * work * math.cos(ph) - 2.2 * tug, 2.0 * work * math.sin(ph) + 1.2 * tug, 0.8 * work * math.cos(ph)])
-    lt = KNOT + np.array([1.6 - 0.8 * work * math.cos(ph + math.pi) + 2.2 * tug, 2.0 * work * math.sin(ph + math.pi) + 1.2 * tug,
+    rt = KNOT + np.array([-3.4 + 0.8 * work * math.cos(ph) - 1.6 * tug, 2.0 * work * math.sin(ph) + 1.2 * tug, 0.8 * work * math.cos(ph)])
+    lt = KNOT + np.array([3.4 - 0.8 * work * math.cos(ph + math.pi) + 1.6 * tug, 2.0 * work * math.sin(ph + math.pi) + 1.2 * tug,
                           0.8 * work * math.cos(ph + math.pi)])
     c.key('right_arm', t, reach('right_arm', fr, rt, palm=F, palm_w=0.2), ease='linear')
     c.key('left_arm', t, reach('left_arm', fr, lt, palm=F, palm_w=0.2), ease='linear')
