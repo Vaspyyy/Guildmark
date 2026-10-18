@@ -108,6 +108,18 @@ object GuildmarkConfig {
     val HANDCARTS: ModConfigSpec.BooleanValue = BUILDER
         .comment("The capitals' carters pull handcarts: sacks of grain from the fields to the mill, flour to the bakehouse and produce to the market, heaped on the cart's bed. Off, they carry the sacks on their shoulders.")
         .define("handcarts", true)
+    val CARAVANS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("The capitals' imports come on wagons that really drive in along their roads, three a day, whether anyone sees them or not: a driver and two guards on a horse-drawn wagon heaped with the real goods. A capital with no road has one surveyed to its nearest village and paved as the land loads. Off, the goods appear in the market at the hour, as they used to.")
+        .define("caravans", true)
+    val ROAD_AMBUSHES: ModConfigSpec.BooleanValue = BUILDER
+        .comment("An outlaw band camped near a capital's road can waylay its wagons: the load lost, a wreck by the road, the driver back at the gate, dearer goods and hungry townsfolk. Each road keeps count of its trouble and closes bit by bit if it's left alone; it opens again when the band is broken, wagons get in under escort, or it quiets down. Needs Caravans and Outlaw Bands.")
+        .define("roadAmbushes", true)
+    val CARAVAN_ESCORTS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("While a capital's road is troubled its quest board posts a note to see the next wagon in, and a wanted note on the band working the road.")
+        .define("caravanEscorts", true)
+    val ROAD_SALVAGE: ModConfigSpec.BooleanValue = BUILDER
+        .comment("A waylaid wagon's wreck holds the goods spilled from it, marked as off that wagon, to bring back to its capital for a finder's fee (or keep, at a cost to your standing there). Off, a wreck is only scenery and its goods are lost.")
+        .define("roadSalvage", true)
 
     val HOMESTEADS: ModConfigSpec.BooleanValue = BUILDER
         .comment("Player homesteads: a charter from the Guildmaster stakes a plot on open land, and a crew of builders puts up a cottage, a farmstead and a manor on it, tier by tier. Off, the Guildmaster sells no charters and no building goes on; homesteads already staked stay.")
