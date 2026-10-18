@@ -103,5 +103,15 @@ object GuildmarkConfig {
         .comment("The capitals' markets: each capital grows, makes, moves, eats and trades real goods an hour at a time, whether anyone is there or not, and its stalls buy and sell at prices that follow what it holds. Off, the markets stand still.")
         .define("capitalMarkets", true)
 
+    val HOMESTEADS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Player homesteads: a charter from the Guildmaster stakes a plot on open land, and a crew of builders puts up a cottage, a farmstead and a manor on it, tier by tier. Off, the Guildmaster sells no charters and no building goes on; homesteads already staked stay.")
+        .define("homesteads", true)
+    val HOMESTEAD_PROTECTION: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Only a homestead's owner and their party may break, place or open things on its land.")
+        .define("homesteadProtection", true)
+    val HOMESTEAD_BUILD_SPEED: ModConfigSpec.DoubleValue = BUILDER
+        .comment("How fast homestead builders work: 1 is a cottage in half a day of daylight, a farmstead in a day and a manor in two; 2 is twice as fast.")
+        .defineInRange("homesteadBuildSpeed", 1.0, 0.1, 20.0)
+
     val SPEC: ModConfigSpec = BUILDER.build()
 }

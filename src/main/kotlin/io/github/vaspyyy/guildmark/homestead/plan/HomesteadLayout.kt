@@ -216,6 +216,9 @@ class HomesteadLayout(private val seed: Long, private val land: PlotLand, privat
     private var tier = 0
 
     private fun height(x: Int, z: Int): Int = terrain[PlotLand.index(x, z)]
+
+    /** The standing height of the column [x], [z] as the last tier drawn ([draw]) left it. */
+    fun groundHeight(x: Int, z: Int): Int = height(x, z)
     private fun owned(x: Int, z: Int): Boolean = owned[PlotLand.index(x, z)]
 
     /**

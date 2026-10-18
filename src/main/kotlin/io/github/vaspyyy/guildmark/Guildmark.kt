@@ -202,6 +202,8 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         io.github.vaspyyy.guildmark.island.Islands.register(modBus)
         // Outlaw bands camped in the wild: their camps, their day, their crimes and the price on their captains (outlaw/)
         io.github.vaspyyy.guildmark.outlaw.Outlaws.register()
+        // Players' homesteads: the charter, the plot, the builders and the tiers going up (homestead/)
+        io.github.vaspyyy.guildmark.homestead.Homesteads.register(modBus)
         // Which part of a capital each player is in, for the city sounds (city/CapitalVisits)
         CapitalVisits.register()
         // Capitals' sites worked out ahead of the players (city/Capitals)

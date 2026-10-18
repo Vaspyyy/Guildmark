@@ -152,6 +152,21 @@ enum class Activity(val clip: String, val ticks: Int, val loop: Boolean, val ove
     LIGHT_LAMP("light_lamp", 50, false),
     KNOCK("knock", 24, false),
     PULL_CART("pull_cart", 40, true, true),
+    // A homestead's builders (art/scripts/homestead_anims.py; the work lands on the ticks in BuilderCrew.Builder)
+    HAUL("haul", 40, true, true),
+    CARRY_BLOCK("carry_block", 40, true, true),
+    TAKE("take", 24, false),
+    LAY("lay", 20, false),
+    LAY_LOW("lay_low", 24, false),
+    LAY_HIGH("lay_high", 22, false),
+    NAIL("nail", 16, true),
+    SAW("saw", 20, true),
+    DIG("dig", 24, true),
+    STAKE("stake", 20, true),
+    CLIMB("climb", 16, true),
+    PLANS("plans", 80, true),
+    MOP_BROW("mop_brow", 40, false),
+    HURRAH("hurrah", 40, false),
     ;
 
     /** Seated activities keep the townsperson on their seat. */
