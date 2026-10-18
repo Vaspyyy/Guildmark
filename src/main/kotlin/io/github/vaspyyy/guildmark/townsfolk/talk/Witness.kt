@@ -5,6 +5,8 @@ import io.github.vaspyyy.guildmark.economy.Good
 import io.github.vaspyyy.guildmark.economy.Markets
 import io.github.vaspyyy.guildmark.economy.Shop
 import io.github.vaspyyy.guildmark.economy.Trading
+import io.github.vaspyyy.guildmark.economy.fortune.Fortunes
+import io.github.vaspyyy.guildmark.economy.fortune.Noted
 import io.github.vaspyyy.guildmark.festival.FestivalContest
 import io.github.vaspyyy.guildmark.homestead.HomesteadEvent
 import io.github.vaspyyy.guildmark.homestead.HomesteadTiers
@@ -257,12 +259,14 @@ object Witness {
 
     /** [player] lifted [victim]'s purse unseen: they'll find it gone. */
     fun robbed(level: ServerLevel, player: Player, victim: Townsperson) {
+        Fortunes.noteAt(level, victim.blockPosition(), Noted.THEFT)
         val r = Residents.get(level).of(victim)?.takeIf { it.alive } ?: return
         felt(level, r, Experience.ROBBED, -1)
     }
 
     /** [player] was caught with a hand in [victim]'s purse: a slight, and the talk of whoever saw. */
     fun caught(level: ServerLevel, player: Player, victim: Townsperson) {
+        Fortunes.noteAt(level, victim.blockPosition(), Noted.CAUGHT, about = player.uuid)
         val r = Residents.get(level).of(victim)?.takeIf { it.alive } ?: return
         val seen = seen(level, player.position(), player, THIEF, true)
         val knowers = (listOf(r.id to Venue.SEEN) + seen.map { it.second.id to Venue.SEEN }).distinctBy { it.first }
@@ -420,6 +424,7 @@ object Witness {
      */
     fun dealt(level: ServerLevel, keeper: Townsperson, player: ServerPlayer, entry: Markets.Entry, good: Good, buying: Boolean, lots: Int) {
         if (lots <= 0) return
+        if (!buying) Fortunes.sold(level, entry, good, player)
         val r = Residents.get(level).of(keeper)?.takeIf { it.alive } ?: return
         val quote = Trading.quote(entry, good)
         val marks = lots * ((if (buying) quote.buy else quote.sell)?.marks ?: 0)
@@ -431,6 +436,7 @@ object Witness {
 
     /** [player] filled their order at [shop] in [capital] (from `Orders.deliver`): a favour to whoever keeps it. */
     fun filled(level: ServerLevel, capital: BlockPos, shop: Shop, player: ServerPlayer) {
+        Fortunes.note(level, capital.asLong(), Noted.SUPPLIED, listOf(player.name.string), player.uuid)
         keeper(level, capital, shop)?.let { order(level, it, player.uuid, player.name.string, true) }
     }
 

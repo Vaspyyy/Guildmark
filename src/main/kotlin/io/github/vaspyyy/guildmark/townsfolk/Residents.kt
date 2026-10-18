@@ -5,6 +5,8 @@ import com.mojang.serialization.codecs.RecordCodecBuilder
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.block.VillageBoards
 import io.github.vaspyyy.guildmark.city.Capitals
+import io.github.vaspyyy.guildmark.economy.fortune.Fortunes
+import io.github.vaspyyy.guildmark.economy.fortune.Noted
 import net.minecraft.core.BlockPos
 import net.minecraft.core.UUIDUtil
 import net.minecraft.network.chat.Component
@@ -216,6 +218,7 @@ class Residents(private val people: MutableMap<Int, Resident> = HashMap(), priva
             r.bed?.let { Furnish.release(level, it) }
             r.bed = null
             data.changed()
+            Fortunes.note(level, r.capital.asLong(), Noted.MOURNING, listOf(r.name))
             io.github.vaspyyy.guildmark.townsfolk.talk.Witness.died(level, p)
         }
     }

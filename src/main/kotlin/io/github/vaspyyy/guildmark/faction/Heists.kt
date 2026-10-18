@@ -2,6 +2,8 @@ package io.github.vaspyyy.guildmark.faction
 
 import io.github.vaspyyy.guildmark.companion.Companions
 import io.github.vaspyyy.guildmark.companion.Deed
+import io.github.vaspyyy.guildmark.economy.fortune.Fortunes
+import io.github.vaspyyy.guildmark.economy.fortune.Noted
 import io.github.vaspyyy.guildmark.progression.Bonus
 import io.github.vaspyyy.guildmark.progression.Talents
 import io.github.vaspyyy.guildmark.quest.ContractState
@@ -148,6 +150,7 @@ object Heists {
                 return false
             }
             if (taken && suspecting.isEmpty() && !AABB.of(site.box).inflate(CLEAR).contains(player.position())) {
+                Fortunes.note(level, site.capital.asLong(), Noted.HEIST)
                 Companions.deed(player, Deed.HEIST)
                 Trials.complete(player, stack)
                 return false

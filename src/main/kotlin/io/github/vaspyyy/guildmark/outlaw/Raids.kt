@@ -3,6 +3,8 @@ package io.github.vaspyyy.guildmark.outlaw
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.block.QuestBoardBlock
 import io.github.vaspyyy.guildmark.block.VillageBoards
+import io.github.vaspyyy.guildmark.economy.fortune.Fortunes
+import io.github.vaspyyy.guildmark.economy.fortune.Noted
 import io.github.vaspyyy.guildmark.guild.GuildNews
 import io.github.vaspyyy.guildmark.quest.QuestGenerator
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
@@ -145,6 +147,7 @@ object Raids {
         }
         if (raid.raiders.isEmpty()) return false
         raids[band.id] = raid
+        Fortunes.noteAt(level, bell, Noted.RAID)
         band.raided = VillageBoards.day(level)
         OutlawCamps.get(level).commit(level, band, Crime.RAID)
         // The alarm: the bell rung, a horn out over the fields
