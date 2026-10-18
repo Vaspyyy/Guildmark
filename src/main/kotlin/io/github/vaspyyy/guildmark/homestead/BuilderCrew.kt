@@ -125,7 +125,7 @@ object BuilderCrew {
             val caller = if (master == null) crew.builders.random() else null
             for (b in crew.builders) b.cheer(stage, b === caller)
             val first = crew.builders.first().p
-            level.playSound(null, first.blockPosition(), HomesteadRegistry.CHEER.get(), SoundSource.NEUTRAL, 1.2f, 1f)
+            level.playSound(null, first.blockPosition(), site.cheer(), SoundSource.NEUTRAL, 1.2f, 1f)
         } else if (stage == Stage.GROUNDWORK || stage == Stage.FOOTINGS) {
             if (master == null) crew.builders.random().p.say("homestead_stage_${stage.key}", force = true)
         }
@@ -590,7 +590,7 @@ object BuilderCrew {
                 1 -> if (beat(clip) == contact(clip)) {
                     when (site.lay(i, fx = true)) {
                         Laid.DONE -> {
-                            sound(level, step.kind)
+                            if (!ownSound(site, i)) sound(level, step.kind)
                             laid(level, site, i)
                             if (p.random.nextInt(40) == 0 && turn()) p.say("homestead_work_${1 + p.random.nextInt(6)}")
                             if (sawn(site, i)) {
@@ -814,6 +814,9 @@ object BuilderCrew {
 
         /** Their job between steps ended early (a cheer, sent home): anything it held let go. */
         protected open fun released() {}
+
+        /** Whether step [i], just laid, made its own sound going in (a works' stake), so the homestead's dig or knock isn't played. */
+        protected open fun ownSound(site: Worksite, i: Int): Boolean = false
 
         /** Walks toward [goal] (see [walk]), for a trade's own jobs. */
         protected fun walkTo(level: ServerLevel, goal: Vec3, near: Double): Boolean = walk(level, goal, near)

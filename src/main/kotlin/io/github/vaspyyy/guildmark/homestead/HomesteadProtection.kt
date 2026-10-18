@@ -206,13 +206,28 @@ object HomesteadProtection {
         if (homestead(level, event.pos) != null) event.isCanceled = true
     }
 
-    /** The builders' work gives nothing back when broken, but for what grows in the fields. */
+    /** Tells whether a block is one a town works' builders put up (economy/works/build sets it at setup). */
+    fun interface Built {
+        fun built(level: ServerLevel, pos: BlockPos): Boolean
+    }
+
+    /** The town works' builders' blocks, which give nothing back either (null until the works' building is set up). */
+    var works: Built? = null
+
+    /** The builders' work gives nothing back when broken, but for what grows in the fields; nor does a town works'. */
     fun onDrops(event: BlockDropsEvent) {
         val level = event.level as? ServerLevel ?: return
         if (level.dimension() != Level.OVERWORLD) return
         val state = event.state
         if (state.block is CropBlock || state.block is StemBlock || state.`is`(Blocks.PUMPKIN) || state.`is`(Blocks.MELON)) return
-        val h = Homesteads.at(level, event.pos) ?: return
+        val h = Homesteads.at(level, event.pos)
+        if (h == null) {
+            if (works?.built(level, event.pos) == true) {
+                event.drops.clear()
+                event.droppedExperience = 0
+            }
+            return
+        }
         if (isWork(level, h, event.pos)) {
             event.drops.clear()
             event.droppedExperience = 0
