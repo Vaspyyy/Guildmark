@@ -13,14 +13,18 @@ import net.minecraft.server.level.ServerLevel
  * What a shop's keeper says to the players they serve (lines under say.guildmark.market., text only for now): a
  * greeting by the hour, the weather and their ways, why a price is where it is ("Dear today, I'm afraid: the mill's
  * sails are broken"), a word on a deal and what came of it ("Carrots, all gone! You've cleared me out."), a goodbye,
- * and out of hours that they're shut, and why.
+ * and out of hours that they're shut, and why. Over orders and standing they speak in their own voices (lines under
+ * say.guildmark.order_, which name no goods and no numbers; the details go to the chat): an order offered, taken,
+ * filled or part filled, let lapse or given up, goods refused for coming off their own stall, and each rank a
+ * supplier rises to.
  */
 object StallTalk {
-    /** Which of the keepers' own lines fit [shop]: a stall's, the market hall's, the bakery's or the smithy's. */
+    /** Which of the keepers' own lines fit [shop]: a stall's, the market hall's, the bakery's, the smithy's or the inn's. */
     private fun kind(shop: Shop): String = when (shop) {
         Shop.BAKERY -> "bakery"
         Shop.SMITHY -> "smithy"
         Shop.HALL -> "hall"
+        Shop.INN -> "inn"
         else -> "stall"
     }
 
@@ -148,4 +152,30 @@ object StallTalk {
 
     /** What a keeper says packing up when their hours are over and the player has stopped trading. */
     const val CLOSING = "market.closing"
+
+    // ---- Orders and standing, spoken ----
+
+    private fun spoken(p: Townsperson, key: String, n: Int): String = "order_${key}_${p.random.nextInt(n)}"
+
+    /** An order of theirs to be had ("I've an order going, if you've the goods for it."). */
+    fun offer(p: Townsperson): String = spoken(p, "offer", 2)
+
+    /** An order taken, or a standing order accepted ("Good. It's yours, then. Bring it by the rest day."). */
+    fun taken(p: Townsperson): String = spoken(p, "taken", 2)
+
+    /** An order filled ("That's the lot. Thank you kindly!"), and part of one ("A good start. I'll mark it down."). */
+    fun thanks(p: Townsperson): String = spoken(p, "thanks", 2)
+    fun part(p: Townsperson): String = spoken(p, "part", 2)
+
+    /** To a supplier who let one of their orders lapse lately, as they step up ("You never brought it. I had to look elsewhere."). */
+    fun lapsed(p: Townsperson): String = spoken(p, "lapsed", 2)
+
+    /** A supplier's rise to [rank] at their capital ("Everyone here knows your goods. A known supplier!"). */
+    fun rank(rank: SupplierRank): String = "order_rank_${rank.ordinal}"
+
+    /** An order given up; goods refused, or sold for no standing, for coming off their own stall lately; a standing order offered, and turned down. */
+    const val GIVEN_UP = "order_given_up"
+    const val BOUGHT_HERE = "order_bought_here"
+    const val STANDING = "order_standing"
+    const val DECLINED = "order_declined"
 }

@@ -2,7 +2,11 @@ package io.github.vaspyyy.guildmark.client
 
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.client.combat.CombatHud
+import io.github.vaspyyy.guildmark.economy.Good
+import io.github.vaspyyy.guildmark.economy.Orders
+import io.github.vaspyyy.guildmark.economy.Shop
 import io.github.vaspyyy.guildmark.guild.RivalGuild
+import io.github.vaspyyy.guildmark.network.TrackedOrder
 import io.github.vaspyyy.guildmark.quest.ContractState
 import io.github.vaspyyy.guildmark.quest.Contracts
 import io.github.vaspyyy.guildmark.quest.QuestNote
@@ -24,6 +28,7 @@ import net.minecraft.resources.Identifier
 import net.minecraft.util.Mth
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.item.ItemStack
+import net.minecraft.world.item.Items
 import net.minecraft.world.level.block.Blocks
 import net.neoforged.neoforge.client.gui.GuiLayer
 import kotlin.math.atan2
@@ -31,7 +36,8 @@ import kotlin.math.sqrt
 
 /**
  * The on-screen contract tracker: the contracts in your inventory, soonest deadline first, each with
- * its progress, days left and an arrow pointing where to go next.
+ * its progress, days left and an arrow pointing where to go next; then the orders you've taken as a supplier at the
+ * capitals (see [io.github.vaspyyy.guildmark.economy.Orders]), as the server sends them.
  */
 object ContractTracker : GuiLayer {
     val ID: Identifier = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "contract_tracker")
@@ -69,9 +75,13 @@ object ContractTracker : GuiLayer {
     const val CONTRACT = 0
     const val CHALLENGE = 1
     const val STORY = 2
+    const val ORDER = 3
 
     private val SHARD_ICON: ItemStack by lazy { MainQuest.shard(0) }
     private val STORY_INK = 0xFF6A3A9A.toInt()
+
+    /** The orders the player holds as a supplier, at every capital, as the server last sent them. */
+    var orders: List<TrackedOrder> = listOf()
 
     override fun render(graphics: GuiGraphicsExtractor, delta: DeltaTracker) {
         val minecraft = Minecraft.getInstance()
@@ -119,7 +129,7 @@ object ContractTracker : GuiLayer {
         renderParty(graphics, minecraft, player, top + height + 3)
     }
 
-    /** Rival challenges first, then the main story, then the contracts carried, soonest deadline first. */
+    /** Rival challenges first, then the main story, then the contracts carried, soonest deadline first, then the orders taken, soonest due first. */
     private fun rows(player: Player): List<Row> {
         val entries = (0 until player.inventory.containerSize)
             .map { player.inventory.getItem(it) }
@@ -136,7 +146,41 @@ object ContractTracker : GuiLayer {
             val (status, color) = status(player, entry)
             rows.add(Row(entry.stack, entry.note.title(), status, color, target(player, entry), CONTRACT))
         }
+        rows.addAll(orderRows(player))
         return rows
+    }
+
+    /**
+     * The orders the player holds: the good and how many are wanted at which business, then how many are still to
+     * come, where, and by when (a standing order's week met, done until the next).
+     */
+    private fun orderRows(player: Player): List<Row> {
+        if (orders.isEmpty()) return listOf()
+        val level = player.level()
+        val now = Math.floorDiv(level.overworldClockTime, 1000L)
+        val here = level.dimension() == Level.OVERWORLD
+        return orders.sortedBy { it.due }.map { o ->
+            val good = Good.byId(o.good)
+            val icon = good?.item?.let { ItemStack(it) } ?: ItemStack(Items.PAPER)
+            val name = Component.translatable((good?.key ?: "good.guildmark.wheat") + ".many")
+            val shop = Component.translatable(Shop.byId(o.shop)?.key ?: "shop.guildmark.produce")
+            val title = if (o.week > 0) Component.translatable("gui.guildmark.tracker.order.standing", o.amount, name, shop, o.week, Orders.WEEKS)
+                else Component.translatable("gui.guildmark.tracker.order", o.amount, name, shop)
+            val days = Orders.daysLeft(o.due, now)
+            val left = (o.amount - o.delivered).coerceAtLeast(0)
+            val (status, color) = when {
+                left == 0 -> Component.translatable("gui.guildmark.tracker.order.met", o.place) to DONE_INK
+                else -> Component.translatable(
+                    "gui.guildmark.tracker.order.status", left, o.place,
+                    when (days) {
+                        0 -> Component.translatable("gui.guildmark.tracker.order.tonight")
+                        1 -> Component.translatable("gui.guildmark.tracker.order.tomorrow")
+                        else -> Component.translatable("gui.guildmark.tracker.days", days)
+                    },
+                ) to if (days <= 1) LATE_INK else FADED_INK
+            }
+            Row(icon, title, status, color, if (here && left > 0) o.pos else null, ORDER)
+        }
     }
 
     /** Where the tracker's rows point, in the dimension the player is in. */

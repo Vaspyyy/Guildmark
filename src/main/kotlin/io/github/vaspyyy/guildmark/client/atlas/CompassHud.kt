@@ -47,6 +47,7 @@ object CompassHud : GuiLayer {
     private val ICON_BOSS = sprite("boss")
     private val ICON_VAULT = sprite("vault")
     private val ICON_CONTRACT = sprite("contract")
+    private val ICON_ORDER = sprite("order")
     private val ICON_PARTY = sprite("party")
     private val ICON_DEATH = sprite("death")
     private val ICON_PIN = sprite("pin")
@@ -252,6 +253,7 @@ object CompassHud : GuiLayer {
             val icon = when (waypoint.kind) {
                 ContractTracker.STORY -> ICON_VAULT
                 ContractTracker.CHALLENGE -> ICON_BOSS
+                ContractTracker.ORDER -> ICON_ORDER
                 else -> ICON_CONTRACT
             }
             out.add(Marker(Vec3.atCenterOf(waypoint.pos), icon, waypoint.title, 4, 6.0))

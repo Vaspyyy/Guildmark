@@ -489,6 +489,7 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
             val kind = when (waypoint.kind) {
                 ContractTracker.STORY -> "story"
                 ContractTracker.CHALLENGE -> "challenge"
+                ContractTracker.ORDER -> "order"
                 else -> "contract"
             }
             out.add(Spot(waypoint.pos.x + 0.5, waypoint.pos.z + 0.5, CONTRACT, waypoint.title, listOf(Component.translatable("gui.guildmark.map.tip.$kind")), 3))

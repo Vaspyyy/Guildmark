@@ -6,6 +6,7 @@ import io.github.vaspyyy.guildmark.city.Capitals
 import io.github.vaspyyy.guildmark.guild.TownControl
 import io.github.vaspyyy.guildmark.network.MarketClosePayload
 import io.github.vaspyyy.guildmark.network.MarketGood
+import io.github.vaspyyy.guildmark.network.MarketOrderPayload
 import io.github.vaspyyy.guildmark.network.MarketRefreshPayload
 import io.github.vaspyyy.guildmark.network.MarketTradePayload
 import io.github.vaspyyy.guildmark.network.MarketUpdatePayload
@@ -18,7 +19,9 @@ import io.github.vaspyyy.guildmark.townsfolk.Director
 import io.github.vaspyyy.guildmark.townsfolk.Doing
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
+import io.github.vaspyyy.guildmark.townsfolk.Trait
 import io.github.vaspyyy.guildmark.village.VillageNames
+import net.minecraft.ChatFormatting
 import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
@@ -29,6 +32,7 @@ import net.minecraft.sounds.SoundEvent
 import net.minecraft.sounds.SoundSource
 import net.minecraft.util.Mth
 import net.minecraft.world.item.ItemStack
+import net.minecraft.world.item.Items
 import net.neoforged.bus.api.IEventBus
 import net.neoforged.neoforge.common.NeoForge
 import net.neoforged.neoforge.event.entity.player.PlayerEvent
@@ -41,13 +45,16 @@ import kotlin.math.floor
 
 /**
  * Trading face to face at a capital's market. Using a townsperson who keeps one of its shops (see [Shop.kept])
- * while they're at their work, or standing at their stall, opens the market screen for its goods; out of hours they
- * say they're shut instead. While the screen is open the keeper serves the player (see [Serving]).
+ * while they're at their work, or standing at their stall, opens the market screen for its goods and its orders (see
+ * [Orders]); out of hours they say they're shut instead. The inn's keeper sells nothing over a counter: at their work,
+ * with an order of the inn's for the player to see, they open a screen of just its orders, and otherwise talk as
+ * anyone does. While the screen is open the keeper serves the player (see [Serving]).
  *
  * Whatever the screen asks, the server checks everything a deal needs: the player within [REACH] of the keeper, the
  * keeper alive and still keeping that shop, the markets switched on, and the good one the shop deals in. Deals go
- * through [Trading], so the prices are the market's own, and after each one every screen open on that market gets
- * fresh quotes. `/guildmark market screen <shop>` opens a shop's screen with nobody keeping it, for testing.
+ * through [Trading] and orders through [Orders], so the prices and the pay are the market's own, and after each one
+ * every screen open on that market gets fresh quotes. `/guildmark market screen <shop>` opens a shop's screen with
+ * nobody keeping it, for testing.
  */
 object Stalls {
     /** How near its keeper a player has to stand to trade; the screen closes a little further off. */
@@ -89,8 +96,9 @@ object Stalls {
         /** Lots bought and sold this time. */
         var lots = 0
 
-        /** The goods whose prices the keeper has explained this time. */
+        /** The goods whose prices the keeper has explained this time, and those they've said came off the market's own stalls. */
         val told = HashSet<Good>()
+        val own = HashSet<Good>()
     }
 
     private val sessions = HashMap<UUID, Session>()
@@ -123,7 +131,7 @@ object Stalls {
      * opens; out of hours they say they're shut. False if they keep no shop, so they talk as usual.
      */
     fun interact(level: ServerLevel, player: ServerPlayer, p: Townsperson): Boolean {
-        if (p.role != TownRole.MERCHANT && p.role != TownRole.BAKER && p.role != TownRole.SMITH) return false
+        if (p.role != TownRole.MERCHANT && p.role != TownRole.BAKER && p.role != TownRole.SMITH && p.role != TownRole.INNKEEPER) return false
         if (!Markets.enabled() || player.isSpectator) return false
         // Something else has charge of them (a job, a festival): theirs to answer for
         val serving = p.director
@@ -131,6 +139,11 @@ object Stalls {
         val life = Days.life(p) ?: return false
         val shop = Shop.kept(p) ?: return false
         val doing = Days.stretch(life, level.overworldClockTime).doing
+        // The inn's keeper is only a business to those it has an order for, and only while they're at their work
+        if (shop == Shop.INN) {
+            if (serving == null && (p.isSleeping || doing != Doing.WORK)) return false
+            if (!innOrders(level, player, life.places.capital.center)) return false
+        }
         if (serving == null && (p.isSleeping || doing != Doing.WORK && !atStall(p))) {
             if (!p.isSleeping) p.attend(player, 60)
             p.say(StallTalk.shut(p, life, doing, shop, level), force = true)
@@ -139,6 +152,13 @@ object Stalls {
         val entry = Markets.of(level, life.places.capital) ?: return false
         open(player, shop, entry, life.places.capital, p)
         return true
+    }
+
+    /** Whether the inn at [capital] has an order [player] could see: one to be had, or one of theirs. */
+    private fun innOrders(level: ServerLevel, player: ServerPlayer, capital: BlockPos): Boolean {
+        if (!Suppliers.enabled()) return false
+        val book = Orders.get(level)[capital] ?: return false
+        return book.orders.any { it.shop == Shop.INN && (it.state == OrderState.OPEN || it.taker == player.uuid) }
     }
 
     /** Whether [p] stands at their stall: by their post, or by the oven or anvil they work at. */
@@ -168,9 +188,30 @@ object Stalls {
             if (served.size > 512) served.entries.removeIf { now - it.value >= REMEMBER }
             val news = StallTalk.news(shop.goods.filter { it.traded }.map { Trading.quote(entry, it) }, s.told)
             news?.let { s.told.add(it.good) }
-            serving.arrive(keeper, player, shop, again, news?.let(StallTalk::price))
+            // A rank they've risen to comes first, then an order they let lapse here; an order to be had comes up after
+            val level = player.level()
+            val rank = risen(level, s.capital, player.uuid)
+            val scold = rank == null && Orders.scold(level, s.capital, player.uuid, shop)
+            val word = when {
+                Orders.offered(level, player.uuid, s.capital, shop) -> StallTalk.STANDING
+                Orders.toBeHad(level, player.uuid, s.capital, shop) -> StallTalk.offer(keeper)
+                else -> null
+            }
+            serving.arrive(keeper, player, shop, again, word ?: news?.let(StallTalk::price), rank, scold)
         }
         PacketDistributor.sendToPlayer(player, OpenMarketPayload(view(s, entry, player)))
+    }
+
+    /** The rank [player] has risen to at [capital] that no keeper there has greeted yet, if they have: greeted now. */
+    private fun risen(level: ServerLevel, capital: BlockPos, player: UUID): SupplierRank? {
+        if (!Suppliers.enabled()) return null
+        val data = Suppliers.get(level)
+        val standing = data[capital, player] ?: return null
+        val rank = standing.rank
+        if (rank.ordinal <= standing.greeted) return null
+        standing.greeted = rank.ordinal
+        data.changed()
+        return rank
     }
 
     /** [p] stops what they were at to serve: [serving] has charge of them until the last customer goes. */
@@ -213,6 +254,7 @@ object Stalls {
         s.dealt = now
         s.active = now
         var done = 0
+        var own = 0
         var stop: Deal? = null
         for (i in 0 until lots.coerceIn(1, MANY)) {
             val deal = if (buying) Trading.buy(player, entry, good) else Trading.sell(player, entry, good)
@@ -221,10 +263,126 @@ object Stalls {
                 break
             }
             done++
+            own += deal.own
         }
         s.lots += done
-        (keeper?.director as? Serving)?.dealt(keeper, player, good, buying, done, stop, Trading.quote(entry, good), s.told)
-        // Every screen open on this market sees the prices move, this one first
+        val level = player.level()
+        // Goods that came off its own stalls lately sell, but earn no standing: the keeper says so the first time
+        if (own > 0) player.sendOverlayMessage(Component.translatable("gui.guildmark.order.own_sold", own, Component.translatable(good.key + ".many")))
+        val serving = keeper?.director as? Serving
+        if (keeper != null && serving != null) {
+            serving.dealt(keeper, player, good, buying, done, stop, Trading.quote(entry, good, Suppliers.share(level, s.capital, player.uuid)), s.told, own > 0 && s.own.add(good))
+            risen(level, s.capital, player.uuid)?.let { serving.risen(keeper, it) }
+        }
+        everyone(player, s, entry)
+    }
+
+    // ---- Orders ----
+
+    /** [player] asks to do [action] (see [MarketOrderPayload]) with the order [id] at the business whose screen they have open. */
+    fun order(player: ServerPlayer, id: Int, action: Int) {
+        val s = sessions[player.uuid] ?: return
+        val level = player.level()
+        val now = level.gameTime
+        s.heard = now
+        val entry = check(player, s, REACH + SLACK) ?: return
+        val keeper = s.keeper
+        if (keeper != null && player.distanceToSqr(keeper) > REACH * REACH) {
+            player.sendOverlayMessage(Component.translatable("gui.guildmark.market.closer"))
+            return send(player, s, entry)
+        }
+        // One a tick however fast the clicks come
+        if (s.dealt == now || !Suppliers.enabled()) return send(player, s, entry)
+        s.dealt = now
+        s.active = now
+        val serving = keeper?.director as? Serving
+        val book = Orders.get(level)[s.capital]
+        val o = book?.orders?.firstOrNull { it.id == id && it.shop == s.shop }
+        if (book == null || o == null) {
+            refuse(player, keeper, serving, "gone")
+            return everyone(player, s, entry)
+        }
+        val mine = o.held && o.taker == player.uuid
+        when (action) {
+            MarketOrderPayload.TAKE -> {
+                val why = Orders.take(level, player, book, entry, o)
+                if (why != null) refuse(player, keeper, serving, why) else {
+                    s.lots++
+                    player.sendSystemMessage(
+                        Component.translatable("supplier.guildmark.taken", Orders.shopName(o.shop), Orders.what(o), book.name, Orders.marks(floor(o.each * o.amount).toInt()), Orders.due(o, Markets.hourOf(level)))
+                            .withStyle(ChatFormatting.YELLOW),
+                    )
+                    if (keeper != null) serving?.took(keeper, StallTalk.taken(keeper))
+                }
+            }
+            MarketOrderPayload.DELIVER -> if (mine) deliver(player, s, entry, book, o, keeper, serving) else refuse(player, keeper, serving, "not_yours")
+            MarketOrderPayload.GIVE_UP -> if (mine) {
+                Orders.giveUp(level, player, book, o)
+                if (keeper != null) serving?.gesture(keeper, Activity.SHRUG, StallTalk.GIVEN_UP)
+            } else {
+                refuse(player, keeper, serving, "not_yours")
+            }
+            MarketOrderPayload.ACCEPT -> {
+                val why = Orders.accept(level, player, book, entry, o)
+                if (why != null) refuse(player, keeper, serving, why) else {
+                    s.lots++
+                    player.sendSystemMessage(
+                        Component.translatable("supplier.guildmark.standing.accepted", Orders.shopName(o.shop), Orders.what(o), book.name, Orders.WEEKS, Orders.marks(floor(o.each * o.amount).toInt()))
+                            .withStyle(ChatFormatting.YELLOW),
+                    )
+                    if (keeper != null) serving?.took(keeper, StallTalk.taken(keeper))
+                }
+            }
+            MarketOrderPayload.DECLINE -> if (o.state == OrderState.OFFERED && o.taker == player.uuid) {
+                Orders.decline(level, player, book, o)
+                if (keeper != null) serving?.gesture(keeper, Activity.NOD, StallTalk.DECLINED)
+            } else {
+                refuse(player, keeper, serving, "gone")
+            }
+        }
+        everyone(player, s, entry)
+    }
+
+    /** [player] delivers what they carry of their order [o]: the keeper takes it across the counter and counts out the pay. */
+    private fun deliver(player: ServerPlayer, s: Session, entry: Markets.Entry, book: Book, o: Order, keeper: Townsperson?, serving: Serving?) {
+        val level = player.level()
+        val good = o.good
+        val name = Component.translatable(good.key + ".many")
+        val d = Orders.deliver(level, player, book, entry, o)
+        if (d.count == 0) {
+            if (d.own > 0) {
+                player.sendOverlayMessage(Component.translatable("gui.guildmark.order.refused.own", d.own, name))
+                if (keeper != null) serving?.gesture(keeper, Activity.SHRUG, StallTalk.BOUGHT_HERE)
+            } else {
+                refuse(player, keeper, serving, "none")
+            }
+            return
+        }
+        s.lots++
+        val key = when {
+            !d.done -> "supplier.guildmark.delivered"
+            o.state == OrderState.STANDING -> "supplier.guildmark.delivered.week"
+            else -> "supplier.guildmark.delivered.all"
+        }
+        player.sendSystemMessage(Component.translatable(key, d.count, name, Orders.shopName(o.shop), Orders.marks(d.pay), o.left).withStyle(ChatFormatting.YELLOW))
+        if (d.own > 0) player.sendSystemMessage(Component.translatable("supplier.guildmark.kept_back", d.own, name).withStyle(ChatFormatting.GRAY))
+        if (d.offered) {
+            player.sendSystemMessage(Component.translatable("supplier.guildmark.standing.offered", Orders.shopName(o.shop), Orders.what(o), book.name, Orders.WEEKS).withStyle(ChatFormatting.GOLD))
+        }
+        if (keeper == null || serving == null) return
+        serving.delivered(keeper, good, if (d.done) StallTalk.thanks(keeper) else StallTalk.part(keeper), d.pay)
+        risen(level, s.capital, player.uuid)?.let { serving.risen(keeper, it) }
+        if (d.offered) serving.after(keeper, StallTalk.STANDING)
+    }
+
+    /** [player] can't do what they asked with an order: told [why] (a key under gui.guildmark.order.refused.), with a shrug from the keeper. */
+    private fun refuse(player: ServerPlayer, keeper: Townsperson?, serving: Serving?, why: String) {
+        player.sendOverlayMessage(Component.translatable("gui.guildmark.order.refused.$why"))
+        if (keeper != null) serving?.gesture(keeper, Activity.SHRUG, null)
+    }
+
+    /** Every screen open on [s]'s market sees what changed, [player]'s first. */
+    private fun everyone(player: ServerPlayer, s: Session, entry: Markets.Entry) {
         send(player, s, entry)
         for (other in sessions.values) if (other !== s && other.capital == s.capital) {
             player.level().server.playerList.getPlayer(other.player)?.let { send(it, other, entry) }
@@ -283,6 +441,8 @@ object Stalls {
         if (keeper.director !is Serving) return "called_away"
         if (player.distanceToSqr(keeper) > reach * reach) return "far"
         if (Shop.kept(keeper) != s.shop) return "moved"
+        // The inn's screen is nothing but its orders
+        if (s.shop == Shop.INN && !Suppliers.enabled()) return "orders_off"
         return null
     }
 
@@ -337,16 +497,29 @@ object Stalls {
         PacketDistributor.sendToPlayer(player, MarketUpdatePayload(view(s, entry, player), closed = false))
     }
 
+    /** What [s]'s screen shows [player]: the shop's goods at the share their standing earns them, their standing, and the business's orders. */
     private fun view(s: Session, entry: Markets.Entry, player: ServerPlayer): MarketView {
+        val level = player.level()
+        val share = Suppliers.share(level, s.capital, player.uuid)
         val goods = s.shop.goods.mapNotNull { g ->
             val item = g.item?.takeIf { g.traded } ?: return@mapNotNull null
-            val q = Trading.quote(entry, g)
+            val q = Trading.quote(entry, g, share)
             MarketGood(
                 g.id, q.stock, floor(entry.town.target(g)).toInt(), q.buy?.count ?: 0, q.buy?.marks ?: 0, q.sell?.count ?: 0,
                 q.sell?.marks ?: 0, q.wants, q.trend, (q.price / q.usual).toFloat(), reason(q), q.why?.dear == true, Trading.count(player.inventory, item),
             )
         }
-        return MarketView(s.shop.id, s.keeper?.id ?: -1, s.place, TownControl.marks(player), goods)
+        val keeper = s.keeper?.id ?: -1
+        val marks = TownControl.marks(player)
+        if (!Suppliers.enabled()) return MarketView(s.shop.id, keeper, s.place, marks, goods)
+        val points = Suppliers.get(level)[s.capital, player.uuid]?.points ?: 0.0
+        val rank = SupplierRank.of(points)
+        val orders = Orders.get(level)
+        val shown = orders[s.capital]?.let { Orders.view(level, player, it, s.shop) } ?: listOf()
+        return MarketView(
+            s.shop.id, keeper, s.place, marks, goods, rank.ordinal, floor(points).toInt(), rank.next?.points ?: -1,
+            orders.held(player.uuid).size, Suppliers.best(level, player.uuid).orders, shown,
+        )
     }
 
     /** The lang key of why [q]'s price is well off its usual (taking the good's name, as [MarketCommand.reason] gives it), or "". */
@@ -356,14 +529,20 @@ object Stalls {
     }
 }
 
+
 /**
  * A shop's keeper serving the players who have its screen open (see [Stalls]). In place of their day's round they
  * stay where they are and turn to whoever they're dealing with; for each deal they hand the goods over
  * ([Activity.HAND_OVER]) or count out the coin ([Activity.PAY]) to the clink of it, a refusal gets a shrug, and they
- * say what fits (see [StallTalk]). Once the last of them goes they see them off and, a moment later, go back to
- * their day.
+ * say what fits (see [StallTalk]). An order's goods they take across the counter a step at a time ([Beat]): received,
+ * put down with the rest, the pay counted out and handed over; an order taken gets its slip handed over, and a
+ * supplier's rise in standing they mark in their own way. Once the last of them goes they see them off and, a moment
+ * later, go back to their day.
  */
 class Serving : Director {
+    /** One step of something taken across the counter: [activity] with [held] in hand for [ticks], saying [line] as it starts, to [coins] clinks of coin. */
+    private class Beat(val activity: Activity, val held: ItemStack, val ticks: Int, val line: String? = null, val coins: Int = 0)
+
     /** The players with the screen open, in the order they came. */
     private val customers = LinkedHashSet<UUID>()
 
@@ -384,6 +563,10 @@ class Serving : Director {
     private var clinks = 0
     private var clinkAt = 0
 
+    /** The steps still to come, and the tick (their own) that the one under way ends; -1 with none under way. */
+    private val beats = ArrayDeque<Beat>()
+    private var beatEnds = -1
+
     override fun tick(p: Townsperson) {
         val level = p.level() as? ServerLevel ?: return
         val now = level.gameTime
@@ -396,15 +579,19 @@ class Serving : Director {
             p.face(Mth.approachDegrees(p.yBodyRot, p.yawTo(who.position()), TURN))
             p.attend(who, 40)
         }
-        // A gesture plays through; then they stand, and talk while they've something to say
-        val doing = p.activity
-        when {
-            doing != Activity.NONE && doing != Activity.TALK && p.actDone -> {
-                p.carried = ItemStack.EMPTY
-                p.act(if (p.speech.isNotEmpty()) Activity.TALK else Activity.NONE)
+        if (beatEnds >= 0) {
+            step(p)
+        } else {
+            // A gesture plays through; then they stand, and talk while they've something to say
+            val doing = p.activity
+            when {
+                doing != Activity.NONE && doing != Activity.TALK && p.actDone -> {
+                    p.carried = ItemStack.EMPTY
+                    p.act(if (p.speech.isNotEmpty()) Activity.TALK else Activity.NONE)
+                }
+                doing == Activity.TALK && p.speech.isEmpty() -> p.act(Activity.NONE)
+                doing == Activity.NONE && p.speech.isNotEmpty() -> p.act(Activity.TALK)
             }
-            doing == Activity.TALK && p.speech.isEmpty() -> p.act(Activity.NONE)
-            doing == Activity.NONE && p.speech.isNotEmpty() -> p.act(Activity.TALK)
         }
         if (clinks > 0 && p.tickCount >= clinkAt) {
             clinks--
@@ -416,36 +603,57 @@ class Serving : Director {
             later = null
             say(p, line)
         }
-        if (leaving in 0..now) Stalls.release(p)
+        // Whatever they're still handing over is finished first
+        if (leaving in 0..now && beatEnds < 0) Stalls.release(p)
     }
 
     // A player crouching behind a busy keeper may try their purse; anyone else steps up to the shop
     override fun interact(p: Townsperson, player: ServerPlayer): Boolean =
         !player.isShiftKeyDown && Stalls.interact(p.level() as ServerLevel, player, p)
 
-    /** [player] has stepped up to [shop]: a greeting, then, a little later, [news] (why a price is where it is). */
-    fun arrive(p: Townsperson, player: ServerPlayer, shop: Shop, again: Boolean, news: String?) {
+    /**
+     * [player] has stepped up to [shop]: a greeting, then, a little later, [news] (an order to be had, or why a price is
+     * where it is). A [rank] they've risen to there is greeted in its place, in the keeper's own way; else, if they
+     * let an order lapse here lately, they hear about it ([scold]).
+     */
+    fun arrive(p: Townsperson, player: ServerPlayer, shop: Shop, again: Boolean, news: String?, rank: SupplierRank? = null, scold: Boolean = false) {
         val level = p.level() as? ServerLevel ?: return
         val busy = customers.any { it != player.uuid }
         customers.add(player.uuid)
         facing = player.uuid
         leaving = -1
-        say(p, StallTalk.greet(p, Days.life(p), shop, level, busy, again))
-        if (!busy) {
+        val greeting = when {
+            rank != null -> StallTalk.rank(rank)
+            scold -> StallTalk.lapsed(p)
+            else -> StallTalk.greet(p, Days.life(p), shop, level, busy, again)
+        }
+        say(p, greeting)
+        if (!busy && beatEnds < 0) {
             p.carried = ItemStack.EMPTY
-            p.act(if (p.random.nextInt(3) == 0) Activity.WAVE else Activity.NOD)
+            p.act(
+                when {
+                    rank != null -> cheer(p)
+                    scold -> Activity.SHRUG
+                    p.random.nextInt(3) == 0 -> Activity.WAVE
+                    else -> Activity.NOD
+                },
+            )
         }
         later = news
-        laterAt = level.gameTime + NEWS
+        laterAt = level.gameTime + if (rank != null || scold) VOICED else NEWS
     }
 
     /**
      * A deal at the shop: [player] [buying] or selling [good], [done] lots of it gone through and [stop] what stopped
-     * the rest, if anything did. [after] is its quote now; [told] the goods whose prices they've explained to [player].
+     * the rest, if anything did. [after] is its quote now; [told] the goods whose prices they've explained to [player];
+     * [own] if what was sold came off the market's own stalls lately, which they say this once.
      */
-    fun dealt(p: Townsperson, player: ServerPlayer, good: Good, buying: Boolean, done: Int, stop: Deal?, after: Quote, told: MutableSet<Good>) {
+    fun dealt(p: Townsperson, player: ServerPlayer, good: Good, buying: Boolean, done: Int, stop: Deal?, after: Quote, told: MutableSet<Good>, own: Boolean) {
         val now = p.level().gameTime
         facing = player.uuid
+        // A deal puts by whatever they were taking across the counter
+        beats.clear()
+        beatEnds = -1
         if (done > 0) {
             // A quick run of clicks plays out as one handing over, not a stutter of them
             if (p.activity != Activity.HAND_OVER && p.activity != Activity.PAY || p.actTicks >= RESTART) {
@@ -458,7 +666,8 @@ class Serving : Director {
             p.carried = ItemStack.EMPTY
             p.act(Activity.SHRUG)
         }
-        val line = StallTalk.deal(good, buying, done, stop, after, told)
+        val line = (if (own) StallTalk.BOUGHT_HERE else null)
+            ?: StallTalk.deal(good, buying, done, stop, after, told)
             ?: StallTalk.remark(p, buying, done, after.why?.dear == true).takeIf { done > 0 && now - spoke >= CHAT && p.random.nextInt(2) == 0 }
         if (line != null) {
             later = null
@@ -466,9 +675,92 @@ class Serving : Director {
         }
     }
 
+    /** An order taken (or a standing one accepted): they hand over its slip, saying [line]. */
+    fun took(p: Townsperson, line: String) = now(p, Beat(Activity.HAND_OVER, ItemStack(Items.PAPER), HANDING, line))
+
+    /** A gesture over an order ([activity]: a shrug at a refusal, a nod at one turned down), saying [line] if there's something to say. */
+    fun gesture(p: Townsperson, activity: Activity, line: String?) = now(p, Beat(activity, ItemStack.EMPTY, activity.ticks, line))
+
     /**
-     * [player] has gone: [traded] if they bought or sold anything, [walked] if they walked off; the last to go is
-     * seen off (with [line], if there's something else to say), and a moment later they go back to their day.
+     * Goods delivered to an order: they take [good] across the counter saying [line], put it down with the rest, and
+     * count out the [pay] (if it came to a whole Mark yet) and hand it over, to the clink of the coin.
+     */
+    fun delivered(p: Townsperson, good: Good, line: String, pay: Int) {
+        val goods = good.item?.let { ItemStack(it) } ?: ItemStack.EMPTY
+        val mark = ItemStack(ModItems.GUILD_MARK.get())
+        if (pay <= 0) return now(p, Beat(Activity.RECEIVE, goods, HANDING, line), Beat(Activity.PUT_DOWN, goods, PUTTING))
+        now(
+            p,
+            Beat(Activity.RECEIVE, goods, HANDING, line),
+            Beat(Activity.PUT_DOWN, goods, PUTTING),
+            Beat(Activity.COUNT, mark, COUNTING, coins = minOf(COUNTED, pay)),
+            Beat(Activity.PAY, mark, HANDING, coins = minOf(HANDED, pay)),
+        )
+    }
+
+    /** A supplier they're serving has risen to [rank] at their capital: once what's under way is through, they mark it in their own way. */
+    fun risen(p: Townsperson, rank: SupplierRank) {
+        val cheer = cheer(p)
+        next(p, Beat(Activity.NONE, ItemStack.EMPTY, PAUSE), Beat(cheer, ItemStack.EMPTY, cheer.ticks, StallTalk.rank(rank)), Beat(Activity.TALK, ItemStack.EMPTY, AFTER_WORD))
+    }
+
+    /** Once what's under way is through, they say [line] (a standing order offered, after a fill). */
+    fun after(p: Townsperson, line: String) = next(p, Beat(Activity.TALK, ItemStack.EMPTY, AFTER_WORD, line))
+
+    /** How [p] marks a supplier's rise in standing, by their ways: a cheer, a nod, a bow, a clap, or their thanks. */
+    private fun cheer(p: Townsperson): Activity {
+        val resident = Days.life(p)?.resident
+        return when {
+            resident?.has(Trait.CHEERFUL) == true -> Activity.CHEER
+            resident?.has(Trait.GRUMPY) == true -> Activity.NOD
+            resident?.has(Trait.SHY) == true -> Activity.BOW
+            resident?.has(Trait.CHATTY) == true -> Activity.CLAP
+            else -> Activity.THANK
+        }
+    }
+
+    /** Puts by whatever they were at across the counter and starts [steps] at once. */
+    private fun now(p: Townsperson, vararg steps: Beat) {
+        later = null
+        beats.clear()
+        beats.addAll(steps)
+        beatEnds = p.tickCount
+        step(p)
+    }
+
+    /** Starts [steps] once what's under way is through: the steps already to come, or the gesture they're making. */
+    private fun next(p: Townsperson, vararg steps: Beat) {
+        later = null
+        beats.addAll(steps)
+        if (beatEnds >= 0) return
+        val doing = p.activity
+        beatEnds = p.tickCount + if (doing.loop) 0 else (doing.ticks - p.actTicks).coerceAtLeast(0)
+    }
+
+    /** The step under way is over: on to the next, or back to standing (and talking while they've something to say). */
+    private fun step(p: Townsperson) {
+        if (p.tickCount < beatEnds) return
+        val beat = beats.removeFirstOrNull()
+        if (beat == null) {
+            beatEnds = -1
+            p.carried = ItemStack.EMPTY
+            p.act(if (p.speech.isNotEmpty()) Activity.TALK else Activity.NONE)
+            return
+        }
+        p.carried = beat.held
+        p.act(beat.activity)
+        beatEnds = p.tickCount + beat.ticks
+        beat.line?.let { say(p, it) }
+        if (beat.coins > 0) {
+            clinks = beat.coins
+            clinkAt = p.tickCount + CLINK
+        }
+    }
+
+    /**
+     * [player] has gone: [traded] if they bought or sold anything (or dealt in an order), [walked] if they walked off;
+     * the last to go is seen off (with [line], if there's something else to say), once what they're handing over is
+     * through unless they walked off, and a moment later they go back to their day.
      */
     fun leave(p: Townsperson, player: UUID, traded: Boolean, walked: Boolean, line: String?) {
         customers.remove(player)
@@ -476,16 +768,19 @@ class Serving : Director {
         if (customers.isNotEmpty()) return
         val level = p.level() as? ServerLevel ?: return
         later = null
-        say(p, line ?: StallTalk.bye(p, Days.life(p), level, traded, walked))
-        p.carried = ItemStack.EMPTY
-        p.act(
-            when {
-                walked -> Activity.WAVE
-                traded -> Activity.BOW
-                else -> Activity.NOD
-            },
-        )
+        val bye = line ?: StallTalk.bye(p, Days.life(p), level, traded, walked)
+        val gesture = when {
+            walked -> Activity.WAVE
+            traded -> Activity.BOW
+            else -> Activity.NOD
+        }
         leaving = level.gameTime + LINGER
+        if (beatEnds >= 0 && !walked) return next(p, Beat(gesture, ItemStack.EMPTY, gesture.ticks, bye))
+        beats.clear()
+        beatEnds = -1
+        say(p, bye)
+        p.carried = ItemStack.EMPTY
+        p.act(gesture)
     }
 
     private fun say(p: Townsperson, line: String) {
@@ -499,8 +794,9 @@ class Serving : Director {
         /** Fewest ticks between two lines of small talk. */
         const val CHAT = 80L
 
-        /** Ticks after the greeting that they say why a price is where it is. */
+        /** Ticks after the greeting that they say why a price is where it is; after a spoken greeting, which takes longer. */
         const val NEWS = 70L
+        const val VOICED = 90L
 
         /** Ticks they linger, once the last customer's gone, before going back to their day. */
         const val LINGER = 40L
@@ -510,6 +806,19 @@ class Serving : Director {
 
         /** Ticks into a handing over that the coin clinks. */
         const val CLINK = 10
+
+        /** Ticks of handing something over or taking it, of putting it down, of counting out the pay, and of a pause between. */
+        const val HANDING = 30
+        const val PUTTING = 20
+        const val COUNTING = 40
+        const val PAUSE = 10
+
+        /** Ticks they stand talking after a word of their own, before anything else. */
+        const val AFTER_WORD = 50
+
+        /** The most clinks of coin while counting out the pay, and while handing it over. */
+        const val COUNTED = 6
+        const val HANDED = 3
 
         val COIN: SoundEvent = SoundEvent.createVariableRangeEvent(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "townsfolk.thief.coin"))
     }

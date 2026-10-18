@@ -269,9 +269,11 @@ class Suppliers(private val capitals: MutableMap<Long, MutableMap<UUID, Standing
         fun set(level: ServerLevel, capital: BlockPos, player: UUID, points: Double): Pair<SupplierRank, SupplierRank> =
             gain(level, capital, player, points - (get(level)[capital, player]?.points ?: 0.0))
 
-        /** The name of the capital whose centre is [capital], as its ground has it ("" if that isn't loaded). */
-        fun place(level: ServerLevel, capital: BlockPos): String =
-            Capitals.covering(level, capital)?.let { VillageNames.of(it.boardAnchor) } ?: ""
+        /** The name of the capital whose centre is [capital], as its orders keep it, or else as its ground has it ("" if that isn't loaded). */
+        fun place(level: ServerLevel, capital: BlockPos): String {
+            Orders.get(level)[capital]?.name?.takeIf { it.isNotEmpty() }?.let { return it }
+            return Capitals.covering(level, capital)?.let { VillageNames.of(it.boardAnchor) } ?: ""
+        }
 
         /** Word of a change of rank at [capital], for the chat: what the new one brings. */
         private fun changeOf(level: ServerLevel, capital: BlockPos, before: SupplierRank, after: SupplierRank): Component {

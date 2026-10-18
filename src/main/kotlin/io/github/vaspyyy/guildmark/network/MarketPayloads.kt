@@ -56,9 +56,24 @@ data class MarketGood(
 
 /**
  * What a market screen shows: the [shop] (its id), who keeps it ([keeper], an entity id, or -1 for the testing
- * screen, which nobody keeps), the capital it's in ([place]), the player's Guild Marks, and the shop's goods.
+ * screen, which nobody keeps), the capital it's in ([place]), the player's Guild Marks, and the shop's goods; the
+ * player's supplier standing there ([standing], the rank 0 to 4, or -1 with standing switched off), their [points]
+ * and the points the next rank takes ([next], -1 at the top), how many orders they hold everywhere ([held]) and may
+ * hold ([most]), and the business's orders as they stand for the player.
  */
-data class MarketView(val shop: String, val keeper: Int, val place: String, val marks: Int, val goods: List<MarketGood>) {
+data class MarketView(
+    val shop: String,
+    val keeper: Int,
+    val place: String,
+    val marks: Int,
+    val goods: List<MarketGood>,
+    val standing: Int = -1,
+    val points: Int = 0,
+    val next: Int = -1,
+    val held: Int = 0,
+    val most: Int = 0,
+    val orders: List<MarketOrder> = listOf(),
+) {
     companion object {
         val STREAM_CODEC: StreamCodec<ByteBuf, MarketView> = StreamCodec.composite(
             ByteBufCodecs.STRING_UTF8, MarketView::shop,
@@ -66,6 +81,12 @@ data class MarketView(val shop: String, val keeper: Int, val place: String, val 
             ByteBufCodecs.STRING_UTF8, MarketView::place,
             ByteBufCodecs.VAR_INT, MarketView::marks,
             MarketGood.STREAM_CODEC.apply(ByteBufCodecs.list()), MarketView::goods,
+            ByteBufCodecs.VAR_INT, MarketView::standing,
+            ByteBufCodecs.VAR_INT, MarketView::points,
+            ByteBufCodecs.VAR_INT, MarketView::next,
+            ByteBufCodecs.VAR_INT, MarketView::held,
+            ByteBufCodecs.VAR_INT, MarketView::most,
+            MarketOrder.STREAM_CODEC.apply(ByteBufCodecs.list()), MarketView::orders,
             ::MarketView,
         )
     }

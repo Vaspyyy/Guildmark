@@ -453,6 +453,7 @@ class MarketScreen(private var view: MarketView) : Screen(Component.translatable
         Shop.BAKERY -> 0xCB7A33
         Shop.SMITHY -> 0x5E6470
         Shop.QUAY -> 0x2F8E8A
+        Shop.INN -> 0x8A5A2B
         Shop.HALL, null -> 0x3A5D9A
     }
 

@@ -12,7 +12,8 @@ import net.minecraft.core.BlockPos
  * crops at a composter, fish and fruit from barrels, the butcher's smoked meat, cloth and hides at a loom, the
  * fletcher's stock, the chandler's candles, honey and bottles at a cauldron), the bakery's bread, the smithy's iron
  * and coal, the fishmongers on the quay, and the market hall, which deals in everything. All of them sell from and
- * buy into the one market (see [Market.stock]), so what one sells out of, the others are out of too.
+ * buy into the one market (see [Market.stock]), so what one sells out of, the others are out of too. The inn sells
+ * nothing over a counter: its keeper's screen holds only the inn's orders (see [Orders]).
  */
 enum class Shop(val id: String, val goods: List<Good>) {
     PRODUCE("produce", listOf(Good.WHEAT, Good.CARROT, Good.POTATO, Good.BEETROOT)),
@@ -24,7 +25,8 @@ enum class Shop(val id: String, val goods: List<Good>) {
     BAKERY("bakery", listOf(Good.BREAD)),
     SMITHY("smithy", listOf(Good.IRON, Good.COAL)),
     QUAY("quay", listOf(Good.COD, Good.SALMON)),
-    HALL("hall", Good.TRADED);
+    HALL("hall", Good.TRADED),
+    INN("inn", listOf());
 
     /** The lang key of its name ("The Bakery"). */
     val key: String get() = "shop.guildmark.$id"
@@ -43,12 +45,13 @@ enum class Shop(val id: String, val goods: List<Good>) {
             else -> null
         }
 
-        /** The shop [p] keeps, if they keep one: the stall they stand at, the bakery, the smithy, the quay or the hall. */
+        /** The shop [p] keeps, if they keep one: the stall they stand at, the bakery, the smithy, the quay, the hall or the inn. */
         fun kept(p: Townsperson): Shop? {
             val places = p.life?.places ?: return null
             return when (p.role) {
                 TownRole.BAKER -> BAKERY
                 TownRole.SMITH -> SMITHY
+                TownRole.INNKEEPER -> INN
                 TownRole.MERCHANT -> at(places, p.post ?: p.work ?: p.blockPosition())
                 else -> null
             }
