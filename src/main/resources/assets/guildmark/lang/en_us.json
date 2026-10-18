@@ -3941,7 +3941,7 @@
   "supplier.guildmark.delivered": "%3$s takes %1$s %2$s and pays you %4$s: %5$s more to bring.",
   "supplier.guildmark.delivered.week": "%3$s takes %1$s %2$s and pays you %4$s: that's this week's order met.",
   "supplier.guildmark.delivered.all": "%3$s takes %1$s %2$s and pays you %4$s: that's the whole order filled.",
-  "supplier.guildmark.kept_back": "You keep back %1$s %2$s you bought at this market lately: it won't take its own goods as an order.",
+  "supplier.guildmark.kept_back": "You keep back %1$s %2$s bought at this market lately: it won't take its own goods as an order.",
   "supplier.guildmark.given_up": "You gave up the order of %1$s for %2$s at %3$s with %4$s still to bring. Your standing there suffers for it.",
   "supplier.guildmark.lapsed": "Your order of %1$s for %2$s at %3$s has lapsed with %4$s still to bring. Your standing there suffers for it.",
   "supplier.guildmark.what": "%s %s",

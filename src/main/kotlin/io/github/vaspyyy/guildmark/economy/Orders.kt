@@ -8,6 +8,7 @@ import io.github.vaspyyy.guildmark.network.MarketOrder
 import io.github.vaspyyy.guildmark.network.MarketOrderPayload
 import io.github.vaspyyy.guildmark.network.SupplierOrdersPayload
 import io.github.vaspyyy.guildmark.network.TrackedOrder
+import io.github.vaspyyy.guildmark.party.Parties
 import io.github.vaspyyy.guildmark.registry.ModItems
 import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
 import io.github.vaspyyy.guildmark.townsfolk.Furnish
@@ -699,16 +700,24 @@ class Orders(private val books: MutableMap<Long, Book> = HashMap(), private var 
             return null
         }
 
-        /** How many of what [player] carries of [o]'s good it will take: none they bought at this market in the last week (or since it was posted). */
+        /**
+         * How many of what [player] carries of [o]'s good it will take: none that they or their party bought at this
+         * market in the last week (or since it was posted).
+         */
         fun deliverable(level: ServerLevel, player: ServerPlayer, book: Book, o: Order): Int {
             val item = o.good.item ?: return 0
             return (Trading.count(player.inventory, item) - barred(level, player.uuid, book, o)).coerceAtLeast(0)
         }
 
-        /** How many of [o]'s good [player] bought at [book]'s market lately, which it won't take. */
+        /**
+         * How many of [o]'s good [player] and everyone in their party bought at [book]'s market lately, which it won't
+         * take: what one of them bought there and handed to another is kept out all the same, as a stall of their own
+         * keeps it off its table (see [SupplierLink.boughtByParty]).
+         */
         fun barred(level: ServerLevel, player: UUID, book: Book, o: Order): Int {
             val since = min(Suppliers.today(level) - Suppliers.WEEK + 1, Math.floorDiv(o.posted + 4, 24L))
-            return Suppliers.boughtSince(level, book.pos, player, o.good, since)
+            val party = Parties.get(level.server).of(player)?.members ?: listOf()
+            return (party + player).distinct().sumOf { Suppliers.boughtSince(level, book.pos, it, o.good, since) }
         }
 
         /**

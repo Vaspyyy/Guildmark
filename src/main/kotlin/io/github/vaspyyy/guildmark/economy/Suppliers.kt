@@ -86,8 +86,11 @@ class Standing(var points: Double = 0.0, var filled: Int = 0, var lapsed: Int = 
  * businesses offer them.
  *
  * Each capital also remembers what a player bought at its market in the last [WEEK] days: those goods can't be
- * delivered to its orders, and selling them back earns no standing (see [sold]). Everything here is off with
- * `supplierOrders` (see [enabled]): no bonus, nothing remembered, the stalls as they always were.
+ * delivered to its orders or set out on a stall of the player's own there, and selling them back earns no standing
+ * (see [sold]). Standing is off with `supplierOrders` (see [enabled]): no bonus, no orders, the stalls as they always
+ * were. What was bought is remembered whenever the markets run, as players' own stalls need it either way.
+ *
+ * Players' own stalls and their homesteads' shipping hear of standing through [SupplierLink] (see [link]).
  */
 class Suppliers(private val capitals: MutableMap<Long, MutableMap<UUID, Standing>> = HashMap()) : SavedData() {
     /** [player]'s standing at the capital whose centre is [capital], if they have any. */
@@ -192,10 +195,11 @@ class Suppliers(private val capitals: MutableMap<Long, MutableMap<UUID, Standing
         /**
          * [player] sold [capital]'s market [count] of [good] for [marks]: as many of them as they bought there in the
          * last [WEEK] days are taken to be those, which earn no standing and are off the record now; the rest earn
-         * half a point a Mark. Gives how many of them came off its own stalls.
+         * half a point a Mark. Gives how many of them came off its own stalls (none with standing switched off, though
+         * they come off the record all the same).
          */
         fun sold(level: ServerLevel, capital: BlockPos, player: UUID, good: Good, count: Int, marks: Int): Int {
-            if (!enabled() || count <= 0) return 0
+            if (count <= 0) return 0
             val data = get(level)
             val standing = data.of(capital, player)
             val today = today(level)
@@ -211,6 +215,7 @@ class Suppliers(private val capitals: MutableMap<Long, MutableMap<UUID, Standing
             standing.forget(today)
             standing.day = today
             data.setDirty()
+            if (!enabled()) return 0
             val earned = marks * (count - own).toDouble() / count
             if (earned > 0.0) gain(level, capital, player, earned * HALF)
             return own
@@ -218,16 +223,26 @@ class Suppliers(private val capitals: MutableMap<Long, MutableMap<UUID, Standing
 
         /** How many of [good] [player] bought at [capital]'s market in the last [WEEK] days (and hasn't sold back). */
         fun bought(level: ServerLevel, capital: BlockPos, player: UUID, good: Good): Int {
-            if (!enabled()) return 0
             val today = today(level)
             return get(level)[capital, player]?.bought(good, today - WEEK + 1, today) ?: 0
         }
 
+        /**
+         * Sets [SupplierLink]'s hooks (once, at start-up), so that players' own stalls and their homesteads' shipping
+         * go by standing: [rank], [earned] and [bought]. With standing switched off, everyone counts as a Trusted
+         * Supplier there (a stall may be rented, at the usual keep) and Marks earned count for nothing.
+         */
+        fun link() {
+            SupplierLink.rank = { level, player, capital -> if (enabled()) rank(level, capital, player) else SupplierLink.TRUSTED }
+            SupplierLink.earned = { level, player, capital, marks -> earned(level, capital, player, marks) }
+            SupplierLink.bought = { level, player, capital, good -> bought(level, capital, player, good) }
+        }
+
         // ---- Kept by the market and its orders ----
 
-        /** [player] bought [count] of [good] at [capital]'s market just now. */
+        /** [player] bought [count] of [good] at [capital]'s market just now (remembered with standing switched off too). */
         fun purchased(level: ServerLevel, capital: BlockPos, player: UUID, good: Good, count: Int) {
-            if (!enabled() || count <= 0) return
+            if (count <= 0) return
             val data = get(level)
             val standing = data.of(capital, player)
             val today = today(level)
@@ -240,7 +255,6 @@ class Suppliers(private val capitals: MutableMap<Long, MutableMap<UUID, Standing
 
         /** How many of [good] [player] bought at [capital]'s market since the town's day [since] (and not sold back). */
         fun boughtSince(level: ServerLevel, capital: BlockPos, player: UUID, good: Good, since: Long): Int {
-            if (!enabled()) return 0
             val today = today(level)
             return get(level)[capital, player]?.bought(good, since, today) ?: 0
         }

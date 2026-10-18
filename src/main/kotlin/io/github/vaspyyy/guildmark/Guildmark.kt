@@ -218,8 +218,10 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         io.github.vaspyyy.guildmark.economy.MarketBoards.register()
         // Trading face to face with the shopkeepers: the market screen
         io.github.vaspyyy.guildmark.economy.Stalls.register(modBus)
-        // Supplying the capitals: the businesses' orders, and each player's standing as a supplier
+        // Supplying the capitals: the businesses' orders, and each player's standing as a supplier (which their own
+        // stalls and their homesteads' shipping go by too)
         io.github.vaspyyy.guildmark.economy.Orders.register(modBus)
+        io.github.vaspyyy.guildmark.economy.Suppliers.link()
         io.github.vaspyyy.guildmark.economy.SupplierCommand.init()
         // The carters' handcarts, pulled behind them with their loads heaped on (cart/)
         io.github.vaspyyy.guildmark.cart.Handcarts.register(modBus)
