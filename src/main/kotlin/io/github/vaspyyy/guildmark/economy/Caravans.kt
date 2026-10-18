@@ -11,6 +11,7 @@ import io.github.vaspyyy.guildmark.outlaw.OutlawCamps
 import io.github.vaspyyy.guildmark.outlaw.Outlaws
 import io.github.vaspyyy.guildmark.quest.CaravanEscorts
 import io.github.vaspyyy.guildmark.road.RoadNetwork
+import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import io.github.vaspyyy.guildmark.townsfolk.talk.Topics
 import io.github.vaspyyy.guildmark.townsfolk.talk.sources.RoadTopics
 import io.github.vaspyyy.guildmark.village.VillageNames
@@ -243,6 +244,13 @@ object Caravans {
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { CaravanRoutes.forget() }
         Topics.register(RoadTopics)
     }
+
+    /**
+     * A road line for [p] to say in the one-line talk (to [player]) and in gossip (to whoever's by), for the hook in
+     * Lines.talk and Lines.gossip (design-road.md section 7): the weightiest thing the road gives them to say just now,
+     * a spoken line with its facts after it in grey, or null. The talk itself asks [RoadTopics] as a topic source.
+     */
+    fun talk(p: Townsperson, player: ServerPlayer? = null): String? = if (enabled()) RoadTopics.line(p, player) else null
 
     // ---- What the bodies call (design-road.md section 7) ----
 

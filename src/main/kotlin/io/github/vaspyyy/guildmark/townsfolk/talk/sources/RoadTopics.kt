@@ -16,15 +16,19 @@ import io.github.vaspyyy.guildmark.outlaw.OutlawCamps
 import io.github.vaspyyy.guildmark.outlaw.Outlaws
 import io.github.vaspyyy.guildmark.townsfolk.Speech
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
+import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import io.github.vaspyyy.guildmark.townsfolk.talk.Ask
 import io.github.vaspyyy.guildmark.townsfolk.talk.Choice
 import io.github.vaspyyy.guildmark.townsfolk.talk.Kind
 import io.github.vaspyyy.guildmark.townsfolk.talk.Occasion
+import io.github.vaspyyy.guildmark.townsfolk.talk.Talk
 import io.github.vaspyyy.guildmark.townsfolk.talk.Topic
 import io.github.vaspyyy.guildmark.townsfolk.talk.TopicSource
 import io.github.vaspyyy.guildmark.townsfolk.talk.Topics
 import io.github.vaspyyy.guildmark.townsfolk.talk.Utterance
 import net.minecraft.network.chat.Component
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.server.level.ServerPlayer
 
 /**
  * The road into the speaker's capital (design-road.md section 2, "Townsfolk"), all from the records the wagons keep
@@ -204,6 +208,21 @@ object RoadTopics : TopicSource {
             else -> due(ask, town)?.let { (way, at) -> Speech.of("talk.detail.road.due", way.name, hourKey(at)) }
         }
         return Utterance(listOfNotNull(first, second?.let { Utterance.Part("", it) }))
+    }
+
+    /**
+     * For the one-line talk and gossip (Lines.talk to [player], Lines.gossip in a chat, which the townsfolk say with the
+     * talk switched off and now and then besides; see [Caravans.talk]): the weightiest of what [p] would say of the road
+     * just now, as one spoken line with its facts after it in grey ("gossip_road_6~talk.detail.road.taken.ford|..."),
+     * or null if the road gives them nothing to say.
+     */
+    fun line(p: Townsperson, player: ServerPlayer?): String? {
+        val level = p.level() as? ServerLevel ?: return null
+        val out = ArrayList<Topic>()
+        offer(Talk.ask(level, p, player, if (player != null) Occasion.OPENER else Occasion.CHAT), out)
+        val best = out.filter { t -> t.say.parts.any { it.line.isNotEmpty() } }.maxByOrNull { it.weight } ?: return null
+        val part = best.say.parts.first { it.line.isNotEmpty() }
+        return Speech.withDetail(part.line, part.detail)
     }
 
     /** A take of [lines] that [ask]'s listener hasn't heard lately, if there's one; else any of them. */
