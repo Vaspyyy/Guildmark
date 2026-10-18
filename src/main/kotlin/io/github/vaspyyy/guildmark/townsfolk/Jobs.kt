@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.townsfolk
 
+import io.github.vaspyyy.guildmark.townsfolk.scenes.Builders
 import io.github.vaspyyy.guildmark.townsfolk.talk.Street
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
@@ -445,9 +446,10 @@ object Leisure {
             .andThen(if (p.random.nextInt(3) == 0) Later(p) { Social.chat(p) ?: Idle(p, 100 + p.random.nextInt(200), Activity.ADMIRE) } else Idle(p, 100 + p.random.nextInt(200), Activity.ADMIRE))
     }
 
-    /** Children at play: tag, hopping about, following an adventurer. */
+    /** Children at play: tag, hopping about, following an adventurer, and builders by a works going up (the works on). */
     fun child(p: Townsperson): Task {
         val level = p.level() as ServerLevel
+        Builders.game(p)?.let { return it }
         Social.adventurer(p)?.let { if (p.random.nextInt(3) == 0) return Follow(p, it, 300 + p.random.nextInt(400)) }
         Social.playmate(p)?.let { if (p.random.nextInt(2) == 0) return Chase(p, it) }
         val center = p.town?.square?.takeIf { p.random.nextInt(3) == 0 } ?: Jobs.home(p)

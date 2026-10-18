@@ -1,6 +1,8 @@
 package io.github.vaspyyy.guildmark.townsfolk
 
 import io.github.vaspyyy.guildmark.GuildmarkConfig
+import io.github.vaspyyy.guildmark.economy.fortune.Fortunes
+import io.github.vaspyyy.guildmark.townsfolk.scenes.Scenes
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.util.RandomSource
@@ -45,21 +47,28 @@ object Crowds {
         1.0
     }
 
-    /** Each tick for each player: a greeting now and then, and more passers-by if the streets round them are quiet. */
+    /**
+     * Each tick for each player: a greeting now and then, the scenes round them (M6's: see [Scenes]), and more
+     * passers-by if the streets round them are quiet.
+     */
     fun tick(level: ServerLevel, player: ServerPlayer) {
         if (player.tickCount % 10 == 0) Social.greet(level, player)
+        Scenes.tick(level, player)
         if (player.tickCount % 40 != 7 || player.isSpectator || !enabled()) return
         val town = Towns.around(level, player.uuid, player.blockPosition()) ?: return
         live.removeIf { it.isRemoved }
         if (live.size >= MAX) return
         val about = level.getEntitiesOfClass(Townsperson::class.java, player.boundingBox.inflate(40.0, 16.0, 40.0)) { it.isAlive }.size
-        val wanted = (wanted(level) * density()).roundToInt()
+        val wanted = (wanted(level, town) * density()).roundToInt()
         if (about >= wanted) return
         repeat(min(2, wanted - about)) { bringIn(level, player, town) }
     }
 
-    /** How many townsfolk should be about a player at this hour. */
-    private fun wanted(level: ServerLevel): Int {
+    /**
+     * How many townsfolk should be about a player in [town] at this hour; with the fortunes on, thinner in hard times
+     * and busier in good ([Fortunes.busy]: 0.7 times in HARD times to 1.25 in THRIVING).
+     */
+    private fun wanted(level: ServerLevel, town: Town): Double {
         val time = Math.floorMod(level.overworldClockTime, 24000L)
         val base = when {
             time < 11000 -> 16
@@ -67,7 +76,9 @@ object Crowds {
             time < 23000 -> 4
             else -> 8
         }
-        return if (level.isRaining) (base + 1) / 2 else base
+        val wanted = if (level.isRaining) (base + 1) / 2 else base
+        if (!Fortunes.enabled()) return wanted.toDouble()
+        return wanted * Fortunes.busy(level, town.center.asLong()).coerceIn(0.5, 1.5)
     }
 
     /** One passer-by, 18 to 40 blocks off in the streets, never popping up in plain sight. */

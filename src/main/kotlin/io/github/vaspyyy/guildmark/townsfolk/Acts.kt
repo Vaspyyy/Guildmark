@@ -4,6 +4,11 @@ import io.github.vaspyyy.guildmark.city.plan.M
 import io.github.vaspyyy.guildmark.registry.ModItems
 import io.github.vaspyyy.guildmark.season.Season
 import io.github.vaspyyy.guildmark.season.Seasons
+import io.github.vaspyyy.guildmark.townsfolk.scenes.Alms
+import io.github.vaspyyy.guildmark.townsfolk.scenes.BreadQueue
+import io.github.vaspyyy.guildmark.townsfolk.scenes.Cold
+import io.github.vaspyyy.guildmark.townsfolk.scenes.Shopping
+import io.github.vaspyyy.guildmark.townsfolk.scenes.ShutStall
 import io.github.vaspyyy.guildmark.townsfolk.talk.Street
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
@@ -48,7 +53,8 @@ object Acts {
         Doing.SLEEP -> listOf(Part { sleep(p, life) })
         Doing.RISE -> listOf(Part { rise(p) }, Part { wash(p, life) })
         Doing.BREAKFAST, Doing.SUPPER -> listOf(Part { goHome(p, life) }, Part { meal(p, life, life.home, 500 + r(p, 500)) })
-        Doing.LUNCH -> listOf(Part { lunch(p, life) })
+        // The alms table, for the hungry, while it's serving (the streets' scenes on)
+        Doing.LUNCH -> listOf(Part { Alms.join(p, life) ?: lunch(p, life) })
         Doing.WORK -> listOf(Part { firewood(p, life) }, Part(laden = true) { stoke(p, life) }, Part { setUp(p, life) })
         Doing.WATCH, Doing.PLAY, Doing.CART, Doing.CRY -> listOf()
         Doing.BUILD -> listOf(Part { Labour.report(p, life) })
@@ -57,7 +63,7 @@ object Acts {
         Doing.ERRAND -> listOf(Part { errand(p, life) })
         Doing.VISIT -> listOf(Part { visit(p, life) })
         Doing.WORSHIP -> listOf(Part { worship(p, life) })
-        Doing.STROLL -> listOf(Part { stroll(p, life) }, Part { stroll(p, life) })
+        Doing.STROLL -> listOf(Part { strollOrIn(p, life) }, Part { strollOrIn(p, life) })
         Doing.LESSONS -> listOf(Part { lessons(p, life) })
         Doing.TAVERN -> listOf(Part { tavern(p, life) })
         Doing.EVENING -> listOf(Part { goHome(p, life) }, Part { evening(p, life) })
@@ -66,15 +72,17 @@ object Acts {
 
     /** What fills the rest of a stretch once its parts are done. */
     fun filler(p: Townsperson, life: Life, doing: Doing): Task = when (doing) {
-        Doing.WORK -> Trades.work(p, life) ?: Jobs.work(p)?.let { onFloor(p, life, it) } ?: chores(p, life)
+        // A stall with nothing to sell is shut and sat by (the streets' scenes on)
+        Doing.WORK -> ShutStall.keep(p, life) ?: Trades.work(p, life) ?: Jobs.work(p)?.let { onFloor(p, life, it) } ?: chores(p, life)
         Doing.CART -> Trades.haul(p, life) ?: Trades.wait(p, life)
         Doing.CRY -> Crier.round(p, life) ?: chores(p, life)
         // A turn at a road's watchtower, where there is one (the works on)
         Doing.WATCH -> Lookout.keep(p, life) ?: Jobs.guard(p)
         Doing.BUILD -> Labour.work(p, life)
-        Doing.PLAY -> Leisure.child(p)
+        // Kept in by the fire with the cold biting (the streets' scenes on)
+        Doing.PLAY -> if (Cold.biting(p, life)) Cold.home(p, life) ?: atHome(p, life) else Leisure.child(p)
         Doing.TAVERN -> tavern(p, life) ?: atHome(p, life)
-        Doing.STROLL -> stroll(p, life) ?: atHome(p, life)
+        Doing.STROLL -> strollOrIn(p, life) ?: atHome(p, life)
         Doing.LESSONS -> lessons(p, life) ?: Leisure.child(p)
         Doing.SLEEP, Doing.BED -> sleep(p, life)
         Doing.WORSHIP -> worship(p, life) ?: atHome(p, life)
@@ -374,6 +382,8 @@ object Acts {
     fun shop(p: Townsperson, life: Life): Task? {
         val level = level(p)
         if (level.isRaining && r(p, 3) != 0) return null
+        // Bread short of a morning: the line at the bakery's door (the streets' scenes on)
+        BreadQueue.join(p, life)?.let { return it }
         if (r(p, 4) == 0) Trades.loaf(p, life)?.let { return it }
         return stall(p, life, null)
     }
@@ -389,6 +399,8 @@ object Acts {
         val pool = if (stocked.isNotEmpty() && (not != null || r(p, 5) != 0)) stocked else stalls
         val pick = pool[r(p, pool.size)]
         val wares = Trades.wares(entry, pick.trade)
+        // As the times go (the streets' scenes on): an armful in good times, a haggle in hard, the empty basket shaken out
+        Shopping.times(p, life)?.let { times -> return Shopping.at(p, life, pick, wares, times, if (not == null) ({ stall(p, life, pick) }) else null) }
         val middle = pick.counter.getOrNull(pick.counter.size / 2) ?: pick.keeper.pos
         if (wares.isEmpty()) {
             if (not != null) return null
@@ -462,7 +474,8 @@ object Acts {
         val water = goods.`is`(Items.WATER_BUCKET)
         val basin = if (water) basin(level, home) else null
         val target = basin ?: home.stores.filter { level.isLoaded(it) }.minByOrNull { it.distSqr(homeSpot(p, life)) }
-        val overlay = if (water) Activity.NONE else Activity.CARRY_BASKET
+        // An armful (good times' shopping: Shopping) in both arms, anything else in the basket
+        val overlay = if (water) Activity.NONE else if (Shopping.armful(goods)) Activity.CARRY else Activity.CARRY_BASKET
         val laden = 0.42
         if (target == null) {
             return Ways.to(p, life.places, homeSpot(p, life), laden, overlay = overlay)
@@ -553,6 +566,9 @@ object Acts {
         val seat = seatIn(level, school, p, table = true) ?: return null
         return sitAt(p, life, seat, 900 + r(p, 600), listOf(Activity.SIT, Activity.SIT, Activity.SIT_TALK))
     }
+
+    /** A turn about the town; or, with the cold biting (the streets' scenes on: [Cold]), home in a hurry and in by the fire. */
+    private fun strollOrIn(p: Townsperson, life: Life): Task? = if (Cold.biting(p, life)) Cold.home(p, life) else stroll(p, life)
 
     /** A turn about the town to a sight (a well, a bench, the market, the bell), and a long look, or a sit. */
     fun stroll(p: Townsperson, life: Life): Task? {
