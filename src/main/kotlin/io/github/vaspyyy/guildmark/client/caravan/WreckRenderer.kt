@@ -25,6 +25,10 @@ internal class WreckLook(val born: Int, val fresh: Boolean) {
     val ground = DoubleArray(PLACES + 1) { Double.NaN }
     var probedAt = Int.MIN_VALUE
 
+    /** Degrees the ground under the hull slopes: its nose up, its right side up. */
+    var pitch = 0f
+    var roll = 0f
+
     companion object {
         /** WagonMesh.WRECK_LOTS' places (lots 8 to 11 heaped on 0 to 3); the dead horse's ground is the last. */
         const val PLACES = 8
@@ -38,6 +42,10 @@ class WreckRenderState : EntityRenderState() {
     var originY = 0.0
     var originZ = 0.0
     var yaw = 0f
+
+    /** Degrees the hull lies tilted with the ground under it: its nose up, its right side up. */
+    var pitch = 0f
+    var roll = 0f
 
     /** Over onto its left side; the band's arrows in its boards (bits 0 to 5); radians its wheels in the air have turned. */
     var mirror = false
@@ -118,10 +126,18 @@ class WreckRenderer(context: EntityRendererProvider.Context) : EntityRenderer<Wr
             look.probedAt = w.tickCount
             for (k in 0..WreckLook.PLACES) {
                 val (px, pz) = if (k < WreckLook.PLACES) WagonMesh.WRECK_LOTS[k][0] * m to WagonMesh.WRECK_LOTS[k][1] else WagonMesh.WRECK_HORSE[0] * m to WagonMesh.WRECK_HORSE[1]
-                pose.world(px, 0f, pz, at)
-                look.ground[k] = WagonClient.groundAt(w.level(), at.x, at.z, w.y)
+                look.ground[k] = groundAt(w, px, pz)
             }
+            // The slope it lies on: the ground at the hull's two ends, and near the road and out in the verge
+            val back = groundAt(w, HULL_X * m, HULL_BACK)
+            val front = groundAt(w, HULL_X * m, HULL_FRONT)
+            val near = groundAt(w, HULL_NEAR * m, HULL_Z)
+            val far = groundAt(w, HULL_FAR * m, HULL_Z)
+            look.pitch = slope(front - back, HULL_BACK - HULL_FRONT)
+            look.roll = m * slope(far - near, HULL_NEAR - HULL_FAR)
         }
+        s.pitch = look.pitch
+        s.roll = look.roll
         // What's left of the load, lying where it spilled
         var n = 0
         for (k in 0 until Wreck.LOTS) {
@@ -158,6 +174,16 @@ class WreckRenderer(context: EntityRendererProvider.Context) : EntityRenderer<Wr
         s.z = at.z
     }
 
+    /** The ground's height at [px], [pz] of the wreck's space (as [pose] has it now). */
+    private fun groundAt(w: Wreck, px: Float, pz: Float): Double {
+        pose.world(px, 0f, pz, at)
+        return WagonClient.groundAt(w.level(), at.x, at.z, w.y)
+    }
+
+    /** Degrees a rise of [dy] blocks over [px] px slopes, kept to what a hull would lie on. */
+    private fun slope(dy: Double, px: Float): Float =
+        Math.toDegrees(kotlin.math.atan2(dy, px / 16.0)).toFloat().coerceIn(-MOST_SLOPE, MOST_SLOPE)
+
     /** Px the ground under place [k] is above the wreck's own. */
     private fun rise(look: WreckLook, k: Int, y: Double): Float {
         val ground = look.ground[k]
@@ -168,11 +194,15 @@ class WreckRenderer(context: EntityRendererProvider.Context) : EntityRenderer<Wr
         poseStack.pushPose()
         poseStack.translate(s.originX - s.x, s.originY - s.y, s.originZ - s.z)
         poseStack.rotateDegrees(Axis.YP, 180f - s.yaw)
-        poseStack.scale(-1f, -1f, 1f)
+        // The hull lying with the slope under it (its lots and the horse lie on the ground where each is)
         poseStack.pushPose()
+        poseStack.rotateDegrees(Axis.XP, s.pitch)
+        poseStack.rotateDegrees(Axis.ZP, s.roll)
+        poseStack.scale(-1f, -1f, 1f)
         if (s.mirror) poseStack.scale(-1f, 1f, 1f)
         collector.submitModel(model, s, poseStack, WagonRenderer.TEXTURE, s.lightCoords, OverlayTexture.NO_OVERLAY, s.outlineColor)
         poseStack.popPose()
+        poseStack.scale(-1f, -1f, 1f)
         for (i in 0 until s.lots) {
             poseStack.pushPose()
             poseStack.translate(s.lx[i] / 16f, s.ly[i] / 16f, s.lz[i] / 16f)
@@ -205,6 +235,19 @@ class WreckRenderer(context: EntityRendererProvider.Context) : EntityRenderer<Wr
 
         /** Ticks between looks at the ground under its lots. */
         private const val PROBE_EVERY = 40
+
+        /**
+         * Where it feels the slope under the hull lying over (px, its space, over to its right): along it at [HULL_X]
+         * from [HULL_BACK] to [HULL_FRONT], and across it at [HULL_Z] from [HULL_NEAR] the road to [HULL_FAR] out; and
+         * the most it tilts with it (degrees).
+         */
+        private const val HULL_X = -30f
+        private const val HULL_BACK = 6f
+        private const val HULL_FRONT = -48f
+        private const val HULL_Z = -20f
+        private const val HULL_NEAR = -16f
+        private const val HULL_FAR = -50f
+        private const val MOST_SLOPE = 20f
 
         /** Degrees a lot heaped on another is turned from its place's own turn. */
         private const val HEAPED_TURN = 23f
