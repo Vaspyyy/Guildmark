@@ -222,7 +222,7 @@ object CaravanCommand {
         val band = OutlawCamps.get(level).band(c.band)
         val out = line().append(grey("   "))
         if (band == null) return out.append(grey(if (c.band >= 0) "its band is gone" else "no band works its road"))
-        out.append(grey("band: ")).append(band.title().copy().withStyle(ChatFormatting.RED)).append(grey(" #${band.id}, camp ${c.reach.toInt()} off the road; "))
+        out.append(grey("band: ")).append(named(band)).append(grey(" #${band.id}, camp ${c.reach.toInt()} off the road; "))
         when {
             c.struck == 2 -> out.append(plain(if (c.waylaid) "struck and waylaid" else "struck and beaten off"))
             c.struck == 1 -> out.append(plain("passed its strike point unstruck"))
@@ -281,7 +281,7 @@ object CaravanCommand {
         if (why != null) return fail(source, "Wagon #${c.id} can't be struck: $why.")
         val t = level.overworldClockTime
         val ahead = (c.strike - Caravans.distance(c, t)).coerceAtLeast(0.0)
-        say(source, line().append(plain("Wagon #${c.id} on the ${side(leg)} is struck by ")).append(band.title().copy().withStyle(ChatFormatting.RED))
+        say(source, line().append(plain("Wagon #${c.id} on the ${side(leg)} is struck by ")).append(named(band))
             .append(plain(" ${ahead.toInt()} blocks ahead (${c.place}), in about ${seconds(Caravans.ticksFor(ahead))}" + if (c.phase != Phase.ROLLING) ", once it sets out." else ".")))
         say(source, grey(when (waylaid) {
             true -> "It will be waylaid."
@@ -315,8 +315,8 @@ object CaravanCommand {
             ?: return fail(source, "No band works the ${side(leg)}, and no ground near you suits a camp for one.")
         val c = Caravans.wreckAt(level, here.entry, leg, band, player.position(), player.yRot)
         val data = CaravanData.get(level)
-        say(source, line().append(plain("A wagon to ${here.name} waylaid here on the ${side(leg)} by ")).append(band.title().copy().withStyle(ChatFormatting.RED))
-            .append(plain(" (#${c.id}, at the ${c.place}).")))
+        say(source, line().append(plain("A wagon to ${here.name} waylaid here on the ${side(leg)} by ")).append(named(band))
+            .append(plain(" (#${c.id}, ")).append(Component.translatable("road.guildmark.place.${c.place}").withStyle(ChatFormatting.WHITE)).append(plain(").")))
         val wreck = data.wrecks.lastOrNull { it.caravan == c.id }
         when {
             leg.road < 0 -> say(source, grey("That's the plan's own road, out of sight: no wreck lies on it."))
@@ -417,19 +417,38 @@ object CaravanCommand {
             say(source, out)
             val second = line().append(grey("   "))
             if (band == null) second.append(grey("no band works it")) else {
-                second.append(grey("band: ")).append(band.title().copy().withStyle(ChatFormatting.RED))
-                    .append(grey(" #${band.id}${if (band.built) "" else " (camp not built yet)"}${if (band.named || band.built) ", bounty ${band.bounty}" else ", not named yet"}, ${CaravanRoutes.reach(leg, band).toInt()} off the road"))
+                second.append(grey("band: ")).append(named(band))
+                    .append(grey(" #${band.id}${if (band.built) "" else " (camp not built yet)"}${if (band.named || band.built) ", bounty ${band.bounty}" else ""}, ${CaravanRoutes.reach(leg, band).toInt()} off the road"))
             }
             val due = Caravans.dueIn(level, here.capital, leg.road)
-            second.append(grey(if (due != null) "; next wagon due in ${clock(Caravans.clockOf(Math.floorDiv(due, 1000L)))}" else "; no wagon due by it in the next two days"))
+            second.append(grey(if (due != null) "; next wagon due in at ${clock(Caravans.clockOf(Math.floorDiv(due, 1000L)))}" else "; no wagon due by it in the next two days"))
             say(source, second)
         }
+        // The road news the crier goes by: what, on which road, when, and whom it names (a band's captain, or the finders)
         val news = data.capitalOrNull(here.capital)?.news.orEmpty().takeLast(6)
-        if (news.isNotEmpty()) say(source, line().append(label("Road news: ")).append(grey(news.joinToString("; ") { n ->
-            "${n.kind} on ${here.legs.firstOrNull { it.road == n.road }?.let { side(it) } ?: "the road"} at ${clock(Caravans.clockOf(n.hour))}" + if (n.names.isNotEmpty()) " (${n.names.joinToString(", ") { Component.translatable(it).string }})" else ""
-        })))
+        if (news.isNotEmpty()) {
+            val out = line().append(label("Road news: "))
+            news.forEachIndexed { k, n ->
+                if (k > 0) out.append(grey("; "))
+                out.append(grey("${n.kind} on ${here.legs.firstOrNull { it.road == n.road }?.let { side(it) } ?: "the road"} at ${clock(Caravans.clockOf(n.hour))}"))
+                if (n.names.isNotEmpty()) {
+                    out.append(grey(" ("))
+                    n.names.forEachIndexed { j, name ->
+                        if (j > 0) out.append(grey(", "))
+                        // A band's names are lang keys; the finders of salvage are players' names as they are
+                        out.append((if (name.startsWith("outlaw.guildmark.")) Component.translatable(name) else Component.literal(name)).withStyle(ChatFormatting.GRAY))
+                    }
+                    out.append(grey(")"))
+                }
+            }
+            say(source, out)
+        }
         return 1
     }
+
+    /** [band] by its captain's name, once it has one. */
+    private fun named(band: OutlawBand): Component =
+        if (band.built || band.named) band.title().copy().withStyle(ChatFormatting.RED) else Component.literal("a band not named yet").withStyle(ChatFormatting.RED)
 
     private fun peril(context: CommandContext<CommandSourceStack>, peril: Int): Int {
         val source = context.source
