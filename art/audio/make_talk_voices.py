@@ -24,6 +24,10 @@ Timbres: the man and the woman say everything but the children's lines. The old 
 replies and the household, and three of his own) and borrows the man's voice lower for the rest; a child has their
 own 18 and borrows the woman's higher for anything else (TownsfolkClient.speak).
 
+Reading: the voices are American, given espeak's British phonemes as in make_townsfolk_voices.py, but each line is
+read with the r's of espeak's American reading sounded (`rhotic`), which the crier's and the festival's lines did a
+word at a time; TALK_PHONEMES and PHONEMES put right what Whisper still heard wrong after that.
+
 Lengths: a take (as processed, its breath and the street's tail included) may last 2.5 s for a greeting, a farewell,
 the screen's own lines and the replies, 4.0 s for other talk, 1.8 s for a news lead-in and 3.0 s for the news after
 it. `process` refuses a take over its limit (it writes nothing for it and says by how much). The keepers' stall lines
@@ -328,7 +332,7 @@ GROUPS = [
         "doing.baker": [
             "Up since before dawn, and the ovens still hot.",
             "Kneading and baking. The town eats more than you'd think.",
-            "Another batch in the oven. The smell's the best part.",
+            "Another batch in the oven. The smell is the best part.",
         ],
         # the ovens standing cold for want of flour
         "doing.baker_cold": [
@@ -694,7 +698,7 @@ GROUPS = [
         # any good deed, heard of
         "deed.praise": [
             "Heard what you did. Good on you.",
-            "Folk speak well of you, you know.",
+            "People speak well of you, you know.",
             "The town's glad to have you, and that's the truth.",
         ],
         # a deed they heard of and doubt (a tall version, or a grumpy teller)
@@ -1036,9 +1040,11 @@ DELIVERY = {
     "market.bye.walked": dict(level=1.5),
     "market.greet.cheerful": dict(level=0.5),
 }
-# A take's own speed, where its timbre's reading would run over its limit or misread at the usual speed:
+# A take's own speed, where its timbre's reading would run over its limit, misread or rush at the usual speed:
 # (key, timbre) -> times the timbre's own, instead of its family's
-SPEED_FOR = {}
+SPEED_FOR = {
+    ("talk.news.assault_0", "man"): 0.88,  # rushed at 8 syllables a second, the man's news being 5.5 to 7
+}
 
 # Text the TTS reads better (the subtitles keep the line as written): {written: said}, for every line, then a line's own
 SAY_AS_ALL = {
@@ -1056,7 +1062,15 @@ CENTRING = ("iə", "ɪə", "eə", "ɛə", "ʊə")
 
 
 def rhotic(gb, us):
-    """[gb] (espeak's British reading) with the r's of [us] (its American reading of the same text) sounded"""
+    """[gb] (espeak's British reading) with the r's of [us] (its American reading of the same text) sounded, word by
+    word where the two readings have as many words (else over the whole line)"""
+    gw, uw = gb.split(" "), us.split(" ")
+    if len(gw) == len(uw):
+        return " ".join(rhotic_word(g, u) for g, u in zip(gw, uw))
+    return rhotic_word(gb, us)
+
+
+def rhotic_word(gb, us):
     blocks = []  # (same?, British, American), each run of differences as one block
     for op, i1, i2, j1, j2 in difflib.SequenceMatcher(a=gb, b=us, autojunk=False).get_opcodes():
         if op != "equal" and blocks and not blocks[-1][0]:
@@ -1068,18 +1082,24 @@ def rhotic(gb, us):
         before = "".join(out)
         after = blocks[i + 1][1] if i + 1 < len(blocks) else ""
         whole = before + a
+        near_r = after.startswith("ɹ") or before.endswith("ɹ")
         if same or not re.search("[ɹɚ]", b) or re.search("[ɹɚ]", a):
             out.append(a)  # the same, or no r to sound here, or one sounded already
+        elif not a:
+            out.append("" if near_r else "ɹ" if "ɹ" in b else "ɚ")  # an r the British reading leaves out
         elif any(whole.endswith(c) and not whole[:-len(c)].endswith(tuple("aeoɔə")) for c in CENTRING):
             # a centring diphthong ("dˈiə", "ðeə", "wɪə"; not the "aɪə" of "fire"): its American vowel and r ("dˈɪɹ",
             # "ðɛɹ", "wɪɹ"), what came before it being the same in both
             out.append(re.sub("ɹ+$", "", b) + ("" if after.startswith("ɹ") else "ɹ") if b.endswith("ɹ") else b)
-        elif a.endswith("ə"):
-            out.append(a[:-1] + ("ɹ" if b.endswith("ɹ") and not after.startswith("ɹ") else "ɚ"))  # "sˈʌpə" -> "sˈʌpɚ"
-        elif not after.startswith("ɹ") and not before.endswith("ɹ"):
-            out.append(a + "ɹ")  # a long vowel and its r: "ʃˈɔːt" -> "ʃˈɔːɹt"
-        else:
+        elif "ɚ" in b and "ə" in a:
+            k = a.rindex("ə")  # the schwa takes the r: "sˈʌpə" -> "sˈʌpɚ", "bˈɛtə" (American "bˈɛɾɚ") -> "bˈɛtɚ"
+            out.append(a[:k] + "ɚ" + a[k + 1:])
+        elif near_r:
             out.append(a)
+        elif b.startswith("ɹ"):
+            out.append("ɹ" + a)  # the r before what follows the vowel: "stˈɑːtɪd" (American "stˈɑːɹɾᵻd") -> "stˈɑːɹtɪd"
+        else:
+            out.append(a + "ɹ")  # a long vowel and its r: "fˈɔːdʒ" (American "fˈoːɹdʒ") -> "fˈɔːɹdʒ"
     return "".join(out)
 
 
@@ -1101,7 +1121,8 @@ TALK_PHONEMES = [
 # "Mmh" letter by letter ("em em aitch"), so the sleepy mumbles are a hum, and they fall at the end (a trailing "..."
 # lifts it, as if more were coming); "home" takes the American o (the recogniser lost "Safe home" without it). The rest
 # were heard wrong as espeak joins or weakens them, and right as written here (a stressed "at", "as", "has" or "and",
-# a "been" said "bin", a pause the comma didn't give).
+# a "been" said "bin", a pause the comma didn't give, an American vowel or a sounded t where the British one was taken
+# for another word). A timbre's own entry is for a line the other timbres were heard saying right as espeak reads it.
 PHONEMES = {
     "talk.ask.asleep_0": "mmm, nˌɒt nˈaʊ.",
     "talk.ask.asleep_1": "fˈaɪv mˈɔːɹ mˈɪnɪts.",
@@ -1126,7 +1147,31 @@ PHONEMES = {
     "market.greet.rain.0": "kˈʌm ˈʌndɚ ðɪ ˈɔːnɪŋ, ˌaʊtəv ðə wˈɛt.",  # "under", not "into"
     "market.greet.rain.indoors": "wˈɛtʰ ˈaʊt ðˈɛɹ? kʌm ˈɪn... ænd dɹˈaɪ ˈɒf.",  # not "What out there? Coming..."
     "market.greet.smithy": "ˈaɪɚn ænd kˈoʊl... ɡˈʊd ænd dɹˈaɪ.",  # "coal", not "cold"
-    "market.poor.one": "ðats wˈʌn mˈɑːɹk, fɹˈɛnd, ænd juː ɑːɹ ʃˈɔːɹt.",  # not "That's Walmart, friend, in your..."
+    "market.poor.one": "ðats wˈʌn mˈɑːɹk, fɹˈɛnd, ˈænd jɔːɹ ʃˈɔːɹt.",  # not "That's Walmart, friend, in your..."
+    "market.dear.again": "dˈɪɹ, aɪ nˈəʊ. kˈæntʰ biː hˈɛlpt.",  # "Can't be helped", not "Can be helped"
+    "market.dear.carts_behind": "dˈɪɹ tədˈeɪ: ðə kˈɑːɹtʰs hˈavənt bɹˈɔːt ɪt ɪn jˈɛt.",  # "carts", not "cards"
+    "market.dear.event.fowl_pest": "dˈɪɹ tədˈeɪ: ɐ pˈests ɡɒt ɐmˌʌŋ ðə hˈinz.",  # not "a past's got among the hands"
+    "market.dear.event.murrain": "dˈɪɹ tədˈeɪ: ðɛɹz mˈʌɹɪn ɐmˌʌŋ ðə hˈɜːdz.",  # "murrain" as said, not "Maureen"
+    "market.dear.event.poor_catch": "dˈɪɹ tədˈeɪ: ðə bˈəʊts kˈeɪm ɪn nˈɪɹ ˈɛmpti.",  # "near empty", not "your empty"
+    "market.dear.no_flour": "dˈɪɹ tədˈeɪ: ðɪ ˈʌvənz stˈʊd kˈəʊld, fɔːɹ wˈɒntʰ ɒv flˈaʊɚ.",  # "want of", not "one of"
+    "market.dear.orchard_lean": "dˈɪɹ tˈɪl ˈɔːtəm, aɪm ɐfɹˈeɪd: ðɪ ˈɔːɹtʃɚdz ˌɑːɹnt bˈɛɹɪŋ.",  # not "Tillatum"
+    "market.dear.scarce": "dˈɪɹ tədˈeɪ: ðˌɛɹz lˈɪtəl ˈɒv ɪt ɐbˈaʊt.",  # "there's little", not "there's a little"
+    "talk.deal.sold_0": "wˌɒt juː sˈəʊld mˌiː, wˈɛnt ɪn ɐn ˈaʊɚ.",  # not "Would you sold me when in an hour?"
+    "talk.deed.doubt_0": "kˈant bɪlˈiːv ˈɛvɹɪθˌɪŋ juː hˈɪɹ... mˈaɪnd.",  # not "...you hear in mind"
+    "talk.deed.dragon_1": "ɐ dɹˈaɡən slˈeɪjɚ, hˈɪɹ ɪn ˌaʊɚ tˈaʊn. hˌuːd hav θˈɔːt ɪt?",  # not "A dragon's lair"
+    "talk.deed.rank_1": "ɐ nˈuː ɹˈaŋk, ðeɪ sˈeɪ. ɡˈʊd fɔːɹ juː.",  # "A new rank", not "And you rank"
+    "talk.doing.fisher_1": "ɐ kwˈaɪət spˈɒt, ɐ ɡˈʊd lˈaɪn. kˈæntʰ ˈæsk fɔːɹ mˈɔːɹ.",  # "Can't ask", not "can ask"
+    "talk.doing.smith_2": "hˈɪndʒɪz, nˈeɪlz, hˈəʊz. ðɛɹz ˈɔːlweɪz sˈʌmθɪŋ wˈɑnts mˈeɪkɪŋ.",  # "wants", not "once"
+    # the man's own, where the old man's was heard right as espeak reads it
+    ("talk.ask.hush_1", "man"): "kwˈaɪət, nˈaʊ. wɪɹ ˈæt pɹˈɛɹ.",  # "at prayer", not "a prayer"
+    ("talk.greet.hero_1", "man"): "ɪz ɪt ɹˈiəlɪ juː? wˈɛl... aɪ nˈɛvɚ!",  # "Well", not "while"
+    ("talk.home.neighbours_1", "man"): "ðə nˈeɪbɚz kˈiːp mˌiː ˌʌp hˈaf ðə nˈaɪt.",  # "half", not "off"
+    ("talk.market.dear_0", "man"): "ˈɛvɹɪθˌɪŋz dˈiəɹ ðiːz dˈeɪz.",  # "dear", not "due"
+    ("talk.market.hungry_0", "man"): "ðə pˈɒts bɪn θˈɪn at ˌaʊɚ hˈaʊs.",  # "been", not "being"
+    ("talk.market.shopping_1", "man"): "ɡˈɒt wɒt aɪ kˈeɪm fɔːɹ, and ɐ bˈɪt mˈɔːɹ bɪsˈaɪdz.",  # "Got", not "Go"
+    ("talk.town.newcomer_1", "man"): "nˈuː nˈeɪbɚz ɪnðə tˈaʊn. wˈiːl sˈiː wɒt ðeɪɚ lˈaɪk.",  # "New", not "You"
+    # the old man's own, where the man's was heard right
+    ("talk.ask.dunno_0", "old"): "aɪv nˈɒt hˈɜːɹd ɐ θˈɪŋ.",  # not "I have, I have"
 }
 
 

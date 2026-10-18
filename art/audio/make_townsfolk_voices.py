@@ -342,7 +342,7 @@ CRIER = {
     "crier_close_2": "So ends the news! Fair trading to you all!",
     # the talk of the town (townsfolk/talk: the hottest rumour of the day, told straight, its details on the slip)
     "crier_talk_deed": "And the talk of the town: a deed worth the telling!",
-    "crier_talk_death": "And the town mourns one of its own.",
+    "crier_talk_death": "And the town has lost one of its own.",
     "crier_talk_trouble": "And the talk of the town: trouble close to home!",
     "crier_talk_good": "And the talk of the town: glad tidings!",
     "crier_talk_far": "And the talk of the town: news from afar!",
