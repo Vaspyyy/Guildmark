@@ -116,7 +116,7 @@ SHAFT_UP = 21.0                         # how high they run there (the tugs' hei
 SHAFT_T = 1.7
 TUG_Z = -4.0                            # the tugs, in the horse's z
 SHAFT_TIP_Z = -15.0                     # the shafts' tips, in the horse's z
-HAMES = (7.0, 21.0, -15.0)              # the trace hooks on the hames: x out, height, the horse's z
+HAMES = (7.0, 21.0, -20.4)              # the trace hooks on the hames: x out, height, the horse's z
 TERRET = (2.2, 31.4, -4.0)              # the rein rings on top of the cart saddle (x mirrored)
 
 SEATS = {   # where the townsfolk sit (the seat's top under the middle of their hips) and which way they face (0 ahead, 180 back)
@@ -1430,10 +1430,9 @@ def build():
     return models, used
 
 
-def pack(cubes):
-    """Skyline-pack every cube's box UV (the lowest fit first), each shared paint once: a cube whose [share] names
-    another cube takes that cube's place; cubes sharing a painter by key take the first one's."""
-    W = TEX_W
+def pack(cubes, W=TEX_W, H=TEX_H, who='wagon'):
+    """Skyline-pack every cube's box UV (the lowest fit first) into [W] x [H], each shared paint once: a cube whose
+    [share] names another cube takes that cube's place; cubes sharing a painter by key take the first one's."""
     sky = [[0, 0, W]]
     by_name = {c.name: c for c in cubes}
     placed, todo = {}, []
@@ -1463,7 +1462,7 @@ def pack(cubes):
             if best is None or key < best[0]:
                 best = (key, x, y)
         if best is None:
-            raise SystemExit(f'wagon: {c.name} ({fw}x{fh}) does not fit')
+            raise SystemExit(f'{who}: {c.name} ({fw}x{fh}) does not fit')
         _, x, y = best
         c.uv = (x, y)
         new, end = [], x + fw
@@ -1494,13 +1493,13 @@ def pack(cubes):
         if c.uv is None:
             src = source(c)
             if src.uv is None:
-                raise SystemExit(f'wagon: {c.name} shares {c.share}, which has no place')
+                raise SystemExit(f'{who}: {c.name} shares {c.share}, which has no place')
             if [math.ceil(s) for s in src.size] != [math.ceil(s) for s in c.size]:
-                raise SystemExit(f'wagon: {c.name} {c.size} shares {src.name} {src.size}, another size')
+                raise SystemExit(f'{who}: {c.name} {c.size} shares {src.name} {src.size}, another size')
             c.uv = src.uv
     used = max(c.uv[1] + c.footprint()[1] for c in cubes)
-    if used > TEX_H:
-        raise SystemExit(f'wagon: texture too small, need {used} rows of {TEX_H}')
+    if used > H:
+        raise SystemExit(f'{who}: texture too small, need {used} rows of {H}')
     return used
 
 

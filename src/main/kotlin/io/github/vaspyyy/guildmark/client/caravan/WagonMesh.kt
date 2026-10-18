@@ -403,7 +403,7 @@ object WagonMesh {
     val SWINGLE = floatArrayOf(0f, -10f, -38.2f)
     const val SWINGLE_HALF = 7.5f
     /** The traces' front ends, on the horse's hames: x out (mirrored for the right), height, and z in the horse's space. */
-    val HAMES = floatArrayOf(7f, 21f, -15f)
+    val HAMES = floatArrayOf(7f, 21f, -20.4f)
     /** The rein rings on top of the horse's saddle the reins run through: x out, height, z in the horse's space. */
     val TERRET = floatArrayOf(2.2f, 31.4f, -4f)
     /** The brake lever's pivot, its length (to the grip) and its lean about x, degrees: off and hard on. */
