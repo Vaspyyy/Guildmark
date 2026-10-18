@@ -182,10 +182,26 @@ enum class Activity(val clip: String, val ticks: Int, val loop: Boolean, val ove
     HANG("fest_hang", 40, true),
     RELEASE("fest_release", 40, false),
     GAZE("fest_gaze", 80, true),
+    // Caravans on the road (living-world/design-road.md; art/scripts/road_clips.py): the wagon's crew, a waylaying,
+    // the run to the gate and the town's grumbling
+    DRIVE("drive", 40, true),
+    DRIVE_URGE("drive_urge", 20, false),
+    DRIVE_BRAKE("drive_brake", 30, false),
+    RIDE_TAIL("ride_tail", 60, true),
+    JUMP_DOWN("jump_down", 16, false),
+    CLIMB_UP("climb_up", 20, false),
+    CUT_LOOSE("cut_loose", 50, false),
+    COWER("cower", 40, true),
+    HAND_DOWN("hand_down", 30, false),
+    CATCH_BREATH("catch_breath", 40, true),
+    RECOUNT("recount", 80, true),
+    WOUNDED("wounded", 40, true, true),
+    GRUMBLE("grumble", 40, false),
     ;
 
-    /** Seated activities keep the townsperson on their seat. */
-    val seated: Boolean get() = this == SIT || this == SIT_DRINK || this == SIT_TALK || this == SCRIBE || this == DICE || this == SIT_EAT
+    /** Seated activities keep the townsperson on their seat (a wagon's bench and tailboard among them). */
+    val seated: Boolean get() = this == SIT || this == SIT_DRINK || this == SIT_TALK || this == SCRIBE || this == DICE || this == SIT_EAT ||
+        this == DRIVE || this == DRIVE_URGE || this == DRIVE_BRAKE || this == RIDE_TAIL
 
     companion object {
         fun byId(id: Int): Activity = entries.getOrElse(id) { NONE }
