@@ -20,7 +20,6 @@ import net.minecraft.core.Direction
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.sounds.SoundEvents
 import net.minecraft.sounds.SoundSource
-import net.minecraft.util.Mth
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 import net.minecraft.world.phys.AABB
@@ -464,11 +463,4 @@ object Fitting {
             const val CARRY_OFF = 160
         }
     }
-
-    /** Degrees a tick a worker turns. */
-    @Suppress("unused")
-    private val TURN = Aside.TURN
-
-    @Suppress("unused")
-    private fun yawDiff(a: Float, b: Float): Float = Mth.degreesDifference(a, b)
 }
