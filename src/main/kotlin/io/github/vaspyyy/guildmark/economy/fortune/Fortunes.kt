@@ -397,9 +397,13 @@ object Fortunes {
         return Crier.Cry(line, said(line).append(" ").append(text.copy().withStyle(ChatFormatting.GRAY)), slip, if (n.what == "wanted") 0 else 1)
     }
 
-    /** [town]'s times at the noon of market hour [noon]: moved since the noon before, or still not steady; null if steady all along. */
+    /**
+     * [town]'s times at the noon of market hour [noon]: moved since the noon before, or still not steady; null if
+     * steady all along. Moved since this noon (`fortune set` or `market run` in the afternoon), it's the next noon's
+     * news, and this noon's times are the ones they moved from.
+     */
     private fun timesCry(town: FortuneData.Town, noon: Long, at: Long): Crier.Cry? {
-        val times = town.times
+        val times = if (town.moved > noon) town.from else town.times
         if (town.moved > noon - 24 && town.moved <= noon) {
             val sign = if (times.ordinal > town.from.ordinal) 1 else -1
             val line = "crier_times_${times.id}"

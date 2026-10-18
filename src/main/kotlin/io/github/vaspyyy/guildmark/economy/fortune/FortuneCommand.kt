@@ -6,7 +6,9 @@ import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.context.CommandContext
 import io.github.vaspyyy.guildmark.city.Capitals
 import io.github.vaspyyy.guildmark.city.CapitalPiece
+import io.github.vaspyyy.guildmark.block.MarketBoardBlockEntity
 import io.github.vaspyyy.guildmark.economy.Conditions
+import io.github.vaspyyy.guildmark.economy.MarketBoards
 import io.github.vaspyyy.guildmark.economy.Markets
 import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
 import io.github.vaspyyy.guildmark.village.VillageNames
@@ -127,6 +129,7 @@ object FortuneCommand {
         val closed = if (town.closed > FortuneData.NEVER) "the close of day ${town.closed}" else "no close yet"
         say(source, line().append(label("Score: ")).append(plain("${town.score} at $closed, calling for ${called.id}" + if (called != town.times) ", so a step toward it at the next close" else "")))
         say(source, line().append(label("Crowds and spending: ")).append(plain("%.2f and %.2f".format(Fortunes.busy(source.level, here.key), Fortunes.spend(source.level, here.key)))))
+        medallion(context, here)?.let { say(source, line().append(label("The board's medallion: ")).append(plain(it))) }
         if (town.reasons.isEmpty()) say(source, grey("Nothing weighed on it at its last close."))
         else {
             say(source, label("Reasons at the last close, biggest first:"))
@@ -151,6 +154,18 @@ object FortuneCommand {
             })))
         }
         return 1
+    }
+
+    /**
+     * What the medallion at the head of [here]'s market board shows (its state, saved and synced, whether or not its
+     * faces are drawn yet), and when it turned; null with the board's chunk not loaded.
+     */
+    private fun medallion(context: CommandContext<CommandSourceStack>, here: Here): String? {
+        val level = context.source.level
+        val board = CityPlaces.of(level, here.capital)?.let { MarketBoards.board(level, it) } ?: return null
+        val turned = if (board.turned > MarketBoardBlockEntity.LONG_AGO) "turned %.0f s ago in sight of someone".format((level.gameTime - board.turned) / 20.0) else "found turned (nobody saw it go)"
+        val pos = board.blockPos
+        return "${board.times}, $turned; the board at ${pos.x} ${pos.y} ${pos.z}"
     }
 
     /** A reason's line: its points, kind, words and how long it has. */
