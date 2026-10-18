@@ -268,18 +268,20 @@ as written (99% for the leaders' 49 lines, 42 of them exactly).
 The sounds the city's people make (`townsfolk/`): their work and play, the bard's tunes, and what they
 say as you pass.
 
-- `make_townsfolk_sfx.py`: the 68 effects (26 events and their variants, the factions' mages, knights and
-  thieves among them), each timed to a townsfolk animation, and the bard's four lute tunes
-  (`townsfolk/bard/tune1..4`). The effects are close-up and dry
-  apart from a small room. Each is set to a loudness target (its loudest 100 ms, K-weighted) instead of by
+- `make_townsfolk_sfx.py`: the 81 effects (31 events and their variants, the factions' mages, knights and
+  thieves among them, and the town crier's chalk, notice and scroll), each timed to a townsfolk animation, and the
+  bard's four lute tunes (`townsfolk/bard/tune1..4`). The effects are close-up and dry
+  apart from a small room (the crier's are out in the square, with its slap off the house fronts instead).
+  Each is set to a loudness target (its loudest 100 ms, K-weighted) instead of by
   peak: the smith's hammer is the loudest at -12 LUFS, the soft sounds sit at -17 to -18, and peaks stay under
   -1 dBFS. `@effect(...)` on each recipe sets its variants, subtitle, target and carry distance. The tunes
   are composed in the script and played by FluidSynth's General MIDI nylon guitar, with a second string a
   few cents sharp for the lute's paired courses and a small synthesised frame drum in the dances. They are
   levelled to -18 LUFS integrated.
-- `make_townsfolk_voices.py`: the 301 voice lines (`townsfolk/voice/<timbre>/<line>`) in four Kokoro voices, 108 of
+- `make_townsfolk_voices.py`: the 527 voice lines (`townsfolk/voice/<timbre>/<line>`) in four Kokoro voices, 108 of
   them what the three factions' members say in the street (`mage_`, `knight_`, `thief_`, `alarm_`, `suspect_`, `calm_`
-  and `purse_` lines, in the man's, the woman's and the old man's timbres).
+  and `purse_` lines, in the man's, the woman's and the old man's timbres) and 226 the town crier's news (`crier_`
+  lines, in the man's and the woman's).
   It also writes the two fragment files the lead merges into `sounds.json` and `en_us.json`:
   `townsfolk_sounds.json` and `townsfolk_lang.json`.
 
@@ -309,8 +311,8 @@ back.
 
 | Timbre | Kokoro voice | Speed | Processing | Lines |
 |---|---|---|---|---|
-| `man` | `am_puck` | 1.0 | street | 110 |
-| `woman` | `af_nova` | 1.12 | street | 110 |
+| `man` | `am_puck` | 1.0 (the crier 0.88) | street (the crier: the square) | 223 |
+| `woman` | `af_nova` | 1.12 (the crier 0.97) | street (the crier: the square) | 223 |
 | `old` | `am_adam` | 0.86 | down 1.2 semitones, a slight tremor, a little grit, street | 75 |
 | `child` | `af_jessica` | 1.1 | up 3 semitones, street | 6 |
 
@@ -318,8 +320,8 @@ All four read British phonemes (`en-gb`), as the city's criers do. None of them 
 characters, Halvard, the criers or the watch. Old women use `woman`, and the game varies the pitch a little
 per townsperson. Each line plays as `townsfolk.voice.<timbre>.<line>` and is subtitled with its own text
 (`say.guildmark.<line>`). Line lengths do not matter: nothing in the game is timed to them, so a line can be
-voiced again freely. `SAY_AS` respells "Hmph" (otherwise spelled out letter by letter) and "Hmm" (otherwise
-a weak, swallowed sound), and puts a comma where a line breathes when the recogniser lost a word without it.
+voiced again freely (the town crier's are the exception, below). `SAY_AS` respells "Hmph" (otherwise spelled out
+letter by letter) and "Hmm" (otherwise a weak, swallowed sound), and puts a comma where a line breathes when the recogniser lost a word without it.
 `PHONEMES` gives the IPA outright for the eight lines no respelling fixed: the American voices turn the British
 long "a" of "stars", "guards" and "hearth" into an "o" ("stalls", "gods", "Hawthorne") unless the r is sounded,
 and `alarm_0` ("Thief! Stop, thief!") is written out so that its lead-in can be. `PHONEMES_FOR` gives a line other
@@ -334,3 +336,27 @@ the 108 faction lines also with Whisper base.en (the encoded files, with a retry
 107 of them come back exactly as written. The one that does not is the man's `knight_kin_0` ("Hearth and road,
 friend." is heard as "Harthing Road, friend"); the larger fp32 model of Whisper also hears the old man's `alarm_0`
 as "Thieve, stop thief".
+
+The town crier's 113 lines (`CRIER`) are in the man's and the woman's voice only: an old crier borrows the man's a
+little lower, as old men do with every line their own voice lacks, so there are no `old` takes. They are the
+everyday voices crying instead of talking (`process_crier`): read slower (`CRIER_SPEED`, 0.88 and 0.97), each take
+cut into its calls where the voice rests between them, each call's last stressed vowel drawn out by a fifth and the
+last call's by a third (`CRIER_DRAW`, with `ambience/voices.py`'s WSOLA) and at least 0.36 s left between calls, then
+projected (less chest, +3.5 dB around 2.6 kHz, a gentle 2.5:1 compressor) and set in the square: a slap off its stone
+fronts (34 to 283 ms, `CRIER_SLAP`) and a faint open tail ducked under the words. Every crier line sits at -19 LUFS
+(within 0.3), about 2.3 LU over the everyday lines' average, with true peaks under -1 dBTP, and its `sounds.json`
+entry has `attenuation_distance` 48 so the whole square hears it. The server gives each line 100 ticks, so none may
+run over 4.5 s: the longest are the man's and the woman's `crier_fever`, 3.7 and 3.8 s. `CRIER_SPEED_FOR` gives a
+line its own speed (only the woman's `crier_festival_soon` and `crier_blight_carrot`, a little quicker, which Whisper
+heard better). `CRIER_PHONEMES` puts right, in espeak's British reading, what Whisper base.en heard wrong: "Oyez" is
+read oh-YEZ (heard as "Oh yes", as criers say it) and "murrain" MURR-in; the r is sounded where the American voices
+lost or bent a vowel without it ("dear", "are", "short", "board", "pork", "banners", "bumper", "iron"); and as both
+voices say a short vowel a step lower than written, "Bread" is read with the vowel of "bid" (else "Brad") and the
+hens in "among the hens" likewise. `CRIER_PHONEMES_FOR` has a line's fixes for one timbre (the man's "Bring, in the
+harvest", else "bringing the harvest"). With them Whisper base.en hears 105 of each voice's 113 lines word for word
+(98.3% of the man's words, 98.8% of the woman's; the fp32 model 98.0% and 98.8%). What it still mishears is a single
+word in a short line: "Cod" as "Caught" (the man's both, the woman's cheap), the woman's "Beetroot" as "Beat wrote",
+"pest" as "past", "murrain" as "Maran" (a word it does not know), and once each "Flint" as "Flynn", "Coal" as "Call",
+"Mutton" as "Martin", the man's "Wheat is dear" as "We is dear", "hens are laying" as "hands" and "want of flour" as
+"one of flour", and the woman's "ovens" as "oven". The 226 takes were also checked for clicks (none) and clipping
+(none).

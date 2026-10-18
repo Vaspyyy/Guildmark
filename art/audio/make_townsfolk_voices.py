@@ -4,7 +4,12 @@ Kokoro TTS in four voices, one per timbre, then given a light touch of processin
 (a little age for the old man, a child's pitch for the child).
 
 The game picks the timbre from the townsperson (old women use "woman") and varies the pitch a little per
-person, so one voice per timbre is enough. Line lengths do not matter to the game.
+person, so one voice per timbre is enough. Line lengths do not matter to the game, except for the town crier's.
+
+The town crier's lines (CRIER: the day's news, cried in the market square at noon) are in the man's and the woman's
+voice, cried rather than said: read slower, each call's last stressed vowel drawn out and a breath between calls,
+then projected and set in the square (process_crier). The server gives each of them 100 ticks, so none runs over
+4.5 s, and they carry 48 blocks.
 
 Stages (run from the repo root):
 
@@ -192,6 +197,138 @@ CHILD = {
     "child_5": "Race you to the fountain!",
 }
 
+# ------------------------------------------------------------------ the town crier
+# At noon a townsperson in each capital cries the day's news in the market square and pins it up on the market
+# board: what happened to the town's market, which prices moved and why, word from the land. Each line
+# here is one piece of that news, in the man's and the woman's voice (an old crier says the man's lines a little
+# lower, as old men do with every line of the man's). The text is the language file's say.guildmark.<line>,
+# character for character, and how the crier says it is set further down (CRIER_SPEED to CRIER_PHONEMES).
+CRIER_TIMBRES = ("man", "woman")
+CRIER = {
+    # the opening call
+    "crier_open_0": "Oyez! Oyez! Oyez!",
+    "crier_open_1": "Hear ye, hear ye! News from the market!",
+    "crier_open_2": "Gather round, good people, and hear the news!",
+    # trouble or luck that has begun
+    "crier_blight_wheat": "Blight in the fields! The wheat is failing!",
+    "crier_blight_carrot": "Blight in the fields! The carrots are failing!",
+    "crier_blight_potato": "Blight in the fields! The potatoes are failing!",
+    "crier_blight_beetroot": "Blight in the fields! The beetroot is failing!",
+    "crier_bumper_wheat": "A bumper crop of wheat is coming in!",
+    "crier_bumper_carrot": "A bumper crop of carrots is coming in!",
+    "crier_bumper_potato": "A bumper crop of potatoes is coming in!",
+    "crier_bumper_beetroot": "A bumper crop of beetroot is coming in!",
+    "crier_murrain": "Murrain among the herds! Meat and hides will be dear!",
+    "crier_fowl_pest": "A pest has got among the hens!",
+    "crier_mill_broken": "The windmill's sails are broken! Flour will be short!",
+    "crier_oven_cracked": "The bakery's oven has cracked! Bread will be short!",
+    "crier_good_catch": "The boats are coming in full! Fish is cheap at the quay!",
+    "crier_poor_catch": "The nets come up empty! Fish will be dear!",
+    "crier_fever": "A fever is going round the town! Keep warm, and rest!",
+    # trouble that is over
+    "crier_over_blight": "The blight has passed from the fields!",
+    "crier_over_murrain": "The herds are healthy again!",
+    "crier_over_fowl_pest": "The hens are laying again!",
+    "crier_over_mill_broken": "The windmill turns again!",
+    "crier_over_oven_cracked": "The bakery's oven is mended!",
+    "crier_over_poor_catch": "The fish are back in the nets!",
+    "crier_over_fever": "The fever has passed!",
+    # a price that moved: crier_dear_<good> and crier_cheap_<good> for each of the market's goods
+    "crier_dear_wheat": "Wheat is dear today!",
+    "crier_cheap_wheat": "Wheat is cheap today!",
+    "crier_dear_bread": "Bread is dear today!",
+    "crier_cheap_bread": "Bread is cheap today!",
+    "crier_dear_carrot": "Carrots are dear today!",
+    "crier_cheap_carrot": "Carrots are cheap today!",
+    "crier_dear_potato": "Potatoes are dear today!",
+    "crier_cheap_potato": "Potatoes are cheap today!",
+    "crier_dear_beetroot": "Beetroot is dear today!",
+    "crier_cheap_beetroot": "Beetroot is cheap today!",
+    "crier_dear_apple": "Apples are dear today!",
+    "crier_cheap_apple": "Apples are cheap today!",
+    "crier_dear_cod": "Cod is dear today!",
+    "crier_cheap_cod": "Cod is cheap today!",
+    "crier_dear_salmon": "Salmon is dear today!",
+    "crier_cheap_salmon": "Salmon is cheap today!",
+    "crier_dear_beef": "Beef is dear today!",
+    "crier_cheap_beef": "Beef is cheap today!",
+    "crier_dear_pork": "Pork is dear today!",
+    "crier_cheap_pork": "Pork is cheap today!",
+    "crier_dear_mutton": "Mutton is dear today!",
+    "crier_cheap_mutton": "Mutton is cheap today!",
+    "crier_dear_chicken": "Chicken is dear today!",
+    "crier_cheap_chicken": "Chicken is cheap today!",
+    "crier_dear_honey": "Honey is dear today!",
+    "crier_cheap_honey": "Honey is cheap today!",
+    "crier_dear_wool": "Wool is dear today!",
+    "crier_cheap_wool": "Wool is cheap today!",
+    "crier_dear_string": "String and twine are dear today!",
+    "crier_cheap_string": "String and twine are cheap today!",
+    "crier_dear_leather": "Leather is dear today!",
+    "crier_cheap_leather": "Leather is cheap today!",
+    "crier_dear_arrow": "Arrows are dear today!",
+    "crier_cheap_arrow": "Arrows are cheap today!",
+    "crier_dear_feather": "Feathers are dear today!",
+    "crier_cheap_feather": "Feathers are cheap today!",
+    "crier_dear_flint": "Flint is dear today!",
+    "crier_cheap_flint": "Flint is cheap today!",
+    "crier_dear_candle": "Candles are dear today!",
+    "crier_cheap_candle": "Candles are cheap today!",
+    "crier_dear_bottle": "Bottles are dear today!",
+    "crier_cheap_bottle": "Bottles are cheap today!",
+    "crier_dear_iron": "Iron is dear today!",
+    "crier_cheap_iron": "Iron is cheap today!",
+    "crier_dear_coal": "Coal is dear today!",
+    "crier_cheap_coal": "Coal is cheap today!",
+    # why a price moved
+    "crier_why_bought_up": "Folk have been buying it up!",
+    "crier_why_sold_in": "The stalls are piled high with it!",
+    "crier_why_no_flour": "The ovens stood cold for want of flour!",
+    "crier_why_no_grain": "The mill stood idle for want of grain!",
+    "crier_why_short_handed": "Too few hands to make it!",
+    "crier_why_rest_day": "The ovens rest on the seventh day!",
+    "crier_why_carts_behind": "The carts are behind with the harvest!",
+    "crier_why_worn_tools": "The town's tools are worn out!",
+    "crier_why_from_afar": "It must come from afar, by caravan!",
+    "crier_why_scarce": "There's little of it about!",
+    "crier_why_plenty": "There's plenty of it about!",
+    # the town
+    "crier_hungry": "The town went hungry yesterday! Food is short!",
+    "crier_quiet": "The market is well stocked, and prices are fair!",
+    "crier_board": "The prices are up on the board!",
+    # word from the land
+    "crier_news_slain": "A great beast has been slain!",
+    "crier_news_dragon": "A dragon has been slain!",
+    "crier_news_sea": "A terror of the deep has been slain!",
+    "crier_news_lair": "A monster's lair has been cleared!",
+    "crier_news_rank": "The guild has a new champion!",
+    "crier_news_works": "A village has finished its new works!",
+    "crier_news_road": "A new road is open to travellers!",
+    "crier_news_bandits": "Bandits were driven off!",
+    "crier_news_siege_won": "A village has held off a siege!",
+    "crier_news_siege_lost": "A village has been overrun by a horde!",
+    "crier_news_outlaws": "Outlaws are abroad! Keep to the roads by day!",
+    "crier_news_outlaw_slain": "An outlaw captain has been brought down!",
+    "crier_news_taken": "Outlaws have carried folk off!",
+    "crier_news_rescued": "A captive has been brought home!",
+    "crier_news_guild": "A new guild has been founded!",
+    "crier_news_banners": "Banners are changing over the villages!",
+    "crier_news_king": "The Hollow King is no more!",
+    "crier_news_deeds": "Great deeds are afoot in the land!",
+    "crier_news_more": "More word from the guild halls!",
+    # the year
+    "crier_festival_soon": "A festival is coming! Make ready!",
+    "crier_festival_today": "The festival is today! Come one, come all!",
+    "crier_season_spring": "Spring has come! Time to sow!",
+    "crier_season_summer": "Summer is here!",
+    "crier_season_autumn": "Autumn is upon us! Bring in the harvest!",
+    "crier_season_winter": "Winter has come! Lay in your stores!",
+    # the closing call
+    "crier_close_0": "That is the news! Go about your business!",
+    "crier_close_1": "Noon, and all's well!",
+    "crier_close_2": "So ends the news! Fair trading to you all!",
+}
+
 # Spelling the TTS reads better than the written text (the subtitles keep the text as written)
 SAY_AS = {
     "Hmph.": "Humph.",  # otherwise spelled out, H-M-P-H
@@ -244,6 +381,85 @@ LEVEL = {
     "suspect_0": -1.0, "suspect_1": -1.0, "suspect_2": -1.0, "calm_0": -2.0, "calm_1": -2.0, "thief_2": -3.0,
 }
 
+# ------------------------------------------------------------------ how the crier cries
+# The crier speaks in the timbre's everyday voice (the same Kokoro voice and British phonemes), so a crier who greets
+# you and then cries the news is one person, projecting: read slower and more deliberately than everyday speech (the
+# man reads his everyday lines at 1.0, the woman hers at 1.12), each call's last stressed vowel drawn out a little and a
+# breath left between one call and the next, then less chest and more presence, gently compressed and set in the
+# square, with a slap off its stone fronts. The server gives each line 100 ticks, so none may run over CRIER_MAX_LEN;
+# one that would is read a little quicker (CRIER_SPEED_FOR) rather than cut.
+CRIER_SPEED = {"man": 0.88, "woman": 0.97}
+CRIER_SPEED_FOR = {  # (line, timbre): a speed of its own
+    ("crier_festival_soon", "woman"): 1.03,  # "Make ready!", not "make granny"
+    ("crier_blight_carrot", "woman"): 1.03,  # "fields", not "field"
+}
+CRIER_DRAW = (1.2, 1.32)  # how far a call's last stressed vowel is drawn out: the earlier calls', the last call's
+CRIER_GAP = 0.36  # seconds between one call and the next, at least
+CRIER_HP = {"man": 95, "woman": 115}  # less chest than the everyday lines (75 and 90 Hz)
+CRIER_LUFS = -19.0  # every crier line's integrated loudness, about 2.3 LU over the everyday lines' -21.3 on average
+CRIER_REACH = 48  # blocks: the whole square hears the crier (the lines' attenuation_distance)
+CRIER_MAX_LEN = 4.5
+# The square's stone fronts: each reflection's delay (s), its level (dB under the voice) and the low-pass (Hz) that
+# dulls it, the far walls' last
+CRIER_SLAP = [(0.034, -13.0, 5500), (0.057, -15.5, 4800), (0.089, -17.5, 4200), (0.141, -18.5, 3600),
+              (0.212, -22.0, 3000), (0.283, -25.0, 2600)]
+
+# The crier's lines are read from phonemes: espeak's British reading of the line (after SAY_AS) with these put right,
+# in this order. The American voices drop or bend a British vowel that has no r after it, so "dear", "are", "short",
+# "board", "more", "carts", "harvest", "pork", "afar", "stores", "bumper", "banners", "feathers" and "iron" sound their
+# r. Both voices also say a short vowel a step lower than written ("Bread" came out as "Brad"), and a few words needed
+# a vowel, a stress or a space of their own. Each comment says what Whisper heard without the fix.
+CRIER_PHONEMES = [
+    ("ˈɔɪɛz", "oʊjˈɛz"),  # "Oyez" as oh-YEZ (heard as "oh yes", as criers say it), not OY-ez ("OES")
+    ("mˈʌɹeɪn", "mˈʌɹɪn"),  # "Murrain" as MURR-in, not mur-RAIN ("Maureen")
+    ("dˈiə", "dˈɪɹ"),  # "dear", not "dee-ah" ("DIA") or "do here"
+    ("ɑː ", "ɑːɹ "),  # "are", lost before "dear" ("carrots a deer")
+    ("ʃˈɔːt", "ʃˈɔːɹt"),  # "short", not "shot"
+    ("bˈɔːd", "bˈɔːɹd"),  # "board", not "baud"
+    ("nˈəʊmˌɔː", "nˈoʊ mˈɔːɹ"),  # "no more", not "no maw"
+    ("mˈɔː wˈɜːd", "mˈɔːɹ wˈɜːd"),  # "More word"
+    ("kˈɑːts", "kˈɑːɹts"),  # "carts", not "cots"
+    ("hˈɑːvɪst", "hˈɑːɹvɪst"),  # "harvest"
+    ("bˈəʊts", "bˈoʊts"),  # "boats", not "bolts"
+    ("bˈiːtɹuːt", "bˈiːt ɹˌuːt"),  # "beetroot", not "be true, it" or "beatrot"
+    ("hˈɒləʊ", "hˈɒloʊ"),  # "Hollow", not "holler" (as knight_3)
+    ("kˈɒd", "kˈɑːd"),  # "Cod", not "caught"
+    ("pˈɔːk", "pˈɔːɹk"),  # "Pork", not "park" or "pock"
+    ("ɐfˈɑː", "ɐfˈɑːɹ"),  # "afar", not "a fall"
+    ("stˈɔːz", "stˈɔːɹz"),  # "stores", not "stars"
+    ("ˈɔːlz wˈɛl", "ˈɔlz wˈɛl"),  # "all's well", not "all as well"
+    ("hɐz kɹˈakt", "hˈaz kɹˈakt"),  # "has cracked", not "is cracked"
+    ("bɹˈɪŋ ɪnðə", "bɹˈɪŋ ˈɪn ðə"),  # "Bring in the harvest", not "bringing the harvest"
+    ("lˈeɪ ɪn", "lˈeɪ ˈɪn"),  # "Lay in", not "late in"
+    ("wˈɪndmɪl", "wˈɪndmˌɪl"),  # "windmill", not "windmull"
+    ("wˈiːt ɪz", "wˈiːt ˈɪz"),  # "Wheat is", not "weed is" (no flapped t before a stressed vowel)
+    ("wˈʊl ɪz", "wˈuːl ɪz"),  # "Wool", not "well" or "wall"
+    ("ˈaɪən ɪz", "ˈaɪɚn ɪz"),  # "Iron", not "I am"
+    ("hɐz hˈɛld", "hˌaz hˈɛld"),  # "has held", not "is held"
+    ("fˈiːvə hɐz", "fˈiːvə hˌaz"),  # "The fever has passed", not "is passed"
+    ("lˈɪtəl ɒv ɪt", "lˈɪtəl ʌv ɪt"),  # "little of it", not "a little bit"
+    ("ˈʌvən ɪz mˈɛndɪd", "ˈʌvən ˈɪz mˈɛndɪd"),  # "oven is mended", not "of an ismended"
+    ("tə sˈəʊ", "tə sˈoʊ"),  # "sow", not "sell"
+    ("bˈʌmpə kɹˈɒp", "bˈʌmpəɹ kɹˈɒp"),  # "bumper", not "bumpa"
+    ("bˈanəz", "bˈænɚz"),  # "Banners", not "Banas" or "Bonners"
+    ("fˈɛðəz ɑːɹ", "fˈeðəɹz ɑːɹ"),  # "Feathers", not "Fathers"
+    ("mˈʌtən ɪz", "mˈətən ɪz"),  # "Mutton", not "Martin"
+    ("kˈəʊl ɪz", "kˈoʊəl ɪz"),  # "Coal", not "Call"
+    ("bɹˈɛd ɪz", "bɹˈɪd ɪz"),  # "Bread", not "Brad": both voices say a short vowel a step lower than written
+    ("wˈɒnt ɒv", "wˈɑnt ʌv"),  # "want of", not "one of"
+    ("wˈɑnt ʌv ɡɹˈeɪn", "wˈɑntʰ ʌv ɡɹˈeɪn"),  # the man's "want of grain", with its t
+    ("pˈɛst hɐz ɡɒt", "pˈɛst hˌaz ɡˈɒt"),  # "has got among the hens", not "...the hands"
+    ("ɐmˌʌŋ ðə hˈɛnz", "ɐmˌʌŋ ðə hˈɪnz"),  # "hens", not "hands" (as "Bread")
+    ("tʃˈɪkɪn ɪz dˈɪɹ", "tʃˈɪkɪn ˈɪz dˈɪɹ"),  # "Chicken is dear", not "Chuckin is dear"
+    ("wˈiːt ˈɪz dˈɪɹ", "wˈiːtʰ ˈɪz dˈɪɹ"),  # the man's "Wheat is dear", not "We dis deer"
+    ("wˈiːt ˈɪz tʃˈiːp", "wˈiːtʰ ˈɪz tʃˈiːp"),  # and "Wheat is cheap", not "Weed is cheap"
+    ("nˈuːn, and ˈɔlz", "nˈuːn! and ˈɔlz"),  # "Noon! and all's well", called as the hour, not "Noonan as well"
+]
+# A line's own fixes in one timbre, after CRIER_PHONEMES: (line, timbre) -> [(espeak's, Kokoro's)]
+CRIER_PHONEMES_FOR = {
+    ("crier_season_autumn", "man"): [("bɹˈɪŋ ˈɪn ðə", "bɹˈɪŋ, ˈɪn ðə")],  # "Bring in", not "bringing"
+}
+
 OUT_SR = 32000
 SPEECH_DB = -19.0  # speech RMS, as the named characters' voices
 SOUND_DIR = "townsfolk/voice"
@@ -261,6 +477,8 @@ def lines(only=None, keys=None):
         else:
             d = dict(COMMON, **(TRADES if timbre in ("man", "woman") else {}))
             d.update(FACTION)
+            if timbre in CRIER_TIMBRES:
+                d.update(CRIER)
         out[timbre] = {k: v for k, v in d.items() if not keys or re.search(keys, k)}
     return out
 
@@ -271,12 +489,31 @@ def spoken(text):
     return text
 
 
-def say(key, text, timbre=None):
+def say(key, text, timbre=None, k=None):
     """what Kokoro is given for a line: its written-out phonemes (the timbre's own, else the line's) if it has any,
-    else its text after SAY_AS, with the line's lead-in in front -> (text or phonemes, is_phonemes)"""
+    a crier line's phonemes (read with the Kokoro k: crier_phonemes), else its text after SAY_AS, with the line's
+    lead-in in front -> (text or phonemes, is_phonemes)"""
     ph = PHONEMES_FOR.get((key, timbre)) or PHONEMES.get(key)
+    if not ph and key in CRIER and k is not None:
+        ph = crier_phonemes(k, key, timbre)
     said, is_ph = (ph, True) if ph else (spoken(text), False)
     return LEAD_IN.get(key, "") + said, is_ph
+
+
+def crier_phonemes(k, key, timbre):
+    """a crier line's phonemes: espeak's reading of its text (after SAY_AS), with CRIER_PHONEMES put right, then the
+    line's own fixes in this timbre (CRIER_PHONEMES_FOR)"""
+    ph = k.tokenizer.phonemize(spoken(CRIER[key]), TIMBRES[timbre]["lang"])
+    for a, b in CRIER_PHONEMES + CRIER_PHONEMES_FOR.get((key, timbre), []):
+        ph = ph.replace(a, b)
+    return ph
+
+
+def speed_of(key, timbre):
+    """how quickly Kokoro reads a line: the timbre's speed, or a crier line's (CRIER_SPEED, CRIER_SPEED_FOR)"""
+    if key in CRIER:
+        return CRIER_SPEED_FOR.get((key, timbre), CRIER_SPEED[timbre])
+    return TIMBRES[timbre]["speed"]
 
 
 def cut_lead_in(x, sr, frame=0.005, floor_db=-22.0, min_run=0.04, fade=0.008):
@@ -320,8 +557,9 @@ def cmd_tts(a):
         folder = os.path.join(a.out, timbre)
         os.makedirs(folder, exist_ok=True)
         for key, text in keys.items():
-            said, is_ph = say(key, text, timbre)
-            audio, sr = k.create(said, voice=t["voice"], speed=t["speed"], lang=t["lang"], is_phonemes=is_ph)
+            said, is_ph = say(key, text, timbre, k)
+            audio, sr = k.create(said, voice=t["voice"], speed=speed_of(key, timbre), lang=t["lang"],
+                                 is_phonemes=is_ph)
             if key in LEAD_IN:
                 audio = cut_lead_in(audio, sr)
             fn = os.path.join(folder, key + ".wav")
@@ -333,7 +571,7 @@ def cmd_phonemes(a):
     k = kokoro(a)
     for timbre, keys in lines(a.only, a.keys).items():
         for key, text in keys.items():
-            said, is_ph = say(key, text, timbre)
+            said, is_ph = say(key, text, timbre, k)
             ph = said if is_ph else k.tokenizer.phonemize(said, TIMBRES[timbre]["lang"])
             print(f"{timbre:6s} {key:12s} {text:45s} {ph}")
 
@@ -418,6 +656,121 @@ def process_line(x, sr_in, st, key, timbre, offset_db=0.0):
     return out
 
 
+# ------------------------------------------------------------------ the crier's delivery
+def city_voices():
+    """the city's criers (ambience/voices.py), for their tools: a take's level, the last stressed vowel of a phrase
+    and the stretch (waveform-similarity overlap-add) that draws a vowel out without changing its pitch"""
+    path = os.path.join(HERE, "ambience")
+    if path not in sys.path:
+        sys.path.insert(0, path)
+    import voices
+    return voices
+
+
+def calls_of(text):
+    """a crier line's calls: its sentences, split after each !, ? or . that has more words after it"""
+    return [c for c in re.split(r"(?<=[!?.])\s+", text.strip()) if c]
+
+
+def call_breaks(y, text, cv, floor_db=-26.0, reach=0.12, min_run=0.02):
+    """(start, end) samples of where the take falls quiet between each call and the next: the longest stretch
+    floor_db under its loudest moment (min_run long at least) near where the text's letters put the break, the nearer
+    of two alike. None where Kokoro ran two calls together: the take is never cut through a word"""
+    from sfxkit import ns
+    calls = calls_of(text)
+    letters = [len(re.sub(r"[^a-z]", "", c.lower())) for c in calls]
+    env = cv.envelope_db(y, win=0.012)
+    out = []
+    for i in range(1, len(calls)):
+        t = int(sum(letters[:i]) / sum(letters) * len(y))
+        r = max(ns(0.15), int(reach * len(y)))
+        a, b = max(ns(0.1), t - r), min(len(y) - ns(0.1), t + r)
+        e = np.diff(np.concatenate([[0], (env[a:b] < floor_db).astype(np.int8), [0]]))
+        runs = [(a + s, a + q) for s, q in zip(np.nonzero(e == 1)[0], np.nonzero(e == -1)[0]) if q - s >= ns(min_run)]
+        out.append(max(runs, key=lambda rq: rq[1] - rq[0] - 0.2 * abs((rq[0] + rq[1]) / 2 - t)) if runs else None)
+    return out
+
+
+def as_calls(y, text):
+    """a crier line's take (at sfxkit's SR) as calls: split where it falls quiet between its exclamations, each
+    call's last stressed vowel drawn out (CRIER_DRAW) and at least CRIER_GAP seconds between one call and the next"""
+    from sfxkit import ns, fade
+    cv = city_voices()
+    breaks = [b for b in call_breaks(y, text, cv) if b]
+    parts = np.split(y, [(a + b) // 2 for a, b in breaks])
+    out = []
+    for i, p in enumerate(parts):
+        last = i == len(parts) - 1
+        v = cv.final_vowel(p)
+        if v:
+            draw = CRIER_DRAW[1] if last else CRIER_DRAW[0]
+            p = cv.wsola(p, 1.0 + (draw - 1.0) * cv.ramp_window(len(p), v[0], v[1]))
+        out.append(fade(p, 0.006 if i else 0.0, 0.0 if last else 0.012))
+        if not last:
+            a, b = breaks[i]
+            out.append(np.zeros(max(0, ns(CRIER_GAP) - (b - a))))
+    return np.concatenate(out)
+
+
+def square_slap(y, rng):
+    """the square's stone fronts (CRIER_SLAP): each reflection smeared over a few milliseconds, duller than the
+    last"""
+    from scipy import signal
+    from sfxkit import hp, lp, ns, db
+    out = np.zeros(len(y) + ns(0.35))
+    src = hp(y, 180)
+    for delay, level_db, cutoff in CRIER_SLAP:
+        smear = rng.standard_normal(ns(0.004)) * np.hanning(ns(0.004))
+        r = signal.fftconvolve(lp(src, cutoff), smear / (np.sqrt(np.sum(smear ** 2)) + 1e-12))[:len(src)]
+        i = ns(delay)
+        out[i:i + len(r)] += db(level_db) * r[:len(out) - i]
+    return out
+
+
+def process_crier(x, sr_in, timbre, key):
+    """a crier line: the take as calls (as_calls), projected (less chest, a lift in the presence band, gently
+    compressed) and set in the square (the slap off its stone fronts and a short open tail ducked under the words),
+    at CRIER_LUFS with the peaks under -1.5 dBFS"""
+    from sfxkit import SR, hp, lp, eq, compress, room_ir, limiter, fade, db, ns, rng_for
+    from scipy import signal
+    from scipy.ndimage import uniform_filter1d
+    from make_townsfolk_sfx import integrated_loudness
+    # Trim the TTS silence (keep a breath at each end) and notch out the vocoder's whistles, as for every line
+    a = np.abs(x)
+    on = np.nonzero(a > a.max() * 10 ** (-40 / 20))[0]
+    x = x[max(0, on[0] - int(0.02 * sr_in)): on[-1] + int(0.06 * sr_in)]
+    for f0 in (4800.0, 9600.0):
+        if f0 < 0.45 * sr_in:
+            x = signal.filtfilt(*signal.iirnotch(f0, 30.0, fs=sr_in), x)
+    x = 0.7 * x / (np.max(np.abs(x)) + 1e-12)
+    y = as_calls(sox(x, sr_in, out_sr=SR), CRIER[key])
+    # Projected: less chest and mud, a presence lift and a little air, then a gentle compressor
+    y = hp(y, CRIER_HP[timbre], order=2)
+    y = eq(y, "peak", 300, 1.0, -2.0)
+    y = eq(y, "peak", 2600, 0.8, 3.5)
+    y = eq(y, "highshelf", 7500, 0.7, 1.5)
+    y /= np.max(np.abs(y)) + 1e-12
+    y = compress(y, thresh_db=-24, ratio=2.5, attack=0.006, release=0.14)
+    # The square: its walls' slap and a short open tail, the tail ducked under the words
+    slap = square_slap(y, rng_for("townsfolk", "crier", timbre, key))
+    ir = room_ir(rt60=0.9, predelay=0.03, early=4, early_span=0.06, hf_damp=0.6, seed=31, density_ms=40)
+    tail = signal.fftconvolve(hp(lp(y, 6000), 220), ir)
+    n = len(y) + ns(0.5)
+    out = fit_len(y, n)
+    env = uniform_filter1d(np.abs(out), size=ns(0.05))
+    env /= env.max() + 1e-12
+    duck = uniform_filter1d(1.0 - 0.45 * np.clip(env * 2.5, 0, 1), size=ns(0.08))
+    out = out + fit_len(slap, n) + 0.05 * fit_len(tail, n) * duck
+    out = hp(out, 60, order=2)
+    for _ in range(3):  # every crier line at the same loudness
+        out *= db(CRIER_LUFS - integrated_loudness(out))
+        out = limiter(out, ceiling=db(-1.5), lookahead=0.003, release=0.08)
+    out = fade(out, fin=0.004, fout=0.35)
+    e = uniform_filter1d(np.abs(out), size=ns(0.02))
+    alive = np.nonzero(e > np.max(e) * db(-55))[0]
+    return fade(out[:alive[-1] + 1], fout=0.05)
+
+
 def cmd_process(a):
     import warnings
     from scipy import signal
@@ -433,7 +786,10 @@ def cmd_process(a):
             x = x.astype(np.float64)
             if x.ndim > 1:
                 x = x.mean(axis=1)
-            y = process_line(x, sr, STYLE[timbre], key, timbre, LEVEL.get(key, 0.0))
+            if key in CRIER:
+                y = process_crier(x, sr, timbre, key)
+            else:
+                y = process_line(x, sr, STYLE[timbre], key, timbre, LEVEL.get(key, 0.0))
             y = sox(y, SR, out_sr=OUT_SR)
             out = os.path.join(a.assets, "sounds", SOUND_DIR, timbre, key + ".ogg")
             for _ in range(3):  # held under -1 dBFS true peak in the encoded file, the encoder's overshoot too
@@ -445,7 +801,9 @@ def cmd_process(a):
                 y = y * 10 ** (-(over + 0.05) / 20)
             if a.wav:
                 write_wav(os.path.join(a.wav, timbre, key + ".wav"), y, sr=OUT_SR)
-            print(f"{out}  {len(y) / OUT_SR:.2f}s", flush=True)
+            long = key in CRIER and len(y) / OUT_SR > CRIER_MAX_LEN
+            print(f"{out}  {len(y) / OUT_SR:.2f}s" + ("  OVER CRIER_MAX_LEN: quicken it in CRIER_SPEED_FOR"
+                                                       if long else ""), flush=True)
 
 
 # ------------------------------------------------------------------ stage 4: the fragments the lead merges
@@ -471,8 +829,10 @@ def cmd_fragments(a):
             name = f"{SOUND_DIR}/{timbre}/{key}"
             if a.assets and not os.path.exists(os.path.join(a.assets, "sounds", name + ".ogg")):
                 missing.append(name)
-            sounds[f"townsfolk.voice.{timbre}.{key}"] = {"sounds": [f"guildmark:{name}"],
-                                                         "subtitle": f"say.guildmark.{key}"}
+            entry = f"guildmark:{name}"
+            if key in CRIER:  # the whole square hears the crier
+                entry = {"name": entry, "attenuation_distance": CRIER_REACH}
+            sounds[f"townsfolk.voice.{timbre}.{key}"] = {"sounds": [entry], "subtitle": f"say.guildmark.{key}"}
             lang[f"say.guildmark.{key}"] = text
     for path, data in ((os.path.join(HERE, "townsfolk_sounds.json"), sounds),
                        (os.path.join(HERE, "townsfolk_lang.json"), lang)):
