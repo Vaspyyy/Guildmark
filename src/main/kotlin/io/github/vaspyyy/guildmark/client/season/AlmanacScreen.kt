@@ -13,6 +13,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.client.renderer.RenderPipelines
+import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
 import net.minecraft.util.ARGB
@@ -231,26 +232,29 @@ class AlmanacScreen : Screen(Component.translatable("gui.guildmark.almanac")) {
 
     // ---- The pages ----
 
+    // Each page holds four entries, one under another: a line with the glyph and the name, and three lines of words
+    // across the whole page under it
+
     private fun seasons(graphics: GuiGraphicsExtractor, date: SeasonDate, seconds: Float, alpha: Float, mouseX: Int, mouseY: Int) {
         val x0 = left + 168
         var y = top + 42
         for (season in Season.entries) {
             val now = season == date.season
-            val hot = mouseX in x0..(x0 + 148) && mouseY in y..(y + 38)
-            if (now || hot) graphics.fill(x0 - 2, y - 2, x0 + 148, y + 37, ARGB.color(alpha * (if (now) 0.28f else 0.14f), season.color))
+            val hot = mouseX in x0..(x0 + 148) && mouseY in y until y + ENTRY
+            if (now || hot) graphics.fill(x0 - 2, y - 2, x0 + 148, y + ENTRY - 2, ARGB.color(alpha * (if (now) 0.28f else 0.14f), season.color))
             val pose = graphics.pose()
             pose.pushMatrix()
-            pose.translate(x0 + 8f, y + 9f)
+            pose.translate(x0 + 7f, y + 4f)
             pose.rotate(sin(seconds * 1.5f + season.ordinal * 1.3f) * (if (now) 0.12f else 0.05f))
             graphics.blitSprite(RenderPipelines.GUI_TEXTURED, GLYPHS.getValue(season), -6, -6, 12, 12, ARGB.color(alpha, 0xFFFFFF))
             pose.popMatrix()
-            graphics.text(font, season.title, x0 + 20, y + 1, ARGB.color(alpha, season.color), true)
+            graphics.text(font, season.title, x0 + 17, y + 1, ARGB.color(alpha, season.color), true)
             if (now) {
                 val tag = Component.translatable("gui.guildmark.almanac.now")
-                graphics.text(font, tag, x0 + 146 - font.width(tag), y + 1, ARGB.color(alpha, Ui.GOLD), true)
+                graphics.text(font, tag, x0 + PAGE - font.width(tag), y + 1, ARGB.color(alpha, Ui.GOLD), true)
             }
-            graphics.textWithWordWrap(font, Component.translatable("gui.guildmark.almanac.season.${season.id}"), x0 + 20, y + 12, 126, ARGB.color(alpha, Ui.TEXT_SOFT), false)
-            y += 40
+            graphics.textWithWordWrap(font, Component.translatable("gui.guildmark.almanac.season.${season.id}"), x0, y + 11, PAGE, ARGB.color(alpha, Ui.TEXT_SOFT), false)
+            y += ENTRY
         }
     }
 
@@ -263,36 +267,37 @@ class AlmanacScreen : Screen(Component.translatable("gui.guildmark.almanac")) {
             var ahead = on.calendarDay - date.calendarDay
             if (ahead < 0) ahead += 4L * date.length
             val today = ahead == 0L
-            val hot = mouseX in x0..(x0 + 148) && mouseY in y..(y + 38)
-            if (today || kind == next || hot) graphics.fill(x0 - 2, y - 2, x0 + 148, y + 37, ARGB.color(alpha * (if (today) 0.32f else if (kind == next) 0.2f else 0.12f), kind.color))
+            val hot = mouseX in x0..(x0 + 148) && mouseY in y until y + ENTRY
+            if (today || kind == next || hot) graphics.fill(x0 - 2, y - 2, x0 + 148, y + ENTRY - 2, ARGB.color(alpha * (if (today) 0.32f else if (kind == next) 0.2f else 0.12f), kind.color))
             val pose = graphics.pose()
             pose.pushMatrix()
-            pose.translate(x0 + 8f, y + 9f + sin(seconds * 2f + kind.ordinal) * (if (today) 1f else 0.4f))
+            pose.translate(x0 + 7f, y + 4f + sin(seconds * 2f + kind.ordinal) * (if (today) 1f else 0.4f))
             graphics.blitSprite(RenderPipelines.GUI_TEXTURED, EMBLEMS.getValue(kind), -6, -6, 12, 12, ARGB.color(alpha, 0xFFFFFF))
             pose.popMatrix()
-            graphics.text(font, kind.title, x0 + 20, y + 1, ARGB.color(alpha, kind.color), true)
+            graphics.text(font, kind.title, x0 + 17, y + 1, ARGB.color(alpha, kind.color), true)
             val whenText = when (ahead) {
                 0L -> Component.translatable("gui.guildmark.almanac.today")
                 1L -> Component.translatable("gui.guildmark.almanac.tomorrow")
                 else -> Component.translatable("gui.guildmark.almanac.in_days", ahead)
             }
-            graphics.text(font, whenText, x0 + 146 - font.width(whenText), y + 1, ARGB.color(alpha, if (today) Ui.GOLD_BRIGHT else Ui.TEXT_FAINT), true)
-            val dayText = Component.translatable("season.guildmark.short", kind.season.title, SeasonDate.festivalDay(date.length))
-            graphics.text(font, dayText, x0 + 20, y + 11, ARGB.color(alpha, Ui.TEXT_FAINT), false)
-            graphics.textWithWordWrap(font, Component.translatable("gui.guildmark.almanac.festival.${kind.id}"), x0 + 20, y + 20, 126, ARGB.color(alpha, Ui.TEXT_SOFT), false)
-            y += 40
+            graphics.text(font, whenText, x0 + PAGE - font.width(whenText), y + 1, ARGB.color(alpha, if (today) Ui.GOLD_BRIGHT else Ui.TEXT_FAINT), true)
+            // Its day, faint, and what's on, run together under the name
+            val dayText = Component.translatable("season.guildmark.short", kind.season.title, SeasonDate.festivalDay(date.length)).withColor(Ui.TEXT_FAINT)
+            val about = Component.empty().append(dayText).append("  ").append(Component.translatable("gui.guildmark.almanac.festival.${kind.id}"))
+            graphics.textWithWordWrap(font, about, x0, y + 11, PAGE, ARGB.color(alpha, Ui.TEXT_SOFT), false)
+            y += ENTRY
         }
     }
 
     private fun crops(graphics: GuiGraphicsExtractor, date: SeasonDate, alpha: Float, mouseX: Int, mouseY: Int) {
         val x0 = left + 168
         val y0 = top + 42
-        val col0 = x0 + 72
+        val col0 = x0 + NAMES
         // The seasons across the top, today's lit
         for (season in Season.entries) {
-            val cx = col0 + season.ordinal * 18
-            if (season == date.season) graphics.fill(cx - 1, y0 - 2, cx + 16, y0 + 12 + SeasonCrops.SHOWN.size * 11, ARGB.color(alpha * 0.22f, season.color))
-            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, GLYPHS.getValue(season), cx + 1, y0 - 1, 12, 12, ARGB.color(alpha, 0xFFFFFF))
+            val cx = col0 + season.ordinal * COLUMN
+            if (season == date.season) graphics.fill(cx - 1, y0 - 2, cx + COLUMN - 1, y0 + 12 + SeasonCrops.SHOWN.size * ROW, ARGB.color(alpha * 0.22f, season.color))
+            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, GLYPHS.getValue(season), cx + 2, y0 - 1, 12, 12, ARGB.color(alpha, 0xFFFFFF))
         }
         var y = y0 + 13
         var hovered: Component? = null
@@ -304,25 +309,62 @@ class AlmanacScreen : Screen(Component.translatable("gui.guildmark.almanac")) {
             pose.scale(0.62f, 0.62f)
             graphics.item(ItemStack(item), 0, 0)
             pose.popMatrix()
-            val name = item.getName(ItemStack(item))
-            graphics.text(font, font.substrByWidth(name, 58).string, x0 + 12, y + 1, ARGB.color(alpha, Ui.TEXT_SOFT), false)
+            // The crop's short name ("Melon", not "Melon Slice"), the item's own where there's none
+            val name = Component.translatableWithFallback("gui.guildmark.almanac.crop.${BuiltInRegistries.ITEM.getKey(item).path}", item.getName(ItemStack(item)).string)
+            graphics.text(font, font.substrByWidth(name, NAMES - 14).string, x0 + 12, y + 1, ARGB.color(alpha, Ui.TEXT_SOFT), false)
             for (season in Season.entries) {
                 val pace = profile.pace(season)
-                val cx = col0 + season.ordinal * 18 + 7
-                val (mark, color) = when {
-                    pace >= 1.08f -> "+" to 0x8FD46A
-                    pace >= 0.95f -> "=" to 0xD8D0B0
-                    pace >= 0.6f -> "-" to 0xE0A050
-                    else -> "*" to 0x9AB4D8
-                }
+                val cx = col0 + season.ordinal * COLUMN + COLUMN / 2
+                val (mark, color) = mark(pace)
                 graphics.text(font, mark, cx - font.width(mark) / 2 + 1, y + 1, ARGB.color(alpha, color), false)
-                if (mouseX in (cx - 7)..(cx + 8) && mouseY in y..(y + 10)) {
+                if (mouseX in (cx - COLUMN / 2)..(cx + COLUMN / 2) && mouseY in y until y + ROW) {
                     hovered = Component.translatable("gui.guildmark.almanac.pace", name, season.title, "%d%%".format((pace * 100).toInt()))
                 }
             }
-            y += 11
+            y += ROW
         }
-        val foot = hovered ?: Component.translatable("gui.guildmark.almanac.shelter")
-        graphics.textWithWordWrap(font, foot, x0, y + 3, 146, ARGB.color(alpha, if (hovered != null) Ui.TEXT else Ui.TEXT_FAINT), false)
+        if (hovered != null) {
+            graphics.textWithWordWrap(font, hovered, x0, y + 3, PAGE, ARGB.color(alpha, Ui.TEXT), false)
+            return
+        }
+        // The key, each mark in its colour, spread across the page (two to a line if they don't fit on one); then
+        // what keeps crops growing through the winter
+        val keys = listOf(1.2f, 1f, 0.8f, 0.4f).map { pace ->
+            val (mark, color) = mark(pace)
+            Triple(mark, color, Component.translatable("gui.guildmark.almanac.key.${KEYS[mark]}"))
+        }
+        val widths = keys.map { (mark, _, word) -> font.width(mark) + 1 + font.width(word) }
+        val rows = if (widths.sum() + 9 <= PAGE) listOf(keys.indices.toList()) else listOf(listOf(0, 1), listOf(2, 3))
+        var ky = y + 3
+        for (row in rows) {
+            val gap = if (row.size > 1) (PAGE - row.sumOf { widths[it] }) / (row.size - 1) else 0
+            var kx = x0
+            for (i in row) {
+                val (mark, color, word) = keys[i]
+                graphics.text(font, mark, kx, ky, ARGB.color(alpha, color), false)
+                graphics.text(font, word, kx + font.width(mark) + 1, ky, ARGB.color(alpha, Ui.TEXT_FAINT), false)
+                kx += widths[i] + gap
+            }
+            ky += 9
+        }
+        graphics.textWithWordWrap(font, Component.translatable("gui.guildmark.almanac.shelter"), x0, ky + 1, PAGE, ARGB.color(alpha, Ui.TEXT_FAINT), false)
+    }
+
+    /** How a pace is marked in the crop table: quick, steady, slow or barely, each in its colour. */
+    private fun mark(pace: Float): Pair<String, Int> = when {
+        pace >= 1.08f -> "+" to 0x8FD46A
+        pace >= 0.95f -> "=" to 0xD8D0B0
+        pace >= 0.6f -> "-" to 0xE0A050
+        else -> "*" to 0x9AB4D8
     }
 }
+
+/** How wide a page's words run, and how tall each of a page's four entries is (a line and three under it). */
+private const val PAGE = 146
+private const val ENTRY = 39
+
+/** The crop table's measures: the names' column, each season's column, and a row. */
+private const val NAMES = 79
+private const val COLUMN = 17
+private const val ROW = 10
+private val KEYS = mapOf("+" to "fast", "=" to "steady", "-" to "slow", "*" to "barely")
