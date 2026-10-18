@@ -73,6 +73,13 @@ class Prop(val kind: PropKind, val x: Int, val z: Int, val facing: Dir = Dir.N, 
 enum class PropKind { LAMP, TREE, STALL, WELL, BENCH, PLANTER, TARGET, HAY_CART, RING }
 
 /**
+ * Ground the plan keeps for a town works (Layout version 2 on; living-world/design-influence.md section 3): the
+ * works' [kind] (its WorksKind id: "granary", "stall"), the [rect] its drawing's lot stands on, its front toward
+ * [front], at standing height [y].
+ */
+class WorksLot(val kind: String, val rect: Rect, val front: Dir, val y: Int = 0)
+
+/**
  * The layout of a capital, all worked out from its [seed] and the [layout] its site allows. Two walls: the
  * outer one round the lower town, with gatehouses on every side and towers along it, and the inner one
  * holding up the old town on its terrace, [Layout.upper] higher. The citadel stands astride the old
@@ -136,6 +143,9 @@ class CityPlan(val seed: Long, val layout: Layout = Layout.DEFAULT, val land: La
     val towers = ArrayList<Tower>()
     val stairs = ArrayList<WallStair>()
     val props = ArrayList<Prop>()
+
+    /** The lots kept for the town works (none before Layout version 2). */
+    val worksLots = ArrayList<WorksLot>()
     private val streets = ArrayList<Street>()
     private val random = Random(seed)
 
