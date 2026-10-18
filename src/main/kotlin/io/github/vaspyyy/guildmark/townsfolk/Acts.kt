@@ -12,6 +12,7 @@ import net.minecraft.world.entity.npc.villager.Villager
 import net.minecraft.world.item.Item
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
+import net.minecraft.world.level.block.AbstractBedBlock
 import net.minecraft.world.level.block.AbstractCauldronBlock
 import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.Blocks
@@ -139,10 +140,14 @@ object Acts {
 
     // --- Night and morning ---
 
-    /** Their own bed if it stands and is free, else a bed at home nobody else has. */
+    /** Their own bed if it stands and is free, else a bed at home nobody else has; never one someone (a player) lies in. */
     private fun bed(p: Townsperson, life: Life): BlockPos? {
         val level = level(p)
-        fun ok(pos: BlockPos) = level.isLoaded(pos) && level.getBlockState(pos).`is`(BlockTags.BEDS) && Claims.free(level, pos, p)
+        fun ok(pos: BlockPos): Boolean {
+            if (!level.isLoaded(pos)) return false
+            val state = level.getBlockState(pos)
+            return state.`is`(BlockTags.BEDS) && !state.getValue(AbstractBedBlock.OCCUPIED) && Claims.free(level, pos, p)
+        }
         life.resident.bed?.let { if (ok(it)) return it }
         val home = life.home ?: return null
         val others = Residents.get(level).of(life.resident.capital).filter { it.home == home.id && it.id != life.resident.id && it.alive }.mapNotNull { it.bed }.toSet()
