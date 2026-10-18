@@ -2,6 +2,7 @@ package io.github.vaspyyy.guildmark.economy
 
 import io.github.vaspyyy.guildmark.guild.TownControl
 import io.github.vaspyyy.guildmark.registry.ModItems
+import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.util.Prediction
 import net.minecraft.world.ContainerHelper
@@ -74,7 +75,16 @@ class Quote(
     val why: Why?,
     /** The trouble or luck behind [why], if that's what it is. */
     val event: EventKind?,
-)
+    /**
+     * The waylaid wagon behind [why], if it's that (see [Caravans]): the WAYLAID event itself, for where it was taken
+     * and what it carried, when [event] is WAYLAID, or when the mill or the bakehouse stood idle for the grain or
+     * flour it carried.
+     */
+    val trouble: Event? = null,
+) {
+    /** Where on the road the waylaid wagon behind its price was taken, if one was ("ford"; see [Caravans.PLACES]). */
+    val place: String? get() = trouble?.place?.takeIf { it.isNotEmpty() }
+}
 
 /**
  * What came of a player's offer: [lot] is what changed hands, or what would have; [own] is how many of the goods sold
@@ -89,6 +99,8 @@ class Deal(val outcome: Outcome, val lot: Lot? = null, val own: Int = 0) {
         POOR,
         /** Not enough of the goods for the lot. */
         LACKING,
+        /** All they have of it is salvage off the capital's own waylaid wagon (see [Marked]): its keepers won't buy that back. */
+        OWN_WAGON,
     }
 }
 
@@ -115,10 +127,27 @@ object Trading {
         val price = m.price(town, good)
         val usual = good.base * m.freight(good)
         val (why, event) = why(entry, good, price / usual)
+        val trouble = when {
+            event == EventKind.WAYLAID -> m.waylaid()
+            // The mill or the bakehouse idle for the grain or flour a waylaid wagon carried
+            why == Why.NO_GRAIN || why == Why.NO_FLOUR -> m.waylaid()?.takeIf { Good.WHEAT in it.goods || Good.FLOUR in it.goods }
+            else -> null
+        }
         return Quote(
             good, floor(m.stock(good) + 1e-6).toInt(), price, usual, Lots.buy(m, town, good), Lots.sell(m, town, good, share),
-            Lots.wants(m, town, good), m.trend(town, good), why, event,
+            Lots.wants(m, town, good), m.trend(town, good), why, event, trouble,
         )
+    }
+
+    /**
+     * The lang key for why [q]'s price stands where it does (it takes the good's name): the reason, the trouble or luck
+     * behind it, and for a waylaid wagon where on the road it was taken ("market.guildmark.why.event.waylaid.ford").
+     */
+    fun reasonKey(q: Quote): String {
+        val why = q.why ?: return ""
+        val event = q.event ?: return why.key
+        val place = q.place?.takeIf { event == EventKind.WAYLAID && it in Caravans.PLACES && it != "road" }
+        return "${why.key}.${event.id}" + (place?.let { ".$it" } ?: "")
     }
 
     /** [player] buys a lot of [good]: their Marks for the goods, which the capital remembers they bought there (see [Suppliers]). */
@@ -142,8 +171,12 @@ object Trading {
         val item = good.item ?: return Deal(Deal.Outcome.NONE)
         val level = player.level()
         val lot = Lots.sell(entry.market, entry.town, good, Suppliers.share(level, entry.capital, player.uuid)) ?: return Deal(Deal.Outcome.NONE)
-        if (count(player.inventory, item) < lot.count) return Deal(Deal.Outcome.LACKING, lot)
-        ContainerHelper.clearOrCountMatchingItems(player.inventory, { it.`is`(item) }, lot.count, false)
+        // Salvage off its own waylaid wagons it won't buy back: that's to be handed in (see Marked)
+        val free = count(player.inventory, item, entry.capital)
+        if (free < lot.count) {
+            return Deal(if (free == 0 && count(player.inventory, item) > 0) Deal.Outcome.OWN_WAGON else Deal.Outcome.LACKING, lot)
+        }
+        take(player.inventory, item, lot.count, entry.capital)
         give(player, ModItems.GUILD_MARK.get(), lot.marks)
         Lots.sold(entry.market, good, lot)
         Markets.get(level).changed()
@@ -154,6 +187,15 @@ object Trading {
     /** How many of [item] [inventory] holds. */
     fun count(inventory: Inventory, item: Item): Int =
         ContainerHelper.clearOrCountMatchingItems(inventory, { it.`is`(item) }, Int.MAX_VALUE, true)
+
+    /** How many of [item] [inventory] holds that the capital whose heart is [capital] will take: none off its own waylaid wagons (see [Marked]). */
+    fun count(inventory: Inventory, item: Item, capital: BlockPos): Int =
+        ContainerHelper.clearOrCountMatchingItems(inventory, { it.`is`(item) && !Marked.home(it, capital) }, Int.MAX_VALUE, true)
+
+    /** Takes [count] of [item] out of [inventory], none of it off the waylaid wagons of the capital whose heart is [capital]. */
+    fun take(inventory: Inventory, item: Item, count: Int, capital: BlockPos) {
+        ContainerHelper.clearOrCountMatchingItems(inventory, { it.`is`(item) && !Marked.home(it, capital) }, count, false)
+    }
 
     /** Puts [count] of [item] into [player]'s inventory, a stack at a time (what doesn't fit drops at their feet). */
     fun give(player: ServerPlayer, item: Item, count: Int) {

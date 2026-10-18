@@ -101,6 +101,9 @@ object Stalls {
         /** The goods whose prices the keeper has explained this time, and those they've said came off the market's own stalls. */
         val told = HashSet<Good>()
         val own = HashSet<Good>()
+
+        /** The goods they've remarked came off another capital's waylaid wagon (see [Marked]). */
+        val marked = HashSet<Good>()
     }
 
     private val sessions = HashMap<UUID, Session>()
@@ -191,10 +194,21 @@ object Stalls {
             val again = served[key]?.let { now - it < REMEMBER } == true
             served[key] = now
             if (served.size > 512) served.entries.removeIf { now - it.value >= REMEMBER }
+            val level = player.level()
+            // Holding out salvage off the capital's own waylaid wagon: the keeper takes it all back first, and pays for it
+            val holding = Marked.home(player.mainHandItem, s.capital) || Marked.home(player.offhandItem, s.capital)
+            val returned = if (holding) Marked.back(level, player, keeper, entry) else null
+            if (returned != null) {
+                serving.arrive(keeper, player, shop, again, null, quiet = true)
+                serving.delivered(keeper, returned.dearest, StallTalk.SALVAGE_BACK, returned.pay)
+                risen(level, s.capital, player.uuid)?.let { serving.risen(keeper, it) }
+                Witness.opened(level, keeper, player)
+                PacketDistributor.sendToPlayer(player, OpenMarketPayload(view(s, entry, player)))
+                return
+            }
             val news = StallTalk.news(shop.goods.filter { it.traded }.map { Trading.quote(entry, it) }, s.told)
             news?.let { s.told.add(it.good) }
             // A rank they've risen to comes first, then an order they let lapse here; an order to be had comes up after
-            val level = player.level()
             val rank = risen(level, s.capital, player.uuid)
             val scold = rank == null && Orders.scold(level, s.capital, player.uuid, shop)
             val word = when {
@@ -202,7 +216,9 @@ object Stalls {
                 Orders.toBeHad(level, player.uuid, s.capital, shop) -> StallTalk.offer(keeper)
                 else -> null
             }
-            serving.arrive(keeper, player, shop, again, word ?: news?.let(StallTalk::price), rank, scold)
+            // Cool on a player who kept what they took off the capital's wagon, for a week (see Marked.lapse)
+            val cool = rank == null && !scold && Marked.cool(level, s.capital, player.uuid)
+            serving.arrive(keeper, player, shop, again, word ?: news?.let(StallTalk::price), rank, scold, cool)
             Witness.opened(level, keeper, player)
         }
         PacketDistributor.sendToPlayer(player, OpenMarketPayload(view(s, entry, player)))
@@ -262,6 +278,8 @@ object Stalls {
         var done = 0
         var own = 0
         var stop: Deal? = null
+        // Selling what came off another capital's waylaid wagon is trade, but the keeper remarks on the mark, once
+        val marked = !buying && Marked.foreign(player, s.capital, good)
         for (i in 0 until lots.coerceIn(1, MANY)) {
             val deal = if (buying) Trading.buy(player, entry, good) else Trading.sell(player, entry, good)
             if (deal.outcome != Deal.Outcome.DONE) {
@@ -275,9 +293,12 @@ object Stalls {
         val level = player.level()
         // Goods that came off its own stalls lately sell, but earn no standing: the keeper says so the first time
         if (own > 0) player.sendOverlayMessage(Component.translatable("gui.guildmark.order.own_sold", own, Component.translatable(good.key + ".many")))
+        // Salvage off this capital's own wagon: not for sale here, but to be handed in
+        if (done == 0 && stop?.outcome == Deal.Outcome.OWN_WAGON) player.sendOverlayMessage(Component.translatable("gui.guildmark.market.own_wagon", s.place))
         val serving = keeper?.director as? Serving
         if (keeper != null && serving != null) {
-            serving.dealt(keeper, player, good, buying, done, stop, Trading.quote(entry, good, Suppliers.share(level, s.capital, player.uuid)), s.told, own > 0 && s.own.add(good))
+            val remark = marked && done > 0 && s.marked.add(good)
+            serving.dealt(keeper, player, good, buying, done, stop, Trading.quote(entry, good, Suppliers.share(level, s.capital, player.uuid)), s.told, own > 0 && s.own.add(good), remark)
             risen(level, s.capital, player.uuid)?.let { serving.risen(keeper, it) }
         }
         // Who bought what, and how much, is the town's to talk of
@@ -545,10 +566,7 @@ object Stalls {
     }
 
     /** The lang key of why [q]'s price is well off its usual (taking the good's name, as [MarketCommand.reason] gives it), or "". */
-    private fun reason(q: Quote): String {
-        val why = q.why ?: return ""
-        return if (q.event != null) "${why.key}.${q.event.id}" else why.key
-    }
+    private fun reason(q: Quote): String = Trading.reasonKey(q)
 }
 
 
@@ -636,17 +654,26 @@ class Serving : Director {
     /**
      * [player] has stepped up to [shop]: a greeting, then, a little later, [news] (an order to be had, or why a price is
      * where it is). A [rank] they've risen to there is greeted in its place, in the keeper's own way; else, if they
-     * let an order lapse here lately, they hear about it ([scold]).
+     * let an order lapse here lately, they hear about it ([scold]); else, if they kept what they took off the capital's
+     * waylaid wagon, a [cool] word. [quiet] if they've something else to say at once (salvage handed back), so no greeting.
      */
-    fun arrive(p: Townsperson, player: ServerPlayer, shop: Shop, again: Boolean, news: String?, rank: SupplierRank? = null, scold: Boolean = false) {
+    fun arrive(
+        p: Townsperson, player: ServerPlayer, shop: Shop, again: Boolean, news: String?, rank: SupplierRank? = null, scold: Boolean = false,
+        cool: Boolean = false, quiet: Boolean = false,
+    ) {
         val level = p.level() as? ServerLevel ?: return
         val busy = customers.any { it != player.uuid }
         customers.add(player.uuid)
         facing = player.uuid
         leaving = -1
+        if (quiet) {
+            later = null
+            return
+        }
         val greeting = when {
             rank != null -> StallTalk.rank(rank)
             scold -> StallTalk.lapsed(p)
+            cool && !busy -> StallTalk.COOL
             else -> StallTalk.greet(p, Days.life(p), shop, level, busy, again)
         }
         say(p, greeting)
@@ -656,21 +683,26 @@ class Serving : Director {
                 when {
                     rank != null -> cheer(p)
                     scold -> Activity.SHRUG
+                    cool -> Activity.NOD
                     p.random.nextInt(3) == 0 -> Activity.WAVE
                     else -> Activity.NOD
                 },
             )
         }
         later = news
-        laterAt = level.gameTime + if (rank != null || scold) VOICED else NEWS
+        laterAt = level.gameTime + if (rank != null || scold || cool) VOICED else NEWS
     }
 
     /**
      * A deal at the shop: [player] [buying] or selling [good], [done] lots of it gone through and [stop] what stopped
      * the rest, if anything did. [after] is its quote now; [told] the goods whose prices they've explained to [player];
-     * [own] if what was sold came off the market's own stalls lately, which they say this once.
+     * [own] if what was sold came off the market's own stalls lately, which they say this once; [marked] if it came off
+     * another capital's waylaid wagon, which they remark on this once.
      */
-    fun dealt(p: Townsperson, player: ServerPlayer, good: Good, buying: Boolean, done: Int, stop: Deal?, after: Quote, told: MutableSet<Good>, own: Boolean) {
+    fun dealt(
+        p: Townsperson, player: ServerPlayer, good: Good, buying: Boolean, done: Int, stop: Deal?, after: Quote, told: MutableSet<Good>, own: Boolean,
+        marked: Boolean = false,
+    ) {
         val now = p.level().gameTime
         facing = player.uuid
         // A deal puts by whatever they were taking across the counter
@@ -689,6 +721,7 @@ class Serving : Director {
             p.act(Activity.SHRUG)
         }
         val line = (if (own) StallTalk.BOUGHT_HERE else null)
+            ?: (if (marked) StallTalk.SALVAGE_MARKED else null)
             ?: StallTalk.deal(good, buying, done, stop, after, told)
             ?: StallTalk.remark(p, buying, done, after.why?.dear == true).takeIf { done > 0 && now - spoke >= CHAT && p.random.nextInt(2) == 0 }
         if (line != null) {

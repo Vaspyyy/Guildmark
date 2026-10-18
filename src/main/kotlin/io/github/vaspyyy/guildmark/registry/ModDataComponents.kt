@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.registry
 
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.economy.WagonMark
 import io.github.vaspyyy.guildmark.loot.RelicData
 import io.github.vaspyyy.guildmark.quest.ContractState
 import io.github.vaspyyy.guildmark.quest.QuestNote
@@ -45,6 +46,12 @@ object ModDataComponents {
     val SHARD_COMPASS: DeferredHolder<DataComponentType<*>, DataComponentType<Boolean>> = COMPONENTS.registerComponentType(
         "shard_compass",
         UnaryOperator<DataComponentType.Builder<Boolean>> { it.persistent(Codec.BOOL).networkSynchronized(ByteBufCodecs.BOOL) },
+    )
+
+    /** Salvage: goods off a waylaid wagon, and the capital it was bound for (see economy/Marked). */
+    val MARKED: DeferredHolder<DataComponentType<*>, DataComponentType<WagonMark>> = COMPONENTS.registerComponentType(
+        "marked",
+        UnaryOperator<DataComponentType.Builder<WagonMark>> { it.persistent(WagonMark.CODEC).networkSynchronized(ByteBufCodecs.fromCodec(WagonMark.CODEC)) },
     )
 
     /** Progress and deadline of a taken contract. */

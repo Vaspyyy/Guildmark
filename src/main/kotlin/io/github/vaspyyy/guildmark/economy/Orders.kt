@@ -22,7 +22,6 @@ import net.minecraft.resources.Identifier
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
-import net.minecraft.world.ContainerHelper
 import net.minecraft.world.level.saveddata.SavedData
 import net.minecraft.world.level.saveddata.SavedDataType
 import net.neoforged.bus.api.IEventBus
@@ -508,8 +507,8 @@ class Orders(private val books: MutableMap<Long, Book> = HashMap(), private var 
                 val stock = m.stock(good)
                 if (touched == null && stock >= target * Lots.ROOM) continue
                 var need = (town.use(good) + town.spoils(good)) * max(m.brought[good.ordinal], town.shortfall(good))
-                // What the trouble takes from what the town makes, on top
-                if (trouble != null) need += town.made(good) * (1.0 - trouble.factor).coerceAtLeast(0.0)
+                // What the trouble takes from what the town makes, on top (a waylaid wagon takes nothing the town makes)
+                if (trouble != null && trouble.kind != EventKind.WAYLAID) need += town.made(good) * (1.0 - trouble.factor).coerceAtLeast(0.0)
                 val short = (target - stock).coerceAtLeast(0.0)
                 if (need * DAYS_MOST + short < LEAST_NEED) continue
                 out.add(Want(good, shops, need, short, (need + short / 3.0) * m.price(town, good)))
@@ -517,8 +516,9 @@ class Orders(private val books: MutableMap<Long, Book> = HashMap(), private var 
             return out
         }
 
-        /** The goods [e] falls on: the blighted crop, the barns' and coops' goods, the catch. */
+        /** The goods [e] falls on: a waylaid wagon's load, the blighted crop, the barns' and coops' goods, the catch. */
         private fun troubled(e: Event): Set<Good> = when {
+            e.goods.isNotEmpty() -> e.goods
             e.good != null -> setOf(e.good)
             e.kind.maker == Maker.BOATS -> Economy.CATCH.keys
             else -> e.kind.goods
@@ -541,7 +541,12 @@ class Orders(private val books: MutableMap<Long, Book> = HashMap(), private var 
                     book.orders.remove(least)
                     room++
                 }
-                val want = pick(wants, random) { it.weight }
+                // A waylaid wagon's order is for the lost good the town is shortest of
+                val want = if (trouble?.kind == EventKind.WAYLAID) {
+                    wants.maxBy { it.short / max(1.0, entry.town.target(it.good)) }
+                } else {
+                    pick(wants, random) { it.weight }
+                }
                 wants.remove(want)
                 val shop = pick(want.shops, random) { if (it.goods.contains(want.good)) 2.0 else 1.0 }
                 val amount = amount(want, entry.town.target(want.good), DAYS_LEAST + random.nextInt(DAYS_MOST - DAYS_LEAST + 1))
@@ -708,7 +713,7 @@ class Orders(private val books: MutableMap<Long, Book> = HashMap(), private var 
          */
         fun deliverable(level: ServerLevel, player: ServerPlayer, book: Book, o: Order): Int {
             val item = o.good.item ?: return 0
-            return (Trading.count(player.inventory, item) - barred(level, player.uuid, book, o)).coerceAtLeast(0)
+            return (Trading.count(player.inventory, item, book.pos) - barred(level, player.uuid, book, o)).coerceAtLeast(0)
         }
 
         /**
@@ -730,7 +735,8 @@ class Orders(private val books: MutableMap<Long, Book> = HashMap(), private var 
         fun deliver(level: ServerLevel, player: ServerPlayer, book: Book, entry: Markets.Entry, o: Order, conjured: Int = -1): Delivery {
             val rank = Suppliers.get(level)[book.pos, player.uuid]?.rank ?: SupplierRank.STRANGER
             val item = o.good.item
-            val carried = if (item == null) 0 else Trading.count(player.inventory, item)
+            // Salvage off the capital's own waylaid wagons doesn't fill its orders: that's to be handed in (see Marked)
+            val carried = if (item == null) 0 else Trading.count(player.inventory, item, book.pos)
             val barred = if (conjured >= 0) 0 else barred(level, player.uuid, book, o)
             val can = if (conjured >= 0) conjured else (carried - barred).coerceAtLeast(0)
             val count = min(o.left, can)
@@ -746,7 +752,7 @@ class Orders(private val books: MutableMap<Long, Book> = HashMap(), private var 
             val pay = (floor(o.earned + 1e-9).toInt() - o.paid).coerceAtLeast(0)
             o.paid += pay
             o.delivered += count
-            if (conjured < 0) ContainerHelper.clearOrCountMatchingItems(player.inventory, { it.`is`(item) }, count, false)
+            if (conjured < 0) Trading.take(player.inventory, item, count, book.pos)
             if (pay > 0) Trading.give(player, ModItems.GUILD_MARK.get(), pay)
             // Into the market they move its price at once, as a sale does; into the mill or the cellar they're felt as they're used
             m.add(site, good, count.toDouble())
@@ -877,7 +883,7 @@ class Orders(private val books: MutableMap<Long, Book> = HashMap(), private var 
                     else -> o.each
                 }
                 val item = o.good.item
-                val carried = if (item == null) 0 else Trading.count(player.inventory, item)
+                val carried = if (item == null) 0 else Trading.count(player.inventory, item, book.pos)
                 val deliverable = if (state == MarketOrder.PROMISED) 0 else deliverable(level, player, book, o)
                 val first = when (state) {
                     MarketOrder.OFFERED -> 0

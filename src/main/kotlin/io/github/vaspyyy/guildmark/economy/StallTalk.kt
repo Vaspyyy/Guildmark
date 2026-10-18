@@ -87,6 +87,7 @@ object StallTalk {
     fun price(q: Quote): String? {
         val why = q.why ?: return null
         val event = q.event
+        waylaid(q)?.let { return it }
         if (why.dear) return when {
             event != null -> if (event in DEAR) "market.dear.event.${event.id}" else "market.dear.scarce"
             else -> "market.dear.${why.id}"
@@ -98,10 +99,30 @@ object StallTalk {
         }
     }
 
+    /**
+     * A waylaid wagon as the reason [q]'s good is dear (see [Caravans]), in the words of the kind of stall it's sold
+     * at: the baker's (bread, and the grain or flour the mill and the ovens stood idle for), the fishmonger's, the
+     * produce stall's, or anyone else's wares; where on the road it was taken goes in the detail. Null if it's not that.
+     */
+    private fun waylaid(q: Quote): String? {
+        val trouble = q.trouble ?: return null
+        val kind = when {
+            q.good == Good.BREAD || q.good == Good.FLOUR || q.why == Why.NO_GRAIN || q.why == Why.NO_FLOUR -> "bakery"
+            q.good in Economy.CATCH.keys -> "fish"
+            q.good.food > 0 || q.good == Good.WHEAT -> "produce"
+            else -> "wares"
+        }
+        val place = trouble.place.takeIf { it in Caravans.PLACES } ?: "road"
+        return Speech.withDetail("$WAYLAID.$kind", "market.detail.waylaid.$place")
+    }
+
+    /** The keepers' line for a waylaid wagon, by kind of stall ("market.dear.event.waylaid.fish": "No fish since they took the wagon."). */
+    const val WAYLAID = "market.dear.event.waylaid"
+
     /** The events the keepers have a word for when they make a good dear, and when they make it cheap. */
     private val DEAR = setOf(
         EventKind.BLIGHT, EventKind.MURRAIN, EventKind.FOWL_PEST, EventKind.MILL_BROKEN, EventKind.OVEN_CRACKED,
-        EventKind.POOR_CATCH, EventKind.FEVER,
+        EventKind.POOR_CATCH, EventKind.FEVER, EventKind.WAYLAID,
     )
     private val CHEAP = setOf(EventKind.BUMPER, EventKind.GOOD_CATCH)
 
@@ -117,6 +138,7 @@ object StallTalk {
             Deal.Outcome.NONE -> Speech.of(if (buying) "market.none_left" else "market.full", name)
             Deal.Outcome.POOR -> (stop.lot?.marks ?: 1).let { if (it == 1) "market.poor.one" else Speech.of("market.poor", it) }
             Deal.Outcome.LACKING -> Speech.of("market.lacking", stop.lot?.count ?: 1)
+            Deal.Outcome.OWN_WAGON -> OWN_WAGON
             Deal.Outcome.DONE -> null
         }
         if (buying && after.buy == null) return Speech.of("market.cleared", name)
@@ -152,6 +174,20 @@ object StallTalk {
 
     /** What a keeper says packing up when their hours are over and the player has stopped trading. */
     const val CLOSING = "market.closing"
+
+    // ---- Salvage off the capital's waylaid wagons (see Marked) ----
+
+    /** Refusing to buy salvage off their own capital's wagon ("That's off our own wagon. I'll not buy it back."). */
+    const val OWN_WAGON = "market.own_wagon"
+
+    /** Taking salvage back and paying the finder's fee ("Off our own wagon! Thank you. Here's something for your trouble."). */
+    const val SALVAGE_BACK = "market.salvage.back"
+
+    /** Buying what came off another capital's wagon, remarking on the mark ("Off another town's wagon, that. Not my business."). */
+    const val SALVAGE_MARKED = "market.salvage.marked"
+
+    /** Greeting a player who kept what they took off the capital's wagon, while the keepers are cool on them. */
+    const val COOL = "market.greet.cool"
 
     // ---- Orders and standing, spoken ----
 
