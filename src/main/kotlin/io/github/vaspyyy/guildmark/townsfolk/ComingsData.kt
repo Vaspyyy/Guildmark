@@ -60,8 +60,11 @@ class ComingsData(
         }
     }
 
-    /** A household that left, or came: its [members] (resident ids), the [home] it left or came to, the market [day] and why. */
-    class Moved(val id: Int, val members: List<Int>, val home: Int, val day: Long, val reason: String) {
+    /**
+     * A household that left, or came: its [members] (resident ids), the [home] it left or came to, the market [day],
+     * the [reason] (as [Household.reason]) and its cause in words ([why]: whose place they took, what sent for them).
+     */
+    class Moved(val id: Int, val members: List<Int>, val home: Int, val day: Long, val reason: String, val why: String = "") {
         companion object {
             val CODEC: Codec<Moved> = RecordCodecBuilder.create { i ->
                 i.group(
@@ -70,7 +73,8 @@ class ComingsData(
                     Codec.INT.optionalFieldOf("home", -1).forGetter(Moved::home),
                     Codec.LONG.optionalFieldOf("day", 0L).forGetter(Moved::day),
                     Codec.STRING.optionalFieldOf("reason", "").forGetter(Moved::reason),
-                ).apply(i) { id, members, home, day, reason -> Moved(id, members, home, day, reason) }
+                    Codec.STRING.optionalFieldOf("why", "").forGetter(Moved::why),
+                ).apply(i) { id, members, home, day, reason, why -> Moved(id, members, home, day, reason, why) }
             }
         }
     }
