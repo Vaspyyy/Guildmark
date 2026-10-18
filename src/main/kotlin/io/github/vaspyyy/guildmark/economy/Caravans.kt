@@ -704,6 +704,7 @@ object Caravans {
             val load = Economy.bring(entry.market, entry.town, first, coming(data, c), max(1, c.slots.size))
             val share = if (c.run == Run.CONVOY) RoadPeril.CONVOY_SHARE else 1.0
             for (g in Good.entries) c.load[g.ordinal] = load[g.ordinal] * share
+            c.freight = io.github.vaspyyy.guildmark.economy.works.WorksFreight.load(level, entry, c)
         }
         c.phase = Phase.ROLLING
         if (escorts()) CaravanEscorts.bind(data, c)
@@ -803,7 +804,9 @@ object Caravans {
 
     /** Whether [c] will be struck at [point] (its dice against the odds as they stand), and if so where the wreck would lie and what the place is like. */
     private fun aim(level: ServerLevel, data: CaravanData, c: CaravanRec, leg: CaravanRoutes.Leg, band: OutlawBand, point: Double, escorted: Boolean) {
-        if (rolls(c.seed)[0] >= chance(level, data, c, band, point, escorted)) {
+        val p = chance(level, data, c, band, point, escorted)
+        c.watched = io.github.vaspyyy.guildmark.economy.works.WorksWatch.aimed(level, c, band, point, rolls(c.seed)[0], p, escorted)
+        if (rolls(c.seed)[0] >= p) {
             c.strike = -1.0
             return
         }
@@ -842,6 +845,7 @@ object Caravans {
         val peril = data.roadOrNull(c.capital, c.road)?.peril ?: 0
         p *= 1.0 + peril / 4.0
         p = p.coerceAtMost(0.6)
+        p *= io.github.vaspyyy.guildmark.economy.works.WorksWatch.wary(level, c, band, point, at)
         if (escorted) {
             val stage = RoadPeril.stage(peril)
             if (stage == RoadPeril.Stage.CLOSED) p = 1.0 else if (stage.troubled) p = max(p, 0.5)
@@ -866,7 +870,7 @@ object Caravans {
     /** The odds of [band] taking [c]: its strength against the guards (and a little for each driver), half again as strong. */
     fun odds(data: CaravanData, c: CaravanRec, band: OutlawBand): Double {
         val b = strength(band, data.bandOrNull(band.id)).toDouble()
-        val g = c.guards + 0.3 * c.wagons
+        val g = c.guards + 0.3 * c.wagons + io.github.vaspyyy.guildmark.economy.works.WorksWatch.riders(c)
         return b / (b + 1.5 * g)
     }
 

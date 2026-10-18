@@ -374,8 +374,11 @@ object CaravanRoutes {
         sqrt(dx * dx + dz * dz)
     } else leg.distance(band.pos.x + 0.5, band.pos.z + 0.5)
 
-    /** Where on [leg] its band strikes: the spot nearest its camp, kept [STRIKE_START] from the start and [STRIKE_FARMS] from the farms; 0 for the plan's own road, before the wagon is ever seen. */
-    fun strikeAt(leg: Leg, band: OutlawBand): Double {
+    /** Where on [leg] its band strikes: where it would ([natural]), or out of sight of a tower's watch if there's somewhere out of it (economy/works/WorksWatch). */
+    fun strikeAt(leg: Leg, band: OutlawBand): Double = io.github.vaspyyy.guildmark.economy.works.WorksWatch.aside(leg, natural(leg, band), STRIKE_START, leg.farms - STRIKE_FARMS)
+
+    /** Where on [leg] its band would strike with no watch to keep out of: the spot nearest its camp, kept [STRIKE_START] from the start and [STRIKE_FARMS] from the farms; 0 for the plan's own road, before the wagon is ever seen. */
+    fun natural(leg: Leg, band: OutlawBand): Double {
         if (leg.road < 0) return 0.0
         val near = leg.nearest(band.pos.x + 0.5, band.pos.z + 0.5)
         val last = leg.farms - STRIKE_FARMS

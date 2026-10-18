@@ -100,7 +100,7 @@ object RoadPeril {
         val day = Math.floorDiv(hour, 24L)
         val t = hour * 1000L
         for (rec in data.roads.filter { it.capital == capital && it.peril > 0 }) {
-            if (t - rec.struck < QUIET || rec.faded == day) continue
+            if (t - rec.struck < io.github.vaspyyy.guildmark.economy.works.WorksWatch.quiet(capital, rec.road, QUIET) || rec.faded == day) continue
             rec.faded = day
             set(data, capital, rec.road, rec.peril - 1, hour)
         }

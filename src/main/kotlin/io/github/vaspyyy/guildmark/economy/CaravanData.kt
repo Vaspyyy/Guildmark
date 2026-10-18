@@ -125,6 +125,10 @@ class CaravanRec(
     /** It goes only with its escort (a Closed road's wagon): if they never come, it never goes. */
     var escortOnly: Boolean = false
 
+    /** What it carries for the capital's works besides its load, and whether its strike falls in a tower's watch (see economy/works/WorksFreight, WorksWatch). */
+    var freight: List<io.github.vaspyyy.guildmark.economy.works.Freight> = listOf()
+    var watched: Boolean = false
+
     /** The slots of the timetable it carries (market hours), and the day's first among them (it brings the bakehouse's flour). */
     var slots: List<Long> = listOf()
 
@@ -140,6 +144,7 @@ class CaravanRec(
             val band: Int, val strike: Double, val reach: Double, val struck: Int, val struckAt: Long,
             val waylaid: Boolean, val horseDead: Boolean, val fought: Boolean, val place: String,
             val wx: Double, val wy: Double, val wz: Double, val wyaw: Float, val gate: Long,
+            val watched: Boolean, val freight: List<io.github.vaspyyy.guildmark.economy.works.Freight>,
         )
 
         private val ROLL: Codec<Roll> = RecordCodecBuilder.create { i ->
@@ -158,6 +163,8 @@ class CaravanRec(
                 Codec.DOUBLE.optionalFieldOf("wz", 0.0).forGetter(Roll::wz),
                 Codec.FLOAT.optionalFieldOf("wyaw", 0f).forGetter(Roll::wyaw),
                 Codec.LONG.optionalFieldOf("gate", 0L).forGetter(Roll::gate),
+                Codec.BOOL.optionalFieldOf("watched", false).forGetter(Roll::watched),
+                io.github.vaspyyy.guildmark.economy.works.Freight.CODEC.listOf().optionalFieldOf("freight", listOf()).forGetter(Roll::freight),
             ).apply(i, ::Roll)
         }
 
@@ -201,7 +208,7 @@ class CaravanRec(
                 Codec.INT.optionalFieldOf("guards", 2).forGetter(CaravanRec::guards),
                 Codec.INT.optionalFieldOf("wagons", 1).forGetter(CaravanRec::wagons),
                 ROLL.fieldOf("roll").forGetter {
-                    Roll(it.band, it.strike, it.reach, it.struck, it.struckAt, it.waylaid, it.horseDead, it.fought, it.place, it.wx, it.wy, it.wz, it.wyaw, it.gate)
+                    Roll(it.band, it.strike, it.reach, it.struck, it.struckAt, it.waylaid, it.horseDead, it.fought, it.place, it.wx, it.wy, it.wz, it.wyaw, it.gate, it.watched, it.freight)
                 },
                 ESCORT.fieldOf("escort").forGetter { Escort(it.job, it.holder, it.met, it.kills, it.escortOnly, it.slots) },
             ).apply(i) { id, capital, bell, road, hour, run, seed, phase, times, length, load, exports, guards, wagons, roll, escort ->
@@ -223,6 +230,8 @@ class CaravanRec(
                     c.wz = roll.wz
                     c.wyaw = roll.wyaw
                     c.gate = roll.gate
+                    c.watched = roll.watched
+                    c.freight = roll.freight
                     c.job = escort.job
                     c.holder = escort.holder
                     c.met = escort.met
