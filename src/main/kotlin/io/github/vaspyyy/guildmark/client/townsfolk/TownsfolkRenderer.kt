@@ -60,6 +60,12 @@ class TownsfolkRenderer(context: EntityRendererProvider.Context) :
         if (state.child) poseStack.scale(Townsperson.CHILD_SCALE, Townsperson.CHILD_SCALE, Townsperson.CHILD_SCALE)
     }
 
+    // ---- Living World (client/caravan): whoever rides a wagon leans with it ----
+    override fun setupRotations(state: TownsfolkRenderState, poseStack: PoseStack, bodyRot: Float, scale: Float) {
+        lean?.invoke(state, poseStack)
+        super.setupRotations(state, poseStack, bodyRot, scale)
+    }
+
     override fun getShadowRadius(state: TownsfolkRenderState): Float =
         super.getShadowRadius(state) * if (state.child) Townsperson.CHILD_SCALE else 1f
 
@@ -84,6 +90,9 @@ class TownsfolkRenderer(context: EntityRendererProvider.Context) :
     companion object {
         val FALLBACK: Identifier = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "textures/entity/townsfolk/citizen_0.png")
         private val GLOW: Identifier = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "textures/entity/townsfolk/townsfolk_glow.png")
+
+        /** Leans [TownsfolkRenderState]'s pose before it's turned the way they face (client/caravan: the wagon's crew on a slope). */
+        var lean: ((TownsfolkRenderState, PoseStack) -> Unit)? = null
 
         /** Blocks off a line can be read from. */
         private const val SPEECH_RANGE = 20.0

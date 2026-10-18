@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.client.caravan
 
+import com.mojang.blaze3d.vertex.PoseStack
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.caravan.Bodies
 import io.github.vaspyyy.guildmark.caravan.DraughtHorse
@@ -72,6 +73,7 @@ object CaravanClient {
         DraughtHorse.clientRemoved = HorseClient::removed
         LivingMoments.caravan = CaravanSounds::crew
         LivingProps.after = ::afterPose
+        TownsfolkRenderer.lean = ::lean
         NeoForge.EVENT_BUS.addListener(ClientPlayerNetworkEvent.LoggingOut::class.java) { _ -> rides.clear() }
     }
 
@@ -151,12 +153,32 @@ object CaravanClient {
         s.bodyRot = body
         s.yRot = Mth.clamp(Mth.wrapDegrees(head - body), -HEAD_TURN, HEAD_TURN)
         s.walkAnimationSpeed = 0f
+        // Leaning with the wagon on a slope, about their seat: easing off as they jump down, and in as they climb up
+        val t = p.tickCount - p.shownStart + partial
+        val weight = when (p.shownActivity) {
+            Activity.JUMP_DOWN -> 1f - smooth((t - CrewMoves.JUMP_DOWN_AIR_FROM) / (CrewMoves.JUMP_DOWN_LAND - CrewMoves.JUMP_DOWN_AIR_FROM))
+            Activity.CLIMB_UP -> smooth((t - CrewMoves.CLIMB_UP_HAUL_FROM) / (CrewMoves.CLIMB_UP_HAUL_TO - CrewMoves.CLIMB_UP_HAUL_FROM))
+            else -> 1f
+        }
+        if (weight > 0f && (abs(pose.pitch) > LEAN_LEAST || abs(pose.roll) > LEAN_LEAST)) {
+            val turn = Math.toRadians(180.0 - pose.yaw).toFloat()
+            s.setRenderData(
+                LEAN,
+                Quaternionf().rotationY(turn).rotateX(rad(pose.pitch * weight)).rotateZ(rad(pose.roll * weight)).rotateY(-turn),
+            )
+        }
         if (i == DRIVER && seat == Wagon.DRIVER) {
             val horse = WagonClient.horseOf(w)
             if (horse != null && WagonClient.harnessed(w, horse)) {
                 s.setRenderData(REIN_STEER, Math.toRadians(Mth.lerp(partial, look.steerO, look.steer).toDouble()).toFloat())
             }
         }
+    }
+
+    /** Leans a seated crew member's pose with the wagon (TownsfolkRenderer, before they're turned their way). */
+    private fun lean(state: TownsfolkRenderState, poseStack: PoseStack) {
+        val q: Quaternionf = state.getRenderData(LEAN) ?: return
+        poseStack.rotate(q)
     }
 
     // ---- After the townsfolk model is posed: the reins and the nosebag ----
@@ -299,6 +321,12 @@ object CaravanClient {
         val k = x.coerceIn(0f, 1f)
         return k * k * (3f - 2f * k)
     }
+
+    private fun rad(deg: Float): Float = Math.toRadians(deg.toDouble()).toFloat()
+
+    /** How the wagon leans its crew (a turn of the world's, made about the seat), passed from the seating to the renderer; degrees too few to bother with. */
+    private val LEAN = ContextKey<Quaternionf>(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "caravan_lean"))
+    private const val LEAN_LEAST = 0.05f
 
     /** The driver's place in the crew. */
     private const val DRIVER = 0
