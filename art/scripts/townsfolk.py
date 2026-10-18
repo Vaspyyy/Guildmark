@@ -203,14 +203,15 @@ def pack_uv(model):
     W = model.tex_w
     cubes = list(model.all_cubes())
     sky = [[0, 0, W]]              # segments: x, height, width
-    # ---- Living World: its props (living_props.py) are packed after the companions', so they never move a cube either
+    # ---- Living World: its props (living_props.py) are packed after the companions', so they never move a cube either,
+    # and the road's (M4) after those
     try:
         import living_props
-        living = living_props.cube_names()
+        living, road = living_props.cube_names(), living_props.road_cube_names()
     except ImportError:
-        living = set()
-    for late in (0, 1, 2):
-        group = [c for c in cubes if (2 if c.name in living else 1 if c.name in LATE_CUBES else 0) == late]
+        living, road = set(), set()
+    for late in (0, 1, 2, 3):
+        group = [c for c in cubes if (3 if c.name in road else 2 if c.name in living else 1 if c.name in LATE_CUBES else 0) == late]
         for c in sorted(group, key=lambda c: (-c.footprint()[1], -c.footprint()[0], c.name)):
             sky = _skyline_place(model, sky, c)
     # ---- Living World: end

@@ -1,7 +1,9 @@
 """
 The Living World's held props for the townsfolk (art/scripts/living_anims.py animates them): food to eat, a bowl and
 spoon, the well's rope and bucket, coins, a seed bag, a scythe, an axe, a crier's handbell and scroll, a lamplighter's
-pole, a basket on the hip, a sack to tip out and a grindstone's crank.
+pole, a basket on the hip, a sack to tip out and a grindstone's crank; and the road's (art/scripts/road_clips.py): a
+caravan driver's knife and reins, a guard's spear laid across the knees, a waylayer's sack of loot and a horse's
+nosebag.
 
 townsfolk_tools.py takes them in at its end (BUILDERS, GLOW_CUBES, TOOL_NOTES), so townsfolk.py builds them into the
 model like every other tool, and art/scripts/townsfolk.py packs their cubes after everyone else's (CUBES), so adding
@@ -11,7 +13,8 @@ them never moves an older cube on the texture. Model space as in townsfolk_tools
 Long things (the rope, the poles, the scythe's snath) are modelled along x and turned into place by their part's
 rotation: a cube's box UV takes 2 (w + d) x (h + d) texels, so a long thin cube lying along x needs one short strip.
 The rope, the bucket and the empty sack hang straight down from the hand however the arm turns (HANG: the game turns
-them each frame, as it does the fishing line and the lantern).
+them each frame, as it does the fishing line and the lantern). The reins are three pieces each, which the driving
+clips' prop tracks lay from the fist to the rein ring on the horse's saddle.
 """
 import math
 import numpy as np
@@ -659,15 +662,167 @@ def _crank():
     ])
 
 
+# ================================================================== the road's props (art/scripts/road_clips.py)
+
+REIN = (92, 58, 34); REIN_D = (58, 36, 20); REIN_L = (136, 92, 58)      # harness leather (wagon.py's, the horse's reins)
+CANVAS = (214, 204, 178); CANVAS_D = (160, 148, 120); CANVAS_L = (236, 230, 210)
+OATS = (196, 168, 104); OATS_D = (140, 112, 62)
+BAND_BLUE = (52, 80, 164)       # the band's chalk mark, as on the marked goods of its loot pile (wagon.py)
+
+
+def rein_painter(key, along='y'):
+    """A rein: a strap of dark harness leather, darker at its edges, the grain running along it."""
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        a = noise_fill(w, h, REIN, rng, 0.05)
+        across, down = (U, V) if along == 'y' else (V, U)
+        a[..., :3] = mix(a[..., :3], REIN_D, np.clip(np.abs(across - 0.5) * 2 - 0.35, 0, 0.6)[..., None])
+        streak = np.sin(down * max(w, h) * 0.9 + across * 3.0 + rng.uniform(0, 6)) > 0.75
+        a[..., :3] = np.where(streak[..., None], mix(a[..., :3], REIN_L, 0.3), a[..., :3])
+        return a
+    return painter(key, fn)
+
+
+def knife_blade_painter(key):
+    """A working knife's blade: grey steel, its honed edge (the cube's +z face) bright, the spine dark, a speck of rust."""
+    def fn(face, w, h, rng):
+        a = metal(w, h, (150, 154, 164), (92, 96, 106), (214, 220, 232), rng, bevel=True, wear=0.08)
+        if face == 'back':
+            a[..., :3] = mix(a[..., :3], STEEL_L, 0.75)
+        elif face == 'front':
+            a[..., :3] = mix(a[..., :3], (70, 72, 80), 0.45)
+        rust = rng.random((h, w)) < 0.04
+        a[..., :3] = np.where(rust[..., None], mix(a[..., :3], (132, 72, 40), 0.5), a[..., :3])
+        return a
+    return painter(key, fn)
+
+
+def loot_sack_painter(key, mark=True):
+    """A sack stuffed with what was taken: lumpy burlap gathered at the neck, the band's blue chalk ring on its side."""
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        a = weave(w, h, BURLAP, BURLAP_D, BURLAP_L, rng, cell=max(1, min(w, h) // 8))
+        lump = np.sin(U * 4.6 + rng.uniform(0, 6)) * np.sin(V * 3.9 + rng.uniform(0, 6))
+        a[..., :3] *= (1 + 0.14 * lump)[..., None]
+        if face in ('front', 'back', 'right', 'left'):
+            a[..., :3] = mix(a[..., :3], BURLAP_D, (np.clip(0.3 - V, 0, 0.3) * 1.6)[..., None])
+            if mark and min(w, h) >= 6 and face in ('front', 'left'):
+                x, y = (U - 0.5) * w / h, V - 0.56
+                d = np.hypot(x, y)
+                ring = (np.abs(d - 0.21) < 0.045) | ((np.abs(x + y * 0.3) < 0.04) & (d < 0.21))
+                a[..., :3] = np.where(ring[..., None], mix(a[..., :3], BAND_BLUE, 0.85), a[..., :3])
+        return shade_edges(a, 0.3, width=max(1, min(w, h) // 4))
+    return painter(key, fn)
+
+
+def nosebag_painter(key):
+    """A horse's nosebag: a bucket of heavy canvas, a leather bottom and rim; seen from above, the oats in it."""
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        if face == 'top':
+            a = noise_fill(w, h, OATS, rng, 0.12)
+            husk = rng.random((h, w)) < 0.3
+            a[..., :3] = np.where(husk[..., None], mix(a[..., :3], OATS_D, 0.6), a[..., :3])
+            rim = (U < 0.16) | (U > 0.84) | (V < 0.16) | (V > 0.84)
+            a[..., :3] = np.where(rim[..., None], np.array(REIN, float), a[..., :3])
+            return a
+        if face == 'bottom':
+            return shade_edges(noise_fill(w, h, REIN, rng, 0.06), 0.25)
+        a = weave(w, h, CANVAS, CANVAS_D, CANVAS_L, rng, cell=max(1, min(w, h) // 6))
+        a[..., :3] *= 0.94
+        a[..., :3] = np.where((V < 0.16)[..., None], noise_fill(w, h, REIN, rng, 0.06)[..., :3], a[..., :3])
+        a[..., :3] = np.where((V > 0.82)[..., None], noise_fill(w, h, REIN_D, rng, 0.06)[..., :3], a[..., :3])
+        return shade_edges(a, 0.2)
+    return painter(key, fn)
+
+
+def _driver_knife():
+    # The driver's knife (cut_loose), a stout working blade held at right angles to the arm like the spoon, its edge (part
+    # +z) down: with the arm hanging it points ahead. The blade's middle at part (0, 5.2, 0.2), its tip at (0, 7.7, -0.1).
+    return 'right_arm', Part('driver_knife', RIGHT_GRIP, (-90, 0, 0), cubes=[
+        C((-0.55, -1.7, -0.65), (1.1, 3.6, 1.3), 't_driver_knife_handle', wood_painter('t_driver_knife_handle', EBONY, EBONY_D, EBONY_L, 'y')),
+        C((-0.7, 1.9, -0.8), (1.4, 0.6, 1.6), 't_driver_knife_bolster', brass_painter('t_driver_knife_bolster')),
+        C((-0.2, 2.5, -0.55), (0.4, 4.2, 1.5), 't_driver_knife_blade', knife_blade_painter('t_driver_knife_blade')),
+        C((-0.2, 6.7, -0.55), (0.4, 1.0, 0.9), 't_driver_knife_tip', knife_blade_painter('t_driver_knife_tip')),
+    ])
+
+
+# The reins: each in three pieces REIN_LEN px along +y from their pivots, which the driving clips' prop tracks lay from
+# the fist (the right rein in the left fist while the right hand is on the brake) to the rein ring on the horse's cart
+# saddle as it stands in the shafts, sagging, flicked and hauled taut. The horse's own reins (DraughtHorseMesh "rein_r",
+# "rein_l") run on from the rings to the bit.
+REIN_LEN = 16.0
+REIN_PIECES = 3
+REINS = [f'rein_{side}_{i}' for side in ('right', 'left') for i in range(1, REIN_PIECES + 1)]
+
+
+def _rein(name):
+    right = name.startswith('rein_right')
+    return ('right_arm' if right else 'left_arm'), Part(name, RIGHT_GRIP if right else LEFT_GRIP, (0, 0, 0), cubes=[
+        C((-0.45, 0.0, -0.2), (0.9, REIN_LEN, 0.4), f't_{name}', rein_painter(f't_{name}')),
+    ])
+
+
+_REIN_BUILDERS = [lambda name=name: _rein(name) for name in REINS]
+
+
+# The watch's spear laid across the knees, riding the tailboard (ride_tail): held by the middle of its shaft in the right
+# fist resting on the right thigh, its head out to the left. The clip's prop track keeps it lying level across the lap
+# however the arm moves; SPEAR_KNEES_MID: how far up the shaft from where the watch holds its spear the fist is.
+SPEAR_KNEES_MID = 7.0
+
+
+def _spear_knees():
+    m = SPEAR_KNEES_MID
+    return 'right_arm', Part('spear_knees', RIGHT_GRIP, (0, 0, 0), cubes=[
+        C((-0.5, -19.5 + m, -0.5), (1, 31, 1), 't_spear_knees_shaft', wood_painter('t_spear_knees_shaft', WOOD, WOOD_D, WOOD_L, 'y', knots=1)),
+        C((-0.7, 11.0 + m, -0.7), (1.4, 1.0, 1.4), 't_spear_knees_butt', iron_painter('t_spear_knees_butt')),
+        C((-0.75, -21.0 + m, -0.75), (1.5, 2.0, 1.5), 't_spear_knees_socket', iron_painter('t_spear_knees_socket', IRON, IRON_D, IRON_L)),
+        C((-1.5, -26.0 + m, -0.25), (3, 5, 0.5), 't_spear_knees_head', tt.spear_head_painter('t_spear_knees_head')),
+    ])
+
+
+LOOT_SACK_BOTTOM = 9.0          # the loot sack's bottom, this far under the fist
+
+
+def _loot_sack():
+    # A waylayer's sack of loot held by its gathered neck in the right fist, hanging from it (HANG). LootSackMesh (the
+    # same sack on its own, for the waylayers' fists: art/scripts/road_clips.py) is made from this.
+    body = Part('loot_sack_body', (0.0, 2.2, 0.0), (0, 8, 0), cubes=[
+        C((-2.9, 0.3, -2.4), (5.8, 5.9, 4.8), 't_loot_sack_body', loot_sack_painter('t_loot_sack_body')),
+        C((-2.2, 6.0, -1.8), (4.4, 0.8, 3.6), 't_loot_sack_bottom', loot_sack_painter('t_loot_sack_bottom', mark=False)),
+    ])
+    return 'right_arm', Part('loot_sack', RIGHT_GRIP, (0, 0, 0), cubes=[
+        C((-0.9, -0.6, -0.9), (1.8, 2.2, 1.8), 't_loot_sack_neck', loot_sack_painter('t_loot_sack_neck', mark=False)),
+        C((-1.1, 0.9, -1.1), (2.2, 0.6, 2.2), 't_loot_sack_cord', cord_painter('t_loot_sack_cord')),
+        C((-1.7, 1.4, -1.7), (3.4, 1.2, 3.4), 't_loot_sack_shoulder', loot_sack_painter('t_loot_sack_shoulder', mark=False)),
+    ], children=[body])
+
+
+def _nosebag_held():
+    # The horse's nosebag carried to it by its strap in the left fist (HANG): the strap's loop over the fist, the bag
+    # below it, its mouth at part (0, 3.4, 0). On the horse it's DraughtHorseMesh's own "nosebag".
+    return 'left_arm', Part('nosebag_held', LEFT_GRIP, (0, 0, 0), cubes=[
+        C((-1.9, -0.5, -0.25), (0.8, 4.0, 0.5), 't_nosebag_strap_a', rein_painter('t_nosebag_strap_a')),
+        C((1.1, -0.5, -0.25), (0.8, 4.0, 0.5), 't_nosebag_strap_b', rein_painter('t_nosebag_strap_b')),
+        C((-1.9, -0.9, -0.25), (3.8, 0.6, 0.5), 't_nosebag_strap_c', rein_painter('t_nosebag_strap_c', along='x')),
+        C((-2.6, 3.4, -2.3), (5.2, 5.4, 4.6), 't_nosebag_bag', nosebag_painter('t_nosebag_bag')),
+    ])
+
+
+# The road's (M4): townsfolk.py packs their cubes after all the others here, so adding them moved no cube already on
+# the texture.
+ROAD_BUILDERS = [_driver_knife, *_REIN_BUILDERS, _spear_knees, _loot_sack, _nosebag_held]
+
 BUILDERS = [_loaf, _apple, _bowl, _spoon, _bucket, _haul_rope_r, _haul_rope_l, _tail_rope_r, _tail_rope_l, _curb_rope,
             _well_rope, _well_bucket, _coin, _seed_bag, _scythe, _axe, _handbell, _scroll, _lamp_pole, _basket_hip,
-            _sack_held, _sack_empty, _crank]
+            _sack_held, _sack_empty, _crank, *ROAD_BUILDERS]
 
 GLOW_CUBES = {'t_lamp_flame'}
 
 # Parts the game turns each frame to hang straight down from the hand (LivingProps.kt), unless a clip's prop track runs
 # them (the parts it turns, places and stretches tick by tick: the crank, the well's ropes and bucket)
-HANG = ('bucket', 'sack_empty')
+HANG = ('bucket', 'sack_empty', 'loot_sack', 'nosebag_held')
 
 TOOL_NOTES = {
     'loaf': 'right hand, tilted 45 like the mug; the bitten top end at part (0, -3.2, -3.0)',
@@ -693,12 +848,23 @@ TOOL_NOTES = {
     'sack_held': 'right hand by the neck: the shoulder sack of carry_sack, taken in hand to pour',
     'sack_empty': 'right hand, hangs limp',
     'crank': 'right hand; turned about the axle by its prop track so the web points to the hub, part (3, 0, -2.9)',
+    'driver_knife': 'right hand, at right angles to the arm like the spoon, edge down; the blade\'s middle at part (0, 5.2, 0.2)',
+    **{name: f'{"right" if "right" in name else "left"} fist; piece {name[-1]} of {REIN_PIECES} of a rein (prop tracks lay the '
+             'pieces from the fist to the rein ring on the horse\'s saddle)' for name in REINS},
+    'spear_knees': 'right fist on the right thigh, by the middle of the shaft; its prop track lays it level across the knees',
+    'loot_sack': f'right fist by the neck, hangs; its bottom {LOOT_SACK_BOTTOM:g} px under the fist',
+    'nosebag_held': 'left fist by its strap, hangs; its mouth at part (0, 3.4, 0)',
 }
 
 
 def cube_names():
     """Every cube these props add (townsfolk.py packs them last)."""
     return {c.name for b in BUILDERS for p in b()[1].walk() for c in p.cubes}
+
+
+def road_cube_names():
+    """The road's cubes among them (townsfolk.py packs them last of all)."""
+    return {c.name for b in ROAD_BUILDERS for p in b()[1].walk() for c in p.cubes}
 
 
 def part_names():
