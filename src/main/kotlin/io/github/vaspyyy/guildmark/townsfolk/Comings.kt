@@ -133,11 +133,14 @@ object Comings {
         return queue(town, times).map { Household(it.id, capital, it.home, listOf(), dueDay(it, times), it.reason) }
     }
 
-    /** Households that came to [capital] in the last [days] market days. */
+    /**
+     * Households that came to [capital] in the last [days] market days, those come home ("return") among them, each
+     * dated by the clock's market day (see [dated]).
+     */
     fun arrived(level: ServerLevel, capital: Long, days: Int): List<Household> {
         if (!enabled() || days <= 0) return listOf()
         val town = ComingsData.get(level).find(capital) ?: return listOf()
-        val today = today(level, capital) ?: return listOf()
+        val today = dated(level)
         return town.log.filter { it.day > today - days }.map { Household(it.id, capital, it.home, it.members, it.day, it.reason) }
     }
 
@@ -274,6 +277,13 @@ object Comings {
         return if (Fortunes.enabled()) maxOf(day, Fortunes.today(level, entry.market.capital)) else day
     }
 
+    /**
+     * The clock's market day, which a household that came, left or came back is dated by (as the town's talk counts a
+     * household's days): the comings' own day ([today]) but for a market run on ahead, whose days the clock hasn't come
+     * round to yet.
+     */
+    internal fun dated(level: ServerLevel): Long = Conditions(Markets.hourOf(level)).day
+
     /** The market's hour in [capital] as the clock reads it (0 to 23), if it has a market. */
     internal fun clock(level: ServerLevel, capital: Long): Int? = Markets.get(level)[BlockPos.of(capital)]?.let { Conditions(hour(level, it)).clock }
 
@@ -319,7 +329,7 @@ object Comings {
         mourn(c, d)
         grow(c, d)
         hard(c, d)
-        c.town.log.removeIf { it.day <= d - ComingsData.LOG }
+        c.town.log.removeIf { it.day <= minOf(d, dated(c.level)) - ComingsData.LOG }
         c.data.changed()
     }
 
@@ -571,13 +581,13 @@ object Comings {
         val made = make(c, due, lodging)
         val ids = made.map { it.id }
         if (due.works >= 0) c.data.hired[due.works] = ids.firstOrNull() ?: -1
-        town.log += ComingsData.Moved(due.id, ids, lodging.id, today, due.reason, cause(c, due) + if (remark != null) " ($remark)" else "")
+        town.log += ComingsData.Moved(due.id, ids, lodging.id, dated(c.level), due.reason, cause(c, due) + if (remark != null) " ($remark)" else "")
         town.why = ""
         c.data.changed()
         c.residents.changed()
         c.refresh()
         for (r in made) newcomer(c.level, r)
-        val h = Household(due.id, c.key, lodging.id, ids, today, due.reason)
+        val h = Household(due.id, c.key, lodging.id, ids, dated(c.level), due.reason)
         show(c, h, ComingsBodies.Kind.ARRIVE, gate, delay)
         return h
     }
@@ -762,13 +772,13 @@ object Comings {
         val ids = members.map { it.id }
         val run = hardRun(c.level, c.key, today)
         val why = if (force) "sent off by a command" else "after $run hard days running"
-        c.town.away += ComingsData.Moved(id, ids, pick.home.id, today, HARD, why)
+        c.town.away += ComingsData.Moved(id, ids, pick.home.id, dated(c.level), HARD, why)
         if (!force) c.town.left = today
         c.town.why = ""
         c.data.changed()
         c.residents.changed()
         c.refresh()
-        val h = Household(id, c.key, pick.home.id, ids, today, HARD)
+        val h = Household(id, c.key, pick.home.id, ids, dated(c.level), HARD)
         val door = pick.home.front
         val seen = door != null && seen(c.level, door.pos, ComingsBodies.SEEN) || bodies.any { c.level.getNearestPlayer(it, ComingsBodies.SEEN) != null }
         if (bodies.isEmpty() || !seen || !ComingsBodies.go(c.level, c.places, h, bodies)) {
@@ -815,11 +825,11 @@ object Comings {
         val ids = members.map { it.id }
         val why = (if (home.id == away.home) "came back to their old home" else "came back, to a new home (theirs was taken)") +
             if (force) " (brought back now by a command)" else ""
-        town.log += ComingsData.Moved(away.id, ids, home.id, today, RETURN, why)
+        town.log += ComingsData.Moved(away.id, ids, home.id, dated(c.level), RETURN, why)
         town.why = ""
         c.residents.changed()
         c.refresh()
-        val h = Household(away.id, c.key, home.id, ids, today, RETURN)
+        val h = Household(away.id, c.key, home.id, ids, dated(c.level), RETURN)
         show(c, h, ComingsBodies.Kind.RETURN, gate, delay)
         return h
     }
