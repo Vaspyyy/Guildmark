@@ -114,7 +114,8 @@ class Resident(
 /** Every town's people (see [Resident]), kept with the overworld. */
 class Residents(private val people: MutableMap<Int, Resident> = HashMap(), private var next: Int = 1) : SavedData() {
     private val byUuid = HashMap<UUID, Resident>().also { map -> for (r in people.values) r.uuid?.let { map[it] = r } }
-    private val byPlan = HashMap<Pair<BlockPos, Int>, Resident>().also { map -> for (r in people.values) if (r.planned >= 0) map[r.capital to r.planned] = r }
+    // Someone new in the plan's place of one who died has it after them, the newest last (as [add] has it)
+    private val byPlan = HashMap<Pair<BlockPos, Int>, Resident>().also { map -> for (r in people.values.sortedBy { it.id }) if (r.planned >= 0) map[r.capital to r.planned] = r }
 
     operator fun get(id: Int): Resident? = people[id]
 
@@ -196,7 +197,8 @@ class Residents(private val people: MutableMap<Int, Resident> = HashMap(), priva
             if (p.customName?.string != r.name) p.customName = Component.literal(r.name)
         }
 
-        private fun traits(seed: Long): Int {
+        /** A newcomer's ways, fixed by [seed] (see [Comings]). */
+        internal fun traits(seed: Long): Int {
             val random = java.util.Random(seed xor 0x5DEECE66DL)
             var bits = 0
             // Two or three of these, never both ends of a pair

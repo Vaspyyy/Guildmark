@@ -180,7 +180,9 @@ object CapitalCommand {
         val toMake = alive.count { it.bed == null && it.home >= 0 && !it.furnished }
         val noRoom = alive.count { it.bed == null && it.furnished }
         val homeless = alive.count { it.bed == null && it.home < 0 }
-        say(source, line().append(label("People: ")).append(plain("${alive.size} living, ${people.size - alive.size} dead (the plan has ${places.census.residents.size}; the rest are taken in as they're met)")))
+        val elsewhere = people.count { away(it) }
+        val left = if (elsewhere > 0) ", $elsewhere away in hard times" else ""
+        say(source, line().append(label("People: ")).append(plain("${alive.size} living, ${people.size - alive.size - elsewhere} dead$left (the plan has ${places.census.residents.size}; the rest are taken in as they're met)")))
         say(source, line().append(label("  with a bed ")).append(plain("$withBed")).append(label("  without ")).append(plain("${alive.size - withBed}"))
             .append(grey(" ($toMake still to be made up, $noRoom with no room, $homeless with no home)")))
         val trades = alive.groupingBy { it.role }.eachCount().entries.sortedByDescending { it.value }
@@ -227,7 +229,7 @@ object CapitalCommand {
             val c = line().append(plain("  " + r.name)).append(grey(", ")).append(trade(r.role).withStyle(ChatFormatting.GRAY)).append(grey(": "))
             val bed = r.bed
             when {
-                !r.alive -> c.append(grey("died on day ${r.died}"))
+                !r.alive -> c.append(grey(gone(r)))
                 bed != null -> c.append(grey("bed ")).append(at(bed))
                 else -> c.append(grey(bedless(r)))
             }
@@ -256,7 +258,11 @@ object CapitalCommand {
         }
         say(source, header(r.name))
         say(source, line().append(trade(r.role)).append(plain(", resident #${r.id}" + (if (r.planned >= 0) " (the plan's #${r.planned})" else "") + ", ")).append(
-            if (r.alive) Component.literal("living").withStyle(ChatFormatting.GREEN) else Component.literal("died on day ${r.died}").withStyle(ChatFormatting.RED),
+            when {
+                r.alive -> Component.literal("living").withStyle(ChatFormatting.GREEN)
+                away(r) -> Component.literal(gone(r)).withStyle(ChatFormatting.GOLD)
+                else -> Component.literal("died on day ${r.died}").withStyle(ChatFormatting.RED)
+            },
         ))
         val capital = Capitals.covering(level, person.blockPosition())?.takeIf { it.center == r.capital }
             ?: Capitals.covering(level, player.blockPosition())?.takeIf { it.center == r.capital }
@@ -597,7 +603,7 @@ object CapitalCommand {
             val home = places.lodgings[r.home]
             if (home != null) c.append(plain(building(home) + " ")).append(at(home.front?.inside ?: home.box.center)) else c.append(grey("no home"))
             when {
-                !r.alive -> c.append(grey(", died on day ${r.died}"))
+                !r.alive -> c.append(grey(", " + gone(r)))
                 r.bed != null -> c.append(Component.literal(", bed ✔").withStyle(ChatFormatting.GREEN))
                 else -> c.append(Component.literal(", no bed").withStyle(ChatFormatting.RED)).append(grey(" (${bedless(r)})"))
             }
@@ -614,6 +620,12 @@ object CapitalCommand {
     }
 
     // ---- Shared ----
+
+    /** Whether [r] is away in hard times (see Comings): not living here, and not dead. */
+    private fun away(r: Resident): Boolean = !r.alive && r.died < 0 && r.left >= 0
+
+    /** When [r] (not living here) died, or left in hard times. */
+    private fun gone(r: Resident): String = if (away(r)) "away since day ${r.left}, in hard times" else "died on day ${r.died}"
 
     /** The capital the player stands in and its places; or null, having said why not. */
     private fun where(source: CommandSourceStack): Triple<ServerPlayer, CapitalPiece, CityPlaces>? {
