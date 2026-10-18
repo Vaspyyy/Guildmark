@@ -111,6 +111,9 @@ object Fortunes {
     /** The market day [capital]'s times last moved (at its close, two in the morning), or -1. */
     fun since(level: ServerLevel, capital: Long): Long = record(level, capital)?.since ?: -1L
 
+    /** The times [capital]'s moved from when they last moved (at [since]); STEADY if they never have (M6 Part E: which way they went). */
+    fun from(level: ServerLevel, capital: Long): Times = record(level, capital)?.from ?: Times.STEADY
+
     /**
      * Something weighs on [capital]: [kind] for [points] over [days] market days (counted at the next [days] closes),
      * with its words' [args], the player it's [about] and the works it's of. Nothing while the fortunes are off, nor
