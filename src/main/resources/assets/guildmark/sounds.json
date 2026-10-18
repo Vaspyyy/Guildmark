@@ -4193,6 +4193,36 @@
     ],
     "subtitle": "subtitles.guildmark.townsfolk.lamp.light"
   },
+  "townsfolk.lamp.wick": {
+    "sounds": [
+      "guildmark:townsfolk/lamp/wick1",
+      "guildmark:townsfolk/lamp/wick2"
+    ],
+    "subtitle": "subtitles.guildmark.townsfolk.lamp.wick"
+  },
+  "townsfolk.lamp.tap": {
+    "sounds": [
+      "guildmark:townsfolk/lamp/tap1",
+      "guildmark:townsfolk/lamp/tap2",
+      "guildmark:townsfolk/lamp/tap3"
+    ],
+    "subtitle": "subtitles.guildmark.townsfolk.lamp.tap"
+  },
+  "townsfolk.lamp.clink": {
+    "sounds": [
+      "guildmark:townsfolk/lamp/clink1",
+      "guildmark:townsfolk/lamp/clink2",
+      "guildmark:townsfolk/lamp/clink3"
+    ],
+    "subtitle": "subtitles.guildmark.townsfolk.lamp.clink"
+  },
+  "townsfolk.lamp.hiss": {
+    "sounds": [
+      "guildmark:townsfolk/lamp/hiss1",
+      "guildmark:townsfolk/lamp/hiss2"
+    ],
+    "subtitle": "subtitles.guildmark.townsfolk.lamp.hiss"
+  },
   "townsfolk.farmer.scythe": {
     "sounds": [
       "guildmark:townsfolk/farmer/scythe1",

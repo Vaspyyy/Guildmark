@@ -134,6 +134,14 @@ Kokoro voices of their own, and the renegade Silvan Marrow made cold and a littl
   the timbers and the axle). Built in a circle with the cog's parts from `make_ship_audio.py` and set quiet by RMS
   (-30, -30 and -28 dBFS, peaks under -10). `--only` takes names; `--mp3 <file>` joins them into one listen-through
   MP3. They are listed in `sounds.json` by hand (`mill.sails`, `mill.stones`, `mill.wheel`).
+- `make_lamp_sfx.py`: the lamplighters' round (`townsfolk/lamp/`), timed to their moves by
+  `client/townsfolk/LivingMoments.kt` and played by the street lamps (`lamps/StreetLampBlock.kt`,
+  `townsfolk/Lamplighters.kt`): `lamp.wick` (the wick at the top of the pole catching as they set out of an evening, 2
+  variants), `lamp.tap` (the pole's brass end knocking on the lantern's frame as the wick goes in at its door, 3),
+  `lamp.clink` (the snuffer's brass bell set down over the flame, 3) and `lamp.hiss` (the flame smothered under it,
+  also a lamp put out by hand or going out by itself in sight, 2), levelled as `make_townsfolk_sfx.py`'s are; the lamp
+  catching (`lamp.light`) is `make_living_sfx.py`'s. It writes `lamp_sounds.json` and `lamp_lang.json` beside itself
+  (their `sounds.json` entries and subtitles), merged by hand. `--mp3 <file>` joins them into one listen-through MP3.
 
 All randomness is seeded, so a rerun gives bit-identical files. Only `make_cast_voices.py sounds` and
 `make_ambience.py --sounds` touch `sounds.json`, each rewriting only its own entries. For everything
@@ -165,6 +173,7 @@ python3 -B art/audio/make_sea_audio.py src/main/resources/assets/guildmark [--wa
 python3 -B art/audio/make_island_audio.py src/main/resources/assets/guildmark [--wav <dir>] [--only surf,gull,island.wreck.bell] [--mp3 <file>] [--variants-mp3 <file>] [--fragments <dir>]
 python3 -B art/audio/make_island_music.py src/main/resources/assets/guildmark [--work <tmp-dir>] [--wav <dir>] [--mp3 <file>] [--reuse]
 python3 -B art/audio/make_mill_audio.py src/main/resources/assets/guildmark [--wav <dir>] [--only sails,wheel] [--mp3 <file>]
+python3 -B art/audio/make_lamp_sfx.py src/main/resources/assets/guildmark [--wav <dir>] [--only lamp.clink,lamp.hiss] [--mp3 <file>]
 python3 -B art/audio/make_festival_music.py src/main/resources/assets/guildmark [--work <tmp-dir>] [--only ribbonwake,stings,fanfare] [--mp3 <dir>]
 ```
 
