@@ -1,0 +1,165 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "guildmark:block/works/ladle",
+    "ladle": "guildmark:block/works/ladle"
+  },
+  "elements": [
+    {
+      "from": [
+        10.65,
+        15.971,
+        10.15
+      ],
+      "to": [
+        11.35,
+        22.771,
+        10.85
+      ],
+      "rotation": {
+        "origin": [
+          11,
+          15.171,
+          11.4
+        ],
+        "x": 90,
+        "y": 67.5,
+        "z": -90
+      },
+      "faces": {
+        "down": {
+          "uv": [
+            0,
+            0,
+            0.7,
+            6.8
+          ],
+          "texture": "#ladle"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            0.7,
+            6.8
+          ],
+          "texture": "#ladle"
+        },
+        "north": {
+          "uv": [
+            0,
+            0,
+            0.7,
+            6.8
+          ],
+          "texture": "#ladle"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            0.7,
+            6.8
+          ],
+          "texture": "#ladle"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            0.7,
+            6.8
+          ],
+          "texture": "#ladle"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            0.7,
+            6.8
+          ],
+          "texture": "#ladle"
+        }
+      }
+    },
+    {
+      "from": [
+        9.7,
+        14.171,
+        10.1
+      ],
+      "to": [
+        12.3,
+        16.171,
+        12.7
+      ],
+      "rotation": {
+        "origin": [
+          11,
+          15.171,
+          11.4
+        ],
+        "x": 90,
+        "y": 67.5,
+        "z": -90
+      },
+      "faces": {
+        "down": {
+          "uv": [
+            9.7,
+            3.3,
+            12.3,
+            5.9
+          ],
+          "texture": "#ladle"
+        },
+        "up": {
+          "uv": [
+            9.7,
+            10.1,
+            12.3,
+            12.7
+          ],
+          "texture": "#ladle"
+        },
+        "north": {
+          "uv": [
+            3.7,
+            14,
+            6.3,
+            16
+          ],
+          "texture": "#ladle"
+        },
+        "south": {
+          "uv": [
+            9.7,
+            14,
+            12.3,
+            16
+          ],
+          "texture": "#ladle"
+        },
+        "west": {
+          "uv": [
+            10.1,
+            14,
+            12.7,
+            16
+          ],
+          "texture": "#ladle"
+        },
+        "east": {
+          "uv": [
+            3.3,
+            14,
+            5.9,
+            16
+          ],
+          "texture": "#ladle"
+        }
+      }
+    }
+  ]
+}

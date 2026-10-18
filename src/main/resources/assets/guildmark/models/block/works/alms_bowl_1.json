@@ -1,0 +1,284 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "guildmark:block/works/bowl_side",
+    "bowl_side": "guildmark:block/works/bowl_side",
+    "bowl_top": "guildmark:block/works/bowl_top"
+  },
+  "elements": [
+    {
+      "from": [
+        2.65,
+        13,
+        9.65
+      ],
+      "to": [
+        5.35,
+        13.45,
+        12.35
+      ],
+      "faces": {
+        "down": {
+          "uv": [
+            4,
+            4,
+            6.7,
+            6.7
+          ],
+          "texture": "#bowl_side"
+        },
+        "north": {
+          "uv": [
+            0,
+            4,
+            2.7,
+            4.45
+          ],
+          "texture": "#bowl_side"
+        },
+        "south": {
+          "uv": [
+            0,
+            4,
+            2.7,
+            4.45
+          ],
+          "texture": "#bowl_side"
+        },
+        "west": {
+          "uv": [
+            0,
+            4,
+            2.7,
+            4.45
+          ],
+          "texture": "#bowl_side"
+        },
+        "east": {
+          "uv": [
+            0,
+            4,
+            2.7,
+            4.45
+          ],
+          "texture": "#bowl_side"
+        }
+      }
+    },
+    {
+      "from": [
+        2.65,
+        13,
+        9.65
+      ],
+      "to": [
+        5.35,
+        13.44,
+        12.35
+      ],
+      "rotation": {
+        "origin": [
+          4,
+          13,
+          11
+        ],
+        "x": 0,
+        "y": 45,
+        "z": 0
+      },
+      "faces": {
+        "down": {
+          "uv": [
+            4,
+            4,
+            6.7,
+            6.7
+          ],
+          "texture": "#bowl_side"
+        },
+        "north": {
+          "uv": [
+            0,
+            4,
+            2.7,
+            4.45
+          ],
+          "texture": "#bowl_side"
+        },
+        "south": {
+          "uv": [
+            0,
+            4,
+            2.7,
+            4.45
+          ],
+          "texture": "#bowl_side"
+        },
+        "west": {
+          "uv": [
+            0,
+            4,
+            2.7,
+            4.45
+          ],
+          "texture": "#bowl_side"
+        },
+        "east": {
+          "uv": [
+            0,
+            4,
+            2.7,
+            4.45
+          ],
+          "texture": "#bowl_side"
+        }
+      }
+    },
+    {
+      "from": [
+        1.75,
+        13.45,
+        8.75
+      ],
+      "to": [
+        6.25,
+        14.9,
+        13.25
+      ],
+      "faces": {
+        "down": {
+          "uv": [
+            2,
+            2,
+            6.5,
+            6.5
+          ],
+          "texture": "#bowl_side"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#bowl_top"
+        },
+        "north": {
+          "uv": [
+            0,
+            0,
+            4.5,
+            1.45
+          ],
+          "texture": "#bowl_side"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            4.5,
+            1.45
+          ],
+          "texture": "#bowl_side"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            4.5,
+            1.45
+          ],
+          "texture": "#bowl_side"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            4.5,
+            1.45
+          ],
+          "texture": "#bowl_side"
+        }
+      }
+    },
+    {
+      "from": [
+        1.75,
+        13.45,
+        8.75
+      ],
+      "to": [
+        6.25,
+        14.89,
+        13.25
+      ],
+      "rotation": {
+        "origin": [
+          4,
+          13.45,
+          11
+        ],
+        "x": 0,
+        "y": 45,
+        "z": 0
+      },
+      "faces": {
+        "down": {
+          "uv": [
+            2,
+            2,
+            6.5,
+            6.5
+          ],
+          "texture": "#bowl_side"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#bowl_top"
+        },
+        "north": {
+          "uv": [
+            0,
+            0,
+            4.5,
+            1.45
+          ],
+          "texture": "#bowl_side"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            4.5,
+            1.45
+          ],
+          "texture": "#bowl_side"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            4.5,
+            1.45
+          ],
+          "texture": "#bowl_side"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            4.5,
+            1.45
+          ],
+          "texture": "#bowl_side"
+        }
+      }
+    }
+  ]
+}

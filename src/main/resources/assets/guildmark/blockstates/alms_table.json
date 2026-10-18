@@ -1,0 +1,546 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "facing": "north"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_table"
+      }
+    },
+    {
+      "when": {
+        "facing": "east"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_table",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_table",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_table",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "level": "1"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_stew_1"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "level": "2"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_stew_2"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "level": "3"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_stew_3"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "level": "4"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_stew_4"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "level": "5"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_stew_5"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "level": "6"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_stew_6"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "level": "7"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_stew_7"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "level": "8"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_stew_8"
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "level": "1"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_stew_1",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "level": "2"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_stew_2",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "level": "3"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_stew_3",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "level": "4"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_stew_4",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "level": "5"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_stew_5",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "level": "6"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_stew_6",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "level": "7"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_stew_7",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "level": "8"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_stew_8",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "level": "1"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_stew_1",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "level": "2"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_stew_2",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "level": "3"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_stew_3",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "level": "4"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_stew_4",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "level": "5"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_stew_5",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "level": "6"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_stew_6",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "level": "7"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_stew_7",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "level": "8"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_stew_8",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "level": "1"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_stew_1",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "level": "2"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_stew_2",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "level": "3"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_stew_3",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "level": "4"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_stew_4",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "level": "5"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_stew_5",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "level": "6"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_stew_6",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "level": "7"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_stew_7",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "level": "8"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_stew_8",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "bowls": "1|2|3|4"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_bowl_1"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "bowls": "2|3|4"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_bowl_2"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "bowls": "3|4"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_bowl_3"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "bowls": "4"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_bowl_4"
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "bowls": "1|2|3|4"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_bowl_1",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "bowls": "2|3|4"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_bowl_2",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "bowls": "3|4"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_bowl_3",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "bowls": "4"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_bowl_4",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "bowls": "1|2|3|4"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_bowl_1",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "bowls": "2|3|4"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_bowl_2",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "bowls": "3|4"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_bowl_3",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "bowls": "4"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_bowl_4",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "bowls": "1|2|3|4"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_bowl_1",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "bowls": "2|3|4"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_bowl_2",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "bowls": "3|4"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_bowl_3",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "bowls": "4"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_bowl_4",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "ladle": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_ladle"
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "ladle": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_ladle",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "ladle": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_ladle",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "ladle": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/works/alms_ladle",
+        "y": 270
+      }
+    }
+  ]
+}

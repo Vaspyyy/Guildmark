@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "guildmark:block/works/stew",
+    "stew": "guildmark:block/works/stew"
+  },
+  "elements": [
+    {
+      "from": [
+        7.9,
+        14.614,
+        7.4
+      ],
+      "to": [
+        15.1,
+        14.614,
+        14.6
+      ],
+      "faces": {
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#stew"
+        }
+      }
+    }
+  ]
+}

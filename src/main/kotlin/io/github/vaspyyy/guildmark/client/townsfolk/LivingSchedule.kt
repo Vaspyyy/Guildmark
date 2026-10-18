@@ -747,7 +747,7 @@ internal object LivingSchedule {
         ),
         "pack" to listOf(
             Moment("lift", 10f, 3f, 20.946f, -6.8f),
-            Moment("set", 25f, 2.2f, 7.479f, -16.756f),
+            Moment("set", 25f, 3.25f, 7.294f, -16.401f),
         ),
         "embrace" to listOf(
             Moment("pat", 19f, -3.722f, 3.92f, -15.449f),

@@ -1,0 +1,161 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "guildmark:block/works/bronze",
+    "plaque": "guildmark:block/works/plaque",
+    "bronze": "guildmark:block/works/bronze",
+    "velvet": "guildmark:block/works/velvet"
+  },
+  "elements": [
+    {
+      "from": [
+        2,
+        3,
+        0
+      ],
+      "to": [
+        14,
+        13,
+        1
+      ],
+      "faces": {
+        "south": {
+          "uv": [
+            0,
+            0,
+            12,
+            10
+          ],
+          "texture": "#plaque"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            12,
+            1
+          ],
+          "texture": "#bronze"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            12,
+            1
+          ],
+          "texture": "#bronze"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            12,
+            1
+          ],
+          "texture": "#bronze"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            12,
+            1
+          ],
+          "texture": "#bronze"
+        }
+      }
+    },
+    {
+      "from": [
+        1,
+        1.7,
+        1
+      ],
+      "to": [
+        15,
+        14.3,
+        1.3
+      ],
+      "faces": {
+        "south": {
+          "uv": [
+            0,
+            0,
+            14,
+            13
+          ],
+          "texture": "#velvet"
+        },
+        "down": {
+          "uv": [
+            0,
+            12,
+            14,
+            12.3
+          ],
+          "texture": "#velvet"
+        },
+        "west": {
+          "uv": [
+            0,
+            12,
+            14,
+            12.3
+          ],
+          "texture": "#velvet"
+        },
+        "east": {
+          "uv": [
+            0,
+            12,
+            14,
+            12.3
+          ],
+          "texture": "#velvet"
+        }
+      }
+    },
+    {
+      "from": [
+        1,
+        14,
+        0
+      ],
+      "to": [
+        15,
+        14.3,
+        1
+      ],
+      "faces": {
+        "up": {
+          "uv": [
+            0,
+            0,
+            14,
+            0.6
+          ],
+          "texture": "#velvet"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            14,
+            0.6
+          ],
+          "texture": "#velvet"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            14,
+            0.6
+          ],
+          "texture": "#velvet"
+        }
+      }
+    }
+  ]
+}

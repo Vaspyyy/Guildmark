@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "guildmark:block/works/works_yard_wool"
+    },
+    "facing=east": {
+      "model": "guildmark:block/works/works_yard_wool",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "guildmark:block/works/works_yard_wool",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "guildmark:block/works/works_yard_wool",
+      "y": 270
+    }
+  }
+}

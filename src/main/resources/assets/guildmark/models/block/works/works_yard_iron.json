@@ -1,0 +1,145 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "guildmark:block/works/oak",
+    "oak": "guildmark:block/works/oak"
+  },
+  "elements": [
+    {
+      "from": [
+        2.25,
+        0,
+        1
+      ],
+      "to": [
+        3.75,
+        1.2,
+        15
+      ],
+      "faces": {
+        "down": {
+          "uv": [
+            2.25,
+            1,
+            3.75,
+            15
+          ],
+          "texture": "#oak"
+        },
+        "up": {
+          "uv": [
+            2.25,
+            1,
+            3.75,
+            15
+          ],
+          "texture": "#oak"
+        },
+        "north": {
+          "uv": [
+            12.25,
+            14.8,
+            13.75,
+            16
+          ],
+          "texture": "#oak"
+        },
+        "south": {
+          "uv": [
+            2.25,
+            14.8,
+            3.75,
+            16
+          ],
+          "texture": "#oak"
+        },
+        "west": {
+          "uv": [
+            1,
+            14.8,
+            15,
+            16
+          ],
+          "texture": "#oak"
+        },
+        "east": {
+          "uv": [
+            1,
+            14.8,
+            15,
+            16
+          ],
+          "texture": "#oak"
+        }
+      }
+    },
+    {
+      "from": [
+        12.25,
+        0,
+        1
+      ],
+      "to": [
+        13.75,
+        1.2,
+        15
+      ],
+      "faces": {
+        "down": {
+          "uv": [
+            12.25,
+            1,
+            13.75,
+            15
+          ],
+          "texture": "#oak"
+        },
+        "up": {
+          "uv": [
+            12.25,
+            1,
+            13.75,
+            15
+          ],
+          "texture": "#oak"
+        },
+        "north": {
+          "uv": [
+            2.25,
+            14.8,
+            3.75,
+            16
+          ],
+          "texture": "#oak"
+        },
+        "south": {
+          "uv": [
+            12.25,
+            14.8,
+            13.75,
+            16
+          ],
+          "texture": "#oak"
+        },
+        "west": {
+          "uv": [
+            1,
+            14.8,
+            15,
+            16
+          ],
+          "texture": "#oak"
+        },
+        "east": {
+          "uv": [
+            1,
+            14.8,
+            15,
+            16
+          ],
+          "texture": "#oak"
+        }
+      }
+    }
+  ]
+}

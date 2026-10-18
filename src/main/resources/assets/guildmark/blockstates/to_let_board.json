@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "guildmark:block/works/to_let_board"
+    },
+    "facing=east": {
+      "model": "guildmark:block/works/to_let_board",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "guildmark:block/works/to_let_board",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "guildmark:block/works/to_let_board",
+      "y": 270
+    }
+  }
+}

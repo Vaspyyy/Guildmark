@@ -1,0 +1,49 @@
+{
+  "variants": {
+    "facing=north,fire=out": {
+      "model": "guildmark:block/works/works_beacon"
+    },
+    "facing=north,fire=lit": {
+      "model": "guildmark:block/works/works_beacon_lit"
+    },
+    "facing=north,fire=flare": {
+      "model": "guildmark:block/works/works_beacon_flare"
+    },
+    "facing=east,fire=out": {
+      "model": "guildmark:block/works/works_beacon",
+      "y": 90
+    },
+    "facing=east,fire=lit": {
+      "model": "guildmark:block/works/works_beacon_lit",
+      "y": 90
+    },
+    "facing=east,fire=flare": {
+      "model": "guildmark:block/works/works_beacon_flare",
+      "y": 90
+    },
+    "facing=south,fire=out": {
+      "model": "guildmark:block/works/works_beacon",
+      "y": 180
+    },
+    "facing=south,fire=lit": {
+      "model": "guildmark:block/works/works_beacon_lit",
+      "y": 180
+    },
+    "facing=south,fire=flare": {
+      "model": "guildmark:block/works/works_beacon_flare",
+      "y": 180
+    },
+    "facing=west,fire=out": {
+      "model": "guildmark:block/works/works_beacon",
+      "y": 270
+    },
+    "facing=west,fire=lit": {
+      "model": "guildmark:block/works/works_beacon_lit",
+      "y": 270
+    },
+    "facing=west,fire=flare": {
+      "model": "guildmark:block/works/works_beacon_flare",
+      "y": 270
+    }
+  }
+}
