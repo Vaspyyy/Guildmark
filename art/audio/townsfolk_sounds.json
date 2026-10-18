@@ -1079,6 +1079,24 @@
     ],
     "subtitle": "say.guildmark.driver_escort_done"
   },
+  "townsfolk.voice.man.driver_clear": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/driver_clear"
+    ],
+    "subtitle": "say.guildmark.driver_clear"
+  },
+  "townsfolk.voice.man.driver_calm": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/driver_calm"
+    ],
+    "subtitle": "say.guildmark.driver_calm"
+  },
+  "townsfolk.voice.man.driver_bye": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/driver_bye"
+    ],
+    "subtitle": "say.guildmark.driver_bye"
+  },
   "townsfolk.voice.man.gossip_road_1": {
     "sounds": [
       "guildmark:townsfolk/voice/man/gossip_road_1"
@@ -3662,6 +3680,24 @@
     ],
     "subtitle": "say.guildmark.driver_escort_done"
   },
+  "townsfolk.voice.woman.driver_clear": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/driver_clear"
+    ],
+    "subtitle": "say.guildmark.driver_clear"
+  },
+  "townsfolk.voice.woman.driver_calm": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/driver_calm"
+    ],
+    "subtitle": "say.guildmark.driver_calm"
+  },
+  "townsfolk.voice.woman.driver_bye": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/driver_bye"
+    ],
+    "subtitle": "say.guildmark.driver_bye"
+  },
   "townsfolk.voice.woman.gossip_road_1": {
     "sounds": [
       "guildmark:townsfolk/voice/woman/gossip_road_1"
@@ -5890,6 +5926,24 @@
       "guildmark:townsfolk/voice/old/driver_escort_done"
     ],
     "subtitle": "say.guildmark.driver_escort_done"
+  },
+  "townsfolk.voice.old.driver_clear": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/driver_clear"
+    ],
+    "subtitle": "say.guildmark.driver_clear"
+  },
+  "townsfolk.voice.old.driver_calm": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/driver_calm"
+    ],
+    "subtitle": "say.guildmark.driver_calm"
+  },
+  "townsfolk.voice.old.driver_bye": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/driver_bye"
+    ],
+    "subtitle": "say.guildmark.driver_bye"
   },
   "townsfolk.voice.old.gossip_road_1": {
     "sounds": [

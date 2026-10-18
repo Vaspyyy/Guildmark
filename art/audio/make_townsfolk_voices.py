@@ -223,6 +223,10 @@ ROAD = {
     "driver_next": "The next one won't go without more spears.",
     "driver_escort_meet": "You're our escort? Then let's be off.",
     "driver_escort_done": "Never been so glad to see a wall.",
+    # the bodies on the road (M4 Part B): clearing the way, calming the horse after a fight, a word to a player leaving
+    "driver_clear": "Clear the road, there!",
+    "driver_calm": "Easy, girl. Easy now.",
+    "driver_bye": "Mind how you go out there.",
     "gossip_road_1": "The wagons aren't safe on the road these days.",
     "gossip_road_2": "Everything off the wagons is dear now.",
     "gossip_road_3": "My brother drives a wagon. I worry for him.",
@@ -546,11 +550,13 @@ PHONEMES = {
     "homestead_work_6": "nˈɪɹli ðˈɛɹ.",
     "works_master_plumb_2": "nˈɑːt ɐ hˈɛɹ ˈaʊt ʌv tɹˈuː. ɡˈʊd.",
     # the road's: an r sounded where the American voices would drop it ("sorted", "more spears", "here", "their",
-    # "escort", "dear", "are", "aren't"), as for the crier
+    # "escort", "dear", "are", "aren't", "clear", "there"), as for the crier
     "driver_mark": "ðɛɹ kˈæmps ˈaʊt ðat wˈeɪ. hˈɪɹ, aɪl ʃˈəʊ juː.",  # "camp's", not "comes"
     "gossip_road_6": "ðeɪ sˈeɪ ðə lˈæst wˈaɡən nˈɛvə kˈeɪm ˈɪn.",  # "last", not "lost"
     "driver_next": "ðə nˈɛkst wˈɒn wəʊnt ɡˌəʊ wɪðˌaʊt mˈɔːɹ spˈɪɹz.",
     "driver_escort_meet": "jɔːɹ ˌaʊəɹ ˈɛskɔːɹt? ðˈɛn lˈɛts biː ˈɒf.",
+    "driver_clear": "klˈɪɹ ðə ɹˈəʊd, ðˈɛɹ!",
+    "driver_bye": "mˈaɪnd hˌaʊ juː ɡˌəʊ ˈaʊt ðˈɛɹ.",
     "gossip_road_1": "ðə wˈaɡənz ˈɑːɹnt sˈeɪf ɒnðə ɹˈəʊd ðiːz dˈeɪz.",
     "gossip_road_2": "ˈɛvɹɪθˌɪŋ ˈɒf ðə wˈaɡənz ɪz dˈɪɹ nˈaʊ.",
     "gossip_road_8": "aɪ wəʊnt sˈɛt fˈʊt aʊtsˈaɪd ðə wˈɔːlz tˈɪl ɪts sˈɔːɹtɪd.",
