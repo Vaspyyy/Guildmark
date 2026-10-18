@@ -226,6 +226,8 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         // The caravans on the roads in: their records, the outlaws working the roads, escorts and salvage
         io.github.vaspyyy.guildmark.economy.Caravans.register()
         io.github.vaspyyy.guildmark.economy.CaravanCommand.init()
+        // The caravans' bodies on the road: wagon, horse and crew, the waylay, the wreck, the band's loot (caravan/)
+        io.github.vaspyyy.guildmark.caravan.Bodies.register(modBus)
         // The town's works: what it asks players to pay for, their freight on the wagons, and what each does once built (economy/works/)
         io.github.vaspyyy.guildmark.economy.works.Works.register()
         // The carters' handcarts, pulled behind them with their loads heaped on (cart/)

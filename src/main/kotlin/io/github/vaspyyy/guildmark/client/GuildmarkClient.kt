@@ -170,6 +170,8 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
         io.github.vaspyyy.guildmark.client.MarketBoardRenderer.register(modBus)
         // The carters' handcarts: their renderer, and the puller turned to the shafts (client/cart)
         io.github.vaspyyy.guildmark.client.cart.CartClient.register(modBus)
+        // The caravans' bodies: the wagon, horse, wreck and loot drawn, the crew on the seats, the reins (client/caravan)
+        io.github.vaspyyy.guildmark.client.caravan.CaravanClient.register(modBus)
         // The market's displays: the goods heaped on them (client/economy)
         io.github.vaspyyy.guildmark.client.economy.WaresClient.register(modBus)
         // Players' own stalls: a market hall table's screen, and the pennants over the let tables (client/economy)
