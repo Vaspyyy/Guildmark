@@ -90,12 +90,14 @@ object ComingsCommand {
         val level = source.level
         val here = here(context) ?: return 0
         val c = Conditions(if (Markets.enabled()) here.entry.market.hour else Markets.hourOf(level))
-        say(source, header("Comings and goings of ${here.name}: market day ${c.day}, %02d:00".format(c.clock)))
+        val today = Comings.today(level, here.key) ?: c.day
+        say(source, header("Comings and goings of ${here.name}: market day $today, %02d:00".format(c.clock)))
         off()?.let { say(source, grey(it)) }
+        if (today > c.day) say(source, grey("The fortunes have closed the days to day $today (a market run on ahead, or the clock set back): the comings go by them, and wait for the clock (day ${c.day}) to come round."))
         val ctx = Comings.ctx(level, here.places, begin = false)
         val town = ctx.town
         val times = Fortunes.times(level, here.key)
-        val run = Comings.hardRun(level, here.key, c.day)
+        val run = Comings.hardRun(level, here.key, today)
         val planned = ctx.planned
         val living = Comings.living(ctx)
         val most = Math.floor(Comings.GROWTH * planned).toInt()

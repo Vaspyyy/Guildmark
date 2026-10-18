@@ -261,8 +261,18 @@ object Comings {
     /** The market's hour in [entry]'s capital (the clock's, with the markets switched off). */
     private fun hour(level: ServerLevel, entry: Markets.Entry): Long = if (Markets.enabled()) entry.market.hour else Markets.hourOf(level)
 
-    /** The market day it is in [capital], if it has a market. */
-    internal fun today(level: ServerLevel, capital: Long): Long? = Markets.get(level)[BlockPos.of(capital)]?.let { Conditions(hour(level, it)).day }
+    /** The market day it is in [capital] for its comings and goings, if it has a market (see [day]). */
+    internal fun today(level: ServerLevel, capital: Long): Long? = Markets.get(level)[BlockPos.of(capital)]?.let { day(level, it) }
+
+    /**
+     * The market day it is in [entry]'s capital for its comings and goings: the market's, or the last its fortunes
+     * closed if that's later. A market run on ahead (`market run`) has lived the days it closed, so the comings go by them
+     * too; with the clock set back they wait for it to come round to their day again.
+     */
+    private fun day(level: ServerLevel, entry: Markets.Entry): Long {
+        val day = Conditions(hour(level, entry)).day
+        return if (Fortunes.enabled()) maxOf(day, Fortunes.today(level, entry.market.capital)) else day
+    }
 
     /** The market's hour in [capital] as the clock reads it (0 to 23), if it has a market. */
     internal fun clock(level: ServerLevel, capital: Long): Int? = Markets.get(level)[BlockPos.of(capital)]?.let { Conditions(hour(level, it)).clock }
@@ -272,18 +282,18 @@ object Comings {
         val data = ComingsData.get(level)
         for (entry in Markets.get(level).all()) {
             val key = entry.market.capital
-            val c = Conditions(hour(level, entry))
+            val today = day(level, entry)
             val town = data.find(key)
             if (town == null) {
                 if (Residents.get(level).of(entry.capital).isEmpty()) continue
                 // The day the record begins is only noted: the next market day is the first worked out
-                data.town(key).closed = c.day
+                data.town(key).closed = today
                 data.changed()
                 continue
             }
             val piece = CaravanRoutes.capital(level, key) ?: continue
             val places = CityPlaces.of(level, piece) ?: continue
-            work(Ctx(level, data, key, town, places), c.day, c.clock)
+            work(Ctx(level, data, key, town, places), today, Conditions(hour(level, entry)).clock)
         }
     }
 
