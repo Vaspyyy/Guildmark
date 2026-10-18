@@ -14,10 +14,12 @@ import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
+import net.minecraft.sounds.SoundEvents
 import net.minecraft.sounds.SoundSource
 import net.minecraft.world.Containers
 import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.Blocks
+import net.minecraft.world.level.block.CampfireBlock
 import net.minecraft.world.level.levelgen.Heightmap
 import net.minecraft.world.phys.Vec3
 import kotlin.math.min
@@ -39,6 +41,19 @@ object HomesteadWorks {
 
     /** How near someone must be for the crew to come and the work to show. */
     private const val NEAR = 72.0
+
+    /** How long the hearths burn on after the last of a homestead's people has left its land (ticks). */
+    private const val HEARTH_WAIT = 600L
+
+    /** How near the post someone must be for its hearths to be seen to. */
+    private const val SIGHT = 128.0
+
+    /** When each homestead last had one of its own people on its land (game time). */
+    private val home = HashMap<Int, Long>()
+
+    /** What each homestead's hearths were last set to (lit or out) and at what tier: they're only set when that changes,
+     *  so a fire its people put out or light themselves stays as they left it. */
+    private val hearthsSet = HashMap<Int, Pair<Int, Boolean>>()
 
     /** The build of homestead [id] going on now, if one is. */
     fun live(id: Int): HomesteadSite? = sites[id]
@@ -68,6 +83,7 @@ object HomesteadWorks {
         }
         val on = Homesteads.enabled()
         for (h in data.homesteads.toList()) {
+            if (on && Math.floorMod(now + h.id * 13L, 40L) == 0L) hearths(level, h, now)
             if (!h.building || !on) {
                 if (sites.remove(h.id) != null || BuilderCrew.builders(h.id).isNotEmpty()) BuilderCrew.dismiss(h.id)
                 continue
@@ -83,8 +99,39 @@ object HomesteadWorks {
         }
     }
 
+    /**
+     * The fire's in while the homestead's people are home: its hearths are lit while the owner or one of their party is
+     * on its land, and go out a while after the last of them leaves (smoke from the chimney means someone's in).
+     */
+    private fun hearths(level: ServerLevel, h: Homestead, now: Long) {
+        if (h.tier < 1) return
+        // Nobody within sight of it: nothing to see, and nothing worked out
+        val post = h.post
+        if (level.players().none { it.distanceToSqr(post.x + 0.5, it.y, post.z + 0.5) < SIGHT * SIGHT }) return
+        if (level.players().any { !it.isSpectator && h.covers(it.blockX, it.blockZ) && Homesteads.belongsTo(level, h, it) }) home[h.id] = now
+        val since = home[h.id]
+        val lit = since != null && now - since < HEARTH_WAIT
+        if (hearthsSet[h.id] == (h.tier to lit)) return
+        var all = true
+        for (pos in Homesteads.places(level, h).hearths) {
+            if (!level.isLoaded(pos)) {
+                all = false
+                continue
+            }
+            val state = level.getBlockState(pos)
+            if (state.block !is CampfireBlock || state.getValue(CampfireBlock.LIT) == lit) continue
+            if (lit && state.getValue(CampfireBlock.WATERLOGGED)) continue
+            level.setBlock(pos, state.setValue(CampfireBlock.LIT, lit), Block.UPDATE_ALL)
+            level.playSound(null, pos, if (lit) SoundEvents.FLINTANDSTEEL_USE else SoundEvents.FIRE_EXTINGUISH, SoundSource.BLOCKS, if (lit) 0.6f else 0.3f, 1f)
+        }
+        // Set once all of them could be: one in a chunk not yet loaded is seen to on a later look
+        if (all) hearthsSet[h.id] = h.tier to lit
+    }
+
     /** A homestead gone: its build and crew forgotten. */
     fun forget(id: Int) {
+        home.remove(id)
+        hearthsSet.remove(id)
         sites.remove(id)
         loaded.remove(id)
         watched.remove(id)
@@ -94,6 +141,8 @@ object HomesteadWorks {
 
     /** The server has stopped: nothing of its world is kept (another may be opened next). */
     fun reset() {
+        home.clear()
+        hearthsSet.clear()
         sites.clear()
         loaded.clear()
         watched.clear()
