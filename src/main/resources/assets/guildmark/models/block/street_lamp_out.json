@@ -1,0 +1,48 @@
+{
+  "textures": {
+    "particle": "minecraft:block/lantern",
+    "glass": "guildmark:block/street_lamp_out"
+  },
+  "elements": [
+    {
+      "from": [6, 1, 4.92],
+      "to": [10, 6, 4.92],
+      "faces": {
+        "north": {
+          "uv": [0, 0, 4, 5],
+          "texture": "#glass"
+        }
+      }
+    },
+    {
+      "from": [6, 1, 11.08],
+      "to": [10, 6, 11.08],
+      "faces": {
+        "south": {
+          "uv": [0, 0, 4, 5],
+          "texture": "#glass"
+        }
+      }
+    },
+    {
+      "from": [4.92, 1, 6],
+      "to": [4.92, 6, 10],
+      "faces": {
+        "west": {
+          "uv": [0, 0, 4, 5],
+          "texture": "#glass"
+        }
+      }
+    },
+    {
+      "from": [11.08, 1, 6],
+      "to": [11.08, 6, 10],
+      "faces": {
+        "east": {
+          "uv": [0, 0, 4, 5],
+          "texture": "#glass"
+        }
+      }
+    }
+  ]
+}

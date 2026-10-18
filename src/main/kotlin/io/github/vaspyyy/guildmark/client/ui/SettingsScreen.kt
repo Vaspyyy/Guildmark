@@ -280,7 +280,7 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
         val listed = listOf(
             c.COMBAT, c.LOSE_MARKS, c.PAY_MULTIPLIER, c.XP_MULTIPLIER, c.SKILL_XP_MULTIPLIER, c.RELIC_CACHE_CHANCE, c.HANDBOOK, c.AUTO_BOARDS, c.WARDFIRES,
             c.DUNGEONS, c.FIELD_BOSSES, c.CAPITALS, c.ISLANDS, c.DUSK_RIDERS, c.DRAGONS, c.SEA_MONSTERS, c.SIEGES, c.SIEGE_CHANCE, c.BANDITS, c.OUTLAWS, c.RIVALS, c.CHARACTERS,
-            c.TOWNSFOLK_CROWDS, c.TOWNSFOLK_CROWD_DENSITY, c.LIVING_WORLD, c.TOWNSFOLK_BEDS, c.MARKETS, c.SUPPLIER_ORDERS, c.HANDCARTS, c.MARKET_DISPLAYS, c.TURNING_MILLS,
+            c.TOWNSFOLK_CROWDS, c.TOWNSFOLK_CROWD_DENSITY, c.LIVING_WORLD, c.TOWNSFOLK_BEDS, c.MARKETS, c.SUPPLIER_ORDERS, c.HANDCARTS, c.MARKET_DISPLAYS, c.TURNING_MILLS, c.STREET_LAMPS,
             c.TOWNSFOLK_TALK, c.TOWNSFOLK_MEMORY, c.TOWNSFOLK_RUMOURS, c.TOWNSFOLK_BARKS,
             c.REGIONS, c.REGION_TERRAIN, c.REGION_ENEMIES,
             c.HOMESTEADS, c.HOMESTEAD_PROTECTION, c.HOMESTEAD_BUILD_SPEED, c.HOMESTEAD_SHIPPING, c.OWN_STALLS,
@@ -315,6 +315,7 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
             toggle(c.HANDCARTS, spec, editable),
             toggle(c.MARKET_DISPLAYS, spec, editable),
             toggle(c.TURNING_MILLS, spec, editable),
+            toggle(c.STREET_LAMPS, spec, editable),
             toggle(c.TOWNSFOLK_TALK, spec, editable),
             toggle(c.TOWNSFOLK_MEMORY, spec, editable),
             toggle(c.TOWNSFOLK_RUMOURS, spec, editable),

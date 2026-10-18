@@ -5,15 +5,16 @@ import java.util.Random
 /**
  * Draws the small things of the country onto [canvas]: lamps, wells, carts, stacks, shrines, trees. Each is drawn in
  * a frame of its own turned to its facing (ahead is north, so -v, and to the right is +u), from a random generator
- * seeded by the city's [seed] and the spot, so that every chunk that sees it draws it the same.
+ * seeded by the city's [seed] and the spot, so that every chunk that sees it draws it the same. [streetLamps]: the
+ * lamp posts' lanterns are street lamps (see [STREET_LAMP]), as a capital's country has them.
  */
-class FarmProps(private val canvas: Canvas, private val seed: Long) {
+class FarmProps(private val canvas: Canvas, private val seed: Long, private val streetLamps: Boolean = false) {
     fun draw(p: FarmProp) {
         val f = Frame(canvas, Rect(p.x, p.z, p.x, p.z), p.facing, p.y)
         val r = Random(mix(p))
         when (p.kind) {
             FarmPropKind.LAMP, FarmPropKind.WELL, FarmPropKind.SCARECROW, FarmPropKind.WAYSTONE, FarmPropKind.SHRINE ->
-                FarmWayside(f, r).draw(p)
+                FarmWayside(f, r, streetLamps).draw(p)
             FarmPropKind.CART, FarmPropKind.HAYSTACK, FarmPropKind.TROUGH, FarmPropKind.WOODPILE, FarmPropKind.COMPOST ->
                 FarmYard(f, r).draw(p)
             FarmPropKind.TREE, FarmPropKind.FRUIT_TREE -> FarmTrees(f, r).draw(p)
@@ -35,7 +36,7 @@ class FarmProps(private val canvas: Canvas, private val seed: Long) {
  * The things beside the roads and out in the fields: lamp posts, wells, scarecrows, waystones and the wayside
  * shrines of the hamlets. The waystone and the shrines face the road and keep to the ground behind its verge.
  */
-internal class FarmWayside(private val f: Frame, private val r: Random) {
+internal class FarmWayside(private val f: Frame, private val r: Random, private val streetLamps: Boolean = false) {
     fun draw(p: FarmProp) {
         when (p.kind) {
             FarmPropKind.LAMP -> lamp()
@@ -51,7 +52,7 @@ internal class FarmWayside(private val f: Frame, private val r: Random) {
         f.set(0, 0, 0, if (r.nextInt(3) != 0) B(M.WALL_POST) else FENCE)
         f.set(0, 1, 0, FENCE)
         f.set(0, 2, 0, FENCE)
-        f.set(0, 3, 0, B(if (r.nextInt(8) == 0) M.SOUL_LANTERN else M.LANTERN))
+        f.set(0, 3, 0, B(if (r.nextInt(8) == 0) M.SOUL_LANTERN else M.LANTERN, v = if (streetLamps) STREET_LAMP else 0))
     }
 
     /**

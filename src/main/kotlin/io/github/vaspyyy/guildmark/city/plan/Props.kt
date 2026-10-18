@@ -7,6 +7,12 @@ import kotlin.math.abs
 import kotlin.math.sqrt
 
 /**
+ * A lantern's [B.v] for a street lamp: a lantern standing on a lamp post, which the game builds as a street lamp
+ * (lamps/StreetLampBlock) that is lit at dusk and put out at dawn, while Street Lamps is switched on.
+ */
+const val STREET_LAMP = 1
+
+/**
  * The street furniture and the things that make a city work: lamps, trees, market stalls, the well,
  * the fountain in the plaza, the bell villagers gather at, the quest board, the Wardfire, and the
  * golems keeping the gates.
@@ -51,7 +57,7 @@ class Props(private val plan: CityPlan, private val world: Canvas) {
         canvas.set(x, 0, z, B(M.WALL_POST))
         canvas.set(x, 1, z, B(M.FENCE))
         canvas.set(x, 2, z, B(M.FENCE))
-        canvas.set(x, 3, z, B(M.LANTERN))
+        canvas.set(x, 3, z, B(M.LANTERN, v = STREET_LAMP))
     }
 
     /** A broad-leaved tree standing on [y]: a trunk [height] and a bit, a rounded crown, leaves that never fall. */

@@ -5,8 +5,11 @@ import io.github.vaspyyy.guildmark.city.plan.B
 import io.github.vaspyyy.guildmark.city.plan.Dir
 import io.github.vaspyyy.guildmark.city.plan.Dye
 import io.github.vaspyyy.guildmark.city.plan.M
+import io.github.vaspyyy.guildmark.city.plan.STREET_LAMP
 import io.github.vaspyyy.guildmark.city.plan.Wares
 import io.github.vaspyyy.guildmark.economy.WaresRegistry
+import io.github.vaspyyy.guildmark.lamps.LampRegistry
+import io.github.vaspyyy.guildmark.lamps.StreetLamps
 import io.github.vaspyyy.guildmark.registry.ModBlocks
 import net.minecraft.core.Direction
 import net.minecraft.core.Holder
@@ -125,8 +128,10 @@ enum class CityStyle {
             M.FENCE_GATE -> facing(p.wood.gate, b.dir).setValue(BlockStateProperties.OPEN, b.open)
             M.LADDER -> facing(Blocks.LADDER, b.dir)
 
-            M.LANTERN -> Blocks.LANTERN.defaultBlockState().setValue(BlockStateProperties.HANGING, b.top)
-            M.SOUL_LANTERN -> Blocks.SOUL_LANTERN.defaultBlockState().setValue(BlockStateProperties.HANGING, b.top)
+            M.LANTERN -> if (b.v == STREET_LAMP && StreetLamps.enabled()) LampRegistry.STREET_LAMP.get().defaultBlockState()
+                else Blocks.LANTERN.defaultBlockState().setValue(BlockStateProperties.HANGING, b.top)
+            M.SOUL_LANTERN -> if (b.v == STREET_LAMP && StreetLamps.enabled()) LampRegistry.SOUL_STREET_LAMP.get().defaultBlockState()
+                else Blocks.SOUL_LANTERN.defaultBlockState().setValue(BlockStateProperties.HANGING, b.top)
             M.TORCH -> if (b.dir != null) facing(Blocks.WALL_TORCH, b.dir) else Blocks.TORCH.defaultBlockState()
             M.CHAIN -> Blocks.IRON_CHAIN.defaultBlockState()
             M.CAMPFIRE -> Blocks.CAMPFIRE.defaultBlockState()

@@ -231,6 +231,8 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         io.github.vaspyyy.guildmark.economy.OwnStalls.register(modBus)
         // The mills' sails and wheels, turning while the mill grinds (mill/)
         io.github.vaspyyy.guildmark.mill.Mills.register(modBus)
+        // The capitals' street lamps, lit at dusk and put out at dawn by the lamplighters on their rounds (lamps/)
+        io.github.vaspyyy.guildmark.lamps.StreetLamps.register(modBus)
         modBus.addListener(EntityAttributeCreationEvent::class.java) {
             it.put(ModEntities.GUILD_MEMBER.get(), GuildMember.createAttributes().build())
             it.put(ModEntities.STORY_NPC.get(), StoryNpc.createAttributes().build())

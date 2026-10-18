@@ -1,0 +1,36 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "minecraft:block/lantern"
+      }
+    },
+    {
+      "when": {
+        "lit": "false",
+        "settling": "false"
+      },
+      "apply": {
+        "model": "guildmark:block/street_lamp_out"
+      }
+    },
+    {
+      "when": {
+        "lit": "false",
+        "settling": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/street_lamp_dying"
+      }
+    },
+    {
+      "when": {
+        "lit": "true",
+        "settling": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/street_lamp_catching"
+      }
+    }
+  ]
+}

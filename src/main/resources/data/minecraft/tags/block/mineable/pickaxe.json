@@ -8,6 +8,8 @@
     "guildmark:large_glimmer_cluster",
     "guildmark:glimmerstone",
     "guildmark:glimmer_crystal",
-    "guildmark:lighthouse_lamp"
+    "guildmark:lighthouse_lamp",
+    "guildmark:street_lamp",
+    "guildmark:soul_street_lamp"
   ]
 }

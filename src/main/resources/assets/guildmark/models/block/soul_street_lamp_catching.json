@@ -1,0 +1,93 @@
+{
+  "textures": {
+    "particle": "minecraft:block/soul_lantern",
+    "glass": "guildmark:block/soul_street_lamp_catching",
+    "glow": "guildmark:block/soul_street_lamp_flame"
+  },
+  "elements": [
+    {
+      "from": [6, 1, 4.92],
+      "to": [10, 6, 4.92],
+      "faces": {
+        "north": {
+          "uv": [0, 0, 4, 5],
+          "texture": "#glass"
+        }
+      }
+    },
+    {
+      "from": [6, 1, 11.08],
+      "to": [10, 6, 11.08],
+      "faces": {
+        "south": {
+          "uv": [0, 0, 4, 5],
+          "texture": "#glass"
+        }
+      }
+    },
+    {
+      "from": [4.92, 1, 6],
+      "to": [4.92, 6, 10],
+      "faces": {
+        "west": {
+          "uv": [0, 0, 4, 5],
+          "texture": "#glass"
+        }
+      }
+    },
+    {
+      "from": [11.08, 1, 6],
+      "to": [11.08, 6, 10],
+      "faces": {
+        "east": {
+          "uv": [0, 0, 4, 5],
+          "texture": "#glass"
+        }
+      }
+    },
+    {
+      "from": [7, 2, 4.84],
+      "to": [9, 4, 4.84],
+      "faces": {
+        "north": {
+          "uv": [0, 0, 2, 2],
+          "texture": "#glow"
+        }
+      },
+      "light_emission": 14
+    },
+    {
+      "from": [7, 2, 11.16],
+      "to": [9, 4, 11.16],
+      "faces": {
+        "south": {
+          "uv": [0, 0, 2, 2],
+          "texture": "#glow"
+        }
+      },
+      "light_emission": 14
+    },
+    {
+      "from": [4.84, 2, 7],
+      "to": [4.84, 4, 9],
+      "faces": {
+        "west": {
+          "uv": [0, 0, 2, 2],
+          "texture": "#glow"
+        }
+      },
+      "light_emission": 14
+    },
+    {
+      "from": [11.16, 2, 7],
+      "to": [11.16, 4, 9],
+      "faces": {
+        "east": {
+          "uv": [0, 0, 2, 2],
+          "texture": "#glow"
+        }
+      },
+      "light_emission": 14
+    }
+  ]
+}

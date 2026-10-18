@@ -145,6 +145,9 @@ object GuildmarkConfig {
     val TOWNSFOLK_BARKS: ModConfigSpec.BooleanValue = BUILDER
         .comment("Townsfolk greet and call out to players in passing with what's on their mind. Off, the old greetings.")
         .define("townsfolkBarks", true)
+    val STREET_LAMPS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("The capitals' street lamps are lit at dusk and put out at dawn: lamplighters walk their rounds with a long pole, lighting the lamps one by one from about half past five in the evening (an hour earlier in a storm) and putting them out from half past five in the morning, farmers see to the lamps at their gates, and any lamp nobody reaches catches or goes out by itself, so every lamp is lit by seven and out by half past seven. Older capitals' lanterns on posts are swapped for street lamps out of sight. Off, the lamps burn day and night as before.")
+        .define("streetLamps", true)
 
     // Seasons and festivals (season/, festival/)
     val SEASONS: ModConfigSpec.BooleanValue = BUILDER

@@ -126,7 +126,7 @@ class Outskirts(private val plan: CityPlan) {
             if (cell != 0) column(canvas, x, z, Cell.entries[cell], heights[i].toInt(), details[i].toInt())
         }
         for (b in buildings) if (canvas.touches(b.bounds)) FarmBuildings(Frame(canvas, b.lot, b.front, b.y), b, Random(b.seed)).draw()
-        val things = FarmProps(canvas, plan.seed)
+        val things = FarmProps(canvas, plan.seed, streetLamps = true)
         for (p in props) if (canvas.touches(p.bounds)) things.draw(p)
         for (b in beasts) if (clip.contains(b.x, b.z)) canvas.spawn(b.what, b.x, b.y, b.z, b.facing)
     }
