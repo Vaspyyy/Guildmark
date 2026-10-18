@@ -3,7 +3,9 @@ The Living World's held props for the townsfolk (art/scripts/living_anims.py ani
 spoon, the well's rope and bucket, coins, a seed bag, a scythe, an axe, a crier's handbell and scroll, a lamplighter's
 pole, a basket on the hip, a sack to tip out and a grindstone's crank; and the road's (art/scripts/road_clips.py): a
 caravan driver's knife and reins, a guard's spear laid across the knees, a waylayer's sack of loot and a horse's
-nosebag.
+nosebag; and the works' and the streets' (M6: art/scripts/works_clips.py, street_clips.py): a trowel, a mortar hoe, a
+mallet and chisel, a plumb line, a sighting staff, a beam for two, a cup for the toast, the alms table's ladle and bowls,
+a torch, the watch's horn, a household's bundle, the cloth over a patron's plaque and an empty basket.
 
 townsfolk_tools.py takes them in at its end (BUILDERS, GLOW_CUBES, TOOL_NOTES), so townsfolk.py builds them into the
 model like every other tool, and art/scripts/townsfolk.py packs their cubes after everyone else's (CUBES), so adding
@@ -855,6 +857,710 @@ TOOL_NOTES = {
     'loot_sack': f'right fist by the neck, hangs; its bottom {LOOT_SACK_BOTTOM:g} px under the fist',
     'nosebag_held': 'left fist by its strap, hangs; its mouth at part (0, 3.4, 0)',
 }
+
+# ================================================================== the works' and the streets' props (M6)
+# art/scripts/works_clips.py (the master builder's crew, the topping out and the opening, the watchtower) and
+# street_clips.py (the alms table, the hard days, households coming and going) hold these. townsfolk.py packs their cubes
+# last of all (works_cube_names()), so adding them moved no cube already on the texture. Most of them are turned, placed
+# and stretched by their clips' prop tracks (the plumb line swings as a pendulum, the unveiling cloth flies off as a chain
+# of three panels, the torch's flame stands up whichever way the torch leans): their rest rotations are where they sit
+# when a clip shows them untracked.
+
+MORTAR = (196, 190, 176); MORTAR_D = (150, 144, 132); MORTAR_L = (222, 218, 206)
+PEWTER = (150, 154, 160); PEWTER_D = (96, 100, 108); PEWTER_L = (210, 214, 220)
+WINE = (104, 18, 32); WINE_L = (168, 52, 64)
+VELVET = (138, 20, 36); VELVET_D = (84, 10, 22); VELVET_L = (198, 58, 72)
+GILT = (224, 180, 72); GILT_D = (150, 110, 40)
+HOMESPUN = (66, 94, 142); HOMESPUN_D = (40, 58, 98); HOMESPUN_L = (128, 154, 192)
+IVORY = (228, 216, 186); IVORY_D = (178, 158, 118); HORN_TIP = (70, 54, 42)
+PITCH = (42, 32, 26); PITCH_L = (92, 70, 48); EMBER = (255, 136, 44)
+BAND_RED = (186, 40, 36); BAND_WHITE = (234, 230, 218)
+BEECH = (200, 160, 110); BEECH_D = (150, 110, 70); BEECH_L = (228, 194, 146)
+
+
+def trowel_blade_painter(key):
+    """A brick trowel's blade: thin bright steel, broad at its heel (the cube's -y end, under the handle) and drawn to a
+    point at its tip (+y), a smear of mortar on its face near the heel; clear outside its outline."""
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        a = metal(w, h, STEEL, STEEL_D, STEEL_L, rng, bevel=False, wear=0.04)
+        if face in ('front', 'back'):
+            half = 0.5 * np.clip(1.0 - V, 0, 1) ** 0.75 + 0.03
+            inside = np.abs(U - 0.5) <= half
+            edge = np.abs(U - 0.5) > half - max(0.09, 1.0 / w)
+            a[..., :3] = np.where(edge[..., None], mix(a[..., :3], (246, 248, 252), 0.55), a[..., :3])
+            a[..., :3] *= (1.0 + 0.12 * (0.5 - V))[..., None]
+            if face == 'front':
+                smear = (V < 0.4) & (np.abs(U - 0.46) < 0.2) & (rng.random((h, w)) < 0.75)
+                a[..., :3] = np.where(smear[..., None], mix(a[..., :3], MORTAR, 0.8), a[..., :3])
+            a[~inside] = 0
+        elif face == 'bottom':
+            a[np.abs(U - 0.5) > 0.14] = 0
+        elif face in ('right', 'left'):
+            a[V > 0.14] = 0
+        return a
+    return painter(key, fn)
+
+
+def larry_blade_painter(key):
+    """A mortar hoe's blade: a broad iron plate with two holes through it (the mortar works through them as it is
+    turned), caked grey with old mortar."""
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        a = metal(w, h, (90, 88, 86), (52, 50, 50), (154, 152, 148), rng, bevel=True, wear=0.05)
+        cake = rng.random((h, w)) < 0.3 + 0.35 * np.abs(U - 0.5) * 2
+        a[..., :3] = np.where(cake[..., None], mix(a[..., :3], mix(MORTAR, MORTAR_D, rng.random((h, w, 1))), 0.8), a[..., :3])
+        if face in ('top', 'bottom'):
+            for cx in (0.3, 0.7):
+                d = np.hypot((U - cx) * w, (V - 0.5) * h)
+                hole = d < min(w, h) * 0.2
+                rim = d < min(w, h) * 0.3
+                a[..., :3] = np.where((rim & ~hole)[..., None], mix(a[..., :3], (40, 38, 38), 0.5), a[..., :3])
+                a[hole] = 0
+        return a
+    return painter(key, fn)
+
+
+def mallet_painter(key):
+    """A mason's round beech mallet head: the grain along its axis (the cube's y), turned round (its corners shaded
+    deep), pocked and dark where it strikes round its middle; its ends end grain."""
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        if face in ('top', 'bottom'):
+            a = grain(w, h, None, BEECH, BEECH_D, BEECH_L, rng)
+            r = np.hypot(U - 0.5, V - 0.5) * 2
+            a[..., :3] *= (1.05 - 0.35 * np.clip(r - 0.55, 0, 1))[..., None]
+            return a
+        a = grain(w, h, 'v', BEECH, BEECH_D, BEECH_L, rng, streak=0.35)
+        a[..., :3] *= (0.72 + 0.34 * np.sin(np.clip(U, 0, 1) * math.pi))[..., None]
+        pock = (np.abs(V - 0.5) < 0.3) & (rng.random((h, w)) < 0.12)
+        a[..., :3] = np.where(pock[..., None], mix(a[..., :3], BEECH_D, 0.7), a[..., :3])
+        a[..., :3] = mix(a[..., :3], (120, 84, 54), (np.clip(0.3 - np.abs(V - 0.5), 0, 0.3) * 0.8)[..., None])
+        return a
+    return painter(key, fn)
+
+
+def chisel_painter(key, part):
+    """A mason's chisel: dark forged steel; its edge ([part] 'edge') ground bright, its struck head ('head') burred
+    over and polished by the mallet."""
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        a = metal(w, h, (104, 106, 114), (58, 60, 66), (176, 180, 192), rng, wear=0.06)
+        if part == 'edge':
+            a[..., :3] = mix(a[..., :3], STEEL_L, (np.clip(V - 0.35, 0, 1) * 1.1)[..., None])
+        elif part == 'head' and face == 'top':
+            a[..., :3] = mix(a[..., :3], STEEL_L, 0.6)
+        elif part == 'head':
+            a[..., :3] = np.where((V < 0.45)[..., None], mix(a[..., :3], (150, 154, 166), 0.5), a[..., :3])
+        return a
+    return painter(key, fn)
+
+
+def staff_painter(key):
+    """A surveyor's ranging staff, modelled along x: ash painted in bands of red and white every 4 px (so a sight along it
+    reads at a distance), the paint worn at the edges and dirty towards the foot (-x)."""
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        if face in ('right', 'left'):
+            return shade_edges(grain(w, h, None, WOOD, WOOD_D, WOOD_L, rng), 0.2)
+        a = grain(w, h, 'u', WOOD, WOOD_D, WOOD_L, rng, streak=0.3)
+        bands = np.floor(U * 30.0 / 4.0).astype(int) % 2 == 0
+        paint = np.where(bands[..., None], np.array(BAND_RED, float), np.array(BAND_WHITE, float))
+        paint = paint * (1 + rng.normal(0, 0.03, (h, w, 1)))
+        worn = rng.random((h, w)) < 0.05 + 0.25 * (np.abs(V - 0.5) > 0.38)
+        a[..., :3] = np.where(worn[..., None], a[..., :3], paint)
+        a[..., :3] = mix(a[..., :3], (96, 78, 56), (np.clip(0.18 - U, 0, 0.18) * 3.0)[..., None])
+        return shade_edges(a, 0.14)
+    return painter(key, fn)
+
+
+def pennant_painter(key):
+    """The staff's pennant, a flat cube in the staff's x-z plane: a little triangle of red over white cloth, its base along
+    the staff (the cube's -z edge: v 1 on its broad faces) and its point out from it; clear round it."""
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        a = noise_fill(w, h, BAND_WHITE, rng, 0.03)
+        if face in ('top', 'bottom'):
+            inside = np.abs(U - 0.5) <= 0.5 * V + 0.02
+            a[..., :3] = np.where((U > 0.5)[..., None], np.array(BAND_RED, float), a[..., :3])
+            a[~inside] = 0
+        else:
+            a[..., :3] = np.array(BAND_RED, float)
+            if face in ('right', 'left', 'back'):
+                a[...] = 0
+        return a
+    return painter(key, fn)
+
+
+def beam_painter(key):
+    """A squared oak beam, modelled along x: the grain running its length, the adze's shallow scallops across its faces,
+    a knot or two, a split; its sawn ends end grain."""
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        if face in ('right', 'left'):
+            return shade_edges(grain(w, h, None, OAK, OAK_D, OAK_L, rng), 0.3)
+        a = grain(w, h, 'u', OAK, OAK_D, OAK_L, rng, streak=0.5, knots=2)
+        n = max(4, w // 5)
+        scallop = np.sin((U * n + 0.3 * np.sin(V * 3.0 + rng.uniform(0, 6))) * math.pi) ** 2
+        a[..., :3] *= (0.9 + 0.12 * scallop)[..., None]
+        if face in ('front', 'top'):
+            x0 = rng.uniform(0.2, 0.6)
+            split = (U > x0) & (U < x0 + 0.18) & (np.abs(V - 0.5 - 0.15 * np.sin((U - x0) * 30)) < max(0.05, 0.6 / h))
+            a[..., :3] = np.where(split[..., None], a[..., :3] * 0.55, a[..., :3])
+        return shade_edges(a, 0.28, width=max(1, h // 4))
+    return painter(key, fn)
+
+
+def pewter_painter(key, wine=False):
+    """Pewter, soft grey and a little worn, a bright glint and a dark line where it was turned; on top ([wine]) the wine
+    in the cup inside a pewter rim."""
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        if face == 'top' and wine:
+            a = noise_fill(w, h, WINE, rng, 0.05)
+            hl = np.exp(-((U - 0.35) ** 2 + (V - 0.35) ** 2) * 16)
+            a[..., :3] = mix(a[..., :3], WINE_L, (hl * 0.7)[..., None])
+            rim = (U < 0.16) | (U > 0.84) | (V < 0.16) | (V > 0.84)
+            a[..., :3] = np.where(rim[..., None], np.array(PEWTER_L, float), a[..., :3])
+            return a
+        a = metal(w, h, PEWTER, PEWTER_D, PEWTER_L, rng, wear=0.05)
+        glint = np.exp(-((U - 0.3) ** 2 + (V - 0.38) ** 2) * 12)
+        a[..., :3] = mix(a[..., :3], (240, 244, 248), (glint * 0.55)[..., None])
+        if h >= 4 and face not in ('top', 'bottom'):
+            ring = np.abs(V - 0.25) < max(0.05, 0.5 / h)
+            a[..., :3] = np.where(ring[..., None], a[..., :3] * 0.75, a[..., :3])
+        return a
+    return painter(key, fn)
+
+
+def ladle_bowl_painter(key, full):
+    """A turned wooden ladle's bowl, the grain going round it; inside it (its top: it opens back towards the handle) the
+    wet wood, or stew ([full]) up to its rim."""
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        if face == 'top':
+            if full:
+                a = noise_fill(w, h, STEW, rng, 0.08)
+                bits = rng.random((h, w))
+                a[..., :3] = np.where((bits < 0.12)[..., None], np.array(CARROT, float), a[..., :3])
+                a[..., :3] = mix(a[..., :3], (204, 150, 100), (np.exp(-((U - 0.35) ** 2 + (V - 0.4) ** 2) * 18) * 0.4)[..., None])
+            else:
+                a = grain(w, h, 'u', OAK_D, (70, 46, 28), OAK, rng, streak=0.3)
+                r = np.hypot(U - 0.5, V - 0.5) * 2
+                a[..., :3] *= (0.7 + 0.25 * r)[..., None]
+                a[..., :3] = mix(a[..., :3], STEW_D, (rng.random((h, w, 1)) < 0.15) * 0.6)
+            rim = (U < 0.16) | (U > 0.84) | (V < 0.16) | (V > 0.84)
+            wood = grain(w, h, 'u', PALE_L, PALE, (236, 216, 170), rng, streak=0.3)
+            a[..., :3] = np.where(rim[..., None], wood[..., :3], a[..., :3])
+            return a
+        a = grain(w, h, 'u' if face != 'bottom' else None, PALE, PALE_D, PALE_L, rng, streak=0.3)
+        if face == 'bottom':
+            return shade_edges(a, 0.3)
+        a[..., :3] = mix(a[..., :3], PALE_D, np.clip(V - 0.5, 0, 0.5)[..., None])
+        return shade_edges(a, 0.22)
+    return painter(key, fn)
+
+
+def stew_painter(key):
+    """A stream of stew poured from the ladle: brown broth with bits of carrot in it, streaked along its fall (+y)."""
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        a = noise_fill(w, h, STEW, rng, 0.06)
+        streak = np.sin(U * 9.0 + rng.uniform(0, 6)) > 0.5
+        a[..., :3] = np.where(streak[..., None], mix(a[..., :3], (176, 112, 66), 0.4), a[..., :3])
+        bits = rng.random((h, w)) < 0.05
+        a[..., :3] = np.where(bits[..., None], np.array(CARROT, float), a[..., :3])
+        return a
+    return painter(key, fn)
+
+
+def empty_bowl_painter(key):
+    """A turned wooden bowl, empty: the grain running round it and a lathe ring under the rim as the stew bowl's; inside,
+    the bare wood deepening to its middle, a lathe ring round its floor."""
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        if face == 'top':
+            a = grain(w, h, 'u', OAK, OAK_D, OAK_L, rng, streak=0.3)
+            r = np.maximum(np.abs(U - 0.5), np.abs(V - 0.5)) * 2
+            a[..., :3] *= (0.62 + 0.32 * np.clip(r, 0, 1))[..., None]
+            ring = np.abs(r - 0.45) < max(0.05, 0.6 / w)
+            a[..., :3] = np.where(ring[..., None], a[..., :3] * 0.8, a[..., :3])
+            wood = grain(w, h, 'u', OAK_L, OAK, (200, 160, 110), rng, streak=0.3)
+            a[..., :3] = np.where((r > 0.72)[..., None], wood[..., :3], a[..., :3])
+            return a
+        if face == 'bottom':
+            return shade_edges(grain(w, h, None, OAK, OAK_D, OAK_L, rng), 0.3)
+        a = grain(w, h, 'u', OAK, OAK_D, OAK_L, rng, streak=0.35)
+        ring = np.abs(V - 0.3) < max(0.06, 0.5 / h)
+        a[..., :3] = np.where(ring[..., None], mix(a[..., :3], OAK_D, 0.6), a[..., :3])
+        a[..., :3] = mix(a[..., :3], OAK_D, np.clip(V - 0.6, 0, 0.4)[..., None])
+        return shade_edges(a, 0.2)
+    return painter(key, fn)
+
+
+def torch_head_painter(key):
+    """A torch's head: rag soaked in pitch and bound round the stave in turns, charred black, glowing at its burning top
+    (-y: the cube's top, and the top of its sides) where the flame stands."""
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        if face == 'top':
+            a = noise_fill(w, h, (60, 26, 14), rng, 0.2)
+            hot = rng.random((h, w)) < 0.55
+            a[..., :3] = np.where(hot[..., None], mix(np.array(EMBER, float), np.array((255, 220, 120), float), rng.random((h, w, 1))), a[..., :3])
+            return a
+        if face == 'bottom':
+            return noise_fill(w, h, PITCH, rng, 0.1)
+        a = noise_fill(w, h, PITCH, rng, 0.12)
+        turns = np.sin((V * 5.0 + U * 0.8) * math.pi * 2) > 0.3
+        a[..., :3] = np.where(turns[..., None], mix(a[..., :3], PITCH_L, 0.45), a[..., :3])
+        char = rng.random((h, w)) < 0.2
+        a[..., :3] = np.where(char[..., None], a[..., :3] * 0.5, a[..., :3])
+        glow = (V < 0.3) & (rng.random((h, w)) < 0.35 * (1 - V / 0.3))
+        a[..., :3] = np.where(glow[..., None], np.array(EMBER, float), a[..., :3])
+        return a
+    return painter(key, fn)
+
+
+def upright_flame_painter(key, core=False):
+    """A flame standing up from its root (the cube's +y end) to its tip (-y), every pixel emissive (GLOW): on each side a
+    teardrop of fire, white-hot low in the middle, orange to red at its edges and tip ([core]: the small white-hot heart
+    inside it); seen from above or below, a round glow. Clear round it."""
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        a = np.zeros((h, w, 4), float)
+        if face in ('top', 'bottom'):
+            r = np.hypot(U - 0.5, V - 0.5) * 2
+            a[..., :3] = ramp(FLAME, np.clip(1.0 - r * 0.8 + (0.3 if core else 0.0), 0, 1))
+            a[..., 3] = np.where(r <= (0.7 if face == 'top' else 1.0), 255, 0)
+            return a
+        x = 1.0 - V                          # along the flame: 0 at its root, 1 at its tip
+        wob = 0.04 * np.sin(x * 9.0 + (0.0 if face in ('front', 'back') else 1.7))
+        half = 0.5 * np.clip(1.0 - x, 0, 1) ** 0.65 * np.clip(x * 4.0 + 0.25, 0, 1) ** 0.5
+        inside = np.abs(U - 0.5 - wob * x) <= half
+        t = np.clip(1.05 - x * (0.55 if core else 0.85) - np.abs(U - 0.5) * (0.6 if core else 1.0), 0, 1)
+        a[..., :3] = ramp(FLAME, t)
+        a[..., 3] = np.where(inside, 255, 0)
+        return a
+    return painter(key, fn, light=False)
+
+
+def horn_painter(key, tip=0.0):
+    """A cow's horn: polished, pale and warm, the growth rings faint round it, darkening ([tip], 0 to 1) towards its
+    narrow end."""
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        base = mix(np.array(IVORY, float), np.array(HORN_TIP, float), tip)
+        a = noise_fill(w, h, tuple(base), rng, 0.04)
+        rings = np.sin(U * max(w, h) * 1.3) > 0.6
+        a[..., :3] = np.where(rings[..., None], a[..., :3] * 0.9, a[..., :3])
+        streak = np.sin(V * 7.0 + U * 2.0 + rng.uniform(0, 6)) > 0.7
+        a[..., :3] = np.where(streak[..., None], mix(a[..., :3], IVORY_D, 0.35), a[..., :3])
+        glint = np.exp(-((V - 0.3) ** 2) * 40)
+        a[..., :3] = mix(a[..., :3], (255, 250, 236), (glint * 0.35)[..., None])
+        return shade_edges(a, 0.22)
+    return painter(key, fn)
+
+
+def bundle_painter(key, knot=False):
+    """A household's bundle: their bedding and clothes tied up in a blue check cloth, creased where it is gathered;
+    [knot]: the knotted corners on top, the cloth twisted tight."""
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        a = noise_fill(w, h, HOMESPUN, rng, 0.05)
+        n = max(3, round(max(w, h) / 3))
+        check = (np.floor(U * n) + np.floor(V * n)) % 2 == 0
+        stripe = ((U * n) % 1.0 < 0.25) | ((V * n) % 1.0 < 0.25)
+        a[..., :3] = np.where(check[..., None], mix(a[..., :3], HOMESPUN_L, 0.45), a[..., :3])
+        a[..., :3] = np.where(stripe[..., None], mix(a[..., :3], (230, 222, 200), 0.55), a[..., :3])
+        if knot:
+            tw = np.sin((U + V) * max(w, h) * 1.2) > 0.2
+            a[..., :3] = np.where(tw[..., None], a[..., :3] * 0.75, a[..., :3])
+        else:
+            fold = np.sin(U * 7.0 + V * 3.0 + rng.uniform(0, 6)) * np.sin(V * 5.0 + rng.uniform(0, 6))
+            a[..., :3] *= (1.0 + 0.16 * fold)[..., None]
+            if face not in ('top', 'bottom'):
+                a[..., :3] = mix(a[..., :3], HOMESPUN_D, (np.clip(0.25 - V, 0, 0.25) * 2.0)[..., None])
+        return shade_edges(a, 0.3, width=max(1, min(w, h) // 4))
+    return painter(key, fn)
+
+
+def veil_painter(key, piece):
+    """The cloth over the patron's plaque: crimson velvet with a soft sheen across its folds and a gilt border along its
+    sides; the last [piece] (VEIL_PIECES) has a gilt fringe along its lower edge (+y)."""
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        sheen = np.sin(U * 5.0 + piece * 1.3) * 0.5 + 0.5
+        a = solid(w, h, VELVET)
+        a[..., :3] = mix(np.array(VELVET_D, float), np.array(VELVET_L, float), (0.25 + 0.5 * sheen)[..., None]) * (1 + rng.normal(0, 0.03, (h, w, 1)))
+        if face in ('front', 'back'):
+            border = (U < 0.07) | (U > 0.93)
+            a[..., :3] = np.where(border[..., None], mix(np.array(GILT, float), np.array(GILT_D, float), rng.random((h, w, 1)) * 0.5), a[..., :3])
+            if piece == VEIL_PIECES:
+                fringe = V > 0.8
+                tassel = (np.floor(U * w * 0.8) % 2 == 0) | (V < 0.9)
+                a[..., :3] = np.where(fringe[..., None], mix(np.array(GILT, float), np.array(GILT_D, float), V[..., None] * 0.6), a[..., :3])
+                a[fringe & ~tassel] = 0
+        return a
+    return painter(key, fn)
+
+
+def empty_basket_painter(key):
+    """The shopper's basket, empty: the carried basket's weave and plaited rim (townsfolk_tools' basket_painter), and
+    inside it (its top) only the bare weave, dark, and a few crumbs."""
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        if face == 'top':
+            a = weave(w, h, WICKER_D, (78, 54, 26), WICKER, rng, cell=max(2, min(w, h) // 4))
+            a[..., :3] *= 0.62
+            crumbs = rng.random((h, w)) < 0.05
+            a[..., :3] = np.where(crumbs[..., None], np.array(BREAD_L, float), a[..., :3])
+            rim = (U < 0.12) | (U > 0.88) | (V < 0.12) | (V > 0.88)
+            a[..., :3] = np.where(rim[..., None], np.array(WICKER_D, float), a[..., :3])
+            return a
+        a = weave(w, h, WICKER, WICKER_D, WICKER_L, rng, cell=max(2, min(w, h) // 4))
+        if face != 'bottom' and h >= 4:
+            r = max(1, h // 6)
+            a[:r, :, :3] = mix(a[:r, :, :3], WICKER_D, 0.5)
+        return shade_edges(a, 0.2)
+    return painter(key, fn)
+
+
+TROWEL_ROT = (-16.0, 0.0, 0.0)
+TROWEL_TIP = (0.0, 7.8, 2.15)            # trowel space: its point; the middle of its face at (0, 4.0, 2.0)
+
+
+def _trowel():
+    # A brick trowel in the right fist: the handle through the fist, the blade under it (part +z) on a cranked shank,
+    # flat, its point ahead (part +y). Cocked TROWEL_ROT forward of the arm's line, so with the arm reaching 16 degrees
+    # down ahead (laying a course a little below the belly, from a step back) the blade lies level.
+    return 'right_arm', Part('trowel', RIGHT_GRIP, TROWEL_ROT, cubes=[
+        C((-0.6, -2.4, -0.6), (1.2, 3.8, 1.2), 't_trowel_handle', wood_painter('t_trowel_handle', OAK_L, OAK, (196, 158, 108), 'y')),
+        C((-0.7, 1.4, -0.7), (1.4, 0.6, 1.4), 't_trowel_ferrule', brass_painter('t_trowel_ferrule')),
+        C((-0.25, 1.75, -0.25), (0.5, 0.5, 2.3), 't_trowel_shank', iron_painter('t_trowel_shank')),
+        C((-1.9, 1.4, 2.0), (3.8, 6.4, 0.3), 't_trowel_blade', trowel_blade_painter('t_trowel_blade')),
+    ])
+
+
+def mortar_heap_painter(key):
+    """A heap of fresh mortar: soft grey, lumpy, wet and lighter where the trowel has cut it, gritty with sand."""
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        a = noise_fill(w, h, MORTAR, rng, 0.06)
+        lumps = np.sin(U * 7.0 + rng.random() * 6) * np.sin(V * 5.0 + rng.random() * 6)
+        a[..., :3] *= (1.0 + 0.07 * lumps)[..., None]
+        grit = rng.random((h, w)) < 0.12
+        a[..., :3] = np.where(grit[..., None], mix(a[..., :3], MORTAR_D, 0.6), a[..., :3])
+        if face == 'top':
+            cut = np.abs(V - 0.35 - 0.1 * U) < max(0.06, 0.7 / h)
+            a[..., :3] = np.where(cut[..., None], mix(a[..., :3], MORTAR_L, 0.7), a[..., :3])
+        else:
+            a[..., :3] *= (0.86 + 0.14 * (1.0 - V))[..., None]
+        return shade_edges(a, 0.2)
+    return painter(key, fn)
+
+
+HAWK_ROT = (45.0, 0.0, 0.0)
+HAWK_TOP = (0.0, -3.8, 0.0)              # hawk space: the middle of its board's top
+HAWK_HEAP = (0.6, -5.2, 0.0)             # the top of the heap of mortar on it
+
+
+def _hawk():
+    # A mortar hawk in the left fist: a square board on a short round handle, a heap of mortar on it. The handle stands
+    # up out of the fist (part -y), tipped HAWK_ROT back off the arm's line, so with the arm reaching 45 degrees down
+    # ahead the board is level; TROWEL scoops off it.
+    return 'left_arm', Part('hawk', LEFT_GRIP, HAWK_ROT, cubes=[
+        C((-0.55, -3.2, -0.55), (1.1, 4.4, 1.1), 't_hawk_handle', wood_painter('t_hawk_handle', OAK, OAK_D, OAK_L, 'y')),
+        C((-4.0, -3.8, -4.0), (8.0, 0.6, 8.0), 't_hawk_board', wood_painter('t_hawk_board', BEECH, BEECH_D, BEECH_L, 'x')),
+        C((-1.6, -5.2, -2.2), (4.4, 1.4, 4.4), 't_hawk_mortar', mortar_heap_painter('t_hawk_mortar')),
+    ])
+
+
+MORTAR_HOE_ROT = (-60.0, 0.0, 0.0)
+MORTAR_HOE_BLADE = (0.0, 17.5, 2.2)      # mortar hoe space: the middle of its blade
+MORTAR_HOE_LEFT = 8.0                    # how far down the shaft from the right fist the left hand holds it
+
+
+def _mortar_hoe():
+    # A mortar hoe (a larry): a long ash shaft, the right fist at its end and the left MORTAR_HOE_LEFT px down it, and a
+    # broad blade with two holes turned back towards the mixer (+z of the shaft) off its far end, as the draw hoe's. The
+    # shaft leaves the fist MORTAR_HOE_ROT forward of the arm's line, pointing ahead and down into the tub.
+    return 'right_arm', Part('mortar_hoe', RIGHT_GRIP, MORTAR_HOE_ROT, cubes=[
+        C((-0.5, -2.0, -0.5), (1.0, 19.2, 1.0), 't_mortar_hoe_shaft', wood_painter('t_mortar_hoe_shaft', WOOD, WOOD_D, WOOD_L, 'y', knots=1)),
+        C((-0.75, 15.8, -0.75), (1.5, 1.6, 1.5), 't_mortar_hoe_socket', iron_painter('t_mortar_hoe_socket', (80, 78, 82), (44, 42, 46), (150, 150, 156))),
+        C((-2.75, 17.2, 0.3), (5.5, 0.6, 3.8), 't_mortar_hoe_blade', larry_blade_painter('t_mortar_hoe_blade')),
+    ])
+
+
+MALLET_ROT = (-20.0, 0.0, 0.0)
+MALLET_HEAD = (0.0, 3.6, 0.0)            # mallet space: the middle of its head (1.8 px round)
+
+
+def _mallet():
+    # A mason's mallet: a short handle continuing the arm's line from the fist, cocked MALLET_ROT forward, and a round
+    # beech head on its end, coaxial with it; it strikes with the head's side.
+    return 'right_arm', Part('mallet', RIGHT_GRIP, MALLET_ROT, cubes=[
+        C((-0.55, -1.6, -0.55), (1.1, 3.4, 1.1), 't_mallet_handle', wood_painter('t_mallet_handle', OAK, OAK_D, OAK_L, 'y')),
+        C((-1.8, 1.8, -1.8), (3.6, 3.6, 3.6), 't_mallet_head', mallet_painter('t_mallet_head')),
+        C((-1.35, 5.4, -1.35), (2.7, 0.4, 2.7), 't_mallet_cap', mallet_painter('t_mallet_cap')),
+    ])
+
+
+CHISEL_PIVOT = (1.0, 9.6, -2.4)          # left arm space: before the fist, where its fingers close round the chisel
+CHISEL_ROT = (40.0, 0.0, 0.0)
+CHISEL_HEAD = (0.0, -2.8, 0.0)           # chisel space: the struck end
+CHISEL_EDGE = (0.0, 3.2, 0.0)            # its cutting edge
+
+
+def _chisel():
+    # A mason's chisel in the left fist, held about its middle before the fingers: its edge down (part +y), its burred
+    # head up out of the top of the fist (part -y), tipped CHISEL_ROT back from the arm's line, so with the arm reaching
+    # down and in to the stone it stands on its edge, leaning back to the mallet.
+    return 'left_arm', Part('chisel', CHISEL_PIVOT, CHISEL_ROT, cubes=[
+        C((-0.45, -2.8, -0.45), (0.9, 0.9, 0.9), 't_chisel_head', chisel_painter('t_chisel_head', 'head')),
+        C((-0.35, -2.0, -0.35), (0.7, 4.4, 0.7), 't_chisel_shank', chisel_painter('t_chisel_shank', 'shank')),
+        C((-0.6, 2.2, -0.22), (1.2, 1.0, 0.44), 't_chisel_edge', chisel_painter('t_chisel_edge', 'edge')),
+    ])
+
+
+PLUMB_PIVOT = (-1.0, 10.6, -2.6)         # right arm space: pinched in the fingertips before the fist
+PLUMB_LEN = 13.9                         # the cord's top to the bob's point
+
+
+def _plumb_line():
+    # A plumb line pinched in the right fingertips before the fist: a toggle to hold it by, a cord and a brass bob on its
+    # end, its point PLUMB_LEN px under the fingers. PLUMB's track hangs it and swings it as a pendulum as the hand moves;
+    # where nothing runs it, it hangs (HANG).
+    return 'right_arm', Part('plumb_line', PLUMB_PIVOT, (0, 0, 0), cubes=[
+        C((-0.8, -0.5, -0.3), (1.6, 0.6, 0.6), 't_plumb_toggle', wood_painter('t_plumb_toggle', OAK, OAK_D, OAK_L, 'x')),
+        C((-0.15, 0.0, -0.15), (0.3, 11.0, 0.3), 't_plumb_cord', cord_painter('t_plumb_cord')),
+        C((-0.8, 11.0, -0.8), (1.6, 2.2, 1.6), 't_plumb_bob', brass_painter('t_plumb_bob')),
+        C((-0.35, 13.2, -0.35), (0.7, 0.7, 0.7), 't_plumb_tip', brass_painter('t_plumb_tip')),
+    ])
+
+
+STAFF_UP_ROT = euler_from_axes((0.0, -1.0, 0.0), (1.0, 0.0, 0.0))     # staff x up the arm, staff y to the arm's +x
+STAFF_FOOT = (-12.4, 0.0, 0.0)           # sighting staff space: its foot (on the ground with the arm hanging)
+STAFF_TOP = (19.6, 0.0, 0.0)
+
+
+def _sighting_staff():
+    # A surveyor's ranging staff, two blocks of ash banded red and white every 4 px, an iron shoe at its foot, a brass cap
+    # and a little red and white pennant at its head. Held upright in the left hand before the fist as the watch holds its
+    # spear (staff x up the arm), its foot 12 px under the fist: on the ground with the arm hanging. Modelled along x (one
+    # short strip of texture). SURVEY's track stands it upright on its foot as the hand works round it.
+    return 'left_arm', Part('sighting_staff', (1.0, 10.0, -2.6), STAFF_UP_ROT, cubes=[
+        C((-11.4, -0.6, -0.6), (30.0, 1.2, 1.2), 't_sighting_staff', staff_painter('t_sighting_staff')),
+        C((-12.4, -0.75, -0.75), (1.0, 1.5, 1.5), 't_sighting_staff_shoe', iron_painter('t_sighting_staff_shoe')),
+        C((18.6, -0.8, -0.8), (1.0, 1.6, 1.6), 't_sighting_staff_cap', brass_painter('t_sighting_staff_cap')),
+        C((15.4, -0.15, 0.6), (3.0, 0.3, 3.0), 't_sighting_staff_pennant', pennant_painter('t_sighting_staff_pennant')),
+    ])
+
+
+BEAM_ROT = euler_from_axes((0.0, 0.0, 1.0), (0.0, 1.0, 0.0))         # beam x back along the body (model +z), y down
+BEAM_SHOULDER = (-6.0, -0.2, 0.0)        # body space: the beam's pivot, the middle of its underside on the right shoulder
+BEAM_FOLLOW = 32.0                       # the carrier behind, in step, this far back: the beam on their right shoulder
+BEAM_AHEAD, BEAM_BEHIND = 16.0, BEAM_FOLLOW / 2   # each carrier's half: this far ahead of the shoulder, and back behind it
+
+
+def _beam():
+    # The beam two carry in step (carry_beam): a squared oak timber 3 px each way on the right shoulder. Each carrier shows
+    # their half of it, BEAM_AHEAD px ahead of the shoulder to BEAM_BEHIND behind, so with the second BEAM_FOLLOW px behind
+    # the first the halves meet between them as one beam (and one carrier alone carries a short one).
+    return 'body', Part('beam', BEAM_SHOULDER, BEAM_ROT, cubes=[
+        C((-BEAM_AHEAD, -3.0, -1.5), (BEAM_AHEAD + BEAM_BEHIND, 3.0, 3.0), 't_beam', beam_painter('t_beam')),
+    ])
+
+
+CUP_RIM = (0.0, -2.9, -3.0)              # cup space: the middle of its rim
+
+
+def _cup():
+    # A pewter goblet of wine for the toast, held by its stem in the fingers before the fist, tilted 45 degrees on the arm
+    # as the mug is (upright with the arm reaching 45 degrees forward). TOAST's track keeps it upright as it is raised
+    # high, and tips it to the lips.
+    return 'right_arm', Part('cup', RIGHT_GRIP, (45, 0, 0), cubes=[
+        C((-1.4, -2.9, -4.4), (2.8, 2.6, 2.8), 't_cup_bowl', pewter_painter('t_cup_bowl', wine=True)),
+        C((-0.45, -0.3, -3.45), (0.9, 1.6, 0.9), 't_cup_stem', pewter_painter('t_cup_stem')),
+        C((-1.1, 1.3, -4.1), (2.2, 0.5, 2.2), 't_cup_foot', pewter_painter('t_cup_foot')),
+    ])
+
+
+LADLE_BOWL = (0.0, 8.2, 0.9)             # ladle space: the middle of its bowl
+LADLE_LIP = (0.0, 7.2, 2.2)              # the far edge of its mouth, where it pours from
+
+
+def _ladle_part(name, full):
+    # A turned wooden ladle in the right fist along the arm's line (ladle +y from the fist), its deep bowl on the end
+    # opening back towards the hand (ladle -y), so it scoops held upright. LADLE's track turns it in the fist: dipped
+    # upright into the pot, tipped over the bowl to pour.
+    return 'right_arm', Part(name, RIGHT_GRIP, (0, 0, 0), cubes=[
+        C((-0.35, -1.6, -0.35), (0.7, 9.0, 0.7), f't_{name}_handle', wood_painter(f't_{name}_handle', PALE, PALE_D, PALE_L, 'y')),
+        C((-1.3, 7.2, -0.4), (2.6, 2.0, 2.6), f't_{name}_bowl', ladle_bowl_painter(f't_{name}_bowl', full)),
+    ])
+
+
+def _ladle():
+    return _ladle_part('ladle', False)
+
+
+def _ladle_full():
+    # the same ladle full of stew, in its place from the dip to the pour
+    return _ladle_part('ladle_full', True)
+
+
+def _soup_pour():
+    # The stew pouring from the ladle into the bowl: a piece ROPE_LEN px along +y that LADLE's track aims from the ladle's
+    # lip to the stew in the bowl and stretches to reach, for the few ticks it pours.
+    return 'right_arm', Part('soup_pour', RIGHT_GRIP, (0, 0, 0), cubes=[
+        C((-0.35, 0.0, -0.35), (0.7, ROPE_LEN, 0.7), 't_soup_pour', stew_painter('t_soup_pour')),
+    ])
+
+
+def _bowl_empty():
+    # An empty wooden bowl from the alms table's stack: the stew bowl (bowl) before it is filled, the same size and in the
+    # same place; LADLE's track holds it level on the left hand until the pour.
+    return 'left_arm', Part('bowl_empty', LEFT_GRIP, BOWL_ROT, cubes=[
+        C((-2.25, -3.9, -1.25), (4.5, 1.9, 4.5), 't_bowl_empty', empty_bowl_painter('t_bowl_empty')),
+    ])
+
+
+TORCH_PIVOT = (-1.0, 10.0, -2.6)         # right arm space: before the fist, as the spear is held
+TORCH_TOP = (0.0, -9.0, 0.0)             # torch space: the top of its head, where the flame stands
+
+
+def _torch():
+    # A pitch torch, upright in the right hand before the fist as the watch holds its spear: an ash stave, an iron band and
+    # a head of rag soaked in pitch, charred and glowing at its top. The flame is a part of its own (torch_flame), so it
+    # can stand up whichever way the torch leans; LIGHT_BEACON's track tips the torch down into the brazier.
+    return 'right_arm', Part('torch', TORCH_PIVOT, (0, 0, 0), cubes=[
+        C((-0.55, -6.6, -0.55), (1.1, 9.0, 1.1), 't_torch_stave', wood_painter('t_torch_stave', WOOD, WOOD_D, WOOD_L, 'y')),
+        C((-0.75, -6.5, -0.75), (1.5, 0.7, 1.5), 't_torch_band', iron_painter('t_torch_band', soot=0.3)),
+        C((-1.05, -9.0, -1.05), (2.1, 2.8, 2.1), 't_torch_head', torch_head_painter('t_torch_head')),
+    ])
+
+
+def _torch_flame():
+    # The torch's flame (it glows: GLOW_CUBES), standing on the top of its head: a teardrop of fire 5.2 px tall round a
+    # white-hot core. LIGHT_BEACON's track keeps it standing up, leaning back from the way the torch moves, flickering.
+    return 'right_arm', Part('torch_flame', tuple(float(v) for v in np.add(TORCH_PIVOT, TORCH_TOP)), (0, 0, 0), cubes=[
+        C((-1.3, -5.2, -1.3), (2.6, 5.2, 2.6), 't_torch_flame', upright_flame_painter('t_torch_flame')),
+        C((-0.65, -2.8, -0.65), (1.3, 2.8, 1.3), 't_torch_flame_core', upright_flame_painter('t_torch_flame_core', core=True)),
+    ])
+
+
+HORN_AT = (2.6, 10.6, -3.4)              # body space: the horn's pivot, slung at the front of the left hip
+HORN_MOUTH = (5.2, 0.0, 0.0)             # horn space: the end of its mouthpiece
+
+
+def _horn():
+    # The watch's horn: a cow's horn, dark at its narrow end, with brass at the mouthpiece and round the bell, slung on a
+    # baldric (horn_baldric) at the front of the left hip and lying across it, the mouthpiece out to the left (horn +x),
+    # curving up to its bell towards the middle (the bell's mouth faces -x of horn_bell). sound_horn's track takes it up
+    # to the lips.
+    bell = Part('horn_bell', (-2.7, 0.0, 0.0), (0, 0, 20), cubes=[
+        C((-2.5, -1.2, -1.2), (2.6, 2.4, 2.4), 't_horn_bell', horn_painter('t_horn_bell', tip=0.0)),
+        C((-2.95, -1.5, -1.5), (0.5, 3.0, 3.0), 't_horn_rim', brass_painter('t_horn_rim')),
+    ])
+    bend = Part('horn_bend', (1.5, 0.0, 0.0), (0, 0, 20), cubes=[
+        C((-2.8, -0.9, -0.9), (2.9, 1.8, 1.8), 't_horn_bend', horn_painter('t_horn_bend', tip=0.3)),
+    ], children=[bell])
+    return 'body', Part('horn', HORN_AT, (0, 0, 0), cubes=[
+        C((4.1, -0.4, -0.4), (1.1, 0.8, 0.8), 't_horn_mouth', brass_painter('t_horn_mouth')),
+        C((1.4, -0.65, -0.65), (2.8, 1.3, 1.3), 't_horn_tip', horn_painter('t_horn_tip', tip=0.75)),
+    ], children=[bend])
+
+
+def _horn_baldric():
+    # The horn's baldric, a leather strap from the left hip across the chest to the right shoulder (shown with the horn,
+    # and staying on the body when the horn is taken up).
+    return 'body', Part('horn_baldric', (3.0, 9.8, -2.55), (0, 0, -34.5), cubes=[
+        C((-0.5, -11.65, -0.2), (1.0, 11.65, 0.4), 't_horn_baldric', strap_painter('t_horn_baldric')),
+    ])
+
+
+def _bundle():
+    # A household's bundle: their bedding and clothes tied up in a blue check cloth, its corners knotted on top. PACK's
+    # track carries it between the hands and sets it on the cart; the middle of its underside is the part's origin (on the
+    # body, where nothing shows it untracked).
+    return 'body', Part('bundle', (0.0, 0.0, 0.0), (0, 0, 0), cubes=[
+        C((-3.6, -5.6, -3.0), (7.2, 5.6, 6.0), 't_bundle', bundle_painter('t_bundle')),
+        C((-2.5, -6.4, -2.1), (5.0, 0.8, 4.2), 't_bundle_top', bundle_painter('t_bundle_top')),
+        C((-1.0, -7.6, -1.0), (2.0, 1.4, 2.0), 't_bundle_knot', bundle_painter('t_bundle_knot', knot=True)),
+        C((-2.0, -7.3, -0.3), (4.0, 0.8, 0.6), 't_bundle_ears', bundle_painter('t_bundle_ears', knot=True)),
+    ])
+
+
+# The cloth over the patron's plaque: three panels VEIL_W across and VEIL_LEN long, each hanging from its top edge (its
+# pivot), which UNVEIL's tracks lay one after another from the master's fist as the cloth is whipped off and flies.
+VEIL_W, VEIL_LEN, VEIL_PIECES = 14.0, 4.2, 3
+VEILS = [f'veil_{i}' for i in range(1, VEIL_PIECES + 1)]
+
+
+def _veil(name):
+    i = int(name[-1])
+    return 'body', Part(name, (0.0, 0.0, 0.0), (0, 0, 0), cubes=[
+        C((-VEIL_W / 2, 0.0, -0.15), (VEIL_W, VEIL_LEN, 0.3), f't_{name}', veil_painter(f't_{name}', i)),
+    ])
+
+
+_VEIL_BUILDERS = [lambda name=name: _veil(name) for name in VEILS]
+
+
+def _basket_turned():
+    # The shopper's basket (townsfolk_tools' basket, which the left hand carries about) as a prop of its own, empty, so
+    # EMPTY_BASKET's track can turn it over and shake it: the same size and place, starting and ending where the carried
+    # one hangs.
+    return 'left_arm', Part('basket_turned', LEFT_GRIP, (0, 0, 0), cubes=[
+        C((-0.25, -1.0, -2.5), (0.5, 3.5, 5), 't_basket_turned_handle', tt.handle_arch_painter('t_basket_turned_handle')),
+        C((-2.0, 2.5, -3.0), (4, 3.5, 6), 't_basket_turned_body', empty_basket_painter('t_basket_turned_body')),
+    ])
+
+
+# The works' and the streets' (M6): townsfolk.py packs their cubes after all the others here, so adding them moved no
+# cube already on the texture.
+WORKS_BUILDERS = [_trowel, _hawk, _mortar_hoe, _mallet, _chisel, _plumb_line, _sighting_staff, _beam, _cup, _ladle, _ladle_full,
+                  _soup_pour, _bowl_empty, _torch, _torch_flame, _horn, _horn_baldric, _bundle, *_VEIL_BUILDERS,
+                  _basket_turned]
+BUILDERS.extend(WORKS_BUILDERS)
+GLOW_CUBES.update({'t_torch_flame', 't_torch_flame_core'})
+HANG = HANG + ('plumb_line',)
+TOOL_NOTES.update({
+    'trowel': 'right hand, the blade under the handle on its shank, cocked 16 forward of the arm (level with the arm 16 '
+              'down ahead); its point at part (0, 7.8, 2.15)',
+    'hawk': 'left hand, the mortar hawk: its board level with the arm 45 down ahead (the handle tipped 45 back off the arm); '
+            'its board\'s top at part (0, -3.8, 0)',
+    'mortar_hoe': f'right hand at the shaft\'s end, the left {MORTAR_HOE_LEFT:g} px down it; the shaft 60 forward of the arm; '
+                  'the blade\'s middle at part (0, 17.5, 2.2)',
+    'mallet': 'right hand, along the arm cocked 20 forward; its round head\'s middle at part (0, 3.6, 0), 1.8 px round',
+    'chisel': 'left hand before the fist, its edge down at part (0, 3.2, 0), its struck head at (0, -2.8, 0), tipped 40 back '
+              'off the arm',
+    'plumb_line': f'right fingertips; hangs (HANG) or swings by its track; the bob\'s point {PLUMB_LEN:g} px under the fingers',
+    'sighting_staff': 'left hand, upright before the fist like the spear (staff x up the arm); its foot at part (-12.4, 0, 0), '
+                      'its head at (19.6, 0, 0); SURVEY\'s track stands it on its foot',
+    'beam': f'body, on the right shoulder: each of the two carriers ({BEAM_FOLLOW:g} px apart, in step) shows their half, '
+            f'{BEAM_AHEAD:g} px ahead of the shoulder to {BEAM_BEHIND:g} behind, the halves meeting between them',
+    'cup': 'right hand by the stem, tilted 45 like the mug; its rim at part (0, -2.9, -3.0); TOAST\'s track keeps it upright',
+    'ladle': 'right hand along the arm, its bowl opening back to the hand at part (0, 8.2, 0.9), its lip at (0, 7.2, 2.2); '
+             'LADLE\'s track turns it',
+    'ladle_full': 'the ladle full of stew, in its place from the dip to the pour',
+    'soup_pour': 'right hand; the stew poured, aimed and stretched by LADLE\'s track from the ladle\'s lip to the bowl',
+    'bowl_empty': 'left hand, as the stew bowl (bowl) before it is filled; LADLE\'s track holds it level',
+    'torch': 'right hand, upright before the fist like the spear; the top of its head at part (0, -9, 0), where torch_flame '
+             'stands; LIGHT_BEACON\'s track tips it into the brazier',
+    'torch_flame': 'right hand, on the torch\'s head; glows; its track stands it up and flickers it',
+    'horn': 'body, slung across the front of the left hip on horn_baldric, the mouthpiece out to the left at part (5.2, 0, 0); '
+            'sound_horn\'s track takes it up to the lips',
+    'horn_baldric': 'body, the horn\'s strap from the left hip to the right shoulder; shown with the horn',
+    'bundle': 'body; PACK\'s track carries it in both hands and sets it on the cart (the middle of its underside its origin)',
+    **{name: f'body; panel {name[-1]} of {VEIL_PIECES} of the cloth over the plaque (UNVEIL\'s tracks lay them from the fist '
+             'as it flies off)' for name in VEILS},
+    'basket_turned': 'left hand, the carried basket\'s size and place, empty; EMPTY_BASKET\'s track turns it over',
+})
+
+
+def works_cube_names():
+    """The works' and the streets' cubes among them (M6: townsfolk.py packs them last of all)."""
+    return {c.name for b in WORKS_BUILDERS for p in b()[1].walk() for c in p.cubes}
 
 
 def cube_names():
