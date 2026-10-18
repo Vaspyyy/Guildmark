@@ -825,7 +825,8 @@ internal class Show private constructor(val level: ServerLevel, first: Caravans.
             h.driver && (mode == Mode.FIGHT) -> "driver_trees"
             h.driver -> if (Caravans.strikes(id) && RoadPeril.stage(CaravanData.get(level), leg.capital, leg.road).troubled) "driver_quiet" else "driver_greet"
             escort || mode == Mode.FIGHT -> "guard_glad"
-            else -> "guard_" + level.random.nextInt(5)
+            // A town guard's words, but for the walls they're not on
+            else -> ROAD_GUARD[level.random.nextInt(ROAD_GUARD.size)]
         }
         h.p.say(line, force = true, hearing = 16.0)
         return true
@@ -1174,6 +1175,9 @@ internal class Show private constructor(val level: ServerLevel, first: Caravans.
         private const val BRAKE_OFF_PITCH = 2f
         private const val STRAIN_START = 30
         private const val URGE_EVERY = 200
+
+        /** A guard's word to a player who comes up to them on the road (the town guards' lines; "All quiet on the walls" left out). */
+        private val ROAD_GUARD = listOf("guard_0", "guard_1", "guard_3", "guard_4")
 
         /** How near the driver greets a player; within how far of the end it looks for its stop. */
         private const val GREET = 8.0
