@@ -72,6 +72,12 @@ class MarketBoardBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(Mod
 
             /** The talk of the town, cried at noon (townsfolk/talk/TownCry.kt). */
             TALK("talk"),
+
+            /** The town's times moving, and why (economy/fortune/Fortunes.kt). */
+            FORTUNE("fortune"),
+
+            /** A works wanted, funded or raised (economy/works/Works.kt). */
+            WORKS("works"),
         }
 
         companion object {
@@ -145,6 +151,14 @@ class MarketBoardBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(Mod
 
     /** Whether the last write-up was seen through: false while the crier is at it, and if they were called away from it. */
     var finished: Boolean = true
+        private set
+
+    /** The town's times as the medallion at the board's head shows them (a [io.github.vaspyyy.guildmark.economy.fortune.Times.id]). */
+    var times: String = "steady"
+        private set
+
+    /** The game time the medallion last turned to [times], or [LONG_AGO] if it was found so (nothing to see turn). */
+    var turned: Long = LONG_AGO
         private set
 
     /** Server side: starts writing the board up for [day] ([noon] or the morning) for [town]. Nothing changes on it yet. */
@@ -221,6 +235,14 @@ class MarketBoardBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(Mod
         sync()
     }
 
+    /** Server side: the medallion turns to [times] (a [io.github.vaspyyy.guildmark.economy.fortune.Times.id]), if it isn't showing it already. */
+    fun times(times: String) {
+        if (this.times == times) return
+        this.times = times
+        turned = level?.gameTime ?: LONG_AGO
+        sync()
+    }
+
     private fun sync() {
         setChanged()
         val level = level ?: return
@@ -240,6 +262,8 @@ class MarketBoardBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(Mod
         output.store("tickets", Ticket.CODEC.listOf(), tickets)
         output.putInt("writing", writing)
         output.putBoolean("finished", finished)
+        output.putString("times", times)
+        output.putLong("turned", turned)
     }
 
     override fun loadAdditional(input: ValueInput) {
@@ -256,6 +280,8 @@ class MarketBoardBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(Mod
         input.read("tickets", Ticket.CODEC.listOf()).ifPresent { tickets.addAll(it) }
         writing = input.getIntOr("writing", -1)
         finished = input.getBooleanOr("finished", true)
+        times = input.getStringOr("times", "steady")
+        turned = input.getLongOr("turned", LONG_AGO)
     }
 
     override fun getUpdateTag(registries: HolderLookup.Provider): CompoundTag = saveCustomOnly(registries)
