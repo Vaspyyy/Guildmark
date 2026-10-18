@@ -5394,6 +5394,123 @@
     ],
     "subtitle": "say.guildmark.crier_why_plenty"
   },
+  "townsfolk.voice.man.crier_why_feast": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/crier_why_feast",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_why_feast"
+  },
+  "townsfolk.voice.man.crier_why_cold": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/crier_why_cold",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_why_cold"
+  },
+  "townsfolk.voice.man.crier_why_warm": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/crier_why_warm",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_why_warm"
+  },
+  "townsfolk.voice.man.crier_why_fields_lean": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/crier_why_fields_lean",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_why_fields_lean"
+  },
+  "townsfolk.voice.man.crier_why_fields_full": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/crier_why_fields_full",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_why_fields_full"
+  },
+  "townsfolk.voice.man.crier_why_orchard_lean": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/crier_why_orchard_lean",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_why_orchard_lean"
+  },
+  "townsfolk.voice.man.crier_why_orchard_full": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/crier_why_orchard_full",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_why_orchard_full"
+  },
+  "townsfolk.voice.man.crier_why_herds_lean": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/crier_why_herds_lean",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_why_herds_lean"
+  },
+  "townsfolk.voice.man.crier_why_herds_full": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/crier_why_herds_full",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_why_herds_full"
+  },
+  "townsfolk.voice.man.crier_why_fleece_lean": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/crier_why_fleece_lean",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_why_fleece_lean"
+  },
+  "townsfolk.voice.man.crier_why_fleece_full": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/crier_why_fleece_full",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_why_fleece_full"
+  },
+  "townsfolk.voice.man.crier_why_coops_lean": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/crier_why_coops_lean",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_why_coops_lean"
+  },
+  "townsfolk.voice.man.crier_why_coops_full": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/crier_why_coops_full",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_why_coops_full"
+  },
   "townsfolk.voice.man.crier_hungry": {
     "sounds": [
       {
@@ -6410,6 +6527,123 @@
       }
     ],
     "subtitle": "say.guildmark.crier_why_plenty"
+  },
+  "townsfolk.voice.woman.crier_why_feast": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/crier_why_feast",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_why_feast"
+  },
+  "townsfolk.voice.woman.crier_why_cold": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/crier_why_cold",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_why_cold"
+  },
+  "townsfolk.voice.woman.crier_why_warm": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/crier_why_warm",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_why_warm"
+  },
+  "townsfolk.voice.woman.crier_why_fields_lean": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/crier_why_fields_lean",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_why_fields_lean"
+  },
+  "townsfolk.voice.woman.crier_why_fields_full": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/crier_why_fields_full",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_why_fields_full"
+  },
+  "townsfolk.voice.woman.crier_why_orchard_lean": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/crier_why_orchard_lean",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_why_orchard_lean"
+  },
+  "townsfolk.voice.woman.crier_why_orchard_full": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/crier_why_orchard_full",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_why_orchard_full"
+  },
+  "townsfolk.voice.woman.crier_why_herds_lean": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/crier_why_herds_lean",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_why_herds_lean"
+  },
+  "townsfolk.voice.woman.crier_why_herds_full": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/crier_why_herds_full",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_why_herds_full"
+  },
+  "townsfolk.voice.woman.crier_why_fleece_lean": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/crier_why_fleece_lean",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_why_fleece_lean"
+  },
+  "townsfolk.voice.woman.crier_why_fleece_full": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/crier_why_fleece_full",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_why_fleece_full"
+  },
+  "townsfolk.voice.woman.crier_why_coops_lean": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/crier_why_coops_lean",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_why_coops_lean"
+  },
+  "townsfolk.voice.woman.crier_why_coops_full": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/crier_why_coops_full",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_why_coops_full"
   },
   "townsfolk.voice.woman.crier_hungry": {
     "sounds": [

@@ -89,7 +89,7 @@ object StallTalk {
         }
         return when {
             event != null -> if (event in CHEAP) "market.cheap.event.${event.id}" else "market.cheap.plenty"
-            why == Why.SOLD_IN -> "market.cheap.sold_in"
+            why == Why.SOLD_IN || why.season -> "market.cheap.${why.id}"
             else -> "market.cheap.plenty"
         }
     }

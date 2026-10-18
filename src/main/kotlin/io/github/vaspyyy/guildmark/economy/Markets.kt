@@ -20,6 +20,7 @@ import net.minecraft.world.level.saveddata.SavedData
 import net.minecraft.world.level.saveddata.SavedDataType
 import net.neoforged.neoforge.common.NeoForge
 import net.neoforged.neoforge.event.tick.ServerTickEvent
+import net.neoforged.neoforge.server.ServerLifecycleHooks
 import java.util.function.Supplier
 import kotlin.random.Random
 
@@ -33,6 +34,9 @@ class Markets(private val entries: MutableMap<Long, Entry> = HashMap()) : SavedD
     /** A capital's market and the town it serves; [looked] is the game time its people were last counted. */
     class Entry(val market: Market, var town: Town, var looked: Long = Long.MIN_VALUE / 2) {
         val capital: BlockPos get() = BlockPos.of(market.capital)
+
+        /** The world as the market last felt it: its weather, season and any feast (not saved; see [felt]). */
+        var felt: Conditions? = null
     }
 
     operator fun get(capital: BlockPos): Entry? = entries[capital.asLong()]
@@ -151,7 +155,17 @@ class Markets(private val entries: MutableMap<Long, Entry> = HashMap()) : SavedD
 
         /** Works out [entry]'s market's [hour] in the overworld's weather and the season. */
         fun step(level: ServerLevel, entry: Entry, hour: Long) {
-            Economy.hour(entry.market, entry.town, conditions(level, hour, entry.capital), random(entry.market, hour))
+            val felt = conditions(level, hour, entry.capital)
+            entry.felt = felt
+            Economy.hour(entry.market, entry.town, felt, random(entry.market, hour))
+        }
+
+        /** The world in [entry]'s market's hour as it feels it there (the season and any feast with it), for why its prices stand where they do. */
+        fun felt(entry: Entry): Conditions {
+            val hour = entry.market.hour
+            entry.felt?.takeIf { it.hour == hour }?.let { return it }
+            val server = ServerLifecycleHooks.getCurrentServer() ?: return Conditions(hour)
+            return conditions(server.overworld(), hour, entry.capital).also { entry.felt = it }
         }
 
         /** Takes [m] back [hours], what it has under way and its news with it. */

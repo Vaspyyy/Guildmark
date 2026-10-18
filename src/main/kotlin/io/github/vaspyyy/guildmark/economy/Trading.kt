@@ -14,7 +14,7 @@ import kotlin.math.floor
  * Why a good's price is well off its usual, as the stall keeper would put it ("Bread is dear: the ovens stood cold
  * for want of flour"). [dear] is which way it's off; [key] takes the good's name.
  */
-enum class Why(val id: String, val dear: Boolean) {
+enum class Why(val id: String, val dear: Boolean, val season: Boolean = false) {
     /** Trouble or luck under way (see [Quote.event], which names it). */
     EVENT_DEAR("event", true),
     EVENT_CHEAP("event", false),
@@ -34,6 +34,22 @@ enum class Why(val id: String, val dear: Boolean) {
     WORN_TOOLS("worn_tools", true),
     /** The town can't make enough of it, so most of it comes by caravan. */
     FROM_AFAR("from_afar", true),
+    /** A festival day: the whole town is feasting. */
+    FEAST("feast", true, true),
+    /** Every hearth burns more coal in the cold, and few are lit in the warm days. */
+    COLD("cold", true, true),
+    WARM("warm", false, true),
+    /** The season has little coming in from where it's made, or plenty (see [Seasonal.Yield]). */
+    FIELDS_LEAN("fields_lean", true, true),
+    FIELDS_FULL("fields_full", false, true),
+    ORCHARD_LEAN("orchard_lean", true, true),
+    ORCHARD_FULL("orchard_full", false, true),
+    HERDS_LEAN("herds_lean", true, true),
+    HERDS_FULL("herds_full", false, true),
+    FLEECE_LEAN("fleece_lean", true, true),
+    FLEECE_FULL("fleece_full", false, true),
+    COOPS_LEAN("coops_lean", true, true),
+    COOPS_FULL("coops_full", false, true),
     /** Nothing in particular: there's simply little of it about, or plenty. */
     SCARCE("scarce", true),
     PLENTY("plenty", false);
@@ -84,6 +100,10 @@ object Trading {
 
     /** Of what the town likes to keep, how much players have to buy or sell for it to be the reason. */
     private const val A_LOT = 0.25
+
+    /** How far the season has to slow what comes in of a good (or speed it) for the season to be the reason. */
+    private const val LEAN = 0.8
+    private const val FULL = 1.2
 
     fun quote(entry: Markets.Entry, good: Good): Quote {
         val m = entry.market
@@ -148,18 +168,31 @@ object Trading {
                 if (m.idle[Maker.OVENS.ordinal] + m.idleYesterday[Maker.OVENS.ordinal] > 0) return Why.NO_FLOUR to null
                 if (Conditions(m.hour).restDay) return Why.REST_DAY to null
             }
+            val felt = Markets.felt(entry)
+            if (felt.feast && good.food > 0) return Why.FEAST to null
             if (shortHanded(town, good)) return Why.SHORT_HANDED to null
             if (good in FARMED && m[Site.FARMS, good] >= town.use(good) * 0.5) return Why.CARTS_BEHIND to null
             if (good in MADE && m.stock(Good.TOOLS) < 1.0) return Why.WORN_TOOLS to null
+            season(felt, good, dear = true)?.let { return it to null }
             if (m.freight(good) >= 1.0 + Economy.FREIGHT * 0.5) return Why.FROM_AFAR to null
             return Why.SCARCE to null
         }
         if (off <= 1.0 / OFF) {
             m.events(good).firstOrNull { it.factor > 1.0 }?.let { return Why.EVENT_CHEAP to it.kind }
             if (m.today(Tally.SOLD, good) + m.yesterday(Tally.SOLD, good) * 0.5 >= target * A_LOT) return Why.SOLD_IN to null
+            season(Markets.felt(entry), good, dear = false)?.let { return it to null }
             return Why.PLENTY to null
         }
         return null to null
+    }
+
+    /** The season as the reason [good] is [dear] (or cheap), if it's pulling that way far enough: the cold or the warm for coal. */
+    private fun season(felt: Conditions, good: Good, dear: Boolean): Why? {
+        if (good == Good.COAL) return if (dear && felt.heating >= FULL) Why.COLD else if (!dear && felt.heating <= LEAN) Why.WARM else null
+        val pace = felt.pace(good)
+        if (if (dear) pace > LEAN else pace < FULL) return null
+        val from = Seasonal.yieldOf(good) ?: return null
+        return if (dear) from.lean else from.full
     }
 
     /** Whether fewer of those who make [good] are living than the town was built with. */

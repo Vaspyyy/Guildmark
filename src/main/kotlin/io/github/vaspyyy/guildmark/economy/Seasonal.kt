@@ -33,12 +33,25 @@ object Seasonal {
     /** Hens lay with the long days. */
     private val LAYING = SeasonCrops.Profile(1.2f, 1.1f, 0.9f, 0.8f)
 
-    private val HERDS: Map<Good, SeasonCrops.Profile> = mapOf(
-        Good.APPLE to ORCHARD,
-        Good.BEEF to SLAUGHTER, Good.PORK to SLAUGHTER, Good.MUTTON to SLAUGHTER, Good.LEATHER to SLAUGHTER,
-        Good.WOOL to SHEARING,
-        Good.CHICKEN to LAYING, Good.FEATHER to LAYING,
+    /** Where a good the seasons pace comes from: as the stalls put it when that's why it's dear ([lean]) or cheap ([full]). */
+    enum class Yield(val lean: Why, val full: Why) {
+        FIELDS(Why.FIELDS_LEAN, Why.FIELDS_FULL),
+        ORCHARD(Why.ORCHARD_LEAN, Why.ORCHARD_FULL),
+        HERDS(Why.HERDS_LEAN, Why.HERDS_FULL),
+        FLEECE(Why.FLEECE_LEAN, Why.FLEECE_FULL),
+        COOPS(Why.COOPS_LEAN, Why.COOPS_FULL),
+    }
+
+    private val HERDS: Map<Good, Pair<SeasonCrops.Profile, Yield>> = mapOf(
+        Good.APPLE to (ORCHARD to Yield.ORCHARD),
+        Good.BEEF to (SLAUGHTER to Yield.HERDS), Good.PORK to (SLAUGHTER to Yield.HERDS),
+        Good.MUTTON to (SLAUGHTER to Yield.HERDS), Good.LEATHER to (SLAUGHTER to Yield.HERDS),
+        Good.WOOL to (SHEARING to Yield.FLEECE),
+        Good.CHICKEN to (LAYING to Yield.COOPS), Good.FEATHER to (LAYING to Yield.COOPS),
     )
+
+    /** Where [good] comes from, if the seasons pace it. */
+    fun yieldOf(good: Good): Yield? = if (good in FIELDS) Yield.FIELDS else HERDS[good]?.second
 
     /** How much coal a hearth burns in each season against the year's usual. */
     private val HEARTH = SeasonCrops.Profile(0.9f, 0.4f, 1.1f, 1.6f)
@@ -58,7 +71,7 @@ object Seasonal {
         val crops = Seasons.cropsEnabled()
         val pace = { good: Good ->
             val field = if (crops) FIELDS[good] else null
-            val profile = field ?: HERDS[good]
+            val profile = field ?: HERDS[good]?.first
             if (profile == null) 1.0 else felt(SeasonCrops.pace(profile, date), weight, if (field != null) SeasonCrops.SLOWEST else 0f)
         }
         return Conditions(hour, level.isRaining, level.isThundering, pace, felt(SeasonCrops.pace(HEARTH, date), weight, 0f), feast)
