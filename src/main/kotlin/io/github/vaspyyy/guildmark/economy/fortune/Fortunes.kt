@@ -113,7 +113,8 @@ object Fortunes {
 
     /**
      * Something weighs on [capital]: [kind] for [points] over [days] market days (counted at the next [days] closes),
-     * with its words' [args], the player it's [about] and the works it's of. Nothing while the fortunes are off.
+     * with its words' [args], the player it's [about] and the works it's of. Nothing while the fortunes are off, nor
+     * for a place with no market open (a village, or a capital nobody has been to yet: it has no fortunes to weigh).
      *
      * A kind of section 4's table is added up by its rule (see [FortuneReasons.noted]). "supplied" is a player's
      * each: `note(level, capital, "supplied", 1, 3, about = player.uuid)` is all it takes (their name is looked up
@@ -124,6 +125,7 @@ object Fortunes {
         args: List<String> = listOf(), about: UUID? = null, works: Int = -1,
     ) {
         if (!enabled() || points == 0 || days <= 0) return
+        if (Markets.get(level)[BlockPos.of(capital)] == null) return
         val words = if (kind == FortuneReasons.SUPPLIED && args.isEmpty() && about != null) listOfNotNull(name(level, about)) else args
         val day = today(level, capital)
         add(level, capital, FortuneData.Note(kind, points, day, day + days, words, about, works, false))
