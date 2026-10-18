@@ -51,7 +51,8 @@ object MarketTopics : TopicSource {
         val entry = Say.market(ask) ?: return
         val m = entry.market
         val town = entry.town
-        val shop = Shop.kept(ask.speaker)
+        // A shop that sells nothing over a counter (the inn, which only posts orders) is no keeper's stall here
+        val shop = Shop.kept(ask.speaker)?.takeIf { it.goods.isNotEmpty() }
         val goods = goodsOf(ask, shop)
         val quotes = goods.associateWith { Trading.quote(entry, it) }
         val talk = ask.occasion != Occasion.NEWS
@@ -95,7 +96,7 @@ object MarketTopics : TopicSource {
         val hour = Markets.hourOf(ask.level)
         m.news.lastOrNull { it.key.startsWith(OVER) && hour - it.hour in 0..GLAD }?.let { n ->
             val kind = EventKind.byId(n.key.substringAfterLast('.'))
-            if (kind != null) add(out, ask, "market.glad", "market.glad.over.${kind.id}.${n.hour}", 0.5, 1, Speech.of("talk.detail.market.over", Say.WORD + "event.${kind.id}"))
+            if (kind != null) add(out, ask, "market.glad", "market.glad.over.${kind.id}.${n.hour}", 0.5, 1, "talk.detail.market.over.${kind.id}")
         }
         m.events.firstOrNull { !it.kind.trouble && goods.any { g -> affects(it, g) } }?.let { e ->
             val g = e.good ?: goods.first { affects(e, it) }

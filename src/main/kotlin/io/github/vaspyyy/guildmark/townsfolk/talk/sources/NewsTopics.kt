@@ -25,13 +25,14 @@ import java.util.UUID
  * ("Word in the tavern is...", "You won't believe this, but..."), then the news with the version they heard as its
  * detail. A rumour the player has heard already is passed over, unless this teller heard it differently: then "Ah, but
  * I heard different." comes first. When the rumour is about a player the speaker can see close by, they point them out
- * instead of the lead-in ("That's the one, over there."), once in two minutes for each player. With townsfolkRumours
- * off they know only what they saw and what the crier cried.
+ * instead of the lead-in ("That's the one, over there."), once in two minutes for each player. In passing, only big
+ * news the player hasn't heard, without the lead-in. With townsfolkRumours off they know only what they saw and what
+ * the crier cried.
  */
 object NewsTopics : TopicSource {
     override val id = "news"
 
-    private val OCCASIONS = Say.TALK + Occasion.NEWS
+    private val OCCASIONS = Say.TALK + Occasion.NEWS + Occasion.BARK
 
     /** A rumour weighs this times its heat (section 1). */
     private const val RUMOUR = 0.7
@@ -60,13 +61,13 @@ object NewsTopics : TopicSource {
 
     /**
      * How many pieces of news [ask]'s speaker tells to "Any news?" and "Anything else?" before "That's all I know." (section
-     * 2): one from strangers and the shy, three from the chatty, two from anyone else.
+     * 2): three from the chatty, one from the shy and to strangers, two from anyone else (as Talk counts them).
      */
     fun limit(ask: Ask): Int {
         val r = ask.resident
         return when {
-            ask.familiarity == Familiarity.STRANGER || r?.has(Trait.SHY) == true -> 1
             r?.has(Trait.CHATTY) == true -> 3
+            r?.has(Trait.SHY) == true || ask.familiarity == Familiarity.STRANGER -> 1
             else -> 2
         }
     }
@@ -83,10 +84,11 @@ object NewsTopics : TopicSource {
         val partner = ask.listener?.takeIf { it.resident >= 0 }?.let { Residents.get(level)[it.resident] }
         val partnerKnows = partner?.let { p -> TownTalk.known(level, p).mapTo(HashSet()) { it.rumour.id } } ?: setOf()
         val asked = ask.occasion == Occasion.NEWS
+        val bark = ask.occasion == Occasion.BARK
         for (k in known.take(KEPT)) {
             val rumour = k.rumour
             val heard = k.heard
-            if (rumour.heat < GONE || rumour.heat < OLD && !asked) continue
+            if (rumour.heat < GONE || rumour.heat < OLD && !asked || bark && rumour.heat < BIG) continue
             // With word not going round, only what they saw and what the crier cried
             if (!rumours && heard.venue != Venue.SEEN && heard.from != -1) continue
             if (player != null && rumour.about == player.uuid) continue
@@ -95,10 +97,11 @@ object NewsTopics : TopicSource {
             val family = RumourWords.family(rumour) ?: continue
             val warp = heard.warp.coerceIn(0, 3)
             val had = theirs[rumour.id]
-            if (had != null && had == warp) continue
+            if (had != null && (had == warp || bark)) continue
             val news = Say.part(ask, family, RumourWords.detail(level, rumour, warp, r.capital)) ?: continue
-            val there = if (had == null) there(ask, rumour) else null
+            val there = if (had == null && !bark) there(ask, rumour) else null
             val parts = when {
+                bark -> listOf(news)
                 there != null -> listOfNotNull(news, Say.lead(ask, "news.there"))
                 had != null -> listOfNotNull(Say.lead(ask, "ask.other"), news)
                 else -> listOfNotNull(lead(ask, rumour, heard), news)
@@ -106,6 +109,7 @@ object NewsTopics : TopicSource {
             val weight = (RUMOUR * rumour.heat).let { if (rumour.heat < OLD) maxOf(it, STALE) else it }
             val least = if (player == null || rumour.heat >= BIG) Familiarity.STRANGER else Familiarity.MET
             val gesture = when {
+                bark -> null
                 there != null -> Activity.POINT
                 warp == 3 && !ask.speaker.activity.seated -> Activity.RECOUNT
                 else -> null

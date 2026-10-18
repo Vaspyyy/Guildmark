@@ -49,8 +49,10 @@ object HouseholdTopics : TopicSource {
         val home = if (r.home >= 0) people.filter { it.home == r.home && it.id != r.id } else listOf()
         val living = home.filter { it.alive }
 
-        // A death in the house, while they lived there
-        home.filter { !it.alive && it.died >= r.since && today - it.died in 0..GRIEF }.maxByOrNull { it.died }?.let { dead ->
+        // A death in the house, while they lived there: after they came, or the day they came if they were among the
+        // town's first people (a newcomer who came that day came after it, into the place of the dead)
+        val first = people.minOfOrNull { it.since } ?: r.since
+        home.filter { !it.alive && (it.died > r.since || it.died == r.since && r.since <= first) && today - it.died in 0..GRIEF }.maxByOrNull { it.died }?.let { dead ->
             val days = today - dead.died
             val detail = when (days) {
                 0L -> Speech.of("talk.detail.home.grief.0", "=${dead.name}")

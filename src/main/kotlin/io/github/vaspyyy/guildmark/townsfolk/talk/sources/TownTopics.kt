@@ -91,14 +91,15 @@ object TownTopics : TopicSource {
 
         if (Days.enabled()) {
             // A neighbour buried, a day or two ago (their own household's grief is the household's)
-            people.filter { !it.alive && it.home != r.home && today - it.died in 1L..2L && (street(it) || it.role == r.role && it.role != TownRole.CITIZEN) }
+            people.filter { !it.alive && it.home != r.home && it.died >= r.since && today - it.died in 1L..2L && (street(it) || it.role == r.role && it.role != TownRole.CITIZEN) }
                 .maxByOrNull { it.died }?.let { dead ->
                     val role = ROLES[dead.role]
                     val detail = if (role != null) Speech.of("talk.detail.town.death", "=${dead.name}", Say.WORD + "role.$role") else Speech.of("talk.detail.town.death.plain", "=${dead.name}")
                     add(ask, out, "town.death", "town.death.${dead.id}", 0.56, -1, detail, Activity.SIGH)
                 }
-            // A new family in the street
+            // A new family in the street: newcomers in a home where nobody else lived before them
             people.filter { it.alive && it.home >= 0 && it.home != r.home && street(it) && HouseholdTopics.newcomer(it, people, today) }
+                .filter { n -> people.none { it.alive && it.home == n.home && it.id != n.id && !HouseholdTopics.newcomer(it, people, today) } }
                 .maxByOrNull { it.since }?.let { n ->
                     add(ask, out, "town.newcomer", "town.newcomer.${n.home}", 0.4, 0, Speech.of("talk.detail.town.newcomer", "=${n.family}"))
                 }

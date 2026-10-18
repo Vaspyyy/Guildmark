@@ -38,7 +38,7 @@ object DealingTopics : TopicSource {
         }
         // A good turn: a keeper's for what was sold them, anyone else's thanks
         if (k.favour >= FAVOUR) {
-            val keeper = Shop.kept(ask.speaker) != null && k.trades > 0
+            val keeper = Shop.kept(ask.speaker)?.goods?.isNotEmpty() == true && k.trades > 0
             add(ask, out, if (keeper) "deal.sold" else "deal.thanks", "dealings.favour.${(k.favour * 2).toInt()}", 0.8, 1, null)
         }
         if (bark) return
