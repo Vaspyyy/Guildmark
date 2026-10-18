@@ -102,6 +102,9 @@ object GuildmarkConfig {
     val MARKETS: ModConfigSpec.BooleanValue = BUILDER
         .comment("The capitals' markets: each capital grows, makes, moves, eats and trades real goods an hour at a time, whether anyone is there or not, and its stalls buy and sell at prices that follow what it holds. Off, the markets stand still.")
         .define("capitalMarkets", true)
+    val HANDCARTS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("The capitals' carters pull handcarts: sacks of grain from the fields to the mill, flour to the bakehouse and produce to the market, heaped on the cart's bed. Off, they carry the sacks on their shoulders.")
+        .define("handcarts", true)
 
     val HOMESTEADS: ModConfigSpec.BooleanValue = BUILDER
         .comment("Player homesteads: a charter from the Guildmaster stakes a plot on open land, and a crew of builders puts up a cottage, a farmstead and a manor on it, tier by tier. Off, the Guildmaster sells no charters and no building goes on; homesteads already staked stay.")

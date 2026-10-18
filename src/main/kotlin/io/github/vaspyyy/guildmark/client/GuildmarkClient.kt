@@ -168,6 +168,8 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
         io.github.vaspyyy.guildmark.client.homestead.HomesteadClient.register(modBus)
         // Market board: the prices chalked live and the news slips (client/MarketBoardRenderer)
         io.github.vaspyyy.guildmark.client.MarketBoardRenderer.register(modBus)
+        // The carters' handcarts: their renderer, and the puller turned to the shafts (client/cart)
+        io.github.vaspyyy.guildmark.client.cart.CartClient.register(modBus)
         HdPack.register(modBus)
         modBus.addListener(RegisterRenderStateModifiersEvent::class.java) { event ->
             event.registerAvatarEntityModifier(CombatAnimator.AVATAR)
