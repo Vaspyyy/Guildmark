@@ -495,21 +495,38 @@ def java_hash(s):
 
 
 class Page:
-    """A slip's paper, flat: turned on its tack and moved (the game also lifts and ripples it)."""
+    """A slip's paper (or an order's ticket, [w] by [h] with its tack [pin] down), flat: turned on its tack and moved
+    (the game also lifts and ripples it)."""
 
-    def __init__(self):
+    def __init__(self, w=None, h=None, pin=None):
         self.slot_u = self.slot_v = self.turn = self.du = self.dv = self.dz = 0.0
+        self.w = L['SLIP_W'] if w is None else w
+        self.h = L['SLIP_H'] if h is None else h
+        self.pin = L['PIN_DOWN'] if pin is None else pin
 
     def map(self, u, v):
-        px, py = u - L['SLIP_W'] / 2, v - L['PIN_DOWN']
+        px, py = u - self.w / 2, v - self.pin
         c, s = math.cos(self.turn), math.sin(self.turn)
         k = 1 + self.dz / 3.0
-        return (self.slot_u + L['SLIP_W'] / 2 + (px * c - py * s) * k + self.du,
-                self.slot_v + L['PIN_DOWN'] + (px * s + py * c) * k + self.dv)
+        return (self.slot_u + self.w / 2 + (px * c - py * s) * k + self.du,
+                self.slot_v + self.pin + (px * s + py * c) * k + self.dv)
 
     def blit(self, face, alpha, colour, u0, v0, u1, v1, opacity=1.0, src=None, rgb_img=None):
         P0 = np.array(self.map(u0, v0))
         face.blit(alpha, colour, P0, np.array(self.map(u1, v0)) - P0, np.array(self.map(u0, v1)) - P0, opacity, src, rgb_img)
+
+
+class Turned(Page):
+    """Something turned and scaled about a point of a page (a stamp on a ticket), in its own blocks from that point."""
+
+    def __init__(self, page, u, v, turn, scale):
+        super().__init__()
+        self.page, self.u, self.v, self.t, self.k = page, u, v, turn, scale
+
+    def map(self, u, v):
+        c, s = math.cos(self.t), math.sin(self.t)
+        x, y = u * self.k, v * self.k
+        return self.page.map(self.u + x * c - y * s, self.v + x * s + y * c)
 
 
 def wrap(hand, text, room, most):
@@ -657,13 +674,102 @@ def draw_slip(face, slips_img, where, slip, slot, age, falling, fade):
         p.blit(face, tk[..., 3] / 255, None, tu - size / 2, tv - size / 2, tu + size / 2, tv + size / 2, alpha, rgb_img=tk[..., :3])
 
 
+def draw_ticket(face, slips_img, where, ticket, age, falling, stamped, fade, icons, words):
+    """An order's ticket on the rail (a port of the renderer's, without the air's sway): flying up from the crier's
+    hand and swinging on its tack ([age] since it was hung), or falling ([falling] since it came down); its head, the
+    good, how many and whose inked on it, and the stamp on it once it's taken ([stamped] ticks ago)."""
+    h = (java_hash('ticket|%d' % ticket['order']) * -7046029254386353131) & 0xFFFFFFFFFFFFFFFF
+    rnd = lambda bits: ((h >> bits) & 1023) / 1023.0
+    W, H = L['TICKET_W'], L['TICKET_H']
+    p = Page(W, H, L['TICKET_PIN'])
+    p.slot_u = L['TICKET_U0'] + ticket['slot'] * L['TICKET_PITCH'] + (rnd(3) - 0.5) * 0.01
+    p.slot_v = L['TICKET_TOP'] + (rnd(13) - 0.5) * 0.006
+    p.turn = (rnd(23) - 0.5) * 0.07
+    corner = -1 if rnd(33) < 0.5 else 1
+    alpha, tack, pressed = 1.0, 1.0, 1.0
+    if falling >= 0:
+        g = falling
+        p.dv = min(g * g * 0.0011 + g * 0.003, 2.0 - (p.slot_v + H) - 0.004)
+        p.dz = 0.02 + g * 0.01
+        p.turn += g * 0.03 * corner
+        alpha = min(1.0, max(0.0, 1 - g / L['FALL']))
+        tack = 0
+    elif age < L['LAND']:
+        e = 1 - (1 - min(1.0, max(0.0, age / L['LAND']))) ** 3
+        p.du = (1 - e) * (1.5 - (p.slot_u + W / 2)) * 0.5
+        p.dv = (1 - e) * -0.55
+        p.dz = (1 - e) * 0.35 + math.sin(e * math.pi) * 0.04
+        p.turn += (1 - e) * 0.5 * corner
+        alpha = min(1.0, age / 2.5)
+        tack = 0
+    elif age < L['FLUTTER']:
+        b = age - L['LAND']
+        p.turn += 0.16 * math.exp(-b / 7) * math.sin(b * 0.8)
+        pressed = 1 + 0.5 * math.exp(-b / 2.5)
+    if alpha <= 0.01:
+        return
+    sl = np.asarray(slips_img, np.float32)
+    x, y, w_, h_ = where['ticket']
+    tag = sl[y:y + h_, x:x + w_]
+    p.blit(face, tag[..., 3] / 255, None, 0, 0, W, H, alpha, rgb_img=tag[..., :3])
+    if fade > 0.002:
+        margin = L['TICKET_MARGIN']
+        room = W - 2 * margin
+        head = words.text('board.guildmark.ticket.wanted').upper()
+        s = min(L['S_TICKET_HEAD'], room / max(1.0, INK.width(head)))
+        ink(face, p, head, W / 2 - INK.width(head) * s / 2, L['TICKET_HEAD_BASE'], s, (C['INK_WANTED'], 0.93 * alpha), fade)
+        icon = icons.get(ticket['good'])
+        if icon is not None:
+            size = L['TICKET_ICON']
+            im = np.asarray(icon, np.float32)
+            u, v = L['TICKET_ICON_U'], L['TICKET_ICON_V']
+            p.blit(face, im[..., 3] / 255, None, u - size / 2, v - size / 2, u + size / 2, v + size / 2, alpha * fade, rgb_img=im[..., :3] * 0.94)
+        if not ticket['taken']:
+            count = str(ticket['count'])
+            s = min(L['S_TICKET_COUNT'], (W - margin - L['TICKET_COUNT_U']) / max(1.0, INK.width(count)))
+            ink(face, p, count, L['TICKET_COUNT_U'], L['TICKET_COUNT_BASE'], s, (C['INK'], 0.92 * alpha), fade)
+        shop = ticket['shop']
+        s = L['S_TICKET_SHOP']
+        lines = [shop] if INK.width(shop) * s <= room else wrap(INK, shop, room / s, 2)
+        widest = max(INK.width(t) for t in lines) * s
+        if widest > room:
+            s *= room / widest
+        base = L['TICKET_SHOP_BASE'] - (len(lines) - 1) * L['TEXT_LINE'] * s
+        for line in lines:
+            ink(face, p, line, W / 2 - INK.width(line) * s / 2, base, s, (C['INK'], 0.88 * alpha), fade)
+            base += L['TEXT_LINE'] * s
+        if ticket['taken']:
+            a = min(1.0, stamped / 2.0)
+            k = 1 + 0.6 * max(0.0, 1 - stamped / 6.0) ** 2
+            st = Turned(p, L['STAMP_U'], L['STAMP_V'], L['STAMP_TURN'], k)
+            sw = L['STAMP_W']
+            sh = sw * MA.STAMP_PX[1] / MA.STAMP_PX[0]
+            x, y, w_, h_ = where['stamp']
+            frame = sl[y:y + h_, x:x + w_]
+            st.blit(face, frame[..., 3] / 255, None, -sw / 2, -sh / 2, sw / 2, sh / 2, a * alpha * fade, rgb_img=frame[..., :3])
+            word = words.text('board.guildmark.ticket.taken').upper()
+            ws = min(L['S_STAMP'], sw * 0.72 / max(1.0, INK.width(word)))
+            ink(face, st, word, -INK.width(word) * ws / 2, 3.5 * ws, ws, (C['INK_STAMP'], 0.95 * a * alpha), fade)
+    if tack > 0:
+        size = L['TACK_SIZE'] * pressed
+        tu, tv = W / 2, L['TICKET_PIN']
+        x, y, w_, h_ = where['tack_shadow']
+        ts_ = sl[y:y + h_, x:x + w_]
+        p.blit(face, ts_[..., 3] / 255, None, tu - size * 0.35, tv - size * 0.3, tu + size * 0.85, tv + size * 0.8, alpha, rgb_img=ts_[..., :3])
+        x, y, w_, h_ = where['tack']
+        tk = sl[y:y + h_, x:x + w_]
+        p.blit(face, tk[..., 3] / 255, None, tu - size / 2, tv - size / 2, tu + size / 2, tv + size / 2, alpha, rgb_img=tk[..., :3])
+
+
 # ================================================================ the whole face
 
 class Board:
-    """A board as the server has it: town, when, lines (dicts or None, in MarketBoards.ORDER), slips, writing."""
+    """A board as the server has it: town, when, lines (dicts or None, in MarketBoards.ORDER), slips, writing, the
+    orders' tickets."""
 
-    def __init__(self, town, when_key, lines, slips, writing=-1):
+    def __init__(self, town, when_key, lines, slips, writing=-1, tickets=None):
         self.town, self.when_key, self.lines, self.slips, self.writing = town, when_key, lines, slips, writing
+        self.tickets = tickets or []
 
 
 class Viewer:
@@ -783,6 +889,11 @@ def draw_face(face, board, viewer, now, words, icons, slips_img, slips_where, he
         draw_slip(face, slips_img, slips_where, slip, i, age, -1, fade)
     for slip, slot, at in viewer.gone:
         draw_slip(face, slips_img, slips_where, slip, slot, math.inf, now - at, fade)
+
+    # The orders' tickets along the rail
+    for t in board.tickets:
+        age = math.inf if t['pinned'] == LONG_AGO else now - t['pinned']
+        draw_ticket(face, slips_img, slips_where, t, age, -1, t.get('stamped', math.inf), fade, icons, words)
 
     # The chalk stick, and its dust
     stick(face, board, viewer, tip, now, frame, fade)
@@ -945,7 +1056,13 @@ def sample_board(lang, now):
         {'kind': 'word', 'headline': lang['board.guildmark.slip.word.slain'],
          'text': 'The guild says the troll on the north road is slain. Travellers may pass in safety.', 'pinned': LONG_AGO},
     ]
-    return Board('Hollowmere', 'board.guildmark.market.noon', lines, slips)
+    tickets = [
+        {'order': 11, 'good': 'wheat', 'count': 64, 'shop': lang['shop.guildmark.bakery'], 'taken': False, 'slot': 0, 'pinned': LONG_AGO},
+        {'order': 12, 'good': 'wool', 'count': 32, 'shop': lang['shop.guildmark.cloth'], 'taken': True, 'slot': 1, 'pinned': LONG_AGO},
+        {'order': 14, 'good': 'carrot', 'count': 96, 'shop': lang['shop.guildmark.produce'], 'taken': False, 'slot': 3, 'pinned': LONG_AGO},
+        {'order': 15, 'good': 'cod', 'count': 128, 'shop': lang['shop.guildmark.fish_and_fruit'], 'taken': False, 'slot': 4, 'pinned': LONG_AGO},
+    ]
+    return Board('Hollowmere', 'board.guildmark.market.noon', lines, slips, tickets=tickets)
 
 
 def item_icons(jar):
@@ -992,6 +1109,8 @@ def previews(assets, out, jar, imgs, where, chalk, ink_, slips_where):
     crop.resize((crop.width * 2, crop.height * 2), Image.LANCZOS).save(os.path.join(out, 'face_slips_closeup.png'))
     crop = filled.crop((int(0.2 * R), int(0.3 * R), int(1.05 * R), int(0.95 * R)))
     crop.resize((crop.width * 2, crop.height * 2), Image.LANCZOS).save(os.path.join(out, 'face_prices_closeup.png'))
+    crop = filled.crop((int(0.5 * R), int(1.55 * R), int(2.5 * R), int(2.0 * R)))
+    crop.resize((crop.width * 2, crop.height * 2), Image.LANCZOS).save(os.path.join(out, 'face_tickets_closeup.png'))
 
     # 3. In 3D: from the front and a little to the side, with the writing; from behind
     sa = scratch_assets(assets)

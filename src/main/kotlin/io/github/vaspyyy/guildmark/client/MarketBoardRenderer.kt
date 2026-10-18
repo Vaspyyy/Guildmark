@@ -106,13 +106,19 @@ class BoardQuads {
     }
 }
 
-/** What a market board needs drawn this frame: the writing and the slips as flat quads, the goods' icons, the town's name. */
+/**
+ * What a market board needs drawn this frame: the writing, the slips and the orders' tickets as flat quads, the goods'
+ * icons, the town's name.
+ */
 class MarketBoardRenderState : BlockEntityRenderState() {
     /** The board's turn from facing north, in degrees (as its blockstate turns its cells). */
     var yRot = 0f
     var any = false
 
-    /** Drawn one after another: the chalk on the slate and the slips' shadows; the slips; their ink and tacks; the chalk stick. */
+    /**
+     * Drawn one after another: the chalk on the slate and the slips' shadows; the slips and the tickets; their ink,
+     * stamps and tacks; the chalk stick.
+     */
     val layers = Array(4) { BoardQuads() }
 
     val icons = Array(MarketBoards.ORDER.size) { ItemStackRenderState() }
@@ -121,6 +127,16 @@ class MarketBoardRenderState : BlockEntityRenderState() {
     val iconV = FloatArray(MarketBoards.ORDER.size)
     val iconSize = FloatArray(MarketBoards.ORDER.size)
     val iconLight = IntArray(MarketBoards.ORDER.size)
+
+    /** The goods' icons on the tickets, a slot of the rail each: where in the board's frame, and turned as the ticket hangs. */
+    val ticketIcons = Array(MarketBoardBlockEntity.TICKETS) { ItemStackRenderState() }
+    val ticketIconOn = BooleanArray(MarketBoardBlockEntity.TICKETS)
+    val ticketIconX = FloatArray(MarketBoardBlockEntity.TICKETS)
+    val ticketIconY = FloatArray(MarketBoardBlockEntity.TICKETS)
+    val ticketIconZ = FloatArray(MarketBoardBlockEntity.TICKETS)
+    val ticketIconTurn = FloatArray(MarketBoardBlockEntity.TICKETS)
+    val ticketIconSize = FloatArray(MarketBoardBlockEntity.TICKETS)
+    val ticketIconLight = IntArray(MarketBoardBlockEntity.TICKETS)
 
     var town: FormattedCharSequence? = null
     var townShadow: FormattedCharSequence? = null
@@ -133,6 +149,7 @@ class MarketBoardRenderState : BlockEntityRenderState() {
         any = false
         for (q in layers) q.clear()
         iconOn.fill(false)
+        ticketIconOn.fill(false)
         town = null
         townShadow = null
     }
@@ -144,12 +161,15 @@ class MarketBoardRenderState : BlockEntityRenderState() {
  * 1" and the Guild Mark's coin), an arrow for which way its price is going, pale red where it's dear and pale green
  * where it's cheap, "none" struck through where there's none to be had. The news hangs beside it on slips of paper,
  * each kind on its own paper (a red seal on trouble, a green ribbon on good news), headlines inked in a quick hand.
+ * The capital's orders hang under it all on manila tickets along the rail: "Wanted", the good, how many and for which
+ * business, stamped "Taken" once someone has taken the order; each swings a little on its tack in the air.
  *
  * It's alive while the crier is at it: an old price is rubbed out with the rag, the new one comes up stroke by stroke
  * from left to right with the stick of chalk at work and a little dust falling, bright while it's fresh; a slip flies
- * up from the crier's hand, is tacked on and swings to rest. Now and then a breeze lifts a slip's corner, never two
- * at once. Lines written while nobody was by show whole. The writing is lit by the light at the board (dark at night
- * unless a lamp is near, like a sign's) and fades out past [MarketBoardArt.FADE_NEAR] blocks.
+ * up from the crier's hand, is tacked on and swings to rest (a ticket too), and one taken down falls away; a ticket
+ * whose order is taken gets its stamp with a thump. Now and then a breeze lifts a slip's corner, never two at once,
+ * or a ticket out from the rail. Lines written while nobody was by show whole. The writing is lit by the light at the
+ * board (dark at night unless a lamp is near, like a sign's) and fades out past [MarketBoardArt.FADE_NEAR] blocks.
  *
  * The lettering is the board's own (see art/scripts/market_board_letters.py): every glyph of the chalk hand is cut into
  * pieces, each swept one way, so a line can be revealed exactly as the chalk's tip goes; everything is laid out by the
@@ -208,8 +228,9 @@ class MarketBoardRenderer(context: BlockEntityRendererProvider.Context) :
             mem.title = ""
         }
 
-        // The slips hang there for anyone to see, the writing only near enough to read
+        // The slips and tickets hang there for anyone to see, the writing only near enough to read
         slips(board, state, mem, level, now, fade, paper, letters)
+        tickets(board, state, mem, level, now, fade, paper, letters)
         if (fade > 0.002f) town(board, state, mem, now, fade)
         // Kept up to date even out of reading range, so nothing's rewritten before your eyes that was written before you came
         slate(board, state, mem, level, pos, now, frame, fade, letters)
@@ -731,6 +752,10 @@ class MarketBoardRenderer(context: BlockEntityRendererProvider.Context) :
         fun rnd(bits: Int): Float = ((h ushr bits) and 1023L).toFloat() / 1023f
         val kind = A.PAPER_KINDS.indexOf(slip.kind).let { if (it < 0) 3 else it }
         val p = page
+        p.w = A.SLIP_W
+        p.h = A.SLIP_H
+        p.pin = A.PIN_DOWN
+        p.tilt = 0f
         p.slotU = A.NEWS_U0 + (A.NEWS_U1 - A.NEWS_U0 - A.SLIP_W) / 2 + (rnd(3) - 0.5f) * 0.012f
         p.slotV = A.PANEL_V0 + A.SLOT_TOP + slot * A.SLOT_PITCH + (rnd(13) - 0.5f) * 0.008f
         p.z = -A.SLATE_DEPTH + 0.006f + slot * 0.0015f
@@ -827,28 +852,28 @@ class MarketBoardRenderer(context: BlockEntityRendererProvider.Context) :
         }
 
         // The tack
-        if (tack > 0f) {
-            val size = A.TACK_SIZE * pressed
-            p.inkLift = 0.0035f
-            val tu = A.SLIP_W / 2
-            val tv = A.PIN_DOWN
-            val shadow = A.TACK_SHADOW
-            quad(
-                ink, p, tu - size * 0.35f, tv - size * 0.3f, tu + size * 0.85f, tv + size * 0.8f,
-                paper.getU(shadow[0].toFloat() / A.SLIPS_W), paper.getV(shadow[1].toFloat() / A.SLIPS_H),
-                paper.getU((shadow[0] + shadow[2]).toFloat() / A.SLIPS_W), paper.getV((shadow[1] + shadow[3]).toFloat() / A.SLIPS_H),
-                scaleAlpha(0xFFFFFFFF.toInt(), alpha), light,
-            )
-            p.inkLift = 0.005f
-            val t = A.TACK
-            quad(
-                ink, p, tu - size / 2, tv - size / 2, tu + size / 2, tv + size / 2,
-                paper.getU(t[0].toFloat() / A.SLIPS_W), paper.getV(t[1].toFloat() / A.SLIPS_H),
-                paper.getU((t[0] + t[2]).toFloat() / A.SLIPS_W), paper.getV((t[1] + t[3]).toFloat() / A.SLIPS_H),
-                scaleAlpha(0xFFFFFFFF.toInt(), alpha), light,
-            )
-            p.inkLift = 0f
-        }
+        if (tack > 0f) tackOn(ink, p, A.SLIP_W / 2, A.PIN_DOWN, A.TACK_SIZE * pressed, alpha, light, paper)
+    }
+
+    /** A tack through page [p] at ([u], [v]), [size] across, with its shadow on the paper. */
+    private fun tackOn(q: BoardQuads, p: Page, u: Float, v: Float, size: Float, alpha: Float, light: Int, paper: TextureAtlasSprite) {
+        p.inkLift = 0.0035f
+        val shadow = A.TACK_SHADOW
+        quad(
+            q, p, u - size * 0.35f, v - size * 0.3f, u + size * 0.85f, v + size * 0.8f,
+            paper.getU(shadow[0].toFloat() / A.SLIPS_W), paper.getV(shadow[1].toFloat() / A.SLIPS_H),
+            paper.getU((shadow[0] + shadow[2]).toFloat() / A.SLIPS_W), paper.getV((shadow[1] + shadow[3]).toFloat() / A.SLIPS_H),
+            scaleAlpha(0xFFFFFFFF.toInt(), alpha), light,
+        )
+        p.inkLift = 0.005f
+        val t = A.TACK
+        quad(
+            q, p, u - size / 2, v - size / 2, u + size / 2, v + size / 2,
+            paper.getU(t[0].toFloat() / A.SLIPS_W), paper.getV(t[1].toFloat() / A.SLIPS_H),
+            paper.getU((t[0] + t[2]).toFloat() / A.SLIPS_W), paper.getV((t[1] + t[3]).toFloat() / A.SLIPS_H),
+            scaleAlpha(0xFFFFFFFF.toInt(), alpha), light,
+        )
+        p.inkLift = 0f
     }
 
     /** A slip's headline and words, kept off its seal, ribbon or stamp. */
@@ -913,8 +938,8 @@ class MarketBoardRenderer(context: BlockEntityRendererProvider.Context) :
         }
     }
 
-    /** [text] inked on page [p] from [x] along [base], each glyph bending with the paper. */
-    private fun ink(q: BoardQuads, p: Page, text: String, x: Float, base: Float, s: Float, argb: Int, light: Int, sprite: TextureAtlasSprite) {
+    /** [text] inked on [p] (a page, or a stamp on one) from [x] along [base], each glyph bending with the paper. */
+    private fun ink(q: BoardQuads, p: Surface, text: String, x: Float, base: Float, s: Float, argb: Int, light: Int, sprite: TextureAtlasSprite) {
         var pen = x
         for (c in text) {
             val g = INK.glyph(c)
@@ -932,6 +957,196 @@ class MarketBoardRenderer(context: BlockEntityRendererProvider.Context) :
             }
             pen += g.advance * s
         }
+    }
+
+    // ---------------------------------------------------------------- the orders' tickets
+
+    private fun tickets(
+        board: MarketBoardBlockEntity, state: MarketBoardRenderState, mem: Memory, level: Level, now: Double, fade: Float,
+        paper: TextureAtlasSprite, letters: TextureAtlasSprite,
+    ) {
+        // Each hangs in its own slot: one whose order is gone falls from it, one whose order is taken gets its stamp
+        for (s in 0 until TICKET_SLOTS) {
+            val hung = board.tickets.firstOrNull { it.slot == s }
+            val seen = mem.tickets[s]
+            if (seen != null && seen.order != hung?.order) {
+                if (!mem.fresh) mem.fallen.add(Fallen(seen, now))
+                mem.tickets[s] = null
+            }
+            if (hung != null) {
+                val before = mem.tickets[s]
+                if (hung.taken && before?.taken != true) mem.stamped[s] = if (mem.fresh || before == null) Double.NEGATIVE_INFINITY else now
+                mem.tickets[s] = hung
+            }
+        }
+        mem.fallen.removeAll { now - it.at > A.FALL }
+
+        val wind = 1f + level.getRainLevel(0f) * 0.7f + level.getThunderLevel(0f) * 0.8f
+        for (s in 0 until TICKET_SLOTS) {
+            val hung = mem.tickets[s] ?: continue
+            val age = if (hung.pinned == MarketBoardBlockEntity.LONG_AGO) Float.POSITIVE_INFINITY else (now - hung.pinned).toFloat()
+            ticket(state, hung, age, -1f, (now - mem.stamped[s]).toFloat(), s, level, now, wind, fade, paper, letters)
+        }
+        for (f in mem.fallen) {
+            // Its icon goes down with it, unless a new ticket has its slot already
+            val icon = if (mem.tickets[f.ticket.slot] == null) f.ticket.slot else -1
+            ticket(state, f.ticket, Float.POSITIVE_INFINITY, (now - f.at).toFloat(), Float.POSITIVE_INFINITY, icon, level, now, wind, fade, paper, letters)
+        }
+    }
+
+    /**
+     * One order's ticket on the rail: flying up from the crier's hand and swinging on its tack ([age] since it was
+     * hung), swaying in the [wind] and now and then lifted out by it, or falling ([falling] since it came down); its
+     * stamp put on [stamped] ticks ago if its order's taken. Its good's icon goes in slot [icon] of the icons (-1: none).
+     */
+    private fun ticket(
+        state: MarketBoardRenderState, ticket: MarketBoardBlockEntity.Ticket, age: Float, falling: Float, stamped: Float, icon: Int,
+        level: Level, now: Double, wind: Float, fade: Float, paper: TextureAtlasSprite, letters: TextureAtlasSprite,
+    ) {
+        val h = "ticket|${ticket.order}".hashCode().toLong() * -7046029254386353131L
+        fun rnd(bits: Int): Float = ((h ushr bits) and 1023L).toFloat() / 1023f
+        val p = page
+        p.w = A.TICKET_W
+        p.h = A.TICKET_H
+        p.pin = A.TICKET_PIN
+        p.slotU = A.TICKET_U0 + ticket.slot * A.TICKET_PITCH + (rnd(3) - 0.5f) * 0.01f
+        p.slotV = A.TICKET_TOP + (rnd(13) - 0.5f) * 0.006f
+        p.z = -A.TICKET_DEPTH + 0.004f + ticket.slot * 0.0005f
+        p.turn = (rnd(23) - 0.5f) * 0.07f
+        p.du = 0f
+        p.dv = 0f
+        p.dz = 0f
+        p.lift = 0f
+        p.ripple = 0f
+        p.tilt = 0f
+        p.corner = if (rnd(33) < 0.5f) -1 else 1
+        p.time = (now % 100000.0 + rnd(43) * 4000.0).toFloat()
+        var alpha = 1f
+        var tack = 1f
+        var pressed = 1f
+        if (falling >= 0f) {
+            // Taken down: the tack out, the card dropping to the ground and blown off it
+            val g = falling
+            p.dv = min(g * g * 0.0011f + g * 0.003f, 2f - (p.slotV + A.TICKET_H) - 0.004f)
+            p.dz = 0.02f + g * 0.01f
+            p.turn += g * 0.03f * p.corner
+            alpha = (1f - g / A.FALL).coerceIn(0f, 1f)
+            tack = 0f
+        } else if (age < A.LAND) {
+            // In flight from the crier's hand, down from about where they stand
+            val e = 1f - (1f - (age / A.LAND).coerceIn(0f, 1f)).pow(3)
+            p.du = (1f - e) * (1.5f - (p.slotU + A.TICKET_W / 2)) * 0.5f
+            p.dv = (1f - e) * -0.55f
+            p.dz = (1f - e) * 0.35f + sin(e * PI.toFloat()) * 0.04f
+            p.turn += (1f - e) * 0.5f * p.corner
+            alpha = min(1f, age / 2.5f)
+            tack = 0f
+        } else if (age < A.FLUTTER) {
+            // Tacked on, it swings on the tack, hanging free, and settles
+            val b = age - A.LAND
+            p.turn += 0.16f * exp(-b / 7f) * sin(b * 0.8f)
+            pressed = 1f + 0.5f * exp(-b / 2.5f)
+        }
+        if (falling < 0f && age >= A.LAND) {
+            // The air sways it on its tack, and now and then a breeze lifts it out from the rail
+            val t = p.time
+            p.turn += A.SWAY * min(1f, wind * 0.6f) * (0.6f * sin(t * 0.031f) + 0.4f * sin(t * 0.077f + 1.3f))
+            val gust = sin(t * 0.019f) * 0.6f + sin(t * 0.047f + 1.7f) * 0.4f
+            p.tilt = ((gust - 0.55f) / 0.45f).coerceIn(0f, 1f) * min(1.6f, wind) * 0.18f
+        }
+        if (alpha <= 0.01f) return
+
+        val light = lightAt(p.slotU + A.TICKET_W / 2, p.slotV + A.TICKET_H / 2)
+        // The card, turned from the light as it's lifted out; its back for anyone behind the board
+        val c = (255 * (1f - 0.3f * min(1f, p.tilt * 4f))).toInt()
+        val argb = ((alpha * 255).toInt() shl 24) or (c shl 16) or (c shl 8) or c
+        val front = A.TICKET
+        quad(
+            state.layers[1], p, 0f, 0f, A.TICKET_W, A.TICKET_H,
+            paper.getU(front[0].toFloat() / A.SLIPS_W), paper.getV(front[1].toFloat() / A.SLIPS_H),
+            paper.getU((front[0] + front[2]).toFloat() / A.SLIPS_W), paper.getV((front[1] + front[3]).toFloat() / A.SLIPS_H),
+            argb, light,
+        )
+        val back = A.TICKET_BACK
+        p.inkLift = -0.004f
+        quad(
+            state.layers[1], p, A.TICKET_W, 0f, 0f, A.TICKET_H,
+            paper.getU(back[0].toFloat() / A.SLIPS_W), paper.getV(back[1].toFloat() / A.SLIPS_H),
+            paper.getU((back[0] + back[2]).toFloat() / A.SLIPS_W), paper.getV((back[1] + back[3]).toFloat() / A.SLIPS_H),
+            argb, light,
+        )
+        p.inkLift = 0f
+
+        // The good's icon, near enough to make out
+        val k = MarketBoards.ORDER.indexOf(ticket.good)
+        val stack = if (k >= 0) STACKS[k] else ItemStack.EMPTY
+        if (icon >= 0 && !stack.isEmpty && fade > 0.05f && alpha > 0.5f) {
+            p.inkLift = 0.003f
+            p.map(A.TICKET_ICON_U, A.TICKET_ICON_V, corner)
+            p.inkLift = 0f
+            itemModels.updateForTopItem(state.ticketIcons[icon], stack, ItemDisplayContext.FIXED, level, null, MarketBoards.ORDER.size + icon)
+            state.ticketIconOn[icon] = true
+            state.ticketIconX[icon] = corner[0]
+            state.ticketIconY[icon] = corner[1]
+            state.ticketIconZ[icon] = corner[2]
+            state.ticketIconTurn[icon] = p.turn
+            state.ticketIconSize[icon] = A.TICKET_ICON * (if (stack.item is BlockItem) 1.6f else 1f)
+            state.ticketIconLight[icon] = light
+        }
+
+        // What it says, near enough to read; the stamp over the count once it's taken, thumped on
+        val q = state.layers[2]
+        if (fade > 0.002f) {
+            p.inkLift = 0.0012f
+            val room = A.TICKET_W - 2 * A.TICKET_MARGIN
+            val head = words.text("board.guildmark.ticket.wanted").uppercase(Locale.ROOT)
+            val hs = min(A.S_TICKET_HEAD, room / max(1f, width(INK, head)))
+            ink(q, p, head, A.TICKET_W / 2 - width(INK, head) * hs / 2, A.TICKET_HEAD_BASE, hs, scaleAlpha(0xFF000000.toInt() or A.INK_WANTED, 0.93f * alpha * fade), light, letters)
+            if (!ticket.taken) {
+                val count = ticket.count.toString()
+                val cs = min(A.S_TICKET_COUNT, (A.TICKET_W - A.TICKET_MARGIN - A.TICKET_COUNT_U) / max(1f, width(INK, count)))
+                ink(q, p, count, A.TICKET_COUNT_U, A.TICKET_COUNT_BASE, cs, scaleAlpha(0xFF000000.toInt() or A.INK, 0.92f * alpha * fade), light, letters)
+            }
+            val shop = ticket.shop.string
+            if (shop.isNotBlank()) {
+                // On two lines if it won't go on one, and smaller if it still won't
+                var ss = A.S_TICKET_SHOP
+                val lines = if (width(INK, shop) * ss <= room) listOf(shop) else wrap(INK, shop, room / ss, 2)
+                val widest = lines.maxOf { width(INK, it) } * ss
+                if (widest > room) ss *= room / widest
+                var base = A.TICKET_SHOP_BASE - (lines.size - 1) * A.TEXT_LINE * ss
+                for (line in lines) {
+                    ink(q, p, line, A.TICKET_W / 2 - width(INK, line) * ss / 2, base, ss, scaleAlpha(0xFF000000.toInt() or A.INK, 0.88f * alpha * fade), light, letters)
+                    base += A.TEXT_LINE * ss
+                }
+            }
+            if (ticket.taken) {
+                val a = (stamped / 2f).coerceIn(0f, 1f)
+                val st = turned
+                st.u = A.STAMP_U
+                st.v = A.STAMP_V
+                st.turn = A.STAMP_TURN
+                st.scale = 1f + 0.6f * max(0f, 1f - stamped / 6f).pow(2)
+                val sw = A.STAMP_W
+                val sh = sw * A.STAMP[3] / A.STAMP[2]
+                val frame = A.STAMP
+                // Over the good's icon
+                p.inkLift = 0.0055f
+                quad(
+                    q, st, -sw / 2, -sh / 2, sw / 2, sh / 2,
+                    paper.getU(frame[0].toFloat() / A.SLIPS_W), paper.getV(frame[1].toFloat() / A.SLIPS_H),
+                    paper.getU((frame[0] + frame[2]).toFloat() / A.SLIPS_W), paper.getV((frame[1] + frame[3]).toFloat() / A.SLIPS_H),
+                    scaleAlpha(0xFFFFFFFF.toInt(), a * alpha * fade), light,
+                )
+                p.inkLift = 0.006f
+                val word = words.text("board.guildmark.ticket.taken").uppercase(Locale.ROOT)
+                val ws = min(A.S_STAMP, sw * 0.72f / max(1f, width(INK, word)))
+                ink(q, st, word, -width(INK, word) * ws / 2, 3.5f * ws, ws, scaleAlpha(0xFF000000.toInt() or A.INK_STAMP, 0.95f * a * alpha * fade), light, letters)
+            }
+            p.inkLift = 0f
+        }
+
+        if (tack > 0f) tackOn(q, p, A.TICKET_W / 2, A.TICKET_PIN, A.TACK_SIZE * pressed, alpha, light, paper)
     }
 
     // ---------------------------------------------------------------- drawing
@@ -964,6 +1179,19 @@ class MarketBoardRenderer(context: BlockEntityRendererProvider.Context) :
             poseStack.popPose()
         }
 
+        // The goods' icons on the tickets, turned as each ticket hangs
+        for (i in state.ticketIcons.indices) {
+            if (!state.ticketIconOn[i]) continue
+            poseStack.pushPose()
+            poseStack.translate(state.ticketIconX[i], state.ticketIconY[i], state.ticketIconZ[i])
+            poseStack.rotateDegrees(Axis.ZP, -Math.toDegrees(state.ticketIconTurn[i].toDouble()).toFloat())
+            poseStack.rotateDegrees(Axis.YP, 180f)
+            val s = state.ticketIconSize[i]
+            poseStack.scale(s, s, s * 0.04f)
+            state.ticketIcons[i].submit(poseStack, collector, state.ticketIconLight[i], OverlayTexture.NO_OVERLAY, 0)
+            poseStack.popPose()
+        }
+
         // The town's name, gilt, sunk a little into the plank
         val town = state.town
         val shadow = state.townShadow
@@ -985,6 +1213,7 @@ class MarketBoardRenderer(context: BlockEntityRendererProvider.Context) :
     private val flat = Flat()
     private val shade = Flat()
     private val page = Page()
+    private val turned = Turned(page)
     private val corner = FloatArray(3)
     private val lights = IntArray(6)
 
@@ -1043,6 +1272,7 @@ class MarketBoardRenderer(context: BlockEntityRendererProvider.Context) :
         private val STACKS: Array<ItemStack> by lazy { Array(MarketBoards.ORDER.size) { i -> MarketBoards.ORDER[i].item?.let { ItemStack(it) } ?: ItemStack.EMPTY } }
 
         private const val SLOTS = MarketBoardBlockEntity.SLIPS
+        private const val TICKET_SLOTS = MarketBoardBlockEntity.TICKETS
 
         /** Ticks after the crier begins writing a board up during which a change of its title is chalked in for all to see. */
         private const val TITLE_FRESH = 200L
@@ -1337,8 +1567,16 @@ class MarketBoardRenderer(context: BlockEntityRendererProvider.Context) :
         }
     }
 
-    /** A slip's paper, in its own blocks from its top left: turned on its tack, lifted and rippled where the air takes it. */
+    /**
+     * A slip's paper (or an order's ticket), in its own blocks from its top left: [w] by [h], tacked [pin] down from
+     * the middle of its top, turned on its tack, lifted and rippled where the air takes it; a ticket hanging free
+     * below the tack is tilted out from the board by [tilt] (blocks out a block down).
+     */
     private class Page : Surface {
+        var w = A.SLIP_W
+        var h = A.SLIP_H
+        var pin = A.PIN_DOWN
+        var tilt = 0f
         var slotU = 0f
         var slotV = 0f
         var z = 0f
@@ -1354,21 +1592,37 @@ class MarketBoardRenderer(context: BlockEntityRendererProvider.Context) :
 
         /** How far a point of the paper stands off the board (blocks). */
         fun liftAt(x: Float, y: Float): Float {
-            val fy = (y / A.SLIP_H).coerceIn(0f, 1f)
-            val fx = (if (corner > 0) x / A.SLIP_W else 1f - x / A.SLIP_W).coerceIn(0f, 1f)
+            val fy = (y / h).coerceIn(0f, 1f)
+            val fx = (if (corner > 0) x / w else 1f - x / w).coerceIn(0f, 1f)
             val corner = fy.pow(1.7f) * fx.pow(1.3f)
             val wave = sin(time * 0.9f + x * 26f) * fy * 0.12f
             return LIFT * (lift * corner + ripple * wave * (0.4f + fy))
         }
 
         override fun map(u: Float, v: Float, out: FloatArray) {
-            val px = u - A.SLIP_W / 2
-            val py = v - A.PIN_DOWN
+            val px = u - w / 2
+            val py = v - pin
             val c = cos(turn)
             val s = sin(turn)
-            out[0] = slotU + A.SLIP_W / 2 + px * c - py * s + du
-            out[1] = -(slotV + A.PIN_DOWN + px * s + py * c + dv)
-            out[2] = z + dz + liftAt(u, v) + inkLift
+            out[0] = slotU + w / 2 + px * c - py * s + du
+            out[1] = -(slotV + pin + px * s + py * c + dv)
+            out[2] = z + dz + liftAt(u, v) + max(0f, py) * tilt + inkLift
+        }
+    }
+
+    /** Something turned and scaled about a point of a [page] (a stamp on a ticket), in its own blocks from that point. */
+    private class Turned(val page: Page) : Surface {
+        var u = 0f
+        var v = 0f
+        var turn = 0f
+        var scale = 1f
+
+        override fun map(u: Float, v: Float, out: FloatArray) {
+            val c = cos(turn)
+            val s = sin(turn)
+            val x = u * scale
+            val y = v * scale
+            page.map(this.u + x * c - y * s, this.v + x * s + y * c, out)
         }
     }
 
@@ -1377,6 +1631,9 @@ class MarketBoardRenderer(context: BlockEntityRendererProvider.Context) :
     private class Seen(var slip: MarketBoardBlockEntity.Slip, val key: String)
 
     private class Gone(val slip: MarketBoardBlockEntity.Slip, val slot: Int, val at: Double)
+
+    /** A ticket taken down at [at], falling from its slot. */
+    private class Fallen(val ticket: MarketBoardBlockEntity.Ticket, val at: Double)
 
     private class Memory {
         /** Nothing seen yet: everything there is shown as it stands, with nothing being rubbed out. */
@@ -1398,6 +1655,11 @@ class MarketBoardRenderer(context: BlockEntityRendererProvider.Context) :
         var lastDust = 0.0
         val slots = arrayOfNulls<Seen>(SLOTS)
         val gone = ArrayList<Gone>()
+
+        /** The ticket seen in each slot of the rail, when each was seen stamped (-infinity: stamped before it was seen), those falling. */
+        val tickets = arrayOfNulls<MarketBoardBlockEntity.Ticket>(TICKET_SLOTS)
+        val stamped = DoubleArray(TICKET_SLOTS) { Double.NEGATIVE_INFINITY }
+        val fallen = ArrayList<Fallen>()
         var townName = ""
         var townWidth = 0f
         var townCentres = FloatArray(0)

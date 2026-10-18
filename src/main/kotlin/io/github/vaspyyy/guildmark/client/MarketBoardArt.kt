@@ -13,7 +13,7 @@ internal object MarketBoardArt {
     const val LETTERS_W = 512
     const val LETTERS_H = 368
     const val SLIPS_W = 64
-    const val SLIPS_H = 208
+    const val SLIPS_H = 272
 
     /** Texels of the atlas to a font pixel. */
     const val TEXELS = 3
@@ -87,6 +87,30 @@ internal object MarketBoardArt {
     const val FALL = 22.000000f
     const val FADE_NEAR = 20.000000f
     const val FADE_FAR = 24.000000f
+    const val TICKET_W = 0.270000f
+    const val TICKET_TOP = 1.645000f
+    const val TICKET_DEPTH = 0.750000f
+    const val TICKET_HEAD_BASE = 0.094000f
+    const val S_TICKET_HEAD = 0.004200f
+    const val TICKET_ICON_U = 0.072000f
+    const val TICKET_ICON_V = 0.166000f
+    const val TICKET_ICON = 0.075000f
+    const val TICKET_COUNT_U = 0.124000f
+    const val TICKET_COUNT_BASE = 0.191000f
+    const val S_TICKET_COUNT = 0.006800f
+    const val TICKET_SHOP_BASE = 0.262000f
+    const val S_TICKET_SHOP = 0.003100f
+    const val STAMP_U = 0.140000f
+    const val STAMP_V = 0.166000f
+    const val STAMP_W = 0.232000f
+    const val STAMP_TURN = -0.210000f
+    const val S_STAMP = 0.005600f
+    const val SWAY = 0.050000f
+    const val TICKET_H = 0.303750f
+    const val TICKET_PIN = 0.033750f
+    const val TICKET_PITCH = 0.322917f
+    const val TICKET_U0 = 0.557708f
+    const val TICKET_MARGIN = 0.033750f
     const val ITEM_PITCH = 0.102725f
     const val COL_W = 0.591250f
     const val LEGEND_BASE = 1.216388f
@@ -101,6 +125,8 @@ internal object MarketBoardArt {
     const val GILT = 0xE2BC6C
     const val GILT_SHADOW = 0x24170F
     const val GILT_GLINT = 0xFFF0C0
+    const val INK_WANTED = 0x6A1610
+    const val INK_STAMP = 0x9C2A22
 
     /** How many of MarketBoards.ORDER's goods each section takes, and the column of the slate it's in. */
     val SECTION_SIZES = intArrayOf(2, 5, 2, 4, 10)
@@ -123,6 +149,10 @@ internal object MarketBoardArt {
     val SLIP_SHADOW = intArrayOf(0, 160, 64, 32)
     val TACK = intArrayOf(0, 192, 6, 6)
     val TACK_SHADOW = intArrayOf(8, 192, 7, 8)
+    /** An order's ticket, its back (mirrored, as it's seen from behind) and the stamp on one taken: x, y, w, h in texels. */
+    val TICKET = intArrayOf(0, 208, 32, 36)
+    val TICKET_BACK = intArrayOf(32, 208, 32, 36)
+    val STAMP = intArrayOf(0, 244, 32, 14)
 
     /**
      * Every glyph, one after another: its character, its advance (font px x100), whether it has a cell and the cell,

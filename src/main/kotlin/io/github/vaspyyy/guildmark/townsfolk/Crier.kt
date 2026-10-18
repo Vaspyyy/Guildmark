@@ -10,7 +10,10 @@ import io.github.vaspyyy.guildmark.economy.MarketBoards
 import io.github.vaspyyy.guildmark.economy.MarketCommand
 import io.github.vaspyyy.guildmark.economy.Markets
 import io.github.vaspyyy.guildmark.economy.News
+import io.github.vaspyyy.guildmark.economy.OrderState
+import io.github.vaspyyy.guildmark.economy.Orders
 import io.github.vaspyyy.guildmark.economy.Quote
+import io.github.vaspyyy.guildmark.economy.Suppliers
 import io.github.vaspyyy.guildmark.economy.Trading
 import io.github.vaspyyy.guildmark.festival.FestivalCalendar
 import io.github.vaspyyy.guildmark.guild.GuildNews
@@ -29,17 +32,19 @@ import net.minecraft.world.phys.Vec3
 import java.util.Random
 import java.util.WeakHashMap
 import kotlin.math.abs
+import kotlin.math.floor
 import kotlin.math.ln
 
 /**
  * The town crier: one of a capital's citizens (see [Hands]), who keeps its market board ([MarketBoards]). First thing
  * on a working morning they chalk up the prices that changed overnight. At eleven they're off to the square with
  * the day's news on a scroll, reading it over; at noon on the dot they ring the handbell and cry it, a line at a
- * time, while the folk about the square gather round to hear (see [Hear]); then they pin it up on the board, write
- * the prices up again, and get their lunch. What they cry is what really happened: the market's own news since the
- * noon before (trouble or luck starting, trouble over), whether the town went hungry, the prices that stand furthest
- * off their usual and why, and the guild's news of the day before. Every line is voiced; what goes with it (whose
- * deed, which village) is in the chat of the players about the square and on the slip pinned up for it.
+ * time, while the folk about the square gather round to hear (see [Hear]); then they pin it up on the board, hang a
+ * ticket on its rail for each new order, write the prices up again, and get their lunch. What they cry is what really
+ * happened: the market's own news since the noon before (trouble or luck starting, trouble over), whether the town
+ * went hungry, the orders its businesses posted and those filled, the prices that stand furthest off their usual and
+ * why, and the guild's news of the day before. Every line is voiced; what goes with it (whose deed, which village,
+ * who wants how many) is in the chat of the players about the square and on the slip pinned up for it.
  */
 object Crier {
     /** How far the crier's voice carries, and how near the crier a player must be to have what's cried in chat. */
@@ -72,6 +77,10 @@ object Crier {
 
     /** How many days ahead the crier starts telling of a festival. */
     private const val FESTIVAL_AHEAD = 2
+
+    /** The most new orders cried, and the most suppliers named for orders filled. */
+    private const val WANTED = 2
+    private const val FILLED = 3
 
     private const val EVENT_NEWS = "news.guildmark.market.event."
     private const val OVER_NEWS = "news.guildmark.market.over."
@@ -122,7 +131,9 @@ object Crier {
         if (c.clock < 11 && !now) {
             if (life.chalked == c.day) return null
             life.chalked = c.day
-            if (entry == null || board == null || MarketBoards.current(board, c.day to false)) return null
+            if (entry == null || board == null) return null
+            // Nothing to write up and no new orders to hang
+            if (MarketBoards.current(board, c.day to false) && MarketBoards.unhung(level, board, life.places.capital.center).isEmpty()) return null
             return chalk(p, life, noon = false, slips = listOf())
         }
         if (!now) {
@@ -187,9 +198,9 @@ object Crier {
     }
 
     /**
-     * The board written up: at noon yesterday's slips taken down and [slips] pinned up, then the lines that have
-     * changed chalked in, one stroke at a time (in the morning, a word to the street once it's done). Null if
-     * there's no board or market to write up.
+     * The board written up: at noon yesterday's slips taken down and [slips] pinned up, a ticket hung on the rail for
+     * each order that hasn't one, then the lines that have changed chalked in, one stroke at a time (in the morning,
+     * a word to the street once it's done). Null if there's no board or market to write up.
      */
     private fun chalk(p: Townsperson, life: Life, noon: Boolean, slips: List<Slip>): Task? {
         val level = level(p)
@@ -198,7 +209,10 @@ object Crier {
         crying.remove(p)
         val spot = writingSpot(life.places)
         val slate = Vec3.atCenterOf(life.places.marketBoard.pos).add(0.0, 0.6, 0.0)
+        val rail = Vec3.atBottomCenterOf(life.places.marketBoard.pos).add(0.0, 0.3, 0.0)
+        val capital = life.places.capital.center
         var todo: List<Int>? = null
+        var orders: List<Int> = listOf()
         var pinned = 0
         var written = 0
         val plan = plan@{ i: Int ->
@@ -207,15 +221,17 @@ object Crier {
                 val c = conditions(level)
                 board.begin(MarketBoards.town(life.places.capital), c.day, noon)
                 if (noon) board.unpin()
+                orders = MarketBoards.unhung(level, board, capital).map { it.order }
                 val at = level.gameTime
                 MarketBoards.ORDER.indices.filter { k -> !MarketBoards.line(entry, MarketBoards.ORDER[k], at).same(board.lines.getOrNull(k)) }
                     .also { todo = it }
                     .also { if (it.isEmpty()) board.finish() }
             }
+            val pins = slips.size + orders.size
             when {
-                i < slips.size -> Step(Activity.HAND_OVER)
-                i == slips.size -> if (list.isNotEmpty()) Step(Activity.SCRIBE, STROKE * list.size + 8) else Step(Activity.NONE, 10)
-                i == slips.size + 1 && !noon -> Step(Activity.NONE, 40, turned = true)
+                i < pins -> Step(Activity.HAND_OVER)
+                i == pins -> if (list.isNotEmpty()) Step(Activity.SCRIBE, STROKE * list.size + 8) else Step(Activity.NONE, 10)
+                i == pins + 1 && !noon -> Step(Activity.NONE, 40, turned = true)
                 else -> null
             }
         }
@@ -226,6 +242,10 @@ object Crier {
                     val slip = slips[pinned++]
                     board.pin(Slip(slip.kind, slip.headline, slip.text, level.gameTime))
                     sound(level, slate, "pin", 0.8f)
+                } else if (t == 16 && pinned < slips.size + orders.size) {
+                    // The order's ticket, if it's still wanted and nobody's hung it meanwhile
+                    if (MarketBoards.hang(level, board, capital, orders[pinned - slips.size])) sound(level, rail, "pin", 0.7f)
+                    pinned++
                 }
                 Activity.SCRIBE -> {
                     val list = todo.orEmpty()
@@ -239,7 +259,10 @@ object Crier {
                         sound(level, slate, "chalk_tap", 0.6f)
                     }
                 }
-                Activity.NONE -> if (s.turned && t == 0) p.say("crier_board", force = true, hearing = HEARD, ticks = SHOWN)
+                // The prices are up; or, with none changed, the new orders
+                Activity.NONE -> if (s.turned && t == 0) {
+                    p.say(if (todo.isNullOrEmpty() && orders.isNotEmpty()) "crier_board_orders" else "crier_board", force = true, hearing = HEARD, ticks = SHOWN)
+                }
                 else -> {}
             }
         }))
@@ -276,9 +299,9 @@ object Crier {
 
     /**
      * Everything to cry at [c]'s noon, opening and close included: the market's news since the noon before, hunger,
-     * a new season or a festival at hand, the prices furthest off their usual with why, and the guild's news of the
-     * day before, at most [MOST] between
-     * the opening and the close; if there's none, that the market is well and prices fair.
+     * the new orders and those filled, a new season or a festival at hand, the prices furthest off their usual with
+     * why, and the guild's news of the day before, at most [MOST] between the opening and the close; if there's
+     * none, that the market is well and prices fair.
      */
     fun news(level: ServerLevel, entry: Markets.Entry?, c: Conditions, random: Random): List<Cry> {
         val at = level.gameTime
@@ -297,6 +320,7 @@ object Crier {
             if ((m.hungry.lastOrNull() ?: 0.0) >= maxOf(HUNGRY_MEALS, entry.town.people * Economy.MEALS * HUNGRY)) {
                 groups.add(listOf(Cry("crier_hungry", said("crier_hungry"), slip(Slip.Kind.TROUBLE, Component.translatable("board.guildmark.slip.hungry"), said("crier_hungry"), at), -1)))
             }
+            orders(level, entry, noon, random).forEach { groups.add(listOf(it)) }
         }
         calendar(level, c, at)?.let { groups.add(it) }
         val word = GuildNews.get(level).items.filter { it.day == VillageBoards.day(level) - 1 }.take(WORD).map { listOf(word(it, at)) }
@@ -347,6 +371,35 @@ object Crier {
 
     /** A slip of [kind] for the board, pinned at [at]. */
     private fun slip(kind: Slip.Kind, headline: Component, text: Component, at: Long): Slip = Slip(kind.id, headline, text, at)
+
+    /**
+     * The orders at [entry]'s capital since the noon before market hour [noon]: up to [WANTED] newly posted and still
+     * open (the biggest first), each cried with who wants how many and about what it pays; and one cry for those
+     * filled, naming up to [FILLED] suppliers. None while orders are off; their tickets go on the rail, not slips.
+     */
+    private fun orders(level: ServerLevel, entry: Markets.Entry, noon: Long, random: Random): List<Cry> {
+        if (!Suppliers.enabled()) return listOf()
+        val book = Orders.get(level)[entry.capital] ?: return listOf()
+        val out = ArrayList<Cry>()
+        for (o in book.orders.filter { it.state == OrderState.OPEN && it.posted > noon - 24 && it.posted <= noon }.sortedByDescending { it.worth }.take(WANTED)) {
+            val line = "crier_wanted_${o.good.id}"
+            val pay = Orders.marks(floor(Orders.each(o.basis, 0.0, standing = false) * o.amount + 1e-6).toInt())
+            val about = Component.translatable("chat.guildmark.crier.wanted", Orders.shopName(o.shop), Orders.what(o), pay)
+            out.add(Cry(line, said(line).append(" ").append(about.withStyle(ChatFormatting.GRAY)), null, 1))
+        }
+        val filled = book.fills.filter { it.hour > noon - 24 && it.hour <= noon }
+        if (filled.isNotEmpty()) {
+            val line = "crier_order_filled_${random.nextInt(2)}"
+            val text = said(line)
+            for ((k, f) in filled.take(FILLED).withIndex()) {
+                val what = Component.translatable("supplier.guildmark.what", f.count, Component.translatable(f.good.key + ".many"))
+                text.append(Component.literal(if (k == 0) " " else "; ").withStyle(ChatFormatting.GRAY))
+                    .append(Component.translatable("chat.guildmark.crier.filled", f.who, what, Orders.shopName(f.shop)).withStyle(ChatFormatting.GRAY))
+            }
+            out.add(Cry(line, text, null, 1))
+        }
+        return out
+    }
 
     /** The market's piece of news [n], cried: trouble or luck starting, or trouble over; and which kind it is. */
     private fun market(n: News, at: Long): Pair<Cry, EventKind>? {

@@ -18,8 +18,9 @@ import net.minecraft.world.level.storage.ValueOutput
 
 /**
  * The anchor cell of a market board (see [MarketBoardBlock]): every good's price as the crier last chalked it up,
- * and the news they pinned beside it. Synced to clients whole, so the board can be drawn as it stands: a line
- * written since a viewer last looked comes up stroke by stroke (see [Line.chalked]), a slip pinned flutters up.
+ * the news they pinned beside it, and the capital's orders hung on tickets along the rail under them. Synced to
+ * clients whole, so the board can be drawn as it stands: a line written since a viewer last looked comes up stroke
+ * by stroke (see [Line.chalked]), a slip pinned flutters up.
  */
 class MarketBoardBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(ModBlockEntities.MARKET_BOARD.get(), pos, state) {
     /**
@@ -82,6 +83,34 @@ class MarketBoardBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(Mod
         }
     }
 
+    /**
+     * One of the capital's orders on a ticket hung from the rail (see [io.github.vaspyyy.guildmark.economy.Orders]):
+     * the [order]'s number, [count] of [good] wanted at [shop], whether someone has [taken] it (stamped so), the
+     * [slot] along the rail it hangs in, and the game time it was hung ([pinned]; [LONG_AGO] if it was found hung).
+     */
+    class Ticket(val order: Int, val good: Good, val count: Int, val shop: Component, val taken: Boolean, val slot: Int, val pinned: Long) {
+        /** It as its order now stands: [count] wanted, [taken] or not. */
+        fun with(count: Int, taken: Boolean): Ticket = if (count == this.count && taken == this.taken) this else Ticket(order, good, count, shop, taken, slot, pinned)
+
+        /** Whether it shows the same as [other]. */
+        fun same(other: Ticket): Boolean =
+            order == other.order && good == other.good && count == other.count && shop == other.shop && taken == other.taken && slot == other.slot && pinned == other.pinned
+
+        companion object {
+            val CODEC: Codec<Ticket> = RecordCodecBuilder.create { i ->
+                i.group(
+                    Codec.INT.fieldOf("order").forGetter(Ticket::order),
+                    Codec.STRING.fieldOf("good").forGetter { it.good.id },
+                    Codec.INT.fieldOf("count").forGetter(Ticket::count),
+                    ComponentSerialization.CODEC.fieldOf("shop").forGetter(Ticket::shop),
+                    Codec.BOOL.optionalFieldOf("taken", false).forGetter(Ticket::taken),
+                    Codec.INT.optionalFieldOf("slot", 0).forGetter(Ticket::slot),
+                    Codec.LONG.optionalFieldOf("pinned", LONG_AGO).forGetter(Ticket::pinned),
+                ).apply(i) { order, good, count, shop, taken, slot, pinned -> Ticket(order, Good.byId(good) ?: Good.WHEAT, count, shop, taken, slot, pinned) }
+            }
+        }
+    }
+
     /** The capital's name, for the board's head. */
     var town: Component = Component.empty()
         private set
@@ -103,6 +132,9 @@ class MarketBoardBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(Mod
 
     /** The news pinned up, oldest first, at most [SLIPS]. */
     val slips: MutableList<Slip> = ArrayList()
+
+    /** The orders' tickets on the rail, each in its own slot (0 until [TICKETS]). */
+    val tickets: MutableList<Ticket> = ArrayList()
 
     /** The line the crier's chalk is on right now, or -1; drawn as the hand at work. */
     var writing: Int = -1
@@ -171,6 +203,21 @@ class MarketBoardBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(Mod
         sync()
     }
 
+    /** Server side: hangs [ticket] up in its slot, taking down whatever hung there (and any other ticket for its order). */
+    fun hang(ticket: Ticket) {
+        tickets.removeAll { it.slot == ticket.slot || it.order == ticket.order }
+        tickets.add(ticket)
+        sync()
+    }
+
+    /** Server side: the tickets as they now stand, if that's changed (see [io.github.vaspyyy.guildmark.economy.MarketBoards.tickets]). */
+    fun tickets(next: List<Ticket>) {
+        if (next.size == tickets.size && next.indices.all { next[it].same(tickets[it]) }) return
+        tickets.clear()
+        tickets.addAll(next)
+        sync()
+    }
+
     private fun sync() {
         setChanged()
         val level = level ?: return
@@ -187,6 +234,7 @@ class MarketBoardBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(Mod
         output.putLong("begun", begun)
         output.store("lines", Line.CODEC.listOf(), lines)
         output.store("slips", Slip.CODEC.listOf(), slips)
+        output.store("tickets", Ticket.CODEC.listOf(), tickets)
         output.putInt("writing", writing)
         output.putBoolean("finished", finished)
     }
@@ -201,6 +249,8 @@ class MarketBoardBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(Mod
         input.read("lines", Line.CODEC.listOf()).ifPresent { lines.addAll(it) }
         slips.clear()
         input.read("slips", Slip.CODEC.listOf()).ifPresent { slips.addAll(it) }
+        tickets.clear()
+        input.read("tickets", Ticket.CODEC.listOf()).ifPresent { tickets.addAll(it) }
         writing = input.getIntOr("writing", -1)
         finished = input.getBooleanOr("finished", true)
     }
@@ -213,7 +263,10 @@ class MarketBoardBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(Mod
         /** The most slips a board holds. */
         const val SLIPS = 4
 
-        /** A [Line.chalked] or [Slip.pinned] time long past: shown whole, with nothing still being written. */
+        /** How many tickets hang along the rail, at most (as many as a capital has orders out). */
+        const val TICKETS = 6
+
+        /** A [Line.chalked], [Slip.pinned] or [Ticket.pinned] time long past: shown whole, with nothing still being written. */
         const val LONG_AGO = Long.MIN_VALUE / 4
     }
 }

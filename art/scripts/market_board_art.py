@@ -11,7 +11,8 @@ Writes, all at 32x with the HD art kit (hdkit.py):
   textures/block/market_board_{front,back,wood,post,cap,trim}.png  the board's painting and materials
   textures/block/market_board/letters.png                           the chalk and ink lettering atlas (see
                                                                      market_board_letters.py), the chalk stick, dust
-  textures/block/market_board/slips.png                             the five papers a slip can be on, a tack, shadows
+  textures/block/market_board/slips.png                             the five papers a slip can be on, a tack, shadows,
+                                                                     an order's ticket (front and back) and its stamp
   textures/item/market_board.png                                    the item icon
   models/block/market_board_<part>.json                             the six cells (the blockstate already picks them)
   models/item/market_board.json                                     points at the icon
@@ -88,6 +89,14 @@ STRAPS = [
 # Two stubs of chalk on the ledge
 STUBS = [(9.0, 10.75, 7.0, 7.5, 11.0, 11.5), (13.5, 14.5, 7.0, 7.5, 11.25, 11.75)]
 
+# The orders' tickets hang along the rail, between the iron straps at its ends: how many, and the tag's texels (its
+# eyelet's middle among them); the stamp put on one taken
+TICKETS_X = (8.5, 39.5)
+TICKET_SLOTS = 6
+TICKET_PX = (32, 36)
+EYELET = (16.0, 4.0)
+STAMP_PX = (32, 14)
+
 PARTS = {'bottom_left': (-1, 0), 'bottom_middle': (0, 0), 'bottom_right': (1, 0),
          'top_left': (-1, 1), 'top_middle': (0, 1), 'top_right': (1, 1)}
 
@@ -158,7 +167,23 @@ LAYOUT = {
     'SMEAR': 160.0, 'FLUTTER': 36.0, 'LAND': 13.0, 'FALL': 22.0,
     # Past this many blocks the writing fades, and is gone by the next
     'FADE_NEAR': 20.0, 'FADE_FAR': 24.0,
+    # The orders' tickets, hung on the rail's face below the ledge: a ticket's width (its height goes by its texels),
+    # the tags' top and how far back the rail's face is; on a ticket, in blocks from its top left: the head's
+    # baseline and size, the good's icon's middle and size, the count's left, baseline and size, the business's last
+    # baseline and size, the stamp's middle, width and turn (radians) and its word's size (the stamp goes over the
+    # count); how far the air swings a ticket on its tack (radians), at most
+    'TICKET_W': 0.27, 'TICKET_TOP': 1.645, 'TICKET_DEPTH': blocks(RAIL_Z[0]),
+    'TICKET_HEAD_BASE': 0.094, 'S_TICKET_HEAD': 0.0042, 'TICKET_ICON_U': 0.072, 'TICKET_ICON_V': 0.166,
+    'TICKET_ICON': 0.075, 'TICKET_COUNT_U': 0.124, 'TICKET_COUNT_BASE': 0.191, 'S_TICKET_COUNT': 0.0068,
+    'TICKET_SHOP_BASE': 0.262, 'S_TICKET_SHOP': 0.0031, 'STAMP_U': 0.14, 'STAMP_V': 0.166, 'STAMP_W': 0.232,
+    'STAMP_TURN': -0.21, 'S_STAMP': 0.0056, 'SWAY': 0.05,
 }
+LAYOUT['TICKET_H'] = LAYOUT['TICKET_W'] * TICKET_PX[1] / TICKET_PX[0]
+LAYOUT['TICKET_PIN'] = LAYOUT['TICKET_H'] * EYELET[1] / TICKET_PX[1]
+LAYOUT['TICKET_PITCH'] = blocks(TICKETS_X[1] - TICKETS_X[0]) / TICKET_SLOTS
+LAYOUT['TICKET_U0'] = blocks(TICKETS_X[0]) + (LAYOUT['TICKET_PITCH'] - LAYOUT['TICKET_W']) / 2
+# A ticket's margins: where the red rule round it is, inside its edges
+LAYOUT['TICKET_MARGIN'] = LAYOUT['TICKET_W'] * 4.0 / TICKET_PX[0]
 LAYOUT['ITEM_PITCH'] = ((PANEL_V[1] - PANEL_V[0]) - LAYOUT['ROWS_TOP'] - LAYOUT['PAD_B'] - LAYOUT['HEAD_PITCH']) / 10.0
 LAYOUT['COL_W'] = ((SLATE_U[1] - SLATE_U[0]) - LAYOUT['PAD_L'] - LAYOUT['PAD_R']) / 3.0
 # The key to the coin goes at the foot of the first column, on the last row's line (from the panel's top)
@@ -173,6 +198,7 @@ SECTION_COLUMN = [0, 0, 1, 1, 2]
 COLOURS = {
     'CHALK': 0xECE7DC, 'CHALK_DEAR': 0xF0A89A, 'CHALK_CHEAP': 0xAEDCA0, 'CHALK_HEAD': 0xE8D79E, 'CHALK_FRESH': 0xFFFDF6,
     'INK': 0x2A1E1A, 'INK_TROUBLE': 0x5A1414, 'GILT': 0xE2BC6C, 'GILT_SHADOW': 0x24170F, 'GILT_GLINT': 0xFFF0C0,
+    'INK_WANTED': 0x6A1610, 'INK_STAMP': 0x9C2A22,
 }
 
 # The papers, in Slip.Kind's order, and for each the corner its decoration takes (texels of the 64x32 paper; text
@@ -709,6 +735,66 @@ def slip_shadow():
     return cv
 
 
+# ================================================================ the orders' tickets
+
+MANILA = [(86, 64, 36), (142, 114, 68), (190, 160, 106), (218, 190, 136), (236, 212, 162), (248, 232, 194)]
+TICKET_RED = (156, 38, 30)
+
+
+def ticket(seed, printed=True):
+    """An order's ticket: a manila tag with its top corners cut off and an eyelet ringed with card for the tack, printed
+    with a red rule round it and one under its head (the renderer inks the head, the good, how many and whose on it).
+    Not printed, it's the tag's back."""
+    W, H = TICKET_PX
+    xs, ys = grid(W, H)
+    cv = Canvas(W, H)
+    rng = np.random.default_rng(seed)
+    cut = 6.5
+    shape = (xs + ys >= cut) & ((W - xs) + ys >= cut)
+    # Cut a little unevenly: a nick out of an edge here and there
+    edge_px = shape & (dist_in(shape, 2) == 1)
+    m = shape & ~(edge_px & (rng.random((H, W)) < 0.12) & (ys > cut))
+    pal = MANILA
+    t = 0.62 + 0.05 * (fbm(W, H, 8, seed + 1) - 0.5) + 0.04 * (rand(W, H, seed + 2) - 0.5) + 0.05 * (ys < 3) - 0.07 * (ys > H - 3)
+    cv.put(m, ramp(pal, t))
+    cv.put(m, bands(pal, t, 0.12))
+    # A faint crease across, where it was carried folded, and a smudge of dirt low down
+    cv.over(m & (np.abs(ys - H * 0.58) < 0.6), pal[2], 0.18)
+    cv.over(m & (np.abs(ys - H * 0.58 - 1) < 0.6), pal[5], 0.15)
+    sm, _ = ellipse(W * 0.78, H * 0.86, 3.0, 2.2, W, H)
+    cv.over(sm & m, pal[1], 0.12)
+    # The eyelet: a ring of card glued on, the hole through it
+    ex, ey = EYELET
+    ring, rh = disc(ex, ey, 2.8, W, H)
+    cv.put(ring & m, bands(pal, 0.74 + 0.18 * light(rh * 2), 0.1))
+    cv.over(ring & m & (dist_in(ring, 2) == 1), pal[2], 0.6)
+    hole, _ = disc(ex, ey, 1.25, W, H)
+    cv.put(hole, (44, 30, 20))
+    if printed:
+        # Printed before it was cut, so the rule keeps to the tag's own shape; the eyelet's card over it
+        ink = m & ~ring & (rand(W, H, seed + 3) > 0.1)
+        cv.over((dist_in(shape, 4) == 3) & ink, TICKET_RED, 0.82)
+        cv.over((ys >= 12) & (ys < 13) & (xs >= 3) & (xs < W - 3) & ink, TICKET_RED, 0.85)
+    # The edges a shade darker, as card's are
+    cv.over(m & (dist_in(m, 2) == 1), pal[2], 0.35)
+    return cv
+
+
+def stamp(seed):
+    """The stamp put on a ticket whose order is taken: a red frame, inked unevenly (the renderer inks the word inside
+    it and turns it)."""
+    W, H = STAMP_PX
+    cv = Canvas(W, H)
+    box = rect(1, 1, W - 1, H - 1, W, H)
+    for (cx, cy) in ((1, 1), (W - 2, 1), (1, H - 2), (W - 2, H - 2)):
+        box[cy, cx] = False
+    a = np.where(box & (dist_in(box, 3) <= 2), 0.92, 0.0)
+    a = a * (rand(W, H, seed) > 0.1) * (0.8 + 0.2 * fbm(W, H, 4, seed + 1))
+    cv.rgb[:] = TICKET_RED
+    cv.a = np.clip(a, 0, 1)
+    return cv
+
+
 # ================================================================ atlases
 
 class Packer:
@@ -789,7 +875,8 @@ def letters_atlas():
 def slips_atlas():
     W = 64
     parts = [(k, paper(k, 300 + i)) for i, k in enumerate(SLIP_KINDS)]
-    H = SLIP_PX[1] * (len(parts) + 1) + 16
+    below = SLIP_PX[1] * (len(parts) + 1) + 16
+    H = int(math.ceil((below + TICKET_PX[1] + STAMP_PX[1]) / 16.0) * 16)
     img = Canvas(W, H)
     where = {}
     y = 0
@@ -808,6 +895,23 @@ def slips_atlas():
     img.a[y:y + 8, 0:16] = tk.a
     where['tack'] = (0, y, 6, 6)
     where['tack_shadow'] = (8, y, 7, 8)
+    # An order's ticket; its back beside it, mirrored as it's seen from behind; the stamp under them
+    y = below
+    tw, th = TICKET_PX
+    front = ticket(320)
+    back = ticket(320, printed=False)
+    img.rgb[y:y + th, 0:tw] = front.rgb
+    img.a[y:y + th, 0:tw] = front.a
+    where['ticket'] = (0, y, tw, th)
+    img.rgb[y:y + th, tw:2 * tw] = back.rgb[:, ::-1]
+    img.a[y:y + th, tw:2 * tw] = back.a[:, ::-1]
+    where['ticket_back'] = (tw, y, tw, th)
+    y += th
+    st = stamp(321)
+    sw, sh = STAMP_PX
+    img.rgb[y:y + sh, 0:sw] = st.rgb
+    img.a[y:y + sh, 0:sw] = st.a
+    where['stamp'] = (0, y, sw, sh)
     return img.image(), where
 
 
@@ -1047,6 +1151,10 @@ def kotlin(where, chalk, ink, letters_size, slips_where, slips_size):
     w('    val SLIP_SHADOW = intArrayOf(%d, %d, %d, %d)' % slips_where['shadow'])
     w('    val TACK = intArrayOf(%d, %d, %d, %d)' % slips_where['tack'])
     w('    val TACK_SHADOW = intArrayOf(%d, %d, %d, %d)' % slips_where['tack_shadow'])
+    w('    /** An order\'s ticket, its back (mirrored, as it\'s seen from behind) and the stamp on one taken: x, y, w, h in texels. */')
+    w('    val TICKET = intArrayOf(%d, %d, %d, %d)' % slips_where['ticket'])
+    w('    val TICKET_BACK = intArrayOf(%d, %d, %d, %d)' % slips_where['ticket_back'])
+    w('    val STAMP = intArrayOf(%d, %d, %d, %d)' % slips_where['stamp'])
     w('')
     w('    /**')
     w('     * Every glyph, one after another: its character, its advance (font px x100), whether it has a cell and the cell,')
