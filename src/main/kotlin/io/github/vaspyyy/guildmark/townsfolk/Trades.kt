@@ -12,6 +12,7 @@ import io.github.vaspyyy.guildmark.economy.Markets
 import io.github.vaspyyy.guildmark.economy.Route
 import io.github.vaspyyy.guildmark.economy.Shop
 import io.github.vaspyyy.guildmark.economy.Site
+import io.github.vaspyyy.guildmark.mill.Mills
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.sounds.SoundEvents
@@ -467,17 +468,18 @@ object Trades {
     // --- The miller, the farmer's basket, the fisher's catch ---
 
     /**
-     * The miller at the stones while the mill grinds (the market's mill turned out flour this hour): watching the
-     * grind and tending it, and now and then a sack fetched from the store and tipped into the hopper first. Null
-     * while the mill stands, when they're out in the fields like any farmer.
+     * The miller at the stones while the mill grinds, as its sails or its wheel show it ([Mills.turning]: the
+     * market's mill turning out flour this hour, and not braked for a storm): watching the grind and tending it, and
+     * now and then a sack fetched from the store and tipped into the hopper first. Null while the mill stands, when
+     * they're out in the fields like any farmer.
      */
     private fun milling(p: Townsperson, life: Life): Task? {
         val mill = life.mill ?: return null
         val level = level(p)
-        val entry = market(p, life)
-        val grinding = if (entry != null) entry.market.busy(Maker.MILL) else Economy.milling(clock(level))
-        if (!grinding) return null
         val (stone, spot) = hopper(p, mill, mill.front?.inside ?: p.blockPosition()) ?: return null
+        // With neither a market nor a turning mill to go by, the stones turn by day
+        val grinding = if (market(p, life) == null && (!Mills.enabled() || Mills.near(level, stone) == null)) Economy.milling(clock(level)) else Mills.turning(level, stone)
+        if (!grinding) return null
         val turns = 4 + r(p, 4)
         val grind = Work(p, spot, Jobs.top(stone, 0.8), listOf(Step(Activity.GRIND, Activity.GRIND.ticks * turns), Step(Activity.NONE, 20 + r(p, 30))), stone, onTick = { s, t ->
             if (s.activity == Activity.GRIND && t % Activity.GRIND.ticks == 10) {
