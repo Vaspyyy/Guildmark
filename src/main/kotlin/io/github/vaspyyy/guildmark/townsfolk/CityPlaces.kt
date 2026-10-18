@@ -61,6 +61,9 @@ class CityPlaces(val capital: CapitalPiece, val census: Census, val housing: Hou
     /** A field: its crops' blocks, and the farm building it belongs to. */
     class Field(val index: Int, val crops: List<BlockPos>, val box: BoundingBox, val lodging: Int?)
 
+    /** A woodpile: the bottom of its middle logs, the way its three run, and the building it's by (see [Census.Woodpile]). */
+    class Woodpile(val pos: BlockPos, val along: Direction, val lodging: Int?)
+
     private fun world(a: At): BlockPos = capital.world(a.x, a.y, a.z)
     private fun dir(d: io.github.vaspyyy.guildmark.city.plan.Dir): Direction = capital.direction(d)
 
@@ -103,6 +106,8 @@ class CityPlaces(val capital: CapitalPiece, val census: Census, val housing: Hou
         for (c in crops) box = box.encapsulate(c)
         Field(i, crops, box, f.lodge)
     }
+
+    val woodpiles: List<Woodpile> = census.woodpiles.map { Woodpile(world(it.at), dir(it.along), it.lodge) }
 
     /** The market square's middle, at its standing height. */
     val market: BlockPos = census.plan.market.let { m -> capital.standing(census.plan, io.github.vaspyyy.guildmark.city.plan.CityPlan.Pos((m.x0 + m.x1) / 2, (m.z0 + m.z1) / 2)) }

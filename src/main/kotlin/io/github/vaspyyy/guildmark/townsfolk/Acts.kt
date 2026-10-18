@@ -2,6 +2,8 @@ package io.github.vaspyyy.guildmark.townsfolk
 
 import io.github.vaspyyy.guildmark.city.plan.M
 import io.github.vaspyyy.guildmark.registry.ModItems
+import io.github.vaspyyy.guildmark.season.Season
+import io.github.vaspyyy.guildmark.season.Seasons
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.server.level.ServerLevel
@@ -18,6 +20,8 @@ import net.minecraft.world.level.block.AbstractCauldronBlock
 import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.level.block.LayeredCauldronBlock
+import net.minecraft.world.level.block.RotatedPillarBlock
+import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.phys.AABB
 import kotlin.math.abs
 
@@ -44,7 +48,7 @@ object Acts {
         Doing.RISE -> listOf(Part { rise(p) }, Part { wash(p, life) })
         Doing.BREAKFAST, Doing.SUPPER -> listOf(Part { goHome(p, life) }, Part { meal(p, life, life.home, 500 + r(p, 500)) })
         Doing.LUNCH -> listOf(Part { lunch(p, life) })
-        Doing.WORK -> listOf(Part { setUp(p, life) })
+        Doing.WORK -> listOf(Part { firewood(p, life) }, Part(laden = true) { stoke(p, life) }, Part { setUp(p, life) })
         Doing.WATCH, Doing.PLAY, Doing.CART, Doing.CRY -> listOf()
         Doing.MARKET -> listOf(Part { shop(p, life) }, Part(laden = true) { putAway(p, life) })
         Doing.WATER -> listOf(Part { drawWater(p, life) }, Part(laden = true) { putAway(p, life) })
@@ -228,6 +232,73 @@ object Acts {
     }
 
     // --- Work ---
+
+    /** How near a player may be to a woodpile before a chopping block can't be set out by it. */
+    private const val UNSEEN = 32.0
+
+    /**
+     * Firewood, the first thing in the working day at a home with a woodpile by it (the farms and the cottages out in
+     * the country): logs split on the chopping block beside the pile, and the split wood gathered up into the arms
+     * (to be taken in to the hearth: [stoke]). Most days in autumn and winter, now and then the rest of the year.
+     */
+    private fun firewood(p: Townsperson, life: Life): Task? {
+        if (!p.role.adult) return null
+        val home = life.home ?: return null
+        val pile = life.places.woodpiles.firstOrNull { it.lodging == home.id } ?: return null
+        val level = level(p)
+        val season = Seasons.today(level).season
+        if (r(p, if (season == Season.AUTUMN || season == Season.WINTER) 2 else 10) != 0) return null
+        if (!level.isLoaded(pile.pos)) return null
+        val log = level.getBlockState(pile.pos)
+        if (!log.`is`(BlockTags.LOGS)) return null
+        val (block, stand) = choppingBlock(level, pile, log) ?: return null
+        val wood = ItemStack(log.block.asItem())
+        val chop = Step(Activity.CHOP, Activity.CHOP.ticks * (4 + r(p, 4)))
+        val gather = Step(Activity.PICK_UP)
+        return via(p, life, stand.pos, Work(p, stand, Jobs.top(block, 1.0), listOf(chop, gather), block) { s, t ->
+            if (s === gather && t == 0) p.carried = wood.copy()
+        })
+    }
+
+    /**
+     * The chopping block by [pile] (an upright log of its own wood, a step off its side or past an end) and where to
+     * stand at it, facing it. Set out if there's none yet: only into air on firm ground, and only with nobody near.
+     */
+    private fun choppingBlock(level: ServerLevel, pile: CityPlaces.Woodpile, log: BlockState): Pair<BlockPos, Spot>? {
+        val unseen = level.getNearestPlayer(pile.pos.x + 0.5, pile.pos.y.toDouble(), pile.pos.z + 0.5, UNSEEN, false) == null
+        val sides = listOf(pile.along.clockWise to 1, pile.along.counterClockWise to 1, pile.along to 2, pile.along.opposite to 2)
+        var free: Pair<BlockPos, Spot>? = null
+        for ((side, off) in sides) {
+            val block = pile.pos.relative(side, off)
+            val stand = Spot(block.relative(side), side.opposite)
+            if (!Places.standable(level, stand.pos) || !level.getBlockState(block.above()).isAir) continue
+            val state = level.getBlockState(block)
+            if (state.`is`(BlockTags.LOGS) && state.getOptionalValue(RotatedPillarBlock.AXIS).orElse(null) == Direction.Axis.Y) return block to stand
+            if (free == null && unseen && state.isAir && Places.floor(level, block.below())) free = block to stand
+        }
+        val (block, stand) = free ?: return null
+        val upright = if (log.hasProperty(RotatedPillarBlock.AXIS)) log.setValue(RotatedPillarBlock.AXIS, Direction.Axis.Y) else log
+        level.setBlock(block, upright, Block.UPDATE_ALL)
+        return block to stand
+    }
+
+    /** The firewood in their arms taken in and set down by the hearth, and the fire seen to. */
+    private fun stoke(p: Townsperson, life: Life): Task? {
+        if (p.carried.isEmpty) return null
+        val level = level(p)
+        val home = life.home ?: return hold(p, ItemStack.EMPTY)
+        val fire = home.stations.firstOrNull { it.m == M.FURNACE && level.isLoaded(it.pos) }?.pos
+        val spot = fire?.let { Places.beside(level, it, homeSpot(p, life)) }
+        if (fire == null || spot == null) {
+            return Ways.to(p, life.places, homeSpot(p, life), Trades.LADEN, overlay = Activity.CARRY)
+                .andThen(gesture(p, Activity.PUT_DOWN)).andThen(hold(p, ItemStack.EMPTY))
+        }
+        val down = Step(Activity.PUT_DOWN)
+        val tending = Work(p, spot, Jobs.top(fire, 0.5), listOf(down, Step(Activity.TEND, 40 * (2 + r(p, 3)))), fire) { s, t ->
+            if (s === down && t == 12) p.carried = ItemStack.EMPTY
+        }
+        return Ways.to(p, life.places, spot.pos, Trades.LADEN, near = 1.0, overlay = Activity.CARRY).andThen(tending).andThen(hold(p, ItemStack.EMPTY))
+    }
 
     /** The first thing at work: a merchant sets out the stall. */
     private fun setUp(p: Townsperson, life: Life): Task? {

@@ -70,6 +70,9 @@ class Census(val plan: CityPlan) {
     /** A display of the market's goods (see [Canvas.wares]): what it shows, its front, and what the spot held before (null: nothing). */
     data class Display(val at: At, val wares: Wares, val facing: Dir, val was: B?)
 
+    /** A woodpile out in the country: the bottom of its middle logs, the way its three run, and the building it's by. */
+    data class Woodpile(val at: At, val along: Dir, val lodge: Int?)
+
     val lodges = LinkedHashMap<Int, Lodge>()
     val residents = ArrayList<Planned>()
     val villagers = ArrayList<At>()
@@ -79,6 +82,7 @@ class Census(val plan: CityPlan) {
     val lamps = ArrayList<At>()
     val benches = ArrayList<Seat>()
     val fields = ArrayList<Field>()
+    val woodpiles = ArrayList<Woodpile>()
 
     /** Crops by column (see [M.CROP]: v picks the crop and, by fours, how far from ripe it starts). */
     private val crops = HashMap<Long, Pair<At, Int>>()
@@ -104,12 +108,27 @@ class Census(val plan: CityPlan) {
         }
         for (p in plan.outskirts.props) when (p.kind) {
             FarmPropKind.WELL, FarmPropKind.TROUGH -> wells.add(At(p.x, p.y, p.z))
+            FarmPropKind.WOODPILE -> woodpiles.add(Woodpile(At(p.x, p.y, p.z), p.facing, farmNear(p.x, p.z, WOODPILE_REACH)))
             else -> {}
         }
         gatherFields()
     }
 
     private fun lodgeOf(b: Building): Lodge = lodges.getOrPut(b.id) { Lodge(b.id, b.kind.name, b.lot, b.y, b.front) }
+
+    /** The country building whose walls come nearest [x], [z], within [r] blocks: its lodge id. */
+    private fun farmNear(x: Int, z: Int, r: Int): Int? {
+        var best: Int? = null
+        var nearest = Int.MAX_VALUE
+        plan.outskirts.buildings.forEachIndexed { i, fb ->
+            val d = maxOf(maxOf(fb.lot.x0 - x, 0, x - fb.lot.x1), maxOf(fb.lot.z0 - z, 0, z - fb.lot.z1))
+            if (d <= r && d < nearest) {
+                nearest = d
+                best = FARM + i
+            }
+        }
+        return best
+    }
 
     /** The building whose ground [x], [z] is: a city lot, or the lot of one of the country's buildings. */
     fun lodgeAt(x: Int, z: Int): Lodge? {
@@ -282,6 +301,9 @@ class Census(val plan: CityPlan) {
     companion object {
         /** Country buildings' ids start here, past any city building's. */
         const val FARM = 1_000_000
+
+        /** How far from a building's walls a woodpile can be and still be its own (the back of a cottage's plot). */
+        private const val WOODPILE_REACH = 12
 
         fun key(x: Int, z: Int): Long = (x.toLong() shl 32) or (z.toLong() and 0xFFFFFFFFL)
     }
