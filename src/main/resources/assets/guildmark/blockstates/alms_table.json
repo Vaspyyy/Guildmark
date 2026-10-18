@@ -1,0 +1,49 @@
+{
+  "variants": {
+    "facing=east,part=left": {
+      "model": "guildmark:block/alms_table_left",
+      "y": 90
+    },
+    "facing=east,part=middle": {
+      "model": "guildmark:block/alms_table_middle",
+      "y": 90
+    },
+    "facing=east,part=right": {
+      "model": "guildmark:block/alms_table_right",
+      "y": 90
+    },
+    "facing=north,part=left": {
+      "model": "guildmark:block/alms_table_left"
+    },
+    "facing=north,part=middle": {
+      "model": "guildmark:block/alms_table_middle"
+    },
+    "facing=north,part=right": {
+      "model": "guildmark:block/alms_table_right"
+    },
+    "facing=south,part=left": {
+      "model": "guildmark:block/alms_table_left",
+      "y": 180
+    },
+    "facing=south,part=middle": {
+      "model": "guildmark:block/alms_table_middle",
+      "y": 180
+    },
+    "facing=south,part=right": {
+      "model": "guildmark:block/alms_table_right",
+      "y": 180
+    },
+    "facing=west,part=left": {
+      "model": "guildmark:block/alms_table_left",
+      "y": 270
+    },
+    "facing=west,part=middle": {
+      "model": "guildmark:block/alms_table_middle",
+      "y": 270
+    },
+    "facing=west,part=right": {
+      "model": "guildmark:block/alms_table_right",
+      "y": 270
+    }
+  }
+}
