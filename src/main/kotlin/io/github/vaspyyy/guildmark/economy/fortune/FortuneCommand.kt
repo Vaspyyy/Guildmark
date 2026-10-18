@@ -105,7 +105,7 @@ object FortuneCommand {
     private fun off(): String? = when {
         Fortunes.enabled() -> null
         !Markets.enabled() -> "The markets are switched off (setting: Capital Markets), so the fortunes are too."
-        else -> "The fortunes are off (Part C's READY is false in Fortunes.kt, or the setting Town Fortunes is off): every capital's times read steady, and the record is kept as it was."
+        else -> "The fortunes are off (setting: Town Fortunes; or M6 isn't switched on yet): every capital's times read steady, and the record is kept as it was."
     }
 
     private fun show(context: CommandContext<CommandSourceStack>): Int {
