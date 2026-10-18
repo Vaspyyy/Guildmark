@@ -171,7 +171,7 @@ object Props {
     /** Work for the right hand only (waving, a mug, the sack on the shoulder). */
     private val RIGHT_HAND = setOf(
         Activity.WAVE, Activity.BECKON, Activity.DRINK, Activity.CHEER, Activity.SIT_DRINK, Activity.CARRY_SACK,
-        Activity.SEARCH, Activity.SHOUT, Activity.BOW,
+        Activity.SEARCH, Activity.SHOUT, Activity.FEST_BOW,
     )
 
     fun held(role: TownRole, activity: Activity, lantern: Boolean, pieces: Set<String>): Set<String> {

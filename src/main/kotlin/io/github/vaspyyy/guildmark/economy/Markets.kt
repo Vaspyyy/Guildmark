@@ -149,9 +149,9 @@ class Markets(private val entries: MutableMap<Long, Entry> = HashMap()) : SavedD
             }
         }
 
-        /** Works out [entry]'s market's [hour] in the overworld's weather. */
+        /** Works out [entry]'s market's [hour] in the overworld's weather and the season. */
         fun step(level: ServerLevel, entry: Entry, hour: Long) {
-            Economy.hour(entry.market, entry.town, conditions(level, hour), random(entry.market, hour))
+            Economy.hour(entry.market, entry.town, conditions(level, hour, entry.capital), random(entry.market, hour))
         }
 
         /** Takes [m] back [hours], what it has under way and its news with it. */
@@ -165,8 +165,8 @@ class Markets(private val entries: MutableMap<Long, Entry> = HashMap()) : SavedD
             m.news.addAll(news)
         }
 
-        /** The world in [hour]: the overworld's weather now (the seasons come in with their own work). */
-        fun conditions(level: ServerLevel, hour: Long): Conditions = Conditions(hour, level.isRaining, level.isThundering)
+        /** The world in [hour]: the overworld's weather now, and the season and festivals as [at], a capital's heart, feels them. */
+        fun conditions(level: ServerLevel, hour: Long, at: BlockPos? = null): Conditions = Seasonal.conditions(level, hour, at)
 
         /** The same for the same market and hour, so catching up comes out as it would have hour by hour. */
         private fun random(m: Market, hour: Long): Random = Random(m.capital * -0x61c8864680b583ebL xor hour * 0x2545F4914F6CDD1DL)

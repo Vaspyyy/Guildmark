@@ -222,7 +222,7 @@ object MarketCommand {
         val entry = entry(context) ?: return 0
         val m = entry.market
         // Rolled as the day would roll it, then given the good and length asked for
-        val rolled = generateSequence { Economy.roll(entry.town, Markets.conditions(source.level, m.hour), kotlin.random.Random.Default) }
+        val rolled = generateSequence { Economy.roll(entry.town, Markets.conditions(source.level, m.hour, entry.capital), kotlin.random.Random.Default) }
             .take(400).firstOrNull { it.kind == kind }
         val good = if (goodId == null || goodId == "any") rolled?.good ?: Good.WHEAT.takeIf { kind == EventKind.BLIGHT || kind == EventKind.BUMPER }
             else Good.byId(goodId) ?: return fail(source, "No good called $goodId.")

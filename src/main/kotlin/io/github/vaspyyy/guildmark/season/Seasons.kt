@@ -124,6 +124,9 @@ object Seasons {
         return SeasonDate(VillageBoards.day(overworld) + SeasonState.get(overworld).offset, length())
     }
 
+    /** The date on the world's day number [day] (as [VillageBoards.day] counts them), past or to come. */
+    fun dateOn(server: MinecraftServer, day: Long): SeasonDate = SeasonDate(day + SeasonState.get(server.overworld()).offset, length())
+
     /**
      * Sets the calendar so today is day [day] of [season], telling everyone: of this year, or with [forward] the
      * first such day still to come (winter's "next" is the coming year's spring, not this year's gone by).

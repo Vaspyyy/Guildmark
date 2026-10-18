@@ -12,8 +12,10 @@ import io.github.vaspyyy.guildmark.economy.Markets
 import io.github.vaspyyy.guildmark.economy.News
 import io.github.vaspyyy.guildmark.economy.Quote
 import io.github.vaspyyy.guildmark.economy.Trading
+import io.github.vaspyyy.guildmark.festival.FestivalCalendar
 import io.github.vaspyyy.guildmark.guild.GuildNews
 import io.github.vaspyyy.guildmark.guild.NewsItem
+import io.github.vaspyyy.guildmark.season.Seasons
 import net.minecraft.ChatFormatting
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Holder
@@ -67,6 +69,9 @@ object Crier {
     /** The town went hungry when this share of its meals went uneaten for want of food yesterday, and at least so many. */
     private const val HUNGRY = 0.05
     private const val HUNGRY_MEALS = 3.0
+
+    /** How many days ahead the crier starts telling of a festival. */
+    private const val FESTIVAL_AHEAD = 2
 
     private const val EVENT_NEWS = "news.guildmark.market.event."
     private const val OVER_NEWS = "news.guildmark.market.over."
@@ -270,7 +275,8 @@ object Crier {
 
     /**
      * Everything to cry at [c]'s noon, opening and close included: the market's news since the noon before, hunger,
-     * the prices furthest off their usual with why, and the guild's news of the day before, at most [MOST] between
+     * a new season or a festival at hand, the prices furthest off their usual with why, and the guild's news of the
+     * day before, at most [MOST] between
      * the opening and the close; if there's none, that the market is well and prices fair.
      */
     fun news(level: ServerLevel, entry: Markets.Entry?, c: Conditions, random: Random): List<Cry> {
@@ -291,6 +297,7 @@ object Crier {
                 groups.add(listOf(Cry("crier_hungry", said("crier_hungry"), slip(Slip.Kind.TROUBLE, Component.translatable("board.guildmark.slip.hungry"), said("crier_hungry"), at), -1)))
             }
         }
+        calendar(level, c, at)?.let { groups.add(it) }
         val word = GuildNews.get(level).items.filter { it.day == VillageBoards.day(level) - 1 }.take(WORD).map { listOf(word(it, at)) }
         word.firstOrNull()?.let { groups.add(it) }
         if (entry != null) {
@@ -307,6 +314,34 @@ object Crier {
         val open = "crier_open_${random.nextInt(3)}"
         val close = if (random.nextInt(2) == 0) "crier_close_1" else "crier_close_${random.nextInt(2) * 2}"
         return listOf(Cry(open, said(open), null, 0)) + chosen + Cry(close, said(close), null, 0)
+    }
+
+    /**
+     * The calendar's news at [c]'s noon: a new season on its first day, and the festival today or in the next
+     * [FESTIVAL_AHEAD] days. Null if there's none.
+     */
+    private fun calendar(level: ServerLevel, c: Conditions, at: Long): List<Cry>? {
+        val date = Seasons.dateOn(level.server, Math.floorDiv(c.hour, 24L))
+        val cries = ArrayList<Cry>()
+        if (Seasons.enabled() && date.day == 1) {
+            val line = "crier_season_${date.season.id}"
+            val about = Component.translatable("season.guildmark.banner.${date.season.id}")
+            cries.add(Cry(line, said(line).append(" ").append(about.copy().withStyle(ChatFormatting.GRAY)), slip(Slip.Kind.GOOD, date.season.title, about, at), 1))
+        }
+        if (Seasons.festivalsEnabled()) {
+            val (kind, days) = FestivalCalendar.next(date)
+            if (days <= FESTIVAL_AHEAD) {
+                val line = if (days == 0) "crier_festival_today" else "crier_festival_soon"
+                val time = when (days) {
+                    0 -> kind.title
+                    1 -> Component.translatable("season.guildmark.tomorrow", kind.title)
+                    else -> Component.translatable("season.guildmark.soon", kind.title, days)
+                }
+                val about = Component.translatable("festival.guildmark.${kind.id}.about")
+                cries.add(Cry(line, said(line).append(" ").append(time.copy().withStyle(ChatFormatting.GRAY)), slip(Slip.Kind.GOOD, time, about, at), 1))
+            }
+        }
+        return cries.ifEmpty { null }
     }
 
     /** A slip of [kind] for the board, pinned at [at]. */

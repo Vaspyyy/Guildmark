@@ -135,8 +135,8 @@ class FestivalDance(val kind: FestivalKind, val n: Int, val radius: Double, val 
                 return
             }
             Fig.TWIRL -> activity = Activity.TWIRL
-            Fig.BOW -> activity = Activity.BOW
-            Fig.HURRAH -> activity = Activity.HURRAH
+            Fig.BOW -> activity = Activity.FEST_BOW
+            Fig.HURRAH -> activity = Activity.FEST_HURRAH
             Fig.HOLD -> activity = Activity.NONE
             Fig.RAISE -> activity = Activity.LANTERN_RAISE
             Fig.CLAP -> activity = Activity.CLAP_ALONG

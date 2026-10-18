@@ -679,7 +679,7 @@ class FestivalSite(
                 val roll = Math.floorMod((m.slot * 7349 + index * 1931 + key.toInt()) * 2654435761L.toInt(), 100)
                 p.act(
                     when {
-                        index >= FestivalDance.SET_BARS - 2 -> Activity.HURRAH
+                        index >= FestivalDance.SET_BARS - 2 -> Activity.FEST_HURRAH
                         child -> if (roll < 35) Activity.JUMP else if (roll < 60) Activity.SPIN else Activity.CLAP_ALONG
                         roll < 42 -> Activity.CLAP_ALONG
                         roll < 58 -> Activity.CHEER
@@ -717,7 +717,7 @@ class FestivalSite(
         p.lookAt(host.pos.add(0.0, 1.6, 0.0))
         if (ceremonyStep >= WINNER_STEP && m.lastBar != -WINNER_STEP) {
             m.lastBar = -WINNER_STEP
-            p.act(if (p.role == TownRole.CHILD) Activity.JUMP else Activity.HURRAH)
+            p.act(if (p.role == TownRole.CHILD) Activity.JUMP else Activity.FEST_HURRAH)
         } else if (ceremonyStep < WINNER_STEP && p.activity.loop && p.activity != Activity.NONE) {
             p.act(Activity.NONE)
         }
@@ -896,7 +896,7 @@ class FestivalSite(
         nextSet = now + if (rest) SET_BREAK else FIRST_SET
         for (m in members.values) {
             m.lastBar = -1
-            if (m.part == FestivalPart.PLAY) m.person.act(Activity.BOW)
+            if (m.part == FestivalPart.PLAY) m.person.act(Activity.FEST_BOW)
             m.nextIdle = now + 60
         }
         sync(level)
@@ -1123,7 +1123,7 @@ class FestivalSite(
                 val s = spots[plan.crowd.size + Math.floorMod(index, spots.size - plan.crowd.size)]
                 val activity = when {
                     setStart < 0 -> Activity.NONE
-                    bar >= FestivalDance.SET_BARS - 2 -> Activity.HURRAH
+                    bar >= FestivalDance.SET_BARS - 2 -> Activity.FEST_HURRAH
                     Math.floorMod(bar + index, 4) == 3 -> Activity.TWIRL
                     else -> Activity.CLAP_ALONG
                 }
