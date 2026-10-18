@@ -187,15 +187,15 @@ class FestivalOrnamentRenderer(@Suppress("UNUSED_PARAMETER") context: BlockEntit
             return
         }
         val track = beats[if (side > 0) 0 else 1]
-        val t = elapsed.coerceIn(0f, 40f) / 10.0
-        val i = min(3, t.toInt())
+        val t = elapsed.coerceIn(0f, 40f) / 5.0
+        val i = min(7, t.toInt())
         val u = t - i
-        // A smooth curve through the beats (Catmull-Rom), round the bar: each step ends where it began
+        // A smooth curve through the samples (Catmull-Rom), round the bar: each step ends where it began
         for (c in 0..2) {
-            val a = track[Math.floorMod(i - 1, 4) * 3 + c]
+            val a = track[Math.floorMod(i - 1, 8) * 3 + c]
             val b = track[i * 3 + c]
-            val e = track[Math.floorMod(i + 1, 4) * 3 + c]
-            val f = track[Math.floorMod(i + 2, 4) * 3 + c]
+            val e = track[Math.floorMod(i + 1, 8) * 3 + c]
+            val f = track[Math.floorMod(i + 2, 8) * 3 + c]
             out[c] = 0.5 * (2 * b + (e - a) * u + (2 * a - 5 * b + 4 * e - f) * u * u + (3 * b - a - 3 * e + f) * u * u * u)
         }
     }
@@ -848,34 +848,34 @@ class FestivalOrnamentRenderer(@Suppress("UNUSED_PARAMETER") context: BlockEntit
         private const val FADE = 5f
 
         /**
-         * Where each Ribbonwake step has the hands on its beats (0, 10, 20 and 30 ticks into the bar), the right hand
-         * and then the left, in blocks from the feet: to their right, up and ahead. Taken from the clips themselves:
-         * art/scripts/festival_anims.py prints this table.
+         * Where each Ribbonwake step has the hands every 5 ticks through its bar (0, 5, ... 35: the hops come between
+         * the beats), the right hand and then the left, in blocks from the feet: to their right, up and ahead. Taken
+         * from the clips themselves: art/scripts/festival_anims.py prints this table.
          */
         private val RIBBON_HANDS: Map<Activity, Array<DoubleArray>> = mapOf(
             Activity.RING_STEP to arrayOf(
-                doubleArrayOf(0.79, 1.78, 0.11, 0.83, 1.76, 0.11, 0.79, 1.78, 0.11, 0.83, 1.76, 0.11),
-                doubleArrayOf(-0.39, 0.81, 0.32, -0.35, 0.80, -0.04, -0.39, 0.81, 0.32, -0.35, 0.80, -0.04),
+                doubleArrayOf(0.79, 1.78, 0.11, 0.80, 1.87, 0.10, 0.83, 1.76, 0.11, 0.83, 1.84, 0.10, 0.79, 1.78, 0.11, 0.80, 1.87, 0.10, 0.83, 1.76, 0.11, 0.83, 1.84, 0.10),
+                doubleArrayOf(-0.39, 0.81, 0.32, -0.38, 0.86, 0.14, -0.35, 0.80, -0.04, -0.38, 0.86, 0.14, -0.39, 0.81, 0.32, -0.38, 0.86, 0.14, -0.35, 0.80, -0.04, -0.38, 0.86, 0.14),
             ),
             Activity.RING_STEP_L to arrayOf(
-                doubleArrayOf(0.35, 0.80, -0.04, 0.39, 0.81, 0.32, 0.35, 0.80, -0.04, 0.39, 0.81, 0.32),
-                doubleArrayOf(-0.83, 1.76, 0.11, -0.79, 1.78, 0.11, -0.83, 1.76, 0.11, -0.79, 1.78, 0.11),
+                doubleArrayOf(0.35, 0.80, -0.04, 0.38, 0.86, 0.14, 0.39, 0.81, 0.32, 0.38, 0.86, 0.14, 0.35, 0.80, -0.04, 0.38, 0.86, 0.14, 0.39, 0.81, 0.32, 0.38, 0.86, 0.14),
+                doubleArrayOf(-0.83, 1.76, 0.11, -0.80, 1.87, 0.10, -0.79, 1.78, 0.11, -0.83, 1.84, 0.10, -0.83, 1.76, 0.11, -0.80, 1.87, 0.10, -0.79, 1.78, 0.11, -0.83, 1.84, 0.10),
             ),
             Activity.RING_IN to arrayOf(
-                doubleArrayOf(0.40, 1.00, 0.52, 0.37, 1.84, 0.44, 0.30, 2.02, 0.19, 0.37, 1.84, 0.44),
-                doubleArrayOf(-0.40, 1.00, 0.52, -0.37, 1.84, 0.44, -0.30, 2.02, 0.19, -0.37, 1.84, 0.44),
+                doubleArrayOf(0.40, 1.00, 0.52, 0.48, 1.25, 0.60, 0.37, 1.84, 0.44, 0.32, 1.99, 0.25, 0.30, 2.02, 0.19, 0.32, 1.99, 0.25, 0.37, 1.84, 0.44, 0.48, 1.25, 0.60),
+                doubleArrayOf(-0.40, 1.00, 0.52, -0.48, 1.25, 0.60, -0.37, 1.84, 0.44, -0.32, 1.99, 0.25, -0.30, 2.02, 0.19, -0.32, 1.99, 0.25, -0.37, 1.84, 0.44, -0.48, 1.25, 0.60),
             ),
             Activity.TWIRL to arrayOf(
-                doubleArrayOf(0.42, 0.76, 0.03, -0.15, 1.97, -0.15, -0.41, 2.06, 0.29, -0.23, 1.75, 0.02),
-                doubleArrayOf(-0.42, 0.76, 0.03, -0.88, 1.50, 0.30, -0.30, 1.59, -0.06, -0.96, 1.36, -0.07),
+                doubleArrayOf(0.42, 0.76, 0.03, -0.10, 0.86, 0.15, -0.15, 1.97, -0.15, -0.46, 2.05, -0.09, -0.41, 2.06, 0.29, -0.05, 2.04, 0.30, -0.23, 1.75, 0.02, 0.09, 0.77, 0.02),
+                doubleArrayOf(-0.42, 0.76, 0.03, -0.64, 0.84, -0.28, -0.88, 1.50, 0.30, -0.39, 1.58, 0.40, -0.30, 1.59, -0.06, -0.70, 1.57, -0.21, -0.96, 1.36, -0.07, -0.59, 0.79, -0.09),
             ),
             Activity.BOW to arrayOf(
-                doubleArrayOf(0.42, 0.76, 0.03, 0.23, 1.23, 0.83, -0.01, 0.84, 0.80, 0.59, 0.83, 0.42),
-                doubleArrayOf(-0.42, 0.76, 0.03, -0.51, 0.79, -0.10, -0.49, 0.77, -0.07, -0.38, 0.72, 0.02),
+                doubleArrayOf(0.42, 0.76, 0.03, 0.83, 1.56, 0.28, 0.23, 1.23, 0.83, -0.01, 0.85, 0.80, -0.01, 0.84, 0.80, -0.01, 0.84, 0.80, 0.59, 0.83, 0.42, 0.42, 0.75, 0.09),
+                doubleArrayOf(-0.42, 0.76, 0.03, -0.50, 0.80, -0.22, -0.51, 0.79, -0.10, -0.49, 0.77, -0.07, -0.49, 0.77, -0.07, -0.49, 0.77, -0.06, -0.38, 0.72, 0.02, -0.42, 0.75, 0.09),
             ),
             Activity.HURRAH to arrayOf(
-                doubleArrayOf(0.42, 0.76, 0.03, 0.52, 2.23, 0.05, 0.52, 1.97, 0.09, 0.52, 1.95, 0.11),
-                doubleArrayOf(-0.42, 0.76, 0.03, -0.52, 2.23, 0.05, -0.52, 1.97, 0.09, -0.52, 1.95, 0.11),
+                doubleArrayOf(0.42, 0.76, 0.03, 0.82, 0.96, -0.04, 0.52, 2.23, 0.05, 0.54, 1.88, 0.17, 0.52, 1.97, 0.09, 0.60, 1.93, 0.09, 0.52, 1.95, 0.11, 0.53, 0.79, 0.04),
+                doubleArrayOf(-0.42, 0.76, 0.03, -0.82, 0.96, -0.04, -0.52, 2.23, 0.05, -0.50, 1.90, 0.17, -0.52, 1.97, 0.09, -0.43, 1.99, 0.10, -0.52, 1.95, 0.11, -0.53, 0.79, 0.04),
             ),
         )
     }

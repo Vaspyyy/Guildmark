@@ -377,7 +377,7 @@ seal(c)
 
 # ================================================================== where the hands are
 
-RIBBON_TICKS = (0, 10, 20, 30)     # each step ends where it began, so 40 is 0 again
+RIBBON_TICKS = tuple(range(0, BAR, 5))     # 8 to the bar, to catch the hops between the beats; 40 is 0 again
 RIBBON_STEPS = (('RING_STEP', 'fest_ring_step'), ('RING_STEP_L', 'fest_ring_step_l'), ('RING_IN', 'fest_ring_in'),
                 ('TWIRL', 'fest_twirl'), ('BOW', 'fest_bow'), ('HURRAH', 'fest_hurrah'))
 
@@ -389,7 +389,7 @@ def hand_blocks(c, t, side):
 
 
 def ribbon_table():
-    """The Ribbonwake's dance steps' hands on the beats, as FestivalOrnamentRenderer's RIBBON_HANDS (Kotlin)."""
+    """The Ribbonwake's dance steps' hands every 5 ticks, as FestivalOrnamentRenderer's RIBBON_HANDS (Kotlin)."""
     lines = []
     for activity, name in RIBBON_STEPS:
         c = next(x for x in ta.clips if x.name == name)
@@ -419,7 +419,7 @@ def main(argv):
     for c in mine:
         for line in ta.report(c):
             print(line)
-    print('the ribbon hands on the beats (FestivalOrnamentRenderer.RIBBON_HANDS): blocks from the feet, right, up, ahead')
+    print('the ribbon hands every 5 ticks (FestivalOrnamentRenderer.RIBBON_HANDS): blocks from the feet, right, up, ahead')
     for line in ribbon_table():
         print(line)
     rel = next(x for x in ta.clips if x.name == 'fest_release')
