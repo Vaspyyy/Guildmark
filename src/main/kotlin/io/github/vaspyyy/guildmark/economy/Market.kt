@@ -44,6 +44,18 @@ enum class Maker(val id: String) {
     }
 }
 
+/** The ways a capital's carts go (see [Economy.cart]). */
+enum class Route {
+    /** Grain from the farms to the mill. */
+    GRAIN,
+    /** Flour from the mill to the bakery. */
+    FLOUR,
+    /** The farms' yield to the market. */
+    MARKET,
+    /** The market's grain to the mill, when the fields send none. */
+    GRANARY,
+}
+
 /**
  * Something that's happened to a capital's trade until hour [until]: a [kind] of trouble or luck, on [good] if it
  * falls on one, making the makers it touches work at [factor] of their pace.
@@ -136,6 +148,16 @@ class Market(val capital: Long) {
     /** Meals the town went without on each of the last [HISTORY] days, oldest first. */
     var hungry = DoubleArray(0)
 
+    /**
+     * What each maker turned out in the hour last worked out (the mill's flour, the ovens' loaves, the carts' loads):
+     * what the town's people are seen at just now. Not kept with the world; the next hour tells it again.
+     */
+    val worked = DoubleArray(Maker.entries.size)
+
+    /** What the carts took each [Route] the last hour they went out, and what they brought the market of each good then (not kept either). */
+    val carted = DoubleArray(Route.entries.size)
+    val carts = DoubleArray(Good.entries.size)
+
     operator fun get(site: Site, good: Good): Double = stores[site.ordinal][good.ordinal]
 
     operator fun set(site: Site, good: Good, amount: Double) {
@@ -154,6 +176,14 @@ class Market(val capital: Long) {
 
     /** What the market has for sale. */
     fun stock(good: Good): Double = get(Site.MARKET, good)
+
+    /** Whether [maker] is at work this hour: it turned something out in the hour last worked out. */
+    fun busy(maker: Maker): Boolean = worked[maker.ordinal] > 0.0
+
+    /** [maker] turned out [amount] this hour. */
+    fun did(maker: Maker, amount: Double) {
+        if (amount > 0.0) worked[maker.ordinal] += amount
+    }
 
     fun tally(tally: Tally, good: Good, amount: Double) {
         today[tally.ordinal][good.ordinal] += amount

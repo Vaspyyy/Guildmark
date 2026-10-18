@@ -141,6 +141,7 @@ object Economy {
     /** Works out one hour of [m]'s trade for [town] in [c]; [random] decides what trouble or luck a new day brings. */
     fun hour(m: Market, town: Town, c: Conditions, random: Random) {
         m.hour = c.hour
+        m.worked.fill(0.0)
         val h = c.clock
         if (h == NEW_DAY) newDay(m, town, c, random)
         m.events.removeIf { it.until <= c.hour }
@@ -205,7 +206,11 @@ object Economy {
             else -> 1.0
         }
         val tools = tools(m)
-        for ((g, rate) in FIELD) make(m, Site.FARMS, g, town.farmers * rate * c.pace(g) * weather * tools * m.factor(Maker.FIELDS, g))
+        for ((g, rate) in FIELD) {
+            val n = town.farmers * rate * c.pace(g) * weather * tools * m.factor(Maker.FIELDS, g)
+            make(m, Site.FARMS, g, n)
+            m.did(Maker.FIELDS, n)
+        }
         if (weather < 1.0) m.idle[Maker.FIELDS.ordinal]++
     }
 
@@ -226,7 +231,11 @@ object Economy {
         if (CATCH.keys.all { m.stock(it) >= town.target(it) * 1.5 }) return
         val weather = if (c.rain) 0.7 else 1.0
         val tools = tools(m)
-        for ((g, share) in CATCH) make(m, Site.MARKET, g, town.fishers * FISH * share * weather * tools * m.factor(Maker.BOATS, g))
+        for ((g, share) in CATCH) {
+            val n = town.fishers * FISH * share * weather * tools * m.factor(Maker.BOATS, g)
+            make(m, Site.MARKET, g, n)
+            m.did(Maker.BOATS, n)
+        }
     }
 
     private fun mill(m: Market, town: Town) {
@@ -239,6 +248,7 @@ object Economy {
         if (grain < can * 0.5) m.idle[Maker.MILL.ordinal]++
         val ground = use(m, Site.MILL, Good.WHEAT, minOf(can, want, grain))
         make(m, Site.MILL, Good.FLOUR, ground)
+        m.did(Maker.MILL, ground)
     }
 
     private fun bake(m: Market, town: Town, c: Conditions) {
@@ -251,6 +261,7 @@ object Economy {
         val loaves = minOf(can, want, flour / BAKE_FLOUR)
         use(m, Site.BAKEHOUSE, Good.FLOUR, loaves * BAKE_FLOUR)
         make(m, Site.MARKET, Good.BREAD, loaves)
+        m.did(Maker.OVENS, loaves)
     }
 
     /** The smith buys the day's iron and coal at the market first thing. */
@@ -272,6 +283,7 @@ object Economy {
         use(m, Site.SMITHY, Good.IRON, tools * FORGE_IRON)
         use(m, Site.SMITHY, Good.COAL, tools * FORGE_COAL)
         make(m, Site.MARKET, Good.TOOLS, tools)
+        m.did(Maker.FORGE, tools)
     }
 
     private fun fletch(m: Market, town: Town) {
@@ -283,26 +295,32 @@ object Economy {
         use(m, Site.MARKET, Good.FLINT, arrows * FLETCH_FLINT)
         use(m, Site.MARKET, Good.FEATHER, arrows * FLETCH_FEATHER)
         make(m, Site.MARKET, Good.ARROW, arrows)
+        m.did(Maker.FLETCHER, arrows)
     }
 
     /** The carters' hour: grain to the mill, flour to the bakehouse, then the rest of the farms' yield to the market. */
     private fun cart(m: Market, town: Town) {
         var load = town.carters * CART * m.factor(Maker.CARTS, null)
-        fun move(g: Good, from: Site, to: Site, want: Double) {
+        m.carted.fill(0.0)
+        m.carts.fill(0.0)
+        fun move(g: Good, from: Site, to: Site, want: Double, route: Route) {
             val n = minOf(load, want, m[from, g])
             if (n <= 0.0) return
             m.take(from, g, n)
             m.add(to, g, n)
             load -= n
+            m.carted[route.ordinal] += n
+            if (route == Route.MARKET) m.carts[g.ordinal] += n
+            m.did(Maker.CARTS, n)
         }
         val milling = town.mills > 0 && town.farmers > 0 && town.bakers > 0
         val millDay = town.mills * MILL * MILL_HOURS
-        if (milling) move(Good.WHEAT, Site.FARMS, Site.MILL, millDay - m[Site.MILL, Good.WHEAT])
-        if (town.bakers > 0) move(Good.FLOUR, Site.MILL, Site.BAKEHOUSE, town.use(Good.FLOUR) * 2.5 - m[Site.BAKEHOUSE, Good.FLOUR])
-        for (g in Good.entries) if (g != Good.WHEAT && g != Good.FLOUR) move(g, Site.FARMS, Site.MARKET, Double.MAX_VALUE)
-        move(Good.WHEAT, Site.FARMS, Site.MARKET, Double.MAX_VALUE)
+        if (milling) move(Good.WHEAT, Site.FARMS, Site.MILL, millDay - m[Site.MILL, Good.WHEAT], Route.GRAIN)
+        if (town.bakers > 0) move(Good.FLOUR, Site.MILL, Site.BAKEHOUSE, town.use(Good.FLOUR) * 2.5 - m[Site.BAKEHOUSE, Good.FLOUR], Route.FLOUR)
+        for (g in Good.entries) if (g != Good.WHEAT && g != Good.FLOUR) move(g, Site.FARMS, Site.MARKET, Double.MAX_VALUE, Route.MARKET)
+        move(Good.WHEAT, Site.FARMS, Site.MARKET, Double.MAX_VALUE, Route.MARKET)
         // The granary feeds the mill when the fields don't
-        if (milling && m[Site.MILL, Good.WHEAT] < millDay * 0.5) move(Good.WHEAT, Site.MARKET, Site.MILL, millDay * 0.5 - m[Site.MILL, Good.WHEAT])
+        if (milling && m[Site.MILL, Good.WHEAT] < millDay * 0.5) move(Good.WHEAT, Site.MARKET, Site.MILL, millDay * 0.5 - m[Site.MILL, Good.WHEAT], Route.GRANARY)
         if (load <= 0.0 && Good.entries.any { m[Site.FARMS, it] > CART }) m.idle[Maker.CARTS.ordinal]++
     }
 
@@ -323,6 +341,7 @@ object Economy {
         val ale = minOf(can, want, grain / BREW_WHEAT)
         use(m, Site.TAVERN, Good.WHEAT, ale * BREW_WHEAT)
         make(m, Site.TAVERN, Good.ALE, ale)
+        m.did(Maker.BREWERY, ale)
     }
 
     /**
