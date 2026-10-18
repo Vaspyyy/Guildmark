@@ -105,6 +105,7 @@ object StreetLamps {
         NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { tick(it.server) }
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> clear() }
         io.github.vaspyyy.guildmark.townsfolk.Lamplighters.init()
+        LampCommand.init()
     }
 
     /** Whether the street lamps are lit and put out at all (the Street Lamps setting). */
