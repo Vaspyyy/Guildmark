@@ -576,28 +576,47 @@ object Dressing : Fortunes.Listener {
         return n
     }
 
-    /** For the streets command: what [column]'s dressing is doing, in a few words. */
-    fun status(level: ServerLevel, column: Long): String {
-        val t = StreetsData.get(level)[column] ?: return "never dressed"
-        val crew = crews[column]
-        val state = when (t.dress) {
+    /**
+     * For the streets command: what [column]'s dressing (the capital whose heart is [key]) is doing, and why, in a few
+     * words: with the times on, the market day it goes up (or comes down) on, if that's still to come.
+     */
+    fun status(level: ServerLevel, column: Long, key: Long): String {
+        val t = StreetsData.get(level)[column]
+        val run = t?.run ?: 0L
+        val test = t != null && forced(t)
+        val times = Fortunes.enabled() && !test
+        val today = if (times) Fortunes.today(level, key) else 0L
+        val state = when (t?.dress) {
             StreetsData.UP -> "up"
             StreetsData.DOWN -> "coming down"
-            else -> "not up"
+            else -> if (run > 0) "not up" else "never dressed"
         }
-        val lanterns = when (t.lanterns) {
-            StreetsData.UP -> ", lanterns up"
+        val lanterns = when (t?.lanterns) {
+            StreetsData.UP -> {
+                val dimmed = if (times) fell(level, key, Times.THRIVING) else -1L
+                if (dimmed >= 0) ", lanterns up (down from market day ${dimmed + HELD})" else ", lanterns up"
+            }
             StreetsData.DOWN -> ", lanterns coming down"
             else -> ""
         }
         val why = when {
-            forced(t) -> " (the streets command's ${listOf("", "good", "thriving", "down").getOrElse(t.force) { "" }})"
-            t.goodFrom >= 0 -> " (good times since market day ${t.goodFrom})"
-            t.fellOn >= 0 -> " (the times fell back on market day ${t.fellOn})"
-            else -> ""
+            test -> " (the streets command's ${listOf("", "good", "thriving", "down").getOrElse(t!!.force) { "" }})"
+            !times -> ""
+            else -> {
+                val good = from(level, key, Times.GOOD, today)
+                val fell = fell(level, key, Times.GOOD)
+                val dress = t?.dress ?: StreetsData.NONE
+                when {
+                    good >= 0 && dress != StreetsData.UP -> " (good times since market day $good: up on market day ${good + HELD}; today is $today)"
+                    good >= 0 -> " (good times since market day $good)"
+                    fell >= 0 && dress == StreetsData.UP -> " (the times fell back on market day $fell: down from market day ${fell + HELD}; today is $today)"
+                    fell >= 0 && dress == StreetsData.DOWN -> " (the times fell back on market day $fell)"
+                    else -> ""
+                }
+            }
         }
-        val pieces = crew?.pieces?.size?.let { ", $it pieces laid out, ${crew.rounds} rounds out" } ?: ""
-        return "dressing #${t.run} $state$lanterns$why$pieces"
+        val pieces = crews[column]?.let { crew -> crew.pieces?.size?.let { ", $it pieces laid out, ${crew.rounds} rounds out" } } ?: ""
+        return if (run > 0) "dressing #$run $state$lanterns$why$pieces" else "$state$why"
     }
 
     fun forget() = crews.clear()

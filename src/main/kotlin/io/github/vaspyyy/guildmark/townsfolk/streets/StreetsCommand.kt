@@ -79,7 +79,7 @@ object StreetsCommand {
         if (!Comings.enabled()) switches += "comings and goings are off: no \"To let\" boards but the tests'"
         if (Streets.testing) switches += "the streets command's tests are on this session"
         for (s in switches) say(source, grey(s))
-        say(source, line().append(label("Dressing: ")).append(plain(Dressing.status(level, column))))
+        say(source, line().append(label("Dressing: ")).append(plain(Dressing.status(level, column, h.key))))
         say(source, line().append(label("Lamps tonight: ")).append(plain(Rationing.why(level, h.capital))))
         val stalls = h.places.stalls.mapNotNull { Awnings.status(level, column, it) }
         say(source, line().append(label("Shut stalls: ")).append(plain(if (stalls.isEmpty()) "none" else "${stalls.size}")))
