@@ -50,9 +50,10 @@ class MarketBoardBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(Mod
 
     /**
      * A slip of news pinned to the board: [headline] in a big hand, [text] in full (what the crier cried), [kind]
-     * for its paper (see [Slip.Kind]), and the game time it went up ([pinned]).
+     * for its paper (see [Slip.Kind]), and the game time it went up ([pinned]). A WORKS slip names its works
+     * ([works], a WorksView id, for the works screen to open from it; -1 on every other slip).
      */
-    class Slip(val kind: String, val headline: Component, val text: Component, val pinned: Long) {
+    class Slip(val kind: String, val headline: Component, val text: Component, val pinned: Long, val works: Int = -1) {
         /** The papers a slip can be on. */
         enum class Kind(val id: String) {
             /** Trouble at the market: blight, a broken mill, a fever. */
@@ -87,6 +88,7 @@ class MarketBoardBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(Mod
                     ComponentSerialization.CODEC.fieldOf("headline").forGetter(Slip::headline),
                     ComponentSerialization.CODEC.fieldOf("text").forGetter(Slip::text),
                     Codec.LONG.optionalFieldOf("pinned", LONG_AGO).forGetter(Slip::pinned),
+                    Codec.INT.optionalFieldOf("works", -1).forGetter(Slip::works),
                 ).apply(i, ::Slip)
             }
         }
@@ -236,10 +238,16 @@ class MarketBoardBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(Mod
     }
 
     /** Server side: the medallion turns to [times] (a [io.github.vaspyyy.guildmark.economy.fortune.Times.id]), if it isn't showing it already. */
-    fun times(times: String) {
+    fun times(times: String) = times(times, seen = true)
+
+    /**
+     * Server side: as [times], turning in sight of someone ([seen]), or else found turned ([turned] [LONG_AGO]: the
+     * times moved while nobody was by to see it go).
+     */
+    fun times(times: String, seen: Boolean) {
         if (this.times == times) return
         this.times = times
-        turned = level?.gameTime ?: LONG_AGO
+        turned = if (seen) level?.gameTime ?: LONG_AGO else LONG_AGO
         sync()
     }
 
