@@ -147,6 +147,8 @@ object Days {
         }
         // Up out of bed, for whatever they were still abed for when the world was saved
         if (p.isSleeping && stretch.doing != Doing.SLEEP && stretch.doing != Doing.BED) p.stopSleeping()
+        // Off a watchtower's platform by its ladder when the watch is over, rather than walked off its edge
+        Lookout.down(p, life, stretch)?.let { return it }
         while (life.step < life.script.size) {
             val part = life.script[life.step++]
             if (!part.laden) p.carried = ItemStack.EMPTY
@@ -535,6 +537,8 @@ class Life(val resident: Resident, val places: CityPlaces, val home: CityPlaces.
     /** Lent to the town's works today ([Hands], [Labour]): a building day. */
     var labourer = false
 
+    /** For a guard, the road whose watchtower they last kept watch at ([Lookout]), or -1. */
+    var tower = -1
 
     /** Crops (or catches) gathered into their basket since it was last taken in, and what the last of them was (see [Trades.gathered]). */
     var basket = 0

@@ -282,12 +282,14 @@ object CapitalCommand {
             val crew = Hands.of(level, places)
             val mill = crew.millers[r.id]?.let { places.lodgings[it] }
             val crier = r.id == crew.crier
+            val tower = if (r.role == TownRole.GUARD) Lookout.turnOf(r.capital.asLong(), r.id, person.nightWatch) else -1
             val site = if (r.id in crew.labourers) Works.workAt(level, r.capital.asLong()) else null
             val duty = when {
                 r.id in crew.carters -> "one of the town's carters"
                 mill != null -> "keeps the ${building(mill)}"
                 crier -> "the town crier: chalks up the market board at seven and cries the news at noon by it"
                 r.id in crew.labourers -> "lent to the town's works today: at the site from seven till sunset"
+                tower >= 0 -> "keeps the watch at the tower on road $tower " + (if (person.nightWatch) "tonight" else "today")
                 else -> null
             }
             val where = mill?.let { it.front?.inside ?: it.box.center } ?: if (crier) places.marketBoard.pos else site
