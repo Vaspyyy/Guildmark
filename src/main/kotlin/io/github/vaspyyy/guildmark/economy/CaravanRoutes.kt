@@ -386,8 +386,9 @@ object CaravanRoutes {
     // ---- A road for a capital that has none (open question 1) ----
 
     /**
-     * With [PAVE_ROADS], asks the road network once a day for a road from [bell], the heart of a capital with no road,
-     * to its nearest village with none to it yet, paved as the land loads. [done] hears whether one was found.
+     * With [PAVE_ROADS], asks the road network for a road from [bell], the heart of a capital with no road, to its
+     * nearest village with none to it yet, paved as the land loads (Caravans asks every few days until there's one).
+     * [done] hears whether one was found.
      */
     fun survey(level: ServerLevel, bell: BlockPos, done: (Boolean) -> Unit) {
         if (!PAVE_ROADS) return done(false)

@@ -432,9 +432,9 @@ object Crier {
         if (news.isEmpty()) return listOf()
         val out = ArrayList<List<Cry>>()
         val relief = news.lastOrNull { it.kind == "relief" }
-        // Each road's latest stage, once
+        // Each road's latest stage, once (the news is kept in the order it came, so two in an hour keep theirs)
         val stages = news.filter { RoadPeril.Stage.entries.any { s -> s.id == it.kind } || it.kind == "clear" }
-            .groupBy { it.road }.values.mapNotNull { list -> list.maxByOrNull { it.hour } }.sortedBy { it.hour }
+            .groupBy { it.road }.values.map { it.last() }.sortedBy { it.hour }
         for (n in stages) {
             val way = road(capital, n.road)
             when (n.kind) {
