@@ -654,6 +654,8 @@ class HomesteadLedgerScreen(private var data: LedgerPayload) : Screen(Component.
             val paint = ARGB.color(1f, if (open) tint else ARGB.scaleRGB(tint, 0.68f))
             graphics.blitSprite(RenderPipelines.GUI_TEXTURED, RIBBON_PAINT, RIBBON_W, RIBBON_H, 0, v, x, y, RIBBON_W, length, paint)
             graphics.blitSprite(RenderPipelines.GUI_TEXTURED, RIBBON, RIBBON_W, RIBBON_H, 0, v, x, y, RIBBON_W, length, -1)
+            // In the shadow of the pages it comes out from between
+            graphics.fillGradient(x + 1, y, x + RIBBON_W - 1, y + 3, ARGB.color(0.55f, 0), 0)
             // The page's sign just above the notch
             val sign = if (i == SHIPPING) SIGN_SHIPPING else SIGN_BUILD
             graphics.blitSprite(RenderPipelines.GUI_TEXTURED, sign, x + (RIBBON_W - SIGN) / 2, y + length - SIGN - 6, SIGN, SIGN, ARGB.white(if (open) 1f else 0.7f))
@@ -746,7 +748,7 @@ class HomesteadLedgerScreen(private var data: LedgerPayload) : Screen(Component.
         private const val RIBBON_H = 30
         private const val RIBBON_X = 14
         private const val RIBBON_STEP = 15
-        private const val RIBBON_TOP = 4
+        private const val RIBBON_TOP = 3
         private const val RIBBON_SHUT = 18f
         private const val RIBBON_OPEN = 25f
         private const val SIGN = 7

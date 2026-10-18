@@ -379,7 +379,7 @@ object StallPennants {
     private const val ROLL_MORE = 0.05f
     private const val ROWS = 10
 
-    /** Where each part is on the texture (art/scripts/stall_art.py): cloth, rod, cord and the roll, on a 32 by 32 sheet. */
+    /** Where each part is on the texture (art/scripts/stall_art.py): cloth, rod, cord and the roll, as shares of the 64 by 64 sheet. */
     private const val CLOTH_U0 = 0f
     private const val CLOTH_U1 = 0.5f
     private const val CLOTH_V0 = 0f
