@@ -414,6 +414,20 @@ object Stalls {
         end(player.uuid, s, walked = false)
     }
 
+    /**
+     * [player] asks [p], who's serving them, for a talk instead (the screen's Talk tab): their trade ends here with no
+     * farewell, and the keeper is let go to talk. False, with nothing changed, if [p] is serving someone else too.
+     */
+    fun spare(player: ServerPlayer, p: Townsperson): Boolean {
+        val serving = p.director as? Serving ?: return false
+        if (!serving.only(player.uuid)) return false
+        if (sessions[player.uuid]?.keeper === p) sessions.remove(player.uuid)
+        p.director = null
+        p.carried = ItemStack.EMPTY
+        p.act(Activity.NONE)
+        return true
+    }
+
     // ---- Keeping it honest ----
 
     /**
@@ -764,6 +778,9 @@ class Serving : Director {
             clinkAt = p.tickCount + CLINK
         }
     }
+
+    /** Whether [player] is the only one they're serving. */
+    fun only(player: UUID): Boolean = customers.all { it == player }
 
     /**
      * [player] has gone: [traded] if they bought or sold anything (or dealt in an order), [walked] if they walked off;

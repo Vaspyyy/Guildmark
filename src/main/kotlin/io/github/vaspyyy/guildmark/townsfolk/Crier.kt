@@ -19,6 +19,7 @@ import io.github.vaspyyy.guildmark.festival.FestivalCalendar
 import io.github.vaspyyy.guildmark.guild.GuildNews
 import io.github.vaspyyy.guildmark.guild.NewsItem
 import io.github.vaspyyy.guildmark.season.Seasons
+import io.github.vaspyyy.guildmark.townsfolk.talk.TownCry
 import net.minecraft.ChatFormatting
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Holder
@@ -177,7 +178,7 @@ object Crier {
                     gather(p)
                 } else if (said >= cries.size && t == BELL_AFTER - 1) {
                     crying.remove(p)
-                    io.github.vaspyyy.guildmark.townsfolk.talk.TownCry.listened(level, p)
+                    TownCry.listened(level, p)
                     sound(level, mouth, "roll_up", 0.7f)
                 }
                 Activity.ANNOUNCE -> if (t == 0 && said < cries.size) {
@@ -324,6 +325,8 @@ object Crier {
             orders(level, entry, noon, random).forEach { groups.add(listOf(it)) }
         }
         calendar(level, c, at)?.let { groups.add(it) }
+        // The talk of the town: the day's hottest rumour, its details on the slip
+        if (entry != null) TownCry.cry(level, entry.capital, c.day)?.let { groups.add(listOf(it)) }
         val word = GuildNews.get(level).items.filter { it.day == VillageBoards.day(level) - 1 }.take(WORD).map { listOf(word(it, at)) }
         word.firstOrNull()?.let { groups.add(it) }
         if (entry != null) {

@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.townsfolk.talk
 
 import io.github.vaspyyy.guildmark.GuildmarkConfig
+import io.github.vaspyyy.guildmark.economy.Serving
 import io.github.vaspyyy.guildmark.economy.Stalls
 import io.github.vaspyyy.guildmark.network.TalkChoice
 import io.github.vaspyyy.guildmark.network.TalkClosePayload
@@ -8,6 +9,7 @@ import io.github.vaspyyy.guildmark.network.TalkOpenPayload
 import io.github.vaspyyy.guildmark.network.TalkPart
 import io.github.vaspyyy.guildmark.network.TalkPayloads
 import io.github.vaspyyy.guildmark.network.TalkSayPayload
+import io.github.vaspyyy.guildmark.townsfolk.talk.sources.Say
 import io.github.vaspyyy.guildmark.townsfolk.Activity
 import io.github.vaspyyy.guildmark.townsfolk.Days
 import io.github.vaspyyy.guildmark.townsfolk.Director
@@ -36,6 +38,7 @@ import net.neoforged.neoforge.event.server.ServerStoppedEvent
 import net.neoforged.neoforge.event.tick.ServerTickEvent
 import java.util.UUID
 import java.util.WeakHashMap
+import kotlin.math.ceil
 
 /**
  * The server's side of a talk with a townsperson (living-world/design-voices.md section 2): opening one on a
@@ -169,7 +172,10 @@ object Talk {
      * As [open], with [first] (a line) said after the greeting in place of their own opener, as a keeper's "We're
      * shut" out of hours; [anyway] opens it even if they're busy (`/guildmark talk open`).
      */
-    fun open(level: ServerLevel, player: ServerPlayer, p: Townsperson, first: String?, anyway: Boolean): Boolean {
+    fun open(level: ServerLevel, player: ServerPlayer, p: Townsperson, first: String?, anyway: Boolean): Boolean = open(level, player, p, first, anyway, false)
+
+    /** As [open]; [market]: asked from the market screen of the keeper serving them, who turns from the counter to talk. */
+    private fun open(level: ServerLevel, player: ServerPlayer, p: Townsperson, first: String?, anyway: Boolean, market: Boolean): Boolean {
         if (!enabled() || !READY || player.isSpectator) return false
         if (!p.isAlive || p.isLeader || p.captiveOf >= 0 || p.watcher || p.target != null || p.activity == Activity.FLEE) return false
         sessions[player.uuid]?.let { s ->
@@ -177,7 +183,13 @@ object Talk {
             end(s, Ending.GONE)
         }
         val director = p.director
-        if (director != null && director !is Talking) return false
+        if (market && director is Serving) {
+            // Serving someone else besides, they've no time for it
+            if (!Stalls.spare(player, p)) {
+                word(ask(level, p, player, Occasion.GREET), "ask.busy")?.let { p.say(it, force = true) }
+                return false
+            }
+        } else if (director != null && director !is Talking) return false
         val ask = ask(level, p, player, Occasion.GREET)
         if (p.isSleeping) {
             p.say(word(ask, "ask.asleep") ?: return false, force = true)
@@ -192,13 +204,15 @@ object Talk {
             p.say(word(ask, "ask.queue") ?: return true, force = true)
             return true
         }
-        if (director == null) Talking.take(p)
+        if (p.director == null) Talking.take(p)
         val s = Session(player, p, null, level.gameTime)
         s.holder = p.director
+        s.market = market
         sessions[player.uuid] = s
         Wire.open(player, p, name(p), epithet(ask), TalkOpenPayload.knows(ask.familiarity))
         val parts = ArrayList<Spoken>()
-        greeting(ask)?.let { parts += it }
+        // At the counter they've greeted the player already
+        if (!market) greeting(ask)?.let { parts += it }
         s.wary = ask.familiarity == Familiarity.WARY || ask.familiarity == Familiarity.HOSTILE
         when {
             ask.familiarity == Familiarity.HOSTILE -> {
@@ -305,7 +319,7 @@ object Talk {
         val level = player.level() as? ServerLevel ?: return
         val p = level.getEntity(entity) as? Townsperson ?: return
         if (p.distanceToSqr(player) > REACH * REACH) return
-        if (open(level, player, p, null, true)) sessions[player.uuid]?.takeIf { it.p === p }?.market = true
+        open(level, player, p, null, true, true)
     }
 
     /**
@@ -477,7 +491,7 @@ object Talk {
             name != null -> Speech.of(key, "=$name")
             else -> key
         }
-        return Spoken(Speech.withDetail(line, detail), key, gesture, ticks(key), toward)
+        return Spoken(Speech.withDetail(line, detail), key, gesture, ticks(ask.speaker, key), toward)
     }
 
     /** A take of [family] said on its own, for a word without a talk (asleep, can't stop, one at a time). */
@@ -494,7 +508,7 @@ object Talk {
             name != null && '|' !in part.line -> Speech.withDetail(Speech.of(part.line, "=$name"), part.detail)
             else -> Speech.withDetail(part.line, part.detail)
         }
-        Spoken(speech, key, if (i == 0) gesture else null, if (key.isEmpty()) UNTIMED else ticks(key), if (i == 0) toward else null)
+        Spoken(speech, key, if (i == 0) gesture else null, if (key.isEmpty()) UNTIMED else ticks(ask.speaker, key), if (i == 0) toward else null)
     }.filter { it.speech.isNotEmpty() }
 
     /** The gesture a topic is said with when it names none (section 6): from its kind and its tone. */
@@ -527,7 +541,18 @@ object Talk {
         seated(p, gesture)?.let { p.act(it) }
     }
 
-    private fun ticks(key: String): Int = TalkLines.ticks(key).takeIf { it > 0 } ?: UNTIMED
+    /**
+     * How long [p] takes to say take [key]: its length played at their pitch, as TownsfolkClient.speak plays it (an old
+     * speaker lower still in the men's take of a family they have none of; children, quicker in the women's, are
+     * given the full length).
+     */
+    private fun ticks(p: Townsperson, key: String): Int {
+        val ticks = TalkLines.ticks(key).takeIf { it > 0 } ?: return UNTIMED
+        var pitch = 0.92f + Math.floorMod(p.uuid.leastSignificantBits, 17L) / 100f
+        val family = TalkLines.FAMILIES[key.removePrefix("talk.").substringBeforeLast('_')]
+        if (Say.timbre(p) == "old" && family?.timbres?.contains("old") != true) pitch *= 0.9f
+        return ceil(ticks / pitch).toInt()
+    }
 
     private fun queue(s: Session, parts: List<Spoken>, closing: Boolean) {
         s.waiting = true
@@ -536,7 +561,7 @@ object Talk {
 
     /** [p] says each of [lines] in turn, spaced by their lengths, with nobody to talk to (`/guildmark talk family`). */
     fun recite(p: Townsperson, lines: List<String>) {
-        val parts = lines.map { Spoken(it, Speech.key(it), Activity.TALK, ticks(Speech.key(it)) + 20, null) }
+        val parts = lines.map { Spoken(it, Speech.key(it), Activity.TALK, ticks(p, Speech.key(it)) + 20, null) }
         queues.getOrPut(p) { ArrayDeque() }.addLast(Answer(null, parts, false))
     }
 
