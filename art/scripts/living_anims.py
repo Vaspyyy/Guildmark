@@ -338,7 +338,7 @@ GOODS_COLOUR = (214, 168, 92)
 # then; gather pulls up a carrot).
 GOODS_SPANS = {}
 GOODS_REPLACE = {'carry': 'crate', 'pay': 'coin'}
-GOODS_ONLY_CARRIED = {'pay', 'carry', 'carry_sack'}
+GOODS_ONLY_CARRIED = {'pay', 'carry'}
 GOODS_DEFAULT = {'gather': 'carrot'}
 
 
@@ -2115,10 +2115,9 @@ for t in every(30):
 c.mode('head', 'add')
 # Paying with goods (when they carry something), it is counted out of the fingers in the coins' place
 set_goods('pay', [(7.0, PAY_DROPS[-1], ('part', 'right_arm', GRIP['right_arm'] + np.array(COIN)), 3.0)])
-# carry and carry_sack (townsfolk_anims.py's clips): goods carried between the hands in the crate's place, or in the
-# free left hand beside the sack on the shoulder
+# carry (townsfolk_anims.py's clip): goods carried between the hands in the crate's place. carry_sack draws none: the
+# sack on the shoulder is what's carried (grain, flour, wool), and goods beside it would show the load twice
 set_goods('carry', [(0, None, ('hands', 0.0), GOODS)])
-set_goods('carry_sack', [(0, None, ('part', 'left_arm', GRIP['left_arm'] + np.array([0.0, 1.2, -1.2])), 5.0)])
 
 # ================================================================== the market
 

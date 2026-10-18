@@ -13,6 +13,7 @@ import io.github.vaspyyy.guildmark.economy.Route
 import io.github.vaspyyy.guildmark.economy.Shop
 import io.github.vaspyyy.guildmark.economy.Site
 import io.github.vaspyyy.guildmark.mill.Mills
+import io.github.vaspyyy.guildmark.registry.ModItems
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.sounds.SoundEvents
@@ -43,6 +44,10 @@ object Trades {
 
     /** How many crops a farmer gathers into the basket, or catches a fisher lands, before taking them in. */
     const val BASKET = 4
+
+    /** The ticks goods leave the hands as put_down sets them down, and as a sack is tipped or poured out. */
+    private const val SET_DOWN = 11
+    private const val TIPPED = 12
 
     /** [life]'s capital's market, if the markets are on and it keeps one yet. */
     fun market(p: Townsperson, life: Life): Markets.Entry? =
@@ -111,7 +116,8 @@ object Trades {
         val taking = Work(p, spot, Jobs.top(pos, 0.9), listOf(Step(Activity.PICK_UP), Step(Activity.NONE, 8)), pos, onTick = { s, t ->
             if (s.activity == Activity.PICK_UP) {
                 if (t == 1) open(level, p, pos)
-                if (t == 10) {
+                // In hand as pick_up starts to lift
+                if (t == 8) {
                     p.carried = goods.copy()
                     close(level, p, pos)
                     got?.invoke()
@@ -124,20 +130,27 @@ object Trades {
     /**
      * What's in [p]'s hands carried (laden, [overlay] showing how: a sack on the shoulder, a crate, a basket) to
      * [spot] and left there with [drop] (put away in a barrel, tipped into the hopper, handed over a counter),
-     * looking at [look]; [handed] hears the moment it leaves their hands.
+     * looking at [look]; [handed] hears the moment it leaves their hands, or for a hand-over the moment it begins (so
+     * whoever takes it reaches out as they do, the goods passing at [Acts.PASS]).
      */
     private fun carry(
         p: Townsperson, life: Life, overlay: Activity, spot: Spot, look: Vec3, drop: Activity, store: BlockPos? = null,
         handed: (() -> Unit)? = null,
     ): Task {
         val level = level(p)
+        val release = when (drop) {
+            Activity.PUT_DOWN -> SET_DOWN
+            Activity.HAND_OVER -> Acts.PASS
+            else -> TIPPED
+        }
         val leaving = Work(p, spot, look, listOf(Step(drop), Step(Activity.NONE, 15)), store, onTick = { s, t ->
             if (s.activity == drop) {
+                if (t == 0 && drop == Activity.HAND_OVER) handed?.invoke()
                 if (t == 1 && store != null) open(level, p, store)
-                if (t == 12) {
+                if (t == release) {
                     p.carried = ItemStack.EMPTY
                     if (store != null) close(level, p, store)
-                    handed?.invoke()
+                    if (drop != Activity.HAND_OVER) handed?.invoke()
                 }
             }
         })
@@ -285,7 +298,7 @@ object Trades {
             val middle = stall.counter.getOrNull(stall.counter.size / 2) ?: stall.keeper.pos
             // The cart stands back from the counter, out of the buyers' way
             Drop(stall.customer, Jobs.top(middle, 1.0), Activity.HAND_OVER, bay = { Handcarts.bay(level, stall.customer.pos, stall.customer.facing.opposite, p) }) {
-                Acts.serve(Acts.keeper(level, stall), p, Activity.RECEIVE)
+                Acts.serve(Acts.keeper(level, stall), p, Activity.RECEIVE, p.carried)
             }
         } else {
             val hall = places.nearest(from.first, setOf(Kind.MARKET_HALL.name)).take(1)
@@ -521,7 +534,7 @@ object Trades {
         val spot = Spot(stand, keeper.facing.opposite)
         return Acts.hold(p, goods).andThen(carry(p, life, Activity.CARRY_BASKET, spot, Jobs.top(keeper.pos.relative(keeper.facing), 1.0), Activity.HAND_OVER) {
             val them = level.getEntitiesOfClass(Townsperson::class.java, AABB(keeper.pos).inflate(1.2, 1.0, 1.2)) { it.isAlive && !it.isSleeping }.firstOrNull()
-            Acts.serve(them, p, Activity.RECEIVE)
+            Acts.serve(them, p, Activity.RECEIVE, p.carried)
         })
     }
 
@@ -558,7 +571,7 @@ object Trades {
         val (top, behind) = counter(level, bakery) ?: return null
         val ovenSpot = Places.beside(level, oven, p.blockPosition()) ?: return null
         val out = Work(p, ovenSpot, Jobs.top(oven, 0.5), listOf(Step(Activity.OVEN), Step(Activity.PICK_UP)), oven, onTick = { s, t ->
-            if (s.activity == Activity.PICK_UP && t == 10) p.carried = ItemStack(Items.BREAD)
+            if (s.activity == Activity.PICK_UP && t == 8) p.carried = ItemStack(Items.BREAD)
         })
         return Acts.via(p, life, ovenSpot.pos, out).andThen(carry(p, life, Activity.CARRY_BASKET, behind, Jobs.top(top, 1.0), Activity.PUT_DOWN))
     }
@@ -613,10 +626,12 @@ object Trades {
                     baker = level.getEntitiesOfClass(Townsperson::class.java, AABB.of(bakery.box)) { it.role == TownRole.BAKER && it.isAlive && !it.isSleeping }.firstOrNull()
                     Acts.serve(baker, p, if (s.activity == Activity.SHRUG) Activity.SHRUG else Activity.NOD)
                 }
-                Activity.PAY -> Acts.serve(baker, p, Activity.HAND_OVER)
+                // The coin across the counter, then the loaf back the other way
+                Activity.PAY -> Acts.serve(baker, p, Activity.RECEIVE, ItemStack(ModItems.GUILD_MARK.get()))
+                Activity.RECEIVE -> Acts.serve(baker, p, Activity.HAND_OVER, ItemStack(Items.BREAD))
                 else -> {}
             }
-            if (s.activity == Activity.RECEIVE && t == 12) p.carried = ItemStack(Items.BREAD)
+            if (s.activity == Activity.RECEIVE && t == Acts.PASS) p.carried = ItemStack(Items.BREAD)
         })
         return Ways.to(p, life.places, stand, Jobs.WALK, near = 1.0).andThen(buying)
     }

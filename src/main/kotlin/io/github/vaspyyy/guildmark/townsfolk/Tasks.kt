@@ -337,11 +337,17 @@ class Work(
     }
 }
 
-/** Sits a while on the stair at [seatPos], going through [moods] (sit, sip, chat) in turn. */
+/**
+ * Sits a while on the stair at [seatPos], going through [moods] (sit, sip, chat) in turn: lowered onto it from the
+ * floor in front, and up again onto the floor at the end (or once a new part of their day has begun).
+ */
 class Sit(p: Townsperson, private val seatPos: BlockPos, private val ticks: Int, private val moods: List<Activity>) : Task(p) {
     private val walker = Walker(p)
     private var seated = false
     private var nextMood = 0
+
+    // The tick they began to get up, or -1 while they sit on
+    private var rising = -1
 
     override val anchored: Boolean get() = seated
     override val leisure: Boolean get() = seated
@@ -368,12 +374,20 @@ class Sit(p: Townsperson, private val seatPos: BlockPos, private val ticks: Int,
                 Walker.State.ARRIVED -> {
                     if (!Places.isSeat(level, level.getBlockState(seatPos), seatPos)) return false
                     seated = true
+                    // On the seat as the clip lowers them onto it from where they stood
                     p.sitOn(seatPos)
-                    nextMood = age
+                    p.act(Activity.SIT_DOWN)
+                    nextMood = age + Activity.SIT_DOWN.ticks
                 }
             }
         }
         if (age % 100 == 0) Claims.claim(level, seatPos, p, 400)
+        if (rising < 0 && (age >= ticks || p.routine.windingDown)) {
+            rising = age
+            p.act(Activity.STAND_UP)
+        }
+        // Still on the seat while the clip raises them; stop() puts them on the floor as it ends
+        if (rising >= 0) return age < rising + Activity.STAND_UP.ticks
         if (age >= nextMood && (p.activity.loop || p.actDone)) {
             val mood = moods[p.random.nextInt(moods.size)]
             p.act(mood)
@@ -381,7 +395,7 @@ class Sit(p: Townsperson, private val seatPos: BlockPos, private val ticks: Int,
         }
         val other = p.attending
         if (other != null) p.lookAt(other) else p.level().getNearestPlayer(p, 6.0)?.let { if (p.random.nextInt(4) == 0) p.lookAt(it) }
-        return age < ticks
+        return true
     }
 
     override fun stop() {

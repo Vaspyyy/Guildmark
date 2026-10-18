@@ -2,8 +2,6 @@ package io.github.vaspyyy.guildmark.townsfolk
 
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel
-import net.minecraft.sounds.SoundEvents
-import net.minecraft.sounds.SoundSource
 import net.minecraft.world.level.block.LadderBlock
 import net.minecraft.world.phys.Vec3
 import kotlin.math.abs
@@ -148,7 +146,7 @@ class Climb(p: Townsperson, private val ladder: CityPlaces.Ladder, private val f
                 if (there) y = to.toDouble()
                 p.setPos(shaft.x, y, shaft.z)
                 p.face(wall)
-                if (age % 8 == 0) level.playSound(null, p.blockPosition(), SoundEvents.LADDER_STEP, SoundSource.NEUTRAL, 0.35f, 1f)
+                // The rungs creak under the hands and feet on the client, in step with the climb clip
                 if (there) {
                     stage = Stage.OFF
                     t = 0
@@ -196,9 +194,9 @@ class Climb(p: Townsperson, private val ladder: CityPlaces.Ladder, private val f
         /** Ticks to step on or off. */
         const val STEP = 8
 
-        /** Blocks a tick, up and down: one pull of the arms is 16 ticks of the clip, two rungs. */
-        const val UP = 0.125
-        const val DOWN = 0.15
+        /** Blocks a tick, up and down: the climb clip goes by height, 32 of its ticks a block, so this is twice its own pace. */
+        const val UP = 0.0625
+        const val DOWN = 0.075
 
         /** How near a player must be for the climb to be played out. */
         const val SEEN = 48.0

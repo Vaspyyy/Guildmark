@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.townsfolk
 
 import io.github.vaspyyy.guildmark.city.plan.M
+import io.github.vaspyyy.guildmark.registry.ModItems
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.server.level.ServerLevel
@@ -30,6 +31,9 @@ import kotlin.math.abs
 object Acts {
     private fun level(p: Townsperson): ServerLevel = p.level() as ServerLevel
     private fun r(p: Townsperson, n: Int): Int = p.random.nextInt(n)
+
+    /** The tick of hand_over and receive (played together, across a counter) the goods pass from one to the other. */
+    const val PASS = 16
 
     /** One part of a stretch: [make] gives its task when its turn comes (null: nothing to do); only [laden] parts start with goods in hand. */
     class Part(val laden: Boolean = false, val make: () -> Task?)
@@ -263,12 +267,20 @@ object Acts {
             ?: level.getEntitiesOfClass(Villager::class.java, box) { it.isAlive && !it.isSleeping }.firstOrNull()
     }
 
-    /** The keeper's side of a sale (or of a delivery, or of having none to sell): a look up, the goods handed over or taken, a word. */
-    fun serve(keeper: Entity?, customer: Townsperson, what: Activity) {
+    /**
+     * The keeper's side of a sale (or of a delivery, or of having none to sell): a look up, the goods handed over or
+     * taken, a word. [goods] are what passes through their hands: handed over, they leave them as the clips pass them
+     * across ([PASS]); taken, they're in them from then until the clip's end.
+     */
+    fun serve(keeper: Entity?, customer: Townsperson, what: Activity, goods: ItemStack = ItemStack.EMPTY) {
         when (keeper) {
             is Townsperson -> {
                 keeper.lookAt(customer)
                 keeper.act(what)
+                if (!goods.isEmpty) {
+                    keeper.carried = goods.copy()
+                    keeper.carriedUntil = keeper.tickCount + if (what == Activity.HAND_OVER) PASS else what.ticks
+                }
                 if (what == Activity.HAND_OVER && keeper.random.nextInt(3) == 0) keeper.say("merchant_${keeper.random.nextInt(6)}")
             }
             is Villager -> {
@@ -321,10 +333,12 @@ object Acts {
                     keeper = keeper(level, pick)
                     serve(keeper, p, Activity.NOD)
                 }
-                Activity.PAY -> serve(keeper, p, Activity.HAND_OVER)
+                // The coin across the counter, then the goods back the other way
+                Activity.PAY -> serve(keeper, p, Activity.RECEIVE, ItemStack(ModItems.GUILD_MARK.get()))
+                Activity.RECEIVE -> serve(keeper, p, Activity.HAND_OVER, goods)
                 else -> {}
             }
-            if (step.activity == Activity.RECEIVE && t == 12) p.carried = goods
+            if (step.activity == Activity.RECEIVE && t == PASS) p.carried = goods
         })
         return via(p, life, pick.customer.pos, buying)
     }

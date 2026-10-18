@@ -89,6 +89,9 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
         get() = entityData.get(CARRIED)
         set(value) = entityData.set(CARRIED, value)
 
+    /** The tick [carried] leaves their hands by itself (goods passed across a counter to someone); 0 to keep it. */
+    var carriedUntil = 0
+
     /** Carrying a lantern (after dark). */
     var lantern: Boolean
         get() = entityData.get(FLAGS).toInt() and FLAG_LANTERN != 0
@@ -391,6 +394,10 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
             return
         }
         if (speech.isNotEmpty() && level.gameTime >= speechUntil) entityData.set(SPEECH, "")
+        if (carriedUntil != 0 && tickCount >= carriedUntil) {
+            carried = ItemStack.EMPTY
+            carriedUntil = 0
+        }
         val other = attending
         if (other != null && (!other.isAlive || other.level() !== level || level.gameTime > attendUntil || distanceToSqr(other) > 100.0)) attending = null
         seat?.let { pos ->

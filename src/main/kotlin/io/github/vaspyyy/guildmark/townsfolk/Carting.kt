@@ -151,6 +151,7 @@ class Heap(
 ) : Task(p) {
     private val walker = Walker(p)
     private val move = if (piece != null) Activity.PUT_DOWN else Activity.PICK_UP
+    private val swap = if (piece != null) PUT_AT else TAKE_AT
 
     // Ticks into putting it down or lifting it off; -1 on the way to the cart's side
     private var t = -1
@@ -160,7 +161,7 @@ class Heap(
         private set
 
     /** The piece is on the cart, or in their hands. */
-    val done: Boolean get() = t >= SWAP
+    val done: Boolean get() = t >= swap
 
     override fun start() {
         val side = Handcarts.side(p, from)
@@ -195,7 +196,7 @@ class Heap(
             p.lookAt(bed)
         }
         t++
-        if (t == SWAP) {
+        if (t == swap) {
             if (piece != null) {
                 goods.add(piece.copy())
                 p.carried = ItemStack.EMPTY
@@ -214,7 +215,8 @@ class Heap(
     }
 
     private companion object {
-        /** The tick of the move the piece leaves their hands (or comes into them). */
-        const val SWAP = 12
+        /** The ticks of the moves the piece leaves their hands (as put_down sets it down) or comes into them (as pick_up lifts it). */
+        const val PUT_AT = 11
+        const val TAKE_AT = 8
     }
 }

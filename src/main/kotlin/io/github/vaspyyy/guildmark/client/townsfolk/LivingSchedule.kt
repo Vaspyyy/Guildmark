@@ -160,9 +160,6 @@ internal object LivingSchedule {
         "carry" to listOf(
             Goods(0f, END, How.HANDS, "", 0f, 0f, 0f, "", 0f, 0f, 0f, 0f, 8f),
         ),
-        "carry_sack" to listOf(
-            Goods(0f, END, How.PART, "left_arm", 1f, 11.2f, -1.2f, "", 0f, 0f, 0f, 0f, 5f),
-        ),
         "set_up" to listOf(
             Goods(9f, 20f, How.PART, "left_arm", 1f, 11f, -2.5f, "", 0f, 0f, 0f, 0f, 5f),
             Goods(20f, 31f, How.GROUND, "", 2f, 5f, -12f, "", 0f, 0f, 0f, 0f, 5f),
@@ -181,7 +178,7 @@ internal object LivingSchedule {
     val GOODS_REPLACE: Map<String, String> = mapOf("carry" to "crate", "pay" to "coin")
 
     /** Clips that show goods only when something is carried (and their own props otherwise). */
-    val GOODS_ONLY_CARRIED: Set<String> = setOf("carry", "carry_sack", "pay")
+    val GOODS_ONLY_CARRIED: Set<String> = setOf("carry", "pay")
 
     /** By clip: the item shown when nothing is carried (a crop pulled up is a carrot). */
     val GOODS_DEFAULT: Map<String, String> = mapOf("gather" to "minecraft:carrot")

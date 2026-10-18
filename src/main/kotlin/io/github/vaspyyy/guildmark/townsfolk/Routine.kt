@@ -147,6 +147,9 @@ class Routine(private val p: Townsperson) {
     private var windDown = 0
     private var startedAt = 0
 
+    /** A new part of their day has begun, and what they're at should come to an end soon (getting up off a seat). */
+    val windingDown: Boolean get() = windDown != 0
+
     fun tick() {
         val level = p.level() as? ServerLevel ?: return
         val life = Days.life(p)
