@@ -5,6 +5,7 @@ import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.city.plan.Dye
 import io.github.vaspyyy.guildmark.client.ui.Ui
 import io.github.vaspyyy.guildmark.economy.Good
+import io.github.vaspyyy.guildmark.economy.OwnStalls
 import io.github.vaspyyy.guildmark.economy.StallDesk
 import io.github.vaspyyy.guildmark.economy.SupplierLink
 import io.github.vaspyyy.guildmark.network.StallActionPayload
@@ -285,8 +286,9 @@ class StallScreen(private var view: StallView) : Screen(Component.translatable("
                 val half = (innerWidth - 4) / 2
                 val asking = ticks < confirmUntil
                 out.add(Desk(StallDesk.COLLECT, innerX + innerWidth - 70, y, 70, Component.translatable("gui.guildmark.stall.collect"), view.till > 0, null))
-                out.add(Desk(StallDesk.PAY, innerX, y + 22, half, Component.translatable("gui.guildmark.stall.pay", marks(view.keep)), why == null, why))
-                out.add(
+                // A stall of one's own in the square (table -1) has no rent to pay or give up
+                if (view.table >= 0) out.add(Desk(StallDesk.PAY, innerX, y + 22, half, Component.translatable("gui.guildmark.stall.pay", marks(view.keep)), why == null, why))
+                if (view.table >= 0) out.add(
                     Desk(
                         StallDesk.GIVE_UP, innerX + innerWidth - half, y + 22, half,
                         Component.translatable(if (asking) "gui.guildmark.stall.give_up_sure" else "gui.guildmark.stall.give_up"), true,
@@ -418,14 +420,16 @@ class StallScreen(private var view: StallView) : Screen(Component.translatable("
             else -> Component.translatable("gui.guildmark.stall.free")
         }
         Ui.headingAt(graphics, font, title, innerX, panelY + 9, fade(Ui.GOLD, k))
-        val place = Component.translatable("gui.guildmark.stall.place", view.place, view.table + 1)
+        val own = view.table < 0
+        val place = if (own) Component.translatable("gui.guildmark.stall.own_place", view.place) else Component.translatable("gui.guildmark.stall.place", view.place, view.table + 1)
         graphics.text(font, place, innerX + innerWidth - 20 - font.width(place), panelY + 11, fade(Ui.TEXT_FAINT, k), false)
-        val status = when (view.state) {
-            StallDesk.YOURS -> Component.translatable("gui.guildmark.stall.paid_for", time(view.left))
-            StallDesk.TAKEN -> Component.translatable("gui.guildmark.stall.rented_for", time(view.left))
+        val status = when {
+            own -> Component.translatable("gui.guildmark.stall.own_keeper", marks(OwnStalls.KEEPER_WAGE.toInt()))
+            view.state == StallDesk.YOURS -> Component.translatable("gui.guildmark.stall.paid_for", time(view.left))
+            view.state == StallDesk.TAKEN -> Component.translatable("gui.guildmark.stall.rented_for", time(view.left))
             else -> Component.translatable("gui.guildmark.stall.let_by_week", marks(view.keep))
         }
-        graphics.text(font, status, innerX + 2, panelY + 25, fade(if (view.state == StallDesk.YOURS && view.left <= LOW) Ui.GOLD_BRIGHT else Ui.TEXT_SOFT, k), false)
+        graphics.text(font, status, innerX + 2, panelY + 25, fade(if (!own && view.state == StallDesk.YOURS && view.left <= LOW) Ui.GOLD_BRIGHT else Ui.TEXT_SOFT, k), false)
         // What the hall's merchant keeps for them, or where they stand as a supplier here
         val kept = view.kept > 0 || view.keptMarks > 0
         val line = when {

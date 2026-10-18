@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.economy
 
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.city.CapitalPiece
 import io.github.vaspyyy.guildmark.city.plan.Kind
 import io.github.vaspyyy.guildmark.guild.Guilds
 import io.github.vaspyyy.guildmark.guild.TownControl
@@ -53,7 +54,9 @@ import kotlin.math.floor
  * Players' own stalls at the market hall tables (see [OwnStalls]), face to face. Using a table (its display, the table
  * itself or the lantern on it) opens its screen: a free table can be rented there for a week by a Trusted Supplier of
  * the capital (see [SupplierLink]), and its renter sets their goods out on it from their pack, takes them back,
- * collects the till, pays for another week or gives it up. Anyone else sees whose it is and what's on it.
+ * collects the till, pays for another week or gives it up. Anyone else sees whose it is and what's on it. A player's
+ * own stall in the square (see [OwnStall.pitch]) has the same screen ([openPitch]), with no rent: it's their one place
+ * in that market, so while they have it they rent no table there.
  *
  * Whatever the screen asks, the server checks everything: the player at the table, the table theirs, the Marks, and
  * the goods their own (none of what they or their party bought at this market in the last week, see
@@ -109,13 +112,23 @@ object StallDesk {
     val SET_OUT: SoundEvent = sound("stall.set_out")
     val TILL: SoundEvent = sound("stall.till")
 
-    /** A player's open screen at table [t], in the capital called [place]. */
-    private class Session(val player: UUID, val t: StallTables.Table, val place: String, now: Long) {
+    /**
+     * A player's open screen at table [t], in the capital called [place] whose centre is [centre]; or, with [t] null,
+     * at [owner]'s own stall in its square (see [OwnStall.pitch]).
+     */
+    private class Session(val player: UUID, val t: StallTables.Table?, val owner: UUID?, val centre: BlockPos, val place: String, now: Long) {
         /** Game time of the last word from the screen, of the last refresh, and of the last thing done at it. */
         var heard = now
         var refreshed = -1L
         var acted = -1L
+
+        /** Its stall in [hall]: the table's, whoever's it is, or the owner's own in the square. */
+        fun stall(hall: Hall?): OwnStall? = if (t != null) hall?.stalls?.getOrNull(t.index) else owner?.let { hall?.pitches?.get(it) }
     }
+
+    /** Where [s]'s stall stands, to measure reach from: its table's display, or the owner's own stall's; null if that stall is gone. */
+    private fun middle(level: ServerLevel, s: Session): Vec3? =
+        s.t?.middle ?: s.stall(OwnStalls.get(level).find(s.centre.asLong()))?.let { Vec3.atCenterOf(it.at) }
 
     private val sessions = HashMap<UUID, Session>()
 
@@ -172,9 +185,26 @@ object StallDesk {
     fun open(level: ServerLevel, player: ServerPlayer, t: StallTables.Table) {
         val now = level.gameTime
         val old = sessions[player.uuid]
-        val s = if (old != null && old.t === t) old.also { it.heard = now } else Session(player.uuid, t, VillageNames.of(t.capital.boardAnchor), now)
+        val s = if (old != null && old.t === t) old.also { it.heard = now } else Session(player.uuid, t, null, t.capital.center, VillageNames.of(t.capital.boardAnchor), now)
         sessions[player.uuid] = s
         PacketDistributor.sendToPlayer(player, OpenStallPayload(view(level, s, player)))
+    }
+
+    /**
+     * Opens the screen of [owner]'s own stall in [capital]'s square (see [OwnStall.pitch]) for [player], the same
+     * screen as a table's: theirs to stock if it's their own, with no rent to pay or give up. For the stall's blocks to
+     * call when they're used (the works build them); false, with nothing opened, if [owner] has no stall there.
+     */
+    fun openPitch(level: ServerLevel, player: ServerPlayer, capital: CapitalPiece, owner: UUID = player.uuid): Boolean {
+        val centre = capital.center
+        val stall = OwnStalls.get(level).find(centre.asLong())?.pitches?.get(owner) ?: return false
+        val now = level.gameTime
+        val old = sessions[player.uuid]
+        val s = if (old != null && old.t == null && old.owner == owner && old.centre == centre) old.also { it.heard = now }
+        else Session(player.uuid, null, owner, centre, stall.place, now)
+        sessions[player.uuid] = s
+        PacketDistributor.sendToPlayer(player, OpenStallPayload(view(level, s, player)))
+        return true
     }
 
     /** [player]'s screen asks to see the table as it stands, and says it's still open. */
@@ -203,7 +233,7 @@ object StallDesk {
         s.heard = now
         if (!check(player, s)) return
         // A step too far to reach the table, though not so far that the screen's closed
-        if (player.position().distanceToSqr(s.t.middle) > REACH * REACH) {
+        if (player.position().distanceToSqr(middle(level, s) ?: return) > REACH * REACH) {
             player.sendOverlayMessage(Component.translatable("gui.guildmark.stall.closer"))
             return send(player, s)
         }
@@ -212,7 +242,7 @@ object StallDesk {
         s.acted = now
         val data = OwnStalls.get(level)
         val t = s.t
-        val hall = data.hall(t.capital.center.asLong())
+        val hall = data.hall(s.centre.asLong())
         val why = when (action) {
             RENT -> rent(level, player, s, hall)
             PAY -> pay(level, player, s, hall)
@@ -226,17 +256,17 @@ object StallDesk {
         if (why != null) player.sendOverlayMessage(Component.translatable(why, s.place, rankName(SupplierLink.TRUSTED, s.place)).withStyle(ChatFormatting.RED))
         data.changed()
         data.tidy()
-        if (level.isLoaded(t.display)) StallTables.sync(level, t, data.find(t.capital.center.asLong())?.stalls?.get(t.index))
+        if (t != null && level.isLoaded(t.display)) StallTables.sync(level, t, data.find(t.capital.center.asLong())?.stalls?.get(t.index))
         // Everyone with a screen open in this hall sees it, this one first
         send(player, s)
-        for (other in sessions.values) if (other !== s && other.t.capital.center == t.capital.center) {
+        for (other in sessions.values) if (other !== s && other.centre == s.centre) {
             level.server.playerList.getPlayer(other.player)?.let { send(it, other) }
         }
     }
 
     /** [player] rents table [s] for a week; the lang key of why not, if they can't. */
     private fun rent(level: ServerLevel, player: ServerPlayer, s: Session, hall: Hall): String? {
-        val t = s.t
+        val t = s.t ?: return "gui.guildmark.stall.why.pitch"
         if (hall.stalls[t.index] != null) return "gui.guildmark.stall.why.taken"
         val rank = SupplierLink.rank(level, player.uuid, t.capital.center)
         val keep = keep(rank)
@@ -251,7 +281,7 @@ object StallDesk {
 
     /** [player] pays their stall at table [s] another week ahead. */
     private fun pay(level: ServerLevel, player: ServerPlayer, s: Session, hall: Hall): String? {
-        val t = s.t
+        val t = s.t ?: return "gui.guildmark.stall.why.pitch"
         val stall = hall.stalls[t.index]?.takeIf { it.renter == player.uuid } ?: return "gui.guildmark.stall.why.not_yours"
         val rank = SupplierLink.rank(level, player.uuid, t.capital.center)
         val keep = keep(rank)
@@ -267,7 +297,7 @@ object StallDesk {
 
     /** [player] gives their stall up: what's on it and in its till comes back to them now, and the table is free (no rent comes back). */
     private fun giveUp(level: ServerLevel, player: ServerPlayer, s: Session, hall: Hall): String? {
-        val t = s.t
+        val t = s.t ?: return "gui.guildmark.stall.why.pitch"
         val stall = hall.stalls[t.index]?.takeIf { it.renter == player.uuid } ?: return "gui.guildmark.stall.why.not_yours"
         val goods = IntArray(Good.entries.size) { stall.whole(Good.entries[it]) }
         for (g in Good.entries) g.item?.let { give(player, it, goods[g.ordinal]) }
@@ -287,52 +317,52 @@ object StallDesk {
      * they or their party bought at this market this week) and there's room for.
      */
     private fun put(level: ServerLevel, player: ServerPlayer, s: Session, hall: Hall, good: Good?, count: Int): String? {
-        val t = s.t
-        val stall = hall.stalls[t.index]?.takeIf { it.renter == player.uuid } ?: return "gui.guildmark.stall.why.not_yours"
+        val stall = s.stall(hall)?.takeIf { it.renter == player.uuid } ?: return "gui.guildmark.stall.why.not_yours"
         if (!open()) return "gui.guildmark.stall.why.off"
         val item = good?.takeIf { it.traded }?.item ?: return null
         if (stall.whole(good) <= 0 && stall.goods().size >= KINDS) return "gui.guildmark.stall.why.kinds"
-        val n = minOf(count, allowed(level, player, t, stall, good))
-        if (n <= 0) return if (SupplierLink.boughtByParty(level, player.uuid, t.capital.center, good) > 0) "gui.guildmark.stall.why.bought" else null
+        val n = minOf(count, allowed(level, player, s.centre, stall, good))
+        if (n <= 0) return if (SupplierLink.boughtByParty(level, player.uuid, s.centre, good) > 0) "gui.guildmark.stall.why.bought" else null
         ContainerHelper.clearOrCountMatchingItems(player.inventory, { it.`is`(item) }, n, false)
         stall.stock[good.ordinal] += n
-        level.playSound(null, t.display, SET_OUT, SoundSource.BLOCKS, 0.7f, 0.95f + level.random.nextFloat() * 0.1f)
+        level.playSound(null, display(s, stall), SET_OUT, SoundSource.BLOCKS, 0.7f, 0.95f + level.random.nextFloat() * 0.1f)
         return null
     }
 
     /** [player] takes [count] of [good] back off their stall at [s]. */
     private fun take(level: ServerLevel, player: ServerPlayer, s: Session, hall: Hall, good: Good?, count: Int): String? {
-        val t = s.t
-        val stall = hall.stalls[t.index]?.takeIf { it.renter == player.uuid } ?: return "gui.guildmark.stall.why.not_yours"
+        val stall = s.stall(hall)?.takeIf { it.renter == player.uuid } ?: return "gui.guildmark.stall.why.not_yours"
         val item = good?.item ?: return null
         val n = minOf(count, stall.whole(good))
         if (n <= 0) return null
         stall.stock[good.ordinal] = (stall.stock[good.ordinal] - n).coerceAtLeast(0.0)
         give(player, item, n)
-        level.playSound(null, t.display, SET_OUT, SoundSource.BLOCKS, 0.6f, 0.8f + level.random.nextFloat() * 0.1f)
+        level.playSound(null, display(s, stall), SET_OUT, SoundSource.BLOCKS, 0.6f, 0.8f + level.random.nextFloat() * 0.1f)
         return null
     }
 
     /** [player] empties their stall's till, the whole Marks of it (what's left of one waits there). */
     private fun collect(level: ServerLevel, player: ServerPlayer, s: Session, hall: Hall): String? {
-        val t = s.t
-        val stall = hall.stalls[t.index]?.takeIf { it.renter == player.uuid } ?: return "gui.guildmark.stall.why.not_yours"
+        val stall = s.stall(hall)?.takeIf { it.renter == player.uuid } ?: return "gui.guildmark.stall.why.not_yours"
         val marks = floor(stall.till + 1e-6).toInt()
         if (marks <= 0) return null
         stall.till = (stall.till - marks).coerceAtLeast(0.0)
         give(player, ModItems.GUILD_MARK.get(), marks)
-        SupplierLink.earned(level, player.uuid, t.capital.center, marks)
-        level.playSound(null, t.display, TILL, SoundSource.BLOCKS, 0.9f, 1f)
+        SupplierLink.earned(level, player.uuid, s.centre, marks)
+        level.playSound(null, display(s, stall), TILL, SoundSource.BLOCKS, 0.9f, 1f)
         return null
     }
 
     /** [player] takes back what the hall keeps for them from a stall let go, at the table, with no merchant about to hand it over. */
     private fun collectKept(level: ServerLevel, player: ServerPlayer, s: Session, hall: Hall): String? {
         val kept = hall.kept[player.uuid] ?: return null
-        if (merchant(level, s.t.capital.center, s.t.middle, NO_MERCHANT) != null) return "gui.guildmark.stall.why.ask_merchant"
-        handOver(level, player, s.t.capital.center, hall, kept, null)
+        if (merchant(level, s.centre, middle(level, s) ?: return null, NO_MERCHANT) != null) return "gui.guildmark.stall.why.ask_merchant"
+        handOver(level, player, s.centre, hall, kept, null)
         return null
     }
+
+    /** Where [s]'s [stall] is set out, for its sounds: its table's display, or the owner's own stall's. */
+    private fun display(s: Session, stall: OwnStall): BlockPos = s.t?.display ?: stall.at
 
     /**
      * Why [player] can't rent or pay for [stall] (null: the table is free) now, as a lang key; null if they can, at
@@ -341,6 +371,8 @@ object StallDesk {
     private fun refusal(player: ServerPlayer, hall: Hall, stall: OwnStall?, rank: Int, keep: Int): String? = when {
         !open() -> "gui.guildmark.stall.why.off"
         stall != null && stall.renter != player.uuid -> "gui.guildmark.stall.why.taken"
+        // Their own stall in the square is their one place in this market (economy/works)
+        stall == null && hall.pitches.containsKey(player.uuid) -> "gui.guildmark.stall.why.own_stall"
         stall == null && hall.of(player.uuid) >= 0 -> "gui.guildmark.stall.why.other_table"
         stall == null && rank < SupplierLink.TRUSTED -> "gui.guildmark.stall.why.rank"
         stall != null && stall.left > OwnStalls.AHEAD -> "gui.guildmark.stall.why.ahead"
@@ -349,9 +381,9 @@ object StallDesk {
     }
 
     /** How many of [good] [player] may set out on [stall] at [t] now: what they carry, less what they or their party bought here this week, as far as there's room. */
-    private fun allowed(level: ServerLevel, player: ServerPlayer, t: StallTables.Table, stall: OwnStall, good: Good): Int {
+    private fun allowed(level: ServerLevel, player: ServerPlayer, centre: BlockPos, stall: OwnStall, good: Good): Int {
         val item = good.item ?: return 0
-        val own = Trading.count(player.inventory, item) - SupplierLink.boughtByParty(level, player.uuid, t.capital.center, good)
+        val own = Trading.count(player.inventory, item) - SupplierLink.boughtByParty(level, player.uuid, centre, good)
         return minOf(own, MOST - stall.whole(good)).coerceAtLeast(0)
     }
 
@@ -430,7 +462,7 @@ object StallDesk {
     /** Whether [s]'s screen can stay open; if not, it's closed and false. */
     private fun check(player: ServerPlayer, s: Session): Boolean {
         val gone = !player.isAlive || player.isSpectator || player.level().dimension() != Level.OVERWORLD ||
-            player.position().distanceToSqr(s.t.middle) > (REACH + SLACK) * (REACH + SLACK)
+            (middle(player.level(), s)?.let { player.position().distanceToSqr(it) > (REACH + SLACK) * (REACH + SLACK) } ?: true)
         if (gone) stop(player, s)
         return !gone
     }
@@ -513,9 +545,9 @@ object StallDesk {
 
     private fun view(level: ServerLevel, s: Session, player: ServerPlayer): StallView {
         val t = s.t
-        val centre = t.capital.center
+        val centre = s.centre
         val hall = OwnStalls.get(level).find(centre.asLong())
-        val stall = hall?.stalls?.getOrNull(t.index)
+        val stall = s.stall(hall)
         val state = when {
             stall == null -> FREE
             stall.renter == player.uuid -> YOURS
@@ -534,16 +566,17 @@ object StallDesk {
             val lot = entry?.let { Lots.cheap(it.market.price(it.town, g) * (1.0 - OwnStalls.CUT)) }
             StallGood(
                 g.id, stall?.whole(g) ?: 0, carried,
-                if (state == YOURS && (stall!!.whole(g) > 0 || stall.goods().size < KINDS)) allowed(level, player, t, stall, g) else 0,
+                if (state == YOURS && (stall!!.whole(g) > 0 || stall.goods().size < KINDS)) allowed(level, player, centre, stall, g) else 0,
                 if (state == TAKEN) 0 else SupplierLink.boughtByParty(level, player.uuid, centre, g),
                 lot?.count ?: 0, lot?.marks ?: 0, stall?.let { floor(it.today[g.ordinal] + 1e-6).toInt() } ?: 0,
             )
         }
+        // An own stall in the square shows as table -1: no rent to pay, nothing to refuse
         return StallView(
-            s.place, t.index, state, stall?.name ?: "", stall?.color ?: colorOf(level, player.uuid), stall?.left ?: 0, keep, rank,
-            if (state == TAKEN) "" else refusal(player, hall ?: Hall(centre.asLong()), stall, rank, keep) ?: "", TownControl.marks(player),
+            s.place, t?.index ?: -1, state, stall?.name ?: "", stall?.color ?: colorOf(level, player.uuid), stall?.left ?: 0, keep, rank,
+            if (state == TAKEN || t == null) "" else refusal(player, hall ?: Hall(centre.asLong()), stall, rank, keep) ?: "", TownControl.marks(player),
             if (state == YOURS) floor(stall!!.till + 1e-6).toInt() else 0, kept?.goods?.sum() ?: 0, kept?.let { floor(it.marks + 1e-6).toInt() } ?: 0,
-            kept != null && merchant(level, centre, t.middle, NO_MERCHANT) != null, open(), goods,
+            kept != null && middle(level, s)?.let { merchant(level, centre, it, NO_MERCHANT) } != null, open(), goods,
         )
     }
 

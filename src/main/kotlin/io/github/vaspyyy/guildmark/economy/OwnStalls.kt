@@ -45,6 +45,14 @@ class OwnStall(
     /** Of what it's sold, what its display still shows until the shoppers come for it (see [StallShoppers]; not kept). */
     val waiting = DoubleArray(Good.entries.size)
 
+    /**
+     * A stall of the renter's own in the square, built by the town's works (economy/works), rather than a hall table:
+     * no rent runs down and there's no weekly keep, but its keeper's wage ([OwnStalls.KEEPER_WAGE] a week) comes out
+     * of the till, what the till can't pay waiting in [wages] for the next takings.
+     */
+    var pitch: Boolean = false
+    var wages: Double = 0.0
+
     /** Whole units of [good] on it. */
     fun whole(good: Good): Int = floor(stock[good.ordinal] + 1e-6).toInt()
 
@@ -61,15 +69,19 @@ class OwnStall(
  */
 class Kept(var name: String, var place: String, val goods: IntArray = IntArray(Good.entries.size), var marks: Double = 0.0, var told: Boolean = false)
 
-/** A capital's market hall as [OwnStalls] keeps it: each table's stall, if it's let, and what the merchant keeps for whom. */
+/**
+ * A capital's market hall as [OwnStalls] keeps it: each table's stall, if it's let, and what the merchant keeps for
+ * whom; and the players' own stalls in its square ([pitches], by owner), each one's one place in this market.
+ */
 class Hall(val capital: Long) {
     val stalls: Array<OwnStall?> = arrayOfNulls(OwnStalls.TABLES)
     val kept = LinkedHashMap<UUID, Kept>()
+    val pitches = LinkedHashMap<UUID, OwnStall>()
 
     /** [player]'s stall here and its table, if they rent one. */
     fun of(player: UUID): Int = stalls.indexOfFirst { it?.renter == player }
 
-    val idle: Boolean get() = stalls.all { it == null } && kept.isEmpty()
+    val idle: Boolean get() = stalls.all { it == null } && kept.isEmpty() && pitches.isEmpty()
 }
 
 /**
@@ -122,6 +134,9 @@ class OwnStalls(private val halls: MutableMap<Long, Hall> = HashMap()) : SavedDa
         /** Market hours of rent left when its renter is told it's nearly out. */
         const val WARN = 24
 
+        /** A week's wage for the keeper of a player's own stall in the square, from its till. */
+        const val KEEPER_WAGE = 2.0
+
         private val GOODS: Codec<Map<String, Double>> = Codec.unboundedMap(Codec.STRING, Codec.DOUBLE)
         private val COUNTS: Codec<Map<String, Int>> = Codec.unboundedMap(Codec.STRING, Codec.INT)
 
@@ -145,9 +160,13 @@ class OwnStalls(private val halls: MutableMap<Long, Hall> = HashMap()) : SavedDa
                 Codec.DOUBLE.optionalFieldOf("till", 0.0).forGetter { it.second.till },
                 Codec.DOUBLE.optionalFieldOf("takings", 0.0).forGetter { it.second.takings },
                 Codec.BOOL.optionalFieldOf("warned", false).forGetter { it.second.warned },
-            ).apply(i) { table, renter, name, color, place, at, front, left, stock, till, takings, warned ->
+                Codec.BOOL.optionalFieldOf("pitch", false).forGetter { it.second.pitch },
+                Codec.DOUBLE.optionalFieldOf("wages", 0.0).forGetter { it.second.wages },
+            ).apply(i) { table, renter, name, color, place, at, front, left, stock, till, takings, warned, pitch, wages ->
                 val s = OwnStall(renter, name, color, place, BlockPos.of(at), Direction.from2DDataValue(front), left, till = till, takings = takings, warned = warned)
                 for ((id, n) in stock) Good.byId(id)?.let { s.stock[it.ordinal] = n }
+                s.pitch = pitch
+                s.wages = wages
                 table to s
             }
         }
@@ -172,10 +191,12 @@ class OwnStalls(private val halls: MutableMap<Long, Hall> = HashMap()) : SavedDa
                 Codec.LONG.fieldOf("capital").forGetter(Hall::capital),
                 STALL.listOf().optionalFieldOf("stalls", listOf()).forGetter { h -> h.stalls.withIndex().mapNotNull { (n, s) -> s?.let { n to it } } },
                 KEPT.listOf().optionalFieldOf("kept", listOf()).forGetter { h -> h.kept.map { (p, k) -> p to k } },
-            ).apply(i) { capital, stalls, kept ->
+                STALL.listOf().optionalFieldOf("pitches", listOf()).forGetter { h -> h.pitches.values.map { -1 to it } },
+            ).apply(i) { capital, stalls, kept, pitches ->
                 Hall(capital).also { h ->
                     for ((table, s) in stalls) if (table in 0 until TABLES) h.stalls[table] = s
                     for ((p, k) in kept) h.kept[p] = k
+                    for ((_, s) in pitches) h.pitches[s.renter] = s.also { it.pitch = true }
                 }
             }
         }
@@ -213,7 +234,7 @@ class OwnStalls(private val halls: MutableMap<Long, Hall> = HashMap()) : SavedDa
             if (!enabled()) return null
             val data = get(level)
             val hall = data.find(entry.market.capital) ?: return null
-            if (hall.stalls.all { it == null }) return null
+            if (hall.stalls.all { it == null } && hall.pitches.isEmpty()) return null
             return { m, town ->
                 sell(hall, m, town)
                 data.setDirty()
@@ -226,9 +247,12 @@ class OwnStalls(private val halls: MutableMap<Long, Hall> = HashMap()) : SavedDa
          * enough for all, and the market gets back what the town had from them instead; each sale goes into the
          * stall's till at the market's price less [CUT]. Then each stall's rent runs an hour down, and one whose rent
          * is out is let go. Plain arithmetic on the hall and the market, so it comes out the same however it's run.
+         *
+         * The players' own stalls in the square ([Hall.pitches]) sell beside the tables in the same fair share; they
+         * have no rent, but their keepers' wages come out of their tills.
          */
         fun sell(hall: Hall, m: Market, town: Town) {
-            val stalls = hall.stalls
+            val stalls: List<OwnStall?> = hall.stalls.toList() + hall.pitches.values
             val newDay = Conditions(m.hour).clock == Economy.NEW_DAY
             for (s in stalls) {
                 if (s == null) continue
@@ -260,16 +284,63 @@ class OwnStalls(private val halls: MutableMap<Long, Hall> = HashMap()) : SavedDa
                     s.stock[g.ordinal] = (s.stock[g.ordinal] - n).coerceAtLeast(0.0)
                     s.sold[g.ordinal] += n
                     s.today[g.ordinal] += n
-                    s.waiting[g.ordinal] += n
+                    // No shoppers come for what a stall in the square sold yet, so its display has nothing waiting
+                    if (!s.pitch) s.waiting[g.ordinal] += n
                     s.till += n * each
                     s.takings += n * each
                 }
             }
             for (i in stalls.indices) {
                 val s = stalls[i] ?: continue
+                if (s.pitch) {
+                    // The keeper's wage, an hour's worth, paid from the till as far as it goes
+                    s.wages += KEEPER_WAGE / WEEK
+                    val paid = minOf(s.wages, s.till)
+                    s.till -= paid
+                    s.wages -= paid
+                    continue
+                }
                 s.left--
                 if (s.left <= 0) letGo(hall, i)
             }
+        }
+
+        /**
+         * [owner]'s own stall opens in the square of the capital whose centre is [capital] (its works finished): their
+         * one place in this market, so the hall table they rent there, if they do, is let go into it, its goods and
+         * till with it. Known as [name] in their [color], in the capital called [place], its display at [at] facing
+         * [front]. The stall they have there already, if they do.
+         */
+        fun opening(level: ServerLevel, capital: Long, owner: UUID, name: String, color: Int, place: String, at: BlockPos, front: Direction): OwnStall {
+            val data = get(level)
+            val hall = data.hall(capital)
+            hall.pitches[owner]?.let { return it }
+            val s = OwnStall(owner, name, color, place, at, front, 0)
+            s.pitch = true
+            val table = hall.of(owner)
+            if (table >= 0) {
+                val t = hall.stalls[table]!!
+                for (g in Good.entries) s.stock[g.ordinal] += t.stock[g.ordinal]
+                s.till += t.till
+                s.takings += t.takings
+                hall.stalls[table] = null
+            }
+            hall.pitches[owner] = s
+            data.changed()
+            return s
+        }
+
+        /** [owner]'s own stall in [capital]'s square is gone (its works taken down): its goods and till wait with the hall's merchant, as a table let go does. */
+        fun closing(level: ServerLevel, capital: Long, owner: UUID) {
+            val data = get(level)
+            val hall = data.find(capital) ?: return
+            val s = hall.pitches.remove(owner) ?: return
+            val k = hall.kept.getOrPut(owner) { Kept(s.name, s.place) }
+            k.name = s.name
+            for (g in Good.entries) k.goods[g.ordinal] += s.whole(g)
+            k.marks += s.till
+            k.told = false
+            data.changed()
         }
 
         /**
