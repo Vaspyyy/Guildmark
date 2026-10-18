@@ -562,7 +562,7 @@ object Spread {
         val day = Days.dayOf(hour * 1000L).toInt()
         if (Memory.enabled()) for (m in entry.minds.values) Memory.tidy(m, day)
         val residents = Residents.get(level)
-        entry.minds.keys.removeIf { residents[it]?.alive != true }
+        entry.minds.keys.removeIf { residents[it]?.let { r -> r.alive || r.left >= 0 } != true }
         entry.minds.values.removeIf { it.empty }
         for (p in entry.players.values) p.keys.retainAll(entry.rumours.keys)
         entry.players.values.removeIf { it.isEmpty() }
