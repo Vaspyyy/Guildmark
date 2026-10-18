@@ -151,6 +151,7 @@ enum class Activity(val clip: String, val ticks: Int, val loop: Boolean, val ove
     ANNOUNCE("announce", 80, true),
     LIGHT_LAMP("light_lamp", 50, false),
     KNOCK("knock", 24, false),
+    PULL_CART("pull_cart", 40, true, true),
     ;
 
     /** Seated activities keep the townsperson on their seat. */
