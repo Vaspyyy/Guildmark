@@ -4,6 +4,7 @@ import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.economy.CaravanData
 import io.github.vaspyyy.guildmark.economy.CaravanRoutes
 import io.github.vaspyyy.guildmark.economy.Caravans
+import io.github.vaspyyy.guildmark.outlaw.OutlawCamps
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import net.minecraft.core.registries.Registries
 import net.minecraft.resources.Identifier
@@ -279,16 +280,20 @@ internal object Bodies {
         return show.wagon != null
     }
 
-    /** Where a wreck's body lies: the back axle's spot and the yaw the wagon stood at as it went over, and to which side. */
-    class Pose(val at: Vec3, val yaw: Float, val mirror: Boolean)
+    /**
+     * Where a wreck's body lies: the back axle's spot and the yaw the wagon stood at as it went over, and to which side;
+     * the [coat] of the horse that pulled it, and whether the band shot from the side it went over onto ([arrowsUnder]).
+     */
+    class Pose(val at: Vec3, val yaw: Float, val mirror: Boolean, val coat: Int = 0, val arrowsUnder: Boolean = false)
 
     /**
      * Where wreck [w]'s body lies: just where its wagon pulled up for the strike (swerved toward the verge the records
      * have it on), as [Show] places it there, so a wreck come upon later lies as the one seen going over.
      */
     fun wreckPose(level: ServerLevel, w: Caravans.Wreck): Pose {
-        val fallback = Pose(w.pos, w.yaw, false)
-        val rec = CaravanData.get(level).wrecks.firstOrNull { it.id == w.id } ?: return fallback
+        val rec = CaravanData.get(level).wrecks.firstOrNull { it.id == w.id } ?: return Pose(w.pos, w.yaw, false)
+        val coat = DraughtHorse.coatOf(rec.caravan)
+        val fallback = Pose(w.pos, w.yaw, false, coat)
         val leg = CaravanRoutes.cached(rec.capital, rec.road) ?: return fallback
         val way = Way(leg.points)
         if (way.empty) return fallback
@@ -297,7 +302,10 @@ internal object Bodies {
         val (rx, rz) = way.right(along)
         val side = if ((rec.x - p.x) * rx + (rec.z - p.z) * rz >= 0.0) 1.0 else -1.0
         val (at, yaw) = Show.strikePose(way, along, side)
-        return Pose(at, yaw, side < 0.0)
+        // The band shot from its camp's side of the road (as Show.bandSide has it): gone over onto that side, the arrows are under it
+        val camp = OutlawCamps.get(level).band(rec.band)?.pos
+        val band = if (camp == null) -side else if ((camp.x + 0.5 - p.x) * rx + (camp.z + 0.5 - p.z) * rz >= 0.0) 1.0 else -1.0
+        return Pose(at, yaw, side < 0.0, coat, band == side)
     }
 
     /** The shows out now, for the commands. */

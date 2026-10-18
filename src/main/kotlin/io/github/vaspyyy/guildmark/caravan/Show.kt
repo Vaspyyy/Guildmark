@@ -999,7 +999,7 @@ internal class Show private constructor(val level: ServerLevel, first: Caravans.
         val w = Bodies.WAGON.get().create(level, EntitySpawnReason.EVENT) ?: return false
         val h = Bodies.DRAUGHT_HORSE.get().create(level, EntitySpawnReason.EVENT) ?: return false
         w.caravan = id
-        h.coat(Math.floorMod(id * 7L + 3L, 3L).toInt())
+        h.coat(DraughtHorse.coatOf(id))
         wagon = w
         horse = h
         place(true)

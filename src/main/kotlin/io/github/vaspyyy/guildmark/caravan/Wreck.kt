@@ -357,9 +357,9 @@ internal object WreckShows {
         val y = Ground.stand(level, pose.at.x, pose.at.z, w.pos.y)
         wreck.snapTo(pose.at.x, y, pose.at.z, pose.yaw, 0f)
         var flags = if (pose.mirror) Wreck.FLAG_MIRROR else 0
-        if (w.horseDead) flags = flags or Wreck.FLAG_HORSE or ((Math.floorMod(w.id, 3L).toInt()) shl Wreck.COAT)
-        // The band's arrows, by the wreck's own number
-        flags = flags or ((Math.floorMod(w.id * 2654435761L, 64L).toInt() or 1) shl Wreck.ARROWS)
+        if (w.horseDead) flags = flags or Wreck.FLAG_HORSE or (pose.coat shl Wreck.COAT)
+        // The band's arrows, by the wreck's own number: none to see if it went over onto the side they went into
+        if (!pose.arrowsUnder) flags = flags or ((Math.floorMod(w.id * 2654435761L, 64L).toInt() or 1) shl Wreck.ARROWS)
         wreck.set(w.lots.map { it?.first }, flags)
         val s = Shown(w.id, false, wreck, null, MutableList(Wreck.LOTS) { null })
         shown[w.id] = s

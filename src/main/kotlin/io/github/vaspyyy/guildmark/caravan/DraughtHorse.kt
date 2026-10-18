@@ -192,6 +192,9 @@ class DraughtHorse(type: EntityType<out DraughtHorse>, level: Level) : Entity(ty
         /** Blocks from the middle of its body to its fore and hind feet. */
         const val HOOVES = 11.0 / 16.0
 
+        /** The coat caravan [caravan]'s horse has, the same each time it's shown (and lying dead by its wreck). */
+        fun coatOf(caravan: Long): Int = Math.floorMod(caravan * 7L + 3L, 3L).toInt()
+
         /** Run on the client each tick for each horse (client/caravan: its gait, its hooves, its harness's sounds). */
         @JvmStatic
         var clientTick: ((DraughtHorse) -> Unit)? = null
