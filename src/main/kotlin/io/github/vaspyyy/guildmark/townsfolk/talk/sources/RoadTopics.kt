@@ -193,7 +193,7 @@ object RoadTopics : TopicSource {
             Utterance.Part(pick(ask, listOf("gossip_road_1", "gossip_road_3")), Speech.of("talk.detail.road.stage.${worst.stage.id}", worst.name))
         } else {
             val over = town.entry?.market?.news?.lastOrNull { it.key == OVER && Markets.hourOf(ask.level) - it.hour in 0..GLAD }
-            val quiet = if (town.ways.size == 1) Speech.of("talk.detail.road.quiet.one", worst.name) else Speech.of("talk.detail.road.quiet", town.ways.size)
+            val quiet = if (town.ways.size == 1) Speech.of("talk.detail.road.quiet.one", worst.name) else "talk.detail.road.quiet"
             Utterance.Part(if (over != null) "gossip_road_clear_4" else "", quiet)
         }
         val band = worst.band
