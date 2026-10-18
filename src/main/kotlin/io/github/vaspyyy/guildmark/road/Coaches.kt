@@ -13,6 +13,7 @@ import io.github.vaspyyy.guildmark.guild.GuildMember
 import io.github.vaspyyy.guildmark.guild.Holdings
 import io.github.vaspyyy.guildmark.guild.TownControl
 import io.github.vaspyyy.guildmark.party.Parties
+import io.github.vaspyyy.guildmark.quest.CaravanEscorts
 import io.github.vaspyyy.guildmark.quest.QuestType
 import io.github.vaspyyy.guildmark.registry.ModDataComponents
 import io.github.vaspyyy.guildmark.village.VillageNames
@@ -91,10 +92,15 @@ object Coaches {
         }
     }
 
-    /** The player is escorting someone, who would be left behind if they rode or travelled off. */
+    /**
+     * The player is escorting someone, who would be left behind if they rode or travelled off: a traveller, or a
+     * wagon they've met at the start of its road (until then they may ride to the meeting place; see CaravanEscorts).
+     */
     fun escorting(player: ServerPlayer): Boolean = (0 until player.inventory.containerSize).any { slot ->
         val stack = player.inventory.getItem(slot)
-        stack.get(ModDataComponents.QUEST_NOTE.get())?.type == QuestType.ESCORT && stack.has(ModDataComponents.CONTRACT_STATE.get())
+        val type = stack.get(ModDataComponents.QUEST_NOTE.get())?.type
+        stack.has(ModDataComponents.CONTRACT_STATE.get()) &&
+            (type == QuestType.ESCORT || type == QuestType.CARAVAN && CaravanEscorts.walking(player.level(), stack))
     }
 
     /** Why [player] can't board right now, as a message key, or null if they can. */

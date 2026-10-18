@@ -2,6 +2,7 @@ package io.github.vaspyyy.guildmark.road
 
 import com.mojang.serialization.Codec
 import com.mojang.serialization.codecs.RecordCodecBuilder
+import io.github.vaspyyy.guildmark.economy.Caravans
 import io.github.vaspyyy.guildmark.quest.Expeditions
 import io.github.vaspyyy.guildmark.quest.QuestGenerator
 import io.github.vaspyyy.guildmark.registry.ModAttachments
@@ -96,7 +97,8 @@ object Traffic {
         val mob: PathfinderMob = (if (level.random.nextInt(5) < 3) createMerchant(level, spot) else createTraveller(level, spot)) ?: return false
         mob.setData(ModAttachments.TRAFFIC, TrafficState(road.id, forward, level.gameTime))
         mob.setData(ModAttachments.TRAVEL_PROGRESS, TravelProgress(start + 1))
-        if (ambush) {
+        // A road an outlaw band works is theirs alone: no pillagers lie in wait on it (see economy/Caravans)
+        if (ambush && !Caravans.banded(level, road.id)) {
             mob.setData(ModAttachments.AMBUSH_AT, min(start + 2 + level.random.nextInt(3), points.size - 2))
         }
         level.addFreshEntity(mob)

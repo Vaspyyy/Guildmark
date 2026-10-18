@@ -46,7 +46,8 @@ object Bounties {
         return band == null || band.slain
     }
 
-    private fun notice(band: OutlawBand): Wanted {
+    /** [band]'s notice, as any board pins it (the capital's board pins its road's band's while the road is troubled: see economy/Caravans). */
+    fun notice(band: OutlawBand): Wanted {
         val crime = band.latestCrime()?.id ?: "nothing"
         val where = band.region.ifEmpty { "#${Outlaws.WILDS}" }
         return Wanted(band.id, band.label, band.bounty, "quest.guildmark.wanted_for.$crime|$where")
@@ -59,7 +60,8 @@ object Bounties {
     fun quarry(level: ServerLevel, board: BlockPos, note: QuestNote): OutlawBand? {
         if (level.dimension() != Level.OVERWORLD) return null
         val camps = OutlawCamps.get(level)
-        if (note.site >= 0) return camps.band(note.site)?.takeIf { it.built && !it.slain && it.captain() != null }
+        // A band named on the road before its camp was built is wanted too (its camp is built when someone comes near)
+        if (note.site >= 0) return camps.band(note.site)?.takeIf { !it.slain && (it.built && it.captain() != null || !it.built && it.named) }
         return camps.wanted(board, RANGE).firstOrNull()
     }
 

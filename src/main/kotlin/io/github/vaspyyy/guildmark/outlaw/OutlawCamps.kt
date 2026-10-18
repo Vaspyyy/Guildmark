@@ -4,6 +4,8 @@ import com.mojang.serialization.Codec
 import com.mojang.serialization.codecs.RecordCodecBuilder
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.block.VillageBoards
+import io.github.vaspyyy.guildmark.economy.Caravans
+import io.github.vaspyyy.guildmark.economy.RoadPeril
 import io.github.vaspyyy.guildmark.field.FieldBosses
 import io.github.vaspyyy.guildmark.field.TrollCamp
 import io.github.vaspyyy.guildmark.guild.GuildNews
@@ -140,6 +142,8 @@ class OutlawBand(
     var raided: Long = -1,
     /** The bounty on the captain has been paid, to the first to bring a contract on them in; it's paid once. */
     var claimed: Boolean = false,
+    /** Named (captain, epithet and bounty) before its camp was built, having struck a wagon on the road (see economy/Caravans). */
+    var named: Boolean = false,
 ) {
     val tier: Int get() = QuestGenerator.tierAt(pos.x, pos.z)
 
@@ -171,8 +175,12 @@ class OutlawBand(
                 Captive.CODEC.listOf().optionalFieldOf("captives", listOf()).forGetter { it.captives },
                 Codec.LONG.optionalFieldOf("raided", -1L).forGetter(OutlawBand::raided),
                 Codec.BOOL.optionalFieldOf("claimed", false).forGetter(OutlawBand::claimed),
-            ).apply(i) { id, pos, facing, built, slain, name, epithet, bounty, crimes, members, region, recruited, captives, raided, claimed ->
-                OutlawBand(id, pos, facing, built, slain, name, epithet, bounty, crimes.toMutableList(), members.toMutableList(), region, recruited, captives.toMutableList(), raided, claimed)
+                Codec.BOOL.optionalFieldOf("named", false).forGetter(OutlawBand::named),
+            ).apply(i) { id, pos, facing, built, slain, name, epithet, bounty, crimes, members, region, recruited, captives, raided, claimed, named ->
+                OutlawBand(
+                    id, pos, facing, built, slain, name, epithet, bounty, crimes.toMutableList(), members.toMutableList(), region, recruited,
+                    captives.toMutableList(), raided, claimed, named,
+                )
             }
         }
     }
@@ -203,9 +211,9 @@ class OutlawCamps(
 
     fun band(id: Int): OutlawBand? = bands.firstOrNull { it.id == id }
 
-    /** The living bands within [range] of [pos], nearest first. */
+    /** The living bands within [range] of [pos], nearest first: those built with their captain, and those named before their camp was. */
     fun wanted(pos: BlockPos, range: Double): List<OutlawBand> = bands
-        .filter { it.built && !it.slain && it.captain() != null && horizontal(pos, it.pos) < range }
+        .filter { !it.slain && (it.built && it.captain() != null || !it.built && it.named) && horizontal(pos, it.pos) < range }
         .sortedBy { horizontal(pos, it.pos) }
 
     /** Every 10 ticks, in the overworld. */
@@ -259,6 +267,30 @@ class OutlawCamps(
 
     private fun nextId(): Int = (bands.maxOfOrNull { it.id } ?: 0) + 1
 
+    /** Settles, once, whether the cell holding [x], [z] has a band (for a capital's road, before anyone wanders near: see economy/CaravanRoutes). */
+    fun settle(level: ServerLevel, x: Int, z: Int) {
+        if (level.dimension() != Level.OVERWORLD) return
+        decide(level, Math.floorDiv(x, CELL), Math.floorDiv(z, CELL))
+    }
+
+    /**
+     * A band comes to camp about [x], [z], by a quiet capital's road (open question 3 of design-road.md): only in a
+     * cell with no band of its own, and never near where players start. Built, named and mustered like any other once
+     * someone comes near. Null if it can't settle there.
+     */
+    fun settleAt(level: ServerLevel, x: Int, z: Int): OutlawBand? {
+        if (level.dimension() != Level.OVERWORLD) return null
+        val cx = Math.floorDiv(x, CELL)
+        val cz = Math.floorDiv(z, CELL)
+        if (bands.any { Math.floorDiv(it.pos.x, CELL) == cx && Math.floorDiv(it.pos.z, CELL) == cz }) return null
+        if (horizontal(x + 0.5, z + 0.5, level.respawnData.pos()) < QUIET_SPAWN) return null
+        decided.add((cx.toLong() shl 32) or (cz.toLong() and 0xFFFFFFFFL))
+        val band = OutlawBand(nextId(), BlockPos(x, 0, z))
+        bands.add(band)
+        setDirty()
+        return band
+    }
+
     /** Finds the spot nearest the band's mark that suits a camp and builds it there; or gives the band up. */
     private fun build(level: ServerLevel, band: OutlawBand) {
         val bells = bells(level, band.pos, VILLAGE_GAP + SEARCH)
@@ -268,6 +300,8 @@ class OutlawCamps(
         if (spot == null) {
             bands.remove(band)
             setDirty()
+            // Its roads' trouble ends as if it had moved on
+            RoadPeril.gaveUp(level, band)
             return
         }
         raise(level, band, spot)
@@ -282,19 +316,8 @@ class OutlawCamps(
         band.facing = facing
         band.built = true
         band.region = Regions.regionAt(level, spot)?.name.orEmpty()
-        // A name no other band at large goes by, if there's one left
-        val taken = bands.filter { it !== band && it.built && !it.slain }
-        for (attempt in 0 until 40) {
-            band.name = random.nextInt(Outlaws.NAMES)
-            band.epithet = random.nextInt(Outlaws.EPITHETS)
-            if (taken.none { it.name == band.name || it.epithet == band.epithet }) break
-        }
-        // Wanted already for a thing or two before anyone came this way
-        band.bounty = Outlaws.baseBounty(band.tier)
-        repeat(1 + random.nextInt(2)) {
-            band.crimes.add(0, Crime.DAILY[random.nextInt(Crime.DAILY.size)].id)
-            band.bounty = raised(band)
-        }
+        // Named already if it struck on the road before anyone came this way
+        if (!band.named) name(level, band)
         band.recruited = VillageBoards.day(level)
         muster(level, band)
         // Some bands already have someone from the nearest village tied up by the fire
@@ -306,6 +329,39 @@ class OutlawCamps(
         // Far enough out that someone who falls here and wakes there isn't still in the fight
         if (WardfireSites.enabled() && !WardfireSites.near(level, spot, FIRE_MAX)) WardfireSites.placeNear(level, spot, FIRE_MIN, FIRE_MAX)
         setDirty()
+    }
+
+    /**
+     * [band]'s captain's name and epithet (one no other band at large goes by, if there's one left) and the price on
+     * their head, wanted already for a thing or two: when its camp is built, or before then if it strikes a wagon on
+     * the road (see [named]).
+     */
+    private fun name(level: ServerLevel, band: OutlawBand) {
+        val random = level.random
+        val taken = bands.filter { it !== band && (it.built || it.named) && !it.slain }
+        for (attempt in 0 until 40) {
+            band.name = random.nextInt(Outlaws.NAMES)
+            band.epithet = random.nextInt(Outlaws.EPITHETS)
+            if (taken.none { it.name == band.name || it.epithet == band.epithet }) break
+        }
+        band.bounty = Outlaws.baseBounty(band.tier)
+        repeat(1 + random.nextInt(2)) {
+            band.crimes.add(0, Crime.DAILY[random.nextInt(Crime.DAILY.size)].id)
+            band.bounty = raised(band)
+        }
+        band.named = true
+        setDirty()
+    }
+
+    /**
+     * [band] struck a wagon before its camp was built: it gets its captain's name, epithet and bounty now, so the
+     * driver, the crier and the wanted notes can name it (design-road.md section 2). Its camp is still built only
+     * when someone comes near.
+     */
+    fun named(level: ServerLevel, band: OutlawBand) {
+        if (band.built || band.named || band.slain) return
+        name(level, band)
+        if (band.region.isEmpty()) band.region = Regions.regionAt(level, band.pos)?.name.orEmpty()
     }
 
     /** The ground at [x], [z]: the first open block above it, stepping down off trees and plants (never through water). */
@@ -382,7 +438,8 @@ class OutlawCamps(
     private fun muster(level: ServerLevel, band: OutlawBand) {
         val layout = OutlawCamp.layout(band.pos, band.facing)
         spawnCaptain(level, band, layout.chair)
-        val size = 2 + band.tier
+        // As many hands as it has now: more for the wagons it took and hired with, fewer for those it lost on the road
+        val size = Caravans.hands(level, band, 2 + band.tier)
         val roles = buildList {
             add(OutlawRole.LOOKOUT)
             add(OutlawRole.SENTRY)
@@ -800,6 +857,8 @@ class OutlawCamps(
         Bounties.onSlain(heroes, band.id)
         GuildNews.add(level, "news.guildmark.outlaw_slain", heroes.joinToString(", ") { it.name.string }.ifEmpty { "?" },
             "#${Outlaws.NAME_KEY}.${band.name}", "#${Outlaws.EPITHET_KEY}.${band.epithet}", where(band))
+        // The roads it worked are safe again: a relief wagon sets out, and its loot lies in a pile by the camp
+        RoadPeril.broken(level, band)
     }
 
     /** With the captain dead the band breaks: each runs from whoever's nearest, and is gone once out of their sight. */
@@ -838,7 +897,10 @@ class OutlawCamps(
         for (band in bands) {
             if (!band.built || band.slain || band.captain() == null) continue
             if (level.random.nextFloat() >= CRIME_CHANCE) continue
-            commit(level, band, Crime.DAILY[level.random.nextInt(Crime.DAILY.size)])
+            val crime = Crime.DAILY[level.random.nextInt(Crime.DAILY.size)]
+            // A band that works a capital's road is told of only the wagons it really takes
+            if (crime == Crime.CARAVAN && Caravans.works(level, band)) continue
+            commit(level, band, crime)
         }
     }
 
