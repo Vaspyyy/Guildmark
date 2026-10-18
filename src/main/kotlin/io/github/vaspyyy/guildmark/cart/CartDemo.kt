@@ -26,7 +26,8 @@ import kotlin.math.sin
  * Testing the carts (ops only). `/guildmark cart demo` brings a carter who pulls a laden cart round you on a loop,
  * stops and lets go of it, unloads it a sack at a time, loads it with produce (sacks again the next time round),
  * takes it up again and sets off, round and round. `/guildmark cart clear` takes the carts and the demo's carters
- * away. A demo carter is a passer-by: never saved, and gone once no one's about.
+ * away. A demo carter is a passer-by, gone once no one's about and after a reload; with carts switched off in the
+ * settings they go at once, cart and all.
  */
 object CartDemo {
     /** Adds `/guildmark cart demo` and `/guildmark cart clear`. */
@@ -108,6 +109,11 @@ object CartDemo {
         private val goods = ArrayList<ItemStack>()
 
         override fun tick(p: Townsperson) {
+            // Carts switched off: the demo's over (Handcarts takes the cart away)
+            if (!Handcarts.enabled()) {
+                p.discard()
+                return
+            }
             val w = walker
             if (w != null) {
                 if (stage == Stage.LAP) p.act(Handcarts.PULL)
@@ -189,6 +195,8 @@ object CartDemo {
                     Handcarts.parked(p)?.let { p.face(it.yRot) }
                     Handcarts.hitch(p)
                     if (Handcarts.pulling(p)) {
+                        // The same load again changes nothing; a fresh cart (the old one went) gets it
+                        Handcarts.load(p, goods)
                         p.act(Handcarts.PULL)
                         wait = 15
                         leg = 0
