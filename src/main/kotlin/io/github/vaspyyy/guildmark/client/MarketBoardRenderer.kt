@@ -238,12 +238,15 @@ class MarketBoardRenderer(context: BlockEntityRendererProvider.Context) :
             else -> words.text("board.guildmark.market.old")
         }.replaceFirstChar { it.titlecase(Locale.ROOT) }
         if (title != mem.title) {
-            if (!mem.fresh && mem.title.isNotEmpty()) {
+            // Rewritten before your eyes only while the crier is at it; a day turning over, or a board found
+            // written up, just reads differently the next time you look
+            val seen = !mem.fresh && board.begun != MarketBoardBlockEntity.LONG_AGO && level.gameTime - board.begun < TITLE_FRESH
+            if (seen && mem.title.isNotEmpty()) {
                 mem.oldTitle = mem.titleRow
                 mem.oldTitleAt = now
             }
             mem.title = title
-            mem.titleAt = if (mem.fresh) Double.NEGATIVE_INFINITY else now
+            mem.titleAt = if (seen) now else Double.NEGATIVE_INFINITY
             mem.titleRow = if (title.isEmpty()) null else Row().also {
                 val base = top + A.TITLE_BASE
                 it.run(title, left, base, A.S_TITLE, tint(A.CHALK))
@@ -1040,6 +1043,9 @@ class MarketBoardRenderer(context: BlockEntityRendererProvider.Context) :
         private val STACKS: Array<ItemStack> by lazy { Array(MarketBoards.ORDER.size) { i -> MarketBoards.ORDER[i].item?.let { ItemStack(it) } ?: ItemStack.EMPTY } }
 
         private const val SLOTS = MarketBoardBlockEntity.SLIPS
+
+        /** Ticks after the crier begins writing a board up during which a change of its title is chalked in for all to see. */
+        private const val TITLE_FRESH = 200L
         private const val MESH_X = 6
         private const val MESH_Y = 3
         private const val CAP = 7f

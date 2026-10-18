@@ -94,6 +94,10 @@ class MarketBoardBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(Mod
     var noon: Boolean = false
         private set
 
+    /** The game time the crier began writing it up, or [LONG_AGO] if it was found written up (nothing to see written). */
+    var begun: Long = LONG_AGO
+        private set
+
     /** Every traded good's line, in the board's order (see [io.github.vaspyyy.guildmark.economy.MarketBoards.ORDER]). */
     val lines: MutableList<Line> = ArrayList()
 
@@ -109,6 +113,7 @@ class MarketBoardBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(Mod
         this.town = town
         this.day = day
         this.noon = noon
+        begun = level?.gameTime ?: LONG_AGO
         sync()
     }
 
@@ -132,6 +137,7 @@ class MarketBoardBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(Mod
         this.town = town
         this.day = day
         this.noon = noon
+        begun = LONG_AGO
         lines.clear()
         lines.addAll(all)
         writing = -1
@@ -165,6 +171,7 @@ class MarketBoardBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(Mod
         output.store("town", ComponentSerialization.CODEC, town)
         output.putLong("day", day)
         output.putBoolean("noon", noon)
+        output.putLong("begun", begun)
         output.store("lines", Line.CODEC.listOf(), lines)
         output.store("slips", Slip.CODEC.listOf(), slips)
         output.putInt("writing", writing)
@@ -175,6 +182,7 @@ class MarketBoardBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(Mod
         town = input.read("town", ComponentSerialization.CODEC).orElse(Component.empty())
         day = input.getLongOr("day", -1L)
         noon = input.getBooleanOr("noon", false)
+        begun = input.getLongOr("begun", LONG_AGO)
         lines.clear()
         input.read("lines", Line.CODEC.listOf()).ifPresent { lines.addAll(it) }
         slips.clear()

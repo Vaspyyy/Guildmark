@@ -7,6 +7,7 @@ import io.github.vaspyyy.guildmark.block.VillageBoards
 import io.github.vaspyyy.guildmark.field.FieldBosses
 import io.github.vaspyyy.guildmark.field.TrollCamp
 import io.github.vaspyyy.guildmark.guild.GuildNews
+import io.github.vaspyyy.guildmark.homestead.Homesteads
 import io.github.vaspyyy.guildmark.lair.Lairs
 import io.github.vaspyyy.guildmark.loot.Rarity
 import io.github.vaspyyy.guildmark.loot.Relics
@@ -353,6 +354,8 @@ class OutlawCamps(
         if (Lairs.get(level).lairs.any { it.pos.closerThan(pos, LAIR_GAP) }) return false
         if (FieldBosses.get(level).sites.any { it.built && it.pos.closerThan(pos, TROLL_GAP) }) return false
         if (bands.any { it.built && it.pos.closerThan(pos, BAND_GAP) }) return false
+        // Not on anyone's doorstep: a homestead keeps them as far off as a village does
+        if (Homesteads.near(level, pos.x, pos.z, HOME_GAP) != null) return false
         return bells.none { it.closerThan(pos, VILLAGE_GAP.toDouble()) }
     }
 
@@ -897,6 +900,7 @@ class OutlawCamps(
         private const val SEARCH = 32
         private const val QUIET_SPAWN = 400.0
         private const val VILLAGE_GAP = 192
+        private const val HOME_GAP = 160
         private const val LAIR_GAP = 96.0
         private const val TROLL_GAP = 160.0
         private const val BAND_GAP = 384.0

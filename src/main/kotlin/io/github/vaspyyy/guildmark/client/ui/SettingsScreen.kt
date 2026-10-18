@@ -280,7 +280,8 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
         val listed = listOf(
             c.COMBAT, c.LOSE_MARKS, c.PAY_MULTIPLIER, c.XP_MULTIPLIER, c.SKILL_XP_MULTIPLIER, c.RELIC_CACHE_CHANCE, c.HANDBOOK, c.AUTO_BOARDS, c.WARDFIRES,
             c.DUNGEONS, c.FIELD_BOSSES, c.CAPITALS, c.ISLANDS, c.DUSK_RIDERS, c.DRAGONS, c.SEA_MONSTERS, c.SIEGES, c.SIEGE_CHANCE, c.BANDITS, c.OUTLAWS, c.RIVALS, c.CHARACTERS,
-            c.TOWNSFOLK_CROWDS, c.TOWNSFOLK_CROWD_DENSITY, c.LIVING_WORLD, c.TOWNSFOLK_BEDS, c.MARKETS, c.REGIONS, c.REGION_TERRAIN, c.REGION_ENEMIES,
+            c.TOWNSFOLK_CROWDS, c.TOWNSFOLK_CROWD_DENSITY, c.LIVING_WORLD, c.TOWNSFOLK_BEDS, c.MARKETS, c.HANDCARTS, c.REGIONS, c.REGION_TERRAIN, c.REGION_ENEMIES,
+            c.HOMESTEADS, c.HOMESTEAD_PROTECTION, c.HOMESTEAD_BUILD_SPEED,
         )
         val rows = arrayListOf<Row>(Note(Component.translatable("gui.guildmark.settings.world.$note"), if (editable) Ui.TEXT_FAINT else Ui.GOLD, width))
         if (!spec.isLoaded) return rows
@@ -308,6 +309,10 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
             toggle(c.LIVING_WORLD, spec, editable),
             toggle(c.TOWNSFOLK_BEDS, spec, editable),
             toggle(c.MARKETS, spec, editable),
+            toggle(c.HANDCARTS, spec, editable),
+            toggle(c.HOMESTEADS, spec, editable),
+            toggle(c.HOMESTEAD_PROTECTION, spec, editable),
+            slider(c.HOMESTEAD_BUILD_SPEED, spec, editable, MULTIPLIERS, ::times) { c.HOMESTEAD_BUILD_SPEED.set(it) },
             toggle(c.DUSK_RIDERS, spec, editable),
             toggle(c.DRAGONS, spec, editable),
             toggle(c.SEA_MONSTERS, spec, editable),

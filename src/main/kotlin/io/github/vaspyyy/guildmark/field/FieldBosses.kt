@@ -6,6 +6,7 @@ import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.GuildmarkConfig
 import io.github.vaspyyy.guildmark.enemy.HillTroll
 import io.github.vaspyyy.guildmark.guild.GuildNews
+import io.github.vaspyyy.guildmark.homestead.Homesteads
 import io.github.vaspyyy.guildmark.lair.Lairs
 import io.github.vaspyyy.guildmark.loot.Rarity
 import io.github.vaspyyy.guildmark.loot.Relics
@@ -210,6 +211,8 @@ class FieldBosses(
     private fun apart(level: ServerLevel, pos: BlockPos, bells: List<BlockPos>): Boolean {
         if (Lairs.get(level).lairs.any { it.pos.closerThan(pos, LAIR_GAP) }) return false
         if (sites.any { it.built && it.pos.closerThan(pos, SITE_GAP) }) return false
+        // Not on anyone's doorstep: a homestead keeps them as far off as a village does
+        if (Homesteads.near(level, pos.x, pos.z, HOME_GAP) != null) return false
         return bells.none { it.closerThan(pos, VILLAGE_GAP.toDouble()) }
     }
 
@@ -291,6 +294,7 @@ class FieldBosses(
         private const val SEARCH = 32
         private const val QUIET_SPAWN = 320.0
         private const val VILLAGE_GAP = 160
+        private const val HOME_GAP = 128
         private const val LAIR_GAP = 96.0
         private const val SITE_GAP = 256.0
         /** How far from a camp's fire its Wardfire stands. */

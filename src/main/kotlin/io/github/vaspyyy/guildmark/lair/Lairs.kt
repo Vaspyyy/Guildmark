@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.lair
 
+import io.github.vaspyyy.guildmark.homestead.Homesteads
 import io.github.vaspyyy.guildmark.progression.Milestones
 import com.mojang.serialization.Codec
 import com.mojang.serialization.codecs.RecordCodecBuilder
@@ -144,6 +145,8 @@ class Lairs(val lairs: MutableList<Lair> = mutableListOf()) : SavedData() {
             val distance = minDistance + level.random.nextInt(spread)
             val x = near.x + (cos(angle) * distance).toInt()
             val z = near.z + (sin(angle) * distance).toInt()
+            // Never dug into anyone's homestead, nor right up against it
+            if (Homesteads.near(level, x, z, RADIUS + HOME_GAP) != null) return@repeat
             // Generate the land if nobody has been there yet
             for (dx in listOf(-RADIUS - 1, RADIUS + 1)) for (dz in listOf(-RADIUS - 1, RADIUS + 1)) level.getChunk((x + dx) shr 4, (z + dz) shr 4)
             var top = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, BlockPos(x, 0, z))
@@ -568,6 +571,9 @@ class Lairs(val lairs: MutableList<Lair> = mutableListOf()) : SavedData() {
 
     companion object {
         const val RADIUS = 8
+
+        /** How far clear of a homestead's land a lair keeps, past its own [RADIUS]. */
+        private const val HOME_GAP = 24
         /** How close the first player comes before the lair's Wardfire is raised. */
         private const val FIRE_RANGE = 80.0
         /** How close the first player comes before a dungeon is dug and its entrance built. */
