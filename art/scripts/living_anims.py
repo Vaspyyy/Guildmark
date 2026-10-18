@@ -162,17 +162,25 @@ PLANK = (150, 112, 70)
 DIRT = (104, 76, 50)
 
 
-def ladder_boxes(rise=0.0):
-    """The ladder's wall, rails and rungs (world fixed: a body [rise] px up the ladder sees them that much lower). The
-    rungs' middles are 2, 6, 10 and 14 px up each block (vanilla's ladder texture); the floor is at the bottom block's
-    foot (y 24 when rise is 0)."""
-    b = [((-24, -64 + rise, -14.0), (24, 24 + rise, -8.0), (118, 108, 98), True)]
-    for x0 in (-6.5, 5.5):
-        b.append(((x0, -64 + rise, -8.0), (x0 + 1.0, 24 + rise, -6.9), (112, 80, 48), True))
-    for k in range(0, 22):
+_RISE = [0.0]           # how far up the ladder the body being drawn is (render_cell sets it from INFO 'rise')
+
+
+def ladder_boxes(rise=None):
+    """The ladder's wall, rails and rungs (world fixed: a body [rise] px up the ladder sees them that much lower), as
+    vanilla draws a ladder: a plane 0.8 px off the wall, its rails 2 px wide 4 to 6 px out from the middle, its rungs 2
+    px high and 14 across with their middles 2, 6, 10 and 14 px up each block. The floor is at the bottom block's foot
+    (y 24 when rise is 0)."""
+    rise = _RISE[0] if rise is None else rise
+    foot = min(40.0, 24.0 + rise)
+    b = [((-24, -56.0, -14.0), (24, foot, -8.0), (118, 108, 98), True)]
+    for x0 in (-6.0, 4.0):
+        b.append(((x0, -56.0, -7.6), (x0 + 2.0, foot, -6.8), (112, 80, 48), True))
+    for k in range(int(math.floor((rise - 10.0) / 4.0)), int(math.ceil((rise + 80.0) / 4.0))):
         mid = 24.0 - 2.0 - 4.0 * k + rise          # world height 2 + 4k px over the floor
-        b.append(((-5.5, mid - 0.5, -7.6), (5.5, mid + 0.5, -6.8), (150, 110, 64), True))
-    b.append(((-24, 24 + rise, -24), (24, 24.2 + rise, 24), (96, 92, 84), True))
+        if k >= 0 and -58.0 < mid < foot:
+            b.append(((-7.0, mid - 1.0, -7.5), (7.0, mid + 1.0, -6.9), (150, 110, 64), True))
+    if rise < 16.0:
+        b.append(((-24, 24 + rise, -24), (24, 24.2 + rise, 24), (96, 92, 84), True))
     return b
 
 
@@ -288,7 +296,7 @@ _station_boxes = ta.station_boxes
 
 def station_boxes(kind, rise=0.0):
     if kind in STATIONS:
-        b = list(STATIONS[kind](rise) if kind == 'ladder' else STATIONS[kind]())
+        b = list(STATIONS[kind](rise or None) if kind == 'ladder' else STATIONS[kind]())
         if kind != 'ladder':
             gy = GROUND_AT.get(kind, 24.0)
             b.append(((-24, gy, -24), (24, gy + 0.2, 24), GROUND_COLOUR.get(kind, ta.GROUND), True))
@@ -298,10 +306,55 @@ def station_boxes(kind, rise=0.0):
 
 ta.station_boxes = station_boxes
 
-# What the previews show of a clip's props and goods tick by tick (the game does the same: LivingProps.kt): INFO[name]
-# 'tools_at' (t -> the props shown, when they come and go within the clip) and 'goods' (t, part matrices -> the middle
-# and size of what is carried, drawn as a box where the game draws the carried item, or None).
+# What the previews show of a clip's props and goods tick by tick (the game does the same: LivingProps.kt, from the
+# LivingSchedule.kt main() writes): INFO[name] 'tools_at' (t -> the props shown, when they come and go within the clip)
+# and 'goods' (t, part matrices -> the middle and size of what is carried, drawn as a box where the game draws the
+# carried item, or None), which set_goods() makes from the clip's spans in GOODS_SPANS.
 GOODS_COLOUR = (214, 168, 92)
+
+# What is carried (Townsperson.carried, drawn by the game with the item renderer) and where, clip by clip: spans (from,
+# to, how, size) of ticks (to None: on to the end, and held there). how is ('hands', ahead): between the two grips and
+# [ahead] px further forward, turned with the body; ('part', part, offset): at a point in a part's own space, turned with
+# it; ('ground', point): at a point in the clip's own space (on the ground, on a stall's counter); ('toss', point, part,
+# offset, arc): thrown from a point in the clip's space to one in a part's, rising [arc] px over the way. size: its
+# largest extent, px. GOODS_REPLACE: the prop the goods take the place of while they show (the crate carry holds when
+# there are no goods); GOODS_ONLY_CARRIED: clips that draw nothing when nothing is carried (pay counts its own coins
+# then; gather pulls up a carrot).
+GOODS_SPANS = {}
+GOODS_REPLACE = {'carry': 'crate', 'pay': 'coin'}
+GOODS_ONLY_CARRIED = {'pay', 'carry', 'carry_sack'}
+GOODS_DEFAULT = {'gather': 'carrot'}
+
+
+def goods_point(how, t, t0, t1, mats):
+    """Where a span puts the goods at [t] (the clip's space), from the part matrices of the pose."""
+    kind = how[0]
+    if kind == 'hands':
+        return between_hands(mats, how[1])
+    if kind == 'part':
+        return apply(mats[how[1]], np.asarray(how[2], float))
+    if kind == 'ground':
+        return np.asarray(how[1], float)
+    _, start, part, offset, arc = how
+    end = apply(mats[part], np.asarray(offset, float))
+    u = (t - t0) / max(1e-6, t1 - t0)
+    return np.asarray(start, float) + (end - np.asarray(start, float)) * u + np.array([0.0, -4.0 * arc * u * (1 - u), 0.0])
+
+
+def set_goods(name, spans):
+    """[name]'s goods spans, for the game (GOODS) and the previews (INFO 'goods')."""
+    GOODS_SPANS[name] = [(float(a), None if b is None else float(b), how, float(size)) for a, b, how, size in spans]
+    if name not in ta.INFO:
+        return
+
+    def fn(t, mats, name=name):
+        if name in GOODS_ONLY_CARRIED:
+            return None
+        for a, b, how, size in GOODS_SPANS[name]:
+            if a <= t and (b is None or t < b):
+                return goods_point(how, t, a, b, mats), size
+        return None
+    ta.INFO[name]['goods'] = fn
 
 
 def shown_tools(name, t):
@@ -341,15 +394,19 @@ def render_cell(look, c, t, project, size, walking, wire=False, solo=False):
         quads += partner_quads(info['partner'], t)
     _CUR[0] = None
     kind = info['station']
-    if kind and not wire:
-        quads += ta.station(kind)
-    else:
-        for lo, hi, col, light in station_boxes(kind or ''):
-            if hi[1] - lo[1] < 0.5 and hi[0] - lo[0] > 30:
-                quads += ta.box(lo, hi, col, light)
-    img = ta.raster(quads, project, size, bg=(54, 60, 74))
-    if kind and wire:
-        ta.station_wire(ImageDraw.Draw(img), kind, project)
+    _RISE[0] = info['rise'](t) if info.get('rise') else 0.0
+    try:
+        if kind and not wire:
+            quads += ta.station(kind)
+        else:
+            for lo, hi, col, light in station_boxes(kind or ''):
+                if hi[1] - lo[1] < 0.5 and hi[0] - lo[0] > 30:
+                    quads += ta.box(lo, hi, col, light)
+        img = ta.raster(quads, project, size, bg=(54, 60, 74))
+        if kind and wire:
+            ta.station_wire(ImageDraw.Draw(img), kind, project)
+    finally:
+        _RISE[0] = 0.0
     return img, pose
 
 
@@ -560,6 +617,132 @@ WANTED = ['sit_down', 'stand_up', 'yawn', 'stretch', 'climb', 'eat', 'sit_eat', 
           'gather', 'carry_basket', 'grind', 'pour_sack', 'chop', 'ring_bell', 'announce', 'light_lamp', 'knock']
 
 
+# ================================================================== the game's half: LivingSchedule.kt
+
+SCHEDULE_KT = os.path.join(ROOT, 'src/main/kotlin/io/github/vaspyyy/guildmark/client/townsfolk/LivingSchedule.kt')
+
+
+def shown_spans(c):
+    """The props [c] shows and the ticks it shows each between: (part, from, to), to None for on to the end and held
+    there (a one-shot keeps showing its last frame)."""
+    info = ta.INFO[c.name]
+    if not info.get('tools_at'):
+        return [(p, 0.0, None) for p in sorted(info['tools'])]
+    spans, since = [], {}
+    n = int(round(c.length * 2))
+    for i in range(n + 1):
+        t = i / 2.0
+        now = set(shown_tools(c.name, t))
+        for p in sorted(now - set(since)):
+            since[p] = t
+        for p in sorted(set(since) - now):
+            spans.append((p, since.pop(p), t))
+    spans += [(p, t0, None) for p, t0 in since.items()]
+    return sorted(spans, key=lambda sp: (sp[0], sp[1]))
+
+
+def kt_float(x):
+    """A Kotlin float literal (None: END, on to the end)."""
+    if x is None:
+        return 'END'
+    x = round(float(x), 3)
+    if x == int(x):
+        return f'{int(x)}f'
+    return f'{x:.3f}'.rstrip('0').rstrip('.') + 'f'
+
+
+def kt_goods(span):
+    a, b, how, size = span
+    kind, zero = how[0], ('0f', '0f', '0f')
+    part, at, to_part, to, arc = '""', zero, '""', zero, '0f'
+    if kind == 'hands':
+        at = (kt_float(how[1]), '0f', '0f')
+    elif kind == 'part':
+        part, at = f'"{how[1]}"', tuple(kt_float(v) for v in how[2])
+    elif kind == 'ground':
+        at = tuple(kt_float(v) for v in how[1])
+    else:
+        at = tuple(kt_float(v) for v in how[1])
+        to_part, to, arc = f'"{how[2]}"', tuple(kt_float(v) for v in how[3]), kt_float(how[4])
+    return (f'Goods({kt_float(a)}, {kt_float(b)}, How.{kind.upper()}, {part}, {", ".join(at)}, {to_part}, '
+            f'{", ".join(to)}, {arc}, {kt_float(size)})')
+
+
+def write_schedule(path=SCHEDULE_KT):
+    """Writes what each clip shows of its props and goods when, for LivingProps.kt."""
+    parents = [(part.name, parent) for parent, part in (b() for b in lp.BUILDERS)]
+    out = ['// Written by art/scripts/living_anims.py (write_schedule) from its clips and art/scripts/living_props.py: run',
+           '// the script rather than editing this by hand.',
+           'package io.github.vaspyyy.guildmark.client.townsfolk', '',
+           '/**',
+           " * What the Living World's clips show of their props, and of the goods someone carries, tick by tick (the previews",
+           ' * of art/scripts/living_anims.py show the same). [LivingProps] shows and hides the props and runs their tracks;',
+           ' * [LivingGoodsLayer] draws the goods.',
+           ' */',
+           'internal object LivingSchedule {',
+           '    /** On to the end of the clip, and held there. */',
+           '    const val END = Float.MAX_VALUE', '',
+           '    /** A prop shown from tick [from] up to [to]. */',
+           '    class Shown(val part: String, val from: Float, val to: Float)', '',
+           '    /**',
+           '     * Goods shown from tick [from] up to [to], [size] px at their largest: between the hands and [x] px further',
+           "     * forward (HANDS), at ([x], [y], [z]) in [part]'s own space (PART), at ([x], [y], [z]) in the clip's space",
+           '     * (GROUND: on the ground, on a counter), or thrown from there to ([tx], [ty], [tz]) in [toPart]\'s space,',
+           '     * rising [arc] px on the way (TOSS).',
+           '     */',
+           '    class Goods(',
+           '        val from: Float, val to: Float, val how: How, val part: String, val x: Float, val y: Float, val z: Float,',
+           '        val toPart: String, val tx: Float, val ty: Float, val tz: Float, val arc: Float, val size: Float,',
+           '    )', '',
+           '    enum class How { HANDS, PART, GROUND, TOSS }', '',
+           '    /** A moment of a clip: what happens ([name]) and on which tick. */',
+           '    class Moment(val name: String, val tick: Float)', '',
+           "    /** Each prop's own part, and the part it hangs on. */",
+           '    val PARENT: Map<String, String> = mapOf(']
+    out += [f'        "{n}" to "{p}",' for n, p in parents]
+    out += ['    )', '', '    /** By clip: the props it shows, and when. */', '    val SHOWN: Map<String, List<Shown>> = mapOf(']
+    for c in clips:
+        spans = shown_spans(c)
+        if spans:
+            out.append(f'        "{c.name}" to listOf(')
+            out += [f'            Shown("{p}", {kt_float(a)}, {kt_float(b)}),' for p, a, b in spans]
+            out.append('        ),')
+    out += ['    )', '',
+            '    /** By clip: the props its file turns, places and stretches itself tick by tick ("prop:<part>" bones). */',
+            '    val TRACKED: Map<String, List<String>> = mapOf(']
+    out += [f'        "{n}" to listOf(' + ', '.join(f'"{p}"' for p in sorted(tr)) + '),' for n, tr in TRACKS.items() if tr]
+    out += ['    )', '',
+            '    /** Props that hang straight down from the hand holding them (where no track runs them). */',
+            '    val HANG: Set<String> = setOf(' + ', '.join(f'"{p}"' for p in lp.HANG) + ')', '',
+            '    /** Props with a flame that glows in the dark. */',
+            '    val GLOW: Set<String> = setOf("lamp_pole")', '',
+            '    /** By clip: where the goods someone carries are, and when. */',
+            '    val GOODS: Map<String, List<Goods>> = mapOf(']
+    for name, spans in GOODS_SPANS.items():
+        out.append(f'        "{name}" to listOf(')
+        out += [f'            {kt_goods(sp)},' for sp in spans]
+        out.append('        ),')
+    out += ['    )', '',
+            '    /** By clip: the prop the goods take the place of while they show. */',
+            '    val GOODS_REPLACE: Map<String, String> = mapOf('
+            + ', '.join(f'"{k}" to "{v}"' for k, v in GOODS_REPLACE.items()) + ')', '',
+            '    /** Clips that show goods only when something is carried (and their own props otherwise). */',
+            '    val GOODS_ONLY_CARRIED: Set<String> = setOf(' + ', '.join(f'"{k}"' for k in sorted(GOODS_ONLY_CARRIED)) + ')', '',
+            '    /** By clip: the item shown when nothing is carried (a crop pulled up is a carrot). */',
+            '    val GOODS_DEFAULT: Map<String, String> = mapOf('
+            + ', '.join(f'"{k}" to "minecraft:{v}"' for k, v in GOODS_DEFAULT.items()) + ')', '',
+            '    /** By clip: its moments, the ticks things happen on (a knock, a bite, a bell rung), for their sounds and dust. */',
+            '    val MOMENTS: Map<String, List<Moment>> = mapOf(']
+    for c in clips:
+        ev = ta.INFO[c.name]['events']
+        if ev:
+            out.append(f'        "{c.name}" to listOf(' + ', '.join(f'Moment("{n}", {kt_float(k)})' for n, k in ev) + '),')
+    out += ['    )', '}', '']
+    with open(path, 'w') as f:
+        f.write('\n'.join(out))
+    return path
+
+
 def main(argv):
     assets, previews = argv[1], argv[2]
     only = set(argv[3:])
@@ -571,6 +754,7 @@ def main(argv):
         print(line)
     for c in clips:
         bake_tracks(c, c.write(assets, GROUP))
+    print('wrote', os.path.relpath(write_schedule(), ROOT))
     print(f'wrote {len(clips)} clips to {os.path.join(assets, "animations", GROUP)}' + ('' if ok else '   (with problems: see !!)'))
     os.makedirs(previews, exist_ok=True)
     for c in clips:
@@ -1051,7 +1235,7 @@ for t in every(24):
     jolt = sum(bump(t, k - 0.2, k + 1.2) for k in KNOCKS)
     fr = F_(qt=bend(K(KN_P, t) + 0.8 * jolt, K(KN_YAW, t), 0.0))
     key_frame(c, t, fr, root=False, ease='linear')
-    hit = arms.reach('right_arm', fr, np.array([-2.0, -4.2, KNOCK_Z + KNOCK_GAP]), palm=D, palm_w=0.2)
+    hit = arms.reach('right_arm', fr, np.array([-2.0, -5.4, KNOCK_Z + KNOCK_GAP]), palm=D, palm_w=0.2)
     back = qmul(qaxis((1, 0, 0), -16.0), hit)
     q_up = qslerp(hit, back, knock_back(t))
     c.key('right_arm', t, qslerp(hang('right_arm', fr), q_up, smooth(K(KN_RAISE, t))), ease='linear')
@@ -1061,6 +1245,176 @@ for t in every(24):
 c.mode('head', 'add')
 for k in KNOCKS:
     check(c, f'knuckles on the door (t={k:g})', (ta.fk(c, k, 'right_arm', GRIP['right_arm'])[2],), (KNOCK_Z + KNOCK_GAP,), tol=0.3)
+
+# ================================================================== ladders
+
+# ---- climb (16, loop): hand over hand up a ladder, facing it, one limb after another four ticks apart as a crawl goes:
+# the right hand lets go at tick 1, the left foot at 5, the left hand at 9, the right foot at 13. Each comes off its
+# rung, up and out past the next one and down onto the one above that, two rungs (8 px) a go, 7 ticks off and 9 on. The
+# body rises 0.5 px a tick all the while (the server moves it), so a hand or foot on a rung slides 4.5 px down the body
+# while it holds. The arms are rigid, so the torso turns from side to side (the shoulder of the lower hand going back)
+# and the shoulders shrug up for each reach and down for each pull to keep the fists on their rungs; the hips sink a
+# little as each foot takes its rung and rise as the leg drives; the head looks up the ladder after the hand going up.
+# The client plays it by height, not by time: tick 32 y mod 16 for feet y blocks up (2 ticks a px), so the rungs stay
+# in the hands and under the feet at any speed, and a climber going down plays it backwards.
+CL_LEN = 16.0
+CL_RISE = 0.5                       # px a tick up the ladder
+CL_MOVE = 7.0                       # ticks a hand or foot is off its rung
+CL_HOLD = CL_LEN - CL_MOVE
+CL_LET_GO = {'right_arm': 1.0, 'left_leg': 5.0, 'left_arm': 9.0, 'right_leg': 13.0}
+CL_HAND = (4.8, -6.0)               # a fist on a rung: x out from the middle (by the rail), z (its front at the wall)
+CL_IN = 1.0                         # the rung's middle that far into the fist from its end
+CL_SLACK = (0.5, 0.6)               # and the fist free to sit that much off it along the rung (x) and up or down (y)
+CL_FOOT = (2.2, -5.4)               # a sole's middle on a rung: x out from the middle, z (the toes to the wall)
+CL_GRAB_Y = -6.0                    # about where a hand takes its next rung (the rung's middle)
+CL_STEP_Y = 20.0                    # about where a foot takes its next rung (the rung's middle)
+CL_ROOT_Z = -1.2
+CL_PARTS = ('right_arm', 'left_arm', 'right_leg', 'left_leg')
+
+
+def cl_rung_mid(t, near):
+    """The middle of the rung nearest [near] at [t] (the rungs' middles 2 + 4k px up the block, the body risen 0.5 t)."""
+    base = 22.0 + CL_RISE * t
+    return base - 4.0 * round((base - near) / 4.0)
+
+
+def cl_phase(part, t):
+    """[part]'s rung at [t]: (the y of its middle, None) while it holds it, (None, how far through its move, 0 to 1)."""
+    t_take = CL_LET_GO[part] + CL_MOVE
+    mid0 = cl_rung_mid(t_take, CL_GRAB_Y if part.endswith('arm') else CL_STEP_Y)
+    u = (t - t_take) % CL_LEN
+    if u <= CL_HOLD + 1e-9:
+        return mid0 + CL_RISE * u, None
+    return None, (u - CL_HOLD) / CL_MOVE
+
+
+def cl_side(part):
+    return -1.0 if part.startswith('right') else 1.0
+
+
+def cl_hold_point(part, mid):
+    """Where the grip (a hand) or the sole's middle (a foot) is on a rung whose middle is at y [mid]."""
+    s = cl_side(part)
+    if part.endswith('arm'):
+        return np.array([s * CL_HAND[0], mid - CL_IN, CL_HAND[1]])
+    return np.array([s * CL_FOOT[0], mid - 1.0, CL_FOOT[1]])
+
+
+def cl_target(part, t):
+    """Where [part] is wanted at [t] (the grip of a hand, the sole's middle of a foot), and whether it is on a rung."""
+    mid, u = cl_phase(part, t)
+    if mid is not None:
+        return cl_hold_point(part, mid), True
+    t_off = CL_LET_GO[part]
+    p0 = cl_hold_point(part, cl_phase(part, t_off)[0])
+    p1 = cl_hold_point(part, cl_phase(part, t_off + CL_MOVE)[0])
+    s = cl_side(part)
+    if part.endswith('arm'):
+        # off the rung (back from it and a touch down), up and out past the next one, over the one above and down onto it
+        keys = [(0.0, p0), (0.14, p0 + np.array([0.0, 0.4, 1.6])),
+                (0.55, p0 + (p1 - p0) * 0.62 + np.array([s * 1.4, -2.4, 3.2])),
+                (0.86, p1 + np.array([0.0, -1.3, 1.2])), (1.0, p1)]
+    else:
+        # the heel up and the toes back off the rung, up and out past the next one, over the one above and down onto it
+        keys = [(0.0, p0), (0.15, p0 + np.array([0.0, -0.5, 1.8])),
+                (0.55, p0 + (p1 - p0) * 0.6 + np.array([s * 0.3, -1.2, 3.0])),
+                (0.85, p1 + np.array([0.0, -1.0, 1.0])), (1.0, p1)]
+    return KV(keys, u), False
+
+
+def cl_shrug(side, t):
+    """The shoulder raised (-y) to reach up for a rung and pulled down through the hold: the arm's pivot offset."""
+    mid, u = cl_phase(side, t)
+    if mid is not None:
+        return -1.0 + 1.6 * smooth((t - CL_LET_GO[side] - CL_MOVE) % CL_LEN / CL_HOLD)
+    return 0.6 - 1.6 * smooth(u)
+
+
+def cl_wave(t, at):
+    """A cycle's cosine, peaking at tick [at]."""
+    return math.cos(2 * math.pi * (t - at) / CL_LEN)
+
+
+def cl_drop(t):
+    """The hips' bob: lowest as a foot takes its rung (ticks 12, 4), highest as its leg drives (8, 16)."""
+    return 0.35 * math.cos(2 * math.pi * (t - 4.5) / 8.0)
+
+
+def cl_solve():
+    sols, guess = {}, None
+    for lap in range(2):
+        for t in ticks(0, CL_LEN - 0.5, 0.5):
+            want = {p: cl_target(p, t) for p in CL_PARTS}
+            pos = {s: np.array([0.0, cl_shrug(s, t), 0.0]) for s in ('right_arm', 'left_arm')}
+
+            def res(fr, qa, qb, want=want, pos=pos):
+                out = []
+                for side, q in (('right_arm', qa), ('left_arm', qb)):
+                    Rp, j = chain_frame(side, qr=fr['qr'], pr=fr['pr'], qt=fr['qt'], vt=fr['vt'], arm_pos=pos[side])
+                    e = j + Rp @ qmat(q) @ GRIP[side] - want[side][0]
+                    if want[side][1]:
+                        ex = 0.0 if abs(e[0]) <= CL_SLACK[0] else e[0] - math.copysign(CL_SLACK[0], e[0])
+                        ey = 0.0 if abs(e[1]) <= CL_SLACK[1] else e[1] - math.copysign(CL_SLACK[1], e[1])
+                        out += [ex * 3.0, ey * 3.0, e[2] * 3.0]
+                    else:
+                        out += list(e * 0.4)
+                for side in ('right_leg', 'left_leg'):
+                    hip = np.array(PIVOTS[side], float) + fr['pr']
+                    n = float(np.linalg.norm(want[side][0] - hip))
+                    out.append(max(0.0, n - 11.85) * (4.0 if want[side][1] else 1.0))
+                return out
+            fr, qa, qb, guess = body_solve(res, pitch0=-8.0, yaw0=14.0 * cl_wave(t, 1.0),
+                                           roll0=5.0 * math.sin(2 * math.pi * (t - 0.5) / CL_LEN),
+                                           root0=(0.0, 0.0, CL_ROOT_Z), guess=guess, pitch_w=0.05, yaw_w=0.04,
+                                           roll_w=0.06, root_w=0.3, drop=cl_drop(t))
+            sols[t] = (fr, qa, qb)
+    sols[CL_LEN] = sols[0.0]
+    return sols
+
+
+CL_SOL = cl_solve()
+
+
+def cl_look(fr, t):
+    """Up the ladder, after the hand going up (the right in the first half, the left in the second)."""
+    side = -math.sin(2 * math.pi * (t - 2.0) / CL_LEN)
+    d = np.array([math.sin(math.radians(9.0)) * side, -math.sin(math.radians(24.0)), -math.cos(math.radians(24.0))])
+    return np.array([0.0, -4.0, -3.0]) + fr['pr'] + 40.0 * d
+
+
+c = clip('climb', 16, True, look=('citizen', 3), station_='ladder',
+         events=[('grab', 0), ('step', 4), ('grab', 8), ('step', 12)],
+         traces=[('right_arm', GRIP['right_arm'], (255, 200, 120)), ('left_arm', GRIP['left_arm'], (200, 230, 255))],
+         views=((150, -10), (90, -2), (30, -8, True)), pan=(0.0, -4.0, -2.0))
+ta.INFO['climb']['rise'] = lambda t: CL_RISE * t
+for t in every(16):
+    fr, qa, qb = CL_SOL[t]
+    key_frame(c, t, fr, ease='linear')
+    c.key('right_arm', t, qa, pos=(0.0, cl_shrug('right_arm', t), 0.0), ease='linear')
+    c.key('left_arm', t, qb, pos=(0.0, cl_shrug('left_arm', t), 0.0), ease='linear')
+    for side in ('right_leg', 'left_leg'):
+        leg_to(c, t, side, fr['pr'], cl_target(side, t)[0], toe=F)
+    c.key('head', t, head_at(fr, cl_look(fr, t)), ease='linear')
+c.mode('head', 'set')
+seal(c)
+for part in CL_PARTS:
+    t_take = CL_LET_GO[part] + CL_MOVE
+    for k in (t_take, t_take + CL_HOLD / 2, t_take + CL_HOLD):
+        k = k % CL_LEN
+        p = GRIP[part] if part.endswith('arm') else (0.0, 12.0, 0.0)
+        got = ta.fk(c, k, part, p)
+        want = cl_target(part, k)[0]
+        if part.endswith('arm'):
+            got = got.copy()
+            for i, sl in ((0, CL_SLACK[0]), (1, CL_SLACK[1])):
+                d = got[i] - want[i]
+                if abs(d) <= sl:
+                    got[i] = want[i]
+        for i, sl in ((0, CL_SLACK[0]), (1, CL_SLACK[1])):
+            d = got[i] - want[i]
+            if part.endswith('arm') and abs(d) > sl:
+                got[i] -= math.copysign(sl, d)
+        check(c, f'{part} on its rung (t={k:g})', got, want, tol=0.35)
 
 # ================================================================== eating and washing
 
@@ -1267,7 +1621,7 @@ def goods_clip(name, keys, events, goods, look):
     CK = carry_keys()
     c = clip(name, 20, False, look=look, events=events, views=((32, -12), (90, -2), (150, -10)),
              traces=[('right_arm', GRIP['right_arm'], (255, 200, 120))])
-    ta.INFO[name]['goods'] = goods
+    set_goods(name, goods)
     arms = Arms()
     for t in every(20):
         feet = {'right_leg': (-1.9, 0.0), 'left_leg': (1.9, 0.0)}
@@ -1309,7 +1663,7 @@ PU_KEYS = {
 }
 PU_GRAB = 8.5
 c = goods_clip('pick_up', PU_KEYS, [('grab', PU_GRAB)],
-               lambda t, mats: (GOODS_ON_GROUND if t < PU_GRAB else between_hands(mats), GOODS), ('citizen', 3))
+               [(0, PU_GRAB, ('ground', GOODS_ON_GROUND), GOODS), (PU_GRAB, None, ('hands', 0.0), GOODS)], ('citizen', 3))
 join('pick_up ends on carry', getc('pick_up'), 20, getc('carry'), 0, tol=0.3)
 join('pick_up starts on idle', getc('pick_up'), 0, getc('idle'), 0, tol=1.0)
 check(c, 'hands on the goods on the ground (t=8.5)', ta.fk(c, PU_GRAB, 'right_arm', GRIP['right_arm']),
@@ -1327,7 +1681,7 @@ PD_KEYS = {
 }
 PD_DOWN = 11.0
 c = goods_clip('put_down', PD_KEYS, [('set_down', PD_DOWN)],
-               lambda t, mats: (between_hands(mats) if t < PD_DOWN else GOODS_ON_GROUND, GOODS), ('citizen', 6))
+               [(0, PD_DOWN, ('hands', 0.0), GOODS), (PD_DOWN, None, ('ground', GOODS_ON_GROUND), GOODS)], ('citizen', 6))
 join('put_down starts on carry', getc('put_down'), 0, getc('carry'), 0, tol=0.3)
 join('put_down ends on idle', getc('put_down'), 20, getc('idle'), 0, tol=1.0)
 check(c, 'hands on the goods on the ground (t=11)', ta.fk(c, PD_DOWN, 'right_arm', GRIP['right_arm']),
@@ -1340,7 +1694,7 @@ def counter_clip(name, look, events, goods=None, tools=(), tools_at=None, partne
              views=((40, -14), (90, -2), (200, -14)),
              traces=[('right_arm', GRIP['right_arm'], (255, 200, 120))])
     if goods:
-        ta.INFO[name]['goods'] = goods
+        set_goods(name, goods)
     if tools_at:
         ta.INFO[name]['tools_at'] = tools_at
     return c
@@ -1364,7 +1718,7 @@ HO_W = [(0, 1.0), (19.0, 1.0), (24.0, 0.0), (30, 0.0)]
 HO_HEAD = [(0, 6.0), (5.0, 4.0), (12.0, 6.0), (16.0, 4.0), (20.0, -2.0), (24.0, 8.0), (27.0, 0.0), (30, 0.0)]
 HANDOVER_T = 16.0
 c = counter_clip('hand_over', ('merchant', 3), [('handoff', HANDOVER_T)], partner='receive',
-                 goods=lambda t, mats: (between_hands(mats, 2.0), GOODS) if t < HANDOVER_T else None)
+                 goods=[(0, HANDOVER_T, ('hands', 2.0), GOODS)])
 arms = Arms()
 for t in every(30):
     fr = F_(qt=bend(K(HO_P, t)))
@@ -1381,7 +1735,7 @@ RC_HAND = [(0, (-7.0, 10.0, -5.0)), (5.0, (-7.6, 5.0, -9.0)), (11.0, (-7.4, 3.2,
 RC_W = [(0, 0.0), (5.0, 1.0), (30, 1.0)]
 RC_HEAD = [(0, 0.0), (5.0, 4.0), (12.0, 6.0), (16.0, 8.0), (21.0, 12.0), (25.0, 14.0), (28.0, 6.0), (30, 4.0)]
 c = counter_clip('receive', ('citizen', 1), [('handoff', HANDOVER_T)], partner='hand_over',
-                 goods=lambda t, mats: (between_hands(mats, 2.0), GOODS) if t >= HANDOVER_T else None)
+                 goods=[(HANDOVER_T, None, ('hands', 2.0), GOODS)])
 arms = Arms()
 for t in every(30):
     fr = F_(qt=bend(K(RC_P, t), 0.0, 0.0))
@@ -1427,6 +1781,12 @@ for t in every(30):
     c.key('right_arm', t, qslerp(hang('right_arm', fr), q_hand, smooth(K(PAY_HW, t))), ease='linear')
     c.key('head', t, qeuler(x=K(PAY_HEAD, t)), ease='linear')
 c.mode('head', 'add')
+# Paying with goods (when they carry something), it is counted out of the fingers in the coins' place
+set_goods('pay', [(7.0, PAY_DROPS[-1], ('part', 'right_arm', GRIP['right_arm'] + np.array(COIN)), 3.0)])
+# carry and carry_sack (townsfolk_anims.py's clips): goods carried between the hands in the crate's place, or in the
+# free left hand beside the sack on the shoulder
+set_goods('carry', [(0, None, ('hands', 0.0), GOODS)])
+set_goods('carry_sack', [(0, None, ('part', 'left_arm', GRIP['left_arm'] + np.array([0.0, 1.2, -1.2])), 5.0)])
 
 # ================================================================== the market
 
@@ -1507,8 +1867,8 @@ SU2_TAKE, SU2_PLACE = 9.0, 20.0
 c = clip('set_up', 60, True, look=('merchant', 1), station_='stall',
          events=[('take', SU2_TAKE), ('place', SU2_PLACE), ('tug', 38), ('tug', 42)], views=((40, -14, True), (90, -2), (200, -16)),
          traces=[('left_arm', GRIP['left_arm'], (200, 230, 255))])
-ta.INFO['set_up']['goods'] = lambda t, mats: ((apply(mats['left_arm'], GRIP['left_arm'] + np.array([0.0, 1.0, -2.5])), 5.0)
-                                              if SU2_TAKE <= t < SU2_PLACE else (STALL_SET, 5.0) if SU2_PLACE <= t < 31.0 else None)
+set_goods('set_up', [(SU2_TAKE, SU2_PLACE, ('part', 'left_arm', GRIP['left_arm'] + np.array([0.0, 1.0, -2.5])), 5.0),
+                      (SU2_PLACE, 31.0, ('ground', STALL_SET), 5.0)])
 rights, lefts = Arms(), Arms()
 for t in every(60):
     fr = F_(qt=bend(K(SU2_P, t, 60), K(SU2_YAW, t, 60), K(SU2_ROLL, t, 60)))
@@ -1592,7 +1952,7 @@ BASKET_RIM = np.array([8.4, 7.6, -6.4])         # torso space: the front rim's o
 Q_BASKET = reach('left_arm', _fr0, BASKET_RIM, palm=R, palm_w=0.3)
 c = clip('carry_basket', 40, True, look=('farmer', 2), tools_=('basket_hip',), overlay=True,
          views=((32, -12), (90, -2), (-60, -10)))
-ta.INFO['carry_basket']['goods'] = lambda t, mats: (apply(mats['body'], BASKET_TOP + np.array([0.0, 0.4, 0.0])), 3.5)
+set_goods('carry_basket', [(0, None, ('part', 'body', BASKET_TOP + np.array([0.0, 0.4, 0.0])), 3.5)])
 for t in every(40, 2.0):
     ph = 2 * math.pi * t / 40.0
     c.key('left_arm', t, Q_BASKET, ease='linear')
@@ -1671,21 +2031,11 @@ for t in every(40):
 c.mode('head', 'set')
 
 
-def _gather_goods(t, mats):
-    if t < G_PULL:
-        return None
-    if t < G_TOSS:
-        return apply(mats['right_arm'], GRIP['right_arm'] + np.array([0.0, 1.4, -1.0])), 3.0
-    into = apply(mats['body'], BASKET_TOP + np.array([0.0, 0.4, 0.0]))
-    if t < G_IN:
-        r = getc('gather')
-        start = ta.fk(r, G_TOSS, 'right_arm', GRIP['right_arm'] + np.array([0.0, 1.4, -1.0]))
-        u = (t - G_TOSS) / (G_IN - G_TOSS)
-        return start + (into - start) * u + np.array([0.0, -4.0 * u * (1.0 - u), 0.0]), 3.0
-    return into, 3.0
-
-
-ta.INFO['gather']['goods'] = _gather_goods
+G_IN_HAND = GRIP['right_arm'] + np.array([0.0, 1.4, -1.0])     # the crop in the fist, by its leaves
+G_IN_BASKET = BASKET_TOP + np.array([0.0, 0.4, 0.0])
+set_goods('gather', [(G_PULL, G_TOSS, ('part', 'right_arm', G_IN_HAND), 3.0),
+                     (G_TOSS, G_IN, ('toss', ta.fk(getc('gather'), G_TOSS, 'right_arm', G_IN_HAND), 'body', G_IN_BASKET, 2.0), 3.0),
+                     (G_IN, None, ('part', 'body', G_IN_BASKET), 3.0)])
 check(c, 'hand on the leaves (t=11)', ta.fk(c, 11, 'right_arm', GRIP['right_arm']), GATHER_CROP, tol=0.8)
 check(c, 'right knee on the ground (t=16)', (leg_end(c, 16, 'right_leg')[1],), (24.0,), tol=0.4)
 check(c, 'left foot on the ground (t=16)', (leg_end(c, 16, 'left_leg')[1],), (24.0,), tol=0.4)
@@ -2570,3 +2920,7 @@ for k in (50.0, 52.0, 54.0, 55.0, 56.0):
 check(c, 'left fist on the curb (t=52)', ta.fk(c, 52.0, 'left_arm', GRIP['left_arm']), DW_BRACE, tol=0.6)
 print('   draw_water: rope hauled', round(hauled(44.0), 1), 'of', round(WAY_AT[-1], 1), '| bucket over the edge at t',
       next(k for k in ticks(0, 44, 0.5) if hauled(k) >= UP_SHAFT))
+
+
+if __name__ == '__main__':
+    main(sys.argv)
