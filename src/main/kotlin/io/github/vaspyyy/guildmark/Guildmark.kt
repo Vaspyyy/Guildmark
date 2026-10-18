@@ -223,6 +223,9 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         io.github.vaspyyy.guildmark.economy.Orders.register(modBus)
         io.github.vaspyyy.guildmark.economy.Suppliers.link()
         io.github.vaspyyy.guildmark.economy.SupplierCommand.init()
+        // The caravans on the roads in: their records, the outlaws working the roads, escorts and salvage
+        io.github.vaspyyy.guildmark.economy.Caravans.register()
+        io.github.vaspyyy.guildmark.economy.CaravanCommand.init()
         // The carters' handcarts, pulled behind them with their loads heaped on (cart/)
         io.github.vaspyyy.guildmark.cart.Handcarts.register(modBus)
         // The market's goods on show: its displays, kept as full as its stock, and set out in capitals built before them
