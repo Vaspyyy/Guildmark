@@ -1,0 +1,182 @@
+package io.github.vaspyyy.guildmark.economy
+
+import io.github.vaspyyy.guildmark.guild.TownControl
+import io.github.vaspyyy.guildmark.registry.ModItems
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.util.Prediction
+import net.minecraft.world.ContainerHelper
+import net.minecraft.world.entity.player.Inventory
+import net.minecraft.world.item.Item
+import net.minecraft.world.item.ItemStack
+import kotlin.math.floor
+
+/**
+ * Why a good's price is well off its usual, as the stall keeper would put it ("Bread is dear: the ovens stood cold
+ * for want of flour"). [dear] is which way it's off; [key] takes the good's name.
+ */
+enum class Why(val id: String, val dear: Boolean) {
+    /** Trouble or luck under way (see [Quote.event], which names it). */
+    EVENT_DEAR("event", true),
+    EVENT_CHEAP("event", false),
+    /** Players have bought a lot of it lately, or sold a lot. */
+    BOUGHT_UP("bought_up", true),
+    SOLD_IN("sold_in", false),
+    /** The bakehouse ran out of flour, or the mill out of grain. */
+    NO_FLOUR("no_flour", true),
+    NO_GRAIN("no_grain", true),
+    /** Fewer hands make it than the town was built for. */
+    SHORT_HANDED("short_handed", true),
+    /** The ovens rest on the seventh day. */
+    REST_DAY("rest_day", true),
+    /** The fields have it, but the carts haven't brought it in. */
+    CARTS_BEHIND("carts_behind", true),
+    /** The town's tools are worn out, so everything comes slower. */
+    WORN_TOOLS("worn_tools", true),
+    /** The town can't make enough of it, so most of it comes by caravan. */
+    FROM_AFAR("from_afar", true),
+    /** Nothing in particular: there's simply little of it about, or plenty. */
+    SCARCE("scarce", true),
+    PLENTY("plenty", false);
+
+    val key: String get() = if (this == EVENT_DEAR || this == EVENT_CHEAP) "market.guildmark.why.event" else "market.guildmark.why.$id"
+}
+
+/**
+ * What a shop can tell a player about one of its goods: whole units in stock, a unit's price now and as it usually
+ * goes, the lot a player can buy now and the one the market will buy, how many more it takes, which way the price
+ * is going (1 up, -1 down, against yesterday's close), and why it's well off its usual, if it is.
+ */
+class Quote(
+    val good: Good,
+    val stock: Int,
+    val price: Double,
+    val usual: Double,
+    val buy: Lot?,
+    val sell: Lot?,
+    val wants: Int,
+    val trend: Int,
+    val why: Why?,
+    /** The trouble or luck behind [why], if that's what it is. */
+    val event: EventKind?,
+)
+
+/** What came of a player's offer: [lot] is what changed hands, or what would have. */
+class Deal(val outcome: Outcome, val lot: Lot? = null) {
+    enum class Outcome {
+        DONE,
+        /** The market has none to sell, or wants no more. */
+        NONE,
+        /** Not enough Guild Marks for the lot. */
+        POOR,
+        /** Not enough of the goods for the lot. */
+        LACKING,
+    }
+}
+
+/**
+ * Players' trade with a capital's market: quotes for its goods, and buying and selling a lot at a time for Guild
+ * Marks (see [Lots] for how lots are priced). Everything comes from and goes into the market's own stock, and
+ * every lot moves the price.
+ */
+object Trading {
+    /** How far off its usual a price has to be for the stall to say why. */
+    private const val OFF = 1.2
+
+    /** Of what the town likes to keep, how much players have to buy or sell for it to be the reason. */
+    private const val A_LOT = 0.25
+
+    fun quote(entry: Markets.Entry, good: Good): Quote {
+        val m = entry.market
+        val town = entry.town
+        val price = m.price(town, good)
+        val usual = good.base * m.freight(good)
+        val (why, event) = why(entry, good, price / usual)
+        return Quote(
+            good, floor(m.stock(good) + 1e-6).toInt(), price, usual, Lots.buy(m, town, good), Lots.sell(m, town, good),
+            Lots.wants(m, town, good), m.trend(town, good), why, event,
+        )
+    }
+
+    /** [player] buys a lot of [good]: their Marks for the goods. */
+    fun buy(player: ServerPlayer, entry: Markets.Entry, good: Good): Deal {
+        val item = good.item ?: return Deal(Deal.Outcome.NONE)
+        val lot = Lots.buy(entry.market, entry.town, good) ?: return Deal(Deal.Outcome.NONE)
+        if (TownControl.marks(player) < lot.marks) return Deal(Deal.Outcome.POOR, lot)
+        TownControl.pay(player, lot.marks)
+        give(player, item, lot.count)
+        Lots.bought(entry.market, good, lot)
+        Markets.get(player.level()).changed()
+        return Deal(Deal.Outcome.DONE, lot)
+    }
+
+    /** [player] sells the market a lot of [good]: the goods for its Marks. */
+    fun sell(player: ServerPlayer, entry: Markets.Entry, good: Good): Deal {
+        val item = good.item ?: return Deal(Deal.Outcome.NONE)
+        val lot = Lots.sell(entry.market, entry.town, good) ?: return Deal(Deal.Outcome.NONE)
+        if (count(player.inventory, item) < lot.count) return Deal(Deal.Outcome.LACKING, lot)
+        ContainerHelper.clearOrCountMatchingItems(player.inventory, { it.`is`(item) }, lot.count, false)
+        give(player, ModItems.GUILD_MARK.get(), lot.marks)
+        Lots.sold(entry.market, good, lot)
+        Markets.get(player.level()).changed()
+        return Deal(Deal.Outcome.DONE, lot)
+    }
+
+    /** How many of [item] [inventory] holds. */
+    fun count(inventory: Inventory, item: Item): Int =
+        ContainerHelper.clearOrCountMatchingItems(inventory, { it.`is`(item) }, Int.MAX_VALUE, true)
+
+    private fun give(player: ServerPlayer, item: Item, count: Int) {
+        var left = count
+        val most = ItemStack(item).maxStackSize
+        while (left > 0) {
+            val n = minOf(left, most)
+            player.inventory.placeItemBackInInventory(ItemStack(item, n), Prediction.SERVER_ONLY)
+            left -= n
+        }
+    }
+
+    /** Why [good]'s price stands at [off] times its usual, if that's far enough off to say. */
+    private fun why(entry: Markets.Entry, good: Good, off: Double): Pair<Why?, EventKind?> {
+        val m = entry.market
+        val town = entry.town
+        val target = town.target(good)
+        if (off >= OFF) {
+            m.events(good).firstOrNull { it.factor < 1.0 || it.kind == EventKind.FEVER }?.let { return Why.EVENT_DEAR to it.kind }
+            if (m.today(Tally.BOUGHT, good) + m.yesterday(Tally.BOUGHT, good) * 0.5 >= target * A_LOT) return Why.BOUGHT_UP to null
+            if (good == Good.BREAD) {
+                if (m.idle[Maker.MILL.ordinal] + m.idleYesterday[Maker.MILL.ordinal] > 0) return Why.NO_GRAIN to null
+                if (m.idle[Maker.OVENS.ordinal] + m.idleYesterday[Maker.OVENS.ordinal] > 0) return Why.NO_FLOUR to null
+                if (Conditions(m.hour).restDay) return Why.REST_DAY to null
+            }
+            if (shortHanded(town, good)) return Why.SHORT_HANDED to null
+            if (good in FARMED && m[Site.FARMS, good] >= town.use(good) * 0.5) return Why.CARTS_BEHIND to null
+            if (good in MADE && m.stock(Good.TOOLS) < 1.0) return Why.WORN_TOOLS to null
+            if (m.freight(good) >= 1.0 + Economy.FREIGHT * 0.5) return Why.FROM_AFAR to null
+            return Why.SCARCE to null
+        }
+        if (off <= 1.0 / OFF) {
+            m.events(good).firstOrNull { it.factor > 1.0 }?.let { return Why.EVENT_CHEAP to it.kind }
+            if (m.today(Tally.SOLD, good) + m.yesterday(Tally.SOLD, good) * 0.5 >= target * A_LOT) return Why.SOLD_IN to null
+            return Why.PLENTY to null
+        }
+        return null to null
+    }
+
+    /** Whether fewer of those who make [good] are living than the town was built with. */
+    private fun shortHanded(town: Town, good: Good): Boolean {
+        val built = town.planned ?: return false
+        return when (good) {
+            Good.BREAD -> town.bakers < built.bakers
+            in FARMED -> town.farmers < built.farmers
+            in Economy.CATCH.keys -> town.fishers < built.fishers
+            Good.ARROW -> town.fletchers < built.fletchers
+            else -> false
+        }
+    }
+
+    /** What the fields, barns, coops and orchards give, which the carters bring in. */
+    private val FARMED = Economy.FIELD.keys + Economy.BARN.keys + Economy.COOP.keys + Good.APPLE
+
+    /** What the town's own hands make with tools. */
+    private val MADE = FARMED + Economy.CATCH.keys + listOf(Good.BREAD, Good.ARROW)
+}

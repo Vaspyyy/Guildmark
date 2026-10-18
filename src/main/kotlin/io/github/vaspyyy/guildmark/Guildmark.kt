@@ -206,6 +206,9 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         CapitalVisits.register()
         // Capitals' sites worked out ahead of the players (city/Capitals)
         Capitals.register()
+        // Each capital's market: goods grown, made, carted, eaten and traded an hour at a time (economy/)
+        io.github.vaspyyy.guildmark.economy.Markets.register()
+        io.github.vaspyyy.guildmark.economy.MarketCommand.init()
         modBus.addListener(EntityAttributeCreationEvent::class.java) {
             it.put(ModEntities.GUILD_MEMBER.get(), GuildMember.createAttributes().build())
             it.put(ModEntities.STORY_NPC.get(), StoryNpc.createAttributes().build())

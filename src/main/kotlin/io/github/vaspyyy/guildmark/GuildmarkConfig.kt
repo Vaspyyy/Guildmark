@@ -99,6 +99,9 @@ object GuildmarkConfig {
     val TOWNSFOLK_BEDS: ModConfigSpec.BooleanValue = BUILDER
         .comment("A bed for everyone in the capitals: anyone the city left with nowhere to sleep has a bed made up in their home, out of sight of players.")
         .define("townsfolkBeds", true)
+    val MARKETS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("The capitals' markets: each capital grows, makes, moves, eats and trades real goods an hour at a time, whether anyone is there or not, and its stalls buy and sell at prices that follow what it holds. Off, the markets stand still.")
+        .define("capitalMarkets", true)
 
     val SPEC: ModConfigSpec = BUILDER.build()
 }
