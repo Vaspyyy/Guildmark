@@ -170,6 +170,8 @@ internal class Waylay(val show: Show, private var strike: Caravans.Strike?) {
             h.then(Go({ show.around(it, spot.first) }, 0.15, { spot.second })).then { it.p.act(Activity.STAND_GUARD) }
         }
         w?.flag(Wagon.FLAG_BRAKE, true)
+        // The band's arrows go into the side it faces them with: its left unless they're on its right
+        w?.flag(Wagon.FLAG_MIRROR, side > 0)
     }
 
     /** Where the band's [k]th comes from: 24 to 32 blocks off the road on its side, out of the wagon's sight if the ground allows. */
