@@ -283,7 +283,7 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
             c.TOWNSFOLK_CROWDS, c.TOWNSFOLK_CROWD_DENSITY, c.LIVING_WORLD, c.TOWNSFOLK_BEDS, c.MARKETS, c.HANDCARTS, c.MARKET_DISPLAYS, c.TURNING_MILLS,
             c.TOWNSFOLK_TALK, c.TOWNSFOLK_MEMORY, c.TOWNSFOLK_RUMOURS, c.TOWNSFOLK_BARKS,
             c.REGIONS, c.REGION_TERRAIN, c.REGION_ENEMIES,
-            c.HOMESTEADS, c.HOMESTEAD_PROTECTION, c.HOMESTEAD_BUILD_SPEED,
+            c.HOMESTEADS, c.HOMESTEAD_PROTECTION, c.HOMESTEAD_BUILD_SPEED, c.HOMESTEAD_SHIPPING, c.OWN_STALLS,
         )
         val rows = arrayListOf<Row>(Note(Component.translatable("gui.guildmark.settings.world.$note"), if (editable) Ui.TEXT_FAINT else Ui.GOLD, width))
         if (!spec.isLoaded) return rows
@@ -321,6 +321,8 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
             toggle(c.HOMESTEADS, spec, editable),
             toggle(c.HOMESTEAD_PROTECTION, spec, editable),
             slider(c.HOMESTEAD_BUILD_SPEED, spec, editable, MULTIPLIERS, ::times) { c.HOMESTEAD_BUILD_SPEED.set(it) },
+            toggle(c.HOMESTEAD_SHIPPING, spec, editable),
+            toggle(c.OWN_STALLS, spec, editable),
             toggle(c.DUSK_RIDERS, spec, editable),
             toggle(c.DRAGONS, spec, editable),
             toggle(c.SEA_MONSTERS, spec, editable),
