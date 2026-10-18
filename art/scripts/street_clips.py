@@ -2,9 +2,9 @@
 The streets' moves (M6, influence: living-world/design-influence.md, sections 5, 6 and 8), on the Living World's kit.
 The hard days: waiting in the bread queue (queue), shivering with the coal short (shiver), an empty basket turned over
 at a bare stall (empty_basket), haggling (haggle), and a bare stall's flap let down (shut_stall). The alms table: hands
-held out (hold_out), the keeper ladling stew into a bowl and handing it over the table (ladle), the bowl taken with a
-little bow (take_bowl, which starts on hold_out's last frame and ends on eat_bowl's first) and eaten standing
-(eat_bowl). A household coming and going: the handcart packed (pack), the neighbours' embrace (embrace, one clip that
+held out and a bowl taken in them (hold_out), the keeper ladling stew into it and handing it over the table (ladle:
+the game starts the two together), the bowl drawn in with a little bow (take_bowl, which starts on hold_out's last frame
+and ends on eat_bowl's first) and eaten standing (eat_bowl). A household coming and going: the handcart packed (pack), the neighbours' embrace (embrace, one clip that
 both play, face to face), the newcomers taking in the street (look_about) and shown to their door (show_in, an overlay
 played walking).
 
@@ -474,50 +474,15 @@ def _ss_cord(c, t):
 
 # ================================================================== the alms table
 
-# ---- hold_out (30, once, its last frame held): at the alms table, the hands cupped together and held out over its
-# near edge to the keeper across it, a small bow of the head, and a hopeful look up; held there until the bowl comes
-# (take_bowl starts where this ends).
-HD2_LEN = 30
-HD2_OUT = [(0, 0.0), (3.0, 0.0), (11.0, 1.0), (30, 1.0)]
-HD2_P = [(0, 0.0), (4.0, 2.0), (11.0, 9.0), (15.0, 12.0), (19.0, 9.0), (30, 9.0)]
-HD2_HX = [(0, 0.0), (5.0, 10.0), (11.0, 6.0), (15.0, 16.0), (20.0, -6.0), (30, -6.0)]
-HD2_HANDS = {'right_arm': np.array([-1.1, 6.6, -10.4]), 'left_arm': np.array([1.1, 6.6, -10.4])}
-
-
-def hd2_bob(t):
-    return np.array([0.0, 0.3 * bump(t, 16.0, 30.0) * math.sin(2 * math.pi * (t - 16.0) / 14.0), 0.0])
-
-
-def hold_out():
-    c = la.clip('hold_out', HD2_LEN, False, look=('citizen', 4), station_='alms_taker', events=[('offer', 11.0)],
-                traces=[('right_arm', GRIP['right_arm'], (255, 200, 120))], views=((32, -10), (90, -2), (150, -14)))
-    holds = la.Holds()
-    for t in la.every(HD2_LEN):
-        pitch = K(HD2_P, t)
-        fr = F_(qt=bend(pitch, 0.0, 0.0), vt=(0.0, sink_for(pitch), 0.0), pr=la.root_for(FEET, z=-0.4 * smooth(K(HD2_OUT, t))))
-        key_frame(c, t, fr, ease='linear')
-        stand(c, t, fr)
-        w = smooth(K(HD2_OUT, t))
-        for side in ('right_arm', 'left_arm'):
-            pose = reach_arm(holds, side, fr, HD2_HANDS[side] + hd2_bob(t), palm=U, palm_w=0.5)
-            set_arm(c, side, t, mix(rest_arm(side, fr), pose, w))
-        c.key('head', t, head_level(fr, K(HD2_HX, t)), ease='linear')
-    c.mode('head', 'set')
-    joins_idle(c, end=False)
-    for k in (12.0, 30.0):
-        for side in ('right_arm', 'left_arm'):
-            check(c, f'{side.replace("_arm", "")} hand held out (t={k:g})', ta.fk(c, k, side, GRIP[side]),
-                  HD2_HANDS[side] + hd2_bob(k), tol=0.8)
-    return c
-
 # ---- ladle (30, once): the keeper behind the alms table (a noble of the town, or the innkeeper), a short step in: a bowl
 # taken off the stack on the left by its near rim (take); the ladle taken up from where it stands leaning in the pot,
 # straightened and pushed down to the bottom, stirred round (dip) and lifted out full; the bowl brought in under it, over
 # the pot's near left edge, as the ladle goes out over the bowl and tips to the right (pour: the stew runs off its lip
 # into the bowl); the ladle righted and stood back in the pot as it was; the bowl taken by its right rim too, another
-# step in, and held out over the table's middle to whoever is across it (give: they take it from beneath, playing
-# take_bowl from this clip's pour tick), a step back and the hands down. The ladle stands in the pot at the start and
-# the end just where the table's own model has it (works_art.py), so the game can hide the table's while this plays.
+# step in, and held out over the table's middle to whoever is across it (give: they take it from beneath, in their
+# hold_out, which the game starts on the same tick as this), a step back and the hands down. The ladle stands in the pot
+# at the start and the end just where the table's own model has it (works_art.py), so the game can hide the table's
+# while this plays; the bowl's spoon comes with its stew.
 LA_LEN = 30
 LA_TAKE, LA_GRAB, LA_DIP, LA_POUR, LA_BACK, LA_GIVE = 3.5, 4.5, 7.5, 12.5, 17.5, 21.0
 LA_POURING = (12.2, 13.9)                       # the stew runs off the lip
@@ -618,7 +583,8 @@ def la_hands(t):
 
 
 def ladle():
-    c = la.clip('ladle', LA_LEN, False, look=('noble', 2), tools_=('ladle', 'ladle_full', 'soup_pour', 'bowl_empty', 'bowl'),
+    c = la.clip('ladle', LA_LEN, False, look=('noble', 2),
+                tools_=('ladle', 'ladle_full', 'soup_pour', 'bowl_empty', 'bowl', 'spoon'),
                 station_='alms_keeper', events=[('take', LA_TAKE), ('dip', LA_DIP), ('pour', LA_POUR), ('give', LA_GIVE)],
                 traces=[('ladle', tuple(LA_BOWL_PT), (230, 190, 140))], views=((40, -14), (90, -4), (-40, -16)))
     holds = la.Holds()
@@ -642,12 +608,14 @@ def ladle():
     track = lambda t, pivot, c=c: _la_track(c, t)
     bowl = lambda t, pivot, c=c: (level(), _la_bowl_pivot(c, t), None)
     la.TRACKS['ladle'] = {'ladle': track, 'ladle_full': track, 'soup_pour': lambda t, pivot, c=c: _la_pour(c, t),
-                          'bowl_empty': bowl, 'bowl': bowl}
+                          'bowl_empty': bowl, 'bowl': bowl,
+                          'spoon': lambda t, pivot, c=c: (*spoon_in(_la_bowl_pivot(c, t) + level() @ BOWL_BASE, keeper=True), None)}
     ta.INFO['ladle']['tools_at'] = tools_when([('ladle', 0.0, LA_DIP + 0.5), ('ladle_full', LA_DIP + 0.5, LA_POURING[1]),
                                                ('ladle', LA_POURING[1], None), ('soup_pour', *LA_POURING),
-                                               ('bowl_empty', LA_TAKE, LA_FILLED), ('bowl', LA_FILLED, LA_GIVE)])
-    ta.INFO['ladle']['partner'] = ('take_bowl', ('citizen', 4))
-    PARTNER_PLACE['ladle'] = (T(0.0, 0.0, -wa.ALMS_GAP) @ FACING, LA_POUR)
+                                               ('bowl_empty', LA_TAKE, LA_FILLED), ('bowl', LA_FILLED, LA_GIVE),
+                                               ('spoon', LA_FILLED, LA_GIVE)])
+    ta.INFO['ladle']['partner'] = ('hold_out', ('citizen', 4))
+    PARTNER_PLACE['ladle'] = (T(0.0, 0.0, -wa.ALMS_GAP) @ FACING, 0.0)
     check(c, f'a bowl off the stack (t={LA_TAKE:g})', ta.fk(c, LA_TAKE, 'bowl_empty', BOWL_BASE), wa.BOWL_TAKEN, tol=0.6)
     for k in (LA_GRAB, LA_BACK):
         check(c, f'right fist on the ladle where it stands (t={k:g})', ta.fk(c, k, 'right_arm', GRIP['right_arm']),
@@ -703,99 +671,161 @@ def _la_pour(c, t):
     Rm, S = la.aim(top, foot, lp.ROPE_LEN)
     return Rm, top, S
 
-# ---- take_bowl (24, once): from hold_out's last frame (the hands cupped out over the table): a step in and a lean, the
-# hands reaching in under the bowl the keeper holds out over the table's middle, taken from beneath in both (take: the
-# keeper's give), drawn in to the chest with a small bow of thanks (bow), a step back, and the spoon taken out of the
-# bowl; it ends on eat_bowl's first frame. The game starts it on the keeper's ladle's pour tick, so the two meet over
-# the table.
-TB_LEN = 24
-TB_TAKE = LA_GIVE - LA_POUR                     # 8
+# ---- hold_out (30, once, its last frame held): at the alms table, the game starting it with the keeper's ladle (the
+# two on the same tick, so they meet over the table): the hands cupped together and held out over the table's near edge
+# to the keeper across it, a small bow of the head and a hopeful look up; a step in and a lean as the keeper brings the
+# filled bowl over the table's middle, the hands in under it, and it taken from beneath (take: the keeper's give), drawn
+# in a little and held (take_bowl starts where this ends).
+HD2_LEN = 30
+HD2_TAKE = LA_GIVE                              # 21: the keeper lets go of it
+HD2_OUT = [(0, 0.0), (3.0, 0.0), (10.0, 1.0), (30, 1.0)]
+HD2_P = [(0, 0.0), (4.0, 2.0), (10.0, 9.0), (13.0, 11.0), (16.0, 8.0), (19.0, 17.0), (HD2_TAKE, 20.0), (24.5, 14.0),
+         (30, 13.0)]
+HD2_HX = [(0, 0.0), (5.0, 10.0), (10.0, 6.0), (13.0, 14.0), (16.5, -6.0), (19.0, 6.0), (22.0, 12.0), (26.0, 0.0),
+          (30, -2.0)]
+HD2_HANDS = {'right_arm': np.array([-1.1, 6.6, -10.4]), 'left_arm': np.array([1.1, 6.6, -10.4])}
+HD2_STEPS = [(14.0, 16.8, 'left_leg', (1.9, -3.0)), (15.6, 18.4, 'right_leg', (-1.9, -3.0))]
 TB_HANDOVER = np.array([-LA_HANDOVER[0], LA_HANDOVER[1], -wa.ALMS_GAP - LA_HANDOVER[2]])
 TB_UNDER = {'right_arm': np.array([-1.6, 2.0, 0.5]), 'left_arm': np.array([1.6, 2.0, 0.5])}    # the fists under it
-TB_STEPS = [(0.5, 3.5, 'left_leg', (1.9, -3.0)), (2.5, 5.5, 'right_leg', (-1.9, -3.0)),
-            (11.5, 14.0, 'right_leg', (-1.9, 0.0)), (13.0, 15.5, 'left_leg', (1.9, 0.0))]
-TB_P = [(0, 9.0), (4.0, 15.0), (TB_TAKE, 20.0), (10.5, 12.0), (13.0, 17.0), (15.5, 8.0), (24, 5.0)]
-TB_SPOON = 19.0
+HD2_HELD = TB_HANDOVER + np.array([0.3, 0.2, 2.4])      # its bottom's middle, drawn in a little and held
+
+
+def hd2_bob(t):
+    return np.array([0.0, 0.3 * bump(t, 9.0, 16.0) * math.sin(2 * math.pi * (t - 9.0) / 7.0), 0.0])
+
+
+def hd2_bowl_path(t):
+    """The bowl's bottom's middle once it's taken: drawn in a little and held."""
+    return path([(HD2_TAKE, TB_HANDOVER), (24.5, HD2_HELD), (HD2_LEN, HD2_HELD)], t)
+
+
+def spoon_in(base, keeper=False):
+    """The spoon stood in a bowl of stew (whose bottom's middle is [base]), leaning back toward whoever eats from it
+    ([keeper]: as the keeper holds it out, across the table from them): its turn, and its pivot (its handle's end)."""
+    if keeper:
+        Rs = frame_of(unit(np.array([-0.55, 1.0, -0.25])), F)
+        off = np.array([-0.4, 0.4, 0.0])
+    else:
+        Rs = frame_of(unit(np.array([0.55, 1.0, 0.25])), B)
+        off = np.array([0.4, 0.4, 0.0])
+    stew = base + level() @ (BOWL_TOP - BOWL_BASE) + off
+    return Rs, stew - Rs @ SPOON_BOWL
+
+
+def hold_out():
+    c = la.clip('hold_out', HD2_LEN, False, look=('citizen', 4), tools_=('bowl', 'spoon'), station_='alms_taker',
+                events=[('offer', 10.0), ('take', HD2_TAKE)], traces=[('right_arm', GRIP['right_arm'], (255, 200, 120))],
+                views=((32, -10), (90, -2), (150, -14)))
+    holds = la.Holds()
+    for t in la.every(HD2_LEN):
+        pitch = K(HD2_P, t)
+        w = smooth(K(HD2_OUT, t))
+        feet, lift = stepping(t, FEET, HD2_STEPS, lift=1.0)
+        fr = F_(qt=bend(pitch, 0.0, 0.0), vt=(0.0, sink_for(pitch), 0.0),
+                pr=la.root_for(feet, z=0.5 * (feet['right_leg'][1] + feet['left_leg'][1]) - 0.4 * w,
+                               dip=0.4 * bump(t, 13.0, 30.0)))
+        key_frame(c, t, fr, ease='linear')
+        stand(c, t, fr, feet=feet, lift=lift)
+        base = hd2_bowl_path(t)
+        reach = smooth((t - 15.0) / 4.5)
+        hold = smooth((t - HD2_TAKE + 1.6) / 1.6)
+        for side in ('right_arm', 'left_arm'):
+            want = (HD2_HANDS[side] + hd2_bob(t)) * (1.0 - reach) + \
+                (TB_HANDOVER + TB_UNDER[side] + np.array([0.0, 0.8, 0.6])) * reach
+            want = want * (1.0 - hold) + (base + TB_UNDER[side]) * hold
+            pose = reach_arm(holds, side, fr, want, palm=U, palm_w=0.5)
+            set_arm(c, side, t, mix(rest_arm(side, fr), pose, w))
+        c.key('head', t, head_level(fr, K(HD2_HX, t)), ease='linear')
+    c.mode('head', 'set')
+    la.TRACKS['hold_out'] = {'bowl': lambda t, pivot: (level(), hd2_bowl_path(t) - level() @ BOWL_BASE, None),
+                             'spoon': lambda t, pivot: (*spoon_in(hd2_bowl_path(t)), None)}
+    ta.INFO['hold_out']['tools_at'] = tools_when([('bowl', HD2_TAKE, None), ('spoon', HD2_TAKE, None)])
+    ta.INFO['hold_out']['partner'] = ('ladle', ('noble', 2))
+    PARTNER_PLACE['hold_out'] = (T(0.0, 0.0, -wa.ALMS_GAP) @ FACING, 0.0)
+    joins_idle(c, end=False)
+    for side in ('right_arm', 'left_arm'):
+        check(c, f'{side.replace("_arm", "")} hand held out (t=12)', ta.fk(c, 12.0, side, GRIP[side]),
+              HD2_HANDS[side] + hd2_bob(12.0), tol=0.8)
+        for k in (HD2_TAKE, HD2_LEN):
+            check(c, f'{side.replace("_arm", "")} hand under the bowl (t={k:g})', ta.fk(c, k, side, GRIP[side]),
+                  hd2_bowl_path(k) + TB_UNDER[side], tol=0.8)
+    check(c, f'the bowl taken over the table\'s middle (t={HD2_TAKE:g})', ta.fk(c, HD2_TAKE, 'bowl', BOWL_BASE), TB_HANDOVER,
+          tol=0.6)
+    return c
+
+# ---- take_bowl (24, once): from hold_out's last frame (the bowl just taken over the table, held out in both hands):
+# drawn in to the chest, a step back, a small bow of thanks (bow), and the spoon taken out of the bowl; it ends on
+# eat_bowl's first frame.
+TB_LEN = 24
+TB_BOW = 9.5
+TB_SPOON = 17.0
+TB_STEPS = [(2.5, 5.3, 'right_leg', (-1.9, 0.0)), (4.2, 7.0, 'left_leg', (1.9, 0.0))]
+TB_FEET = {'right_leg': (-1.9, -3.0), 'left_leg': (1.9, -3.0)}      # where hold_out's step in left them
+TB_P = [(0, 13.0), (4.0, 9.0), (7.0, 11.0), (TB_BOW, 17.0), (12.5, 9.0), (17.0, 7.0), (24, 6.0)]
 
 
 def tb_bowl_path(t):
-    """The bowl's bottom's middle: taken over the table's middle, drawn in and up to where eat_bowl holds it."""
-    keys = [(TB_TAKE, TB_HANDOVER), (10.5, TB_HANDOVER + np.array([0.4, 0.4, 3.0])),
-            (14.0, EB_BOWL_AT[0][1] + np.array([-0.2, 1.6, -0.8])), (17.5, EB_BOWL_AT[0][1] + np.array([0.0, 0.4, -0.2])),
-            (TB_LEN, EB_BOWL_AT[0][1])]
+    """The bowl's bottom's middle: from where hold_out holds it, drawn in and up to where eat_bowl holds it."""
+    keys = [(0.0, HD2_HELD), (6.5, EB_BOWL_AT[0][1] + np.array([-0.2, 1.6, -0.8])),
+            (12.0, EB_BOWL_AT[0][1] + np.array([0.0, 0.4, -0.2])), (TB_LEN, EB_BOWL_AT[0][1])]
     return path(keys, t)
-
-
-def tb_spoon_at(base):
-    """The spoon stood in the bowl (whose bottom's middle is [base]): its turn, and its pivot (the end of its handle)."""
-    Rs = frame_of(unit(np.array([0.55, 1.0, 0.25])), B)
-    stew = base + level() @ (BOWL_TOP - BOWL_BASE) + np.array([0.4, 0.4, 0.0])
-    return Rs, stew - Rs @ SPOON_BOWL
 
 
 def take_bowl():
     ho, eat = la.getc('hold_out'), la.getc('eat_bowl')
     start, end = pose_keys(ho, ho.length), pose_keys(eat, 0.0)
     c = la.clip('take_bowl', TB_LEN, False, look=('citizen', 4), tools_=('bowl', 'spoon'), station_='alms_taker',
-                events=[('take', TB_TAKE), ('bow', 13.0)], traces=[('bowl', tuple(BOWL_BASE), (220, 190, 140))],
+                events=[('bow', TB_BOW)], traces=[('bowl', tuple(BOWL_BASE), (220, 190, 140))],
                 views=((32, -10), (90, -2), (150, -14)))
     holds = la.Holds()
     for t in la.every(TB_LEN):
         pitch = K(TB_P, t)
-        feet, lift = stepping(t, FEET, TB_STEPS, lift=1.0)
+        feet, lift = stepping(t, TB_FEET, TB_STEPS, lift=1.0)
         fr = F_(qt=bend(pitch, 0.0, 0.0), vt=(0.0, sink_for(pitch), 0.0),
-                pr=la.root_for(feet, z=0.5 * (feet['right_leg'][1] + feet['left_leg'][1]), dip=0.4 * bump(t, 0.5, 16.0)))
+                pr=la.root_for(feet, z=0.5 * (feet['right_leg'][1] + feet['left_leg'][1])))
         w0 = 1.0 - smooth(t / 2.0)
         w1 = smooth((t - 20.5) / 3.5)
         fr = frame_toward(frame_toward(fr, start, w0), end, w1)
         key_frame(c, t, fr, ease='linear')
         stand(c, t, fr, feet=feet, lift=lift)
         base = tb_bowl_path(t)
-        reach = smooth((t - 1.5) / 5.5)
         poses = {}
         for side in ('right_arm', 'left_arm'):
-            under = TB_HANDOVER + TB_UNDER[side]
-            want = HD2_HANDS[side] * (1.0 - reach) + (under + np.array([0.0, 0.8, 0.6])) * reach
-            hold = smooth((t - TB_TAKE + 1.6) / 1.6)
-            want = want * (1.0 - hold) + (base + TB_UNDER[side]) * hold
+            want = base + TB_UNDER[side]
             if side == 'left_arm':          # it settles onto the left hand as eat_bowl holds it
-                want = want + (base - level() @ BOWL_BASE - want) * smooth((t - 17.0) / 4.0)
+                want = want + (base - level() @ BOWL_BASE - want) * smooth((t - 13.0) / 4.0)
             else:                           # the right lets go and takes the spoon
-                want = want + (tb_spoon_at(base)[1] - want) * smooth((t - 15.0) / 3.5)
-            palm = U if (side == 'left_arm' or t < 15.0) else L
+                want = want + (spoon_in(base)[1] - want) * smooth((t - 12.5) / 3.5)
+            palm = U if (side == 'left_arm' or t < 12.5) else L
             poses[side] = reach_arm(holds, side, fr, want, palm=palm, palm_w=0.35)
         for side, pose in poses.items():
             set_arm(c, side, t, arm_toward(arm_toward(pose, start, side, w0), end, side, w1))
-        q = head_level(fr, -6.0 + 22.0 * bump(t, 11.0, 17.0) + 12.0 * bump(t, 4.0, 10.0))
+        q = head_level(fr, -2.0 + 20.0 * bump(t, 7.5, 12.5) + 8.0 * bump(t, 0.5, 6.0))
         q = qslerp(qslerp(q, start[1]['head'][0], w0), end[1]['head'][0], w1)
         c.key('head', t, q, ease='linear')
     c.mode('head', 'set')
     la.TRACKS['take_bowl'] = {'bowl': lambda t, pivot, c=c: _tb_bowl(c, t), 'spoon': lambda t, pivot, c=c: _tb_spoon(c, t)}
-    ta.INFO['take_bowl']['tools_at'] = tools_when([('bowl', TB_TAKE, None), ('spoon', TB_TAKE, None)])
+    ta.INFO['take_bowl']['tools_at'] = tools_when([('bowl', 0.0, None), ('spoon', 0.0, None)])
     ta.INFO['take_bowl']['partner'] = ('ladle', ('noble', 2))
-    PARTNER_PLACE['take_bowl'] = (T(0.0, 0.0, -wa.ALMS_GAP) @ FACING, -LA_POUR)
+    PARTNER_PLACE['take_bowl'] = (T(0.0, 0.0, -wa.ALMS_GAP) @ FACING, -float(LA_LEN))
     la.join('take_bowl starts where hold_out ends', ho, ho.length, c, 0, tol=0.1)
     la.join('take_bowl ends on eat_bowl', c, TB_LEN, eat, 0, tol=0.1)
-    check(c, f'the bowl taken over the table\'s middle (t={TB_TAKE:g})', ta.fk(c, TB_TAKE, 'bowl', BOWL_BASE), TB_HANDOVER,
-          tol=0.6)
-    for side in ('right_arm', 'left_arm'):
-        check(c, f'{side.replace("_arm", "")} hand under the bowl (t={TB_TAKE:g})', ta.fk(c, TB_TAKE, side, GRIP[side]),
-              TB_HANDOVER + TB_UNDER[side], tol=0.8)
+    check(c, 'the bowl where hold_out left it (t=0)', ta.fk(c, 0.0, 'bowl', BOWL_BASE), HD2_HELD, tol=0.3)
     check(c, f'right fist on the spoon (t={TB_SPOON:g})', ta.fk(c, TB_SPOON, 'right_arm', GRIP['right_arm']),
-          tb_spoon_at(ta.fk(c, TB_SPOON, 'bowl', BOWL_BASE))[1], tol=0.8)
+          spoon_in(ta.fk(c, TB_SPOON, 'bowl', BOWL_BASE))[1], tol=0.8)
     return c
 
 
 def _tb_bowl(c, t):
-    """Level, on the hands under it as it is taken and drawn in; settling onto the left hand as eat_bowl holds it."""
+    """Level, on the hands under it as it's drawn in; settling onto the left hand as eat_bowl holds it."""
     on_hand = apply(part_M(c, t, 'left_arm'), ta.tool_local('bowl')[:3, 3])
-    w = smooth((t - 17.0) / 4.0)
+    w = smooth((t - 13.0) / 4.0)
     return level(), (tb_bowl_path(t) - level() @ BOWL_BASE) * (1.0 - w) + on_hand * w, None
 
 
 def _tb_spoon(c, t):
     base = _tb_bowl(c, t)[1] + level() @ BOWL_BASE
-    Rs, Ps = tb_spoon_at(base)
+    Rs, Ps = spoon_in(base)
     M = part_M(c, t, 'right_arm') @ ta.tool_local('spoon')
     w = smooth((t - TB_SPOON + 0.5) / 2.0)
     return blend_R(Rs, M[:3, :3], w), Ps * (1.0 - w) + M[:3, 3] * w, None
@@ -1097,10 +1127,10 @@ def show_in():
 STREET_CLIPS = ['queue', 'hold_out', 'ladle', 'take_bowl', 'eat_bowl', 'shiver', 'empty_basket', 'haggle', 'pack',
                 'embrace', 'look_about', 'show_in', 'shut_stall']
 # hold_out and eat_bowl before take_bowl, which starts on the one and ends on the other
-MAKERS = [('queue', queue), ('shiver', shiver), ('empty_basket', empty_basket), ('haggle', haggle), ('hold_out', hold_out),
-          ('ladle', ladle), ('eat_bowl', eat_bowl), ('take_bowl', take_bowl), ('pack', pack), ('embrace', embrace),
+MAKERS = [('queue', queue), ('shiver', shiver), ('empty_basket', empty_basket), ('haggle', haggle), ('ladle', ladle),
+          ('hold_out', hold_out), ('eat_bowl', eat_bowl), ('take_bowl', take_bowl), ('pack', pack), ('embrace', embrace),
           ('look_about', look_about), ('show_in', show_in), ('shut_stall', shut_stall)]
-NEEDS = {'take_bowl': ('hold_out', 'eat_bowl', 'ladle'), 'ladle': ('take_bowl',)}
+NEEDS = {'take_bowl': ('hold_out', 'eat_bowl', 'ladle'), 'ladle': ('hold_out',), 'hold_out': ('ladle',)}
 STATION_BOXES = {'alms_keeper': lambda: _alms(False), 'alms_taker': lambda: _alms(True), 'cart_tail': _cart_tail,
                  'bare_stall': _bare_stall}
 STATION_COLOUR = {'alms_keeper': wc.EARTH, 'alms_taker': wc.EARTH, 'cart_tail': wc.EARTH}
@@ -1112,10 +1142,10 @@ def street_moment_specs():
     mouth = ('part', 'head', (0.0, -2.2, -4.4))
     return {
         'queue': {'murmur': mouth},
-        'hold_out': {'offer': ('hands', 0.0)},
+        'hold_out': {'offer': ('hands', 0.0), 'take': ('part', 'bowl', tuple(BOWL_BASE))},
         'ladle': {'take': ('part', 'bowl_empty', tuple(BOWL_BASE)), 'dip': ('part', 'ladle', tuple(lp.LADLE_BOWL)),
                   'pour': ('part', 'bowl_empty', tuple(BOWL_TOP)), 'give': ('part', 'bowl', tuple(BOWL_BASE))},
-        'take_bowl': {'take': ('part', 'bowl', tuple(BOWL_BASE)), 'bow': ('part', 'head', (0.0, -4.0, -3.0))},
+        'take_bowl': {'bow': ('part', 'head', (0.0, -4.0, -3.0))},
         'eat_bowl': {'spoon': mouth},
         'shiver': {'stamp': {SH2_STAMPS[0]: ('part', 'right_leg', (0.0, 12.0, -1.0)),
                              SH2_STAMPS[1]: ('part', 'left_leg', (0.0, 12.0, -1.0))}, 'puff': mouth},
