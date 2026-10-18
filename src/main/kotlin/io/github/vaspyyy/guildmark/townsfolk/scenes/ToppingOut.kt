@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.townsfolk.scenes
 
 import io.github.vaspyyy.guildmark.economy.works.Works
+import io.github.vaspyyy.guildmark.economy.works.WorksState
 import io.github.vaspyyy.guildmark.economy.works.WorksView
 import io.github.vaspyyy.guildmark.homestead.plan.Stage
 import io.github.vaspyyy.guildmark.townsfolk.Activity
@@ -24,8 +25,9 @@ import kotlin.math.sin
  * TOPPING stage begins (heard through [Works.listen]) with a player near enough for its crew to be there, idle folk
  * within [NEAR] blocks drift over by ones and twos, stand round it in a loose ring looking up at it, and clap and
  * cheer each time the master builder calls it (his HURRAH, the TOAST: seen on the lot, or told by the building
- * through [cheer]); the children jump about. After [WINDOW] ticks they go back to their day. The master builder and
- * the ceremony itself are the building's (Part B's).
+ * through [cheer]); the children jump about. After [WINDOW] ticks they go back to their day. A player who comes by
+ * while it's still being topped out (the land loading, or walking up) sees the gathering then: once a works. The
+ * master builder and the ceremony itself are the building's (Part B's).
  */
 internal object ToppingOut : Works.Listener {
     /** How far idle folk drift over from, and how near a player must be (the crew's there only then). */
@@ -58,8 +60,12 @@ internal object ToppingOut : Works.Listener {
 
     private val gatherings = HashMap<Int, Gathering>()
 
+    /** The works whose topping out has had its gathering (by id), so it's held once however it came about. */
+    private val held = HashSet<Int>()
+
     override fun staged(level: ServerLevel, w: WorksView, stage: Stage) {
-        if (stage != Stage.TOPPING || !Works.enabled()) return
+        // Once a works, however often the building reports the stage
+        if (stage != Stage.TOPPING || !Works.enabled() || w.id in held) return
         val lot = w.site?.lot ?: return
         if (!Scenes.seen(level, lot.center, CREW)) return
         start(level, w.id, lot)
@@ -69,7 +75,21 @@ internal object ToppingOut : Works.Listener {
     fun start(level: ServerLevel, id: Int, lot: BoundingBox): Gathering {
         gatherings[id]?.let { if (level.gameTime <= it.until) return it }
         gatherings.values.removeIf { level.gameTime > it.until + 200 }
+        held += id
         return Gathering(id, lot, level.gameTime + WINDOW).also { gatherings[id] = it }
+    }
+
+    /**
+     * A works in [here]'s capital being topped out that [player] has come within sight of since its TOPPING stage
+     * began, its gathering not held yet (nobody was near to see it begin): the town gathers now, as it would have.
+     */
+    private fun catchUp(level: ServerLevel, player: ServerPlayer, here: Scenes.Here) {
+        for (w in Scenes.works(level, here.key)) {
+            if (w.state != WorksState.BUILDING || w.stage != Stage.TOPPING || w.id in held) continue
+            val lot = w.site?.lot ?: continue
+            if (player.distanceToSqr(Vec3.atCenterOf(lot.center)) > CREW * CREW) continue
+            start(level, w.id, lot)
+        }
     }
 
     /**
@@ -82,8 +102,12 @@ internal object ToppingOut : Works.Listener {
         g.cued = level.gameTime
     }
 
-    /** Once a second for each player near a topping out: a cheer heard from the lot, and a couple more drifting over. */
-    fun look(level: ServerLevel, player: ServerPlayer) {
+    /**
+     * Once a second for each player in a capital: a topping out begun out of sight caught up with; and near one, a
+     * cheer heard from the lot, and a couple more drifting over.
+     */
+    fun look(level: ServerLevel, player: ServerPlayer, here: Scenes.Here) {
+        catchUp(level, player, here)
         if (gatherings.isEmpty()) return
         val now = level.gameTime
         for (g in gatherings.values.toList()) {
@@ -203,5 +227,8 @@ internal object ToppingOut : Works.Listener {
     /** The gathering at works [id], if one's on. */
     fun at(id: Int): Gathering? = gatherings[id]
 
-    fun forget() = gatherings.clear()
+    fun forget() {
+        gatherings.clear()
+        held.clear()
+    }
 }

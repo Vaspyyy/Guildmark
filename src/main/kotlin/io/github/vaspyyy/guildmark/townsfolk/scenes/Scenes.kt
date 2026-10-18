@@ -82,7 +82,7 @@ object Scenes {
         val here = here(level, player) ?: return
         when (slot) {
             3 -> if (works) Watchers.look(level, player, here)
-            5 -> if (works) ToppingOut.look(level, player)
+            5 -> if (works) ToppingOut.look(level, player, here)
             7 -> if (streets) Grumbling.look(level, player, here)
             9 -> if (streets) Cold.look(level, player, here)
             11 -> if (streets) BreadQueue.look(level, player, here)

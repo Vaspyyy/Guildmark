@@ -42,9 +42,13 @@ internal object BreadQueue {
     private const val DRAWN = 5
     private const val PULL = 24.0
 
-    /** How near a player must be to the bakery, and the fewest ticks between one passer-by joining and the next. */
+    /**
+     * How near a player must be to the bakery, the fewest ticks between one passer-by joining and the next, and how
+     * many come over at once when a player first comes by (a line that's been forming all morning, caught up with).
+     */
     private const val SEEN = 48.0
     private const val PULL_EVERY = 200L
+    private const val FIRST = 3
 
     /** The longest anyone waits (a little more for some), and the longest the one being served is waited for. */
     private const val PATIENCE = 2400
@@ -158,7 +162,8 @@ internal object BreadQueue {
 
     /**
      * Once a second for each player in a capital: the lines near them kept (broken up once the morning's gone with no
-     * bread), and with bread short, a passer-by near a bakery's door now and then drawn into its line.
+     * bread), and with bread short, a passer-by near a bakery's door now and then drawn into its line (a few at once
+     * when a player first comes by: the line that's been forming all morning, caught up with).
      */
     fun look(level: ServerLevel, player: ServerPlayer, here: Scenes.Here) {
         val now = level.gameTime
@@ -177,17 +182,23 @@ internal object BreadQueue {
             if (door.pos.distSqr(player.blockPosition()) > SEEN * SEEN) continue
             val line = line(level, bakery) ?: continue
             if (line.looked == now) continue
+            val first = line.looked == Long.MIN_VALUE
             line.looked = now
             line.queue.prune()
             line.queue.over = false
-            if (line.queue.members.size >= DRAWN || now - line.pulled < PULL_EVERY) continue
+            if (line.queue.members.size >= DRAWN || !first && now - line.pulled < PULL_EVERY) continue
+            // One at a time as they pass; a few at once when it's first seen
+            val want = if (first) (FIRST - line.queue.members.size).coerceAtLeast(1) else 1
             val at = Vec3.atCenterOf(door.pos)
-            val p = level.getEntitiesOfClass(Townsperson::class.java, AABB(door.pos).inflate(PULL, 6.0, PULL)) { pullable(level, it) }
-                .minByOrNull { it.distanceToSqr(at) } ?: continue
-            val life = p.life ?: continue
-            if (bakery(p, life)?.id != bakery.id) continue
-            p.routine.replace(queueing(level, p, life, line, home = p.resident >= 0))
-            line.pulled = now
+            var n = 0
+            for (p in level.getEntitiesOfClass(Townsperson::class.java, AABB(door.pos).inflate(PULL, 6.0, PULL)) { pullable(level, it) }.sortedBy { it.distanceToSqr(at) }) {
+                if (n >= want || line.queue.full) break
+                val life = p.life ?: continue
+                if (bakery(p, life)?.id != bakery.id) continue
+                p.routine.replace(queueing(level, p, life, line, home = p.resident >= 0))
+                n++
+            }
+            if (n > 0) line.pulled = now
         }
     }
 

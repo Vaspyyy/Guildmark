@@ -49,7 +49,8 @@ import java.util.UUID
  * `here` lists the building you stand in (its floors, doors, ladders, beds, seats, tables, work blocks and stores)
  * and who lives there, `who` tells you about the townsperson you're looking at, `show` marks the building's places
  * for a while (only you see the marks), `furnish` makes up every bed its people are missing at once, `crew` lists
- * its carters, millers and crier, `cry` sends the crier to cry the news now, `act <move> [ticks]` has the townsperson
+ * its carters, millers and crier (and, with the works on, those lent to them for the day), `cry` sends the crier to
+ * cry the news now, `act <move> [ticks]` has the townsperson
  * you're looking at play one of their moves on the spot, over and over, `makeway [blocks]` sends a make-believe wagon
  * down the street you're looking along for townsfolk to step aside from, `people [trade] [page]` lists its people, and
  * `scene <name>` plays one of the town's scenes near you now, whatever the switches say ([SceneCommand]).
@@ -366,6 +367,13 @@ object CapitalCommand {
         val crier = crew.crier?.let { residents[it] }
         if (crier == null) say(source, label("Crier: ").append(grey("nobody (every citizen left is a carter)")))
         else say(source, label("Crier:").append(row(crier, "crier")))
+        // Those lent to the town's works today (the works on: see Labour)
+        if (Works.enabled() || crew.labourers.isNotEmpty()) {
+            val lent = crew.labourers.mapNotNull { residents[it] }.sortedBy { it.id }
+            val site = Works.workAt(level, capital.center.asLong())
+            say(source, label("Labourers ${lent.size}:").append(if (site != null) grey(" reporting at ").append(at(site)) else grey(" no site to report at today")))
+            for (r in lent) say(source, row(r, "lent to the works"))
+        }
         val board = MarketBoards.board(level, places)
         val written = when {
             board == null -> grey(if (level.isLoaded(places.marketBoard.pos)) "not up yet (it goes up while nobody's near)" else "not loaded")

@@ -31,12 +31,13 @@ import net.minecraft.world.phys.Vec3
  * today, I'm afraid."), and sit by it (on a seat near it, or standing arms folded behind it), looking up now and then,
  * until there's something to sell again: then the awning goes up (SET_UP) and the day's trade goes on. It's the
  * keeper's working day ([keep], from [io.github.vaspyyy.guildmark.townsfolk.Acts]' work), and seen sooner near a player
- * ([look]).
+ * ([look]). A keeper only just come into the world (the land loading as a player comes by) at a stall that's sold out
+ * finds it shut already, as the record has it, and sits by it: the awning isn't let down before the player's eyes.
  *
  * **The way in, for Part D2** (the slate on the display, and the awning's look): [isShut] says whether a stall's
- * keeper has let its awning down; set [awning] to hear the moment they let it down and put it up again. Kept in
- * memory: after a restart the keeper lets it down again the next time they're at the stall with nothing to sell.
- * Everything here is on [Fortunes.enabled], with the streets' other scenes.
+ * keeper has let its awning down; set [awning] to hear the moment they let it down and put it up again (told too when
+ * it's found shut as the land loads). Kept in memory: after a restart it's found shut again the first time its keeper
+ * is at the stall with nothing to sell. Everything here is on [Fortunes.enabled], with the streets' other scenes.
  */
 object ShutStall {
     /** The awning's look, as Part D2 has it: told when a keeper lets it down and puts it up again. */
@@ -51,6 +52,9 @@ object ShutStall {
 
     /** How near a player a stall is looked at for a keeper to shut it at once. */
     private const val SEEN = 32.0
+
+    /** How many ticks a keeper's body has been in the world (loaded or come in) and still finds their stall as it was left. */
+    private const val LOADED = 200
 
     /** The stalls shut (by their keeper's place), and since when. */
     private val shut = HashMap<Long, Long>()
@@ -91,10 +95,26 @@ object ShutStall {
         val bare = bare(level, p, life, stall)
         return when {
             bare && key in shut -> sitBy(p, life, stall)
+            bare && p.tickCount < LOADED -> foundShut(level, p, life, stall)
             bare -> shutUp(p, life, stall).andThen(sitBy(p, life, stall))
             key in shut -> openUp(p, life, stall)
             else -> null
         }
+    }
+
+    /** [stall]'s awning is down from now (D2's [awning] told), let down by [by]. */
+    private fun down(level: ServerLevel, stall: CityPlaces.Stall, by: Townsperson) {
+        shut[stall.keeper.pos.asLong()] = level.gameTime
+        try {
+            awning?.down(level, stall, by)
+        } catch (e: RuntimeException) {
+        }
+    }
+
+    /** Come into the world at a stall sold out a while since: it's shut already, and they sit by it. */
+    private fun foundShut(level: ServerLevel, p: Townsperson, life: Life, stall: CityPlaces.Stall): Task {
+        down(level, stall, p)
+        return sitBy(p, life, stall)
     }
 
     /** Where the keeper looks to reach the awning: up over the counter's middle. */
@@ -111,13 +131,7 @@ object ShutStall {
         val tidying = Step(Activity.ARRANGE, 60)
         val steps = listOf(shutting, tidying, Step(Activity.ARRANGE, 61), Step(Activity.NONE, 20))
         return Acts.via(p, life, stall.keeper.pos, Work(p, Spot(stall.keeper.pos, stall.keeper.facing), awningAt(stall), { i -> steps.getOrNull(i) }, onTick = { s, t ->
-            if (s === shutting && t == Activity.SHUT_STALL.ticks / 2) {
-                shut[stall.keeper.pos.asLong()] = level.gameTime
-                try {
-                    awning?.down(level, stall, p)
-                } catch (e: RuntimeException) {
-                }
-            }
+            if (s === shutting && t == Activity.SHUT_STALL.ticks / 2) down(level, stall, p)
             if (s === tidying && t == 0) {
                 p.lookAt(counter)
                 Words.say(p, "streets.shut", "a stall shut with nothing to sell")
@@ -176,7 +190,7 @@ object ShutStall {
             val life = Days.life(keeper) ?: continue
             if (Days.stretch(life, level.overworldClockTime).doing != Doing.WORK || keeper.routine.windingDown) continue
             if (stallOf(keeper, life) !== stall) continue
-            keeper.routine.replace(shutUp(keeper, life, stall).andThen(sitBy(keeper, life, stall)))
+            keeper.routine.replace(if (keeper.tickCount < LOADED) foundShut(level, keeper, life, stall) else shutUp(keeper, life, stall).andThen(sitBy(keeper, life, stall)))
             return
         }
     }

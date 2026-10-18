@@ -72,9 +72,13 @@ object Alms {
     private const val PULL = 20.0
     private const val FAR = 72.0
 
-    /** How near a player must be to the table, and the fewest ticks between one passer-by joining and the next. */
+    /**
+     * How near a player must be to the table, the fewest ticks between one passer-by joining and the next, and how
+     * many come over at once when a player first comes by (the line that's been there since noon, caught up with).
+     */
     private const val SEEN = 48.0
     private const val PULL_EVERY = 160L
+    private const val FIRST = 3
 
     /** The longest anyone waits, and the longest the one at the table is waited for before the next steps up. */
     private const val PATIENCE = 2400
@@ -187,7 +191,7 @@ object Alms {
 
     /**
      * Once a second for each player in a capital: its line kept (broken up once the table's done serving), and with it
-     * serving, a passer-by near it now and then drawn into the line.
+     * serving, a passer-by near it now and then drawn into the line (a few at once when a player first comes by).
      */
     fun look(level: ServerLevel, player: ServerPlayer, here: Scenes.Here) {
         val now = level.gameTime
@@ -202,14 +206,20 @@ object Alms {
         if (player.distanceToSqr(at) > SEEN * SEEN) return
         val line = line(level, here.key, table) ?: return
         if (line.looked == now) return
+        val first = line.looked == Long.MIN_VALUE
         line.looked = now
         line.queue.prune()
         line.queue.over = false
-        if (line.queue.members.size >= DRAWN || line.queue.full || now - line.pulled < PULL_EVERY) return
-        val p = level.getEntitiesOfClass(Townsperson::class.java, AABB(table.pos).inflate(PULL, 6.0, PULL)) { pullable(level, it) }
-            .minByOrNull { it.distanceToSqr(at) } ?: return
-        p.routine.replace(queueing(level, p, line))
-        line.pulled = now
+        if (line.queue.members.size >= DRAWN || line.queue.full || !first && now - line.pulled < PULL_EVERY) return
+        // One at a time as they pass; a few at once when it's first seen
+        val want = if (first) (FIRST - line.queue.members.size).coerceAtLeast(1) else 1
+        val pulled = level.getEntitiesOfClass(Townsperson::class.java, AABB(table.pos).inflate(PULL, 6.0, PULL)) { pullable(level, it) }
+            .sortedBy { it.distanceToSqr(at) }.take(want)
+        for (p in pulled) {
+            if (line.queue.full) break
+            p.routine.replace(queueing(level, p, line))
+        }
+        if (pulled.isNotEmpty()) line.pulled = now
     }
 
     /** Whether [p] would come to the table: one of the hungry with time on their hands, or a passer-by down on their luck. */
