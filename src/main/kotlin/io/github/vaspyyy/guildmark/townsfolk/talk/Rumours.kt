@@ -33,8 +33,10 @@ import kotlin.random.Random
  * - `homestead.raised` [=player, the tier's name key]: a homestead finished near the capital (0.4, small).
  * - `market.event.<event>` [the good's key, if it falls on one] and `market.over.<event>` [the same]: the market's
  *   trouble or luck starting, or the trouble over (0.6, small); `market.hungry` []: the town went hungry (0.6, small).
- * - `road.waylaid` [the band's name key, the good's key, if any were taken], `road.clear` [], `road.relief` []: the
- *   wagons (M4, 0.8, small); `deed.escort` [=player]: they saw a wagon in (0.6, small).
+ * - `road.waylaid` [the band's name key, the good's key, if any were taken]: a wagon taken (M4, 0.8, small);
+ *   `deed.escort` [=player]: they saw the player bring a wagon in (0.6, small). The road clear again goes round as
+ *   M4's market news (`market.over.waylaid`); `road.clear` [] and `road.relief` [] are kept for M4 to start with
+ *   [TownTalk.start] if it wants them.
  * - `salvage.brought` / `salvage.kept` [=player] (M4, 0.5, small); `order.filled` / `order.lapsed` [=player] (M3, 0.3).
  * - From the guild's news, as it's sorted for the crier: `deed.dragon`, `deed.king`, `deed.sea` (1.0, lore);
  *   `deed.beast`, `deed.lair`, `deed.siege`, `deed.band_broken` (0.8, big); `siege.lost` (0.8, big, bad);

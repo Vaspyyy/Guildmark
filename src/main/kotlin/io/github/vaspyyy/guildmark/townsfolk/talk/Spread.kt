@@ -41,10 +41,13 @@ import kotlin.random.Random
  * those in the same place may talk: a household at its meals and of an evening, a caller and the house they call at,
  * the tavern nearest home, the well, the market, a trade at work, the temple, a stroll, the children at their lessons
  * and their games. Each knower tells two others there what they know that's still news, each with a chance of the
- * venue's × the rumour's heat × the teller's tongue × the listener's ear, and each telling may change it a step (see
- * [Rumours.retold]); the innkeeper tells everyone at the bar. At noon the crier's crowd hears the news cried; at dawn
- * what's faded is let go. Word bound for the other capitals arrives when it's due, and visitors bring some of an
- * evening. Faction members and anyone with no record live no days here, so they take no part.
+ * venue's × [TELLING] × the rumour's heat^1.5 × the teller's tongue × the listener's ear, and each telling may change
+ * it a step (see [Rumours.retold]); the innkeeper tells everyone at the bar. At noon the crier's crowd hears the news
+ * cried; at dawn what's faded is let go. Word bound for the other capitals arrives when it's due, and visitors bring
+ * some of an evening. Faction members and anyone with no record live no days here, so they take no part. Townsfolk
+ * outside the capitals (the demo yard, a town marked by command, one set down by hand) are taken in as residents of
+ * where they are and talk among themselves the same way, but there's no crier or visitors there, and neither the
+ * guild's news nor word from the capitals reaches them ([city]).
  *
  * The spreading needs both [Rumours.enabled] and the Living World ([Days.enabled]); with the rumours off the hours
  * still go by (so nothing bursts out later), the crier still cries, and the town knows only what it saw and heard cried.
@@ -64,6 +67,9 @@ object Spread {
     private const val NOON = 6
     private const val EVENING = 15
 
+    /** The hour of the day the market closes its day (two in the morning: Economy.NEW_DAY on its own clock). */
+    private const val CLOSES = 20
+
     /** Each knower tells this many others in a place an hour. */
     private const val LISTENERS = 2
 
@@ -79,6 +85,15 @@ object Spread {
     private const val SERVICE = 0.3
     private const val STROLL = 0.05
     private const val INNKEEPER = 0.5
+
+    /**
+     * What those chances are worth, with the rumour's heat counted half as much again (heat^1.5: a lukewarm rumour
+     * isn't worth passing far). Tuned on a model of a capital of 150 living Days.plan's days, twenty runs each: a
+     * rumour of heat 0.9 that four saw of a morning is known by a third of the town that evening, half by the next
+     * noon, nearly three quarters by the next evening and nearly everyone (93%) by the end of the second day; one of 0.4
+     * reaches their households, their workplaces and a few more, about fifteen in all, and goes no further.
+     */
+    private const val TELLING = 0.5
 
     /** A trade at work in bands of about this many (so the town's citizens aren't one crowd), and the homes a caller chooses among. */
     private const val CREW = 8
@@ -146,6 +161,10 @@ object Spread {
         /** What more than half the town knows, as of an hour, for passers-by. */
         var commonHour = Long.MIN_VALUE
         var common: List<Int> = listOf()
+
+        /** Whether it's known to be a capital rather than a village (see [city]), and when that was last looked at. */
+        var city = false
+        var checked = Long.MIN_VALUE / 2
     }
 
     private val views = HashMap<Long, TownView>()
@@ -153,6 +172,23 @@ object Spread {
     fun view(capital: Long): TownView = views.getOrPut(capital) { TownView(capital) }
 
     fun view(capital: BlockPos): TownView = view(capital.asLong())
+
+    /**
+     * Whether the town at [capital] is one of the capitals: townsfolk anywhere else (the demo yard, a town marked by
+     * command, one set down by hand) are taken in as residents of where they are, and remember and talk among
+     * themselves, but only a capital has a crier, visitors, word from the others and the guild's news. It's known once
+     * the capital's piece is found, its market is open or the plan's people are taken in there (nobody else's ever
+     * are); until then it's looked at again every [FIND] ticks.
+     */
+    fun city(level: ServerLevel, capital: Long): Boolean {
+        val view = view(capital)
+        if (view.city) return true
+        if (level.gameTime - view.checked < FIND) return false
+        view.checked = level.gameTime
+        val pos = BlockPos.of(capital)
+        view.city = view.piece != null || Markets.get(level)[pos] != null || Residents.get(level).of(pos).any { it.planned >= 0 }
+        return view.city
+    }
 
     /** What one run of the step came to: tellings tried, rumours heard, hours stepped, and the time it took. */
     class Tally {
@@ -202,6 +238,7 @@ object Spread {
 
     /** [view]'s capital is [piece]: its board, its name, and its places (worked out off the thread the first time). */
     fun found(level: ServerLevel, view: TownView, piece: CapitalPiece) {
+        view.city = true
         if (view.piece == null) {
             view.piece = piece
             try {
@@ -258,20 +295,20 @@ object Spread {
     }
 
     /**
-     * For `/guildmark rumour spread`: the talk of the next [hours] at [entry] worked out now, as they'd go (the crier's
-     * noon included), without moving its clock; what's heard is heard now.
+     * For `/guildmark rumour spread`: the talk of [hours] hours at [entry] from the [from]th hour ahead, worked out now
+     * as they'd go (the crier's noon included), without moving its clock; what's heard is heard now. Counted into [tally].
      */
-    fun ahead(level: ServerLevel, entry: TownTalkData.Entry, hours: Int): Tally {
-        val tally = Tally()
+    fun ahead(level: ServerLevel, entry: TownTalkData.Entry, hours: Int, from: Int = 1, tally: Tally = Tally()): Tally {
         val start = System.nanoTime()
         val now = hourOf(level)
         val view = view(entry.capital)
-        for (k in 1..hours) {
+        val crier = crier(level, entry, view)
+        for (k in from until from + hours) {
             val hour = now + k
             val people = people(level, view, Days.dayOf(hour * 1000L + 500L))
             val groups = groups(people, hour)
             talk(entry, groups, hour, now, random(entry, hour), tally)
-            if (Math.floorMod(hour, 24L).toInt() == NOON) {
+            if (Math.floorMod(hour, 24L).toInt() == NOON && crier) {
                 val square = groups.filter { it.venue == Venue.MARKET }.flatMap { it.members }
                 for (s in cries(level, entry, view, hour, keep = false)) for (p in square) {
                     if (Rumours.hear(entry, entry.mind(p.r.id, true)!!, s, now, Rumours.CRIER, Venue.CRIER, Rumours.TRUE)) tally.heard++
@@ -279,7 +316,7 @@ object Spread {
             }
             tally.hours++
         }
-        tally.nanos = System.nanoTime() - start
+        tally.nanos += System.nanoTime() - start
         return tally
     }
 
@@ -417,10 +454,13 @@ object Spread {
      */
     private fun talk(entry: TownTalkData.Entry, groups: List<Group>, hour: Long, heard: Long, random: Random, tally: Tally) {
         val heats = HashMap<Int, Float>()
+        val worths = HashMap<Int, Double>()
         for (s in entry.rumours.values) {
             if (s.rumour.born > hour) continue
             val h = Rumours.heat(s, hour)
-            if (h >= Rumours.OLD) heats[s.rumour.id] = h
+            if (h < Rumours.OLD) continue
+            heats[s.rumour.id] = h
+            worths[s.rumour.id] = TELLING * h * sqrt(h.toDouble())
         }
         if (heats.isEmpty()) return
         val news = ArrayList<Hearing>()
@@ -444,10 +484,10 @@ object Spread {
                     for (h in told) {
                         val known = theirs?.get(h.rumour)
                         if (known != null && known.warp <= h.warp) continue
-                        val heat = heats[h.rumour] ?: continue
+                        val worth = worths[h.rumour] ?: continue
                         val story = entry.rumours[h.rumour] ?: continue
                         tally.tries++
-                        val chance = if (inn) INNKEEPER * heat else g.chance * heat * tongue * ear
+                        val chance = if (inn) INNKEEPER * worth else g.chance * worth * tongue * ear
                         if (random.nextDouble() >= chance) continue
                         h.told++
                         news.add(Hearing(l.r.id, h.rumour, teller.r.id, g.venue, Rumours.retold(teller.r, story.rumour, h.warp, random)))
@@ -490,11 +530,16 @@ object Spread {
         return out
     }
 
+    /** Whether [entry]'s town has a crier to cry the news at noon: a capital, unless its people are known to have none. */
+    private fun crier(level: ServerLevel, entry: TownTalkData.Entry, view: TownView): Boolean {
+        if (!city(level, entry.capital)) return false
+        val places = view.places ?: return true
+        return Hands.of(level, places).crier != null
+    }
+
     /** Noon: the crier cries the news, and everyone about the square knows it. */
     private fun noon(level: ServerLevel, entry: TownTalkData.Entry, view: TownView, groups: List<Group>, hour: Long, tally: Tally?) {
-        // A capital whose people are known to have no crier cries nothing
-        val places = view.places
-        if (places != null && Hands.of(level, places).crier == null) return
+        if (!crier(level, entry, view)) return
         val cried = cries(level, entry, view, hour)
         if (cried.isEmpty()) return
         val square = groups.filter { it.venue == Venue.MARKET }.flatMap { it.members }
@@ -532,6 +577,8 @@ object Spread {
     private fun hunger(level: ServerLevel, entry: TownTalkData.Entry, people: List<Person>, hour: Long) {
         if (people.isEmpty()) return
         val m = Markets.get(level)[entry.pos] ?: return
+        // Only a day the market has closed since the last morning (it closes at two): a market standing still says nothing new
+        if (m.market.hour < hour - (HUNGER + 24 - CLOSES)) return
         val missed = m.market.hungry.lastOrNull() ?: return
         if (missed < maxOf(3.0, m.town.people * Economy.MEALS * 0.05)) return
         val day = Days.dayOf(hour * 1000L).toInt()
@@ -573,11 +620,12 @@ object Spread {
             0.6f, Fade.SMALL, Scope.TOWN, tone, null, Rumours.MARKET,
         )
         if (!new) return s
-        val trade = when (kind) {
-            EventKind.BLIGHT, EventKind.BUMPER, EventKind.MURRAIN, EventKind.FOWL_PEST, EventKind.MILL_BROKEN -> TownRole.FARMER
-            EventKind.OVEN_CRACKED -> TownRole.BAKER
-            EventKind.GOOD_CATCH, EventKind.POOR_CATCH -> TownRole.FISHER
-            EventKind.FEVER -> null
+        // Kinds other parts add (M4's waylaid wagons) are the keepers' and the crier's news alone
+        val trade = when (kind.id) {
+            "blight", "bumper", "murrain", "fowl_pest", "mill_broken" -> TownRole.FARMER
+            "oven_cracked" -> TownRole.BAKER
+            "good_catch", "poor_catch" -> TownRole.FISHER
+            else -> null
         }
         val heard = minOf(born, hour)
         val crier = view.places?.let { Hands.of(level, it).crier }
@@ -608,7 +656,9 @@ object Spread {
             if (n.hour in hour - SEED_MARKET_HOURS..hour) news(level, entry, view, n.hour, n.key, n.good?.key, hour)?.let { born.add(it) }
         }
         val today = Math.floorDiv(hour, 24L)
-        for (item in GuildNews.get(level).items) {
+        // The guild's news is a capital's (see [city])
+        val items = if (city(level, entry.capital)) GuildNews.get(level).items else listOf()
+        for (item in items) {
             if (item.day < today - SEED_GUILD_DAYS || item.day > today) continue
             val s = Witness.guild(level, entry, item.key, item.args, item.day * 24L + NOON) ?: continue
             // What's older than today has been cried already
@@ -624,12 +674,13 @@ object Spread {
 
     // ---- Between capitals ----
 
-    /** Every capital the talk knows of: those with talk kept, a market, or people living there. */
+    /** Every capital the talk knows of (and no other town: see [city]): those with talk kept, a market, or people living there. */
     fun capitals(level: ServerLevel): Set<Long> {
         val out = LinkedHashSet<Long>()
         for (e in TownTalkData.get(level).all()) out.add(e.capital)
         for (m in Markets.get(level).all()) out.add(m.market.capital)
         for (r in Residents.get(level).all()) if (r.alive) out.add(r.capital.asLong())
+        out.removeIf { !city(level, it) }
         return out
     }
 
@@ -713,6 +764,7 @@ object Spread {
      * True if they brought any.
      */
     fun visitors(level: ServerLevel, entry: TownTalkData.Entry, view: TownView, hour: Long): Boolean {
+        if (!city(level, entry.capital)) return false
         val day = Days.dayOf(hour * 1000L)
         if (entry.brought == day) return false
         entry.brought = day
@@ -721,7 +773,7 @@ object Spread {
         var from = 0L
         var most = Rumours.OLD / Rumours.VISITORS
         for (other in data.all()) {
-            if (other === entry) continue
+            if (other === entry || !city(level, other.capital)) continue
             for (s in other.rumours.values) {
                 if (s.by != Rumours.TOWN || s.rumour.born > hour) continue
                 val h = Rumours.heat(s, hour)

@@ -42,7 +42,8 @@ import kotlin.math.abs
  * `/guildmark rumour list` is the capital's rumours with their kind, whom they're about, heat, how many know them and
  * in which versions; `rumour show <id>` who knows one, from whom and where; `rumour seed <kind> [player] [heat]` starts
  * one, known by the townsperson you're looking at; `rumour spread [hours]` works out the next hours' talk now (up to 72)
- * and says how far each rumour got and how long it took; `rumour tell` has them tell you their hottest; and
+ * and says how many knew each rumour every six hours of it, and how long it took; `rumour tell` has them tell you their
+ * hottest; and
  * `rumour clear [id]` lets one go, or all of them.
  */
 object TalkCommand {
@@ -53,11 +54,21 @@ object TalkCommand {
     /** The most knowers `rumour show` lists. */
     private const val SHOWN = 24
 
+    /** `rumour spread` counts the knowers after every this many hours. */
+    private const val BLOCK = 6
+
     private val KINDS = listOf(
         "deed.town", "deed.saved", "deed.rescue", "deed.dragon", "deed.beast", "deed.escort", "slight.assault", "slight.murder",
         "slight.theft", "death", "newcomer", "festival.won", "homestead.raised", "market.event.blight", "market.hungry",
         "road.waylaid", "road.relief", "guild.advance",
     )
+
+    /** Kinds of good news and of bad besides the deeds, slights, outlaws and the market's events and their ends (see [Rumours]). */
+    private val GOOD = setOf(
+        "festival.won", "homestead.raised", "order.filled", "salvage.brought", "road.clear", "road.relief",
+        "market.event.bumper", "market.event.good_catch",
+    )
+    private val BAD = setOf("death", "siege.lost", "road.waylaid", "market.hungry", "order.lapsed", "salvage.kept")
 
     fun register() {
         NeoForge.EVENT_BUS.addListener(RegisterCommandsEvent::class.java) { register(it.dispatcher) }
@@ -330,8 +341,8 @@ object TalkCommand {
         val (p, r) = resident(source, player) ?: return 0
         if (r.id < 0) return fail(source, "${who(p, r)} has no record: start it with someone who lives here.")
         val tone = when {
-            kind.startsWith("deed.") || kind.endsWith(".won") || kind.endsWith(".raised") || kind.startsWith("market.over.") -> 1
-            kind.startsWith("slight.") || kind == "death" || kind.startsWith("outlaws.") || kind.startsWith("road.waylaid") || kind == "market.hungry" -> -1
+            kind.startsWith("deed.") || kind.startsWith("market.over.") || kind in GOOD -> 1
+            kind.startsWith("slight.") || kind.startsWith("outlaws.") || kind.startsWith("market.event.") || kind in BAD -> -1
             else -> 0
         }
         val args = if (about != null) listOf(Witness.named(about.name.string)) else listOf(Witness.named(r.name))
@@ -349,19 +360,32 @@ object TalkCommand {
         val capital = capital(source, player) ?: return 0
         val entry = TownTalkData.get(level)[capital] ?: return fail(source, "Nothing has been said in ${name(capital)} yet.")
         if (!Rumours.enabled()) say(source, grey("Rumours are switched off (townsfolkRumours); spreading anyway, as asked."))
-        val before = entry.rumours.keys.associateWith { id -> entry.minds.values.count { id in it.heard } }
-        val tally = Spread.ahead(level, entry, hours)
-        TownTalkData.get(level).changed()
+        fun knowers(id: Int): Int = entry.minds.values.count { id in it.heard }
+        // How many know each rumour now, then after every few hours (the clock time each count is at)
+        val ids = entry.rumours.keys.toList()
+        val curve = ids.associateWith { arrayListOf(knowers(it)) }
         val hour = Spread.hourOf(level)
+        val marks = ArrayList<String>()
+        val tally = Spread.Tally()
+        var done = 0
+        while (done < hours) {
+            val n = minOf(BLOCK, hours - done)
+            Spread.ahead(level, entry, n, done + 1, tally)
+            done += n
+            marks.add("%02d:00".format(Math.floorMod(hour + done + 1 + 6, 24L)))
+            for (id in ids) curve[id]?.add(knowers(id))
+        }
+        TownTalkData.get(level).changed()
         val living = Residents.get(level).of(capital).count { it.alive }
         say(source, header("The next $hours hours' talk in ${name(capital)}, worked out now"))
+        say(source, grey("How many of the $living know each: now, then at " + marks.joinToString(", ")))
         for (s in entry.rumours.values.sortedByDescending { Rumours.heat(it, hour + hours) }) {
             val id = s.rumour.id
-            val after = entry.minds.values.count { id in it.heard }
+            val counts = curve[id] ?: continue
             say(
                 source,
-                line().append(clickable("#$id", "/guildmark rumour show $id")).append(plain(" ${s.rumour.kind}"))
-                    .append(plain("  ${before[id] ?: 0} -> $after of $living"))
+                line().append(clickable("#$id", "/guildmark rumour show $id")).append(plain(" ${s.rumour.kind}  "))
+                    .append(plain(counts.joinToString(" -> ")))
                     .append(grey("  heat %.2f now, %.2f by then".format(Rumours.heat(s, hour), Rumours.heat(s, hour + hours)))),
             )
         }
