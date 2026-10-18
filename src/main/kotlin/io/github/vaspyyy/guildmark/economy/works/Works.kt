@@ -230,6 +230,8 @@ object Works {
         w.here[i] += units
         w.brought[i] += units
         data.changed()
+        val v = view(level, w)
+        listeners.forEach { it.brought(level, v, player.uuid, units) }
         return units
     }
 
@@ -436,6 +438,9 @@ object Works {
 
         /** [w] is gone from the records: called off (no site found) or taken down (`works remove`), every pledge paid back. The building takes its blocks down. */
         fun removed(level: ServerLevel, w: WorksView) {}
+
+        /** [player] brought [units] of materials (by [Stuff.PAID]'s count) to [w]'s yard (M6 Part E: its crew's thanks). */
+        fun brought(level: ServerLevel, w: WorksView, player: UUID, units: Int) {}
     }
 
     // ---- Setting up ----
@@ -746,6 +751,21 @@ object Works {
 
     /** The record of works [id], for the commands. */
     internal fun record(level: ServerLevel, id: Int): WorksRec? = data(level).works[id]
+
+    // ---- For the talk (M6 Part E) ----
+
+    /** The market day works [id] last eased each thing ([MILL], [BREAD], [BAND]): empty for none, or until [READY]. */
+    fun lastEased(level: ServerLevel, id: Int): Map<String, Long> {
+        if (!READY) return mapOf()
+        return data(level).works[id]?.eased?.toMap() ?: mapOf()
+    }
+
+    /** What works [id]'s bill still wants in its yard, by [Stuff.PAID] (bill less what's here and what's used): empty until [READY]. */
+    fun wanting(level: ServerLevel, id: Int): IntArray {
+        if (!READY) return IntArray(0)
+        val w = data(level).works[id] ?: return IntArray(0)
+        return IntArray(w.bill.size) { (w.bill[it] - w.here[it] - w.used[it]).coerceAtLeast(0) }
+    }
 
     /** Every works record of [capital], for the commands. */
     internal fun records(level: ServerLevel, capital: Long): List<WorksRec> = data(level).of(capital)
