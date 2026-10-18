@@ -5,6 +5,7 @@ import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.context.CommandContext
 import io.github.vaspyyy.guildmark.block.VillageBoards
+import io.github.vaspyyy.guildmark.cart.Handcarts
 import io.github.vaspyyy.guildmark.city.CapitalPiece
 import io.github.vaspyyy.guildmark.city.Capitals
 import io.github.vaspyyy.guildmark.city.plan.Census
@@ -87,6 +88,7 @@ object CapitalCommand {
                         .then(Commands.literal("who").executes { who(it) })
                         .then(Commands.literal("crew").executes { crew(it) })
                         .then(Commands.literal("cry").executes { cry(it) })
+                        .then(Commands.literal("haul").executes { haul(it) })
                         .then(Commands.literal("show").executes { show(it) })
                         .then(Commands.literal("furnish").executes { furnish(it) })
                         .then(
@@ -350,6 +352,25 @@ object CapitalCommand {
             ?: return fail(source, "${r.name} isn't about just now: their part of town isn't loaded.")
         if (!Crier.cryNow(p)) return fail(source, "${r.name} can't go just now: their day hasn't started yet.")
         say(source, line().append(grey("They're on their way to cry it at ")).append(at(Crier.spot(places))))
+        return 1
+    }
+
+    // ---- haul ----
+
+    /** The nearest carter about sets off on a haul now, without waiting on their next: with their handcart, if carts are on. */
+    private fun haul(context: CommandContext<CommandSourceStack>): Int {
+        val source = context.source
+        val (player, capital, places) = where(source) ?: return 0
+        val level = source.level
+        val residents = Residents.get(level)
+        val about = Hands.of(level, places).carters.mapNotNull { residents[it] }.mapNotNull { r ->
+            (r.uuid?.let { level.getEntity(it) as? Townsperson })?.takeIf { it.isAlive }?.let { r to it }
+        }
+        val (r, p) = about.minByOrNull { it.second.distanceToSqr(player) }
+            ?: return fail(source, "None of ${name(capital)}'s carters is about just now: their parts of town aren't loaded.")
+        if (!Trades.haulNow(p)) return fail(source, "${r.name} has nothing to haul just now, or their day hasn't started yet.")
+        val how = if (Handcarts.enabled()) "They're off for their handcart, from " else "They're off for a sack, from "
+        say(source, line().append(plain("${r.name} sets off on a haul. ")).append(grey(how)).append(at(p.blockPosition())))
         return 1
     }
 

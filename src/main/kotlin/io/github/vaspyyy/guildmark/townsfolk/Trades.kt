@@ -1,5 +1,7 @@
 package io.github.vaspyyy.guildmark.townsfolk
 
+import io.github.vaspyyy.guildmark.cart.Handcart
+import io.github.vaspyyy.guildmark.cart.Handcarts
 import io.github.vaspyyy.guildmark.city.plan.FarmKind
 import io.github.vaspyyy.guildmark.city.plan.Kind
 import io.github.vaspyyy.guildmark.city.plan.M
@@ -23,9 +25,9 @@ import net.minecraft.world.phys.Vec3
 import kotlin.random.Random
 
 /**
- * The town's goods in its people's hands, the way its market ([Markets]) has them move: the carters hauling sacks
- * from the barns to the mill's hopper, flour from the mill to the bakery and the farms' yield to the stall that
- * sells it; the miller at the stones while they grind; the baker carrying the loaves out to the counter, or at a loss
+ * The town's goods in its people's hands, the way its market ([Markets]) has them move: the carters loading their
+ * handcarts a sack at a time and pulling them from the barns to the mill's hopper, flour from the mill to the bakery
+ * and the farms' yield to the stall that sells it (a sack on the shoulder where there's no cart); the miller at the stones while they grind; the baker carrying the loaves out to the counter, or at a loss
  * by a cold oven when there's no flour; the farmer's full basket taken in to the barn and the fisher's to the
  * fishmonger; and the shopper who finds a stall sold out. Where nothing is known of the market (the markets are
  * switched off) they go about it all the same, as an ordinary day would have it. Who the carters and millers are
@@ -99,8 +101,11 @@ object Trades {
         return null
     }
 
-    /** [goods] taken up at the store at [pos] from [spot]: walked to empty-handed, the lid lifted, and out they come. */
-    private fun take(p: Townsperson, life: Life, goods: ItemStack, pos: BlockPos, spot: Spot): Task {
+    /**
+     * [goods] taken up at the store at [pos] from [spot]: walked to empty-handed, the lid lifted, and out they
+     * come; [got] hears the moment they're in hand.
+     */
+    private fun take(p: Townsperson, life: Life, goods: ItemStack, pos: BlockPos, spot: Spot, got: (() -> Unit)? = null): Task {
         val level = level(p)
         val taking = Work(p, spot, Jobs.top(pos, 0.9), listOf(Step(Activity.PICK_UP), Step(Activity.NONE, 8)), pos, onTick = { s, t ->
             if (s.activity == Activity.PICK_UP) {
@@ -108,6 +113,7 @@ object Trades {
                 if (t == 10) {
                     p.carried = goods.copy()
                     close(level, p, pos)
+                    got?.invoke()
                 }
             }
         })
@@ -163,23 +169,29 @@ object Trades {
         else -> good.item?.let { ItemStack(it) } ?: ItemStack.EMPTY
     }
 
+    /** The fewest and the most sacks or crates on a cartload. */
+    private const val LOAD_LEAST = 2
+    private const val LOAD_MOST = 6
+
     /** What the farms send most of when there's no market to go by. */
     private val YIELD = listOf(Good.WHEAT, Good.WHEAT, Good.CARROT, Good.POTATO, Good.BEETROOT, Good.APPLE, Good.WOOL, Good.BEEF, Good.CHICKEN)
 
     /**
-     * A carter's haul, one of the ways the market's carts went last hour (picked by how much went each way): a sack
-     * of grain from a barn to the mill's hopper, a sack of flour from the mill to the bakery, a crate or a sack of the
-     * farms' yield to the stall that sells it (handed over the counter) or the market hall, or grain from the hall
-     * out to the mill when the fields send none. Null when the carts went nowhere (nothing to fetch), or the way
-     * there isn't loaded.
+     * A carter's haul, one of the ways the market's carts went last hour (picked by how much went each way): grain
+     * from a barn to the mill's hopper, flour from the mill to the bakery, the farms' yield to the stall that sells
+     * it (handed over the counter) or the market hall, or grain from the hall out to the mill when the fields send
+     * none. A cartload on their handcart where they can have one ([deliver]), the more the busier the carts were;
+     * otherwise a sack on the shoulder. Null when the carts went nowhere (nothing to fetch), or the way there isn't
+     * loaded.
      */
     fun haul(p: Townsperson, life: Life): Task? {
         val entry = market(p, life)
+        val n = cartload(p, entry)
         return when (route(p, entry?.market?.carted)) {
-            Route.GRAIN -> grain(p, life)
-            Route.FLOUR -> flour(p, life)
-            Route.MARKET -> produce(p, life, good(p, entry?.market?.carts))
-            Route.GRANARY -> granary(p, life)
+            Route.GRAIN -> grain(p, life, n)
+            Route.FLOUR -> flour(p, life, n)
+            Route.MARKET -> produce(p, life, good(p, entry?.market?.carts), n)
+            Route.GRANARY -> granary(p, life, n)
             null -> null
         }
     }
@@ -207,6 +219,12 @@ object Trades {
         return YIELD[r(p, YIELD.size)]
     }
 
+    /** How many sacks or crates go on the cart this time: a full cart when the carts had all they could carry last hour, a couple when little went. */
+    private fun cartload(p: Townsperson, entry: Markets.Entry?): Int {
+        val busy = entry?.let { e -> (e.market.carted.sum() / (e.town.carters * Economy.CART)).coerceIn(0.0, 1.0) } ?: 0.5
+        return (LOAD_LEAST + Math.round(busy * (LOAD_MOST - LOAD_LEAST)).toInt() + r(p, 3) - 1).coerceIn(LOAD_LEAST, LOAD_MOST)
+    }
+
     /** The barrel on a mill's millstone, which the grain is tipped into: the stone, and where to stand at it. */
     private fun hopper(p: Townsperson, mill: CityPlaces.Lodging, from: BlockPos): Pair<BlockPos, Spot>? {
         val level = level(p)
@@ -214,43 +232,45 @@ object Trades {
         return Places.beside(level, stone, from)?.let { stone to it }
     }
 
-    /** A sack of grain to the mill, poured into the hopper: [take], or from a barn on the farms. */
-    private fun grain(p: Townsperson, life: Life, from: Pair<BlockPos, Spot>? = null): Task? {
+    /** Grain to the mill, tipped into the hopper: from [from] (the granary), or from a barn on the farms. */
+    private fun grain(p: Townsperson, life: Life, n: Int, from: Pair<BlockPos, Spot>? = null): Task? {
+        val level = level(p)
         val places = life.places
         val (barn, at) = from ?: store(p, places.nearest(p.blockPosition(), STORES), p.blockPosition()) ?: return null
         val mill = places.nearest(barn, MILLS).firstOrNull() ?: return null
         val (stone, by) = hopper(p, mill, mill.front?.inside ?: barn) ?: return null
-        val pour = carry(p, life, Activity.CARRY_SACK, by, Jobs.top(stone, 1.5), Activity.POUR_SACK)
-        return take(p, life, ItemStack(Items.WHEAT), barn, at).andThen(pour)
+        val to = Drop(by, Jobs.top(stone, 1.5), Activity.POUR_SACK, bay = { mill.front?.let { Handcarts.bay(level, it, p) } })
+        return deliver(p, life, barn to at, to, ItemStack(Items.WHEAT), Handcarts.stack(Good.WHEAT), Activity.CARRY_SACK, n)
     }
 
     /** The granary's grain to the mill, when the fields send none: from the market hall's store. */
-    private fun granary(p: Townsperson, life: Life): Task? {
+    private fun granary(p: Townsperson, life: Life, n: Int): Task? {
         val hall = store(p, life.places.nearest(p.blockPosition(), setOf(Kind.MARKET_HALL.name)).take(1), p.blockPosition()) ?: return null
-        return grain(p, life, hall)
+        return grain(p, life, n, hall)
     }
 
-    /** A sack of flour from the mill's store to the bakery's bin (or by the oven, where it keeps none). */
-    private fun flour(p: Townsperson, life: Life): Task? {
+    /** Flour from the mill's store to the bakery's bin (or by the oven, where it keeps none). */
+    private fun flour(p: Townsperson, life: Life, n: Int): Task? {
         val level = level(p)
         val places = life.places
         val mills = places.nearest(p.blockPosition(), MILLS)
         val mill = mills.take(2).randomOrNull(Random(p.random.nextLong())) ?: return null
         val stone = mill.stations.firstOrNull { it.m == M.GRINDSTONE }?.pos
-        val (sacks, at) = store(p, listOf(mill), mill.front?.inside ?: p.blockPosition(), setOfNotNull(stone?.above())) ?: return null
+        val sacks = store(p, listOf(mill), mill.front?.inside ?: p.blockPosition(), setOfNotNull(stone?.above())) ?: return null
         val bakery = places.nearest(mill.box.center, BAKERIES).firstOrNull { b -> b !== mill && b.stations.any { it.m == M.SMOKER || it.m == M.FURNACE } }
             ?: return null
         val oven = bakery.stations.first { it.m == M.SMOKER || it.m == M.FURNACE }.pos
         val bin = store(p, listOf(bakery), oven) ?: Places.beside(level, oven, bakery.front?.inside ?: oven)?.let { oven to it } ?: return null
         val store = bin.first.takeIf { it != oven }
-        return take(p, life, ItemStack.EMPTY, sacks, at).andThen(carry(p, life, Activity.CARRY_SACK, bin.second, Jobs.top(bin.first, 0.9), Activity.PUT_DOWN, store))
+        val to = Drop(bin.second, Jobs.top(bin.first, 0.9), Activity.PUT_DOWN, store, bay = { bakery.front?.let { Handcarts.bay(level, it, p) } })
+        return deliver(p, life, sacks, to, ItemStack.EMPTY, Handcarts.FLOUR, Activity.CARRY_SACK, n)
     }
 
     /**
-     * Some of the farms' [good] (a crate of roots, a sack of grain or fleece, the butcher's meat) to the stall that
+     * Some of the farms' [good] (crates of roots, sacks of grain or fleece, the butcher's meat) to the stall that
      * sells it, handed over the counter to its keeper; or to the market hall's store if no stall does.
      */
-    private fun produce(p: Townsperson, life: Life, good: Good): Task? {
+    private fun produce(p: Townsperson, life: Life, good: Good, n: Int): Task? {
         val level = level(p)
         val places = life.places
         val here = p.blockPosition()
@@ -260,15 +280,180 @@ object Trades {
         val stall = places.stalls.filter { s ->
             Shop.of(s.trade)?.goods?.contains(good) == true && level.isLoaded(s.customer.pos) && Claims.free(level, s.customer.pos, p)
         }.minByOrNull { it.customer.pos.distSqr(from.first) }
-        val bringing = if (stall != null) {
+        val to = if (stall != null) {
             val middle = stall.counter.getOrNull(stall.counter.size / 2) ?: stall.keeper.pos
-            carry(p, life, overlay, stall.customer, Jobs.top(middle, 1.0), Activity.HAND_OVER) { Acts.serve(Acts.keeper(level, stall), p, Activity.RECEIVE) }
+            // The cart stands back from the counter, out of the buyers' way
+            Drop(stall.customer, Jobs.top(middle, 1.0), Activity.HAND_OVER, bay = { Handcarts.bay(level, stall.customer.pos, stall.customer.facing.opposite, p) }) {
+                Acts.serve(Acts.keeper(level, stall), p, Activity.RECEIVE)
+            }
         } else {
-            val hall = places.nearest(from.first, setOf(Kind.MARKET_HALL.name))
-            val (store, at) = store(p, hall.take(1), from.first) ?: return null
-            carry(p, life, overlay, at, Jobs.top(store, 0.9), Activity.PUT_DOWN, store)
+            val hall = places.nearest(from.first, setOf(Kind.MARKET_HALL.name)).take(1)
+            val (store, at) = store(p, hall, from.first) ?: return null
+            Drop(at, Jobs.top(store, 0.9), Activity.PUT_DOWN, store, bay = { hall.firstOrNull()?.front?.let { Handcarts.bay(level, it, p) } })
         }
-        return take(p, life, goods, from.first, from.second).andThen(bringing)
+        val piece = if (goods.isEmpty) Handcarts.stack(good) else goods
+        return deliver(p, life, from, to, goods, piece, overlay, n)
+    }
+
+    /**
+     * Where a load goes, a piece at a time: carried to [spot] and left there with [drop], looking at [look] (put
+     * away in [store] if it's a barrel or a chest); [handed] hears each one leave their hands. A cart waits at
+     * [bay] meanwhile (worked out when it's wanted; null if there's no room for one).
+     */
+    private class Drop(
+        val spot: Spot, val look: Vec3, val drop: Activity, val store: BlockPos? = null, val bay: () -> BlockPos?, val handed: (() -> Unit)? = null,
+    )
+
+    /**
+     * Goods from the store at [from] to [to]: a cartload of [n] ([Cartload]) where carts are on and there's room
+     * for one by both doors, otherwise one piece carried on the shoulder. [held] is how a piece looks in their
+     * hands, [piece] how it looks heaped on the cart, and [overlay] how they carry it.
+     */
+    private fun deliver(
+        p: Townsperson, life: Life, from: Pair<BlockPos, Spot>, to: Drop, held: ItemStack, piece: ItemStack, overlay: Activity, n: Int,
+    ): Task {
+        val shoulder = { take(p, life, held, from.first, from.second).andThen(carry(p, life, overlay, to.spot, to.look, to.drop, to.store, to.handed)) }
+        if (!Handcarts.enabled()) return shoulder()
+        val door = life.places.lodgingAt(from.first)?.front ?: return shoulder()
+        val start = Handcarts.bay(level(p), door, p) ?: return shoulder()
+        val end = to.bay() ?: return shoulder()
+        return Cartload(p, life, from, door, start, to, end, held, piece, overlay, n, shoulder)
+    }
+
+    /**
+     * A cartload (see [deliver]): the carter's handcart fetched (or brought out) and pulled to [start] by [door],
+     * [n] pieces taken out of the store at [from] one at a time and heaped on it, pulled across town to [to]'s
+     * bay ([end] if there's none free by then), and lifted off and carried in to [to] one at a time. With no cart
+     * to be had after all, a piece on the shoulder instead ([shoulder]). Broken off, they let go of the cart where
+     * it stands.
+     */
+    private class Cartload(
+        p: Townsperson, private val life: Life, private val from: Pair<BlockPos, Spot>, door: CityPlaces.Door, private val start: BlockPos,
+        private val to: Drop, private val end: BlockPos, private val held: ItemStack, private val piece: ItemStack, private val overlay: Activity,
+        private val n: Int, private val shoulder: () -> Task,
+    ) : Task(p) {
+        private enum class Stage { THERE, FETCH, LOAD, ACROSS, UNLOAD, BRING, DONE }
+
+        private val door = Vec3.atBottomCenterOf(door.outside)
+        private val heap = ArrayList<ItemStack>()
+        private var stage = Stage.THERE
+        private var inner: Task? = null
+        private var pull: Pull? = null
+        private var heaping: Heap? = null
+        private var holding = false
+        private var handed = false
+
+        override val anchored: Boolean get() = inner?.anchored == true
+
+        override fun start() {
+            // Whatever was left on it last time goes along with this load
+            Handcarts.parked(p)?.let { cart ->
+                for (slot in 0 until Handcart.SLOTS) cart.goods(slot).takeIf { !it.isEmpty }?.let { heap.add(it.copy()) }
+            }
+            if (Pull.standing(p, start)) {
+                go(if (heap.size >= n) across() else fetch())
+                return
+            }
+            // Out to the cart first (down from upstairs and out of doors); with none standing by, to where it's wanted, to bring one out
+            val at = Handcarts.fetch(p) ?: start
+            go(Ways.to(p, life.places, at, Jobs.WALK, near = 1.0, exact = at != start).andThen(Later(p) { pulling(start) }))
+        }
+
+        private fun go(task: Task?) {
+            inner = task
+            task?.start()
+        }
+
+        private fun pulling(to: BlockPos): Task = Pull(p, to, heap).also { pull = it }
+
+        override fun run(): Boolean {
+            val current = inner ?: return false
+            if (current.tick()) return true
+            current.stop()
+            // The rest of a run (the way in, then the work there), unless the way failed
+            val then = current.then
+            go(then ?: next())
+            return inner != null
+        }
+
+        /** The next stage's first task, now that the last one's over; null once it's all done. */
+        private fun next(): Task? = when (stage) {
+            // No cart for it after all: one on the shoulder
+            Stage.THERE -> if (pull?.failed != false) over(shoulder()) else if (heap.size >= n) across() else fetch()
+            // Nothing more to be had from the store: off with what's on, if anything
+            Stage.FETCH -> if (holding) load() else if (heap.isEmpty()) over() else across()
+            Stage.LOAD -> {
+                holding = false
+                if (heaping?.done != true) over() else if (heap.size >= n) across() else fetch()
+            }
+            Stage.ACROSS -> if (pull?.failed != false) over() else unload()
+            Stage.UNLOAD -> if (heaping?.done != true) over() else bring()
+            // Couldn't get it in: the rest stays on the cart
+            Stage.BRING -> if (!handed) over() else unload()
+            Stage.DONE -> null
+        }
+
+        private fun over(last: Task? = null): Task? {
+            stage = Stage.DONE
+            return last
+        }
+
+        /** In to the store for the next piece. */
+        private fun fetch(): Task {
+            stage = Stage.FETCH
+            return take(p, life, held, from.first, from.second) { holding = true }
+        }
+
+        /** Out to the cart with it, and onto the heap. */
+        private fun load(): Task {
+            stage = Stage.LOAD
+            return atCart(Heap(p, heap, piece, from = door, overlay = overlay), door, overlay)
+        }
+
+        /** Loaded: the shafts taken up and off across town. */
+        private fun across(): Task {
+            stage = Stage.ACROSS
+            return pulling(to.bay() ?: end)
+        }
+
+        /** The next piece lifted off, or with none left, done. */
+        private fun unload(): Task? {
+            if (heap.isEmpty()) return over()
+            stage = Stage.UNLOAD
+            val toward = Vec3.atBottomCenterOf(to.spot.pos)
+            return atCart(Heap(p, heap, null, held, from = toward), toward, Activity.NONE)
+        }
+
+        /** Out to the cart's side (down the ladder first if they're upstairs), on the side nearer [from], for [heap] there. */
+        private fun atCart(heap: Heap, from: Vec3, overlay: Activity): Task {
+            heaping = heap
+            val side = Handcarts.side(p, from) ?: return heap
+            return Ways.to(p, life.places, side, LADEN, near = 1.0, overlay = overlay).andThen(heap)
+        }
+
+        /** The piece in their hands carried in and left. */
+        private fun bring(): Task {
+            stage = Stage.BRING
+            handed = false
+            return carry(p, life, overlay, to.spot, to.look, to.drop, to.store) {
+                handed = true
+                to.handed?.invoke()
+            }
+        }
+
+        override fun stop() {
+            inner?.stop()
+            inner = null
+        }
+    }
+
+    /** Sends carter [p] off on a haul now (for the commands); false if they're no carter, or there's nothing to haul. */
+    fun haulNow(p: Townsperson): Boolean {
+        val life = Days.life(p) ?: return false
+        if (!life.carter) return false
+        val task = haul(p, life) ?: return false
+        p.routine.replace(task)
+        return true
     }
 
     /** Nothing to haul just now: a word with someone near, or a while by a barn door waiting on the next load. */

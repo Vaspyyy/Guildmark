@@ -170,12 +170,14 @@ class Handcart(type: EntityType<out Handcart>, level: Level) : Entity(type, leve
         settle(level)
     }
 
-    /** One tick standing: it settles onto its shafts, and goes once no player has been near for a while. */
+    /** One tick standing: it settles onto its shafts, and goes once neither a player nor its carter has been near for a while. */
     private fun stand(level: ServerLevel) {
         resting++
         if (resting <= SETTLE_TICKS || (level.gameTime + id) % 20 == 0L) settle(level)
         if ((level.gameTime + id) % 20 == 0L) {
-            lonely = if (level.getNearestPlayer(x, y, z, NEAR, false) != null) 0 else lonely + 20
+            // Its carter loading it or unloading it keeps it, seen or not
+            val minded = owner?.let { it.distanceToSqr(this) < MINDED * MINDED } == true
+            lonely = if (minded || level.getNearestPlayer(x, y, z, NEAR, false) != null) 0 else lonely + 20
             if (lonely >= LONELY) discard()
         }
     }
@@ -462,6 +464,8 @@ class Handcart(type: EntityType<out Handcart>, level: Level) : Entity(type, leve
         /** Blocks a player must be within for a standing cart to stay; and how long it waits with none (ticks). */
         private const val NEAR = 48.0
         private const val LONELY = 600
+        /** Blocks its carter must be within for a standing cart to stay with no player near. */
+        private const val MINDED = 24.0
 
         private val PULLER: EntityDataAccessor<Int> = SynchedEntityData.defineId(Handcart::class.java, EntityDataSerializers.INT)
         private val ROLL: EntityDataAccessor<Float> = SynchedEntityData.defineId(Handcart::class.java, EntityDataSerializers.FLOAT)

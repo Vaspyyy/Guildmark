@@ -176,16 +176,18 @@ object Handcarts {
 
     /**
      * Where to stop with a cart to leave it by the door at [door] (whose outside is toward [outward]): two blocks
-     * out from the wall and three or more along it, so the cart stands clear of the doorway whichever way it came.
-     * Null if there's no room by the door.
+     * out from the wall and three or more along it, so the cart stands clear of the doorway whichever way it came,
+     * and not where someone else's cart stands already ([by]'s own doesn't count). Null if there's no room by the
+     * door.
      */
-    fun bay(level: Level, door: BlockPos, outward: Direction): BlockPos? {
+    fun bay(level: Level, door: BlockPos, outward: Direction, by: Townsperson? = null): BlockPos? {
         val along = outward.clockWise
         for (step in BAY_STEPS) {
             val base = door.relative(outward, 2).relative(along, step)
             for (dy in BAY_DY) {
                 val at = base.above(dy)
                 if (!Places.standable(level, at)) continue
+                if (taken(level, at, by)) break
                 if (Places.standable(level, at.relative(along)) || Places.standable(level, at.relative(along.opposite))) return at
             }
         }
@@ -193,7 +195,13 @@ object Handcarts {
     }
 
     /** Where to stop with a cart to leave it by [door] (see the other [bay]). */
-    fun bay(level: Level, door: CityPlaces.Door): BlockPos? = bay(level, door.pos, door.inward.opposite)
+    fun bay(level: Level, door: CityPlaces.Door, by: Townsperson? = null): BlockPos? = bay(level, door.pos, door.inward.opposite, by)
+
+    /** Whether a cart other than [by]'s stands near [at], where one stopping there would stand on it. */
+    private fun taken(level: Level, at: BlockPos, by: Townsperson?): Boolean {
+        val c = Vec3.atBottomCenterOf(at)
+        return carts.values.any { it.level() === level && !it.isRemoved && it.owner !== by && it.distanceToSqr(c) < TAKEN * TAKEN }
+    }
 
     /** The stack that shows [good] on a cart: its own item; flour as a flour sack ([FLOUR]). */
     fun stack(good: Good): ItemStack = when (good) {
@@ -270,6 +278,9 @@ object Handcarts {
     private const val BED_MIDDLE = 0.15
     private const val BESIDE = 1.3
     private val ALONG = doubleArrayOf(0.0, 0.6, -0.6)
+
+    /** Another cart this near a stop has it taken. */
+    private const val TAKEN = 3.0
 
     private val BAY_STEPS = intArrayOf(3, -3, 4, -4, 5, -5)
     private val BAY_DY = intArrayOf(0, -1, 1)
