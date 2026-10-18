@@ -102,6 +102,9 @@ object GuildmarkConfig {
     val MARKETS: ModConfigSpec.BooleanValue = BUILDER
         .comment("The capitals' markets: each capital grows, makes, moves, eats and trades real goods an hour at a time, whether anyone is there or not, and its stalls buy and sell at prices that follow what it holds. Off, the markets stand still.")
         .define("capitalMarkets", true)
+    val SUPPLIER_ORDERS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Supplying the capitals: each capital's businesses post orders for the goods it has to bring in (on the market board, at their screens, cried at noon), players take and fill them for a fixed price, and filling orders and selling at the stalls earns a supplier's standing there, which pays a little more at its stalls. Off, there are no orders and no standing, and the stalls pay as they always have.")
+        .define("supplierOrders", true)
     val HANDCARTS: ModConfigSpec.BooleanValue = BUILDER
         .comment("The capitals' carters pull handcarts: sacks of grain from the fields to the mill, flour to the bakehouse and produce to the market, heaped on the cart's bed. Off, they carry the sacks on their shoulders.")
         .define("handcarts", true)

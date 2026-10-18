@@ -13,7 +13,8 @@ class Lot(val count: Int, val marks: Int) {
 
 /**
  * How a market's goods change hands with players, a lot at a time since a Guild Mark doesn't split: "11 for 2
- * Marks", "3 for 4 Marks". A buyer always pays at least the price and a seller gets at most [SELL_SHARE] of it, each
+ * Marks", "3 for 4 Marks". A buyer always pays at least the price and a seller gets at most [SELL_SHARE] of it (a
+ * supplier in good standing a few hundredths more, never so much as three quarters: see [SupplierRank]), each
  * reckoned at what the market will hold once the lot has changed hands, so buying a lot and selling it straight back
  * always loses, and a stall never pays more than it can sell for. The market only buys what it has room for: up to
  * [ROOM] times what it likes to keep.
@@ -75,19 +76,22 @@ object Lots {
     fun wants(m: Market, town: Town, good: Good): Int =
         if (!good.traded) 0 else floor(town.target(good) * ROOM - m.stock(good)).toInt().coerceAtLeast(0)
 
-    /** The lot of [good] [m] will buy from a player now, or null if it wants no more. */
-    fun sell(m: Market, town: Town, good: Good): Lot? {
+    /**
+     * The lot of [good] [m] will buy from a player now, paying [share] of its price (a supplier's standing lifts it a
+     * little over [SELL_SHARE], see [Suppliers.share]), or null if it wants no more.
+     */
+    fun sell(m: Market, town: Town, good: Good, share: Double = SELL_SHARE): Lot? {
         val room = wants(m, town, good)
         if (room < 1) return null
-        var lot = cheap(m.price(town, good) * SELL_SHARE) ?: return null
+        var lot = cheap(m.price(town, good) * share) ?: return null
         // Reckoned at what it will hold once it's in, which is cheaper
-        repeat(2) { lot = cheap(m.price(town, good, m.stock(good) + lot.count) * SELL_SHARE) ?: return null }
+        repeat(2) { lot = cheap(m.price(town, good, m.stock(good) + lot.count) * share) ?: return null }
         var count = lot.count
-        while (lot.marks > count * m.price(town, good, m.stock(good) + count) * SELL_SHARE) count++
+        while (lot.marks > count * m.price(town, good, m.stock(good) + count) * share) count++
         lot = Lot(count, lot.marks)
         if (lot.count <= room) return lot
         // Room for less than a lot: what that's worth, rounded down
-        val marks = floor(room * m.price(town, good, m.stock(good) + room) * SELL_SHARE).toInt()
+        val marks = floor(room * m.price(town, good, m.stock(good) + room) * share).toInt()
         return if (marks >= 1) Lot(room, marks) else null
     }
 

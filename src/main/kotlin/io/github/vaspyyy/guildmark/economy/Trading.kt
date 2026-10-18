@@ -76,8 +76,11 @@ class Quote(
     val event: EventKind?,
 )
 
-/** What came of a player's offer: [lot] is what changed hands, or what would have. */
-class Deal(val outcome: Outcome, val lot: Lot? = null) {
+/**
+ * What came of a player's offer: [lot] is what changed hands, or what would have; [own] is how many of the goods sold
+ * had come off the market's own stalls lately (see [Suppliers.sold]).
+ */
+class Deal(val outcome: Outcome, val lot: Lot? = null, val own: Int = 0) {
     enum class Outcome {
         DONE,
         /** The market has none to sell, or wants no more. */
@@ -105,19 +108,20 @@ object Trading {
     private const val LEAN = 0.8
     private const val FULL = 1.2
 
-    fun quote(entry: Markets.Entry, good: Good): Quote {
+    /** What [entry]'s market says of [good], the lot it buys paying [share] of its price (a supplier's standing lifts it, see [Suppliers.share]). */
+    fun quote(entry: Markets.Entry, good: Good, share: Double = Lots.SELL_SHARE): Quote {
         val m = entry.market
         val town = entry.town
         val price = m.price(town, good)
         val usual = good.base * m.freight(good)
         val (why, event) = why(entry, good, price / usual)
         return Quote(
-            good, floor(m.stock(good) + 1e-6).toInt(), price, usual, Lots.buy(m, town, good), Lots.sell(m, town, good),
+            good, floor(m.stock(good) + 1e-6).toInt(), price, usual, Lots.buy(m, town, good), Lots.sell(m, town, good, share),
             Lots.wants(m, town, good), m.trend(town, good), why, event,
         )
     }
 
-    /** [player] buys a lot of [good]: their Marks for the goods. */
+    /** [player] buys a lot of [good]: their Marks for the goods, which the capital remembers they bought there (see [Suppliers]). */
     fun buy(player: ServerPlayer, entry: Markets.Entry, good: Good): Deal {
         val item = good.item ?: return Deal(Deal.Outcome.NONE)
         val lot = Lots.buy(entry.market, entry.town, good) ?: return Deal(Deal.Outcome.NONE)
@@ -126,26 +130,33 @@ object Trading {
         give(player, item, lot.count)
         Lots.bought(entry.market, good, lot)
         Markets.get(player.level()).changed()
+        Suppliers.purchased(player.level(), entry.capital, player.uuid, good, lot.count)
         return Deal(Deal.Outcome.DONE, lot)
     }
 
-    /** [player] sells the market a lot of [good]: the goods for its Marks. */
+    /**
+     * [player] sells the market a lot of [good]: the goods for its Marks, at the share their standing there earns them,
+     * and half a point of standing for each Mark (none for goods that came off its own stalls lately).
+     */
     fun sell(player: ServerPlayer, entry: Markets.Entry, good: Good): Deal {
         val item = good.item ?: return Deal(Deal.Outcome.NONE)
-        val lot = Lots.sell(entry.market, entry.town, good) ?: return Deal(Deal.Outcome.NONE)
+        val level = player.level()
+        val lot = Lots.sell(entry.market, entry.town, good, Suppliers.share(level, entry.capital, player.uuid)) ?: return Deal(Deal.Outcome.NONE)
         if (count(player.inventory, item) < lot.count) return Deal(Deal.Outcome.LACKING, lot)
         ContainerHelper.clearOrCountMatchingItems(player.inventory, { it.`is`(item) }, lot.count, false)
         give(player, ModItems.GUILD_MARK.get(), lot.marks)
         Lots.sold(entry.market, good, lot)
-        Markets.get(player.level()).changed()
-        return Deal(Deal.Outcome.DONE, lot)
+        Markets.get(level).changed()
+        val own = Suppliers.sold(level, entry.capital, player.uuid, good, lot.count, lot.marks)
+        return Deal(Deal.Outcome.DONE, lot, own)
     }
 
     /** How many of [item] [inventory] holds. */
     fun count(inventory: Inventory, item: Item): Int =
         ContainerHelper.clearOrCountMatchingItems(inventory, { it.`is`(item) }, Int.MAX_VALUE, true)
 
-    private fun give(player: ServerPlayer, item: Item, count: Int) {
+    /** Puts [count] of [item] into [player]'s inventory, a stack at a time (what doesn't fit drops at their feet). */
+    fun give(player: ServerPlayer, item: Item, count: Int) {
         var left = count
         val most = ItemStack(item).maxStackSize
         while (left > 0) {
