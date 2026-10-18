@@ -4016,5 +4016,9 @@
   "news.guildmark.market.over.poor_catch": "The fish are back: the boats come in with full nets.",
   "news.guildmark.market.over.fever": "The fever has passed.",
   "guildmark.configuration.capitalMarkets": "Capital Markets",
-  "guildmark.configuration.livingWorld": "Living Capitals"
+  "guildmark.configuration.livingWorld": "Living Capitals",
+  "guildmark.configuration.townsfolkTalk": "Talking with Townsfolk",
+  "guildmark.configuration.townsfolkMemory": "Townsfolk Remember You",
+  "guildmark.configuration.townsfolkRumours": "Rumours Get Round",
+  "guildmark.configuration.townsfolkBarks": "Remarks in Passing"
 }

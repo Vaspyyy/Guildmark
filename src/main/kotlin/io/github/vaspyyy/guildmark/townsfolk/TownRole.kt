@@ -201,11 +201,28 @@ enum class Activity(val clip: String, val ticks: Int, val loop: Boolean, val ove
     // to lamp at dusk, and the lamps put out at dawn
     CARRY_POLE("carry_pole", 40, true, true),
     SNUFF_LAMP("snuff_lamp", 40, false),
+    // Talking with players and each other (living-world/design-voices.md section 6; art/scripts/talk_clips.py): the
+    // gestures a line is said with, the walking nods and waves in passing, and setting the work down to talk
+    EXPLAIN("explain", 60, true),
+    GOSSIP("gossip", 60, true),
+    SHUSH("shush", 30, false),
+    WAVE_OFF("wave_off", 24, false),
+    SIGH("sigh", 40, false),
+    THINK("think", 50, false),
+    TIP_HAT("tip_hat", 24, false),
+    INTRODUCE("introduce", 40, false),
+    ARMS_FOLDED("arms_folded", 80, true),
+    RECOIL("recoil", 20, false),
+    WAVE_WALK("wave_walk", 30, false, true),
+    NOD_WALK("nod_walk", 20, false, true),
+    SIT_GOSSIP("sit_gossip", 60, true),
+    SIT_LAUGH("sit_laugh", 40, false),
+    PAUSE_WORK("pause_work", 30, false),
     ;
 
     /** Seated activities keep the townsperson on their seat (a wagon's bench and tailboard among them). */
     val seated: Boolean get() = this == SIT || this == SIT_DRINK || this == SIT_TALK || this == SCRIBE || this == DICE || this == SIT_EAT ||
-        this == DRIVE || this == DRIVE_URGE || this == DRIVE_BRAKE || this == RIDE_TAIL
+        this == DRIVE || this == DRIVE_URGE || this == DRIVE_BRAKE || this == RIDE_TAIL || this == SIT_GOSSIP || this == SIT_LAUGH
 
     companion object {
         fun byId(id: Int): Activity = entries.getOrElse(id) { NONE }

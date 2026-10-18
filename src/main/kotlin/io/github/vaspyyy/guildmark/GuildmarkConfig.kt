@@ -124,6 +124,19 @@ object GuildmarkConfig {
         .comment("The capitals' mills turn: a windmill's sails while its millstones grind (braked in a storm, one with a sail hanging broken while the mill is broken), a watermill's wheel with its stream, harder while it grinds. Older capitals' block-built sails and wheels are swapped for turning ones out of sight. Off, they stand still.")
         .define("turningMills", true)
 
+    val TOWNSFOLK_TALK: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Talking with townsfolk: a right-click opens a short talk (a greeting that knows you, what's on their mind, then what they're up to, any news, trade or goodbye), and their remarks in passing and their chats come from the same topics. Off, they say one line as before.")
+        .define("townsfolkTalk", true)
+    val TOWNSFOLK_MEMORY: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Townsfolk remember the players they've met, what passed between them and what they saw. Off, everyone is a stranger; what they remembered is kept for when it's turned on again.")
+        .define("townsfolkMemory", true)
+    val TOWNSFOLK_RUMOURS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("News goes from person to person through the townsfolk's days, changing as it goes, and the crier cries the talk of the town. Off, townsfolk know only what they saw and what the crier cried. Passing news on out of sight needs Living Capitals.")
+        .define("townsfolkRumours", true)
+    val TOWNSFOLK_BARKS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Townsfolk greet and call out to players in passing with what's on their mind. Off, the old greetings.")
+        .define("townsfolkBarks", true)
+
     // Seasons and festivals (season/, festival/)
     val SEASONS: ModConfigSpec.BooleanValue = BUILDER
         .comment("Seasons in the overworld: spring, summer, autumn and winter turn the land's colours, bring blossom, falling leaves and winter snow, and pace the crops. Off, the calendar still counts (for the festivals) but nothing changes with it.")
