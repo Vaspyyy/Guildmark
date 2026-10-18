@@ -111,8 +111,9 @@ object DraughtHorseMesh {
 
     /**
      * Hidden unless wanted: "nosebag" (feeding at the stand), "reins_tied" (the reins tied up at the saddle while
-     * nobody drives), and the cut ends of the traces ("trace_r_cut", "trace_l_cut") and reins ("rein_r_cut",
-     * "rein_l_cut") once it's cut loose or lies dead by the wreck: then hide "rein_r" and "rein_l".
+     * nobody drives), the cut ends of the traces ("trace_r_cut", "trace_l_cut") once it's cut loose (its reins still
+     * tied up), and lying dead by the wreck those and the cut ends of the reins ("rein_r_cut", "rein_l_cut"): then
+     * hide "rein_r" and "rein_l".
      */
     val HIDDEN: List<String> = listOf("nosebag", "reins_tied", "trace_r_cut", "trace_l_cut", "rein_r_cut", "rein_l_cut")
 

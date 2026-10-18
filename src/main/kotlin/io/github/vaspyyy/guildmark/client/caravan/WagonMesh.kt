@@ -26,7 +26,7 @@ object WagonMesh {
      * "lantern" (swings at its hook), "pennant" with "pennant_1" and "pennant_2" (each turns about y at its root: ripple
      * them), the back wheels "wheel_rr" and "wheel_rl" (spin about x), and "front" (steers about y at the kingpin)
      * carrying "wheel_fr" and "wheel_fl" (spin about x, [REAR_RADIUS] / [FRONT_RADIUS] times as fast) and "shafts"
-     * (turns about x at the hinges: + lifts the tips).
+     * (turns about x at the hinges: + lowers the tips).
      */
     @Suppress("LocalVariableName", "UNUSED_VARIABLE")
     fun wagon(): LayerDefinition {
@@ -353,8 +353,9 @@ object WagonMesh {
     }
 
     /**
-     * The band's loot pile: "loot_0" to "loot_5" (marked crates, sacks and a barrel; "loot_4" sits on
-     * "loot_0" and "loot_1"), "tarp" over them and "tarp_ropes" pegging it down.
+     * The band's loot pile: "loot_0" to "loot_5" (marked crates, sacks and a barrel, hidden one by one
+     * as they're taken, "loot_4" first: it sits on "loot_0" and "loot_1"), "tarp" over them and "tarp_ropes" pegging
+     * it down (both rest on "loot_4": they come off with it).
      */
     @Suppress("LocalVariableName", "UNUSED_VARIABLE")
     fun loot(): LayerDefinition {
