@@ -5,12 +5,23 @@ import com.mojang.brigadier.arguments.FloatArgumentType
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.context.CommandContext
+import io.github.vaspyyy.guildmark.economy.Conditions
+import io.github.vaspyyy.guildmark.economy.Markets
+import io.github.vaspyyy.guildmark.economy.fortune.FortuneReasons
+import io.github.vaspyyy.guildmark.economy.fortune.Fortunes
+import io.github.vaspyyy.guildmark.economy.works.Works
+import io.github.vaspyyy.guildmark.economy.works.WorksKind
+import io.github.vaspyyy.guildmark.economy.works.WorksState
+import io.github.vaspyyy.guildmark.festival.FestivalKind
 import io.github.vaspyyy.guildmark.townsfolk.CapitalCommand
+import io.github.vaspyyy.guildmark.townsfolk.Comings
 import io.github.vaspyyy.guildmark.townsfolk.Furnish
+import io.github.vaspyyy.guildmark.townsfolk.Household
 import io.github.vaspyyy.guildmark.townsfolk.Resident
 import io.github.vaspyyy.guildmark.townsfolk.Residents
 import io.github.vaspyyy.guildmark.townsfolk.Speech
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
+import io.github.vaspyyy.guildmark.townsfolk.talk.sources.FortuneTopics
 import net.minecraft.ChatFormatting
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands
@@ -35,7 +46,9 @@ import kotlin.math.abs
  * `/guildmark memory` says what they remember of you, the opinion worked out (and from what) and the familiarity;
  * `memory set <opinion>` makes them think that of you now (it fades back over ten days), `memory meet` and `memory name`
  * are a talk and an introduction, `memory forget` wipes you from their mind, and `memory town` counts how many of the
- * town have met you, know your name, are friends or wary of you.
+ * town have met you, know your name, are friends or wary of you. For M6: `memory laboured <works>` gives them a
+ * building day on that works today (their own line about it, for a month: Part B's Labour.kt records the real ones),
+ * and `memory fed` has them eat at your alms table today (the FED favour, as Part D2's table will give it).
  *
  * `/guildmark rumour list` is the capital's rumours with their kind, whom they're about, heat, how many know them and
  * in which versions; `rumour show <id>` who knows one, from whom and where; `rumour seed <kind> [player] [heat]` starts
@@ -43,6 +56,13 @@ import kotlin.math.abs
  * and says how many knew each rumour every six hours of it, and how long it took; `rumour tell` has them tell you their
  * hottest; and
  * `rumour clear [id]` lets one go, or all of them.
+ *
+ * For M6's talk of the works and the times: `rumour household gone|back` starts the word of the looked-at
+ * townsperson's household gone in hard times or come home (as Part D3's comings will), and `rumour household new [why]`
+ * or `home` has that household talk as newcomers or as those come home for its first days (the households' talk is
+ * heard though the comings are off, until the server stops); `rumour eased <works> mill|bread|band` has a standing works
+ * ease the town today; and `rumour reason <kind> [facts]` notes a fortune reason in the capital as if it had happened,
+ * with facts from the town (or given, split by commas), counted from the next close or now with `fortune step`.
  */
 object TalkCommand {
     /** The most knowers `rumour show` lists. */
@@ -64,6 +84,16 @@ object TalkCommand {
     )
     private val BAD = setOf("death", "siege.lost", "road.waylaid", "market.hungry", "order.lapsed", "salvage.kept")
 
+    /** `rumour household`: what befalls the household, and why newcomers came. */
+    private val HOUSEHOLD = listOf("gone", "back", "new", "home")
+    private val WHY = listOf("replace", "grow", "trade")
+
+    /** `rumour eased`: what a standing works eases (Works.MILL, BREAD, BAND). */
+    private val EASES = listOf(Works.MILL, Works.BREAD, Works.BAND)
+
+    /** `rumour reason`: market days a reason noted is kept for. */
+    private const val REASON_DAYS = 3
+
     fun register() {
         NeoForge.EVENT_BUS.addListener(RegisterCommandsEvent::class.java) { register(it.dispatcher) }
     }
@@ -84,7 +114,13 @@ object TalkCommand {
                         .then(Commands.literal("meet").executes { meet(it, named = false) })
                         .then(Commands.literal("name").executes { meet(it, named = true) })
                         .then(Commands.literal("forget").executes { forget(it) })
-                        .then(Commands.literal("town").executes { town(it) }),
+                        .then(Commands.literal("town").executes { town(it) })
+                        .then(
+                            Commands.literal("laboured").then(
+                                Commands.argument("works", IntegerArgumentType.integer(0)).executes { laboured(it, IntegerArgumentType.getInteger(it, "works")) },
+                            ),
+                        )
+                        .then(Commands.literal("fed").executes { fed(it) }),
                 )
                 .then(
                     Commands.literal("rumour")
@@ -122,6 +158,35 @@ object TalkCommand {
                             Commands.literal("clear")
                                 .executes { clear(it, null) }
                                 .then(Commands.argument("id", IntegerArgumentType.integer(1)).executes { clear(it, IntegerArgumentType.getInteger(it, "id")) }),
+                        )
+                        .then(
+                            Commands.literal("household").then(
+                                Commands.argument("what", StringArgumentType.word())
+                                    .suggests { _, b -> SharedSuggestionProvider.suggest(HOUSEHOLD, b) }
+                                    .executes { household(it, StringArgumentType.getString(it, "what"), null) }
+                                    .then(
+                                        Commands.argument("why", StringArgumentType.word())
+                                            .suggests { _, b -> SharedSuggestionProvider.suggest(WHY, b) }
+                                            .executes { household(it, StringArgumentType.getString(it, "what"), StringArgumentType.getString(it, "why")) },
+                                    ),
+                            ),
+                        )
+                        .then(
+                            Commands.literal("eased").then(
+                                Commands.argument("works", IntegerArgumentType.integer(0)).then(
+                                    Commands.argument("what", StringArgumentType.word())
+                                        .suggests { _, b -> SharedSuggestionProvider.suggest(EASES, b) }
+                                        .executes { eased(it, IntegerArgumentType.getInteger(it, "works"), StringArgumentType.getString(it, "what")) },
+                                ),
+                            ),
+                        )
+                        .then(
+                            Commands.literal("reason").then(
+                                Commands.argument("kind", StringArgumentType.word())
+                                    .suggests { _, b -> SharedSuggestionProvider.suggest(FortuneReasons.KINDS, b) }
+                                    .executes { reason(it, null) }
+                                    .then(Commands.argument("facts", StringArgumentType.greedyString()).executes { reason(it, StringArgumentType.getString(it, "facts")) }),
+                            ),
                         ),
                 ),
         )
@@ -179,7 +244,40 @@ object TalkCommand {
             for ((k, h) in about) say(source, line().append(plain("  #${k.rumour.id} ${k.rumour.kind}")).append(grey(" version ${h.warp}, " + whence(level, h))))
         }
         val felt = TownTalk.felt(level, r)
-        if (felt.isNotEmpty()) say(source, line().append(label("Lately: ")).append(plain(felt.joinToString(", ") { "${it.experience.name.lowercase()} (day ${it.day})" })))
+        if (felt.isNotEmpty()) {
+            val text = felt.joinToString(", ") { f ->
+                f.experience.name.lowercase() + (if (f.experience == Experience.LABOURED) " on works #${f.about}" else "") + " (day ${f.day})"
+            }
+            say(source, line().append(label("Lately: ")).append(plain(text)))
+        }
+        if (a != null && a.thanked.isNotEmpty()) {
+            val text = a.thanked.joinToString(", ") { t -> t.favour.name.lowercase() + if (t.favour == Favour.FUNDED) " (works #${t.key})" else " (day ${t.key})" }
+            say(source, line().append(label("Thanked you for: ")).append(plain(text)))
+        }
+        return 1
+    }
+
+    private fun laboured(context: CommandContext<CommandSourceStack>, works: Int): Int {
+        val source = context.source
+        val player = source.playerOrException
+        val level = source.level
+        val (p, r) = resident(source, player) ?: return 0
+        if (!Memory.enabled()) return fail(source, "Memory is switched off (townsfolkMemory).")
+        if (r.id < 0) return fail(source, "${who(p, r)} has no record: they keep nothing past the day.")
+        val w = Works.get(level, works) ?: return fail(source, "There's no works #$works (`/guildmark works` lists them).")
+        TownTalk.laboured(level, r, w.id)
+        say(source, plain("${who(p, r)} has had a building day on works #${w.id} (${w.kind.id}, ${w.state.name.lowercase()}) today: their own line about it while it's going up, and for a month after their last day."))
+        return 1
+    }
+
+    private fun fed(context: CommandContext<CommandSourceStack>): Int {
+        val source = context.source
+        val player = source.playerOrException
+        val level = source.level
+        val (p, r) = resident(source, player) ?: return 0
+        if (!Memory.enabled()) return fail(source, "Memory is switched off (townsfolkMemory).")
+        TownTalk.fed(level, r, player.uuid)
+        say(source, plain("${who(p, r)} ate at your alms table today: a small favour, counted once a day and only while their favour for you is under %.0f.".format(Memory.DAILY_CAP)))
         return 1
     }
 
@@ -429,6 +527,132 @@ object TalkCommand {
         }
         data.changed()
         return 1
+    }
+
+    // ---- The works, the times and the households (M6) ----
+
+    /**
+     * `rumour household`: the looked-at townsperson's household (everyone living in their home) [what]: gone in hard
+     * times or come home (the word of it starts with the neighbours, as Witness.gone and back start it for Part D3's
+     * comings), or newcomers ([why] they came) or come home, talking of it themselves for their first days.
+     */
+    private fun household(context: CommandContext<CommandSourceStack>, what: String, why: String?): Int {
+        val source = context.source
+        val player = source.playerOrException
+        val level = source.level
+        val (p, r) = resident(source, player) ?: return 0
+        if (r.id < 0) return fail(source, "${who(p, r)} has no record: try someone who lives here.")
+        if (what !in HOUSEHOLD) return fail(source, "Say what befalls them: " + HOUSEHOLD.joinToString(", "))
+        if (why != null && (what != "new" || why !in WHY)) return fail(source, "Only newcomers say why they came: " + WHY.joinToString(", "))
+        val members = if (r.home >= 0) Residents.get(level).of(r.capital).filter { it.alive && it.home == r.home }.map { it.id } else listOf(r.id)
+        val capital = r.capital.asLong()
+        val h = Household(
+            if (r.home >= 0) r.home else -r.id, capital, r.home, members, Conditions(Markets.hourOf(level)).day,
+            when (what) {
+                "gone" -> "hard"
+                "new" -> why ?: "grow"
+                else -> "return"
+            },
+        )
+        FortuneTopics.trying = true
+        val family = r.family.ifEmpty { who(p, r) }
+        when (what) {
+            "gone", "back" -> {
+                if (what == "gone") Witness.gone(level, h) else Witness.back(level, h)
+                val news = if (what == "gone") "have left in hard times" else "are home again"
+                say(
+                    source,
+                    line().append(plain("The $family family (${members.size}) $news: their neighbours know first, and the town talks of it while the word is warm. "))
+                        .append(clickable("[rumours]", "/guildmark rumour list")).append(plain(" ")).append(clickable("[spread 24 hours]", "/guildmark rumour spread 24")),
+                )
+            }
+            else -> {
+                FortuneTopics.tried.removeIf { it.capital == capital && it.members.any { m -> m in members } }
+                FortuneTopics.tried.add(h)
+                val talk = if (what == "new") "newcomers (${h.reason})" else "home again"
+                say(source, plain("The $family family (${members.size}) talk as $talk for their first days, from today (until the server stops)."))
+            }
+        }
+        if (!Comings.enabled()) say(source, grey("The comings are off: the households' talk is heard anyway, for this test, until the server stops."))
+        return 1
+    }
+
+    /** `rumour eased`: standing works [works] eased [what] today, as its effect would (heard by Fortunes and WorksTopics). */
+    private fun eased(context: CommandContext<CommandSourceStack>, works: Int, what: String): Int {
+        val source = context.source
+        val level = source.level
+        if (!Works.enabled()) return fail(source, "The works are off (Works.READY, townWorks): nothing eases anything.")
+        if (what !in EASES) return fail(source, "Say what it eased: " + EASES.joinToString(", "))
+        val w = Works.get(level, works) ?: return fail(source, "There's no works #$works (`/guildmark works` lists them).")
+        if (w.state != WorksState.DONE || w.kind == WorksKind.STALL) return fail(source, "Works #$works isn't one of the town's standing: only those raised ease anything.")
+        Works.eased(level, w.capital, w.kind, w.road, what)
+        say(source, plain("Works #${w.id} (${w.kind.id}) eased the $what today: talked of for three days, and noted in the fortunes at the next close."))
+        return 1
+    }
+
+    /**
+     * `rumour reason`: a fortune reason of the kind given, noted in the capital as if it had happened (Fortunes.note,
+     * added up by its kind's rule), with facts from the town: its roads, its dead, its works, a festival, the player's
+     * own name; or the [facts] given, split by commas, in the order the reason keeps them (see FortuneReasons).
+     */
+    private fun reason(context: CommandContext<CommandSourceStack>, facts: String?): Int {
+        val source = context.source
+        val player = source.playerOrException
+        val level = source.level
+        val kind = StringArgumentType.getString(context, "kind")
+        if (!Fortunes.enabled()) return fail(source, "The fortunes are off (Fortunes.READY, townFortunes, the markets): nothing is noted.")
+        if (kind !in FortuneReasons.KINDS) return fail(source, "No reason called $kind: " + FortuneReasons.KINDS.joinToString(", "))
+        val capital = capital(source, player) ?: return 0
+        val (points, sample) = sample(level, capital, kind, player)
+        val args = facts?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() } ?: sample
+        val about = player.uuid.takeIf { kind == FortuneReasons.SUPPLIED || kind == FortuneReasons.ESCORTED }
+        Fortunes.note(level, capital.asLong(), kind, points, REASON_DAYS, args, about)
+        say(
+            source,
+            line().append(plain("Noted $kind %+d for $REASON_DAYS days in ${name(capital)}, facts [${args.joinToString(", ")}]. It counts from the next close, or now: ".format(points)))
+                .append(clickable("[fortune step]", "/guildmark fortune step")),
+        )
+        return 1
+    }
+
+    /** A reason of [kind]'s points, and facts for it as they'd be in [capital] now. */
+    private fun sample(level: ServerLevel, capital: BlockPos, kind: String, player: ServerPlayer): Pair<Int, List<String>> {
+        val at = capital.asLong()
+        val side = FortuneReasons.side(at, 0)
+        val me = player.name.string
+        val people = Residents.get(level).of(capital)
+        val works = Works.all(level, at)
+        val standing = works.filter { it.state == WorksState.DONE && it.kind != WorksKind.STALL }.maxByOrNull { it.done }
+        val family = people.firstOrNull { it.alive && it.family.isNotEmpty() }?.family ?: "Thatcher"
+        return when (kind) {
+            FortuneReasons.HUNGRY -> -2 to listOf("6", "5")
+            FortuneReasons.FED -> 1 to listOf<String>()
+            FortuneReasons.DEAR -> -2 to listOf("160", "bread")
+            FortuneReasons.CHEAP -> 1 to listOf("82", "bread")
+            FortuneReasons.WANTING -> -2 to listOf("candle", "tools")
+            FortuneReasons.IDLE -> -2 to listOf("mill", "ovens")
+            FortuneReasons.ROAD -> -2 to listOf("perilous", side)
+            FortuneReasons.WAYLAID -> -1 to listOf("ford", side)
+            FortuneReasons.RELIEF -> 2 to listOf(side)
+            FortuneReasons.ESCORTED, FortuneReasons.SUPPLIED -> 1 to listOf(me)
+            FortuneReasons.PLENTY -> 1 to listOf("bumper:wheat", "good_catch")
+            FortuneReasons.TROUBLE -> -2 to listOf("blight:wheat", "mill_broken", "oven_cracked", "murrain", "poor_catch")
+            FortuneReasons.FEVER -> -2 to listOf<String>()
+            FortuneReasons.MOURNING -> -1 to listOfNotNull(people.filter { !it.alive && it.died >= 0 }.maxByOrNull { it.died }?.name ?: people.firstOrNull()?.name)
+            FortuneReasons.CRIME -> -1 to listOf("theft")
+            FortuneReasons.FESTIVAL -> 3 to listOf(FestivalKind.entries.first().id, "fed")
+            FortuneReasons.BUILDING -> 1 to works.filter { it.state == WorksState.BUILDING && it.kind != WorksKind.STALL }.map { it.kind.id }.distinct().ifEmpty { listOf("granary") }
+            FortuneReasons.RAISED -> 2 to listOf(standing?.kind?.id ?: "granary", me)
+            FortuneReasons.EASED -> 1 to when (val k = standing?.kind) {
+                null -> listOf("granary", Works.MILL, me, "any")
+                WorksKind.OVEN -> listOf("oven", Works.BREAD, me, "any")
+                WorksKind.TOWER -> listOf("tower", Works.BAND, me, FortuneReasons.side(at, standing?.road ?: -1))
+                else -> listOf(k.id, Works.MILL, me, "any")
+            }
+            FortuneReasons.NEWCOMERS -> 1 to listOf("grow", family)
+            FortuneReasons.LEAVING -> -1 to listOf("hard", family)
+            else -> -1 to listOf<String>()
+        }
     }
 
     // ---- Finding them ----
