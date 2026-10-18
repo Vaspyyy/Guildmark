@@ -752,8 +752,8 @@ def carry_beam():
             if lap:
                 set_arm(c, 'right_arm', t, pose)
                 back = bump(t, 28.0, 37.0)
-                c.key('head', t, qeuler(x=-3.0 + 2.0 * math.sin(2 * math.pi * t / 20.0), y=34.0 * back,
-                                        z=-6.0 + 2.0 * back), ease='linear')
+                c.key('head', t, qeuler(x=-3.0 + 2.0 * math.sin(2 * math.pi * t / 20.0), y=-34.0 * back,
+                                        z=6.0 - 2.0 * back), ease='linear')
     seal(c)
     # the previews draw the other carrier, BEAM_FOLLOW px behind in step under the other half
     ta.INFO['carry_beam']['partner'] = ('carry_beam', ('citizen', 3))
@@ -989,7 +989,7 @@ def survey():
         set_arm(c, 'right_arm', t, mix(rest, out, wr))
         sight = smooth(K(SV_LEAN, t)) * (1.0 - wr * 0.7)
         q_sight = head_at(fr, SV_FAR, mode='add')
-        q_look = qeuler(x=-6.0, y=-55.0 * min(1.0, wr * 1.3), z=0.0)
+        q_look = qeuler(x=-6.0, y=55.0 * min(1.0, wr * 1.3), z=0.0)
         c.key('head', t, qslerp(qslerp(I, q_look, wr), q_sight, sight), ease='linear')
     c.mode('head', 'add')
     la.TRACKS['survey'] = {'sighting_staff': _staff_track}
@@ -1268,7 +1268,7 @@ def lookout():
             pitch = 3.0 + 6.0 * lean
             fr = F_(qt=bend(pitch, 0.35 * yaw_h, 0.0), vt=(0.0, sink_for(pitch), 0.0),
                     pr=la.root_for(FEET, z=-0.9 * lean, dip=0.4 * lean))
-            qh = qeuler(x=K(LO_PITCH, t, LO_LEN), y=-0.65 * yaw_h, z=2.0 * lean)
+            qh = qeuler(x=K(LO_PITCH, t, LO_LEN), y=0.65 * yaw_h, z=2.0 * lean)
             brow = head_pt(fr, qh, LO_BROW)
             right = reach_arm(holds, 'right_arm', fr, brow, palm=D, palm_w=0.5, limit=1.6)
             if lap:
