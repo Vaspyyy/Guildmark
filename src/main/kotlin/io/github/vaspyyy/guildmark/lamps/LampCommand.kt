@@ -80,7 +80,7 @@ object LampCommand {
         val litBy = StreetLamps.litBy(town, level.isRaining)
         val weather = when {
             level.isThundering -> " A thunderstorm: every lamp is lit while it lasts."
-            level.isRaining -> " Rain: the evening comes on half an hour early and the morning half an hour late."
+            level.isRaining -> " Rain: the evening comes on an hour early and the morning an hour late."
             else -> ""
         }
         say(

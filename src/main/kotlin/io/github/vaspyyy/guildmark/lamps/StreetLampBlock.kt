@@ -8,7 +8,6 @@ import net.minecraft.core.particles.ParticleTypes
 import net.minecraft.resources.Identifier
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.sounds.SoundEvent
-import net.minecraft.sounds.SoundEvents
 import net.minecraft.sounds.SoundSource
 import net.minecraft.util.RandomSource
 import net.minecraft.world.InteractionHand
@@ -100,8 +99,7 @@ class StreetLampBlock(properties: Properties, val soul: Boolean) : Block(propert
     ): InteractionResult {
         if (!stack.isEmpty || !state.getValue(LIT) || !player.abilities.mayBuild) return super.useItemOn(stack, state, level, pos, player, hand, hit)
         if (level is ServerLevel) {
-            putOut(level, pos, show = true)
-            level.playSound(null, pos, SoundEvents.CANDLE_EXTINGUISH, SoundSource.BLOCKS, 1.0f, 0.85f)
+            putOut(level, pos, show = true, volume = 0.7f)
             level.gameEvent(player, GameEvent.BLOCK_CHANGE, pos)
         }
         return InteractionResult.SUCCESS
@@ -164,14 +162,18 @@ class StreetLampBlock(properties: Properties, val soul: Boolean) : Block(propert
         }
 
         /**
-         * Puts out the lamp at [pos] if it's burning: its wick glows a moment and smokes. [show]: with a wisp of smoke
-         * from its top, for a lamp going out by itself in sight of a player. False if there's no lamp or it was out.
+         * Puts out the lamp at [pos] if it's burning: its wick glows a moment and smokes. [show]: with the flame's hiss
+         * ([volume]) and a wisp of smoke from its top, for a lamp going out by itself in sight of a player or put out by
+         * hand (a lamplighter's snuffer makes its own, see LivingMoments). False if there's no lamp or it was out.
          */
-        fun putOut(level: ServerLevel, pos: BlockPos, show: Boolean): Boolean {
+        fun putOut(level: ServerLevel, pos: BlockPos, show: Boolean, volume: Float = 0.3f): Boolean {
             val state = level.getBlockState(pos)
             if (!isLamp(state) || !state.getValue(LIT)) return false
             level.setBlock(pos, state.setValue(LIT, false).setValue(SETTLING, true), Block.UPDATE_ALL)
-            if (show) level.sendParticles(ParticleTypes.SMOKE, pos.x + 0.5, pos.y + 0.5, pos.z + 0.5, 4, 0.06, 0.08, 0.06, 0.008)
+            if (show) {
+                level.playSound(null, pos.x + 0.5, pos.y + 0.35, pos.z + 0.5, HISS_SOUND, SoundSource.BLOCKS, volume, 0.95f + level.random.nextFloat() * 0.1f)
+                level.sendParticles(ParticleTypes.SMOKE, pos.x + 0.5, pos.y + 0.5, pos.z + 0.5, 4, 0.06, 0.08, 0.06, 0.008)
+            }
             return true
         }
 
@@ -192,5 +194,7 @@ class StreetLampBlock(properties: Properties, val soul: Boolean) : Block(propert
 
         private val LIGHT_SOUND: Holder<SoundEvent> =
             Holder.direct(SoundEvent.createVariableRangeEvent(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "townsfolk.lamp.light")))
+        private val HISS_SOUND: Holder<SoundEvent> =
+            Holder.direct(SoundEvent.createVariableRangeEvent(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "townsfolk.lamp.hiss")))
     }
 }

@@ -31,7 +31,7 @@ import java.util.concurrent.CompletableFuture
  * farmer sees to, and lamps out on the roads that keep their own time. At dusk each round begins about half past five
  * (an hour earlier in rain, since rain darkens the sky) and its lamps catch one after another at a lamplighter's
  * pace; while a lamplighter really goes round it (see Lamplighters), its lamps wait for them instead. At dawn, from
- * half past five (six in rain), the same rounds put them out. Whatever happens, every lamp is lit by seven ([LIT_BY]),
+ * half past five (half past six in rain), the same rounds put them out. Whatever happens, every lamp is lit by seven ([LIT_BY]),
  * before the dark lets monsters about, and out by half past seven ([OUT_BY]); in a thunderstorm, when monsters are about
  * by day too, every lamp is lit, and after it they go out one by one. A lamp nobody reaches catches (or goes out) by
  * itself, with a little flame (or a wisp of smoke) if a player is near enough to see; lamps whose land isn't loaded are
@@ -52,8 +52,8 @@ object StreetLamps {
     const val DAWN = 17500
     const val OUT_BY = 19500
 
-    /** How much earlier the evening comes, and later the morning, in rain. */
-    const val RAIN = 500
+    /** How much earlier the evening comes, and later the morning, in rain (an hour: the sky is dark sooner, and light later). */
+    const val RAIN = 1000
 
     /** Over how long the lamps go out one by one after a thunderstorm by day. */
     const val STORM_AFTER = 600
@@ -157,7 +157,7 @@ object StreetLamps {
 
     /**
      * Whether it's dark enough just now for monsters to be about whatever the clock says of the lamps: a thunderstorm, or
-     * rain from half past six to six. Lamps are kept lit meanwhile, and no lamp is put out.
+     * rain from six in the evening to half past six in the morning. Lamps are kept lit meanwhile, and no lamp is put out.
      */
     fun dark(level: ServerLevel): Boolean {
         if (level.isThundering) return true
@@ -340,7 +340,7 @@ object StreetLamps {
             }
             LampTown.Kind.FARM -> {
                 val supper = LampKeepers.farmerIn(level, run, night)
-                ((supper ?: (DUSK + 500)) - shift).coerceIn(DUSK_OPEN, litBy - 200 - run.ticks)
+                ((supper ?: (DUSK + 500)) - shift).coerceAtMost(litBy - 200 - run.ticks).coerceAtLeast(DUSK_OPEN)
             }
             LampTown.Kind.LONE -> {
                 val from = DUSK - shift
@@ -357,7 +357,7 @@ object StreetLamps {
             LampTown.Kind.CITY -> dawn + (spread(run.index, night) * 300).toInt()
             LampTown.Kind.FARM -> {
                 val out = LampKeepers.farmerOut(level, run, night)
-                (out ?: (dawn + 400)).coerceIn(dawn, outBy - 200 - run.ticks)
+                (out ?: (dawn + 400)).coerceAtMost(outBy - 200 - run.ticks).coerceAtLeast(dawn)
             }
             LampTown.Kind.LONE -> dawn + (town.phase(run.lamps[0]) * (outBy - 300 - dawn)).toInt()
         }
