@@ -389,6 +389,63 @@ object Caravans {
     /** Every broken band's loot pile within [range] blocks of [pos], as wrecks are (its lots marked as off the wagons they were taken from). */
     fun piles(level: ServerLevel, pos: BlockPos, range: Double): List<Wreck> = wrecksOf(level, pos, range, piles = true)
 
+    // ---- Added by Part B, the bodies ----
+
+    /** Caravan [id] as its bodies see it now (to follow it tick by tick), or null once its record has ended. */
+    fun view(id: Long): View? {
+        val level = overworld() ?: return null
+        if (!enabled()) return null
+        val c = CaravanData.get(level).caravan(id)?.takeIf { it.phase != Phase.PLANNED } ?: return null
+        return view(level, c, level.overworldClockTime)
+    }
+
+    /** Caravan [id]'s way in (where the farms and the gate fall along it), or null. */
+    fun leg(id: Long): CaravanRoutes.Leg? {
+        val level = overworld() ?: return null
+        val c = CaravanData.get(level).caravan(id) ?: return null
+        return CaravanRoutes.cached(c.capital, c.road)
+    }
+
+    /**
+     * Whether caravan [id] would be struck if its bodies reached its strike point now (its band is still there and
+     * may strike), so they can brace for it a little before they get there; [struck] still has the last word.
+     */
+    fun strikes(id: Long): Boolean {
+        if (!ambushes()) return false
+        val level = overworld() ?: return false
+        val data = CaravanData.get(level)
+        val c = data.caravan(id) ?: return false
+        if (c.phase != Phase.ROLLING || c.struck != 0 || c.strike < 0) return false
+        val band = OutlawCamps.get(level).band(c.band) ?: return false
+        return allowed(level, data, band, level.overworldClockTime)
+    }
+
+    /** Where caravan [id]'s wreck lies, or would if it's waylaid at its strike point (on the verge, turned as the road), and its yaw; null with no strike. */
+    fun verge(id: Long): Pair<Vec3, Float>? {
+        val level = overworld() ?: return null
+        val c = CaravanData.get(level).caravan(id)?.takeIf { it.strike >= 0.0 } ?: return null
+        return Vec3(c.wx, c.wy, c.wz) to c.wyaw
+    }
+
+    /**
+     * A waylayer fell in a real fight carrying off [count] of [good] from caravan [caravan]: that much of what the band
+     * took drops on the road (marked as off the wagon, as a wreck's lots are), if the band still has it; else nothing.
+     */
+    fun dropped(level: ServerLevel, caravan: Long, good: Good, count: Int): ItemStack {
+        if (count <= 0 || !salvage() || good.item == null) return ItemStack.EMPTY
+        val data = CaravanData.get(level)
+        for (band in data.bands) {
+            val cargo = band.loot.firstOrNull { it.caravan == caravan && it.good == good && it.count > 0 } ?: continue
+            val n = min(count, cargo.count)
+            cargo.count -= n
+            if (cargo.count <= 0) band.loot.remove(cargo)
+            data.changed()
+            val name = data.capitalOrNull(cargo.capital)?.name.orEmpty()
+            return Marked.stack(good, n, WagonMark(cargo.capital, caravan, name))
+        }
+        return ItemStack.EMPTY
+    }
+
     private fun wrecksOf(level: ServerLevel, pos: BlockPos, range: Double, piles: Boolean): List<Wreck> {
         if (level.dimension() != Level.OVERWORLD) return listOf()
         val at = Vec3(pos.x + 0.5, pos.y.toDouble(), pos.z + 0.5)
