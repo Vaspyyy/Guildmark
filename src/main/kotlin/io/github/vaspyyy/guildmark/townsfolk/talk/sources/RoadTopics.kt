@@ -182,10 +182,11 @@ object RoadTopics : TopicSource {
         }
     }
 
+    /** "About the road...": more pressing while a road in is troubled or worse (the screen shows the two most pressing). */
     override fun choice(ask: Ask): Choice? {
         if (Say.child(ask.speaker) || ask.player == null) return null
-        town(ask) ?: return null
-        return Choice(ASK, Component.translatable("gui.guildmark.talk.road"))
+        val town = town(ask) ?: return null
+        return Choice(ASK, Component.translatable("gui.guildmark.talk.road"), pressing = if (town.worst.stage.troubled) 0.65 else 0.45)
     }
 
     /** How the roads stand: the worst of them, and then its band and what's on its head, the note on the board, or the next wagon. */

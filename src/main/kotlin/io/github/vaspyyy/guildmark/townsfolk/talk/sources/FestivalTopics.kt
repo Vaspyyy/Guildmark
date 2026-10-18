@@ -101,7 +101,15 @@ object FestivalTopics : TopicSource {
         }
     }
 
-    override fun choice(ask: Ask): Choice? = if (now(ask) != null) Choice(ASK, Component.translatable("gui.guildmark.talk.festival")) else null
+    /** "About the festival...": most pressing on its day, then while it's coming (the screen shows the two most pressing). */
+    override fun choice(ask: Ask): Choice? {
+        val pressing = when (now(ask) ?: return null) {
+            is Now.Today -> 0.85
+            is Now.Soon -> 0.6
+            is Now.After -> 0.5
+        }
+        return Choice(ASK, Component.translatable("gui.guildmark.talk.festival"), pressing = pressing)
+    }
 
     override fun answer(ask: Ask, choice: String): Utterance? {
         if (choice != ASK) return null

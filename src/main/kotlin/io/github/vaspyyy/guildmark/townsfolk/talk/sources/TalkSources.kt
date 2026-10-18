@@ -26,9 +26,10 @@ import kotlin.math.sqrt
 /**
  * The topic sources of living-world/design-voices.md section 1 that the town, its market, the sky, the calendar and
  * the townsfolk's memory give: what goes on in a household, at the market, in the sky, in the season and at the
- * festival, in the streets, the player's deeds and dealings, the news, and the player's homestead. Each is registered
- * once at setup by [init], whatever its switch, and checks its own switch and its facts each time it's asked, so it
- * offers a topic only while the world holds it true.
+ * festival, in the streets, the player's deeds and dealings, the news, the player's homestead, and (M6) the town's works
+ * and how the town is faring, its households' comings and goings with it. Each is registered once at setup by [init],
+ * whatever its switch, and checks its own switch and its facts each time it's asked, so it offers a topic only while
+ * the world holds it true.
  *
  * Not here: the doing, trade and faction sources (the talk's own), the road (M4's, round Caravans.talk) and the
  * supplier (M3's), each registered with its system as these are.
@@ -39,7 +40,7 @@ object TalkSources {
     /** Every source here, in the order they're asked. */
     val ALL: List<TopicSource> = listOf(
         HouseholdTopics, MarketTopics, WeatherTopics, SeasonTopics, FestivalTopics, TownTopics, DeedTopics, DealingTopics,
-        NewsTopics, HomesteadTopics,
+        NewsTopics, HomesteadTopics, WorksTopics, FortuneTopics,
     )
 
     /** Registers every source with [Topics] and starts what they keep watch on: once, at setup (Townsfolk.init). */
@@ -66,6 +67,8 @@ object TalkSources {
         FestivalTopics.forget()
         TownTopics.forget()
         NewsTopics.forget()
+        WorksTopics.forget()
+        FortuneTopics.forget()
     }
 }
 
