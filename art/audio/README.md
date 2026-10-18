@@ -452,3 +452,63 @@ peaks under -1 dBTP. The townsfolk fragments are not rewritten; the `sounds` sta
 python3 -B art/audio/make_order_voices.py process --raw <raw-dir> --assets src/main/resources/assets/guildmark [--timbres ...] [--keys ...] [--wav <dir>]
 python3 -B art/audio/make_order_voices.py sounds
 ```
+
+### Talk voices
+
+`make_talk_voices.py` voices the townsfolk's talk (living-world/design-voices.md section 5, `townsfolk/talk`): what the
+capital's people say on the talk screen, in passing and to each other, as 183 families of wordings that fit what is
+really going on (greetings by the hour and by how well they know you, farewells, the screen's own lines, the daily
+round, the trades at work, market talk, the town's doings, the weather and the season, deeds and dealings, news
+lead-ins and the news after them, replies, the household, the old man's own and the children's). A family is one
+meaning said one to four ways, each a whole sentence that is true whenever the family is picked: its takes are
+`talk.<family>_0`, `_1`, ... (366 keys). What changes (a name, a good, a price, a place, a time) is never voiced: it
+follows the take as text. Where a name belongs, the family has `.named` texts (`say.guildmark.talk.<family>_<n>.named`,
+seven families): the take says "There you are!" and the screen shows "There you are, Ransom!". The script also voices
+the keepers' 89 stall lines that name nothing (`economy/StallTalk.kt`'s `say.guildmark.market.*`, read from
+`en_us.json` as written), in the man's and the woman's voices, and its entries carry the five talk-of-the-town lines
+the crier cries, which `make_townsfolk_voices.py` records with the rest of `CRIER` (`crier_talk_*`).
+
+The man and the woman say every family but the children's and the old man's own; the old man says those old folk say
+most (greetings and farewells, the screen's own, the daily round, market talk, the town, the weather, the lead-ins,
+the replies and the household, and his own three lines: 210 takes) and borrows the man's voice lower for the rest;
+a child has 18 of their own and borrows the woman's. With the crier's ten, 1,106 takes. A take may last 2.5 s for a
+greeting, a farewell, the screen's own lines and the replies, 4.0 s for other talk and the keepers' lines, 1.8 s for a
+lead-in and 3.0 s for the news after it (as processed, the street's tail included): `process` refuses a take over its
+limit and writes nothing for it. `DELIVERY` sets a family's speed, pitch and level (the lead-ins a little quicker;
+"Can't stop!" over a shoulder and louder; the sleepy, the hushed and what's said in confidence 3 to 4 dB lower), and
+`SPEED_FOR` a take's own speed (the man's `news.assault_0`, which rushed).
+
+All four voices are American, and `make_townsfolk_voices.py` gives them espeak's British phonemes. Whisper heard
+nearly a third of the man's lines wrong that way, mostly where a vowel's r goes unsounded ("Zappa" for "Supper", "shot"
+for "short", "farge" for "forge", "mock it" for "market", "Dia" for "dear"), which the crier's and the festival's lines
+put right a word at a time. Here every line is read as espeak's British reading with the r's of its American reading
+sounded, word by word (`rhotic`: the British vowels stay, and with them the voices the townsfolk already have).
+`TALK_PHONEMES` then fixes a few words wherever they come ("can't", "Hollow", "one", a weak "We'll" or "for a"), and
+`PHONEMES` writes out in full the lines that were still heard wrong (a stressed "at", "as", "has" or "and", a "been"
+said "bin", a pause the comma didn't give, a sounded t in "can't" and "carts", "near" with the American vowel and
+"hens" with a higher one; the sleepy mumbles as a hum), some for one timbre only where the others were heard right. A
+few wordings were changed where no reading would do.
+
+Checked with Whisper base.en on the encoded files (a retry when its decoder loops on a word): 404 of the man's 434
+takes, 413 of the woman's 434, 202 of the old man's 210, all 18 of the children's and all ten of the crier's come back
+exactly as written. The rest are heard as near-homophones ("Please to meet you", "Goodale", "Ribbon wakes", "Price is
+on the board", "the forges banked", "the floor is hard", "Everyone saying"), as words it doesn't know ("murrain" as
+"Maran", "Sheafmoot" as "Chief Mootzoon" or "Sheaf moots"), the sleepy hum as a word ("Do", "Remember", "Smooth"), or
+with a sound lost or added in a short word ("hearth's" as "heart's", "pest's" as "pastes", "ovens" as "oven", "Oi" as
+"Boy"). The man's takes run at a median 5.5 syllables a second, the woman's 4.8, the children's 4.75 and the old man's
+4.3, with no pause inside a line longer than 0.4 s.
+
+```
+<venv>/bin/python -I -B art/audio/make_talk_voices.py tts --model <dl>/kokoro-v1.0.onnx --voices <dl>/voices-v1.0.bin --out <raw-dir> [--timbres man,old] [--keys greet] [--force] [--espeak-data <dir>]
+python3 -B art/audio/make_talk_voices.py process --raw <raw-dir> --assets src/main/resources/assets/guildmark [--timbres ...] [--keys ...] [--wav <dir>]
+<venv>/bin/python -I -B art/audio/make_talk_voices.py phonemes --model ... --voices ... [--timbres ...] [--keys ...]
+python3 -B art/audio/make_talk_voices.py table [--assets src/main/resources/assets/guildmark]
+```
+
+`tts` reads only the takes not in `<raw-dir>` yet (`--force` reads them again); `--keys` is a regex on the key.
+`phonemes` prints what Kokoro is given for each take. `table` writes `talk_sounds.json` and `talk_lang.json` (every
+take's `sounds.json` entry, its text and `.named` text for `en_us.json`, and the crier's five lines with the square's
+reach) and generates `townsfolk/talk/TalkLines.kt` from the table and the takes on disk: each family, its number of
+wordings, each wording's length in ticks (the longest timbre's), whether it has `.named` texts and which timbres say
+it, and `OTHERS`, the length of every other voiced townsfolk line, so that `TalkLines.ticks` knows any line a talk can
+say.
