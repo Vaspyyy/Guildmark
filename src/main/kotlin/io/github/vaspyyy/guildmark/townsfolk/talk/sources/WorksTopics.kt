@@ -221,16 +221,17 @@ object WorksTopics : TopicSource {
         val stage = w.stage
         val detail = Speech.of("talk.detail.works.building" + (stage?.let { ".${it.key}" } ?: ""), s.kind)
         val first = Say.part(ask, "works.building", detail) ?: return
-        val more = if (!s.bark) Utterance.Part("", "talk.detail.works.share." + share(w)) else null
+        val more = if (!s.bark) share(w)?.let { Utterance.Part("", "talk.detail.works.share.$it") } else null
         out.add(Topic(
             "works.building.${w.id}.${stage?.key ?: "begun"}", Kind.WORKS, if (s.near) 0.6 else 0.5,
             Utterance(listOfNotNull(first, more)), tone = 1, toward = s.at,
         ))
     }
 
-    /** How much of [w] is laid, in a word. */
-    private fun share(w: WorksView): String {
-        val share = if (w.total > 0) w.laid.toDouble() / w.total else 0.0
+    /** How much of [w] is laid, in a word; null while the builders haven't said (no pieces counted yet). */
+    private fun share(w: WorksView): String? {
+        if (w.total <= 0) return null
+        val share = w.laid.toDouble() / w.total
         return when {
             share < 0.1 -> "begun"
             share < 0.4 -> "quarter"
@@ -411,7 +412,7 @@ object WorksTopics : TopicSource {
         }
         val detail = Speech.of(if (how == "at") "talk.detail.works.labour" else "talk.detail.works.labour.$how", kind)
         val first = Say.part(ask, "works.building", detail) ?: return
-        val more = if (how == "at" && w.state == WorksState.BUILDING && ask.occasion != Occasion.BARK) Utterance.Part("", "talk.detail.works.share." + share(w)) else null
+        val more = if (how == "at" && w.state == WorksState.BUILDING && ask.occasion != Occasion.BARK) share(w)?.let { Utterance.Part("", "talk.detail.works.share.$it") } else null
         out.add(Topic(
             "works.labouring.${w.id}.$how", Kind.DOING, DailySource.weight(ask), Utterance(listOfNotNull(first, more)),
             tone = 1, gesture = Activity.POINT, toward = place(w) ?: site,
@@ -479,7 +480,7 @@ object WorksTopics : TopicSource {
                 val late = late(s)
                 val first = late?.say?.parts?.firstOrNull()
                     ?: Say.part(ask, "works.building", Speech.of("talk.detail.works.building" + (w.stage?.let { ".${it.key}" } ?: ""), kind))
-                listOfNotNull(first, Utterance.Part("", "talk.detail.works.share." + share(w)))
+                listOfNotNull(first, share(w)?.let { Utterance.Part("", "talk.detail.works.share.$it") })
             }
             WorksState.FUNDED -> listOf(Utterance.Part("", Speech.of("talk.detail.works.funded", kind)), Utterance.Part("", coming(s)))
             WorksState.WANTED -> {
