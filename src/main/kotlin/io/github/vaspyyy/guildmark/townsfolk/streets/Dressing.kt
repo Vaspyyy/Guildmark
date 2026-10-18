@@ -591,7 +591,7 @@ object Dressing : Fortunes.Listener {
             else -> ""
         }
         val why = when {
-            forced(t) -> " (the streets command's ${listOf("", "good", "thriving", "down")[t.force]})"
+            forced(t) -> " (the streets command's ${listOf("", "good", "thriving", "down").getOrElse(t.force) { "" }})"
             t.goodFrom >= 0 -> " (good times since market day ${t.goodFrom})"
             t.fellOn >= 0 -> " (the times fell back on market day ${t.fellOn})"
             else -> ""

@@ -92,6 +92,9 @@ object AlmsTable : Alms.Source {
         var hiredAt = Long.MIN_VALUE / 2
         var spentAt = -1L
         var noRoom = false
+
+        /** Residents who set off for the table today and couldn't get to it: not fetched again. */
+        val couldnt = HashSet<Int>()
     }
 
     private val keeping = HashMap<Long, Keeping>()
@@ -329,6 +332,7 @@ object AlmsTable : Alms.Source {
         val k = keeping.getOrPut(Streets.column(h.capital)) { Keeping() }
         k.spentAt = -1L
         k.noRoom = false
+        k.couldnt.clear()
         t.almsDay = day
         t.served = 0
         t.given = 0.0
@@ -452,7 +456,7 @@ object AlmsTable : Alms.Source {
         val pos = t.almsPos ?: return
         val at = Vec3.atCenterOf(pos)
         val bodies = Residents.get(level).of(h.capital.center).asSequence()
-            .filter { it.alive && (it.role == TownRole.NOBLE || it.role == TownRole.INNKEEPER) }
+            .filter { it.alive && (it.role == TownRole.NOBLE || it.role == TownRole.INNKEEPER) && it.id !in k.couldnt }
             .mapNotNull { r -> (r.uuid?.let { level.getEntity(it) } as? Townsperson)?.takeIf { able(level, it, r.id) && it.distanceToSqr(at) < FETCH * FETCH } }
             .toList()
         val p = bodies.filter { it.role == TownRole.NOBLE }.minByOrNull { it.distanceToSqr(at) } ?: bodies.minByOrNull { it.distanceToSqr(at) } ?: return
@@ -474,6 +478,11 @@ object AlmsTable : Alms.Source {
     /** The soup's run out (the last bowl ladled): the table waits a while on a gift before it's cleared. */
     internal fun ranOut(column: Long, now: Long) {
         keeping[column]?.let { if (it.spentAt < 0) it.spentAt = now }
+    }
+
+    /** Resident [id] set off for [column]'s table and couldn't get to it: someone else is fetched next time. */
+    internal fun couldnt(column: Long, id: Int) {
+        if (id >= 0) keeping[column]?.couldnt?.add(id)
     }
 
     // ---- The streets command ----
@@ -607,7 +616,10 @@ private class AlmsKeeper(private val column: Long, private val p: Townsperson) :
                 val state = walker.tick()
                 if (state == Walker.State.WALKING && t < 1200) return
                 walker.stop()
-                if (p.blockPosition().distManhattan(behind) > 2) return finish()
+                if (p.blockPosition().distManhattan(behind) > 2) {
+                    AlmsTable.couldnt(column, p.resident)
+                    return finish()
+                }
                 p.setPos(behind.x + 0.5, p.y, behind.z + 0.5)
                 next(level, town)
             }

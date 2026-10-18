@@ -34,6 +34,8 @@ object StreetsCommand {
                 .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                 .then(
                     Commands.literal("streets")
+                        // Its own as well: a merged /guildmark keeps whichever requirement it was first given
+                        .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                         .executes { show(it) }
                         .then(
                             Commands.literal("dress")
@@ -122,7 +124,7 @@ object StreetsCommand {
             say(source, grey("The nearest lamps are a farm's, which aren't rationed: go nearer the streets for the city's."))
         }
         val lighting = StreetLamps.startNow(level, town, run)
-        if (!lighting) return say(source, plain("Rationed tonight (for the next ten minutes). Most of the nearest round's lamps are lit already, so it's put out now: put them out (/guildmark capital lamps out) and run this again to see it lit by halves."))
+        if (!lighting) return say(source, plain("Rationed tonight (for the next ten minutes), but most of the nearest round's lamps were lit already, so its lamplighter puts them out instead: once they're out (or after /guildmark capital lamps out), run this again to see them lit by halves."))
         return say(
             source, line().append(plain("Rationed tonight: the lamplighter lights every other lamp of the nearest round, saying why; the others catch by themselves a little after."))
                 .append(grey(" (For the next ten minutes, this session only.)")),

@@ -137,18 +137,18 @@ class StreetsData(private val towns: MutableMap<Long, Town> = HashMap()) : Saved
                     Town(column).also { t ->
                         dress.ifPresent { d ->
                             t.run = d.run
-                            t.dress = d.dress
-                            t.lanterns = d.lanterns
+                            t.dress = d.dress.takeIf { it in NONE..DOWN } ?: NONE
+                            t.lanterns = d.lanterns.takeIf { it in NONE..DOWN } ?: NONE
                             t.goodFrom = d.goodFrom
                             t.fellOn = d.fellOn
                             t.dimmedOn = d.dimmedOn
                             t.downFrom = d.downFrom
-                            t.force = d.force
+                            t.force = d.force.takeIf { it in FORCE_NONE..FORCE_DOWN } ?: FORCE_NONE
                         }
                         for (b in boards) t.boards[b.home] = b.day
                         alms.ifPresent { a ->
                             t.almsDay = a.day
-                            t.almsState = a.state
+                            t.almsState = a.state.takeIf { it in ALMS_NONE..ALMS_CLEARED } ?: ALMS_NONE
                             t.almsPos = a.pos.orElse(null)
                             t.almsFront = if (a.front.axis.isHorizontal) a.front else Direction.NORTH
                             t.soup = a.soup
