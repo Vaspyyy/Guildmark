@@ -164,6 +164,8 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
         io.github.vaspyyy.guildmark.client.sea.SeaClient.register(modBus)
         // The islands: their sounds and music, the gulls, the lighthouse lamps' beams
         io.github.vaspyyy.guildmark.client.island.IslandClient.register(modBus)
+        // Homesteads: the bounds, the claim preview, the ledger, the crates' screens and the post's pennant (client/homestead)
+        io.github.vaspyyy.guildmark.client.homestead.HomesteadClient.register(modBus)
         HdPack.register(modBus)
         modBus.addListener(RegisterRenderStateModifiersEvent::class.java) { event ->
             event.registerAvatarEntityModifier(CombatAnimator.AVATAR)
