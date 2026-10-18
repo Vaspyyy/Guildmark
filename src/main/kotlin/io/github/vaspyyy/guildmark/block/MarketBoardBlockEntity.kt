@@ -108,12 +108,17 @@ class MarketBoardBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(Mod
     var writing: Int = -1
         private set
 
+    /** Whether the last write-up was seen through: false while the crier is at it, and if they were called away from it. */
+    var finished: Boolean = true
+        private set
+
     /** Server side: starts writing the board up for [day] ([noon] or the morning) for [town]. Nothing changes on it yet. */
     fun begin(town: Component, day: Long, noon: Boolean) {
         this.town = town
         this.day = day
         this.noon = noon
         begun = level?.gameTime ?: LONG_AGO
+        finished = false
         sync()
     }
 
@@ -132,6 +137,13 @@ class MarketBoardBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(Mod
         sync()
     }
 
+    /** Server side: the write-up is seen through, every line that wanted it rewritten; the chalk is put down. */
+    fun finish() {
+        finished = true
+        writing = -1
+        sync()
+    }
+
     /** Server side: writes the whole board at once, as it would be found by someone coming by afterwards. */
     fun write(town: Component, day: Long, noon: Boolean, all: List<Line>) {
         this.town = town
@@ -141,6 +153,7 @@ class MarketBoardBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(Mod
         lines.clear()
         lines.addAll(all)
         writing = -1
+        finished = true
         sync()
     }
 
@@ -175,6 +188,7 @@ class MarketBoardBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(Mod
         output.store("lines", Line.CODEC.listOf(), lines)
         output.store("slips", Slip.CODEC.listOf(), slips)
         output.putInt("writing", writing)
+        output.putBoolean("finished", finished)
     }
 
     override fun loadAdditional(input: ValueInput) {
@@ -188,6 +202,7 @@ class MarketBoardBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(Mod
         slips.clear()
         input.read("slips", Slip.CODEC.listOf()).ifPresent { slips.addAll(it) }
         writing = input.getIntOr("writing", -1)
+        finished = input.getBooleanOr("finished", true)
     }
 
     override fun getUpdateTag(registries: HolderLookup.Provider): CompoundTag = saveCustomOnly(registries)

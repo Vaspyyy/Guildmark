@@ -117,9 +117,11 @@ object MarketBoards {
         val late = board.day < 0 || c.day != due.first || c.clock >= hour + GRACE
         val seen = level.getNearestPlayer(anchor.x + 0.5, anchor.y + 0.5, anchor.z + 0.5, UNSEEN * 2, false) != null
         if (current(board, due)) {
-            // Left half written (the crier was called away from it): the rest is found written up all the same
-            if (board.writing == -1 && board.lines.size < ORDER.size && (late || !seen)) {
-                board.write(board.town, board.day, board.noon, board.lines + lines(entry, MarketBoardBlockEntity.LONG_AGO).drop(board.lines.size))
+            // Left half written (the crier was called away from it): the rest is found written up all the same, and
+            // the lines they did write stay as they wrote them
+            if (board.writing == -1 && (!board.finished || board.lines.size < ORDER.size) && (late || !seen)) {
+                val now = lines(entry, MarketBoardBlockEntity.LONG_AGO)
+                board.write(board.town, board.day, board.noon, now.mapIndexed { k, line -> board.lines.getOrNull(k)?.takeIf { it.same(line) } ?: line })
             }
             return
         }

@@ -210,6 +210,7 @@ object Crier {
                 val at = level.gameTime
                 MarketBoards.ORDER.indices.filter { k -> !MarketBoards.line(entry, MarketBoards.ORDER[k], at).same(board.lines.getOrNull(k)) }
                     .also { todo = it }
+                    .also { if (it.isEmpty()) board.finish() }
             }
             when {
                 i < slips.size -> Step(Activity.HAND_OVER)
@@ -234,7 +235,7 @@ object Crier {
                         sound(level, slate, "chalk", 0.6f)
                     }
                     if (t == STROKE * list.size + 6) {
-                        board.done()
+                        board.finish()
                         sound(level, slate, "chalk_tap", 0.6f)
                     }
                 }
