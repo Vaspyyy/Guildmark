@@ -72,19 +72,27 @@ object Mills {
 
     /**
      * Whether the mill at or about [pos] (its millstone, its hub, the miller at work in it) is grinding just now as players
-     * see it: its sails or its wheel turning at work. Asked of the nearest mill hub within a few blocks; with none loaded
-     * there (an older capital's mill not yet swapped for a turning one), or with Turning Mills switched off, it goes by the
-     * market of the capital at [pos] alone ([Maker.MILL] busy this hour), so a miller works whenever the mill grinds.
+     * see it: its sails or its wheel turning at work. Asked of the nearest mill hub within a few blocks (worked out afresh
+     * if no player is near enough for the round of looks to be keeping it up to date); with none loaded there (an older
+     * capital's mill not yet swapped for a turning one), or with Turning Mills switched off, it goes by the market of the
+     * capital at [pos] alone ([Maker.MILL] busy this hour), so a miller works whenever the mill grinds.
      */
     fun turning(level: ServerLevel, pos: BlockPos): Boolean {
-        if (enabled()) near(level, pos)?.let { return it.blockState.getValue(MillBlock.WORK) == MillWork.WORKING }
+        if (enabled()) fresh(level, pos)?.let { return it.blockState.getValue(MillBlock.WORK) == MillWork.WORKING }
         if (!Markets.enabled()) return false
         val capital = Furnish.capitalAt(level, pos) ?: return false
         return Markets.get(level)[capital.center]?.market?.busy(Maker.MILL) == true
     }
 
-    /** What the mill whose hub is nearest [pos], within a few blocks, is doing; null if none is loaded there. */
-    fun work(level: ServerLevel, pos: BlockPos): MillWork? = near(level, pos)?.blockState?.getValue(MillBlock.WORK)
+    /** What the mill whose hub is nearest [pos], within a few blocks, is doing (as [turning] asks it); null if none is loaded there. */
+    fun work(level: ServerLevel, pos: BlockPos): MillWork? = fresh(level, pos)?.blockState?.getValue(MillBlock.WORK)
+
+    /** The loaded mill hub nearest [pos], its block brought up to date first if no player is near enough to have kept it so. */
+    private fun fresh(level: ServerLevel, pos: BlockPos): MillBlockEntity? {
+        val hub = near(level, pos) ?: return null
+        if (enabled() && !watched(level, hub.blockPos)) check(level, hub, always = true)
+        return hub
+    }
 
     /** The loaded mill hub nearest [pos], within [ABOUT] blocks. */
     fun near(level: ServerLevel, pos: BlockPos): MillBlockEntity? {
