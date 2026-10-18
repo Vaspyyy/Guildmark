@@ -511,20 +511,21 @@ def hammer():
 
 
 def saw():
-    """The builder's hand saw: a steel blade tapering from the grip to its tip, teeth along its lower edge, its back
-    lit, an ash handle with a hole for the hand and two brass rivets."""
+    """The builder's hand saw: a steel blade tapering from the grip to its tip, an ash handle with a hole for the hand
+    and two brass rivets. Drawn as the game expects a tool, the handle at the lower left and the blade running to the
+    upper right; its teeth are along the upper edge, which faces down when it's held (ItemInHandLayer)."""
     cv = Canvas(T)
-    ax, ay, bx, by = 25.5, 26.0, 4.5, 5.5
+    ax, ay, bx, by = 8.0, 25.0, 28.5, 4.5
     u, v, L = frame_uv(ax, ay, bx, by)
     xy = framed(ax, ay, bx, by)
-    # The blade (v > 0 toward its back, the upper right): a straight back, the toothed edge rising to the tip
+    # The blade (v > 0 toward its back, the lower right): a straight back, the toothed edge closing in to the tip
     k = np.clip((u - 5.0) / (L - 5.0), 0, 1)
     back = 2.3 - 0.5 * k
     edge = -4.8 + 3.0 * k
     tri = 1.0 - np.abs(np.mod(u, 2.0) - 1.0)
     blade = (u >= 4.0) & (u <= L - 0.4) & (v <= back) & (v >= edge - 1.1 * tri)
-    bt = 0.42 + 0.34 * np.clip((v - edge) / (back - edge), 0, 1) + 0.04 * (vnoise(T, T, 2, 9) - 0.5)
-    bt = np.where(v > back - 0.9, bt + 0.14, bt)
+    bt = 0.76 - 0.34 * np.clip((v - edge) / (back - edge), 0, 1) + 0.04 * (vnoise(T, T, 2, 9) - 0.5)
+    bt = np.where(v > back - 0.9, bt - 0.08, bt)
     bt = np.where(v < edge, 0.3, bt)
     cv.put(blade, bands(PAL['steel'], bt, 0.2))
     # A few freckles of rust, and the maker's mark punched near the handle
@@ -545,7 +546,7 @@ def saw():
         cv.px(int(p[0]), int(p[1]), PAL['brass'][5])
         cv.px(int(p[0]) + 1, int(p[1]) + 1, PAL['brass'][2])
     outline(cv, 0.85)
-    gx, gy = xy([(L - 6.0, 1.4)])[0]
+    gx, gy = xy([(L - 6.0, -1.4)])[0]
     glint(cv, int(gx), int(gy), 1)
     return cv.image()
 
