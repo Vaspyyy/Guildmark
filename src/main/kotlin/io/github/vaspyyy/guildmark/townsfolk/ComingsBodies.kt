@@ -281,7 +281,6 @@ internal object ComingsBodies {
         for ((i, p) in path.withIndex()) {
             val last = i == path.size - 1
             if (i % STRIDE != 0 && !last) continue
-            if (i == 0 && toDoor) continue
             points += places.capital.world(p.x, plan.level(p.x, p.z), p.z)
         }
         return points
@@ -456,7 +455,7 @@ internal object ComingsBodies {
             Stage.CART -> {
                 val bay = party.bay
                 if (bay == null || !Handcarts.enabled()) enter(party, Stage.PACK)
-                else if (hidden(level, bay) || party.t > CART_WAIT) {
+                else if (party.t % 10 == 0 && hidden(level, bay) || party.t > CART_WAIT) {
                     // Brought round while nobody was looking: behind them as they face the door, so it stands clear of it
                     puller.face(Vec3.atCenterOf(party.door.pos))
                     if (Handcarts.hitch(puller.p) != null) {
@@ -757,12 +756,23 @@ internal object ComingsBodies {
         }
         puller?.let { Handcarts.headFor(it.p, null) }
         puller?.let { Handcarts.leave(it.p) }
+        // Still on their way when it ended: whoever nobody can see is home at once (made there out of sight, as for
+        // those come in with nobody near), the rest go on home as their day has them
+        val onTheWay = party.kind != Kind.LEAVE && party.stage in ON_THE_WAY
+        val home = ArrayList<Int>()
         for (h in party.crew) {
             release(h)
             // Whatever's still in their arms is set down at home
             h.p.carried = ItemStack.EMPTY
+            if (onTheWay && hidden(h.p)) {
+                h.p.discard()
+                home += h.id
+            }
         }
+        if (home.isNotEmpty()) Comings.later(party.level, party.h.capital, home)
     }
+
+    private val ON_THE_WAY = setOf(Stage.ROAD, Stage.LOOK, Stage.STREETS)
 
     /** [h] out of our charge, to their day. */
     private fun release(h: Hand) {
