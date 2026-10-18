@@ -112,11 +112,18 @@ object MarketBoards {
         val entry = Markets.of(level, capital) ?: return
         val c = Conditions(Markets.hourOf(level))
         val due = due(c)
-        if (current(board, due)) return
         // Left to the crier while they still might come and someone's about to see them do it
         val hour = if (due.second) NOON else MORNING
         val late = board.day < 0 || c.day != due.first || c.clock >= hour + GRACE
-        if (!late && level.getNearestPlayer(anchor.x + 0.5, anchor.y + 0.5, anchor.z + 0.5, UNSEEN * 2, false) != null) return
+        val seen = level.getNearestPlayer(anchor.x + 0.5, anchor.y + 0.5, anchor.z + 0.5, UNSEEN * 2, false) != null
+        if (current(board, due)) {
+            // Left half written (the crier was called away from it): the rest is found written up all the same
+            if (board.writing == -1 && board.lines.size < ORDER.size && (late || !seen)) {
+                board.write(board.town, board.day, board.noon, board.lines + lines(entry, MarketBoardBlockEntity.LONG_AGO).drop(board.lines.size))
+            }
+            return
+        }
+        if (!late && seen) return
         board.write(town(capital), due.first, due.second, lines(entry, MarketBoardBlockEntity.LONG_AGO))
     }
 
