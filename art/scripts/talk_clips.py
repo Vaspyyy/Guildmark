@@ -779,7 +779,7 @@ def sit_laugh():
 # are wiped on it, down and up by turns (12 and 16), the head coming up to the listener; then off the apron out to the
 # sides and a straightening up, the chest out and the shoulders back (23), the hands dropping to the sides.
 PW_SURFACE = np.array([2.5, 7.8, -10.6])        # the left hand on the work (x mirrored for the right)
-PW_APRON = np.array([2.3, 11.6, -5.7])          # torso space: the left hand on the apron, over the thigh (x mirrored)
+PW_APRON = np.array([2.3, 11.3, -5.7])          # torso space: the left hand on the apron, over the thigh (x mirrored)
 PW_PRESS = [(0, 0.0), (1.0, 0.0), (2.5, 0.6), (3.5, 0.4), (5.5, -1.2), (9.0, -1.0), (30, 0.0)]
 PW_TO_APRON = [(0, 0.0), (4.0, 0.0), (10.0, 1.0), (30, 1.0)]       # from the work back to the apron
 PW_OFF = [(0, 0.0), (19.5, 0.0), (22.0, 1.0), (30, 1.0)]           # off the apron, out to the sides
@@ -798,7 +798,7 @@ def pw_apron(s, t):
     pressing in on the way down."""
     ph = 2 * math.pi * (t - 8.0) / 8.0 + (0.0 if s < 0 else math.pi)
     k = bump(t, 8.0, 22.0)
-    return PW_APRON * np.array([s, 1.0, 1.0]) + np.array([0.0, 1.6 * k * math.sin(ph), -0.3 * k * math.cos(ph)])
+    return PW_APRON * np.array([s, 1.0, 1.0]) + np.array([0.0, 1.4 * k * math.sin(ph), -0.3 * k * math.cos(ph)])
 
 
 def pause_work():
@@ -832,7 +832,7 @@ def pause_work():
         s = 1.0 if side == 'left_arm' else -1.0
         at_hand(c, 2.5, side, PW_SURFACE * np.array([s, 1.0, 1.0]) + np.array([0.0, 0.6, 0.0]), f'{side.replace("_", " ")} on the work')
         for k in (12.0, 14.0, 16.0):
-            at_hand(c, k, side, torso_to_world(ta.frame_at(c, k), pw_apron(s, k)), f'{side.replace("_", " ")} wiped on the apron', tol=0.8)
+            at_hand(c, k, side, torso_to_world(ta.frame_at(c, k), pw_apron(s, k)), f'{side.replace("_", " ")} wiped on the apron')
         clear_of(c, side, every(30), into=('body', 'head', 'right_leg', 'left_leg'))
     feet_down(c, (0.0, 23.0))
     join('pause_work ends on idle', c, 30, getc('idle'), 0, tol=1.0)
