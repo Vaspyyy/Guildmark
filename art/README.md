@@ -110,6 +110,14 @@ and Kotlin model code always agree.
   festival emblems, the Almanac's wheel of the year, needle and drifting motes (row designs put through
   `ui_hd.remaster`, the wheel painted at 2x), the season particles (petals, leaves, breath and frost glints, 16x16,
   painted pale where the game tints them) and the 32x Almanac item. With a preview dir it writes a contact sheet.
+- `scripts/festival_art.py` is the grand festivals' art: the decorations' atlas (`entity/festival/ornaments.png`,
+  the regions `FestivalOrnamentRenderer` declares at 256x256, painted at 512x512: pale pennant cloth, cord, ribbon,
+  bows, glow, lantern glass and paper for the game to tint, and in their own colours the wood, iron and gilt, the
+  four banners, the garlands' flowers and leaves, the sun wheel, the star and the sheaves), the Ribbonwake's painted
+  maypole (its stripes run on round the pole's faces and up into the next block), the four 32x prizes, the Ribbon
+  Crown as worn, the sky lantern particle, and the JSON that points at them: the trim's blockstate (the poles, the
+  rest the vanilla blocks' models), the ornament's, the poles' models, the prizes' item models and definitions and the
+  crown's equipment asset. With a preview dir it writes a contact sheet.
 
 Rebuild a model (needs Python 3 with Pillow and numpy), from the repo root:
 
@@ -129,6 +137,7 @@ python3 -B art/scripts/creature_hd.py src/main/resources/assets/guildmark [previ
 python3 -B art/scripts/vanilla_hd.py <minecraft-26.3 jar> src/main/resources/resourcepacks/guildmark_hd [preview-dir]
 python3 -B art/scripts/market_board_art.py src/main/resources/assets/guildmark [preview-dir [minecraft-26.3 jar]]
 python3 -B art/scripts/season_art.py src/main/resources/assets/guildmark [preview-dir]
+python3 -B art/scripts/festival_art.py src/main/resources/assets/guildmark [preview-dir]
 ```
 
 Each run writes the textures into the mod's assets, the `.bbmodel` into `art/models`, and a preview

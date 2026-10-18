@@ -392,7 +392,9 @@ class FestivalOrnamentRenderer(@Suppress("UNUSED_PARAMETER") context: BlockEntit
                     }
                 }
             } else {
-                box(solid, x - w, bottom, z - w, x + w, top, z + w, GLASS, tint, LightCoordsUtil.FULL_BRIGHT, top = IRON)
+                // Glass the flame shows through: drawn with the glow (seen from both sides, half clear), a hair inside
+                // the foot and the cap so their faces don't fight
+                box(glow, x - w, bottom + 0.002, z - w, x + w, top - 0.002, z + w, GLASS, tint, LightCoordsUtil.FULL_BRIGHT)
             }
             // The cap: a low pyramid, and the ring to hang it by
             val capW = w + 0.03 * size

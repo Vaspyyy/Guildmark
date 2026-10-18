@@ -1,0 +1,100 @@
+{
+  "variants": {
+    "light=0,usable=false": {
+      "model": "guildmark:block/festival_ornament"
+    },
+    "light=0,usable=true": {
+      "model": "guildmark:block/festival_ornament"
+    },
+    "light=1,usable=false": {
+      "model": "guildmark:block/festival_ornament"
+    },
+    "light=1,usable=true": {
+      "model": "guildmark:block/festival_ornament"
+    },
+    "light=2,usable=false": {
+      "model": "guildmark:block/festival_ornament"
+    },
+    "light=2,usable=true": {
+      "model": "guildmark:block/festival_ornament"
+    },
+    "light=3,usable=false": {
+      "model": "guildmark:block/festival_ornament"
+    },
+    "light=3,usable=true": {
+      "model": "guildmark:block/festival_ornament"
+    },
+    "light=4,usable=false": {
+      "model": "guildmark:block/festival_ornament"
+    },
+    "light=4,usable=true": {
+      "model": "guildmark:block/festival_ornament"
+    },
+    "light=5,usable=false": {
+      "model": "guildmark:block/festival_ornament"
+    },
+    "light=5,usable=true": {
+      "model": "guildmark:block/festival_ornament"
+    },
+    "light=6,usable=false": {
+      "model": "guildmark:block/festival_ornament"
+    },
+    "light=6,usable=true": {
+      "model": "guildmark:block/festival_ornament"
+    },
+    "light=7,usable=false": {
+      "model": "guildmark:block/festival_ornament"
+    },
+    "light=7,usable=true": {
+      "model": "guildmark:block/festival_ornament"
+    },
+    "light=8,usable=false": {
+      "model": "guildmark:block/festival_ornament"
+    },
+    "light=8,usable=true": {
+      "model": "guildmark:block/festival_ornament"
+    },
+    "light=9,usable=false": {
+      "model": "guildmark:block/festival_ornament"
+    },
+    "light=9,usable=true": {
+      "model": "guildmark:block/festival_ornament"
+    },
+    "light=10,usable=false": {
+      "model": "guildmark:block/festival_ornament"
+    },
+    "light=10,usable=true": {
+      "model": "guildmark:block/festival_ornament"
+    },
+    "light=11,usable=false": {
+      "model": "guildmark:block/festival_ornament"
+    },
+    "light=11,usable=true": {
+      "model": "guildmark:block/festival_ornament"
+    },
+    "light=12,usable=false": {
+      "model": "guildmark:block/festival_ornament"
+    },
+    "light=12,usable=true": {
+      "model": "guildmark:block/festival_ornament"
+    },
+    "light=13,usable=false": {
+      "model": "guildmark:block/festival_ornament"
+    },
+    "light=13,usable=true": {
+      "model": "guildmark:block/festival_ornament"
+    },
+    "light=14,usable=false": {
+      "model": "guildmark:block/festival_ornament"
+    },
+    "light=14,usable=true": {
+      "model": "guildmark:block/festival_ornament"
+    },
+    "light=15,usable=false": {
+      "model": "guildmark:block/festival_ornament"
+    },
+    "light=15,usable=true": {
+      "model": "guildmark:block/festival_ornament"
+    }
+  }
+}

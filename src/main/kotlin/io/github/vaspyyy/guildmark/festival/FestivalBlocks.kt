@@ -122,7 +122,8 @@ class FestivalTrimBlock(properties: Properties) : Block(properties) {
         private val LOW_SHAPE: VoxelShape = box(0.0, 0.0, 0.0, 16.0, 7.0, 16.0)
         private val CANDLES_SHAPE: VoxelShape = box(5.0, 0.0, 6.0, 11.0, 6.0, 11.0)
         private val BLOSSOM_SHAPE: VoxelShape = box(2.0, 0.0, 2.0, 14.0, 14.0, 14.0)
-        private val CANDLE_WICKS = listOf(Triple(0.5, 0.5, 0.5), Triple(0.375, 0.44, 0.5), Triple(0.56, 0.31, 0.44))
+        /** The vanilla three-candle cluster's wicks (CandleBlock's own offsets). */
+        private val CANDLE_WICKS = listOf(Triple(0.5, 0.3125, 0.625), Triple(0.375, 0.4375, 0.5), Triple(0.5625, 0.5, 0.4375))
 
         fun state(look: TrimLook, facing: Direction = Direction.SOUTH): BlockState =
             FestivalRegistry.TRIM.get().defaultBlockState().setValue(LOOK, look).setValue(FACING, facing)

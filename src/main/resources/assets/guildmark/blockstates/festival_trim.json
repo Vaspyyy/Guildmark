@@ -1,0 +1,157 @@
+{
+  "variants": {
+    "facing=east,look=pole_birch": {
+      "model": "guildmark:block/festival_pole_birch"
+    },
+    "facing=east,look=pole_oak": {
+      "model": "guildmark:block/festival_pole_oak"
+    },
+    "facing=east,look=pole_spruce": {
+      "model": "guildmark:block/festival_pole_spruce"
+    },
+    "facing=east,look=hay": {
+      "model": "minecraft:block/hay_block"
+    },
+    "facing=east,look=pumpkin": {
+      "model": "minecraft:block/pumpkin"
+    },
+    "facing=east,look=carved": {
+      "model": "minecraft:block/carved_pumpkin",
+      "y": 90
+    },
+    "facing=east,look=jack": {
+      "model": "minecraft:block/jack_o_lantern",
+      "y": 90
+    },
+    "facing=east,look=melon": {
+      "model": "minecraft:block/melon"
+    },
+    "facing=east,look=target": {
+      "model": "minecraft:block/target"
+    },
+    "facing=east,look=brazier": {
+      "model": "minecraft:block/campfire",
+      "y": 270
+    },
+    "facing=east,look=candles": {
+      "model": "minecraft:block/white_candle_three_candles_lit"
+    },
+    "facing=east,look=blossom": {
+      "model": "minecraft:block/flowering_azalea"
+    },
+    "facing=north,look=pole_birch": {
+      "model": "guildmark:block/festival_pole_birch"
+    },
+    "facing=north,look=pole_oak": {
+      "model": "guildmark:block/festival_pole_oak"
+    },
+    "facing=north,look=pole_spruce": {
+      "model": "guildmark:block/festival_pole_spruce"
+    },
+    "facing=north,look=hay": {
+      "model": "minecraft:block/hay_block"
+    },
+    "facing=north,look=pumpkin": {
+      "model": "minecraft:block/pumpkin"
+    },
+    "facing=north,look=carved": {
+      "model": "minecraft:block/carved_pumpkin"
+    },
+    "facing=north,look=jack": {
+      "model": "minecraft:block/jack_o_lantern"
+    },
+    "facing=north,look=melon": {
+      "model": "minecraft:block/melon"
+    },
+    "facing=north,look=target": {
+      "model": "minecraft:block/target"
+    },
+    "facing=north,look=brazier": {
+      "model": "minecraft:block/campfire",
+      "y": 180
+    },
+    "facing=north,look=candles": {
+      "model": "minecraft:block/white_candle_three_candles_lit"
+    },
+    "facing=north,look=blossom": {
+      "model": "minecraft:block/flowering_azalea"
+    },
+    "facing=south,look=pole_birch": {
+      "model": "guildmark:block/festival_pole_birch"
+    },
+    "facing=south,look=pole_oak": {
+      "model": "guildmark:block/festival_pole_oak"
+    },
+    "facing=south,look=pole_spruce": {
+      "model": "guildmark:block/festival_pole_spruce"
+    },
+    "facing=south,look=hay": {
+      "model": "minecraft:block/hay_block"
+    },
+    "facing=south,look=pumpkin": {
+      "model": "minecraft:block/pumpkin"
+    },
+    "facing=south,look=carved": {
+      "model": "minecraft:block/carved_pumpkin",
+      "y": 180
+    },
+    "facing=south,look=jack": {
+      "model": "minecraft:block/jack_o_lantern",
+      "y": 180
+    },
+    "facing=south,look=melon": {
+      "model": "minecraft:block/melon"
+    },
+    "facing=south,look=target": {
+      "model": "minecraft:block/target"
+    },
+    "facing=south,look=brazier": {
+      "model": "minecraft:block/campfire"
+    },
+    "facing=south,look=candles": {
+      "model": "minecraft:block/white_candle_three_candles_lit"
+    },
+    "facing=south,look=blossom": {
+      "model": "minecraft:block/flowering_azalea"
+    },
+    "facing=west,look=pole_birch": {
+      "model": "guildmark:block/festival_pole_birch"
+    },
+    "facing=west,look=pole_oak": {
+      "model": "guildmark:block/festival_pole_oak"
+    },
+    "facing=west,look=pole_spruce": {
+      "model": "guildmark:block/festival_pole_spruce"
+    },
+    "facing=west,look=hay": {
+      "model": "minecraft:block/hay_block"
+    },
+    "facing=west,look=pumpkin": {
+      "model": "minecraft:block/pumpkin"
+    },
+    "facing=west,look=carved": {
+      "model": "minecraft:block/carved_pumpkin",
+      "y": 270
+    },
+    "facing=west,look=jack": {
+      "model": "minecraft:block/jack_o_lantern",
+      "y": 270
+    },
+    "facing=west,look=melon": {
+      "model": "minecraft:block/melon"
+    },
+    "facing=west,look=target": {
+      "model": "minecraft:block/target"
+    },
+    "facing=west,look=brazier": {
+      "model": "minecraft:block/campfire",
+      "y": 90
+    },
+    "facing=west,look=candles": {
+      "model": "minecraft:block/white_candle_three_candles_lit"
+    },
+    "facing=west,look=blossom": {
+      "model": "minecraft:block/flowering_azalea"
+    }
+  }
+}
