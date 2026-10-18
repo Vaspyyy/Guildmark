@@ -192,6 +192,10 @@ enum class CityStyle {
                 else -> Blocks.PUMPKIN.defaultBlockState()
             }
             M.WARES -> facing(WaresRegistry.block(Wares.entries[Math.floorMod(b.v, Wares.entries.size)].look), b.dir)
+
+            // The mills' hubs, drawn turning by the game (their block entities are set up by WorldCanvas)
+            M.SAILS -> facing(io.github.vaspyyy.guildmark.mill.MillRegistry.SAILS.get(), b.dir)
+            M.WATER_WHEEL -> facing(io.github.vaspyyy.guildmark.mill.MillRegistry.WHEEL.get(), b.dir)
         }
     }
 

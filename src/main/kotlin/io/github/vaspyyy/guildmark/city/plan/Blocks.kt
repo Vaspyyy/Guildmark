@@ -70,6 +70,9 @@ enum class M(val rgb: Int, val solid: Boolean = true) {
 
     // The market's displays of goods (drawn with Canvas.wares): [B.v] is what one shows (Wares), [B.dir] its front
     WARES(0x9A7A4A, false),
+    // The mills' hubs, each a block the game draws turning (see FarmWindmill and FarmWheel), facing the way the sails or
+    // the wheel look out: the windmill's sails, their cloth in [B.color], and the watermill's wheel
+    SAILS(0xE0D8C8, false), WATER_WHEEL(0x6A4A2A, false),
 }
 
 /**

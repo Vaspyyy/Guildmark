@@ -120,5 +120,9 @@ object GuildmarkConfig {
         .comment("The market's goods on show in the capitals: baskets, crates, racks, boards, trays, shelves and sacks on the stalls and counters, heaped with the real goods as full as the market's stock of each. Off, newly built capitals keep the old stall props, no more displays are set out in capitals built before, and those already out stand still.")
         .define("marketDisplays", true)
 
+    val TURNING_MILLS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("The capitals' mills turn: a windmill's sails while its millstones grind (braked in a storm, one with a sail hanging broken while the mill is broken), a watermill's wheel with its stream, harder while it grinds. Older capitals' block-built sails and wheels are swapped for turning ones out of sight. Off, they stand still.")
+        .define("turningMills", true)
+
     val SPEC: ModConfigSpec = BUILDER.build()
 }

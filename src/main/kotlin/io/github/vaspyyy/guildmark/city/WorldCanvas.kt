@@ -76,6 +76,7 @@ class WorldCanvas(
         val pos = piece.world(x, y, z)
         if (!writable(pos)) return
         place(pos, planned(piece, b, pos))
+        if (b.m == io.github.vaspyyy.guildmark.city.plan.M.SAILS || b.m == io.github.vaspyyy.guildmark.city.plan.M.WATER_WHEEL) mill(pos, At(x, y, z), b)
     }
 
     override fun wares(x: Int, y: Int, z: Int, wares: Wares, facing: Dir, was: B?) {
@@ -238,6 +239,25 @@ class WorldCanvas(
         },
     )
 
+    // ---- The mills ----
+
+    /**
+     * The mills' sails and wheels are the hubs the game draws turning, but in a far-view mod's stand-in world (which can't
+     * have them) and for a windmill crowded by its neighbours, whose sails are built of blocks.
+     */
+    override fun blockMill(hub: At): Boolean = !real || mills.none { it.hub == hub && it.turns }
+
+    /** The capital's mills (see [blockMill] and [mill]). */
+    private val mills by lazy { io.github.vaspyyy.guildmark.city.plan.MillSite.of(plan) }
+
+    /** Sets up the block entity of the mill hub [b] just placed at [pos] ([at] in the city's frame) for the capital. */
+    private fun mill(pos: BlockPos, at: At, b: B) {
+        if (!real) return
+        val site = mills.firstOrNull { it.hub == at && it.turns } ?: return
+        val hub = level.getBlockEntity(pos) as? io.github.vaspyyy.guildmark.mill.MillBlockEntity ?: return
+        hub.found(piece.center, style, b.color, site.rank, site.count)
+    }
+
     companion object {
         /** Deepest a dip under the city is filled; anything deeper is a cave, left as it is. */
         private const val MAX_FILL = 40
@@ -275,5 +295,8 @@ class WorldCanvas(
         /** Air, water, plants and trees: what the ground under a city is filled through. */
         fun loose(state: BlockState): Boolean =
             state.canBeReplaced() || !state.fluidState.isEmpty || state.`is`(BlockTags.LEAVES) || state.`is`(BlockTags.LOGS)
+
+        /** The block [piece]'s plan puts at [pos] for its block [b], as a canvas places it there (before any neighbours join up). */
+        fun state(piece: CapitalPiece, b: B, pos: BlockPos): BlockState = piece.style.state(b, hash(pos)).rotate(piece.turn)
     }
 }

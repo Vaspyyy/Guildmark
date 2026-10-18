@@ -76,6 +76,14 @@ interface Canvas {
     fun wares(x: Int, y: Int, z: Int, wares: Wares, facing: Dir, was: B? = null) = set(x, y, z, B(M.WARES, facing, v = wares.ordinal))
 
     fun touches(r: Rect): Boolean = clip.intersects(r)
+
+    /**
+     * Whether the mill whose sails or wheel turn on [hub] is built of blocks here, standing still, as the mills were before
+     * they turned: on a canvas that can't have the hub blocks the game draws turning (a far-view mod's stand-in world), for
+     * a windmill whose sails would sweep through something next to it (see [MillSite]), and for working out what an older
+     * capital was built with.
+     */
+    fun blockMill(hub: At): Boolean = false
 }
 
 /** Another canvas, raised [dy] blocks: for drawing something written for standing height 0 on a terrace. */
@@ -91,4 +99,5 @@ class Raised(private val canvas: Canvas, private val dy: Int) : Canvas {
     override fun resident(folk: Folk, at: At, work: At?, post: At?, facing: Dir?, home: At?) =
         canvas.resident(folk, at.up(dy), work?.up(dy), post?.up(dy), facing, home?.up(dy))
     override fun wares(x: Int, y: Int, z: Int, wares: Wares, facing: Dir, was: B?) = canvas.wares(x, y + dy, z, wares, facing, was)
+    override fun blockMill(hub: At): Boolean = canvas.blockMill(hub.up(dy))
 }

@@ -219,6 +219,10 @@ internal class IslandStyle(climate: Climate) {
         }
         // Nothing an island builds sets out the market's goods; a display would only ever show its usual stock
         M.WARES -> Bk.of("guildmark:" + Wares.entries[Math.floorMod(b.v, Wares.entries.size)].look.id, "facing" to face(b))
+
+        // The mills' hubs (an island builds no mills)
+        M.SAILS -> Bk.of("guildmark:windmill_sails", "facing" to face(b))
+        M.WATER_WHEEL -> Bk.of("guildmark:water_wheel", "facing" to face(b))
     }
 
     private fun face(b: B): String = b.dir?.let { CityBridge.dir(it).id } ?: "north"

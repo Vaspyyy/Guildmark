@@ -115,8 +115,10 @@ internal class FarmMill(f: Frame, b: FarmBuilding, r: Random) : FarmPiece(f, b, 
 
 /**
  * The windmill on its rise, drawn facing the road: a round stone tower, a narrower timbered tower on it, and a
- * pointed cap whose axle carries four sails turned a little from the upright, so they look to be turning. Inside
- * a mill room with the millstone, sacks and a ladder up through the floors to the cap.
+ * pointed cap whose axle carries four sails on a hub the game draws turning while the mill grinds, a little out in
+ * front of the yard's cart and the lamps' posts. Where the canvas builds this mill of blocks ([Canvas.blockMill]) the
+ * sails are built block by block instead, turned a little from the upright so they look to be turning. Inside a mill
+ * room with the millstone, sacks and a ladder up through the floors to the cap.
  */
 internal class FarmWindmill(f: Frame, b: FarmBuilding, r: Random) : FarmPiece(f, b, r) {
     private val cu = w / 2
@@ -193,11 +195,13 @@ internal class FarmWindmill(f: Frame, b: FarmBuilding, r: Random) : FarmPiece(f,
         f.set(cu - 1, TOP - 1, cv, B(M.LANTERN, top = true))
         f.set(cu + 1, TOP - 1, cv - 1, B(M.LANTERN, top = true))
 
-        // The cap: the axle through its front wall to the hub, lanterns from its roof over the little room
-        for (v in SAIL_V + 1..cv - 1) f.set(cu, axle, v, B(M.LOG, axis = Axis.Z))
+        // The cap: the axle through its front wall to the hub, lanterns from its roof over the little room. The turning
+        // sails bring their own length of axle out of the cap's wall to the hub
+        val turning = !f.canvas.blockMill(f.at(cu, axle, SAIL_V))
+        for (v in SAIL_V + 1..cv - 1) f.set(cu, axle, v, if (turning && v < SHAFT_V) AIR else B(M.LOG, axis = Axis.Z))
         f.set(cu - 1, axle, cv, B(M.LANTERN, top = true))
         f.set(cu + 1, axle, cv, B(M.LANTERN, top = true))
-        sails(cu, axle, SAIL_V, degrees, cloth)
+        if (turning) f.set(cu, axle, SAIL_V, B(M.SAILS, Dir.N, color = cloth)) else sails(cu, axle, SAIL_V, degrees, cloth)
     }
 
     /** A timber beam round the tower at this column, running along the wall. */
@@ -269,6 +273,15 @@ internal class FarmWindmill(f: Frame, b: FarmBuilding, r: Random) : FarmPiece(f,
         const val SAIL = 8
         const val SAIL_V = 1
         const val CLOTH_WIDTH = 3.5
+
+        /** The row of the cap's front wall, where the axle goes in: turning sails bring the axle from there to the hub. */
+        const val SHAFT_V = 4
+
+        /** Where [b]'s sails turn: their hub, in the city's frame. */
+        fun hub(b: FarmBuilding): At {
+            val f = Frame(NullCanvas, b.lot, b.front, b.y)
+            return f.at(f.w / 2, TOP + 3, SAIL_V)
+        }
 
         /** A windmill's cone: dark timber, slate, thatch, tile. */
         val ROOFS = intArrayOf(ROOF_WOOD, ROOF_SLATE, ROOF_SLATE, ROOF_THATCH, ROOF_RED)
