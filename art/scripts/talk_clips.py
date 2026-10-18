@@ -157,70 +157,82 @@ def joins_standing(c):
 
 # ---- explain (60, loop): their work, the way somewhere, a price. A breath, then both hands come up together and shape
 # the thing between them, palms in: round, down and under, and wide on the beat ("about so big", tick 20); the left
-# hand settles low before them, palm up, as if holding what's told, while the right lays three points out over it with
-# the edge of the hand, from left to right ("there, there and there": 30, 35, 40), a little nod with each; both hands
-# open out palms up with a firm nod ("and there you are", 45), and come down to the sides for a breath before the next
-# go (the seam is at rest).
+# hand comes up before them to count on and the right counts three points off on it (30, 35, 40), coming down onto its
+# end each time a little further along, the head down at the hands for the first and back up at the listener with a nod
+# for the others; both hands open out palms up with a firm nod ("and there you are", 45), and come down to the sides
+# for a breath before the next go (the seam is at rest).
 EX_SHAPE_DIR = [(2.0, (0.55, -0.85, 0.12)), (7.0, (1.0, -0.20, 0.22)), (10.5, (1.0, -0.30, 0.62)),
                 (14.0, (1.0, -0.62, 0.36)), (16.5, (1.0, -0.52, 0.20)), (20.0, (0.90, -0.28, 0.88)), (23.5, (1.0, -0.40, 0.55))]
 EX_SHAPE_PALM = [(2.0, (0.6, 0.6, -0.6)), (7.0, (0.0, 0.25, -1.0)), (10.5, (0.0, 0.2, -1.0)), (14.0, (0.0, 0.7, -0.7)),
                  (16.5, (0.0, 0.5, -1.0)), (20.0, (0.35, 0.55, -0.6)), (23.5, (0.2, 0.5, -0.8))]
 EX_OPEN = (1.0, -0.42, 0.78)                    # both hands open out, palms up
-EX_BEATS = (30.0, 35.0, 40.0)
-EX_BASE = (0.85, -0.62, 0.10)                   # the left hand low before them, palm up, pointing in a little
+EX_COUNTS = (30.0, 35.0, 40.0)
+EX_FINGERS = (1.0, -0.25, 0.32)                 # the left arm held up to count on: forward, a little down, in across
+EX_ON = np.array([-4.0, -0.7, 0.3])             # the right hand's end on the left's: from its right, a touch above,
+EX_ALONG = np.array([0.0, 0.25, 0.7])           # that much further along it at each count,
+EX_OFF = np.array([-1.1, -1.6, -0.4])           # and lifted off it between
 EX_UP = [(0, 0.0), (1.0, 0.0), (7.0, 1.0), (60, 1.0)]               # off the sides
-EX_POINTS = [(0, 0.0), (22.0, 0.0), (27.0, 1.0), (60, 1.0)]         # the points laid out
+EX_COUNT = [(0, 0.0), (22.0, 0.0), (27.0, 1.0), (60, 1.0)]          # the count
 EX_OPEN_W = [(0, 0.0), (41.0, 0.0), (44.5, 1.0), (60, 1.0)]         # opened out
 EX_DOWN = [(0, 0.0), (47.5, 0.0), (55.0, 1.0), (60, 1.0)]           # back to the sides
 EX_SWING = [(0, 0.0), (53.0, 0.0), (56.0, -4.0), (58.5, 1.0), (60, 0.0)]
-# the right hand laying the points out: across (to its right as r grows), and up and down as it lifts and comes down
-# on each beat, fast into it (the key just before) and stopping there with a little bounce
-EX_PT_R = [(22.0, -0.30), (28.0, -0.22), (30.0, -0.20), (32.5, 0.08), (35.0, 0.12), (37.5, 0.38), (40.0, 0.42), (44.0, 0.42)]
-EX_PT_U = [(22.0, -0.10), (28.0, 0.10), (29.3, -0.24), (30.0, -0.36), (31.5, -0.27), (33.5, 0.08), (34.3, -0.24),
-           (35.0, -0.36), (36.5, -0.27), (38.5, 0.08), (39.3, -0.25), (40.0, -0.38), (41.5, -0.30), (44.0, -0.30)]
+# the right hand off the left (1) and on it (0): quick onto it at each count (the key just before), a little bounce
+EX_TAP_OFF = [(22.0, 1.0), (28.4, 1.0), (29.4, 0.45), (30.0, 0.0), (31.0, 0.15), (33.2, 1.0), (34.4, 0.45), (35.0, 0.0),
+              (36.0, 0.15), (38.2, 1.0), (39.4, 0.45), (40.0, 0.0), (41.0, 0.25), (44.0, 1.0)]
+EX_STEP = [(22.0, 0.0), (32.6, 0.0), (33.6, 1.0), (37.6, 1.0), (38.6, 2.0), (44.0, 2.0)]   # which count, moved on while off
 EX_P = [(0, 0.0), (2.5, -1.2), (7.0, 1.0), (10.5, 2.5), (14.0, 1.5), (17.0, 1.2), (20.0, 4.0), (23.5, 2.0), (27.0, 3.0),
-        (30.0, 4.5), (33.0, 3.2), (35.0, 4.3), (38.0, 3.3), (40.0, 4.6), (42.5, 2.5), (45.0, 5.5), (48.5, 1.5), (54.0, -0.6),
+        (30.0, 5.0), (33.0, 3.5), (35.0, 4.5), (38.0, 3.5), (40.0, 4.6), (42.5, 2.5), (45.0, 5.5), (48.5, 1.5), (54.0, -0.6),
         (57.0, 0.3), (60, 0.0)]
-EX_Y = [(0, 0.0), (22.0, 0.0), (27.0, -4.0), (30.0, -4.5), (35.0, -0.5), (40.0, 3.0), (45.0, 0.0), (60, 0.0)]
-EX_HX = [(0, 0.0), (2.5, -3.0), (7.0, 2.0), (10.5, -1.0), (14.0, 4.0), (17.0, 1.0), (20.0, -2.5), (24.0, 1.0), (28.0, -1.5),
-         (30.0, 6.5), (33.0, 0.0), (35.0, 5.5), (38.0, 0.0), (40.0, 6.5), (42.5, -1.0), (45.0, 11.0), (48.0, 1.0), (52.0, -1.5),
-         (56.0, 0.5), (60, 0.0)]
-EX_HY = [(0, 0.0), (7.0, 3.0), (14.0, -3.0), (20.0, 4.0), (24.0, 0.0), (28.0, -5.0), (30.0, -7.0), (34.0, -1.0), (35.0, 0.0),
-         (39.0, 5.0), (40.0, 6.0), (43.0, 0.0), (60, 0.0)]
+EX_Y = [(0, 0.0), (22.0, 0.0), (27.0, -5.0), (41.0, -5.0), (45.0, 0.0), (60, 0.0)]
+EX_HX = [(0, 0.0), (2.5, -3.0), (7.0, 2.0), (10.5, -1.0), (14.0, 4.0), (17.0, 1.0), (20.0, -2.5), (24.0, 1.0), (27.5, 10.0),
+         (30.0, 13.0), (32.5, 4.0), (34.0, 0.5), (35.0, 6.0), (37.5, 0.0), (40.0, 6.5), (42.5, -1.0), (45.0, 11.0), (48.0, 1.0),
+         (52.0, -1.5), (56.0, 0.5), (60, 0.0)]
+EX_HY = [(0, 0.0), (7.0, 3.0), (14.0, -3.0), (20.0, 4.0), (24.0, 0.0), (28.0, -5.0), (31.0, -4.0), (34.0, 0.0), (60, 0.0)]
 EX_HZ = [(0, 0.0), (7.0, 3.0), (14.0, -2.5), (20.0, 4.0), (25.0, 0.0), (45.0, -3.0), (50.0, 0.0), (60, 0.0)]
 EX_RX = [(0, 0.0), (10.0, 0.3), (24.0, -0.2), (36.0, 0.5), (48.0, 0.0), (60, 0.0)]
 
 
+def ex_grip(side, pose, fr):
+    """Where the hand's end (the grip) is for the arm [pose] under [fr]."""
+    Ra, j = ta.arm_world(side, pose[0], arm_pos=pose[1], **fr)
+    return j + Ra @ GRIP[side]
+
+
 def explain():
-    c = clip('explain', 60, True, look=('smith', 1), events=[('beat', 20)] + [('point', k) for k in EX_BEATS] + [('nod', 45)],
+    c = clip('explain', 60, True, look=('smith', 1), events=[('beat', 20)] + [('count', k) for k in EX_COUNTS] + [('nod', 45)],
              views=((32, -12), (90, -2), (0, -4)),
              traces=[('right_arm', GRIP['right_arm'], (255, 200, 120)), ('left_arm', GRIP['left_arm'], (200, 230, 255))])
+    holds = Holds()
     for t in every(60):
         fr = F_(qt=bend(K(EX_P, t), K(EX_Y, t), 0.0), pr=root_for(FEET, x=K(EX_RX, t)))
         key_frame(c, t, fr, ease='linear')
         stand(c, t, fr)
         c.key('head', t, qeuler(x=K(EX_HX, t), y=K(EX_HY, t), z=K(EX_HZ, t)), ease='linear')
-        beat = sum(bump(t, k - 0.8, k + 1.6) for k in EX_BEATS)
-        for side in ('right_arm', 'left_arm'):
+        tap = sum(bump(t, k - 0.4, k + 1.2) for k in EX_COUNTS)
+        poses = {}
+        for side in ('left_arm', 'right_arm'):
             s = 1.0 if side == 'right_arm' else -1.0
             tt = t - (0.0 if side == 'right_arm' else 0.8)      # the left a little behind the right
             rest = rest_arm(side, fr, fwd=K(EX_SWING, tt))
             d = KV([(k, (f, u, s * r)) for k, (f, u, r) in EX_SHAPE_DIR], min(max(tt, 2.0), 23.5))
             p = KV([(k, (f, u, s * r)) for k, (f, u, r) in EX_SHAPE_PALM], min(max(tt, 2.0), 23.5))
             pose = mix_arm(rest, point_arm(fr, v(*d), v(*p), lift=0.4), smooth(K(EX_UP, tt)))
-            if side == 'right_arm':
-                points = point_arm(fr, v(f=1.0, u=K(EX_PT_U, t), r=K(EX_PT_R, t)), L, lift=0.4)
-            else:
-                points = point_arm(fr, v(f=EX_BASE[0], u=EX_BASE[1] - 0.05 * beat, r=EX_BASE[2]), U, lift=0.2)
-            pose = mix_arm(pose, points, smooth(K(EX_POINTS, tt)))
+            count = smooth(K(EX_COUNT, tt))
+            if side == 'left_arm':
+                # held up to count on, giving a little under each count
+                fingers = point_arm(fr, v(f=EX_FINGERS[0], u=EX_FINGERS[1] - 0.04 * tap, r=EX_FINGERS[2]), U, lift=0.3)
+                pose = mix_arm(pose, fingers, count)
+                poses['left'] = fingers
+            elif count > 1e-4:
+                on = ex_grip('left_arm', poses['left'], fr) + EX_ON + EX_ALONG * K(EX_STEP, t) + EX_OFF * K(EX_TAP_OFF, t)
+                pose = mix_arm(pose, reach_arm(holds, side, fr, on, palm=L, palm_w=0.2), count)
             pose = mix_arm(pose, point_arm(fr, v(EX_OPEN[0], EX_OPEN[1], s * EX_OPEN[2]), U, lift=0.5), smooth(K(EX_OPEN_W, tt)))
             set_arm(c, side, t, mix_arm(pose, rest, smooth(K(EX_DOWN, tt))))
     c.mode('head', 'add')
     seal(c)
-    xs = [ta.fk(c, k, 'right_arm', GRIP['right_arm'])[0] for k in EX_BEATS]
-    at_least(c, 'the points laid out from left to right, apart (px, t=30 to 35, 35 to 40)', (xs[0] - xs[1], xs[1] - xs[2]), 2.5)
-    drops = [ta.fk(c, k, 'right_arm', GRIP['right_arm'])[1] - ta.fk(c, k - 1.5, 'right_arm', GRIP['right_arm'])[1] for k in EX_BEATS]
-    at_least(c, 'the hand coming down onto each point (px in the last 1.5 ticks)', drops, 2.0)
+    for i, k in enumerate(EX_COUNTS):
+        check(c, f'right hand counting on the left hand\'s end (t={k:g})', ta.fk(c, k, 'right_arm', GRIP['right_arm']),
+              ta.fk(c, k, 'left_arm', GRIP['left_arm']) + EX_ON + EX_ALONG * i, tol=0.6)
     hands_apart(c, every(60))
     clear_of(c, 'right_arm', every(60))
     clear_of(c, 'left_arm', every(60))
@@ -606,7 +618,7 @@ def recoil():
         jump = 0.8 * K(RC_JUMP, t)
         for side in ('right_arm', 'left_arm'):
             s = 1.0 if side == 'right_arm' else -1.0
-            up = point_arm(fr, v(f=0.8, u=0.25 + 0.03 * tremor, r=-s * 0.1), v(f=-0.2, u=1.0, r=0.0), lift=0.4)
+            up = point_arm(fr, v(f=1.0, u=-0.08 + 0.03 * tremor, r=-s * 0.12), v(f=-0.2, u=1.0, r=0.0), lift=0.4)
             pose = mix_arm(rest_arm(side, fr, fwd=K(RC_SWING, t - (0.0 if s > 0 else 0.7))), up, w)
             set_arm(c, side, t, lifted(pose, jump))
     c.mode('head', 'add')
@@ -828,12 +840,14 @@ def pause_work():
 # ================================================================== the previews
 
 
-def gif(c, out_dir, views=((32, -10), (90, -2), (0, -6)), cell=(220, 280), zoom=5.2, rest=10):
+def gif(c, out_dir, views=((32, -10), (0, -6), (90, -2)), cell=(230, 300), zoom=6.0, rest=10):
     """An animated GIF of [c] at the game's pace (a frame a tick), drawn as the contact sheets are: from the three views
-    side by side, a one-shot held on its last frame for [rest] ticks before it goes again (as `act` plays it)."""
+    side by side (three-quarters, the front, the side), a one-shot held on its last frame for [rest] ticks before it
+    goes again."""
     info = ta.INFO[c.name]
     look = ta.look_for(info['look'])
     walking = info['walking']
+    middle = 13.0 if info['station'] == 'seat' else 8.0       # the figure's middle (px down from the head's pivot)
     W, H = cell
     n = c.length if info['loop'] else c.length + 1 + rest
     frames = []
@@ -841,7 +855,7 @@ def gif(c, out_dir, views=((32, -10), (90, -2), (0, -6)), cell=(220, 280), zoom=
         t = float(min(i, c.length))
         img = Image.new('RGB', (W * len(views), H + 22), (30, 32, 40))
         for j, (yaw, pitch) in enumerate(views):
-            project = ta.ortho(yaw, pitch, zoom, (W, H), 7.0)
+            project = ta.ortho(yaw, pitch, zoom, (W, H), middle)
             cell_img, _ = ta.render_cell(look, c, t, project, (W, H), walking)
             img.paste(cell_img, (j * W, 22))
         d = ImageDraw.Draw(img)

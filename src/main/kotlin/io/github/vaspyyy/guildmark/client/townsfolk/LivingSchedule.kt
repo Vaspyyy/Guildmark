@@ -336,9 +336,9 @@ internal object LivingSchedule {
         ),
         "explain" to listOf(
             Moment("beat", 20f, -0.101f, 3.197f, -3.122f),
-            Moment("point", 30f, 0.401f, 3.225f, -3.189f),
-            Moment("point", 35f, 0.514f, 3.223f, -3.168f),
-            Moment("point", 40f, 0.202f, 3.235f, -3.209f),
+            Moment("count", 30f, 0.435f, 3.253f, -3.262f),
+            Moment("count", 35f, 0.765f, 3.234f, -3.186f),
+            Moment("count", 40f, 0.65f, 3.235f, -3.202f),
             Moment("nod", 45f, 0.078f, 3.281f, -3.351f),
         ),
         "gossip" to listOf(
