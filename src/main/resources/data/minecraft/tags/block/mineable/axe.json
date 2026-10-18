@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "guildmark:charred_log"
+    "guildmark:charred_log",
+    "guildmark:shipping_crate"
   ]
 }

@@ -447,6 +447,16 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
                 lines.add(AtlasClient.kindName(mark))
                 if (mark.has(AtlasMark.RESTED)) lines.add(Component.translatable("gui.guildmark.map.tip.rested"))
                 out.add(Spot(x, z, WARDFIRE, name, lines, 2, label = name, labelFrom = 1.0, wardfire = mark.pos))
+            } else if (mark.kind == AtlasPlace.HOMESTEAD) {
+                // A homestead: the tier it stands at, the one going up, and whether you'd wake there
+                val yours = mark.has(AtlasMark.YOURS)
+                lines.add(AtlasClient.kindName(mark))
+                if (mark.standing > mark.size) {
+                    val going = io.github.vaspyyy.guildmark.homestead.HomesteadTiers.key(mark.standing)
+                    lines.add(Component.translatable("gui.guildmark.map.tip.homestead_raising", Component.translatable("gui.guildmark.homestead.tier.$going")))
+                }
+                if (mark.has(AtlasMark.RESTED)) lines.add(Component.translatable("gui.guildmark.map.tip.homestead_rested"))
+                out.add(Spot(x, z, if (yours) HOMESTEAD_YOURS else HOMESTEAD, name, lines, if (yours) 3 else 1, label = name, labelFrom = if (yours) 0.5 else 1.0))
             } else {
                 val throne = mark.kind == AtlasPlace.THRONE
                 val camp = mark.kind == AtlasPlace.FIELD_BOSS
@@ -845,6 +855,8 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
         private val TROLL_SLAIN = sprite("troll_camp_slain")
         private val OUTLAW = sprite("outlaw_camp")
         private val OUTLAW_SLAIN = sprite("outlaw_camp_slain")
+        private val HOMESTEAD = sprite("homestead")
+        private val HOMESTEAD_YOURS = sprite("homestead_yours")
         private val SHIP = sprite("ship")
         private val ISLAND = sprite("island")
         private val ROSE = sprite("rose")
@@ -855,7 +867,8 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
 
         private val LEGEND = listOf(
             VILLAGE to "village", TOWN to "town", CITY to "city", HALL to "hall", LAIR to "lair", LAIR_CLEARED to "lair_cleared",
-            VAULT to "vault", TROLL to "troll_camp", OUTLAW to "outlaw_camp", WARDFIRE to "wardfire", COACH to "coach", CONTRACT to "objective", PIN to "pin", PARTY to "party",
+            VAULT to "vault", TROLL to "troll_camp", OUTLAW to "outlaw_camp", HOMESTEAD_YOURS to "homestead",
+            WARDFIRE to "wardfire", COACH to "coach", CONTRACT to "objective", PIN to "pin", PARTY to "party",
             DEATH to "death", LOST_MARKS to "lost_marks", SHIP to "ship", ISLAND to "island", PLAYER to "you",
         )
         private val SCALES = intArrayOf(10, 20, 50, 100, 200, 500, 1000, 2000, 5000)

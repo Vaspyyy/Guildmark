@@ -165,6 +165,16 @@ class Homesteads(
         @JvmStatic
         fun all(level: ServerLevel): List<Homestead> = get(level).homesteads.toList()
 
+        /**
+         * The homestead whose land, with [margin] blocks round it, takes in [x], [z], if any: for whatever would make
+         * camp, dig a lair or spawn a boss there, to keep clear of people's homes.
+         */
+        @JvmStatic
+        fun near(level: ServerLevel, x: Int, z: Int, margin: Int): Homestead? {
+            if (level.dimension() != Level.OVERWORLD) return null
+            return get(level).near(x, z, margin)
+        }
+
         /** Whether [player] is one of [homestead]'s people: its owner or one of the owner's party. */
         @JvmStatic
         fun belongsTo(level: ServerLevel, homestead: Homestead, player: Player): Boolean {

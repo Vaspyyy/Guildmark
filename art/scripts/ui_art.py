@@ -281,6 +281,10 @@ COMPASS_ICONS = {
     "outlaw_camp": ["..ooo..", ".onnno.", "onooono", "onWoWno", "onrrrno", ".orRro.", "..ooo.."],
     # the same hood gone grey: its captain has fallen
     "outlaw_camp_slain": ["..ooo..", ".osss..", "osooos.", "osoooso", "osqqqso", ".oqsqo.", "..oo..."],
+    # a low cottage, a red pennant flying from the pole on its ridge: someone's homestead
+    "homestead": ["...oRRo", "...oRo.", "..ono..", ".onnno.", "onnnnno", ".owowo.", ".ooooo."],
+    # the same with a gold pennant and lamps in the windows: your own homestead
+    "homestead_yours": ["...oGGo", "...oGo.", "..oNo..", ".oNNNo.", "oNNNNNo", ".oGoGo.", ".ooooo."],
 }
 
 # ink icons for the map, 11x11, drawn on parchment
@@ -528,6 +532,34 @@ MAP_ICONS = {
         ".s.k.....s.",
         "s.k.......s",
         "sksssssssss",
+    ],
+    # a cottage behind its fence, the Charter Post beside it flying a red pennant: someone's homestead
+    "homestead": [
+        "........kRR",
+        "........kR.",
+        "...k....k..",
+        "..ksk...k..",
+        ".ksssk..k..",
+        "kkkkkkk.k..",
+        ".kw.wk..k..",
+        ".k.k.k..k..",
+        ".kkkkk.kkk.",
+        "k.k.k.k.k.k",
+        "kkkkkkkkkkk",
+    ],
+    # the same with a gold pennant and lamps in the windows: your own homestead
+    "homestead_yours": [
+        "........kgg",
+        "........kg.",
+        "...k....k..",
+        "..ksk...k..",
+        ".ksssk..k..",
+        "kkkkkkk.k..",
+        ".kg.gk..k..",
+        ".k.k.k..k..",
+        ".kkkkk.kkk.",
+        "k.k.k.k.k.k",
+        "kkkkkkkkkkk",
     ],
     # a sword planted in a fire on its ring of stones
     "wardfire": [

@@ -34,6 +34,8 @@ data class AtlasPlace(
         const val ISLAND = 5
         /** An outlaw band's camp; [ref] is its band in OutlawCamps. */
         const val OUTLAW_CAMP = 6
+        /** Someone else's homestead, at its Charter Post; [ref] is its id in Homesteads (homestead/HomesteadAtlas). */
+        const val HOMESTEAD = 7
 
         /** A village's [ref] when it's a capital city. */
         const val CAPITAL_REF = 1

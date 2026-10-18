@@ -6943,6 +6943,165 @@
     ],
     "subtitle": "subtitles.guildmark.ship.anchor_raise"
   },
+  "homestead.claim": {
+    "sounds": [
+      {
+        "name": "guildmark:homestead/claim1",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "subtitles.guildmark.homestead.claim"
+  },
+  "homestead.stake": {
+    "sounds": [
+      {
+        "name": "guildmark:homestead/stake1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:homestead/stake2",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:homestead/stake3",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.homestead.stake"
+  },
+  "homestead.refuse": {
+    "sounds": [
+      "guildmark:homestead/refuse1",
+      "guildmark:homestead/refuse2"
+    ],
+    "subtitle": "subtitles.guildmark.homestead.refuse"
+  },
+  "homestead.hammer": {
+    "sounds": [
+      {
+        "name": "guildmark:homestead/hammer1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:homestead/hammer2",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:homestead/hammer3",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:homestead/hammer4",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.homestead.hammer"
+  },
+  "homestead.saw": {
+    "sounds": [
+      {
+        "name": "guildmark:homestead/saw1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:homestead/saw2",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:homestead/saw3",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.homestead.saw"
+  },
+  "homestead.dig": {
+    "sounds": [
+      {
+        "name": "guildmark:homestead/dig1",
+        "attenuation_distance": 20
+      },
+      {
+        "name": "guildmark:homestead/dig2",
+        "attenuation_distance": 20
+      },
+      {
+        "name": "guildmark:homestead/dig3",
+        "attenuation_distance": 20
+      }
+    ],
+    "subtitle": "subtitles.guildmark.homestead.dig"
+  },
+  "homestead.arrive": {
+    "sounds": [
+      {
+        "name": "guildmark:homestead/arrive1",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "subtitles.guildmark.homestead.arrive"
+  },
+  "homestead.cheer": {
+    "sounds": [
+      {
+        "name": "guildmark:homestead/cheer1",
+        "attenuation_distance": 40
+      },
+      {
+        "name": "guildmark:homestead/cheer2",
+        "attenuation_distance": 40
+      }
+    ],
+    "subtitle": "subtitles.guildmark.homestead.cheer"
+  },
+  "homestead.topping": {
+    "sounds": [
+      {
+        "name": "guildmark:homestead/topping1",
+        "attenuation_distance": 64
+      }
+    ],
+    "subtitle": "subtitles.guildmark.homestead.topping"
+  },
+  "homestead.finished": {
+    "sounds": [
+      {
+        "name": "guildmark:homestead/finished1",
+        "attenuation_distance": 64
+      }
+    ],
+    "subtitle": "subtitles.guildmark.homestead.finished"
+  },
+  "homestead.deliver": {
+    "sounds": [
+      "guildmark:homestead/deliver1",
+      "guildmark:homestead/deliver2",
+      "guildmark:homestead/deliver3"
+    ],
+    "subtitle": "subtitles.guildmark.homestead.deliver"
+  },
+  "homestead.ledger": {
+    "sounds": [
+      "guildmark:homestead/ledger1"
+    ],
+    "subtitle": "subtitles.guildmark.homestead.ledger"
+  },
+  "homestead.scaffold": {
+    "sounds": [
+      {
+        "name": "guildmark:homestead/scaffold1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:homestead/scaffold2",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:homestead/scaffold3",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.homestead.scaffold"
+  },
   "ship.bell": {
     "sounds": [
       {

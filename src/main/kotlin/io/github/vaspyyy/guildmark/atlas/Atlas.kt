@@ -170,6 +170,8 @@ object Atlas {
                 if (places.any { it.kind == AtlasPlace.OUTLAW_CAMP && it.dimension == dimension && it.ref == band.id }) continue
                 found(AtlasPlace(AtlasPlace.OUTLAW_CAMP, dimension, band.pos, ref = band.id, found = now))
             }
+            // Someone else's homestead, once you've come by its gate (your own and your party's are always on it)
+            for (place in io.github.vaspyyy.guildmark.homestead.HomesteadAtlas.found(level, player, places, CAMP_SIGHT, now)) found(place)
             // An island, once it's in sight over the sea
             for (spec in Islands.near(level, here, ISLAND_LOOK)) {
                 val middle = BlockPos(spec.cx, spec.sea, spec.cz)
@@ -255,6 +257,7 @@ object Atlas {
                     val flags = if (band.slain) AtlasMark.CLEARED else 0
                     AtlasMark(AtlasPlace.OUTLAW_CAMP, band.pos, "${Outlaws.NAME_KEY}.${band.name}", 0, flags, "", 0, 0, listOf())
                 }
+                AtlasPlace.HOMESTEAD -> io.github.vaspyyy.guildmark.homestead.HomesteadAtlas.mark(level, player, place, restingAt)
                 // Named from what it is; the client tells what sort of island it is from the same number
                 AtlasPlace.ISLAND -> AtlasMark(AtlasPlace.ISLAND, place.pos, IslandMarks.name(place.ref), place.size, 0, "", 0, place.ref, listOf())
                 else -> null
@@ -264,7 +267,8 @@ object Atlas {
         val roads = network.roads
             .filter { road -> villages.any { road.touches(it, ROAD_SLACK) } }
             .map { AtlasRoad(bends(it.points), it.finished) }
-        return AtlasPayload(dimension, marks, roads, fresh.map { it.pos })
+        val homes = io.github.vaspyyy.guildmark.homestead.HomesteadAtlas.own(level, player, restingAt)
+        return AtlasPayload(dimension, marks + homes, roads, fresh.map { it.pos })
     }
 
     /** A road's waypoints with the straight runs folded up: only where it turns, as x, z pairs. */

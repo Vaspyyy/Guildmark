@@ -70,6 +70,9 @@ object AtlasClient {
         AtlasPlace.FIELD_BOSS -> Component.translatable("atlas.guildmark.troll_camp", Component.translatable(mark.label))
         AtlasPlace.ISLAND -> Component.literal(mark.label)
         AtlasPlace.OUTLAW_CAMP -> Component.translatable("atlas.guildmark.outlaw_camp", Component.translatable(mark.label))
+        // Named for its owner, whose name the label carries
+        AtlasPlace.HOMESTEAD -> if (mark.has(AtlasMark.YOURS)) Component.translatable("atlas.guildmark.homestead.yours")
+        else Component.translatable("atlas.guildmark.homestead", mark.label)
         else -> Component.translatable(mark.label)
     }
 
@@ -81,6 +84,8 @@ object AtlasClient {
         mark.kind == AtlasPlace.THRONE -> Component.translatable("atlas.guildmark.kind.throne")
         mark.kind == AtlasPlace.FIELD_BOSS -> Component.translatable("atlas.guildmark.kind.troll_camp")
         mark.kind == AtlasPlace.OUTLAW_CAMP -> Component.translatable("atlas.guildmark.kind.outlaw_camp")
+        mark.kind == AtlasPlace.HOMESTEAD ->
+            Component.translatable("gui.guildmark.homestead.tier.${io.github.vaspyyy.guildmark.homestead.HomesteadTiers.key(mark.size)}")
         mark.kind == AtlasPlace.ISLAND -> Component.translatable(IslandMarks.kindKey(mark.standing))
         mark.has(AtlasMark.VAULT) -> Component.translatable("atlas.guildmark.kind.vault")
         else -> Component.translatable("atlas.guildmark.kind.lair")

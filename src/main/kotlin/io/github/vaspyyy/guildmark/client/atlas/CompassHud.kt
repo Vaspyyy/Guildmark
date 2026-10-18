@@ -56,6 +56,8 @@ object CompassHud : GuiLayer {
     private val ICON_TROLL_SLAIN = sprite("troll_camp_slain")
     private val ICON_OUTLAW = sprite("outlaw_camp")
     private val ICON_OUTLAW_SLAIN = sprite("outlaw_camp_slain")
+    private val ICON_HOMESTEAD = sprite("homestead")
+    private val ICON_HOMESTEAD_YOURS = sprite("homestead_yours")
     private val ICON_SHIP = sprite("ship")
 
     private const val TOP = 3
@@ -187,6 +189,8 @@ object CompassHud : GuiLayer {
             val at = Vec3(mark.pos.x + 0.5, mark.pos.y.toDouble(), mark.pos.z + 0.5)
             val range = when {
                 mark.kind == AtlasPlace.THRONE -> 2000.0
+                // Home is always worth knowing the way to
+                mark.kind == AtlasPlace.HOMESTEAD && mark.has(AtlasMark.YOURS) -> 2000.0
                 // Islands are what you steer by at sea
                 mark.kind == AtlasPlace.ISLAND -> 900.0
                 mark.kind == AtlasPlace.VILLAGE -> 640.0
@@ -203,6 +207,7 @@ object CompassHud : GuiLayer {
                 mark.kind == AtlasPlace.THRONE || mark.has(AtlasMark.VAULT) -> ICON_VAULT
                 mark.kind == AtlasPlace.FIELD_BOSS -> if (mark.has(AtlasMark.CLEARED)) ICON_TROLL_SLAIN else ICON_TROLL
                 mark.kind == AtlasPlace.OUTLAW_CAMP -> if (mark.has(AtlasMark.CLEARED)) ICON_OUTLAW_SLAIN else ICON_OUTLAW
+                mark.kind == AtlasPlace.HOMESTEAD -> if (mark.has(AtlasMark.YOURS)) ICON_HOMESTEAD_YOURS else ICON_HOMESTEAD
                 mark.has(AtlasMark.CLEARED) -> ICON_LAIR_CLEARED
                 mark.has(AtlasMark.AWAKE) -> ICON_BOSS
                 else -> ICON_LAIR
