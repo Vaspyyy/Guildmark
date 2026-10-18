@@ -127,7 +127,8 @@ object MarketCommand {
         say(source, grey("People: $town"))
         town.planned?.let { built -> if (built.people != town.people) say(source, grey("Built for ${built.people} (${built.people - town.people} gone)")) }
         if (m.events.isNotEmpty()) say(source, line().append(label("Under way: ")).append(plain(m.events.joinToString(", ") { e ->
-            e.kind.id + (e.good?.let { " (${it.id})" } ?: "") + " x%.2f, %d h left".format(e.factor, e.until - m.hour)
+            e.kind.id + (e.good?.let { " (${it.id})" } ?: "") + (if (e.goods.isNotEmpty()) " (${e.goods.joinToString("+") { it.id }})" else "") +
+                (if (e.place.isNotEmpty()) " at the ${e.place}" else "") + " x%.2f, %d h left".format(e.factor, e.until - m.hour)
         })))
         m.hungry.lastOrNull()?.let { if (it > 0.5) say(source, line().append(label("Went hungry yesterday: ")).append(plain("%.0f meals".format(it)))) }
         say(source, grey("good: stock / keeps   price (usual)   you buy   you sell (room)   trend   why"))
@@ -166,9 +167,8 @@ object MarketCommand {
 
     /** What the stall says about [q]'s price. */
     fun reason(q: Quote): MutableComponent {
-        val why = q.why ?: return Component.empty()
-        val name = Component.translatable(q.good.key)
-        return if (q.event != null) Component.translatable("${why.key}.${q.event.id}", name) else Component.translatable(why.key, name)
+        if (q.why == null) return Component.empty()
+        return Component.translatable(Trading.reasonKey(q), Component.translatable(q.good.key))
     }
 
     private fun good(context: CommandContext<CommandSourceStack>, id: String): Int {
@@ -229,17 +229,33 @@ object MarketCommand {
         val factor = rolled?.factor ?: FACTORS[kind] ?: 0.5
         val length = if (days > 0) days * 24L else (rolled?.let { it.until - it.since } ?: 72L)
         m.events.removeIf { it.kind == kind }
+        if (kind == EventKind.WAYLAID) {
+            // A wagon's load lost on the road: the good asked for, or the dearest of what a wagon would bring now
+            val load = Economy.bring(m, entry.town, false)
+            val lost = if (good != null) setOf(good) else {
+                Good.entries.filter { it.traded && load[it.ordinal] >= 1.0 }.sortedByDescending { it.base * load[it.ordinal] }.take(WAYLAID_GOODS).toSet()
+                    .ifEmpty { setOf(Good.CANDLE, Good.IRON) }
+            }
+            val place = Caravans.PLACES.random()
+            m.events.add(Event(kind, null, factor, m.hour, m.hour + length, lost, place))
+            m.say("news.guildmark.market.event.${kind.id}", lost.first())
+            Markets.get(source.level).changed()
+            return say(source, plain("Started waylaid (at the $place) on ${lost.joinToString(", ") { it.id }} for ${length / 24} days (x%.2f).".format(factor)))
+        }
         m.events.add(Event(kind, good, factor, m.hour, m.hour + length))
         m.say("news.guildmark.market.event.${kind.id}", good)
         Markets.get(source.level).changed()
         return say(source, plain("Started ${kind.id}" + (good?.let { " on ${it.id}" } ?: "") + " for ${length / 24} days (x%.2f).".format(factor)))
     }
 
+    /** The most goods a waylaid wagon started by hand loses, when no good is named. */
+    private const val WAYLAID_GOODS = 5
+
     /** What each kind does when the town can't roll it (no farmers for a blight, say). */
     private val FACTORS = mapOf(
         EventKind.BLIGHT to 0.25, EventKind.BUMPER to 1.6, EventKind.MURRAIN to 0.4, EventKind.FOWL_PEST to 0.3,
         EventKind.MILL_BROKEN to 0.0, EventKind.OVEN_CRACKED to 0.5, EventKind.GOOD_CATCH to 1.8, EventKind.POOR_CATCH to 0.3,
-        EventKind.FEVER to 0.75,
+        EventKind.FEVER to 0.75, EventKind.WAYLAID to RoadPeril.Stage.TROUBLED.factor,
     )
 
     private fun run(context: CommandContext<CommandSourceStack>, hours: Int): Int {
@@ -278,6 +294,7 @@ object MarketCommand {
             Deal.Outcome.NONE -> if (buying) "The market has none left to sell." else "The market won't take any more."
             Deal.Outcome.POOR -> "Not enough Marks for the next lot (${stop.lot})."
             Deal.Outcome.LACKING -> "Not enough of it on you for the next lot (${stop.lot})."
+            Deal.Outcome.OWN_WAGON -> "All you carry of it is salvage off this capital's own waylaid wagon, which it won't buy back: hold it out to a keeper here to hand it in."
             Deal.Outcome.DONE -> ""
         }))
         say(source, row(entry, g))
