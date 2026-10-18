@@ -99,11 +99,12 @@ object StreetLamps {
 
     var taker: Taker? = null
 
-    /** Sets the street lamps going: their blocks, their keeping, and the testing command. */
+    /** Sets the street lamps going: their blocks, their keeping, the lamplighters, and the testing command. */
     fun register(modBus: IEventBus) {
         LampRegistry.BLOCKS.register(modBus)
         NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { tick(it.server) }
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> clear() }
+        io.github.vaspyyy.guildmark.townsfolk.Lamplighters.init()
     }
 
     /** Whether the street lamps are lit and put out at all (the Street Lamps setting). */
@@ -501,8 +502,9 @@ object StreetLamps {
     fun release(level: ServerLevel, town: LampTown, run: LampTown.Run, director: Director) {
         if (run.held !== director) return
         run.held = null
+        // The clock takes up where they left off (never going back on a lamp they've seen to)
         val time = since(level.overworldClockTime)
-        if (run.done < run.lamps.size) run.start = time + PASS - run.offsets[run.done]
+        run.start = if (run.done < run.lamps.size) time + PASS - run.offsets[run.done] else minOf(run.start, time - run.offsets.last())
         run.lookAt = level.gameTime + LOOK_AGAIN * 3
     }
 
