@@ -115,6 +115,12 @@ object GuildmarkConfig {
     val HOMESTEAD_BUILD_SPEED: ModConfigSpec.DoubleValue = BUILDER
         .comment("How fast homestead builders work: 1 is a cottage in half a day of daylight, a farmstead in a day and a manor in two; 2 is twice as fast.")
         .defineInRange("homesteadBuildSpeed", 1.0, 0.1, 20.0)
+    val HOMESTEAD_SHIPPING: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Each morning at seven the carter from the nearest capital (within 1500 blocks) empties a homestead's shipping crates and sells their goods at that market's own falling prices, until it wants no more; the Marks wait in the Charter Post's purse, collected from its ledger. Off, the crates are left as they are.")
+        .define("homesteadShipping", true)
+    val OWN_STALLS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("A Trusted Supplier of a capital may rent a table in its market hall by the week and stock it from their pack, and it sells to the town while they're away: each market hour up to a third of what the town buys of each good on it, at the market's price less a tenth. Off, no table is let and the stalls already let sell nothing (their goods and tills can still be taken back).")
+        .define("ownStalls", true)
 
     val MARKET_DISPLAYS: ModConfigSpec.BooleanValue = BUILDER
         .comment("The market's goods on show in the capitals: baskets, crates, racks, boards, trays, shelves and sacks on the stalls and counters, heaped with the real goods as full as the market's stock of each. Off, newly built capitals keep the old stall props, no more displays are set out in capitals built before, and those already out stand still.")
