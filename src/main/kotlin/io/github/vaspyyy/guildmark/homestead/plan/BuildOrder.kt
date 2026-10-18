@@ -3,6 +3,7 @@ package io.github.vaspyyy.guildmark.homestead.plan
 import io.github.vaspyyy.guildmark.city.plan.B
 import io.github.vaspyyy.guildmark.city.plan.Dir
 import io.github.vaspyyy.guildmark.city.plan.M
+import io.github.vaspyyy.guildmark.city.plan.Rect
 import io.github.vaspyyy.guildmark.city.plan.Spawn
 import kotlin.math.abs
 import kotlin.math.atan2
@@ -80,14 +81,34 @@ class TierPlan(val tier: Int, val steps: List<Step>, val pieces: List<PieceInfo>
 }
 
 /**
+ * What a crew can build from: a drawing that [BuildOrder] turns into steps. A homestead's layout is one
+ * (HomesteadLayout, a tier at a time), and so is each of the town's works (economy/works/build/WorksPlans, which have
+ * the one tier, 1).
+ */
+interface Drawing {
+    /** The columns it reaches: what it draws is recorded within these and a few blocks round them, and the scaffolding stands within them. */
+    val bounds: Rect
+
+    /** Draws [tier] onto [c] (the tiers before it standing already). */
+    fun draw(tier: Int, c: PlanCanvas)
+
+    /** The standing height of the column [x], [z] as the last [draw] left it. */
+    fun groundHeight(x: Int, z: Int): Int
+
+    /** Where the shipping crates up to [tier] stand, (x, z) at the ground: none but a homestead's. */
+    fun shipping(tier: Int): List<Pair<Int, Int>> = listOf()
+}
+
+/**
  * Turns a tier of the layout into the order its crew builds it in: the stakes, the groundwork lot by lot, then each
  * stage over every building in turn (a house's walls course by course round it, its roof from the eaves up), the
  * scaffolding up before the roofs and down after the bough, the grounds, the shipping crates, and last the beasts.
+ * A block the drawing put in a stage of its own (PlanCanvas.stage) goes up in that one.
  */
 object BuildOrder {
-    fun plan(layout: HomesteadLayout, tier: Int): TierPlan {
-        val rec = Recording(PlotShape.RESERVED.grow(4))
-        layout.draw(tier, rec)
+    fun plan(drawing: Drawing, tier: Int): TierPlan {
+        val rec = Recording(drawing.bounds.grow(4))
+        drawing.draw(tier, rec)
         val out = rec.finish()
         val pieces = out.pieces
         val steps = ArrayList<Step>()
@@ -121,7 +142,7 @@ object BuildOrder {
             .map { (key, placed) ->
                 val piece = pieces[placed.piece]
                 val y = Packed.y(key)
-                Triple(key, placed, Staging.stage(placed.b, y, piece))
+                Triple(key, placed, placed.stage ?: Staging.stage(placed.b, y, piece))
             }
         val byStage = blocks.groupBy { it.third }
         val houses = pieces.withIndex().filter { it.value.kind == PieceKind.HOUSE && it.value.roofBase != Int.MAX_VALUE }
@@ -129,7 +150,7 @@ object BuildOrder {
         for (stage in Stage.entries) {
             if (stage == Stage.STAKES) continue
             when (stage) {
-                Stage.SCAFFOLD -> scaffold(steps, houses, out, layout)
+                Stage.SCAFFOLD -> scaffold(steps, houses, out, drawing)
                 Stage.TOPPING -> topping(steps, houses, out)
                 Stage.UNSCAFFOLD -> {
                     val up = steps.filter { it.kind == StepKind.SCAFFOLD }
@@ -158,10 +179,10 @@ object BuildOrder {
         }
 
         // The shipping crates this tier adds, at the edge of the grounds, and the beasts let out last of all
-        val before = if (tier > 0) layout.places(tier - 1).shipping.toSet() else setOf()
-        for ((x, z) in layout.places(tier).shipping) {
+        val before = if (tier > 0) drawing.shipping(tier - 1).toSet() else setOf()
+        for ((x, z) in drawing.shipping(tier)) {
             if ((x to z) in before) continue
-            val y = out.grounds[Packed.column(x, z)]?.y ?: out.clearings[Packed.column(x, z)]?.y ?: layout.groundHeight(x, z)
+            val y = out.grounds[Packed.column(x, z)]?.y ?: out.clearings[Packed.column(x, z)]?.y ?: drawing.groundHeight(x, z)
             steps.add(Step(StepKind.SHIPPING, Stage.GROUNDS, x, y, z))
         }
         for (s in out.spawns) steps.add(Step(StepKind.SPAWN, Stage.GROUNDS, s.x, s.y, s.z, spawn = s.what, facing = s.facing))
@@ -192,7 +213,7 @@ object BuildOrder {
      * Scaffolding round each roofed building: poles two out from its walls, at its corners and every few blocks along
      * each side, from the ground to just under the eaves, wherever nothing of the plan stands in the way.
      */
-    private fun scaffold(steps: MutableList<Step>, houses: List<IndexedValue<PieceInfo>>, out: Recorded, layout: HomesteadLayout) {
+    private fun scaffold(steps: MutableList<Step>, houses: List<IndexedValue<PieceInfo>>, out: Recorded, drawing: Drawing) {
         val taken = HashSet<Long>()
         val columns = HashMap<Long, IntArray>()   // column -> min y, max y of plan blocks there
         for ((key, placed) in out.blocks) {
@@ -230,8 +251,8 @@ object BuildOrder {
             for ((x, z) in ring) {
                 val col = Packed.column(x, z)
                 if (col in taken) continue
-                if (!PlotShape.RESERVED.contains(x, z)) continue
-                val ground = out.grounds[col]?.y ?: out.clearings[col]?.y ?: layout.groundHeight(x, z)
+                if (!drawing.bounds.contains(x, z)) continue
+                val ground = out.grounds[col]?.y ?: out.clearings[col]?.y ?: drawing.groundHeight(x, z)
                 if (abs(ground - house.y) > 2) continue
                 val span = columns[col]
                 // Anything of the plan in the way (but what lies on the ground: crops, paths, flowers) rules it out

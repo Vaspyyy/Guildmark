@@ -1,6 +1,5 @@
 package io.github.vaspyyy.guildmark.homestead
 
-import io.github.vaspyyy.guildmark.city.plan.Dir
 import io.github.vaspyyy.guildmark.city.plan.M
 import io.github.vaspyyy.guildmark.homestead.plan.Stage
 import io.github.vaspyyy.guildmark.homestead.plan.StepKind
@@ -12,7 +11,6 @@ import io.github.vaspyyy.guildmark.townsfolk.Townsfolk
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import net.minecraft.core.BlockPos
 import net.minecraft.core.particles.ParticleTypes
-import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.sounds.SoundEvents
@@ -24,10 +22,8 @@ import net.minecraft.world.item.BlockItem
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 import net.minecraft.world.level.block.Blocks
-import net.minecraft.world.level.levelgen.Heightmap
 import net.minecraft.world.phys.Vec3
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent
-import io.github.vaspyyy.guildmark.homestead.plan.PlotShape
 import kotlin.math.abs
 
 /**
@@ -38,6 +34,12 @@ import kotlin.math.abs
  * Each builder takes a few steps of the stage in hand (HomesteadSite.claim), fetches what they're made of from the supply
  * crate, carries it over, climbs up if it goes high, and lays it with the clip for the job: digging the ground, knocking
  * in stakes, setting blocks low, at the chest or overhead, nailing timber and sawing it. They cheer each stage done.
+ *
+ * A crew builds at any [Worksite]: a homestead's ([HomesteadSite]) or one of a capital's town works
+ * (economy/works/build). A works' crew is the town's own citizens lent to it for the day ([lend]: residents, who go
+ * back to their day when they're let go, never vanishing), strangers made as a homestead's are only making up the
+ * number ([Worksite.strangers]), under a master builder who calls the stages while the crew cheers ([Worksite.caller]);
+ * its builders may be a trade's own ([Worksite.builder]), with more to their work than a homestead's.
  */
 object BuilderCrew {
     /** Every builder wears this tag, so one saved with its chunk is known for what it is. */
@@ -50,6 +52,7 @@ object BuilderCrew {
     private val LOOKS = intArrayOf(0, 1, 2, 4, 6, 7)
 
     class Crew(val id: Int) {
+        /** The strangers made for it and the residents lent to it, at work. */
         val builders = ArrayList<Builder>()
         var nextArrival = 0L
         var arrived = false
@@ -63,21 +66,34 @@ object BuilderCrew {
 
     private val crews = HashMap<Int, Crew>()
 
+    /** Finds the town works' sites by their crews' keys (economy/works/build sets it); homesteads' are HomesteadWorks'. */
+    fun interface Sites {
+        fun live(key: Int): Worksite?
+    }
+
+    /** The town works' sites (set at setup by economy/works/build). */
+    var works: Sites? = null
+
+    /** The site the crew of [key] builds, while it's being built: a homestead's (keys from 0) or a town works' (below 0). */
+    fun live(key: Int): Worksite? = if (key >= 0) HomesteadWorks.live(key) else works?.live(key)
+
     /**
      * Brings [site]'s crew in, one at a time, while [wanted] (someone near, in working hours), or sends them home.
-     * Called every second for each homestead being built.
+     * Called every second for each homestead being built (and each town works).
      */
-    fun update(level: ServerLevel, site: HomesteadSite, wanted: Boolean) {
-        val id = site.homestead.id
+    fun update(level: ServerLevel, site: Worksite, wanted: Boolean) {
+        val id = site.key
         val crew = crews[id] ?: if (wanted) Crew(id).also { crews[id] = it } else return
+        // The lent who aren't the crew's any more (gone, stopped by a player, never handed over) are handed back
+        for (b in crew.builders.toList()) if (b.lent && b.gone(level)) b.handBack()
         crew.builders.removeIf { !it.p.isAlive || it.p.isRemoved || it.p.level() !== level }
         if (wanted) {
-            if (crew.builders.size < site.tier.crew && level.gameTime >= crew.nextArrival) {
+            if (crew.builders.count { !it.lent } < site.strangers && level.gameTime >= crew.nextArrival) {
                 spawn(level, site, crew)
                 crew.nextArrival = level.gameTime + 30 + level.random.nextInt(40)
             }
         } else {
-            for (b in crew.builders) b.leave()
+            for (b in crew.builders.toList()) b.leave()
             if (crew.builders.isEmpty()) crews.remove(id)
         }
     }
@@ -95,22 +111,46 @@ object BuilderCrew {
     /** Sends a crew away at once, with no walk home (the homestead is gone, or its tier finished by command). */
     fun dismiss(id: Int) {
         val crew = crews.remove(id) ?: return
-        for (b in crew.builders) b.vanish()
+        for (b in crew.builders.toList()) b.vanish()
     }
 
-    /** A stage is done: the whole crew downs tools and cheers. */
-    fun celebrate(level: ServerLevel, site: HomesteadSite, stage: Stage) {
-        val crew = crews[site.homestead.id] ?: return
+    /** A stage is done: the whole crew downs tools and cheers (a works' master builder calls it, if it has one about: see [Worksite.caller]). */
+    fun celebrate(level: ServerLevel, site: Worksite, stage: Stage) {
+        val crew = crews[site.key] ?: return
         val loud = stage == Stage.WALLS || stage == Stage.ROOF || stage == Stage.TOPPING
         if (crew.builders.isEmpty()) return
+        val master = site.caller()
         if (loud) {
             // One of them calls the stage and the rest cheer it (their lines are voiced: all at once they'd talk over each other)
-            val caller = crew.builders.random()
+            val caller = if (master == null) crew.builders.random() else null
             for (b in crew.builders) b.cheer(stage, b === caller)
             val first = crew.builders.first().p
             level.playSound(null, first.blockPosition(), HomesteadRegistry.CHEER.get(), SoundSource.NEUTRAL, 1.2f, 1f)
         } else if (stage == Stage.GROUNDWORK || stage == Stage.FOOTINGS) {
-            crew.builders.random().p.say("homestead_stage_${stage.key}", force = true)
+            if (master == null) crew.builders.random().p.say("homestead_stage_${stage.key}", force = true)
+        }
+    }
+
+    /**
+     * [p], a resident lent to [site] for the day (see townsfolk/Labour), joins its crew: the director they're to work
+     * under, or null if the site has no work for them now (no one near to see it, or out of working hours).
+     */
+    fun lend(level: ServerLevel, site: Worksite, p: Townsperson, wanted: Boolean): Director? {
+        if (!wanted || site.finished) return null
+        val crew = crews.getOrPut(site.key) { Crew(site.key) }
+        crew.builders.firstOrNull { it.p === p }?.let { return it }
+        val builder = site.builder(p, site.road(), true)
+        builder.since = level.gameTime
+        crew.builders.add(builder)
+        return builder
+    }
+
+    /** [p], lent to a works' crew, is let go (their stretch is over, they were hurt, a player stopped them): whatever they had of the site's is given back. */
+    fun released(p: Townsperson) {
+        for (crew in crews.values) {
+            val b = crew.builders.firstOrNull { it.p === p } ?: continue
+            b.handBack()
+            return
         }
     }
 
@@ -121,40 +161,25 @@ object BuilderCrew {
         for (b in crew.builders) b.cheer(null, b === caller)
     }
 
-    private fun spawn(level: ServerLevel, site: HomesteadSite, crew: Crew) {
-        val frame = site.homestead.frame
-        val road = road(level, site)
+    private fun spawn(level: ServerLevel, site: Worksite, crew: Crew) {
+        val road = site.road()
         val look = LOOKS[level.random.nextInt(LOOKS.size)]
-        val p = Townsfolk.create(level, road, TownRole.CITIZEN, look, frame.direction(Dir.S).toYRot(), EntitySpawnReason.EVENT) ?: return
+        val p = Townsfolk.create(level, road, TownRole.CITIZEN, look, site.out.opposite.toYRot(), EntitySpawnReason.EVENT) ?: return
         p.setPermanentlyInvulnerable(true)
         // Nothing can hurt them, so they don't run off the scaffolding from a passing monster (Townsperson.FleeGoal)
         p.goalSelector.removeAllGoals { it.javaClass.simpleName == "FleeGoal" }
         p.addTag(TAG)
         p.setDropChance(EquipmentSlot.MAINHAND, 0f)
         p.setDropChance(EquipmentSlot.OFFHAND, 0f)
-        val builder = Builder(p, site.homestead.id, road)
+        val builder = site.builder(p, road, false)
         p.director = builder
         if (!level.addFreshEntity(p)) return
         crew.builders.add(builder)
         // The first of the morning rings the crew's handbell coming up the road
         if (!crew.arrived) {
             crew.arrived = true
-            level.playSound(null, road, HomesteadRegistry.ARRIVE.get(), SoundSource.NEUTRAL, 1.4f, 1f)
-            p.say("homestead_arrive_${1 + level.random.nextInt(3)}", force = true)
+            site.arrive(p, road)
         }
-    }
-
-    /** Where the crew comes from: the road some way out from the gate, or the gate itself if that's no place to stand. */
-    private fun road(level: ServerLevel, site: HomesteadSite): BlockPos {
-        val frame = site.homestead.frame
-        for (out in intArrayOf(22, 14, 6)) {
-            val x = frame.worldX(0, -out)
-            val z = frame.worldZ(0, -out)
-            val y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z)
-            val pos = BlockPos(x, y, z)
-            if (level.getBlockState(pos.below()).fluidState.isEmpty && level.getBlockState(pos).isAir && level.getBlockState(pos.above()).isAir) return pos
-        }
-        return frame.world(0, site.homestead.land.height(0, 1), 1)
     }
 
     /** A builder from a chunk saved with them in it: gone at once (the crew is brought in afresh when they're wanted). */
@@ -163,9 +188,23 @@ object BuilderCrew {
         if (event.loadedFromDisk() && entity is Townsperson && TAG in entity.entityTags()) event.isCanceled = true
     }
 
-    /** One of the crew, at work: the director of their townsperson while they're on the job. */
-    class Builder(val p: Townsperson, private val id: Int, private val road: BlockPos) : Director {
-        private enum class S { ARRIVE, IDLE, FETCH, TAKE, GO, CLIMB, WORK, CHEER, LEAVE }
+    /**
+     * One of the crew, at work: the director of their townsperson while they're on the job. A stranger made for it
+     * goes home at the end; one [lent] (a resident) is handed back to their day ([handBack]). A trade's own builders
+     * (a works', see [Worksite.builder]) add to the work through the open hooks: something to do before a step is
+     * laid and after ([dress], [finish]), what laying it sounds like ([laid]), and a job of their own between steps
+     * ([chore]).
+     */
+    open class Builder(val p: Townsperson, protected val id: Int, private val road: BlockPos, val lent: Boolean = false) : Director {
+        private enum class S { ARRIVE, IDLE, FETCH, TAKE, GO, CLIMB, WORK, CHEER, LEAVE, CHORE }
+
+        /** When one lent was given to the crew, and whether they've been in its charge since (their first tick under it). */
+        internal var since = 0L
+        private var started = false
+
+        /** The drop chances of a lent one's hands before the crew had them (what they carry is the site's, not theirs to drop). */
+        private var dropMain = -1f
+        private var dropOff = -1f
 
         private var s = S.ARRIVE
         private var timer = 0
@@ -191,12 +230,25 @@ object BuilderCrew {
         var leaving = false
             private set
 
+        /** Ticks into the step's dressing or finish ([dress], [finish]), and the clip playing for it. */
+        private var extra: Activity? = null
+
         override fun tick(p: Townsperson) {
             val level = p.level() as? ServerLevel ?: return
+            if (!started) {
+                started = true
+                if (lent) {
+                    dropMain = p.dropChances.byEquipment(EquipmentSlot.MAINHAND)
+                    dropOff = p.dropChances.byEquipment(EquipmentSlot.OFFHAND)
+                    p.setDropChance(EquipmentSlot.MAINHAND, 0f)
+                    p.setDropChance(EquipmentSlot.OFFHAND, 0f)
+                }
+            }
             timer++
-            val site = HomesteadWorks.live(id)
+            val site = live(id)
             // The site gone (finished, removed): they finish any cheer first, and then go
             if (site == null && s != S.LEAVE && s != S.CHEER) leave()
+            if (handedBack) return
             when (s) {
                 S.ARRIVE -> arrive(level, site ?: return)
                 S.IDLE -> idle(level, site ?: return)
@@ -209,6 +261,7 @@ object BuilderCrew {
                     if (cheerAfter == S.LEAVE) leave() else into(cheerAfter)
                 }
                 S.LEAVE -> home(level)
+                S.CHORE -> if (site == null || !chore(level, site, timer)) into(S.IDLE)
             }
             // Whoever stands on scaffolding or a roof stays put there, held up
             p.isNoGravity = up || s == S.CLIMB
@@ -217,17 +270,10 @@ object BuilderCrew {
 
         override fun interact(p: Townsperson, player: ServerPlayer): Boolean {
             val level = p.level() as? ServerLevel ?: return false
-            val site = HomesteadWorks.live(id) ?: return false
+            val site = live(id) ?: return false
             p.lookAt(player)
             p.say("homestead_hello_${1 + level.random.nextInt(4)}", force = true)
-            val percent = if (site.total == 0) 100 else site.laid * 100 / site.total
-            player.sendOverlayMessage(
-                Component.translatable(
-                    "message.guildmark.homestead.builder_progress",
-                    Component.translatable("gui.guildmark.homestead.tier.${site.tier.key}"),
-                    Component.translatable("gui.guildmark.homestead.stage.${site.stage.key}"), percent,
-                ),
-            )
+            player.sendOverlayMessage(site.progress())
             return true
         }
 
@@ -239,8 +285,8 @@ object BuilderCrew {
 
         // ---- Coming and going ----
 
-        private fun arrive(level: ServerLevel, site: HomesteadSite) {
-            val gate = site.homestead.frame.centre(0.0, site.homestead.land.height(0, 2).toDouble(), 2.0)
+        private fun arrive(level: ServerLevel, site: Worksite) {
+            val gate = site.gate()
             hold(ItemStack.EMPTY)
             p.act(Activity.NONE)
             if (walk(level, gate, 2.5) || timer > 600) into(S.IDLE)
@@ -249,7 +295,7 @@ object BuilderCrew {
         fun leave() {
             if (s == S.LEAVE) return
             leaving = true
-            HomesteadWorks.live(id)?.release(p.id)
+            live(id)?.release(p.id)
             batch = IntArray(0)
             if (up) {
                 puff(p.level() as ServerLevel)
@@ -259,7 +305,47 @@ object BuilderCrew {
             }
             hold(ItemStack.EMPTY)
             p.act(Activity.NONE)
+            // A resident goes back to their own day from here; a stranger walks off down the road
+            if (lent) {
+                handBack()
+                return
+            }
             into(S.LEAVE)
+        }
+
+        /** Whether this one, lent, has been handed back to their day. */
+        private var handedBack = false
+
+        /** Whether this one, lent, isn't the crew's any more: gone, taken in charge by something else, or never handed over. */
+        internal fun gone(level: ServerLevel): Boolean = !p.isAlive || p.isRemoved || p.level() !== level ||
+            if (started) p.director !== this else level.gameTime - since > 100
+
+        /**
+         * A resident lent to the crew, handed back to their day: what they had in hand given back to the site, down off
+         * the scaffold, their hands empty, and theirs again from the next tick.
+         */
+        fun handBack() {
+            if (handedBack) return
+            handedBack = true
+            leaving = true
+            live(id)?.release(p.id)
+            released()
+            batch = IntArray(0)
+            val level = p.level() as? ServerLevel
+            if ((up || s == S.CLIMB) && level != null) {
+                puff(level)
+                p.teleportTo(p.x, groundUnder(level, p.blockPosition()).toDouble(), p.z)
+            }
+            up = false
+            p.isNoGravity = false
+            hold(ItemStack.EMPTY)
+            if (dropMain >= 0f) p.setDropChance(EquipmentSlot.MAINHAND, dropMain)
+            if (dropOff >= 0f) p.setDropChance(EquipmentSlot.OFFHAND, dropOff)
+            crews[id]?.builders?.remove(this)
+            if (p.director === this) {
+                p.director = null
+                if (p.activity != Activity.NONE && !p.activity.overlay) p.act(Activity.NONE)
+            }
         }
 
         private fun home(level: ServerLevel) {
@@ -268,11 +354,15 @@ object BuilderCrew {
             if (walk(level, there, 2.0) || timer > 500 || !seen) vanish()
         }
 
-        /** Gone, with a puff of dust. */
+        /** Gone, with a puff of dust (a resident lent to the crew is only handed back to their day). */
         fun vanish() {
+            if (lent) {
+                handBack()
+                return
+            }
             val level = p.level() as? ServerLevel
             if (level != null) {
-                HomesteadWorks.live(id)?.release(p.id)
+                live(id)?.release(p.id)
                 puff(level)
             }
             p.director = null
@@ -282,8 +372,9 @@ object BuilderCrew {
         /** Downs tools and cheers [stage] (the tier, if null); the one who [calls] it says so. */
         fun cheer(stage: Stage?, calls: Boolean) {
             if (s == S.LEAVE) return
-            cheerAfter = if (stage == null) S.LEAVE else if (s == S.WORK || s == S.GO || s == S.FETCH || s == S.TAKE) S.IDLE else s
-            if (s == S.WORK || s == S.GO) HomesteadWorks.live(id)?.release(p.id)
+            cheerAfter = if (stage == null) S.LEAVE else if (s == S.WORK || s == S.GO || s == S.FETCH || s == S.TAKE || s == S.CHORE) S.IDLE else s
+            if (s == S.WORK || s == S.GO) live(id)?.release(p.id)
+            if (s == S.CHORE) released()
             batch = IntArray(0)
             hold(ItemStack.EMPTY)
             into(S.CHEER)
@@ -297,7 +388,7 @@ object BuilderCrew {
         }
 
         /** Whether this one may speak up now: none of the crew has for [QUIET] ticks (and then it's their turn). */
-        private fun turn(): Boolean {
+        protected fun turn(): Boolean {
             val crew = crews[id] ?: return true
             val now = p.level().gameTime
             if (now - crew.spoke < QUIET) return false
@@ -307,18 +398,23 @@ object BuilderCrew {
 
         // ---- Between jobs ----
 
-        private fun idle(level: ServerLevel, site: HomesteadSite) {
+        private fun idle(level: ServerLevel, site: Worksite) {
             if (!site.workday()) {
                 leave()
                 return
             }
             if (timer % 10 == 1) {
+                // A trade's own job comes first when it has one (mortar to mix, a beam to carry)
+                if (chores(level, site)) {
+                    into(S.CHORE)
+                    return
+                }
                 val got = site.claim(p.id, site.workingAt(p.id), BATCH)
                 if (got.isNotEmpty()) {
                     batch = got
                     k = 0
                     val stuff = got.map { site.step(it).stuff }.firstOrNull { it != Stuff.FREE }
-                    val crate = Vec3.atCenterOf(site.homestead.crate)
+                    val crate = Vec3.atCenterOf(site.crate)
                     val far = crate.distanceTo(Vec3.atCenterOf(site.at(got[0]))) > 40
                     if (stuff != null && !far && (stuff != carrying || trips >= 3)) {
                         carrying = stuff
@@ -333,10 +429,10 @@ object BuilderCrew {
             }
             // Nothing to hand: waiting on the crate, or on the others to finish the stage
             val short = site.short
-            if (short != null && site.build.reach <= 0) {
-                val by = crateFront(site)
+            if (short != null && site.reach <= 0) {
+                val by = site.crateFront()
                 if (walk(level, by, 1.6)) {
-                    p.face(p.yawTo(Vec3.atCenterOf(site.homestead.crate)))
+                    p.face(p.yawTo(Vec3.atCenterOf(site.crate)))
                     if (timer % 300 == 40) {
                         if (turn()) p.say("homestead_need_${short.key}", force = true)
                         p.act(Activity.MOP_BROW)
@@ -351,34 +447,34 @@ object BuilderCrew {
             if (timer % 400 == 200 && turn()) p.say("homestead_wait_${1 + p.random.nextInt(3)}")
         }
 
-        private fun fetch(level: ServerLevel, site: HomesteadSite) {
+        private fun fetch(level: ServerLevel, site: Worksite) {
             if (batch.all(site::isDone)) {
                 into(S.IDLE)
                 return
             }
             hold(ItemStack.EMPTY)
             p.act(Activity.NONE)
-            if (walk(level, crateFront(site), 1.4) || timer > 400) {
+            if (walk(level, site.crateFront(), 1.4) || timer > 400) {
                 into(S.TAKE)
                 p.navigation.stop()
-                p.face(p.yawTo(Vec3.atCenterOf(site.homestead.crate)))
+                p.face(p.yawTo(Vec3.atCenterOf(site.crate)))
                 p.act(Activity.TAKE)
-                level.playSound(null, site.homestead.crate, SoundEvents.BARREL_OPEN, SoundSource.BLOCKS, 0.5f, 1f)
+                level.playSound(null, site.crate, SoundEvents.BARREL_OPEN, SoundSource.BLOCKS, 0.5f, 1f)
             }
         }
 
-        private fun take(level: ServerLevel, site: HomesteadSite) {
-            p.face(p.yawTo(Vec3.atCenterOf(site.homestead.crate)))
+        private fun take(level: ServerLevel, site: Worksite) {
+            p.face(p.yawTo(Vec3.atCenterOf(site.crate)))
             if (timer == TAKE_GRAB) hold(itemFor(site, batch.firstOrNull { !site.isDone(it) } ?: batch[0]))
             if (timer >= Activity.TAKE.ticks) {
-                level.playSound(null, site.homestead.crate, SoundEvents.BARREL_CLOSE, SoundSource.BLOCKS, 0.5f, 1f)
+                level.playSound(null, site.crate, SoundEvents.BARREL_CLOSE, SoundSource.BLOCKS, 0.5f, 1f)
                 startGo(level, site)
             }
         }
 
         // ---- Getting to the work ----
 
-        private fun startGo(level: ServerLevel, site: HomesteadSite) {
+        private fun startGo(level: ServerLevel, site: Worksite) {
             while (k < batch.size && site.isDone(batch[k])) k++
             if (k >= batch.size) {
                 done(level, site)
@@ -389,12 +485,12 @@ object BuilderCrew {
             spot = stand
             if (stand == null) {
                 // Nowhere to stand within reach: they do it from the nearest ground and make the best of it
-                spot = BlockPos(target.x, groundUnder(level, target), target.z).relative(site.homestead.frame.direction(Dir.N))
+                spot = BlockPos(target.x, groundUnder(level, target), target.z).relative(site.out)
             }
             into(S.GO)
         }
 
-        private fun go(level: ServerLevel, site: HomesteadSite) {
+        private fun go(level: ServerLevel, site: Worksite) {
             val stand = spot ?: return into(S.IDLE)
             val item = p.mainHandItem
             // Timber on the shoulder, anything else carried before them
@@ -403,7 +499,7 @@ object BuilderCrew {
                     item.`is`(ItemTags.PLANKS) || item.`is`(ItemTags.LOGS) || item.`is`(ItemTags.WOODEN_STAIRS) || item.`is`(ItemTags.WOODEN_SLABS) -> Activity.HAUL
                     item.item is BlockItem -> Activity.CARRY_BLOCK
                     else -> Activity.NONE
-                },
+                }.let { carrying(item) ?: it },
             )
             val goal = Vec3.atBottomCenterOf(stand)
             val ground = groundUnder(level, stand)
@@ -456,7 +552,7 @@ object BuilderCrew {
             phase = -1
         }
 
-        private fun work(level: ServerLevel, site: HomesteadSite) {
+        private fun work(level: ServerLevel, site: Worksite) {
             while (k < batch.size && site.isDone(batch[k])) k++
             if (k >= batch.size) {
                 done(level, site)
@@ -474,8 +570,8 @@ object BuilderCrew {
             p.lookAt(centre)
             val step = site.step(i)
             if (phase < 0) {
-                // A new step: what it takes
-                phase = if (sawn(site, i) && p.random.nextInt(3) == 0) 0 else 1
+                // A new step: what it takes (a stone dressed first, at a works)
+                phase = if (sawn(site, i) && p.random.nextInt(3) == 0) 0 else if (!sawn(site, i) && dress(site, i)?.also { extra = it } != null) 4 else 1
                 nails = 0
                 timer = 0
                 begin(site, i, target)
@@ -495,13 +591,23 @@ object BuilderCrew {
                     when (site.lay(i, fx = true)) {
                         Laid.DONE -> {
                             sound(level, step.kind)
+                            laid(level, site, i)
                             if (p.random.nextInt(40) == 0 && turn()) p.say("homestead_work_${1 + p.random.nextInt(6)}")
                             if (sawn(site, i)) {
                                 phase = 2
                                 timer = 0
                                 hold(ItemStack(HomesteadRegistry.HAMMER_ITEM.get()))
                                 p.act(Activity.NAIL)
-                            } else next()
+                            } else {
+                                // The course finished off (a works' stone trowelled), or on to the next
+                                val after = finish(site, i)
+                                if (after != null) {
+                                    extra = after
+                                    phase = 5
+                                    timer = 0
+                                    p.act(after)
+                                } else next()
+                            }
                         }
                         Laid.LATER -> {
                             // The day's pace: finishing touches while the clock catches up
@@ -540,18 +646,43 @@ object BuilderCrew {
                 }
                 3 -> {
                     if (timer % Activity.NAIL.ticks == NAIL_HIT) level.playSound(null, target, HomesteadRegistry.HAMMER.get(), SoundSource.BLOCKS, 0.5f, 1.1f)
-                    if (timer >= Activity.NAIL.ticks * 2 && site.build.work >= 1.0) begin(site, i, target)
+                    if (timer >= Activity.NAIL.ticks * 2 && site.work >= 1.0) begin(site, i, target)
+                }
+                // A trade's dressing before the step (a stone chiselled), and its finish after (the course trowelled)
+                4 -> {
+                    val clip = extra ?: Activity.NONE
+                    stroke(level, site, i, clip, beat(clip))
+                    if (timer >= extraTicks(clip)) {
+                        phase = 1
+                        timer = 0
+                        extra = null
+                        begin(site, i, target)
+                    }
+                }
+                5 -> {
+                    val clip = extra ?: Activity.NONE
+                    stroke(level, site, i, clip, beat(clip))
+                    if (timer >= extraTicks(clip)) {
+                        extra = null
+                        next()
+                    }
                 }
             }
         }
 
         /** Starts laying step [i]: the right thing in hand and the clip for it. */
-        private fun begin(site: HomesteadSite, i: Int, target: BlockPos) {
+        private fun begin(site: Worksite, i: Int, target: BlockPos) {
             val step = site.step(i)
             if (phase == 0) {
                 // The saw in the right hand, the length being cut held out in the left
                 hold(ItemStack(HomesteadRegistry.SAW_ITEM.get()), itemFor(site, i))
                 p.act(Activity.SAW)
+                return
+            }
+            if (phase == 4) {
+                // The trade's dressing: its tool in hand (a chisel and mallet), the block held to it
+                hold(tool(extra) ?: ItemStack(HomesteadRegistry.MALLET_ITEM.get()), itemFor(site, i))
+                extra?.let { p.act(it) }
                 return
             }
             phase = 1
@@ -572,7 +703,7 @@ object BuilderCrew {
             phase = -1
         }
 
-        private fun done(level: ServerLevel, site: HomesteadSite) {
+        private fun done(level: ServerLevel, site: Worksite) {
             batch = IntArray(0)
             hold(ItemStack.EMPTY)
             if (up) {
@@ -637,7 +768,7 @@ object BuilderCrew {
         }
 
         /** Whether step [i] is timber cut to fit (planks, beams, stairs and slabs of wood, frames): sawn and nailed. */
-        private fun sawn(site: HomesteadSite, i: Int): Boolean {
+        private fun sawn(site: Worksite, i: Int): Boolean {
             val step = site.step(i)
             if (step.kind != StepKind.BLOCK) return false
             return when (step.b.m) {
@@ -647,13 +778,51 @@ object BuilderCrew {
         }
 
         /** What they carry for step [i]: the block itself where it has an item, or the hammer. */
-        private fun itemFor(site: HomesteadSite, i: Int): ItemStack {
+        protected fun itemFor(site: Worksite, i: Int): ItemStack {
             val item = site.stateFor(i).block.asItem()
             return if (item == Items.AIR) ItemStack(HomesteadRegistry.HAMMER_ITEM.get()) else ItemStack(item)
         }
 
+        // ---- A trade's own work (a works' crew): nothing, at a homestead ----
+
+        /** The clip step [i] is dressed with before it's laid (a stone chiselled), or null to lay it as it comes. */
+        protected open fun dress(site: Worksite, i: Int): Activity? = null
+
+        /** The clip step [i] is finished with once laid (a stone's course trowelled), or null to go on to the next. */
+        protected open fun finish(site: Worksite, i: Int): Activity? = null
+
+        /** How long a dressing or finishing clip plays. */
+        protected open fun extraTicks(clip: Activity): Int = clip.ticks
+
+        /** The tool held for a dressing clip, if not the mallet. */
+        protected open fun tool(clip: Activity?): ItemStack? = null
+
+        /** Tick [beat] of a dressing or finishing [clip] at step [i]: its strokes' sounds. */
+        protected open fun stroke(level: ServerLevel, site: Worksite, i: Int, clip: Activity, beat: Int) {}
+
+        /** Step [i] has just gone in, by their hand. */
+        protected open fun laid(level: ServerLevel, site: Worksite, i: Int) {}
+
+        /** The clip they carry [item] over in, if not as a homestead's builder would (a beam on the shoulder, two to it). */
+        protected open fun carrying(item: ItemStack): Activity? = null
+
+        /** Whether they've a job of their own to start between steps (mortar to mix, a beam to carry); if so [chore] runs it. */
+        protected open fun chores(level: ServerLevel, site: Worksite): Boolean = false
+
+        /** Tick [t] of that job; false once it's over (and they look for work again). */
+        protected open fun chore(level: ServerLevel, site: Worksite, t: Int): Boolean = false
+
+        /** Their job between steps ended early (a cheer, sent home): anything it held let go. */
+        protected open fun released() {}
+
+        /** Walks toward [goal] (see [walk]), for a trade's own jobs. */
+        protected fun walkTo(level: ServerLevel, goal: Vec3, near: Double): Boolean = walk(level, goal, near)
+
+        /** Whether they're up on the scaffold or a roof. */
+        protected val aloft: Boolean get() = up
+
         /** [stack] in the right hand and [off] in the left (nothing, but for the length being sawn). */
-        private fun hold(stack: ItemStack, off: ItemStack = ItemStack.EMPTY) {
+        protected fun hold(stack: ItemStack, off: ItemStack = ItemStack.EMPTY) {
             val was = p.offhandItem
             if (!(was.isEmpty && off.isEmpty) && !ItemStack.isSameItem(was, off)) p.setItemSlot(EquipmentSlot.OFFHAND, off)
             val now = p.mainHandItem
@@ -686,12 +855,6 @@ object BuilderCrew {
                 p.navigation.moveTo(goal.x, goal.y, goal.z, SPEED)
             }
             return false
-        }
-
-        private fun crateFront(site: HomesteadSite): Vec3 {
-            val frame = site.homestead.frame
-            val y = site.homestead.land.height(PlotShape.CRATE_X, 0).toDouble()
-            return frame.centre(PlotShape.CRATE_X.toDouble(), y, -1.0)
         }
 
         /**
@@ -733,7 +896,7 @@ object BuilderCrew {
         }
 
         /** The height one would stand at on the ground under [pos]. */
-        private fun groundUnder(level: ServerLevel, pos: BlockPos): Int {
+        protected fun groundUnder(level: ServerLevel, pos: BlockPos): Int {
             val cursor = pos.mutable()
             var n = 0
             while (n++ < 40 && cursor.y > level.minY) {
@@ -745,7 +908,7 @@ object BuilderCrew {
             return pos.y
         }
 
-        private fun puff(level: ServerLevel) {
+        protected fun puff(level: ServerLevel) {
             level.sendParticles(ParticleTypes.POOF, p.x, p.y + 0.8, p.z, 10, 0.3, 0.5, 0.3, 0.02)
         }
 

@@ -139,7 +139,13 @@ class LevelCheck(val lot: Rect, val y: Int, val most: Int, val what: String)
  * capital's manor (Landmarks); this lays out the ground between them. [seed] turns the farmstead round (the farmhouse
  * on the left or the right) and is every building's seed; [owner] colours the stakes' banners.
  */
-class HomesteadLayout(private val seed: Long, private val land: PlotLand, private val owner: Dye = Dye.RED) {
+class HomesteadLayout(private val seed: Long, private val land: PlotLand, private val owner: Dye = Dye.RED) : Drawing {
+    /** The plot as far as any tier reaches (see [Drawing.bounds]). */
+    override val bounds: Rect get() = PlotShape.RESERVED
+
+    /** Where the shipping crates stand, up to [tier] (see [places]). */
+    override fun shipping(tier: Int): List<Pair<Int, Int>> = places(tier).shipping
+
     private val mirror = (seed ushr 11) and 1L == 1L
 
     private fun mx(x: Int) = if (mirror) -x else x
@@ -218,14 +224,14 @@ class HomesteadLayout(private val seed: Long, private val land: PlotLand, privat
     private fun height(x: Int, z: Int): Int = terrain[PlotLand.index(x, z)]
 
     /** The standing height of the column [x], [z] as the last tier drawn ([draw]) left it. */
-    fun groundHeight(x: Int, z: Int): Int = height(x, z)
+    override fun groundHeight(x: Int, z: Int): Int = height(x, z)
     private fun owned(x: Int, z: Int): Boolean = owned[PlotLand.index(x, z)]
 
     /**
      * Draws what tier [tier] adds (1 the cottage, 2 the farmstead, 3 the manor; 0 only stakes the plot). The tiers
      * before it are walked through first, drawing nothing, so that this one knows the ground they left.
      */
-    fun draw(tier: Int, c: PlanCanvas) {
+    override fun draw(tier: Int, c: PlanCanvas) {
         land.heights.copyInto(terrain)
         owned.fill(false)
         // The post and the crate at the front stand on the land as it was

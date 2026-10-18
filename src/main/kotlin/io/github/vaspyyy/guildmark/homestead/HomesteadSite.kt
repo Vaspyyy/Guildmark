@@ -81,11 +81,50 @@ enum class Laid {
  * knocked out and dropped as an item, unless it holds things, when the step waits ([Laid.BLOCKED]) and the ledger says
  * where.
  */
-class HomesteadSite(val level: ServerLevel, val homestead: Homestead, val plan: TierPlan) {
+class HomesteadSite(override val level: ServerLevel, val homestead: Homestead, override val plan: TierPlan) : Worksite {
     val build: Build get() = homestead.build
     val tier: HomesteadTiers.Tier = HomesteadTiers.of(plan.tier) ?: HomesteadTiers.TIERS.last()
     private val frame = homestead.frame
     private val style: CityStyle = homestead.cityStyle
+
+    // ---- As its crew sees it (Worksite) ----
+
+    override val key: Int get() = homestead.id
+    override val crew: Int get() = tier.crew
+    override val work: Double get() = build.work
+    override val reach: Int get() = build.reach
+    override val crate: BlockPos get() = homestead.crate
+    override val out: Direction get() = frame.direction(Dir.N)
+
+    /** In front of the supply crate, on the road side. */
+    override fun crateFront(): Vec3 {
+        val y = homestead.land.height(io.github.vaspyyy.guildmark.homestead.plan.PlotShape.CRATE_X, 0).toDouble()
+        return frame.centre(io.github.vaspyyy.guildmark.homestead.plan.PlotShape.CRATE_X.toDouble(), y, -1.0)
+    }
+
+    /** Just inside the gate. */
+    override fun gate(): Vec3 = frame.centre(0.0, homestead.land.height(0, 2).toDouble(), 2.0)
+
+    /** Where the crew comes from: the road some way out from the gate, or the gate itself if that's no place to stand. */
+    override fun road(): BlockPos {
+        for (out in intArrayOf(22, 14, 6)) {
+            val x = frame.worldX(0, -out)
+            val z = frame.worldZ(0, -out)
+            val y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z)
+            val pos = BlockPos(x, y, z)
+            if (level.getBlockState(pos.below()).fluidState.isEmpty && level.getBlockState(pos).isAir && level.getBlockState(pos.above()).isAir) return pos
+        }
+        return frame.world(0, homestead.land.height(0, 1), 1)
+    }
+
+    override fun progress(): net.minecraft.network.chat.Component {
+        val percent = if (total == 0) 100 else laid * 100 / total
+        return net.minecraft.network.chat.Component.translatable(
+            "message.guildmark.homestead.builder_progress",
+            net.minecraft.network.chat.Component.translatable("gui.guildmark.homestead.tier.${tier.key}"),
+            net.minecraft.network.chat.Component.translatable("gui.guildmark.homestead.stage.${stage.key}"), percent,
+        )
+    }
 
     /** Units of each paid material one step takes: the tier's bill spread over its steps of that material. */
     private val per = DoubleArray(Stuff.PAID.size) { s -> if (plan.needs[s] == 0) 0.0 else tier.bill[s].toDouble() / plan.needs[s] }
@@ -108,7 +147,7 @@ class HomesteadSite(val level: ServerLevel, val homestead: Homestead, val plan: 
     private var blockedStep = -1
 
     /** The material the crate ran out of, if it has. */
-    var short: Stuff? = null
+    override var short: Stuff? = null
         private set
 
     /** The stage the build is in, as last seen (to tell when one is finished). */
@@ -147,23 +186,23 @@ class HomesteadSite(val level: ServerLevel, val homestead: Homestead, val plan: 
 
     // ---- Where the build stands ----
 
-    val total: Int get() = plan.steps.size
-    val finished: Boolean get() = build.step >= plan.steps.size
+    override val total: Int get() = plan.steps.size
+    override val finished: Boolean get() = build.step >= plan.steps.size
 
     /** Steps laid so far. */
-    val laid: Int get() = build.step + build.done.cardinality()
+    override val laid: Int get() = build.step + build.done.cardinality()
 
-    fun isDone(i: Int): Boolean = i < build.step || build.done.get(i)
+    override fun isDone(i: Int): Boolean = i < build.step || build.done.get(i)
 
     /** The stage being worked on: the first one with a step still to lay. */
-    val stage: Stage get() = plan.stageOf(build.step)
+    override val stage: Stage get() = plan.stageOf(build.step)
 
     private val stageEnd: Int get() = plan.stageStarts[stage.ordinal + 1]
 
-    fun step(i: Int): Step = plan.steps[i]
+    override fun step(i: Int): Step = plan.steps[i]
 
     /** Where step [i] is in the world. */
-    fun at(i: Int): BlockPos {
+    override fun at(i: Int): BlockPos {
         val s = plan.steps[i]
         return frame.world(s.x, s.y, s.z)
     }
@@ -210,7 +249,7 @@ class HomesteadSite(val level: ServerLevel, val homestead: Homestead, val plan: 
     fun rate(): Double = total / (tier.days * HomesteadTiers.WORKDAY / speed()) * if (rushed) 10.0 else 1.0
 
     /** Whether it's working hours: the crew comes at sunrise and goes home at sunset (always, if the sun stands still). */
-    fun workday(): Boolean =
+    override fun workday(): Boolean =
         !level.gameRules.get(GameRules.ADVANCE_TIME) || Math.floorMod(level.overworldClockTime, 24000L) < HomesteadTiers.WORKDAY - 300
 
     // ---- Materials ----
@@ -274,7 +313,7 @@ class HomesteadSite(val level: ServerLevel, val homestead: Homestead, val plan: 
     // ---- Handing out steps ----
 
     /** Whether step [i] can be taken in hand now: in the stage being worked, not done, not someone else's. */
-    fun open(i: Int): Boolean {
+    override fun open(i: Int): Boolean {
         if (i < build.step || i >= stageEnd || isDone(i) || claims.containsKey(i)) return false
         if (i == blockedStep && blocked != null) return false
         val since = waiting[i]
@@ -285,7 +324,7 @@ class HomesteadSite(val level: ServerLevel, val homestead: Homestead, val plan: 
      * Up to [most] steps for builder [who] to lay together: the first open one (away from where the others are working,
      * if there's a choice) and the open ones near it, in order.
      */
-    fun claim(who: Int, others: List<BlockPos>, most: Int = 6): IntArray {
+    override fun claim(who: Int, others: List<BlockPos>, most: Int): IntArray {
         val end = stageEnd
         var first = -1
         var fallback = -1
@@ -323,16 +362,16 @@ class HomesteadSite(val level: ServerLevel, val homestead: Homestead, val plan: 
     }
 
     /** Lets go of whatever [who] had in hand. */
-    fun release(who: Int) {
+    override fun release(who: Int) {
         claims.entries.removeIf { it.value == who }
     }
 
-    fun release(who: Int, i: Int) {
+    override fun release(who: Int, i: Int) {
         if (claims[i] == who) claims.remove(i)
     }
 
     /** Where the others are working (the first step each has in hand). */
-    fun workingAt(except: Int): List<BlockPos> {
+    override fun workingAt(except: Int): List<BlockPos> {
         val seen = HashMap<Int, Int>()
         for ((i, who) in claims) if (who != except) seen.merge(who, i, ::minOf)
         return seen.values.map(::at)
@@ -344,7 +383,7 @@ class HomesteadSite(val level: ServerLevel, val homestead: Homestead, val plan: 
      * Lays step [i] if the clock and the crate allow: [fx] shows it going in (dust and its sound). [free] lays it
      * whatever the clock and the crate say (the test commands).
      */
-    fun lay(i: Int, fx: Boolean, free: Boolean = false): Laid {
+    override fun lay(i: Int, fx: Boolean, free: Boolean): Laid {
         if (isDone(i)) return Laid.DONE
         if (!free && build.work < 1.0) return Laid.LATER
         val step = plan.steps[i]
@@ -666,7 +705,7 @@ class HomesteadSite(val level: ServerLevel, val homestead: Homestead, val plan: 
     // ---- Small helpers ----
 
     /** The block step [i] puts in (what a builder carries for it). */
-    fun stateFor(i: Int): BlockState {
+    override fun stateFor(i: Int): BlockState {
         val step = plan.steps[i]
         val pos = at(i)
         return when (step.kind) {

@@ -17,6 +17,13 @@ import io.github.vaspyyy.guildmark.city.plan.Spawn
 interface PlanCanvas : Canvas {
     /** Everything drawn from now on, until the next call, belongs to a [kind] of thing on [lot] standing at [y]. */
     fun piece(kind: PieceKind, lot: Rect, y: Int)
+
+    /**
+     * Every block drawn from now on, until the next call, goes up in [stage], whatever [Staging] would make of it (null:
+     * as Staging has it). A town works' drawing says this of what its stages show (economy/works/build/WorksPlans); a
+     * homestead's never does.
+     */
+    fun stage(stage: Stage?) {}
 }
 
 /** A place in the plot's own frame packed into a number (x and z within +-2^20, y within +-2^19). */
@@ -34,8 +41,8 @@ object Packed {
     private const val MASK = (1L shl 21) - 1
 }
 
-/** A block the plan sets, and the piece that set it last. */
-class Placed(val b: B, val piece: Int)
+/** A block the plan sets, the piece that set it last, and the stage the drawing put it in (null: as Staging has it). */
+class Placed(val b: B, val piece: Int, val stage: Stage? = null)
 
 /** A column of ground made to stand at [y], with [surface] under it and [fill] below that ([Canvas.ground]). */
 class GroundOp(val y: Int, val surface: B, val fill: B, val piece: Int)
@@ -66,6 +73,7 @@ class Recording(override val clip: Rect) : PlanCanvas {
     private val clearings = LinkedHashMap<Long, ClearOp>()
     private val spawns = ArrayList<SpawnOp>()
     private val pieces = ArrayList<PieceInfo>()
+    private var stage: Stage? = null
 
     private fun current(): Int {
         if (pieces.isEmpty()) pieces.add(PieceInfo(PieceKind.YARD, clip, 0))
@@ -76,9 +84,13 @@ class Recording(override val clip: Rect) : PlanCanvas {
         pieces.add(PieceInfo(kind, lot, y))
     }
 
+    override fun stage(stage: Stage?) {
+        this.stage = stage
+    }
+
     override fun set(x: Int, y: Int, z: Int, b: B) {
         if (!clip.contains(x, z)) return
-        blocks[Packed.of(x, y, z)] = Placed(b, current())
+        blocks[Packed.of(x, y, z)] = Placed(b, current(), stage)
     }
 
     override fun ground(x: Int, z: Int, y: Int, surface: B, fill: B) {
