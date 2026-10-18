@@ -405,7 +405,7 @@ object BuilderCrew {
             climbLength = (distance / CLIMB_SPEED).toInt().coerceIn(4, 120)
             afterClimb = then
             into(S.CLIMB)
-            p.act(if (abs(goal.y - climbFrom.y) > 1.2) Activity.CLIMB else Activity.NONE)
+            p.act(if (abs(goal.y - climbFrom.y) > 1.2) Activity.CLAMBER else Activity.NONE)
         }
 
         private fun climb() {
@@ -462,14 +462,14 @@ object BuilderCrew {
             when (phase) {
                 0 -> {
                     // Sawing the plank to length first
-                    if (timer % Activity.SAW.ticks == SAW_STROKE) level.playSound(null, p.blockPosition(), HomesteadRegistry.SAW.get(), SoundSource.NEUTRAL, 0.8f, 0.9f + p.random.nextFloat() * 0.2f)
+                    if (beat(Activity.SAW) == SAW_STROKE) level.playSound(null, p.blockPosition(), HomesteadRegistry.SAW.get(), SoundSource.NEUTRAL, 0.8f, 0.9f + p.random.nextFloat() * 0.2f)
                     if (timer >= Activity.SAW.ticks * 2) {
                         phase = 1
                         timer = 0
                         begin(site, i, target)
                     }
                 }
-                1 -> if (timer == contact(clip)) {
+                1 -> if (beat(clip) == contact(clip)) {
                     when (site.lay(i, fx = true)) {
                         Laid.DONE -> {
                             sound(level, step.kind)
@@ -527,7 +527,8 @@ object BuilderCrew {
         private fun begin(site: HomesteadSite, i: Int, target: BlockPos) {
             val step = site.step(i)
             if (phase == 0) {
-                hold(ItemStack(HomesteadRegistry.SAW_ITEM.get()))
+                // The saw in the right hand, the length being cut held out in the left
+                hold(ItemStack(HomesteadRegistry.SAW_ITEM.get()), itemFor(site, i))
                 p.act(Activity.SAW)
                 return
             }
@@ -590,6 +591,10 @@ object BuilderCrew {
             }
         }
 
+        /** Where [clip] is in its round. A loop already playing isn't restarted for the next step (Townsperson.act),
+         *  so a dig or a knock comes round on the clip's own count, not the step's. */
+        private fun beat(clip: Activity): Int = if (clip.loop) p.actTicks % clip.ticks else timer
+
         /** The tick of [clip] the block goes in. */
         private fun contact(clip: Activity): Int = when (clip) {
             Activity.DIG -> DIG_BITE
@@ -625,7 +630,10 @@ object BuilderCrew {
             return if (item == Items.AIR) ItemStack(HomesteadRegistry.HAMMER_ITEM.get()) else ItemStack(item)
         }
 
-        private fun hold(stack: ItemStack) {
+        /** [stack] in the right hand and [off] in the left (nothing, but for the length being sawn). */
+        private fun hold(stack: ItemStack, off: ItemStack = ItemStack.EMPTY) {
+            val was = p.offhandItem
+            if (!(was.isEmpty && off.isEmpty) && !ItemStack.isSameItem(was, off)) p.setItemSlot(EquipmentSlot.OFFHAND, off)
             val now = p.mainHandItem
             if (ItemStack.isSameItem(now, stack) || now.isEmpty && stack.isEmpty) return
             p.setItemSlot(EquipmentSlot.MAINHAND, stack)

@@ -163,7 +163,7 @@ enum class Activity(val clip: String, val ticks: Int, val loop: Boolean, val ove
     SAW("saw", 20, true),
     DIG("dig", 24, true),
     STAKE("stake", 20, true),
-    CLIMB("climb", 16, true),
+    CLAMBER("clamber", 16, true),
     PLANS("plans", 80, true),
     MOP_BROW("mop_brow", 40, false),
     HURRAH("hurrah", 40, false),
