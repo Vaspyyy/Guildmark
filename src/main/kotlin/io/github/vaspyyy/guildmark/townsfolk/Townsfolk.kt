@@ -67,7 +67,10 @@ object Townsfolk {
         NeoForge.EVENT_BUS.addListener(RegisterCommandsEvent::class.java) { TownsfolkCommand.register(it.dispatcher) }
         Furnish.register()
         CapitalCommand.init()
-        NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> CityPlaces.forget() }
+        NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ ->
+            CityPlaces.forget()
+            Hands.forget()
+        }
     }
 
     /** A townsperson of [role] standing at [at], not yet added to the world. */

@@ -9,7 +9,6 @@ import net.minecraft.sounds.SoundSource
 import net.minecraft.tags.BlockTags
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.npc.villager.Villager
-import net.minecraft.world.item.DyeColor
 import net.minecraft.world.item.Item
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
@@ -41,7 +40,7 @@ object Acts {
         Doing.BREAKFAST, Doing.SUPPER -> listOf(Part { goHome(p, life) }, Part { meal(p, life, life.home, 500 + r(p, 500)) })
         Doing.LUNCH -> listOf(Part { lunch(p, life) })
         Doing.WORK -> listOf(Part { setUp(p, life) })
-        Doing.WATCH, Doing.PLAY -> listOf()
+        Doing.WATCH, Doing.PLAY, Doing.CART -> listOf()
         Doing.MARKET -> listOf(Part { shop(p, life) }, Part(laden = true) { putAway(p, life) })
         Doing.WATER -> listOf(Part { drawWater(p, life) }, Part(laden = true) { putAway(p, life) })
         Doing.ERRAND -> listOf(Part { errand(p, life) })
@@ -56,7 +55,8 @@ object Acts {
 
     /** What fills the rest of a stretch once its parts are done. */
     fun filler(p: Townsperson, life: Life, doing: Doing): Task = when (doing) {
-        Doing.WORK -> Jobs.work(p)?.let { onFloor(p, life, it) } ?: chores(p, life)
+        Doing.WORK -> Trades.work(p, life) ?: Jobs.work(p)?.let { onFloor(p, life, it) } ?: chores(p, life)
+        Doing.CART -> Trades.haul(p, life) ?: Trades.wait(p, life)
         Doing.WATCH -> Jobs.guard(p)
         Doing.PLAY -> Leisure.child(p)
         Doing.TAVERN -> tavern(p, life) ?: atHome(p, life)
@@ -78,7 +78,7 @@ object Acts {
      * [task], with the way there by ladder first when [target] is on another floor than they are ([Work], [Sit]
      * and [Sleep] walk the last of the way themselves).
      */
-    private fun via(p: Townsperson, life: Life, target: BlockPos, task: Task): Task {
+    fun via(p: Townsperson, life: Life, target: BlockPos, task: Task): Task {
         val here = p.blockPosition()
         val from = life.places.lodgingAt(here)?.takeIf { it.contains(here) }
         val into = life.places.lodgingAt(target)?.takeIf { it.contains(target) }
@@ -95,7 +95,8 @@ object Acts {
         return Ways.to(p, life.places, homeSpot(p, life), Jobs.WALK, near = 1.5, overlay = overlay)
     }
 
-    private fun gesture(p: Townsperson, what: Activity): Task = Idle(p, what.ticks, what, chatty = false)
+    /** A move made on the spot: a yawn, a shrug. */
+    fun gesture(p: Townsperson, what: Activity): Task = Idle(p, what.ticks, what, chatty = false)
 
     /** Something done to the world (or to what's in their hands) at once, between two tasks. */
     private class Now(p: Townsperson, private val what: () -> Unit) : Task(p) {
@@ -104,7 +105,8 @@ object Acts {
         override fun run(): Boolean = false
     }
 
-    private fun hold(p: Townsperson, item: ItemStack): Task = Now(p) { p.carried = item }
+    /** [item] in their hands from now on (empty to put down what they held). */
+    fun hold(p: Townsperson, item: ItemStack): Task = Now(p) { p.carried = item }
 
     // --- Seats ---
 
@@ -248,29 +250,15 @@ object Acts {
 
     // --- The market, the well, errands ---
 
-    /** What a stall of [trade] sells, as it might go home in a basket. */
-    private fun wares(trade: M, p: Townsperson): ItemStack {
-        val choice = when (trade) {
-            M.COMPOSTER -> listOf(Items.CARROT, Items.POTATO, Items.BEETROOT, Items.WHEAT)
-            M.BARREL -> listOf(Items.COD, Items.SALMON, Items.APPLE)
-            M.SMOKER -> listOf(Items.COOKED_CHICKEN, Items.COOKED_PORKCHOP, Items.COOKED_MUTTON)
-            M.LOOM -> listOf(Items.WOOL.pick(DyeColor.WHITE), Items.STRING, Items.LEATHER)
-            M.FLETCHING_TABLE -> listOf(Items.ARROW, Items.FEATHER, Items.STICK)
-            M.CAULDRON -> listOf(Items.CANDLE, Items.HONEY_BOTTLE, Items.GLASS_BOTTLE)
-            else -> listOf(Items.BREAD)
-        }
-        return ItemStack(choice[r(p, choice.size)])
-    }
-
     /** Whoever keeps [stall] just now, townsperson or villager. */
-    private fun keeper(level: ServerLevel, stall: CityPlaces.Stall): Entity? {
+    fun keeper(level: ServerLevel, stall: CityPlaces.Stall): Entity? {
         val box = AABB(stall.keeper.pos).inflate(1.2, 1.0, 1.2)
         return level.getEntitiesOfClass(Townsperson::class.java, box) { it.isAlive && !it.isSleeping }.firstOrNull()
             ?: level.getEntitiesOfClass(Villager::class.java, box) { it.isAlive && !it.isSleeping }.firstOrNull()
     }
 
-    /** The keeper's side of a sale: a look up, the goods handed over, a word. */
-    private fun serve(keeper: Entity?, customer: Townsperson, what: Activity) {
+    /** The keeper's side of a sale (or of a delivery, or of having none to sell): a look up, the goods handed over or taken, a word. */
+    fun serve(keeper: Entity?, customer: Townsperson, what: Activity) {
         when (keeper) {
             is Townsperson -> {
                 keeper.lookAt(customer)
@@ -280,27 +268,51 @@ object Acts {
             is Villager -> {
                 keeper.lookControl.setLookAt(customer)
                 if (what == Activity.HAND_OVER) keeper.playSound(SoundEvents.VILLAGER_YES, 0.6f, 1f)
+                if (what == Activity.SHRUG) keeper.playSound(SoundEvents.VILLAGER_NO, 0.6f, 1f)
             }
         }
     }
 
-    /** To the market: a stall's wares looked over, pointed at, paid for and taken. */
+    /**
+     * To the market: a stall's wares looked over, pointed at, paid for and taken; now and then a loaf from the
+     * bakery instead. Mostly it's a stall with something left to sell (the market's own stock: [Trades.wares]);
+     * one that's sold out gets a look over its bare counter and a shrug, and they try another.
+     */
     fun shop(p: Townsperson, life: Life): Task? {
         val level = level(p)
         if (level.isRaining && r(p, 3) != 0) return null
-        val stalls = life.places.stalls.filter { level.isLoaded(it.customer.pos) && Claims.free(level, it.customer.pos, p) }
+        if (r(p, 4) == 0) Trades.loaf(p, life)?.let { return it }
+        return stall(p, life, null)
+    }
+
+    /** A stall's wares bought at one of the stalls but [not]; or, at one sold out, a shrug and on to the next (only the once). */
+    private fun stall(p: Townsperson, life: Life, not: CityPlaces.Stall?): Task? {
+        val level = level(p)
+        val entry = Trades.market(p, life)
+        val stalls = life.places.stalls.filter { it !== not && level.isLoaded(it.customer.pos) && Claims.free(level, it.customer.pos, p) }
         if (stalls.isEmpty()) return null
-        val stall = stalls[r(p, stalls.size)]
-        val goods = wares(stall.trade, p)
-        val middle = stall.counter.getOrNull(stall.counter.size / 2) ?: stall.keeper.pos
+        val stocked = stalls.filter { Trades.wares(entry, it.trade).isNotEmpty() }
+        // Mostly one with something left; now and then they find out the hard way, but not twice running
+        val pool = if (stocked.isNotEmpty() && (not != null || r(p, 5) != 0)) stocked else stalls
+        val pick = pool[r(p, pool.size)]
+        val wares = Trades.wares(entry, pick.trade)
+        val middle = pick.counter.getOrNull(pick.counter.size / 2) ?: pick.keeper.pos
+        if (wares.isEmpty()) {
+            if (not != null) return null
+            val looking = Work(p, pick.customer, Jobs.top(middle, 1.0), listOf(Step(Activity.BROWSE, 60 + r(p, 40)), Step(Activity.SHRUG), Step(Activity.NONE, 10)), onTick = { step, t ->
+                if (step.activity == Activity.SHRUG && t == 0) serve(keeper(level, pick), p, Activity.SHRUG)
+            })
+            return via(p, life, pick.customer.pos, looking).andThen(Later(p) { stall(p, life, pick) })
+        }
+        val goods = ItemStack(wares[r(p, wares.size)])
         val steps = listOf(
             Step(Activity.BROWSE, 60 * (2 + r(p, 2))), Step(Activity.POINT), Step(Activity.PAY), Step(Activity.RECEIVE), Step(Activity.NOD),
         )
         var keeper: Entity? = null
-        val buying = Work(p, stall.customer, Jobs.top(middle, 1.0), steps, onTick = { step, t ->
+        val buying = Work(p, pick.customer, Jobs.top(middle, 1.0), steps, onTick = { step, t ->
             if (t == 0) when (step.activity) {
                 Activity.POINT -> {
-                    keeper = keeper(level, stall)
+                    keeper = keeper(level, pick)
                     serve(keeper, p, Activity.NOD)
                 }
                 Activity.PAY -> serve(keeper, p, Activity.HAND_OVER)
@@ -308,7 +320,7 @@ object Acts {
             }
             if (step.activity == Activity.RECEIVE && t == 12) p.carried = goods
         })
-        return via(p, life, stall.customer.pos, buying)
+        return via(p, life, pick.customer.pos, buying)
     }
 
     /** Where to stand at the well at [well]: by its curb, facing the water. */

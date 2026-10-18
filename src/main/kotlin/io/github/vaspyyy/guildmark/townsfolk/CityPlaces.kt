@@ -88,6 +88,11 @@ class CityPlaces(val capital: CapitalPiece, val census: Census, val housing: Hou
         Stall(i, Spot(world(s.keeper), dir(s.facing)), Spot(world(s.customer), dir(s.facing.opposite)), s.counter.map(::world), s.goods.map(::world), s.trade)
     }
 
+    /** Where the merchants who keep no market stall stand to serve, facing their customers: at the quay's stalls and the like. */
+    val counters: List<Spot> = census.residents.filter { it.folk == Folk.MERCHANT && it.post != null }
+        .map { Spot(world(it.post!!), dir(it.facing ?: io.github.vaspyyy.guildmark.city.plan.Dir.N)) }
+        .filter { s -> stalls.none { it.keeper.pos == s.pos } }
+
     val wells: List<BlockPos> = census.wells.map(::world)
     val lamps: List<BlockPos> = census.lamps.map(::world)
     val benches: List<Spot> = census.benches.map { Spot(world(it.at), dir(it.facing)) }

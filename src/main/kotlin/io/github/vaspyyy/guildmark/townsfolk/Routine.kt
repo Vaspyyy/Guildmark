@@ -233,6 +233,7 @@ class Routine(private val p: Townsperson) {
         task = null
         windDown = 0
         p.carried = ItemStack.EMPTY
+        p.opened = null
     }
 
     /**

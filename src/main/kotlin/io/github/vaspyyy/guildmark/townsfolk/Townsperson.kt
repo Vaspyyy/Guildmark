@@ -19,6 +19,7 @@ import net.minecraft.world.DifficultyInstance
 import net.minecraft.world.InteractionHand
 import net.minecraft.world.InteractionResult
 import net.minecraft.world.damagesource.DamageSource
+import net.minecraft.world.entity.ContainerUser
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.EntityDimensions
 import net.minecraft.world.entity.EntitySpawnReason
@@ -45,6 +46,7 @@ import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.Level
 import net.minecraft.world.level.ServerLevelAccessor
 import net.minecraft.world.level.block.StairBlock
+import net.minecraft.world.level.block.entity.ContainerOpenersCounter
 import net.minecraft.world.level.levelgen.structure.BoundingBox
 import net.minecraft.world.level.storage.ValueInput
 import net.minecraft.world.level.storage.ValueOutput
@@ -62,7 +64,7 @@ import kotlin.math.atan2
  * keep the streets busy; they slip away again out of sight, and are never kept when their chunk is saved.
  * They're an [Npc], so the city ambience counts them into its crowd chatter.
  */
-class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderMob(type, level), Npc {
+class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderMob(type, level), Npc, ContainerUser {
     var role: TownRole
         get() = TownRole.byId(entityData.get(ROLE).toInt())
         private set(value) = entityData.set(ROLE, value.ordinal.toByte())
@@ -166,6 +168,9 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
     /** Their life in a capital, with its days (see [Days.life]); not saved, it's looked up again. */
     var life: Life? = null
     var lifeLooked = 0
+
+    /** The chest or barrel they have open just now, taking something out or putting it away (see [Trades]); its lid stays up while this is it. */
+    var opened: BlockPos? = null
 
     /** A guard's beat, if set; otherwise they walk the streets round their post. */
     var patrol: List<BlockPos> = listOf()
@@ -596,6 +601,10 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
         if (resident >= 0 && level is ServerLevel) Residents.died(level, this)
         super.die(source)
     }
+
+    override fun hasContainerOpen(counter: ContainerOpenersCounter, pos: BlockPos): Boolean = opened == pos
+
+    override fun getContainerInteractionRange(): Double = 4.0
 
     companion object {
         private val ROLE: EntityDataAccessor<Byte> = SynchedEntityData.defineId(Townsperson::class.java, EntityDataSerializers.BYTE)

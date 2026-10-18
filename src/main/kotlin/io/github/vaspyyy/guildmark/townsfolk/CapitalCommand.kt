@@ -8,6 +8,9 @@ import io.github.vaspyyy.guildmark.block.VillageBoards
 import io.github.vaspyyy.guildmark.city.CapitalPiece
 import io.github.vaspyyy.guildmark.city.Capitals
 import io.github.vaspyyy.guildmark.city.plan.Census
+import io.github.vaspyyy.guildmark.economy.Maker
+import io.github.vaspyyy.guildmark.economy.Markets
+import io.github.vaspyyy.guildmark.economy.Route
 import io.github.vaspyyy.guildmark.village.VillageNames
 import net.minecraft.ChatFormatting
 import net.minecraft.commands.CommandSourceStack
@@ -79,6 +82,7 @@ object CapitalCommand {
                         .then(Commands.literal("info").executes { info(it) })
                         .then(Commands.literal("here").executes { here(it) })
                         .then(Commands.literal("who").executes { who(it) })
+                        .then(Commands.literal("crew").executes { crew(it) })
                         .then(Commands.literal("show").executes { show(it) })
                         .then(Commands.literal("furnish").executes { furnish(it) })
                         .then(
@@ -230,10 +234,20 @@ object CapitalCommand {
         say(source, bedLine)
         val traits = Trait.entries.filter { r.has(it) }.joinToString(", ") { trait(it) }
         say(source, line().append(label("Ways: ")).append(plain(traits.ifEmpty { "nothing out of the way" })))
+        if (places != null && r.alive) {
+            val crew = Hands.of(level, places)
+            val mill = crew.millers[r.id]?.let { places.lodgings[it] }
+            val duty = when {
+                r.id in crew.carters -> "one of the town's carters"
+                mill != null -> "keeps the ${building(mill)}"
+                else -> null
+            }
+            if (duty != null) say(source, line().append(label("Duties: ")).append(plain(duty)).append(if (mill != null) plain(" ").append(at(mill.front?.inside ?: mill.box.center)) else plain("")))
+        }
         say(source, doing)
 
         // ---- Today's agenda: agenda() below fills these lines in ----
-        val today = agenda(level, r, person)
+        val today = agenda(level, r, person, places)
         if (today.isEmpty()) say(source, grey("Today: (no agenda yet)"))
         else {
             say(source, label("Today:"))
@@ -246,11 +260,11 @@ object CapitalCommand {
      * Today's agenda, one line a stretch, for `who`: where [r] is to be when, today, the stretch they're in marked.
      * Their body's own day if they're about, or worked out from their record if not.
      */
-    fun agenda(level: ServerLevel, r: Resident, person: Townsperson?): List<Component> {
+    fun agenda(level: ServerLevel, r: Resident, person: Townsperson?, places: CityPlaces? = null): List<Component> {
         val time = level.overworldClockTime
         person?.life?.let { life -> return Days.describe(life, time).map { Component.literal(it) } }
         if (!r.alive) return listOf()
-        val agenda = Days.plan(r, Days.dayOf(time), true, false)
+        val agenda = Days.plan(r, Days.dayOf(time), true, false, carter = places?.let { r.id in Hands.of(level, it).carters } == true)
         val now = agenda.at(Days.offsetOf(time))
         return agenda.stretches.map { Component.literal((if (it === now) "> " else "  ") + it) }
     }
@@ -268,6 +282,38 @@ object CapitalCommand {
         (hit?.entity as? Townsperson)?.let { return it }
         return level.getEntitiesOfClass(Townsperson::class.java, player.boundingBox.inflate(NEAR)) { it.isAlive && it.distanceTo(player) <= NEAR }
             .minByOrNull { it.distanceToSqr(player) }
+    }
+
+    // ---- crew ----
+
+    /** The town's carters and millers, where each is and what they're at, and what the market's carts and makers are doing. */
+    private fun crew(context: CommandContext<CommandSourceStack>): Int {
+        val source = context.source
+        val (_, capital, places) = where(source) ?: return 0
+        val level = source.level
+        val crew = Hands.of(level, places)
+        val residents = Residents.get(level)
+        say(source, header("${name(capital)}'s carters and millers"))
+        fun row(r: Resident, what: String): MutableComponent {
+            val c = line().append(plain("  " + r.name)).append(grey(", $what: "))
+            val p = r.uuid?.let { level.getEntity(it) as? Townsperson } ?: return c.append(grey("not about just now"))
+            val held = if (p.carried.isEmpty) "" else ", carrying " + p.carried.hoverName.string.lowercase()
+            return c.append(plain(words(p.activity.clip) + held)).append(grey(" at ")).append(at(p.blockPosition()))
+        }
+        val carters = crew.carters.mapNotNull { residents[it] }.sortedBy { it.id }
+        say(source, label("Carters ${carters.size}:"))
+        for (r in carters) say(source, row(r, "carter"))
+        say(source, label("Millers ${crew.millers.size}:"))
+        for ((id, mill) in crew.millers) residents[id]?.let { say(source, row(it, places.lodgings[mill]?.let { l -> building(l) } ?: "the mill")) }
+        val m = Markets.get(level)[capital.center]?.market
+        if (m == null) say(source, grey("No market yet (or the markets are switched off): the carters haul as an ordinary day would have it."))
+        else {
+            val ways = Route.entries.filter { m.carted[it.ordinal] > 0.0 }.joinToString(", ") { "${words(it.name)} ${"%.0f".format(m.carted[it.ordinal])}" }
+            say(source, line().append(label("The carts last took: ")).append(plain(ways.ifEmpty { "nothing yet (they go out from eight)" })))
+            val busy = Maker.entries.filter { m.busy(it) }.joinToString(", ") { words(it.name) }
+            say(source, line().append(label("At work this hour: ")).append(plain(busy.ifEmpty { "nobody" })))
+        }
+        return 1
     }
 
     // ---- show ----

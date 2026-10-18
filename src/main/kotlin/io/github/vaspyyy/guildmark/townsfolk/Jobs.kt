@@ -5,6 +5,8 @@ import net.minecraft.core.Direction
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.tags.BlockTags
 import net.minecraft.tags.FluidTags
+import net.minecraft.world.item.Item
+import net.minecraft.world.item.Items
 import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.level.block.CropBlock
@@ -206,19 +208,43 @@ object Jobs {
         val at = Places.besideCrop(level, crop, p.blockPosition()) ?: return null
         val state = level.getBlockState(crop)
         val block = state.block as? CropBlock ?: return null
-        if (block.isMaxAge(state)) {
-            return Work(p, at, top(crop, 0.2), listOf(Step(Activity.HARVEST), Step(Activity.NONE, 20)), crop) { step, tick ->
-                // The crop comes up on the pluck, and is set growing again
-                if (step.activity == Activity.HARVEST && tick == 20) {
-                    val now = level.getBlockState(crop)
-                    if (now.block === block) {
-                        level.setBlock(crop, block.getStateForAge(0), Block.UPDATE_ALL)
-                        level.levelEvent(2001, crop, Block.getId(now))
-                    }
-                }
-            }
-        }
+        if (block.isMaxAge(state)) return reap(p, level, at, crop, block)
         return Work(p, at, top(crop, 0.1), listOf(Step(Activity.HOE, 32 * (3 + r(p, 3)), line = if (r(p, 5) == 0) "farmer_${r(p, 3)}" else null)), crop)
+    }
+
+    /**
+     * A ripe crop brought in and the ground sown again: wheat scythed, a sweep at a time, with the ripe wheat either
+     * side of it (the row across in front of them); roots pulled by hand. What's cut goes in the basket (see
+     * [Trades.gathered]), and the seed goes back in: scattered for wheat and beet, a seed potato or carrot set in
+     * by hand for the rest.
+     */
+    private fun reap(p: Townsperson, level: ServerLevel, at: Spot, crop: BlockPos, block: CropBlock): Task {
+        val wheat = block === Blocks.WHEAT
+        val cut = if (wheat) Step(Activity.SCYTHE, Activity.SCYTHE.ticks * 3) else Step(Activity.HARVEST)
+        val sow = Step(if (wheat || block === Blocks.BEETROOTS) Activity.SOW else Activity.PUT_DOWN, 40)
+        // The sweeps of the scythe: the crop in front, then the one to the left, then to the right
+        val across = at.facing.clockWise
+        val sweeps = if (wheat) listOf(16 to crop, 48 to crop.relative(across.opposite), 80 to crop.relative(across)) else listOf(20 to crop)
+        fun bringIn(pos: BlockPos) {
+            val now = level.getBlockState(pos)
+            val ripe = now.block as? CropBlock ?: return
+            if (ripe !== block || !ripe.isMaxAge(now)) return
+            // The crop comes up, and is set growing again
+            level.setBlock(pos, ripe.getStateForAge(0), Block.UPDATE_ALL)
+            level.levelEvent(2001, pos, Block.getId(now))
+            Trades.gathered(p, yieldOf(block))
+        }
+        return Work(p, at, top(crop, 0.2), listOf(cut, sow, Step(Activity.NONE, 20)), crop) { step, tick ->
+            if (step === cut) for ((t, pos) in sweeps) if (tick == t) bringIn(pos)
+        }
+    }
+
+    /** What a field of [block] yields: wheat, carrots, potatoes or beetroot. */
+    private fun yieldOf(block: Block): Item = when {
+        block === Blocks.CARROTS -> Items.CARROT
+        block === Blocks.POTATOES -> Items.POTATO
+        block === Blocks.BEETROOTS -> Items.BEETROOT
+        else -> Items.WHEAT
     }
 
     private fun fisher(p: Townsperson): Task? {
@@ -230,12 +256,16 @@ object Jobs {
         } ?: return null
         val water = Vec3(spot.pos.x + 0.5 + spot.facing.stepX * 3.0, spot.pos.y - 0.5, spot.pos.z + 0.5 + spot.facing.stepZ * 3.0)
         val waits = 3 + r(p, 5)
+        val catch = if (r(p, 5) < 3) Items.COD else Items.SALMON
         return Work(p, spot, water, listOf(
             Step(Activity.CAST),
             Step(Activity.FISH, 80 * waits),
             Step(Activity.REEL, line = if (r(p, 3) == 0) "fisher_${r(p, 3)}" else null),
             Step(Activity.NONE, 30 + r(p, 40)),
-        ))
+        )) { step, tick ->
+            // Something on the line, into the basket
+            if (step.activity == Activity.REEL && tick == 30) Trades.gathered(p, catch)
+        }
     }
 
     /** A guard's watch: at their post a while, or a walk of their beat. */

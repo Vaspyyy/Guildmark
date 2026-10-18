@@ -2,8 +2,10 @@ package io.github.vaspyyy.guildmark.townsfolk
 
 import io.github.vaspyyy.guildmark.GuildmarkConfig
 import io.github.vaspyyy.guildmark.city.Capitals
+import io.github.vaspyyy.guildmark.economy.Economy
 import io.github.vaspyyy.guildmark.faction.Faction
 import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.item.Item
 import net.minecraft.world.item.ItemStack
 import java.util.Random
 import kotlin.math.roundToInt
@@ -43,6 +45,8 @@ enum class Doing(val phase: Phase) {
     EVENING(Phase.HOME),
     /** Home and up to bed. */
     BED(Phase.HOME),
+    /** Hauling the town's goods between the farms, the mill, the bakery and the market (see [Trades.haul]). */
+    CART(Phase.WORK),
 }
 
 /** A stretch of a day: [doing] from [start] ticks into it until the next stretch starts. */
@@ -97,7 +101,7 @@ object Days {
      */
     fun life(p: Townsperson): Life? {
         if (p.resident < 0 || !enabled()) return null
-        p.life?.let { if (it.resident.id == p.resident && it.resident.alive) return it }
+        p.life?.let { if (it.resident.id == p.resident && it.resident.alive) return it.also { life -> duties(p, life) } }
         if (p.tickCount < p.lifeLooked) return null
         p.lifeLooked = p.tickCount + 200
         if (p.crowd || p.watcher || p.captiveOf >= 0 || Faction.of(p.role) != null) return null
@@ -108,10 +112,22 @@ object Days {
         val home = places.lodgings[resident.home]
         val life = Life(resident, places, home)
         life.nightWatch = p.nightWatch
+        duties(p, life)
         // Home is the house they live in now, not where they happened to be set down
         home?.front?.let { p.home = it.inside }
         p.life = life
         return life
+    }
+
+    /** Whether [life] carts for the town today, or keeps one of its mills (see [Hands]): worked out afresh each day. */
+    private fun duties(p: Townsperson, life: Life) {
+        val level = p.level() as? ServerLevel ?: return
+        val day = dayOf(level.overworldClockTime)
+        if (life.dutiesDay == day) return
+        life.dutiesDay = day
+        val crew = Hands.of(level, life.places)
+        life.carter = life.resident.id in crew.carters
+        life.mill = crew.millers[life.resident.id]?.let { life.places.lodgings[it] }
     }
 
     /**
@@ -159,14 +175,18 @@ object Days {
 
     /** [life]'s day number [day]. */
     fun plan(life: Life, day: Long): Agenda =
-        plan(life.resident, day, life.places.lodgings.values.any { it.kind in CityPlaces.TEMPLES || it.kind == "LIBRARY" }, life.nightWatch)
+        plan(life.resident, day, life.places.lodgings.values.any { it.kind in CityPlaces.TEMPLES || it.kind == "LIBRARY" }, life.nightWatch, life.carter)
 
-    /** [r]'s day number [day], where children go to [lessons] if there's a temple or a library, and a guard may keep the [nightWatch]. */
-    fun plan(r: Resident, day: Long, lessons: Boolean, nightWatch: Boolean): Agenda {
+    /**
+     * [r]'s day number [day], where children go to [lessons] if there's a temple or a library, a guard may keep the
+     * [nightWatch], and a citizen may be one of the town's carters ([carter]).
+     */
+    fun plan(r: Resident, day: Long, lessons: Boolean, nightWatch: Boolean, carter: Boolean = false): Agenda {
         val d = Planner(r, day)
         val rest = restDay(day)
         when (r.role) {
-            TownRole.BAKER -> if (rest) d.restDay() else d.baker()
+            TownRole.BAKER -> if (rest) d.restDay() else d.baker(Economy.ahead(day))
+            TownRole.CITIZEN -> if (rest) d.restDay() else if (carter) d.carter() else d.worker()
             TownRole.INNKEEPER -> d.innkeeper()
             TownRole.GUARD -> if (nightWatch) d.nightWatch() else d.dayWatch()
             TownRole.FARMER -> if (rest) d.restDay() else d.farmer()
@@ -233,17 +253,17 @@ object Days {
 
         // --- The days of each trade ---
 
-        fun worker(until: Double = 17.0) {
+        fun worker(until: Double = 17.0, work: Doing = Doing.WORK, begin: Double = 7.0) {
             at(6.0, Doing.RISE)
             at(6.4, Doing.BREAKFAST)
-            var start = 7.0
+            var start = begin
             if (r.has(Trait.DEVOUT) && chance(1, 2)) {
-                at(6.9, Doing.WORSHIP)
-                start = 7.5
+                at(begin - 0.1, Doing.WORSHIP)
+                start = begin + 0.5
             }
-            at(start, Doing.WORK)
+            at(start, work)
             at(12.0, Doing.LUNCH)
-            at(12.75, Doing.WORK)
+            at(12.75, work)
             // The diligent stay on, the idle slip off early; everyone's done by supper
             val end = (until + (if (r.has(Trait.DILIGENT)) 0.75 else 0.0) - (if (r.has(Trait.IDLE)) 0.75 else 0.0)).coerceAtMost(17.75)
             at(end, free())
@@ -270,14 +290,22 @@ object Days {
             at(22.5, Doing.SLEEP)
         }
 
-        /** The bread is in the oven long before the town is up. */
-        fun baker() {
+        /** Out to the farms after breakfast, and to and fro with the loads until five, as the carts go ([Economy.carting]). */
+        fun carter() = worker(work = Doing.CART, begin = 7.25)
+
+        /** The bread is in the oven long before the town is up; the day before the rest day it bakes on past noon for that day too. */
+        fun baker(ahead: Boolean) {
             at(3.75, Doing.RISE, shift = half)
             at(4.25, Doing.WORK, shift = half)
-            at(11.5, Doing.LUNCH, shift = half)
-            at(12.25, free(), shift = half)
-            at(13.5, Doing.EVENING, shift = half)
-            at(15.0, free(), shift = half)
+            if (ahead) {
+                at(13.75, Doing.LUNCH, shift = half)
+                at(14.5, free(), shift = half)
+            } else {
+                at(11.5, Doing.LUNCH, shift = half)
+                at(12.25, free(), shift = half)
+                at(13.5, Doing.EVENING, shift = half)
+                at(15.0, free(), shift = half)
+            }
             at(17.0, Doing.SUPPER, shift = half)
             at(18.0, Doing.EVENING, shift = half)
             at(19.5, Doing.BED, shift = half)
@@ -437,6 +465,15 @@ class Life(val resident: Resident, val places: CityPlaces, val home: CityPlaces.
 
     /** A guard of the night watch. */
     var nightWatch = false
+
+    /** One of the town's carters today, and the mill they keep if they're its miller (see [Hands]); [dutiesDay] is the day that's for. */
+    var carter = false
+    var mill: CityPlaces.Lodging? = null
+    var dutiesDay = Long.MIN_VALUE
+
+    /** Crops (or catches) gathered into their basket since it was last taken in, and what the last of them was (see [Trades.gathered]). */
+    var basket = 0
+    var gathered: Item? = null
 
     /** The stall, house or well they're bound for this stretch, once chosen. */
     var bound: Any? = null
