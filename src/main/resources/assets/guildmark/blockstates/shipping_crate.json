@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=south": {
+      "model": "guildmark:block/shipping_crate"
+    },
+    "facing=west": {
+      "model": "guildmark:block/shipping_crate",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "guildmark:block/shipping_crate",
+      "y": 180
+    },
+    "facing=east": {
+      "model": "guildmark:block/shipping_crate",
+      "y": 270
+    }
+  }
+}

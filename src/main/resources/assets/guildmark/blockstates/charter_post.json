@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=south": {
+      "model": "guildmark:block/charter_post"
+    },
+    "facing=west": {
+      "model": "guildmark:block/charter_post",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "guildmark:block/charter_post",
+      "y": 180
+    },
+    "facing=east": {
+      "model": "guildmark:block/charter_post",
+      "y": 270
+    }
+  }
+}
