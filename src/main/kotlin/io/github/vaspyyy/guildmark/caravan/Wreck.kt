@@ -262,6 +262,9 @@ internal object WreckShows {
     private const val FAR = 128.0
     private const val LINGER = 200
 
+    /** Ticks a wreck made by a wagon going over counts as just gone over. */
+    private const val FRESH_TICKS = 160
+
     /** Every 20 ticks, from Bodies.scan: the wrecks and piles near [players]. */
     fun scan(level: ServerLevel, players: List<ServerPlayer>) {
         val seen = HashSet<Long>()
@@ -371,6 +374,8 @@ internal object WreckShows {
     private fun sync(level: ServerLevel, s: Shown, w: Caravans.Wreck) {
         val wreck = s.wreck
         if (wreck != null) {
+            // Only just gone over (its wheels in the air spin on) for whoever sees it go, not for someone come upon it later
+            if (wreck.has(Wreck.FLAG_FRESH) && wreck.tickCount > FRESH_TICKS) wreck.flag(Wreck.FLAG_FRESH, false)
             val goods = (0 until Wreck.LOTS).map { w.lots.getOrNull(it)?.first }
             wreck.lots(goods)
             for (k in 0 until Wreck.LOTS) {
