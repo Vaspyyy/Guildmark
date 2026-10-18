@@ -1226,7 +1226,8 @@ def stall_lines(lang_path=LANG):
         lang = json.load(f)
     out = {}
     for k, v in lang.items():
-        if k.startswith("say.guildmark." + STALL_PREFIX) and "%" not in v:
+        # a line's detail (where a wagon was taken) follows it as text, as the talk's details do
+        if k.startswith("say.guildmark." + STALL_PREFIX) and "%" not in v and not k.startswith("say.guildmark.market.detail."):
             key = k[len("say.guildmark."):]
             out[key] = Line(key, None, v, None, MW, TALK)
     return out

@@ -483,14 +483,14 @@ meaning said one to four ways, each a whole sentence that is true whenever the f
 `talk.<family>_0`, `_1`, ... (366 keys). What changes (a name, a good, a price, a place, a time) is never voiced: it
 follows the take as text. Where a name belongs, the family has `.named` texts (`say.guildmark.talk.<family>_<n>.named`,
 seven families): the take says "There you are!" and the screen shows "There you are, Ransom!". The script also voices
-the keepers' 89 stall lines that name nothing (`economy/StallTalk.kt`'s `say.guildmark.market.*`, read from
-`en_us.json` as written), in the man's and the woman's voices, and its entries carry the five talk-of-the-town lines
+the keepers' 98 stall lines that name nothing (`economy/StallTalk.kt`'s `say.guildmark.market.*`, read from
+`en_us.json` as written; a line's detail, `market.detail.*`, follows it as text), in the man's and the woman's voices, and its entries carry the five talk-of-the-town lines
 the crier cries, which `make_townsfolk_voices.py` records with the rest of `CRIER` (`crier_talk_*`).
 
 The man and the woman say every family but the children's and the old man's own; the old man says those old folk say
 most (greetings and farewells, the screen's own, the daily round, market talk, the town, the weather, the lead-ins,
 the replies and the household, and his own three lines: 210 takes) and borrows the man's voice lower for the rest;
-a child has 18 of their own and borrows the woman's. With the crier's ten, 1,106 takes. A take may last 2.5 s for a
+a child has 18 of their own and borrows the woman's. With the crier's ten, 1,124 takes. A take may last 2.5 s for a
 greeting, a farewell, the screen's own lines and the replies, 4.0 s for other talk and the keepers' lines, 1.8 s for a
 lead-in and 3.0 s for the news after it (as processed, the street's tail included): `process` refuses a take over its
 limit and writes nothing for it. `DELIVERY` sets a family's speed, pitch and level (the lead-ins a little quicker;
@@ -514,7 +514,8 @@ exactly as written. The rest are heard as near-homophones ("Please to meet you",
 on the board", "the forges banked", "the floor is hard", "Everyone saying"), as words it doesn't know ("murrain" as
 "Maran", "Sheafmoot" as "Chief Mootzoon" or "Sheaf moots"), the sleepy hum as a word ("Do", "Remember", "Smooth"), or
 with a sound lost or added in a short word ("hearth's" as "heart's", "pest's" as "pastes", "ovens" as "oven", "Oi" as
-"Boy"). The man's takes run at a median 5.5 syllables a second, the woman's 4.8, the children's 4.75 and the old man's
+"Boy"). The keepers' nine road lines (a waylaid wagon, goods off it, and the cool greeting) came later and have not
+been heard back yet. The man's takes run at a median 5.5 syllables a second, the woman's 4.8, the children's 4.75 and the old man's
 4.3, with no pause inside a line longer than 0.4 s.
 
 ```

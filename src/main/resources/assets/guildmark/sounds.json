@@ -15316,6 +15316,60 @@
     ],
     "subtitle": "say.guildmark.market.closing"
   },
+  "townsfolk.voice.man.market.dear.event.waylaid": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/market.dear.event.waylaid"
+    ],
+    "subtitle": "say.guildmark.market.dear.event.waylaid"
+  },
+  "townsfolk.voice.man.market.dear.event.waylaid.produce": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/market.dear.event.waylaid.produce"
+    ],
+    "subtitle": "say.guildmark.market.dear.event.waylaid.produce"
+  },
+  "townsfolk.voice.man.market.dear.event.waylaid.fish": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/market.dear.event.waylaid.fish"
+    ],
+    "subtitle": "say.guildmark.market.dear.event.waylaid.fish"
+  },
+  "townsfolk.voice.man.market.dear.event.waylaid.wares": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/market.dear.event.waylaid.wares"
+    ],
+    "subtitle": "say.guildmark.market.dear.event.waylaid.wares"
+  },
+  "townsfolk.voice.man.market.dear.event.waylaid.bakery": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/market.dear.event.waylaid.bakery"
+    ],
+    "subtitle": "say.guildmark.market.dear.event.waylaid.bakery"
+  },
+  "townsfolk.voice.man.market.own_wagon": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/market.own_wagon"
+    ],
+    "subtitle": "say.guildmark.market.own_wagon"
+  },
+  "townsfolk.voice.man.market.salvage.back": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/market.salvage.back"
+    ],
+    "subtitle": "say.guildmark.market.salvage.back"
+  },
+  "townsfolk.voice.man.market.salvage.marked": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/market.salvage.marked"
+    ],
+    "subtitle": "say.guildmark.market.salvage.marked"
+  },
+  "townsfolk.voice.man.market.greet.cool": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/market.greet.cool"
+    ],
+    "subtitle": "say.guildmark.market.greet.cool"
+  },
   "townsfolk.voice.man.crier_talk_deed": {
     "sounds": [
       {
@@ -17964,6 +18018,60 @@
       "guildmark:townsfolk/voice/woman/market.closing"
     ],
     "subtitle": "say.guildmark.market.closing"
+  },
+  "townsfolk.voice.woman.market.dear.event.waylaid": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/market.dear.event.waylaid"
+    ],
+    "subtitle": "say.guildmark.market.dear.event.waylaid"
+  },
+  "townsfolk.voice.woman.market.dear.event.waylaid.produce": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/market.dear.event.waylaid.produce"
+    ],
+    "subtitle": "say.guildmark.market.dear.event.waylaid.produce"
+  },
+  "townsfolk.voice.woman.market.dear.event.waylaid.fish": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/market.dear.event.waylaid.fish"
+    ],
+    "subtitle": "say.guildmark.market.dear.event.waylaid.fish"
+  },
+  "townsfolk.voice.woman.market.dear.event.waylaid.wares": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/market.dear.event.waylaid.wares"
+    ],
+    "subtitle": "say.guildmark.market.dear.event.waylaid.wares"
+  },
+  "townsfolk.voice.woman.market.dear.event.waylaid.bakery": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/market.dear.event.waylaid.bakery"
+    ],
+    "subtitle": "say.guildmark.market.dear.event.waylaid.bakery"
+  },
+  "townsfolk.voice.woman.market.own_wagon": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/market.own_wagon"
+    ],
+    "subtitle": "say.guildmark.market.own_wagon"
+  },
+  "townsfolk.voice.woman.market.salvage.back": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/market.salvage.back"
+    ],
+    "subtitle": "say.guildmark.market.salvage.back"
+  },
+  "townsfolk.voice.woman.market.salvage.marked": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/market.salvage.marked"
+    ],
+    "subtitle": "say.guildmark.market.salvage.marked"
+  },
+  "townsfolk.voice.woman.market.greet.cool": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/market.greet.cool"
+    ],
+    "subtitle": "say.guildmark.market.greet.cool"
   },
   "townsfolk.voice.woman.crier_talk_deed": {
     "sounds": [
