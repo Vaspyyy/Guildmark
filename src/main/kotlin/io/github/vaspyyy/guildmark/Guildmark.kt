@@ -86,6 +86,7 @@ import io.github.vaspyyy.guildmark.network.ReceptionActionPayload
 import io.github.vaspyyy.guildmark.road.Bandits
 import io.github.vaspyyy.guildmark.road.RoadNetwork
 import io.github.vaspyyy.guildmark.road.Traffic
+import io.github.vaspyyy.guildmark.siege.Defenders
 import io.github.vaspyyy.guildmark.siege.Sieges
 import io.github.vaspyyy.guildmark.quest.Contracts
 import io.github.vaspyyy.guildmark.quest.SeaWork
@@ -249,6 +250,8 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         NeoForge.EVENT_BUS.addListener(LivingIncomingDamageEvent::class.java, Relics::onIncomingDamage)
         NeoForge.EVENT_BUS.addListener(LivingIncomingDamageEvent::class.java, Parties::onIncomingDamage)
         NeoForge.EVENT_BUS.addListener(LivingDamageEvent.Post::class.java, Relics::onDamaged)
+        // Who fought off a siege or a bandit ambush, so its pay goes to them (siege/Defenders)
+        NeoForge.EVENT_BUS.addListener(LivingDamageEvent.Post::class.java, Defenders::onDamaged)
         // The action combat (combat/): damage, guard, poise, knockback and sound hooks
         NeoForge.EVENT_BUS.addListener(LivingIncomingDamageEvent::class.java, Combat::onIncomingDamage)
         NeoForge.EVENT_BUS.addListener(LivingShieldBlockEvent::class.java, Combat::onShieldBlock)

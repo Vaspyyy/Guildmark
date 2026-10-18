@@ -5,6 +5,7 @@ import io.github.vaspyyy.guildmark.progression.Progression
 import io.github.vaspyyy.guildmark.quest.QuestGenerator
 import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.registry.ModItems
+import io.github.vaspyyy.guildmark.siege.Defenders
 import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerLevel
@@ -16,6 +17,7 @@ import net.minecraft.world.entity.EntityType
 import net.minecraft.world.entity.Mob
 import net.minecraft.world.entity.PathfinderMob
 import net.minecraft.world.entity.EntityTypes
+import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.levelgen.Heightmap
@@ -25,10 +27,10 @@ import kotlin.math.sin
 /**
  * Bandits who waylay travellers and caravans on the roads. A pack of illagers turns up a short way off
  * and goes for the traveller (illagers hunt villagers and traders on their own); the traveller holds
- * still until every bandit is dead or gone. Defending a caravan pays the guards who were there.
+ * still until every bandit is dead or gone. Defending a caravan pays the guards who fought the bandits off.
  */
 object Bandits {
-    /** Players this close hear about an ambush and share the reward for beating it. */
+    /** Players this close hear about an ambush. */
     private const val WITNESS_RANGE = 48.0
 
     /** Spring an ambush on [victim]: a pack sized by how far from spawn the road runs. */
@@ -38,6 +40,7 @@ object Bandits {
         val bandits = (0 until count).mapNotNull { spawnBandit(level, victim, tier) }
         if (bandits.isEmpty()) return
         victim.setData(ModAttachments.AMBUSHERS, bandits.map { it.uuid })
+        victim.removeData(ModAttachments.AMBUSH_FIGHTERS)
         level.playSound(null, victim.blockPosition(), SoundEvents.PILLAGER_CELEBRATE, SoundSource.HOSTILE, 1.5f, 0.9f)
         val message = Component.translatable("message.guildmark.ambush", victim.name)
         for (player in witnesses(level, victim)) player.sendSystemMessage(message)
@@ -45,7 +48,7 @@ object Bandits {
 
     /**
      * Called every check while [victim] travels. Returns true while an ambush is still on; when the last
-     * bandit falls it pays any caravan guards and the traveller moves on.
+     * bandit falls a caravan pays those who fought the bandits off, and the traveller moves on.
      */
     fun tick(level: ServerLevel, victim: PathfinderMob): Boolean {
         val ambushers = victim.getData(ModAttachments.AMBUSHERS)
@@ -58,7 +61,14 @@ object Bandits {
         val guards = witnesses(level, victim)
         val caravan = victim.hasData(ModAttachments.TRAFFIC)
         val marks = 2 + ambushers.size * 2
-        for (player in guards) {
+        // Paid and named in the news: those who fought the bandits off, not anyone who stood and watched
+        val fighters = Defenders.who(level, victim.getData(ModAttachments.AMBUSH_FIGHTERS))
+        victim.removeData(ModAttachments.AMBUSH_FIGHTERS)
+        for (player in guards) if (player !in fighters) {
+            val key = if (caravan) "message.guildmark.ambush_defended_unpaid" else "message.guildmark.ambush_defended"
+            player.sendSystemMessage(Component.translatable(key, victim.name))
+        }
+        for (player in fighters) {
             if (caravan) {
                 val paid = Progression.reward(player, marks)
                 player.inventory.placeItemBackInInventory(ItemStack(ModItems.GUILD_MARK.get(), paid), Prediction.SERVER_ONLY)
@@ -69,8 +79,17 @@ object Bandits {
             }
         }
         level.playSound(null, victim.blockPosition(), SoundEvents.VILLAGER_CELEBRATE, SoundSource.NEUTRAL, 1.0f, 1.0f)
-        if (guards.isNotEmpty()) GuildNews.add(level, "news.guildmark.ambush", guards.joinToString(", ") { it.name.string }, victim.name.string)
+        if (fighters.isNotEmpty()) GuildNews.add(level, "news.guildmark.ambush", fighters.joinToString(", ") { it.name.string }, victim.name.string)
         return false
+    }
+
+    /** [player] dealt [damage] to [mob]: if it's a bandit, they're fighting for the traveller it waylaid. */
+    fun onAttackerHurt(level: ServerLevel, mob: LivingEntity, player: Player, damage: Float) {
+        if (!mob.hasData(ModAttachments.WAYLAYS)) return
+        val victim = level.getEntity(mob.getData(ModAttachments.WAYLAYS)) as? PathfinderMob ?: return
+        if (mob.uuid !in victim.getData(ModAttachments.AMBUSHERS)) return
+        val fought = victim.getData(ModAttachments.AMBUSH_FIGHTERS)
+        victim.setData(ModAttachments.AMBUSH_FIGHTERS, fought + (player.uuid to (fought[player.uuid] ?: 0f) + damage))
     }
 
     /** A traveller or merchant died mid-ambush: tell whoever was there. */
@@ -102,6 +121,7 @@ object Bandits {
         bandit.finalizeSpawn(level, level.getCurrentDifficultyAt(spot), EntitySpawnReason.EVENT, null)
         bandit.customName = Component.translatable("entity.guildmark.bandit")
         bandit.target = victim
+        bandit.setData(ModAttachments.WAYLAYS, victim.uuid)
         level.addFreshEntity(bandit)
         return bandit
     }

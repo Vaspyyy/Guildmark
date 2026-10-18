@@ -42,7 +42,7 @@ import java.util.UUID
 
 /**
  * Monster sieges. Some nights a horde marches on a village from one side, in waves. Kill every wave
- * and the defenders are paid and the village thinks better of them; if the horde is still standing at
+ * and those who fought it off are paid and the village thinks better of them; if the horde is still standing at
  * dawn, or it kills three villagers, the village is damaged: palisade logs and lamps torn down, its
  * current project's progress lost, and standing lost with everyone who was there.
  */
@@ -72,6 +72,8 @@ object Sieges {
         var villagersLost = 0
         var waveStarted = 0L
         var waveSize = 1
+        /** The damage each player has dealt the horde: those who've dealt enough are its defenders (see Defenders). */
+        val fought = HashMap<UUID, Float>()
         val bar = ServerBossEvent(UUID.randomUUID(), Component.empty(), BossEvent.BossBarColor.RED, BossEvent.BossBarOverlay.PROGRESS)
     }
 
@@ -206,6 +208,13 @@ object Sieges {
         }
     }
 
+    /** [player] dealt [damage] to [mob]: if it's one of a horde, they're defending that village. */
+    fun onAttackerHurt(mob: LivingEntity, player: Player, damage: Float) {
+        if (!mob.hasData(ModAttachments.SIEGE)) return
+        val siege = sieges[mob.getData(ModAttachments.SIEGE)] ?: return
+        siege.fought.merge(player.uuid, damage) { a, b -> a + b }
+    }
+
     /** A villager died: if it was in a besieged village, the defence is failing. */
     fun onDeath(level: ServerLevel, victim: LivingEntity) {
         if (victim !is Villager || level.dimension() != net.minecraft.world.level.Level.OVERWORLD) return
@@ -222,7 +231,11 @@ object Sieges {
         (level.getBlockEntity(siege.anchor) as? QuestBoardBlockEntity)?.recordSiege(won, VillageBoards.day(level))
         if (won) {
             val marks = 6 + siege.tier * 4 + siege.totalWaves * 2
-            for (player in defenders) {
+            // Paid, thanked and remembered: those who fought the horde off, not anyone who stood and watched
+            val fighters = Defenders.who(level, siege.fought)
+            val unpaid = Component.translatable("message.guildmark.siege_won_unpaid", VillageNames.of(siege.anchor))
+            for (player in defenders) if (player !in fighters) player.sendSystemMessage(unpaid)
+            for (player in fighters) {
                 val paid = Progression.reward(player, marks)
                 player.inventory.placeItemBackInInventory(ItemStack(ModItems.GUILD_MARK.get(), paid), Prediction.SERVER_ONLY)
                 player.inventory.placeItemBackInInventory(Relics.roll(level, siege.tier + 1), Prediction.SERVER_ONLY)

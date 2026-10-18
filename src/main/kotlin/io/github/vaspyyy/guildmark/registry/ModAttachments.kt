@@ -106,6 +106,16 @@ object ModAttachments {
         AttachmentType.builder { -> listOf<UUID>() }.serialize(UUIDUtil.CODEC.listOf().fieldOf("bandits")).build()
     }
 
+    /** On a bandit: the traveller or caravan it was sent to waylay. */
+    val WAYLAYS: DeferredHolder<AttachmentType<*>, AttachmentType<UUID>> = ATTACHMENTS.register("waylays") { ->
+        AttachmentType.builder { -> net.minecraft.util.Util.NIL_UUID }.serialize(UUIDUtil.CODEC.fieldOf("traveller")).build()
+    }
+
+    /** On a waylaid traveller or caravan: the damage each player has dealt its bandits, so those who fought are paid. */
+    val AMBUSH_FIGHTERS: DeferredHolder<AttachmentType<*>, AttachmentType<Map<UUID, Float>>> = ATTACHMENTS.register("ambush_fighters") { ->
+        AttachmentType.builder { -> mapOf<UUID, Float>() }.serialize(Codec.unboundedMap(UUIDUtil.STRING_CODEC, Codec.FLOAT).fieldOf("damage")).build()
+    }
+
     /** Marks a guild hall receptionist, holding the board anchor of the village they serve. */
     val RECEPTIONIST: DeferredHolder<AttachmentType<*>, AttachmentType<BlockPos>> = ATTACHMENTS.register("receptionist") { ->
         AttachmentType.builder { -> BlockPos.ZERO }.serialize(BlockPos.CODEC.fieldOf("board")).build()
