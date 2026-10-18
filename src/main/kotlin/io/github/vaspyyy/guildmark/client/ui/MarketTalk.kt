@@ -66,7 +66,8 @@ object MarketTalk {
     fun click(keeper: Int, right: Int, top: Int, x: Double, y: Double): Boolean {
         if (!shows(keeper) || !over(right, top, x, y)) return false
         val now = Minecraft.getInstance().level?.gameTime ?: return true
-        if (now - askedAt < AGAIN) return true
+        // A press stamped later than now was in another world (this one's clock is behind it): it holds nothing back
+        if (now >= askedAt && now - askedAt < AGAIN) return true
         askedAt = now
         Ui.select()
         ClientPacketDistributor.sendToServer(TalkAskPayload(keeper))
