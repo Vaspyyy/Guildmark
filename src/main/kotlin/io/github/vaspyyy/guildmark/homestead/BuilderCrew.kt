@@ -53,7 +53,13 @@ object BuilderCrew {
         val builders = ArrayList<Builder>()
         var nextArrival = 0L
         var arrived = false
+
+        /** The game time one of them last spoke up, so that two don't say their piece at once (see [QUIET]). */
+        var spoke = Long.MIN_VALUE / 2
     }
+
+    /** Ticks after one of a crew speaks up before another may unasked: their lines are voiced, and a crew all talking at once is noise. */
+    private const val QUIET = 60L
 
     private val crews = HashMap<Int, Crew>()
 
@@ -98,7 +104,9 @@ object BuilderCrew {
         val loud = stage == Stage.WALLS || stage == Stage.ROOF || stage == Stage.TOPPING
         if (crew.builders.isEmpty()) return
         if (loud) {
-            for (b in crew.builders) b.cheer(stage)
+            // One of them calls the stage and the rest cheer it (their lines are voiced: all at once they'd talk over each other)
+            val caller = crew.builders.random()
+            for (b in crew.builders) b.cheer(stage, b === caller)
             val first = crew.builders.first().p
             level.playSound(null, first.blockPosition(), HomesteadRegistry.CHEER.get(), SoundSource.NEUTRAL, 1.2f, 1f)
         } else if (stage == Stage.GROUNDWORK || stage == Stage.FOOTINGS) {
@@ -109,7 +117,8 @@ object BuilderCrew {
     /** The tier is finished: they cheer, and then they go. */
     fun finished(level: ServerLevel, id: Int) {
         val crew = crews[id] ?: return
-        for (b in crew.builders) b.cheer(null)
+        val caller = crew.builders.randomOrNull()
+        for (b in crew.builders) b.cheer(null, b === caller)
     }
 
     private fun spawn(level: ServerLevel, site: HomesteadSite, crew: Crew) {
@@ -270,7 +279,8 @@ object BuilderCrew {
             p.discard()
         }
 
-        fun cheer(stage: Stage?) {
+        /** Downs tools and cheers [stage] (the tier, if null); the one who [calls] it says so. */
+        fun cheer(stage: Stage?, calls: Boolean) {
             if (s == S.LEAVE) return
             cheerAfter = if (stage == null) S.LEAVE else if (s == S.WORK || s == S.GO || s == S.FETCH || s == S.TAKE) S.IDLE else s
             if (s == S.WORK || s == S.GO) HomesteadWorks.live(id)?.release(p.id)
@@ -278,9 +288,21 @@ object BuilderCrew {
             hold(ItemStack.EMPTY)
             into(S.CHEER)
             p.act(Activity.HURRAH)
-            p.say(if (stage == null) "homestead_done_${1 + p.random.nextInt(2)}" else "homestead_stage_${stage.key}", force = true)
+            if (calls) {
+                p.say(if (stage == null) "homestead_done_${1 + p.random.nextInt(2)}" else "homestead_stage_${stage.key}", force = true)
+                crews[id]?.spoke = p.level().gameTime
+            }
             val level = p.level() as ServerLevel
             level.sendParticles(ParticleTypes.HAPPY_VILLAGER, p.x, p.y + 2.1, p.z, 6, 0.4, 0.3, 0.4, 0.0)
+        }
+
+        /** Whether this one may speak up now: none of the crew has for [QUIET] ticks (and then it's their turn). */
+        private fun turn(): Boolean {
+            val crew = crews[id] ?: return true
+            val now = p.level().gameTime
+            if (now - crew.spoke < QUIET) return false
+            crew.spoke = now
+            return true
         }
 
         // ---- Between jobs ----
@@ -316,7 +338,7 @@ object BuilderCrew {
                 if (walk(level, by, 1.6)) {
                     p.face(p.yawTo(Vec3.atCenterOf(site.homestead.crate)))
                     if (timer % 300 == 40) {
-                        p.say("homestead_need_${short.key}", force = true)
+                        if (turn()) p.say("homestead_need_${short.key}", force = true)
                         p.act(Activity.MOP_BROW)
                     }
                 }
@@ -326,7 +348,7 @@ object BuilderCrew {
                 hold(if (p.random.nextInt(2) == 0) ItemStack(Items.PAPER) else ItemStack.EMPTY)
                 p.act(if (p.mainHandItem.`is`(Items.PAPER)) Activity.PLANS else Activity.NONE)
             }
-            if (timer % 400 == 200) p.say("homestead_wait_${1 + p.random.nextInt(3)}")
+            if (timer % 400 == 200 && turn()) p.say("homestead_wait_${1 + p.random.nextInt(3)}")
         }
 
         private fun fetch(level: ServerLevel, site: HomesteadSite) {
@@ -473,7 +495,7 @@ object BuilderCrew {
                     when (site.lay(i, fx = true)) {
                         Laid.DONE -> {
                             sound(level, step.kind)
-                            if (p.random.nextInt(40) == 0) p.say("homestead_work_${1 + p.random.nextInt(6)}")
+                            if (p.random.nextInt(40) == 0 && turn()) p.say("homestead_work_${1 + p.random.nextInt(6)}")
                             if (sawn(site, i)) {
                                 phase = 2
                                 timer = 0
@@ -491,7 +513,7 @@ object BuilderCrew {
                         Laid.NEED -> {
                             site.release(p.id)
                             batch = IntArray(0)
-                            p.say("homestead_need_${(site.short ?: step.stuff).key}", force = true)
+                            if (turn()) p.say("homestead_need_${(site.short ?: step.stuff).key}", force = true)
                             into(S.IDLE)
                         }
                         Laid.WAIT -> {
@@ -500,7 +522,7 @@ object BuilderCrew {
                         }
                         Laid.BLOCKED -> {
                             site.release(p.id, i)
-                            p.say("homestead_blocked", force = true)
+                            if (turn()) p.say("homestead_blocked", force = true)
                             next()
                         }
                     }
