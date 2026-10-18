@@ -5,6 +5,7 @@ import com.mojang.brigadier.arguments.FloatArgumentType
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.context.CommandContext
+import io.github.vaspyyy.guildmark.townsfolk.CapitalCommand
 import io.github.vaspyyy.guildmark.townsfolk.Furnish
 import io.github.vaspyyy.guildmark.townsfolk.Resident
 import io.github.vaspyyy.guildmark.townsfolk.Residents
@@ -22,9 +23,6 @@ import net.minecraft.network.chat.HoverEvent
 import net.minecraft.network.chat.MutableComponent
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
-import net.minecraft.world.entity.projectile.ProjectileUtil
-import net.minecraft.world.level.ClipContext
-import net.minecraft.world.phys.HitResult
 import net.neoforged.neoforge.common.NeoForge
 import net.neoforged.neoforge.event.RegisterCommandsEvent
 import java.util.UUID
@@ -47,10 +45,6 @@ import kotlin.math.abs
  * `rumour clear [id]` lets one go, or all of them.
  */
 object TalkCommand {
-    /** How far the commands look along your gaze, and how near someone must be to do without it. */
-    private const val SIGHT = 16.0
-    private const val NEAR = 4.0
-
     /** The most knowers `rumour show` lists. */
     private const val SHOWN = 24
 
@@ -441,7 +435,7 @@ object TalkCommand {
 
     /** The townsperson [player] is looking at (or the nearest close by), and their record (a visitor's day-long one if they have none). */
     private fun resident(source: CommandSourceStack, player: ServerPlayer): Pair<Townsperson, Resident>? {
-        val p = lookedAt(player)
+        val p = CapitalCommand.lookedAt(player)
         if (p == null) {
             fail(source, "Look at a townsperson first.")
             return null
@@ -456,25 +450,10 @@ object TalkCommand {
 
     /** The capital of the townsperson looked at, else the one [player] stands in. */
     private fun capital(source: CommandSourceStack, player: ServerPlayer): BlockPos? {
-        lookedAt(player)?.let { p -> (Residents.get(source.level).of(p) ?: p.life?.resident)?.let { return it.capital } }
+        CapitalCommand.lookedAt(player)?.let { p -> (Residents.get(source.level).of(p) ?: p.life?.resident)?.let { return it.capital } }
         Furnish.capitalAt(source.level, player.blockPosition())?.let { return it.center }
         fail(source, "You're not in a capital, nor looking at anyone who lives in one.")
         return null
-    }
-
-    /** As `/guildmark capital who` finds them: along the gaze, else the nearest close by. */
-    private fun lookedAt(player: ServerPlayer): Townsperson? {
-        val level = player.level()
-        val eye = player.eyePosition
-        val look = player.getViewVector(1f)
-        var end = eye.add(look.scale(SIGHT))
-        val block = level.clip(ClipContext(eye, end, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player))
-        if (block.type != HitResult.Type.MISS) end = block.location
-        val box = player.boundingBox.expandTowards(look.scale(SIGHT)).inflate(1.0)
-        val hit = ProjectileUtil.getEntityHitResult(player, eye, end, box, { it is Townsperson && it.isAlive }, SIGHT * SIGHT)
-        (hit?.entity as? Townsperson)?.let { return it }
-        return level.getEntitiesOfClass(Townsperson::class.java, player.boundingBox.inflate(NEAR)) { it.isAlive && it.distanceTo(player) <= NEAR }
-            .minByOrNull { it.distanceToSqr(player) }
     }
 
     // ---- Words ----

@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.townsfolk.talk
 
 import io.github.vaspyyy.guildmark.GuildmarkConfig
+import io.github.vaspyyy.guildmark.economy.Stalls
 import io.github.vaspyyy.guildmark.network.TalkChoice
 import io.github.vaspyyy.guildmark.network.TalkClosePayload
 import io.github.vaspyyy.guildmark.network.TalkOpenPayload
@@ -44,6 +45,12 @@ import java.util.WeakHashMap
  * body is [Talking]'s. The talk screen's payloads come in through [picked], [ended] and [asked].
  */
 object Talk {
+    /**
+     * Whether talks open at all: until the townsfolk's new voices are on main none does, a right-click answers as
+     * before, and the market screen's Talk tab stays hidden.
+     */
+    const val READY = false
+
     /** How far a player may be from whoever they're talking with. */
     const val REACH = 12.0
 
@@ -108,6 +115,9 @@ object Talk {
         /** How the wary or hostile stand through the whole talk. */
         var wary = false
 
+        /** Opened from the market screen's Talk tab: Trade takes the player back to it. */
+        var market = false
+
         var ending: Ending? = null
     }
 
@@ -160,7 +170,7 @@ object Talk {
      * shut" out of hours; [anyway] opens it even if they're busy (`/guildmark talk open`).
      */
     fun open(level: ServerLevel, player: ServerPlayer, p: Townsperson, first: String?, anyway: Boolean): Boolean {
-        if (!enabled() || !Wire.READY || player.isSpectator) return false
+        if (!enabled() || !READY || player.isSpectator) return false
         if (!p.isAlive || p.isLeader || p.captiveOf >= 0 || p.watcher || p.target != null || p.activity == Activity.FLEE) return false
         sessions[player.uuid]?.let { s ->
             if (s.p === p) return true
@@ -208,7 +218,7 @@ object Talk {
 
     /** Opens a talk between [player] and [p] that [script] runs, for a director with scripted work (M4's driver, the festival host): the director keeps the body. */
     fun script(level: ServerLevel, player: ServerPlayer, p: Townsperson, script: Script) {
-        if (!Wire.READY) return
+        if (!READY) return
         sessions[player.uuid]?.let { end(it, Ending.GONE) }
         val s = Session(player, p, script, level.gameTime)
         s.holder = p.director
@@ -270,6 +280,7 @@ object Talk {
         }
         when (choice) {
             "bye" -> farewell(s, ask, Ending.BYE)
+            "trade" -> trade(level, s)
             "doing" -> doing(s, ask)
             "news" -> news(s, ask)
             "name" -> name(s, ask)
@@ -294,7 +305,18 @@ object Talk {
         val level = player.level() as? ServerLevel ?: return
         val p = level.getEntity(entity) as? Townsperson ?: return
         if (p.distanceToSqr(player) > REACH * REACH) return
-        open(level, player, p, null, true)
+        if (open(level, player, p, null, true)) sessions[player.uuid]?.takeIf { it.p === p }?.market = true
+    }
+
+    /**
+     * Trade, in a talk opened from the market screen: the talk screen closes, the market screen comes up in its place,
+     * and the keeper serves the player as before, back at what they were at before the talk.
+     */
+    private fun trade(level: ServerLevel, s: Session) {
+        end(s, Ending.GONE)
+        if (talkers(s.p) > 0) return
+        (s.p.director as? Talking)?.hand(s.p)
+        Stalls.interact(level, s.player, s.p)
     }
 
     private fun doing(s: Session, ask: Ask) {
@@ -435,6 +457,8 @@ object Talk {
             out += Choice("name", Component.translatable("talk.guildmark.choice.name", s.player.gameProfile.name))
         }
         for (c in Topics.choices(again(ask, Occasion.ANSWER)).take(2)) out += Choice(c.id, c.label, c.id in s.asked)
+        // Back to the market they came from, while nobody else is talking with the keeper
+        if (s.market && talkers(s.p) == 1) return out.take(4) + Choice("trade", label("trade")) + bye
         return out.take(5) + bye
     }
 
@@ -708,13 +732,8 @@ object Talk {
         return Component.translatable("talk.guildmark.epithet", Component.translatable("talk.guildmark.trade.$trade"), town)
     }
 
-    /**
-     * The talk screen's side (network/TalkPayloads). Until the voices, the gestures, memory and the sources are all on
-     * main no talk opens ([READY] is false), and a right-click answers as before.
-     */
+    /** The talk screen's side (network/TalkPayloads). */
     private object Wire {
-        const val READY = false
-
         fun open(player: ServerPlayer, p: Townsperson, name: Component, epithet: Component, knows: Int) {
             PacketDistributor.sendToPlayer(player, TalkOpenPayload(p.id, name, epithet, knows))
         }

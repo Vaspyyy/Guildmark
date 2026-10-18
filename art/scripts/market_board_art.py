@@ -37,6 +37,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from hdkit import (PAL, Canvas, grid, vnoise, fbm, rand, tone, mix, ramp, bands, poly, disc, ellipse, rect, blur, edge,
                    grow, dist_in, light, outline, glint, bevel)
 import market_board_letters as ML
+import talk_slip_art as TALK
 
 # ================================================================ geometry (model px)
 
@@ -203,10 +204,10 @@ COLOURS = {
 
 # The papers, in Slip.Kind's order, and for each the corner its decoration takes (texels of the 64x32 paper; text
 # keeps clear of it)
-SLIP_KINDS = ['trouble', 'good', 'price', 'word', 'year']
+SLIP_KINDS = ['trouble', 'good', 'price', 'word', 'year', 'talk']
 SLIP_PX = (64, 32)
 SLIP_KEEP = {'trouble': (47, 17, 64, 32), 'good': (0, 0, 9, 32), 'price': (0, 21, 16, 32), 'word': (45, 15, 64, 32),
-             'year': (0, 18, 17, 32)}
+             'year': (0, 18, 17, 32), 'talk': TALK.KEEP}
 
 
 # ================================================================ painting
@@ -611,6 +612,7 @@ PAPERS = {
     'price': [(66, 64, 62), (114, 112, 106), (162, 158, 150), (198, 194, 184), (222, 218, 208), (238, 234, 224)],
     'word': PAL['parchment'],
     'year': [(68, 70, 60), (118, 122, 106), (170, 174, 154), (206, 210, 190), (228, 232, 214), (242, 244, 232)],
+    'talk': TALK.PALETTE,
 }
 RIBBON = [(14, 36, 22), (26, 64, 36), (44, 100, 54), (76, 142, 80), (124, 190, 116)]
 LEAF = [(18, 40, 24), (34, 70, 38), (60, 104, 54), (98, 142, 78)]
@@ -703,6 +705,9 @@ def paper(kind, seed):
         for (bx, by) in ((11, 27), (13, 26)):
             cv.put(rect(bx, by, bx + 2, by + 2, W, H), PAL['wax'][3])
             cv.px(bx, by, PAL['wax'][5])
+    elif kind == 'talk':
+        # Two heads leaning together over a whisper (talk_slip_art.py)
+        TALK.decorate(cv, m, pal, seed)
     # The edges a shade darker, as paper's are
     cv.over(m & (dist_in(m, 2) == 1), pal[2], 0.3)
     return cv

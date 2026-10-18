@@ -177,6 +177,7 @@ object Crier {
                     gather(p)
                 } else if (said >= cries.size && t == BELL_AFTER - 1) {
                     crying.remove(p)
+                    io.github.vaspyyy.guildmark.townsfolk.talk.TownCry.listened(level, p)
                     sound(level, mouth, "roll_up", 0.7f)
                 }
                 Activity.ANNOUNCE -> if (t == 0 && said < cries.size) {

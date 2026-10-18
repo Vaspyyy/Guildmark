@@ -4,7 +4,9 @@ import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.townsfolk.talk.Talk
 import io.github.vaspyyy.guildmark.townsfolk.talk.TalkDebug
 import io.github.vaspyyy.guildmark.townsfolk.talk.TalkTest
+import io.github.vaspyyy.guildmark.townsfolk.talk.TownTalk
 import io.github.vaspyyy.guildmark.townsfolk.talk.sources.DailySources
+import io.github.vaspyyy.guildmark.townsfolk.talk.sources.TalkSources
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.core.particles.ParticleType
@@ -75,8 +77,10 @@ object Townsfolk {
         Furnish.register()
         CapitalCommand.init()
         Wayside.init()
+        TownTalk.register()
         Talk.init()
         DailySources.init()
+        TalkSources.init()
         TalkDebug.init()
         TalkTest.init()
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ ->

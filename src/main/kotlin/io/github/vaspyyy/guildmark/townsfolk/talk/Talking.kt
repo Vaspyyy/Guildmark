@@ -94,6 +94,9 @@ class Talking private constructor(
         return Talk.open(level, player, p)
     }
 
+    /** The talk turned to trade ([Talk]): they let go at once, back at what they were at, for the stall to take them up. */
+    fun hand(p: Townsperson) = release(p, false, true)
+
     /** [Talk] has them point the way to [at]: they turn to it first. */
     fun point(at: BlockPos) {
         pointAt = at

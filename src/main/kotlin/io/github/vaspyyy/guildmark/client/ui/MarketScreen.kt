@@ -595,6 +595,7 @@ class MarketScreen(private var view: MarketView) : Screen(Component.translatable
 
     override fun mouseClicked(event: MouseButtonEvent, doubleClick: Boolean): Boolean {
         if (event.button() == InputConstants.MOUSE_BUTTON_LEFT) {
+            if (MarketTalk.click(view.keeper, panelX + panelWidth, panelY + 21, event.x(), event.y())) return true
             orderButtonAt(event.x(), event.y())?.let { return order(it) }
             val (row, buying) = buttonAt(event.x(), event.y()) ?: return super.mouseClicked(event, doubleClick)
             val ok = if (buying) canBuy(row.g) else canSell(row.g)
@@ -657,6 +658,8 @@ class MarketScreen(private var view: MarketView) : Screen(Component.translatable
         drawHeader(graphics, rise, t)
         drawRows(graphics, mouseX, mouseY, t, a)
         drawFooter(graphics, rise, t, a)
+        // The Talk tab on the panel's right edge, level with the keeper's plate
+        MarketTalk.draw(graphics, view.keeper, panelX + panelWidth, panelY + 21, mouseX, mouseY, rise)
         pose.popMatrix()
         drawCoins(graphics, t)
         drawFloaters(graphics, t)

@@ -13,7 +13,7 @@ internal object MarketBoardArt {
     const val LETTERS_W = 512
     const val LETTERS_H = 368
     const val SLIPS_W = 64
-    const val SLIPS_H = 272
+    const val SLIPS_H = 304
 
     /** Texels of the atlas to a font pixel. */
     const val TEXELS = 3
@@ -142,17 +142,17 @@ internal object MarketBoardArt {
     val STICK = intArrayOf(2, 2, 12, 36, 0, 0)
 
     /** The slips' papers in Slip.Kind order, their shadow and the tack: x, y, w, h in texels of the slips sprite. */
-    val PAPERS = arrayOf(intArrayOf(0, 0, 64, 32), intArrayOf(0, 32, 64, 32), intArrayOf(0, 64, 64, 32), intArrayOf(0, 96, 64, 32), intArrayOf(0, 128, 64, 32))
-    val PAPER_KINDS = arrayOf("trouble", "good", "price", "word", "year")
+    val PAPERS = arrayOf(intArrayOf(0, 0, 64, 32), intArrayOf(0, 32, 64, 32), intArrayOf(0, 64, 64, 32), intArrayOf(0, 96, 64, 32), intArrayOf(0, 128, 64, 32), intArrayOf(0, 160, 64, 32))
+    val PAPER_KINDS = arrayOf("trouble", "good", "price", "word", "year", "talk")
     /** Where on each paper (texels of 64x32) its seal, ribbon, dust, stamp or sprig is: the writing keeps off it. */
-    val PAPER_KEEP = arrayOf(intArrayOf(47, 17, 64, 32), intArrayOf(0, 0, 9, 32), intArrayOf(0, 21, 16, 32), intArrayOf(45, 15, 64, 32), intArrayOf(0, 18, 17, 32))
-    val SLIP_SHADOW = intArrayOf(0, 160, 64, 32)
-    val TACK = intArrayOf(0, 192, 6, 6)
-    val TACK_SHADOW = intArrayOf(8, 192, 7, 8)
+    val PAPER_KEEP = arrayOf(intArrayOf(47, 17, 64, 32), intArrayOf(0, 0, 9, 32), intArrayOf(0, 21, 16, 32), intArrayOf(45, 15, 64, 32), intArrayOf(0, 18, 17, 32), intArrayOf(44, 11, 64, 32))
+    val SLIP_SHADOW = intArrayOf(0, 192, 64, 32)
+    val TACK = intArrayOf(0, 224, 6, 6)
+    val TACK_SHADOW = intArrayOf(8, 224, 7, 8)
     /** An order's ticket, its back (mirrored, as it's seen from behind) and the stamp on one taken: x, y, w, h in texels. */
-    val TICKET = intArrayOf(0, 208, 32, 36)
-    val TICKET_BACK = intArrayOf(32, 208, 32, 36)
-    val STAMP = intArrayOf(0, 244, 32, 14)
+    val TICKET = intArrayOf(0, 240, 32, 36)
+    val TICKET_BACK = intArrayOf(32, 240, 32, 36)
+    val STAMP = intArrayOf(0, 276, 32, 14)
 
     /**
      * Every glyph, one after another: its character, its advance (font px x100), whether it has a cell and the cell,

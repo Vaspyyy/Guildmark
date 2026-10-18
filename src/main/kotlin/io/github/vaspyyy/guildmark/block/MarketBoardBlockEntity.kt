@@ -69,6 +69,9 @@ class MarketBoardBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(Mod
 
             /** The year: a festival coming, the season turning. */
             YEAR("year"),
+
+            /** The talk of the town, cried at noon (townsfolk/talk/TownCry.kt). */
+            TALK("talk"),
         }
 
         companion object {

@@ -3,6 +3,7 @@ package io.github.vaspyyy.guildmark.client.ui
 import io.github.vaspyyy.guildmark.GuildmarkConfig
 import io.github.vaspyyy.guildmark.network.TalkAskPayload
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
+import io.github.vaspyyy.guildmark.townsfolk.talk.Talk
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.renderer.RenderPipelines
@@ -33,9 +34,9 @@ object MarketTalk {
     /** The game time of the last press. */
     private var askedAt = Long.MIN_VALUE / 2
 
-    /** Whether the tab shows for [keeper]: a keeper the client can see, and townsfolk talk switched on. */
+    /** Whether the tab shows for [keeper]: a keeper the client can see, and townsfolk talk switched on (and built: [Talk.READY]). */
     fun shows(keeper: Int): Boolean {
-        if (keeper < 0 || GuildmarkConfig.SPEC.isLoaded && !GuildmarkConfig.TOWNSFOLK_TALK.get()) return false
+        if (!Talk.READY || keeper < 0 || GuildmarkConfig.SPEC.isLoaded && !GuildmarkConfig.TOWNSFOLK_TALK.get()) return false
         return Minecraft.getInstance().level?.getEntity(keeper) is Townsperson
     }
 

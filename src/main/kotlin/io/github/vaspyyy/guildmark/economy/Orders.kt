@@ -12,6 +12,7 @@ import io.github.vaspyyy.guildmark.party.Parties
 import io.github.vaspyyy.guildmark.registry.ModItems
 import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
 import io.github.vaspyyy.guildmark.townsfolk.Furnish
+import io.github.vaspyyy.guildmark.townsfolk.talk.Witness
 import io.github.vaspyyy.guildmark.village.VillageNames
 import net.minecraft.ChatFormatting
 import net.minecraft.core.BlockPos
@@ -665,6 +666,7 @@ class Orders(private val books: MutableMap<Long, Book> = HashMap(), private var 
                 suppliers.of(book.pos, taker).lapsed++
                 suppliers.changed()
                 if (!given) book.lapses.add(Lapse(taker, o.shop, hour))
+                Witness.lapsed(level, book.pos, o.shop, taker, o.name)
             }
             val key = if (given) "supplier.guildmark.given_up" else "supplier.guildmark.lapsed"
             level.server.playerList.getPlayer(taker)?.sendSystemMessage(
@@ -764,6 +766,7 @@ class Orders(private val books: MutableMap<Long, Book> = HashMap(), private var 
                 suppliers.of(book.pos, player.uuid).filled++
                 suppliers.changed()
                 book.fills.add(Fill(hour, good, o.shop, o.amount, player.gameProfile.name))
+                Witness.filled(level, book.pos, o.shop, player)
                 if (o.state == OrderState.TAKEN) {
                     offered = after >= SupplierRank.KNOWN && player.random.nextDouble() < OFFER
                     if (offered) offer(book, entry, o, hour) else {

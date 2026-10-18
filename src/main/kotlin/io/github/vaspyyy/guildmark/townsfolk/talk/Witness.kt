@@ -3,6 +3,7 @@ package io.github.vaspyyy.guildmark.townsfolk.talk
 import io.github.vaspyyy.guildmark.economy.Caravans
 import io.github.vaspyyy.guildmark.economy.Good
 import io.github.vaspyyy.guildmark.economy.Markets
+import io.github.vaspyyy.guildmark.economy.Shop
 import io.github.vaspyyy.guildmark.economy.Trading
 import io.github.vaspyyy.guildmark.festival.FestivalContest
 import io.github.vaspyyy.guildmark.homestead.HomesteadEvent
@@ -426,13 +427,41 @@ object Witness {
     }
 
     /** [player]'s order with [r] was [filled] or let lapse (M3): a favour or a slight, and their business talks of it. */
-    fun order(level: ServerLevel, r: Resident, player: ServerPlayer, filled: Boolean) {
-        if (filled) TownTalk.favour(level, r, player.uuid, Favour.ORDER_FILLED) else TownTalk.slight(level, r, player.uuid, Slight.ORDER_LAPSED)
+    fun order(level: ServerLevel, r: Resident, player: ServerPlayer, filled: Boolean) = order(level, r, player.uuid, player.name.string, filled)
+
+    /** [player] filled their order at [shop] in [capital] (from `Orders.deliver`): a favour to whoever keeps it. */
+    fun filled(level: ServerLevel, capital: BlockPos, shop: Shop, player: ServerPlayer) {
+        keeper(level, capital, shop)?.let { order(level, it, player.uuid, player.name.string, true) }
+    }
+
+    /** [player] (called [name]) let their order at [shop] in [capital] lapse unmet, or gave it up (from `Orders`): a slight to whoever keeps it. */
+    fun lapsed(level: ServerLevel, capital: BlockPos, shop: Shop, player: UUID, name: String) {
+        keeper(level, capital, shop)?.let { order(level, it, player, name, false) }
+    }
+
+    private fun order(level: ServerLevel, r: Resident, player: UUID, name: String, filled: Boolean) {
+        if (filled) TownTalk.favour(level, r, player, Favour.ORDER_FILLED) else TownTalk.slight(level, r, player, Slight.ORDER_LAPSED)
         val knowers = (listOf(r.id to Venue.SEEN) + household(level, r).map { it.id to Venue.HOUSEHOLD }).distinctBy { it.first }
         TownTalk.begin(
-            level, r.capital, if (filled) "order.filled" else "order.lapsed", player.uuid, r.id, listOf(named(player.name.string)),
+            level, r.capital, if (filled) "order.filled" else "order.lapsed", player, r.id, listOf(named(name)),
             0.3f, Fade.SMALL, Scope.TOWN, if (filled) 1 else -1, null, Rumours.TOWN, knowers,
         )
+    }
+
+    /**
+     * Who keeps [shop] at [capital], as far as the town knows: its baker, smith or innkeeper, or the merchant at that
+     * stall while they're about (a stall's keeper is known by where they stand).
+     */
+    private fun keeper(level: ServerLevel, capital: BlockPos, shop: Shop): Resident? {
+        val role = when (shop) {
+            Shop.BAKERY -> TownRole.BAKER
+            Shop.SMITHY -> TownRole.SMITH
+            Shop.INN -> TownRole.INNKEEPER
+            else -> TownRole.MERCHANT
+        }
+        val people = Residents.get(level).of(capital).filter { it.alive && it.role == role }
+        if (role != TownRole.MERCHANT) return people.firstOrNull()
+        return people.firstOrNull { r -> (r.uuid?.let(level::getEntity) as? Townsperson)?.let { Shop.kept(it) == shop } == true }
     }
 
     /** [player] brought [r]'s salvage back off their wagon, or kept it (M4): a favour or a slight, and the keeper's talk. */

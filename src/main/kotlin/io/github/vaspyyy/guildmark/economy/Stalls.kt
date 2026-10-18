@@ -20,6 +20,8 @@ import io.github.vaspyyy.guildmark.townsfolk.Doing
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import io.github.vaspyyy.guildmark.townsfolk.Trait
+import io.github.vaspyyy.guildmark.townsfolk.talk.Talk
+import io.github.vaspyyy.guildmark.townsfolk.talk.Witness
 import io.github.vaspyyy.guildmark.village.VillageNames
 import net.minecraft.ChatFormatting
 import net.minecraft.core.BlockPos
@@ -145,8 +147,11 @@ object Stalls {
             if (!innOrders(level, player, life.places.capital.center)) return false
         }
         if (serving == null && (p.isSleeping || doing != Doing.WORK && !atStall(p))) {
+            val shut = StallTalk.shut(p, life, doing, shop, level)
+            // Awake, they'll talk all the same, saying they're shut first
+            if (!p.isSleeping && Talk.open(level, player, p, shut, false)) return true
             if (!p.isSleeping) p.attend(player, 60)
-            p.say(StallTalk.shut(p, life, doing, shop, level), force = true)
+            p.say(shut, force = true)
             return true
         }
         val entry = Markets.of(level, life.places.capital) ?: return false
@@ -198,6 +203,7 @@ object Stalls {
                 else -> null
             }
             serving.arrive(keeper, player, shop, again, word ?: news?.let(StallTalk::price), rank, scold)
+            Witness.opened(level, keeper, player)
         }
         PacketDistributor.sendToPlayer(player, OpenMarketPayload(view(s, entry, player)))
     }
@@ -274,6 +280,8 @@ object Stalls {
             serving.dealt(keeper, player, good, buying, done, stop, Trading.quote(entry, good, Suppliers.share(level, s.capital, player.uuid)), s.told, own > 0 && s.own.add(good))
             risen(level, s.capital, player.uuid)?.let { serving.risen(keeper, it) }
         }
+        // Who bought what, and how much, is the town's to talk of
+        if (keeper != null && done > 0) Witness.dealt(level, keeper, player, entry, good, buying, done)
         everyone(player, s, entry)
     }
 
