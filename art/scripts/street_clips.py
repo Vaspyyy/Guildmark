@@ -901,7 +901,9 @@ PK_LEN = 40
 PK_LIFT, PK_SET = 10.0, 25.0
 PK_TILT = hc.parked_tilt()
 PK_AXLE = np.array([0.0, 24.0 - hc.R, -19.0])   # the cart's axle (its origin), its tail toward the packer
-PK_SLOT = (2.2, 5.0)                            # cart (x, z): where on the bed the bundle goes (the tail, to the left)
+PK_SLOT = hc.SLOTS[5][:2]                       # cart (x, z): where on the bed the bundle goes (the tail, to the left):
+PK_SLOT_YAW = hc.SLOTS[5][2]                    # place 5, turned as it is, where a household's heap has its second
+                                                # bundle (HandcartMesh.HOUSEHOLD): the cart's own takes over there
 
 
 def cart_R():
@@ -940,7 +942,7 @@ def pk_bundle(t):
     ground = rot_about(U, 14.0)
     held = rot_about(U, 14.0 * (1.0 - smooth((t - PK_LIFT) / 6.0))) @ rot_about(L, -8.0 * bump(t, 18.0, 24.0))
     on = smooth((t - 22.0) / (PK_SET - 22.0))
-    return p, blend_R(held if t > PK_LIFT else ground, cart_R(), on)
+    return p, blend_R(held if t > PK_LIFT else ground, cart_R() @ hc.roty(-PK_SLOT_YAW), on)
 
 
 def pack():

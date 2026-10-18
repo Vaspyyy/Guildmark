@@ -2,7 +2,9 @@
 The carters' handcart (cart/Handcart, drawn by client/cart/HandcartRenderer) and what heaps on its bed. Two big spoked
 wheels with iron tyres on an iron axle; a plank bed with low sides, nailed on two long ash poles that run on forward
 as the shafts, braced by a bar ahead of the bed; the load: sacks of grain, paler sacks of flour, crates (for roots and
-fruit), a basket (for loaves) and a box of fish on ice, the goods themselves drawn on top of the open ones by the game.
+fruit), a basket (for loaves) and a box of fish on ice, the goods themselves drawn on top of the open ones by the game;
+and a household's goods when they move (HOUSEHOLD): a chest, the cooking pot, their bundles (PACK's), a hen in her coop
+looking about (HandcartMesh.henHead), the mattress rolled and tied, and a chair, heaped on the same places.
 In the capitals' manner: their block carts (city/plan/FarmYard) have a plank bed between round wheels of dark planks
 and rest tipped forward on their shafts, as this does when it's parked.
 
@@ -10,7 +12,8 @@ and rest tipped forward on their shafts, as this does when it's parked.
 
 Writes textures/entity/cart/handcart.png (box UV on TEX_W x TEX_H, the PNG at SCALE times that, painted at the higher
 resolution as the townsfolk's are), HandcartMesh.kt (the cart's layer and the load's), handcart.bbmodel, and (with a
-preview dir) the cart empty, loaded with sacks, loaded with produce, parked on its shafts, and from the side and above.
+preview dir) the cart empty, loaded with sacks, loaded with produce, parked on its shafts, and from the side and above,
+and a household's goods heaped on it (a still, and a GIF of them loaded one by one and the hen in her coop).
 Prints the geometry the game's code works from: where the hands take the shafts, the tilt it rests at when parked,
 the places on the bed. Model space as everywhere: pixels, y down, the cart faces -z (the shafts' way), its right is
 -x; the origin is the middle of the axle, a wheel's radius over the ground.
@@ -28,7 +31,7 @@ sys.path.insert(0, HERE)
 from modelkit import Cube, Part, Model
 import townsfolk_tools as tt
 
-TEX_W, TEX_H = 256, 64      # the declared (box UV) size
+TEX_W, TEX_H = 256, 128     # the declared (box UV) size
 SCALE = 2                   # the PNG ships at SCALE times that
 
 # ================================================================== geometry (px)
@@ -68,6 +71,77 @@ PIECES = {
 
 # The pieces' order in the Kotlin (HandcartMesh.PIECES)
 PIECE_ORDER = ('sack', 'flour', 'crate', 'basket', 'fish')
+
+# A household's goods for a move (household_parts()): after the produce in HandcartMesh.PIECES (5 to 10), kept out of
+# PIECES and load_parts(), which the caravan's wagon heaps from
+HOUSE_PIECES = {
+    'chest': dict(height=4.7, shows=()),
+    'pot': dict(height=3.8, shows=()),
+    'bundle': dict(height=6.4, shows=()),
+    'cage': dict(height=4.0, shows=()),
+    'mattress': dict(height=3.2, shows=()),
+    'chair': dict(height=4.4, shows=()),
+}
+HOUSE_ORDER = ('chest', 'pot', 'bundle', 'cage', 'mattress', 'chair')
+ALL_PIECES = {**PIECES, **HOUSE_PIECES}
+KT_ORDER = PIECE_ORDER + HOUSE_ORDER
+
+# What a household's move heaps, place by place (SLOTS' order): the chest and the pot over the axle, the hen's coop and
+# a sack from their larder ahead, their two bundles at the tail (place 5's where PACK sets its bundle down), the
+# mattress and the chair on top
+HOUSEHOLD = ('chest', 'pot', 'cage', 'sack', 'bundle', 'bundle', 'mattress', 'chair')
+
+# The hen in her coop looks about as hens do: her head snapped from one look to the next every HEN_BEAT ticks (in
+# HEN_SNAP) and held there, cocked now and then, and in some beats a peck at the straw (HEN_PECK ticks, down to
+# HEN_PECK_DEG), or two. A function of the time alone (and a seed, the cart's), the same here and in the Kotlin.
+HEN_BEAT, HEN_SNAP = 8.0, 1.2
+HEN_PECK, HEN_PECK_AT, HEN_PECK_DEG = 1.8, (2.4, 4.6), 34.0
+
+
+def hen_hash(k, j):
+    """0..1 from two ints, as 32-bit ints mix them (the Kotlin's Int arithmetic, wrapping)."""
+    h = (k * 374761393 + j * 668265263) & 0xffffffff
+    h = ((h ^ (h >> 13)) * 1274126177) & 0xffffffff
+    h ^= h >> 16
+    return (h & 0xffffff) / 16777216.0
+
+
+def hen_look(k, seed, which):
+    """Beat [k]'s look for the hen on cart [seed]: [which] 0 her pitch (down +), 1 her yaw, 2 her roll (degrees)."""
+    j = seed * 8
+    if which == 0:
+        return (hen_hash(k, j + 3) - 0.65) * 24.0
+    if which == 1:
+        return (2.0 * hen_hash(k, j) - 1.0) * 42.0
+    return (2.0 * hen_hash(k, j + 1) - 1.0) * 14.0 if hen_hash(k, j + 2) < 0.35 else 0.0
+
+
+def _smooth(x):
+    c = min(1.0, max(0.0, x))
+    return c * c * (3.0 - 2.0 * c)
+
+
+def hen_peck(u):
+    """A peck's dip, 0..1, [u] ticks into it: quick down, a moment at the straw, back up."""
+    if u <= 0.0 or u >= HEN_PECK:
+        return 0.0
+    x = u / HEN_PECK
+    return _smooth(x / 0.3) if x < 0.3 else 1.0 if x < 0.5 else 1.0 - _smooth((x - 0.5) / 0.5)
+
+
+def hen_head(t, seed=0):
+    """"cage_hen_head"'s turn at [t] ticks: (xRot, yRot, zRot) degrees, as ModelPart takes them (radians there)."""
+    k = math.floor(t / HEN_BEAT)
+    s = t - k * HEN_BEAT
+    f = _smooth(s / HEN_SNAP)
+    pitch, yaw, roll = [hen_look(k - 1, seed, i) + (hen_look(k, seed, i) - hen_look(k - 1, seed, i)) * f for i in range(3)]
+    pecks = hen_hash(k, seed * 8 + 4)
+    if pecks < 0.3:
+        dip = hen_peck(s - HEN_PECK_AT[0]) + (hen_peck(s - HEN_PECK_AT[1]) if pecks < 0.12 else 0.0)
+        pitch += (HEN_PECK_DEG - pitch) * dip
+        yaw *= 1.0 - 0.6 * dip
+        roll *= 1.0 - dip
+    return pitch, yaw, roll
 
 
 def parked_tilt():
@@ -525,6 +599,168 @@ def handle_painter(key):
         return a
     return painter(key, fn)
 
+# ---------------------------------------------------------------- a household's goods, heaped for a move
+
+CHEST = (92, 58, 36); CHEST_D = (54, 32, 20); CHEST_L = (132, 90, 56)          # a chest, its oak stained dark
+POT = (54, 52, 56); POT_D = (24, 22, 26); POT_L = (112, 108, 106)                # a cooking pot, black iron
+TICK = (222, 214, 192); TICK_D = (164, 154, 130); TICK_L = (240, 236, 222)       # a mattress's ticking
+TICK_STRIPE = (92, 108, 150)
+HEN = (236, 228, 210); HEN_D = (178, 160, 128); COMB = (196, 40, 36); BEAK = (226, 178, 70)
+CHAIR = (152, 114, 72); CHAIR_D = (100, 72, 44); CHAIR_L = (188, 150, 102)      # a beech chair
+
+
+def chest_painter(key, part='body'):
+    """A household's chest: dark-stained boards, iron straps over its corners, a lock plate on its front and the hasp
+    over it from the lid, a ring for a handle at each end; the lid's top curved, two straps across it."""
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        if face in ('top', 'bottom'):
+            a, _ = boards(w, h, rng, 3, 'u', CHEST, CHEST_D, CHEST_L, knots=0)
+            if part == 'lid' and face == 'top':
+                a[..., :3] *= (0.86 + 0.24 * np.sin(np.pi * V))[..., None]
+                a = band(a, (np.abs(U - 0.22) < 0.05) | (np.abs(U - 0.78) < 0.05), rng)
+            return tt.shade_edges(a, 0.16)
+        a, _ = boards(w, h, rng, 2 if part == 'body' else 1, 'u', CHEST, CHEST_D, CHEST_L, knots=1)
+        a = weather(a, rng, 0.08, grey=CHEST_L)
+        straps = (U < 0.08) | (U > 0.92)
+        if part == 'lid' and face in ('front', 'back'):
+            straps = straps | (np.abs(U - 0.22) < 0.05) | (np.abs(U - 0.78) < 0.05)
+        a = band(a, straps, rng)
+        for cu in (0.04, 0.96):
+            for cv in ((0.3, 0.75) if part == 'body' else (0.5,)):
+                nail(a, cu, cv, 0.5)
+        if face == 'front' and part == 'body':
+            a = band(a, (np.abs(U - 0.5) < 0.1) & (V < 0.44), rng)
+            hole = (np.abs(U - 0.5) < 0.03) & (np.abs(V - 0.24) < 0.08)
+            a[..., :3] = np.where(hole[..., None], np.array((10, 8, 8), float), a[..., :3])
+        if face == 'front' and part == 'lid':
+            a = band(a, (np.abs(U - 0.5) < 0.06) & (V > 0.3), rng)
+        if face in ('right', 'left') and part == 'body':
+            ring = np.abs(np.hypot((U - 0.5) * w / h, V - 0.42) - 0.17) < 0.06
+            a[..., :3] = np.where(ring[..., None], np.array(IRON_L, float) * 0.85, a[..., :3])
+        return tt.shade_edges(a, 0.18)
+    return painter(key, fn)
+
+
+def pot_painter(key, part='body'):
+    """A family's cooking pot: black iron sooted toward its foot, a rim round its mouth, a lid with a knob, a lug each
+    side; eight-sided (the body and the lid twice, the second turned an eighth)."""
+    def fn(face, w, h, rng):
+        a = metal(w, h, POT, POT_D, POT_L, rng, wear=0.06)
+        U, V = uv(w, h)
+        if part == 'body' and face not in ('top', 'bottom'):
+            a[..., :3] = mix(a[..., :3], (14, 12, 12), (0.55 * V ** 2)[..., None])
+            a = band(a, V < 0.14, rng, POT, POT_D, POT_L)
+            a[..., :3] *= (0.86 + 0.24 * np.sin(np.pi * U))[..., None]
+        elif part == 'lid' and face == 'top':
+            a[..., :3] *= (1.1 - 0.5 * np.hypot(U - 0.5, V - 0.5))[..., None]
+        return a
+    return painter(key, fn)
+
+
+def cage_painter(key, part):
+    """A hen's coop for the road, of willow: [part] 'floor' (woven, solid), 'top' (rods along it, clear between) or a
+    wall ('wall_z' the front and back, 'wall_x' the ends: upright rods, clear between, a frame round them). Each wall
+    is its own thin cube, so from any side the far wall's rods show through the near one's (the game culls a cube's
+    inside faces)."""
+    big = {'top': ('top', 'bottom'), 'wall_z': ('front', 'back'), 'wall_x': ('right', 'left')}.get(part, ())
+
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        a = weave(w, h, WICKER, WICKER_D, WICKER_L, rng, cell=2)
+        if face not in big:
+            a[..., :3] = mix(a[..., :3], WICKER_D, 0.2)
+            return a
+        # rods a texel wide, three texels apart, and a texel of frame round the edge: the hen shows between them; the
+        # top's run lengthwise, at CAGE_RODS (px across), so her neck has the middle gap to itself
+        ys, xs = np.mgrid[0:h, 0:w]
+        if part == 'top':
+            x = (U - 0.5) * CAGE_W
+            rod = np.min([np.abs(x - r) for r in CAGE_RODS], axis=0) < 0.25
+        else:
+            rod = ((xs - (w % 3) // 2) % 3) == 1
+        frame = (xs == 0) | (xs == w - 1) | (ys == 0) | (ys == h - 1)
+        a[..., :3] = np.where(rod[..., None], mix(a[..., :3], WICKER_L, 0.15), a[..., :3])
+        a[..., :3] = np.where(frame[..., None], mix(a[..., :3], WICKER_D, 0.35), a[..., :3])
+        a[~(rod | frame)] = 0
+        return a
+    return painter(key, fn)
+
+
+def hen_painter(key, part='body'):
+    """The hen in it: cream feathers in soft scallops, speckled brown; a red comb and wattle, a yellow beak, black
+    eyes."""
+    def fn(face, w, h, rng):
+        if part == 'comb':
+            return tt.noise_fill(w, h, COMB, rng, 0.08)
+        if part == 'beak':
+            return tt.noise_fill(w, h, BEAK, rng, 0.06)
+        U, V = uv(w, h)
+        a = tt.noise_fill(w, h, HEN, rng, 0.05)
+        sc = (np.sin(U * w * 1.4) * np.sin(V * h * 1.4 + U * 2.0)) > 0.55
+        a[..., :3] = np.where(sc[..., None], mix(a[..., :3], HEN_D, 0.35), a[..., :3])
+        speck = rng.random((h, w)) < 0.1
+        a[..., :3] = np.where(speck[..., None], mix(a[..., :3], (124, 86, 50), 0.6), a[..., :3])
+        if part == 'head' and face in ('right', 'left'):
+            eye = np.hypot(U - 0.45, V - 0.42) < 0.17
+            a[..., :3] = np.where(eye[..., None], np.array((20, 14, 10), float), a[..., :3])
+        return tt.shade_edges(a, 0.22)
+    return painter(key, fn)
+
+
+ROLL_RINGS = 1.25      # the rolled mattress's end: rings per px out from its middle
+
+
+def mattress_painter(key, part='roll'):
+    """A straw mattress rolled for the move: ticking striped round the roll, its end the rolled layers in rings with
+    straw poking out between them; [part] 'cord' for the cords tied round it. The roll is three boxes on one axis (a
+    stepped round, as pixels draw a circle), so the rings and stripes are laid out in px from the roll's axis and
+    middle, and the three boxes' meet."""
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        if part == 'cord':
+            a = tt.noise_fill(w, h, (116, 90, 54), rng, 0.08)
+            tw = np.sin((U + V) * max(w, h) * 1.6) > 0
+            a[..., :3] = np.where(tw[..., None], a[..., :3] * 0.8, a[..., :3])
+            return tt.shade_edges(a, 0.2)
+        if face in ('right', 'left'):
+            r = np.hypot((U - 0.5) * w / SCALE, (V - 0.5) * h / SCALE)
+            ring = (r * ROLL_RINGS) % 1.0
+            a = solid(w, h, TICK)
+            a[..., :3] = mix(np.array(TICK_D, float) * 0.8, np.array(TICK_L, float), (np.sin(ring * math.pi) ** 0.6)[..., None])
+            straw = (rng.random((h, w)) < 0.18) & (ring < 0.3) & (r > 0.3)
+            a[..., :3] = np.where(straw[..., None], np.array(STRAW, float), a[..., :3])
+            return a
+        a = weave(w, h, TICK, TICK_D, TICK_L, rng, cell=1)
+        along = np.abs(U - 0.5) * w / SCALE
+        stripe = ((along * 0.9) % 1.0) < 0.3
+        a[..., :3] = np.where(stripe[..., None], mix(a[..., :3], TICK_STRIPE, 0.7), a[..., :3])
+        a[..., :3] *= (0.88 + 0.16 * np.sin(np.pi * V))[..., None]
+        return a
+    return painter(key, fn)
+
+
+def chair_painter(key, part):
+    """A rush-seated chair of beech: turned legs, two slats across its back, the rush seat woven in from its corners;
+    [part] 'seat', 'leg', 'post', 'rail' or 'stretcher'."""
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        if part == 'seat' and face in ('top', 'bottom'):
+            a = weave(w, h, STRAW, STRAW_D, STRAW_L, rng, cell=2)
+            diag = np.abs(np.abs(U - 0.5) - np.abs(V - 0.5)) < 0.035
+            a[..., :3] = np.where(diag[..., None], mix(a[..., :3], STRAW_D, 0.6), a[..., :3])
+            rim = (U < 0.08) | (U > 0.92) | (V < 0.08) | (V > 0.92)
+            a[..., :3] = np.where(rim[..., None], grain(w, h, 'u', CHAIR, CHAIR_D, CHAIR_L, rng)[..., :3], a[..., :3])
+            return a
+        upright = part in ('leg', 'post')
+        a = grain(w, h, 'v' if upright else 'u', CHAIR, CHAIR_D, CHAIR_L, rng, streak=0.4)
+        if upright and face not in ('top', 'bottom'):
+            a[..., :3] *= (0.8 + 0.3 * np.sin(np.pi * U))[..., None]
+            rings = np.abs(((V * (5 if part == 'post' else 3)) % 1.0) - 0.5) < 0.07
+            a[..., :3] = np.where(rings[..., None], mix(a[..., :3], CHAIR_D, 0.5), a[..., :3])
+        return tt.shade_edges(a, 0.15)
+    return painter(key, fn)
+
 # ================================================================== the model
 
 
@@ -597,12 +833,92 @@ def load_parts():
     return [sack('sack', False), sack('flour', True), crate, basket, fish]
 
 
-SHARED = {'c_rim': rim_painter('c_rim'), 'c_spoke': spoke_painter('c_spoke'), 'c_nave': hub_painter('c_nave'), 'c_cap': cap_painter('c_cap')}
+ROLL_R = 1.6                     # the rolled mattress's radius (it lies across, its axis this high)
+HEN_HEAD = (0.0, -3.0, -0.9)     # the hen's neck, in the coop's frame: "cage_hen_head" turns about it, her neck up
+                                 # through the top's middle gap (a peck tips it along the gap, a look turns it in it)
+CAGE_W = 5.6                     # the coop's width, and the top's rods (px across: they run lengthwise)
+CAGE_RODS = (-1.95, -0.8, 0.8, 1.95)
+
+
+def household_parts():
+    """A household's goods for a move, each standing on the middle of its underside: a chest, the cooking pot, the
+    bundle of their bedding and clothes (PACK's own: the same cubes and the same paint, so the one it sets on the bed
+    and the one the cart then draws are one thing), a hen in her coop (her head on a part of its own,
+    "cage_hen_head", that HandcartMesh.henHead turns as she looks about and pecks), the mattress rolled and tied, and
+    a chair. (Not in load_parts(): the caravan's wagon heaps those, and these are a household's, not a trader's.)"""
+    import living_props as lp       # the bundle's paint (here, so the wagon's script importing this one stays light)
+    chest = Part('chest', (0, 0, 0), (0, 0, 0), cubes=[
+        C((-3.2, -3.5, -2.4), (6.4, 3.5, 4.8), 'l_chest', chest_painter('l_chest', 'body')),
+        C((-3.35, -4.7, -2.55), (6.7, 1.2, 5.1), 'l_chest_lid', chest_painter('l_chest_lid', 'lid'))])
+    # eight-sided: a box and the same turned an eighth (a little smaller, so its corners round the first's sides off
+    # and its top sits a hair under the first's)
+    pot = Part('pot', (0, 0, 0), (0, 0, 0), cubes=[
+        C((-2.4, -3.3, -2.4), (4.8, 3.3, 4.8), 'l_pot', pot_painter('l_pot', 'body')),
+        C((-2.05, -3.8, -2.05), (4.1, 0.5, 4.1), 'l_pot_lid', pot_painter('l_pot_lid', 'lid')),
+        C((-0.5, -4.4, -0.5), (1.0, 0.6, 1.0), 'l_pot_knob', pot_painter('l_pot_knob', 'knob')),
+        C((-3.6, -3.0, -0.45), (0.7, 0.6, 0.9), 'l_pot_lug_r', None, share='l_pot_lug'),
+        C((2.9, -3.0, -0.45), (0.7, 0.6, 0.9), 'l_pot_lug_l', None, share='l_pot_lug'),
+    ], children=[Part('pot45', (0, 0, 0), (0, 45.0, 0), cubes=[
+        C((-2.1, -3.2, -2.1), (4.2, 3.2, 4.2), 'l_pot45', pot_painter('l_pot45', 'body')),
+        C((-1.8, -3.7, -1.8), (3.6, 0.4, 3.6), 'l_pot_lid45', pot_painter('l_pot_lid45', 'lid'))])])
+    bundle = Part('bundle', (0, 0, 0), (0, 0, 0), cubes=[
+        C((-3.6, -5.6, -3.0), (7.2, 5.6, 6.0), 'l_bundle', lp.bundle_painter('t_bundle')),
+        C((-2.5, -6.4, -2.1), (5.0, 0.8, 4.2), 'l_bundle_top', lp.bundle_painter('t_bundle_top')),
+        C((-1.0, -7.6, -1.0), (2.0, 1.4, 2.0), 'l_bundle_knot', lp.bundle_painter('t_bundle_knot', knot=True)),
+        C((-2.0, -7.3, -0.3), (4.0, 0.8, 0.6), 'l_bundle_ears', lp.bundle_painter('t_bundle_ears', knot=True))])
+    # the coop: a woven floor, rods across the top, and its four walls each a thin cube of its own; the hen sits in it
+    # with her neck up between two of the top's rods, her head out over it
+    cage = Part('cage', (0, 0, 0), (0, 0, 0), cubes=[
+        C((-2.8, -0.4, -2.4), (5.6, 0.4, 4.8), 'l_cage_floor', cage_painter('l_cage_floor', 'floor')),
+        C((-2.8, -4.0, -2.4), (5.6, 0.3, 4.8), 'l_cage_top', cage_painter('l_cage_top', 'top')),
+        C((-2.8, -3.7, -2.4), (5.6, 3.3, 0.3), 'l_cage_front', None, share='l_cage_wz'),
+        C((-2.8, -3.7, 2.1), (5.6, 3.3, 0.3), 'l_cage_back', None, share='l_cage_wz'),
+        C((-2.8, -3.7, -2.1), (0.3, 3.3, 4.2), 'l_cage_right', None, share='l_cage_wx'),
+        C((2.5, -3.7, -2.1), (0.3, 3.3, 4.2), 'l_cage_left', None, share='l_cage_wx'),
+        C((-1.3, -3.0, -1.5), (2.6, 2.6, 3.0), 'l_hen', hen_painter('l_hen', 'body')),
+        C((-0.5, -3.6, 1.1), (1.0, 1.3, 0.75), 'l_hen_tail', hen_painter('l_hen_tail', 'tail')),
+    ], children=[Part('cage_hen_head', HEN_HEAD, (0, 0, 0), cubes=[
+        C((-0.35, -1.75, -0.35), (0.7, 1.85, 0.7), 'l_hen_neck', hen_painter('l_hen_neck', 'neck')),
+        C((-0.6, -2.8, -0.85), (1.2, 1.2, 1.3), 'l_hen_head', hen_painter('l_hen_head', 'head')),
+        C((-0.15, -3.25, -0.65), (0.3, 0.5, 0.95), 'l_hen_comb', hen_painter('l_hen_comb', 'comb')),
+        C((-0.2, -2.35, -1.3), (0.4, 0.3, 0.45), 'l_hen_beak', hen_painter('l_hen_beak', 'beak')),
+        C((-0.2, -2.05, -1.05), (0.4, 0.45, 0.2), 'l_hen_wattle', hen_painter('l_hen_wattle', 'comb'))])])
+    # the roll lies across the bed: three boxes on its axis, 1.6 px up (wide, tall and square: a stepped round, each
+    # one's ends a hair inside the last's), and a cord round it near either end, the same three a little bigger
+    def stepped(name, x0, length, r, inset, share=None):
+        out = []
+        for k, (hz, hy) in enumerate(((r, 0.625 * r), (0.625 * r, r), (0.8625 * r, 0.8625 * r))):
+            g = inset * k
+            out.append(C((x0 + g, -ROLL_R - hy, -hz), (length - 2 * g, 2 * hy, 2 * hz), f'{name}_{"abc"[k]}',
+                         None if share else mattress_painter(f'{name}_{"abc"[k]}'), share=share and f'{share}_{"abc"[k]}'))
+        return out
+    mattress = Part('mattress', (0, 0, 0), (0, 0, 0), cubes=stepped('l_roll', -3.7, 7.4, ROLL_R, 0.04)
+                    + stepped('l_cord_r', -2.45, 0.5, ROLL_R + 0.1, 0.03, share='l_cord')
+                    + stepped('l_cord_l', 1.95, 0.5, ROLL_R + 0.1, 0.03, share='l_cord'))
+    legs = [C((sx * 2.25 - 0.35, -3.7, sz * 2.05 - 0.35), (0.7, 3.7, 0.7), f'l_chair_leg{i}', None, share='l_chair_leg')
+            for i, (sx, sz) in enumerate(((-1, -1), (1, -1), (-1, 1), (1, 1)))]
+    posts = [C((sx * 2.25 - 0.35, -10.4, 1.7), (0.7, 6.0, 0.7), f'l_chair_post{i}', None, share='l_chair_post')
+             for i, sx in enumerate((-1, 1))]
+    rails = [C((-1.9, y, 1.8), (3.8, 0.9, 0.4), f'l_chair_rail{i}', None, share='l_chair_rail') for i, y in enumerate((-9.9, -7.5))]
+    stretchers = [C((-1.9, -1.6, sz * 2.05 - 0.2), (3.8, 0.4, 0.4), f'l_chair_str{i}', None, share='l_chair_str')
+                  for i, sz in enumerate((-1, 1))]
+    chair = Part('chair', (0, 0, 0), (0, 0, 0), cubes=[
+        C((-2.8, -4.4, -2.6), (5.6, 0.7, 5.2), 'l_chair_seat', chair_painter('l_chair_seat', 'seat'))] + legs + posts + rails + stretchers)
+    return [chest, pot, bundle, cage, mattress, chair]
+
+
+SHARED = {'c_rim': rim_painter('c_rim'), 'c_spoke': spoke_painter('c_spoke'), 'c_nave': hub_painter('c_nave'), 'c_cap': cap_painter('c_cap'),
+          'l_pot_lug': pot_painter('l_pot_lug', 'lug'), 'l_cage_wz': cage_painter('l_cage_wz', 'wall_z'),
+          'l_cage_wx': cage_painter('l_cage_wx', 'wall_x'), 'l_cord_a': mattress_painter('l_cord_a', 'cord'),
+          'l_cord_b': mattress_painter('l_cord_b', 'cord'), 'l_cord_c': mattress_painter('l_cord_c', 'cord'),
+          'l_chair_leg': chair_painter('l_chair_leg', 'leg'),
+          'l_chair_post': chair_painter('l_chair_post', 'post'), 'l_chair_rail': chair_painter('l_chair_rail', 'rail'),
+          'l_chair_str': chair_painter('l_chair_str', 'stretcher')}
 
 
 def build():
     cart = Model('handcart', TEX_W, TEX_H, [bed(), wheel(-1), wheel(1)])
-    load = Model('handcart_load', TEX_W, TEX_H, load_parts())
+    load = Model('handcart_load', TEX_W, TEX_H, load_parts() + household_parts())
     every = list(cart.all_cubes()) + list(load.all_cubes())
     names = [c.name for c in every]
     dup = {n for n in names if names.count(n) > 1}
@@ -727,7 +1043,8 @@ def model_faces(model, M=np.eye(3), T=np.zeros(3), extra=None, only=None):
     extra = extra or {}
 
     def go(part, M0, T0):
-        Rl = rot_part(part.rot) @ rotx(extra.get(part.name, 0.0))
+        e = extra.get(part.name, 0.0)       # degrees about x (a wheel's turn), or a part's own turn (a matrix)
+        Rl = rot_part(part.rot) @ (np.asarray(e, float) if np.ndim(e) == 2 else rotx(e))
         Rm = M0 @ Rl
         P = T0 + M0 @ np.array(part.pivot, float)
         for c in part.cubes:
@@ -766,12 +1083,12 @@ def cart_pose(pitch=0.0, roll=0.0, spin=0.0):
     return M, {'wheel_r': turn, 'wheel_l': turn}
 
 
-def piece_faces(load, kind, slot, lift=0.0, layer_y=0.0, M=np.eye(3), T=np.zeros(3)):
+def piece_faces(load, kind, slot, lift=0.0, layer_y=0.0, M=np.eye(3), T=np.zeros(3), extra=None):
     """One of the load's pieces in its place on the bed ([layer_y] up, on whatever it rests on), the cart turned by M
-    and moved by T."""
+    and moved by T; [extra] turns its parts (model_faces)."""
     x, z, yaw, layer, _ = SLOTS[slot]
     P = np.asarray(T, float) + M @ np.array([x, FLOOR_TOP - layer_y - lift, z])
-    return model_faces(load, M @ roty(-yaw), P, only={kind})
+    return model_faces(load, M @ roty(-yaw), P, extra=extra, only={kind})
 
 
 SPRITES = {}
@@ -820,7 +1137,7 @@ def sprite(name):
 
 def item_faces(kind, slot, item, atlas, layer_y=0.0, M=np.eye(3)):
     """The goods shown on an open piece, as the renderer lays them: flat, a little turned and tipped, on its top."""
-    info = PIECES[kind]
+    info = ALL_PIECES[kind]
     x, z, yaw, layer, _ = SLOTS[slot]
     out = []
     size = info.get('size', 0.4) * 16
@@ -929,7 +1246,7 @@ def scene(cart, load, atlas, goods=(), pitch=0.0, roll=0.0, spin=0.0):
     tops = {}
     for i, (kind, item) in enumerate(goods):
         x, z, yaw, layer, under = SLOTS[i]
-        rest = max((PIECES[goods[j][0]]['height'] for j in under if j < len(goods)), default=0.0)
+        rest = max((ALL_PIECES[goods[j][0]]['height'] for j in under if j < len(goods)), default=0.0)
         faces += piece_faces(load, kind, i, layer_y=rest, M=M)
         if item:
             faces += item_faces(kind, i, item, atlas, layer_y=rest, M=M)
@@ -970,6 +1287,84 @@ def previews(cart, load, tex, out):
     img.save(p)
     paths.append(p)
     tex.save(os.path.join(out, 'handcart_texture.png'))
+    return paths + household_previews(cart, load, tex2, out)
+
+
+def household_scene(cart, load, n=len(HOUSEHOLD), lifts=None, t=0.0, pitch=0.0, spin=0.0, seed=3, only=None):
+    """The cart posed with a household's goods heaped (HOUSEHOLD, the first [n] of them; piece i [lifts][i] px over
+    its place), the hen's head as at [t] ticks; [only]: just those places' pieces, no cart."""
+    M, extra = cart_pose(pitch, 0.0, spin)
+    faces = [] if only else model_faces(cart, M, extra=extra)
+    goods = HOUSEHOLD[:n]
+    head = {'cage_hen_head': rot_part(hen_head(t, seed))}
+    for i, kind in enumerate(goods):
+        if only and i not in only:
+            continue
+        x, z, yaw, layer, under = SLOTS[i]
+        rest = max((ALL_PIECES[goods[j]]['height'] for j in under if j < len(goods)), default=0.0)
+        faces += piece_faces(load, kind, i, lift=(lifts[i] if lifts else 0.0), layer_y=rest, M=M, extra=head)
+    return faces
+
+
+def _drop(age):
+    """px a piece set on the heap is still over its place [age] frames after it was let go (as a heave lets it fall)."""
+    if age < 5.0:
+        u = max(0.0, age) / 5.0
+        return 7.0 * (1.0 - u * u)
+    if age < 8.0:
+        return 0.5 * math.sin(math.pi * (age - 5.0) / 3.0)
+    return 0.0
+
+
+def household_previews(cart, load, tex2, out):
+    """A household's goods heaped on the cart from two sides; and a GIF of them put on it one by one as it stands
+    parked at the door, then the cart taken up level and seen all round, the hen looking about in her coop (a close
+    view of her in the corner, as the game turns her head: HandcartMesh.henHead)."""
+    paths = []
+    full = household_scene(cart, load, spin=10.0)
+    a = render(full, tex2, yaw=215, pitch=-24, scale=7.0, center=(0.0, -6.0, -4.0))
+    b = render(full, tex2, yaw=40, pitch=-30, scale=7.0, center=(0.0, -6.0, -4.0))
+    img = Image.new('RGB', (a.width * 2, a.height + 18), (30, 32, 40))
+    img.paste(a, (0, 18))
+    img.paste(b, (a.width, 18))
+    ImageDraw.Draw(img).text((6, 3), 'handcart: a household\'s move (' + ', '.join(HOUSEHOLD) + ')', fill=(235, 235, 235))
+    p = os.path.join(out, 'handcart_household.png')
+    img.save(p)
+    paths.append(p)
+    tilt = parked_tilt()
+    starts = [2 + 5 * i for i in range(len(HOUSEHOLD))]
+    load_end = starts[-1] + 10
+    lift_end = load_end + 10
+    turn_end = lift_end + 64
+    frames = []
+    for f in range(turn_end + 6):
+        n = sum(1 for s in starts if s <= f)
+        lifts = [_drop(f - s) for s in starts[:n]]
+        if f < load_end:
+            pitch, yaw, title = -tilt, 215.0, 'loading at the door, parked on its shafts'
+        elif f < lift_end:
+            pitch, yaw, title = -tilt * (1.0 - _smooth((f - load_end) / 10.0)), 215.0, 'taken up by the shafts'
+        else:
+            pitch, yaw, title = 0.0, 215.0 + 360.0 * _smooth((f - lift_end) / 64.0), 'heaped for the road'
+        main = render(household_scene(cart, load, n, lifts, t=float(f), pitch=pitch, spin=10.0), tex2, yaw=yaw, pitch=-24,
+                      scale=7.0, center=(0.0, -6.0, -4.0))
+        frame = Image.new('RGB', (main.width, main.height + 18), (30, 32, 40))
+        frame.paste(main, (0, 18))
+        if n > 2:
+            # the coop close, as it sits (place 2), the hen's head as the game turns it
+            M, _ = cart_pose(pitch, 0.0, 10.0)
+            x, z, _, _, _ = SLOTS[2]
+            c = M @ np.array([x, FLOOR_TOP - 2.4, z])
+            close = render(household_scene(cart, load, n, lifts, t=float(f), pitch=pitch, spin=10.0, only={2}), tex2,
+                           yaw=24, pitch=-14, scale=20.0, size=(150, 124), center=tuple(c), ground=False)
+            frame.paste(close, (main.width - 154, 22))
+            ImageDraw.Draw(frame).rectangle((main.width - 155, 21, main.width - 4, 146), outline=(200, 200, 200))
+        ImageDraw.Draw(frame).text((6, 3), f'handcart: a household\'s move, {title}', fill=(235, 235, 235))
+        frames.append(frame)
+    pal = [fr.quantize(colors=160, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE) for fr in frames]
+    p = os.path.join(out, 'handcart_household.gif')
+    pal[0].save(p, save_all=True, append_images=pal[1:], duration=50, loop=0, optimize=True, disposal=1)
+    paths.append(p)
     return paths
 
 # ================================================================== output
@@ -989,8 +1384,8 @@ def kotlin_load_data():
         u = 'intArrayOf(' + ', '.join(str(i) for i in under) + ')'
         slots.append(f'        Slot({kt_float(x)}, {kt_float(z)}, {kt_float(yaw)}, {u}),')
     pieces = []
-    for name in PIECE_ORDER:
-        info = PIECES[name]
+    for name in KT_ORDER:
+        info = ALL_PIECES[name]
         shows = ', '.join('floatArrayOf(' + ', '.join(kt_float(v) for v in show) + ')' for show in info['shows'])
         pieces.append(f'        Piece("{name}", {kt_float(info["height"])}, listOf({shows}), {kt_float(info.get("size", 0.0))}),')
     return '\n'.join(slots), '\n'.join(pieces)
@@ -1006,6 +1401,8 @@ import net.minecraft.client.model.geom.PartPose
 import net.minecraft.client.model.geom.builders.CubeListBuilder
 import net.minecraft.client.model.geom.builders.LayerDefinition
 import net.minecraft.client.model.geom.builders.MeshDefinition
+import kotlin.math.floor
+import kotlin.math.min
 
 /**
  * The handcart's two layers, box UV on the one [TEX_WIDTH] x [TEX_HEIGHT] texture (the PNG ships at {SCALE}x that,
@@ -1027,7 +1424,9 @@ object HandcartMesh {{
 
     /**
      * What heaps on the bed, each part standing on the middle of its underside: "sack" (grain), "flour", "crate",
-     * "basket" and "fish".
+     * "basket" and "fish"; and a household's goods for a move: "chest", "pot", "bundle" (PACK's own bundle: the same
+     * cubes and paint as the prop it sets down), "cage" (a hen in her coop: her head is its child "cage_hen_head",
+     * turned by [henHead]), "mattress" (rolled, lying across) and "chair".
      */
     @Suppress("LocalVariableName", "UNUSED_VARIABLE")
     fun load(): LayerDefinition {{
@@ -1054,10 +1453,94 @@ object HandcartMesh {{
      */
     class Piece(val part: String, val height: Float, val shows: List<FloatArray>, val size: Float)
 
-    /** The pieces: grain, flour, a crate of produce, a basket of loaves, a box of fish on ice. */
+    /**
+     * The pieces: grain, flour, a crate of produce, a basket of loaves, a box of fish on ice (0 to 4); a household's
+     * chest, cooking pot, bundle, hen's coop, rolled mattress and chair (5 to 10).
+     */
     val PIECES: List<Piece> = listOf(
 {pieces}
     )
+
+    /**
+     * A household's move, place by place ([SLOTS]' order): the [PIECES] index each takes. {', '.join(HOUSEHOLD)}.
+     * Place 5 is where PACK sets its bundle down.
+     */
+    val HOUSEHOLD: IntArray = intArrayOf({', '.join(str(KT_ORDER.index(k)) for k in HOUSEHOLD)})
+
+    /** The hen's neck in the coop's frame (px), "cage_hen_head"'s pivot. */
+    val HEN_HEAD: FloatArray = floatArrayOf({', '.join(kt_float(v) for v in HEN_HEAD)})
+
+    /** The hen's look-about: ticks from one look to the next, and how long a snap of her head takes. */
+    const val HEN_BEAT = {kt_float(HEN_BEAT)}
+    const val HEN_SNAP = {kt_float(HEN_SNAP)}
+
+    /** A peck at the straw: how long it takes (ticks), when in a beat it starts (the second of a double one), how far. */
+    const val HEN_PECK = {kt_float(HEN_PECK)}
+    const val HEN_PECK_AT = {kt_float(HEN_PECK_AT[0])}
+    const val HEN_PECK_AGAIN = {kt_float(HEN_PECK_AT[1])}
+    const val HEN_PECK_DEG = {kt_float(HEN_PECK_DEG)}
+
+    private const val DEG = 0.017453292f      // PI / 180
+
+    /** 0..1 from two ints (the script's hen_hash: the same Int arithmetic, wrapping). */
+    private fun henHash(k: Int, j: Int): Float {{
+        var h = k * 374761393 + j * 668265263
+        h = (h xor (h ushr 13)) * 1274126177
+        h = h xor (h ushr 16)
+        return (h and 0xffffff) / 16777216f
+    }}
+
+    /** Beat [k]'s look for the hen on cart [seed]: [which] 0 her pitch (down +), 1 her yaw, 2 her roll, degrees. */
+    private fun henLook(k: Int, seed: Int, which: Int): Float {{
+        val j = seed * 8
+        return when (which) {{
+            0 -> (henHash(k, j + 3) - 0.65f) * 24f
+            1 -> (2f * henHash(k, j) - 1f) * 42f
+            else -> if (henHash(k, j + 2) < 0.35f) (2f * henHash(k, j + 1) - 1f) * 14f else 0f
+        }}
+    }}
+
+    private fun smooth(x: Float): Float {{
+        val c = x.coerceIn(0f, 1f)
+        return c * c * (3f - 2f * c)
+    }}
+
+    /** A peck's dip, 0..1, [u] ticks into it: quick down, a moment at the straw, back up. */
+    private fun henPeck(u: Float): Float {{
+        if (u <= 0f || u >= HEN_PECK) return 0f
+        val x = u / HEN_PECK
+        return when {{
+            x < 0.3f -> smooth(x / 0.3f)
+            x < 0.5f -> 1f
+            else -> 1f - smooth((x - 0.5f) / 0.5f)
+        }}
+    }}
+
+    /**
+     * How "cage_hen_head" turns at [t] ticks, for the hen on the cart [seed] (its id): her xRot, yRot and zRot
+     * (radians, as ModelPart takes them) into [out]. She snaps her head from one look to the next every [HEN_BEAT]
+     * ticks and holds it there, as hens do, cocks it now and then, and in some beats pecks at the straw, once or
+     * twice. Pass the cart's own tickCount plus the partial tick (a small number: a float of the game time would step).
+     */
+    fun henHead(t: Float, seed: Int, out: FloatArray = FloatArray(3)): FloatArray {{
+        val k = floor(t / HEN_BEAT).toInt()
+        val s = t - k * HEN_BEAT
+        val f = smooth(min(1f, s / HEN_SNAP))
+        var pitch = henLook(k - 1, seed, 0) + (henLook(k, seed, 0) - henLook(k - 1, seed, 0)) * f
+        var yaw = henLook(k - 1, seed, 1) + (henLook(k, seed, 1) - henLook(k - 1, seed, 1)) * f
+        var roll = henLook(k - 1, seed, 2) + (henLook(k, seed, 2) - henLook(k - 1, seed, 2)) * f
+        val pecks = henHash(k, seed * 8 + 4)
+        if (pecks < 0.3f) {{
+            val dip = henPeck(s - HEN_PECK_AT) + (if (pecks < 0.12f) henPeck(s - HEN_PECK_AGAIN) else 0f)
+            pitch += (HEN_PECK_DEG - pitch) * dip
+            yaw *= 1f - 0.6f * dip
+            roll *= 1f - dip
+        }}
+        out[0] = pitch * DEG
+        out[1] = yaw * DEG
+        out[2] = roll * DEG
+        return out
+    }}
 }}
 '''
 
@@ -1073,7 +1556,7 @@ def report():
     ]
     for i, (x, z, yaw, layer, under) in enumerate(SLOTS):
         lines.append(f'  place {i}: x {x:g} z {z:g} turned {yaw:g}' + (f', on top of {list(under)}' if layer else ''))
-    for k, info in PIECES.items():
+    for k, info in ALL_PIECES.items():
         lines.append(f'  {k}: {info["height"]:g} px tall' + (f', goods shown at {list(info["shows"])} size {info.get("size")}' if info['shows'] else ''))
     return '\n'.join(lines)
 
