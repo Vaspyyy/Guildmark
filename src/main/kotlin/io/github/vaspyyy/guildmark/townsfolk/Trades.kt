@@ -364,11 +364,13 @@ object Trades {
             Handcarts.parked(p)?.let { cart ->
                 for (slot in 0 until Handcart.SLOTS) cart.goods(slot).takeIf { !it.isEmpty }?.let { heap.add(it.copy()) }
             }
-            if (Pull.standing(p, start)) {
-                go(if (heap.size >= n) across() else fetch())
+            // Standing by the door already, with more to go on: in to the store for the next piece
+            if (Pull.standing(p, start) && heap.size < n) {
+                go(fetch())
                 return
             }
-            // Out to the cart first (down from upstairs and out of doors); with none standing by, to where it's wanted, to bring one out
+            // Out to the cart first (down from upstairs and out of doors), even if it stands loaded and ready; with none
+            // standing by, to where it's wanted, to bring one out
             val at = Handcarts.fetch(p) ?: start
             go(Ways.to(p, life.places, at, Jobs.WALK, near = 1.0, exact = at != start).andThen(Later(p) { pulling(start) }))
         }
