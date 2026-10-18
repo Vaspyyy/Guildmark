@@ -66,6 +66,7 @@ object Townsfolk {
         }
         NeoForge.EVENT_BUS.addListener(RegisterCommandsEvent::class.java) { TownsfolkCommand.register(it.dispatcher) }
         Furnish.register()
+        CapitalCommand.init()
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> CityPlaces.forget() }
     }
 
