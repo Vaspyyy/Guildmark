@@ -496,7 +496,7 @@ object StallDesk {
             for ((renter, kept) in hall.kept) {
                 if (kept.told) continue
                 val player = server.playerList.getPlayer(renter) ?: continue
-                player.sendSystemMessage(Component.translatable("message.guildmark.stall.let_go", kept.place).withStyle(ChatFormatting.GOLD))
+                player.sendSystemMessage(Component.translatable(kept.why, kept.place).withStyle(ChatFormatting.GOLD))
                 kept.told = true
                 data.changed()
             }

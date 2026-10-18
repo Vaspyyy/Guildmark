@@ -444,7 +444,9 @@ object WorksCommand {
             Works.siteAgain(level, w)
             return say(source, plain("#$id's site is forgotten: the builders look for one again."))
         }
-        if (Capitals.covering(level, player.blockPosition())?.center?.asLong() != w.capital) return fail(source, "Stand in #$id's capital to site it there.")
+        // A tower stands out on its road, beyond the capital; anything else in the capital
+        if (level.dimension() != Level.OVERWORLD) return fail(source, "The capitals and their works are in the overworld.")
+        if (w.kind != WorksKind.TOWER && Capitals.covering(level, player.blockPosition())?.center?.asLong() != w.capital) return fail(source, "Stand in #$id's capital to site it there.")
         Works.siteHere(level, player, w)
         return say(source, plain("#$id's ${site(w)}."))
     }

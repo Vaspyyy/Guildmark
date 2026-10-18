@@ -65,9 +65,13 @@ class OwnStall(
 
 /**
  * What a player's stall left with the hall's merchant in [place] when it was let go: its goods, whole, and the Marks
- * from its till; [told] once its renter has heard.
+ * from its till; [told] once its renter has heard, in the words of [why] (a lang key: a table's week run out, or
+ * their own stall in the square taken down).
  */
-class Kept(var name: String, var place: String, val goods: IntArray = IntArray(Good.entries.size), var marks: Double = 0.0, var told: Boolean = false)
+class Kept(
+    var name: String, var place: String, val goods: IntArray = IntArray(Good.entries.size), var marks: Double = 0.0, var told: Boolean = false,
+    var why: String = OwnStalls.LET_GO,
+)
 
 /**
  * A capital's market hall as [OwnStalls] keeps it: each table's stall, if it's let, and what the merchant keeps for
@@ -137,6 +141,10 @@ class OwnStalls(private val halls: MutableMap<Long, Hall> = HashMap()) : SavedDa
         /** A week's wage for the keeper of a player's own stall in the square, from its till. */
         const val KEEPER_WAGE = 2.0
 
+        /** What a renter is told of a stall let go: a table's week run out, or their own stall in the square taken down. */
+        const val LET_GO = "message.guildmark.stall.let_go"
+        const val PITCH_GONE = "message.guildmark.stall.pitch_gone"
+
         private val GOODS: Codec<Map<String, Double>> = Codec.unboundedMap(Codec.STRING, Codec.DOUBLE)
         private val COUNTS: Codec<Map<String, Int>> = Codec.unboundedMap(Codec.STRING, Codec.INT)
 
@@ -179,8 +187,9 @@ class OwnStalls(private val halls: MutableMap<Long, Hall> = HashMap()) : SavedDa
                 COUNTS.optionalFieldOf("goods", mapOf()).forGetter { counts(it.second.goods) },
                 Codec.DOUBLE.optionalFieldOf("marks", 0.0).forGetter { it.second.marks },
                 Codec.BOOL.optionalFieldOf("told", false).forGetter { it.second.told },
-            ).apply(i) { player, name, place, goods, marks, told ->
-                val k = Kept(name, place, marks = marks, told = told)
+                Codec.STRING.optionalFieldOf("why", LET_GO).forGetter { it.second.why },
+            ).apply(i) { player, name, place, goods, marks, told, why ->
+                val k = Kept(name, place, marks = marks, told = told, why = why)
                 for ((id, n) in goods) Good.byId(id)?.let { k.goods[it.ordinal] = n }
                 player to k
             }
@@ -340,6 +349,7 @@ class OwnStalls(private val halls: MutableMap<Long, Hall> = HashMap()) : SavedDa
             for (g in Good.entries) k.goods[g.ordinal] += s.whole(g)
             k.marks += s.till
             k.told = false
+            k.why = PITCH_GONE
             data.changed()
         }
 
@@ -373,6 +383,7 @@ class OwnStalls(private val halls: MutableMap<Long, Hall> = HashMap()) : SavedDa
             for (g in Good.entries) k.goods[g.ordinal] += s.whole(g)
             k.marks += s.till
             k.told = false
+            k.why = LET_GO
             hall.stalls[table] = null
         }
     }
