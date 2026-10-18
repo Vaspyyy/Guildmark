@@ -38,6 +38,15 @@ object Memory {
     const val FAVOUR_HALF = 10.0
     const val SET_HALF = 10.0
 
+    /**
+     * The favour felt the daily favours (M6: materials brought, alms given) bring a resident up to at most: +20 to the
+     * opinion, a good neighbour's, never a friend's on its own.
+     */
+    const val DAILY_CAP = 2.0
+
+    /** The favours counted once a resident keeps track of for each player (the oldest let go first): enough for a town's works. */
+    const val THANKED = 12
+
     /** The three kinds of slight by how long they weigh: small, harm and a killing (their half-lives in days). */
     val HALVES = intArrayOf(5, 15, 60)
 
@@ -224,6 +233,26 @@ object Memory {
     fun favour(a: Acq, day: Int, favour: Favour) {
         add(a.favour, day, FAVOUR_HALF, favour.amount)
         a.last = max(a.last, day)
+    }
+
+    /**
+     * The player did them [favour], one of those counted once (M6): FUNDED once for each works ([key] its id), the
+     * daily ones ([Favour.daily]: materials brought, alms given) once a day ([key] the day) and only up to
+     * [DAILY_CAP] of favour felt, so giving every day can't buy a town's love. False if it didn't count.
+     */
+    fun favourOnce(a: Acq, day: Int, favour: Favour, key: Long): Boolean {
+        if (a.thanked.any { it.favour == favour && it.key == key }) return false
+        var amount = favour.amount
+        if (favour.daily) {
+            amount = min(amount, DAILY_CAP - faded(a.favour, day, FAVOUR_HALF))
+            if (amount <= 0.0) return false
+            a.thanked.removeAll { it.favour == favour }
+        }
+        a.thanked.add(Thanked(favour, key))
+        while (a.thanked.size > THANKED) a.thanked.removeAt(0)
+        add(a.favour, day, FAVOUR_HALF, amount)
+        a.last = max(a.last, day)
+        return true
     }
 
     /** The player wronged them ([slight]); false if it doesn't count again (walking off counts once a day). */

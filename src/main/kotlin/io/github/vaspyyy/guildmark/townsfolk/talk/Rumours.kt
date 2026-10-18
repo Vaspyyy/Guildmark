@@ -42,6 +42,12 @@ import kotlin.random.Random
  *   `deed.beast`, `deed.lair`, `deed.siege`, `deed.band_broken` (0.8, big); `siege.lost` (0.8, big, bad);
  *   `deed.band` (0.6); `outlaws.<crime>` and `outlaws.taken` (0.6, bad); `deed.rank` (0.4); and `guild.<news>` for
  *   the rest (0.4). Their args are the news' own, a name as "=Name", a lang key bare.
+ * - The town's works and households (M6), told by their own sources (WorksTopics, FortuneTopics), never as news nor
+ *   by the crier, who has the works' own news: `works.funded` [the works' id, its name's key
+ *   ("fortune.guildmark.works.granary"), =patron]: a works paid for, about its patron (0.6, small, +1; a stall 0);
+ *   `works.raised` [the same]: raised (0.75, big, +1; a stall 0.4, small, 0). Whoever hears either thanks the patron
+ *   and anyone who gave a quarter of its price, once ([TownTalk.heard]). `household.gone` / `household.back`
+ *   [=family]: a household gone in hard times, or come home, about its first member (0.6, small, -1 / +1).
  */
 object Rumours {
     /** How a rumour began ([Story.by]): in the town itself, the guild's news, the market's news, or from another capital. */
@@ -84,6 +90,12 @@ object Rumours {
     /** The truest and the tallest versions. */
     const val TRUE = 0
     const val TALL = 3
+
+    /** The kinds of the town's works and households (M6): see above. */
+    const val WORKS_FUNDED = "works.funded"
+    const val WORKS_RAISED = "works.raised"
+    const val HOUSEHOLD_GONE = "household.gone"
+    const val HOUSEHOLD_BACK = "household.back"
 
     fun enabled(): Boolean = try {
         GuildmarkConfig.TOWNSFOLK_RUMOURS.get()
@@ -201,6 +213,7 @@ object Rumours {
             mind.heard.remove(coldest)
         }
         mind.heard[id] = Heard(id, hour, from, venue, w, 0)
+        TownTalk.heard(entry, mind, s)
         return true
     }
 

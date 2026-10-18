@@ -26,11 +26,17 @@ class Hurt(var value: Double = 0.0, var day: Int = 0, var kind: Slight? = null)
 class Saw(val kind: String, val day: Int, val tone: Int, val big: Boolean, val rumour: Int)
 
 /**
+ * A favour counted once that a resident has counted already (M6, see [Memory.favourOnce]): which [favour], and what
+ * for ([key]): the works' id for [Favour.FUNDED], the day for the daily ones.
+ */
+class Thanked(val favour: Favour, val key: Long)
+
+/**
  * What a resident remembers of one [player], as it's kept (see [Memory] for how it's read): the day they first met
  * ([met], -1 if they've only seen them), whether they know the name, the last day they talked or dealt ([seen]) and the
  * last day anything passed between them at all ([last]), on how many [days] they talked or dealt, their [trades] and
  * the Marks [spent], the [favour] felt, the three [slights], the opinion the test command [set], the day they last
- * walked off mid-talk ([off]) and the deeds they [saw].
+ * walked off mid-talk ([off]), the deeds they [saw] and the favours counted once they've [thanked] the player for.
  */
 class Acq(val player: UUID) {
     var met = -1
@@ -45,6 +51,7 @@ class Acq(val player: UUID) {
     val set = Score()
     var off = -1
     val saw = ArrayList<Saw>()
+    val thanked = ArrayList<Thanked>()
 }
 
 /** What one resident ([id]) holds: the players they know, the rumours they've heard (by rumour id) and what befell them, newest last. */
@@ -151,6 +158,16 @@ class TownTalkData(private val entries: MutableMap<Long, Entry> = HashMap()) : S
             ).apply(i) { k, d, t, b, r -> Saw(k, d, t, b, r) }
         }
 
+        /** A favour counted once, as it's kept: the favour's name (one this build doesn't know is let go) and what it was for. */
+        private class Thank(val favour: String, val key: Long)
+
+        private val THANKED: Codec<Thank> = RecordCodecBuilder.create { i ->
+            i.group(
+                Codec.STRING.fieldOf("f").forGetter(Thank::favour),
+                Codec.LONG.fieldOf("k").forGetter(Thank::key),
+            ).apply(i) { f, k -> Thank(f, k) }
+        }
+
         private val ACQ: Codec<Acq> = RecordCodecBuilder.create { i ->
             i.group(
                 UUIDUtil.CODEC.fieldOf("p").forGetter(Acq::player),
@@ -166,7 +183,8 @@ class TownTalkData(private val entries: MutableMap<Long, Entry> = HashMap()) : S
                 SCORE.optionalFieldOf("o").forGetter { score(it.set) },
                 Codec.INT.optionalFieldOf("w", -1).forGetter(Acq::off),
                 SAW.listOf().optionalFieldOf("e").forGetter { some(it.saw) },
-            ).apply(i) { p, m, n, s, l, d, t, sp, f, x, o, w, e ->
+                THANKED.listOf().optionalFieldOf("u").forGetter { a -> some(a.thanked.map { Thank(it.favour.name, it.key) }) },
+            ).apply(i) { p, m, n, s, l, d, t, sp, f, x, o, w, e, u ->
                 Acq(p).also { a ->
                     a.met = m
                     a.named = n
@@ -180,6 +198,7 @@ class TownTalkData(private val entries: MutableMap<Long, Entry> = HashMap()) : S
                     o.ifPresent { a.set.value = it.value; a.set.day = it.day }
                     a.off = w
                     e.ifPresent { a.saw.addAll(it) }
+                    u.ifPresent { list -> for (th in list) Favour.entries.firstOrNull { it.name == th.favour }?.let { a.thanked.add(Thanked(it, th.key)) } }
                 }
             }
         }

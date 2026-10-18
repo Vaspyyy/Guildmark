@@ -1,5 +1,8 @@
 package io.github.vaspyyy.guildmark.townsfolk.talk
 
+import io.github.vaspyyy.guildmark.economy.works.Works
+import io.github.vaspyyy.guildmark.economy.works.WorksKind
+import io.github.vaspyyy.guildmark.economy.works.WorksView
 import io.github.vaspyyy.guildmark.townsfolk.Doing
 import io.github.vaspyyy.guildmark.townsfolk.Furnish
 import io.github.vaspyyy.guildmark.townsfolk.Resident
@@ -12,6 +15,7 @@ import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.phys.Vec3
+import net.neoforged.neoforge.server.ServerLifecycleHooks
 import java.util.UUID
 import java.util.WeakHashMap
 import kotlin.random.Random
@@ -101,6 +105,65 @@ object TownTalk {
         val a = acq(level, r, player) ?: return
         if (Memory.slight(a, Memory.day(level), slight)) changed(level, r)
     }
+
+    // ---- The works and the alms table (M6) ----
+
+    /**
+     * [r] laboured on works [works] today: a building day, which stays with them for a month as their own pride in it
+     * (the labourer's line, "I laid stone on that."). A day counts once, so it's safe to call each time they set to
+     * work. Part B calls it from Labour.kt as a labourer takes up the day's work at the site; Witness records the
+     * day's crew as the works begins, rises a stage and is finished.
+     */
+    fun laboured(level: ServerLevel, r: Resident, works: Int) {
+        if (r.id < 0) return
+        val mind = mind(level, r, true) ?: return
+        val day = Memory.day(level)
+        if (mind.felt.any { it.experience == Experience.LABOURED && it.about == works && it.day == day }) return
+        Memory.felt(mind, Experience.LABOURED, day, works)
+        changed(level, r)
+    }
+
+    /**
+     * [r] ate at the alms table on a day [player] gave there: a small favour ([Favour.FED]), counted once a day however
+     * often either happens, and only while the favour [r] feels for them is small ([Memory.DAILY_CAP]). Part D2's
+     * alms table calls it for each who eats there on a day the player gave, and for each who's eaten there that day
+     * when the player gives.
+     */
+    fun fed(level: ServerLevel, r: Resident, player: UUID) = once(level, r, player, Favour.FED)
+
+    /** [player] brought materials to the yard of the works [r] labours on: the crew's thanks ([Favour.BROUGHT]), once a day (Witness hears it). */
+    fun brought(level: ServerLevel, r: Resident, player: UUID) = once(level, r, player, Favour.BROUGHT)
+
+    private fun once(level: ServerLevel, r: Resident, player: UUID, favour: Favour) {
+        val a = acq(level, r, player) ?: return
+        val day = Memory.day(level)
+        if (Memory.favourOnce(a, day, favour, day.toLong())) changed(level, r)
+    }
+
+    /**
+     * [mind] has just heard [s] for the first time ([Rumours.hear] calls it): a works paid for or raised is the
+     * town's thanks to its patron and anyone who gave a quarter of its price ([Favour.FUNDED]), once for each works,
+     * whichever of its rumours they hear first. Never for a stall: that's its owner's own.
+     */
+    internal fun heard(entry: TownTalkData.Entry, mind: Mind, s: Story) {
+        val kind = s.rumour.kind
+        if (kind != Rumours.WORKS_FUNDED && kind != Rumours.WORKS_RAISED || mind.id < 0) return
+        if (!Memory.enabled() || !Works.enabled()) return
+        val id = s.rumour.args.firstOrNull()?.toIntOrNull() ?: return
+        val level = ServerLifecycleHooks.getCurrentServer()?.overworld() ?: return
+        val w = Works.get(level, id)?.takeIf { it.capital == entry.capital && it.kind != WorksKind.STALL } ?: return
+        val day = Memory.day(level)
+        var thanked = false
+        for (giver in givers(w)) {
+            val a = Memory.acq(mind, giver, day, true) ?: continue
+            if (Memory.favourOnce(a, day, Favour.FUNDED, id.toLong())) thanked = true
+        }
+        if (thanked) TownTalkData.get(level).changed()
+    }
+
+    /** Those the town thanks for [w]: its patron, and anyone who gave a quarter of its price or more. */
+    fun givers(w: WorksView): List<UUID> =
+        (listOfNotNull(w.patron) + w.pledges.filter { it.marks * 4 >= w.price }.map { it.player }).distinct()
 
     /**
      * Something happened at [at]: the residents within [radius] who could see it know it as a rumour (of [kind], about
@@ -409,6 +472,18 @@ enum class Favour(val amount: Double) {
     FREED(3.0),
     /** Saved them from a monster. */
     SAVED(3.0),
+    /**
+     * Paid for one of their town's works (M6): its patron, and anyone who gave a quarter of its price, from each
+     * resident who hears of it, once for each works (see [TownTalk.heard]).
+     */
+    FUNDED(1.5),
+    /** Brought materials to the yard of the works they're labouring on (M6): from its crew, once a day ([TownTalk.brought]). */
+    BROUGHT(0.5),
+    /** Gave at the alms table on a day they ate there (M6): once a day ([TownTalk.fed]). */
+    FED(0.5);
+
+    /** Counted at most once a day from each resident, and only while the favour felt is small ([Memory.DAILY_CAP]). */
+    val daily: Boolean get() = this == BROUGHT || this == FED
 }
 
 /** A wrong a player did a resident: how much it counts, and its half-life in days (section 3). */
@@ -479,8 +554,14 @@ class Heard(val rumour: Int, val hour: Long, val from: Int, val venue: Venue, va
 /** A rumour a resident knows, as they heard it. */
 class Known(val rumour: Rumour, val heard: Heard)
 
-/** What befell a resident lately, and how many days it stays with them. */
-enum class Experience(val days: Int) { HUNGRY(7), FRIGHTENED(7), ROBBED(15), SAVED(15), BEREAVED(30) }
+/**
+ * What befell a resident lately, and how many days it stays with them: LABOURED, a building day on one of the town's
+ * works (M6), stays a month, the labourer's own pride in it (see [TownTalk.laboured]).
+ */
+enum class Experience(val days: Int) { HUNGRY(7), FRIGHTENED(7), ROBBED(15), SAVED(15), BEREAVED(30), LABOURED(30) }
 
-/** Something that befell a resident on [day]; [about] is the resident it concerned (the one who died), or -1. */
+/**
+ * Something that befell a resident on [day]; [about] is the resident it concerned (the one who died), for LABOURED
+ * the works' id, or -1.
+ */
 class Felt(val experience: Experience, val day: Int, val about: Int = -1)
