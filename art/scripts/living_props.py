@@ -1385,8 +1385,8 @@ def _cup():
     ])
 
 
-LADLE_BOWL = (0.0, 8.2, 0.9)             # ladle space: the middle of its bowl
-LADLE_LIP = (0.0, 7.2, 2.2)              # the far edge of its mouth, where it pours from
+LADLE_BOWL = (0.0, 6.4, 0.9)             # ladle space: the middle of its bowl
+LADLE_LIP = (0.0, 5.4, 2.2)              # the far edge of its mouth, where it pours from
 
 
 def _ladle_part(name, full):
@@ -1394,8 +1394,8 @@ def _ladle_part(name, full):
     # opening back towards the hand (ladle -y), so it scoops held upright. LADLE's track turns it in the fist: dipped
     # upright into the pot, tipped over the bowl to pour.
     return 'right_arm', Part(name, RIGHT_GRIP, (0, 0, 0), cubes=[
-        C((-0.35, -1.6, -0.35), (0.7, 9.0, 0.7), f't_{name}_handle', wood_painter(f't_{name}_handle', PALE, PALE_D, PALE_L, 'y')),
-        C((-1.3, 7.2, -0.4), (2.6, 2.0, 2.6), f't_{name}_bowl', ladle_bowl_painter(f't_{name}_bowl', full)),
+        C((-0.35, -1.2, -0.35), (0.7, 6.8, 0.7), f't_{name}_handle', wood_painter(f't_{name}_handle', PALE, PALE_D, PALE_L, 'y')),
+        C((-1.3, 5.4, -0.4), (2.6, 2.0, 2.6), f't_{name}_bowl', ladle_bowl_painter(f't_{name}_bowl', full)),
     ])
 
 
@@ -1516,11 +1516,68 @@ def _basket_turned():
     ])
 
 
+def flap_painter(key, rolled=False):
+    """The stall's front flap: undyed canvas, seamed every so often down its length and hemmed dark along its lower edge
+    (+y); [rolled]: the canvas rolled round its batten, the turns showing on its ends."""
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        a = noise_fill(w, h, CANVAS, rng, 0.04)
+        if rolled:
+            if face in ('left', 'right'):
+                r = np.hypot(U - 0.5, V - 0.5)
+                turns = np.sin(r * 26.0) > 0.0
+                a[..., :3] = np.where(turns[..., None], mix(a[..., :3], CANVAS_D, 0.5), a[..., :3])
+                a[..., :3] = np.where((r < 0.16)[..., None], np.array(WOOD_D, float), a[..., :3])
+            else:
+                a[..., :3] *= (1.0 - 0.18 * np.abs(np.sin(V * 9.0)))[..., None]
+            return shade_edges(a, 0.3, width=max(1, min(w, h) // 3))
+        seam = (np.floor(U * 4.0) != np.floor((U + 1.0 / max(w, 1)) * 4.0))
+        a[..., :3] = np.where(seam[..., None], mix(a[..., :3], CANVAS_D, 0.55), a[..., :3])
+        fold = np.sin(U * 21.0 + rng.uniform(0, 6))
+        a[..., :3] *= (1.0 + 0.07 * fold)[..., None]
+        if face in ('front', 'back'):
+            hem = V > 0.82
+            a[..., :3] = np.where(hem[..., None], mix(a[..., :3], CANVAS_D, 0.45), a[..., :3])
+        return a
+    return painter(key, fn)
+
+
+# The stall's front flap (SHUT_STALL): a canvas blind on a rail under the awning, over the back edge of the counter,
+# kept rolled up round its batten until the keeper pulls it down by its cord and hooks the batten on the counter. All
+# three on the body, where nothing shows them untracked: SHUT_STALL's tracks place them in the clip's own space. The
+# cloth is modelled FLAP_W across and FLAP_LEN long from its top edge (its pivot), and its track stretches it down to
+# the batten, whose roll of canvas its track thins as the cloth comes off it.
+FLAP_W, FLAP_LEN = 16.0, 4.0
+FLAP_ROLL = 1.2                          # the rolled-up canvas round the batten: half its thickness
+
+
+def _flap_rail():
+    return 'body', Part('flap_rail', (0.0, 0.0, 0.0), (0, 0, 0), cubes=[
+        C((-FLAP_W / 2 - 0.6, -0.6, -0.6), (FLAP_W + 1.2, 1.2, 1.2), 't_flap_rail',
+          wood_painter('t_flap_rail', WOOD, WOOD_D, WOOD_L, 'x')),
+    ])
+
+
+def _flap_cloth():
+    return 'body', Part('flap_cloth', (0.0, 0.0, 0.0), (0, 0, 0), cubes=[
+        C((-FLAP_W / 2, 0.0, -0.15), (FLAP_W, FLAP_LEN, 0.3), 't_flap_cloth', flap_painter('t_flap_cloth')),
+    ])
+
+
+def _flap_batten():
+    return 'body', Part('flap_batten', (0.0, 0.0, 0.0), (0, 0, 0), cubes=[
+        C((-FLAP_W / 2, -FLAP_ROLL, -FLAP_ROLL), (FLAP_W, 2 * FLAP_ROLL, 2 * FLAP_ROLL), 't_flap_batten',
+          flap_painter('t_flap_batten', rolled=True)),
+    ])
+
+
+FLAPS = ['flap_rail', 'flap_cloth', 'flap_batten']
+
 # The works' and the streets' (M6): townsfolk.py packs their cubes after all the others here, so adding them moved no
 # cube already on the texture.
 WORKS_BUILDERS = [_trowel, _hawk, _mortar_hoe, _mallet, _chisel, _plumb_line, _sighting_staff, _beam, _cup, _ladle, _ladle_full,
                   _soup_pour, _bowl_empty, _torch, _torch_flame, _horn, _horn_baldric, _bundle, *_VEIL_BUILDERS,
-                  _basket_turned]
+                  _basket_turned, _flap_rail, _flap_cloth, _flap_batten]
 BUILDERS.extend(WORKS_BUILDERS)
 GLOW_CUBES.update({'t_torch_flame', 't_torch_flame_core'})
 HANG = HANG + ('plumb_line',)
@@ -1540,7 +1597,7 @@ TOOL_NOTES.update({
     'beam': f'body, on the right shoulder: each of the two carriers ({BEAM_FOLLOW:g} px apart, in step) shows their half, '
             f'{BEAM_AHEAD:g} px ahead of the shoulder to {BEAM_BEHIND:g} behind, the halves meeting between them',
     'cup': 'right hand by the stem, tilted 45 like the mug; its rim at part (0, -2.9, -3.0); TOAST\'s track keeps it upright',
-    'ladle': 'right hand along the arm, its bowl opening back to the hand at part (0, 8.2, 0.9), its lip at (0, 7.2, 2.2); '
+    'ladle': 'right hand along the arm, its bowl opening back to the hand at part (0, 6.4, 0.9), its lip at (0, 5.4, 2.2); '
              'LADLE\'s track turns it',
     'ladle_full': 'the ladle full of stew, in its place from the dip to the pour',
     'soup_pour': 'right hand; the stew poured, aimed and stretched by LADLE\'s track from the ladle\'s lip to the bowl',
@@ -1555,6 +1612,11 @@ TOOL_NOTES.update({
     **{name: f'body; panel {name[-1]} of {VEIL_PIECES} of the cloth over the plaque (UNVEIL\'s tracks lay them from the fist '
              'as it flies off)' for name in VEILS},
     'basket_turned': 'left hand, the carried basket\'s size and place, empty; EMPTY_BASKET\'s track turns it over',
+    'flap_rail': 'body; the rail under the awning the stall\'s canvas flap hangs from (SHUT_STALL\'s track places it)',
+    'flap_cloth': f'body; the flap\'s canvas, {FLAP_W:g} across, hung from its top edge; SHUT_STALL\'s track stretches it '
+                  'down to the batten',
+    'flap_batten': 'body; the flap\'s batten in its roll of canvas, the roll thinning as the cloth comes off it; '
+                   'SHUT_STALL\'s track drops it and hooks it on the counter',
 })
 
 

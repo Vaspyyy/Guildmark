@@ -76,17 +76,28 @@ VEIL_FRONT = float(clip_pt(0, 0, VEIL_HI[2], by=1)[2])                          
 # facing south), its top ALMS_TOP_Y up, the pot on the keeper's right and the stack of bowls on their left.
 ALMS_TOP_Y = 13.0
 POT_AT = (11.5, 11.0)                   # model (x, z): the pot's middle, on the keeper's side (south) and their right (east)
-POT_R = 3.6                             # its inside's radius at the rim
-POT_RIM_Y = ALMS_TOP_Y + 6.5
-POT_FLOOR_Y = ALMS_TOP_Y + 1.5          # the stew's lowest (one ladle's worth) and its highest, a little under the rim
-POT_FULL_Y = POT_RIM_Y - 1.2
+POT_R = 3.6                             # its inside's radius at the rim (its wall POT_WALL thick)
+POT_WALL = 0.6
+POT_RIM_Y = ALMS_TOP_Y + 5.0
+POT_INSIDE_Y = ALMS_TOP_Y + 0.5         # its inside's floor
+POT_FLOOR_Y = ALMS_TOP_Y + 1.2          # the stew's lowest (one ladle's worth) and its highest, a little under the rim
+POT_FULL_Y = POT_RIM_Y - 0.9
+# The ladle left standing in the pot (the table's model draws it there, and LADLE takes it up and stands it back just
+# so): leaning LADLE_LEAN degrees with its handle's top to the keeper's right (east), turned about the north-south line,
+# its bowl's middle over model (x, z) LADLE_AT, its lowest corner LADLE_CLEAR over the pot's floor. Its shape is
+# living_props.py's ladle's.
+LADLE_LEAN = 22.5
+LADLE_AT = (11.0, 11.4)
+LADLE_CLEAR = 0.25
 BOWLS_AT = (4.0, 11.0)                  # model (x, z): the stack of bowls' middle, on the keeper's left (west)
-BOWL_H = 1.2                            # each bowl the stack's height more
+BOWL_TALL = 1.9                         # a bowl's height (the stew bowl's), and each more on the stack adds BOWL_H (they
+BOWL_H = 1.2                            # nest)
 BOWLS_MAX = 4
 POT_LEVELS = 8                          # the stew's levels (0 empty .. 8 full)
 ALMS_TOP = float(clip_pt(0, ALMS_TOP_Y, 0)[1])                                   # clip y of the top: 11
 POT_MOUTH = clip_pt(POT_AT[0], POT_RIM_Y, POT_AT[1], bz=-1)                     # the keeper's clip: the pot's rim's middle
-BOWLS_TOP = clip_pt(BOWLS_AT[0], ALMS_TOP_Y + BOWL_H * 3, BOWLS_AT[1], bz=-1)   # the top of a stack of three
+BOWLS_TOP = clip_pt(BOWLS_AT[0], ALMS_TOP_Y + BOWL_TALL + BOWL_H * 2, BOWLS_AT[1], bz=-1)   # a stack of three's top
+BOWL_TAKEN = clip_pt(BOWLS_AT[0], ALMS_TOP_Y + BOWL_H * 2, BOWLS_AT[1], bz=-1)              # its top bowl's bottom
 ALMS_GAP = 32.0                         # keeper to taker, middle to middle (the table between them)
 
 
