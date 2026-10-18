@@ -3,7 +3,9 @@ package io.github.vaspyyy.guildmark.client.festival
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.city.plan.Dye
 import io.github.vaspyyy.guildmark.festival.FestivalKind
+import io.github.vaspyyy.guildmark.festival.FestivalOrnamentBlock
 import io.github.vaspyyy.guildmark.festival.FestivalOrnamentBlockEntity
 import io.github.vaspyyy.guildmark.festival.FestivalPhase
 import io.github.vaspyyy.guildmark.festival.OrnamentData
@@ -20,6 +22,7 @@ import net.minecraft.client.renderer.rendertype.RenderTypes
 import net.minecraft.client.renderer.state.level.CameraRenderState
 import net.minecraft.client.renderer.texture.OverlayTexture
 import net.minecraft.core.BlockPos
+import net.minecraft.core.Direction
 import net.minecraft.resources.Identifier
 import net.minecraft.util.ARGB
 import net.minecraft.util.LightCoordsUtil
@@ -29,8 +32,10 @@ import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import kotlin.math.PI
 import kotlin.math.abs
+import kotlin.math.atan2
 import kotlin.math.ceil
 import kotlin.math.cos
+import kotlin.math.exp
 import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.min
@@ -57,6 +62,11 @@ class FestivalOrnamentRenderState : BlockEntityRenderState() {
     /** The light along its string of pennants and its garland, a few samples each. */
     val stringLight = IntArray(SAMPLES)
     val garlandLight = IntArray(SAMPLES)
+
+    /** The streets' pieces: ticks since they went up or began to come down (huge for "there already"), and a lantern string's light. */
+    var age = 1e9
+    var lit = false
+    var litAge = 1e9f
 
     companion object {
         const val MAX_HANDS = 12
@@ -100,6 +110,17 @@ class FestivalOrnamentRenderer(@Suppress("UNUSED_PARAMETER") context: BlockEntit
         state.playing = (site?.setAge() ?: -1L) >= 0
         sample(level, pos, data.string, -0.02, state.stringLight)
         sample(level, pos, data.garland, -0.02, state.garlandLight)
+        if (data.kind.street) {
+            state.age = if (data.since > 0L) (level.gameTime - data.since) + partialTicks.toDouble() else 1e9
+            // A lantern string catches (or goes out) along its length as its lamp does
+            val lit = if (be.blockState.getValue(FestivalOrnamentBlock.LIGHT) > 0) 1 else 0
+            if (be.lit != lit) {
+                be.litAt = if (be.lit < 0) Long.MIN_VALUE / 2 else level.gameTime
+                be.lit = lit
+            }
+            state.lit = lit == 1
+            state.litAge = ((level.gameTime - be.litAt).coerceAtMost(1_000_000L) + partialTicks).toFloat()
+        }
         state.hands = 0
         if (data.kind == OrnamentKind.CROWN && data.festival == FestivalKind.RIBBONWAKE && state.playing && data.ring > 0f) hands(level, pos, data, partialTicks, state)
     }
@@ -204,19 +225,33 @@ class FestivalOrnamentRenderer(@Suppress("UNUSED_PARAMETER") context: BlockEntit
         val eye = V(camera.pos.x - state.blockPos.x, camera.pos.y - state.blockPos.y, camera.pos.z - state.blockPos.z)
         val solid = Geo()
         val glow = Geo()
-        val draw = Draw(state, eye, solid, glow)
+        // The streets' cloth, seen from either side
+        val cloth = Geo()
+        val draw = Draw(state, eye, solid, glow, cloth)
         when (state.data.kind) {
             OrnamentKind.POST, OrnamentKind.RIDDLE -> draw.post()
             OrnamentKind.CROWN -> draw.crown()
             OrnamentKind.HUNT_RIBBON -> draw.huntRibbon()
+            OrnamentKind.STREET_GARLAND -> draw.streetGarland()
+            OrnamentKind.STREET_BUNTING -> draw.streetBunting()
+            OrnamentKind.STREET_LANTERNS -> draw.streetLanterns()
+            OrnamentKind.AWNING_FLAP -> draw.awningFlap()
         }
         if (solid.count > 0) collector.submitCustomGeometry(poseStack, RenderTypes.entityCutout(ATLAS)) { pose, buffer -> solid.emit(buffer, pose, false) }
+        if (cloth.count > 0) collector.submitCustomGeometry(poseStack, RenderTypes.entityCutout(ATLAS)) { pose, buffer -> cloth.emit(buffer, pose, true) }
         if (glow.count > 0) collector.submitCustomGeometry(poseStack, RenderTypes.eyes(ATLAS)) { pose, buffer -> glow.emit(buffer, pose, true) }
     }
 
     override fun getRenderBoundingBox(be: FestivalOrnamentBlockEntity): AABB {
         val data = be.data
         var box = AABB(be.blockPos).inflate(0.5)
+        if (data.kind.street) {
+            // Strung from its tie, and hanging straight down from it as it comes down; a flap both ways along its awning
+            val reach = data.string ?: data.garland
+            if (reach != null) box = box.expandTowards(reach).expandTowards(0.0, -reach.length() - 0.5, 0.0).expandTowards(0.0, 1.0, 0.0)
+            if (data.kind == OrnamentKind.AWNING_FLAP && reach != null) box = box.expandTowards(reach.reverse()).expandTowards(0.0, -data.drop - 0.5, 0.0)
+            return box
+        }
         data.string?.let { box = box.expandTowards(it) }
         data.garland?.let { box = box.expandTowards(it).expandTowards(0.0, -1.5, 0.0) }
         if (data.banner) box = box.expandTowards(0.0, -1.8, 0.0)
@@ -294,7 +329,7 @@ class FestivalOrnamentRenderer(@Suppress("UNUSED_PARAMETER") context: BlockEntit
     }
 
     /** One frame's drawing of one ornament. */
-    private class Draw(val s: FestivalOrnamentRenderState, val eye: V, val solid: Geo, val glow: Geo) {
+    private class Draw(val s: FestivalOrnamentRenderState, val eye: V, val solid: Geo, val glow: Geo, val cloth: Geo) {
         val data = s.data
         val kind = data.festival
         val t = s.time
@@ -615,6 +650,294 @@ class FestivalOrnamentRenderer(@Suppress("UNUSED_PARAMETER") context: BlockEntit
             }
         }
 
+        // ---- The streets: their dressing in good times, and a shut stall's flap (townsfolk/streets, M6 Part D) ----
+
+        /**
+         * A street string as it is this frame: [line] runs from its near end (0) to where its far end is just now (1),
+         * [length] long. [whole] is its length once up, [out] how much of that is out, and [size] how big what hangs
+         * on it shows (bunched up small as it's gathered in).
+         */
+        class Run(val line: (Double) -> V, val length: Double, val whole: Double, val out: Double, val going: Boolean, val size: Double) {
+            /** Where along [line] what hangs [f] of the way along the whole string is: null while that part isn't out yet. */
+            fun at(f: Double): Double? = when {
+                !going -> f
+                f > out -> null
+                else -> f / max(out, 1e-6)
+            }
+
+            /** How far what hangs [f] of the way along has opened out, 0 to 1: it opens as the string runs on past it. */
+            fun grown(f: Double): Double = if (!going) 1.0 else ((out - f) * whole / OPEN).coerceIn(0.0, 1.0)
+        }
+
+        fun smooth(x: Double): Double {
+            val c = x.coerceIn(0.0, 1.0)
+            return c * c * (3 - 2 * c)
+        }
+
+        /**
+         * A street string from [near] (the end tied by whoever's up the ladder, which stays) to [far], sagging [sag] and
+         * swaying [sway] in the breeze once it's up. Going up, its far end is drawn across in a low arc, like a line
+         * thrown over, what hangs on it opening as it comes clear, and it bounces a little as it catches. Coming down,
+         * untied, its far end falls slack and swings in under the near one (no more than [fall] below it), and it's
+         * gathered in to the hand.
+         */
+        fun run(near: V, far: V, sag: Double, sway: Double, fall: Double, phase: Double): Run {
+            val whole = far - near
+            val length = whole.length()
+            val age = s.age
+            if (data.phase == 1) {
+                val a = min(age, DOWN_TICKS)
+                val flat = whole.flat()
+                val outward = if (flat.length() < 1e-6) V(1.0, 0.0, 0.0) else flat.unit()
+                // From where it was to hanging straight down, swinging past and back
+                val start = atan2(-whole.y, flat.length())
+                val swing = start + (PI / 2 - start) * (1 - exp(-a / 4.5) * cos(a * 0.42))
+                val gathered = smooth((a - SLACK_TICKS) / (DOWN_TICKS - SLACK_TICKS))
+                val reach = (length + (min(length, fall) - length) * smooth(a / SLACK_TICKS)) * (1 - gathered)
+                val end = near + outward * (reach * cos(swing)) - V(0.0, reach * sin(swing), 0.0)
+                val level = cos(swing) * cos(swing)
+                return Run(hang(near, end, sag * (reach / max(length, 1e-6)) * level, sway * 0.5, phase), reach, length, 1 - gathered, false, 1 - 0.85 * gathered)
+            }
+            if (age < UP_TICKS) {
+                val u = (age / UP_TICKS).coerceIn(0.0, 1.0)
+                val p = 1 - (1 - u).pow(3)
+                val end = near + whole * p + V(0.0, sin(u * PI) * min(0.8, 0.12 * length), 0.0)
+                return Run(hang(near, end, sag * p * p, sway * p, phase), length * p, length, p, true, 1.0)
+            }
+            val since = age - UP_TICKS
+            val bounce = if (since < CATCH_TICKS) 1 + 0.35 * exp(-since / 4) * sin(since * 0.9) else 1.0
+            return Run(hang(near, far, sag * bounce, sway, phase), length, length, 1.0, false, 1.0)
+        }
+
+        /** The cord a street string's drawn with, along [run]. */
+        fun cord(run: Run, width: Double, color: Int, lights: IntArray, step: Double) {
+            val n = max(4, ceil(run.length / step).toInt())
+            strip(solid, (0..n).map { run.line(it.toDouble() / n) }, width, ROPE, color.opaque(), lights, light, repeat = step)
+        }
+
+        /** A garland swagged over a door in the season's festival's flowers and leaves, tied up from the ladder at its near end. */
+        fun streetGarland() {
+            val span = data.garland ?: return
+            val tie = data.from?.let { V(it.x, it.y, it.z) } ?: V(0.5, 0.5, 0.5)
+            val reach = V(span.x, span.y, span.z)
+            val length = reach.length()
+            val run = run(tie + reach, tie, 0.08 * length + 0.14, 0.05, 1.7, s.seed + 2.0)
+            if (run.length < 0.04) return
+            cord(run, 0.07, GARLAND_ROPE[kind.ordinal], s.garlandLight, 0.3)
+            val sprites = GARLAND[kind.ordinal]
+            val count = max(4, (length / 0.22).toInt())
+            for (k in 0 until count) {
+                val f = (k + 0.5) / count
+                val at = run.at(f) ?: break
+                val size = (0.22 + 0.05 * sin(k * 2.1 + s.seed)) * run.grown(f) * run.size
+                if (size < 0.02) continue
+                val stir = 0.08 * sin(t * 0.06 + k * 0.7 + s.seed) * wind
+                val pick = sprites[Math.floorMod(k * 7 + data.index * 3, sprites.size)]
+                crossed(cloth, run.line(at) + V(0.0, -0.1, 0.0), size, size, k * 1.7 + s.seed, pick, -1, lightAt(s.garlandLight, f), V(stir, 0.0, stir * 0.5))
+            }
+            if (kind == FestivalKind.LANTERNRISE && run.out >= 1.0) {
+                // The winter's evergreen twinkles, as the festival's does
+                for (k in 0 until max(2, (length / 0.6).toInt())) {
+                    val f = (k + 0.3) / max(2, (length / 0.6).toInt())
+                    val twinkle = 0.55 + 0.45 * sin(t * 0.13 + k * 2.4 + s.seed)
+                    val color = intArrayOf(0xFFE6A0, 0xFF8070, 0xA0E0FF, 0xC8FFB0)[Math.floorMod(k + data.index, 4)]
+                    billboard(glow, run.line(f) + V(0.0, -0.06, 0.0), 0.14 * run.size, HALO, ARGB.color((twinkle * (0.4f + 0.6f * s.dark)).toFloat().coerceIn(0f, 1f), color), LightCoordsUtil.FULL_BRIGHT)
+                }
+            }
+        }
+
+        /** A string of pennants from an eave across the street (to the eave opposite, or to a lamp), in the season's festival's colours. */
+        fun streetBunting() {
+            val to = data.string ?: return
+            val near = data.from?.let { V(it.x, it.y, it.z) } ?: V(0.5, 0.5, 0.5)
+            val length = to.length()
+            val run = run(near, near + V(to.x, to.y, to.z), 0.04 * length + 0.12, 0.12, 2.6, s.seed)
+            if (run.length < 0.04) return
+            cord(run, 0.022, 0xC8B89A, s.stringLight, 0.5)
+            val colors = PENNANT_COLORS[kind.ordinal]
+            val count = max(3, (length / 0.52).toInt())
+            for (k in 0 until count) {
+                val f0 = (k + 0.12) / count
+                val f1 = (k + 0.88) / count
+                val a1 = run.at(f1) ?: break
+                val a0 = run.at(f0) ?: break
+                val p0 = run.line(a0)
+                val p1 = run.line(a1)
+                val tangent = (p1 - p0).unit()
+                val across = tangent.cross(V(0.0, 1.0, 0.0)).let { if (it.length() < 1e-6) V(1.0, 0.0, 0.0) else it.unit() }
+                // Every one fluttering on its own, and all of them blown the way the breeze goes
+                val flutter = (0.22 + 0.25 * wind) * sin(t * 0.21 + k * 0.83 + s.seed) + 0.25 * wind * (across.x * windDir.x + across.z * windDir.z)
+                val down = V(0.0, -1.0, 0.0) * cos(flutter) + across * sin(flutter)
+                val tip = (p0 + p1) * 0.5 + down * (0.3 * run.grown(f1) * run.size)
+                tri(cloth, p0, p1, tip, CLOTH, colors[Math.floorMod(k + data.index, colors.size)].opaque(), lightAt(s.stringLight, (f0 + f1) / 2))
+            }
+        }
+
+        /**
+         * A string of little lanterns over the market from one lamp to the next, in the season's festival's colours: lit
+         * while its lamp burns, each catching a moment after the one before it from the lamp's end, and going out the
+         * same way.
+         */
+        fun streetLanterns() {
+            val to = data.string ?: return
+            val near = data.from?.let { V(it.x, it.y, it.z) } ?: V(0.5, 0.1, 0.5)
+            val length = to.length()
+            val run = run(near, near + V(to.x, to.y, to.z), 0.05 * length + 0.15, 0.08, 3.0, s.seed + 1.0)
+            if (run.length < 0.04) return
+            cord(run, 0.02, 0x403020, s.stringLight, 0.5)
+            val count = max(2, (length / 1.2).toInt())
+            for (k in 0 until count) {
+                val f = (k + 0.5) / count
+                val at = run.at(f) ?: break
+                val size = 0.42 * run.grown(f) * run.size
+                if (size < 0.03) continue
+                val top = run.line(at)
+                val swing = 0.25 * sin(t * 0.07 + k * 1.3 + s.seed) * wind
+                val hangAt = top + V(sin(swing) * 0.1, -0.16 * (size / 0.42), sin(swing * 0.7 + 0.4) * 0.05)
+                val l = lightAt(s.stringLight, f)
+                strip(solid, listOf(top, hangAt), 0.012, ROPE, 0x403020.opaque(), null, l)
+                val change = ((s.litAge.toDouble() - k * RIPPLE) / CATCH).coerceIn(0.0, 1.0)
+                streetLantern(hangAt, size, kind.color(k + data.index), if (s.lit) change else 1 - change, if (s.lit) change else 0.0, l)
+            }
+        }
+
+        /**
+         * A little paper lantern hanging from [top], lit as much as [on] (0 out, 1 alight): alight, it shines and glows
+         * (flaring a moment as it [catches]); out, its paper's dull, lit by the street as anything else is.
+         */
+        fun streetLantern(top: V, size: Double, tint: Int, on: Double, catches: Double, l: Int) {
+            val h = 0.3 * size
+            val w = 0.12 * size
+            val mid = top + V(0.0, -h / 2, 0.0)
+            val color = ARGB.srgbLerp(on.toFloat(), ARGB.scaleRGB(tint.opaque(), 0.58f), tint.opaque())
+            val lit = if (on > 0.5) LightCoordsUtil.FULL_BRIGHT else l
+            for (k in 0 until 6) {
+                val a0 = k * PI / 3
+                val a1 = (k + 1) * PI / 3
+                val bulge = w * 1.25
+                val pTop0 = top + V(cos(a0) * w, 0.0, sin(a0) * w)
+                val pTop1 = top + V(cos(a1) * w, 0.0, sin(a1) * w)
+                val pMid0 = mid + V(cos(a0) * bulge, 0.0, sin(a0) * bulge)
+                val pMid1 = mid + V(cos(a1) * bulge, 0.0, sin(a1) * bulge)
+                val pBot0 = top + V(cos(a0) * w, -h, sin(a0) * w)
+                val pBot1 = top + V(cos(a1) * w, -h, sin(a1) * w)
+                solid.vertex(pTop0, PAPER.u0, PAPER.v0, color, lit)
+                solid.vertex(pTop1, PAPER.u1, PAPER.v0, color, lit)
+                solid.vertex(pMid1, PAPER.u1, PAPER.v(0.5), color, lit)
+                solid.vertex(pMid0, PAPER.u0, PAPER.v(0.5), color, lit)
+                solid.vertex(pMid0, PAPER.u0, PAPER.v(0.5), color, lit)
+                solid.vertex(pMid1, PAPER.u1, PAPER.v(0.5), color, lit)
+                solid.vertex(pBot1, PAPER.u1, PAPER.v1, color, lit)
+                solid.vertex(pBot0, PAPER.u0, PAPER.v1, color, lit)
+            }
+            if (on <= 0.01) return
+            val flicker = 0.85 + 0.15 * sin(t * 1.1 + top.x * 7 + top.z * 5)
+            val flare = 1 + 0.6 * sin(catches * PI)
+            billboard(glow, mid, 0.85 * size * flare, HALO, ARGB.color((glowing * 0.6 * flicker * on).toFloat().coerceIn(0f, 1f), tint), LightCoordsUtil.FULL_BRIGHT)
+        }
+
+        /** A dye's colour as the awning's wool shows it, by its id ([otherwise] if it isn't known). */
+        fun dye(id: Int, otherwise: Int): Int = if (id in Dye.entries.indices) Dye.entries[id].rgb else otherwise
+
+        /** How much of a flap being let down hangs [age] ticks after it began: dropping faster as it goes, then bouncing as it catches. */
+        fun unroll(age: Double): Double {
+            if (age < UNROLL_TICKS) {
+                val u = age / UNROLL_TICKS
+                return 0.3 * u + 0.7 * u * u
+            }
+            val a = age - UNROLL_TICKS
+            return 1 - 0.08 * exp(-a / 3.5) * abs(sin(a * 0.75))
+        }
+
+        /**
+         * A shut stall's awning let down over its front from the awning's front edge, in the awning's own stripes,
+         * hemmed and rolled at its foot with a scalloped edge below, stirring in the breeze. Let down, it unrolls from
+         * that roll, which slips out from under the awning, drops and bounces as it catches; put up again, it rolls up
+         * from the foot, the roll fattening as it goes, and tucks away under the awning.
+         */
+        fun awningFlap() {
+            val front = Direction.from2DDataValue(data.index)
+            val out = V(front.stepX.toDouble(), 0.0, front.stepZ.toDouble())
+            val half = data.string?.let { V(it.x, 0.0, it.z) } ?: (V(-out.z, 0.0, out.x) * 2.5)
+            val width = half.length() * 2
+            if (width < 0.1) return
+            val along = half.unit()
+            val top = V(0.5, 0.998, 0.5) + out * 0.505
+            val drop = max(0.3, data.drop.toDouble())
+            val age = s.age
+            val rolling = data.phase == 1
+            val shown = when {
+                rolling -> 1 - smooth(age / ROLL_TICKS)
+                age < 1e8 -> unroll(age)
+                else -> 1.0
+            }
+            // Slipping out from under the awning as it begins, tucked away there as it ends
+            val tuck = if (rolling) smooth((age - ROLL_TICKS) / 4) else if (age < 1e8) 1 - smooth(age / 3) else 0.0
+            if (rolling && tuck >= 1.0) return
+            val hanging = drop * shown
+            val stripes = max(1, Math.round(width).toInt())
+            val stripe = dye((data.colors and 0xFF) - 1, 0xA02828)
+            val other = dye(((data.colors shr 8) and 0xFF) - 1, 0xF0F0F0)
+            val push = if (out.x * windDir.x + out.z * windDir.z >= 0) 1.0 else -1.0
+            // A point of the cloth [x] along it from its middle and [d] down from the awning: the further down, the more it stirs
+            fun at(x: Double, d: Double): V {
+                val ripple = (0.03 + 0.06 * wind) * sin(t * 0.12 - x * 1.4 + s.seed) + 0.05 * wind * push
+                val stir = (d / drop).coerceAtLeast(0.0).pow(1.6) * ripple
+                return top + along * x - V(0.0, d, 0.0) + out * stir
+            }
+            val cols = stripes * 2
+            val hem = min(HEM_DEPTH, hanging)
+            val rows = doubleArrayOf(0.0, hem, hem + (hanging - hem) / 3, hem + (hanging - hem) * 2 / 3, hanging)
+            val colorOf = { c: Int -> (if ((c / 2) % 2 == 0) stripe else other).opaque() }
+            for (c in 0 until cols) {
+                val x0 = -width / 2 + width * c / cols
+                val x1 = -width / 2 + width * (c + 1) / cols
+                val color = colorOf(c)
+                for (r in 0 until rows.size - 1) {
+                    if (rows[r + 1] - rows[r] < 1e-4) continue
+                    quad(cloth, at(x0, rows[r]), at(x1, rows[r]), at(x1, rows[r + 1]), at(x0, rows[r + 1]), if (r == 0) HEM else PLAIN, color, light)
+                }
+            }
+            // The roll at its foot: all of it while it's rolled up, a hem once it's down
+            val rr = HEM_ROLL + 0.085 * sqrt(1 - shown)
+            val segments = 6
+            for (c in 0 until cols) {
+                val x0 = -width / 2 + width * c / cols
+                val x1 = -width / 2 + width * (c + 1) / cols
+                val color = colorOf(c)
+                val lift = V(0.0, tuck * rr * 2.4, 0.0)
+                val c0 = at(x0, hanging) + out * (rr * 0.55) - V(0.0, rr * 0.55, 0.0) + lift
+                val c1 = at(x1, hanging) + out * (rr * 0.55) - V(0.0, rr * 0.55, 0.0) + lift
+                for (j in 0 until segments) {
+                    val a0 = j * 2 * PI / segments
+                    val a1 = (j + 1) * 2 * PI / segments
+                    val r0 = out * (cos(a0) * rr) + V(0.0, sin(a0) * rr, 0.0)
+                    val r1 = out * (cos(a1) * rr) + V(0.0, sin(a1) * rr, 0.0)
+                    // Darker underneath
+                    val shade = (0.7 + 0.3 * (0.5 + 0.5 * sin((a0 + a1) / 2))).toFloat()
+                    quad(cloth, c0 + r0, c1 + r0, c1 + r1, c0 + r1, PLAIN, ARGB.scaleRGB(color, shade), light)
+                }
+                // Its ends
+                if (c == 0 || c == cols - 1) {
+                    val e = if (c == 0) c0 else c1
+                    val ring = (0 until segments).map { j -> e + out * (cos(j * 2 * PI / segments) * rr) + V(0.0, sin(j * 2 * PI / segments) * rr, 0.0) }
+                    quad(cloth, ring[0], ring[1], ring[2], ring[3], PLAIN, ARGB.scaleRGB(color, 0.8f), light)
+                    quad(cloth, ring[3], ring[4], ring[5], ring[0], PLAIN, ARGB.scaleRGB(color, 0.8f), light)
+                }
+            }
+            // The scalloped edge below the hem, once it's down
+            val scallop = smooth((shown - 0.82) / 0.18) * (1 - tuck)
+            if (scallop <= 0.01) return
+            for (c in 0 until cols) {
+                val x0 = -width / 2 + width * c / cols
+                val x1 = -width / 2 + width * (c + 1) / cols
+                val a = at(x0, hanging + HEM_ROLL)
+                val b = at(x1, hanging + HEM_ROLL)
+                val tip = at((x0 + x1) / 2, hanging + HEM_ROLL + 0.15 * scallop) + out * (0.02 * sin(t * 0.2 + c * 0.9 + s.seed) * wind)
+                tri(cloth, a, b, tip, CLOTH, colorOf(c), light)
+            }
+        }
+
         // ---- The centrepiece ----
 
         fun crown() {
@@ -822,6 +1145,30 @@ class FestivalOrnamentRenderer(@Suppress("UNUSED_PARAMETER") context: BlockEntit
         private val WHEEL = Uv(0, 96, 64, 160)
         private val STAR = Uv(64, 96, 96, 128)
         private val SHEAF = Uv(96, 96, 128, 160)
+        /** The cloth's plain weave, and its hem with the stitching (for an awning's flap). */
+        private val PLAIN = Uv(5, 3, 11, 6)
+        private val HEM = Uv(0, 0, 16, 3)
+
+        /**
+         * The streets' strings: ticks one takes to be drawn across going up, and to stop bouncing once it catches; to
+         * fall slack once untied, and to be gathered in (Fitting takes it away at 30); and how far a string runs on past
+         * what hangs on it before that's fully open.
+         */
+        private const val UP_TICKS = 22.0
+        private const val CATCH_TICKS = 20.0
+        private const val SLACK_TICKS = 9.0
+        private const val DOWN_TICKS = 28.0
+        private const val OPEN = 0.6
+
+        /** A lantern string's lanterns catch from the lamp's end one after another, this many ticks apart, each taking [CATCH]. */
+        private const val RIPPLE = 3.0
+        private const val CATCH = 4.0
+
+        /** A shut stall's flap: ticks it takes to unroll, and to roll up (Awnings takes it away at 30); its hem's depth and roll. */
+        private const val UNROLL_TICKS = 12.0
+        private const val ROLL_TICKS = 25.0
+        private const val HEM_DEPTH = 0.09
+        private const val HEM_ROLL = 0.028
 
         /** The lanterns' glass, the garlands' rope, the pennants' cloth and the ribbons, by festival. */
         private val LANTERN_TINT = intArrayOf(0xFFE4F0, 0xFFE2A0, 0xFFD2A0, 0xFFF0C8)

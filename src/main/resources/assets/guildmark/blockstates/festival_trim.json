@@ -39,6 +39,50 @@
     "facing=east,look=blossom": {
       "model": "minecraft:block/flowering_azalea"
     },
+    "facing=east,look=ladder": {
+      "model": "minecraft:block/ladder",
+      "y": 90
+    },
+    "facing=east,look=pot_poppy": {
+      "model": "minecraft:block/potted_poppy"
+    },
+    "facing=east,look=pot_dandelion": {
+      "model": "minecraft:block/potted_dandelion"
+    },
+    "facing=east,look=pot_blue_orchid": {
+      "model": "minecraft:block/potted_blue_orchid"
+    },
+    "facing=east,look=pot_allium": {
+      "model": "minecraft:block/potted_allium"
+    },
+    "facing=east,look=pot_azure_bluet": {
+      "model": "minecraft:block/potted_azure_bluet"
+    },
+    "facing=east,look=pot_red_tulip": {
+      "model": "minecraft:block/potted_red_tulip"
+    },
+    "facing=east,look=pot_orange_tulip": {
+      "model": "minecraft:block/potted_orange_tulip"
+    },
+    "facing=east,look=pot_white_tulip": {
+      "model": "minecraft:block/potted_white_tulip"
+    },
+    "facing=east,look=pot_pink_tulip": {
+      "model": "minecraft:block/potted_pink_tulip"
+    },
+    "facing=east,look=pot_oxeye_daisy": {
+      "model": "minecraft:block/potted_oxeye_daisy"
+    },
+    "facing=east,look=pot_cornflower": {
+      "model": "minecraft:block/potted_cornflower"
+    },
+    "facing=east,look=pot_lily_of_the_valley": {
+      "model": "minecraft:block/potted_lily_of_the_valley"
+    },
+    "facing=east,look=to_let": {
+      "model": "guildmark:block/to_let_board",
+      "y": 90
+    },
     "facing=north,look=pole_birch": {
       "model": "guildmark:block/festival_pole_birch"
     },
@@ -75,6 +119,48 @@
     },
     "facing=north,look=blossom": {
       "model": "minecraft:block/flowering_azalea"
+    },
+    "facing=north,look=ladder": {
+      "model": "minecraft:block/ladder"
+    },
+    "facing=north,look=pot_poppy": {
+      "model": "minecraft:block/potted_poppy"
+    },
+    "facing=north,look=pot_dandelion": {
+      "model": "minecraft:block/potted_dandelion"
+    },
+    "facing=north,look=pot_blue_orchid": {
+      "model": "minecraft:block/potted_blue_orchid"
+    },
+    "facing=north,look=pot_allium": {
+      "model": "minecraft:block/potted_allium"
+    },
+    "facing=north,look=pot_azure_bluet": {
+      "model": "minecraft:block/potted_azure_bluet"
+    },
+    "facing=north,look=pot_red_tulip": {
+      "model": "minecraft:block/potted_red_tulip"
+    },
+    "facing=north,look=pot_orange_tulip": {
+      "model": "minecraft:block/potted_orange_tulip"
+    },
+    "facing=north,look=pot_white_tulip": {
+      "model": "minecraft:block/potted_white_tulip"
+    },
+    "facing=north,look=pot_pink_tulip": {
+      "model": "minecraft:block/potted_pink_tulip"
+    },
+    "facing=north,look=pot_oxeye_daisy": {
+      "model": "minecraft:block/potted_oxeye_daisy"
+    },
+    "facing=north,look=pot_cornflower": {
+      "model": "minecraft:block/potted_cornflower"
+    },
+    "facing=north,look=pot_lily_of_the_valley": {
+      "model": "minecraft:block/potted_lily_of_the_valley"
+    },
+    "facing=north,look=to_let": {
+      "model": "guildmark:block/to_let_board"
     },
     "facing=south,look=pole_birch": {
       "model": "guildmark:block/festival_pole_birch"
@@ -114,6 +200,50 @@
     "facing=south,look=blossom": {
       "model": "minecraft:block/flowering_azalea"
     },
+    "facing=south,look=ladder": {
+      "model": "minecraft:block/ladder",
+      "y": 180
+    },
+    "facing=south,look=pot_poppy": {
+      "model": "minecraft:block/potted_poppy"
+    },
+    "facing=south,look=pot_dandelion": {
+      "model": "minecraft:block/potted_dandelion"
+    },
+    "facing=south,look=pot_blue_orchid": {
+      "model": "minecraft:block/potted_blue_orchid"
+    },
+    "facing=south,look=pot_allium": {
+      "model": "minecraft:block/potted_allium"
+    },
+    "facing=south,look=pot_azure_bluet": {
+      "model": "minecraft:block/potted_azure_bluet"
+    },
+    "facing=south,look=pot_red_tulip": {
+      "model": "minecraft:block/potted_red_tulip"
+    },
+    "facing=south,look=pot_orange_tulip": {
+      "model": "minecraft:block/potted_orange_tulip"
+    },
+    "facing=south,look=pot_white_tulip": {
+      "model": "minecraft:block/potted_white_tulip"
+    },
+    "facing=south,look=pot_pink_tulip": {
+      "model": "minecraft:block/potted_pink_tulip"
+    },
+    "facing=south,look=pot_oxeye_daisy": {
+      "model": "minecraft:block/potted_oxeye_daisy"
+    },
+    "facing=south,look=pot_cornflower": {
+      "model": "minecraft:block/potted_cornflower"
+    },
+    "facing=south,look=pot_lily_of_the_valley": {
+      "model": "minecraft:block/potted_lily_of_the_valley"
+    },
+    "facing=south,look=to_let": {
+      "model": "guildmark:block/to_let_board",
+      "y": 180
+    },
     "facing=west,look=pole_birch": {
       "model": "guildmark:block/festival_pole_birch"
     },
@@ -152,6 +282,50 @@
     },
     "facing=west,look=blossom": {
       "model": "minecraft:block/flowering_azalea"
+    },
+    "facing=west,look=ladder": {
+      "model": "minecraft:block/ladder",
+      "y": 270
+    },
+    "facing=west,look=pot_poppy": {
+      "model": "minecraft:block/potted_poppy"
+    },
+    "facing=west,look=pot_dandelion": {
+      "model": "minecraft:block/potted_dandelion"
+    },
+    "facing=west,look=pot_blue_orchid": {
+      "model": "minecraft:block/potted_blue_orchid"
+    },
+    "facing=west,look=pot_allium": {
+      "model": "minecraft:block/potted_allium"
+    },
+    "facing=west,look=pot_azure_bluet": {
+      "model": "minecraft:block/potted_azure_bluet"
+    },
+    "facing=west,look=pot_red_tulip": {
+      "model": "minecraft:block/potted_red_tulip"
+    },
+    "facing=west,look=pot_orange_tulip": {
+      "model": "minecraft:block/potted_orange_tulip"
+    },
+    "facing=west,look=pot_white_tulip": {
+      "model": "minecraft:block/potted_white_tulip"
+    },
+    "facing=west,look=pot_pink_tulip": {
+      "model": "minecraft:block/potted_pink_tulip"
+    },
+    "facing=west,look=pot_oxeye_daisy": {
+      "model": "minecraft:block/potted_oxeye_daisy"
+    },
+    "facing=west,look=pot_cornflower": {
+      "model": "minecraft:block/potted_cornflower"
+    },
+    "facing=west,look=pot_lily_of_the_valley": {
+      "model": "minecraft:block/potted_lily_of_the_valley"
+    },
+    "facing=west,look=to_let": {
+      "model": "guildmark:block/to_let_board",
+      "y": 270
     }
   }
 }

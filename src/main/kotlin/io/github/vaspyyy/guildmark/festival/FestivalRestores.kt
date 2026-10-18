@@ -54,8 +54,14 @@ object FestivalRestores {
     /** Chunks that loaded with records, and the game time to look at them (a running festival may want them). */
     private val queue = ArrayDeque<Pair<Long, Long>>()
 
-    /** Is [state] one of the festival's own blocks? */
-    fun ours(state: BlockState): Boolean = state.block is FestivalTrimBlock || state.block is FestivalOrnamentBlock
+    /**
+     * A block of another part's that goes up and comes down as the festival's decorations do, through this record
+     * (the streets' alms table, M6 Part D2): taken down, it's put back as it was, and a stray one goes.
+     */
+    interface Restorable
+
+    /** Is [state] one of the festival's own blocks (or one put up the same way, a [Restorable])? */
+    fun ours(state: BlockState): Boolean = state.block is FestivalTrimBlock || state.block is FestivalOrnamentBlock || state.block is Restorable
 
     /**
      * Whether a decoration may go at [pos]: it's loaded, and holds air or a plant anything may build over (or a

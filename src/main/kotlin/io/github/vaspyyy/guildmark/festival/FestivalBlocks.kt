@@ -57,9 +57,34 @@ enum class TrimLook(private val id: String, val shape: TrimShape, val light: Int
     TARGET("target", TrimShape.FULL, 0),
     BRAZIER("brazier", TrimShape.LOW, 15),
     CANDLES("candles", TrimShape.NONE, 12),
-    BLOSSOM("blossom", TrimShape.NONE, 0);
+    BLOSSOM("blossom", TrimShape.NONE, 0),
+
+    // The streets in good times and hard (townsfolk/streets, M6 Part D): the ladder a resident sets against a wall to
+    // hang the dressing, the flower pots on the doorsteps, and the "To let" board by the door of a home left empty
+    LADDER("ladder", TrimShape.NONE, 0),
+    POT_POPPY("pot_poppy", TrimShape.NONE, 0),
+    POT_DANDELION("pot_dandelion", TrimShape.NONE, 0),
+    POT_BLUE_ORCHID("pot_blue_orchid", TrimShape.NONE, 0),
+    POT_ALLIUM("pot_allium", TrimShape.NONE, 0),
+    POT_AZURE_BLUET("pot_azure_bluet", TrimShape.NONE, 0),
+    POT_RED_TULIP("pot_red_tulip", TrimShape.NONE, 0),
+    POT_ORANGE_TULIP("pot_orange_tulip", TrimShape.NONE, 0),
+    POT_WHITE_TULIP("pot_white_tulip", TrimShape.NONE, 0),
+    POT_PINK_TULIP("pot_pink_tulip", TrimShape.NONE, 0),
+    POT_OXEYE_DAISY("pot_oxeye_daisy", TrimShape.NONE, 0),
+    POT_CORNFLOWER("pot_cornflower", TrimShape.NONE, 0),
+    POT_LILY_OF_THE_VALLEY("pot_lily_of_the_valley", TrimShape.NONE, 0),
+    TO_LET("to_let", TrimShape.POST, 0);
 
     override fun getSerializedName(): String = id
+
+    /** A flower pot on a doorstep. */
+    val pot: Boolean get() = name.startsWith("POT_")
+
+    companion object {
+        /** The doorsteps' flower pots. */
+        val POTS: List<TrimLook> = entries.filter { it.pot }
+    }
 }
 
 /** A piece of festival trim (see [TrimLook]). */
@@ -75,16 +100,26 @@ class FestivalTrimBlock(properties: Properties) : Block(properties) {
     override fun getShape(state: BlockState, level: BlockGetter, pos: BlockPos, context: CollisionContext): VoxelShape = when (state.getValue(LOOK)) {
         TrimLook.CANDLES -> CANDLES_SHAPE
         TrimLook.BLOSSOM -> BLOSSOM_SHAPE
-        else -> collision(state)
+        TrimLook.LADDER -> ladder(state.getValue(FACING))
+        else -> if (state.getValue(LOOK).pot) POT_SHAPE else collision(state)
     }
 
-    override fun getCollisionShape(state: BlockState, level: BlockGetter, pos: BlockPos, context: CollisionContext): VoxelShape = collision(state)
+    override fun getCollisionShape(state: BlockState, level: BlockGetter, pos: BlockPos, context: CollisionContext): VoxelShape =
+        if (state.getValue(LOOK).pot) POT_SHAPE else collision(state)
 
     private fun collision(state: BlockState): VoxelShape = when (state.getValue(LOOK).shape) {
         TrimShape.NONE -> Shapes.empty()
         TrimShape.POST -> POST_SHAPE
         TrimShape.LOW -> LOW_SHAPE
         TrimShape.FULL -> Shapes.block()
+    }
+
+    /** A ladder's outline: the rungs against the wall behind it, facing [facing] (as the vanilla ladder's). */
+    private fun ladder(facing: Direction): VoxelShape = when (facing) {
+        Direction.SOUTH -> LADDER_SOUTH
+        Direction.WEST -> LADDER_WEST
+        Direction.EAST -> LADDER_EAST
+        else -> LADDER_NORTH
     }
 
     override fun propagatesSkylightDown(state: BlockState): Boolean = state.getValue(LOOK).shape != TrimShape.FULL
@@ -122,6 +157,12 @@ class FestivalTrimBlock(properties: Properties) : Block(properties) {
         private val LOW_SHAPE: VoxelShape = box(0.0, 0.0, 0.0, 16.0, 7.0, 16.0)
         private val CANDLES_SHAPE: VoxelShape = box(5.0, 0.0, 6.0, 11.0, 6.0, 11.0)
         private val BLOSSOM_SHAPE: VoxelShape = box(2.0, 0.0, 2.0, 14.0, 14.0, 14.0)
+        /** The vanilla flower pot's, and the vanilla ladder's for each way it faces. */
+        private val POT_SHAPE: VoxelShape = box(5.0, 0.0, 5.0, 11.0, 6.0, 11.0)
+        private val LADDER_NORTH: VoxelShape = box(0.0, 0.0, 13.0, 16.0, 16.0, 16.0)
+        private val LADDER_SOUTH: VoxelShape = box(0.0, 0.0, 0.0, 16.0, 16.0, 3.0)
+        private val LADDER_WEST: VoxelShape = box(13.0, 0.0, 0.0, 16.0, 16.0, 16.0)
+        private val LADDER_EAST: VoxelShape = box(0.0, 0.0, 0.0, 3.0, 16.0, 16.0)
         /** The vanilla three-candle cluster's wicks (CandleBlock's own offsets). */
         private val CANDLE_WICKS = listOf(Triple(0.5, 0.3125, 0.625), Triple(0.375, 0.4375, 0.5), Triple(0.5625, 0.5, 0.4375))
 
@@ -139,7 +180,26 @@ enum class OrnamentKind(val id: String) {
     /** A ribbon tied somewhere about the town for the Ribbon Hunt. */
     HUNT_RIBBON("hunt_ribbon"),
     /** A Lanternrise post whose lantern carries a riddle. */
-    RIDDLE("riddle");
+    RIDDLE("riddle"),
+
+    // The streets' dressing in good times (townsfolk/streets/Dressing, M6 Part D1), in the festivals' colours: each
+    // hangs from [OrnamentData.from] along [OrnamentData.garland] or [OrnamentData.string]
+    /** A garland swagged over a door. */
+    STREET_GARLAND("street_garland"),
+    /** A string of pennants from an eave across the street. */
+    STREET_BUNTING("street_bunting"),
+    /** A string of little lanterns over the market, from one lamp to the next: lit (the block's light) while its lamp burns. */
+    STREET_LANTERNS("street_lanterns"),
+
+    /**
+     * A market stall's awning let down over its front, the keeper's shop shut (townsfolk/streets/Awnings, M6 Part D2):
+     * [OrnamentData.string] is half its width along the front, [OrnamentData.drop] how far it hangs, [OrnamentData.index]
+     * the way its face looks (a 2D value) and [OrnamentData.colors] its stripes.
+     */
+    AWNING_FLAP("awning_flap");
+
+    /** One of the streets' (M6 Part D), not a festival's. */
+    val street: Boolean get() = this == STREET_GARLAND || this == STREET_BUNTING || this == STREET_LANTERNS || this == AWNING_FLAP
 
     companion object {
         fun byId(id: String): OrnamentKind = entries.firstOrNull { it.id == id } ?: POST
@@ -161,6 +221,14 @@ data class OrnamentData(
     val drop: Float = 0f,
     /** A post: whether it flies a banner. */
     val banner: Boolean = false,
+    /** The streets' pieces: where what hangs is tied on, from the block's corner (null: the block's middle). */
+    val from: Vec3? = null,
+    /** An awning's stripes: the stripe's dye id and the other's, each plus one, in the low and next bytes (0: unknown). */
+    val colors: Int = 0,
+    /** The streets' pieces: 0 while they're up, 1 once they're coming down (an awning rolling up, a string being untied). */
+    val phase: Int = 0,
+    /** The streets' pieces: the game time [phase] last changed (it went up, or began to come down); 0 for "there already". */
+    val since: Long = 0L,
 )
 
 /**
@@ -215,6 +283,16 @@ class FestivalOrnamentBlockEntity(pos: BlockPos, state: BlockState) : BlockEntit
     var data: OrnamentData = OrnamentData(OrnamentKind.POST, FestivalKind.RIBBONWAKE)
         private set
 
+    /**
+     * Client side, for the streets' lantern strings (client/festival/FestivalOrnamentRenderer): whether it was last seen
+     * lit (-1 not yet seen), and the game time that changed, so its lanterns catch one after another along the string.
+     */
+    @JvmField
+    var lit = -1
+
+    @JvmField
+    var litAt = 0L
+
     /** Server side: set what it shows and tell the clients. */
     fun setup(data: OrnamentData) {
         this.data = data
@@ -234,6 +312,11 @@ class FestivalOrnamentBlockEntity(pos: BlockPos, state: BlockState) : BlockEntit
         output.putFloat("ring", d.ring)
         output.putFloat("drop", d.drop)
         output.putBoolean("banner", d.banner)
+        // The streets' pieces only (a festival's leave them at their defaults, and write nothing new)
+        output.storeNullable("from", Vec3.CODEC, d.from)
+        if (d.colors != 0) output.putInt("colors", d.colors)
+        if (d.phase != 0) output.putInt("phase", d.phase)
+        if (d.since != 0L) output.putLong("since", d.since)
     }
 
     override fun loadAdditional(input: ValueInput) {
@@ -247,6 +330,10 @@ class FestivalOrnamentBlockEntity(pos: BlockPos, state: BlockState) : BlockEntit
             input.getFloatOr("ring", 0f),
             input.getFloatOr("drop", 0f),
             input.getBooleanOr("banner", false),
+            input.read("from", Vec3.CODEC).orElse(null),
+            input.getIntOr("colors", 0),
+            input.getIntOr("phase", 0),
+            input.getLongOr("since", 0L),
         )
     }
 
