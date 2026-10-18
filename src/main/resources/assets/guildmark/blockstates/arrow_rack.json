@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "guildmark:block/arrow_rack"
+    },
+    "facing=east": {
+      "model": "guildmark:block/arrow_rack",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "guildmark:block/arrow_rack",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "guildmark:block/arrow_rack",
+      "y": 270
+    }
+  }
+}

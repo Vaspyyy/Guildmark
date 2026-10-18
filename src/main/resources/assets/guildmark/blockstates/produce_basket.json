@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "guildmark:block/produce_basket"
+    },
+    "facing=east": {
+      "model": "guildmark:block/produce_basket",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "guildmark:block/produce_basket",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "guildmark:block/produce_basket",
+      "y": 270
+    }
+  }
+}

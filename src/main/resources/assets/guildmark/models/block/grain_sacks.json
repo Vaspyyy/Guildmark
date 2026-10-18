@@ -1,0 +1,188 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "guildmark:block/wares/burlap",
+    "burlap": "guildmark:block/wares/burlap",
+    "sack_mouth": "guildmark:block/wares/sack_mouth"
+  },
+  "elements": [
+    {
+      "from": [1.5, 0, 5],
+      "to": [7.5, 7.5, 12],
+      "faces": {
+        "north": {
+          "uv": [8.5, 8.5, 14.5, 16],
+          "texture": "#burlap"
+        },
+        "south": {
+          "uv": [1.5, 8.5, 7.5, 16],
+          "texture": "#burlap"
+        },
+        "east": {
+          "uv": [4, 8.5, 11, 16],
+          "texture": "#burlap"
+        },
+        "west": {
+          "uv": [5, 8.5, 12, 16],
+          "texture": "#burlap"
+        },
+        "down": {
+          "uv": [1.5, 4, 7.5, 11],
+          "texture": "#burlap",
+          "cullface": "down"
+        }
+      }
+    },
+    {
+      "from": [1, 0.5, 4.5],
+      "to": [8, 4.5, 12.5],
+      "faces": {
+        "north": {
+          "uv": [8, 11.5, 15, 15.5],
+          "texture": "#burlap"
+        },
+        "south": {
+          "uv": [1, 11.5, 8, 15.5],
+          "texture": "#burlap"
+        },
+        "east": {
+          "uv": [3.5, 11.5, 11.5, 15.5],
+          "texture": "#burlap"
+        },
+        "west": {
+          "uv": [4.5, 11.5, 12.5, 15.5],
+          "texture": "#burlap"
+        },
+        "up": {
+          "uv": [1, 4.5, 8, 12.5],
+          "texture": "#burlap"
+        }
+      }
+    },
+    {
+      "from": [1.25, 7.5, 4.75],
+      "to": [7.75, 9, 12.25],
+      "faces": {
+        "north": {
+          "uv": [8.25, 7, 14.75, 8.5],
+          "texture": "#burlap"
+        },
+        "south": {
+          "uv": [1.25, 7, 7.75, 8.5],
+          "texture": "#burlap"
+        },
+        "east": {
+          "uv": [3.75, 7, 11.25, 8.5],
+          "texture": "#burlap"
+        },
+        "west": {
+          "uv": [4.75, 7, 12.25, 8.5],
+          "texture": "#burlap"
+        },
+        "down": {
+          "uv": [1.25, 3.75, 7.75, 11.25],
+          "texture": "#burlap"
+        }
+      }
+    },
+    {
+      "from": [1.25, 7.5, 4.75],
+      "to": [7.75, 9, 12.25],
+      "faces": {
+        "up": {
+          "uv": [0, 0, 16, 16],
+          "texture": "#sack_mouth"
+        }
+      }
+    },
+    {
+      "from": [8.5, 0, 4],
+      "to": [14.5, 6.5, 11],
+      "faces": {
+        "north": {
+          "uv": [1.5, 9.5, 7.5, 16],
+          "texture": "#burlap"
+        },
+        "south": {
+          "uv": [8.5, 9.5, 14.5, 16],
+          "texture": "#burlap"
+        },
+        "east": {
+          "uv": [5, 9.5, 12, 16],
+          "texture": "#burlap"
+        },
+        "west": {
+          "uv": [4, 9.5, 11, 16],
+          "texture": "#burlap"
+        },
+        "down": {
+          "uv": [8.5, 5, 14.5, 12],
+          "texture": "#burlap",
+          "cullface": "down"
+        }
+      }
+    },
+    {
+      "from": [8, 0.5, 3.5],
+      "to": [15, 3.5, 11.5],
+      "faces": {
+        "north": {
+          "uv": [1, 12.5, 8, 15.5],
+          "texture": "#burlap"
+        },
+        "south": {
+          "uv": [8, 12.5, 15, 15.5],
+          "texture": "#burlap"
+        },
+        "east": {
+          "uv": [4.5, 12.5, 12.5, 15.5],
+          "texture": "#burlap"
+        },
+        "west": {
+          "uv": [3.5, 12.5, 11.5, 15.5],
+          "texture": "#burlap"
+        },
+        "up": {
+          "uv": [8, 3.5, 15, 11.5],
+          "texture": "#burlap"
+        }
+      }
+    },
+    {
+      "from": [8.25, 6.5, 3.75],
+      "to": [14.75, 8, 11.25],
+      "faces": {
+        "north": {
+          "uv": [1.25, 8, 7.75, 9.5],
+          "texture": "#burlap"
+        },
+        "south": {
+          "uv": [8.25, 8, 14.75, 9.5],
+          "texture": "#burlap"
+        },
+        "east": {
+          "uv": [4.75, 8, 12.25, 9.5],
+          "texture": "#burlap"
+        },
+        "west": {
+          "uv": [3.75, 8, 11.25, 9.5],
+          "texture": "#burlap"
+        },
+        "down": {
+          "uv": [8.25, 4.75, 14.75, 12.25],
+          "texture": "#burlap"
+        }
+      }
+    },
+    {
+      "from": [8.25, 6.5, 3.75],
+      "to": [14.75, 8, 11.25],
+      "faces": {
+        "up": {
+          "uv": [0, 0, 16, 16],
+          "texture": "#sack_mouth"
+        }
+      }
+    }
+  ]
+}

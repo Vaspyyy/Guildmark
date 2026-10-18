@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "condition": {
+        "type": "minecraft:survives_explosion"
+      },
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "guildmark:candle_tray"
+        }
+      ]
+    }
+  ],
+  "random_sequence": "guildmark:blocks/candle_tray"
+}

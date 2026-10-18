@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "guildmark:block/grain_sacks"
+    },
+    "facing=east": {
+      "model": "guildmark:block/grain_sacks",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "guildmark:block/grain_sacks",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "guildmark:block/grain_sacks",
+      "y": 270
+    }
+  }
+}

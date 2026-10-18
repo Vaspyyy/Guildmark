@@ -2,6 +2,13 @@
   "replace": false,
   "values": [
     "guildmark:charred_log",
-    "guildmark:shipping_crate"
+    "guildmark:shipping_crate",
+    "guildmark:produce_basket",
+    "guildmark:fish_crate",
+    "guildmark:meat_rack",
+    "guildmark:cloth_board",
+    "guildmark:arrow_rack",
+    "guildmark:candle_tray",
+    "guildmark:bread_shelf"
   ]
 }

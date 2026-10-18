@@ -1,0 +1,102 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "guildmark:block/wares/plank",
+    "plank": "guildmark:block/wares/plank",
+    "post": "guildmark:block/wares/post"
+  },
+  "elements": [
+    {
+      "from": [1, 1, 2],
+      "to": [15, 2.6, 14],
+      "faces": {
+        "down": {
+          "uv": [1, 2, 15, 14],
+          "texture": "#plank"
+        },
+        "up": {
+          "uv": [1, 2, 15, 14],
+          "texture": "#plank"
+        },
+        "north": {
+          "uv": [1, 13.4, 15, 15],
+          "texture": "#plank"
+        },
+        "south": {
+          "uv": [1, 13.4, 15, 15],
+          "texture": "#plank"
+        },
+        "west": {
+          "uv": [2, 13.4, 14, 15],
+          "texture": "#plank"
+        },
+        "east": {
+          "uv": [2, 13.4, 14, 15],
+          "texture": "#plank"
+        }
+      }
+    },
+    {
+      "from": [2, 0, 2.5],
+      "to": [3.5, 1, 13.5],
+      "faces": {
+        "down": {
+          "uv": [2, 2.5, 3.5, 13.5],
+          "texture": "#post",
+          "cullface": "down"
+        },
+        "up": {
+          "uv": [2, 2.5, 3.5, 13.5],
+          "texture": "#post"
+        },
+        "north": {
+          "uv": [12.5, 15, 14, 16],
+          "texture": "#post"
+        },
+        "south": {
+          "uv": [2, 15, 3.5, 16],
+          "texture": "#post"
+        },
+        "west": {
+          "uv": [2.5, 15, 13.5, 16],
+          "texture": "#post"
+        },
+        "east": {
+          "uv": [2.5, 15, 13.5, 16],
+          "texture": "#post"
+        }
+      }
+    },
+    {
+      "from": [12.5, 0, 2.5],
+      "to": [14, 1, 13.5],
+      "faces": {
+        "down": {
+          "uv": [12.5, 2.5, 14, 13.5],
+          "texture": "#post",
+          "cullface": "down"
+        },
+        "up": {
+          "uv": [12.5, 2.5, 14, 13.5],
+          "texture": "#post"
+        },
+        "north": {
+          "uv": [2, 15, 3.5, 16],
+          "texture": "#post"
+        },
+        "south": {
+          "uv": [12.5, 15, 14, 16],
+          "texture": "#post"
+        },
+        "west": {
+          "uv": [2.5, 15, 13.5, 16],
+          "texture": "#post"
+        },
+        "east": {
+          "uv": [2.5, 15, 13.5, 16],
+          "texture": "#post"
+        }
+      }
+    }
+  ]
+}

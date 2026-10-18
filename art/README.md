@@ -55,6 +55,11 @@ and Kotlin model code always agree.
   and item definitions already point at them. It replaces the old 16x scripts (`cache_art.py`, `flask_art.py`,
   `shard_art.py`, `rider_items.py`, `spawn_eggs.py`).
 - `scripts/wardfire_art.py` and `scripts/dungeon_art.py` paint the Wardfire and the mist gate at 32x too.
+- `scripts/wares_art.py` is the capitals' market displays (`economy/WaresBlock.kt`): the produce basket, fish crate,
+  meat rack, cloth board, arrow rack, candle tray, bread shelf and grain sacks at 32x, with their models, blockstates
+  and item definitions. The goods on them are the game's own items, laid by `economy/WaresLayout.kt` on the floors,
+  rims and hooks of these models, so the two have to agree. Run it with
+  `python3 -B art/scripts/wares_art.py [assets dir [preview dir]]`.
 - `scripts/faction_art.py` is the factions' other art: the sworn knight (`sworn_knight.png`, a living Hearthsworn knight
   painted on the Hollow Soldier's own model and UV layout at the same 2x size), the 32x purse, the four heist prizes
   (`item/heist/`, which `items/heist_prize.json` picks between by custom model data), the Starwatch staff, the Widow's

@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "guildmark:block/candle_tray"
+    },
+    "facing=east": {
+      "model": "guildmark:block/candle_tray",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "guildmark:block/candle_tray",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "guildmark:block/candle_tray",
+      "y": 270
+    }
+  }
+}

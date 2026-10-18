@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "guildmark:block/bread_shelf"
+    },
+    "facing=east": {
+      "model": "guildmark:block/bread_shelf",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "guildmark:block/bread_shelf",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "guildmark:block/bread_shelf",
+      "y": 270
+    }
+  }
+}
