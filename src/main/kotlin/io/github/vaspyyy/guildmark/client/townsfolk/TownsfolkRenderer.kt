@@ -29,6 +29,9 @@ class TownsfolkRenderer(context: EntityRendererProvider.Context) :
 
     init {
         addLayer(GlowLayer(this))
+        // ---- Living World (LivingGoodsLayer.kt): the goods in hand ----
+        addLayer(LivingGoodsLayer(this))
+        // ---- end Living World ----
     }
 
     override fun createRenderState(): TownsfolkRenderState = TownsfolkRenderState()
@@ -46,6 +49,9 @@ class TownsfolkRenderer(context: EntityRendererProvider.Context) :
         if (entity.shownActivity == Activity.RELEASE && entity.tickCount - entity.shownStart >= FestivalSite.RELEASE_TICK) state.held -= "lantern"
         state.glows = "hot_iron" in state.held || "lantern" in state.held
         state.frame = if (entity.isSleeping) null else frame(entity, partialTicks)
+        // ---- Living World (LivingProps.kt): its clips' props and goods, climbing by height ----
+        LivingProps.extract(entity, state, partialTicks)
+        // ---- end Living World ----
     }
 
     override fun scale(state: TownsfolkRenderState, poseStack: PoseStack) {

@@ -668,6 +668,66 @@ def kt_goods(span):
             f'{", ".join(to)}, {arc}, {kt_float(size)})')
 
 
+def moment_specs():
+    """Where each clip's moments happen, so their sounds and dust come from there: by clip and moment, ('part', part,
+    offset) for a point of a part as posed on the moment's tick, ('hands', ahead) for between the hands, ('point', p) for
+    a point of the clip's own space, or by tick when the same moment happens in different places (climb's grabs). The
+    rest happen at the chest."""
+    rg, lg = tuple(GRIP['right_arm']), tuple(GRIP['left_arm'])
+    mouth, face, hips = ('part', 'head', (0.0, -2.2, -4.4)), ('part', 'head', (0.0, -3.5, -4.6)), ('part', 'body', (0.0, 12.0, 0.0))
+    right, left, hands = ('part', 'right_arm', rg), ('part', 'left_arm', lg), ('hands', 0.0)
+    bell = ('part', 'handbell', BELL_MOUTH)
+    return {
+        'sit_down': {'glance': ('part', 'head', (0.0, -4.0, 0.0)), 'down': hips},
+        'stand_up': {'feet': ('part', 'right_leg', (0.0, 12.0, -1.0)), 'up': hips},
+        'knock': {'knock': right},
+        'climb': {'grab': {0.0: left, 8.0: right},
+                  'step': {4.0: ('part', 'right_leg', (0.0, 12.0, -1.5)), 12.0: ('part', 'left_leg', (0.0, 12.0, -1.5))}},
+        'eat': {'bite': mouth},
+        'sit_eat': {'spoon': mouth},
+        'wash': {'scoop': hands, 'splash': face, 'shake': hands},
+        'pick_up': {'grab': hands},
+        'put_down': {'set_down': ('point', tuple(GOODS_ON_GROUND))},
+        'hand_over': {'handoff': ('hands', 2.0)},
+        'receive': {'handoff': ('hands', 2.0)},
+        'pay': {'clink': ('part', 'right_arm', tuple(np.add(rg, COIN)))},
+        'browse': {'pick': right, 'look': left, 'put back': right, 'feel': left},
+        'set_up': {'take': left, 'place': ('point', tuple(STALL_SET)), 'tug': hands},
+        'sow': {'seed': right},
+        'gather': {'pull': right, 'toss': right, 'in_basket': ('part', 'body', (5.6, 7.8, -4.0))},
+        'scythe': {'swish': ('part', 'scythe', SC_BLADE_MID), 'cut': ('part', 'scythe', SC_BLADE_MID)},
+        'grind': {'grind': ('point', (0.0, 19.0, -16.0))},
+        'chop': {'chop': ('point', tuple(CHOP_AT))},
+        'pour_sack': {'swing': ('part', 'sack_held', (0.0, 0.0, 0.0)), 'pour': ('point', (0.0, 8.5, -16.0)),
+                      'shake': ('point', (0.0, 8.5, -16.0)), 'empty': right},
+        'ring_bell': {'ring': bell},
+        'announce': {'sweep': bell, 'beat': bell, 'show': bell, 'ring': bell},
+        'light_lamp': {'reach': ('part', 'lamp_pole', LAMP_WICK), 'lit': ('point', (0.0, -27.5, -16.0))},
+        'draw_water': {'pull': hands, 'knock': ('part', 'well_bucket', (0.0, 4.0, 0.0)),
+                       'scrape': ('part', 'well_bucket', (0.0, 4.0, 0.0)), 'grab': right,
+                       'slosh': ('part', 'bucket', (0.0, 4.0, 0.0))},
+    }
+
+
+def moment_point(c, name, t, specs):
+    """Where [c]'s moment [name] on tick [t] happens, in the clip's space."""
+    spec = specs.get(c.name, {}).get(name, ('part', 'body', (0.0, 3.0, -2.5)))
+    if isinstance(spec, dict):
+        spec = spec[float(t)]
+    if spec[0] == 'point':
+        return np.asarray(spec[1], float)
+    was = list(_CUR)
+    _CUR[0], _CUR[1] = c.name, t
+    try:
+        look = ta.look_for(ta.INFO[c.name]['look'])
+        mats = part_matrices(look, ta.pose_at(c, t, ta.walk_base(t, speed=0.0, age=t)))
+    finally:
+        _CUR[0], _CUR[1] = was
+    if spec[0] == 'hands':
+        return between_hands(mats, spec[1])
+    return apply(mats[spec[1]], np.asarray(spec[2], float))
+
+
 def write_schedule(path=SCHEDULE_KT):
     """Writes what each clip shows of its props and goods when, for LivingProps.kt."""
     parents = [(part.name, parent) for parent, part in (b() for b in lp.BUILDERS)]
@@ -695,8 +755,10 @@ def write_schedule(path=SCHEDULE_KT):
            '        val toPart: String, val tx: Float, val ty: Float, val tz: Float, val arc: Float, val size: Float,',
            '    )', '',
            '    enum class How { HANDS, PART, GROUND, TOSS }', '',
-           '    /** A moment of a clip: what happens ([name]) and on which tick. */',
-           '    class Moment(val name: String, val tick: Float)', '',
+           '    /** A moment of a clip: what happens ([name]), on which tick, and where: ([x], [y], [z]) in the clip\'s space. */',
+           '    class Moment(val name: String, val tick: Float, val x: Float, val y: Float, val z: Float)', '',
+           '    /** The clips these are for. */',
+           '    val CLIPS: Set<String> = setOf(' + ', '.join(f'"{c.name}"' for c in clips) + ')', '',
            "    /** Each prop's own part, and the part it hangs on. */",
            '    val PARENT: Map<String, String> = mapOf(']
     out += [f'        "{n}" to "{p}",' for n, p in parents]
@@ -733,10 +795,15 @@ def write_schedule(path=SCHEDULE_KT):
             + ', '.join(f'"{k}" to "minecraft:{v}"' for k, v in GOODS_DEFAULT.items()) + ')', '',
             '    /** By clip: its moments, the ticks things happen on (a knock, a bite, a bell rung), for their sounds and dust. */',
             '    val MOMENTS: Map<String, List<Moment>> = mapOf(']
+    specs = moment_specs()
     for c in clips:
         ev = ta.INFO[c.name]['events']
         if ev:
-            out.append(f'        "{c.name}" to listOf(' + ', '.join(f'Moment("{n}", {kt_float(k)})' for n, k in ev) + '),')
+            out.append(f'        "{c.name}" to listOf(')
+            for n, k in ev:
+                x, y, z = (kt_float(v) for v in moment_point(c, n, k, specs))
+                out.append(f'            Moment("{n}", {kt_float(k)}, {x}, {y}, {z}),')
+            out.append('        ),')
     out += ['    )', '}', '']
     with open(path, 'w') as f:
         f.write('\n'.join(out))

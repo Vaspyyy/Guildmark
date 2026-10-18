@@ -28,6 +28,10 @@ class TownsfolkRenderState : HumanoidRenderState() {
     var glows = false
     /** The clip to show (kept here: render data set while extracting is cleared after). */
     var frame: CombatAnimator.Frame? = null
+
+    // ---- Living World (LivingProps.kt): its clips' props, the goods in hand ----
+    internal val living = LivingProps.State()
+    // ---- end Living World ----
 }
 
 /**
@@ -55,6 +59,10 @@ class TownsfolkModel(root: ModelPart) : HumanoidModel<TownsfolkRenderState>(root
     private val step = Quaternionf()
     private val euler = Vector3f()
 
+    // ---- Living World (LivingProps.kt): its clips' props ----
+    private val living = LivingProps.Parts(root)
+    // ---- end Living World ----
+
     override fun setupAnim(state: TownsfolkRenderState) {
         super.setupAnim(state)
         for ((name, part) in pieces) part.visible = name in state.pieces
@@ -75,6 +83,9 @@ class TownsfolkModel(root: ModelPart) : HumanoidModel<TownsfolkRenderState>(root
         val swing = sin(state.walkAnimationPos * 0.6662f) * state.walkAnimationSpeed * 0.25f
         hang(lantern, sin(state.ageInTicks * 0.12f) * 0.05f + swing, root(), leftArm)
         hang(line, sin(state.ageInTicks * 0.07f) * 0.03f, root(), rightArm, rod)
+        // ---- Living World (LivingProps.kt): its clips' props shown, tracked and hung ----
+        living.pose(this, state)
+        // ---- end Living World ----
     }
 
     /** Turns [part] so it hangs straight down, undoing the turns of the parts it hangs from ([chain], outermost first). */

@@ -14,7 +14,7 @@ import net.minecraft.client.model.geom.builders.MeshDefinition
  */
 object TownsfolkMesh {
     const val TEX_WIDTH = 256
-    const val TEX_HEIGHT = 128
+    const val TEX_HEIGHT = 256
 
     @Suppress("LocalVariableName", "UNUSED_VARIABLE")
     fun createBodyLayer(): LayerDefinition {
@@ -74,6 +74,13 @@ object TownsfolkMesh {
         lute_slung.addOrReplaceChild("lute_slung_strap", CubeListBuilder.create().texOffs(166, 16).addBox(-0.6f, -7.5f, -2.35f, 1.2f, 15f, 0.3f), PartPose.offsetAndRotation(0f, 5.5f, 0f, 0f, 0f, -0.733f))
         body.addOrReplaceChild("crate", CubeListBuilder.create().texOffs(156, 58).addBox(-4.5f, -3f, -3f, 9f, 6f, 6f), PartPose.offset(0f, 7f, -7.5f))
         body.addOrReplaceChild("sack", CubeListBuilder.create().texOffs(226, 31).addBox(-2.6f, -3f, -4.6f, 5.2f, 5f, 9f).texOffs(188, 94).addBox(-1.5f, -2.6f, -6.2f, 3f, 3f, 1.6f).texOffs(178, 94).addBox(-1.6f, -2.7f, -5f, 3.2f, 3.2f, 0.6f), PartPose.offsetAndRotation(-5.6f, -1.2f, 0.4f, 0f, 0f, -0.209f))
+        body.addOrReplaceChild("curb_rope", CubeListBuilder.create().texOffs(108, 106).addBox(-0.35f, 0f, -0.35f, 0.7f, 16f, 0.7f), PartPose.offset(0f, 0f, 0f))
+        body.addOrReplaceChild("well_rope", CubeListBuilder.create().texOffs(74, 112).addBox(-0.35f, 0f, -0.35f, 0.7f, 16f, 0.7f), PartPose.offset(0f, 0f, 0f))
+        body.addOrReplaceChild("well_bucket", CubeListBuilder.create().texOffs(0, 125).addBox(-2.2f, 0f, -0.15f, 4.4f, 2.4f, 0.3f).texOffs(230, 115).addBox(-2f, 2f, -2f, 4f, 4.4f, 4f), PartPose.offset(0f, 0f, 0f))
+        val seed_bag = body.addOrReplaceChild("seed_bag", CubeListBuilder.create().texOffs(186, 115).addBox(-2f, -1.6f, -1.8f, 4f, 4.6f, 3.6f), PartPose.offsetAndRotation(3.6f, 9.2f, -3.6f, 0f, -0.209f, 0f))
+        seed_bag.addOrReplaceChild("seed_bag_strap", CubeListBuilder.create().texOffs(78, 112).addBox(-0.5f, -10.2f, -0.2f, 1f, 10.2f, 0.4f), PartPose.offsetAndRotation(-0.2f, -1.4f, 1.6f, 0f, 0f, 0.716f))
+        val basket_hip = body.addOrReplaceChild("basket_hip", CubeListBuilder.create().texOffs(0, 114).addBox(-3f, -2.1f, -2.6f, 6f, 4.6f, 5.2f), PartPose.offsetAndRotation(5.6f, 9.5f, -4f, 0f, -0.314f, -0.105f))
+        basket_hip.addOrReplaceChild("basket_hip_cloth", CubeListBuilder.create().texOffs(164, 116).addBox(-2.7f, -0.6f, -2.4f, 5.4f, 0.9f, 4.8f), PartPose.offset(0f, -2.1f, 0f))
         val right_arm = root.addOrReplaceChild("right_arm", CubeListBuilder.create().texOffs(134, 16).addBox(-3f, -2f, -2f, 4f, 12f, 4f), PartPose.offset(-5f, 2f, 0f))
         right_arm.addOrReplaceChild("sleeve_r", CubeListBuilder.create().texOffs(62, 70).addBox(-3.5f, 3f, -2.5f, 5f, 5f, 5f), PartPose.offset(0f, 0f, 0f))
         right_arm.addOrReplaceChild("puff_r", CubeListBuilder.create().texOffs(166, 70).addBox(-3.5f, -2.5f, -2.5f, 5f, 4f, 5f), PartPose.offset(0f, 0f, 0f))
@@ -92,6 +99,22 @@ object TownsfolkMesh {
         right_arm.addOrReplaceChild("sword", CubeListBuilder.create().texOffs(208, 99).addBox(-1f, -5.5f, -1f, 2f, 1.5f, 2f).texOffs(130, 79).addBox(-0.75f, -4f, -0.75f, 1.5f, 6.5f, 1.5f).texOffs(42, 80).addBox(-0.75f, 2.5f, -3.5f, 1.5f, 1f, 7f).texOffs(136, 103).addBox(-0.75f, 3.5f, 2.5f, 1.5f, 1f, 1f).texOffs(142, 103).addBox(-0.75f, 3.5f, -3.5f, 1.5f, 1f, 1f).texOffs(126, 0).addBox(-0.25f, 3.5f, -1.25f, 0.5f, 14.5f, 2.5f), PartPose.offsetAndRotation(-1f, 10f, 0f, -1.571f, 0f, 0f))
         right_arm.addOrReplaceChild("dice_cup", CubeListBuilder.create().texOffs(92, 99).addBox(-1.5f, 1f, -4.1f, 3f, 1f, 3f).texOffs(12, 85).addBox(-1.75f, -1.5f, -4.35f, 3.5f, 2.5f, 3.5f).texOffs(98, 94).addBox(-2f, -2.5f, -4.6f, 4f, 1f, 4f), PartPose.offsetAndRotation(-1f, 10f, 0f, 0.785f, 0f, 0f))
         right_arm.addOrReplaceChild("lockpick", CubeListBuilder.create().texOffs(24, 98).addBox(-0.5f, -1.5f, -0.5f, 1f, 3.5f, 1f).texOffs(236, 87).addBox(-0.25f, 2f, -0.25f, 0.5f, 6f, 0.5f).texOffs(252, 99).addBox(-0.25f, 7.5f, -0.75f, 0.5f, 0.5f, 0.5f).texOffs(28, 98).addBox(-1.25f, 1f, -0.25f, 0.5f, 4f, 0.5f).texOffs(100, 103).addBox(-1.25f, 4.5f, -1.25f, 0.5f, 0.5f, 1.5f), PartPose.offset(-1f, 10f, 0f))
+        right_arm.addOrReplaceChild("loaf", CubeListBuilder.create().texOffs(202, 115).addBox(-1.3f, -3.2f, -4.3f, 2.6f, 4.8f, 2.6f), PartPose.offsetAndRotation(-1f, 10f, 0f, 0.785f, 0f, 0f))
+        right_arm.addOrReplaceChild("apple", CubeListBuilder.create().texOffs(214, 121).addBox(-1.3f, -2.6f, -4.3f, 2.6f, 2.6f, 2.6f).texOffs(238, 128).addBox(-0.2f, -3.4f, -3.2f, 0.4f, 0.9f, 0.4f).texOffs(232, 128).addBox(0.2f, -3.2f, -3.6f, 1.1f, 0.3f, 0.9f), PartPose.offsetAndRotation(-1f, 10f, 0f, 0.785f, 0f, 0f))
+        right_arm.addOrReplaceChild("spoon", CubeListBuilder.create().texOffs(96, 112).addBox(-0.25f, -1.5f, -0.25f, 0.5f, 5.2f, 0.5f).texOffs(164, 127).addBox(-0.6f, 3.7f, -0.55f, 1.2f, 2f, 0.7f), PartPose.offsetAndRotation(-1f, 10f, 0f, -1.571f, 0f, 0f))
+        right_arm.addOrReplaceChild("bucket", CubeListBuilder.create().texOffs(226, 124).addBox(-2.2f, 0f, -0.15f, 4.4f, 2.4f, 0.3f).texOffs(214, 112).addBox(-2f, 2f, -2f, 4f, 4.4f, 4f), PartPose.offset(-1f, 10f, 0f))
+        right_arm.addOrReplaceChild("haul_rope_right", CubeListBuilder.create().texOffs(248, 111).addBox(-0.35f, 0f, -0.35f, 0.7f, 16f, 0.7f), PartPose.offset(-1f, 10f, 0f))
+        right_arm.addOrReplaceChild("tail_rope_right", CubeListBuilder.create().texOffs(70, 112).addBox(-0.35f, 0f, -0.35f, 0.7f, 16f, 0.7f), PartPose.offset(-1f, 10f, 0f))
+        right_arm.addOrReplaceChild("coin", CubeListBuilder.create().texOffs(102, 127).addBox(-0.7f, -0.2f, -3.2f, 1.4f, 1.4f, 0.4f), PartPose.offset(-1f, 10f, 0f))
+        val scythe = right_arm.addOrReplaceChild("scythe", CubeListBuilder.create().texOffs(170, 128).addBox(-12f, -0.5f, -0.5f, 29.5f, 1f, 1f).texOffs(36, 127).addBox(-0.6f, -0.6f, -2.4f, 1.2f, 1.2f, 1.9f).texOffs(28, 127).addBox(16.5f, -0.75f, -0.75f, 1.5f, 1.5f, 1.5f), PartPose.offsetAndRotation(-1f, 10f, 0f, 1.905f, -0.634f, 0.605f))
+        scythe.addOrReplaceChild("scythe_blade", CubeListBuilder.create().texOffs(146, 123).addBox(-0.5f, -1.4f, -0.3f, 7f, 2.6f, 0.6f).texOffs(126, 127).addBox(6f, -1.9f, -0.3f, 6f, 2f, 0.6f).texOffs(158, 127).addBox(11.5f, -2.6f, -0.3f, 2f, 1.4f, 0.6f), PartPose.offsetAndRotation(17f, 0f, 0f, 0f, 1.571f, 0f))
+        right_arm.addOrReplaceChild("axe", CubeListBuilder.create().texOffs(142, 130).addBox(-4.5f, -0.5f, -0.5f, 14f, 1f, 1f).texOffs(132, 116).addBox(7f, -0.75f, -1.6f, 3f, 1.5f, 5f), PartPose.offsetAndRotation(-1f, 10f, 0f, 0f, 0.262f, 1.571f))
+        right_arm.addOrReplaceChild("handbell", CubeListBuilder.create().texOffs(118, 123).addBox(-0.6f, -1.6f, -0.6f, 1.2f, 2.8f, 1.2f).texOffs(164, 122).addBox(-1.1f, 1.1f, -1.1f, 2.2f, 1.2f, 2.2f).texOffs(148, 116).addBox(-1.7f, 2.3f, -1.7f, 3.4f, 2.2f, 3.4f).texOffs(82, 122).addBox(-2.1f, 4.5f, -2.1f, 4.2f, 0.8f, 4.2f), PartPose.offsetAndRotation(-1f, 10f, 0f, -0.175f, 0f, 0f))
+        val lamp_pole = right_arm.addOrReplaceChild("lamp_pole", CubeListBuilder.create().texOffs(50, 130).addBox(-5.4f, -0.5f, -0.5f, 45f, 1f, 1f).texOffs(12, 125).addBox(39f, -0.85f, -0.85f, 1.8f, 1.7f, 1.7f).texOffs(44, 127).addBox(-5.7f, -0.7f, -0.7f, 0.8f, 1.4f, 1.4f), PartPose.offsetAndRotation(-1f, 10f, -2.6f, 0f, 0.436f, -1.571f))
+        lamp_pole.addOrReplaceChild("lamp_flame", CubeListBuilder.create().texOffs(238, 124).addBox(0f, -0.6f, -0.6f, 2.4f, 1.2f, 1.2f), PartPose.offset(40.8f, 0f, 0f))
+        right_arm.addOrReplaceChild("sack_held", CubeListBuilder.create().texOffs(24, 113).addBox(-2.6f, -3f, -4.6f, 5.2f, 5f, 9f).texOffs(108, 123).addBox(-1.5f, -2.6f, -6.2f, 3f, 3f, 1.6f).texOffs(176, 122).addBox(-1.6f, -2.7f, -5f, 3.2f, 3.2f, 0.6f), PartPose.offsetAndRotation(-0.181f, 1.834f, -2.714f, 2.289f, -0.008f, 0.154f))
+        right_arm.addOrReplaceChild("sack_empty", CubeListBuilder.create().texOffs(20, 127).addBox(-1f, -0.5f, -1f, 2f, 1.6f, 2f).texOffs(54, 113).addBox(-2.6f, 1f, -0.9f, 5.2f, 6.4f, 1.8f), PartPose.offset(-1f, 10f, 0f))
+        right_arm.addOrReplaceChild("crank", CubeListBuilder.create().texOffs(54, 122).addBox(-0.5f, -0.5f, -2.3f, 1f, 1f, 4.6f).texOffs(140, 127).addBox(-0.6f, -0.6f, -3.1f, 4.2f, 1.2f, 0.8f).texOffs(206, 123).addBox(2f, -1f, -3.6f, 2f, 2f, 1.4f), PartPose.offset(-1f, 10f, 0f))
         val left_arm = root.addOrReplaceChild("left_arm", CubeListBuilder.create().texOffs(222, 0).addBox(-1f, -2f, -2f, 4f, 12f, 4f), PartPose.offset(5f, 2f, 0f))
         left_arm.addOrReplaceChild("sleeve_l", CubeListBuilder.create().texOffs(42, 70).addBox(-1.5f, 3f, -2.5f, 5f, 5f, 5f), PartPose.offset(0f, 0f, 0f))
         left_arm.addOrReplaceChild("puff_l", CubeListBuilder.create().texOffs(146, 70).addBox(-1.5f, -2.5f, -2.5f, 5f, 4f, 5f), PartPose.offset(0f, 0f, 0f))
@@ -109,12 +132,16 @@ object TownsfolkMesh {
         left_arm.addOrReplaceChild("shield", CubeListBuilder.create().texOffs(232, 16).addBox(-5f, -9f, -3.5f, 10f, 14f, 1f).texOffs(112, 103).addBox(-2.5f, -7f, -2.5f, 5f, 1f, 1f).texOffs(124, 103).addBox(-2.5f, -2f, -2.5f, 5f, 1f, 1f), PartPose.offsetAndRotation(1f, 10f, 0f, 0.698f, 0f, 0f))
         left_arm.addOrReplaceChild("whetstone", CubeListBuilder.create().texOffs(102, 87).addBox(-1.25f, -0.5f, -2.5f, 2.5f, 1.5f, 5f), PartPose.offset(1f, 10f, 0f))
         left_arm.addOrReplaceChild("coin_purse", CubeListBuilder.create().texOffs(70, 87).addBox(-2f, -0.5f, -4.5f, 4f, 3f, 3.5f).texOffs(242, 102).addBox(-1.25f, -1.5f, -3.75f, 2.5f, 1f, 2f).texOffs(140, 99).addBox(-1.5f, -1.25f, -4f, 3f, 0.5f, 2.5f).texOffs(130, 94).addBox(-2f, -2.5f, -4.5f, 4f, 1f, 3.5f).texOffs(106, 103).addBox(-0.5f, -3.7f, -3f, 1.5f, 1.5f, 0.5f).texOffs(232, 99).addBox(-1f, -3.2f, -2.4f, 0.5f, 1.5f, 1.5f), PartPose.offsetAndRotation(1f, 10f, 0f, 0.785f, 0f, 0f))
+        left_arm.addOrReplaceChild("bowl", CubeListBuilder.create().texOffs(112, 116).addBox(-2.25f, -3.9f, -1.25f, 4.5f, 1.9f, 4.5f), PartPose.offsetAndRotation(1f, 10f, 0f, -1.789f, 0f, -3.142f))
+        left_arm.addOrReplaceChild("haul_rope_left", CubeListBuilder.create().texOffs(104, 110).addBox(-0.35f, 0f, -0.35f, 0.7f, 16f, 0.7f), PartPose.offset(1f, 10f, 0f))
+        left_arm.addOrReplaceChild("tail_rope_left", CubeListBuilder.create().texOffs(252, 111).addBox(-0.35f, 0f, -0.35f, 0.7f, 16f, 0.7f), PartPose.offset(1f, 10f, 0f))
+        left_arm.addOrReplaceChild("scroll", CubeListBuilder.create().texOffs(186, 124).addBox(-3.6f, -0.6f, -0.6f, 7.2f, 1.2f, 1.2f).texOffs(82, 112).addBox(-3f, 0.5f, -0.15f, 6f, 8.4f, 0.3f).texOffs(126, 123).addBox(-3.6f, 8.8f, -0.6f, 7.2f, 1.2f, 1.2f).texOffs(152, 127).addBox(-0.7f, 6.4f, -0.5f, 1.4f, 1.4f, 0.35f), PartPose.offsetAndRotation(1f, 10f, 0f, 1.717f, 0.047f, -0.309f))
         val right_leg = root.addOrReplaceChild("right_leg", CubeListBuilder.create().texOffs(150, 16).addBox(-2f, 0f, -2f, 4f, 12f, 4f), PartPose.offset(-1.9f, 12f, 0f))
         right_leg.addOrReplaceChild("skirt_r", CubeListBuilder.create().texOffs(104, 0).addBox(-3.1f, -0.5f, -3f, 5f, 12f, 6f), PartPose.offset(0f, 0f, 0f))
         right_leg.addOrReplaceChild("boot_r", CubeListBuilder.create().texOffs(42, 88).addBox(-2f, 5f, -2f, 4f, 2f, 4f, CubeDeformation(0.35f)), PartPose.offset(0f, 0f, 0f))
         val left_leg = root.addOrReplaceChild("left_leg", CubeListBuilder.create().texOffs(238, 0).addBox(-2f, 0f, -2f, 4f, 12f, 4f), PartPose.offset(1.9f, 12f, 0f))
         left_leg.addOrReplaceChild("skirt_l", CubeListBuilder.create().texOffs(82, 0).addBox(-1.9f, -0.5f, -3f, 5f, 12f, 6f), PartPose.offset(0f, 0f, 0f))
         left_leg.addOrReplaceChild("boot_l", CubeListBuilder.create().texOffs(240, 87).addBox(-2f, 5f, -2f, 4f, 2f, 4f, CubeDeformation(0.35f)), PartPose.offset(0f, 0f, 0f))
-        return LayerDefinition.create(mesh, 256, 128)
+        return LayerDefinition.create(mesh, 256, 256)
     }
 }

@@ -64,6 +64,9 @@ object TownsfolkClient {
         val distance = player.distanceToSqr(p)
         if (distance > HEARD * HEARD) return
         moments(p, p.level())
+        // ---- Living World (LivingMoments.kt): its clips' sounds and dust ----
+        LivingMoments.tick(p)
+        // ---- end Living World ----
         if (p.role == TownRole.BARD) tune(p)
     }
 
