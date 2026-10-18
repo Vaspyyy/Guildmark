@@ -153,11 +153,11 @@ class Markets(private val entries: MutableMap<Long, Entry> = HashMap()) : SavedD
             }
         }
 
-        /** Works out [entry]'s market's [hour] in the overworld's weather and the season. */
+        /** Works out [entry]'s market's [hour] in the overworld's weather and the season, its players' own stalls selling in it. */
         fun step(level: ServerLevel, entry: Entry, hour: Long) {
             val felt = conditions(level, hour, entry.capital)
             entry.felt = felt
-            Economy.hour(entry.market, entry.town, felt, random(entry.market, hour))
+            Economy.hour(entry.market, entry.town, felt, random(entry.market, hour), OwnStalls.seller(level, entry))
         }
 
         /** The world in [entry]'s market's hour as it feels it there (the season and any feast with it), for why its prices stand where they do. */

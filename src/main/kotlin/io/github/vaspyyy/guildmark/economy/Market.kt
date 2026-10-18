@@ -161,6 +161,13 @@ class Market(val capital: Long) {
     val carted = DoubleArray(Route.entries.size)
     val carts = DoubleArray(Good.entries.size)
 
+    /**
+     * What the town bought at the market of each good in the hour last worked out: its meals, what it wore out and
+     * burnt, and what its makers fetched to work with (not what the caravans took away). Players' own stalls sell
+     * out of it (see [OwnStalls]). Not kept either.
+     */
+    val drawn = DoubleArray(Good.entries.size)
+
     operator fun get(site: Site, good: Good): Double = stores[site.ordinal][good.ordinal]
 
     operator fun set(site: Site, good: Good, amount: Double) {

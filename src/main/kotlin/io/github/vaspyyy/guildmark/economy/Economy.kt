@@ -138,10 +138,15 @@ object Economy {
     fun caravan(h: Int): Boolean = h == 9 || h == 12 || h == 15
     const val NEW_DAY = 2
 
-    /** Works out one hour of [m]'s trade for [town] in [c]; [random] decides what trouble or luck a new day brings. */
-    fun hour(m: Market, town: Town, c: Conditions, random: Random) {
+    /**
+     * Works out one hour of [m]'s trade for [town] in [c]; [random] decides what trouble or luck a new day brings.
+     * [stalls], when players keep stalls of their own in the capital's market hall, sells the town a share of what it
+     * bought this hour (see [OwnStalls]) once it's bought it, before the stores go off and the caravans come.
+     */
+    fun hour(m: Market, town: Town, c: Conditions, random: Random, stalls: ((Market, Town) -> Unit)? = null) {
         m.hour = c.hour
         m.worked.fill(0.0)
+        m.drawn.fill(0.0)
         val h = c.clock
         if (h == NEW_DAY) newDay(m, town, c, random)
         val over = m.events.filter { it.until <= c.hour }
@@ -171,6 +176,7 @@ object Economy {
         if (meal(h)) eat(m, town, c)
         wares(m, town, c)
         if (tavern(h)) drink(m, town, c)
+        stalls?.invoke(m, town)
         spoil(m)
         if (caravan(h)) caravans(m, town, first = h == 9)
         m.settle()
@@ -197,9 +203,16 @@ object Economy {
     }
 
     private fun use(m: Market, site: Site, good: Good, amount: Double): Double {
-        val got = m.take(site, good, amount)
+        val got = if (site == Site.MARKET) buy(m, good, amount) else m.take(site, good, amount)
         m.tally(Tally.USED, good, got)
         if (got < amount - 1e-9) m.tally(Tally.SHORT, good, amount - got)
+        return got
+    }
+
+    /** Takes up to [amount] of [good] off the market for the town's own use, as it buys it there ([Market.drawn]). */
+    private fun buy(m: Market, good: Good, amount: Double): Double {
+        val got = m.take(Site.MARKET, good, amount)
+        m.drawn[good.ordinal] += got
         return got
     }
 
@@ -275,7 +288,7 @@ object Economy {
         val day = town.smiths * FORGE * FORGE_HOURS
         for ((g, per) in listOf(Good.IRON to FORGE_IRON, Good.COAL to FORGE_COAL)) {
             val want = day * per - m[Site.SMITHY, g]
-            if (want > 0) m.add(Site.SMITHY, g, m.take(Site.MARKET, g, want))
+            if (want > 0) m.add(Site.SMITHY, g, buy(m, g, want))
         }
     }
 
@@ -311,7 +324,7 @@ object Economy {
         fun move(g: Good, from: Site, to: Site, want: Double, route: Route) {
             val n = minOf(load, want, m[from, g])
             if (n <= 0.0) return
-            m.take(from, g, n)
+            if (from == Site.MARKET) buy(m, g, n) else m.take(from, g, n)
             m.add(to, g, n)
             load -= n
             m.carted[route.ordinal] += n
@@ -333,7 +346,7 @@ object Economy {
     private fun stockTavern(m: Market, town: Town) {
         if (town.innkeepers == 0) return
         val want = town.innkeepers * BREW * BREW_HOURS * BREW_WHEAT * 2 - m[Site.TAVERN, Good.WHEAT]
-        if (want > 0) m.add(Site.TAVERN, Good.WHEAT, m.take(Site.MARKET, Good.WHEAT, want))
+        if (want > 0) m.add(Site.TAVERN, Good.WHEAT, buy(m, Good.WHEAT, want))
     }
 
     private fun brew(m: Market, town: Town) {
@@ -369,7 +382,7 @@ object Economy {
             for (g in Good.FOODS) {
                 val w = weights[g.ordinal]
                 if (w <= 0.0) continue
-                val units = m.take(Site.MARKET, g, need * w / total / g.food)
+                val units = buy(m, g, need * w / total / g.food)
                 m.tally(Tally.USED, g, units)
                 ate += units * g.food
             }
