@@ -99,6 +99,31 @@ object StreetLamps {
 
     var taker: Taker? = null
 
+    /**
+     * Whether a capital's lamps are rationed tonight (M6 Part D2's rationed lamps: candles short): its lamplighters light
+     * every other lamp of their rounds, and the rest catch by themselves a little before seven ([skipped]). Asked as
+     * the evening's rounds begin; null (as until Part D2 sets it), nothing is rationed.
+     */
+    fun interface Rationing {
+        fun rationed(level: ServerLevel, capital: CapitalPiece): Boolean
+    }
+
+    @JvmStatic
+    var rationing: Rationing? = null
+
+    /** Whether [town]'s lamps are rationed tonight, as [rationing] has it (false if it fails). */
+    private fun rationed(level: ServerLevel, town: LampTown): Boolean = try {
+        rationing?.rationed(level, town.capital) == true
+    } catch (e: RuntimeException) {
+        false
+    }
+
+    /**
+     * Whether the lamp at [k] in [run] is one its lamplighter leaves tonight, the lamps being rationed: every other lamp
+     * of a lamplighter's round (the second, the fourth and so on). It catches by itself a little before seven.
+     */
+    fun skipped(town: LampTown, run: LampTown.Run, k: Int): Boolean = town.rationed && run.kind == LampTown.Kind.CITY && k % 2 == 1
+
     /** Sets the street lamps going: their blocks, their keeping, the lamplighters, and the testing command. */
     fun register(modBus: IEventBus) {
         LampRegistry.BLOCKS.register(modBus)
@@ -320,6 +345,8 @@ object StreetLamps {
             run.lookAt = 0L
         }
         if (stretch == Stretch.DUSK || stretch == Stretch.DAWN) LampKeepers.assign(level, town)
+        // Rationed or not is settled as the evening's rounds begin, for the night
+        if (stretch == Stretch.DUSK) town.rationed = rationed(level, town) else if (stretch == Stretch.AFTERNOON) town.rationed = false
         when (stretch) {
             Stretch.DUSK -> for (run in town.runs) run.start = duskStart(level, town, run, night)
             Stretch.DAWN -> for (run in town.runs) run.start = dawnStart(level, town, run, night)
@@ -379,11 +406,23 @@ object StreetLamps {
         if (!enabled) return LampTown.LIT
         val k = town.placeOf[i]
         val force = run.force
-        if (force != 0.toByte()) return if (k < progress) force else if (force == LampTown.LIT) LampTown.OUT else LampTown.LIT
+        if (force != 0.toByte()) {
+            // Rationed: the lamps the lamplighter leaves catch one after another once the round is done
+            if (force == LampTown.LIT && skipped(town, run, k)) {
+                return if (time >= run.start + run.ticks + RATIONED_AFTER + (town.phase(i) * RATIONED_SPREAD).toInt()) LampTown.LIT else LampTown.OUT
+            }
+            return if (k < progress) force else if (force == LampTown.LIT) LampTown.OUT else LampTown.LIT
+        }
         if (thunder) return LampTown.LIT
         return when (stretch) {
             Stretch.NIGHT -> LampTown.LIT
-            Stretch.DUSK -> if (k < progress || raining && time >= LIT_BY - RAIN) LampTown.LIT else LampTown.OUT
+            Stretch.DUSK -> when {
+                raining && time >= LIT_BY - RAIN -> LampTown.LIT
+                // Rationed: left by the lamplighter, it catches by itself a little before every lamp must be lit
+                skipped(town, run, k) -> if (time >= litBy(town, false) - RATIONED_LATE - (town.phase(i) * RATIONED_SPREAD).toInt()) LampTown.LIT else LampTown.OUT
+                k < progress -> LampTown.LIT
+                else -> LampTown.OUT
+            }
             Stretch.DAWN -> if (k < progress && !(raining && time < DAWN + RAIN)) LampTown.OUT else LampTown.LIT
             // After a storm by day the lamps go out one by one
             else -> if (sinceStorm < town.phase(i) * STORM_AFTER) LampTown.LIT else LampTown.OUT
@@ -454,6 +493,14 @@ object StreetLamps {
     /** Ticks before its start that a round's keeper is fetched (to get the pole first), and between looks for one not to be had. */
     private const val LEAD = 300
     private const val LOOK_AGAIN = 200L
+
+    /**
+     * Rationed lamps: how long before every lamp must be lit the ones a lamplighter leaves begin to catch by themselves,
+     * over how long they all have (each at its own phase in it), and how long after a testing round they begin.
+     */
+    private const val RATIONED_LATE = 20
+    private const val RATIONED_SPREAD = 180
+    private const val RATIONED_AFTER = 40
 
     /** [director] goes round [run] from its lamp [from]: its lamps wait for them from now. */
     fun hold(town: LampTown, run: LampTown.Run, director: Director, from: Int, now: Long) {
@@ -547,6 +594,7 @@ object StreetLamps {
         setUp(level, town, clock, level.isRaining)
         val lit = run.lamps.count { i -> StreetLampBlock.burning(level.getBlockState(town.pos[i])) }
         val dusk = lit * 2 < run.lamps.size
+        if (dusk) town.rationed = rationed(level, town)
         val previous = run.held
         if (previous != null) release(level, town, run, previous)
         run.force = if (dusk) LampTown.LIT else LampTown.OUT

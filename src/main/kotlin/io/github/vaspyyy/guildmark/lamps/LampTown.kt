@@ -45,6 +45,13 @@ class LampTown(val capital: CapitalPiece, val places: CityPlaces, val plan: Lamp
     var rainyDusk = false
     var rainyDawn = false
 
+    /**
+     * Whether tonight's lamps are rationed (candles short, see [StreetLamps.Rationing]): the lamplighters light every
+     * other lamp, and the rest catch by themselves a little before seven ([StreetLamps.skipped]). Settled as the
+     * evening's rounds begin.
+     */
+    var rationed = false
+
     init {
         val list = ArrayList<Run>()
         for (r in plan.rounds) {

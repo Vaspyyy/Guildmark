@@ -4,6 +4,7 @@ import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.lamps.LampTown
 import io.github.vaspyyy.guildmark.lamps.StreetLampBlock
 import io.github.vaspyyy.guildmark.lamps.StreetLamps
+import io.github.vaspyyy.guildmark.townsfolk.scenes.Words
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Holder
 import net.minecraft.core.particles.ParticleTypes
@@ -24,7 +25,10 @@ import net.minecraft.world.phys.Vec3
  * day. A farmer does the same for the lamps at their gate, coming in from the fields and going out to them. A lamp
  * already as it should be is passed by; one they can't get to is left to catch by itself. Hurt, running from
  * something, taken over by something else, or gone out of everyone's reach, they hand what's left of the round back
- * to the clock. Now and then they say something to whoever's by, and spoken to, they answer and carry on.
+ * to the clock. Now and then they say something to whoever's by, and spoken to, they answer and carry on. With the
+ * lamps rationed tonight (candles short, see [StreetLamps.Rationing]), they light every other lamp, saying so to
+ * whoever's by as they pass the first they leave, and answering with it when spoken to: the rest catch by themselves a
+ * little before seven.
  */
 object Lamplighters : StreetLamps.Taker {
     /** The ticks of LIGHT_LAMP the lamp catches on (its "lit" moment), and of SNUFF_LAMP it goes out on (the hiss). */
@@ -98,6 +102,8 @@ class Lamplighter(private val town: LampTown, private val run: LampTown.Run, pri
     /** Their front door, where the pole is kept; null for someone with no home (they've it with them). */
     private var door: CityPlaces.Door? = null
     private var done = false
+    /** Whether they've said tonight's lamps are rationed (see [StreetLamps.skipped]), this round. */
+    private var rationSaid = false
 
     override fun tick(p: Townsperson) {
         val level = p.level() as? ServerLevel ?: return
@@ -181,6 +187,8 @@ class Lamplighter(private val town: LampTown, private val run: LampTown.Run, pri
     override fun interact(p: Townsperson, player: ServerPlayer): Boolean {
         p.attend(player)
         p.lookAt(player)
+        // Rationed tonight: that's what's on their mind
+        if (dusk && town.rationed && Words.say(p, "streets.lamps", "asked about the lamps, rationed tonight", force = true)) return true
         p.say(Lamplighters.hello(p), force = true)
         return true
     }
@@ -202,6 +210,13 @@ class Lamplighter(private val town: LampTown, private val run: LampTown.Run, pri
         p.act(Activity.CARRY_POLE)
         while (k < run.lamps.size) {
             val i = run.lamps[k]
+            // Rationed: every other lamp is left to catch by itself, and a word for whoever's by as they pass the first
+            if (dusk && StreetLamps.skipped(town, run, k)) {
+                if (!rationSaid) rationSaid = Words.say(p, "streets.lamps", "every other lamp lit tonight, candles short")
+                StreetLamps.seenTo(run, this, k)
+                k++
+                continue
+            }
             val stand = if (settled(level, i)) null else stand(level, i)
             if (stand != null) {
                 walker.go(stand, Jobs.BRISK, exact = true)
