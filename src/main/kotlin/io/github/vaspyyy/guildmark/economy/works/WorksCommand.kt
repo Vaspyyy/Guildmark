@@ -51,7 +51,9 @@ import java.util.UUID
  * builders work ten times as fast and held-up freight come round the long way ten times as soon, on and off; `site
  * <id> [here]` has the builders look for its site again, or puts it where you stand; `remove <id>` takes it down and
  * pays every pledge back; `stall` opens your own stall's screen, standing at it; and `effect` is what the works do
- * here now: the ovens and the bake, the granary by good, each road's watch, and the stalls of players' own.
+ * here now: the ovens and the bake, the granary by good, each road's watch, and the stalls of players' own. Until
+ * the works screen is in, `pledge <id> <marks>`, `withdraw <id>` and `bring <id>` ask what it will: a pledge from
+ * your purse, taking it back while it's unfunded, and the materials in your hand to the yard.
  *
  * Registered only once the works are wired in ([Works.ready]): until then there is no `works` command.
  */
@@ -108,6 +110,14 @@ object WorksCommand {
                             ),
                         )
                         .then(Commands.literal("remove").then(id().executes { remove(it, id(it)) }))
+                        // The works screen's own asks, until it's in (part B): a pledge from your purse, taking it back, and materials from your hand
+                        .then(
+                            Commands.literal("pledge").then(
+                                id().then(Commands.argument("marks", IntegerArgumentType.integer(1, 100000)).executes { pledge(it, id(it), IntegerArgumentType.getInteger(it, "marks")) }),
+                            ),
+                        )
+                        .then(Commands.literal("withdraw").then(id().executes { withdraw(it, id(it)) }))
+                        .then(Commands.literal("bring").then(id().executes { bring(it, id(it)) }))
                         .then(Commands.literal("stall").executes { stall(it) })
                         .then(Commands.literal("effect").executes { effect(it) }),
                 ),
@@ -223,6 +233,7 @@ object WorksCommand {
         }
         say(source, grey("   " + site(w)))
         say(source, line().append(grey("   now: ")).append(plain(doing(level, entry, w))))
+        if (w.eased.isNotEmpty()) say(source, grey("   last eased: " + w.eased.entries.sortedBy { it.value }.joinToString(", ") { "${it.key} on day ${it.value}" }))
     }
 
     /** [w] by name, with its road (a tower's) or its owner (a stall's). */
@@ -453,6 +464,54 @@ object WorksCommand {
         )
         say(source, grey("The builders take its blocks down to what the drawing found there, once they're in (M6's building)."))
         return 1
+    }
+
+    /** `works pledge`: [marks] of your own toward works [id], as the works screen pledges them (Works.pledge). */
+    private fun pledge(context: CommandContext<CommandSourceStack>, id: Int, marks: Int): Int {
+        val source = context.source
+        val level = source.level
+        val player = source.playerOrException
+        val before = Works.record(level, id)?.pledged ?: 0
+        val why = Works.pledge(level, player, id, marks)
+        if (why != null) {
+            source.sendFailure(Works.text(why.key, why.args.map { it.toString() }))
+            return 0
+        }
+        val w = Works.record(level, id) ?: return 1
+        say(source, plain("You pledged ${w.pledged - before} Marks toward #$id from your purse. Pledged ${w.pledged} of ${w.price}."))
+        if (w.paid) say(source, plain("It's paid for: its materials go out on the next wagons (`works materials $id`)."))
+        return 1
+    }
+
+    /** `works withdraw`: what you pledged toward works [id] back while it's unfunded (Works.withdraw). */
+    private fun withdraw(context: CommandContext<CommandSourceStack>, id: Int): Int {
+        val source = context.source
+        val level = source.level
+        val player = source.playerOrException
+        val w = record(source, id) ?: return 0
+        if (w.paid) return fail(source, "#$id is paid for: pledges can't be taken back now.")
+        if (w.pledges.none { it.player == player.uuid }) return fail(source, "You've pledged nothing toward #$id.")
+        val marks = Works.withdraw(level, player, id)
+        return say(source, plain("Your pledges toward #$id are taken back: $marks Marks back in your purse (an op's free pledge gives none). Pledged ${w.pledged} of ${w.price}."))
+    }
+
+    /** `works bring`: what's in your hand toward works [id]'s bill, as its yard's crate takes it (Works.bring). */
+    private fun bring(context: CommandContext<CommandSourceStack>, id: Int): Int {
+        val source = context.source
+        val level = source.level
+        val player = source.playerOrException
+        if (!on(source)) return 0
+        val w = record(source, id) ?: return 0
+        if (!w.open) return fail(source, "#$id takes materials only once it's paid for and until it's built: ${state(w)}.")
+        val stack = player.mainHandItem
+        if (stack.isEmpty) return fail(source, "Hold the materials in your main hand.")
+        val name = stack.hoverName.copy()
+        val units = Works.bring(level, player, id, stack)
+        if (units <= 0) {
+            source.sendFailure(Component.literal("#$id's bill doesn't want that: ").append(name).append(Component.literal(" (`works materials $id` shows what it still wants).")))
+            return 0
+        }
+        return say(source, line().append(plain("#$id's yard took $units units of ")).append(name).append(plain(" (what it still wanted; the rest stays in your hand). In the yard now: ${stuff(w.here)}.")))
     }
 
     private fun stall(context: CommandContext<CommandSourceStack>): Int {
