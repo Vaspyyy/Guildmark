@@ -6,7 +6,9 @@ import kotlin.random.Random
 /**
  * The world in the hour being worked out: which hour of the overworld clock it is ([hour], counted from the
  * world's first), the weather, how the season has the fields, beasts and orchards doing ([pace] of a good, 1 as
- * usual), how much coal homes burn for warmth ([heating], 1 as usual), and whether it's a feast day.
+ * usual), how much coal homes burn for warmth ([heating], 1 as usual), whether it's a feast day, and how freely the
+ * town spends on its wares and ale as its times go ([spend], 1 as usual; see Fortunes.spend). Food is never spent
+ * less on: people eat what they need.
  */
 class Conditions(
     val hour: Long,
@@ -15,7 +17,11 @@ class Conditions(
     val pace: (Good) -> Double = { 1.0 },
     val heating: Double = 1.0,
     val feast: Boolean = false,
+    val spend: Double = 1.0,
 ) {
+    /** The same hour, the town spending [spend] as freely as usual on its wares and ale. */
+    fun spending(spend: Double): Conditions = if (spend == this.spend) this else Conditions(hour, rain, thunder, pace, heating, feast, spend)
+
     /** The clock's hour, 0 at midnight. */
     val clock: Int get() = Math.floorMod(hour + 6, 24L).toInt()
 
@@ -395,22 +401,26 @@ object Economy {
         for (g in Good.FOODS) m.tally(Tally.SHORT, g, need * g.share / g.food)
     }
 
-    /** What the town wears out, burns and looses in an hour. */
+    /**
+     * What the town wears out, burns and looses in an hour: its households' wares as freely as the times let them
+     * ([Conditions.spend]); the guards' arrows and the trades' tools as their work wears them.
+     */
     private fun wares(m: Market, town: Town, c: Conditions) {
         val people = town.people.toDouble()
-        use(m, Site.MARKET, Good.WOOL, people * WOOL / 24)
-        use(m, Site.MARKET, Good.STRING, people * STRING / 24)
-        use(m, Site.MARKET, Good.LEATHER, people * LEATHER / 24)
-        use(m, Site.MARKET, Good.BOTTLE, people * BOTTLES / 24)
-        use(m, Site.MARKET, Good.COAL, people * HEATING * c.heating / 24)
-        if (c.clock in 18..23) use(m, Site.MARKET, Good.CANDLE, people * CANDLES / 6)
+        val spend = c.spend
+        use(m, Site.MARKET, Good.WOOL, people * WOOL / 24 * spend)
+        use(m, Site.MARKET, Good.STRING, people * STRING / 24 * spend)
+        use(m, Site.MARKET, Good.LEATHER, people * LEATHER / 24 * spend)
+        use(m, Site.MARKET, Good.BOTTLE, people * BOTTLES / 24 * spend)
+        use(m, Site.MARKET, Good.COAL, people * HEATING * c.heating / 24 * spend)
+        if (c.clock in 18..23) use(m, Site.MARKET, Good.CANDLE, people * CANDLES / 6 * spend)
         if (c.clock in 8..17) use(m, Site.MARKET, Good.ARROW, town.guards * ARROWS / 10)
         use(m, Site.MARKET, Good.TOOLS, ((town.farmers + town.fishers) * FIELD_WEAR + town.workers * WEAR) / 24)
     }
 
     private fun drink(m: Market, town: Town, c: Conditions) {
         if (town.innkeepers == 0) return
-        use(m, Site.TAVERN, Good.ALE, town.drinkers * ALE / 5 * (if (c.feast) 3.0 else 1.0))
+        use(m, Site.TAVERN, Good.ALE, town.drinkers * ALE / 5 * (if (c.feast) 3.0 else 1.0) * c.spend)
     }
 
     private fun spoil(m: Market) {
