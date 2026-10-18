@@ -1,0 +1,498 @@
+{
+  "caravan.roll": {
+    "sounds": [
+      {
+        "name": "guildmark:caravan/roll1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:caravan/roll2",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.caravan.roll"
+  },
+  "caravan.roll_stone": {
+    "sounds": [
+      {
+        "name": "guildmark:caravan/roll_stone1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:caravan/roll_stone2",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.caravan.roll_stone"
+  },
+  "caravan.roll_planks": {
+    "sounds": [
+      {
+        "name": "guildmark:caravan/roll_planks1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:caravan/roll_planks2",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.caravan.roll_planks"
+  },
+  "caravan.creak": {
+    "sounds": [
+      "guildmark:caravan/creak1",
+      "guildmark:caravan/creak2",
+      "guildmark:caravan/creak3",
+      "guildmark:caravan/creak4"
+    ],
+    "subtitle": "subtitles.guildmark.caravan.creak"
+  },
+  "caravan.bells": {
+    "sounds": [
+      {
+        "name": "guildmark:caravan/bells1",
+        "attenuation_distance": 20
+      },
+      {
+        "name": "guildmark:caravan/bells2",
+        "attenuation_distance": 20
+      },
+      {
+        "name": "guildmark:caravan/bells3",
+        "attenuation_distance": 20
+      },
+      {
+        "name": "guildmark:caravan/bells4",
+        "attenuation_distance": 20
+      }
+    ],
+    "subtitle": "subtitles.guildmark.caravan.bells"
+  },
+  "caravan.brake": {
+    "sounds": [
+      {
+        "name": "guildmark:caravan/brake1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:caravan/brake2",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.caravan.brake"
+  },
+  "caravan.tilt": {
+    "sounds": [
+      "guildmark:caravan/tilt1",
+      "guildmark:caravan/tilt2",
+      "guildmark:caravan/tilt3"
+    ],
+    "subtitle": "subtitles.guildmark.caravan.tilt"
+  },
+  "caravan.crate_down": {
+    "sounds": [
+      "guildmark:caravan/crate_down1",
+      "guildmark:caravan/crate_down2",
+      "guildmark:caravan/crate_down3"
+    ],
+    "subtitle": "subtitles.guildmark.caravan.crate_down"
+  },
+  "caravan.overturn": {
+    "sounds": [
+      {
+        "name": "guildmark:caravan/overturn1",
+        "attenuation_distance": 40
+      },
+      {
+        "name": "guildmark:caravan/overturn2",
+        "attenuation_distance": 40
+      }
+    ],
+    "subtitle": "subtitles.guildmark.caravan.overturn"
+  },
+  "caravan.smash": {
+    "sounds": [
+      {
+        "name": "guildmark:caravan/smash1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:caravan/smash2",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:caravan/smash3",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.caravan.smash"
+  },
+  "caravan.rip": {
+    "sounds": [
+      {
+        "name": "guildmark:caravan/rip1",
+        "attenuation_distance": 20
+      },
+      {
+        "name": "guildmark:caravan/rip2",
+        "attenuation_distance": 20
+      },
+      {
+        "name": "guildmark:caravan/rip3",
+        "attenuation_distance": 20
+      }
+    ],
+    "subtitle": "subtitles.guildmark.caravan.rip"
+  },
+  "caravan.bottles": {
+    "sounds": [
+      {
+        "name": "guildmark:caravan/bottles1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:caravan/bottles2",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:caravan/bottles3",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.caravan.bottles"
+  },
+  "caravan.wheel_snap": {
+    "sounds": [
+      {
+        "name": "guildmark:caravan/wheel_snap1",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:caravan/wheel_snap2",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "subtitles.guildmark.caravan.wheel_snap"
+  },
+  "caravan.whistle": {
+    "sounds": [
+      {
+        "name": "guildmark:caravan/whistle1",
+        "attenuation_distance": 64
+      },
+      {
+        "name": "guildmark:caravan/whistle2",
+        "attenuation_distance": 64
+      },
+      {
+        "name": "guildmark:caravan/whistle3",
+        "attenuation_distance": 64
+      }
+    ],
+    "subtitle": "subtitles.guildmark.caravan.whistle"
+  },
+  "caravan.whoop": {
+    "sounds": [
+      {
+        "name": "guildmark:caravan/whoop1",
+        "attenuation_distance": 48
+      },
+      {
+        "name": "guildmark:caravan/whoop2",
+        "attenuation_distance": 48
+      },
+      {
+        "name": "guildmark:caravan/whoop3",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "subtitles.guildmark.caravan.whoop"
+  },
+  "caravan.hoof": {
+    "sounds": [
+      {
+        "name": "guildmark:caravan/hoof1",
+        "attenuation_distance": 20
+      },
+      {
+        "name": "guildmark:caravan/hoof2",
+        "attenuation_distance": 20
+      },
+      {
+        "name": "guildmark:caravan/hoof3",
+        "attenuation_distance": 20
+      },
+      {
+        "name": "guildmark:caravan/hoof4",
+        "attenuation_distance": 20
+      }
+    ],
+    "subtitle": "subtitles.guildmark.caravan.hoof"
+  },
+  "caravan.hoof_stone": {
+    "sounds": [
+      {
+        "name": "guildmark:caravan/hoof_stone1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:caravan/hoof_stone2",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:caravan/hoof_stone3",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:caravan/hoof_stone4",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.caravan.hoof_stone"
+  },
+  "caravan.hoof_wood": {
+    "sounds": [
+      {
+        "name": "guildmark:caravan/hoof_wood1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:caravan/hoof_wood2",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:caravan/hoof_wood3",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.caravan.hoof_wood"
+  },
+  "caravan.horse_stamp": {
+    "sounds": [
+      "guildmark:caravan/horse_stamp1",
+      "guildmark:caravan/horse_stamp2",
+      "guildmark:caravan/horse_stamp3"
+    ],
+    "subtitle": "subtitles.guildmark.caravan.horse_stamp"
+  },
+  "caravan.horse_snort": {
+    "sounds": [
+      {
+        "name": "guildmark:caravan/horse_snort1",
+        "attenuation_distance": 20
+      },
+      {
+        "name": "guildmark:caravan/horse_snort2",
+        "attenuation_distance": 20
+      },
+      {
+        "name": "guildmark:caravan/horse_snort3",
+        "attenuation_distance": 20
+      }
+    ],
+    "subtitle": "subtitles.guildmark.caravan.horse_snort"
+  },
+  "caravan.horse_neigh": {
+    "sounds": [
+      {
+        "name": "guildmark:caravan/horse_neigh1",
+        "attenuation_distance": 40
+      },
+      {
+        "name": "guildmark:caravan/horse_neigh2",
+        "attenuation_distance": 40
+      },
+      {
+        "name": "guildmark:caravan/horse_neigh3",
+        "attenuation_distance": 40
+      }
+    ],
+    "subtitle": "subtitles.guildmark.caravan.horse_neigh"
+  },
+  "caravan.horse_hurt": {
+    "sounds": [
+      {
+        "name": "guildmark:caravan/horse_hurt1",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:caravan/horse_hurt2",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:caravan/horse_hurt3",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "subtitles.guildmark.caravan.horse_hurt"
+  },
+  "caravan.horse_thud": {
+    "sounds": [
+      {
+        "name": "guildmark:caravan/horse_thud1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:caravan/horse_thud2",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:caravan/horse_thud3",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.caravan.horse_thud"
+  },
+  "caravan.horse_tear": {
+    "sounds": [
+      "guildmark:caravan/horse_tear1",
+      "guildmark:caravan/horse_tear2",
+      "guildmark:caravan/horse_tear3"
+    ],
+    "subtitle": "subtitles.guildmark.caravan.horse_tear"
+  },
+  "caravan.click": {
+    "sounds": [
+      "guildmark:caravan/click1",
+      "guildmark:caravan/click2",
+      "guildmark:caravan/click3"
+    ],
+    "subtitle": "subtitles.guildmark.caravan.click"
+  },
+  "caravan.reins_flick": {
+    "sounds": [
+      "guildmark:caravan/reins_flick1",
+      "guildmark:caravan/reins_flick2",
+      "guildmark:caravan/reins_flick3"
+    ],
+    "subtitle": "subtitles.guildmark.caravan.reins_flick"
+  },
+  "caravan.reins_haul": {
+    "sounds": [
+      "guildmark:caravan/reins_haul1",
+      "guildmark:caravan/reins_haul2"
+    ],
+    "subtitle": "subtitles.guildmark.caravan.reins_haul"
+  },
+  "caravan.land": {
+    "sounds": [
+      "guildmark:caravan/land1",
+      "guildmark:caravan/land2"
+    ],
+    "subtitle": "subtitles.guildmark.caravan.land"
+  },
+  "caravan.grab": {
+    "sounds": [
+      "guildmark:caravan/grab1",
+      "guildmark:caravan/grab2",
+      "guildmark:caravan/grab3"
+    ],
+    "subtitle": "subtitles.guildmark.caravan.grab"
+  },
+  "caravan.knife_saw": {
+    "sounds": [
+      "guildmark:caravan/knife_saw1",
+      "guildmark:caravan/knife_saw2",
+      "guildmark:caravan/knife_saw3",
+      "guildmark:caravan/knife_saw4"
+    ],
+    "subtitle": "subtitles.guildmark.caravan.knife_saw"
+  },
+  "caravan.trace_cut": {
+    "sounds": [
+      "guildmark:caravan/trace_cut1",
+      "guildmark:caravan/trace_cut2"
+    ],
+    "subtitle": "subtitles.guildmark.caravan.trace_cut"
+  },
+  "caravan.sheathe": {
+    "sounds": [
+      "guildmark:caravan/sheathe1",
+      "guildmark:caravan/sheathe2"
+    ],
+    "subtitle": "subtitles.guildmark.caravan.sheathe"
+  },
+  "caravan.slap": {
+    "sounds": [
+      "guildmark:caravan/slap1",
+      "guildmark:caravan/slap2",
+      "guildmark:caravan/slap3"
+    ],
+    "subtitle": "subtitles.guildmark.caravan.slap"
+  },
+  "caravan.crate_lift": {
+    "sounds": [
+      "guildmark:caravan/crate_lift1",
+      "guildmark:caravan/crate_lift2"
+    ],
+    "subtitle": "subtitles.guildmark.caravan.crate_lift"
+  },
+  "caravan.handoff": {
+    "sounds": [
+      "guildmark:caravan/handoff1",
+      "guildmark:caravan/handoff2"
+    ],
+    "subtitle": "subtitles.guildmark.caravan.handoff"
+  },
+  "caravan.gasp": {
+    "sounds": [
+      "guildmark:caravan/gasp1",
+      "guildmark:caravan/gasp2",
+      "guildmark:caravan/gasp3"
+    ],
+    "subtitle": "subtitles.guildmark.caravan.gasp"
+  },
+  "caravan.pant": {
+    "sounds": [
+      "guildmark:caravan/pant1",
+      "guildmark:caravan/pant2",
+      "guildmark:caravan/pant3"
+    ],
+    "subtitle": "subtitles.guildmark.caravan.pant"
+  },
+  "caravan.cough": {
+    "sounds": [
+      "guildmark:caravan/cough1",
+      "guildmark:caravan/cough2"
+    ],
+    "subtitle": "subtitles.guildmark.caravan.cough"
+  },
+  "caravan.smack": {
+    "sounds": [
+      "guildmark:caravan/smack1",
+      "guildmark:caravan/smack2",
+      "guildmark:caravan/smack3"
+    ],
+    "subtitle": "subtitles.guildmark.caravan.smack"
+  },
+  "caravan.swish": {
+    "sounds": [
+      "guildmark:caravan/swish1",
+      "guildmark:caravan/swish2",
+      "guildmark:caravan/swish3"
+    ],
+    "subtitle": "subtitles.guildmark.caravan.swish"
+  },
+  "caravan.stomp": {
+    "sounds": [
+      "guildmark:caravan/stomp1",
+      "guildmark:caravan/stomp2"
+    ],
+    "subtitle": "subtitles.guildmark.caravan.stomp"
+  },
+  "caravan.wince": {
+    "sounds": [
+      "guildmark:caravan/wince1",
+      "guildmark:caravan/wince2",
+      "guildmark:caravan/wince3"
+    ],
+    "subtitle": "subtitles.guildmark.caravan.wince"
+  },
+  "caravan.huff": {
+    "sounds": [
+      "guildmark:caravan/huff1",
+      "guildmark:caravan/huff2"
+    ],
+    "subtitle": "subtitles.guildmark.caravan.huff"
+  }
+}

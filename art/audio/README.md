@@ -142,6 +142,15 @@ Kokoro voices of their own, and the renegade Silvan Marrow made cold and a littl
   also a lamp put out by hand or going out by itself in sight, 2), levelled as `make_townsfolk_sfx.py`'s are; the lamp
   catching (`lamp.light`) is `make_living_sfx.py`'s. It writes `lamp_sounds.json` and `lamp_lang.json` beside itself
   (their `sounds.json` entries and subtitles), merged by hand. `--mp3 <file>` joins them into one listen-through MP3.
+- `make_caravan_sfx.py`: the caravans on the roads (`caravan/`, 43 events, 119 mono files): the wagon (`roll`,
+  `roll_stone` and `roll_planks` are seamless loops for a looping sound that follows the wagon's speed; creaks,
+  harness bells, the brake's squeal, the canvas flapping, a crate set down), a waylaying (the band's two-note
+  whistle and whoop, the wagon going over, crates smashed, sacks ripped, bottles broken, a wheel snapping), the
+  draught horse (hooves on earth, stone and planks, stamps, snorts, neighs, a squeal, a fall, grazing; the Dusk
+  Rider's horse from `make_sfx.py` played by a heavier animal) and the crew's moves, timed to their clips'
+  moments (the tongue's click, the reins, the knife on the traces, a slap, a crate lifted and handed down, gasps,
+  pants and huffs). Levelled as the townsfolk's are; it writes `caravan_sounds.json` and `caravan_lang.json` here,
+  merged into `sounds.json` and `en_us.json` by hand.
 
 All randomness is seeded, so a rerun gives bit-identical files. Only `make_cast_voices.py sounds` and
 `make_ambience.py --sounds` touch `sounds.json`, each rewriting only its own entries. For everything
@@ -174,6 +183,7 @@ python3 -B art/audio/make_island_audio.py src/main/resources/assets/guildmark [-
 python3 -B art/audio/make_island_music.py src/main/resources/assets/guildmark [--work <tmp-dir>] [--wav <dir>] [--mp3 <file>] [--reuse]
 python3 -B art/audio/make_mill_audio.py src/main/resources/assets/guildmark [--wav <dir>] [--only sails,wheel] [--mp3 <file>]
 python3 -B art/audio/make_lamp_sfx.py src/main/resources/assets/guildmark [--wav <dir>] [--only lamp.clink,lamp.hiss] [--mp3 <file>]
+python3 -B art/audio/make_caravan_sfx.py src/main/resources/assets/guildmark [--wav <dir>] [--only roll,whistle] [--mp3 <file>]
 python3 -B art/audio/make_festival_music.py src/main/resources/assets/guildmark [--work <tmp-dir>] [--only ribbonwake,stings,fanfare] [--mp3 <dir>]
 ```
 
