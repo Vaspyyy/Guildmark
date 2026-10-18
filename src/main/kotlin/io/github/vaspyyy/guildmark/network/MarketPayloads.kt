@@ -1,0 +1,163 @@
+package io.github.vaspyyy.guildmark.network
+
+import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.client.ui.MarketClient
+import io.github.vaspyyy.guildmark.economy.Stalls
+import io.netty.buffer.ByteBuf
+import net.minecraft.network.codec.ByteBufCodecs
+import net.minecraft.network.codec.StreamCodec
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload
+import net.minecraft.resources.Identifier
+import net.minecraft.server.level.ServerPlayer
+import net.neoforged.neoforge.network.handling.IPayloadContext
+
+/**
+ * One of a shop's goods as the market screen shows it: whole units in the market's [stock] against what the town
+ * likes to [keep], the lot a player can buy ([buyCount] for [buyMarks] Guild Marks, 0 for 0 when there's none to
+ * sell) and the lot the market buys ([sellCount] for [sellMarks], 0 for 0 when it wants no more), how many more it
+ * [wants], which way the price is going ([trend], 1 up, -1 down), how far it is off its usual ([off], the price
+ * over the usual), why if that's far enough off to say ([why], a lang key that takes the good's name, "" if not;
+ * [dear] which way), and how many of it the player [carried].
+ */
+data class MarketGood(
+    val good: String,
+    val stock: Int,
+    val keep: Int,
+    val buyCount: Int,
+    val buyMarks: Int,
+    val sellCount: Int,
+    val sellMarks: Int,
+    val wants: Int,
+    val trend: Int,
+    val off: Float,
+    val why: String,
+    val dear: Boolean,
+    val carried: Int,
+) {
+    companion object {
+        val STREAM_CODEC: StreamCodec<ByteBuf, MarketGood> = StreamCodec.composite(
+            ByteBufCodecs.STRING_UTF8, MarketGood::good,
+            ByteBufCodecs.VAR_INT, MarketGood::stock,
+            ByteBufCodecs.VAR_INT, MarketGood::keep,
+            ByteBufCodecs.VAR_INT, MarketGood::buyCount,
+            ByteBufCodecs.VAR_INT, MarketGood::buyMarks,
+            ByteBufCodecs.VAR_INT, MarketGood::sellCount,
+            ByteBufCodecs.VAR_INT, MarketGood::sellMarks,
+            ByteBufCodecs.VAR_INT, MarketGood::wants,
+            ByteBufCodecs.VAR_INT, MarketGood::trend,
+            ByteBufCodecs.FLOAT, MarketGood::off,
+            ByteBufCodecs.STRING_UTF8, MarketGood::why,
+            ByteBufCodecs.BOOL, MarketGood::dear,
+            ByteBufCodecs.VAR_INT, MarketGood::carried,
+            ::MarketGood,
+        )
+    }
+}
+
+/**
+ * What a market screen shows: the [shop] (its id), who keeps it ([keeper], an entity id, or -1 for the testing
+ * screen, which nobody keeps), the capital it's in ([place]), the player's Guild Marks, and the shop's goods.
+ */
+data class MarketView(val shop: String, val keeper: Int, val place: String, val marks: Int, val goods: List<MarketGood>) {
+    companion object {
+        val STREAM_CODEC: StreamCodec<ByteBuf, MarketView> = StreamCodec.composite(
+            ByteBufCodecs.STRING_UTF8, MarketView::shop,
+            ByteBufCodecs.VAR_INT, MarketView::keeper,
+            ByteBufCodecs.STRING_UTF8, MarketView::place,
+            ByteBufCodecs.VAR_INT, MarketView::marks,
+            MarketGood.STREAM_CODEC.apply(ByteBufCodecs.list()), MarketView::goods,
+            ::MarketView,
+        )
+    }
+}
+
+/** Server opens a shop's market screen (see [Stalls]). */
+data class OpenMarketPayload(val view: MarketView) : CustomPacketPayload {
+    override fun type(): CustomPacketPayload.Type<OpenMarketPayload> = TYPE
+
+    companion object {
+        val TYPE: CustomPacketPayload.Type<OpenMarketPayload> =
+            CustomPacketPayload.Type(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "open_market"))
+
+        val STREAM_CODEC: StreamCodec<ByteBuf, OpenMarketPayload> = MarketView.STREAM_CODEC.map(::OpenMarketPayload, OpenMarketPayload::view)
+
+        fun handle(payload: OpenMarketPayload, context: IPayloadContext) {
+            MarketClient.open(payload.view)
+        }
+    }
+}
+
+/**
+ * Server sends an open market screen fresh quotes and counts: after any deal at the capital's market, and when the
+ * screen asks. [closed]: the trade is over (the keeper went off, the player walked away), so the screen closes.
+ */
+data class MarketUpdatePayload(val view: MarketView, val closed: Boolean) : CustomPacketPayload {
+    override fun type(): CustomPacketPayload.Type<MarketUpdatePayload> = TYPE
+
+    companion object {
+        val TYPE: CustomPacketPayload.Type<MarketUpdatePayload> =
+            CustomPacketPayload.Type(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "market_update"))
+
+        val STREAM_CODEC: StreamCodec<ByteBuf, MarketUpdatePayload> = StreamCodec.composite(
+            MarketView.STREAM_CODEC, MarketUpdatePayload::view,
+            ByteBufCodecs.BOOL, MarketUpdatePayload::closed,
+            ::MarketUpdatePayload,
+        )
+
+        fun handle(payload: MarketUpdatePayload, context: IPayloadContext) {
+            MarketClient.update(payload.view, payload.closed)
+        }
+    }
+}
+
+/** Client buys ([buy]) or sells [lots] lots of [good] (its id) at the shop whose screen it has open. */
+data class MarketTradePayload(val good: String, val buy: Boolean, val lots: Int) : CustomPacketPayload {
+    override fun type(): CustomPacketPayload.Type<MarketTradePayload> = TYPE
+
+    companion object {
+        val TYPE: CustomPacketPayload.Type<MarketTradePayload> =
+            CustomPacketPayload.Type(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "market_trade"))
+
+        val STREAM_CODEC: StreamCodec<ByteBuf, MarketTradePayload> = StreamCodec.composite(
+            ByteBufCodecs.STRING_UTF8, MarketTradePayload::good,
+            ByteBufCodecs.BOOL, MarketTradePayload::buy,
+            ByteBufCodecs.VAR_INT, MarketTradePayload::lots,
+            ::MarketTradePayload,
+        )
+
+        fun handle(payload: MarketTradePayload, context: IPayloadContext) {
+            val player = context.player() as? ServerPlayer ?: return
+            Stalls.trade(player, payload.good, payload.buy, payload.lots)
+        }
+    }
+}
+
+/** Client's market screen is still open and would like fresh quotes (it asks every couple of seconds). */
+object MarketRefreshPayload : CustomPacketPayload {
+    val TYPE: CustomPacketPayload.Type<MarketRefreshPayload> =
+        CustomPacketPayload.Type(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "market_refresh"))
+
+    val STREAM_CODEC: StreamCodec<ByteBuf, MarketRefreshPayload> = StreamCodec.unit(this)
+
+    override fun type(): CustomPacketPayload.Type<MarketRefreshPayload> = TYPE
+
+    fun handle(payload: MarketRefreshPayload, context: IPayloadContext) {
+        val player = context.player() as? ServerPlayer ?: return
+        Stalls.refresh(player)
+    }
+}
+
+/** Client closed its market screen. */
+object MarketClosePayload : CustomPacketPayload {
+    val TYPE: CustomPacketPayload.Type<MarketClosePayload> =
+        CustomPacketPayload.Type(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "market_close"))
+
+    val STREAM_CODEC: StreamCodec<ByteBuf, MarketClosePayload> = StreamCodec.unit(this)
+
+    override fun type(): CustomPacketPayload.Type<MarketClosePayload> = TYPE
+
+    fun handle(payload: MarketClosePayload, context: IPayloadContext) {
+        val player = context.player() as? ServerPlayer ?: return
+        Stalls.close(player)
+    }
+}

@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.townsfolk
 
 import io.github.vaspyyy.guildmark.client.townsfolk.TownsfolkClient
+import io.github.vaspyyy.guildmark.economy.Stalls
 import io.github.vaspyyy.guildmark.faction.Factions
 import io.github.vaspyyy.guildmark.faction.Pickpocket
 import io.github.vaspyyy.guildmark.faction.SwornKnight
@@ -504,6 +505,7 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
         }
         // Crouched behind them: a hand in their purse (face to face, it's only a word)
         if (player.isShiftKeyDown && !watcher && (level !is ServerLevel || Pickpocket.tryLift(level, player, this))) return InteractionResult.SUCCESS
+        if (level is ServerLevel && player is ServerPlayer && Stalls.interact(level, player, this)) return InteractionResult.SUCCESS
         if (isSleeping) return InteractionResult.PASS
         if (level is ServerLevel) {
             attend(player)

@@ -278,6 +278,7 @@ def repainted():
         'ui/glow': ui_art.glow(128, (226, 176, 92), 92),
         'map/rose': ui_art.rose(25),
         'map/frame': ui_art.vignette(64, 24),
+        'market/shade': ui_art.gradient_band(64, 8, (0, 0, 0, 255), 175, 0, 1.6),
     }
     for name, (top, mid, bot, w, h) in HUD_FILLS.items():
         out['hud/' + name] = bar_fill(top, mid, bot, w, h)

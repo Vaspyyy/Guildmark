@@ -22,7 +22,7 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent
  * why it's off, if it is; `good <good>` is one good in full (every store, today's and yesterday's tallies, the last
  * closes); `news` the market's news; `event <kind> [good] [days]` starts trouble or luck now; `run <hours>` works
  * the market ahead; `buy <good> [lots]` and `sell <good> [lots]` trade with what you carry; `shop <shop>` is what a
- * shop would show; `open` starts the market afresh.
+ * shop would show, and `screen <shop>` opens its market screen with nobody keeping it; `open` starts the market afresh.
  */
 object MarketCommand {
     fun init() {
@@ -75,6 +75,13 @@ object MarketCommand {
                                 Commands.argument("shop", StringArgumentType.word())
                                     .suggests { _, b -> SharedSuggestionProvider.suggest(Shop.entries.map { it.id }, b) }
                                     .executes { shop(it, StringArgumentType.getString(it, "shop")) },
+                            ),
+                        )
+                        .then(
+                            Commands.literal("screen").then(
+                                Commands.argument("shop", StringArgumentType.word())
+                                    .suggests { _, b -> SharedSuggestionProvider.suggest(Shop.entries.map { it.id }, b) }
+                                    .executes { screen(it, StringArgumentType.getString(it, "shop")) },
                             ),
                         )
                         .then(Commands.literal("open").executes { open(it) }),
@@ -284,6 +291,18 @@ object MarketCommand {
         say(source, header(Component.translatable(shop.key).string))
         for (g in shop.goods) say(source, row(entry, g))
         return 1
+    }
+
+    /** Opens [id]'s market screen with nobody keeping it: deals as at the shop itself, but nobody acts them out. */
+    private fun screen(context: CommandContext<CommandSourceStack>, id: String): Int {
+        val source = context.source
+        val shop = Shop.byId(id) ?: return fail(source, "No shop called $id: " + Shop.entries.joinToString(", ") { it.id })
+        if (!Markets.enabled()) return fail(source, "The markets are switched off (setting: Capital Markets).")
+        val player = source.playerOrException
+        val capital = Capitals.covering(source.level, player.blockPosition()) ?: return fail(source, "You're not in a capital.")
+        val entry = entry(context) ?: return 0
+        Stalls.open(player, shop, entry, capital, null)
+        return say(source, grey("Opened the ${shop.id} screen. Nobody keeps it, so nobody acts the deals out; walk out of the capital and it closes."))
     }
 
     private fun open(context: CommandContext<CommandSourceStack>): Int {

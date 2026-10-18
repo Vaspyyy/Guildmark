@@ -2,7 +2,7 @@
 
     python3 art/scripts/ui_art.py src/main/resources/assets/guildmark [preview.png]
 
-Writes sprites to textures/gui/sprites/{ui,compass,map,death}/ (with their .mcmeta scaling), the
+Writes sprites to textures/gui/sprites/{ui,compass,map,death,market}/ (with their .mcmeta scaling), the
 map's parchment and guild-lands wash to textures/gui/map/, and an optional contact sheet of everything at 4x.
 Same palette as hud_art.py: iron frames with a tarnished-gold inner line, dark see-through fills.
 """
@@ -740,6 +740,58 @@ def crest():
     return img
 
 
+# ---------------------------------------------------------------- market
+# which way a price is going: up (dearer) in red, down (cheaper) in green, holding steady a short gold bar
+TREND_ICONS = {
+    "up": ["...o...", "..oRo..", ".oRRro.", "oRRRrro", "oooRooo", "..oro..", "..ooo.."],
+    "down": ["..ooo..", "..oEo..", "oooEooo", "oEEEeeo", ".oEEeo.", "..oeo..", "...o..."],
+    "steady": [".......", ".......", "ooooooo", "oGGGGgo", "ooooooo", ".......", "......."],
+}
+
+
+def awning(w, h):
+    """a market stall's awning, two stripes wide, to be laid side by side: an iron rail along the top, the cloth
+    shaded under it and folded at each stripe's edges, and a hem cut in rounded tongues. Returns the cloth (cream
+    stripes, the rail and the hem's outline) and the paint (the other stripes in white and grey, to be drawn over it
+    in the shop's colour)."""
+    cloth = Image.new("RGBA", (w, h), CL)
+    paint = Image.new("RGBA", (w, h), CL)
+    half = w // 2
+    r = half / 2
+    for x in range(w):
+        painted = (x // half) % 2 == 1
+        dx = (x % half) + 0.5 - r
+        hem = h - 1 - int(r) + int(round(math.sqrt(max(0.0, r * r - dx * dx))))
+        hem = min(hem, h - 1)
+        for y in range(h):
+            if y == 0:
+                cloth.putpixel((x, y), OUT)
+            elif y == 1:
+                cloth.putpixel((x, y), IRON_L)
+            elif y == 2:
+                cloth.putpixel((x, y), IRON)
+            elif y == 3:
+                cloth.putpixel((x, y), IRON_D)
+            elif y < hem:
+                # in the rail's shadow at the top, a fold at each stripe's edges, a sewn edge just above the hem
+                k = 0.78 if y == 4 else 0.9 if y == 5 else 1.0
+                edge = x % half
+                if edge == 0:
+                    k *= 0.9
+                elif edge == half - 1:
+                    k *= 0.84
+                if y == hem - 1:
+                    k *= 1.06
+                if painted:
+                    v = max(0, min(255, int(round(255 * k * 0.94))))
+                    paint.putpixel((x, y), (v, v, v, 255))
+                else:
+                    cloth.putpixel((x, y), shade(BONE, k))
+            elif y == hem:
+                cloth.putpixel((x, y), OUT)
+    return cloth, paint
+
+
 # ---------------------------------------------------------------- main
 def main():
     global SPRITES
@@ -789,6 +841,15 @@ def main():
         save(from_rows(rows, MAP_PAL), "map/" + name)
     save(rose(12), "map/rose")
     save(vignette(32, 12), "map/frame", nine(32, 32, 12))
+
+    # the market screen: the awning over its panel (its stripes painted in the shop's colour), which way each
+    # price is going, and the shade behind the panel, fading off toward the stall
+    cloth, paint = awning(16, 14)
+    save(cloth, "market/awning")
+    save(paint, "market/awning_paint")
+    for name, rows in TREND_ICONS.items():
+        save(from_rows(rows, MARK_PAL), "market/" + name)
+    save(gradient_band(32, 4, (0, 0, 0, 255), 175, 0, 1.6), "market/shade", STRETCH)
 
     save(slip(64, 32, 11), "death/slip", nine(64, 32, 8))
     save(seal(9, 12), "death/seal")
