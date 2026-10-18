@@ -9,6 +9,9 @@ import io.github.vaspyyy.guildmark.economy.works.WorksView
 import io.github.vaspyyy.guildmark.homestead.plan.Stage
 import io.github.vaspyyy.guildmark.homestead.plan.Stuff
 import io.github.vaspyyy.guildmark.townsfolk.Activity
+import io.github.vaspyyy.guildmark.townsfolk.Days
+import io.github.vaspyyy.guildmark.townsfolk.Doing
+import io.github.vaspyyy.guildmark.townsfolk.Labour
 import io.github.vaspyyy.guildmark.townsfolk.Speech
 import io.github.vaspyyy.guildmark.townsfolk.talk.Ask
 import io.github.vaspyyy.guildmark.townsfolk.talk.Choice
@@ -43,7 +46,9 @@ import java.util.UUID
  * - and the deeds of the works: its patron (and anyone who gave a quarter of its price) thanked to their face, as
  *   DEEDS, by those who've heard who paid or built it; the patron pointed out to others while they're in sight, or
  *   else named (if the speaker knows the name); and a labourer's own pride in what they built, for a month after
- *   their last day on it ([TownTalk.laboured]).
+ *   their last day on it ([TownTalk.laboured]);
+ * - a labourer's building day as they're about it, asked what they're doing: the works they're lent to, and whether
+ *   they're at work on it, waiting about the site or on their way (where the builders have a site for them).
  *
  * Children play at builders while a works is going up. In passing, a works is talked of near it, or while its news is
  * fresh. "About the works..." asks what's wanted, what's going up and what's been raised, and by whom. Nothing while
@@ -77,6 +82,9 @@ object WorksTopics : TopicSource {
 
     /** The answer's parts at most: the first works, then two more in a word each. */
     private const val PARTS = 3
+
+    /** How near the place they report at a labourer is at the site (blocks), as Labour has it. */
+    private const val SITE = 10.0
 
     /** When each patron was last pointed out (game time); kept in memory only. */
     private val pointed = HashMap<UUID, Long>()
@@ -127,6 +135,7 @@ object WorksTopics : TopicSource {
     }
 
     override fun offer(ask: Ask, out: MutableList<Topic>) {
+        if (DailySource.fits(ask.occasion)) labouring(ask, out)
         if (ask.occasion !in OCCASIONS) return
         val town = town(ask) ?: return
         for (s in seen(ask, town)) {
@@ -380,6 +389,33 @@ object WorksTopics : TopicSource {
         val say = Say.line(s.ask, "works.labourer", detail) ?: return
         val weight = 0.55 - 0.25 * age / Experience.LABOURED.days
         out.add(Topic("works.labourer.${w.id}.${w.state.name.lowercase()}", Kind.WORKS, weight, say, tone = 1, toward = s.at))
+    }
+
+    /**
+     * A labourer on their building day ([Doing.BUILD]), asked what they're about or saying it in passing as the day's
+     * round is said ([DailySource]): the works they're lent to, pointing at it, and where they are in their day: at work
+     * for the crew ("I'm on the granary today, till sunset.", and how much of it is built), waiting about the site for
+     * the builders to set them on, or on their way there. Only where the builders have a site for them ([Labour.site]).
+     */
+    private fun labouring(ask: Ask, out: MutableList<Topic>) {
+        val life = ask.life ?: return
+        val p = ask.speaker
+        if (!Works.enabled() || Say.child(p) || Days.stretch(life, ask.level.overworldClockTime).doing != Doing.BUILD) return
+        val site = Labour.site(p, life) ?: return
+        val w = Works.at(ask.level, site)?.takeIf { it.state == WorksState.BUILDING || it.state == WorksState.FUNDED } ?: return
+        val kind = "fortune.guildmark.works.${w.kind.id}"
+        val how = when {
+            Labour.lentNow(p) -> "at"
+            p.blockPosition().distSqr(site) <= SITE * SITE -> "waiting"
+            else -> "going"
+        }
+        val detail = Speech.of(if (how == "at") "talk.detail.works.labour" else "talk.detail.works.labour.$how", kind)
+        val first = Say.part(ask, "works.building", detail) ?: return
+        val more = if (how == "at" && w.state == WorksState.BUILDING && ask.occasion != Occasion.BARK) Utterance.Part("", "talk.detail.works.share." + share(w)) else null
+        out.add(Topic(
+            "works.labouring.${w.id}.$how", Kind.DOING, DailySource.weight(ask), Utterance(listOfNotNull(first, more)),
+            tone = 1, gesture = Activity.POINT, toward = place(w) ?: site,
+        ))
     }
 
     /** A child at play while a works is going up ("I'm the master builder! You carry the stones!"). */
