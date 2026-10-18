@@ -75,7 +75,7 @@ internal object Grumbling {
             // Someone at it already: a look at them and a nod, the same thought
             moves += Play(Activity.NOD, at = { other.eyePosition })
         }
-        moves += Play(Activity.GRUMBLE, at = { face }, first = { who -> Words.about(level, who, Kind.FORTUNE, fallback, "grumbling at the market board") })
+        moves += Play(Activity.GRUMBLE, at = { face }, first = { who -> Words.about(level, who, Kind.FORTUNE, fallback, "grumbling at the market board") { it.tone <= 0 } })
         moves += Play(if (r.nextInt(2) == 0) Activity.SIGH else Activity.SHRUG, at = { face })
         val aside = Aside(moves, most = 900)
         if (!Aside.take(p, aside)) return null

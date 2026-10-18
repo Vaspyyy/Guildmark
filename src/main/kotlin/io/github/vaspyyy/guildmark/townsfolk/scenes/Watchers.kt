@@ -103,7 +103,8 @@ internal object Watchers {
         moves += Turn(aim)
         moves += Play(Activity.GAZE, Activity.GAZE.ticks * (1 + r.nextInt(2)), aim)
         moves += Play(Activity.POINT, at = aim, first = { who ->
-            if (talker == null) Words.about(level, who, Kind.WORKS, "works.building", "watching the works go up")
+            // With no works topic on offer, only the wording true at any stage ("It'll be a fine sight when it's done.")
+            if (talker == null) Words.about(level, who, Kind.WORKS, "works.building", "watching the works go up", takes = setOf(1))
         })
         if (talker != null && talker.isAlive && talker.distanceToSqr(p) < 64.0) {
             moves += Play(Activity.NOD, at = { talker.eyePosition })

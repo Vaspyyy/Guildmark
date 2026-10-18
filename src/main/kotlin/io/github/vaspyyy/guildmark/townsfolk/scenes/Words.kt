@@ -5,6 +5,7 @@ import io.github.vaspyyy.guildmark.townsfolk.talk.Kind
 import io.github.vaspyyy.guildmark.townsfolk.talk.Occasion
 import io.github.vaspyyy.guildmark.townsfolk.talk.Street
 import io.github.vaspyyy.guildmark.townsfolk.talk.Talk
+import io.github.vaspyyy.guildmark.townsfolk.talk.Topic
 import io.github.vaspyyy.guildmark.townsfolk.talk.TalkLines
 import io.github.vaspyyy.guildmark.townsfolk.talk.Topics
 import net.minecraft.server.level.ServerLevel
@@ -34,11 +35,14 @@ internal object Words {
     /** The nearest player in hearing of [p], if any. */
     fun hearer(p: Townsperson): ServerPlayer? = p.level().getNearestPlayer(p, HEARING) as? ServerPlayer
 
-    /** A take of [family] for [p] to say in [player]'s hearing: one neither has heard lately; null if none (or none recorded). */
-    fun of(p: Townsperson, player: ServerPlayer?, family: String): Street.Line? {
+    /**
+     * A take of [family] for [p] to say in [player]'s hearing (only those numbered in [takes], when given: the ones true
+     * whatever's going on): one neither has heard lately; null if none (or none recorded).
+     */
+    fun of(p: Townsperson, player: ServerPlayer?, family: String, takes: Set<Int>? = null): Street.Line? {
         val f = TalkLines.FAMILIES[family]?.takeIf { it.count > 0 } ?: return null
         val avoid = Topics.avoid(p, player)
-        val keys = (0 until f.count).map { "talk.${family}_$it" }.filter { it !in avoid }
+        val keys = (0 until f.count).filter { takes == null || it in takes }.map { "talk.${family}_$it" }.filter { it !in avoid }
         if (keys.isEmpty()) return null
         val key = keys[p.random.nextInt(keys.size)]
         return Street.Line(key, key, Talk.ticks(p, key))
@@ -64,21 +68,22 @@ internal object Words {
     }
 
     /**
-     * [p] says something of [kind] (a works going up, the times) from the talk's topics, its first part as one line
-     * (the topic then out for a while, as the street talk has it); else a take of [fallback]. True if anything was said.
+     * [p] says something of [kind] (a works going up, the times) from the talk's topics that [fits], its first part as
+     * one line (the topic then out for a while, as the street talk has it); else a take of [fallback] (of its [takes],
+     * when given). True if anything was said.
      */
-    fun about(level: ServerLevel, p: Townsperson, kind: Kind, fallback: String?, why: String): Boolean {
+    fun about(level: ServerLevel, p: Townsperson, kind: Kind, fallback: String?, why: String, takes: Set<Int>? = null, fits: (Topic) -> Boolean = { true }): Boolean {
         if (!on()) return false
         val player = hearer(p) ?: return false
         if (p.speech.isNotEmpty() || Street.hushed(p) || over(p)) return false
         val ask = Talk.ask(level, p, player, Occasion.BARK)
-        val topic = Street.pick(ask, Topics.LEAST) { it.kind == kind && it.say.parts.isNotEmpty() }
+        val topic = Street.pick(ask, Topics.LEAST) { it.kind == kind && it.say.parts.isNotEmpty() && fits(it) }
         val line = topic?.let { Street.said(ask, it).firstOrNull() }
         if (topic != null && line != null) {
             if (!say(p, player, line, why)) return false
             Topics.said(ask, topic)
             return true
         }
-        return fallback != null && say(p, player, of(p, player, fallback), why)
+        return fallback != null && say(p, player, of(p, player, fallback, takes), why)
     }
 }
