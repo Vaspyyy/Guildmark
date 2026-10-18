@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.quest
 
+import io.github.vaspyyy.guildmark.economy.MarketFetch
 import io.github.vaspyyy.guildmark.outlaw.Captives
 import io.github.vaspyyy.guildmark.progression.AdventurerRank
 import io.github.vaspyyy.guildmark.lair.LairTheme
@@ -43,8 +44,9 @@ object QuestGenerator {
     /**
      * What lies round a board, deciding which jobs it can post: a Trade Road to other villages, work out at sea
      * (looked into only once a job that wants the sea comes up), the beasts living in reach ([quarry] says whether
-     * there's one of the kind a hunt's target names) and the outlaw bands camped in reach, whose notices [dress]
-     * writes onto wanted notes.
+     * there's one of the kind a hunt's target names), the outlaw bands camped in reach, whose notices [dress]
+     * writes onto wanted notes, and at a capital's own board its market: [market] gives what it asks for one of an
+     * item and whether it's short of it, or null for one it doesn't trade (see MarketFetch).
      */
     class Surroundings(
         val hasRoad: Boolean,
@@ -52,6 +54,7 @@ object QuestGenerator {
         private val quarry: (Identifier) -> Boolean = { false },
         wanted: () -> List<Bounties.Wanted> = { listOf() },
         held: () -> List<Captives.Held> = { listOf() },
+        private val market: (Identifier) -> MarketFetch.Ask? = { null },
     ) {
         private val sea by lazy(sea)
         private val wanted by lazy(wanted)
@@ -63,8 +66,18 @@ object QuestGenerator {
             QuestType.SLAY -> quarry(entry.target)
             QuestType.BOUNTY -> wanted.isNotEmpty()
             QuestType.RESCUE -> held.isNotEmpty()
+            // The market's own goods are asked for only while it's short of them
+            QuestType.FETCH -> market(entry.target)?.short ?: (hasRoad || !entry.type.needsRoad)
             else -> hasRoad || !entry.type.needsRoad
         }
+
+        /**
+         * [note] paying no more than it may, or null if that would leave it paying too little to post: a fetch for
+         * the market's goods half what the market asks for them, any other fetch for goods that can be bought half
+         * what they cost (see GoodsPrices).
+         */
+        fun fit(note: QuestNote): QuestNote? =
+            GoodsPrices.fit(note, if (note.type == QuestType.FETCH) market(note.target)?.price else null)
 
         /**
          * A wanted note names one of the bands in reach, the price on them and what for, and a plea for a captive names
@@ -83,7 +96,7 @@ object QuestGenerator {
             .filter { it.professions.isEmpty() || profession in it.professions }
             .flatMap { it.entries }
             .filter(around::allows)
-        return around.dress(random, pickAndBuild(random, entries, tier, poster) { rankFor(random, it, tier) })
+        return around.dress(random, pickAndBuild(random, entries, tier, poster, around::fit) { rankFor(random, it, tier) })
     }
 
     /** A note with no villager behind it yet, e.g. the first notes on a new board. */
@@ -92,14 +105,14 @@ object QuestGenerator {
         val profession = pool?.professions?.randomOrNull(random)
         val poster = "${NAMES[random.nextInt(NAMES.size)]} the ${title(profession)}"
         val entries = pool?.entries.orEmpty().filter(around::allows)
-        return around.dress(random, pickAndBuild(random, entries, tier, poster) { rankFor(random, it, tier) })
+        return around.dress(random, pickAndBuild(random, entries, tier, poster, around::fit) { rankFor(random, it, tier) })
     }
 
     /** A note from any pool's entries that [around] allows and [which] picks, signed by [poster]; null if there's none. */
     fun generateWhere(random: RandomSource, tier: Int, around: Surroundings, poster: String, which: (QuestPool.Entry) -> Boolean): QuestNote? {
         val entries = QuestPools.pools.flatMap { it.entries }.filter { it.minTier <= tier && which(it) && around.allows(it) }
         if (entries.isEmpty()) return null
-        return pickAndBuild(random, entries, tier, poster) { rankFor(random, it, tier) }
+        return pickAndBuild(random, entries, tier, poster, around::fit) { rankFor(random, it, tier) }
     }
 
     /** A note of one specific type from any pool, for testing. Null if no pool offers that type. */
@@ -116,19 +129,23 @@ object QuestGenerator {
      */
     fun generateHall(random: RandomSource, rank: Int, around: Surroundings, poster: String): QuestNote {
         val entries = QuestPools.pools.flatMap { it.entries }.filter(around::allows)
-        val note = around.dress(random, pickAndBuild(random, entries, MAX_TIER, poster) { rank })
+        val note = around.dress(random, pickAndBuild(random, entries, MAX_TIER, poster, around::fit) { rank })
         return GoodsPrices.capped(note.copy(reward = note.reward * 3 / 2))
     }
 
     /**
      * Picks one of [entries] and builds its note, rated at [rank]. A fetch for goods that can be bought pays no more than
-     * half what they cost, and one that would be left paying next to nothing is passed over for another (see GoodsPrices).
+     * half what they cost ([fit]; see GoodsPrices and Surroundings.fit), and one that would be left paying next to
+     * nothing is passed over for another.
      */
-    private fun pickAndBuild(random: RandomSource, entries: List<QuestPool.Entry>, tier: Int, poster: String, rank: (QuestPool.Entry) -> Int): QuestNote {
+    private fun pickAndBuild(
+        random: RandomSource, entries: List<QuestPool.Entry>, tier: Int, poster: String,
+        fit: (QuestNote) -> QuestNote? = GoodsPrices::fit, rank: (QuestPool.Entry) -> Int,
+    ): QuestNote {
         var open = entries
         while (true) {
             val entry = pick(random, open, tier)
-            GoodsPrices.fit(build(random, entry, poster, rank(entry)))?.let { return it }
+            fit(build(random, entry, poster, rank(entry)))?.let { return it }
             open = open.filter { it !== entry }
         }
     }

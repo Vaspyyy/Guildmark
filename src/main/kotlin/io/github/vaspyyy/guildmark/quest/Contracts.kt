@@ -18,6 +18,7 @@ import io.github.vaspyyy.guildmark.progression.Milestones
 import io.github.vaspyyy.guildmark.loot.Relics
 import io.github.vaspyyy.guildmark.advance.Advances
 import io.github.vaspyyy.guildmark.block.QuestBoardBlock
+import io.github.vaspyyy.guildmark.economy.MarketFetch
 import io.github.vaspyyy.guildmark.lair.Lairs
 import io.github.vaspyyy.guildmark.progression.AdventurerRank
 import io.github.vaspyyy.guildmark.progression.Progression
@@ -308,8 +309,12 @@ object Contracts {
                 (if (level is ServerLevel) TownControl.bonus(level, it, player, note.reward) + Festivals.bonus(level, it, note.reward) else 0)
         } ?: 0
         val earned = (Progression.reward(player, note.reward + bonus) * GuildmarkConfig.PAY_MULTIPLIER.get()).toInt()
-        // Goods that can be bought never pay back what they cost, bonuses and all (a story's chapter is asked only once)
-        val goodsCap = if (note.type == QuestType.FETCH && chapter == null) GoodsPrices.cap(note.target, note.count) else null
+        // Goods that can be bought never pay back what they cost, bonuses and all (a story's chapter is asked only once):
+        // a capital's market's own goods, posted on its board, half what the market asks for them now
+        val goodsCap = if (note.type == QuestType.FETCH && chapter == null) {
+            (if (level is ServerLevel && origin != null) MarketFetch.cap(level, origin, note.target, note.count) else null)
+                ?: GoodsPrices.cap(note.target, note.count)
+        } else null
         val marks = (if (goodsCap != null) minOf(earned, goodsCap) else earned).coerceAtLeast(1)
         val xp = note.reward * Progression.XP_PER_MARK
         player.inventory.placeItemBackInInventory(ItemStack(ModItems.GUILD_MARK.get(), marks), Prediction.SERVER_ONLY)

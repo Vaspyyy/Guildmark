@@ -99,10 +99,14 @@ object GoodsPrices {
         return if (note.reward <= cap) note else note.copy(reward = cap.coerceAtLeast(1))
     }
 
-    /** [note] as [capped], or null if it's a fetch for goods that sell so cheap it could pay no more than [MIN_PAY]. */
-    fun fit(note: QuestNote): QuestNote? {
+    /**
+     * [note] as [capped], or null if it's a fetch for goods that sell so cheap it could pay no more than [MIN_PAY].
+     * [each]: what one of its goods costs where it's posted, if a market there sells them (see MarketFetch).
+     */
+    fun fit(note: QuestNote, each: Double? = null): QuestNote? {
         if (note.type != QuestType.FETCH) return note
-        val cap = cap(note.target, note.count) ?: return note
-        return if (cap < MIN_PAY) null else capped(note)
+        val cap = each?.let { floor(it * note.count * MAX_SHARE).toInt() } ?: cap(note.target, note.count) ?: return note
+        if (cap < MIN_PAY) return null
+        return if (note.reward <= cap) note else note.copy(reward = cap)
     }
 }

@@ -2,6 +2,7 @@ package io.github.vaspyyy.guildmark.quest
 
 import io.github.vaspyyy.guildmark.block.QuestBoardBlockEntity
 import io.github.vaspyyy.guildmark.block.VillageBoards
+import io.github.vaspyyy.guildmark.economy.MarketFetch
 import io.github.vaspyyy.guildmark.guild.Holdings
 import io.github.vaspyyy.guildmark.guild.RivalGuild
 import io.github.vaspyyy.guildmark.village.VillageNames
@@ -62,7 +63,9 @@ object Situations {
         val base = job.min + random.nextInt(job.max - job.min + 1)
         val count = if (job.type.isSingle) 1 else (base * countScale).toInt().coerceAtLeast(1)
         val reward = 3 + (count * job.rewardPer * (1.0f + 0.35f * rank) * bonus).toInt()
-        return GoodsPrices.fit(QuestNote(job.type, poster, Identifier.withDefaultNamespace(job.target), count, reward, 3, story(key, random, args), rank))
+        val note = QuestNote(job.type, poster, Identifier.withDefaultNamespace(job.target), count, reward, 3, story(key, random, args), rank)
+        // At a capital's own board, its market's goods pay no more than half what the market asks for them
+        return GoodsPrices.fit(note, MarketFetch.at(level, anchor)?.let { MarketFetch.ask(it, note.target) }?.price)
     }
 
     /** "key|arg|arg": QuestNote.storyLine fills the arguments in. */

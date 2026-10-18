@@ -5,6 +5,7 @@ import io.github.vaspyyy.guildmark.quest.QuestNote
 import io.github.vaspyyy.guildmark.outlaw.Captives
 import io.github.vaspyyy.guildmark.quest.Situations
 import io.github.vaspyyy.guildmark.GuildmarkConfig
+import io.github.vaspyyy.guildmark.economy.MarketFetch
 import io.github.vaspyyy.guildmark.advance.Advances
 import io.github.vaspyyy.guildmark.quest.QuestGenerator
 import io.github.vaspyyy.guildmark.quest.SeaWork
@@ -176,12 +177,14 @@ object VillageBoards {
     /** What the board at [anchor] has round it to post jobs about: its village's roads, the sea and the beasts about. */
     fun surroundings(level: Level, anchor: BlockPos): QuestGenerator.Surroundings {
         val serverLevel = level as? ServerLevel ?: return QuestGenerator.Surroundings(false)
+        val market by lazy { MarketFetch.at(serverLevel, anchor) }
         return QuestGenerator.Surroundings(
             hasRoad(level, anchor),
             { SeaWork.reach(serverLevel, anchor) },
             { target -> BossHunts.quarries(serverLevel, anchor, target).isNotEmpty() },
             { Bounties.wanted(serverLevel, anchor) },
             { Captives.held(serverLevel, anchor) },
+            { item -> market?.let { MarketFetch.ask(it, item) } },
         )
     }
 
