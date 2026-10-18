@@ -31,7 +31,7 @@ internal object LivingSchedule {
     class Moment(val name: String, val tick: Float, val x: Float, val y: Float, val z: Float)
 
     /** The clips these are for. */
-    val CLIPS: Set<String> = setOf("sit_down", "stand_up", "nod", "shrug", "point", "bow", "yawn", "stretch", "knock", "climb", "climb_top", "eat", "sit_eat", "wash", "pick_up", "put_down", "hand_over", "receive", "pay", "browse", "set_up", "sow", "carry_basket", "gather", "scythe", "grind", "chop", "pour_sack", "ring_bell", "announce", "draw_water", "explain", "gossip", "shush", "wave_off", "sigh", "think", "tip_hat", "introduce", "arms_folded", "recoil", "wave_walk", "nod_walk", "sit_gossip", "sit_laugh", "pause_work", "carry_pole", "light_lamp", "snuff_lamp")
+    val CLIPS: Set<String> = setOf("sit_down", "stand_up", "nod", "shrug", "point", "bow", "yawn", "stretch", "knock", "climb", "climb_top", "eat", "sit_eat", "wash", "pick_up", "put_down", "hand_over", "receive", "pay", "browse", "set_up", "sow", "carry_basket", "gather", "scythe", "grind", "chop", "pour_sack", "ring_bell", "announce", "draw_water", "explain", "gossip", "shush", "wave_off", "sigh", "think", "tip_hat", "introduce", "arms_folded", "recoil", "wave_walk", "nod_walk", "sit_gossip", "sit_laugh", "pause_work", "carry_pole", "light_lamp", "snuff_lamp", "drive", "drive_urge", "drive_brake", "ride_tail", "jump_down", "climb_up", "cut_loose", "hand_down", "cower", "catch_breath", "recount", "wounded", "grumble")
 
     /** Each prop's own part, and the part it hangs on. */
     val PARENT: Map<String, String> = mapOf(
@@ -58,6 +58,16 @@ internal object LivingSchedule {
         "sack_held" to "right_arm",
         "sack_empty" to "right_arm",
         "crank" to "right_arm",
+        "driver_knife" to "right_arm",
+        "rein_right_1" to "right_arm",
+        "rein_right_2" to "right_arm",
+        "rein_right_3" to "right_arm",
+        "rein_left_1" to "left_arm",
+        "rein_left_2" to "left_arm",
+        "rein_left_3" to "left_arm",
+        "spear_knees" to "right_arm",
+        "loot_sack" to "right_arm",
+        "nosebag_held" to "left_arm",
     )
 
     /** By clip: the props it shows, and when. */
@@ -130,6 +140,52 @@ internal object LivingSchedule {
         "snuff_lamp" to listOf(
             Shown("lamp_pole", 0f, END),
         ),
+        "drive" to listOf(
+            Shown("rein_left_1", 0f, END),
+            Shown("rein_left_2", 0f, END),
+            Shown("rein_left_3", 0f, END),
+            Shown("rein_right_1", 0f, END),
+            Shown("rein_right_2", 0f, END),
+            Shown("rein_right_3", 0f, END),
+        ),
+        "drive_urge" to listOf(
+            Shown("rein_left_1", 0f, END),
+            Shown("rein_left_2", 0f, END),
+            Shown("rein_left_3", 0f, END),
+            Shown("rein_right_1", 0f, END),
+            Shown("rein_right_2", 0f, END),
+            Shown("rein_right_3", 0f, END),
+        ),
+        "drive_brake" to listOf(
+            Shown("rein_left_1", 0f, END),
+            Shown("rein_left_2", 0f, END),
+            Shown("rein_left_3", 0f, END),
+            Shown("rein_right_1", 0f, END),
+            Shown("rein_right_2", 0f, END),
+            Shown("rein_right_3", 0f, END),
+        ),
+        "ride_tail" to listOf(
+            Shown("spear_knees", 0f, END),
+        ),
+        "jump_down" to listOf(
+            Shown("rein_left_1", 0f, 1.5f),
+            Shown("rein_left_2", 0f, 1.5f),
+            Shown("rein_left_3", 0f, 1.5f),
+            Shown("rein_right_1", 0f, 1.5f),
+            Shown("rein_right_2", 0f, 1.5f),
+            Shown("rein_right_3", 0f, 1.5f),
+        ),
+        "climb_up" to listOf(
+            Shown("rein_left_1", 17f, END),
+            Shown("rein_left_2", 17f, END),
+            Shown("rein_left_3", 17f, END),
+            Shown("rein_right_1", 17f, END),
+            Shown("rein_right_2", 17f, END),
+            Shown("rein_right_3", 17f, END),
+        ),
+        "cut_loose" to listOf(
+            Shown("driver_knife", 0f, 24.5f),
+        ),
     )
 
     /** By clip: the props its file turns, places and stretches itself tick by tick ("prop:<part>" bones). */
@@ -137,10 +193,16 @@ internal object LivingSchedule {
         "grind" to listOf("crank"),
         "draw_water" to listOf("bucket", "curb_rope", "haul_rope_left", "haul_rope_right", "tail_rope_left", "tail_rope_right", "well_bucket", "well_rope"),
         "snuff_lamp" to listOf("lamp_pole"),
+        "ride_tail" to listOf("spear_knees"),
+        "drive" to listOf("rein_left_1", "rein_left_2", "rein_left_3", "rein_right_1", "rein_right_2", "rein_right_3"),
+        "drive_urge" to listOf("rein_left_1", "rein_left_2", "rein_left_3", "rein_right_1", "rein_right_2", "rein_right_3"),
+        "drive_brake" to listOf("rein_left_1", "rein_left_2", "rein_left_3", "rein_right_1", "rein_right_2", "rein_right_3"),
+        "jump_down" to listOf("rein_left_1", "rein_left_2", "rein_left_3", "rein_right_1", "rein_right_2", "rein_right_3"),
+        "climb_up" to listOf("rein_left_1", "rein_left_2", "rein_left_3", "rein_right_1", "rein_right_2", "rein_right_3"),
     )
 
     /** Props that hang straight down from the hand holding them (where no track runs them). */
-    val HANG: Set<String> = setOf("bucket", "sack_empty")
+    val HANG: Set<String> = setOf("bucket", "sack_empty", "loot_sack", "nosebag_held")
 
     /** Props with a flame that glows in the dark. */
     val GLOW: Set<String> = setOf("lamp_pole")
@@ -178,6 +240,9 @@ internal object LivingSchedule {
             Goods(13f, 21f, How.PART, "right_arm", -1f, 11.4f, -1f, "", 0f, 0f, 0f, 0f, 3f),
             Goods(21f, 24f, How.TOSS, "", 4.93f, 12.742f, -6.577f, "body", 5.6f, 7.8f, -4f, 2f, 3f),
             Goods(24f, END, How.PART, "body", 5.6f, 7.8f, -4f, "", 0f, 0f, 0f, 0f, 3f),
+        ),
+        "hand_down" to listOf(
+            Goods(7f, 16f, How.HANDS, "", 2f, 0f, 0f, "", 0f, 0f, 0f, 0f, 8f),
         ),
     )
 
@@ -416,6 +481,59 @@ internal object LivingSchedule {
             Moment("clink", 18.5f, 0f, -26.6f, -13f),
             Moment("hiss", 23f, 0f, -27.5f, -16f),
             Moment("smoke", 25.5f, 0f, -27.1f, -12.4f),
+        ),
+        "drive_urge" to listOf(
+            Moment("click", 3f, 0f, 7.135f, -4.875f),
+            Moment("flick", 5f, 1.052f, 18.784f, -24.594f),
+        ),
+        "drive_brake" to listOf(
+            Moment("haul", 6f, -2.406f, 17.639f, -0.335f),
+            Moment("brake", 11f, -5.9f, 18.632f, -0.795f),
+        ),
+        "jump_down" to listOf(
+            Moment("push", 5f, -3.813f, 23.187f, 0.998f),
+            Moment("land", 10f, -14f, 51.5f, -1f),
+        ),
+        "climb_up" to listOf(
+            Moment("grab", 3f, -5.53f, 23.854f, 4.607f),
+            Moment("step", 4f, -7.7f, 41.1f, 13.5f),
+            Moment("sit", 13f, 0f, 24f, 0f),
+        ),
+        "cut_loose" to listOf(
+            Moment("saw", 5f, -2.554f, 3.649f, -13.471f),
+            Moment("saw", 9f, -2.554f, 3.649f, -13.471f),
+            Moment("saw", 13f, -2.554f, 3.649f, -13.471f),
+            Moment("saw", 17f, -2.554f, 3.649f, -13.471f),
+            Moment("cut", 20f, -2.554f, 3.649f, -13.471f),
+            Moment("sheathe", 24.5f, -4.621f, 10.692f, -1.074f),
+            Moment("slap", 39f, 21.6f, 2.5f, -11.7f),
+        ),
+        "hand_down" to listOf(
+            Moment("lift", 7f, -0.065f, 20.967f, 8.484f),
+            Moment("handoff", 16f, 0f, 22.005f, -7.999f),
+        ),
+        "cower" to listOf(
+            Moment("flinch", 30.5f, 0.705f, 11.267f, -7.405f),
+        ),
+        "catch_breath" to listOf(
+            Moment("gasp", 1.5f, -0.047f, 5.149f, -12.371f),
+            Moment("gasp", 17.5f, -0.001f, 5.517f, -12.572f),
+            Moment("cough", 30f, 0.297f, 7.695f, -13.686f),
+        ),
+        "recount" to listOf(
+            Moment("point", 6f, -2.407f, -0.618f, 13.49f),
+            Moment("rush", 21f, -0.2f, 0.142f, -14.134f),
+            Moment("sweep", 38f, -7.467f, 5.548f, -6.145f),
+            Moment("clap", 47f, 0.017f, 8.568f, -9.179f),
+            Moment("clap", 50f, 0.104f, 8.423f, -9.209f),
+        ),
+        "wounded" to listOf(
+            Moment("wince", 4f, -0.055f, -0.549f, -4.888f),
+            Moment("wince", 24f, -0.062f, -0.814f, -4.851f),
+        ),
+        "grumble" to listOf(
+            Moment("huff", 7f, 1.073f, -2.482f, -3.492f),
+            Moment("sweep", 27f, -7.804f, 6.757f, -10.871f),
         ),
     )
 }
