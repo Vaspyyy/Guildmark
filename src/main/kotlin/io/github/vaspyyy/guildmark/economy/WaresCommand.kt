@@ -121,7 +121,7 @@ object WaresCommand {
     private fun row(level: ServerLevel, display: WaresBlockEntity, entry: Markets.Entry?): Component {
         val c = line().append(at(level, display.blockPos)).append(plain(" ")).append(display.blockState.block.name.withStyle(ChatFormatting.WHITE)).append(grey(":"))
         val full = display.full()
-        display.wares.goods.forEachIndexed { i, id ->
+        display.goods.forEachIndexed { i, id ->
             val good = Good.byId(id) ?: return@forEachIndexed
             c.append(plain(" ")).append(Component.translatable(good.key).withStyle(ChatFormatting.WHITE))
             c.append(plain(" ${display.counts.getOrElse(i) { 0 }}/${full.getOrElse(i) { 0 }}"))

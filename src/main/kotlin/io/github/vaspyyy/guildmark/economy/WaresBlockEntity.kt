@@ -20,7 +20,8 @@ import kotlin.math.roundToInt
  * A market display's block entity: whose market it shows (its capital, by the centre), what it shows ([wares]), and
  * how many items of each of its goods are on it ([counts], one lane of [WaresLayout] each). Every [CHECK] ticks while
  * a player is within [NEAR] blocks the server works the counts out from the market's stock, and it tells clients only
- * when they change; a client then has the items that came settle in, or those that went lift out ([motion]).
+ * when they change; a client then has the items that came settle in, or those that went lift out ([motion]). On a
+ * market hall table a player has let, it shows their own goods instead ([own], set by [StallTables]).
  */
 class WaresBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(WaresRegistry.ENTITY.get(), pos, state) {
     /** How it looks, from its block. */
@@ -33,7 +34,14 @@ class WaresBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(WaresRegi
     /** The centre of the capital whose market it shows; null until known. */
     private var capital: BlockPos? = null
 
-    /** How many items of each good it shows, in the order of [Wares.goods]. */
+    /** A player's own goods (by id) it shows while the market hall table it stands on is theirs; null while it shows the market's. */
+    var own: List<String>? = null
+        private set
+
+    /** The goods it shows, a lane each: a player's own while it shows theirs, else its [wares]'. */
+    val goods: List<String> get() = own ?: wares.goods
+
+    /** How many items of each good it shows, in the order of [goods]. */
     var counts: IntArray = full()
         private set
 
@@ -61,13 +69,23 @@ class WaresBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(WaresRegi
     fun setUp(capital: BlockPos, wares: Wares) {
         this.capital = capital
         this.wares = wares
+        own = null
         counts = full()
         setChanged()
     }
 
+    /** Shows a player's own [goods] (see [own]), [counts] items of each, telling clients if that changes anything. */
+    fun show(level: ServerLevel, goods: List<String>, counts: IntArray) {
+        if (goods == own && counts.contentEquals(this.counts)) return
+        own = goods
+        this.counts = counts
+        setChanged()
+        level.sendBlockUpdated(blockPos, blockState, blockState, Block.UPDATE_CLIENTS)
+    }
+
     /** Its counts at the town's usual stock: a neat display, full to the rim. */
     fun full(): IntArray {
-        val cap = WaresLayout.capacity(look, wares.goods)
+        val cap = WaresLayout.capacity(look, goods)
         return IntArray(cap.size / 2) { cap[it * 2] }
     }
 
@@ -91,9 +109,10 @@ class WaresBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(WaresRegi
     /**
      * What it should show now: each good as full as the market holds of it against what the town likes to keep, a
      * count it's near enough to kept so the heap doesn't flicker; full with the markets switched off; null (no change)
-     * outside a capital or while its market hasn't opened.
+     * outside a capital, while its market hasn't opened, and while it shows a player's own goods.
      */
     private fun target(level: ServerLevel): IntArray? {
+        if (own != null) return null
         if (!Markets.enabled()) return full()
         val centre = capital(level) ?: return null
         val entry = Markets.get(level)[centre] ?: return null
@@ -127,25 +146,27 @@ class WaresBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(WaresRegi
         super.saveAdditional(output)
         output.putString("wares", wares.name)
         capital?.let { output.putLong("capital", it.asLong()) }
+        own?.let { output.putString("own", it.joinToString(",")) }
         output.putIntArray("counts", counts)
     }
 
     override fun loadAdditional(input: ValueInput) {
         super.loadAdditional(input)
-        val before = wares
+        val before = goods
         val name = input.getStringOr("wares", "")
         wares = Wares.entries.firstOrNull { it.name == name && it.look == look } ?: Wares.of(look)
         capital = input.getLong("capital").map(BlockPos::of).orElse(null)
-        val lanes = WaresLayout.capacity(look, wares.goods).size / 2
+        own = input.getString("own").map { if (it.isEmpty()) listOf() else it.split(',') }.orElse(null)
+        val lanes = WaresLayout.capacity(look, goods).size / 2
         val next = input.getIntArray("counts").orElse(null)?.takeIf { it.size == lanes } ?: full()
         if (level?.isClientSide() == true) moved(before, next)
         counts = next
     }
 
-    /** Client side: sets moving the items new counts bring or take away, unless these are its first. */
-    private fun moved(before: Wares, next: IntArray) {
+    /** Client side: sets moving the items new counts bring or take away, unless these are its first (or its goods changed). */
+    private fun moved(before: List<String>, next: IntArray) {
         val level = level ?: return
-        if (!primed || before != wares || next.size != counts.size) {
+        if (!primed || before != goods || next.size != counts.size) {
             primed = true
             motion = arrayOfNulls(next.size)
             return

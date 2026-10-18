@@ -4,25 +4,32 @@ import com.mojang.serialization.Codec
 import com.mojang.serialization.codecs.RecordCodecBuilder
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.GuildmarkConfig
+import net.minecraft.core.BlockPos
+import net.minecraft.core.Direction
 import net.minecraft.core.UUIDUtil
 import net.minecraft.resources.Identifier
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.level.saveddata.SavedData
 import net.minecraft.world.level.saveddata.SavedDataType
+import net.neoforged.bus.api.IEventBus
 import java.util.UUID
 import java.util.function.Supplier
 import kotlin.math.floor
 
 /**
  * A player's stall on one of a capital's market hall tables (see [OwnStalls]): who rents it ([renter], called [name],
- * in their [color], a [io.github.vaspyyy.guildmark.city.plan.Dye] ordinal), the market hours of rent still to run
- * ([left]), what's on it of each good (fractions and all, as the town buys a little at a time) and the Marks in its
- * till.
+ * in their [color], a [io.github.vaspyyy.guildmark.city.plan.Dye] ordinal), in which capital ([place], its name) and
+ * where its table's display stands ([at], its front toward [front], the buyers' side), the market hours of rent still
+ * to run ([left]), what's on it of each good (fractions and all, as the town buys a little at a time) and the Marks in
+ * its till.
  */
 class OwnStall(
     val renter: UUID,
     var name: String,
     var color: Int,
+    val place: String,
+    val at: BlockPos,
+    val front: Direction,
     var left: Int,
     val stock: DoubleArray = DoubleArray(Good.entries.size),
     var till: Double = 0.0,
@@ -41,14 +48,18 @@ class OwnStall(
     /** Whole units of [good] on it. */
     fun whole(good: Good): Int = floor(stock[good.ordinal] + 1e-6).toInt()
 
-    /** The goods with a whole unit or more on it, most first. */
-    fun goods(): List<Good> = Good.TRADED.filter { whole(it) > 0 }.sortedByDescending { stock[it.ordinal] }
+    /** Whole units of [good] its display shows: what's on it, and what's been sold but not yet taken away. */
+    fun shown(good: Good): Int = floor(stock[good.ordinal] + waiting[good.ordinal] + 1e-6).toInt()
+
+    /** The goods with a whole unit or more on it, in the order of [Good]. */
+    fun goods(): List<Good> = Good.TRADED.filter { whole(it) > 0 }
 }
 
-/** What a player's stall left with the hall's merchant when it was let go: its goods, whole, and the Marks from its till. */
-class Kept(var name: String, val goods: IntArray = IntArray(Good.entries.size), var marks: Double = 0.0, var told: Boolean = false) {
-    val empty: Boolean get() = goods.all { it <= 0 } && marks < 1.0
-}
+/**
+ * What a player's stall left with the hall's merchant in [place] when it was let go: its goods, whole, and the Marks
+ * from its till; [told] once its renter has heard.
+ */
+class Kept(var name: String, var place: String, val goods: IntArray = IntArray(Good.entries.size), var marks: Double = 0.0, var told: Boolean = false)
 
 /** A capital's market hall as [OwnStalls] keeps it: each table's stall, if it's let, and what the merchant keeps for whom. */
 class Hall(val capital: Long) {
@@ -126,13 +137,16 @@ class OwnStalls(private val halls: MutableMap<Long, Hall> = HashMap()) : SavedDa
                 UUIDUtil.CODEC.fieldOf("renter").forGetter { it.second.renter },
                 Codec.STRING.optionalFieldOf("name", "").forGetter { it.second.name },
                 Codec.INT.optionalFieldOf("color", 14).forGetter { it.second.color },
+                Codec.STRING.optionalFieldOf("place", "").forGetter { it.second.place },
+                Codec.LONG.fieldOf("at").forGetter { it.second.at.asLong() },
+                Codec.INT.optionalFieldOf("front", 2).forGetter { it.second.front.get2DDataValue() },
                 Codec.INT.fieldOf("left").forGetter { it.second.left },
                 GOODS.optionalFieldOf("stock", mapOf()).forGetter { goods(it.second.stock) },
                 Codec.DOUBLE.optionalFieldOf("till", 0.0).forGetter { it.second.till },
                 Codec.DOUBLE.optionalFieldOf("takings", 0.0).forGetter { it.second.takings },
                 Codec.BOOL.optionalFieldOf("warned", false).forGetter { it.second.warned },
-            ).apply(i) { table, renter, name, color, left, stock, till, takings, warned ->
-                val s = OwnStall(renter, name, color, left, till = till, takings = takings, warned = warned)
+            ).apply(i) { table, renter, name, color, place, at, front, left, stock, till, takings, warned ->
+                val s = OwnStall(renter, name, color, place, BlockPos.of(at), Direction.from2DDataValue(front), left, till = till, takings = takings, warned = warned)
                 for ((id, n) in stock) Good.byId(id)?.let { s.stock[it.ordinal] = n }
                 table to s
             }
@@ -142,11 +156,12 @@ class OwnStalls(private val halls: MutableMap<Long, Hall> = HashMap()) : SavedDa
             i.group(
                 UUIDUtil.CODEC.fieldOf("player").forGetter { it.first },
                 Codec.STRING.optionalFieldOf("name", "").forGetter { it.second.name },
+                Codec.STRING.optionalFieldOf("place", "").forGetter { it.second.place },
                 COUNTS.optionalFieldOf("goods", mapOf()).forGetter { counts(it.second.goods) },
                 Codec.DOUBLE.optionalFieldOf("marks", 0.0).forGetter { it.second.marks },
                 Codec.BOOL.optionalFieldOf("told", false).forGetter { it.second.told },
-            ).apply(i) { player, name, goods, marks, told ->
-                val k = Kept(name, marks = marks, told = told)
+            ).apply(i) { player, name, place, goods, marks, told ->
+                val k = Kept(name, place, marks = marks, told = told)
                 for ((id, n) in goods) Good.byId(id)?.let { k.goods[it.ordinal] = n }
                 player to k
             }
@@ -171,6 +186,14 @@ class OwnStalls(private val halls: MutableMap<Long, Hall> = HashMap()) : SavedDa
         }
 
         private val TYPE = SavedDataType(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "own_stalls"), Supplier { OwnStalls() }, CODEC)
+
+        /** Registers the tables' screens, displays and pennants, their shoppers, and the testing commands. */
+        fun register(modBus: IEventBus) {
+            StallDesk.register(modBus)
+            StallTables.register()
+            StallShoppers.register()
+            StallCommand.init()
+        }
 
         /** The world's, kept with the overworld whichever [level] asks. */
         fun get(level: ServerLevel): OwnStalls = level.server.overworld().dataStorage.computeIfAbsent(TYPE)
@@ -274,7 +297,7 @@ class OwnStalls(private val halls: MutableMap<Long, Hall> = HashMap()) : SavedDa
          */
         fun letGo(hall: Hall, table: Int) {
             val s = hall.stalls[table] ?: return
-            val k = hall.kept.getOrPut(s.renter) { Kept(s.name) }
+            val k = hall.kept.getOrPut(s.renter) { Kept(s.name, s.place) }
             k.name = s.name
             for (g in Good.entries) k.goods[g.ordinal] += s.whole(g)
             k.marks += s.till

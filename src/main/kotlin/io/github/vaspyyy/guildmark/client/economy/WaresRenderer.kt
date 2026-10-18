@@ -3,7 +3,6 @@ package io.github.vaspyyy.guildmark.client.economy
 import com.mojang.blaze3d.vertex.PoseStack
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.city.plan.Look
-import io.github.vaspyyy.guildmark.city.plan.Wares
 import io.github.vaspyyy.guildmark.economy.Good
 import io.github.vaspyyy.guildmark.economy.WaresBlock
 import io.github.vaspyyy.guildmark.economy.WaresBlockEntity
@@ -59,10 +58,10 @@ class WaresRenderer(context: BlockEntityRendererProvider.Context) : BlockEntityR
     private val items: ItemModelResolver = context.itemModelResolver()
 
     /** A display's goods' places as they stand in its block, its front to [facing]: each good's lane, item and poses. */
-    class Drawn(val wares: Wares, val facing: Direction, val lanes: List<WaresLayout.Lane>, val stacks: List<ItemStack>, val poses: List<Array<Matrix4f>>)
+    class Drawn(val goods: List<String>, val facing: Direction, val lanes: List<WaresLayout.Lane>, val stacks: List<ItemStack>, val poses: List<Array<Matrix4f>>)
 
     /** A display's places being worked out. */
-    private class Laying(val wares: Wares, val facing: Direction, val job: CompletableFuture<Drawn?>)
+    private class Laying(val goods: List<String>, val facing: Direction, val job: CompletableFuture<Drawn?>)
 
     override fun createRenderState(): WaresRenderState = WaresRenderState()
 
@@ -88,10 +87,10 @@ class WaresRenderer(context: BlockEntityRendererProvider.Context) : BlockEntityR
     /** [display]'s places as they stand now; null while they're worked out (it's set going if need be). */
     private fun drawn(display: WaresBlockEntity): Drawn? {
         val facing = display.blockState.getValue(WaresBlock.FACING)
-        val wares = display.wares
+        val goods = display.goods
         when (val kept = display.drawn) {
-            is Drawn -> if (kept.wares == wares && kept.facing == facing) return kept
-            is Laying -> if (kept.wares == wares && kept.facing == facing) {
+            is Drawn -> if (kept.goods == goods && kept.facing == facing) return kept
+            is Laying -> if (kept.goods == goods && kept.facing == facing) {
                 if (!kept.job.isDone) return null
                 val done = kept.job.join() ?: return null
                 display.drawn = done
@@ -100,11 +99,11 @@ class WaresRenderer(context: BlockEntityRendererProvider.Context) : BlockEntityR
         }
         val look = display.look
         val seed = display.blockPos.asLong()
-        val job = CompletableFuture.supplyAsync({ lay(look, wares, facing, seed) }, Util.backgroundExecutor()).exceptionally { e ->
+        val job = CompletableFuture.supplyAsync({ lay(look, goods, facing, seed) }, Util.backgroundExecutor()).exceptionally { e ->
             Guildmark.LOGGER.warn("Couldn't lay out the market display at {}", display.blockPos, e)
             null
         }
-        display.drawn = Laying(wares, facing, job)
+        display.drawn = Laying(goods, facing, job)
         return null
     }
 
@@ -200,14 +199,14 @@ class WaresRenderer(context: BlockEntityRendererProvider.Context) : BlockEntityR
             return SETTLE + gap(n) * (n - 1).coerceAtLeast(0)
         }
 
-        /** The places of a display of [look] showing [wares], its front to [facing], for the display whose position gives [seed]. */
-        private fun lay(look: Look, wares: Wares, facing: Direction, seed: Long): Drawn {
-            val lanes = WaresLayout.of(look, wares.goods, seed)
+        /** The places of a display of [look] showing [goods] (by id), its front to [facing], for the display whose position gives [seed]. */
+        private fun lay(look: Look, goods: List<String>, facing: Direction, seed: Long): Drawn {
+            val lanes = WaresLayout.of(look, goods, seed)
             val stacks = lanes.map { lane -> Good.byId(lane.good)?.item?.let(::ItemStack) ?: ItemStack.EMPTY }
             // The layout's frame has the front to the north: turned about the block's middle to face the right way
             val turn = Matrix4f().translation(0.5f, 0f, 0.5f).rotateY(rad(180f - facing.toYRot())).translate(-0.5f, 0f, -0.5f)
             val poses = lanes.map { lane -> Array(lane.slots.size) { pose(turn, lane.slots[it]) } }
-            return Drawn(wares, facing, lanes, stacks, poses)
+            return Drawn(goods, facing, lanes, stacks, poses)
         }
 
         /** One item's pose in its block: in place, turned and tipped, laid as its pose says, spun in its plane and sized. */

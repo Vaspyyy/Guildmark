@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.economy
 
+import io.github.vaspyyy.guildmark.party.Parties
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel
 import java.util.UUID
@@ -34,4 +35,13 @@ object SupplierLink {
     /** How many of [good] [player] has bought at the market of the capital whose centre is [capital] in the last seven days. */
     @JvmStatic
     var bought: (level: ServerLevel, player: UUID, capital: BlockPos, good: Good) -> Int = { _, _, _, _ -> 0 }
+
+    /**
+     * How many of [good] [player] and everyone in their party have bought at that market in the last seven days (see
+     * [bought]): what one of them bought there and handed to another is kept off a stall or out of standing all the same.
+     */
+    fun boughtByParty(level: ServerLevel, player: UUID, capital: BlockPos, good: Good): Int {
+        val party = Parties.get(level.server).of(player)?.members ?: listOf()
+        return (party + player).distinct().sumOf { bought(level, it, capital, good) }
+    }
 }

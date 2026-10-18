@@ -221,6 +221,8 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         io.github.vaspyyy.guildmark.cart.Handcarts.register(modBus)
         // The market's goods on show: its displays, kept as full as its stock, and set out in capitals built before them
         io.github.vaspyyy.guildmark.economy.WaresRegistry.register(modBus)
+        // Players' own stalls at the market hall's tables: renting, stocking, the till, the displays, pennants and shoppers
+        io.github.vaspyyy.guildmark.economy.OwnStalls.register(modBus)
         // The mills' sails and wheels, turning while the mill grinds (mill/)
         io.github.vaspyyy.guildmark.mill.Mills.register(modBus)
         modBus.addListener(EntityAttributeCreationEvent::class.java) {
