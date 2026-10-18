@@ -1170,8 +1170,20 @@ PHONEMES = {
     ("talk.market.hungry_0", "man"): "ðə pˈɒts bɪn θˈɪn at ˌaʊɚ hˈaʊs.",  # "been", not "being"
     ("talk.market.shopping_1", "man"): "ɡˈɒt wɒt aɪ kˈeɪm fɔːɹ, and ɐ bˈɪt mˈɔːɹ bɪsˈaɪdz.",  # "Got", not "Go"
     ("talk.town.newcomer_1", "man"): "nˈuː nˈeɪbɚz ɪnðə tˈaʊn. wˈiːl sˈiː wɒt ðeɪɚ lˈaɪk.",  # "New", not "You"
+    ("talk.sky.clearing_0", "man"): "dɹˈaɪ ˈat lˈast. aɪ θˈɔːt ɪt wʊd nˈɛvɚ stˈɒp.",  # not "it had never stopped"
     # the old man's own, where the man's was heard right
     ("talk.ask.dunno_0", "old"): "aɪv nˈɒt hˈɜːɹd ɐ θˈɪŋ.",  # not "I have, I have"
+    # the woman's own
+    ("market.greet.smithy", "woman"): "ˈaɪɚn ænd kˈoʊl, ɡˈʊd ænd dɹˈaɪ.",  # "coal", not "cold"
+    ("talk.doing.farmer_sow_1", "woman"): "sˈəʊɪŋ, ɹˈəʊ ˈaftɚ ɹˈəʊ. maɪ bˈaks hˈad ɪnˈʌf ɔːlɹˈɛdi.",  # not "back's at"
+    ("talk.greet.wary_1", "woman"): "mˈeɪk ɪt kwˈɪk!",  # "quick", not "quicker"
+    ("talk.home.neighbours_1", "woman"): "ðə nˈeɪbɚz kˈiːp mˌiː ˌʌp hˈaf ðə nˈaɪt.",  # "half", not "off"
+    ("talk.news.far_0", "woman"): "sˈʌmθɪŋz ɐfˈʊt... fˈɑːɹ ˈɒf.",  # not "Some things are foot"
+    ("talk.sky.snow_0", "woman"): "snˈoʊ! mˈaɪnd jɔːɹ fˈʊtɪŋ.",  # "Snow!", not "Now"
+    ("talk.town.sheafmoot_0", "woman"): "ʃˈiːf mˌuːt sˈuːn. aɪv bˌiːn bˈeɪkɪŋ fɔːɹ ɪt ˈɔːl wˈiːk.",  # not "She've moved"
+    ("talk.town.sheafmoot_1", "woman"): "ʃˈiːf mˌuːts kˈʌmɪŋ. ðə pɹˈoʊdus ʃˈəʊz ˈɔːlweɪz ɐ fˈaɪt.",  # not "the Pradhu"
+    # a child's
+    "talk.child.weather_1": "lˈʊk at ðə skˈaɪ! lˈʊkʰ!",  # "Look!", not "Loki"
 }
 
 
