@@ -180,7 +180,9 @@ object Street {
 
     private val beats = ArrayList<Beat>()
     private var clock = 0L
-    private var broken = false
+
+    /** The parts of the street talk that have failed (each logged once). */
+    private val broken = HashSet<String>()
 
     /** A line said in the street, for `/guildmark talk street`. */
     private class Said(val at: Long, val who: String, val to: UUID?, val line: String, val why: String, val pos: Vec3)
@@ -217,8 +219,7 @@ object Street {
             try {
                 beat.run()
             } catch (e: Exception) {
-                if (!broken) Guildmark.LOGGER.error("Townsfolk talk: a line in the street failed", e)
-                broken = true
+                failed("a line in the street", e)
             }
         }
     }
@@ -226,6 +227,31 @@ object Street {
     /** Does [run] in [ticks] ticks. */
     private fun later(ticks: Int, run: () -> Unit) {
         beats += Beat(clock + maxOf(1, ticks), run)
+    }
+
+    /** [where] failed: it's logged the first time, and skipped. */
+    private fun failed(where: String, e: Exception) {
+        if (broken.add(where)) Guildmark.LOGGER.error("Townsfolk talk: {} failed and is skipped", where, e)
+    }
+
+    /**
+     * Runs [what], the street talk's part in [where] (from the town's own ticks); should it throw, it's logged once and
+     * [fallback] does instead, so a fault here costs a line, never the server's tick.
+     */
+    private inline fun <T> guarded(where: String, fallback: T, what: () -> T): T = try {
+        what()
+    } catch (e: Exception) {
+        failed(where, e)
+        fallback
+    }
+
+    /** [guarded], for a part with nothing to give back. */
+    private inline fun guarded(where: String, what: () -> Unit) {
+        try {
+            what()
+        } catch (e: Exception) {
+            failed(where, e)
+        }
     }
 
     private fun forget(player: UUID) {
@@ -258,7 +284,7 @@ object Street {
      * Every ten ticks for each player, from [Social.greet]: what they're watching, acquaintances passing near them
      * (every 40), and every 140 ticks someone noticing them.
      */
-    fun greet(level: ServerLevel, player: ServerPlayer) {
+    fun greet(level: ServerLevel, player: ServerPlayer): Unit = guarded("noticing players in passing") {
         if (player.isSpectator) return
         val now = level.gameTime
         watch(level, player, now)
@@ -861,7 +887,7 @@ object Street {
      * with a price, once an hour to each player; null if they've nothing to call (they tidy the stall instead).
      * Talk off, the old call; barks off, one of the old calls that's true.
      */
-    fun calling(p: Townsperson, near: Player): Step? {
+    fun calling(p: Townsperson, near: Player): Step? = guarded("calling the wares", null) {
         if (!Talk.enabled()) return Step(Activity.CALL_OUT, line = "merchant_${p.random.nextInt(6)}")
         val level = p.level() as? ServerLevel ?: return null
         if (!on()) return OldLines.pool(p, CALLS, near).let { if (it.isEmpty()) null else Step(Activity.CALL_OUT, line = it[p.random.nextInt(it.size)]) }
@@ -872,7 +898,7 @@ object Street {
         mark(player.uuid, p, now)
         p.glance(player, call.ticks + 10)
         speak(p, player, listOf(call), "calling the wares")
-        return Step(Activity.CALL_OUT)
+        Step(Activity.CALL_OUT)
     }
 
     /**
@@ -910,7 +936,7 @@ object Street {
     }
 
     /** The innkeeper pours with [near] at the bar (Jobs' POUR step), with a word to them now and then; true words only, with talk on. */
-    fun pouring(p: Townsperson, near: Player): Step {
+    fun pouring(p: Townsperson, near: Player): Step = guarded("pouring at the bar", Step(Activity.POUR)) {
         if (!Talk.enabled()) return Step(Activity.POUR, line = "inn_${p.random.nextInt(4)}")
         val level = p.level() as? ServerLevel ?: return Step(Activity.POUR)
         if (!on()) return Step(Activity.POUR, line = OldLines.pool(p, BAR, near).let { if (it.isEmpty()) null else it[p.random.nextInt(it.size)] })
@@ -921,7 +947,7 @@ object Street {
         mark(player.uuid, p, now)
         p.glance(player, line.ticks + 10)
         speak(p, player, listOf(line), "at the bar")
-        return Step(Activity.POUR)
+        Step(Activity.POUR)
     }
 
     /**
@@ -929,7 +955,7 @@ object Street {
      * another of its kind that is); with barks on as well, only to a player who's watched them at it for two seconds,
      * once an hour, and half the time how the work's going instead.
      */
-    fun step(p: Townsperson, line: String) {
+    fun step(p: Townsperson, line: String): Unit = guarded("a line at work") {
         if (!Talk.enabled()) {
             p.say(line)
             return
@@ -958,7 +984,7 @@ object Street {
      * true words; with barks on as well, a salute to a hero and a nod to anyone else, and a word once an hour as
      * they know them.
      */
-    fun salute(p: Townsperson, passer: Player) {
+    fun salute(p: Townsperson, passer: Player): Unit = guarded("a guard's word on the beat") {
         if (!Talk.enabled()) {
             p.act(Activity.SALUTE)
             p.say("guard_${p.random.nextInt(5)}")
@@ -1000,7 +1026,7 @@ object Street {
      * wary's, the famous'; with its gesture. Null for a stranger, or someone met who's nothing particular to be
      * greeted for: the keeper's own greeting (by the weather, the hour, their ways) does for them.
      */
-    fun counter(level: ServerLevel, p: Townsperson, player: ServerPlayer): Pair<String, Activity>? {
+    fun counter(level: ServerLevel, p: Townsperson, player: ServerPlayer): Pair<String, Activity>? = guarded("a keeper's greeting", null) {
         if (!Talk.enabled() || Topics.registered.isEmpty()) return null
         val ask = Talk.ask(level, p, player, Occasion.GREET)
         pick(ask, Topics.LEAST)?.let { t ->
@@ -1024,18 +1050,18 @@ object Street {
         }
         val line = family(ask, family, named = true) ?: return null
         Topics.spoke(p, player, line.voiced)
-        return line.speech to gesture
+        line.speech to gesture
     }
 
     /** A word from [p] to [player] with nothing more to it (a right-click with no talk to open): what's on their mind, or a greeting that knows them. */
-    fun word(p: Townsperson, player: Player?): String? {
+    fun word(p: Townsperson, player: Player?): String? = guarded("a word to a player", null) {
         val level = p.level() as? ServerLevel ?: return null
         if (Topics.registered.isEmpty()) return null
         val sp = player as? ServerPlayer
         val ask = Talk.ask(level, p, sp, Occasion.BARK)
         val line = pick(ask, Topics.LEAST) { it.rumour == null && it.say.parts.size == 1 }?.let { lines(ask, it.say).firstOrNull() } ?: hello(ask) ?: return null
         if (line.voiced.isNotEmpty()) Topics.spoke(p, sp, line.voiced)
-        return line.speech
+        line.speech
     }
 
     // --- To each other: chats and the tavern ---------------------------------------------------------------------------
@@ -1125,7 +1151,7 @@ object Street {
      * the old small talk; on, a topic for whoever's nearest (a rumour passes to them, and they answer it), said with
      * its gesture. The ticks it takes, so the mood lasts it out.
      */
-    fun mingle(p: Townsperson): Int {
+    fun mingle(p: Townsperson): Int = guarded("tavern talk", 0) {
         if (!Talk.enabled()) {
             if (p.random.nextInt(3) == 0) p.say(Lines.gossip(p))
             return 0
@@ -1170,7 +1196,7 @@ object Street {
                 }
             }
         }
-        return total + 40
+        total + 40
     }
 
     // --- For /guildmark talk street, bark and chat -----------------------------------------------------------------------
