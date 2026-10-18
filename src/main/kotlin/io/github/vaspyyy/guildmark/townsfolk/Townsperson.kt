@@ -197,6 +197,11 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
         private set
     private var attendUntil = 0L
 
+    /** Who (or where) their eyes go to for a moment as they carry on (a greeting in passing, a neighbour), until when. */
+    private var glanceAt: Entity? = null
+    private var glanceSpot: Vec3? = null
+    private var glanceUntil = 0L
+
     /** The seat they're sitting on. */
     var seat: BlockPos? = null
         private set
@@ -358,6 +363,23 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
         attendUntil = level().gameTime + ticks
     }
 
+    /**
+     * Turns their head to [at] for [ticks] while they go on with what they're doing, walking or working: a glance in
+     * passing, not a stop. Whoever is talking with them, or has charge of them, comes first.
+     */
+    fun glance(at: Entity, ticks: Int) {
+        glanceAt = at
+        glanceSpot = null
+        glanceUntil = level().gameTime + ticks
+    }
+
+    /** As [glance], at a place (the one their partner is pointing out). */
+    fun glance(at: Vec3, ticks: Int) {
+        glanceAt = null
+        glanceSpot = at
+        glanceUntil = level().gameTime + ticks
+    }
+
     /** A leader turns to [player] for a conversation, which lasts until they leave it ([stopListening]). */
     fun listen(player: Player) = attend(player, LISTEN_TICKS)
 
@@ -401,6 +423,19 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
         }
         val other = attending
         if (other != null && (!other.isAlive || other.level() !== level || level.gameTime > attendUntil || distanceToSqr(other) > 100.0)) attending = null
+        // After the day's round has had its say, so the eyes go there whatever the task looks at
+        if (glanceAt != null || glanceSpot != null) {
+            val at = glanceAt
+            when {
+                level.gameTime > glanceUntil || director != null || attending != null || isSleeping ||
+                    at != null && (!at.isAlive || at.level() !== level || distanceToSqr(at) > 576.0) -> {
+                    glanceAt = null
+                    glanceSpot = null
+                }
+                at != null -> lookControl.setLookAt(at, GLANCE_TURN, GLANCE_TURN)
+                else -> glanceSpot?.let { lookControl.setLookAt(it.x, it.y, it.z, GLANCE_TURN, GLANCE_TURN) }
+            }
+        }
         seat?.let { pos ->
             // Keep to the seat; it may have been broken under them
             if (level.getBlockState(pos).block !is StairBlock) standUp()
@@ -519,7 +554,9 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
         if (isSleeping) return InteractionResult.PASS
         if (level is ServerLevel) {
             attend(player)
-            say(Lines.talk(this, player), force = true)
+            val line = Lines.talk(this, player)
+            // Talk on, shown as long as its take lasts
+            if (Talk.enabled()) say(line, force = true, ticks = Talk.ticks(this, Speech.key(line)) + 20L) else say(line, force = true)
         }
         return InteractionResult.SUCCESS
     }
@@ -633,6 +670,9 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
 
         /** How long a leader keeps their eyes on someone talking to them before giving up on them. */
         private const val LISTEN_TICKS = 2400
+
+        /** Degrees a tick the head turns in a glance: unhurried, not the snap of being spoken to. */
+        private const val GLANCE_TURN = 10f
 
         /** Children are drawn and sized this much smaller. */
         const val CHILD_SCALE = 0.6f

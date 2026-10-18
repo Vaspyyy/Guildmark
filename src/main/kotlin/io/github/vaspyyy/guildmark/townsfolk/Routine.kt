@@ -170,10 +170,11 @@ class Routine(private val p: Townsperson) {
         if (windDown != 0 && p.tickCount >= windDown) end()
         val other = p.attending
         if (other != null && task?.anchored != true) {
-            // Stopped in the street by a player
+            // Stopped in the street by a player: a wave or a nod to them plays through, and talking with their hands to
+            // them goes on; whatever else they were at stops
             p.navigation.stop()
             p.lookAt(other)
-            if (!p.activity.overlay) p.act(Activity.NONE)
+            if (!p.activity.overlay && (p.activity.loop && p.activity !in TALKING || p.actDone)) p.act(Activity.NONE)
             return
         }
         val current = task ?: (if (life != null) Days.next(p, life, life.stretch ?: Days.stretch(life, level.overworldClockTime)) else Jobs.next(p, phase ?: Phase.FREE)).also {
@@ -261,5 +262,8 @@ class Routine(private val p: Townsperson) {
     private companion object {
         /** Ticks what they were at may run on into a new stretch of their day. */
         const val WIND_DOWN = 200
+
+        /** Talking with their hands, which goes on while they turn to a player. */
+        val TALKING = setOf(Activity.TALK, Activity.EXPLAIN, Activity.GOSSIP, Activity.RECOUNT)
     }
 }

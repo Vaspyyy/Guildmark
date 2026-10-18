@@ -162,9 +162,15 @@ object Topics {
     val registered: List<TopicSource> get() = sources
 
     /** What [Ask.speaker] says for [Ask.occasion], or null: nothing that scores [least] or more (they nod). */
-    fun pick(ask: Ask, least: Double = LEAST): Topic? {
-        if (sources.isEmpty()) return old(ask)
-        val best = all(ask).take(DRAW).filter { it.score >= least }
+    fun pick(ask: Ask, least: Double = LEAST): Topic? = pick(ask, least) { true }
+
+    /**
+     * As [pick], from only the topics [allow] lets through (a chat between housemates leaves out the household's own
+     * news; a worker in passing talks only of the work).
+     */
+    fun pick(ask: Ask, least: Double, allow: (Topic) -> Boolean): Topic? {
+        if (sources.isEmpty()) return old(ask)?.takeIf(allow)
+        val best = all(ask).filter { allow(it.topic) }.take(DRAW).filter { it.score >= least }
         if (best.isEmpty()) return null
         // The chance goes with the score squared, so the best usually wins and the others come up now and then
         var roll = ask.speaker.random.nextDouble() * best.sumOf { it.score * it.score }

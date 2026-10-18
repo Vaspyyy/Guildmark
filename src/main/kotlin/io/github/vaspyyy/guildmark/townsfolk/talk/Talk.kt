@@ -440,7 +440,7 @@ object Talk {
     }
 
     /** The greeting for the hour (morning 5 to 12, afternoon 12 to 17, evening 17 to 21); null at night. */
-    private fun byHour(ask: Ask): String? = when (hour(ask.level)) {
+    internal fun byHour(ask: Ask): String? = when (hour(ask.level)) {
         in 5 until 12 -> "greet.morning"
         in 12 until 17 -> "greet.afternoon"
         in 17 until 21 -> "greet.evening"
@@ -512,7 +512,7 @@ object Talk {
     }.filter { it.speech.isNotEmpty() }
 
     /** The gesture a topic is said with when it names none (section 6): from its kind and its tone. */
-    private fun gesture(topic: Topic): Activity = when {
+    internal fun gesture(topic: Topic): Activity = when {
         topic.rumour != null || topic.kind == Kind.NEWS -> Activity.GOSSIP
         topic.tone < 0 && topic.kind == Kind.ROAD -> Activity.GRUMBLE
         topic.tone < 0 -> Activity.SIGH
@@ -523,7 +523,7 @@ object Talk {
     }
 
     /** A gesture as someone seated makes it: their seated talk, laugh or lean-in, or nothing they'd have to stand for. */
-    private fun seated(p: Townsperson, gesture: Activity): Activity? {
+    internal fun seated(p: Townsperson, gesture: Activity): Activity? {
         if (p.seat == null) return gesture
         return when (gesture) {
             Activity.LAUGH, Activity.CHEER, Activity.CLAP -> Activity.SIT_LAUGH
@@ -546,7 +546,7 @@ object Talk {
      * speaker lower still in the men's take of a family they have none of; children, quicker in the women's, are
      * given the full length).
      */
-    private fun ticks(p: Townsperson, key: String): Int {
+    internal fun ticks(p: Townsperson, key: String): Int {
         val ticks = TalkLines.ticks(key).takeIf { it > 0 } ?: return UNTIMED
         var pitch = 0.92f + Math.floorMod(p.uuid.leastSignificantBits, 17L) / 100f
         val family = TalkLines.FAMILIES[key.removePrefix("talk.").substringBeforeLast('_')]
@@ -731,7 +731,7 @@ object Talk {
     private fun night(level: ServerLevel): Boolean = hour(level).let { it >= 21 || it < 5 }
 
     /** Whether the player is a hero at the capital's board. */
-    private fun hero(ask: Ask): Boolean {
+    internal fun hero(ask: Ask): Boolean {
         val player = ask.player ?: return false
         val capital = ask.life?.places?.capital ?: return false
         return Standing.tier(ask.level, capital.boardAnchor, player) == StandingTier.HERO
