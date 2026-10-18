@@ -241,7 +241,11 @@ object Caravans {
         if (registered) return
         registered = true
         NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { tick(it.server) }
-        NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { CaravanRoutes.forget() }
+        NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) {
+            CaravanRoutes.forget()
+            // A second world opened the same game heals its bands from its own first day
+            healed = Long.MIN_VALUE
+        }
         Topics.register(RoadTopics)
     }
 
