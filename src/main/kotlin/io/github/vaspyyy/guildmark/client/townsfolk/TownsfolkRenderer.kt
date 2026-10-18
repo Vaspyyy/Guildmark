@@ -6,6 +6,7 @@ import io.github.vaspyyy.guildmark.client.combat.Clip
 import io.github.vaspyyy.guildmark.client.combat.Clips
 import io.github.vaspyyy.guildmark.client.combat.CombatAnimator
 import io.github.vaspyyy.guildmark.townsfolk.Activity
+import io.github.vaspyyy.guildmark.townsfolk.Speech
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import net.minecraft.client.renderer.SubmitNodeCollector
@@ -56,7 +57,7 @@ class TownsfolkRenderer(context: EntityRendererProvider.Context) :
         entity.speech.isNotEmpty() && distance < SPEECH_RANGE * SPEECH_RANGE || super.shouldShowName(entity, distance)
 
     override fun getNameTag(entity: Townsperson): Component? =
-        if (entity.speech.isNotEmpty()) Component.translatable("say.guildmark." + entity.speech) else super.getNameTag(entity)
+        if (entity.speech.isNotEmpty()) Speech.text(entity.speech) else super.getNameTag(entity)
 
     /** The hot iron in a smith's tongs and the flame in a lantern, bright in the dark. */
     private class GlowLayer(parent: RenderLayerParent<TownsfolkRenderState, TownsfolkModel>) : RenderLayer<TownsfolkRenderState, TownsfolkModel>(parent) {

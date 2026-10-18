@@ -231,7 +231,7 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
             }
             shownActivity = activity
         }
-        if (key == SPEECH && speech.isNotEmpty()) TownsfolkClient.speak(this, speech)
+        if (key == SPEECH && speech.isNotEmpty()) TownsfolkClient.speak(this, Speech.key(speech))
     }
 
     // What a client last heard they were doing, and what that cut short, for the clips' crossfade
