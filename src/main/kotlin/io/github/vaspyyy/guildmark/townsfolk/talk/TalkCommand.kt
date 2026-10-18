@@ -544,7 +544,8 @@ object TalkCommand {
         if (r.id < 0) return fail(source, "${who(p, r)} has no record: try someone who lives here.")
         if (what !in HOUSEHOLD) return fail(source, "Say what befalls them: " + HOUSEHOLD.joinToString(", "))
         if (why != null && (what != "new" || why !in WHY)) return fail(source, "Only newcomers say why they came: " + WHY.joinToString(", "))
-        val members = if (r.home >= 0) Residents.get(level).of(r.capital).filter { it.alive && it.home == r.home }.map { it.id } else listOf(r.id)
+        // The looked-at townsperson first, so the word names their family
+        val members = listOf(r.id) + if (r.home >= 0) Residents.get(level).of(r.capital).filter { it.alive && it.home == r.home && it.id != r.id }.map { it.id } else listOf()
         val capital = r.capital.asLong()
         val h = Household(
             if (r.home >= 0) r.home else -r.id, capital, r.home, members, Conditions(Markets.hourOf(level)).day,
