@@ -3252,6 +3252,12 @@ check(c, 'left fist on the curb (t=52)', ta.fk(c, 52.0, 'left_arm', GRIP['left_a
 print('   draw_water: rope hauled', round(hauled(44.0), 1), 'of', round(WAY_AT[-1], 1), '| bucket over the edge at t',
       next(k for k in ticks(0, 44, 0.5) if hauled(k) >= UP_SHAFT))
 
+# ================================================================== talking: the gestures a line is said with (art/scripts/talk_clips.py)
+
+import talk_clips
+talk_clips.build(sys.modules[__name__])
+WANTED += talk_clips.WANTED
+
 
 if __name__ == '__main__':
     main(sys.argv)

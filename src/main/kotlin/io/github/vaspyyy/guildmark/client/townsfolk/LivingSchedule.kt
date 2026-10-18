@@ -31,7 +31,7 @@ internal object LivingSchedule {
     class Moment(val name: String, val tick: Float, val x: Float, val y: Float, val z: Float)
 
     /** The clips these are for. */
-    val CLIPS: Set<String> = setOf("sit_down", "stand_up", "nod", "shrug", "point", "bow", "yawn", "stretch", "knock", "climb", "climb_top", "eat", "sit_eat", "wash", "pick_up", "put_down", "hand_over", "receive", "pay", "browse", "set_up", "sow", "carry_basket", "gather", "scythe", "grind", "chop", "pour_sack", "ring_bell", "announce", "light_lamp", "draw_water")
+    val CLIPS: Set<String> = setOf("sit_down", "stand_up", "nod", "shrug", "point", "bow", "yawn", "stretch", "knock", "climb", "climb_top", "eat", "sit_eat", "wash", "pick_up", "put_down", "hand_over", "receive", "pay", "browse", "set_up", "sow", "carry_basket", "gather", "scythe", "grind", "chop", "pour_sack", "ring_bell", "announce", "light_lamp", "draw_water", "explain", "gossip", "shush", "wave_off", "sigh", "think", "tip_hat", "introduce", "arms_folded", "recoil", "wave_walk", "nod_walk", "sit_gossip", "sit_laugh", "pause_work")
 
     /** Each prop's own part, and the part it hangs on. */
     val PARENT: Map<String, String> = mapOf(
@@ -333,6 +333,73 @@ internal object LivingSchedule {
             Moment("grab", 48f, -1.073f, 1.696f, -12.659f),
             Moment("slosh", 52f, -1.174f, 4.271f, -12.71f),
             Moment("slosh", 60f, -5.492f, 14.218f, -4.589f),
+        ),
+        "explain" to listOf(
+            Moment("beat", 20f, -0.101f, 3.197f, -3.122f),
+            Moment("point", 30f, 0.401f, 3.225f, -3.189f),
+            Moment("point", 35f, 0.514f, 3.223f, -3.168f),
+            Moment("point", 40f, 0.202f, 3.235f, -3.209f),
+            Moment("nod", 45f, 0.078f, 3.281f, -3.351f),
+        ),
+        "gossip" to listOf(
+            Moment("glance", 16.5f, 0.24f, 4.002f, -2.937f),
+            Moment("glance", 38.5f, 0.273f, 4.092f, -2.967f),
+            Moment("nod", 45.5f, 0.381f, 4.37f, -3.051f),
+        ),
+        "shush" to listOf(
+            Moment("shush", 6.5f, 0f, 3.256f, -3.575f),
+            Moment("look", 13.5f, 0.212f, 3.173f, -3.337f),
+            Moment("look", 18.5f, -0.159f, 3.173f, -3.341f),
+        ),
+        "wave_off" to listOf(
+            Moment("flick", 6.5f, -0.212f, 2.882f, -1.866f),
+        ),
+        "sigh" to listOf(
+            Moment("sigh", 12f, 0f, 2.958f, -2.343f),
+        ),
+        "think" to listOf(
+            Moment("tap", 16f, 0.801f, 3.076f, -2.689f),
+            Moment("tap", 20f, 0.802f, 3.081f, -2.706f),
+            Moment("tap", 24f, 0.803f, 3.084f, -2.717f),
+            Moment("ah", 37.5f, 0.37f, 2.945f, -2.264f),
+        ),
+        "tip_hat" to listOf(
+            Moment("touch", 7f, -0.094f, 3.069f, -2.735f),
+        ),
+        "introduce" to listOf(
+            Moment("chest", 8.5f, 0.082f, 2.958f, -2.341f),
+            Moment("nod", 18.5f, 0.135f, 3.825f, -3.383f),
+            Moment("offer", 27f, 0f, 3.1f, -2.694f),
+        ),
+        "arms_folded" to listOf(
+            Moment("tap", 23f, 1.102f, 3.164f, -1.468f),
+            Moment("tap", 27f, 1.061f, 3.171f, -1.509f),
+            Moment("tap", 31f, 1.011f, 3.169f, -1.518f),
+            Moment("hmph", 52f, 0.773f, 3.076f, -1.179f),
+        ),
+        "recoil" to listOf(
+            Moment("start", 2f, 0f, 3.008f, -0.491f),
+        ),
+        "wave_walk" to listOf(
+            Moment("wave", 10f, 0f, 3f, -2.5f),
+        ),
+        "nod_walk" to listOf(
+            Moment("touch", 5.5f, 0f, 3f, -2.5f),
+            Moment("nod", 7.5f, 0f, 3f, -2.5f),
+        ),
+        "sit_gossip" to listOf(
+            Moment("glance", 19f, -0.167f, 13.794f, -4.527f),
+            Moment("glance", 41f, -0.166f, 13.788f, -4.52f),
+            Moment("nod", 47.5f, -0.175f, 14.105f, -4.904f),
+        ),
+        "sit_laugh" to listOf(
+            Moment("slap", 12.5f, 0f, 13.209f, -3.728f),
+            Moment("slap", 21.5f, 0f, 13.015f, -3.427f),
+        ),
+        "pause_work" to listOf(
+            Moment("set_down", 2.5f, 0f, 4.505f, -3.844f),
+            Moment("wipe", 12f, 0f, 3.402f, -2.96f),
+            Moment("wipe", 16f, 0f, 3.366f, -2.927f),
         ),
     )
 }
