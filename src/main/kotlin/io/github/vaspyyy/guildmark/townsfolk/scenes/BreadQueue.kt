@@ -59,6 +59,9 @@ internal object BreadQueue {
     private const val PULL_EVERY = 200L
     private const val FIRST = 3
 
+    /** How near the player the scene command's bakery must be. */
+    private const val SCENE = 64.0
+
     /** The longest anyone waits (a little more for some), and the longest the one being served is waited for. */
     private const val PATIENCE = 2400
     private const val IN_SHOP = 600L
@@ -261,11 +264,12 @@ internal object BreadQueue {
     }
 
     /**
-     * `/guildmark capital scene queue`: a line now at the bakery nearest [player], of whoever's free about it, the loaves
-     * coming out in half a minute. How many joined it.
+     * `/guildmark capital scene queue`: a line now at the bakery nearest [player] (within [SCENE] blocks), of whoever's
+     * free about it, the loaves coming out in half a minute. How many joined it; -1 with no bakery near.
      */
     fun play(level: ServerLevel, player: ServerPlayer, here: Scenes.Here): Int {
         val bakery = here.places.nearest(player.blockPosition(), BAKERIES).firstOrNull { it.front != null } ?: return -1
+        if (bakery.front!!.pos.distSqr(player.blockPosition()) > SCENE * SCENE) return -1
         val line = line(level, bakery) ?: return -1
         line.queue.over = false
         line.opens = level.gameTime + 600
