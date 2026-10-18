@@ -2,6 +2,7 @@ package io.github.vaspyyy.guildmark.townsfolk
 
 import io.github.vaspyyy.guildmark.economy.works.Works
 import io.github.vaspyyy.guildmark.economy.works.WorksState
+import io.github.vaspyyy.guildmark.townsfolk.scenes.Words
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.server.level.ServerLevel
@@ -166,8 +167,9 @@ object Labour {
             Step(Activity.ARMS_FOLDED, Activity.ARMS_FOLDED.ticks),
         )
         return Work(p, Spot(stand, facing), look, steps, onTick = { s, t ->
-            // The homestead crew's own words for waiting, now and then
-            if (s === first && t == 60 && p.random.nextInt(3) == 0) p.say("homestead_wait_${1 + p.random.nextInt(3)}")
+            // The homestead crew's own words for waiting, now and then: a bark, so with the street talk on, and one
+            // of them at a time (the lines are voiced)
+            if (s === first && t == 60 && p.random.nextInt(3) == 0 && Words.on() && !Words.over(p)) p.say("homestead_wait_${1 + p.random.nextInt(3)}")
         })
     }
 
