@@ -372,11 +372,11 @@ object Talk {
         queue(s, parts.ifEmpty { listOf(Spoken("greet_0", "greet_0", Activity.NOD, UNTIMED, null)) }, false)
     }
 
-    /** A source's own choice ("About the festival..."): asked once. */
+    /** A source's own choice ("About the festival..."): asked once; an answer about somewhere (the works) points there as it begins. */
     private fun source(s: Session, ask: Ask, choice: String) {
         s.asked += choice
         val said = Topics.answer(ask, choice)
-        queue(s, said?.let { spoken(ask, it, Activity.EXPLAIN, null) } ?: listOfNotNull(part(ask, "ask.dunno", Activity.SHRUG)).ifEmpty { old(Lines.reply(s.p)) }, false)
+        queue(s, said?.let { spoken(ask, it, if (it.toward != null) Activity.POINT else Activity.EXPLAIN, it.toward) } ?: listOfNotNull(part(ask, "ask.dunno", Activity.SHRUG)).ifEmpty { old(Lines.reply(s.p)) }, false)
     }
 
     /** One of the old lines as an answer, while the new ones aren't recorded. */
@@ -470,7 +470,7 @@ object Talk {
         if (ask.resident != null && ask.knows?.named != true && "name" !in s.asked) {
             out += Choice("name", Component.translatable("talk.guildmark.choice.name", s.player.gameProfile.name))
         }
-        for (c in Topics.choices(again(ask, Occasion.ANSWER)).take(2)) out += Choice(c.id, c.label, c.id in s.asked)
+        for (c in Topics.choices(again(ask, Occasion.ANSWER)).sortedByDescending { it.pressing }.take(2)) out += Choice(c.id, c.label, c.id in s.asked)
         // Back to the market they came from, while nobody else is talking with the keeper
         if (s.market && talkers(s.p) == 1) return out.take(4) + Choice("trade", label("trade")) + bye
         return out.take(5) + bye
@@ -511,10 +511,14 @@ object Talk {
         Spoken(speech, key, if (i == 0) gesture else null, if (key.isEmpty()) UNTIMED else ticks(ask.speaker, key), if (i == 0) toward else null)
     }.filter { it.speech.isNotEmpty() }
 
-    /** The gesture a topic is said with when it names none (section 6): from its kind and its tone. */
+    /**
+     * The gesture a topic is said with when it names none (section 6): from its kind and its tone. The town's works
+     * are pointed at (M6: [Topic.toward], where the works stands), and bad times grumbled at as a bad road is.
+     */
     internal fun gesture(topic: Topic): Activity = when {
         topic.rumour != null || topic.kind == Kind.NEWS -> Activity.GOSSIP
-        topic.tone < 0 && topic.kind == Kind.ROAD -> Activity.GRUMBLE
+        topic.kind == Kind.WORKS && topic.toward != null -> Activity.POINT
+        topic.tone < 0 && (topic.kind == Kind.ROAD || topic.kind == Kind.FORTUNE) -> Activity.GRUMBLE
         topic.tone < 0 -> Activity.SIGH
         topic.tone > 0 && topic.kind == Kind.DEEDS -> Activity.CHEER
         topic.tone > 0 -> Activity.LAUGH

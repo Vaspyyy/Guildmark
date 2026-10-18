@@ -43,8 +43,11 @@ enum class Familiarity {
     }
 }
 
-/** A line as it's said: one or two voiced parts, each with an unvoiced detail. */
-class Utterance(val parts: List<Part>) {
+/**
+ * A line as it's said: one or two voiced parts, each with an unvoiced detail. An answer to a source's choice may name
+ * where it's about ([toward]: the works asked after): the first part is said pointing there.
+ */
+class Utterance(val parts: List<Part>, val toward: BlockPos? = null) {
     /**
      * [line]: a voiced key (say.guildmark.<line>, townsfolk.voice.<timbre>.<line>), or "" for text alone.
      * [detail]: Speech-format text after it ("talk.detail.price|item.minecraft.bread|3"), or null.
@@ -92,8 +95,12 @@ class Ask(
     val market: Markets.Entry?, val now: Long,
 )
 
-/** A choice on the talk screen: its id ("road:ask"), its label, whether it's been asked this talk. */
-class Choice(val id: String, val label: Component, val asked: Boolean = false)
+/**
+ * A choice on the talk screen: its id ("road:ask"), its label, whether it's been asked this talk; and, for a source's
+ * own choice, how [pressing] it is now, 0 to 1 (the screen has room for two: the most pressing are shown, the sources'
+ * order between equals).
+ */
+class Choice(val id: String, val label: Component, val asked: Boolean = false, val pressing: Double = 0.5)
 
 /**
  * Something that gives townsfolk things to talk about. Every system registers its source once at setup, whatever its
@@ -105,7 +112,7 @@ interface TopicSource {
     /** What this source would have [Ask.speaker] say now; nothing if it has nothing, or its system is off. */
     fun offer(ask: Ask, out: MutableList<Topic>)
 
-    /** At most one choice for the talk screen ("About the road..."), shown while it applies. */
+    /** At most one choice for the talk screen ("About the road..."), shown while it applies (and among the two most [Choice.pressing]). */
     fun choice(ask: Ask): Choice? = null
 
     /** The answer to this source's choice, or null if it no longer applies. */
