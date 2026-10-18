@@ -3,9 +3,14 @@ package io.github.vaspyyy.guildmark.townsfolk
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.block.MarketBoardBlockEntity.Slip
 import io.github.vaspyyy.guildmark.block.VillageBoards
+import io.github.vaspyyy.guildmark.economy.CaravanData
+import io.github.vaspyyy.guildmark.economy.CaravanRoutes
+import io.github.vaspyyy.guildmark.economy.Caravans
 import io.github.vaspyyy.guildmark.economy.Conditions
 import io.github.vaspyyy.guildmark.economy.Economy
 import io.github.vaspyyy.guildmark.economy.EventKind
+import io.github.vaspyyy.guildmark.economy.Good
+import io.github.vaspyyy.guildmark.economy.Market
 import io.github.vaspyyy.guildmark.economy.MarketBoards
 import io.github.vaspyyy.guildmark.economy.MarketCommand
 import io.github.vaspyyy.guildmark.economy.Markets
@@ -13,11 +18,13 @@ import io.github.vaspyyy.guildmark.economy.News
 import io.github.vaspyyy.guildmark.economy.OrderState
 import io.github.vaspyyy.guildmark.economy.Orders
 import io.github.vaspyyy.guildmark.economy.Quote
+import io.github.vaspyyy.guildmark.economy.RoadPeril
 import io.github.vaspyyy.guildmark.economy.Suppliers
 import io.github.vaspyyy.guildmark.economy.Trading
 import io.github.vaspyyy.guildmark.festival.FestivalCalendar
 import io.github.vaspyyy.guildmark.guild.GuildNews
 import io.github.vaspyyy.guildmark.guild.NewsItem
+import io.github.vaspyyy.guildmark.outlaw.Outlaws
 import io.github.vaspyyy.guildmark.season.Seasons
 import io.github.vaspyyy.guildmark.townsfolk.talk.TownCry
 import net.minecraft.ChatFormatting
@@ -82,6 +89,9 @@ object Crier {
     /** The most new orders cried, and the most suppliers named for orders filled. */
     private const val WANTED = 2
     private const val FILLED = 3
+
+    /** The most goods a waylaid wagon's slip names as short. */
+    private const val SHORT = 5
 
     private const val EVENT_NEWS = "news.guildmark.market.event."
     private const val OVER_NEWS = "news.guildmark.market.over."
@@ -315,9 +325,11 @@ object Crier {
             val noon = c.day * 24 + 6
             for (n in m.news) {
                 if (n.hour <= noon - 24 || n.hour > noon) continue
-                val (cry, kind) = market(n, at) ?: continue
+                val (cry, kind) = market(n, at, m) ?: continue
                 if (cried.add(kind) || kind == EventKind.BLIGHT || kind == EventKind.BUMPER) groups.add(listOf(cry))
             }
+            // The roads' news: a road gone worse, a band broken and the relief on its way, the road clear, salvage brought back
+            road(level, entry, noon, at, cried).forEach { groups.add(it) }
             // Hungry: a twentieth of the day's meals or more went uneaten for want of food
             if ((m.hungry.lastOrNull() ?: 0.0) >= maxOf(HUNGRY_MEALS, entry.town.people * Economy.MEALS * HUNGRY)) {
                 groups.add(listOf(Cry("crier_hungry", said("crier_hungry"), slip(Slip.Kind.TROUBLE, Component.translatable("board.guildmark.slip.hungry"), said("crier_hungry"), at), -1)))
@@ -327,7 +339,10 @@ object Crier {
         calendar(level, c, at)?.let { groups.add(it) }
         // The talk of the town: the day's hottest rumour, its details on the slip
         if (entry != null) TownCry.cry(level, entry.capital, c.day)?.let { groups.add(listOf(it)) }
-        val word = GuildNews.get(level).items.filter { it.day == VillageBoards.day(level) - 1 }.take(WORD).map { listOf(word(it, at)) }
+        // A wagon waylaid is cried as the market's news: the guild's news of the band's crime isn't cried again
+        val word = GuildNews.get(level).items.filter { it.day == VillageBoards.day(level) - 1 }
+            .filter { EventKind.WAYLAID !in cried || it.key != "news.guildmark.outlaw.caravan" }
+            .take(WORD).map { listOf(word(it, at)) }
         word.firstOrNull()?.let { groups.add(it) }
         if (entry != null) {
             MarketBoards.ORDER.map { Trading.quote(entry, it) }
@@ -405,8 +420,84 @@ object Crier {
         return out
     }
 
-    /** The market's piece of news [n], cried: trouble or luck starting, or trouble over; and which kind it is. */
-    private fun market(n: News, at: Long): Pair<Cry, EventKind>? {
+    /**
+     * The roads' news at [entry]'s capital since the noon before market hour [noon] (see [RoadPeril]), each a group cried
+     * together: each road's latest stage if it went worse; a band broken, with the relief wagon on its way; a road clear
+     * again of itself (unless the wagons getting through is [cried] already); and those who brought salvage back, named.
+     */
+    private fun road(level: ServerLevel, entry: Markets.Entry, noon: Long, at: Long, cried: Set<EventKind>): List<List<Cry>> {
+        if (!Caravans.enabled()) return listOf()
+        val capital = entry.market.capital
+        val news = CaravanData.get(level).capitalOrNull(capital)?.news?.filter { it.hour > noon - 24 && it.hour <= noon } ?: return listOf()
+        if (news.isEmpty()) return listOf()
+        val out = ArrayList<List<Cry>>()
+        val relief = news.lastOrNull { it.kind == "relief" }
+        // Each road's latest stage, once
+        val stages = news.filter { RoadPeril.Stage.entries.any { s -> s.id == it.kind } || it.kind == "clear" }
+            .groupBy { it.road }.values.mapNotNull { list -> list.maxByOrNull { it.hour } }.sortedBy { it.hour }
+        for (n in stages) {
+            val way = road(capital, n.road)
+            when (n.kind) {
+                // A band broken is cried with its relief wagon, below
+                "clear" -> if (relief == null && EventKind.WAYLAID !in cried) {
+                    val text = Component.translatable("chat.guildmark.crier.road.clear", way)
+                    out.add(listOf(Cry("crier_over_waylaid", detailed("crier_over_waylaid", text), slip(Slip.Kind.GOOD, Component.translatable("board.guildmark.slip.road.clear"), text, at), 1)))
+                }
+                RoadPeril.Stage.OPEN.id -> {}
+                else -> {
+                    val band = band(n.names)
+                    val text = if (band != null) Component.translatable("chat.guildmark.crier.road.${n.kind}.band", way, band) else Component.translatable("chat.guildmark.crier.road.${n.kind}", way)
+                    val line = "crier_road_${n.kind}"
+                    out.add(listOf(Cry(line, detailed(line, text), slip(Slip.Kind.TROUBLE, Component.translatable("board.guildmark.slip.road.${n.kind}"), text, at), -1)))
+                }
+            }
+        }
+        if (relief != null) {
+            val way = road(capital, relief.road)
+            val band = band(relief.names)
+            val broken = if (band != null) Component.translatable("chat.guildmark.crier.road.broken.band", band, way) else Component.translatable("chat.guildmark.crier.road.broken", way)
+            val coming = Component.translatable("chat.guildmark.crier.road.relief", way)
+            out.add(listOf(
+                Cry("crier_road_clear", detailed("crier_road_clear", broken), slip(Slip.Kind.GOOD, Component.translatable("board.guildmark.slip.road.broken"), broken, at), 1),
+                Cry("crier_relief", detailed("crier_relief", coming), slip(Slip.Kind.GOOD, Component.translatable("board.guildmark.slip.road.relief"), coming, at), 1),
+            ))
+        }
+        // Everyone who brought salvage back since the noon before, named once each
+        val finders = news.filter { it.kind == "salvage" }.flatMap { it.names }.distinct()
+        if (finders.isNotEmpty()) {
+            val text = Component.translatable("chat.guildmark.crier.road.salvage", finders.take(FILLED).joinToString(", "))
+            out.add(listOf(Cry("crier_salvage_returned", detailed("crier_salvage_returned", text), slip(Slip.Kind.GOOD, Component.translatable("board.guildmark.slip.road.salvage"), text, at), 1)))
+        }
+        return out
+    }
+
+    /** The voiced [line]'s words, [detail] after it in grey. */
+    private fun detailed(line: String, detail: Component): MutableComponent = said(line).append(" ").append(detail.copy().withStyle(ChatFormatting.GRAY))
+
+    /** The road [road] into the capital whose heart is [capital], by the gate it comes in at ("the north road"). */
+    private fun road(capital: Long, road: Int): Component {
+        val side = CaravanRoutes.cached(capital, road)?.side?.name?.lowercase() ?: "any"
+        return Component.translatable("road.guildmark.way.$side")
+    }
+
+    /** A band's captain as road news names them ([names]: the name's key and the epithet's), if it does: "Red Maud, the Lantern Thief". */
+    private fun band(names: List<String>): Component? {
+        if (names.size < 2) return null
+        return Component.translatable(Outlaws.FULL, Component.translatable(names[0]), Component.translatable(names[1]))
+    }
+
+    /** [goods] by name, one after another ("Cod, Candles, Iron"). */
+    private fun names(goods: List<Good>): MutableComponent {
+        val out = Component.empty()
+        goods.forEachIndexed { k, g ->
+            if (k > 0) out.append(", ")
+            out.append(Component.translatable(g.key + ".many"))
+        }
+        return out
+    }
+
+    /** The market's piece of news [n] at [m], cried: trouble or luck starting, or trouble over; and which kind it is. */
+    private fun market(n: News, at: Long, m: Market): Pair<Cry, EventKind>? {
         val started = n.key.startsWith(EVENT_NEWS)
         if (!started && !n.key.startsWith(OVER_NEWS)) return null
         val kind = EventKind.byId(n.key.substringAfterLast('.')) ?: return null
@@ -415,6 +506,15 @@ object Crier {
         if (!started) {
             val line = "crier_over_${kind.id}"
             return Cry(line, said(line), slip(Slip.Kind.GOOD, Component.translatable("board.guildmark.slip.over.${kind.id}"), text, at), 1) to kind
+        }
+        if (kind == EventKind.WAYLAID) {
+            // What's short now, as the waylaid wagons' trouble holds it (the news names only the dearest good), and where it was taken
+            val e = m.waylaid()
+            val goods = e?.goods?.sortedByDescending { it.base }?.take(SHORT) ?: listOfNotNull(good)
+            val place = e?.place?.takeIf { it in Caravans.PLACES } ?: "road"
+            val short = if (goods.isEmpty()) text else Component.translatable("board.guildmark.slip.waylaid.text", Component.translatable("road.guildmark.place.$place"), names(goods))
+            val line = "crier_${kind.id}"
+            return Cry(line, said(line).append(" ").append(short.copy().withStyle(ChatFormatting.GRAY)), slip(Slip.Kind.TROUBLE, Component.translatable("board.guildmark.slip.${kind.id}"), short, at), -1) to kind
         }
         val crop = good?.takeIf { kind == EventKind.BLIGHT || kind == EventKind.BUMPER }
         val line = if (crop != null) "crier_${kind.id}_${crop.id}" else "crier_${kind.id}"
