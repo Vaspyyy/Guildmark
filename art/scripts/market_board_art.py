@@ -3,23 +3,32 @@ collars, with a carved header plank under a little pitched cap of slate tiles. T
 the crier's chalk (the prices, drawn live by client/MarketBoardRenderer.kt); a narrow panel of planks on the right,
 behind a mullion, takes the news slips. Iron straps hold the frame's corners, a ledge under the slate keeps two stubs
 of chalk, and the back is finished: planks, two battens bolted across the posts, and the guild's crest burnt into the
-back of the header.
+back of the header. Over the ridge, between two posts on a plinth, the medallion: a five-sided drum of carved oak on an
+iron axle, a gilt roundel on each face with the town's times painted and carved in it (a bare branch in snow for hard
+times, a thin sheaf for lean, level scales for steady, a full sheaf for good, a sheaf with ribbons under a sun for
+thriving), turned by the renderer to the times the board shows.
 
     python3 -B art/scripts/market_board_art.py src/main/resources/assets/guildmark [preview-dir [minecraft client jar]]
+
+With a preview dir it writes the medallion's previews (market_board_preview.medallion_previews); with the jar as well,
+the face filled in and the crier at work (the goods' icons come from the jar).
 
 Writes, all at 32x with the HD art kit (hdkit.py):
   textures/block/market_board_{front,back,wood,post,cap,trim}.png  the board's painting and materials
   textures/block/market_board/letters.png                           the chalk and ink lettering atlas (see
                                                                      market_board_letters.py), the chalk stick, dust
-  textures/block/market_board/slips.png                             the five papers a slip can be on, a tack, shadows,
-                                                                     an order's ticket (front and back) and its stamp
+  textures/block/market_board/slips.png                             the papers a slip can be on (in Slip.Kind's order:
+                                                                     trouble, good, price, word, year, talk, fortune,
+                                                                     works), a tack, shadows, an order's ticket (front
+                                                                     and back) and its stamp
+  textures/block/market_board/medallion.png                         the medallion's five faces and its end (80x320)
   textures/item/market_board.png                                    the item icon
-  models/block/market_board_<part>.json                             the six cells (the blockstate already picks them)
+  models/block/market_board_<part>.json                             the six cells (the blockstate already picks them;
+                                                                     the top middle carries the medallion's frame)
   models/item/market_board.json                                     points at the icon
 and the Kotlin tables the renderer draws from, src/main/kotlin/.../client/MarketBoardArt.kt (GENERATED: every
-atlas cell, every glyph's pieces and the face's layout numbers, so the game and the previews lay the board out the
-same way). With a preview dir it also writes the previews (see market_board_preview.py); the minecraft jar is where
-the goods' item icons come from for the offline face render.
+atlas cell, every glyph's pieces, the face's layout numbers and the medallion's faces and turn, so the game and the
+previews lay the board out the same way).
 
 Coordinates: the board's own, in model pixels (16 to a block), as seen from the front: X 0..48 from the left edge,
 Y 0..32 up from the ground, Z 0..16 from the front of the cells back (the cells are authored facing north, so the
@@ -35,7 +44,7 @@ from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from hdkit import (PAL, Canvas, grid, vnoise, fbm, rand, tone, mix, ramp, bands, poly, disc, ellipse, rect, blur, edge,
-                   grow, dist_in, light, outline, glint, bevel)
+                   grow, dist_in, light, outline, glint, bevel, path_dist, seg_dist, cavity, shift)
 import market_board_letters as ML
 import talk_slip_art as TALK
 
@@ -89,6 +98,28 @@ STRAPS = [
 ]
 # Two stubs of chalk on the ledge
 STUBS = [(9.0, 10.75, 7.0, 7.5, 11.0, 11.5), (13.5, 14.5, 7.0, 7.5, 11.25, 11.75)]
+
+# The medallion at the board's head: a five-sided drum of carved oak on an iron axle, held between two posts on a plinth
+# over the ridge, a face carved and painted for each of the town's times (economy/fortune/Fortunes.kt's Times, in its
+# order), the one showing turned to the front. The renderer draws the drum and turns it; the plinth, the posts and the
+# axle's ends are the top middle cell's (they stand over the board, above its 32 px).
+MED_TIMES = ['hard', 'lean', 'steady', 'good', 'thriving']
+MED_SIDES = 5
+MED_TPX = 8                                                # texels to a model px on its faces and ends
+MED_FACE = (64, 42)                                        # a face's texels: 8 px along the drum, 5.25 px round it
+MED_LEN = MED_FACE[0] / MED_TPX
+MED_FACE_H = MED_FACE[1] / MED_TPX
+MED_R = MED_FACE_H / (2 * math.sin(math.pi / MED_SIDES))   # its edges' distance from the axle
+MED_APOTHEM = MED_R * math.cos(math.pi / MED_SIDES)        # its faces'
+MED_X = (24.0 - MED_LEN / 2, 24.0 + MED_LEN / 2)          # its ends
+PLINTH_X, PLINTH_Y, PLINTH_Z = (18.4, 29.6), (30.9, 32.5), (11.7, 14.3)
+MED_Y = PLINTH_Y[1] + MED_R + 0.35                         # the axle: this high, over the ridge
+MED_Z = RIDGE_Z
+MED_POSTS = [(18.6, 19.9), (28.1, 29.4)]
+MED_POST_Y = (PLINTH_Y[1], MED_Y + 1.5)
+MED_POST_Z = (12.3, 13.7)
+MED_CAP = 72                                               # an end's texels: a pentagon in a square 9 px across
+MED_SPRITE = (80, 320)
 
 # The orders' tickets hang along the rail, between the iron straps at its ends: how many, and the tag's texels (its
 # eyelet's middle among them); the stamp put on one taken
@@ -190,6 +221,30 @@ LAYOUT['COL_W'] = ((SLATE_U[1] - SLATE_U[0]) - LAYOUT['PAD_L'] - LAYOUT['PAD_R']
 # The key to the coin goes at the foot of the first column, on the last row's line (from the panel's top)
 LAYOUT['LEGEND_BASE'] = ((PANEL_V[1] - PANEL_V[0]) - LAYOUT['PAD_B'] - 0.5 * LAYOUT['ITEM_PITCH']
                          + LAYOUT['TEXT_DROP'] * LAYOUT['S_PRICE'])
+# The medallion, laid out as the face is (u from the board's left, v down from its top, so over the top v is less than
+# 0; depth back from the cells' front): its ends, its axle, how far its edges and its faces are from the axle, half its
+# end's square (blocks). How it turns, as a heavy drum let go onto its catch: a spring's damping, its speed in radians a
+# tick for a turn of one face (a turn of n faces is slower by the root of n), and the ticks a turn of one face takes to
+# come still; how far it stirs on its axle at rest in a calm (radians; the wind adds to it).
+MED_ZETA, MED_OMEGA = 0.62, 0.24
+LAYOUT.update({
+    'MED_U0': blocks(MED_X[0]), 'MED_U1': blocks(MED_X[1]), 'MED_V': blocks(32 - MED_Y), 'MED_DEPTH': blocks(MED_Z),
+    'MED_R': blocks(MED_R), 'MED_APOTHEM': blocks(MED_APOTHEM), 'MED_CAP_HALF': blocks(MED_CAP / 2 / MED_TPX),
+    'MED_ZETA': MED_ZETA, 'MED_OMEGA': MED_OMEGA, 'MED_STILL': math.log(500) / (MED_ZETA * MED_OMEGA),
+    'MED_ROCK': math.radians(0.8),
+})
+
+
+def med_turn(age, faces):
+    """How far through a turn of `faces` faces the medallion is `age` ticks after it began (MarketBoardArt.medallionTurn)."""
+    faces = max(1.0, faces)
+    if age <= 0:
+        return 0.0
+    if age >= LAYOUT['MED_STILL'] * math.sqrt(faces):
+        return 1.0
+    w = MED_OMEGA / math.sqrt(faces)
+    d = math.sqrt(1 - MED_ZETA ** 2)
+    return 1 - math.exp(-MED_ZETA * w * age) * (math.cos(w * d * age) + MED_ZETA / d * math.sin(w * d * age))
 
 # The goods' sections, in MarketBoards.ORDER's order: how many goods each takes, and the column it's chalked in
 SECTIONS = [2, 5, 2, 4, 10]
@@ -204,10 +259,10 @@ COLOURS = {
 
 # The papers, in Slip.Kind's order, and for each the corner its decoration takes (texels of the 64x32 paper; text
 # keeps clear of it)
-SLIP_KINDS = ['trouble', 'good', 'price', 'word', 'year', 'talk']
+SLIP_KINDS = ['trouble', 'good', 'price', 'word', 'year', 'talk', 'fortune', 'works']
 SLIP_PX = (64, 32)
 SLIP_KEEP = {'trouble': (47, 17, 64, 32), 'good': (0, 0, 9, 32), 'price': (0, 21, 16, 32), 'word': (45, 15, 64, 32),
-             'year': (0, 18, 17, 32), 'talk': TALK.KEEP}
+             'year': (0, 18, 17, 32), 'talk': TALK.KEEP, 'fortune': (46, 13, 64, 32), 'works': (0, 14, 19, 32)}
 
 
 # ================================================================ painting
@@ -595,13 +650,467 @@ def paint_item():
     row = np.floor((ys - 3) / 2.0)
     shingle = ((xs + row * 1.5) % 3.0) < 0.7
     cv.put(roof, bands(PAL['slate'], 0.5 - 0.04 * row - 0.22 * shingle + 0.1 * (xs < 16)))
-    cv.put(rect(15, 2, 17, 4, N), PAL['darkwood'][3])
+    # The medallion over the ridge: its drum between two posts, a gilt roundel on the face it shows
+    for px in (12, 19):
+        cv.put(rect(px, 1, px + 1, 4, N), PAL['darkwood'][3])
+    cv.put(rect(13, 0, 19, 3, N), bands(OAK, 0.5 + 0.2 * (ys < 0.9) - 0.15 * (ys > 2.1) + 0.0 * xs))
+    cv.put(rect(15, 1, 17, 2, N), PAL['gold'][4])
     # Iron straps at the corners
     for (bx, by) in ((2, 23), (28, 23), (2, 11), (28, 11)):
         cv.put(rect(bx, by, bx + 2, by + 2, N), PAL['iron'][3])
         cv.px(bx, by, PAL['iron'][5])
     outline(cv, 0.8)
     return cv
+
+
+# ================================================================ the medallion
+
+# Where its five faces (in MED_TIMES order) and its end are in the sprite: x, y, w, h in texels. The faces' edges are
+# run out into the gutters round them, so a mip level doesn't fetch the face beside.
+MED_WHERE = {'faces': [(8, 2 + 46 * k, MED_FACE[0], MED_FACE[1]) for k in range(MED_SIDES)],
+             'cap': (4, 236, MED_CAP, MED_CAP)}
+
+OAK = [(24, 17, 15), (46, 32, 25), (70, 50, 35), (96, 70, 47), (124, 94, 63), (152, 120, 82)]
+# Each face's painted ground, darkest first: cold for hard times, dun for lean, sage for steady, green for good, sky
+GROUNDS = {
+    'hard': [(14, 18, 28), (26, 34, 50), (42, 54, 74), (62, 78, 100), (88, 106, 126), (120, 138, 154)],
+    'lean': [(30, 22, 14), (56, 40, 22), (86, 64, 32), (116, 88, 44), (146, 114, 60), (174, 142, 84)],
+    'steady': [(18, 24, 20), (34, 44, 36), (54, 66, 52), (76, 90, 70), (100, 114, 90), (128, 140, 112)],
+    'good': [(14, 24, 12), (28, 46, 22), (44, 70, 30), (64, 96, 40), (90, 122, 54), (122, 150, 74)],
+    'thriving': [(16, 26, 44), (30, 50, 82), (48, 80, 122), (72, 114, 160), (108, 152, 194), (154, 188, 218)],
+}
+# How light each ground is laid (0..1 along its tones): a pale winter sky behind the bare branch, the rest mid
+GROUND_TONE = {'hard': 0.7, 'lean': 0.33, 'steady': 0.4, 'good': 0.4, 'thriving': 0.46}
+STRAW = [(42, 28, 14), (86, 60, 26), (134, 98, 40), (180, 138, 58), (216, 178, 88), (242, 216, 142)]
+STRAW_THIN = [(38, 30, 20), (72, 58, 36), (108, 90, 58), (142, 122, 82), (172, 154, 108), (200, 184, 138)]
+BARK = [(16, 12, 12), (30, 23, 21), (48, 37, 32), (68, 54, 45), (92, 74, 60), (118, 98, 80)]
+SNOW = [(70, 84, 104), (128, 144, 164), (180, 194, 210), (214, 224, 234), (238, 244, 250)]
+SUN = [(66, 36, 18), (130, 76, 26), (190, 126, 40), (230, 172, 62), (248, 214, 112), (255, 242, 186)]
+RED_RIBBON = [(36, 8, 12), (84, 16, 22), (140, 30, 34), (190, 56, 50), (226, 100, 80)]
+BLUE_RIBBON = [(10, 16, 38), (20, 38, 84), (36, 66, 136), (64, 104, 184), (112, 154, 218)]
+
+
+class Relief:
+    """A carved and painted panel: a height field, and for each texel the material it's painted in and its tone before
+    the light. Painted at the end, lit from the upper left (the kit's light()), its hollows a little darker."""
+
+    def __init__(self, W, H, pals):
+        self.W, self.H = W, H
+        self.names = list(pals)
+        self.pals = pals
+        self.hgt = np.zeros((H, W))
+        self.mat = np.zeros((H, W), int)
+        self.base = np.full((H, W), 0.5)
+
+    def lay(self, mask, mat, base, height):
+        mask = np.asarray(mask, bool)
+        if not mask.any():
+            return
+        self.mat[mask] = self.names.index(mat)
+        self.base[mask] = np.broadcast_to(np.asarray(base, float), mask.shape)[mask]
+        self.hgt[mask] = np.broadcast_to(np.asarray(height, float), mask.shape)[mask]
+
+    def of(self, *names):
+        return np.isin(self.mat, [self.names.index(n) for n in names])
+
+    def paint(self, strength=1.4, k=0.62, dither=0.3):
+        t = self.base + k * light(self.hgt, strength) - 0.3 * np.clip(cavity(self.hgt, 1), 0, 1)
+        cv = Canvas(self.W, self.H)
+        for i, n in enumerate(self.names):
+            m = self.mat == i
+            if m.any():
+                cv.put(m, bands(self.pals[n], t, dither))
+        return cv
+
+
+def tube(pts, r0, r1, W, H):
+    """A round stem along a polyline, r0 thick at its start and r1 at its end: its mask and its height (1 on its ridge)."""
+    d, along = path_dist(pts, W, H)
+    L = sum(math.hypot(x1 - x0, y1 - y0) for (x0, y0), (x1, y1) in zip(pts, pts[1:]))
+    r = r0 + (r1 - r0) * np.clip(along / max(L, 1e-6), 0, 1)
+    return d < r, np.sqrt(np.clip(1 - (d / r) ** 2, 0, 1))
+
+
+def oval(cx, cy, rx, ry, ang, W, H):
+    """An ellipse turned by ang (its rx axis along (cos, sin) of it, y down): mask, dome, and the texels' place in it
+    (u along rx, v along ry, each -1..1 over it)."""
+    xs, ys = grid(W, H)
+    c, s = math.cos(ang), math.sin(ang)
+    u = ((xs - cx) * c + (ys - cy) * s) / rx
+    v = (-(xs - cx) * s + (ys - cy) * c) / ry
+    d2 = u * u + v * v
+    return d2 <= 1, np.sqrt(np.clip(1 - d2, 0, 1)), u, v
+
+
+def ear(rel, fld, pts, length, width, mat, base, raise_, awns=3, seed=0):
+    """An ear of grain at the top of the stalk pts: its grains in a chevron and its awns fanned on past its tip."""
+    W, H = rel.W, rel.H
+    (x0, y0), (x1, y1) = pts[-2], pts[-1]
+    a = math.atan2(y1 - y0, x1 - x0)
+    cx, cy = x1 + math.cos(a) * (length * 0.32), y1 + math.sin(a) * (length * 0.32)
+    m, h, u, v = oval(cx, cy, length / 2, width / 2, a, W, H)
+    # Each grain a little dome, set alternately either side of the ear's spine, so its outline is beaded
+    phase = u * length / 2.8 + 0.5 * (v > 0)
+    grains = 0.5 + 0.5 * np.cos(2 * np.pi * phase)
+    edge = 1 - 0.24 * (1 - grains)
+    m = (np.abs(u) ** 3 + (v / edge) ** 2 <= 1) & (np.abs(u) <= 1)
+    h = np.sqrt(np.clip(1 - np.abs(u) ** 3 - v * v, 0, 1))
+    seam = (np.abs(v) < 0.18) & (np.abs(u) < 0.8)
+    rel.lay(m & fld, mat, base + 0.12 * (v < 0) - 0.1 * (v > 0.5) + 0.08 * (grains - 0.5) - 0.08 * seam,
+            raise_ + 0.7 * h * (0.7 + 0.3 * grains) - 0.15 * seam)
+    tip = (cx + math.cos(a) * length / 2, cy + math.sin(a) * length / 2)
+    for i in range(awns):
+        da = (i - (awns - 1) / 2) * 0.34
+        n = length * 0.55
+        am, ah = tube([tip, (tip[0] + math.cos(a + da) * n, tip[1] + math.sin(a + da) * n)], 0.5, 0.36, W, H)
+        rel.lay(am & fld & ~m, mat, base + 0.1, raise_ + 0.25 * ah)
+
+
+def sheaf(rel, fld, cx, band_y, top_y, foot_y, half_top, half_band, half_foot, n, ear_len, mat, base, seed):
+    """A sheaf as it's carved: n stalks fanned up from a twisted band at the waist into a crown of ears (the ears
+    shoulder to shoulder, each its grains set alternately either side, a few awns standing out of the crown), and
+    splayed below the band to their cut ends. half_top, half_band and half_foot are its half widths there."""
+    W, H = rel.W, rel.H
+    xs, ys = grid(W, H)
+    rng = np.random.default_rng(seed)
+    # Above the band: every stalk on a line from a point below the waist, as a bound sheaf's are
+    slope = (half_top - half_band) / (band_y - top_y)
+    fy = band_y + half_band / slope
+    spread = math.atan(slope)
+    th = np.arctan2(xs - cx, fy - ys)
+    rr = np.hypot(xs - cx, fy - ys)
+    k = (th / spread + 1) * n / 2
+    idx = np.clip(np.floor(k), 0, n - 1).astype(int)
+    f = k - np.floor(k)
+    crown = (fy - top_y) * (1 - 0.16 * (th / spread) ** 2)
+    jitter = rng.normal(0, 0.55, n)
+    tip = crown + jitter[idx] - 1.6 * (2 * f - 1) ** 2
+    upper = (np.abs(th) <= spread) & (ys <= band_y) & (rr <= tip) & fld
+    across = 1 - (2 * f - 1) ** 2                          # 1 down a stalk's middle, 0 between two
+    ears = upper & (rr > tip - ear_len)
+    grains = 0.5 + 0.5 * np.cos(2 * np.pi * (rr / 2.1 + 0.5 * (idx % 2) + 0.5 * (f > 0.5)))
+    stalks = upper & ~ears
+    rel.lay(stalks, mat, base - 0.18 + 0.14 * across, 0.3 + 0.35 * across)
+    rel.lay(ears, mat, base + 0.06 + 0.12 * across + 0.08 * grains - 0.1 * (f > 0.82),
+            0.6 + 0.45 * across + 0.2 * grains)
+    # Awns standing out of the crown, from every other ear
+    for i in range(0, n, 2):
+        a = ((i + 0.5) / n * 2 - 1) * spread
+        r0 = (fy - top_y) * (1 - 0.16 * (a / spread) ** 2) + jitter[i] - 0.3
+        x0, y0 = cx + math.sin(a) * r0, fy - math.cos(a) * r0
+        for da in (-0.22, 0.22):
+            L = 2.4 + rng.random() * 1.2
+            m, h = tube([(x0, y0), (x0 + math.sin(a + da) * L, y0 - math.cos(a + da) * L)], 0.5, 0.36, W, H)
+            rel.lay(m & fld & ~upper, mat, base + 0.12, 0.35)
+    # Below it: the stalks splayed from a point above the waist down to their cut ends, pale
+    slope2 = (half_foot - half_band) / (foot_y - band_y)
+    fy2 = band_y - half_band / slope2
+    spread2 = math.atan(slope2)
+    th2 = np.arctan2(xs - cx, ys - fy2)
+    k2 = (th2 / spread2 + 1) * (n - 2) / 2
+    f2 = k2 - np.floor(k2)
+    ends = foot_y + 0.5 * np.sin(np.floor(k2) * 2.3)
+    lower = (np.abs(th2) <= spread2) & (ys >= band_y) & (ys <= ends) & fld
+    across2 = 1 - (2 * f2 - 1) ** 2
+    cut = lower & (ys > ends - 1.0)
+    rel.lay(lower & ~cut, mat, base - 0.14 + 0.16 * across2, 0.3 + 0.35 * across2)
+    rel.lay(cut, mat, base + 0.16 + 0.1 * across2 - 0.25 * (f2 < 0.2), 0.7)
+    # The band, twisted straw round the waist
+    half = half_band + 1.0
+    bm = (np.abs(xs - cx) < half) & (np.abs(ys - band_y) < 1.35)
+    bh = np.sqrt(np.clip(1 - ((ys - band_y) / 1.35) ** 2, 0, 1))
+    twist = np.sin((xs - cx) * 1.9 - (ys - band_y) * 2.6) > 0.55
+    rel.lay(bm & fld, mat, base - 0.2 + 0.1 * bh - 0.12 * twist, 0.9 + 0.6 * bh - 0.3 * twist)
+
+
+def emblem_hard(rel, fld, seed):
+    """A bare branch, gnarled, its twigs empty, snow along it and falling, and lying in the foot of the field."""
+    W, H = rel.W, rel.H
+    xs, ys = grid(W, H)
+    rng = np.random.default_rng(seed)
+    limbs = [
+        ([(18.6, 33.6), (22.6, 29.6), (27.0, 27.4), (31.0, 24.0), (35.0, 19.5), (40.0, 15.5), (45.6, 11.6)], 2.4, 0.7),
+        ([(27.0, 27.4), (25.5, 22.0), (26.5, 17.0), (24.8, 12.0)], 1.3, 0.5),
+        ([(31.0, 24.0), (36.0, 25.2), (41.0, 23.6), (44.8, 25.2)], 1.15, 0.5),
+        ([(35.0, 19.5), (34.4, 14.0), (36.6, 9.2)], 1.05, 0.48),
+        ([(40.0, 15.5), (43.8, 18.2)], 0.8, 0.48),
+        ([(25.6, 21.5), (22.0, 19.0)], 0.75, 0.48),
+        ([(34.5, 14.5), (31.5, 12.0)], 0.65, 0.48),
+    ]
+    branch = np.zeros((H, W), bool)
+    stout = np.zeros((H, W), bool)          # the limbs thick enough to hold snow along them
+    hb = np.zeros((H, W))
+    for pts, r0, r1 in limbs:
+        m, h = tube(pts, r0, r1, W, H)
+        h = h * min(1.0, 0.4 + r0 / 2.4)
+        hb = np.where(m, np.maximum(hb, h), hb)
+        branch |= m
+        if r0 >= 1.2:
+            stout |= m
+    for (x, y, r) in ((27.0, 27.4, 1.7), (31.0, 24.0, 1.5), (35.0, 19.5, 1.25), (22.6, 29.6, 2.1)):
+        m, h = disc(x, y, r, W, H)
+        hb = np.where(m, np.maximum(hb, h * 0.95), hb)
+        branch |= m
+    branch &= fld
+    tb = 0.44 + 0.14 * (rand(W, H, seed + 1) - 0.5) + 0.1 * (fbm(W, H, 2, seed + 2) - 0.5)
+    rel.lay(branch, 'bark', tb, 0.35 + 0.85 * hb)
+    # Its foot broken off: the pale wood inside the bark
+    end, eh = disc(18.9, 33.3, 1.55, W, H)
+    rel.lay(end & branch, 'oak', 0.68 + 0.06 * np.sin(np.hypot(xs - 18.9, ys - 33.3) * 3.2), 1.0)
+    # Snow lying along the limbs' tops, a texel deep and broken where a twig's too steep to hold it
+    top = branch & ~shift(branch, 0, 1) & ~end
+    steep = ~(shift(top, 1, 0) | shift(top, -1, 0))
+    lay = top & ~steep & (rand(W, H, seed + 3) > np.where(stout, 0.12, 0.7))
+    rel.lay(lay, 'snow', 0.72 + 0.1 * (rand(W, H, seed + 4) - 0.5), 1.25)
+    # A drift in the foot of the field, and flakes falling
+    drift = fld & (ys > 34.2 + 0.9 * np.sin(xs * 0.42 + 1.3)) & ~branch
+    rel.lay(drift, 'snow', 0.58 + 0.12 * (ys < 35.5), -0.1)
+    placed = 0
+    while placed < 13:
+        x, y = int(rng.integers(17, 47)), int(rng.integers(6, 33))
+        if not fld[y, x] or grow(branch, 1)[y, x]:
+            continue
+        one = np.zeros((H, W), bool)
+        one[y, x] = True
+        rel.lay(one, 'snow', 0.8 + 0.15 * rng.random(), -0.1)
+        placed += 1
+
+
+def emblem_lean(rel, fld, seed):
+    """A thin sheaf: five poor stalks in a band, three with a meagre ear, one empty, one bent over and broken."""
+    W, H = rel.W, rel.H
+    xs, ys = grid(W, H)
+    stalks = [
+        ([(30.3, 26.4), (27.6, 17.0), (24.8, 9.8)], True),
+        ([(31.3, 26.4), (29.9, 15.5), (28.8, 7.6)], False),
+        ([(32.3, 26.4), (32.5, 15.0), (33.0, 6.8)], True),
+        ([(33.3, 26.4), (35.6, 16.0), (37.8, 8.8)], True),
+        ([(34.2, 26.4), (37.3, 17.4), (40.3, 13.4), (42.6, 15.4)], False),
+    ]
+    for pts, has_ear in stalks:
+        m, h = tube(pts, 0.6, 0.5, W, H)
+        rel.lay(m & fld, 'thin', 0.5 + 0.1 * h, 0.25 + 0.45 * h)
+        if has_ear:
+            ear(rel, fld, pts, 5.2, 1.8, 'thin', 0.64, 0.4, awns=2)
+    # The empty one's frayed tip, and the broken one hanging its head
+    m, h = disc(28.7, 7.0, 0.7, W, H)
+    rel.lay(m & fld, 'thin', 0.4, 0.5)
+    m, h = tube([(42.6, 15.4), (43.5, 18.4)], 0.75, 0.45, W, H)
+    rel.lay(m & fld, 'thin', 0.42, 0.45 + 0.3 * h)
+    for i in range(5):
+        f = (i - 2) / 2
+        m, h = tube([(30.3 + i, 27.6), (32.3 + f * 4.6, 35.2 - 0.5 * f * f)], 0.58, 0.58, W, H)
+        rel.lay(m & fld, 'thin', 0.48, 0.3 + 0.4 * h)
+        e, _ = disc(32.3 + f * 4.6, 35.2 - 0.5 * f * f, 0.7, W, H)
+        rel.lay(e & fld, 'thin', 0.66, 0.7)
+    bm = (np.abs(xs - 32.3) < 3.3) & (np.abs(ys - 27.4) < 1.1)
+    bh = np.sqrt(np.clip(1 - ((ys - 27.4) / 1.1) ** 2, 0, 1))
+    rel.lay(bm & fld, 'thin', 0.36 + 0.1 * bh, 0.8 + 0.5 * bh)
+
+
+def emblem_steady(rel, fld, seed):
+    """A pair of brass scales on a post, the beam level and the pans even."""
+    W, H = rel.W, rel.H
+    xs, ys = grid(W, H)
+    m, h = tube([(32.0, 10.8), (32.0, 32.6)], 1.05, 1.05, W, H)
+    rel.lay(m & fld, 'brass', 0.54 + 0.1 * (xs < 31.6), 0.3 + 0.7 * h)
+    foot = poly([(26.4, 35.4), (37.6, 35.4), (34.8, 32.3), (29.2, 32.3)], W, H)
+    rel.lay(foot & fld, 'brass', 0.5 + 0.14 * (ys < 33.3) - 0.1 * (xs > 35), 0.9)
+    m, h = disc(32.0, 9.2, 1.75, W, H)
+    rel.lay(m & fld, 'brass', 0.62, 0.6 + 0.8 * h)
+    m, h = tube([(20.6, 13.4), (43.4, 13.4)], 0.85, 0.85, W, H)
+    rel.lay(m & fld, 'brass', 0.56, 0.45 + 0.7 * h)
+    for (x, r) in ((32.0, 1.65), (20.6, 1.05), (43.4, 1.05)):
+        m, h = disc(x, 13.4, r, W, H)
+        rel.lay(m & fld, 'brass', 0.62, 0.65 + 0.8 * h)
+    for px in (20.6, 43.4):
+        for dx in (-3.5, 3.5):
+            m, h = tube([(px, 14.2), (px + dx, 24.6)], 0.42, 0.42, W, H)
+            links = (np.floor(np.hypot(xs - px, ys - 14.2) / 1.3) % 2) == 0
+            rel.lay(m & fld, 'brass', 0.46 + 0.14 * links, 0.25 + 0.35 * h)
+        pan, ph, u, v = oval(px, 24.6, 4.3, 2.7, 0.0, W, H)
+        bowl = pan & (ys >= 24.6)
+        rel.lay(bowl & fld, 'brass', 0.5 - 0.1 * u - 0.08 * (ys > 26.2), 0.5 + 0.8 * ph)
+        rim = (np.abs(ys - 24.6) < 0.6) & (np.abs(xs - px) < 4.5)
+        rel.lay(rim & fld, 'brass', 0.74, 1.15)
+    glint_at = (31, 8)
+    one = np.zeros((H, W), bool)
+    one[glint_at[1], glint_at[0]] = True
+    rel.lay(one & fld, 'brass', 0.95, 1.3)
+
+
+def emblem_good(rel, fld, seed):
+    """A full sheaf, golden and heavy in the ear, tied fat round the middle."""
+    sheaf(rel, fld, 32.0, 24.4, 7.0, 35.4, 12.6, 3.4, 6.2, 11, 7.0, 'straw', 0.56, seed)
+
+
+def emblem_thriving(rel, fld, seed):
+    """A sun in its rays over a sheaf, red and blue ribbons tied in a bow at its band and streaming off it."""
+    W, H = rel.W, rel.H
+    xs, ys = grid(W, H)
+    sx, sy = 32.0, 10.8
+    d = np.hypot(xs - sx, ys - sy)
+    # The sky lighter round the sun
+    rel.base = np.where(rel.of('ground') & fld, rel.base + 0.2 * np.exp(-np.clip(d - 4, 0, None) / 5.0), rel.base)
+    for j in range(12):
+        a = math.radians(15 + 30 * j)
+        long_ = j % 2 == 0
+        L = 7.4 if long_ else 6.3
+        if math.sin(a) > 0.9:
+            continue                # none straight down: the sun stands clear over the sheaf
+        w = 1.25 if long_ else 0.95
+        ca, sa = math.cos(a), math.sin(a)
+        pts = [(sx + ca * 3.6 - sa * w, sy + sa * 3.6 + ca * w), (sx + ca * L, sy + sa * L), (sx + ca * 3.6 + sa * w, sy + sa * 3.6 - ca * w)]
+        m = poly(pts, W, H) & fld
+        rel.lay(m, 'sun', 0.62 + 0.12 * long_ - 0.04 * (d / L), 0.5 + 0.3 * (1 - d / L))
+    m, h = disc(sx, sy, 3.9, W, H)
+    rel.lay(m & fld, 'sun', 0.64 + 0.1 * h, 0.7 + 1.0 * h)
+    ring = (np.abs(d - 2.9) < 0.45)
+    rel.lay(ring & fld, 'sun', 0.5, 0.95)
+    sheaf(rel, fld, 32.0, 30.2, 18.0, 35.8, 8.8, 2.8, 4.6, 7, 5.4, 'straw', 0.58, seed + 5)
+    # The bow: a red loop to the left, a blue to the right, the knot, and their ends streaming out and down
+    for (cx, cy, a, mat) in ((28.2, 29.6, -0.28, 'red'), (35.8, 29.6, 0.28, 'blue')):
+        m, h, u, v = oval(cx, cy, 3.1, 1.7, a, W, H)
+        hole = (u * u + v * v) < 0.2
+        rel.lay(m & ~hole & fld, mat, 0.5 + 0.18 * (v < 0) - 0.1 * (u * np.sign(cx - 32) > 0.5), 1.25 + 0.4 * h)
+    for (pts, mat) in (([(31.0, 31.0), (28.4, 32.4), (25.6, 34.4), (23.6, 33.6)], 'red'),
+                       ([(33.0, 31.0), (35.6, 32.4), (38.4, 34.4), (40.4, 33.6)], 'blue')):
+        m, h = tube(pts, 0.95, 0.75, W, H)
+        fold = (np.hypot(xs - pts[2][0], ys - pts[2][1]) < 0.9)
+        rel.lay(m & fld, mat, 0.52 + 0.12 * h - 0.16 * fold, 1.1 + 0.4 * h)
+        # A swallowtail cut in the end
+        ex, ey = pts[-1]
+        notch, _ = disc(ex + (0.7 if ex < 32 else -0.7) * -1, ey + 0.1, 0.55, W, H)
+        rel.lay(notch & m & fld, 'ground', GROUND_TONE['thriving'] - 0.06, -0.3)
+    m, h = disc(32.0, 30.5, 1.25, W, H)
+    rel.lay(m & fld, 'red', 0.6 + 0.12 * h, 1.5 + 0.4 * h)
+
+
+EMBLEMS = {'hard': emblem_hard, 'lean': emblem_lean, 'steady': emblem_steady, 'good': emblem_good,
+           'thriving': emblem_thriving}
+
+
+def med_face(kind, seed):
+    """One of the drum's faces: carved oak with a bead at each end and a leaf and acorn beside the roundel, the
+    roundel's rim gilt and twisted like rope, its field painted the times' colour, the emblem carved up out of it."""
+    W, H = MED_FACE
+    xs, ys = grid(W, H)
+    cx, cy = W / 2, H / 2
+    r = np.hypot(xs - cx, ys - cy)
+    ang = np.arctan2(ys - cy, xs - cx)
+    pals = {'oak': OAK, 'gilt': PAL['gold'], 'ground': GROUNDS[kind], 'straw': STRAW, 'thin': STRAW_THIN, 'bark': BARK,
+            'snow': SNOW, 'brass': PAL['brass'], 'sun': SUN, 'red': RED_RIBBON, 'blue': BLUE_RIBBON}
+    rel = Relief(W, H, pals)
+    # The oak, its grain along the drum; the arrises where it meets the faces above and below lit and shaded
+    t = 0.46 + 0.12 * fibres(W, H, seed, False) + 0.05 * (fbm(W, H, 6, seed + 3) - 0.5)
+    t = t + 0.16 * (ys < 1) - 0.22 * (ys > H - 1)
+    rel.lay(np.ones((H, W), bool), 'oak', t, 0.0)
+    # A bead round each end, a groove inside it
+    for x0 in (1.0, W - 4.0):
+        bead = (xs >= x0) & (xs < x0 + 3)
+        hb = np.sqrt(np.clip(1 - ((xs - x0 - 1.5) / 1.5) ** 2, 0, 1))
+        rel.hgt[bead] = 0.9 * hb[bead]
+    for xg in (5.0, W - 5.0):
+        rel.hgt[np.abs(xs - xg) < 0.6] = -0.6
+    # Either side of the roundel, a quatrefoil carved proud in a sunk round, and a sunk drop above and below it
+    for lx in (8.6, W - 8.6):
+        sunk, _ = disc(lx, cy, 3.3, W, H)
+        rel.lay(sunk, 'oak', 0.26, -0.55)
+        for (dx, dy) in ((1.4, 0), (-1.4, 0), (0, 1.4), (0, -1.4)):
+            m, h = disc(lx + dx, cy + dy, 1.3, W, H)
+            rel.lay(m, 'oak', 0.6 + 0.08 * h, 0.1 + 0.7 * h)
+        m, h = disc(lx, cy, 0.8, W, H)
+        rel.lay(m, 'oak', 0.7, 0.9)
+        for (dy, sgn) in ((-10.6, 1), (10.6, -1)):
+            m, h, u, v = oval(lx, cy + dy, 2.8, 1.25, math.pi / 2, W, H)
+            drop = m & (u * sgn < 0.75 - 0.25 * np.abs(v))
+            rel.lay(drop, 'oak', 0.3, -0.5)
+            rib = drop & (np.abs(v) < 0.3) & (np.abs(u) < 0.7)
+            rel.lay(rib, 'oak', 0.62, 0.2)
+    # The roundel: the gilt rim twisted like rope, a dark groove inside it, then the painted field
+    rim = (r >= 16.5) & (r < 19.5)
+    hr = np.sqrt(np.clip(1 - ((r - 18.0) / 1.5) ** 2, 0, 1))
+    twist = np.sin(ang * 20 - r * 1.3) > 0.62
+    rel.lay(rim, 'gilt', 0.56 + 0.08 * (fbm(W, H, 4, seed + 4) - 0.5) - 0.12 * twist, 0.9 + 0.7 * hr - 0.4 * twist)
+    groove = (r >= 15.7) & (r < 16.5)
+    rel.lay(groove, 'ground', 0.12, -0.7)
+    fld = r < 15.7
+    gt = (GROUND_TONE[kind] + 0.05 * (-(xs - cx) - (ys - cy)) / 15.7 + 0.06 * (fbm(W, H, 5, seed + 7) - 0.5)
+          - 0.06 * (r / 15.7) ** 2)
+    rel.lay(fld, 'ground', gt, -0.3)
+    EMBLEMS[kind](rel, fld, seed + 10)
+    # The emblem's shadow on the field, down and to the right
+    emb = fld & ~rel.of('ground')
+    for (dx, dy, k) in ((1, 1, 0.13), (2, 2, 0.06)):
+        sh = shift(emb, dx, dy) & fld & rel.of('ground')
+        rel.base = np.where(sh, rel.base - k, rel.base)
+    cv = rel.paint()
+    # The gilt rubbed through to its red bole here and there, the paint worn at the field's edge
+    cv.over(rim & (fbm(W, H, 3, seed + 8) > 0.7) & (rand(W, H, seed + 9) > 0.4), (118, 54, 34), 0.35)
+    cv.over(fld & rel.of('ground') & (r > 13.6) & (rand(W, H, seed + 11) > 0.9), OAK[2], 0.5)
+    return cv
+
+
+def med_cap(seed):
+    """The drum's end: a pentagon (its corners at 72 degree steps from the right, as the faces' edges are) of end grain
+    round the iron boss of its axle, an incised ring and a gilt rose of five petals, its arris chamfered."""
+    N = MED_CAP
+    xs, ys = grid(N)
+    c = N / 2
+    R = MED_R * MED_TPX
+    pts = [(c + R * math.cos(math.radians(72 * k)), c - R * math.sin(math.radians(72 * k))) for k in range(MED_SIDES)]
+    pent = poly(pts, N)
+    r = np.hypot(xs - c, ys - c)
+    ang = np.arctan2(ys - c, xs - c)
+    rel = Relief(N, N, {'oak': OAK, 'gilt': PAL['gold'], 'iron': PAL['iron']})
+    wob = fbm(N, N, 9, seed) - 0.5
+    rings = np.sin((r + wob * 4.0) * 1.35)
+    t = 0.44 + 0.07 * rings + 0.05 * (rand(N, N, seed + 1) - 0.5) + 0.04 * (fbm(N, N, 4, seed + 2) - 0.5)
+    rel.lay(pent, 'oak', t, 0.0)
+    rng = np.random.default_rng(seed)
+    for k in range(3):
+        a = rng.uniform(0, 2 * math.pi)
+        r0, r1 = rng.uniform(25, 28), rng.uniform(31, 34)
+        m = tube([(c + math.cos(a) * r0, c + math.sin(a) * r0), (c + math.cos(a + 0.03) * r1, c + math.sin(a + 0.03) * r1)], 0.55, 0.4, N, N)[0]
+        rel.lay(m & pent, 'oak', 0.2, -0.5)
+    di = dist_in(pent, 3)
+    rel.hgt = np.where(pent & (di <= 2), rel.hgt - 0.45 * (3 - di), rel.hgt)
+    ring = np.abs(r - 24.2) < 0.75
+    rel.lay(ring & pent, 'oak', 0.24, -0.7)
+    bead = np.abs(r - 26.0) < 0.9
+    rel.lay(bead & pent, 'oak', 0.5, 0.4 + 0.4 * np.sqrt(np.clip(1 - ((r - 26.0) / 0.9) ** 2, 0, 1)))
+    for k in range(MED_SIDES):
+        a = math.radians(72 * k)
+        m, h, u, v = oval(c + math.cos(a) * 11.0, c - math.sin(a) * 11.0, 7.6, 4.0, -a, N, N)
+        vein = np.abs(v) < 0.14
+        rel.lay(m, 'gilt', 0.56 + 0.12 * (v < 0) - 0.12 * vein, 0.6 + 0.7 * h - 0.3 * vein)
+        a2 = a + math.radians(36)
+        m, h, u, v = oval(c + math.cos(a2) * 8.0, c - math.sin(a2) * 8.0, 4.6, 2.5, -a2, N, N)
+        rel.lay(m, 'gilt', 0.48 + 0.1 * (v < 0), 0.4 + 0.5 * h)
+    m, h = disc(c, c, 5.2, N, N)
+    rel.lay(m, 'iron', 0.5 + 0.1 * h, 1.2 + 1.2 * h)
+    nut = (np.abs(xs - c) < 2.0) & (np.abs(ys - c) < 2.0)
+    rel.lay(nut, 'iron', 0.38 + 0.18 * ((xs < c) & (ys < c)), 2.2)
+    cv = rel.paint(strength=1.2)
+    cv.over(pent & rel.of('gilt') & (fbm(N, N, 3, seed + 5) > 0.7), (118, 54, 34), 0.3)
+    cv.a = np.where(pent, 1.0, 0.0)
+    return cv
+
+
+def paint_medallion():
+    """The medallion's sprite: its five faces, one under another in MED_TIMES order, and its end below them."""
+    W, H = MED_SPRITE
+    out = Canvas(W, H)
+    for k, kind in enumerate(MED_TIMES):
+        x, y, w, h = MED_WHERE['faces'][k]
+        cv = med_face(kind, 600 + 17 * k)
+        out.rgb[y - 2:y + h + 2, x - 8:x + w + 8] = np.pad(cv.rgb, ((2, 2), (8, 8), (0, 0)), mode='edge')
+        out.a[y - 2:y + h + 2, x - 8:x + w + 8] = 1.0
+    x, y, w, h = MED_WHERE['cap']
+    cap = med_cap(640)
+    out.rgb[y:y + h, x:x + w] = cap.rgb
+    out.a[y:y + h, x:x + w] = cap.a
+    return out
 
 
 # ================================================================ the slips' papers
@@ -613,7 +1122,12 @@ PAPERS = {
     'word': PAL['parchment'],
     'year': [(68, 70, 60), (118, 122, 106), (170, 174, 154), (206, 210, 190), (228, 232, 214), (242, 244, 232)],
     'talk': TALK.PALETTE,
+    # A printed broadsheet's cheap grey-white, and a builder's buff ruled sheet
+    'fortune': [(62, 60, 56), (108, 104, 96), (156, 150, 138), (196, 190, 176), (222, 216, 202), (238, 234, 222)],
+    'works': [(70, 58, 40), (122, 106, 76), (172, 154, 116), (208, 192, 152), (230, 216, 180), (244, 234, 204)],
 }
+PRINT_INK = (30, 26, 26)
+WORKS_INK = (46, 52, 104)
 RIBBON = [(14, 36, 22), (26, 64, 36), (44, 100, 54), (76, 142, 80), (124, 190, 116)]
 LEAF = [(18, 40, 24), (34, 70, 38), (60, 104, 54), (98, 142, 78)]
 
@@ -708,9 +1222,74 @@ def paper(kind, seed):
     elif kind == 'talk':
         # Two heads leaning together over a whisper (talk_slip_art.py)
         TALK.decorate(cv, m, pal, seed)
+    elif kind == 'fortune':
+        fortune_print(cv, m, pal, seed)
+    elif kind == 'works':
+        works_ruling(cv, m, pal, seed)
     # The edges a shade darker, as paper's are
     cv.over(m & (dist_in(m, 2) == 1), pal[2], 0.3)
     return cv
+
+
+def fortune_print(cv, m, pal, seed):
+    """The times' broadsheet: printed, so its rules are straight whatever its edges do, a thick and thin border with a
+    printer's flower at each corner, and in the bottom right corner a small woodcut of a pair of scales, cut in its
+    block with the ground hatched, the ink a little heavy and broken as cheap print is."""
+    W, H = SLIP_PX
+    xs, ys = grid(W, H)
+    inked = m & (rand(W, H, seed + 1) > 0.12)
+    # Thick and thin rules round the print, set a hair crooked on the sheet
+    sx = 0.35 * (ys - H / 2) / H
+    outer = ((np.abs(xs + sx - 2.5) < 0.5) | (np.abs(xs + sx - (W - 2.5)) < 0.5)) & (ys >= 2) & (ys < H - 2)
+    outer |= ((np.abs(ys - 2.5) < 0.5) | (np.abs(ys - (H - 2.5)) < 0.5)) & (xs >= 2) & (xs < W - 2)
+    cv.over(outer & inked, PRINT_INK, 0.85)
+    # A printer's flower in each corner: a dot inside the rule's turn
+    for (fx, fy) in ((4, 4), (W - 5, 4), (4, H - 5), (W - 5, H - 5)):
+        cv.over(rect(fx, fy, fx + 1, fy + 1, W, H) & m, PRINT_INK, 0.8)
+    # The woodcut: a pair of scales level, standing on hatched ground
+    lines = np.zeros((H, W), bool)
+    for (ax, ay, bx, by, r) in ((53.5, 15.0, 53.5, 25.0, 0.55), (47.5, 16.5, 59.5, 16.5, 0.55),   # the post, the beam
+                                (48.5, 17.0, 46.6, 20.6, 0.45), (48.5, 17.0, 50.4, 20.6, 0.45),   # the left pan's cords
+                                (58.5, 17.0, 56.6, 20.6, 0.45), (58.5, 17.0, 60.4, 20.6, 0.45),   # the right's
+                                (51.0, 25.0, 56.0, 25.0, 0.6)):                                   # the foot
+        d, _ = seg_dist(ax, ay, bx, by, W, H)
+        lines |= d < r
+    for cx in (48.5, 58.5):
+        bowl, _ = ellipse(cx, 20.6, 2.4, 1.6, W, H)
+        lines |= bowl & (ys >= 20.6)
+    finial, _ = disc(53.5, 14.6, 0.9, W, H)
+    hatch = rect(46, 26, 61, 28, W, H) & (((xs.astype(int) + ys.astype(int)) % 2) == 0)
+    ink = (lines | finial | hatch) & inked
+    cv.over(ink, PRINT_INK, 0.88)
+    # Ink spread a little into the paper round the cut
+    cv.over(grow(ink, 1) & ~ink & m, pal[2], 0.18)
+
+
+def works_ruling(cv, m, pal, seed):
+    """A builder's sheet: ruled in faint squares for reckoning, a red rule down the margin, and the works' stamp in the
+    bottom left corner, a hammer and a trowel crossed in two rings, inked blue-black and pressed unevenly."""
+    W, H = SLIP_PX
+    xs, ys = grid(W, H)
+    rows = (((ys.astype(int) - 2) % 4) == 0) & (ys > 3) & (ys < H - 2)
+    cols = (((xs.astype(int) - 1) % 8) == 0) & (ys > 3) & (ys < H - 2)
+    cv.over((rows | cols) & m, (120, 138, 156), 0.13)
+    cv.over((np.abs(xs - 3.5) < 0.5) & m & (ys > 2), (168, 64, 56), 0.36)
+    cx, cy = 9.5, 23.2
+    d = np.hypot(xs - cx, ys - cy)
+    press = 0.6 + 0.4 * np.clip((fbm(W, H, 5, seed + 3) - 0.3) * 2, 0, 1)
+    rings = ((d > 7.1) & (d < 8.1)) | ((d > 5.9) & (d < 6.5))
+    tools = np.zeros((H, W), bool)
+    # The hammer: its shaft from low left to high right, its head across the top end
+    dh, _ = seg_dist(6.6, 27.4, 11.6, 21.0, W, H)
+    tools |= dh < 0.55
+    dh, _ = seg_dist(10.2, 18.9, 13.6, 22.3, W, H)
+    tools |= dh < 0.95
+    # The trowel: its blade a lozenge high on the left, its handle down to the right
+    tools |= poly([(5.0, 20.4), (7.6, 17.8), (9.6, 20.0), (7.0, 22.6)], W, H)
+    dt, _ = seg_dist(8.6, 21.6, 12.8, 26.8, W, H)
+    tools |= dt < 0.55
+    stamp_ink = (rings | (tools & (d < 5.9))) & m & (rand(W, H, seed + 4) > 0.08)
+    cv.over(stamp_ink, WORKS_INK, 0.8 * press)
 
 
 def tack():
@@ -944,12 +1523,13 @@ class Box:
     material for its front (north) face, its back (south) face and the rest."""
 
     def __init__(self, X, Y, Z, front='#front', back='#back', side='#wood', top=None, rotation=None, faces=None,
-                 top_uv=None):
+                 top_uv=None, above=False):
         self.X, self.Y, self.Z = X, Y, Z
         self.front, self.back, self.side, self.top = front, back, side, top or side
         self.rotation = rotation
         self.faces = faces
         self.top_uv = top_uv
+        self.above = above          # stands over the board's top (the top row's cells take it whole)
 
 
 def boxes():
@@ -980,10 +1560,32 @@ def boxes():
     out.append(Box(HEADER_X, (CAP_UNDER, CAP_UNDER + CAP_T), (RIDGE_Z - 0.02, RIDGE_Z + L), front='#wood', back='#wood',
                    top='#cap', rotation=('x', PITCH, RIDGE_Z), top_uv='back'))
     out.append(Box(HEADER_X, RIDGE_CAP_Y, RIDGE_CAP_Z, front='#trim_iron', back='#trim_iron', side='#trim_iron'))
+    # The medallion's frame over the ridge: the plinth, the two posts with a knob on each, the axle's iron ends
+    out.append(Box(PLINTH_X, PLINTH_Y, PLINTH_Z, front='#wood', back='#wood', above=True))
+    for (x0, x1) in MED_POSTS:
+        out.append(Box((x0, x1), MED_POST_Y, MED_POST_Z, front='#post', back='#post', side='#post', above=True))
+        out.append(Box((x0 + 0.25, x1 - 0.25), (MED_POST_Y[1], MED_POST_Y[1] + 0.9), (MED_POST_Z[0] + 0.25, MED_POST_Z[1] - 0.25),
+                       front='#post', back='#post', side='#post', above=True))
+    for (x0, x1) in ((MED_POSTS[0][0] - 0.3, MED_POSTS[0][0]), (MED_POSTS[1][1], MED_POSTS[1][1] + 0.3)):
+        out.append(Box((x0, x1), (MED_Y - 0.55, MED_Y + 0.55), (MED_Z - 0.55, MED_Z + 0.55), front='#trim_iron', back='#trim_iron',
+                       side='#trim_iron', above=True))
     return out
 
 
 TRIM_QUADS = {'#trim_iron': (0, 0), '#trim_chalk': (8, 0), '#trim_stone': (0, 8), '#trim_paper': (8, 8)}
+
+
+def in_tile(uv):
+    """A face's uv moved so it lies in 0..16: by whole tiles, and if it then runs over a tile's edge, back off that edge
+    (a face less than a tile across, on a material that tiles, so where on it a face starts doesn't show)."""
+    u0, v0, u1, v1 = uv
+    du = 16 * math.floor(min(u0, u1) / 16 + 1e-6)
+    dv = 16 * math.floor(min(v0, v1) / 16 + 1e-6)
+    du += max(0.0, max(u0, u1) - du - 16)
+    dv += max(0.0, max(v0, v1) - dv - 16)
+    out = (u0 - du, v0 - dv, u1 - du, v1 - dv)
+    assert all(-1e-6 <= x <= 16 + 1e-6 for x in out), f'a face over the board is wider than a tile: {uv}'
+    return tuple(round(x, 4) for x in out)
 
 
 def tex_and_uv(mat, d, frm, to):
@@ -1002,11 +1604,11 @@ def cell_elements(col, row):
     elements = []
     for b in boxes():
         X0, X1 = max(b.X[0], off_x), min(b.X[1], off_x + 16)
-        if b.rotation is None:
+        if b.rotation is None and not b.above:
             Y0, Y1 = max(b.Y[0], off_y), min(b.Y[1], off_y + 16)
         else:
             Y0, Y1 = b.Y
-            # A pitched board belongs to the top row only
+            # A pitched board, and what stands over the board, belong to the top row only
             if row != 1:
                 continue
         if X1 - X0 <= 1e-6 or Y1 - Y0 <= 1e-6:
@@ -1016,8 +1618,8 @@ def cell_elements(col, row):
         faces = {}
         internal_left = X0 > b.X[0] + 1e-6        # the box goes on into the cell to the viewer's left
         internal_right = X1 < b.X[1] - 1e-6
-        internal_down = b.rotation is None and Y0 > b.Y[0] + 1e-6
-        internal_up = b.rotation is None and Y1 < b.Y[1] - 1e-6
+        internal_down = b.rotation is None and not b.above and Y0 > b.Y[0] + 1e-6
+        internal_up = b.rotation is None and not b.above and Y1 < b.Y[1] - 1e-6
         for d in ('north', 'south', 'east', 'west', 'up', 'down'):
             # East is the viewer's left as seen from the front (models face north)
             if d == 'east' and internal_left or d == 'west' and internal_right:
@@ -1048,6 +1650,10 @@ def cell_elements(col, row):
                 mat = b.top if d == 'up' else b.side
                 t, uv = tex_and_uv(mat, d, frm, to)
                 faces[d] = face(uv, t)
+        if b.above:
+            # Over the cell's top its local uv runs past 16: back onto the tile, as each face is narrower than one
+            for d, f in faces.items():
+                f['uv'] = list(in_tile(f['uv']))
         e = {'from': [round(v, 4) for v in frm], 'to': [round(v, 4) for v in to], 'faces': faces}
         if b.rotation is not None:
             axis, angle, rz = b.rotation
@@ -1112,9 +1718,13 @@ def kotlin(where, chalk, ink, letters_size, slips_where, slips_size):
     w('// GENERATED by art/scripts/market_board_art.py: edit the script, not this file.')
     w('package io.github.vaspyyy.guildmark.client')
     w('')
+    for f in ('cos', 'exp', 'max', 'sin', 'sqrt'):
+        w(f'import kotlin.math.{f}')
+    w('')
     w('/**')
     w(' * The market board\'s art as the renderer draws it (see [MarketBoardRenderer]): where every chalk and ink glyph, each')
-    w(' * piece of a chalk glyph and every other mark sits in the lettering atlas, and the numbers the face is laid out by.')
+    w(' * piece of a chalk glyph and every other mark sits in the lettering atlas, the numbers the face is laid out by, and')
+    w(' * the medallion\'s faces and how it turns.')
     w(' * The same numbers lay out the script\'s previews, so the game and the pictures agree. Sizes are blocks unless')
     w(' * they say font pixels; atlas cells are texels of their sprite.')
     w(' */')
@@ -1125,6 +1735,9 @@ def kotlin(where, chalk, ink, letters_size, slips_where, slips_size):
     w(f'    const val LETTERS_H = {letters_size[1]}')
     w(f'    const val SLIPS_W = {slips_size[0]}')
     w(f'    const val SLIPS_H = {slips_size[1]}')
+    w('    const val MEDALLION = "block/market_board/medallion"')
+    w(f'    const val MEDALLION_W = {MED_SPRITE[0]}')
+    w(f'    const val MEDALLION_H = {MED_SPRITE[1]}')
     w('')
     w('    /** Texels of the atlas to a font pixel. */')
     w(f'    const val TEXELS = {ML.T}')
@@ -1151,7 +1764,7 @@ def kotlin(where, chalk, ink, letters_size, slips_where, slips_size):
     w('    /** The slips\' papers in Slip.Kind order, their shadow and the tack: x, y, w, h in texels of the slips sprite. */')
     w('    val PAPERS = arrayOf(' + ', '.join('intArrayOf(%d, %d, %d, %d)' % slips_where[k] for k in SLIP_KINDS) + ')')
     w('    val PAPER_KINDS = arrayOf(' + ', '.join(f'"{k}"' for k in SLIP_KINDS) + ')')
-    w('    /** Where on each paper (texels of 64x32) its seal, ribbon, dust, stamp or sprig is: the writing keeps off it. */')
+    w('    /** Where on each paper (texels of 64x32) its seal, ribbon, dust, stamp, sprig, heads or woodcut is: the writing keeps off it. */')
     w('    val PAPER_KEEP = arrayOf(' + ', '.join('intArrayOf(%d, %d, %d, %d)' % SLIP_KEEP[k] for k in SLIP_KINDS) + ')')
     w('    val SLIP_SHADOW = intArrayOf(%d, %d, %d, %d)' % slips_where['shadow'])
     w('    val TACK = intArrayOf(%d, %d, %d, %d)' % slips_where['tack'])
@@ -1160,6 +1773,31 @@ def kotlin(where, chalk, ink, letters_size, slips_where, slips_size):
     w('    val TICKET = intArrayOf(%d, %d, %d, %d)' % slips_where['ticket'])
     w('    val TICKET_BACK = intArrayOf(%d, %d, %d, %d)' % slips_where['ticket_back'])
     w('    val STAMP = intArrayOf(%d, %d, %d, %d)' % slips_where['stamp'])
+    w('')
+    w('    /**')
+    w('     * The medallion\'s faces, one for each of the town\'s times in Times order (economy/fortune/Fortunes.kt\'s ids), and')
+    w('     * its end: x, y, w, h in texels of its sprite. Face k is the one showing when the drum has turned k fifths of a')
+    w('     * turn; its end\'s pentagon has a corner at the sprite cell\'s right, the rest every fifth of a turn round.')
+    w('     */')
+    w('    val MEDALLION_TIMES = arrayOf(' + ', '.join(f'"{k}"' for k in MED_TIMES) + ')')
+    w('    val MEDALLION_FACES = arrayOf(' + ', '.join('intArrayOf(%d, %d, %d, %d)' % f for f in MED_WHERE['faces']) + ')')
+    w('    val MEDALLION_CAP = intArrayOf(%d, %d, %d, %d)' % MED_WHERE['cap'])
+    w('')
+    w('    /**')
+    w('     * How far through a turn of [faces] faces (1 or more) the medallion is [age] ticks after it began: 0 to 1, a')
+    w('     * little past 1 as it swings onto its catch and back, and 1 from [medallionStill] on. A heavy drum let go: a')
+    w('     * spring\'s step, damped by MED_ZETA, slower the further it has to go.')
+    w('     */')
+    w('    fun medallionTurn(age: Float, faces: Float): Float {')
+    w('        if (age <= 0f) return 0f')
+    w('        if (age >= medallionStill(faces)) return 1f')
+    w('        val w = MED_OMEGA / sqrt(max(1f, faces))')
+    w('        val d = sqrt(1f - MED_ZETA * MED_ZETA)')
+    w('        return 1f - exp(-MED_ZETA * w * age) * (cos(w * d * age) + MED_ZETA / d * sin(w * d * age))')
+    w('    }')
+    w('')
+    w('    /** The ticks a turn of [faces] faces takes to come still. */')
+    w('    fun medallionStill(faces: Float): Float = MED_STILL * sqrt(max(1f, faces))')
     w('')
     w('    /**')
     w('     * Every glyph, one after another: its character, its advance (font px x100), whether it has a cell and the cell,')
@@ -1193,6 +1831,7 @@ def build(assets):
     out['block/market_board/letters'] = letters
     slips, slips_where = slips_atlas()
     out['block/market_board/slips'] = slips
+    out['block/market_board/medallion'] = paint_medallion().image()
     return out, where, chalk, ink, slips_where
 
 
@@ -1222,7 +1861,10 @@ def main():
                        imgs['block/market_board/slips'].size))
     if prev:
         import market_board_preview as MP
-        MP.previews(assets, prev, jar, imgs, where, chalk, ink, slips_where)
+        MP.medallion_previews(assets, prev, imgs)
+        # The face filled in needs the goods' icons, from the game's jar
+        if jar:
+            MP.previews(assets, prev, jar, imgs, where, chalk, ink, slips_where)
 
 
 if __name__ == '__main__':
