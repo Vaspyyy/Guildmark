@@ -406,6 +406,13 @@ object Works {
 
     interface Crew {
         fun labour(level: ServerLevel, p: Townsperson): Director?
+
+        /**
+         * [p] is let go from the director [labour] gave them: the stretch is over (noon, sunset), they were hurt or
+         * fought, or the director set [Townsperson.director] to null itself. Whatever they held of the site's (a
+         * claim, a block in hand) is to be given back here. Their body is the thread's again from the next tick.
+         */
+        fun release(level: ServerLevel, p: Townsperson) {}
     }
 
     private val listeners = ArrayList<Listener>()

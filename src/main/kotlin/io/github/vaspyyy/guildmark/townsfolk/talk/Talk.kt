@@ -81,7 +81,7 @@ object Talk {
     private const val OPENER = 0.3
 
     /** The stretches of a day that won't wait for a talk. */
-    private val MUST = setOf(Doing.WORK, Doing.WATCH, Doing.CRY, Doing.LESSONS)
+    private val MUST = setOf(Doing.WORK, Doing.WATCH, Doing.CRY, Doing.LESSONS, Doing.BUILD)
 
     /** What someone carrying a load is seen doing. */
     private val LADEN = setOf(Activity.CARRY, Activity.CARRY_SACK, Activity.CARRY_BASKET, Activity.HAUL, Activity.CARRY_BLOCK, Activity.PULL_CART, Activity.CARRY_POLE)

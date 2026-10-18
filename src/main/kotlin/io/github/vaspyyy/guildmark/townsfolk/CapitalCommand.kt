@@ -13,6 +13,7 @@ import io.github.vaspyyy.guildmark.economy.Maker
 import io.github.vaspyyy.guildmark.economy.MarketBoards
 import io.github.vaspyyy.guildmark.economy.Markets
 import io.github.vaspyyy.guildmark.economy.Route
+import io.github.vaspyyy.guildmark.economy.works.Works
 import io.github.vaspyyy.guildmark.village.VillageNames
 import net.minecraft.ChatFormatting
 import net.minecraft.commands.CommandSourceStack
@@ -281,13 +282,15 @@ object CapitalCommand {
             val crew = Hands.of(level, places)
             val mill = crew.millers[r.id]?.let { places.lodgings[it] }
             val crier = r.id == crew.crier
+            val site = if (r.id in crew.labourers) Works.workAt(level, r.capital.asLong()) else null
             val duty = when {
                 r.id in crew.carters -> "one of the town's carters"
                 mill != null -> "keeps the ${building(mill)}"
                 crier -> "the town crier: chalks up the market board at seven and cries the news at noon by it"
+                r.id in crew.labourers -> "lent to the town's works today: at the site from seven till sunset"
                 else -> null
             }
-            val where = mill?.let { it.front?.inside ?: it.box.center } ?: if (crier) places.marketBoard.pos else null
+            val where = mill?.let { it.front?.inside ?: it.box.center } ?: if (crier) places.marketBoard.pos else site
             if (duty != null) say(source, line().append(label("Duties: ")).append(plain(duty)).append(if (where != null) plain(" ").append(at(where)) else plain("")))
         }
         say(source, doing)
@@ -311,7 +314,10 @@ object CapitalCommand {
         person?.life?.let { life -> return Days.describe(life, time).map { Component.literal(it) } }
         if (!r.alive) return listOf()
         val crew = places?.let { Hands.of(level, it) }
-        val agenda = Days.plan(r, Days.dayOf(time), true, false, carter = crew != null && r.id in crew.carters, crier = crew != null && r.id == crew.crier)
+        val agenda = Days.plan(
+            r, Days.dayOf(time), true, false, carter = crew != null && r.id in crew.carters, crier = crew != null && r.id == crew.crier,
+            labourer = crew != null && r.id in crew.labourers,
+        )
         val now = agenda.at(Days.offsetOf(time))
         return agenda.stretches.map { Component.literal((if (it === now) "> " else "  ") + it) }
     }

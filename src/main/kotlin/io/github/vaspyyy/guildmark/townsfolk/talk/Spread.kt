@@ -342,7 +342,7 @@ object Spread {
             val well = at?.let { h -> wells.indices.minByOrNull { wells[it].distSqr(h) } } ?: 0
             val bands = max(1, (counts[r.role] ?: 1) / CREW)
             val watch = r.role == TownRole.GUARD && nightWatch(level, r)
-            val agenda = Days.plan(r, day, lessons, watch, crew?.carters?.contains(r.id) == true, crew?.crier == r.id)
+            val agenda = Days.plan(r, day, lessons, watch, crew?.carters?.contains(r.id) == true, crew?.crier == r.id, crew?.labourers?.contains(r.id) == true)
             Person(r, agenda, tavern, well, temple, neighbour(r, at, homes, places, day), Math.floorMod(mix(r.id.toLong()), bands.toLong()).toInt())
         }
         view.day = day

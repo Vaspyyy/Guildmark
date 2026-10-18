@@ -49,6 +49,8 @@ enum class Doing(val phase: Phase) {
     CART(Phase.WORK),
     /** The town crier at the market board: the prices chalked up of a morning, the news cried at noon (see [Crier]). */
     CRY(Phase.WORK),
+    /** Lent to the town's works for the day: at the site from seven till sunset (see [Labour]). */
+    BUILD(Phase.WORK),
 }
 
 /** A stretch of a day: [doing] from [start] ticks into it until the next stretch starts. */
@@ -121,7 +123,7 @@ object Days {
         return life
     }
 
-    /** Whether [life] carts for the town today, or keeps one of its mills (see [Hands]): worked out afresh each day. */
+    /** Whether [life] carts for the town today, keeps one of its mills, cries its news or is lent to its works (see [Hands]): worked out afresh each day. */
     private fun duties(p: Townsperson, life: Life) {
         val level = p.level() as? ServerLevel ?: return
         val day = dayOf(level.overworldClockTime)
@@ -131,6 +133,7 @@ object Days {
         life.carter = life.resident.id in crew.carters
         life.mill = crew.millers[life.resident.id]?.let { life.places.lodgings[it] }
         life.crier = life.resident.id == crew.crier
+        life.labourer = life.resident.id in crew.labourers
     }
 
     /**
@@ -178,18 +181,19 @@ object Days {
 
     /** [life]'s day number [day]. */
     fun plan(life: Life, day: Long): Agenda =
-        plan(life.resident, day, life.places.lodgings.values.any { it.kind in CityPlaces.TEMPLES || it.kind == "LIBRARY" }, life.nightWatch, life.carter, life.crier)
+        plan(life.resident, day, life.places.lodgings.values.any { it.kind in CityPlaces.TEMPLES || it.kind == "LIBRARY" }, life.nightWatch, life.carter, life.crier, life.labourer)
 
     /**
      * [r]'s day number [day], where children go to [lessons] if there's a temple or a library, a guard may keep the
-     * [nightWatch], and a citizen may be one of the town's carters ([carter]) or its crier ([crier]).
+     * [nightWatch], and a citizen may be one of the town's carters ([carter]), its crier ([crier]) or lent to its
+     * works for the day ([labourer]: a building day, whatever day it is).
      */
-    fun plan(r: Resident, day: Long, lessons: Boolean, nightWatch: Boolean, carter: Boolean = false, crier: Boolean = false): Agenda {
+    fun plan(r: Resident, day: Long, lessons: Boolean, nightWatch: Boolean, carter: Boolean = false, crier: Boolean = false, labourer: Boolean = false): Agenda {
         val d = Planner(r, day)
         val rest = restDay(day)
         when (r.role) {
             TownRole.BAKER -> if (rest) d.restDay() else d.baker(Economy.ahead(day))
-            TownRole.CITIZEN -> if (crier) d.crier(rest) else if (rest) d.restDay() else if (carter) d.carter() else d.worker()
+            TownRole.CITIZEN -> if (crier) d.crier(rest) else if (labourer) d.labourer() else if (rest) d.restDay() else if (carter) d.carter() else d.worker()
             TownRole.INNKEEPER -> d.innkeeper()
             TownRole.GUARD -> if (nightWatch) d.nightWatch() else d.dayWatch()
             TownRole.FARMER -> if (rest) d.restDay() else d.farmer()
@@ -301,6 +305,26 @@ object Days {
 
         /** Out to the farms after breakfast, and to and fro with the loads until five, as the carts go ([Economy.carting]). */
         fun carter() = worker(work = Doing.CART, begin = 7.25)
+
+        /**
+         * A building day ([Labour]): at the works at seven, however late they like to lie in, an hour off at noon, and
+         * let go at sunset, as the work clock goes (daylight only); home then, with supper and the evening after.
+         */
+        fun labourer() {
+            val morning = minOf(own, 0.25)
+            at(6.0, Doing.RISE, shift = morning)
+            at(6.4, Doing.BREAKFAST, shift = morning)
+            at(7.0, Doing.BUILD, keep = true)
+            at(12.0, Doing.LUNCH, keep = true)
+            at(13.0, Doing.BUILD, keep = true)
+            at(Labour.SUNSET, Doing.EVENING, keep = true)
+            // Nobody's sat down to supper before they're let go
+            val after = maxOf(own, 0.0)
+            at(18.5, Doing.SUPPER, shift = after)
+            at(19.4, if (tavern()) Doing.TAVERN else Doing.EVENING, shift = after)
+            at(21.5, Doing.BED)
+            at(22.0, Doing.SLEEP)
+        }
 
         /**
          * The town crier: the market board's prices chalked up first thing, their own work until eleven, then to the
@@ -507,6 +531,10 @@ class Life(val resident: Resident, val places: CityPlaces, val home: CityPlaces.
     var crier = false
     var chalked = Long.MIN_VALUE
     var cried = Long.MIN_VALUE
+
+    /** Lent to the town's works today ([Hands], [Labour]): a building day. */
+    var labourer = false
+
 
     /** Crops (or catches) gathered into their basket since it was last taken in, and what the last of them was (see [Trades.gathered]). */
     var basket = 0
