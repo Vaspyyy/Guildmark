@@ -193,6 +193,14 @@ python3 -B art/scripts/townsfolk_anims.py src/main/resources/assets/guildmark <p
   no clip named it also writes `companion_moves.gif`, all eleven in a row (set `GUILDMARK_VANILLA_BOW` to the vanilla client's
   `textures/item/bow.png` to draw the real bow). Run it like `renegade_anims.py`:
   `python3 -B art/scripts/companion_anims.py src/main/resources/assets/guildmark <preview-dir> [clip ...]`.
+- `scripts/festival_anims.py` is the grand festivals' fourteen townsfolk clips (`fest_*`, played by the activities in
+  `townsfolk/TownRole.kt`): the dance steps (the two ring steps, stepping in, the couples' turn, the twirl, the bow and
+  the hurrah, each one 40-tick bar of the 120-beat music, ending where it began), the crowd clapping on the beat, the
+  band's minstrel, hanging the decorations, and the Lanternrise's lantern walk, raise, release (let go at tick 22) and
+  gaze. It builds on `townsfolk_anims.py` and writes only its own clips; it also prints the ribbon hands' table that
+  `client/festival/FestivalOrnamentRenderer.kt` ties the Ribbonwake's ribbons to (`RIBBON_HANDS`), and where the
+  released lantern is (`FestivalSite.LET_GO_*`), so paste those in when a step changes:
+  `python3 -B art/scripts/festival_anims.py src/main/resources/assets/guildmark <preview-dir> [clip ...]`.
 
 ## Screens
 

@@ -9,6 +9,7 @@ import io.github.vaspyyy.guildmark.festival.FestivalPhase
 import io.github.vaspyyy.guildmark.festival.OrnamentData
 import io.github.vaspyyy.guildmark.festival.OrnamentKind
 import io.github.vaspyyy.guildmark.townsfolk.Activity
+import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import net.minecraft.client.renderer.SubmitNodeCollector
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer
@@ -112,44 +113,90 @@ class FestivalOrnamentRenderer(@Suppress("UNUSED_PARAMETER") context: BlockEntit
         }
     }
 
-    /** Where the hands of those dancing round the pole are, each holding the end of a ribbon. */
+    /** Which hand each dancer holds their ribbon in (+1 right), and in the step before, for the crossfade. */
+    private class Holder(var side: Int, var lastSide: Int, var change: Int)
+
+    private val holders = HashMap<Int, Holder>()
+    private val now = DoubleArray(3)
+    private val before = DoubleArray(3)
+
+    /**
+     * Where the hands of those dancing round the pole are, each holding the end of a ribbon: just where the clip has
+     * the hand at that moment (RIBBON_HANDS), blended from the last step's as the townsfolk renderer blends the clips.
+     */
     private fun hands(level: Level, pos: BlockPos, data: OrnamentData, partialTicks: Float, state: FestivalOrnamentRenderState) {
         val cx = pos.x + 0.5
         val cz = pos.z + 0.5
         val floor = pos.y + 0.5 - data.drop
         val r = data.ring.toDouble()
         val box = AABB(cx - r - 2, floor - 1.5, cz - r - 2, cx + r + 2, floor + 3.0, cz + r + 2)
+        if (holders.size > 64) holders.clear()
         for (p in level.getEntitiesOfClass(Townsperson::class.java, box)) {
             if (state.hands >= FestivalOrnamentRenderState.MAX_HANDS) break
             val at = p.getPosition(partialTicks)
             val d = hypot(at.x - cx, at.z - cz)
             if (abs(d - r) > 1.3) continue
-            val act = p.shownActivity
             val yaw = Mth.rotLerp(partialTicks, p.yBodyRotO, p.yBodyRot) * (PI / 180.0)
             val fx = -sin(yaw)
             val fz = cos(yaw)
             val rx = -cos(yaw)
             val rz = -sin(yaw)
-            val side = when (act) {
-                Activity.RING_STEP -> 1.0
-                Activity.RING_STEP_L -> -1.0
-                // The hand on the pole's side
-                else -> if ((at.x + rx - cx).let { it * it } + (at.z + rz - cz).let { it * it } < (at.x - rx - cx).let { it * it } + (at.z - rz - cz).let { it * it }) 1.0 else -1.0
+            // The hand toward the pole in the ring steps, and the same one through the figures between them
+            val holder = holders.getOrPut(p.id) {
+                val near = if (hypot(at.x + rx * 0.4 - cx, at.z + rz * 0.4 - cz) <= d) 1 else -1
+                val side = ribbonSide(p.shownActivity, near)
+                Holder(side, side, p.changedAt)
             }
-            val up = when (act) {
-                Activity.RING_STEP, Activity.RING_STEP_L -> 1.45
-                Activity.RING_IN -> 1.55
-                Activity.TWIRL -> 1.7
-                Activity.HURRAH -> 1.85
-                Activity.BOW -> 0.95
-                else -> 1.25
+            if (holder.change != p.changedAt) {
+                holder.change = p.changedAt
+                holder.lastSide = holder.side
+                holder.side = ribbonSide(p.shownActivity, holder.side)
             }
+            val time = p.tickCount + partialTicks
+            ribbonHand(p.shownActivity, holder.side, time - p.shownStart, now)
+            val fade = ((time - p.changedAt) / FADE).coerceIn(0f, 1f)
+            if (fade < 1f) {
+                ribbonHand(p.lastActivity, holder.lastSide, time - p.lastStart, before)
+                val w = fade * fade * (3f - 2f * fade)
+                for (i in 0..2) now[i] = before[i] + (now[i] - before[i]) * w
+            }
+            val scale = if (p.role == TownRole.CHILD) Townsperson.CHILD_SCALE.toDouble() else 1.0
             val k = state.hands * 3
-            state.hand[k] = at.x + rx * 0.36 * side + fx * 0.12 - pos.x
-            state.hand[k + 1] = at.y + up - pos.y
-            state.hand[k + 2] = at.z + rz * 0.36 * side + fz * 0.12 - pos.z
+            state.hand[k] = at.x + (rx * now[0] + fx * now[2]) * scale - pos.x
+            state.hand[k + 1] = at.y + now[1] * scale - pos.y
+            state.hand[k + 2] = at.z + (rz * now[0] + fz * now[2]) * scale - pos.z
             state.holder[state.hands] = p.id
             state.hands++
+        }
+    }
+
+    private fun ribbonSide(activity: Activity, keep: Int): Int = when (activity) {
+        Activity.RING_STEP -> 1
+        Activity.RING_STEP_L -> -1
+        else -> keep
+    }
+
+    /** The [side] hand, [elapsed] ticks into [activity]'s step, in blocks from the feet (right, up, ahead), into [out]. */
+    private fun ribbonHand(activity: Activity, side: Int, elapsed: Float, out: DoubleArray) {
+        val beats = RIBBON_HANDS[activity]
+        if (beats == null) {
+            // Standing easy
+            out[0] = 0.42 * side
+            out[1] = 0.76
+            out[2] = 0.03
+            return
+        }
+        val track = beats[if (side > 0) 0 else 1]
+        val t = elapsed.coerceIn(0f, 40f) / 10.0
+        val i = min(3, t.toInt())
+        val u = t - i
+        // A smooth curve through the beats (Catmull-Rom), round the bar: each step ends where it began
+        for (c in 0..2) {
+            val a = track[Math.floorMod(i - 1, 4) * 3 + c]
+            val b = track[i * 3 + c]
+            val e = track[Math.floorMod(i + 1, 4) * 3 + c]
+            val f = track[Math.floorMod(i + 2, 4) * 3 + c]
+            out[c] = 0.5 * (2 * b + (e - a) * u + (2 * a - 5 * b + 4 * e - f) * u * u + (3 * b - a - 3 * e + f) * u * u * u)
         }
     }
 
@@ -796,5 +843,40 @@ class FestivalOrnamentRenderer(@Suppress("UNUSED_PARAMETER") context: BlockEntit
             ((time % 400.0) / 400.0 * 2 * PI) to ((time % 1600.0) / 1600.0 * 2 * PI)
 
         private fun Int.opaque(): Int = this or (0xFF shl 24)
+
+        /** The townsfolk renderer's crossfade between clips, in ticks. */
+        private const val FADE = 5f
+
+        /**
+         * Where each Ribbonwake step has the hands on its beats (0, 10, 20 and 30 ticks into the bar), the right hand
+         * and then the left, in blocks from the feet: to their right, up and ahead. Taken from the clips themselves:
+         * art/scripts/festival_anims.py prints this table.
+         */
+        private val RIBBON_HANDS: Map<Activity, Array<DoubleArray>> = mapOf(
+            Activity.RING_STEP to arrayOf(
+                doubleArrayOf(0.79, 1.78, 0.11, 0.83, 1.76, 0.11, 0.79, 1.78, 0.11, 0.83, 1.76, 0.11),
+                doubleArrayOf(-0.39, 0.81, 0.32, -0.35, 0.80, -0.04, -0.39, 0.81, 0.32, -0.35, 0.80, -0.04),
+            ),
+            Activity.RING_STEP_L to arrayOf(
+                doubleArrayOf(0.35, 0.80, -0.04, 0.39, 0.81, 0.32, 0.35, 0.80, -0.04, 0.39, 0.81, 0.32),
+                doubleArrayOf(-0.83, 1.76, 0.11, -0.79, 1.78, 0.11, -0.83, 1.76, 0.11, -0.79, 1.78, 0.11),
+            ),
+            Activity.RING_IN to arrayOf(
+                doubleArrayOf(0.40, 1.00, 0.52, 0.37, 1.84, 0.44, 0.30, 2.02, 0.19, 0.37, 1.84, 0.44),
+                doubleArrayOf(-0.40, 1.00, 0.52, -0.37, 1.84, 0.44, -0.30, 2.02, 0.19, -0.37, 1.84, 0.44),
+            ),
+            Activity.TWIRL to arrayOf(
+                doubleArrayOf(0.42, 0.76, 0.03, -0.15, 1.97, -0.15, -0.41, 2.06, 0.29, -0.23, 1.75, 0.02),
+                doubleArrayOf(-0.42, 0.76, 0.03, -0.88, 1.50, 0.30, -0.30, 1.59, -0.06, -0.96, 1.36, -0.07),
+            ),
+            Activity.BOW to arrayOf(
+                doubleArrayOf(0.42, 0.76, 0.03, 0.23, 1.23, 0.83, -0.01, 0.84, 0.80, 0.59, 0.83, 0.42),
+                doubleArrayOf(-0.42, 0.76, 0.03, -0.51, 0.79, -0.10, -0.49, 0.77, -0.07, -0.38, 0.72, 0.02),
+            ),
+            Activity.HURRAH to arrayOf(
+                doubleArrayOf(0.42, 0.76, 0.03, 0.52, 2.23, 0.05, 0.52, 1.97, 0.09, 0.52, 1.95, 0.11),
+                doubleArrayOf(-0.42, 0.76, 0.03, -0.52, 2.23, 0.05, -0.52, 1.97, 0.09, -0.52, 1.95, 0.11),
+            ),
+        )
     }
 }

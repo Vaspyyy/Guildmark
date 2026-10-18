@@ -574,7 +574,8 @@ class FestivalSite(
         return when (m.part) {
             FestivalPart.PLAY -> false
             FestivalPart.DANCE -> kind == FestivalKind.LANTERNRISE
-            else -> dark || kind == FestivalKind.LANTERNRISE && phase == FestivalPhase.DUSK
+            // Not while the music plays: they clap and cheer it with both hands
+            else -> setStart < 0 && (dark || kind == FestivalKind.LANTERNRISE && phase == FestivalPhase.DUSK)
         }
     }
 
@@ -1011,7 +1012,12 @@ class FestivalSite(
             // Once it's dark, at the end of a set (not in the middle of one)
             if (t < LANTERNS_AT || setStart >= 0) return
             lanternsAt = now
-            for (m in members.values) if (m.part != FestivalPart.PLAY) m.person.act(Activity.RELEASE)
+            for (m in members.values) {
+                if (m.part == FestivalPart.PLAY) continue
+                m.person.act(Activity.RELEASE)
+                // Nobody wanders off to chat in the middle of it: they watch the lanterns go
+                m.nextIdle = now + LANTERN_TIME
+            }
             for (player in nearby(level, plan.square + 24.0)) player.sendOverlayMessage(Component.translatable("message.guildmark.festival.lanterns").withColor(kind.color))
             return
         }
@@ -1019,12 +1025,22 @@ class FestivalSite(
         val type = FestivalRegistry.SKY_LANTERN.get()
         if (e == RELEASE_TICK) {
             for (m in members.values) {
-                if (m.part == FestivalPart.PLAY) continue
                 val p = m.person
-                level.sendParticles(type, true, true, p.x - sin(p.yRot * PI / 180) * 0.3, p.y + 2.3, p.z + cos(p.yRot * PI / 180) * 0.3, 0, 0.0, 1.0, 0.0, 0.0)
-                p.act(Activity.GAZE)
+                if (m.part == FestivalPart.PLAY || p.activity != Activity.RELEASE) continue
+                // Just where the lantern is in their hands as the clip lets go (festival_anims.py prints it), so the
+                // one in the sky takes over from the one they held (which the client stops drawing then)
+                val scale = if (p.role == TownRole.CHILD) Townsperson.CHILD_SCALE.toDouble() else 1.0
+                val yaw = p.yBodyRot * PI / 180
+                val right = LET_GO_RIGHT * scale
+                val ahead = LET_GO_FORWARD * scale
+                level.sendParticles(
+                    type, true, true, p.x - sin(yaw) * ahead - cos(yaw) * right, p.y + LET_GO_UP * scale, p.z + cos(yaw) * ahead - sin(yaw) * right,
+                    0, 0.0, 1.0, 0.0, 0.0,
+                )
             }
         }
+        // Their arms open after it, and then they watch it go
+        if (e == Activity.RELEASE.ticks.toLong()) for (m in members.values) if (m.person.activity == Activity.RELEASE) m.person.act(Activity.GAZE)
         if (e in RELEASE_TICK..LANTERN_TIME && e % 7 == 0L) {
             val random = level.random
             val a = random.nextDouble() * 2 * PI
@@ -1178,6 +1194,10 @@ class FestivalSite(
         /** The Lanternrise's lanterns are let go at this local time; when they leave the hands; how long more rise. */
         const val LANTERNS_AT = 13000
         const val RELEASE_TICK = 22L
+        /** Where the lantern is then, in blocks from their feet: to their right, up, and ahead (fest_release). */
+        const val LET_GO_RIGHT = -0.08
+        const val LET_GO_UP = 1.74
+        const val LET_GO_FORWARD = 0.21
         const val LANTERN_TIME = 320L
         /** How far out from the square players are told about the music. */
         const val MUSIC_RANGE = 80

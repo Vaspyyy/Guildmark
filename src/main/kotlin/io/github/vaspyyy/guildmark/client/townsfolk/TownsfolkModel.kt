@@ -165,13 +165,13 @@ object Props {
         Activity.PICK_LOCK, Activity.LURK, Activity.BOUND, Activity.PLEAD, Activity.FREED, Activity.THANK,
         Activity.PULL_CART,
         Activity.MINSTREL, Activity.CLAP_ALONG, Activity.FEST_HURRAH, Activity.TWIRL, Activity.COUPLE_TURN, Activity.RING_IN,
-        Activity.HANG, Activity.FEST_BOW,
+        Activity.HANG, Activity.RING_STEP, Activity.RING_STEP_L,
     )
 
     /** Work for the right hand only (waving, a mug, the sack on the shoulder). */
     private val RIGHT_HAND = setOf(
         Activity.WAVE, Activity.BECKON, Activity.DRINK, Activity.CHEER, Activity.SIT_DRINK, Activity.CARRY_SACK,
-        Activity.SEARCH, Activity.SHOUT, Activity.RING_STEP,
+        Activity.SEARCH, Activity.SHOUT, Activity.BOW,
     )
 
     fun held(role: TownRole, activity: Activity, lantern: Boolean, pieces: Set<String>): Set<String> {

@@ -5,6 +5,7 @@ import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.client.combat.Clip
 import io.github.vaspyyy.guildmark.client.combat.Clips
 import io.github.vaspyyy.guildmark.client.combat.CombatAnimator
+import io.github.vaspyyy.guildmark.festival.FestivalSite
 import io.github.vaspyyy.guildmark.townsfolk.Activity
 import io.github.vaspyyy.guildmark.townsfolk.Speech
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
@@ -41,6 +42,8 @@ class TownsfolkRenderer(context: EntityRendererProvider.Context) :
         state.pieces = look?.parts ?: emptySet()
         state.child = role == TownRole.CHILD
         state.held = Props.held(role, entity.shownActivity, entity.lantern, state.pieces)
+        // The Lanternrise: the lantern leaves their hands at the let-go, as its sky lantern rises from there
+        if (entity.shownActivity == Activity.RELEASE && entity.tickCount - entity.shownStart >= FestivalSite.RELEASE_TICK) state.held -= "lantern"
         state.glows = "hot_iron" in state.held || "lantern" in state.held
         state.frame = if (entity.isSleeping) null else frame(entity, partialTicks)
     }
