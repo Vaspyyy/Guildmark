@@ -45,36 +45,39 @@ TOWN_ROLE = os.path.join(ROOT, 'src/main/kotlin/io/github/vaspyyy/guildmark/town
 
 HANG = set(lp.HANG) | {'line', 'lantern'}
 
-# Parts the game turns about the model's z each frame (TURN): the grindstone's crank, its web pointing from the fist to
-# the hub on the axle (GRIND_HUB, where the grind clip has it: the game turns it by the clip's time to the same angle)
-TURN = set(lp.TURN)
-GRIND_HUB = np.array([0.0, 14.0, -9.4])
-
-
-def turn_matrix(name, grip):
-    d = GRIND_HUB - np.asarray(grip, float)
-    a = math.atan2(d[1], d[0])
-    c, s = math.cos(a), math.sin(a)
-    return np.array([[c, -s, 0.0], [s, c, 0.0], [0.0, 0.0, 1.0]])
+# Prop tracks: parts a clip turns (and may place and stretch) tick by tick, in the model's own space, whatever the arm
+# or body carrying them does: the grindstone's crank turning on its axle, the well rope running over the curb to the
+# hands, the bucket coming up the shaft. TRACKS[clip][part] = fn(t, pivot) -> (R, P, S): the part's rotation in model
+# space (3 x 3), its pivot in model space (None: where its parent carries it, [pivot]) and its scale (None: 1). main()
+# bakes them into the clip's file as extra bones ("prop:<part>": rotation and pivot; "prop:<part>:scale": the scale as
+# a position) that LivingProps.kt plays back: the part turned to that rotation by undoing its parents' turns.
+TRACKS = {}
+_CUR = [None, 0.0]          # the clip and time being drawn (the tracks need them)
+_TRACKED = {}               # what the tracks gave, part by part, the last time part_matrices ran
 
 
 def part_matrices(look, pose, hang=True):
-    """ta.part_matrices, hanging the rope, the bucket and the empty sack straight down from the hand too (as the game
-    turns them each frame)."""
+    """ta.part_matrices, hanging the bucket and the empty sack straight down from the hand too, and the clip's prop
+    tracks turning, placing and stretching their parts (as the game does each frame)."""
     qr, pr = pose['root']
     Mroot = T(*pr) @ Rq(qr)
     out = {}
+    tracks = TRACKS.get(_CUR[0], {}) if hang else {}
 
     def go(part, M):
         out[part.name] = M
         for c in part.children:
             Mc = M @ T(*c.pivot) @ Rq(ta.rot_part(c.rot))
-            if hang and c.name in HANG:
+            if c.name in tracks:
+                R, P, S = tracks[c.name](_CUR[1], Mc[:3, 3].copy())
+                _TRACKED[c.name] = (R, P, S)
+                Mc = Mc.copy()
+                Mc[:3, :3] = R if S is None else R @ np.diag(S)
+                if P is not None:
+                    Mc[:3, 3] = P
+            elif hang and c.name in HANG:
                 Mc = Mc.copy()
                 Mc[:3, :3] = np.eye(3)
-            elif hang and c.name in TURN:
-                Mc = Mc.copy()
-                Mc[:3, :3] = turn_matrix(c.name, Mc[:3, 3])
             go(c, Mc)
     for p in look.model.parts:
         q, piv = pose[p.name]
@@ -83,6 +86,74 @@ def part_matrices(look, pose, hang=True):
 
 
 ta.part_matrices = part_matrices
+_fk = ta.fk
+
+
+def fk(c, t, part, p, walking=False):
+    """ta.fk, with the clip's prop tracks."""
+    was = list(_CUR)
+    _CUR[0], _CUR[1] = c.name, t
+    try:
+        return _fk(c, t, part, p, walking)
+    finally:
+        _CUR[0], _CUR[1] = was
+
+
+ta.fk = fk
+
+
+def aim(frm, to, length0):
+    """A track's rotation and scale for a straight piece (a rope) modelled [length0] px along its +y from its pivot:
+    turned from [frm] to point at [to] and stretched to reach it."""
+    d = np.asarray(to, float) - np.asarray(frm, float)
+    n = float(np.linalg.norm(d))
+    if n < 1e-6:
+        return np.eye(3), (1.0, 1e-3, 1.0)
+    y = d / n
+    x = np.cross(y, np.array([0.0, 0.0, 1.0])) if abs(y[2]) < 0.9 else np.cross(y, np.array([1.0, 0.0, 0.0]))
+    x /= np.linalg.norm(x)
+    z = np.cross(x, y)
+    return np.column_stack([x, y, z]), (1.0, n / length0, 1.0)
+
+
+def bake_tracks(c, path):
+    """Adds [c]'s prop tracks to its clip file at [path] (the samples the kit bakes: rate per tick)."""
+    import json
+    tracks = TRACKS.get(c.name)
+    if not tracks:
+        return
+    data = json.load(open(path))
+    look = ta.look_for(ta.INFO[c.name]['look'])
+    n = int(math.floor(c.length * c.rate)) + 1
+    rot = {k: [] for k in tracks}
+    pos = {k: [] for k in tracks}
+    scale = {k: [] for k in tracks}
+    placed, stretched, prev = set(), set(), {}
+    for i in range(n):
+        t = i / c.rate
+        _CUR[0], _CUR[1] = c.name, t
+        _TRACKED.clear()
+        part_matrices(look, ta.pose_at(c, t, ta.walk_base(t, speed=0.0, age=t)))
+        for k in tracks:
+            R, P, S = _TRACKED[k]
+            q = qfrommat(R)
+            if k in prev and float(np.dot(prev[k], q)) < 0:
+                q = -q
+            prev[k] = q
+            rot[k] += [round(float(v), 4) for v in q]
+            pos[k] += [round(float(v), 3) for v in (P if P is not None else (0.0, 0.0, 0.0))]
+            scale[k] += [round(float(v), 4) for v in (S if S is not None else (1.0, 1.0, 1.0))]
+            if P is not None:
+                placed.add(k)
+            if S is not None:
+                stretched.add(k)
+    _CUR[0] = None
+    for k in tracks:
+        data['bones'][f'prop:{k}'] = {'rot': rot[k], **({'pos': pos[k]} if k in placed else {})}
+        if k in stretched:
+            data['bones'][f'prop:{k}:scale'] = {'pos': scale[k]}
+    with open(path, 'w') as f:
+        json.dump(data, f, separators=(',', ':'))
 
 # The stations the new clips work at, as boxes (lo, hi, colour, lit) in the clip's own space (the feet at y 24, facing -z)
 STONE = (128, 128, 136)
@@ -106,13 +177,19 @@ def ladder_boxes(rise=0.0):
 
 
 def _well():
-    # a stone curb a block high round a shaft a block ahead (2 px walls, like a cauldron), the water far down it
-    b = [((-8, 8, -24), (8, 24, -22), STONE, True), ((-8, 8, -10), (8, 24, -8), STONE, True),
-         ((-8, 8, -22), (-6, 24, -10), STONE, True), ((6, 8, -22), (8, 24, -10), STONE, True),
-         ((-6, 30, -22), (6, 30.3, -10), (40, 70, 140), False)]
-    # posts and a beam overhead
-    b += [((-9, -26, -17), (-7, 8, -15), (110, 80, 50), True), ((7, -26, -17), (9, 24, -15), (110, 80, 50), True),
-          ((-9, -28, -17), (9, -26, -15), (110, 80, 50), True)]
+    # the town well a block ahead: a ring of stone a block high round the water (three blocks across, the water in the
+    # middle one, two blocks ahead, its face under the ground), fence posts on the ring's corners carrying a roof of
+    # slabs, and a chain hanging over the water from it (Props.kt and FarmProps.kt build them so)
+    b = []
+    for x0 in (-24, -8, 8):
+        for z0 in (-24, -40, -56):
+            if (x0, z0) != (-8, -40):
+                b.append(((x0, 8, z0), (x0 + 16, 34, z0 + 16), STONE if (x0 + z0) % 32 else STONE_D, True))
+    b.append(((-8, 25.8, -40), (8, 26.0, -24), (46, 80, 150), False))
+    for cx, cz in ((-16, -16), (16, -16), (-16, -48), (16, -48)):
+        b.append(((cx - 2, -24, cz - 2), (cx + 2, 8, cz + 2), (110, 80, 50), True))
+    b.append(((-24, -32, -56), (24, -24, -8), STONE_D, True))
+    b.append(((-0.8, -24, -32.8), (0.8, -8, -31.2), (70, 70, 76), True))
     return b
 
 
@@ -256,10 +333,13 @@ def render_cell(look, c, t, project, size, walking, wire=False, solo=False):
     info = ta.INFO[c.name]
     base = ta.walk_base(t, speed=ta.walk_speed(c, walking), age=t)
     pose = ta.pose_at(c, t, base)
+    _CUR[0], _CUR[1] = c.name, t
     mats = part_matrices(look, pose)
     quads = ta.model_quads(look, mats, shown_tools(c.name, t)) + goods_quads(c.name, t, mats)
     if info.get('partner') and not solo:
+        _CUR[0] = info['partner'] if isinstance(info['partner'], str) else info['partner'][0]
         quads += partner_quads(info['partner'], t)
+    _CUR[0] = None
     kind = info['station']
     if kind and not wire:
         quads += ta.station(kind)
@@ -490,7 +570,7 @@ def main(argv):
     for line in lines:
         print(line)
     for c in clips:
-        c.write(assets, GROUP)
+        bake_tracks(c, c.write(assets, GROUP))
     print(f'wrote {len(clips)} clips to {os.path.join(assets, "animations", GROUP)}' + ('' if ok else '   (with problems: see !!)'))
     os.makedirs(previews, exist_ok=True)
     for c in clips:
@@ -1693,9 +1773,10 @@ for side in ('right_leg', 'left_leg'):
 
 # ---- grind (40, loop): the miller at a grindstone a block ahead (its axle pointing at them), turning its crank round
 # with the right hand, a turn every 20 ticks (clockwise as they see it), the body rocking into each turn and sunk on bent
-# knees; the left hand braced on the left thigh. The crank's web turns about the axle (the game turns it by the clip's
-# time to the angle grind_crank_angle gives: TURN), so it points from the fist to the hub; the stone grinds at the bottom
-# of each turn (ticks 10 and 30) with a puff of flour.
+# knees; the left hand braced on the left thigh. The crank's web turns about the axle (its prop track: it points from
+# the fist to the hub, GRIND_HUB, whatever the arm does); the stone grinds at the bottom of each turn (ticks 10 and 30)
+# with a puff of flour.
+GRIND_HUB = np.array([0.0, 14.0, -9.4])         # the crank's hub on the grindstone's axle
 GRIND_TURN = 20.0
 GRIND_THROW = lp.CRANK_THROW
 GRIND_FIST_Z = GRIND_HUB[2] + 2.9               # the fist on the handle, 2.9 px nearer than the hub (living_props: crank)
@@ -1716,6 +1797,17 @@ def grind_crank_angle(t):
 def grind_hand(t):
     a = grind_hand_angle(t)
     return np.array([GRIND_HUB[0] + GRIND_THROW * math.cos(a), GRIND_HUB[1] + GRIND_THROW * math.sin(a), GRIND_FIST_Z])
+
+
+def crank_track(t, grip):
+    """The crank's web turned about the model's z to point from the fist to the hub."""
+    d = GRIND_HUB - np.asarray(grip, float)
+    a = math.atan2(d[1], d[0])
+    c_, s_ = math.cos(a), math.sin(a)
+    return np.array([[c_, -s_, 0.0], [s_, c_, 0.0], [0.0, 0.0, 1.0]]), None, None
+
+
+TRACKS['grind'] = {'crank': crank_track}
 
 
 def grind_thigh(fr):
@@ -2125,3 +2217,356 @@ for k in (10.0, LL_IN, 30.0):
     near_k, up_k = on_pole(fr_k, qa_k, ta.fk(c, k, 'left_arm', GRIP['left_arm']))
     check(c, f'left hand on the pole (t={k:g}, {up_k:.1f} px up it)', ta.fk(c, k, 'left_arm', GRIP['left_arm']), near_k, tol=0.8)
 print('   light_lamp: the wick carried at', np.round(LL_REST, 1))
+
+# ================================================================== at the well
+
+# ---- draw_water (80): at the town well (the well station: a ring of stone a block high round the water, three blocks
+# across, the water in the middle two blocks ahead; posts on the corners carry a roof of slabs). Standing a little back
+# from the curb (WELL_BACK), the well's rope runs from the bucket down in the water up the shaft, over the curb's inner
+# edge, across its top and over its near edge to the hands, and on behind them to a coil on the ground. Five strokes hand
+# over hand, the left first (ticks 4 to 44), the body leaning into each reach and back as it pulls, haul the bucket up
+# the shaft (knocking on the edge as it comes over, 29) and across the curb's top towards them (scraping, 33); a step in
+# to the curb, the right hand takes it by the bail (48), the left lets the rope go and braces on the curb, and the bucket
+# is lifted clear, brought back over the edge and let down to hang at the side, swinging, the water slopping (52, 60).
+# The rope's stretches, the bucket in the well and its swing in the hand are prop tracks (living_props: haul_rope_*,
+# tail_rope_*, curb_rope, well_rope, well_bucket, bucket).
+WELL_BACK = 3.5                                 # how far back from the block's middle they stand to haul
+WELL_STEP = 1.5                                 # where they step in to (from the block's middle) to take the bucket
+CURB_TOP, CURB_NEAR, CURB_INNER = 8.0, -8.0, -24.0
+WATER_Y = 25.8                                  # the water's face in the shaft, under the ground (24)
+ROPE_IN = np.array([-0.6, 7.65, -23.9])         # the rope over the curb's inner edge
+ROPE_OVER = np.array([-2.0, 7.65, -8.1])        # and over its near edge
+ROPE_COIL = np.array([-8.0, 23.6, 9.0])         # where the hauled-in rope lies coiled, behind and to the right
+_rope_end = np.array([-3.39, 10.96, 0.70])      # where each pull ends, by the right hip
+ROPE_DIR = unit(_rope_end - ROPE_OVER)
+S_FAR, S_NEAR = 2.3, 9.5                        # each stroke takes the rope from this far past the edge to this far
+STROKE = S_NEAR - S_FAR
+DW_STROKES = [('left_arm', 4.0), ('right_arm', 12.0), ('left_arm', 20.0), ('right_arm', 28.0), ('left_arm', 36.0)]
+DW_PULL, DW_HOLD = 7.0, 8.5                     # in each 8-tick stroke: pulled for 7 ticks, held till 8.5 (the other hand has it)
+DW_GRAB = 48.0                                  # the right hand takes the bucket
+# the bucket's way (its bail's top): up the shaft from the water, over the inner edge, across the curb to stand by its
+# near edge; it moves as far as the rope has been hauled in
+BUCKET_WAY = [np.array([-0.6, WATER_Y - 1.6, -26.2]), np.array([-0.6, 1.6, -26.2]), np.array([-0.8, 1.6, -22.4]),
+              np.array([-1.0, 1.6, -12.8])]
+
+
+def _way_lengths():
+    out, acc = [0.0], 0.0
+    for a, b in zip(BUCKET_WAY, BUCKET_WAY[1:]):
+        acc += float(np.linalg.norm(b - a))
+        out.append(acc)
+    return out
+
+
+WAY_AT = _way_lengths()
+UP_SHAFT = WAY_AT[1]                            # hauled this far, the bucket is at the inner edge
+
+
+def stroke_s(u):
+    """How far past the curb's near edge a hand [u] ticks into its stroke holds the rope (its pull: eased in and out)."""
+    if u <= 0.0:
+        return S_FAR
+    if u >= DW_PULL:
+        return S_NEAR
+    x = u / DW_PULL
+    return S_FAR + STROKE * (x * x * (3 - 2 * x)) ** 1.15
+
+
+def hauled(t):
+    """How much rope has come in by [t] (px): the strokes' pulls, one after another."""
+    return sum(stroke_s(t - t0) - S_FAR for _, t0 in DW_STROKES)
+
+
+def bucket_at(t):
+    """Where the bucket's bail is, and how it tips (degrees, its top towards the hauler), as far as the rope has come."""
+    h = min(hauled(t), WAY_AT[-1])
+    for i in range(3):
+        if h <= WAY_AT[i + 1] or i == 2:
+            f = (h - WAY_AT[i]) / (WAY_AT[i + 1] - WAY_AT[i])
+            p = BUCKET_WAY[i] + (BUCKET_WAY[i + 1] - BUCKET_WAY[i]) * min(1.0, max(0.0, f))
+            tip = 24.0 * math.sin(math.pi * min(1.0, max(0.0, f))) if i == 1 else 0.0
+            return p, tip
+    return BUCKET_WAY[-1], 0.0
+
+
+def gripping(side, t):
+    """Whether [side]'s hand is on the rope at [t]."""
+    for s_, t0 in DW_STROKES:
+        if s_ == side and t0 <= t <= t0 + DW_HOLD + (DW_GRAB - 44.0 if t0 == DW_STROKES[-1][1] else 0.0):
+            return True
+    return False
+
+
+def trailing(t):
+    """The hand nearer the coil end of the rope (the last to have pulled) while any is on it."""
+    on = [s_ for s_ in ('left_arm', 'right_arm') if gripping(s_, t)]
+    if len(on) == 1:
+        return on[0]
+    if not on:
+        return None
+    last = max((t0, s_) for s_, t0 in DW_STROKES if t0 <= t)
+    return [s_ for s_ in on if s_ != last[1]][0] if len(on) == 2 else last[1]
+
+
+def rope_point(s):
+    return ROPE_OVER + ROPE_DIR * s
+
+
+DW_FEET = [(0, (-1.9, 0.0), (1.9, 0.0)), (0.5, (-1.9, 0.0), (1.9, 0.0)), (3.0, (-2.6, 4.5), (1.9, 0.0)),
+           (4.5, (-2.6, 4.5), (2.4, 2.0)), (42.0, (-2.6, 4.5), (2.4, 2.0)), (45.0, (-2.4, 2.6), (2.4, 2.0)),
+           (48.0, (-2.4, 2.6), (2.2, 0.0)), (50.5, (-2.4, 2.6), (2.2, 0.0)), (53.0, (-2.2, 4.2), (2.2, 0.0)),
+           (53.5, (-2.2, 4.2), (2.2, 0.0)), (56.0, (-2.2, 4.2), (2.0, 2.4)), (66.0, (-2.2, 4.2), (2.0, 2.4)),
+           (69.0, (-1.9, 3.1), (2.0, 2.4)), (70.0, (-1.9, 3.1), (2.0, 2.4)), (73.0, (-1.9, 3.1), (1.9, 2.9)),
+           (80, (-1.9, 3.1), (1.9, 2.9))]
+DW_BACK = 3.0                                   # where they step back to, the bucket in hand
+DW_ROOT_Z = [(0, WELL_BACK), (42.0, WELL_BACK), (48.0, WELL_STEP), (50.0, WELL_STEP), (56.0, 3.0), (80, 3.0)]
+
+
+def dw_feet(t):
+    r = KV([(k, (a[0], 24.0, a[1])) for k, a, _ in DW_FEET], t)
+    l = KV([(k, (b[0], 24.0, b[1])) for k, _, b in DW_FEET], t)
+    return r, l
+
+
+def hand_target(side, t):
+    """Where [side]'s hand is wanted at [t] (None: left to the pose it is blended from)."""
+    s = -1.0 if side == 'right_arm' else 1.0
+    for s_, t0 in DW_STROKES:
+        if s_ != side:
+            continue
+        u = t - t0
+        if 0.0 <= u <= DW_HOLD:
+            return rope_point(stroke_s(u))
+        last = t0 == DW_STROKES[-1][1]
+        side_last = t0 == max(t_ for s__, t_ in DW_STROKES if s__ == side)
+        if last and side == 'left_arm' and DW_HOLD < u <= DW_GRAB - t0:
+            return rope_point(S_NEAR)
+        if DW_HOLD < u < 16.0 and not side_last:
+            # back up the rope to take it again: up and out round the other hand
+            v = (u - DW_HOLD) / (16.0 - DW_HOLD)
+            e = v * v * (3 - 2 * v)
+            p = rope_point(S_NEAR) + (rope_point(S_FAR) - rope_point(S_NEAR)) * e
+            return p + np.array([s * 1.4, -3.6, -0.6]) * math.sin(math.pi * v)
+    return None
+
+
+DW_RIGHT_LATE = [(36.0 + DW_HOLD, None), (42.5, np.array([-0.6, 0.2, -6.0])), (46.0, np.array([-1.2, 0.6, -12.0])),
+                 (DW_GRAB, BUCKET_WAY[-1])]
+DW_LIFT = [(DW_GRAB, BUCKET_WAY[-1]), (51.0, np.array([-1.4, 0.4, -12.6])), (54.5, np.array([-2.6, 0.5, -7.4])),
+           (56.0, np.array([-3.4, 1.3, -5.3])), (58.0, np.array([-4.8, 7.4, -4.6]))]
+DW_BRACE = np.array([3.2, 6.3, -10.0])          # the left fist on the curb's top as they lift
+
+
+def dw_pitch(t):
+    haul = 9.0 + 6.0 * math.cos(2 * math.pi * (t - 4.0) / 8.0)
+    if t <= 4.0:
+        return 4.0 + (15.0 - 4.0) * smooth(t / 4.0)
+    if t <= 44.0:
+        return haul
+    return K([(44.0, 9.0 + 6.0 * math.cos(2 * math.pi * 40.0 / 8.0)), (DW_GRAB, 34.0), (51.0, 31.0), (55.0, 9.0),
+              (58.0, 4.0), (62.0, 1.0), (80, 1.0)], t)
+
+
+def dw_yaw(t):
+    if t <= 44.0:
+        return 6.0 + 6.0 * math.sin(2 * math.pi * (t - 4.0) / 16.0) * smooth(t / 4.0)
+    return K([(44.0, 6.0 + 6.0 * math.sin(2 * math.pi * 40.0 / 16.0)), (DW_GRAB, -12.0), (51.0, -10.0), (55.0, -4.0),
+              (62.0, 0.0), (80, 0.0)], t)
+
+
+DW_FR0 = F_()
+
+
+def dw_solve():
+    sols, guess = {}, None
+    for t in ticks(4.0, 62.0, 0.5):
+        rt, lt = dw_targets(t)
+        rz = K(DW_ROOT_Z, t)
+
+        lw = 3.0 if 40.0 <= t <= DW_GRAB else 1.5
+
+        def res(fr, qa, qb, rt=rt, lt=lt, lw=lw):
+            out = []
+            if rt is not None:
+                out += list((hand_point('right_arm', qa, fr) - rt) * 1.5)
+            if lt is not None:
+                out += list((hand_point('left_arm', qb, fr) - lt) * lw)
+            return out
+        fr, qa, qb, guess = body_solve(res, pitch0=dw_pitch(t), yaw0=dw_yaw(t), root0=(0.0, 0.0, rz), guess=guess,
+                                        pitch_w=0.12, yaw_w=0.1, root_w=1.2, drop=0.6, arms_w=0.0)
+        sols[t] = (fr, qa, qb)
+    return sols
+
+
+def dw_targets(t):
+    """Both hands' targets at [t] (in the solved stretch, 4 to 62)."""
+    if t <= DW_GRAB:
+        rt = hand_target('right_arm', t)
+        if rt is None and t < 12.0:
+            # on the way from hanging to the rope (12): through a point in front, then to where it takes hold
+            rt = KV([(4.0, np.array([-5.4, 9.4, -3.6])), (8.0, np.array([-3.8, 5.0, -6.6])), (12.0, rope_point(S_FAR))], t)
+        if rt is None and t > 36.0:
+            rt = KV([(36.0 + DW_HOLD, rope_point(S_NEAR))] + DW_RIGHT_LATE[1:], t)
+    else:
+        rt = KV(DW_LIFT, t) if t <= 58.0 else None
+    if t <= DW_GRAB:
+        lt = hand_target('left_arm', t)
+    else:
+        lt = KV([(DW_GRAB, rope_point(S_NEAR)), (49.5, DW_BRACE + np.array([0.0, -2.0, 1.0])), (50.5, DW_BRACE),
+                 (53.0, DW_BRACE)], t) if t <= 53.0 else None
+    return rt, lt
+
+
+DW_SOL = dw_solve()
+DW_END_FR = F_(pr=(0.0, 0.1, DW_BACK))
+
+
+def dw_pose(t):
+    """The frame and both arms at [t]: blended in from standing (0 to 4), solved (4 to 62), let down to rest (58 on)."""
+    if t < 4.0:
+        w = smooth(t / 4.0)
+        f1, qa1, qb1 = DW_SOL[4.0]
+        fr = mix_frames(DW_FR0, f1, w)
+        return fr, qslerp(hang('right_arm', fr), qa1, w), qslerp(hang('left_arm', fr), qb1, w)
+    if t <= 62.0:
+        fr, qa, qb = DW_SOL[t]
+    else:
+        fr, qa, qb = mix_frames(DW_SOL[62.0][0], DW_END_FR, smooth((t - 62.0) / 10.0)), None, None
+    end_a = hang('right_arm', fr, out=11.0, fwd=2.0)
+    end_b = hang('left_arm', fr, out=6.0)
+    if qa is None:
+        return fr, end_a, end_b
+    if t > 53.0:
+        qb = qslerp(qb, end_b, smooth((t - 53.0) / 5.0))      # the left hand off the curb, down to the side
+    if t > 58.0:
+        qa = qslerp(qa, end_a, smooth((t - 58.0) / 4.0))      # the bucket let down to hang
+    return fr, qa, qb
+
+
+c = clip('draw_water', 80, False, look=('citizen', 6), station_='well',
+         tools_=('curb_rope', 'well_rope', 'well_bucket', 'haul_rope_left', 'haul_rope_right', 'tail_rope_left',
+                 'tail_rope_right', 'bucket'),
+         events=[('pull', 8), ('pull', 16), ('pull', 24), ('pull', 32), ('pull', 40), ('knock', 29), ('scrape', 33),
+                 ('grab', 48), ('slosh', 52), ('slosh', 60)],
+         views=((50, -14, True), (90, -4), (160, -28)), pan=(0.0, 0.0, -9.0))
+DW_HX = [(0, 0.0), (4.0, 16.0), (28.0, 18.0), (34.0, 24.0), (44.0, 30.0), (DW_GRAB, 26.0), (54.0, 14.0), (60.0, 20.0),
+         (66.0, 22.0), (72.0, 6.0), (80, 2.0)]
+for t in every(80):
+    fr, qa, qb = dw_pose(t)
+    key_frame(c, t, fr, ease='linear')
+    c.key('right_arm', t, qa, ease='linear')
+    c.key('left_arm', t, qb, ease='linear')
+    rf, lf = dw_feet(t)
+    rlift = 1.6 * bump(t, 0.5, 3.0) + 1.4 * bump(t, 42.0, 45.5) + 1.2 * bump(t, 50.5, 53.5) + 0.9 * bump(t, 66.0, 69.5)
+    llift = 1.0 * bump(t, 2.5, 4.5) + 1.4 * bump(t, 44.5, 48.0) + 1.2 * bump(t, 53.0, 56.0) + 0.9 * bump(t, 69.5, 73.0)
+    leg_to(c, t, 'right_leg', fr['pr'], rf - np.array([0.0, rlift, 0.0]), toe=F)
+    leg_to(c, t, 'left_leg', fr['pr'], lf - np.array([0.0, llift, 0.0]), toe=F)
+    c.key('head', t, qeuler(x=K(DW_HX, t), y=-8.0 * bump(t, 28.0, 46.0) + 10.0 * bump(t, 62.0, 74.0)), ease='linear')
+c.mode('head', 'add')
+
+
+def dw_shown(t):
+    out = {'curb_rope', 'well_bucket'} if t < DW_GRAB else {'bucket'}
+    if hauled(t) < UP_SHAFT + 0.5:
+        out.add('well_rope')
+    for side, name in (('left_arm', 'left'), ('right_arm', 'right')):
+        if gripping(side, t):
+            out.add(f'haul_rope_{name}')
+    tr = trailing(t)
+    if tr is not None and t < DW_GRAB:
+        out.add('tail_rope_' + ('left' if tr == 'left_arm' else 'right'))
+    return out
+
+
+ta.INFO['draw_water']['tools_at'] = dw_shown
+
+
+# the bucket's swing in the hand: a short pendulum (its bail to its middle) shaken by the fist's comings and goings
+def _bucket_swing():
+    g, L, damp = 0.392, 4.2, 0.07       # px per tick squared (a block a metre), px, per tick
+    th = np.zeros(2)                     # swing about x (forward and back) and z (side to side), radians
+    om = np.zeros(2)
+    out = {}
+    prev_v = None
+    prev_p = None
+    step = 0.5
+    t = DW_GRAB
+    while t <= 80.0 + 1e-6:
+        fr, qa, qb = dw_pose(min(t, 80.0))
+        p = hand_point('right_arm', qa, fr)
+        if prev_p is not None:
+            v = (p - prev_p) / step
+            a = (v - prev_v) / step if prev_v is not None else np.zeros(3)
+            prev_v = v
+            # the fist's push sideways swings the bucket the other way; forward and back about x, sideways about z
+            for i, ax in enumerate((2, 0)):
+                acc = -(g / L) * math.sin(th[i]) - (a[ax] / L) * math.cos(th[i]) - damp * om[i]
+                om[i] += acc * step
+                th[i] += om[i] * step
+        else:
+            prev_v = np.zeros(3)
+        prev_p = p
+        out[round(t * 2)] = (float(th[0]), float(th[1]))
+        t += step
+    return out
+
+
+DW_SWING = _bucket_swing()
+
+
+def _bucket_track(t, pivot):
+    if t < DW_GRAB:
+        return np.eye(3), None, None
+    a, b = DW_SWING.get(round(min(t, 80.0) * 2), (0.0, 0.0))
+    # turned about x by a (its bottom swinging forward for a fist pushed back) and about z by b
+    Rx = qmat(qeuler(x=math.degrees(a)))
+    Rz = qmat(qeuler(z=-math.degrees(b)))
+    return Rz @ Rx, None, None
+
+
+def _well_bucket_track(t, pivot):
+    p, tip = bucket_at(t)
+    return qmat(qeuler(x=-tip)), p, None
+
+
+def _well_rope_track(t, pivot):
+    p, _ = bucket_at(t)
+    R, S = aim(ROPE_IN, p, lp.ROPE_LEN)
+    return R, ROPE_IN, S
+
+
+def _curb_rope_track(t, pivot):
+    p, _ = bucket_at(t)
+    to = ROPE_IN if hauled(t) < UP_SHAFT else p
+    R, S = aim(ROPE_OVER, to, lp.ROPE_LEN)
+    return R, ROPE_OVER, S
+
+
+def _haul_track(t, pivot):
+    R, S = aim(pivot, ROPE_OVER, lp.ROPE_LEN)
+    return R, None, S
+
+
+def _tail_track(t, pivot):
+    R, S = aim(pivot, ROPE_COIL, lp.ROPE_LEN)
+    return R, None, S
+
+
+TRACKS['draw_water'] = {'bucket': _bucket_track, 'well_bucket': _well_bucket_track, 'well_rope': _well_rope_track,
+                        'curb_rope': _curb_rope_track, 'haul_rope_left': _haul_track, 'haul_rope_right': _haul_track,
+                        'tail_rope_left': _tail_track, 'tail_rope_right': _tail_track}
+
+for side in ('left_arm', 'right_arm'):
+    for s_, t0 in DW_STROKES:
+        if s_ == side:
+            for k in (t0, t0 + DW_PULL):
+                want = rope_point(stroke_s(k - t0))
+                check(c, f'{side} on the rope (t={k:g})', ta.fk(c, k, side, GRIP[side]), want, tol=0.5)
+check(c, 'right hand on the bucket\'s bail (t=48)', ta.fk(c, DW_GRAB, 'right_arm', GRIP['right_arm']), BUCKET_WAY[-1], tol=0.5)
+for k in (50.0, 52.0, 54.0, 55.0, 56.0):
+    got = ta.fk(c, k, 'right_arm', GRIP['right_arm'])
+    check(c, f'the bucket clear of the curb (t={k:g}: its bottom above the top, or past the near edge)',
+          np.array([0.0, min(0.0, CURB_TOP - (got[1] + 6.4)) if got[2] < CURB_NEAR + 2.2 else 0.0, 0.0]), np.zeros(3), tol=0.05)
+check(c, 'left fist on the curb (t=52)', ta.fk(c, 52.0, 'left_arm', GRIP['left_arm']), DW_BRACE, tol=0.6)
+print('   draw_water: rope hauled', round(hauled(44.0), 1), 'of', round(WAY_AT[-1], 1), '| bucket over the edge at t',
+      next(k for k in ticks(0, 44, 0.5) if hauled(k) >= UP_SHAFT))

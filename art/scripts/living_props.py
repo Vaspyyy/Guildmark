@@ -180,14 +180,16 @@ def iron_arch_painter(key, thick=0.16):
     return painter(key, fn)
 
 
-def rope_painter(key):
-    """Hemp rope: a twist of strands across it, darker in the hollows; long faces along x."""
+def rope_painter(key, along='x'):
+    """Hemp rope: a twist of strands across it, darker in the hollows; its long faces along x (or y)."""
     def fn(face, w, h, rng):
         U, V = uv(w, h)
         a = noise_fill(w, h, ROPE, rng, 0.06)
-        if face in ('front', 'back', 'top', 'bottom'):
+        long_faces = ('front', 'back', 'top', 'bottom') if along == 'x' else ('front', 'back', 'left', 'right')
+        if face in long_faces:
             n = max(w, h)
-            tw = np.sin((U * n * 1.1 + V * 1.6) * math.pi) > 0.1
+            A, B_ = (U, V) if along == 'x' else (V, U)
+            tw = np.sin((A * n * 1.1 + B_ * 1.6) * math.pi) > 0.1
             a[..., :3] = np.where(tw[..., None], mix(a[..., :3], ROPE_D, 0.45), mix(a[..., :3], ROPE_L, 0.2))
         return a
     return painter(key, fn)
@@ -421,21 +423,49 @@ def _bucket():
     ])
 
 
-def _rope(side, grip):
-    # The well's rope through a fist, hanging straight down from it (HANG) into the shaft: 3 px above the fist (slack to
-    # the other hand) to 44 px below. Modelled along x, turned down by its inner part.
-    inner = Part(f'well_rope_{side}_line', (0, 0, 0), (0, 0, 90), cubes=[
-        C((-3.0, -0.25, -0.25), (47.0, 0.5, 0.5), f't_well_rope_{side}', rope_painter(f't_well_rope_{side}')),
+ROPE_LEN = 16.0         # the well's rope pieces are modelled this long along their +y; prop tracks stretch them
+
+
+def _line(name, parent, pivot, thick=0.7):
+    # A stretch of the well's rope, ROPE_LEN px along +y from its pivot: draw_water's prop tracks turn it to run where it
+    # goes (from a fist over the curb, from the curb down the shaft) and stretch it to reach.
+    h = thick / 2
+    return parent, Part(name, pivot, (0, 0, 0), cubes=[
+        C((-h, 0.0, -h), (thick, ROPE_LEN, thick), f't_{name}', rope_painter(f't_{name}', along='y')),
     ])
-    return f'{side}_arm', Part(f'well_rope_{side}', grip, (0, 0, 0), children=[inner])
 
 
-def _rope_r():
-    return _rope('right', RIGHT_GRIP)
+def _haul_rope_r():
+    return _line('haul_rope_right', 'right_arm', RIGHT_GRIP)
 
 
-def _rope_l():
-    return _rope('left', LEFT_GRIP)
+def _haul_rope_l():
+    return _line('haul_rope_left', 'left_arm', LEFT_GRIP)
+
+
+def _tail_rope_r():
+    return _line('tail_rope_right', 'right_arm', RIGHT_GRIP)
+
+
+def _tail_rope_l():
+    return _line('tail_rope_left', 'left_arm', LEFT_GRIP)
+
+
+def _curb_rope():
+    return _line('curb_rope', 'body', (0, 0, 0))
+
+
+def _well_rope():
+    return _line('well_rope', 'body', (0, 0, 0))
+
+
+def _well_bucket():
+    # The well's bucket on the end of its rope, coming up the shaft and over the curb: draw_water's prop track places it
+    # by its bail's top (its pivot) in the clip's own space. The same bucket as the one carried off (bucket).
+    return 'body', Part('well_bucket', (0, 0, 0), (0, 0, 0), cubes=[
+        C((-2.2, 0.0, -0.15), (4.4, 2.4, 0.3), 't_well_bucket_bail', iron_arch_painter('t_well_bucket_bail')),
+        C((-2.0, 2.0, -2.0), (4.0, 4.4, 4.0), 't_well_bucket', staves_painter('t_well_bucket', top=water_top)),
+    ])
 
 
 def _coin():
@@ -580,8 +610,8 @@ CRANK_THROW = 3.0         # the crank's throw: the fist goes round the hub this 
 
 def _crank():
     # A grindstone's crank: the handle through the right fist (part z, the axle's way), the web from the handle's far end
-    # along part +x to the hub on the axle, part (CRANK_THROW, 0, -2.9). The game turns it about the axle each frame
-    # (TURN) whatever way the arm is turned, so the web points from the fist to the hub as the hand goes round.
+    # along part +x to the hub on the axle, part (CRANK_THROW, 0, -2.9). The grind clip's prop track turns it about the
+    # axle whatever way the arm is turned, so the web points from the fist to the hub as the hand goes round.
     r = CRANK_THROW
     return 'right_arm', Part('crank', RIGHT_GRIP, (0, 0, 0), cubes=[
         C((-0.5, -0.5, -2.3), (1.0, 1.0, 4.6), 't_crank_handle', wood_painter('t_crank_handle', OAK, OAK_D, OAK_L, 'z')),
@@ -590,16 +620,15 @@ def _crank():
     ])
 
 
-BUILDERS = [_loaf, _apple, _bowl, _spoon, _bucket, _rope_r, _rope_l, _coin, _seed_bag, _scythe, _axe, _handbell, _scroll,
-            _lamp_pole, _basket_hip, _sack_held, _sack_empty, _crank]
+BUILDERS = [_loaf, _apple, _bowl, _spoon, _bucket, _haul_rope_r, _haul_rope_l, _tail_rope_r, _tail_rope_l, _curb_rope,
+            _well_rope, _well_bucket, _coin, _seed_bag, _scythe, _axe, _handbell, _scroll, _lamp_pole, _basket_hip,
+            _sack_held, _sack_empty, _crank]
 
 GLOW_CUBES = {'t_lamp_flame'}
 
-# Parts the game turns each frame to hang straight down from the hand (TownsfolkModel)
-HANG = ('bucket', 'well_rope_right', 'well_rope_left', 'sack_empty')
-
-# Parts the game turns each frame about the model's z axis by an angle the clip's time gives (TownsfolkModel)
-TURN = ('crank',)
+# Parts the game turns each frame to hang straight down from the hand (LivingProps.kt), unless a clip's prop track runs
+# them (the parts it turns, places and stretches tick by tick: the crank, the well's ropes and bucket)
+HANG = ('bucket', 'sack_empty')
 
 TOOL_NOTES = {
     'loaf': 'right hand, tilted 45 like the mug; the bitten top end at part (0, -3.2, -3.0)',
@@ -607,8 +636,13 @@ TOOL_NOTES = {
     'bowl': 'left hand, sitting on it: level with the arm straight out in front; the top of the stew at part (0, -3.9, 1.0)',
     'spoon': 'right hand, at right angles to the arm like the sword; its bowl at part (0, 4.7, -0.2)',
     'bucket': 'right hand by the bail, hangs upright; bottom at part (0, 6.4, 0)',
-    'well_rope_right': 'right hand, hangs straight down 44 px into the well',
-    'well_rope_left': 'left hand, hangs straight down 44 px into the well',
+    'haul_rope_right': 'right fist; a stretch of the well rope (prop track: from the fist to the curb\'s edge)',
+    'haul_rope_left': 'left fist; a stretch of the well rope (prop track: from the fist to the curb\'s edge)',
+    'tail_rope_right': 'right fist; the hauled-in rope (prop track: from the fist down to its coil on the ground)',
+    'tail_rope_left': 'left fist; the hauled-in rope (prop track: from the fist down to its coil on the ground)',
+    'curb_rope': 'body; the rope across the well\'s curb (prop track places it)',
+    'well_rope': 'body; the rope down the shaft to the bucket (prop track places it)',
+    'well_bucket': 'body; the bucket coming up the shaft and over the curb (prop track places it by its bail\'s top)',
     'coin': 'right fingertips; part (0, 0.5, -3.0)',
     'seed_bag': 'on the body at the front of the left hip, a strap to the right shoulder; mouth at body (3.6, 7.6, -3.6)',
     'scythe': 'right hand on the snath (part x), the left 11 px up it; the blade off the heel (x 17) along -z',
@@ -619,7 +653,7 @@ TOOL_NOTES = {
     'basket_hip': 'on the body at the left hip; its top at body (5.6, 7.4, -4.0); basket_hip_cloth shows when nothing is carried',
     'sack_held': 'right hand by the neck: the shoulder sack of carry_sack, taken in hand to pour',
     'sack_empty': 'right hand, hangs limp',
-    'crank': 'right hand; turned by the game about the axle (TURN) so the web points to the hub, part (3, 0, -2.9)',
+    'crank': 'right hand; turned about the axle by its prop track so the web points to the hub, part (3, 0, -2.9)',
 }
 
 
