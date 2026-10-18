@@ -12,7 +12,7 @@ the other effects' are. --only takes event names such as knock or a group prefix
 The new sounds: a seat creaking as someone sits or gets up, knuckles on a door, an axe splitting a billet, the well's
 rope hauled over its curb, its bucket knocking the shaft and scraping over the stone, water sloshing in a bucket,
 water scooped up in the hands, splashed on a face and shaken off them, grain poured into a hopper, a millstone
-grinding, a crier's handbell, a street lamp catching, a scythe through standing wheat. The rest of the Living World's
+grinding, the crier's handbell, a street lamp catching, a scythe through standing wheat. The rest of the Living World's
 moments use vanilla sounds (a ladder's creak, eating, a crop broken or planted, a bundle) or the townsfolk's own
 (coins, goods set down, a crop pulled up).
 
@@ -275,29 +275,35 @@ def miller_grind(v, rng):
 
 
 # =========================================================================== the crier
-def handbell_tone(dur, rng, f):
+def handbell_tone(dur, rng, f, bright=1.0):
     """one strike of a brass handbell's clapper: a bell's partials (hum, prime, tierce, quint, nominal and the upper
-    ones, each a close pair that beats), and the clapper's tick"""
+    ones, each a close pair that beats), and the clapper's tick; a softer strike ([bright] under 1) wakes the upper
+    partials less"""
     r = np.array([0.5, 1.0, 1.183, 1.506, 2.0, 2.514, 2.662, 3.011, 4.166])
     t60 = np.array([1.8, 1.4, 1.1, 0.9, 0.8, 0.5, 0.45, 0.35, 0.22])
-    amps = np.array([0.35, 1.0, 0.7, 0.45, 0.6, 0.35, 0.25, 0.2, 0.12])
+    amps = np.array([0.35, 1.0, 0.7, 0.45, 0.6, 0.35, 0.25, 0.2, 0.12]) * bright ** (0.8 * np.maximum(0.0, r - 1.0))
     y = ring(dur, f * r, t60, amps, rng, doublet=0.003, doublet_amp=0.6)
     tick = fit(bp(white(0.003, rng), 2000, 12000) * np.exp(-tvec(0.003) / 0.0005), len(y))
-    return nrm(nrm(y) + 0.3 * nrm(tick))
+    return nrm(nrm(y) + 0.3 * bright * nrm(tick))
 
 
-@effect("handbell", variants=3, subtitle="A handbell rings", loud=-13.0, max_len=1.8, fade_out=0.5, attenuation=32)
-def handbell(v, rng):
-    """a crier's handbell swung once: the clapper strikes once to three times, and the bell, swinging, sounds louder
-    and duller as its mouth turns toward and away"""
+# the crier's handbell at the ends of its swings: how the clapper strikes it each time, (when, how hard) — a clean
+# stroke, one that bounces back for a second, a hard one that rattles three times, a glancing one and its echo
+BELL_STRIKES = [[(0.0, 1.0), (0.13, 0.55)], [(0.0, 1.0)], [(0.0, 0.95), (0.085, 0.6), (0.19, 0.35)], [(0.0, 0.7), (0.055, 0.45)]]
+
+
+@effect("crier.handbell", variants=4, subtitle="Handbell rings", loud=-13.0, max_len=1.8, fade_out=0.5, attenuation=48)
+def crier_handbell(v, rng):
+    """the town crier's brass handbell at one end of a swing (ring_bell rings it at every end of the shake, four times
+    a loop): the clapper strikes once, or bounces to strike again, harder or softer; the bell, still swinging, sounds
+    louder and duller as its mouth turns toward and away. One bell, so one pitch: the variants differ in the stroke."""
     dur = 1.8
     m = Mix(dur)
-    f = [660, 635, 685][v]
-    for at, g in [[(0.0, 1.0), (0.13, 0.7)], [(0.0, 1.0)], [(0.0, 0.9), (0.11, 0.8), (0.24, 0.5)]][v]:
-        m.add(handbell_tone(dur - at, rng, f * rng.uniform(0.998, 1.002)), at, g)
+    for at, g in BELL_STRIKES[v]:
+        m.add(handbell_tone(dur - at, rng, 660.0 * rng.uniform(0.9995, 1.0005), bright=g), at, g)
     y = fit(m.out(), ns(dur))
     t = tvec(dur)
-    y = y * (1 + 0.18 * np.sin(2 * np.pi * 2.6 * t + rng.uniform(0, 2 * np.pi)) * np.exp(-t / 0.8))
+    y = y * (1 + 0.18 * np.sin(2 * np.pi * [2.6, 2.4, 2.8, 2.5][v] * t + rng.uniform(0, 2 * np.pi)) * np.exp(-t / 0.8))
     return lead_in(street(y, wet=0.15, seed=320 + v))
 
 

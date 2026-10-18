@@ -198,9 +198,11 @@ internal object LivingMoments {
                     repeat(3) { puff(level, FLOUR, at, 0.3, 0.03, 0.03) }
                 }
             }
-            "ring_bell" -> sound(level, at, mod("handbell"), 0.8f)
+            // The crier's handbell, rung at each end of the shake (four strokes a loop). One bell, so one pitch: its
+            // sounds differ in how the clapper strikes, and the pitch only wavers a hair so the strokes don't drone
+            "ring_bell" -> sound(level, at, mod(HANDBELL), 0.8f, bellPitch(level))
             // Waved about as they read out, the bell in the crier's hand knocks once or twice; shaken up high, it rings
-            "announce" -> if (m.name == "ring") sound(level, at, mod("handbell"), 0.8f) else sound(level, at, mod("handbell"), 0.14f, 1.06f)
+            "announce" -> sound(level, at, mod(HANDBELL), if (m.name == "ring") 0.8f else 0.14f, bellPitch(level))
             "light_lamp" -> if (m.name == "lit") {
                 sound(level, at, mod("lamp.light"), 0.6f)
                 repeat(4) { puff(level, ParticleTypes.FLAME, at, 0.12, 0.02, 0.01) }
@@ -306,6 +308,12 @@ internal object LivingMoments {
 
     /** The clip a climb's last two blocks under a ledge play (LivingProps.TOP_OUT), by its name here. */
     private const val TOP_OUT = "climb_top"
+
+    /** The town crier's handbell (townsfolk.crier.handbell: heard about as far as the crier's voice, 48 blocks). */
+    private const val HANDBELL = "crier.handbell"
+
+    /** The handbell's pitch: one bell, so it barely varies. */
+    private fun bellPitch(level: Level): Float = 0.99f + level.random.nextFloat() * 0.02f
 
     private val events = HashMap<String, SoundEvent>()
 
