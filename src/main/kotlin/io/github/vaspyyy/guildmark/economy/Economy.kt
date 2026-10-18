@@ -142,8 +142,10 @@ object Economy {
      * Works out one hour of [m]'s trade for [town] in [c]; [random] decides what trouble or luck a new day brings.
      * [stalls], when players keep stalls of their own in the capital's market hall, sells the town a share of what it
      * bought this hour (see [OwnStalls]) once it's bought it, before the stores go off and the caravans come.
+     * [carried]: this hour's caravan comes on a wagon along the road (see [Caravans]), which brings its goods when it
+     * gets in, or doesn't; otherwise they come in at the hour as they always have.
      */
-    fun hour(m: Market, town: Town, c: Conditions, random: Random, stalls: ((Market, Town) -> Unit)? = null) {
+    fun hour(m: Market, town: Town, c: Conditions, random: Random, stalls: ((Market, Town) -> Unit)? = null, carried: Boolean = false) {
         m.hour = c.hour
         m.worked.fill(0.0)
         m.drawn.fill(0.0)
@@ -178,7 +180,7 @@ object Economy {
         if (tavern(h)) drink(m, town, c)
         stalls?.invoke(m, town)
         spoil(m)
-        if (caravan(h)) caravans(m, town, first = h == 9)
+        if (caravan(h)) caravans(m, town, first = h == 9, carried = carried)
         m.settle()
     }
 
@@ -426,35 +428,57 @@ object Economy {
 
     /**
      * One of the day's three caravans: the first takes away half of whatever the market holds beyond twice its
-     * target, and each brings in a third of what it's short of, as much as they usually carry for the town and a
-     * little more, or a share of how far short it is, whichever is more.
+     * target ([exports]), and each brings in what [bring] says, unless it's [carried] on a wagon along the road,
+     * whose goods come in when it gets there (see [Caravans]).
      */
-    private fun caravans(m: Market, town: Town, first: Boolean) {
+    private fun caravans(m: Market, town: Town, first: Boolean, carried: Boolean) {
+        if (first) for ((g, n) in exports(m, town)) {
+            m.take(Site.MARKET, g, n)
+            m.tally(Tally.EXPORTED, g, n)
+        }
+        if (carried) return
+        val load = bring(m, town, first)
         for (g in Good.entries) {
-            if (!g.traded && g != Good.TOOLS) continue
-            val stock = m.stock(g)
-            val target = town.target(g)
-            if (stock > target * GLUT) {
-                if (!first) continue
-                val n = (stock - target * GLUT) * 0.5
-                m.take(Site.MARKET, g, n)
-                m.tally(Tally.EXPORTED, g, n)
-                continue
-            }
-            val most = maxOf((town.use(g) + town.spoils(g)) * (town.shortfall(g) + SPARE), (target - stock) * CATCH_UP, LEAST / 4) / 3
-            val n = minOf(target - stock, most)
+            val n = load[g.ordinal]
             if (n <= 0.0) continue
-            m.add(Site.MARKET, g, n)
+            m.add(site(g), g, n)
             m.tally(Tally.IMPORTED, g, n)
+        }
+    }
+
+    /** Where a caravan's [good] goes in a capital: the bakehouse for flour, the market for everything else. */
+    fun site(good: Good): Site = if (good == Good.FLOUR) Site.BAKEHOUSE else Site.MARKET
+
+    /** What the morning caravan takes away: half of whatever the market holds beyond [GLUT] times its target. */
+    fun exports(m: Market, town: Town): List<Pair<Good, Double>> = Good.entries
+        .filter { (it.traded || it == Good.TOOLS) && m.stock(it) > town.target(it) * GLUT }
+        .map { it to (m.stock(it) - town.target(it) * GLUT) * 0.5 }
+
+    /**
+     * What one of the day's caravans brings in of each good, by ordinal: a third of what the market is short of, as
+     * much as they usually carry for the town and a little more, or a share of how far short it is, whichever is
+     * more; and on the [first] of the day, the flour a town with no mill buys, for its bakehouse. [coming] is what's
+     * on the road already, counted as in; [times] is how many wagons' worth, one after the other, as a convoy carries.
+     */
+    fun bring(m: Market, town: Town, first: Boolean, coming: DoubleArray? = null, times: Int = 1): DoubleArray {
+        val out = DoubleArray(Good.entries.size)
+        repeat(times) {
+            for (g in Good.entries) {
+                if (!g.traded && g != Good.TOOLS) continue
+                val stock = m.stock(g) + (coming?.get(g.ordinal) ?: 0.0) + out[g.ordinal]
+                val target = town.target(g)
+                if (stock > target * GLUT) continue
+                val most = maxOf((town.use(g) + town.spoils(g)) * (town.shortfall(g) + SPARE), (target - stock) * CATCH_UP, LEAST / 4) / 3
+                val n = minOf(target - stock, most)
+                if (n > 0.0) out[g.ordinal] += n
+            }
         }
         // A town with no mill buys its flour
         if (first && town.bakers > 0 && (town.mills == 0 || town.farmers == 0)) {
-            val n = town.use(Good.FLOUR) * 2.5 - m[Site.BAKEHOUSE, Good.FLOUR]
-            if (n > 0) {
-                m.add(Site.BAKEHOUSE, Good.FLOUR, n)
-                m.tally(Tally.IMPORTED, Good.FLOUR, n)
-            }
+            val n = town.use(Good.FLOUR) * 2.5 - m[Site.BAKEHOUSE, Good.FLOUR] - (coming?.get(Good.FLOUR.ordinal) ?: 0.0)
+            if (n > 0) out[Good.FLOUR.ordinal] += n
         }
+        return out
     }
 
     private fun newDay(m: Market, town: Town, c: Conditions, random: Random) {
@@ -496,6 +520,8 @@ object Economy {
             EventKind.GOOD_CATCH -> Triple(null, 1.8, days(2, 3))
             EventKind.POOR_CATCH -> Triple(null, 0.3, days(2, 4))
             EventKind.FEVER -> Triple(null, 0.75, days(3, 4))
+            // Never rolled for a new day: only a wagon really waylaid on the road brings it (see Caravans)
+            EventKind.WAYLAID -> Triple(null, 0.5, days(2, 3))
         }
         return Event(kind, good, factor, c.hour, c.hour + length * 24L)
     }

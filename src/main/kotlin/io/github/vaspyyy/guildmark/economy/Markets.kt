@@ -145,7 +145,8 @@ class Markets(private val entries: MutableMap<Long, Entry> = HashMap()) : SavedD
                     continue
                 }
                 if (now - m.hour > CATCH_UP) m.hour = now - CATCH_UP
-                while (m.hour < now && steps > 0) {
+                // A wagon being watched acts its arrival or its waylaying out first, and the hour waits for it
+                while (m.hour < now && steps > 0 && Caravans.ready(level, entry, m.hour + 1)) {
                     step(level, entry, m.hour + 1)
                     steps--
                     data.setDirty()
@@ -153,11 +154,16 @@ class Markets(private val entries: MutableMap<Long, Entry> = HashMap()) : SavedD
             }
         }
 
-        /** Works out [entry]'s market's [hour] in the overworld's weather and the season, its players' own stalls selling in it. */
+        /**
+         * Works out [entry]'s market's [hour] in the overworld's weather and the season, its players' own stalls
+         * selling in it, and its wagons on the road: what got in or was waylaid by the hour, and those setting out in
+         * it (see [Caravans]), whose goods come when they get in rather than at the hour.
+         */
         fun step(level: ServerLevel, entry: Entry, hour: Long) {
             val felt = conditions(level, hour, entry.capital)
             entry.felt = felt
-            Economy.hour(entry.market, entry.town, felt, random(entry.market, hour), OwnStalls.seller(level, entry))
+            val carried = Caravans.hour(level, entry, hour)
+            Economy.hour(entry.market, entry.town, felt, random(entry.market, hour), OwnStalls.seller(level, entry), carried)
         }
 
         /** The world in [entry]'s market's hour as it feels it there (the season and any feast with it), for why its prices stand where they do. */
@@ -168,10 +174,14 @@ class Markets(private val entries: MutableMap<Long, Entry> = HashMap()) : SavedD
             return conditions(server.overworld(), hour, entry.capital).also { entry.felt = it }
         }
 
-        /** Takes [m] back [hours], what it has under way and its news with it. */
+        /**
+         * Takes [m] back [hours], what it has under way and its news with it; its wagons not yet in are called off and
+         * their goods come in at once (see [Caravans.rewind]).
+         */
         fun rewind(m: Market, hours: Long) {
             m.hour -= hours
-            val events = m.events.map { Event(it.kind, it.good, it.factor, it.since - hours, it.until - hours) }
+            Caravans.rewind(m, hours)
+            val events = m.events.map { it.back(hours) }
             m.events.clear()
             m.events.addAll(events)
             val news = m.news.map { News(it.hour - hours, it.key, it.good, it.value) }

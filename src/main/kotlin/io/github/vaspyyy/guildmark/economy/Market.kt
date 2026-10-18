@@ -21,7 +21,9 @@ enum class Tally(val id: String) {
     /** Sent off with the caravans, more than the town could use. */
     EXPORTED("exported"),
     /** Gone off in store. */
-    SPOILED("spoiled");
+    SPOILED("spoiled"),
+    /** Lost on the road: carried off by a band that waylaid the wagon, or spilled in its wreck (see [Caravans]). */
+    LOST("lost");
 
     companion object {
         fun byId(id: String): Tally? = entries.firstOrNull { it.id == id }
@@ -58,10 +60,25 @@ enum class Route {
 
 /**
  * Something that's happened to a capital's trade until hour [until]: a [kind] of trouble or luck, on [good] if it
- * falls on one, making the makers it touches work at [factor] of their pace.
+ * falls on one, making the makers it touches work at [factor] of their pace. Some fall on several goods at once
+ * ([goods]: a waylaid wagon's load) and somewhere in particular ([place]: where on the road it was waylaid, see
+ * [Caravans.PLACES]); a WAYLAID event's factor leans prices only, it never slows a maker.
  */
-class Event(val kind: EventKind, val good: Good?, val factor: Double, val since: Long, val until: Long) {
-    fun touches(g: Good): Boolean = if (good != null) g == good else g in kind.goods
+class Event(
+    val kind: EventKind, val good: Good?, val factor: Double, val since: Long, val until: Long,
+    val goods: Set<Good> = setOf(), val place: String = "",
+) {
+    fun touches(g: Good): Boolean = when {
+        goods.isNotEmpty() -> g in goods
+        good != null -> g == good
+        else -> g in kind.goods
+    }
+
+    /** The same, lasting until hour [until] instead. */
+    fun until(until: Long): Event = Event(kind, good, factor, since, until, goods, place)
+
+    /** The same, moved [hours] back in time (see [Markets.rewind]). */
+    fun back(hours: Long): Event = Event(kind, good, factor, since - hours, until - hours, goods, place)
 
     companion object {
         val CODEC: Codec<Event> = RecordCodecBuilder.create { i ->
@@ -71,7 +88,11 @@ class Event(val kind: EventKind, val good: Good?, val factor: Double, val since:
                 Codec.DOUBLE.fieldOf("factor").forGetter(Event::factor),
                 Codec.LONG.optionalFieldOf("since", 0L).forGetter(Event::since),
                 Codec.LONG.fieldOf("until").forGetter(Event::until),
-            ).apply(i) { kind, good, factor, since, until -> Event(EventKind.byId(kind) ?: EventKind.FEVER, Good.byId(good), factor, since, until) }
+                Codec.STRING.listOf().optionalFieldOf("goods", listOf()).forGetter { e -> e.goods.map { it.id } },
+                Codec.STRING.optionalFieldOf("place", "").forGetter(Event::place),
+            ).apply(i) { kind, good, factor, since, until, goods, place ->
+                Event(EventKind.byId(kind) ?: EventKind.FEVER, Good.byId(good), factor, since, until, goods.mapNotNull(Good::byId).toSet(), place)
+            }
         }
     }
 }
@@ -95,7 +116,12 @@ enum class EventKind(val id: String, val maker: Maker?, val goods: Set<Good> = s
     /** The nets come up empty. */
     POOR_CATCH("poor_catch", Maker.BOATS),
     /** A fever goes round: every trade works short-handed. */
-    FEVER("fever", null);
+    FEVER("fever", null),
+    /**
+     * A wagon bound for the town was waylaid on the road: what it carried won't come ([Event.goods]), and the market
+     * leans those goods dearer until wagons get through again (see [Caravans]).
+     */
+    WAYLAID("waylaid", null);
 
     /** Whether it's trouble (and its end news); otherwise it's luck. */
     val trouble: Boolean get() = this != BUMPER && this != GOOD_CATCH
@@ -207,6 +233,8 @@ class Market(val capital: Long) {
         var f = 1.0
         for (e in events) {
             val on = when {
+                // A waylaid wagon makes goods dear; it never slows the town's own hands
+                e.kind == EventKind.WAYLAID -> false
                 e.kind == EventKind.FEVER -> maker != null
                 e.kind.maker != null -> e.kind.maker == maker && (e.good == null || e.good == good)
                 else -> good != null && e.touches(good)
@@ -281,11 +309,15 @@ class Market(val capital: Long) {
         }
     }
 
-    /** Closes the day: keeps [town]'s prices and how hungry it went, and starts the tallies afresh. */
+    /**
+     * Closes the day: keeps [town]'s prices and how hungry it went, and starts the tallies afresh. What was lost on
+     * the road counts with what the caravans brought, so a waylaid load doesn't make freight any cheaper.
+     */
     fun close(town: Town) {
         for (g in Good.entries) {
             val used = today(Tally.USED, g) + today(Tally.SPOILED, g) + today(Tally.EXPORTED, g)
-            if (used > 0.0) brought[g.ordinal] += ((today(Tally.IMPORTED, g) / used).coerceIn(0.0, 1.0) - brought[g.ordinal]) * BROUGHT
+            val came = today(Tally.IMPORTED, g) + today(Tally.LOST, g)
+            if (used > 0.0) brought[g.ordinal] += ((came / used).coerceIn(0.0, 1.0) - brought[g.ordinal]) * BROUGHT
         }
         for (g in Good.entries) {
             val list = closes[g.ordinal]
@@ -301,6 +333,9 @@ class Market(val capital: Long) {
         idle.copyInto(idleYesterday)
         idle.fill(0)
     }
+
+    /** The waylaid wagon the market is feeling, if there is one (there's only ever one: a second joins the first). */
+    fun waylaid(): Event? = events.firstOrNull { it.kind == EventKind.WAYLAID }
 
     fun say(key: String, good: Good? = null, value: Double = 0.0) {
         news.add(News(hour, key, good, value))
