@@ -1,0 +1,462 @@
+{
+  "works.trowel": {
+    "sounds": [
+      "guildmark:works/trowel1",
+      "guildmark:works/trowel2",
+      "guildmark:works/trowel3",
+      "guildmark:works/trowel4",
+      "guildmark:works/trowel5",
+      "guildmark:works/trowel6"
+    ],
+    "subtitle": "subtitles.guildmark.works.trowel"
+  },
+  "works.chisel": {
+    "sounds": [
+      {
+        "name": "guildmark:works/chisel1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:works/chisel2",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:works/chisel3",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:works/chisel4",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:works/chisel5",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:works/chisel6",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.works.chisel"
+  },
+  "works.mortar": {
+    "sounds": [
+      "guildmark:works/mortar1",
+      "guildmark:works/mortar2",
+      "guildmark:works/mortar3",
+      "guildmark:works/mortar4"
+    ],
+    "subtitle": "subtitles.guildmark.works.mortar"
+  },
+  "works.hoist": {
+    "sounds": [
+      {
+        "name": "guildmark:works/hoist1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:works/hoist2",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:works/hoist3",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:works/hoist4",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.works.hoist"
+  },
+  "works.beam_down": {
+    "sounds": [
+      {
+        "name": "guildmark:works/beam_down1",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:works/beam_down2",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:works/beam_down3",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "subtitles.guildmark.works.beam_down"
+  },
+  "works.stone_set": {
+    "sounds": [
+      {
+        "name": "guildmark:works/stone_set1",
+        "attenuation_distance": 20
+      },
+      {
+        "name": "guildmark:works/stone_set2",
+        "attenuation_distance": 20
+      },
+      {
+        "name": "guildmark:works/stone_set3",
+        "attenuation_distance": 20
+      },
+      {
+        "name": "guildmark:works/stone_set4",
+        "attenuation_distance": 20
+      }
+    ],
+    "subtitle": "subtitles.guildmark.works.stone_set"
+  },
+  "works.stake": {
+    "sounds": [
+      {
+        "name": "guildmark:works/stake1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:works/stake2",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:works/stake3",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:works/stake4",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.works.stake"
+  },
+  "works.cheer": {
+    "sounds": [
+      {
+        "name": "guildmark:works/cheer1",
+        "attenuation_distance": 48
+      },
+      {
+        "name": "guildmark:works/cheer2",
+        "attenuation_distance": 48
+      },
+      {
+        "name": "guildmark:works/cheer3",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "subtitles.guildmark.works.cheer"
+  },
+  "works.toast": {
+    "sounds": [
+      {
+        "name": "guildmark:works/toast1",
+        "attenuation_distance": 20
+      },
+      {
+        "name": "guildmark:works/toast2",
+        "attenuation_distance": 20
+      },
+      {
+        "name": "guildmark:works/toast3",
+        "attenuation_distance": 20
+      },
+      {
+        "name": "guildmark:works/toast4",
+        "attenuation_distance": 20
+      }
+    ],
+    "subtitle": "subtitles.guildmark.works.toast"
+  },
+  "works.unveil": {
+    "sounds": [
+      {
+        "name": "guildmark:works/unveil1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:works/unveil2",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:works/unveil3",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.works.unveil"
+  },
+  "works.handbell": {
+    "sounds": [
+      {
+        "name": "guildmark:works/handbell1",
+        "attenuation_distance": 48
+      },
+      {
+        "name": "guildmark:works/handbell2",
+        "attenuation_distance": 48
+      },
+      {
+        "name": "guildmark:works/handbell3",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "subtitles.guildmark.works.handbell"
+  },
+  "works.horn": {
+    "sounds": [
+      {
+        "name": "guildmark:works/horn1",
+        "attenuation_distance": 128
+      },
+      {
+        "name": "guildmark:works/horn2",
+        "attenuation_distance": 128
+      },
+      {
+        "name": "guildmark:works/horn3",
+        "attenuation_distance": 128
+      }
+    ],
+    "subtitle": "subtitles.guildmark.works.horn"
+  },
+  "works.beacon_flare": {
+    "sounds": [
+      {
+        "name": "guildmark:works/beacon_flare1",
+        "attenuation_distance": 48
+      },
+      {
+        "name": "guildmark:works/beacon_flare2",
+        "attenuation_distance": 48
+      },
+      {
+        "name": "guildmark:works/beacon_flare3",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "subtitles.guildmark.works.beacon_flare"
+  },
+  "works.beacon_loop": {
+    "sounds": [
+      {
+        "name": "guildmark:works/beacon_loop1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:works/beacon_loop2",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.works.beacon_loop"
+  },
+  "works.granary_doors": {
+    "sounds": [
+      {
+        "name": "guildmark:works/granary_doors1",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:works/granary_doors2",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:works/granary_doors3",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "subtitles.guildmark.works.granary_doors"
+  },
+  "works.pledge": {
+    "sounds": [
+      {
+        "name": "guildmark:works/pledge1",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:works/pledge2",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:works/pledge3",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:works/pledge4",
+        "attenuation_distance": 12
+      }
+    ],
+    "subtitle": "subtitles.guildmark.works.pledge"
+  },
+  "streets.ladle": {
+    "sounds": [
+      "guildmark:streets/ladle1",
+      "guildmark:streets/ladle2",
+      "guildmark:streets/ladle3",
+      "guildmark:streets/ladle4"
+    ],
+    "subtitle": "subtitles.guildmark.streets.ladle"
+  },
+  "streets.pot_loop": {
+    "sounds": [
+      {
+        "name": "guildmark:streets/pot_loop1",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:streets/pot_loop2",
+        "attenuation_distance": 12
+      }
+    ],
+    "subtitle": "subtitles.guildmark.streets.pot_loop"
+  },
+  "streets.bowl": {
+    "sounds": [
+      {
+        "name": "guildmark:streets/bowl1",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:streets/bowl2",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:streets/bowl3",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:streets/bowl4",
+        "attenuation_distance": 12
+      }
+    ],
+    "subtitle": "subtitles.guildmark.streets.bowl"
+  },
+  "streets.queue": {
+    "sounds": [
+      {
+        "name": "guildmark:streets/queue1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:streets/queue2",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.streets.queue"
+  },
+  "streets.awning": {
+    "sounds": [
+      {
+        "name": "guildmark:streets/awning1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:streets/awning2",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:streets/awning3",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.streets.awning"
+  },
+  "streets.basket": {
+    "sounds": [
+      {
+        "name": "guildmark:streets/basket1",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:streets/basket2",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:streets/basket3",
+        "attenuation_distance": 12
+      }
+    ],
+    "subtitle": "subtitles.guildmark.streets.basket"
+  },
+  "streets.stamp": {
+    "sounds": [
+      {
+        "name": "guildmark:streets/stamp1",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:streets/stamp2",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:streets/stamp3",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:streets/stamp4",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:streets/stamp5",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:streets/stamp6",
+        "attenuation_distance": 12
+      }
+    ],
+    "subtitle": "subtitles.guildmark.streets.stamp"
+  },
+  "streets.pat": {
+    "sounds": [
+      {
+        "name": "guildmark:streets/pat1",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:streets/pat2",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:streets/pat3",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:streets/pat4",
+        "attenuation_distance": 12
+      }
+    ],
+    "subtitle": "subtitles.guildmark.streets.pat"
+  },
+  "streets.bundle": {
+    "sounds": [
+      {
+        "name": "guildmark:streets/bundle1",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "guildmark:streets/bundle2",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "guildmark:streets/bundle3",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "guildmark:streets/bundle4",
+        "attenuation_distance": 16
+      }
+    ],
+    "subtitle": "subtitles.guildmark.streets.bundle"
+  },
+  "streets.handcart_goods": {
+    "sounds": [
+      {
+        "name": "guildmark:streets/handcart_goods1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:streets/handcart_goods2",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.streets.handcart_goods"
+  }
+}
