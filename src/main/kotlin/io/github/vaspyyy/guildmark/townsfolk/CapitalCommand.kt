@@ -48,7 +48,8 @@ import java.util.UUID
  * and who lives there, `who` tells you about the townsperson you're looking at, `show` marks the building's places
  * for a while (only you see the marks), `furnish` makes up every bed its people are missing at once, `crew` lists
  * its carters, millers and crier, `cry` sends the crier to cry the news now, `act <move> [ticks]` has the townsperson
- * you're looking at play one of their moves on the spot, over and over, and `people [trade] [page]` lists its people.
+ * you're looking at play one of their moves on the spot, over and over, `makeway [blocks]` sends a make-believe wagon
+ * down the street you're looking along for townsfolk to step aside from, and `people [trade] [page]` lists its people.
  * Positions in the replies can be clicked to go there.
  */
 object CapitalCommand {
@@ -66,6 +67,10 @@ object CapitalCommand {
     private const val ACT_TICKS = 200
     private const val ACT_MOST = 2400
     private const val ACT_REST = 10
+
+    /** How far `makeway` sends its wagon unless told otherwise, and the farthest it will. */
+    private const val MAKE_WAY = 32
+    private const val MAKE_WAY_MOST = 128
 
     /** The moves that show what someone has in hand: given one with empty hands, they hold a loaf (or what you hold). */
     private val HANDLED = setOf(
@@ -103,6 +108,14 @@ object CapitalCommand {
                         .then(Commands.literal("haul").executes { haul(it) })
                         .then(Commands.literal("show").executes { show(it) })
                         .then(Commands.literal("furnish").executes { furnish(it) })
+                        .then(
+                            Commands.literal("makeway")
+                                .executes { makeWay(it, MAKE_WAY) }
+                                .then(
+                                    Commands.argument("blocks", IntegerArgumentType.integer(8, MAKE_WAY_MOST))
+                                        .executes { makeWay(it, IntegerArgumentType.getInteger(it, "blocks")) },
+                                ),
+                        )
                         .then(
                             Commands.literal("act")
                                 .then(
@@ -454,6 +467,18 @@ object CapitalCommand {
             p.act(Activity.NONE)
             p.routine.interrupt()
         }
+    }
+
+    // ---- makeway ----
+
+    private fun makeWay(context: CommandContext<CommandSourceStack>, blocks: Int): Int {
+        val source = context.source
+        val player = source.playerOrException
+        Wayside.makeWay(player, blocks)
+        val seconds = blocks / Wayside.WAGON_PACE / 20
+        say(source, line().append(plain("A make-believe wagon sets off from your feet the way you're looking, $blocks blocks at a wagon's pace. "))
+            .append(grey("(Its front is the puff of dust; it takes ${seconds.toInt()}s. Anyone on its way steps aside.)")))
+        return 1
     }
 
     // ---- show ----

@@ -62,11 +62,15 @@ object Townsfolk {
         NeoForge.EVENT_BUS.addListener(PlayerTickEvent.Post::class.java) { event ->
             val player = event.entity as? ServerPlayer
             val level = player?.level() as? ServerLevel
-            if (player != null && level != null) Crowds.tick(level, player)
+            if (player != null && level != null) {
+                Crowds.tick(level, player)
+                Wayside.ride(level, player)
+            }
         }
         NeoForge.EVENT_BUS.addListener(RegisterCommandsEvent::class.java) { TownsfolkCommand.register(it.dispatcher) }
         Furnish.register()
         CapitalCommand.init()
+        Wayside.init()
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ ->
             CityPlaces.forget()
             Hands.forget()
