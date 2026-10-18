@@ -5,8 +5,10 @@ tail and four legs in two parts each, posed by the rig animator from clips keyed
 horse: a deep barrel, broad quarters, a short thick crested neck, a big Roman-nosed head, heavy legs with long white
 feathering over broad shod hooves. It wears its harness: a padded collar with brass-tipped hames, the trace hooks and
 a strap of bells across the hame tops; a bridle with blinkers, browband, noseband and bit; a cart saddle with the rein
-rings and the tugs the shafts run through; the belly band, the breeching round its quarters and the crupper. Hidden
-until wanted: its nosebag, and the cut ends of its traces and reins (cut loose, or lying dead in its cut harness).
+rings and the tugs the shafts run through; the belly band, the breeching round its quarters and the crupper; and the
+reins from the bit back to the rings, which the renderer lays from the bit to the ring each frame (the driver's hands
+hold them on from there: living_props.py). Hidden until wanted: its nosebag, the reins tied up at the saddle (nobody
+driving), and the cut ends of its traces and reins (cut loose, or lying dead in its cut harness).
 
 Three coats share one layout: bay (black points, white socks, a blaze), dapple grey, and chestnut with a flaxen mane.
 The coat is painted by where each texel lies on the horse rather than face by face, so its shading, dapples, socks and
@@ -22,12 +24,11 @@ its body. The harness's numbers come from wagon.py (the shafts' height and tips,
 it fits the wagon it pulls. Its clips are draught_horse_anims.py.
 """
 import json
-import math
 import os
 import sys
 
 import numpy as np
-from PIL import Image, ImageDraw
+from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -647,6 +648,41 @@ def place_hooks(model):
     return hooks
 
 
+def place_reins(model):
+    """The reins from each bit ring back to its rein ring on the saddle ("rein_r", "rein_l": the body's, modelled
+    REIN_LENGTH along their own +y from the ring, laid at rest toward the bit; the renderer turns each to the bit as
+    the head moves and stretches it to reach), and the reins tied up at the saddle when nobody drives ("reins_tied":
+    across the saddle from ring to ring and a bight hung down its right side). Returns REIN_LENGTH."""
+    F = frames(model)
+    Rb, Tb, body = F['body']
+    Rh, Th, _ = F['head']
+    length = None
+    for s_, n in ((-1, 'r'), (1, 'l')):
+        ring = np.array([s_ * wg.TERRET[0], by(wg.TERRET[1]), wg.TUG_Z])
+        bit = Rb.T @ (Th + Rh @ np.array(BIT if s_ > 0 else mirror_x(BIT), float) - Tb)
+        d = bit - ring
+        L = float(np.linalg.norm(d))
+        length = round(L, 3) if length is None else length
+        y = d / L
+        x = np.cross(y, np.array([0.0, 1.0, 0.0]))
+        x /= np.linalg.norm(x)
+        body.children.append(Part(f'rein_{n}', tuple(round(float(v), 4) for v in ring), wg.euler_from_axes(x, y), cubes=[
+            C((-0.45, 0.0, -0.2), (0.9, length, 0.4), f'rein_{n}_c', REIN_PAINT)]))
+    # tied up: the reins' slack drawn across the saddle and looped down its right side
+    tz = wg.TUG_Z
+    top = by(wg.TERRET[1] - 0.3)
+    pts = [(2.2, top, tz + 0.9), (-2.2, top, tz + 0.9), (-6.9, by(29.9), tz + 0.6), (-7.4, by(23.6), tz + 1.3),
+           (-7.3, by(23.4), tz - 0.9), (-6.9, by(29.9), tz - 1.0), (-2.2, top, tz - 0.4)]
+    kids = [plate(f'reins_tied_{i}', a, b, 0.9, 0.4, REIN_PAINT_X, (0, -1, 0) if i < 2 or i > 4 else (-1, 0, 0), extra=0.2)
+            for i, (a, b) in enumerate(zip(pts, pts[1:]))]
+    body.children.append(Part('reins_tied', (0.0, 0.0, 0.0), children=kids))
+    return length
+
+
+REIN_PAINT = leather_painter('h_rein', 'y', base=REIN, dark=REIN_D, light=REIN_L, stitch=False)
+REIN_PAINT_X = leather_painter('h_rein_x', 'x', base=REIN, dark=REIN_D, light=REIN_L, stitch=False)
+REIN_LENGTH = [None]
+
 HARNESS = {}
 
 
@@ -654,6 +690,7 @@ def build():
     HARNESS.update(harness_paints())
     model = Model('draught_horse', TEX_W, TEX_H, [body_part(HARNESS)])
     hooks = place_hooks(model)
+    REIN_LENGTH[0] = place_reins(model)
     cubes = list(model.all_cubes())
     names = [c.name for c in cubes]
     dup = sorted({n for n in names if names.count(n) > 1})
@@ -796,7 +833,6 @@ def paint_leg(look, x):
     col = coat_base(look, x)
     col, white = socks(look, x, col, leg_of(x))
     # the knee's and hock's bony fronts lighter, the tendons down the back of the cannon darker
-    L = x.L
     if x.face == 'back':
         col *= 0.9
     col *= (0.97 + 0.06 * vnoise(x.P * np.array([2.0, 0.5, 2.0]), 0.6, seed=8))[..., None]
@@ -1091,7 +1127,7 @@ def posed_faces(model, pose=None, M=np.eye(3), T=np.zeros(3), hide=(), show=()):
     return out
 
 
-HIDDEN = ('nosebag', 'trace_r_cut', 'trace_l_cut', 'rein_r_cut', 'rein_l_cut')
+HIDDEN = ('nosebag', 'reins_tied', 'trace_r_cut', 'trace_l_cut', 'rein_r_cut', 'rein_l_cut')
 TO_GROUND = np.array([0.0, -GROUND, 0.0])     # model space to wagon.render's (the ground at y 0)
 
 
@@ -1171,10 +1207,19 @@ object DraughtHorseMesh {{
     val RIG: List<String> = listOf({rig})
 
     /**
-     * Hidden unless wanted: "nosebag" (feeding at the stand), and the cut ends of the traces ("trace_r_cut",
-     * "trace_l_cut") and reins ("rein_r_cut", "rein_l_cut") once it's cut loose or lies dead by the wreck.
+     * Hidden unless wanted: "nosebag" (feeding at the stand), "reins_tied" (the reins tied up at the saddle while
+     * nobody drives), and the cut ends of the traces ("trace_r_cut", "trace_l_cut") and reins ("rein_r_cut",
+     * "rein_l_cut") once it's cut loose or lies dead by the wreck: then hide "rein_r" and "rein_l".
      */
     val HIDDEN: List<String> = listOf({hidden})
+
+    /**
+     * The reins from the bit back to the rein rings: "rein_r" and "rein_l" (the body's, pivoted at [TERRET_RIGHT] and
+     * [TERRET_LEFT]) are [REIN_LENGTH] px along their own +y, laid at rest toward the bit. Each frame, turn each so its
+     * +y runs from its ring to its bit ring ([BIT_RIGHT], [BIT_LEFT] as the head is posed) and set yScale to the
+     * distance over [REIN_LENGTH]. The driver's hands hold them on from the rings (living_props.py's "rein_*" pieces).
+     */
+    const val REIN_LENGTH = {kf(REIN_LENGTH[0])}
 
     /** A point on the horse: [x], [y], [z] (px) in the frame of [part] (from its pivot, turned with it). */
     class Point(val part: String, val x: Float, val y: Float, val z: Float)
@@ -1185,7 +1230,7 @@ object DraughtHorseMesh {{
     /** The rein rings on the saddle the reins run through (WagonMesh.TERRET). At rest: {kv(ter_l_w)}. */
     val TERRET_LEFT = {ter_l}
     val TERRET_RIGHT = {ter_r}
-    /** The tugs the shafts run through (WagonMesh.SHAFT_X, the shafts' middle line). At rest: {kv(tug_l_w)}. */
+    /** The tugs the shafts run through (the shafts' middle line by the horse: wagon.py's SHAFT_X). At rest: {kv(tug_l_w)}. */
     val TUG_LEFT = {tug_l}
     val TUG_RIGHT = {tug_r}
     /** The hame hooks, the traces' front ends (WagonMesh.HAMES). At rest: {kv(hame_l_w)}. */
