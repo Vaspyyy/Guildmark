@@ -27,6 +27,13 @@ class Town(
     val trees: Int,
     /** The same counts for the town as it was built, before anyone died. */
     val planned: Town? = null,
+    /**
+     * Its bakehouse ovens: the plan's bakeries, an oven each, and any players' Marks have added (economy/works). The
+     * bake goes by them only with the town's works on (see economy/works/Ovens); off, it's the bakers' as always.
+     */
+    val ovens: Int = 1,
+    /** The grade of its town granary, if players' Marks have built one: 0 none, 1 the granary, 2 the great granary (economy/works/Reserve). */
+    val granary: Int = 0,
 ) {
     val adults: Int get() = (people - children).coerceAtLeast(0)
 
@@ -97,10 +104,15 @@ class Town(
     fun counts(): Map<String, Int> = linkedMapOf(
         "people" to people, "children" to children, "farmers" to farmers, "fishers" to fishers, "bakers" to bakers,
         "smiths" to smiths, "fletchers" to fletchers, "innkeepers" to innkeepers, "guards" to guards, "barns" to barns,
-        "coops" to coops, "mills" to mills, "trees" to trees,
+        "coops" to coops, "mills" to mills, "trees" to trees, "ovens" to ovens, "granary" to granary,
     )
 
-    override fun toString(): String = counts().entries.joinToString(", ") { "${it.key} ${it.value}" }
+    /** The same town with [ovens] ovens and its granary at [granary] (a works just finished or taken down). */
+    fun with(ovens: Int = this.ovens, granary: Int = this.granary): Town = Town(
+        people, children, farmers, fishers, bakers, smiths, fletchers, innkeepers, guards, barns, coops, mills, trees, planned, ovens, granary,
+    )
+
+    override fun toString(): String = counts().entries.filter { it.key != "ovens" && it.key != "granary" }.joinToString(", ") { "${it.key} ${it.value}" }
 
     companion object {
         private fun of(c: Map<String, Int>, planned: Town?): Town {
@@ -108,6 +120,8 @@ class Town(
             return Town(
                 n("people"), n("children"), n("farmers"), n("fishers"), n("bakers"), n("smiths"), n("fletchers"),
                 n("innkeepers"), n("guards"), n("barns"), n("coops"), n("mills"), n("trees"), planned,
+                // A town kept before it counted its ovens had its bakery's one
+                c["ovens"] ?: 1, n("granary"),
             )
         }
 

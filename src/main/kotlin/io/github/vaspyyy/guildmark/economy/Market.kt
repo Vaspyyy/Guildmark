@@ -23,7 +23,13 @@ enum class Tally(val id: String) {
     /** Gone off in store. */
     SPOILED("spoiled"),
     /** Lost on the road: carried off by a band that waylaid the wagon, or spilled in its wreck (see [Caravans]). */
-    LOST("lost");
+    LOST("lost"),
+    /** Put by in the town granary: what the morning caravan would have taken away, and what the wagons bring for it (see economy/works/Reserve). */
+    STORED("stored"),
+    /** Given out of the town granary: grain to the mill while the market runs short, roots to the market before a meal. */
+    RELEASED("released"),
+    /** Food given to the town for nothing, at the alms table (see [Economy.given]). */
+    GIVEN("given");
 
     companion object {
         fun byId(id: String): Tally? = entries.firstOrNull { it.id == id }
@@ -56,6 +62,8 @@ enum class Route {
     MARKET,
     /** The market's grain to the mill, when the fields send none. */
     GRANARY,
+    /** The town granary's grain to the mill, while the market's own runs short (see economy/works/Reserve). */
+    RESERVE,
 }
 
 /**

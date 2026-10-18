@@ -1,5 +1,8 @@
 package io.github.vaspyyy.guildmark.economy
 
+import io.github.vaspyyy.guildmark.economy.works.Ovens
+import io.github.vaspyyy.guildmark.economy.works.Reserve
+import io.github.vaspyyy.guildmark.economy.works.Works
 import kotlin.math.pow
 import kotlin.random.Random
 
@@ -281,7 +284,8 @@ object Economy {
         if (town.bakers == 0) return
         val want = town.target(Good.BREAD) * 1.25 + (if (ahead(c.day)) town.use(Good.BREAD) else 0.0) - m.stock(Good.BREAD)
         if (want <= 0.0) return
-        val can = town.bakers * BAKE * tools(m) * m.factor(Maker.OVENS, Good.BREAD)
+        // With the town's works on the ovens bake by how many there are (see Ovens); off, by the bakers as they always have
+        val can = if (Works.enabled()) Ovens.bake(m, town) * tools(m) else town.bakers * BAKE * tools(m) * m.factor(Maker.OVENS, Good.BREAD)
         val flour = m[Site.BAKEHOUSE, Good.FLOUR]
         if (flour / BAKE_FLOUR < can * 0.5) m.idle[Maker.OVENS.ordinal]++
         val loaves = minOf(can, want, flour / BAKE_FLOUR)
@@ -333,6 +337,7 @@ object Economy {
             val n = minOf(load, want, m[from, g])
             if (n <= 0.0) return
             if (from == Site.MARKET) buy(m, g, n) else m.take(from, g, n)
+            if (from == Site.GRANARY) m.tally(Tally.RELEASED, g, n)
             m.add(to, g, n)
             load -= n
             m.carted[route.ordinal] += n
@@ -347,6 +352,8 @@ object Economy {
         move(Good.WHEAT, Site.FARMS, Site.MARKET, Double.MAX_VALUE, Route.MARKET)
         // The granary feeds the mill when the fields don't
         if (milling && m[Site.MILL, Good.WHEAT] < millDay * 0.5) move(Good.WHEAT, Site.MARKET, Site.MILL, millDay * 0.5 - m[Site.MILL, Good.WHEAT], Route.GRANARY)
+        // And the town's own granary, once players have built one, while the market's wheat runs short (see Reserve)
+        if (milling) move(Good.WHEAT, Site.GRANARY, Site.MILL, Reserve.release(m, town, millDay), Route.RESERVE)
         if (load <= 0.0 && Good.entries.any { m[Site.FARMS, it] > CART }) m.idle[Maker.CARTS.ordinal]++
     }
 
@@ -375,6 +382,8 @@ object Economy {
      * and then whatever's left for those who couldn't get what they wanted. What can't be had at all goes short.
      */
     private fun eat(m: Market, town: Town, c: Conditions) {
+        // A great granary puts out its roots first, where the market's running short of them (see Reserve)
+        Reserve.roots(m, town)
         var need = town.people * (if (c.feast) FEAST else 1.0)
         val weights = DoubleArray(Good.entries.size)
         for (round in 0 until 2) {
@@ -428,6 +437,8 @@ object Economy {
             if (g.halfLife <= 0.0) continue
             val keep = 0.5.pow(1.0 / (24 * g.halfLife))
             for (site in Site.entries) {
+                // The town granary's bins keep (see Reserve)
+                if (site == Site.GRANARY) continue
                 val had = m[site, g]
                 if (had <= 0.0) continue
                 m[site, g] = had * keep
@@ -443,8 +454,10 @@ object Economy {
      */
     private fun caravans(m: Market, town: Town, first: Boolean, carried: Boolean) {
         if (first) for ((g, n) in exports(m, town)) {
-            m.take(Site.MARKET, g, n)
-            m.tally(Tally.EXPORTED, g, n)
+            // What would go goes into the town's granary first, while it has room (see Reserve)
+            val kept = Reserve.store(m, town, g, n)
+            m.take(Site.MARKET, g, n - kept)
+            m.tally(Tally.EXPORTED, g, n - kept)
         }
         if (carried) return
         val load = bring(m, town, first)
@@ -458,6 +471,17 @@ object Economy {
 
     /** Where a caravan's [good] goes in a capital: the bakehouse for flour, the market for everything else. */
     fun site(good: Good): Site = if (good == Good.FLOUR) Site.BAKEHOUSE else Site.MARKET
+
+    /**
+     * [amount] of [good] given to [m]'s town for nothing (the alms table, M6 Part D2): it goes into the market, where
+     * the town's next meal takes it as it takes any food there, and is tallied GIVEN. The one call for food given;
+     * the caller marks the markets changed (`Markets.get(level).changed()`).
+     */
+    fun given(m: Market, good: Good, amount: Double) {
+        if (amount <= 0.0) return
+        m.add(Site.MARKET, good, amount)
+        m.tally(Tally.GIVEN, good, amount)
+    }
 
     /** What the morning caravan takes away: half of whatever the market holds beyond [GLUT] times its target. */
     fun exports(m: Market, town: Town): List<Pair<Good, Double>> = Good.entries

@@ -8,8 +8,10 @@ import io.github.vaspyyy.guildmark.city.CapitalPiece
 import io.github.vaspyyy.guildmark.city.plan.FarmKind
 import io.github.vaspyyy.guildmark.city.plan.FarmPropKind
 import io.github.vaspyyy.guildmark.city.plan.Folk
+import io.github.vaspyyy.guildmark.city.plan.Kind
 import io.github.vaspyyy.guildmark.city.plan.Trade
 import io.github.vaspyyy.guildmark.economy.fortune.Fortunes
+import io.github.vaspyyy.guildmark.economy.works.Works
 import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
 import io.github.vaspyyy.guildmark.townsfolk.Furnish
 import io.github.vaspyyy.guildmark.townsfolk.Residents
@@ -165,6 +167,10 @@ class Markets(private val entries: MutableMap<Long, Entry> = HashMap()) : SavedD
             entry.felt = felt
             val carried = Caravans.hour(level, entry, hour)
             Economy.hour(entry.market, entry.town, felt, random(entry.market, hour), OwnStalls.seller(level, entry), carried)
+            // The town's works: at the close, what the day showed a need of; every hour, what they did and their freight
+            if (felt.clock == Economy.NEW_DAY) Works.day(level, entry)
+            Works.hour(level, entry, hour, carried)
+            // Its fortunes after the works, so the close reads the day the works finished
             Fortunes.day(level, entry)
         }
 
@@ -224,13 +230,16 @@ class Markets(private val entries: MutableMap<Long, Entry> = HashMap()) : SavedD
             val coops = plan.outskirts.buildings.count { it.kind == FarmKind.COOP }
             val mills = plan.outskirts.buildings.count { it.kind == FarmKind.WINDMILL || it.kind == FarmKind.MILL }
             val trees = plan.outskirts.props.count { it.kind == FarmPropKind.FRUIT_TREE }
-            fun town(n: IntArray, extra: Int, planned: Town?) = Town(
+            // An oven in each bakery and watermill, and any the town's works have added (see economy/works)
+            val ovens = plan.buildings.count { it.kind == Kind.BAKERY } + plan.outskirts.buildings.count { it.kind == FarmKind.MILL }
+            fun town(n: IntArray, extra: Int, planned: Town?, ovens: Int, granary: Int) = Town(
                 people = n.sum() + extra, children = n[Folk.CHILD.ordinal], farmers = n[Folk.FARMER.ordinal],
                 fishers = n[Folk.FISHER.ordinal], bakers = n[Folk.BAKER.ordinal], smiths = n[Folk.SMITH.ordinal],
                 fletchers = fletchers, innkeepers = n[Folk.INNKEEPER.ordinal], guards = n[Folk.GUARD.ordinal],
-                barns = barns, coops = coops, mills = mills, trees = trees, planned = planned,
+                barns = barns, coops = coops, mills = mills, trees = trees, planned = planned, ovens = ovens, granary = granary,
             )
-            return town(living, others, town(built, 0, null))
+            val capital = center.asLong()
+            return town(living, others, town(built, 0, null, ovens, 0), ovens + Works.ovens(level, capital), Works.grade(level, capital))
         }
     }
 }

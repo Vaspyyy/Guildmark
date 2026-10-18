@@ -116,7 +116,13 @@ enum class Site(val id: String) {
     /** Iron and coal for the forge. */
     SMITHY("smithy"),
     /** Grain for the brewing and ale in the cellar. */
-    TAVERN("tavern");
+    TAVERN("tavern"),
+    /**
+     * The town granary's bins, once players' Marks have built one (economy/works/Reserve): grain, and roots under a
+     * great granary, held against a bad day. It never spoils and isn't the market's stock, so prices and the
+     * caravans go by the market as before.
+     */
+    GRANARY("granary");
 
     companion object {
         fun byId(id: String): Site? = entries.firstOrNull { it.id == id }

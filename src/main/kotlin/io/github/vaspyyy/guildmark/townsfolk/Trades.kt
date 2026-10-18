@@ -12,6 +12,8 @@ import io.github.vaspyyy.guildmark.economy.Markets
 import io.github.vaspyyy.guildmark.economy.Route
 import io.github.vaspyyy.guildmark.economy.Shop
 import io.github.vaspyyy.guildmark.economy.Site
+import io.github.vaspyyy.guildmark.economy.works.Works
+import io.github.vaspyyy.guildmark.economy.works.WorksKind
 import io.github.vaspyyy.guildmark.mill.Mills
 import io.github.vaspyyy.guildmark.registry.ModItems
 import net.minecraft.core.BlockPos
@@ -206,12 +208,13 @@ object Trades {
             Route.FLOUR -> flour(p, life, n)
             Route.MARKET -> produce(p, life, good(p, entry?.market?.carts), n)
             Route.GRANARY -> granary(p, life, n)
+            Route.RESERVE -> reserve(p, life, n)
             null -> null
         }
     }
 
     private fun route(p: Townsperson, carted: DoubleArray?): Route? {
-        val weights = carted ?: doubleArrayOf(4.0, 2.0, 4.0, 0.0)
+        val weights = carted ?: doubleArrayOf(4.0, 2.0, 4.0, 0.0, 0.0)
         var pick = p.random.nextDouble() * weights.sum()
         if (pick <= 0.0) return null
         for (route in Route.entries) {
@@ -261,6 +264,18 @@ object Trades {
     private fun granary(p: Townsperson, life: Life, n: Int): Task? {
         val hall = store(p, life.places.nearest(p.blockPosition(), setOf(Kind.MARKET_HALL.name)).take(1), p.blockPosition()) ?: return null
         return grain(p, life, n, hall)
+    }
+
+    /**
+     * The town granary's grain to the mill, while the market's runs short (economy/works/Reserve): sacks from the
+     * granary's door, or from the market hall's store while the granary has no building of its own to fetch from.
+     */
+    private fun reserve(p: Townsperson, life: Life, n: Int): Task? {
+        val level = level(p)
+        val door = Works.door(level, life.places.capital.center.asLong(), WorksKind.GRANARY)
+        if (door == null || !Places.loaded(level, door, 1)) return granary(p, life, n)
+        val at = Places.beside(level, door, p.blockPosition()) ?: return granary(p, life, n)
+        return grain(p, life, n, door to at)
     }
 
     /** Flour from the mill's store to the bakery's bin (or by the oven, where it keeps none). */
