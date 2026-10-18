@@ -16,6 +16,7 @@ import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.entity.EntitySpawnReason
 import net.minecraft.world.entity.EntityType
 import net.minecraft.world.entity.MobCategory
+import net.minecraft.world.item.DyeColor
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 import net.minecraft.world.level.Level
@@ -219,6 +220,55 @@ object Handcarts {
         Good.TOOLS -> ItemStack(Items.IRON_SHOVEL)
         Good.ALE -> ItemStack(Items.BARREL)
         else -> good.item?.let { ItemStack(it) } ?: ItemStack.EMPTY
+    }
+
+    // ---- A household moving house (townsfolk/Comings: Part D3) ----
+
+    /**
+     * A household's goods, heaped on its cart as it comes to a capital or leaves one: a chair, a chest, a bundle, a pot,
+     * a cage and a rolled mattress. Each is an item of its own that no carter's load uses, so every client knows a
+     * household's load for what it is ([household]) and draws each piece as itself (client/cart's CartClient.piece);
+     * a bundle is heard set on the cart, and the load rattles as the cart rolls.
+     */
+    val CHAIR: ItemStack get() = ItemStack(Items.OAK_STAIRS)
+    val CHEST: ItemStack get() = ItemStack(Items.CHEST)
+    val BUNDLE: ItemStack get() = ItemStack(Items.BUNDLE)
+    val POT: ItemStack get() = ItemStack(Items.DECORATED_POT)
+    val CAGE: ItemStack get() = ItemStack(Items.IRON_BARS)
+    val MATTRESS: ItemStack get() = ItemStack(Items.BED.pick(DyeColor.WHITE))
+
+    /**
+     * What a household of [people] brings, in the order it's heaped on (the floor of the bed first, then the places on
+     * top): someone on their own a chest, a rolled mattress, a chair and a bundle; two of them the pot and a second
+     * bundle too; three or more a second mattress and the cage on top.
+     */
+    fun household(people: Int): List<ItemStack> {
+        val load = arrayListOf(CHEST, MATTRESS, CHAIR, BUNDLE)
+        if (people >= 2) {
+            load += POT
+            load += BUNDLE
+        }
+        if (people >= 3) {
+            load += MATTRESS
+            load += CAGE
+        }
+        return load
+    }
+
+    /** Whether [stack] is a piece of a household's load (see [household]). */
+    fun household(stack: ItemStack): Boolean =
+        stack.`is`(Items.OAK_STAIRS) || stack.`is`(Items.CHEST) || stack.`is`(Items.BUNDLE) || stack.`is`(Items.DECORATED_POT) ||
+            stack.`is`(Items.IRON_BARS) || stack.`is`(Items.BED.pick(DyeColor.WHITE))
+
+    /**
+     * [p] is done with their cart for good (a household moved in has it emptied by the door): let go of where it
+     * stands, it's nobody's from now on, and it goes once no one is looking.
+     */
+    fun leave(p: Townsperson) {
+        val cart = mine(p) ?: return
+        val level = p.level() as? ServerLevel ?: return
+        if (cart.held || cart.waiting) cart.letGo(level)
+        abandon(p, cart)
     }
 
     /** Takes every cart in [level] away (testing); how many there were. */

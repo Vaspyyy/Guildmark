@@ -1,13 +1,21 @@
 package io.github.vaspyyy.guildmark.client.cart
 
+import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.cart.Handcart
 import io.github.vaspyyy.guildmark.cart.Handcarts
 import io.github.vaspyyy.guildmark.client.townsfolk.TownsfolkRenderState
 import io.github.vaspyyy.guildmark.client.townsfolk.TownsfolkRenderer
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap
+import net.minecraft.client.Minecraft
+import net.minecraft.client.resources.sounds.AbstractTickableSoundInstance
+import net.minecraft.client.resources.sounds.SoundInstance
+import net.minecraft.resources.Identifier
+import net.minecraft.sounds.SoundEvent
+import net.minecraft.sounds.SoundSource
 import net.minecraft.tags.ItemTags
 import net.minecraft.util.Mth
+import net.minecraft.world.item.DyeColor
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 import net.neoforged.bus.api.IEventBus
@@ -17,6 +25,7 @@ import net.neoforged.neoforge.client.renderstate.RegisterRenderStateModifiersEve
 import net.neoforged.neoforge.common.NeoForge
 import kotlin.math.atan2
 import kotlin.math.cos
+import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.sin
 
@@ -51,6 +60,10 @@ object CartClient {
 
     /** Which of [HandcartMesh.PIECES] shows [stack]: a sack of grain or of flour, a crate, a basket of loaves, a box of fish. */
     fun piece(stack: ItemStack): Int = when {
+        // A household's goods (Handcarts.household), until pieces of their own are drawn: the bundle and the rolled
+        // mattress as sacks, the pot in a basket, the chest, the chair and the cage in crates
+        stack.`is`(Items.BUNDLE) || stack.`is`(Items.BED.pick(DyeColor.WHITE)) -> SACK
+        stack.`is`(Items.DECORATED_POT) -> BASKET
         stack.`is`(Items.SUGAR) -> FLOUR
         stack.`is`(Items.WHEAT) || stack.`is`(Items.WHEAT_SEEDS) || stack.`is`(Items.BEETROOT_SEEDS) || stack.`is`(Items.HAY_BLOCK) -> SACK
         stack.`is`(Items.BREAD) || stack.`is`(Items.COOKIE) || stack.`is`(Items.PUMPKIN_PIE) || stack.`is`(Items.CAKE) -> BASKET
@@ -125,6 +138,8 @@ object CartClient {
                 look.since[s] = if (first) SETTLE else 0
             } else if (look.since[s] < SETTLE) {
                 look.since[s]++
+                // A household's things, heard as each comes down on the bed
+                if (look.since[s] == SETTLE - 1 && Handcarts.household(look.shown[s])) bundle(cart)
             }
             if (!look.leaving[s].isEmpty && ++look.gone[s] > LIFT) look.leaving[s] = ItemStack.EMPTY
         }
@@ -138,11 +153,73 @@ object CartClient {
             look.rest[s] = if (first) target else Mth.approach(look.rest[s], target, REST_SPEED)
             if (first) look.restO[s] = look.rest[s]
         }
+        rattle(cart, look)
     }
 
     private fun removed(cart: Handcart) {
         val look = cart.look as? Look ?: return
         if (look.puller >= 0 && pulled.get(look.puller) === cart) pulled.remove(look.puller)
+        (look.rattle as? Rattle)?.end()
+        look.rattle = null
+    }
+
+    // ---- A household's load, heard ----
+
+    /** A bundle set down on [cart] (streets.bundle, heard 16 blocks off). */
+    private fun bundle(cart: Handcart) {
+        val level = cart.level()
+        level.playLocalSound(cart.x, cart.y + 0.9, cart.z, BUNDLE, SoundSource.NEUTRAL, 0.7f, 0.92f + level.random.nextFloat() * 0.16f, false)
+    }
+
+    /**
+     * A household's load rattling on [cart] as it rolls (streets.handcart_goods, a loop heard 24 blocks off): faster
+     * and higher the faster it goes, fading out as it stops; begun as it sets off, and let go once it has stood a while.
+     */
+    private fun rattle(cart: Handcart, look: Look) {
+        var loaded = false
+        for (s in 0 until Handcart.SLOTS) if (!look.shown[s].isEmpty && Handcarts.household(look.shown[s])) loaded = true
+        val speed = if (loaded) hypot(cart.x - cart.xo, cart.z - cart.zo) * 20.0 else 0.0
+        var loop = look.rattle as? Rattle
+        if (loop == null || loop.isStopped) {
+            if (speed < RATTLE_FROM) return
+            loop = Rattle(cart)
+            look.rattle = loop
+            Minecraft.getInstance().soundManager.play(loop)
+        }
+        loop.speed = speed
+    }
+
+    /** The rattle of a household's load on one cart. */
+    private class Rattle(private val cart: Handcart) : AbstractTickableSoundInstance(GOODS, SoundSource.NEUTRAL, SoundInstance.createUnseededRandom()) {
+        /** Blocks a second the cart is rolling. */
+        var speed = 0.0
+        private var still = 0
+
+        init {
+            looping = true
+            attenuation = SoundInstance.Attenuation.LINEAR
+            volume = 0f
+            x = cart.x
+            y = cart.y + 0.6
+            z = cart.z
+        }
+
+        override fun canStartSilent(): Boolean = true
+
+        override fun tick() {
+            if (cart.isRemoved) return stop()
+            x = cart.x
+            y = cart.y + 0.6
+            z = cart.z
+            val target = (speed / RATTLE_FULL).toFloat().coerceIn(0f, 1f) * RATTLE_VOLUME
+            volume += (target - volume) * if (target > volume) 0.25f else 0.12f
+            if (volume < 0.003f && target <= 0f) volume = 0f
+            pitch = (speed / RATTLE_PITCH).toFloat().coerceIn(0.8f, 1.25f)
+            still = if (volume <= 0f) still + 1 else 0
+            if (still > RATTLE_LINGER) stop()
+        }
+
+        fun end() = stop()
     }
 
     // ---- The puller, turned to the cart ----
@@ -216,6 +293,9 @@ object CartClient {
         /** Px a piece rests up off the floor (on what's under it), eased; and last tick's. */
         val rest = FloatArray(Handcart.SLOTS)
         val restO = FloatArray(Handcart.SLOTS)
+
+        /** A household's load rattling as it rolls, while it's heard. */
+        var rattle: Any? = null
     }
 
     /** A sack of grain: the first of HandcartMesh.PIECES. */
@@ -236,6 +316,16 @@ object CartClient {
 
     /** Ticks the shafts take to come up into the hands, or down onto the ground. */
     private const val LIFT_TICKS = 8f
+
+    // A household's load: set down on the bed, and rattling as it rolls (blocks a second it starts at, is loudest at
+    // and is at its own pitch at; how loud at most; ticks it lingers silent before it's let go)
+    private val BUNDLE: SoundEvent = SoundEvent.createVariableRangeEvent(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "streets.bundle"))
+    private val GOODS: SoundEvent = SoundEvent.createVariableRangeEvent(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "streets.handcart_goods"))
+    private const val RATTLE_FROM = 0.4
+    private const val RATTLE_FULL = 1.6
+    private const val RATTLE_PITCH = 2.05
+    private const val RATTLE_VOLUME = 0.6f
+    private const val RATTLE_LINGER = 40
     private const val ROLL_EASE = 0.35f
     /** Px a tick a piece on top settles down (or up). */
     private const val REST_SPEED = 0.9f
