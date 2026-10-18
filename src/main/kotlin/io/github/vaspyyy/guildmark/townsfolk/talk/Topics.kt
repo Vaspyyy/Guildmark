@@ -161,10 +161,10 @@ object Topics {
     /** Every registered source, in the order they came. */
     val registered: List<TopicSource> get() = sources
 
-    /** What [Ask.speaker] says for [Ask.occasion], or null: nothing worth saying (they nod). */
-    fun pick(ask: Ask): Topic? {
+    /** What [Ask.speaker] says for [Ask.occasion], or null: nothing that scores [least] or more (they nod). */
+    fun pick(ask: Ask, least: Double = LEAST): Topic? {
         if (sources.isEmpty()) return old(ask)
-        val best = all(ask).take(DRAW).filter { it.score >= LEAST }
+        val best = all(ask).take(DRAW).filter { it.score >= least }
         if (best.isEmpty()) return null
         // The chance goes with the score squared, so the best usually wins and the others come up now and then
         var roll = ask.speaker.random.nextDouble() * best.sumOf { it.score * it.score }

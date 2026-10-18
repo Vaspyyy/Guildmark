@@ -249,4 +249,13 @@ object Claims {
         val map = of(level)
         if (map[pos.asLong()]?.holder == who.id) map.remove(pos.asLong())
     }
+
+    /**
+     * Keeps every place [who] holds theirs for [ticks] more, while something else has charge of them and the task that
+     * took the places waits (stopped in the street, standing aside): nobody takes their seat or station meanwhile.
+     */
+    fun held(who: Entity, ticks: Int = 200) {
+        val now = who.level().gameTime
+        for (claim in of(who.level()).values) if (claim.holder == who.id && claim.until >= now) claim.until = maxOf(claim.until, now + ticks)
+    }
 }

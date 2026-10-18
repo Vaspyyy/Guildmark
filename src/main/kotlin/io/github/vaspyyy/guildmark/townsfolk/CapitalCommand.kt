@@ -317,7 +317,7 @@ object CapitalCommand {
     }
 
     /** The townsperson [player] is looking at, within [SIGHT] and not behind a wall; else the nearest within [NEAR]. */
-    private fun lookedAt(player: ServerPlayer): Townsperson? {
+    fun lookedAt(player: ServerPlayer): Townsperson? {
         val level = player.level()
         val eye = player.eyePosition
         val look = player.getViewVector(1f)

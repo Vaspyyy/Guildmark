@@ -306,6 +306,7 @@ object Wayside {
 
         override fun tick(p: Townsperson) {
             val now = p.level().gameTime
+            if ((now - since) % 100 == 0L) Claims.held(p)
             if (now > until || now - since > MOST) return goBack(p)
             if (returning) go(p, spot)
             if (!there) {

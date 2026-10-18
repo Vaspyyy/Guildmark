@@ -6,6 +6,7 @@ import io.github.vaspyyy.guildmark.faction.Factions
 import io.github.vaspyyy.guildmark.faction.Pickpocket
 import io.github.vaspyyy.guildmark.faction.SwornKnight
 import io.github.vaspyyy.guildmark.outlaw.Captives
+import io.github.vaspyyy.guildmark.townsfolk.talk.Talk
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.core.UUIDUtil
@@ -485,7 +486,7 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
     }
 
     /** Whoever hurt them lately, or a monster close by in sight. */
-    private fun threat(): LivingEntity? {
+    fun threat(): LivingEntity? {
         lastHurtByMob?.let { if (it.isAlive && tickCount - lastHurtByMobTimestamp < 100 && distanceToSqr(it) < 256.0) return it }
         return level().getEntitiesOfClass(Mob::class.java, boundingBox.inflate(8.0, 4.0, 8.0)) { it is Enemy && it.isAlive && it !is Townsperson && it !is SwornKnight }
             .filter { hasLineOfSight(it) }
@@ -513,6 +514,8 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
         // Crouched behind them: a hand in their purse (face to face, it's only a word)
         if (player.isShiftKeyDown && !watcher && (level !is ServerLevel || Pickpocket.tryLift(level, player, this))) return InteractionResult.SUCCESS
         if (level is ServerLevel && player is ServerPlayer && Stalls.interact(level, player, this)) return InteractionResult.SUCCESS
+        // A talk: a greeting that knows them, what's on their mind, then the player's choices (asleep, a mumble; busy, a word over the shoulder)
+        if (level is ServerLevel && player is ServerPlayer && Talk.open(level, player, this)) return InteractionResult.SUCCESS
         if (isSleeping) return InteractionResult.PASS
         if (level is ServerLevel) {
             attend(player)

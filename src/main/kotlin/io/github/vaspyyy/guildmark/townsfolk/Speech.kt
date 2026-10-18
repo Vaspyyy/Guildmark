@@ -12,7 +12,8 @@ import net.minecraft.network.chat.MutableComponent
  * A talk line (living-world/design-voices.md section 5) may carry a detail after a "~", in the same form, that's shown
  * but never voiced: "talk.market.dear_0~talk.detail.price|item.minecraft.bread|3" says "Everything's dear this week."
  * and then, in grey, "Bread: 3 Marks.". A talk line that names something shows its .named text, the names filled in
- * ("talk.greet.friend_0|=Ransom"), since names can't be voiced.
+ * ("talk.greet.friend_0|=Ransom"), since names can't be voiced; a detail said as a line of its own (talk.detail.*) shows as
+ * it is.
  */
 object Speech {
     /** The line [key] naming [args] (numbers, names as "=Name", or lang keys). */
@@ -36,7 +37,7 @@ object Speech {
         val main = line.substringBefore('~')
         if ('|' !in main) return Component.translatable("say.guildmark.$main")
         val parts = main.split('|')
-        val key = if (parts[0].startsWith("talk.")) parts[0] + ".named" else parts[0]
+        val key = if (parts[0].startsWith("talk.") && !parts[0].startsWith("talk.detail.")) parts[0] + ".named" else parts[0]
         return Component.translatable("say.guildmark.$key", *args(parts))
     }
 

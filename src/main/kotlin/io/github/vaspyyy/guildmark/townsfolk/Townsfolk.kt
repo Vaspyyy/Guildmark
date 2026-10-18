@@ -1,6 +1,9 @@
 package io.github.vaspyyy.guildmark.townsfolk
 
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.townsfolk.talk.Talk
+import io.github.vaspyyy.guildmark.townsfolk.talk.TalkDebug
+import io.github.vaspyyy.guildmark.townsfolk.talk.sources.DailySources
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.core.particles.ParticleType
@@ -71,6 +74,9 @@ object Townsfolk {
         Furnish.register()
         CapitalCommand.init()
         Wayside.init()
+        Talk.init()
+        DailySources.init()
+        TalkDebug.init()
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ ->
             CityPlaces.forget()
             Hands.forget()
