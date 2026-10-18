@@ -700,6 +700,9 @@ def hoist():
             p, held = ho_hand(side, k)
             check(c, f'{side.replace("_arm", "")} fist on the rope (t={k:g})', ta.fk(c, k, side, GRIP[side]), p, tol=0.7)
     feet_down(c, (0.0, 2.0, 22.0), HO_FEET)
+    # The hoist's renderer runs its rope and turns its pulley by works_art.haul(): it must haul as these hands do
+    gap = max(abs(wa.haul(float(k)) - ho_hauled(float(k))) for k in np.arange(0.0, HO_LEN + 0.01, 0.25))
+    assert gap < 1e-6, f'works_art.haul() is {gap:.4f} px off the hoist clip\'s heaves: make the two agree'
     return c
 
 
