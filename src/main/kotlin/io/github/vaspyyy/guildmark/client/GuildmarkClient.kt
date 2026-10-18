@@ -172,6 +172,8 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
         io.github.vaspyyy.guildmark.client.cart.CartClient.register(modBus)
         // The market's displays: the goods heaped on them (client/economy)
         io.github.vaspyyy.guildmark.client.economy.WaresClient.register(modBus)
+        // The mills: the windmills' sails and the watermills' wheels turning on their hubs, and their sounds (client/mill)
+        io.github.vaspyyy.guildmark.client.mill.MillClient.register(modBus)
         HdPack.register(modBus)
         modBus.addListener(RegisterRenderStateModifiersEvent::class.java) { event ->
             event.registerAvatarEntityModifier(CombatAnimator.AVATAR)

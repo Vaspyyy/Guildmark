@@ -32,13 +32,19 @@ class MillBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(MillRegist
     var capital: BlockPos? = null
         private set
 
-    /** The wood its sails or its wheel are built of (its city's style), its sails' cloth, and which of the capital's windmills it is ([rank] of [count]). */
+    /** The wood its sails or its wheel are built of: its city's style. */
     var style: CityStyle = CityStyle.TEMPERATE
         private set
+
+    /** The colour of its sails' cloth. */
     var cloth: Dye = Dye.WHITE
         private set
+
+    /** Which of its capital's windmills it is, counted from 0: only one of them shows a broken sail. */
     var rank = 0
         private set
+
+    /** How many windmills its capital has. */
     var count = 0
         private set
 
@@ -94,11 +100,13 @@ class MillBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(MillRegist
     // ---- How it turns, on a client ----
 
     /**
-     * How far round the sails or the wheel have turned, in radians, and where they were a tick ago: the sails turn against
-     * the clock seen from in front, the wheel whichever way its stream runs ([spin]).
+     * How far round the sails or the wheel have turned, in radians: the sails turn against the clock seen from in front,
+     * the wheel whichever way its stream runs ([spin]).
      */
     var turn = 0f
         private set
+
+    /** Where [turn] was a tick ago. */
     var turnO = 0f
         private set
 
@@ -110,9 +118,11 @@ class MillBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(MillRegist
     var spin = 1
         private set
 
-    /** How far the sails' cloth is furled round the whips, from 0 spread to 1 furled, and a tick ago. */
+    /** How far the sails' cloth is furled up along the whips, from 0 spread to 1 furled. */
     var furl = 0f
         private set
+
+    /** Where [furl] was a tick ago. */
     var furlO = 0f
         private set
 
@@ -120,9 +130,11 @@ class MillBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(MillRegist
     var broken = -1
         private set
 
-    /** How far the broken sail's hanging end swings from straight down, in radians, and a tick ago. */
+    /** How far the broken sail's hanging end swings from straight down, in radians. */
     var swing = 0f
         private set
+
+    /** Where [swing] was a tick ago. */
     var swingO = 0f
         private set
     private var swingSpeed = 0f
@@ -229,21 +241,24 @@ class MillBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(MillRegist
         turn += spin * speed * (1f + surge * sin(SURGE_BEATS * turn))
     }
 
-    /** The sail that's shown broken when the sails come to rest a quarter turn [quarter] round: always one lying level, from which the broken end hangs. */
-    private fun brokenArm(quarter: Int): Int {
-        val pick = ((blockPos.asLong() * 31L) ushr 17).toInt() and 1
-        return Math.floorMod(quarter + 1 + 2 * pick, 4)
-    }
+    /**
+     * The sail that's shown broken when the sails come to rest [quarter] quarter turns round: the one lying level to the
+     * left seen from in front, whose cloth is on its upper side, so that its broken end hangs clear of the cloth.
+     */
+    private fun brokenArm(quarter: Int): Int = Math.floorMod(quarter + 3, 4)
 
     companion object {
         /** Every mill hub loaded on this client, for the sounds by them (client/mill/MillSounds). */
         val LOADED = HashSet<MillBlockEntity>()
 
+        /** A whole turn, in radians. */
         const val TWO_PI = (2.0 * PI).toFloat()
+
+        /** A quarter turn, in radians: from one sail to the next. */
         const val QUARTER = (PI / 2.0).toFloat()
         private const val WRAP = TWO_PI * 64f
 
-        /** The sails at work: a whole turn in eight seconds, up to speed in about six and braked to rest in about as long. */
+        /** The sails at work, in radians a tick: a whole turn in eight seconds, up to speed in about six and braked to rest in about as long. */
         const val SAIL_SPEED = TWO_PI / 160f
         private const val SAIL_ACCEL = SAIL_SPEED / 120f
         private const val MIN_SPEED = SAIL_SPEED / 400f
@@ -253,9 +268,13 @@ class MillBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(MillRegist
         private const val FURL = 1f / 80f
         private const val UNFURL = 1f / 60f
 
-        /** The wheel: a turn in sixteen seconds idle, in eight while it grinds, and how quickly it takes up a new pace. */
+        /** The wheel turning with the stream while the mill is idle, in radians a tick: a turn in sixteen seconds. */
         const val WHEEL_IDLE = TWO_PI / 320f
+
+        /** The wheel while the mill grinds, in radians a tick: a turn in eight seconds. */
         const val WHEEL_WORK = TWO_PI / 160f
+
+        // How quickly the wheel takes up a new pace, and how its pace surges as each paddle bites
         private const val WHEEL_EASE = 0.012f
         private const val SURGE_BEATS = 8f
         private const val WORK_SURGE = 0.16f

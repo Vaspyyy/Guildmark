@@ -241,3 +241,12 @@ renders previews of it without the game: see `shaderkit/README.md`.
   full-bright glow overlays, and their block and item models, blockstates and item definitions.
   Run it with `python3 -B art/scripts/region_terrain.py src/main/resources/assets/guildmark [preview-dir]`.
 - Sound effects, music and Halvard's voice: see `audio/README.md`.
+- `scripts/mill_art.py` is the mills' turning parts, which `client/mill/` draws on the hubs the capitals' plan places: a
+  windmill's sails (a timber frame in its city's wood, one texture a style, and white canvas the game dyes with the
+  sail's cloth: spread, furled into a roll, or torn on a broken sail whose outer half hangs from where it broke) and a
+  watermill's wheel (eight spokes a side and sixteen paddles). It writes the textures (`textures/entity/mill/`),
+  `client/mill/MillMesh.kt` (GENERATED: edit the script, never the Kotlin), the three `.bbmodel` files and previews;
+  `--check` compiles the Kotlin and compares the quads Minecraft draws, and where they sample the texture, with the
+  Python ones. Its bottom faces take their texture as Minecraft lays it, back to front like the top's (modelkit's
+  `world_faces` lays the bottom the other way round).
+  Run it with `python3 -B art/scripts/mill_art.py [--check] [assets dir [preview dir [models dir]]]`.
