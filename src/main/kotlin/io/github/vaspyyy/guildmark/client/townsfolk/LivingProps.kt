@@ -149,7 +149,12 @@ internal object LivingProps {
      * Whether [p] was just put somewhere new along with their move: onto the seat as SIT_DOWN starts, or onto the floor
      * in front of it as whatever follows STAND_UP starts (sit_down starts, and stand_up ends, standing on that floor).
      */
-    private fun moved(p: Townsperson): Boolean = p.shownActivity == Activity.SIT_DOWN || p.lastActivity == Activity.STAND_UP
+    private fun moved(p: Townsperson): Boolean = p.shownActivity == Activity.SIT_DOWN || p.lastActivity == Activity.STAND_UP ||
+        // The caravan crew: onto the wagon's seat as climb_up starts, onto the road as jump_down and cut_loose end
+        p.shownActivity == Activity.CLIMB_UP || p.lastActivity == Activity.JUMP_DOWN || p.lastActivity == Activity.CUT_LOOSE
+
+    /** Run after the props are posed (TownsfolkModel.setupAnim): client/caravan's reins and nosebag. */
+    var after: ((TownsfolkModel, TownsfolkRenderState) -> Unit)? = null
 
     /**
      * Each client tick (from LivingMoments.tick): someone put onto a seat or off it is put straight there, not slid

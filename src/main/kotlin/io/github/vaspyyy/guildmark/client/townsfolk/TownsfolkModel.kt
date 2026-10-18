@@ -85,6 +85,7 @@ class TownsfolkModel(root: ModelPart) : HumanoidModel<TownsfolkRenderState>(root
         hang(line, sin(state.ageInTicks * 0.07f) * 0.03f, root(), rightArm, rod)
         // ---- Living World (LivingProps.kt): its clips' props shown, tracked and hung ----
         living.pose(this, state)
+        LivingProps.after?.invoke(this, state)
         // ---- end Living World ----
     }
 

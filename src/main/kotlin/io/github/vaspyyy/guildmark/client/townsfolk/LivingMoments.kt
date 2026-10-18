@@ -238,9 +238,13 @@ internal object LivingMoments {
                     repeat(2) { puff(level, ParticleTypes.SPLASH, at, 0.15, 0.06, 0.03) }
                 }
             }
-            else -> {}
+            // The caravan crew's clips: their caravan.* sounds (client/caravan's CaravanSounds)
+            else -> caravan?.invoke(p, clip, m.name, at)
         }
     }
+
+    /** Plays a moment of a clip this has no case for: [clip]'s moment [moment], by [Townsperson], at a point of the world. */
+    var caravan: ((Townsperson, String, String, Vec3) -> Unit)? = null
 
     /** Where moment [m] happens in the world: its point of the clip's space, set by where [p] stands and faces. */
     private fun at(p: Townsperson, m: LivingSchedule.Moment): Vec3 {
