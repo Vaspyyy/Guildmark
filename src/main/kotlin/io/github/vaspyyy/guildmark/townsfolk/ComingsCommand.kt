@@ -158,7 +158,8 @@ object ComingsCommand {
         if (empty.isNotEmpty()) say(source, line().append(label("To let: ")).append(plain(empty.joinToString(", ") { "#$it" })))
         val playing = ComingsBodies.describe(here.key)
         for (p in playing) say(source, line().append(label("Now: ")).append(plain(p)))
-        if (town.bodies.isNotEmpty()) say(source, grey("${town.bodies.size} of them in by the record are still to be met at home (their bodies are made out of sight as you come near)."))
+        val toMeet = town.bodies.count { !ComingsBodies.busy(it) }
+        if (toMeet > 0) say(source, grey("$toMeet of them in by the record are still to be met at home (their bodies are made out of sight as you come near)."))
         if (town.why.isNotEmpty()) say(source, line().append(label("Lately: ")).append(grey(town.why)))
         return 1
     }

@@ -875,10 +875,18 @@ object Comings {
         data.changed()
     }
 
+    /** [ids] have their bodies about now: none is to be made for them at home. */
+    internal fun met(level: ServerLevel, capital: Long, ids: List<Int>) {
+        if (ids.isEmpty()) return
+        val town = ComingsData.get(level).find(capital) ?: return
+        if (town.bodies.removeAll(ids.toSet())) ComingsData.get(level).changed()
+    }
+
     /**
      * The bodies still to be made at home in the capitals players are in: each just inside their front door, with its
      * land loaded, nobody within [Furnish.UNSEEN] blocks of the house and nobody in sight of the spot ([MOST_BODIES] a
-     * capital at a time). Someone whose own body is about already needs none.
+     * capital at a time). Someone whose own body is about already needs none, and someone coming in at a gate just now
+     * has theirs made there (if it never is, the server stopping first, say, it's made at home after all).
      */
     private fun bodies(level: ServerLevel) {
         val data = ComingsData.get(level)
@@ -896,11 +904,13 @@ object Comings {
             for (id in town.bodies.toList()) {
                 if (made >= MOST_BODIES) break
                 val r = residents[id]
-                if (r == null || !r.alive || ComingsBodies.busy(id)) {
+                if (r == null || !r.alive) {
                     town.bodies.remove(id)
                     data.changed()
                     continue
                 }
+                // Coming in at a gate just now: their bodies are made on the road (they're kept here only in case they never are)
+                if (ComingsBodies.busy(id)) continue
                 if (body(level, r) != null) {
                     town.bodies.remove(id)
                     data.changed()

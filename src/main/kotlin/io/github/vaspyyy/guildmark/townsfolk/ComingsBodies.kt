@@ -144,6 +144,8 @@ internal object ComingsBodies {
             val party = Party(level, h, kind, places, home, door, g, way, gateAt, level.gameTime + delay, start.first)
             parties[h.id] = party
             for (id in h.members) busy[id] = party
+            // Should the server stop before they're set down, they're made at home after all (none of this is saved)
+            Comings.later(level, h.capital, h.members)
             return true
         }
         return false
@@ -586,9 +588,13 @@ internal object ComingsBodies {
         val members = party.h.members.mapNotNull { residents[it] }.filter { it.alive }
             .sortedWith(compareBy({ if (it.role.adult) 0 else 1 }, { it.id }))
         val later = ArrayList<Int>()
+        val met = ArrayList<Int>()
         for ((k, r) in members.withIndex()) {
             // Someone whose body is about already is in as they are
-            if (Comings.body(level, r) != null) continue
+            if (Comings.body(level, r) != null) {
+                met += r.id
+                continue
+            }
             val off = if (k == 0) Vec3.ZERO else Vec3(back.x * (2.5 + 1.4 * ((k + 1) / 2)) + back.z * (if (k % 2 == 0) 1.0 else -1.0),
                 0.0, back.z * (2.5 + 1.4 * ((k + 1) / 2)) - back.x * (if (k % 2 == 0) 1.0 else -1.0))
             val at = stand(level, BlockPos.containing(Vec3.atBottomCenterOf(spot).add(off))) ?: spot
@@ -600,8 +606,10 @@ internal object ComingsBodies {
             p.director = null
             take(p)
             party.crew += Hand(party, p, r.id)
+            met += r.id
         }
         if (later.isNotEmpty()) Comings.later(level, party.h.capital, later)
+        Comings.met(level, party.h.capital, met)
         if (party.crew.isEmpty()) return false
         for (h in party.crew) h.p.director = h
         val puller = party.puller ?: return false
