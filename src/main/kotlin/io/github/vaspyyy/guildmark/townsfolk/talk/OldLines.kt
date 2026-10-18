@@ -4,8 +4,12 @@ import io.github.vaspyyy.guildmark.block.BoardPart
 import io.github.vaspyyy.guildmark.block.NoteKind
 import io.github.vaspyyy.guildmark.block.QuestBoardBlock
 import io.github.vaspyyy.guildmark.city.Capitals
+import io.github.vaspyyy.guildmark.economy.CaravanData
+import io.github.vaspyyy.guildmark.economy.CaravanRoutes
+import io.github.vaspyyy.guildmark.economy.Caravans
 import io.github.vaspyyy.guildmark.economy.Good
 import io.github.vaspyyy.guildmark.economy.Markets
+import io.github.vaspyyy.guildmark.economy.RoadPeril
 import io.github.vaspyyy.guildmark.economy.Shop
 import io.github.vaspyyy.guildmark.enemy.DuskRider
 import io.github.vaspyyy.guildmark.guild.GuildNews
@@ -229,11 +233,17 @@ internal object OldLines {
     }
 
     /**
-     * No outlaws camped on the roads round the capital. (M4 has the roads' own state, Troubled or not; until it's
-     * merged, an outlaw camp near the town stands for a road made unsafe.)
+     * The roads round the capital are safe: with the caravans on, no road into it Troubled or worse (its peril); else,
+     * or while its roads are still being worked out, no outlaw band at large near the town.
      */
     private fun roadsSafe(level: ServerLevel, p: Townsperson): Boolean {
         val heart = capital(level, p) ?: return false
+        // With the wagons on the roads, it's what the roads' peril says: no road into the capital Troubled or worse
+        val legs = if (Caravans.enabled()) CaravanRoutes.legs(level, heart.asLong()) else null
+        if (!legs.isNullOrEmpty()) {
+            val data = CaravanData.get(level)
+            return legs.none { RoadPeril.stage(data, heart.asLong(), it.road).troubled }
+        }
         if (!Outlaws.enabled()) return true
         return OutlawCamps.get(level).wanted(heart, BANDS).none { !it.slain }
     }

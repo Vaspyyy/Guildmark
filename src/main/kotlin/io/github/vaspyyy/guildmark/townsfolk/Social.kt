@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.townsfolk
 
+import io.github.vaspyyy.guildmark.economy.Caravans
 import io.github.vaspyyy.guildmark.faction.Faction
 import io.github.vaspyyy.guildmark.faction.Factions
 import io.github.vaspyyy.guildmark.townsfolk.talk.Exchange
@@ -63,6 +64,8 @@ object Lines {
     /** What they say to a player who speaks to them: talk on, what's on their mind for them, or a greeting that knows them. */
     fun talk(p: Townsperson, player: Player? = null): String {
         if (Talk.enabled()) Street.word(p, player)?.let { return it }
+        // Talk off, one time in three the road's news, while it has any (talk on, it comes through the topics already)
+        if (!Talk.enabled() && p.role != TownRole.CHILD && p.random.nextInt(3) == 0) Caravans.talk(p, player as? ServerPlayer)?.let { return it }
         player?.let { kin(p, it) }?.let { return it }
         if (p.role == TownRole.CITIZEN && p.random.nextInt(3) == 0) return gossip(p)
         return trade(p, player)?.takeIf { p.random.nextInt(3) != 0 } ?: greet(p)
@@ -80,8 +83,12 @@ object Lines {
         return if (cold && faction != Faction.STARWATCH) "${p.role.id}_cold_0" else null
     }
 
-    /** Small talk; talk on, only what's true now ("Have you seen my cat?" always is). */
-    fun gossip(p: Townsperson): String = if (p.role == TownRole.CHILD) pick(p, "child_", 6) else truly(p, "gossip_", 12) ?: "gossip_5"
+    /** Small talk; talk on, only what's true now ("Have you seen my cat?" always is), and one time in three the road's news while it has any. */
+    fun gossip(p: Townsperson): String {
+        if (p.role == TownRole.CHILD) return pick(p, "child_", 6)
+        if (p.random.nextInt(3) == 0) Caravans.talk(p)?.let { return it }
+        return truly(p, "gossip_", 12) ?: "gossip_5"
+    }
 
     fun reply(p: Townsperson): String = if (p.role == TownRole.CHILD) "child_4" else pick(p, "reply_", 6)
 
