@@ -55,6 +55,7 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.sin
+import kotlin.math.sqrt
 
 /**
  * Flat quads for one layer of a market board, in the board's own frame: x to the right as seen from the front, y up,
@@ -170,6 +171,7 @@ class MarketBoardRenderState : BlockEntityRenderState() {
  * whose order is taken gets its stamp with a thump. Now and then a breeze lifts a slip's corner, never two at once,
  * or a ticket out from the rail. Lines written while nobody was by show whole. The writing is lit by the light at the
  * board (dark at night unless a lamp is near, like a sign's) and fades out past [MarketBoardArt.FADE_NEAR] blocks.
+ * Over the ridge the medallion shows the town's times on a carved drum, and turns when they move (see [medallion]).
  *
  * The lettering is the board's own (see art/scripts/market_board_letters.py): every glyph of the chalk hand is cut into
  * pieces, each swept one way, so a line can be revealed exactly as the chalk's tip goes; everything is laid out by the
@@ -191,7 +193,8 @@ class MarketBoardRenderer(context: BlockEntityRendererProvider.Context) :
 
     override fun getRenderBoundingBox(board: MarketBoardBlockEntity): AABB {
         val p = board.blockPos
-        return AABB(p.x - 1.0, p.y.toDouble(), p.z - 1.0, p.x + 2.0, p.y + 2.0, p.z + 2.0)
+        // The medallion stands over the board's top
+        return AABB(p.x - 1.0, p.y.toDouble(), p.z - 1.0, p.x + 2.0, p.y + 2.75, p.z + 2.0)
     }
 
     // ---------------------------------------------------------------- extraction
@@ -234,6 +237,7 @@ class MarketBoardRenderer(context: BlockEntityRendererProvider.Context) :
         if (fade > 0.002f) town(board, state, mem, now, fade)
         // Kept up to date even out of reading range, so nothing's rewritten before your eyes that was written before you came
         slate(board, state, mem, level, pos, now, frame, fade, letters)
+        medallion(board, state, mem, level, pos, now, cameraPosition)
         mem.fresh = false
         state.any = true
     }
@@ -1149,6 +1153,128 @@ class MarketBoardRenderer(context: BlockEntityRendererProvider.Context) :
         if (tack > 0f) tackOn(q, p, A.TICKET_W / 2, A.TICKET_PIN, A.TACK_SIZE * pressed, alpha, light, paper)
     }
 
+    // ---------------------------------------------------------------- the medallion
+
+    /**
+     * The medallion at the board's head: a drum of five carved faces, one for each of the town's times, on an iron axle
+     * between two posts over the ridge (the posts and their plinth are the top middle cell's model). It shows the face
+     * of the times [board] holds. When they move ([MarketBoardBlockEntity.turned] says when) it turns to the new face as
+     * a heavy drum would, rolling up for better times and down for worse, swinging a little past onto its catch and
+     * back; a little dust comes out of its bearings as it starts and off its faces at the catch. At rest it stirs on its
+     * axle, more in rain and storm. First seen, it shows as it stands, and so it does if it turned while nobody was
+     * looking (longer ago than a turn takes); a change that comes while it's turning turns it on from wherever it is.
+     */
+    private fun medallion(
+        board: MarketBoardBlockEntity, state: MarketBoardRenderState, mem: Memory, level: Level, pos: BlockPos,
+        now: Double, eye: Vec3,
+    ) {
+        val target = A.MEDALLION_TIMES.indexOf(board.times).let { if (it < 0) STEADY_FACE else it }
+        val seen = !mem.medShown.isNaN()
+        if (!seen || target != mem.medTo) {
+            val missed = board.turned == MarketBoardBlockEntity.LONG_AGO ||
+                now - board.turned > A.medallionStill(abs(target - mem.medShown)) + 20.0
+            if (!seen || missed) {
+                mem.medFrom = target.toFloat()
+                mem.medTo = target
+                mem.medStart = Double.NEGATIVE_INFINITY
+                mem.medKnocked = true
+            } else {
+                mem.medFrom = mem.medShown
+                mem.medTo = target
+                mem.medStart = now
+                mem.medKnocked = false
+                medDust(level, pos, state.yRot, 3, false)
+            }
+        }
+        val faces = abs(mem.medTo - mem.medFrom)
+        val turning = faces > 1e-4f
+        val age = (now - mem.medStart).toFloat()
+        val at = if (turning) mem.medFrom + (mem.medTo - mem.medFrom) * A.medallionTurn(age, faces) else mem.medTo.toFloat()
+        mem.medShown = at
+        if (!mem.medKnocked && turning && age >= medPeak(faces)) {
+            mem.medKnocked = true
+            medDust(level, pos, state.yRot, 2, true)
+        }
+        // At rest it stirs on its axle in the wind, coming to it slowly once a turn is over
+        val settled = if (turning) ((age - A.medallionStill(faces)) / 30f).coerceIn(0f, 1f) else 1f
+        val wind = 1f + level.getRainLevel(0f) * 0.7f + level.getThunderLevel(0f) * 0.8f
+        val t = (now % 100000.0).toFloat() + (pos.hashCode() and 1023)
+        val phi = at * STEP + A.MED_ROCK * wind * settled * (0.6f * sin(t * 0.071f) + 0.4f * sin(t * 0.163f + 1.7f))
+
+        val sprite = sprites.get(MEDALLION_ID)
+        val q = state.layers[1]
+        val light = LightCoordsUtil.max(lightAt(1.5f, 0.5f), LightCoordsUtil.getLightCoords(level, pos.above(2)))
+        // The eye in the board's frame: the faces turned from it aren't drawn
+        local(pos, state.yRot, eye, corner)
+        val ex = corner[0]
+        val ey = corner[1]
+        val ez = corner[2]
+        val y0 = -A.MED_V
+        val z0 = -A.MED_DEPTH
+        val r = A.MED_R
+        for (k in A.MEDALLION_FACES.indices) {
+            // Face k is turned (phi - k fifths) from facing out, up being positive; its edges a tenth of a turn either side
+            val a = phi - k * STEP
+            val ny = sin(a)
+            val nz = cos(a)
+            if ((ey - y0 - A.MED_APOTHEM * ny) * ny + (ez - z0 - A.MED_APOTHEM * nz) * nz <= 0f) continue
+            val ty = y0 + r * sin(a + STEP / 2)
+            val tz = z0 + r * cos(a + STEP / 2)
+            val by = y0 + r * sin(a - STEP / 2)
+            val bz = z0 + r * cos(a - STEP / 2)
+            val cell = A.MEDALLION_FACES[k]
+            val s0 = sprite.getU(cell[0].toFloat() / A.MEDALLION_W)
+            val s1 = sprite.getU((cell[0] + cell[2]).toFloat() / A.MEDALLION_W)
+            val t0 = sprite.getV(cell[1].toFloat() / A.MEDALLION_H)
+            val t1 = sprite.getV((cell[1] + cell[3]).toFloat() / A.MEDALLION_H)
+            q.vertex(A.MED_U0, ty, tz, s0, t0)
+            q.vertex(A.MED_U0, by, bz, s0, t1)
+            q.vertex(A.MED_U1, by, bz, s1, t1)
+            q.vertex(A.MED_U1, ty, tz, s1, t0)
+            // Shaded as a block's faces are: full on top, less to the front, least underneath
+            q.close(grey(if (ny >= 0f) 0.8f + 0.2f * ny else 0.8f + 0.3f * ny), light)
+        }
+        // Its ends, each pentagon turned with the drum (the left end's is seen from its own side, a tenth of a turn on)
+        val cap = A.MEDALLION_CAP
+        val s0 = sprite.getU(cap[0].toFloat() / A.MEDALLION_W)
+        val s1 = sprite.getU((cap[0] + cap[2]).toFloat() / A.MEDALLION_W)
+        val t0 = sprite.getV(cap[1].toFloat() / A.MEDALLION_H)
+        val t1 = sprite.getV((cap[1] + cap[3]).toFloat() / A.MEDALLION_H)
+        if (ex > A.MED_U1) drumEnd(q, A.MED_U1, y0, z0, -sin(phi), -cos(phi), cos(phi), -sin(phi), s0, t0, s1, t1, light)
+        if (ex < A.MED_U0) {
+            val p = phi + STEP / 2
+            drumEnd(q, A.MED_U0, y0, z0, sin(p), cos(p), cos(p), -sin(p), s0, t0, s1, t1, light)
+        }
+    }
+
+    /** An end of the medallion at [x]: its square about the axle ([y], [z]), ([ry], [rz]) its right and ([qy], [qz]) its up as seen from outside. */
+    private fun drumEnd(
+        q: BoardQuads, x: Float, y: Float, z: Float, ry: Float, rz: Float, qy: Float, qz: Float,
+        s0: Float, t0: Float, s1: Float, t1: Float, light: Int,
+    ) {
+        val h = A.MED_CAP_HALF
+        q.vertex(x, y + (qy - ry) * h, z + (qz - rz) * h, s0, t0)
+        q.vertex(x, y + (-qy - ry) * h, z + (-qz - rz) * h, s0, t1)
+        q.vertex(x, y + (ry - qy) * h, z + (rz - qz) * h, s1, t1)
+        q.vertex(x, y + (ry + qy) * h, z + (rz + qz) * h, s1, t0)
+        q.close(grey(0.6f), light)
+    }
+
+    /** A little wood dust at the medallion: out of its bearings as it starts to turn, or [shaken] off its underside at the catch. */
+    private fun medDust(level: Level, pos: BlockPos, yRot: Float, n: Int, shaken: Boolean) {
+        val r = level.random
+        for (side in 0..1) {
+            repeat(n) {
+                val w = if (shaken) {
+                    world(pos, yRot, A.MED_U0 + (A.MED_U1 - A.MED_U0) * r.nextFloat(), A.MED_V + A.MED_R * 0.9f, -A.MED_DEPTH + (r.nextFloat() - 0.5f) * 0.3f)
+                } else {
+                    world(pos, yRot, if (side == 0) A.MED_U0 - 0.01f else A.MED_U1 + 0.01f, A.MED_V, -A.MED_DEPTH)
+                }
+                level.addParticle(WOOD_DUST, w.x, w.y, w.z, (r.nextDouble() - 0.5) * 0.01, -0.006 - r.nextDouble() * 0.006, (r.nextDouble() - 0.5) * 0.01)
+            }
+        }
+    }
+
     // ---------------------------------------------------------------- drawing
 
     override fun submit(state: MarketBoardRenderState, poseStack: PoseStack, collector: SubmitNodeCollector, camera: CameraRenderState) {
@@ -1264,9 +1390,16 @@ class MarketBoardRenderer(context: BlockEntityRendererProvider.Context) :
     companion object {
         private val LETTERS_ID = SpriteId(TextureAtlas.LOCATION_BLOCKS, Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, A.LETTERS))
         private val SLIPS_ID = SpriteId(TextureAtlas.LOCATION_BLOCKS, Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, A.SLIPS))
+        private val MEDALLION_ID = SpriteId(TextureAtlas.LOCATION_BLOCKS, Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, A.MEDALLION))
         private val HEADING = FontDescription.Resource(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "heading"))
         private val type: RenderType by lazy { RenderTypes.textPolygonOffset(TextureAtlas.LOCATION_BLOCKS) }
         private val DUST = DustParticleOptions(0xF2EFE6, 0.45f)
+        private val WOOD_DUST = DustParticleOptions(0x8C6E4E, 0.5f)
+
+        /** A fifth of a turn: from one of the medallion's faces to the next. */
+        private val STEP = (2 * PI / 5).toFloat()
+        /** The face shown for times the medallion doesn't know (steady's). */
+        private const val STEADY_FACE = 2
 
         private val SECTION_KEYS = MarketBoards.SECTIONS.map { it.first }
         private val STACKS: Array<ItemStack> by lazy { Array(MarketBoards.ORDER.size) { i -> MarketBoards.ORDER[i].item?.let { ItemStack(it) } ?: ItemStack.EMPTY } }
@@ -1318,6 +1451,28 @@ class MarketBoardRenderer(context: BlockEntityRendererProvider.Context) :
             val c = cos(a)
             val s = sin(a)
             return Vec3(pos.x + 0.5 + lx * c + lz * s, pos.y + 2.0 - v, pos.z + 0.5 - lx * s + lz * c)
+        }
+
+        /** Where a point of the world is in the board's frame (x right as seen, y up from the top, z out from the front): [world] undone, into [out]. */
+        private fun local(pos: BlockPos, yRot: Float, p: Vec3, out: FloatArray) {
+            val a = Math.toRadians(-yRot.toDouble())
+            val c = cos(a)
+            val s = sin(a)
+            val dx = p.x - pos.x - 0.5
+            val dz = p.z - pos.z - 0.5
+            out[0] = (1.5 - (dx * c - dz * s)).toFloat()
+            out[1] = (p.y - pos.y - 2.0).toFloat()
+            out[2] = (-(dx * s + dz * c) - 0.5).toFloat()
+        }
+
+        /** The ticks from the start of a turn of [faces] faces to its first swing past the new face, onto the catch. */
+        private fun medPeak(faces: Float): Float =
+            PI.toFloat() / (A.MED_OMEGA / sqrt(max(1f, faces)) * sqrt(1f - A.MED_ZETA * A.MED_ZETA))
+
+        /** Opaque white dimmed to [k], to shade a face by. */
+        private fun grey(k: Float): Int {
+            val c = (k * 255).toInt().coerceIn(0, 255)
+            return (0xFF shl 24) or (c shl 16) or (c shl 8) or c
         }
 
         private fun key(slip: MarketBoardBlockEntity.Slip): String = "${slip.pinned}|${slip.kind}|${slip.headline.string}"
@@ -1664,6 +1819,16 @@ class MarketBoardRenderer(context: BlockEntityRendererProvider.Context) :
         var townWidth = 0f
         var townCentres = FloatArray(0)
         var words = -1
+
+        /**
+         * The medallion: where it was last drawn (in faces from hard times', part way through a turn; NaN until it's
+         * first drawn), the turn it's in (from where, to which face, begun when), whether that turn has reached its catch.
+         */
+        var medShown = Float.NaN
+        var medFrom = 0f
+        var medTo = 0
+        var medStart = Double.NEGATIVE_INFINITY
+        var medKnocked = true
     }
 
     /** The board's words in the player's language, looked up again when it changes. */
