@@ -148,9 +148,13 @@ object AlmsTable : Alms.Source {
 
     override fun taken(level: ServerLevel, capital: Long, by: Townsperson) {
         val column = Streets.column(capital)
+        if (!on(level, column)) return
         val data = StreetsData.get(level)
         val t = data[column] ?: return
         if (t.almsState != StreetsData.ALMS_UP) return
+        // Today's table only, and standing (a record left from another day, or with the times since switched off, counts nothing)
+        if (t.almsDay != Days.dayOf(level.overworldClockTime) && !test(level, column)) return
+        if (!Streets.mine(level, t.almsPos ?: return, column, Streets.ALMS)) return
         t.served++
         val r = by.resident
         if (r >= 0 && r !in t.fed) {
