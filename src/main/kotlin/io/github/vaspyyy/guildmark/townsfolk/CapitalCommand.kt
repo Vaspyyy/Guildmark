@@ -30,6 +30,8 @@ import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.tags.BlockTags
 import net.minecraft.world.entity.projectile.ProjectileUtil
+import net.minecraft.world.item.ItemStack
+import net.minecraft.world.item.Items
 import net.minecraft.world.level.ClipContext
 import net.minecraft.world.level.block.AbstractBedBlock
 import net.minecraft.world.level.block.HorizontalDirectionalBlock
@@ -46,8 +48,9 @@ import java.util.UUID
  * `here` lists the building you stand in (its floors, doors, ladders, beds, seats, tables, work blocks and stores)
  * and who lives there, `who` tells you about the townsperson you're looking at, `show` marks the building's places
  * for a while (only you see the marks), `furnish` makes up every bed its people are missing at once, `crew` lists
- * its carters, millers and crier, `cry` sends the crier to cry the news now, and `people [trade] [page]` lists its
- * people. Positions in the replies can be clicked to go there.
+ * its carters, millers and crier, `cry` sends the crier to cry the news now, `act <move> [ticks]` has the townsperson
+ * you're looking at play one of their moves on the spot, over and over, and `people [trade] [page]` lists its people.
+ * Positions in the replies can be clicked to go there.
  */
 object CapitalCommand {
     /** How far `who` looks along your gaze, and how near someone must be to do without it. */
@@ -59,6 +62,16 @@ object CapitalCommand {
     private const val SHOW_EVERY = 8
 
     private const val PAGE = 12
+
+    /** How long `act` keeps someone at a move unless told otherwise, the most it will, and the pause between goes. */
+    private const val ACT_TICKS = 200
+    private const val ACT_MOST = 2400
+    private const val ACT_REST = 10
+
+    /** The moves that show what someone has in hand: given one with empty hands, they hold a loaf (or what you hold). */
+    private val HANDLED = setOf(
+        Activity.PICK_UP, Activity.PUT_DOWN, Activity.HAND_OVER, Activity.RECEIVE, Activity.SET_UP, Activity.CARRY_BASKET,
+    )
 
     /** Each kind of place `show` marks: its name and colour. */
     private enum class Mark(val label: String, val colour: Int) {
@@ -91,6 +104,18 @@ object CapitalCommand {
                         .then(Commands.literal("haul").executes { haul(it) })
                         .then(Commands.literal("show").executes { show(it) })
                         .then(Commands.literal("furnish").executes { furnish(it) })
+                        .then(
+                            Commands.literal("act")
+                                .then(
+                                    Commands.argument("move", StringArgumentType.word())
+                                        .suggests { _, builder -> SharedSuggestionProvider.suggest(Activity.entries.map { it.clip }, builder) }
+                                        .executes { act(it, StringArgumentType.getString(it, "move"), ACT_TICKS) }
+                                        .then(
+                                            Commands.argument("ticks", IntegerArgumentType.integer(20, ACT_MOST))
+                                                .executes { act(it, StringArgumentType.getString(it, "move"), IntegerArgumentType.getInteger(it, "ticks")) },
+                                        ),
+                                ),
+                        )
                         .then(
                             Commands.literal("people")
                                 .executes { people(it, "all", 1) }
@@ -372,6 +397,64 @@ object CapitalCommand {
         val how = if (Handcarts.enabled()) "They're off for their handcart, from " else "They're off for a sack, from "
         say(source, line().append(plain("${r.name} sets off on a haul. ")).append(grey(how)).append(at(p.blockPosition())))
         return 1
+    }
+
+    // ---- act ----
+
+    private fun act(context: CommandContext<CommandSourceStack>, move: String, ticks: Int): Int {
+        val source = context.source
+        val player = source.playerOrException
+        val activity = Activity.entries.firstOrNull { it.clip == move } ?: return fail(source, "There's no move called \"$move\". Tab through the list for theirs.")
+        val person = lookedAt(player) ?: return fail(source, "Look at a townsperson (up to ${SIGHT.toInt()} blocks off), or stand right by one.")
+        (person.director as? Acting)?.release(person)
+        if (person.director != null) return fail(source, "${person.name.string} is taken up with the festival just now.")
+        if (person.captiveOf >= 0) return fail(source, "${person.name.string} is a captive: cut them loose first.")
+        if (person.isSleeping) return fail(source, "${person.name.string} is asleep.")
+        person.standUp()
+        person.routine.interrupt()
+        person.navigation.stop()
+        val gave = activity in HANDLED && person.carried.isEmpty
+        if (gave) {
+            person.carried = player.mainHandItem.takeUnless { it.isEmpty }?.copyWithCount(1) ?: ItemStack(Items.BREAD)
+            person.carriedUntil = 0
+        }
+        person.director = Acting(activity, person.tickCount + ticks, person.yawTo(player.position()), gave)
+        val loop = if (activity.loop) "over and over" else "every ${(activity.ticks + ACT_REST) / 20.0}s"
+        say(source, line().append(plain("${person.name.string} plays ${words(activity.clip)} ")).append(grey("($loop, for ${ticks / 20}s; right-click them to let them go)")))
+        if (activity == Activity.CLIMB) say(source, line().append(grey("The climb moves with their height, so it only runs on a ladder; here it holds still.")))
+        return 1
+    }
+
+    /** Has someone play [activity] where they stand, facing [yaw], until [until]; one-shots go again after a breath. */
+    private class Acting(val activity: Activity, val until: Int, val yaw: Float, val gave: Boolean) : Director {
+        private var rest = 0
+
+        override fun tick(p: Townsperson) {
+            p.navigation.stop()
+            p.face(yaw)
+            if (p.tickCount >= until) return release(p)
+            when {
+                rest > 0 -> if (--rest == 0) p.act(activity)
+                p.activity != activity -> p.act(activity)
+                p.actDone -> {
+                    rest = ACT_REST
+                    p.act(Activity.NONE)
+                }
+            }
+        }
+
+        override fun interact(p: Townsperson, player: ServerPlayer): Boolean {
+            release(p)
+            return true
+        }
+
+        /** Back to their day. */
+        fun release(p: Townsperson) {
+            if (p.director === this) p.director = null
+            if (gave) p.carried = ItemStack.EMPTY
+            p.act(Activity.NONE)
+            p.routine.interrupt()
+        }
     }
 
     // ---- show ----
