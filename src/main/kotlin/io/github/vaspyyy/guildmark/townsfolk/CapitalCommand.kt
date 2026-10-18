@@ -8,7 +8,9 @@ import io.github.vaspyyy.guildmark.block.VillageBoards
 import io.github.vaspyyy.guildmark.city.CapitalPiece
 import io.github.vaspyyy.guildmark.city.Capitals
 import io.github.vaspyyy.guildmark.city.plan.Census
+import io.github.vaspyyy.guildmark.economy.Conditions
 import io.github.vaspyyy.guildmark.economy.Maker
+import io.github.vaspyyy.guildmark.economy.MarketBoards
 import io.github.vaspyyy.guildmark.economy.Markets
 import io.github.vaspyyy.guildmark.economy.Route
 import io.github.vaspyyy.guildmark.village.VillageNames
@@ -42,8 +44,9 @@ import java.util.UUID
  * Testing commands for a capital's places and people. `/guildmark capital info` sums up the capital you're in,
  * `here` lists the building you stand in (its floors, doors, ladders, beds, seats, tables, work blocks and stores)
  * and who lives there, `who` tells you about the townsperson you're looking at, `show` marks the building's places
- * for a while (only you see the marks), `furnish` makes up every bed its people are missing at once, and
- * `people [trade] [page]` lists its people. Positions in the replies can be clicked to go there.
+ * for a while (only you see the marks), `furnish` makes up every bed its people are missing at once, `crew` lists
+ * its carters, millers and crier, `cry` sends the crier to cry the news now, and `people [trade] [page]` lists its
+ * people. Positions in the replies can be clicked to go there.
  */
 object CapitalCommand {
     /** How far `who` looks along your gaze, and how near someone must be to do without it. */
@@ -83,6 +86,7 @@ object CapitalCommand {
                         .then(Commands.literal("here").executes { here(it) })
                         .then(Commands.literal("who").executes { who(it) })
                         .then(Commands.literal("crew").executes { crew(it) })
+                        .then(Commands.literal("cry").executes { cry(it) })
                         .then(Commands.literal("show").executes { show(it) })
                         .then(Commands.literal("furnish").executes { furnish(it) })
                         .then(
@@ -237,12 +241,15 @@ object CapitalCommand {
         if (places != null && r.alive) {
             val crew = Hands.of(level, places)
             val mill = crew.millers[r.id]?.let { places.lodgings[it] }
+            val crier = r.id == crew.crier
             val duty = when {
                 r.id in crew.carters -> "one of the town's carters"
                 mill != null -> "keeps the ${building(mill)}"
+                crier -> "the town crier: chalks up the market board at seven and cries the news at noon by it"
                 else -> null
             }
-            if (duty != null) say(source, line().append(label("Duties: ")).append(plain(duty)).append(if (mill != null) plain(" ").append(at(mill.front?.inside ?: mill.box.center)) else plain("")))
+            val where = mill?.let { it.front?.inside ?: it.box.center } ?: if (crier) places.marketBoard.pos else null
+            if (duty != null) say(source, line().append(label("Duties: ")).append(plain(duty)).append(if (where != null) plain(" ").append(at(where)) else plain("")))
         }
         say(source, doing)
 
@@ -264,7 +271,8 @@ object CapitalCommand {
         val time = level.overworldClockTime
         person?.life?.let { life -> return Days.describe(life, time).map { Component.literal(it) } }
         if (!r.alive) return listOf()
-        val agenda = Days.plan(r, Days.dayOf(time), true, false, carter = places?.let { r.id in Hands.of(level, it).carters } == true)
+        val crew = places?.let { Hands.of(level, it) }
+        val agenda = Days.plan(r, Days.dayOf(time), true, false, carter = crew != null && r.id in crew.carters, crier = crew != null && r.id == crew.crier)
         val now = agenda.at(Days.offsetOf(time))
         return agenda.stretches.map { Component.literal((if (it === now) "> " else "  ") + it) }
     }
@@ -286,14 +294,14 @@ object CapitalCommand {
 
     // ---- crew ----
 
-    /** The town's carters and millers, where each is and what they're at, and what the market's carts and makers are doing. */
+    /** The town's carters, millers and crier, where each is and what they're at, and what the market's carts and makers are doing. */
     private fun crew(context: CommandContext<CommandSourceStack>): Int {
         val source = context.source
         val (_, capital, places) = where(source) ?: return 0
         val level = source.level
         val crew = Hands.of(level, places)
         val residents = Residents.get(level)
-        say(source, header("${name(capital)}'s carters and millers"))
+        say(source, header("${name(capital)}'s carters, millers and crier"))
         fun row(r: Resident, what: String): MutableComponent {
             val c = line().append(plain("  " + r.name)).append(grey(", $what: "))
             val p = r.uuid?.let { level.getEntity(it) as? Townsperson } ?: return c.append(grey("not about just now"))
@@ -305,6 +313,16 @@ object CapitalCommand {
         for (r in carters) say(source, row(r, "carter"))
         say(source, label("Millers ${crew.millers.size}:"))
         for ((id, mill) in crew.millers) residents[id]?.let { say(source, row(it, places.lodgings[mill]?.let { l -> building(l) } ?: "the mill")) }
+        val crier = crew.crier?.let { residents[it] }
+        if (crier == null) say(source, label("Crier: ").append(grey("nobody (every citizen left is a carter)")))
+        else say(source, label("Crier:").append(row(crier, "crier")))
+        val board = MarketBoards.board(level, places)
+        val written = when {
+            board == null -> grey(if (level.isLoaded(places.marketBoard.pos)) "not up yet (it goes up while nobody's near)" else "not loaded")
+            board.day < 0 -> grey("up, still bare")
+            else -> plain("written up for ${if (board.noon) "noon" else "the morning"} of day ${board.day}, ${board.slips.size} slips pinned")
+        }
+        say(source, line().append(label("Market board ")).append(at(places.marketBoard.pos)).append(grey(": ")).append(written))
         val m = Markets.get(level)[capital.center]?.market
         if (m == null) say(source, grey("No market yet (or the markets are switched off): the carters haul as an ordinary day would have it."))
         else {
@@ -313,6 +331,25 @@ object CapitalCommand {
             val busy = Maker.entries.filter { m.busy(it) }.joinToString(", ") { words(it.name) }
             say(source, line().append(label("At work this hour: ")).append(plain(busy.ifEmpty { "nobody" })))
         }
+        return 1
+    }
+
+    // ---- cry ----
+
+    /** The town crier cries today's news now, without waiting for noon: what they'll cry, and off they go to the board. */
+    private fun cry(context: CommandContext<CommandSourceStack>): Int {
+        val source = context.source
+        val (_, capital, places) = where(source) ?: return 0
+        val level = source.level
+        val r = Hands.of(level, places).crier?.let { Residents.get(level)[it] }
+            ?: return fail(source, "${name(capital)} has nobody to cry the news: every citizen left is a carter.")
+        val cries = Crier.today(level, places, Markets.of(level, capital), Conditions(Markets.hourOf(level)))
+        say(source, header("${r.name} cries the news of ${name(capital)}"))
+        for (c in cries) say(source, line().append(plain("  ")).append(c.text.copy()))
+        val p = r.uuid?.let { level.getEntity(it) as? Townsperson }?.takeIf { it.isAlive }
+            ?: return fail(source, "${r.name} isn't about just now: their part of town isn't loaded.")
+        if (!Crier.cryNow(p)) return fail(source, "${r.name} can't go just now: their day hasn't started yet.")
+        say(source, line().append(grey("They're on their way to cry it at ")).append(at(Crier.spot(places))))
         return 1
     }
 

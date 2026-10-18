@@ -382,6 +382,7 @@ object Jobs {
 object Leisure {
     fun next(p: Townsperson, crowd: Boolean = false): Task {
         val level = p.level() as ServerLevel
+        Crier.near(p)?.let { if (p.random.nextInt(3) != 0) return Hear(p, it) }
         Social.performingBard(p)?.let { if (p.random.nextInt(3) != 0) return Audience(p, it) }
         if (p.role == TownRole.CHILD) return child(p)
         if (p.role == TownRole.NOBLE && p.random.nextInt(3) != 0) return stroll(p)

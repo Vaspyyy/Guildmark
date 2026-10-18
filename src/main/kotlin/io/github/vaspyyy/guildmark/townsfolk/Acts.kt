@@ -40,7 +40,7 @@ object Acts {
         Doing.BREAKFAST, Doing.SUPPER -> listOf(Part { goHome(p, life) }, Part { meal(p, life, life.home, 500 + r(p, 500)) })
         Doing.LUNCH -> listOf(Part { lunch(p, life) })
         Doing.WORK -> listOf(Part { setUp(p, life) })
-        Doing.WATCH, Doing.PLAY, Doing.CART -> listOf()
+        Doing.WATCH, Doing.PLAY, Doing.CART, Doing.CRY -> listOf()
         Doing.MARKET -> listOf(Part { shop(p, life) }, Part(laden = true) { putAway(p, life) })
         Doing.WATER -> listOf(Part { drawWater(p, life) }, Part(laden = true) { putAway(p, life) })
         Doing.ERRAND -> listOf(Part { errand(p, life) })
@@ -57,6 +57,7 @@ object Acts {
     fun filler(p: Townsperson, life: Life, doing: Doing): Task = when (doing) {
         Doing.WORK -> Trades.work(p, life) ?: Jobs.work(p)?.let { onFloor(p, life, it) } ?: chores(p, life)
         Doing.CART -> Trades.haul(p, life) ?: Trades.wait(p, life)
+        Doing.CRY -> Crier.round(p, life) ?: chores(p, life)
         Doing.WATCH -> Jobs.guard(p)
         Doing.PLAY -> Leisure.child(p)
         Doing.TAVERN -> tavern(p, life) ?: atHome(p, life)

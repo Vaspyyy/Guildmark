@@ -438,12 +438,16 @@ object Trades {
 /**
  * Who in a capital does the carrying and the milling its market counts on: as many carters as it has carts (see
  * [io.github.vaspyyy.guildmark.economy.Town.carters]), from its citizens, those living out at the farms first and
- * then those living nearest them; and for each mill, the farmer living nearest it as its miller. Worked out from
- * the living residents now and then, so someone new takes over when a carter or a miller dies.
+ * then those living nearest them; for each mill, the farmer living nearest it as its miller; and of the citizens
+ * left, the one living nearest the market board as the town crier (see [Crier]). Worked out from the living
+ * residents now and then, so someone new takes over when a carter, a miller or the crier dies.
  */
 object Hands {
-    /** A capital's carters (resident ids) and millers (resident id to their mill's lodging id), as worked out at game time [at]. */
-    class Crew(val carters: Set<Int>, val millers: Map<Int, Int>, val at: Long)
+    /**
+     * A capital's carters (resident ids), millers (resident id to their mill's lodging id) and crier (a resident id,
+     * or null if there's no one to be it), as worked out at game time [at].
+     */
+    class Crew(val carters: Set<Int>, val millers: Map<Int, Int>, val crier: Int?, val at: Long)
 
     /** How often (in game ticks) a capital's crew is worked out again. */
     private const val AGAIN = 2400L
@@ -468,6 +472,9 @@ object Hands {
         val carters = living.filter { it.role == TownRole.CITIZEN }
             .sortedWith(compareBy<Resident>({ if (places.lodgings[it.home]?.farm == true) 0 else 1 }, { out(it) }, { it.id }))
             .take(carts).map { it.id }.toSet()
+        val board = places.marketBoard.pos
+        val crier = living.filter { it.role == TownRole.CITIZEN && it.id !in carters }
+            .minWithOrNull(compareBy<Resident>({ home(it)?.distSqr(board) ?: Double.MAX_VALUE }, { it.id }))?.id
         val farmers = living.filter { it.role == TownRole.FARMER }.toMutableList()
         val millers = HashMap<Int, Int>()
         for (mill in places.lodgings.values.filter { it.kind in Trades.MILLS }.sortedBy { it.id }) {
@@ -475,6 +482,6 @@ object Hands {
             farmers.remove(miller)
             millers[miller.id] = mill.id
         }
-        return Crew(carters, millers, level.gameTime)
+        return Crew(carters, millers, crier, level.gameTime)
     }
 }

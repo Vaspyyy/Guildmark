@@ -47,6 +47,8 @@ enum class Doing(val phase: Phase) {
     BED(Phase.HOME),
     /** Hauling the town's goods between the farms, the mill, the bakery and the market (see [Trades.haul]). */
     CART(Phase.WORK),
+    /** The town crier at the market board: the prices chalked up of a morning, the news cried at noon (see [Crier]). */
+    CRY(Phase.WORK),
 }
 
 /** A stretch of a day: [doing] from [start] ticks into it until the next stretch starts. */
@@ -128,6 +130,7 @@ object Days {
         val crew = Hands.of(level, life.places)
         life.carter = life.resident.id in crew.carters
         life.mill = crew.millers[life.resident.id]?.let { life.places.lodgings[it] }
+        life.crier = life.resident.id == crew.crier
     }
 
     /**
@@ -175,18 +178,18 @@ object Days {
 
     /** [life]'s day number [day]. */
     fun plan(life: Life, day: Long): Agenda =
-        plan(life.resident, day, life.places.lodgings.values.any { it.kind in CityPlaces.TEMPLES || it.kind == "LIBRARY" }, life.nightWatch, life.carter)
+        plan(life.resident, day, life.places.lodgings.values.any { it.kind in CityPlaces.TEMPLES || it.kind == "LIBRARY" }, life.nightWatch, life.carter, life.crier)
 
     /**
      * [r]'s day number [day], where children go to [lessons] if there's a temple or a library, a guard may keep the
-     * [nightWatch], and a citizen may be one of the town's carters ([carter]).
+     * [nightWatch], and a citizen may be one of the town's carters ([carter]) or its crier ([crier]).
      */
-    fun plan(r: Resident, day: Long, lessons: Boolean, nightWatch: Boolean, carter: Boolean = false): Agenda {
+    fun plan(r: Resident, day: Long, lessons: Boolean, nightWatch: Boolean, carter: Boolean = false, crier: Boolean = false): Agenda {
         val d = Planner(r, day)
         val rest = restDay(day)
         when (r.role) {
             TownRole.BAKER -> if (rest) d.restDay() else d.baker(Economy.ahead(day))
-            TownRole.CITIZEN -> if (rest) d.restDay() else if (carter) d.carter() else d.worker()
+            TownRole.CITIZEN -> if (crier) d.crier(rest) else if (rest) d.restDay() else if (carter) d.carter() else d.worker()
             TownRole.INNKEEPER -> d.innkeeper()
             TownRole.GUARD -> if (nightWatch) d.nightWatch() else d.dayWatch()
             TownRole.FARMER -> if (rest) d.restDay() else d.farmer()
@@ -274,15 +277,21 @@ object Days {
             at(22.0, Doing.SLEEP)
         }
 
-        fun restDay() {
+        /** [crier]: the news is cried on the rest day too, after the service (see [crier]). */
+        fun restDay(crier: Boolean = false) {
             // Up in time for the service, however late they like to lie in
             val morning = minOf(own, 0.5)
             at(7.0, Doing.RISE, shift = morning)
             at(7.5, Doing.BREAKFAST, shift = morning)
             if (!r.has(Trait.IDLE) || chance(1, 2)) at(8.75, Doing.WORSHIP, keep = true)
             at(10.25, Doing.MARKET)
-            at(12.0, Doing.LUNCH)
-            at(13.5, if (chance(1, 2)) Doing.VISIT else Doing.STROLL)
+            if (crier) {
+                at(11.0, Doing.CRY, keep = true)
+                at(13.5, Doing.LUNCH, keep = true)
+            } else {
+                at(12.0, Doing.LUNCH)
+            }
+            at(if (crier) 14.25 else 13.5, if (chance(1, 2)) Doing.VISIT else Doing.STROLL)
             at(15.25, free())
             at(18.0, Doing.SUPPER)
             at(19.0, if (tavern() || chance(1, 2)) Doing.TAVERN else Doing.EVENING)
@@ -292,6 +301,29 @@ object Days {
 
         /** Out to the farms after breakfast, and to and fro with the loads until five, as the carts go ([Economy.carting]). */
         fun carter() = worker(work = Doing.CART, begin = 7.25)
+
+        /**
+         * The town crier: the market board's prices chalked up first thing, their own work until eleven, then to the
+         * square to read the news over, cry it at noon on the dot and write the board up again, a late lunch, and
+         * work again until five. On the rest day only the noon round.
+         */
+        fun crier(rest: Boolean) {
+            if (rest) return restDay(crier = true)
+            at(6.0, Doing.RISE)
+            at(6.4, Doing.BREAKFAST)
+            at(7.0, Doing.CRY)
+            at(7.75, Doing.WORK)
+            at(11.0, Doing.CRY, keep = true)
+            at(13.5, Doing.LUNCH, keep = true)
+            at(14.25, Doing.WORK)
+            val end = (17.0 + (if (r.has(Trait.DILIGENT)) 0.75 else 0.0) - (if (r.has(Trait.IDLE)) 0.75 else 0.0)).coerceAtMost(17.75)
+            at(end, free())
+            if (end <= 17.0) at(end + 0.75, free())
+            at(18.5, Doing.SUPPER)
+            evening(19.4)
+            at(21.5, Doing.BED)
+            at(22.0, Doing.SLEEP)
+        }
 
         /** The bread is in the oven long before the town is up; the day before the rest day it bakes on past noon for that day too. */
         fun baker(ahead: Boolean) {
@@ -470,6 +502,11 @@ class Life(val resident: Resident, val places: CityPlaces, val home: CityPlaces.
     var carter = false
     var mill: CityPlaces.Lodging? = null
     var dutiesDay = Long.MIN_VALUE
+
+    /** The town crier (see [Hands]), and the days they last chalked the morning's prices and cried the noon news (see [Crier]). */
+    var crier = false
+    var chalked = Long.MIN_VALUE
+    var cried = Long.MIN_VALUE
 
     /** Crops (or catches) gathered into their basket since it was last taken in, and what the last of them was (see [Trades.gathered]). */
     var basket = 0
