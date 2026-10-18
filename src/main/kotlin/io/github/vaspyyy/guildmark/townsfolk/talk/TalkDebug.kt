@@ -21,7 +21,8 @@ import java.util.Locale
  * (as `/guildmark capital` finds them): `/guildmark talk topics [occasion]` lists every topic they have for you now,
  * with its weight, factors and score, best first; `say <id>` has them say a take of a family, or a line as written;
  * `family <family>` has them say each of its wordings in turn, to check the takes and their lengths; `open` starts a
- * talk even if they're busy.
+ * talk even if they're busy. For the street ([Street]): `bark` has them notice you as in passing, now; `chat` has them
+ * start a chat with whoever's nearest; `street` lists what's been said round you in the last minute, and why.
  */
 object TalkDebug {
     /** The most topics `topics` lists. */
@@ -67,9 +68,36 @@ object TalkDebug {
                                         .executes { family(it, StringArgumentType.getString(it, "family")) },
                                 ),
                         )
-                        .then(Commands.literal("open").executes { open(it) }),
+                        .then(Commands.literal("open").executes { open(it) })
+                        .then(Commands.literal("bark").executes { bark(it) })
+                        .then(Commands.literal("chat").executes { chat(it) })
+                        .then(Commands.literal("street").executes { street(it) }),
                 ),
         )
+    }
+
+    /** `bark`: they notice you now, as they would in passing (whatever the hour since the last time, and the chances). */
+    private fun bark(context: CommandContext<CommandSourceStack>): Int {
+        val source = context.source
+        val player = source.playerOrException
+        val p = person(source, player) ?: return 0
+        return say(source, Street.barkNow(source.level, player, p)).let { 1 }
+    }
+
+    /** `chat`: they start a chat with whoever's nearest and free. */
+    private fun chat(context: CommandContext<CommandSourceStack>): Int {
+        val source = context.source
+        val player = source.playerOrException
+        val p = person(source, player) ?: return 0
+        return say(source, Street.chatNow(p)).let { 1 }
+    }
+
+    /** `street`: what's been said round you in the last minute and why, the rates, and how the one you look at stands with you. */
+    private fun street(context: CommandContext<CommandSourceStack>): Int {
+        val source = context.source
+        val player = source.playerOrException
+        for (line in Street.report(source.level, player, CapitalCommand.lookedAt(player))) say(source, line)
+        return 1
     }
 
     private fun topics(context: CommandContext<CommandSourceStack>, occasion: Occasion): Int {

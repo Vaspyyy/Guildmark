@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.townsfolk
 
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.townsfolk.talk.Street
 import io.github.vaspyyy.guildmark.townsfolk.talk.Talk
 import io.github.vaspyyy.guildmark.townsfolk.talk.TalkDebug
 import io.github.vaspyyy.guildmark.townsfolk.talk.TalkTest
@@ -82,6 +83,7 @@ object Townsfolk {
         DailySources.init()
         TalkSources.init()
         TalkDebug.init()
+        Street.init()
         TalkTest.init()
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ ->
             CityPlaces.forget()

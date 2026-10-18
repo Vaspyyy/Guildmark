@@ -1,7 +1,10 @@
 package io.github.vaspyyy.guildmark.townsfolk
 
+import io.github.vaspyyy.guildmark.townsfolk.talk.Exchange
+import io.github.vaspyyy.guildmark.townsfolk.talk.Street
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel
+import net.minecraft.util.Mth
 import net.minecraft.world.entity.ai.util.LandRandomPos
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.phys.Vec3
@@ -205,8 +208,9 @@ open class Idle(p: Townsperson, private val ticks: Int, private val activity: Ac
         }
         val target = lookAt
         if (target != null) p.lookAt(target) else p.level().getNearestPlayer(p, 8.0)?.let { p.lookAt(it) }
-        // A one-shot (a wave, a laugh) settles back into standing
-        if (!p.activity.loop && p.actDone) p.act(Activity.NONE)
+        // A one-shot (a wave, a laugh) settles back into standing, or into what they stood there doing (a look at the
+        // sights, a prayer) once whoever stopped them has gone
+        if (!p.activity.loop && p.actDone || p.activity == Activity.NONE && activity != Activity.NONE) p.act(if (activity.loop) activity else Activity.NONE)
         return age < ticks
     }
 }
@@ -325,7 +329,8 @@ class Work(
         step = next
         stepAge = 0
         p.act(next.activity)
-        next.line?.let { p.say(it) }
+        // Said only while it's true, and with street talk on only to a player who's stood and watched them at it
+        next.line?.let { Street.step(p, it) }
         return true
     }
 
@@ -449,9 +454,13 @@ class Sleep(p: Townsperson, private val bed: BlockPos, private val keep: (() -> 
 
 /**
  * A chat between two townsfolk: they face each other and take turns, one talking (and now and then saying a
- * bit of gossip), the other listening and answering; it may end in a laugh. Both run one of these.
+ * bit of gossip), the other listening and answering; it may end in a laugh. Both run one of these. With [talk] (street
+ * talk on), its turns are what's on their minds for each other, run by the one who began it ([Exchange]).
  */
-class Chat(p: Townsperson, val partner: Townsperson, private val talking: Boolean, private val length: Int, private val seated: Boolean = false) : Task(p) {
+class Chat(
+    p: Townsperson, val partner: Townsperson, private val talking: Boolean, private val length: Int, private val seated: Boolean = false,
+    private val talk: Exchange? = null,
+) : Task(p) {
     private var turn = 0
     private var turnEnds = 0
     private var speaking = talking
@@ -473,6 +482,12 @@ class Chat(p: Townsperson, val partner: Townsperson, private val talking: Boolea
                 Walker.State.FAILED -> return false
                 Walker.State.ARRIVED -> together = true
             }
+        }
+        if (talk != null) {
+            // Round to each other (or to whatever's being pointed out), not snapped
+            if (p.seat == null) p.face(Mth.approachDegrees(p.yBodyRot, p.yawTo(talk.turnTo(p)), TURN))
+            p.lookAt(talk.look(p))
+            return if (talking) talk.tick() else !talk.done
         }
         if (!seated) p.face(p.yawTo(partner.position()))
         p.lookAt(partner.eyePosition)
@@ -499,6 +514,11 @@ class Chat(p: Townsperson, val partner: Townsperson, private val talking: Boolea
     override fun stop() {
         walker.stop()
         if (!seated) p.act(Activity.NONE)
+    }
+
+    private companion object {
+        /** Degrees a tick they turn to face each other in a talk from the topics. */
+        const val TURN = 20f
     }
 }
 

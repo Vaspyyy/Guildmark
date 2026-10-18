@@ -2,6 +2,10 @@ package io.github.vaspyyy.guildmark.townsfolk
 
 import io.github.vaspyyy.guildmark.faction.Faction
 import io.github.vaspyyy.guildmark.faction.Factions
+import io.github.vaspyyy.guildmark.townsfolk.talk.Exchange
+import io.github.vaspyyy.guildmark.townsfolk.talk.OldLines
+import io.github.vaspyyy.guildmark.townsfolk.talk.Street
+import io.github.vaspyyy.guildmark.townsfolk.talk.Talk
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
@@ -13,40 +17,55 @@ import java.util.UUID
 /**
  * What townsfolk say: line keys under say.guildmark. (the text, and the voice clip of the same name per timbre,
  * townsfolk.voice.<timbre>.<line>). See art/audio/make_townsfolk_voices.py.
+ *
+ * With townsfolk talk on, only what's true now is said (living-world/design-voices.md section 5, "The old lines";
+ * [OldLines] says when each is), and a word to a player comes from the topics first ([Street.word]).
  */
 object Lines {
     private fun pick(p: Townsperson, prefix: String, n: Int): String = prefix + p.random.nextInt(n)
 
+    /** One of [prefix]_0 to _[n - 1]: any, talk off; else one true for [p] now (to [player]), or null if none is. */
+    private fun truly(p: Townsperson, prefix: String, n: Int, player: Player? = null): String? {
+        if (!Talk.enabled()) return pick(p, prefix, n)
+        val pool = OldLines.pool(p, (0 until n).map { "$prefix$it" }, player)
+        return if (pool.isEmpty()) null else pool[p.random.nextInt(pool.size)]
+    }
+
+    /** The greetings that are true at some hour or other: by day, of a morning, of a fine day, of an evening, at night. */
+    private val GREETINGS = listOf("greet_0", "greet_1", "greet_2", "greet_7", "night_0", "night_1", "night_2")
+
     fun greet(p: Townsperson): String = when {
         p.role == TownRole.CHILD -> "child_" + listOf(2, 4, 5)[p.random.nextInt(3)]
+        Talk.enabled() -> OldLines.pool(p, GREETINGS).let { if (it.isEmpty()) "night_1" else it[p.random.nextInt(it.size)] }
         Schedule.dark(p) -> pick(p, "night_", 3)
         else -> pick(p, "greet_", 8)
     }
 
-    /** Something about their trade, if they have one worth talking about. */
-    fun trade(p: Townsperson): String? = when (p.role) {
-        TownRole.SMITH -> pick(p, "smith_", 3)
-        TownRole.BAKER -> pick(p, "baker_", 3)
-        TownRole.MERCHANT -> pick(p, "merchant_", 6)
-        TownRole.GUARD -> pick(p, "guard_", 5)
-        TownRole.NOBLE -> pick(p, "noble_", 4)
-        TownRole.INNKEEPER -> pick(p, "inn_", 4)
+    /** Something about their trade, if they have one worth talking about (and, talk on, something about it is true now). */
+    fun trade(p: Townsperson, player: Player? = null): String? = when (p.role) {
+        TownRole.SMITH -> truly(p, "smith_", 3, player)
+        TownRole.BAKER -> truly(p, "baker_", 3, player)
+        TownRole.MERCHANT -> truly(p, "merchant_", 6, player)
+        TownRole.GUARD -> truly(p, "guard_", 5, player)
+        TownRole.NOBLE -> truly(p, "noble_", 4, player)
+        TownRole.INNKEEPER -> truly(p, "inn_", 4, player)
         TownRole.BARD -> "bard_0"
-        TownRole.PRIEST -> pick(p, "priest_", 3)
-        TownRole.FARMER -> pick(p, "farmer_", 3)
-        TownRole.FISHER -> pick(p, "fisher_", 3)
-        TownRole.CHILD -> pick(p, "child_", 6)
-        TownRole.MAGE -> pick(p, "mage_", 6)
-        TownRole.KNIGHT -> pick(p, "knight_", 6)
-        TownRole.THIEF -> pick(p, "thief_", 6)
+        TownRole.PRIEST -> truly(p, "priest_", 3, player)
+        TownRole.FARMER -> truly(p, "farmer_", 3, player)
+        TownRole.FISHER -> truly(p, "fisher_", 3, player)
+        TownRole.CHILD -> truly(p, "child_", 6, player)
+        TownRole.MAGE -> truly(p, "mage_", 6, player)
+        TownRole.KNIGHT -> truly(p, "knight_", 6, player)
+        TownRole.THIEF -> truly(p, "thief_", 6, player)
         TownRole.CITIZEN -> null
     }
 
-    /** What they say to a player who speaks to them. */
+    /** What they say to a player who speaks to them: talk on, what's on their mind for them, or a greeting that knows them. */
     fun talk(p: Townsperson, player: Player? = null): String {
+        if (Talk.enabled()) Street.word(p, player)?.let { return it }
         player?.let { kin(p, it) }?.let { return it }
         if (p.role == TownRole.CITIZEN && p.random.nextInt(3) == 0) return gossip(p)
-        return trade(p)?.takeIf { p.random.nextInt(3) != 0 } ?: greet(p)
+        return trade(p, player)?.takeIf { p.random.nextInt(3) != 0 } ?: greet(p)
     }
 
     /**
@@ -61,7 +80,8 @@ object Lines {
         return if (cold && faction != Faction.STARWATCH) "${p.role.id}_cold_0" else null
     }
 
-    fun gossip(p: Townsperson): String = if (p.role == TownRole.CHILD) pick(p, "child_", 6) else pick(p, "gossip_", 12)
+    /** Small talk; talk on, only what's true now ("Have you seen my cat?" always is). */
+    fun gossip(p: Townsperson): String = if (p.role == TownRole.CHILD) pick(p, "child_", 6) else truly(p, "gossip_", 12) ?: "gossip_5"
 
     fun reply(p: Townsperson): String = if (p.role == TownRole.CHILD) "child_4" else pick(p, "reply_", 6)
 
@@ -73,9 +93,16 @@ object Social {
     /** When each player was last greeted, so walking down a busy street isn't a din of hellos. */
     private val greeted = HashMap<UUID, Long>()
 
-    /** Now and then someone near [player] and in front of them says hello (or calls their wares, or waves). */
+    /**
+     * Now and then someone near [player] and in front of them says hello (or calls their wares, or waves). With street
+     * talk on (townsfolkTalk and townsfolkBarks), they notice the player as they know them, from the topics ([Street]).
+     */
     fun greet(level: ServerLevel, player: ServerPlayer) {
         if (player.isSpectator) return
+        if (Street.on()) {
+            Street.greet(level, player)
+            return
+        }
         val last = greeted[player.uuid] ?: 0L
         if (level.gameTime - last < 140) return
         val look = player.getViewVector(1f)
@@ -106,17 +133,22 @@ object Social {
         }
     }
 
-    /** Someone close by to chat with, who's free for it; starts the chat for both. */
+    /**
+     * Someone close by to chat with, who's free for it; starts the chat for both. With street talk on, its turns carry
+     * what's on their minds for each other ([Exchange]).
+     */
     fun chat(p: Townsperson): Task? {
         if (!p.role.adult) return null
         val level = p.level() as ServerLevel
         val partner = level.getEntitiesOfClass(Townsperson::class.java, p.boundingBox.inflate(10.0, 3.0, 10.0)) {
-            it !== p && it.isAlive && it.role.adult && !it.isSleeping && it.attending == null && it.routine.task.let { task -> task == null || task.leisure }
+            it !== p && it.isAlive && it.role.adult && !it.isSleeping && it.attending == null && it.director == null &&
+                it.routine.task.let { task -> task == null || task.leisure }
         }.minByOrNull { p.distanceToSqr(it) } ?: return null
         val turns = 2 + p.random.nextInt(4)
         val seated = p.seat != null && partner.seat != null
-        partner.routine.replace(Chat(partner, p, talking = false, length = turns, seated = seated))
-        return Chat(p, partner, talking = true, length = turns, seated = seated)
+        val talk = if (Street.on()) Exchange(p, partner, turns) else null
+        partner.routine.replace(Chat(partner, p, talking = false, length = turns, seated = seated, talk = talk))
+        return Chat(p, partner, talking = true, length = turns, seated = seated, talk = talk)
     }
 
     /** A bard playing within earshot, or a mage of the Starwatch conjuring lights in the square, if there is one. */
