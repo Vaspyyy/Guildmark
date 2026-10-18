@@ -1,16 +1,160 @@
 package io.github.vaspyyy.guildmark.townsfolk.talk
 
+import io.github.vaspyyy.guildmark.townsfolk.Residents
+import io.github.vaspyyy.guildmark.townsfolk.Speech
+import io.github.vaspyyy.guildmark.townsfolk.talk.sources.Say
+import net.minecraft.core.BlockPos
+import net.minecraft.server.level.ServerLevel
+import net.neoforged.neoforge.server.ServerLifecycleHooks
+
 /**
  * How a rumour is put into words (design-voices.md sections 4 and 5): the news family a teller says it with, and the
- * unvoiced detail each version of it shows. The news source tells rumours with it, and the crier and the board cry and
- * pin the talk of the town with it.
+ * detail each version of it shows. Version 0 tells it as it happened ("Ransom, away to the north, yesterday."), 1 as
+ * it grew in the telling ("Ransom. A beast the size of a barn!"), 2 muddled (the name, the place and the day gone
+ * vague: "One of the guild folk, out west, the other day.") and 3 as a tall tale ("Bare-handed, they say."). Names
+ * go as `=Name` arguments, so they're shown as written and never read as lang keys.
  *
- * As it stands no rumour has words: every call gives null.
+ * What's read of a rumour: its kind (the part after its last dot names the news: "deed.dragon", "slight.murder",
+ * "outlaw.raid_taken", "festival.won"; a guild news key as GuildNews keeps it works too), the player it's [Rumour.about]
+ * (their name), the [Rumour.resident] it's about (theirs), the first `=Name` among its args when it names neither,
+ * where it happened ([Rumour.origin]) and the hour it was born ([Rumour.born], in hours of the overworld clock as
+ * Markets.hourOf counts them). The market's, the road's, salvage and orders have no news family: their own sources
+ * tell them.
  */
 object RumourWords {
     /** The news family [rumour] is told with ("news.dragon"), or null if it has none. */
-    fun family(rumour: Rumour): String? = null
+    fun family(rumour: Rumour): String? = news(rumour.kind)?.let { "news.$it" }
 
     /** The detail of [rumour] as version [warp] of it tells it, in Speech format ("talk.detail.news.dragon|=Ransom|..."), or null. */
-    fun detail(rumour: Rumour, warp: Int): String? = null
+    fun detail(rumour: Rumour, warp: Int): String? {
+        val level = ServerLifecycleHooks.getCurrentServer()?.overworld() ?: return null
+        return detail(level, rumour, warp, null)
+    }
+
+    /**
+     * The detail of [rumour] as version [warp] tells it in the town whose heart is [from] (a capital's centre, as
+     * Resident.capital keeps it): the place is said from there ("here in town", "away to the north"); with [from] null
+     * it's left out.
+     */
+    fun detail(level: ServerLevel, rumour: Rumour, warp: Int, from: BlockPos?): String? {
+        val news = news(rumour.kind) ?: return null
+        val player = rumour.about?.let { Say.name(level, it) }
+        val resident = rumour.resident.takeIf { it >= 0 }?.let { Residents.get(level)[it] }
+        val named = rumour.args.firstOrNull { it.length > 1 && it.startsWith("=") }?.substring(1)
+        val who = player ?: resident?.name ?: named
+        return when (warp.coerceIn(0, 3)) {
+            0 -> straight(level, rumour, news, player, resident?.name, resident?.family, who, from)
+            1 -> Speech.of("talk.detail.news.$news.grown", who?.let { "=$it" } ?: vague(rumour))
+            2 -> Speech.of("talk.detail.news.told", vague(rumour), Say.muddled(from, rumour.origin, rumour.id), Say.WORD + "when.other")
+            else -> "talk.detail.news.$news.tall"
+        }
+    }
+
+    /**
+     * What a rumour of [kind] is news of: the end of its news family ("dragon" for news.dragon), or null for what has
+     * none (the market's news, the road's but a wagon waylaid, salvage and orders: their own sources tell those).
+     */
+    fun news(kind: String): String? {
+        val k = kind.removePrefix("news.guildmark.")
+        val head = k.substringBefore('.')
+        if (head in OWN) return if (head == "road" && ("waylaid" in k || "ambush" in k)) "band" else null
+        NEWS[k.substringAfterLast('.')]?.let { return it }
+        NEWS[k]?.let { return it }
+        // Something the guild or a player did that has no news of its own: big news from away
+        return if (head in DEEDS) "far" else null
+    }
+
+    /**
+     * The deed family a resident says a deed of [kind] with to the player who did it ("deed.dragon"): [seen] if they
+     * saw it themselves, [mine] if it was done for them (they were the one saved). Null if it has none of its own.
+     */
+    fun deed(kind: String, seen: Boolean, mine: Boolean): String? = when (kind.removePrefix("news.guildmark.").substringAfterLast('.')) {
+        "dragon", "dragon_slain" -> "deed.dragon"
+        "beast", "slain", "field_boss", "boss", "sea", "maelgrasp", "maelgrasp_slain" -> if (seen) "deed.beast_seen" else "deed.beast"
+        "lair" -> "deed.lair"
+        "siege_won", "siege" -> "deed.siege"
+        "bandits", "ambush", "raid_beaten", "outlaw_slain", "band_broken", "broken" -> "deed.band"
+        "escort", "escorted" -> "deed.escort"
+        "salvage", "returned" -> "deed.salvage"
+        "order", "filled" -> "deed.order"
+        "contract", "quest" -> "deed.contract"
+        "won", "festival_won", "festival" -> "deed.festival"
+        "rank", "promoted" -> "deed.rank"
+        "kindle", "kindled", "wardfire" -> "deed.kindle"
+        "town", "monster" -> "deed.monster_town"
+        "saved" -> if (mine) "deed.saved" else "deed.monster_town"
+        "rescue", "rescued", "freed" -> "deed.rescued"
+        "homestead", "raised" -> "deed.homestead"
+        "faction", "faction_joined", "faction_done", "companion_sworn" -> "deed.faction"
+        "murder", "killing", "killed" -> "deed.murder"
+        "assault", "struck", "hurt" -> "deed.hurt"
+        "theft", "purse" -> "deed.theft"
+        else -> null
+    }
+
+    /** Version 0: who, where and when, or for a wrong or a rescue the two people in it. */
+    private fun straight(
+        level: ServerLevel, rumour: Rumour, news: String, player: String?, victim: String?, family: String?, who: String?, from: BlockPos?,
+    ): String {
+        val ago = Say.ago(Say.day(level) - Math.floorDiv(rumour.born, 24L))
+        val where = if (from != null) rumour.origin?.let { Say.where(level, from, it) } else null
+        return when {
+            news == "murder" || news == "assault" || news == "theft" -> when {
+                victim != null && player != null -> Speech.of("talk.detail.news.slight", "=$victim", "=$player")
+                player != null -> Speech.of("talk.detail.news.culprit", "=$player", ago)
+                else -> told(rumour, victim ?: who, where, ago)
+            }
+            news == "rescue" && victim != null && player != null -> Speech.of("talk.detail.news.rescue", "=$victim", "=$player")
+            news == "monster" && rumour.kind.endsWith("saved") && victim != null && player != null ->
+                Speech.of("talk.detail.news.saved", "=$victim", "=$player")
+            news == "newcomer" && family != null -> Speech.of("talk.detail.news.newcomer", "=$family", ago)
+            else -> told(rumour, who, where, ago)
+        }
+    }
+
+    /** "Ransom, away to the north, yesterday." (or without the place, if it's not known). */
+    private fun told(rumour: Rumour, who: String?, where: String?, ago: String): String {
+        val w = who?.let { "=$it" } ?: vague(rumour)
+        return if (where != null) Speech.of("talk.detail.news.told", w, where, ago) else Speech.of("talk.detail.news.told.short", w, ago)
+    }
+
+    /** Who it was, gone vague: one of the guild folk (a player), one of the townsfolk, or someone. */
+    private fun vague(rumour: Rumour): String = Say.WORD + when {
+        rumour.about != null -> "who.guild"
+        rumour.resident >= 0 -> "who.townsfolk"
+        else -> "who.someone"
+    }
+
+    /** The heads of kinds told by their own sources, not as news. */
+    private val OWN = setOf("market", "salvage", "order", "road")
+
+    /** The heads of kinds that are deeds and guild news: news from away, if nothing more particular. */
+    private val DEEDS = setOf("deed", "guild", "news", "outlaw", "faction")
+
+    /** What each kind's last word (or a guild news key) is news of. */
+    private val NEWS: Map<String, String> = buildMap {
+        fun of(news: String, vararg words: String) = words.forEach { put(it, news) }
+        of("dragon", "dragon", "dragon_slain")
+        of("king", "king", "king_slain")
+        of("sea", "sea", "maelgrasp", "maelgrasp_slain")
+        of("beast", "beast", "slain", "field_boss", "boss", "lair")
+        of("siege_won", "siege_won")
+        of("siege_lost", "siege_lost")
+        of("band", "outlaws", "caravan", "farm", "barn", "traveller", "tithe", "patrol", "camp", "band", "waylaid")
+        of("raid", "raid", "taken", "raid_taken")
+        of("band_broken", "bandits", "ambush", "raid_beaten", "outlaw_slain", "band_broken", "broken")
+        of("rescue", "rescue", "rescued", "freed")
+        of("monster", "town", "saved", "monster")
+        of("rank", "rank", "promoted", "faction_done")
+        of("guild", "guild", "guild_founded", "banners", "claimed", "lost_village", "rival_challenge", "rival_repelled")
+        of("faction", "faction", "faction_joined", "faction_expelled", "companion_sworn")
+        of("homestead", "homestead", "raised")
+        of("festival_won", "won", "festival_won")
+        of("death", "death", "died")
+        of("murder", "murder", "killing", "killed")
+        of("assault", "assault", "struck", "hurt")
+        of("theft", "theft", "purse")
+        of("newcomer", "newcomer")
+        of("far", "works", "advance", "story_done", "shard", "character_arrived", "deeds", "more", "kindle", "contract", "far")
+    }
 }
