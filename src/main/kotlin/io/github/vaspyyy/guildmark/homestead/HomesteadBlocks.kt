@@ -249,9 +249,19 @@ class GoodsCrateBlockEntity(pos: BlockPos, state: BlockState) : BaseContainerBlo
     }
 }
 
-/** A chest's menu over a goods crate, its slots taking only what the crate takes. */
+/**
+ * A chest's menu over a goods crate, its slots taking only what the crate takes. Whatever goes in, by hand or by
+ * hopper while it's open, lands with a thump (homestead.deliver), and the lid drops shut when it's closed.
+ */
 class GoodsMenu(type: MenuType<*>, id: Int, inventory: Inventory, container: Container, val kind: GoodsCrateBlock.Kind) :
     ChestMenu(type, id, inventory, container, 3) {
+    /** The crate itself, on the server (the client's menu is over a stand-in). */
+    private val crate = container as? GoodsCrateBlockEntity
+
+    /** How many things were in the crate at the last look, and how long until it may thump again. */
+    private var held = crate?.let { tally(it) } ?: 0
+    private var hush = 0
+
     init {
         for (i in 0 until GoodsCrateBlockEntity.SIZE) {
             val old = slots[i]
@@ -263,7 +273,36 @@ class GoodsMenu(type: MenuType<*>, id: Int, inventory: Inventory, container: Con
         }
     }
 
+    override fun broadcastChanges() {
+        super.broadcastChanges()
+        val crate = crate ?: return
+        val level = crate.level as? ServerLevel ?: return
+        val now = tally(crate)
+        if (hush > 0) hush--
+        if (now > held && hush == 0) {
+            level.playSound(null, crate.blockPos, HomesteadRegistry.DELIVER.get(), SoundSource.BLOCKS, 0.7f, 0.9f + level.random.nextFloat() * 0.2f)
+            hush = DELIVER_GAP
+        }
+        held = now
+    }
+
+    override fun removed(player: Player) {
+        super.removed(player)
+        val crate = crate ?: return
+        val level = crate.level as? ServerLevel ?: return
+        level.playSound(null, crate.blockPos, SoundEvents.BARREL_CLOSE, SoundSource.BLOCKS, 0.5f, 0.9f + level.random.nextFloat() * 0.2f)
+    }
+
+    private fun tally(container: Container): Int {
+        var n = 0
+        for (i in 0 until container.containerSize) n += container.getItem(i).count
+        return n
+    }
+
     companion object {
+        /** Ticks between two thumps, so a stack shift-clicked in by the slot doesn't rattle. */
+        private const val DELIVER_GAP = 6
+
         fun client(kind: GoodsCrateBlock.Kind, id: Int, inventory: Inventory): GoodsMenu =
             GoodsMenu(kind.menu(), id, inventory, SimpleContainer(GoodsCrateBlockEntity.SIZE), kind)
     }
