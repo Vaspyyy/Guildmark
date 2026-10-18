@@ -202,11 +202,11 @@ def item_icon(jar, name):
 
 def mock(sprites, jar):
     """The slips as an order's row on the market screen shows them, at a GUI scale of 4 (one screen pixel to four):
-    open, yours, a standing order with its seal, one promised to someone else with its stamp; and the five ranks'
-    emblems as the header shows them."""
+    open, yours, a standing order with its seal, one promised to someone else with its stamp; the five ranks'
+    emblems as the header shows them; and the compass's marker."""
     S = 4
     got = dict(sprites)
-    W, H = 4 * 30 * S + 40, 30 * S + 30 * S
+    W, H = 5 * 30 * S + 40, 30 * S + 30 * S
     out = Image.new("RGBA", (W, H), (17, 15, 19, 255))
 
     def put(img, x, y, w, h):
@@ -227,7 +227,8 @@ def mock(sprites, jar):
         y0 = 30 * S + 10
         put(got["market/rank_" + r], x0, y0, 9, 9)
         d.text((x0, y0 + 10 * S + 4), r, fill=(220, 214, 200, 255))
-    put(got["compass/order"], W - 20 - 7 * S * 2, 30 * S + 10, 14, 14)
+    put(got["compass/order"], W - 20 - 14 * S, 30 * S + 10, 14, 14)
+    d.text((W - 20 - 14 * S, 30 * S + 10 + 15 * S + 4), "compass", fill=(220, 214, 200, 255))
     return out
 
 
