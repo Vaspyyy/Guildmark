@@ -8,21 +8,30 @@ import io.github.vaspyyy.guildmark.economy.Markets
 import io.github.vaspyyy.guildmark.economy.Route
 import io.github.vaspyyy.guildmark.economy.Tally
 import io.github.vaspyyy.guildmark.economy.fortune.Fortunes
+import io.github.vaspyyy.guildmark.registry.ModItems
 import io.github.vaspyyy.guildmark.townsfolk.Activity
 import io.github.vaspyyy.guildmark.townsfolk.Acts
 import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
+import io.github.vaspyyy.guildmark.townsfolk.Claims
 import io.github.vaspyyy.guildmark.townsfolk.Days
+import io.github.vaspyyy.guildmark.townsfolk.Jobs
 import io.github.vaspyyy.guildmark.townsfolk.Later
 import io.github.vaspyyy.guildmark.townsfolk.Life
 import io.github.vaspyyy.guildmark.townsfolk.Phase
+import io.github.vaspyyy.guildmark.townsfolk.Places
+import io.github.vaspyyy.guildmark.townsfolk.Spot
+import io.github.vaspyyy.guildmark.townsfolk.Step
 import io.github.vaspyyy.guildmark.townsfolk.Task
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import io.github.vaspyyy.guildmark.townsfolk.Trades
 import io.github.vaspyyy.guildmark.townsfolk.Ways
+import io.github.vaspyyy.guildmark.townsfolk.Work
+import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.item.ItemStack
+import net.minecraft.world.item.Items
 import net.minecraft.world.level.levelgen.structure.BoundingBox
 import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
@@ -141,7 +150,8 @@ internal object BreadQueue {
                 if (line.opens >= 0) level.gameTime >= line.opens else market(level, life.places)?.let { it.stock(Good.BREAD) >= 1.0 } ?: true
         },
         served = { who ->
-            val buy = Trades.loaf(who, life)
+            // The scene command's line buys at its own bakery, the loaves out whatever the shelves say
+            val buy = if (line.opens >= 0) bought(level, who, life, line) else Trades.loaf(who, life)
             if (buy != null) {
                 line.inside = who
                 line.wentIn = level.gameTime
@@ -151,6 +161,46 @@ internal object BreadQueue {
         words = { who -> if (who.role == TownRole.CHILD) "child.hungry" else "streets.queue" },
         why = "in the bread queue",
     )
+
+    /**
+     * For the scene command's line (whoever was free nearby, whatever bakery they'd go to, with the loaves out
+     * whatever the shelves say): a loaf bought at [line]'s own bakery, as [Trades.loaf] buys one. In at the door to
+     * the counter, a look at the shelf, the coin across, and the loaf handed over by the baker if they're in.
+     */
+    private fun bought(level: ServerLevel, p: Townsperson, life: Life, line: Line): Task? {
+        val door = line.door
+        val counter = counter(level, door)
+        val step = counter?.relative(door.inward.opposite) ?: door.inside.relative(door.inward)
+        val stand = if (level.isLoaded(step) && Places.standable(level, step)) step else door.inside
+        if (!level.isLoaded(stand) || !Claims.free(level, stand, p)) return null
+        val shelf = Jobs.top(counter ?: stand.relative(door.inward, 2), 1.0)
+        var baker: Townsperson? = null
+        val steps = listOf(Step(Activity.BROWSE, 40), Step(Activity.POINT), Step(Activity.PAY), Step(Activity.RECEIVE), Step(Activity.NOD))
+        val buying = Work(p, Spot(stand, door.inward), shelf, steps, onTick = { s, t ->
+            if (t == 0) when (s.activity) {
+                Activity.POINT -> {
+                    baker = level.getEntitiesOfClass(Townsperson::class.java, AABB.of(line.box)) { it.role == TownRole.BAKER && it.isAlive && !it.isSleeping }.firstOrNull()
+                    Acts.serve(baker, p, Activity.NOD)
+                }
+                Activity.PAY -> Acts.serve(baker, p, Activity.RECEIVE, ItemStack(ModItems.GUILD_MARK.get()))
+                Activity.RECEIVE -> Acts.serve(baker, p, Activity.HAND_OVER, ItemStack(Items.BREAD))
+                else -> {}
+            }
+            if (s.activity == Activity.RECEIVE && t == Acts.PASS) p.carried = ItemStack(Items.BREAD)
+        })
+        return Ways.to(p, life.places, stand, Jobs.WALK, near = 1.0).andThen(buying)
+    }
+
+    /** The bakery's counter, as Trades has it: a block a few steps in from [door] with room to stand either side. */
+    private fun counter(level: ServerLevel, door: CityPlaces.Door): BlockPos? {
+        for (k in 2..4) {
+            val c = door.inside.relative(door.inward, k)
+            if (!level.isLoaded(c)) return null
+            if (Places.free(level, c, feet = true)) continue
+            return c.takeIf { Places.standable(level, it.relative(door.inward.opposite)) && Places.standable(level, it.relative(door.inward)) }
+        }
+        return null
+    }
 
     /** The loaf taken home in the basket and put down there. */
     private fun home(p: Townsperson, life: Life): Task? {
