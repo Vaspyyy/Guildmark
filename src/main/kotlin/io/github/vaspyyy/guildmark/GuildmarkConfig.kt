@@ -161,6 +161,20 @@ object GuildmarkConfig {
         .comment("The capitals' street lamps are lit at dusk and put out at dawn: lamplighters walk their rounds with a long pole, lighting the lamps one by one from about half past five in the evening (an hour earlier in a storm) and putting them out from half past five in the morning, farmers see to the lamps at their gates, and any lamp nobody reaches catches or goes out by itself, so every lamp is lit by seven and out by half past seven. Older capitals' lanterns on posts are swapped for street lamps out of sight. Off, the lamps burn day and night as before.")
         .define("streetLamps", true)
 
+    // A capital's works, its good times and hard, and households coming and going (living-world/design-influence.md)
+    val TOWN_WORKS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("A capital asks for works once it shows the need (a second oven, a granary and then a great one, a watchtower on a road in, a stall of your own), players pledge Marks toward them, and the town's own people build them under a master builder, the materials coming in on the wagons. Off, nothing new is wanted or built, the bake is as before, the granary neither gives nor fills and towers don't count; pledges, sites and half-built works are kept for when it's on again.")
+        .define("townWorks", true)
+    val TOWN_WORKS_BUILD_SPEED: ModConfigSpec.DoubleValue = BUILDER
+        .comment("How fast a capital's builders put up a works: 1 is as the design has it; 2 is twice as fast.")
+        .defineInRange("townWorksBuildSpeed", 1.0, 0.1, 20.0)
+    val TOWN_FORTUNES: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Each capital's times are worked out every day from what really happened to it (hunger, robbed wagons, works built, goods supplied, deaths and festivals), from hard times to thriving, and show in its streets and its talk. Off, every capital's times read steady (no dressing, the usual crowds, nobody leaves); the record is kept.")
+        .define("townFortunes", true)
+    val TOWN_COMINGS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Newcomers come in through a gate to take the homes and trades of the dead, and good times grow a capital by up to a fifth; after five hard days a household may leave (one a week at most, never below 85% of the plan), and they're the first to come back. Off, nobody comes or goes, and households away are home again.")
+        .define("townComings", true)
+
     // Seasons and festivals (season/, festival/)
     val SEASONS: ModConfigSpec.BooleanValue = BUILDER
         .comment("Seasons in the overworld: spring, summer, autumn and winter turn the land's colours, bring blossom, falling leaves and winter snow, and pace the crops. Off, the calendar still counts (for the festivals) but nothing changes with it.")

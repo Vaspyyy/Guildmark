@@ -218,6 +218,32 @@ enum class Activity(val clip: String, val ticks: Int, val loop: Boolean, val ove
     SIT_GOSSIP("sit_gossip", 60, true),
     SIT_LAUGH("sit_laugh", 40, false),
     PAUSE_WORK("pause_work", 30, false),
+    // A capital's works going up, its good times and hard, and households coming and going (living-world/design-influence.md
+    // section 8; art/scripts/works_clips.py and street_clips.py)
+    MIX_MORTAR("mix_mortar", 40, true),
+    TROWEL("trowel", 40, true),
+    HOIST("hoist", 40, true),
+    CARRY_BEAM("carry_beam", 40, true, true),
+    CHISEL("chisel", 30, true),
+    PLUMB("plumb", 60, false),
+    SURVEY("survey", 60, false),
+    UNVEIL("unveil", 40, false),
+    TOAST("toast", 40, false),
+    QUEUE("queue", 80, true),
+    HOLD_OUT("hold_out", 30, false),
+    LADLE("ladle", 30, false),
+    TAKE_BOWL("take_bowl", 24, false),
+    EAT_BOWL("eat_bowl", 60, true),
+    SHIVER("shiver", 40, true),
+    EMPTY_BASKET("empty_basket", 40, false),
+    HAGGLE("haggle", 50, false),
+    PACK("pack", 40, false),
+    EMBRACE("embrace", 50, false),
+    LOOK_ABOUT("look_about", 80, false),
+    SHOW_IN("show_in", 30, false, true),
+    LOOKOUT("lookout", 80, true),
+    LIGHT_BEACON("light_beacon", 50, false),
+    SHUT_STALL("shut_stall", 30, false),
     ;
 
     /** Seated activities keep the townsperson on their seat (a wagon's bench and tailboard among them). */

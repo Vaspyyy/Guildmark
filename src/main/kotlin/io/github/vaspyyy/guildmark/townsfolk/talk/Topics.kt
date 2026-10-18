@@ -20,7 +20,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 enum class Occasion { GREET, OPENER, DOING, NEWS, ANSWER, BARK, CHAT, FAREWELL }
 
 /** What a line is about: the weights and the "not twice" rules go by it. */
-enum class Kind { DOING, TRADE, HOUSEHOLD, MARKET, EVENT, SEASON, FESTIVAL, WEATHER, DEEDS, DEALINGS, NEWS, ROAD, FACTION, HOMESTEAD }
+enum class Kind { DOING, TRADE, HOUSEHOLD, MARKET, EVENT, SEASON, FESTIVAL, WEATHER, DEEDS, DEALINGS, NEWS, ROAD, FACTION, HOMESTEAD, WORKS, FORTUNE }
 
 /** How well the speaker knows the player (living-world/design-voices.md section 3). */
 enum class Familiarity {
@@ -268,7 +268,7 @@ object Topics {
     private fun familiarity(kind: Kind, f: Familiarity): Double {
         val row = when (kind) {
             Kind.DOING, Kind.TRADE, Kind.WEATHER, Kind.SEASON, Kind.FACTION -> PLAIN
-            Kind.MARKET, Kind.EVENT, Kind.FESTIVAL, Kind.ROAD, Kind.HOMESTEAD -> TOWN
+            Kind.MARKET, Kind.EVENT, Kind.FESTIVAL, Kind.ROAD, Kind.HOMESTEAD, Kind.WORKS, Kind.FORTUNE -> TOWN
             Kind.NEWS -> NEWS
             Kind.HOUSEHOLD -> HOUSEHOLD
             Kind.DEEDS -> DEEDS

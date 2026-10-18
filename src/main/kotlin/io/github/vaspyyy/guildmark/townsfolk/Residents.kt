@@ -66,6 +66,11 @@ class Resident(
     var died: Long,
     /** The day they came to live here. */
     val since: Long,
+    /**
+     * The day they left in hard times (living-world/design-influence.md section 6), or -1. While they're away [alive]
+     * is false and [died] stays -1.
+     */
+    var left: Long = -1L,
 ) {
     val name: String get() = "$given $family"
 
@@ -93,10 +98,11 @@ class Resident(
                 Codec.BOOL.optionalFieldOf("alive", true).forGetter(Resident::alive),
                 Codec.LONG.optionalFieldOf("died", -1L).forGetter(Resident::died),
                 Codec.LONG.optionalFieldOf("since", 0L).forGetter(Resident::since),
-            ).apply(i) { id, uuid, capital, planned, given, family, role, look, home, bed, furnished, traits, alive, died, since ->
+                Codec.LONG.optionalFieldOf("left", -1L).forGetter(Resident::left),
+            ).apply(i) { id, uuid, capital, planned, given, family, role, look, home, bed, furnished, traits, alive, died, since, left ->
                 Resident(
                     id, uuid.orElse(null), capital, planned, given, family, TownRole.byName(role) ?: TownRole.CITIZEN, look,
-                    home, bed.orElse(null), furnished, traits, alive, died, since,
+                    home, bed.orElse(null), furnished, traits, alive, died, since, left,
                 )
             }
         }
