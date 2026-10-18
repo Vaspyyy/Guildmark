@@ -10,6 +10,7 @@ import net.minecraft.ChatFormatting
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands
 import net.minecraft.core.BlockPos
+import net.minecraft.core.Direction
 import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.HoverEvent
@@ -100,7 +101,7 @@ object WaresCommand {
         val entry = Markets.get(level)[capital.center]
         if (entry == null) say(source, grey("The market hasn't opened yet: displays show the town's usual stock."))
         val here = source.playerOrException.blockPosition()
-        for (display in shown.sortedBy { it.blockPos.distSqr(here) }.take(NEAREST)) say(source, row(display, entry))
+        for (display in shown.sortedBy { it.blockPos.distSqr(here) }.take(NEAREST)) say(source, row(level, display, entry))
         say(source, grey(when {
             !WaresRegistry.enabled() -> "Displays are switched off (setting: Market Displays): no more are set out, and those out stand still."
             !Markets.enabled() -> "The markets are switched off (setting: Capital Markets): displays show the town's usual stock."
@@ -117,8 +118,8 @@ object WaresCommand {
     }
 
     /** One display: where it is, what it is, and each of its goods' items against a full display and the market's stock against what the town keeps. */
-    private fun row(display: WaresBlockEntity, entry: Markets.Entry?): Component {
-        val c = line().append(at(display.blockPos)).append(plain(" ")).append(display.blockState.block.name.withStyle(ChatFormatting.WHITE)).append(grey(":"))
+    private fun row(level: ServerLevel, display: WaresBlockEntity, entry: Markets.Entry?): Component {
+        val c = line().append(at(level, display.blockPos)).append(plain(" ")).append(display.blockState.block.name.withStyle(ChatFormatting.WHITE)).append(grey(":"))
         val full = display.full()
         display.wares.goods.forEachIndexed { i, id ->
             val good = Good.byId(id) ?: return@forEachIndexed
@@ -162,7 +163,7 @@ object WaresCommand {
             val c = line().append(label("New: "))
             made.take(8).forEachIndexed { i, pos ->
                 if (i > 0) c.append(grey(", "))
-                c.append(at(pos))
+                c.append(at(level, pos))
             }
             if (made.size > 8) c.append(grey(" and ${made.size - 8} more"))
             say(source, c)
@@ -178,12 +179,26 @@ object WaresCommand {
     private fun label(s: String): MutableComponent = Component.literal(s).withStyle(ChatFormatting.YELLOW)
     private fun header(s: String): MutableComponent = Component.literal("== $s ==").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)
 
-    /** A position to click to go to. */
-    private fun at(pos: BlockPos): MutableComponent = Component.literal("[${pos.x} ${pos.y} ${pos.z}]").withStyle {
-        it.withColor(ChatFormatting.AQUA)
-            .withClickEvent(ClickEvent.RunCommand("/tp @s ${pos.x} ${pos.y + 1} ${pos.z}"))
-            .withHoverEvent(HoverEvent.ShowText(Component.literal("Click to go there")))
+    /** A display's position to click to go to: where its buyers stand (or its keeper, if that's taken), looking at it. */
+    private fun at(level: ServerLevel, pos: BlockPos): MutableComponent {
+        val facing = level.getBlockState(pos).getOptionalValue(WaresBlock.FACING).orElse(Direction.NORTH)
+        val front = pos.relative(facing)
+        val back = pos.relative(facing.opposite)
+        val (feet, look) = listOf(front.below() to facing.opposite, front to facing.opposite, back.below() to facing, back to facing)
+            .firstOrNull { room(level, it.first) } ?: (pos.above() to facing.opposite)
+        return Component.literal("[${pos.x} ${pos.y} ${pos.z}]").withStyle {
+            it.withColor(ChatFormatting.AQUA)
+                .withClickEvent(ClickEvent.RunCommand("/tp @s ${feet.x + 0.5} ${feet.y} ${feet.z + 0.5} ${look.toYRot()} 25"))
+                .withHoverEvent(HoverEvent.ShowText(Component.literal("Click to go there")))
+        }
     }
+
+    /** Whether someone can stand with their feet at [feet]: room for them, and something under them. */
+    private fun room(level: ServerLevel, feet: BlockPos): Boolean =
+        level.isLoaded(feet) &&
+            level.getBlockState(feet).getCollisionShape(level, feet).isEmpty &&
+            level.getBlockState(feet.above()).getCollisionShape(level, feet.above()).isEmpty &&
+            !level.getBlockState(feet.below()).getCollisionShape(level, feet.below()).isEmpty
 
     private fun say(source: CommandSourceStack, c: Component): Int {
         source.sendSuccess({ c }, false)
