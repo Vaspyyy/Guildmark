@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.townsfolk
 
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.townsfolk.scenes.Scenes
 import io.github.vaspyyy.guildmark.townsfolk.talk.Street
 import io.github.vaspyyy.guildmark.townsfolk.talk.Talk
 import io.github.vaspyyy.guildmark.townsfolk.talk.TalkDebug
@@ -85,6 +86,8 @@ object Townsfolk {
         TalkDebug.init()
         Street.init()
         TalkTest.init()
+        // M6's scenes: the works' stages and the households' comings heard from the start (townsfolk/scenes/)
+        Scenes.init()
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ ->
             CityPlaces.forget()
             Hands.forget()
