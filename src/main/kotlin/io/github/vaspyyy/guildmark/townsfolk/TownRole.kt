@@ -167,6 +167,21 @@ enum class Activity(val clip: String, val ticks: Int, val loop: Boolean, val ove
     PLANS("plans", 80, true),
     MOP_BROW("mop_brow", 40, false),
     HURRAH("hurrah", 40, false),
+    // The grand festivals' dances, band and crowd (festival/FestivalDance, art/scripts/festival_anims.py)
+    RING_STEP("fest_ring_step", 40, false),
+    RING_STEP_L("fest_ring_step_l", 40, false),
+    RING_IN("fest_ring_in", 40, false),
+    COUPLE_TURN("fest_couple_turn", 40, false),
+    TWIRL("fest_twirl", 40, false),
+    FEST_BOW("fest_bow", 40, false),
+    FEST_HURRAH("fest_hurrah", 40, false),
+    CLAP_ALONG("fest_clap", 40, true),
+    LANTERN_WALK("fest_lantern_walk", 40, false),
+    LANTERN_RAISE("fest_lantern_raise", 40, false),
+    MINSTREL("fest_minstrel", 40, true),
+    HANG("fest_hang", 40, true),
+    RELEASE("fest_release", 40, false),
+    GAZE("fest_gaze", 80, true),
     ;
 
     /** Seated activities keep the townsperson on their seat. */

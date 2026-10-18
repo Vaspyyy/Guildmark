@@ -82,6 +82,7 @@ object Seasons {
         NeoForge.EVENT_BUS.addListener(RegisterCommandsEvent::class.java) { SeasonCommand.register(it.dispatcher) }
         SeasonCrops.register()
         SeasonSnow.register(modBus)
+        io.github.vaspyyy.guildmark.festival.Festivities.register(modBus)
     }
 
     // ---- Switches ----

@@ -271,7 +271,7 @@ object AdvanceCommand {
                         .then(Commands.literal("night").executes { context -> sendRider(context.source, true) }),
                 )
                 .then(
-                    Commands.literal("festival").executes { context ->
+                    Commands.literal("marketday").executes { context ->
                         val source = context.source
                         val anchor = nearestAnchor(source)
                         if (anchor == null) {

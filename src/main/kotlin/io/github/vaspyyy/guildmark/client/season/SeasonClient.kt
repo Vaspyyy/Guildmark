@@ -55,6 +55,7 @@ object SeasonClient {
         NeoForge.EVENT_BUS.addListener(ClientPlayerNetworkEvent.LoggingOut::class.java) { _ -> reset() }
         NeoForge.EVENT_BUS.addListener(ItemTooltipEvent::class.java, ::tooltip)
         SeasonWeather.register()
+        io.github.vaspyyy.guildmark.client.festival.FestivalClient.register(modBus)
     }
 
     fun receive(payload: SeasonPayload) {

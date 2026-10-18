@@ -4,6 +4,8 @@ import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.client.atlas.PlaceBanner
 import io.github.vaspyyy.guildmark.client.region.RegionTitle
 import io.github.vaspyyy.guildmark.client.ui.Ui
+import io.github.vaspyyy.guildmark.festival.FestivalKind
+import io.github.vaspyyy.guildmark.festival.FestivalRegistry
 import io.github.vaspyyy.guildmark.season.Season
 import io.github.vaspyyy.guildmark.season.SeasonDate
 import io.github.vaspyyy.guildmark.season.SeasonRegistry
@@ -25,6 +27,9 @@ import kotlin.math.sin
  * A new season across the upper screen as it comes in: its name in the carved capitals, a rule in its colour, the day
  * and the year, and a line of what it brings; petals, motes of light, leaves or snow drift across it as it shows, and
  * it comes in on its own short sting. It waits for a place's or a region's card to finish rather than talk over it.
+ *
+ * A festival has the same card as you come into its square ([showFestival]): its name in its own colour, the town over
+ * it and what's on below, coming in on the festival fanfare.
  */
 object SeasonBanner : GuiLayer {
     val ID: Identifier = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "season_banner")
@@ -35,7 +40,7 @@ object SeasonBanner : GuiLayer {
     private const val SCALE = 3f
     private const val PATIENCE = 20 * 15
 
-    private class Card(val season: Season, val date: SeasonDate) {
+    private class Card(val season: Season, val date: SeasonDate, val festival: FestivalKind? = null, val town: String = "") {
         var start = 0L
     }
 
@@ -50,6 +55,14 @@ object SeasonBanner : GuiLayer {
         waited = 0
     }
 
+    /** The festival of [kind] in [town], as you come into its square. */
+    fun showFestival(kind: FestivalKind, town: String) {
+        // A season's own card coming in has the say
+        if (waiting?.festival == null && waiting != null) return
+        waiting = Card(kind.season, SeasonClient.date, kind, town)
+        waited = 0
+    }
+
     fun tick() {
         val next = waiting ?: return
         if (++waited > PATIENCE) {
@@ -60,8 +73,8 @@ object SeasonBanner : GuiLayer {
         waiting = null
         next.start = Util.getMillis()
         card = next
-        val sting = SeasonRegistry.STINGS[next.season.ordinal].get()
-        Minecraft.getInstance().soundManager.play(SimpleSoundInstance.forUI(sting, 1f, 0.9f))
+        val sting = if (next.festival != null) FestivalRegistry.FANFARE.get() else SeasonRegistry.STINGS[next.season.ordinal].get()
+        Minecraft.getInstance().soundManager.play(SimpleSoundInstance.forUI(sting, 1f, if (next.festival != null) 0.7f else 0.9f))
     }
 
     fun reset() {
@@ -91,26 +104,31 @@ object SeasonBanner : GuiLayer {
         // What the season brings, drifting across behind the words
         drift(graphics, season, centerX, top, time, alpha)
 
-        val over = Ui.heading(Component.translatable("season.guildmark.banner.over", shown.date.year))
+        val festival = shown.festival
+        val over = Ui.heading(
+            if (festival != null) Component.translatable("festival.guildmark.banner.over", shown.town)
+            else Component.translatable("season.guildmark.banner.over", shown.date.year),
+        )
         graphics.text(font, over, centerX - font.width(over) / 2, top - 14 + Ui.HEADING_RISE, ARGB.color(alpha, Ui.GOLD), true)
 
-        val title = Ui.heading(season.title)
+        val title = Ui.heading(festival?.title ?: season.title)
+        val color = festival?.color ?: season.color
         val width = font.width(title)
         val scale = min(SCALE, (graphics.guiWidth() - 40f) / width.coerceAtLeast(1))
         val pose = graphics.pose()
         pose.pushMatrix()
         pose.translate(centerX.toFloat(), top.toFloat())
         pose.scale(scale, scale)
-        graphics.text(font, title, -width / 2, Ui.HEADING_RISE, ARGB.color(alpha, season.color), true)
+        graphics.text(font, title, -width / 2, Ui.HEADING_RISE, ARGB.color(alpha, color), true)
         pose.popMatrix()
 
         val below = top + (Ui.HEADING_HEIGHT * scale).toInt() + 8
         // The rule draws out from the middle
         val grown = min(1f, time / 1.4f).let { it * it * (3f - 2f * it) }
         val rule = (min((width * scale).toInt() + 80, graphics.guiWidth() - 40) * grown).toInt().coerceAtLeast(8)
-        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, Ui.DIVIDER, centerX - rule / 2, below, rule, 3, ARGB.color(alpha, season.color))
+        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, Ui.DIVIDER, centerX - rule / 2, below, rule, 3, ARGB.color(alpha, color))
         graphics.blitSprite(RenderPipelines.GUI_TEXTURED, Ui.DIAMOND_LARGE, centerX - 3, below - 2, 7, 7, alpha)
-        val line = Component.translatable("season.guildmark.banner.${season.id}")
+        val line = if (festival != null) Component.translatable("festival.guildmark.${festival.id}.about") else Component.translatable("season.guildmark.banner.${season.id}")
         graphics.text(font, line, centerX - font.width(line) / 2, below + 9, ARGB.color(alpha, Ui.TEXT_SOFT), true)
     }
 
