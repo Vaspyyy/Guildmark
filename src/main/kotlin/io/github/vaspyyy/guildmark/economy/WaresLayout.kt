@@ -72,10 +72,11 @@ object WaresLayout {
 
     /**
      * How many items show in a lane holding [full] at the usual stock and [max] at most, for a market holding [fill]
-     * times what its town likes to keep: none when it's out, [full] when it holds that, [max] in a glut (twice it).
+     * times what its town likes to keep: none when it's out (or the fill is no number), [full] when it holds that,
+     * [max] in a glut (twice it).
      */
     fun count(full: Int, max: Int, fill: Double): Double =
-        if (fill <= 1.0) full * fill.coerceAtLeast(0.0) else full + (max - full) * min(1.0, fill - 1.0)
+        if (!(fill > 0.0)) 0.0 else if (fill <= 1.0) full * fill else full + (max - full) * min(1.0, fill - 1.0)
 
     /** The full and most counts of each lane of a display of [look] holding [goods], in pairs: the same wherever it stands. */
     fun capacity(look: Look, goods: List<String>): IntArray = capacities.getOrPut(look.id + ":" + goods.joinToString(",")) {
