@@ -7,6 +7,7 @@ import io.github.vaspyyy.guildmark.economy.works.WorksState
 import io.github.vaspyyy.guildmark.townsfolk.Activity
 import io.github.vaspyyy.guildmark.townsfolk.Acts
 import io.github.vaspyyy.guildmark.townsfolk.CapitalCommand
+import io.github.vaspyyy.guildmark.townsfolk.Claims
 import io.github.vaspyyy.guildmark.townsfolk.Jobs
 import io.github.vaspyyy.guildmark.townsfolk.Labour
 import io.github.vaspyyy.guildmark.townsfolk.Later
@@ -210,12 +211,15 @@ internal object SceneCommand {
 
     /** A shopper at the stall nearest [player], as [times] go: buying there (or, if [bare], finding it sold out). */
     private fun shopper(level: ServerLevel, player: ServerPlayer, here: Scenes.Here, times: Times, bare: Boolean): String? {
-        val stall = here.places.stalls.minByOrNull { it.customer.pos.distSqr(player.blockPosition()) } ?: return null
-        if (stall.customer.pos.distSqr(player.blockPosition()) > 48.0 * 48.0) return null
-        val at = Vec3.atCenterOf(stall.customer.pos)
-        val p = level.getEntitiesOfClass(Townsperson::class.java, AABB(stall.customer.pos).inflate(24.0, 6.0, 24.0)) {
+        val from = player.blockPosition()
+        val stalls = here.places.stalls.filter { it.customer.pos.distSqr(from) <= 48.0 * 48.0 }.sortedBy { it.customer.pos.distSqr(from) }
+        val nearest = stalls.firstOrNull() ?: return null
+        val at = Vec3.atCenterOf(nearest.customer.pos)
+        val p = level.getEntitiesOfClass(Townsperson::class.java, AABB(nearest.customer.pos).inflate(24.0, 6.0, 24.0)) {
             it.role.adult && it.role != TownRole.GUARD && it.role != TownRole.MERCHANT && it.life != null && Aside.free(it, seated = true)
         }.minByOrNull { it.distanceToSqr(at) } ?: return null
+        // The nearest stall with its customer's place free for them (not another shopper's just now)
+        val stall = stalls.firstOrNull { Claims.free(level, it.customer.pos, p) } ?: return null
         val life = p.life ?: return null
         Shopping.force(p, times, 1800)
         val wares = if (bare) listOf() else Trades.wares(Trades.market(p, life), stall.trade).ifEmpty { listOf(Items.BREAD) }

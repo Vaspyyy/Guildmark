@@ -139,6 +139,9 @@ internal object Cold {
         forced[capital] = level.gameTime + ticks
     }
 
+    /** Whether the scene command has the cold biting anywhere just now (so [look] runs whatever the switches say). */
+    fun forcing(): Boolean = forced.isNotEmpty()
+
     fun forget() {
         known.clear()
         forced.clear()

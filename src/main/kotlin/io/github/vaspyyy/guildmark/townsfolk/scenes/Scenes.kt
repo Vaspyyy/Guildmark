@@ -75,7 +75,9 @@ object Scenes {
         val works = Works.enabled()
         val streets = Fortunes.enabled()
         val homes = Comings.enabled()
-        if (!works && !streets && !homes) return
+        // The scene command's cold goes on biting while it lasts, whatever the switches say
+        val cold = streets || Cold.forcing()
+        if (!works && !cold && !homes) return
         if (player.isSpectator || level.dimension() != Level.OVERWORLD) return
         val slot = player.tickCount % 20
         if (slot % 2 == 0 || slot < 3 || slot > 17) return
@@ -84,7 +86,7 @@ object Scenes {
             3 -> if (works) Watchers.look(level, player, here)
             5 -> if (works) ToppingOut.look(level, player, here)
             7 -> if (streets) Grumbling.look(level, player, here)
-            9 -> if (streets) Cold.look(level, player, here)
+            9 -> if (cold) Cold.look(level, player, here)
             11 -> if (streets) BreadQueue.look(level, player, here)
             13 -> if (streets) Alms.look(level, player, here)
             15 -> if (homes) Neighbours.look(level, player)
