@@ -197,6 +197,10 @@ enum class Activity(val clip: String, val ticks: Int, val loop: Boolean, val ove
     RECOUNT("recount", 80, true),
     WOUNDED("wounded", 40, true, true),
     GRUMBLE("grumble", 40, false),
+    // The lamplighters' rounds (townsfolk/Lamplighters.kt; art/scripts/lamp_clips.py): the lit pole carried from lamp
+    // to lamp at dusk, and the lamps put out at dawn
+    CARRY_POLE("carry_pole", 40, true, true),
+    SNUFF_LAMP("snuff_lamp", 40, false),
     ;
 
     /** Seated activities keep the townsperson on their seat (a wagon's bench and tailboard among them). */
