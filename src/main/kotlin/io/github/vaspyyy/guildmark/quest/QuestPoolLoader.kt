@@ -30,8 +30,8 @@ class QuestPoolLoader : SimpleJsonResourceReloadListener<QuestPool>(QuestPool.CO
         QuestType.SLAY -> BossHunts.isQuarry(entry.target)
         QuestType.BOUNTY -> entry.target == Bounties.OUTLAW
         QuestType.RESCUE -> entry.target == Captives.CAPTIVE
-        // Faction jobs are set up by the factions, never drawn from a pool
-        QuestType.TRIAL -> false
+        // Faction jobs are set up by the factions, and a wagon's note by its capital's board: never drawn from a pool
+        QuestType.TRIAL, QuestType.CARAVAN -> false
     }
 
     private companion object {

@@ -83,8 +83,8 @@ enum class Advance(
             // Clearing a lair near the village makes everyone safer
             QuestType.LAIR, QuestType.SLAY, QuestType.BOUNTY -> countsClear || huntTargets.isNotEmpty()
             QuestType.TRIAL -> false
-            // Sea work is a journey too
-            QuestType.DELIVER, QuestType.ESCORT, QuestType.CHART, QuestType.SALVAGE -> countsTravel
+            // Sea work is a journey too, and so is seeing a wagon in
+            QuestType.DELIVER, QuestType.ESCORT, QuestType.CHART, QuestType.SALVAGE, QuestType.CARAVAN -> countsTravel
             // Bringing someone home from an outlaw camp clears the road of a band's menace and is a journey besides
             QuestType.RESCUE -> countsClear || countsTravel
             QuestType.FETCH -> (vanilla && note.target.path in fetchItems) ||

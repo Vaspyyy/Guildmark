@@ -53,10 +53,18 @@ enum class QuestType(private val id: String) : StringRepresentable {
      * Free a villager an outlaw band holds in its camp (the target is always guildmark:captive) and see them home: the
      * one the note names, posted while they're held, or for a note naming no one, whoever's held nearest the board.
      */
-    RESCUE("rescue");
+    RESCUE("rescue"),
 
-    /** One-off jobs: a single letter, traveller, champion, lair, island, beast, outlaw or captive rather than a count. */
-    val isSingle: Boolean get() = this == DELIVER || this == ESCORT || this == CHAMPION || this == LAIR || this == SALVAGE || this == SLAY || this == BOUNTY || this == RESCUE
+    /**
+     * See a wagon in (M4, see CaravanEscorts): the next wagon on a troubled road into a capital, met at the start of
+     * its leg and walked in to its stand (the target is always guildmark:caravan). Posted only on the capital's own
+     * board while the road is Troubled or worse, never drawn from a pool; its progress is 1 once the wagon's met and
+     * 2 once it's in.
+     */
+    CARAVAN("caravan");
+
+    /** One-off jobs: a single letter, traveller, champion, lair, island, beast, outlaw, captive or wagon rather than a count. */
+    val isSingle: Boolean get() = this == DELIVER || this == ESCORT || this == CHAMPION || this == LAIR || this == SALVAGE || this == SLAY || this == BOUNTY || this == RESCUE || this == CARAVAN
 
     /** Villages only trust these jobs to people they know. */
     val minStanding: StandingTier get() = if (this == CHAMPION || this == LAIR || this == SLAY || this == BOUNTY) StandingTier.KNOWN else StandingTier.STRANGER

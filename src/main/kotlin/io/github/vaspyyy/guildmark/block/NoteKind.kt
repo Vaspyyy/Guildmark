@@ -38,6 +38,8 @@ enum class NoteKind(private val id: String) : StringRepresentable {
             QuestType.RESCUE -> ESCORT
             // Never posted on a board; drawn like a champion's notice if one ever is
             QuestType.TRIAL -> CHAMPION
+            // Seeing a wagon in: the same folded paper as seeing a traveller home
+            QuestType.CARAVAN -> ESCORT
         }
     }
 }

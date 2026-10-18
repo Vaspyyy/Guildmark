@@ -177,6 +177,12 @@ object Contracts {
             }
             // A faction's own kind of job sets itself up (and may find it can't, with word why)
             QuestType.TRIAL -> state = Trials.begin(level, player, note, state) ?: return null
+            // The next wagon on the road waits for its holder at the start of its leg
+            QuestType.CARAVAN -> {
+                val (n, s) = CaravanEscorts.take(level, boardPos, player, note, state) ?: return null
+                note = n
+                state = s
+            }
             else -> {}
         }
 
@@ -234,6 +240,8 @@ object Contracts {
      * it when expired.
      */
     fun turnIn(stack: ItemStack, player: Player, level: Level, pos: BlockPos, character: StoryCharacter? = null, village: BlockPos = pos) {
+        // A wagon's contract catches up with its job first: in with its holder by it while the note was put by
+        if (level is ServerLevel) CaravanEscorts.settle(level, stack)
         val note = stack.get(ModDataComponents.QUEST_NOTE.get()) ?: return
         val state = stack.get(ModDataComponents.CONTRACT_STATE.get()) ?: return
         val chapter = StoryCharacter.parseChain(note.chain)
@@ -241,6 +249,15 @@ object Contracts {
         val owner = chapter?.first ?: StoryCharacter.ownerOf(note.chain)
         if (owner != null && owner != character) {
             player.sendOverlayMessage(Component.translatable("message.guildmark.story_return", owner.title))
+            level.playSound(null, pos, SoundEvents.VILLAGER_NO, SoundSource.BLOCKS, 1.0f, 1.0f)
+            return
+        }
+
+        // A wagon's job that's off (waylaid, gone without them, never sent) is worth nothing, and costs nothing but the job
+        if (note.type == QuestType.CARAVAN && level is ServerLevel && (CaravanEscorts.lost(level, state) || state.isExpired(level.gameTime) && state.progress < note.count)) {
+            stack.shrink(1)
+            CaravanEscorts.turnedIn(level, state)
+            player.sendOverlayMessage(Component.translatable("message.guildmark.caravan.worthless"))
             level.playSound(null, pos, SoundEvents.VILLAGER_NO, SoundSource.BLOCKS, 1.0f, 1.0f)
             return
         }
@@ -259,6 +276,12 @@ object Contracts {
             QuestType.DELIVER, QuestType.ESCORT -> if (!Expeditions.atDestination(state, village)) {
                 val destination = state.destination ?: BlockPos.ZERO
                 player.sendOverlayMessage(Component.translatable("message.guildmark.wrong_village", destination.x, destination.z))
+                level.playSound(null, pos, SoundEvents.VILLAGER_NO, SoundSource.BLOCKS, 1.0f, 1.0f)
+                return
+            }
+            // A wagon seen in is paid for at the board of the capital it came to
+            QuestType.CARAVAN -> if (level.dimension() != state.dimension || Expeditions.horizontalDistance(state.boardPos, pos) > CARAVAN_BOARD) {
+                player.sendOverlayMessage(Component.translatable("message.guildmark.wrong_village", state.boardPos.x, state.boardPos.z))
                 level.playSound(null, pos, SoundEvents.VILLAGER_NO, SoundSource.BLOCKS, 1.0f, 1.0f)
                 return
             }
@@ -286,15 +309,17 @@ object Contracts {
 
         val done = when (note.type) {
             QuestType.FETCH -> takeFetchItems(player, note)
-            QuestType.HUNT, QuestType.CLEAR, QuestType.CHAMPION, QuestType.LAIR, QuestType.CHART, QuestType.SALVAGE, QuestType.SLAY, QuestType.BOUNTY, QuestType.RESCUE -> state.progress >= note.count
+            QuestType.HUNT, QuestType.CLEAR, QuestType.CHAMPION, QuestType.LAIR, QuestType.CHART, QuestType.SALVAGE, QuestType.SLAY, QuestType.BOUNTY, QuestType.RESCUE, QuestType.CARAVAN -> state.progress >= note.count
             QuestType.DELIVER, QuestType.ESCORT -> true
             // A stolen prize is handed over with the contract
             QuestType.TRIAL -> state.progress >= note.count && Trials.handOver(player, stack, note)
         }
         if (!done) {
             val have = if (note.type == QuestType.FETCH) countFetchItems(player, note) else state.progress
-            // A heist done but its prize missing has already said so
-            if (note.type != QuestType.TRIAL || state.progress < note.count) {
+            // A heist done but its prize missing has already said so; a wagon not in yet says just that
+            if (note.type == QuestType.CARAVAN) {
+                player.sendOverlayMessage(Component.translatable(if (state.progress >= 1) "message.guildmark.caravan.not_in" else "message.guildmark.caravan.not_met"))
+            } else if (note.type != QuestType.TRIAL || state.progress < note.count) {
                 player.sendOverlayMessage(Component.translatable("message.guildmark.not_done", note.title(), have, note.count))
             }
             level.playSound(null, pos, SoundEvents.VILLAGER_NO, SoundSource.BLOCKS, 1.0f, 1.0f)
@@ -303,6 +328,7 @@ object Contracts {
 
         stack.shrink(1)
         if (note.type == QuestType.BOUNTY) Bounties.claim(serverLevel, state.site)
+        if (note.type == QuestType.CARAVAN) CaravanEscorts.turnedIn(serverLevel, state)
         val origin = state.boardPos.takeIf { level.dimension() == state.dimension }
         val bonus = origin?.let {
             Standing.bonus(level, it, player, note.reward) +
@@ -326,7 +352,7 @@ object Contracts {
         if (note.trial) Progression.promote(player, note.rank)
         Milestones.award(player, Milestones.PAID)
         if (note.type == QuestType.DELIVER) Milestones.award(player, Milestones.COURIER)
-        if (note.type == QuestType.ESCORT) Milestones.award(player, Milestones.BODYGUARD)
+        if (note.type == QuestType.ESCORT || note.type == QuestType.CARAVAN) Milestones.award(player, Milestones.BODYGUARD)
         // Trials always pay a relic cache; other contracts sometimes do, more often at higher ranks, though never goods
         // that can be bought, or buying them to hand in would pay after all
         if (note.trial || (goodsCap == null && level.random.nextFloat() < GuildmarkConfig.RELIC_CACHE_CHANCE.get() + 0.03 * note.rank)) {
@@ -357,8 +383,11 @@ object Contracts {
         QuestType.CHAMPION -> victim.uuid == state.bound
         // Lair bosses are credited to everyone nearby by onLairCleared instead, field bosses by BossHunts, outlaw
         // captains by Bounties, rescues by Captives, faction jobs by their own rules and sea work by SeaWork
-        QuestType.FETCH, QuestType.DELIVER, QuestType.ESCORT, QuestType.LAIR, QuestType.TRIAL, QuestType.CHART, QuestType.SALVAGE, QuestType.SLAY, QuestType.BOUNTY, QuestType.RESCUE -> false
+        QuestType.FETCH, QuestType.DELIVER, QuestType.ESCORT, QuestType.LAIR, QuestType.TRIAL, QuestType.CHART, QuestType.SALVAGE, QuestType.SLAY, QuestType.BOUNTY, QuestType.RESCUE, QuestType.CARAVAN -> false
     }
+
+    /** How near the board a wagon's note was taken from it must be turned in (any cell of that board, or one beside it). */
+    private const val CARAVAN_BOARD = 48.0
 
     private val HOLLOW_SOLDIER = net.minecraft.resources.Identifier.fromNamespaceAndPath("guildmark", "hollow_soldier")
 
@@ -454,6 +483,13 @@ object Contracts {
                 lines.add(Component.translatable("quest.guildmark.rescue_at", state.label, destination.x, destination.z))
             }
             QuestType.TRIAL -> lines.addAll(Trials.details(note, state))
+            // Where to meet the wagon, then where it's bound, then back to the board
+            QuestType.CARAVAN -> when {
+                state.progress >= note.count -> lines.add(Component.translatable("quest.guildmark.caravan.in"))
+                destination == null -> {}
+                state.progress >= 1 -> lines.add(Component.translatable("quest.guildmark.caravan.walk", destination.x, destination.z))
+                else -> lines.add(Component.translatable("quest.guildmark.caravan.meet", state.labelText(), destination.x, destination.z))
+            }
             else -> {}
         }
         if (note.type == QuestType.ESCORT && state.label.isNotEmpty()) {

@@ -11,6 +11,7 @@ import io.github.vaspyyy.guildmark.quest.QuestGenerator
 import io.github.vaspyyy.guildmark.quest.SeaWork
 import io.github.vaspyyy.guildmark.quest.BossHunts
 import io.github.vaspyyy.guildmark.quest.Bounties
+import io.github.vaspyyy.guildmark.quest.CaravanEscorts
 import io.github.vaspyyy.guildmark.road.RoadNetwork
 import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.registry.ModBlocks
@@ -110,9 +111,12 @@ object VillageBoards {
         val today = day(level)
         for (cell in cells) {
             val note = cell.note ?: continue
-            // A wanted note comes down too once its captain has fallen, and a plea once its captive's free
-            if (cell.postedDay != today || Bounties.stale(level, note) || Captives.stale(level, note)) cell.updateNote(null)
+            // A wanted note comes down too once its captain has fallen, a plea once its captive's free, and a wagon's
+            // note once its road is quiet again
+            if (cell.postedDay != today || Bounties.stale(level, note) || Captives.stale(level, note) || CaravanEscorts.stale(level, anchor, note)) cell.updateNote(null)
         }
+        // A capital's board puts up its own notes for a troubled road: the escort and the wanted note on its band
+        if ((level.getBlockEntity(anchor) as? QuestBoardBlockEntity)?.capital == true) CaravanEscorts.pin(level, anchor, facing, cells)
 
         if (!level.isBrightOutside) return
         val empty = cells.filter { it.note == null }

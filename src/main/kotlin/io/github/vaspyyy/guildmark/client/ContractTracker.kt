@@ -253,7 +253,7 @@ object ContractTracker : GuiLayer {
 
     private fun isDone(player: Player, entry: Entry): Boolean = when (entry.note.type) {
         QuestType.FETCH -> Contracts.countFetchItems(player, entry.note) >= entry.note.count
-        QuestType.HUNT, QuestType.CLEAR, QuestType.CHAMPION, QuestType.LAIR, QuestType.TRIAL, QuestType.CHART, QuestType.SALVAGE, QuestType.SLAY, QuestType.BOUNTY, QuestType.RESCUE -> entry.state.progress >= entry.note.count
+        QuestType.HUNT, QuestType.CLEAR, QuestType.CHAMPION, QuestType.LAIR, QuestType.TRIAL, QuestType.CHART, QuestType.SALVAGE, QuestType.SLAY, QuestType.BOUNTY, QuestType.RESCUE, QuestType.CARAVAN -> entry.state.progress >= entry.note.count
         QuestType.DELIVER, QuestType.ESCORT -> false
     }
 
@@ -276,6 +276,8 @@ object ContractTracker : GuiLayer {
             } else {
                 Component.translatable("gui.guildmark.tracker.rescue", entry.state.label)
             }
+            // To the start of the road to meet the wagon, then along with it
+            QuestType.CARAVAN -> Component.translatable(if (entry.state.progress >= 1) "gui.guildmark.tracker.caravan_walk" else "gui.guildmark.tracker.caravan_meet", entry.state.labelText())
         }
         val text = Component.translatable("gui.guildmark.tracker.status", progress, Component.translatable("gui.guildmark.tracker.days", days))
         return Pair(text, if (days <= 1) LATE_INK else FADED_INK)
@@ -288,7 +290,7 @@ object ContractTracker : GuiLayer {
         if (isDone(player, entry)) return state.boardPos
         return when (entry.note.type) {
             QuestType.CLEAR -> state.boardPos
-            QuestType.DELIVER, QuestType.ESCORT, QuestType.CHAMPION, QuestType.LAIR, QuestType.TRIAL, QuestType.SALVAGE, QuestType.SLAY, QuestType.BOUNTY, QuestType.RESCUE -> state.destination
+            QuestType.DELIVER, QuestType.ESCORT, QuestType.CHAMPION, QuestType.LAIR, QuestType.TRIAL, QuestType.SALVAGE, QuestType.SLAY, QuestType.BOUNTY, QuestType.RESCUE, QuestType.CARAVAN -> state.destination
             // Any isle no one's charted will do, wherever it is
             QuestType.FETCH, QuestType.HUNT, QuestType.CHART -> null
         }
