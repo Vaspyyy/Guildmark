@@ -19,6 +19,7 @@ import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.level.block.Block
 import net.neoforged.neoforge.common.NeoForge
+import net.neoforged.neoforge.event.server.ServerStoppedEvent
 import net.neoforged.neoforge.event.tick.ServerTickEvent
 import kotlin.math.floor
 
@@ -68,6 +69,8 @@ object MarketBoards {
 
     fun register() {
         NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { look(it.server) }
+        // The next world's clock starts again from its own time, which may be earlier than this one's
+        NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> looked = 0L }
     }
 
     /** One good's line as the board would have it now, written at game time [at]. */
