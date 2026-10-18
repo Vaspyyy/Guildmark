@@ -179,7 +179,7 @@ object MillRefit {
             val b = now[at]
             if (a != null && b != null && MillSite.alike(a, b)) continue
             val pos = capital.world(at.x, at.y, at.z)
-            list.add(Change(pos, a?.let { WorldCanvas.state(capital, it, pos) }, WorldCanvas.state(capital, b ?: B.AIR, pos)))
+            list.add(Change(pos, a?.let { WorldCanvas.planned(capital, it, pos) }, WorldCanvas.planned(capital, b ?: B.AIR, pos)))
         }
         // The hub last, once everything round it is as it should be
         val hub = capital.world(site.hub.x, site.hub.y, site.hub.z)

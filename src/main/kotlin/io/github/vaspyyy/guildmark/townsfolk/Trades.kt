@@ -274,7 +274,9 @@ object Trades {
         val bakery = places.nearest(mill.box.center, BAKERIES).firstOrNull { b -> b !== mill && b.stations.any { it.m == M.SMOKER || it.m == M.FURNACE } }
             ?: return null
         val oven = bakery.stations.first { it.m == M.SMOKER || it.m == M.FURNACE }.pos
-        val bin = store(p, listOf(bakery), oven) ?: Places.beside(level, oven, bakery.front?.inside ?: oven)?.let { oven to it } ?: return null
+        val bin = store(p, listOf(bakery), oven)
+            ?: (if (Places.loaded(level, oven, 1)) Places.beside(level, oven, bakery.front?.inside ?: oven)?.let { oven to it } else null)
+            ?: return null
         val store = bin.first.takeIf { it != oven }
         val to = Drop(bin.second, Jobs.top(bin.first, 0.9), Activity.PUT_DOWN, store, bay = { bakery.front?.let { Handcarts.bay(level, it, p) } })
         return deliver(p, life, sacks, to, ItemStack.EMPTY, Handcarts.FLOUR, Activity.CARRY_SACK, n)
@@ -346,7 +348,7 @@ object Trades {
         private val to: Drop, private val end: BlockPos, private val held: ItemStack, private val piece: ItemStack, private val overlay: Activity,
         private val n: Int, private val shoulder: () -> Task,
     ) : Task(p) {
-        private enum class Stage { THERE, FETCH, LOAD, ACROSS, UNLOAD, BRING, DONE }
+        private enum class Stage { THERE, FETCH, OUT, LOAD, ACROSS, UNLOAD, BRING, DONE }
 
         private val door = Vec3.atBottomCenterOf(door.outside)
         private val heap = ArrayList<ItemStack>()
@@ -397,7 +399,9 @@ object Trades {
             // No cart for it after all: one on the shoulder
             Stage.THERE -> if (pull?.failed != false) over(shoulder()) else if (heap.size >= n) across() else fetch()
             // Nothing more to be had from the store: off with what's on, if anything
-            Stage.FETCH -> if (holding) load() else if (heap.isEmpty()) over() else across()
+            Stage.FETCH -> if (holding) load() else if (heap.isEmpty()) over() else out()
+            // Couldn't get back out to it: it stands where it is, loaded, for next time
+            Stage.OUT -> over()
             Stage.LOAD -> {
                 holding = false
                 if (heaping?.done != true) over() else if (heap.size >= n) across() else fetch()
@@ -424,6 +428,13 @@ object Trades {
         private fun load(): Task {
             stage = Stage.LOAD
             return atCart(Heap(p, heap, piece, from = door, overlay = overlay), door, overlay)
+        }
+
+        /** Back out to the cart empty-handed (down from upstairs and out of doors), and off across town with what's on it. */
+        private fun out(): Task {
+            stage = Stage.OUT
+            val at = Handcarts.fetch(p) ?: start
+            return Ways.to(p, life.places, at, Jobs.WALK, near = 1.0, exact = at != start).andThen(Later(p) { across() })
         }
 
         /** Loaded: the shafts taken up and off across town. */
@@ -463,13 +474,13 @@ object Trades {
         }
     }
 
-    /** Sends carter [p] off on a haul now (for the commands); false if they're no carter, or there's nothing to haul. */
-    fun haulNow(p: Townsperson): Boolean {
-        val life = Days.life(p) ?: return false
-        if (!life.carter) return false
-        val task = haul(p, life) ?: return false
+    /** Sends carter [p] off on a haul now (for the commands): true if with their cart, null if they're no carter, or there's nothing to haul. */
+    fun haulNow(p: Townsperson): Boolean? {
+        val life = Days.life(p) ?: return null
+        if (!life.carter) return null
+        val task = haul(p, life) ?: return null
         p.routine.replace(task)
-        return true
+        return task is Cartload
     }
 
     /** Nothing to haul just now: a word with someone near, or a while by a barn door waiting on the next load. */

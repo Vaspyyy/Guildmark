@@ -5,7 +5,6 @@ import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.context.CommandContext
 import io.github.vaspyyy.guildmark.block.VillageBoards
-import io.github.vaspyyy.guildmark.cart.Handcarts
 import io.github.vaspyyy.guildmark.city.CapitalPiece
 import io.github.vaspyyy.guildmark.city.Capitals
 import io.github.vaspyyy.guildmark.city.plan.Census
@@ -393,8 +392,8 @@ object CapitalCommand {
         }
         val (r, p) = about.minByOrNull { it.second.distanceToSqr(player) }
             ?: return fail(source, "None of ${name(capital)}'s carters is about just now: their parts of town aren't loaded.")
-        if (!Trades.haulNow(p)) return fail(source, "${r.name} has nothing to haul just now, or their day hasn't started yet.")
-        val how = if (Handcarts.enabled()) "They're off for their handcart, from " else "They're off for a sack, from "
+        val carting = Trades.haulNow(p) ?: return fail(source, "${r.name} has nothing to haul just now, or their day hasn't started yet.")
+        val how = if (carting) "They're off for their handcart, from " else "They're off for a sack, from "
         say(source, line().append(plain("${r.name} sets off on a haul. ")).append(grey(how)).append(at(p.blockPosition())))
         return 1
     }

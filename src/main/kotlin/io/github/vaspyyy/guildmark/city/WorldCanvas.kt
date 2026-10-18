@@ -295,8 +295,5 @@ class WorldCanvas(
         /** Air, water, plants and trees: what the ground under a city is filled through. */
         fun loose(state: BlockState): Boolean =
             state.canBeReplaced() || !state.fluidState.isEmpty || state.`is`(BlockTags.LEAVES) || state.`is`(BlockTags.LOGS)
-
-        /** The block [piece]'s plan puts at [pos] for its block [b], as a canvas places it there (before any neighbours join up). */
-        fun state(piece: CapitalPiece, b: B, pos: BlockPos): BlockState = piece.style.state(b, hash(pos)).rotate(piece.turn)
     }
 }
