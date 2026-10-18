@@ -222,9 +222,10 @@ class Routine(private val p: Townsperson) {
     /** Drops whatever they were doing (fleeing, fighting, a new part of the day). */
     fun interrupt() = end()
 
-    /** Swaps whatever they're doing for [next], which starts at once. */
+    /** Swaps whatever they're doing for [next], which starts at once (a lid they had up falls). */
     fun replace(next: Task) {
         task?.stop()
+        p.opened = null
         task = next
         windDown = 0
         startedAt = p.tickCount
