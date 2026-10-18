@@ -382,3 +382,41 @@ near-homophones ("Mind the latter, who's got the penance?", "Harvest in", "Upper
 python3 -B art/audio/make_festival_voices.py process --raw <raw-dir> --assets src/main/resources/assets/guildmark [--timbres ...] [--keys ...] [--wav <dir>]
 python3 -B art/audio/make_festival_voices.py sounds
 ```
+
+### Stalls and shipping
+
+`make_stall_audio.py` makes the sounds of a player's own stall in a capital's market hall and of a homestead's
+shipping: 7 events and 16 files (`stall/`, and `carter_wheels`, `carter_load` and `purse` in `homestead/`).
+`stall.rent` is a week's rent paid (coins set down on the counter, the hall's rent book stamped and shut),
+`stall.set_out` goods going on the table (a crate set down and slid into line, produce tipped out of a sack and
+rolling, a sack set down and patted into shape), `stall.till` the till (a handful of coins dropped in, the coins
+scooped out, a single coin), and `stall.pennant` the renter's pennant unrolling over the table, its cords creaking
+and a soft snap as it falls taut (the game plays it higher as one rolls up). `homestead.carter.wheels` is the
+carter's handcart on the road, played every 16 ticks while it moves so each overlaps the next,
+`homestead.carter.load` a sack, a crate or a basket heaped onto the cart, and `homestead.purse` the Charter Post's
+purse emptied and the Marks counted out into its owner's hand. They are synthesised with `sfxkit.py` and
+`make_townsfolk_sfx.py`'s parts, in the hall's small room or out in the street, and levelled as the townsfolk
+effects are: the loudest 100 ms at -16 to -21 LUFS (K-weighted), peaks under -1 dBFS. The pennant and the wheels
+carry 24 blocks, the purse 12. `--preview <file>` writes every sound in a row as an MP3 and `--entries <file>` their
+`sounds.json` entries.
+
+`make_stall_voices.py` voices the 16 lines the hall's merchant and the carter say (`stall_*` and `carter_*`) in the
+man's, the woman's and the old man's timbres, through `make_townsfolk_voices.py`'s voices and processing as
+`make_festival_voices.py` does. No line holds a name or a number: those are in the chat line beside it. The carter's
+call up the road is read a little quicker, 35 cents higher and 2 dB over the speech level; the heave as a sack goes on
+and the word to a player who stops the cart are a little quicker and 20 cents higher. `PHONEMES` sounds the r of "yours"
+and "Carter" (else "yaws" and "Cotta") and gives the man's "Off" and "Folks" their American vowels (else "of" and
+"Though"). Checked with Whisper base.en on the encoded files (`check`): 38 of the 48 come back word for word, 97.2% of
+the words; the rest are homophones and spellings ("That's a good wait", "Write the markets waiting", "The markets got
+plenty of that") and a stray "(b" or "(buzzer" Whisper adds after the woman's `stall_well_0` and `stall_gone_0` as
+their room tail dies away. `preview` writes every line in the three voices as one MP3 and `sounds` prints the
+`sounds.json` entries. Neither script touches `townsfolk_sounds.json` or `townsfolk_lang.json`.
+
+```
+python3 -B art/audio/make_stall_audio.py src/main/resources/assets/guildmark [--wav <dir>] [--only stall.till,homestead.purse] [--preview <file>] [--entries <file>]
+<venv>/bin/python -I -B art/audio/make_stall_voices.py tts --model <dl>/kokoro-v1.0.onnx --voices <dl>/voices-v1.0.bin --out <raw-dir> [--timbres man] [--keys carter] [--espeak-data <dir>]
+python3 -B art/audio/make_stall_voices.py process --raw <raw-dir> --assets src/main/resources/assets/guildmark [--timbres ...] [--keys ...] [--wav <dir>]
+<venv>/bin/python -I -B art/audio/make_stall_voices.py check --asr <sherpa-onnx-whisper-base.en dir> --assets src/main/resources/assets/guildmark
+python3 -B art/audio/make_stall_voices.py preview --assets src/main/resources/assets/guildmark --mp3 <file>
+python3 -B art/audio/make_stall_voices.py sounds
+```

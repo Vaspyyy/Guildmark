@@ -809,6 +809,363 @@
     ],
     "subtitle": "say.guildmark.fest_winner"
   },
+  "townsfolk.voice.man.stall_rent_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/stall_rent_0"
+    ],
+    "subtitle": "say.guildmark.stall_rent_0"
+  },
+  "townsfolk.voice.man.stall_rent_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/stall_rent_1"
+    ],
+    "subtitle": "say.guildmark.stall_rent_1"
+  },
+  "townsfolk.voice.man.stall_paid_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/stall_paid_0"
+    ],
+    "subtitle": "say.guildmark.stall_paid_0"
+  },
+  "townsfolk.voice.man.stall_well_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/stall_well_0"
+    ],
+    "subtitle": "say.guildmark.stall_well_0"
+  },
+  "townsfolk.voice.man.stall_well_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/stall_well_1"
+    ],
+    "subtitle": "say.guildmark.stall_well_1"
+  },
+  "townsfolk.voice.man.stall_gone_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/stall_gone_0"
+    ],
+    "subtitle": "say.guildmark.stall_gone_0"
+  },
+  "townsfolk.voice.man.stall_gone_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/stall_gone_1"
+    ],
+    "subtitle": "say.guildmark.stall_gone_1"
+  },
+  "townsfolk.voice.man.carter_arrive_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/carter_arrive_0"
+    ],
+    "subtitle": "say.guildmark.carter_arrive_0"
+  },
+  "townsfolk.voice.man.carter_arrive_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/carter_arrive_1"
+    ],
+    "subtitle": "say.guildmark.carter_arrive_1"
+  },
+  "townsfolk.voice.man.carter_load_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/carter_load_0"
+    ],
+    "subtitle": "say.guildmark.carter_load_0"
+  },
+  "townsfolk.voice.man.carter_load_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/carter_load_1"
+    ],
+    "subtitle": "say.guildmark.carter_load_1"
+  },
+  "townsfolk.voice.man.carter_leave_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/carter_leave_0"
+    ],
+    "subtitle": "say.guildmark.carter_leave_0"
+  },
+  "townsfolk.voice.man.carter_leave_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/carter_leave_1"
+    ],
+    "subtitle": "say.guildmark.carter_leave_1"
+  },
+  "townsfolk.voice.man.carter_empty_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/carter_empty_0"
+    ],
+    "subtitle": "say.guildmark.carter_empty_0"
+  },
+  "townsfolk.voice.man.carter_full_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/carter_full_0"
+    ],
+    "subtitle": "say.guildmark.carter_full_0"
+  },
+  "townsfolk.voice.man.carter_hello_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/carter_hello_0"
+    ],
+    "subtitle": "say.guildmark.carter_hello_0"
+  },
+  "townsfolk.voice.woman.stall_rent_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/stall_rent_0"
+    ],
+    "subtitle": "say.guildmark.stall_rent_0"
+  },
+  "townsfolk.voice.woman.stall_rent_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/stall_rent_1"
+    ],
+    "subtitle": "say.guildmark.stall_rent_1"
+  },
+  "townsfolk.voice.woman.stall_paid_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/stall_paid_0"
+    ],
+    "subtitle": "say.guildmark.stall_paid_0"
+  },
+  "townsfolk.voice.woman.stall_well_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/stall_well_0"
+    ],
+    "subtitle": "say.guildmark.stall_well_0"
+  },
+  "townsfolk.voice.woman.stall_well_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/stall_well_1"
+    ],
+    "subtitle": "say.guildmark.stall_well_1"
+  },
+  "townsfolk.voice.woman.stall_gone_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/stall_gone_0"
+    ],
+    "subtitle": "say.guildmark.stall_gone_0"
+  },
+  "townsfolk.voice.woman.stall_gone_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/stall_gone_1"
+    ],
+    "subtitle": "say.guildmark.stall_gone_1"
+  },
+  "townsfolk.voice.woman.carter_arrive_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/carter_arrive_0"
+    ],
+    "subtitle": "say.guildmark.carter_arrive_0"
+  },
+  "townsfolk.voice.woman.carter_arrive_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/carter_arrive_1"
+    ],
+    "subtitle": "say.guildmark.carter_arrive_1"
+  },
+  "townsfolk.voice.woman.carter_load_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/carter_load_0"
+    ],
+    "subtitle": "say.guildmark.carter_load_0"
+  },
+  "townsfolk.voice.woman.carter_load_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/carter_load_1"
+    ],
+    "subtitle": "say.guildmark.carter_load_1"
+  },
+  "townsfolk.voice.woman.carter_leave_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/carter_leave_0"
+    ],
+    "subtitle": "say.guildmark.carter_leave_0"
+  },
+  "townsfolk.voice.woman.carter_leave_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/carter_leave_1"
+    ],
+    "subtitle": "say.guildmark.carter_leave_1"
+  },
+  "townsfolk.voice.woman.carter_empty_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/carter_empty_0"
+    ],
+    "subtitle": "say.guildmark.carter_empty_0"
+  },
+  "townsfolk.voice.woman.carter_full_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/carter_full_0"
+    ],
+    "subtitle": "say.guildmark.carter_full_0"
+  },
+  "townsfolk.voice.woman.carter_hello_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/carter_hello_0"
+    ],
+    "subtitle": "say.guildmark.carter_hello_0"
+  },
+  "townsfolk.voice.old.stall_rent_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/stall_rent_0"
+    ],
+    "subtitle": "say.guildmark.stall_rent_0"
+  },
+  "townsfolk.voice.old.stall_rent_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/stall_rent_1"
+    ],
+    "subtitle": "say.guildmark.stall_rent_1"
+  },
+  "townsfolk.voice.old.stall_paid_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/stall_paid_0"
+    ],
+    "subtitle": "say.guildmark.stall_paid_0"
+  },
+  "townsfolk.voice.old.stall_well_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/stall_well_0"
+    ],
+    "subtitle": "say.guildmark.stall_well_0"
+  },
+  "townsfolk.voice.old.stall_well_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/stall_well_1"
+    ],
+    "subtitle": "say.guildmark.stall_well_1"
+  },
+  "townsfolk.voice.old.stall_gone_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/stall_gone_0"
+    ],
+    "subtitle": "say.guildmark.stall_gone_0"
+  },
+  "townsfolk.voice.old.stall_gone_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/stall_gone_1"
+    ],
+    "subtitle": "say.guildmark.stall_gone_1"
+  },
+  "townsfolk.voice.old.carter_arrive_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/carter_arrive_0"
+    ],
+    "subtitle": "say.guildmark.carter_arrive_0"
+  },
+  "townsfolk.voice.old.carter_arrive_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/carter_arrive_1"
+    ],
+    "subtitle": "say.guildmark.carter_arrive_1"
+  },
+  "townsfolk.voice.old.carter_load_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/carter_load_0"
+    ],
+    "subtitle": "say.guildmark.carter_load_0"
+  },
+  "townsfolk.voice.old.carter_load_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/carter_load_1"
+    ],
+    "subtitle": "say.guildmark.carter_load_1"
+  },
+  "townsfolk.voice.old.carter_leave_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/carter_leave_0"
+    ],
+    "subtitle": "say.guildmark.carter_leave_0"
+  },
+  "townsfolk.voice.old.carter_leave_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/carter_leave_1"
+    ],
+    "subtitle": "say.guildmark.carter_leave_1"
+  },
+  "townsfolk.voice.old.carter_empty_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/carter_empty_0"
+    ],
+    "subtitle": "say.guildmark.carter_empty_0"
+  },
+  "townsfolk.voice.old.carter_full_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/carter_full_0"
+    ],
+    "subtitle": "say.guildmark.carter_full_0"
+  },
+  "townsfolk.voice.old.carter_hello_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/carter_hello_0"
+    ],
+    "subtitle": "say.guildmark.carter_hello_0"
+  },
+  "stall.rent": {
+    "sounds": [
+      "guildmark:stall/rent1"
+    ],
+    "subtitle": "subtitles.guildmark.stall.rent"
+  },
+  "stall.set_out": {
+    "sounds": [
+      "guildmark:stall/set_out1",
+      "guildmark:stall/set_out2",
+      "guildmark:stall/set_out3"
+    ],
+    "subtitle": "subtitles.guildmark.stall.set_out"
+  },
+  "stall.till": {
+    "sounds": [
+      "guildmark:stall/till1",
+      "guildmark:stall/till2",
+      "guildmark:stall/till3"
+    ],
+    "subtitle": "subtitles.guildmark.stall.till"
+  },
+  "stall.pennant": {
+    "sounds": [
+      {
+        "name": "guildmark:stall/pennant1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:stall/pennant2",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.stall.pennant"
+  },
+  "homestead.carter.wheels": {
+    "sounds": [
+      {
+        "name": "guildmark:homestead/carter_wheels1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:homestead/carter_wheels2",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:homestead/carter_wheels3",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.homestead.carter.wheels"
+  },
+  "homestead.carter.load": {
+    "sounds": [
+      "guildmark:homestead/carter_load1",
+      "guildmark:homestead/carter_load2",
+      "guildmark:homestead/carter_load3"
+    ],
+    "subtitle": "subtitles.guildmark.homestead.carter.load"
+  },
+  "homestead.purse": {
+    "sounds": [
+      {
+        "name": "guildmark:homestead/purse1",
+        "attenuation_distance": 12
+      }
+    ],
+    "subtitle": "subtitles.guildmark.homestead.purse"
+  },
   "combat.swing_light": {
     "sounds": [
       "guildmark:combat/swing_light1",
