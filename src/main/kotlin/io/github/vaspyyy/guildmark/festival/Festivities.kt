@@ -164,7 +164,7 @@ object Festivities {
                 }
             }
         }
-        FestivalRestores.tick(level) { pos, record -> sites[record.site]?.let { it.owns(pos) && it.wants(record) } == true }
+        FestivalRestores.tick(level) { pos, record -> wanted(level, pos, record) }
         for (player in level.players()) {
             if (Math.floorMod(now + player.id, LOOK_EVERY) == 0L) look(level, player)
         }
@@ -242,12 +242,17 @@ object Festivities {
     /** A decoration's random tick: one no festival wants any more (left from a crash, say) is put back as it was. */
     fun checkPiece(level: ServerLevel, pos: BlockPos) {
         val record = FestivalRestores.recordAt(level, pos)
-        if (record != null) {
-            val site = sites[record.site]
-            if (site != null && site.owns(pos) && site.wants(record)) return
-        }
+        if (record != null && wanted(level, pos, record)) return
         FestivalRestores.restore(level, pos)
     }
+
+    /**
+     * Whether the decoration at [pos] ([record]) is wanted still: by the running festival it belongs to, or by the
+     * streets' signs and dressing (townsfolk/streets, M6 Part D), which put theirs up through the same record.
+     */
+    private fun wanted(level: ServerLevel, pos: BlockPos, record: FestivalRestores.PieceRecord): Boolean =
+        sites[record.site]?.let { it.owns(pos) && it.wants(record) } == true ||
+            io.github.vaspyyy.guildmark.townsfolk.streets.Streets.wants(level, pos, record)
 
     /** A player used a decoration (a hunt ribbon, a riddle lantern). */
     fun useOrnament(level: ServerLevel, pos: BlockPos, player: ServerPlayer) {
