@@ -148,7 +148,7 @@ object RoadTopics : TopicSource {
         }
         val relief = town.news.lastOrNull { it.kind == "relief" && hour - it.hour in 0..GLAD }
         if (relief != null) {
-            val detail = if (relief.names.size >= 2) Speech.of("talk.detail.road.broken", relief.names[0], relief.names[1]) else "talk.detail.road.broken.band"
+            val detail = if (relief.names.size >= 2) Speech.of("talk.detail.road.broken.band", relief.names[0], relief.names[1]) else "talk.detail.road.broken"
             val parts = mutableListOf(Utterance.Part("gossip_road_clear_2", detail))
             if (!bark) parts.add(Utterance.Part("", "talk.detail.road.relief"))
             out.add(Topic("road.broken.${relief.hour}", Kind.ROAD, 0.7, Utterance(parts), tone = 1))
