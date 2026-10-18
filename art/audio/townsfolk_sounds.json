@@ -1013,6 +1013,174 @@
     ],
     "subtitle": "say.guildmark.purse_1"
   },
+  "townsfolk.voice.man.driver_walk_on": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/driver_walk_on"
+    ],
+    "subtitle": "say.guildmark.driver_walk_on"
+  },
+  "townsfolk.voice.man.driver_quiet": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/driver_quiet"
+    ],
+    "subtitle": "say.guildmark.driver_quiet"
+  },
+  "townsfolk.voice.man.driver_greet": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/driver_greet"
+    ],
+    "subtitle": "say.guildmark.driver_greet"
+  },
+  "townsfolk.voice.man.driver_hold": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/driver_hold"
+    ],
+    "subtitle": "say.guildmark.driver_hold"
+  },
+  "townsfolk.voice.man.driver_trees": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/driver_trees"
+    ],
+    "subtitle": "say.guildmark.driver_trees"
+  },
+  "townsfolk.voice.man.driver_took": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/driver_took"
+    ],
+    "subtitle": "say.guildmark.driver_took"
+  },
+  "townsfolk.voice.man.driver_ran": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/driver_ran"
+    ],
+    "subtitle": "say.guildmark.driver_ran"
+  },
+  "townsfolk.voice.man.driver_mark": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/driver_mark"
+    ],
+    "subtitle": "say.guildmark.driver_mark"
+  },
+  "townsfolk.voice.man.driver_next": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/driver_next"
+    ],
+    "subtitle": "say.guildmark.driver_next"
+  },
+  "townsfolk.voice.man.driver_escort_meet": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/driver_escort_meet"
+    ],
+    "subtitle": "say.guildmark.driver_escort_meet"
+  },
+  "townsfolk.voice.man.driver_escort_done": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/driver_escort_done"
+    ],
+    "subtitle": "say.guildmark.driver_escort_done"
+  },
+  "townsfolk.voice.man.gossip_road_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/gossip_road_1"
+    ],
+    "subtitle": "say.guildmark.gossip_road_1"
+  },
+  "townsfolk.voice.man.gossip_road_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/gossip_road_2"
+    ],
+    "subtitle": "say.guildmark.gossip_road_2"
+  },
+  "townsfolk.voice.man.gossip_road_3": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/gossip_road_3"
+    ],
+    "subtitle": "say.guildmark.gossip_road_3"
+  },
+  "townsfolk.voice.man.gossip_road_4": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/gossip_road_4"
+    ],
+    "subtitle": "say.guildmark.gossip_road_4"
+  },
+  "townsfolk.voice.man.gossip_road_5": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/gossip_road_5"
+    ],
+    "subtitle": "say.guildmark.gossip_road_5"
+  },
+  "townsfolk.voice.man.gossip_road_6": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/gossip_road_6"
+    ],
+    "subtitle": "say.guildmark.gossip_road_6"
+  },
+  "townsfolk.voice.man.gossip_road_7": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/gossip_road_7"
+    ],
+    "subtitle": "say.guildmark.gossip_road_7"
+  },
+  "townsfolk.voice.man.gossip_road_8": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/gossip_road_8"
+    ],
+    "subtitle": "say.guildmark.gossip_road_8"
+  },
+  "townsfolk.voice.man.gossip_road_clear_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/gossip_road_clear_1"
+    ],
+    "subtitle": "say.guildmark.gossip_road_clear_1"
+  },
+  "townsfolk.voice.man.gossip_road_clear_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/gossip_road_clear_2"
+    ],
+    "subtitle": "say.guildmark.gossip_road_clear_2"
+  },
+  "townsfolk.voice.man.gossip_road_clear_3": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/gossip_road_clear_3"
+    ],
+    "subtitle": "say.guildmark.gossip_road_clear_3"
+  },
+  "townsfolk.voice.man.gossip_road_clear_4": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/gossip_road_clear_4"
+    ],
+    "subtitle": "say.guildmark.gossip_road_clear_4"
+  },
+  "townsfolk.voice.man.guard_to_wagon": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/guard_to_wagon"
+    ],
+    "subtitle": "say.guildmark.guard_to_wagon"
+  },
+  "townsfolk.voice.man.guard_together": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/guard_together"
+    ],
+    "subtitle": "say.guildmark.guard_together"
+  },
+  "townsfolk.voice.man.guard_beaten_off": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/guard_beaten_off"
+    ],
+    "subtitle": "say.guildmark.guard_beaten_off"
+  },
+  "townsfolk.voice.man.guard_cant_hold": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/guard_cant_hold"
+    ],
+    "subtitle": "say.guildmark.guard_cant_hold"
+  },
+  "townsfolk.voice.man.guard_glad": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/guard_glad"
+    ],
+    "subtitle": "say.guildmark.guard_glad"
+  },
   "townsfolk.voice.man.crier_open_0": {
     "sounds": [
       {
@@ -2120,6 +2288,78 @@
     ],
     "subtitle": "say.guildmark.crier_season_winter"
   },
+  "townsfolk.voice.man.crier_waylaid": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/crier_waylaid",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_waylaid"
+  },
+  "townsfolk.voice.man.crier_over_waylaid": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/crier_over_waylaid",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_over_waylaid"
+  },
+  "townsfolk.voice.man.crier_road_troubled": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/crier_road_troubled",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_road_troubled"
+  },
+  "townsfolk.voice.man.crier_road_perilous": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/crier_road_perilous",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_road_perilous"
+  },
+  "townsfolk.voice.man.crier_road_closed": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/crier_road_closed",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_road_closed"
+  },
+  "townsfolk.voice.man.crier_road_clear": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/crier_road_clear",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_road_clear"
+  },
+  "townsfolk.voice.man.crier_relief": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/crier_relief",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_relief"
+  },
+  "townsfolk.voice.man.crier_salvage_returned": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/crier_salvage_returned",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_salvage_returned"
+  },
   "townsfolk.voice.man.crier_close_0": {
     "sounds": [
       {
@@ -2866,6 +3106,174 @@
       "guildmark:townsfolk/voice/woman/purse_1"
     ],
     "subtitle": "say.guildmark.purse_1"
+  },
+  "townsfolk.voice.woman.driver_walk_on": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/driver_walk_on"
+    ],
+    "subtitle": "say.guildmark.driver_walk_on"
+  },
+  "townsfolk.voice.woman.driver_quiet": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/driver_quiet"
+    ],
+    "subtitle": "say.guildmark.driver_quiet"
+  },
+  "townsfolk.voice.woman.driver_greet": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/driver_greet"
+    ],
+    "subtitle": "say.guildmark.driver_greet"
+  },
+  "townsfolk.voice.woman.driver_hold": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/driver_hold"
+    ],
+    "subtitle": "say.guildmark.driver_hold"
+  },
+  "townsfolk.voice.woman.driver_trees": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/driver_trees"
+    ],
+    "subtitle": "say.guildmark.driver_trees"
+  },
+  "townsfolk.voice.woman.driver_took": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/driver_took"
+    ],
+    "subtitle": "say.guildmark.driver_took"
+  },
+  "townsfolk.voice.woman.driver_ran": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/driver_ran"
+    ],
+    "subtitle": "say.guildmark.driver_ran"
+  },
+  "townsfolk.voice.woman.driver_mark": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/driver_mark"
+    ],
+    "subtitle": "say.guildmark.driver_mark"
+  },
+  "townsfolk.voice.woman.driver_next": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/driver_next"
+    ],
+    "subtitle": "say.guildmark.driver_next"
+  },
+  "townsfolk.voice.woman.driver_escort_meet": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/driver_escort_meet"
+    ],
+    "subtitle": "say.guildmark.driver_escort_meet"
+  },
+  "townsfolk.voice.woman.driver_escort_done": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/driver_escort_done"
+    ],
+    "subtitle": "say.guildmark.driver_escort_done"
+  },
+  "townsfolk.voice.woman.gossip_road_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/gossip_road_1"
+    ],
+    "subtitle": "say.guildmark.gossip_road_1"
+  },
+  "townsfolk.voice.woman.gossip_road_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/gossip_road_2"
+    ],
+    "subtitle": "say.guildmark.gossip_road_2"
+  },
+  "townsfolk.voice.woman.gossip_road_3": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/gossip_road_3"
+    ],
+    "subtitle": "say.guildmark.gossip_road_3"
+  },
+  "townsfolk.voice.woman.gossip_road_4": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/gossip_road_4"
+    ],
+    "subtitle": "say.guildmark.gossip_road_4"
+  },
+  "townsfolk.voice.woman.gossip_road_5": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/gossip_road_5"
+    ],
+    "subtitle": "say.guildmark.gossip_road_5"
+  },
+  "townsfolk.voice.woman.gossip_road_6": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/gossip_road_6"
+    ],
+    "subtitle": "say.guildmark.gossip_road_6"
+  },
+  "townsfolk.voice.woman.gossip_road_7": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/gossip_road_7"
+    ],
+    "subtitle": "say.guildmark.gossip_road_7"
+  },
+  "townsfolk.voice.woman.gossip_road_8": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/gossip_road_8"
+    ],
+    "subtitle": "say.guildmark.gossip_road_8"
+  },
+  "townsfolk.voice.woman.gossip_road_clear_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/gossip_road_clear_1"
+    ],
+    "subtitle": "say.guildmark.gossip_road_clear_1"
+  },
+  "townsfolk.voice.woman.gossip_road_clear_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/gossip_road_clear_2"
+    ],
+    "subtitle": "say.guildmark.gossip_road_clear_2"
+  },
+  "townsfolk.voice.woman.gossip_road_clear_3": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/gossip_road_clear_3"
+    ],
+    "subtitle": "say.guildmark.gossip_road_clear_3"
+  },
+  "townsfolk.voice.woman.gossip_road_clear_4": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/gossip_road_clear_4"
+    ],
+    "subtitle": "say.guildmark.gossip_road_clear_4"
+  },
+  "townsfolk.voice.woman.guard_to_wagon": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/guard_to_wagon"
+    ],
+    "subtitle": "say.guildmark.guard_to_wagon"
+  },
+  "townsfolk.voice.woman.guard_together": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/guard_together"
+    ],
+    "subtitle": "say.guildmark.guard_together"
+  },
+  "townsfolk.voice.woman.guard_beaten_off": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/guard_beaten_off"
+    ],
+    "subtitle": "say.guildmark.guard_beaten_off"
+  },
+  "townsfolk.voice.woman.guard_cant_hold": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/guard_cant_hold"
+    ],
+    "subtitle": "say.guildmark.guard_cant_hold"
+  },
+  "townsfolk.voice.woman.guard_glad": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/guard_glad"
+    ],
+    "subtitle": "say.guildmark.guard_glad"
   },
   "townsfolk.voice.woman.crier_open_0": {
     "sounds": [
@@ -3974,6 +4382,78 @@
     ],
     "subtitle": "say.guildmark.crier_season_winter"
   },
+  "townsfolk.voice.woman.crier_waylaid": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/crier_waylaid",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_waylaid"
+  },
+  "townsfolk.voice.woman.crier_over_waylaid": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/crier_over_waylaid",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_over_waylaid"
+  },
+  "townsfolk.voice.woman.crier_road_troubled": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/crier_road_troubled",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_road_troubled"
+  },
+  "townsfolk.voice.woman.crier_road_perilous": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/crier_road_perilous",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_road_perilous"
+  },
+  "townsfolk.voice.woman.crier_road_closed": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/crier_road_closed",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_road_closed"
+  },
+  "townsfolk.voice.woman.crier_road_clear": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/crier_road_clear",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_road_clear"
+  },
+  "townsfolk.voice.woman.crier_relief": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/crier_relief",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_relief"
+  },
+  "townsfolk.voice.woman.crier_salvage_returned": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/crier_salvage_returned",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_salvage_returned"
+  },
   "townsfolk.voice.woman.crier_close_0": {
     "sounds": [
       {
@@ -4450,6 +4930,144 @@
       "guildmark:townsfolk/voice/old/purse_1"
     ],
     "subtitle": "say.guildmark.purse_1"
+  },
+  "townsfolk.voice.old.driver_walk_on": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/driver_walk_on"
+    ],
+    "subtitle": "say.guildmark.driver_walk_on"
+  },
+  "townsfolk.voice.old.driver_quiet": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/driver_quiet"
+    ],
+    "subtitle": "say.guildmark.driver_quiet"
+  },
+  "townsfolk.voice.old.driver_greet": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/driver_greet"
+    ],
+    "subtitle": "say.guildmark.driver_greet"
+  },
+  "townsfolk.voice.old.driver_hold": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/driver_hold"
+    ],
+    "subtitle": "say.guildmark.driver_hold"
+  },
+  "townsfolk.voice.old.driver_trees": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/driver_trees"
+    ],
+    "subtitle": "say.guildmark.driver_trees"
+  },
+  "townsfolk.voice.old.driver_took": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/driver_took"
+    ],
+    "subtitle": "say.guildmark.driver_took"
+  },
+  "townsfolk.voice.old.driver_ran": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/driver_ran"
+    ],
+    "subtitle": "say.guildmark.driver_ran"
+  },
+  "townsfolk.voice.old.driver_mark": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/driver_mark"
+    ],
+    "subtitle": "say.guildmark.driver_mark"
+  },
+  "townsfolk.voice.old.driver_next": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/driver_next"
+    ],
+    "subtitle": "say.guildmark.driver_next"
+  },
+  "townsfolk.voice.old.driver_escort_meet": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/driver_escort_meet"
+    ],
+    "subtitle": "say.guildmark.driver_escort_meet"
+  },
+  "townsfolk.voice.old.driver_escort_done": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/driver_escort_done"
+    ],
+    "subtitle": "say.guildmark.driver_escort_done"
+  },
+  "townsfolk.voice.old.gossip_road_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/gossip_road_1"
+    ],
+    "subtitle": "say.guildmark.gossip_road_1"
+  },
+  "townsfolk.voice.old.gossip_road_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/gossip_road_2"
+    ],
+    "subtitle": "say.guildmark.gossip_road_2"
+  },
+  "townsfolk.voice.old.gossip_road_3": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/gossip_road_3"
+    ],
+    "subtitle": "say.guildmark.gossip_road_3"
+  },
+  "townsfolk.voice.old.gossip_road_4": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/gossip_road_4"
+    ],
+    "subtitle": "say.guildmark.gossip_road_4"
+  },
+  "townsfolk.voice.old.gossip_road_5": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/gossip_road_5"
+    ],
+    "subtitle": "say.guildmark.gossip_road_5"
+  },
+  "townsfolk.voice.old.gossip_road_6": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/gossip_road_6"
+    ],
+    "subtitle": "say.guildmark.gossip_road_6"
+  },
+  "townsfolk.voice.old.gossip_road_7": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/gossip_road_7"
+    ],
+    "subtitle": "say.guildmark.gossip_road_7"
+  },
+  "townsfolk.voice.old.gossip_road_8": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/gossip_road_8"
+    ],
+    "subtitle": "say.guildmark.gossip_road_8"
+  },
+  "townsfolk.voice.old.gossip_road_clear_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/gossip_road_clear_1"
+    ],
+    "subtitle": "say.guildmark.gossip_road_clear_1"
+  },
+  "townsfolk.voice.old.gossip_road_clear_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/gossip_road_clear_2"
+    ],
+    "subtitle": "say.guildmark.gossip_road_clear_2"
+  },
+  "townsfolk.voice.old.gossip_road_clear_3": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/gossip_road_clear_3"
+    ],
+    "subtitle": "say.guildmark.gossip_road_clear_3"
+  },
+  "townsfolk.voice.old.gossip_road_clear_4": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/gossip_road_clear_4"
+    ],
+    "subtitle": "say.guildmark.gossip_road_clear_4"
   },
   "townsfolk.voice.child.child_0": {
     "sounds": [

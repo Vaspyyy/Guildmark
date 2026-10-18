@@ -1,7 +1,8 @@
 """The townsfolk's voices: what the people of the city say as you pass (greetings, trade cries, gossip,
-replies, a laugh, a cry for help, a lamplighter's word on their round, and what the three factions' members
-and a heist's watchmen say), read by Kokoro TTS in four voices, one per timbre, then given a light touch of
-processing so they sit in the street (a little age for the old man, a child's pitch for the child).
+replies, a laugh, a cry for help, a lamplighter's word on their round, what the three factions' members and a
+heist's watchmen say, and the road's: a caravan's driver and guards, and the grumbles while the road is troubled),
+read by Kokoro TTS in four voices, one per timbre, then given a light touch of processing so they sit in the street
+(a little age for the old man, a child's pitch for the child).
 
 The game picks the timbre from the townsperson (old women use "woman") and varies the pitch a little per
 person, so one voice per timbre is enough. Line lengths do not matter to the game, except for the town crier's.
@@ -202,6 +203,45 @@ FACTION = {
     "purse_1": "Hey! That's mine!",
 }
 
+# man, woman and old: the road's (M4, design-road.md section 5). A caravan's driver, a stranger from the far end of the
+# road, on the bench (to the horse, to themself, to a passer-by, struck), then at the gate after a waylaying, and to a
+# player who escorts the wagon; and what the townsfolk say while their road is troubled, then once it's clear again.
+# The text is the language file's say.guildmark.<line>, character for character
+ROAD = {
+    "driver_walk_on": "Walk on, Daisy.",
+    "driver_quiet": "Road's quiet. I don't like it.",
+    "driver_greet": "Good day! Mind the wheels, now.",
+    "driver_hold": "Whoa, girl! Whoa!",
+    "driver_trees": "Look out! Outlaws!",
+    "driver_took": "They came out of nowhere and took the lot.",
+    "driver_ran": "I ran. I'm not proud of it.",
+    "driver_mark": "Their camp's out that way. Here, I'll show you.",
+    "driver_next": "The next one won't go without more spears.",
+    "driver_escort_meet": "You're our escort? Then let's be off.",
+    "driver_escort_done": "Never been so glad to see a wall.",
+    "gossip_road_1": "The wagons aren't safe on the road these days.",
+    "gossip_road_2": "Everything off the wagons is dear now.",
+    "gossip_road_3": "My brother drives a wagon. I worry for him.",
+    "gossip_road_4": "Outlaws on the road, and nobody does a thing.",
+    "gossip_road_5": "Somebody ought to deal with those outlaws.",
+    "gossip_road_6": "They say the last wagon never came in.",
+    "gossip_road_7": "Bread's gone up again. It's that road.",
+    "gossip_road_8": "I won't set foot outside the walls till it's sorted.",
+    "gossip_road_clear_1": "Wagons are coming in again. About time.",
+    "gossip_road_clear_2": "They say the outlaws were broken. Good riddance.",
+    "gossip_road_clear_3": "Prices are coming down, thank goodness.",
+    "gossip_road_clear_4": "The road's safe again, they say.",
+}
+
+# man and woman only: a caravan's guards (townsfolk guards from the far end), in a fight on the road and to an escort
+ROAD_GUARD = {
+    "guard_to_wagon": "To the wagon!",
+    "guard_together": "Stand together!",
+    "guard_beaten_off": "That's it, run! And stay gone!",
+    "guard_cant_hold": "There's too many! Can't hold them!",
+    "guard_glad": "Glad of you. Watch the treeline.",
+}
+
 # the child only
 CHILD = {
     "child_0": "You're it!",
@@ -351,6 +391,16 @@ CRIER = {
     "crier_season_summer": "Summer is here!",
     "crier_season_autumn": "Autumn is upon us! Bring in the harvest!",
     "crier_season_winter": "Winter has come! Lay in your stores!",
+    # the road (M4): a wagon waylaid and the goods it carried (the event's news), the trouble over, the road's stages as
+    # it grows worse, the band broken, the relief wagon, and goods brought back from a wreck
+    "crier_waylaid": "A wagon was waylaid on the road! Goods will be short!",
+    "crier_over_waylaid": "The wagons are getting through again!",
+    "crier_road_troubled": "Trouble on the road! Escorts wanted for the wagons!",
+    "crier_road_perilous": "The road is perilous! The wagons go together, at noon!",
+    "crier_road_closed": "The road is closed! No wagon goes without an escort!",
+    "crier_road_clear": "The outlaws are broken! The road is clear again!",
+    "crier_relief": "A relief wagon is on its way to us!",
+    "crier_salvage_returned": "Goods from the wreck have been brought back! Our thanks!",
     # the closing call
     "crier_close_0": "That is the news! Go about your business!",
     "crier_close_1": "Noon, and all's well!",
@@ -391,12 +441,28 @@ PHONEMES = {
     "knight_kin_0": "hˈɑːɹθ ænd ɹˈəʊd, fɹˈɛnd.",
     "alarm_1": "ɡˈɑːɹdz! ɡˈɑːɹdz!",
     "alarm_0": "θˈiːf! stˈɒp, θˈiːf!",  # as the text reads; written out because its LEAD_IN is phonemes
+    # the road's: an r sounded where the American voices would drop it ("sorted", "more spears", "here", "their",
+    # "escort", "dear", "are", "aren't"), as for the crier
+    "driver_mark": "ðɛɹ kˈæmps ˈaʊt ðat wˈeɪ. hˈɪɹ, aɪl ʃˈəʊ juː.",  # "camp's", not "comes"
+    "gossip_road_6": "ðeɪ sˈeɪ ðə lˈæst wˈaɡən nˈɛvə kˈeɪm ˈɪn.",  # "last", not "lost"
+    "driver_next": "ðə nˈɛkst wˈɒn wəʊnt ɡˌəʊ wɪðˌaʊt mˈɔːɹ spˈɪɹz.",
+    "driver_escort_meet": "jɔːɹ ˌaʊəɹ ˈɛskɔːɹt? ðˈɛn lˈɛts biː ˈɒf.",
+    "gossip_road_1": "ðə wˈaɡənz ˈɑːɹnt sˈeɪf ɒnðə ɹˈəʊd ðiːz dˈeɪz.",
+    "gossip_road_2": "ˈɛvɹɪθˌɪŋ ˈɒf ðə wˈaɡənz ɪz dˈɪɹ nˈaʊ.",
+    "gossip_road_8": "aɪ wəʊnt sˈɛt fˈʊt aʊtsˈaɪd ðə wˈɔːlz tˈɪl ɪts sˈɔːɹtɪd.",
+    "gossip_road_clear_1": "wˈaɡənz ɑːɹ kˈʌmɪŋ ɪn ɐɡˈɛn. ɐbˌaʊt tˈaɪm.",
+    "gossip_road_clear_3": "pɹˈaɪsɪz ɑːɹ kˈʌmɪŋ dˈaʊn, θˈaŋk ɡˈʊdnəs.",
 }
 # The same for one timbre only. With the plain "f" the woman's and the old man's first "Thief" came out as "Thieve":
 # the woman's reads right with an aspirated "f" and a full stop, the old man's with a longer one and a comma.
 PHONEMES_FOR = {
     ("alarm_0", "woman"): "θˈiːfʰ. stˈɒp, θˈiːf!",
     ("alarm_0", "old"): "θˈiːff, stˈɒp, θˈiːf!",
+    # the road's: "There's too many! Can't" not "This too many caught", "Wagons" not "Woggins"
+    ("driver_hold", "old"): "wˈoʊ, ɡˈɜːl! wˈoʊ!",  # "Whoa", not "Well"
+    ("driver_trees", "man"): "lˈʊk ˈaʊt! ˈaʊt lˌɔːz!",  # "Outlaws", not "outliers"
+    ("guard_cant_hold", "woman"): "ðɛɹz tˈuː mˈɛni! kˈænt hˈəʊld ðˌɛm!",
+    ("gossip_road_clear_1", "woman"): "wˈæɡənz ɑːɹ kˈʌmɪŋ ɪn ɐɡˈɛn. ɐbˌaʊt tˈaɪm.",
 }
 
 # Kokoro lets the first word of a take go: the "th" of a "Thief" that opens an utterance is almost silent ("Leave!
@@ -413,6 +479,9 @@ LEVEL = {
     # a heist's watchmen: shouts must carry, a victim cries out, the wary and the muttering are quieter
     "alarm_0": 3.0, "alarm_1": 3.0, "alarm_2": 3.0, "purse_0": 2.0, "purse_1": 2.0,
     "suspect_0": -1.0, "suspect_1": -1.0, "suspect_2": -1.0, "calm_0": -2.0, "calm_1": -2.0, "thief_2": -3.0,
+    # the road: a driver struck and guards in a fight shout, a driver uneasy or ashamed says it low
+    "driver_hold": 3.0, "driver_trees": 3.0, "guard_to_wagon": 3.0, "guard_together": 3.0, "guard_beaten_off": 2.0,
+    "guard_cant_hold": 3.0, "driver_quiet": -2.0, "driver_ran": -1.5,
 }
 
 # ------------------------------------------------------------------ how the crier cries
@@ -488,6 +557,14 @@ CRIER_PHONEMES = [
     ("wˈiːt ˈɪz dˈɪɹ", "wˈiːtʰ ˈɪz dˈɪɹ"),  # the man's "Wheat is dear", not "We dis deer"
     ("wˈiːt ˈɪz tʃˈiːp", "wˈiːtʰ ˈɪz tʃˈiːp"),  # and "Wheat is cheap", not "Weed is cheap"
     ("nˈuːn, and ˈɔlz", "nˈuːn! and ˈɔlz"),  # "Noon! and all's well", called as the hour, not "Noonan as well"
+    # the road's (M4): "escort" with its r, "wanted" not "wonted", "clear" as "dear" is, "waylaid" not "whaling" and
+    # "Our thanks" not "are thanks"
+    ("ˈɛskɔːts", "ˈɛskɔːɹts"),
+    ("ˈɛskɔːt", "ˈɛskɔːɹt"),
+    ("wˈɒntɪd", "wˈɑntɪd"),
+    ("ˌaʊə θˈaŋks", "ˈaʊwɚ θˈaŋks"),
+    ("klˈiəɹ", "klˈɪɹ"),
+    ("wˈeɪleɪd", "wˈeɪ lˌeɪd"),
 ]
 # A line's own fixes in one timbre, after CRIER_PHONEMES: (line, timbre) -> [(espeak's, Kokoro's)]
 CRIER_PHONEMES_FOR = {
@@ -511,6 +588,9 @@ def lines(only=None, keys=None):
         else:
             d = dict(COMMON, **(dict(TRADES, **LAMPLIGHTER) if timbre in ("man", "woman") else {}))
             d.update(FACTION)
+            d.update(ROAD)
+            if timbre in ("man", "woman"):
+                d.update(ROAD_GUARD)
             if timbre in CRIER_TIMBRES:
                 d.update(CRIER)
         out[timbre] = {k: v for k, v in d.items() if not keys or re.search(keys, k)}
