@@ -532,3 +532,60 @@ reach) and generates `townsfolk/talk/TalkLines.kt` from the table and the takes 
 wordings, each wording's length in ticks (the longest timbre's), whether it has `.named` texts and which timbres say
 it, and `OTHERS`, the length of every other voiced townsfolk line, so that `TalkLines.ticks` knows any line a talk can
 say.
+
+### Works and streets (M6)
+
+`make_works_audio.py` makes the sounds of M6's works going up and of its streets in good times and hard
+(living-world/design-influence.md section 8): 26 events and 93 mono files in `works/` and `streets/`.
+- **The building:** `works.trowel` (a stroke through mortar), `works.chisel` (a mallet on a chisel), `works.mortar`
+  (the hoe turned through the tub), `works.hoist` (the rope hauled hand over hand), `works.beam_down`,
+  `works.stone_set` and `works.stake` (the works' post knocked in, heavier than the homestead's).
+- **The ceremonies and the works at work:** `works.cheer` (the topping out), `works.toast`, `works.unveil` (the cloth
+  off the plaque), `works.handbell` (the master's, at the opening), `works.horn` (the watch's, reaching 128 blocks),
+  `works.beacon_flare` and `works.beacon_loop`, `works.granary_doors` and `works.pledge` (Marks into the post's box).
+- **The streets:** `streets.ladle`, `streets.pot_loop`, `streets.bowl`, `streets.queue` (the bread queue's murmur,
+  cut from the townsfolk's own recorded talk and muffled so that nothing in it can be made out), `streets.awning`,
+  `streets.basket`, `streets.stamp`, `streets.pat`, `streets.bundle` and `streets.handcart_goods`.
+
+Every one-shot starts on its contact, so a clip's moment plays it on the frame it happens. The four loops are built
+round, not cut and faded: their noise is made in the frequency domain to come round on itself, what happens in them is
+laid on a ring, their filters run three laps and their reverb's tail is folded back, so each file is one lap with no
+seam. They are levelled as the homestead's are (the loudest 100 ms at -14 to -20 LUFS, K-weighted; the loops by gain
+alone, at -23 to -28) with peaks under -1 dBFS, and seeded. The script writes `works_sounds.json` and
+`works_lang.json` here, merged into `sounds.json` and `en_us.json` by hand; `--mp3 <file>` joins what it rendered
+into one listen-through MP3, each loop played round twice.
+
+M6's voices are made by the scripts above:
+- `make_talk_voices.py` has seven new groups at the end of `GROUPS`: the works, the works' deeds, the times, the
+  household's comings and goings, the neighbours', the streets and the children's. They hold 44 families, 106
+  wordings and 284 takes, which brings the talk to 227 families, 472 keys and 1,408 takes with the crier's.
+  `TALK_PHONEMES` gives "granary" its "a" (else "gronary") and "mortar" both its r's.
+- `make_townsfolk_voices.py` has the crier's works and times: 21 lines (`crier_works_*`, `crier_times_*`) in his two
+  voices. It also has the homestead crew's 36 lines (`HOMESTEAD`, text only until now), in the man's, the woman's and
+  the old man's voices, and a town works' master builder's 14 (`MASTER`, `works_master_*`), in the man's and the old
+  man's.
+  - The builders' lines are read as the talk is (`talk_phonemes`: espeak's British reading with the American r's).
+  - "Hurrah!" is said "hooray": Kokoro reads "Hurrah" as "her eye" or "Hara".
+  - `LEVEL` sets their stage calls, shortages and the master's calls 1 to 2.5 dB over the speech level, and their
+    waiting and working 1 to 1.5 dB under.
+  - `fragments` now leaves the crier's talk-of-the-town lines (`crier_talk_*`) to `make_talk_voices.py`'s `table`,
+    which writes their entries.
+
+Checked with Whisper base.en on the encoded files: 385 of the 462 new takes come back word for word, 97.4% of the
+words. Most of the rest are homophones and spellings ("The new ovens made all the difference", "a cue for bread",
+"Bow on the ridge", "Write tools out", "Morning, the cruise here") or "hooray" for "Hurrah". A few are still heard a
+little wrong: "Find day for building" in all three voices, "Ground level, lads", and the woman's "with the granary".
+Eleven wordings were changed where no reading would do.
+
+The new talk sits at the existing takes' speech level (a median of -19.1 dB RMS) and the crier at -19.1 LUFS.
+living-world/works-audio.md in the shared notes lists every sound and line with what plays it.
+
+```
+python3 -B art/audio/make_works_audio.py src/main/resources/assets/guildmark [--wav <dir>] [--only works.trowel,streets.bowl] [--mp3 <file>]
+<venv>/bin/python -I -B art/audio/make_talk_voices.py tts --model <dl>/kokoro-v1.0.onnx --voices <dl>/voices-v1.0.bin --out <raw-dir> --keys '^talk\.(works|fortune|comings|streets)\.|^talk\.child\.(builders|hungry|festoons)_'
+python3 -B art/audio/make_talk_voices.py process --raw <raw-dir> --assets src/main/resources/assets/guildmark --keys '<the same>'
+<venv>/bin/python -I -B art/audio/make_townsfolk_voices.py tts --model <dl>/kokoro-v1.0.onnx --voices <dl>/voices-v1.0.bin --out <raw-dir> --keys '^(crier_works_|crier_times_|homestead_|works_master_)'
+python3 -B art/audio/make_townsfolk_voices.py process --raw <raw-dir> --assets src/main/resources/assets/guildmark --keys '<the same>'
+python3 -B art/audio/make_townsfolk_voices.py fragments --assets src/main/resources/assets/guildmark
+python3 -B art/audio/make_talk_voices.py table --assets src/main/resources/assets/guildmark
+```
