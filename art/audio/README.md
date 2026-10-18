@@ -420,3 +420,35 @@ python3 -B art/audio/make_stall_voices.py process --raw <raw-dir> --assets src/m
 python3 -B art/audio/make_stall_voices.py preview --assets src/main/resources/assets/guildmark --mp3 <file>
 python3 -B art/audio/make_stall_voices.py sounds
 ```
+
+### Orders and standing
+
+`make_order_voices.py` voices the capitals' orders and supplier standing. A business's keeper has 18 lines (`order_`):
+an order to be had, taken, filled or part filled, let lapse or given up; a standing order offered or turned down; goods
+refused for having come off their own stall; and a supplier's rise to each rank. They are in the man's, the woman's and
+the old man's timbres, as everyday speech. The town crier has 25 order cries: `crier_wanted_<good>` for each of the 22
+goods a business can ask for, `crier_order_filled_0` and `_1`, and `crier_board_orders`. They are in the man's and the
+woman's voices, cried through `make_townsfolk_voices`'s own delivery (`process_crier`), with the lines joining `CRIER`
+for the run. No line says a name or a number.
+
+Every line is read from espeak's British phonemes, with `PHONEMES` put right:
+- The r of "order", "short", "mark", "more", "here", "sooner", "our", "purveyor", "suppliers" and "iron" is sounded,
+  as in the crier's "dear".
+- "of" takes the vowel of the crier's "little of it".
+
+`PHONEMES_FOR` holds a line's fixes for one timbre. The man breathes after "Bring" in "Bring, in your catch" (else
+"bringing your catch", as in the crier's harvest line) and after "Wheat" in "Wheat, wanted!". Two lines were reworded
+because no reading was heard right: "Wool wanted" always came out as "We'll want it", so the crier says "Wool is
+wanted!", and "An order filled" as "In order filled", so it is "An order is filled!".
+
+Checked with Whisper base.en on the encoded files: 101 of the 104 come back exactly as written (99.6% of words). The
+three that don't are "Purveyor", a word it doesn't know, heard as "Perveyor". The fp32 model also hears the woman's
+"Cod" as "Codd" and the old man's "A known supplier" as "Unknown supplier". The keeper's lines average -21.1 LUFS
+against the everyday lines' -20.8. The crier's sit at -19 LUFS within 0.3, and the longest runs 3.6 s. All have true
+peaks under -1 dBTP. The townsfolk fragments are not rewritten; the `sounds` stage prints the `sounds.json` entries.
+
+```
+<venv>/bin/python -I -B art/audio/make_order_voices.py tts --model <dl>/kokoro-v1.0.onnx --voices <dl>/voices-v1.0.bin --out <raw-dir> [--timbres man] [--keys crier] [--espeak-data <dir>]
+python3 -B art/audio/make_order_voices.py process --raw <raw-dir> --assets src/main/resources/assets/guildmark [--timbres ...] [--keys ...] [--wav <dir>]
+python3 -B art/audio/make_order_voices.py sounds
+```
