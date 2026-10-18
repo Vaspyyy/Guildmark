@@ -39,7 +39,8 @@ object DeedTopics : TopicSource {
         // What they saw the player do, the newest first
         if (Say.memory()) for (d in ask.knows?.witnessed ?: listOf()) {
             val age = today - d.day
-            if (age < 0 || age > SEEN || bark && age > 1 || !said.add(d.kind)) continue
+            // The works' patron is thanked by WorksTopics, in the works' own words
+            if (age < 0 || age > SEEN || bark && age > 1 || RumourWords.theirs(d.kind) || !said.add(d.kind)) continue
             val family = family(d.kind, d.tone, seen = true, mine = false, child = child) ?: continue
             val say = Say.line(ask, family, seen(age)) ?: continue
             out.add(Topic("deeds.${d.kind}.${d.day}", Kind.DEEDS, weight(age), say, tone = d.tone, about = player.uuid))
@@ -50,7 +51,7 @@ object DeedTopics : TopicSource {
         for (k in TownTalk.known(level, r)) {
             val rumour = k.rumour
             val heard = k.heard
-            if (rumour.about != player.uuid || rumour.heat < COLD) continue
+            if (rumour.about != player.uuid || rumour.heat < COLD || RumourWords.theirs(rumour.kind)) continue
             val seen = heard.venue == Venue.SEEN
             if (!rumours && !seen && heard.from != -1) continue
             val age = today - Math.floorDiv(rumour.born, 24L)

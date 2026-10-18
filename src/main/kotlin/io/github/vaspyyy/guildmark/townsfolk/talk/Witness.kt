@@ -7,13 +7,20 @@ import io.github.vaspyyy.guildmark.economy.Shop
 import io.github.vaspyyy.guildmark.economy.Trading
 import io.github.vaspyyy.guildmark.economy.fortune.Fortunes
 import io.github.vaspyyy.guildmark.economy.fortune.Noted
+import io.github.vaspyyy.guildmark.economy.works.Works
+import io.github.vaspyyy.guildmark.economy.works.WorksKind
+import io.github.vaspyyy.guildmark.economy.works.WorksState
+import io.github.vaspyyy.guildmark.economy.works.WorksView
 import io.github.vaspyyy.guildmark.festival.FestivalContest
 import io.github.vaspyyy.guildmark.homestead.HomesteadEvent
 import io.github.vaspyyy.guildmark.homestead.HomesteadTiers
+import io.github.vaspyyy.guildmark.homestead.plan.Stage
 import io.github.vaspyyy.guildmark.outlaw.OutlawCamps
 import io.github.vaspyyy.guildmark.outlaw.Outlaws
+import io.github.vaspyyy.guildmark.townsfolk.Comings
 import io.github.vaspyyy.guildmark.townsfolk.Days
 import io.github.vaspyyy.guildmark.townsfolk.Hands
+import io.github.vaspyyy.guildmark.townsfolk.Household
 import io.github.vaspyyy.guildmark.townsfolk.Resident
 import io.github.vaspyyy.guildmark.townsfolk.Residents
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
@@ -43,15 +50,18 @@ import java.util.UUID
  * Where rumours start (living-world/design-voices.md section 4): what the capitals' people see happen, and what other
  * systems tell of in a line each. Monsters killed in sight of residents, a resident saved from one, struck or killed,
  * any other death in town, a purse lifted or a thief caught, a captive brought home, a festival won, a homestead raised
- * near a capital, newcomers taken in, the guild's news as it's made, a wagon waylaid or escorted in, salvage and orders.
- * Each starts its rumour (see [Rumours] for the kinds and their facts) with whoever knows it first, and the favour,
- * slight or experience that goes with it.
+ * near a capital, newcomers taken in, the guild's news as it's made, a wagon waylaid or escorted in, salvage and orders;
+ * and (M6) a works paid for and raised, its crew's building days and the materials players bring, and a household
+ * gone in hard times or come home. Each starts its rumour (see [Rumours] for the kinds and their facts) with whoever
+ * knows it first, and the favour, slight or experience that goes with it.
  *
  * The one-line calls, in the files they're about: `GuildNews.add` ([guildNews]), `Residents.died` ([died]) and
  * `Residents.adopt` ([newcomer]), `Pickpocket.lift` ([robbed]) and `Pickpocket.caught` ([caught]),
  * `Captives.homecoming` ([rescued]), `FestivalSite.award` ([festival]), `Visitors.next` ([visitor]); and, once M3
  * and M4 are in, `Stalls.open` ([opened]), `Stalls.trade` ([dealt]), M3's orders ([order]) and M4's salvage
- * ([salvage]). The rest it hears for itself: the game's deaths and blows, homesteads' tiers, and the caravans.
+ * ([salvage]). The rest it hears for itself: the game's deaths and blows, homesteads' tiers, the caravans, and (M6)
+ * the works' and the households' listeners ([gone] and [back] are there for Part D3 to call itself if it would
+ * rather). Part B's labourers and Part D2's alms table call [TownTalk.laboured] and [TownTalk.fed].
  */
 object Witness {
     /** How far residents see a deed from, how far a monster's quarry may be from it, and a festival's crowd. */
@@ -82,6 +92,8 @@ object Witness {
         NeoForge.EVENT_BUS.addListener(HomesteadEvent.TierChanged::class.java) { raised(it) }
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> blows.clear() }
         Caravans.listen(Road)
+        Works.listen(Building)
+        Comings.listen(Households)
     }
 
     // ---- Who saw it ----
@@ -521,4 +533,146 @@ object Witness {
             return people.filter { it.role == TownRole.GUARD }.take(3) + people.filter { it.role == TownRole.MERCHANT }
         }
     }
+
+    // ---- The town's works and households (M6) ----
+
+    /** How near a works the folk who see it paid for or raised stand, and the days a crew still counts those who were on it. */
+    private const val ONLOOKERS = 24.0
+    private const val CREW_DAYS = 2
+
+    /**
+     * What the town hears of its works: one paid for and one raised, about its patron (each resident thanks the patron
+     * and its quarter-givers as they hear of it: [TownTalk.heard]); the day's crew at each step of the building, who
+     * remember their building days ([TownTalk.laboured]); and materials a player brought to the yard, which the crew
+     * thank them for, once a day ([TownTalk.brought]).
+     */
+    private object Building : Works.Listener {
+        override fun funded(level: ServerLevel, w: WorksView) {
+            if (!Works.enabled()) return
+            val stall = w.kind == WorksKind.STALL
+            start(level, w, Rumours.WORKS_FUNDED, if (stall) 0.4f else 0.6f, Fade.SMALL, if (stall) 0 else 1, street(level, w))
+        }
+
+        override fun begun(level: ServerLevel, w: WorksView) = labour(level, w)
+
+        override fun staged(level: ServerLevel, w: WorksView, stage: Stage) = labour(level, w)
+
+        override fun finished(level: ServerLevel, w: WorksView) {
+            if (!Works.enabled()) return
+            labour(level, w)
+            val stall = w.kind == WorksKind.STALL
+            // The crew saw it raised; the street round it heard as it went up
+            val knowers = (crew(level, w, Experience.LABOURED.days).map { it.id to Venue.SEEN } + street(level, w)).distinctBy { it.first }
+            start(level, w, Rumours.WORKS_RAISED, if (stall) 0.4f else 0.75f, if (stall) Fade.SMALL else Fade.BIG, if (stall) 0 else 1, knowers)
+        }
+
+        override fun brought(level: ServerLevel, w: WorksView, player: UUID, units: Int) {
+            if (!Works.enabled() || units <= 0) return
+            for (r in crew(level, w, CREW_DAYS)) TownTalk.brought(level, r, player)
+        }
+
+        /** [w]'s rumour of [kind], about its patron, known first by [knowers]; its facts the works' id, its name and its patron's. */
+        private fun start(level: ServerLevel, w: WorksView, kind: String, heat: Float, fade: Fade, tone: Int, knowers: List<Pair<Int, Venue>>) {
+            if (knowers.isEmpty()) return
+            val args = listOfNotNull(w.id.toString(), "fortune.guildmark.works.${w.kind.id}", patron(level, w)?.let(::named))
+            TownTalk.begin(
+                level, BlockPos.of(w.capital), kind, w.patron, -1, args, heat, fade, Scope.TOWN, tone,
+                w.site?.lot?.center ?: w.site?.post, Rumours.TOWN, knowers,
+            )
+        }
+
+        /** Who pledged most toward [w] (a stall's owner), by name. */
+        private fun patron(level: ServerLevel, w: WorksView): String? {
+            val id = w.patron ?: return null
+            return w.pledges.firstOrNull { it.player == id }?.name?.takeIf { it.isNotEmpty() } ?: level.server.playerList.getPlayer(id)?.name?.string
+        }
+
+        /**
+         * The street round [w]: those living in the homes nearest its site (or the market board, with no site yet), who
+         * hear of it there, and the folk about it now, who see it; three of the town if neither is known.
+         */
+        private fun street(level: ServerLevel, w: WorksView): List<Pair<Int, Venue>> {
+            val capital = BlockPos.of(w.capital)
+            val at = w.site?.post ?: Spread.view(w.capital).places?.marketBoard?.pos
+            val near = at?.let { round(level, capital, it) }.orEmpty().map { it.id to Venue.STREET }
+            val seen = at?.let { pos -> seen(level, Vec3.atCenterOf(pos), null, ONLOOKERS, false).filter { it.second.capital == capital } }.orEmpty()
+                .map { it.second.id to Venue.SEEN }
+            return (seen + near).distinctBy { it.first }.ifEmpty { some(level, capital, w.id.toLong()).map { it.id to Venue.STREET } }
+        }
+
+        /** Today's labourers record a building day on [w], if it's the works they're lent to. */
+        private fun labour(level: ServerLevel, w: WorksView) {
+            if (!Works.enabled()) return
+            val residents = Residents.get(level)
+            for (id in labourers(level, w)) residents[id]?.takeIf { it.alive }?.let { TownTalk.laboured(level, it, w.id) }
+        }
+
+        /** [w]'s crew: today's labourers at it, and those who laboured on it in the last [days] days. */
+        private fun crew(level: ServerLevel, w: WorksView, days: Int): List<Resident> {
+            val capital = BlockPos.of(w.capital)
+            val entry = TownTalkData.get(level)[capital]
+            val day = Memory.day(level)
+            val today = labourers(level, w)
+            return Residents.get(level).of(capital).filter { r ->
+                r.alive && (r.id in today || entry?.minds?.get(r.id)?.felt?.any { it.experience == Experience.LABOURED && it.about == w.id && day - it.day in 0..days } == true)
+            }
+        }
+
+        /**
+         * The citizens lent to [w]'s capital's works today ([Hands.Crew.labourers]), if [w] is the works they work at:
+         * the one at [Works.workAt], or with that not known, the only works going up there.
+         */
+        private fun labourers(level: ServerLevel, w: WorksView): Set<Int> {
+            val places = Spread.view(w.capital).places ?: return setOf()
+            val at = Works.workAt(level, w.capital)
+            val theirs = if (at != null) Works.at(level, at)?.id == w.id
+            else Works.all(level, w.capital).none { it.id != w.id && it.state == WorksState.BUILDING }
+            return if (theirs) Hands.of(level, places).labourers else setOf()
+        }
+    }
+
+    /** What the town hears of its households: one gone in hard times, one come home. */
+    private object Households : Comings.Listener {
+        override fun left(level: ServerLevel, h: Household) = gone(level, h)
+
+        override fun returned(level: ServerLevel, h: Household) = back(level, h)
+    }
+
+    /**
+     * Household [h] has left its capital in hard times: its neighbours know first, and the town talks of the family
+     * gone (FortuneTopics). Comings' listener calls it; call it while the members' records still name them.
+     */
+    fun gone(level: ServerLevel, h: Household) = household(level, h, Rumours.HOUSEHOLD_GONE, -1)
+
+    /** Household [h] has come home: its neighbours know first, and the town talks of the family back (FortuneTopics). */
+    fun back(level: ServerLevel, h: Household) = household(level, h, Rumours.HOUSEHOLD_BACK, 1)
+
+    private fun household(level: ServerLevel, h: Household, kind: String, tone: Int) {
+        val residents = Residents.get(level)
+        val members = h.members.mapNotNull { residents[it] }
+        val first = members.firstOrNull { it.family.isNotEmpty() } ?: return
+        val capital = BlockPos.of(h.capital)
+        val home = Spread.view(h.capital).places?.lodgings?.get(h.home)?.box?.center
+        val knowers = (home?.let { round(level, capital, it, h.home) }.orEmpty().filter { it.id !in h.members }
+            .ifEmpty { some(level, capital, h.id.toLong()).filter { it.id !in h.members } })
+            .map { it.id to Venue.STREET }
+        if (knowers.isEmpty()) return
+        TownTalk.begin(
+            level, capital, kind, null, first.id, listOf(named(first.family)), 0.6f, Fade.SMALL, Scope.TOWN, tone,
+            home, Rumours.TOWN, knowers,
+        )
+    }
+
+    /** Those living in the [NEIGHBOURS] homes nearest [at] in [capital] (but home [except]), where its places are known. */
+    private fun round(level: ServerLevel, capital: BlockPos, at: BlockPos, except: Int = -1): List<Resident> {
+        val places = Spread.view(capital).places ?: return listOf()
+        val living = Residents.get(level).of(capital).filter { it.alive && it.home >= 0 && it.home != except }
+        val homes = living.map { it.home }.distinct()
+            .sortedBy { places.lodgings[it]?.box?.center?.distSqr(at) ?: Double.MAX_VALUE }.take(NEIGHBOURS).toSet()
+        return living.filter { it.home in homes }
+    }
+
+    /** Three of [capital]'s grown citizens, the same three for the same [salt], to know first where nobody else would. */
+    private fun some(level: ServerLevel, capital: BlockPos, salt: Long): List<Resident> =
+        Residents.get(level).of(capital).filter { it.alive && it.role == TownRole.CITIZEN }.sortedBy { Spread.mix(it.id * 17L + salt) }.take(3)
 }

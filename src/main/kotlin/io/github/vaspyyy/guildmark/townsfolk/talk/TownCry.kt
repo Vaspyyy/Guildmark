@@ -46,7 +46,8 @@ object TownCry {
         var best: Story? = null
         var most = HOT
         for (s in entry.rumours.values) {
-            if (s.by != Rumours.TOWN && s.by != Rumours.AFAR || s.cried || s.rumour.born > hour) continue
+            // The works' and households' talk is told by their own sources: the crier has the works' own news
+            if (s.by != Rumours.TOWN && s.by != Rumours.AFAR || s.cried || s.rumour.born > hour || RumourWords.theirs(s.rumour.kind)) continue
             val h = Rumours.heat(s, hour)
             if (h >= most) {
                 most = h

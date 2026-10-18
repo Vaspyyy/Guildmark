@@ -20,7 +20,8 @@ import net.neoforged.neoforge.server.ServerLifecycleHooks
  * (their name), the [Rumour.resident] it's about (theirs), the first `=Name` among its args when it names neither
  * (else the outlaw band's name, as its lang key, for what a band did), where it happened ([Rumour.origin]) and the
  * hour it was born ([Rumour.born], in hours of the overworld clock as Markets.hourOf counts them). The market's, the
- * road's, salvage and orders have no news family: their own sources tell them.
+ * road's, salvage and orders, and the town's works and households (M6) have no news family: their own sources tell
+ * them.
  */
 object RumourWords {
     /** The news family [rumour] is told with ("news.dragon"), or null if it has none. */
@@ -150,8 +151,17 @@ object RumourWords {
     /** The news that's about what a band did, said with the band's name before any place it names. */
     private val BANDS = setOf("band", "band_broken")
 
-    /** The heads of kinds told by their own sources, not as news. */
-    private val OWN = setOf("market", "salvage", "order", "road")
+    /** The heads of kinds told by their own sources, not as news (M6: the works' and the households', see [theirs]). */
+    private val OWN = setOf("market", "salvage", "order", "road", "works", "household")
+
+    /** The heads of kinds only their own sources tell (M6): not the deeds, the news nor the crier. */
+    private val THEIRS = setOf("works", "household")
+
+    /**
+     * Whether a rumour of [kind] is the town's works' or households' (M6), told only by WorksTopics and FortuneTopics:
+     * not as a deed to the patron, nor as news, nor cried as the talk of the town (the crier has the works' own news).
+     */
+    fun theirs(kind: String): Boolean = kind.substringBefore('.') in THEIRS
 
     /** The heads of kinds that are deeds and guild news: news from away, if nothing more particular. */
     private val DEEDS = setOf("deed", "guild", "news", "outlaw", "faction")
