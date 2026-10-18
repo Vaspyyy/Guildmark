@@ -1,19 +1,24 @@
 package io.github.vaspyyy.guildmark.client.townsfolk
 
 import io.github.vaspyyy.guildmark.client.combat.Clip
+import io.github.vaspyyy.guildmark.client.combat.Clips
 import io.github.vaspyyy.guildmark.client.combat.CombatAnimator
 import io.github.vaspyyy.guildmark.townsfolk.Activity
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import net.minecraft.client.Minecraft
 import net.minecraft.client.model.geom.ModelPart
 import net.minecraft.client.renderer.item.ItemStackRenderState
+import net.minecraft.core.BlockPos
+import net.minecraft.core.Direction
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.resources.Identifier
+import net.minecraft.tags.BlockTags
 import net.minecraft.util.Mth
 import net.minecraft.world.item.ItemDisplayContext
 import net.minecraft.world.item.ItemStack
 import org.joml.Quaternionf
 import org.joml.Vector3f
+import java.util.WeakHashMap
 import kotlin.math.sin
 
 /**
@@ -23,7 +28,8 @@ import kotlin.math.sin
  * clip's work let go of what they carry about anyway (a smith's hammer, a lantern after dark); props that move on
  * their own (the well's rope running over the curb, the bucket coming up the shaft, a grindstone's crank) follow
  * their clip's "prop:" tracks, and a bucket or an emptied sack hangs straight down from the fist. A climb plays by
- * height, so hands and feet keep to the rungs at whatever speed someone goes up or down.
+ * height, so hands and feet keep to the rungs at whatever speed someone goes up or down, and over the last two blocks
+ * under a ledge the hands go onto the ledge and the climber steps up onto it.
  */
 internal object LivingProps {
     /** What a Living World clip shows this frame (kept on the render state: render data set while extracting is cleared after). */
@@ -158,19 +164,73 @@ internal object LivingProps {
     /** Where in the climb clip someone [y] blocks up is: 2 ticks a px of height (the clip rises 0.5 px a tick), so a hand or foot on a rung stays on it. */
     fun climbTime(y: Double): Float = Mth.positiveModulo(y * CLIMB_TICKS_PER_BLOCK, Activity.CLIMB.ticks.toDouble()).toFloat()
 
-    /** [frame] with a climb's time (and that of a climb it eases out of) going by [p]'s height. */
+    /**
+     * Where in [TOP_OUT] someone [y] blocks up is, by height as a climb's time is (0 two blocks under the top, its
+     * length with the feet level with it), or -1 if they aren't topping out: the climbable blocks they're on end within
+     * two blocks over their feet, at a ledge ahead to step up onto (a block solid on top, with room over it).
+     */
+    fun topOutTime(p: Townsperson, y: Double): Float {
+        val level = p.level()
+        val x = Mth.floor(p.x)
+        val z = Mth.floor(p.z)
+        val feet = Mth.floor(y)
+        val pos = BlockPos.MutableBlockPos()
+        var top = feet + TOP_OUT_BLOCKS + 1
+        for (k in 0..TOP_OUT_BLOCKS) {
+            if (!level.getBlockState(pos.set(x, feet + k, z)).`is`(BlockTags.CLIMBABLE)) {
+                top = feet + k
+                break
+            }
+        }
+        val under = top - y
+        if (under > TOP_OUT_BLOCKS) return -1f
+        val ahead = Direction.fromYRot(p.yBodyRot.toDouble())
+        pos.set(x + ahead.stepX, top - 1, z + ahead.stepZ)
+        if (!level.getBlockState(pos).isFaceSturdy(level, pos, Direction.UP)) return -1f
+        pos.move(Direction.UP)
+        if (!level.getBlockState(pos).getCollisionShape(level, pos).isEmpty) return -1f
+        return ((TOP_OUT_BLOCKS - under) * CLIMB_TICKS_PER_BLOCK).toFloat().coerceIn(0f, TOP_OUT_TICKS)
+    }
+
+    /** Which climb clip showed someone last and where in it (a climb eased out of is held there). */
+    private class Climb(var top: Boolean, var time: Float)
+
+    private val climbs = WeakHashMap<Townsperson, Climb>()
+
+    /**
+     * [frame] with a climb's time going by [p]'s height, the last two blocks under a ledge shown by [TOP_OUT] (the
+     * hands onto the ledge, the step up onto it); a climb eased out of, stepping off at the top or the bottom, is held
+     * where it was left.
+     */
     private fun climbing(p: Townsperson, frame: CombatAnimator.Frame, partial: Float): CombatAnimator.Frame {
         val climbing = p.shownActivity == Activity.CLIMB
         val from = frame.from
         val wasClimbing = from != null && p.lastActivity == Activity.CLIMB
-        if (!climbing && !wasClimbing) return frame
-        val t = climbTime(Mth.lerp(partial.toDouble(), p.yo, p.y))
-        val newFrom = if (wasClimbing && from != null) CombatAnimator.Frame(from.clip, t, from.weight, from.yaw, from.tremble, from.seed, null) else from
-        return CombatAnimator.Frame(frame.clip, if (climbing) t else frame.time, frame.weight, frame.yaw, frame.tremble, frame.seed, newFrom)
+        if (climbing) {
+            val y = Mth.lerp(partial.toDouble(), p.yo, p.y)
+            val top = topOutTime(p, y)
+            val climb = climbs.getOrPut(p) { Climb(false, 0f) }
+            climb.top = top >= 0f
+            climb.time = if (climb.top) top else climbTime(y)
+            val clip = climbClip(climb, frame.clip)
+            val held = if (wasClimbing && from != null) CombatAnimator.Frame(clip, climb.time, from.weight, from.yaw, from.tremble, from.seed, null) else from
+            return CombatAnimator.Frame(clip, climb.time, frame.weight, frame.yaw, frame.tremble, frame.seed, held)
+        }
+        if (!wasClimbing || from == null) return frame
+        val climb = climbs[p] ?: Climb(false, climbTime(p.y))
+        val held = CombatAnimator.Frame(climbClip(climb, from.clip), climb.time, from.weight, from.yaw, from.tremble, from.seed, null)
+        return CombatAnimator.Frame(frame.clip, frame.time, frame.weight, frame.yaw, frame.tremble, frame.seed, held)
     }
+
+    private fun climbClip(climb: Climb, clip: Clip): Clip = if (climb.top) Clips.get(TOP_OUT) ?: clip else clip
 
     /** Ticks of the climb clip a block of height takes (16 px a block, 2 ticks a px). */
     const val CLIMB_TICKS_PER_BLOCK = 32.0
+
+    /** The clip of a climb's last blocks under a ledge (no Activity's own: played in the climb's place), how many blocks it takes and its length. */
+    const val TOP_OUT = "townsfolk/climb_top"
+    const val TOP_OUT_BLOCKS = 2
+    const val TOP_OUT_TICKS = 64f
 
     // ---- On the model ----
 

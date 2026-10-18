@@ -31,7 +31,7 @@ internal object LivingSchedule {
     class Moment(val name: String, val tick: Float, val x: Float, val y: Float, val z: Float)
 
     /** The clips these are for. */
-    val CLIPS: Set<String> = setOf("sit_down", "stand_up", "nod", "shrug", "point", "bow", "yawn", "stretch", "knock", "climb", "eat", "sit_eat", "wash", "pick_up", "put_down", "hand_over", "receive", "pay", "browse", "set_up", "sow", "carry_basket", "gather", "scythe", "grind", "chop", "pour_sack", "ring_bell", "announce", "light_lamp", "draw_water")
+    val CLIPS: Set<String> = setOf("sit_down", "stand_up", "nod", "shrug", "point", "bow", "yawn", "stretch", "knock", "climb", "climb_top", "eat", "sit_eat", "wash", "pick_up", "put_down", "hand_over", "receive", "pay", "browse", "set_up", "sow", "carry_basket", "gather", "scythe", "grind", "chop", "pour_sack", "ring_bell", "announce", "light_lamp", "draw_water")
 
     /** Each prop's own part, and the part it hangs on. */
     val PARENT: Map<String, String> = mapOf(
@@ -227,6 +227,18 @@ internal object LivingSchedule {
             Moment("step", 4f, -2.181f, 18.451f, -6.796f),
             Moment("grab", 8f, -4.98f, -7.447f, -6f),
             Moment("step", 12f, 2.181f, 18.451f, -6.796f),
+        ),
+        "climb_top" to listOf(
+            Moment("step", 4f, -2.181f, 18.428f, -6.787f),
+            Moment("palm", 9.5f, -4.306f, -4.855f, -8.375f),
+            Moment("step", 12f, 2.19f, 18.357f, -6.755f),
+            Moment("palm", 19f, 4.2f, -1.282f, -9.6f),
+            Moment("step", 20f, -2.186f, 18.463f, -6.801f),
+            Moment("step", 28f, 2.185f, 18.454f, -6.797f),
+            Moment("step", 36f, -2.188f, 18.539f, -6.827f),
+            Moment("step", 44f, 2.192f, 18.681f, -6.866f),
+            Moment("step", 52f, -2.195f, 18.808f, -6.888f),
+            Moment("ledge", 60f, 2.188f, 21.582f, -10.708f),
         ),
         "eat" to listOf(
             Moment("bite", 12f, -0.273f, -1.242f, -6.323f),

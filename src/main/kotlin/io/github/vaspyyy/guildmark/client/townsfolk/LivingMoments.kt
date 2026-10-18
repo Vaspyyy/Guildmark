@@ -26,14 +26,15 @@ import kotlin.math.sin
 
 /**
  * What the Living World's work sounds and looks like, on exactly the ticks it happens ([LivingSchedule.MOMENTS],
- * where in the clip each one is too): the ladder creaking under each hand and foot, a bite and its crumbs, water
+ * where in the clip each one is too): the ladder creaking under each hand and foot and the ledge at its top under a
+ * slapped-down hand, a bite and its crumbs, water
  * scooped and splashed, the well's rope over the curb and its bucket knocking the stone, coins counted out, knocks on
  * a door, the axe's thunk and its chips, the grindstone's rumble and its flour, a sack of grain poured, bells rung,
  * seeds cast, the scythe's swish and the stalks it cuts, a street lamp catching. Each townsperson's clip time is
  * followed tick to tick and every moment it passes goes off (a climb's go by height, either way up the ladder).
  */
 internal object LivingMoments {
-    private class Seen(var activity: Activity, var start: Int, var time: Float, var at: Int)
+    private class Seen(var activity: Activity, var clip: String, var start: Int, var time: Float, var at: Int)
 
     private val seen = WeakHashMap<Townsperson, Seen>()
 
@@ -41,26 +42,38 @@ internal object LivingMoments {
     fun tick(p: Townsperson) {
         LivingProps.settle(p)
         val activity = p.shownActivity
-        val name = TownsfolkClient.clipName(p, activity)
+        var name = TownsfolkClient.clipName(p, activity)
+        var now: Float
+        // A climb goes by height, its last two blocks under a ledge by the top-out's clip
+        val top = if (activity == Activity.CLIMB) LivingProps.topOutTime(p, p.y) else -1f
+        if (top >= 0f) {
+            name = TOP_OUT
+            now = top
+        } else {
+            now = time(p, activity)
+        }
         val moments = LivingSchedule.MOMENTS[name]
         if (moments == null) {
             seen.remove(p)
             return
         }
-        val now = time(p, activity)
         val was = seen[p]
-        if (was == null || was.activity != activity || was.start != p.shownStart || p.tickCount - was.at > 2) {
+        if (was == null || was.activity != activity || was.clip != name || was.start != p.shownStart || p.tickCount - was.at > 2) {
             // Only just begun: what happens on its first tick happens now. Come upon part way through (or back in
-            // earshot after a while away): nothing is caught up on.
+            // earshot after a while away), or on from a climb's rungs to its top: nothing is caught up on.
             val begun = was != null && p.tickCount - was.at <= 2 && p.tickCount - p.shownStart <= 1 && activity != Activity.CLIMB
-            seen[p] = Seen(activity, p.shownStart, now, p.tickCount)
+            seen[p] = Seen(activity, name, p.shownStart, now, p.tickCount)
             if (begun) for (m in moments) if (m.tick <= now) fire(p, name, m)
             return
         }
-        val length = activity.ticks.toFloat()
+        val length = if (name == TOP_OUT) LivingProps.TOP_OUT_TICKS else activity.ticks.toFloat()
         var from = was.time
         var to = now
-        if (activity == Activity.CLIMB) {
+        if (name == TOP_OUT) {
+            // By height either way, from one end of it to the other
+            from = minOf(was.time, now)
+            to = maxOf(was.time, now)
+        } else if (activity == Activity.CLIMB) {
             // By height: up or down, whichever way is the shorter round the loop
             var d = now - was.time
             if (d > length / 2) d -= length else if (d < -length / 2) d += length
@@ -97,6 +110,12 @@ internal object LivingMoments {
             "stand_up" -> if (m.name == "up") sound(level, at, mod("seat"), 0.3f, 1.1f)
             "knock" -> sound(level, at, mod("knock"), 0.85f)
             "climb" -> if (m.name == "grab") sound(level, at, SoundEvents.LADDER_STEP, 0.3f, 1.12f) else sound(level, at, SoundEvents.LADDER_STEP, 0.5f, 0.92f)
+            TOP_OUT -> when (m.name) {
+                "step" -> sound(level, at, SoundEvents.LADDER_STEP, 0.5f, 0.92f)
+                // A hand slapped down on the ledge, a foot put on it: the ledge's own sound
+                "palm" -> blockSound(level, at, hit = true, volume = 0.35f)
+                "ledge" -> blockSound(level, at, hit = false, volume = 0.5f)
+            }
             "eat" -> {
                 sound(level, at, SoundEvents.GENERIC_EAT.value(), 0.5f, 0.9f + p.random.nextFloat() * 0.2f)
                 val food = p.carried.takeUnless { it.isEmpty }?.item ?: Items.BREAD
@@ -276,6 +295,17 @@ internal object LivingMoments {
     private fun sound(level: Level, at: Vec3, event: SoundEvent, volume: Float, pitch: Float = 0.95f + level.random.nextFloat() * 0.1f) {
         level.playLocalSound(at.x, at.y, at.z, event, SoundSource.NEUTRAL, volume, pitch, false)
     }
+
+    /** The sound of the block just under [at] (a hand or a foot put down on it): its hit, or its step. */
+    private fun blockSound(level: Level, at: Vec3, hit: Boolean, volume: Float) {
+        val state = level.getBlockState(BlockPos.containing(at.x, at.y - 0.12, at.z))
+        if (state.isAir) return
+        val type = state.soundType
+        sound(level, at, if (hit) type.hitSound else type.stepSound, type.volume * volume, type.pitch * (0.9f + level.random.nextFloat() * 0.15f))
+    }
+
+    /** The clip a climb's last two blocks under a ledge play (LivingProps.TOP_OUT), by its name here. */
+    private const val TOP_OUT = "climb_top"
 
     private val events = HashMap<String, SoundEvent>()
 

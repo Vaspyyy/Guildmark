@@ -184,6 +184,21 @@ def ladder_boxes(rise=None):
     return b
 
 
+def ladder_top_boxes(rise=None):
+    """The last two blocks of a ladder and the ledge it ends at (the wall's top, a landing beyond it), world fixed as
+    ladder_boxes are: the ledge 32 px over the feet of a body [rise] 0 px up (climb_top's tick 0)."""
+    rise = _RISE[0] if rise is None else rise
+    top = -8.0 + rise
+    b = [((-24, top, -40.0), (24, 72.0, -8.0), (118, 108, 98), True)]
+    for x0 in (-6.0, 4.0):
+        b.append(((x0, top, -7.6), (x0 + 2.0, 72.0, -6.8), (112, 80, 48), True))
+    for k in range(-14, 8):
+        mid = 22.0 + rise - 4.0 * k
+        if mid < 72.0:
+            b.append(((-7.0, mid - 1.0, -7.5), (7.0, mid + 1.0, -6.9), (150, 110, 64), True))
+    return b
+
+
 def _well():
     # the town well a block ahead: a ring of stone a block high round the water (three blocks across, the water in the
     # middle one, two blocks ahead, its face under the ground), fence posts on the ring's corners carrying a roof of
@@ -278,6 +293,7 @@ def _table_seat():
 
 STATIONS = {
     'ladder': ladder_boxes,
+    'ladder_top': ladder_top_boxes,
     'well': _well,
     'stall': _stall,
     'grindstone': _grindstone,
@@ -296,8 +312,8 @@ _station_boxes = ta.station_boxes
 
 def station_boxes(kind, rise=0.0):
     if kind in STATIONS:
-        b = list(STATIONS[kind](rise or None) if kind == 'ladder' else STATIONS[kind]())
-        if kind != 'ladder':
+        b = list(STATIONS[kind](rise or None) if kind in ('ladder', 'ladder_top') else STATIONS[kind]())
+        if kind not in ('ladder', 'ladder_top'):
             gy = GROUND_AT.get(kind, 24.0)
             b.append(((-24, gy, -24), (24, gy + 0.2, 24), GROUND_COLOUR.get(kind, ta.GROUND), True))
         return b
@@ -577,7 +593,11 @@ def verify():
     for c in clips:
         info = ta.INFO[c.name]
         bad = []
-        if c.name not in acts:
+        if c.name in EXTRA:
+            ticks_, loop = EXTRA[c.name]
+            if c.length != ticks_ or info['loop'] != loop:
+                bad.append(f'{c.length} ticks long, loop {info["loop"]}: wanted {ticks_}, loop {loop}')
+        elif c.name not in acts:
             bad.append('no Activity plays it')
         else:
             act, ticks_, loop, overlay = acts[c.name]
@@ -610,6 +630,9 @@ def verify():
         ok = ok and gap <= tol
     return lines, ok
 
+
+# clips no Activity plays, which the game plays in another's place: (ticks, loop)
+EXTRA = {'climb_top': (64, False)}
 
 # the clips this script makes: every Activity added for the Living World
 WANTED = ['sit_down', 'stand_up', 'yawn', 'stretch', 'climb', 'eat', 'sit_eat', 'wash', 'draw_water', 'pick_up',
@@ -683,6 +706,9 @@ def moment_specs():
         'knock': {'knock': right},
         'climb': {'grab': {0.0: left, 8.0: right},
                   'step': {4.0: ('part', 'right_leg', (0.0, 12.0, -1.5)), 12.0: ('part', 'left_leg', (0.0, 12.0, -1.5))}},
+        'climb_top': {'step': {k: ('part', 'right_leg' if k % 16 == 4 else 'left_leg', (0.0, 12.0, -1.5))
+                               for k in (4.0, 12.0, 20.0, 28.0, 36.0, 44.0, 52.0)},
+                      'palm': {9.5: right, 19.0: left}, 'ledge': ('part', 'left_leg', (0.0, 12.0, -1.0))},
         'eat': {'bite': mouth},
         'sit_eat': {'spoon': mouth},
         'wash': {'scoop': hands, 'splash': face, 'shake': hands},
@@ -1482,6 +1508,245 @@ for part in CL_PARTS:
             if part.endswith('arm') and abs(d) > sl:
                 got[i] -= math.copysign(sl, d)
         check(c, f'{part} on its rung (t={k:g})', got, want, tol=0.35)
+
+# ---- climb_top (64, once; played in climb's place over the last two blocks of a ladder that ends at a ledge ahead,
+# by height as climb is: tick 0 two blocks under the top, where climb's own tick 0 is too, 64 with the feet level with
+# the ledge). No Activity plays it: LivingProps does, when the climbable blocks someone is on end within two blocks
+# over their feet and there is a ledge ahead to step up onto. The rungs run out: the right hand comes off the second
+# rung from the top (tick 1) and up over the edge onto the ledge (9.5), the left off the top rung onto it beside it
+# (10 to 19); the feet go on up the rungs as climb's do while the body rises between the hands, hanging back on
+# straight arms as they pass the shoulders, then leaning out over them as they press down; the hands come away (48,
+# 50) as the ledge sinks past the hips, the left foot steps off the last rung but one up onto the ledge (53 to 60),
+# and the climber stands at the top, one foot on the top rung and one on the ledge, leaning into the step that walking
+# away carries on (LivingProps fades it into the walk as the climber steps off forward).
+CT_LEN = 64.0
+CT_EDGE = -9.0                          # a fist on the ledge: its middle this far forward (the wall's face at -8)
+CT_FOOT_Z = -9.8                        # the left foot's sole on the ledge, its middle
+CT_HAND_X = 4.6                         # a fist on the ledge, out from the middle
+
+
+def ct_ledge(t):
+    """The ledge's top at [t] (y): 32 px over the feet at tick 0, level with them at 64."""
+    return -8.0 + CL_RISE * t
+
+
+def ct_rung(k, t):
+    """The middle of rung [k] at [t] (0 the bottom one of the last two blocks, 7 the top one, 2 px under the ledge)."""
+    return 22.0 + CL_RISE * t - 4.0 * k
+
+
+# Each limb's holds, (from, to, (what, ...)), what is 'rung' (its number) or 'ledge'; between two holds a move. The
+# right foot is still moving at tick 0 (climb's step that takes its rung at 4) and follows climb's own path there.
+CT_HOLDS = {
+    'right_arm': [(0.0, 1.0, ('rung', 6)), (9.5, 48.0, ('ledge',))],
+    'left_arm': [(0.0, 10.0, ('rung', 7)), (19.0, 50.0, ('ledge',))],
+    'right_leg': [(4.0, 13.0, ('rung', 1)), (20.0, 29.0, ('rung', 3)), (36.0, 45.0, ('rung', 5)), (52.0, 64.0, ('rung', 7))],
+    'left_leg': [(0.0, 5.0, ('rung', 0)), (12.0, 21.0, ('rung', 2)), (28.0, 37.0, ('rung', 4)), (44.0, 53.0, ('rung', 6)),
+                 (60.0, 64.0, ('ledge',))],
+}
+CT_FREE = {'right_arm': 48.0, 'left_arm': 50.0}     # the hands off the ledge for good from here
+
+
+def ct_hold_point(part, what, t):
+    """Where [part] holds [what] at [t]: a grip (a hand) or the middle of a sole (a foot)."""
+    s = cl_side(part)
+    if what[0] == 'rung':
+        return cl_hold_point(part, ct_rung(what[1], t))
+    if part.endswith('arm'):
+        return np.array([s * CT_HAND_X, ct_ledge(t) - 1.4, CT_EDGE])
+    return np.array([s * CL_FOOT[0], ct_ledge(t), CT_FOOT_Z])
+
+
+def ct_target(part, t):
+    """Where [part] is wanted at [t] and how: ('hold', point, what), ('move', point, None) or ('free', None, None) (a
+    hand off the ledge for good, keyed by itself after)."""
+    holds = CT_HOLDS[part]
+    for a, b, what in holds:
+        if a - 1e-9 <= t <= b + 1e-9:
+            return 'hold', ct_hold_point(part, what, t), what
+    if part in CT_FREE and t >= CT_FREE[part]:
+        return 'free', None, None
+    if part == 'right_leg' and t < holds[0][0]:
+        return 'move', cl_target(part, t)[0], None
+    i = next(i for i in range(len(holds) - 1) if holds[i][1] < t < holds[i + 1][0])
+    (_, t0, w0), (t1, _, w1) = holds[i], holds[i + 1]
+    p0, p1 = ct_hold_point(part, w0, t0), ct_hold_point(part, w1, t1)
+    u = (t - t0) / (t1 - t0)
+    s = cl_side(part)
+    if part.endswith('arm'):
+        # off the rung (back from it and a touch down), up past the top of the wall in front of it, over the edge and
+        # down onto the ledge
+        edge = ct_ledge(t0 + (t1 - t0) * 0.6)
+        keys = [(0.0, p0), (0.14, p0 + np.array([0.0, 0.4, 1.6])),
+                (0.6, np.array([s * (CT_HAND_X + 0.8), edge - 2.5, -7.0])),
+                (0.86, p1 + np.array([0.0, -1.6, 0.8])), (1.0, p1)]
+    elif w1[0] == 'ledge':
+        # the heel up and the toes back off the rung, up in front of the wall to over the ledge, forward over the edge
+        # and down onto it
+        edge = ct_ledge(t0 + (t1 - t0) * 0.55)
+        keys = [(0.0, p0), (0.18, p0 + np.array([0.0, -0.8, 1.8])),
+                (0.55, np.array([s * (CL_FOOT[0] + 0.3), edge - 2.6, -5.6])),
+                (0.85, p1 + np.array([0.0, -1.4, 1.2])), (1.0, p1)]
+    else:
+        keys = [(0.0, p0), (0.15, p0 + np.array([0.0, -0.5, 1.8])),
+                (0.55, p0 + (p1 - p0) * 0.6 + np.array([s * 0.3, -1.2, 3.0])),
+                (0.85, p1 + np.array([0.0, -1.0, 1.0])), (1.0, p1)]
+    return 'move', KV(keys, u), None
+
+
+def ct_fade(t, a, b):
+    """1 until [a], easing to 0 at [b]."""
+    return 1.0 - smooth(min(1.0, max(0.0, (t - a) / (b - a))))
+
+
+# The torso and the hips: climb's lean back and sway at first, easing out once both hands are on the ledge; then
+# upright as the body rises between the hands, leaning out over them as they press down, and into the step at the top.
+CT_PITCH = [(0, -8.0), (6.0, -6.0), (12.0, -4.0), (19.0, -6.0), (27.0, -5.0), (34.0, 0.0), (40.0, 12.0), (45.0, 28.0),
+            (49.0, 34.0), (53.0, 30.0), (58.0, 22.0), (64.0, 14.0)]
+CT_ROOT_Z = [(0, CL_ROOT_Z), (24.0, -1.2), (34.0, -1.6), (42.0, -2.6), (50.0, -3.6), (58.0, -4.6), (64.0, -5.0)]
+CT_SINK = [(0, 0.0), (48.0, 0.0), (58.0, 0.8), (64.0, 1.2)]
+
+
+def ct_pose_aims(t):
+    yaw = 14.0 * cl_wave(t, 1.0) * ct_fade(t, 2.0, 16.0)
+    roll = 5.0 * math.sin(2 * math.pi * (t - 0.5) / CL_LEN) * ct_fade(t, 2.0, 16.0)
+    drop = cl_drop(t) * ct_fade(t, 50.0, 58.0) + K(CT_SINK, t)
+    return K(CT_PITCH, t), yaw, roll, K(CT_ROOT_Z, t), drop
+
+
+ARM_END = {'right_arm': [np.array([x, 10.0, z]) for x in (-3.0, 1.0) for z in (-2.0, 2.0)],
+           'left_arm': [np.array([x, 10.0, z]) for x in (-1.0, 3.0) for z in (-2.0, 2.0)]}
+
+
+def ct_wall(p, t, w=3.0):
+    """A world point inside the wall under the ledge (forward of its face, below its top): how far in, weighted."""
+    x, y, z = p
+    top = ct_ledge(t)
+    if z < -8.0 and y > top:
+        return min(-8.0 - z, y - top) * w
+    return 0.0
+
+
+def ct_shrug(side, t):
+    """The shoulder raised to reach (-y) and pulled down to hold, as climb's, then pressed down on the ledge."""
+    kind = ct_target(side, t)[0]
+    if t <= 1.0 or (side == 'left_arm' and t <= 10.0):
+        return cl_shrug(side, t)
+    holds = CT_HOLDS[side]
+    a, b = holds[-1][0], holds[-1][1]
+    if kind == 'move':
+        t0 = holds[0][1]
+        u = (t - t0) / (a - t0)
+        start = cl_shrug(side, t0)
+        return start + (-1.0 - start) * smooth(u)
+    if kind == 'hold':
+        return -1.0 + 1.8 * smooth((t - a) / (b - a))
+    return 0.8 * ct_fade(t, b, b + 8.0)
+
+
+def ct_solve():
+    sols, guess = {}, None
+    for t in ticks(0, CT_LEN, 0.5):
+        want = {p: ct_target(p, t) for p in CL_PARTS}
+        pos = {s: np.array([0.0, ct_shrug(s, t), 0.0]) for s in ('right_arm', 'left_arm')}
+
+        def res(fr, qa, qb, want=want, pos=pos, t=t):
+            out = []
+            for side, q in (('right_arm', qa), ('left_arm', qb)):
+                kind, p, what = want[side]
+                Rp, j = chain_frame(side, qr=fr['qr'], pr=fr['pr'], qt=fr['qt'], vt=fr['vt'], arm_pos=pos[side])
+                Ra = Rp @ qmat(q)
+                if kind == 'free':
+                    out += [0.0, 0.0, 0.0, 0.0]
+                    continue
+                e = j + Ra @ GRIP[side] - p
+                if kind == 'hold' and what[0] == 'rung':
+                    ex = 0.0 if abs(e[0]) <= CL_SLACK[0] else e[0] - math.copysign(CL_SLACK[0], e[0])
+                    ey = 0.0 if abs(e[1]) <= CL_SLACK[1] else e[1] - math.copysign(CL_SLACK[1], e[1])
+                    out += [ex * 3.0, ey * 3.0, e[2] * 3.0, 0.0]
+                elif kind == 'hold':
+                    # on the ledge: the fist's lowest corner on its top, its middle where it was put (a little give)
+                    low = max(float((j + Ra @ c_)[1]) for c_ in ARM_END[side])
+                    ex = 0.0 if abs(e[0]) <= 0.4 else e[0] - math.copysign(0.4, e[0])
+                    ez = 0.0 if abs(e[2]) <= 0.6 else e[2] - math.copysign(0.6, e[2])
+                    out += [ex * 3.0, 0.0, ez * 3.0, (low - ct_ledge(t)) * 3.0]
+                else:
+                    out += list(e * 0.4) + [0.0]
+            for side in ('right_leg', 'left_leg'):
+                kind, p, _ = want[side]
+                hip = np.array(PIVOTS[side], float) + fr['pr']
+                n = float(np.linalg.norm(p - hip))
+                out.append(max(0.0, n - 11.85) * (4.0 if kind == 'hold' else 1.0))
+            for corner in ((-4.0, 0.0, -2.0), (4.0, 0.0, -2.0), (-4.0, 6.0, -2.0), (4.0, 6.0, -2.0), (0.0, 11.0, -2.0)):
+                out.append(ct_wall(torso_to_world(fr, corner), t))
+            return out
+        pitch, yaw, roll, rz, drop = ct_pose_aims(t)
+        fr, qa, qb, guess = body_solve(res, pitch0=pitch, yaw0=yaw, roll0=roll, root0=(0.0, 0.0, rz), guess=guess,
+                                       pitch_w=0.05, yaw_w=0.04, roll_w=0.06, root_w=0.3, drop=drop)
+        sols[t] = (fr, qa, qb)
+    return sols
+
+
+CT_SOL = ct_solve()
+
+
+def ct_look(fr, t):
+    """Up the ladder as climb looks, then at the edge between the hands, over the ledge, and ahead."""
+    w1 = smooth(min(1.0, max(0.0, (t - 1.0) / 8.0)))
+    w2 = smooth(min(1.0, max(0.0, (t - 30.0) / 16.0)))
+    w3 = smooth(min(1.0, max(0.0, (t - 50.0) / 12.0)))
+    edge = np.array([0.0, ct_ledge(t) - 1.0, -9.0])
+    over = np.array([0.0, ct_ledge(t) - 1.0, -26.0])
+    ahead = fr['pr'] + np.array([0.0, -4.0, -48.0])
+    p = cl_look(fr, t % CL_LEN) * (1 - w1) + edge * w1
+    p = p * (1 - w2) + over * w2
+    return p * (1 - w3) + ahead * w3
+
+
+c = clip('climb_top', 64, False, look=('citizen', 3), station_='ladder_top',
+         events=[('step', 4), ('palm', 9.5), ('step', 12), ('palm', 19), ('step', 20), ('step', 28), ('step', 36),
+                 ('step', 44), ('step', 52), ('ledge', 60)],
+         traces=[('right_arm', GRIP['right_arm'], (255, 200, 120)), ('left_arm', GRIP['left_arm'], (200, 230, 255)),
+                 ('left_leg', (0.0, 12.0, 0.0), (180, 255, 160))],
+         views=((150, -10), (90, -2), (30, -8, True)), pan=(0.0, -4.0, -2.0))
+ta.INFO['climb_top']['rise'] = lambda t: CL_RISE * t
+for t in every(64):
+    fr, qa, qb = CL_SOL[0.0] if t == 0 else CT_SOL[t]
+    key_frame(c, t, fr, ease='linear')
+    for side, q in (('right_arm', qa), ('left_arm', qb)):
+        if ct_target(side, t)[0] == 'free':
+            # off the ledge: from where it let go to hanging a little forward, swung against the step up
+            t0 = CT_FREE[side]
+            f0, a0, b0 = CT_SOL[t0]
+            q0 = rel(fr, qmul(qmul(f0['qr'], f0['qt']), a0 if side == 'right_arm' else b0))
+            u = smooth(min(1.0, (t - t0) / 8.0))
+            swing = (14.0 if side == 'right_arm' else -9.0) * bump(t, 52.0, 66.0)
+            q = qslerp(q0, hang(side, fr, out=6.0, fwd=6.0 + swing), u)
+        c.key(side, t, q, pos=(0.0, ct_shrug(side, t), 0.0), ease='linear')
+    for side in ('right_leg', 'left_leg'):
+        leg_to(c, t, side, fr['pr'], ct_target(side, t)[1], toe=F)
+    c.key('head', t, head_at(fr, ct_look(fr, t)), ease='linear')
+c.mode('head', 'set')
+for part in CL_PARTS:
+    for a, b, what in CT_HOLDS[part]:
+        for k in (a, (a + b) / 2, b):
+            arm = part.endswith('arm')
+            got = ta.fk(c, k, part, GRIP[part] if arm else (0.0, 12.0, 0.0))
+            want = ct_hold_point(part, what, k)
+            if arm:
+                # a fist may sit a little off its mark (on a rung CL_SLACK; on the ledge 0.4 across, 0.6 along), and
+                # on the ledge it is the fist's lowest corner, not its grip, that sits on the top
+                got, want = got.copy(), want.copy()
+                for i, sl in enumerate((CL_SLACK[0], CL_SLACK[1], 0.0) if what[0] == 'rung' else (0.4, None, 0.6)):
+                    if sl is None:
+                        got[i] = max(float(ta.fk(c, k, part, c_)[1]) for c_ in ARM_END[part])
+                        want[i] = ct_ledge(k)
+                        continue
+                    d = got[i] - want[i]
+                    got[i] = want[i] if abs(d) <= sl else got[i] - math.copysign(sl, d)
+            label = f'{part} on the {what[0]}' + (f' {what[1]}' if what[0] == 'rung' else '')
+            check(c, f'{label} (t={k:g})', got, want, tol=0.35)
+join('climb_top starts where climb is at its tick 0', getc('climb'), 0, c, 0, tol=0.05)
 
 # ================================================================== eating and washing
 
