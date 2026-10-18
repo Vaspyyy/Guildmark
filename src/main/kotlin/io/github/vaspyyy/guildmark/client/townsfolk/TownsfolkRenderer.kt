@@ -5,11 +5,13 @@ import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.client.combat.Clip
 import io.github.vaspyyy.guildmark.client.combat.Clips
 import io.github.vaspyyy.guildmark.client.combat.CombatAnimator
+import io.github.vaspyyy.guildmark.client.ui.TalkClient
 import io.github.vaspyyy.guildmark.festival.FestivalSite
 import io.github.vaspyyy.guildmark.townsfolk.Activity
 import io.github.vaspyyy.guildmark.townsfolk.Speech
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
+import net.minecraft.ChatFormatting
 import net.minecraft.client.renderer.SubmitNodeCollector
 import net.minecraft.client.renderer.entity.EntityRendererProvider
 import net.minecraft.client.renderer.entity.HumanoidMobRenderer
@@ -63,10 +65,13 @@ class TownsfolkRenderer(context: EntityRendererProvider.Context) :
 
     // What they're saying shows over their heads in place of a name
     override fun shouldShowName(entity: Townsperson, distance: Double): Boolean =
-        entity.speech.isNotEmpty() && distance < SPEECH_RANGE * SPEECH_RANGE || super.shouldShowName(entity, distance)
+        speaking(entity) && distance < SPEECH_RANGE * SPEECH_RANGE || super.shouldShowName(entity, distance)
 
     override fun getNameTag(entity: Townsperson): Component? =
-        if (entity.speech.isNotEmpty()) Speech.text(entity.speech) else super.getNameTag(entity)
+        if (speaking(entity)) tag(entity.speech) else super.getNameTag(entity)
+
+    /** Whether what [entity] says shows over their head: they're saying something, and not into this player's talk screen, which shows it all. */
+    private fun speaking(entity: Townsperson): Boolean = entity.speech.isNotEmpty() && !TalkClient.talkingWith(entity.id)
 
     /** The hot iron in a smith's tongs and the flame in a lantern, bright in the dark. */
     private class GlowLayer(parent: RenderLayerParent<TownsfolkRenderState, TownsfolkModel>) : RenderLayer<TownsfolkRenderState, TownsfolkModel>(parent) {
@@ -82,6 +87,42 @@ class TownsfolkRenderer(context: EntityRendererProvider.Context) :
 
         /** Blocks off a line can be read from. */
         private const val SPEECH_RANGE = 20.0
+
+        /**
+         * The most letters a line and its detail show over someone's head; a cut is made at a word if there's one in
+         * the last [WORD] letters, and a detail left fewer than [LEAST_DETAIL] letters shows as an ellipsis alone.
+         */
+        private const val TAG_LETTERS = 48
+        private const val WORD = 12
+        private const val LEAST_DETAIL = 6
+
+        /**
+         * What [line] says over their head: the line, then its detail in grey, the whole cut at [TAG_LETTERS] letters
+         * with an ellipsis. A line with no detail shows as it is (the talk screen shows a detail in full).
+         */
+        fun tag(line: String): Component {
+            val detail = Speech.detail(line) ?: return Speech.said(line)
+            val said = Speech.said(line).string
+            val more = detail.string
+            if (said.length + 1 + more.length <= TAG_LETTERS) return Speech.text(line)
+            val room = TAG_LETTERS - said.length - 1
+            return when {
+                room >= LEAST_DETAIL -> Component.literal("$said ").append(Component.literal(cut(more, room)).withStyle(ChatFormatting.GRAY))
+                said.length + 2 <= TAG_LETTERS -> Component.literal("$said ").append(Component.literal(ELLIPSIS).withStyle(ChatFormatting.GRAY))
+                else -> Component.literal(cut(said, TAG_LETTERS))
+            }
+        }
+
+        /** [text] cut to at most [most] letters, the ellipsis last: at the last word's end if one is near, else mid-word. */
+        private fun cut(text: String, most: Int): String {
+            if (text.length <= most) return text
+            val end = most - ELLIPSIS.length
+            val space = text.lastIndexOf(' ', end)
+            val at = if (space > 0 && space >= end - WORD) space else end
+            return text.substring(0, at).trimEnd(' ', ',', ';', ':', '.', '-') + ELLIPSIS
+        }
+
+        private const val ELLIPSIS = "…"
 
         /** Ticks to ease from one activity's clip into the next. */
         private const val FADE = 5f
