@@ -16,7 +16,7 @@ object GuildmarkClientConfig {
         .comment("Play boss introductions as short cutscenes.")
         .define("cutscenes", true)
     val DIALOGUE_CAMERA: ModConfigSpec.BooleanValue = BUILDER
-        .comment("Move the camera over your shoulder while a story character talks.")
+        .comment("Move the camera over your shoulder while a story character or a townsperson talks.")
         .define("dialogueCamera", true)
     val COMPASS: ModConfigSpec.BooleanValue = BUILDER
         .comment("Show the compass strip across the top of the screen, with the places you've found and where your contracts lead.")

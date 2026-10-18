@@ -1,6 +1,12 @@
 package io.github.vaspyyy.guildmark.townsfolk.talk
 
 import io.github.vaspyyy.guildmark.GuildmarkConfig
+import io.github.vaspyyy.guildmark.network.TalkChoice
+import io.github.vaspyyy.guildmark.network.TalkClosePayload
+import io.github.vaspyyy.guildmark.network.TalkOpenPayload
+import io.github.vaspyyy.guildmark.network.TalkPart
+import io.github.vaspyyy.guildmark.network.TalkPayloads
+import io.github.vaspyyy.guildmark.network.TalkSayPayload
 import io.github.vaspyyy.guildmark.townsfolk.Activity
 import io.github.vaspyyy.guildmark.townsfolk.Days
 import io.github.vaspyyy.guildmark.townsfolk.Director
@@ -23,6 +29,7 @@ import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 import net.neoforged.neoforge.common.NeoForge
+import net.neoforged.neoforge.network.PacketDistributor
 import net.neoforged.neoforge.event.entity.player.PlayerEvent
 import net.neoforged.neoforge.event.server.ServerStoppedEvent
 import net.neoforged.neoforge.event.tick.ServerTickEvent
@@ -52,6 +59,9 @@ object Talk {
 
     /** How long after a stretch that won't wait begins someone is still on their way to it. */
     private const val ON_THE_WAY = 600
+
+    /** How often a screen waiting on an answer hears the server's still there (it gives up after 100 ticks of silence). */
+    private const val ALIVE = 60L
 
     /** Ticks between the parts of an answer, and how long a part whose take isn't timed is given. */
     private const val GAP = 6
@@ -91,6 +101,9 @@ object Talk {
 
         /** Whoever has charge of them for the talk ([Talking], or the director that runs [script]): if they let go, the talk's over. */
         var holder: Director? = null
+
+        /** When the screen last heard from the server. */
+        var sent = started
 
         /** How the wary or hostile stand through the whole talk. */
         var wary = false
@@ -173,7 +186,7 @@ object Talk {
         val s = Session(player, p, null, level.gameTime)
         s.holder = p.director
         sessions[player.uuid] = s
-        Wire.open(player, p, name(p), epithet(ask), knows(ask.familiarity))
+        Wire.open(player, p, name(p), epithet(ask), TalkOpenPayload.knows(ask.familiarity))
         val parts = ArrayList<Spoken>()
         greeting(ask)?.let { parts += it }
         s.wary = ask.familiarity == Familiarity.WARY || ask.familiarity == Familiarity.HOSTILE
@@ -201,7 +214,7 @@ object Talk {
         s.holder = p.director
         sessions[player.uuid] = s
         val ask = ask(level, p, player, Occasion.OPENER)
-        Wire.open(player, p, name(p), epithet(ask), knows(ask.familiarity))
+        Wire.open(player, p, name(p), epithet(ask), TalkOpenPayload.knows(ask.familiarity))
         queue(s, spoken(ask, script.opener(ask), Activity.TALK, null), false)
     }
 
@@ -538,8 +551,13 @@ object Talk {
         if (s.ending != null) return
         if (player.hurtTime > 0 && player.lastHurtByMob != null) return end(s, Ending.GONE)
         if (player.distanceToSqr(p) > REACH * REACH) return walkedOff(s, level)
-        if (s.script != null || queues[p]?.any { it.session === s } == true) return
         val now = level.gameTime
+        // Their answer waits behind someone else's: the screen hears the server's still there
+        if (s.waiting && now - s.sent >= ALIVE) {
+            Wire.alive(player, p, s.serial)
+            s.sent = now
+        }
+        if (s.script != null || queues[p]?.any { it.session === s } == true) return
         val ask = ask(level, p, player, Occasion.FAREWELL)
         when {
             now - s.last > IDLE -> farewell(s, ask, Ending.IDLE)
@@ -588,6 +606,7 @@ object Talk {
                 answering[p] = s
                 s.serial++
                 s.waiting = false
+                s.sent = now
                 val ask = ask(level, p, s.player, Occasion.ANSWER)
                 Wire.say(s.player, p, s.serial, a.parts, if (a.closing) listOf() else choices(s, ask), a.closing)
             }
@@ -689,26 +708,32 @@ object Talk {
         return Component.translatable("talk.guildmark.epithet", Component.translatable("talk.guildmark.trade.$trade"), town)
     }
 
-    /** How the plate says they know the player: 0 a stranger, 1 has heard of them, 2 knows them, 3 wary. */
-    private fun knows(f: Familiarity): Int = when (f) {
-        Familiarity.STRANGER -> 0
-        Familiarity.HEARD_OF -> 1
-        Familiarity.MET, Familiarity.ACQUAINTED, Familiarity.FRIEND -> 2
-        Familiarity.WARY, Familiarity.HOSTILE -> 3
-    }
-
     /**
-     * The talk screen's side, through network/TalkPayloads: until it's on main no talk opens ([READY] is false), and a
-     * right-click answers as before.
+     * The talk screen's side (network/TalkPayloads). Until the voices, the gestures, memory and the sources are all on
+     * main no talk opens ([READY] is false), and a right-click answers as before.
      */
     private object Wire {
         const val READY = false
 
-        fun open(player: ServerPlayer, p: Townsperson, name: Component, epithet: Component, knows: Int) {}
+        fun open(player: ServerPlayer, p: Townsperson, name: Component, epithet: Component, knows: Int) {
+            PacketDistributor.sendToPlayer(player, TalkOpenPayload(p.id, name, epithet, knows))
+        }
 
-        fun say(player: ServerPlayer, p: Townsperson, serial: Int, parts: List<Spoken>, choices: List<Choice>, closing: Boolean) {}
+        /** [parts] to show as they're said (a part with no take types to the pen), then [choices], or the last words if [closing]. */
+        fun say(player: ServerPlayer, p: Townsperson, serial: Int, parts: List<Spoken>, choices: List<Choice>, closing: Boolean) {
+            val shown = parts.take(TalkPayloads.MAX_PARTS).map { TalkPart.of(it.speech, if (it.voiced.isEmpty()) 0 else it.ticks) }
+            val answers = choices.take(TalkPayloads.MAX_CHOICES).map { TalkChoice(it.id, it.label, it.asked) }
+            PacketDistributor.sendToPlayer(player, TalkSayPayload(p.id, serial, shown, answers, closing))
+        }
 
-        fun close(player: ServerPlayer, p: Townsperson) {}
+        /** Nothing new: the screen waiting on an answer only hears the server's still there. */
+        fun alive(player: ServerPlayer, p: Townsperson, serial: Int) {
+            PacketDistributor.sendToPlayer(player, TalkSayPayload(p.id, serial, listOf(), listOf(), false))
+        }
+
+        fun close(player: ServerPlayer, p: Townsperson) {
+            PacketDistributor.sendToPlayer(player, TalkClosePayload(p.id))
+        }
     }
 }
 
