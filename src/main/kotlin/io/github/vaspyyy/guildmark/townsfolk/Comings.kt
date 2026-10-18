@@ -562,7 +562,7 @@ object Comings {
         c: Ctx, due: ComingsData.Due, today: Long, gate: Dir?, force: Boolean, home: CityPlaces.Lodging?, delay: Int = 0, remark: String? = null,
     ): Household? {
         val lodging = home ?: homeFor(c, due) ?: run {
-            note(c, "${what(due)} waits: there's no house for them to take.")
+            note(c, "${what(due).replaceFirstChar { it.uppercase() }} waits: there's no house for them to take.")
             return null
         }
         val town = c.town
