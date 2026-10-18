@@ -18,6 +18,7 @@ import net.neoforged.neoforge.client.network.ClientPacketDistributor
  * both the panel's right edge and the top of the keeper's row.
  */
 object MarketTalk {
+    /** How tall the tab is. */
     private const val HEIGHT = 15
 
     /** How far the tab reaches in over the panel's edge, so it sits on it. */
@@ -26,6 +27,7 @@ object MarketTalk {
     /** Ticks after a press before another counts: the server's answer replaces the screen. */
     private const val AGAIN = 20
 
+    /** What the tab says. */
     private val LABEL: Component = Component.translatable("gui.guildmark.market.talk")
 
     /** The game time of the last press. */
@@ -37,8 +39,10 @@ object MarketTalk {
         return Minecraft.getInstance().level?.getEntity(keeper) is Townsperson
     }
 
+    /** How wide the tab is, its word and a margin either side. */
     private fun width(): Int = Minecraft.getInstance().font.width(LABEL) + 18
 
+    /** Whether ([x], [y]) is on the tab, on the panel's [right] edge from [top]. */
     private fun over(right: Int, top: Int, x: Double, y: Double): Boolean {
         val left = right - OVERLAP
         return x >= left && x < left + width() && y >= top && y < top + HEIGHT

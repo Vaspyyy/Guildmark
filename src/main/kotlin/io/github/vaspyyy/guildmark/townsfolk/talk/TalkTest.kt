@@ -102,6 +102,7 @@ object TalkTest {
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> tests.clear() }
     }
 
+    /** `/guildmark talk test`, and its words for how the plate shows they know the player. */
     fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
         val test = Commands.literal("test").executes { start(it.source, TalkOpenPayload.KNOWS) }
         for ((word, knows) in listOf(
@@ -115,6 +116,7 @@ object TalkTest {
         )
     }
 
+    /** Whether townsfolk talk is switched on. */
     private fun talkOn(): Boolean = !GuildmarkConfig.SPEC.isLoaded || GuildmarkConfig.TOWNSFOLK_TALK.get()
 
     // ---- From the talk screen ----
@@ -136,11 +138,11 @@ object TalkTest {
         return true
     }
 
-    /** [player]'s talk screen closed, if they have a test talk open (true: it's the test's, and it's over). */
+    /** [player]'s talk screen with [entity] closed: true if it was their test talk's, which is over. */
     fun ended(player: ServerPlayer, entity: Int): Boolean {
         val test = tests[player.uuid] ?: return false
-        // An older screen's end, from before this test began: the test goes on
-        if (entity != test.speaker) return true
+        // Another screen's end (a talk from before this test began): not the test's, which goes on
+        if (entity != test.speaker) return false
         tests.remove(player.uuid)
         release(test, player)
         return true
@@ -148,6 +150,7 @@ object TalkTest {
 
     // ---- The talk ----
 
+    /** Opens a test talk for the player running the command, the plate showing [knows]; an old one of theirs ends. */
     private fun start(source: CommandSourceStack, knows: Int): Int {
         val player = source.playerOrException
         if (!talkOn()) {
@@ -197,6 +200,7 @@ object TalkTest {
         speaker(player, test)?.let { aloud(test, it, now) }
     }
 
+    /** The townsperson saying [test], while they're about; null for nobody. */
     private fun speaker(player: ServerPlayer, test: Test): Townsperson? =
         if (test.speaker < 0) null else player.level().getEntity(test.speaker) as? Townsperson
 
@@ -213,6 +217,7 @@ object TalkTest {
         speaker(player, test)?.stopListening(player)
     }
 
+    /** Says each part aloud in its turn, keeps the townsperson turned to the player, and ends the tests that are over. */
     private fun tick(server: MinecraftServer) {
         val now = server.tickCount
         val each = tests.values.iterator()

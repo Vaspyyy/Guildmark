@@ -54,6 +54,7 @@ object TalkPayloads {
         return e.isAlive && player.distanceToSqr(e) <= REACH * REACH
     }
 
+    /** A payload's id, under this mod. */
     internal fun id(path: String): Identifier = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, path)
 }
 

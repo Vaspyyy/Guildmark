@@ -84,6 +84,7 @@ class TalkScreen(private var open: TalkOpenPayload) : DialogueKit(Component.tran
             field = value
             answers = value.map { Row(it.label, it.asked) }
         }
+    /** The answers as the kit's box shows them. */
     private var answers: List<Row> = emptyList()
     private var serial = 0
 
@@ -130,6 +131,7 @@ class TalkScreen(private var open: TalkOpenPayload) : DialogueKit(Component.tran
         runs.getOrNull(run)?.let { shown = min(shown, it.joined.length.toFloat()) }
     }
 
+    /** The screen is gone: the server is told, unless it ended the talk itself. */
     override fun removed() {
         if (closed || ended) return
         ended = true
@@ -202,11 +204,13 @@ class TalkScreen(private var open: TalkOpenPayload) : DialogueKit(Component.tran
 
     // ---- What's said ----
 
+    /** Cuts [r]'s words into lines that fit the panel. */
     private fun wrap(r: Run) {
         r.lines = font.splitter.splitLines(r.text, textWidth, Style.EMPTY).map { it.string }
         r.joined = r.lines.joinToString("\n")
     }
 
+    /** The townsperson talking, while the client knows them; null for nobody. */
     private fun speaker(): Entity? = if (open.entity < 0) null else minecraft.level?.getEntity(open.entity)
 
     /** Whether the speaker is saying something aloud now (to this player or another). */
@@ -262,6 +266,7 @@ class TalkScreen(private var open: TalkOpenPayload) : DialogueKit(Component.tran
         }
     }
 
+    /** The answers come up, the first not yet asked lit (or the last, Goodbye, if all have been). */
     private fun showChoices() {
         choicesAt = ticks
         armed = false
@@ -272,6 +277,7 @@ class TalkScreen(private var open: TalkOpenPayload) : DialogueKit(Component.tran
     /** The answers as the kit's box shows them: the asked ones dimmed. */
     override fun rows(): List<Row> = answers
 
+    /** The answer at [index] goes to the server, and the screen waits for what they say to it. */
     override fun pick(index: Int) {
         val choice = choices.getOrNull(index) ?: return
         Ui.select()
@@ -328,6 +334,7 @@ class TalkScreen(private var open: TalkOpenPayload) : DialogueKit(Component.tran
 
     // ---- Every tick ----
 
+    /** Ends the talk if it's over, rolls the lines up, and types; and gives up on a server that's gone quiet. */
     override fun tick() {
         ticks++
         scrollLast = scroll
@@ -416,6 +423,7 @@ class TalkScreen(private var open: TalkOpenPayload) : DialogueKit(Component.tran
     /** The screen sinking away once it's over: 1 while it's up. */
     override fun presence(a: Float): Float = if (sinkAt < 0) 1f else 1f - ease(min(1f, (ticks + a - sinkAt) / SINK))
 
+    /** The panel, the plate and its word, the words, the dots or the diamond, and the answers. */
     override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, a: Float) {
         super.extractRenderState(graphics, mouseX, mouseY, a)
         val t = ticks + a

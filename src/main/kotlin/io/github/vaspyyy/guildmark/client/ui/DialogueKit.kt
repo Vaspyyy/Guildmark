@@ -52,12 +52,14 @@ abstract class DialogueKit(title: Component) : Screen(title) {
     /** The pitch of the pen's tick for this speaker. */
     protected abstract val blipPitch: Float
 
+    /** Ticks since the screen opened. */
     protected var ticks = 0
 
     /** Letters of the words typing now shown so far (a line break counts as one), and ticks before the next. */
     protected var shown = 0f
     protected var wait = 0
 
+    /** The answer that's lit, which Enter picks. */
     protected var selected = 0
 
     /** When the answers came up, or -1 while the speaker is still talking. */
@@ -72,17 +74,20 @@ abstract class DialogueKit(title: Component) : Screen(title) {
     /** The player's hurt flash last tick, to notice a new hit. */
     private var lastHurt = -1
 
+    /** Where the speech panel sits (its left, top and width), and how wide its words may run. */
     protected var panelX = 0
     protected var panelY = 0
     protected var panelWidth = 0
     protected val textWidth get() = panelWidth - PAD * 2 - 10
 
+    /** Lays the panel out across the foot of the screen. */
     override fun init() {
         panelWidth = min(width - 24, 400)
         panelX = (width - panelWidth) / 2
         panelY = height - PANEL_HEIGHT - 10
     }
 
+    /** The camera settles over the player's shoulder, facing the speaker. */
     override fun added() {
         minecraft.level?.getEntity(entityId)?.let { Cutscenes.talk(it, this) }
     }
@@ -139,6 +144,7 @@ abstract class DialogueKit(title: Component) : Screen(title) {
         return false
     }
 
+    /** Lights the answer [by] rows on, round from the last to the first. */
     protected fun move(by: Int) {
         val count = rows().size
         if (count == 0) return
@@ -202,6 +208,7 @@ abstract class DialogueKit(title: Component) : Screen(title) {
         return Box(panelX + panelWidth - w, panelY - 12 - h, w, h)
     }
 
+    /** The answer under ([x], [y]), or -1. */
     protected fun rowAt(x: Double, y: Double): Int {
         val box = choiceBox()
         if (x < box.x + 4 || x >= box.x + box.w - 4 || y < box.y + 5) return -1
@@ -292,14 +299,17 @@ abstract class DialogueKit(title: Component) : Screen(title) {
     /** [color] at [k] of its strength (as it was when [k] is 1). */
     protected fun faded(color: Int, k: Float): Int = if (k >= 1f) color else ARGB.multiplyAlpha(color, k.coerceAtLeast(0f))
 
+    /** [k] (0 to 1) eased: quick at first, settling into place. */
     protected fun ease(k: Float): Float = 1f - (1f - k) * (1f - k) * (1f - k)
 
+    /** The world goes on while they talk. */
     override fun isPauseScreen(): Boolean = false
 
     /** Subtitles are drawn over this screen, not hidden under its shade. */
     override fun isInGameUi(): Boolean = true
 
     companion object {
+        /** The panel's inner margin, a line's height, and the lines it holds. */
         const val PAD = 14
         const val LINE = 11
         const val MAX_LINES = 4
