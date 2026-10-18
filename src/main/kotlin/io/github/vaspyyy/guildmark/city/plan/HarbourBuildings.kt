@@ -277,7 +277,7 @@ class HarbourBuildings(private val f: Frame, private val r: Random, private val 
             val stall = (v - 2) % 4
             f.set(u, 0, v, if (stall == 3) AIR else TABLE)
             when (stall) {
-                0 -> f.set(u, 1, v, B(M.CANDLE))
+                0 -> f.wares(u, 1, v, Wares.FISH, if (u < mid) Dir.E else Dir.W, was = B(M.CANDLE))
                 1 -> f.set(u, 0, v, B(M.CAULDRON, v = 2))
                 2 -> f.set(u, 0, v, B(M.BARREL))
             }

@@ -97,9 +97,13 @@ class Props(private val plan: CityPlan, private val world: Canvas) {
         val stripe = STALL_COLORS[kind]
         for (a in listOf(-2, 2)) for (b in 0..1) for (y in 0..2) at(a, b, y, B(M.FENCE))
         for (a in -1..1) at(a, 0, 0, if (a == 0) B(STALL_TRADES[kind], front) else B(M.PLANK_SLAB, top = true))
+        // The goods on the counter: displays of what the stall sells where there are any, the old props otherwise
         val (left, right) = STALL_GOODS[kind]
-        at(-1, 0, 1, left)
-        at(1, 0, 1, right)
+        val (onLeft, onTrade, onRight) = STALL_WARES[kind]
+        for ((a, was, wares) in listOf(Triple(-1, left, onLeft), Triple(0, null, onTrade), Triple(1, right, onRight))) {
+            if (wares != null) canvas.wares(p.x + along.dx * a, 1, p.z + along.dz * a, wares, front, was)
+            else if (was != null) at(a, 0, 1, was)
+        }
         at(-1, 1, 0, B(M.BARREL, front))
         for (a in -2..2) for (b in -1..1) at(a, b, 3, B(M.WOOL, color = if (Math.floorMod(a, 2) == 0) stripe else Dye.WHITE))
         // Townsfolk keep every stall, so every stall trades with the market; in capitals generated before they did,
@@ -261,6 +265,19 @@ class Props(private val plan: CityPlan, private val world: Canvas) {
             B(M.WOOL, color = Dye.RED) to B(M.WOOL, color = Dye.YELLOW),
             B(M.HAY) to B(M.BARREL, Dir.N),
             B(M.WOOL, color = Dye.BROWN) to B(M.CANDLE),
+        )
+
+        /**
+         * The displays of goods on each kind of stall's counter, in place of its [STALL_GOODS]: on the left, on top
+         * of the trade's block in the middle, and on the right (null: the old prop stays, or nothing).
+         */
+        val STALL_WARES = listOf(
+            Triple(Wares.GRAIN, null, Wares.ROOTS),
+            Triple(Wares.FISH, Wares.APPLES, null),
+            Triple(Wares.BEEF_PORK, Wares.MUTTON_CHICKEN, null),
+            Triple(Wares.WOOL, null, Wares.HIDES),
+            Triple(Wares.FLETCHING, null, null),
+            Triple(Wares.CHANDLERY, null, null),
         )
     }
 }

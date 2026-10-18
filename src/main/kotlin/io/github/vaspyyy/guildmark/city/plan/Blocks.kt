@@ -67,6 +67,9 @@ enum class M(val rgb: Int, val solid: Boolean = true) {
     // The farms. A crop's [B.v] picks it (wheat, carrots, potatoes, beetroot) and, by fours, how far it is from
     // ripe; a pumpkin's is plain, carved (facing [B.dir]), lit or a melon; leaves' 1 is a fruit tree in blossom
     FARMLAND(0x6A4A2E), TRACK(0x8E8880), PUMPKIN(0xE08020),
+
+    // The market's displays of goods (drawn with Canvas.wares): [B.v] is what one shows (Wares), [B.dir] its front
+    WARES(0x9A7A4A, false),
 }
 
 /**

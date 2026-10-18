@@ -5,6 +5,8 @@ import io.github.vaspyyy.guildmark.city.plan.B
 import io.github.vaspyyy.guildmark.city.plan.Dir
 import io.github.vaspyyy.guildmark.city.plan.Dye
 import io.github.vaspyyy.guildmark.city.plan.M
+import io.github.vaspyyy.guildmark.city.plan.Wares
+import io.github.vaspyyy.guildmark.economy.WaresRegistry
 import io.github.vaspyyy.guildmark.registry.ModBlocks
 import net.minecraft.core.Direction
 import net.minecraft.core.Holder
@@ -189,6 +191,7 @@ enum class CityStyle {
                 3 -> Blocks.MELON.defaultBlockState()
                 else -> Blocks.PUMPKIN.defaultBlockState()
             }
+            M.WARES -> facing(WaresRegistry.block(Wares.entries[Math.floorMod(b.v, Wares.entries.size)].look), b.dir)
         }
     }
 

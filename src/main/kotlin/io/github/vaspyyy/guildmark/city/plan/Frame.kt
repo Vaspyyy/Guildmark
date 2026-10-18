@@ -35,11 +35,17 @@ class Frame(val canvas: Canvas, val lot: Rect, val front: Dir, val y0: Int = 0) 
 
     fun turn(axis: Axis): Axis = if (axis == Axis.Y || !front.alongX) axis else if (axis == Axis.X) Axis.Z else Axis.X
 
-    fun set(u: Int, y: Int, v: Int, b: B) {
+    fun set(u: Int, y: Int, v: Int, b: B) = canvas.set(x(u, v), y0 + y, z(u, v), turned(b))
+
+    /** [b] turned to the city's frame. */
+    private fun turned(b: B): B {
         val dir = b.dir
-        val turned = if (dir == null && b.axis == Axis.Y) b else B(b.m, dir?.let { turn(it) }, b.top, turn(b.axis), b.color, b.v, b.part, b.open)
-        canvas.set(x(u, v), y0 + y, z(u, v), turned)
+        return if (dir == null && b.axis == Axis.Y) b else B(b.m, dir?.let { turn(it) }, b.top, turn(b.axis), b.color, b.v, b.part, b.open)
     }
+
+    /** A display of the market's goods at [u], [y], [v], its front to [facing] (see [Canvas.wares]). */
+    fun wares(u: Int, y: Int, v: Int, wares: Wares, facing: Dir, was: B? = null) =
+        canvas.wares(x(u, v), y0 + y, z(u, v), wares, turn(facing), was?.let(::turned))
 
     fun fill(u0: Int, y0: Int, v0: Int, u1: Int, y1: Int, v1: Int, b: B) {
         for (u in minOf(u0, u1)..maxOf(u0, u1)) for (v in minOf(v0, v1)..maxOf(v0, v1)) for (y in minOf(y0, y1)..maxOf(y0, y1)) set(u, y, v, b)

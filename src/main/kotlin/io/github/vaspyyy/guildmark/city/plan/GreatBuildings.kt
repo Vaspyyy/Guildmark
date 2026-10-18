@@ -345,21 +345,24 @@ class GreatBuildings(private val f: Frame, private val b: Building, private val 
             f.set(u, y, d - 1, WINDOW)
         }
         Buildings.roof(f, w, d, 0, top, ROOF_RED, false, PLASTER)
-        // The stalls underneath
+        // The stalls underneath, each with a display of its goods on its table, the buyers' side to the north
         val goods = listOf(B(M.HAY), B(M.COMPOSTER), B(M.BARREL, Dir.N), B(M.SMOKER, Dir.N))
+        val shown = listOf(Wares.GRAIN, Wares.ROOTS, Wares.FISH, Wares.BEEF_PORK)
         for ((i, spot) in listOf(2 to 4, w - 4 to 4, 2 to d - 5, w - 4 to d - 5).withIndex()) {
             val (u, v) = spot
             f.set(u, 0, v, TABLE)
             f.set(u + 1, 0, v, TABLE)
             f.set(u, 0, v + 1, goods[i])
             f.set(u + 1, 1, v, B(M.LANTERN))
+            f.wares(u, 1, v, shown[i], Dir.N)
         }
         f.set(w / 2, STORY - 2, d / 2, B(M.LANTERN, top = true))
         for (y in 0..STORY) f.set(1, y, 3, B(M.LADDER, Dir.E))
-        // Upstairs: the merchants' store
+        // Upstairs: the merchants' store, its grain, cloth and hides set out along the front wall
         val y1 = STORY
         for (u in 2..w - 2) f.set(u, y1, d - 2, B(M.BARREL, Dir.N))
         for (u in 3..5) f.set(u, y1, 1, B(M.HAY))
+        for (u in 6..w - 4) f.wares(u, y1, 1, STORE[(u - 6) % STORE.size], Dir.S)
         f.chest(w - 2, y1, 1, Dir.W, Loot.MARKET)
         f.set(w / 2, top - 1, d / 2, B(M.LANTERN, top = true))
         f.spawn(Spawn.VILLAGER, w / 2, 0, d / 2)
@@ -516,10 +519,11 @@ class GreatBuildings(private val f: Frame, private val b: Building, private val 
         f.set(w - 3, top + 7, d - 3, B(M.CAMPFIRE))
         // A table by the oven to knead the dough on
         f.set(w - 6, 0, d - 6, TABLE)
-        // The counter, sacks of flour and barrels, the compost bin out back
+        // The counter with bread set out at both ends, sacks of flour and barrels, the compost bin out back
         for (u in 2..door + 1) f.set(u, 0, 4, B(M.PLANKS, v = 1))
         f.set(3, 1, 4, B(M.HAY))
         f.set(door, 1, 4, B(M.CANDLE))
+        for (u in listOf(2, door + 1)) f.wares(u, 1, 4, Wares.BREAD, Dir.N)
         for (v in 7..10) f.set(1, 0, v, B(M.HAY))
         for (v in 7..9) f.set(1, 1, v, B(M.BARREL, Dir.E))
         f.set(2, 0, d - 2, B(M.COMPOSTER))
@@ -919,5 +923,8 @@ class GreatBuildings(private val f: Frame, private val b: Building, private val 
         val GLASS_COLORS = listOf(Dye.BLUE, Dye.RED, Dye.YELLOW, Dye.PURPLE, Dye.LIGHT_BLUE, Dye.ORANGE)
         /** The rose window's panes: across from the aisle and up from the eaves. */
         val ROSE = listOf(0 to 2, 1 to 2, -1 to 3, 0 to 3, 1 to 3, 2 to 3, 0 to 4, 1 to 4)
+
+        /** What the market hall's store upstairs sets out, in turn along its front wall. */
+        val STORE = listOf(Wares.GRAIN, Wares.WOOL, Wares.HIDES)
     }
 }

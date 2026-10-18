@@ -217,6 +217,8 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         io.github.vaspyyy.guildmark.economy.Stalls.register(modBus)
         // The carters' handcarts, pulled behind them with their loads heaped on (cart/)
         io.github.vaspyyy.guildmark.cart.Handcarts.register(modBus)
+        // The market's goods on show: its displays, kept as full as its stock, and set out in capitals built before them
+        io.github.vaspyyy.guildmark.economy.WaresRegistry.register(modBus)
         modBus.addListener(EntityAttributeCreationEvent::class.java) {
             it.put(ModEntities.GUILD_MEMBER.get(), GuildMember.createAttributes().build())
             it.put(ModEntities.STORY_NPC.get(), StoryNpc.createAttributes().build())

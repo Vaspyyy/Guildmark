@@ -116,5 +116,9 @@ object GuildmarkConfig {
         .comment("How fast homestead builders work: 1 is a cottage in half a day of daylight, a farmstead in a day and a manor in two; 2 is twice as fast.")
         .defineInRange("homesteadBuildSpeed", 1.0, 0.1, 20.0)
 
+    val MARKET_DISPLAYS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("The market's goods on show in the capitals: baskets, crates, racks, boards, trays, shelves and sacks on the stalls and counters, heaped with the real goods as full as the market's stock of each. Off, newly built capitals keep the old stall props, no more displays are set out in capitals built before, and those already out stand still.")
+        .define("marketDisplays", true)
+
     val SPEC: ModConfigSpec = BUILDER.build()
 }

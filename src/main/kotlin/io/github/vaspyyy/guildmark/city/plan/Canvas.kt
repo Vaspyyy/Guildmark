@@ -68,6 +68,13 @@ interface Canvas {
      */
     fun resident(folk: Folk, at: At, work: At? = null, post: At? = null, facing: Dir? = null, home: At? = null)
 
+    /**
+     * A display of the market's goods showing [wares], its front (where the buyers stand) to [facing], on a spot
+     * that held [was] before capitals had displays (null: nothing). The world sets it up for the capital's market,
+     * or with displays switched off puts down [was] instead.
+     */
+    fun wares(x: Int, y: Int, z: Int, wares: Wares, facing: Dir, was: B? = null) = set(x, y, z, B(M.WARES, facing, v = wares.ordinal))
+
     fun touches(r: Rect): Boolean = clip.intersects(r)
 }
 
@@ -83,4 +90,5 @@ class Raised(private val canvas: Canvas, private val dy: Int) : Canvas {
     override fun spawn(what: Spawn, x: Int, y: Int, z: Int, facing: Dir) = canvas.spawn(what, x, y + dy, z, facing)
     override fun resident(folk: Folk, at: At, work: At?, post: At?, facing: Dir?, home: At?) =
         canvas.resident(folk, at.up(dy), work?.up(dy), post?.up(dy), facing, home?.up(dy))
+    override fun wares(x: Int, y: Int, z: Int, wares: Wares, facing: Dir, was: B?) = canvas.wares(x, y + dy, z, wares, facing, was)
 }

@@ -11,8 +11,12 @@ import io.github.vaspyyy.guildmark.city.plan.CityPlan
 import io.github.vaspyyy.guildmark.city.plan.Dir
 import io.github.vaspyyy.guildmark.city.plan.Folk
 import io.github.vaspyyy.guildmark.city.plan.Loot
+import io.github.vaspyyy.guildmark.city.plan.M
 import io.github.vaspyyy.guildmark.city.plan.Rect
 import io.github.vaspyyy.guildmark.city.plan.Spawn
+import io.github.vaspyyy.guildmark.city.plan.Wares
+import io.github.vaspyyy.guildmark.economy.WaresBlockEntity
+import io.github.vaspyyy.guildmark.economy.WaresRegistry
 import io.github.vaspyyy.guildmark.guild.GuildHall
 import io.github.vaspyyy.guildmark.registry.ModBlocks
 import io.github.vaspyyy.guildmark.townsfolk.Town
@@ -71,7 +75,19 @@ class WorldCanvas(
     override fun set(x: Int, y: Int, z: Int, b: B) {
         val pos = piece.world(x, y, z)
         if (!writable(pos)) return
-        place(pos, style.state(b, hash(pos)).rotate(piece.turn))
+        place(pos, planned(piece, b, pos))
+    }
+
+    override fun wares(x: Int, y: Int, z: Int, wares: Wares, facing: Dir, was: B?) {
+        // Switched off, the spot keeps what it held before there were displays
+        if (!WaresRegistry.enabled()) {
+            if (was != null) set(x, y, z, was)
+            return
+        }
+        val pos = piece.world(x, y, z)
+        if (!writable(pos)) return
+        place(pos, planned(piece, B(M.WARES, facing, v = wares.ordinal), pos))
+        (level.getBlockEntity(pos) as? WaresBlockEntity)?.setUp(piece.center, wares)
     }
 
     override fun ground(x: Int, z: Int, y: Int, surface: B, fill: B) {
@@ -235,6 +251,9 @@ class WorldCanvas(
          * only there do joined-up blocks get fixed up afterwards.
          */
         fun isReal(level: WorldGenLevel): Boolean = level is WorldGenRegion || level is ServerLevel
+
+        /** The real block the plan's [b] is at [pos] in [piece], as a capital is built with it (and so was built before). */
+        fun planned(piece: CapitalPiece, b: B, pos: BlockPos): BlockState = piece.style.state(b, hash(pos)).rotate(piece.turn)
 
         private fun hash(pos: BlockPos): Int = (Mth.getSeed(pos.x, pos.y, pos.z) ushr 8).toInt()
 

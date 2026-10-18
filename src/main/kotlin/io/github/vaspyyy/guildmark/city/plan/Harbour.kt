@@ -905,7 +905,7 @@ class Harbour(private val plan: CityPlan) {
         at(-1, 0, 0, B(M.CAULDRON, v = 2))
         at(0, 0, 0, B(M.PLANK_SLAB, top = true))
         at(1, 0, 0, B(M.BARREL, front))
-        at(0, 0, 1, B(M.CANDLE))
+        canvas.wares(x(t.a, t.o), y + 1, z(t.a, t.o), Wares.FISH, front, was = B(M.CANDLE))
         at(-1, 1, 0, B(M.BARREL))
         at(1, 1, 0, B(M.SMOKER, front))
         for (a in -2..2) for (b in -1..1) at(a, b, 3, B(M.WOOL, color = if (Math.floorMod(a, 2) == 0) stripe else Dye.WHITE))

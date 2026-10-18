@@ -3,9 +3,9 @@ package io.github.vaspyyy.guildmark.city.plan
 /**
  * Everything a city's plan sets down where its people will use it, worked out by drawing its buildings, its
  * street furniture, the harbour and the farms into a canvas that keeps only what matters to them: each building's
- * doors, ladders, beds, seats, tables, work blocks and stores; the market's stalls; wells and benches; the crops,
- * gathered into fields; and who the plan houses where. All of it in the city's own frame, the same every time for
- * the same plan, so it holds for a capital built long before anyone asked.
+ * doors, ladders, beds, seats, tables, work blocks and stores; the market's stalls and its displays of goods; wells
+ * and benches; the crops, gathered into fields; and who the plan houses where. All of it in the city's own frame,
+ * the same every time for the same plan, so it holds for a capital built long before anyone asked.
  */
 class Census(val plan: CityPlan) {
     /** A door's lower half, opening toward [inward]. */
@@ -67,10 +67,14 @@ class Census(val plan: CityPlan) {
     /** A run of crops close together, the strip of a field or a kitchen garden, and the farm building nearest it. */
     class Field(val crops: List<At>, val bounds: Rect, val kinds: IntArray, val lodge: Int?)
 
+    /** A display of the market's goods (see [Canvas.wares]): what it shows, its front, and what the spot held before (null: nothing). */
+    data class Display(val at: At, val wares: Wares, val facing: Dir, val was: B?)
+
     val lodges = LinkedHashMap<Int, Lodge>()
     val residents = ArrayList<Planned>()
     val villagers = ArrayList<At>()
     val stalls = ArrayList<Stall>()
+    val displays = ArrayList<Display>()
     val wells = ArrayList<At>()
     val lamps = ArrayList<At>()
     val benches = ArrayList<Seat>()
@@ -234,6 +238,11 @@ class Census(val plan: CityPlan) {
             val planned = Planned(folk, at, work, post, facing, home, l?.id ?: -1)
             residents.add(planned)
             l?.residents?.add(planned)
+        }
+
+        override fun wares(x: Int, y: Int, z: Int, wares: Wares, facing: Dir, was: B?) {
+            displays.add(Display(At(x, y, z), wares, facing, was))
+            set(x, y, z, B(M.WARES, facing, v = wares.ordinal))
         }
 
         /** Ladders into runs, stairs into seats (not the steps of a flight), fences with a cloth on into tables. */

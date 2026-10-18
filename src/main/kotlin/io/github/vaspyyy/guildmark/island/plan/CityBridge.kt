@@ -10,6 +10,7 @@ import io.github.vaspyyy.guildmark.city.plan.Loot
 import io.github.vaspyyy.guildmark.city.plan.M
 import io.github.vaspyyy.guildmark.city.plan.Rect
 import io.github.vaspyyy.guildmark.city.plan.Spawn
+import io.github.vaspyyy.guildmark.city.plan.Wares
 import io.github.vaspyyy.guildmark.city.plan.Dir as CityDir
 
 /**
@@ -216,6 +217,8 @@ internal class IslandStyle(climate: Climate) {
             3 -> Bk.of("melon")
             else -> Bk.of("pumpkin")
         }
+        // Nothing an island builds sets out the market's goods; a display would only ever show its usual stock
+        M.WARES -> Bk.of("guildmark:" + Wares.entries[Math.floorMod(b.v, Wares.entries.size)].look.id, "facing" to face(b))
     }
 
     private fun face(b: B): String = b.dir?.let { CityBridge.dir(it).id } ?: "north"
