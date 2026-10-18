@@ -737,6 +737,66 @@
     ],
     "subtitle": "say.guildmark.tavern_4"
   },
+  "townsfolk.voice.man.lamplighter_dusk_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/lamplighter_dusk_0"
+    ],
+    "subtitle": "say.guildmark.lamplighter_dusk_0"
+  },
+  "townsfolk.voice.man.lamplighter_dusk_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/lamplighter_dusk_1"
+    ],
+    "subtitle": "say.guildmark.lamplighter_dusk_1"
+  },
+  "townsfolk.voice.man.lamplighter_dusk_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/lamplighter_dusk_2"
+    ],
+    "subtitle": "say.guildmark.lamplighter_dusk_2"
+  },
+  "townsfolk.voice.man.lamplighter_dusk_3": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/lamplighter_dusk_3"
+    ],
+    "subtitle": "say.guildmark.lamplighter_dusk_3"
+  },
+  "townsfolk.voice.man.lamplighter_dawn_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/lamplighter_dawn_0"
+    ],
+    "subtitle": "say.guildmark.lamplighter_dawn_0"
+  },
+  "townsfolk.voice.man.lamplighter_dawn_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/lamplighter_dawn_1"
+    ],
+    "subtitle": "say.guildmark.lamplighter_dawn_1"
+  },
+  "townsfolk.voice.man.lamplighter_dawn_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/lamplighter_dawn_2"
+    ],
+    "subtitle": "say.guildmark.lamplighter_dawn_2"
+  },
+  "townsfolk.voice.man.lamplighter_hello_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/lamplighter_hello_0"
+    ],
+    "subtitle": "say.guildmark.lamplighter_hello_0"
+  },
+  "townsfolk.voice.man.lamplighter_hello_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/lamplighter_hello_1"
+    ],
+    "subtitle": "say.guildmark.lamplighter_hello_1"
+  },
+  "townsfolk.voice.man.lamplighter_hello_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/lamplighter_hello_2"
+    ],
+    "subtitle": "say.guildmark.lamplighter_hello_2"
+  },
   "townsfolk.voice.man.mage_0": {
     "sounds": [
       "guildmark:townsfolk/voice/man/mage_0"
@@ -2530,6 +2590,66 @@
       "guildmark:townsfolk/voice/woman/tavern_4"
     ],
     "subtitle": "say.guildmark.tavern_4"
+  },
+  "townsfolk.voice.woman.lamplighter_dusk_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/lamplighter_dusk_0"
+    ],
+    "subtitle": "say.guildmark.lamplighter_dusk_0"
+  },
+  "townsfolk.voice.woman.lamplighter_dusk_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/lamplighter_dusk_1"
+    ],
+    "subtitle": "say.guildmark.lamplighter_dusk_1"
+  },
+  "townsfolk.voice.woman.lamplighter_dusk_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/lamplighter_dusk_2"
+    ],
+    "subtitle": "say.guildmark.lamplighter_dusk_2"
+  },
+  "townsfolk.voice.woman.lamplighter_dusk_3": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/lamplighter_dusk_3"
+    ],
+    "subtitle": "say.guildmark.lamplighter_dusk_3"
+  },
+  "townsfolk.voice.woman.lamplighter_dawn_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/lamplighter_dawn_0"
+    ],
+    "subtitle": "say.guildmark.lamplighter_dawn_0"
+  },
+  "townsfolk.voice.woman.lamplighter_dawn_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/lamplighter_dawn_1"
+    ],
+    "subtitle": "say.guildmark.lamplighter_dawn_1"
+  },
+  "townsfolk.voice.woman.lamplighter_dawn_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/lamplighter_dawn_2"
+    ],
+    "subtitle": "say.guildmark.lamplighter_dawn_2"
+  },
+  "townsfolk.voice.woman.lamplighter_hello_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/lamplighter_hello_0"
+    ],
+    "subtitle": "say.guildmark.lamplighter_hello_0"
+  },
+  "townsfolk.voice.woman.lamplighter_hello_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/lamplighter_hello_1"
+    ],
+    "subtitle": "say.guildmark.lamplighter_hello_1"
+  },
+  "townsfolk.voice.woman.lamplighter_hello_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/lamplighter_hello_2"
+    ],
+    "subtitle": "say.guildmark.lamplighter_hello_2"
   },
   "townsfolk.voice.woman.mage_0": {
     "sounds": [

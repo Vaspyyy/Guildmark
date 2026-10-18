@@ -1,7 +1,7 @@
 """The townsfolk's voices: what the people of the city say as you pass (greetings, trade cries, gossip,
-replies, a laugh, a cry for help, and what the three factions' members and a heist's watchmen say), read by
-Kokoro TTS in four voices, one per timbre, then given a light touch of processing so they sit in the street
-(a little age for the old man, a child's pitch for the child).
+replies, a laugh, a cry for help, a lamplighter's word on their round, and what the three factions' members
+and a heist's watchmen say), read by Kokoro TTS in four voices, one per timbre, then given a light touch of
+processing so they sit in the street (a little age for the old man, a child's pitch for the child).
 
 The game picks the timbre from the townsperson (old women use "woman") and varies the pitch a little per
 person, so one voice per timbre is enough. Line lengths do not matter to the game, except for the town crier's.
@@ -142,6 +142,21 @@ TRADES = {
     "tavern_2": "To the guild!",
     "tavern_3": "Ha! Good one.",
     "tavern_4": "My round next time.",
+}
+
+# man and woman only: the lamplighters' (townsfolk/Lamplighters.kt), said now and then on their round to whoever's by
+# (dusk: after a lamp is lit; dawn: after one is put out) and to someone who stops them (hello)
+LAMPLIGHTER = {
+    "lamplighter_dusk_0": "There we are. That'll see you home.",
+    "lamplighter_dusk_1": "Evening. The lamps are going up.",
+    "lamplighter_dusk_2": "Not a dark street in the city tonight.",
+    "lamplighter_dusk_3": "Burn bright, old girl.",
+    "lamplighter_dawn_0": "Morning. The sun can take it from here.",
+    "lamplighter_dawn_1": "There. That's the night seen off.",
+    "lamplighter_dawn_2": "Rest now. I'll be back at dusk.",
+    "lamplighter_hello_0": "Can't stop long. I've a round to finish.",
+    "lamplighter_hello_1": "Mind the pole, friend.",
+    "lamplighter_hello_2": "Someone has to see to the lamps.",
 }
 
 # man, woman and old: the faction members' street lines (the Starwatch's mages, the Hearthsworn's knights, the
@@ -494,7 +509,7 @@ def lines(only=None, keys=None):
         if timbre == "child":
             d = dict(CHILD)
         else:
-            d = dict(COMMON, **(TRADES if timbre in ("man", "woman") else {}))
+            d = dict(COMMON, **(dict(TRADES, **LAMPLIGHTER) if timbre in ("man", "woman") else {}))
             d.update(FACTION)
             if timbre in CRIER_TIMBRES:
                 d.update(CRIER)

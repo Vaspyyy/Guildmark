@@ -71,10 +71,10 @@ object Lamplighters : StreetLamps.Taker {
     }
 
     /** What they say now and then on their round, and to someone who speaks to them. */
-    internal fun line(p: Townsperson, dusk: Boolean): String = if (dusk) "lamplighter_dusk_${1 + p.random.nextInt(DUSK_LINES)}"
-    else "lamplighter_dawn_${1 + p.random.nextInt(DAWN_LINES)}"
+    internal fun line(p: Townsperson, dusk: Boolean): String = if (dusk) "lamplighter_dusk_${p.random.nextInt(DUSK_LINES)}"
+    else "lamplighter_dawn_${p.random.nextInt(DAWN_LINES)}"
 
-    internal fun hello(p: Townsperson): String = "lamplighter_hello_${1 + p.random.nextInt(HELLO_LINES)}"
+    internal fun hello(p: Townsperson): String = "lamplighter_hello_${p.random.nextInt(HELLO_LINES)}"
 
     const val DUSK_LINES = 4
     const val DAWN_LINES = 3
