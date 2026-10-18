@@ -104,7 +104,7 @@ internal object ComingsBodies {
             Kind.RETURN -> "coming back"
             Kind.LEAVE -> "leaving"
         }
-        "Household #${p.h.id} ($what by the ${p.gate.name} gate): ${p.stage.name.lowercase()}, ${p.crew.size} of them, ${p.age / 20}s in"
+        "Household #${p.h.id} ($what by the ${p.places.capital.direction(p.gate).serializedName} gate): ${p.stage.name.lowercase()}, ${p.crew.size} of them, ${p.age / 20}s in"
     }
 
     /** The server has stopped: everything here goes (it's never saved). */

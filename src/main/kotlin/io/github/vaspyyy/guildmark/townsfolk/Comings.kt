@@ -761,7 +761,7 @@ object Comings {
         val id = c.data.newId()
         val ids = members.map { it.id }
         val run = hardRun(c.level, c.key, today)
-        val why = if (force) "sent off by a command" else "left after $run hard days running"
+        val why = if (force) "sent off by a command" else "after $run hard days running"
         c.town.away += ComingsData.Moved(id, ids, pick.home.id, today, HARD, why)
         if (!force) c.town.left = today
         c.town.why = ""
