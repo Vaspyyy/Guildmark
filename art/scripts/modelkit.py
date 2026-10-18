@@ -147,7 +147,8 @@ class Model:
                     'right': (W(x0, y0, z1), W(x0, y0, z0), W(x0, y1, z1), (-1, 0, 0)),
                     'left': (W(x1, y0, z0), W(x1, y0, z1), W(x1, y1, z0), (1, 0, 0)),
                     'top': (W(x0, y0, z1), W(x1, y0, z1), W(x0, y0, z0), (0, -1, 0)),
-                    'bottom': (W(x0, y1, z0), W(x1, y1, z0), W(x0, y1, z1), (0, 1, 0)),
+                    # As ModelPart.Cube maps it: the bottom face's first row is the cube's back edge
+                    'bottom': (W(x0, y1, z1), W(x1, y1, z1), W(x0, y1, z0), (0, 1, 0)),
                 }
                 rects = c.rects()
                 for face, (A, B, D, n) in quads.items():

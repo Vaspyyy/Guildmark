@@ -489,7 +489,8 @@ def box_quads(origin, size, uv, inflate=0.0):
         (P(x0, y0, z1), P(x0, y0, z0), P(x0, y1, z1), rect['right'], 'right'),
         (P(x1, y0, z0), P(x1, y0, z1), P(x1, y1, z0), rect['left'], 'left'),
         (P(x0, y0, z1), P(x1, y0, z1), P(x0, y0, z0), rect['top'], 'top'),
-        (P(x0, y1, z0), P(x1, y1, z0), P(x0, y1, z1), rect['bottom'], 'bottom'),
+        # As ModelPart.Cube maps it: the bottom face's first row is the cube's back edge
+        (P(x0, y1, z1), P(x1, y1, z1), P(x0, y1, z0), rect['bottom'], 'bottom'),
     ]
 
 PLAYER = {
