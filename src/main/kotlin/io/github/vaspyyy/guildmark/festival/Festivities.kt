@@ -117,7 +117,11 @@ object Festivities {
         }
         NeoForge.EVENT_BUS.addListener(RegisterCommandsEvent::class.java) { FestivalCommand.register(it.dispatcher) }
         NeoForge.EVENT_BUS.addListener(ProjectileImpactEvent::class.java, ::arrow)
-        Seasons.onNewDay { level, _, today -> news(level, today) }
+        Seasons.onNewDay { level, _, today ->
+            // Only today's count: a calendar put back (by command, or a /time set) holds that day's festivals again
+            held.removeIf { it.second != today.calendarDay }
+            news(level, today)
+        }
     }
 
     // =============================================================================================== for anyone

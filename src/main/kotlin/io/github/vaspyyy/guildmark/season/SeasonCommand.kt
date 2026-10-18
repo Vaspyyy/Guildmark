@@ -60,7 +60,7 @@ object SeasonCommand {
         val source = context.source
         val date = Seasons.today(source.level)
         val season = date.season.next
-        Seasons.setDate(source.level, season, 1)
+        Seasons.setDate(source.level, season, 1, forward = true)
         source.sendSuccess({ Component.translatable("commands.guildmark.season.set", Seasons.today(source.level).title) }, true)
         return 1
     }

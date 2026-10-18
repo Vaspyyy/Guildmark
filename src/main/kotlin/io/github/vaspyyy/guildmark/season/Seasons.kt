@@ -124,10 +124,14 @@ object Seasons {
         return SeasonDate(VillageBoards.day(overworld) + SeasonState.get(overworld).offset, length())
     }
 
-    /** Sets the calendar so today is day [day] of [season] (this year), telling everyone. */
-    fun setDate(level: ServerLevel, season: Season, day: Int) {
+    /**
+     * Sets the calendar so today is day [day] of [season], telling everyone: of this year, or with [forward] the
+     * first such day still to come (winter's "next" is the coming year's spring, not this year's gone by).
+     */
+    fun setDate(level: ServerLevel, season: Season, day: Int, forward: Boolean = false) {
         val now = today(level)
-        val target = now.startOf(season).plus((day.coerceIn(1, now.length) - 1).toLong())
+        var target = now.startOf(season).plus((day.coerceIn(1, now.length) - 1).toLong())
+        if (forward && target.calendarDay <= now.calendarDay) target = target.plus(4L * now.length)
         val state = SeasonState.get(level.server.overworld())
         state.offset += target.calendarDay - now.calendarDay
         state.setDirty()
