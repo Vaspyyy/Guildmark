@@ -144,7 +144,12 @@ object Economy {
         m.worked.fill(0.0)
         val h = c.clock
         if (h == NEW_DAY) newDay(m, town, c, random)
-        m.events.removeIf { it.until <= c.hour }
+        val over = m.events.filter { it.until <= c.hour }
+        if (over.isNotEmpty()) {
+            m.events.removeAll(over)
+            // The good news the crier has when trouble ends (a bumper crop or a run of fish just ends)
+            for (e in over) if (e.kind.trouble) m.say("news.guildmark.market.over.${e.kind.id}", e.good)
+        }
         if (!c.restDay) {
             if (farming(h)) {
                 farm(m, town, c)

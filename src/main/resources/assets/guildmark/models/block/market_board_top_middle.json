@@ -1,0 +1,8 @@
+{
+  "parent": "guildmark:block/quest_board_top_middle",
+  "textures": {
+    "panel": "minecraft:block/polished_blackstone",
+    "frame": "minecraft:block/dark_oak_planks",
+    "particle": "minecraft:block/dark_oak_planks"
+  }
+}

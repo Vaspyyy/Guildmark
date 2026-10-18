@@ -97,6 +97,9 @@ enum class EventKind(val id: String, val maker: Maker?, val goods: Set<Good> = s
     /** A fever goes round: every trade works short-handed. */
     FEVER("fever", null);
 
+    /** Whether it's trouble (and its end news); otherwise it's luck. */
+    val trouble: Boolean get() = this != BUMPER && this != GOOD_CATCH
+
     companion object {
         fun byId(id: String): EventKind? = entries.firstOrNull { it.id == id }
     }

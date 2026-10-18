@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "condition": {
+        "type": "minecraft:survives_explosion"
+      },
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "guildmark:market_board",
+          "condition": {
+            "type": "minecraft:match_block",
+            "blocks": "guildmark:market_board",
+            "state": {
+              "part": "bottom_middle"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "random_sequence": "guildmark:blocks/market_board"
+}

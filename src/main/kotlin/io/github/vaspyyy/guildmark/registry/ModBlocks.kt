@@ -3,6 +3,7 @@ package io.github.vaspyyy.guildmark.registry
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.block.ArcherPostBlock
 import io.github.vaspyyy.guildmark.block.BountyBoardBlock
+import io.github.vaspyyy.guildmark.block.MarketBoardBlock
 import io.github.vaspyyy.guildmark.block.MistGateBlock
 import io.github.vaspyyy.guildmark.block.QuestBoardBlock
 import io.github.vaspyyy.guildmark.block.WardfireBlock
@@ -26,6 +27,11 @@ object ModBlocks {
     /** The town watch's iron-bound board of wanted notices; villages with outlaws about put one up, and it can be crafted. */
     val BOUNTY_BOARD: DeferredBlock<BountyBoardBlock> = BLOCKS.registerBlock("bounty_board", ::BountyBoardBlock, UnaryOperator<BlockBehaviour.Properties> {
         it.mapColor(MapColor.COLOR_BROWN).strength(3.0f).sound(SoundType.WOOD).noOcclusion().pushReaction(PushReaction.IMMOVEABLE)
+    })
+
+    /** A capital's market board in its market square, where the crier chalks up the prices and pins up the news. */
+    val MARKET_BOARD: DeferredBlock<MarketBoardBlock> = BLOCKS.registerBlock("market_board", ::MarketBoardBlock, UnaryOperator<BlockBehaviour.Properties> {
+        it.mapColor(MapColor.COLOR_BLACK).strength(2.5f).sound(SoundType.WOOD).noOcclusion().pushReaction(PushReaction.IMMOVEABLE)
     })
 
     /** Rest points out in the world. Found, never crafted, and can't be mined (creative players can break them). */

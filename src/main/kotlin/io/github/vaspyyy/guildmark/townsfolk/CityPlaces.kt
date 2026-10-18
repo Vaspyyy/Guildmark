@@ -109,6 +109,11 @@ class CityPlaces(val capital: CapitalPiece, val census: Census, val housing: Hou
 
     val bell: BlockPos = capital.bell
 
+    /** The market board: its anchor (the bottom middle cell), and the way its face looks (see [io.github.vaspyyy.guildmark.block.MarketBoardBlock]). */
+    val marketBoard: Spot = census.plan.let { plan ->
+        Spot(capital.world(plan.marketBoard.x, plan.level(plan.marketBoard.x, plan.marketBoard.z), plan.marketBoard.z), dir(plan.marketBoardFacing))
+    }
+
     /** The building whose ground [pos] is on, if any. */
     fun lodgingAt(pos: BlockPos): Lodging? {
         val (x, z) = capital.local(pos.x, pos.z)

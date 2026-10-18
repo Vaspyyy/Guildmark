@@ -151,6 +151,14 @@ class CityPlan(val seed: Long, val layout: Layout = Layout.DEFAULT, val land: La
     val boardFacing = Dir.W
     val wardfire = Pos(-(plaza - 4), plaza - 4)
 
+    /**
+     * The market board (its anchor, the bottom middle cell, and the way it faces): beside the avenue in the middle of
+     * the market square, its face to the avenue, clear of the avenue's lamps and the stalls' backs, with room in front
+     * for the crier and a crowd.
+     */
+    val marketBoard = Pos(6, bandMid)
+    val marketBoardFacing = Dir.W
+
     init {
         lay()
     }

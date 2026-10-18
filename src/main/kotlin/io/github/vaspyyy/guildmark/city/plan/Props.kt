@@ -36,6 +36,7 @@ class Props(private val plan: CityPlan, private val world: Canvas) {
         canvas = Raised(world, plan.level(plan.bell.x, plan.bell.z))
         bell(plan.bell.x, plan.bell.z)
         world.board(plan.board.x, plan.level(plan.board.x, plan.board.z), plan.board.z, plan.boardFacing)
+        world.marketBoard(plan.marketBoard.x, plan.level(plan.marketBoard.x, plan.marketBoard.z), plan.marketBoard.z, plan.marketBoardFacing)
         canvas = Raised(world, plan.level(plan.wardfire.x, plan.wardfire.z))
         wardfire(plan.wardfire.x, plan.wardfire.z)
         canvas = world

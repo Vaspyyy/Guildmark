@@ -45,6 +45,7 @@ object ModItems {
 
     val QUEST_BOARD: DeferredItem<BlockItem> = ITEMS.registerSimpleBlockItem("quest_board", ModBlocks.QUEST_BOARD)
     val BOUNTY_BOARD: DeferredItem<BlockItem> = ITEMS.registerSimpleBlockItem("bounty_board", ModBlocks.BOUNTY_BOARD)
+    val MARKET_BOARD: DeferredItem<BlockItem> = ITEMS.registerSimpleBlockItem("market_board", ModBlocks.MARKET_BOARD)
 
     val WARDFIRE: DeferredItem<BlockItem> = ITEMS.registerSimpleBlockItem("wardfire", ModBlocks.WARDFIRE)
 

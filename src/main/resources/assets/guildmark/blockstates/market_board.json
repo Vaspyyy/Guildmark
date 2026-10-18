@@ -1,0 +1,238 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "facing": "north",
+        "part": "bottom_left"
+      },
+      "apply": {
+        "model": "guildmark:block/market_board_bottom_left"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "part": "bottom_middle"
+      },
+      "apply": {
+        "model": "guildmark:block/market_board_bottom_middle"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "part": "bottom_right"
+      },
+      "apply": {
+        "model": "guildmark:block/market_board_bottom_right"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "part": "top_left"
+      },
+      "apply": {
+        "model": "guildmark:block/market_board_top_left"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "part": "top_middle"
+      },
+      "apply": {
+        "model": "guildmark:block/market_board_top_middle"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "part": "top_right"
+      },
+      "apply": {
+        "model": "guildmark:block/market_board_top_right"
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "part": "bottom_left"
+      },
+      "apply": {
+        "model": "guildmark:block/market_board_bottom_left",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "part": "bottom_middle"
+      },
+      "apply": {
+        "model": "guildmark:block/market_board_bottom_middle",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "part": "bottom_right"
+      },
+      "apply": {
+        "model": "guildmark:block/market_board_bottom_right",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "part": "top_left"
+      },
+      "apply": {
+        "model": "guildmark:block/market_board_top_left",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "part": "top_middle"
+      },
+      "apply": {
+        "model": "guildmark:block/market_board_top_middle",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "part": "top_right"
+      },
+      "apply": {
+        "model": "guildmark:block/market_board_top_right",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "part": "bottom_left"
+      },
+      "apply": {
+        "model": "guildmark:block/market_board_bottom_left",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "part": "bottom_middle"
+      },
+      "apply": {
+        "model": "guildmark:block/market_board_bottom_middle",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "part": "bottom_right"
+      },
+      "apply": {
+        "model": "guildmark:block/market_board_bottom_right",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "part": "top_left"
+      },
+      "apply": {
+        "model": "guildmark:block/market_board_top_left",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "part": "top_middle"
+      },
+      "apply": {
+        "model": "guildmark:block/market_board_top_middle",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "part": "top_right"
+      },
+      "apply": {
+        "model": "guildmark:block/market_board_top_right",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "part": "bottom_left"
+      },
+      "apply": {
+        "model": "guildmark:block/market_board_bottom_left",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "part": "bottom_middle"
+      },
+      "apply": {
+        "model": "guildmark:block/market_board_bottom_middle",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "part": "bottom_right"
+      },
+      "apply": {
+        "model": "guildmark:block/market_board_bottom_right",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "part": "top_left"
+      },
+      "apply": {
+        "model": "guildmark:block/market_board_top_left",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "part": "top_middle"
+      },
+      "apply": {
+        "model": "guildmark:block/market_board_top_middle",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "part": "top_right"
+      },
+      "apply": {
+        "model": "guildmark:block/market_board_top_right",
+        "y": 270
+      }
+    }
+  ]
+}

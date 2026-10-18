@@ -56,6 +56,9 @@ interface Canvas {
     /** A quest board facing [facing], with its anchor (bottom middle) cell at [x], [y], [z]. */
     fun board(x: Int, y: Int, z: Int, facing: Dir)
 
+    /** A market board facing [facing], with its anchor (bottom middle) cell at [x], [y], [z]; only the world draws one. */
+    fun marketBoard(x: Int, y: Int, z: Int, facing: Dir) {}
+
     fun spawn(what: Spawn, x: Int, y: Int, z: Int, facing: Dir)
 
     /**
@@ -76,6 +79,7 @@ class Raised(private val canvas: Canvas, private val dy: Int) : Canvas {
     override fun clearing(x: Int, z: Int, y: Int) = canvas.clearing(x, z, y + dy)
     override fun chest(x: Int, y: Int, z: Int, facing: Dir, loot: Loot) = canvas.chest(x, y + dy, z, facing, loot)
     override fun board(x: Int, y: Int, z: Int, facing: Dir) = canvas.board(x, y + dy, z, facing)
+    override fun marketBoard(x: Int, y: Int, z: Int, facing: Dir) = canvas.marketBoard(x, y + dy, z, facing)
     override fun spawn(what: Spawn, x: Int, y: Int, z: Int, facing: Dir) = canvas.spawn(what, x, y + dy, z, facing)
     override fun resident(folk: Folk, at: At, work: At?, post: At?, facing: Dir?, home: At?) =
         canvas.resident(folk, at.up(dy), work?.up(dy), post?.up(dy), facing, home?.up(dy))

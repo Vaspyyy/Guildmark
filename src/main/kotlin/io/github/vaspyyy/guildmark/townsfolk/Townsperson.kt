@@ -331,16 +331,19 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
         lookControl.setLookAt(other, 30f, 30f)
     }
 
-    /** Says [line] (a key under say.guildmark.) if a player is near enough to hear it. */
-    fun say(line: String, force: Boolean = false): Boolean {
+    /**
+     * Says [line] (a key under say.guildmark.) if a player is within [hearing] of them, showing it over their head
+     * for [ticks]; [force] says it even while they've only just said something.
+     */
+    fun say(line: String, force: Boolean = false, hearing: Double = HEARING, ticks: Long = SPEECH_TICKS): Boolean {
         val level = level() as? ServerLevel ?: return false
         // The leaders keep their own voices for talking properly (Factions)
         if (isLeader) return false
         if (!force && (level.gameTime < nextSpeech || speech.isNotEmpty())) return false
-        if (level.getNearestPlayer(this, HEARING) == null) return false
+        if (level.getNearestPlayer(this, hearing) == null) return false
         entityData.set(SPEECH, line)
-        speechUntil = level.gameTime + SPEECH_TICKS
-        nextSpeech = level.gameTime + SPEECH_TICKS + 60 + random.nextInt(200)
+        speechUntil = level.gameTime + ticks
+        nextSpeech = level.gameTime + ticks + 60 + random.nextInt(200)
         return true
     }
 

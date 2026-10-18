@@ -125,6 +125,18 @@ class WorldCanvas(
         }
     }
 
+    override fun marketBoard(x: Int, y: Int, z: Int, facing: Dir) {
+        val anchor = piece.world(x, y, z)
+        val front = piece.direction(facing)
+        val state = ModBlocks.MARKET_BOARD.get().defaultBlockState().setValue(QuestBoardBlock.FACING, front)
+        for (part in BoardPart.entries) {
+            val pos = QuestBoardBlock.cellPos(anchor, front, part)
+            if (!writable(pos)) continue
+            // Bare until the crier first writes it up (see MarketBoards)
+            level.setBlock(pos, state.setValue(QuestBoardBlock.PART, part), Block.UPDATE_CLIENTS)
+        }
+    }
+
     override fun spawn(what: Spawn, x: Int, y: Int, z: Int, facing: Dir) {
         val pos = piece.world(x, y, z)
         if (!real || !writable(pos)) return
