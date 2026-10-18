@@ -1,7 +1,7 @@
 """
 The Living World's held props for the townsfolk (art/scripts/living_anims.py animates them): food to eat, a bowl and
 spoon, the well's rope and bucket, coins, a seed bag, a scythe, an axe, a crier's handbell and scroll, a lamplighter's
-pole, a basket on the hip, a sack to tip out, a grindstone's crank and a wrapped parcel.
+pole, a basket on the hip, a sack to tip out and a grindstone's crank.
 
 townsfolk_tools.py takes them in at its end (BUILDERS, GLOW_CUBES, TOOL_NOTES), so townsfolk.py builds them into the
 model like every other tool, and art/scripts/townsfolk.py packs their cubes after everyone else's (CUBES), so adding
@@ -323,24 +323,6 @@ def flame_painter(key):
     return painter(key, fn, light=False)
 
 
-def parcel_painter(key):
-    """A parcel of goods wrapped in brown paper, tied both ways with string."""
-    def fn(face, w, h, rng):
-        U, V = uv(w, h)
-        a = noise_fill(w, h, KRAFT, rng, 0.05)
-        crease = rng.random((h, w)) < 0.05
-        a[..., :3] = np.where(crease[..., None], mix(a[..., :3], KRAFT_L, 0.6), a[..., :3])
-        string = (np.abs(U - 0.5) < max(0.06, 0.45 / w)) | ((np.abs(V - 0.5) < max(0.06, 0.45 / h)) & (face not in ('right', 'left')))
-        if face in ('right', 'left'):
-            string = np.abs(V - 0.5) < max(0.06, 0.45 / h)
-        a[..., :3] = np.where(string[..., None], np.array((232, 220, 196), float), a[..., :3])
-        if face == 'top':
-            knot = np.hypot(U - 0.5, V - 0.5) < 0.1
-            a[..., :3] = np.where(knot[..., None], np.array((210, 196, 168), float), a[..., :3])
-        return shade_edges(a, 0.2)
-    return painter(key, fn)
-
-
 def basket_hip_painter(key):
     """A deep wicker basket for the hip: an over-under weave and a plaited rim; from above, the dark inside of it."""
     def fn(face, w, h, rng):
@@ -474,6 +456,12 @@ def _seed_bag():
     ], children=[strap])
 
 
+# The scythe in the right fist as the mowing stance holds it (living_anims.py solves it: bent 35 degrees and sunk 3 px, the
+# fist low in front of the right hip, the snath running back past it to the right and down to the blade, the blade flat on
+# the ground; the scythe clip checks it).
+SCYTHE_ROT = (109.127, -36.331, 34.678)
+
+
 def _scythe():
     # A scythe, worked with both hands: the right fist on the snath's lower grip (the part's origin), the left on the top
     # end 11 px up it. The snath is the part's x (the blade's heel at x 17, the top end at -12); the blade runs off the
@@ -487,7 +475,7 @@ def _scythe():
         C((6.0, -1.9, -0.3), (6.0, 2.0, 0.6), 't_scythe_blade_b', scythe_blade_painter('t_scythe_blade_b')),
         C((11.5, -2.6, -0.3), (2.0, 1.4, 0.6), 't_scythe_blade_tip', scythe_blade_painter('t_scythe_blade_tip')),
     ])
-    return 'right_arm', Part('scythe', RIGHT_GRIP, (0, 0, 0), cubes=[
+    return 'right_arm', Part('scythe', RIGHT_GRIP, SCYTHE_ROT, cubes=[
         C((-12.0, -0.5, -0.5), (29.5, 1.0, 1.0), 't_scythe_snath', wood_painter('t_scythe_snath', WOOD, WOOD_D, WOOD_L, 'x', knots=1)),
         C((-0.6, -0.6, -2.4), (1.2, 1.2, 1.9), 't_scythe_nib', wood_painter('t_scythe_nib', OAK, OAK_D, OAK_L, 'z')),
         C((16.5, -0.75, -0.75), (1.5, 1.5, 1.5), 't_scythe_ferrule', iron_painter('t_scythe_ferrule')),
@@ -495,15 +483,15 @@ def _scythe():
 
 
 def _axe():
-    # A splitting axe in both hands, the right fist 3 px above the left at the end of the handle. The handle continues
-    # the arm's line, cocked 15 degrees forward (part x is the handle, out from the fist; the bit is +z of the part), so
-    # an overhead chop brings the bit down edge first.
+    # A splitting axe, the right fist on the handle and the left 3 px nearer its end. The handle continues the arm's line,
+    # cocked 15 degrees forward (part x is the handle, out from the fist; the bit is +z of the part), so an overhead chop
+    # brings the bit down edge first; the bit's edge at part (8.5, 0, 3.4).
     xa = _rot_x(-15, (0, 1, 0))
     za = _rot_x(-15, (0, 0, 1))
     ya = tuple(np.cross(za, xa))
     return 'right_arm', Part('axe', RIGHT_GRIP, euler_from_axes(xa, ya), cubes=[
-        C((-4.5, -0.5, -0.5), (17.0, 1.0, 1.0), 't_axe_handle', wood_painter('t_axe_handle', PALE, PALE_D, PALE_L, 'x')),
-        C((10.0, -0.75, -1.6), (3.0, 1.5, 5.0), 't_axe_head', axe_head_painter('t_axe_head')),
+        C((-4.5, -0.5, -0.5), (14.0, 1.0, 1.0), 't_axe_handle', wood_painter('t_axe_handle', PALE, PALE_D, PALE_L, 'x')),
+        C((7.0, -0.75, -1.6), (3.0, 1.5, 5.0), 't_axe_head', axe_head_painter('t_axe_head')),
     ])
 
 
@@ -521,7 +509,7 @@ def _handbell():
 # The scroll is held up to read in the left hand (by its top roller): SCROLL_ROT turns the sheet to hang straight with
 # its writing towards the reader in the reading pose of the announce clip (living_anims.py solves that pose and checks
 # the sheet hangs within a few degrees of upright).
-SCROLL_ROT = (128.0, -12.0, 4.0)
+SCROLL_ROT = (98.394, 2.697, -17.687)
 
 
 def _scroll():
@@ -533,17 +521,21 @@ def _scroll():
     ])
 
 
+LAMP_POLE_ROT = euler_from_axes((0.0, -math.cos(math.radians(25)), -math.sin(math.radians(25))), (1.0, 0.0, 0.0))
+
+
 def _lamp_pole():
-    # A lamplighter's pole, 2.5 blocks of ash with a brass cap and a burning wick at the top: held upright in front of the
-    # fist along the arm like the watch's spear (the same pivot), its foot by the right foot with the arm hanging. The
-    # pole is the part's x (turned up the arm by the -90 about z); the flame's root at part (34.5, 0, 0), its tip 2 px on.
-    flame = Part('lamp_flame', (34.6, 0.0, 0.0), (0, 0, 0), cubes=[
+    # A lamplighter's pole, near three blocks of ash with a brass cap and a burning wick at the top: held low, near its
+    # foot, in front of the fist along the arm like the watch's spear (the same pivot) but leaning 25 degrees forward of
+    # it, so with the arm hanging it is carried at a slant, the wick 50 px up. The pole is the part's x (turned up the
+    # arm, LAMP_POLE_ROT); the flame's root at part (40.8, 0, 0), its tip 2.4 px on.
+    flame = Part('lamp_flame', (40.8, 0.0, 0.0), (0, 0, 0), cubes=[
         C((0.0, -0.6, -0.6), (2.4, 1.2, 1.2), 't_lamp_flame', flame_painter('t_lamp_flame')),
     ])
-    return 'right_arm', Part('lamp_pole', (-1.0, 10.0, -2.6), (0, 0, -90), cubes=[
-        C((-11.6, -0.5, -0.5), (45.0, 1.0, 1.0), 't_lamp_pole', wood_painter('t_lamp_pole', WOOD, WOOD_D, WOOD_L, 'x', knots=2)),
-        C((32.8, -0.85, -0.85), (1.8, 1.7, 1.7), 't_lamp_pole_cap', brass_painter('t_lamp_pole_cap')),
-        C((-11.9, -0.7, -0.7), (0.8, 1.4, 1.4), 't_lamp_pole_foot', iron_painter('t_lamp_pole_foot')),
+    return 'right_arm', Part('lamp_pole', (-1.0, 10.0, -2.6), LAMP_POLE_ROT, cubes=[
+        C((-5.4, -0.5, -0.5), (45.0, 1.0, 1.0), 't_lamp_pole', wood_painter('t_lamp_pole', WOOD, WOOD_D, WOOD_L, 'x', knots=2)),
+        C((39.0, -0.85, -0.85), (1.8, 1.7, 1.7), 't_lamp_pole_cap', brass_painter('t_lamp_pole_cap')),
+        C((-5.7, -0.7, -0.7), (0.8, 1.4, 1.4), 't_lamp_pole_foot', iron_painter('t_lamp_pole_foot')),
     ], children=[flame])
 
 
@@ -569,9 +561,10 @@ def _sack_held():
     ])
 
 
-# Where the shoulder's sack is in the right hand at pour_sack's tick 8 (solved by living_anims.py: pour_sack checks it)
-SACK_HELD_PIVOT = (-1.0, 10.0, 0.0)
-SACK_HELD_ROT = (0.0, 0.0, 0.0)
+# Where the shoulder's sack is in the right arm's space at carry_sack's first frame, so the swap from the shoulder to
+# the hand as pour_sack begins is not seen (living_anims.py checks it)
+SACK_HELD_PIVOT = (-0.181, 1.834, -2.714)
+SACK_HELD_ROT = (131.136, -0.487, 8.807)
 
 
 def _sack_empty():
@@ -582,31 +575,31 @@ def _sack_empty():
     ])
 
 
+CRANK_THROW = 3.0         # the crank's throw: the fist goes round the hub this far out
+
+
 def _crank():
-    # A grindstone's crank in the right fist: the handle through the fist (part z, along the arm's front-back), the web
-    # from its far end (-z) 4 px off along part +y to the hub on the stone's axle, part (0, 4.0, -2.6).
+    # A grindstone's crank: the handle through the right fist (part z, the axle's way), the web from the handle's far end
+    # along part +x to the hub on the axle, part (CRANK_THROW, 0, -2.9). The game turns it about the axle each frame
+    # (TURN) whatever way the arm is turned, so the web points from the fist to the hub as the hand goes round.
+    r = CRANK_THROW
     return 'right_arm', Part('crank', RIGHT_GRIP, (0, 0, 0), cubes=[
-        C((-0.6, -0.6, -2.2), (1.2, 1.2, 3.6), 't_crank_handle', wood_painter('t_crank_handle', OAK, OAK_D, OAK_L, 'z')),
-        C((-0.5, -0.5, -3.1), (1.0, 5.0, 0.9), 't_crank_web', iron_painter('t_crank_web')),
-        C((-1.0, 3.0, -3.6), (2.0, 2.0, 1.4), 't_crank_hub', iron_painter('t_crank_hub')),
-    ])
-
-
-def _parcel():
-    # Goods wrapped in brown paper and tied with string, held in both hands by its ends: the right fist at its right end,
-    # the left hand at part (7.0, 0, 0). Shown when nothing real is carried (HAND_OVER, RECEIVE).
-    return 'right_arm', Part('parcel', RIGHT_GRIP, (0, 0, 0), cubes=[
-        C((0.4, -1.6, -2.2), (6.2, 3.2, 4.4), 't_parcel', parcel_painter('t_parcel')),
+        C((-0.5, -0.5, -2.3), (1.0, 1.0, 4.6), 't_crank_handle', wood_painter('t_crank_handle', OAK, OAK_D, OAK_L, 'z')),
+        C((-0.6, -0.6, -3.1), (r + 1.2, 1.2, 0.8), 't_crank_web', iron_painter('t_crank_web')),
+        C((r - 1.0, -1.0, -3.6), (2.0, 2.0, 1.4), 't_crank_hub', iron_painter('t_crank_hub')),
     ])
 
 
 BUILDERS = [_loaf, _apple, _bowl, _spoon, _bucket, _rope_r, _rope_l, _coin, _seed_bag, _scythe, _axe, _handbell, _scroll,
-            _lamp_pole, _basket_hip, _sack_held, _sack_empty, _crank, _parcel]
+            _lamp_pole, _basket_hip, _sack_held, _sack_empty, _crank]
 
 GLOW_CUBES = {'t_lamp_flame'}
 
 # Parts the game turns each frame to hang straight down from the hand (TownsfolkModel)
 HANG = ('bucket', 'well_rope_right', 'well_rope_left', 'sack_empty')
+
+# Parts the game turns each frame about the model's z axis by an angle the clip's time gives (TownsfolkModel)
+TURN = ('crank',)
 
 TOOL_NOTES = {
     'loaf': 'right hand, tilted 45 like the mug; the bitten top end at part (0, -3.2, -3.0)',
@@ -619,15 +612,14 @@ TOOL_NOTES = {
     'coin': 'right fingertips; part (0, 0.5, -3.0)',
     'seed_bag': 'on the body at the front of the left hip, a strap to the right shoulder; mouth at body (3.6, 7.6, -3.6)',
     'scythe': 'right hand on the snath (part x), the left 11 px up it; the blade off the heel (x 17) along -z',
-    'axe': 'right hand, the left 3 px below it on the handle (part x, cocked 15 forward of the arm); the bit on +z',
+    'axe': 'right hand, the left 3 px nearer the end (part x, cocked 15 forward of the arm); the bit\'s edge at part (8.5, 0, 3.4)',
     'handbell': 'right hand, along the arm; the mouth at part (0, 5.4, 0)',
     'scroll': 'left hand by the top roller, the sheet hanging below it facing the reader in the announce pose',
-    'lamp_pole': 'right hand, upright along the arm like the spear; the flame (lamp_flame, glows) at its top',
+    'lamp_pole': 'right hand near its foot, up the arm like the spear but leaning 25 forward of it; the wick (lamp_flame, glows) at part (42, 0, 0)',
     'basket_hip': 'on the body at the left hip; its top at body (5.6, 7.4, -4.0); basket_hip_cloth shows when nothing is carried',
     'sack_held': 'right hand by the neck: the shoulder sack of carry_sack, taken in hand to pour',
     'sack_empty': 'right hand, hangs limp',
-    'crank': 'right hand; the hub at part (0, 4.0, -2.6) on the grindstone\'s axle',
-    'parcel': 'right hand at its right end, the left at part (7, 0, 0)',
+    'crank': 'right hand; turned by the game about the axle (TURN) so the web points to the hub, part (3, 0, -2.9)',
 }
 
 
