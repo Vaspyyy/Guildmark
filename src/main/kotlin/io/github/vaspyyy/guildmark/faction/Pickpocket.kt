@@ -98,6 +98,7 @@ object Pickpocket {
         Skills.gain(player, Skill.STEALTH, 4.0 + marks * 0.3)
         Trials.onPurse(player, victim)
         Companions.deed(player, Deed.THEFT)
+        io.github.vaspyyy.guildmark.townsfolk.talk.Witness.robbed(level, player, victim)
     }
 
     private fun caught(level: ServerLevel, player: Player, victim: Townsperson) {
@@ -110,5 +111,6 @@ object Pickpocket {
         level.playSound(null, victim.x, victim.y, victim.z, FactionRegistry.PICKPOCKET_CAUGHT.get(), SoundSource.NEUTRAL, 1f, 1f)
         player.sendOverlayMessage(Component.translatable("message.guildmark.pickpocket_caught", victim.displayName))
         Social.alarm(level, victim, player)
+        io.github.vaspyyy.guildmark.townsfolk.talk.Witness.caught(level, player, victim)
     }
 }

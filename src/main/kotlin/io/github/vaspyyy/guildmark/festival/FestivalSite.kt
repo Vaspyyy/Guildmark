@@ -959,6 +959,7 @@ class FestivalSite(
         if (awarded) return
         awarded = true
         contest.open = false
+        io.github.vaspyyy.guildmark.townsfolk.talk.Witness.festival(level, plan.centre, kind.id, contest.results())
         FestivalPrizes.award(level, kind, townName, contest.results())
     }
 

@@ -281,6 +281,9 @@ object TownTalk {
         return Math.floorMod(hash, 10L) < tenths
     }
 
+    /** What [r] keeps of [player] just as it's kept, unworked (for the test commands), or null. */
+    internal fun kept(level: ServerLevel, r: Resident, player: UUID): Acq? = mind(level, r, false)?.known?.get(player)
+
     /** [player]'s standing at [capital]'s board: read there if it's loaded, else as last seen. Null if never known. */
     fun standing(level: ServerLevel, capital: BlockPos, player: UUID): StandingTier? {
         val view = Spread.view(capital)
@@ -466,7 +469,8 @@ class Rumour(
 )
 
 /**
- * How a resident came by a rumour: which ([rumour]), the [hour], [from] whom (a resident; -1 the crier; -2 from afar),
+ * How a resident came by a rumour: which ([rumour]), the [hour], [from] whom (a resident's id; 0 they saw it
+ * themselves; -1 the crier; -2 from afar),
  * where ([venue]), which version they had (warp: 0 as it happened, 1 grown in the telling, 2 muddled, 3 a tall tale)
  * and how many they've [told].
  */

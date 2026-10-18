@@ -747,6 +747,7 @@ object Spread {
         entry.hour -= hours
         if (entry.news != Long.MIN_VALUE) entry.news -= hours
         if (entry.brought != Long.MIN_VALUE) entry.brought -= days
+        entry.made -= days
         for (s in entry.rumours.values) {
             val r = s.rumour
             s.rumour = Rumour(r.id, r.kind, r.about, r.resident, r.args, r.born - hours, r.heat, r.fade, r.scope, r.tone, r.origin)

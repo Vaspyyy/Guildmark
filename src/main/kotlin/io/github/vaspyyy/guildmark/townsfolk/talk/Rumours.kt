@@ -145,7 +145,7 @@ object Rumours {
         val rumour = Rumour(id, kind, about, resident, args, hour, if (held) h * HELD else h, fade, scope, tone, origin)
         val story = Story(rumour, hour, if (held) h else 0f, false, by, from, source)
         entry.rumours[id] = story
-        trim(entry, hour)
+        trim(entry, hour, id)
         return story to true
     }
 
@@ -229,12 +229,15 @@ object Rumours {
         for (p in entry.players.values) p.remove(id)
     }
 
-    /** Keeps [entry] to [LIVE] rumours and [LORE] of lore besides, the coldest let go. True if any were. */
-    fun trim(entry: TownTalkData.Entry, hour: Long): Boolean {
+    /**
+     * Keeps [entry] to [LIVE] rumours and [LORE] of lore besides, the coldest let go (never rumour [keep], the one just
+     * begun: news is news). True if any were.
+     */
+    fun trim(entry: TownTalkData.Entry, hour: Long, keep: Int = -1): Boolean {
         if (entry.rumours.size <= LIVE) return false
         val (lore, rest) = entry.rumours.values.partition { it.rumour.fade == Fade.LORE }
-        val sortedLore = lore.sortedByDescending { heat(it, hour) }
-        val live = (rest + sortedLore.drop(LORE)).sortedByDescending { heat(it, hour) }
+        val sortedLore = lore.sortedWith(compareByDescending<Story> { it.rumour.id == keep }.thenByDescending { heat(it, hour) })
+        val live = (rest + sortedLore.drop(LORE)).sortedWith(compareByDescending<Story> { it.rumour.id == keep }.thenByDescending { heat(it, hour) })
         if (live.size <= LIVE) return false
         for (s in live.drop(LIVE)) forget(entry, s.rumour.id)
         return true

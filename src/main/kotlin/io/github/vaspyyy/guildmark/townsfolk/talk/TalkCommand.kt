@@ -132,9 +132,10 @@ object TalkCommand {
         val day = Memory.day(level)
         say(source, header("What ${who(p, r)} remembers of you"))
         if (!Memory.enabled()) say(source, grey("Memory is switched off (townsfolkMemory): everyone's a stranger, and nothing is dropped."))
+        if (r.id < 0) say(source, grey("Someone with no record (a visitor): what passes with them is kept for today only, and they know what most of the town knows."))
         val familiarity = TownTalk.familiarity(level, r, player)
         val tier = TownTalk.standing(level, r.capital, player.uuid)
-        val a = r.takeIf { it.id >= 0 }?.let { TownTalkData.get(level)[it.capital]?.minds?.get(it.id)?.known?.get(player.uuid) }
+        val a = TownTalk.kept(level, r, player.uuid)
         val about = about(level, r, player.uuid)
         val seen = a?.let { Memory.deeds(it, day) }.orEmpty()
         val deeds = Memory.deedScore(seen, about.map { it.first.rumour })

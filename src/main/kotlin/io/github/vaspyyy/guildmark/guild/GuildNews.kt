@@ -57,6 +57,7 @@ class GuildNews(val items: MutableList<NewsItem> = mutableListOf()) : SavedData(
             news.items.add(0, NewsItem(VillageBoards.day(serverLevel), key, args.toList()))
             while (news.items.size > KEEP) news.items.removeLast()
             news.setDirty()
+            io.github.vaspyyy.guildmark.townsfolk.talk.Witness.guildNews(serverLevel, key, args.toList())
         }
     }
 }

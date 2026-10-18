@@ -180,6 +180,7 @@ class Residents(private val people: MutableMap<Int, Resident> = HashMap(), priva
             data.add(r)
             p.resident = id
             named(p, r)
+            io.github.vaspyyy.guildmark.townsfolk.talk.Witness.newcomer(level, r)
         }
 
         /** Gives [p] their name, shown when someone looks at them. */
@@ -209,6 +210,7 @@ class Residents(private val people: MutableMap<Int, Resident> = HashMap(), priva
             r.bed?.let { Furnish.release(level, it) }
             r.bed = null
             data.changed()
+            io.github.vaspyyy.guildmark.townsfolk.talk.Witness.died(level, p)
         }
     }
 }

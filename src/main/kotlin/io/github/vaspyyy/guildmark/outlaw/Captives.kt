@@ -287,6 +287,7 @@ object Captives {
                 player.sendOverlayMessage(Component.translatable("message.guildmark.rescue_done", p.name))
             }
         if (rescuer != null && level.getBlockState(home).block is QuestBoardBlock) Standing.add(level, home, rescuer, STANDING_GAIN)
+        io.github.vaspyyy.guildmark.townsfolk.talk.Witness.rescued(level, p)
         GuildNews.add(level, "news.guildmark.outlaw.rescued", p.name.string, villageName(level, home).string)
     }
 

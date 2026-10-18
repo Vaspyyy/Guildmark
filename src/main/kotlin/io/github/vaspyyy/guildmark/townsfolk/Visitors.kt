@@ -22,6 +22,7 @@ object Visitors {
             Life(Resident.visitor(capital.center, p.role), places, null).also {
                 it.script = purposes(p, it)
                 p.life = it
+                io.github.vaspyyy.guildmark.townsfolk.talk.Witness.visitor(level, capital.center, p)
             }
         }
         while (life.step < life.script.size) {
