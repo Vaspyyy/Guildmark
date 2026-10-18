@@ -3,6 +3,7 @@ package io.github.vaspyyy.guildmark.client.economy
 import com.mojang.blaze3d.vertex.PoseStack
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.city.plan.Look
+import io.github.vaspyyy.guildmark.client.streets.StreetSlate
 import io.github.vaspyyy.guildmark.economy.Good
 import io.github.vaspyyy.guildmark.economy.WaresBlock
 import io.github.vaspyyy.guildmark.economy.WaresBlockEntity
@@ -42,6 +43,11 @@ class WaresRenderState : BlockEntityRenderState() {
     var models: Array<ItemStackRenderState> = arrayOf()
     /** How many of its items are drawn, by how far off it's seen: all near by, fewer and fewer out to [WaresRenderer.FAR]. */
     var keep = 1f
+    /** A shut stall's slate on it (client/streets/StreetSlate): whether it's up, the way it faces, and ticks since it was set down or taken away. */
+    var slate = false
+    var slateFacing: Direction = Direction.NORTH
+    var slateAge = 0f
+    var slateGone = 1e9f
 }
 
 /**
@@ -56,6 +62,7 @@ class WaresRenderState : BlockEntityRenderState() {
  */
 class WaresRenderer(context: BlockEntityRendererProvider.Context) : BlockEntityRenderer<WaresBlockEntity, WaresRenderState> {
     private val items: ItemModelResolver = context.itemModelResolver()
+    private val font = context.font()
 
     /** A display's goods' places as they stand in its block, its front to [facing]: each good's lane, item and poses. */
     class Drawn(val goods: List<String>, val facing: Direction, val lanes: List<WaresLayout.Lane>, val stacks: List<ItemStack>, val poses: List<Array<Matrix4f>>)
@@ -71,6 +78,7 @@ class WaresRenderer(context: BlockEntityRendererProvider.Context) : BlockEntityR
     ) {
         BlockEntityRenderState.extractBase(display, state, breakProgress)
         val level = display.level ?: return
+        slate(display, state, level.gameTime, partialTicks)
         val drawn = drawn(display) ?: return
         state.drawn = drawn
         state.keep = keep(sqrt(cameraPosition.distanceToSqr(Vec3.atCenterOf(display.blockPos))).toFloat())
@@ -82,6 +90,15 @@ class WaresRenderer(context: BlockEntityRendererProvider.Context) : BlockEntityR
         state.models = Array(drawn.stacks.size) { i ->
             ItemStackRenderState().also { items.updateForTopItem(it, drawn.stacks[i], ItemDisplayContext.FIXED, level, null, seed + i) }
         }
+    }
+
+    /** A shut stall's slate on [display] (M6 Part D2), as it is this frame. */
+    private fun slate(display: WaresBlockEntity, state: WaresRenderState, now: Long, partialTicks: Float) {
+        val since = display.slate
+        state.slate = since != 0L
+        state.slateFacing = display.blockState.getValue(WaresBlock.FACING)
+        state.slateAge = if (since > 0L) (now - since).coerceIn(0L, 1_000_000L) + partialTicks else 1e6f
+        state.slateGone = if (since == 0L) (now - display.slateGone).coerceIn(0L, 1_000_000L) + partialTicks else 1e9f
     }
 
     /** [display]'s places as they stand now; null while they're worked out (it's set going if need be). */
@@ -108,6 +125,9 @@ class WaresRenderer(context: BlockEntityRendererProvider.Context) : BlockEntityR
     }
 
     override fun submit(state: WaresRenderState, poseStack: PoseStack, collector: SubmitNodeCollector, camera: CameraRenderState) {
+        if (state.slate || state.slateGone < SLATE_GONE) {
+            StreetSlate.submit(poseStack, collector, font, state.slateFacing, state.lightCoords, state.slate, state.slateAge, state.slateGone)
+        }
         val drawn = state.drawn ?: return
         val fx = drawn.facing.stepX.toFloat()
         val fz = drawn.facing.stepZ.toFloat()
@@ -163,7 +183,11 @@ class WaresRenderer(context: BlockEntityRendererProvider.Context) : BlockEntityR
         }
     }
 
-    override fun getRenderBoundingBox(display: WaresBlockEntity): AABB = AABB(display.blockPos).expandTowards(0.0, HEAPED, 0.0)
+    override fun getRenderBoundingBox(display: WaresBlockEntity): AABB {
+        val box = AABB(display.blockPos).expandTowards(0.0, HEAPED, 0.0)
+        // A slate leans out over its front
+        return if (display.slate != 0L || display.slateGone > Long.MIN_VALUE / 2) box.inflate(0.2, 0.0, 0.2) else box
+    }
 
     override fun getViewDistance(): Int = FAR
 
@@ -177,6 +201,9 @@ class WaresRenderer(context: BlockEntityRendererProvider.Context) : BlockEntityR
 
         /** How far over its block a glut may heap (blocks). */
         private const val HEAPED = 0.6
+
+        /** Ticks a slate taken away is still seen going. */
+        private const val SLATE_GONE = 20f
 
         /** Ticks an item takes to settle in or lift out, and the most between one and the next. */
         private const val SETTLE = 10f

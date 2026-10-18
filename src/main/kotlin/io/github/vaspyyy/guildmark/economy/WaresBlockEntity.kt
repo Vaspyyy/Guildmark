@@ -66,6 +66,26 @@ class WaresBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(WaresRegi
     /** A good's items going from [from] to [to], starting at game time [since] (the client's). */
     class Motion(val from: Int, val to: Int, val since: Long)
 
+    /**
+     * The streets' slate (M6 Part D2, townsfolk/streets/Awnings): leaning on its front, chalked "Nothing today", while
+     * the stall it stands on is shut with nothing to sell. 0 for none, -1 for one there already, else the game time it
+     * was set down (it's chalked as it's seen). Sent to clients, never saved: after a restart the keeper finds the stall
+     * shut again and the slate goes back.
+     */
+    var slate = 0L
+        private set
+
+    /** Client side: the game time the slate was last taken away (it's lifted off as it's seen). */
+    @JvmField
+    var slateGone = Long.MIN_VALUE / 2
+
+    /** Server side: the slate set down at [since] (-1: there already), or taken away (0), telling clients. */
+    fun slate(level: ServerLevel, since: Long) {
+        if (since == slate || since != 0L && slate != 0L) return
+        slate = since
+        level.sendBlockUpdated(blockPos, blockState, blockState, Block.UPDATE_CLIENTS)
+    }
+
     /** Sets up a display the plan puts down: showing [wares] from the market of the capital at [capital], full for now. */
     fun setUp(capital: BlockPos, wares: Wares) {
         this.capital = capital
@@ -163,6 +183,11 @@ class WaresBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(WaresRegi
         val next = input.getIntArray("counts").orElse(null)?.takeIf { it.size == lanes } ?: full()
         if (level?.isClientSide() == true) moved(before, next)
         counts = next
+        // The slate comes only with what's sent to clients (see getUpdateTag)
+        val nextSlate = input.getLong("slate").orElse(0L)
+        val level = level
+        if (level != null && level.isClientSide() && slate != 0L && nextSlate == 0L) slateGone = level.gameTime
+        slate = nextSlate
     }
 
     /** Client side: sets moving the items new counts bring or take away, unless these are its first (or its goods changed). */
@@ -185,7 +210,9 @@ class WaresBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(WaresRegi
         }
     }
 
-    override fun getUpdateTag(registries: HolderLookup.Provider): CompoundTag = saveCustomOnly(registries)
+    override fun getUpdateTag(registries: HolderLookup.Provider): CompoundTag = saveCustomOnly(registries).also { tag ->
+        if (slate != 0L) tag.putLong("slate", slate)
+    }
 
     override fun getUpdatePacket(): ClientboundBlockEntityDataPacket = ClientboundBlockEntityDataPacket.create(this)
 
