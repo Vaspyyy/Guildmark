@@ -267,7 +267,8 @@ object CaravanEscorts {
 
     /**
      * [c]'s job is off ([why]: "waylaid", "alone" when it went without its holder, "lapsed" when a Closed road's wagon
-     * never went, "missed" when it got in without them): the holder hears it, and the contract is gone from their pack.
+     * never went, "missed" when it got in without them, "called" when it was called off before it was in): the holder
+     * hears it, and the contract is gone from their pack.
      */
     fun failed(level: ServerLevel, data: CaravanData, c: CaravanRec, why: String) {
         val job = c.job ?: return

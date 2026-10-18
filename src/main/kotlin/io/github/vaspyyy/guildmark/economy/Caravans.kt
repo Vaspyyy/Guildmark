@@ -446,7 +446,7 @@ object Caravans {
                 deliver(m, c.load)
                 kept.addAll(c.slots)
             }
-            end(level, data, c)
+            callOff(level, data, c)
         }
         data.capitalOrNull(m.capital)?.let { cap ->
             cap.handled.removeIf { it > m.hour && it !in kept }
@@ -485,7 +485,7 @@ object Caravans {
         for (c in data.caravans.toList()) {
             val entry = markets[BlockPos.of(c.capital)]
             if (entry == null) {
-                end(level, data, c)
+                callOff(level, data, c)
                 continue
             }
             // A market still catching up settles its wagons in its own hourly steps
@@ -1092,11 +1092,20 @@ object Caravans {
         listeners.forEach { it.ended(level, c.id) }
     }
 
+    /**
+     * [c] is called off before it's in (time set back, the wagons switched off, its market gone): an escort's job on
+     * it goes with it, so their contract isn't left waiting on a wagon that isn't coming, and its record goes.
+     */
+    private fun callOff(level: ServerLevel, data: CaravanData, c: CaravanRec) {
+        if (c.job != null) CaravanEscorts.failed(level, data, c, "called")
+        end(level, data, c)
+    }
+
     /** The wagons are switched off: whatever of [entry]'s is still on the road comes in at once, and the records go. */
     private fun flush(level: ServerLevel, data: CaravanData, entry: Markets.Entry) {
         for (c in data.caravans.filter { it.capital == entry.market.capital }) {
             if (c.phase in setOf(Phase.WAITING, Phase.ROLLING, Phase.STRUCK)) deliver(entry.market, c.load)
-            end(level, data, c)
+            callOff(level, data, c)
         }
     }
 

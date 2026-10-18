@@ -5208,6 +5208,7 @@
   "message.guildmark.caravan.failed.alone": "The wagon set out without you. The job's off.",
   "message.guildmark.caravan.failed.lapsed": "No wagon set out for you to see in, and the job has lapsed.",
   "message.guildmark.caravan.failed.missed": "The wagon got in without you by it. The job's off.",
+  "message.guildmark.caravan.failed.called": "The wagon you were to see in has been called off. The job's off.",
   "message.guildmark.caravan.failed.off": "The wagon job you held fell through while you were away. Its contract is worth nothing now.",
   "message.guildmark.caravan.met": "You've met the wagon on %s. Stay by it and see it in to the market.",
   "message.guildmark.caravan.done": "The wagon's in at %s, safe and sound. Take the contract back to the board for your pay.",
