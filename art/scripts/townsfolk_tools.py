@@ -1727,3 +1727,7 @@ def tool_painters():
 def tool_names():
     """Every tool part name, children included (hot_iron, line, and the lute's pieces)."""
     return [q.name for parts in tool_parts().values() for p in parts for q in p.walk()]
+
+# ---- Living World props (art/scripts/living_props.py): begin
+import living_props  # noqa: E402,F401  (adds its props to BUILDERS, GLOW_CUBES and TOOL_NOTES as it loads)
+# ---- Living World props: end

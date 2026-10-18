@@ -1,0 +1,1427 @@
+"""
+The Living World's townsfolk clips: getting up and sitting down, yawns and stretches, climbing ladders, eating, washing
+and drawing water, goods changing hands, greetings and gestures, the market, the fields, the mill, the woodpile, the
+crier and the lamplighter. Built with the townsfolk kit (art/scripts/townsfolk_anims.py: the same skeleton, IK and
+forward kinematics as the game's CombatAnimator) on the townsfolk model, holding the props of art/scripts/living_props.py.
+Run from the repo root:
+
+    python3 -B art/scripts/living_anims.py src/main/resources/assets/guildmark <preview-dir> [clip ...]
+
+Writes only these clips to assets/guildmark/animations/townsfolk/ (blend in and out 0: the game crossfades between
+activities itself), checks each against its Activity in townsfolk/TownRole.kt (length, loop, overlay), checks every loop
+ends where it starts, every overlay moves nothing but the arms and the head, and every join (the first and last frames
+against the clips they meet: sit, standing idle), and draws a contact sheet per clip (or only the clips named).
+
+The seat transitions are drawn on the seat: sit_down starts standing where standUp() leaves someone (the access block's
+middle, 14.08 px ahead of where sitOn() puts them and 8 px lower) with their back to the seat, and ends on exactly the
+first frame of sit; stand_up is the way back, ending on the first frame of idle. The client keeps the figure where it was
+as the server moves it between seat and floor (living transitions in LivingWorld.kt).
+
+The climb is one 16-tick cycle that the client plays by height, not by time: tick 2h for a body h px up the ladder (two
+rungs a cycle), so the hands and feet stay on the rungs at any speed; 1/32 of a block a tick plays it at its own pace.
+"""
+import math, os, re, sys
+import numpy as np
+from PIL import Image, ImageDraw
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+if HERE not in sys.path:
+    sys.path.insert(0, HERE)
+import townsfolk_anims as ta
+from townsfolk_anims import (qeuler, qmul, qaxis, qmat, qslerp, qfrommat, frame_to, unit, I, v, F, B, U, D, R, L, T, Rq,
+                             apply, PIVOTS, HIPS, GRIP, EYES, MOUTH, F_, bend, frame_at, chain_frame, arm_world,
+                             hand_point, solve_arm, free, rel, reach, head_at, head_point, key_frame, track, ticks, seal,
+                             check, fit, arm_dir, body_solve, sink_for, torso_local, mirror_dir, mirror_q, qinv, rvec_q,
+                             q_rvec, look_q, smooth, bump, tool_point, tool_dir, relaxed, knee_hand, seat_legs, SEAT_DROP,
+                             spline_keys, mono_keys, gaze_head, hands_at, level_arms, solve_arm_slack, torso_to_world,
+                             COUNTER_TOP, TABLE_TOP, DOOR_Z, LIPS)
+import living_props as lp
+
+GROUP = ta.GROUP
+ROOT = os.path.normpath(os.path.join(HERE, '..', '..'))
+TOWN_ROLE = os.path.join(ROOT, 'src/main/kotlin/io/github/vaspyyy/guildmark/townsfolk/TownRole.kt')
+
+# ================================================================== the kit, taught the new props and stations
+
+HANG = set(lp.HANG) | {'line', 'lantern'}
+
+
+def part_matrices(look, pose, hang=True):
+    """ta.part_matrices, hanging the rope, the bucket and the empty sack straight down from the hand too (as the game
+    turns them each frame)."""
+    qr, pr = pose['root']
+    Mroot = T(*pr) @ Rq(qr)
+    out = {}
+
+    def go(part, M):
+        out[part.name] = M
+        for c in part.children:
+            Mc = M @ T(*c.pivot) @ Rq(ta.rot_part(c.rot))
+            if hang and c.name in HANG:
+                Mc = Mc.copy()
+                Mc[:3, :3] = np.eye(3)
+            go(c, Mc)
+    for p in look.model.parts:
+        q, piv = pose[p.name]
+        go(p, Mroot @ T(*piv) @ Rq(q))
+    return out
+
+
+ta.part_matrices = part_matrices
+
+# The stations the new clips work at, as boxes (lo, hi, colour, lit) in the clip's own space (the feet at y 24, facing -z)
+STONE = (128, 128, 136)
+STONE_D = (100, 100, 110)
+PLANK = (150, 112, 70)
+DIRT = (104, 76, 50)
+
+
+def ladder_boxes(rise=0.0):
+    """The ladder's wall, rails and rungs (world fixed: a body [rise] px up the ladder sees them that much lower). The
+    rungs' middles are 2, 6, 10 and 14 px up each block (vanilla's ladder texture); the floor is at the bottom block's
+    foot (y 24 when rise is 0)."""
+    b = [((-24, -64 + rise, -14.0), (24, 24 + rise, -8.0), (118, 108, 98), True)]
+    for x0 in (-6.5, 5.5):
+        b.append(((x0, -64 + rise, -8.0), (x0 + 1.0, 24 + rise, -6.9), (112, 80, 48), True))
+    for k in range(0, 22):
+        mid = 24.0 - 2.0 - 4.0 * k + rise          # world height 2 + 4k px over the floor
+        b.append(((-5.5, mid - 0.5, -7.6), (5.5, mid + 0.5, -6.8), (150, 110, 64), True))
+    b.append(((-24, 24 + rise, -24), (24, 24.2 + rise, 24), (96, 92, 84), True))
+    return b
+
+
+def _well():
+    # a stone curb a block high round a shaft a block ahead (2 px walls, like a cauldron), the water far down it
+    b = [((-8, 8, -24), (8, 24, -22), STONE, True), ((-8, 8, -10), (8, 24, -8), STONE, True),
+         ((-8, 8, -22), (-6, 24, -10), STONE, True), ((6, 8, -22), (8, 24, -10), STONE, True),
+         ((-6, 30, -22), (6, 30.3, -10), (40, 70, 140), False)]
+    # posts and a beam overhead
+    b += [((-9, -26, -17), (-7, 8, -15), (110, 80, 50), True), ((7, -26, -17), (9, 24, -15), (110, 80, 50), True),
+          ((-9, -28, -17), (9, -26, -15), (110, 80, 50), True)]
+    return b
+
+
+def _stall():
+    # the stall's counter a block ahead (its top at 8), goods on it, a barrel the block to the merchant's left, the posts
+    # and the striped awning three blocks up, its scalloped valance hanging to just over the merchant's head
+    b = [((-8, 8, -24), (8, 24, -8), (140, 100, 62), True),
+         ((-6, 5, -14), (-2, 8, -10), (196, 50, 40), True), ((-7, 6, -20), (-1, 8, -16), (220, 190, 90), True),
+         ((8, 8.5, -8), (24, 24, 8), (122, 86, 52), True), ((9, 8, -7), (23, 8.5, 7), (96, 66, 40), True)]
+    for x0 in (-33, 31):
+        for z0 in (-17, -1):
+            b.append(((x0, -24, z0), (x0 + 2, 24, z0 + 2), (110, 80, 50), True))
+    for i, x0 in enumerate(range(-40, 40, 8)):
+        col = (190, 50, 46) if i % 2 == 0 else (236, 232, 222)
+        b.append(((x0, -26, -40), (x0 + 8, -24, 8), col, True))
+        b.append(((x0, -24, -8), (x0 + 8, -11 if i % 2 == 0 else -12, -7.4), col, True))
+    return b
+
+
+def _grindstone():
+    # a grindstone a block ahead, its axle pointing at the miller: the wheel (12 across) between two legs and bearings,
+    # the crank on the near end of the axle
+    b = [((-6, 8, -20), (6, 20, -12), (150, 150, 156), True),
+         ((-2, 17, -22), (2, 24, -20), (110, 80, 50), True), ((-2, 17, -12), (2, 24, -10), (110, 80, 50), True),
+         ((-3, 11, -22), (3, 17, -20), (96, 70, 44), True), ((-3, 11, -12), (3, 17, -10), (96, 70, 44), True)]
+    return b
+
+
+def _hopper():
+    # a hopper (a bin) a block ahead: its open top at 8
+    b = [((-8, 8, -24), (8, 13, -22), (70, 70, 78), True), ((-8, 8, -10), (8, 13, -8), (70, 70, 78), True),
+         ((-8, 8, -22), (-6, 13, -10), (70, 70, 78), True), ((6, 8, -22), (8, 13, -10), (70, 70, 78), True),
+         ((-6, 12, -22), (6, 13, -10), (40, 40, 46), True),
+         ((-4, 13, -20), (4, 19, -12), (64, 64, 72), True), ((-2, 19, -18), (2, 24, -14), (64, 64, 72), True)]
+    return b
+
+
+def _block():
+    # a log on end a block ahead for a chopping block, a billet standing on it
+    return [((-7, 8, -23), (7, 24, -9), (118, 86, 54), True), ((-6, 7.8, -22), (6, 8, -10), (196, 160, 110), True),
+            ((-2, 1, -18), (2, 8, -14), (190, 152, 104), True)]
+
+
+def _lamp():
+    # a street lamp a block ahead: a wall post, two fences and a lantern on top (its glass 52 px up)
+    return [((-4, 8, -20), (4, 24, -12), STONE, True), ((-2, -24, -18), (2, 8, -14), (110, 80, 50), True),
+            ((-3, -31, -19), (3, -24, -13), (60, 58, 64), True), ((-2.5, -30, -18.5), (2.5, -25, -13.5), (255, 200, 90), False),
+            ((-2, -33, -18), (2, -31, -14), (60, 58, 64), True)]
+
+
+def _wheat():
+    # standing wheat across the front, where the scythe sweeps
+    b = []
+    for i, x in enumerate(np.arange(-14, 15, 2.0)):
+        for z in (-12.0, -15.0, -18.0):
+            jit = ((i * 7 + int(z) * 3) % 5) * 0.3
+            b.append(((x - 0.4, 11 + jit, z - 0.4), (x + 0.4, 24, z + 0.4), (176, 160, 70), True))
+            b.append(((x - 0.8, 10 + jit, z - 0.6), (x + 0.8, 12.5 + jit, z + 0.6), (222, 196, 96), True))
+    return b
+
+
+def _crop_row():
+    # carrots in a row ahead: leafy tops on the dirt
+    b = []
+    for x, z in ((-5, -10), (-1, -11), (3, -10.5), (-3, -13), (1, -14)):
+        b.append(((x - 1.2, 21, z - 1.2), (x + 1.2, 24, z + 1.2), (96, 150, 60), True))
+    return b
+
+
+def _table_seat():
+    # the seat and a table in front of it, its top at TABLE_TOP
+    b = [((-8, 24, -6), (8, 32, 10), PLANK, True), ((-8, 16, 2), (8, 24, 10), (132, 98, 62), True),
+         ((-12, TABLE_TOP, -27), (12, TABLE_TOP + 1.5, -7), PLANK, True)]
+    for x0, z0 in ((-11.5, -26.5), (9.5, -26.5), (-11.5, -9.5), (9.5, -9.5)):
+        b.append(((x0, TABLE_TOP + 1.5, z0), (x0 + 2, 32, z0 + 2), (110, 80, 50), True))
+    return b
+
+
+STATIONS = {
+    'ladder': ladder_boxes,
+    'well': _well,
+    'stall': _stall,
+    'grindstone': _grindstone,
+    'hopper': _hopper,
+    'block': _block,
+    'lamp': _lamp,
+    'wheat': _wheat,
+    'crop_row': _crop_row,
+    'table_seat': _table_seat,
+}
+GROUND_AT = {'table_seat': 32.0}
+GROUND_COLOUR = {'wheat': DIRT, 'crop_row': DIRT}
+
+_station_boxes = ta.station_boxes
+
+
+def station_boxes(kind, rise=0.0):
+    if kind in STATIONS:
+        b = list(STATIONS[kind](rise) if kind == 'ladder' else STATIONS[kind]())
+        if kind != 'ladder':
+            gy = GROUND_AT.get(kind, 24.0)
+            b.append(((-24, gy, -24), (24, gy + 0.2, 24), GROUND_COLOUR.get(kind, ta.GROUND), True))
+        return b
+    return _station_boxes(kind)
+
+
+ta.station_boxes = station_boxes
+
+# What the previews show of a clip's props and goods tick by tick (the game does the same: LivingProps.kt): INFO[name]
+# 'tools_at' (t -> the props shown, when they come and go within the clip) and 'goods' (t, part matrices -> the middle
+# and size of what is carried, drawn as a box where the game draws the carried item, or None).
+GOODS_COLOUR = (214, 168, 92)
+
+
+def shown_tools(name, t):
+    info = ta.INFO[name]
+    fn = info.get('tools_at')
+    return set(fn(t)) if fn else info['tools']
+
+
+def goods_quads(name, t, mats):
+    fn = ta.INFO[name].get('goods')
+    got = fn(t, mats) if fn else None
+    if got is None:
+        return []
+    mid, size = np.asarray(got[0], float), float(got[1])
+    return ta.box(mid - size / 2, mid + size / 2, GOODS_COLOUR, True)
+
+
+def partner_quads(partner, t):
+    name, look_key = (partner, None) if isinstance(partner, str) else partner
+    pc = next(c for c in ta.clips if c.name == name)
+    look2 = ta.look_for(look_key or ta.INFO[name]['look'])
+    pose2 = ta.pose_at(pc, t, ta.walk_base(t, speed=0.0, age=t))
+    G = ta.partner_place()
+    mats2 = {k: G @ M for k, M in part_matrices(look2, pose2).items()}
+    return ta.model_quads(look2, mats2, shown_tools(name, t)) + goods_quads(name, t, mats2)
+
+
+def render_cell(look, c, t, project, size, walking, wire=False, solo=False):
+    info = ta.INFO[c.name]
+    base = ta.walk_base(t, speed=ta.walk_speed(c, walking), age=t)
+    pose = ta.pose_at(c, t, base)
+    mats = part_matrices(look, pose)
+    quads = ta.model_quads(look, mats, shown_tools(c.name, t)) + goods_quads(c.name, t, mats)
+    if info.get('partner') and not solo:
+        quads += partner_quads(info['partner'], t)
+    kind = info['station']
+    if kind and not wire:
+        quads += ta.station(kind)
+    else:
+        for lo, hi, col, light in station_boxes(kind or ''):
+            if hi[1] - lo[1] < 0.5 and hi[0] - lo[0] > 30:
+                quads += ta.box(lo, hi, col, light)
+    img = ta.raster(quads, project, size, bg=(54, 60, 74))
+    if kind and wire:
+        ta.station_wire(ImageDraw.Draw(img), kind, project)
+    return img, pose
+
+
+ta.partner_quads = partner_quads
+ta.render_cell = render_cell
+
+
+def grips(mats):
+    """Both hands' grips in the clip's space, from the part matrices of a pose."""
+    return apply(mats['right_arm'], GRIP['right_arm']), apply(mats['left_arm'], GRIP['left_arm'])
+
+# ================================================================== the activities, and a registry of these clips
+
+def activities():
+    """Activity name -> (clip, ticks, loop, overlay), read from TownRole.kt."""
+    out = {}
+    src = open(TOWN_ROLE).read()
+    for m in re.finditer(r'^\s*([A-Z_]+)\("([a-z_]+)",\s*(\d+),\s*(true|false)(?:,\s*(true|false))?\)', src, re.M):
+        out[m.group(1)] = (m.group(2), int(m.group(3)), m.group(4) == 'true', m.group(5) == 'true')
+    return out
+
+
+clips = []
+
+
+def clip(name, length, loop, **kw):
+    """ta.clip, registered here too (and a clip of the same name built before in this session replaced)."""
+    ta.clips[:] = [c for c in ta.clips if c.name != name]
+    clips[:] = [c for c in clips if c.name != name]
+    c = ta.clip(name, length, loop, **kw)
+    clips.append(c)
+    return c
+
+
+def getc(name):
+    return next(c for c in ta.clips if c.name == name)
+
+# ================================================================== helpers
+
+def keyed(c, times, fn):
+    """Calls fn(t) at each of [times]; fn keys whatever it likes at t (ease 'linear': dense keys carry the curve)."""
+    for t in times:
+        fn(t)
+
+
+def every(length, step=0.5):
+    return ticks(0, length, step)
+
+
+def leg_q(d, toe=None):
+    """A leg ('set', relative to the root) pointing along world [d], its toes turned as near [toe] as they go (forward
+    when it hangs, up when it lies out)."""
+    d = unit(d)
+    if toe is None:
+        k = min(1.0, max(0.0, float(d[1])))
+        toe = k * F + (1.0 - k) * U
+    return frame_to(np.array([0.0, 1.0, 0.0]), np.array([0.0, 0.0, -1.0]), d, np.asarray(toe, float))
+
+
+def hip_of(side, pr):
+    return np.array(PIVOTS[side], float) + np.asarray(pr, float)
+
+
+def leg_to(c, t, side, pr, foot, ease='linear', toe=None, lift=None):
+    """Keys [side] so its end (the sole's middle) reaches world [foot] from its hip under root offset [pr]. A foot nearer
+    than the leg's 12 px lifts the leg into the body (its pivot raised: a bent knee, as a block leg shows one)."""
+    hip = hip_of(side, pr)
+    d = np.asarray(foot, float) - hip
+    n = float(np.linalg.norm(d))
+    raise_ = 0.0
+    if n < 12.0:
+        # raise the pivot straight up until the leg's 12 px just reach
+        dy = d[1]
+        horiz = math.hypot(d[0], d[2])
+        new_dy = math.sqrt(max(0.0, 144.0 - horiz * horiz))
+        raise_ = new_dy - dy
+        d = np.array([d[0], new_dy, d[2]])
+    elif n > 12.05:
+        print(f'   ({c.name} t={t}: {side} reaches {n:.2f} px, more than 12)')
+    if lift is not None:
+        raise_ = lift
+    c.key(side, t, leg_q(d, toe), pos=(0.0, -raise_, 0.0) if raise_ > 1e-6 else None, ease=ease)
+    return raise_
+
+
+def leg_end(c, t, side):
+    """Where the end of a leg (the middle of its sole) is at [t], as the game poses it."""
+    return ta.fk(c, t, side, (0.0, 12.0, 0.0))
+
+
+def arm_hang(side, out=4.0, fwd=0.0):
+    """An arm hanging at rest ('set' relative to the torso): [out] degrees out from the side, [fwd] forward."""
+    s = 1.0 if side == 'right_arm' else -1.0
+    return qeuler(x=-fwd, z=s * out)
+
+
+def seat_frame(t):
+    """The first frame of sit (where sit_down ends and stand_up begins)."""
+    return F_(qt=bend(3.0, 0.0, 0.0), pr=(0, SEAT_DROP, 0))
+
+
+def interp(keys, t, kind='mono'):
+    """A number through [keys] (t, value): 'mono' never overshoots a key, 'spline' carries its speed through them."""
+    return float(mono_keys(keys, t)) if kind == 'mono' else float(spline_keys(keys, t))
+
+
+def vec_keys(keys, t, kind='mono'):
+    """A point through [keys] (t, (x, y, z)), each coordinate as interp does it."""
+    return np.array([interp([(k, p[i]) for k, p in keys], t, kind) for i in range(3)])
+
+
+def deg_between(qa, qb):
+    return math.degrees(2 * math.acos(min(1.0, abs(float(np.dot(qa, qb))))))
+
+# ================================================================== joins: does one clip's frame meet another's?
+
+JOIN_POINTS = {
+    'head': [(0.0, -4.0, -3.0), (0.0, -8.0, 0.0), (4.0, -4.0, 0.0)],
+    'body': [(0.0, 0.0, 0.0), (0.0, 12.0, 0.0), (4.0, 6.0, -2.0)],
+    'right_arm': [(-1.0, 10.0, 0.0), (-1.0, 0.0, -2.0)],
+    'left_arm': [(1.0, 10.0, 0.0), (1.0, 0.0, -2.0)],
+    'right_leg': [(0.0, 12.0, 0.0), (0.0, 6.0, -2.0)],
+    'left_leg': [(0.0, 12.0, 0.0), (0.0, 6.0, -2.0)],
+}
+
+
+def pose_points(c, t, M=None):
+    """The world points of a pose (the head, the torso, both hands, both feet) at [t] of [c], standing still, under an
+    optional 4x4 [M] (another clip's frame)."""
+    look = ta.look_for(ta.INFO[c.name]['look'])
+    pose = ta.pose_at(c, t, ta.walk_base(t, speed=0.0, age=0.0))
+    mats = part_matrices(look, pose)
+    out = {}
+    for part, pts in JOIN_POINTS.items():
+        for i, p in enumerate(pts):
+            w = apply(mats[part], p)
+            if M is not None:
+                w = apply(M, w)
+            out[(part, i)] = w
+    return out
+
+
+def join_gap(a, ta_, b, tb, M=None):
+    """The farthest any of the pose points of [a] at [ta_] is from where [b] has them at [tb] (in px), and where."""
+    pa = pose_points(a, ta_, M)
+    pb = pose_points(b, tb)
+    worst = max(pa, key=lambda k: np.linalg.norm(pa[k] - pb[k]))
+    return float(np.linalg.norm(pa[worst] - pb[worst])), worst
+
+
+JOINS = []      # (label, clip a, tick, clip b, tick, M (a's frame in b's), tolerance px)
+
+
+def join(label, a, ta_, b, tb, M=None, tol=0.6):
+    JOINS.append((label, a, ta_, b, tb, M, tol))
+
+# ================================================================== writing them out, with every check
+
+
+OVERLAY_BONES = {'right_arm', 'left_arm', 'head'}     # all an overlay may move: it plays while walking
+
+
+def verify():
+    """Every clip against its Activity (length, loop, overlay), loops sealed, overlays moving only the arms and the head,
+    the joins, the contacts. Returns the lines to print and whether all is well."""
+    acts = {clip_: (name, ticks_, loop, overlay) for name, (clip_, ticks_, loop, overlay) in activities().items()}
+    lines, ok = [], True
+    for c in clips:
+        info = ta.INFO[c.name]
+        bad = []
+        if c.name not in acts:
+            bad.append('no Activity plays it')
+        else:
+            act, ticks_, loop, overlay = acts[c.name]
+            if c.length != ticks_:
+                bad.append(f'{c.length} ticks long, {act} lasts {ticks_}')
+            if info['loop'] != loop:
+                bad.append(f'loop {info["loop"]}, {act} loop {loop}')
+            if info['overlay'] != overlay:
+                bad.append(f'overlay {info["overlay"]}, {act} overlay {overlay}')
+            if overlay:
+                bad += [f'{b} is keyed (an overlay moves only the arms and head)' for b in c.keys if b not in OVERLAY_BONES]
+        if info['loop']:
+            bad += ta.check_loop(c)
+        for bone, keys in c.keys.items():
+            if keys[0][0] != 0 or abs(keys[-1][0] - c.length) > 1e-6:
+                bad.append(f'{bone} keyed over {keys[0][0]}..{keys[-1][0]}')
+        lines.append(f'{c.name:12s} {c.length:3d}t {"loop" if info["loop"] else "once"}'
+                     f'{" overlay" if info["overlay"] else ""}: ' + ('ok' if not bad else '!! ' + '; '.join(bad)))
+        ok = ok and not bad
+        for line in ta.report(c):
+            lines.append(line)
+            ok = ok and '!! OFF' not in line
+    missing = [act for act, (clip_, *_rest) in activities().items() if clip_ in WANTED and clip_ not in {c.name for c in clips}]
+    if missing:
+        lines.append('!! not made yet: ' + ', '.join(missing))
+        ok = False
+    for label, a, t1, b, t2, M, tol in JOINS:
+        gap, where = join_gap(a, t1, b, t2, M)
+        lines.append(f'  join {label}: {gap:.2f} px (at {where[0]})' + ('   !! OFF' if gap > tol else ''))
+        ok = ok and gap <= tol
+    return lines, ok
+
+
+# the clips this script makes: every Activity added for the Living World
+WANTED = ['sit_down', 'stand_up', 'yawn', 'stretch', 'climb', 'eat', 'sit_eat', 'wash', 'draw_water', 'pick_up',
+          'put_down', 'hand_over', 'receive', 'pay', 'bow', 'nod', 'shrug', 'point', 'browse', 'set_up', 'sow', 'scythe',
+          'gather', 'carry_basket', 'grind', 'pour_sack', 'chop', 'ring_bell', 'announce', 'light_lamp', 'knock']
+
+
+def main(argv):
+    assets, previews = argv[1], argv[2]
+    only = set(argv[3:])
+    unknown = only - {c.name for c in clips}
+    if unknown:
+        raise SystemExit(f'no such clip: {sorted(unknown)}')
+    lines, ok = verify()
+    for line in lines:
+        print(line)
+    for c in clips:
+        c.write(assets, GROUP)
+    print(f'wrote {len(clips)} clips to {os.path.join(assets, "animations", GROUP)}' + ('' if ok else '   (with problems: see !!)'))
+    os.makedirs(previews, exist_ok=True)
+    for c in clips:
+        if only and c.name not in only:
+            continue
+        ta.sheet(c).save(os.path.join(previews, f'living_{c.name}.png'))
+
+# ================================================================== getting up and sitting down
+
+# Where standUp() leaves someone, from where sitOn() sat them: the access block's middle, 0.88 of a block ahead (sitOn
+# puts the sitter 0.12 of a block forward of the stair's middle) and half a block down (the stair's step is half a block
+# high, the floor its foot).
+STAND_SPOT = np.array([0.0, 8.0, -14.08])
+SEAT_FLOOR = 32.0                   # the floor in front of the seat, in the seat's frame
+STEP_EDGE = (-6.0, 24.0)            # the step's front edge (z) and top (y)
+SIT_LEGS = (-86.0, 10.0)            # sit's legs at its first frame: out over the step, a little apart
+
+
+def leg_collides(pr, th, margin=0.15):
+    """Whether a leg turned [th] degrees forward from hanging (negative: back), from hips at root offset [pr], cuts into
+    the step (the leg is 4 px thick, 12 long; the step fills everything behind its front edge and below its top)."""
+    hip_y, hip_z = 12.0 + pr[1], pr[2]
+    r = math.radians(th)
+    for s in np.arange(0.0, 12.01, 0.5):
+        for off in (2.0, 0.0, -2.0):
+            y = hip_y + s * math.cos(r) + off * math.sin(r)
+            z = hip_z - s * math.sin(r) + off * math.cos(r)
+            if z > STEP_EDGE[0] + margin and y > STEP_EDGE[1] + margin:
+                return True
+    return False
+
+
+def leg_clear_angle(pr, margin=0.15):
+    """How far forward (degrees) a leg from hips at root offset [pr] must be raised to clear the step's front edge."""
+    for th in np.arange(0.0, 90.5, 0.5):
+        if not leg_collides(pr, th, margin):
+            return float(th)
+    return 90.0
+
+
+def floor_leg(pr, side, foot_z, foot_x_out=0.6):
+    """A leg from hips at [pr] to a foot flat on the floor at [foot_z] (z), [foot_x_out] outward: (foot point, angle
+    forward from straight down), or None when the floor is out of reach."""
+    s = -1.0 if side == 'right_leg' else 1.0
+    hip = hip_of(side, pr)
+    dy = SEAT_FLOOR - hip[1]
+    dx = s * foot_x_out
+    dz = foot_z - hip[2]
+    if math.hypot(dx, dz) > math.sqrt(max(0.0, 144.0 - dy * dy)) + 0.6:
+        return None
+    return np.array([hip[0] + dx, SEAT_FLOOR, foot_z]), math.degrees(math.atan2(-dz, dy))
+
+
+def seat_leg(c, t, side, pr, angle, splay):
+    """A leg raised [angle] degrees forward from hanging, splayed [splay] degrees outward (as sit has them at 86, 10)."""
+    s = 1.0 if side == 'right_leg' else -1.0
+    c.key(side, t, qeuler(x=-angle, y=s * splay), ease='linear')
+
+
+# ---- sit_down (16): back to the seat, a glance down over the right shoulder at it, a step back to it (the right foot,
+# then the left) leaning forward to sit, the hips going back onto the step as the legs come up over its edge, the hands
+# reaching for the knees; a little bounce as they land (tick 12) and the torso settling back upright into sit.
+SD_ROOT_Z = [(0, -14.08), (1.5, -14.0), (4.5, -12.2), (7.0, -9.6), (9.0, -6.0), (11.0, -2.0), (12.5, -0.4), (14.0, 0.15), (16, 0.0)]
+SD_ROOT_Y = [(0, 8.0), (3.0, 8.15), (7.0, 8.5), (9.5, 9.0), (11.5, 9.75), (12.5, 10.05), (14.0, 9.75), (16, SEAT_DROP)]
+SD_PITCH = [(0, 0.0), (2.0, 2.0), (5.0, 7.0), (8.0, 15.0), (10.5, 22.0), (12.0, 17.0), (13.5, 6.0), (14.5, 1.5), (16, 3.0)]
+SD_YAW = [(0, 0.0), (2.5, 6.0), (5.0, 4.0), (8.0, 0.0), (16, 0.0)]
+SD_HEAD_YAW = [(0, 0.0), (2.5, 34.0), (5.0, 26.0), (8.0, 4.0), (16, 0.0)]
+SD_HEAD_PITCH = [(0, 0.0), (2.5, 18.0), (5.0, 16.0), (8.0, 10.0), (11.0, 2.0), (12.8, 7.0), (14.5, -1.0), (16, 0.0)]
+# the feet: the right steps back first, then the left; planted until the legs must lift over the step's edge
+SD_FOOT = {'right_leg': [(0, -14.08), (1.0, -14.08), (4.0, -10.8), (16, -10.8)],
+           'left_leg': [(0, -14.08), (3.5, -14.08), (6.5, -10.2), (16, -10.2)]}
+SD_STEP = {'right_leg': (1.0, 4.0), 'left_leg': (3.5, 6.5)}       # when each foot is off the floor stepping
+
+
+def sd_frame(t):
+    pitch = interp(SD_PITCH, t)
+    return F_(qt=bend(pitch, interp(SD_YAW, t), 0.0), vt=(0.0, 0.0, 0.0),
+              pr=(0.0, interp(SD_ROOT_Y, t), interp(SD_ROOT_Z, t)))
+
+
+SD_LIFT_FROM = {}       # when each leg leaves the floor for good (filled as the clip is built)
+SD_LIFT_ANGLE = {}      # and how far forward it was then
+
+
+def sd_legs(c, t, fr):
+    """The legs of sit_down at [t]: a foot planted (or stepping) on the floor while it can be, then raised clear of the
+    step's edge and on up to sit's 86 degrees."""
+    for side in ('right_leg', 'left_leg'):
+        s = -1.0 if side == 'right_leg' else 1.0
+        clear = leg_clear_angle(fr['pr'])
+        fz = interp(SD_FOOT[side], t)
+        a0, a1 = SD_STEP[side]
+        lift = 1.6 * bump(t, a0, a1)                 # a stepping foot clears the floor
+        fl = floor_leg(fr['pr'], side, fz)
+        angle_floor = None if fl is None else fl[1]
+        end = smooth((t - 12.0) / 4.0)                 # the last ticks ease into sit's own leg pose
+        if angle_floor is not None and not leg_collides(fr['pr'], angle_floor) and side not in SD_LIFT_FROM:
+            foot = fl[0] + np.array([0.0, -lift, 0.0])
+            leg_to(c, t, side, fr['pr'], foot, toe=F)
+            continue
+        SD_LIFT_FROM.setdefault(side, t)
+        t0 = SD_LIFT_FROM[side]
+        # from where it left the floor, up past the edge to 86 (a touch over, then back), splaying out to 10
+        a_start = SD_LIFT_ANGLE.setdefault(side, clear if angle_floor is None else max(clear, angle_floor))
+        keys = [(t0, a_start)]
+        if t0 + 2.5 < 13.3:
+            keys.append((t0 + 2.5, 80.0))
+        keys += [(max(13.8, t0 + 0.5), 90.0), (16.0, -SIT_LEGS[0])]
+        angle = max(clear, interp(keys, t))
+        splay = SIT_LEGS[1] * smooth((t - t0) / max(1.0, 16.0 - t0))
+        seat_leg(c, t, side, fr['pr'], angle, splay)
+
+
+def sd_arms(c, t, fr):
+    """Hanging, then swinging forward for balance as they lean to sit, the hands coming down onto the knees."""
+    ra0, la0 = arm_hang('right_arm', 4.0), arm_hang('left_arm', 4.0)
+    reach_ = smooth((t - 4.0) / 6.0)
+    land = smooth((t - 10.5) / 4.0)
+    for side, q0 in (('right_arm', ra0), ('left_arm', la0)):
+        s = -1.0 if side == 'right_arm' else 1.0
+        q_bal = free(fr, v(f=0.75, u=-0.62, r=-s * 0.18), D if side == 'right_arm' else D)
+        q_knee = knee_hand(fr, side)
+        q = qslerp(q0, q_bal, reach_)
+        q = qslerp(q, q_knee, land)
+        if t >= 16.0 - 1e-9:
+            q = knee_hand(seat_frame(16), side)
+        c.key(side, t, q, ease='linear')
+
+
+c = clip('sit_down', 16, False, look=('citizen', 7), station_='seat', events=[('glance', 3), ('down', 12)],
+         views=((32, -12, True), (90, -2), (150, -10)),
+         traces=[('body', (0.0, 12.0, 0.0), (255, 200, 120))])
+SD_LIFT_FROM.clear()
+SD_LIFT_ANGLE.clear()
+for t in every(16):
+    fr = sd_frame(t) if t < 16 else seat_frame(16)
+    key_frame(c, t, fr, ease='linear')
+    sd_legs(c, t, fr)
+    sd_arms(c, t, fr)
+    c.key('head', t, qeuler(x=interp(SD_HEAD_PITCH, t), y=interp(SD_HEAD_YAW, t)), ease='linear')
+c.mode('head', 'add')
+for side in ('right_leg', 'left_leg'):
+    check(c, f'{side} foot on the floor (t=0)', (leg_end(c, 0, side)[1],), (SEAT_FLOOR,), tol=0.3)
+join('sit_down ends on sit', getc('sit_down'), 16, getc('sit'), 0, tol=0.05)
+join('sit_down starts on idle (at the access block)', getc('sit_down'), 0, getc('idle'), 0, M=T(*(-STAND_SPOT)), tol=1.2)
+
+# ---- stand_up (14): from sit, the hands pressing on the thighs and the torso leaning forward as the hips slide to the
+# step's edge and over it, the legs swinging down off it (never through its edge) to plant the feet where standUp()
+# stands them (tick 5); the arms swinging forward as the push lifts the hips up over the feet on straight legs, the
+# torso straightening with a little sway back, the arms swinging down to hang: the first frame of idle there.
+SU_LAND = 5.0                                   # the feet meet the floor, and stay
+SU_FEET = {'right_leg': np.array([-1.9, SEAT_FLOOR, STAND_SPOT[2]]),
+           'left_leg': np.array([1.9, SEAT_FLOOR, STAND_SPOT[2]])}
+SU_ROOT_Z = [(0, 0.0), (1.0, -0.5), (2.5, -3.0), (3.6, -5.8), (4.4, -7.4), (5.0, -8.1), (6.5, -10.2), (8.0, -12.3),
+             (9.5, -13.6), (11.0, -14.02), (14, -14.08)]
+SU_PITCH = [(0, 3.0), (1.0, 7.0), (2.5, 13.0), (4.0, 20.0), (5.5, 25.0), (7.0, 20.0), (8.5, 11.0), (10.0, 3.5),
+            (11.3, -1.6), (12.6, 0.6), (14, 0.0)]
+SU_ROLL = [(0, 0.0), (8.5, 0.0), (10.0, 1.2), (11.8, -0.9), (13.0, 0.3), (14, 0.0)]
+SU_HEAD_PITCH = [(0, 0.0), (2.0, 5.0), (4.5, 7.0), (7.0, -2.0), (9.0, -5.0), (11.0, -1.0), (14, 0.0)]
+SU_ARM_FWD = [(2.5, 34.0), (4.5, 42.0), (6.5, 38.0), (8.5, 20.0), (10.3, -7.0), (12.0, 3.0), (13.2, -1.0), (14, 0.0)]
+SU_ARM_OUT = [(2.5, 6.0), (4.5, 10.0), (8.0, 8.0), (11.0, 5.0), (14, 4.4)]
+IDLE_ARM_OUT = 4.4      # idle's arms at rest: its 1.5 degrees out on vanilla's bob (0 to 5.7, 2.9 on the whole)
+
+
+def su_root(t):
+    """The root offset: on the seat until the feet land, then wherever straight legs from the planted feet put the hips."""
+    z = interp(SU_ROOT_Z, t)
+    if t <= SU_LAND:
+        return np.array([0.0, SEAT_DROP, z])
+    dz = z - STAND_SPOT[2]
+    return np.array([0.0, SEAT_FLOOR - math.sqrt(144.0 - dz * dz) - 12.0, z])
+
+
+def su_frame(t):
+    if t <= 0:
+        return seat_frame(0)
+    return F_(qt=bend(interp(SU_PITCH, t), 0.0, interp(SU_ROLL, t)), pr=su_root(t))
+
+
+_hip = hip_of('right_leg', su_root(SU_LAND))
+SU_LAND_ANGLE = math.degrees(math.atan2(_hip[2] - STAND_SPOT[2], SEAT_FLOOR - _hip[1]))
+# leg space: the point of each thigh that sit's hands rest on (knee_hand's target, carried by the leg as it swings)
+SU_THIGH = {}
+for _leg, _s in (('right_leg', 1.0), ('left_leg', -1.0)):
+    _target = np.array([-_s * 3.1, 19.4, -7.0])
+    SU_THIGH[_leg] = qmat(qeuler(x=SIT_LEGS[0], y=_s * SIT_LEGS[1])).T @ (_target - hip_of(_leg, (0.0, SEAT_DROP, 0.0)))
+
+
+def su_legs(c, t, fr):
+    """Sit's legs swinging down off the step (never through its edge) until the feet land, then planted (straight legs:
+    the hips ride up over them)."""
+    for side in ('right_leg', 'left_leg'):
+        if t <= 0:
+            seat_leg(c, t, side, fr['pr'], -SIT_LEGS[0], SIT_LEGS[1])
+        elif t < SU_LAND:
+            keys = [(0.0, -SIT_LEGS[0]), (1.5, 85.0), (3.0, 72.0), (4.0, 50.0), (SU_LAND, SU_LAND_ANGLE)]
+            angle = max(leg_clear_angle(fr['pr']), interp(keys, t))
+            seat_leg(c, t, side, fr['pr'], angle, SIT_LEGS[1] * (1.0 - smooth(t / SU_LAND)))
+        elif t >= 14 - 1e-9:
+            c.key(side, t, I, ease='linear')
+        else:
+            leg_to(c, t, side, fr['pr'], SU_FEET[side], toe=F)
+
+
+def su_arms(c, t, fr):
+    """The hands on the thighs, pressing as the hips slide; leaving them to swing forward with the push, then down past
+    the hang and back to it."""
+    for side, leg in (('right_arm', 'right_leg'), ('left_arm', 'left_leg')):
+        if t <= 0:
+            q = knee_hand(seat_frame(0), side)
+        elif t >= 14 - 1e-9:
+            q = arm_hang(side, IDLE_ARM_OUT)
+        else:
+            _, q_leg, p_leg, _ = c.keys[leg][-1]
+            thigh = hip_of(leg, fr['pr']) + (np.zeros(3) if p_leg is None else np.asarray(p_leg, float)) \
+                + qmat(q_leg) @ SU_THIGH[leg]
+            q_on = reach(side, fr, thigh, palm=D, palm_w=0.3)
+            q_swing = arm_hang(side, interp(SU_ARM_OUT, t), fwd=interp(SU_ARM_FWD, t) + interp(SU_PITCH, t))
+            q = qslerp(q_on, q_swing, smooth((t - 2.5) / 2.0))
+        c.key(side, t, q, ease='linear')
+
+
+c = clip('stand_up', 14, False, look=('citizen', 7), station_='seat', events=[('feet', SU_LAND), ('up', 10)],
+         views=((32, -12, True), (90, -2), (150, -10)),
+         traces=[('body', (0.0, 12.0, 0.0), (255, 200, 120))])
+for t in every(14):
+    fr = su_frame(t)
+    key_frame(c, t, fr, ease='linear')
+    su_legs(c, t, fr)
+    su_arms(c, t, fr)
+    c.key('head', t, qeuler(x=interp(SU_HEAD_PITCH, t)), ease='linear')
+c.mode('head', 'add')
+for side in ('right_leg', 'left_leg'):
+    for _t in (SU_LAND, 9.0, 14.0):
+        check(c, f'{side} foot planted (t={_t:g})', leg_end(c, _t, side), SU_FEET[side], tol=0.3)
+join('stand_up starts on sit', getc('stand_up'), 0, getc('sit'), 0, tol=0.05)
+join('stand_up ends on idle (at the access block)', getc('stand_up'), 14, getc('idle'), 0, M=T(*(-STAND_SPOT)), tol=1.2)
+
+# ================================================================== standing about: yawns, stretches, greetings, gestures
+
+def K(keys, t, loop=None):
+    """A number through [keys] (t, value): round a loop of [loop] ticks a periodic spline (the keys' first and last values
+    the same), else monotone (at rest at each end and at every turn)."""
+    if loop:
+        return float(spline_keys(keys, t, period=loop))
+    return float(mono_keys(keys, t))
+
+
+def KV(keys, t, loop=None):
+    """A point through [keys] (t, (x, y, z)), as K does a number."""
+    if loop:
+        return np.asarray(spline_keys(keys, t, period=loop), float)
+    return vec_keys(keys, t)
+
+
+def hang(side, fr=None, out=None, fwd=0.0):
+    """An arm hanging straight down in the world whatever the torso does, [out] degrees out from the side and [fwd]
+    forward: its 'set' key under [fr] (idle's own arm at rest by default)."""
+    s = 1.0 if side == 'right_arm' else -1.0
+    q = qeuler(x=-fwd, z=s * (IDLE_ARM_OUT if out is None else out))
+    return q if fr is None else rel(fr, q)
+
+
+class Arms:
+    """Arm solutions that each start from the one before, so a hand following a path never flips."""
+
+    def __init__(self):
+        self.prev = {}
+
+    def reach(self, side, fr, target, palm=None, palm_w=0.3, p=None):
+        q = reach(side, fr, target, palm=palm, palm_w=palm_w, guess=self.prev.get(side), p=p)
+        self.prev[side] = q
+        return q
+
+    def solve(self, side, fr, points=(), dirs=()):
+        q, _ = solve_arm(side, fr, list(points), list(dirs), guess=self.prev.get(side))
+        self.prev[side] = q
+        return q
+
+
+def plant(c, t, fr, right=(-1.9, 0.0), left=(1.9, 0.0), floor=24.0, lift=(0.0, 0.0)):
+    """Both feet planted at world (x, z) on the floor (or lifted [lift] px) however the root moves the hips."""
+    for side, (x, z), up in (('right_leg', right, lift[0]), ('left_leg', left, lift[1])):
+        leg_to(c, t, side, fr['pr'], np.array([x, floor - up, z]), toe=F)
+
+
+def root_for(feet, x=0.0, z=0.0, floor=24.0, dip=0.0):
+    """The root offset that puts the hips (moved [x], [z]) as high as straight legs to every planted foot allow, dipped
+    [dip] px more (a bend of the knees)."""
+    y = 0.0
+    for side, (fx, fz) in feet.items():
+        hip = hip_of(side, (x, 0.0, z))
+        d2 = (fx - hip[0]) ** 2 + (fz - hip[2]) ** 2
+        y = max(y, floor - math.sqrt(max(0.0, 144.0 - d2)) - 12.0)
+    return np.array([x, y + dip, z])
+
+
+# ---- nod (20): two nods, the second smaller, the torso dipping a touch with each
+c = clip('nod', 20, False, look=('citizen', 2), events=[('nod', 3.5), ('nod', 10.5)], views=((32, -12), (90, -2)))
+NOD_HEAD = [(0, 0.0), (3.5, 14.0), (7.0, -3.0), (10.5, 9.0), (14.0, -1.5), (17.0, 0.5), (20, 0.0)]
+NOD_PITCH = [(0, 0.0), (4.0, 2.0), (7.5, -0.4), (11.0, 1.2), (14.5, 0.0), (20, 0.0)]
+NOD_ARMS = [(0, 0.0), (4.5, 1.5), (8.0, -0.5), (11.5, 1.0), (15.0, 0.0), (20, 0.0)]
+for t in every(20):
+    fr = F_(qt=bend(K(NOD_PITCH, t)))
+    key_frame(c, t, fr, root=False, ease='linear')
+    for side in ('right_arm', 'left_arm'):
+        c.key(side, t, hang(side, fr, fwd=K(NOD_ARMS, t)), ease='linear')
+    c.key('head', t, qeuler(x=K(NOD_HEAD, t)), ease='linear')
+c.mode('head', 'add')
+
+# ---- shrug (24): a dip, then the shoulders up and the arms out and forward with the palms turned up, the head tipped
+# and the chin up ("who knows?"), a second little lift, and down again
+SHRUG_U = [(0, 0.0), (2.5, -0.15), (6.5, 1.0), (9.0, 0.9), (12.0, 1.0), (17.5, 0.0), (19.5, -0.06), (24, 0.0)]
+c = clip('shrug', 24, False, look=('citizen', 1), events=[('shrug', 6.5)], views=((32, -12), (0, -4), (90, -2)),
+         traces=[('right_arm', GRIP['right_arm'], (255, 200, 120)), ('left_arm', GRIP['left_arm'], (200, 230, 255))])
+for t in every(24):
+    u = K(SHRUG_U, t)
+    fr = F_(qt=bend(-2.5 * u, 0.0, 1.5 * u))
+    key_frame(c, t, fr, root=False, ease='linear')
+    for side in ('right_arm', 'left_arm'):
+        s = 1.0 if side == 'right_arm' else -1.0
+        out = IDLE_ARM_OUT + 22.0 * max(0.0, u) - 2.0 * min(0.0, u)
+        q = qmul(qeuler(x=-24.0 * u, z=s * out), qaxis((0, 1, 0), s * 45.0 * max(0.0, u)))
+        c.key(side, t, rel(fr, q), pos=(0.0, -1.2 * max(0.0, u), 0.0), ease='linear')
+    c.key('head', t, qeuler(x=-4.0 * u, y=5.0 * u, z=9.0 * u), ease='linear')
+c.mode('head', 'add')
+
+# ---- point (30): a little draw back, then the right arm flung out to point ahead and to the right, the body turning
+# with it and the head looking along it; two jabs ("there!"), the arm coming down
+POINT_U = [(0, 0.0), (2.5, -0.06), (7.0, 1.04), (9.0, 1.0), (19.0, 1.0), (25.0, 0.0), (30, 0.0)]
+POINT_DIR = v(f=1.0, u=0.14, r=0.42)
+c = clip('point', 30, False, look=('citizen', 3), events=[('point', 7), ('jab', 12.5), ('jab', 16)],
+         views=((32, -12), (90, -2), (160, -10)), traces=[('right_arm', GRIP['right_arm'], (255, 200, 120))])
+for t in every(30):
+    u = K(POINT_U, t)
+    jab = bump(t, 11.0, 14.0) + 0.8 * bump(t, 14.8, 17.5)
+    fr = F_(qt=bend(2.0 * u + 1.2 * jab, 9.0 * u, -1.0 * u))
+    key_frame(c, t, fr, root=False, ease='linear')
+    d = unit(POINT_DIR + np.array([0.0, 0.12 * jab, 0.0]))
+    q_point = free(fr, d, D)
+    c.key('right_arm', t, qslerp(hang('right_arm', fr), q_point, max(0.0, min(1.04, u))) if u >= 0
+          else hang('right_arm', fr, fwd=-6.0 * u / 0.06), ease='linear')
+    c.key('left_arm', t, hang('left_arm', fr, out=IDLE_ARM_OUT + 3.0 * u, fwd=-5.0 * u), ease='linear')
+    c.key('head', t, qeuler(x=-3.0 * u + 4.0 * jab, y=16.0 * u), ease='linear')
+c.mode('head', 'add')
+
+# ---- bow (30): a courtly bow: the right foot slides back, the right hand comes across the belly and the left goes behind
+# the back as the body bends deep from the hips (the hips going back over the heels), held a moment, and up
+BOW_P = [(0, 0.0), (2.5, -2.0), (6.0, 14.0), (9.5, 36.0), (12.0, 40.0), (15.5, 38.0), (19.5, 20.0), (23.5, 2.0), (26.0, -1.5), (30, 0.0)]
+BOW_Z = [(0, 0.0), (2.5, 0.0), (9.5, 1.6), (15.5, 1.6), (23.5, 0.0), (30, 0.0)]
+BOW_FOOT = [(0, 0.0), (3.0, 0.0), (7.0, 4.5), (19.5, 4.5), (23.5, 0.0), (30, 0.0)]
+BOW_ARMS = [(0, 0.0), (3.0, 0.0), (9.0, 1.0), (18.0, 1.0), (25.0, 0.0), (30, 0.0)]
+BOW_HEAD = [(0, 0.0), (6.0, 2.0), (11.0, 8.0), (16.0, 8.0), (21.0, -2.0), (25.0, 0.0), (30, 0.0)]
+c = clip('bow', 30, False, look=('noble', 1), events=[('bow', 12)], views=((32, -12), (90, -2), (150, -10)),
+         traces=[('head', (0.0, -4.0, -3.0), (255, 200, 120))])
+arms = Arms()
+for t in every(30):
+    feet = {'right_leg': (-1.9, K(BOW_FOOT, t)), 'left_leg': (1.9, 0.0)}
+    pr = root_for(feet, z=K(BOW_Z, t), dip=0.5 * bump(t, 5.0, 20.0))
+    fr = F_(qt=bend(K(BOW_P, t)), pr=pr)
+    key_frame(c, t, fr, ease='linear')
+    lift = 1.4 * (bump(t, 3.0, 7.0) + bump(t, 19.5, 23.5))
+    plant(c, t, fr, right=feet['right_leg'], left=feet['left_leg'], lift=(lift, 0.0))
+    w = smooth(K(BOW_ARMS, t))
+    w_l = smooth(K(BOW_ARMS, t - 1.0))
+    q_belly = arms.reach('right_arm', fr, torso_to_world(fr, (0.8, 10.0, -3.6)), palm=None)
+    q_back = arms.reach('left_arm', fr, torso_to_world(fr, (-0.5, 10.0, 3.8)), palm=None)
+    c.key('right_arm', t, qslerp(hang('right_arm', fr), q_belly, w), ease='linear')
+    c.key('left_arm', t, qslerp(hang('left_arm', fr), q_back, w_l), ease='linear')
+    c.key('head', t, qeuler(x=K(BOW_HEAD, t)), ease='linear')
+c.mode('head', 'add')
+for side in ('right_leg', 'left_leg'):
+    check(c, f'{side} foot on the ground (t=12)', (leg_end(c, 12, side)[1],), (24.0,), tol=0.3)
+
+# ---- yawn (40): a slump, then a deep breath in with the head going back and the right hand coming up over the mouth,
+# the left arm stretching out behind; held with a shiver, then the hand drops, a shake of the head, and settle
+Y_P = [(0, 0.0), (4.0, 2.0), (10.0, -6.0), (21.0, -8.0), (26.0, -1.0), (30.0, 2.5), (34.0, 0.5), (40, 0.0)]
+Y_R = [(0, 0.0), (10.0, 2.5), (21.0, 3.5), (27.0, 0.0), (40, 0.0)]
+Y_HP = [(0, 0.0), (4.0, 4.0), (10.0, -20.0), (17.0, -26.0), (21.0, -22.0), (26.0, -6.0), (30.0, 6.0), (33.5, 1.0), (40, 0.0)]
+Y_HR = [(0, 0.0), (10.0, 7.0), (21.0, 9.0), (26.0, 2.0), (40, 0.0)]
+Y_HAND = [(0, 0.0), (4.0, 0.0), (9.0, 1.0), (23.0, 1.0), (28.0, 0.0), (40, 0.0)]
+Y_LEFT = [(0, 0.0), (6.0, 0.0), (11.0, 1.0), (22.0, 1.0), (27.0, 0.0), (40, 0.0)]
+c = clip('yawn', 40, False, look=('citizen', 4), events=[('yawn', 12)], views=((32, -12), (90, -2), (0, -4)),
+         traces=[('right_arm', GRIP['right_arm'], (255, 200, 120))])
+arms = Arms()
+for t in every(40):
+    shiver = 1.2 * bump(t, 15.0, 22.0) * math.sin(2 * math.pi * (t - 15.0) / 2.5)
+    fr = F_(qt=bend(K(Y_P, t) + 0.4 * shiver, 0.0, K(Y_R, t)))
+    key_frame(c, t, fr, root=False, ease='linear')
+    shake = 6.0 * bump(t, 29.5, 36.0) * math.sin(2 * math.pi * (t - 29.5) / 3.2)
+    q_head = qeuler(x=K(Y_HP, t) + shiver, y=shake, z=K(Y_HR, t))
+    mouth = head_point(fr, q_head, MOUTH + np.array([-0.8, 1.0, -3.4]))
+    q_mouth = arms.reach('right_arm', fr, mouth, palm=B, palm_w=0.2)
+    c.key('right_arm', t, qslerp(hang('right_arm', fr), q_mouth, smooth(K(Y_HAND, t))), ease='linear')
+    wl = smooth(K(Y_LEFT, t))
+    c.key('left_arm', t, hang('left_arm', fr, out=IDLE_ARM_OUT + 12.0 * wl, fwd=-9.0 * wl + 0.6 * shiver), ease='linear')
+    c.key('head', t, q_head, ease='linear')
+c.mode('head', 'add')
+
+# ---- stretch (40): the fingers laced in front, a little hunch, then the joined hands pushed up in front and on overhead
+# as the back arches; a lean to the left with them up there, then the arms sweep out to the sides and down, and settle
+S_P = [(0, 0.0), (5.0, 4.0), (9.0, 1.0), (13.0, -6.0), (19.0, -10.0), (22.0, -6.0), (26.0, -3.0), (30.0, -1.0), (34.0, 1.0), (37.0, 0.0), (40, 0.0)]
+S_R = [(0, 0.0), (19.0, 0.0), (23.5, 9.0), (26.0, 4.0), (29.0, 0.0), (40, 0.0)]
+S_HP = [(0, 0.0), (5.0, 6.0), (12.0, -12.0), (20.0, -18.0), (24.0, -8.0), (30.0, -2.0), (34.0, 2.0), (40, 0.0)]
+S_HR = [(0, 0.0), (19.0, 0.0), (23.5, 6.0), (27.0, 0.0), (40, 0.0)]
+# the right hand's path in torso space while the hands are joined (the left mirrors it): low in front, out in front, overhead
+S_PATH = [(4.0, (-1.0, 10.5, -4.5)), (7.0, (-0.9, 9.0, -6.0)), (10.0, (-1.6, 2.0, -10.0)), (12.5, (-3.8, -7.4, -2.0)),
+          (19.0, (-4.2, -7.8, 0.0)), (25.5, (-4.4, -7.6, 0.0))]
+S_OUT = [(25.5, 178.0), (30.0, 92.0), (34.0, 14.0), (36.5, 2.0), (40.0, IDLE_ARM_OUT)]
+S_LIFT = [(0, 0.0), (12.0, 0.0), (16.0, 1.0), (22.0, 1.0), (27.0, 0.0), (35.0, 0.0), (37.0, -0.3), (40, 0.0)]
+c = clip('stretch', 40, False, look=('citizen', 5), events=[('stretch', 19)], views=((32, -12), (90, -2), (0, -4)),
+         traces=[('right_arm', GRIP['right_arm'], (255, 200, 120)), ('left_arm', GRIP['left_arm'], (200, 230, 255))])
+arms = Arms()
+for t in every(40):
+    fr = F_(qt=bend(K(S_P, t), 0.0, K(S_R, t)))
+    key_frame(c, t, fr, root=False, ease='linear')
+    lift = K(S_LIFT, t)
+    for side in ('right_arm', 'left_arm'):
+        s = 1.0 if side == 'right_arm' else -1.0
+        p = KV(S_PATH, t) * np.array([s, 1.0, 1.0])
+        q_path = arms.reach(side, fr, torso_to_world(fr, p), palm=None)
+        q_side = qeuler(z=s * K(S_OUT, t))
+        if t < 4.0:
+            q = hang(side, fr)
+        elif t < 6.0:
+            q = qslerp(hang(side, fr), q_path, smooth((t - 4.0) / 2.0))
+        elif t < 25.5:
+            q = q_path
+        elif t < 28.0:
+            q = qslerp(q_path, q_side, smooth((t - 25.5) / 2.5))
+        else:
+            q = q_side
+        if t >= 40 - 1e-9:
+            q = hang(side, fr)
+        c.key(side, t, q, pos=(0.0, -1.0 * lift, 0.0) if abs(lift) > 1e-6 else None, ease='linear')
+    c.key('head', t, qeuler(x=K(S_HP, t), z=K(S_HR, t)), ease='linear')
+c.mode('head', 'add')
+
+# ---- knock (24): the right fist raised to the door, three knocks (ticks 7, 10, 13), each with a little jolt through the
+# body, the hand held up a moment, lowered; the head tipped to listen. The door's face half a block ahead (a door on the
+# near side of the next block).
+KNOCK_Z = -8.0
+KNOCKS = (7.0, 10.0, 13.0)
+KNOCK_GAP = 0.8        # the fist's middle this far off the door: its lower edge, tipped up, just meets it
+
+
+def _knock_door():
+    return [((-8, -24, KNOCK_Z - 3), (8, 24, KNOCK_Z), (118, 84, 54), True),
+            ((-10.5, -26, KNOCK_Z - 4), (-8, 24, KNOCK_Z + 1), (84, 60, 40), True),
+            ((8, -26, KNOCK_Z - 4), (10.5, 24, KNOCK_Z + 1), (84, 60, 40), True),
+            ((-10.5, -26, KNOCK_Z - 4), (10.5, -23.5, KNOCK_Z + 1), (84, 60, 40), True),
+            ((4.0, 4.0, KNOCK_Z), (5.0, 7.0, KNOCK_Z + 1.2), (60, 60, 66), True)]
+
+
+STATIONS['knock_door'] = _knock_door
+KN_P = [(0, 0.0), (3.0, 3.0), (6.0, 5.0), (14.0, 5.0), (18.0, 1.5), (21.0, -0.5), (24, 0.0)]
+KN_YAW = [(0, 0.0), (4.0, -8.0), (14.0, -8.0), (19.0, -2.0), (24, 0.0)]
+KN_RAISE = [(0, 0.0), (1.0, 0.0), (5.0, 1.0), (15.0, 1.0), (20.5, 0.0), (24, 0.0)]
+KN_HEAD = [(0, 0.0), (4.0, -4.0), (14.0, -4.0), (17.0, 3.0), (24, 0.0)]
+KN_LISTEN = [(0, 0.0), (14.0, 0.0), (17.0, 1.0), (21.0, 1.0), (24, 0.0)]
+
+
+def knock_back(t):
+    """How far the fist is drawn back from the door (0 on it): a quick hit at each knock, a slower draw back."""
+    d = 1.0
+    for k in KNOCKS:
+        if k - 1.4 <= t <= k:
+            d = min(d, 1.0 - smooth((t - (k - 1.4)) / 1.4) ** 2)
+        elif k < t <= k + 1.6:
+            d = min(d, smooth((t - k) / 1.6))
+    return d
+
+
+c = clip('knock', 24, False, look=('citizen', 6), station_='knock_door', events=[('knock', k) for k in KNOCKS],
+         views=((32, -12, True), (90, -2), (150, -10)), traces=[('right_arm', GRIP['right_arm'], (255, 200, 120))])
+arms = Arms()
+for t in every(24):
+    jolt = sum(bump(t, k - 0.2, k + 1.2) for k in KNOCKS)
+    fr = F_(qt=bend(K(KN_P, t) + 0.8 * jolt, K(KN_YAW, t), 0.0))
+    key_frame(c, t, fr, root=False, ease='linear')
+    hit = arms.reach('right_arm', fr, np.array([-2.0, -4.2, KNOCK_Z + KNOCK_GAP]), palm=D, palm_w=0.2)
+    back = qmul(qaxis((1, 0, 0), -16.0), hit)
+    q_up = qslerp(hit, back, knock_back(t))
+    c.key('right_arm', t, qslerp(hang('right_arm', fr), q_up, smooth(K(KN_RAISE, t))), ease='linear')
+    c.key('left_arm', t, hang('left_arm', fr, out=IDLE_ARM_OUT + 1.0 * jolt), ease='linear')
+    li = K(KN_LISTEN, t)
+    c.key('head', t, qeuler(x=K(KN_HEAD, t) + 1.5 * jolt, y=10.0 * li, z=6.0 * li), ease='linear')
+c.mode('head', 'add')
+for k in KNOCKS:
+    check(c, f'knuckles on the door (t={k:g})', (ta.fk(c, k, 'right_arm', GRIP['right_arm'])[2],), (KNOCK_Z + KNOCK_GAP,), tol=0.3)
+
+# ================================================================== eating and washing
+
+class Holds(Arms):
+    """Arms that may roll the shoulder a little (the key's offset) to bring a held thing close to the face."""
+
+    def slack(self, side, fr, points=(), dirs=(), slack=1.0, limit=1.6):
+        q, off = solve_arm_slack(side, fr, list(points), list(dirs), start=self.prev.get(side), slack=slack, limit=limit)
+        self.prev[side] = q
+        return q, off
+
+
+def mix_arm(a, b, w):
+    """Two (key, offset) arm poses mixed: [w] 0 is [a], 1 is [b]."""
+    return qslerp(a[0], b[0], w), np.asarray(a[1], float) * (1.0 - w) + np.asarray(b[1], float) * w
+
+
+def key_arm(c, side, t, pose):
+    q, off = pose
+    off = np.asarray(off, float)
+    c.key(side, t, q, pos=off if float(np.linalg.norm(off)) > 1e-6 else None, ease='linear')
+
+
+def chew(t, a, b, amp=1.4, period=6.0):
+    """A chewing bob of the head (degrees) from [a] to [b]."""
+    return amp * bump(t, a, b) * math.sin(2 * math.pi * (t - a) / period)
+
+
+# ---- eat (60, loop): a loaf (or an apple: the same clip) held at the chest; a look at it, raised to the mouth and bitten
+# (tick 12) with a tug of the hand to tear the bite off, lowered, chewed while looking about; crumbs brushed off the
+# chest with the left hand; a swallow, and round again
+LOAF_TOP = (0.0, -3.2, -3.0)            # loaf part space: the bitten end
+LOAF_MID = (0.0, -0.8, -3.0)
+EAT_HOLD = np.array([-2.8, 8.0, -7.4])
+EAT_BITE = [(0, 0.0), (6.0, 0.0), (11.0, 1.0), (14.0, 1.0), (19.5, 0.0), (60, 0.0)]
+EAT_P = [(0, 1.0), (8.0, 3.0), (11.0, 7.0), (13.0, 7.5), (18.0, 2.0), (40.0, 0.5), (60, 1.0)]
+EAT_HP = [(0, 10.0), (5.0, 14.0), (9.0, 4.0), (12.0, 3.0), (14.0, 0.0), (18.0, 4.0), (24.0, 0.0), (36.0, -2.0), (46.0, 4.0), (52.0, 6.0), (60, 10.0)]
+EAT_HY = [(0, 6.0), (5.0, 8.0), (10.0, 2.0), (14.0, 0.0), (22.0, -4.0), (30.0, -14.0), (38.0, -10.0), (44.0, 8.0), (52.0, 6.0), (60, 6.0)]
+EAT_SWIPE = [(0, 0.0), (28.0, 0.0), (31.0, 1.0), (36.0, 1.0), (39.5, 0.0), (60, 0.0)]
+c = clip('eat', 60, True, look=('citizen', 0), tools_=('loaf',), events=[('bite', 12)],
+         views=((32, -12), (90, -2), (0, -4)), traces=[('loaf', LOAF_TOP, (240, 200, 140))])
+arms, bites, swipes = Arms(), Holds(), Arms()
+for t in every(60):
+    tear = bump(t, 12.0, 15.0)
+    fr = F_(qt=bend(K(EAT_P, t, 60), 2.0 * math.sin(2 * math.pi * t / 60), 0.0))
+    key_frame(c, t, fr, root=False, ease='linear')
+    q_head = qeuler(x=K(EAT_HP, t, 60) - 5.0 * tear + chew(t, 14.0, 46.0), y=K(EAT_HY, t, 60))
+    hold = (arms.solve('right_arm', fr, [(tool_point('loaf', LOAF_MID), EAT_HOLD + np.array([0.0, 0.3 * math.sin(2 * math.pi * t / 30), 0.0]), 1.0)],
+                       [(tool_dir('loaf', (0, -1, 0)), v(u=1.0, f=-0.15), 0.8)]), np.zeros(3))
+    w = smooth(K(EAT_BITE, t))
+    if w > 1e-4:
+        lips = head_point(fr, q_head, LIPS) + np.array([0.0, 1.2, -0.8]) * tear
+        bite = bites.slack('right_arm', fr, [(tool_point('loaf', LOAF_TOP), lips, 3.0)],
+                          [(tool_dir('loaf', (0, -1, 0)), v(f=-1.0, u=0.7, r=0.2), 0.4)], limit=2.4)
+        pose = mix_arm(hold, bite, w)
+    else:
+        pose = hold
+    key_arm(c, 'right_arm', t, pose)
+    ws = smooth(K(EAT_SWIPE, t))
+    swipe = swipes.reach('left_arm', fr, torso_to_world(fr, (0.4 + 1.8 * math.sin(2 * math.pi * (t - 31.0) / 2.5), 5.0, -3.2)), palm=B)
+    c.key('left_arm', t, qslerp(hang('left_arm', fr), swipe, ws), ease='linear')
+    c.key('head', t, q_head, ease='linear')
+c.mode('head', 'set')
+seal(c)
+_fr = frame_at(c, 12)
+check(c, 'loaf at the lips (t=12)', ta.fk(c, 12, 'loaf', LOAF_TOP),
+      head_point(_fr, c.sample('head', 12)[0], LIPS), tol=0.6)
+
+# ---- sit_eat (60, loop): seated at a table, a bowl of stew held up over it on the left hand; the spoon dipped, a scoop,
+# up to the mouth as the head comes down to meet it (ticks 16 and 46), chewed; the second spoonful taken a little more
+# hungrily, the bowl lifted towards it
+BOWL_BASE = (0.0, -2.0, 1.0)            # bowl part space: the middle of its bottom (on the hand)
+BOWL_TOP = (0.0, -3.9, 1.0)             # the middle of the stew's surface
+SPOON_BOWL = (0.0, 4.7, -0.2)           # spoon part space: the middle of its bowl
+BOWL_AT = [(0, (2.0, 12.0, -10.4)), (12.0, (1.8, 11.4, -10.0)), (20.0, (2.0, 12.0, -10.4)), (40.0, (1.6, 11.0, -9.8)),
+           (48.0, (1.5, 10.6, -9.6)), (54.0, (2.0, 12.0, -10.4)), (60, (2.0, 12.0, -10.4))]     # the bottom's middle, held
+                                                                                                # 3 px over the table
+SE_P = [(0, 9.0), (4.0, 10.0), (10.0, 12.0), (16.0, 15.0), (20.0, 11.0), (30.0, 9.0), (34.0, 10.0), (40.0, 13.0), (46.0, 17.0), (50.0, 12.0), (60, 9.0)]
+SE_HP = [(0, 18.0), (5.0, 22.0), (10.0, 12.0), (15.0, 3.0), (17.0, 2.0), (20.0, 8.0), (26.0, 16.0), (30.0, 18.0), (35.0, 22.0), (40.0, 10.0), (45.0, 1.0), (47.0, 0.0), (50.0, 8.0), (56.0, 16.0), (60, 18.0)]
+SE_HY = [(0, 6.0), (10.0, 3.0), (16.0, 0.0), (24.0, 5.0), (30.0, 6.0), (40.0, 3.0), (46.0, 0.0), (54.0, 4.0), (60, 6.0)]
+SE_MOUTH = [(0, 0.0), (9.0, 0.0), (15.0, 1.0), (17.0, 1.0), (21.0, 0.0), (39.0, 0.0), (45.0, 1.0), (47.0, 1.0), (51.0, 0.0), (60, 0.0)]
+# the spoon's bowl about the stew (off its surface's middle) between mouthfuls: hovering, dipped in, scooped towards the
+# near rim and lifted
+SE_STEW = [(0, (-0.6, -3.0, 1.4)), (3.0, (0.4, 0.5, -0.8)), (6.0, (0.0, 0.4, 0.8)), (9.0, (-0.4, -2.4, 1.8)),
+           (21.0, (-0.8, -3.4, 1.6)), (30.0, (-0.6, -3.0, 1.4)), (33.0, (0.4, 0.5, -0.8)), (36.0, (0.0, 0.4, 0.8)),
+           (39.0, (-0.4, -2.4, 1.8)), (51.0, (-0.8, -3.4, 1.6)), (60, (-0.6, -3.0, 1.4))]
+SE_AXIS_TABLE = v(f=0.35, u=-0.75, r=-0.55)
+SE_AXIS_MOUTH = v(f=-0.6, u=0.2, r=-0.8)
+c = clip('sit_eat', 60, True, look=('citizen', 3), tools_=('bowl', 'spoon'), station_='table_seat',
+         events=[('spoon', 16), ('spoon', 46)], views=((40, -14, True), (90, -2), (-40, -20)),
+         traces=[('spoon', SPOON_BOWL, (240, 220, 160))])
+arms, bowls = Holds(), Holds()
+for t in every(60):
+    fr = F_(qt=bend(K(SE_P, t, 60), 0.0, 0.6 * math.sin(2 * math.pi * t / 60)), pr=(0, SEAT_DROP, 0))
+    key_frame(c, t, fr, ease='linear')
+    seat_legs(c, t, ease='linear', spread=10.0)
+    q_bowl, off_bowl = bowls.slack('left_arm', fr, [(tool_point('bowl', BOWL_BASE), KV(BOWL_AT, t, 60), 3.0)],
+                                   [(tool_dir('bowl', (0, -1, 0)), U, 2.0)], limit=2.4)
+    key_arm(c, 'left_arm', t, (q_bowl, off_bowl))
+    Ra, ja = arm_world('left_arm', q_bowl, arm_pos=off_bowl, **fr)
+    stew = ja + Ra @ tool_point('bowl', BOWL_TOP)
+    chewing = chew(t, 17.0, 32.0) + chew(t, 47.0, 60.0, period=6.0) + chew(t, -13.0, 2.0, period=6.0)
+    q_head = qeuler(x=K(SE_HP, t, 60) + chewing, y=K(SE_HY, t, 60))
+    wm = smooth(K(SE_MOUTH, t))
+    lips = head_point(fr, q_head, LIPS) + np.array([0.0, 0.0, 0.4])
+    target = (stew + KV(SE_STEW, t, 60)) * (1.0 - wm) + lips * wm
+    axis = unit(SE_AXIS_TABLE * (1.0 - wm) + SE_AXIS_MOUTH * wm)
+    pose = arms.slack('right_arm', fr, [(tool_point('spoon', SPOON_BOWL), target, 3.0)],
+                      [(tool_dir('spoon', (0, 1, 0)), axis, 0.5)], limit=2.4)
+    key_arm(c, 'right_arm', t, pose)
+    c.key('head', t, q_head, ease='linear')
+c.mode('head', 'set')
+seal(c)
+for _t in (16, 46):
+    _fr = frame_at(c, _t)
+    check(c, f'spoon at the lips (t={_t})', ta.fk(c, _t, 'spoon', SPOON_BOWL),
+          head_point(_fr, c.sample('head', _t)[0], LIPS) + np.array([0.0, 0.0, 0.4]), tol=0.8)
+for _t in (5.0, 35.0):
+    check(c, f'spoon in the stew (t={_t:g})', (ta.fk(c, _t, 'spoon', SPOON_BOWL)[1] - ta.fk(c, _t, 'bowl', BOWL_TOP)[1],),
+          (0.5,), tol=0.6)
+_up = ta.fk(c, 30, 'bowl', (0.0, -3.9, 1.0)) - ta.fk(c, 30, 'bowl', BOWL_BASE)
+check(c, 'bowl level (t=30: its up off the vertical, px over 1.9)', (math.hypot(_up[0], _up[2]),), (0.0,), tol=0.3)
+check(c, 'bowl over the table (t=30: its bottom above the top)', (min(0.0, TABLE_TOP - 0.5 - ta.fk(c, 30, 'bowl', BOWL_BASE)[1]),), (0.0,), tol=0.01)
+
+# ---- wash (50): at a basin (a cauldron or trough a block ahead): bending over it, both hands into the water, scooped
+# (tick 12) and splashed up onto the face as the head comes down to meet them (tick 18), the face rubbed, the head shaken
+# (tick 27), up again flicking the water off the hands
+WASH_P = [(0, 0.0), (3.0, -2.0), (9.0, 38.0), (12.0, 40.0), (16.0, 30.0), (18.0, 31.0), (24.0, 30.0), (30.0, 28.0), (36.0, 4.0), (39.0, -3.0), (43.0, 1.0), (50, 0.0)]
+WASH_Z = [(0, 0.0), (3.0, 0.0), (10.0, 1.8), (30.0, 1.6), (37.0, 0.0), (50, 0.0)]
+WASH_DIP = [(0, 0.0), (4.0, 0.0), (8.0, 1.0), (12.0, 1.0), (14.0, 0.0), (50, 0.0)]      # hands in the water
+WASH_FACE = [(0, 0.0), (12.5, 0.0), (17.0, 1.0), (24.0, 1.0), (27.0, 0.0), (50, 0.0)]  # hands at the face
+WASH_HP = [(0, 0.0), (4.0, 6.0), (10.0, 18.0), (14.0, 4.0), (17.0, -4.0), (24.0, -2.0), (28.0, 8.0), (34.0, 4.0), (38.0, -6.0), (43.0, 0.0), (50, 0.0)]
+WASH_FLICK = [(0, 0.0), (36.0, 0.0), (38.0, 1.0), (43.0, 1.0), (46.0, 0.0), (50, 0.0)]
+c = clip('wash', 50, False, look=('citizen', 5), station_='cauldron', events=[('scoop', 12), ('splash', 18), ('shake', 27)],
+         views=((32, -12, True), (90, -2), (150, -10)),
+         traces=[('right_arm', GRIP['right_arm'], (160, 200, 255))])
+dips, faces = Arms(), Arms()
+for t in every(50):
+    feet = {'right_leg': (-1.9, -0.5), 'left_leg': (1.9, 0.5)}
+    pr = root_for(feet, z=K(WASH_Z, t), dip=0.6 * bump(t, 4.0, 34.0))
+    fr = F_(qt=bend(K(WASH_P, t)), pr=pr)
+    key_frame(c, t, fr, ease='linear')
+    plant(c, t, fr, right=feet['right_leg'], left=feet['left_leg'])
+    shake = 10.0 * bump(t, 25.0, 31.0) * math.sin(2 * math.pi * (t - 25.0) / 2.0)
+    q_head = qeuler(x=K(WASH_HP, t), y=shake)
+    rub = 1.4 * bump(t, 19.0, 25.0) * math.sin(2 * math.pi * (t - 19.0) / 3.0)
+    wd, wf, wk = smooth(K(WASH_DIP, t)), smooth(K(WASH_FACE, t)), K(WASH_FLICK, t)
+    for side in ('right_arm', 'left_arm'):
+        s = -1.0 if side == 'right_arm' else 1.0
+        water = np.array([s * 1.6, 11.0, -13.2])
+        face = head_point(fr, q_head, np.array([s * 1.7, -2.0 + rub * (1 if s < 0 else -1), -6.6]))
+        q_water = dips.reach(side, fr, water, palm=U, palm_w=0.2) if wd > 1e-4 else None
+        q_face = faces.reach(side, fr, face, palm=B, palm_w=0.2) if wf > 1e-4 else None
+        q = hang(side, fr, fwd=4.0 * bump(t, 2.0, 8.0))
+        if q_water is not None:
+            q = qslerp(q, q_water, wd)
+        if q_face is not None:
+            q = qslerp(q, q_face, wf)
+        flick = 10.0 * wk * math.sin(2 * math.pi * (t - 38.0) / 2.5)
+        if wk > 1e-4:
+            q = qslerp(q, hang(side, fr, out=IDLE_ARM_OUT + 14.0 + flick, fwd=12.0 + flick), wk)
+        c.key(side, t, q, ease='linear')
+    c.key('head', t, q_head, ease='linear')
+c.mode('head', 'add')
+for side in ('right_leg', 'left_leg'):
+    check(c, f'{side} foot on the ground (t=12)', (leg_end(c, 12, side)[1],), (24.0,), tol=0.3)
+check(c, 'right hand in the water (t=12)', (ta.fk(c, 12, 'right_arm', GRIP['right_arm'])[1],), (11.0,), tol=0.8)
+
+# ================================================================== goods changing hands
+
+GOODS = 8.0                                         # what is carried, drawn about this big (a block item at half size)
+GOODS_ON_GROUND = np.array([0.0, 24.0 - 4.5, -9.5])  # set down a little ahead (the middle of a 9 px thing on the ground)
+CARRY_AT = np.array([-6.3, 7.6, -8.2])              # carry's right hand on the side of what is carried (the left mirrored)
+HANDOFF = np.array([-6.0, 3.0, -14.0])              # the giver's right hand on the near half of goods held out over the
+                                                    # counter's middle (the taker, 2 blocks off, takes the far half)
+
+
+def mirror_x(p):
+    return np.asarray(p, float) * np.array([-1.0, 1.0, 1.0])
+
+
+def flat_forward(mats):
+    f = mats['body'][:3, :3] @ np.array([0.0, 0.0, -1.0])
+    f[1] = 0.0
+    return f / max(1e-9, float(np.linalg.norm(f)))
+
+
+def between_hands(mats, ahead=0.0):
+    """The middle of what both hands hold by its sides, [ahead] px further forward (goods held by their near half)."""
+    a, b = grips(mats)
+    return (a + b) / 2 + flat_forward(mats) * ahead
+
+
+def carry_keys():
+    """carry's first frame: the arms and torso pick_up ends on and put_down starts from."""
+    cc = getc('carry')
+    return {b: cc.sample(b, 0.0) for b in ('right_arm', 'left_arm', 'torso', 'head')}
+
+
+def goods_clip(name, keys, events, goods, look):
+    """pick_up and put_down: the hands down to the ground and up to carry's hold (or back), the hips down and back over
+    planted feet; [keys]: pitch, drop, back, head (add), the right hand's path (the left mirrors it) with the weight of
+    it against hanging, and how far the clip has gone into carry's own first frame."""
+    CK = carry_keys()
+    c = clip(name, 20, False, look=look, events=events, views=((32, -12), (90, -2), (150, -10)),
+             traces=[('right_arm', GRIP['right_arm'], (255, 200, 120))])
+    ta.INFO[name]['goods'] = goods
+    arms = Arms()
+    for t in every(20):
+        feet = {'right_leg': (-1.9, 0.0), 'left_leg': (1.9, 0.0)}
+        pr = np.array([0.0, K(keys['drop'], t), K(keys['back'], t)])
+        fr = F_(qt=bend(K(keys['pitch'], t)), pr=pr)
+        wc = smooth(K(keys['carry'], t))
+        if wc > 1e-6:
+            fr['qt'] = qslerp(fr['qt'], CK['torso'][0], wc)
+        key_frame(c, t, fr, ease='linear')
+        if t >= 20 - 1e-9 or t <= 1e-9:
+            for side in ('right_leg', 'left_leg'):
+                c.key(side, t, I, ease='linear')
+        else:
+            plant(c, t, fr, right=feet['right_leg'], left=feet['left_leg'])
+        w = smooth(K(keys['reach'], t))
+        for side, palm in (('right_arm', L), ('left_arm', R)):
+            p = KV(keys['hand'], t)
+            q = arms.reach(side, fr, p if side == 'right_arm' else mirror_x(p), palm=palm, palm_w=0.4)
+            q = qslerp(hang(side, fr), q, w)
+            if wc > 1e-6:
+                q = qslerp(q, CK[side][0], wc)
+            c.key(side, t, q, ease='linear')
+        hq = qeuler(x=K(keys['head'], t))
+        c.key('head', t, qslerp(hq, CK['head'][0], wc) if wc > 1e-6 else hq, ease='linear')
+    c.mode('head', 'add')
+    return c
+
+
+PU_KEYS = {
+    'pitch': [(0, 0.0), (1.5, -2.0), (5.0, 38.0), (8.0, 60.0), (9.5, 60.0), (12.5, 40.0), (15.5, 10.0), (17.5, -4.0), (20, -3.0)],
+    'drop': [(0, 0.0), (2.0, 0.0), (6.5, 2.6), (10.0, 2.6), (14.0, 0.5), (17.0, 0.0), (20, 0.0)],
+    'back': [(0, 0.0), (2.0, 0.0), (6.5, 1.5), (10.0, 1.5), (15.0, 0.2), (20, 0.0)],
+    'head': [(0, 0.0), (2.0, 8.0), (6.0, 14.0), (9.0, 10.0), (13.0, 4.0), (17.0, -4.0), (20, -3.0)],
+    'reach': [(0, 0.0), (1.5, 0.0), (4.5, 1.0), (20, 1.0)],
+    'carry': [(0, 0.0), (17.0, 0.0), (20, 1.0)],
+    'hand': [(0, (-7.0, 12.0, -6.0)), (2.0, (-7.0, 12.0, -6.0)), (6.0, (-7.4, 17.5, -9.5)), (8.5, (-6.3, 19.5, -9.5)),
+             (10.0, (-6.3, 19.2, -9.5)), (13.0, (-6.3, 13.5, -10.4)), (16.0, (-6.3, 9.0, -9.4)), (18.5, CARRY_AT + (0, 0.1, -0.1)),
+             (20, CARRY_AT)],
+}
+PU_GRAB = 8.5
+c = goods_clip('pick_up', PU_KEYS, [('grab', PU_GRAB)],
+               lambda t, mats: (GOODS_ON_GROUND if t < PU_GRAB else between_hands(mats), GOODS), ('citizen', 3))
+join('pick_up ends on carry', getc('pick_up'), 20, getc('carry'), 0, tol=0.3)
+join('pick_up starts on idle', getc('pick_up'), 0, getc('idle'), 0, tol=1.0)
+check(c, 'hands on the goods on the ground (t=8.5)', ta.fk(c, PU_GRAB, 'right_arm', GRIP['right_arm']),
+      GOODS_ON_GROUND + np.array([-6.3, 0.0, 0.0]), tol=0.8)
+
+PD_KEYS = {
+    'pitch': [(0, -3.0), (2.0, 4.0), (6.0, 36.0), (9.5, 58.0), (11.5, 60.0), (13.5, 48.0), (17.0, 8.0), (18.5, -1.0), (20, 0.0)],
+    'drop': [(0, 0.0), (3.0, 0.0), (8.5, 2.6), (12.0, 2.6), (16.0, 0.5), (18.5, 0.0), (20, 0.0)],
+    'back': [(0, 0.0), (3.0, 0.0), (8.5, 1.5), (12.0, 1.5), (16.5, 0.2), (20, 0.0)],
+    'head': [(0, -3.0), (3.0, 6.0), (8.0, 12.0), (12.0, 10.0), (16.0, 2.0), (20, 0.0)],
+    'reach': [(0, 1.0), (13.0, 1.0), (18.5, 0.0), (20, 0.0)],
+    'carry': [(0, 1.0), (3.0, 0.0), (20, 0.0)],
+    'hand': [(0, CARRY_AT), (2.5, (-6.3, 8.5, -9.0)), (6.0, (-6.3, 13.5, -10.4)), (9.5, (-6.3, 19.2, -9.5)),
+             (11.0, (-6.3, 19.5, -9.5)), (12.5, (-7.4, 18.5, -9.4)), (15.5, (-7.0, 13.0, -6.5)), (20, (-7.0, 12.0, -6.0))],
+}
+PD_DOWN = 11.0
+c = goods_clip('put_down', PD_KEYS, [('set_down', PD_DOWN)],
+               lambda t, mats: (between_hands(mats) if t < PD_DOWN else GOODS_ON_GROUND, GOODS), ('citizen', 6))
+join('put_down starts on carry', getc('put_down'), 0, getc('carry'), 0, tol=0.3)
+join('put_down ends on idle', getc('put_down'), 20, getc('idle'), 0, tol=1.0)
+check(c, 'hands on the goods on the ground (t=11)', ta.fk(c, PD_DOWN, 'right_arm', GRIP['right_arm']),
+      GOODS_ON_GROUND + np.array([-6.3, 0.0, 0.0]), tol=0.8)
+
+
+def counter_clip(name, look, events, goods=None, tools=(), tools_at=None, partner=None):
+    """hand_over, receive and pay: across a counter from someone 2 blocks off (the partner in the previews)."""
+    c = clip(name, 30, False, look=look, tools_=tools, station_='counter', events=events, partner=partner,
+             views=((40, -14), (90, -2), (200, -14)),
+             traces=[('right_arm', GRIP['right_arm'], (255, 200, 120))])
+    if goods:
+        ta.INFO[name]['goods'] = goods
+    if tools_at:
+        ta.INFO[name]['tools_at'] = tools_at
+    return c
+
+
+def both_hands_on(c, t, fr, arms, path, w, palms=(L, R)):
+    """Both hands at the sides of something held by them: the right on [path] (the left mirrored), weighed [w] against
+    hanging."""
+    for side, palm in (('right_arm', palms[0]), ('left_arm', palms[1])):
+        p = path if side == 'right_arm' else mirror_x(path)
+        q = arms.reach(side, fr, p, palm=palm, palm_w=0.4)
+        c.key(side, t, qslerp(hang(side, fr), q, w), ease='linear')
+
+
+# ---- hand_over (30): goods lifted from under the counter and held out over it with both hands, leaning in; held while
+# the other takes them (tick 16), the hands sliding off and open, and back with a nod
+HO_P = [(0, 0.0), (3.0, -1.0), (9.0, 24.0), (16.0, 26.0), (19.0, 18.0), (24.0, 2.0), (27.0, -1.0), (30, 0.0)]
+HO_HAND = [(0, (-6.0, 11.0, -5.5)), (5.0, (-6.0, 5.5, -8.0)), (12.0, HANDOFF + (0, 0.4, 0.2)), (16.0, HANDOFF),
+           (19.0, (-7.6, 3.4, -12.6)), (23.0, (-7.0, 9.0, -7.0)), (30, (-7.0, 10.0, -5.0))]
+HO_W = [(0, 1.0), (19.0, 1.0), (24.0, 0.0), (30, 0.0)]
+HO_HEAD = [(0, 6.0), (5.0, 4.0), (12.0, 6.0), (16.0, 4.0), (20.0, -2.0), (24.0, 8.0), (27.0, 0.0), (30, 0.0)]
+HANDOVER_T = 16.0
+c = counter_clip('hand_over', ('merchant', 3), [('handoff', HANDOVER_T)], partner='receive',
+                 goods=lambda t, mats: (between_hands(mats, 2.0), GOODS) if t < HANDOVER_T else None)
+arms = Arms()
+for t in every(30):
+    fr = F_(qt=bend(K(HO_P, t)))
+    key_frame(c, t, fr, root=False, ease='linear')
+    both_hands_on(c, t, fr, arms, KV(HO_HAND, t), smooth(K(HO_W, t)), palms=(L, R) if t < 18 else (U, U))
+    c.key('head', t, qeuler(x=K(HO_HEAD, t)), ease='linear')
+c.mode('head', 'add')
+
+# ---- receive (30): the hands come up and out over the counter, take the goods held out (tick 16) by their far half,
+# draw them in to the chest and a look at them
+RC_P = [(0, 0.0), (4.0, 2.0), (10.0, 22.0), (16.0, 24.0), (20.0, 10.0), (24.0, 2.0), (30, 1.0)]
+RC_HAND = [(0, (-7.0, 10.0, -5.0)), (5.0, (-7.6, 5.0, -9.0)), (11.0, (-7.4, 3.2, -13.4)), (14.5, HANDOFF + (-0.6, 0.0, 0.0)),
+           (16.0, HANDOFF), (20.0, (-6.0, 5.5, -10.0)), (24.0, (-6.0, 6.5, -8.5)), (30, (-6.0, 6.8, -8.3))]
+RC_W = [(0, 0.0), (5.0, 1.0), (30, 1.0)]
+RC_HEAD = [(0, 0.0), (5.0, 4.0), (12.0, 6.0), (16.0, 8.0), (21.0, 12.0), (25.0, 14.0), (28.0, 6.0), (30, 4.0)]
+c = counter_clip('receive', ('citizen', 1), [('handoff', HANDOVER_T)], partner='hand_over',
+                 goods=lambda t, mats: (between_hands(mats, 2.0), GOODS) if t >= HANDOVER_T else None)
+arms = Arms()
+for t in every(30):
+    fr = F_(qt=bend(K(RC_P, t), 0.0, 0.0))
+    key_frame(c, t, fr, root=False, ease='linear')
+    both_hands_on(c, t, fr, arms, KV(RC_HAND, t), smooth(K(RC_W, t)), palms=(U, U) if t < 13 else (L, R))
+    c.key('head', t, qeuler(x=K(RC_HEAD, t), y=8.0 * bump(t, 21.0, 29.0)), ease='linear')
+c.mode('head', 'add')
+
+
+def goods_at(name, t, ahead=2.0, place=None):
+    mats = part_matrices(ta.look_for(ta.INFO[name]['look']), ta.pose_at(getc(name), t, ta.walk_base(t)))
+    p = between_hands(mats, ahead)
+    return p if place is None else apply(place, p)
+
+
+check(getc('hand_over'), 'the goods where the taker takes them (t=16, against receive)', goods_at('hand_over', HANDOVER_T),
+      goods_at('receive', HANDOVER_T, place=ta.partner_place()), tol=0.8)
+
+# ---- pay (30): the purse up in the left hand, coins taken from it, and counted one by one into the other's palm over
+# the counter (ticks 11, 14, 17), the purse lowered
+PURSE_MOUTH = (0.0, -2.5, -2.75)
+COIN = (0.0, 0.5, -3.0)
+PAY_DROPS = (11.0, 14.0, 17.0)
+PAY_P = [(0, 0.0), (4.0, 4.0), (8.0, 8.0), (11.0, 20.0), (17.0, 22.0), (21.0, 8.0), (26.0, 0.0), (30, 0.0)]
+PAY_PURSE = [(0, (3.0, 9.0, -5.5)), (4.0, (2.6, 7.0, -7.5)), (17.0, (2.6, 7.2, -7.3)), (24.0, (3.6, 10.0, -4.5)), (30, (3.6, 10.5, -4.0))]
+PAY_W = [(0, 0.0), (1.0, 0.0), (4.0, 1.0), (30, 1.0)]
+PAY_HAND = [(0, (-7.0, 11.0, -5.0)), (4.0, (1.2, 4.6, -7.6)), (6.0, (1.4, 5.4, -7.4)), (7.5, (0.4, 4.0, -8.5)),
+            (10.5, (-1.0, 1.4, -13.3)), (11.0, (-1.0, 1.9, -13.4)), (13.5, (-0.5, 1.3, -13.4)), (14.0, (-0.5, 1.9, -13.5)),
+            (16.5, (0.0, 1.3, -13.5)), (17.0, (0.0, 1.9, -13.6)), (20.0, (-4.0, 6.0, -10.0)), (24.0, (-7.0, 10.5, -5.5)),
+            (30, (-7.0, 11.0, -5.0))]
+PAY_HW = [(0, 0.0), (1.0, 0.0), (4.0, 1.0), (19.0, 1.0), (25.0, 0.0), (30, 0.0)]
+PAY_HEAD = [(0, 10.0), (4.0, 16.0), (7.0, 14.0), (11.0, 6.0), (17.0, 6.0), (21.0, 2.0), (25.0, 8.0), (28.0, 0.0), (30, 0.0)]
+c = counter_clip('pay', ('noble', 0), [('clink', k) for k in PAY_DROPS], tools=('coin_purse', 'coin'),
+                 tools_at=lambda t: {'coin_purse'} | ({'coin'} if 7.0 <= t < PAY_DROPS[-1] else set()), partner='receive')
+arms, purses = Arms(), Arms()
+for t in every(30):
+    fr = F_(qt=bend(K(PAY_P, t)))
+    key_frame(c, t, fr, root=False, ease='linear')
+    q_purse = purses.solve('left_arm', fr, [(tool_point('coin_purse', PURSE_MOUTH), KV(PAY_PURSE, t), 3.0)],
+                           [(tool_dir('coin_purse', (0, -1, 0)), U, 1.0)])
+    c.key('left_arm', t, qslerp(hang('left_arm', fr), q_purse, smooth(K(PAY_W, t))), ease='linear')
+    q_hand = arms.reach('right_arm', fr, KV(PAY_HAND, t), palm=D, palm_w=0.3)
+    c.key('right_arm', t, qslerp(hang('right_arm', fr), q_hand, smooth(K(PAY_HW, t))), ease='linear')
+    c.key('head', t, qeuler(x=K(PAY_HEAD, t)), ease='linear')
+c.mode('head', 'add')
+
+# ================================================================== the market
+
+APPLE_MID = (0.0, -1.3, -3.0)           # apple part space: its middle
+
+
+def counter_edge(side, x_in=5.0):
+    """A hand resting on the near edge of the counter a block ahead (its top at 8, its face at -8)."""
+    s = -1.0 if side == 'right_arm' else 1.0
+    return np.array([s * x_in, 6.2, -9.6])
+
+
+# ---- browse (60, loop): a shopper at a stall, leaning on the counter's edge, looking the goods over; an apple picked
+# up (tick 14), brought up to look at, turned over in the fingers, the other hand helping, put back (tick 36); a lean
+# to the other end of the stall and a feel of the goods there with the left hand, and back
+BR_P = [(0, 14.0), (8.0, 16.0), (14.0, 20.0), (20.0, 8.0), (30.0, 9.0), (36.0, 20.0), (42.0, 15.0), (48.0, 19.0), (54.0, 14.0), (60, 14.0)]
+BR_YAW = [(0, 0.0), (8.0, 6.0), (14.0, 8.0), (22.0, 4.0), (30.0, 4.0), (36.0, 8.0), (44.0, -10.0), (50.0, -12.0), (56.0, -3.0), (60, 0.0)]
+BR_ROLL = [(0, 0.0), (36.0, 0.0), (44.0, -2.0), (50.0, -2.5), (56.0, 0.0), (60, 0.0)]
+BR_HY = [(0, -14.0), (5.0, 10.0), (10.0, 14.0), (16.0, 6.0), (24.0, 2.0), (30.0, 4.0), (36.0, 10.0), (42.0, -18.0), (48.0, -22.0), (54.0, -10.0), (60, -14.0)]
+BR_HP = [(0, 18.0), (6.0, 22.0), (12.0, 26.0), (18.0, 10.0), (26.0, 12.0), (32.0, 20.0), (38.0, 24.0), (46.0, 22.0), (54.0, 18.0), (60, 18.0)]
+BR_HR = [(0, 0.0), (18.0, 0.0), (21.0, 8.0), (27.0, -6.0), (31.0, 0.0), (60, 0.0)]
+APPLES = np.array([-4.0, 5.6, -12.0])           # the apples on the counter
+TOUCH = np.array([3.0, 5.6, -11.5])             # the goods at the other end
+BR_RIGHT = [(0, counter_edge('right_arm')), (6.0, counter_edge('right_arm') + (0.0, -1.5, -1.0)), (11.0, APPLES + (0.0, -1.5, 0.0)),
+            (14.0, APPLES), (17.0, APPLES + (1.0, -3.5, 2.0)), (21.0, (-2.6, 1.0, -8.6)), (30.0, (-2.4, 1.2, -8.8)),
+            (33.0, APPLES + (0.6, -2.5, 1.2)), (36.0, APPLES), (39.0, APPLES + (-0.5, -1.5, 1.5)),
+            (43.0, counter_edge('right_arm') + (-0.5, -0.5, 0.0)), (60, counter_edge('right_arm'))]
+BR_TWIST = [(0, 0.0), (21.0, 0.0), (24.0, 40.0), (27.0, -30.0), (30.0, 0.0), (60, 0.0)]
+BR_LEFT = [(0, counter_edge('left_arm')), (20.0, counter_edge('left_arm')), (23.0, (0.2, 1.6, -9.6)), (29.0, (0.0, 1.8, -9.8)),
+           (32.0, counter_edge('left_arm') + (0.0, -1.0, -0.5)), (36.0, counter_edge('left_arm')), (42.0, counter_edge('left_arm')),
+           (46.0, TOUCH + (0.0, -2.0, 0.0)), (48.0, TOUCH), (50.0, TOUCH + (-0.6, 0.0, 0.3)), (52.0, TOUCH + (0.0, -1.5, 0.5)),
+           (56.0, counter_edge('left_arm')), (60, counter_edge('left_arm'))]
+c = clip('browse', 60, True, look=('noble', 2), tools_=('apple',), station_='counter',
+         events=[('pick', 14), ('look', 25), ('put back', 36), ('feel', 48)], views=((40, -14), (90, -2), (-30, -16)),
+         traces=[('right_arm', GRIP['right_arm'], (255, 200, 120))])
+ta.INFO['browse']['tools_at'] = lambda t: {'apple'} if 14.0 <= t < 36.0 else set()
+rights, lefts = Arms(), Arms()
+for t in every(60):
+    fr = F_(qt=bend(K(BR_P, t, 60), K(BR_YAW, t, 60), K(BR_ROLL, t, 60)))
+    key_frame(c, t, fr, root=False, ease='linear')
+    q = rights.reach('right_arm', fr, KV(BR_RIGHT, t, 60), palm=D, palm_w=0.25)
+    tw = K(BR_TWIST, t)
+    if abs(tw) > 1e-6:
+        q = qmul(q, qaxis((0, 1, 0), tw))
+    c.key('right_arm', t, q, ease='linear')
+    c.key('left_arm', t, lefts.reach('left_arm', fr, KV(BR_LEFT, t, 60), palm=D, palm_w=0.25), ease='linear')
+    c.key('head', t, qeuler(x=K(BR_HP, t, 60), y=K(BR_HY, t, 60), z=K(BR_HR, t, 60)), ease='linear')
+c.mode('head', 'set')
+seal(c)
+check(c, 'hand at the apples (t=14)', ta.fk(c, 14, 'right_arm', GRIP['right_arm']), APPLES, tol=0.8)
+check(c, 'hand at the apples (t=36)', ta.fk(c, 36, 'right_arm', GRIP['right_arm']), APPLES, tol=0.8)
+
+
+# ---- set_up (60, loop): a merchant setting out the stall: a turn to the barrel at the left, goods taken out of it in
+# the left hand (tick 9), turned back and set on the counter (tick 20), pushed into line by the right; then both hands
+# up to the awning's edge, two tugs to straighten it (ticks 38, 42), a look over the stall, and back to the counter
+STALL_BARREL = np.array([14.5, 12.0, -1.0])     # down in the barrel at the merchant's left (its top at 8.5)
+STALL_SET = np.array([2.0, 5.0, -12.0])         # where the goods are set on the counter (their middle)
+AWNING = np.array([0.0, -9.0, -7.0])            # the awning's front edge overhead
+SU2_P = [(0, 12.0), (5.0, 20.0), (9.0, 30.0), (14.0, 12.0), (20.0, 22.0), (27.0, 18.0), (32.0, 2.0), (36.0, -8.0), (44.0, -8.0), (48.0, -2.0), (54.0, 4.0), (60, 12.0)]
+SU2_YAW = [(0, 0.0), (5.0, -30.0), (9.0, -40.0), (15.0, -8.0), (20.0, 0.0), (44.0, 0.0), (48.0, 8.0), (52.0, -8.0), (56.0, 0.0), (60, 0.0)]
+SU2_ROLL = [(0, 0.0), (5.0, 5.0), (9.0, 9.0), (15.0, 0.0), (60, 0.0)]
+SU2_LEFT = [(0, counter_edge('left_arm', 4.0)), (4.0, (7.5, 5.0, -4.0)), (7.5, STALL_BARREL + (0.0, -1.2, 0.0)), (9.0, STALL_BARREL),
+            (11.0, STALL_BARREL + (-1.0, -3.5, -1.0)), (16.0, STALL_SET + (0.5, -2.5, 1.5)), (20.0, STALL_SET + (0.0, -0.5, 0.0)),
+            (23.0, STALL_SET + (1.5, -1.5, 2.5)), (27.0, counter_edge('left_arm', 4.0)), (31.0, (6.0, 2.0, -8.0)),
+            (35.0, AWNING + (3.0, 0.5, 0.0)), (38.0, AWNING + (3.0, 1.5, 0.0)), (40.0, AWNING + (3.0, 0.4, 0.0)),
+            (42.0, AWNING + (3.0, 1.6, 0.0)), (44.0, AWNING + (3.0, 0.6, 0.0)), (48.0, (6.5, 6.0, -5.0)), (52.0, (7.0, 11.0, -3.5)),
+            (56.0, (6.5, 9.0, -6.0)), (60, counter_edge('left_arm', 4.0))]
+SU2_RIGHT = [(0, counter_edge('right_arm', 4.0)), (8.0, counter_edge('right_arm', 4.0) + (0.0, -0.5, 0.5)), (16.0, counter_edge('right_arm', 4.0)),
+             (21.0, STALL_SET + (-5.5, -0.5, 0.0)), (23.5, STALL_SET + (-4.6, 0.6, 0.0)), (25.5, STALL_SET + (-3.6, 0.6, 0.0)),
+             (27.5, STALL_SET + (-5.0, -1.0, 0.5)), (31.0, (-6.0, 2.0, -8.0)), (35.0, AWNING + (-3.0, 0.5, 0.0)), (38.0, AWNING + (-3.0, 1.5, 0.0)),
+             (40.0, AWNING + (-3.0, 0.4, 0.0)), (42.0, AWNING + (-3.0, 1.6, 0.0)), (44.0, AWNING + (-3.0, 0.6, 0.0)), (48.0, (-6.5, 6.0, -5.0)),
+             (52.0, (-7.0, 11.0, -3.5)), (56.0, (-6.5, 9.0, -6.0)), (60, counter_edge('right_arm', 4.0))]
+SU2_PALM = [(0, D), (30.0, D), (34.0, F), (44.0, F), (49.0, D), (60, D)]
+SU2_HY = [(0, 0.0), (5.0, -30.0), (9.0, -14.0), (15.0, 4.0), (20.0, 6.0), (26.0, 2.0), (32.0, -30.0), (36.0, -40.0), (44.0, -36.0), (48.0, -6.0), (52.0, 14.0), (56.0, 0.0), (60, 0.0)]
+SU2_HX = [(0, 0.0), (5.0, -20.0), (9.0, -12.0), (15.0, 4.0), (20.0, 8.0), (26.0, 4.0), (32.0, 0.0), (48.0, 0.0), (52.0, 4.0), (56.0, 0.0), (60, 0.0)]
+SU2_TAKE, SU2_PLACE = 9.0, 20.0
+c = clip('set_up', 60, True, look=('merchant', 1), station_='stall',
+         events=[('take', SU2_TAKE), ('place', SU2_PLACE), ('tug', 38), ('tug', 42)], views=((40, -14, True), (90, -2), (200, -16)),
+         traces=[('left_arm', GRIP['left_arm'], (200, 230, 255))])
+ta.INFO['set_up']['goods'] = lambda t, mats: ((apply(mats['left_arm'], GRIP['left_arm'] + np.array([0.0, 1.0, -2.5])), 5.0)
+                                              if SU2_TAKE <= t < SU2_PLACE else (STALL_SET, 5.0) if SU2_PLACE <= t < 31.0 else None)
+rights, lefts = Arms(), Arms()
+for t in every(60):
+    fr = F_(qt=bend(K(SU2_P, t, 60), K(SU2_YAW, t, 60), K(SU2_ROLL, t, 60)))
+    key_frame(c, t, fr, root=False, ease='linear')
+    palm = unit(KV(SU2_PALM, t))
+    c.key('right_arm', t, rights.reach('right_arm', fr, KV(SU2_RIGHT, t, 60), palm=palm, palm_w=0.3), ease='linear')
+    c.key('left_arm', t, lefts.reach('left_arm', fr, KV(SU2_LEFT, t, 60), palm=mirror_x(palm), palm_w=0.3), ease='linear')
+    c.key('head', t, qeuler(x=K(SU2_HX, t, 60), y=K(SU2_HY, t, 60)), ease='linear')
+c.mode('head', 'add')
+seal(c)
+check(c, 'left hand in the barrel (t=9)', ta.fk(c, SU2_TAKE, 'left_arm', GRIP['left_arm']), STALL_BARREL, tol=0.8)

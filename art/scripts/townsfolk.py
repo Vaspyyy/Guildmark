@@ -27,7 +27,7 @@ if HERE not in sys.path:
 import modelkit
 from modelkit import Cube, Part, Model
 
-TEX_W, TEX_H = 256, 128     # the declared (box UV) size
+TEX_W, TEX_H = 256, 256     # the declared (box UV) size (Living World: was 256 x 128, full once its props came in)
 SCALE = 2                   # every PNG ships at SCALE times that
 ROOT = os.path.normpath(os.path.join(HERE, '..', '..'))
 KOTLIN_DIR = os.path.join(ROOT, 'src/main/kotlin/io/github/vaspyyy/guildmark/client/townsfolk')
@@ -203,10 +203,17 @@ def pack_uv(model):
     W = model.tex_w
     cubes = list(model.all_cubes())
     sky = [[0, 0, W]]              # segments: x, height, width
-    for late in (False, True):
-        group = [c for c in cubes if (c.name in LATE_CUBES) == late]
+    # ---- Living World: its props (living_props.py) are packed after the companions', so they never move a cube either
+    try:
+        import living_props
+        living = living_props.cube_names()
+    except ImportError:
+        living = set()
+    for late in (0, 1, 2):
+        group = [c for c in cubes if (2 if c.name in living else 1 if c.name in LATE_CUBES else 0) == late]
         for c in sorted(group, key=lambda c: (-c.footprint()[1], -c.footprint()[0], c.name)):
             sky = _skyline_place(model, sky, c)
+    # ---- Living World: end
     used = max(c.uv[1] + c.footprint()[1] for c in model.all_cubes())
     if used > model.tex_h:
         raise SystemExit(f'{model.name}: texture too small, need {used} rows of {model.tex_h}')
