@@ -725,7 +725,9 @@ internal class Waylay(val show: Show, private var strike: Caravans.Strike?) {
             if (wreck != null) {
                 wreck.wreck = rec.id
                 wreck.snapTo(w.x, w.y, w.z, w.yRot, 0f)
-                var flags = Wreck.FLAG_FRESH or (if (verge < 0) Wreck.FLAG_MIRROR else 0) or (w.arrows shl Wreck.ARROWS)
+                // The arrows went into the side facing the band: gone over onto that side, they're under it now
+                val arrows = if ((side > 0) == (verge > 0)) 0 else w.arrows
+                var flags = Wreck.FLAG_FRESH or (if (verge < 0) Wreck.FLAG_MIRROR else 0) or (arrows shl Wreck.ARROWS)
                 if (horseDead) flags = flags or Wreck.FLAG_HORSE or ((show.horse?.coat ?: 0) shl Wreck.COAT)
                 wreck.set(rec.lots.map { if (it.count > 0) it.good else null }, flags)
                 if (level.addFreshEntity(wreck)) WreckShows.adopt(level, rec.id, wreck)
