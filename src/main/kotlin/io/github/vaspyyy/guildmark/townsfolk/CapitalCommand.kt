@@ -14,6 +14,7 @@ import io.github.vaspyyy.guildmark.economy.MarketBoards
 import io.github.vaspyyy.guildmark.economy.Markets
 import io.github.vaspyyy.guildmark.economy.Route
 import io.github.vaspyyy.guildmark.economy.works.Works
+import io.github.vaspyyy.guildmark.townsfolk.scenes.SceneCommand
 import io.github.vaspyyy.guildmark.village.VillageNames
 import net.minecraft.ChatFormatting
 import net.minecraft.commands.CommandSourceStack
@@ -50,7 +51,8 @@ import java.util.UUID
  * for a while (only you see the marks), `furnish` makes up every bed its people are missing at once, `crew` lists
  * its carters, millers and crier, `cry` sends the crier to cry the news now, `act <move> [ticks]` has the townsperson
  * you're looking at play one of their moves on the spot, over and over, `makeway [blocks]` sends a make-believe wagon
- * down the street you're looking along for townsfolk to step aside from, and `people [trade] [page]` lists its people.
+ * down the street you're looking along for townsfolk to step aside from, `people [trade] [page]` lists its people, and
+ * `scene <name>` plays one of the town's scenes near you now, whatever the switches say ([SceneCommand]).
  * Positions in the replies can be clicked to go there.
  */
 object CapitalCommand {
@@ -109,6 +111,7 @@ object CapitalCommand {
                         .then(Commands.literal("haul").executes { haul(it) })
                         .then(Commands.literal("show").executes { show(it) })
                         .then(Commands.literal("furnish").executes { furnish(it) })
+                        .then(SceneCommand.node())
                         .then(
                             Commands.literal("makeway")
                                 .executes { makeWay(it, MAKE_WAY) }
