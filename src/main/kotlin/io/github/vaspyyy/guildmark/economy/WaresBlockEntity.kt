@@ -2,6 +2,7 @@ package io.github.vaspyyy.guildmark.economy
 
 import io.github.vaspyyy.guildmark.city.plan.Look
 import io.github.vaspyyy.guildmark.city.plan.Wares
+import io.github.vaspyyy.guildmark.economy.works.Reserve
 import io.github.vaspyyy.guildmark.townsfolk.Furnish
 import net.minecraft.core.BlockPos
 import net.minecraft.core.HolderLookup
@@ -107,8 +108,9 @@ class WaresBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(WaresRegi
     }
 
     /**
-     * What it should show now: each good as full as the market holds of it against what the town likes to keep, a
-     * count it's near enough to kept so the heap doesn't flicker; full with the markets switched off; null (no change)
+     * What it should show now: each good as full as the market holds of it against what the town likes to keep (a
+     * town granary's bins: as full as the granary holds of it against its room, see [Wares.reserve]), a count it's
+     * near enough to kept so the heap doesn't flicker; full with the markets switched off; null (no change)
      * outside a capital, while its market hasn't opened, and while it shows a player's own goods.
      */
     private fun target(level: ServerLevel): IntArray? {
@@ -119,7 +121,7 @@ class WaresBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(WaresRegi
         val cap = WaresLayout.capacity(look, wares.goods)
         return IntArray(cap.size / 2) { i ->
             val good = Good.byId(wares.goods[i]) ?: return@IntArray cap[i * 2]
-            val exact = WaresLayout.count(cap[i * 2], cap[i * 2 + 1], entry.market.stock(good) / entry.town.target(good))
+            val exact = WaresLayout.count(cap[i * 2], cap[i * 2 + 1], if (wares.reserve) Reserve.full(entry.market, entry.town, good) else entry.market.stock(good) / entry.town.target(good))
             val now = counts.getOrElse(i) { -1 }
             if (now >= 0 && abs(exact - now) < HOLD) now else exact.roundToInt().coerceIn(0, cap[i * 2 + 1])
         }

@@ -42,10 +42,17 @@ enum class Wares(val look: Look, vararg goods: String) {
     HIDES(Look.CLOTH, "leather", "string"),
     FLETCHING(Look.ARROWS, "arrow", "feather", "flint"),
     CHANDLERY(Look.CANDLES, "candle", "honey", "bottle"),
-    BREAD(Look.BREAD, "bread");
+    BREAD(Look.BREAD, "bread"),
+
+    /** The town granary's bins (economy/works/Reserve): heaped by what it holds against its room, not by the market. */
+    RESERVE_GRAIN(Look.SACKS, "wheat"),
+    RESERVE_ROOTS(Look.BASKET, "carrot", "potato", "beetroot");
 
     /** Its goods by id, a lane of the display each (economy/WaresLayout), the first on the buyer's left or at the front. */
     val goods: List<String> = goods.toList()
+
+    /** Whether it shows the town granary's store rather than the market's. */
+    val reserve: Boolean get() = this == RESERVE_GRAIN || this == RESERVE_ROOTS
 
     companion object {
         /** What a display of [look] put down by hand shows. */
