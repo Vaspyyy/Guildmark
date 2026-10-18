@@ -31,7 +31,7 @@ internal object LivingSchedule {
     class Moment(val name: String, val tick: Float, val x: Float, val y: Float, val z: Float)
 
     /** The clips these are for. */
-    val CLIPS: Set<String> = setOf("sit_down", "stand_up", "nod", "shrug", "point", "bow", "yawn", "stretch", "knock", "climb", "climb_top", "eat", "sit_eat", "wash", "pick_up", "put_down", "hand_over", "receive", "pay", "browse", "set_up", "sow", "carry_basket", "gather", "scythe", "grind", "chop", "pour_sack", "ring_bell", "announce", "light_lamp", "draw_water", "explain", "gossip", "shush", "wave_off", "sigh", "think", "tip_hat", "introduce", "arms_folded", "recoil", "wave_walk", "nod_walk", "sit_gossip", "sit_laugh", "pause_work")
+    val CLIPS: Set<String> = setOf("sit_down", "stand_up", "nod", "shrug", "point", "bow", "yawn", "stretch", "knock", "climb", "climb_top", "eat", "sit_eat", "wash", "pick_up", "put_down", "hand_over", "receive", "pay", "browse", "set_up", "sow", "carry_basket", "gather", "scythe", "grind", "chop", "pour_sack", "ring_bell", "announce", "draw_water", "carry_pole", "light_lamp", "snuff_lamp")
 
     /** Each prop's own part, and the part it hangs on. */
     val PARENT: Map<String, String> = mapOf(
@@ -105,9 +105,6 @@ internal object LivingSchedule {
             Shown("handbell", 0f, END),
             Shown("scroll", 0f, END),
         ),
-        "light_lamp" to listOf(
-            Shown("lamp_pole", 0f, END),
-        ),
         "draw_water" to listOf(
             Shown("bucket", 48f, END),
             Shown("curb_rope", 0f, 48f),
@@ -124,12 +121,22 @@ internal object LivingSchedule {
             Shown("well_bucket", 0f, 48f),
             Shown("well_rope", 0f, 30.5f),
         ),
+        "carry_pole" to listOf(
+            Shown("lamp_pole", 0f, END),
+        ),
+        "light_lamp" to listOf(
+            Shown("lamp_pole", 0f, END),
+        ),
+        "snuff_lamp" to listOf(
+            Shown("lamp_pole", 0f, END),
+        ),
     )
 
     /** By clip: the props its file turns, places and stretches itself tick by tick ("prop:<part>" bones). */
     val TRACKED: Map<String, List<String>> = mapOf(
         "grind" to listOf("crank"),
         "draw_water" to listOf("bucket", "curb_rope", "haul_rope_left", "haul_rope_right", "tail_rope_left", "tail_rope_right", "well_bucket", "well_rope"),
+        "snuff_lamp" to listOf("lamp_pole"),
     )
 
     /** Props that hang straight down from the hand holding them (where no track runs them). */
@@ -318,10 +325,6 @@ internal object LivingSchedule {
             Moment("ring", 60f, -8.594f, -10.011f, -8.82f),
             Moment("ring", 64f, -8.595f, -10.011f, -8.894f),
         ),
-        "light_lamp" to listOf(
-            Moment("reach", 21f, 0.009f, -27.549f, -12.622f),
-            Moment("lit", 24f, 0f, -27.5f, -16f),
-        ),
         "draw_water" to listOf(
             Moment("pull", 8f, -3.335f, 7.395f, -4.358f),
             Moment("pull", 16f, -2.224f, 8.083f, -2.581f),
@@ -334,72 +337,18 @@ internal object LivingSchedule {
             Moment("slosh", 52f, -1.174f, 4.271f, -12.71f),
             Moment("slosh", 60f, -5.492f, 14.218f, -4.589f),
         ),
-        "explain" to listOf(
-            Moment("beat", 20f, -0.101f, 3.197f, -3.122f),
-            Moment("count", 30f, 0.435f, 3.253f, -3.262f),
-            Moment("count", 35f, 0.765f, 3.234f, -3.186f),
-            Moment("count", 40f, 0.65f, 3.235f, -3.202f),
-            Moment("nod", 45f, 0.078f, 3.281f, -3.351f),
+        "carry_pole" to listOf(
+            Moment("smoke", 12f, -3.3f, -27.944f, -20.013f),
+            Moment("smoke", 32f, -4.095f, -27.978f, -20.013f),
         ),
-        "gossip" to listOf(
-            Moment("glance", 16.5f, 0.24f, 4.002f, -2.937f),
-            Moment("glance", 38.5f, 0.273f, 4.092f, -2.967f),
-            Moment("nod", 45.5f, 0.381f, 4.37f, -3.051f),
+        "light_lamp" to listOf(
+            Moment("reach", 21f, 0.008f, -27.56f, -12.619f),
+            Moment("lit", 24f, 0f, -27.5f, -16f),
         ),
-        "shush" to listOf(
-            Moment("shush", 6.5f, 0f, 3.256f, -3.575f),
-            Moment("look", 13.5f, 0.212f, 3.173f, -3.337f),
-            Moment("look", 18.5f, -0.159f, 3.173f, -3.341f),
-        ),
-        "wave_off" to listOf(
-            Moment("flick", 6.5f, -0.212f, 2.882f, -1.866f),
-        ),
-        "sigh" to listOf(
-            Moment("sigh", 12f, 0f, 2.958f, -2.343f),
-        ),
-        "think" to listOf(
-            Moment("tap", 16f, 0.801f, 3.076f, -2.689f),
-            Moment("tap", 20f, 0.802f, 3.081f, -2.706f),
-            Moment("tap", 24f, 0.803f, 3.084f, -2.717f),
-            Moment("ah", 37.5f, 0.37f, 2.945f, -2.264f),
-        ),
-        "tip_hat" to listOf(
-            Moment("touch", 7f, -0.094f, 3.069f, -2.735f),
-        ),
-        "introduce" to listOf(
-            Moment("chest", 8.5f, 0.082f, 2.958f, -2.341f),
-            Moment("nod", 18.5f, 0.135f, 3.825f, -3.383f),
-            Moment("offer", 27f, 0f, 3.1f, -2.694f),
-        ),
-        "arms_folded" to listOf(
-            Moment("tap", 23f, 1.102f, 3.164f, -1.468f),
-            Moment("tap", 27f, 1.061f, 3.171f, -1.509f),
-            Moment("tap", 31f, 1.011f, 3.169f, -1.518f),
-            Moment("hmph", 52f, 0.773f, 3.076f, -1.179f),
-        ),
-        "recoil" to listOf(
-            Moment("start", 2f, 0f, 3.008f, -0.491f),
-        ),
-        "wave_walk" to listOf(
-            Moment("wave", 10f, 0f, 3f, -2.5f),
-        ),
-        "nod_walk" to listOf(
-            Moment("touch", 5.5f, 0f, 3f, -2.5f),
-            Moment("nod", 7.5f, 0f, 3f, -2.5f),
-        ),
-        "sit_gossip" to listOf(
-            Moment("glance", 19f, -0.167f, 13.794f, -4.527f),
-            Moment("glance", 41f, -0.166f, 13.788f, -4.52f),
-            Moment("nod", 47.5f, -0.175f, 14.105f, -4.904f),
-        ),
-        "sit_laugh" to listOf(
-            Moment("slap", 12.5f, 0f, 13.209f, -3.728f),
-            Moment("slap", 21.5f, 0f, 13.015f, -3.427f),
-        ),
-        "pause_work" to listOf(
-            Moment("set_down", 2.5f, 0f, 4.505f, -3.844f),
-            Moment("wipe", 12f, 0f, 3.402f, -2.96f),
-            Moment("wipe", 16f, 0f, 3.366f, -2.927f),
+        "snuff_lamp" to listOf(
+            Moment("clink", 18.5f, 0f, -26.6f, -13f),
+            Moment("hiss", 23f, 0f, -27.5f, -16f),
+            Moment("smoke", 25.5f, 0f, -27.1f, -12.4f),
         ),
     )
 }

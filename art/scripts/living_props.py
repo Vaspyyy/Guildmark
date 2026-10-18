@@ -325,6 +325,31 @@ def flame_painter(key):
     return painter(key, fn, light=False)
 
 
+SOOT = (34, 28, 24)
+
+
+def snuffer_painter(key, mouth=False):
+    """The lamplighter's snuffer: a little brass bell, its mouth (the -y face, 'top': it faces out from the pole's
+    side) black with soot inside a bright rim, the soot creeping up the sides from it; elsewhere polished brass with a
+    glint."""
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        if face == 'top' and mouth:
+            a = solid(w, h, SOOT)
+            r = np.maximum(np.abs(U - 0.5), np.abs(V - 0.5))
+            a[..., :3] = np.where((r > 0.34)[..., None], np.array(BRASS_L, float), a[..., :3])
+            a[..., :3] = np.where((r <= 0.18)[..., None], np.array((14, 12, 10), float), a[..., :3])
+            return a
+        a = metal(w, h, BRASS, BRASS_D, BRASS_L, rng, wear=0.08)
+        glint = np.exp(-((U - 0.35) ** 2 + (V - 0.4) ** 2) * 12)
+        a[..., :3] = mix(a[..., :3], (255, 240, 190), (glint * 0.6)[..., None])
+        if mouth and face != 'bottom':
+            # the sides lay y out down them from the mouth's edge (y0): V is how far a texel is from it
+            a[..., :3] = mix(a[..., :3], SOOT, (np.clip(0.4 - V, 0, 1) * 1.6)[..., None])
+        return a
+    return painter(key, fn)
+
+
 def basket_hip_painter(key):
     """A deep wicker basket for the hip: an over-under weave and a plaited rim; from above, the dark inside of it."""
     def fn(face, w, h, rng):
@@ -554,18 +579,32 @@ def _scroll():
 LAMP_POLE_ROT = euler_from_axes((0.0, -math.cos(math.radians(25)), -math.sin(math.radians(25))), (1.0, 0.0, 0.0))
 
 
+SNUFFER_X = 36.2                    # lamp_pole space: how far up the pole the snuffer's middle is (low enough to keep
+                                    # under the lantern while the wick is in its door)
+SNUFFER_MOUTH = (SNUFFER_X, -4.0, 0.0)    # the middle of its mouth
+SNUFFER_AXIS = (0.0, -1.0, 0.0)     # the way its mouth faces: out from the pole's side
+
+
 def _lamp_pole():
     # A lamplighter's pole, near three blocks of ash with a brass cap and a burning wick at the top: held low, near its
     # foot, in front of the fist along the arm like the watch's spear (the same pivot) but leaning 25 degrees forward of
     # it, so with the arm hanging it is carried at a slant, the wick 50 px up. The pole is the part's x (turned up the
-    # arm, LAMP_POLE_ROT); the flame's root at part (40.8, 0, 0), its tip 2.4 px on.
+    # arm, LAMP_POLE_ROT); the flame's root at part (40.8, 0, 0), its tip 2.4 px on. A little below the wick the
+    # snuffer stands out from the pole on a short arm, on its side (part -y: out to the right of the pole as it is
+    # carried and as a lamp is lit, clear of the lamp): a brass bell, its sooty mouth facing out (SNUFFER_MOUTH,
+    # SNUFFER_AXIS), put over a lamp's flame to put it out of a morning (the pole turned a quarter in the hands to
+    # bring it round to the lamp: snuff_lamp's track).
     flame = Part('lamp_flame', (40.8, 0.0, 0.0), (0, 0, 0), cubes=[
         C((0.0, -0.6, -0.6), (2.4, 1.2, 1.2), 't_lamp_flame', flame_painter('t_lamp_flame')),
     ])
+    sx = SNUFFER_X
     return 'right_arm', Part('lamp_pole', (-1.0, 10.0, -2.6), LAMP_POLE_ROT, cubes=[
         C((-5.4, -0.5, -0.5), (45.0, 1.0, 1.0), 't_lamp_pole', wood_painter('t_lamp_pole', WOOD, WOOD_D, WOOD_L, 'x', knots=2)),
         C((39.0, -0.85, -0.85), (1.8, 1.7, 1.7), 't_lamp_pole_cap', brass_painter('t_lamp_pole_cap')),
         C((-5.7, -0.7, -0.7), (0.8, 1.4, 1.4), 't_lamp_pole_foot', iron_painter('t_lamp_pole_foot')),
+        C((sx - 0.3, -1.5, -0.3), (0.6, 1.1, 0.6), 't_lamp_pole_arm', brass_painter('t_lamp_pole_arm')),
+        C((sx - 0.6, -2.0, -0.6), (1.2, 0.6, 1.2), 't_lamp_pole_crown', snuffer_painter('t_lamp_pole_crown')),
+        C((sx - 1.1, -4.0, -1.1), (2.2, 2.0, 2.2), 't_lamp_pole_snuffer', snuffer_painter('t_lamp_pole_snuffer', mouth=True)),
     ], children=[flame])
 
 
@@ -649,7 +688,7 @@ TOOL_NOTES = {
     'axe': 'right hand, the left 3 px nearer the end (part x, cocked 15 forward of the arm); the bit\'s edge at part (8.5, 0, 3.4)',
     'handbell': 'right hand, along the arm; the mouth at part (0, 5.4, 0)',
     'scroll': 'left hand by the top roller, the sheet hanging below it facing the reader in the announce pose',
-    'lamp_pole': 'right hand near its foot, up the arm like the spear but leaning 25 forward of it; the wick (lamp_flame, glows) at part (42, 0, 0)',
+    'lamp_pole': 'right hand near its foot, up the arm like the spear but leaning 25 forward of it; the wick (lamp_flame, glows) at part (42, 0, 0); the snuffer\'s mouth at part (36.2, -4, 0), facing -y (turned to the lamp in snuff_lamp by its track)',
     'basket_hip': 'on the body at the left hip; its top at body (5.6, 7.4, -4.0); basket_hip_cloth shows when nothing is carried',
     'sack_held': 'right hand by the neck: the shoulder sack of carry_sack, taken in hand to pour',
     'sack_empty': 'right hand, hangs limp',

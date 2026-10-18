@@ -3258,6 +3258,10 @@ import talk_clips
 talk_clips.build(sys.modules[__name__])
 WANTED += talk_clips.WANTED
 
+# ================================================================== the lamplighter's round (art/scripts/lamp_clips.py)
+import lamp_clips  # noqa: E402
+lamp_clips.make(sys.modules[__name__])
+
 
 if __name__ == '__main__':
     main(sys.argv)

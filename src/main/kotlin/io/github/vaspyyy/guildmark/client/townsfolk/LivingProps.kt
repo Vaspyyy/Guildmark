@@ -46,6 +46,8 @@ internal object LivingProps {
         /** The middle of the goods' model and its largest extent (in the item's own space, blocks). */
         val middle = Vector3f()
         var extent = 1f
+        /** Whether the wick at the top of a lamplighter's pole burns: lit to light the lamps, out to put them out. */
+        var wick = true
     }
 
     // What a free hand carries about anyway (Props.held), let go of while the hand is busy
@@ -70,6 +72,12 @@ internal object LivingProps {
         living.name = ""
         living.span = null
         living.shown.clear()
+        // The pole's wick: burning on the way to light the lamps (the lantern flag stands for it), out to snuff them
+        living.wick = when (p.shownActivity) {
+            Activity.SNUFF_LAMP -> false
+            Activity.CARRY_POLE -> p.lantern
+            else -> true
+        }
         val first = state.frame ?: return
         var frame = climbing(p, first, partial)
         // Put on a seat or off it: no easing in from the last clip, which was drawn from the other place
@@ -107,7 +115,7 @@ internal object LivingProps {
             }
         }
         state.held = held
-        if (living.shown.any { it in LivingSchedule.GLOW }) state.glows = true
+        if (living.wick && living.shown.any { it in LivingSchedule.GLOW }) state.glows = true
     }
 
     private fun letGo(held: Set<String>, right: Boolean, left: Boolean): Set<String> {
@@ -244,6 +252,7 @@ internal object LivingProps {
         private val all: List<Pair<String, ModelPart>> = LivingSchedule.PARENT.keys.mapNotNull { name -> find.apply(name)?.let { name to it } }
         private val byName: Map<String, ModelPart> = all.toMap()
         private val cloth: ModelPart? = find.apply("basket_hip_cloth")
+        private val flame: ModelPart? = find.apply("lamp_flame")
 
         private val qRoot = Quaternionf()
         private val qParent = Quaternionf()
@@ -257,6 +266,8 @@ internal object LivingProps {
             for ((name, part) in all) part.visible = name in living.shown
             // The basket's cloth covers it while nothing is in it
             cloth?.visible = living.span == null
+            // The pole's flame, only while its wick burns
+            flame?.visible = living.wick
             val clip = living.clip ?: return
             val tracked = LivingSchedule.TRACKED[living.name].orEmpty()
             for (name in tracked) {

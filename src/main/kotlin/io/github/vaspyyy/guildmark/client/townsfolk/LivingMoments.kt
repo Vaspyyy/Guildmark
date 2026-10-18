@@ -30,7 +30,8 @@ import kotlin.math.sin
  * slapped-down hand, a bite and its crumbs, water
  * scooped and splashed, the well's rope over the curb and its bucket knocking the stone, coins counted out, knocks on
  * a door, the axe's thunk and its chips, the grindstone's rumble and its flour, a sack of grain poured, bells rung,
- * seeds cast, the scythe's swish and the stalks it cuts, a street lamp catching. Each townsperson's clip time is
+ * seeds cast, the scythe's swish and the stalks it cuts, a street lamp catching and snuffed, the lamplighter's wick
+ * smoking at the top of the pole. Each townsperson's clip time is
  * followed tick to tick and every moment it passes goes off (a climb's go by height, either way up the ladder).
  */
 internal object LivingMoments {
@@ -203,11 +204,27 @@ internal object LivingMoments {
             "ring_bell" -> sound(level, at, mod(HANDBELL), 0.8f, bellPitch(level))
             // Waved about as they read out, the bell in the crier's hand knocks once or twice; shaken up high, it rings
             "announce" -> sound(level, at, mod(HANDBELL), if (m.name == "ring") 0.8f else 0.14f, bellPitch(level))
-            "light_lamp" -> if (m.name == "lit") {
-                sound(level, at, mod("lamp.light"), 0.6f)
-                repeat(4) { puff(level, ParticleTypes.FLAME, at, 0.12, 0.02, 0.01) }
-                repeat(3) { puff(level, ParticleTypes.SMOKE, at.add(0.0, 0.15, 0.0), 0.1, 0.04, 0.01) }
+            "light_lamp" -> when (m.name) {
+                // The pole's brass end knocks on the lantern's frame as the wick goes in at its little door
+                "reach" -> sound(level, at, mod("lamp.tap"), 0.45f)
+                "lit" -> {
+                    sound(level, at, mod("lamp.light"), 0.6f)
+                    repeat(4) { puff(level, ParticleTypes.FLAME, at, 0.12, 0.02, 0.01) }
+                    repeat(3) { puff(level, ParticleTypes.SMOKE, at.add(0.0, 0.15, 0.0), 0.1, 0.04, 0.01) }
+                }
             }
+            // Of a morning: the snuffer's brass bell put over the flame (it clinks on the lantern), the flame hissing out
+            // under it, and a wisp of smoke let out of the lantern as it comes away
+            "snuff_lamp" -> when (m.name) {
+                "clink" -> sound(level, at, mod("lamp.clink"), 0.5f)
+                "hiss" -> {
+                    sound(level, at, mod("lamp.hiss"), 0.55f)
+                    repeat(2) { puff(level, ParticleTypes.SMOKE, at, 0.06, 0.02, 0.01) }
+                }
+                "smoke" -> repeat(5) { puff(level, ParticleTypes.SMOKE, at, 0.08, 0.05, 0.008) }
+            }
+            // The wick burning at the top of the pole, carried lit from lamp to lamp: a thread of smoke now and then
+            "carry_pole" -> if (p.lantern) puff(level, ParticleTypes.SMOKE, at, 0.02, 0.03, 0.004)
             "draw_water" -> when (m.name) {
                 "pull" -> sound(level, at, mod("well.rope"), 0.45f)
                 "knock" -> {
