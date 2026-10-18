@@ -2069,6 +2069,588 @@
     ],
     "subtitle": "say.guildmark.talk.home.robbed_1"
   },
+  "townsfolk.voice.man.talk.works.wanted.oven_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.wanted.oven_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.wanted.oven_0"
+  },
+  "townsfolk.voice.man.talk.works.wanted.oven_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.wanted.oven_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.wanted.oven_1"
+  },
+  "townsfolk.voice.man.talk.works.wanted.granary_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.wanted.granary_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.wanted.granary_0"
+  },
+  "townsfolk.voice.man.talk.works.wanted.granary_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.wanted.granary_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.wanted.granary_1"
+  },
+  "townsfolk.voice.man.talk.works.wanted.great_granary_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.wanted.great_granary_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.wanted.great_granary_0"
+  },
+  "townsfolk.voice.man.talk.works.wanted.great_granary_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.wanted.great_granary_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.wanted.great_granary_1"
+  },
+  "townsfolk.voice.man.talk.works.wanted.tower_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.wanted.tower_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.wanted.tower_0"
+  },
+  "townsfolk.voice.man.talk.works.wanted.tower_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.wanted.tower_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.wanted.tower_1"
+  },
+  "townsfolk.voice.man.talk.works.funding_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.funding_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.funding_0"
+  },
+  "townsfolk.voice.man.talk.works.funding_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.funding_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.funding_1"
+  },
+  "townsfolk.voice.man.talk.works.funding_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.funding_2"
+    ],
+    "subtitle": "say.guildmark.talk.works.funding_2"
+  },
+  "townsfolk.voice.man.talk.works.building_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.building_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.building_0"
+  },
+  "townsfolk.voice.man.talk.works.building_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.building_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.building_1"
+  },
+  "townsfolk.voice.man.talk.works.building_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.building_2"
+    ],
+    "subtitle": "say.guildmark.talk.works.building_2"
+  },
+  "townsfolk.voice.man.talk.works.raised.oven_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.raised.oven_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.raised.oven_0"
+  },
+  "townsfolk.voice.man.talk.works.raised.oven_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.raised.oven_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.raised.oven_1"
+  },
+  "townsfolk.voice.man.talk.works.raised.granary_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.raised.granary_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.raised.granary_0"
+  },
+  "townsfolk.voice.man.talk.works.raised.granary_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.raised.granary_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.raised.granary_1"
+  },
+  "townsfolk.voice.man.talk.works.raised.great_granary_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.raised.great_granary_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.raised.great_granary_0"
+  },
+  "townsfolk.voice.man.talk.works.raised.great_granary_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.raised.great_granary_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.raised.great_granary_1"
+  },
+  "townsfolk.voice.man.talk.works.raised.tower_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.raised.tower_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.raised.tower_0"
+  },
+  "townsfolk.voice.man.talk.works.raised.tower_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.raised.tower_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.raised.tower_1"
+  },
+  "townsfolk.voice.man.talk.works.raised.stall_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.raised.stall_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.raised.stall_0"
+  },
+  "townsfolk.voice.man.talk.works.raised.stall_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.raised.stall_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.raised.stall_1"
+  },
+  "townsfolk.voice.man.talk.works.eased.granary_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.eased.granary_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.eased.granary_0"
+  },
+  "townsfolk.voice.man.talk.works.eased.granary_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.eased.granary_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.eased.granary_1"
+  },
+  "townsfolk.voice.man.talk.works.eased.oven_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.eased.oven_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.eased.oven_0"
+  },
+  "townsfolk.voice.man.talk.works.eased.oven_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.eased.oven_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.eased.oven_1"
+  },
+  "townsfolk.voice.man.talk.works.eased.tower_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.eased.tower_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.eased.tower_0"
+  },
+  "townsfolk.voice.man.talk.works.eased.tower_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.eased.tower_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.eased.tower_1"
+  },
+  "townsfolk.voice.man.talk.works.late_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.late_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.late_0"
+  },
+  "townsfolk.voice.man.talk.works.late_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.late_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.late_1"
+  },
+  "townsfolk.voice.man.talk.works.patron_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.patron_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.patron_0"
+  },
+  "townsfolk.voice.man.talk.works.patron_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.patron_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.patron_1"
+  },
+  "townsfolk.voice.man.talk.works.patron_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.patron_2"
+    ],
+    "subtitle": "say.guildmark.talk.works.patron_2"
+  },
+  "townsfolk.voice.man.talk.works.patron_other_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.patron_other_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.patron_other_0"
+  },
+  "townsfolk.voice.man.talk.works.patron_other_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.patron_other_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.patron_other_1"
+  },
+  "townsfolk.voice.man.talk.works.patron_there_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.patron_there_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.patron_there_0"
+  },
+  "townsfolk.voice.man.talk.works.patron_there_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.patron_there_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.patron_there_1"
+  },
+  "townsfolk.voice.man.talk.works.labourer_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.labourer_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.labourer_0"
+  },
+  "townsfolk.voice.man.talk.works.labourer_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.labourer_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.labourer_1"
+  },
+  "townsfolk.voice.man.talk.works.labourer_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.works.labourer_2"
+    ],
+    "subtitle": "say.guildmark.talk.works.labourer_2"
+  },
+  "townsfolk.voice.man.talk.fortune.hard_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.fortune.hard_0"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.hard_0"
+  },
+  "townsfolk.voice.man.talk.fortune.hard_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.fortune.hard_1"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.hard_1"
+  },
+  "townsfolk.voice.man.talk.fortune.hard_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.fortune.hard_2"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.hard_2"
+  },
+  "townsfolk.voice.man.talk.fortune.lean_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.fortune.lean_0"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.lean_0"
+  },
+  "townsfolk.voice.man.talk.fortune.lean_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.fortune.lean_1"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.lean_1"
+  },
+  "townsfolk.voice.man.talk.fortune.good_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.fortune.good_0"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.good_0"
+  },
+  "townsfolk.voice.man.talk.fortune.good_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.fortune.good_1"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.good_1"
+  },
+  "townsfolk.voice.man.talk.fortune.thriving_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.fortune.thriving_0"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.thriving_0"
+  },
+  "townsfolk.voice.man.talk.fortune.thriving_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.fortune.thriving_1"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.thriving_1"
+  },
+  "townsfolk.voice.man.talk.fortune.thriving_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.fortune.thriving_2"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.thriving_2"
+  },
+  "townsfolk.voice.man.talk.fortune.better_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.fortune.better_0"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.better_0"
+  },
+  "townsfolk.voice.man.talk.fortune.better_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.fortune.better_1"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.better_1"
+  },
+  "townsfolk.voice.man.talk.fortune.better_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.fortune.better_2"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.better_2"
+  },
+  "townsfolk.voice.man.talk.fortune.worse_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.fortune.worse_0"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.worse_0"
+  },
+  "townsfolk.voice.man.talk.fortune.worse_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.fortune.worse_1"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.worse_1"
+  },
+  "townsfolk.voice.man.talk.fortune.worse_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.fortune.worse_2"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.worse_2"
+  },
+  "townsfolk.voice.man.talk.fortune.gone_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.fortune.gone_0"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.gone_0"
+  },
+  "townsfolk.voice.man.talk.fortune.gone_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.fortune.gone_1"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.gone_1"
+  },
+  "townsfolk.voice.man.talk.fortune.back_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.fortune.back_0"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.back_0"
+  },
+  "townsfolk.voice.man.talk.fortune.back_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.fortune.back_1"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.back_1"
+  },
+  "townsfolk.voice.man.talk.comings.arrive_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.comings.arrive_0"
+    ],
+    "subtitle": "say.guildmark.talk.comings.arrive_0"
+  },
+  "townsfolk.voice.man.talk.comings.arrive_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.comings.arrive_1"
+    ],
+    "subtitle": "say.guildmark.talk.comings.arrive_1"
+  },
+  "townsfolk.voice.man.talk.comings.leave_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.comings.leave_0"
+    ],
+    "subtitle": "say.guildmark.talk.comings.leave_0"
+  },
+  "townsfolk.voice.man.talk.comings.leave_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.comings.leave_1"
+    ],
+    "subtitle": "say.guildmark.talk.comings.leave_1"
+  },
+  "townsfolk.voice.man.talk.comings.home_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.comings.home_0"
+    ],
+    "subtitle": "say.guildmark.talk.comings.home_0"
+  },
+  "townsfolk.voice.man.talk.comings.home_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.comings.home_1"
+    ],
+    "subtitle": "say.guildmark.talk.comings.home_1"
+  },
+  "townsfolk.voice.man.talk.comings.welcome_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.comings.welcome_0"
+    ],
+    "subtitle": "say.guildmark.talk.comings.welcome_0"
+  },
+  "townsfolk.voice.man.talk.comings.welcome_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.comings.welcome_1"
+    ],
+    "subtitle": "say.guildmark.talk.comings.welcome_1"
+  },
+  "townsfolk.voice.man.talk.comings.welcome_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.comings.welcome_2"
+    ],
+    "subtitle": "say.guildmark.talk.comings.welcome_2"
+  },
+  "townsfolk.voice.man.talk.comings.farewell_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.comings.farewell_0"
+    ],
+    "subtitle": "say.guildmark.talk.comings.farewell_0"
+  },
+  "townsfolk.voice.man.talk.comings.farewell_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.comings.farewell_1"
+    ],
+    "subtitle": "say.guildmark.talk.comings.farewell_1"
+  },
+  "townsfolk.voice.man.talk.comings.return_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.comings.return_0"
+    ],
+    "subtitle": "say.guildmark.talk.comings.return_0"
+  },
+  "townsfolk.voice.man.talk.comings.return_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.comings.return_1"
+    ],
+    "subtitle": "say.guildmark.talk.comings.return_1"
+  },
+  "townsfolk.voice.man.talk.streets.queue_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.streets.queue_0"
+    ],
+    "subtitle": "say.guildmark.talk.streets.queue_0"
+  },
+  "townsfolk.voice.man.talk.streets.queue_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.streets.queue_1"
+    ],
+    "subtitle": "say.guildmark.talk.streets.queue_1"
+  },
+  "townsfolk.voice.man.talk.streets.queue_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.streets.queue_2"
+    ],
+    "subtitle": "say.guildmark.talk.streets.queue_2"
+  },
+  "townsfolk.voice.man.talk.streets.alms_keep_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.streets.alms_keep_0"
+    ],
+    "subtitle": "say.guildmark.talk.streets.alms_keep_0"
+  },
+  "townsfolk.voice.man.talk.streets.alms_keep_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.streets.alms_keep_1"
+    ],
+    "subtitle": "say.guildmark.talk.streets.alms_keep_1"
+  },
+  "townsfolk.voice.man.talk.streets.alms_keep_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.streets.alms_keep_2"
+    ],
+    "subtitle": "say.guildmark.talk.streets.alms_keep_2"
+  },
+  "townsfolk.voice.man.talk.streets.alms_thanks_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.streets.alms_thanks_0"
+    ],
+    "subtitle": "say.guildmark.talk.streets.alms_thanks_0"
+  },
+  "townsfolk.voice.man.talk.streets.alms_thanks_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.streets.alms_thanks_1"
+    ],
+    "subtitle": "say.guildmark.talk.streets.alms_thanks_1"
+  },
+  "townsfolk.voice.man.talk.streets.alms_thanks_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.streets.alms_thanks_2"
+    ],
+    "subtitle": "say.guildmark.talk.streets.alms_thanks_2"
+  },
+  "townsfolk.voice.man.talk.streets.shut_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.streets.shut_0"
+    ],
+    "subtitle": "say.guildmark.talk.streets.shut_0"
+  },
+  "townsfolk.voice.man.talk.streets.shut_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.streets.shut_1"
+    ],
+    "subtitle": "say.guildmark.talk.streets.shut_1"
+  },
+  "townsfolk.voice.man.talk.streets.lamps_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.streets.lamps_0"
+    ],
+    "subtitle": "say.guildmark.talk.streets.lamps_0"
+  },
+  "townsfolk.voice.man.talk.streets.lamps_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.streets.lamps_1"
+    ],
+    "subtitle": "say.guildmark.talk.streets.lamps_1"
+  },
+  "townsfolk.voice.man.talk.streets.watch_quiet_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.streets.watch_quiet_0"
+    ],
+    "subtitle": "say.guildmark.talk.streets.watch_quiet_0"
+  },
+  "townsfolk.voice.man.talk.streets.watch_quiet_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.streets.watch_quiet_1"
+    ],
+    "subtitle": "say.guildmark.talk.streets.watch_quiet_1"
+  },
+  "townsfolk.voice.man.talk.streets.watch_quiet_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.streets.watch_quiet_2"
+    ],
+    "subtitle": "say.guildmark.talk.streets.watch_quiet_2"
+  },
+  "townsfolk.voice.man.talk.streets.watch_riders_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.streets.watch_riders_0"
+    ],
+    "subtitle": "say.guildmark.talk.streets.watch_riders_0"
+  },
+  "townsfolk.voice.man.talk.streets.watch_riders_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.streets.watch_riders_1"
+    ],
+    "subtitle": "say.guildmark.talk.streets.watch_riders_1"
+  },
+  "townsfolk.voice.man.talk.streets.watch_riders_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.streets.watch_riders_2"
+    ],
+    "subtitle": "say.guildmark.talk.streets.watch_riders_2"
+  },
+  "townsfolk.voice.man.talk.streets.first_bread_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.streets.first_bread_0"
+    ],
+    "subtitle": "say.guildmark.talk.streets.first_bread_0"
+  },
+  "townsfolk.voice.man.talk.streets.first_bread_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.streets.first_bread_1"
+    ],
+    "subtitle": "say.guildmark.talk.streets.first_bread_1"
+  },
+  "townsfolk.voice.man.talk.streets.first_bread_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/talk.streets.first_bread_2"
+    ],
+    "subtitle": "say.guildmark.talk.streets.first_bread_2"
+  },
   "townsfolk.voice.man.market.shut.asleep": {
     "sounds": [
       "guildmark:townsfolk/voice/man/market.shut.asleep"
@@ -4772,6 +5354,588 @@
     ],
     "subtitle": "say.guildmark.talk.home.robbed_1"
   },
+  "townsfolk.voice.woman.talk.works.wanted.oven_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.wanted.oven_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.wanted.oven_0"
+  },
+  "townsfolk.voice.woman.talk.works.wanted.oven_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.wanted.oven_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.wanted.oven_1"
+  },
+  "townsfolk.voice.woman.talk.works.wanted.granary_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.wanted.granary_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.wanted.granary_0"
+  },
+  "townsfolk.voice.woman.talk.works.wanted.granary_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.wanted.granary_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.wanted.granary_1"
+  },
+  "townsfolk.voice.woman.talk.works.wanted.great_granary_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.wanted.great_granary_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.wanted.great_granary_0"
+  },
+  "townsfolk.voice.woman.talk.works.wanted.great_granary_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.wanted.great_granary_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.wanted.great_granary_1"
+  },
+  "townsfolk.voice.woman.talk.works.wanted.tower_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.wanted.tower_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.wanted.tower_0"
+  },
+  "townsfolk.voice.woman.talk.works.wanted.tower_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.wanted.tower_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.wanted.tower_1"
+  },
+  "townsfolk.voice.woman.talk.works.funding_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.funding_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.funding_0"
+  },
+  "townsfolk.voice.woman.talk.works.funding_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.funding_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.funding_1"
+  },
+  "townsfolk.voice.woman.talk.works.funding_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.funding_2"
+    ],
+    "subtitle": "say.guildmark.talk.works.funding_2"
+  },
+  "townsfolk.voice.woman.talk.works.building_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.building_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.building_0"
+  },
+  "townsfolk.voice.woman.talk.works.building_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.building_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.building_1"
+  },
+  "townsfolk.voice.woman.talk.works.building_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.building_2"
+    ],
+    "subtitle": "say.guildmark.talk.works.building_2"
+  },
+  "townsfolk.voice.woman.talk.works.raised.oven_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.raised.oven_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.raised.oven_0"
+  },
+  "townsfolk.voice.woman.talk.works.raised.oven_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.raised.oven_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.raised.oven_1"
+  },
+  "townsfolk.voice.woman.talk.works.raised.granary_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.raised.granary_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.raised.granary_0"
+  },
+  "townsfolk.voice.woman.talk.works.raised.granary_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.raised.granary_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.raised.granary_1"
+  },
+  "townsfolk.voice.woman.talk.works.raised.great_granary_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.raised.great_granary_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.raised.great_granary_0"
+  },
+  "townsfolk.voice.woman.talk.works.raised.great_granary_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.raised.great_granary_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.raised.great_granary_1"
+  },
+  "townsfolk.voice.woman.talk.works.raised.tower_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.raised.tower_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.raised.tower_0"
+  },
+  "townsfolk.voice.woman.talk.works.raised.tower_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.raised.tower_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.raised.tower_1"
+  },
+  "townsfolk.voice.woman.talk.works.raised.stall_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.raised.stall_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.raised.stall_0"
+  },
+  "townsfolk.voice.woman.talk.works.raised.stall_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.raised.stall_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.raised.stall_1"
+  },
+  "townsfolk.voice.woman.talk.works.eased.granary_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.eased.granary_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.eased.granary_0"
+  },
+  "townsfolk.voice.woman.talk.works.eased.granary_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.eased.granary_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.eased.granary_1"
+  },
+  "townsfolk.voice.woman.talk.works.eased.oven_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.eased.oven_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.eased.oven_0"
+  },
+  "townsfolk.voice.woman.talk.works.eased.oven_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.eased.oven_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.eased.oven_1"
+  },
+  "townsfolk.voice.woman.talk.works.eased.tower_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.eased.tower_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.eased.tower_0"
+  },
+  "townsfolk.voice.woman.talk.works.eased.tower_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.eased.tower_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.eased.tower_1"
+  },
+  "townsfolk.voice.woman.talk.works.late_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.late_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.late_0"
+  },
+  "townsfolk.voice.woman.talk.works.late_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.late_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.late_1"
+  },
+  "townsfolk.voice.woman.talk.works.patron_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.patron_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.patron_0"
+  },
+  "townsfolk.voice.woman.talk.works.patron_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.patron_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.patron_1"
+  },
+  "townsfolk.voice.woman.talk.works.patron_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.patron_2"
+    ],
+    "subtitle": "say.guildmark.talk.works.patron_2"
+  },
+  "townsfolk.voice.woman.talk.works.patron_other_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.patron_other_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.patron_other_0"
+  },
+  "townsfolk.voice.woman.talk.works.patron_other_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.patron_other_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.patron_other_1"
+  },
+  "townsfolk.voice.woman.talk.works.patron_there_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.patron_there_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.patron_there_0"
+  },
+  "townsfolk.voice.woman.talk.works.patron_there_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.patron_there_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.patron_there_1"
+  },
+  "townsfolk.voice.woman.talk.works.labourer_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.labourer_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.labourer_0"
+  },
+  "townsfolk.voice.woman.talk.works.labourer_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.labourer_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.labourer_1"
+  },
+  "townsfolk.voice.woman.talk.works.labourer_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.works.labourer_2"
+    ],
+    "subtitle": "say.guildmark.talk.works.labourer_2"
+  },
+  "townsfolk.voice.woman.talk.fortune.hard_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.fortune.hard_0"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.hard_0"
+  },
+  "townsfolk.voice.woman.talk.fortune.hard_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.fortune.hard_1"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.hard_1"
+  },
+  "townsfolk.voice.woman.talk.fortune.hard_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.fortune.hard_2"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.hard_2"
+  },
+  "townsfolk.voice.woman.talk.fortune.lean_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.fortune.lean_0"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.lean_0"
+  },
+  "townsfolk.voice.woman.talk.fortune.lean_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.fortune.lean_1"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.lean_1"
+  },
+  "townsfolk.voice.woman.talk.fortune.good_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.fortune.good_0"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.good_0"
+  },
+  "townsfolk.voice.woman.talk.fortune.good_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.fortune.good_1"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.good_1"
+  },
+  "townsfolk.voice.woman.talk.fortune.thriving_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.fortune.thriving_0"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.thriving_0"
+  },
+  "townsfolk.voice.woman.talk.fortune.thriving_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.fortune.thriving_1"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.thriving_1"
+  },
+  "townsfolk.voice.woman.talk.fortune.thriving_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.fortune.thriving_2"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.thriving_2"
+  },
+  "townsfolk.voice.woman.talk.fortune.better_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.fortune.better_0"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.better_0"
+  },
+  "townsfolk.voice.woman.talk.fortune.better_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.fortune.better_1"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.better_1"
+  },
+  "townsfolk.voice.woman.talk.fortune.better_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.fortune.better_2"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.better_2"
+  },
+  "townsfolk.voice.woman.talk.fortune.worse_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.fortune.worse_0"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.worse_0"
+  },
+  "townsfolk.voice.woman.talk.fortune.worse_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.fortune.worse_1"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.worse_1"
+  },
+  "townsfolk.voice.woman.talk.fortune.worse_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.fortune.worse_2"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.worse_2"
+  },
+  "townsfolk.voice.woman.talk.fortune.gone_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.fortune.gone_0"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.gone_0"
+  },
+  "townsfolk.voice.woman.talk.fortune.gone_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.fortune.gone_1"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.gone_1"
+  },
+  "townsfolk.voice.woman.talk.fortune.back_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.fortune.back_0"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.back_0"
+  },
+  "townsfolk.voice.woman.talk.fortune.back_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.fortune.back_1"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.back_1"
+  },
+  "townsfolk.voice.woman.talk.comings.arrive_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.comings.arrive_0"
+    ],
+    "subtitle": "say.guildmark.talk.comings.arrive_0"
+  },
+  "townsfolk.voice.woman.talk.comings.arrive_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.comings.arrive_1"
+    ],
+    "subtitle": "say.guildmark.talk.comings.arrive_1"
+  },
+  "townsfolk.voice.woman.talk.comings.leave_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.comings.leave_0"
+    ],
+    "subtitle": "say.guildmark.talk.comings.leave_0"
+  },
+  "townsfolk.voice.woman.talk.comings.leave_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.comings.leave_1"
+    ],
+    "subtitle": "say.guildmark.talk.comings.leave_1"
+  },
+  "townsfolk.voice.woman.talk.comings.home_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.comings.home_0"
+    ],
+    "subtitle": "say.guildmark.talk.comings.home_0"
+  },
+  "townsfolk.voice.woman.talk.comings.home_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.comings.home_1"
+    ],
+    "subtitle": "say.guildmark.talk.comings.home_1"
+  },
+  "townsfolk.voice.woman.talk.comings.welcome_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.comings.welcome_0"
+    ],
+    "subtitle": "say.guildmark.talk.comings.welcome_0"
+  },
+  "townsfolk.voice.woman.talk.comings.welcome_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.comings.welcome_1"
+    ],
+    "subtitle": "say.guildmark.talk.comings.welcome_1"
+  },
+  "townsfolk.voice.woman.talk.comings.welcome_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.comings.welcome_2"
+    ],
+    "subtitle": "say.guildmark.talk.comings.welcome_2"
+  },
+  "townsfolk.voice.woman.talk.comings.farewell_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.comings.farewell_0"
+    ],
+    "subtitle": "say.guildmark.talk.comings.farewell_0"
+  },
+  "townsfolk.voice.woman.talk.comings.farewell_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.comings.farewell_1"
+    ],
+    "subtitle": "say.guildmark.talk.comings.farewell_1"
+  },
+  "townsfolk.voice.woman.talk.comings.return_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.comings.return_0"
+    ],
+    "subtitle": "say.guildmark.talk.comings.return_0"
+  },
+  "townsfolk.voice.woman.talk.comings.return_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.comings.return_1"
+    ],
+    "subtitle": "say.guildmark.talk.comings.return_1"
+  },
+  "townsfolk.voice.woman.talk.streets.queue_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.streets.queue_0"
+    ],
+    "subtitle": "say.guildmark.talk.streets.queue_0"
+  },
+  "townsfolk.voice.woman.talk.streets.queue_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.streets.queue_1"
+    ],
+    "subtitle": "say.guildmark.talk.streets.queue_1"
+  },
+  "townsfolk.voice.woman.talk.streets.queue_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.streets.queue_2"
+    ],
+    "subtitle": "say.guildmark.talk.streets.queue_2"
+  },
+  "townsfolk.voice.woman.talk.streets.alms_keep_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.streets.alms_keep_0"
+    ],
+    "subtitle": "say.guildmark.talk.streets.alms_keep_0"
+  },
+  "townsfolk.voice.woman.talk.streets.alms_keep_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.streets.alms_keep_1"
+    ],
+    "subtitle": "say.guildmark.talk.streets.alms_keep_1"
+  },
+  "townsfolk.voice.woman.talk.streets.alms_keep_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.streets.alms_keep_2"
+    ],
+    "subtitle": "say.guildmark.talk.streets.alms_keep_2"
+  },
+  "townsfolk.voice.woman.talk.streets.alms_thanks_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.streets.alms_thanks_0"
+    ],
+    "subtitle": "say.guildmark.talk.streets.alms_thanks_0"
+  },
+  "townsfolk.voice.woman.talk.streets.alms_thanks_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.streets.alms_thanks_1"
+    ],
+    "subtitle": "say.guildmark.talk.streets.alms_thanks_1"
+  },
+  "townsfolk.voice.woman.talk.streets.alms_thanks_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.streets.alms_thanks_2"
+    ],
+    "subtitle": "say.guildmark.talk.streets.alms_thanks_2"
+  },
+  "townsfolk.voice.woman.talk.streets.shut_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.streets.shut_0"
+    ],
+    "subtitle": "say.guildmark.talk.streets.shut_0"
+  },
+  "townsfolk.voice.woman.talk.streets.shut_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.streets.shut_1"
+    ],
+    "subtitle": "say.guildmark.talk.streets.shut_1"
+  },
+  "townsfolk.voice.woman.talk.streets.lamps_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.streets.lamps_0"
+    ],
+    "subtitle": "say.guildmark.talk.streets.lamps_0"
+  },
+  "townsfolk.voice.woman.talk.streets.lamps_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.streets.lamps_1"
+    ],
+    "subtitle": "say.guildmark.talk.streets.lamps_1"
+  },
+  "townsfolk.voice.woman.talk.streets.watch_quiet_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.streets.watch_quiet_0"
+    ],
+    "subtitle": "say.guildmark.talk.streets.watch_quiet_0"
+  },
+  "townsfolk.voice.woman.talk.streets.watch_quiet_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.streets.watch_quiet_1"
+    ],
+    "subtitle": "say.guildmark.talk.streets.watch_quiet_1"
+  },
+  "townsfolk.voice.woman.talk.streets.watch_quiet_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.streets.watch_quiet_2"
+    ],
+    "subtitle": "say.guildmark.talk.streets.watch_quiet_2"
+  },
+  "townsfolk.voice.woman.talk.streets.watch_riders_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.streets.watch_riders_0"
+    ],
+    "subtitle": "say.guildmark.talk.streets.watch_riders_0"
+  },
+  "townsfolk.voice.woman.talk.streets.watch_riders_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.streets.watch_riders_1"
+    ],
+    "subtitle": "say.guildmark.talk.streets.watch_riders_1"
+  },
+  "townsfolk.voice.woman.talk.streets.watch_riders_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.streets.watch_riders_2"
+    ],
+    "subtitle": "say.guildmark.talk.streets.watch_riders_2"
+  },
+  "townsfolk.voice.woman.talk.streets.first_bread_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.streets.first_bread_0"
+    ],
+    "subtitle": "say.guildmark.talk.streets.first_bread_0"
+  },
+  "townsfolk.voice.woman.talk.streets.first_bread_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.streets.first_bread_1"
+    ],
+    "subtitle": "say.guildmark.talk.streets.first_bread_1"
+  },
+  "townsfolk.voice.woman.talk.streets.first_bread_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/talk.streets.first_bread_2"
+    ],
+    "subtitle": "say.guildmark.talk.streets.first_bread_2"
+  },
   "townsfolk.voice.woman.market.shut.asleep": {
     "sounds": [
       "guildmark:townsfolk/voice/woman/market.shut.asleep"
@@ -6665,6 +7829,492 @@
     ],
     "subtitle": "say.guildmark.talk.home.old_2"
   },
+  "townsfolk.voice.old.talk.works.wanted.oven_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.works.wanted.oven_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.wanted.oven_0"
+  },
+  "townsfolk.voice.old.talk.works.wanted.oven_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.works.wanted.oven_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.wanted.oven_1"
+  },
+  "townsfolk.voice.old.talk.works.wanted.granary_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.works.wanted.granary_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.wanted.granary_0"
+  },
+  "townsfolk.voice.old.talk.works.wanted.granary_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.works.wanted.granary_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.wanted.granary_1"
+  },
+  "townsfolk.voice.old.talk.works.wanted.great_granary_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.works.wanted.great_granary_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.wanted.great_granary_0"
+  },
+  "townsfolk.voice.old.talk.works.wanted.great_granary_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.works.wanted.great_granary_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.wanted.great_granary_1"
+  },
+  "townsfolk.voice.old.talk.works.wanted.tower_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.works.wanted.tower_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.wanted.tower_0"
+  },
+  "townsfolk.voice.old.talk.works.wanted.tower_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.works.wanted.tower_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.wanted.tower_1"
+  },
+  "townsfolk.voice.old.talk.works.funding_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.works.funding_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.funding_0"
+  },
+  "townsfolk.voice.old.talk.works.funding_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.works.funding_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.funding_1"
+  },
+  "townsfolk.voice.old.talk.works.funding_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.works.funding_2"
+    ],
+    "subtitle": "say.guildmark.talk.works.funding_2"
+  },
+  "townsfolk.voice.old.talk.works.building_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.works.building_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.building_0"
+  },
+  "townsfolk.voice.old.talk.works.building_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.works.building_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.building_1"
+  },
+  "townsfolk.voice.old.talk.works.building_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.works.building_2"
+    ],
+    "subtitle": "say.guildmark.talk.works.building_2"
+  },
+  "townsfolk.voice.old.talk.works.raised.oven_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.works.raised.oven_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.raised.oven_0"
+  },
+  "townsfolk.voice.old.talk.works.raised.oven_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.works.raised.oven_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.raised.oven_1"
+  },
+  "townsfolk.voice.old.talk.works.raised.granary_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.works.raised.granary_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.raised.granary_0"
+  },
+  "townsfolk.voice.old.talk.works.raised.granary_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.works.raised.granary_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.raised.granary_1"
+  },
+  "townsfolk.voice.old.talk.works.raised.great_granary_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.works.raised.great_granary_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.raised.great_granary_0"
+  },
+  "townsfolk.voice.old.talk.works.raised.great_granary_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.works.raised.great_granary_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.raised.great_granary_1"
+  },
+  "townsfolk.voice.old.talk.works.raised.tower_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.works.raised.tower_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.raised.tower_0"
+  },
+  "townsfolk.voice.old.talk.works.raised.tower_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.works.raised.tower_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.raised.tower_1"
+  },
+  "townsfolk.voice.old.talk.works.raised.stall_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.works.raised.stall_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.raised.stall_0"
+  },
+  "townsfolk.voice.old.talk.works.raised.stall_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.works.raised.stall_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.raised.stall_1"
+  },
+  "townsfolk.voice.old.talk.works.eased.granary_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.works.eased.granary_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.eased.granary_0"
+  },
+  "townsfolk.voice.old.talk.works.eased.granary_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.works.eased.granary_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.eased.granary_1"
+  },
+  "townsfolk.voice.old.talk.works.eased.oven_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.works.eased.oven_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.eased.oven_0"
+  },
+  "townsfolk.voice.old.talk.works.eased.oven_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.works.eased.oven_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.eased.oven_1"
+  },
+  "townsfolk.voice.old.talk.works.eased.tower_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.works.eased.tower_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.eased.tower_0"
+  },
+  "townsfolk.voice.old.talk.works.eased.tower_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.works.eased.tower_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.eased.tower_1"
+  },
+  "townsfolk.voice.old.talk.works.late_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.works.late_0"
+    ],
+    "subtitle": "say.guildmark.talk.works.late_0"
+  },
+  "townsfolk.voice.old.talk.works.late_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.works.late_1"
+    ],
+    "subtitle": "say.guildmark.talk.works.late_1"
+  },
+  "townsfolk.voice.old.talk.fortune.hard_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.fortune.hard_0"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.hard_0"
+  },
+  "townsfolk.voice.old.talk.fortune.hard_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.fortune.hard_1"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.hard_1"
+  },
+  "townsfolk.voice.old.talk.fortune.hard_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.fortune.hard_2"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.hard_2"
+  },
+  "townsfolk.voice.old.talk.fortune.lean_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.fortune.lean_0"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.lean_0"
+  },
+  "townsfolk.voice.old.talk.fortune.lean_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.fortune.lean_1"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.lean_1"
+  },
+  "townsfolk.voice.old.talk.fortune.good_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.fortune.good_0"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.good_0"
+  },
+  "townsfolk.voice.old.talk.fortune.good_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.fortune.good_1"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.good_1"
+  },
+  "townsfolk.voice.old.talk.fortune.thriving_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.fortune.thriving_0"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.thriving_0"
+  },
+  "townsfolk.voice.old.talk.fortune.thriving_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.fortune.thriving_1"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.thriving_1"
+  },
+  "townsfolk.voice.old.talk.fortune.thriving_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.fortune.thriving_2"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.thriving_2"
+  },
+  "townsfolk.voice.old.talk.fortune.better_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.fortune.better_0"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.better_0"
+  },
+  "townsfolk.voice.old.talk.fortune.better_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.fortune.better_1"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.better_1"
+  },
+  "townsfolk.voice.old.talk.fortune.better_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.fortune.better_2"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.better_2"
+  },
+  "townsfolk.voice.old.talk.fortune.worse_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.fortune.worse_0"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.worse_0"
+  },
+  "townsfolk.voice.old.talk.fortune.worse_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.fortune.worse_1"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.worse_1"
+  },
+  "townsfolk.voice.old.talk.fortune.worse_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.fortune.worse_2"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.worse_2"
+  },
+  "townsfolk.voice.old.talk.fortune.gone_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.fortune.gone_0"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.gone_0"
+  },
+  "townsfolk.voice.old.talk.fortune.gone_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.fortune.gone_1"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.gone_1"
+  },
+  "townsfolk.voice.old.talk.fortune.back_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.fortune.back_0"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.back_0"
+  },
+  "townsfolk.voice.old.talk.fortune.back_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.fortune.back_1"
+    ],
+    "subtitle": "say.guildmark.talk.fortune.back_1"
+  },
+  "townsfolk.voice.old.talk.comings.welcome_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.comings.welcome_0"
+    ],
+    "subtitle": "say.guildmark.talk.comings.welcome_0"
+  },
+  "townsfolk.voice.old.talk.comings.welcome_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.comings.welcome_1"
+    ],
+    "subtitle": "say.guildmark.talk.comings.welcome_1"
+  },
+  "townsfolk.voice.old.talk.comings.welcome_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.comings.welcome_2"
+    ],
+    "subtitle": "say.guildmark.talk.comings.welcome_2"
+  },
+  "townsfolk.voice.old.talk.comings.farewell_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.comings.farewell_0"
+    ],
+    "subtitle": "say.guildmark.talk.comings.farewell_0"
+  },
+  "townsfolk.voice.old.talk.comings.farewell_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.comings.farewell_1"
+    ],
+    "subtitle": "say.guildmark.talk.comings.farewell_1"
+  },
+  "townsfolk.voice.old.talk.comings.return_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.comings.return_0"
+    ],
+    "subtitle": "say.guildmark.talk.comings.return_0"
+  },
+  "townsfolk.voice.old.talk.comings.return_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.comings.return_1"
+    ],
+    "subtitle": "say.guildmark.talk.comings.return_1"
+  },
+  "townsfolk.voice.old.talk.streets.queue_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.streets.queue_0"
+    ],
+    "subtitle": "say.guildmark.talk.streets.queue_0"
+  },
+  "townsfolk.voice.old.talk.streets.queue_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.streets.queue_1"
+    ],
+    "subtitle": "say.guildmark.talk.streets.queue_1"
+  },
+  "townsfolk.voice.old.talk.streets.queue_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.streets.queue_2"
+    ],
+    "subtitle": "say.guildmark.talk.streets.queue_2"
+  },
+  "townsfolk.voice.old.talk.streets.alms_keep_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.streets.alms_keep_0"
+    ],
+    "subtitle": "say.guildmark.talk.streets.alms_keep_0"
+  },
+  "townsfolk.voice.old.talk.streets.alms_keep_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.streets.alms_keep_1"
+    ],
+    "subtitle": "say.guildmark.talk.streets.alms_keep_1"
+  },
+  "townsfolk.voice.old.talk.streets.alms_keep_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.streets.alms_keep_2"
+    ],
+    "subtitle": "say.guildmark.talk.streets.alms_keep_2"
+  },
+  "townsfolk.voice.old.talk.streets.alms_thanks_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.streets.alms_thanks_0"
+    ],
+    "subtitle": "say.guildmark.talk.streets.alms_thanks_0"
+  },
+  "townsfolk.voice.old.talk.streets.alms_thanks_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.streets.alms_thanks_1"
+    ],
+    "subtitle": "say.guildmark.talk.streets.alms_thanks_1"
+  },
+  "townsfolk.voice.old.talk.streets.alms_thanks_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.streets.alms_thanks_2"
+    ],
+    "subtitle": "say.guildmark.talk.streets.alms_thanks_2"
+  },
+  "townsfolk.voice.old.talk.streets.shut_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.streets.shut_0"
+    ],
+    "subtitle": "say.guildmark.talk.streets.shut_0"
+  },
+  "townsfolk.voice.old.talk.streets.shut_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.streets.shut_1"
+    ],
+    "subtitle": "say.guildmark.talk.streets.shut_1"
+  },
+  "townsfolk.voice.old.talk.streets.lamps_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.streets.lamps_0"
+    ],
+    "subtitle": "say.guildmark.talk.streets.lamps_0"
+  },
+  "townsfolk.voice.old.talk.streets.lamps_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.streets.lamps_1"
+    ],
+    "subtitle": "say.guildmark.talk.streets.lamps_1"
+  },
+  "townsfolk.voice.old.talk.streets.watch_quiet_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.streets.watch_quiet_0"
+    ],
+    "subtitle": "say.guildmark.talk.streets.watch_quiet_0"
+  },
+  "townsfolk.voice.old.talk.streets.watch_quiet_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.streets.watch_quiet_1"
+    ],
+    "subtitle": "say.guildmark.talk.streets.watch_quiet_1"
+  },
+  "townsfolk.voice.old.talk.streets.watch_quiet_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.streets.watch_quiet_2"
+    ],
+    "subtitle": "say.guildmark.talk.streets.watch_quiet_2"
+  },
+  "townsfolk.voice.old.talk.streets.watch_riders_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.streets.watch_riders_0"
+    ],
+    "subtitle": "say.guildmark.talk.streets.watch_riders_0"
+  },
+  "townsfolk.voice.old.talk.streets.watch_riders_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.streets.watch_riders_1"
+    ],
+    "subtitle": "say.guildmark.talk.streets.watch_riders_1"
+  },
+  "townsfolk.voice.old.talk.streets.watch_riders_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.streets.watch_riders_2"
+    ],
+    "subtitle": "say.guildmark.talk.streets.watch_riders_2"
+  },
+  "townsfolk.voice.old.talk.streets.first_bread_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.streets.first_bread_0"
+    ],
+    "subtitle": "say.guildmark.talk.streets.first_bread_0"
+  },
+  "townsfolk.voice.old.talk.streets.first_bread_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.streets.first_bread_1"
+    ],
+    "subtitle": "say.guildmark.talk.streets.first_bread_1"
+  },
+  "townsfolk.voice.old.talk.streets.first_bread_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/talk.streets.first_bread_2"
+    ],
+    "subtitle": "say.guildmark.talk.streets.first_bread_2"
+  },
   "townsfolk.voice.child.talk.child.greet_0": {
     "sounds": [
       "guildmark:townsfolk/voice/child/talk.child.greet_0"
@@ -6772,5 +8422,59 @@
       "guildmark:townsfolk/voice/child/talk.child.festival_1"
     ],
     "subtitle": "say.guildmark.talk.child.festival_1"
+  },
+  "townsfolk.voice.child.talk.child.builders_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/child/talk.child.builders_0"
+    ],
+    "subtitle": "say.guildmark.talk.child.builders_0"
+  },
+  "townsfolk.voice.child.talk.child.builders_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/child/talk.child.builders_1"
+    ],
+    "subtitle": "say.guildmark.talk.child.builders_1"
+  },
+  "townsfolk.voice.child.talk.child.builders_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/child/talk.child.builders_2"
+    ],
+    "subtitle": "say.guildmark.talk.child.builders_2"
+  },
+  "townsfolk.voice.child.talk.child.hungry_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/child/talk.child.hungry_0"
+    ],
+    "subtitle": "say.guildmark.talk.child.hungry_0"
+  },
+  "townsfolk.voice.child.talk.child.hungry_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/child/talk.child.hungry_1"
+    ],
+    "subtitle": "say.guildmark.talk.child.hungry_1"
+  },
+  "townsfolk.voice.child.talk.child.hungry_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/child/talk.child.hungry_2"
+    ],
+    "subtitle": "say.guildmark.talk.child.hungry_2"
+  },
+  "townsfolk.voice.child.talk.child.festoons_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/child/talk.child.festoons_0"
+    ],
+    "subtitle": "say.guildmark.talk.child.festoons_0"
+  },
+  "townsfolk.voice.child.talk.child.festoons_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/child/talk.child.festoons_1"
+    ],
+    "subtitle": "say.guildmark.talk.child.festoons_1"
+  },
+  "townsfolk.voice.child.talk.child.festoons_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/child/talk.child.festoons_2"
+    ],
+    "subtitle": "say.guildmark.talk.child.festoons_2"
   }
 }

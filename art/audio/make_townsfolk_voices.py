@@ -12,6 +12,10 @@ voice, cried rather than said: read slower, each call's last stressed vowel draw
 then projected and set in the square (process_crier). The server gives each of them 100 ticks, so none runs over
 4.5 s, and they carry 48 blocks.
 
+The builders' lines are said as they work: a homestead's crew's (HOMESTEAD, which a town works' master builder says
+too) in the man's, the woman's and the old man's voices, and the master builder's own (MASTER) in the man's and the old
+man's.
+
 Stages (run from the repo root):
 
 1) TTS with Kokoro (kokoro-onnx, Apache-2.0) -> raw 24 kHz WAVs, one folder per timbre
@@ -252,6 +256,71 @@ CHILD = {
     "child_5": "Race you to the fountain!",
 }
 
+# man, woman and old: a homestead's crew (homestead/BuilderCrew.kt), arriving of a morning, to a player passing, at
+# each stage done, when the crate runs short of something, waiting their turn, at work, and stopped by something in
+# the way; and a town works' master builder (M6), who says the arrive, stage, need and wait lines at any build. The
+# text is the language file's say.guildmark.<line>, character for character
+HOMESTEAD = {
+    "homestead_arrive_1": "Morning! The crew's here.",
+    "homestead_arrive_2": "Right, tools out!",
+    "homestead_arrive_3": "Fine day for building!",
+    "homestead_hello_1": "Coming along nicely, eh?",
+    "homestead_hello_2": "Mind the scaffold.",
+    "homestead_hello_3": "She'll be up before you know it.",
+    "homestead_hello_4": "Keep the crate full and we'll keep at it.",
+    "homestead_stage_stakes": "Stakes are in!",
+    "homestead_stage_groundwork": "Ground's level, lads!",
+    "homestead_stage_footings": "Footings are down!",
+    "homestead_stage_walls": "Walls are up! Hurrah!",
+    "homestead_stage_scaffold": "Scaffold's up!",
+    "homestead_stage_roof": "Roof's on! Hurrah!",
+    "homestead_stage_topping": "Bough on the ridge! Hurrah!",
+    "homestead_stage_unscaffold": "Scaffold's down!",
+    "homestead_stage_openings": "Doors and windows in!",
+    "homestead_stage_fitting": "All fitted out!",
+    "homestead_stage_grounds": "Grounds are done!",
+    "homestead_done_1": "Finished! Enjoy your home.",
+    "homestead_done_2": "That's a job well done!",
+    "homestead_need_timber": "We're out of timber!",
+    "homestead_need_stone": "No stone left in the crate!",
+    "homestead_need_glass": "We'll want glass for the windows.",
+    "homestead_need_iron": "Need iron for the fittings.",
+    "homestead_need_wool": "Need wool for the beds.",
+    "homestead_need_free": "We'll wait for the ground to clear.",
+    "homestead_wait_1": "Waiting on the others.",
+    "homestead_wait_2": "Let's see what the plans say.",
+    "homestead_wait_3": "Nearly our turn.",
+    "homestead_work_1": "Steady now.",
+    "homestead_work_2": "Hand me that, would you?",
+    "homestead_work_3": "Measure twice, cut once.",
+    "homestead_work_4": "Up she goes!",
+    "homestead_work_5": "Hold it level.",
+    "homestead_work_6": "Nearly there.",
+    "homestead_blocked": "Something's in the way here!",
+}
+
+# man and old: a town works' master builder (M6, design-influence.md section 7; economy/works/build/MasterBuilder.kt),
+# his own lines: surveying the lot (SURVEY), calling for mortar, minding a beam on its way up, at the plumb line
+# (PLUMB), when the wagon with the materials is in, raising his cup at the topping out (TOAST), at the opening after
+# his handbell, and to the patron as the plaque is unveiled. He borrows the rest from HOMESTEAD
+MASTER = {
+    "works_master_survey_1": "Stakes here, and here.",
+    "works_master_survey_2": "A bit to the left. There!",
+    "works_master_mortar_1": "Mortar!",
+    "works_master_mortar_2": "Mortar, over here!",
+    "works_master_beam_1": "Mind the beam!",
+    "works_master_beam_2": "Steady with that beam!",
+    "works_master_plumb_1": "True as a die.",
+    "works_master_plumb_2": "Not a hair out of true. Good.",
+    "works_master_wagon_1": "The wagon's in. Unload it, lads.",
+    "works_master_wagon_2": "The wagon's here. Look lively, now!",
+    "works_master_toast_1": "To the town!",
+    "works_master_toast_2": "To the town, and all who built it!",
+    "works_master_opening_1": "It's done. May it serve you well.",
+    "works_master_plaque_1": "There. Your name, for all to see.",
+}
+MASTER_TIMBRES = ("man", "old")
+
 # ------------------------------------------------------------------ the town crier
 # At noon a townsperson in each capital cries the day's news in the market square and pins it up on the market
 # board: what happened to the town's market, which prices moved and why, word from the land. Each line
@@ -411,6 +480,30 @@ CRIER = {
     "crier_talk_trouble": "And the talk of the town: trouble close to home!",
     "crier_talk_good": "And the talk of the town: glad tidings!",
     "crier_talk_far": "And the talk of the town: news from afar!",
+    # the works (M6, design-influence.md section 7): a works the town wants (the post goes up after the cries), paid
+    # for in full, and raised by the gift of its patron
+    "crier_works_wanted_oven": "The town asks for a second oven! Pledge what you can!",
+    "crier_works_wanted_granary": "The town asks for a granary! Pledge what you can!",
+    "crier_works_wanted_great_granary": "The town asks for a great granary! Pledge what you can!",
+    "crier_works_wanted_tower": "The town asks for a watchtower on the road! Pledge what you can!",
+    "crier_works_funded_oven": "The second oven is paid for! Our thanks to all who gave!",
+    "crier_works_funded_granary": "The granary is paid for! Our thanks to all who gave!",
+    "crier_works_funded_great_granary": "The great granary is paid for! Our thanks to all who gave!",
+    "crier_works_funded_tower": "The watchtower is paid for! Our thanks to all who gave!",
+    "crier_works_raised_oven": "The second oven is built, by the gift of a friend of the town!",
+    "crier_works_raised_granary": "The granary is raised, by the gift of a friend of the town!",
+    "crier_works_raised_great_granary": "The great granary is raised, by the gift of a friend of the town!",
+    "crier_works_raised_tower": "The watchtower is raised, by the gift of a friend of the town!",
+    # the times (M6): the noon after they move to these, and at noon while they hold (but for steady)
+    "crier_times_hard": "Hard times, friends. Help where you can.",
+    "crier_times_lean": "Lean times in the town! Look out for your neighbours!",
+    "crier_times_steady": "Steady times in the town! Neither feast nor famine!",
+    "crier_times_good": "Good times in the town! The stalls are busy!",
+    "crier_times_thriving": "The town is thriving! Fortune smiles on us all!",
+    "crier_times_still_hard": "Times are still hard! Share what you can!",
+    "crier_times_still_lean": "Times are lean still! Waste nothing!",
+    "crier_times_still_good": "Times are still good! Long may they last!",
+    "crier_times_still_thriving": "The town is thriving still! Fortune is with us!",
 }
 
 # Spelling the TTS reads better than the written text (the subtitles keep the text as written)
@@ -441,6 +534,17 @@ PHONEMES = {
     "knight_kin_0": "hˈɑːɹθ ænd ɹˈəʊd, fɹˈɛnd.",
     "alarm_1": "ɡˈɑːɹdz! ɡˈɑːɹdz!",
     "alarm_0": "θˈiːf! stˈɒp, θˈiːf!",  # as the text reads; written out because its LEAD_IN is phonemes
+    # the builders' (M6), read as the talk is (talk_phonemes) but for these: "Hurrah" said "hooray" (else "her eye",
+    # "Hara" or "here"), the American vowels of "on", "glass", "Nearly" and "Not" (else "Roofs on Herr", "class",
+    # "You'll be there" and "Not a hair off true"), "and" and "our" in full (else "Doors on windows", "out turn")
+    "homestead_stage_walls": "wˈɔːlz ɑːɹ ˈʌp! hʊɹˈeɪ!",
+    "homestead_stage_roof": "ɹˈuːfs ˈɑːn! hʊɹˈeɪ!",
+    "homestead_stage_topping": "bˈaʊ ɑːn ðə ɹˈɪdʒ! hʊɹˈeɪ!",
+    "homestead_stage_openings": "dˈɔːɹz ænd wˈɪndoʊz ˈɪn!",
+    "homestead_need_glass": "wˈiːl wˈɑːnt ɡlˈæs fɚðə wˈɪndoʊz.",
+    "homestead_wait_3": "nˈɪɹli ˈaʊɚ tˈɜːn.",
+    "homestead_work_6": "nˈɪɹli ðˈɛɹ.",
+    "works_master_plumb_2": "nˈɑːt ɐ hˈɛɹ ˈaʊt ʌv tɹˈuː. ɡˈʊd.",
     # the road's: an r sounded where the American voices would drop it ("sorted", "more spears", "here", "their",
     # "escort", "dear", "are", "aren't"), as for the crier
     "driver_mark": "ðɛɹ kˈæmps ˈaʊt ðat wˈeɪ. hˈɪɹ, aɪl ʃˈəʊ juː.",  # "camp's", not "comes"
@@ -458,6 +562,16 @@ PHONEMES = {
 PHONEMES_FOR = {
     ("alarm_0", "woman"): "θˈiːfʰ. stˈɒp, θˈiːf!",
     ("alarm_0", "old"): "θˈiːff, stˈɒp, θˈiːf!",
+    # the builders' (M6): the man's "hooray" stressed on its last vowel, his "in" long, his "fitted" with a held t,
+    # "Mortar" with an r at its end too; the woman's "Finished" with its t
+    ("homestead_stage_walls", "man"): "wˈɔːlz ɑːɹ ˈʌp! hʊˈɹeɪ!",  # not "Walzara Parra"
+    ("homestead_stage_topping", "man"): "bˈaʊ ɑːn ðə ɹˈɪdʒ! hʊˈɹeɪ!",  # not "Bow on the red chara"
+    ("homestead_stage_openings", "man"): "dˈɔːɹz ænd wˈɪndoʊz ˈɪːn!",  # "in", not "end"
+    ("homestead_stage_fitting", "man"): "ˈɔːl fˈɪttɪd ˈaʊt!",  # not "All figured out"
+    ("homestead_arrive_3", "man"): "fˈaɪn dˈɛj fɔːɹ bˈɪldɪŋ!",  # "Fine day", heard "Find day", not "Find a for"
+    ("homestead_done_1", "woman"): "fˈɪnɪʃt! ɛndʒˈɔɪ jɔːɹ hˈoʊm.",  # "Finished", not "Finish"
+    ("works_master_mortar_1", "man"): "mˈɔːɹtɚɹ!",  # not "Mater"
+    ("works_master_mortar_2", "man"): "mˈɔːɹtɚɹ, ˈoʊvɚ hˈɪɹ!",  # not "Mort over here"
     # the road's: "There's too many! Can't" not "This too many caught", "Wagons" not "Woggins"
     ("driver_hold", "old"): "wˈoʊ, ɡˈɜːl! wˈoʊ!",  # "Whoa", not "Well"
     ("driver_trees", "man"): "lˈʊk ˈaʊt! ˈaʊt lˌɔːz!",  # "Outlaws", not "outliers"
@@ -479,6 +593,21 @@ LEVEL = {
     # a heist's watchmen: shouts must carry, a victim cries out, the wary and the muttering are quieter
     "alarm_0": 3.0, "alarm_1": 3.0, "alarm_2": 3.0, "purse_0": 2.0, "purse_1": 2.0,
     "suspect_0": -1.0, "suspect_1": -1.0, "suspect_2": -1.0, "calm_0": -2.0, "calm_1": -2.0, "thief_2": -3.0,
+    # a homestead's crew and a works' master builder: the stages, the shortages, the master's calls across the site
+    # and his toast carry; waiting and working between themselves, and the plumb line, are said low
+    "homestead_arrive_1": 1.0, "homestead_arrive_2": 1.5, "homestead_arrive_3": 1.0, "homestead_stage_stakes": 2.0,
+    "homestead_stage_groundwork": 2.0, "homestead_stage_footings": 2.0, "homestead_stage_walls": 2.0,
+    "homestead_stage_scaffold": 2.0, "homestead_stage_roof": 2.0, "homestead_stage_topping": 2.0,
+    "homestead_stage_unscaffold": 2.0, "homestead_stage_openings": 2.0, "homestead_stage_fitting": 2.0,
+    "homestead_stage_grounds": 2.0, "homestead_done_1": 1.5, "homestead_done_2": 1.5, "homestead_need_timber": 1.5,
+    "homestead_need_stone": 1.5, "homestead_need_glass": 1.0, "homestead_need_iron": 1.0, "homestead_need_wool": 1.0,
+    "homestead_need_free": 1.0, "homestead_wait_1": -1.5, "homestead_wait_2": -1.5, "homestead_wait_3": -1.5,
+    "homestead_work_1": -1.0, "homestead_work_2": -1.0, "homestead_work_3": -1.0, "homestead_work_4": 1.0,
+    "homestead_work_5": -1.0, "homestead_work_6": -1.0, "homestead_blocked": 1.5,
+    "works_master_survey_1": 1.0, "works_master_survey_2": 1.5, "works_master_mortar_1": 2.0,
+    "works_master_mortar_2": 2.0, "works_master_beam_1": 2.5, "works_master_beam_2": 2.5, "works_master_plumb_1": -1.5,
+    "works_master_plumb_2": -1.5, "works_master_wagon_1": 2.0, "works_master_wagon_2": 2.0, "works_master_toast_1": 2.0,
+    "works_master_toast_2": 2.0, "works_master_opening_1": 1.5,
     # the road: a driver struck and guards in a fight shout, a driver uneasy or ashamed says it low
     "driver_hold": 3.0, "driver_trees": 3.0, "guard_to_wagon": 3.0, "guard_together": 3.0, "guard_beaten_off": 2.0,
     "guard_cant_hold": 3.0, "driver_quiet": -2.0, "driver_ran": -1.5,
@@ -565,6 +694,17 @@ CRIER_PHONEMES = [
     ("ˌaʊə θˈaŋks", "ˈaʊwɚ θˈaŋks"),
     ("klˈiəɹ", "klˈɪɹ"),
     ("wˈeɪleɪd", "wˈeɪ lˌeɪd"),
+    # the works and the times (M6): "paid for", "Hard", "where", "Share", "for your neighbours", "Neither... nor" and
+    # "Fortune" with their r, and "asks for a" with its "a" (the talk's "for a bite" was heard "for bite")
+    ("fəɹə", "fɔːɹ ɐ"),
+    ("pˈeɪd fɔː!", "pˈeɪd fˈɔːɹ!"),
+    ("hˈɑːd", "hˈɑːɹd"),
+    ("wˌeə juː", "wˌɛɹ juː"),
+    ("ʃˈeə", "ʃˈɛɹ"),
+    ("fɔː jɔː nˈeɪbəz", "fɔːɹ jɔːɹ nˈeɪbɚz"),
+    ("nˈaɪðə", "nˈaɪðɚ"),
+    ("nˈɔː fˈamɪn", "nˈɔːɹ fˈamɪn"),
+    ("fˈɔːtʃuːn", "fˈɔːɹtʃən"),
 ]
 # A line's own fixes in one timbre, after CRIER_PHONEMES: (line, timbre) -> [(espeak's, Kokoro's)]
 CRIER_PHONEMES_FOR = {
@@ -593,6 +733,9 @@ def lines(only=None, keys=None):
                 d.update(ROAD_GUARD)
             if timbre in CRIER_TIMBRES:
                 d.update(CRIER)
+            d.update(HOMESTEAD)
+            if timbre in MASTER_TIMBRES:
+                d.update(MASTER)
         out[timbre] = {k: v for k, v in d.items() if not keys or re.search(keys, k)}
     return out
 
@@ -605,13 +748,25 @@ def spoken(text):
 
 def say(key, text, timbre=None, k=None):
     """what Kokoro is given for a line: its written-out phonemes (the timbre's own, else the line's) if it has any,
-    a crier line's phonemes (read with the Kokoro k: crier_phonemes), else its text after SAY_AS, with the line's
-    lead-in in front -> (text or phonemes, is_phonemes)"""
+    a crier line's phonemes (read with the Kokoro k: crier_phonemes), a builder's read as the talk is
+    (talk_phonemes), else its text after SAY_AS, with the line's lead-in in front -> (text or phonemes, is_phonemes)"""
     ph = PHONEMES_FOR.get((key, timbre)) or PHONEMES.get(key)
     if not ph and key in CRIER and k is not None:
         ph = crier_phonemes(k, key, timbre)
+    if not ph and (key in HOMESTEAD or key in MASTER) and k is not None:
+        ph = talk_phonemes(k, text, timbre)
     said, is_ph = (ph, True) if ph else (spoken(text), False)
     return LEAD_IN.get(key, "") + said, is_ph
+
+
+def talk_phonemes(k, text, timbre):
+    """a builder's line read as make_talk_voices.py reads the talk: espeak's British reading of its text (after SAY_AS)
+    with the r's of its American reading sounded (rhotic) and the talk's own fixes (TALK_PHONEMES), so that "here",
+    "for", "timber" and "mortar" keep their r in the American voices, as the crew's talk does"""
+    import make_talk_voices as talk
+    said = spoken(text)
+    return talk.rhotic(talk.fix_phonemes(k.tokenizer.phonemize(said, TIMBRES[timbre]["lang"])),
+                       k.tokenizer.phonemize(said, "en-us"))
 
 
 def crier_phonemes(k, key, timbre):
@@ -940,6 +1095,8 @@ def cmd_fragments(a):
     missing = []
     for timbre, keys in lines().items():
         for key, text in keys.items():
+            if key.startswith("crier_talk_"):
+                continue  # the crier's talk of the town: make_talk_voices.py's table writes its entries
             name = f"{SOUND_DIR}/{timbre}/{key}"
             if a.assets and not os.path.exists(os.path.join(a.assets, "sounds", name + ".ogg")):
                 missing.append(name)

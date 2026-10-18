@@ -1017,6 +1017,248 @@ GROUPS = [
             "Will there be dancing? I love the dancing!",
         ],
     }),
+    # M6, influence (design-influence.md sections 5 to 7): the town's works, its times, the households that come and
+    # go, and the streets' signs. Part E's WorksTopics and FortuneTopics and the streets' scenes say these families
+    ("The works", MWO, TALK, {
+        # a works the town wants (the detail gives the reason: "The mill stood idle on Tuesday.")
+        "works.wanted.oven": [
+            "We could do with a second oven.",
+            "A second oven at the bakery would see us right.",
+        ],
+        "works.wanted.granary": [
+            "We could do with a granary.",
+            "A granary would tide us over the bad spells.",
+        ],
+        "works.wanted.great_granary": [
+            "The granary's not big enough. We could do with a bigger one.",
+            "One granary won't see us through a long winter.",
+        ],
+        "works.wanted.tower": [
+            "We need a watchtower on the road.",
+            "With a watch on the road, the wagons would be safer.",
+        ],
+        # a works being paid for, not paid in full yet (the detail: the Marks pledged against its price)
+        "works.funding": [
+            "Bit by bit, it's being paid for.",
+            "Every Mark given brings it closer.",
+            "It's not paid for yet, but it's getting there.",
+        ],
+        # a works going up (pointing at it; the detail names the stage)
+        "works.building": [
+            "Have you seen it going up?",
+            "It'll be a fine sight when it's done.",
+            "Not long now, and it'll be finished.",
+        ],
+        # a works raised, for seven days after
+        "works.raised.oven": [
+            "The new oven's made all the difference.",
+            "Have you tried the bread from the new oven?",
+        ],
+        "works.raised.granary": [
+            "We'll sleep easier now there's a granary.",
+            "The granary's built at last. That's a weight off.",
+        ],
+        "works.raised.great_granary": [
+            "The granary's twice the size now. That'll see us through.",
+            "The great granary's done, and a grand sight it is.",
+        ],
+        "works.raised.tower": [
+            "There's a watch on the road now. About time.",
+            "The new watchtower's up. The wagons will be safer for it.",
+        ],
+        # a player's own stall raised in the square
+        "works.raised.stall": [
+            "There's a new stall in the square. Have you seen it?",
+            "A new stall in the market, with its own awning and all.",
+        ],
+        # a works that did its job, for three days after (the granary kept the mill going, the second oven the
+        # bread, the watchtower's watch saw to a band on the road)
+        "works.eased.granary": [
+            "The granary saw us through. The mill never stopped.",
+            "Good thing we had the granary. The mill kept turning.",
+        ],
+        "works.eased.oven": [
+            "Good thing we had the second oven. The bread kept coming.",
+            "The new oven earned its keep. We'd have gone short without it.",
+        ],
+        "works.eased.tower": [
+            "Good thing we've a watch on the road. It's proved its worth.",
+            "The watchtower did its job. That's what it's there for.",
+        ],
+        # a works waiting for its materials, the wagon late
+        "works.late": [
+            "The work's held up. They're waiting on the wagon.",
+            "It's all stopped till the wagon comes in.",
+        ],
+    }),
+    ("The works: deeds", MW, TALK, {
+        # to a works' patron, as a deed (the detail names the works), by name if they know it
+        "works.patron": [
+            "You paid for it, didn't you{, %s}? Bless you.",
+            "That was your doing{, %s}. Thank you.",
+            "The whole town's grateful to you{, %s}.",
+        ],
+        # to someone else, of a works' patron (the detail names them), whether or not they're in sight
+        "works.patron_other": [
+            "We've a friend of the town to thank for it.",
+            "Somebody paid for it out of their own pocket.",
+        ],
+        # the same, pointing at the patron while they're in sight
+        "works.patron_there": [
+            "That's the one who paid for it, over there.",
+            "See them? It was them that paid for it.",
+        ],
+        # a labourer, of the works they helped build, for thirty days after
+        "works.labourer": [
+            "I had a hand in building that, you know.",
+            "I helped build that. I'll be telling my grandchildren.",
+            "My own two hands went into that.",
+        ],
+    }),
+    ("The times", MWO, TALK, {
+        # the town's times (the detail gives the biggest reason)
+        "fortune.hard": [
+            "Times are hard. There's no two ways about it.",
+            "Hard times. We'll get through them, somehow.",
+            "It's hard going in the town just now.",
+        ],
+        "fortune.lean": [
+            "Lean times. We're getting by, just about.",
+            "Things are tight in the town just now.",
+        ],
+        "fortune.good": [
+            "Times are good. Long may they last.",
+            "The town's doing well. You can see it in people's faces.",
+        ],
+        "fortune.thriving": [
+            "Never seen the town so lively.",
+            "The town's thriving, and no mistake.",
+            "These are the best days I can remember.",
+        ],
+        # the times changing: better than they were, or worse
+        "fortune.better": [
+            "Things are looking up.",
+            "Better than it was, that's for sure.",
+            "It's getting better, little by little.",
+        ],
+        "fortune.worse": [
+            "It's been getting worse.",
+            "Things are going downhill.",
+            "It's worse than it was, and that's the truth.",
+        ],
+        # a household gone for the hard times (the detail names them), or come back
+        "fortune.gone": [
+            "They've gone. Times were too hard for them.",
+            "Packed up and left. Can't say I blame them.",
+        ],
+        "fortune.back": [
+            "They're back! Good to see their lamp lit again.",
+            "They've come home again. I knew they would.",
+        ],
+    }),
+    ("Comings and goings: the household's own", MW, TALK, {
+        # a household arriving, looking about them as they come in at the gate
+        "comings.arrive": [
+            "So this is the place.",
+            "A fresh start. Let's hope it's a kind town.",
+        ],
+        # a household leaving for the hard times, packing the handcart at their door
+        "comings.leave": [
+            "We can't stay. Not with times like these.",
+            "It breaks my heart to go, but we've no choice.",
+        ],
+        # a household that left, come back again
+        "comings.home": [
+            "Home again. I never thought I'd be so glad.",
+            "It's good to be back.",
+        ],
+    }),
+    ("Comings and goings: the neighbours'", MWO, TALK, {
+        # a neighbour showing a household arriving in to their new home
+        "comings.welcome": [
+            "Welcome to the street! This one's yours.",
+            "Here it is. You'll like this street.",
+            "Make yourself at home. Shout if you need anything.",
+        ],
+        # the neighbours seeing a household off
+        "comings.farewell": [
+            "Safe road. Come back when things are better.",
+            "Look after yourself. We'll miss you.",
+        ],
+        # the neighbours welcoming a household back
+        "comings.return": [
+            "You came back! Oh, it's good to see you.",
+            "Welcome home! The street wasn't the same without you.",
+        ],
+    }),
+    ("The streets", MWO, TALK, {
+        # shoppers in the bread queue at the bakery's door, grumbling
+        "streets.queue": [
+            "There'd better be bread left when I get in.",
+            "Keep the line moving, will you?",
+            "A queue for bread. Whatever next?",
+        ],
+        # the alms table's keeper, ladling soup to the hungry
+        "streets.alms_keep": [
+            "Here you are. Eat it while it's hot.",
+            "One bowl each, now. Mind, it's hot.",
+            "Don't be shy. Come and have some soup.",
+        ],
+        # the hungry at the alms table, taking a bowl
+        "streets.alms_thanks": [
+            "Bless you for this.",
+            "Thank you kindly. You're very good.",
+            "It's warm, at least. Thank you.",
+        ],
+        # a keeper at a stall with nothing to sell
+        "streets.shut": [
+            "Nothing to sell today, I'm afraid.",
+            "Empty, as you can see. Try again tomorrow.",
+        ],
+        # the lamplighter on a rationed night, lighting every other lamp
+        "streets.lamps": [
+            "Every other lamp tonight: candles are dear.",
+            "Only half the lamps tonight. Candles are short.",
+        ],
+        # a watchtower's watch, the road quiet
+        "streets.watch_quiet": [
+            "All's quiet on the road.",
+            "Nothing moving out there.",
+            "Quiet out there. Just how I like it.",
+        ],
+        # a watchtower's watch riding out to a wagon struck in their sight
+        "streets.watch_riders": [
+            "Outlaws at the wagon! Come on!",
+            "They're at the wagon! With me!",
+            "Trouble on the road! Quick, now!",
+        ],
+        # the baker handing out the first loaves from the new oven
+        "streets.first_bread": [
+            "Fresh from the new oven!",
+            "The new oven's first loaves! Take one!",
+            "First bake from the new oven! Here, try it!",
+        ],
+    }),
+    ("The children's: the works and the times", CHILD, TALK, {
+        # playing builders near a works going up
+        "child.builders": [
+            "I'm the master builder! You carry the stones!",
+            "Up she goes! Hold it steady!",
+            "Mind the beam!",
+        ],
+        # hungry: their household went without, or the times are hard
+        "child.hungry": [
+            "I'm hungry. Is there anything to eat?",
+            "My tummy's rumbling.",
+            "I'm ever so hungry.",
+        ],
+        # the street dressed with garlands, pennants and flowers for the good times
+        "child.festoons": [
+            "Look at all the flags!",
+            "The whole street's dressed up!",
+            "Flowers and flags everywhere! I love it!",
+        ],
+    }),
 ]
 
 # The keepers' lines are held to other talk's limit; the five crier lines are make_townsfolk_voices.py's (CRIER)
@@ -1039,6 +1281,14 @@ DELIVERY = {
     "market.greet.storm": dict(speed=1.04, level=1.0),
     "market.bye.walked": dict(level=1.5),
     "market.greet.cheerful": dict(level=0.5),
+    # M6: the watch shouts as it rides out, the baker and the children at play call out, the neighbours call after
+    # those leaving; the bread queue grumbles and the watch on a quiet day says it low
+    "streets.watch_riders": dict(speed=1.06, level=2.5),
+    "streets.first_bread": dict(level=1.5),
+    "child.builders": dict(level=1.5),
+    "comings.farewell": dict(level=1.0),
+    "streets.queue": dict(level=-1.5),
+    "streets.watch_quiet": dict(level=-1.0),
 }
 # A take's own speed, where its timbre's reading would run over its limit, misread or rush at the usual speed:
 # (key, timbre) -> times the timbre's own, instead of its family's
@@ -1116,6 +1366,9 @@ TALK_PHONEMES = [
     ("juː nˈəʊ", "juː nˈoʊ"),  # "you know", not "you now"
     ("wˈɒn", "wˈʌn"),  # "one" ("That's one mark" was heard "That's Walmart")
     ("wˌɒn", "wˌʌn"),
+    ("ɡɹˈanəɹi", "ɡɹˈænəɹi"),  # "granary", not "gronary" ("We could do with agronary")
+    ("ɡɹˈanəɹiz", "ɡɹˈænəɹiz"),
+    ("mˈɔːtə", "mˈɔːɹtə"),  # "mortar" with both its r's, not "Mottery"
 ]
 # A take's phonemes written out in full, its r's sounded: (key, timbre) or key -> phonemes. espeak spells out "Mm" and
 # "Mmh" letter by letter ("em em aitch"), so the sleepy mumbles are a hum, and they fall at the end (a trailing "..."
@@ -1159,6 +1412,9 @@ PHONEMES = {
     "talk.deal.sold_0": "wˌɒt juː sˈəʊld mˌiː, wˈɛnt ɪn ɐn ˈaʊɚ.",  # not "Would you sold me when in an hour?"
     "talk.deed.doubt_0": "kˈant bɪlˈiːv ˈɛvɹɪθˌɪŋ juː hˈɪɹ... mˈaɪnd.",  # not "...you hear in mind"
     "talk.deed.dragon_1": "ɐ dɹˈaɡən slˈeɪjɚ, hˈɪɹ ɪn ˌaʊɚ tˈaʊn. hˌuːd hav θˈɔːt ɪt?",  # not "A dragon's lair"
+    "talk.works.wanted.oven_0": "wiː kʊd dˈuː wˈɪð ɐ sˈɛkənd ˈʌvən.",  # not "do it with", "with the second"
+    "talk.works.wanted.granary_0": "wiː kʊd dˈuː wˈɪð ɐ ɡɹˈænɚɹi.",  # not "We could do it with"
+    "talk.works.eased.granary_0": "ðə ɡɹˈænɚɹi sˈɔː ˈʌs θɹˈuː. ðə mˈɪl nˈɛvɚ stˈɒpt.",  # "saw us", not "saws"
     "talk.deed.rank_1": "ɐ nˈuː ɹˈaŋk, ðeɪ sˈeɪ. ɡˈʊd fɔːɹ juː.",  # "A new rank", not "And you rank"
     "talk.doing.fisher_1": "ɐ kwˈaɪət spˈɒt, ɐ ɡˈʊd lˈaɪn. kˈæntʰ ˈæsk fɔːɹ mˈɔːɹ.",  # "Can't ask", not "can ask"
     "talk.doing.smith_2": "hˈɪndʒɪz, nˈeɪlz, hˈəʊz. ðɛɹz ˈɔːlweɪz sˈʌmθɪŋ wˈɑnts mˈeɪkɪŋ.",  # "wants", not "once"
@@ -1170,9 +1426,12 @@ PHONEMES = {
     ("talk.market.hungry_0", "man"): "ðə pˈɒts bɪn θˈɪn at ˌaʊɚ hˈaʊs.",  # "been", not "being"
     ("talk.market.shopping_1", "man"): "ɡˈɒt wɒt aɪ kˈeɪm fɔːɹ, and ɐ bˈɪt mˈɔːɹ bɪsˈaɪdz.",  # "Got", not "Go"
     ("talk.town.newcomer_1", "man"): "nˈuː nˈeɪbɚz ɪnðə tˈaʊn. wˈiːl sˈiː wɒt ðeɪɚ lˈaɪk.",  # "New", not "You"
+    ("talk.fortune.gone_1", "man"): "pˈakt ˌʌp and lˈɛft. kˈæntʰ sˈeɪ ˈaɪ blˈeɪm ðˌɛm.",  # "Can't say", not "can see"
+    ("talk.fortune.back_1", "man"): "ðˈeɪv kˈʌm hˈəʊm ɐɡˈɛn. aɪ njˈuː ðeɪ wˈʊd.",  # "They've", not "If"
     ("talk.sky.clearing_0", "man"): "dɹˈaɪ ˈat lˈast. aɪ θˈɔːt ɪt wʊd nˈɛvɚ stˈɒp.",  # not "it had never stopped"
     # the old man's own, where the man's was heard right
     ("talk.ask.dunno_0", "old"): "aɪv nˈɒt hˈɜːɹd ɐ θˈɪŋ.",  # not "I have, I have"
+    ("talk.streets.watch_riders_0", "old"): "ˈaʊtlɔːz ˈat ðə wˈaɡən! kˈʌm ˈɒn!",  # "at the wagon", not "of"
     # the woman's own
     ("market.greet.smithy", "woman"): "ˈaɪɚn ænd kˈoʊl, ɡˈʊd ænd dɹˈaɪ.",  # "coal", not "cold"
     ("talk.doing.farmer_sow_1", "woman"): "sˈəʊɪŋ, ɹˈəʊ ˈaftɚ ɹˈəʊ. maɪ bˈaks hˈad ɪnˈʌf ɔːlɹˈɛdi.",  # not "back's at"
