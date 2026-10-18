@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "guildmark:item/quest_board"
+    "layer0": "guildmark:item/market_board"
   }
 }

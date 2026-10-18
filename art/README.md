@@ -91,6 +91,16 @@ and Kotlin model code always agree.
   them at 32x so they sit next to Guildmark's own blocks: Scale2x with wrap so they still tile, a bevel where shapes
   meet, fine grain per material, and a dark fantasy grade (a little desaturated, cool shadows, warm highlights). Tinted
   textures (grass, leaves) stay grey so biome colours still apply, and ore crystals keep their colour.
+- `scripts/market_board_art.py` is the capitals' market board (3x2): its six part models, drawn as one board in model
+  pixels (two posts in stone collars, a slate and a news panel in a dark frame with iron corner straps, a chalk ledge,
+  a carved header under a slate-tiled cap, a back of planks and battens), its 32x textures, the item icon, and the
+  sheets the game writes with: `market_board/letters.png` (the chalk hand and the ink hand of
+  `scripts/market_board_letters.py`, every chalk glyph also cut into the strokes it is drawn in, and the chalk's
+  underline, strike, smudge and stick) and `market_board/slips.png` (the five slip papers, a tack, shadows). It also
+  writes `client/MarketBoardArt.kt`, the layout numbers and glyph tables `client/MarketBoardRenderer.kt` draws the
+  live writing from: change the layout in the script, not the Kotlin. Given a preview dir and the Minecraft client
+  jar (for the goods' icons), `scripts/market_board_preview.py` renders the face offline with the same numbers: the
+  textures, a filled-in face, close-ups, the board in 3D front and back, and `crier_at_work.gif`.
 
 Rebuild a model (needs Python 3 with Pillow and numpy), from the repo root:
 
@@ -108,6 +118,7 @@ python3 -B art/scripts/companion_art.py src/main/resources/assets/guildmark [pre
 python3 -B art/scripts/ui_hd.py src/main/resources/assets/guildmark [preview-dir]
 python3 -B art/scripts/creature_hd.py src/main/resources/assets/guildmark [preview-dir]
 python3 -B art/scripts/vanilla_hd.py <minecraft-26.3 jar> src/main/resources/resourcepacks/guildmark_hd [preview-dir]
+python3 -B art/scripts/market_board_art.py src/main/resources/assets/guildmark [preview-dir [minecraft-26.3 jar]]
 ```
 
 Each run writes the textures into the mod's assets, the `.bbmodel` into `art/models`, and a preview

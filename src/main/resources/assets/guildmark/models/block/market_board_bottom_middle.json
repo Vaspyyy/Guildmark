@@ -1,8 +1,213 @@
 {
-  "parent": "guildmark:block/quest_board_bottom_middle",
   "textures": {
-    "panel": "minecraft:block/polished_blackstone",
-    "frame": "minecraft:block/dark_oak_planks",
-    "particle": "minecraft:block/dark_oak_planks"
-  }
+    "front": "guildmark:block/market_board_front",
+    "back": "guildmark:block/market_board_back",
+    "wood": "guildmark:block/market_board_wood",
+    "post": "guildmark:block/market_board_post",
+    "cap": "guildmark:block/market_board_cap",
+    "trim": "guildmark:block/market_board_trim",
+    "particle": "guildmark:block/market_board_wood"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        4.0,
+        12.0
+      ],
+      "to": [
+        16,
+        6.5,
+        14.75
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            5.3333,
+            12.75,
+            10.6667,
+            14.0
+          ],
+          "texture": "#front"
+        },
+        "south": {
+          "uv": [
+            5.3333,
+            12.75,
+            10.6667,
+            14.0
+          ],
+          "texture": "#back"
+        },
+        "up": {
+          "uv": [
+            0,
+            12.0,
+            16,
+            14.75
+          ],
+          "texture": "#wood"
+        },
+        "down": {
+          "uv": [
+            0,
+            1.25,
+            16,
+            4.0
+          ],
+          "texture": "#wood"
+        }
+      }
+    },
+    {
+      "from": [
+        0.0,
+        6.0,
+        10.75
+      ],
+      "to": [
+        16,
+        7.0,
+        12.0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            5.3333,
+            12.5,
+            10.6667,
+            13.0
+          ],
+          "texture": "#front"
+        },
+        "south": {
+          "uv": [
+            5.3333,
+            12.5,
+            10.6667,
+            13.0
+          ],
+          "texture": "#back"
+        },
+        "west": {
+          "uv": [
+            10.75,
+            9.0,
+            12.0,
+            10.0
+          ],
+          "texture": "#wood"
+        },
+        "up": {
+          "uv": [
+            0.0,
+            10.75,
+            16,
+            12.0
+          ],
+          "texture": "#wood"
+        },
+        "down": {
+          "uv": [
+            0.0,
+            4.0,
+            16,
+            5.25
+          ],
+          "texture": "#wood"
+        }
+      }
+    },
+    {
+      "from": [
+        0,
+        6.5,
+        12.75
+      ],
+      "to": [
+        16,
+        16,
+        14.75
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            5.3333,
+            8.0,
+            10.6667,
+            12.75
+          ],
+          "texture": "#front"
+        },
+        "south": {
+          "uv": [
+            5.3333,
+            8.0,
+            10.6667,
+            12.75
+          ],
+          "texture": "#back"
+        },
+        "down": {
+          "uv": [
+            0,
+            1.25,
+            16,
+            3.25
+          ],
+          "texture": "#wood"
+        }
+      }
+    },
+    {
+      "from": [
+        0,
+        9.0,
+        14.75
+      ],
+      "to": [
+        16,
+        10.5,
+        15.75
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            5.5,
+            16,
+            7.0
+          ],
+          "texture": "#wood"
+        },
+        "south": {
+          "uv": [
+            5.3333,
+            10.75,
+            10.6667,
+            11.5
+          ],
+          "texture": "#back"
+        },
+        "up": {
+          "uv": [
+            0,
+            14.75,
+            16,
+            15.75
+          ],
+          "texture": "#wood"
+        },
+        "down": {
+          "uv": [
+            0,
+            0.25,
+            16,
+            1.25
+          ],
+          "texture": "#wood"
+        }
+      }
+    }
+  ]
 }
