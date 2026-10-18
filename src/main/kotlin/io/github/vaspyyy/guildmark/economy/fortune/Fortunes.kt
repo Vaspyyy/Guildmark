@@ -57,8 +57,9 @@ class FortuneDay(val day: Long, val score: Int, val times: Times)
  * (see [FortuneReasons]): what the market, the road, the calendar and the works hold, and what's been noted since
  * the close before ([note]). The score is their sum, kept to -10..10, and the times move one step a day toward the
  * times it calls for ([called]). A market catching up closes each of its days in turn, so it comes out as it would
- * have day by day; a day already closed (the clock set back, or `market run` on ahead) isn't closed again, and the
- * fortunes wait for it to come round.
+ * have day by day, and one run on ahead of the clock (`market run`) closes the fortunes' next days as it goes. A day
+ * already closed isn't closed twice: with the clock set back, or after a run, the fortunes wait for the clock to come
+ * round to the days they haven't closed, and a note counts at the next closes, whichever days they are ([today]).
  *
  * Where it shows: the medallion at the head of the capital's market board turns to the times; the crier cries them
  * at noon when they've moved, with a FORTUNE slip ("Hard times", and its two biggest reasons), and while they aren't
@@ -111,13 +112,12 @@ object Fortunes {
     fun since(level: ServerLevel, capital: Long): Long = record(level, capital)?.since ?: -1L
 
     /**
-     * Something weighs on [capital]: [kind] for [points] over [days] market days (counted at the closes after today's
-     * market day, for [days] of them), with its words' [args], the player it's [about] and the works it's of.
-     * Nothing while the fortunes are off.
+     * Something weighs on [capital]: [kind] for [points] over [days] market days (counted at the next [days] closes),
+     * with its words' [args], the player it's [about] and the works it's of. Nothing while the fortunes are off.
      *
      * A kind of section 4's table is added up by its rule (see [FortuneReasons.noted]). "supplied" is a player's
      * each: `note(level, capital, "supplied", 1, 3, about = player.uuid)` is all it takes (their name is looked up
-     * if [args] doesn't start with it), and said again the same day it's the one note.
+     * when [args] is empty), and said again the same day it's the one note.
      */
     fun note(
         level: ServerLevel, capital: Long, kind: String, points: Int, days: Int,
@@ -125,7 +125,7 @@ object Fortunes {
     ) {
         if (!enabled() || points == 0 || days <= 0) return
         val words = if (kind == FortuneReasons.SUPPLIED && args.isEmpty() && about != null) listOfNotNull(name(level, about)) else args
-        val day = Conditions(hourOf(level, capital)).day
+        val day = today(level, capital)
         add(level, capital, FortuneData.Note(kind, points, day, day + days, words, about, works, false))
     }
 
@@ -211,10 +211,13 @@ object Fortunes {
         if (c.clock != Economy.NEW_DAY) return
         val data = FortuneData.get(level)
         val town = data.town(m.capital)
-        // Time set back, or the market run on ahead of the clock: a day already closed isn't closed again
-        if (c.day <= town.closed) return
-        town.closed = c.day
-        close(level, entry, town, c.day, now = false)
+        // On ahead of the clock (`market run`), each day the market closes is the fortunes' next, however often it's
+        // run on from the same hour: those days are lived already, and the clock's closes wait for them to come round
+        val day = if (m.hour > Markets.hourOf(level)) maxOf(c.day, town.closed + 1) else c.day
+        // Time set back: a day already closed isn't closed twice
+        if (day <= town.closed) return
+        town.closed = day
+        close(level, entry, town, day, now = false)
         data.changed()
     }
 
@@ -238,7 +241,7 @@ object Fortunes {
         town.days.add(FortuneDay(day, town.score, to))
         town.days.sortBy { it.day }
         while (town.days.size > DAYS) town.days.removeAt(0)
-        if (to != from) move(level, entry.market.capital, town, to, entry.market.hour)
+        if (to != from) move(level, entry.market.capital, town, to, day)
         return called
     }
 
@@ -246,15 +249,15 @@ object Fortunes {
     private fun toward(from: Times, to: Times): Times = Times.entries[from.ordinal + Integer.signum(to.ordinal - from.ordinal)]
 
     /**
-     * [capital]'s times move to [to] at market [hour]: kept (since its market day, and for the crier the clock's hour
+     * [capital]'s times move to [to] on market day [day]: kept (since that day, and for the crier the clock's hour
      * now, which the noon's news goes by however far ahead `market run` has the market), the medallion's turn made
      * fresh, and the listeners told.
      */
-    private fun move(level: ServerLevel, capital: Long, town: FortuneData.Town, to: Times, hour: Long) {
+    private fun move(level: ServerLevel, capital: Long, town: FortuneData.Town, to: Times, day: Long) {
         val from = town.times
         town.from = from
         town.times = to
-        town.since = Conditions(hour).day
+        town.since = day
         town.moved = Markets.hourOf(level)
         fresh[capital] = level.gameTime
         for (l in listeners) l.changed(level, capital, from, to)
@@ -276,9 +279,19 @@ object Fortunes {
         data.changed()
     }
 
-    /** The hour [capital]'s market has got to (the clock's, with no market), which a note's day goes by. */
+    /** The hour [capital]'s market has got to (the clock's, with no market). */
     private fun hourOf(level: ServerLevel, capital: Long): Long =
         Markets.get(level)[BlockPos.of(capital)]?.market?.hour?.takeIf { it != Long.MIN_VALUE } ?: Markets.hourOf(level)
+
+    /**
+     * The day the fortunes of [capital] stand at, which a note, a hold and `fortune step` go by: its market's day, or
+     * the last day they closed if that's later (`market run` on ahead, or the clock set back), so a note counts at
+     * the next closes whichever they are.
+     */
+    internal fun today(level: ServerLevel, capital: Long): Long {
+        val closed = FortuneData.get(level)[capital]?.closed ?: FortuneData.NEVER
+        return maxOf(Conditions(hourOf(level, capital)).day, closed)
+    }
 
     /** A player's name as the world knows it, whether they're on or not. */
     private fun name(level: ServerLevel, id: UUID): String? =
@@ -286,26 +299,35 @@ object Fortunes {
 
     // ---- For the commands ----
 
-    /** `fortune set`: [capital]'s times are [to] from now, held through market day [through] (-1 for no hold). */
-    internal fun set(level: ServerLevel, capital: Long, to: Times, through: Long) {
+    /**
+     * `fortune set`: [capital]'s times are [to] from now, held through the next [closes] closes (none for 0). Gives
+     * the last day they're held through, or -1.
+     */
+    internal fun set(level: ServerLevel, capital: Long, to: Times, closes: Int): Long {
+        val day = today(level, capital)
         val data = FortuneData.get(level)
         val town = data.town(capital)
-        town.held = through
-        if (town.times != to) move(level, capital, town, to, hourOf(level, capital))
+        town.held = if (closes > 0) day + closes else -1L
+        if (town.times != to) move(level, capital, town, to, day)
         data.changed()
+        return town.held
     }
 
-    /** `fortune step`: [entry]'s capital's day worked out now, its notes of today with it, and the times a step on: the times called for. */
+    /**
+     * `fortune step`: [entry]'s capital's day (see [today]) worked out again now, today's notes with it, and the
+     * times a step on, any hold let go. Gives the times called for.
+     */
     internal fun step(level: ServerLevel, entry: Markets.Entry): Times {
+        val day = today(level, entry.market.capital)
         val data = FortuneData.get(level)
-        val called = close(level, entry, data.town(entry.market.capital), Conditions(entry.market.hour).day, now = true)
+        val called = close(level, entry, data.town(entry.market.capital), day, now = true)
         data.changed()
         return called
     }
 
-    /** `fortune reason`: [kind] for [points] over [days] market days, by hand: a reason of its own, whatever its kind's rule. */
+    /** `fortune reason`: [kind] for [points] over the next [days] closes, by hand: a reason of its own, whatever its kind's rule. */
     internal fun hand(level: ServerLevel, capital: Long, kind: String, points: Int, days: Int) {
-        val day = Conditions(hourOf(level, capital)).day
+        val day = today(level, capital)
         add(level, capital, FortuneData.Note(kind, points, day, day + days, listOf(), null, -1, true))
     }
 

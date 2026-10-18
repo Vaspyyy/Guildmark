@@ -24,8 +24,8 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent
 /**
  * Testing commands for a capital's fortunes (living-world/design-influence.md section 9), run standing in the
  * capital. `/guildmark fortune` shows its times and since when, the score and the times it calls for, the reasons of
- * its last close with their points and days left, what's been noted since, the last 14 days, and the crowds' and the
- * spending's share; `set <times> [days]` puts the times there now, held for so many closes (3 unless you say);
+ * its last close with their points and days left, the notes still to count, the last 14 days, the crowds' and the
+ * spending's share, and what the board's medallion shows; `set <times> [days]` puts the times there now, held for so many closes (3 unless you say);
  * `reason <kind> <points> <days>` notes a reason by hand; `step` works the day's move out now; `clear` forgets the
  * capital's record.
  */
@@ -82,9 +82,6 @@ object FortuneCommand {
     private class Here(val capital: CapitalPiece, val entry: Markets.Entry) {
         val key: Long get() = entry.market.capital
         val name: String get() = VillageNames.of(capital.boardAnchor)
-
-        /** Its market's day. */
-        val today: Long get() = Conditions(entry.market.hour).day
     }
 
     /** The capital [context]'s player stands in, with its market; null (and why, said) if there isn't one. */
@@ -122,25 +119,31 @@ object FortuneCommand {
             say(source, plain("No record yet: the times are steady, and the next close (at two in the morning) starts it."))
             return 1
         }
-        val held = if (town.held >= c.day) "; held there through day ${town.held} by fortune set" else ""
+        // The day the fortunes stand at: the market's, or later after a market run on ahead (see Fortunes.today)
+        val today = Fortunes.today(source.level, here.key)
+        val held = if (town.held > today) "; held there through day ${town.held} by fortune set" else ""
         val since = if (town.since >= 0) " since day ${town.since} (moved from ${town.from.id})" else " (never moved)"
         say(source, line().append(label("Times: ")).append(plain(town.times.id + since + held)))
         val called = Fortunes.called(town.score)
         val closed = if (town.closed > FortuneData.NEVER) "the close of day ${town.closed}" else "no close yet"
         say(source, line().append(label("Score: ")).append(plain("${town.score} at $closed, calling for ${called.id}" + if (called != town.times) ", so a step toward it at the next close" else "")))
+        if (town.closed > c.day) {
+            say(source, grey("A market run on ahead has closed the fortunes through day ${town.closed} already: the clock's closes wait until day ${town.closed + 1} comes round, and another market run carries on from there. fortune step works the day out again now."))
+        }
         say(source, line().append(label("Crowds and spending: ")).append(plain("%.2f and %.2f".format(Fortunes.busy(source.level, here.key), Fortunes.spend(source.level, here.key)))))
         medallion(context, here)?.let { say(source, line().append(label("The board's medallion: ")).append(plain(it))) }
         if (town.reasons.isEmpty()) say(source, grey("Nothing weighed on it at its last close."))
         else {
             say(source, label("Reasons at the last close, biggest first:"))
-            for (r in town.reasons) say(source, reason(r, c.day))
+            for (r in town.reasons) say(source, reason(r, today))
         }
-        val pending = town.notes.filter { it.from >= town.closed }
-        if (pending.isNotEmpty()) {
-            say(source, label("Noted since, counted from the next close:"))
-            for (n in pending) {
+        // The notes that still count at the next close: each counts at the closes after the day it was made, through its last
+        val notes = town.notes.filter { it.until > town.closed }
+        if (notes.isNotEmpty()) {
+            say(source, label("Noted, counting at the closes after the day each was made:"))
+            for (n in notes) {
                 val about = (if (n.args.isNotEmpty()) " [" + n.args.joinToString(", ") + "]" else "") + if (n.hand) " (by hand)" else ""
-                say(source, plain("  %+d %s%s, from day %d through day %d".format(n.points, n.kind, about, n.from, n.until)))
+                say(source, plain("  %+d %s%s, made day %d, counts through day %d".format(n.points, n.kind, about, n.from, n.until)))
             }
         }
         if (town.days.isNotEmpty()) {
@@ -183,8 +186,8 @@ object FortuneCommand {
         val to = Times.entries.firstOrNull { it.id == id } ?: return fail(source, "No times called $id: " + Times.entries.joinToString(", ") { it.id })
         val here = here(context) ?: return 0
         val from = Fortunes.times(source.level, here.key)
-        Fortunes.set(source.level, here.key, to, if (days > 0) here.today + days else -1L)
-        val held = if (days > 0) "held there through day ${here.today + days} ($days closes)" else "not held: the next close moves them a step toward the score"
+        val through = Fortunes.set(source.level, here.key, to, days)
+        val held = if (through >= 0) "held there through day $through (the next $days closes)" else "not held: the next close moves them a step toward the score"
         val moved = if (from != to) "The medallion on the market board turns within a few seconds, and the crier cries it at the next noon with a FORTUNE slip." else "They were ${to.id} already."
         return say(source, plain("The times in ${here.name} are ${to.id} now, $held. $moved"))
     }
@@ -204,11 +207,12 @@ object FortuneCommand {
         off()?.let { return fail(source, it) }
         val here = here(context) ?: return 0
         val from = Fortunes.times(source.level, here.key)
+        val day = Fortunes.today(source.level, here.key)
         val called = Fortunes.step(source.level, here.entry)
         val to = Fortunes.times(source.level, here.key)
         val score = Fortunes.score(source.level, here.key)
         val moved = if (to != from) "the times move from ${from.id} to ${to.id}" else "the times stay ${to.id}"
-        say(source, plain("Worked day ${here.today} out now: score $score, calling for ${called.id}; $moved."))
+        say(source, plain("Worked day $day out again now, today's notes with it: score $score, calling for ${called.id}; $moved."))
         return show(context)
     }
 
