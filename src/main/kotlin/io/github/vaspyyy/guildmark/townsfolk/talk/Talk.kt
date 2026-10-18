@@ -49,10 +49,10 @@ import kotlin.math.ceil
  */
 object Talk {
     /**
-     * Whether talks open at all: until the townsfolk's new voices are on main none does, a right-click answers as
-     * before, and the market screen's Talk tab stays hidden.
+     * Whether talks open at all, built in (the townsfolkTalk setting turns them off in play): false, none does, a
+     * right-click answers with a line as before, and the market screen's Talk tab stays hidden.
      */
-    const val READY = false
+    const val READY = true
 
     /** How far a player may be from whoever they're talking with. */
     const val REACH = 12.0
