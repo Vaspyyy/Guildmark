@@ -40,10 +40,11 @@ class RoadNetwork(val roads: MutableList<Road> = mutableListOf()) : SavedData() 
     fun isConnected(a: BlockPos, b: BlockPos): Boolean = roads.any { it.connects(a, b, 64.0) }
 
     /**
-     * Survey a road between two village centres in the background, then start building all of it.
-     * [done] runs back on the server thread with the new road, or null if there's no route.
+     * Survey a road between two village centres in the background, then start building all of it, or with [build]
+     * false leave it to be paved as its land loads (as a capital's road to its nearest village is, see
+     * economy/CaravanRoutes). [done] runs back on the server thread with the new road, or null if there's no route.
      */
-    fun survey(level: ServerLevel, a: BlockPos, b: BlockPos, done: (Road?) -> Unit) {
+    fun survey(level: ServerLevel, a: BlockPos, b: BlockPos, build: Boolean = true, done: (Road?) -> Unit) {
         // A capital's road leaves by its gate, down the avenue from the plaza, and keeps off its walls outside
         val capitalA = Capitals.at(level, a)
         val capitalB = Capitals.at(level, b)
@@ -62,7 +63,7 @@ class RoadNetwork(val roads: MutableList<Road> = mutableListOf()) : SavedData() 
             .exceptionally { error -> Guildmark.LOGGER.error("Road survey failed", error); null }
             .thenAcceptAsync({ points ->
                 if (points == null) return@thenAcceptAsync done(null)
-                val road = Road((roads.maxOfOrNull { it.id } ?: 0) + 1, a, b, points, mutableSetOf(), true)
+                val road = Road((roads.maxOfOrNull { it.id } ?: 0) + 1, a, b, points, mutableSetOf(), build)
                 road.unpaved.addAll(road.columnsByChunk.keys)
                 roads.add(road)
                 setDirty()
