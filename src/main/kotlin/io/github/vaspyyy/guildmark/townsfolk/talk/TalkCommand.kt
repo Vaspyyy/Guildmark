@@ -586,6 +586,13 @@ object TalkCommand {
         if (what !in EASES) return fail(source, "Say what it eased: " + EASES.joinToString(", "))
         val w = Works.get(level, works) ?: return fail(source, "There's no works #$works (`/guildmark works` lists them).")
         if (w.state != WorksState.DONE || w.kind == WorksKind.STALL) return fail(source, "Works #$works isn't one of the town's standing: only those raised ease anything.")
+        // Each eases only what it does in the market and on the road (Works.day, WorksFreight)
+        val fits = when (what) {
+            Works.MILL -> w.kind == WorksKind.GRANARY || w.kind == WorksKind.GREAT_GRANARY
+            Works.BREAD -> w.kind == WorksKind.OVEN
+            else -> w.kind == WorksKind.TOWER
+        }
+        if (!fits) return fail(source, "A ${w.kind.id} doesn't ease the $what: a granary keeps the mill turning, the second oven the bread coming, a watchtower sees a band off.")
         Works.eased(level, w.capital, w.kind, w.road, what)
         say(source, plain("Works #${w.id} (${w.kind.id}) eased the $what today: talked of for three days, and noted in the fortunes at the next close."))
         return 1
