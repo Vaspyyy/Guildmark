@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.townsfolk
 
+import io.github.vaspyyy.guildmark.townsfolk.talk.Street
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.server.level.ServerLevel
@@ -162,7 +163,8 @@ object Jobs {
             when {
                 i >= 6 -> null
                 near != null && near.distanceToSqr(counter) < 36.0 && r(p, 3) == 0 -> Step(Activity.BECKON)
-                near != null && r(p, 2) == 0 -> Step(Activity.CALL_OUT, line = "merchant_${r(p, 6)}")
+                // What the stall really has, and what's really cheap; nothing to call, the stall's tidied instead
+                near != null && r(p, 2) == 0 -> Street.calling(p, near) ?: Step(Activity.ARRANGE, 60 * (1 + r(p, 2)))
                 r(p, 3) == 0 -> Step(Activity.NONE, 60 + r(p, 80))
                 else -> Step(Activity.ARRANGE, 60 * (1 + r(p, 2)))
             }
@@ -177,7 +179,7 @@ object Jobs {
             val near = level.getNearestPlayer(bar.x, bar.y, bar.z, 6.0, false)
             when {
                 i >= 8 -> null
-                near != null && r(p, 2) == 0 -> Step(Activity.POUR, line = "inn_${r(p, 4)}")
+                near != null && r(p, 2) == 0 -> Street.pouring(p, near)
                 r(p, 6) == 0 -> Step(Activity.ARRANGE, 60, turned = true)
                 r(p, 5) == 0 -> Step(Activity.POUR)
                 else -> Step(Activity.WIPE, 40 * (2 + r(p, 3)))
@@ -438,8 +440,9 @@ object Leisure {
         val center = p.town?.square?.takeIf { p.random.nextInt(3) == 0 } ?: p.blockPosition()
         val target = Places.street(level, center, 30, p.random, minR = 8)?.takeIf { p.town?.contains(it) != false }
             ?: return Idle(p, 100, Activity.ADMIRE)
+        // The chat is looked for once they're there, with whoever's about then
         return Walk(p, target, Jobs.STROLL, near = 2.0, overlay = Activity.STROLL)
-            .andThen(if (p.random.nextInt(3) == 0) Social.chat(p) ?: Idle(p, 100 + p.random.nextInt(200), Activity.ADMIRE) else Idle(p, 100 + p.random.nextInt(200), Activity.ADMIRE))
+            .andThen(if (p.random.nextInt(3) == 0) Later(p) { Social.chat(p) ?: Idle(p, 100 + p.random.nextInt(200), Activity.ADMIRE) } else Idle(p, 100 + p.random.nextInt(200), Activity.ADMIRE))
     }
 
     /** Children at play: tag, hopping about, following an adventurer. */
@@ -473,11 +476,11 @@ class Patrol(p: Townsperson, private val points: List<BlockPos>) : Task(p) {
             val passer = p.level().getNearestPlayer(p, 5.0)
             if (passer != null && age - saluted > 400) {
                 saluted = age
-                p.act(Activity.SALUTE)
-                p.say("guard_${p.random.nextInt(5)}")
+                // A salute to a hero, a nod to anyone else; a word as they know them
+                Street.salute(p, passer)
             }
             if (passer != null) p.lookAt(passer)
-            if (p.activity == Activity.SALUTE && p.actDone) p.act(Activity.STAND_GUARD)
+            if ((p.activity == Activity.SALUTE || p.activity == Activity.NOD) && p.actDone) p.act(Activity.STAND_GUARD)
             if (standing == 0) {
                 if (++index >= points.size) return false
                 walker.go(points[index], 0.45, near = 2.0)
@@ -562,7 +565,8 @@ class Mingle(p: Townsperson, private val ticks: Int, private val moods: List<Act
             when (mood) {
                 Activity.CHEER -> p.say(if (tavern) "tavern_${listOf(0, 1, 2, 4)[p.random.nextInt(4)]}" else "reply_5")
                 Activity.LAUGH -> p.say(if (tavern && p.random.nextBoolean()) "tavern_3" else "laugh_0")
-                Activity.TALK -> if (p.random.nextInt(3) == 0) p.say(Lines.gossip(p))
+                // Talk on, what's on their mind for whoever's nearest (and their answer); the mood lasts it out
+                Activity.TALK -> nextMood = maxOf(nextMood, age + Street.mingle(p))
                 else -> {}
             }
         }

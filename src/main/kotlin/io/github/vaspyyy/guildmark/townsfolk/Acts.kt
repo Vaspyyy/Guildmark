@@ -4,6 +4,7 @@ import io.github.vaspyyy.guildmark.city.plan.M
 import io.github.vaspyyy.guildmark.registry.ModItems
 import io.github.vaspyyy.guildmark.season.Season
 import io.github.vaspyyy.guildmark.season.Seasons
+import io.github.vaspyyy.guildmark.townsfolk.talk.Street
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.server.level.ServerLevel
@@ -352,7 +353,7 @@ object Acts {
                     keeper.carried = goods.copy()
                     keeper.carriedUntil = keeper.tickCount + if (what == Activity.HAND_OVER) PASS else what.ticks
                 }
-                if (what == Activity.HAND_OVER && keeper.random.nextInt(3) == 0) keeper.say("merchant_${keeper.random.nextInt(6)}")
+                if (what == Activity.HAND_OVER) Street.handed(keeper)?.let { keeper.say(it) }
             }
             is Villager -> {
                 keeper.lookControl.setLookAt(customer)
@@ -518,8 +519,9 @@ object Acts {
         val there = neighbours[r(p, neighbours.size)]
         val door = there.front ?: return null
         val knock = Work(p, Spot(door.outside, door.inward), Jobs.top(door.pos, 1.0), listOf(Step(Activity.KNOCK), Step(Activity.NONE, 30), Step(Activity.WAVE)))
-        // Asked in: a seat at their table, found once they're at the door
+        // Asked in: a seat at their table, found once they're at the door (and they're acquaintances of the house a while)
         val stay = Later(p) {
+            Street.visited(p, there.id)
             val seat = seatIn(level, there, p, table = true)
             if (seat != null) sitAt(p, life, seat, 600 + r(p, 600), listOf(Activity.SIT_TALK, Activity.SIT_TALK, Activity.SIT, Activity.SIT_DRINK))
             else Walk(p, door.inside, Jobs.WALK, near = 1.0).andThen(Idle(p, 300 + r(p, 300), Activity.TALK))
@@ -560,8 +562,12 @@ object Acts {
         if (sights.isEmpty()) return null
         val sight = sights[r(p, sights.size)]
         val bench = places.benches.firstOrNull { it.pos.distSqr(sight) < 16.0 && Claims.free(level, it.pos, p) && Places.isSeat(level, level.getBlockState(it.pos), it.pos) }
-        val after = if (bench != null && r(p, 3) == 0) Sit(p, bench.pos, 300 + r(p, 400), listOf(Activity.SIT))
-        else Idle(p, 100 + r(p, 200), Activity.ADMIRE)
+        val after = when {
+            bench != null && r(p, 3) == 0 -> Sit(p, bench.pos, 300 + r(p, 400), listOf(Activity.SIT))
+            // With street talk on, now and then a word with whoever else is taking the air there
+            Street.on() && r(p, 3) == 0 -> Later(p) { Social.chat(p) ?: Idle(p, 100 + r(p, 200), Activity.ADMIRE) }
+            else -> Idle(p, 100 + r(p, 200), Activity.ADMIRE)
+        }
         return Ways.to(p, places, sight, Jobs.STROLL, near = 3.0, overlay = Activity.STROLL).andThen(after)
     }
 

@@ -20,6 +20,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Doing
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import io.github.vaspyyy.guildmark.townsfolk.Trait
+import io.github.vaspyyy.guildmark.townsfolk.talk.Street
 import io.github.vaspyyy.guildmark.townsfolk.talk.Talk
 import io.github.vaspyyy.guildmark.townsfolk.talk.Witness
 import io.github.vaspyyy.guildmark.village.VillageNames
@@ -670,10 +671,13 @@ class Serving : Director {
             later = null
             return
         }
+        // Talk on, a greeting that knows them comes after M3's (a new rank, a lapsed order) and M4's cool word: a friend's, "back again"...
+        val known = if (rank == null && !scold && !cool && !busy && !again) Street.counter(level, p, player) else null
         val greeting = when {
             rank != null -> StallTalk.rank(rank)
             scold -> StallTalk.lapsed(p)
             cool && !busy -> StallTalk.COOL
+            known != null -> known.first
             else -> StallTalk.greet(p, Days.life(p), shop, level, busy, again)
         }
         say(p, greeting)
@@ -684,13 +688,14 @@ class Serving : Director {
                     rank != null -> cheer(p)
                     scold -> Activity.SHRUG
                     cool -> Activity.NOD
+                    known != null -> known.second
                     p.random.nextInt(3) == 0 -> Activity.WAVE
                     else -> Activity.NOD
                 },
             )
         }
         later = news
-        laterAt = level.gameTime + if (rank != null || scold || cool) VOICED else NEWS
+        laterAt = level.gameTime + if (rank != null || scold || cool || known != null) VOICED else NEWS
     }
 
     /**
