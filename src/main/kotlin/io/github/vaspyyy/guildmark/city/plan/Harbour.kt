@@ -909,9 +909,10 @@ class Harbour(private val plan: CityPlan) {
         at(-1, 1, 0, B(M.BARREL))
         at(1, 1, 0, B(M.SMOKER, front))
         for (a in -2..2) for (b in -1..1) at(a, b, 3, B(M.WOOL, color = if (Math.floorMod(a, 2) == 0) stripe else Dye.WHITE))
-        // Half the stalls are kept by villagers to trade with, the rest by fishmongers crying the catch
+        // Fishmongers keep every stall, crying the catch and selling it from the market's stock; in capitals
+        // generated before they did, villagers keep half of them
         val behind = At(x(t.a, t.o) - front.dx, y, z(t.a, t.o) - front.dz)
-        if (t.v % 2 == 0) canvas.spawn(Spawn.VILLAGER, behind.x, y, behind.z, front)
+        if (t.v % 2 == 0 && plan.layout.version < 1) canvas.spawn(Spawn.VILLAGER, behind.x, y, behind.z, front)
         else canvas.resident(Folk.MERCHANT, behind, post = behind, facing = front)
     }
 

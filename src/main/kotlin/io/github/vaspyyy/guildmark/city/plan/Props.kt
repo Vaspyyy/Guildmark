@@ -102,9 +102,10 @@ class Props(private val plan: CityPlan, private val world: Canvas) {
         at(1, 0, 1, right)
         at(-1, 1, 0, B(M.BARREL, front))
         for (a in -2..2) for (b in -1..1) at(a, b, 3, B(M.WOOL, color = if (Math.floorMod(a, 2) == 0) stripe else Dye.WHITE))
-        // Villagers keep half the stalls and townsfolk the others
+        // Townsfolk keep every stall, so every stall trades with the market; in capitals generated before they did,
+        // villagers keep half of them
         val behind = At(p.x - front.dx, 0, p.z - front.dz)
-        if (kind % 2 == 0) canvas.spawn(Spawn.VILLAGER, behind.x, 0, behind.z, front)
+        if (kind % 2 == 0 && plan.layout.version < 1) canvas.spawn(Spawn.VILLAGER, behind.x, 0, behind.z, front)
         else canvas.resident(Folk.MERCHANT, behind, post = behind, facing = front)
     }
 

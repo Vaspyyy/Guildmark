@@ -73,6 +73,8 @@ class CapitalPiece : StructurePiece, PieceBeardifierModifier {
             Layout(
                 tier, tag.getIntOr("upper", 0), tag.getIntOr("citadel", 0), Dir.entries.getOrNull(tag.getIntOr("harbour", -1)),
                 Dir.entries.filter { crowded and (1 shl it.ordinal) != 0 }.toSet(),
+                // Saved before the plans had versions: the first
+                tag.getIntOr("version", 0),
             )
         }
         proxy = tag.getBooleanOr("proxy", false)
@@ -91,6 +93,7 @@ class CapitalPiece : StructurePiece, PieceBeardifierModifier {
         tag.putInt("citadel", layout.citadel)
         tag.putInt("harbour", layout.harbour?.ordinal ?: -1)
         tag.putInt("crowded", layout.crowded.sumOf { 1 shl it.ordinal })
+        tag.putInt("version", layout.version)
         if (proxy) tag.putBoolean("proxy", true)
     }
 
@@ -105,7 +108,7 @@ class CapitalPiece : StructurePiece, PieceBeardifierModifier {
 
     private fun plan(land: GeneratedLand): CityPlan {
         val layout = layout ?: throw IllegalStateException("A capital saved by an older version has no plan")
-        val key = PlanKey(seed, center, turn, layout.tier, layout.upper, layout.citadel, layout.harbour, layout.crowded)
+        val key = PlanKey(seed, center, turn, layout.tier, layout.upper, layout.citadel, layout.harbour, layout.crowded, layout.version)
         val held = synchronized(PLANS) {
             PLANS.getOrPut(key) { lazy { CityPlan(seed, layout, CapitalLand(land, center, turn, layout.tier.reach)) } }
         }
@@ -249,7 +252,7 @@ class CapitalPiece : StructurePiece, PieceBeardifierModifier {
     /** What a plan is laid out from: every piece of a city has the same, and they share the plan. */
     private data class PlanKey(
         val seed: Long, val center: BlockPos, val turn: Rotation, val tier: Tier, val upper: Int, val citadel: Int,
-        val harbour: Dir?, val crowded: Set<Dir>,
+        val harbour: Dir?, val crowded: Set<Dir>, val version: Int,
     )
 
     companion object {

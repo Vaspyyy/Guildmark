@@ -28,11 +28,18 @@ interface Land {
 /**
  * How a capital is laid out on its site (see [Site]): its size, how far its old town stands over the
  * lower town ([upper]) and its citadel over the old town ([citadel]), the side ([harbour], east or west
- * in the city's frame) that opens onto water, and the sides whose farms a village nearby has taken
- * ([crowded]).
+ * in the city's frame) that opens onto water, the sides whose farms a village nearby has taken
+ * ([crowded]), and the [version] of the plans it was generated with: a capital keeps its own, so neither
+ * what it built nor the people its plan set down change under it when the plans do.
  */
-class Layout(val tier: Tier, val upper: Int, val citadel: Int, val harbour: Dir?, val crowded: Set<Dir> = setOf()) {
+class Layout(val tier: Tier, val upper: Int, val citadel: Int, val harbour: Dir?, val crowded: Set<Dir> = setOf(), val version: Int = VERSION) {
     companion object {
+        /**
+         * The plans as capitals are generated now. 1: townsfolk keep every market stall (in capitals generated
+         * before, version 0, villagers keep half of them).
+         */
+        const val VERSION = 1
+
         fun of(site: Site, crowded: Set<Dir> = setOf()): Layout = Layout(site.tier, site.upper, site.citadel, site.harbour, crowded)
 
         /** A middling city on a gentle hill: for previews. */
