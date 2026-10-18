@@ -22,8 +22,10 @@ import io.github.vaspyyy.guildmark.townsfolk.talk.Known
 import io.github.vaspyyy.guildmark.townsfolk.talk.Memory
 import io.github.vaspyyy.guildmark.townsfolk.talk.Occasion
 import io.github.vaspyyy.guildmark.townsfolk.talk.Rumours
+import io.github.vaspyyy.guildmark.townsfolk.talk.TalkLines
 import io.github.vaspyyy.guildmark.townsfolk.talk.Topic
 import io.github.vaspyyy.guildmark.townsfolk.talk.TopicSource
+import io.github.vaspyyy.guildmark.townsfolk.talk.Topics
 import io.github.vaspyyy.guildmark.townsfolk.talk.TownTalk
 import io.github.vaspyyy.guildmark.townsfolk.talk.Utterance
 import io.github.vaspyyy.guildmark.townsfolk.talk.Witness
@@ -85,6 +87,9 @@ object WorksTopics : TopicSource {
 
     /** How near the place they report at a labourer is at the site (blocks), as Labour has it. */
     private const val SITE = 10.0
+
+    /** The family a works going up is talked of with (see [going]). */
+    private const val GOING = "works.building"
 
     /** When each patron was last pointed out (game time); kept in memory only. */
     private val pointed = HashMap<UUID, Long>()
@@ -220,12 +225,32 @@ object WorksTopics : TopicSource {
         late(s)?.let(out::add)
         val stage = w.stage
         val detail = Speech.of("talk.detail.works.building" + (stage?.let { ".${it.key}" } ?: ""), s.kind)
-        val first = Say.part(ask, "works.building", detail) ?: return
+        val first = going(ask, w, detail)
         val more = if (!s.bark) share(w)?.let { Utterance.Part("", "talk.detail.works.share.$it") } else null
         out.add(Topic(
             "works.building.${w.id}.${stage?.key ?: "begun"}", Kind.WORKS, if (s.near) 0.6 else 0.5,
             Utterance(listOfNotNull(first, more)), tone = 1, toward = s.at,
         ))
+    }
+
+    /**
+     * [w] going up (or about to), said with [detail]: a take of works.building that's true of it as it stands, the
+     * listener's freshest. Its wordings as recorded: "Have you seen it going up?" (_0) once its footings are going in,
+     * "It'll be a fine sight when it's done." (_1) at any stage, "Not long now, and it'll be finished." (_2) once it's
+     * topped out or nearly all laid. Text alone while none is recorded.
+     */
+    private fun going(ask: Ask, w: WorksView, detail: String): Utterance.Part {
+        val family = TalkLines.FAMILIES[GOING]
+        val building = w.state == WorksState.BUILDING
+        val stage = w.stage
+        val share = share(w)
+        val up = building && (stage != null && stage >= Stage.FOOTINGS || share != null && share != "begun")
+        val late = building && (stage != null && stage >= Stage.TOPPING || share == "nearly")
+        val keys = (0 until minOf(family?.count ?: 0, 3)).filter { it == 1 || it == 0 && up || it == 2 && late }.map { "talk.${GOING}_$it" }
+        val avoid = Topics.avoid(ask.speaker, ask.player)
+        val from = keys.filter { it !in avoid }.ifEmpty { keys }
+        val take = if (from.isEmpty()) "" else from[ask.speaker.random.nextInt(from.size)]
+        return Utterance.Part(take, detail, take.isNotEmpty() && family?.named == true)
     }
 
     /** How much of [w] is laid, in a word; null while the builders haven't said (no pieces counted yet). */
@@ -411,7 +436,7 @@ object WorksTopics : TopicSource {
             else -> "going"
         }
         val detail = Speech.of(if (how == "at") "talk.detail.works.labour" else "talk.detail.works.labour.$how", kind)
-        val first = Say.part(ask, "works.building", detail) ?: return
+        val first = going(ask, w, detail)
         val more = if (how == "at" && w.state == WorksState.BUILDING && ask.occasion != Occasion.BARK) share(w)?.let { Utterance.Part("", "talk.detail.works.share.$it") } else null
         out.add(Topic(
             "works.labouring.${w.id}.$how", Kind.DOING, DailySource.weight(ask), Utterance(listOfNotNull(first, more)),
@@ -479,7 +504,7 @@ object WorksTopics : TopicSource {
             WorksState.BUILDING -> {
                 val late = late(s)
                 val first = late?.say?.parts?.firstOrNull()
-                    ?: Say.part(ask, "works.building", Speech.of("talk.detail.works.building" + (w.stage?.let { ".${it.key}" } ?: ""), kind))
+                    ?: going(ask, w, Speech.of("talk.detail.works.building" + (w.stage?.let { ".${it.key}" } ?: ""), kind))
                 listOfNotNull(first, share(w)?.let { Utterance.Part("", "talk.detail.works.share.$it") })
             }
             WorksState.FUNDED -> listOf(Utterance.Part("", Speech.of("talk.detail.works.funded", kind)), Utterance.Part("", coming(s)))
