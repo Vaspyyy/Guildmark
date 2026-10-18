@@ -62,8 +62,10 @@ object Handcarts {
     /** A sack of flour, as a cart shows it (flour has no item of its own). */
     val FLOUR: ItemStack get() = ItemStack(Items.SUGAR)
 
-    // Each carter's cart, by who they are; and carts nobody wants any more, until no one's looking
+    // Each carter's cart, by who they are; where each is taking theirs to leave it, so nobody else picks the same spot
+    // meanwhile; and carts nobody wants any more, until no one's looking
     private val carts = HashMap<UUID, Handcart>()
+    private val bound = HashMap<UUID, Pair<Townsperson, BlockPos>>()
     private val strays = ArrayList<Handcart>()
 
     /** Registers handcarts with the game; called once from the mod's constructor. */
@@ -74,6 +76,7 @@ object Handcarts {
         NeoForge.EVENT_BUS.addListener(RegisterCommandsEvent::class.java) { CartDemo.register(it.dispatcher) }
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ ->
             carts.clear()
+            bound.clear()
             strays.clear()
         }
     }
@@ -197,10 +200,17 @@ object Handcarts {
     /** Where to stop with a cart to leave it by [door] (see the other [bay]). */
     fun bay(level: Level, door: CityPlaces.Door, by: Townsperson? = null): BlockPos? = bay(level, door.pos, door.inward.opposite, by)
 
-    /** Whether a cart other than [by]'s stands near [at], where one stopping there would stand on it. */
+    /** [p] is taking their cart to [at] to leave it there (null: nowhere now), so no one else's bay is picked there meanwhile. */
+    fun headFor(p: Townsperson, at: BlockPos?) {
+        if (at == null) bound.remove(p.uuid) else bound[p.uuid] = p to at
+    }
+
+    /** Whether a cart other than [by]'s stands near [at], or is on its way to stand there, where one stopping there would stand on it. */
     private fun taken(level: Level, at: BlockPos, by: Townsperson?): Boolean {
         val c = Vec3.atBottomCenterOf(at)
-        return carts.values.any { it.level() === level && !it.isRemoved && it.owner !== by && it.distanceToSqr(c) < TAKEN * TAKEN }
+        if (carts.values.any { it.level() === level && !it.isRemoved && it.owner !== by && it.distanceToSqr(c) < TAKEN * TAKEN }) return true
+        bound.values.removeIf { (p, _) -> p.isRemoved }
+        return bound.values.any { (p, spot) -> p !== by && p.level() === level && spot.distSqr(at) < TAKEN * TAKEN }
     }
 
     /** The stack that shows [good] on a cart: its own item; flour as a flour sack ([FLOUR]). */

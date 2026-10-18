@@ -373,6 +373,7 @@ object Trades {
             }
             // Out to the cart first (down from upstairs and out of doors), even if it stands loaded and ready; with none
             // standing by, to where it's wanted, to bring one out
+            Handcarts.headFor(p, start)
             val at = Handcarts.fetch(p) ?: start
             go(Ways.to(p, life.places, at, Jobs.WALK, near = 1.0, exact = at != start).andThen(Later(p) { pulling(start) }))
         }
@@ -440,7 +441,9 @@ object Trades {
         /** Loaded: the shafts taken up and off across town. */
         private fun across(): Task {
             stage = Stage.ACROSS
-            return pulling(to.bay() ?: end)
+            val bay = to.bay() ?: end
+            Handcarts.headFor(p, bay)
+            return pulling(bay)
         }
 
         /** The next piece lifted off, or with none left, done. */
@@ -471,6 +474,7 @@ object Trades {
         override fun stop() {
             inner?.stop()
             inner = null
+            Handcarts.headFor(p, null)
         }
     }
 
