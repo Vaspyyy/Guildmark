@@ -31,7 +31,7 @@ object CapitalVisits {
     private class Visit {
         /** The capital whose ground the player was last on, farms and all. */
         var capital: CapitalPiece? = null
-        var searched = Long.MIN_VALUE
+        var searched = Long.MIN_VALUE / 2
         /** What the player's side was last told; null until it's been told anything. */
         var told: Pair<Boolean, District>? = null
     }

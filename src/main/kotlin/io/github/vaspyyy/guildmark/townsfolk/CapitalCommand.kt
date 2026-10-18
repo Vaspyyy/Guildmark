@@ -243,10 +243,17 @@ object CapitalCommand {
     }
 
     /**
-     * TODAY'S AGENDA, one line each, for `who`: where [r] is to be when, today. A stub for now: the townsfolk's
-     * day (Routine, Jobs) fills it in.
+     * Today's agenda, one line a stretch, for `who`: where [r] is to be when, today, the stretch they're in marked.
+     * Their body's own day if they're about, or worked out from their record if not.
      */
-    fun agenda(level: ServerLevel, r: Resident, person: Townsperson?): List<Component> = listOf()
+    fun agenda(level: ServerLevel, r: Resident, person: Townsperson?): List<Component> {
+        val time = level.overworldClockTime
+        person?.life?.let { life -> return Days.describe(life, time).map { Component.literal(it) } }
+        if (!r.alive) return listOf()
+        val agenda = Days.plan(r, Days.dayOf(time), true, false)
+        val now = agenda.at(Days.offsetOf(time))
+        return agenda.stretches.map { Component.literal((if (it === now) "> " else "  ") + it) }
+    }
 
     /** The townsperson [player] is looking at, within [SIGHT] and not behind a wall; else the nearest within [NEAR]. */
     private fun lookedAt(player: ServerPlayer): Townsperson? {

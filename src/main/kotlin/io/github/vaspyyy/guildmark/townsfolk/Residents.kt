@@ -205,6 +205,9 @@ class Residents(private val people: MutableMap<Int, Resident> = HashMap(), priva
             val r = data.of(p) ?: return
             r.alive = false
             r.died = VillageBoards.day(level)
+            // Their bed is free for whoever comes to live there next
+            r.bed?.let { Furnish.release(level, it) }
+            r.bed = null
             data.changed()
         }
     }
