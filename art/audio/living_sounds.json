@@ -1,0 +1,141 @@
+{
+  "townsfolk.seat": {
+    "sounds": [
+      "guildmark:townsfolk/seat1",
+      "guildmark:townsfolk/seat2",
+      "guildmark:townsfolk/seat3"
+    ],
+    "subtitle": "subtitles.guildmark.townsfolk.seat"
+  },
+  "townsfolk.knock": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/knock1",
+        "attenuation_distance": 20
+      },
+      {
+        "name": "guildmark:townsfolk/knock2",
+        "attenuation_distance": 20
+      },
+      {
+        "name": "guildmark:townsfolk/knock3",
+        "attenuation_distance": 20
+      }
+    ],
+    "subtitle": "subtitles.guildmark.townsfolk.knock"
+  },
+  "townsfolk.chop": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/chop1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:townsfolk/chop2",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:townsfolk/chop3",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.townsfolk.chop"
+  },
+  "townsfolk.well.rope": {
+    "sounds": [
+      "guildmark:townsfolk/well/rope1",
+      "guildmark:townsfolk/well/rope2",
+      "guildmark:townsfolk/well/rope3"
+    ],
+    "subtitle": "subtitles.guildmark.townsfolk.well.rope"
+  },
+  "townsfolk.well.bucket": {
+    "sounds": [
+      "guildmark:townsfolk/well/bucket1",
+      "guildmark:townsfolk/well/bucket2"
+    ],
+    "subtitle": "subtitles.guildmark.townsfolk.well.bucket"
+  },
+  "townsfolk.well.scrape": {
+    "sounds": [
+      "guildmark:townsfolk/well/scrape1",
+      "guildmark:townsfolk/well/scrape2"
+    ],
+    "subtitle": "subtitles.guildmark.townsfolk.well.scrape"
+  },
+  "townsfolk.slosh": {
+    "sounds": [
+      "guildmark:townsfolk/slosh1",
+      "guildmark:townsfolk/slosh2",
+      "guildmark:townsfolk/slosh3"
+    ],
+    "subtitle": "subtitles.guildmark.townsfolk.slosh"
+  },
+  "townsfolk.wash.scoop": {
+    "sounds": [
+      "guildmark:townsfolk/wash/scoop1",
+      "guildmark:townsfolk/wash/scoop2"
+    ],
+    "subtitle": "subtitles.guildmark.townsfolk.wash.scoop"
+  },
+  "townsfolk.wash.splash": {
+    "sounds": [
+      "guildmark:townsfolk/wash/splash1",
+      "guildmark:townsfolk/wash/splash2"
+    ],
+    "subtitle": "subtitles.guildmark.townsfolk.wash.splash"
+  },
+  "townsfolk.wash.shake": {
+    "sounds": [
+      "guildmark:townsfolk/wash/shake1",
+      "guildmark:townsfolk/wash/shake2"
+    ],
+    "subtitle": "subtitles.guildmark.townsfolk.wash.shake"
+  },
+  "townsfolk.miller.pour": {
+    "sounds": [
+      "guildmark:townsfolk/miller/pour1",
+      "guildmark:townsfolk/miller/pour2"
+    ],
+    "subtitle": "subtitles.guildmark.townsfolk.miller.pour"
+  },
+  "townsfolk.miller.grind": {
+    "sounds": [
+      "guildmark:townsfolk/miller/grind1",
+      "guildmark:townsfolk/miller/grind2"
+    ],
+    "subtitle": "subtitles.guildmark.townsfolk.miller.grind"
+  },
+  "townsfolk.handbell": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/handbell1",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:townsfolk/handbell2",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:townsfolk/handbell3",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "subtitles.guildmark.townsfolk.handbell"
+  },
+  "townsfolk.lamp.light": {
+    "sounds": [
+      "guildmark:townsfolk/lamp/light1",
+      "guildmark:townsfolk/lamp/light2"
+    ],
+    "subtitle": "subtitles.guildmark.townsfolk.lamp.light"
+  },
+  "townsfolk.farmer.scythe": {
+    "sounds": [
+      "guildmark:townsfolk/farmer/scythe1",
+      "guildmark:townsfolk/farmer/scythe2",
+      "guildmark:townsfolk/farmer/scythe3"
+    ],
+    "subtitle": "subtitles.guildmark.townsfolk.farmer.scythe"
+  }
+}

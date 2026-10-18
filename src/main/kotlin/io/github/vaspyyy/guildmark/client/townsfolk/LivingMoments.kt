@@ -39,6 +39,7 @@ internal object LivingMoments {
 
     /** Each client tick for each townsperson near enough to be heard (TownsfolkClient.tick). */
     fun tick(p: Townsperson) {
+        LivingProps.settle(p)
         val activity = p.shownActivity
         val name = TownsfolkClient.clipName(p, activity)
         val moments = LivingSchedule.MOMENTS[name]

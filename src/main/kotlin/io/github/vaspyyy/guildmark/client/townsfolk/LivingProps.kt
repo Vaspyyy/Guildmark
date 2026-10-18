@@ -61,7 +61,10 @@ internal object LivingProps {
         living.span = null
         living.shown.clear()
         val first = state.frame ?: return
-        val frame = climbing(p, first, partial)
+        var frame = climbing(p, first, partial)
+        // Put on a seat or off it: no easing in from the last clip, which was drawn from the other place
+        val from = frame.from
+        if (from != null && moved(p)) frame = CombatAnimator.Frame(frame.clip, frame.time, 1f, frame.yaw, frame.tremble, frame.seed, null)
         state.frame = frame
         val activity = p.shownActivity
         val name = TownsfolkClient.clipName(p, activity)
@@ -120,6 +123,34 @@ internal object LivingProps {
         living.extent = maxOf(box.xsize, box.ysize, box.zsize).toFloat().coerceAtLeast(1e-3f)
         living.span = span
         return span
+    }
+
+    // ---- Onto a seat and off it ----
+
+    /**
+     * Whether [p] was just put somewhere new along with their move: onto the seat as SIT_DOWN starts, or onto the floor
+     * in front of it as whatever follows STAND_UP starts (sit_down starts, and stand_up ends, standing on that floor).
+     */
+    private fun moved(p: Townsperson): Boolean = p.shownActivity == Activity.SIT_DOWN || p.lastActivity == Activity.STAND_UP
+
+    /**
+     * Each client tick (from LivingMoments.tick): someone put onto a seat or off it is put straight there, not slid
+     * there over the next few ticks as a move from the server usually is, since their clip already carries them over.
+     */
+    fun settle(p: Townsperson) {
+        if (!moved(p) || p.tickCount - p.changedAt > 1) return
+        val handler = p.interpolation ?: return
+        if (!handler.hasActiveInterpolation()) return
+        val target = handler.target() ?: return
+        val at = target.position()
+        val yaw = target.yRot()
+        val pitch = target.xRot()
+        handler.cancel()
+        p.snapTo(at, yaw, pitch)
+        p.setYBodyRot(yaw)
+        p.setYHeadRot(yaw)
+        p.yBodyRotO = yaw
+        p.yHeadRotO = yaw
     }
 
     // ---- Climbing ----
