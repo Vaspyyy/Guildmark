@@ -228,6 +228,9 @@ object Topics {
         today.second.getOrPut(topic.id) { HashSet() }.add(ask.speaker.uuid)
     }
 
+    /** A take of [family] for [ask]'s speaker to say to their listener, the freshest first; null if none is recorded. */
+    fun take(ask: Ask, family: String): String? = TalkLines.pick(family, avoid(ask.speaker, ask.player), ask.speaker.random)
+
     /** The takes to keep from [speaker] now: theirs of the last two minutes, and the last [RING] that [player] heard. */
     fun avoid(speaker: Townsperson, player: ServerPlayer?): Set<String> {
         val now = speaker.level().gameTime

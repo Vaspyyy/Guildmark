@@ -570,9 +570,7 @@ object Trades {
         val oven = p.work?.takeIf { level.isLoaded(it) && Jobs.oven(level.getBlockState(it)) } ?: return null
         val bakery = life.places.lodgingAt(oven)?.takeIf { it.contains(oven) } ?: return null
         val door = bakery.front
-        val m = market(p, life)?.market
-        val baking = Economy.baking(clock(level), Economy.ahead(Days.dayOf(level.overworldClockTime)))
-        if (m != null && baking && !m.busy(Maker.OVENS) && m[Site.BAKEHOUSE, Good.FLOUR] < Economy.BAKE_FLOUR * 4) {
+        if (ovensCold(p, life)) {
             val bin = store(p, listOf(bakery), oven)
             val looking = bin?.let { (pos, spot) ->
                 Acts.via(p, life, spot.pos, Work(p, spot, Jobs.top(pos, 0.9), listOf(Step(Activity.SEARCH, 80), Step(Activity.SHRUG), Step(Activity.NONE, 20)), pos, onTick = { s, t ->
@@ -592,6 +590,17 @@ object Trades {
         })
         return Acts.via(p, life, ovenSpot.pos, out).andThen(carry(p, life, Activity.CARRY_BASKET, behind, Jobs.top(top, 1.0), Activity.PUT_DOWN))
     }
+
+    /** Whether [life]'s capital's ovens stand cold for want of flour in the baking hours, as its market has it. */
+    fun ovensCold(p: Townsperson, life: Life): Boolean {
+        val m = market(p, life)?.market ?: return false
+        val level = level(p)
+        val baking = Economy.baking(clock(level), Economy.ahead(Days.dayOf(level.overworldClockTime)))
+        return baking && !m.busy(Maker.OVENS) && m[Site.BAKEHOUSE, Good.FLOUR] < Economy.BAKE_FLOUR * 4
+    }
+
+    /** Whether [life]'s capital's forge turned nothing out in the hour last worked out (no iron, or no call for it). */
+    fun forgeIdle(p: Townsperson, life: Life): Boolean = market(p, life)?.market?.busy(Maker.FORGE) == false
 
     /**
      * The bakery's counter: something standing a few steps in from the front door with room to stand either side,
