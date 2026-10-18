@@ -6,6 +6,7 @@ import net.minecraft.server.level.ServerLevel
 import net.minecraft.tags.BlockTags
 import net.minecraft.tags.FluidTags
 import net.minecraft.world.item.Item
+import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.Blocks
@@ -214,17 +215,18 @@ object Jobs {
 
     /**
      * A ripe crop brought in and the ground sown again: wheat scythed, a sweep at a time, with the ripe wheat either
-     * side of it (the row across in front of them); roots pulled by hand. What's cut goes in the basket (see
-     * [Trades.gathered]), and the seed goes back in: scattered for wheat and beet, a seed potato or carrot set in
-     * by hand for the rest.
+     * side of it (the row across in front of them); roots pulled up by hand, the very carrot, potato or beet coming
+     * up in the fist and tossed in the basket on the hip. What's cut goes in the basket (see [Trades.gathered]), and
+     * the seed goes back in: scattered for wheat and beet, a seed potato or carrot set in by hand for the rest.
      */
     private fun reap(p: Townsperson, level: ServerLevel, at: Spot, crop: BlockPos, block: CropBlock): Task {
         val wheat = block === Blocks.WHEAT
-        val cut = if (wheat) Step(Activity.SCYTHE, Activity.SCYTHE.ticks * 3) else Step(Activity.HARVEST)
+        val cut = if (wheat) Step(Activity.SCYTHE, Activity.SCYTHE.ticks * 3) else Step(Activity.GATHER)
         val sow = Step(if (wheat || block === Blocks.BEETROOTS) Activity.SOW else Activity.PUT_DOWN, 40)
-        // The sweeps of the scythe: the crop in front, then the one to the left, then to the right
+        // The sweeps of the scythe: the crop in front, then the one to the left, then to the right; a root comes up
+        // as the fist pulls (living_anims.py: G_PULL)
         val across = at.facing.clockWise
-        val sweeps = if (wheat) listOf(16 to crop, 48 to crop.relative(across.opposite), 80 to crop.relative(across)) else listOf(20 to crop)
+        val sweeps = if (wheat) listOf(16 to crop, 48 to crop.relative(across.opposite), 80 to crop.relative(across)) else listOf(13 to crop)
         fun bringIn(pos: BlockPos) {
             val now = level.getBlockState(pos)
             val ripe = now.block as? CropBlock ?: return
@@ -235,6 +237,11 @@ object Jobs {
             Trades.gathered(p, yieldOf(block))
         }
         return Work(p, at, top(crop, 0.2), listOf(cut, sow, Step(Activity.NONE, 20)), crop) { step, tick ->
+            // What comes up in the hand, and what's set back in, is the field's own crop
+            if (step === cut && tick == 0 && !wheat && p.carried.isEmpty) {
+                p.carried = ItemStack(yieldOf(block))
+                p.carriedUntil = p.tickCount + cut.ticks + sow.ticks
+            }
             if (step === cut) for ((t, pos) in sweeps) if (tick == t) bringIn(pos)
         }
     }
