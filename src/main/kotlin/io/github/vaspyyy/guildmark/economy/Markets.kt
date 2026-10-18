@@ -9,6 +9,7 @@ import io.github.vaspyyy.guildmark.city.plan.FarmKind
 import io.github.vaspyyy.guildmark.city.plan.FarmPropKind
 import io.github.vaspyyy.guildmark.city.plan.Folk
 import io.github.vaspyyy.guildmark.city.plan.Trade
+import io.github.vaspyyy.guildmark.economy.fortune.Fortunes
 import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
 import io.github.vaspyyy.guildmark.townsfolk.Furnish
 import io.github.vaspyyy.guildmark.townsfolk.Residents
@@ -160,10 +161,11 @@ class Markets(private val entries: MutableMap<Long, Entry> = HashMap()) : SavedD
          * it (see [Caravans]), whose goods come when they get in rather than at the hour.
          */
         fun step(level: ServerLevel, entry: Entry, hour: Long) {
-            val felt = conditions(level, hour, entry.capital)
+            val felt = conditions(level, hour, entry.capital).spending(Fortunes.spend(level, entry.market.capital))
             entry.felt = felt
             val carried = Caravans.hour(level, entry, hour)
             Economy.hour(entry.market, entry.town, felt, random(entry.market, hour), OwnStalls.seller(level, entry), carried)
+            Fortunes.day(level, entry)
         }
 
         /** The world in [entry]'s market's hour as it feels it there (the season and any feast with it), for why its prices stand where they do. */

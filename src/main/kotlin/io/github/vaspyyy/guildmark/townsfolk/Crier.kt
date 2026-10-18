@@ -21,6 +21,7 @@ import io.github.vaspyyy.guildmark.economy.Quote
 import io.github.vaspyyy.guildmark.economy.RoadPeril
 import io.github.vaspyyy.guildmark.economy.Suppliers
 import io.github.vaspyyy.guildmark.economy.Trading
+import io.github.vaspyyy.guildmark.economy.fortune.Fortunes
 import io.github.vaspyyy.guildmark.festival.FestivalCalendar
 import io.github.vaspyyy.guildmark.guild.GuildNews
 import io.github.vaspyyy.guildmark.guild.NewsItem
@@ -252,7 +253,7 @@ object Crier {
             if (board != null) when (s.activity) {
                 Activity.HAND_OVER -> if (t == 16 && pinned < slips.size) {
                     val slip = slips[pinned++]
-                    board.pin(Slip(slip.kind, slip.headline, slip.text, level.gameTime))
+                    board.pin(Slip(slip.kind, slip.headline, slip.text, level.gameTime, slip.works))
                     sound(level, slate, "pin", 0.8f)
                 } else if (t == 16 && pinned < slips.size + orders.size) {
                     // The order's ticket, if it's still wanted and nobody's hung it meanwhile
@@ -312,8 +313,8 @@ object Crier {
     /**
      * Everything to cry at [c]'s noon, opening and close included: the market's news since the noon before, hunger,
      * the new orders and those filled, a new season or a festival at hand, the prices furthest off their usual with
-     * why, and the guild's news of the day before, at most [MOST] between the opening and the close; if there's
-     * none, that the market is well and prices fair.
+     * why, the guild's news of the day before, and last the town's works and its times, at most [MOST] between the
+     * opening and the close; if there's none, that the market is well and prices fair.
      */
     fun news(level: ServerLevel, entry: Markets.Entry?, c: Conditions, random: Random): List<Cry> {
         val at = level.gameTime
@@ -352,8 +353,11 @@ object Crier {
                 .forEach { groups.add(price(it, at)) }
         }
         word.drop(1).forEach { groups.add(it) }
+        // The town's works and its times come last, with room kept for them (see Fortunes.cries)
+        val last = if (entry != null) Fortunes.cries(level, entry, c, at) else listOf()
         val chosen = ArrayList<Cry>()
-        for (g in groups) if (chosen.size + g.size <= MOST) chosen.addAll(g)
+        for (g in groups) if (chosen.size + g.size <= MOST - last.size) chosen.addAll(g)
+        chosen.addAll(last)
         if (chosen.isEmpty()) chosen.add(Cry("crier_quiet", said("crier_quiet"), null, 1))
         val open = "crier_open_${random.nextInt(3)}"
         val close = if (random.nextInt(2) == 0) "crier_close_1" else "crier_close_${random.nextInt(2) * 2}"
