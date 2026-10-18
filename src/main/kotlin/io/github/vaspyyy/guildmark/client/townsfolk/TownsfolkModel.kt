@@ -148,6 +148,11 @@ object Props {
         Activity.DICE to setOf("dice_cup"),
         Activity.COUNT to setOf("coin_purse"),
         Activity.PICK_LOCK to setOf("lockpick"),
+        // The festivals: the band's lutes, and the lanterns carried in the Lanternrise's ring and let go at dusk
+        Activity.MINSTREL to setOf("lute"),
+        Activity.LANTERN_WALK to setOf("lantern"),
+        Activity.LANTERN_RAISE to setOf("lantern"),
+        Activity.RELEASE to setOf("lantern"),
     )
 
     /** Work for both hands: nothing else is held meanwhile. */
@@ -159,12 +164,14 @@ object Props {
         Activity.READ, Activity.KNEEL, Activity.COUNT, Activity.DICE, Activity.SCRIBE, Activity.CONJURE, Activity.LECTURE,
         Activity.PICK_LOCK, Activity.LURK, Activity.BOUND, Activity.PLEAD, Activity.FREED, Activity.THANK,
         Activity.PULL_CART,
+        Activity.MINSTREL, Activity.CLAP_ALONG, Activity.FEST_HURRAH, Activity.TWIRL, Activity.COUPLE_TURN, Activity.RING_IN,
+        Activity.HANG, Activity.FEST_BOW,
     )
 
     /** Work for the right hand only (waving, a mug, the sack on the shoulder). */
     private val RIGHT_HAND = setOf(
         Activity.WAVE, Activity.BECKON, Activity.DRINK, Activity.CHEER, Activity.SIT_DRINK, Activity.CARRY_SACK,
-        Activity.SEARCH, Activity.SHOUT,
+        Activity.SEARCH, Activity.SHOUT, Activity.RING_STEP,
     )
 
     fun held(role: TownRole, activity: Activity, lantern: Boolean, pieces: Set<String>): Set<String> {
@@ -181,7 +188,7 @@ object Props {
             TownRole.FARMER -> carry("hoe")
             TownRole.FISHER -> carry("rod")
             TownRole.PRIEST -> carry("book")
-            TownRole.BARD -> if (activity != Activity.LUTE) out += "lute_slung"
+            TownRole.BARD -> if (activity != Activity.LUTE && activity != Activity.MINSTREL) out += "lute_slung"
             TownRole.MAGE -> carry("staff")
             else -> {}
         }

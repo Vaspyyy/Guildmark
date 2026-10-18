@@ -140,6 +140,12 @@ object TownsfolkClient {
                 repeat(3) { puff(level, BlockParticleOption(ParticleTypes.BLOCK, state), floor, 0.15, 0.04, 0.03) }
             }
             Activity.STAGGER -> if (t == 30 && p.random.nextInt(2) == 0) sound(p, "hiccup", 0.6f, voicePitch(p))
+            // The festival band's notes land on the beat; the crowd claps along on it
+            Activity.MINSTREL -> if (t % 10 == 0) {
+                val lute = at(p, 0.45, 0.95, 0.04)
+                level.addParticle(ParticleTypes.NOTE, lute.x, lute.y + 0.25, lute.z, p.random.nextInt(25) / 24.0, 0.0, 0.0)
+            }
+            Activity.CLAP_ALONG -> if (t % 10 == 0) sound(p, "clap", 0.32f, 0.9f + p.random.nextFloat() * 0.2f)
             Activity.LUTE -> if (t % 8 == 0) {
                 // A note rises off the soundboard
                 val lute = at(p, 0.45, 0.95, 0.04)
