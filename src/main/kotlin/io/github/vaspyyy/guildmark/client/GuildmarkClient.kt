@@ -176,6 +176,8 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
         io.github.vaspyyy.guildmark.client.economy.WaresClient.register(modBus)
         // Players' own stalls: a market hall table's screen, and the pennants over the let tables (client/economy)
         io.github.vaspyyy.guildmark.client.economy.StallClient.register()
+        // The streets' alms table drawn, its pot's level and its bubbling (client/streets/)
+        io.github.vaspyyy.guildmark.client.streets.StreetsClient.register(modBus)
         // The mills: the windmills' sails and the watermills' wheels turning on their hubs, and their sounds (client/mill)
         io.github.vaspyyy.guildmark.client.mill.MillClient.register(modBus)
         // The seasons' colours, air, compass medallion, banner and Almanac, and the festivals' music and trim (client/season, client/festival)

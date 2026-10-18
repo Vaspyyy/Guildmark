@@ -245,6 +245,8 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         io.github.vaspyyy.guildmark.economy.fortune.FortuneCommand.init()
         // A capital's comings and goings: households in for the dead and in good times, out in hard (townsfolk/Comings.kt)
         io.github.vaspyyy.guildmark.townsfolk.Comings.register()
+        // The streets as the times go: the dressing, rationed lamps, the empty stall's slate, To let boards, the alms table (townsfolk/streets/)
+        io.github.vaspyyy.guildmark.townsfolk.streets.Streets.register(modBus)
         modBus.addListener(EntityAttributeCreationEvent::class.java) {
             it.put(ModEntities.GUILD_MEMBER.get(), GuildMember.createAttributes().build())
             it.put(ModEntities.STORY_NPC.get(), StoryNpc.createAttributes().build())
