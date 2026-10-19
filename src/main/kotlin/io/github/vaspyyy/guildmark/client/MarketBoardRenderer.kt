@@ -33,6 +33,8 @@ import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.FontDescription
 import net.minecraft.network.chat.Style
 import net.minecraft.resources.Identifier
+import net.minecraft.sounds.SoundEvent
+import net.minecraft.sounds.SoundSource
 import net.minecraft.util.FormattedCharSequence
 import net.minecraft.util.LightCoordsUtil
 import net.minecraft.world.item.BlockItem
@@ -50,6 +52,7 @@ import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.exp
+import kotlin.math.floor
 import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.min
@@ -1160,7 +1163,9 @@ class MarketBoardRenderer(context: BlockEntityRendererProvider.Context) :
      * between two posts over the ridge (the posts and their plinth are the top middle cell's model). It shows the face
      * of the times [board] holds. When they move ([MarketBoardBlockEntity.turned] says when) it turns to the new face as
      * a heavy drum would, rolling up for better times and down for worse, swinging a little past onto its catch and
-     * back; a little dust comes out of its bearings as it starts and off its faces at the catch. At rest it stirs on its
+     * back; a little dust comes out of its bearings as it starts and off its faces at the catch. It's heard creaking round
+     * as it goes (works.medallion, played slower for a turn of several faces, which takes longer) and its catch knocking
+     * home (works.medallion_catch), lightly at each face it rolls past on the way. At rest it stirs on its
      * axle, more in rain and storm. First seen, it shows as it stands, and so it does if it turned while nobody was
      * looking (longer ago than a turn takes); a change that comes while it's turning turns it on from wherever it is.
      */
@@ -1184,16 +1189,24 @@ class MarketBoardRenderer(context: BlockEntityRendererProvider.Context) :
                 mem.medStart = now
                 mem.medKnocked = false
                 medDust(level, pos, state.yRot, 3, false)
+                // It creaks round as it goes: a turn of several faces takes longer, so its creak is played slower
+                val rolls = abs(target - mem.medShown)
+                medSound(level, pos, state.yRot, MED_TURN, 0.5f + 0.5f * min(1f, rolls), (1f / sqrt(max(1f, rolls))) * (0.97f + 0.06f * level.random.nextFloat()))
             }
         }
         val faces = abs(mem.medTo - mem.medFrom)
         val turning = faces > 1e-4f
         val age = (now - mem.medStart).toFloat()
         val at = if (turning) mem.medFrom + (mem.medTo - mem.medFrom) * A.medallionTurn(age, faces) else mem.medTo.toFloat()
+        // Its catch drops lightly into each face it rolls past on the way, heard if it was in sight since the last frame
+        if (turning && !mem.medKnocked && now - mem.medHeard < 4.0) medPassing(level, pos, state.yRot, mem, mem.medShown, at)
         mem.medShown = at
+        mem.medHeard = now
         if (!mem.medKnocked && turning && age >= medPeak(faces)) {
             mem.medKnocked = true
             medDust(level, pos, state.yRot, 2, true)
+            // and knocks home as it swings onto its catch (not if that came and went while the board was out of sight)
+            if (age < medPeak(faces) + 6f) medSound(level, pos, state.yRot, MED_CATCH, 0.6f + 0.4f * min(1f, faces), 0.96f + 0.08f * level.random.nextFloat())
         }
         // At rest it stirs on its axle in the wind, coming to it slowly once a turn is over
         val settled = if (turning) ((age - A.medallionStill(faces)) / 30f).coerceIn(0f, 1f) else 1f
@@ -1273,6 +1286,30 @@ class MarketBoardRenderer(context: BlockEntityRendererProvider.Context) :
                 level.addParticle(WOOD_DUST, w.x, w.y, w.z, (r.nextDouble() - 0.5) * 0.01, -0.006 - r.nextDouble() * 0.006, (r.nextDouble() - 0.5) * 0.01)
             }
         }
+    }
+
+    /**
+     * The medallion's catch dropping lightly into a face that came square under it as the drum moved from [was] (where
+     * it was last drawn) to [at]: a face between the one the turn set off from and the one it's turning to, so a turn of
+     * one face knocks only on its catch. Once a frame at most.
+     */
+    private fun medPassing(level: Level, pos: BlockPos, yRot: Float, mem: Memory, was: Float, at: Float) {
+        val lo = min(mem.medFrom, mem.medTo.toFloat()) + 1e-3f
+        val hi = max(mem.medFrom, mem.medTo.toFloat()) - 1e-3f
+        var k = floor(min(was, at)).toInt() + 1
+        while (k <= max(was, at)) {
+            if (k > lo && k < hi) {
+                medSound(level, pos, yRot, MED_CATCH, 0.5f, 1.06f + 0.06f * level.random.nextFloat())
+                return
+            }
+            k++
+        }
+    }
+
+    /** [sound] from the middle of the medallion's drum, as a block's sound, [volume] loud and at [pitch]. */
+    private fun medSound(level: Level, pos: BlockPos, yRot: Float, sound: SoundEvent, volume: Float, pitch: Float) {
+        val w = world(pos, yRot, (A.MED_U0 + A.MED_U1) / 2f, A.MED_V, -A.MED_DEPTH)
+        level.playLocalSound(w.x, w.y, w.z, sound, SoundSource.BLOCKS, volume, pitch, false)
     }
 
     // ---------------------------------------------------------------- drawing
@@ -1395,6 +1432,9 @@ class MarketBoardRenderer(context: BlockEntityRendererProvider.Context) :
         private val type: RenderType by lazy { RenderTypes.textPolygonOffset(TextureAtlas.LOCATION_BLOCKS) }
         private val DUST = DustParticleOptions(0xF2EFE6, 0.45f)
         private val WOOD_DUST = DustParticleOptions(0x8C6E4E, 0.5f)
+        /** The medallion's sounds: its drum creaking round as it turns, and its catch knocking as a face comes square. */
+        private val MED_TURN = SoundEvent.createVariableRangeEvent(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "works.medallion"))
+        private val MED_CATCH = SoundEvent.createVariableRangeEvent(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "works.medallion_catch"))
 
         /** A fifth of a turn: from one of the medallion's faces to the next. */
         private val STEP = (2 * PI / 5).toFloat()
@@ -1822,13 +1862,15 @@ class MarketBoardRenderer(context: BlockEntityRendererProvider.Context) :
 
         /**
          * The medallion: where it was last drawn (in faces from hard times', part way through a turn; NaN until it's
-         * first drawn), the turn it's in (from where, to which face, begun when), whether that turn has reached its catch.
+         * first drawn), the turn it's in (from where, to which face, begun when), whether that turn has reached its catch,
+         * and when it was last drawn (its catch is heard dropping into the faces it passes only while it's in sight).
          */
         var medShown = Float.NaN
         var medFrom = 0f
         var medTo = 0
         var medStart = Double.NEGATIVE_INFINITY
         var medKnocked = true
+        var medHeard = Double.NEGATIVE_INFINITY
     }
 
     /** The board's words in the player's language, looked up again when it changes. */
