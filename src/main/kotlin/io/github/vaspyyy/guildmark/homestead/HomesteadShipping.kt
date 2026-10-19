@@ -9,6 +9,7 @@ import io.github.vaspyyy.guildmark.economy.Good
 import io.github.vaspyyy.guildmark.economy.GoodsList
 import io.github.vaspyyy.guildmark.economy.Lot
 import io.github.vaspyyy.guildmark.economy.Lots
+import io.github.vaspyyy.guildmark.economy.Marked
 import io.github.vaspyyy.guildmark.economy.Markets
 import io.github.vaspyyy.guildmark.economy.SupplierLink
 import io.github.vaspyyy.guildmark.economy.Suppliers
@@ -240,7 +241,7 @@ object HomesteadShipping {
 
     /** Whether [h]'s crates (those loaded) hold anything [target]'s market would take now: else no carter comes for it. */
     private fun wanted(level: ServerLevel, h: Homestead, book: Book, target: Target): Boolean {
-        val held = held(crates(level, h, book, load = false))
+        val held = held(crates(level, h, book, load = false), target.entry.capital)
         val share = Suppliers.share(level, target.entry.capital, h.owner)
         return Good.TRADED.any { held[it.ordinal] > 0 && Lots.sell(target.entry.market, target.entry.town, it, share) != null }
     }
@@ -303,11 +304,15 @@ object HomesteadShipping {
         return found.values.sortedBy { Vec3.atCenterOf(it.blockPos).distanceToSqr(gate) }
     }
 
-    /** How many of each good the market deals in [crates] hold, by [Good] ordinal. */
-    private fun held(crates: List<GoodsCrateBlockEntity>): IntArray {
+    /**
+     * How many of each good the market deals in [crates] hold, by [Good] ordinal, for the market of the capital whose
+     * heart is [capital]: none of it salvage off that capital's own wagons, which it won't buy back (see [Marked]).
+     */
+    private fun held(crates: List<GoodsCrateBlockEntity>, capital: BlockPos): IntArray {
         val held = IntArray(Good.entries.size)
         for (crate in crates) for (i in 0 until crate.containerSize) {
             val stack = crate.getItem(i)
+            if (Marked.home(stack, capital)) continue
             Good.of(stack.item)?.let { held[it.ordinal] += stack.count }
         }
         return held
@@ -358,7 +363,7 @@ object HomesteadShipping {
         val crates = crates(level, h, book, load = true)
         val m = target.entry.market
         val town = target.entry.town
-        val held = held(crates)
+        val held = held(crates, target.entry.capital)
         val sold = IntArray(Good.entries.size)
         val earned = IntArray(Good.entries.size)
         // The owner's standing as a supplier there pays a little more, as it does selling by hand
@@ -382,6 +387,7 @@ object HomesteadShipping {
             val out = IntArray(Good.entries.size)
             for (i in 0 until crate.containerSize) {
                 val stack = crate.getItem(i)
+                if (Marked.home(stack, target.entry.capital)) continue
                 val good = Good.of(stack.item) ?: continue
                 val n = minOf(stack.count, owing[good.ordinal])
                 if (n <= 0) continue
