@@ -3,8 +3,10 @@ package io.github.vaspyyy.guildmark.client.cart
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.cart.Handcart
 import io.github.vaspyyy.guildmark.cart.Handcarts
+import io.github.vaspyyy.guildmark.client.townsfolk.LivingSchedule
 import io.github.vaspyyy.guildmark.client.townsfolk.TownsfolkRenderState
 import io.github.vaspyyy.guildmark.client.townsfolk.TownsfolkRenderer
+import io.github.vaspyyy.guildmark.townsfolk.Activity
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap
 import net.minecraft.client.Minecraft
@@ -32,11 +34,15 @@ import kotlin.math.sin
 /**
  * The client half of the handcarts: their renderer, what each client works out for itself to draw them (the
  * shafts coming up into the hands or down onto the ground, the wheels rolling by how far each went, the load
- * settling on and lifting off), and the puller turned to their cart, the shafts behind them.
+ * settling on and lifting off), and the puller turned to their cart, the shafts behind them. A household's bundle
+ * heaved up onto the bed from the tail (PACK) passes from the packer's hands to the cart as the move sets it down.
  */
 object CartClient {
     /** Which cart each puller is drawn turned to, by their entity id, while the shafts are in (or leaving) their hands. */
     private val pulled = Int2ObjectOpenHashMap<Handcart>()
+
+    /** The bundle each packer has just heaved up onto a cart (PACK), by their entity id: the one in their hands goes. */
+    private val packed = Int2ObjectOpenHashMap<Packed>()
 
     /** Registers the renderer, the cart's model layers and the puller's turn; called once from the client's setup. */
     fun register(modBus: IEventBus) {
@@ -48,11 +54,17 @@ object CartClient {
             event.registerLayerDefinition(HandcartModel.LOAD, HandcartMesh::load)
         }
         modBus.addListener(RegisterRenderStateModifiersEvent::class.java) { event ->
-            event.registerEntityModifier<Townsperson, TownsfolkRenderState>(TownsfolkRenderer::class.java) { p, state -> turn(p, state) }
+            event.registerEntityModifier<Townsperson, TownsfolkRenderState>(TownsfolkRenderer::class.java) { p, state ->
+                turn(p, state)
+                packing(p, state)
+            }
         }
         Handcart.clientTick = ::tick
         Handcart.clientRemoved = ::removed
-        NeoForge.EVENT_BUS.addListener(ClientPlayerNetworkEvent.LoggingOut::class.java) { _ -> pulled.clear() }
+        NeoForge.EVENT_BUS.addListener(ClientPlayerNetworkEvent.LoggingOut::class.java) { _ ->
+            pulled.clear()
+            packed.clear()
+        }
     }
 
     /** What this client keeps to draw [cart]. */
@@ -89,6 +101,10 @@ object CartClient {
         val look = look(cart)
         val first = look.fresh
         look.fresh = false
+        if (!packed.isEmpty()) {
+            val now = cart.level().gameTime
+            packed.values.removeIf { it.cart.isRemoved || now - it.at > PACKED_LINGER }
+        }
         // The shafts come up into the puller's hands, or down onto the ground
         look.liftO = look.lift
         look.lift = if (first) (if (cart.held) 1f else 0f) else Mth.approach(look.lift, if (cart.held) 1f else 0f, 1f / LIFT_TICKS)
@@ -142,6 +158,11 @@ object CartClient {
                 }
                 look.shown[s] = now.copy()
                 look.since[s] = if (first) SETTLE else 0
+                // A bundle heaved up onto the bed (PACK) lies as the move set it down: no settling, and heard as it's set
+                if (!first && now.`is`(Items.BUNDLE) && packedBy(cart, s)) {
+                    look.since[s] = SETTLE
+                    bundle(cart)
+                }
             } else if (look.since[s] < SETTLE) {
                 look.since[s]++
                 // A household's things, heard as each comes down on the bed
@@ -194,6 +215,46 @@ object CartClient {
         }
         loop.speed = speed
     }
+
+    // ---- A bundle heaved up onto the cart from its tail (PACK) ----
+
+    /**
+     * Whether a bundle just come onto [cart]'s place [slot] was heaved up there by someone at its tail, at their move's
+     * set (Comings plays it so the move sets the bundle down just where the cart has it): if so the cart's own lies
+     * there from now on, and the one in their hands goes ([packing]).
+     */
+    private fun packedBy(cart: Handcart, slot: Int): Boolean {
+        val level = cart.level()
+        var by: Townsperson? = null
+        var best = Double.MAX_VALUE
+        for (p in level.getEntitiesOfClass(Townsperson::class.java, cart.boundingBox.inflate(PACK_REACH))) {
+            if (p.shownActivity != Activity.PACK) continue
+            val into = p.tickCount - p.shownStart
+            if (into < PACK_SET - PACK_EARLY || into > PACK_SET + PACK_LATE) continue
+            val d = p.distanceToSqr(cart)
+            if (d < best) {
+                by = p
+                best = d
+            }
+        }
+        if (by == null) return false
+        packed.put(by.id, Packed(cart, slot, level.gameTime))
+        return true
+    }
+
+    /** [p] heaving a bundle up onto a cart (PACK): once the cart shows it in its place, the one in their hands goes. */
+    private fun packing(p: Townsperson, state: TownsfolkRenderState) {
+        if (packed.isEmpty()) return
+        val set = packed.get(p.id) ?: return
+        if (p.shownActivity != Activity.PACK || set.cart.isRemoved) {
+            packed.remove(p.id)
+            return
+        }
+        if (look(set.cart).shown[set.slot].`is`(Items.BUNDLE)) state.living.shown.remove(PACK_BUNDLE)
+    }
+
+    /** A bundle [cart] shows on place [slot], heaved up there at the game time [at]. */
+    private class Packed(val cart: Handcart, val slot: Int, val at: Long)
 
     /** The rattle of a household's load on one cart. */
     private class Rattle(private val cart: Handcart) : AbstractTickableSoundInstance(GOODS, SoundSource.NEUTRAL, SoundInstance.createUnseededRandom()) {
@@ -339,6 +400,17 @@ object CartClient {
     private const val RATTLE_PITCH = 2.05
     private const val RATTLE_VOLUME = 0.6f
     private const val RATTLE_LINGER = 40
+
+    // A bundle heaved up from the tail (PACK, art/scripts/street_clips.py): its prop in the packer's hands; the move's set
+    // (LivingSchedule.MOMENTS); how many ticks before or after the set the cart may show it (the two are sent apart);
+    // how far from the cart the packer stands (blocks); ticks a packer is kept in mind at most
+    private const val PACK_BUNDLE = "bundle"
+    private val PACK_SET: Float = LivingSchedule.MOMENTS["pack"]?.firstOrNull { it.name == "set" }?.tick ?: 25f
+    private const val PACK_EARLY = 4
+    private const val PACK_LATE = 10
+    private const val PACK_REACH = 2.5
+    private const val PACKED_LINGER = 60L
+
     private const val ROLL_EASE = 0.35f
     /** Px a tick a piece on top settles down (or up). */
     private const val REST_SPEED = 0.9f

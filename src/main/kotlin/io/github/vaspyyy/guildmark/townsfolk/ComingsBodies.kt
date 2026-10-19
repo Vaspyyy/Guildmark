@@ -36,9 +36,10 @@ import kotlin.math.sin
  *   empty cart goes once nobody's looking, and their day takes them up.
  * - **Leaving**: home from wherever they are to their door; their cart brought round to its bay while nobody's looking
  *   that way; the household's goods fetched out of the house a piece at a time and heaped on it, the floor of the bed
- *   first, each in its place, handed up over its side (HAND_OVER); the listeners told and the neighbours seeing them
- *   off (a hug, then waving after them); "comings.leave"; and away with the cart along the streets to the nearest
- *   gate and out onto the road, where they're taken away once no one can see them.
+ *   first, each in its place (a grown-up's bundle set down at the cart's tail and heaved up onto it, PACK; anything
+ *   else handed up over its side, HAND_OVER); the listeners told and the neighbours seeing them off (a hug, then
+ *   waving after them); "comings.leave"; and away with the cart along the streets to the nearest gate and out onto
+ *   the road, where they're taken away once no one can see them.
  *
  * Each plays once, whoever's watching, and never longer than [MOST] ticks; with nobody near any of them for [ALONE]
  * ticks it's finished out of sight (those coming in are home as their day has them; those leaving are gone). Nothing
@@ -544,13 +545,18 @@ internal object ComingsBodies {
                 party.load.clear()
                 party.load.addAll(Handcarts.household(party.h.members.size))
                 party.heaped.clear()
+                party.tail = null
                 for (h in party.crew) h.set()
             }
             Stage.FAREWELL -> {
                 party.said = false
                 tell(party)
                 party.came = Neighbours.at(party.level, party.h, Neighbours.Kind.LEFT, party.crew.map { it.p })
-                for (h in party.crew) if (!h.waiting) h.set(Stand(-1, { street(party) }))
+                for (h in party.crew) {
+                    // Cut short with a bundle set down at the cart's tail: it goes on all the same
+                    if (h.piece != null && h.p.carried.isEmpty) onto(party, h)
+                    if (!h.waiting) h.set(Stand(-1, { street(party) }))
+                }
             }
             Stage.OUT -> {
                 party.tries = 0
@@ -696,14 +702,25 @@ internal object ComingsBodies {
     }
 
     /**
-     * [h] (the [k]th of them) out of the house with a piece for the cart, to hand it up over its side (HAND_OVER), a
-     * piece for the top only once everything to go under it is on. With nothing in their arms after all, or no cart,
-     * they wait by the door with whatever they have.
+     * [h] (the [k]th of them) out of the house with a piece for the cart: a grown-up's bundle heaved up onto it from its
+     * tail (PACK), anything else handed up over its side (HAND_OVER), and a piece for the top only once everything to go
+     * under it is on. With nothing in their arms after all, or no cart, they wait by the door with whatever they have.
      */
     private fun out(party: Party, h: Hand, k: Int) {
         val puller = party.puller
-        if (h.piece == null || puller == null || !party.cart || Handcarts.parked(puller.p) == null) {
+        val piece = h.piece
+        if (piece == null || puller == null || !party.cart || Handcarts.parked(puller.p) == null) {
             h.set(Go({ spot(party, k) }, Jobs.WALK, 0.9, Activity.CARRY), Stand(-1, { street(party) }))
+            return
+        }
+        val tail = if (h.adult && piece.stack.`is`(Items.BUNDLE) && party.tail == null) Handcarts.tail(puller.p, piece.place) else null
+        if (tail != null) {
+            party.tail = h
+            h.set(
+                Go({ BlockPos.containing(tail.x, tail.y + 0.5, tail.z) }, Jobs.WALK, 1.0, Activity.CARRY),
+                Step(tail, Jobs.WALK, Activity.CARRY),
+                Do { heave(party, it, tail) },
+            )
             return
         }
         val door = Vec3.atCenterOf(party.door.pos)
@@ -711,6 +728,27 @@ internal object ComingsBodies {
             Go({ Handcarts.side(puller.p, door) ?: party.bay ?: spot(party, k) }, Jobs.WALK, 0.7, Activity.CARRY),
             Until({ ready(party, it) }, { Handcarts.bed(puller.p) }),
             Play(Activity.HAND_OVER, { Handcarts.bed(puller.p) }, HANDOFF) { onto(party, it) },
+        )
+    }
+
+    /**
+     * [h] at [party]'s cart's tail with a bundle, to stand on [at] (square behind it): set down, then heaved up onto its
+     * place (PACK), the cart's own from the move's set. Not got there after all: handed up from where they are.
+     */
+    private fun heave(party: Party, h: Hand, at: Vec3) {
+        val puller = party.puller ?: return
+        if (h.p.position().distanceToSqr(at.x, h.p.y, at.z) > NEAR_TAIL * NEAR_TAIL || abs(h.p.y - at.y) > 0.6) {
+            if (party.tail === h) party.tail = null
+            h.set(Play(Activity.HAND_OVER, { Handcarts.bed(puller.p) }, HANDOFF) { onto(party, it) })
+            return
+        }
+        // Onto the very spot, so the bundle comes down where the cart has it
+        h.p.setPos(at.x, h.p.y, at.z)
+        val ahead = { it: Hand -> Handcarts.ahead(puller.p, it.p.position()) }
+        h.set(
+            Play(Activity.PUT_DOWN, ahead) { it.p.carried = ItemStack.EMPTY },
+            Play(Activity.PACK, ahead, PACK_SET) { onto(party, it) },
+            Do { if (party.tail === it) party.tail = null },
         )
     }
 
@@ -875,8 +913,15 @@ internal object ComingsBodies {
     private const val GATHER_TICKS = 1200
     private const val WORK_TICKS = 2400
 
-    /** HAND_OVER's hand-off (client/townsfolk's LivingSchedule.MOMENTS): from that tick the piece is the cart's. */
+    /** PACK's set and HAND_OVER's hand-off (client/townsfolk's LivingSchedule.MOMENTS): from that tick the piece is the cart's. */
+    private const val PACK_SET = 25
     private const val HANDOFF = 16
+
+    /** Further than this from the cart's tail (blocks), they don't heave a bundle up from it but hand it up from where they are. */
+    private const val NEAR_TAIL = 0.5
+
+    /** Blocks off a point a Step makes for that's near enough to be set right onto it. */
+    private const val ON_SPOT = 0.12
 
     // ---- A household on the move, and each of them ----
 
@@ -923,6 +968,9 @@ internal object ComingsBodies {
 
         /** What's on the cart now, in the order it was heaped on. */
         val heaped = ArrayList<Handcarts.Placed>()
+
+        /** Leaving: whoever is at the cart's tail heaving a bundle up onto it, if anyone. */
+        var tail: Hand? = null
 
         var room: List<BlockPos>? = null
 
@@ -1096,6 +1144,33 @@ internal object ComingsBodies {
         }
 
         override fun stop(h: Hand) = h.walker.stop()
+    }
+
+    /**
+     * The last few steps straight onto [to], a point a walk to its block has brought them near (holding [overlay] as
+     * they go), the last of it set right. Not there in [most] ticks (something in the way), they stop where they are.
+     */
+    private class Step(private val to: Vec3, private val speed: Double, private val overlay: Activity = Activity.NONE, private val most: Int = 40) : Act() {
+        private var t = 0
+
+        override fun start(h: Hand) {
+            t = 0
+            h.p.navigation.stop()
+            h.p.act(holding(h, overlay))
+        }
+
+        override fun tick(h: Hand): Boolean {
+            val dx = to.x - h.p.x
+            val dz = to.z - h.p.z
+            if (dx * dx + dz * dz <= ON_SPOT * ON_SPOT) {
+                h.p.setPos(to.x, h.p.y, to.z)
+                return false
+            }
+            if (++t > most) return false
+            keep(h, holding(h, overlay))
+            h.p.moveControl.setWantedPosition(to.x, h.p.y, to.z, speed)
+            return true
+        }
     }
 
     /** The one at the head (with the cart) along the way's points up to [until], waiting for the rest when they fall behind. */

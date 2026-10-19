@@ -272,6 +272,28 @@ object Handcarts {
         cart.lay(Array(Handcart.SLOTS) { slot -> pieces.firstOrNull { it.place == slot }?.stack ?: ItemStack.EMPTY })
     }
 
+    /**
+     * Where to stand at [p]'s parked cart's tail to heave a bundle up onto [place] (one of the two at the back of the
+     * bed) as the PACK move does: square behind the cart, its axle [PACK_BACK] ahead. The move sets its bundle on the
+     * left-hand one (5); for the right-hand one (4) it's played that much further right. Null with none parked, or
+     * nowhere to stand there level with the cart.
+     */
+    fun tail(p: Townsperson, place: Int): Vec3? {
+        val cart = parked(p) ?: return null
+        val (fx, fz) = Handcart.forward(cart.yRot)
+        val right = if (place == BACK_RIGHT) PLACES_APART else 0.0
+        // The cart's right is (-fz, fx)
+        val at = Vec3(cart.x - fx * PACK_BACK - fz * right, cart.y, cart.z - fz * PACK_BACK + fx * right)
+        return at.takeIf { Places.standable(cart.level(), BlockPos.containing(at.x, cart.y + 0.5, at.z)) }
+    }
+
+    /** A point straight on from [from] the way [p]'s parked cart heads, at about head height: what someone at its tail faces. Null with none parked. */
+    fun ahead(p: Townsperson, from: Vec3): Vec3? {
+        val cart = parked(p) ?: return null
+        val (fx, fz) = Handcart.forward(cart.yRot)
+        return Vec3(from.x + fx * 4.0, from.y + 1.4, from.z + fz * 4.0)
+    }
+
     /** Whether [stack] is a piece of a household's load (see [household]). */
     fun household(stack: ItemStack): Boolean =
         stack.`is`(Items.OAK_STAIRS) || stack.`is`(Items.CHEST) || stack.`is`(Items.BUNDLE) || stack.`is`(Items.DECORATED_POT) ||
@@ -358,6 +380,12 @@ object Handcarts {
 
     /** Another cart this near a stop has it taken. */
     private const val TAKEN = 3.0
+
+    // Packing a household's cart from its tail (art/scripts/street_clips.py's pack): the axle 19 px ahead of the feet;
+    // the bed's right-hand place at the back, and how far across it is from the left-hand one (HandcartMesh.SLOTS)
+    private const val PACK_BACK = 19.0 / 16
+    private const val BACK_RIGHT = 4
+    private const val PLACES_APART = 6.5 / 16
 
     private val BAY_STEPS = intArrayOf(3, -3, 4, -4, 5, -5)
     private val BAY_DY = intArrayOf(0, -1, 1)
