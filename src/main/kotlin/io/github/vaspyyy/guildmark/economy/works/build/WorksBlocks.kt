@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.economy.works.build
 
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.client.works.WorksArt
 import io.github.vaspyyy.guildmark.homestead.Materials
 import io.github.vaspyyy.guildmark.homestead.plan.Stuff
 import net.minecraft.core.BlockPos
@@ -40,6 +41,7 @@ import net.minecraft.world.level.block.state.StateDefinition
 import net.minecraft.world.level.block.state.properties.BlockStateProperties
 import net.minecraft.world.level.block.state.properties.BooleanProperty
 import net.minecraft.world.level.block.state.properties.EnumProperty
+import net.minecraft.world.level.block.state.properties.IntegerProperty
 import net.minecraft.world.level.material.MapColor
 import net.minecraft.world.level.material.PushReaction
 import net.minecraft.world.level.storage.ValueInput
@@ -170,6 +172,8 @@ object WorksBlocks {
     val GRANARY_DOORS = sound("works.granary_doors", 32f)
     /** Marks pledged at the post: coins into the box. */
     val PLEDGE = sound("works.pledge", 12f)
+    /** A seal dropping out of its slit on the post's parchment to the end of its cord (the client's, as each new one lands). */
+    val SEAL = sound("works.seal", 12f)
 
     fun id(name: String): Identifier = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, name)
 
@@ -241,9 +245,14 @@ abstract class WorksBlockEntity(type: BlockEntityType<*>, pos: BlockPos, state: 
 class WorksPostBlock(properties: BlockBehaviour.Properties) : WorksFacingBlock(properties), EntityBlock {
     override fun getShape(state: BlockState, level: BlockGetter, pos: BlockPos, context: CollisionContext): VoxelShape = SHAPES.getValue(state.getValue(FACING))
 
-    override fun getCollisionShape(state: BlockState, level: BlockGetter, pos: BlockPos, context: CollisionContext): VoxelShape = POLE
+    override fun getCollisionShape(state: BlockState, level: BlockGetter, pos: BlockPos, context: CollisionContext): VoxelShape = SOLID.getValue(state.getValue(FACING))
 
     override fun newBlockEntity(pos: BlockPos, state: BlockState): BlockEntity = WorksPostBlockEntity(pos, state)
+
+    override fun <T : BlockEntity> getTicker(level: Level, state: BlockState, type: BlockEntityType<T>): BlockEntityTicker<T>? {
+        if (!level.isClientSide() || type != WorksBlocks.POST_ENTITY.get()) return null
+        return BlockEntityTicker { _, _, _, entity -> clientTick?.invoke(entity as WorksPostBlockEntity) }
+    }
 
     override fun useItemOn(stack: ItemStack, state: BlockState, level: Level, pos: BlockPos, player: Player, hand: InteractionHand, hit: BlockHitResult): InteractionResult {
         if (Materials.of(stack) == null) return InteractionResult.TRY_WITH_EMPTY_HAND
@@ -258,16 +267,26 @@ class WorksPostBlock(properties: BlockBehaviour.Properties) : WorksFacingBlock(p
     }
 
     companion object {
-        private val POLE: VoxelShape = box(6.5, 0.0, 6.5, 9.5, 16.0, 9.5)
-        private val SHAPES: Map<Direction, VoxelShape> = Shapes.rotateHorizontal(Shapes.or(POLE, box(2.0, 6.0, 5.5, 14.0, 15.0, 6.5)))
+        // Part F's model, facing north: the post at the back up to its cap, the notice board on its front under the drip
+        // hood, the pledge box below; a body is stopped by it as high as by a fence
+        private val SHAPES: Map<Direction, VoxelShape> = Shapes.rotateHorizontal(
+            Shapes.or(box(6.5, 0.0, 10.0, 9.5, 29.2, 13.0), box(1.0, 11.0, 9.0, 15.0, 26.0, 10.0), box(0.4, 26.0, 6.4, 15.6, 26.8, 10.6), box(4.5, 5.0, 6.0, 11.5, 9.5, 10.0)),
+        )
+        private val SOLID: Map<Direction, VoxelShape> = Shapes.rotateHorizontal(
+            Shapes.or(box(6.5, 0.0, 10.0, 9.5, 24.0, 13.0), box(1.0, 11.0, 9.0, 15.0, 24.0, 10.0), box(4.5, 5.0, 6.0, 11.5, 9.5, 10.0)),
+        )
+
+        /** The client's look at a post each tick (client/works sets it): each new seal heard as its drop lands. */
+        var clientTick: ((WorksPostBlockEntity) -> Unit)? = null
     }
 }
 
 /**
  * What the post shows: the works ([works], its [kind]'s drawing), how many tenths of its price are pledged ([seals],
  * a red seal each), whether it's [stamped] (paid for), when it was knocked in ([raised], game time, for the client's
- * settling of it), last sealed ([sealedAt], for the new seal's press) and last pledged to ([pledgedAt], the coins'
- * drop into its box).
+ * settling of it), when its seals last changed ([sealedAt]: from [was] seals, the new ones dropping out one after
+ * another [SEAL_GAP] ticks apart, or those taken back drawn up), when the stamp comes down on it ([stampedAt]: as the
+ * last new seal lands) and when it was last pledged to at the post ([pledgedAt], the coins' drop into its box).
  */
 class WorksPostBlockEntity(pos: BlockPos, state: BlockState) : WorksBlockEntity(WorksBlocks.POST_ENTITY.get(), pos, state) {
     var works: Int = -1
@@ -284,15 +303,33 @@ class WorksPostBlockEntity(pos: BlockPos, state: BlockState) : WorksBlockEntity(
         private set
     var pledgedAt: Long = 0L
         private set
+    var was: Int = 0
+        private set
+    var stampedAt: Long = 0L
+        private set
+
+    /** The client's: up to which game time this post's seals have been heard landing. */
+    var heard: Long = Long.MIN_VALUE
 
     fun set(works: Int, kind: String, seals: Int, stamped: Boolean) {
-        if (this.works == works && this.kind == kind && this.seals == seals && this.stamped == stamped) return
+        val n = seals.coerceIn(0, 10)
+        if (this.works == works && this.kind == kind && this.seals == n && this.stamped == stamped) return
         val now = level?.gameTime ?: 0L
-        if (this.works != works) raised = now
-        if (seals > this.seals || stamped && !this.stamped) sealedAt = now
+        if (this.works != works) {
+            // A post put up (or put to another works) shows what's pledged as it is
+            raised = now
+            was = n
+            stampedAt = if (stamped) now - STAMP_SHOWN else 0L
+        } else if (n != this.seals) {
+            was = this.seals
+            sealedAt = now
+        }
+        if (this.works == works && stamped && !this.stamped) {
+            stampedAt = if (sealedAt == now && n > was) now + (n - was - 1) * SEAL_GAP + WorksArt.SEAL_DROP.toLong() else now
+        }
         this.works = works
         this.kind = kind
-        this.seals = seals.coerceIn(0, 10)
+        this.seals = n
         this.stamped = stamped
         WorksBlocks.sync(this)
     }
@@ -312,6 +349,8 @@ class WorksPostBlockEntity(pos: BlockPos, state: BlockState) : WorksBlockEntity(
         output.putLong("raised", raised)
         output.putLong("sealed_at", sealedAt)
         output.putLong("pledged_at", pledgedAt)
+        output.putInt("was", was)
+        output.putLong("stamped_at", stampedAt)
     }
 
     override fun loadAdditional(input: ValueInput) {
@@ -323,6 +362,16 @@ class WorksPostBlockEntity(pos: BlockPos, state: BlockState) : WorksBlockEntity(
         raised = input.getLongOr("raised", 0L)
         sealedAt = input.getLongOr("sealed_at", 0L)
         pledgedAt = input.getLongOr("pledged_at", 0L)
+        was = input.getIntOr("was", seals)
+        stampedAt = input.getLongOr("stamped_at", if (stamped) sealedAt else 0L)
+    }
+
+    companion object {
+        /** Ticks between one new seal's drop and the next's. */
+        const val SEAL_GAP = 5L
+
+        /** How long ago a stamp already on a post put up was pressed: long enough to show settled. */
+        private const val STAMP_SHOWN = 1000L
     }
 }
 
@@ -338,15 +387,17 @@ class WorksPlaqueBlock(properties: BlockBehaviour.Properties) : WorksFacingBlock
         builder.add(FACING, COVERED)
     }
 
-    override fun getShape(state: BlockState, level: BlockGetter, pos: BlockPos, context: CollisionContext): VoxelShape = SHAPES.getValue(state.getValue(FACING))
+    override fun getShape(state: BlockState, level: BlockGetter, pos: BlockPos, context: CollisionContext): VoxelShape =
+        (if (state.getValue(COVERED)) VEILED else BARE).getValue(state.getValue(FACING))
 
     override fun newBlockEntity(pos: BlockPos, state: BlockState): BlockEntity = WorksPlaqueBlockEntity(pos, state)
 
     companion object {
         val COVERED: BooleanProperty = BooleanProperty.create("covered")
 
-        // Facing north, the wall is to its south: it hangs on that side of its block
-        private val SHAPES: Map<Direction, VoxelShape> = Shapes.rotateHorizontal(box(1.0, 2.0, 14.5, 15.0, 14.0, 16.0))
+        // Facing north, the wall is to its south: the plate hangs on that side of its block, under its velvet till the opening
+        private val BARE: Map<Direction, VoxelShape> = Shapes.rotateHorizontal(box(2.0, 3.0, 15.0, 14.0, 13.0, 16.0))
+        private val VEILED: Map<Direction, VoxelShape> = Shapes.rotateHorizontal(box(1.0, 1.7, 14.7, 15.0, 14.3, 16.0))
     }
 }
 
@@ -368,6 +419,9 @@ class WorksPlaqueBlockEntity(pos: BlockPos, state: BlockState) : WorksBlockEntit
         private set
     var unveiled: Long = 0L
         private set
+
+    /** The client's: its words as last lettered (client/works keeps them here). */
+    var words: Any? = null
 
     fun set(kind: String, patron: String, others: Int, place: String, day: Long) {
         if (this.kind == kind && this.patron == patron && this.others == others && this.place == place && this.day == day) return
@@ -432,7 +486,8 @@ class WorksCrateBlock(properties: BlockBehaviour.Properties) : WorksFacingBlock(
     }
 
     companion object {
-        private val SHAPE: VoxelShape = box(1.0, 0.0, 1.0, 15.0, 14.0, 15.0)
+        // The supply crate's model fills its block
+        private val SHAPE: VoxelShape = Shapes.block()
     }
 }
 
@@ -516,13 +571,26 @@ class WorksYardBlockEntity(pos: BlockPos, state: BlockState) : WorksBlockEntity(
     }
 }
 
-/** The mortar tub: MIX_MORTAR is played standing behind it (the block on the side it doesn't face), facing it. */
+/**
+ * The mortar tub: MIX_MORTAR is played standing behind it (the block on the side it doesn't face), facing it. Its
+ * [MORTAR] is how full it is (its block entity's count), so the mortar's top stands that high in its model and reads
+ * true from across the yard: raised a round of the hoe at a time, lowered a trowel's worth at a time.
+ */
 class MortarTubBlock(properties: BlockBehaviour.Properties) : WorksFacingBlock(properties), EntityBlock {
+    init {
+        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(MORTAR, 0))
+    }
+
+    override fun createBlockStateDefinition(builder: StateDefinition.Builder<Block, BlockState>) {
+        builder.add(FACING, MORTAR)
+    }
+
     override fun getShape(state: BlockState, level: BlockGetter, pos: BlockPos, context: CollisionContext): VoxelShape = SHAPE
 
     override fun newBlockEntity(pos: BlockPos, state: BlockState): BlockEntity = MortarTubBlockEntity(pos, state)
 
     companion object {
+        val MORTAR: IntegerProperty = IntegerProperty.create("mortar", 0, MortarTubBlockEntity.FULL)
         private val SHAPE: VoxelShape = box(1.0, 0.0, 1.0, 15.0, 7.0, 15.0)
     }
 }
@@ -540,6 +608,7 @@ class MortarTubBlockEntity(pos: BlockPos, state: BlockState) : WorksBlockEntity(
     fun mix(by: Int = FULL) {
         mortar = (mortar + by).coerceAtMost(FULL)
         stirred = level?.gameTime ?: 0L
+        show()
         WorksBlocks.sync(this)
     }
 
@@ -548,8 +617,18 @@ class MortarTubBlockEntity(pos: BlockPos, state: BlockState) : WorksBlockEntity(
         if (mortar <= 0) return false
         mortar--
         scooped = level?.gameTime ?: 0L
+        show()
         WorksBlocks.sync(this)
         return true
+    }
+
+    /** The tub's block shows as much mortar as it has. */
+    private fun show() {
+        val level = level ?: return
+        if (level.isClientSide()) return
+        val state = level.getBlockState(worldPosition)
+        if (!state.`is`(WorksBlocks.TUB.get()) || state.getValue(MortarTubBlock.MORTAR) == mortar) return
+        level.setBlock(worldPosition, state.setValue(MortarTubBlock.MORTAR, mortar.coerceIn(0, FULL)), Block.UPDATE_CLIENTS)
     }
 
     override fun saveAdditional(output: ValueOutput) {
@@ -576,16 +655,25 @@ class MortarTubBlockEntity(pos: BlockPos, state: BlockState) : WorksBlockEntity(
 class WorksHoistBlock(properties: BlockBehaviour.Properties) : WorksFacingBlock(properties), EntityBlock {
     override fun getShape(state: BlockState, level: BlockGetter, pos: BlockPos, context: CollisionContext): VoxelShape = SHAPES.getValue(state.getValue(FACING))
 
+    override fun getCollisionShape(state: BlockState, level: BlockGetter, pos: BlockPos, context: CollisionContext): VoxelShape = SOLID.getValue(state.getValue(FACING))
+
     override fun newBlockEntity(pos: BlockPos, state: BlockState): BlockEntity = WorksHoistBlockEntity(pos, state)
 
     companion object {
-        private val SHAPES: Map<Direction, VoxelShape> = Shapes.rotateHorizontal(box(6.0, 10.0, 0.0, 10.0, 14.0, 16.0))
+        // Part F's model, facing north: the sole and the post at the block's back (against the wall), the jib out from
+        // the post's top a block and more; a body is stopped by the post as high as by a fence
+        private val SHAPES: Map<Direction, VoxelShape> = Shapes.rotateHorizontal(
+            Shapes.or(box(1.0, 0.0, 10.5, 6.0, 1.0, 16.0), box(2.0, 1.0, 12.0, 5.0, 26.0, 15.0), box(2.25, 23.0, -16.0, 4.75, 25.5, 12.0)),
+        )
+        private val SOLID: Map<Direction, VoxelShape> = Shapes.rotateHorizontal(Shapes.or(box(1.0, 0.0, 10.5, 6.0, 1.0, 16.0), box(2.0, 1.0, 12.0, 5.0, 24.0, 15.0)))
     }
 }
 
 /**
- * What the hoist is lifting: [load] (an item's id, "" for nothing) from [drop] blocks below it, the lift begun at
- * [from] (game time) and taking [ticks]. The client draws the rope down to the load and the load rising.
+ * What the hoist is lifting: [load] (an item's id, "" for nothing) from the ground [drop] blocks below it (in front of
+ * it, where its falls hang), the lift begun at [from] (game time), its hauling taking [ticks] (WorksArt.ticksFor its
+ * travel, so the rope runs with HOIST's heaves). The client draws the falls, the hook and the load rising, held at the
+ * top while it's taken in, and the hook let back down.
  */
 class WorksHoistBlockEntity(pos: BlockPos, state: BlockState) : WorksBlockEntity(WorksBlocks.HOIST_ENTITY.get(), pos, state) {
     var load: String = ""
@@ -614,10 +702,11 @@ class WorksHoistBlockEntity(pos: BlockPos, state: BlockState) : WorksBlockEntity
         WorksBlocks.sync(this)
     }
 
-    /** The rope hanging [drop] blocks down to the ground (nothing on it). */
+    /** The rope hanging [drop] blocks down to the ground, its hook at rest with nothing on it (a lift done, or cut short). */
     fun hang(drop: Int) {
-        if (load.isEmpty() && this.drop == drop) return
+        if (load.isEmpty() && this.drop == drop && ticks == 0) return
         load = ""
+        ticks = 0
         this.drop = drop.coerceIn(1, 24)
         WorksBlocks.sync(this)
     }

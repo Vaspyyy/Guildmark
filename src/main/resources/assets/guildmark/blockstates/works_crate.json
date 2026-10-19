@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "guildmark:block/supply_crate",
+      "y": 180
+    },
+    "facing=east": {
+      "model": "guildmark:block/supply_crate",
+      "y": 270
+    },
+    "facing=south": {
+      "model": "guildmark:block/supply_crate"
+    },
+    "facing=west": {
+      "model": "guildmark:block/supply_crate",
+      "y": 90
+    }
+  }
+}

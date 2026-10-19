@@ -384,7 +384,7 @@ class Granary(y0: Int, private val palette: Int) : WorksDrawing(WorksKind.GRANAR
         Buildings.roof(p.frame(house), 9, 5, 0, 6, palette, true, BOARDS)
         // The hoist beam out over the loading door, with the bough
         p.stage(Stage.TOPPING)
-        p.set(5, 10, 1, HOIST)
+        p.set(5, 9, 1, HOIST)
         // The double doors, the loading door, the windows, a lantern under each front eave
         p.stage(Stage.OPENINGS)
         p.door(4, 2, 2, Dir.S)

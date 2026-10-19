@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.economy.works.build
 
 import io.github.vaspyyy.guildmark.city.plan.M
+import io.github.vaspyyy.guildmark.client.works.WorksArt
 import io.github.vaspyyy.guildmark.homestead.BuilderCrew
 import io.github.vaspyyy.guildmark.homestead.Worksite
 import io.github.vaspyyy.guildmark.homestead.plan.Stage
@@ -15,6 +16,7 @@ import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 import net.minecraft.world.phys.Vec3
+import kotlin.math.ceil
 
 /**
  * One of a works' crew, a labourer lent by the town or a stranger making up the number: a homestead's builder
@@ -22,14 +24,14 @@ import net.minecraft.world.phys.Vec3
  *
  * At the work: now and then a stone is dressed with the chisel before it goes in, and a course is pointed with the
  * trowel after, a trowel's worth out of the mortar tub each time (with the tub empty there's no pointing until it's
- * mixed again). Each stone set beds down with its own sound, a beam now and then with a thud.
+ * mixed again). Each stone set beds down with its own sound as the site lays it (TownWorksSite.lay).
  *
  * Between steps, one job of the yard's at a time, each one of the crew's at once and each only now and then: the mortar
  * mixed when the tub runs low, stone dressed at its heap, a beam carried two to it from the timber stack to where
  * the frame is going up (the one who leads with it fetches the other, who keeps his end two blocks behind), and,
  * while the granary's doors and bins go in, its hoist hauled hand over hand with what goes up next on the rope. Their
- * strokes' sounds are the clips' own, on their moments (client/works/WorksMoments); what changes in the world (the
- * tub filled, the load lifted, the beam set down) changes on the server.
+ * strokes' sounds are the clips' own, on their moments (client/townsfolk/LivingMoments); what changes in the world (the
+ * tub filled round by round, the load lifted, the beam set down with its thud) changes on the server.
  */
 class WorksBuilder(p: Townsperson, id: Int, road: BlockPos, lent: Boolean) : BuilderCrew.Builder(p, id, road, lent) {
     private enum class Job { MIX, CHISEL, BEAM, HOIST }
@@ -50,6 +52,10 @@ class WorksBuilder(p: Townsperson, id: Int, road: BlockPos, lent: Boolean) : Bui
 
     /** Where the beam is going down. */
     private var drop: Vec3 = Vec3.ZERO
+
+    /** A haul of the hoist: ticks of hauling, then of the load taken in and the hook let down. */
+    private var hauling = 0
+    private var lowering = 0
 
     /** The last game time they were idle looking for work (a beam's leader takes only someone free just now). */
     private var idleAt = Long.MIN_VALUE / 2
@@ -96,20 +102,13 @@ class WorksBuilder(p: Townsperson, id: Int, road: BlockPos, lent: Boolean) : Bui
         hold(ItemStack.EMPTY)
     }
 
-    /** A stone set beds down on its mortar; a beam, now and then, goes in with a thud. */
+    /** The newest stone set, for the master's plumb line (its bedding is heard as the site lays it: TownWorksSite.lay). */
     override fun laid(level: ServerLevel, site: Worksite, i: Int) {
         val step = site.step(i)
-        if (step.kind != StepKind.BLOCK) return
-        when (step.stuff) {
-            Stuff.STONE -> {
-                WorksBlocks.play(level, site.at(i), WorksBlocks.STONE_SET)
-                val yard = yards.getOrPut(id) { Yard() }
-                yard.newest = site.at(i)
-                yard.newestAt = level.gameTime
-            }
-            Stuff.TIMBER -> if (step.b.m == M.TIMBER && p.random.nextInt(3) == 0) WorksBlocks.play(level, site.at(i), WorksBlocks.BEAM_DOWN, 0.6f)
-            else -> {}
-        }
+        if (step.kind != StepKind.BLOCK || step.stuff != Stuff.STONE) return
+        val yard = yards.getOrPut(id) { Yard() }
+        yard.newest = site.at(i)
+        yard.newestAt = level.gameTime
     }
 
     // ---- The yard's jobs ----
@@ -178,7 +177,7 @@ class WorksBuilder(p: Townsperson, id: Int, road: BlockPos, lent: Boolean) : Bui
         val hoist = yard.hoist
         if (hoist != null && (s.stage == Stage.OPENINGS || s.stage == Stage.FITTING) && !holds(yard.hoister, Job.HOIST) && now - yard.hoisted > HOIST_EVERY) {
             val be = level.getBlockEntity(hoist) as? WorksHoistBlockEntity
-            val stand = be?.let { footing(level, hoist, it.drop) }
+            val stand = be?.let { footing(level, hoist, s.dropBelow(hoist)) }
             if (be != null && stand != null) {
                 yard.hoister = p.id
                 yard.hoisted = now
@@ -255,7 +254,7 @@ class WorksBuilder(p: Townsperson, id: Int, road: BlockPos, lent: Boolean) : Bui
         p.lookAt(target)
     }
 
-    // The mortar: stirred through, round and round, behind the tub; full at the end
+    // The mortar: stirred through, round and round, behind the tub, the tub fuller each round; full at the end
     private fun mix(level: ServerLevel, t: Int): Boolean {
         val be = level.getBlockEntity(at) as? MortarTubBlockEntity ?: return end()
         val tub = Vec3.atCenterOf(at)
@@ -267,10 +266,12 @@ class WorksBuilder(p: Townsperson, id: Int, road: BlockPos, lent: Boolean) : Bui
             }
             else -> {
                 faceAt(tub.add(0.0, -0.4, 0.0))
-                if (t - mark >= Activity.MIX_MORTAR.ticks * MIX_ROUNDS) {
-                    be.mix()
-                    return end()
+                val rounds = (t - mark) / Activity.MIX_MORTAR.ticks
+                if (rounds >= phase) {
+                    phase = rounds + 1
+                    be.mix(if (rounds >= MIX_ROUNDS) MortarTubBlockEntity.FULL else (MortarTubBlockEntity.FULL + MIX_ROUNDS - 1) / MIX_ROUNDS)
                 }
+                if (rounds >= MIX_ROUNDS) return end()
             }
         }
         return true
@@ -398,21 +399,34 @@ class WorksBuilder(p: Townsperson, id: Int, road: BlockPos, lent: Boolean) : Bui
         return true
     }
 
-    // The hoist: hauled hand over hand from beside the rope's foot, with the next thing that goes up high on it
+    // The hoist: hauled hand over hand from under its hauled fall with the next thing that goes up high on it, as far
+    // as the rope must run (WorksArt.ticksFor, HOIST's heaves); the load taken in at the top, the hook let back down
     private fun hoist(level: ServerLevel, s: TownWorksSite, t: Int): Boolean {
         val be = level.getBlockEntity(at) as? WorksHoistBlockEntity ?: return end()
-        val foot = Vec3.atBottomCenterOf(at.below(be.drop))
+        val facing = facing(level, at)
+        val sheave = Vec3.atCenterOf(at.relative(facing)).add(0.0, 0.45, 0.0)
         when (phase) {
             0 -> if (there(level, t)) {
                 phase = 1
                 mark = t
-                be.lift(load(s), be.drop, Activity.HOIST.ticks * HOIST_ROUNDS)
+                val drop = s.dropBelow(at)
+                val travel = 16f * drop + WorksArt.HOOK_TOP - WorksArt.HOOK_REST
+                hauling = ceil(WorksArt.ticksFor(travel)).toInt()
+                lowering = WorksArt.HOIST_LAND.toInt() + ceil(travel / WorksArt.HOIST_LOWER).toInt()
+                be.lift(load(s), drop, hauling)
+                p.face(facing.toYRot())
                 p.act(Activity.HOIST)
             }
             else -> {
-                p.face(p.yawTo(foot))
-                p.lookAt(Vec3.atCenterOf(at))
-                if (t - mark >= Activity.HOIST.ticks * HOIST_ROUNDS) {
+                p.face(facing.toYRot())
+                p.lookAt(sheave)
+                val k = t - mark
+                if (phase == 1 && k >= hauling) {
+                    // Up: the load's taken in, and the rope let run back up through his hands
+                    phase = 2
+                    p.act(Activity.NONE)
+                }
+                if (k >= hauling + lowering) {
                     be.hang(be.drop)
                     return end()
                 }
@@ -458,14 +472,24 @@ class WorksBuilder(p: Townsperson, id: Int, road: BlockPos, lent: Boolean) : Bui
         return s.gate()
     }
 
-    /** Somewhere to stand beside the hoist's rope where it reaches the ground, nearest the yard. */
+    /**
+     * Where the hoist is hauled from: HOIST's place, under its hauled fall on the ground in front of it (the block it
+     * faces, [drop] down: the rope a little ahead), or beside there if that's taken.
+     */
     private fun footing(level: ServerLevel, hoist: BlockPos, drop: Int): BlockPos? {
-        val foot = hoist.below(drop)
+        val foot = hoist.relative(facing(level, hoist)).below(drop)
         val ground = BlockPos(foot.x, groundUnder(level, foot), foot.z)
+        if (Places.standable(level, ground)) return ground
         return Direction.Plane.HORIZONTAL.stream().toList()
             .map { ground.relative(it) }
             .filter { Places.standable(level, it) }
             .minByOrNull { it.distSqr(p.blockPosition()) }
+    }
+
+    /** The way the works' block at [pos] faces. */
+    private fun facing(level: ServerLevel, pos: BlockPos): Direction {
+        val state = level.getBlockState(pos)
+        return if (state.hasProperty(WorksFacingBlock.FACING)) state.getValue(WorksFacingBlock.FACING) else Direction.NORTH
     }
 
     /** What goes up on the rope: the next thing of the stage to go in high up, as it will. */
@@ -546,10 +570,9 @@ class WorksBuilder(p: Townsperson, id: Int, road: BlockPos, lent: Boolean) : Bui
         /** Ticks a job of the yard's may take at most, walking there included. */
         private const val TIMEOUT = 600
 
-        /** Rounds of each clip a job takes. */
+        /** Rounds of each clip a job takes (the hoist's as many as its rope must run). */
         private const val MIX_ROUNDS = 3
         private const val CHISEL_ROUNDS = 3
-        private const val HOIST_ROUNDS = 4
 
         /** The fewest ticks between one beam carried and the next, stone dressed at the heap, the hoist hauled. */
         private const val BEAM_EVERY = 1800L

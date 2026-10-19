@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "guildmark:block/works/works_pitch"
+    },
+    "facing=east": {
+      "model": "guildmark:block/works/works_pitch",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "guildmark:block/works/works_pitch",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "guildmark:block/works/works_pitch",
+      "y": 270
+    }
+  }
+}

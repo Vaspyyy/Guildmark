@@ -725,10 +725,8 @@ internal object MasterBuilder {
                     speak("works_master_toast_${1 + p.random.nextInt(2)}", force = true)
                     BuilderCrew.join(s.key, Activity.TOAST)
                 }, on = { t ->
-                    if (t == TOAST_RAISE) {
-                        WorksBlocks.play(level, p.blockPosition(), WorksBlocks.TOAST)
-                        ToppingOut.cheer(level, works)
-                    }
+                    // The cups raised (their knock is the client's, once for the crew), and the town's cheer with it
+                    if (t == TOAST_RAISE) ToppingOut.cheer(level, works)
                 }),
                 Act {
                     if (tower) WorksAtWork.firstFire(level, rec, s, true)
@@ -746,11 +744,13 @@ internal object MasterBuilder {
             ceremony = true
             inn = false
             cut()
-            val face = Vec3.atCenterOf(plaque)
+            // UNVEIL is played from the block under the plaque's, facing the wall, the cloth's corner in reach
+            val face = Vec3.atCenterOf(plaque).add(-facing.stepX * 0.45, 0.0, -facing.stepZ * 0.45)
+            val under = plaque.below()
             val front = plaque.relative(facing, 2)
             val near = plaque.relative(facing)
-            val stand = listOf(BlockPos(front.x, ground(level, front), front.z), BlockPos(near.x, ground(level, near), near.z))
-                .firstOrNull { level.isLoaded(it) && Places.standable(level, it) } ?: BlockPos.containing(site?.gate() ?: p.position())
+            val stand = listOf(under, BlockPos(under.x, ground(level, under), under.z), BlockPos(near.x, ground(level, near), near.z), BlockPos(front.x, ground(level, front), front.z))
+                .firstOrNull { level.isLoaded(it) && Places.standable(level, it) && plaque.y - it.y in 0..2 } ?: BlockPos.containing(site?.gate() ?: p.position())
             val patron = Works.get(level, w.id)?.patron?.let { level.server.playerList.getPlayer(it) }
                 ?.takeIf { it.level() === level && !it.isSpectator && it.distanceToSqr(face) < SEEN * SEEN }
             val listener = { (patron ?: level.getNearestPlayer(p, SEEN))?.eyePosition ?: face }

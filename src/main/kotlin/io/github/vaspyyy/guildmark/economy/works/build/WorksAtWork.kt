@@ -81,6 +81,10 @@ internal object WorksAtWork {
     private const val FLARE = 600L
     private const val FIRST_FLARE = 100L
 
+    /** SOUND_HORN's blow (its tick 12), when the horn's heard; and how far round a tower's beacon its lookouts stand. */
+    private const val HORN_BLOW = 12L
+    private const val DECK = 4.0
+
     /** The clock: the beacon put out in the morning, lit at dusk by its watch, and by the clock once it's dark. */
     private const val MORNING = 6.0
     private const val DUSK = 17.5
@@ -174,6 +178,7 @@ internal object WorksAtWork {
         doorsUntil.clear()
         flares.clear()
         firsts.clear()
+        horns.clear()
     }
 
     private fun fittings(id: Int, planned: WorksPlans.Planned): Fittings {
@@ -255,24 +260,70 @@ internal object WorksAtWork {
     }
 
     /**
-     * A strike seen from [w], a standing tower (caravan/Watchmen, as its watch rides out): the horn sounded from its
-     * deck, its beacon flaring, and its lookouts pointing and calling ([Lookout.riders]) at [at], the wagon.
+     * A strike seen from [w], a standing tower (caravan/Watchmen, as its watch rides out): one of its lookouts up there
+     * turns to [at] (the wagon) and blows the horn (SOUND_HORN, heard from its blow at [HORN_BLOW] to 128 blocks), the
+     * beacon flaring with it; and as the horn's done they all point and call ([Lookout.riders]). With nobody up there
+     * the horn's heard from its deck at once.
      */
     fun strike(level: ServerLevel, w: WorksView, at: BlockPos?) {
-        flares[w.id] = level.gameTime + FLARE
+        if (horns.any { it.w.id == w.id }) return
         val pos = Beacon.at(level, w)
-        if (pos != null) {
-            WorksBlocks.play(level, pos.above(), WorksBlocks.HORN)
-            fire(level, pos, BeaconFire.FLARE, sound = true)
-        } else {
-            val site = w.site
-            if (site != null) WorksBlocks.play(level, site.origin.above(8), WorksBlocks.HORN)
+        val by = pos?.let { blower(level, it) }
+        if (pos == null || by == null) {
+            blow(level, w, pos, null)
+            Lookout.riders(level, w.capital, w.road, at)
+            return
         }
-        Lookout.riders(level, w.capital, w.road, at)
+        val towards = at?.let { Vec3.atCenterOf(it) } ?: Vec3.atCenterOf(pos)
+        by.navigation.stop()
+        by.face(by.yawTo(towards))
+        by.lookAt(towards)
+        by.act(Activity.SOUND_HORN)
+        horns += Horn(by, level.gameTime, w, at)
+    }
+
+    /** Who's to blow the horn at the tower whose beacon is at [beacon]: the nearest of its lookouts up there. */
+    private fun blower(level: ServerLevel, beacon: BlockPos): Townsperson? =
+        level.getEntitiesOfClass(Townsperson::class.java, AABB(beacon).inflate(DECK, 3.0, DECK)) { it.isAlive && Lookout.up(it) }
+            .minByOrNull { it.distanceToSqr(Vec3.atCenterOf(beacon)) }
+
+    /** The horn heard, from [by] or the tower's deck, and its beacon (at [pos]) flaring. */
+    private fun blow(level: ServerLevel, w: WorksView, pos: BlockPos?, by: Townsperson?) {
+        flares[w.id] = level.gameTime + FLARE
+        val from = by?.blockPosition()?.above() ?: pos?.above() ?: w.site?.origin?.above(8)
+        if (from != null) WorksBlocks.play(level, from, WorksBlocks.HORN)
+        if (pos != null) fire(level, pos, BeaconFire.FLARE, sound = true)
+    }
+
+    /** A lookout's horn being blown: who, since when (game time), for which tower, at what. */
+    private class Horn(val p: Townsperson, val start: Long, val w: WorksView, val at: BlockPos?) {
+        var blown = false
+    }
+
+    private val horns = ArrayList<Horn>()
+
+    /** The horns being blown: each heard at SOUND_HORN's blow, and the watch pointing as it's done (or cut short). */
+    private fun horns(level: ServerLevel) {
+        val now = level.gameTime
+        val each = horns.iterator()
+        while (each.hasNext()) {
+            val h = each.next()
+            val t = now - h.start
+            val cut = !h.p.isAlive || h.p.level() !== level || h.p.activity != Activity.SOUND_HORN
+            if (!h.blown && (t >= HORN_BLOW || cut)) {
+                h.blown = true
+                blow(level, h.w, Beacon.at(level, h.w), h.p.takeIf { it.isAlive && it.level() === level })
+            }
+            if (t >= Activity.SOUND_HORN.ticks || cut) {
+                each.remove()
+                Lookout.riders(level, h.w.capital, h.w.road, h.at)
+            }
+        }
     }
 
     /** The towers lit at their topping out while they're still going up: out the next morning, and back from a flare. */
     fun everyTick(level: ServerLevel) {
+        if (horns.isNotEmpty()) horns(level)
         if (level.gameTime % 20L != 3L || firsts.isEmpty()) return
         val now = level.gameTime
         val hour = hour(level)

@@ -223,6 +223,19 @@ internal object WorksYard {
         }
     }
 
+    /** Marks pledged to [rec]'s works: its seals at once, and the coins into the post's box if [player] pledged at it. */
+    fun pledged(level: ServerLevel, rec: BuildRec, player: java.util.UUID) {
+        val w = WorksData.get(level).works[rec.id] ?: return
+        seal(level, w, rec)
+        val pos = rec.post ?: return
+        if (!level.isLoaded(pos)) return
+        val by = level.server.playerList.getPlayer(player) ?: return
+        if (by.level() !== level || by.distanceToSqr(Vec3.atCenterOf(pos)) > AT_POST * AT_POST) return
+        val be = level.getBlockEntity(pos) as? WorksPostBlockEntity ?: return
+        be.pledged()
+        WorksBlocks.play(level, pos, WorksBlocks.PLEDGE)
+    }
+
     /** The works is paid for: its post stamped. */
     fun stamp(level: ServerLevel, rec: BuildRec) {
         val w = WorksData.get(level).works[rec.id] ?: return
@@ -447,4 +460,7 @@ internal object WorksYard {
     private const val KNOCKS = 3
     private const val KNOCK_AT = 9
     private const val SET_AT = 10
+
+    /** How near the post a player pledges for the coins to go into its box (as they stand at it, with its screen open). */
+    private const val AT_POST = 8.0
 }

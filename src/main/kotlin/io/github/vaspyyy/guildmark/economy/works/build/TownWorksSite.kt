@@ -688,15 +688,23 @@ class TownWorksSite(override val level: ServerLevel, val rec: BuildRec, val plan
     /** Whether lighting a fire shows (it's always a step laid by hand or the clock: yes). */
     private val fxFire = true
 
-    /** How far the hoist's rope hangs to the ground below it. */
-    private fun dropBelow(pos: BlockPos): Int {
-        var n = 1
-        val cursor = pos.mutable().move(Direction.DOWN)
-        while (n < 24 && cursor.y > level.minY && level.getBlockState(cursor).getCollisionShape(level, cursor).isEmpty) {
+    /**
+     * How far the hoist at [pos] has its rope to the ground, in blocks: its falls hang in front of it (in the block it
+     * faces), down to the ground there, 16 px a block under its own floor (as client/works draws it).
+     */
+    fun dropBelow(pos: BlockPos): Int {
+        val state = level.getBlockState(pos)
+        val facing = if (state.hasProperty(WorksFacingBlock.FACING)) state.getValue(WorksFacingBlock.FACING) else Direction.NORTH
+        val cursor = pos.relative(facing).mutable()
+        var n = 0
+        while (n < 24 && cursor.y > level.minY) {
+            val below = cursor.below()
+            val under = level.getBlockState(below)
+            if (!under.getCollisionShape(level, below).isEmpty && !under.`is`(Blocks.SCAFFOLDING)) break
             n++
             cursor.move(Direction.DOWN)
         }
-        return n
+        return n.coerceIn(1, 24)
     }
 
     /**

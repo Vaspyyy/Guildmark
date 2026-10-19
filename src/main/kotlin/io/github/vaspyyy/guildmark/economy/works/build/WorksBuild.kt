@@ -438,7 +438,10 @@ object WorksBuild {
             WorksBuildData.get(level)[w.id]?.let { rec -> WorksYard.stamp(level, rec) }
         }
 
-        override fun pledged(level: ServerLevel, w: WorksView, player: UUID, marks: Int) = WorksLedger.changed(level, w.id)
+        override fun pledged(level: ServerLevel, w: WorksView, player: UUID, marks: Int) {
+            WorksLedger.changed(level, w.id)
+            WorksBuildData.get(level)[w.id]?.let { rec -> WorksYard.pledged(level, rec, player) }
+        }
 
         override fun brought(level: ServerLevel, w: WorksView, player: UUID, units: Int) = WorksLedger.changed(level, w.id)
 

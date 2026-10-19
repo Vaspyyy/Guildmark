@@ -1,17 +1,137 @@
 {
   "variants": {
-    "facing=north": {
+    "facing=north,mortar=0": {
+      "model": "guildmark:block/works/works_mortar_tub_0"
+    },
+    "facing=north,mortar=1": {
+      "model": "guildmark:block/works/works_mortar_tub_1"
+    },
+    "facing=north,mortar=2": {
+      "model": "guildmark:block/works/works_mortar_tub_2"
+    },
+    "facing=north,mortar=3": {
+      "model": "guildmark:block/works/works_mortar_tub_3"
+    },
+    "facing=north,mortar=4": {
+      "model": "guildmark:block/works/works_mortar_tub_4"
+    },
+    "facing=north,mortar=5": {
+      "model": "guildmark:block/works/works_mortar_tub_5"
+    },
+    "facing=north,mortar=6": {
+      "model": "guildmark:block/works/works_mortar_tub_6"
+    },
+    "facing=north,mortar=7": {
+      "model": "guildmark:block/works/works_mortar_tub_7"
+    },
+    "facing=north,mortar=8": {
       "model": "guildmark:block/works/works_mortar_tub"
     },
-    "facing=east": {
+    "facing=east,mortar=0": {
+      "model": "guildmark:block/works/works_mortar_tub_0",
+      "y": 90
+    },
+    "facing=east,mortar=1": {
+      "model": "guildmark:block/works/works_mortar_tub_1",
+      "y": 90
+    },
+    "facing=east,mortar=2": {
+      "model": "guildmark:block/works/works_mortar_tub_2",
+      "y": 90
+    },
+    "facing=east,mortar=3": {
+      "model": "guildmark:block/works/works_mortar_tub_3",
+      "y": 90
+    },
+    "facing=east,mortar=4": {
+      "model": "guildmark:block/works/works_mortar_tub_4",
+      "y": 90
+    },
+    "facing=east,mortar=5": {
+      "model": "guildmark:block/works/works_mortar_tub_5",
+      "y": 90
+    },
+    "facing=east,mortar=6": {
+      "model": "guildmark:block/works/works_mortar_tub_6",
+      "y": 90
+    },
+    "facing=east,mortar=7": {
+      "model": "guildmark:block/works/works_mortar_tub_7",
+      "y": 90
+    },
+    "facing=east,mortar=8": {
       "model": "guildmark:block/works/works_mortar_tub",
       "y": 90
     },
-    "facing=south": {
+    "facing=south,mortar=0": {
+      "model": "guildmark:block/works/works_mortar_tub_0",
+      "y": 180
+    },
+    "facing=south,mortar=1": {
+      "model": "guildmark:block/works/works_mortar_tub_1",
+      "y": 180
+    },
+    "facing=south,mortar=2": {
+      "model": "guildmark:block/works/works_mortar_tub_2",
+      "y": 180
+    },
+    "facing=south,mortar=3": {
+      "model": "guildmark:block/works/works_mortar_tub_3",
+      "y": 180
+    },
+    "facing=south,mortar=4": {
+      "model": "guildmark:block/works/works_mortar_tub_4",
+      "y": 180
+    },
+    "facing=south,mortar=5": {
+      "model": "guildmark:block/works/works_mortar_tub_5",
+      "y": 180
+    },
+    "facing=south,mortar=6": {
+      "model": "guildmark:block/works/works_mortar_tub_6",
+      "y": 180
+    },
+    "facing=south,mortar=7": {
+      "model": "guildmark:block/works/works_mortar_tub_7",
+      "y": 180
+    },
+    "facing=south,mortar=8": {
       "model": "guildmark:block/works/works_mortar_tub",
       "y": 180
     },
-    "facing=west": {
+    "facing=west,mortar=0": {
+      "model": "guildmark:block/works/works_mortar_tub_0",
+      "y": 270
+    },
+    "facing=west,mortar=1": {
+      "model": "guildmark:block/works/works_mortar_tub_1",
+      "y": 270
+    },
+    "facing=west,mortar=2": {
+      "model": "guildmark:block/works/works_mortar_tub_2",
+      "y": 270
+    },
+    "facing=west,mortar=3": {
+      "model": "guildmark:block/works/works_mortar_tub_3",
+      "y": 270
+    },
+    "facing=west,mortar=4": {
+      "model": "guildmark:block/works/works_mortar_tub_4",
+      "y": 270
+    },
+    "facing=west,mortar=5": {
+      "model": "guildmark:block/works/works_mortar_tub_5",
+      "y": 270
+    },
+    "facing=west,mortar=6": {
+      "model": "guildmark:block/works/works_mortar_tub_6",
+      "y": 270
+    },
+    "facing=west,mortar=7": {
+      "model": "guildmark:block/works/works_mortar_tub_7",
+      "y": 270
+    },
+    "facing=west,mortar=8": {
       "model": "guildmark:block/works/works_mortar_tub",
       "y": 270
     }

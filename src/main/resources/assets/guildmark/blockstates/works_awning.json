@@ -1,0 +1,28 @@
+{
+  "variants": {
+    "facing=north,open=false": {
+      "model": "guildmark:block/works/works_awning"
+    },
+    "facing=north,open=true": {
+      "model": "guildmark:block/works/works_awning"
+    },
+    "facing=east,open=false": {
+      "model": "guildmark:block/works/works_awning"
+    },
+    "facing=east,open=true": {
+      "model": "guildmark:block/works/works_awning"
+    },
+    "facing=south,open=false": {
+      "model": "guildmark:block/works/works_awning"
+    },
+    "facing=south,open=true": {
+      "model": "guildmark:block/works/works_awning"
+    },
+    "facing=west,open=false": {
+      "model": "guildmark:block/works/works_awning"
+    },
+    "facing=west,open=true": {
+      "model": "guildmark:block/works/works_awning"
+    }
+  }
+}
