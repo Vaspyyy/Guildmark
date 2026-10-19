@@ -26,6 +26,7 @@ import net.minecraft.world.level.levelgen.structure.StructurePiece
 import net.minecraft.world.level.levelgen.structure.TerrainAdjustment
 import net.minecraft.world.level.levelgen.structure.pieces.StructurePieceSerializationContext
 import net.neoforged.neoforge.common.world.PieceBeardifierModifier
+import java.lang.ref.WeakReference
 import kotlin.math.abs
 
 /**
@@ -110,7 +111,10 @@ class CapitalPiece : StructurePiece, PieceBeardifierModifier {
         val layout = layout ?: throw IllegalStateException("A capital saved by an older version has no plan")
         val key = PlanKey(seed, center, turn, layout.tier, layout.upper, layout.citadel, layout.harbour, layout.crowded, layout.version)
         val held = synchronized(PLANS) {
-            PLANS.getOrPut(key) { lazy { CityPlan(seed, layout, CapitalLand(land, center, turn, layout.tier.reach)) } }
+            PLANS.getOrPut(key) {
+                // One gone from the last few but still held elsewhere (a town's places keep theirs) is taken back, not laid out again
+                KEPT[key]?.get()?.let { lazyOf(it) } ?: lazy { CityPlan(seed, layout, CapitalLand(land, center, turn, layout.tier.reach)).also { kept(key, it) } }
+            }
         }
         return held.value
     }
@@ -268,6 +272,15 @@ class CapitalPiece : StructurePiece, PieceBeardifierModifier {
         // (any other thread wanting it meanwhile waits for it) and the last few are kept
         private val PLANS = object : LinkedHashMap<PlanKey, Lazy<CityPlan>>(16, 0.75f, true) {
             override fun removeEldestEntry(eldest: MutableMap.MutableEntry<PlanKey, Lazy<CityPlan>>?): Boolean = size > 8
+        }
+
+        // Every plan laid out, held weakly (it lasts only while something else keeps it), so one dropped from the last
+        // few is found again while it's still about. Guarded by PLANS
+        private val KEPT = HashMap<PlanKey, WeakReference<CityPlan>>()
+
+        private fun kept(key: PlanKey, plan: CityPlan) = synchronized(PLANS) {
+            KEPT.values.removeIf { it.get() == null }
+            KEPT[key] = WeakReference(plan)
         }
     }
 }
