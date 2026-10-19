@@ -415,6 +415,7 @@ class CityPlan(val seed: Long, val layout: Layout = Layout.DEFAULT, val land: La
         special(Kind.MARKET_HALL, Rect(m.x1 + 1, bandMid - 6, m.x1 + 12, bandMid + 5), Dir.W)
         special(Kind.BAKERY, Rect(m.x0 - 12, bandMid - 6, m.x0 - 1, bandMid + 5), Dir.E)
         if (bandMid + 20 <= bandOut) special(Kind.TAVERN, Rect(m.x1 + 1, bandMid + 8, m.x1 + 14, bandMid + 20), Dir.W)
+        if (layout.version >= 2) worksLots()
 
         // The smithy on the craftsmen's square
         val (craftAlong, _) = CRAFT_SQUARE[tier.ordinal]
@@ -424,6 +425,31 @@ class CityPlan(val seed: Long, val layout: Layout = Layout.DEFAULT, val land: La
         special(Kind.BARRACKS, sideRect(training, -16, -5, bandIn + 1, bandIn + 16), Dir.S)
         val yard = 5 + TRAINING_DEPTH[tier.ordinal]
         special(Kind.STABLES, sideRect(training, yard + 1, yard + 12, bandIn + 1, bandIn + 14), Dir.N)
+    }
+
+    /**
+     * The town works' lots (Layout version 2 on; living-world/design-influence.md section 3): the granary's twelve by
+     * eleven south of the bakery, opposite the inn by the gate, when the band reaches that far (its back half the
+     * great granary's), laid as packed earth (the lane through it ends at it, as the one past the inn does); and two
+     * stall pitches at the market square's south corners, facing into it. Nothing else is set down on them.
+     */
+    private fun worksLots() {
+        val m = market
+        val granary = Rect(m.x0 - 12, bandMid + 8, m.x0 - 1, bandMid + 18)
+        if (granary.z1 <= bandOut && all(granary) { it == Use.FREE || it == Use.LANE }) {
+            grid.fill(granary, Use.YARD)
+            worksLots.add(WorksLot("granary", granary, Dir.E, grid.height((granary.x0 + granary.x1) / 2, (granary.z0 + granary.z1) / 2)))
+        }
+        for (pitch in listOf(Rect(m.x0 + 1, m.z1 - 3, m.x0 + 3, m.z1 - 1), Rect(m.x1 - 3, m.z1 - 3, m.x1 - 1, m.z1 - 1))) {
+            if (!all(pitch) { it == Use.SQUARE }) continue
+            worksLots.add(WorksLot("stall", pitch, Dir.N, grid.height((pitch.x0 + pitch.x1) / 2, (pitch.z0 + pitch.z1) / 2)))
+        }
+    }
+
+    /** Whether every column of [r] is of a use [ok] takes. */
+    private fun all(r: Rect, ok: (Use) -> Boolean): Boolean {
+        for (x in r.x0..r.x1) for (z in r.z0..r.z1) if (!ok(grid[x, z])) return false
+        return true
     }
 
     /** The noble quarter, south-west of the plaza in the old town. */
@@ -690,14 +716,20 @@ class CityPlan(val seed: Long, val layout: Layout = Layout.DEFAULT, val land: La
         // A few stalls on the plaza
         for ((i, sx) in intArrayOf(-1, 1).withIndex()) props.add(Prop(PropKind.STALL, sx * (plaza - 3), fountain.z + 1, if (sx < 0) Dir.E else Dir.W, i * 3))
 
-        // The market: rows of stalls down either side of the avenue and along the square's edges, and two wells
+        // The market: rows of stalls down either side of the avenue and along the square's edges, and two wells; none
+        // on a works' pitch or crowding it (Layout version 2 on)
         val m = market
+        val pitches = worksLots.filter { it.kind == "stall" }.map { it.rect.grow(1) }
+        fun stall(x: Int, z: Int, front: Dir, v: Int) {
+            val box = if (front.alongX) Rect(x - 1, z - 2, x + 1, z + 2) else Rect(x - 2, z - 1, x + 2, z + 1)
+            if (pitches.none { it.intersects(box) }) props.add(Prop(PropKind.STALL, x, z, front, v))
+        }
         var z = m.z0 + 3
         var n = 0
         while (z <= m.z1 - 3) {
             for (sx in intArrayOf(-1, 1)) {
-                if (key(sx * (m.x1 + 1) - sx, z) !in doors) props.add(Prop(PropKind.STALL, sx * (m.x1 - 2), z, if (sx < 0) Dir.E else Dir.W, n++))
-                props.add(Prop(PropKind.STALL, sx * (m.x1 / 2 + 2), z, if (sx < 0) Dir.W else Dir.E, n++))
+                if (key(sx * (m.x1 + 1) - sx, z) !in doors) stall(sx * (m.x1 - 2), z, if (sx < 0) Dir.E else Dir.W, n++)
+                stall(sx * (m.x1 / 2 + 2), z, if (sx < 0) Dir.W else Dir.E, n++)
             }
             z += 7
         }

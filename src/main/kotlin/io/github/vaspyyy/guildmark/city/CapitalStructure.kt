@@ -279,7 +279,8 @@ class Founding(val site: Site, val crowded: Set<Dir>, val style: CityStyle, val 
     /** The plaza's middle, at the lower town's standing height. */
     val center: BlockPos = BlockPos(site.x, site.ground, site.z)
     val turn: Rotation = Rotation.entries[site.turn]
-    val layout: Layout = Layout.of(site, crowded)
+    // The town works' lots only once the works are wired in: until then a new capital is drawn as before
+    val layout: Layout = Layout.of(site, crowded, if (io.github.vaspyyy.guildmark.economy.works.Works.ready()) Layout.VERSION else Layout.BEFORE_WORKS)
 
     /**
      * The box of cell [i], [j] of the grid of starts round chunk [centre] (see [CapitalPlacement]): its columns

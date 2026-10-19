@@ -6,9 +6,10 @@ import kotlin.math.sqrt
 /**
  * The city's great buildings, each drawn facing north in its own frame: the guild hall, temple, tavern,
  * library, market hall, counting house, smithy and bakery round the plaza, and the keep, barracks and
- * stables in the keep's ward. The plan gives each a lot of a set size and each is drawn to fit it.
+ * stables in the keep's ward. The plan gives each a lot of a set size and each is drawn to fit it, as the plans of
+ * [version] have it (Layout.VERSION).
  */
-class GreatBuildings(private val f: Frame, private val b: Building, private val r: Random) {
+class GreatBuildings(private val f: Frame, private val b: Building, private val r: Random, private val version: Int = Layout.BEFORE_WORKS) {
     private val w = f.w
     private val d = f.d
 
@@ -524,11 +525,26 @@ class GreatBuildings(private val f: Frame, private val b: Building, private val 
         f.set(3, 1, 4, B(M.HAY))
         f.set(door, 1, 4, B(M.CANDLE))
         for (u in listOf(2, door + 1)) f.wares(u, 1, 4, Wares.BREAD, Dir.N)
-        for (v in 7..10) f.set(1, 0, v, B(M.HAY))
-        for (v in 7..9) f.set(1, 1, v, B(M.BARREL, Dir.E))
-        f.set(2, 0, d - 2, B(M.COMPOSTER))
-        f.chest(1, 0, d - 2, Dir.E, Loot.HOUSE)
-        f.set(4, STORY - 2, 7, B(M.LANTERN, top = true))
+        if (version >= 2) {
+            // Since there were town works: the other back corner kept clear for a second oven, its flue's footing laid
+            // through the floor, and the sacks, barrels, bin and chest by the front instead, where the works' drawing
+            // of its bay carries them (economy/works/build/WorksPlans.kt: OvenBay); the lantern hung clear of its flue
+            for (v in 1..2) {
+                f.set(1, 0, v, B(M.HAY))
+                f.set(1, 1, v, B(M.BARREL, Dir.E))
+            }
+            f.set(1, 0, 3, B(M.COMPOSTER))
+            f.chest(2, 0, 1, Dir.S, Loot.HOUSE)
+            f.set(2, 0, 2, B(M.BARREL, Dir.E))
+            f.set(2, -1, d - 2, STONE)
+            f.set(5, STORY - 2, 7, B(M.LANTERN, top = true))
+        } else {
+            for (v in 7..10) f.set(1, 0, v, B(M.HAY))
+            for (v in 7..9) f.set(1, 1, v, B(M.BARREL, Dir.E))
+            f.set(2, 0, d - 2, B(M.COMPOSTER))
+            f.chest(1, 0, d - 2, Dir.E, Loot.HOUSE)
+            f.set(4, STORY - 2, 7, B(M.LANTERN, top = true))
+        }
         for (y in 0..STORY) f.set(w - 2, y, 5, B(M.LADDER, Dir.W))
         f.bed(2, STORY, d - 4, Dir.S, Dye.YELLOW)
         f.set(3, top - 1, 6, B(M.LANTERN, top = true))

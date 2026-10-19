@@ -56,6 +56,7 @@ class CityBuilder(private val plan: CityPlan, private val canvas: Canvas) {
         val z0 = max(clip.z0, -plan.reach)
         val z1 = min(clip.z1, plan.reach)
         for (x in x0..x1) for (z in z0..z1) ground(x, z)
+        worksLots()
         for (x in x0..x1) for (z in z0..z1) fortification(x, z)
         for (s in plan.stairs) wallStair(s)
         val buildings = Buildings(plan, canvas)
@@ -78,7 +79,7 @@ class CityBuilder(private val plan: CityPlan, private val canvas: Canvas) {
             Use.PLAZA -> canvas.ground(x, z, y, plazaPaving(x, z), FILL)
             Use.COURT -> canvas.ground(x, z, y, courtPaving(x, z), FILL)
             Use.AVENUE -> canvas.ground(x, z, y, avenuePaving(x, z), FILL)
-            Use.SQUARE -> canvas.ground(x, z, y, squarePaving(x, z), FILL)
+            Use.SQUARE -> canvas.ground(x, z, y, if (pitches.any { it.contains(x, z) }) PITCH else squarePaving(x, z), FILL)
             // The great stair stands on the plaza; the steps up from the inner gates are cut down into the old town
             Use.STAIR -> canvas.ground(x, z, if (plan.stair.contains(x, z)) upper else 0, B(M.PAVE_STREET), FILL)
             Use.LANE, Use.POMERIUM -> canvas.ground(x, z, y, LANE, FILL)
@@ -111,6 +112,33 @@ class CityBuilder(private val plan: CityPlan, private val canvas: Canvas) {
     }
 
     private fun courtPaving(x: Int, z: Int): B = if ((x + z) and 3 == 0) B(M.PAVE_PLAZA, v = 2) else B(M.PAVE_PLAZA)
+
+    /** The town works' stall pitches on the market square (Layout version 2 on), paved plain in the darker flags. */
+    private val pitches = plan.worksLots.filter { it.kind == "stall" }.map { it.rect }
+
+    /**
+     * The granary's works lot (Layout version 2 on): packed earth (the yard's ground, [Use.YARD]) with a low fence round
+     * it on the free ground outside, but for its front, which stays open to the street.
+     */
+    private fun worksLots() {
+        for (lot in plan.worksLots) {
+            if (lot.kind == "stall") continue
+            val r = lot.rect
+            val ring = r.grow(1)
+            for (x in ring.x0..ring.x1) for (z in ring.z0..ring.z1) {
+                if (r.contains(x, z) || !clip.contains(x, z)) continue
+                val before = when (lot.front) {
+                    Dir.N -> z < r.z0
+                    Dir.S -> z > r.z1
+                    Dir.W -> x < r.x0
+                    Dir.E -> x > r.x1
+                }
+                val use = grid[x, z]
+                if (before || (use != Use.YARD && use != Use.GARDEN && use != Use.FREE)) continue
+                canvas.set(x, plan.level(x, z), z, B(M.FENCE))
+            }
+        }
+    }
 
     /** The squares: big flags of stone laid in a grid. */
     private fun squarePaving(x: Int, z: Int): B =
@@ -573,6 +601,7 @@ class CityBuilder(private val plan: CityPlan, private val canvas: Canvas) {
         val FILL = B(M.FILL)
         val LANE = B(M.PAVE_LANE)
         val YARD = B(M.PAVE_YARD)
+        val PITCH = B(M.PAVE_STREET, v = 1)
         val GRASS = B(M.GRASS)
         val SAND = B(M.SOIL, v = 1)
     }

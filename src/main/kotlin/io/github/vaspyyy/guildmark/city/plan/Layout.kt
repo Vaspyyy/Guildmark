@@ -36,11 +36,17 @@ class Layout(val tier: Tier, val upper: Int, val citadel: Int, val harbour: Dir?
     companion object {
         /**
          * The plans as capitals are generated now. 1: townsfolk keep every market stall (in capitals generated
-         * before, version 0, villagers keep half of them).
+         * before, version 0, villagers keep half of them). 2: the town works' lots are kept (CityPlan.worksLots: the
+         * granary's, and two stall pitches on the market square) and the bakery is drawn with its other back corner
+         * clear for a second oven, its flue's footing laid (M6).
          */
-        const val VERSION = 1
+        const val VERSION = 2
 
-        fun of(site: Site, crowded: Set<Dir> = setOf()): Layout = Layout(site.tier, site.upper, site.citadel, site.harbour, crowded)
+        /** The plans before the town works: new capitals are drawn to them until the works are wired in (Works.ready). */
+        const val BEFORE_WORKS = 1
+
+        fun of(site: Site, crowded: Set<Dir> = setOf(), version: Int = VERSION): Layout =
+            Layout(site.tier, site.upper, site.citadel, site.harbour, crowded, version)
 
         /** A middling city on a gentle hill: for previews. */
         val DEFAULT = Layout(Tier.LARGE, 6, 7, null)
