@@ -1259,6 +1259,362 @@ GROUPS = [
             "Flowers and flags everywhere! I love it!",
         ],
     }),
+    # Round two: M6's lines that were words only (WorksTopics, FortuneTopics), each now a take, with what changes (a
+    # number, a name, a road, a good, when) still in words after it
+    ("The works: given, paid for, how far built", MWO, TALK, {
+        # in a talk, after a works wanted and why: where pledges go (the detail: the Marks it still wants)
+        "works.post": [
+            "Anyone can give toward it.",
+            "Every Mark helps, if you can spare one.",  # "if you've one to spare" was heard "if you've won despair"
+        ],
+        # after the Marks given toward a works, to a listener who gave some of them (the detail: how many)
+        "works.yours": [
+            "You gave toward it yourself, I hear.",
+            "Some of that came from your own purse. Thank you.",
+        ],
+        # a works paid for in full and not begun, waiting on its first materials (the detail: the wagon bringing them,
+        # its road and when it's due, or that none is on its way yet)
+        "works.funded.oven": [
+            "The second oven's paid for, every Mark of it.",
+            "The second oven's paid for. Now we wait on the wagons.",
+        ],
+        "works.funded.granary": [
+            "The granary's paid for, every Mark of it.",
+            "The granary's paid for. Now we wait on the wagons.",
+        ],
+        "works.funded.great_granary": [
+            "The great granary's paid for, every Mark of it.",
+            "The great granary's paid for. Now we wait on the wagons.",
+        ],
+        "works.funded.tower": [
+            "The watchtower's paid for, every Mark of it.",
+            "The watchtower's paid for. Now we wait on the wagons.",
+        ],
+        # how much of a works going up is laid, once its builders have counted (under a tenth, under two fifths, under
+        # three fifths, under 85 in a hundred, and more), after the stage it's at; a labourer at work on it says it too
+        "works.share.begun": [
+            "They've only just begun.",
+            "They've barely started on it.",
+        ],
+        "works.share.quarter": [
+            "A quarter of it's built.",
+            "It's a quarter built, near enough.",
+        ],
+        "works.share.half": [
+            "It's half built.",
+            "They're halfway there.",
+        ],
+        "works.share.past_half": [
+            "It's more than half built.",
+            "Most of it's up now.",  # the man's "They're past halfway now" was heard "past half-week", "half we"
+        ],
+        "works.share.nearly": [
+            "It's nearly finished.",
+            "It's all but done.",
+        ],
+    }),
+    ("The works: the others, in a word", MWO, TALK, {
+        # "About the works...", after the first works: another wanted (the detail: the Marks pledged against its price)
+        "works.also.wanted.oven": [
+            "The town wants a second oven too.",
+            "There's talk of a second oven as well.",
+        ],
+        "works.also.wanted.granary": [
+            "The town wants a granary too.",
+            "There's talk of a granary as well.",
+        ],
+        "works.also.wanted.great_granary": [
+            "The town wants a great granary too.",
+            "There's talk of a great granary as well.",
+        ],
+        "works.also.wanted.tower": [
+            "The town wants a watchtower too.",
+            "There's talk of a watchtower as well.",
+        ],
+        # another paid for, waiting on its materials
+        "works.also.funded.oven": [
+            "The second oven's paid for too.",
+            "There's the second oven as well, paid for and waiting.",
+        ],
+        "works.also.funded.granary": [
+            "The granary's paid for too.",
+            "There's the granary as well, paid for and waiting.",
+        ],
+        "works.also.funded.great_granary": [
+            "The great granary's paid for too.",
+            "There's the great granary as well, paid for and waiting.",
+        ],
+        "works.also.funded.tower": [
+            "The watchtower's paid for too.",
+            "There's the watchtower as well, paid for and waiting.",
+        ],
+        # another going up
+        "works.also.building.oven": [
+            "The second oven's going up as well.",
+            "They're building the second oven too.",
+        ],
+        "works.also.building.granary": [
+            "The granary's going up as well.",
+            "They're building the granary too.",
+        ],
+        "works.also.building.great_granary": [
+            "The great granary's going up as well.",
+            "They're building the great granary too.",
+        ],
+        "works.also.building.tower": [
+            "The watchtower's going up as well.",
+            "They're building the watchtower too.",
+        ],
+        # another raised, however long ago (the detail: when, and by whose gift as far as the speaker knows)
+        "works.also.raised.oven": [
+            "And there's the second oven, of course.",
+            "The second oven's built and baking.",
+        ],
+        "works.also.raised.granary": [
+            "And there's the granary, of course.",
+            "The granary's built and standing.",
+        ],
+        "works.also.raised.great_granary": [
+            "And there's the great granary, of course.",
+            "The great granary's built and standing.",
+        ],
+        "works.also.raised.tower": [
+            "And there's the watchtower, of course.",
+            "The watchtower's built and standing.",
+        ],
+        # a player's stall raised in the square this last week (the detail: whose, and when)
+        "works.also.raised.stall": [
+            "And there's the stall in the square.",
+            "There's a stall gone up in the market, too.",
+        ],
+    }),
+    ("The times: steady, and why", MWO, TALK, {
+        # "How's the town?" with the times steady and not moved lately
+        "fortune.steady": [
+            "Steady enough. Neither feast nor famine.",
+            "Much as ever. No better, no worse.",
+        ],
+        # A reason for the times on its own (in "How's the town?" after the first, and after the times' move), named
+        # fortune.why.<its detail's key after talk.detail.fortune.> (a road's stage, fortune.why.road.<stage>). A reason
+        # whose words are fixed is said as written; one that names something (how many, a good, a road, a place, a
+        # person, a festival, a works) is said as what it means, and its detail follows in words.
+        "fortune.why.hungry.one": ["Someone went without a meal yesterday."],
+        "fortune.why.hungry.none": ["Folk have been going hungry."],
+        "fortune.why.fed": ["Nobody's gone hungry all week."],
+        "fortune.why.dear.all": ["Food's dear all round."],
+        "fortune.why.cheap.all": ["Food's cheap all round."],
+        "fortune.why.wanting.none": ["The town's going short."],
+        "fortune.why.idle.mill": ["The mill stood idle yesterday for want of grain."],
+        "fortune.why.idle.ovens": ["The ovens stood cold yesterday for want of flour."],
+        "fortune.why.idle.both": ["The mill stood idle yesterday, and the ovens stood cold."],
+        "fortune.why.idle.none": ["The mill and the ovens have been standing idle."],
+        "fortune.why.road.none": ["There's trouble on the roads in."],
+        "fortune.why.waylaid.none": ["Wagons have been taken on the way in."],  # "on the roads in": "roads end"
+        "fortune.why.relief.none": ["A band's been broken on the roads."],
+        "fortune.why.escorted.none": ["Wagons have come in safe, under escort."],
+        "fortune.why.supplied.none": ["Traders have brought what the town was short of."],
+        "fortune.why.plenty.catch": ["The shoals are in, and the nets come up full."],
+        "fortune.why.plenty.none": ["There's plenty at the market."],
+        "fortune.why.trouble.murrain": ["There's murrain in the herds."],
+        "fortune.why.trouble.fowl_pest": ["There's a pest in the coops."],
+        "fortune.why.trouble.mill_broken": ["The mill's sails are broken."],
+        "fortune.why.trouble.oven_cracked": ["An oven's cracked at the bakery."],
+        "fortune.why.trouble.poor_catch": ["The nets come up empty."],
+        "fortune.why.trouble.none": ["There's trouble at the market."],
+        "fortune.why.fever": ["There's a fever going round."],
+        "fortune.why.mourning.none": ["The town's in mourning."],
+        "fortune.why.crime.theft.one": ["Someone had their purse lifted."],
+        "fortune.why.crime.caught.one": ["A thief was caught at it."],
+        "fortune.why.crime.raid.one": ["Outlaws raided the town."],
+        "fortune.why.crime.heist.one": ["There's been a break-in."],
+        "fortune.why.crime.none": ["There's been crime in the town."],
+        "fortune.why.festival.none": ["The festival's still on everyone's lips."],
+        "fortune.why.building.none": ["The town's builders are at work."],
+        "fortune.why.raised.none": ["There's a new works standing."],
+        "fortune.why.eased.none": ["The town's works have earned their keep."],
+        "fortune.why.newcomers.one": ["A new household has come to live here."],
+        "fortune.why.leaving.one": ["A household has left the town."],
+        # meals gone without yesterday (how many)
+        "fortune.why.hungry": [
+            "Not everyone's had enough to eat.",
+            "There've been empty bowls in the town.",
+        ],
+        # food dear, or cheap (the good most of all)
+        "fortune.why.dear": [
+            "Prices are up at the market.",
+            "Everything costs more just now.",
+        ],
+        "fortune.why.cheap": [
+            "Prices are down at the market.",
+            "You can eat well for a few Marks just now.",
+        ],
+        # the town short of a good yesterday, or of two
+        "fortune.why.wanting.one": [
+            "The market's been running short.",
+            "There've been gaps on the stalls.",
+        ],
+        "fortune.why.wanting.two": ["The market's been running short of this and that."],
+        # a road in troubled (the wagons go with three guards), perilous (all together, at noon) or all but closed
+        "fortune.why.road.troubled": [
+            "There's been trouble on the road.",
+            "The wagons are taking no chances.",
+        ],
+        "fortune.why.road.perilous": [
+            "The road's getting dangerous.",
+            "No wagons go alone these days.",  # the man's "No wagon goes" was heard "No wacking goes"
+        ],
+        "fortune.why.road.closed": [
+            "One of the roads is all but shut.",
+            "The outlaws have all but closed a road.",
+        ],
+        # a wagon taken (where, and on which road), or several (how many)
+        "fortune.why.waylaid.one": [
+            "The outlaws have had a wagon.",
+            "We lost a wagon to the outlaws.",
+        ],
+        "fortune.why.waylaid.many": [
+            "The outlaws have been at the wagons.",
+            "We've lost wagons to the outlaws.",
+        ],
+        # a band broken on a road, and a relief wagon sent (which road)
+        "fortune.why.relief": [
+            "There's good news from the roads.",
+            "One band fewer on the roads.",
+        ],
+        # a wagon seen in safe by an escort (who), or several (how many, and one of the escorts)
+        "fortune.why.escorted.one": ["There's an escort to thank."],
+        "fortune.why.escorted.many": [
+            "The escorts have been earning their keep.",
+            "The wagons are getting through.",
+        ],
+        # a trader who brought what the town was short of (who), two of them, or three or more
+        "fortune.why.supplied": ["We've had a good trader through."],
+        "fortune.why.supplied.two": ["We've had good traders through."],
+        "fortune.why.supplied.more": ["Traders have been coming from all over."],
+        # a bumper crop (of what), or blight in the fields (in what)
+        "fortune.why.plenty.bumper": [
+            "The fields have done us proud.",
+            "It's a fine crop this time.",
+        ],
+        "fortune.why.trouble.blight": [
+            "The fields have let us down.",
+            "There's a sickness in the crops.",
+        ],
+        # the town mourning one (who), two, or three or more
+        "fortune.why.mourning": [
+            "We've lost one of our own.",
+            "There's been a funeral.",
+        ],
+        "fortune.why.mourning.two": ["We've lost two of our own."],
+        "fortune.why.mourning.more": ["We've lost too many of our own."],
+        # purses lifted, thieves caught, outlaw raids or break-ins lately, two or more (how many)
+        "fortune.why.crime.theft": [
+            "Keep a hand on your purse.",
+            "There are thieves about.",
+        ],
+        "fortune.why.crime.caught": [
+            "The guards have been busy.",
+            "The thieves aren't getting away with it.",
+        ],
+        "fortune.why.crime.raid": [
+            "The outlaws have been at the town.",
+            "Outlaws, right here in the town.",
+        ],
+        "fortune.why.crime.heist": [
+            "Folk are barring their doors.",
+            "Lock up well at night.",
+        ],
+        # a festival lately (which), and nobody hungry on the day
+        "fortune.why.festival": [
+            "What a festival that was!",
+            "Nobody's forgotten the festival.",
+        ],
+        "fortune.why.festival.fed": ["What a feast that was!"],
+        # a works going up (which), or two
+        "fortune.why.building": [
+            "The builders are hard at it.",
+            "There's work going on in the town.",
+        ],
+        "fortune.why.building.two": ["There's building all over the town."],
+        # a works raised (which), by a patron's gift (whose), or with none known
+        "fortune.why.raised": [
+            "Someone's given the town a fine gift.",
+            "We've a generous friend to thank.",
+        ],
+        "fortune.why.raised.nobody": ["The town's a little grander now."],
+        # a works that kept the mill turning or the bread coming (which), or saw a band off a road (which)
+        "fortune.why.eased.mill": ["There was grain for the mill when it counted."],
+        "fortune.why.eased.bread": ["There was bread when it counted."],
+        "fortune.why.eased.band": ["The watch did its job."],
+        # households come to live here (how many), a family (whose), or one come home again (whose)
+        "fortune.why.newcomers.many": [
+            "Folk have been moving in.",
+            "The town's growing.",
+        ],
+        "fortune.why.newcomers.family": ["We've new neighbours."],
+        "fortune.why.newcomers.home": ["Some old neighbours are back."],
+        # households gone (how many), or a family (whose)
+        "fortune.why.leaving.many": [
+            "Folk have been leaving.",
+            "Folk are packing up and going.",
+        ],
+        "fortune.why.leaving.family": ["We've lost some neighbours."],
+    }),
+    # The speaker's own reasons, said on their own or in "How's the town?" (fortune.own.<its detail's key after
+    # talk.detail.fortune.own.>), in the voices of those who say them: the baker, the keeper, the guard, the priest,
+    # the innkeeper and the bard here; the miller (a farmer), the farmer, the fisher, the smith, a carter (a citizen),
+    # a parent, anyone hungry and a labourer in the next. Fixed words are said as written; a good, a road, a person, a
+    # festival or a works follows in words.
+    ("The times: their own, the trades'", MW, TALK, {
+        "fortune.own.idle.ovens": ["My ovens stood cold yesterday. Not a sack of flour to be had."],
+        "fortune.own.trouble.oven_cracked": ["My oven's cracked. I can barely bake."],
+        "fortune.own.dear": ["Folk haven't the Marks for my stall, with food this dear."],
+        "fortune.own.cheap": ["Food's cheap, and folk are buying."],
+        "fortune.own.waylaid.merchant": ["What I sell comes in on those wagons."],
+        "fortune.own.waylaid.guard": ["We should have been out there with them."],
+        "fortune.own.fever": ["I've sat by more sickbeds than I can count this week."],
+        "fortune.own.crime": ["We're keeping a closer watch, with what's been going on."],
+        "fortune.own.eased.bread": ["The second oven kept my bread coming."],
+        # the keeper with no stock of a good (which)
+        "fortune.own.wanting": ["My stall's half empty."],
+        # the guard, a road in going bad (which)
+        "fortune.own.road.guard": ["The watch can't be everywhere."],
+        # the keeper's stall kept stocked by a trader (who)
+        "fortune.own.supplied": ["I've a trader to thank."],
+        # the priest, of the dead they said the words over (who)
+        "fortune.own.mourning": ["It's been a sad time."],
+        # the innkeeper and the bard, of a festival lately (which)
+        "fortune.own.festival.inn": ["My inn has never been so busy."],  # "My inn's" was heard "My end's"
+        "fortune.own.festival.bard": ["What a festival to play at!"],
+        # the guard, of the watchtower that saw a band off a road (which)
+        "fortune.own.eased.band": ["The watchtower's proved its worth."],
+    }),
+    ("The times: their own, the town's", MWO, TALK, {
+        "fortune.own.idle.mill": ["My mill stood idle yesterday. Not a grain to grind."],
+        # "My mill's sails" was heard "My meals sails" in the woman's and the old man's voices
+        "fortune.own.trouble.mill_broken": ["The mill's sails are broken. I can't grind a thing."],
+        "fortune.own.trouble.murrain": ["There's murrain in my herd."],
+        "fortune.own.trouble.fowl_pest": ["There's a pest in my coops."],
+        "fortune.own.trouble.poor_catch": ["My nets come up empty."],
+        "fortune.own.plenty.catch": ["My nets come up full. The shoals are in."],
+        "fortune.own.hungry.children": ["My little ones went to bed hungry."],
+        "fortune.own.hungry.self": ["I went without, myself."],
+        "fortune.own.fed": ["My children haven't gone hungry all week."],
+        "fortune.own.wanting.tools": ["I can't make tools fast enough. The town's short of them."],
+        "fortune.own.waylaid.carter": ["I know the drivers on that road."],
+        "fortune.own.eased.mill": ["The granary kept my mill turning."],
+        # the farmer's blight (in what) and bumper crop (of what)
+        "fortune.own.trouble.blight": ["It's been a bad time in my fields."],
+        "fortune.own.plenty.bumper": ["My fields have done me proud."],
+        # a carter, a road in going bad (which)
+        "fortune.own.road.carter": ["The roads aren't safe for a cart."],
+        # the guard or a carter, a band broken on a road (which)
+        "fortune.own.relief": ["One band fewer to worry about."],
+        # a carter or the keeper, their wagons seen in safe (by whom)
+        "fortune.own.escorted": ["We had a good escort."],
+        # a labourer, of the works they're on (which)
+        "fortune.own.building": ["I've been lending the builders a hand."],
+    }),
 ]
 
 # The keepers' lines are held to other talk's limit; the five crier lines are make_townsfolk_voices.py's (CRIER)
@@ -1294,13 +1650,17 @@ DELIVERY = {
 # (key, timbre) -> times the timbre's own, instead of its family's
 SPEED_FOR = {
     ("talk.news.assault_0", "man"): 0.88,  # rushed at 8 syllables a second, the man's news being 5.5 to 7
+    ("talk.works.share.begun_1", "man"): 0.9,  # "They've" lost at his usual speed ("They barely started on it")
+    ("talk.fortune.own.dear_0", "man"): 0.9,  # "this dear" heard "this year" at his usual speed
 }
 
 # Text the TTS reads better (the subtitles keep the line as written): {written: said}, for every line, then a line's own
 SAY_AS_ALL = {
     "Hmph.": "Humph.",  # otherwise spelled out, H-M-P-H (make_townsfolk_voices.SAY_AS)
 }
-SAY_AS = {}
+SAY_AS = {
+    "talk.fortune.own.fever_0": {"sickbeds": "sick beds"},  # espeak reads "sickbeds" without its e ("sˈɪkbdz")
+}
 
 # The voices are American and read espeak's British phonemes, as make_townsfolk_voices.py has them: but a British
 # vowel whose r goes unsounded comes out bent or lost ("Zappa" for "Supper", "shot" for "short", "farge" for "forge",
@@ -1369,6 +1729,7 @@ TALK_PHONEMES = [
     ("ɡɹˈanəɹi", "ɡɹˈænəɹi"),  # "granary", not "gronary" ("We could do with agronary")
     ("ɡɹˈanəɹiz", "ɡɹˈænəɹiz"),
     ("mˈɔːtə", "mˈɔːɹtə"),  # "mortar" with both its r's, not "Mottery"
+    ("mˈʌɹeɪn", "mˈʌɹɪn"),  # "murrain" as said, not "Maureen" (as market.dear.event.murrain)
 ]
 # A take's phonemes written out in full, its r's sounded: (key, timbre) or key -> phonemes. espeak spells out "Mm" and
 # "Mmh" letter by letter ("em em aitch"), so the sleepy mumbles are a hum, and they fall at the end (a trailing "..."
@@ -1443,6 +1804,49 @@ PHONEMES = {
     ("talk.town.sheafmoot_1", "woman"): "ʃˈiːf mˌuːts kˈʌmɪŋ. ðə pɹˈoʊdus ʃˈəʊz ˈɔːlweɪz ɐ fˈaɪt.",  # not "the Pradhu"
     # a child's
     "talk.child.weather_1": "lˈʊk at ðə skˈaɪ! lˈʊkʰ!",  # "Look!", not "Loki"
+    # Round two's (M6's lines that were words only), heard wrong as espeak reads them in two voices or more: a stressed
+    # "and" or "as", a sounded t, an American vowel where the British one was taken for another word ("pest", "dear"),
+    # a pause the comma didn't give
+    "talk.works.also.funded.oven_1": "ðɛɹz ðə sˈɛkənd ˈʌvən az wˈɛl, pˈeɪd fɔːɹ ˈænd wˈeɪtɪŋ.",  # not "in waiting"
+    "talk.works.also.funded.granary_1": "ðɛɹz ðə ɡɹˈænɚɹi az wˈɛl, pˈeɪd fɔːɹ ˈænd wˈeɪtɪŋ.",
+    "talk.works.also.funded.great_granary_1": "ðɛɹz ðə ɡɹˈeɪt ɡɹˈænɚɹi az wˈɛl, pˈeɪd fɔːɹ ˈænd wˈeɪtɪŋ.",
+    "talk.works.also.funded.tower_1": "ðɛɹz ðə wˈɒtʃtaʊɚɹ az wˈɛl, pˈeɪd fɔːɹ ˈænd wˈeɪtɪŋ.",
+    "talk.works.also.raised.granary_1": "ðə ɡɹˈænɚɹiz bˈɪlt ˈænd stˈandɪŋ.",  # "built and", not "built in"
+    "talk.works.also.raised.great_granary_1": "ðə ɡɹˈeɪt ɡɹˈænɚɹiz bˈɪlt ˈænd stˈandɪŋ.",
+    "talk.works.also.building.oven_1": "ðeɪɚ bˈɪldɪŋ ðə sˈɛkənd ˈʌvən, tˈuː.",  # "oven, too", not "of in two"
+    "talk.fortune.steady_1": "mˈʌtʃ ˈæz ˈɛvɚ. nˈoʊ bˈɛtɚ, nˈoʊ wˈɜːs.",  # "Much as ever", not "Much has ever"
+    "talk.fortune.why.idle.mill_0": "ðə mˈɪl stˈʊd ˈaɪdəl jˈɛstɚdˌeɪ fɔːɹ wˈɒntʰ ɒv ɡɹˈeɪn.",  # "want of", not "one of"
+    "talk.fortune.why.idle.ovens_0": "ðɪ ˈʌvənz stˈʊd kˈəʊld jˈɛstɚdˌeɪ fɔːɹ wˈɒntʰ ɒv flˈaʊɚ.",
+    "talk.fortune.why.trouble.fowl_pest_0": "ðɛɹz ɐ pˈest ɪnðə kˈuːps.",  # "pest", not "past" (as fowl_pest's market line)
+    "talk.fortune.why.trouble.oven_cracked_0": "ɐ nˈʌvənz kɹˈakt at ðə bˈeɪkɚɹi.",  # "An oven's", not "And ovens"
+    "talk.fortune.why.crime.caught.one_0": "ɐ θˈiːf wɒz kˈɔːtʰ ˈat ɪt.",  # "caught at it", not "called at it"
+    "talk.fortune.own.dear_0": "fˈəʊk hˈavənt ðə mˈɑːɹks fɔːɹ maɪ stˈɔːl, wɪð fˈuːd ðɪs dˈiəɹ.",  # not "this year"
+    # the man's own
+    ("talk.works.share.begun_1", "man"): "ðˈeɪv bˈɛɹli stˈɑːɹtɪd ˈɒn ɪt.",  # "They've", not "They" (and SPEED_FOR)
+    ("talk.works.also.wanted.granary_0", "man"): "ðə tˈaʊn wˈɑnts ɐ ɡɹˈænɚɹi tˈuː.",  # not "The talent wants"
+    ("talk.works.also.wanted.tower_0", "man"): "ðə tˈaʊn wˈɑnts ɐ wˈɒtʃtˌaʊɚ tˈuː.",  # "watchtower", not "watch star"
+    ("talk.works.also.raised.oven_1", "man"): "ðə sˈɛkənd ˈʌvənz bˈɪlt ˈænd bˈeɪkɪŋ.",  # "built and", not "built in"
+    ("talk.works.also.raised.tower_1", "man"): "ðə wˈɒtʃtˌaʊɚz bˈɪlt ˈænd stˈandɪŋ.",
+    ("talk.works.also.raised.stall_1", "man"): "ðɛɹz ɐ stˈɔːl ɡˈɔːn ˌʌp ɪnðə mˈɑːɹkɪt, tˈuː.",  # "gone up", not "gun up"
+    ("talk.fortune.why.idle.ovens_0", "man"): "ðɪ ˈʌvənz stˈʊd kˈəʊld jˈɛstɚdˌeɪ fɔːɹ wˈɑntʰ ʌv flˈaʊɚ.",  # not "one to"
+    ("talk.fortune.why.crime.caught.one_0", "man"): "ə θˈiːf wɒz kˈɔːtʰ ˈat ɪt.",  # "A thief", not "The thief"
+    ("talk.fortune.why.relief_1", "man"): "wˈʌn bˈænd fjˈuːwɚɹ ɒnðə ɹˈəʊdz.",  # "band fewer", not "banfure"
+    ("talk.fortune.why.crime.heist_0", "man"): "fˈəʊk ɑːɹ bˈɑːɹɪŋ ðˈɛɹ dˈɔːɹz.",  # "barring their", not "buying the"
+    ("talk.fortune.why.crime.heist_1", "man"): "lˈɒk ˌʌp wˈɛl ˈat nˈaɪt.",  # "well at night", not "all night"
+    ("talk.fortune.why.raised_1", "man"): "wˈiːv ɐ dʒˈɛnɚɹəs fɹˈɛnd tə θˈaŋk.",  # "We've", not "We're"
+    ("talk.fortune.why.eased.bread_0", "man"): "ðɛɹwˌɒz bɹˈed wɛn ɪt kˈaʊntɪd.",  # "bread", not "Brad"
+    ("talk.fortune.own.crime_0", "man"): "wɪɹ kˈiːpɪŋ ɐ klˈəʊsɚ wˈɒtʃ, wɪð wˈʌts bɪn ɡˌəʊɪŋ ˈɒn.",  # not "with us being"
+    ("talk.fortune.own.road.guard_0", "man"): "ðə wˈɒtʃ kˈæntʰ biː ˈɛvɹɪwˌɛɹ.",  # "can't be", not "can be"
+    ("talk.fortune.own.road.carter_0", "man"): "ðə ɹˈəʊdz ˈɑːɹnt sˈeɪf fɔːɹ ɐ kˈɑːɹt.",  # not "The road's unsafe"
+    ("talk.fortune.own.relief_0", "man"): "wˈʌn bˈænd fjˈuːɚ tə wˈʌɹi ɐbˈaʊt.",  # "fewer", not "fear"
+    # the woman's own
+    ("talk.fortune.why.mourning.none_0", "woman"): "ðə tˈaʊnz ˈɪn mˈɔːɹnɪŋ.",  # "in mourning", not "and mourning"
+    ("talk.fortune.why.crime.heist.one_0", "woman"): "ðɛɹz bɪn ɐ bɹˈeɪkˈɪn.",  # "been", not "being"
+    ("talk.fortune.why.escorted.none_0", "woman"): "wˈæɡənz hav kˈʌm ɪn sˈeɪf, ˌʌndɚɹ ˈɛskɔːɹt.",  # not "Woggins"
+    ("talk.fortune.own.trouble.fowl_pest_0", "woman"): "ðɛɹz ɐ pˈest ɪn maɪ kˈuːps.",  # "pest", not "past"
+    # the old man's own
+    ("talk.works.also.wanted.oven_0", "old"): "ðə tˈaʊn wˈɒnts ɐ sˈɛkənd ˈʌvən, tˈuː.",  # "oven, too", not "of in two"
+    ("talk.fortune.why.trouble.oven_cracked_0", "old"): "ɐ nˈʌvənz kɹˈakt ˈat ðə bˈeɪkɚɹi.",  # not "cracked to the"
 }
 
 

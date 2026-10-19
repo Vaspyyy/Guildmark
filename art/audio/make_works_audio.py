@@ -19,6 +19,10 @@ loop played round twice.
 - The streets: the alms table's ladle, its pot simmering (a loop), a bowl taken with a spoon in it, the bread queue's
   murmur (a loop), an awning's flap, an empty basket shaken out, feet stamped against the cold, pats on the back in an
   embrace, a bundle set on a cart, and a handcart heaped with household goods (a loop).
+- Round two, what the moments' art wanted: the market board's medallion creaking round to a new face, shaped to its
+  turn (works.medallion), and its catch knocking home (works.medallion_catch); a wax seal dropping out on its cord at
+  the works' post and swinging against the board (works.seal); the "To let" board creaking on its iron hooks as the
+  wind swings it (streets.to_let).
 
 Every one-shot that goes with a clip starts on its contact (the blade's touch, the blow, the foot coming down), as
 the homestead's tools do, so a clip's moment plays it on the frame it happens. The four loops (works.beacon_loop,
@@ -49,6 +53,7 @@ sys.path.insert(0, HERE)
 from sfxkit import *  # noqa: E402,F401,F403
 import make_townsfolk_sfx as tf  # noqa: E402
 import make_homestead_audio as hs  # noqa: E402
+import make_ship_audio as ship  # noqa: E402
 from make_townsfolk_sfx import (level, write_checked, true_peak, loudness_curve, nrm, street, ring,  # noqa: E402
                                 knock, thud, grains, clods, rustle, creak, bubbles, late, lead_in)
 
@@ -1207,6 +1212,235 @@ def handcart_goods(v, rng):
         m.add(nrm(creak(0.4, rng, 25, 60, [410, 760, 1240], t60=0.05)), at, 0.22)
     y = lap(lambda z: lp(z, 7000), m.out())
     return street_round(y, wet=0.1, seed=260 + v)
+
+
+# =========================================================================== round two: the medallion, the seals, "To let"
+def loud_as(x, lufs):
+    """x scaled so that its loudest 100 ms is lufs (K-weighted): layers laid by how loud they sound, not by their
+    peaks, so a click and a creak given the same figure sound as loud as each other"""
+    x = np.asarray(x, dtype=float)
+    return x * db(lufs - float(np.max(loudness_curve(x))))
+
+
+MED_ZETA, MED_OMEGA = 0.62, 0.24  # MarketBoardArt: the medallion's spring, its damping and (per tick) its pace for a face
+MED_DAMPED = MED_OMEGA * np.sqrt(1 - MED_ZETA ** 2)
+MED_PEAK = np.pi / MED_DAMPED / 20.0  # s from a one-face turn's start to its swing past onto the catch (0.834)
+
+
+def med_speed(dur):
+    """how fast the medallion turns through a turn of one face, from its start, as a share of its fastest
+    (MarketBoardArt.medallionTurn's slope, negative as it swings back): up to speed in a quarter of a second, easing
+    off onto its catch at MED_PEAK, back at a twelfth of that, and still"""
+    t = tvec(dur) * 20.0
+    v = np.exp(-MED_ZETA * MED_OMEGA * t) * np.sin(MED_DAMPED * t)
+    return v / np.max(np.abs(v))
+
+
+def med_body(scale=1.0):
+    """the medallion's oak drum and the two posts it turns between: the same modes in every take, as it's one drum,
+    dense low down and gathered round the drum's hollow and the posts' tone"""
+    f, t60, g = ship.timber_modes(rng_for("works", "medallion", "body"), 85.0, 2400.0, count=28, t60_lo=0.11,
+                                  t60_hi=0.02, peaks=(160, 420))
+    return f * scale, t60, g
+
+
+@effect("works.medallion", 6, "Medallion turns", loud=-18.0, max_len=1.75, fade_out=0.35, reach=24, limit=3.0)
+def medallion(v, rng):
+    """the market board's medallion rolling to its new face, from the moment it's let go: the catch lifting off it
+    with a small knock, then the heavy oak drum creaking round on its iron axle in the posts' bearings, as loud and as
+    fast as it turns (up to speed in a quarter of a second, easing off as it swings onto its catch at 0.83 s, where
+    works.medallion_catch knocks), and a faint creak as it settles back. Made for a turn of one face; the renderer
+    plays a turn of n faces, which takes sqrt(n) times as long, at a pitch of 1/sqrt(n), so the creak lasts the turn
+    and eases off onto its catch. v1 a rough groan, v2 the axle squeaking dry over it, v3 a creak that sticks and
+    skips, v4 the posts groaning under the drum's weight, v5 stuck a moment and breaking free with a crack, v6 drier,
+    the iron ticking round in its bearing"""
+    dur = 1.75
+    t = tvec(dur)
+    s = np.abs(med_speed(dur))
+    body = med_body()
+    r1 = [70, 60, 46, 54, 64, 36][v]
+    rate = 2.5 + r1 * s ** 0.8 * rng.uniform(0.95, 1.05)
+    amp = s ** 0.75
+    vowel = [((240 + 320 * s) * [1.0, 1.06, 0.95, 0.9, 1.0, 1.12][v], 3.5, 0.7)]
+    groan = ship.creak_voice(dur, rng, rate, amp, body, vowel=vowel,
+                             jitter=[0.08, 0.07, 0.14, 0.1, 0.08, 0.12][v], alt=[0.0, 0.0, 0.55, 0.15, 0.0, 0.25][v],
+                             rub=[0.12, 0.1, 0.1, 0.16, 0.12, 0.2][v],
+                             kick=[0.0011, 0.001, 0.0012, 0.0014, 0.0011, 0.0008][v],
+                             bright=[3000, 3400, 3000, 2400, 3200, 4200][v],
+                             unsteady=[0.35, 0.3, 0.45, 0.3, 0.35, 0.4][v])
+    m = Mix(dur)
+    m.add(loud_as(groan, -20.0), 0.0, 1.0)
+    if v == 1:  # the axle dry in its bearing, squeaking as the drum comes up to speed
+        sq = ship.squeal(dur, rng, 360 + 190 * s, s ** 2.2 * (t < MED_PEAK), harmonics=6, tilt=1.5, chatter=0.4,
+                         peak_hz=900)
+        m.add(loud_as(lp(sq, 4000), -28.0), 0.0, 1.0)
+    if v == 3:  # the posts groaning under the drum's weight, lower and slower
+        posts = ship.creak_voice(dur, rng, 1.5 + 22 * s ** 1.2, s ** 0.9, med_body(0.8), jitter=0.15, alt=0.3,
+                                 rub=0.05, kick=0.0016, bright=1800, unsteady=0.5)
+        m.add(loud_as(posts, -24.0), 0.02, 1.0)
+    if v == 5:  # the iron axle ticking round in its bearing
+        ticks = resonators(crackle(dur, rng, 4 + 38 * s, decay=0.0003, f_lo=1500, f_hi=7000, size_var=0.5),
+                           [1900, 2650, 3700], [0.04, 0.03, 0.02], [1, .6, .35]) * (t < MED_PEAK + 0.05)
+        m.add(loud_as(ticks, -29.0), 0.0, 1.0)
+    if v == 4:  # stuck to the bearing a moment: it breaks free with a crack of the wood
+        m.add(loud_as(ship.pop(rng, 270, size=0.8, hard=0.8), -22.0), 0.0, 1.0)
+    else:  # the catch lifted off the face
+        lift = Mix(0.15)
+        lift.add(nrm(ship.oak(0.15, rng, [720, 680, 760, 640, 0, 700][v], t60=0.035, hard=0.7)), 0.0, 1.0)
+        lift.add(nrm(ship.hann_burst(0.002, rng, 900, 6000)), 0.0, 0.35)
+        m.add(loud_as(lift.out(), -26.0), 0.0, 1.0)
+    y = fit(m.out(), ns(dur)) * np.clip(tvec(dur) / 0.0006, 0, 1)
+    return lead_in(street(lp(y, 8000), wet=0.1, seed=270 + v))
+
+
+@effect("works.medallion_catch", 5, "Medallion's catch knocks", loud=-17.5, max_len=0.7, fade_out=0.2, reach=24,
+        limit=4.0)
+def medallion_catch(v, rng):
+    """the medallion's catch dropping in as a face comes round square, from the knock: the oak pawl falling into
+    the notch at the drum's end with a hard, woody knock, the drum's weight coming onto it with a dull thump, its body
+    booming under it and its iron boss chinking on the axle. The renderer plays it as the turn swings onto its catch,
+    with the dust, and more lightly at each face a turn of several rolls past. v1 a clean knock, v2 the pawl bouncing
+    once, v3 duller, the drum's weight in it, v4 brighter, the boss ringing, v5 knocked, and the drum creaking back
+    off it"""
+    dur = 0.7
+    f0 = [560, 600, 520, 640, 580][v] * rng.uniform(0.98, 1.02)
+    body = med_body()
+    low = body[0] < 900
+    m = Mix(dur)
+    m.add(loud_as(ship.oak(0.35, rng, f0, t60=0.07, hard=[1.1, 1.0, 0.6, 1.3, 1.0][v], ex=0.0018, lo=250), -18.0),
+          0.0, 1.0)  # the pawl into its notch
+    m.add(loud_as(ship.hann_burst(0.0015, rng, 1500, 9000), -31.0), 0.0, 1.0)
+    weight = thump(0.25, [150, 145, 130, 160, 150][v], 85, rng, decay=0.035, click=0.0, noise=0.45, nlp=420)
+    m.add(loud_as(ship.saturate(weight, 1.8), [-21.0, -21.0, -19.0, -22.0, -21.0][v]), 0.001, 1.0)
+    shake = fit(ship.hann_burst(0.004, rng, 80, 1200), ns(0.5))
+    drum = resonators(shake, body[0][low], body[1][low] * 1.6, body[2][low])
+    m.add(loud_as(drum, [-21.0, -21.5, -19.0, -22.0, -21.0][v]), 0.001, 1.0)  # the drum's body under it
+    boss = ship.iron_ring(0.35, rng, [1380 * rng.uniform(0.98, 1.02), 2050], t60=0.15, gains=[1.0, 0.5])
+    m.add(loud_as(boss, [-31.0, -31.0, -34.0, -26.0, -31.0][v]), 0.002, 1.0)  # its iron boss on the axle
+    if v == 1:  # the pawl bouncing once in its notch
+        m.add(loud_as(ship.oak(0.25, rng, f0 * 1.03, t60=0.05, hard=0.8, ex=0.0015, lo=300), -25.0), 0.045, 1.0)
+    if v == 4:  # and the drum creaking back off the catch
+        cd = 0.3
+        rate = 3 + 15 * bell(cd, 0.35, 1.2, 1.6)
+        back = ship.creak_voice(cd, rng, rate, bell(cd, 0.4, 1.3, 1.5), body, jitter=0.1, rub=0.1, kick=0.0012,
+                                bright=2800)
+        m.add(loud_as(back, -28.0), 0.09, 1.0)
+    y = fit(m.out(), ns(dur))
+    return lead_in(street(lp(y, 9000), wet=0.1, seed=280 + v))
+
+
+def to_let_board():
+    """the "To let" board and its two iron hooks: a thin plank board's modes and, damped and quiet, the hooks'
+    iron, the same in every take"""
+    f, t60, g = ship.timber_modes(rng_for("works", "to_let", "board"), 260.0, 2600.0, count=22, t60_lo=0.05,
+                                  t60_hi=0.012, peaks=(480, 1050))
+    return (np.concatenate([f, [1650.0, 2380.0, 3150.0]]), np.concatenate([t60, [0.03, 0.025, 0.02]]),
+            np.concatenate([g, 0.12 * np.max(g) * np.array([1.0, 0.7, 0.45])]))
+
+
+@effect("streets.to_let", 8, "Sign creaks on its hooks", loud=-23.0, max_len=1.3, fade_out=0.3, reach=12)
+def to_let(v, rng):
+    """the "To let" board creaking on its two iron hooks as the wind swings it, at one end of its swing: the eyes on
+    the board's top turning on the hooks, rusty iron on iron, slow and soft, the board's thin planks sounding it.
+    Kept low and mellow (nothing shrill in it) and every take a different creak, so that it never grates however often
+    it comes round. v1 a slow, soft creak, v2 both hooks, one after the other, v3 a short, rusty squeak, v4 a long one
+    that wavers, v5 a creak and the hook shifting in its eye with a soft clink, v6 a rough, low one, v7 a little
+    double creak, v8 barely there"""
+    board = to_let_board()
+    d = [0.62, 0.5, 0.42, 0.95, 0.5, 0.7, 0.55, 0.45][v]
+    pk = [0.45, 0.4, 0.5, 0.35, 0.55, 0.45, 0.3, 0.5][v]
+    r1 = [85, 95, 100, 75, 90, 42, 105, 16][v]
+    dur = d + 0.35
+    m = Mix(dur)
+
+    def hook(d, pk, r1, f=1.0, lufs=-24.0, wobble=0.0):
+        """one hook's creak: the slips ticking slowly as the board comes to the end of its swing and sets off back,
+        running together into a soft, rusty groan in the middle"""
+        s = bell(d, pk, 1.4, 1.6)
+        if wobble:
+            s = s * (0.75 + 0.25 * np.sin(2 * np.pi * wobble * tvec(d) + rng.uniform(0, 6.3)))
+        rate = 4.0 + r1 * s ** 1.5 * rng.uniform(0.9, 1.1)
+        vowel = [((560 + 260 * s) * f, 4.0, 0.4)]
+        y = ship.creak_voice(d, rng, rate, s ** 0.8, (board[0] * f, board[1], board[2]), vowel=vowel, jitter=0.1,
+                             alt=rng.uniform(0.0, 0.3), rub=0.06, kick=0.0013, bright=2200, unsteady=0.4)
+        return loud_as(lp(y, 4000), lufs)
+    if v == 3:  # a long creak that wavers as the board rocks on its hooks
+        m.add(hook(d, pk, r1, 1.0, -24.0, wobble=2.6), 0.0, 1.0)
+    elif v == 6:  # a little double creak: the board catching and letting go twice
+        m.add(hook(0.26, 0.45, r1, 1.04), 0.0, 1.0)
+        m.add(hook(0.3, 0.5, r1 * 0.9, 1.0, -25.5), 0.25, 1.0)
+    elif v == 7:  # barely there: a few slow ticks of the iron
+        m.add(hook(d, pk, r1, 0.97, -27.0), 0.0, 1.0)
+    else:
+        m.add(hook(d, pk, r1, [1.0, 1.05, 1.0, 0, 0.95, 0.86][v], [-24.0, -24.0, -25.0, 0, -24.0, -23.5][v]), 0.0,
+              1.0)
+    if v == 1:  # the other hook a moment after
+        m.add(hook(0.42, 0.5, 24, 0.93, -27.0), 0.2, 1.0)
+    if v == 2:  # the rusty squeak of an eye dry on its hook
+        sd = 0.3
+        sq = ship.squeal(sd, rng, 540 + 70 * bell(sd, 0.4, 1.2, 1.4), bell(sd, 0.45, 1.3, 1.5), harmonics=5, tilt=1.7,
+                         chatter=0.45, wobble=0.02, grit=0.08, peak_hz=1200)
+        m.add(loud_as(lp(sq, 3500), -27.0), 0.08, 1.0)
+    if v == 4:  # the hook shifting in its eye: a soft clink
+        m.add(loud_as(ship.iron_ring(0.25, rng, [2550 * rng.uniform(0.97, 1.03)], t60=0.08), -30.0), d * 0.8, 1.0)
+        m.add(loud_as(ship.hann_burst(0.0015, rng, 1500, 6000), -33.0), d * 0.8, 1.0)
+    y = fit(m.out(), ns(dur)) * np.clip(tvec(dur) / 0.002, 0, 1)
+    return lead_in(street(lp(y, 5000), wet=0.08, seed=290 + v))
+
+
+SEAL_KICK = 0.55 * 20.0  # WorksArt.sealDrop: the seal's swing after the jolt, radians a second
+SEAL_FADE = 10.0 / 20.0  # and the time it takes to die to a third (s)
+
+
+def wax_knock(rng, f=1.0):
+    """a wax seal knocking the oak board it hangs against: the wax too soft to click, a dull tap, the board's planks
+    ringing a moment behind it"""
+    m = Mix(0.3)
+    m.add(nrm(knock(0.25, np.array([310, 520, 760, 1090, 1480, 2050]) * f, [0.05, 0.04, 0.03, 0.025, 0.02, 0.015],
+                    [1, .8, .6, .45, .3, .2], rng, lo=150, hi=3200, ex_len=0.0025)), 0.0, 1.0)
+    m.add(thud(0.08, rng, f=240 * f, decay=0.006, tone=0.2), 0.0, 0.6)
+    return m.out()
+
+
+@effect("works.seal", 6, "Seal drops on its cord", loud=-20.0, max_len=1.2, fade_out=0.3, reach=12, limit=3.0)
+def seal(v, rng):
+    """a wax seal dropping out on its cord at the foot of the works' post's parchment as a tenth of its price comes
+    in, from the jolt as the cord comes taut (WorksArt.sealDrop's end, SEAL_DROP ticks after the seal's tenth came
+    in): the cord snapping tight, the seal knocking the board under the parchment with a dull, waxy tap and the
+    parchment crackling as the cord tugs it, then the seal swinging to and fro across the board (sealDrop's kick,
+    half a swing every 0.29 s, dying away over a second), brushing the oak and tapping it lightly. v1 a clean drop,
+    v2 it knocks the seal beside it, v3 the long-corded seal, swinging wider, v4 it bounces off the board and back,
+    v5 the parchment tugged harder, crackling, v6 a heavier seal, a lower knock"""
+    dur = 1.2
+    m = Mix(dur)
+    m.add(loud_as(burst(0.01, rng, 800, 5000, 0.0015), -28.0), 0.0, 1.0)  # the cord snapping taut
+    m.add(loud_as(thud(0.04, rng, f=320, decay=0.004, tone=0.1), -30.0), 0.0, 1.0)
+    f = [1.0, 1.05, 0.97, 1.02, 1.0, 0.85][v]
+    m.add(loud_as(wax_knock(rng, f), [-21.0, -21.0, -21.5, -21.0, -22.0, -20.0][v]), 0.002, 1.0)
+    ct = tvec(0.07)
+    crk = crackle(0.07, rng, 5000 * np.exp(-ct / 0.014), decay=0.0004, f_lo=1500, f_hi=7000, size_var=0.8)
+    m.add(loud_as(crk, -27.0 if v == 4 else -30.0), 0.003, 1.0)  # the parchment tugged
+    if v == 3:  # it bounces off the board and comes back against it
+        m.add(loud_as(wax_knock(rng, f * 1.04), -26.0), 0.065, 1.0)
+    if v == 1:  # it knocks the seal beside it: wax on wax
+        m.add(loud_as(knock(0.06, [1850, 2600, 3500], [0.012, 0.009, 0.006], [1, .6, .3], rng, lo=800, hi=7000,
+                            ex_len=0.0008), -28.0), 0.15, 1.0)
+    wide = 1.25 if v == 2 else 1.0
+    half = np.pi / SEAL_KICK  # a half-swing, 0.286 s
+    for k in range(5):  # the wax brushing the board as it swings across it, fastest through the middle of each swing
+        bd = 0.16
+        at = k * half + rng.uniform(-0.015, 0.015) if k else bd / 2  # (from the jolt, it's off at its fastest)
+        g = -29.0 + 20 * np.log10(wide * np.exp(-at / SEAL_FADE))
+        sb = bell(bd, 0.5 if k else 0.25, 1.4, 1.4)
+        rub = bp(colored(bd, rng, -1.5), 500, 3500) * (0.6 + 0.4 * smooth_random(bd, rng, 40))
+        grain = crackle(bd, rng, 900 * sb + 20, decay=0.0004, f_lo=900, f_hi=4500, size_var=0.7)
+        m.add(loud_as((nrm(rub) + 0.5 * nrm(grain)) * sb, g), at - bd / 2, 1.0)
+    for k in rng.choice([1, 3, 5], size=[1, 1, 2, 1, 1, 2][v], replace=False):  # its edge tapping the board at a turn
+        at = k * half / 2 + rng.uniform(-0.01, 0.01)
+        m.add(loud_as(wax_knock(rng, f * rng.uniform(1.05, 1.15)), -24.0 + 20 * np.log10(np.exp(-at / SEAL_FADE))),
+              at, 1.0)
+    y = fit(m.out(), ns(dur)) * np.clip(tvec(dur) / 0.0005, 0, 1)
+    return lead_in(street(lp(y, 9000), wet=0.07, seed=300 + v))
 
 
 # =========================================================================== main

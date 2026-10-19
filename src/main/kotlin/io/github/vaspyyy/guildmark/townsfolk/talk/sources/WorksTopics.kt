@@ -39,7 +39,7 @@ import java.util.UUID
  * records ([Works]) and what each speaker knows of them:
  * - a works wanted, and why, the day the need showed ("We could do with a granary.", "The mill stood idle yesterday
  *   for want of grain."), pointing at its post; the Marks given toward it against its price;
- * - one paid for, waiting on its materials (in words only: no voice says it yet);
+ * - one paid for, waiting on its first materials, and the wagon bringing them;
  * - one going up, pointed at, with the stage the builders are at and how much is built; held up when its yard has
  *   run out of what it's laying and the wagon bringing more is still out ("They're out of stone. The next of it's on
  *   the wagon in by the north road, due about nine in the morning.");
@@ -171,7 +171,7 @@ object WorksTopics : TopicSource {
         if (s.bark && !s.near && age > FRESH) return
         val first = Say.part(ask, "works.wanted.${w.kind.id}", why(w, age)) ?: return
         val parts = mutableListOf(first)
-        if (!s.bark) parts.add(Utterance.Part("", Speech.of("talk.detail.works.post", (w.price - w.pledged).coerceAtLeast(0))))
+        if (!s.bark) Say.part(ask, "works.post", Speech.of("talk.detail.works.post", (w.price - w.pledged).coerceAtLeast(0)))?.let(parts::add)
         out.add(Topic("works.wanted.${w.id}", Kind.WORKS, 0.55 - 0.03 * age.coerceIn(0L, 7L), Utterance(parts), toward = s.at))
 
         // What's been given toward it, and how much of that was the listener's
@@ -185,7 +185,7 @@ object WorksTopics : TopicSource {
         }
         val funding = Say.part(ask, "works.funding", Speech.of("talk.detail.works.funding.$bracket", w.pledged, w.price)) ?: return
         val mine = ask.player?.let { p -> w.pledges.firstOrNull { it.player == p.uuid }?.marks } ?: 0
-        val more = if (!s.bark && mine > 0) Utterance.Part("", Speech.of("talk.detail.works.yours", mine)) else null
+        val more = if (!s.bark && mine > 0) Say.part(ask, "works.yours", Speech.of("talk.detail.works.yours", mine)) else null
         out.add(Topic("works.funding.${w.id}.$bracket", Kind.WORKS, 0.4 + 0.2 * share, Utterance(listOfNotNull(funding, more)), tone = 1, toward = s.at))
     }
 
@@ -202,11 +202,20 @@ object WorksTopics : TopicSource {
         "great_granary.drawn", "tower.waylaid", "tower.troubled", "proposed",
     )
 
-    /** A works paid for and not yet begun, in words only (no voice says it yet): waiting on the wagon with its first materials. */
+    /** A works paid for and not yet begun: waiting on the wagon with its first materials. */
     private fun funded(s: Seen, out: MutableList<Topic>) {
         if (s.bark || s.w.kind == WorksKind.STALL) return
-        val parts = listOf(Utterance.Part("", Speech.of("talk.detail.works.funded", s.kind)), Utterance.Part("", coming(s)))
-        out.add(Topic("works.funded.${s.w.id}", Kind.WORKS, 0.45, Utterance(parts), tone = 1, toward = s.at))
+        out.add(Topic("works.funded.${s.w.id}", Kind.WORKS, 0.45, Utterance(paid(s)), tone = 1, toward = s.at))
+    }
+
+    /**
+     * [s]'s works paid for, as it's said: a take of works.funded.<its kind> ("The granary's paid for, every Mark of
+     * it."), with the wagon bringing its first materials after it in words; in words alone while none is recorded.
+     */
+    private fun paid(s: Seen): List<Utterance.Part> {
+        val coming = coming(s)
+        Say.lead(s.ask, "works.funded.${s.w.kind.id}", coming)?.let { return listOf(it) }
+        return listOf(Utterance.Part("", Speech.of("talk.detail.works.funded", s.kind)), Utterance.Part("", coming))
     }
 
     /** The first wagon on its way with [s]'s materials: its road and when it's due; or that none is yet. */
@@ -226,7 +235,7 @@ object WorksTopics : TopicSource {
         val stage = w.stage
         val detail = Speech.of("talk.detail.works.building" + (stage?.let { ".${it.key}" } ?: ""), s.kind)
         val first = going(ask, w, detail)
-        val more = if (!s.bark) share(w)?.let { Utterance.Part("", "talk.detail.works.share.$it") } else null
+        val more = if (!s.bark) built(ask, w) else null
         out.add(Topic(
             "works.building.${w.id}.${stage?.key ?: "begun"}", Kind.WORKS, if (s.near) 0.6 else 0.5,
             Utterance(listOfNotNull(first, more)), tone = 1, toward = s.at,
@@ -265,6 +274,10 @@ object WorksTopics : TopicSource {
             else -> "nearly"
         }
     }
+
+    /** How much of [w] is laid, said: a take of works.share.<the share> ("It's half built."), its words alone while none is recorded; null while the builders haven't said. */
+    private fun built(ask: Ask, w: WorksView): Utterance.Part? =
+        share(w)?.let { Say.part(ask, "works.share.$it", null) ?: Utterance.Part("", "talk.detail.works.share.$it") }
 
     /**
      * [s]'s works held up: at a stage that lays materials, with nothing left in its yard while its bill still wants
@@ -438,7 +451,7 @@ object WorksTopics : TopicSource {
         }
         val detail = Speech.of(if (how == "at") "talk.detail.works.labour" else "talk.detail.works.labour.$how", kind)
         val first = going(ask, w, detail)
-        val more = if (how == "at" && w.state == WorksState.BUILDING && ask.occasion != Occasion.BARK) share(w)?.let { Utterance.Part("", "talk.detail.works.share.$it") } else null
+        val more = if (how == "at" && w.state == WorksState.BUILDING && ask.occasion != Occasion.BARK) built(ask, w) else null
         out.add(Topic(
             "works.labouring.${w.id}.$how", Kind.DOING, DailySource.weight(ask), Utterance(listOfNotNull(first, more)),
             tone = 1, gesture = Activity.POINT, toward = place(w) ?: site,
@@ -479,7 +492,7 @@ object WorksTopics : TopicSource {
         val parts = ArrayList(head(first))
         for (s in ranked.drop(1)) {
             if (parts.size >= PARTS) break
-            parts.add(Utterance.Part("", summary(s)))
+            parts.add(summary(s))
         }
         return Utterance(parts.take(PARTS), first.at)
     }
@@ -506,11 +519,11 @@ object WorksTopics : TopicSource {
                 val late = late(s)
                 val first = late?.say?.parts?.firstOrNull()
                     ?: going(ask, w, Speech.of("talk.detail.works.building" + (w.stage?.let { ".${it.key}" } ?: ""), kind))
-                listOfNotNull(first, share(w)?.let { Utterance.Part("", "talk.detail.works.share.$it") })
+                listOfNotNull(first, built(ask, w))
             }
-            WorksState.FUNDED -> listOf(Utterance.Part("", Speech.of("talk.detail.works.funded", kind)), Utterance.Part("", coming(s)))
+            WorksState.FUNDED -> paid(s)
             WorksState.WANTED -> {
-                val bracket = if (w.pledged > 0) Utterance.Part("", Speech.of("talk.detail.works.ask.pledged", w.pledged, w.price)) else null
+                val bracket = if (w.pledged > 0) Say.part(ask, "works.funding", Speech.of("talk.detail.works.ask.pledged", w.pledged, w.price)) else null
                 listOfNotNull(Say.part(ask, "works.wanted.${w.kind.id}", why(w, s.town.today - w.wanted)), bracket)
             }
             WorksState.DONE -> {
@@ -522,17 +535,33 @@ object WorksTopics : TopicSource {
         }
     }
 
-    /** Another works, in a word: "The town wants a watchtower too: 40 of 180 Marks pledged." */
-    private fun summary(s: Seen): String {
+    /**
+     * Another works, in a word: a take of works.also.<wanted, funded, building or raised>.<its kind> ("The town wants a
+     * watchtower too."), with what changes in words after it ("40 of its 180 Marks pledged so far.", "Raised yesterday,
+     * by the gift of Ransom."); in words alone while none is recorded ("The town wants a watchtower too: 40 of 180 Marks
+     * pledged.").
+     */
+    private fun summary(s: Seen): Utterance.Part {
         val w = s.w
+        val ask = s.ask
+        val kind = w.kind.id
         return when (w.state) {
-            WorksState.WANTED -> Speech.of("talk.detail.works.ask.wanted", s.kind, w.pledged, w.price)
-            WorksState.FUNDED -> Speech.of("talk.detail.works.ask.funded", s.kind)
-            WorksState.BUILDING -> Speech.of("talk.detail.works.ask.building", s.kind)
+            WorksState.WANTED -> Say.lead(ask, "works.also.wanted.$kind", Speech.of("talk.detail.works.ask.pledged", w.pledged, w.price))
+                ?: Utterance.Part("", Speech.of("talk.detail.works.ask.wanted", s.kind, w.pledged, w.price))
+            WorksState.FUNDED -> Say.lead(ask, "works.also.funded.$kind") ?: Utterance.Part("", Speech.of("talk.detail.works.ask.funded", s.kind))
+            WorksState.BUILDING -> Say.lead(ask, "works.also.building.$kind") ?: Utterance.Part("", Speech.of("talk.detail.works.ask.building", s.kind))
             WorksState.DONE -> {
                 val ago = Say.ago(s.town.today - w.done)
-                val by = if (w.kind == WorksKind.STALL) owner(s.ask, w) else patronName(s.ask, s)
-                if (by != null) Speech.of("talk.detail.works.ask.raised", s.kind, ago, by) else Speech.of("talk.detail.works.ask.raised.nobody", s.kind, ago)
+                val stall = w.kind == WorksKind.STALL
+                val by = if (stall) owner(ask, w) else patronName(ask, s)
+                val detail = when {
+                    stall && by != null -> Speech.of("talk.detail.works.raised.stall", by, ago)
+                    stall -> Speech.of("talk.detail.works.raised.stall.nobody", ago)
+                    by != null -> Speech.of("talk.detail.works.raised", ago, by)
+                    else -> Speech.of("talk.detail.works.raised.nobody", ago)
+                }
+                Say.lead(ask, "works.also.raised.$kind", detail)
+                    ?: Utterance.Part("", if (by != null) Speech.of("talk.detail.works.ask.raised", s.kind, ago, by) else Speech.of("talk.detail.works.ask.raised.nobody", s.kind, ago))
             }
         }
     }

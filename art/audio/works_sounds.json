@@ -458,5 +458,125 @@
       }
     ],
     "subtitle": "subtitles.guildmark.streets.handcart_goods"
+  },
+  "works.medallion": {
+    "sounds": [
+      {
+        "name": "guildmark:works/medallion1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:works/medallion2",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:works/medallion3",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:works/medallion4",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:works/medallion5",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:works/medallion6",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.works.medallion"
+  },
+  "works.medallion_catch": {
+    "sounds": [
+      {
+        "name": "guildmark:works/medallion_catch1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:works/medallion_catch2",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:works/medallion_catch3",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:works/medallion_catch4",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:works/medallion_catch5",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.works.medallion_catch"
+  },
+  "streets.to_let": {
+    "sounds": [
+      {
+        "name": "guildmark:streets/to_let1",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:streets/to_let2",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:streets/to_let3",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:streets/to_let4",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:streets/to_let5",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:streets/to_let6",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:streets/to_let7",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:streets/to_let8",
+        "attenuation_distance": 12
+      }
+    ],
+    "subtitle": "subtitles.guildmark.streets.to_let"
+  },
+  "works.seal": {
+    "sounds": [
+      {
+        "name": "guildmark:works/seal1",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:works/seal2",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:works/seal3",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:works/seal4",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:works/seal5",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:works/seal6",
+        "attenuation_distance": 12
+      }
+    ],
+    "subtitle": "subtitles.guildmark.works.seal"
   }
 }
