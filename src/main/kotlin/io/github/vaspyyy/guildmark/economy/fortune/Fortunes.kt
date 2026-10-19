@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.economy.fortune
 
+import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.GuildmarkConfig
 import io.github.vaspyyy.guildmark.block.MarketBoardBlockEntity.Slip
 import io.github.vaspyyy.guildmark.economy.CaravanData
@@ -190,6 +191,17 @@ object Fortunes {
         fun changed(level: ServerLevel, capital: Long, from: Times, to: Times)
     }
 
+    /** The listeners hear [capital]'s times move from [from] to [to]: one that fails is logged, and the rest still hear. */
+    private fun tell(level: ServerLevel, capital: Long, from: Times, to: Times) {
+        for (l in listeners.toList()) {
+            try {
+                l.changed(level, capital, from, to)
+            } catch (e: RuntimeException) {
+                Guildmark.LOGGER.warn("Something hearing of the times failed in the capital at {}", BlockPos.of(capital).toShortString(), e)
+            }
+        }
+    }
+
     /** At setup: the boards' medallions kept to the times, and the road, the works and the households heard. */
     fun register() {
         NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { tick(it.server) }
@@ -265,7 +277,7 @@ object Fortunes {
         town.since = day
         town.moved = Markets.hourOf(level)
         fresh[capital] = level.gameTime
-        for (l in listeners) l.changed(level, capital, from, to)
+        tell(level, capital, from, to)
     }
 
     /** Adds [note] to [capital]'s record: said again the same day of the same player or works, it's the one note (see [FortuneReasons.SAME]). */
@@ -341,7 +353,7 @@ object Fortunes {
         val town = FortuneData.get(level).clear(capital) ?: return
         if (town.times == Times.STEADY) return
         fresh[capital] = level.gameTime
-        for (l in listeners) l.changed(level, capital, town.times, Times.STEADY)
+        tell(level, capital, town.times, Times.STEADY)
     }
 
     // ---- The board's medallion ----
