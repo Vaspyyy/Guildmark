@@ -104,10 +104,18 @@ object SeasonColours {
                 tintMix + (other.tintMix - tintMix) * t, spread + (other.spread - spread) * t,
             )
         }
+
+        /** Whether [other] turns a colour just as this does. */
+        fun same(other: Shift): Boolean = hue == other.hue && pull == other.pull && saturation == other.saturation &&
+            value == other.value && tint == other.tint && tintMix == other.tintMix && spread == other.spread
     }
 
     /** A day's looks: one shift for each kind of plant. */
-    class Look(val active: Boolean, val grass: Shift, val foliage: Shift, val birch: Shift, val evergreen: Shift, val cane: Shift)
+    class Look(val active: Boolean, val grass: Shift, val foliage: Shift, val birch: Shift, val evergreen: Shift, val cane: Shift) {
+        /** Whether [other] colours the land just as this does (the days of a season's middle third all look alike). */
+        fun same(other: Look): Boolean = active == other.active && grass.same(other.grass) && foliage.same(other.foliage) &&
+            birch.same(other.birch) && evergreen.same(other.evergreen) && cane.same(other.cane)
+    }
 
     private val NONE = Shift(0f, 0f, 1f, 1f, 0, 0f)
 
@@ -267,12 +275,12 @@ object SeasonColours {
     private var ringCentreX = 0
     private var ringCentreZ = 0
 
-    /** A new day (or a new season, a command, a login): today's look, and the land round about re-meshed. */
+    /** A new day (or a new season, a command, a login): today's look, and the land round about re-meshed if it changed. */
     fun update(date: SeasonDate, active: Boolean) {
         val next = lookFor(date, active)
         val was = look
         look = next
-        if (was.active || next.active) startRemesh()
+        if ((was.active || next.active) && !was.same(next)) startRemesh()
     }
 
     fun reset() {
