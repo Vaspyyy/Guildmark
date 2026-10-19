@@ -21,6 +21,8 @@ import io.github.vaspyyy.guildmark.economy.Site
 import io.github.vaspyyy.guildmark.economy.StallDesk
 import io.github.vaspyyy.guildmark.economy.Tally
 import io.github.vaspyyy.guildmark.economy.Town
+import io.github.vaspyyy.guildmark.economy.works.build.WorksBuild
+import io.github.vaspyyy.guildmark.economy.works.build.WorksLedger
 import io.github.vaspyyy.guildmark.homestead.plan.Stage
 import io.github.vaspyyy.guildmark.homestead.plan.Stuff
 import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
@@ -46,14 +48,16 @@ import java.util.UUID
  * and site, and what it does now; then the works not wanted yet and what would make them. `propose <kind> [road]`
  * has one wanted now, whatever the need (a tower by the road named, or the nearest; a stall for you); `fund <id>
  * [marks]` is an op's free pledge, marked as one, of the rest of its price if no Marks are named; `start <id>` has
- * all its materials in its yard now; `finish <id>` lays it at once; `stage <id> <stage>` puts it at a stage as the
- * builders would report it; `materials <id>` is its bill, its yard, and the wagons bringing the rest; `rush` has the
+ * all its materials in its yard now and its builders seen to at once; `finish <id>` lays it at once; `stage <id>
+ * <stage>` lays it free up to that stage (with no site yet, only puts it there as the builders would report it);
+ * `materials <id>` is its bill, its yard, the wagons bringing the rest, and how far its builders are; `rush` has the
  * builders work ten times as fast and held-up freight come round the long way ten times as soon, on and off; `site
  * <id> [here]` has the builders look for its site again, or puts it where you stand; `remove <id>` takes it down and
  * pays every pledge back; `stall` opens your own stall's screen, standing at it; and `effect` is what the works do
- * here now: the ovens and the bake, the granary by good, each road's watch, and the stalls of players' own. Until
- * the works screen is in, `pledge <id> <marks>`, `withdraw <id>` and `bring <id>` ask what it will: a pledge from
- * your purse, taking it back while it's unfunded, and the materials in your hand to the yard.
+ * here now: the ovens and the bake, the granary by good, each road's watch, and the stalls of players' own. As the
+ * works screen and the yard's crate do, `pledge <id> <marks>`, `withdraw <id>` and `bring <id>` ask a pledge from
+ * your purse, taking it back while it's unfunded, and the materials in your hand to the yard. A works' name in the
+ * list opens its screen.
  *
  * Registered only once the works are wired in ([Works.ready]): until then there is no `works` command.
  */
@@ -210,7 +214,8 @@ object WorksCommand {
     /** [w]'s lines in the list: what and whose, its state, its price and pledges, why it was wanted, its days and stage, its site, and what it does now. */
     private fun works(source: CommandSourceStack, level: ServerLevel, entry: Markets.Entry, w: WorksRec) {
         val v = Works.get(level, w.id) ?: return
-        say(source, line().append(label("#${w.id} ")).append(title(level, w)).append(grey(": ${state(w)}")))
+        val name = if (Works.enabled()) WorksLedger.link(w.id, title(level, w)) else title(level, w)
+        say(source, line().append(label("#${w.id} ")).append(name).append(grey(": ${state(w)}")))
         val parts = w.parts.entries.joinToString(", ") { "${it.key} ${it.value}" }
         val patron = v.patron?.let { p -> v.pledges.firstOrNull { it.player == p }?.name ?: name(level, p) }
         val free = w.pledges.filter { it.free }.sumOf { it.marks }
@@ -359,8 +364,13 @@ object WorksCommand {
         if (w.state == WorksState.DONE) return fail(source, "#$id stands finished already.")
         Works.startNow(level, player, w)
         if (!w.open) return fail(source, "#$id couldn't be started: ${state(w)}.")
+        WorksBuild.start(level, id)
         say(source, plain("#$id is paid for, and all its materials are in its yard now: ${stuff(w.here)}."))
-        say(source, grey("Its crew comes with the builders (M6's building); until they're in, `works stage $id <stage>` and `works finish $id` stand in for them."))
+        if (w.site == null) {
+            say(source, grey("It has no site yet: the builders look for one each second in loaded land (`works site $id here` puts it where you stand), and its crew comes once it has one."))
+        } else {
+            say(source, grey("Its master builder and crew come while a player's within ${WorksBuild.NEAR.toInt()} blocks of it, in daylight with an hour off at noon, and the clock lays the rest whenever its land is loaded. `works rush` is ten times as fast; `works stage $id <stage>` lays it free up to a stage, `works finish $id` all of it."))
+        }
         return 1
     }
 
@@ -373,9 +383,11 @@ object WorksCommand {
         if (w.state == WorksState.DONE) return fail(source, "#$id stands finished already.")
         Works.finishNow(level, player, w)
         if (w.state != WorksState.DONE) return fail(source, "#$id couldn't be finished: ${state(w)}.")
+        WorksBuild.start(level, id)
         say(source, line().append(plain("#$id stands finished, laid at once: ")).append(title(level, w)).append(plain(".")))
         say(source, line().append(grey("   now: ")).append(plain(doing(level, entryOf(level, w), w))))
-        if (w.site == null) say(source, grey("   It had no site: it does its work all the same (a stall of your own stands at the capital's centre; `works site <id> here` before finishing puts it where you stand)."))
+        if (w.site == null) say(source, grey("   It had no site: it does its work all the same, with no building (a stall of your own stands at the capital's centre; `works site <id> here` before finishing puts it where you stand)."))
+        else say(source, grey("   Its blocks went in at once where its land is loaded (else they go in as soon as it is), and its master builder opens it with whoever's about."))
         return 1
     }
 
@@ -387,9 +399,16 @@ object WorksCommand {
         val w = record(source, id) ?: return 0
         val stage = Stage.entries.firstOrNull { it.key == key } ?: return fail(source, "No stage called $key: ${Stage.entries.joinToString(", ") { it.key }}.")
         if (w.state == WorksState.DONE) return fail(source, "#$id stands finished already.")
+        if (!w.paid) Works.fundFree(level, player, w, null)
+        if (!w.open) return fail(source, "#$id couldn't be put at a stage: ${state(w)}.")
+        if (WorksBuild.stageTo(level, id, stage)) {
+            say(source, plain("#$id is laid free up to its ${stage.key}, the stages before it built as the builders would have them: now if its land is loaded, else as soon as it is. The crew goes on from there."))
+            return 1
+        }
+        // No site to lay it on yet: only its record is put at the stage, as the builders would report it
         Works.stageNow(level, player, w, stage)
         if (w.stage != stage) return fail(source, "#$id couldn't be put at a stage: ${state(w)}.")
-        say(source, plain("#$id is at its ${stage.key} now, as the builders would report it (${state(w)})."))
+        say(source, plain("#$id has no site yet, so nothing's laid: it's at its ${stage.key} as the builders would report it (${state(w)}), and is built from the start once it has a site."))
         return 1
     }
 
@@ -418,6 +437,7 @@ object WorksCommand {
             val wait = if (Works.rush) WorksFreight.LONG_WAY / 10 else WorksFreight.LONG_WAY
             say(source, grey("   freight last landed ${m.hour - w.landed} market hours ago; after $wait without any, what's still wanted comes round the long way"))
         }
+        for (line in WorksBuild.describe(level, id)) say(source, grey(line))
         return 1
     }
 
@@ -464,7 +484,7 @@ object WorksCommand {
                 plain(if (back > 0) "; $back Marks paid back to those who pledged them (owed to anyone not on until they next join)." else "; nothing to pay back."),
             ),
         )
-        say(source, grey("The builders take its blocks down to what the drawing found there, once they're in (M6's building)."))
+        say(source, grey("Its blocks come down to what its drawing found there: now where its land is loaded, else as soon as it is."))
         return 1
     }
 

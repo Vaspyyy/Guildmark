@@ -122,6 +122,9 @@ internal object WorksAtWork {
         /** The doors' lower halves, and where to stand outside each. */
         val doors = ArrayList<BlockPos>()
         val doorFronts = ArrayList<BlockPos>()
+
+        /** The ovens' mouths (their smoker and furnace). */
+        val mouths = ArrayList<BlockPos>()
         var beacon: BlockPos? = null
         var awning: BlockPos? = null
         val pitches = ArrayList<BlockPos>()
@@ -137,6 +140,7 @@ internal object WorksAtWork {
                         doors.add(f.world(s.x, s.y, s.z))
                         doorFronts.add(f.world(s.x, s.y, s.z - 1))
                     }
+                    b.m == M.SMOKER || b.m == M.FURNACE -> mouths.add(f.world(s.x, s.y, s.z))
                     b.v == WorksDrawing.MARK && b.m == M.CAULDRON -> beacon = f.world(s.x, s.y, s.z)
                     b.v == WorksDrawing.MARK && b.m == M.WOOL -> awning = f.world(s.x, s.y, s.z)
                     b.v == WorksDrawing.MARK && b.m == M.CRATE -> pitches.add(f.world(s.x, s.y, s.z))
@@ -412,6 +416,12 @@ internal object WorksAtWork {
         if (!changed(w, open) { swing(level, f, it, sound = false) }) return
         swing(level, f, open, sound = true)
         if (open && near && !carried) carter(level, w, site, f, giving)
+    }
+
+    /** Works [id]'s door as it was drawn (Works.door): the granary's first door's foot, or the oven's first mouth; null with neither. */
+    fun door(level: ServerLevel, id: Int): BlockPos? {
+        val f = fittings(level, id) ?: return null
+        return f.doors.firstOrNull() ?: f.mouths.firstOrNull()
     }
 
     /** Where a granary's sacks are tipped in: the stand before its first door, and the doorway (Unloads' porters). */

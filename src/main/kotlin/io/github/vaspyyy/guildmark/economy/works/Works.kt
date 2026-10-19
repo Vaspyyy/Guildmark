@@ -357,12 +357,15 @@ object Works {
     }
 
     /**
-     * Where the carters fetch from [capital]'s works of [kind] (the granary's grain): the middle of its lot's front,
-     * on the side it faces, at its foot; null while it has no site or doesn't stand.
+     * Where the carters fetch from [capital]'s works of [kind] (the granary's grain): its first door as it was built
+     * (the granary's), or its ovens' mouths (the oven's); else the middle of its lot's front, on the side it faces, at
+     * its foot; null while it has no site or doesn't stand.
      */
     fun door(level: ServerLevel, capital: Long, kind: WorksKind): BlockPos? {
         if (!READY) return null
-        val site = data(level).done(capital, kind)?.site ?: return null
+        val w = data(level).done(capital, kind) ?: return null
+        val site = w.site ?: return null
+        io.github.vaspyyy.guildmark.economy.works.build.WorksAtWork.door(level, w.id)?.let { return it }
         val lot = site.lot
         val x = (lot.minX() + lot.maxX()) / 2
         val z = (lot.minZ() + lot.maxZ()) / 2
@@ -397,11 +400,13 @@ object Works {
 
     // ---- The labourers: the brainstorm thread asks, the building answers ----
 
-    /** The residents of [capital] wanted at the works on market day [day]. */
-    fun labourers(level: ServerLevel, capital: Long, day: Long): List<Int> = listOf()
+    /** The residents of [capital] wanted at the works on market day [day] (Part B: a few of its spare citizens a day). */
+    fun labourers(level: ServerLevel, capital: Long, day: Long): List<Int> =
+        io.github.vaspyyy.guildmark.economy.works.build.WorksBuild.labourers(level, capital, day)
 
-    /** Where [capital]'s labourers report for work. */
-    fun workAt(level: ServerLevel, capital: Long): BlockPos? = null
+    /** Where [capital]'s labourers report for work (Part B: before the crate of the works going up). */
+    fun workAt(level: ServerLevel, capital: Long): BlockPos? =
+        io.github.vaspyyy.guildmark.economy.works.build.WorksBuild.workAt(level, capital)
 
     /** Gives a labourer their work at the site (Part B sets it). */
     var crew: Crew? = null

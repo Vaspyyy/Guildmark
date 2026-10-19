@@ -186,8 +186,9 @@ object WorksBuild {
             rec = unsite(level, data, build, w, rec)
         }
         if (site == null || !rec.sited) {
-            // Done without a site (finished by command before it had one): nothing to lay
-            if (w.state == WorksState.DONE) return
+            // Done without a site (finished by command before it had one): nothing to lay. One set where an op stood
+            // (`works site <id> here`) is taken, and laid at once
+            if (w.state == WorksState.DONE && site == null) return
             WorksSiting.look(level, w, rec, capital)
             return
         }
@@ -412,6 +413,49 @@ object WorksBuild {
         if (site != null && site.loaded()) layTo(site, end, near(level, site)) else rec.layTo = end
         WorksBuildData.get(level).changed()
         return true
+    }
+
+    /** How far works [id]'s builders are, for `works materials` (in the commands' own words). */
+    fun describe(level: ServerLevel, id: Int): List<String> {
+        val rec = WorksBuildData.get(level)[id] ?: return listOf("builders: not seen to yet (within a second of its being wanted)")
+        if (rec.removed) return listOf("builders: taking it down, as soon as its land is loaded")
+        if (!rec.sited) {
+            val held = WorksSiting.inWay(id)
+            return listOf(
+                "builders: no site yet" +
+                    (held?.let { ", held up by the block at ${it.x} ${it.y} ${it.z} (outlined in red to anyone within 32 blocks)" } ?: "; they look for one each second in loaded land"),
+            )
+        }
+        val out = ArrayList<String>()
+        val o = rec.origin
+        out.add(
+            "builders: sited at ${o.x} ${o.y} ${o.z} facing ${rec.front.serializedName}" + (if (rec.planned) ", on the plan's own lot" else "") +
+                (rec.post?.let { "; its post at ${it.x} ${it.y} ${it.z}" } ?: "") + "; ${rec.yard.size} heaps laid out in its yard",
+        )
+        val plan = WorksPlans.of(rec).plan
+        val b = rec.build
+        val laid = min(b.step + b.done.cardinality(), plan.steps.size)
+        out.add(
+            "   $laid of ${plan.steps.size} steps laid, at its ${plan.stageOf(b.step).key}; %.1f steps of work in hand".format(b.work) +
+                if (rec.layTo >= 0) "; laid free up to step ${rec.layTo} as soon as its land loads" else "",
+        )
+        val site = sites[id] ?: return out
+        val crew = BuilderCrew.builders(site.key).count { !it.leaving }
+        val master = when {
+            MasterBuilder.body(level, id) != null -> "the master builder here"
+            rec.came -> "the master builder away"
+            else -> "the master builder not come yet"
+        }
+        out.add("   crew: $crew at work of the ${WorksKinds.crew(rec.kind)} it wants (${crewOf(level, id).size} lent by the town today), $master")
+        val held = listOfNotNull(
+            if (!site.loaded()) "its land isn't loaded (the clock lays when it is)" else null,
+            if (site.loaded() && id !in watched) "no player within ${NEAR.toInt()} blocks (the crew comes when one is)" else null,
+            if (!site.workday()) "it's not a working hour (daylight, an hour off at noon)" else null,
+            site.short?.let { "it's out of ${it.key}" },
+            site.blocked?.let { "the block at ${it.x} ${it.y} ${it.z} is in its way (the clock lays round it)" },
+        )
+        if (held.isNotEmpty()) out.add("   waiting: " + held.joinToString("; "))
+        return out
     }
 
     // ---- Taken down ----
