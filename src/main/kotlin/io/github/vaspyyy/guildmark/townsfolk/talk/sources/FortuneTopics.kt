@@ -40,7 +40,7 @@ import kotlin.math.abs
  * fortunes' record ([Fortunes]) and what each speaker knows:
  * - the times ("Times are hard. There's no two ways about it."), with the biggest reason pulling them that way as the
  *   detail, a reason of the speaker's own trade or household first (the baker on her cold ovens, a carter on the shut
- *   road, a mother on the hungry days); their own reasons the times don't go by they say in words only;
+ *   road, a mother on the hungry days); their own reasons the times don't go by they say on their own;
  * - the change: the times moved in the last three days ("Times were lean till yesterday. They're steady now."), or a
  *   week's swing in how the town is doing, with the biggest reason for it;
  * - a family gone in hard times, or back ("They're back! Good to see their lamp lit again.", pointing at their home),
@@ -144,7 +144,7 @@ object FortuneTopics : TopicSource {
     // ---- The times ----
 
     /**
-     * The times, with the biggest reason pulling them that way (the speaker's own first), and, in words only, the
+     * The times, with the biggest reason pulling them that way (the speaker's own first), and, each on its own, the
      * speaker's other reasons of their own: those pulling against the times, the steady times', and the rest.
      */
     private fun times(ask: Ask, r: Resident, town: Town, out: MutableList<Topic>) {
@@ -162,7 +162,7 @@ object FortuneTopics : TopicSource {
         if (ask.occasion == Occasion.BARK) return
         for ((reason, detail) in own) {
             if (reason === mine?.first) continue
-            out.add(Topic("fortune.own.${reason.kind}.${town.today}", Kind.FORTUNE, 0.35, Utterance.of("", detail), tone = Integer.signum(reason.points)))
+            out.add(Topic("fortune.own.${reason.kind}.${town.today}", Kind.FORTUNE, 0.35, Utterance(listOf(aloud(ask, detail))), tone = Integer.signum(reason.points)))
         }
     }
 
@@ -400,6 +400,29 @@ object FortuneTopics : TopicSource {
     /** The times in a word ("lean"). */
     private fun word(times: Times): String = Say.WORD + "times." + times.id
 
+    /** What a reason's words are keyed by: the speaker's own, the town's, and a road's stage. */
+    private const val OWN_WORDS = "talk.detail.fortune.own."
+    private const val TOWN_WORDS = "talk.detail.fortune."
+    private const val ROAD_WORDS = "talk.detail.road.stage."
+
+    /**
+     * A reason's [detail] (the speaker's own, or the town's) said on its own: a take of its family, fortune.own.<its key
+     * after talk.detail.fortune.own.> or fortune.why.<its key after talk.detail.fortune.> (a road's stage,
+     * fortune.why.road.<stage>). Where its words are fixed the take says them and is all there is; where they name
+     * something (how many, a good, a road, a person, a festival, a works) the take says what it means, and the detail
+     * follows in words. In words alone while none is recorded.
+     */
+    private fun aloud(ask: Ask, detail: String): Utterance.Part {
+        val key = Speech.key(detail)
+        val family = when {
+            key.startsWith(OWN_WORDS) -> "fortune.own." + key.removePrefix(OWN_WORDS)
+            key.startsWith(ROAD_WORDS) -> "fortune.why.road." + key.removePrefix(ROAD_WORDS)
+            key.startsWith(TOWN_WORDS) -> "fortune.why." + key.removePrefix(TOWN_WORDS)
+            else -> null
+        }
+        return family?.let { Say.lead(ask, it, if ('|' in detail) detail else null) } ?: Utterance.Part("", detail)
+    }
+
     // ---- The change ----
 
     /**
@@ -417,7 +440,7 @@ object FortuneTopics : TopicSource {
             val more = if (bark) null else town.reasons.firstOrNull { Integer.signum(it.points) == town.way && it !== shown }?.let(::detail)
             out.add(Topic(
                 "fortune.moved.${town.since}.${town.times.id}", Kind.FORTUNE, if (days <= 1) 0.6 else 0.5,
-                Utterance(listOfNotNull(say, more?.let { Utterance.Part("", it) })), tone = town.way,
+                Utterance(listOfNotNull(say, more?.let { aloud(ask, it) })), tone = town.way,
             ))
             return
         }
@@ -552,7 +575,7 @@ object FortuneTopics : TopicSource {
                 Say.part(ask, "fortune.${town.times.id}", detail)?.let(parts::add)
             }
             town.moved -> Say.part(ask, if (town.way > 0) "fortune.better" else "fortune.worse", moved(town))?.let(parts::add)
-            else -> parts.add(Utterance.Part("", "talk.detail.fortune.steady"))
+            else -> parts.add(Say.part(ask, "fortune.steady", null) ?: Utterance.Part("", "talk.detail.fortune.steady"))
         }
         // The reasons pulling the times' way first (biggest first among them), then the rest
         for (reason in town.reasons.sortedByDescending { town.sign != 0 && Integer.signum(it.points) == town.sign }) {
@@ -560,9 +583,11 @@ object FortuneTopics : TopicSource {
             if (said.any { it === reason }) continue
             val detail = own.firstOrNull { it.first === reason }?.second ?: detail(reason) ?: continue
             said.add(reason)
-            parts.add(Utterance.Part("", detail))
+            parts.add(aloud(ask, detail))
         }
-        if (town.moved && town.times != Times.STEADY && parts.size < PARTS) parts.add(Utterance.Part("", moved(town)))
+        if (town.moved && town.times != Times.STEADY && parts.size < PARTS) {
+            Say.part(ask, if (town.way > 0) "fortune.better" else "fortune.worse", moved(town))?.let(parts::add)
+        }
         if (parts.isEmpty()) return null
         return Utterance(parts.take(PARTS))
     }
