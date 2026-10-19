@@ -111,7 +111,8 @@ object Social {
             return
         }
         val last = greeted[player.uuid] ?: 0L
-        if (level.gameTime - last < 140) return
+        // A hello stamped later than now was in another world (this one's clock is behind it): it holds nothing back
+        if (level.gameTime - last in 0 until 140L) return
         val look = player.getViewVector(1f)
         val folk = level.getEntitiesOfClass(Townsperson::class.java, player.boundingBox.inflate(6.0, 2.0, 6.0)) {
             it.isAlive && !it.isSleeping && it.speech.isEmpty() && level.gameTime >= it.nextSpeech
