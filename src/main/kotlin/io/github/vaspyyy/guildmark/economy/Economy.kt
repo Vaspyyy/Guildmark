@@ -101,6 +101,11 @@ object Economy {
     const val FLETCH = 6.0
     const val FLETCH_FLINT = 0.25
     const val FLETCH_FEATHER = 0.25
+    /**
+     * The boats stay in, and the fletchers make no more, once the stalls hold this many times what the town likes to
+     * keep of their goods: a little under what the stalls take in, so there's room left for a player's lot.
+     */
+    const val STOCKED = 1.1
     /** Ale an innkeeper brews in an hour, and the grain each measure takes. */
     const val BREW = 12.0
     const val BREW_WHEAT = 1.0 / 3.0
@@ -114,12 +119,19 @@ object Economy {
 
     /** How much dearer than its base a good runs where all of it comes from afar. */
     const val FREIGHT = 0.35
-    /** Of a day's use, how much more than its usual shortfall the caravans can bring. */
-    const val SPARE = 0.25
-    /** Of how far the market is below its target, how much the caravans can make up in a day however short it is. */
-    const val CATCH_UP = 0.2
+    /**
+     * Of a day's use, how much more than its usual shortfall the caravans can bring: little to spare, so a hard winter
+     * or a wagon lost on the road leaves the stalls short now and then.
+     */
+    const val SPARE = 0.1
+    /**
+     * Of how far the market is below its target, how much the caravans can make up in a day however short it is:
+     * enough that a town short of everything in a long winter with its road in trouble gets back on its feet within
+     * a week of the road clearing, and is never starved for good.
+     */
+    const val CATCH_UP = 0.15
     /** The market keeps no more than this many times its target; the caravans take away half the rest each day. */
-    const val GLUT = 2.0
+    const val GLUT = 1.5
     /** The least a market likes to have of anything. */
     const val LEAST = 12.0
 
@@ -257,7 +269,7 @@ object Economy {
             return
         }
         // No one puts out to sea with the stalls still full
-        if (CATCH.keys.all { m.stock(it) >= town.target(it) * 1.5 }) return
+        if (CATCH.keys.all { m.stock(it) >= town.target(it) * STOCKED }) return
         val weather = if (c.rain) 0.7 else 1.0
         val tools = tools(m)
         for ((g, share) in CATCH) {
@@ -318,10 +330,13 @@ object Economy {
 
     private fun fletch(m: Market, town: Town) {
         if (town.fletchers == 0) return
-        if (m.stock(Good.ARROW) >= town.target(Good.ARROW) * 1.3) return
+        val want = town.target(Good.ARROW) * STOCKED - m.stock(Good.ARROW)
+        if (want <= 0.0) return
         val can = town.fletchers * FLETCH * m.factor(Maker.FLETCHER, Good.ARROW)
-        val arrows = minOf(can, m.stock(Good.FLINT) / FLETCH_FLINT, m.stock(Good.FEATHER) / FLETCH_FEATHER)
-        if (arrows < can * 0.5) m.idle[Maker.FLETCHER.ordinal]++
+        val stuff = minOf(m.stock(Good.FLINT) / FLETCH_FLINT, m.stock(Good.FEATHER) / FLETCH_FEATHER)
+        if (stuff < can * 0.5) m.idle[Maker.FLETCHER.ordinal]++
+        // No more than the stalls want: an hour's work past them would take flint the caravans are slow to make up
+        val arrows = minOf(can, want, stuff)
         use(m, Site.MARKET, Good.FLINT, arrows * FLETCH_FLINT)
         use(m, Site.MARKET, Good.FEATHER, arrows * FLETCH_FEATHER)
         make(m, Site.MARKET, Good.ARROW, arrows)
@@ -448,7 +463,7 @@ object Economy {
     }
 
     /**
-     * One of the day's three caravans: the first takes away half of whatever the market holds beyond twice its
+     * One of the day's three caravans: the first takes away half of whatever the market holds beyond [GLUT] times its
      * target ([exports]), and each brings in what [bring] says, unless it's [carried] on a wagon along the road,
      * whose goods come in when it gets there (see [Caravans]).
      */
