@@ -162,7 +162,8 @@ object Comings {
 
     /**
      * Sends for a [role] to [capital] for works [works]: their resident id once they're in, else -1. Asked again it's
-     * the same newcomer (or -1 while they're still on their way); if they've died since, someone new is sent for.
+     * the same newcomer (or -1 while they're still on their way); if they've died since, someone new is sent for, once:
+     * by the day's mourning ([mourn]) if it hasn't seen to them yet.
      */
     fun hire(level: ServerLevel, capital: Long, role: TownRole, works: Int): Int {
         if (!enabled()) return -1
@@ -171,6 +172,7 @@ object Comings {
         if (had != null && had >= 0) {
             val r = Residents.get(level)[had]
             if (r != null && r.alive) return had
+            if (r != null && r.died >= 0 && data.find(capital)?.seen?.contains(r.id) == false) return -1
         }
         val town = data.town(capital)
         if (town.due.none { it.works == works }) {
