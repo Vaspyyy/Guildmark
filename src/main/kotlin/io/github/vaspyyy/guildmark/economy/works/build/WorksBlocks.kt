@@ -308,8 +308,11 @@ class WorksPostBlockEntity(pos: BlockPos, state: BlockState) : WorksBlockEntity(
     var stampedAt: Long = 0L
         private set
 
-    /** The client's: up to which game time this post's seals have been heard landing. */
+    /** The client's: the game time it last looked at this post (the stamp is heard as it comes down while it looks). */
     var heard: Long = Long.MIN_VALUE
+
+    /** The client's: the seals it has heard land, or found down already (bit k for seal k), each heard once. */
+    var sealsHeard: Int = 0
 
     fun set(works: Int, kind: String, seals: Int, stamped: Boolean) {
         val n = seals.coerceIn(0, 10)

@@ -100,24 +100,45 @@ object WorksClient {
 
     // ---- The seals ----
 
-    /** Each tick of a post near this client: its new seals heard as each one's drop lands, and the stamp as it comes down. */
+    /**
+     * Each tick of a post near this client: each new seal heard once, as its drop lands (the take starts on the cord's
+     * jolt, its brushes following the swing: WorksArt.sealDrop), at that seal on the board; and the stamp as it comes
+     * down. As with the market board's medallion, a seal down already when this client first looks at the post, or
+     * one that landed while it wasn't looking, is never heard; a seal taken back is heard again when it's pledged again.
+     */
     private fun post(be: WorksPostBlockEntity) {
         val level = be.level ?: return
         val now = level.gameTime
         val from = be.heard
         be.heard = now
-        // Nothing heard that came before this client looked (or while it wasn't looking)
-        if (from == Long.MIN_VALUE || now <= from || now - from > LOOK_GAP) return
-        val at = board(be)
-        for (k in be.was until be.seals) {
-            val lands = be.sealedAt + (k - be.was) * WorksPostBlockEntity.SEAL_GAP + WorksArt.SEAL_DROP.toLong()
-            if (lands in from + 1..now) {
-                level.playLocalSound(at.x, at.y, at.z, WorksBlocks.SEAL.get(), SoundSource.NEUTRAL, 0.8f, 0.92f + 0.04f * (k % 4), false)
+        val looking = from != Long.MIN_VALUE && now > from && now - from <= LOOK_GAP
+        for (k in 0 until WorksArt.SEALS) {
+            val bit = 1 shl k
+            if (k >= be.seals) {
+                be.sealsHeard = be.sealsHeard and bit.inv()
+                continue
             }
+            if (be.sealsHeard and bit != 0) continue
+            // Those it had before its seals last changed are down already; the new ones drop out in turn
+            val old = k < be.was
+            val lands = if (old) now else be.sealedAt + (k - be.was) * WorksPostBlockEntity.SEAL_GAP + WorksArt.SEAL_DROP.toLong()
+            if (lands > now) continue
+            be.sealsHeard = be.sealsHeard or bit
+            if (!looking || old || now - lands > LATE) continue
+            val at = seal(be, k)
+            level.playLocalSound(at.x, at.y, at.z, WorksBlocks.SEAL.get(), SoundSource.BLOCKS, 1f, 0.95f + 0.1f * level.random.nextFloat(), false)
         }
-        if (be.stamped && be.stampedAt in from + 1..now) {
+        if (looking && be.stamped && be.stampedAt in from + 1..now) {
+            val at = board(be)
             level.playLocalSound(at.x, at.y + 0.2, at.z, SoundEvents.BOOK_PUT, SoundSource.NEUTRAL, 0.6f, 1.25f, false)
         }
+    }
+
+    /** Where seal [k] hangs on [be]'s board, in the world: below its slit, down its cord (as WorksPostRenderer draws it). */
+    private fun seal(be: WorksPostBlockEntity, k: Int): Vec3 {
+        val x = WorksPaint.lerp(WorksArt.PAPER_X0, WorksArt.PAPER_X1, WorksArt.SEAL_U[k])
+        val y = WorksPaint.lerp(WorksArt.PAPER_Y0, WorksArt.PAPER_Y1, WorksArt.SEAL_V) - WorksArt.SEAL_CORD[k % 2] - WorksArt.SEAL_W / 2f
+        return WorksPaint.world(be.blockPos, WorksPaint.facing(be.blockState), x * WorksPaint.PX, y * WorksPaint.PX, WorksArt.PAPER_Z * WorksPaint.PX)
     }
 
     /** The middle of a post's board, a hair in front of it. */
@@ -202,6 +223,9 @@ object WorksClient {
 
     /** Ticks a post may go unlooked at and still be heard (more, and what dropped meanwhile is let go). */
     private const val LOOK_GAP = 40L
+
+    /** Ticks after a seal lands that its drop may still be heard (a slow frame or two): later, it's let go. */
+    private const val LATE = 4L
 
     /** The beacon's loop: lit and flaring; heard from how far; how long to wait to try again; silent how long before it stops. */
     private const val LIT = 0.7f

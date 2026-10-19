@@ -6,9 +6,13 @@ import com.mojang.math.Axis
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.economy.works.build.WorksFacingBlock
 import net.minecraft.client.renderer.texture.OverlayTexture
+import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.resources.Identifier
 import net.minecraft.world.level.block.state.BlockState
+import net.minecraft.world.phys.Vec3
+import kotlin.math.cos
+import kotlin.math.sin
 
 /**
  * What the works' renderers share: the way into their models' space as Part F drew them (living-world/works-art.md,
@@ -36,6 +40,16 @@ internal object WorksPaint {
         poseStack.translate(0.5f, 0f, 0.5f)
         poseStack.rotateDegrees(Axis.YP, 180f - facing.toYRot())
         poseStack.translate(-0.5f, 0f, -0.5f)
+    }
+
+    /** A point of a model authored facing north ([x], [y], [z]: blocks from [pos]'s corner) in the world, turned to [facing] as [model] turns it. */
+    fun world(pos: BlockPos, facing: Direction, x: Float, y: Float, z: Float): Vec3 {
+        val a = Math.toRadians(180.0 - facing.toYRot())
+        val dx = x - 0.5
+        val dz = z - 0.5
+        val c = cos(a)
+        val s = sin(a)
+        return Vec3(pos.x + 0.5 + dx * c + dz * s, pos.y + y.toDouble(), pos.z + 0.5 - dx * s + dz * c)
     }
 
     /** The same for a model authored facing south (the plaque). */
