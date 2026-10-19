@@ -319,6 +319,8 @@ object Talk {
         val level = player.level() as? ServerLevel ?: return
         val p = level.getEntity(entity) as? Townsperson ?: return
         if (p.distanceToSqr(player) > REACH * REACH) return
+        // Only a keeper at their counter has a Talk button (a sent one for anyone else would skip their busy check)
+        if (p.director !is Serving) return
         open(level, player, p, null, true, true)
     }
 
