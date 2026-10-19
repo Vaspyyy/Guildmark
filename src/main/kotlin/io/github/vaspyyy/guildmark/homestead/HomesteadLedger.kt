@@ -119,7 +119,8 @@ object HomesteadLedger {
     fun check(player: ServerPlayer, post: BlockPos, facing: Int) {
         val level = player.level()
         val now = level.gameTime
-        if ((lastCheck[player.uuid] ?: -100L) + 6L > now) return
+        // A check stamped later than now was in another world (this one's clock is behind it): it holds nothing back
+        if (lastCheck[player.uuid]?.let { now - it in 0 until 6L } == true) return
         if (lastCheck.size > 512) lastCheck.clear()
         lastCheck[player.uuid] = now
         if (!player.mainHandItem.`is`(HomesteadRegistry.CHARTER.get()) && !player.offhandItem.`is`(HomesteadRegistry.CHARTER.get())) return
