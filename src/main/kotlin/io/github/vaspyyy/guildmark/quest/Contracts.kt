@@ -336,10 +336,14 @@ object Contracts {
         } ?: 0
         val earned = (Progression.reward(player, note.reward + bonus) * GuildmarkConfig.PAY_MULTIPLIER.get()).toInt()
         // Goods that can be bought never pay back what they cost, bonuses and all (a story's chapter is asked only once):
-        // a capital's market's own goods, posted on its board, half what the market asks for them now
+        // a capital's market's own goods, posted on its board, half what the market asks for them now; posted anywhere
+        // else, what the nearest market asks and a carrier's quarter, the party's share of it and all
         val goodsCap = if (note.type == QuestType.FETCH && chapter == null) {
-            (if (level is ServerLevel && origin != null) MarketFetch.cap(level, origin, note.target, note.count) else null)
-                ?: GoodsPrices.cap(note.target, note.count)
+            val mates = Parties.nearbyMates(player).size
+            listOfNotNull(
+                if (level is ServerLevel && origin != null) MarketFetch.cap(level, origin, note.target, note.count, mates) else null,
+                GoodsPrices.cap(note.target, note.count),
+            ).minOrNull()
         } else null
         val marks = (if (goodsCap != null) minOf(earned, goodsCap) else earned).coerceAtLeast(1)
         val xp = note.reward * Progression.XP_PER_MARK
@@ -354,8 +358,9 @@ object Contracts {
         if (note.type == QuestType.DELIVER) Milestones.award(player, Milestones.COURIER)
         if (note.type == QuestType.ESCORT || note.type == QuestType.CARAVAN) Milestones.award(player, Milestones.BODYGUARD)
         // Trials always pay a relic cache; other contracts sometimes do, more often at higher ranks, though never goods
-        // that can be bought, or buying them to hand in would pay after all
-        if (note.trial || (goodsCap == null && level.random.nextFloat() < GuildmarkConfig.RELIC_CACHE_CHANCE.get() + 0.03 * note.rank)) {
+        // that can be bought (anything the markets sell among them), or buying them to hand in would pay after all
+        val bought = goodsCap != null || (note.type == QuestType.FETCH && MarketFetch.sold(note.target))
+        if (note.trial || (!bought && level.random.nextFloat() < GuildmarkConfig.RELIC_CACHE_CHANCE.get() + 0.03 * note.rank)) {
             player.inventory.placeItemBackInInventory(Relics.cacheForRank(note.rank), Prediction.SERVER_ONLY)
             player.sendSystemMessage(Component.translatable("message.guildmark.cache_found"))
         }

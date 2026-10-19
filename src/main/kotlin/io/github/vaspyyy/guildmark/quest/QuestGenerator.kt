@@ -46,7 +46,8 @@ object QuestGenerator {
      * (looked into only once a job that wants the sea comes up), the beasts living in reach ([quarry] says whether
      * there's one of the kind a hunt's target names), the outlaw bands camped in reach, whose notices [dress]
      * writes onto wanted notes, and at a capital's own board its market: [market] gives what it asks for one of an
-     * item and whether it's short of it, or null for one it doesn't trade (see MarketFetch).
+     * item and whether it's short of it, or null for one it doesn't trade (see MarketFetch). Anywhere else, [errand]
+     * gives what the nearest market asks for one, or null for an item no market trades.
      */
     class Surroundings(
         val hasRoad: Boolean,
@@ -55,6 +56,7 @@ object QuestGenerator {
         wanted: () -> List<Bounties.Wanted> = { listOf() },
         held: () -> List<Captives.Held> = { listOf() },
         private val market: (Identifier) -> MarketFetch.Ask? = { null },
+        private val errand: (Identifier) -> Double? = { null },
     ) {
         private val sea by lazy(sea)
         private val wanted by lazy(wanted)
@@ -73,11 +75,16 @@ object QuestGenerator {
 
         /**
          * [note] paying no more than it may, or null if that would leave it paying too little to post: a fetch for
-         * the market's goods half what the market asks for them, any other fetch for goods that can be bought half
-         * what they cost (see GoodsPrices).
+         * the market's goods half what the market asks for them, one for the markets' goods anywhere else what the
+         * nearest market asks and a carrier's quarter (asking for more of cheap goods rather than go unposted), any
+         * other fetch for goods that can be bought half what they cost (see GoodsPrices).
          */
-        fun fit(note: QuestNote): QuestNote? =
-            GoodsPrices.fit(note, if (note.type == QuestType.FETCH) market(note.target)?.price else null)
+        fun fit(note: QuestNote): QuestNote? {
+            if (note.type != QuestType.FETCH) return GoodsPrices.fit(note)
+            market(note.target)?.let { return GoodsPrices.fit(note, it.price) }
+            errand(note.target)?.let { return GoodsPrices.carried(note, it * MarketFetch.CARRIED) }
+            return GoodsPrices.fit(note)
+        }
 
         /**
          * A wanted note names one of the bands in reach, the price on them and what for, and a plea for a captive names
@@ -130,7 +137,8 @@ object QuestGenerator {
     fun generateHall(random: RandomSource, rank: Int, around: Surroundings, poster: String): QuestNote {
         val entries = QuestPools.pools.flatMap { it.entries }.filter(around::allows)
         val note = around.dress(random, pickAndBuild(random, entries, MAX_TIER, poster, around::fit) { rank })
-        return GoodsPrices.capped(note.copy(reward = note.reward * 3 / 2))
+        val more = note.copy(reward = note.reward * 3 / 2)
+        return around.fit(more) ?: GoodsPrices.capped(more)
     }
 
     /**

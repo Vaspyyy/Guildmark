@@ -22,7 +22,8 @@ object Situations {
 
     private class Job(val type: QuestType, val target: String, val min: Int, val max: Int, val rewardPer: Float)
 
-    // Goods nobody sells, so handing in what was bought never pays (see GoodsPrices): no glass, bread, beef, cake or pie
+    // Goods nobody sells, so handing in what was bought never pays (see GoodsPrices): no glass, bread, beef, cake or pie.
+    // The markets do sell the feast's cooked mutton: away from a capital, that's a carrier's errand (see MarketFetch)
     private val REBUILD = listOf(Job(QuestType.FETCH, "oak_planks", 32, 64, 0.15f), Job(QuestType.FETCH, "cobblestone", 32, 64, 0.12f),
         Job(QuestType.FETCH, "stone_bricks", 16, 32, 0.25f), Job(QuestType.FETCH, "oak_log", 16, 32, 0.25f))
     private val FEAST = listOf(Job(QuestType.FETCH, "baked_potato", 12, 24, 0.3f), Job(QuestType.FETCH, "cooked_mutton", 8, 16, 0.5f),
@@ -64,8 +65,13 @@ object Situations {
         val count = if (job.type.isSingle) 1 else (base * countScale).toInt().coerceAtLeast(1)
         val reward = 3 + (count * job.rewardPer * (1.0f + 0.35f * rank) * bonus).toInt()
         val note = QuestNote(job.type, poster, Identifier.withDefaultNamespace(job.target), count, reward, 3, story(key, random, args), rank)
-        // At a capital's own board, its market's goods pay no more than half what the market asks for them
-        return GoodsPrices.fit(note, MarketFetch.at(level, anchor)?.let { MarketFetch.ask(it, note.target) }?.price)
+        // At a capital's own board, its market's goods pay no more than half what the market asks for them; anywhere
+        // else, what the nearest market asks and a carrier's quarter (cooked mutton for a feast, say)
+        val market = MarketFetch.at(level, anchor)
+        if (note.type == QuestType.FETCH && market == null) {
+            MarketFetch.errand(level, anchor, note.target)?.let { return GoodsPrices.carried(note, it * MarketFetch.CARRIED) }
+        }
+        return GoodsPrices.fit(note, market?.let { MarketFetch.ask(it, note.target) }?.price)
     }
 
     /** "key|arg|arg": QuestNote.storyLine fills the arguments in. */

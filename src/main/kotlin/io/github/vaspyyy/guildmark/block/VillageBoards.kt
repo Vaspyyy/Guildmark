@@ -189,6 +189,8 @@ object VillageBoards {
             { Bounties.wanted(serverLevel, anchor) },
             { Captives.held(serverLevel, anchor) },
             { item -> market?.let { MarketFetch.ask(it, item) } },
+            // Away from a capital's own board, the markets' goods are a carrier's errand from the nearest of them
+            { item -> if (market == null) MarketFetch.errand(serverLevel, anchor, item) else null },
         )
     }
 

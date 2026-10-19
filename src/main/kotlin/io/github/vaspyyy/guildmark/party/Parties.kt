@@ -49,7 +49,8 @@ class Parties(val parties: MutableList<Party> = mutableListOf()) : SavedData() {
         const val MAX_SIZE = 4
         /** How close party members must be to share kills and pay. */
         const val SHARE_RANGE = 64.0
-        private const val PAY_SHARE = 4
+        /** Of a finished contract's Marks and XP, each mate nearby gets one part in this many on top. */
+        const val PAY_SHARE = 4
 
         private val CODEC: Codec<Parties> = RecordCodecBuilder.create { i ->
             i.group(Party.CODEC.listOf().fieldOf("parties").forGetter { it.parties }).apply(i) { Parties(it.toMutableList()) }

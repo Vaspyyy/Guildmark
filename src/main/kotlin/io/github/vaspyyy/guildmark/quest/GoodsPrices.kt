@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.quest
 
 import net.minecraft.resources.Identifier
+import kotlin.math.ceil
 import kotlin.math.floor
 
 /**
@@ -11,7 +12,8 @@ import kotlin.math.floor
  *
  * The prices are the Guildmaster's own, in Marks (data/guildmark/villager_trade/guildmaster), and the village traders' at
  * the cheapest a trade goes once a village thinks well of you, one emerald, with an emerald at the Guildmaster's 3 Marks.
- * Wandering traders, who only pass by now and then, aren't counted. Anything sold for Marks elsewhere belongs here too.
+ * Wandering traders, who only pass by now and then, aren't counted. Anything sold for Marks elsewhere belongs here too,
+ * but for the markets' own goods, held to what the markets ask for them (see MarketFetch and [carried]).
  */
 object GoodsPrices {
     /** The most of what its goods cost that a fetch pays, bonuses and all. */
@@ -109,4 +111,25 @@ object GoodsPrices {
         if (cap < MIN_PAY) return null
         return if (note.reward <= cap) note else note.copy(reward = cap)
     }
+
+    /**
+     * [note], a fetch for one of the markets' goods posted away from the capitals' own boards: a carrier's errand,
+     * paying no more than [most] a unit (what the nearest market asks and a carrier's quarter, see MarketFetch), nor
+     * than [cap] allows if they're sold elsewhere too. Where that leaves too little to post, it asks for as many more
+     * of them as pay [MIN_PAY], paid as the note pays for each, so a village's notes for cheap goods ask for a
+     * cartload rather than go; null only past [MOST_ASKED].
+     */
+    fun carried(note: QuestNote, most: Double): QuestNote? {
+        if (note.type != QuestType.FETCH) return note
+        val unit = minOf(most, cost(note.target)?.let { it * MAX_SHARE } ?: most)
+        if (unit <= 0.0) return null
+        val count = maxOf(note.count, ceil(MIN_PAY / unit - 1e-9).toInt())
+        if (count > MOST_ASKED) return null
+        val cap = floor(unit * count + 1e-9).toInt()
+        val reward = minOf(note.reward.toLong() * count / note.count, cap.toLong()).toInt()
+        return if (count == note.count && reward == note.reward) note else note.copy(count = count, reward = reward)
+    }
+
+    /** The most of a good a carrier's errand asks for. */
+    private const val MOST_ASKED = 256
 }
