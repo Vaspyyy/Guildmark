@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.client.townsfolk
 
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.client.works.WorksClient
 import io.github.vaspyyy.guildmark.townsfolk.Activity
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
@@ -106,6 +107,8 @@ internal object LivingMoments {
     private fun fire(p: Townsperson, clip: String, m: LivingSchedule.Moment) {
         val level = p.level()
         val at = at(p, m)
+        // A works' master builder's handbell is the server's (works.handbell): no crier's bell on top of it
+        if (clip == "ring_bell" && WorksClient.master(p)) return
         when (clip) {
             "sit_down" -> if (m.name == "down") sound(level, at, mod("seat"), 0.45f)
             "stand_up" -> if (m.name == "up") sound(level, at, mod("seat"), 0.3f, 1.1f)

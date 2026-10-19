@@ -120,7 +120,7 @@ object StreetsClient {
 
     // ---- The "To let" boards ----
 
-    /** The board's hooks creaking as it swings (its sound comes with living-world's audio: silent till then). */
+    /** The board's hooks creaking as it swings (works-audio.md, round two). */
     private val TO_LET_ID: Identifier = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "streets.to_let")
     private val TO_LET: SoundEvent = SoundEvent.createVariableRangeEvent(TO_LET_ID)
 

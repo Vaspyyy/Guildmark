@@ -230,6 +230,8 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         io.github.vaspyyy.guildmark.caravan.Bodies.register(modBus)
         // The town's works: what it asks players to pay for, their freight on the wagons, and what each does once built (economy/works/)
         io.github.vaspyyy.guildmark.economy.works.Works.register()
+        // The works built: their sites, master builders and crews, blocks, yards, posts and screen (economy/works/build/)
+        io.github.vaspyyy.guildmark.economy.works.build.WorksBuild.register(modBus)
         // The carters' handcarts, pulled behind them with their loads heaped on (cart/)
         io.github.vaspyyy.guildmark.cart.Handcarts.register(modBus)
         // The market's goods on show: its displays, kept as full as its stock, and set out in capitals built before them

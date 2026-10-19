@@ -174,6 +174,8 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
         io.github.vaspyyy.guildmark.client.caravan.CaravanClient.register(modBus)
         // The market's displays: the goods heaped on them (client/economy)
         io.github.vaspyyy.guildmark.client.economy.WaresClient.register(modBus)
+        // The town's works drawn: the post and its seals, the yard, hoist, plaque, beacon and awning, and the works screen (client/works/)
+        io.github.vaspyyy.guildmark.client.works.WorksClient.register(modBus)
         // Players' own stalls: a market hall table's screen, and the pennants over the let tables (client/economy)
         io.github.vaspyyy.guildmark.client.economy.StallClient.register()
         // The streets' alms table drawn, its pot's level and its bubbling (client/streets/)
