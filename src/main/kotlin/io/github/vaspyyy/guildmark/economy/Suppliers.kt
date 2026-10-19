@@ -225,12 +225,19 @@ class Suppliers(private val capitals: MutableMap<Long, MutableMap<UUID, Standing
             val today = today(level)
             standing.forget(today)
             var own = 0
-            for (b in standing.bought.sortedBy { it.day }) {
-                if (own >= count) break
-                if (b.good != good || b.day <= today - WEEK) continue
-                val n = minOf(b.count, count - own)
-                b.count -= n
-                own += n
+            // Their own purchases first, then their party's: what one of them bought here and handed to another earns
+            // no standing either, as it goes into no order and onto no stall here (see SupplierLink.boughtByParty)
+            for (who in SupplierLink.party(level, player)) {
+                val theirs = data[capital, who] ?: continue
+                theirs.forget(today)
+                for (b in theirs.bought.sortedBy { it.day }) {
+                    if (own >= count) break
+                    if (b.good != good || b.day <= today - WEEK) continue
+                    val n = minOf(b.count, count - own)
+                    b.count -= n
+                    own += n
+                }
+                theirs.forget(today)
             }
             standing.forget(today)
             standing.day = today

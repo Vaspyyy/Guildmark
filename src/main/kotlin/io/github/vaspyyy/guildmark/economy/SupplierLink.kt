@@ -44,4 +44,8 @@ object SupplierLink {
         val party = Parties.get(level.server).of(player)?.members ?: listOf()
         return (party + player).distinct().sumOf { bought(level, it, capital, good) }
     }
+
+    /** [player] and everyone in their party, [player] first. */
+    fun party(level: ServerLevel, player: UUID): List<UUID> =
+        (listOf(player) + (Parties.get(level.server).of(player)?.members ?: listOf())).distinct()
 }
