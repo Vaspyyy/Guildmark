@@ -133,9 +133,12 @@ object Trading {
             why == Why.NO_GRAIN || why == Why.NO_FLOUR -> m.waylaid()?.takeIf { Good.WHEAT in it.goods || Good.FLOUR in it.goods }
             else -> null
         }
+        val sell = Lots.sell(m, town, good, share)
+        // A thin market's one lot past its room is still taken
+        val wants = maxOf(Lots.wants(m, town, good), sell?.count ?: 0)
         return Quote(
-            good, floor(m.stock(good) + 1e-6).toInt(), price, usual, Lots.buy(m, town, good), Lots.sell(m, town, good, share),
-            Lots.wants(m, town, good), m.trend(town, good), why, event, trouble,
+            good, floor(m.stock(good) + 1e-6).toInt(), price, usual, Lots.buy(m, town, good), sell,
+            wants, m.trend(town, good), why, event, trouble,
         )
     }
 

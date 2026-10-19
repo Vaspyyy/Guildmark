@@ -17,7 +17,8 @@ class Lot(val count: Int, val marks: Int) {
  * supplier in good standing a few hundredths more, never so much as three quarters: see [SupplierRank]), each
  * reckoned at what the market will hold once the lot has changed hands, so buying a lot and selling it straight back
  * always loses, and a stall never pays more than it can sell for. The market only buys what it has room for: up to
- * [ROOM] times what it likes to keep.
+ * [ROOM] times what it likes to keep. A thin market, whose room is worth less than a Mark, still takes the smallest
+ * lot that's worth one while it holds no more than it likes to keep.
  */
 object Lots {
     /** Of its own price, what the market pays for what it buys. */
@@ -64,9 +65,11 @@ object Lots {
         // Reckoned at what's left once it's gone, which is dearer
         repeat(2) { lot = dear(m.price(town, good, m.stock(good) - lot.count)) ?: return null }
         if (lot.count <= stock) {
+            var count = lot.count
             var marks = lot.marks
-            while (marks < lot.count * m.price(town, good, m.stock(good) - lot.count)) marks++
-            return Lot(lot.count, marks)
+            // Still short of the price once it's gone: a unit fewer, and a Mark more only for a lot of one
+            while (marks < count * m.price(town, good, m.stock(good) - count)) if (count > 1) count-- else marks++
+            return Lot(count, marks)
         }
         // Too few left for a whole lot: what there is, at the price of the last of it, rounded up
         return Lot(stock, ceil(stock * m.price(town, good, 0.0)).toInt())
@@ -92,7 +95,12 @@ object Lots {
         if (lot.count <= room) return lot
         // Room for less than a lot: what that's worth, rounded down
         val marks = floor(room * m.price(town, good, m.stock(good) + room) * share).toInt()
-        return if (marks >= 1) Lot(room, marks) else null
+        if (marks >= 1) return Lot(room, marks)
+        // Worth less than a Mark: a thin market, holding no more than it likes to keep, takes the smallest lot that's worth one
+        if (m.stock(good) > town.target(good)) return null
+        var least = ceil(1.0 / (m.price(town, good) * share)).toInt().coerceAtLeast(1)
+        while (least * m.price(town, good, m.stock(good) + least) * share < 1.0) least++
+        return Lot(least, 1)
     }
 
     /** A player has bought [lot] of [good]: it leaves the market, and the price stays up for it (see [Market.traded]). */
