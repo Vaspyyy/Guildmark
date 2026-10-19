@@ -149,16 +149,24 @@ object CombatAnimator {
     private val hips = Vector3f()
     private val euler = Vector3f()
 
+    /** The model's parts the clips move, [BODY] to [LEFT_LEG], as this pose has them. */
+    private val parts = arrayOfNulls<ModelPart>(6)
+
     /**
      * Poses the model for its frame. Each part starts from where vanilla put it, eases into the move cut
      * short (if any), then into this one.
      */
     fun pose(model: HumanoidModel<*>, state: HumanoidRenderState, frame: Frame? = state.getRenderData(FRAME)) {
         if (frame == null) return
-        val parts = arrayOf(model.body, model.rightArm, model.leftArm, model.head, model.rightLeg, model.leftLeg)
+        parts[BODY] = model.body
+        parts[RIGHT_ARM] = model.rightArm
+        parts[LEFT_ARM] = model.leftArm
+        parts[HEAD] = model.head
+        parts[RIGHT_LEG] = model.rightLeg
+        parts[LEFT_LEG] = model.leftLeg
         hips.set(0f, model.rightLeg.initialPose.y, 0f)
         for (i in parts.indices) {
-            val part = parts[i]
+            val part = parts[i]!!
             vanilla[i].q.rotationZYX(part.zRot, part.yRot, part.xRot)
             vanilla[i].v.set(part.x, part.y, part.z)
         }
@@ -173,7 +181,7 @@ object CombatAnimator {
         goals(model, frame)
         for (i in 0 until 7) shown[i].mix(goal[i], frame.weight)
 
-        for (i in parts.indices) write(parts[i], shown[i].q, shown[i].v)
+        for (i in parts.indices) write(parts[i]!!, shown[i].q, shown[i].v)
         // The root turns about the hips
         val root = shown[ROOT]
         vClip.set(hips)
@@ -194,15 +202,14 @@ object CombatAnimator {
             val shake = frame.tremble * 0.02f
             qTorso.rotateX(sin(frame.seed * 7.1f) * shake).rotateZ(sin(frame.seed * 9.3f) * shake)
         }
-        // Mirrored, each side plays the other's track
-        val right = if (frame.mirror) "left" else "right"
-        val left = if (frame.mirror) "right" else "left"
+        // Mirrored, each side plays the other's track (the names as they are, not made afresh for every pose)
+        val mirror = frame.mirror
         carried(BODY, model.body, null, false, frame)
-        carried(RIGHT_ARM, model.rightArm, clip.bones["${right}_arm"], true, frame)
-        carried(LEFT_ARM, model.leftArm, if (frame.offHandFull) null else clip.bones["${left}_arm"], true, frame)
+        carried(RIGHT_ARM, model.rightArm, clip.bones[if (mirror) "left_arm" else "right_arm"], true, frame)
+        carried(LEFT_ARM, model.leftArm, if (frame.offHandFull) null else clip.bones[if (mirror) "right_arm" else "left_arm"], true, frame)
         head(model.head, clip.bones["head"], frame)
-        leg(RIGHT_LEG, model.rightLeg, clip.bones["${right}_leg"], frame)
-        leg(LEFT_LEG, model.leftLeg, clip.bones["${left}_leg"], frame)
+        leg(RIGHT_LEG, model.rightLeg, clip.bones[if (mirror) "left_leg" else "right_leg"], frame)
+        leg(LEFT_LEG, model.leftLeg, clip.bones[if (mirror) "right_leg" else "left_leg"], frame)
 
         // The root turns the whole body: rolls, and a roll's direction
         val root = clip.bones["root"]
