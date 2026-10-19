@@ -370,7 +370,7 @@ object Fortunes {
         add(level, capital, FortuneData.Note(kind, points, day, day + days, listOf(), null, -1, true))
     }
 
-    /** `fortune clear`: [capital]'s record forgotten, and its times steady again. */
+    /** `fortune clear`: [capital]'s record forgotten but for the day it last closed, and its times steady again. */
     internal fun clear(level: ServerLevel, capital: Long) {
         val town = FortuneData.get(level).clear(capital) ?: return
         if (town.times == Times.STEADY) return

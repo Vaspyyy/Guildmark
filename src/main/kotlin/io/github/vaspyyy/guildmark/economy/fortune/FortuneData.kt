@@ -168,8 +168,14 @@ class FortuneData(private val towns: MutableMap<Long, Town> = HashMap()) : Saved
     /** Every capital's record. */
     fun all(): Collection<Town> = towns.values
 
-    /** Forgets [capital]'s record (`fortune clear`): what it was, if it had one. */
-    fun clear(capital: Long): Town? = towns.remove(capital)?.also { setDirty() }
+    /**
+     * Forgets [capital]'s record (`fortune clear`): what it was, if it had one. The day it last closed stays, so a day
+     * lived already (on ahead, by a market run) isn't closed again and the comings that go by it aren't held back.
+     */
+    fun clear(capital: Long): Town? = towns.remove(capital)?.also { old ->
+        towns[capital] = Town(capital).also { it.closed = old.closed }
+        setDirty()
+    }
 
     fun changed() = setDirty()
 

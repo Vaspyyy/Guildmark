@@ -269,12 +269,14 @@ object Comings {
 
     /**
      * The market day it is in [entry]'s capital for its comings and goings: the market's, or the last its fortunes
-     * closed if that's later. A market run on ahead (`market run`) has lived the days it closed, so the comings go by them
-     * too; with the clock set back their days go back with it ([back]).
+     * closed if that's later, and never one before the last day they worked out. A market run on ahead (`market run`)
+     * has lived the days it closed, so the comings go by them too, and keep to them with the fortunes switched off
+     * since; with the clock set back their days go back with it ([back]).
      */
     private fun day(level: ServerLevel, entry: Markets.Entry): Long {
         val day = Conditions(hour(level, entry)).day
-        return if (Fortunes.enabled()) maxOf(day, Fortunes.today(level, entry.market.capital)) else day
+        val lived = if (Fortunes.enabled()) maxOf(day, Fortunes.today(level, entry.market.capital)) else day
+        return maxOf(lived, ComingsData.get(level).find(entry.market.capital)?.closed ?: ComingsData.NEVER)
     }
 
     /**

@@ -27,7 +27,7 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent
  * its last close with their points and days left, the notes still to count, the last 14 days, the crowds' and the
  * spending's share, and what the board's medallion shows; `set <times> [days]` puts the times there now, held for so many closes (3 unless you say);
  * `reason <kind> <points> <days>` notes a reason by hand; `step` works the day's move out now; `clear` forgets the
- * capital's record.
+ * capital's record but for the day it last closed.
  */
 object FortuneCommand {
     /** How many closes `fortune set` holds the times through, unless told. */
@@ -221,7 +221,10 @@ object FortuneCommand {
         off()?.let { return fail(source, it) }
         val here = here(context) ?: return 0
         Fortunes.clear(source.level, here.key)
-        return say(source, plain("Cleared the fortunes of ${here.name}: the times are steady, with no reasons, notes, history or works news; the next close starts it again."))
+        // The day it last closed is kept (see FortuneData.clear)
+        val kept = FortuneData.get(source.level)[here.key]?.closed?.takeIf { it > FortuneData.NEVER }
+        val next = if (kept != null) "the next close after day $kept, the last it closed, starts it again" else "the next close starts it again"
+        return say(source, plain("Cleared the fortunes of ${here.name}: the times are steady, with no reasons, notes, history or works news; $next."))
     }
 
     // ---- Text ----
