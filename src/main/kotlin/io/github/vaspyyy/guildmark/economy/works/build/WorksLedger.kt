@@ -24,4 +24,7 @@ object WorksLedger {
 
     /** [player] used the works' post, crate or yard at [pos]. */
     fun openAt(level: ServerLevel, player: ServerPlayer, pos: BlockPos) {}
+
+    /** Works [id]'s screen opened for [player] (its master asked). */
+    fun open(level: ServerLevel, player: ServerPlayer, id: Int) {}
 }

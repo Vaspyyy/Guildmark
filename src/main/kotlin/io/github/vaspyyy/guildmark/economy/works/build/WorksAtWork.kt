@@ -25,6 +25,9 @@ internal object WorksAtWork {
 
     fun reset() {}
 
+    /** The tower's beacon has its first fire at its topping out (lit before them all if [near]). */
+    fun firstFire(level: ServerLevel, rec: BuildRec, site: TownWorksSite, near: Boolean) {}
+
     /** [player] uses a stall's counter at [pos]. */
     fun usePitch(level: ServerLevel, player: ServerPlayer, pos: BlockPos) {}
 }

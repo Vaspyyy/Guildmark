@@ -142,6 +142,9 @@ abstract class WorksDrawing(val kind: WorksKind, val y0: Int) : Drawing {
     /** Its patron's plaque, on its wall facing out (its block is in front of the wall); none for a stall. */
     abstract val plaque: Pin?
 
+    /** Where its master builder keeps his post while it goes up, facing it: beside its door, a step out. */
+    open val master: Pin get() = Pin(door.x + 2, door.y, door.z - 1, Dir.S)
+
     /** Packed places (the drawing's x, the world's y, z) where its block goes in over the town's own, kept to put back if it's ever taken down. */
     val replaces = HashSet<Long>()
 
@@ -239,6 +242,9 @@ class OvenBay(y0: Int) : WorksDrawing(WorksKind.OVEN, y0) {
     override val yard = listOf(Pin(0, 0, -1), Pin(1, 0, -1), Pin(2, 0, -1), Pin(0, 0, -2), Pin(1, 0, -2), Pin(2, 0, -2), Pin(3, 0, -2))
     override val plaque = Pin(3, 1, -1, Dir.N)
 
+    /** Inside, between the two ovens at the back, facing the bay (the baker's own place is a step nearer the front). */
+    override val master = Pin(5, 0, 9, Dir.W)
+
     override fun drawWorks(p: Pen) {
         p.piece(PieceKind.PROP, lot)
         // The corner cleared: its hay, barrels, bin and chest carried out to the front, and the lantern taken down
@@ -283,28 +289,6 @@ class OvenBay(y0: Int) : WorksDrawing(WorksKind.OVEN, y0) {
         p.set(1, 2, 6, B(M.BARS))
         p.set(5, 2, 7, B(M.LANTERN, top = true))
         p.set(5, 0, 6, TABLE)
-    }
-
-    companion object {
-        /** The bay's blocks as a bakery's plan has them, for telling whether it's as drawn: (x, y, z) to what stands there. */
-        val PLAN: List<Pair<Pin, M>> = buildList {
-            for (z in 7..9) {
-                add(Pin(1, 0, z) to M.HAY)
-                add(Pin(1, 1, z) to M.BARREL)
-            }
-            add(Pin(1, 0, 10) to M.CHEST)
-            add(Pin(2, 0, 10) to M.COMPOSTER)
-            add(Pin(4, 2, 7) to M.LANTERN)
-        }
-
-        /** Where the bay's own oven goes: clear in a bakery as planned (but for [PLAN]'s things). */
-        val CLEAR: List<Pin> = buildList {
-            for (x in 1..4) for (z in 7..10) for (y in 0..2) {
-                if (PLAN.none { it.first.x == x && it.first.y == y && it.first.z == z }) add(Pin(x, y, z))
-            }
-            for (y in listOf(4, 5, 6, 8, 9, 11, 12, 13, 14)) add(Pin(2, y, 10))
-            for ((x, y, z) in listOf(Triple(1, 0, 1), Triple(1, 0, 2), Triple(1, 1, 1), Triple(1, 1, 2), Triple(1, 0, 3), Triple(2, 0, 1), Triple(2, 0, 2), Triple(5, 2, 7), Triple(5, 0, 6), Triple(1, 1, 6), Triple(1, 2, 6))) add(Pin(x, y, z))
-        }
     }
 }
 

@@ -154,6 +154,12 @@ object BuilderCrew {
         }
     }
 
+    /** The crew of [id] downs tools and plays [clip] with whoever leads it (a works' toast: the master raises his cup and they drink), then goes back to work. */
+    fun join(id: Int, clip: Activity) {
+        val crew = crews[id] ?: return
+        for (b in crew.builders) b.join(clip)
+    }
+
     /** The tier is finished: they cheer, and then they go. */
     fun finished(level: ServerLevel, id: Int) {
         val crew = crews[id] ?: return
@@ -227,6 +233,9 @@ object BuilderCrew {
         private var phase = 1
         private var nails = 0
         private var cheerAfter = S.IDLE
+
+        /** The clip they're cheering with (a hurrah, or a works' toast), for how long they're at it. */
+        private var cheerClip = Activity.HURRAH
         var leaving = false
             private set
 
@@ -257,7 +266,7 @@ object BuilderCrew {
                 S.GO -> go(level, site ?: return)
                 S.CLIMB -> climb()
                 S.WORK -> work(level, site ?: return)
-                S.CHEER -> if (timer >= Activity.HURRAH.ticks) {
+                S.CHEER -> if (timer >= cheerClip.ticks) {
                     if (cheerAfter == S.LEAVE) leave() else into(cheerAfter)
                 }
                 S.LEAVE -> home(level)
@@ -378,6 +387,7 @@ object BuilderCrew {
             batch = IntArray(0)
             hold(ItemStack.EMPTY)
             into(S.CHEER)
+            cheerClip = Activity.HURRAH
             p.act(Activity.HURRAH)
             if (calls) {
                 p.say(if (stage == null) "homestead_done_${1 + p.random.nextInt(2)}" else "homestead_stage_${stage.key}", force = true)
@@ -385,6 +395,19 @@ object BuilderCrew {
             }
             val level = p.level() as ServerLevel
             level.sendParticles(ParticleTypes.HAPPY_VILLAGER, p.x, p.y + 2.1, p.z, 6, 0.4, 0.3, 0.4, 0.0)
+        }
+
+        /** Downs tools and plays [clip] with the rest (a works' toast), then back to what they were at. */
+        fun join(clip: Activity) {
+            if (s == S.LEAVE || s == S.CHEER || handedBack) return
+            cheerAfter = if (s == S.WORK || s == S.GO || s == S.FETCH || s == S.TAKE || s == S.CHORE) S.IDLE else s
+            if (s == S.WORK || s == S.GO) live(id)?.release(p.id)
+            if (s == S.CHORE) released()
+            batch = IntArray(0)
+            hold(ItemStack.EMPTY)
+            into(S.CHEER)
+            cheerClip = clip
+            p.act(clip)
         }
 
         /** Whether this one may speak up now: none of the crew has for [QUIET] ticks (and then it's their turn). */

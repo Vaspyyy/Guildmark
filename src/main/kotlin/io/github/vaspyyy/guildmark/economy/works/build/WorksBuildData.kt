@@ -83,6 +83,9 @@ class BuildRec(val id: Int, val kind: WorksKind, val capital: Long) {
     /** `works stage`: the step it's laid to (free) as soon as its land is loaded; -1 when nothing is asked. */
     var layTo: Int = -1
 
+    /** Its master builder has come to it (in through the town's gate, the first day); on the days after he comes from the inn. */
+    var came: Boolean = false
+
     /** Its frame as it's laid. */
     val frame: WorksFrame get() = WorksFrame(origin, front)
 
@@ -120,6 +123,7 @@ class BuildRec(val id: Int, val kind: WorksKind, val capital: Long) {
         r.mended = mended
         r.removed = removed
         r.layTo = layTo
+        r.came = came
     }
 
     /** The same works drawn and laid where [other] is (the great granary in its granary's frame). */
@@ -211,7 +215,7 @@ class WorksBuildData(
 
         private class Life(
             val reported: Int, val finishedAt: Long, val toasted: Boolean, val opened: Boolean, val firstUse: Boolean,
-            val mended: Long, val removed: Boolean, val layTo: Int,
+            val mended: Long, val removed: Boolean, val layTo: Int, val came: Boolean,
         )
 
         private val LIFE: MapCodec<Life> = RecordCodecBuilder.mapCodec { i ->
@@ -224,6 +228,7 @@ class WorksBuildData(
                 Codec.LONG.optionalFieldOf("mended", Long.MIN_VALUE / 2).forGetter(Life::mended),
                 Codec.BOOL.optionalFieldOf("removed", false).forGetter(Life::removed),
                 Codec.INT.optionalFieldOf("lay_to", -1).forGetter(Life::layTo),
+                Codec.BOOL.optionalFieldOf("came", false).forGetter(Life::came),
             ).apply(i, ::Life)
         }
 
@@ -240,7 +245,7 @@ class WorksBuildData(
                 },
                 LIFE.forGetter { o: Optional<BuildRec> ->
                     val r = o.get()
-                    Life(r.reported, r.finishedAt, r.toasted, r.opened, r.firstUse, r.mended, r.removed, r.layTo)
+                    Life(r.reported, r.finishedAt, r.toasted, r.opened, r.firstUse, r.mended, r.removed, r.layTo, r.came)
                 },
             ).apply(i) { w, k, y, l ->
                 val kind = WorksKind.entries.firstOrNull { it.id == w.kind } ?: return@apply Optional.empty()
@@ -271,6 +276,7 @@ class WorksBuildData(
                     r.mended = l.mended
                     r.removed = l.removed
                     r.layTo = l.layTo
+                    r.came = l.came
                 })
             }
         }

@@ -99,7 +99,7 @@ object WorksBlocks {
     /** The mortar tub by the yard, the mortar in it stirred and spread. */
     val TUB: DeferredBlock<MortarTubBlock> = BLOCKS.registerBlock("works_mortar_tub", ::MortarTubBlock, fixed(MapColor.WOOD, SoundType.WOOD) { it.noOcclusion() })
 
-    /** A hoist: the granary's over its loading door, and the builders' up on the scaffold while the roof goes on. */
+    /** A hoist: the granary's, over its loading door (its builders send its fittings up by it). */
     val HOIST: DeferredBlock<WorksHoistBlock> = BLOCKS.registerBlock("works_hoist", ::WorksHoistBlock, fixed(MapColor.WOOD, SoundType.WOOD) { it.noOcclusion() })
 
     /** The watchtower's beacon: out by day, burning from dusk, flaring when a strike is seen. */
@@ -188,9 +188,9 @@ object WorksBlocks {
         more(it.mapColor(color).strength(-1f, 3_600_000f).noLootTable().sound(sound).pushReaction(PushReaction.IMMOVEABLE).isValidSpawn { _, _, _, _ -> false })
     }
 
-    /** Plays [event] at [pos] for everyone in range. */
+    /** Plays [event] at [pos] for everyone in its range, at the audio's own level and pitch (living-world/works-audio.md: 1.0, 0.95 to 1.05, NEUTRAL). */
     fun play(level: ServerLevel, pos: BlockPos, event: DeferredHolder<SoundEvent, SoundEvent>, volume: Float = 1f, pitch: Float = 0.95f + level.random.nextFloat() * 0.1f) {
-        level.playSound(null, pos, event.get(), SoundSource.BLOCKS, volume, pitch)
+        level.playSound(null, pos, event.get(), SoundSource.NEUTRAL, volume, pitch)
     }
 
     /** Sends [be]'s data to the clients watching it. */
@@ -572,7 +572,7 @@ class MortarTubBlockEntity(pos: BlockPos, state: BlockState) : WorksBlockEntity(
     }
 }
 
-/** A hoist: a beam out from the wall (or the scaffold's top) with a pulley at its end and a rope down from it. */
+/** A hoist: a beam out from the wall with a pulley at its end and a rope down from it. */
 class WorksHoistBlock(properties: BlockBehaviour.Properties) : WorksFacingBlock(properties), EntityBlock {
     override fun getShape(state: BlockState, level: BlockGetter, pos: BlockPos, context: CollisionContext): VoxelShape = SHAPES.getValue(state.getValue(FACING))
 
