@@ -361,7 +361,7 @@ internal object Bodies {
     private fun joined(event: EntityJoinLevelEvent) {
         if (!event.loadedFromDisk()) return
         val tags = event.entity.entityTags()
-        if (Crew.TAG in tags || Waylay.TAG in tags) event.isCanceled = true
+        if (Crew.TAG in tags || Waylay.TAG in tags || Watchmen.TAG in tags) event.isCanceled = true
     }
 
     /**
@@ -399,7 +399,7 @@ internal object Bodies {
             event.drops.clear()
             val carried = showOf(e)?.waylay?.drops(e) ?: return
             for (stack in carried) event.drops.add(ItemEntity(level, e.x, e.y + 0.5, e.z, stack))
-        } else if (e is Townsperson && Crew.TAG in tags) {
+        } else if (e is Townsperson && (Crew.TAG in tags || Watchmen.TAG in tags)) {
             event.drops.clear()
         }
     }

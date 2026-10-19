@@ -74,7 +74,7 @@ class BuildRec(val id: Int, val kind: WorksKind, val capital: Long) {
     /** Its first use was seen (the first loaves, the first filling, the first watch, the first wares). */
     var firstUse: Boolean = false
 
-    /** The market day its blocks were last looked over and anything gone laid again. */
+    /** The town day (Days.dayOf) its blocks were last looked over in the morning and anything gone laid again. */
     var mended: Long = Long.MIN_VALUE / 2
 
     /** It's gone from Part A's records and its blocks are still to be taken down (its land wasn't loaded). */

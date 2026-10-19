@@ -104,6 +104,8 @@ internal class Unloading(val show: Show) {
         open = true
         show.tailboard()
         borrowCarters()
+        // The works' freight on it, carried over to their yards by porters of its own (economy/works/build/Unloads)
+        io.github.vaspyyy.guildmark.economy.works.build.Unloads.arrived(level, show.id, show.wagonAt())
     }
 
     /** Where the driver stands to put the nosebag on: by the horse's head, on its right, facing it. */

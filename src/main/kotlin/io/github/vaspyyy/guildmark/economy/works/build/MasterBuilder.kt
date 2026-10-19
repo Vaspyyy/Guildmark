@@ -538,18 +538,19 @@ internal object MasterBuilder {
             return inn.seats.map { it.pos }.shuffled().firstOrNull { level.isLoaded(it) && Places.isSeat(level, level.getBlockState(it), it) && Claims.free(level, it, p) }
         }
 
-        /** Off for good, down the street, and gone (at once out of sight). */
+        /** Off for good, out at the town's gate (or down the street), and gone: at once with nobody to see him go. */
         fun leave(level: ServerLevel) {
             if (leaving) return
             leaving = true
             ceremony = false
             cut()
-            val road = site?.road()
-            if (road == null || level.getNearestPlayer(p, SEEN) == null) {
+            val s = site
+            val out = s?.let { st -> capital?.let { gate(level, it, st) } ?: st.road() }
+            if (out == null || level.getNearestPlayer(p, SEEN) == null) {
                 vanish()
                 return
             }
-            queue(Go(road, 2.0, 600))
+            queue(Go(out, 2.0, 1800))
         }
 
         /** Gone, with a puff of dust. */

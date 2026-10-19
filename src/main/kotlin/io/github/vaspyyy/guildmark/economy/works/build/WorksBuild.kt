@@ -2,6 +2,7 @@ package io.github.vaspyyy.guildmark.economy.works.build
 
 import io.github.vaspyyy.guildmark.city.CapitalPiece
 import io.github.vaspyyy.guildmark.economy.CaravanRoutes
+import io.github.vaspyyy.guildmark.economy.Caravans
 import io.github.vaspyyy.guildmark.economy.works.Works
 import io.github.vaspyyy.guildmark.economy.works.WorksData
 import io.github.vaspyyy.guildmark.economy.works.WorksKind
@@ -91,6 +92,7 @@ object WorksBuild {
         Works.listen(Listener)
         Works.crew = Crew
         Lookout.beacon = WorksAtWork.Beacon
+        Caravans.listen(Unloads)
         BuilderCrew.works = BuilderCrew.Sites { key -> sites[-1 - key] }
         HomesteadProtection.works = HomesteadProtection.Built { level, pos -> built(level, pos) }
         val bus = NeoForge.EVENT_BUS
@@ -138,6 +140,7 @@ object WorksBuild {
         if (now % 20L == 7L) takeDowns(level, build)
         if (!Works.enabled()) {
             if (now % 20L == 0L) still(level, build)
+            Unloads.tick(level)
             return
         }
         val data = WorksData.get(level)
@@ -455,7 +458,7 @@ object WorksBuild {
             if (!site.loaded()) return
             if (rec.surveyed) site.takeDown()
         }
-        WorksYard.clear(level, rec)
+        WorksYard.clear(level, rec, plaque = true)
         build.recs.remove(rec.id)
         build.changed()
         WorksPlans.forget(rec.id)

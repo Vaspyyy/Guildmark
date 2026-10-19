@@ -118,6 +118,15 @@ internal class Waylay(val show: Show, private var strike: Caravans.Strike?) {
     /** Whether the fight is still on (not yet decided). */
     val fighting: Boolean get() = !resolved && (phase == Phase.RUSH || phase == Phase.FIGHT)
 
+    /** The road's tower's watch come to the fight, if the strike fell in its sight (see [Watchmen]). */
+    private var watch: Watchmen? = null
+
+    /** Where the tower's watchman [k] stands in the fight: out on the band's side beyond the guards, facing out. */
+    fun watchSpot(k: Int): Pair<Vec3, Float> = show.ground(-(side.toFloat()) * 46f, if (k % 2 == 0) -60f else 44f) to show.yaw((90.0 * side).toFloat())
+
+    /** The band still in the fight. */
+    fun foes(): List<Mob> = band.filter { !it.fleeing && it.mob.isAlive && !it.mob.isRemoved }.map { it.mob }
+
     // ---- The band runs in ----
 
     /** The strike's begun: the band runs in from off the road, the crew get down to meet it. */
@@ -172,6 +181,8 @@ internal class Waylay(val show: Show, private var strike: Caravans.Strike?) {
         w?.flag(Wagon.FLAG_BRAKE, true)
         // The band's arrows go into the side it faces them with: its left unless they're on its right
         w?.flag(Wagon.FLAG_MIRROR, side > 0)
+        // In a tower's sight: its horn, and its watch on the way
+        watch = Watchmen.out(this)
     }
 
     /** Where the band's [k]th comes from: 24 to 32 blocks off the road on its side, out of the wagon's sight if the ground allows. */
@@ -267,8 +278,14 @@ internal class Waylay(val show: Show, private var strike: Caravans.Strike?) {
 
     // ---- Each tick ----
 
-    /** One tick; false once everything of it has gone (the band, the runner, the hurt guards). */
+    /** One tick; false once everything of it has gone (the band, the runner, the hurt guards, the tower's watch). */
     fun tick(): Boolean {
+        val more = step()
+        watch?.tick()
+        return more || watch?.busy == true
+    }
+
+    private fun step(): Boolean {
         t++
         band.removeIf { it.mob.isRemoved }
         // Reared at the whistle, it stands and stamps through the fight
@@ -431,8 +448,8 @@ internal class Waylay(val show: Show, private var strike: Caravans.Strike?) {
         mob.targetSelector.addGoal(3, NearestAttackableTargetGoal(mob, Townsperson::class.java, 10, true, false) { e, _ -> guardOf(e) })
     }
 
-    /** Whether [e] is one of this caravan's guards still standing. */
-    private fun guardOf(e: Entity): Boolean = show.hands.any { !it.driver && it.p === e && it.p.isAlive }
+    /** Whether [e] is one of this caravan's guards (or the tower's watch) still standing. */
+    private fun guardOf(e: Entity): Boolean = show.hands.any { !it.driver && it.p === e && it.p.isAlive } || watch?.standing(e) == true
 
     /** Each tick of a real fight: the guards at the band, the band at them and the players, until half the band's down or every guard is. */
     private fun realFight() {
@@ -471,6 +488,7 @@ internal class Waylay(val show: Show, private var strike: Caravans.Strike?) {
         }
         for (h in show.hands) h.p.target = null
         show.hands.removeIf { !it.p.isAlive || it.p.isRemoved }
+        watch?.decided(waylaid)
         if (waylaid) taking() else beatenOff()
     }
 
@@ -935,7 +953,7 @@ internal class Waylay(val show: Show, private var strike: Caravans.Strike?) {
         val by = source.entity
         val man = band.firstOrNull { it.mob === target }
         if (man != null) {
-            if (by is Townsperson && show.hands.any { it.p === by }) return real && !resolved
+            if (by is Townsperson && (show.hands.any { it.p === by } || watch?.has(by) == true)) return real && !resolved
             // Someone else joins in (a player, their wolf, a golem): from now on it's for real
             if (by != null && band.none { it.mob === by }) {
                 if (fighting) goReal() else arm(man)
@@ -987,6 +1005,8 @@ internal class Waylay(val show: Show, private var strike: Caravans.Strike?) {
         }
         for (m in band) m.mob.discard()
         band.clear()
+        watch?.gone()
+        watch = null
     }
 
     /** Whether anyone's near enough to [at] to see it go: a player within [range] looking that way (or very near). */
