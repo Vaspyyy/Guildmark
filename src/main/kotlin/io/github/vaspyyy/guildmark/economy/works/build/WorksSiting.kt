@@ -18,6 +18,7 @@ import io.github.vaspyyy.guildmark.economy.works.WorksKind
 import io.github.vaspyyy.guildmark.economy.works.WorksRec
 import io.github.vaspyyy.guildmark.economy.works.WorksSite
 import io.github.vaspyyy.guildmark.homestead.HomesteadSite
+import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.core.particles.DustParticleOptions
@@ -67,6 +68,9 @@ internal object WorksSiting {
 
     /** The ground a works may be sited on where the plan has no lot for it. */
     private val FREE_USES = setOf(Use.FREE, Use.GARDEN, Use.YARD, Use.CLEARING)
+
+    /** The works whose siting reads the city's plan at every look. */
+    private val ON_PLAN = setOf(WorksKind.OVEN, WorksKind.GRANARY, WorksKind.STALL)
 
     /** A lot to try: the drawing's (0, 0) at [ox], [oz] in the city's frame, its front toward [front]. */
     private class Cand(val ox: Int, val oz: Int, val front: Dir)
@@ -132,6 +136,9 @@ internal object WorksSiting {
             return
         }
         looked[w.id] = now
+        // These are sited on the city's plan, which is laid out off the server's thread with the town's places: until
+        // those are known they wait, as for land not loaded, rather than lay the plan out here
+        if (w.kind in ON_PLAN && CityPlaces.of(level, capital) == null && !CityPlaces.failed(capital)) return
         val found = when (w.kind) {
             WorksKind.OVEN -> oven(level, w, rec, capital)
             WorksKind.GRANARY -> granary(level, w, rec, capital)
