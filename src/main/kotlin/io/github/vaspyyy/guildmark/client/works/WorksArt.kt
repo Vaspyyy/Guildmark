@@ -3,6 +3,7 @@ package io.github.vaspyyy.guildmark.client.works
 
 import kotlin.math.abs
 import kotlin.math.ceil
+import kotlin.math.cos
 import kotlin.math.exp
 import kotlin.math.floor
 import kotlin.math.max
@@ -13,7 +14,8 @@ import kotlin.math.sin
 /**
  * The town works' blocks as their renderers draw them (living-world/works-art.md says which renderer draws what, and
  * how): the yard's heaps, the post's parchment, seals and stamp, the plaque's lettering, the hoist at work, the "To let"
- * board's swing, the beacon's glow and the slate's lean. Sizes are pixels (a sixteenth of a block) in the block's own
+ * board's swing, the beacon's glow, the slate's lean, and the alms table's pot, stew, bowls and ladle, ladled from and
+ * given to. Sizes are pixels (a sixteenth of a block) in the block's own
  * model space (x east, y up, z south, the block facing north, its front toward -z), which a renderer turns by its facing
  * as the blockstate turns the model; times are ticks; the meshes are [WorksMesh]'s.
  */
@@ -22,6 +24,7 @@ internal object WorksArt {
     const val HOIST_TEXTURE = "textures/entity/works/hoist.png"
     const val TO_LET_TEXTURE = "textures/entity/works/to_let.png"
     const val SLATE_TEXTURE = "textures/entity/works/slate.png"
+    const val ALMS_TEXTURE = "textures/entity/works/alms.png"
     const val POST_TEXTURE = "textures/entity/works/post.png"
     const val GLOW_TEXTURE = "textures/entity/works/beacon_glow.png"
 
@@ -355,9 +358,9 @@ internal object WorksArt {
     // ---------------------------------------------------------------- the "To let" board, the beacon, the slate
 
     /** The line through the board's hooks, which it swings about (along x). */
-    const val TO_LET_X = 9.5f
-    const val TO_LET_Y = 20.8f
-    const val TO_LET_Z = 8f
+    const val TO_LET_X = 8f
+    const val TO_LET_Y = 20f
+    const val TO_LET_Z = 4.6f
 
     /** Degrees the board swings on its hooks at tick [t] ([phase] from its position; twice as far in rain). */
     fun toLetSwing(t: Float, phase: Float, wet: Boolean): Float =
@@ -372,6 +375,105 @@ internal object WorksArt {
 
     /** Degrees the slate leans back against the display (its foot at the display's front middle). */
     const val SLATE_LEAN = 14f
+
+    /**
+     * The slate ([WorksMesh.slate]: its foot's middle at the mesh's origin, its face toward -z): px across, high and
+     * thick; and the chalk's room on its face, inside the frame (px across and high, its middle half the slate's
+     * height up), for client/streets/StreetSlate's words in place of its FACE_W and FACE_H.
+     */
+    val SLATE_SIZE = floatArrayOf(11f, 8f, 0.5f)
+    val SLATE_CHALK = floatArrayOf(9.5f, 6.5f)
+
+    // ---------------------------------------------------------------- the alms table
+
+    /*
+     * The pot, its stew, the bowls and the ladle on the table's middle block ([WorksMesh.alms], drawn by its block
+     * entity's renderer): in that block's model space, turned about its middle as the blockstate turns the trestle's
+     * model (Axis.YP by 180 - facing.toYRot() degrees for a table whose front is to facing), each piece drawn at its
+     * place here through poseStack.scale(-1f, -1f, 1f).
+     */
+
+    /** The table top's height, and the pot's foot's middle on it ("pot"). */
+    const val ALMS_TOP = 13f
+    const val POT_X = 11.5f
+    const val POT_Z = 11f
+
+    /** The pot's rim's height (its steam rises from here, over [POT_X], [POT_Z]). */
+    const val POT_RIM = 18f
+
+    /** The stew's top for a pot [fill] full (0 to 1: shown when there's any in it), "stew_k" drawn there. */
+    fun stewY(fill: Float): Float = 14.2f + 2.9f * fill.coerceIn(0f, 1f)
+
+    /** The stew's frames: "stew_0" up to [STEW_FRAMES], each [STEW_TICKS] ticks, round and round as it simmers. */
+    const val STEW_FRAMES = 8
+    const val STEW_TICKS = 3f
+
+    fun stewFrame(t: Float): Int = floor(t / STEW_TICKS).toInt().mod(STEW_FRAMES)
+
+    /** px the stew's top rocks up and down as it simmers, at tick [t]. */
+    fun stewBob(t: Float): Float = 0.05f * sin(0.35f * t)
+
+    /**
+     * The stack of bowls on the keeper's left: its middle, and the [i]th bowl's foot up it (from 0); "bowl" the top
+     * one, "bowl_under" every one under it. It shows [BOWLS_MAX] at most (draw min(bowls, BOWLS_MAX)): LADLE lifts the
+     * top one off a stack of three (its take, [LADLE_TAKE]), and a taller stack would swallow the keeper's hand.
+     */
+    const val BOWLS_X = 4f
+    const val BOWLS_Z = 11f
+    const val BOWLS_MAX = 3
+
+    fun bowlY(i: Int): Float = ALMS_TOP + 1.2f * i
+
+    /** The ladle standing in the pot: its bowl's middle ("ladle", already turned as it leans). */
+    val LADLE_REST = floatArrayOf(11f, 15.1714f, 11.4f)
+
+    /**
+     * LADLE's moments, ticks from its start: the bowl lifted off the stack, the ladle in the stew, the pour into the
+     * bowl and the bowl given. The keeper holds the ladle from its first tick to its last (the table's own is hidden
+     * meanwhile); the stack is a bowl short from the take.
+     */
+    const val LADLE_LEN = 30f
+    const val LADLE_TAKE = 3.5f
+    const val LADLE_DIP = 7.5f
+    const val LADLE_POUR = 12.5f
+    const val LADLE_GIVE = 21f
+
+    /** Where the ladle goes into the stew (x, z): its ripple spreads from here from [LADLE_DIP]. */
+    const val DIP_X = 11.3f
+    const val DIP_Z = 10.8f
+
+    /** "ripple" (4 px across): the scale of it across [age] ticks after it starts, gone after [RIPPLE_TICKS]. */
+    const val RIPPLE_TICKS = 18f
+
+    fun rippleScale(age: Float): Float {
+        val u = (age / RIPPLE_TICKS).coerceIn(0f, 1f)
+        return 0.36f + 1.6f * (1f - (1f - u) * (1f - u))
+    }
+
+    /** A gift tipped in: its ring spreading from the pot's middle (as the ripple, quicker), and its splash. */
+    const val SPLASH_TICKS = 14f
+
+    fun splashScale(age: Float): Float {
+        val u = (age / SPLASH_TICKS).coerceIn(0f, 1f)
+        return 0.5f + 1.5f * (1f - (1f - u) * (1f - u))
+    }
+
+    /**
+     * The splash's drops ("drop"), [SPLASH_DROPS] of them: where the [j]th is [age] ticks on, from the stew's top over
+     * the pot's middle (x, up, z px), or null once it's fallen back in.
+     */
+    const val SPLASH_DROPS = 6
+
+    fun splashDrop(j: Int, age: Float): FloatArray? {
+        val up = 0.55f * age - 0.04f * age * age
+        if (age <= 0f || up < 0f) return null
+        val a = (j * 60f + 23f) * PI / 180f
+        val out = 0.4f + 0.16f * age
+        return floatArrayOf(out * cos(a), up, out * sin(a))
+    }
+
+    /** The pot's outline over the middle block for its block's shape (a box: x0, y0, z0, x1, y1, z1). */
+    val POT_SHAPE = floatArrayOf(6.4f, 13f, 6.5f, 16f, 18f, 15.5f)
 
     private const val PI = 3.1416f
 }

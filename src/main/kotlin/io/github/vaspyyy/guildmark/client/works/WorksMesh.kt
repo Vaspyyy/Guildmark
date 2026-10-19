@@ -2,6 +2,7 @@
 package io.github.vaspyyy.guildmark.client.works
 
 import net.minecraft.client.model.geom.PartPose
+import net.minecraft.client.model.geom.builders.CubeDeformation
 import net.minecraft.client.model.geom.builders.CubeListBuilder
 import net.minecraft.client.model.geom.builders.LayerDefinition
 import net.minecraft.client.model.geom.builders.MeshDefinition
@@ -72,12 +73,35 @@ object WorksMesh {
         return LayerDefinition.create(mesh, 32, 16)
     }
 
-    /** The chalked slate, "slate", standing on the middle of its foot, its face toward -z. On a 32 x 16 texture (slate.png ships at 6x that). */
+    /** The slate in its frame, "slate", standing on the middle of its foot, its face toward -z: rubbed clean but for the ghosts of old chalk, for the words to be chalked on (client/streets/StreetSlate writes them). On a 32 x 16 texture (slate.png ships at 6x that). */
     @Suppress("LocalVariableName", "UNUSED_VARIABLE")
     fun slate(): LayerDefinition {
         val mesh = MeshDefinition()
         val root = mesh.root
         root.addOrReplaceChild("slate", CubeListBuilder.create().texOffs(0, 0).addBox(-5.5f, -8f, -0.25f, 11f, 8f, 0.5f), PartPose.offset(0f, 0f, 0f))
         return LayerDefinition.create(mesh, 32, 16)
+    }
+
+    /** The alms table's pieces on its middle block, placed by [WorksArt]'s alms numbers: "pot" (its foot's middle at the origin), "stew_0" to "stew_7" (the stew's top, a frame each: one at a time), "ripple" (a ring on the stew 4 px across, to spread), "drop" (a splash, about its middle), "bowl" (the top of the stack: an empty bowl as LADLE takes it up), "bowl_under" (each under it, a hair bigger) and "ladle" (as it stands in the pot: drawn at [WorksArt.LADLE_REST]). On a 128 x 64 texture (alms.png ships at 4x that). */
+    @Suppress("LocalVariableName", "UNUSED_VARIABLE")
+    fun alms(): LayerDefinition {
+        val mesh = MeshDefinition()
+        val root = mesh.root
+        val pot = root.addOrReplaceChild("pot", CubeListBuilder.create().texOffs(76, 24).addBox(-1.74f, -4.3f, -4.2f, 3.479f, 4.3f, 0.6f, EnumSet.of(Direction.NORTH, Direction.SOUTH)).texOffs(96, 24).addBox(-1.74f, -4.3f, 3.6f, 3.479f, 4.3f, 0.6f, EnumSet.of(Direction.NORTH, Direction.SOUTH)).texOffs(20, 0).addBox(-4.2f, -4.3f, -1.74f, 0.6f, 4.3f, 3.479f, EnumSet.of(Direction.WEST, Direction.EAST)).texOffs(0, 0).addBox(3.6f, -4.3f, -1.74f, 0.6f, 4.3f, 3.479f, EnumSet.of(Direction.WEST, Direction.EAST)).texOffs(76, 30).addBox(-1.864f, -5f, -4.5f, 3.728f, 0.7f, 1f).texOffs(96, 30).addBox(-1.864f, -5f, 3.5f, 3.728f, 0.7f, 1f).texOffs(20, 25).addBox(-4.5f, -5f, -1.864f, 1f, 0.7f, 3.728f).texOffs(0, 25).addBox(3.5f, -5f, -1.864f, 1f, 0.7f, 3.728f).texOffs(16, 30).addBox(4.1f, -3.6f, -0.9f, 1f, 1f, 1.8f).texOffs(22, 30).addBox(-5.1f, -3.6f, -0.9f, 1f, 1f, 1.8f).texOffs(40, 0).addBox(-3.9f, -0.5f, -3.9f, 7.8f, 0f, 7.8f, EnumSet.of(Direction.DOWN)), PartPose.offset(0f, 0f, 0f))
+        pot.addOrReplaceChild("pot45", CubeListBuilder.create().texOffs(86, 24).addBox(-1.74f, -4.3f, -4.2f, 3.479f, 4.3f, 0.6f, EnumSet.of(Direction.NORTH, Direction.SOUTH)).texOffs(106, 24).addBox(-1.74f, -4.3f, 3.6f, 3.479f, 4.3f, 0.6f, EnumSet.of(Direction.NORTH, Direction.SOUTH)).texOffs(30, 0).addBox(-4.2f, -4.3f, -1.74f, 0.6f, 4.3f, 3.479f, EnumSet.of(Direction.WEST, Direction.EAST)).texOffs(10, 0).addBox(3.6f, -4.3f, -1.74f, 0.6f, 4.3f, 3.479f, EnumSet.of(Direction.WEST, Direction.EAST)).texOffs(86, 30).addBox(-1.864f, -5f, -4.5f, 3.728f, 0.7f, 1f).texOffs(106, 30).addBox(-1.864f, -5f, 3.5f, 3.728f, 0.7f, 1f).texOffs(116, 29).addBox(-4.5f, -5f, -1.864f, 1f, 0.7f, 3.728f).texOffs(10, 25).addBox(3.5f, -5f, -1.864f, 1f, 0.7f, 3.728f), PartPose.offsetAndRotation(0f, 0f, 0f, 0f, 0.785f, 0f))
+        root.addOrReplaceChild("stew_0", CubeListBuilder.create().texOffs(72, 0).addBox(-3.6f, 0f, -3.6f, 7.2f, 0f, 7.2f, EnumSet.of(Direction.DOWN)), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("stew_1", CubeListBuilder.create().texOffs(40, 8).addBox(-3.6f, 0f, -3.6f, 7.2f, 0f, 7.2f, EnumSet.of(Direction.DOWN)), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("stew_2", CubeListBuilder.create().texOffs(72, 8).addBox(-3.6f, 0f, -3.6f, 7.2f, 0f, 7.2f, EnumSet.of(Direction.DOWN)), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("stew_3", CubeListBuilder.create().texOffs(0, 9).addBox(-3.6f, 0f, -3.6f, 7.2f, 0f, 7.2f, EnumSet.of(Direction.DOWN)), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("stew_4", CubeListBuilder.create().texOffs(32, 16).addBox(-3.6f, 0f, -3.6f, 7.2f, 0f, 7.2f, EnumSet.of(Direction.DOWN)), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("stew_5", CubeListBuilder.create().texOffs(64, 16).addBox(-3.6f, 0f, -3.6f, 7.2f, 0f, 7.2f, EnumSet.of(Direction.DOWN)), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("stew_6", CubeListBuilder.create().texOffs(96, 16).addBox(-3.6f, 0f, -3.6f, 7.2f, 0f, 7.2f, EnumSet.of(Direction.DOWN)), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("stew_7", CubeListBuilder.create().texOffs(0, 17).addBox(-3.6f, 0f, -3.6f, 7.2f, 0f, 7.2f, EnumSet.of(Direction.DOWN)), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("ripple", CubeListBuilder.create().texOffs(0, 30).addBox(-2f, 0f, -2f, 4f, 0f, 4f, EnumSet.of(Direction.DOWN)), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("drop", CubeListBuilder.create().texOffs(28, 30).addBox(-0.3f, -0.3f, -0.3f, 0.6f, 0.6f, 0.6f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bowl", CubeListBuilder.create().texOffs(36, 24).addBox(-2.25f, -1.9f, -2.25f, 4.5f, 1.9f, 4.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bowl_under", CubeListBuilder.create().texOffs(56, 24).addBox(-2.25f, -1.9f, -2.25f, 4.5f, 1.9f, 4.5f, CubeDeformation(0.1f)), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("ladle", CubeListBuilder.create().texOffs(32, 24).addBox(-0.35f, -7.6f, -1.25f, 0.7f, 6.8f, 0.7f).texOffs(116, 24).addBox(-1.3f, -1f, -1.3f, 2.6f, 2f, 2.6f), PartPose.offsetAndRotation(0f, 0f, 0f, -0.393f, -1.571f, 0f))
+        return LayerDefinition.create(mesh, 128, 64)
     }
 }
