@@ -233,6 +233,13 @@ class Orders(private val books: MutableMap<Long, Book> = HashMap(), private var 
         private const val TICK = 20
         private const val LOOK = 100
 
+        /**
+         * The most hours worked out in one run for all the books together, catching up; the rest wait for the next. As
+         * many as the markets work out in a run (the orders run just after them, in their order), so a book catching up
+         * goes about as fast as its market.
+         */
+        private const val STEPS = 48
+
         // ---- Keeping ----
 
         private val ORDER: Codec<Order> = RecordCodecBuilder.create { i ->
@@ -355,9 +362,10 @@ class Orders(private val books: MutableMap<Long, Book> = HashMap(), private var 
             val data = get(level)
             val now = Markets.hourOf(level)
             if (on && server.tickCount % LOOK == 0) look(level, data)
+            var steps = STEPS
             for (entry in Markets.get(level).all()) {
                 val book = data.book(entry.capital)
-                if (on) run(level, data, book, entry, now) else hold(data, book, now)
+                if (on) steps -= run(level, data, book, entry, now, steps) else hold(data, book, now)
             }
         }
 
@@ -416,31 +424,35 @@ class Orders(private val books: MutableMap<Long, Book> = HashMap(), private var 
         }
 
         /**
-         * Works out the hours of the markets' clock [book] is behind ([now]), each in turn: up to [Markets.CATCH_UP] of
-         * them, as the market works out no more than that, the orders' days standing still over the rest.
+         * Works out the hours of the markets' clock [book] is behind ([now]), each in turn, [steps] of them at most (the
+         * rest wait for the next run): up to [Markets.CATCH_UP] of them, as the market works out no more than that, the
+         * orders' days standing still over the rest. The hours it worked out.
          */
-        private fun run(level: ServerLevel, data: Orders, book: Book, entry: Markets.Entry, now: Long) {
+        private fun run(level: ServerLevel, data: Orders, book: Book, entry: Markets.Entry, now: Long, steps: Int): Int {
             if (book.hour == Long.MIN_VALUE) {
                 // Nothing's asked for until its businesses are known and its market is open; then a first few orders at once
-                if (book.shops.isEmpty() || entry.market.hour == Long.MIN_VALUE) return
+                if (book.shops.isEmpty() || entry.market.hour == Long.MIN_VALUE) return 0
                 book.hour = now
                 book.trouble = entry.market.events.maxOfOrNull { it.since } ?: Long.MIN_VALUE
                 post(data, book, entry, FIRST, random(book, now), now)
                 data.setDirty()
-                return
+                return 0
             }
             // Time set back: everything keeps the days it had left, as the market's own trouble does
             if (now < book.hour) {
                 shift(book, now - book.hour, trouble = true)
                 data.setDirty()
-                return
+                return 0
             }
             if (now - book.hour > Markets.CATCH_UP) shift(book, now - Markets.CATCH_UP - book.hour, trouble = false)
-            while (book.hour < now) {
+            var worked = 0
+            while (book.hour < now && worked < steps) {
                 book.hour++
                 hour(level, data, book, entry, book.hour)
                 data.setDirty()
+                worked++
             }
+            return worked
         }
 
         /** One market [hour] at [book]'s capital: orders whose day is up, orders for new trouble, the day's new orders at dawn, and those owed. */
