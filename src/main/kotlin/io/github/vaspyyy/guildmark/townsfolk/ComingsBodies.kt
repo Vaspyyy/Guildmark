@@ -32,12 +32,13 @@ import kotlin.math.sin
  *   way. At the door the cart is left at its bay, the listeners hear of them, and the neighbours come over
  *   ([Neighbours.at]: a welcome and SHOW_IN, or for those back, a hug, whose household half is played here: [embrace]);
  *   one of them says "So this is the place" ("comings.arrive"; "comings.home" for those back); and they carry their
- *   things in off the cart a piece at a time (CARRY, the children the bundles) and are home. The empty cart goes once
- *   nobody's looking, and their day takes them up.
+ *   things in off the cart a piece at a time, what's on top first (CARRY, the children the bundles), and are home. The
+ *   empty cart goes once nobody's looking, and their day takes them up.
  * - **Leaving**: home from wherever they are to their door; their cart brought round to its bay while nobody's looking
- *   that way; the household's goods fetched out of the house and packed on it (PACK); the listeners told and the
- *   neighbours seeing them off (a hug, then waving after them); "comings.leave"; and away with the cart along the
- *   streets to the nearest gate and out onto the road, where they're taken away once no one can see them.
+ *   that way; the household's goods fetched out of the house a piece at a time and heaped on it, the floor of the bed
+ *   first, each in its place, handed up over its side (HAND_OVER); the listeners told and the neighbours seeing them
+ *   off (a hug, then waving after them); "comings.leave"; and away with the cart along the streets to the nearest
+ *   gate and out onto the road, where they're taken away once no one can see them.
  *
  * Each plays once, whoever's watching, and never longer than [MOST] ticks; with nobody near any of them for [ALONE]
  * ticks it's finished out of sight (those coming in are home as their day has them; those leaving are gone). Nothing
@@ -470,7 +471,9 @@ internal object ComingsBodies {
             }
             Stage.PACK -> {
                 for ((k, h) in party.crew.withIndex()) if (h.idle) pack(party, h, k)
-                if (party.load.isEmpty() && party.crew.all { it.waiting } || party.t > WORK_TICKS) enter(party, Stage.FAREWELL)
+                // Done once it's all on the cart (with no cart, once each has their arms full)
+                val cart = party.cart && Handcarts.parked(puller.p) != null
+                if ((party.load.isEmpty() || !cart) && party.crew.all { it.waiting } || party.t > WORK_TICKS) enter(party, Stage.FAREWELL)
             }
             Stage.FAREWELL -> {
                 if (!party.said && party.t % 30 == 10 && party.t < 300) party.said = say(party, "comings.leave", "leaving in hard times")
@@ -616,11 +619,11 @@ internal object ComingsBodies {
         val goods = Handcarts.household(party.h.members.size)
         if (Handcarts.hitch(puller.p) != null) {
             party.cart = true
-            Handcarts.load(puller.p, goods)
+            Handcarts.heap(puller.p, goods)
             party.heaped.addAll(goods)
         } else {
             // No cart: what they can carry in their arms, a piece each
-            val pieces = ArrayDeque(goods)
+            val pieces = ArrayDeque(goods.map { it.stack })
             for (h in party.crew) {
                 val piece = (if (h.adult) pieces.removeFirstOrNull() else pieces.firstOrNull { it.`is`(Items.BUNDLE) }?.also { pieces.remove(it) }) ?: continue
                 h.p.carried = piece
@@ -653,12 +656,12 @@ internal object ComingsBodies {
         h.set(
             Go({ Handcarts.side(puller.p, door) ?: party.bay ?: spot(party, k) }, Jobs.WALK, 0.7),
             Play(Activity.PICK_UP, { Handcarts.bed(puller.p) }) {
-                // Taken off the cart now: whatever suits them that's still there
+                // Taken off the cart now: whatever suits them that's still there, what's on top first
                 val piece = next(party.heaped, h.adult)
                 if (piece != null) {
                     party.heaped.remove(piece)
-                    Handcarts.load(puller.p, party.heaped)
-                    it.p.carried = piece
+                    Handcarts.heap(puller.p, party.heaped)
+                    it.p.carried = piece.stack
                 }
             },
             Go({ party.door.inside }, Jobs.WALK, 0.6, Activity.CARRY),
@@ -670,49 +673,72 @@ internal object ComingsBodies {
 
     /** [h] (the [k]th of them) at the door with things still to pack: into the house for the next, and out to the cart with it. */
     private fun pack(party: Party, h: Hand, k: Int) {
-        val puller = party.puller ?: return
         if (h.waiting) return
-        if (next(party.load, h.adult) == null) {
+        if (first(party.load, h.adult) == null) {
             h.set(Go({ spot(party, k) }, Jobs.WALK, 0.9), Stand(-1, { street(party) }))
-            return
-        }
-        val door = Vec3.atCenterOf(party.door.pos)
-        val cart = party.cart && Handcarts.parked(puller.p) != null
-        val fetch = Do {
-            val piece = next(party.load, it.adult)
-            if (piece != null) {
-                party.load.remove(piece)
-                it.p.carried = piece
-            }
-        }
-        if (!cart) {
-            // No cart: a piece in each of their arms to take with them
-            h.set(
-                Go({ party.door.inside }, Jobs.WALK, 0.6), Go({ room(party, k) }, Jobs.WALK, 0.8), Stand(20 + k * 7, { null }), fetch,
-                Go({ spot(party, k) }, Jobs.WALK, 0.9, Activity.CARRY), Stand(-1, { street(party) }),
-            )
             return
         }
         h.set(
             Go({ party.door.inside }, Jobs.WALK, 0.6),
             Go({ room(party, k) }, Jobs.WALK, 0.8),
             Stand(20 + k * 7, { null }),
-            fetch,
-            Go({ Handcarts.side(puller.p, door) ?: party.bay ?: spot(party, k) }, Jobs.WALK, 0.7, Activity.CARRY),
-            Play(Activity.PACK, { Handcarts.bed(puller.p) }) {
-                val piece = it.p.carried
-                if (!piece.isEmpty) {
-                    party.heaped += piece
-                    Handcarts.load(puller.p, party.heaped)
-                    it.p.carried = ItemStack.EMPTY
+            Do {
+                // Whatever's next for them by now
+                val piece = first(party.load, it.adult)
+                if (piece != null) {
+                    party.load.remove(piece)
+                    it.piece = piece
+                    it.p.carried = piece.stack
                 }
             },
+            Do { out(party, it, k) },
         )
     }
 
-    /** The next piece of [goods] for someone to carry: a grown-up takes the last heaped on; a child only a bundle. */
-    private fun next(goods: List<ItemStack>, adult: Boolean): ItemStack? =
-        if (adult) goods.lastOrNull() else goods.lastOrNull { it.`is`(Items.BUNDLE) }
+    /**
+     * [h] (the [k]th of them) out of the house with a piece for the cart, to hand it up over its side (HAND_OVER), a
+     * piece for the top only once everything to go under it is on. With nothing in their arms after all, or no cart,
+     * they wait by the door with whatever they have.
+     */
+    private fun out(party: Party, h: Hand, k: Int) {
+        val puller = party.puller
+        if (h.piece == null || puller == null || !party.cart || Handcarts.parked(puller.p) == null) {
+            h.set(Go({ spot(party, k) }, Jobs.WALK, 0.9, Activity.CARRY), Stand(-1, { street(party) }))
+            return
+        }
+        val door = Vec3.atCenterOf(party.door.pos)
+        h.set(
+            Go({ Handcarts.side(puller.p, door) ?: party.bay ?: spot(party, k) }, Jobs.WALK, 0.7, Activity.CARRY),
+            Until({ ready(party, it) }, { Handcarts.bed(puller.p) }),
+            Play(Activity.HAND_OVER, { Handcarts.bed(puller.p) }, HANDOFF) { onto(party, it) },
+        )
+    }
+
+    /** Whether [h]'s piece can go onto [party]'s cart now: onto the floor any time, on top once nothing still to come goes under it. */
+    private fun ready(party: Party, h: Hand): Boolean {
+        val piece = h.piece ?: return true
+        if (piece.place < Handcarts.ON_TOP) return true
+        return party.load.none { it.place < Handcarts.ON_TOP } &&
+            party.crew.none { it !== h && (it.piece?.place ?: Handcarts.ON_TOP) < Handcarts.ON_TOP }
+    }
+
+    /** The piece in [h]'s arms goes onto [party]'s cart, in its place. */
+    private fun onto(party: Party, h: Hand) {
+        val piece = h.piece ?: return
+        h.piece = null
+        h.p.carried = ItemStack.EMPTY
+        val puller = party.puller ?: return
+        party.heaped += piece
+        Handcarts.heap(puller.p, party.heaped)
+    }
+
+    /** The next piece on the cart for someone to take off: a grown-up the last heaped on (what's on top first), a child only a bundle. */
+    private fun next(goods: List<Handcarts.Placed>, adult: Boolean): Handcarts.Placed? =
+        if (adult) goods.lastOrNull() else goods.lastOrNull { it.stack.`is`(Items.BUNDLE) }
+
+    /** The next piece still to pack for someone to fetch: a grown-up the first to be heaped on (the floor first), a child only a bundle. */
+    private fun first(load: List<Handcarts.Placed>, adult: Boolean): Handcarts.Placed? =
+        if (adult) load.firstOrNull() else load.firstOrNull { it.stack.`is`(Items.BUNDLE) }
 
     /** The listeners hear of [party]'s household (once). */
     private fun tell(party: Party) {
@@ -849,6 +875,9 @@ internal object ComingsBodies {
     private const val GATHER_TICKS = 1200
     private const val WORK_TICKS = 2400
 
+    /** HAND_OVER's hand-off (client/townsfolk's LivingSchedule.MOMENTS): from that tick the piece is the cart's. */
+    private const val HANDOFF = 16
+
     // ---- A household on the move, and each of them ----
 
     private class Party(
@@ -889,11 +918,11 @@ internal object ComingsBodies {
         /** Where the cart stands by the door. */
         var bay: BlockPos? = null
 
-        /** Leaving: what's still to be packed. */
-        val load = ArrayList<ItemStack>()
+        /** Leaving: what's still to be packed, in the order it's heaped on. */
+        val load = ArrayList<Handcarts.Placed>()
 
-        /** What's on the cart now. */
-        val heaped = ArrayList<ItemStack>()
+        /** What's on the cart now, in the order it was heaped on. */
+        val heaped = ArrayList<Handcarts.Placed>()
 
         var room: List<BlockPos>? = null
 
@@ -922,6 +951,9 @@ internal object ComingsBodies {
 
         /** In their new home, done. */
         var home = false
+
+        /** Leaving: the piece of the household's goods they're taking to the cart (in their arms, or being set on it). */
+        var piece: Handcarts.Placed? = null
 
         /** Nothing more to do. */
         val idle: Boolean get() = act == null && queue.isEmpty()
@@ -1213,22 +1245,55 @@ internal object ComingsBodies {
         }
     }
 
-    /** A one-shot played facing whatever [at] says; [done] as it ends. */
-    private class Play(private val activity: Activity, private val at: (Hand) -> Vec3?, private val done: (Hand) -> Unit = {}) : Act() {
+    /**
+     * A one-shot played facing whatever [at] says; [done] on the move's tick [moment] (-1: as it ends). Cut short once
+     * [done] is (by a word with a player, say), it isn't played again.
+     */
+    private class Play(
+        private val activity: Activity, private val at: (Hand) -> Vec3?, private val moment: Int = -1, private val done: (Hand) -> Unit = {},
+    ) : Act() {
         private var t = 0
+        private var fired = false
 
         override fun start(h: Hand) {
             t = 0
+            if (fired) return
             h.p.navigation.stop()
             at(h)?.let { h.face(it) }
             h.p.act(activity)
         }
 
         override fun tick(h: Hand): Boolean {
+            if (fired && t == 0) return false
             at(h)?.let { h.p.lookAt(it) }
-            if (++t < activity.ticks) return true
-            done(h)
-            return false
+            t++
+            // The tick it starts on is the move's first (tick 0 as each client plays it), so its tick n is our n + 1
+            if (!fired && t == (if (moment < 0) activity.ticks else moment + 1)) {
+                fired = true
+                done(h)
+            }
+            return t < activity.ticks
+        }
+    }
+
+    /** Stands facing whatever [at] says until [ready] says they may go on (or [most] ticks have gone by). */
+    private class Until(private val ready: (Hand) -> Boolean, private val at: (Hand) -> Vec3?, private val most: Int = 400) : Act() {
+        private var t = 0
+
+        override fun start(h: Hand) {
+            t = 0
+            h.p.navigation.stop()
+            h.p.act(holding(h, Activity.NONE))
+        }
+
+        override fun tick(h: Hand): Boolean {
+            if (ready(h) || ++t > most) return false
+            at(h)?.let {
+                h.p.lookAt(it)
+                h.p.face(Mth.approachDegrees(h.p.yBodyRot, h.p.yawTo(it), 12f))
+            }
+            keep(h, holding(h, Activity.NONE))
+            return true
         }
     }
 

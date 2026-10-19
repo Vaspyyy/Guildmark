@@ -238,21 +238,38 @@ object Handcarts {
     val MATTRESS: ItemStack get() = ItemStack(Items.BED.pick(DyeColor.WHITE))
 
     /**
-     * What a household of [people] brings, in the order it's heaped on (the floor of the bed first, then the places on
-     * top): someone on their own a chest, a rolled mattress, a chair and a bundle; two of them the pot and a second
-     * bundle too; three or more a second mattress and the cage on top.
+     * One of a household's goods, [stack], and the [place] on the bed it's heaped on (client/cart's HandcartMesh.SLOTS:
+     * six on the floor, then two on top of them from [ON_TOP]).
      */
-    fun household(people: Int): List<ItemStack> {
-        val load = arrayListOf(CHEST, MATTRESS, CHAIR, BUNDLE)
-        if (people >= 2) {
-            load += POT
-            load += BUNDLE
-        }
-        if (people >= 3) {
-            load += MATTRESS
-            load += CAGE
-        }
-        return load
+    class Placed(val place: Int, val stack: ItemStack)
+
+    /** The first of the bed's places that rests on others (HandcartMesh.SLOTS: six on the floor, then two on top). */
+    const val ON_TOP = 6
+
+    /**
+     * What a household of [people] brings, each piece with its place on the bed, in the order it's heaped on: the floor
+     * first, then on top (and it's taken off the other way round). Each lies in its kind's place in client/cart's
+     * HandcartMesh.HOUSEHOLD, as the previews heap a move: the chest, the pot and the hen's coop across the middle and
+     * the front, the bundles at the back, the mattress and the chair riding on top. On top only over a full floor,
+     * though, as with less under them they'd hang in the air: a smaller household's mattress lies across the front of
+     * the bed (where a full heap has a sack), and someone on their own has their chair at the back.
+     *
+     * Someone on their own brings a chest, a rolled mattress, a chair and a bundle; two of them the pot and a second
+     * bundle too, the chair riding on top; three or more a second mattress, on top, and the hen in her coop.
+     */
+    fun household(people: Int): List<Placed> = when {
+        people >= 3 -> listOf(
+            Placed(0, CHEST), Placed(1, POT), Placed(2, CAGE), Placed(3, MATTRESS), Placed(4, BUNDLE), Placed(5, BUNDLE),
+            Placed(6, MATTRESS), Placed(7, CHAIR),
+        )
+        people == 2 -> listOf(Placed(0, CHEST), Placed(1, POT), Placed(3, MATTRESS), Placed(4, BUNDLE), Placed(5, BUNDLE), Placed(7, CHAIR))
+        else -> listOf(Placed(0, CHEST), Placed(3, MATTRESS), Placed(4, CHAIR), Placed(5, BUNDLE))
+    }
+
+    /** What's heaped on [p]'s cart: [pieces], each on its own place, the rest of the bed bare. */
+    fun heap(p: Townsperson, pieces: List<Placed>) {
+        val cart = mine(p) ?: return
+        cart.lay(Array(Handcart.SLOTS) { slot -> pieces.firstOrNull { it.place == slot }?.stack ?: ItemStack.EMPTY })
     }
 
     /** Whether [stack] is a piece of a household's load (see [household]). */

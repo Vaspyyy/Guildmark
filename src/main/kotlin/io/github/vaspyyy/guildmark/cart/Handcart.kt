@@ -395,6 +395,14 @@ class Handcart(type: EntityType<out Handcart>, level: Level) : Entity(type, leve
         }
     }
 
+    /** Lays [heap] on the bed place by place (empty where nothing goes): each where it's given, nothing moved round. */
+    internal fun lay(heap: Array<ItemStack>) {
+        for (slot in 0 until SLOTS) {
+            val stack = heap.getOrNull(slot)?.takeUnless { it.isEmpty }?.copyWithCount(1) ?: ItemStack.EMPTY
+            if (!ItemStack.matches(stack, goods(slot))) entityData.set(GOODS[slot], stack)
+        }
+    }
+
     companion object {
         /** Places on the bed. */
         const val SLOTS = 8
