@@ -270,10 +270,18 @@ object SeasonColours {
 
     // ---- Changing over ----
 
-    /** Chunk columns still to be re-meshed, nearest first, as ring numbers to go. */
+    /** Chunk columns still to be re-meshed, nearest first, as ring numbers to go, and how many columns may be done now. */
     private var ring = -1
     private var ringCentreX = 0
     private var ringCentreZ = 0
+    private var ringRoom = 0
+
+    /**
+     * About how many chunk columns are re-meshed a tick (whole rings at a time): the land round the player turns over
+     * in about a second at the usual render distance of 12, longer further out, so the threads that mesh it aren't
+     * swamped all at once.
+     */
+    private const val RING_COLUMNS = 32
 
     /** A new day (or a new season, a command, a login): today's look, and the land round about re-meshed if it changed. */
     fun update(date: SeasonDate, active: Boolean) {
@@ -293,9 +301,10 @@ object SeasonColours {
         ringCentreX = SectionPos.blockToSectionCoord(player.blockX)
         ringCentreZ = SectionPos.blockToSectionCoord(player.blockZ)
         ring = 0
+        ringRoom = 0
     }
 
-    /** Every client tick: the next ring of chunks out, until the render distance is passed. */
+    /** Every client tick: the next rings of chunks out, [RING_COLUMNS] columns' worth a tick, until the render distance is passed. */
     fun tick() {
         if (ring < 0) return
         val minecraft = Minecraft.getInstance()
@@ -303,13 +312,17 @@ object SeasonColours {
         val reach = minecraft.options.renderDistance().get() + 1
         val minY = level.minSectionY
         val maxY = level.maxSectionY
-        // Two rings a tick: the land round the player turns over in about a second
-        repeat(2) {
+        ringRoom += RING_COLUMNS
+        while (true) {
             if (ring > reach) {
                 ring = -1
                 return
             }
             val r = ring
+            // A ring of 8r columns waits till there's room for the whole of it
+            val columns = if (r == 0) 1 else 8 * r
+            if (columns > ringRoom) return
+            ringRoom -= columns
             val cx = ringCentreX
             val cz = ringCentreZ
             if (r == 0) {
