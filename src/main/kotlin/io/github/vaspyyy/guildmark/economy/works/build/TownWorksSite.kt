@@ -27,6 +27,7 @@ import io.github.vaspyyy.guildmark.homestead.plan.Stuff
 import io.github.vaspyyy.guildmark.homestead.plan.TierPlan
 import io.github.vaspyyy.guildmark.townsfolk.Names
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
+import io.github.vaspyyy.guildmark.townsfolk.scenes.ToppingOut
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.core.particles.BlockParticleOption
@@ -173,8 +174,11 @@ class TownWorksSite(override val level: ServerLevel, val rec: BuildRec, val plan
         return WorksBuilder(p, key, road, lent)
     }
 
-    /** The crew's cheer at a stage's end: a town's crowd, not a homestead's handful. */
-    override fun cheer(): SoundEvent = WorksBlocks.CHEER.get()
+    /**
+     * The crew's cheer at a stage's end: a town's crowd, not a homestead's handful. At the topping out with the town
+     * gathered round, the town's cheer is the one heard (ToppingOut's), not this as well.
+     */
+    override fun cheer(stage: Stage): SoundEvent? = if (stage == Stage.TOPPING && ToppingOut.gathered(level, id)) null else WorksBlocks.CHEER.get()
 
     // ---- Materials ----
 

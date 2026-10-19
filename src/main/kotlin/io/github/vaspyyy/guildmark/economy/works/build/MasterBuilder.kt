@@ -712,10 +712,8 @@ internal object MasterBuilder {
             val up = { top() }
             queue(
                 Face(up),
-                Clip(if (loud) Activity.HURRAH else Activity.POINT, at = up, first = {
-                    speak("homestead_stage_${stage.key}", force = true)
-                    if (stage == Stage.TOPPING) ToppingOut.cheer(level, works)
-                }),
+                // The town's cheer for the topping out went up as it was finished, with the crew's (WorksBuild.staged)
+                Clip(if (loud) Activity.HURRAH else Activity.POINT, at = up, first = { speak("homestead_stage_${stage.key}", force = true) }),
                 Act { ceremony = false },
             )
         }
@@ -730,9 +728,9 @@ internal object MasterBuilder {
                 Clip(Activity.TOAST, at = up, first = {
                     speak("works_master_toast_${1 + p.random.nextInt(2)}", force = true)
                     BuilderCrew.join(s.key, Activity.TOAST)
-                }, on = { t ->
-                    // The cups raised (their knock is the client's, once for the crew), and the town's cheer with it
-                    if (t == TOAST_RAISE) ToppingOut.cheer(level, works)
+                    // The town's cheer as the cups go up (their knock is the client's, once for the crew): told now, as
+                    // the toast begins, so the gathering doesn't take the crew's toast for another call and cheer twice
+                    ToppingOut.cheer(level, works)
                 }),
                 Act {
                     if (tower) WorksAtWork.firstFire(level, rec, s, true)
@@ -788,9 +786,8 @@ internal object MasterBuilder {
         return pos.y
     }
 
-    // The clips' moments (art/scripts/works_clips.py): the plumb bob still, the cups raised, the cloth's pull
+    // The clips' moments (art/scripts/works_clips.py): the plumb bob still, the cloth's pull
     private const val PLUMB_TRUE = 42
-    private const val TOAST_RAISE = 9
     private const val UNVEIL_PULL = 9
 
     /** Ticks after the topping out's call before the toast: the crew's HURRAH (40) played out. */

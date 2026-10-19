@@ -274,6 +274,8 @@ object WorksBuild {
     /** A stage of [site] is finished: called by the master (or one of the crew), cheered, and its ceremony if it has one. */
     private fun staged(level: ServerLevel, w: WorksRec, rec: BuildRec, site: TownWorksSite, stage: Stage, near: Boolean) {
         if (near) {
+            // The town gathered round its topping out cheers it as the crew does, once (and the crew's own cheer is left out)
+            if (stage == Stage.TOPPING) io.github.vaspyyy.guildmark.townsfolk.scenes.ToppingOut.cheer(level, w.id)
             BuilderCrew.celebrate(level, site, stage)
             MasterBuilder.calls(level, w, rec, site, stage)
         }

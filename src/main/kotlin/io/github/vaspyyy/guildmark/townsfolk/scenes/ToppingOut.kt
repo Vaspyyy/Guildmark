@@ -111,6 +111,9 @@ internal object ToppingOut : Works.Listener {
         roar(level, g)
     }
 
+    /** Whether the town is gathered at works [works] for its topping out now: its cheers are the crowd's then ([cheer]), not the crew's own. */
+    fun gathered(level: ServerLevel, works: Int): Boolean = gatherings[works]?.let { level.gameTime <= it.until } == true
+
     /** The cheer going up from the lot and the ring round it, the louder the more have gathered. */
     private fun roar(level: ServerLevel, g: Gathering) {
         val at = g.center

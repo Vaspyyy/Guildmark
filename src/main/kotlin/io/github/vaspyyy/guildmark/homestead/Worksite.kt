@@ -96,8 +96,11 @@ interface Worksite {
     /** Whoever calls its stages for the crew, if anyone but one of themselves does (a works' master builder); the crew only cheers then. */
     fun caller(): Townsperson? = null
 
-    /** The cheer at a loud stage (the walls, the roof, the topping out): a homestead's crew's own; a works' crowd has its own. */
-    fun cheer(): SoundEvent = HomesteadRegistry.CHEER.get()
+    /**
+     * The cheer at a loud [stage] (the walls, the roof, the topping out): a homestead's crew's own; a works' crowd has
+     * its own; none when another is heard for it (the town gathered round a works' topping out).
+     */
+    fun cheer(stage: Stage): SoundEvent? = HomesteadRegistry.CHEER.get()
 
     /** The first of the morning's crew, [p], coming up from [road]: a homestead's ring their handbell and say they're here. */
     fun arrive(p: Townsperson, road: BlockPos) {

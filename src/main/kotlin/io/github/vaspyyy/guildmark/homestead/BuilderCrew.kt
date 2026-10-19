@@ -125,7 +125,7 @@ object BuilderCrew {
             val caller = if (master == null) crew.builders.random() else null
             for (b in crew.builders) b.cheer(stage, b === caller)
             val first = crew.builders.first().p
-            level.playSound(null, first.blockPosition(), site.cheer(), SoundSource.NEUTRAL, 1.2f, 1f)
+            site.cheer(stage)?.let { level.playSound(null, first.blockPosition(), it, SoundSource.NEUTRAL, 1.2f, 1f) }
         } else if (stage == Stage.GROUNDWORK || stage == Stage.FOOTINGS) {
             if (master == null) crew.builders.random().p.say("homestead_stage_${stage.key}", force = true)
         }
