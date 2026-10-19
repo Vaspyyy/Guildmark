@@ -8,6 +8,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Household
 import io.github.vaspyyy.guildmark.townsfolk.Places
 import io.github.vaspyyy.guildmark.townsfolk.Residents
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
+import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import io.github.vaspyyy.guildmark.townsfolk.scenes.Scenes
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel
@@ -32,8 +33,8 @@ import net.minecraft.world.phys.Vec3
  * `/guildmark streets board`'s tests (this session's).
  */
 object Signs : Comings.Listener {
-    /** Boards someone's on their way to put up or take down just now (by position). */
-    private val busy = HashSet<Long>()
+    /** Boards someone's on their way to put up or take down just now (by position), and who. */
+    private val busy = HashMap<Long, Townsperson>()
 
     /** When a board that wouldn't go up (or come down) is tried again, by position. */
     private val retry = HashMap<Long, Long>()
@@ -77,6 +78,8 @@ object Signs : Comings.Listener {
 
     /** Once a second, a player in the capital: each board up where it's wanted and down where it isn't. */
     fun look(level: ServerLevel, column: Long, h: Scenes.Here, now: Long) {
+        // An errand whose bearer went from the world partway (their land unloaded, or they died) never ends of itself
+        busy.values.removeIf { !it.isAlive || it.isRemoved || it.director == null }
         val enabled = Comings.enabled()
         val tests = forced[column]
         if (tests != null) {
@@ -166,7 +169,7 @@ object Signs : Comings.Listener {
             retry[key] = level.gameTime + WAIT
             return
         }
-        busy += key
+        busy[key] = p
     }
 
     /** [lodging]'s board put up at [spot] now, if it's still wanted and there's room. True if it stands. */

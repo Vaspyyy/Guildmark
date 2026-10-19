@@ -17,6 +17,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Comings
 import io.github.vaspyyy.guildmark.townsfolk.Days
 import io.github.vaspyyy.guildmark.townsfolk.Places
 import io.github.vaspyyy.guildmark.townsfolk.Residents
+import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import io.github.vaspyyy.guildmark.townsfolk.scenes.Scenes
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
@@ -71,7 +72,9 @@ object Dressing : Fortunes.Listener {
         var pieces: List<Piece>? = null
         val busy = HashSet<Long>()
         val retry = HashMap<Long, Long>()
-        val workers = HashSet<Int>()
+
+        /** Those out on a round, by entity id, and their rounds (see [lost]). */
+        val workers = HashMap<Int, Round>()
         var rounds = 0
         var waiting = -1L
 
@@ -80,6 +83,9 @@ object Dressing : Fortunes.Listener {
         var lived: Set<Int> = setOf()
         var homesAt = Long.MIN_VALUE / 2
     }
+
+    /** One out on a round, and the pieces it's of. */
+    private class Round(val p: Townsperson, val pieces: List<Piece>)
 
     private val crews = HashMap<Long, Crew>()
 
@@ -217,6 +223,7 @@ object Dressing : Fortunes.Listener {
         val dressUp = town.dress == StreetsData.UP
         val lanternsUp = dressUp && town.lanterns == StreetsData.UP
         homes(level, crew, h, now)
+        lost(crew)
         var standing = 0
         var lanternsStanding = 0
         var unloaded = false
@@ -310,7 +317,7 @@ object Dressing : Fortunes.Listener {
             chosen += next
         }
         val loose = crew.waiting >= 0 && now - crew.waiting > LOOSE
-        val p = Fitting.hire(level, first.pos, h.capital.center, crew.workers, loose)
+        val p = Fitting.hire(level, first.pos, h.capital.center, crew.workers.keys, loose)
         if (p == null) {
             if (crew.waiting < 0) crew.waiting = now
             return
@@ -321,8 +328,9 @@ object Dressing : Fortunes.Listener {
         val keys = chosen.map { it.key }
         val id = p.id
         val sent = Fitting.send(level, p, stations, putting, column) {
+            // Let go already, if the round was found to have outlived its worker (see lost)
+            if (crew.workers.remove(id) == null) return@send
             crew.rounds--
-            crew.workers.remove(id)
             crew.busy.removeAll(keys.toSet())
             // Anything the round didn't get to waits a while before it's tried again
             val at = level.gameTime
@@ -334,8 +342,30 @@ object Dressing : Fortunes.Listener {
         if (!sent) return
         crew.waiting = -1L
         crew.rounds++
-        crew.workers += id
+        crew.workers[id] = Round(p, chosen)
         crew.busy += keys
+    }
+
+    /**
+     * The rounds whose worker went from the world partway (their land unloaded with them in it, as when a player is
+     * teleported off, or they died), or out of the round's charge with its end unheard: such a round never ends of
+     * itself, so it's over now. Its pieces are free for another round, and its ladders let go (each put back as its
+     * land is next seen to), but for one another round is up.
+     */
+    private fun lost(crew: Crew) {
+        val gone = crew.workers.filterValues { !it.p.isAlive || it.p.isRemoved || it.p.director == null }
+        if (gone.isEmpty()) return
+        for ((id, round) in gone) {
+            crew.workers.remove(id)
+            crew.rounds--
+            for (piece in round.pieces) crew.busy.remove(piece.key)
+        }
+        val using = crew.workers.values.flatMapTo(HashSet()) { r -> r.pieces.mapNotNull { it.ladder } }
+        for (round in gone.values) for (piece in round.pieces) {
+            val bottom = piece.ladder ?: continue
+            if (bottom in using) continue
+            for (k in 0..piece.rise) Fitting.ladders.remove(bottom.above(k).asLong())
+        }
     }
 
     /** [piece] as a worker's station for [column]'s dressing [r]. */
