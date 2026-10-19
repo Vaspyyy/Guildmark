@@ -5113,7 +5113,7 @@
   "gui.guildmark.works.wait.blocked": "Held up: something's in the way at %s %s %s.",
   "gui.guildmark.works.wait.short_coming": "Out of %1$s: %3$s more coming by %2$s, due about %4$s.",
   "gui.guildmark.works.wait.short": "Out of %s, and none on its way yet.",
-  "gui.guildmark.works.wait.night": "The crew's off for now: they work in daylight, with an hour at noon.",
+  "gui.guildmark.works.wait.night": "The crew's gone home for the night: they're back at sunrise.",
   "gui.guildmark.works.doing.oven": "%s ovens at work: up to %s loaves over the baking hours, against the town's %s a day.",
   "gui.guildmark.works.doing.granary": "Holding %s of the %s it has room for.",
   "gui.guildmark.works.doing.tower": "Keeps watch %s blocks out along its road, seeing %s blocks either way. Watchmen up there now: %s.",

@@ -452,7 +452,7 @@ object WorksBuild {
         val held = listOfNotNull(
             if (!site.loaded()) "its land isn't loaded (the clock lays when it is)" else null,
             if (site.loaded() && id !in watched) "no player within ${NEAR.toInt()} blocks (the crew comes when one is)" else null,
-            if (!site.workday()) "it's not a working hour (daylight, an hour off at noon)" else null,
+            if (!site.workday()) "it's not a working hour (the crew works from sunrise to sunset)" else null,
             site.short?.let { "it's out of ${it.key}" },
             site.blocked?.let { "the block at ${it.x} ${it.y} ${it.z} is in its way (the clock lays round it)" },
         )

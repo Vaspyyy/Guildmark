@@ -369,7 +369,7 @@ object WorksCommand {
         if (w.site == null) {
             say(source, grey("It has no site yet: the builders look for one each second in loaded land (`works site $id here` puts it where you stand), and its crew comes once it has one."))
         } else {
-            say(source, grey("Its master builder and crew come while a player's within ${WorksBuild.NEAR.toInt()} blocks of it, in daylight with an hour off at noon, and the clock lays the rest whenever its land is loaded. `works rush` is ten times as fast; `works stage $id <stage>` lays it free up to a stage, `works finish $id` all of it."))
+            say(source, grey("Its master builder and crew come while a player's within ${WorksBuild.NEAR.toInt()} blocks of it, from sunrise to sunset (the town's labourers among them take an hour off at noon), and the clock lays the rest whenever its land is loaded. `works rush` is ten times as fast; `works stage $id <stage>` lays it free up to a stage, `works finish $id` all of it."))
         }
         return 1
     }
