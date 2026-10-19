@@ -94,6 +94,11 @@ object TownsfolkCommand {
         val player = source.playerOrException
         val folk = source.level.getEntitiesOfClass(Townsperson::class.java, player.boundingBox.inflate(radius.toDouble())) { true }
         folk.forEach { it.discard() }
+        // A capital's people are only sent home: made there again out of sight, so their records keep a body
+        val residents = Residents.get(source.level)
+        folk.mapNotNull { p -> residents.of(p)?.takeIf { it.alive && it.home >= 0 && it.uuid == p.uuid } }
+            .groupBy({ it.capital.asLong() }, { it.id })
+            .forEach { (capital, ids) -> Comings.later(source.level, capital, ids) }
         source.sendSuccess({ Component.translatable("commands.guildmark.townsfolk.cleared", folk.size) }, true)
         return folk.size
     }
