@@ -47,7 +47,8 @@ object Towns {
     /** The town round [player]'s position, looked up at most every few seconds. */
     fun around(level: ServerLevel, playerId: UUID, pos: BlockPos): Town? {
         val seen = byPlayer[playerId]
-        if (seen != null && level.gameTime - seen.at < 100 && (seen.town == null || seen.town.contains(pos))) return seen.town
+        // A look stamped later than now was in another world (this one's clock is behind it): it's looked at again
+        if (seen != null && level.gameTime - seen.at in 0 until 100L && (seen.town == null || seen.town.contains(pos))) return seen.town
         val town = at(level, pos)
         if (byPlayer.size > 256) byPlayer.clear()
         byPlayer[playerId] = Seen(level.gameTime, town)
