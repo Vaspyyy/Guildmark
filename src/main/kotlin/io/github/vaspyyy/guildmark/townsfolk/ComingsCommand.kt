@@ -81,8 +81,8 @@ object ComingsCommand {
     private fun off(): String? = when {
         Comings.enabled() -> null
         !Comings.ready() -> "Comings and goings aren't switched on yet (M6 isn't wired in): nobody comes or goes."
-        !Days.enabled() -> "The Living World is switched off (setting: Living World), so nobody comes or goes."
-        else -> "Comings and goings are off (setting: Town Comings): nobody comes or goes, and any household away is home again."
+        !Days.enabled() -> "The Living World is switched off (setting: Living Capitals), so nobody comes or goes."
+        else -> "Comings and goings are off (setting: Comings and Goings): nobody comes or goes, and any household away is home again."
     }
 
     private fun show(context: CommandContext<CommandSourceStack>): Int {

@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.townsfolk.scenes
 
+import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.economy.works.Works
 import io.github.vaspyyy.guildmark.economy.works.WorksState
 import io.github.vaspyyy.guildmark.economy.works.WorksView
@@ -10,8 +11,12 @@ import io.github.vaspyyy.guildmark.townsfolk.Places
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import net.minecraft.core.BlockPos
+import net.minecraft.core.Holder
+import net.minecraft.resources.Identifier
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
+import net.minecraft.sounds.SoundEvent
+import net.minecraft.sounds.SoundSource
 import net.minecraft.world.level.levelgen.structure.BoundingBox
 import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
@@ -43,6 +48,9 @@ internal object ToppingOut : Works.Listener {
     private const val CHEERS_APART = 60L
 
     private val CALLS = setOf(Activity.HURRAH, Activity.TOAST, Activity.FEST_HURRAH)
+
+    /** The crowd's cheer and clapping at each call (works.cheer), sent as far as its sounds.json entry carries it. */
+    private val CHEER: Holder<SoundEvent> = Holder.direct(SoundEvent.createFixedRangeEvent(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "works.cheer"), 48f))
 
     class Gathering(val id: Int, val lot: BoundingBox, val until: Long) {
         val members = LinkedHashSet<Townsperson>()
@@ -100,6 +108,14 @@ internal object ToppingOut : Works.Listener {
         val g = gatherings[works] ?: return
         g.cue++
         g.cued = level.gameTime
+        roar(level, g)
+    }
+
+    /** The cheer going up from the lot and the ring round it, the louder the more have gathered. */
+    private fun roar(level: ServerLevel, g: Gathering) {
+        val at = g.center
+        val volume = (0.6f + 0.05f * g.members.size).coerceAtMost(1f)
+        level.playSound(null, at.x, at.y + 1.5, at.z, CHEER, SoundSource.NEUTRAL, volume, 0.95f + level.random.nextFloat() * 0.1f)
     }
 
     /**
@@ -134,6 +150,7 @@ internal object ToppingOut : Works.Listener {
         if (calling.isNotEmpty()) {
             g.cue++
             g.cued = now
+            roar(level, g)
         }
     }
 

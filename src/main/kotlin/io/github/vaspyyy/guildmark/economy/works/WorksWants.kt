@@ -8,6 +8,7 @@ import io.github.vaspyyy.guildmark.economy.Good
 import io.github.vaspyyy.guildmark.economy.Maker
 import io.github.vaspyyy.guildmark.economy.Market
 import io.github.vaspyyy.guildmark.economy.Markets
+import io.github.vaspyyy.guildmark.economy.OwnStalls
 import io.github.vaspyyy.guildmark.economy.RoadPeril
 import io.github.vaspyyy.guildmark.economy.SupplierLink
 import io.github.vaspyyy.guildmark.economy.SupplierRank
@@ -79,7 +80,8 @@ internal object WorksWants {
                 }
             }
         }
-        if (Suppliers.enabled()) for (player in level.server.playerList.players) {
+        // A stall of your own only where stalls are let and sell (Own Stalls) and suppliers are trusted (Supplier Orders)
+        if (Suppliers.enabled() && OwnStalls.enabled()) for (player in level.server.playerList.players) {
             if (taken(data, capital, WorksKind.STALL, owner = player.uuid) || !trusted(level, capital, player.uuid)) continue
             out.add(Want(WorksKind.STALL, -1, player.uuid, "gui.guildmark.works.why.stall.trusted"))
         }

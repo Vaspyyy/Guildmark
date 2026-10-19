@@ -332,7 +332,8 @@ object WorksTopics : TopicSource {
         val ask = s.ask
         val player = ask.player ?: return
         if (ask.occasion !in THANKS || w.kind == WorksKind.STALL || w.state == WorksState.WANTED) return
-        if (player.uuid !in TownTalk.givers(w)) return
+        // Knowing you for the one who paid is remembering you (Townsfolk Remember You): off, you're a stranger here too
+        if (!Say.memory() || player.uuid !in TownTalk.givers(w)) return
         val heard = s.heard
         if (heard == null && s.laboured == null) return
         val told = heard?.let { Say.day(ask.level) - Math.floorDiv(it.rumour.born, 24L) }

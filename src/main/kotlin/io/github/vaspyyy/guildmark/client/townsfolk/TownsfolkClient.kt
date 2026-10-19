@@ -66,6 +66,8 @@ object TownsfolkClient {
         moments(p, p.level())
         // ---- Living World (LivingMoments.kt): its clips' sounds and dust ----
         LivingMoments.tick(p)
+        // The bread queue's grumble, one for the line (QueueLoop.kt)
+        if (p.shownActivity == Activity.QUEUE) QueueLoop.heard(p)
         // ---- end Living World ----
         if (p.role == TownRole.BARD) tune(p)
     }

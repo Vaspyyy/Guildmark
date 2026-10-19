@@ -201,7 +201,7 @@ object TalkCommand {
         val (p, r) = resident(source, player) ?: return 0
         val day = Memory.day(level)
         say(source, header("What ${who(p, r)} remembers of you"))
-        if (!Memory.enabled()) say(source, grey("Memory is switched off (townsfolkMemory): everyone's a stranger, and nothing is dropped."))
+        if (!Memory.enabled()) say(source, grey("Memory is switched off (setting: Townsfolk Remember You): everyone's a stranger, and nothing is dropped."))
         if (r.id < 0) say(source, grey("Someone with no record (a visitor): what passes with them is kept for today only, and they know what most of the town knows."))
         val familiarity = TownTalk.familiarity(level, r, player)
         val tier = TownTalk.standing(level, r.capital, player.uuid)
@@ -262,7 +262,7 @@ object TalkCommand {
         val player = source.playerOrException
         val level = source.level
         val (p, r) = resident(source, player) ?: return 0
-        if (!Memory.enabled()) return fail(source, "Memory is switched off (townsfolkMemory).")
+        if (!Memory.enabled()) return fail(source, "Memory is switched off (setting: Townsfolk Remember You).")
         if (r.id < 0) return fail(source, "${who(p, r)} has no record: they keep nothing past the day.")
         val w = Works.get(level, works) ?: return fail(source, "There's no works #$works (`/guildmark works` lists them).")
         TownTalk.laboured(level, r, w.id)
@@ -275,9 +275,9 @@ object TalkCommand {
         val player = source.playerOrException
         val level = source.level
         val (p, r) = resident(source, player) ?: return 0
-        if (!Memory.enabled()) return fail(source, "Memory is switched off (townsfolkMemory).")
+        if (!Memory.enabled()) return fail(source, "Memory is switched off (setting: Townsfolk Remember You).")
         TownTalk.fed(level, r, player.uuid)
-        say(source, plain("${who(p, r)} ate at your alms table today: a small favour, counted once a day and only while their favour for you is under %.0f.".format(Memory.DAILY_CAP)))
+        say(source, plain("${who(p, r)} ate at your alms table today: a small favour, counted once a day and only while their favour for you (the Opinion line's) is under %+.0f.".format(10 * Memory.DAILY_CAP)))
         return 1
     }
 
@@ -286,7 +286,7 @@ object TalkCommand {
         val player = source.playerOrException
         val level = source.level
         val (p, r) = resident(source, player) ?: return 0
-        if (!Memory.enabled()) return fail(source, "Memory is switched off (townsfolkMemory).")
+        if (!Memory.enabled()) return fail(source, "Memory is switched off (setting: Townsfolk Remember You).")
         if (r.id < 0) return fail(source, "${who(p, r)} has no record: they keep nothing past the day.")
         val data = TownTalkData.get(level)
         val entry = data[r.capital] ?: data.open(r.capital, Spread.hourOf(level), Memory.day(level).toLong())
@@ -304,7 +304,7 @@ object TalkCommand {
         val player = source.playerOrException
         val level = source.level
         val (p, r) = resident(source, player) ?: return 0
-        if (!Memory.enabled()) return fail(source, "Memory is switched off (townsfolkMemory).")
+        if (!Memory.enabled()) return fail(source, "Memory is switched off (setting: Townsfolk Remember You).")
         if (named) TownTalk.named(level, r, player) else TownTalk.met(level, r, player)
         say(source, plain(if (named) "You've told ${who(p, r)} your name." else "You and ${who(p, r)} have talked today."))
         return 1
@@ -366,7 +366,7 @@ object TalkCommand {
         val hour = Spread.hourOf(level)
         val living = Residents.get(level).of(capital).count { it.alive }
         say(source, header("Rumours of ${name(capital)}: ${entry.rumours.size} going (hour $hour, ${entry.arrivals.size} on their way in)"))
-        if (!Rumours.enabled()) say(source, grey("Rumours are switched off (townsfolkRumours): nothing goes from mouth to mouth."))
+        if (!Rumours.enabled()) say(source, grey("Rumours are switched off (setting: Rumours Get Round): nothing goes from mouth to mouth."))
         val talk = TownCry.pick(entry, Spread.view(capital), hour, keep = false)
         for (s in entry.rumours.values.sortedByDescending { Rumours.heat(it, hour) }) {
             val r = s.rumour
@@ -451,7 +451,7 @@ object TalkCommand {
         val level = source.level
         val capital = capital(source, player) ?: return 0
         val entry = TownTalkData.get(level)[capital] ?: return fail(source, "Nothing has been said in ${name(capital)} yet.")
-        if (!Rumours.enabled()) say(source, grey("Rumours are switched off (townsfolkRumours); spreading anyway, as asked."))
+        if (!Rumours.enabled()) say(source, grey("Rumours are switched off (setting: Rumours Get Round); spreading anyway, as asked."))
         fun knowers(id: Int): Int = entry.minds.values.count { id in it.heard }
         // How many know each rumour now, then after every few hours (the clock time each count is at)
         val ids = entry.rumours.keys.toList()
