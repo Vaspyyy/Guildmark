@@ -238,10 +238,11 @@ internal object LivingMoments {
                     repeat(2) { puff(level, ParticleTypes.SPLASH, at, 0.15, 0.06, 0.03) }
                 }
             }
-            // The works' crew. The beam set down (works.beam_down) and the horn (works.horn, heard to 128 blocks) are the
+            // The works' crew. Their sounds carry their own level (works-audio.md), so most play at 1.0; the lighter touches
+            // are softer. The beam set down (works.beam_down) and the horn (works.horn, heard to 128 blocks) are the
             // server's, so carry_beam and sound_horn play nothing here
             "mix_mortar" -> {
-                sound(level, at, sfx("works.mortar"), 0.6f)
+                sound(level, at, sfx("works.mortar"), 1.0f)
                 repeat(2) { puff(level, MORTAR, at, 0.15, 0.06, 0.03) }
             }
             "trowel" -> when (m.name) {
@@ -254,10 +255,10 @@ internal object LivingMoments {
                 "tap" -> sound(level, at, sfx("works.stone_set"), 0.4f, 1.15f + level.random.nextFloat() * 0.1f)
                 "cut" -> sound(level, at, sfx("works.trowel"), 0.6f)
             }
-            "hoist" -> sound(level, at, sfx("works.hoist"), 0.7f)
+            "hoist" -> sound(level, at, sfx("works.hoist"), 1.0f)
             // Chips of the stone off the chisel's point, the banker's own
             "chisel" -> {
-                sound(level, at, sfx("works.chisel"), 0.8f)
+                sound(level, at, sfx("works.chisel"), 1.0f)
                 val stone = level.getBlockState(BlockPos.containing(at.add(0.0, -0.1, 0.0))).takeUnless { it.isAir || !it.fluidState.isEmpty }
                     ?: Blocks.STONE.defaultBlockState()
                 repeat(5) { puff(level, BlockParticleOption(ParticleTypes.BLOCK, stone), at, 0.12, 0.12, 0.1) }
@@ -268,7 +269,7 @@ internal object LivingMoments {
                 val ground = groundUnder(level, at.add(0.0, -0.3, 0.0))
                 repeat(3) { puff(level, BlockParticleOption(ParticleTypes.BLOCK, ground), at.add(0.0, 0.05, 0.0), 0.2, 0.06, 0.04) }
             }
-            "unveil" -> if (m.name == "pull") sound(level, at, sfx("works.unveil"), 0.9f)
+            "unveil" -> if (m.name == "pull") sound(level, at, sfx("works.unveil"), 1.0f)
             "toast" -> when (m.name) {
                 // Raised together: the crew's cups are heard as one clink, not one for every cup
                 "raise" -> if (level.gameTime - toastTick > TOAST_TOGETHER || toastAt.distanceToSqr(at) > 256.0) {
@@ -288,7 +289,7 @@ internal object LivingMoments {
             // handcart are the server's, heard once however many watch
             "shiver" -> when (m.name) {
                 "stamp" -> {
-                    sound(level, at, sfx("streets.stamp"), 0.6f)
+                    sound(level, at, sfx("streets.stamp"), 1.0f)
                     val ground = groundUnder(level, at.add(0.0, -0.3, 0.0))
                     repeat(2) { puff(level, BlockParticleOption(ParticleTypes.BLOCK, ground), at.add(0.0, 0.05, 0.0), 0.2, 0.04, 0.03) }
                 }
@@ -296,7 +297,7 @@ internal object LivingMoments {
             }
             // Turned over above the bare counter and shaken twice: the basket's rattle on the turn, the last crumbs falling
             "empty_basket" -> {
-                if (m.tick < 14f) sound(level, at, sfx("streets.basket"), 0.7f)
+                if (m.tick < 14f) sound(level, at, sfx("streets.basket"), 1.0f)
                 crumbs(p, level, at, Items.BREAD, 3)
             }
             "ladle" -> when (m.name) {
@@ -304,10 +305,10 @@ internal object LivingMoments {
                 // A few drops off the ladle's lip as it pours into the bowl
                 "pour" -> repeat(4) { puff(level, STEW, at, 0.08, -0.04, 0.01) }
             }
-            "take_bowl" -> sound(level, at, sfx("streets.bowl"), 0.8f)
+            "take_bowl" -> sound(level, at, sfx("streets.bowl"), 1.0f)
             "eat_bowl" -> sound(level, at, sfx("streets.bowl"), 0.6f)
             // Each of the pair pats the other's back
-            "embrace" -> sound(level, at, sfx("streets.pat"), 0.55f)
+            "embrace" -> sound(level, at, sfx("streets.pat"), 1.0f)
             // The caravan crew's clips: their caravan.* sounds (client/caravan's CaravanSounds)
             else -> caravan?.invoke(p, clip, m.name, at)
         }
