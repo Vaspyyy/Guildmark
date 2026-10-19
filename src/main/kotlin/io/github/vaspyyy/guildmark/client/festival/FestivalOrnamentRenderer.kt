@@ -282,14 +282,17 @@ class FestivalOrnamentRenderer(@Suppress("UNUSED_PARAMETER") context: BlockEntit
         fun flat(): V = V(x, 0.0, z)
     }
 
-    /** Vertices waiting to be drawn: position, texture, colour and light. */
+    /**
+     * Vertices waiting to be drawn: position, texture, colour and light. Room is made with the first (a frame's three
+     * often leave one empty: a garland or a string of pennants has nothing that glows, a flap nothing solid).
+     */
     private class Geo {
-        private var data = FloatArray(7 * 256)
+        private var data = NO_VERTICES
         var count = 0
             private set
 
         fun vertex(p: V, u: Float, v: Float, color: Int, light: Int) {
-            if ((count + 1) * 7 > data.size) data = data.copyOf(data.size * 2)
+            if ((count + 1) * 7 > data.size) data = data.copyOf(max(7 * 256, data.size * 2))
             val i = count * 7
             data[i] = p.x.toFloat()
             data[i + 1] = p.y.toFloat()
@@ -1118,6 +1121,9 @@ class FestivalOrnamentRenderer(@Suppress("UNUSED_PARAMETER") context: BlockEntit
     companion object {
         private val ATLAS = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "textures/entity/festival/ornaments.png")
         private const val SIZE = 256f
+
+        /** A [Geo] with nothing in it yet. */
+        private val NO_VERTICES = FloatArray(0)
 
         private val CLOTH = Uv(0, 0, 16, 16)
         private val ROPE = Uv(16, 0, 32, 16)
