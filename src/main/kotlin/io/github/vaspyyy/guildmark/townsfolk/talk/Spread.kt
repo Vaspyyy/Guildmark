@@ -335,6 +335,8 @@ object Spread {
         val wells = places?.wells.orEmpty()
         val homes = living.map { it.home }.filter { it >= 0 }.distinct()
         val counts = living.groupingBy { it.role }.eachCount()
+        // Each home's nearest worked out once, for everyone living there
+        val byHome = HashMap<Int, List<Int>>()
         val out = living.map { r ->
             val at = places?.lodgings?.get(r.home)?.box?.center
             val tavern = at?.let { h -> taverns.minByOrNull { it.box.center.distSqr(h) }?.id } ?: 0
@@ -343,7 +345,8 @@ object Spread {
             val bands = max(1, (counts[r.role] ?: 1) / CREW)
             val watch = r.role == TownRole.GUARD && nightWatch(level, r)
             val agenda = Days.plan(r, day, lessons, watch, crew?.carters?.contains(r.id) == true, crew?.crier == r.id, crew?.labourers?.contains(r.id) == true)
-            Person(r, agenda, tavern, well, temple, neighbour(r, at, homes, places, day), Math.floorMod(mix(r.id.toLong()), bands.toLong()).toInt())
+            val near = byHome.getOrPut(r.home) { nearest(r.home, at, homes, places) }
+            Person(r, agenda, tavern, well, temple, neighbour(r, near, day), Math.floorMod(mix(r.id.toLong()), bands.toLong()).toInt())
         }
         view.day = day
         view.people = out
@@ -356,15 +359,31 @@ object Spread {
         return body?.nightWatch ?: (Math.floorMod(mix(r.id * 7919L), 3L) == 0L)
     }
 
-    /** The home [r] calls at on [day]: one of the [NEIGHBOURS] nearest theirs (where the places are known), picked by who and when. */
-    private fun neighbour(r: Resident, at: BlockPos?, homes: List<Int>, places: CityPlaces?, day: Long): Int {
-        val others = homes.filter { it != r.home }
-        if (others.isEmpty()) return -1
-        val near = if (at != null && places != null) {
-            others.sortedBy { places.lodgings[it]?.box?.center?.distSqr(at) ?: Double.MAX_VALUE }.take(NEIGHBOURS)
-        } else {
-            others
+    /** The homes someone living in [home] (at [at]) might call at: the [NEIGHBOURS] nearest theirs where the places are known, else any of [homes]. */
+    private fun nearest(home: Int, at: BlockPos?, homes: List<Int>, places: CityPlaces?): List<Int> {
+        val others = homes.filter { it != home }
+        if (at == null || places == null) return others
+        // The nearest kept as the homes are met, each distance worked out once: nearest first, ties in their order (as sorting them all had it)
+        val near = ArrayList<Int>(NEIGHBOURS + 1)
+        val far = ArrayList<Double>(NEIGHBOURS + 1)
+        for (h in others) {
+            val d = places.lodgings[h]?.box?.center?.distSqr(at) ?: Double.MAX_VALUE
+            var k = near.size
+            while (k > 0 && far[k - 1] > d) k--
+            if (k >= NEIGHBOURS) continue
+            near.add(k, h)
+            far.add(k, d)
+            if (near.size > NEIGHBOURS) {
+                near.removeAt(NEIGHBOURS)
+                far.removeAt(NEIGHBOURS)
+            }
         }
+        return near
+    }
+
+    /** The home [r] calls at on [day]: one of those [near] theirs (see [nearest]), picked by who and when. */
+    private fun neighbour(r: Resident, near: List<Int>, day: Long): Int {
+        if (near.isEmpty()) return -1
         return near[Math.floorMod(mix(r.id * 31L + day), near.size.toLong()).toInt()]
     }
 
