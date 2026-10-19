@@ -1418,6 +1418,8 @@ object Caravans {
         c.reach = CaravanRoutes.reach(leg, band)
         c.struck = 0
         spot(level, c, leg, point)
+        // In its road's tower's sight it's seen from there, as a strike the dice put there would be
+        c.watched = io.github.vaspyyy.guildmark.economy.works.WorksWatch.struck(level, c, point, t)
         c.rigged = when (waylaid) {
             true -> 1
             false -> -1

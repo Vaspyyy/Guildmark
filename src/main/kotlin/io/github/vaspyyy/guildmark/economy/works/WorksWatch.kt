@@ -114,6 +114,17 @@ internal object WorksWatch {
         return false
     }
 
+    /**
+     * Whether [c]'s strike put at [point] by hand (`caravan ambush`), falling at clock time [at], is in its road's
+     * tower's sight with a watch posted: the record's `watched`, as for a strike the dice put there. The hook in
+     * Caravans.ambush.
+     */
+    fun struck(level: ServerLevel, c: CaravanRec, point: Double, at: Long): Boolean {
+        if (!Works.enabled() || c.road < 0) return false
+        val watch = Works.watch(level, c.capital, c.road) ?: return false
+        return sees(watch, point) && watchmen(level, c.capital, Caravans.clockOf(Math.floorDiv(at, 1000L))) > 0
+    }
+
     /** Guards the watch counts for when it rides out to the strike [c] (the hook in Caravans.odds): none with the works off. */
     fun riders(c: CaravanRec): Double = if (c.watched && Works.enabled()) RIDERS else 0.0
 
