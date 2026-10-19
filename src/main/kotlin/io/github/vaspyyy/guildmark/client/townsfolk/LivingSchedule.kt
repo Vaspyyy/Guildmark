@@ -290,9 +290,6 @@ internal object LivingSchedule {
             Shown("bundle", 0f, END),
         ),
         "shut_stall" to listOf(
-            Shown("flap_batten", 0f, END),
-            Shown("flap_cloth", 0f, END),
-            Shown("flap_rail", 0f, END),
             Shown("well_rope", 0f, END),
         ),
     )
@@ -321,7 +318,7 @@ internal object LivingSchedule {
         "eat_bowl" to listOf("bowl"),
         "take_bowl" to listOf("bowl", "spoon"),
         "pack" to listOf("bundle"),
-        "shut_stall" to listOf("flap_batten", "flap_cloth", "flap_rail", "well_rope"),
+        "shut_stall" to listOf("well_rope"),
     )
 
     /** Props that hang straight down from the hand holding them (where no track runs them). */
@@ -762,8 +759,7 @@ internal object LivingSchedule {
             Moment("show", 12f, -11.785f, -0.821f, -7.007f),
         ),
         "shut_stall" to listOf(
-            Moment("pull", 6.5f, 0f, -21f, -8f),
-            Moment("hook", 17.5f, 0f, 7.2f, -8f),
+            Moment("pull", 6.5f, 0f, -23.6f, -8f),
         ),
     )
 }

@@ -22,8 +22,9 @@ import net.minecraft.world.phys.Vec3
 
 /**
  * The shut stall's awning and slate (living-world/design-influence.md section 5, "The slate", M6 Part D2): as the
- * keeper of a stall with nothing to sell lets its awning's flap down (townsfolk/scenes/ShutStall, SHUT_STALL), the
- * flap unrolls from the awning's front edge in the stall's own stripes and hangs there stirring in the breeze; as they
+ * keeper of a stall with nothing to sell lets its awning's flap down (townsfolk/scenes/ShutStall, SHUT_STALL: a tug on
+ * the cord under the awning, and the flap is put up as the tie gives), the flap unrolls from the awning's front edge
+ * in the stall's own stripes (client/festival's renderer, from that moment) and hangs there stirring in the breeze; as they
  * tidy the bare counter, a slate goes up leaning on the display, chalked "Nothing today" as it's seen
  * ([WaresBlockEntity.slate]). When there's something to sell again and they put the awning up (SET_UP), the flap rolls
  * up and goes, and the slate's taken away. Each with the awning's flap of sound (`streets.awning`).

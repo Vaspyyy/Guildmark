@@ -56,6 +56,12 @@ object ShutStall {
     /** How many ticks a keeper's body has been in the world (loaded or come in) and still finds their stall as it was left. */
     private const val LOADED = 200
 
+    /**
+     * The tick of SHUT_STALL (counted as Work counts a step's, from 0 a tick after the move starts) the awning comes
+     * down on: the move's pull on the cord gives at its 7th tick, and D2's flap unrolls from then in its own renderer.
+     */
+    private const val PULL_AT = 6
+
     /** The stalls shut (by their keeper's place), and since when. */
     private val shut = HashMap<Long, Long>()
 
@@ -131,7 +137,7 @@ object ShutStall {
         val tidying = Step(Activity.ARRANGE, 60)
         val steps = listOf(shutting, tidying, Step(Activity.ARRANGE, 61), Step(Activity.NONE, 20))
         return Acts.via(p, life, stall.keeper.pos, Work(p, Spot(stall.keeper.pos, stall.keeper.facing), awningAt(stall), { i -> steps.getOrNull(i) }, onTick = { s, t ->
-            if (s === shutting && t == Activity.SHUT_STALL.ticks / 2) down(level, stall, p)
+            if (s === shutting && t == PULL_AT) down(level, stall, p)
             if (s === tidying && t == 0) {
                 p.lookAt(counter)
                 Words.say(p, "streets.shut", "a stall shut with nothing to sell")

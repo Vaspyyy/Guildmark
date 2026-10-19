@@ -356,69 +356,46 @@ def haggle():
     joins_idle(c)
     return c
 
-# ---- shut_stall (30, once): the keeper of a stall with nothing to sell, behind the counter: a look up at the flap
-# rolled under the awning over the counter's back edge, a step in and the right hand up to its cord; a tug (pull: the
-# tie gives and the canvas comes unrolling down, its batten swinging), a step back, the batten taken by its ends and
-# hooked on the counter (hook); a look up and down it, and the hands dusted.
+# ---- shut_stall (30, once): the keeper of a stall with nothing to sell, behind the counter: a look up at the cord that
+# hangs from under the awning over the counter's back edge, a step in and the right hand up to its toggle; a tug (pull:
+# the tie at the awning's front gives, and the flap comes unrolling down over the stall's front: Part D2's AWNING_FLAP
+# ornament, put up on the pull and unrolled by its own renderer from then, so the clip carries no flap of its own), the
+# cord let go and swinging back, a step back and a look out at the flap coming down; a nod, and the hands dusted.
 SS_LEN = 30
-SS_PULL, SS_HOOK = 6.5, 17.5
-SS_FREE, SS_FALL = 7.0, 3.4                     # the batten let go of, and the ticks it takes to drop
-SS_Z = -8.0                                     # the flap hangs over the counter's back edge
-SS_RAIL = np.array([0.0, -23.4, SS_Z])          # the rail's middle, under the awning
-SS_ROLLED = -21.0                               # the batten's height rolled up, and hanging free
-SS_HANG = 4.4
-SS_HOOKED = 7.2                                 # ... and hooked on the counter's edge
-SS_CORD = 15.6                                  # the cord, from the batten's middle
+SS_PULL, SS_FREE = 6.5, 7.0                     # the tug, and the cord let go of as the tie gives
+SS_Z = -8.0                                     # the cord hangs over the counter's back edge
+SS_EYE = np.array([0.0, -23.6, SS_Z])           # ... from an eye under the awning
+SS_TOGGLE = np.array([-0.4, -4.2, SS_Z + 0.4])  # its toggle, in reach overhead
+SS_CORD = float(SS_TOGGLE[1] - SS_EYE[1])       # the cord's length, eye to toggle
 SS_STEPS = [(0.5, 3.0, 'right_leg', (-1.9, -2.6)), (2.5, 5.0, 'left_leg', (1.9, -2.6)),
             (8.0, 10.5, 'right_leg', (-1.9, 0.0)), (10.0, 12.5, 'left_leg', (1.9, 0.0))]
-SS_RIGHT = [(0, 0.0), (1.5, 0.0), (5.0, 1.0), (7.5, 1.0), (10.0, 0.0), (11.5, 0.0), (14.0, 1.0), (19.0, 1.0), (22.5, 0.0),
-            (30, 0.0)]
-SS_LEFT = [(0, 0.0), (11.5, 0.0), (14.0, 1.0), (19.0, 1.0), (22.5, 0.0), (30, 0.0)]
-SS_P = [(0, 0.0), (3.0, -5.0), (7.0, -3.0), (10.0, 2.0), (13.0, 5.0), (SS_HOOK, 4.0), (20.0, 3.0), (23.0, -4.0),
-        (26.5, -1.0), (30, 0.0)]
-SS_HX = [(0, 0.0), (3.0, -30.0), (6.5, -26.0), (9.0, -8.0), (12.0, 10.0), (SS_HOOK, 16.0), (20.5, 4.0), (23.5, -22.0),
-         (26.5, -8.0), (30, 0.0)]
-
-
-def ss_batten(t):
-    """The batten's middle (and how far the canvas is off its roll, 0 to 1) at [t]: rolled up under the rail, the tug,
-    dropping free with a bounce and a swing, drawn down and hooked on the counter."""
-    tug = 0.6 * bump(t, SS_PULL - 1.0, SS_FREE + 0.4)
-    if t <= SS_FREE:
-        return np.array([0.0, SS_ROLLED + tug, SS_Z]), 0.0
-    u = (t - SS_FREE) / SS_FALL
-    fall = u * u if u < 1.0 else 1.0 + 0.06 * math.sin(math.pi * (u - 1.0) * 2.4) * math.exp(-(u - 1.0) * 2.2)
-    y = SS_ROLLED + (SS_HANG - SS_ROLLED) * fall
-    swing = 1.6 * math.sin(2 * math.pi * (t - SS_FREE - SS_FALL) / 5.0) * math.exp(-max(0.0, t - SS_FREE - SS_FALL) / 3.5) \
-        if t > SS_FREE + SS_FALL else 0.0
-    take = smooth((t - 13.0) / 1.5)
-    swing *= 1.0 - take
-    down = smooth((t - 14.5) / (SS_HOOK - 14.5))
-    y = y + (SS_HOOKED - SS_HANG) * down
-    return np.array([0.0, y, SS_Z + swing]), min(1.0, fall)
+SS_RIGHT = [(0, 0.0), (1.5, 0.0), (5.0, 1.0), (7.5, 1.0), (10.0, 0.0), (30, 0.0)]
+SS_LEFT = [(0, 0.0), (30, 0.0)]
+SS_P = [(0, 0.0), (3.0, -5.0), (7.0, -3.0), (10.0, -1.0), (14.0, -2.5), (19.0, -2.0), (23.0, -4.0), (26.5, -1.0),
+        (30, 0.0)]
+# the head: up at the cord, then out at the flap coming down over the front (it's down by 19), a nod, and back
+SS_HX = [(0, 0.0), (3.0, -30.0), (6.5, -26.0), (9.0, -14.0), (13.0, -10.0), (17.0, -5.0), (20.0, -4.0), (21.5, 6.0),
+         (23.5, -2.0), (26.5, -3.0), (30, 0.0)]
 
 
 def ss_hands(t):
-    """Where each fist is wanted (None: at rest): the right on the cord's toggle, then each on an end of the batten."""
-    b, _ = ss_batten(t)
-    toggle = np.array([-0.4, SS_ROLLED + 1.2 + SS_CORD, SS_Z + 0.4])
+    """Where each fist is wanted (None: at rest): the right on the cord's toggle, tugging it."""
     if t < 9.0:
         tug = np.array([0.0, 2.6 * smooth((t - SS_PULL + 0.8) / 1.2), 0.8 * smooth((t - SS_PULL + 0.8) / 1.2)])
-        return {'right_arm': toggle + tug, 'left_arm': None}
-    lift = np.array([0.0, -1.0, 0.6]) * smooth((t - SS_HOOK - 0.5) / 2.0)
-    return {'right_arm': b + np.array([-6.6, 0.4, 0.8]) + lift, 'left_arm': b + np.array([6.6, 0.4, 0.8]) + lift}
+        return {'right_arm': SS_TOGGLE + tug, 'left_arm': None}
+    return {'right_arm': None, 'left_arm': None}
 
 
 def shut_stall():
-    c = la.clip('shut_stall', SS_LEN, False, look=('merchant', 1), tools_=('well_rope', *lp.FLAPS), station_='stall',
-                events=[('pull', SS_PULL), ('hook', SS_HOOK)], traces=[('right_arm', GRIP['right_arm'], (255, 200, 120))],
+    c = la.clip('shut_stall', SS_LEN, False, look=('merchant', 1), tools_=('well_rope',), station_='stall',
+                events=[('pull', SS_PULL)], traces=[('right_arm', GRIP['right_arm'], (255, 200, 120))],
                 views=((40, -14, True), (90, -2), (200, -16)))
     holds = la.Holds()
     for t in la.every(SS_LEN):
         pitch = K(SS_P, t)
         feet, lift = stepping(t, FEET, SS_STEPS, lift=1.0)
         fr = F_(qt=bend(pitch, 0.0, 0.0), vt=(0.0, sink_for(pitch), 0.0),
-                pr=la.root_for(feet, z=0.5 * (feet['right_leg'][1] + feet['left_leg'][1]), dip=0.5 * bump(t, 12.0, 21.0)))
+                pr=la.root_for(feet, z=0.5 * (feet['right_leg'][1] + feet['left_leg'][1])))
         key_frame(c, t, fr, ease='linear')
         stand(c, t, fr, feet=feet, lift=lift)
         want = ss_hands(t)
@@ -431,46 +408,27 @@ def shut_stall():
             set_arm(c, side, t, rest)
         c.key('head', t, qeuler(x=K(SS_HX, t)), ease='linear')
     c.mode('head', 'add')
-    la.TRACKS['shut_stall'] = {'well_rope': lambda t, pivot, c=c: _ss_cord(c, t),
-                               'flap_rail': lambda t, pivot: (np.eye(3), SS_RAIL, None),
-                               'flap_cloth': lambda t, pivot: _ss_cloth(t), 'flap_batten': lambda t, pivot: _ss_roll(t)}
+    la.TRACKS['shut_stall'] = {'well_rope': lambda t, pivot, c=c: _ss_cord(c, t)}
     for k in (5.0, SS_PULL):
         check(c, f'right fist on the cord\'s toggle (t={k:g})', ta.fk(c, k, 'right_arm', GRIP['right_arm']), ss_hands(k)['right_arm'], tol=0.8)
-    for side in ('right_arm', 'left_arm'):
-        check(c, f'{side.replace("_arm", "")} fist on the batten (t={SS_HOOK:g})', ta.fk(c, SS_HOOK, side, GRIP[side]),
-              ss_hands(SS_HOOK)[side], tol=0.8)
     joins_idle(c)
     return c
 
 
-def _ss_roll(t):
-    b, off = ss_batten(t)
-    s = 1.0 - 0.55 * off
-    return np.eye(3), b, (1.0, s, s)
-
-
-def _ss_cloth(t):
-    b, off = ss_batten(t)
-    top = SS_RAIL + np.array([0.0, 0.6, 0.0])
-    foot = b - np.array([0.0, lp.FLAP_ROLL * (1.0 - 0.55 * off) * 0.9, 0.0])
-    Rm, S = la.aim(top, foot, lp.FLAP_LEN)
-    return Rm, top, S
-
-
 def _ss_cord(c, t):
-    b, off = ss_batten(t)
-    top = b + np.array([0.0, lp.FLAP_ROLL * (1.0 - 0.55 * off), 0.0])
+    """The cord from its eye under the awning: hanging straight, its toggle taken as the hand comes to it and tugged,
+    then let go as the tie gives, swinging back to hang straight again."""
+    hung = SS_EYE + np.array([0.0, SS_CORD, 0.0])
     if t < SS_FREE:
-        end = apply(part_M(c, t, 'right_arm'), GRIP['right_arm'])
+        w = smooth((smooth(K(SS_RIGHT, t)) - 0.7) / 0.3)
+        end = hung + (apply(part_M(c, t, 'right_arm'), GRIP['right_arm']) - hung) * w
     else:
-        sway = b[2] - SS_Z
-        end = top + np.array([0.0, SS_CORD, -0.6 * sway])
-        if t < SS_FREE + 2.0:            # let go of: it falls in after the batten
-            held = apply(part_M(c, SS_FREE, 'right_arm'), GRIP['right_arm'])
-            hung = ss_batten(SS_FREE)[0] + np.array([0.0, lp.FLAP_ROLL + SS_CORD, 0.0])
-            end = end + (held - hung) * (1.0 - smooth((t - SS_FREE) / 2.0))
-    Rm, S = la.aim(top, end, lp.ROPE_LEN)
-    return Rm, top, S
+        a = t - SS_FREE
+        held = apply(part_M(c, SS_FREE, 'right_arm'), GRIP['right_arm'])
+        swing = 0.9 * math.sin(2 * math.pi * a / 5.0) * math.exp(-a / 3.5)
+        end = hung + (held - hung) * (1.0 - smooth(a / 2.0)) + np.array([0.0, 0.0, swing])
+    Rm, S = la.aim(SS_EYE, end, lp.ROPE_LEN)
+    return Rm, SS_EYE, S
 
 # ================================================================== the alms table
 
@@ -1157,7 +1115,7 @@ def street_moment_specs():
         'embrace': {'pat': right},
         'look_about': {'look': ('part', 'head', (0.0, -4.0, -3.0))},
         'show_in': {'show': right},
-        'shut_stall': {'pull': ('point', (0.0, SS_ROLLED, SS_Z)), 'hook': ('point', (0.0, SS_HOOKED, SS_Z))},
+        'shut_stall': {'pull': ('point', tuple(float(x) for x in SS_EYE))},
     }
 
 
