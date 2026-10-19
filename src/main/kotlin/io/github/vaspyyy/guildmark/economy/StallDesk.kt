@@ -31,7 +31,6 @@ import net.minecraft.server.level.ServerPlayer
 import net.minecraft.sounds.SoundEvent
 import net.minecraft.sounds.SoundSource
 import net.minecraft.util.Prediction
-import net.minecraft.world.ContainerHelper
 import net.minecraft.world.InteractionHand
 import net.minecraft.world.InteractionResult
 import net.minecraft.world.item.Item
@@ -314,7 +313,7 @@ object StallDesk {
 
     /**
      * [player] sets [count] of [good] out on their stall at [s], as many of it as they carry, may sell here (not what
-     * they or their party bought at this market this week) and there's room for.
+     * they or their party bought at this market this week, nor salvage off its own wagons) and there's room for.
      */
     private fun put(level: ServerLevel, player: ServerPlayer, s: Session, hall: Hall, good: Good?, count: Int): String? {
         val stall = s.stall(hall)?.takeIf { it.renter == player.uuid } ?: return "gui.guildmark.stall.why.not_yours"
@@ -322,8 +321,12 @@ object StallDesk {
         val item = good?.takeIf { it.traded }?.item ?: return null
         if (stall.whole(good) <= 0 && stall.goods().size >= KINDS) return "gui.guildmark.stall.why.kinds"
         val n = minOf(count, allowed(level, player, s.centre, stall, good))
-        if (n <= 0) return if (SupplierLink.boughtByParty(level, player.uuid, s.centre, good) > 0) "gui.guildmark.stall.why.bought" else null
-        ContainerHelper.clearOrCountMatchingItems(player.inventory, { it.`is`(item) }, n, false)
+        if (n <= 0) return when {
+            Trading.count(player.inventory, item, s.centre) == 0 && Trading.count(player.inventory, item) > 0 -> "gui.guildmark.market.own_wagon"
+            SupplierLink.boughtByParty(level, player.uuid, s.centre, good) > 0 -> "gui.guildmark.stall.why.bought"
+            else -> null
+        }
+        Trading.take(player.inventory, item, n, s.centre)
         stall.stock[good.ordinal] += n
         level.playSound(null, display(s, stall), SET_OUT, SoundSource.BLOCKS, 0.7f, 0.95f + level.random.nextFloat() * 0.1f)
         return null
@@ -380,10 +383,14 @@ object StallDesk {
         else -> null
     }
 
-    /** How many of [good] [player] may set out on [stall] at [t] now: what they carry, less what they or their party bought here this week, as far as there's room. */
+    /**
+     * How many of [good] [player] may set out on [stall] at [t] now: what they carry but salvage off the capital's own
+     * wagons (its keepers won't buy that back, see [Marked]), less what they or their party bought here this week, as
+     * far as there's room.
+     */
     private fun allowed(level: ServerLevel, player: ServerPlayer, centre: BlockPos, stall: OwnStall, good: Good): Int {
         val item = good.item ?: return 0
-        val own = Trading.count(player.inventory, item) - SupplierLink.boughtByParty(level, player.uuid, centre, good)
+        val own = Trading.count(player.inventory, item, centre) - SupplierLink.boughtByParty(level, player.uuid, centre, good)
         return minOf(own, MOST - stall.whole(good)).coerceAtLeast(0)
     }
 
@@ -557,12 +564,13 @@ object StallDesk {
         val keep = keep(rank)
         val kept = hall?.kept?.get(player.uuid)
         val entry = Markets.get(level)[centre]
+        // What they carry of each good to set out: none of it salvage off this capital's own wagons
         val shown = Good.TRADED.filter { g ->
             val item = g.item ?: return@filter false
-            stall != null && stall.whole(g) > 0 || state != TAKEN && Trading.count(player.inventory, item) > 0
+            stall != null && stall.whole(g) > 0 || state != TAKEN && Trading.count(player.inventory, item, centre) > 0
         }
         val goods = shown.map { g ->
-            val carried = if (state == TAKEN) 0 else Trading.count(player.inventory, g.item!!)
+            val carried = if (state == TAKEN) 0 else Trading.count(player.inventory, g.item!!, centre)
             val lot = entry?.let { Lots.cheap(it.market.price(it.town, g) * (1.0 - OwnStalls.CUT)) }
             StallGood(
                 g.id, stall?.whole(g) ?: 0, carried,
