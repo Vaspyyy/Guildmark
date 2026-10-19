@@ -222,6 +222,7 @@ class FestivalOrnamentRenderer(@Suppress("UNUSED_PARAMETER") context: BlockEntit
     }
 
     override fun submit(state: FestivalOrnamentRenderState, poseStack: PoseStack, collector: SubmitNodeCollector, camera: CameraRenderState) {
+        V.reuse()
         val eye = V(camera.pos.x - state.blockPos.x, camera.pos.y - state.blockPos.y, camera.pos.z - state.blockPos.z)
         val solid = Geo()
         val glow = Geo()
@@ -268,8 +269,19 @@ class FestivalOrnamentRenderer(@Suppress("UNUSED_PARAMETER") context: BlockEntit
 
     // =============================================================================================== drawing
 
-    /** A point or a direction, in blocks from the block's corner. */
-    private data class V(val x: Double, val y: Double, val z: Double) {
+    /**
+     * A point or a direction, in blocks from the block's corner. Drawing a piece takes thousands of them, every frame,
+     * so they're kept and handed out again rather than made afresh: one holds until the next ornament's drawing begins
+     * ([reuse]), and none is wanted after its own ornament's (the vertices are copied out of them as they're made).
+     */
+    private class V private constructor() {
+        var x = 0.0
+            private set
+        var y = 0.0
+            private set
+        var z = 0.0
+            private set
+
         operator fun plus(o: V) = V(x + o.x, y + o.y, z + o.z)
         operator fun minus(o: V) = V(x - o.x, y - o.y, z - o.z)
         operator fun times(k: Double) = V(x * k, y * k, z * k)
@@ -280,6 +292,30 @@ class FestivalOrnamentRenderer(@Suppress("UNUSED_PARAMETER") context: BlockEntit
             return if (l < 1e-9) V(0.0, 1.0, 0.0) else V(x / l, y / l, z / l)
         }
         fun flat(): V = V(x, 0.0, z)
+
+        companion object {
+            /** The thread the ornaments are drawn on, which the kept ones are for: any other is given new ones. */
+            private val home: Thread = Thread.currentThread()
+            private val kept = ArrayList<V>()
+            private var handed = 0
+
+            operator fun invoke(x: Double, y: Double, z: Double): V {
+                val v = when {
+                    Thread.currentThread() !== home -> V()
+                    handed < kept.size -> kept[handed++]
+                    else -> V().also { kept.add(it); handed++ }
+                }
+                v.x = x
+                v.y = y
+                v.z = z
+                return v
+            }
+
+            /** An ornament's drawing begins: those handed out for the last one can go again. */
+            fun reuse() {
+                if (Thread.currentThread() === home) handed = 0
+            }
+        }
     }
 
     /**
@@ -424,13 +460,18 @@ class FestivalOrnamentRenderer(@Suppress("UNUSED_PARAMETER") context: BlockEntit
             }
         }
 
+        /** Where a line is [f] of the way along it, from its start (0) to its end (1). */
+        fun interface Line {
+            operator fun invoke(f: Double): V
+        }
+
         /** A line from [a] to [b] sagging [sag] in its middle and blown a little sideways by the breeze. */
-        fun hang(a: V, b: V, sag: Double, sway: Double, phase: Double): (Double) -> V {
+        fun hang(a: V, b: V, sag: Double, sway: Double, phase: Double): Line {
             val dir = (b - a).flat()
             val across = if (dir.length() < 1e-6) V(1.0, 0.0, 0.0) else V(-dir.z, 0.0, dir.x).unit()
             val push = (across.x * windDir.x + across.z * windDir.z).let { if (it >= 0) 1.0 else -1.0 }
             val blow = sway * (0.6 * wind + 0.4 * sin(t * 0.05 + phase)) * push
-            return { f ->
+            return Line { f ->
                 val bend = 4 * f * (1 - f)
                 a + (b - a) * f - V(0.0, sag * bend, 0.0) + across * (blow * bend)
             }
@@ -616,7 +657,7 @@ class FestivalOrnamentRenderer(@Suppress("UNUSED_PARAMETER") context: BlockEntit
                 for (k in 0 until lights) {
                     val f = (k + 0.3) / lights
                     val twinkle = 0.55 + 0.45 * sin(t * 0.13 + k * 2.4 + s.seed)
-                    val color = intArrayOf(0xFFE6A0, 0xFF8070, 0xA0E0FF, 0xC8FFB0)[Math.floorMod(k + data.index, 4)]
+                    val color = TWINKLE[Math.floorMod(k + data.index, TWINKLE.size)]
                     billboard(glow, line(f) + V(0.0, -0.06, 0.0), 0.16, HALO, ARGB.color((twinkle * (0.4f + 0.6f * s.dark)).toFloat().coerceIn(0f, 1f), color), LightCoordsUtil.FULL_BRIGHT)
                 }
             }
@@ -660,7 +701,7 @@ class FestivalOrnamentRenderer(@Suppress("UNUSED_PARAMETER") context: BlockEntit
          * [length] long. [whole] is its length once up, [out] how much of that is out, and [size] how big what hangs
          * on it shows (bunched up small as it's gathered in).
          */
-        class Run(val line: (Double) -> V, val length: Double, val whole: Double, val out: Double, val going: Boolean, val size: Double) {
+        class Run(val line: Line, val length: Double, val whole: Double, val out: Double, val going: Boolean, val size: Double) {
             /** Where along [line] what hangs [f] of the way along the whole string is: null while that part isn't out yet. */
             fun at(f: Double): Double? = when {
                 !going -> f
@@ -743,7 +784,7 @@ class FestivalOrnamentRenderer(@Suppress("UNUSED_PARAMETER") context: BlockEntit
                 for (k in 0 until max(2, (length / 0.6).toInt())) {
                     val f = (k + 0.3) / max(2, (length / 0.6).toInt())
                     val twinkle = 0.55 + 0.45 * sin(t * 0.13 + k * 2.4 + s.seed)
-                    val color = intArrayOf(0xFFE6A0, 0xFF8070, 0xA0E0FF, 0xC8FFB0)[Math.floorMod(k + data.index, 4)]
+                    val color = TWINKLE[Math.floorMod(k + data.index, TWINKLE.size)]
                     billboard(glow, run.line(f) + V(0.0, -0.06, 0.0), 0.14 * run.size, HALO, ARGB.color((twinkle * (0.4f + 0.6f * s.dark)).toFloat().coerceIn(0f, 1f), color), LightCoordsUtil.FULL_BRIGHT)
                 }
             }
@@ -1030,7 +1071,7 @@ class FestivalOrnamentRenderer(@Suppress("UNUSED_PARAMETER") context: BlockEntit
                     val flutter = (0.08 + 0.15 * wind) * sin(time * 0.15 + k + f * 3.0) * f
                     from + V(0.0, -0.95 * f, 0.0) + windDir * (0.25 * wind * f) + V(-h.z, 0.0, h.x) * flutter
                 }
-                strip(solid, points, 0.06, RIBBON, intArrayOf(0xD9432F, 0xF5B342, 0xFFF1C9, 0xF08A3A)[k % 4].opaque(), null, light)
+                strip(solid, points, 0.06, RIBBON, SUN_STREAMERS[k % SUN_STREAMERS.size].opaque(), null, light)
             }
         }
 
@@ -1062,7 +1103,7 @@ class FestivalOrnamentRenderer(@Suppress("UNUSED_PARAMETER") context: BlockEntit
                     val flutter = (0.05 + 0.12 * wind) * sin(t * 0.12 + k * 1.7 + f * 3.5) * f
                     from + V(cos(a) * 0.15 * f, -1.2 * f, sin(a) * 0.15 * f) + V(-sin(a), 0.0, cos(a)) * flutter
                 }
-                strip(solid, points, 0.06, RIBBON, intArrayOf(0xB5532A, 0xD9A23A, 0x8C2D3A, 0x6F8F3A)[k].opaque(), null, light)
+                strip(solid, points, 0.06, RIBBON, SHEAF_STREAMERS[k].opaque(), null, light)
             }
         }
 
@@ -1186,6 +1227,10 @@ class FestivalOrnamentRenderer(@Suppress("UNUSED_PARAMETER") context: BlockEntit
             intArrayOf(0xF4F1EA, 0xE8C26A, 0xB32D35, 0x2F6B45),
         )
         private val RIBBON_COLORS = intArrayOf(0xF2A6C8, 0xF6E27A, 0x9BD36A, 0x8EC9F0, 0xC4A3E8, 0xF8F4EC, 0xF08A9A, 0x7FD6C2)
+        /** The evergreen's twinkling lights, and the sun wheel's and the harvest crown's streamers. */
+        private val TWINKLE = intArrayOf(0xFFE6A0, 0xFF8070, 0xA0E0FF, 0xC8FFB0)
+        private val SUN_STREAMERS = intArrayOf(0xD9432F, 0xF5B342, 0xFFF1C9, 0xF08A3A)
+        private val SHEAF_STREAMERS = intArrayOf(0xB5532A, 0xD9A23A, 0x8C2D3A, 0x6F8F3A)
 
         /** The sun wheel's size and how high its hub stands above the crown's middle. */
         const val WHEEL_RADIUS = 1.1
