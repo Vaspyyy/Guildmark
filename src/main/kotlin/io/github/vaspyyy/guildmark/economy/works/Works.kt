@@ -524,7 +524,10 @@ object Works {
         val data = data(level)
         val m = entry.market
         val rec = data.town(m.capital)
-        val closed = Conditions(m.hour).day - 1
+        val day = Conditions(m.hour).day - 1
+        // On ahead of the clock (`market run`), each day the market closes is the works' next, however often it's run on
+        // from the same hour, as the fortunes' are; the dates kept (a want's, a lost site's) stay the market's own days
+        val closed = if (m.hour > Markets.hourOf(level)) maxOf(day, rec.closed + 1) else day
         if (closed <= rec.closed) {
             rec.begin()
             data.changed()
@@ -532,9 +535,9 @@ object Works {
         }
         rec.closed = closed
         rec.short = ((rec.short shl 1) or (if (WorksWants.shortDay(m, entry.town)) 1 else 0)) and 0xFF
-        for (want in WorksWants.wants(level, entry, data, rec)) propose(level, data, m.capital, want.kind, want.road, want.owner, want.why, closed)
+        for (want in WorksWants.wants(level, entry, data, rec)) propose(level, data, m.capital, want.kind, want.road, want.owner, want.why, day)
         for (w in data.of(m.capital)) {
-            if (w.paid && w.state != WorksState.DONE && w.siteLost >= 0 && closed - w.siteLost >= SITE_LOST_DAYS) {
+            if (w.paid && w.state != WorksState.DONE && w.siteLost >= 0 && day - w.siteLost >= SITE_LOST_DAYS) {
                 remove(level, w.id, "message.guildmark.works.called_off")
                 continue
             }
