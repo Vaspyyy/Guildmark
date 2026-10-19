@@ -82,18 +82,20 @@ class RoadNetwork(val roads: MutableList<Road> = mutableListOf()) : SavedData() 
     }
 
     /**
-     * Every tick: roads under construction load their next chunk (generating it if needed) and pave it,
-     * one chunk per tick so the server keeps up. Every 20 ticks, any other unpaved stretch whose chunk
-     * happens to be loaded is paved too.
+     * Every tick: a road under construction paves its next chunk if that's loaded, and loads it for that (generating
+     * it if needed, which holds the server up a while) every [BUILD_EVERY] ticks if it isn't, so the server keeps up.
+     * Every 20 ticks, any other unpaved stretch whose chunk happens to be loaded is paved too.
      */
     fun tick(level: ServerLevel) {
         val building = roads.firstOrNull { it.underConstruction && !it.finished }
         if (building != null) {
             val chunkKey = building.unpaved.first()
             val chunkPos = ChunkPos.unpack(chunkKey)
-            level.getChunk(chunkPos.x, chunkPos.z)
-            pave(level, building, chunkKey)
-            if (building.finished) finish(level, building)
+            if (level.chunkSource.getChunkNow(chunkPos.x, chunkPos.z) != null || level.gameTime % BUILD_EVERY == BUILD_AT) {
+                level.getChunk(chunkPos.x, chunkPos.z)
+                pave(level, building, chunkKey)
+                if (building.finished) finish(level, building)
+            }
         }
         if (level.gameTime % 20L != 0L) return
         var budget = 4
@@ -200,6 +202,10 @@ class RoadNetwork(val roads: MutableList<Road> = mutableListOf()) : SavedData() 
 
         /** Blocks of open space kept above a road. */
         private const val HEADROOM = 4
+
+        /** Ticks between the chunks loaded for a road being built where its land isn't loaded, and the tick of those it's done on. */
+        private const val BUILD_EVERY = 20L
+        private const val BUILD_AT = 10L
 
         private val CODEC: Codec<RoadNetwork> = RecordCodecBuilder.create { i ->
             i.group(Road.CODEC.listOf().fieldOf("roads").forGetter { it.roads })
