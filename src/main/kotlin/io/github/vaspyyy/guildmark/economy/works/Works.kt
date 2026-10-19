@@ -22,6 +22,7 @@ import io.github.vaspyyy.guildmark.homestead.plan.Stuff
 import io.github.vaspyyy.guildmark.registry.ModItems
 import io.github.vaspyyy.guildmark.townsfolk.Comings
 import io.github.vaspyyy.guildmark.townsfolk.Director
+import io.github.vaspyyy.guildmark.townsfolk.Residents
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import io.github.vaspyyy.guildmark.village.VillageNames
@@ -664,16 +665,20 @@ object Works {
         Markets.get(level).changed()
     }
 
-    /** Asks after the newcomer [w] sent for once built: a journeyman baker for the oven, a keeper for the stall (see [Comings.hire]). */
+    /**
+     * Asks after the newcomer [w] sent for once built: a journeyman baker for the oven, a keeper for the stall (see
+     * [Comings.hire]); one who has died is followed by whoever the comings send in their place, once they're in.
+     */
     private fun hire(level: ServerLevel, data: WorksData, w: WorksRec) {
-        if (w.state != WorksState.DONE || w.hired >= 0) return
+        if (w.state != WorksState.DONE) return
+        if (w.hired >= 0 && Residents.get(level)[w.hired]?.alive == true) return
         val role = when (w.kind) {
             WorksKind.OVEN -> TownRole.BAKER
             WorksKind.STALL -> TownRole.MERCHANT
             else -> return
         }
         val id = Comings.hire(level, w.capital, role, w.id)
-        if (id < 0) return
+        if (id < 0 || id == w.hired) return
         w.hired = id
         data.changed()
     }
