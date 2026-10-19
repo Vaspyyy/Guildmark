@@ -54,7 +54,7 @@ object Lookout {
     var beacon: Beacon? = null
 
     /** The tick of LIGHT_BEACON (Part F's clip) the flame goes in on, when [Beacon.light] is told. */
-    const val LIT_TICK = 30
+    const val LIT_TICK = 14
 
     /** Dusk, on the clock, when the beacon is lit: from the day watch's last half hour until dark. */
     private const val DUSK_FROM = 17.5

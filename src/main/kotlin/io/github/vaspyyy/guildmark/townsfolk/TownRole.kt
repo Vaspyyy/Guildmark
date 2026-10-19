@@ -244,6 +244,7 @@ enum class Activity(val clip: String, val ticks: Int, val loop: Boolean, val ove
     LOOKOUT("lookout", 80, true),
     LIGHT_BEACON("light_beacon", 50, false),
     SHUT_STALL("shut_stall", 30, false),
+    SOUND_HORN("sound_horn", 40, false),
     ;
 
     /** Seated activities keep the townsperson on their seat (a wagon's bench and tailboard among them). */

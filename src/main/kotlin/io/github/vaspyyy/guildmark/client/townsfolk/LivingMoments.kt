@@ -238,6 +238,76 @@ internal object LivingMoments {
                     repeat(2) { puff(level, ParticleTypes.SPLASH, at, 0.15, 0.06, 0.03) }
                 }
             }
+            // The works' crew. The beam set down (works.beam_down) and the horn (works.horn, heard to 128 blocks) are the
+            // server's, so carry_beam and sound_horn play nothing here
+            "mix_mortar" -> {
+                sound(level, at, sfx("works.mortar"), 0.6f)
+                repeat(2) { puff(level, MORTAR, at, 0.15, 0.06, 0.03) }
+            }
+            "trowel" -> when (m.name) {
+                "scoop" -> sound(level, at, sfx("works.trowel"), 0.6f)
+                "spread" -> {
+                    sound(level, at, sfx("works.trowel"), 1.0f)
+                    repeat(2) { puff(level, MORTAR, at, 0.2, 0.02, 0.02) }
+                }
+                // The blade's flat tapping the stone down into its bed
+                "tap" -> sound(level, at, sfx("works.stone_set"), 0.4f, 1.15f + level.random.nextFloat() * 0.1f)
+                "cut" -> sound(level, at, sfx("works.trowel"), 0.6f)
+            }
+            "hoist" -> sound(level, at, sfx("works.hoist"), 0.7f)
+            // Chips of the stone off the chisel's point, the banker's own
+            "chisel" -> {
+                sound(level, at, sfx("works.chisel"), 0.8f)
+                val stone = level.getBlockState(BlockPos.containing(at.add(0.0, -0.1, 0.0))).takeUnless { it.isAir || !it.fluidState.isEmpty }
+                    ?: Blocks.STONE.defaultBlockState()
+                repeat(5) { puff(level, BlockParticleOption(ParticleTypes.BLOCK, stone), at, 0.12, 0.12, 0.1) }
+            }
+            // The sighting staff's foot planted in the ground (the master's lines as he waves are the building's)
+            "survey" -> if (m.name == "plant") {
+                sound(level, at, sfx("works.stake"), 0.5f)
+                val ground = groundUnder(level, at.add(0.0, -0.3, 0.0))
+                repeat(3) { puff(level, BlockParticleOption(ParticleTypes.BLOCK, ground), at.add(0.0, 0.05, 0.0), 0.2, 0.06, 0.04) }
+            }
+            "unveil" -> if (m.name == "pull") sound(level, at, sfx("works.unveil"), 0.9f)
+            "toast" -> when (m.name) {
+                // Raised together: the crew's cups are heard as one clink, not one for every cup
+                "raise" -> if (level.gameTime - toastTick > TOAST_TOGETHER || toastAt.distanceToSqr(at) > 256.0) {
+                    toastTick = level.gameTime
+                    toastAt = at
+                    sound(level, at, sfx("works.toast"), 1.0f)
+                }
+                "drink" -> sound(level, at, mod("tavern.sip"), 0.5f)
+            }
+            // The torch put into the beacon's coals (the fire's flare and its burning are the beacon's own)
+            "light_beacon" -> if (m.name == "dip") {
+                sound(level, at, sfx("works.beacon_flare"), 1.0f)
+                repeat(5) { puff(level, ParticleTypes.FLAME, at, 0.25, 0.04, 0.02) }
+                repeat(3) { puff(level, ParticleTypes.SMOKE, at.add(0.0, 0.2, 0.0), 0.2, 0.05, 0.01) }
+            }
+            // The streets in hard times. The awning's flap (shut_stall), the ladle in the pot and the bundle set on the
+            // handcart are the server's, heard once however many watch
+            "shiver" -> when (m.name) {
+                "stamp" -> {
+                    sound(level, at, sfx("streets.stamp"), 0.6f)
+                    val ground = groundUnder(level, at.add(0.0, -0.3, 0.0))
+                    repeat(2) { puff(level, BlockParticleOption(ParticleTypes.BLOCK, ground), at.add(0.0, 0.05, 0.0), 0.2, 0.04, 0.03) }
+                }
+                "puff" -> breath(p, level, at)
+            }
+            // Turned over above the bare counter and shaken twice: the basket's rattle on the turn, the last crumbs falling
+            "empty_basket" -> {
+                if (m.tick < 14f) sound(level, at, sfx("streets.basket"), 0.7f)
+                crumbs(p, level, at, Items.BREAD, 3)
+            }
+            "ladle" -> when (m.name) {
+                "dip" -> repeat(2) { puff(level, STEW, at, 0.1, 0.06, 0.02) }
+                // A few drops off the ladle's lip as it pours into the bowl
+                "pour" -> repeat(4) { puff(level, STEW, at, 0.08, -0.04, 0.01) }
+            }
+            "take_bowl" -> sound(level, at, sfx("streets.bowl"), 0.8f)
+            "eat_bowl" -> sound(level, at, sfx("streets.bowl"), 0.6f)
+            // Each of the pair pats the other's back
+            "embrace" -> sound(level, at, sfx("streets.pat"), 0.55f)
             // The caravan crew's clips: their caravan.* sounds (client/caravan's CaravanSounds)
             else -> caravan?.invoke(p, clip, m.name, at)
         }
@@ -294,6 +364,16 @@ internal object LivingMoments {
         }
     }
 
+    /** A breath of white let out at the mouth on a cold day, drifting forward and thinning. */
+    private fun breath(p: Townsperson, level: Level, at: Vec3) {
+        val yaw = Math.toRadians(p.yBodyRot.toDouble())
+        val random = level.random
+        repeat(3) {
+            val out = 0.012 + random.nextDouble() * 0.012
+            level.addParticle(ParticleTypes.WHITE_SMOKE, at.x, at.y, at.z, -sin(yaw) * out, 0.004 + random.nextDouble() * 0.006, cos(yaw) * out)
+        }
+    }
+
     /** Grain streaming down into a hopper. */
     private fun grain(level: Level, at: Vec3, count: Int) {
         val random = level.random
@@ -336,11 +416,30 @@ internal object LivingMoments {
     /** The handbell's pitch: one bell, so it barely varies. */
     private fun bellPitch(level: Level): Float = 0.99f + level.random.nextFloat() * 0.02f
 
+    /** When and where a toast was last raised, so a crew raising their cups together clinks once. */
+    private var toastTick = -1000L
+    private var toastAt: Vec3 = Vec3.ZERO
+
+    /** How many ticks apart two cups raised count as raised together. */
+    private const val TOAST_TOGETHER = 8L
+
     private val events = HashMap<String, SoundEvent>()
 
     /** The mod's townsfolk.[name] sound. */
     private fun mod(name: String): SoundEvent =
         events.getOrPut(name) { SoundEvent.createVariableRangeEvent(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "townsfolk.$name")) }
 
+    private val whole = HashMap<String, SoundEvent>()
+
+    /** The mod's sound [id], given whole: the works' and the streets' (works.*, streets.*). */
+    private fun sfx(id: String): SoundEvent =
+        whole.getOrPut(id) { SoundEvent.createVariableRangeEvent(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, id)) }
+
     private val FLOUR = DustParticleOptions(0xF4EEDF, 0.9f)
+
+    /** Lime mortar, wet: flecks of it off the hoe and the trowel. */
+    private val MORTAR = BlockParticleOption(ParticleTypes.BLOCK, Blocks.CALCITE.defaultBlockState())
+
+    /** The alms pot's stew, in drops. */
+    private val STEW = ItemParticleOption(ParticleTypes.ITEM, Items.RABBIT_STEW)
 }

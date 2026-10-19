@@ -59,6 +59,8 @@ internal object LivingProps {
         Activity.KNOCK, Activity.POINT, Activity.YAWN,
         // The talking gestures that use one hand, the other hanging or walking
         Activity.GOSSIP, Activity.SHUSH, Activity.WAVE_OFF, Activity.TIP_HAT, Activity.INTRODUCE, Activity.WAVE_WALK, Activity.NOD_WALK,
+        // The watch (a lantern kept in the left at night), the beam on the right shoulder, the newcomers shown in: the left swings free
+        Activity.LOOKOUT, Activity.CARRY_BEAM, Activity.SHOW_IN,
     )
     private val LEFT_ONLY = setOf(Activity.CARRY_BASKET)
     private val FREE = setOf(Activity.NOD, Activity.SIGH)
