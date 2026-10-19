@@ -120,8 +120,10 @@ class TownWorksSite(override val level: ServerLevel, val rec: BuildRec, val plan
     /** Standing before the crate, on the side it faces. */
     override fun crateFront(): Vec3 {
         val c = crate
-        val state = level.getBlockState(c)
-        val facing = if (state.hasProperty(WorksFacingBlock.FACING)) state.getValue(WorksFacingBlock.FACING) else frame.front
+        // Asked from afar too (where its labourers report, where the porters carry to): with its land not loaded, the
+        // frame's front does, and nothing is loaded to say which way the crate faces
+        val state = if (level.isLoaded(c)) level.getBlockState(c) else null
+        val facing = if (state != null && state.hasProperty(WorksFacingBlock.FACING)) state.getValue(WorksFacingBlock.FACING) else frame.front
         val stand = c.relative(facing)
         return Vec3(stand.x + 0.5, stand.y.toDouble(), stand.z + 0.5)
     }
