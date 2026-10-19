@@ -30,7 +30,7 @@ class TownsfolkRenderer(context: EntityRendererProvider.Context) :
     HumanoidMobRenderer<Townsperson, TownsfolkRenderState, TownsfolkModel>(context, TownsfolkModel(context.bakeLayer(TownsfolkModel.LAYER)), 0.5f) {
 
     init {
-        addLayer(GlowLayer(this))
+        addLayer(GlowLayer(this, TownsfolkModel(context.bakeLayer(TownsfolkModel.LAYER)).glowing()))
         // ---- Living World (LivingGoodsLayer.kt): the goods in hand ----
         addLayer(LivingGoodsLayer(this))
         // ---- end Living World ----
@@ -79,11 +79,15 @@ class TownsfolkRenderer(context: EntityRendererProvider.Context) :
     /** Whether what [entity] says shows over their head: they're saying something, and not into this player's talk screen, which shows it all. */
     private fun speaking(entity: Townsperson): Boolean = entity.speech.isNotEmpty() && !TalkClient.talkingWith(entity.id)
 
-    /** The hot iron in a smith's tongs and the flame in a lantern, bright in the dark. */
-    private class GlowLayer(parent: RenderLayerParent<TownsfolkRenderState, TownsfolkModel>) : RenderLayer<TownsfolkRenderState, TownsfolkModel>(parent) {
+    /**
+     * The hot iron in a smith's tongs and the flame in a lantern, bright in the dark: drawn again with [glow], a model of
+     * them that draws only what glows (not the whole of them a second time).
+     */
+    private class GlowLayer(parent: RenderLayerParent<TownsfolkRenderState, TownsfolkModel>, private val glow: TownsfolkModel) :
+        RenderLayer<TownsfolkRenderState, TownsfolkModel>(parent) {
         override fun submit(poseStack: PoseStack, collector: SubmitNodeCollector, light: Int, state: TownsfolkRenderState, yRot: Float, xRot: Float) {
             if (!state.glows || state.isInvisible) return
-            collector.order(1).submitModel(parentModel, state, poseStack, RenderTypes.eyes(GLOW), light, OverlayTexture.NO_OVERLAY, state.outlineColor)
+            collector.order(1).submitModel(glow, state, poseStack, RenderTypes.eyes(GLOW), light, OverlayTexture.NO_OVERLAY, state.outlineColor)
         }
     }
 

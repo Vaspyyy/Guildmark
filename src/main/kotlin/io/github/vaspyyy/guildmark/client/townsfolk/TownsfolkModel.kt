@@ -89,6 +89,16 @@ class TownsfolkModel(root: ModelPart) : HumanoidModel<TownsfolkRenderState>(root
         // ---- end Living World ----
     }
 
+    /**
+     * Has this model draw only what can glow ([GLOWING]: the rest of it is dark in the glow texture), for the glow layer
+     * to draw with. It's posed just as ever, so what glows is where it should be.
+     */
+    fun glowing(): TownsfolkModel {
+        for (part in root().allParts) part.skipDraw = true
+        for (name in GLOWING) find.apply(name)?.allParts?.forEach { it.skipDraw = false }
+        return this
+    }
+
     /** Turns [part] so it hangs straight down, undoing the turns of the parts it hangs from ([chain], outermost first). */
     private fun hang(part: ModelPart?, sway: Float, vararg chain: ModelPart?) {
         if (part == null || !part.visible) return
@@ -105,6 +115,9 @@ class TownsfolkModel(root: ModelPart) : HumanoidModel<TownsfolkRenderState>(root
 
         /** How much bigger a child's head is drawn, on a body drawn at [io.github.vaspyyy.guildmark.townsfolk.Townsperson.CHILD_SCALE]. */
         const val CHILD_HEAD = 1.3f
+
+        /** The parts lit in the glow texture (with whatever hangs from them): the hot iron, the lantern and the Living World's lit props. */
+        private val GLOWING: Set<String> = setOf("hot_iron", "lantern") + LivingSchedule.GLOW
     }
 }
 
