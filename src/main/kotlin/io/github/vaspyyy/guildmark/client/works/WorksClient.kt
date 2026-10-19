@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.client.works
 
+import io.github.vaspyyy.guildmark.client.ui.WorksScreen
 import io.github.vaspyyy.guildmark.economy.works.build.BeaconFire
 import io.github.vaspyyy.guildmark.economy.works.build.MasterBuilder
 import io.github.vaspyyy.guildmark.economy.works.build.WorksBeaconBlock
@@ -7,7 +8,13 @@ import io.github.vaspyyy.guildmark.economy.works.build.WorksBeaconBlockEntity
 import io.github.vaspyyy.guildmark.economy.works.build.WorksBlocks
 import io.github.vaspyyy.guildmark.economy.works.build.WorksPostBlock
 import io.github.vaspyyy.guildmark.economy.works.build.WorksPostBlockEntity
+import io.github.vaspyyy.guildmark.economy.works.build.WorksLedger
+import io.github.vaspyyy.guildmark.network.WorksActionPayload
+import io.github.vaspyyy.guildmark.network.WorksClosePayload
+import io.github.vaspyyy.guildmark.network.WorksDrawingPayload
+import io.github.vaspyyy.guildmark.network.WorksLedgerPayload
 import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.screens.ChatScreen
 import net.minecraft.client.resources.sounds.AbstractTickableSoundInstance
 import net.minecraft.client.resources.sounds.SoundInstance
 import net.minecraft.client.sounds.SoundEngine
@@ -19,13 +26,15 @@ import net.minecraft.world.phys.Vec3
 import net.neoforged.bus.api.IEventBus
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent
 import net.neoforged.neoforge.client.event.EntityRenderersEvent
+import net.neoforged.neoforge.client.network.ClientPacketDistributor
 import net.neoforged.neoforge.common.NeoForge
 import kotlin.math.abs
 
 /**
  * The town works on a client (M6 Part B): its blocks' renderers (the post's drawing and seals, the plaque's letters,
  * the yard's heaps, the hoist's rope and load, the beacon's glow, a stall's awning) on Part F's meshes, the beacon's
- * burning heard while it's lit, and each seal heard as it drops out on its post. Wired in from the client's setup.
+ * burning heard while it's lit, each seal heard as it drops out on its post, and the works screen's side of its
+ * payloads. Wired in from the client's setup.
  */
 object WorksClient {
     /** Has it all registered, from the client's setup. */
@@ -44,7 +53,43 @@ object WorksClient {
         }
         WorksBeaconBlock.clientTick = ::beacon
         WorksPostBlock.clientTick = ::post
-        NeoForge.EVENT_BUS.addListener(ClientPlayerNetworkEvent.LoggingOut::class.java) { _ -> retry.clear() }
+        NeoForge.EVENT_BUS.addListener(ClientPlayerNetworkEvent.LoggingOut::class.java) { _ ->
+            retry.clear()
+            drawings.clear()
+        }
+    }
+
+    // ---- The works screen ----
+
+    /** Each works' drawing as last sent (WorksLedger sends one once per reader, and again only when it changes). */
+    internal val drawings = HashMap<Int, WorksDrawingPayload>()
+
+    /**
+     * A capital's works as they stand ([WorksLedgerPayload]): the works screen, if it's up, shows them. Asked for
+     * ([WorksLedgerPayload.fresh]), it opens, unless another screen is up (but the chat, where a WORKS slip's link was
+     * clicked). Otherwise the server is told it's not being looked at, so it stops sending.
+     */
+    fun onLedger(payload: WorksLedgerPayload) {
+        val minecraft = Minecraft.getInstance()
+        val open = minecraft.gui.screen()
+        when {
+            open is WorksScreen -> open.update(payload)
+            payload.fresh && (open == null || open is ChatScreen) -> minecraft.gui.setScreen(WorksScreen(payload))
+            else -> ClientPacketDistributor.sendToServer(WorksActionPayload(0, WorksLedger.CLOSE, 0))
+        }
+    }
+
+    /** A works' drawing ([WorksDrawingPayload]): kept, and drawn on the screen if it's up. */
+    fun onDrawing(payload: WorksDrawingPayload) {
+        if (drawings.size >= MAX_DRAWINGS && payload.id !in drawings) drawings.remove(drawings.keys.first())
+        drawings[payload.id] = payload
+        (Minecraft.getInstance().gui.screen() as? WorksScreen)?.drew(payload.id)
+    }
+
+    /** The server closed [payload]'s capital's screen (walked off, the works switched off). */
+    fun onClose(payload: WorksClosePayload) {
+        val open = Minecraft.getInstance().gui.screen() as? WorksScreen ?: return
+        if (open.capital == payload.capital) open.closeNow()
     }
 
     /**
@@ -151,6 +196,9 @@ object WorksClient {
             if (silent > STOP_AFTER) stop()
         }
     }
+
+    /** The most works' drawings kept at once. */
+    private const val MAX_DRAWINGS = 32
 
     /** Ticks a post may go unlooked at and still be heard (more, and what dropped meanwhile is let go). */
     private const val LOOK_GAP = 40L

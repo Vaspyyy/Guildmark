@@ -240,8 +240,7 @@ internal object MasterBuilder {
         p.addTag(TAG)
         p.setDropChance(EquipmentSlot.MAINHAND, 0f)
         p.setDropChance(EquipmentSlot.OFFHAND, 0f)
-        val style = CityStyle.entries[rec.style.coerceIn(0, CityStyle.entries.size - 1)]
-        p.customName = Component.translatable(NAME, Names.given(style, false, seed) + " " + Names.family(style, seed / 7))
+        p.customName = nameOf(rec)
         p.isCustomNameVisible = false
         val h = Head(w.id, p)
         h.see(w, rec, site, capital)
@@ -254,6 +253,13 @@ internal object MasterBuilder {
             WorksBuildData.get(level).changed()
         }
         return h
+    }
+
+    /** [rec]'s master builder by name ("Master Aldo Brennick"): in the capital's own style, the same every visit (and on its screen). */
+    fun nameOf(rec: BuildRec): Component {
+        val seed = rec.capital * 31L + 17L
+        val style = CityStyle.entries[rec.style.coerceIn(0, CityStyle.entries.size - 1)]
+        return Component.translatable(NAME, Names.given(style, false, seed) + " " + Names.family(style, seed / 7))
     }
 
     /** Inside the town's gate on the side nearest the works. */

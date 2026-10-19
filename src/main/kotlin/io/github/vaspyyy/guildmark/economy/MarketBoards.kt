@@ -5,6 +5,8 @@ import io.github.vaspyyy.guildmark.block.MarketBoardBlock
 import io.github.vaspyyy.guildmark.block.MarketBoardBlockEntity
 import io.github.vaspyyy.guildmark.block.NoticeBoardBlock
 import io.github.vaspyyy.guildmark.city.CapitalPiece
+import io.github.vaspyyy.guildmark.economy.works.Works
+import io.github.vaspyyy.guildmark.economy.works.build.WorksLedger
 import io.github.vaspyyy.guildmark.registry.ModBlocks
 import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
 import io.github.vaspyyy.guildmark.townsfolk.Furnish
@@ -138,6 +140,8 @@ object MarketBoards {
 
     /** [player] reads the board at [anchor]: every price on it and the news, in chat. */
     fun read(level: ServerLevel, player: ServerPlayer, anchor: BlockPos) {
+        // What called-off works owe the reader is paid as they use the board (M6)
+        Works.owed(level, player)
         val board = level.getBlockEntity(anchor) as? MarketBoardBlockEntity
         if (board == null || board.day < 0 || board.lines.isEmpty()) {
             player.sendOverlayMessage(Component.translatable("board.guildmark.market.bare"))
@@ -163,7 +167,10 @@ object MarketBoards {
             player.sendSystemMessage(row)
         }
         for (slip in board.slips) {
-            player.sendSystemMessage(Component.literal("✎ ").withStyle(ChatFormatting.GRAY).append(slip.text.copy().withStyle(ChatFormatting.WHITE)))
+            val text = slip.text.copy().withStyle(ChatFormatting.WHITE)
+            // A WORKS slip opens its works' screen (M6)
+            val shown = if (slip.works >= 0 && Works.enabled()) WorksLedger.link(slip.works, text) else text
+            player.sendSystemMessage(Component.literal("✎ ").withStyle(ChatFormatting.GRAY).append(shown))
         }
         // The orders on their tickets: what's wanted where, and what it would pay the reader (or that it's taken)
         val capital = Furnish.capitalAt(level, anchor) ?: return

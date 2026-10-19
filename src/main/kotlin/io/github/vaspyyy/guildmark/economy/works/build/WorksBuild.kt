@@ -497,7 +497,14 @@ object WorksBuild {
         if (spare.isEmpty()) return listOf()
         val want = WorksKinds.crew(w.kind).coerceAtMost(spare.size)
         val start = Math.floorMod(day * 7L + w.id * 3L, spare.size.toLong()).toInt()
-        return List(want) { spare[(start + it * 5) % spare.size] }.distinct()
+        return List(want) { spare[(start + it) % spare.size] }
+    }
+
+    /** Today's labourers from the town at works [id] (for its screen): none unless it's where the town's labourers go now. */
+    fun crewOf(level: ServerLevel, id: Int): List<Int> {
+        val w = WorksData.get(level).works[id] ?: return listOf()
+        if (w.kind == WorksKind.TOWER || current(level, w.capital).works != id) return listOf()
+        return labourers(level, w.capital, Days.dayOf(level.overworldClockTime))
     }
 
     /** Where [capital]'s labourers report for work: before its works' crate. */

@@ -228,12 +228,17 @@ internal object WorksYard {
         val w = WorksData.get(level).works[rec.id] ?: return
         seal(level, w, rec)
         val pos = rec.post ?: return
-        if (!level.isLoaded(pos)) return
         val by = level.server.playerList.getPlayer(player) ?: return
-        if (by.level() !== level || by.distanceToSqr(Vec3.atCenterOf(pos)) > AT_POST * AT_POST) return
+        if (!atPost(level, rec, by)) return
         val be = level.getBlockEntity(pos) as? WorksPostBlockEntity ?: return
         be.pledged()
         WorksBlocks.play(level, pos, WorksBlocks.PLEDGE)
+    }
+
+    /** Whether [player] stands at [rec]'s post (their pledge drops its coins in the box there, and is heard there). */
+    fun atPost(level: ServerLevel, rec: BuildRec, player: ServerPlayer): Boolean {
+        val pos = rec.post ?: return false
+        return level.isLoaded(pos) && player.level() === level && player.distanceToSqr(Vec3.atCenterOf(pos)) <= AT_POST * AT_POST
     }
 
     /** The works is paid for: its post stamped. */
