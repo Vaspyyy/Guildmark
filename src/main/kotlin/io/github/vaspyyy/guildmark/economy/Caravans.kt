@@ -475,6 +475,7 @@ object Caravans {
         val cap = data.capital(center, hour)
         if (cap.name.isEmpty()) CaravanRoutes.capital(level, center)?.let { cap.name = VillageNames.of(it.boardAnchor) }
         cap.handled.removeIf { it < hour - 48 }
+        cap.covered.removeIf { it < hour - 48 }
         if (Math.floorMod(hour, 24L) == 0L) RoadPeril.morning(data, center, hour)
         val legs = CaravanRoutes.legs(level, center)
         if (legs != null) {
