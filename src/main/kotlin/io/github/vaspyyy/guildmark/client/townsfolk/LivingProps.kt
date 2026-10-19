@@ -122,6 +122,8 @@ internal object LivingProps {
 
     private fun letGo(held: Set<String>, right: Boolean, left: Boolean): Set<String> {
         if (!right && !left) return held
+        // Nothing in a busy hand to let go of: the same set, not a copy of it
+        if (held.none { right && it in RIGHT_CARRIED || left && it in LEFT_CARRIED }) return held
         return held.filterTo(HashSet()) { !(right && it in RIGHT_CARRIED) && !(left && it in LEFT_CARRIED) }
     }
 
@@ -261,6 +263,10 @@ internal object LivingProps {
         private val cloth: ModelPart? = find.apply("basket_hip_cloth")
         private val flame: ModelPart? = find.apply("lamp_flame")
 
+        /** Each prop's tracks' names in a clip ("prop:" and its name, and its stretch's), made once rather than every frame. */
+        private val trackKeys = HashMap<String, String>()
+        private val scaleKeys = HashMap<String, String>()
+
         private val qRoot = Quaternionf()
         private val qParent = Quaternionf()
         private val qModel = Quaternionf()
@@ -301,7 +307,7 @@ internal object LivingProps {
          * in the model's own space (where the root is placed), so the root's and the parent's are undone.
          */
         private fun track(model: TownsfolkModel, clip: Clip, time: Float, name: String, part: ModelPart) {
-            val bone = clip.bones["prop:$name"] ?: return
+            val bone = clip.bones[trackKeys.getOrPut(name) { "prop:$name" }] ?: return
             val parent = parentOf(model, name) ?: return
             val root = model.root()
             qRoot.rotationZYX(root.zRot, root.yRot, root.xRot)
@@ -322,7 +328,7 @@ internal object LivingProps {
                 part.y = v.y
                 part.z = v.z
             }
-            clip.bones["prop:$name:scale"]?.let { stretch ->
+            clip.bones[scaleKeys.getOrPut(name) { "prop:$name:scale" }]?.let { stretch ->
                 stretch.position(clip, time, v)
                 part.xScale = v.x
                 part.yScale = v.y

@@ -162,6 +162,12 @@ class TownsfolkRenderer(context: EntityRendererProvider.Context) :
         private fun time(activity: Activity, clip: Clip, elapsed: Float): Float =
             if (activity.loop) ((elapsed % clip.length) + clip.length) % clip.length else elapsed.coerceIn(0f, clip.length)
 
-        private fun clip(entity: Townsperson, activity: Activity): Clip? = Clips.get("townsfolk/" + TownsfolkClient.clipName(entity, activity))
+        /** Each townsfolk clip's name as [Clips] knows it ("townsfolk/" and its own), made once rather than every frame. */
+        private val clipKeys = HashMap<String, String>()
+
+        private fun clip(entity: Townsperson, activity: Activity): Clip? {
+            val name = TownsfolkClient.clipName(entity, activity)
+            return Clips.get(clipKeys.getOrPut(name) { "townsfolk/$name" })
+        }
     }
 }

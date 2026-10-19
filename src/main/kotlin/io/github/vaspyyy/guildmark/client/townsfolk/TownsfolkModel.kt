@@ -4,6 +4,7 @@ import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.client.combat.CombatAnimator
 import io.github.vaspyyy.guildmark.townsfolk.Activity
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap
 import net.minecraft.client.model.HumanoidModel
 import net.minecraft.client.model.geom.ModelLayerLocation
 import net.minecraft.client.model.geom.ModelPart
@@ -11,6 +12,7 @@ import net.minecraft.client.renderer.entity.state.HumanoidRenderState
 import net.minecraft.resources.Identifier
 import org.joml.Quaternionf
 import org.joml.Vector3f
+import java.util.Collections
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -204,7 +206,22 @@ object Props {
         Activity.SEARCH, Activity.SHOUT, Activity.FEST_BOW,
     )
 
+    /**
+     * What [held] comes to for each role, activity, lantern and look (by the [CARRIED_LOOKS] it has), worked out once:
+     * it's asked of everyone in sight every frame, and the same few sets serve them all (none is changed once made).
+     */
+    private val heldFor = Int2ObjectOpenHashMap<Set<String>>()
+
     fun held(role: TownRole, activity: Activity, lantern: Boolean, pieces: Set<String>): Set<String> {
+        var key = (role.ordinal shl 16) or (activity.ordinal shl 4) or (if (lantern) 8 else 0)
+        for (k in CARRIED_LOOKS.indices) if (CARRIED_LOOKS[k] in pieces) key = key or (1 shl k)
+        heldFor.get(key)?.let { return it }
+        val out = Collections.unmodifiableSet(workOut(role, activity, lantern, pieces))
+        heldFor.put(key, out)
+        return out
+    }
+
+    private fun workOut(role: TownRole, activity: Activity, lantern: Boolean, pieces: Set<String>): Set<String> {
         val out = HashSet<String>(OWN[activity] ?: emptySet())
         val both = activity in BOTH_HANDS
         val rightBusy = both || activity in RIGHT_HAND || out.any { it in RIGHT }
