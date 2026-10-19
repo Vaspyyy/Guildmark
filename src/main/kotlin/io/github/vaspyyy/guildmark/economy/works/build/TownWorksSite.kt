@@ -61,6 +61,7 @@ import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.level.block.state.properties.BlockStateProperties
 import net.minecraft.world.level.gamerules.GameRules
 import net.minecraft.world.level.levelgen.Heightmap
+import net.minecraft.world.level.levelgen.structure.BoundingBox
 import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import kotlin.math.abs
@@ -270,12 +271,19 @@ class TownWorksSite(override val level: ServerLevel, val rec: BuildRec, val plan
     /** The world box its lot covers. */
     val box get() = frame.box(drawing.lot, drawing.y0 + drawing.low, drawing.y0 + drawing.high)
 
-    /** Whether all of its ground (and its yard round it) is loaded, so it can be built, looked over or taken down. */
+    /**
+     * Whether all of its ground (and its yard round it) is loaded, so it can be built, looked over or taken down: its
+     * lot and yard, and as far as its drawing reaches (a tower's path out to its road, an oven bay's front, and the
+     * few blocks round them its steps may touch), so no step it lays loads a chunk.
+     */
     fun loaded(): Boolean {
         val b = box.inflatedBy(Works.YARD, 0, Works.YARD)
-        return level.isLoaded(BlockPos(b.minX(), b.minY(), b.minZ())) && level.isLoaded(BlockPos(b.maxX(), b.minY(), b.maxZ())) &&
-            level.isLoaded(BlockPos(b.minX(), b.minY(), b.maxZ())) && level.isLoaded(BlockPos(b.maxX(), b.minY(), b.minZ()))
+        return corners(b) && corners(frame.box(drawing.bounds.grow(4), b.minY(), b.minY()))
     }
+
+    private fun corners(b: BoundingBox): Boolean =
+        level.isLoaded(BlockPos(b.minX(), b.minY(), b.minZ())) && level.isLoaded(BlockPos(b.maxX(), b.minY(), b.maxZ())) &&
+            level.isLoaded(BlockPos(b.minX(), b.minY(), b.maxZ())) && level.isLoaded(BlockPos(b.maxX(), b.minY(), b.minZ()))
 
     /** How much of each paid material is still to be used, in units. */
     fun left(): IntArray {
