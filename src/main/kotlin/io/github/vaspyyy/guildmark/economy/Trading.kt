@@ -230,7 +230,7 @@ object Trading {
             if (good in FARMED && m[Site.FARMS, good] >= town.use(good) * 0.5) return Why.CARTS_BEHIND to null
             if (good in MADE && m.stock(Good.TOOLS) < 1.0) return Why.WORN_TOOLS to null
             season(felt, good, dear = true)?.let { return it to null }
-            if (m.freight(good) >= 1.0 + Economy.FREIGHT * 0.5) return Why.FROM_AFAR to null
+            if (m.brought[good.ordinal] >= 0.5) return Why.FROM_AFAR to null
             return Why.SCARCE to null
         }
         if (off <= 1.0 / OFF) {

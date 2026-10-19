@@ -178,6 +178,12 @@ class Market(val capital: Long) {
     /** Of what the town has used of each good lately, the share the caravans brought in, smoothed over days. */
     val brought = DoubleArray(Good.entries.size)
 
+    /**
+     * What bringing each good in costs here, of its base, for all of it brought: by the road from the nearest capital
+     * with it to spare, or from afar (see [Carriage], which works it out; not kept).
+     */
+    val carry = DoubleArray(Good.entries.size) { Economy.FREIGHT }
+
     /** Each good's price at the close of each of the last [HISTORY] days, oldest first, as a share of its base. */
     val closes: Array<DoubleArray> = Array(Good.entries.size) { DoubleArray(0) }
     val events = ArrayList<Event>()
@@ -256,10 +262,10 @@ class Market(val capital: Long) {
     /**
      * What a unit of [good] goes for while the market holds [stock] of it: its base price, dearer the shorter the
      * town is of it against what it likes to keep (up to three times, and as low as under half in a glut), dearer
-     * for what it has to have brought from afar, and leaning ahead of trouble or luck already under way. What it
-     * holds is what it's held lately ([held]) and whatever has changed hands since, so a stall's prices don't swing
-     * with every meal, but every lot a player buys or sells moves them, and keeps them moved until the town's own
-     * buying and making and the caravans have made it up (see [traded]).
+     * for what it has to have brought in, the more the farther it comes, and leaning ahead of trouble or luck already
+     * under way. What it holds is what it's held lately ([held]) and whatever has changed hands since, so a stall's
+     * prices don't swing with every meal, but every lot a player buys or sells moves them, and keeps them moved until
+     * the town's own buying and making and the caravans have made it up (see [traded]).
      */
     fun price(town: Town, good: Good, stock: Double = stock(good)): Double {
         val target = town.target(good)
@@ -268,8 +274,8 @@ class Market(val capital: Long) {
         return good.base * (ratio * freight(good) * outlook(good)).coerceIn(LOW, HIGHEST)
     }
 
-    /** How much dearer [good] runs for the share of it the caravans have lately had to bring. */
-    fun freight(good: Good): Double = 1.0 + Economy.FREIGHT * brought[good.ordinal]
+    /** How much dearer [good] runs for the share of it the caravans have lately had to bring, and how far they bring it ([carry]). */
+    fun freight(good: Good): Double = 1.0 + carry[good.ordinal] * brought[good.ordinal]
 
     /**
      * A player's trade: [amount] of [good] into the market, or out of it if less than nothing (no more than it has).

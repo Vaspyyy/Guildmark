@@ -35,6 +35,11 @@ import kotlin.random.Random
  * not, and catches up after a night's sleep or a /time add (the last [CATCH_UP] hours of it at most).
  */
 class Markets(private val entries: MutableMap<Long, Entry> = HashMap()) : SavedData() {
+    // What each market's goods cost to bring in, from where the others stand (not kept; see Carriage)
+    init {
+        Carriage.reckon(entries.values)
+    }
+
     /** A capital's market and the town it serves; [looked] is the game time its people were last counted. */
     class Entry(val market: Market, var town: Town, var looked: Long = Long.MIN_VALUE / 2) {
         val capital: BlockPos get() = BlockPos.of(market.capital)
@@ -57,6 +62,7 @@ class Markets(private val entries: MutableMap<Long, Entry> = HashMap()) : SavedD
         market.hour = hourOf(level)
         val entry = Entry(market, town, level.gameTime)
         entries[market.capital] = entry
+        Carriage.reckon(entries.values)
         setDirty()
         return entry
     }
@@ -132,6 +138,7 @@ class Markets(private val entries: MutableMap<Long, Entry> = HashMap()) : SavedD
                 if (level.gameTime - entry.looked < RECOUNT) continue
                 entry.town = townOf(level, places)
                 entry.looked = level.gameTime
+                Carriage.reckon(data.entries.values)
                 data.setDirty()
             }
         }
