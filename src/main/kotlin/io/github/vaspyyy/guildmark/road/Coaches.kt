@@ -56,6 +56,9 @@ object Coaches {
 
     private val boardings = HashMap<UUID, Boarding>()
 
+    /** Drops every offer to ride after a mate: they're timed by this world's clock, and a world opened next has its own. */
+    fun forget() = boardings.clear()
+
     private fun horizontal(a: BlockPos, b: BlockPos): Double = Expeditions.horizontalDistance(a, b)
 
     /** The coach stops reachable from the village the player is standing in, or null if they're not in one. */

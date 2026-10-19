@@ -378,6 +378,8 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
                 Atlas.resend(player)
             }
         }
+        // A coach's offer to ride after a party mate is for the world it was made in
+        NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> Coaches.forget() }
         NeoForge.EVENT_BUS.addListener(RegisterCommandsEvent::class.java) {
             AdvanceCommand.register(it.dispatcher)
             PartyCommand.register(it.dispatcher)
