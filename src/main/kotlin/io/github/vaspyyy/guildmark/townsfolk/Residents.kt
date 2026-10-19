@@ -213,19 +213,27 @@ class Residents(private val people: MutableMap<Int, Resident> = HashMap(), priva
 
         /**
          * A body loaded with its chunk that's no one's now: one of a household away in hard times (living-world/
-         * design-influence.md section 6: their bodies were taken away, or should have been), or an old body of someone
-         * whose body has been made anew since (back home, made at home out of sight): gone at once, as BuilderCrew's
-         * are. Set listening by [Comings.register].
+         * design-influence.md section 6: their bodies were taken away, or should have been), an old body of someone
+         * whose body has been made anew since (back home, made at home out of sight), or of someone dead whose chunk
+         * was last saved before they died: gone at once, as BuilderCrew's are. One the records don't know as theirs
+         * (its chunk saved after the records last were, the game stopped between) is someone new, taken in afresh, so
+         * no two bodies ever share a record. Set listening by [Comings.register].
          */
         fun onJoin(event: EntityJoinLevelEvent) {
             if (!event.loadedFromDisk()) return
             val p = event.entity as? Townsperson ?: return
             if (p.resident < 0) return
             val level = event.level as? ServerLevel ?: return
-            val r = get(level)[p.resident] ?: return
+            val r = get(level)[p.resident]
+            if (r == null || r.uuid != p.uuid && !Comings.renewed(level, r)) {
+                p.resident = -1
+                p.customName = null
+                return
+            }
             val away = !r.alive && r.died < 0 && r.left >= 0
-            val stale = r.alive && r.uuid != null && r.uuid != p.uuid && Comings.renewed(level, r)
-            if (away || stale) event.isCanceled = true
+            val dead = !r.alive && r.died >= 0
+            val stale = r.alive && r.uuid != p.uuid && Comings.renewed(level, r)
+            if (away || dead || stale) event.isCanceled = true
         }
 
         /** [p] died: their life here ends (and their home and trade wait for someone new). */
