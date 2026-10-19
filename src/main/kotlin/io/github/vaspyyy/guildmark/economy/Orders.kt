@@ -766,8 +766,8 @@ class Orders(private val books: MutableMap<Long, Book> = HashMap(), private var 
             o.delivered += count
             if (conjured < 0) Trading.take(player.inventory, item, count, book.pos)
             if (pay > 0) Trading.give(player, ModItems.GUILD_MARK.get(), pay)
-            // Into the market they move its price at once, as a sale does; into the mill or the cellar they're felt as they're used
-            m.add(site, good, count.toDouble())
+            // Into the market they move its price at once and keep it moved, as a sale does; into the mill or the cellar they're felt as they're used
+            if (site == Site.MARKET) m.traded(good, count.toDouble()) else m.add(site, good, count.toDouble())
             if (site != Site.MARKET) book.fed[good.ordinal] += count.toDouble()
             m.tally(Tally.SOLD, good, count.toDouble())
             Markets.get(level).changed()

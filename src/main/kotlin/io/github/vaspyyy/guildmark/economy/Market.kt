@@ -169,7 +169,8 @@ class Market(val capital: Long) {
 
     /**
      * What the market has held of each good lately, smoothed over the last several hours ([settle]), and what it held
-     * when that was last worked out: prices follow the one, moved by whatever has changed hands since.
+     * when that was last worked out: prices follow the one, moved by whatever has changed hands since. A player's
+     * trade moves both (see [traded]).
      */
     val held = DoubleArray(Good.entries.size)
     val mark = DoubleArray(Good.entries.size)
@@ -257,7 +258,8 @@ class Market(val capital: Long) {
      * town is of it against what it likes to keep (up to three times, and as low as under half in a glut), dearer
      * for what it has to have brought from afar, and leaning ahead of trouble or luck already under way. What it
      * holds is what it's held lately ([held]) and whatever has changed hands since, so a stall's prices don't swing
-     * with every meal, but every lot a player buys or sells moves them.
+     * with every meal, but every lot a player buys or sells moves them, and keeps them moved until the town's own
+     * buying and making and the caravans have made it up (see [traded]).
      */
     fun price(town: Town, good: Good, stock: Double = stock(good)): Double {
         val target = town.target(good)
@@ -268,6 +270,22 @@ class Market(val capital: Long) {
 
     /** How much dearer [good] runs for the share of it the caravans have lately had to bring. */
     fun freight(good: Good): Double = 1.0 + Economy.FREIGHT * brought[good.ordinal]
+
+    /**
+     * A player's trade: [amount] of [good] into the market, or out of it if less than nothing (no more than it has).
+     * What it's held lately moves with it, so the hour's settle doesn't ease the trade back out of the price: a lot
+     * bought keeps the good dear, and a lot sold keeps it cheap, until the town has used it up or its makers and the
+     * caravans have made it up. Gives how much moved.
+     */
+    fun traded(good: Good, amount: Double): Double {
+        val i = good.ordinal
+        val moved = if (amount >= 0.0) amount.also { add(Site.MARKET, good, it) } else -take(Site.MARKET, good, -amount)
+        val was = held[i]
+        held[i] = (was + moved).coerceAtLeast(0.0)
+        // Bought past what it's held lately: what that couldn't take off eases out at the settle, as before
+        mark[i] += held[i] - was
+        return moved
+    }
 
     /** At the end of an hour: what the market holds now counts a little toward what it's held lately. */
     fun settle() {

@@ -95,15 +95,15 @@ object Lots {
         return if (marks >= 1) Lot(room, marks) else null
     }
 
-    /** A player has bought [lot] of [good]: it leaves the market. */
+    /** A player has bought [lot] of [good]: it leaves the market, and the price stays up for it (see [Market.traded]). */
     fun bought(m: Market, good: Good, lot: Lot) {
-        m.take(Site.MARKET, good, lot.count.toDouble())
+        m.traded(good, -lot.count.toDouble())
         m.tally(Tally.BOUGHT, good, lot.count.toDouble())
     }
 
-    /** A player has sold [lot] of [good]: it's the market's now. */
+    /** A player has sold [lot] of [good]: it's the market's now, and the price stays down for it (see [Market.traded]). */
     fun sold(m: Market, good: Good, lot: Lot) {
-        m.add(Site.MARKET, good, lot.count.toDouble())
+        m.traded(good, lot.count.toDouble())
         m.tally(Tally.SOLD, good, lot.count.toDouble())
     }
 }
