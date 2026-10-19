@@ -1,6 +1,8 @@
 package io.github.vaspyyy.guildmark.client.streets
 
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.client.works.WorksMesh
+import io.github.vaspyyy.guildmark.townsfolk.streets.AlmsTableBlock
 import io.github.vaspyyy.guildmark.townsfolk.streets.AlmsTableBlockEntity
 import io.github.vaspyyy.guildmark.townsfolk.streets.StreetsRegistry
 import net.minecraft.client.Minecraft
@@ -15,10 +17,12 @@ import net.neoforged.neoforge.client.event.EntityRenderersEvent
 import kotlin.math.abs
 
 /**
- * The streets on a client (M6 Part D, townsfolk/streets): the alms table's pot and bowls drawn ([AlmsTableRenderer]),
- * its soup's level eased as it changes, its bowls seen set down, and its simmer heard near it while there's soup in
- * it (`streets.pot_loop`). The dressing and the awnings' flaps are festival ornaments (client/festival's renderer
- * draws them), and the slate is drawn with its market display (client/economy/WaresRenderer, [StreetSlate]).
+ * The streets on a client (M6 Part D, townsfolk/streets): the alms table's pot, stew and bowls drawn
+ * ([AlmsTableRenderer], from Part F's client/works/WorksMesh.alms), its soup's level eased as it changes, its pot and
+ * bowls seen set down, the keeper's ladling and the gifts timed as they're seen, and its simmer heard over the pot
+ * while there's soup in it (`streets.pot_loop`). The dressing and the awnings' flaps are festival ornaments
+ * (client/festival's renderer draws them), and the slate is drawn with its market display
+ * (client/economy/WaresRenderer, [StreetSlate]).
  */
 object StreetsClient {
     /** Has it all registered, from the client's setup. */
@@ -26,8 +30,13 @@ object StreetsClient {
         modBus.addListener(EntityRenderersEvent.RegisterRenderers::class.java) { event ->
             event.registerBlockEntityRenderer(StreetsRegistry.ALMS_TABLE_ENTITY.get(), ::AlmsTableRenderer)
         }
+        modBus.addListener(EntityRenderersEvent.RegisterLayerDefinitions::class.java) { event ->
+            event.registerLayerDefinition(AlmsTableRenderer.LAYER, WorksMesh::alms)
+        }
         AlmsTableBlockEntity.clientTick = ::tick
     }
+
+    // ---- The alms table ----
 
     private val POT_LOOP: SoundEvent = SoundEvent.createVariableRangeEvent(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "streets.pot_loop"))
 
@@ -38,10 +47,28 @@ object StreetsClient {
         // The soup's level as it's seen, easing to what's in the pot
         val soup = table.soup.toFloat()
         table.shown = if (table.shown < 0f) soup else if (abs(soup - table.shown) < 0.02f) soup else table.shown + (soup - table.shown) * EASE
-        // A bowl set out is seen set down (not those there as the table comes into view)
+        // A bowl set out is seen set down, and the pot (not those there as the table comes into view)
         if (table.bowls != table.bowlsSeen) {
             if (table.bowlsSeen >= 0 && table.bowls > table.bowlsSeen) table.bowlAt = now
             table.bowlsSeen = table.bowls
+        }
+        val pot = if (table.pot) 1 else 0
+        if (pot != table.potSeen) {
+            if (table.potSeen == 0 && pot == 1) table.potAt = now
+            table.potSeen = pot
+        }
+        // A ladling or a gift seen starting: timed from now, with the keeper's move (one under way as the table comes
+        // into view goes on from when it started; the stack's then taken as it stands)
+        if (table.ladled != table.ladleSeen) {
+            val first = table.ladleSeen == Long.MIN_VALUE
+            table.ladleAt = if (!first) now else if (table.ladled > 0L) table.ladled else Long.MIN_VALUE / 2
+            table.bowlsAtLadle = if (first) Int.MAX_VALUE else table.bowls
+            table.ladleSeen = table.ladled
+        }
+        if (table.given != table.giftSeen) {
+            val first = table.giftSeen == Long.MIN_VALUE
+            table.giftAt = if (!first) now else if (table.given > 0L) table.given else Long.MIN_VALUE / 2
+            table.giftSeen = table.given
         }
         // The simmer, while there's soup in it and someone near enough to hear it
         val playing = table.loop as? PotLoop
@@ -55,16 +82,17 @@ object StreetsClient {
         if (Minecraft.getInstance().soundManager.play(fresh) == SoundEngine.PlayResult.NOT_STARTED) table.loopRetry = now + RETRY else table.loop = fresh
     }
 
-    /** The pot's simmer, at the pot: louder the fuller it is, fading out as it's emptied, taken away, or left behind. */
+    /** The pot's simmer, over the pot: louder the fuller it is, fading out as it's emptied, taken away, or left behind. */
     private class PotLoop(private val table: AlmsTableBlockEntity) :
         AbstractTickableSoundInstance(POT_LOOP, SoundSource.BLOCKS, SoundInstance.createUnseededRandom()) {
         init {
             looping = true
             attenuation = SoundInstance.Attenuation.LINEAR
             volume = 0.01f
-            x = table.blockPos.x + 0.5
-            y = table.blockPos.y + 1.1
-            z = table.blockPos.z + 0.5
+            val at = AlmsTableBlock.pot(table.blockState.getValue(AlmsTableBlock.FACING), table.blockPos)
+            x = at.x
+            y = at.y
+            z = at.z
         }
 
         override fun canStartSilent(): Boolean = true

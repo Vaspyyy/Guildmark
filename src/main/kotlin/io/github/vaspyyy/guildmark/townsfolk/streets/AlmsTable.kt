@@ -697,11 +697,9 @@ private class AlmsKeeper(private val column: Long, private val p: Townsperson) :
                     town.soup = (town.soup - 1).coerceAtLeast(0)
                     data.changed()
                     if (town.soup == 0) AlmsTable.ranOut(column, level.gameTime)
-                    AlmsTable.pot(level, town)?.let { be ->
-                        be.set(town.soup, town.cap, true, AlmsTable.bowlsFor(town.soup))
-                        be.ladle(level.gameTime)
-                    }
-                    Streets.sound(level, pos.x + 0.5, pos.y + 1.1, pos.z + 0.5, "streets.ladle", LADLE_REACH, 0.8f, 0.95f + p.random.nextFloat() * 0.1f)
+                    AlmsTable.pot(level, town)?.set(town.soup, town.cap, true, AlmsTable.bowlsFor(town.soup))
+                    val at = AlmsTableBlock.pot(front, pos)
+                    Streets.sound(level, at.x, at.y, at.z, "streets.ladle", LADLE_REACH, 0.8f, 0.95f + p.random.nextFloat() * 0.1f)
                 }
                 if (t >= Activity.LADLE.ticks) {
                     to = null
@@ -831,6 +829,9 @@ private class AlmsKeeper(private val column: Long, private val p: Townsperson) :
         s = S.LADLE
         t = 0
         p.act(Activity.LADLE)
+        // The table's ladle and the top bowl are in the keeper's hands from now (the clients time them from this)
+        val level = p.level() as? ServerLevel
+        if (level != null) StreetsData.get(level)[column]?.let { town -> AlmsTable.pot(level, town)?.ladle(level.gameTime) }
         return true
     }
 
@@ -882,9 +883,9 @@ private class AlmsKeeper(private val column: Long, private val p: Townsperson) :
         /** Ticks between one bowl and the next set out (or gathered in). */
         const val BOWL_EVERY = 8
 
-        /** The ticks of LADLE they speak on, and the ladle dips on. */
+        /** The ticks of LADLE they speak on, and the ladle dips on (the move's LADLE_DIP, 7.5, in client/works/WorksArt). */
         const val SAY_AT = 2
-        const val DIP_AT = 10
+        const val DIP_AT = 8
 
         /** The tick of PUT_DOWN the pot touches the table on, and of PICK_UP it lifts off on; ticks the trestle's carried off for at the end. */
         const val POT_AT = 10

@@ -32,6 +32,7 @@ import net.minecraft.world.level.block.state.properties.EnumProperty
 import net.minecraft.world.level.storage.ValueInput
 import net.minecraft.world.level.storage.ValueOutput
 import net.minecraft.world.phys.BlockHitResult
+import net.minecraft.world.phys.Vec3
 import net.minecraft.world.phys.shapes.CollisionContext
 import net.minecraft.world.phys.shapes.Shapes
 import net.minecraft.world.phys.shapes.VoxelShape
@@ -107,11 +108,12 @@ class AlmsTableBlock(properties: Properties) : Block(properties), EntityBlock, F
         val table = level.getBlockEntity(pos) as? AlmsTableBlockEntity ?: return
         if (!table.pot || table.soup <= 0) return
         val full = table.soup.toFloat() / table.cap.coerceAtLeast(1)
+        val at = pot(state.getValue(FACING), pos)
         for (k in 0 until 1 + random.nextInt(2)) {
             if (random.nextFloat() > 0.45f + 0.4f * full) continue
-            val x = pos.x + 0.5 + (random.nextDouble() - 0.5) * 0.28
-            val z = pos.z + 0.5 + (random.nextDouble() - 0.5) * 0.28
-            level.addParticle(ParticleTypes.WHITE_SMOKE, x, pos.y + POT_RIM + 0.05, z, (random.nextDouble() - 0.5) * 0.004, 0.018 + random.nextDouble() * 0.012, (random.nextDouble() - 0.5) * 0.004)
+            val x = at.x + (random.nextDouble() - 0.5) * 0.28
+            val z = at.z + (random.nextDouble() - 0.5) * 0.28
+            level.addParticle(ParticleTypes.WHITE_SMOKE, x, at.y + 0.05, z, (random.nextDouble() - 0.5) * 0.004, 0.018 + random.nextDouble() * 0.012, (random.nextDouble() - 0.5) * 0.004)
         }
     }
 
@@ -122,10 +124,23 @@ class AlmsTableBlock(properties: Properties) : Block(properties), EntityBlock, F
 
         /** The table top's height, and the pot's rim (blocks over the table's own block). */
         const val TOP = 13.0 / 16.0
-        const val POT_RIM = 1.15
+        const val POT_RIM = 18.0 / 16.0
+
+        /** The pot's middle on the middle block, px, as the trestle's model has it facing north (client/works/WorksArt's POT_X and POT_Z): on the keeper's right, toward them. */
+        private const val POT_X = 11.5
+        private const val POT_Z = 11.0
 
         /** The way along the table to its keeper's right, for a table whose front faces [front]. */
         fun along(front: Direction): Direction = front.clockWise
+
+        /** Over the middle of the pot's rim on the middle block at [pos] of a table whose front faces [front] (its steam and its simmer come from here). */
+        fun pot(front: Direction, pos: BlockPos): Vec3 {
+            val right = along(front)
+            val back = front.opposite
+            val dx = (POT_X - 8.0) / 16.0
+            val dz = (POT_Z - 8.0) / 16.0
+            return Vec3(pos.x + 0.5 + right.stepX * dx + back.stepX * dz, pos.y + POT_RIM, pos.z + 0.5 + right.stepZ * dx + back.stepZ * dz)
+        }
 
         /** The middle block of the table whose [part] at [pos] faces [state]'s way. */
         fun middle(pos: BlockPos, state: BlockState): BlockPos {
@@ -141,7 +156,8 @@ class AlmsTableBlock(properties: Properties) : Block(properties), EntityBlock, F
         private val TOP_SHAPE: VoxelShape = box(0.0, 11.0, 1.0, 16.0, 13.0, 15.0)
         private val LEFT_LEGS: VoxelShape = box(1.5, 0.0, 2.0, 3.5, 11.0, 14.0)
         private val RIGHT_LEGS: VoxelShape = box(12.5, 0.0, 2.0, 14.5, 11.0, 14.0)
-        private val POT: VoxelShape = box(4.0, 13.0, 4.0, 12.0, 18.4, 12.0)
+        /** The pot on its middle (client/works/WorksArt's POT_SHAPE). */
+        private val POT: VoxelShape = box(6.4, 13.0, 6.5, 16.0, 18.0, 15.5)
 
         private val SHAPES: Map<TablePart, Map<Direction, VoxelShape>> = mapOf(
             TablePart.LEFT to Shapes.rotateHorizontal(Shapes.or(TOP_SHAPE, LEFT_LEGS)),
@@ -159,8 +175,8 @@ class AlmsTableBlock(properties: Properties) : Block(properties), EntityBlock, F
 /**
  * The alms table's middle (see [AlmsTableBlock]): the soup pot and the bowls set out by it, as the server's [AlmsTable]
  * has them, kept with the chunk and sent to the clients: how much [soup] is in the pot of the [cap] it holds (its level
- * shows it), whether the [pot] is on the table yet, how many [bowls] are set out, and when the keeper last ladled and a
- * gift was last tipped in (for the ladle's dip and the splash).
+ * shows it), whether the [pot] is on the table yet, how many [bowls] are stacked by it, and when the keeper last started
+ * ladling and a gift was last tipped in (for the ladle taken up, the dip's ripple and the splash).
  */
 class AlmsTableBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(StreetsRegistry.ALMS_TABLE_ENTITY.get(), pos, state) {
     var soup = 0
@@ -193,6 +209,33 @@ class AlmsTableBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(Stree
     @JvmField
     var bowlAt = Long.MIN_VALUE / 2
 
+    /** Client side: the pot as last seen (-1 not yet, 0 off the table, 1 on it), and when it was seen set down. */
+    @JvmField
+    var potSeen = -1
+
+    @JvmField
+    var potAt = Long.MIN_VALUE / 2
+
+    /**
+     * Client side: the last ladling and gift seen ([ladled] and [given] as they came), when each was seen to start (by
+     * this client's clock, so in step with the keeper's move), and the bowls set out as the ladling started (the keeper
+     * has lifted one off the stack until the server's count has it).
+     */
+    @JvmField
+    var ladleSeen = Long.MIN_VALUE
+
+    @JvmField
+    var ladleAt = Long.MIN_VALUE / 2
+
+    @JvmField
+    var bowlsAtLadle = Int.MAX_VALUE
+
+    @JvmField
+    var giftSeen = Long.MIN_VALUE
+
+    @JvmField
+    var giftAt = Long.MIN_VALUE / 2
+
     /** Server side: the pot and bowls as they are now, telling the clients if that changes anything. */
     fun set(soup: Int, cap: Int, pot: Boolean, bowls: Int) {
         val s = soup.coerceIn(0, cap)
@@ -205,7 +248,7 @@ class AlmsTableBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(Stree
         sync()
     }
 
-    /** Server side: the keeper's ladle dips now ([soup] already down). */
+    /** Server side: the keeper starts ladling now (taking up the ladle and a bowl off the stack; the dip's a little later). */
     fun ladle(now: Long) {
         ladled = now
         sync()
@@ -248,8 +291,8 @@ class AlmsTableBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(Stree
     override fun getUpdatePacket(): ClientboundBlockEntityDataPacket = ClientboundBlockEntityDataPacket.create(this)
 
     companion object {
-        /** The most bowls set out on the table at once. */
-        const val BOWLS = 6
+        /** The most bowls set out on the table at once: a stack of three (client/works/WorksArt's BOWLS_MAX), the keeper lifting the top one off. */
+        const val BOWLS = 3
 
         /** Client side: each tick of a table in view (the pot's simmer), set by client/streets/StreetsClient. */
         @JvmStatic
