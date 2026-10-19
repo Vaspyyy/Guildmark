@@ -2346,6 +2346,7 @@
   "subtitles.guildmark.streets.bundle": "Bundle set on a cart",
   "subtitles.guildmark.streets.handcart_goods": "Handcart rattles",
   "block.guildmark.alms_table": "Alms Table",
+  "block.guildmark.to_let_board": "\"To Let\" Board",
   "streets.guildmark.slate": "Nothing today",
   "message.guildmark.streets.alms_closed": "The alms table isn't serving just now.",
   "message.guildmark.streets.alms_full": "The pot's full to the brim: keep it for when it's gone down.",

@@ -1,7 +1,5 @@
 package io.github.vaspyyy.guildmark.townsfolk.streets
 
-import io.github.vaspyyy.guildmark.festival.FestivalTrimBlock
-import io.github.vaspyyy.guildmark.festival.TrimLook
 import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
 import io.github.vaspyyy.guildmark.townsfolk.Comings
 import io.github.vaspyyy.guildmark.townsfolk.ComingsBodies
@@ -26,9 +24,10 @@ import net.minecraft.world.phys.Vec3
  * down by the door, knock its post in (STAKE) and say the household's gone (`fortune.gone`); and someone takes it up
  * again when it's done with (PICK_UP) and carries it off. Out of sight it's simply there, or gone.
  *
- * Each board is the festivals' trim in a look of its own ([TrimLook.TO_LET]) under the record of what stood there
- * ([Streets.BOARDS], run: the home's lodging id), placed only into air (or a plant anyone may build over) and put back
- * as it was. Its day is kept in [StreetsData] ([StreetsData.Town.boards]), and kept after the board comes down for as
+ * Each board is a [ToLetBlock] (its board swinging on its hooks, facing the street) under the record of what stood
+ * there ([Streets.BOARDS], run: the home's lodging id), placed only into air (or a plant anyone may build over) and put
+ * back as it was; one put up before the board had a block of its own is the festivals' trim in its still TO_LET look,
+ * and comes down the same way. Its day is kept in [StreetsData] ([StreetsData.Town.boards]), and kept after the board comes down for as
  * long as the home stands empty, so it isn't put up again. All of it waits on [Comings.enabled], but for
  * `/guildmark streets board`'s tests (this session's).
  */
@@ -177,7 +176,7 @@ object Signs : Comings.Listener {
         val h = Streets.here(column)
         val wanted = forcedFor(level, column, lodging.id) || Comings.enabled() && (h == null || lodging.id in gone(level, h.key))
         if (!wanted || !Places.floor(level, spot.below())) return false
-        val state = FestivalTrimBlock.state(TrimLook.TO_LET, door.inward.opposite)
+        val state = ToLetBlock.state(door.inward.opposite)
         if (!Streets.place(level, spot, state, column, Streets.BOARDS, lodging.id.toLong(), solid = true)) return false
         if (sound) level.playSound(null, spot, SoundEvents.HANGING_SIGN_PLACE, SoundSource.NEUTRAL, 0.8f, 0.95f)
         return true

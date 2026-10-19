@@ -80,7 +80,7 @@
       "model": "minecraft:block/potted_lily_of_the_valley"
     },
     "facing=east,look=to_let": {
-      "model": "guildmark:block/to_let_board",
+      "model": "guildmark:block/works/to_let_board",
       "y": 90
     },
     "facing=north,look=pole_birch": {
@@ -160,7 +160,7 @@
       "model": "minecraft:block/potted_lily_of_the_valley"
     },
     "facing=north,look=to_let": {
-      "model": "guildmark:block/to_let_board"
+      "model": "guildmark:block/works/to_let_board"
     },
     "facing=south,look=pole_birch": {
       "model": "guildmark:block/festival_pole_birch"
@@ -241,7 +241,7 @@
       "model": "minecraft:block/potted_lily_of_the_valley"
     },
     "facing=south,look=to_let": {
-      "model": "guildmark:block/to_let_board",
+      "model": "guildmark:block/works/to_let_board",
       "y": 180
     },
     "facing=west,look=pole_birch": {
@@ -324,7 +324,7 @@
       "model": "minecraft:block/potted_lily_of_the_valley"
     },
     "facing=west,look=to_let": {
-      "model": "guildmark:block/to_let_board",
+      "model": "guildmark:block/works/to_let_board",
       "y": 270
     }
   }

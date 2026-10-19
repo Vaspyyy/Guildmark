@@ -17,8 +17,9 @@ import java.util.function.UnaryOperator
  * What the streets add to the registries (M6 Part D2): the alms table, a trestle of three blocks set up by the market's
  * well on a hungry day, its pot and bowls drawn by its middle block's renderer (client/streets/StreetsClient). Like the
  * festivals' decorations it has no item, no drop and no recipe, can't be broken or moved, and is taken down again,
- * whatever stood there put back (it goes up through [io.github.vaspyyy.guildmark.festival.FestivalRestores]). The
- * dressing and the "To let" boards are the festivals' own blocks in new looks; the slate is drawn on the displays.
+ * whatever stood there put back (it goes up through [io.github.vaspyyy.guildmark.festival.FestivalRestores]); and the
+ * "To let" board on its post by an empty home's door, the same way, its board swinging on its hooks. The dressing is
+ * the festivals' own blocks in new looks; the slate is drawn on the displays.
  */
 object StreetsRegistry {
     val BLOCKS: DeferredRegister.Blocks = DeferredRegister.createBlocks(Guildmark.MOD_ID)
@@ -35,6 +36,19 @@ object StreetsRegistry {
     val ALMS_TABLE_ENTITY: DeferredHolder<BlockEntityType<*>, BlockEntityType<AlmsTableBlockEntity>> =
         BLOCK_ENTITIES.register("alms_table") { ->
             BlockEntityType(BlockEntityType.BlockEntitySupplier(::AlmsTableBlockEntity), ALMS_TABLE.get())
+        }
+
+    /** A "To let" board on its post, the board swinging (see [ToLetBlock]). */
+    val TO_LET: DeferredBlock<ToLetBlock> = BLOCKS.registerBlock("to_let_board", ::ToLetBlock, props {
+        it.mapColor(MapColor.WOOD).strength(-1f, 3600000f).noLootTable().noOcclusion().randomTicks()
+            .pushReaction(PushReaction.IMMOVEABLE).sound(SoundType.WOOD)
+            .isValidSpawn { _, _, _, _ -> false }.isRedstoneConductor { _, _, _ -> false }
+            .isSuffocating { _, _, _ -> false }.isViewBlocking { _, _, _, _ -> false }
+    })
+
+    val TO_LET_ENTITY: DeferredHolder<BlockEntityType<*>, BlockEntityType<ToLetBlockEntity>> =
+        BLOCK_ENTITIES.register("to_let_board") { ->
+            BlockEntityType(BlockEntityType.BlockEntitySupplier(::ToLetBlockEntity), TO_LET.get())
         }
 
     fun register(modBus: IEventBus) {

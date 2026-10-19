@@ -5,6 +5,8 @@ import io.github.vaspyyy.guildmark.client.works.WorksMesh
 import io.github.vaspyyy.guildmark.townsfolk.streets.AlmsTableBlock
 import io.github.vaspyyy.guildmark.townsfolk.streets.AlmsTableBlockEntity
 import io.github.vaspyyy.guildmark.townsfolk.streets.StreetsRegistry
+import io.github.vaspyyy.guildmark.townsfolk.streets.ToLetBlock
+import io.github.vaspyyy.guildmark.townsfolk.streets.ToLetBlockEntity
 import net.minecraft.client.Minecraft
 import net.minecraft.client.resources.sounds.AbstractTickableSoundInstance
 import net.minecraft.client.resources.sounds.SoundInstance
@@ -15,12 +17,14 @@ import net.minecraft.sounds.SoundSource
 import net.neoforged.bus.api.IEventBus
 import net.neoforged.neoforge.client.event.EntityRenderersEvent
 import kotlin.math.abs
+import kotlin.math.sign
 
 /**
  * The streets on a client (M6 Part D, townsfolk/streets): the alms table's pot, stew and bowls drawn
  * ([AlmsTableRenderer], from Part F's client/works/WorksMesh.alms), its soup's level eased as it changes, its pot and
  * bowls seen set down, the keeper's ladling and the gifts timed as they're seen, and its simmer heard over the pot
- * while there's soup in it (`streets.pot_loop`). The dressing and the awnings' flaps are festival ornaments
+ * while there's soup in it (`streets.pot_loop`); and the "To let" boards swinging on their posts ([ToLetRenderer]),
+ * creaking now and then as they swing (`streets.to_let`). The dressing and the awnings' flaps are festival ornaments
  * (client/festival's renderer draws them), and the slate is drawn with its market display
  * (client/economy/WaresRenderer, [StreetSlate]).
  */
@@ -29,11 +33,14 @@ object StreetsClient {
     fun register(modBus: IEventBus) {
         modBus.addListener(EntityRenderersEvent.RegisterRenderers::class.java) { event ->
             event.registerBlockEntityRenderer(StreetsRegistry.ALMS_TABLE_ENTITY.get(), ::AlmsTableRenderer)
+            event.registerBlockEntityRenderer(StreetsRegistry.TO_LET_ENTITY.get(), ::ToLetRenderer)
         }
         modBus.addListener(EntityRenderersEvent.RegisterLayerDefinitions::class.java) { event ->
             event.registerLayerDefinition(AlmsTableRenderer.LAYER, WorksMesh::alms)
+            event.registerLayerDefinition(ToLetRenderer.LAYER, WorksMesh::toLet)
         }
         AlmsTableBlockEntity.clientTick = ::tick
+        ToLetBlockEntity.clientTick = ::creak
     }
 
     // ---- The alms table ----
@@ -110,4 +117,57 @@ object StreetsClient {
     private const val EASE = 0.12f
     private const val HEAR = 14.0
     private const val RETRY = 100L
+
+    // ---- The "To let" boards ----
+
+    /** The board's hooks creaking as it swings (its sound comes with living-world's audio: silent till then). */
+    private val TO_LET_ID: Identifier = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "streets.to_let")
+    private val TO_LET: SoundEvent = SoundEvent.createVariableRangeEvent(TO_LET_ID)
+
+    /**
+     * Each client tick of a "To let" board in the loaded world: how wet the wind is there, eased as the rain comes and
+     * goes (it swings twice as far in rain), and its hooks' creak now and then as a swing turns back: the further it
+     * swung out, the likelier and the louder (so more often and louder in rain), and never within [CREAK_GAP] of the last.
+     */
+    private fun creak(board: ToLetBlockEntity) {
+        val level = board.level ?: return
+        val now = level.gameTime
+        val pos = board.blockPos
+        val rain = if (level.isRainingAt(pos.above())) 1f else 0f
+        board.wet = if (board.wet < 0f) rain else board.wet + (rain - board.wet) * WET_EASE
+        val swing = ToLetRenderer.swing(level, pos, board.wet, 0f)
+        val last = board.lastSwing
+        board.lastSwing = swing
+        if (last.isNaN()) return
+        val way = sign(swing - last).toInt()
+        val turned = way != 0 && board.lastWay != 0 && way != board.lastWay
+        if (way != 0) board.lastWay = way
+        if (!turned || now - board.creakAt < CREAK_GAP) return
+        val far = abs(last)
+        if (level.random.nextFloat() >= ((far - CREAK_FROM) / CREAK_SPAN).coerceIn(0f, 1f)) return
+        val mc = Minecraft.getInstance()
+        val player = mc.player ?: return
+        if (player.distanceToSqr(pos.x + 0.5, pos.y + 1.0, pos.z + 0.5) > CREAK_HEAR * CREAK_HEAR) return
+        if (mc.soundManager.getSoundEvent(TO_LET_ID) == null) return
+        board.creakAt = now
+        // From the board, hung out toward the street
+        val out = board.blockState.getValue(ToLetBlock.FACING)
+        val x = pos.x + 0.5 + out.stepX * BOARD_OUT
+        val z = pos.z + 0.5 + out.stepZ * BOARD_OUT
+        level.playLocalSound(x, pos.y + BOARD_Y, z, TO_LET, SoundSource.BLOCKS, (0.2f + 0.05f * far).coerceAtMost(0.9f), 0.9f + level.random.nextFloat() * 0.2f, false)
+    }
+
+    /**
+     * The board's creak: the least ticks between two, the degrees out a swing must turn back from to creak at all and
+     * how many more till it always does (a dry wind swings it 7.5 at most, rain twice that), and how near it's heard.
+     */
+    private const val CREAK_GAP = 30L
+    private const val CREAK_FROM = 3f
+    private const val CREAK_SPAN = 9f
+    private const val CREAK_HEAR = 24.0
+
+    /** How fast the board's wetness follows the rain each tick, and where it hangs (blocks up, and out toward the street). */
+    private const val WET_EASE = 0.02f
+    private const val BOARD_Y = 1.0
+    private const val BOARD_OUT = 0.21
 }
