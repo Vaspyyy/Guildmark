@@ -65,6 +65,13 @@ object Spread {
     const val CATCH_UP = 24L
     private const val STEPS = 8
 
+    /**
+     * The most capitals whose people's day ([people]) is worked out in one run, for all of them together. The day turns
+     * for every capital at two in the morning, and none is known in the first hour after the world opens: the rest wait
+     * a run or a few, still in that hour's first seconds.
+     */
+    private const val DAYS = 3
+
     /** Hours of the day (0 is six in the morning): dawn, when the night's hunger is known, noon, and the tavern's late evening. */
     private const val DAWN = 0
     private const val HUNGER = 1
@@ -257,14 +264,15 @@ object Spread {
     }
 
     /**
-     * Works out the hours every capital's talk is behind, [STEPS] of them at most this run; the rest wait for the next.
-     * With the markets on, an hour is talked over once the capital's market has worked it out, so the market's news of
-     * that hour goes round in it.
+     * Works out the hours every capital's talk is behind, [STEPS] of them at most this run, and a new day's people for
+     * [DAYS] capitals at most; the rest wait for the next. With the markets on, an hour is talked over once the
+     * capital's market has worked it out, so the market's news of that hour goes round in it.
      */
     private fun run(level: ServerLevel, data: TownTalkData) {
         val now = hourOf(level)
         val markets = if (Markets.enabled()) Markets.get(level) else null
         var steps = STEPS
+        var days = DAYS
         for (entry in data.all()) {
             // Time set back: the talk carries on from the new hour, everything kept moved back with it
             if (entry.hour > now) {
@@ -275,6 +283,11 @@ object Spread {
             if (now - entry.hour > CATCH_UP) entry.hour = now - CATCH_UP
             val upTo = markets?.get(entry.pos)?.market?.hour?.coerceAtMost(now) ?: now
             while (entry.hour < upTo && steps > 0) {
+                // An hour whose day's people aren't known yet works them out, as step does
+                if (known(view(entry.capital), Days.dayOf((entry.hour + 1) * 1000L + 500L)) == null) {
+                    if (days == 0) break
+                    days--
+                }
                 step(level, entry, entry.hour + 1, null)
                 entry.hour++
                 steps--
@@ -334,7 +347,7 @@ object Spread {
 
     /** [view]'s living people on [day] as the step sees them (worked out once a day). */
     fun people(level: ServerLevel, view: TownView, day: Long): List<Person> {
-        view.people?.takeIf { view.day == day }?.let { return it }
+        known(view, day)?.let { return it }
         val centre = BlockPos.of(view.capital)
         val living = Residents.get(level).of(centre).filter { it.alive && it.id >= 0 && Faction.of(it.role) == null }.sortedBy { it.id }
         val places = view.places
@@ -362,6 +375,9 @@ object Spread {
         view.people = out
         return out
     }
+
+    /** [view]'s people on [day] if they're worked out already (see [people]), else null. */
+    private fun known(view: TownView, day: Long): List<Person>? = view.people?.takeIf { view.day == day }
 
     /** Whether [r], a guard, keeps the night watch: as their body has it if it's about, else one in three. */
     private fun nightWatch(level: ServerLevel, r: Resident): Boolean {
