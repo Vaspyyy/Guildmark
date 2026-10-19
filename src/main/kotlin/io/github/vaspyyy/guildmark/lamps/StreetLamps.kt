@@ -33,10 +33,12 @@ import java.util.concurrent.CompletableFuture
  * pace; while a lamplighter really goes round it (see Lamplighters), its lamps wait for them instead. At dawn, from
  * half past five (half past six in rain), the same rounds put them out. Whatever happens, every lamp is lit by seven ([LIT_BY]),
  * before the dark lets monsters about, and out by half past seven ([OUT_BY]); in a thunderstorm, when monsters are about
- * by day too, every lamp is lit, and after it they go out one by one. A lamp nobody reaches catches (or goes out) by
- * itself, with a little flame (or a wisp of smoke) if a player is near enough to see; lamps whose land isn't loaded are
- * set as soon as it is. An older capital's lanterns on their posts are swapped for street lamps while nobody is within
- * [UNSEEN] blocks. Switched off, every street lamp burns day and night, and nothing is swapped.
+ * by day too, every lamp is lit (catching one after another over a few seconds, [CATCHING], as do the lamps not yet lit
+ * when rain brings the night on early, and those already out when it rains at dawn), and after it they go out one by
+ * one. A lamp nobody reaches catches (or goes out) by itself, with a little flame (or a wisp of smoke) if a player is
+ * near enough to see; lamps whose land isn't loaded are set as soon as it is. An older capital's lanterns on their posts
+ * are swapped for street lamps while nobody is within [UNSEEN] blocks. Switched off, every street lamp burns day and
+ * night, and nothing is swapped.
  */
 object StreetLamps {
     // ---- The clock, in ticks since noon (see [since]) ----
@@ -57,6 +59,13 @@ object StreetLamps {
 
     /** Over how long the lamps go out one by one after a thunderstorm by day. */
     const val STORM_AFTER = 600
+
+    /**
+     * Over how long the lamps not yet lit catch one by one as it grows dark before its time: a thunderstorm, or rain at
+     * dusk (from this long before six, so that they're all lit by then) or at dawn. Not all in one pass, as the light
+     * round some hundreds of lamps worked out at once is a stutter on every client about.
+     */
+    const val CATCHING = 200
 
     // ---- The keeping ----
 
@@ -91,6 +100,10 @@ object StreetLamps {
 
     /** The last game time it thundered. */
     private var stormAt = Long.MIN_VALUE / 2
+
+    /** The game time it last grew dark before its time for the lamps (see [CATCHING]), and whether it was at the last tick. */
+    private var darkFrom = Long.MIN_VALUE / 2
+    private var wasDark = false
 
     /** Things that see to a round themselves once the clock has it begin (the lamplighters): given the run, they may take it. */
     fun interface Taker {
@@ -148,6 +161,8 @@ object StreetLamps {
         nowhere.clear()
         scanned = Long.MIN_VALUE / 2
         stormAt = Long.MIN_VALUE / 2
+        darkFrom = Long.MIN_VALUE / 2
+        wasDark = false
     }
 
     // ---- Time ----
@@ -196,6 +211,9 @@ object StreetLamps {
         val level = server.overworld()
         val time = level.gameTime
         if (level.isThundering) stormAt = time
+        val dark = level.isThundering || level.isRaining && since(level.overworldClockTime) in (LIT_BY - RAIN - CATCHING) until (DAWN + RAIN)
+        if (dark && !wasDark) darkFrom = time
+        wasDark = dark
         if (time % PASS != 0L) return
         if (time - scanned >= SCAN) {
             scanned = time
@@ -309,9 +327,10 @@ object StreetLamps {
         val progress = IntArray(town.runs.size) { town.runs[it].progress(time) }
         val thunder = level.isThundering
         val sinceStorm = now - stormAt
+        val sinceDark = now - darkFrom
         for (i in town.pos.indices) {
             val run = town.runs[town.runOf[i]]
-            val want = wanted(town, i, run, progress[run.index], stretch, time, raining, thunder, sinceStorm, enabled)
+            val want = wanted(town, i, run, progress[run.index], stretch, time, raining, thunder, sinceStorm, sinceDark, enabled)
             if (want != town.applied[i]) set(level, town, i, want, now, enabled)
         }
     }
@@ -398,10 +417,15 @@ object StreetLamps {
         return (h ushr 11).toDouble() / (1L shl 53).toDouble()
     }
 
-    /** What lamp [i] (in [run], which has seen to [progress] of its lamps) should be just now. */
+    /**
+     * What lamp [i] (in [run], which has seen to [progress] of its lamps) should be just now. It grew dark before its
+     * time (a storm, or rain at dusk or dawn) [sinceDark] ticks ago, and a lamp that should catch for that does so at its
+     * own moment within [CATCHING] ticks, staying as it is ([LampTown.applied]) till then; after a storm by day, one the
+     * storm lit stays so till its turn to go out.
+     */
     private fun wanted(
         town: LampTown, i: Int, run: LampTown.Run, progress: Int, stretch: Stretch, time: Int, raining: Boolean,
-        thunder: Boolean, sinceStorm: Long, enabled: Boolean,
+        thunder: Boolean, sinceStorm: Long, sinceDark: Long, enabled: Boolean,
     ): Byte {
         if (!enabled) return LampTown.LIT
         val k = town.placeOf[i]
@@ -413,19 +437,28 @@ object StreetLamps {
             }
             return if (k < progress) force else if (force == LampTown.LIT) LampTown.OUT else LampTown.LIT
         }
-        if (thunder) return LampTown.LIT
+        // Grown dark before its time, the lamps not yet lit catch one after another over a few seconds
+        val caught = sinceDark >= town.phase(i) * CATCHING
+        if (thunder && caught) return LampTown.LIT
         return when (stretch) {
-            Stretch.NIGHT -> LampTown.LIT
+            Stretch.NIGHT -> if (time >= LIT_BY || caught) LampTown.LIT else town.applied[i]
             Stretch.DUSK -> when {
-                raining && time >= LIT_BY - RAIN -> LampTown.LIT
+                // In rain the lamps not yet lit catch one after another over the last few seconds before six
+                raining && time >= LIT_BY - RAIN - CATCHING && caught -> LampTown.LIT
                 // Rationed: left by the lamplighter, it catches by itself a little before every lamp must be lit
                 skipped(town, run, k) -> if (time >= litBy(town, false) - RATIONED_LATE - (town.phase(i) * RATIONED_SPREAD).toInt()) LampTown.LIT else LampTown.OUT
                 k < progress -> LampTown.LIT
                 else -> LampTown.OUT
             }
-            Stretch.DAWN -> if (k < progress && !(raining && time < DAWN + RAIN)) LampTown.OUT else LampTown.LIT
-            // After a storm by day the lamps go out one by one
-            else -> if (sinceStorm < town.phase(i) * STORM_AFTER) LampTown.LIT else LampTown.OUT
+            Stretch.DAWN -> when {
+                k >= progress -> LampTown.LIT
+                !(raining && time < DAWN + RAIN) -> LampTown.OUT
+                // Rain keeps them lit till half past six: those already out catch again one after another
+                caught -> LampTown.LIT
+                else -> town.applied[i]
+            }
+            // After a storm by day the lamps go out one by one, each the storm lit staying so till its turn
+            else -> if (thunder || sinceStorm < town.phase(i) * STORM_AFTER) town.applied[i] else LampTown.OUT
         }
     }
 
@@ -567,6 +600,7 @@ object StreetLamps {
         val stretch = setUp(level, town, clock, raining)
         val enabled = enabled()
         val sinceStorm = level.gameTime - stormAt
+        val sinceDark = level.gameTime - darkFrom
         for (i in town.pos.indices) {
             val pos = town.pos[i]
             if (!level.isLoaded(pos)) continue
@@ -579,7 +613,7 @@ object StreetLamps {
             if (done) n++
             // Left so until the clock next wants it otherwise
             val run = town.runs[town.runOf[i]]
-            town.applied[i] = wanted(town, i, run, run.progress(time), stretch, time, raining, level.isThundering, sinceStorm, enabled)
+            town.applied[i] = wanted(town, i, run, run.progress(time), stretch, time, raining, level.isThundering, sinceStorm, sinceDark, enabled)
         }
         return n
     }
