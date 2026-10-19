@@ -209,7 +209,7 @@ class WorksBuilder(p: Townsperson, id: Int, road: BlockPos, lent: Boolean) : Bui
             Job.CHISEL -> if (yard?.chiseller == p.id) yard.chiseller = -1
             Job.HOIST -> {
                 if (yard?.hoister == p.id) yard.hoister = -1
-                (p.level().getBlockEntity(at) as? WorksHoistBlockEntity)?.let { it.hang(it.drop) }
+                if (p.level().isLoaded(at)) (p.level().getBlockEntity(at) as? WorksHoistBlockEntity)?.let { it.hang(it.drop) }
             }
             else -> {}
         }

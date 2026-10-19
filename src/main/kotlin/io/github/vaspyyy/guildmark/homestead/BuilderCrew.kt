@@ -344,7 +344,8 @@ object BuilderCrew {
             released()
             batch = IntArray(0)
             val level = p.level() as? ServerLevel
-            if ((up || s == S.CLIMB) && level != null) {
+            // Gone with their chunk, they're left as it was saved: reading the ground under them would load it again
+            if ((up || s == S.CLIMB) && level != null && !p.isRemoved) {
                 puff(level)
                 p.teleportTo(p.x, groundUnder(level, p.blockPosition()).toDouble(), p.z)
             }
