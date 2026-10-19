@@ -58,12 +58,18 @@ object CartClient {
     /** What this client keeps to draw [cart]. */
     fun look(cart: Handcart): Look = cart.look as? Look ?: Look(cart.held).also { cart.look = it }
 
-    /** Which of [HandcartMesh.PIECES] shows [stack]: a sack of grain or of flour, a crate, a basket of loaves, a box of fish. */
+    /**
+     * Which of [HandcartMesh.PIECES] shows [stack]: a sack of grain or of flour, a crate, a basket of loaves, a box of
+     * fish; or a household's chest, cooking pot, bundle, hen in her coop, rolled mattress or chair.
+     */
     fun piece(stack: ItemStack): Int = when {
-        // A household's goods (Handcarts.household), until pieces of their own are drawn: the bundle and the rolled
-        // mattress as sacks, the pot in a basket, the chest, the chair and the cage in crates
-        stack.`is`(Items.BUNDLE) || stack.`is`(Items.BED.pick(DyeColor.WHITE)) -> SACK
-        stack.`is`(Items.DECORATED_POT) -> BASKET
+        // A household's goods (Handcarts.household), each as itself
+        stack.`is`(Items.CHEST) -> CHEST
+        stack.`is`(Items.DECORATED_POT) -> POT
+        stack.`is`(Items.BUNDLE) -> BUNDLE
+        stack.`is`(Items.IRON_BARS) -> CAGE
+        stack.`is`(Items.BED.pick(DyeColor.WHITE)) -> MATTRESS
+        stack.`is`(Items.OAK_STAIRS) -> CHAIR
         stack.`is`(Items.SUGAR) -> FLOUR
         stack.`is`(Items.WHEAT) || stack.`is`(Items.WHEAT_SEEDS) || stack.`is`(Items.BEETROOT_SEEDS) || stack.`is`(Items.HAY_BLOCK) -> SACK
         stack.`is`(Items.BREAD) || stack.`is`(Items.COOKIE) || stack.`is`(Items.PUMPKIN_PIE) || stack.`is`(Items.CAKE) -> BASKET
@@ -168,7 +174,7 @@ object CartClient {
     /** A bundle set down on [cart] (streets.bundle, heard 16 blocks off). */
     private fun bundle(cart: Handcart) {
         val level = cart.level()
-        level.playLocalSound(cart.x, cart.y + 0.9, cart.z, BUNDLE, SoundSource.NEUTRAL, 0.7f, 0.92f + level.random.nextFloat() * 0.16f, false)
+        level.playLocalSound(cart.x, cart.y + 0.9, cart.z, SET_DOWN, SoundSource.NEUTRAL, 0.7f, 0.92f + level.random.nextFloat() * 0.16f, false)
     }
 
     /**
@@ -308,6 +314,13 @@ object CartClient {
     const val BASKET = 3
     /** A box of fish on ice. */
     const val FISH = 4
+    /** A household's chest (Handcarts.CHEST); and the rest of a move: its cooking pot, a bundle, the hen in her coop, a rolled mattress, a chair. */
+    const val CHEST = 5
+    const val POT = 6
+    const val BUNDLE = 7
+    const val CAGE = 8
+    const val MATTRESS = 9
+    const val CHAIR = 10
 
     /** Ticks a piece takes to settle onto the bed. */
     const val SETTLE = 7
@@ -319,7 +332,7 @@ object CartClient {
 
     // A household's load: set down on the bed, and rattling as it rolls (blocks a second it starts at, is loudest at
     // and is at its own pitch at; how loud at most; ticks it lingers silent before it's let go)
-    private val BUNDLE: SoundEvent = SoundEvent.createVariableRangeEvent(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "streets.bundle"))
+    private val SET_DOWN: SoundEvent = SoundEvent.createVariableRangeEvent(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "streets.bundle"))
     private val GOODS: SoundEvent = SoundEvent.createVariableRangeEvent(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "streets.handcart_goods"))
     private const val RATTLE_FROM = 0.4
     private const val RATTLE_FULL = 1.6
