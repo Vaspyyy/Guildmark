@@ -1,0 +1,255 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "guildmark:block/works/oak",
+    "oak": "guildmark:block/works/oak",
+    "pallet": "guildmark:block/works/pallet"
+  },
+  "elements": [
+    {
+      "from": [
+        1.5,
+        0,
+        1
+      ],
+      "to": [
+        3,
+        1,
+        15
+      ],
+      "faces": {
+        "up": {
+          "uv": [
+            1.5,
+            1,
+            3,
+            15
+          ],
+          "texture": "#oak"
+        },
+        "west": {
+          "uv": [
+            1,
+            15,
+            15,
+            16
+          ],
+          "texture": "#oak"
+        },
+        "east": {
+          "uv": [
+            1,
+            15,
+            15,
+            16
+          ],
+          "texture": "#oak"
+        },
+        "north": {
+          "uv": [
+            13,
+            15,
+            14.5,
+            16
+          ],
+          "texture": "#oak"
+        },
+        "south": {
+          "uv": [
+            1.5,
+            15,
+            3,
+            16
+          ],
+          "texture": "#oak"
+        }
+      }
+    },
+    {
+      "from": [
+        7.25,
+        0,
+        1
+      ],
+      "to": [
+        8.75,
+        1,
+        15
+      ],
+      "faces": {
+        "up": {
+          "uv": [
+            7.25,
+            1,
+            8.75,
+            15
+          ],
+          "texture": "#oak"
+        },
+        "west": {
+          "uv": [
+            1,
+            15,
+            15,
+            16
+          ],
+          "texture": "#oak"
+        },
+        "east": {
+          "uv": [
+            1,
+            15,
+            15,
+            16
+          ],
+          "texture": "#oak"
+        },
+        "north": {
+          "uv": [
+            7.25,
+            15,
+            8.75,
+            16
+          ],
+          "texture": "#oak"
+        },
+        "south": {
+          "uv": [
+            7.25,
+            15,
+            8.75,
+            16
+          ],
+          "texture": "#oak"
+        }
+      }
+    },
+    {
+      "from": [
+        13,
+        0,
+        1
+      ],
+      "to": [
+        14.5,
+        1,
+        15
+      ],
+      "faces": {
+        "up": {
+          "uv": [
+            13,
+            1,
+            14.5,
+            15
+          ],
+          "texture": "#oak"
+        },
+        "west": {
+          "uv": [
+            1,
+            15,
+            15,
+            16
+          ],
+          "texture": "#oak"
+        },
+        "east": {
+          "uv": [
+            1,
+            15,
+            15,
+            16
+          ],
+          "texture": "#oak"
+        },
+        "north": {
+          "uv": [
+            1.5,
+            15,
+            3,
+            16
+          ],
+          "texture": "#oak"
+        },
+        "south": {
+          "uv": [
+            13,
+            15,
+            14.5,
+            16
+          ],
+          "texture": "#oak"
+        }
+      }
+    },
+    {
+      "from": [
+        1,
+        1,
+        1
+      ],
+      "to": [
+        15,
+        1.6,
+        15
+      ],
+      "faces": {
+        "down": {
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "texture": "#pallet"
+        },
+        "up": {
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "texture": "#pallet"
+        },
+        "north": {
+          "uv": [
+            1,
+            14.4,
+            15,
+            15
+          ],
+          "texture": "#pallet"
+        },
+        "south": {
+          "uv": [
+            1,
+            14.4,
+            15,
+            15
+          ],
+          "texture": "#pallet"
+        },
+        "west": {
+          "uv": [
+            1,
+            14.4,
+            15,
+            15
+          ],
+          "texture": "#pallet"
+        },
+        "east": {
+          "uv": [
+            1,
+            14.4,
+            15,
+            15
+          ],
+          "texture": "#pallet"
+        }
+      }
+    }
+  ]
+}

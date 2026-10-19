@@ -1,0 +1,69 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "guildmark:block/works/bronze",
+    "plaque": "guildmark:block/works/plaque",
+    "bronze": "guildmark:block/works/bronze"
+  },
+  "elements": [
+    {
+      "from": [
+        2,
+        3,
+        0
+      ],
+      "to": [
+        14,
+        13,
+        1
+      ],
+      "faces": {
+        "south": {
+          "uv": [
+            0,
+            0,
+            12,
+            10
+          ],
+          "texture": "#plaque"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            12,
+            1
+          ],
+          "texture": "#bronze"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            12,
+            1
+          ],
+          "texture": "#bronze"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            12,
+            1
+          ],
+          "texture": "#bronze"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            12,
+            1
+          ],
+          "texture": "#bronze"
+        }
+      }
+    }
+  ]
+}

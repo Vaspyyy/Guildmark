@@ -31,7 +31,7 @@ internal object LivingSchedule {
     class Moment(val name: String, val tick: Float, val x: Float, val y: Float, val z: Float)
 
     /** The clips these are for. */
-    val CLIPS: Set<String> = setOf("sit_down", "stand_up", "nod", "shrug", "point", "bow", "yawn", "stretch", "knock", "climb", "climb_top", "eat", "sit_eat", "wash", "pick_up", "put_down", "hand_over", "receive", "pay", "browse", "set_up", "sow", "carry_basket", "gather", "scythe", "grind", "chop", "pour_sack", "ring_bell", "announce", "draw_water", "explain", "gossip", "shush", "wave_off", "sigh", "think", "tip_hat", "introduce", "arms_folded", "recoil", "wave_walk", "nod_walk", "sit_gossip", "sit_laugh", "pause_work", "carry_pole", "light_lamp", "snuff_lamp", "drive", "drive_urge", "drive_brake", "ride_tail", "jump_down", "climb_up", "cut_loose", "hand_down", "cower", "catch_breath", "recount", "wounded", "grumble")
+    val CLIPS: Set<String> = setOf("sit_down", "stand_up", "nod", "shrug", "point", "bow", "yawn", "stretch", "knock", "climb", "climb_top", "eat", "sit_eat", "wash", "pick_up", "put_down", "hand_over", "receive", "pay", "browse", "set_up", "sow", "carry_basket", "gather", "scythe", "grind", "chop", "pour_sack", "ring_bell", "announce", "draw_water", "explain", "gossip", "shush", "wave_off", "sigh", "think", "tip_hat", "introduce", "arms_folded", "recoil", "wave_walk", "nod_walk", "sit_gossip", "sit_laugh", "pause_work", "carry_pole", "light_lamp", "snuff_lamp", "drive", "drive_urge", "drive_brake", "ride_tail", "jump_down", "climb_up", "cut_loose", "hand_down", "cower", "catch_breath", "recount", "wounded", "grumble", "mix_mortar", "trowel", "hoist", "carry_beam", "chisel", "plumb", "survey", "unveil", "toast", "lookout", "light_beacon", "sound_horn", "queue", "shiver", "empty_basket", "haggle", "ladle", "hold_out", "eat_bowl", "take_bowl", "pack", "embrace", "look_about", "show_in", "shut_stall")
 
     /** Each prop's own part, and the part it hangs on. */
     val PARENT: Map<String, String> = mapOf(
@@ -68,6 +68,31 @@ internal object LivingSchedule {
         "spear_knees" to "right_arm",
         "loot_sack" to "right_arm",
         "nosebag_held" to "left_arm",
+        "trowel" to "right_arm",
+        "hawk" to "left_arm",
+        "mortar_hoe" to "right_arm",
+        "mallet" to "right_arm",
+        "chisel" to "left_arm",
+        "plumb_line" to "right_arm",
+        "sighting_staff" to "left_arm",
+        "beam" to "body",
+        "cup" to "right_arm",
+        "ladle" to "right_arm",
+        "ladle_full" to "right_arm",
+        "soup_pour" to "right_arm",
+        "bowl_empty" to "left_arm",
+        "torch" to "right_arm",
+        "torch_flame" to "right_arm",
+        "horn" to "body",
+        "horn_baldric" to "body",
+        "bundle" to "body",
+        "veil_1" to "body",
+        "veil_2" to "body",
+        "veil_3" to "body",
+        "basket_turned" to "left_arm",
+        "flap_rail" to "body",
+        "flap_cloth" to "body",
+        "flap_batten" to "body",
     )
 
     /** By clip: the props it shows, and when. */
@@ -186,6 +211,90 @@ internal object LivingSchedule {
         "cut_loose" to listOf(
             Shown("driver_knife", 0f, 24.5f),
         ),
+        "mix_mortar" to listOf(
+            Shown("mortar_hoe", 0f, END),
+        ),
+        "trowel" to listOf(
+            Shown("hawk", 0f, END),
+            Shown("trowel", 0f, END),
+        ),
+        "hoist" to listOf(
+            Shown("curb_rope", 0f, END),
+            Shown("haul_rope_right", 0f, 0.5f),
+            Shown("haul_rope_right", 9.5f, 10.5f),
+            Shown("haul_rope_right", 19.5f, 20.5f),
+            Shown("haul_rope_right", 29.5f, 30.5f),
+            Shown("haul_rope_right", 39.5f, END),
+            Shown("well_rope", 0f, END),
+        ),
+        "carry_beam" to listOf(
+            Shown("beam", 0f, END),
+        ),
+        "chisel" to listOf(
+            Shown("chisel", 0f, END),
+            Shown("mallet", 0f, END),
+        ),
+        "plumb" to listOf(
+            Shown("plumb_line", 0f, END),
+        ),
+        "survey" to listOf(
+            Shown("sighting_staff", 0f, END),
+        ),
+        "unveil" to listOf(
+            Shown("veil_1", 9f, 36f),
+            Shown("veil_2", 9f, 36f),
+            Shown("veil_3", 9f, 36f),
+        ),
+        "toast" to listOf(
+            Shown("cup", 0f, END),
+        ),
+        "lookout" to listOf(
+            Shown("horn", 0f, END),
+            Shown("horn_baldric", 0f, END),
+        ),
+        "light_beacon" to listOf(
+            Shown("horn", 0f, END),
+            Shown("horn_baldric", 0f, END),
+            Shown("torch", 0f, END),
+            Shown("torch_flame", 0f, END),
+        ),
+        "sound_horn" to listOf(
+            Shown("horn", 0f, END),
+            Shown("horn_baldric", 0f, END),
+        ),
+        "empty_basket" to listOf(
+            Shown("basket_turned", 0f, END),
+        ),
+        "ladle" to listOf(
+            Shown("bowl", 13.5f, 21f),
+            Shown("bowl_empty", 3.5f, 13.5f),
+            Shown("ladle", 0f, 8f),
+            Shown("ladle", 14f, END),
+            Shown("ladle_full", 8f, 14f),
+            Shown("soup_pour", 12.5f, 14f),
+            Shown("spoon", 13.5f, 21f),
+        ),
+        "hold_out" to listOf(
+            Shown("bowl", 21f, END),
+            Shown("spoon", 21f, END),
+        ),
+        "eat_bowl" to listOf(
+            Shown("bowl", 0f, END),
+            Shown("spoon", 0f, END),
+        ),
+        "take_bowl" to listOf(
+            Shown("bowl", 0f, END),
+            Shown("spoon", 0f, END),
+        ),
+        "pack" to listOf(
+            Shown("bundle", 0f, END),
+        ),
+        "shut_stall" to listOf(
+            Shown("flap_batten", 0f, END),
+            Shown("flap_cloth", 0f, END),
+            Shown("flap_rail", 0f, END),
+            Shown("well_rope", 0f, END),
+        ),
     )
 
     /** By clip: the props its file turns, places and stretches itself tick by tick ("prop:<part>" bones). */
@@ -199,13 +308,27 @@ internal object LivingSchedule {
         "drive_brake" to listOf("rein_left_1", "rein_left_2", "rein_left_3", "rein_right_1", "rein_right_2", "rein_right_3"),
         "jump_down" to listOf("rein_left_1", "rein_left_2", "rein_left_3", "rein_right_1", "rein_right_2", "rein_right_3"),
         "climb_up" to listOf("rein_left_1", "rein_left_2", "rein_left_3", "rein_right_1", "rein_right_2", "rein_right_3"),
+        "hoist" to listOf("curb_rope", "haul_rope_right", "well_rope"),
+        "plumb" to listOf("plumb_line"),
+        "survey" to listOf("sighting_staff"),
+        "unveil" to listOf("veil_1", "veil_2", "veil_3"),
+        "toast" to listOf("cup"),
+        "light_beacon" to listOf("torch", "torch_flame"),
+        "sound_horn" to listOf("horn"),
+        "empty_basket" to listOf("basket_turned"),
+        "ladle" to listOf("bowl", "bowl_empty", "ladle", "ladle_full", "soup_pour", "spoon"),
+        "hold_out" to listOf("bowl", "spoon"),
+        "eat_bowl" to listOf("bowl"),
+        "take_bowl" to listOf("bowl", "spoon"),
+        "pack" to listOf("bundle"),
+        "shut_stall" to listOf("flap_batten", "flap_cloth", "flap_rail", "well_rope"),
     )
 
     /** Props that hang straight down from the hand holding them (where no track runs them). */
-    val HANG: Set<String> = setOf("bucket", "sack_empty", "loot_sack", "nosebag_held")
+    val HANG: Set<String> = setOf("bucket", "sack_empty", "loot_sack", "nosebag_held", "plumb_line")
 
     /** Props with a flame that glows in the dark. */
-    val GLOW: Set<String> = setOf("lamp_pole")
+    val GLOW: Set<String> = setOf("lamp_pole", "torch", "torch_flame")
 
     /** By clip: where the goods someone carries are, and when. */
     val GOODS: Map<String, List<Goods>> = mapOf(
@@ -534,6 +657,113 @@ internal object LivingSchedule {
         "grumble" to listOf(
             Moment("huff", 7f, 1.073f, -2.482f, -3.492f),
             Moment("sweep", 27f, -7.804f, 6.757f, -10.871f),
+        ),
+        "mix_mortar" to listOf(
+            Moment("stir", 3f, 0.805f, 21.624f, -14.124f),
+            Moment("stir", 23f, -0.601f, 21.632f, -14.128f),
+        ),
+        "trowel" to listOf(
+            Moment("scoop", 4f, 7.227f, 5.163f, -5.586f),
+            Moment("spread", 11f, -4.838f, 7.738f, -11.552f),
+            Moment("tap", 20.5f, 0.824f, 7.362f, -11.646f),
+            Moment("tap", 23.5f, -1.78f, 7.369f, -11.47f),
+            Moment("cut", 28f, 1.56f, 8.355f, -9.268f),
+        ),
+        "hoist" to listOf(
+            Moment("heave", 0.5f, -0.025f, 1.232f, -4.798f),
+            Moment("heave", 10.5f, 0.025f, 1.232f, -4.798f),
+            Moment("heave", 20.5f, -0.025f, 1.232f, -4.798f),
+            Moment("heave", 30.5f, 0.025f, 1.232f, -4.798f),
+        ),
+        "carry_beam" to listOf(
+            Moment("hitch", 22f, -6.804f, -4.612f, -6.713f),
+        ),
+        "chisel" to listOf(
+            Moment("strike", 6f, 1.167f, 7.902f, -9.12f),
+            Moment("strike", 16f, -0.032f, 7.894f, -9.1f),
+            Moment("strike", 26f, -1.225f, 7.887f, -9.08f),
+        ),
+        "plumb" to listOf(
+            Moment("true", 42f, -0.013f, -3.131f, -5.911f),
+        ),
+        "survey" to listOf(
+            Moment("plant", 10f, 6.4f, 24f, -10f),
+            Moment("wave", 27f, -9.477f, -0.703f, -9.867f),
+            Moment("wave", 32f, -9.748f, -0.857f, -9.311f),
+            Moment("there", 38f, -2.576f, 2.365f, -10.91f),
+        ),
+        "unveil" to listOf(
+            Moment("pull", 9f, 0.026f, 6.318f, -6.933f),
+            Moment("present", 17f, 4.342f, -3.615f, -8.145f),
+        ),
+        "toast" to listOf(
+            Moment("raise", 9f, -4.128f, -10.847f, -7.584f),
+            Moment("drink", 21f, 0f, -3.303f, -2.625f),
+        ),
+        "lookout" to listOf(
+            Moment("stare", 52f, -1.636f, -3.097f, -5.491f),
+        ),
+        "light_beacon" to listOf(
+            Moment("dip", 11f, 0f, 11f, -16f),
+            Moment("flare", 14f, 0f, 11f, -16f),
+        ),
+        "sound_horn" to listOf(
+            Moment("blow", 12f, 0.708f, -2.755f, -2.858f),
+        ),
+        "queue" to listOf(
+            Moment("murmur", 46f, -0.152f, -1.726f, -4.394f),
+        ),
+        "shiver" to listOf(
+            Moment("stamp", 14f, -1.9f, 24f, -1f),
+            Moment("stamp", 34f, 1.9f, 24f, -1f),
+            Moment("puff", 21f, 0f, -0.908f, -5.758f),
+        ),
+        "empty_basket" to listOf(
+            Moment("shake", 13f, 0.6f, 6.041f, -8.8f),
+            Moment("shake", 16f, 0.6f, 6.041f, -8.8f),
+        ),
+        "haggle" to listOf(
+            Moment("count", 10f, 1.344f, 3.645f, -10.2f),
+            Moment("count", 15f, 1.837f, 3.804f, -10.303f),
+            Moment("count", 20f, 2.328f, 3.857f, -10.331f),
+            Moment("no", 30.5f, -8.306f, 4.635f, -7.111f),
+        ),
+        "ladle" to listOf(
+            Moment("take", 3.5f, 3.996f, 8.627f, -13.042f),
+            Moment("dip", 7.5f, -3.293f, 9.3f, -13.226f),
+            Moment("pour", 12.5f, 0.899f, 3.638f, -13.402f),
+            Moment("give", 21f, 0.373f, 3.995f, -16.043f),
+        ),
+        "hold_out" to listOf(
+            Moment("offer", 10f, 0f, 6.641f, -10.396f),
+            Moment("take", 21f, -0.4f, 4f, -16f),
+        ),
+        "eat_bowl" to listOf(
+            Moment("spoon", 16f, 1.243f, 0.502f, -7.902f),
+            Moment("spoon", 46f, 0.144f, 0.656f, -8.305f),
+        ),
+        "take_bowl" to listOf(
+            Moment("bow", 9.5f, 0f, -1.903f, -7.5f),
+        ),
+        "pack" to listOf(
+            Moment("lift", 10f, 3f, 20.946f, -6.8f),
+            Moment("set", 25f, 3.25f, 7.294f, -16.401f),
+        ),
+        "embrace" to listOf(
+            Moment("pat", 19f, -3.722f, 3.92f, -15.449f),
+            Moment("pat", 22.5f, -3.722f, 3.92f, -15.449f),
+            Moment("pat", 26f, -3.722f, 3.92f, -15.449f),
+        ),
+        "look_about" to listOf(
+            Moment("look", 24f, -0.072f, -4.809f, -0.724f),
+            Moment("look", 58f, -0.976f, -4.417f, -1.696f),
+        ),
+        "show_in" to listOf(
+            Moment("show", 12f, -11.785f, -0.821f, -7.007f),
+        ),
+        "shut_stall" to listOf(
+            Moment("pull", 6.5f, 0f, -21f, -8f),
+            Moment("hook", 17.5f, 0f, 7.2f, -8f),
         ),
     )
 }

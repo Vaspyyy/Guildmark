@@ -1,12 +1,14 @@
 """Previews of the market board, for looking at on a phone: the board's textures, the board in 3D from the front and the
 back, a filled-in face as the game would draw it, and a GIF of the crier at work (the title rewritten, three prices
-rubbed out and chalked up stroke by stroke, a slip of news flying up and tacked on).
+rubbed out and chalked up stroke by stroke, a slip of news flying up and tacked on); and the medallion at its head,
+turning through the town's times.
 
-    python3 -B art/scripts/market_board_art.py src/main/resources/assets/guildmark <preview dir> <minecraft client jar>
+    python3 -B art/scripts/market_board_art.py src/main/resources/assets/guildmark <preview dir> [minecraft client jar]
 
-(market_board_art.py calls previews() here once it has painted everything.) The face is laid out by a port of
-client/MarketBoardRenderer.kt's layout and timing, from the same numbers (market_board_art.LAYOUT), so what's here is
-where the game puts it. The goods' icons come from the client jar given (any 26.x client or patched jar).
+(market_board_art.py calls medallion_previews() and, given the jar, previews() here once it has painted everything.)
+The face is laid out by a port of client/MarketBoardRenderer.kt's layout and timing, from the same numbers
+(market_board_art.LAYOUT), so what's here is where the game puts it; the medallion turns by the same curve and is
+shaded as the renderer shades it. The goods' icons come from the client jar given (any 26.x client or patched jar).
 """
 import copy
 import json
@@ -14,6 +16,7 @@ import math
 import os
 import shutil
 import sys
+import tempfile
 import unicodedata
 import zipfile
 
@@ -25,6 +28,7 @@ import market_board_art as MA
 import market_board_letters as ML
 import island_blockview as BV
 from hdkit import sheet
+from PIL import ImageDraw
 
 L = MA.LAYOUT
 C = MA.COLOURS
@@ -1191,3 +1195,129 @@ def gif(out, assets, lang, words, icons, slips_img, slips_where, heading, bg):
     draw_face(face, board2, viewer2, 10.0 + L['RUB'] * 0.6 + 7.0, words, icons, slips_img, slips_where, heading)
     big = face.over(front_view(assets, R * 2, bg))
     big.crop((int(0.2 * 2 * R), int(0.38 * 2 * R), int(0.95 * 2 * R), int(0.72 * 2 * R))).save(os.path.join(out, 'chalking_closeup.png'))
+
+
+# ================================================================ the medallion
+
+def med_shade(a):
+    """The renderer's light on a face of the drum turned to angle a (radians from facing out, up positive)."""
+    ny = math.sin(a)
+    return 0.8 + 0.2 * ny if ny >= 0 else 0.8 + 0.3 * ny
+
+
+def med_elements(phi, tex):
+    """The drum turned to phi (radians; face k shows at k fifths of a turn) as model elements in the board's model
+    space (north-facing, the middle cell at x 0..16, y up from the ground): each face a thin plate turned about the axle,
+    its texture shaded ahead (tex[k], drawn unshaded), and an end at each side (shaded as the game shades east and west)."""
+    x0, x1 = 32 - MA.MED_X[1], 32 - MA.MED_X[0]
+    y, z = MA.MED_Y, MA.MED_Z
+    h, A = MA.MED_FACE_H / 2, MA.MED_APOTHEM
+    origin = [8.0, y, z]
+    els = []
+    for k in range(MA.MED_SIDES):
+        a = phi - k * 2 * math.pi / MA.MED_SIDES
+        els.append({'from': [x0, y - h, z - A], 'to': [x1, y + h, z - A + 0.001], 'shade': False,
+                    'rotation': {'origin': origin, 'axis': 'x', 'angle': math.degrees(a)},
+                    'faces': {'north': {'uv': [0, 0, 16, 16], 'texture': tex[k]}}})
+    c = MA.MED_CAP / 2 / MA.MED_TPX
+    # The right end as seen from the front (model west): its pentagon turned with the drum; the left end's a fifth of a
+    # half turn on, as seen from its own side
+    els.append({'from': [x0 - 0.001, y - c, z - c], 'to': [x0, y + c, z + c],
+                'rotation': {'origin': origin, 'axis': 'x', 'angle': math.degrees(phi)},
+                'faces': {'west': {'uv': [0, 0, 16, 16], 'texture': 'guildmark:preview/med_cap'}}})
+    els.append({'from': [x1, y - c, z - c], 'to': [x1 + 0.001, y + c, z + c],
+                'rotation': {'origin': origin, 'axis': 'x', 'angle': math.degrees(phi) + 36.0},
+                'faces': {'east': {'uv': [0, 0, 16, 16], 'texture': 'guildmark:preview/med_cap'}}})
+    return els
+
+
+def med_assets(assets, sprite):
+    """A scratch assets dir for the drum's renders: the board's textures, and the medallion's faces and end cut out of
+    its sprite (the faces are shaded into it per frame)."""
+    tmp = tempfile.mkdtemp(prefix='med_')
+    os.makedirs(os.path.join(tmp, 'textures', 'block'))
+    os.makedirs(os.path.join(tmp, 'textures', 'preview'))
+    for k in ('front', 'back', 'wood', 'post', 'cap', 'trim'):
+        shutil.copy(os.path.join(assets, 'textures', 'block', 'market_board_%s.png' % k), os.path.join(tmp, 'textures', 'block'))
+    x, y, w, h = MA.MED_WHERE['cap']
+    sprite.crop((x, y, x + w, y + h)).save(os.path.join(tmp, 'textures', 'preview', 'med_cap.png'))
+    faces = []
+    for (x, y, w, h) in MA.MED_WHERE['faces']:
+        faces.append(np.asarray(sprite.crop((x, y, x + w, y + h)).convert('RGBA'), np.float32))
+    return tmp, faces
+
+
+def med_frame(model, tmp, faces, phi, view, label=None):
+    """One picture of the board's head with the drum at phi."""
+    tex = []
+    for k, f in enumerate(faces):
+        a = phi - k * 2 * math.pi / MA.MED_SIDES
+        im = f.copy()
+        im[..., :3] *= med_shade(a)
+        name = 'med_face_%d' % k
+        Image.fromarray(np.clip(im, 0, 255).astype(np.uint8), 'RGBA').save(os.path.join(tmp, 'textures', 'preview', name + '.png'))
+        tex.append('guildmark:preview/' + name)
+    m = {'textures': model['textures'], 'elements': model['elements'] + med_elements(phi, tex)}
+    img = Image.fromarray(BV.render_model(m, tmp, **view))
+    if label:
+        d = ImageDraw.Draw(img)
+        d.rectangle((0, img.height - 22, img.width, img.height), fill=(28, 26, 32))
+        d.text((10, img.height - 17), label, fill=(232, 222, 196))
+    return img
+
+
+def medallion_previews(assets, out, imgs):
+    """The medallion's faces and end as painted; the board with it at its head; and a GIF of it turning through the
+    times, up from hard to thriving a step at a time (as the times move, a day apart), then down two at once."""
+    os.makedirs(out, exist_ok=True)
+    sprite = imgs['block/market_board/medallion']
+    names = ['Hard', 'Lean', 'Steady', 'Good', 'Thriving']
+    cells = [sprite.crop((x, y, x + w, y + h)) for (x, y, w, h) in MA.MED_WHERE['faces']]
+    x, y, w, h = MA.MED_WHERE['cap']
+    cells.append(sprite.crop((x, y, x + w, y + h)))
+    what = ['a bare branch', 'a thin sheaf', 'scales level', 'a full sheaf', 'a sheaf with ribbons under a sun']
+    sheet(cells, scale=5, cols=3, labels=['%s: %s' % (n.upper(), w) for n, w in zip(names, what)] + ['the drum\'s end'],
+          bg=(40, 38, 46)).save(os.path.join(out, 'medallion_faces.png'))
+
+    tmp, faces = med_assets(assets, sprite)
+    try:
+        board = board_model(assets)
+        bg = (52, 56, 66)
+        # The whole board, the medallion showing steady times
+        whole = dict(yaw=205.0, elev=12.0, scale=13.0, size=(760, 640), center=(8.0, 21.0, 12.0), bg=bg, ss=2)
+        med_frame(board, tmp, faces, 2 * 2 * math.pi / 5, whole).save(os.path.join(out, 'medallion_on_board.png'))
+        # Turning: the head of the board, a little from the left and above
+        top = {'textures': board['textures'], 'elements': [e for e in board['elements'] if e['to'][1] > 24.0]}
+        view = dict(yaw=203.0, elev=11.0, scale=16.0, size=(440, 320), center=(8.0, 35.6, 12.0), bg=bg, ss=2)
+        steps = [(0, 1), (1, 2), (2, 3), (3, 4), (4, 2), (2, 0)]
+        frames, durations = [], []
+        wind = 1.6
+        t0 = 0.0
+        for (a, b) in steps:
+            n = abs(b - a)
+            still = MA.LAYOUT['MED_STILL'] * math.sqrt(n)
+            lab = '%s  ->  %s' % (names[a].upper(), names[b].upper())
+            # A beat at rest first, stirring on its axle
+            for i in range(3):
+                t = t0 + i * 4
+                rock = MA.LAYOUT['MED_ROCK'] * wind * (0.6 * math.sin(t * 0.071) + 0.4 * math.sin(t * 0.163 + 1.7))
+                frames.append(med_frame(top, tmp, faces, a * 2 * math.pi / 5 + rock, view, names[a].upper()))
+                durations.append(260)
+            t0 += 12
+            for tick in np.arange(0.0, still + 2, 2.0):
+                f = MA.med_turn(float(tick), n)
+                at = a + (b - a) * f
+                frames.append(med_frame(top, tmp, faces, at * 2 * math.pi / 5, view, lab))
+                durations.append(100)
+            t0 += still
+        durations[-1] = 1400
+        strip = Image.new('RGB', (frames[0].width, frames[0].height * 5))
+        for i, k in enumerate((0, len(frames) // 4, len(frames) // 2, 3 * len(frames) // 4, len(frames) - 1)):
+            strip.paste(frames[k], (0, frames[0].height * i))
+        pal = strip.quantize(colors=255, method=Image.Quantize.MEDIANCUT)
+        q = [f.quantize(palette=pal, dither=Image.Dither.NONE) for f in frames]
+        q[0].save(os.path.join(out, 'medallion_turning.gif'), save_all=True, append_images=q[1:], duration=durations,
+                  loop=0, optimize=False)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    return ['medallion_faces.png', 'medallion_on_board.png', 'medallion_turning.gif']

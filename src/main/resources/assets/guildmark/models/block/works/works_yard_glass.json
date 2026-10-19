@@ -1,0 +1,136 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "guildmark:block/works/straw",
+    "straw": "guildmark:block/works/straw"
+  },
+  "elements": [
+    {
+      "from": [
+        0.5,
+        0,
+        0.5
+      ],
+      "to": [
+        15.5,
+        0.8,
+        15.5
+      ],
+      "faces": {
+        "down": {
+          "uv": [
+            0.5,
+            0.5,
+            15.5,
+            15.5
+          ],
+          "texture": "#straw"
+        },
+        "up": {
+          "uv": [
+            0.5,
+            0.5,
+            15.5,
+            15.5
+          ],
+          "texture": "#straw"
+        },
+        "north": {
+          "uv": [
+            0.5,
+            15.2,
+            15.5,
+            16
+          ],
+          "texture": "#straw"
+        },
+        "south": {
+          "uv": [
+            0.5,
+            15.2,
+            15.5,
+            16
+          ],
+          "texture": "#straw"
+        },
+        "west": {
+          "uv": [
+            0.5,
+            15.2,
+            15.5,
+            16
+          ],
+          "texture": "#straw"
+        },
+        "east": {
+          "uv": [
+            0.5,
+            15.2,
+            15.5,
+            16
+          ],
+          "texture": "#straw"
+        }
+      }
+    },
+    {
+      "from": [
+        2,
+        0.8,
+        1.5
+      ],
+      "to": [
+        14,
+        1.2,
+        14.5
+      ],
+      "faces": {
+        "up": {
+          "uv": [
+            2,
+            1.5,
+            14,
+            14.5
+          ],
+          "texture": "#straw"
+        },
+        "north": {
+          "uv": [
+            2,
+            14.8,
+            14,
+            15.2
+          ],
+          "texture": "#straw"
+        },
+        "south": {
+          "uv": [
+            2,
+            14.8,
+            14,
+            15.2
+          ],
+          "texture": "#straw"
+        },
+        "west": {
+          "uv": [
+            1.5,
+            14.8,
+            14.5,
+            15.2
+          ],
+          "texture": "#straw"
+        },
+        "east": {
+          "uv": [
+            1.5,
+            14.8,
+            14.5,
+            15.2
+          ],
+          "texture": "#straw"
+        }
+      }
+    }
+  ]
+}

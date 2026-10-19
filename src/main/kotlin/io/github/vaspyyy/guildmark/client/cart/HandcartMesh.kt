@@ -5,6 +5,8 @@ import net.minecraft.client.model.geom.PartPose
 import net.minecraft.client.model.geom.builders.CubeListBuilder
 import net.minecraft.client.model.geom.builders.LayerDefinition
 import net.minecraft.client.model.geom.builders.MeshDefinition
+import kotlin.math.floor
+import kotlin.math.min
 
 /**
  * The handcart's two layers, box UV on the one [TEX_WIDTH] x [TEX_HEIGHT] texture (the PNG ships at 2x that,
@@ -13,7 +15,7 @@ import net.minecraft.client.model.geom.builders.MeshDefinition
  */
 object HandcartMesh {
     const val TEX_WIDTH = 256
-    const val TEX_HEIGHT = 64
+    const val TEX_HEIGHT = 128
 
     /**
      * The cart: its bed (the floor and low sides on the two poles that run on forward as the shafts, and the axle)
@@ -23,64 +25,74 @@ object HandcartMesh {
     fun cart(): LayerDefinition {
         val mesh = MeshDefinition()
         val root = mesh.root
-        root.addOrReplaceChild("bed", CubeListBuilder.create().texOffs(156, 28).addBox(-6.5f, -4.75f, -14f, 13f, 1f, 24f).texOffs(206, 0).addBox(-7.5f, -7.75f, -14f, 1f, 4f, 24f).texOffs(78, 0).addBox(-6.75f, -3.75f, -26f, 1.5f, 1.5f, 37f).texOffs(90, 49).addBox(-6.75f, -2.25f, -1.75f, 1.5f, 3.5f, 3.5f).texOffs(8, 51).addBox(-7.6f, -8.75f, -13.6f, 1.2f, 5f, 1.2f).texOffs(16, 51).addBox(-7.6f, -8.75f, 8.4f, 1.2f, 5f, 1.2f).texOffs(156, 0).addBox(6.5f, -7.75f, -14f, 1f, 4f, 24f).texOffs(0, 0).addBox(5.25f, -3.75f, -26f, 1.5f, 1.5f, 37f).texOffs(78, 49).addBox(5.25f, -2.25f, -1.75f, 1.5f, 3.5f, 3.5f).texOffs(126, 49).addBox(6.4f, -8.75f, -13.6f, 1.2f, 5f, 1.2f).texOffs(0, 51).addBox(6.4f, -8.75f, 8.4f, 1.2f, 5f, 1.2f).texOffs(196, 53).addBox(-6.5f, -7.25f, -14f, 13f, 2.5f, 1f).texOffs(224, 55).addBox(-6.5f, -7.25f, 9f, 13f, 2.5f, 1f).texOffs(148, 57).addBox(-5.25f, -3.75f, -17.2f, 10.5f, 1.5f, 1f).texOffs(30, 57).addBox(-5.25f, -3.75f, -12f, 10.5f, 1f, 1.5f).texOffs(56, 57).addBox(-5.25f, -3.75f, 6f, 10.5f, 1f, 1.5f).texOffs(152, 53).addBox(-10f, -0.75f, -0.75f, 20f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
-        val wheel_r = root.addOrReplaceChild("wheel_r", CubeListBuilder.create().texOffs(138, 47).addBox(-1.75f, -1.75f, -1.75f, 3f, 3.5f, 3.5f).texOffs(24, 57).addBox(-2.75f, -1f, -1f, 1f, 2f, 2f), PartPose.offset(-9f, 0f, 0f))
-        wheel_r.addOrReplaceChild("wheel_r_rim0", CubeListBuilder.create().texOffs(138, 39).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offset(0f, 0f, 0f))
-        wheel_r.addOrReplaceChild("wheel_r_rim1", CubeListBuilder.create().texOffs(138, 39).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 0.524f, 0f, 0f))
-        wheel_r.addOrReplaceChild("wheel_r_rim2", CubeListBuilder.create().texOffs(138, 39).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 1.047f, 0f, 0f))
-        wheel_r.addOrReplaceChild("wheel_r_rim3", CubeListBuilder.create().texOffs(138, 39).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 1.571f, 0f, 0f))
-        wheel_r.addOrReplaceChild("wheel_r_rim4", CubeListBuilder.create().texOffs(138, 39).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 2.094f, 0f, 0f))
-        wheel_r.addOrReplaceChild("wheel_r_rim5", CubeListBuilder.create().texOffs(138, 39).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 2.618f, 0f, 0f))
-        wheel_r.addOrReplaceChild("wheel_r_rim6", CubeListBuilder.create().texOffs(138, 39).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 3.142f, 0f, 0f))
-        wheel_r.addOrReplaceChild("wheel_r_rim7", CubeListBuilder.create().texOffs(138, 39).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 3.665f, 0f, 0f))
-        wheel_r.addOrReplaceChild("wheel_r_rim8", CubeListBuilder.create().texOffs(138, 39).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 4.189f, 0f, 0f))
-        wheel_r.addOrReplaceChild("wheel_r_rim9", CubeListBuilder.create().texOffs(138, 39).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 4.712f, 0f, 0f))
-        wheel_r.addOrReplaceChild("wheel_r_rim10", CubeListBuilder.create().texOffs(138, 39).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 5.236f, 0f, 0f))
-        wheel_r.addOrReplaceChild("wheel_r_rim11", CubeListBuilder.create().texOffs(138, 39).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 5.76f, 0f, 0f))
+        root.addOrReplaceChild("bed", CubeListBuilder.create().texOffs(156, 28).addBox(-6.5f, -4.75f, -14f, 13f, 1f, 24f).texOffs(206, 0).addBox(-7.5f, -7.75f, -14f, 1f, 4f, 24f).texOffs(78, 0).addBox(-6.75f, -3.75f, -26f, 1.5f, 1.5f, 37f).texOffs(202, 53).addBox(-6.75f, -2.25f, -1.75f, 1.5f, 3.5f, 3.5f).texOffs(134, 58).addBox(-7.6f, -8.75f, -13.6f, 1.2f, 5f, 1.2f).texOffs(142, 58).addBox(-7.6f, -8.75f, 8.4f, 1.2f, 5f, 1.2f).texOffs(156, 0).addBox(6.5f, -7.75f, -14f, 1f, 4f, 24f).texOffs(0, 0).addBox(5.25f, -3.75f, -26f, 1.5f, 1.5f, 37f).texOffs(190, 53).addBox(5.25f, -2.25f, -1.75f, 1.5f, 3.5f, 3.5f).texOffs(248, 56).addBox(6.4f, -8.75f, -13.6f, 1.2f, 5f, 1.2f).texOffs(68, 58).addBox(6.4f, -8.75f, 8.4f, 1.2f, 5f, 1.2f).texOffs(106, 65).addBox(-6.5f, -7.25f, -14f, 13f, 2.5f, 1f).texOffs(0, 66).addBox(-6.5f, -7.25f, 9f, 13f, 2.5f, 1f).texOffs(114, 69).addBox(-5.25f, -3.75f, -17.2f, 10.5f, 1.5f, 1f).texOffs(62, 69).addBox(-5.25f, -3.75f, -12f, 10.5f, 1f, 1.5f).texOffs(88, 69).addBox(-5.25f, -3.75f, 6f, 10.5f, 1f, 1.5f).texOffs(62, 65).addBox(-10f, -0.75f, -0.75f, 20f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        val wheel_r = root.addOrReplaceChild("wheel_r", CubeListBuilder.create().texOffs(68, 50).addBox(-1.75f, -1.75f, -1.75f, 3f, 3.5f, 3.5f).texOffs(196, 67).addBox(-2.75f, -1f, -1f, 1f, 2f, 2f), PartPose.offset(-9f, 0f, 0f))
+        wheel_r.addOrReplaceChild("wheel_r_rim0", CubeListBuilder.create().texOffs(174, 53).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offset(0f, 0f, 0f))
+        wheel_r.addOrReplaceChild("wheel_r_rim1", CubeListBuilder.create().texOffs(174, 53).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 0.524f, 0f, 0f))
+        wheel_r.addOrReplaceChild("wheel_r_rim2", CubeListBuilder.create().texOffs(174, 53).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 1.047f, 0f, 0f))
+        wheel_r.addOrReplaceChild("wheel_r_rim3", CubeListBuilder.create().texOffs(174, 53).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 1.571f, 0f, 0f))
+        wheel_r.addOrReplaceChild("wheel_r_rim4", CubeListBuilder.create().texOffs(174, 53).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 2.094f, 0f, 0f))
+        wheel_r.addOrReplaceChild("wheel_r_rim5", CubeListBuilder.create().texOffs(174, 53).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 2.618f, 0f, 0f))
+        wheel_r.addOrReplaceChild("wheel_r_rim6", CubeListBuilder.create().texOffs(174, 53).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 3.142f, 0f, 0f))
+        wheel_r.addOrReplaceChild("wheel_r_rim7", CubeListBuilder.create().texOffs(174, 53).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 3.665f, 0f, 0f))
+        wheel_r.addOrReplaceChild("wheel_r_rim8", CubeListBuilder.create().texOffs(174, 53).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 4.189f, 0f, 0f))
+        wheel_r.addOrReplaceChild("wheel_r_rim9", CubeListBuilder.create().texOffs(174, 53).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 4.712f, 0f, 0f))
+        wheel_r.addOrReplaceChild("wheel_r_rim10", CubeListBuilder.create().texOffs(174, 53).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 5.236f, 0f, 0f))
+        wheel_r.addOrReplaceChild("wheel_r_rim11", CubeListBuilder.create().texOffs(174, 53).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 5.76f, 0f, 0f))
         wheel_r.addOrReplaceChild("wheel_r_spoke0", CubeListBuilder.create().texOffs(230, 28).addBox(-0.5f, -8.6f, -0.5f, 1f, 17.2f, 1f), PartPose.offset(0f, 0f, 0f))
         wheel_r.addOrReplaceChild("wheel_r_spoke1", CubeListBuilder.create().texOffs(230, 28).addBox(-0.5f, -8.6f, -0.5f, 1f, 17.2f, 1f), PartPose.offsetAndRotation(0f, 0f, 0f, 0.524f, 0f, 0f))
         wheel_r.addOrReplaceChild("wheel_r_spoke2", CubeListBuilder.create().texOffs(230, 28).addBox(-0.5f, -8.6f, -0.5f, 1f, 17.2f, 1f), PartPose.offsetAndRotation(0f, 0f, 0f, 1.047f, 0f, 0f))
         wheel_r.addOrReplaceChild("wheel_r_spoke3", CubeListBuilder.create().texOffs(230, 28).addBox(-0.5f, -8.6f, -0.5f, 1f, 17.2f, 1f), PartPose.offsetAndRotation(0f, 0f, 0f, 1.571f, 0f, 0f))
         wheel_r.addOrReplaceChild("wheel_r_spoke4", CubeListBuilder.create().texOffs(230, 28).addBox(-0.5f, -8.6f, -0.5f, 1f, 17.2f, 1f), PartPose.offsetAndRotation(0f, 0f, 0f, 2.094f, 0f, 0f))
         wheel_r.addOrReplaceChild("wheel_r_spoke5", CubeListBuilder.create().texOffs(230, 28).addBox(-0.5f, -8.6f, -0.5f, 1f, 17.2f, 1f), PartPose.offsetAndRotation(0f, 0f, 0f, 2.618f, 0f, 0f))
-        wheel_r.addOrReplaceChild("wheel_r_nave45", CubeListBuilder.create().texOffs(138, 47).addBox(-1.75f, -1.75f, -1.75f, 3f, 3.5f, 3.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 0.785f, 0f, 0f))
-        val wheel_l = root.addOrReplaceChild("wheel_l", CubeListBuilder.create().texOffs(138, 47).addBox(-1.25f, -1.75f, -1.75f, 3f, 3.5f, 3.5f).texOffs(24, 57).addBox(1.75f, -1f, -1f, 1f, 2f, 2f), PartPose.offset(9f, 0f, 0f))
-        wheel_l.addOrReplaceChild("wheel_l_rim0", CubeListBuilder.create().texOffs(138, 39).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offset(0f, 0f, 0f))
-        wheel_l.addOrReplaceChild("wheel_l_rim1", CubeListBuilder.create().texOffs(138, 39).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 0.524f, 0f, 0f))
-        wheel_l.addOrReplaceChild("wheel_l_rim2", CubeListBuilder.create().texOffs(138, 39).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 1.047f, 0f, 0f))
-        wheel_l.addOrReplaceChild("wheel_l_rim3", CubeListBuilder.create().texOffs(138, 39).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 1.571f, 0f, 0f))
-        wheel_l.addOrReplaceChild("wheel_l_rim4", CubeListBuilder.create().texOffs(138, 39).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 2.094f, 0f, 0f))
-        wheel_l.addOrReplaceChild("wheel_l_rim5", CubeListBuilder.create().texOffs(138, 39).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 2.618f, 0f, 0f))
-        wheel_l.addOrReplaceChild("wheel_l_rim6", CubeListBuilder.create().texOffs(138, 39).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 3.142f, 0f, 0f))
-        wheel_l.addOrReplaceChild("wheel_l_rim7", CubeListBuilder.create().texOffs(138, 39).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 3.665f, 0f, 0f))
-        wheel_l.addOrReplaceChild("wheel_l_rim8", CubeListBuilder.create().texOffs(138, 39).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 4.189f, 0f, 0f))
-        wheel_l.addOrReplaceChild("wheel_l_rim9", CubeListBuilder.create().texOffs(138, 39).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 4.712f, 0f, 0f))
-        wheel_l.addOrReplaceChild("wheel_l_rim10", CubeListBuilder.create().texOffs(138, 39).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 5.236f, 0f, 0f))
-        wheel_l.addOrReplaceChild("wheel_l_rim11", CubeListBuilder.create().texOffs(138, 39).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 5.76f, 0f, 0f))
+        wheel_r.addOrReplaceChild("wheel_r_nave45", CubeListBuilder.create().texOffs(68, 50).addBox(-1.75f, -1.75f, -1.75f, 3f, 3.5f, 3.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 0.785f, 0f, 0f))
+        val wheel_l = root.addOrReplaceChild("wheel_l", CubeListBuilder.create().texOffs(68, 50).addBox(-1.25f, -1.75f, -1.75f, 3f, 3.5f, 3.5f).texOffs(196, 67).addBox(1.75f, -1f, -1f, 1f, 2f, 2f), PartPose.offset(9f, 0f, 0f))
+        wheel_l.addOrReplaceChild("wheel_l_rim0", CubeListBuilder.create().texOffs(174, 53).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offset(0f, 0f, 0f))
+        wheel_l.addOrReplaceChild("wheel_l_rim1", CubeListBuilder.create().texOffs(174, 53).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 0.524f, 0f, 0f))
+        wheel_l.addOrReplaceChild("wheel_l_rim2", CubeListBuilder.create().texOffs(174, 53).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 1.047f, 0f, 0f))
+        wheel_l.addOrReplaceChild("wheel_l_rim3", CubeListBuilder.create().texOffs(174, 53).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 1.571f, 0f, 0f))
+        wheel_l.addOrReplaceChild("wheel_l_rim4", CubeListBuilder.create().texOffs(174, 53).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 2.094f, 0f, 0f))
+        wheel_l.addOrReplaceChild("wheel_l_rim5", CubeListBuilder.create().texOffs(174, 53).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 2.618f, 0f, 0f))
+        wheel_l.addOrReplaceChild("wheel_l_rim6", CubeListBuilder.create().texOffs(174, 53).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 3.142f, 0f, 0f))
+        wheel_l.addOrReplaceChild("wheel_l_rim7", CubeListBuilder.create().texOffs(174, 53).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 3.665f, 0f, 0f))
+        wheel_l.addOrReplaceChild("wheel_l_rim8", CubeListBuilder.create().texOffs(174, 53).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 4.189f, 0f, 0f))
+        wheel_l.addOrReplaceChild("wheel_l_rim9", CubeListBuilder.create().texOffs(174, 53).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 4.712f, 0f, 0f))
+        wheel_l.addOrReplaceChild("wheel_l_rim10", CubeListBuilder.create().texOffs(174, 53).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 5.236f, 0f, 0f))
+        wheel_l.addOrReplaceChild("wheel_l_rim11", CubeListBuilder.create().texOffs(174, 53).addBox(-1f, -10f, -2.75f, 2f, 1.5f, 5.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 5.76f, 0f, 0f))
         wheel_l.addOrReplaceChild("wheel_l_spoke0", CubeListBuilder.create().texOffs(230, 28).addBox(-0.5f, -8.6f, -0.5f, 1f, 17.2f, 1f), PartPose.offset(0f, 0f, 0f))
         wheel_l.addOrReplaceChild("wheel_l_spoke1", CubeListBuilder.create().texOffs(230, 28).addBox(-0.5f, -8.6f, -0.5f, 1f, 17.2f, 1f), PartPose.offsetAndRotation(0f, 0f, 0f, 0.524f, 0f, 0f))
         wheel_l.addOrReplaceChild("wheel_l_spoke2", CubeListBuilder.create().texOffs(230, 28).addBox(-0.5f, -8.6f, -0.5f, 1f, 17.2f, 1f), PartPose.offsetAndRotation(0f, 0f, 0f, 1.047f, 0f, 0f))
         wheel_l.addOrReplaceChild("wheel_l_spoke3", CubeListBuilder.create().texOffs(230, 28).addBox(-0.5f, -8.6f, -0.5f, 1f, 17.2f, 1f), PartPose.offsetAndRotation(0f, 0f, 0f, 1.571f, 0f, 0f))
         wheel_l.addOrReplaceChild("wheel_l_spoke4", CubeListBuilder.create().texOffs(230, 28).addBox(-0.5f, -8.6f, -0.5f, 1f, 17.2f, 1f), PartPose.offsetAndRotation(0f, 0f, 0f, 2.094f, 0f, 0f))
         wheel_l.addOrReplaceChild("wheel_l_spoke5", CubeListBuilder.create().texOffs(230, 28).addBox(-0.5f, -8.6f, -0.5f, 1f, 17.2f, 1f), PartPose.offsetAndRotation(0f, 0f, 0f, 2.618f, 0f, 0f))
-        wheel_l.addOrReplaceChild("wheel_l_nave45", CubeListBuilder.create().texOffs(138, 47).addBox(-1.25f, -1.75f, -1.75f, 3f, 3.5f, 3.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 0.785f, 0f, 0f))
-        return LayerDefinition.create(mesh, 256, 64)
+        wheel_l.addOrReplaceChild("wheel_l_nave45", CubeListBuilder.create().texOffs(68, 50).addBox(-1.25f, -1.75f, -1.75f, 3f, 3.5f, 3.5f), PartPose.offsetAndRotation(0f, 0f, 0f, 0.785f, 0f, 0f))
+        return LayerDefinition.create(mesh, 256, 128)
     }
 
     /**
      * What heaps on the bed, each part standing on the middle of its underside: "sack" (grain), "flour", "crate",
-     * "basket" and "fish".
+     * "basket" and "fish"; and a household's goods for a move: "chest", "pot", "bundle" (PACK's own bundle: the same
+     * cubes and paint as the prop it sets down), "cage" (a hen in her coop: her head is its child "cage_hen_head",
+     * turned by [henHead]), "mattress" (rolled, lying across) and "chair".
      */
     @Suppress("LocalVariableName", "UNUSED_VARIABLE")
     fun load(): LayerDefinition {
         val mesh = MeshDefinition()
         val root = mesh.root
-        root.addOrReplaceChild("sack", CubeListBuilder.create().texOffs(54, 49).addBox(-2.8f, -1.2f, -2.8f, 5.6f, 1.2f, 5.6f).texOffs(110, 39).addBox(-3.1f, -3.5f, -3.1f, 6.2f, 2.3f, 6.2f).texOffs(28, 50).addBox(-2.6f, -4.5f, -2.7f, 5.2f, 1f, 5.4f).texOffs(118, 56).addBox(-1.2f, -3.3f, -3.9f, 2.4f, 2.2f, 0.8f).texOffs(126, 56).addBox(-1.35f, -3.45f, -3.6f, 2.7f, 2.5f, 0.45f), PartPose.offset(0f, 0f, 0f))
-        root.addOrReplaceChild("flour", CubeListBuilder.create().texOffs(230, 47).addBox(-2.8f, -1.2f, -2.8f, 5.6f, 1.2f, 5.6f).texOffs(82, 39).addBox(-3.1f, -3.5f, -3.1f, 6.2f, 2.3f, 6.2f).texOffs(102, 49).addBox(-2.6f, -4.5f, -2.7f, 5.2f, 1f, 5.4f).texOffs(102, 56).addBox(-1.2f, -3.3f, -3.9f, 2.4f, 2.2f, 0.8f).texOffs(110, 56).addBox(-1.35f, -3.45f, -3.6f, 2.7f, 2.5f, 0.45f), PartPose.offset(0f, 0f, 0f))
-        root.addOrReplaceChild("crate", CubeListBuilder.create().texOffs(0, 39).addBox(-3.1f, -4.6f, -3.3f, 6.2f, 4.6f, 6.6f), PartPose.offset(0f, 0f, 0f))
-        root.addOrReplaceChild("basket", CubeListBuilder.create().texOffs(28, 39).addBox(-3f, -3.6f, -3.2f, 6f, 3.6f, 6.4f).texOffs(134, 55).addBox(-2.8f, -6.6f, -0.25f, 5.6f, 3f, 0.5f), PartPose.offset(0f, 0f, 0f))
-        root.addOrReplaceChild("fish", CubeListBuilder.create().texOffs(54, 39).addBox(-3.1f, -2.8f, -3.3f, 6.2f, 2.8f, 6.6f), PartPose.offset(0f, 0f, 0f))
-        return LayerDefinition.create(mesh, 256, 64)
+        root.addOrReplaceChild("sack", CubeListBuilder.create().texOffs(150, 53).addBox(-2.8f, -1.2f, -2.8f, 5.6f, 1.2f, 5.6f).texOffs(82, 49).addBox(-3.1f, -3.5f, -3.1f, 6.2f, 2.3f, 6.2f).texOffs(0, 59).addBox(-2.6f, -4.5f, -2.7f, 5.2f, 1f, 5.4f).texOffs(180, 67).addBox(-1.2f, -3.3f, -3.9f, 2.4f, 2.2f, 0.8f).texOffs(188, 67).addBox(-1.35f, -3.45f, -3.6f, 2.7f, 2.5f, 0.45f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("flour", CubeListBuilder.create().texOffs(26, 51).addBox(-2.8f, -1.2f, -2.8f, 5.6f, 1.2f, 5.6f).texOffs(110, 39).addBox(-3.1f, -3.5f, -3.1f, 6.2f, 2.3f, 6.2f).texOffs(110, 58).addBox(-2.6f, -4.5f, -2.7f, 5.2f, 1f, 5.4f).texOffs(156, 67).addBox(-1.2f, -3.3f, -3.9f, 2.4f, 2.2f, 0.8f).texOffs(164, 67).addBox(-1.35f, -3.45f, -3.6f, 2.7f, 2.5f, 0.45f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("crate", CubeListBuilder.create().texOffs(28, 39).addBox(-3.1f, -4.6f, -3.3f, 6.2f, 4.6f, 6.6f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("basket", CubeListBuilder.create().texOffs(56, 39).addBox(-3f, -3.6f, -3.2f, 6f, 3.6f, 6.4f).texOffs(134, 65).addBox(-2.8f, -6.6f, -0.25f, 5.6f, 3f, 0.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("fish", CubeListBuilder.create().texOffs(82, 39).addBox(-3.1f, -2.8f, -3.3f, 6.2f, 2.8f, 6.6f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("chest", CubeListBuilder.create().texOffs(230, 47).addBox(-3.2f, -3.5f, -2.4f, 6.4f, 3.5f, 4.8f).texOffs(0, 51).addBox(-3.35f, -4.7f, -2.55f, 6.7f, 1.2f, 5.1f), PartPose.offset(0f, 0f, 0f))
+        val pot = root.addOrReplaceChild("pot", CubeListBuilder.create().texOffs(110, 49).addBox(-2.4f, -3.3f, -2.4f, 4.8f, 3.3f, 4.8f).texOffs(214, 63).addBox(-2.05f, -3.8f, -2.05f, 4.1f, 0.5f, 4.1f).texOffs(234, 69).addBox(-0.5f, -4.4f, -0.5f, 1f, 0.6f, 1f).texOffs(238, 69).addBox(-3.6f, -3f, -0.45f, 0.7f, 0.6f, 0.9f).texOffs(238, 69).addBox(2.9f, -3f, -0.45f, 0.7f, 0.6f, 0.9f), PartPose.offset(0f, 0f, 0f))
+        pot.addOrReplaceChild("pot45", CubeListBuilder.create().texOffs(130, 49).addBox(-2.1f, -3.2f, -2.1f, 4.2f, 3.2f, 4.2f).texOffs(32, 65).addBox(-1.8f, -3.7f, -1.8f, 3.6f, 0.4f, 3.6f), PartPose.offsetAndRotation(0f, 0f, 0f, 0f, 0.785f, 0f))
+        root.addOrReplaceChild("bundle", CubeListBuilder.create().texOffs(0, 39).addBox(-3.6f, -5.6f, -3f, 7.2f, 5.6f, 6f).texOffs(194, 61).addBox(-2.5f, -6.4f, -2.1f, 5f, 0.8f, 4.2f).texOffs(148, 67).addBox(-1f, -7.6f, -1f, 2f, 1.4f, 2f).texOffs(138, 69).addBox(-2f, -7.3f, -0.3f, 4f, 0.8f, 0.6f), PartPose.offset(0f, 0f, 0f))
+        val cage = root.addOrReplaceChild("cage", CubeListBuilder.create().texOffs(76, 59).addBox(-2.8f, -0.4f, -2.4f, 5.6f, 0.4f, 4.8f).texOffs(150, 61).addBox(-2.8f, -4f, -2.4f, 5.6f, 0.3f, 4.8f).texOffs(48, 65).addBox(-2.8f, -3.7f, -2.4f, 5.6f, 3.3f, 0.3f).texOffs(48, 65).addBox(-2.8f, -3.7f, 2.1f, 5.6f, 3.3f, 0.3f).texOffs(56, 50).addBox(-2.8f, -3.7f, -2.1f, 0.3f, 3.3f, 4.2f).texOffs(56, 50).addBox(2.5f, -3.7f, -2.1f, 0.3f, 3.3f, 4.2f).texOffs(56, 59).addBox(-1.3f, -3f, -1.5f, 2.6f, 2.6f, 3f).texOffs(202, 67).addBox(-0.5f, -3.6f, 1.1f, 1f, 1.3f, 0.75f), PartPose.offset(0f, 0f, 0f))
+        cage.addOrReplaceChild("cage_hen_head", CubeListBuilder.create().texOffs(28, 66).addBox(-0.35f, -1.75f, -0.35f, 0.7f, 1.85f, 0.7f).texOffs(172, 67).addBox(-0.6f, -2.8f, -0.85f, 1.2f, 1.2f, 1.3f).texOffs(226, 69).addBox(-0.15f, -3.25f, -0.65f, 0.3f, 0.5f, 0.95f).texOffs(28, 69).addBox(-0.2f, -2.35f, -1.3f, 0.4f, 0.3f, 0.45f).texOffs(230, 69).addBox(-0.2f, -2.05f, -1.05f, 0.4f, 0.45f, 0.2f), PartPose.offset(0f, -3f, -0.9f))
+        root.addOrReplaceChild("mattress", CubeListBuilder.create().texOffs(32, 59).addBox(-3.7f, -2.6f, -1.6f, 7.4f, 2f, 3.2f).texOffs(234, 63).addBox(-3.66f, -3.2f, -1f, 7.32f, 3.2f, 2f).texOffs(172, 61).addBox(-3.62f, -2.98f, -1.38f, 7.24f, 2.76f, 2.76f).texOffs(238, 56).addBox(-2.45f, -2.663f, -1.7f, 0.5f, 2.125f, 3.4f).texOffs(24, 59).addBox(-2.42f, -3.3f, -1.062f, 0.44f, 3.4f, 2.125f).texOffs(98, 59).addBox(-2.39f, -3.066f, -1.466f, 0.38f, 2.933f, 2.933f).texOffs(238, 56).addBox(1.95f, -2.663f, -1.7f, 0.5f, 2.125f, 3.4f).texOffs(24, 59).addBox(1.98f, -3.3f, -1.062f, 0.44f, 3.4f, 2.125f).texOffs(98, 59).addBox(2.01f, -3.066f, -1.466f, 0.38f, 2.933f, 2.933f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("chair", CubeListBuilder.create().texOffs(214, 56).addBox(-2.8f, -4.4f, -2.6f, 5.6f, 0.7f, 5.2f).texOffs(106, 59).addBox(-2.6f, -3.7f, -2.4f, 0.7f, 3.7f, 0.7f).texOffs(106, 59).addBox(1.9f, -3.7f, -2.4f, 0.7f, 3.7f, 0.7f).texOffs(106, 59).addBox(-2.6f, -3.7f, 1.7f, 0.7f, 3.7f, 0.7f).texOffs(106, 59).addBox(1.9f, -3.7f, 1.7f, 0.7f, 3.7f, 0.7f).texOffs(50, 51).addBox(-2.6f, -10.4f, 1.7f, 0.7f, 6f, 0.7f).texOffs(50, 51).addBox(1.9f, -10.4f, 1.7f, 0.7f, 6f, 0.7f).texOffs(206, 69).addBox(-1.9f, -9.9f, 1.8f, 3.8f, 0.9f, 0.4f).texOffs(206, 69).addBox(-1.9f, -7.5f, 1.8f, 3.8f, 0.9f, 0.4f).texOffs(216, 69).addBox(-1.9f, -1.6f, -2.25f, 3.8f, 0.4f, 0.4f).texOffs(216, 69).addBox(-1.9f, -1.6f, 1.85f, 3.8f, 0.4f, 0.4f), PartPose.offset(0f, 0f, 0f))
+        return LayerDefinition.create(mesh, 256, 128)
     }
 
     /** The bed's floor, its top inside: px from the axle, y down as in the model. */
@@ -110,12 +122,102 @@ object HandcartMesh {
      */
     class Piece(val part: String, val height: Float, val shows: List<FloatArray>, val size: Float)
 
-    /** The pieces: grain, flour, a crate of produce, a basket of loaves, a box of fish on ice. */
+    /**
+     * The pieces: grain, flour, a crate of produce, a basket of loaves, a box of fish on ice (0 to 4); a household's
+     * chest, cooking pot, bundle, hen's coop, rolled mattress and chair (5 to 10).
+     */
     val PIECES: List<Piece> = listOf(
         Piece("sack", 4.5f, listOf(), 0f),
         Piece("flour", 4.5f, listOf(), 0f),
         Piece("crate", 4.6f, listOf(floatArrayOf(-1.3f, -1.5f, 25f, 8f), floatArrayOf(1.4f, -0.3f, -40f, -6f), floatArrayOf(-0.1f, 1.7f, 75f, 5f)), 0.36f),
         Piece("basket", 3.6f, listOf(floatArrayOf(-1f, -1.2f, 30f, 10f), floatArrayOf(1.1f, 1f, -20f, -8f)), 0.4f),
         Piece("fish", 2.8f, listOf(floatArrayOf(-1.2f, 0f, 80f, 4f), floatArrayOf(1.2f, 0.3f, 100f, -5f)), 0.42f),
+        Piece("chest", 4.7f, listOf(), 0f),
+        Piece("pot", 3.8f, listOf(), 0f),
+        Piece("bundle", 6.4f, listOf(), 0f),
+        Piece("cage", 4f, listOf(), 0f),
+        Piece("mattress", 3.2f, listOf(), 0f),
+        Piece("chair", 4.4f, listOf(), 0f),
     )
+
+    /**
+     * A household's move, place by place ([SLOTS]' order): the [PIECES] index each takes. chest, pot, cage, sack, bundle, bundle, mattress, chair.
+     * Place 5 is where PACK sets its bundle down.
+     */
+    val HOUSEHOLD: IntArray = intArrayOf(5, 6, 8, 0, 7, 7, 9, 10)
+
+    /** The hen's neck in the coop's frame (px), "cage_hen_head"'s pivot. */
+    val HEN_HEAD: FloatArray = floatArrayOf(0f, -3f, -0.9f)
+
+    /** The hen's look-about: ticks from one look to the next, and how long a snap of her head takes. */
+    const val HEN_BEAT = 8f
+    const val HEN_SNAP = 1.2f
+
+    /** A peck at the straw: how long it takes (ticks), when in a beat it starts (the second of a double one), how far. */
+    const val HEN_PECK = 1.8f
+    const val HEN_PECK_AT = 2.4f
+    const val HEN_PECK_AGAIN = 4.6f
+    const val HEN_PECK_DEG = 34f
+
+    private const val DEG = 0.017453292f      // PI / 180
+
+    /** 0..1 from two ints (the script's hen_hash: the same Int arithmetic, wrapping). */
+    private fun henHash(k: Int, j: Int): Float {
+        var h = k * 374761393 + j * 668265263
+        h = (h xor (h ushr 13)) * 1274126177
+        h = h xor (h ushr 16)
+        return (h and 0xffffff) / 16777216f
+    }
+
+    /** Beat [k]'s look for the hen on cart [seed]: [which] 0 her pitch (down +), 1 her yaw, 2 her roll, degrees. */
+    private fun henLook(k: Int, seed: Int, which: Int): Float {
+        val j = seed * 8
+        return when (which) {
+            0 -> (henHash(k, j + 3) - 0.65f) * 24f
+            1 -> (2f * henHash(k, j) - 1f) * 42f
+            else -> if (henHash(k, j + 2) < 0.35f) (2f * henHash(k, j + 1) - 1f) * 14f else 0f
+        }
+    }
+
+    private fun smooth(x: Float): Float {
+        val c = x.coerceIn(0f, 1f)
+        return c * c * (3f - 2f * c)
+    }
+
+    /** A peck's dip, 0..1, [u] ticks into it: quick down, a moment at the straw, back up. */
+    private fun henPeck(u: Float): Float {
+        if (u <= 0f || u >= HEN_PECK) return 0f
+        val x = u / HEN_PECK
+        return when {
+            x < 0.3f -> smooth(x / 0.3f)
+            x < 0.5f -> 1f
+            else -> 1f - smooth((x - 0.5f) / 0.5f)
+        }
+    }
+
+    /**
+     * How "cage_hen_head" turns at [t] ticks, for the hen on the cart [seed] (its id): her xRot, yRot and zRot
+     * (radians, as ModelPart takes them) into [out]. She snaps her head from one look to the next every [HEN_BEAT]
+     * ticks and holds it there, as hens do, cocks it now and then, and in some beats pecks at the straw, once or
+     * twice. Pass the cart's own tickCount plus the partial tick (a small number: a float of the game time would step).
+     */
+    fun henHead(t: Float, seed: Int, out: FloatArray = FloatArray(3)): FloatArray {
+        val k = floor(t / HEN_BEAT).toInt()
+        val s = t - k * HEN_BEAT
+        val f = smooth(min(1f, s / HEN_SNAP))
+        var pitch = henLook(k - 1, seed, 0) + (henLook(k, seed, 0) - henLook(k - 1, seed, 0)) * f
+        var yaw = henLook(k - 1, seed, 1) + (henLook(k, seed, 1) - henLook(k - 1, seed, 1)) * f
+        var roll = henLook(k - 1, seed, 2) + (henLook(k, seed, 2) - henLook(k - 1, seed, 2)) * f
+        val pecks = henHash(k, seed * 8 + 4)
+        if (pecks < 0.3f) {
+            val dip = henPeck(s - HEN_PECK_AT) + (if (pecks < 0.12f) henPeck(s - HEN_PECK_AGAIN) else 0f)
+            pitch += (HEN_PECK_DEG - pitch) * dip
+            yaw *= 1f - 0.6f * dip
+            roll *= 1f - dip
+        }
+        out[0] = pitch * DEG
+        out[1] = yaw * DEG
+        out[2] = roll * DEG
+        return out
+    }
 }

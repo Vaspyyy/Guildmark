@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "guildmark:block/works/works_hoist"
+    },
+    "facing=east": {
+      "model": "guildmark:block/works/works_hoist",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "guildmark:block/works/works_hoist",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "guildmark:block/works/works_hoist",
+      "y": 270
+    }
+  }
+}

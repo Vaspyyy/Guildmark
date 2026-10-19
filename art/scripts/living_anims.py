@@ -634,6 +634,9 @@ def verify():
 # clips no Activity plays, which the game plays in another's place: (ticks, loop)
 EXTRA = {'climb_top': (64, False)}
 
+# props with a flame that glows in the dark (LivingSchedule.GLOW)
+GLOW_PROPS = ['lamp_pole']
+
 # the clips this script makes: every Activity added for the Living World
 WANTED = ['sit_down', 'stand_up', 'yawn', 'stretch', 'climb', 'eat', 'sit_eat', 'wash', 'draw_water', 'pick_up',
           'put_down', 'hand_over', 'receive', 'pay', 'bow', 'nod', 'shrug', 'point', 'browse', 'set_up', 'sow', 'scythe',
@@ -803,7 +806,7 @@ def write_schedule(path=SCHEDULE_KT):
             '    /** Props that hang straight down from the hand holding them (where no track runs them). */',
             '    val HANG: Set<String> = setOf(' + ', '.join(f'"{p}"' for p in lp.HANG) + ')', '',
             '    /** Props with a flame that glows in the dark. */',
-            '    val GLOW: Set<String> = setOf("lamp_pole")', '',
+            '    val GLOW: Set<String> = setOf(' + ', '.join(f'"{p}"' for p in GLOW_PROPS) + ')', '',
             '    /** By clip: where the goods someone carries are, and when. */',
             '    val GOODS: Map<String, List<Goods>> = mapOf(']
     for name, spans in GOODS_SPANS.items():
@@ -3269,6 +3272,16 @@ lamp_clips.make(sys.modules[__name__])
 # CrewMoves.kt (the numbers the game places them by).
 import road_clips  # noqa: E402
 road_clips.build(sys.modules[__name__])
+
+
+# ================================================================== the works and the streets (art/scripts/works_clips.py,
+# street_clips.py: M6)
+
+# Built on this kit, written with the rest: their clips, their props' tracks and moments into LivingSchedule.kt.
+import works_clips  # noqa: E402
+works_clips.build(sys.modules[__name__])
+import street_clips  # noqa: E402
+street_clips.build(sys.modules[__name__])
 
 
 if __name__ == '__main__':
