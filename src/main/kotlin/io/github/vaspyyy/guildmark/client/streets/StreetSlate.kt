@@ -1,11 +1,14 @@
 package io.github.vaspyyy.guildmark.client.streets
 
 import com.mojang.blaze3d.vertex.PoseStack
-import com.mojang.blaze3d.vertex.VertexConsumer
 import com.mojang.math.Axis
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.client.works.WorksArt
+import io.github.vaspyyy.guildmark.client.works.WorksMesh
 import net.minecraft.client.gui.Font
+import net.minecraft.client.model.geom.ModelPart
 import net.minecraft.client.renderer.SubmitNodeCollector
+import net.minecraft.client.renderer.rendertype.RenderType
 import net.minecraft.client.renderer.rendertype.RenderTypes
 import net.minecraft.client.renderer.texture.OverlayTexture
 import net.minecraft.core.Direction
@@ -20,18 +23,16 @@ import kotlin.math.sin
 
 /**
  * The shut stall's slate (townsfolk/streets/Awnings, M6 Part D2), drawn with the market display it leans on
- * (client/economy/WaresRenderer, from [io.github.vaspyyy.guildmark.economy.WaresBlockEntity.slate]): a little slate in
- * a wooden frame, lifted over the goods from the keeper's side and leant on the display's front, rocking as it settles,
- * where "Nothing today" is chalked on it a letter at a time; taken away again, it goes back over the way it came. Made
- * of the festivals' ornaments' atlas (its iron for the slate, its wood for the frame): no art of its own.
+ * (client/economy/WaresRenderer, from [io.github.vaspyyy.guildmark.economy.WaresBlockEntity.slate]): Part F's slate in
+ * its plain pine frame (client/works: WorksMesh.slate, rubbed clean but for the ghosts of old chalk), lifted over the
+ * goods from the keeper's side and leant on the display's front, rocking as it settles, where "Nothing today" is
+ * chalked on it a letter at a time; taken away again, it goes back over the way it came.
  */
 object StreetSlate {
-    private val ATLAS = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "textures/entity/festival/ornaments.png")
-    private const val SIZE = 256f
+    /** The slate, baked from its mesh the first time it's drawn. */
+    private val slate: ModelPart by lazy { WorksMesh.slate().bakeRoot().getChild("slate") }
 
-    /** The atlas's tiles: the iron (a dark speckled grey, the slate) and the wood (the frame). */
-    private const val IRON_U = 128f
-    private const val WOOD_U = 112f
+    private val TYPE: RenderType = RenderTypes.entityCutout(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, WorksArt.SLATE_TEXTURE))
 
     /**
      * Draws the slate on a display whose front is to [facing], lit [light]: [up] while it's there, [age] ticks since it
@@ -60,74 +61,17 @@ object StreetSlate {
         poseStack.translate(0f, y, z)
         poseStack.rotateDegrees(Axis.XP, lean)
         if (size != 1f) poseStack.scale(size, size, size)
-        collector.submitCustomGeometry(poseStack, RenderTypes.entityCutout(ATLAS)) { pose, buffer -> board(pose, buffer, light) }
+        // The slate in its frame: its foot's middle here, its face (the mesh's -z) turned to +z, out over the street
+        poseStack.pushPose()
+        poseStack.rotateDegrees(Axis.YP, 180f)
+        poseStack.scale(-1f, -1f, 1f)
+        collector.submitModelPart(slate, poseStack, TYPE, light, OverlayTexture.NO_OVERLAY, null)
+        poseStack.popPose()
         // The chalk, a letter at a time once it's set down
         val text = text()
         val written = if (!up) text.letters else ((age - WRITE_FROM) / PER_LETTER).toInt().coerceIn(0, text.letters)
         if (written > 0) chalk(poseStack, collector, font, text, written, light)
         poseStack.popPose()
-    }
-
-    // ---- The board ----
-
-    /** The board in its own frame: its foot's middle at the origin, its face to +z, its top to +y. */
-    private fun board(pose: PoseStack.Pose, buffer: VertexConsumer, light: Int) {
-        val w = FACE_W / 2
-        // The slate, a hair behind the frame's front
-        quad(pose, buffer, -w, BAR, w, BAR + FACE_H, 0f, IRON_U, 1f, SLATE, light)
-        // The frame round it
-        val x0 = -w - BAR
-        val x1 = w + BAR
-        val y1 = BAR * 2 + FACE_H
-        box(pose, buffer, x0, 0f, -DEPTH, x1, BAR, PROUD, light)
-        box(pose, buffer, x0, y1 - BAR, -DEPTH, x1, y1, PROUD, light)
-        box(pose, buffer, x0, BAR, -DEPTH, -w, y1 - BAR, PROUD, light)
-        box(pose, buffer, w, BAR, -DEPTH, x1, y1 - BAR, PROUD, light)
-        // Its back, boarded
-        quad(pose, buffer, -w, BAR, w, y1 - BAR, -DEPTH + 0.004f, WOOD_U, -1f, WOOD, light)
-    }
-
-    /** A box of the frame's wood, every side, seen from either side. */
-    private fun box(pose: PoseStack.Pose, buffer: VertexConsumer, x0: Float, y0: Float, z0: Float, x1: Float, y1: Float, z1: Float, light: Int) {
-        quad(pose, buffer, x0, y0, x1, y1, z1, WOOD_U, 1f, WOOD, light)
-        quad(pose, buffer, x0, y0, x1, y1, z0, WOOD_U, -1f, WOOD, light)
-        side(pose, buffer, x0, y0, z0, y1, z1, -1f, light)
-        side(pose, buffer, x1, y0, z0, y1, z1, 1f, light)
-        flat(pose, buffer, x0, y0, z0, x1, z1, -1f, light)
-        flat(pose, buffer, x0, y1, z0, x1, z1, 1f, light)
-    }
-
-    /** A face across x and y at [z] facing [nz] (+1 the front), textured from the tile at [tu], seen from either side. */
-    private fun quad(pose: PoseStack.Pose, buffer: VertexConsumer, x0: Float, y0: Float, x1: Float, y1: Float, z: Float, tu: Float, nz: Float, color: Int, light: Int) {
-        val u0 = tu / SIZE
-        val u1 = (tu + min(16f, (x1 - x0) * 16f)) / SIZE
-        val v1 = min(16f, (y1 - y0) * 16f) / SIZE
-        both(pose, buffer, floatArrayOf(x0, y0, z, x1, y0, z, x1, y1, z, x0, y1, z), floatArrayOf(u0, v1, u1, v1, u1, 0f, u0, 0f), 0f, 0f, nz, color, light)
-    }
-
-    /** A face across z and y at [x] (the frame's ends). */
-    private fun side(pose: PoseStack.Pose, buffer: VertexConsumer, x: Float, y0: Float, z0: Float, y1: Float, z1: Float, nx: Float, light: Int) {
-        val u1 = (WOOD_U + min(16f, (z1 - z0) * 16f)) / SIZE
-        val v1 = min(16f, (y1 - y0) * 16f) / SIZE
-        both(pose, buffer, floatArrayOf(x, y0, z0, x, y0, z1, x, y1, z1, x, y1, z0), floatArrayOf(WOOD_U / SIZE, v1, u1, v1, u1, 0f, WOOD_U / SIZE, 0f), nx, 0f, 0f, WOOD, light)
-    }
-
-    /** A face across x and z at [y] (the frame's top and bottom). */
-    private fun flat(pose: PoseStack.Pose, buffer: VertexConsumer, x0: Float, y: Float, z0: Float, x1: Float, z1: Float, ny: Float, light: Int) {
-        val u1 = (WOOD_U + min(16f, (x1 - x0) * 16f)) / SIZE
-        val v1 = min(16f, (z1 - z0) * 16f) / SIZE
-        both(pose, buffer, floatArrayOf(x0, y, z0, x1, y, z0, x1, y, z1, x0, y, z1), floatArrayOf(WOOD_U / SIZE, 0f, u1, 0f, u1, v1, WOOD_U / SIZE, v1), 0f, ny, 0f, WOOD, light)
-    }
-
-    /** Four corners (x, y, z each) with their texture, drawn both ways round so either side shows. */
-    private fun both(pose: PoseStack.Pose, buffer: VertexConsumer, p: FloatArray, uv: FloatArray, nx: Float, ny: Float, nz: Float, color: Int, light: Int) {
-        for (k in 0 until 4) vertex(pose, buffer, p, uv, k, nx, ny, nz, color, light)
-        for (k in 3 downTo 0) vertex(pose, buffer, p, uv, k, -nx, -ny, -nz, color, light)
-    }
-
-    private fun vertex(pose: PoseStack.Pose, buffer: VertexConsumer, p: FloatArray, uv: FloatArray, k: Int, nx: Float, ny: Float, nz: Float, color: Int, light: Int) {
-        buffer.addVertex(pose, p[k * 3], p[k * 3 + 1], p[k * 3 + 2]).setColor(color).setUv(uv[k * 2], uv[k * 2 + 1])
-            .setOverlay(OverlayTexture.NO_OVERLAY).setLight(light).setNormal(pose, nx, ny, nz)
     }
 
     // ---- The chalk ----
@@ -158,12 +102,15 @@ object StreetSlate {
         return Text(whole, lines).also { text = it }
     }
 
-    /** The first [written] letters of [text] chalked on the slate, each line centred as it'll be when it's done. */
+    /**
+     * The first [written] letters of [text] chalked on the slate, each line centred as it'll be when it's done: in the
+     * room inside its frame (WorksArt.SLATE_CHALK), its middle half the slate's height up, on its face.
+     */
     private fun chalk(poseStack: PoseStack, collector: SubmitNodeCollector, font: Font, text: Text, written: Int, light: Int) {
         val widest = text.lines.maxOf { font.width(it) }.coerceAtLeast(1)
-        val scale = min(FACE_W * 0.84f / widest, FACE_H * 0.8f / (text.lines.size * LINE))
+        val scale = min(CHALK_W * 0.9f / widest, CHALK_H * 0.82f / (text.lines.size * LINE))
         poseStack.pushPose()
-        poseStack.translate(0f, BAR + FACE_H / 2, 0.003f)
+        poseStack.translate(0f, WorksArt.SLATE_SIZE[1] / 2f / 16f, WorksArt.SLATE_SIZE[2] / 2f / 16f + 0.001f)
         poseStack.scale(scale, -scale, scale)
         var left = written
         val top = -text.lines.size * LINE / 2f + 1f
@@ -212,19 +159,10 @@ object StreetSlate {
     private const val REST_LEAN = -6f
     private const val ROCK = 4f
 
-    /** The slate's size, its frame's bars, how far the frame stands proud of it and how deep the board is (blocks). */
-    private const val FACE_W = 0.44f
-    private const val FACE_H = 0.3f
-    private const val BAR = 0.04f
-    private const val PROUD = 0.008f
-    private const val DEPTH = 0.025f
-
-    /** The chalk's lines' height (font pixels), and its colour and dust. */
+    /** The chalk's room on the slate (blocks: WorksArt.SLATE_CHALK's px), its lines' height (font pixels), and its colour and dust. */
+    private val CHALK_W = WorksArt.SLATE_CHALK[0] / 16f
+    private val CHALK_H = WorksArt.SLATE_CHALK[1] / 16f
     private const val LINE = 10f
     private const val CHALK = 0xF2EEEDE6.toInt()
     private const val CHALK_DUST = 0x55EEEDE6
-
-    /** The board's tints: the slate a little blue, the wood as it is. */
-    private const val SLATE = 0xFFC8D0DA.toInt()
-    private const val WOOD = -1
 }
