@@ -62,7 +62,10 @@ internal class Show private constructor(val level: ServerLevel, first: Caravans.
 
     /** The way in, swerved toward the verge for a strike. */
     var swerve: Swerve? = null
-    private val forward = Path { s -> swerved(way, swerve, s) }
+
+    /** How far right of the road's middle it keeps at each distance along [path], to pass a wagon coming the other way (null: in the middle). */
+    private var lane: Lane? = null
+    private val forward = Path { s -> laned(swerved(way, swerve, s), s, s, 1.0) }
     var path: Path = forward
         private set
 
@@ -119,6 +122,23 @@ internal class Show private constructor(val level: ServerLevel, first: Caravans.
     /** The verge a strike swerves it to: 1 the road's right, -1 its left. */
     var verge = 1.0
         private set
+
+    // ---- Passing ----
+
+    /** A wagon coming the other way on its road that it's passing (see [meet]), and how far ahead its nose is of this one's. */
+    private var meeting: Show? = null
+    private var gap = 0.0
+
+    /** How far over to its right it found it could keep for [meeting] (NaN: it hasn't looked). */
+    private var room = Double.NaN
+
+    /** Whether the two have room to pass; whether this one has pulled up to let the other by, there being none. */
+    private var roomy = false
+    private var yielding = false
+    private var bid = false
+
+    /** How far its walking guards have dropped back behind the tailboard while it passes (0 to 1). */
+    private var tuck = 0.0
 
     val guards: Int get() = (hands.size - 1).coerceAtLeast(0)
     val driver: Hand? get() = hands.firstOrNull { it.index == 0 }
@@ -251,6 +271,7 @@ internal class Show private constructor(val level: ServerLevel, first: Caravans.
         if (mode == Mode.BRACE && strike != null) halt = strike + LEAD
         stop?.let { halt = min(halt, it.s) }
         target = min(target, halt)
+        meet()
         val want = drive(target, halt)
         move(want, halt)
         place(false)
@@ -275,6 +296,9 @@ internal class Show private constructor(val level: ServerLevel, first: Caravans.
     private fun drive(target: Double, halt: Double): Double {
         var want = (Caravans.PACE * min(rate, 1.0) + (target - s) * GAIN).coerceIn(0.0, Caravans.PACE * FAST)
         if (halt < Double.MAX_VALUE) want = min(want, sqrt(2.0 * STOP_DECEL * max(0.0, halt - s)))
+        // Pulled up to let a wagon coming the other way by; alongside one, a little slower
+        if (yielding) return 0.0
+        if (meeting != null && gap < PASS_SLOW) want = min(want, Caravans.PACE * PASS_PACE)
         if (want > 0.0 && obstructed()) {
             want = 0.0
             blocked++
@@ -375,7 +399,8 @@ internal class Show private constructor(val level: ServerLevel, first: Caravans.
 
     /**
      * Something in the road: a block at the horse's chest or head a stride ahead (a step it can climb doesn't count),
-     * or a player or a creature standing there. Its crew don't count, nor the horse itself.
+     * or a player or a creature standing there. Its crew don't count, nor the horse itself, nor the crew of a wagon
+     * it's passing.
      */
     private fun obstructed(): Boolean {
         val h = horse ?: return false
@@ -388,13 +413,19 @@ internal class Show private constructor(val level: ServerLevel, first: Caravans.
             return true
         }
         val box = AABB(px - BLOCK_REACH, g - 0.5, pz - BLOCK_REACH, px + BLOCK_REACH, g + 2.5, pz + BLOCK_REACH)
-        val who = level.getEntitiesOfClass(LivingEntity::class.java, box) { it.isAlive && !it.isSpectator && !ours(it) }.firstOrNull()
+        val who = level.getEntitiesOfClass(LivingEntity::class.java, box) { it.isAlive && !it.isSpectator && !ours(it) && !passing(it) }.firstOrNull()
         blockedBy = who
         return who != null
     }
 
     /** Whether [e] is one of this caravan's own (its crew, or one of the band in its fight). */
     private fun ours(e: Entity): Boolean = e is Townsperson && hands.any { it.p === e } || waylay?.owns(e) == true
+
+    /** Whether [e] is one of the crew of the wagon it's passing (with room to, or the other pulled up to let it by). */
+    private fun passing(e: Entity): Boolean {
+        val m = meeting ?: return false
+        return (roomy || m.yielding) && e is Townsperson && m.hands.any { it.p === e }
+    }
 
     private fun whenBlocked() {
         // The driver shouts at whoever's in the way; with nobody near for a while it goes round, and in the end, once nobody looks
@@ -416,6 +447,195 @@ internal class Show private constructor(val level: ServerLevel, first: Caravans.
         blocked = 0
         s += HOP
         place(true)
+    }
+
+    // ---- Passing ----
+
+    /**
+     * A wagon coming the other way on its road (looked for every few ticks): both keep to their right to pass, each as
+     * far over as the ground beside the road lets it, the one with room making up for the one without; the drivers
+     * look across and one has a word, and the walking guards fall in behind. With no room for both, the one coming in
+     * pulls up till the other is by (two going in, the later one). Gone by, it eases back to the middle.
+     */
+    private fun meet() {
+        lane?.let { l ->
+            l.past(rearS - 2.0)
+            if (l.to == 0.0 && rearS - 2.0 > l.a1) lane = null
+        }
+        if (t % MEET_EVERY != 0) return
+        val d = dir()
+        val seen = if (drives()) oncoming(d) else null
+        if (seen == null) {
+            part()
+            return
+        }
+        val o = seen.show
+        if (meeting !== o) {
+            part()
+            meeting = o
+        }
+        gap = seen.gap
+        // How far over each can go: this one from its ground ahead, the other as it found (or, pulled up or standing, where it is)
+        val reach = max(0.0, if (o.moves()) gap / 2.0 else gap) + Train.LENGTH + 4.0
+        val r = if (keepsClear()) roomAhead(reach) else 0.0
+        room = r
+        val still = !o.moves()
+        val theirs = if (still) seen.over else o.room.takeIf { !it.isNaN() } ?: HALF
+        val mine = min(r, if (still) NEED - theirs else max(HALF, NEED - theirs)).coerceAtLeast(0.0)
+        val theirsWill = if (still) theirs else min(theirs, max(HALF, NEED - r))
+        roomy = mine + theirsWill >= NEED - SLACK
+        if (!roomy && !still && !yielding && givesWay(o)) yielding = true
+        keep(mine)
+        // A word between the drivers as they come alongside
+        if (!bid && gap < BID_AT && speaks(o)) {
+            bid = true
+            driver?.takeIf { it.seat == Wagon.DRIVER && it.idle }?.then(Say("driver_bye", 24.0))
+        }
+    }
+
+    /** One wagon coming the other way, seen: how far ahead its nose is of this one's, and how far it's over to its own right. */
+    private class Oncoming(val show: Show, val gap: Double, val over: Double)
+
+    /** The nearest wagon coming the other way on its road, not yet by. */
+    private fun oncoming(d: Int): Oncoming? {
+        val nose = along(s) + d * NOSE
+        val tail = along(rearS) - d * TAIL
+        var best: Oncoming? = null
+        for (o in Bodies.shows()) {
+            if (o === this || o.level !== level || !o.onRoad()) continue
+            val (af, lf) = onWay(o.path.at(o.s))
+            val (ab, lb) = onWay(o.path.at(o.rearS))
+            // Heading the other way along this one's road (its front nearer than its back), and on it
+            if ((af - ab) * d > -1.0 || abs(lf) > ON_ROAD || abs(lb) > ON_ROAD) continue
+            val g = (af - d * NOSE - nose) * d
+            if (g > (if (o === meeting) MEET + 8.0 else MEET)) continue
+            // Its tailboard gone by this one's: by
+            if ((ab + d * TAIL - tail) * d < -PAST) continue
+            if (best == null || g < best.gap) best = Oncoming(o, g, -d * (lf + lb) / 2.0)
+        }
+        return best
+    }
+
+    /** How far along this one's way [p] lies (straight on past either end of it), and how far to the way's right. */
+    private fun onWay(p: Vec3): Pair<Double, Double> {
+        var a = way.nearest(p.x, p.z)
+        if (a <= 0.0 || a >= way.length) {
+            val q = way.at(a)
+            val (hx, hz) = way.heading(a)
+            a += (p.x - q.x) * hx + (p.z - q.z) * hz
+        }
+        val q = way.at(a)
+        val (rx, rz) = way.right(a)
+        return a to (p.x - q.x) * rx + (p.z - q.z) * rz
+    }
+
+    /** Whether it's on the road with its wagon (not turning round in the square, not unloading, not a wreck). */
+    private fun onRoad(): Boolean = wagon != null && harnessed && mode != Mode.STAND && mode != Mode.RUN && dir() != 0
+
+    /** Whether it's driving its road (not waiting at its start, not braced for a strike or fighting). */
+    private fun drives(): Boolean = onRoad() && (mode == Mode.ROLL || mode == Mode.LEAVE || mode == Mode.OFF)
+
+    /** Whether it can keep over for one coming: driving its road, not pulled up to let it by. */
+    private fun moves(): Boolean = !yielding && drives()
+
+    /** Whether it may keep over now: not with a strike close ahead, nor coming up to its stand (it's to be in the middle for those). */
+    private fun keepsClear(): Boolean {
+        if (mode != Mode.ROLL) return true
+        if (stop != null) return false
+        val strike = view.strike?.takeIf { !passed } ?: return true
+        return middle() < strike - BRACE_AT - STRIKE_CLEAR
+    }
+
+    /** Which of two with no room to pass pulls up: the one coming in, for one going out; of two going in, the later. */
+    private fun givesWay(o: Show): Boolean {
+        val inbound = mode == Mode.ROLL
+        val theirs = o.mode == Mode.ROLL
+        return if (inbound != theirs) inbound else id > o.id
+    }
+
+    /** Which of the two drivers has the word: the one coming in, for one going out; of two the same, the earlier. */
+    private fun speaks(o: Show): Boolean {
+        val inbound = mode == Mode.ROLL
+        val theirs = o.mode == Mode.ROLL
+        return if (inbound != theirs) inbound else id < o.id
+    }
+
+    /** How far over to its right it can keep from here to [reach] blocks on: the most of [ROOM_MOST] its wheels find ground for. */
+    private fun roomAhead(reach: Double): Double {
+        val from = lane?.at(s) ?: 0.0
+        var lat = ROOM_MOST
+        while (lat > 0.05) {
+            if (clearOver(lat, from, reach)) return lat
+            lat -= ROOM_STEP
+        }
+        return 0.0
+    }
+
+    /** Whether easing over from [from] to [lat] from here, its right wheels find ground all the way to [reach] blocks on: no wall, no step up, no drop. */
+    private fun clearOver(lat: Double, from: Double, reach: Double): Boolean {
+        val d = dir().toDouble()
+        var u = s
+        while (u <= s + reach) {
+            val l = from + (lat - from) * Swerve.ease((u - s) / Swerve.RAMP)
+            if (l > 0.05) {
+                val a = along(u)
+                val p = if (d < 0.0) way.at(a) else swerved(way, swerve, u)
+                val road = Ground.at(level, p.x, p.z, p.y).takeIf { !it.isNaN() } ?: p.y
+                val (rx, rz) = way.right(a)
+                for (e in EDGES) {
+                    val x = p.x + rx * d * (l + e)
+                    val z = p.z + rz * d * (l + e)
+                    val g = Ground.at(level, x, z, road)
+                    if (g.isNaN() || g > road + STEP_UP || g < road - STEP_DOWN) return false
+                }
+            }
+            u += 1.0
+        }
+        return true
+    }
+
+    /** Eases over to [to] blocks right of the road's middle from where it is now (unless it's near enough there already). */
+    private fun keep(to: Double) {
+        val now = lane
+        if (now == null && to < 0.05 || now != null && abs(now.to - to) < KEEP_SLACK) return
+        lane = Lane(now, to, s, s + Swerve.RAMP)
+    }
+
+    /** The wagon it was passing is by (or gone): back to the middle of the road. */
+    private fun part() {
+        if (meeting == null) return
+        unmeet()
+        keep(0.0)
+    }
+
+    private fun unmeet() {
+        meeting = null
+        gap = 0.0
+        room = Double.NaN
+        roomy = false
+        yielding = false
+        bid = false
+    }
+
+    /** Which way it drives along its way: 1 in toward its stand, -1 back out (past the turn), 0 turning round. */
+    private fun dir(): Int {
+        val dep = out
+        if (dep == null || path !== dep) return 1
+        return if (s > dep.lb) -1 else 0
+    }
+
+    /** How far along its way [u] along [path] lies. */
+    private fun along(u: Double): Double {
+        val dep = out
+        return if (dep == null || path !== dep) u else dep.stop.s - (u - dep.lb)
+    }
+
+    /** [p], on the way at [along] ([s] along [path], driving it [dir]), moved over to its lane. */
+    private fun laned(p: Vec3, along: Double, s: Double, dir: Double): Vec3 {
+        val l = lane?.at(s) ?: return p
+        if (l == 0.0) return p
+        val (rx, rz) = way.right(along)
+        return Vec3(p.x + rx * l * dir, p.y, p.z + rz * l * dir)
     }
 
     /** Whether a player within [range] has the wagon in view. */
@@ -441,6 +661,9 @@ internal class Show private constructor(val level: ServerLevel, first: Caravans.
      */
     private fun brace(strike: Double, fresh: Boolean) {
         mode = Mode.BRACE
+        // Back in the middle of the road by now (meet keeps it there this near a strike)
+        unmeet()
+        lane = null
         verge = vergeSide(strike)
         swerve = Swerve.brace(strike, verge)
         hauled = false
@@ -524,6 +747,7 @@ internal class Show private constructor(val level: ServerLevel, first: Caravans.
     /** Pulled up at the stand: the load comes off ([Unloading]). */
     private fun stand() {
         mode = Mode.STAND
+        unmeet()
         speed = 0.0
         braking = true
         wagon?.flag(Wagon.FLAG_BRAKE, true)
@@ -535,6 +759,8 @@ internal class Show private constructor(val level: ServerLevel, first: Caravans.
         val st = stop ?: findStop().also { stop = it }
         unloading = null
         mode = Mode.LEAVE
+        unmeet()
+        lane = null
         braking = false
         wagon?.flag(Wagon.FLAG_BRAKE, false)
         val dep = Departure(st)
@@ -562,6 +788,7 @@ internal class Show private constructor(val level: ServerLevel, first: Caravans.
             if (view.now < way.length - 0.5 && fromRecord > expect + 8.0) expect = fromRecord
         }
         val target = if (mode == Mode.LEAVE) expect else s + 10.0
+        meet()
         val want = drive(target, Double.MAX_VALUE)
         move(want, Double.MAX_VALUE)
         place(false)
@@ -727,11 +954,16 @@ internal class Show private constructor(val level: ServerLevel, first: Caravans.
     /** The walking guards beside it (the third on its left, a fourth on its right), kept there as it goes. */
     private fun walkers() {
         val w = wagon ?: return
+        // Passing a wagon coming the other way, they drop back along its side and fall in behind the tailboard till it's by
+        tuck = if (meeting != null) min(1.0, tuck + 1.0 / TUCK_TICKS) else max(0.0, tuck - 1.0 / TUCK_TICKS)
+        val back = Swerve.ease(tuck / 0.65)
+        val inward = 1.0 - Swerve.ease((tuck - 0.55) / 0.45)
         for (h in hands) {
             if (h.index < 3 || h.seat != Wagon.OFF || !h.idle || !h.kinematic) continue
             if (mode == Mode.FIGHT || mode == Mode.STAND || mode == Mode.RUN) continue
             val side = if (h.index == 3) 1f else -1f
-            val at = ground(WALKER_OUT * side, WALKER_Z)
+            val behind = TUCK_Z[(h.index - 3).coerceAtMost(TUCK_Z.size - 1)]
+            val at = ground(WALKER_OUT * side * inward.toFloat(), WALKER_Z + (behind - WALKER_Z) * back.toFloat())
             val p = h.p
             val y = if (abs(at.y - p.y) > 1.2) at.y else p.y + Mth.clamp(at.y - p.y, -0.3, 0.25)
             p.setPos(at.x, y, at.z)
@@ -749,7 +981,11 @@ internal class Show private constructor(val level: ServerLevel, first: Caravans.
             val near = level.getNearestPlayer(h.p, 10.0)
             when {
                 near != null && !near.isSpectator -> h.p.lookAt(near)
-                h.driver -> h.p.lookAt(ahead)
+                h.driver -> {
+                    // Passing a wagon coming the other way, a look across at its driver
+                    val other = meeting?.takeIf { gap < LOOK_ACROSS && gap > -Train.LENGTH }?.driver?.p
+                    if (other != null && !other.isRemoved) h.p.lookAt(other) else h.p.lookAt(ahead)
+                }
                 h.seat == Wagon.TAIL -> h.p.lookAt(path.at(rearS - 6.0).add(0.0, 1.4, 0.0))
                 else -> {
                     // A guard keeps an eye on the verges, now one side, now the other
@@ -1127,7 +1363,8 @@ internal class Show private constructor(val level: ServerLevel, first: Caravans.
                 val q = Train.bulb(p0.x, p0.z, h0.first, h0.second, stop.side, stop.r, s)
                 return Vec3(q[0], p0.y, q[1])
             }
-            return way.at(stop.s - (s - lb))
+            val a = stop.s - (s - lb)
+            return laned(way.at(a), a, s, -1.0)
         }
     }
 
@@ -1156,6 +1393,46 @@ internal class Show private constructor(val level: ServerLevel, first: Caravans.
         /** How far ahead of the horse's middle it feels for what's in the road, and how near that counts. */
         private const val PROBE = 1.9
         private const val BLOCK_REACH = 0.9
+
+        /**
+         * Passing a wagon coming the other way: how far apart the two middle lines must be (half that each, with room),
+         * the most one keeps over and the steps it looks for room in, how short of that still does, and how much of a
+         * change in room is worth easing over for.
+         */
+        private const val NEED = 2.3
+        private const val HALF = NEED / 2.0
+        private const val ROOM_MOST = 2.4
+        private const val ROOM_STEP = 0.3
+        private const val SLACK = 0.15
+        private const val KEEP_SLACK = 0.2
+
+        /** How far ahead (nose to nose) it sees one coming and how often it looks; how near its road counts as on it; how far gone by is by. */
+        private const val MEET = 36.0
+        private const val MEET_EVERY = 5
+        private const val ON_ROAD = 3.5
+        private const val PAST = 1.0
+
+        /** Blocks from the horse's middle to its nose, and from the back axle to the tailboard's end. */
+        private const val NOSE = 1.3
+        private const val TAIL = 0.8
+
+        /** Noses this near, it goes at [PASS_PACE] of its pace; the driver has a word at [BID_AT] and looks across within [LOOK_ACROSS]. */
+        private const val PASS_SLOW = 10.0
+        private const val PASS_PACE = 0.75
+        private const val BID_AT = 6.0
+        private const val LOOK_ACROSS = 12.0
+
+        /** This much short of where it would brace for a strike it doesn't keep over: it's back in the middle by then. */
+        private const val STRIKE_CLEAR = 18.0
+
+        /** The ground beside the road a wheel may go on: up a little, down a block or so; looked at across the right wheels. */
+        private const val STEP_UP = 0.6
+        private const val STEP_DOWN = 1.2
+        private val EDGES = doubleArrayOf(0.4, 1.05)
+
+        /** Ticks the walking guards take to fall in behind the tailboard, and where each walks there (px behind the back axle). */
+        private const val TUCK_TICKS = 80.0
+        private val TUCK_Z = floatArrayOf(46f, 74f)
 
         /** Held up this long with nobody within [HOP_CLEAR], it goes round; this long, round once nobody looks. */
         private const val HOP_AFTER = 600
@@ -1311,12 +1588,13 @@ internal class Swerve(val amount: Double, val a0: Double, val a1: Double) {
         return amount * out * (1.0 - back)
     }
 
-    private fun ease(x: Double): Double {
-        val u = x.coerceIn(0.0, 1.0)
-        return u * u * (3.0 - 2.0 * u)
-    }
-
     companion object {
+        /** Eased from 0 to 1 as [x] goes from 0 to 1 (held at either end beyond). */
+        fun ease(x: Double): Double {
+            val u = x.coerceIn(0.0, 1.0)
+            return u * u * (3.0 - 2.0 * u)
+        }
+
         /** How far over a wagon pulls toward the verge for a strike, and over how many blocks it eases there. */
         const val LATERAL = 1.6
         const val RAMP = 8.0
@@ -1326,5 +1604,23 @@ internal class Swerve(val amount: Double, val a0: Double, val a1: Double) {
             val end = strike - Show.MID
             return Swerve(side * LATERAL, end - RAMP, end)
         }
+    }
+}
+
+/**
+ * How far right of the road's middle a wagon keeps at each distance along its path, to pass one coming the other way:
+ * as [before] had it up to [a0], then easing over to [to] by [a1].
+ */
+internal class Lane(private var before: Lane?, val to: Double, val a0: Double, val a1: Double) {
+    private val from = before?.at(a0) ?: 0.0
+
+    fun at(s: Double): Double {
+        if (s <= a0) return before?.at(s) ?: from
+        return from + (to - from) * Swerve.ease((s - a0) / (a1 - a0))
+    }
+
+    /** The wagon's all past [s]: what came before isn't needed now. */
+    fun past(s: Double) {
+        if (s > a0) before = null
     }
 }

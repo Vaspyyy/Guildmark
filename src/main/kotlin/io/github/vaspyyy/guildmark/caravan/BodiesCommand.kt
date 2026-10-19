@@ -31,13 +31,17 @@ import kotlin.math.max
  * `caravan here` sets a wagon out on the road nearest you, 60 blocks up it, to roll past you (its strike, if it has
  * one behind that, passed by). `caravan fight [waylaid|beaten|dice]` sets one out to be struck about 20 blocks up the
  * road from you, by the road's band (a camp made near you if it has none), played out as the dice or the word say
- * unless you join in. `caravan stand` sets one out 70 blocks short of its stand, to pull in and unload. `caravan gate`
+ * unless you join in. `caravan stand` sets one out 70 blocks short of its stand, to pull in and unload. `caravan pass`
+ * has one leave its stand as another comes in, to meet on the road and pass each other. `caravan gate`
  * brings the last waylaid driver's body to the gate's place, by you, to be talked to. `caravan bodies` lists what's
  * out (`bodies clear` lets it all go).
  */
 internal object BodiesCommand {
     /** How near one of a capital's roads you must stand to work on it from outside the capital (as Part A's). */
     private const val ROADS = 640.0
+
+    /** Ticks till `caravan pass`'s wagon at its stand leaves. */
+    private const val LEAVE_SOON = 100L
 
     fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
         dispatcher.register(
@@ -56,6 +60,7 @@ internal object BodiesCommand {
                                 ),
                         )
                         .then(Commands.literal("stand").executes { stand(it) })
+                        .then(Commands.literal("pass").executes { pass(it) })
                         .then(Commands.literal("gate").executes { gate(it) })
                         .then(
                             Commands.literal("bodies")
@@ -190,6 +195,29 @@ internal object BodiesCommand {
         if (c.phase == Phase.WAITING) return say(source, grey("Wagon #${c.id} waits at the start of the road for its escort."))
         val stand = road.leg.stand
         return say(source, plain("Wagon #${c.id} is 70 blocks short of its stand in ${road.name} (at ${stand.x.toInt()} ${stand.y.toInt()} ${stand.z.toInt()}), coming in to unload."))
+    }
+
+    private fun pass(context: CommandContext<CommandSourceStack>): Int {
+        val source = context.source
+        val level = source.level
+        val player = source.playerOrException
+        val road = road(source) ?: return 0
+        val leg = road.leg
+        // One in at its stand now and off again in a few seconds; another coming in behind it, to meet it on its way out
+        val out = setOut(level, road, leg.length - 70.0, strike = false) ?: return 0
+        if (out.phase == Phase.WAITING) return say(source, grey("Wagon #${out.id} waits at the start of the road for its escort: try again."))
+        if (!Caravans.arriveNow(level, out)) return fail(source, "Wagon #${out.id} couldn't be put in at its stand.")
+        out.until = level.overworldClockTime + LEAVE_SOON
+        CaravanData.get(level).changed()
+        val inn = setOut(level, road, leg.length - 120.0, strike = false) ?: return 0
+        if (inn.phase == Phase.WAITING) return say(source, grey("Wagon #${out.id} leaves its stand soon, but wagon #${inn.id} waits at the start of the road for its escort."))
+        say(source, plain("Wagon #${out.id} leaves its stand in ${road.name} in a few seconds, and wagon #${inn.id} comes in from 120 blocks out: they meet on the road and pass each other."))
+        val stand = leg.stand
+        val off = flat(player.position(), stand)
+        return say(source, grey(
+            if (off < 40.0 || off > 110.0) "Watch from the road 50 to 100 blocks out from the stand (at ${stand.x.toInt()} ${stand.y.toInt()} ${stand.z.toInt()}); you're ${off.toInt()} from it."
+            else "Watch from where you are, ${off.toInt()} blocks out from the stand.",
+        ))
     }
 
     private fun gate(context: CommandContext<CommandSourceStack>): Int {
