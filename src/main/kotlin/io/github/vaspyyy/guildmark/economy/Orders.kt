@@ -132,8 +132,8 @@ class Delivery(
 /**
  * The capitals' orders (see [Order]): a capital's businesses asking for the goods it has to bring in by caravan or
  * is short of now, weighted by what it pays for them, each for one good at one business (two businesses may want the
- * same good: the produce stall, the bakery and the inn all buy wheat). A capital keeps up to [MOST] at once: one to
- * three posted at dawn, one more for each filled, lapsed or withdrawn, and one for the goods trouble falls on as it
+ * same good: the produce stall, the bakery and the inn all buy wheat). A capital keeps up to [MOST] at once: two to
+ * four posted at dawn, one more for each filled, lapsed or withdrawn, and one for the goods trouble falls on as it
  * starts (a blight posts one for the blighted crop). An order nobody takes is withdrawn after [OPEN_HOURS], so the
  * town asks afresh. A player takes one at the business's market screen and it's theirs alone until the next rest day
  * at least [MIN_DAYS] days off; they may hold as many as their best standing anywhere allows (see
@@ -219,8 +219,8 @@ class Orders(private val books: MutableMap<Long, Book> = HashMap(), private var 
 
         /** Orders posted when a capital's businesses are first known, and at dawn (fewest and most). */
         private const val FIRST = 2
-        private const val DAWN_LEAST = 1
-        private const val DAWN_MOST = 3
+        private const val DAWN_LEAST = 2
+        private const val DAWN_MOST = 4
 
         /** Hours after the crier's round an order's ticket goes up on the board without them. */
         const val GRACE = 2
@@ -774,6 +774,7 @@ class Orders(private val books: MutableMap<Long, Book> = HashMap(), private var 
             get(level).setDirty()
             val hour = Markets.hourOf(level)
             val gained = Suppliers.gain(level, book.pos, player.uuid, pay.toDouble())
+            Suppliers.dealt(level, player.uuid, pay.toDouble())
             val before = gained.first
             var after = gained.second
             val done = o.delivered >= o.amount

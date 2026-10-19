@@ -26,7 +26,7 @@ object SupplierLink {
     /**
      * [player] has been paid [marks] Guild Marks for goods sold to the market of the capital whose centre is
      * [capital], without trading at its stalls by hand: a homestead's shipment, or their own stall's takings as
-     * they collect them. Standing counts these as it counts selling at the stalls (half a point a Mark); what came
+     * they collect them. Standing counts these as it counts selling at the stalls (a point a Mark); what came
      * of goods the player had bought at that market in the last week is already left out of [marks].
      */
     @JvmStatic

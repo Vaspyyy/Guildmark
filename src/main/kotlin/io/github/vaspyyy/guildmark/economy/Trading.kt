@@ -168,7 +168,7 @@ object Trading {
 
     /**
      * [player] sells the market a lot of [good]: the goods for its Marks, at the share their standing there earns them,
-     * and half a point of standing for each Mark (none for goods that came off its own stalls lately).
+     * and a point of standing and the Trade skill's XP for each Mark (none for goods that came off its own stalls lately).
      */
     fun sell(player: ServerPlayer, entry: Markets.Entry, good: Good): Deal {
         val item = good.item ?: return Deal(Deal.Outcome.NONE)

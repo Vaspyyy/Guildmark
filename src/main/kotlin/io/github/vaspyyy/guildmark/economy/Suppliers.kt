@@ -5,6 +5,8 @@ import com.mojang.serialization.codecs.RecordCodecBuilder
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.GuildmarkConfig
 import io.github.vaspyyy.guildmark.city.Capitals
+import io.github.vaspyyy.guildmark.progression.Skill
+import io.github.vaspyyy.guildmark.progression.Skills
 import io.github.vaspyyy.guildmark.townsfolk.Days
 import io.github.vaspyyy.guildmark.village.VillageNames
 import net.minecraft.ChatFormatting
@@ -24,7 +26,8 @@ import kotlin.math.roundToInt
  * orders a player may hold at once ([orders]: counted across every capital, by their best standing anywhere), and
  * what it adds to the share of its price a stall pays them for their goods ([bonus], on top of [Lots.SELL_SHARE]).
  * The points are set against the markets' real prices, so that someone farming steadily and filling the orders that
- * come up reaches Known Supplier in about three days and Trusted Supplier in about ten.
+ * come up reaches Known Supplier in a day and Trusted Supplier in one to two weeks (two to six days in winter, when
+ * the stalls take more), and a homesteader with beasts besides in three to six days.
  */
 enum class SupplierRank(val id: String, val points: Int, val orders: Int, val bonus: Double) {
     STRANGER("stranger", 0, 1, 0.0),
@@ -80,10 +83,11 @@ class Standing(var points: Double = 0.0, var filled: Int = 0, var lapsed: Int = 
 
 /**
  * Every player's standing as a supplier at every capital (see [SupplierRank]), kept with the overworld. Points come
- * from Marks earned there: one for each Mark an order pays, half for each Mark from selling at its stalls (or from
- * shipping to it), a bonus for an order filled in full and in time, and a loss for one let lapse. The better a
- * player's standing, the more a capital's stalls pay them, the more orders they may hold, and the more its
- * businesses offer them.
+ * from Marks earned there: one for each Mark an order pays, and one for each Mark from selling at its stalls, from a
+ * stall of their own there or from shipping to it, a bonus for an order filled in full and in time, and a loss for
+ * one let lapse. The better a player's standing, the more a capital's stalls pay them, the more orders they may
+ * hold, and the more its businesses offer them. Every Mark earned dealing at a market so also grows the Trade skill
+ * (see [dealt]), standing switched on or off.
  *
  * Each capital also remembers what a player bought at its market in the last [WEEK] days: those goods can't be
  * delivered to its orders or set out on a stall of the player's own there, and selling them back earns no standing
@@ -111,8 +115,11 @@ class Suppliers(private val capitals: MutableMap<Long, MutableMap<UUID, Standing
         const val WEEK = 7L
         const val KEPT = 10L
 
-        /** Points for each Mark earned selling at the stalls (an order's Marks count whole). */
-        const val HALF = 0.5
+        /** Points for each Mark earned selling at the stalls, from a stall of one's own or by shipping (an order's Marks count whole too). */
+        const val SOLD = 1.0
+
+        /** Trade skill XP for each Mark earned dealing at a market, as a contract gives for each Mark of its reward. */
+        const val TRADE_XP = 2.0
 
         private val BOUGHT: Codec<Triple<Long, String, Int>> = RecordCodecBuilder.create { i ->
             i.group(
@@ -184,19 +191,32 @@ class Suppliers(private val capitals: MutableMap<Long, MutableMap<UUID, Standing
             Lots.SELL_SHARE + SupplierRank.entries[rank(level, capital, player)].bonus
 
         /**
-         * [player] earned [marks] Guild Marks at [capital] selling there (at its stalls or by shipping to it): half a
-         * point of standing each. For goods that might have come off its own stalls, use [sold] instead.
+         * [player] earned [marks] Guild Marks at [capital] selling there (from a stall of their own or by shipping to
+         * it): a point of standing each, and the Trade skill's XP. For goods that might have come off its own stalls,
+         * use [sold] instead.
          */
         fun earned(level: ServerLevel, capital: BlockPos, player: UUID, marks: Int) {
-            if (!enabled() || marks <= 0) return
-            gain(level, capital, player, marks * HALF)
+            if (marks <= 0) return
+            dealt(level, player, marks.toDouble())
+            if (!enabled()) return
+            gain(level, capital, player, marks * SOLD)
+        }
+
+        /**
+         * [player], if they're on, earned [marks] dealing at a market for goods they didn't buy there lately (sold at
+         * its stalls, from a stall of their own, shipped to it, or delivered to its orders): [TRADE_XP] each of the
+         * Trade skill.
+         */
+        fun dealt(level: ServerLevel, player: UUID, marks: Double) {
+            if (marks <= 0.0) return
+            level.server.playerList.getPlayer(player)?.let { Skills.gain(it, Skill.TRADE, marks * TRADE_XP) }
         }
 
         /**
          * [player] sold [capital]'s market [count] of [good] for [marks]: as many of them as they bought there in the
-         * last [WEEK] days are taken to be those, which earn no standing and are off the record now; the rest earn
-         * half a point a Mark. Gives how many of them came off its own stalls (none with standing switched off, though
-         * they come off the record all the same).
+         * last [WEEK] days are taken to be those, which earn no standing and no Trade and are off the record now; the
+         * rest earn a point a Mark and the Trade skill's XP (see [dealt]). Gives how many of them came off its own
+         * stalls (none with standing switched off, though they come off the record and earn no Trade all the same).
          */
         fun sold(level: ServerLevel, capital: BlockPos, player: UUID, good: Good, count: Int, marks: Int): Int {
             if (count <= 0) return 0
@@ -215,9 +235,10 @@ class Suppliers(private val capitals: MutableMap<Long, MutableMap<UUID, Standing
             standing.forget(today)
             standing.day = today
             data.setDirty()
-            if (!enabled()) return 0
             val earned = marks * (count - own).toDouble() / count
-            if (earned > 0.0) gain(level, capital, player, earned * HALF)
+            dealt(level, player, earned)
+            if (!enabled()) return 0
+            if (earned > 0.0) gain(level, capital, player, earned * SOLD)
             return own
         }
 
