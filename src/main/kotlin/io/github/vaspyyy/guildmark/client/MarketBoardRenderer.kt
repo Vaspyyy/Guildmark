@@ -1168,11 +1168,18 @@ class MarketBoardRenderer(context: BlockEntityRendererProvider.Context) :
      * home (works.medallion_catch), lightly at each face it rolls past on the way. At rest it stirs on its
      * axle, more in rain and storm. First seen, it shows as it stands, and so it does if it turned while nobody was
      * looking (longer ago than a turn takes); a change that comes while it's turning turns it on from wherever it is.
+     * The drum stands in the block over the top middle cell: with something there that isn't air and can't be replaced,
+     * it isn't drawn, heard or dusted (the posts and plinth stay), and once that's cleared it shows as when first seen.
      */
     private fun medallion(
         board: MarketBoardBlockEntity, state: MarketBoardRenderState, mem: Memory, level: Level, pos: BlockPos,
         now: Double, eye: Vec3,
     ) {
+        val over = level.getBlockState(pos.above(2))
+        if (!over.isAir && !over.canBeReplaced()) {
+            mem.medShown = Float.NaN
+            return
+        }
         val target = A.MEDALLION_TIMES.indexOf(board.times).let { if (it < 0) STEADY_FACE else it }
         val seen = !mem.medShown.isNaN()
         if (!seen || target != mem.medTo) {
