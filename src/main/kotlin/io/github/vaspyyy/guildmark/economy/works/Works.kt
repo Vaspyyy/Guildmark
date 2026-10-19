@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.economy.works
 
+import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.GuildmarkConfig
 import io.github.vaspyyy.guildmark.economy.CaravanRoutes
 import io.github.vaspyyy.guildmark.economy.Caravans
@@ -231,7 +232,7 @@ object Works {
         w.brought[i] += units
         data.changed()
         val v = view(level, w)
-        listeners.forEach { it.brought(level, v, player.uuid, units) }
+        tell(v, "brought materials") { it.brought(level, v, player.uuid, units) }
         return units
     }
 
@@ -294,7 +295,7 @@ object Works {
         data.changed()
         if (moved) {
             val v = view(level, w)
-            listeners.forEach { it.staged(level, v, stage) }
+            tell(v, "staged") { it.staged(level, v, stage) }
         }
     }
 
@@ -311,7 +312,7 @@ object Works {
         data.changed()
         open(level, data, w)
         val v = view(level, w)
-        listeners.forEach { it.finished(level, v) }
+        tell(v, "finished") { it.finished(level, v) }
     }
 
     // ---- What the works do ----
@@ -429,6 +430,20 @@ object Works {
         if (listener !in listeners) listeners += listener
     }
 
+    /**
+     * Every listener hears [what] of [w] ([hear]): one that fails is logged and the rest still hear it, so it never
+     * stops the server's tick or the pledge that set it off (as Comings.tell).
+     */
+    private inline fun tell(w: WorksView, what: String, hear: (Listener) -> Unit) {
+        for (l in listeners) {
+            try {
+                hear(l)
+            } catch (e: RuntimeException) {
+                Guildmark.LOGGER.warn("Something hearing that works #{} was {} failed", w.id, what, e)
+            }
+        }
+    }
+
     /** Hears a works' life: wanted, pledged to, funded, begun, at each stage, finished, and what it eased. */
     interface Listener {
         fun wanted(level: ServerLevel, w: WorksView) {}
@@ -540,14 +555,14 @@ object Works {
         data.works[w.id] = w
         data.changed()
         val v = view(level, w)
-        listeners.forEach { it.wanted(level, v) }
+        tell(v, "wanted") { it.wanted(level, v) }
         return w
     }
 
     /** [player]'s [marks] went toward [w]: heard, and if that's its price, it's funded. */
     private fun pledged(level: ServerLevel, data: WorksData, w: WorksRec, player: UUID, marks: Int) {
         val v = view(level, w)
-        listeners.forEach { it.pledged(level, v, player, marks) }
+        tell(v, "pledged to") { it.pledged(level, v, player, marks) }
         if (w.pledged >= w.price) fund(level, data, w)
     }
 
@@ -560,7 +575,7 @@ object Works {
         if (w.site == null && w.noRoom >= 0 && w.siteLost < 0) w.siteLost = w.funded
         data.changed()
         val v = view(level, w)
-        listeners.forEach { it.funded(level, v) }
+        tell(v, "funded") { it.funded(level, v) }
     }
 
     /** [w]'s builders have begun (or it's laid at once): heard the first time. */
@@ -570,7 +585,7 @@ object Works {
         w.begun = today(level, w.capital)
         data.changed()
         val v = view(level, w)
-        listeners.forEach { it.begun(level, v) }
+        tell(v, "begun") { it.begun(level, v) }
     }
 
     /** [w] stands: from now it does its work. */
@@ -640,7 +655,7 @@ object Works {
         w.eased[what] = day
         data.changed()
         val v = view(level, w)
-        listeners.forEach { it.eased(level, v, what) }
+        tell(v, "easing the town") { it.eased(level, v, what) }
     }
 
     /** [capital]'s standing works of [kind] (for [road]) eased [what] today. */
@@ -677,7 +692,7 @@ object Works {
         }
         data.changed()
         val v = view(level, w)
-        listeners.forEach { it.removed(level, v) }
+        tell(v, "removed") { it.removed(level, v) }
         return true
     }
 
