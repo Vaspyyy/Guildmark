@@ -53,9 +53,13 @@ import kotlin.random.Random
  * still go by (so nothing bursts out later), the crier still cries, and the town knows only what it saw and heard cried.
  */
 object Spread {
-    /** Server ticks between runs, and between looks at where the players are. */
+    /**
+     * Server ticks between runs, and between looks at where the players are; both come [AFTER] ticks after the
+     * markets' (see [run]), so the two aren't worked out in the same tick.
+     */
     private const val TICK = 20
     private const val LOOK = 100
+    private const val AFTER = 10
 
     /** The most hours caught up, and the most stepped in one run for all capitals together. */
     const val CATCH_UP = 24L
@@ -207,10 +211,10 @@ object Spread {
     fun hourOf(level: ServerLevel): Long = Markets.hourOf(level)
 
     private fun tick(server: MinecraftServer) {
-        if (server.tickCount % TICK != 0) return
+        if (server.tickCount % TICK != AFTER) return
         val level = server.overworld()
         val data = TownTalkData.get(level)
-        if (server.tickCount % LOOK == 0) look(level, data)
+        if (server.tickCount % LOOK == AFTER) look(level, data)
         run(level, data)
     }
 
@@ -252,9 +256,14 @@ object Spread {
         if (view.places == null) view.places = CityPlaces.of(level, piece)
     }
 
-    /** Works out the hours every capital's talk is behind, [STEPS] of them at most this run; the rest wait for the next. */
+    /**
+     * Works out the hours every capital's talk is behind, [STEPS] of them at most this run; the rest wait for the next.
+     * With the markets on, an hour is talked over once the capital's market has worked it out, so the market's news of
+     * that hour goes round in it.
+     */
     private fun run(level: ServerLevel, data: TownTalkData) {
         val now = hourOf(level)
+        val markets = if (Markets.enabled()) Markets.get(level) else null
         var steps = STEPS
         for (entry in data.all()) {
             // Time set back: the talk carries on from the new hour, everything kept moved back with it
@@ -264,7 +273,8 @@ object Spread {
                 continue
             }
             if (now - entry.hour > CATCH_UP) entry.hour = now - CATCH_UP
-            while (entry.hour < now && steps > 0) {
+            val upTo = markets?.get(entry.pos)?.market?.hour?.coerceAtMost(now) ?: now
+            while (entry.hour < upTo && steps > 0) {
                 step(level, entry, entry.hour + 1, null)
                 entry.hour++
                 steps--
