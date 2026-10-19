@@ -11,6 +11,7 @@ import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.sounds.SoundEvent
 import net.minecraft.sounds.SoundSource
+import net.minecraft.util.RandomSource
 import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.phys.Vec3
 
@@ -101,6 +102,18 @@ interface Worksite {
      * its own; none when another is heard for it (the town gathered round a works' topping out).
      */
     fun cheer(stage: Stage): SoundEvent? = HomesteadRegistry.CHEER.get()
+
+    /**
+     * The line [stage]'s end is called with: the homestead's own for each stage, or null where it doesn't fit what a
+     * works puts up then (an oven has no roof or bough, a stall no walls): then it's cheered without words.
+     */
+    fun stageLine(stage: Stage): String? = "homestead_stage_${stage.key}"
+
+    /** The line the crew asks for [stuff] with when the crate's out of it, or null where it doesn't fit (a works has no beds). */
+    fun needLine(stuff: Stuff): String? = "homestead_need_${stuff.key}"
+
+    /** The line one of the crew says as the whole of it is finished ([random] picks among a homestead's). */
+    fun doneLine(random: RandomSource): String = "homestead_done_${1 + random.nextInt(2)}"
 
     /** The first of the morning's crew, [p], coming up from [road]: a homestead's ring their handbell and say they're here. */
     fun arrive(p: Townsperson, road: BlockPos) {

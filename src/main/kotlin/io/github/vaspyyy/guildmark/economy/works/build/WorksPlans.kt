@@ -145,6 +145,12 @@ abstract class WorksDrawing(val kind: WorksKind, val y0: Int) : Drawing {
     /** Where its master builder keeps his post while it goes up, facing it: beside its door, a step out. */
     open val master: Pin get() = Pin(door.x + 2, door.y, door.z - 1, Dir.S)
 
+    /**
+     * The stages whose homestead line ("Walls are up!", "Roof's on!", "Bough on the ridge!", "Doors and windows in!")
+     * doesn't fit what it puts up then: they're cheered without words (TownWorksSite.stageLine).
+     */
+    open val unsaid: Set<Stage> get() = emptySet()
+
     /** Packed places (the drawing's x, the world's y, z) where its block goes in over the town's own, kept to put back if it's ever taken down. */
     val replaces = HashSet<Long>()
 
@@ -245,6 +251,9 @@ class OvenBay(y0: Int) : WorksDrawing(WorksKind.OVEN, y0) {
     /** Inside, between the two ovens at the back, facing the bay (the baker's own place is a step nearer the front). */
     override val master = Pin(5, 0, 9, Dir.W)
 
+    /** Its flue up through the bakery's roof, and the first fire on top. */
+    override val unsaid: Set<Stage> get() = setOf(Stage.ROOF, Stage.TOPPING)
+
     override fun drawWorks(p: Pen) {
         p.piece(PieceKind.PROP, lot)
         // The corner cleared: its hay, barrels, bin and chest carried out to the front, and the lantern taken down
@@ -307,6 +316,9 @@ class OvenLeanTo(y0: Int) : WorksDrawing(WorksKind.OVEN, y0) {
     override val posts = listOf(Pin(-2, 0, -2), Pin(6, 0, -2), Pin(2, 0, -3))
     override val yard = listOf(Pin(6, 0, 0), Pin(6, 0, 1), Pin(6, 0, 2), Pin(7, 0, 0), Pin(7, 0, 1), Pin(-2, 0, 0), Pin(-2, 0, 1), Pin(-2, 0, 2))
     override val plaque = Pin(0, 1, -1, Dir.N)
+
+    /** The first fire on its flue, and its lantern. */
+    override val unsaid: Set<Stage> get() = setOf(Stage.TOPPING, Stage.OPENINGS)
 
     override fun drawWorks(p: Pen) {
         p.piece(PieceKind.PROP, lot)
@@ -606,6 +618,9 @@ class Stall(y0: Int, private val patron: Dye) : WorksDrawing(WorksKind.STALL, y0
     override val posts = listOf(Pin(-2, 0, 0), Pin(2, 0, 0), Pin(-2, 0, 2))
     override val yard = listOf(Pin(2, 0, 1, Dir.W), Pin(2, 0, 2, Dir.W), Pin(-2, 0, 1, Dir.E), Pin(-2, 0, 2, Dir.E), Pin(2, 0, 3, Dir.W))
     override val plaque: Pin? = null
+
+    /** Its counter and posts, the patron's banner, its lantern. */
+    override val unsaid: Set<Stage> get() = setOf(Stage.WALLS, Stage.TOPPING, Stage.OPENINGS)
 
     override fun drawWorks(p: Pen) {
         p.piece(PieceKind.PROP, lot)

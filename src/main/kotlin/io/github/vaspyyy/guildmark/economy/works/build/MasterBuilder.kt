@@ -635,7 +635,7 @@ internal object MasterBuilder {
             val crate = Vec3.atCenterOf(s.crate)
             queue(
                 Go(BlockPos.containing(s.crateFront()), 1.0), Face { crate },
-                Clip(Activity.MOP_BROW, at = { crate }, first = { speak("homestead_need_${short.key}") }), Pause(30) { crate },
+                Clip(Activity.MOP_BROW, at = { crate }, first = { s.needLine(short)?.let { speak(it) } }), Pause(30) { crate },
             )
             return true
         }
@@ -689,7 +689,8 @@ internal object MasterBuilder {
             val middle = Vec3((b.minX() + b.maxX() + 1) / 2.0, y + 0.5, (b.minZ() + b.maxZ() + 1) / 2.0)
             queue(
                 Go(corner, 0.8), Face { middle },
-                Clip(Activity.SURVEY, at = { middle }, first = { speak("works_master_survey_${1 + p.random.nextInt(2)}") }), Pause(20) { middle },
+                // "Stakes here, and here." only where it's staked out (not an oven in its bakery, nor a stall)
+                Clip(Activity.SURVEY, at = { middle }, first = { speak(if (s.drawing.stakes.isEmpty()) "works_master_survey_2" else "works_master_survey_${1 + p.random.nextInt(2)}") }), Pause(20) { middle },
             )
             return true
         }
@@ -713,7 +714,7 @@ internal object MasterBuilder {
             queue(
                 Face(up),
                 // The town's cheer for the topping out went up as it was finished, with the crew's (WorksBuild.staged)
-                Clip(if (loud) Activity.HURRAH else Activity.POINT, at = up, first = { speak("homestead_stage_${stage.key}", force = true) }),
+                Clip(if (loud) Activity.HURRAH else Activity.POINT, at = up, first = { site?.stageLine(stage)?.let { speak(it, force = true) } }),
                 Act { ceremony = false },
             )
         }

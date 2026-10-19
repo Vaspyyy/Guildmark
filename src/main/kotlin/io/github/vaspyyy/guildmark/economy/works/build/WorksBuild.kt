@@ -22,6 +22,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Hands
 import io.github.vaspyyy.guildmark.townsfolk.Lookout
 import io.github.vaspyyy.guildmark.townsfolk.Residents
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
+import io.github.vaspyyy.guildmark.townsfolk.scenes.ToppingOut
 import io.github.vaspyyy.guildmark.townsfolk.talk.TownTalk
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet
 import net.minecraft.core.BlockPos
@@ -274,8 +275,10 @@ object WorksBuild {
     /** A stage of [site] is finished: called by the master (or one of the crew), cheered, and its ceremony if it has one. */
     private fun staged(level: ServerLevel, w: WorksRec, rec: BuildRec, site: TownWorksSite, stage: Stage, near: Boolean) {
         if (near) {
-            // The town gathered round its topping out cheers it as the crew does, once (and the crew's own cheer is left out)
-            if (stage == Stage.TOPPING) io.github.vaspyyy.guildmark.townsfolk.scenes.ToppingOut.cheer(level, w.id)
+            // The town gathered round its topping out cheers it as the crew does, once (and the crew's own cheer is left
+            // out); the crew's cheer for the stage before, as the town begins to gather, is a cheer gone up on the lot
+            // already, so the gathering doesn't take it for a call of its own and cheer it again
+            if (stage == Stage.TOPPING) ToppingOut.cheer(level, w.id) else ToppingOut.at(w.id)?.let { if (level.gameTime <= it.until) it.cued = level.gameTime }
             BuilderCrew.celebrate(level, site, stage)
             MasterBuilder.calls(level, w, rec, site, stage)
         }
@@ -455,6 +458,7 @@ object WorksBuild {
             if (!site.workday()) "it's not a working hour (the crew works from sunrise to sunset)" else null,
             site.short?.let { "it's out of ${it.key}" },
             site.blocked?.let { "the block at ${it.x} ${it.y} ${it.z} is in its way (the clock lays round it)" },
+            if (site.awaitingTown()) "the town's gathering for its topping out (it waits a few seconds for them)" else null,
         )
         if (held.isNotEmpty()) out.add("   waiting: " + held.joinToString("; "))
         return out

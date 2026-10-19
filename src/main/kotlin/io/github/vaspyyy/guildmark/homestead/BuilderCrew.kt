@@ -127,7 +127,10 @@ object BuilderCrew {
             val first = crew.builders.first().p
             site.cheer(stage)?.let { level.playSound(null, first.blockPosition(), it, SoundSource.NEUTRAL, 1.2f, 1f) }
         } else if (stage == Stage.GROUNDWORK || stage == Stage.FOOTINGS) {
-            if (master == null) crew.builders.random().p.say("homestead_stage_${stage.key}", force = true)
+            if (master == null) {
+                val b = crew.builders.random()
+                site.stageLine(stage)?.let { b.p.say(it, force = true) }
+            }
         }
     }
 
@@ -390,8 +393,17 @@ object BuilderCrew {
             cheerClip = Activity.HURRAH
             p.act(Activity.HURRAH)
             if (calls) {
-                p.say(if (stage == null) "homestead_done_${1 + p.random.nextInt(2)}" else "homestead_stage_${stage.key}", force = true)
-                crews[id]?.spoke = p.level().gameTime
+                // The site's own words for it: a homestead's for every stage, a works' only where they fit what went up
+                val site = live(id)
+                val line = when {
+                    stage == null -> site?.doneLine(p.random) ?: "homestead_done_${1 + p.random.nextInt(2)}"
+                    site == null -> "homestead_stage_${stage.key}"
+                    else -> site.stageLine(stage)
+                }
+                if (line != null) {
+                    p.say(line, force = true)
+                    crews[id]?.spoke = p.level().gameTime
+                }
             }
             val level = p.level() as ServerLevel
             level.sendParticles(ParticleTypes.HAPPY_VILLAGER, p.x, p.y + 2.1, p.z, 6, 0.4, 0.3, 0.4, 0.0)
@@ -457,7 +469,7 @@ object BuilderCrew {
                 if (walk(level, by, 1.6)) {
                     p.face(p.yawTo(Vec3.atCenterOf(site.crate)))
                     if (timer % 300 == 40) {
-                        if (turn()) p.say("homestead_need_${short.key}", force = true)
+                        site.needLine(short)?.let { if (turn()) p.say(it, force = true) }
                         p.act(Activity.MOP_BROW)
                     }
                 }
@@ -642,7 +654,7 @@ object BuilderCrew {
                         Laid.NEED -> {
                             site.release(p.id)
                             batch = IntArray(0)
-                            if (turn()) p.say("homestead_need_${(site.short ?: step.stuff).key}", force = true)
+                            site.needLine(site.short ?: step.stuff)?.let { if (turn()) p.say(it, force = true) }
                             into(S.IDLE)
                         }
                         Laid.WAIT -> {

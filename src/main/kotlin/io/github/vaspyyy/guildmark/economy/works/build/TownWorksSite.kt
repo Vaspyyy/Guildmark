@@ -39,6 +39,7 @@ import net.minecraft.sounds.SoundEvents
 import net.minecraft.sounds.SoundSource
 import net.minecraft.tags.BlockTags
 import net.minecraft.util.Mth
+import net.minecraft.util.RandomSource
 import net.minecraft.world.Container
 import net.minecraft.world.RandomizableContainer
 import net.minecraft.world.entity.LivingEntity
@@ -180,6 +181,15 @@ class TownWorksSite(override val level: ServerLevel, val rec: BuildRec, val plan
      */
     override fun cheer(stage: Stage): SoundEvent? = if (stage == Stage.TOPPING && ToppingOut.gathered(level, id)) null else WorksBlocks.CHEER.get()
 
+    /** The homestead's line for [stage]'s end, where it fits what this works puts up then (see WorksDrawing.unsaid). */
+    override fun stageLine(stage: Stage): String? = if (stage in drawing.unsaid) null else "homestead_stage_${stage.key}"
+
+    /** The homestead's line for what the crate's out of, but wool's ("for the beds"): a works' wool is a stall's awning. */
+    override fun needLine(stuff: Stuff): String? = if (stuff == Stuff.WOOL) null else "homestead_need_${stuff.key}"
+
+    /** A works is nobody's home: the crew's word as it's finished is the plain one. */
+    override fun doneLine(random: RandomSource): String = "homestead_done_2"
+
     // ---- Materials ----
 
     /** Units of each paid material one step takes: the bill spread over its steps of that material. */
@@ -212,6 +222,15 @@ class TownWorksSite(override val level: ServerLevel, val rec: BuildRec, val plan
 
     /** Set when a stage has just been finished, for the crew to celebrate. */
     var finishedStage: Stage? = null
+
+    /** When its topping out began (not saved: after a restart it isn't waited for again). */
+    private var toppingFrom = Long.MIN_VALUE / 2
+
+    /**
+     * Whether its topping out waits a little yet for the town gathering round it ([ToppingOut]) to see it go up: the
+     * first [GATHER] ticks of the stage while they're gathered. The crew stands by; the clock lays nothing of it.
+     */
+    fun awaitingTown(): Boolean = stage == Stage.TOPPING && level.gameTime - toppingFrom in 0 until GATHER && ToppingOut.gathered(level, id)
 
     /** The steps by their places in the world, packed: a move's other end, a step's own place. */
     private val byPlace = HashMap<Long, Int>()
@@ -349,6 +368,7 @@ class TownWorksSite(override val level: ServerLevel, val rec: BuildRec, val plan
 
     override fun open(i: Int): Boolean {
         if (i < build.step || i >= stageEnd || isDone(i) || claims.containsKey(i)) return false
+        if (awaitingTown()) return false
         rec.blocked[i]?.let { if (level.gameTime - it[0] in 0 until RETRY_BLOCKED) return false }
         val since = waiting[i]
         return since == null || level.gameTime - since > 40
@@ -409,7 +429,7 @@ class TownWorksSite(override val level: ServerLevel, val rec: BuildRec, val plan
 
     override fun lay(i: Int, fx: Boolean, free: Boolean): Laid {
         if (isDone(i)) return Laid.DONE
-        if (!free && build.work < 1.0) return Laid.LATER
+        if (!free && (build.work < 1.0 || awaitingTown())) return Laid.LATER
         val step = plan.steps[i]
         if (!free && !charge(step.stuff)) return Laid.NEED
         val outcome = place(i, step, fx)
@@ -462,6 +482,7 @@ class TownWorksSite(override val level: ServerLevel, val rec: BuildRec, val plan
             build.reach = max(0, build.reach - 1)
         }
         val now = stage
+        if (now != lastStage && now == Stage.TOPPING) toppingFrom = level.gameTime
         if (now != lastStage || finished) {
             if (lastStage.ordinal > build.cheered) {
                 build.cheered = lastStage.ordinal
@@ -1065,6 +1086,9 @@ class TownWorksSite(override val level: ServerLevel, val rec: BuildRec, val plan
 
         /** Ticks a held-up step waits before it's tried again. */
         private const val RETRY_BLOCKED = 600L
+
+        /** Ticks the topping out waits for the town to gather round it: long enough for folk 40 blocks off to walk over. */
+        private const val GATHER = 300L
 
         private val SCAFFOLD: BlockState = Blocks.SCAFFOLDING.defaultBlockState()
             .setValue(ScaffoldingBlock.DISTANCE, 0).setValue(ScaffoldingBlock.BOTTOM, false)
