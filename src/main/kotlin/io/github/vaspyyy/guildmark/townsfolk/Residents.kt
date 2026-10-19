@@ -217,14 +217,22 @@ class Residents(private val people: MutableMap<Int, Resident> = HashMap(), priva
          * whose body has been made anew since (back home, made at home out of sight), or of someone dead whose chunk
          * was last saved before they died: gone at once, as BuilderCrew's are. One the records don't know as theirs
          * (its chunk saved after the records last were, the game stopped between) is someone new, taken in afresh, so
-         * no two bodies ever share a record. Set listening by [Comings.register].
+         * no two bodies ever share a record; but a record saved before it had any body takes back one of its trade and
+         * look. Set listening by [Comings.register].
          */
         fun onJoin(event: EntityJoinLevelEvent) {
             if (!event.loadedFromDisk()) return
             val p = event.entity as? Townsperson ?: return
             if (p.resident < 0) return
             val level = event.level as? ServerLevel ?: return
-            val r = get(level)[p.resident]
+            val data = get(level)
+            val r = data[p.resident]
+            // Their body made after the records were last saved, the game stopped between: it's theirs
+            if (r != null && r.uuid == null && r.role == p.role && r.look == p.look) {
+                r.uuid = p.uuid
+                data.add(r)
+                named(p, r)
+            }
             if (r == null || r.uuid != p.uuid && !Comings.renewed(level, r)) {
                 p.resident = -1
                 p.customName = null
