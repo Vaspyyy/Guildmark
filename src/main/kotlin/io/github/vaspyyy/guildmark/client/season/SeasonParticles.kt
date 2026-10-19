@@ -120,17 +120,18 @@ object SeasonParticles {
 
     /** Breath from everyone close by: players, villagers and townsfolk, every few seconds each. */
     private fun breath(minecraft: Minecraft, level: ClientLevel, player: Player) {
-        // In the lands that feel the seasons, or where it's always cold
         val time = level.gameTime
         if (++breathScan % 2 != 0) return
         val box = AABB(player.blockPosition()).inflate(16.0)
         for (entity in level.getEntitiesOfClass(LivingEntity::class.java, box) { it is Player || it is AbstractVillager || it is Townsperson }) {
             if (entity.isUnderWater || entity.isInvisible || !entity.isAlive || entity.isSleeping) continue
-            val cold = Seasons.temperate(level.getBiome(entity.blockPosition()).value())
-            if (cold < 0.5f && level.getBiome(entity.blockPosition()).value().baseTemperature >= 0.15f) continue
-            // A breath about every three seconds, out of step from one to the next
+            // A breath about every three seconds, out of step from one to the next (looked at before the land, as
+            // only 2 ticks in 64 are anyone's)
             val period = 64L
             if (Math.floorMod(time + entity.id * 23L, period) !in 0L..1L) continue
+            // In the lands that feel the seasons, or where it's always cold
+            val biome = level.getBiome(entity.blockPosition()).value()
+            if (Seasons.temperate(biome) < 0.5f && biome.baseTemperature >= 0.15f) continue
             if (entity === player && minecraft.options.cameraType == CameraType.FIRST_PERSON) continue
             val look = entity.getViewVector(1f)
             val eye = entity.getEyePosition(1f)
