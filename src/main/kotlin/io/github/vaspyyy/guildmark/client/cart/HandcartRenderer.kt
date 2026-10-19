@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.math.Axis
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.cart.Handcart
+import net.minecraft.client.model.geom.ModelPart
 import net.minecraft.client.renderer.SubmitNodeCollector
 import net.minecraft.client.renderer.entity.EntityRenderer
 import net.minecraft.client.renderer.entity.EntityRendererProvider
@@ -17,6 +18,7 @@ import net.minecraft.util.Mth
 import net.minecraft.world.item.ItemDisplayContext
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.phys.AABB
+import org.joml.Quaternionf
 import kotlin.math.atan2
 import kotlin.math.max
 import kotlin.math.sqrt
@@ -26,7 +28,7 @@ import kotlin.math.sqrt
  * them and tipped up or down to their height); standing, it rests tipped forward onto its shafts, as the server
  * left it, and the shafts come up or go down between the two. It leans as its wheels stand, its wheels turn by how
  * far they rolled, and its load is heaped on the bed (each piece of HandcartMesh's, the goods showing in the open
- * ones), settling on as it's put there and lifting off as it's taken.
+ * ones, the hen in a household's coop looking about her), settling on as it's put there and lifting off as it's taken.
  */
 class HandcartRenderer(context: EntityRendererProvider.Context) : EntityRenderer<Handcart, HandcartRenderState>(context) {
     private val model = HandcartModel(context.bakeLayer(HandcartModel.LAYER))
@@ -34,8 +36,14 @@ class HandcartRenderer(context: EntityRendererProvider.Context) : EntityRenderer
     private val parts = HandcartMesh.PIECES.map { load.getChild(it.part) }
     private val items: ItemModelResolver = context.itemModelResolver
 
+    // The hen's head, drawn by itself so that each cart's hen looks about on her own: out of a second baking of the
+    // load, and left out of the coop drawn from the first
+    private val henHead: ModelPart = context.bakeLayer(HandcartModel.LOAD).getChild(COOP).getChild(HEN_HEAD)
+    private val turn = Quaternionf()
+
     init {
         shadowRadius = 0.75f
+        load.getChild(COOP).getChild(HEN_HEAD).visible = false
     }
 
     override fun createRenderState(): HandcartRenderState = HandcartRenderState()
@@ -87,6 +95,12 @@ class HandcartRenderer(context: EntityRendererProvider.Context) : EntityRenderer
             }
         }
         state.pieces = n
+        // The hen in a household's coop looks about her
+        for (i in 0 until n) {
+            if (state.kind[i] != CartClient.CAGE) continue
+            HandcartMesh.henHead(cart.tickCount + partialTicks, cart.id, state.hen)
+            break
+        }
     }
 
     /** Adds a piece of [stack] on place [slot], [up] px off the floor at [scale]; the count drawn so far. */
@@ -120,6 +134,16 @@ class HandcartRenderer(context: EntityRendererProvider.Context) : EntityRenderer
             val scale = state.size[i]
             if (scale != 1f) poseStack.scale(scale, scale, scale)
             collector.submitModelPart(parts[state.kind[i]], poseStack, LOAD_TYPE, state.lightCoords, OverlayTexture.NO_OVERLAY, null, -1, state.outlineColor)
+            if (state.kind[i] == CartClient.CAGE) {
+                // The hen's head on her neck, turned there as ModelPart turns a part about its pivot
+                val neck = HandcartMesh.HEN_HEAD
+                poseStack.pushPose()
+                poseStack.translate(neck[0] / 16f, neck[1] / 16f, neck[2] / 16f)
+                poseStack.rotate(turn.rotationZYX(state.hen[2], state.hen[1], state.hen[0]))
+                poseStack.translate(-neck[0] / 16f, -neck[1] / 16f, -neck[2] / 16f)
+                collector.submitModelPart(henHead, poseStack, LOAD_TYPE, state.lightCoords, OverlayTexture.NO_OVERLAY, null, -1, state.outlineColor)
+                poseStack.popPose()
+            }
             // What shows in an open one, lying on top, each a little turned and tipped
             if (!state.goods[i].isEmpty) {
                 for ((j, show) in piece.shows.withIndex()) {
@@ -147,6 +171,10 @@ class HandcartRenderer(context: EntityRendererProvider.Context) : EntityRenderer
     companion object {
         private val TEXTURE = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "textures/entity/cart/handcart.png")
         private val LOAD_TYPE: RenderType = RenderTypes.entityCutout(TEXTURE)
+
+        /** The hen's coop among the load's parts, and her head in it (HandcartMesh.load). */
+        private val COOP = HandcartMesh.PIECES[CartClient.CAGE].part
+        private const val HEN_HEAD = "cage_hen_head"
 
         /** Px a piece drops from as it's set down, and rises as it's lifted off. */
         private const val SETTLE_DROP = 5f

@@ -43,6 +43,9 @@ class HandcartRenderState : EntityRenderState() {
     /** What shows in each open piece (the carrots in a crate, the loaves in a basket). */
     val goods = Array(MAX) { ItemStackRenderState() }
 
+    /** How the hen in a household's coop holds her head this frame: its xRot, yRot and zRot (HandcartMesh.henHead). */
+    val hen = FloatArray(3)
+
     companion object {
         /** Pieces at most: one on each place on the bed, and one being lifted off each. */
         const val MAX = 16
