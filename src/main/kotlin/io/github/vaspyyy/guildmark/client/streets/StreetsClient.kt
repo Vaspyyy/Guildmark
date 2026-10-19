@@ -164,7 +164,7 @@ object StreetsClient {
     private const val CREAK_GAP = 30L
     private const val CREAK_FROM = 3f
     private const val CREAK_SPAN = 9f
-    private const val CREAK_HEAR = 24.0
+    private const val CREAK_HEAR = 12.0
 
     /** How fast the board's wetness follows the rain each tick, and where it hangs (blocks up, and out toward the street). */
     private const val WET_EASE = 0.02f

@@ -153,7 +153,10 @@ object FortuneTopics : TopicSource {
         if (town.times != Times.STEADY) {
             val reason = mine?.first ?: town.reasons.firstOrNull { Integer.signum(it.points) == town.sign }
             val detail = mine?.second ?: reason?.let(::detail) ?: "talk.detail.fortune.times.${town.times.id}"
-            Say.line(ask, "fortune.${town.times.id}", detail)?.let { say ->
+            // In a talk the reason is heard too, in a take of its own after the times'; in passing, it follows in words
+            val head = if (reason != null && ask.occasion != Occasion.BARK) Say.lead(ask, "fortune.${town.times.id}") else null
+            val say = head?.let { Utterance(listOf(it, aloud(ask, detail))) } ?: Say.line(ask, "fortune.${town.times.id}", detail)
+            if (say != null) {
                 val weight = (WEIGHTS[town.times] ?: 0.4) * (if (mine != null) 1.15 else 1.0)
                 val id = "fortune.times.${town.times.id}.${reason?.kind ?: "held"}" + if (mine != null) ".own" else ""
                 out.add(Topic(id, Kind.FORTUNE, weight, say, tone = town.sign))
@@ -566,29 +569,38 @@ object FortuneTopics : TopicSource {
         val own = ask.resident?.let { own(ask, it, town) } ?: listOf()
         val said = ArrayList<Reason>()
         val parts = ArrayList<Utterance.Part>()
+        var most = PARTS
         when {
             town.times != Times.STEADY -> {
                 val mine = own.firstOrNull { Integer.signum(it.first.points) == town.sign }
                 val reason = mine?.first ?: town.reasons.firstOrNull { Integer.signum(it.points) == town.sign }
                 reason?.let(said::add)
                 val detail = mine?.second ?: reason?.let(::detail) ?: "talk.detail.fortune.times.${town.times.id}"
-                Say.part(ask, "fortune.${town.times.id}", detail)?.let(parts::add)
+                val head = if (reason != null) Say.lead(ask, "fortune.${town.times.id}") else null
+                if (head != null) {
+                    // The times, then their reason in a take of its own: the two count as one of the answer's parts
+                    parts.add(head)
+                    parts.add(aloud(ask, detail))
+                    most++
+                } else {
+                    Say.part(ask, "fortune.${town.times.id}", detail)?.let(parts::add)
+                }
             }
             town.moved -> Say.part(ask, if (town.way > 0) "fortune.better" else "fortune.worse", moved(town))?.let(parts::add)
             else -> parts.add(Say.part(ask, "fortune.steady", null) ?: Utterance.Part("", "talk.detail.fortune.steady"))
         }
         // The reasons pulling the times' way first (biggest first among them), then the rest
         for (reason in town.reasons.sortedByDescending { town.sign != 0 && Integer.signum(it.points) == town.sign }) {
-            if (said.size >= 2 || parts.size >= PARTS) break
+            if (said.size >= 2 || parts.size >= most) break
             if (said.any { it === reason }) continue
             val detail = own.firstOrNull { it.first === reason }?.second ?: detail(reason) ?: continue
             said.add(reason)
             parts.add(aloud(ask, detail))
         }
-        if (town.moved && town.times != Times.STEADY && parts.size < PARTS) {
+        if (town.moved && town.times != Times.STEADY && parts.size < most) {
             Say.part(ask, if (town.way > 0) "fortune.better" else "fortune.worse", moved(town))?.let(parts::add)
         }
         if (parts.isEmpty()) return null
-        return Utterance(parts.take(PARTS))
+        return Utterance(parts.take(most))
     }
 }
