@@ -511,7 +511,11 @@ internal object ComingsBodies {
             Stage.LOOK -> {
                 // In at the gate: they stop and take the place in
                 puller.set(Stand(LOOK_TICKS, { ahead(party) }))
-                rest.forEach { h -> h.set(Play(Activity.LOOK_ABOUT, { ahead(party) }), Stand(LOOK_TICKS, { ahead(party) })) }
+                rest.forEach { h ->
+                    // Anyone with their arms full (no cart) only stands and looks, holding on to their things
+                    if (h.p.carried.isEmpty) h.set(Play(Activity.LOOK_ABOUT, { ahead(party) }), Stand(LOOK_TICKS, { ahead(party) }))
+                    else h.set(Stand(LOOK_TICKS, { ahead(party) }))
+                }
             }
             Stage.STREETS -> {
                 puller.set(Lead(party.way.size))
