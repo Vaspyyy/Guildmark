@@ -13,6 +13,7 @@ import io.github.vaspyyy.guildmark.city.plan.Trade
 import io.github.vaspyyy.guildmark.economy.fortune.Fortunes
 import io.github.vaspyyy.guildmark.economy.works.Works
 import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
+import io.github.vaspyyy.guildmark.townsfolk.Comings
 import io.github.vaspyyy.guildmark.townsfolk.Furnish
 import io.github.vaspyyy.guildmark.townsfolk.Residents
 import net.minecraft.core.BlockPos
@@ -141,9 +142,15 @@ class Markets(private val entries: MutableMap<Long, Entry> = HashMap()) : SavedD
             var steps = STEPS
             for (entry in data.entries.values) {
                 val m = entry.market
-                // Time set back: the market carries on from the new hour, and what's under way keeps the days it had left
+                // Time set back: the market carries on from the new hour, and what's under way keeps the days it had left;
+                // the town's fortunes, works and comings go back with it, so the clock's next close is their next
                 if (m.hour > now) {
-                    rewind(m, m.hour - now)
+                    val hours = m.hour - now
+                    val days = Conditions(m.hour).day - Conditions(now).day
+                    rewind(m, hours)
+                    Fortunes.back(level, m.capital, days, hours)
+                    Works.back(level, m.capital, days, hours)
+                    Comings.back(level, m.capital, days)
                     data.setDirty()
                     continue
                 }

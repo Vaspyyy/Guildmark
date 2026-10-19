@@ -270,11 +270,39 @@ object Comings {
     /**
      * The market day it is in [entry]'s capital for its comings and goings: the market's, or the last its fortunes
      * closed if that's later. A market run on ahead (`market run`) has lived the days it closed, so the comings go by them
-     * too; with the clock set back they wait for it to come round to their day again.
+     * too; with the clock set back their days go back with it ([back]).
      */
     private fun day(level: ServerLevel, entry: Markets.Entry): Long {
         val day = Conditions(hour(level, entry)).day
         return if (Fortunes.enabled()) maxOf(day, Fortunes.today(level, entry.market.capital)) else day
+    }
+
+    /**
+     * The clock set back (from Markets.run, as [capital]'s market goes back): its comings and goings go back [days]
+     * market days with it, the day they last worked out and every day they date by (the households due, away and come
+     * in; the last to leave, to grow the town and to come; the day one is to leave), and the dead not yet seen to with
+     * them, so the clock's next day is their next and nobody due waits the longer. Days lived on ahead by a market run
+     * stay ahead.
+     */
+    internal fun back(level: ServerLevel, capital: Long, days: Long) {
+        if (!READY || days == 0L) return
+        val data = ComingsData.get(level)
+        val town = data.find(capital) ?: return
+        fun earlier(d: Long): Long = if (d == ComingsData.NEVER) d else d - days
+        town.closed = earlier(town.closed)
+        town.grown = earlier(town.grown)
+        town.came = earlier(town.came)
+        town.leaving = earlier(town.leaving)
+        // Nothing goes before the clock's first day, where -1 is "none"
+        if (town.left >= 0) town.left = maxOf(0L, town.left - days)
+        town.due.replaceAll { ComingsData.Due(it.id, it.reason, it.roles, it.planned, it.home, it.day - days, it.wait, it.dead, it.works) }
+        town.away.replaceAll { ComingsData.Moved(it.id, it.members, it.home, it.day - days, it.reason, it.why) }
+        town.log.replaceAll { ComingsData.Moved(it.id, it.members, it.home, it.day - days, it.reason, it.why) }
+        // Someone new is sent for the dead by the day they died
+        val residents = Residents.get(level)
+        for (r in residents.of(BlockPos.of(capital))) if (!r.alive && r.died >= 0 && r.id !in town.seen) r.died = maxOf(0L, r.died - days)
+        data.changed()
+        residents.changed()
     }
 
     /**

@@ -516,8 +516,8 @@ object Works {
     /**
      * [entry]'s market has just closed a day (two o'clock): the town asks for what the day showed a need of; a paid-for
      * works that's stood [SITE_LOST_DAYS] days with no site is called off and paid back; newcomers sent for by works
-     * just built are asked after; and the day's records start afresh. A day already closed (time set back, or `market
-     * run` lived through) isn't closed twice.
+     * just built are asked after; and the day's records start afresh. A day already closed (`market run` lived
+     * through) isn't closed twice; with the clock set back, the days go back with it (see [back]).
      */
     internal fun day(level: ServerLevel, entry: Markets.Entry) {
         if (!enabled()) return
@@ -544,6 +544,32 @@ object Works {
             hire(level, data, w)
         }
         rec.begin()
+        data.changed()
+    }
+
+    /**
+     * The clock set back (from Markets.run, [capital]'s market going back [hours] with it): its works' days go back
+     * [days] market days, the last closed and every day they date by (wanted, paid for, begun and done, a site not
+     * found or lost, each thing last eased, each pledge's), and the hour their freight last landed, so the clock's next
+     * close is their next and nothing waits the longer. Days lived on ahead by a market run stay ahead.
+     */
+    internal fun back(level: ServerLevel, capital: Long, days: Long, hours: Long) {
+        if (!ready()) return
+        val data = data(level)
+        data.towns[capital]?.let { if (it.closed > Long.MIN_VALUE / 4) it.closed -= days }
+        // Nothing goes before the clock's first day, where -1 is "none"
+        fun earlier(d: Long): Long = if (d >= 0) maxOf(0L, d - days) else d
+        for (w in data.of(capital)) {
+            w.wanted -= days
+            w.noRoom = earlier(w.noRoom)
+            w.siteLost = earlier(w.siteLost)
+            w.funded = earlier(w.funded)
+            w.begun = earlier(w.begun)
+            w.done = earlier(w.done)
+            if (w.landed > Long.MIN_VALUE / 4) w.landed -= hours
+            w.eased.replaceAll { _, d -> d - days }
+            w.pledges.replaceAll { PledgeRec(it.player, it.name, it.marks, it.day - days, it.free) }
+        }
         data.changed()
     }
 

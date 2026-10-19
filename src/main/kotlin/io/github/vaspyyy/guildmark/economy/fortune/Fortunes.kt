@@ -231,10 +231,32 @@ object Fortunes {
         // On ahead of the clock (`market run`), each day the market closes is the fortunes' next, however often it's
         // run on from the same hour: those days are lived already, and the clock's closes wait for them to come round
         val day = if (m.hour > Markets.hourOf(level)) maxOf(c.day, town.closed + 1) else c.day
-        // Time set back: a day already closed isn't closed twice
+        // A day already closed (lived on ahead by a market run) isn't closed twice
         if (day <= town.closed) return
         town.closed = day
         close(level, entry, town, day, now = false)
+        data.changed()
+    }
+
+    /**
+     * The clock set back (from Markets.run, [capital]'s market going back [hours] with it): the record goes back [days]
+     * market days, the day it last closed and what it dates by its days (the notes, the hold, the days kept, the
+     * reasons' and since when the times stand) and by the clock's hours (when they moved, the works' news), so the
+     * clock's next close is its next and nothing noted waits or lasts the longer. Days lived on ahead by a market run
+     * stay ahead.
+     */
+    internal fun back(level: ServerLevel, capital: Long, days: Long, hours: Long) {
+        val data = FortuneData.get(level)
+        val town = data[capital] ?: return
+        if (town.closed != FortuneData.NEVER) town.closed -= days
+        // Nothing goes before the clock's first day, where -1 is "never" or "none"
+        if (town.since >= 0) town.since = maxOf(0L, town.since - days)
+        if (town.moved != FortuneData.NEVER) town.moved -= hours
+        if (town.held >= 0) town.held = (town.held - days).takeIf { it >= 0 } ?: -1L
+        town.reasons.replaceAll { Reason(it.kind, it.points, if (it.until >= 0) maxOf(0L, it.until - days) else it.until, it.args, it.about, it.works) }
+        town.notes.replaceAll { FortuneData.Note(it.kind, it.points, it.from - days, it.until - days, it.args, it.about, it.works, it.hand) }
+        town.days.replaceAll { FortuneDay(it.day - days, it.score, it.times) }
+        town.works.replaceAll { FortuneData.WorksNews(it.id, it.kind, it.road, it.what, it.hour - hours, it.why, it.patron) }
         data.changed()
     }
 
@@ -302,8 +324,8 @@ object Fortunes {
 
     /**
      * The day the fortunes of [capital] stand at, which a note, a hold and `fortune step` go by: its market's day, or
-     * the last day they closed if that's later (`market run` on ahead, or the clock set back), so a note counts at
-     * the next closes whichever they are.
+     * the last day they closed if that's later (`market run` on ahead), so a note counts at the next closes whichever
+     * they are.
      */
     internal fun today(level: ServerLevel, capital: Long): Long {
         val closed = FortuneData.get(level)[capital]?.closed ?: FortuneData.NEVER

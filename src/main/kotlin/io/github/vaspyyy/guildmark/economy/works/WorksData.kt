@@ -39,7 +39,7 @@ internal class Owed(var name: String, var marks: Int)
  */
 internal class WorksRec(
     val id: Int, val capital: Long, val kind: WorksKind, val road: Int, val owner: UUID?,
-    val price: Int, val parts: Map<String, Int>, val bill: IntArray, val wanted: Long, val why: String,
+    val price: Int, val parts: Map<String, Int>, val bill: IntArray, var wanted: Long, val why: String,
 ) {
     var state = WorksState.WANTED
     val pledges = ArrayList<PledgeRec>()
