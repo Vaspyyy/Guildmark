@@ -41,7 +41,7 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent
  * - **The alms table** ([AlmsTable]) by the market's well at noon on a hungry day or in hard times.
  *
  * Everything that follows the times or the market waits on [Fortunes.enabled], the boards on [Comings.enabled]; with
- * both off (as they are until M6 is switched on) nothing here runs, and nothing is put up, but by `/guildmark streets`'s
+ * both off (their settings, or M6's READY flags) nothing here runs, and nothing is put up, but by `/guildmark streets`'s
  * tests ([StreetsCommand]). What goes up goes up through the festivals' record of what stood where
  * ([FestivalRestores]), under site keys of its own ([site]), so it's put back as it was however it ends; a piece the
  * signs no longer want is put back as its chunk loads or its random tick comes ([wants], from

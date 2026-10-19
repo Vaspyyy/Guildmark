@@ -109,8 +109,8 @@ class Refusal(val key: String, val args: List<Any> = listOf())
  * nothing: the game is as it was. Switched off, the records are kept for when it's on again.
  */
 object Works {
-    /** Part A is wired in. False until M6's parts are all on main: until then nothing here runs or touches a world. */
-    private const val READY = false
+    /** Part A is wired in, with all of M6 switched on. False would turn it off: nothing here runs or touches a world. */
+    private const val READY = true
 
     /** Whether works are wanted, paid for and built (townWorks, with the markets). */
     fun enabled(): Boolean = READY && Markets.enabled() && setting { GuildmarkConfig.TOWN_WORKS.get() }

@@ -68,11 +68,11 @@ class Household(val id: Int, val capital: Long, val home: Int, val members: List
  */
 object Comings {
     /**
-     * Whether Part D3 is wired in. M6's parts are built side by side and switched on last: until the brainstorm thread
-     * sets this true, nothing here runs (no record is kept, no body made, no command offered), so every game is as it
-     * was.
+     * Whether Part D3 is wired in. M6's parts were built side by side and are all switched on now; false would turn
+     * them off again: nothing here runs (no record is kept, no body made, no command offered), so every game is as it
+     * was before M6.
      */
-    private const val READY = false
+    private const val READY = true
 
     /** Why a household comes or goes ([Household.reason]). */
     const val REPLACE = "replace"

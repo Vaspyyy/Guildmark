@@ -68,10 +68,10 @@ class FortuneDay(val day: Long, val score: Int, val times: Times)
  */
 object Fortunes {
     /**
-     * Whether Part C is wired in. M6's parts are built side by side and switched on last: until the brainstorm thread
-     * sets this true, nothing here runs and every capital is STEADY, so every game is as it was.
+     * Whether Part C is wired in. M6's parts were built side by side and are all switched on now; false would turn
+     * them off again: nothing here runs and every capital is STEADY, so every game is as it was before M6.
      */
-    private const val READY = false
+    private const val READY = true
 
     /** Days of fortunes kept, and the score's bounds. */
     const val DAYS = 14
