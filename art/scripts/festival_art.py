@@ -962,6 +962,11 @@ def sky_lanterns():
 # ================================================================ JSON
 
 TRIM_LOOKS = ['pole_birch', 'pole_oak', 'pole_spruce', 'hay', 'pumpkin', 'carved', 'jack', 'melon', 'target', 'brazier', 'candles', 'blossom']
+# The streets' looks (M6 Part D, TrimLook's LADDER, POT_* and TO_LET): the dressing's ladder, the doorsteps' flower
+# pots, and the "To let" board (works_art.py's model; a board put up now is townsfolk/streets/ToLetBlock, swinging)
+STREET_POTS = ['poppy', 'dandelion', 'blue_orchid', 'allium', 'azure_bluet', 'red_tulip', 'orange_tulip', 'white_tulip',
+               'pink_tulip', 'oxeye_daisy', 'cornflower', 'lily_of_the_valley']
+TRIM_LOOKS += ['ladder'] + [f'pot_{p}' for p in STREET_POTS] + ['to_let']
 FACINGS = {'north': 0, 'east': 90, 'south': 180, 'west': 270}
 # The campfire's logs: its south is the model's own way round
 CAMPFIRE_Y = {'south': 0, 'west': 90, 'north': 180, 'east': 270}
@@ -970,6 +975,8 @@ VANILLA = {
     'jack': 'minecraft:block/jack_o_lantern', 'melon': 'minecraft:block/melon', 'target': 'minecraft:block/target',
     'brazier': 'minecraft:block/campfire', 'candles': 'minecraft:block/white_candle_three_candles_lit',
     'blossom': 'minecraft:block/flowering_azalea',
+    'ladder': 'minecraft:block/ladder', 'to_let': 'guildmark:block/works/to_let_board',
+    **{f'pot_{p}': f'minecraft:block/potted_{p}' for p in STREET_POTS},
 }
 POLE_TEXTURES = {
     'pole_birch': ('guildmark:block/festival_pole_birch', 'minecraft:block/stripped_birch_log_top', True),
@@ -986,7 +993,7 @@ def trim_blockstate():
             key = f'facing={facing},look={look}'
             if look.startswith('pole_'):
                 variants[key] = {'model': f'guildmark:block/festival_{look}'}
-            elif look in ('carved', 'jack'):
+            elif look in ('carved', 'jack', 'ladder', 'to_let'):
                 v = {'model': VANILLA[look]}
                 if FACINGS[facing]:
                     v['y'] = FACINGS[facing]
