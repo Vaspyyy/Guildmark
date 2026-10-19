@@ -101,8 +101,9 @@ object Comings {
     const val WEEK = 7
     const val FLOOR = 0.85
 
-    /** The most market days worked out at once, catching up. */
+    /** The most market days worked out at once, catching up, and the most in one look for all capitals together (the rest wait for the next). */
     private const val CATCH_UP = 30L
+    private const val DAYS = 20
 
     /** The hours of the clock a household comes in between, and leaves between. */
     const val ARRIVE_FROM = 8
@@ -319,9 +320,10 @@ object Comings {
     /** The market's hour in [capital] as the clock reads it (0 to 23), if it has a market. */
     internal fun clock(level: ServerLevel, capital: Long): Int? = Markets.get(level)[BlockPos.of(capital)]?.let { Conditions(hour(level, it)).clock }
 
-    /** Each capital with a market: its days worked out up to today, and what's due in the day so far. */
+    /** Each capital with a market: its days worked out up to today ([DAYS] at most this look, for them all), and what's due in the day so far. */
     private fun records(level: ServerLevel) {
         val data = ComingsData.get(level)
+        var days = DAYS
         for (entry in Markets.get(level).all()) {
             val key = entry.market.capital
             val today = day(level, entry)
@@ -335,25 +337,35 @@ object Comings {
             }
             val piece = CaravanRoutes.capital(level, key) ?: continue
             val places = CityPlaces.of(level, piece) ?: continue
-            work(Ctx(level, data, key, town, places), today, Conditions(hour(level, entry)).clock)
+            days -= work(Ctx(level, data, key, town, places), today, Conditions(hour(level, entry)).clock, days)
         }
     }
 
-    private fun work(c: Ctx, today: Long, clock: Int) {
+    /**
+     * [c]'s market days worked out up to [today], [most] of them at most, then what's due in the day so far; with days
+     * still to work out, the rest wait for the next look, and what's due today with them. The days worked out.
+     */
+    private fun work(c: Ctx, today: Long, clock: Int, most: Int): Int {
         val town = c.town
+        var worked = 0
         if (town.closed == ComingsData.NEVER) {
             town.closed = today
             c.data.changed()
         } else if (today > town.closed) {
             var d = maxOf(town.closed + 1, today - CATCH_UP + 1)
-            while (d <= today) {
+            while (d <= today && worked < most) {
                 day(c, d)
                 d++
+                worked++
             }
-            town.closed = today
-            c.data.changed()
+            if (d - 1 > town.closed) {
+                town.closed = d - 1
+                c.data.changed()
+            }
+            if (town.closed < today) return worked
         }
         during(c, today, clock)
+        return worked
     }
 
     /** Market day [d] in [c]'s capital: the dead seen to, the town grown in good times, a household to leave in hard. */
