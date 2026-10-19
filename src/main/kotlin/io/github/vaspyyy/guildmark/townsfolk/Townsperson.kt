@@ -180,6 +180,9 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
     /** A guard's beat, if set; otherwise they walk the streets round their post. */
     var patrol: List<BlockPos> = listOf()
 
+    /** Saved with gravity off (up a ladder, or up on a works with its crew): the first fall that would hurt them doesn't. Never saved. */
+    private var forgiveFall = false
+
     /** Tick count the current activity started at. */
     var activityStart = 0
         private set
@@ -643,8 +646,17 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
         pursedDay = input.getLongOr("pursed_day", -1L)
         captiveOf = input.getIntOr("captive_of", -1)
         rescuer = input.read("rescuer", UUIDUtil.CODEC).orElse(null)
-        // Saved halfway up a ladder: they come down it again
+        // Saved halfway up a ladder, or up on a works: they come down again, and the drop on the way doesn't hurt them
+        if (isNoGravity) forgiveFall = true
         isNoGravity = false
+    }
+
+    override fun causeFallDamage(fallDistance: Double, multiplier: Float, source: DamageSource): Boolean {
+        if (forgiveFall && calculateFallDamage(fallDistance, multiplier) > 0) {
+            forgiveFall = false
+            return false
+        }
+        return super.causeFallDamage(fallDistance, multiplier, source)
     }
 
     override fun die(source: DamageSource) {
