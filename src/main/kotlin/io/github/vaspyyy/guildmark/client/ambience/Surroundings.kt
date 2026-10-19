@@ -24,6 +24,7 @@ import net.minecraft.world.level.chunk.LevelChunkSection
 import net.minecraft.world.level.chunk.status.ChunkStatus
 import net.minecraft.world.level.levelgen.Heightmap
 import net.minecraft.world.phys.AABB
+import java.util.IdentityHashMap
 import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
@@ -82,6 +83,13 @@ class Surroundings {
     private var center: BlockPos = BlockPos.ZERO
     private val random = RandomSource.create()
 
+    /**
+     * Whether each block state is one the sweep looks at ([interesting]), worked out once a sweep: a city's sections hold
+     * a few hundred states, and a sweep looks at thousands of blocks a tick. Begun afresh each sweep, as a reload can
+     * change the tags.
+     */
+    private val known = IdentityHashMap<BlockState, Boolean>()
+
     /** Townsfolk about, awake or asleep, and the ones awake. */
     var folk: List<LivingEntity> = emptyList()
         private set
@@ -106,6 +114,7 @@ class Surroundings {
         sections.clear()
         next = 0
         sweeps = 0
+        known.clear()
         folk = emptyList()
         awake = emptyList()
         urbanity = 0.0
@@ -139,6 +148,7 @@ class Surroundings {
         center = at
         sections.clear()
         next = 0
+        known.clear()
         val y0 = SectionPos.blockToSectionCoord(max(level.minY, at.y - DOWN))
         val y1 = SectionPos.blockToSectionCoord(min(level.maxY, at.y + UP))
         for (sx in SectionPos.blockToSectionCoord(at.x - RADIUS)..SectionPos.blockToSectionCoord(at.x + RADIUS)) {
@@ -156,7 +166,7 @@ class Surroundings {
         val index = chunk.getSectionIndexFromSectionY(sy)
         if (index < 0 || index >= chunk.sectionsCount) return
         val section = chunk.getSection(index)
-        if (section.hasOnlyAir() || !section.maybeHas { interesting(it) }) return
+        if (section.hasOnlyAir() || !section.maybeHas { looked(it) }) return
         val x0 = max(center.x - RADIUS, sx shl 4)
         val x1 = min(center.x + RADIUS, (sx shl 4) + 15)
         val z0 = max(center.z - RADIUS, sz shl 4)
@@ -166,11 +176,14 @@ class Surroundings {
         val pos = BlockPos.MutableBlockPos()
         for (x in x0..x1) for (z in z0..z1) for (y in y0..y1) {
             val state = section.getBlockState(x and 15, y and 15, z and 15)
-            if (!interesting(state)) continue
+            if (!looked(state)) continue
             pos.set(x, y, z)
             note(level, section, state, pos)
         }
     }
+
+    /** Whether [state] is [interesting], as this sweep has it. */
+    private fun looked(state: BlockState): Boolean = known.getOrPut(state) { interesting(state) }
 
     private fun note(level: ClientLevel, section: LevelChunkSection, state: BlockState, pos: BlockPos) {
         val f = sweeping
