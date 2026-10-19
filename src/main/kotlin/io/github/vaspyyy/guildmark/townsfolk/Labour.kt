@@ -43,8 +43,8 @@ object Labour {
     /** The fewest ticks between one director given and the crew being asked again. */
     private const val ASK_EVERY = 40L
 
-    /** The game tick the lent were last looked at. */
-    private var looked = Long.MIN_VALUE
+    /** The game tick the lent were last looked at (halved, so `now - looked` can't overflow before the first look). */
+    private var looked = Long.MIN_VALUE / 2
 
     /** Where [life]'s capital's labourers report for work, if anywhere. */
     fun site(p: Townsperson, life: Life): BlockPos? {
