@@ -2,17 +2,19 @@
 The town works' blocks (M6, influence: living-world/design-influence.md, sections 3, 5 and 8): the works post with its
 drawing and seals, the patron's bronze plaque (bare, and under its cloth), the yard's displays (timber stack, stone
 pile, glass in straw crates, iron bars, wool bales) heaped by how much is there, the mortar tub, the hoist on the
-scaffold, the beacon brazier (out, lit and flaring), the alms table with its pot and bowls, the "To let" board and the
-empty display's chalked slate. Run from the repo root:
+scaffold, the beacon brazier (out, lit and flaring), the alms table (its trestle's three blocks, and the pot, its stew,
+the bowls and the ladle on its middle), the "To let" board and the empty display's slate. Run from the repo root:
 
     python3 -B art/scripts/works_art.py src/main/resources/assets/guildmark src/main/kotlin/io/github/vaspyyy/guildmark/client/works art/models [preview-dir]
 
 Writes their block models, blockstates and 32x textures (HD, as the rest of the mod's blocks) under the assets; the
 textures of what their renderers draw (textures/entity/works/: the yard's pieces, the hoist's pulley, rope, hook and
-load, the "To let" board, the slate, the post's parchments, seals and stamp, the beacon's glow); WorksMesh.kt (those
-pieces' meshes) and WorksArt.kt (the numbers the renderers heap, fill, seal, swing, haul and letter by) into the Kotlin
-folder; and each mesh's .bbmodel into art/models. None is registered here (Parts B and D2 register them:
-living-world/works-art.md says what each needs). The clips that work at them (works_clips.py, street_clips.py) take
+load, the "To let" board, the slate, the alms table's pot, stew, bowls and ladle, the post's parchments, seals and
+stamp, the beacon's glow); WorksMesh.kt (those pieces' meshes) and WorksArt.kt (the numbers the renderers heap, fill,
+seal, swing, haul, ladle and letter by) into the Kotlin folder; and each mesh's .bbmodel into art/models. None is
+registered here: Part B registers the works' own blocks (their blockstates are written here, by the ids proposed), and
+the alms table and the "To let" board are Part D2's blocks with D2's blockstates, which take these models
+(living-world/works-art.md says what each needs). The clips that work at them (works_clips.py, street_clips.py) take
 their numbers from here, so a hoe goes into the mortar and a torch into the coals.
 
 Block model space: x east, y up, z south, 0 to 16 a block; every block faces north (its front toward -z) in its model,
@@ -74,8 +76,10 @@ PLAQUE_FACE = clip_pt(8.0, 8.0, PLAQUE_Z, by=1)                                 
 VEIL_TOP = float(clip_pt(0, VEIL_HI[1], 0, by=1)[1])                             # clip y of the cloth's top: -6.3
 VEIL_FRONT = float(clip_pt(0, 0, VEIL_HI[2], by=1)[2])                           # clip z of its front: -6.7
 
-# The alms table: a trestle across the block between the keeper (south, facing north) and whoever comes for a bowl (north,
-# facing south), its top ALMS_TOP_Y up, the pot on the keeper's right and the stack of bowls on their left.
+# The alms table (townsfolk/streets/AlmsTableBlock): a trestle three blocks long (its TablePart left, middle and right,
+# from the keeper's left), the keeper behind its middle (south of it, facing north) and whoever comes for a bowl in front
+# of it (north, facing south), its top ALMS_TOP_Y up. On its middle block, the pot on the keeper's right and the stack of
+# bowls on their left: the renderer's (WorksMesh.alms()), at these places in that block's model space.
 ALMS_TOP_Y = 13.0
 POT_AT = (11.5, 11.0)                   # model (x, z): the pot's middle, on the keeper's side (south) and their right (east)
 POT_R = 3.6                             # its inside's radius at the rim (its wall POT_WALL thick)
@@ -94,8 +98,9 @@ LADLE_CLEAR = 0.25
 BOWLS_AT = (4.0, 11.0)                  # model (x, z): the stack of bowls' middle, on the keeper's left (west)
 BOWL_TALL = 1.9                         # a bowl's height (the stew bowl's), and each more on the stack adds BOWL_H (they
 BOWL_H = 1.2                            # nest)
-BOWLS_MAX = 4
-POT_LEVELS = 8                          # the stew's levels (0 empty .. 8 full)
+BOWLS_MAX = 3                           # the most the stack shows (LADLE takes the top one off a stack of three)
+BOWL_W = 4.5                            # a bowl across: the held one's (living_props.py's bowl_empty), square as it is
+POT_LEVELS = 8                          # the clips' checks' levels (the renderer's stew rises and falls freely)
 ALMS_TOP = float(clip_pt(0, ALMS_TOP_Y, 0)[1])                                   # clip y of the top: 11
 POT_MOUTH = clip_pt(POT_AT[0], POT_RIM_Y, POT_AT[1], bz=-1)                     # the keeper's clip: the pot's rim's middle
 BOWLS_TOP = clip_pt(BOWLS_AT[0], ALMS_TOP_Y + BOWL_TALL + BOWL_H * 2, BOWLS_AT[1], bz=-1)   # a stack of three's top
@@ -104,7 +109,7 @@ ALMS_GAP = 32.0                         # keeper to taker, middle to middle (the
 
 
 def pot_level_y(level):
-    """The stew's top (model y) at [level] of POT_LEVELS (0: empty, none shown)."""
+    """The stew's top (model y) at [level] of POT_LEVELS (0: empty, none shown): what the clips check the ladle by."""
     if level <= 0:
         return None
     return POT_FLOOR_Y + (POT_FULL_Y - POT_FLOOR_Y) * (level - 1) / (POT_LEVELS - 1)
@@ -137,7 +142,7 @@ def ladle_rest():
 
 # ================================================================== painting (32x: two texels to a model pixel)
 
-from PIL import Image, ImageDraw  # noqa: E402
+from PIL import Image, ImageDraw, ImageFilter  # noqa: E402
 from hdkit import (PAL, Canvas, grid, vnoise, fbm, rand, tone, ramp, bands, poly, seg_dist, disc, ellipse, rect,  # noqa: E402
                    blur, grow, edge, dist_in, light, cavity, outline, glint, bevel, sheet)
 import island_blockview as BV  # noqa: E402
@@ -610,43 +615,6 @@ def basket_iron():
 STEW_FRAMES = 8
 
 
-def stew_frames():
-    """The stew in the pot from above, its top an octagon (the pot's inside; the corners clear): thick and brown, bits
-    of carrot and peas and barley in it, a skin of fat that catches the light, and bubbles that swell and burst in
-    turn, one or two at a time, a loop of STEW_FRAMES."""
-    xs, ys = grid(T)
-    oct_ = np.abs(xs - 16) + np.abs(ys - 16) <= 16 * math.sqrt(2)          # the pot's inside: a regular octagon, apothem 16
-    base = 0.46 + 0.16 * (fbm(T, T, 6, 2001) - 0.5) + 0.14 * np.sin(xs * 0.5 + fbm(T, T, 9, 2003) * 4) * 0.5
-    rng = np.random.default_rng(2005)
-    bits = []
-    for _ in range(16):
-        bits.append((rng.uniform(3, 29), rng.uniform(3, 29), rng.choice(['carrot', 'pea', 'barley', 'meat']), rng.uniform(0.7, 1.4)))
-    bubbles = [(rng.uniform(6, 26), rng.uniform(6, 26), rng.uniform(0, 1), rng.uniform(1.4, 2.6)) for _ in range(6)]
-    sheet_ = Canvas(T, T * STEW_FRAMES)
-    for f in range(STEW_FRAMES):
-        u = f / STEW_FRAMES
-        t = base + 0.04 * np.sin(u * math.tau + xs * 0.3)
-        cv = Canvas(T)
-        cv.put(oct_, bands(STEW, t, 0.3))
-        for bx_, by_, kind, r in bits:
-            m = np.hypot(xs - bx_ - 0.4 * math.sin(u * math.tau), ys - by_) < r
-            col = {'carrot': (214, 110, 40), 'pea': (110, 146, 56), 'barley': (210, 190, 140), 'meat': (96, 48, 30)}[kind]
-            cv.put(m & oct_, col)
-        for bx_, by_, ph, r in bubbles:
-            g = (u - ph) % 1.0
-            if g < 0.55:
-                rr = r * (0.3 + g / 0.55 * 0.7)
-                d = np.hypot(xs - bx_, ys - by_)
-                ring = (d < rr) & (d > rr - 0.9) & oct_
-                cv.put(ring, STEW[4])
-                cv.put((d < rr - 0.9) & oct_, STEW[2])
-                cv.px(int(bx_ - rr * 0.4), int(by_ - rr * 0.4), STEW[5])
-            elif g < 0.66:
-                d = np.hypot(xs - bx_, ys - by_)
-                cv.put((d < r + 0.8) & (d > r - 0.4) & oct_, STEW[3])
-        sheet_.rgb[f * T:(f + 1) * T] = cv.rgb
-        sheet_.a[f * T:(f + 1) * T] = cv.a
-    return sheet_
 
 
 def pot_iron():
@@ -657,41 +625,66 @@ def pot_iron():
     return cv
 
 
-def bowl_side():
-    """A turned wooden bowl's side: the lathe's fine rings round it, its rim pale (the texture's top rows), darker as it
-    curves in under toward the foot."""
-    xs, ys = grid(T)
-    t = 0.6 + 0.07 * np.sin(ys * 2.6 + 0.5 * fbm(T, T, 6, 2201)) + 0.07 * (fbm(T, T, 4, 2203) - 0.5) - 0.012 * ys
-    t = np.where(ys < 1.0, t + 0.2, np.where(ys < 2.0, t - 0.08, t))
-    cv = Canvas(T)
-    cv.put(ALL, bands(BOWLWOOD, t, 0.3))
+
+
+
+
+
+
+TABLE_PARTS = ('left', 'middle', 'right')      # TablePart's ids, from the keeper's left (west) to their right (east)
+TABLE_Z = (1.0, 15.5)                          # the top's front edge (north, toward the hungry) and back (the keeper's)
+TABLE_UNDER = ALMS_TOP_Y - 1.6                 # the boards' underside
+TRESTLE_X = {'left': 1.6, 'right': 12.8}       # each end's trestle: its bearer's west side, in its own block (1.6 wide)
+RAIL_Y, RAIL_Z = (3.9, 5.1), (7.4, 8.6)        # the long rail between the trestles, low down along the table's middle
+
+
+def trestle_strip():
+    """The table's top from above, all three of its blocks (96 x 32 texels, the keeper's left at the left): three long
+    planed pine boards running its length, each its own tone with the grain wandering along it, a dark seam between
+    them; nailed down over the trestle at each end; scrubbed paler round the middle where the pot and the bowls stand,
+    with the pot's sooty ring and a stew stain or two."""
+    W, H = 3 * T, T
+    xs, ys = grid(W, H)
+    z0, z1 = TABLE_Z[0] * 2, TABLE_Z[1] * 2                  # the boards run from the front edge to the back, in texels
+    height = (z1 - z0) / 3.0
+    row = np.clip(np.floor((ys - z0) / height), 0, 2)
+    within = ys - z0 - row * height
+    t = 0.5 + 0.04 + 0.13 * (fbm(W, H, 5, 2401) - 0.5) \
+        + 0.08 * np.sin(ys * 2.1 + vnoise(W, H, 7, 2409) * 7.0 + row * 2.9 + 0.05 * xs)
+    t += 0.07 * np.sin(row * 4.7 + 1.3)
+    t = np.where(within < 1.0, t + 0.09, t)
+    t = np.where(within >= height - 1.0, t - 0.3, t)
+    rng = np.random.default_rng(2405)
+    for _ in range(5):                                       # knots, the grain bending round them
+        kx, ky = rng.uniform(6, W - 6), rng.uniform(z0 + 3, z1 - 3)
+        d = np.hypot((xs - kx) * 0.6, ys - ky)
+        t = np.where(d < 1.3, t - 0.26, np.where(d < 2.6, t + 0.05 * np.cos(d * 4), t))
+    scrub = np.exp(-((xs - W / 2) / 26.0) ** 2) * (fbm(W, H, 6, 2403) > 0.45)
+    t = t + 0.1 * scrub
+    cv = Canvas(W, H)
+    cv.put(np.ones((H, W), bool), bands(PINE, t, 0.24))
+    # The pot's foot has left a sooty ring where it stands (the middle block's POT_AT), and the ladle drips
+    px_, pz_ = (POT_AT[0] + 16.0) * 2, POT_AT[1] * 2
+    r = np.hypot(xs - px_, ys - pz_)
+    cv.over((np.abs(r - (POT_R + POT_WALL) * 2 + 0.6) < 0.9) & (rand(W, H, 2407) > 0.3), PINE[0], 0.35)
+    for sx, sy, sr in ((px_ - 9.0, pz_ - 6.0, 1.3), (px_ - 4.0, pz_ + 7.5, 0.9), ((BOWLS_AT[0] + 16.0) * 2 + 4.0, pz_ - 9.0, 1.1)):
+        cv.over(np.hypot(xs - sx, ys - sy) < sr, STEW[1], 0.4)
+    for bx in (TRESTLE_X['left'] + 0.8, 32.0 + TRESTLE_X['right'] + 0.8):    # nailed down over each trestle's bearer
+        for k in range(3):
+            nail(cv, int(round(bx * 2)) - 1, int(round(z0 + (k + 0.5) * height)) - 1)
     return cv
 
 
-def bowl_top():
-    """The top bowl's inside: a round hollow, in the rim's shadow on its upper left and catching the light on its lower
-    right, the lathe's rings round it, the pale rim with a dark line where it turns in."""
-    xs, ys = grid(T)
-    r = np.hypot(xs - 16, ys - 16) / 16
-    t = 0.44 + 0.2 * np.clip((xs + ys - 32) / 26, -1, 1) * np.clip(r * 1.4, 0, 1) + 0.05 * np.sin(r * 34)
-    t = np.where(r > 0.86, 0.8 + 0.04 * np.sin(r * 60), np.where(r > 0.78, 0.3, t))
-    cv = Canvas(T)
-    cv.put(ALL, bands(BOWLWOOD, t, 0.3))
-    return cv
-
-
-def ladle_wood():
-    """The ladle's turned pale wood (the props' PALE)."""
-    return wood(BOWLWOOD, 2301, vertical=True, checks=0, knots=0, lift=0.04, warp=2.0)
-
-
-def trestle_top():
-    """The table's top from above: three planed boards running across, cleats nailed under their ends, scrubbed pale
-    in the middle where the bowls go."""
-    cv = boards(PINE, 2401, height=11, gap=0.3, lift=0.04, nails=[(2, 4), (2, 15), (2, 26), (29, 4), (29, 15), (29, 26)])
-    xs, ys = grid(T)
-    cv.over((np.abs(xs - 16) < 9) & (fbm(T, T, 6, 2403) > 0.5), PINE[5], 0.18)
-    return cv
+def trestle_tops():
+    """The strip cut into its three blocks' textures, alms_top_left, _middle and _right."""
+    s = trestle_strip()
+    out = {}
+    for i, part in enumerate(TABLE_PARTS):
+        cv = Canvas(T)
+        cv.rgb = s.rgb[:, i * T:(i + 1) * T].copy()
+        cv.a = s.a[:, i * T:(i + 1) * T].copy()
+        out[f'alms_top_{part}'] = cv
+    return out
 
 
 # ---------------------------------------------------------------- the "To let" board, the slate
@@ -917,77 +910,35 @@ def finish(elements, particle, ao=True):
 
 # ---------------------------------------------------------------- the alms table
 
-BOWL_YAW = (0.0, 17.0, -11.0, 28.0)     # each bowl on the stack turned its own way, so the stack looks stacked
-
-
-def alms_table():
-    """A trestle table: three pine boards on two oak trestles (a beam under the top, two splayed legs and a stretcher
-    each), the soup pot on the keeper's right: black iron, eight-sided, a lip round its rim and a lug at each side. The
-    stew (alms_stew_<level>), the bowls (alms_bowl_<n>) and the ladle (alms_ladle) are laid on by the blockstate."""
-    els = [cube((0.25, ALMS_TOP_Y - 1.5, 1.5), (15.75, ALMS_TOP_Y, 15.5), {'up': 'trestle', '*': 'pine'})]
-    legs = ('down', 'north', 'south', 'west', 'east')
-    for x0 in (1.6, 12.8):
-        els.append(cube((x0, 10.2, 2.4), (x0 + 1.6, ALMS_TOP_Y - 1.5, 14.6), 'oak', legs))
+def alms_trestle(part):
+    """One of the alms table's three blocks (TablePart [part], authored facing north as its blockstate turns it): the
+    three long pine boards of its top running on from block to block, nailed down to a trestle under each end (a bearer
+    under the boards, two splayed legs and a low cross-stretcher), and a long rail low down tying the two trestles
+    together, through each and wedged on its far side. The pot, its stew, the bowls and the ladle on the middle block
+    are the renderer's (WorksMesh.alms())."""
+    z0, z1 = TABLE_Z
+    x0 = 0.5 if part == 'left' else 0.0
+    x1 = 15.5 if part == 'right' else 16.0
+    ends = (['west'] if part == 'left' else []) + (['east'] if part == 'right' else [])
+    top = {'up': f'alms_top_{part}', 'west': 'pine_end', 'east': 'pine_end', '*': 'pine'}
+    els = [cube((x0, TABLE_UNDER, z0), (x1, ALMS_TOP_Y, z1), top, ['up', 'down', 'north', 'south'] + ends)]
+    r0 = TRESTLE_X['left'] - 0.9 if part == 'left' else 0.0
+    r1 = TRESTLE_X['right'] + 1.6 + 0.9 if part == 'right' else 16.0
+    rail = cube((r0, RAIL_Y[0], RAIL_Z[0]), (r1, RAIL_Y[1], RAIL_Z[1]), {'west': 'oak_end', 'east': 'oak_end', '*': 'oak_h'},
+                ['up', 'down', 'north', 'south'] + ends)
+    els.append(rail)
+    if part in TRESTLE_X:
+        bx = TRESTLE_X[part]
+        legs = ('down', 'north', 'south', 'west', 'east')
+        els.append(cube((bx, 10.2, 1.8), (bx + 1.6, TABLE_UNDER, 14.7), {'north': 'oak_end', 'south': 'oak_end', '*': 'oak_h'}, legs))
         for zc, ang in ((3.4, 10.0), (12.6, -10.0)):
-            els.append(cube((x0 + 0.3, -0.3, zc - 0.65), (x0 + 1.3, 10.3, zc + 0.65), 'oak', legs, rot=(ang, 0.0, 0.0),
-                            origin=(x0 + 0.8, 10.2, zc)))
-        els.append(cube((x0 + 0.4, 3.0, 2.2), (x0 + 1.2, 3.9, 13.8), 'oak', ('down', 'up', 'west', 'east')))
-    cx, cz = POT_AT
-    ro = POT_R + POT_WALL
-    els += disc(cx, cz, ALMS_TOP_Y, POT_INSIDE_Y, ro, 'pot', top='pot_in', faces=('up',) + SIDES)
-    els += ring(cx, cz, ALMS_TOP_Y, POT_RIM_Y - 0.7, ro, POT_WALL, 'pot', inner='pot_in', top=False)
-    els += ring(cx, cz, POT_RIM_Y - 0.7, POT_RIM_Y, ro + 0.3, POT_WALL + 0.4, 'pot', top=True, bottom=True)
-    for sx in (-1, 1):
-        xa, xb = cx + sx * (ro - 0.1), cx + sx * (ro + 0.9)
-        els.append(cube((min(xa, xb), 15.6, cz - 0.9), (max(xa, xb), 16.6, cz + 0.9), 'pot'))
-    return finish(els, 'pot')
-
-
-def alms_stew(level):
-    """The stew's top in the pot at [level]: one face, its corners cut away where the pot's eight sides come in."""
-    y = pot_level_y(level)
-    cx, cz = POT_AT
-    r = POT_R
-    return finish([cube((cx - r, y, cz - r), (cx + r, y, cz + r), 'stew', ('up',), uv=(0, 0, 16, 16))], 'stew')
-
-
-def alms_bowl(i):
-    """The [i]th bowl up the stack (from 0): turned wood, eight-sided as the pot is, a foot ring under it, its hollow on
-    top (only the top one's shows)."""
-    cx, cz = BOWLS_AT
-    y0 = ALMS_TOP_Y + BOWL_H * i
-    yaw = BOWL_YAW[i]
-    els = []
-    for k, e in enumerate(disc(cx, cz, y0, y0 + 0.45, 1.35, 'bowl_side', faces=('down',) + SIDES, turn=yaw)):
-        for d, f in e['faces'].items():
-            f['uv'] = [4, 4, 6.7, 6.7] if d == 'down' else [0, 4, 2.7, 4.45]
-        els.append(e)
-    for k, e in enumerate(disc(cx, cz, y0 + 0.45, y0 + BOWL_TALL, 2.25, 'bowl_side', top='bowl_top', turn=yaw)):
-        for d, f in e['faces'].items():
-            f['uv'] = {'up': [0, 0, 16, 16], 'down': [2, 2, 6.5, 6.5]}.get(d, [0, 0, 4.5, round(BOWL_TALL - 0.45, 3)])
-        els.append(e)
-    return finish(els, 'bowl_side')
-
-
-def ladle_elements():
-    """The ladle standing in the pot (ladle_rest()), its cubes turned from the keeper's clip space into the table's model
-    (the block north of them): a point q of the ladle is at A + S R (q - its bowl's middle), S = diag(-1, -1, 1)."""
-    R, P = ladle_rest()
-    S = np.diag([-1.0, -1.0, 1.0])
-    A = np.array([8.0 - P[0], 24.0 - P[1], P[2] + 24.0])
-    Re = S @ R @ S
-    els = []
-    for o, size, name in LADLE_CUBES:
-        q0 = np.array(o, float)
-        q1 = q0 + np.array(size, float)
-        e0, e1 = A + S @ (q0 - LADLE_BOWL_PT), A + S @ (q1 - LADLE_BOWL_PT)
-        uv = {'*': (0, 0, size[0], size[1])} if name == 'handle' else None
-        els.append(cube(np.minimum(e0, e1), np.maximum(e0, e1), 'ladle', SIX, uv=uv, rot=Re, origin=A))
-    return els
-
-
-def alms_ladle():
-    return finish(ladle_elements(), 'ladle')
+            els.append(cube((bx + 0.3, -0.3, zc - 0.65), (bx + 1.3, 10.3, zc + 0.65), 'oak', legs, rot=(ang, 0.0, 0.0),
+                            origin=(bx + 0.8, 10.2, zc)))
+        els.append(cube((bx + 0.4, 3.0, 2.2), (bx + 1.2, RAIL_Y[0], 13.8), 'oak_h'))
+        # The rail's wedge, driven down through it on the trestle's far side
+        wx = bx - 0.75 if part == 'left' else bx + 1.6 + 0.25
+        els.append(cube((wx, RAIL_Y[0] - 0.7, 7.55), (wx + 0.5, RAIL_Y[1] + 0.9, 8.45), 'oak_h'))
+    return finish(els, 'pine')
 
 
 # ---------------------------------------------------------------- the beacon brazier
@@ -1128,19 +1079,48 @@ def works_plaque(covered):
 
 # ---------------------------------------------------------------- the "To let" board
 
-TO_LET_PIVOT = (9.5, 20.8, 8.0)        # the line through its two hooks, which the board swings from (along x)
+TO_LET_PIVOT = (8.0, 20.0, 4.6)        # the line through its two hooks, which the board swings from (along x)
+TO_LET_BAR = (20.4, 21.6)               # the crossbar's underside and top
+TO_LET_TEX = (128, 64)                  # to_let_board.png (the block's): the board's faces at TO_LET_SCALE texels a pixel
+TO_LET_UV = {'north': (0, 0, 60, 39), 'south': (64, 0, 124, 39), 'up': (0, 42, 60, 47), 'down': (64, 42, 124, 47),
+             'west': (124, 0, 128, 39), 'east': (124, 0, 128, 39)}     # ... where each face of the board is in it (texels)
 
 
-def to_let_board():
-    """A stake knocked in by the door, an arm out from its top on a brace, two iron hooks under the arm: the board itself
-    hangs from the hooks and swings in the wind (the renderer's, WorksMesh.toLet())."""
+def to_let_board(board):
+    """A post knocked in beside the door (in the middle of its block, where the trim's post shape is), a bracket out
+    from its top toward the street carrying a crossbar, a knee brace under the bracket, and two iron hooks under the
+    crossbar. The board hangs from the hooks with its foot clear of the post: still, in this model (as the festival trim
+    the board is draws it), or, without the board ([board] False), left to a renderer to hang and swing in the wind
+    (WorksMesh.toLet() at WorksArt.TO_LET_X, _Y, _Z)."""
     px, py, pz = TO_LET_PIVOT
-    els = [cube((1.5, 0.0, 7.0), (3.5, 23.0, 9.0), {'up': 'oak_end', '*': 'oak'}),
-           cube((1.5, 21.4, 7.25), (15.0, 23.0, 8.75), {'east': 'oak_end', '*': 'oak'}),
-           along((3.4, 15.0, 8.0), (8.0, 21.5, 8.0), 1.0, 1.0, 'oak')]
+    b0, b1 = TO_LET_BAR
+    els = [cube((7.0, 0.0, 7.0), (9.0, b1 + 0.4, 9.0), {'up': 'oak_end', 'down': 'oak_end', '*': 'oak'}),
+           cube((7.2, b0 + 0.1, pz + 0.4), (8.8, b1 - 0.1, 7.0), 'oak_h', ('down', 'up', 'west', 'east')),
+           cube((2.4, b0, pz - 0.7), (13.6, b1, pz + 0.7), {'west': 'oak_end', 'east': 'oak_end', '*': 'oak_h'}),
+           along((8.0, b0 - 4.2, 7.15), (8.0, b0 + 0.15, pz + 1.3), 0.9, 0.8, 'oak')]
     for x in (px - 3.5, px + 3.5):
-        els.append(cube((x - 0.4, py - 0.2, pz - 0.4), (x + 0.4, 21.4, pz + 0.4), 'iron'))
+        els.append(cube((x - 0.35, py - 0.25, pz - 0.35), (x + 0.35, b0, pz + 0.35), 'iron'))
+    if board:
+        w, h, d = TO_LET_BOARD
+        W, H = TO_LET_TEX
+        uv = {f: (u0 * 16.0 / W, v0 * 16.0 / H, u1 * 16.0 / W, v1 * 16.0 / H) for f, (u0, v0, u1, v1) in TO_LET_UV.items()}
+        top = py - 0.8
+        els.append(cube((px - w / 2, top - h, pz - d / 2), (px + w / 2, top, pz + d / 2), 'to_let_board', uv=uv))
+        for x in (px - 3.5, px + 3.5):           # the rings the board hangs by, as WorksMesh.toLet()'s
+            els.append(cube((x - 0.2, top - 0.2, pz - 0.2), (x + 0.2, py, pz + 0.2), 'iron'))
     return finish(els, 'oak')
+
+
+def to_let_block_texture():
+    """The board's faces for the block model (to_let_board.png): both lettered as WorksMesh.toLet()'s, its edges green."""
+    W, H = TO_LET_TEX
+    img = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    paint = to_let_painter('t_board')
+    names = {'north': 'front', 'south': 'back', 'up': 'top', 'down': 'bottom', 'west': 'right'}
+    for f, name in names.items():
+        u0, v0, u1, v1 = TO_LET_UV[f]
+        paint(img, name, u0, v0, u1 - u0, v1 - v0)
+    return Canvas.of(img)
 
 
 # ---------------------------------------------------------------- the yard's displays: what they stand on
@@ -1193,18 +1173,15 @@ FIRES = ('out', 'lit', 'flare')
 
 def models():
     """Every block model: its name under models/block/works/ and its JSON."""
-    out = {'alms_table': alms_table(), 'alms_ladle': alms_ladle()}
-    for lv in range(1, POT_LEVELS + 1):
-        out[f'alms_stew_{lv}'] = alms_stew(lv)
-    for i in range(BOWLS_MAX):
-        out[f'alms_bowl_{i + 1}'] = alms_bowl(i)
+    out = {f'alms_table_{p}': alms_trestle(p) for p in TABLE_PARTS}
     for f in FIRES:
         out['works_beacon' + ('' if f == 'out' else '_' + f)] = works_beacon(f)
     out['works_mortar_tub'] = works_mortar_tub()
     out['works_post'] = works_post()
     out['works_plaque'] = works_plaque(False)
     out['works_plaque_covered'] = works_plaque(True)
-    out['to_let_board'] = to_let_board()
+    out['to_let_board'] = to_let_board(True)
+    out['to_let_post'] = to_let_board(False)
     for s in STUFF:
         out[f'works_yard_{s}'] = yard_base(s)
     out['works_hoist'] = works_hoist()
@@ -1220,27 +1197,16 @@ def _variant(name, y):
 
 
 def blockstates():
-    """Every block's blockstate (blockstates/<id>.json), by its proposed id."""
+    """The blockstates (blockstates/<id>.json) of the works' own blocks, by their proposed ids (Part B's). The alms
+    table's and the "To let" board's blocks are Part D2's, with blockstates of their own (alms_table.json, and
+    festival_trim.json's look=to_let): works-art.md says which of these models they take."""
     out = {}
-    for bid in ['works_post', 'works_mortar_tub', 'works_hoist', 'to_let_board'] + [f'works_yard_{s}' for s in STUFF]:
+    for bid in ['works_post', 'works_mortar_tub', 'works_hoist'] + [f'works_yard_{s}' for s in STUFF]:
         out[bid] = {'variants': {f'facing={f}': _variant(bid, y) for f, y in FACING_Y}}
     out['works_plaque'] = {'variants': {f'covered={c},facing={f}': _variant('works_plaque' + ('_covered' if c == 'true' else ''), y)
                                         for c in ('false', 'true') for f, y in FACING_OUT_Y}}
     out['works_beacon'] = {'variants': {f'facing={f},fire={fi}': _variant('works_beacon' + ('' if fi == 'out' else '_' + fi), y)
                                         for f, y in FACING_Y for fi in FIRES}}
-    parts = []
-    for f, y in FACING_Y:
-        parts.append({'when': {'facing': f}, 'apply': _variant('alms_table', y)})
-    for f, y in FACING_Y:
-        for lv in range(1, POT_LEVELS + 1):
-            parts.append({'when': {'facing': f, 'level': str(lv)}, 'apply': _variant(f'alms_stew_{lv}', y)})
-    for f, y in FACING_Y:
-        for i in range(1, BOWLS_MAX + 1):
-            parts.append({'when': {'facing': f, 'bowls': '|'.join(str(n) for n in range(i, BOWLS_MAX + 1))},
-                          'apply': _variant(f'alms_bowl_{i}', y)})
-    for f, y in FACING_Y:
-        parts.append({'when': {'facing': f, 'ladle': 'true'}, 'apply': _variant('alms_ladle', y)})
-    out['alms_table'] = {'multipart': parts}
     return out
 
 
@@ -1259,9 +1225,11 @@ def block_textures():
     """Every texture under textures/block/works/: name -> (Canvas, its .mcmeta's animation or None)."""
     still = {
         'oak': lambda: wood(OAK, 101),
+        'oak_h': lambda: wood(OAK, 111, vertical=False, checks=1),
         'oak_end': lambda: end_grain(OAK, 103),
         'pine': lambda: wood(PINE, 105, vertical=False, checks=1),
-        'trestle': trestle_top,
+        'pine_end': lambda: end_grain(PINE, 109, cx=10.0, cy=40.0),
+        'to_let_board': to_let_block_texture,
         'pallet': lambda: boards(FRESH, 107, height=8, gap=0.3,
                                  nails=[(2, 3), (28, 3), (2, 11), (28, 11), (2, 19), (28, 19), (2, 27), (28, 27)]),
         'post_board': post_board,
@@ -1269,15 +1237,14 @@ def block_textures():
         'bronze': bronze_metal, 'plaque': plaque_face, 'velvet': velvet,
         'staves': tub_staves, 'hoop': lambda: iron(1611, rust=0.25),
         'brazier': basket_iron, 'coals': lambda: coals(False), 'char': charred,
-        'pot': pot_iron, 'pot_in': pot_inside, 'bowl_side': bowl_side, 'bowl_top': bowl_top, 'ladle': ladle_wood,
         'straw': straw_tex, 'iron': iron,
     }
     out = {k: (f(), None) for k, f in still.items()}
+    out.update({k: (cv, None) for k, cv in trestle_tops().items()})
     out['mortar'] = (mortar_frames(), {'frametime': 6, 'interpolate': True})
     out['coals_lit'] = (strip([coals(True, f) for f in range(FLAME_FRAMES)]), {'frametime': 3, 'interpolate': True})
     out['flame'] = (flame_frames(), {'frametime': 2})
     out['flare'] = (flame_frames(True), {'frametime': 1})
-    out['stew'] = (stew_frames(), {'frametime': 3, 'interpolate': True})
     return out
 
 
@@ -1320,6 +1287,8 @@ TILE_PAINTERS = {
     'rope_v': lambda: rope_tex(3017, vertical=True),
     'rope_h': lambda: rope_tex(3019, vertical=False),
     'straw': lambda: straw_tex(3021),
+    'pot': pot_iron,
+    'pot_in': pot_inside,
 }
 _TILES = {}
 
@@ -1517,22 +1486,30 @@ def to_let_painter(key):
 
 
 SLATE_BOARD = (11.0, 8.0, 0.5)          # the slate in its frame: across, high, thick
+SLATE_FRAME = 0.75                      # px of its frame round the slate's face
+
+
+SLATE_GHOSTS = [('Eggs 2d', 0.2, 3.3), ('Fresh peas', 0.17, 6.0)]     # old chalk wiped off it, still faintly there
 
 
 def slate_painter(key):
-    """The chalked slate: dark slate, old chalk rubbed into it in smears, "Nothing" and "today" in the board's chalk
-    hand; its frame plain pine."""
+    """The slate a stall-keeper chalks on: dark slate, rubbed clean with a cloth, but old chalk is never quite gone,
+    the ghosts of an earlier day's words (SLATE_GHOSTS) and the cloth's smears faint on it, for "Nothing today" to be
+    chalked over (the renderer's font, as the language has it); its frame plain pine, its back boarded."""
     def fn(face, w, h, rng):
-        if face not in ('front', 'back'):
+        if face != 'front':
             return tt.shade_edges(from_tile('pine_h', w, h, rng), 0.15)
-        if face == 'back':
-            return tt.shade_edges(from_tile('pine_h', w, h, rng), 0.15)
-        a = board_face([('Nothing', 0.22, 3.55), ('today', 0.22, 6.1)], w, h, TO_LET_SCALE, SLATE,
-                       np.array((236, 234, 226), float), 2601, ML.CHALK)
+        ghost = board_face(SLATE_GHOSTS, w, h, TO_LET_SCALE, SLATE, np.array((236, 234, 226), float), 2601, ML.CHALK)
+        ghost = np.asarray(Image.fromarray(np.clip(ghost[..., :3], 0, 255).astype(np.uint8), 'RGB')
+                           .filter(ImageFilter.GaussianBlur(TO_LET_SCALE * 0.3)), float)
+        a = board_face([], w, h, TO_LET_SCALE, SLATE, np.array((236, 234, 226), float), 2601, ML.CHALK)
+        a[..., :3] = tt.mix(a[..., :3], ghost, 0.08)
         ys, xs = np.mgrid[0:h, 0:w]
-        smear = (fbm(max(w, h), max(w, h), 10, 2603)[:h, :w] > 0.62)
-        a[..., :3] = np.where(smear[..., None], tt.mix(a[..., :3], (120, 124, 130), 0.25), a[..., :3])
-        frame = np.minimum.reduce([xs, ys, w - 1 - xs, h - 1 - ys]) < TO_LET_SCALE * 0.75
+        n = max(w, h)
+        swipe = np.sin((xs * 0.9 + ys * 0.35) / TO_LET_SCALE * 1.7 + fbm(n, n, 8, 2605)[:h, :w] * 5.0)
+        smear = (fbm(n, n, 10, 2603)[:h, :w] > 0.58) & (swipe > 0.2)
+        a[..., :3] = np.where(smear[..., None], tt.mix(a[..., :3], (120, 124, 130), 0.18), a[..., :3])
+        frame = np.minimum.reduce([xs, ys, w - 1 - xs, h - 1 - ys]) < TO_LET_SCALE * SLATE_FRAME
         a[..., :3] = np.where(frame[..., None], from_tile('pine_h', w, h, rng)[..., :3], a[..., :3])
         return tt.shade_edges(a, 0.1)
     return tt.painter(key, fn, light=False)
@@ -1636,6 +1613,197 @@ def slate_parts():
     return [P('slate', [C((-w / 2, -h, -d / 2), (w, h, d), 's_slate', slate_painter('s_slate'))])]
 
 
+# ---------------------------------------------------------------- the alms table's pot, stew, bowls and ladle
+
+import living_props as lp  # noqa: E402
+
+POT_WALL_TOP = POT_RIM_Y - 0.7 - ALMS_TOP_Y        # the pot's walls' top over its foot, under the lip
+STEW_TICKS = 3.0                                   # ticks each of the STEW_FRAMES shows, round and round
+ALMS_SCALE = 4                                     # alms.png's texels to a declared one
+
+
+def euler_zyx(R):
+    """(x, y, z) degrees with R = Rz(z) Ry(y) Rx(x): a ModelPart's rotation, as PartPose turns it."""
+    b = math.asin(max(-1.0, min(1.0, -R[2, 0])))
+    if abs(math.cos(b)) > 1e-6:
+        x, z = math.atan2(R[2, 1], R[2, 2]), math.atan2(R[1, 0], R[0, 0])
+    elif R[2, 0] > 0:
+        x, z = math.atan2(-R[0, 1], R[1, 1]), 0.0
+    else:
+        x, z = math.atan2(R[0, 1], R[1, 1]), 0.0
+    out = (math.degrees(x), math.degrees(b), math.degrees(z))
+    assert np.abs(Rz(out[2]) @ Ry(out[1]) @ Rx(out[0]) - R).max() < 1e-9, 'euler_zyx'
+    return out
+
+
+def stew_frame(f, w, h):
+    """Frame [f] of STEW_FRAMES of the stew in the pot from above, painted at [w] x [h] texels, its octagon (the pot's
+    inside) filling the rect, the corners clear: thick and brown, bits of carrot and peas and barley and meat in it
+    drifting a little, and bubbles that swell and burst in turn, one or two at a time."""
+    n = max(w, h)
+    k = n / T
+    xs, ys = grid(n)
+    c = n / 2.0
+    oct_ = (np.abs(xs - c) + np.abs(ys - c) <= c * math.sqrt(2)) & (xs < n) & (ys < n)
+    base = 0.46 + 0.16 * (fbm(n, n, 6 * k, 2001) - 0.5) + 0.14 * np.sin(xs / k * 0.5 + fbm(n, n, 9 * k, 2003) * 4) * 0.5
+    rng = np.random.default_rng(2005)
+    bits = [(rng.uniform(3, 29) * k, rng.uniform(3, 29) * k, rng.choice(['carrot', 'pea', 'barley', 'meat']),
+             rng.uniform(0.7, 1.4) * k) for _ in range(16)]
+    bubbles = [(rng.uniform(6, 26) * k, rng.uniform(6, 26) * k, rng.uniform(0, 1), rng.uniform(1.4, 2.6) * k) for _ in range(6)]
+    u = f / STEW_FRAMES
+    t = base + 0.04 * np.sin(u * math.tau + xs / k * 0.3)
+    a = np.zeros((n, n, 4))
+    a[..., :3] = bands(STEW, t, 0.3)
+    for bx_, by_, kind, r in bits:
+        m = np.hypot(xs - bx_ - 0.4 * k * math.sin(u * math.tau), ys - by_) < r
+        a[m] = list({'carrot': (214, 110, 40), 'pea': (110, 146, 56), 'barley': (210, 190, 140), 'meat': (96, 48, 30)}[kind]) + [0]
+    for bx_, by_, ph, r in bubbles:
+        g = (u - ph) % 1.0
+        d = np.hypot(xs - bx_, ys - by_)
+        if g < 0.55:
+            rr = r * (0.3 + g / 0.55 * 0.7)
+            a[(d < rr) & (d > rr - 0.9 * k), :3] = STEW[4]
+            a[d < rr - 0.9 * k, :3] = STEW[2]
+            a[(np.abs(xs - (bx_ - rr * 0.4)) < 0.5 * k) & (np.abs(ys - (by_ - rr * 0.4)) < 0.5 * k), :3] = STEW[5]
+        elif g < 0.66:
+            a[(d < r + 0.8 * k) & (d > r - 0.4 * k), :3] = STEW[3]
+    a[..., 3] = np.where(oct_, 255, 0)
+    return a[:h, :w]
+
+
+def stew_painter(f):
+    def fn(face, w, h, rng):
+        return stew_frame(f, w, h) if face == 'top' else None
+    return tt.painter(f'a_stew_{f}', fn, light=False)
+
+
+def ripple_painter(key):
+    """A ring on the broth where the ladle goes in, or a gift: pale and greasy, thinning to nothing at its edges."""
+    def fn(face, w, h, rng):
+        if face != 'top':
+            return None
+        U, V = tt.uv(w, h)
+        r = np.hypot(U - 0.5, V - 0.5) * 2
+        a = tt.solid(w, h, STEW[4])
+        a[..., :3] = tt.mix(a[..., :3], STEW[5], (rng.random((h, w)) < 0.3)[..., None] * 0.5)
+        a[..., 3] = np.where(np.abs(r - 0.84) < 0.12, 255, 0)
+        return a
+    return tt.painter(key, fn, light=False)
+
+
+def pot_painter(key, inner=None):
+    """The pot's iron: sooty black outside, browner where it's been scrubbed; the face [inner] its inside, blacker, the
+    stew's crust on it."""
+    def fn(face, w, h, rng):
+        a = from_tile('pot_in' if face == inner else 'pot', w, h, rng)
+        return tt.shade_edges(a, 0.15)
+    return tt.painter(key, fn)
+
+
+def pot_floor_painter(key):
+    """The pot's floor, seen when it's scraped empty: its inside's iron, an octagon to the walls' (tucked under them,
+    never past them), the corners clear."""
+    def fn(face, w, h, rng):
+        if face != 'top':
+            return None
+        a = from_tile('pot_in', w, h, rng)
+        U, V = tt.uv(w, h)
+        a[..., 3] = np.where(np.abs(U - 0.5) + np.abs(V - 0.5) <= 0.5 * math.sqrt(2), 255, 0)
+        return a
+    return tt.painter(key, fn)
+
+
+def alms_parts():
+    """The alms table's pieces, each standing on the middle of its underside unless it says: "pot" (black iron,
+    eight-sided as its walls are two squares of four, the second turned 45 degrees in its child "pot45"; a lip round its
+    rim and a lug each side), "stew_0" to "stew_7" (the stew's top, its frames, an octagon fitting the pot's inside: the
+    renderer shows one at a time), "ripple" (a ring on the stew's top, 4 px across, for the renderer to spread), "drop"
+    (a splash of stew, about its middle), "bowl" (an empty bowl as LADLE's keeper takes it up: the held one's shape and
+    paint), "bowl_under" (one under it on the stack, a hair bigger all round so the two never fight) and "ladle" (as it
+    stands in the pot: its bowl's middle at the origin, turned as it leans there)."""
+    ro = POT_R + POT_WALL
+    side = 2.0 * ro * math.tan(math.pi / 8)
+    lip_r = ro + 0.3
+    lip_side = 2.0 * lip_r * math.tan(math.pi / 8)
+    floor_h = POT_INSIDE_Y - ALMS_TOP_Y
+    lip0, lip1 = -(POT_RIM_Y - ALMS_TOP_Y), -POT_WALL_TOP
+
+    def walls(tag):
+        hw = POT_WALL_TOP
+        out = [C((-side / 2, -hw, -ro), (side, hw, POT_WALL), f'a_pot_wall_n{tag}', pot_painter(f'a_pot_wall_n{tag}', 'back'), ['front', 'back']),
+               C((-side / 2, -hw, ro - POT_WALL), (side, hw, POT_WALL), f'a_pot_wall_s{tag}', pot_painter(f'a_pot_wall_s{tag}', 'front'), ['front', 'back']),
+               C((-ro, -hw, -side / 2), (POT_WALL, hw, side), f'a_pot_wall_w{tag}', pot_painter(f'a_pot_wall_w{tag}', 'left'), ['right', 'left']),
+               C((ro - POT_WALL, -hw, -side / 2), (POT_WALL, hw, side), f'a_pot_wall_e{tag}', pot_painter(f'a_pot_wall_e{tag}', 'right'), ['right', 'left'])]
+        lt = 1.0
+        out += [C((-lip_side / 2, lip0, -lip_r), (lip_side, lip1 - lip0, lt), f'a_pot_lip_n{tag}', pot_painter(f'a_pot_lip_n{tag}')),
+                C((-lip_side / 2, lip0, lip_r - lt), (lip_side, lip1 - lip0, lt), f'a_pot_lip_s{tag}', pot_painter(f'a_pot_lip_s{tag}')),
+                C((-lip_r, lip0, -lip_side / 2), (lt, lip1 - lip0, lip_side), f'a_pot_lip_w{tag}', pot_painter(f'a_pot_lip_w{tag}')),
+                C((lip_r - lt, lip0, -lip_side / 2), (lt, lip1 - lip0, lip_side), f'a_pot_lip_e{tag}', pot_painter(f'a_pot_lip_e{tag}'))]
+        return out
+    f = ro - 0.3
+    floor = C((-f, -floor_h, -f), (2 * f, 0.0, 2 * f), 'a_pot_floor', pot_floor_painter('a_pot_floor'), ['top'])
+    lug_y = -(16.6 - ALMS_TOP_Y)
+    lugs = [C((ro - 0.1, lug_y, -0.9), (1.0, 1.0, 1.8), 'a_pot_lug0', pot_painter('a_pot_lug0')),
+            C((-ro - 0.9, lug_y, -0.9), (1.0, 1.0, 1.8), 'a_pot_lug1', pot_painter('a_pot_lug1'))]
+    pot = P('pot', walls('') + lugs + [floor], children=[P('pot45', walls('45'), rot=(0.0, 45.0, 0.0))])
+    stews = [P(f'stew_{f}', [C((-POT_R, 0.0, -POT_R), (2 * POT_R, 0.0, 2 * POT_R), f'a_stew_{f}', stew_painter(f), ['top'])])
+             for f in range(STEW_FRAMES)]
+    ripple = P('ripple', [C((-2.0, 0.0, -2.0), (4.0, 0.0, 4.0), 'a_ripple', ripple_painter('a_ripple'), ['top'])])
+    drop = P('drop', [C((-0.3, -0.3, -0.3), (0.6, 0.6, 0.6), 'a_drop',
+                        tt.painter('a_drop', lambda face, w, h, rng: tt.mix(tt.solid(w, h, STEW[3]), (214, 110, 40, 255),
+                                                                         (rng.random((h, w, 1)) < 0.2) * 0.6)))])
+    bw = BOWL_W
+    bowl = P('bowl', [C((-bw / 2, -BOWL_TALL, -bw / 2), (bw, BOWL_TALL, bw), 'a_bowl', lp.empty_bowl_painter('a_bowl'))])
+    under = Cube((-bw / 2, -BOWL_TALL, -bw / 2), (bw, BOWL_TALL, bw), lp.empty_bowl_painter('a_bowl_under'), inflate=0.1,
+                 name='a_bowl_under')
+    under.share = None
+    bowl_under = P('bowl_under', [under])
+    R, _ = ladle_rest()
+    lb = np.asarray(LADLE_BOWL_PT, float)
+    (ho, hs, _), (bo, bs, _) = LADLE_CUBES
+    ladle = P('ladle', [C(tuple(np.asarray(ho) - lb), hs, 'a_ladle_handle', tt.wood_painter('a_ladle_handle', tt.PALE, tt.PALE_D, tt.PALE_L, 'y')),
+                        C(tuple(np.asarray(bo) - lb), bs, 'a_ladle_bowl', lp.ladle_bowl_painter('a_ladle_bowl', False))],
+              rot=euler_zyx(R))
+    return [pot] + stews + [ripple, drop, bowl, bowl_under, ladle]
+
+
+RIPPLE_TICKS = 18.0                     # the ladle's ripple spreading over the stew
+SPLASH_TICKS = 14.0                     # a gift's ring
+SPLASH_DROPS = 6                        # ... and its drops: thrown up SPLASH_UP px a tick, falling back SPLASH_FALL a tick
+SPLASH_UP, SPLASH_FALL, SPLASH_OUT = 0.55, 0.04, 0.16      # a tick, and going out SPLASH_OUT px a tick
+POT_SHAPE = (POT_AT[0] - POT_R - POT_WALL - 0.9, ALMS_TOP_Y, POT_AT[1] - POT_R - POT_WALL - 0.3, 16.0, POT_RIM_Y,
+             POT_AT[1] + POT_R + POT_WALL + 0.3)
+
+
+def stew_y(fill):
+    return POT_FLOOR_Y + (POT_FULL_Y - POT_FLOOR_Y) * min(1.0, max(0.0, fill))
+
+
+def ripple_scale(age):
+    u = min(1.0, max(0.0, age / RIPPLE_TICKS))
+    return 0.36 + 1.6 * (1 - (1 - u) ** 2)
+
+
+def splash_scale(age):
+    u = min(1.0, max(0.0, age / SPLASH_TICKS))
+    return 0.5 + 1.5 * (1 - (1 - u) ** 2)
+
+
+def splash_drop(j, age):
+    up = SPLASH_UP * age - SPLASH_FALL * age * age
+    if age <= 0 or up < 0:
+        return None
+    a = math.radians(j * 60.0 + 23.0)
+    out = 0.4 + SPLASH_OUT * age
+    return np.array([out * math.cos(a), up, out * math.sin(a)])
+
+
+def ladle_rest_at():
+    """Where the standing ladle's bowl's middle is in the middle block's model space (px): "ladle" is drawn there."""
+    _, Pc = ladle_rest()
+    return np.array([8.0 - Pc[0], 24.0 - Pc[1], Pc[2] + 24.0])
+
+
 class Mesh:
     """One LayerDefinition of WorksMesh: its parts, its texture's declared size and the scale it's painted at."""
 
@@ -1717,7 +1885,14 @@ def meshes():
              'The "To let" board, "board", hanging from its rings\' tops at the origin (the line through the hooks), its '
              'lettered face toward -z (both faces are lettered).'),
         Mesh('slate', 'slate', slate_parts(), 32, 16, TO_LET_SCALE,
-             'The chalked slate, "slate", standing on the middle of its foot, its face toward -z.'),
+             'The slate in its frame, "slate", standing on the middle of its foot, its face toward -z: rubbed clean but '
+             'for the ghosts of old chalk, for the words to be chalked on (client/streets/StreetSlate writes them).'),
+        Mesh('alms', 'alms', alms_parts(), 128, 64, ALMS_SCALE,
+             'The alms table\'s pieces on its middle block, placed by [WorksArt]\'s alms numbers: "pot" (its foot\'s '
+             'middle at the origin), "stew_0" to "stew_7" (the stew\'s top, a frame each: one at a time), "ripple" '
+             '(a ring on the stew 4 px across, to spread), "drop" (a splash, about its middle), "bowl" (the top of the '
+             'stack: an empty bowl as LADLE takes it up), "bowl_under" (each under it, a hair bigger) and "ladle" (as '
+             'it stands in the pot: drawn at [WorksArt.LADLE_REST]).'),
     ]
 
 
@@ -2352,6 +2527,7 @@ def kotlin_art():
 
 import kotlin.math.abs
 import kotlin.math.ceil
+import kotlin.math.cos
 import kotlin.math.exp
 import kotlin.math.floor
 import kotlin.math.max
@@ -2362,7 +2538,8 @@ import kotlin.math.sin
 /**
  * The town works' blocks as their renderers draw them (living-world/works-art.md says which renderer draws what, and
  * how): the yard's heaps, the post's parchment, seals and stamp, the plaque's lettering, the hoist at work, the "To let"
- * board's swing, the beacon's glow and the slate's lean. Sizes are pixels (a sixteenth of a block) in the block's own
+ * board's swing, the beacon's glow, the slate's lean, and the alms table's pot, stew, bowls and ladle, ladled from and
+ * given to. Sizes are pixels (a sixteenth of a block) in the block's own
  * model space (x east, y up, z south, the block facing north, its front toward -z), which a renderer turns by its facing
  * as the blockstate turns the model; times are ticks; the meshes are [WorksMesh]'s.
  */
@@ -2371,6 +2548,7 @@ internal object WorksArt {{
     const val HOIST_TEXTURE = "textures/entity/works/hoist.png"
     const val TO_LET_TEXTURE = "textures/entity/works/to_let.png"
     const val SLATE_TEXTURE = "textures/entity/works/slate.png"
+    const val ALMS_TEXTURE = "textures/entity/works/alms.png"
     const val POST_TEXTURE = "textures/entity/works/post.png"
     const val GLOW_TEXTURE = "textures/entity/works/beacon_glow.png"
 
@@ -2635,6 +2813,105 @@ internal object WorksArt {{
     /** Degrees the slate leans back against the display (its foot at the display's front middle). */
     const val SLATE_LEAN = {kf(SLATE_LEAN)}
 
+    /**
+     * The slate ([WorksMesh.slate]: its foot's middle at the mesh's origin, its face toward -z): px across, high and
+     * thick; and the chalk's room on its face, inside the frame (px across and high, its middle half the slate's
+     * height up), for client/streets/StreetSlate's words in place of its FACE_W and FACE_H.
+     */
+    val SLATE_SIZE = {kt_floats(SLATE_BOARD)}
+    val SLATE_CHALK = {kt_floats((SLATE_BOARD[0] - 2 * SLATE_FRAME, SLATE_BOARD[1] - 2 * SLATE_FRAME))}
+
+    // ---------------------------------------------------------------- the alms table
+
+    /*
+     * The pot, its stew, the bowls and the ladle on the table's middle block ([WorksMesh.alms], drawn by its block
+     * entity's renderer): in that block's model space, turned about its middle as the blockstate turns the trestle's
+     * model (Axis.YP by 180 - facing.toYRot() degrees for a table whose front is to facing), each piece drawn at its
+     * place here through poseStack.scale(-1f, -1f, 1f).
+     */
+
+    /** The table top's height, and the pot's foot's middle on it ("pot"). */
+    const val ALMS_TOP = {kf(ALMS_TOP_Y)}
+    const val POT_X = {kf(POT_AT[0])}
+    const val POT_Z = {kf(POT_AT[1])}
+
+    /** The pot's rim's height (its steam rises from here, over [POT_X], [POT_Z]). */
+    const val POT_RIM = {kf(POT_RIM_Y)}
+
+    /** The stew's top for a pot [fill] full (0 to 1: shown when there's any in it), "stew_k" drawn there. */
+    fun stewY(fill: Float): Float = {kf(POT_FLOOR_Y)} + {kf(POT_FULL_Y - POT_FLOOR_Y)} * fill.coerceIn(0f, 1f)
+
+    /** The stew's frames: "stew_0" up to [STEW_FRAMES], each [STEW_TICKS] ticks, round and round as it simmers. */
+    const val STEW_FRAMES = {STEW_FRAMES}
+    const val STEW_TICKS = {kf(STEW_TICKS)}
+
+    fun stewFrame(t: Float): Int = floor(t / STEW_TICKS).toInt().mod(STEW_FRAMES)
+
+    /** px the stew's top rocks up and down as it simmers, at tick [t]. */
+    fun stewBob(t: Float): Float = 0.05f * sin(0.35f * t)
+
+    /**
+     * The stack of bowls on the keeper's left: its middle, and the [i]th bowl's foot up it (from 0); "bowl" the top
+     * one, "bowl_under" every one under it. It shows [BOWLS_MAX] at most (draw min(bowls, BOWLS_MAX)): LADLE lifts the
+     * top one off a stack of three (its take, [LADLE_TAKE]), and a taller stack would swallow the keeper's hand.
+     */
+    const val BOWLS_X = {kf(BOWLS_AT[0])}
+    const val BOWLS_Z = {kf(BOWLS_AT[1])}
+    const val BOWLS_MAX = {BOWLS_MAX}
+
+    fun bowlY(i: Int): Float = ALMS_TOP + {kf(BOWL_H)} * i
+
+    /** The ladle standing in the pot: its bowl's middle ("ladle", already turned as it leans). */
+    val LADLE_REST = {kt_floats(ladle_rest_at())}
+
+    /**
+     * LADLE's moments, ticks from its start: the bowl lifted off the stack, the ladle in the stew, the pour into the
+     * bowl and the bowl given. The keeper holds the ladle from its first tick to its last (the table's own is hidden
+     * meanwhile); the stack is a bowl short from the take.
+     */
+    const val LADLE_LEN = {kf(30)}
+    const val LADLE_TAKE = {kf(3.5)}
+    const val LADLE_DIP = {kf(7.5)}
+    const val LADLE_POUR = {kf(12.5)}
+    const val LADLE_GIVE = {kf(21.0)}
+
+    /** Where the ladle goes into the stew (x, z): its ripple spreads from here from [LADLE_DIP]. */
+    const val DIP_X = {kf(POT_AT[0] - 0.2)}
+    const val DIP_Z = {kf(POT_AT[1] - 0.2)}
+
+    /** "ripple" (4 px across): the scale of it across [age] ticks after it starts, gone after [RIPPLE_TICKS]. */
+    const val RIPPLE_TICKS = {kf(RIPPLE_TICKS)}
+
+    fun rippleScale(age: Float): Float {{
+        val u = (age / RIPPLE_TICKS).coerceIn(0f, 1f)
+        return {kf(0.36)} + {kf(1.6)} * (1f - (1f - u) * (1f - u))
+    }}
+
+    /** A gift tipped in: its ring spreading from the pot's middle (as the ripple, quicker), and its splash. */
+    const val SPLASH_TICKS = {kf(SPLASH_TICKS)}
+
+    fun splashScale(age: Float): Float {{
+        val u = (age / SPLASH_TICKS).coerceIn(0f, 1f)
+        return {kf(0.5)} + {kf(1.5)} * (1f - (1f - u) * (1f - u))
+    }}
+
+    /**
+     * The splash's drops ("drop"), [SPLASH_DROPS] of them: where the [j]th is [age] ticks on, from the stew's top over
+     * the pot's middle (x, up, z px), or null once it's fallen back in.
+     */
+    const val SPLASH_DROPS = {SPLASH_DROPS}
+
+    fun splashDrop(j: Int, age: Float): FloatArray? {{
+        val up = {kf(SPLASH_UP)} * age - {kf(SPLASH_FALL)} * age * age
+        if (age <= 0f || up < 0f) return null
+        val a = (j * 60f + 23f) * PI / 180f
+        val out = 0.4f + {kf(SPLASH_OUT)} * age
+        return floatArrayOf(out * cos(a), up, out * sin(a))
+    }}
+
+    /** The pot's outline over the middle block for its block's shape (a box: x0, y0, z0, x1, y1, z1). */
+    val POT_SHAPE = {kt_floats(POT_SHAPE)}
+
     private const val PI = {kf(math.pi)}
 }}
 '''
@@ -2654,6 +2931,7 @@ def kotlin_mesh(meshes_):
     return KT_HEADER + f'''package io.github.vaspyyy.guildmark.client.works
 
 import net.minecraft.client.model.geom.PartPose
+import net.minecraft.client.model.geom.builders.CubeDeformation
 import net.minecraft.client.model.geom.builders.CubeListBuilder
 import net.minecraft.client.model.geom.builders.LayerDefinition
 import net.minecraft.client.model.geom.builders.MeshDefinition
@@ -2700,8 +2978,9 @@ def part_faces(part, pose=None):
         R = M @ rot_of(p)
         P = T + M @ np.array(p.pivot, float)
         for c in p.cubes:
-            x0, y0, z0 = c.origin
-            x1, y1, z1 = (o + s for o, s in zip(c.origin, c.size))
+            g = c.inflate or 0.0
+            x0, y0, z0 = (o - g for o in c.origin)
+            x1, y1, z1 = (o + s + g for o, s in zip(c.origin, c.size))
 
             def W(x, y, z):
                 return P + R @ np.array([x, y, z], float)
@@ -2929,6 +3208,155 @@ def plaque_text_quad(sc):
     sc.quad((x0, y1, z), (x1, y1, z), (x0, y0, z), (0, 0, 16, 16), 'guildmark:block/preview/plaque_text')
 
 
+ALMS_STORY_LEN = 200
+ALMS_BUILD = (4, 16, 10)                # the trestle's left, middle and right go up (AlmsKeeper's order: ends, then middle)
+ALMS_POT = 24
+ALMS_BOWLS = (38, 46, 54)
+ALMS_LADLES = (72, 150)
+ALMS_RESTOCK = 116
+ALMS_GIFT = 126
+ALMS_FILL = 0.8
+
+
+def alms_story():
+    """The previews' morning at the alms table, tick by tick, as AlmsTable plays it with works-art.md's timing: the
+    trestle up a block at a time, the pot set on it, three bowls set out; then LADLE (the top bowl off the stack at its
+    take, the ladle in the keeper's hand from its start to its end, its ripple from the dip, the pot a ladleful lower),
+    a bowl set out again, a gift tipped in (its splash, the pot fuller), and LADLE again."""
+    def ease(u):
+        u = min(1.0, max(0.0, u))
+        return u * u * (3 - 2 * u)
+
+    def at(t):
+        st = {'up': [t >= ALMS_BUILD[i] for i in range(3)], 'pot': t >= ALMS_POT, 'pot_age': t - ALMS_POT}
+        fill = ALMS_FILL
+        for L in ALMS_LADLES:
+            fill -= 0.07 * ease((t - L - 7.5) / 6.0)
+        fill += 0.14 * ease((t - ALMS_GIFT) / 10.0)
+        st['fill'] = fill
+        stack = []                                  # when each bowl on the stack was set there, the top last
+        events = sorted([(b, 'set') for b in ALMS_BOWLS + (ALMS_RESTOCK,)] + [(L + 3.5, 'take') for L in ALMS_LADLES])
+        for when, what in events:
+            if when > t:
+                break
+            if what == 'set':
+                stack.append(when)
+            elif stack:
+                stack.pop()
+        st['bowls'] = len(stack)
+        st['bowl_age'] = t - stack[-1] if stack else 1e9
+        st['ladle'] = st['pot'] and not any(L <= t < L + 30 for L in ALMS_LADLES)
+        dips = [t - L - 7.5 for L in ALMS_LADLES if t >= L + 7.5]
+        st['ripple'] = min(dips) if dips else None
+        st['splash'] = t - ALMS_GIFT if t >= ALMS_GIFT else None
+        lad = [t - L for L in ALMS_LADLES if L <= t < L + 30]
+        if not st['up'][2] or not all(st['up']):
+            what = 'the trestle set up, a block at a time'
+        elif not st['pot'] or t < ALMS_POT + 10:
+            what = 'the pot set down on the middle'
+        elif t < ALMS_BOWLS[-1] + 10:
+            what = 'the bowls set out on the keeper\'s left'
+        elif lad:
+            k = lad[0]
+            what = 'LADLE %2d: ' % int(k) + ('the ladle taken up' if k < 3.5 else 'a bowl off the stack' if k < 7.5 else
+                                            'the ladle in: its ripple' if k < 12.5 else 'poured' if k < 21 else 'the bowl given')
+        elif ALMS_RESTOCK <= t < ALMS_RESTOCK + 8:
+            what = 'a bowl set out again'
+        elif ALMS_GIFT <= t < ALMS_GIFT + 18:
+            what = 'a gift tipped in: its splash, the pot fuller'
+        else:
+            what = 'serving, the stew simmering'
+        st['what'] = what
+        return st
+    return at
+
+
+def alms_faces(sc, m, st, t):
+    """The alms table's pieces on its middle block (at the scene's origin block) in state [st] at tick [t], as its
+    renderer draws them from WorksArt's numbers."""
+    if st['pot']:
+        lift = drop(st['pot_age'])
+        sc.mesh(m, 'pot', placer(at=(POT_AT[0], ALMS_TOP_Y + lift, POT_AT[1])))
+        if st['fill'] > 0:
+            sy = stew_y(st['fill']) + 0.05 * math.sin(0.35 * t) + lift
+            sc.mesh(m, f'stew_{int(t // STEW_TICKS) % STEW_FRAMES}', placer(at=(POT_AT[0], sy, POT_AT[1])))
+            r = st['ripple']
+            if r is not None and r < RIPPLE_TICKS:
+                k = ripple_scale(r)
+                sc.mesh(m, 'ripple', placer(at=(POT_AT[0] - 0.2, sy + 0.03, POT_AT[1] - 0.2), extra=np.diag([k, 1.0, k])))
+            g = st['splash']
+            if g is not None and g < SPLASH_TICKS:
+                k = splash_scale(g)
+                sc.mesh(m, 'ripple', placer(at=(POT_AT[0], sy + 0.04, POT_AT[1]), extra=np.diag([k, 1.0, k])))
+            if g is not None:
+                for j in range(SPLASH_DROPS):
+                    d = splash_drop(j, g)
+                    if d is not None:
+                        sc.mesh(m, 'drop', placer(at=(POT_AT[0] + d[0], sy + d[1], POT_AT[1] + d[2])))
+        if st['ladle']:
+            sc.mesh(m, 'ladle', placer(at=tuple(ladle_rest_at() + np.array([0.0, lift, 0.0]))))
+    n = st['bowls']
+    for i in range(n):
+        top = i == n - 1
+        y = ALMS_TOP_Y + BOWL_H * i + (drop(st['bowl_age']) if top else 0.0)
+        sc.mesh(m, 'bowl' if top else 'bowl_under', placer(at=(BOWLS_AT[0], y, BOWLS_AT[1])))
+
+
+SLATE_WORDS = [('Nothing', 0.21, 3.6), ('today', 0.21, 6.15)]       # the previews' chalk: StreetSlate's words, two lines
+SLATE_PLACE, SLATE_WRITE, SLATE_LETTER = 14.0, 20.0, 2.5               # StreetSlate's PLACE, WRITE_FROM and PER_LETTER
+
+
+def chalk_textures(pa):
+    """The previews' stand-in for StreetSlate's chalk (the game writes it in its font): SLATE_WORDS on the slate's face,
+    the first k letters of them for each k, as _chalk_<k>.png."""
+    w, h = int(SLATE_BOARD[0] * TO_LET_SCALE), int(SLATE_BOARD[1] * TO_LET_SCALE)
+    total = sum(len(t) for t, _, _ in SLATE_WORDS)
+    rows = []
+    for text, ppf, base in SLATE_WORDS:
+        _, tw_, _ = letters(ML.CHALK, text, ppf, TO_LET_SCALE, seed=2601)
+        rows.append((text, ppf, base, (w - tw_) // 2))
+    for k in range(total + 1):
+        a = np.zeros((h, w, 4))
+        a[..., :3] = (236, 234, 226)
+        left = k
+        for text, ppf, base, ox in rows:
+            n = min(len(text), left)
+            left -= len(text)
+            if n <= 0:
+                continue
+            al, _, tb = letters(ML.CHALK, text[:n], ppf, TO_LET_SCALE, seed=2601)
+            oy = int(round(base * TO_LET_SCALE)) - tb
+            hh, ww = al.shape
+            y0, x0 = max(0, oy), max(0, ox)
+            y1, x1 = min(h, oy + hh), min(w, ox + ww)
+            a[y0:y1, x0:x1, 3] = np.maximum(a[y0:y1, x0:x1, 3], al[y0 - oy:y1 - oy, x0 - ox:x1 - ox] * 255)
+        a[..., 3] = np.where(a[..., 3] > 110, 255, 0)
+        Image.fromarray(a.astype(np.uint8), 'RGBA').save(os.path.join(pa, 'textures', 'entity', 'works', f'_chalk_{k}.png'))
+    return total
+
+
+def slate_faces(sc, m, t):
+    """The slate as StreetSlate brings it at tick [t] (set down from the keeper's side over SLATE_PLACE ticks, rocking as
+    it settles, chalked a letter at a time from SLATE_WRITE), leant on what's behind it; how many letters are written."""
+    u = min(1.0, t / SLATE_PLACE)
+    u = u * u * (3 - 2 * u)
+    y = 3.5 * (1 - u) + 6.1 * math.sin(math.pi * u)
+    z = 8.0 + 8.0 * (1 - u)
+    lean = SLATE_LEAN + 25.0 * (1 - u)
+    if SLATE_PLACE < t < SLATE_PLACE + 20:
+        lean += 4.0 * math.exp(-(t - SLATE_PLACE) / 2.5) * math.sin((t - SLATE_PLACE) * 1.6)
+    place = placer(at=(8.0, y, z), extra=Rx(-lean))
+    sc.mesh(m, 'slate', place)
+    total = sum(len(text) for text, _, _ in SLATE_WORDS)
+    k = min(total, int((t - SLATE_WRITE) / SLATE_LETTER)) if t >= SLATE_WRITE else 0
+    if k:
+        w, h, d = SLATE_BOARD
+        zf = -d / 2 - 0.03
+        a, b, dd = place((-w / 2, -h, zf)), place((w / 2, -h, zf)), place((-w / 2, 0.0, zf))
+        sc.quad(a, b, dd, (0, 0, 16, 16), f'guildmark:entity/works/_chalk_{k}')
+    return k
+
+
 def write_previews(assets, out):
     """The previews for Ransom, into [out]: GIFs of the yard filling, the post sealed and stamped, the beacon, the alms
     table's pot, the hoist hauling, and the "To let" board, tub, plaque and slate; a sheet of the five drawings."""
@@ -3010,26 +3438,23 @@ def write_previews(assets, out):
         frames.append(tiles(imgs, 3, 'beacon brazier: out, lit and flaring, at dusk'))
     written.append(save_gif(frames, os.path.join(out, 'works_beacon.gif'), ms=50))
 
-    # ---- the alms table: the pot ladled down, a bowl given with each
+    # ---- the alms table: set up, the pot and the bowls set out, ladled from, given to
     frames = []
-    states = [(8, 4, True)] * 2
-    for lv in range(7, -1, -1):
-        bowls = 4 - (7 - lv) % 4             # the stack restocked when it's out
-        states += [(lv + 1, bowls, False), (lv, bowls - 1, True)]
-    states += [(0, 0, True)] * 2
-    for f, (lv, bowls, ladle) in enumerate(s for s in states for _ in range(3)):
-        sc = Scene(pa)
-        ground(sc, -16, -16, 32, 32)
-        sc.model(ms['alms_table'])
-        if lv:
-            sc.model(ms[f'alms_stew_{lv}'])
-        for i in range(bowls):
-            sc.model(ms[f'alms_bowl_{i + 1}'])
-        if ladle:
-            sc.model(ms['alms_ladle'])
-        im = sc.render(yaw=200.0, elev=42.0, scale=14.0, size=(420, 360), center=(8, 12, 8), tick=f * 2.0, ss=2)
-        frames.append(label(im, 'alms table: the pot at its level', f'level {lv}/8, {bowls} bowls'))
-    written.append(save_gif(frames, os.path.join(out, 'works_alms_pot.gif')))
+    story = alms_story()
+    for f in range(0, ALMS_STORY_LEN, 2):
+        t = float(f)
+        st = story(t)
+        imgs = []
+        for yaw, elev, scale, cen, size in ((205.0, 26.0, 7.0, (8, 9, 8), (440, 300)), (160.0, 52.0, 16.0, (9, 14, 10), (300, 300))):
+            sc = Scene(pa)
+            ground(sc, -32, -16, 48, 32)
+            for i, part in enumerate(TABLE_PARTS):
+                if st['up'][i]:
+                    sc.model(ms[f'alms_table_{part}'], at=((i - 1) * 16.0, 0.0, 0.0))
+            alms_faces(sc, mesh['alms'], st, t)
+            imgs.append(sc.render(yaw=yaw, elev=elev, scale=scale, size=size, center=cen, ss=2))
+        frames.append(tiles(imgs, 2, 'alms table: the trestle, the pot, the bowls; ladled from, a gift tipped in', st['what']))
+    written.append(save_gif(frames, os.path.join(out, 'works_alms_table.gif')))
 
     # ---- the hoist on the scaffold, hauling a beam up
     frames = []
@@ -3067,19 +3492,27 @@ def write_previews(assets, out):
         frames.append(label(im, 'hoist: a beam hauled up to the scaffold', 'loaded' if loaded else 'the hook let down'))
     written.append(save_gif(frames, os.path.join(out, 'works_hoist.gif')))
 
-    # ---- "To let", the tub, the plaque under its cloth and bare, the slate
+    # ---- "To let" (still, as its trim block draws it, and swinging, as a renderer would), the tub, the plaque under
+    # its cloth and bare, the slate set down and chalked a letter at a time (as client/streets/StreetSlate does it)
     frames = []
     plaque_text(pa)
+    chalk_textures(pa)
     for f in range(40):
         t = f * 2.0
+        wet = f >= 20
         imgs = []
+        for yaw, name in ((200.0, '"To let", as its trim draws it'), (20.0, '... from the house side')):
+            sc = Scene(pa)
+            ground(sc, -16, -16, 32, 32)
+            sc.model(ms['to_let_board'])
+            imgs.append(label(sc.render(yaw=yaw, elev=12.0, scale=9.0, size=(300, 300), center=(8, 12, 7), ss=2), name))
         sc = Scene(pa)
         ground(sc, -16, -16, 32, 32)
-        sc.model(ms['to_let_board'])
-        sw = to_let_swing(t, 0.7, wet=f >= 20)
+        sc.model(ms['to_let_post'])
+        sw = to_let_swing(t, 0.7, wet=wet)
         sc.mesh(mesh['toLet'], 'board', placer(at=TO_LET_PIVOT), pose={'board': Rx(-sw)})
-        imgs.append(label(sc.render(yaw=200.0, elev=12.0, scale=9.0, size=(300, 300), center=(8, 13, 8), ss=2),
-                          '"To let"' + (' (in rain)' if f >= 20 else '')))
+        imgs.append(label(sc.render(yaw=235.0, elev=12.0, scale=9.0, size=(300, 300), center=(8, 12, 7), ss=2),
+                          '... swung by a renderer' + (' (in rain)' if wet else '')))
         sc = Scene(pa)
         ground(sc, -16, -16, 32, 32)
         sc.model(ms['works_mortar_tub'])
@@ -3093,9 +3526,10 @@ def write_previews(assets, out):
                           'plaque' + (' (covered)' if covered else ', its lines lettered')))
         sc = Scene(pa)
         ground(sc, -16, -16, 32, 32)
-        sc.mesh(mesh['slate'], 'slate', placer(at=(8.0, 0.0, 8.0), extra=Rx(-SLATE_LEAN)))
-        imgs.append(label(sc.render(yaw=200.0, elev=15.0, scale=14.0, size=(300, 300), center=(8, 5, 8), ss=2), 'slate'))
-        frames.append(tiles(imgs, 2, 'the "To let" board, the mortar tub, the patron\'s plaque, the slate'))
+        written_ = slate_faces(sc, mesh['slate'], t)
+        imgs.append(label(sc.render(yaw=200.0, elev=15.0, scale=14.0, size=(300, 300), center=(8, 5, 8), ss=2),
+                          'slate, chalked' if written_ else 'slate, set down'))
+        frames.append(tiles(imgs, 3, 'the "To let" board, the mortar tub, the patron' + "'" + 's plaque, the slate'))
     written.append(save_gif(frames, os.path.join(out, 'works_blocks_more.gif')))
     return written
 
