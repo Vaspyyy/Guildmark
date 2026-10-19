@@ -59,6 +59,12 @@ object CaravanRoutes {
     private const val RETRY = 6000L
 
     /**
+     * The most capitals found from their centre chunks (read from disk where they aren't loaded) in one tick for those
+     * who ask again before long: those found ahead ([ahead]), the comings' look and the works' second (see [capital]).
+     */
+    private const val FINDS = 2
+
+    /**
      * A wagon's way into a capital: [points] from the start to the stand, each with how far along it lies; where the
      * farms begin ([farms]) and the gate ([gate], how far along); the gate's side; the capital's [bell] and [name]; and
      * the village at the road's far end ([far]; for the plan's own road, where it leaves the farms).
@@ -154,6 +160,10 @@ object CaravanRoutes {
     private val jobs = HashMap<Pair<Long, Int>, CompletableFuture<Leg?>>()
     private val failed = HashMap<Pair<Long, Int>, Long>()
 
+    /** The server tick capitals were last found from their centre chunks in, and how many were then. */
+    private var findTick = -1
+    private var finds = 0
+
     /** The server has stopped: everything worked out goes, as the next world may be another. */
     fun forget() {
         pieces.clear()
@@ -161,19 +171,57 @@ object CaravanRoutes {
         legs.clear()
         jobs.clear()
         failed.clear()
+        findTick = -1
+        finds = 0
     }
 
-    /** The capital whose heart is [center], once found: from the land loaded round it, or its centre start. */
-    fun capital(level: ServerLevel, center: Long): CapitalPiece? {
+    /**
+     * The capital whose heart is [center], once found: from the land loaded round it, or its centre start. A caller
+     * that asks again before long ([soon]) is told to wait (null) once [FINDS] have been found from their centre chunks
+     * this tick, as reading those from disk holds the server up; anyone else is answered at once, as ever.
+     */
+    fun capital(level: ServerLevel, center: Long, soon: Boolean = false): CapitalPiece? {
         pieces[center]?.let { return it }
         val last = asked[center]
         if (last != null && level.gameTime - last in 0 until RETRY) return null
-        asked[center] = level.gameTime
         val pos = BlockPos.of(center)
-        val piece = Furnish.capitalAt(level, pos) ?: Capitals.at(level, pos) ?: return null
+        val loaded = Furnish.capitalAt(level, pos)
+        if (loaded == null && !finding(level, soon)) return null
+        asked[center] = level.gameTime
+        val piece = loaded ?: Capitals.at(level, pos) ?: return null
         if (piece.layout == null || piece.proxy) return null
         pieces[center] = piece.inWorld(level)
         return piece
+    }
+
+    /** Whether a capital may be found from its centre chunk now: always, but for [soon] only while fewer than [FINDS] have been this tick. */
+    private fun finding(level: ServerLevel, soon: Boolean): Boolean {
+        val tick = level.server.tickCount
+        if (tick != findTick) {
+            findTick = tick
+            finds = 0
+        }
+        if (soon && finds >= FINDS) return false
+        finds++
+        return true
+    }
+
+    /**
+     * Every tick, a few of the capitals with a market not found yet ([FINDS] at most) are found ahead of anyone asking:
+     * a world just opened has its far capitals a few a tick, before its comings, its works and its markets' wagons ask
+     * for them all in one.
+     */
+    fun ahead(level: ServerLevel) {
+        var n = 0
+        for (entry in Markets.get(level).all()) {
+            if (n >= FINDS) return
+            val center = entry.market.capital
+            if (center in pieces) continue
+            val last = asked[center]
+            if (last != null && level.gameTime - last in 0 until RETRY) continue
+            capital(level, center, soon = true)
+            n++
+        }
     }
 
     /** The network's roads into the capital whose heart is [center], finished, being built or being paved as the land loads; oldest first. */

@@ -180,7 +180,7 @@ object WorksBuild {
     private fun second(level: ServerLevel, data: WorksData, build: WorksBuildData, w: WorksRec) {
         var rec = build.recs.getOrPut(w.id) { BuildRec(w.id, w.kind, w.capital).also { build.changed() } }
         if (rec.removed) return
-        val capital = CaravanRoutes.capital(level, w.capital) ?: return
+        val capital = CaravanRoutes.capital(level, w.capital, soon = true) ?: return
         val site = w.site
         if (rec.sited && (site == null || !WorksSiting.ours(rec, site))) {
             // Its site forgotten (`works site <id>`) or set elsewhere (`works site <id> here`): it starts again there

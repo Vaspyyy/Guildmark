@@ -241,6 +241,8 @@ object Caravans {
         if (registered) return
         registered = true
         NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { tick(it.server) }
+        // The capitals with a market found a few a tick, ahead of the comings, the works and the wagons asking for them
+        NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { CaravanRoutes.ahead(it.server.overworld()) }
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) {
             CaravanRoutes.forget()
             // A second world opened the same game heals its bands from its own first day

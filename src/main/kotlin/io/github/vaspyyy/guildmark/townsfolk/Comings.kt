@@ -335,7 +335,7 @@ object Comings {
                 data.changed()
                 continue
             }
-            val piece = CaravanRoutes.capital(level, key) ?: continue
+            val piece = CaravanRoutes.capital(level, key, soon = true) ?: continue
             val places = CityPlaces.of(level, piece) ?: continue
             days -= work(Ctx(level, data, key, town, places), today, Conditions(hour(level, entry)).clock, days)
         }
