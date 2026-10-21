@@ -65,10 +65,10 @@ class Resident(
     var furnished: Boolean,
     val traits: Int,
     var alive: Boolean,
-    /** The day they died, or -1. */
+    /** The day they died, or -1 (a death before the world's first day stands on day 0: see [Residents.diedOn]). */
     var died: Long,
-    /** The day they came to live here. */
-    val since: Long,
+    /** The day they came to live here (before the world's first, if the clock was set back past it: see [Residents.back]). */
+    var since: Long,
     /**
      * The day they left in hard times (living-world/design-influence.md section 6), or -1. While they're away [alive]
      * is false and [died] stays -1.
@@ -112,8 +112,15 @@ class Resident(
     }
 }
 
-/** Every town's people (see [Resident]), kept with the overworld. */
-class Residents(private val people: MutableMap<Int, Resident> = HashMap(), private var next: Int = 1) : SavedData() {
+/**
+ * Every town's people (see [Resident]), kept with the overworld, and [early]: the days the dead died on that a clock
+ * set back took before the world's first day (see [back]), by id.
+ */
+class Residents(
+    private val people: MutableMap<Int, Resident> = HashMap(),
+    private var next: Int = 1,
+    private val early: MutableMap<Int, Long> = HashMap(),
+) : SavedData() {
     private val byUuid = HashMap<UUID, Resident>().also { map -> for (r in people.values) r.uuid?.let { map[it] = r } }
     // Someone new in the plan's place of one who died has it after them, the newest last (as [add] has it)
     private val byPlan = HashMap<Pair<BlockPos, Int>, Resident>().also { map -> for (r in people.values.sortedBy { it.id }) if (r.planned >= 0) map[r.capital to r.planned] = r }
@@ -141,12 +148,51 @@ class Residents(private val people: MutableMap<Int, Resident> = HashMap(), priva
 
     fun changed() = setDirty()
 
+    /**
+     * The day [r] died on, as the town's talk counts it: [Resident.died], but for a death a clock set back took before
+     * the world's first day, whose record stands on day 0 ([Resident.died] is never below 0 but for -1, "not dead") and
+     * whose own day is below it (still -1 for the living and those away).
+     */
+    fun diedOn(r: Resident): Long = early[r.id] ?: r.died
+
+    /**
+     * The clock set back [days] days (from `Comings.setBack`; the world's days, as [VillageBoards.day] counts them, from
+     * six in the morning): everyone's days go back with it, so the town's talk of the newly come and of grief goes by the
+     * days they had, not on from the old clock. The day they came goes back as far before the world's first as it must,
+     * and so does the day a death was (kept apart in [early]); the day they left stops at the first.
+     */
+    fun back(days: Long) {
+        if (days <= 0L || people.isEmpty()) return
+        for (r in people.values) {
+            r.since -= days
+            if (r.left >= 0) r.left = maxOf(0L, r.left - days)
+            if (r.died >= 0) {
+                val day = diedOn(r) - days
+                r.died = maxOf(0L, day)
+                if (day < 0) early[r.id] = day else early.remove(r.id)
+            }
+        }
+        setDirty()
+    }
+
     companion object {
+        private class Early(val id: Int, val day: Long)
+
+        private val EARLY: Codec<Early> = RecordCodecBuilder.create { i ->
+            i.group(
+                Codec.INT.fieldOf("id").forGetter(Early::id),
+                Codec.LONG.fieldOf("day").forGetter(Early::day),
+            ).apply(i, ::Early)
+        }
+
         private val CODEC: Codec<Residents> = RecordCodecBuilder.create { i ->
             i.group(
                 Resident.CODEC.listOf().optionalFieldOf("people", listOf()).forGetter { it.people.values.toList() },
                 Codec.INT.optionalFieldOf("next", 1).forGetter { it.next },
-            ).apply(i) { people, next -> Residents(people.associateBy { it.id }.toMutableMap(), next) }
+                EARLY.listOf().optionalFieldOf("early", listOf()).forGetter { r -> r.early.entries.sortedBy { it.key }.map { Early(it.key, it.value) } },
+            ).apply(i) { people, next, early ->
+                Residents(people.associateBy { it.id }.toMutableMap(), next, early.associate { it.id to it.day }.toMutableMap())
+            }
         }
 
         private val TYPE = SavedDataType(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "residents"), Supplier { Residents() }, CODEC)

@@ -82,7 +82,8 @@ object TownTopics : TopicSource {
         if (bark || Say.child(ask.speaker)) return
 
         val places = ask.life?.places
-        val people = Residents.get(level).of(r.capital)
+        val residents = Residents.get(level)
+        val people = residents.of(r.capital)
         val mine = places?.lodgings?.get(r.home)?.box?.center
         fun street(other: Resident): Boolean {
             val theirs = places?.lodgings?.get(other.home)?.box?.center ?: return false
@@ -91,8 +92,9 @@ object TownTopics : TopicSource {
 
         if (Days.enabled()) {
             // A neighbour buried, a day or two ago (their own household's grief is the household's)
-            people.filter { !it.alive && it.home != r.home && it.died >= r.since && today - it.died in 1L..2L && (street(it) || it.role == r.role && it.role != TownRole.CITIZEN) }
-                .maxByOrNull { it.died }?.let { dead ->
+            fun died(p: Resident) = residents.diedOn(p)
+            people.filter { !it.alive && it.died >= 0 && it.home != r.home && died(it) >= r.since && today - died(it) in 1L..2L && (street(it) || it.role == r.role && it.role != TownRole.CITIZEN) }
+                .maxByOrNull { died(it) }?.let { dead ->
                     val role = ROLES[dead.role]
                     val detail = if (role != null) Speech.of("talk.detail.town.death", "=${dead.name}", Say.WORD + "role.$role") else Speech.of("talk.detail.town.death.plain", "=${dead.name}")
                     add(ask, out, "town.death", "town.death.${dead.id}", 0.56, -1, detail, Activity.SIGH)

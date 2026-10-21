@@ -233,9 +233,10 @@ object Comings {
      * by the hour it was last looked at (kept with the comings' data, so a restart in between sees it too). If so, every
      * capital's comings and goings go back the market days it went ([back]) once, whether the markets are on or off, so
      * the clock's next day is theirs and nobody due waits for it to come round, and so do the days others keep by
-     * them ([Listener.back]: the streets' boards, say). With the markets on, a market the
-     * clock has gone back past takes itself back first (Markets.run, with its fortunes and works), and the comings follow
-     * at the look after; a clock moved on only notes its hour. Days lived on ahead by a market run stay as far ahead.
+     * them ([Listener.back]: the streets' boards, say) and the residents' own (the world's days, see [Residents.back]).
+     * With the markets on, a market the clock has gone back past takes itself back first (Markets.run, with its
+     * fortunes and works), and the comings follow at the look after; a clock moved on only notes its hour. Days lived on
+     * ahead by a market run stay as far ahead.
      */
     private fun setBack(level: ServerLevel) {
         val data = ComingsData.get(level)
@@ -246,17 +247,20 @@ object Comings {
         if (was > now && Markets.enabled() && Markets.get(level).all().any { it.market.hour > now }) return
         data.looked = now
         data.changed()
-        if (was == ComingsData.NEVER || was < now) return
+        if (was < now) return
         val days = Conditions(was).day - Conditions(now).day
-        if (days <= 0L) return
-        for (capital in data.all().keys.toList()) back(level, capital, days)
-        for (l in listeners.toList()) {
-            try {
-                l.back(level, days)
-            } catch (e: RuntimeException) {
-                Guildmark.LOGGER.warn("Something keeping market days failed to go back with the clock", e)
+        if (days > 0L) {
+            for (capital in data.all().keys.toList()) back(level, capital, days)
+            for (l in listeners.toList()) {
+                try {
+                    l.back(level, days)
+                } catch (e: RuntimeException) {
+                    Guildmark.LOGGER.warn("Something keeping market days failed to go back with the clock", e)
+                }
             }
         }
+        // The residents' days are the world's own, from six in the morning where the markets' are from two
+        Residents.get(level).back(Math.floorDiv(was, 24L) - Math.floorDiv(now, 24L))
     }
 
     // ---- The days ----
@@ -320,8 +324,9 @@ object Comings {
     /**
      * The clock set back (from [setBack]): [capital]'s comings and goings go back [days] market days with it, the day they
      * last worked out and every day they date by (the households due, away and come in; the last to leave, to grow the
-     * town and to come; the day one is to leave), and the dead not yet seen to with them, so the clock's next day is
-     * their next and nobody due waits the longer. Days lived on ahead by a market run stay ahead.
+     * town and to come; the day one is to leave), so the clock's next day is their next and nobody due waits the longer
+     * (the days the dead died on go back with the residents' own, see [Residents.back]). Days lived on ahead by a market
+     * run stay ahead.
      */
     internal fun back(level: ServerLevel, capital: Long, days: Long) {
         if (!READY || days == 0L) return
@@ -337,11 +342,7 @@ object Comings {
         town.due.replaceAll { ComingsData.Due(it.id, it.reason, it.roles, it.planned, it.home, it.day - days, it.wait, it.dead, it.works) }
         town.away.replaceAll { ComingsData.Moved(it.id, it.members, it.home, it.day - days, it.reason, it.why) }
         town.log.replaceAll { ComingsData.Moved(it.id, it.members, it.home, it.day - days, it.reason, it.why) }
-        // Someone new is sent for the dead by the day they died
-        val residents = Residents.get(level)
-        for (r in residents.of(BlockPos.of(capital))) if (!r.alive && r.died >= 0 && r.id !in town.seen) r.died = maxOf(0L, r.died - days)
         data.changed()
-        residents.changed()
     }
 
     /**

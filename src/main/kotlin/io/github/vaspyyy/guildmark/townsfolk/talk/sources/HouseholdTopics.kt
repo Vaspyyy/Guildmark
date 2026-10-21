@@ -45,15 +45,18 @@ object HouseholdTopics : TopicSource {
         if (!r.alive) return
         val level = ask.level
         val today = Say.day(level)
-        val people = Residents.get(level).of(r.capital)
+        val residents = Residents.get(level)
+        val people = residents.of(r.capital)
         val home = if (r.home >= 0) people.filter { it.home == r.home && it.id != r.id } else listOf()
         val living = home.filter { it.alive }
 
         // A death in the house, while they lived there: after they came, or the day they came if they were among the
-        // town's first people (a newcomer who came that day came after it, into the place of the dead)
+        // town's first people (a newcomer who came that day came after it, into the place of the dead). The day as
+        // the town counts it, which a clock set back may have taken before the world's first
         val first = people.minOfOrNull { it.since } ?: r.since
-        home.filter { !it.alive && (it.died > r.since || it.died == r.since && r.since <= first) && today - it.died in 0..GRIEF }.maxByOrNull { it.died }?.let { dead ->
-            val days = today - dead.died
+        fun died(p: Resident) = residents.diedOn(p)
+        home.filter { !it.alive && it.died >= 0 && (died(it) > r.since || died(it) == r.since && r.since <= first) && today - died(it) in 0..GRIEF }.maxByOrNull { died(it) }?.let { dead ->
+            val days = today - died(dead)
             val detail = when (days) {
                 0L -> Speech.of("talk.detail.home.grief.0", "=${dead.name}")
                 1L -> Speech.of("talk.detail.home.grief.1", "=${dead.name}")
