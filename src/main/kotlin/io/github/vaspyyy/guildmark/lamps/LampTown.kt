@@ -87,7 +87,7 @@ class LampTown(val capital: CapitalPiece, val places: CityPlaces, val plan: Lamp
         CITY,
         /** The lamps at a farm's gate, which its farmer sees to coming in from the fields and going out to them. */
         FARM,
-        /** A lamp out on a road or a bridge with no farmhouse by: it keeps its own time. */
+        /** A lamp out on a road or a bridge with no farmhouse by, or on the harbour's quays and piers: it keeps its own time. */
         LONE,
     }
 

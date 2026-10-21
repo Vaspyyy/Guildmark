@@ -100,9 +100,10 @@ object LampCommand {
         }
         val city = town.plan.lamps.count { it.city }
         val farms = town.plan.lamps.count { !it.city && it.farm >= 0 }
+        val quays = town.plan.lamps.count { it.quay }
         say(
             source, line().append(label("Lamps: ")).append(plain("${town.pos.size}"))
-                .append(grey(" ($city in the streets in ${town.plan.rounds.size} rounds, $farms at farm gates, ${town.pos.size - city - farms} out on the roads); "))
+                .append(grey(" ($city in the streets in ${town.plan.rounds.size} rounds, $farms at farm gates, $quays on the quays, ${town.pos.size - city - farms - quays} out on the roads); "))
                 .append(plain("$burning of the $loaded loaded are lit"))
                 .append(grey(if (old > 0) "; $old older lanterns wait to be swapped for street lamps once nobody is within ${StreetLamps.UNSEEN.toInt()} blocks" else "")),
         )
@@ -111,7 +112,7 @@ object LampCommand {
         val run = town.runs[town.runOf[near]]
         val first = town.pos[run.lamps[0]]
         say(
-            source, line().append(label("Nearest round: ")).append(plain(describe(run)))
+            source, line().append(label("Nearest round: ")).append(plain(describe(town, run)))
                 .append(grey(", about ${"%.1f".format(run.ticks / 1000.0)} hours, from ")).append(at(first)),
         )
         say(source, line().append(label("  Kept by: ")).append(keeper(level, town, run)))
@@ -149,10 +150,10 @@ object LampCommand {
         StreetLamps.Stretch.MORNING -> "the morning: the lamps are out."
     }
 
-    private fun describe(run: LampTown.Run): String = when (run.kind) {
+    private fun describe(town: LampTown, run: LampTown.Run): String = when (run.kind) {
         LampTown.Kind.CITY -> "lamplighter's round ${run.round + 1}, ${run.lamps.size} lamps"
         LampTown.Kind.FARM -> "the lamp${if (run.lamps.size > 1) "s" else ""} at a farm's gate (${run.lamps.size})"
-        LampTown.Kind.LONE -> "a lamp out on the road"
+        LampTown.Kind.LONE -> if (town.plan.lamps[run.lamps[0]].quay) "a lamp on the harbour's quay or piers" else "a lamp out on the road"
     }
 
     /** Who keeps [run], and where they are just now. */
@@ -201,7 +202,7 @@ object LampCommand {
             grey("nobody can be had to go round it, so its lamps ${if (lighting) "catch" else "go out"} one after another by the clock")
         }
         return say(
-            source, line().append(label("${describe(run).replaceFirstChar { it.uppercase() }}: ")).append(who)
+            source, line().append(label("${describe(town, run).replaceFirstChar { it.uppercase() }}: ")).append(who)
                 .append(grey(", from ")).append(at(town.pos[run.lamps[0]])).append(grey(". It holds until the day's next stretch.")),
         )
     }

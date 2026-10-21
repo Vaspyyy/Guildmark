@@ -69,6 +69,20 @@ class Harbour(private val plan: CityPlan) {
     var area: Rect? = null
         private set
 
+    /**
+     * The harbour's street lamps, each as its lantern's place in the city's frame: along the quay's edge and the lane under
+     * the walls, at the corners of the square's steps and down the piers (see [thing]). None before the harbour is laid.
+     */
+    val lamps: List<At>
+        get() = things.mapNotNull { t ->
+            val top = when (t.kind) {
+                ThingKind.LAMP, ThingKind.PILLAR_LAMP -> LAMP_TOP
+                ThingKind.POST_LAMP -> POST_LAMP_TOP
+                else -> return@mapNotNull null
+            }
+            At(x(t.a, t.o), levelAt(t.a, t.o) + top, z(t.a, t.o))
+        }
+
     /** Lays the harbour out on the plan: called once, after the walls and the town. */
     fun lay(random: Random) {
         val half = min(outer - TOWER_CLEAR, outer * 3 / 5)
@@ -806,22 +820,23 @@ class Harbour(private val plan: CityPlan) {
         val y = levelAt(t.a, t.o)
         when (t.kind) {
             ThingKind.BOLLARD -> at(0, 0, y, B(M.WALL_POST))
+            // The lanterns are street lamps, as the city's own (see Props and [lamps])
             ThingKind.LAMP -> {
                 at(0, 0, y, B(M.WALL_POST))
                 at(0, 0, y + 1, B(M.FENCE))
                 at(0, 0, y + 2, B(M.FENCE))
-                at(0, 0, y + 3, B(M.LANTERN))
+                at(0, 0, y + LAMP_TOP, B(M.LANTERN, v = STREET_LAMP))
             }
             ThingKind.PILLAR_LAMP -> {
                 at(0, 0, y, B(M.WALL_DARK))
                 at(0, 0, y + 1, B(M.WALL_TRIM))
                 at(0, 0, y + 2, B(M.WALL_POST))
-                at(0, 0, y + 3, B(M.LANTERN))
+                at(0, 0, y + LAMP_TOP, B(M.LANTERN, v = STREET_LAMP))
             }
             ThingKind.POST_LAMP -> {
                 at(0, 0, y, B(M.FENCE))
                 at(0, 0, y + 1, B(M.FENCE))
-                at(0, 0, y + 2, B(M.LANTERN))
+                at(0, 0, y + POST_LAMP_TOP, B(M.LANTERN, v = STREET_LAMP))
             }
             ThingKind.CRANE -> crane(canvas, t, y)
             ThingKind.GOODS -> goods(canvas, t, y)
@@ -1064,6 +1079,9 @@ class Harbour(private val plan: CityPlan) {
         const val BOLLARD_EVERY = 6
         const val LAMP_EVERY = 12
         const val PIER_LAMP_EVERY = 8
+        /** How far over the standing height a lamp's lantern is: on a lamp post, and on the shorter post down a pier. */
+        const val LAMP_TOP = 3
+        const val POST_LAMP_TOP = 2
         const val GOODS_KINDS = 4
 
         /** The detail marking a column with a railing along it. */

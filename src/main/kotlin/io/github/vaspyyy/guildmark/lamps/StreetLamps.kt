@@ -28,7 +28,7 @@ import java.util.concurrent.CompletableFuture
  * what each lamp should be just now, and a lamp is touched only when that changes from what it was last set to.
  *
  * The lamps go in rounds ([LampTown.Run]): a lamplighter's round of the streets, the lamps at a farm's gate that its
- * farmer sees to, and lamps out on the roads that keep their own time. At dusk each round begins about half past five
+ * farmer sees to, and lamps out on the roads and along the harbour's quays and piers that keep their own time. At dusk each round begins about half past five
  * (an hour earlier in rain, since rain darkens the sky) and its lamps catch one after another at a lamplighter's
  * pace; while a lamplighter really goes round it (see Lamplighters), its lamps wait for them instead. At dawn, from
  * half past five (half past six in rain), the same rounds put them out. Whatever happens, every lamp is lit by seven ([LIT_BY]),

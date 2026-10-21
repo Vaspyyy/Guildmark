@@ -17,9 +17,10 @@ import kotlin.math.sqrt
 
 /**
  * A capital's street lamps as its plan lays them out, in the city's own frame: the lamps down its streets (see
- * Props) and out in its country (see FarmProps), which farmhouse's farmer sees to each lamp at a farm's gate, and the
- * lamplighters' rounds among the street lamps. Worked out from the plan alone, the same every time (StreetLamps does it
- * off the server thread), so a round's lamps and their order never change.
+ * Props), out in its country (see FarmProps) and on its harbour's quays and piers (see Harbour.lamps), which farmhouse's
+ * farmer sees to each lamp at a farm's gate, and the lamplighters' rounds among the street lamps. Worked out from the
+ * plan alone, the same every time (StreetLamps does it off the server thread), so a round's lamps and their order never
+ * change.
  *
  * The rounds follow the streets: one walk through every street lamp of the city, each step to the nearest lamp not yet
  * lit along the streets (the plan's own street columns, walked a column at a time), straightened out where it crosses
@@ -30,9 +31,10 @@ class LampPlan(val plan: CityPlan, census: Census) {
      * One lamp: its lantern at [at] (the post's foot three blocks under it); [city] for a street lamp inside the walls,
      * [farm] the lodging id (see [Census.lodges]) of the farmhouse whose farmer sees to it, or -1; the ways from the post
      * a lamplighter may stand to it, best first ([stands]: the street's side for a street lamp); [phase], from 0 to 1,
-     * how far into the lighting-up its clock has it catch when nobody lights it.
+     * how far into the lighting-up its clock has it catch when nobody lights it; [quay] for one on the harbour's quays
+     * and piers (no farm's, and no lamplighter's: it keeps its own time like a lamp out on a road).
      */
-    class Lamp(val index: Int, val at: At, val city: Boolean, val farm: Int, val stands: List<Dir>, val phase: Double) {
+    class Lamp(val index: Int, val at: At, val city: Boolean, val farm: Int, val stands: List<Dir>, val phase: Double, val quay: Boolean = false) {
         override fun toString(): String = "lamp#$index(${at.x},${at.y},${at.z})"
     }
 
@@ -67,6 +69,8 @@ class LampPlan(val plan: CityPlan, census: Census) {
             val at = At(p.x, p.y + 3, p.z)
             list.add(Lamp(list.size, at, false, house?.let { Census.FARM + it.index } ?: -1, Dir.entries.toList(), phase(p.x, p.z)))
         }
+        // The harbour's, last of all so that no other lamp's place in the list moves: along its quay and lane and down its piers
+        for (at in plan.harbour?.lamps ?: listOf()) list.add(Lamp(list.size, at, false, -1, Dir.entries.toList(), phase(at.x, at.z), quay = true))
         lamps = list
         rounds = plan(list.filter { it.city })
         roundOf = IntArray(list.size) { -1 }
