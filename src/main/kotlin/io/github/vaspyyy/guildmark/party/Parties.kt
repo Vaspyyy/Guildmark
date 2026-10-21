@@ -190,16 +190,26 @@ class Parties(val parties: MutableList<Party> = mutableListOf()) : SavedData() {
             parties.setDirty()
         }
 
-        /** A finished contract pays nearby party members a quarter of its marks and XP on top. */
-        fun sharePay(player: Player, marks: Int, xp: Int) {
+        /**
+         * A finished contract pays nearby party members a quarter of its marks and XP on top, a Mark at least each. With
+         * [room] given, what the contract's cap leaves for the whole party after [marks] (see MarketFetch.partyCap), they
+         * share no more Marks than that, the first of them served getting theirs: the party is paid no more in all than
+         * the cap allows. The XP is theirs whatever the room.
+         */
+        fun sharePay(player: Player, marks: Int, xp: Int, room: Int? = null) {
             val mates = nearbyMates(player)
             if (mates.isEmpty()) return
             val shareMarks = (marks / PAY_SHARE).coerceAtLeast(1)
             val shareXp = xp / PAY_SHARE
+            var left = room ?: Int.MAX_VALUE
             for (mate in mates) {
-                mate.inventory.placeItemBackInInventory(ItemStack(ModItems.GUILD_MARK.get(), shareMarks), Prediction.SERVER_ONLY)
+                val give = minOf(shareMarks, left.coerceAtLeast(0))
+                left -= give
+                if (give > 0) {
+                    mate.inventory.placeItemBackInInventory(ItemStack(ModItems.GUILD_MARK.get(), give), Prediction.SERVER_ONLY)
+                    mate.sendOverlayMessage(Component.translatable("message.guildmark.party.share", give, player.displayName))
+                }
                 Progression.addXp(mate, shareXp)
-                mate.sendOverlayMessage(Component.translatable("message.guildmark.party.share", shareMarks, player.displayName))
             }
         }
 

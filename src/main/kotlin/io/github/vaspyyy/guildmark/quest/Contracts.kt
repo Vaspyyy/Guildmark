@@ -352,7 +352,11 @@ object Contracts {
         Skills.gain(player, Skill.TRADE, note.reward * 2.0)
         level.playSound(null, pos, SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 0.8f, 1.2f)
         Progression.addXp(player, xp)
-        Parties.sharePay(player, marks, xp)
+        // A carrier's errand pays the whole party no more than a lone carrier gets, so the mates' shares are what the cap leaves
+        val room = if (note.type == QuestType.FETCH && chapter == null && note.capped && level is ServerLevel && origin != null) {
+            MarketFetch.partyCap(level, origin, note.target, note.count)?.let { it - marks }
+        } else null
+        Parties.sharePay(player, marks, xp, room)
         if (note.trial) Progression.promote(player, note.rank)
         Milestones.award(player, Milestones.PAID)
         if (note.type == QuestType.DELIVER) Milestones.award(player, Milestones.COURIER)

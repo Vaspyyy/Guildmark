@@ -90,4 +90,15 @@ object MarketFetch {
         val each = errand(level, board, item) ?: return null
         return floor(each * count * CARRIED / (1.0 + mates.toDouble() / Parties.PAY_SHARE)).toInt()
     }
+
+    /**
+     * The most the whole party may be paid in all for a fetch of [count] [item] posted on the board at [board], if it is
+     * a carrier's errand there (see [cap]): what a lone carrier would be paid, the one handing it in and their mates
+     * together. Null if it isn't one.
+     */
+    fun partyCap(level: ServerLevel, board: BlockPos, item: Identifier, count: Int): Int? {
+        if (good(item) == null || at(level, board) != null) return null
+        val each = errand(level, board, item) ?: return null
+        return floor(each * count * CARRIED).toInt()
+    }
 }
