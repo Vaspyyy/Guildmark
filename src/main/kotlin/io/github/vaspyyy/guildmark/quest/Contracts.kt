@@ -337,13 +337,13 @@ object Contracts {
         val earned = (Progression.reward(player, note.reward + bonus) * GuildmarkConfig.PAY_MULTIPLIER.get()).toInt()
         // Goods that can be bought never pay back what they cost, bonuses and all (a story's chapter is asked only once):
         // a capital's market's own goods, posted on its board, half what the market asks for them now; posted anywhere
-        // else, what the nearest market asks and a carrier's quarter, the party's share of it and all
+        // else, what the nearest market asks and a carrier's quarter, the party's share of it and all. A note posted
+        // before that was posted to the market's cap, else what the goods cost to buy, and is paid so (QuestNote.capped)
         val goodsCap = if (note.type == QuestType.FETCH && chapter == null) {
             val mates = Parties.nearbyMates(player).size
-            listOfNotNull(
-                if (level is ServerLevel && origin != null) MarketFetch.cap(level, origin, note.target, note.count, mates) else null,
-                GoodsPrices.cap(note.target, note.count),
-            ).minOrNull()
+            val market = if (level is ServerLevel && origin != null) MarketFetch.cap(level, origin, note.target, note.count, mates, note.capped) else null
+            val shops = GoodsPrices.cap(note.target, note.count)
+            if (note.capped) listOfNotNull(market, shops).minOrNull() else market ?: shops
         } else null
         val marks = (if (goodsCap != null) minOf(earned, goodsCap) else earned).coerceAtLeast(1)
         val xp = note.reward * Progression.XP_PER_MARK

@@ -80,11 +80,13 @@ object MarketFetch {
      * The most a fetch of [count] [item] posted on the board at [board] may pay now, or null if it isn't one of the
      * markets' goods: at a capital's own board half what its market asks, anywhere else what the nearest market asks
      * and a carrier's quarter, for the whole party: the one handing it in and their [mates] nearby, who each get a
-     * share on top (see [Parties.sharePay]).
+     * share on top (see [Parties.sharePay]). Anywhere else only for a note [capped] by the carrier's quarter, as one is
+     * posted now (see QuestNote.capped): one posted before it pays what it states.
      */
-    fun cap(level: ServerLevel, board: BlockPos, item: Identifier, count: Int, mates: Int = 0): Int? {
+    fun cap(level: ServerLevel, board: BlockPos, item: Identifier, count: Int, mates: Int = 0, capped: Boolean = true): Int? {
         val good = good(item) ?: return null
         at(level, board)?.let { return floor(it.market.price(it.town, good) * count * GoodsPrices.MAX_SHARE).toInt() }
+        if (!capped) return null
         val each = errand(level, board, item) ?: return null
         return floor(each * count * CARRIED / (1.0 + mates.toDouble() / Parties.PAY_SHARE)).toInt()
     }

@@ -31,6 +31,13 @@ data class QuestNote(
     val subject: String = "",
     /** Wanted: the band the note was posted on (see outlaw/OutlawCamps), or -1. */
     val site: Int = -1,
+    /**
+     * Fetch: whether the note was posted under the carrier's cap (see MarketFetch.cap): a fetch for the markets' goods
+     * away from a capital's own board is held, when handed in, to what the nearest market asks for them and a carrier's
+     * quarter. A note saved from before that rule has no such mark (it reads back as false) and pays what it states,
+     * as it was posted to; every note made now is held to it.
+     */
+    val capped: Boolean = true,
 ) {
     val rankLetter: String get() = AdventurerRank.of(rank).letter
     fun rankLine(): Component = Component.translatable(if (trial) "quest.guildmark.trial_rank" else "quest.guildmark.rank", rankLetter)
@@ -102,8 +109,10 @@ data class QuestNote(
                 Codec.STRING.optionalFieldOf("chain", "").forGetter(QuestNote::chain),
                 Codec.STRING.optionalFieldOf("subject", "").forGetter(QuestNote::subject),
                 Codec.INT.optionalFieldOf("site", -1).forGetter(QuestNote::site),
-            ).apply(i) { type, poster, target, count, reward, deadline, story, rank, trial, chain, subject, site ->
-                QuestNote(type, poster, target, count, reward, deadline, story, rank, trial, chain, subject, site)
+                // Missing means a note from before the carrier's cap, though a note made now is capped unless said otherwise
+                Codec.BOOL.optionalFieldOf("capped", false).forGetter(QuestNote::capped),
+            ).apply(i) { type, poster, target, count, reward, deadline, story, rank, trial, chain, subject, site, capped ->
+                QuestNote(type, poster, target, count, reward, deadline, story, rank, trial, chain, subject, site, capped)
             }
         }
     }
