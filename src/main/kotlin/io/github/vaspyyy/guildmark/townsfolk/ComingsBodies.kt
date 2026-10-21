@@ -541,6 +541,8 @@ internal object ComingsBodies {
             }
             Stage.GATHER -> {
                 party.bay = Handcarts.bay(party.level, party.door, puller.p)
+                // Kept for their cart, which is brought round once nobody's looking: no one else's goes there meanwhile
+                Handcarts.headFor(puller.p, party.bay)
                 puller.set(Go({ party.bay ?: spot(party, 0) }, Jobs.WALK, 0.8), Stand(-1, { Vec3.atCenterOf(party.door.pos) }))
                 rest.forEachIndexed { k, h -> h.set(Go({ spot(party, k + 1) }, Jobs.WALK, 0.9), Stand(-1, { Vec3.atCenterOf(party.door.pos) })) }
             }

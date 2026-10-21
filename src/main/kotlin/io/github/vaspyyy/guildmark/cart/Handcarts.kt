@@ -206,10 +206,14 @@ object Handcarts {
         if (at == null) bound.remove(p.uuid) else bound[p.uuid] = p to at
     }
 
-    /** Whether a cart other than [by]'s stands near [at], or is on its way to stand there, where one stopping there would stand on it. */
+    /**
+     * Whether a cart other than [by]'s stands near [at] (one left behind that nobody owns now, until it goes, as well),
+     * or is on its way to stand there, where one stopping there would stand on it.
+     */
     private fun taken(level: Level, at: BlockPos, by: Townsperson?): Boolean {
         val c = Vec3.atBottomCenterOf(at)
-        if (carts.values.any { it.level() === level && !it.isRemoved && it.owner !== by && it.distanceToSqr(c) < TAKEN * TAKEN }) return true
+        fun near(cart: Handcart) = cart.level() === level && !cart.isRemoved && cart.distanceToSqr(c) < TAKEN * TAKEN
+        if (carts.values.any { it.owner !== by && near(it) } || strays.any { near(it) }) return true
         bound.values.removeIf { (p, _) -> p.isRemoved }
         return bound.values.any { (p, spot) -> p !== by && p.level() === level && spot.distSqr(at) < TAKEN * TAKEN }
     }
