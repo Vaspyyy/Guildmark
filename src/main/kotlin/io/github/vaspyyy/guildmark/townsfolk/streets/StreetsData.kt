@@ -74,6 +74,19 @@ class StreetsData(private val towns: MutableMap<Long, Town> = HashMap()) : Saved
         val givers = ArrayList<UUID>()
         val fed = ArrayList<Int>()
 
+        /**
+         * The clock set back [days] market days (see `Comings.setBack`): the days its boards went up on and its dressing
+         * began to come down on go back with it, so a board still stands the week it had left and the dressing waits
+         * the two days it had, not on until the old clock comes round. The rest is read afresh (the times' days from
+         * the fortunes, which go back themselves; the alms table by the day it was decided for, a table of another day
+         * being cleared away).
+         */
+        fun back(days: Long) {
+            boards.replaceAll { _, day -> day - days }
+            // Nothing goes before the clock's first day, where -1 is "not coming down"
+            if (downFrom >= 0) downFrom = maxOf(0L, downFrom - days)
+        }
+
         companion object {
             private class Dress(
                 val run: Long, val dress: Int, val lanterns: Int, val goodFrom: Long, val fellOn: Long, val dimmedOn: Long,

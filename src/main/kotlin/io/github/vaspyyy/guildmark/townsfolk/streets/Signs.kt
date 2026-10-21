@@ -54,6 +54,14 @@ object Signs : Comings.Listener {
 
     // An arrival (or a household come back) takes the home off Comings.empty: its board comes down at the next look
 
+    /** The clock set back: the days the streets keep (the boards' week, the dressing's coming down) go back with it. */
+    override fun back(level: ServerLevel, days: Long) {
+        val data = StreetsData.get(level)
+        if (data.all().isEmpty()) return
+        for (town in data.all()) town.back(days)
+        data.changed()
+    }
+
     // ---- Kept right ----
 
     /** Whether the board at [pos] (home [run]) is wanted still: the home empty and the board not a week up yet. */

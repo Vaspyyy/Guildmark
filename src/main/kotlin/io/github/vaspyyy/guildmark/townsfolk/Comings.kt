@@ -192,11 +192,14 @@ object Comings {
         if (listener !in listeners) listeners += listener
     }
 
-    /** Hears households arrive, leave and come back. */
+    /** Hears households arrive, leave and come back, and the clock set back. */
     interface Listener {
         fun arrived(level: ServerLevel, h: Household) {}
         fun left(level: ServerLevel, h: Household) {}
         fun returned(level: ServerLevel, h: Household) {}
+
+        /** The clock was set back [days] market days ([setBack]): any market day it keeps goes back with it. */
+        fun back(level: ServerLevel, days: Long) {}
     }
 
     // ---- Setup ----
@@ -229,7 +232,8 @@ object Comings {
      * Each look, before the days: whether the clock has been set back since the last (`/time set` to an earlier time),
      * by the hour it was last looked at (kept with the comings' data, so a restart in between sees it too). If so, every
      * capital's comings and goings go back the market days it went ([back]) once, whether the markets are on or off, so
-     * the clock's next day is theirs and nobody due waits for it to come round. With the markets on, a market the
+     * the clock's next day is theirs and nobody due waits for it to come round, and so do the days others keep by
+     * them ([Listener.back]: the streets' boards, say). With the markets on, a market the
      * clock has gone back past takes itself back first (Markets.run, with its fortunes and works), and the comings follow
      * at the look after; a clock moved on only notes its hour. Days lived on ahead by a market run stay as far ahead.
      */
@@ -246,6 +250,13 @@ object Comings {
         val days = Conditions(was).day - Conditions(now).day
         if (days <= 0L) return
         for (capital in data.all().keys.toList()) back(level, capital, days)
+        for (l in listeners.toList()) {
+            try {
+                l.back(level, days)
+            } catch (e: RuntimeException) {
+                Guildmark.LOGGER.warn("Something keeping market days failed to go back with the clock", e)
+            }
+        }
     }
 
     // ---- The days ----
