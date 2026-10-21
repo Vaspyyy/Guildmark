@@ -16,14 +16,20 @@ import java.util.function.Supplier
  * The households coming to each capital and leaving it (living-world/design-influence.md section 6), kept with the
  * overworld as `comings`: those due (why, when, the trades they bring and the home they're for), those away (who, since
  * when, and the home they left), the last day one left, and what [Comings] needs to work each day out once and only
- * once: the last day worked out, the dead already seen to, the bodies still to be made, and where the newcomers work.
- * Every field reads back with a default, so a world saved before any of it starts empty.
+ * once: the last day worked out, the clock's hour at the last look (to see it set back), the dead already seen to, the
+ * bodies still to be made, and where the newcomers work. Every field reads back with a default, so a world saved
+ * before any of it starts empty.
  */
 class ComingsData(
     private val towns: MutableMap<Long, Town> = HashMap(),
     private var next: Int = 1,
     /** The newcomer each works sent for (see [Comings.hire]): its id to theirs, -1 while they're still due. */
     val hired: MutableMap<Int, Int> = HashMap(),
+    /**
+     * The hour of the overworld's clock (as the markets count it) the comings last looked at the days at, or [NEVER]:
+     * a clock found earlier than that was set back, and the days they date by go back with it ([Comings.setBack]).
+     */
+    var looked: Long = NEVER,
 ) : SavedData() {
 
     /**
@@ -187,7 +193,8 @@ class ComingsData(
                 Town.CODEC.listOf().optionalFieldOf("towns", listOf()).forGetter { d -> d.towns.entries.sortedBy { it.key }.map { it.key to it.value } },
                 Codec.INT.optionalFieldOf("next", 1).forGetter { it.next },
                 HIRED.listOf().optionalFieldOf("hired", listOf()).forGetter { d -> d.hired.entries.sortedBy { it.key }.map { it.key to it.value } },
-            ).apply(i) { towns, next, hired -> ComingsData(towns.toMap(HashMap()), next, hired.toMap(HashMap())) }
+                Codec.LONG.optionalFieldOf("looked", NEVER).forGetter { it.looked },
+            ).apply(i) { towns, next, hired, looked -> ComingsData(towns.toMap(HashMap()), next, hired.toMap(HashMap()), looked) }
         }
 
         private val TYPE = SavedDataType(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "comings"), Supplier { ComingsData() }, CODEC)

@@ -221,7 +221,31 @@ object Comings {
         val t = server.tickCount
         if (t % BODIES == 7) bodies(level)
         if (t % LOOK != 23) return
+        setBack(level)
         if (on) records(level) else restore(level)
+    }
+
+    /**
+     * Each look, before the days: whether the clock has been set back since the last (`/time set` to an earlier time),
+     * by the hour it was last looked at (kept with the comings' data, so a restart in between sees it too). If so, every
+     * capital's comings and goings go back the market days it went ([back]) once, whether the markets are on or off, so
+     * the clock's next day is theirs and nobody due waits for it to come round. With the markets on, a market the
+     * clock has gone back past takes itself back first (Markets.run, with its fortunes and works), and the comings follow
+     * at the look after; a clock moved on only notes its hour. Days lived on ahead by a market run stay as far ahead.
+     */
+    private fun setBack(level: ServerLevel) {
+        val data = ComingsData.get(level)
+        val now = Markets.hourOf(level)
+        val was = data.looked
+        if (was == now) return
+        // The markets' own days go back first (the day a market is on is what the comings' days are read against)
+        if (was > now && Markets.enabled() && Markets.get(level).all().any { it.market.hour > now }) return
+        data.looked = now
+        data.changed()
+        if (was == ComingsData.NEVER || was < now) return
+        val days = Conditions(was).day - Conditions(now).day
+        if (days <= 0L) return
+        for (capital in data.all().keys.toList()) back(level, capital, days)
     }
 
     // ---- The days ----
@@ -283,11 +307,10 @@ object Comings {
     }
 
     /**
-     * The clock set back (from Markets.run, as [capital]'s market goes back): its comings and goings go back [days]
-     * market days with it, the day they last worked out and every day they date by (the households due, away and come
-     * in; the last to leave, to grow the town and to come; the day one is to leave), and the dead not yet seen to with
-     * them, so the clock's next day is their next and nobody due waits the longer. Days lived on ahead by a market run
-     * stay ahead.
+     * The clock set back (from [setBack]): [capital]'s comings and goings go back [days] market days with it, the day they
+     * last worked out and every day they date by (the households due, away and come in; the last to leave, to grow the
+     * town and to come; the day one is to leave), and the dead not yet seen to with them, so the clock's next day is
+     * their next and nobody due waits the longer. Days lived on ahead by a market run stay ahead.
      */
     internal fun back(level: ServerLevel, capital: Long, days: Long) {
         if (!READY || days == 0L) return
