@@ -103,6 +103,9 @@ object Talk {
         /** The choices asked this talk. */
         val asked = HashSet<String>()
 
+        /** The ids of the choices the screen was sent with its last say: a pick of any other is dropped. */
+        var offered: Set<String> = emptySet()
+
         /** How many pieces of news they've told this talk. */
         var news = 0
 
@@ -282,6 +285,8 @@ object Talk {
     fun picked(player: ServerPlayer, entity: Int, serial: Int, choice: String) {
         val s = sessions[player.uuid] ?: return
         if (s.p.id != entity || s.serial != serial || s.waiting || s.ending != null) return
+        // Only what the screen was shown can be picked (a sent "trade" in a talk with no market behind it, or a topic's choice it never showed, is dropped)
+        if (choice !in s.offered) return
         val level = s.p.level() as? ServerLevel ?: return
         s.last = level.gameTime
         val ask = ask(level, s.p, player, Occasion.ANSWER)
@@ -663,7 +668,9 @@ object Talk {
                 s.waiting = false
                 s.sent = now
                 val ask = ask(level, p, s.player, Occasion.ANSWER)
-                Wire.say(s.player, p, s.serial, a.parts, if (a.closing) listOf() else choices(s, ask), a.closing)
+                val offer: List<Choice> = if (a.closing) listOf() else choices(s, ask).take(TalkPayloads.MAX_CHOICES)
+                s.offered = offer.mapTo(HashSet()) { it.id }
+                Wire.say(s.player, p, s.serial, a.parts, offer, a.closing)
             }
         }
         if (now < a.at) return
