@@ -1,23 +1,27 @@
 package io.github.vaspyyy.guildmark.cooking.dish
 
 import io.github.vaspyyy.guildmark.cooking.CookRegistry
+import io.github.vaspyyy.guildmark.cooking.CookStats
+import io.github.vaspyyy.guildmark.cooking.Cooking
 import io.github.vaspyyy.guildmark.cooking.DishData
 import io.github.vaspyyy.guildmark.cooking.DishKind
 import io.github.vaspyyy.guildmark.cooking.Stage
+import net.minecraft.core.component.DataComponents
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.item.ItemStack
 
 /**
- * Dishes as things (living-world/cook/design.md 3.1, 3.2). [make] is real from the first commit, because every part
- * that serves a dish makes one this way; the reading of a stack and its freshness are Part D's, and until they land a
- * dish is always fresh.
+ * Dishes as things (living-world/cook/design.md 3.1, 3.2). [make] is what every part that serves a dish calls; the reading
+ * of a stack and how it has kept are here too, and are worked out from the day the dish was cooked, never trusted from
+ * what the stack last said (see [Freshness]).
  */
 object Dishes {
-    /** [count] portions of [kind] with [data]: the item of that kind, the component, and the cosmetic tier its model reads. */
+    /** [count] portions of [kind] with [data]: the item of that kind, the component, the cosmetic tier its model reads and its food (fresh; a held stack brings itself up to date by its own tick). */
     fun make(kind: DishKind, data: DishData, count: Int): ItemStack {
         val stack = ItemStack(CookRegistry.DISHES.getValue(kind).get(), count)
         stack.set(CookRegistry.DISH.get(), data)
         stack.set(CookRegistry.DISH_TIER.get(), data.tier.ordinal)
+        stack.set(DataComponents.FOOD, DishFood.food(kind, data.tier, Stage.FRESH))
         return stack
     }
 
@@ -28,12 +32,20 @@ object Dishes {
     fun dataOf(stack: ItemStack): DishData? =
         if (stack.item is DishItem) stack.get(CookRegistry.DISH.get()) ?: DishData.PLAIN else null
 
-    /** How [stack] has kept in [level]'s world, recomputed from its day and never trusted (3.2; stub: always fresh). */
-    fun stage(level: ServerLevel, stack: ItemStack): Stage = Stage.FRESH
+    /**
+     * How [stack] has kept in [level]'s world, recomputed from its day and never trusted (3.2). Fresh when it is not a
+     * dish, when it is Scorched mess, and always while `dishSpoilage` is off.
+     */
+    fun stage(level: ServerLevel, stack: ItemStack): Stage = Freshness.stageOf(level, stack)
 
-    /** How many days old [stack] is (3.2; stub: 0). */
-    fun age(level: ServerLevel, stack: ItemStack): Long = 0L
+    /** How many days old [stack] is (3.2): 0 when it is not a dish, was cooked today, or was cooked "in the future" (9.3). */
+    fun age(level: ServerLevel, stack: ItemStack): Long {
+        val data = dataOf(stack) ?: return 0L
+        return Freshness.age(Cooking.today(level), data)
+    }
 
-    /** Part D's registration: the dish commands and the Larder's ageing (stub: nothing). */
-    fun register() {}
+    /** Part D's registration: its readout for `cook perf`, and (as it lands) the dish commands and the Larder. */
+    fun register() {
+        CookStats.readout("dishes") { "${Freshness.looks} stack looks, ${Freshness.writes} stage writes" }
+    }
 }
