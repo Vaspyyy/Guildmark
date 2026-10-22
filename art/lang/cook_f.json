@@ -1,0 +1,10 @@
+{
+  "gui.guildmark.cook.meal.warmth": "Warmth: the winter cold keeps off you for %s min",
+  "gui.guildmark.cook.meal.hearty": "Hearty: +%s maximum health for %s min",
+  "gui.guildmark.cook.meal.steady": "Steady: stamina returns %s%% faster, poise +%s, stamina +%s, for %s min",
+  "gui.guildmark.cook.meal.provisioned": "Provisioned: %s%% of the food you lose comes back, for %s min",
+  "message.guildmark.cook.meal.kept": "%s stays as it was: this meal is no stronger and no longer.",
+  "message.guildmark.cook.meal.replaced": "%s gives way to %s: one kind of meal holds at a time.",
+  "message.guildmark.cook.meal.ended": "%s wears off.",
+  "message.guildmark.cook.chill.lifted": "The warmth drives the cold out of you."
+}

@@ -8,6 +8,7 @@ import io.github.vaspyyy.guildmark.combat.Combat
 import io.github.vaspyyy.guildmark.combat.CombatState
 import io.github.vaspyyy.guildmark.combat.Move
 import io.github.vaspyyy.guildmark.combat.MoveKind
+import io.github.vaspyyy.guildmark.cooking.meal.Meals
 import io.github.vaspyyy.guildmark.magic.MagicRegistry
 import io.github.vaspyyy.guildmark.magic.Spellbook
 import io.github.vaspyyy.guildmark.registry.ModAttachments
@@ -124,7 +125,7 @@ object Talents {
         if (player.isAlive && after > before) player.health = min(after, player.health + (after - before))
         if (player.health > after) player.health = after
         val combat = Combat.state(player)
-        combat.maxStamina = CombatState.MAX_STAMINA + build[Bonus.STAMINA].toFloat().coerceAtLeast(-50f)
+        combat.maxStamina = CombatState.MAX_STAMINA + build[Bonus.STAMINA].toFloat().coerceAtLeast(-50f) + Meals.maxStamina(player)
         combat.maxFocus = CombatState.MAX_FOCUS + build[Bonus.FOCUS].toFloat().coerceAtLeast(-20f)
         combat.stamina = min(combat.stamina, combat.maxStamina)
         combat.focus = min(combat.focus, combat.maxFocus)

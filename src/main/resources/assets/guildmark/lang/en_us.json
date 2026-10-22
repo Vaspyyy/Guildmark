@@ -6556,5 +6556,13 @@
   "message.guildmark.cook.hint.timing_now": "Pull it now.",
   "message.guildmark.cook.hint.timing_late": "Pull it now: it is just past its best.",
   "message.guildmark.cook.hint.timing_over": "It is past its time and going over.",
-  "message.guildmark.cook.hint.timing_burning": "It is catching: pull it, quick!"
+  "message.guildmark.cook.hint.timing_burning": "It is catching: pull it, quick!",
+  "gui.guildmark.cook.meal.warmth": "Warmth: the winter cold keeps off you for %s min",
+  "gui.guildmark.cook.meal.hearty": "Hearty: +%s maximum health for %s min",
+  "gui.guildmark.cook.meal.steady": "Steady: stamina returns %s%% faster, poise +%s, stamina +%s, for %s min",
+  "gui.guildmark.cook.meal.provisioned": "Provisioned: %s%% of the food you lose comes back, for %s min",
+  "message.guildmark.cook.meal.kept": "%s stays as it was: this meal is no stronger and no longer.",
+  "message.guildmark.cook.meal.replaced": "%s gives way to %s: one kind of meal holds at a time.",
+  "message.guildmark.cook.meal.ended": "%s wears off.",
+  "message.guildmark.cook.chill.lifted": "The warmth drives the cold out of you."
 }

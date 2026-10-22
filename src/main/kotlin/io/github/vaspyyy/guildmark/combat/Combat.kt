@@ -2,6 +2,7 @@ package io.github.vaspyyy.guildmark.combat
 
 import io.github.vaspyyy.guildmark.wardfire.WardensFlask
 import io.github.vaspyyy.guildmark.GuildmarkConfig
+import io.github.vaspyyy.guildmark.cooking.meal.Meals
 import io.github.vaspyyy.guildmark.magic.Magic
 import io.github.vaspyyy.guildmark.magic.MagicRegistry
 import io.github.vaspyyy.guildmark.magic.Spell
@@ -359,7 +360,7 @@ object Combat {
             val build = Talents.build(player)
             // Bulwark: a raised shield doesn't slow the stamina coming back
             val guarding = player.isUsingItem && player.useItem.has(DataComponents.BLOCKS_ATTACKS) && !build.has(Bonus.GUARD_REGEN)
-            val regen = CombatState.REGEN_PER_TICK * (1f + build[Bonus.STAMINA_REGEN].toFloat()).coerceAtLeast(0.2f)
+            val regen = CombatState.REGEN_PER_TICK * (1f + build[Bonus.STAMINA_REGEN].toFloat() + Meals.regen(player)).coerceAtLeast(0.2f)
             s.stamina = min(s.maxStamina, s.stamina + regen * (if (guarding) 0.35f else 1f))
         }
         s.focus = min(s.maxFocus, s.focus + CombatState.FOCUS_PER_TICK * (1f + Talents[player, Bonus.FOCUS_REGEN].toFloat()).coerceAtLeast(0.2f))
@@ -409,7 +410,7 @@ object Combat {
     /** Poise: base 25, plus armour and toughness. Heavy moves add hyper armour while they swing. */
     private fun poise(player: ServerPlayer, s: CombatState, now: Long): Float {
         val base = (25f + player.armorValue * 1.5f + player.getAttributeValue(Attributes.ARMOR_TOUGHNESS).toFloat() * 2f +
-            Talents[player, Bonus.POISE].toFloat() + (if (player.hasEffect(MagicRegistry.VIGIL)) VIGIL_POISE else 0f)).coerceAtLeast(5f)
+            Talents[player, Bonus.POISE].toFloat() + (if (player.hasEffect(MagicRegistry.VIGIL)) VIGIL_POISE else 0f) + Meals.poise(player)).coerceAtLeast(5f)
         val move = s.move ?: return base
         val t = s.elapsed(now)
         return if (move.poise > 1f && s.busy(now) && t >= 2f && t <= max(move.lastHit, move.castAt) + 1) base * move.poise else base
