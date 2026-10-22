@@ -67,7 +67,7 @@ internal object Cold {
         if (!Fortunes.enabled() || !Markets.enabled()) return false
         val now = level.gameTime
         known[capital]?.let { if (now - it.at in 0 until LOOKED) return it.cold }
-        val entry = Markets.get(level)[BlockPos.of(capital)]
+        val entry = Markets.find(level, capital)
         val cold = entry != null && Markets.felt(entry).heating >= 1.0 && entry.market.let { m ->
             m.today(Tally.SHORT, Good.COAL) > 0.0 || m.yesterday(Tally.SHORT, Good.COAL) > 0.0 && m.stock(Good.COAL) < 1.0
         }

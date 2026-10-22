@@ -4,6 +4,7 @@ import io.github.vaspyyy.guildmark.city.plan.Look
 import io.github.vaspyyy.guildmark.city.plan.Wares
 import io.github.vaspyyy.guildmark.economy.works.Reserve
 import io.github.vaspyyy.guildmark.townsfolk.Furnish
+import io.github.vaspyyy.guildmark.village.live.Villages
 import net.minecraft.core.BlockPos
 import net.minecraft.core.HolderLookup
 import net.minecraft.nbt.CompoundTag
@@ -146,13 +147,13 @@ class WaresBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(WaresRegi
      * What it should show now: each good as full as the market holds of it against what the town likes to keep (a
      * town granary's bins: as full as the granary holds of it against its room, see [Wares.reserve]), a count it's
      * near enough to kept so the heap doesn't flicker; full with the markets switched off; null (no change)
-     * outside a capital, while its market hasn't opened, and while it shows a player's own goods.
+     * outside a capital or a village, while its market hasn't opened, and while it shows a player's own goods.
      */
     private fun target(level: ServerLevel): IntArray? {
         if (own != null) return null
         if (!Markets.enabled()) return full()
         val centre = capital(level) ?: return null
-        val entry = Markets.get(level)[centre] ?: return null
+        val entry = Markets.find(level, centre.asLong()) ?: return null
         val cap = WaresLayout.capacity(look, wares.goods)
         return IntArray(cap.size / 2) { i ->
             val good = Good.byId(wares.goods[i]) ?: return@IntArray cap[i * 2]
@@ -167,7 +168,8 @@ class WaresBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(WaresRegi
         capital?.let { return it }
         if (level.gameTime - sought < SEEK) return null
         sought = level.gameTime
-        val found = Furnish.capitalAt(level, blockPos)?.center ?: return null
+        // A capital's, or the village's whose ground it stands on (its shelves show the village's stock)
+        val found = Furnish.capitalAt(level, blockPos)?.center ?: Villages.at(level, blockPos)?.let { BlockPos.of(it.key) } ?: return null
         capital = found
         setChanged()
         return found

@@ -53,7 +53,7 @@ object Trades {
 
     /** [life]'s capital's market, if the markets are on and it keeps one yet. */
     fun market(p: Townsperson, life: Life): Markets.Entry? =
-        if (Markets.enabled()) Markets.get(level(p))[life.places.centre] else null
+        if (Markets.enabled()) Markets.find(level(p), life.places.centre.asLong()) else null
 
     /** The clock's hour, 0 at midnight. */
     private fun clock(level: ServerLevel): Int = Math.floorMod(Math.floorDiv(level.overworldClockTime, 1000L) + 6, 24L).toInt()

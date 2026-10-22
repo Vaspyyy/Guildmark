@@ -210,7 +210,7 @@ object ShutStall {
      */
     fun look(level: ServerLevel, player: ServerPlayer, here: Scenes.Here) {
         if (!Markets.enabled()) return
-        val entry = Markets.get(level)[here.places.centre] ?: return
+        val entry = Markets.find(level, here.places.centre.asLong()) ?: return
         for (stall in here.places.stalls) {
             if (stall.keeper.pos.distSqr(player.blockPosition()) > SEEN * SEEN) continue
             if (isShut(stall) || Trades.wares(entry, stall.trade).isNotEmpty() && !Tales.sealed(stall.keeper.pos.asLong(), level.gameTime)) continue

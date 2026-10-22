@@ -99,7 +99,7 @@ internal object BreadQueue {
     private fun clock(level: ServerLevel): Int = Math.floorMod(Math.floorDiv(level.overworldClockTime, 1000L) + 6, 24L).toInt()
 
     private fun market(level: ServerLevel, places: TownPlaces): Market? =
-        if (Markets.enabled()) Markets.get(level)[places.centre]?.market else null
+        if (Markets.enabled()) Markets.find(level, places.centre.asLong())?.market else null
 
     /** Whether bread is short at [m] this morning while the ovens are baking or flour is on its way: the queue's cause. */
     fun short(level: ServerLevel, m: Market): Boolean {

@@ -5,6 +5,7 @@ import io.github.vaspyyy.guildmark.block.QuestBoardBlockEntity
 import io.github.vaspyyy.guildmark.party.Parties
 import io.github.vaspyyy.guildmark.quest.GoodsPrices
 import io.github.vaspyyy.guildmark.townsfolk.Furnish
+import io.github.vaspyyy.guildmark.village.live.Villages
 import net.minecraft.core.BlockPos
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.resources.Identifier
@@ -67,7 +68,12 @@ object MarketFetch {
     fun errand(level: ServerLevel, pos: BlockPos, item: Identifier): Double? {
         val good = good(item) ?: return null
         val entry = nearest(level, pos) ?: return null
-        return entry.market.price(entry.town, good)
+        val capital = entry.market.price(entry.town, good)
+        // A board standing in a village whose market is open is reckoned at the lesser of the nearest capital's price and the village's
+        // own, so goods bought at the village's counter and handed in on its board never pay more than a carrier's quarter over what
+        // they cost there (and a village's shortage is never paid out as a relief fee; the villages design, section 18.5)
+        val village = Villages.at(level, pos)?.let { VillageMarkets.find(level, it.key) } ?: return capital
+        return minOf(capital, village.market.price(village.town, good))
     }
 
     /**

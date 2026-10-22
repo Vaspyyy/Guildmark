@@ -11,6 +11,7 @@ import io.github.vaspyyy.guildmark.registry.ModBlocks
 import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
 import io.github.vaspyyy.guildmark.townsfolk.Furnish
 import io.github.vaspyyy.guildmark.village.VillageNames
+import io.github.vaspyyy.guildmark.village.live.Villages
 import net.minecraft.ChatFormatting
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
@@ -116,15 +117,19 @@ object MarketBoards {
         if (board.writing != -1 && (writing == null || time - writing.chalked > PUT_DOWN)) board.done()
         if (!Suppliers.enabled()) board.tickets(listOf())
         if (!Markets.enabled()) return
-        val capital = Furnish.capitalAt(level, anchor) ?: return
-        val entry = Markets.of(level, capital) ?: return
+        // A capital's board, or one that stands in a village whose market is open
+        val capital = Furnish.capitalAt(level, anchor)
+        val village = if (capital == null) Villages.at(level, anchor) else null
+        val entry = (if (capital != null) Markets.of(level, capital) else village?.let { VillageMarkets.find(level, it.key) }) ?: return
+        val centre = capital?.center ?: BlockPos.of(village!!.key)
+        val name: Component = capital?.let(::town) ?: Component.literal(village!!.name)
         val c = Conditions(Markets.hourOf(level))
         val due = due(c)
         // Left to the crier while they still might come and someone's about to see them do it
         val hour = if (due.second) NOON else MORNING
         val late = board.day < 0 || c.day != due.first || c.clock >= hour + GRACE
         val seen = level.getNearestPlayer(anchor.x + 0.5, anchor.y + 0.5, anchor.z + 0.5, UNSEEN * 2, false) != null
-        tickets(level, board, capital.center, seen)
+        tickets(level, board, centre, seen)
         if (current(board, due)) {
             // Left half written (the crier was called away from it): the rest is found written up all the same, and
             // the lines they did write stay as they wrote them
@@ -135,7 +140,7 @@ object MarketBoards {
             return
         }
         if (!late && seen) return
-        board.write(town(capital), due.first, due.second, lines(entry, MarketBoardBlockEntity.LONG_AGO))
+        board.write(name, due.first, due.second, lines(entry, MarketBoardBlockEntity.LONG_AGO))
     }
 
     /** [player] reads the board at [anchor]: every price on it and the news, in chat. */
