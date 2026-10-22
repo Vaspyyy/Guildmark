@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "#": "#minecraft:planks",
+    "C": "minecraft:chest"
+  },
+  "pattern": [
+    "###",
+    "###",
+    " C "
+  ],
+  "result": {
+    "count": 1,
+    "id": "guildmark:larder"
+  }
+}
