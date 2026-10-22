@@ -180,11 +180,13 @@ object Economy {
      * bought this hour (see [OwnStalls]) once it's bought it, before the stores go off and the caravans come.
      * [carried]: this hour's caravan comes on a wagon along the road (see [Caravans]), which brings its goods when it
      * gets in, or doesn't; otherwise they come in at the hour as they always have.
+     * [served]: portions of cooks' dishes the town ate at this hour's meal in place of plain food (see
+     * [io.github.vaspyyy.guildmark.cooking.market.Kitchens]); they come off what the meal asks of the market.
      * [afar]: whether the three caravans a day (which take away what the town has to spare and bring in what it lacks,
      * from afar) run at all. A capital's do. A village's market trades by its own carts and wagons instead (the villages
      * design, section 7.3), so its hours are worked out with this false.
      */
-    fun hour(m: Market, town: Town, c: Conditions, random: Random, stalls: ((Market, Town) -> Unit)? = null, carried: Boolean = false, afar: Boolean = true) {
+    fun hour(m: Market, town: Town, c: Conditions, random: Random, stalls: ((Market, Town) -> Unit)? = null, carried: Boolean = false, served: Double = 0.0, afar: Boolean = true) {
         m.hour = c.hour
         m.worked.fill(0.0)
         m.drawn.fill(0.0)
@@ -214,7 +216,7 @@ object Economy {
         // The inn keeps every day: grain bought at the market after lunch, brewing before it
         if (h == 14) stockTavern(m, town)
         if (brewing(h)) brew(m, town)
-        if (meal(h)) eat(m, town, c)
+        if (meal(h)) eat(m, town, c, served)
         wares(m, town, c)
         if (tavern(h)) drink(m, town, c)
         stalls?.invoke(m, town)
@@ -441,10 +443,10 @@ object Economy {
      * A meal for the whole town from the market: each food by habit, more of what's cheap and less of what's dear,
      * and then whatever's left for those who couldn't get what they wanted. What can't be had at all goes short.
      */
-    private fun eat(m: Market, town: Town, c: Conditions) {
+    private fun eat(m: Market, town: Town, c: Conditions, served: Double) {
         // A great granary puts out its roots first, where the market's running short of them (see Reserve)
         Reserve.roots(m, town)
-        var need = town.people * (if (c.feast) FEAST else 1.0)
+        var need = (town.people * (if (c.feast) FEAST else 1.0) - served).coerceAtLeast(0.0)
         val weights = DoubleArray(Good.entries.size)
         for (round in 0 until 2) {
             var total = 0.0
