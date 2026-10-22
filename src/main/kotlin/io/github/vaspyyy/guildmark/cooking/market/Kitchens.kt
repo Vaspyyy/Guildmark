@@ -46,9 +46,14 @@ class Kitchens(
 
     fun changed() = setDirty()
 
-    /** Sells the dish in [stack] to the keeper of [door] in [capital] for [player], taking what is bought off the stack in one go (7.7; stub: nothing taken). */
+    /**
+     * Sells the dish in [stack] to the keeper of [door] in [capital] for [player] (7.7): every portion the door will take today
+     * is taken off the stack and written into the ledger in this one step on the server thread, and the Sale says what they came
+     * to. It pays nothing: the door counts the Marks out in the order of its scene, or [Owed.settle] does at once if the scene
+     * is cut short. See [Selling] for the arithmetic, [Selling.quote] for what a sale would come to without making it.
+     */
     fun sell(level: ServerLevel, capital: Long, door: Door, player: ServerPlayer, stack: ItemStack): Sale =
-        Sale(0, 0, false, Tier.PLAIN, Stage.FRESH, null, false)
+        Selling.commit(level, this, capital, player, stack, Selling.quote(level, this, capital, door, player, stack))
 
     /**
      * The three kinds the inn wants on [day] (5.2), drawn from the world's seed, the capital and the day with the season's
