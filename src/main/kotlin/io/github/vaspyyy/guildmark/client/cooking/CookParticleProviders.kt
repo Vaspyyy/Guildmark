@@ -234,12 +234,28 @@ object CookParticleProviders {
         }
     }
 
+    /**
+     * What a provider hands back in place of a particle it will not make: one that is gone before it is drawn. The game's particle
+     * engine answers null for a type that has no provider at all, and the town's kitchens (TownKitchen.puff), who ask the engine
+     * for our steam, fat and crumbs and draw the game's smoke if it answers null, would read a plain refusal that way and draw the
+     * smoke beyond the range, over the cap and on every other one when the setting is Decreased.
+     */
+    private class Stillborn(level: ClientLevel, x: Double, y: Double, z: Double, sprites: SpriteSet) :
+        SingleQuadParticle(level, x, y, z, sprites.first()) {
+        init {
+            alpha = 0f
+            remove()
+        }
+
+        override fun getLayer(): Layer = Layer.TRANSLUCENT
+    }
+
     private class Provider(private val sprites: SpriteSet, private val look: Look) : ParticleProvider<SimpleParticleType> {
         override fun createParticle(
             options: SimpleParticleType, level: ClientLevel, x: Double, y: Double, z: Double,
             xAux: Double, yAux: Double, zAux: Double, random: RandomSource,
         ): Particle? {
-            if (!allowed(x, y, z)) return null
+            if (!allowed(x, y, z)) return Stillborn(level, x, y, z, sprites)
             return CookParticle(level, x, y, z, xAux, yAux, zAux, sprites, look)
         }
     }
