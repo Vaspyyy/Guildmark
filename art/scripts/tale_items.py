@@ -13,9 +13,13 @@ Writes
   * the quill, the tracker row's icon (`textures/item/tale_quill.png`, its model and `items/tale_quill.json`);
   * the mote, the gold specks at a cast member's shoulder (`textures/particle/tale_mote_0..3.png`, `particles/tale_mote.json`).
 
-The lit lantern and the lit miner's lamp are animated: a strip of frames and a `.mcmeta`, so the flame inside moves.
+The lit lantern and the lit miner's lamp are animated: a strip of frames and a `.mcmeta`, so the flame inside moves. So
+are the keepsakes with something shiny in them (the cleared note's wax, the wagon tag's brass, the pick's amber, the bell,
+the nail, the lantern's gold thread, the ribbon's silk, the miner's lamp) and the quill: each rests a few seconds and then
+a band of light crosses the shiny parts, over eight frames (a different rest for each, so a hand of them is not in step).
 Everything is seeded, so a rerun gives the same files. With a preview dir it also writes the sheets: every item large on
-a dark and on a light ground, then as a hotbar shows them (32, 16 and the 6 or so pixels a carried prop is drawn at).
+a dark and on a light ground, then as a hotbar shows them (32, 16 and the 6 or so pixels a carried prop is drawn at), and
+a moving picture of each animated one, played as its `.mcmeta` plays it.
 """
 import json
 import math
@@ -132,6 +136,12 @@ KEEPSAKES = ('note', 'note_c', 'chair', 'wagon', 'child', 'fence', 'lute', 'moot
 
 PROPS = ('note_sealed', 'ransom_pouch', 'slate', 'thread_paper', 'locket', 'blanket', 'washing', 'lantern_paper_dark',
          'lantern_paper_lit', 'miners_lamp_dark', 'miners_lamp_lit', 'posy')
+
+
+# The painters' key for each made item, by the name it is made under ('keepsake/wagon' is 'keep:wagon')
+KEY_OF = {'tale_quill': 'quill:tale_quill'}
+KEY_OF.update({'keepsake/' + look: 'keep:' + look for look in KEEPSAKES})
+KEY_OF.update({'tale_prop/' + look: 'prop:' + look for look in PROPS})
 
 
 PAINTERS = {}
@@ -1142,18 +1152,73 @@ def select_definition(cases, fallback):
         'fallback': {'type': 'minecraft:model', 'model': fallback}}}
 
 
+# ================================================================ the light that crosses what is shiny
+
+
+# Each look with something shiny in it: the ramps its shiny parts are painted in, and the ticks it rests between sweeps of light
+SHINE = {
+    'keep:note': ([PAL['wax']], 76),
+    'keep:wagon': ([PAL['brass']], 64),
+    'keep:lute': ([GEMS['amber']], 88),
+    'keep:moot': ([PAL['iron']], 70),
+    'keep:cart': ([PAL['iron']], 96),
+    'keep:lantern': ([PAL['gold']], 82),
+    'keep:locket': ([GEMS['blue']], 60),
+    'keep:brother': ([PAL['iron'], PAL['brass'], PAL['glass']], 74),
+    'quill:tale_quill': ([PAL['gold'], PAL['parchment'], PAL['iron']], 68),
+}
+SWEEP = 8                      # the frames of a sweep, each held for SWEEP_TICKS
+SWEEP_TICKS = 2
+SWEEP_WIDTH = 3.2              # half the band's width, in pixels along the diagonal
+SWEEP_LIGHT = np.array((255, 248, 226), float)
+
+
+def sweep_frames(still, ramps):
+    """A band of light crossing the still from its upper left to its lower right, over SWEEP frames: wherever a pixel is one of
+    the tones of the shiny ramps it is lightened toward warm white by how near the band is. The outline and the dull parts do not
+    change, so the shape and the alpha are the still's in every frame."""
+    a = np.asarray(still.convert('RGBA'), float)
+    shiny = np.zeros((N, N), bool)
+    for ramp in ramps:
+        for tone in ramp:
+            shiny |= (a[..., :3] == np.round(np.asarray(tone, float))).all(-1)
+    shiny &= a[..., 3] > 0
+    along = XS + YS
+    out = []
+    for k in range(SWEEP):
+        centre = -4.0 + (2 * N + 8) * (k + 0.5) / SWEEP
+        near = np.clip(1.0 - np.abs(along - centre) / SWEEP_WIDTH, 0, 1) * shiny * 0.7
+        b = a.copy()
+        b[..., :3] = a[..., :3] * (1 - near[..., None]) + SWEEP_LIGHT * near[..., None]
+        out.append(Image.fromarray(np.clip(b, 0, 255).round().astype(np.uint8), 'RGBA'))
+    return out
+
+
+def frames_of(key):
+    """The painter's frames: one still, or the whole run of an animated one, or a still followed by the sweep of light over it."""
+    if key in ANIM:
+        return [PAINTERS[key](frame=i) for i in range(ANIM[key])]
+    still = PAINTERS[key]()
+    if key in SHINE:
+        return [still] + sweep_frames(still, SHINE[key][0])
+    return [still]
+
+
 # What each animated strip does: the frames it plays, in order, and how long each is held, in ticks
 MCMETA = {
     'prop:lantern_paper_lit': {'animation': {'frametime': 3, 'frames': [0, 1, 2, 3, 4, 5, 3, 1]}},
     'prop:miners_lamp_lit': {'animation': {'frametime': 2, 'frames': [0, 1, 2, 3, 4, 5, 3, 1]}},
 }
+MCMETA.update({key: {'animation': {'frametime': SWEEP_TICKS, 'frames': [{'index': 0, 'time': rest}] + list(range(1, SWEEP + 1))}}
+               for key, (_, rest) in SHINE.items()})
 
 
-def frames_of(key):
-    """The painter's frames: one still, or the whole run of an animated one."""
-    if key in ANIM:
-        return [PAINTERS[key](frame=i) for i in range(ANIM[key])]
-    return [PAINTERS[key]()]
+def playlist(meta, count):
+    """What a .mcmeta plays: [(frame, ticks)] in order (every frame in turn if it lists none)."""
+    anim = meta['animation']
+    base = anim.get('frametime', 1)
+    listed = anim.get('frames', list(range(count)))
+    return [(e, base) if isinstance(e, int) else (e['index'], e.get('time', base)) for e in listed]
 
 
 def strip_of(frames):
@@ -1175,8 +1240,11 @@ def write_items(assets):
         img.save(path, optimize=True)
 
     for look in KEEPSAKES:
-        made['keepsake/' + look] = frames = frames_of('keep:' + look)
+        key = 'keep:' + look
+        made['keepsake/' + look] = frames = frames_of(key)
         texture('item/keepsake/' + look, strip_of(frames) if len(frames) > 1 else frames[0])
+        if key in MCMETA:
+            write_json(os.path.join(assets, 'textures', 'item', 'keepsake', look + '.png.mcmeta'), MCMETA[key])
         write_json(os.path.join(models, 'keepsake', look + '.json'), plain_model('guildmark:item/keepsake/' + look))
     write_json(os.path.join(defs, 'keepsake.json'), select_definition(
         [(look, 'guildmark:item/keepsake/' + look) for look in KEEPSAKES], 'guildmark:item/contract'))
@@ -1189,8 +1257,9 @@ def write_items(assets):
         write_json(os.path.join(models, 'tale_prop', look + '.json'), plain_model('guildmark:item/tale_prop/' + look))
     write_json(os.path.join(defs, 'tale_prop.json'), select_definition(
         [(look, 'guildmark:item/tale_prop/' + look) for look in PROPS], 'guildmark:item/tale_prop/' + PROPS[0]))
-    made['tale_quill'] = [PAINTERS['quill:tale_quill']()]
-    texture('item/tale_quill', made['tale_quill'][0])
+    made['tale_quill'] = frames = frames_of('quill:tale_quill')
+    texture('item/tale_quill', strip_of(frames) if len(frames) > 1 else frames[0])
+    write_json(os.path.join(assets, 'textures', 'item', 'tale_quill.png.mcmeta'), MCMETA['quill:tale_quill'])
     write_json(os.path.join(models, 'tale_quill.json'), plain_model('guildmark:item/tale_quill'))
     write_json(os.path.join(defs, 'tale_quill.json'), one_model('tale_quill'))
     names = []
@@ -1242,6 +1311,26 @@ def verify(assets, made):
         if not exists('textures/particle/tale_mote_%d.png' % i):
             problems.append('missing tale_mote_%d' % i)
     for name, frames in made.items():
+        path = os.path.join(assets, 'textures', 'item', name + '.png')
+        im = Image.open(path)
+        if im.size != (N, N * len(frames)):
+            problems.append('%s: the strip is %d x %d, not %d x %d' % (name, im.width, im.height, N, N * len(frames)))
+        meta_path = path + '.mcmeta'
+        if len(frames) > 1 and not os.path.exists(meta_path):
+            problems.append(name + ': an animated strip with no .mcmeta')
+        if len(frames) == 1 and os.path.exists(meta_path):
+            problems.append(name + ': a .mcmeta beside a single frame')
+        if os.path.exists(meta_path):
+            with open(meta_path) as f:
+                plays = playlist(json.load(f), len(frames))
+            if any(not 0 <= i < len(frames) or t < 1 for i, t in plays):
+                problems.append(name + ': the .mcmeta plays a frame that is not there')
+            if plays[0][0] != 0:
+                problems.append(name + ': the loop does not start on the resting frame')
+        if KEY_OF[name] in SHINE:
+            alpha0 = np.asarray(frames[0].convert('RGBA'))[..., 3]
+            if any((np.asarray(f.convert('RGBA'))[..., 3] != alpha0).any() for f in frames[1:]):
+                problems.append(name + ': the sweep of light changes the shape')
         for k, im in enumerate(frames):
             a = np.asarray(im.convert('RGBA'), int)
             solid = a[..., 3] > 0
@@ -1297,14 +1386,15 @@ def small_row(images, bg, size, zoom=3, per_row=None):
     return out.resize((out.width * zoom, out.height * zoom), Image.NEAREST)
 
 
-def gif(frames, path, bg, scale=8, ms=100):
-    """A looping preview of an animation, each frame on the backdrop."""
+def gif(frames, path, bg, plays, scale=8):
+    """A looping preview of an animation, each frame on the backdrop, played as the .mcmeta plays it ([plays] is [(frame, ticks)])."""
     out = []
-    for f in frames:
+    for i, _ in plays:
+        f = frames[i]
         base = Image.new('RGBA', (f.width * scale, f.height * scale), (*bg, 255))
         base.alpha_composite(f.resize((f.width * scale, f.height * scale), Image.NEAREST))
         out.append(base.convert('P', palette=Image.ADAPTIVE, colors=128))
-    out[0].save(path, save_all=True, append_images=out[1:], duration=ms, loop=0, disposal=2)
+    out[0].save(path, save_all=True, append_images=out[1:], duration=[50 * t for _, t in plays], loop=0, disposal=2)
 
 
 def previews(made, outdir):
@@ -1333,7 +1423,7 @@ def previews(made, outdir):
     sheet_.save(os.path.join(outdir, 'tales_items_small.png'))
     for n in names:
         if len(made[n]) > 1:
-            gif(made[n], os.path.join(outdir, 'tales_%s.gif' % n.split('/')[1]), BG_DARK, 10, 100)
+            gif(made[n], os.path.join(outdir, 'tales_%s.gif' % n.replace('/', '_')), BG_DARK, playlist(MCMETA[KEY_OF[n]], len(made[n])), 10)
     motes = [m.resize((8 * 12, 8 * 12), Image.NEAREST) for m in MOTES]
     mt = Image.new('RGBA', (len(motes) * 8 * 12 + 40, 8 * 12 + 20), (*BG_DARK, 255))
     for i, m in enumerate(motes):
