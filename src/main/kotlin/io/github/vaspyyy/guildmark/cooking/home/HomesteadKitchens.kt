@@ -112,6 +112,7 @@ object HomesteadKitchens {
         Cooking.onForget {
             jobs.clear()
             finds.clear()
+            faults.clear()
             seen.clear()
             checked.clear()
             fitted = 0L
@@ -220,10 +221,10 @@ object HomesteadKitchens {
         if (homes.isEmpty()) return
         for (home in homes) {
             if (home.tier < 1) continue
-            if (Math.floorMod(now + home.id * 13L, ROUND) == 0L) household(level, home)
+            if (Math.floorMod(now + home.id * 13L, ROUND) == 0L) attempt("household", home.id) { household(level, home) }
             if (Math.floorMod(now + home.id * 7L, SCAN) == 0L) {
-                scan(level, home, now)
-                chalkBoard(level, home)
+                attempt("scan", home.id) { scan(level, home, now) }
+                attempt("board", home.id) { chalkBoard(level, home) }
             }
         }
     }
@@ -237,7 +238,29 @@ object HomesteadKitchens {
             jobs.remove(job)
             return
         }
-        if (beat(level, home, job)) job.readyAt = now + (if (job.item == null) ITEM_GAP else BEAT) else jobs.remove(job)
+        val more = try {
+            beat(level, home, job)
+        } catch (e: RuntimeException) {
+            fault("fit-out", job.id, e)
+            false
+        }
+        if (more) job.readyAt = now + (if (job.item == null) ITEM_GAP else BEAT) else jobs.remove(job)
+    }
+
+    /** What has been reported as failing already, so that a fault is said once, with its trace, and the tick goes on without the part that failed. */
+    private val faults = HashSet<String>()
+
+    private fun fault(what: String, id: Int, e: RuntimeException) {
+        if (faults.add("$what $id")) Guildmark.LOGGER.warn("The homestead kitchen's {} for homestead #{} failed and is skipped", what, id, e)
+    }
+
+    /** Runs [work], one part of a tick: a fault in it is logged (once) and never stops the server's tick or the other parts. */
+    private inline fun attempt(what: String, id: Int, work: () -> Unit) {
+        try {
+            work()
+        } catch (e: RuntimeException) {
+            fault(what, id, e)
+        }
     }
 
     /**
