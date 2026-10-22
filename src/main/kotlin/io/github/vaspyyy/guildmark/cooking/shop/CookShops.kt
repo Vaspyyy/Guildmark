@@ -6,6 +6,7 @@ import io.github.vaspyyy.guildmark.cooking.Tier
 import io.github.vaspyyy.guildmark.cooking.dish.Dishes
 import io.github.vaspyyy.guildmark.cooking.dish.LarderBlockEntity
 import io.github.vaspyyy.guildmark.cooking.market.Kitchens
+import io.github.vaspyyy.guildmark.cooking.market.MenuBoards
 import io.github.vaspyyy.guildmark.cooking.market.Owed
 import io.github.vaspyyy.guildmark.cooking.vessel.VesselBlockEntity
 import io.github.vaspyyy.guildmark.economy.Markets
@@ -21,6 +22,7 @@ import io.github.vaspyyy.guildmark.economy.works.build.WorksPlans
 import io.github.vaspyyy.guildmark.party.Parties
 import io.github.vaspyyy.guildmark.registry.ModItems
 import io.github.vaspyyy.guildmark.townsfolk.Days
+import io.github.vaspyyy.guildmark.townsfolk.Residents
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import net.minecraft.ChatFormatting
@@ -270,8 +272,24 @@ object CookShops {
     }
 
     /**
+     * The standing cookshop that has a part where [takes] says (its Hob, its Menu board...). Found among the few cookshops there are
+     * and not by a lot's yard, which a neighbouring stall's or shop's yard can overlap.
+     */
+    private inline fun standingWith(level: ServerLevel, takes: (ShopLayout) -> Boolean): WorksRec? {
+        for (w in WorksData.get(level).works.values) {
+            if (w.kind != WorksKind.COOKSHOP || w.state != WorksState.DONE) continue
+            val lay = layout(level, w.id) ?: continue
+            if (takes(lay)) return w
+        }
+        return null
+    }
+
+    /** The standing cookshop whose Menu board hangs at [pos]. */
+    internal fun boardAt(level: ServerLevel, pos: BlockPos): WorksRec? = standingWith(level) { it.board == pos }
+
+    /**
      * Whether the fire at [pos] is a cookshop's Hob or Bake oven, burning no fuel while the shop is open (from `Fuel.free`, once a second
-     * for each lit fire near a player). Found from the works whose ground holds it, and remembered.
+     * for each lit fire near a player). Found among the cookshops, and remembered.
      */
     fun freeAt(level: ServerLevel, pos: BlockPos): Boolean {
         if (!isOpen(level)) return false
@@ -282,12 +300,24 @@ object CookShops {
             if (works != null && works.kind == WorksKind.COOKSHOP && works.state == WorksState.DONE) return true
             stations.remove(key)
         }
-        val view = Works.at(level, pos) ?: return false
-        if (view.kind != WorksKind.COOKSHOP || view.state != WorksState.DONE) return false
-        val lay = layout(level, view.id) ?: return false
-        if (pos != lay.hob && pos != lay.oven) return false
-        stations[key] = view.id
+        val works = standingWith(level) { pos == it.hob || pos == it.oven } ?: return false
+        stations[key] = works.id
         return true
+    }
+
+    // ---- Who keeps it ----
+
+    /** [works]'s keeper in the world, if they are about. */
+    internal fun keeperOf(level: ServerLevel, works: WorksRec): Townsperson? {
+        if (works.hired < 0) return null
+        val uuid = Residents.get(level)[works.hired]?.uuid ?: return null
+        return (level.getEntity(uuid) as? Townsperson)?.takeIf { it.isAlive }
+    }
+
+    /** The standing cookshop that [keeper] keeps, if they keep one. */
+    internal fun keptBy(level: ServerLevel, keeper: Townsperson): WorksRec? {
+        if (keeper.resident < 0) return null
+        return WorksData.get(level).works.values.firstOrNull { it.kind == WorksKind.COOKSHOP && it.state == WorksState.DONE && it.hired == keeper.resident }
     }
 
     // ---- Each second ----
@@ -388,9 +418,14 @@ object CookShops {
 
     // ---- Registration ----
 
-    /** Part H's registration: what a closed shop owes is handed over at login, and the in-memory tables are cleared when the server stops. */
+    /**
+     * Part H's registration: what a closed shop owes is handed over at login, the owner's use of the Menu board takes the till, a dish
+     * held out to the keeper goes in the larder, and the in-memory tables are cleared when the server stops.
+     */
     fun register() {
         Cooking.onForget { forget() }
         NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerLoggedInEvent::class.java) { event -> (event.entity as? ServerPlayer)?.let { login(it) } }
+        MenuBoards.onUse(MenuBoards.Use { level, pos, player -> ShopTill.use(level, pos, player) })
+        ShopKeeper.register()
     }
 }
