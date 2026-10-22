@@ -51,6 +51,7 @@ import net.minecraft.world.entity.player.Player
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.component.ItemLore
 import net.minecraft.world.level.Level
+import io.github.vaspyyy.guildmark.tales.Tales
 
 /** Server-side contract rules: creating, progressing and turning in. */
 object Contracts {
@@ -268,6 +269,7 @@ object Contracts {
             if (level is ServerLevel && level.dimension() == state.dimension) Standing.add(level, state.boardPos, player, -(note.reward / 2).coerceAtLeast(3))
             player.sendOverlayMessage(Component.translatable("message.guildmark.expired", note.title()))
             level.playSound(null, pos, SoundEvents.VILLAGER_NO, SoundSource.BLOCKS, 1.0f, 1.0f)
+            if (level is ServerLevel && note.chain.startsWith("tale:")) Tales.contractExpired(level, player, note, state)
             return
         }
 
@@ -330,11 +332,6 @@ object Contracts {
         if (note.type == QuestType.BOUNTY) Bounties.claim(serverLevel, state.site)
         if (note.type == QuestType.CARAVAN) CaravanEscorts.turnedIn(serverLevel, state)
         val origin = state.boardPos.takeIf { level.dimension() == state.dimension }
-        val bonus = origin?.let {
-            Standing.bonus(level, it, player, note.reward) +
-                (if (level is ServerLevel) TownControl.bonus(level, it, player, note.reward) + Festivals.bonus(level, it, note.reward) else 0)
-        } ?: 0
-        val earned = (Progression.reward(player, note.reward + bonus) * GuildmarkConfig.PAY_MULTIPLIER.get()).toInt()
         // Goods that can be bought never pay back what they cost, bonuses and all (a story's chapter is asked only once):
         // a capital's market's own goods, posted on its board, half what the market asks for them now; posted anywhere
         // else, what the nearest market asks and a carrier's quarter, the party's share of it and all. A note posted
@@ -345,18 +342,11 @@ object Contracts {
             val shops = GoodsPrices.cap(note.target, note.count)
             if (note.capped) listOfNotNull(market, shops).minOrNull() else market ?: shops
         } else null
-        val marks = (if (goodsCap != null) minOf(earned, goodsCap) else earned).coerceAtLeast(1)
-        val xp = note.reward * Progression.XP_PER_MARK
-        player.inventory.placeItemBackInInventory(ItemStack(ModItems.GUILD_MARK.get(), marks), Prediction.SERVER_ONLY)
-        player.sendOverlayMessage(Component.translatable("message.guildmark.complete", marks, Progression.scaled(player, xp)))
-        Skills.gain(player, Skill.TRADE, note.reward * 2.0)
-        level.playSound(null, pos, SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 0.8f, 1.2f)
-        Progression.addXp(player, xp)
-        // A carrier's errand pays the whole party no more than a lone carrier gets, so the mates' shares are what the cap leaves
-        val room = if (note.type == QuestType.FETCH && chapter == null && note.capped && level is ServerLevel && origin != null) {
-            MarketFetch.partyCap(level, origin, note.target, note.count)?.let { it - marks }
+        // A carrier's errand pays the whole party no more than a lone carrier gets (payOut leaves the mates' shares what the cap leaves)
+        val partyCap = if (note.type == QuestType.FETCH && chapter == null && note.capped && level is ServerLevel && origin != null) {
+            MarketFetch.partyCap(level, origin, note.target, note.count)
         } else null
-        Parties.sharePay(player, marks, xp, room)
+        payOut(serverLevel, player, pos, origin, note.reward, goodsCap, partyCap)
         if (note.trial) Progression.promote(player, note.rank)
         Milestones.award(player, Milestones.PAID)
         if (note.type == QuestType.DELIVER) Milestones.award(player, Milestones.COURIER)
@@ -371,6 +361,7 @@ object Contracts {
         if (note.type == QuestType.TRIAL) Trials.finish(serverLevel, player, note)
         if (chapter != null) Characters.onChapterDone(serverLevel, player, chapter.first, chapter.second)
         else if (owner != null) Factions.onWorkDone(serverLevel, player, owner)
+        else if (note.chain.startsWith("tale:")) Tales.contractDone(serverLevel, player, note, state)
         // Honest work, seen done (a companion's own chapter is thanks enough)
         if (owner?.companion == null) Companions.deed(player, Deed.CONTRACT)
         if (origin != null) Standing.add(serverLevel, origin, player, note.reward)
@@ -380,6 +371,39 @@ object Contracts {
             val state = level.getBlockState(pos)
             if (state.block is QuestBoardBlock) Advances.contribute(level, QuestBoardBlock.anchorPos(pos, state), note, player)
         }
+    }
+
+    /** What [payOut] paid: the [marks] it put in the pack, and the guild [xp] it banked (0 for a player who can bank none, at the top level). */
+    class Paid(val marks: Int, val xp: Int)
+
+    /**
+     * Pays [player] for work worth [reward] points: the one run of lines [turnIn] pays a contract with, cut out so that whatever else
+     * pays like a contract (a tale's ending) pays the same. First the bonus of the board's standing, the guild's town control and
+     * the festival at [origin] (the board the work was posted at; null: none), then the Marks, at least 1 and no more than
+     * [marksCap] if given, into the pack; the message, the Trade skill (two to a point), the level-up sound at [soundAt], the guild
+     * XP (ten to a point), and last the party's share: a quarter of both to each mate nearby, which [partyCap] (the most the whole
+     * party may be paid in Marks) limits and [shareWithParty] false leaves to the caller. [tell] false leaves the message to the
+     * caller too, who has the numbers in the [Paid] returned. It adds no standing and no milestone: those stay with the caller, in its own order.
+     */
+    fun payOut(
+        level: ServerLevel, player: Player, soundAt: BlockPos, origin: BlockPos?, reward: Int,
+        marksCap: Int? = null, partyCap: Int? = null, shareWithParty: Boolean = true, tell: Boolean = true,
+    ): Paid {
+        val bonus = origin?.let {
+            Standing.bonus(level, it, player, reward) + TownControl.bonus(level, it, player, reward) + Festivals.bonus(level, it, reward)
+        } ?: 0
+        val earned = (Progression.reward(player, reward + bonus) * GuildmarkConfig.PAY_MULTIPLIER.get()).toInt()
+        val marks = (if (marksCap != null) minOf(earned, marksCap) else earned).coerceAtLeast(1)
+        val xp = reward * Progression.XP_PER_MARK
+        player.inventory.placeItemBackInInventory(ItemStack(ModItems.GUILD_MARK.get(), marks), Prediction.SERVER_ONLY)
+        val scaled = Progression.scaled(player, xp)
+        if (tell) player.sendOverlayMessage(Component.translatable("message.guildmark.complete", marks, scaled))
+        Skills.gain(player, Skill.TRADE, reward * 2.0)
+        level.playSound(null, soundAt, SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 0.8f, 1.2f)
+        Progression.addXp(player, xp)
+        // A carrier's errand pays the whole party no more than a lone carrier gets, so the mates' shares are what the cap leaves
+        if (shareWithParty) Parties.sharePay(player, marks, xp, partyCap?.let { it - marks })
+        return Paid(marks, if (scaled > 0 && !Progression.get(player).isMaxLevel()) scaled else 0)
     }
 
     private fun counts(note: QuestNote, state: ContractState, victim: LivingEntity): Boolean = when (note.type) {
