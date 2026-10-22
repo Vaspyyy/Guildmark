@@ -75,16 +75,20 @@ object Lots {
         return Lot(stock, ceil(stock * m.price(town, good, 0.0)).toInt())
     }
 
-    /** How many of [good] [m] will still take from players. */
-    fun wants(m: Market, town: Town, good: Good): Int =
-        if (!good.traded) 0 else floor(town.target(good) * ROOM - m.stock(good)).toInt().coerceAtLeast(0)
+    /**
+     * How many of [good] [m] will still take from players, [extra] more units than it usually has room for (the
+     * haul room a dealer's lot is given, see [io.github.vaspyyy.guildmark.trade.Hauls.room]).
+     */
+    fun wants(m: Market, town: Town, good: Good, extra: Double = 0.0): Int =
+        if (!good.traded) 0 else floor(town.target(good) * ROOM + extra - m.stock(good)).toInt().coerceAtLeast(0)
 
     /**
      * The lot of [good] [m] will buy from a player now, paying [share] of its price (a supplier's standing lifts it a
-     * little over [SELL_SHARE], see [Suppliers.share]), or null if it wants no more.
+     * little over [SELL_SHARE], see [Suppliers.share]), or null if it wants no more. [extra] is room on top of the
+     * usual, as for [wants].
      */
-    fun sell(m: Market, town: Town, good: Good, share: Double = SELL_SHARE): Lot? {
-        val room = wants(m, town, good)
+    fun sell(m: Market, town: Town, good: Good, share: Double = SELL_SHARE, extra: Double = 0.0): Lot? {
+        val room = wants(m, town, good, extra)
         if (room < 1) return null
         var lot = cheap(m.price(town, good) * share) ?: return null
         // Reckoned at what it will hold once it's in, which is cheaper
