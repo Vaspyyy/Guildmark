@@ -74,10 +74,10 @@ object PackFollow {
     /** Ticks between two looks at the panniers (what shows of them is worked out from the chest this often). */
     private const val POLL = 10
 
-    /** The bell: blocks of walking to a ring, at a walk and at a trot, and the blocks a tick above which it is a trot. */
-    private const val WALK_STRIDE = 1.6
-    private const val TROT_STRIDE = 2.4
-    private const val TROT_SPEED = 0.3
+    /** The bell: blocks of walking to a ring, at a walk and at a trot, and the blocks a tick above which it is a trot (the client swings the bell by the same). */
+    internal const val WALK_STRIDE = 1.6
+    internal const val TROT_STRIDE = 2.4
+    internal const val TROT_SPEED = 0.3
 
     /** How long a bolted animal runs, at the longest, before it goes home, and how long it may take to get there. */
     const val BOLT_TICKS = 400
