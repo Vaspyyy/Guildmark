@@ -302,10 +302,10 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
     /** Set once they were given a role, so finalizeSpawn keeps it. */
     private var roleSet = false
 
-    /** Makes them a [role] in one of its looks ([look] -1 for any), at that role's full health. */
+    /** Makes them a [role] in one of its looks ([look] -1 for any but the role's reserved ones), at that role's full health. */
     fun assign(role: TownRole, look: Int = -1) {
         this.role = role
-        this.look = if (look in 0 until role.looks) look else random.nextInt(role.looks)
+        this.look = if (look in 0 until role.looks) look else random.nextInt(role.common)
         roleSet = true
         getAttribute(Attributes.MAX_HEALTH)?.baseValue = role.health
         health = maxHealth

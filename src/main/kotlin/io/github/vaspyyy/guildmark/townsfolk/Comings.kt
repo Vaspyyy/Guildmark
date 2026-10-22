@@ -748,7 +748,7 @@ object Comings {
 
     /** A look for someone new of [role] (one with a [woman]'s voice if that's wanted and there is one), from [seed]. */
     private fun look(role: TownRole, seed: Long, woman: Boolean?): Int {
-        val n = maxOf(1, role.looks)
+        val n = maxOf(1, role.common)
         val start = Math.floorMod(mix(seed, 0x10L), n.toLong()).toInt()
         if (woman == null) return start
         for (k in 0 until n) {

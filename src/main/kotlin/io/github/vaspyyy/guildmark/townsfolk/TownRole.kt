@@ -3,17 +3,18 @@ package io.github.vaspyyy.guildmark.townsfolk
 /**
  * What a townsperson does for a living, which decides their look, their tools, their day and what they say.
  * The order is the network and save id; add new roles at the end. [looks] is how many looks the role's
- * textures have (art/scripts/townsfolk.py paints them).
+ * textures have (art/scripts/townsfolk.py paints them). The last [reserved] of them are kept for particular people (a
+ * village's pedlar): a look drawn by chance is one of the first [common], and a reserved one is only ever given by number.
  */
-enum class TownRole(val looks: Int, val health: Double = 20.0) {
+enum class TownRole(val looks: Int, val health: Double = 20.0, val reserved: Int = 0) {
     /** Ordinary folk: errands, carrying, sweeping, gossip, and a craft at a workbench if they have one. */
     CITIZEN(8),
     /** Hammers hot iron at an anvil, works the forge and quenches in a cauldron. */
     SMITH(3),
     /** Kneads dough at a table and works the oven with a peel. */
     BAKER(3),
-    /** Keeps a market stall: tidies the goods and calls out to passers-by. */
-    MERCHANT(4),
+    /** Keeps a market stall: tidies the goods and calls out to passers-by. Looks 4 and 5 are kept for the pedlars. */
+    MERCHANT(6, reserved = 2),
     /** The city watch: patrols with a spear, stands guard, fights off monsters. Some keep the night watch. */
     GUARD(4, 30.0),
     /** Hoes and harvests the fields round a composter. */
@@ -40,6 +41,9 @@ enum class TownRole(val looks: Int, val health: Double = 20.0) {
 
     /** The role's name in commands, textures and line keys. */
     val id: String = name.lowercase()
+
+    /** How many looks a random draw picks from: all but the [reserved] ones. */
+    val common: Int get() = looks - reserved
 
     /** Whether they're grown up enough to drink, gossip and keep an evening at the tavern. */
     val adult: Boolean get() = this != CHILD
