@@ -533,12 +533,12 @@ object Sets {
      * ([retort]); A recoils; both grumble. A [third] comes up and SHUSHes, and nods; then A and B turn their backs and each go to
      * their own door. [watchers] look on from where they stand (gaze, then folded arms, one may grumble); with [crowd] (the moot) up
      * to five stand in a half ring and call out, clapping and grumbling. The watchers are bystanders, not parts: they are not counted
-     * against the five and nothing waits for them. About 30 seconds. Null if there is nowhere for the marks. Seeds: the fence, the moot, the locket.
+     * against the five and nothing waits for them. The third's SHUSH carries the words of [hush] if there are any (the fence). About 30 seconds. Null if there is nowhere for the marks. Seeds: the fence, the moot, the locket.
      */
     fun quarrel(
         a: Townsperson, b: Townsperson, third: Townsperson? = null, watchers: List<Townsperson> = listOf(), shout: Line? = null,
         point: Line? = null, retort: Line? = null, toward: Vec3? = null, crowd: Boolean = false,
-        hours: ClosedFloatingPointRange<Double>? = 8.0..20.0,
+        hours: ClosedFloatingPointRange<Double>? = 8.0..20.0, hush: Line? = null,
     ): Stage? {
         val level = a.level() as ServerLevel
         val mid = Vec3((a.x + b.x) / 2.0, (a.y + b.y) / 2.0, (a.z + b.z) / 2.0)
@@ -590,7 +590,8 @@ object Sets {
             tm += Barrier("retorted", most = 2400)
             tm += GoTo({ beside(level, mid, third.position(), 2.6) }, Jobs.BRISK, near = 1.0, most = 600)
             tm += Turn({ centre })
-            tm += Play(Activity.SHUSH, at = { centre })
+            // Tales T1a: the third's words with the SHUSH (the fence's `tale.fence.third`), when a template gives them
+            tm += if (hush == null) Play(Activity.SHUSH, at = { centre }) else Beat(Activity.SHUSH, at = { centre }) { p, tick -> if (tick == 4) speak(p, hush, "a quarrel") }
             tm += Barrier("hushed", most = 900, at = { centre })
             tm += Play(Activity.NOD, at = { centre })
             parts += walker("third", third, tm, essential = false)
