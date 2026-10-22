@@ -29839,5 +29839,131 @@
       "guildmark:townsfolk/tale/cart_mend2"
     ],
     "subtitle": "subtitles.guildmark.townsfolk.tale.cart_mend"
+  },
+  "townsfolk.voice.man.crier_tale_good": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/crier_tale_good",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_tale_good"
+  },
+  "townsfolk.voice.man.crier_tale_ill": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/crier_tale_ill",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_tale_ill"
+  },
+  "townsfolk.voice.man.crier_tale_home": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/crier_tale_home",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_tale_home"
+  },
+  "townsfolk.voice.man.crier_tale_lost": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/crier_tale_lost",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_tale_lost"
+  },
+  "townsfolk.voice.man.crier_news_tale": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/crier_news_tale",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_news_tale"
+  },
+  "townsfolk.voice.man.crier_tale_moot": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/crier_tale_moot",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_tale_moot"
+  },
+  "townsfolk.voice.man.crier_tale_custom": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/crier_tale_custom",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_tale_custom"
+  },
+  "townsfolk.voice.woman.crier_tale_good": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/crier_tale_good",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_tale_good"
+  },
+  "townsfolk.voice.woman.crier_tale_ill": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/crier_tale_ill",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_tale_ill"
+  },
+  "townsfolk.voice.woman.crier_tale_home": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/crier_tale_home",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_tale_home"
+  },
+  "townsfolk.voice.woman.crier_tale_lost": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/crier_tale_lost",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_tale_lost"
+  },
+  "townsfolk.voice.woman.crier_news_tale": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/crier_news_tale",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_news_tale"
+  },
+  "townsfolk.voice.woman.crier_tale_moot": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/crier_tale_moot",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_tale_moot"
+  },
+  "townsfolk.voice.woman.crier_tale_custom": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/crier_tale_custom",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.crier_tale_custom"
   }
 }

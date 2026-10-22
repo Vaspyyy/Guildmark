@@ -509,6 +509,12 @@ CRIER = {
     "crier_times_still_good": "Times are still good! Long may they last!",
     "crier_times_still_thriving": "The town is thriving still! Fortune is with us!",
 }
+# The tales' (Living World, Tales Part H): what the crier cries when a tale ends well or ill, when someone long gone is
+# home or lost, when a great turn is told in another town, when a moot is called and when a custom is kept. Typed once, in
+# art/audio/tale_lines (CRIER), with the tales' other lines.
+import tale_lines  # noqa: E402
+
+CRIER.update(tale_lines.CRIER)
 
 # Spelling the TTS reads better than the written text (the subtitles keep the text as written)
 SAY_AS = {
@@ -715,6 +721,7 @@ CRIER_PHONEMES = [
 # A line's own fixes in one timbre, after CRIER_PHONEMES: (line, timbre) -> [(espeak's, Kokoro's)]
 CRIER_PHONEMES_FOR = {
     ("crier_season_autumn", "man"): [("bɹˈɪŋ ˈɪn ðə", "bɹˈɪŋ, ˈɪn ðə")],  # "Bring in", not "bringing"
+    ("crier_tale_home", "man"): [("ɪz hˈəʊm", "ˈɪz hˈəʊm")],  # "awaited is home", not "awaited his home"
 }
 
 OUT_SR = 32000
