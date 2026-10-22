@@ -12,6 +12,7 @@ import net.minecraft.world.damagesource.DamageSource
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.EntityType
 import net.minecraft.world.entity.InterpolationHandler
+import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.SteppedInterpolationHandler
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.Explosion
@@ -38,8 +39,11 @@ import kotlin.math.sqrt
  * saved with the world ([Handcarts] brings one round again when a carter wants it). The server places it each tick
  * ([Handcarts] after everyone has moved); clients draw it a few ticks behind, exactly as they draw the townsfolk,
  * and turn its wheels by how far it went (client/cart).
+ *
+ * Open for one subclass, the Chapman's Cart ([PlayerCart]): the player's own, saved, pulled by a player and kept by the
+ * trader's code and not by [Handcarts]. It answers [keep], [through] and [lost] for itself and leaves the rest as it is.
  */
-class Handcart(type: EntityType<out Handcart>, level: Level) : Entity(type, level) {
+open class Handcart(type: EntityType<out Handcart>, level: Level) : Entity(type, level) {
 
     // ---- What every client sees ----
 
@@ -94,8 +98,11 @@ class Handcart(type: EntityType<out Handcart>, level: Level) : Entity(type, leve
     override fun tick() {
         // Nothing of a mob's or an item's: the server places it (Handcarts), the client animates it (client/cart)
         if (level().isClientSide) clientTick?.invoke(this)
-        else if (!Handcarts.owns(this)) discard()
+        else if (!keep()) discard()
     }
+
+    /** Whether the game keeps this cart: the carters' registry knows it (anything else, a stray copy, goes). A [PlayerCart] is its own keeper. */
+    protected open fun keep(): Boolean = Handcarts.owns(this)
 
     override fun onClientRemoval() {
         super.onClientRemoval()
@@ -153,12 +160,25 @@ class Handcart(type: EntityType<out Handcart>, level: Level) : Entity(type, leve
     internal fun take(p: Townsperson) {
         owner = p
         waiting = false
+        hold(p)
+    }
+
+    /** [p], whoever they are, takes up the shafts: it follows them from now on. */
+    internal fun hold(p: LivingEntity) {
         lonely = 0
         resting = 0
         lastX = p.x
         lastY = p.y
         lastZ = p.z
         entityData.set(PULLER, p.id)
+    }
+
+    /** Whether it may pass through a wall that no swing of the shafts clears for [p] (a carter's cart, a prop, does; a player's does not). */
+    protected open fun through(p: LivingEntity): Boolean = true
+
+    /** [p] was snapped somewhere the cart cannot be brought behind: a carter's cart is gone, a player's lets go. */
+    protected open fun lost(level: ServerLevel, p: LivingEntity) {
+        discard()
     }
 
     /** Let go: it stays where it stands and tips forward onto its shafts. */
@@ -183,7 +203,7 @@ class Handcart(type: EntityType<out Handcart>, level: Level) : Entity(type, leve
     }
 
     /** Follows [p] another tick: the shafts in their hands, the bed at the shafts' length behind them. */
-    private fun trail(level: ServerLevel, p: Townsperson) {
+    internal fun trail(level: ServerLevel, p: LivingEntity) {
         val px = p.x
         val py = p.y
         val pz = p.z
@@ -192,7 +212,7 @@ class Handcart(type: EntityType<out Handcart>, level: Level) : Entity(type, leve
             moved = hypot(px - lastX, pz - lastZ)
             // Snapped somewhere out of sight (a walk nobody would see walked): the cart goes with them
             if (moved > SNAP || abs(py - lastY) > SNAP) {
-                if (place(level, p)) take(p) else discard()
+                if (place(level, p)) hold(p) else lost(level, p)
                 return
             }
         }
@@ -215,6 +235,7 @@ class Handcart(type: EntityType<out Handcart>, level: Level) : Entity(type, leve
         val dist = reach + HAND_BACK
         // Into a wall that way: swung round them to where it's clear, the nearer way first (or through it, a prop)
         if (!clear(level, px + ux * dist, pz + uz * dist, ux, uz, y)) {
+            var free = false
             search@ for (k in 1..SWINGS) for (side in SIDES) {
                 val a = Math.toRadians(SWING * k * side)
                 val vx = ux * cos(a) - uz * sin(a)
@@ -222,9 +243,12 @@ class Handcart(type: EntityType<out Handcart>, level: Level) : Entity(type, leve
                 if (clear(level, px + vx * dist, pz + vz * dist, vx, vz, y)) {
                     ux = vx
                     uz = vz
+                    free = true
                     break@search
                 }
             }
+            // Nowhere clear: it stands where it is (the one that may not go through)
+            if (!free && !through(p)) return
         }
         var nx = px + ux * dist
         var nz = pz + uz * dist
@@ -255,7 +279,7 @@ class Handcart(type: EntityType<out Handcart>, level: Level) : Entity(type, leve
      * Puts it fresh behind [p], ready to take up: straight behind them if there's room, otherwise as near that as
      * there is. False (and it isn't moved) if there's nowhere for it.
      */
-    internal fun place(level: ServerLevel, p: Townsperson): Boolean {
+    internal fun place(level: ServerLevel, p: LivingEntity): Boolean {
         val body = p.yBodyRot.toDouble()
         val dist = reach(HAND_UP - AXLE_UP) + HAND_BACK
         for (k in 0..6) for (side in if (k == 0) ONE else SIDES) {
@@ -286,7 +310,7 @@ class Handcart(type: EntityType<out Handcart>, level: Level) : Entity(type, leve
     }
 
     /** Settles it standing: each wheel on the ground under it, tipped forward until the shafts' tips touch down. */
-    private fun settle(level: ServerLevel) {
+    internal fun settle(level: ServerLevel) {
         wheels(level, x, z, yRot, ease = true)
         val ny = (groundR + groundL) / 2
         val (fx, fz) = forward(yRot)
@@ -316,7 +340,7 @@ class Handcart(type: EntityType<out Handcart>, level: Level) : Entity(type, leve
     }
 
     /** Whether it would stand clear of walls with its axle at ([nx], [nz]) and its shafts toward -([ux], [uz]). */
-    private fun clear(level: ServerLevel, nx: Double, nz: Double, ux: Double, uz: Double, ref: Double): Boolean {
+    internal fun clear(level: ServerLevel, nx: Double, nz: Double, ux: Double, uz: Double, ref: Double): Boolean {
         // The cart's right is (uz, -ux) when it faces -u
         return !probe(level, nx + uz * HALF_TRACK, nz - ux * HALF_TRACK, ref).isNaN() &&
             !probe(level, nx - uz * HALF_TRACK, nz + ux * HALF_TRACK, ref).isNaN() &&
@@ -325,16 +349,16 @@ class Handcart(type: EntityType<out Handcart>, level: Level) : Entity(type, leve
     }
 
     /** Whether [p] can take it up from where they are: at its shafts, or just ahead of it (it rolls up to them). */
-    internal fun reachable(p: Townsperson): Boolean = within(p, TAKE) || ahead(p, ROLL_UP)
+    internal fun reachable(p: LivingEntity): Boolean = within(p, TAKE) || ahead(p, ROLL_UP)
 
     /** Whether [p] stands within [d] of where they'd hold the shafts. */
-    private fun within(p: Townsperson, d: Double): Boolean {
+    private fun within(p: LivingEntity, d: Double): Boolean {
         val g = grip()
         return hypot(p.x - g.x, p.z - g.z) <= d && abs(p.y - y) <= STEP
     }
 
     /** Whether [p] is within [d] ahead of it, near enough straight ahead for it to roll up to them. */
-    private fun ahead(p: Townsperson, d: Double): Boolean {
+    private fun ahead(p: LivingEntity, d: Double): Boolean {
         val dx = p.x - x
         val dz = p.z - z
         val dist = hypot(dx, dz)
