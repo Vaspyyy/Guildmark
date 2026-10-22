@@ -8,6 +8,7 @@ import io.github.vaspyyy.guildmark.city.plan.FarmKind
 import io.github.vaspyyy.guildmark.city.plan.Frame
 import io.github.vaspyyy.guildmark.city.plan.Kind
 import io.github.vaspyyy.guildmark.city.plan.NullCanvas
+import io.github.vaspyyy.guildmark.city.plan.PropKind
 import io.github.vaspyyy.guildmark.city.plan.Rect
 import io.github.vaspyyy.guildmark.city.plan.Use
 import io.github.vaspyyy.guildmark.economy.CaravanRoutes
@@ -273,14 +274,15 @@ internal object WorksSiting {
      * end) left free to walk on. A middling capital's square has no clear 5 by 4 against its edge (its stalls and wells and the houses on its
      * south rim are there), so the spots away from the edge are tried after: the strips beside the avenue, with the row before the counter
      * on the avenue's edge (the avenue's own ground, three out from its middle, stays clear). One that would face the back of a stall is
-     * not sited, for the row before its counter is not free there.
+     * not sited, for the row before its counter is not free there; nor one whose back wall would wall in a market stall's keeper, who stands
+     * in the cell behind the counter and goes out by the cells behind that ([leavesStalls]).
      */
     private fun cookshop(level: ServerLevel, w: WorksRec, rec: BuildRec, capital: CapitalPiece): Boolean? {
         val plan = capital.plan
         val search = searches.getOrPut(w.id) { Search(pitches(plan, Cookshop.LOT, Int.MAX_VALUE, AVENUE_EDGE)) }
         return find(
             level, w, rec, capital, search, Cookshop.LOT, Cookshop.DOOR, street = true, uses = setOf(Use.SQUARE),
-            walks = Cookshop.FRONT + Cookshop.FLANK,
+            walks = Cookshop.FRONT + Cookshop.FLANK, stalls = true,
         )
     }
 
@@ -436,11 +438,12 @@ internal object WorksSiting {
      * Works through [search]'s lots for one [lot] will stand on: on the plan, all of it on one of [uses] at one
      * height, the ground before its [door] a street (or free ground, if not [street]); in the world, loaded, clear
      * and on solid ground, and the drawing laid there with nothing in its way, and each of [walks] (pins outside the lot: the ground before its
-     * door, a way in) somewhere to stand. Null while there are lots still to try; false when they're all tried.
+     * door, a way in) somewhere to stand, and with [stalls] no market stall's keeper walled in by it. Null while there are lots still to try; false
+     * when they're all tried.
      */
     private fun find(
         level: ServerLevel, w: WorksRec, rec: BuildRec, capital: CapitalPiece, search: Search, lot: Rect, door: Pin,
-        street: Boolean, uses: Set<Use> = FREE_USES, walks: List<Pin> = emptyList(),
+        street: Boolean, uses: Set<Use> = FREE_USES, walks: List<Pin> = emptyList(), stalls: Boolean = false,
     ): Boolean? {
         val plan = capital.plan
         var planned = 0
@@ -460,6 +463,7 @@ internal object WorksSiting {
             val frame = WorksFrame(capital.world(c.ox, y0, c.oz), capital.direction(c.front))
             if (!worldFit(level, frame, lot, y0)) continue
             if (walks.any { !walkable(level, frame.world(it.x, y0, it.z)) }) continue
+            if (stalls && !leavesStalls(level, capital, plan, frame, lot, y0)) continue
             val t = trial(level, w, capital, frame, y0, 0)
             if (t.inWay() != null || taken(level, w, t.box)) continue
             settle(level, w, rec, capital, frame, y0, 0, false)
@@ -507,6 +511,51 @@ internal object WorksSiting {
     /** Whether someone can stand at [pos]: room for them, and ground under it. */
     private fun walkable(level: ServerLevel, pos: BlockPos): Boolean =
         free(level, pos) && free(level, pos.above()) && level.getBlockState(pos.below()).isFaceSturdy(level, pos.below(), Direction.UP)
+
+    /**
+     * Whether [lot] laid in [frame] at [y0] leaves the keeper of each market stall near it the way out from behind their counter that they
+     * had: a stall's keeper stands in the cell behind the counter and goes out by the cells behind that, so a lot laid flush against a
+     * stall's back would wall them in. Each keeper who could walk out before ([walksOut]) must be able to with the lot across the ground; one
+     * who could not (a stall against a wall) is not ours to free.
+     */
+    private fun leavesStalls(level: ServerLevel, capital: CapitalPiece, plan: CityPlan, frame: WorksFrame, lot: Rect, y0: Int): Boolean {
+        val near = frame.box(lot, y0, y0).inflatedBy(3)
+        var laid: HashSet<Long>? = null
+        for (p in plan.props) {
+            if (p.kind != PropKind.STALL) continue
+            val tx = p.x - p.facing.dx
+            val tz = p.z - p.facing.dz
+            val keeper = capital.world(tx, capital.center.y + plan.level(tx, tz), tz)
+            if (!near.isInside(keeper) || !walksOut(level, keeper, emptySet())) continue
+            val blocked = laid ?: HashSet<Long>().also { cells ->
+                for (x in lot.x0..lot.x1) for (z in lot.z0..lot.z1) cells.add(key(frame.worldX(x, z), frame.worldZ(x, z)))
+                laid = cells
+            }
+            if (!walksOut(level, keeper, blocked)) return false
+        }
+        return true
+    }
+
+    /** Whether someone standing at [from] could walk out to six cells away over ground to stand on, none of it a column of [blocked]; ground not loaded is taken as open. */
+    private fun walksOut(level: ServerLevel, from: BlockPos, blocked: Set<Long>): Boolean {
+        if (!level.isLoaded(from)) return true
+        val seen = HashSet<Long>()
+        val queue = ArrayDeque<BlockPos>()
+        queue.add(from)
+        seen.add(key(from.x, from.z))
+        while (queue.isNotEmpty()) {
+            val at = queue.removeFirst()
+            if (max(abs(at.x - from.x), abs(at.z - from.z)) >= 6) return true
+            for (d in Direction.Plane.HORIZONTAL) {
+                val next = at.relative(d)
+                val k = key(next.x, next.z)
+                if (k in blocked || !seen.add(k)) continue
+                if (!level.isLoaded(next)) return true
+                if (walkable(level, next)) queue.add(next)
+            }
+        }
+        return false
+    }
 
     /** Whether all the land [box] covers is loaded. */
     private fun loaded(level: ServerLevel, box: BoundingBox): Boolean =
