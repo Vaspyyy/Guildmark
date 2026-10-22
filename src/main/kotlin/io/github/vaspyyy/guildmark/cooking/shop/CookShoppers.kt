@@ -74,6 +74,13 @@ internal object CookShoppers {
 
     private val watched = HashMap<Int, Watch>()
 
+    // What `cook perf` reads (CookStats): the sales at the counter since the server started
+    private var handed = 0L
+    private var gaveUp = 0L
+
+    /** The dishes handed across the counter and the sales given up since the server started. */
+    fun readout(): String = "$handed sales at the counter, $gaveUp given up"
+
     fun register() {
         NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { if (it.server.tickCount % LOOK == 0) look(it.server) }
         Cooking.onForget { watched.clear() }
@@ -197,6 +204,7 @@ internal object CookShoppers {
         /** The dish handed across: [p] has it, and the shop has one fewer waiting; the last one fetched from a shop with nothing left makes its keeper shrug. */
         private fun take(p: Townsperson) {
             taken = true
+            handed++
             p.carried = sale.dish.copy()
             shop.waiting.removeFirstOrNull()
             // A dish fetched: the rest are given the same time again to be
@@ -209,7 +217,10 @@ internal object CookShoppers {
             work.stop()
             if (p.director === this) p.director = null
             sale.end()
-            if (!taken) watch.retryAt = level.gameTime + RETRY
+            if (!taken) {
+                watch.retryAt = level.gameTime + RETRY
+                gaveUp++
+            }
             p.routine.interrupt()
             p.navigation.stop()
             if (taken) eating(p)?.let { p.routine.replace(it) }

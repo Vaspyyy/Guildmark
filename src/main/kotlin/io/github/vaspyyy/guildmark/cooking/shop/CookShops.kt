@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.cooking.shop
 
 import io.github.vaspyyy.guildmark.city.CapitalPiece
+import io.github.vaspyyy.guildmark.cooking.CookStats
 import io.github.vaspyyy.guildmark.cooking.Cooking
 import io.github.vaspyyy.guildmark.cooking.DishData
 import io.github.vaspyyy.guildmark.cooking.DishKind
@@ -434,7 +435,8 @@ object CookShops {
 
     /**
      * Part H's registration: what a closed shop owes is handed over at login, the owner's use of the Menu board takes the till, a dish
-     * held out to the keeper goes in the larder, and the in-memory tables are cleared when the server stops.
+     * held out to the keeper goes in the larder, the keepers' scenes and the shoppers' walks, `cook shop` and its line for `cook perf`,
+     * and the in-memory tables are cleared when the server stops.
      */
     fun register() {
         Cooking.onForget { forget() }
@@ -443,5 +445,7 @@ object CookShops {
         ShopKeeper.register()
         CookshopScene.register()
         CookShoppers.register()
+        ShopCommand.register()
+        CookStats.readout("shops") { "${ShopSales.readout()}; ${CookshopScene.readout()}; ${CookShoppers.readout()}" }
     }
 }

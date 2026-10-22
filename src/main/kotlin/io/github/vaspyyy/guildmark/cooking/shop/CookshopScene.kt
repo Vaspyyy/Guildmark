@@ -75,6 +75,12 @@ internal object CookshopScene {
     private val shrugged = HashMap<Int, Long>()
     private val fetched = HashMap<Int, Long>()
 
+    // What `cook perf` reads (CookStats): the parts keepers have played since the server started
+    private var parts = 0L
+
+    /** The parts the keepers have played (a cry, a flip, a peel, a slice, a shrug, a sigh) since the server started. */
+    fun readout(): String = "$parts parts played by keepers"
+
     fun register() {
         NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { if (it.server.tickCount % EVERY == 0) look(it.server) }
         Cooking.onForget {
@@ -105,7 +111,10 @@ internal object CookshopScene {
             if (keeper.isSleeping || keeper.distanceToSqr(Vec3.atCenterOf(stand)) > POST * POST || CookShoppers.serving(works.id)) continue
             if (!Aside.free(keeper, station = true)) continue
             val moves = choose(level, works, lay, keeper, now) ?: continue
-            if (Aside.take(keeper, Aside(moves, reach = SEEN + 20.0, most = 600), station = true)) next[works.id] = now + COOL + keeper.random.nextInt(COOL_MORE)
+            if (Aside.take(keeper, Aside(moves, reach = SEEN + 20.0, most = 600), station = true)) {
+                next[works.id] = now + COOL + keeper.random.nextInt(COOL_MORE)
+                parts++
+            }
         }
     }
 

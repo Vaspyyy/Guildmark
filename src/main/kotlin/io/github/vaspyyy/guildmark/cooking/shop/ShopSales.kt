@@ -93,6 +93,15 @@ internal object ShopSales {
     /** The most portions kept waiting for the shoppers to fetch after a selling hour. */
     private const val WAITING_MOST = 12
 
+    // What `cook perf` reads (CookStats): plain counters, kept by the server thread and read when someone asks
+    private var worked = 0L
+    private var soldTotal = 0L
+    private var lastNanos = 0L
+    private var slowest = 0L
+
+    /** The selling hours worked since the server started, what they sold and how long the last and the longest took. */
+    fun readout(): String = "$worked selling hours worked (last ${lastNanos / 1000} us, slowest ${slowest / 1000} us), $soldTotal portions sold"
+
     /** One shop's part in an hour: what it has sold so far. */
     private class Seller(val shop: ShopRec, val prices: Prices) {
         var portions = 0
@@ -139,6 +148,7 @@ internal object ShopSales {
      */
     fun hour(level: ServerLevel, entry: Markets.Entry, hour: Long): Double {
         if (!Cooking.shops() || !Works.enabled()) return 0.0
+        val begun = System.nanoTime()
         val kitchens = Kitchens.get(level)
         val capital = entry.market.capital
         val rec = kitchens.rec(capital) ?: return 0.0
@@ -179,6 +189,10 @@ internal object ShopSales {
         }
         for (s in sellers) pay(level, rec, capital, s, at.day)
         kitchens.changed()
+        worked++
+        soldTotal += sold
+        lastNanos = System.nanoTime() - begun
+        slowest = maxOf(slowest, lastNanos)
         return sold.toDouble()
     }
 
