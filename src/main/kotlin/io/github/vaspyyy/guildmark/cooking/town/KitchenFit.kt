@@ -16,6 +16,7 @@ import io.github.vaspyyy.guildmark.cooking.vessel.StewpotBlock
 import io.github.vaspyyy.guildmark.cooking.vessel.StewpotBlockEntity
 import io.github.vaspyyy.guildmark.cooking.vessel.StewpotMode
 import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
+import io.github.vaspyyy.guildmark.townsfolk.Days
 import io.github.vaspyyy.guildmark.townsfolk.Furnish
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
@@ -151,7 +152,8 @@ object KitchenFit {
     private fun tick(server: MinecraftServer) {
         val level = server.overworld()
         val time = level.gameTime
-        if (time % STEP != 0L || level.players().isEmpty() || !Cooking.townKitchens()) return
+        // Town Kitchens needs Living Capitals, as its setting says: with the capitals' days off no old capital is fitted
+        if (time % STEP != 0L || level.players().isEmpty() || !Cooking.townKitchens() || !Days.enabled()) return
         if (time - scanned >= SCAN) {
             scanned = time
             scan(level, time)

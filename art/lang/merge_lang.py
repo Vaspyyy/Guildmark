@@ -85,6 +85,8 @@ OVERRIDES = {
     # Trade A, worded by the lead so that they read for one as well as for several
     "message.guildmark.trade.haul.deposit_back",
     "message.guildmark.trade.haul.standing",
+    # Hearthcraft B, worded by the lead so that the innkeeper is not taken for a woman
+    "message.guildmark.cook.guest_no",
 }
 
 

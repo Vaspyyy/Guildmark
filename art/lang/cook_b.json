@@ -2,7 +2,7 @@
   "message.guildmark.cook.off": "Hearthcraft is off.",
   "message.guildmark.cook.private": "This one is kept for whoever set it down, and their party.",
   "message.guildmark.cook.house": "The innkeeper's pot.",
-  "message.guildmark.cook.guest_no": "The innkeeper shakes her head: the back pot is for those she knows.",
+  "message.guildmark.cook.guest_no": "The innkeeper shakes their head: the back pot is for those the inn knows.",
   "message.guildmark.cook.burning": "It's burning already.",
   "message.guildmark.cook.nothing_to_burn": "There's nothing in the fire to light.",
   "message.guildmark.cook.fuel_too_much": "That's too much for the fire.",
