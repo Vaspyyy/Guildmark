@@ -30,7 +30,7 @@ import io.github.vaspyyy.guildmark.trade.Hauls
 import io.github.vaspyyy.guildmark.trade.Taker
 import io.github.vaspyyy.guildmark.trade.TradeConfig
 import io.github.vaspyyy.guildmark.trade.TradeSounds
-import io.github.vaspyyy.guildmark.village.VillageNames
+import io.github.vaspyyy.guildmark.village.live.Villages
 import net.minecraft.ChatFormatting
 import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
@@ -144,12 +144,12 @@ object Stalls {
      * opens; out of hours they say they're shut. False if they keep no shop, so they talk as usual.
      */
     fun interact(level: ServerLevel, player: ServerPlayer, p: Townsperson): Boolean {
-        if (p.role != TownRole.MERCHANT && p.role != TownRole.BAKER && p.role != TownRole.SMITH && p.role != TownRole.INNKEEPER) return false
         if (!Markets.enabled() || player.isSpectator) return false
         // Something else has charge of them (a job, a festival): theirs to answer for
         val serving = p.director
         if (serving != null && serving !is Serving) return false
         val life = Days.life(p) ?: return false
+        // Who keeps a shop is the one rule of Shop.kept: a merchant, baker, smith or innkeeper, and in a village its farmers, fishers and stall keepers
         val shop = Shop.kept(p) ?: return false
         val doing = Days.stretch(life, level.overworldClockTime).doing
         // The inn's keeper is only a business to those it has an order for, and only while they're at their work
@@ -165,9 +165,10 @@ object Stalls {
             p.say(shut, force = true)
             return true
         }
-        val capital = (life.places as? CityPlaces)?.capital ?: return false
-        val entry = Markets.of(level, capital) ?: return false
-        open(player, shop, entry, capital, p)
+        // A capital's market is opened if it isn't yet; a village's is found where it is kept
+        val places = life.places
+        val entry = (places as? CityPlaces)?.let { Markets.of(level, it.capital) } ?: Markets.find(level, places.centre.asLong()) ?: return false
+        open(player, shop, entry, MarketTown.of(places), p)
         return true
     }
 
@@ -185,8 +186,8 @@ object Stalls {
         return p.blockPosition().distSqr(spot) <= AT_STALL
     }
 
-    /** Opens [shop]'s screen for [player] at [capital]'s market ([entry]), kept by [keeper] (null: the testing screen, which nobody keeps). */
-    fun open(player: ServerPlayer, shop: Shop, entry: Markets.Entry, capital: CapitalPiece, keeper: Townsperson?) {
+    /** Opens [shop]'s screen for [player] at [town]'s market ([entry]), kept by [keeper] (null: the testing screen, which nobody keeps). */
+    fun open(player: ServerPlayer, shop: Shop, entry: Markets.Entry, town: MarketTown, keeper: Townsperson?) {
         val now = player.level().gameTime
         val old = sessions[player.uuid]
         if (old != null && old.keeper === keeper && old.shop == shop) {
@@ -196,7 +197,7 @@ object Stalls {
             return
         }
         if (old != null) end(player.uuid, old, walked = false)
-        val s = Session(player.uuid, shop, capital.center, VillageNames.of(capital.boardAnchor), keeper, now)
+        val s = Session(player.uuid, shop, town.centre, town.name, keeper, now)
         sessions[player.uuid] = s
         if (keeper != null) {
             val serving = keeper.director as? Serving ?: Serving().also { take(keeper, it) }
@@ -565,7 +566,7 @@ object Stalls {
             stop(player, s, why)
             return null
         }
-        val entry = Markets.get(player.level())[s.capital]
+        val entry = Markets.find(player.level(), s.capital.asLong())
         if (entry == null) stop(player, s, "gone")
         return entry
     }
@@ -580,9 +581,10 @@ object Stalls {
         val level = player.level()
         val keeper = s.keeper
         if (keeper == null) {
-            // The testing screen: an operator, standing in the capital
+            // The testing screen: an operator, standing in the capital or the village
             if (!level.server.playerList.isOp(player.nameAndId())) return ""
-            return if (Capitals.covering(level, player.blockPosition())?.center != s.capital) "left" else null
+            val here = Capitals.covering(level, player.blockPosition())?.center ?: Villages.at(level, player.blockPosition())?.let { BlockPos.of(it.key) }
+            return if (here != s.capital) "left" else null
         }
         if (keeper.isRemoved || !keeper.isAlive || keeper.level() !== level) return "gone"
         if (keeper.director !is Serving) return "called_away"

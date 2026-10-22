@@ -186,8 +186,9 @@ object Trading {
         TownControl.pay(player, lot.marks)
         give(player, item, lot.count)
         Lots.bought(entry.market, good, lot)
-        Markets.get(player.level()).changed()
-        Suppliers.purchased(player.level(), entry.capital, player.uuid, good, lot.count)
+        VillageMarkets.changed(player.level(), entry)
+        // A village's counter keeps no supplier standing: the capitals' ranks are the capitals' own (the villages design, section 18.5)
+        if (!VillageMarkets.owns(player.level(), entry)) Suppliers.purchased(player.level(), entry.capital, player.uuid, good, lot.count)
         return Deal(Deal.Outcome.DONE, lot)
     }
 
@@ -213,8 +214,8 @@ object Trading {
         if (dealer != null) Ledger.take(level, player.uuid, good, lot.count, entry.capital)
         give(player, ModItems.GUILD_MARK.get(), lot.marks)
         Lots.sold(entry.market, good, lot)
-        Markets.get(level).changed()
-        val own = Suppliers.sold(level, entry.capital, player.uuid, good, lot.count, lot.marks)
+        VillageMarkets.changed(level, entry)
+        val own = if (VillageMarkets.owns(level, entry)) 0 else Suppliers.sold(level, entry.capital, player.uuid, good, lot.count, lot.marks)
         return Deal(Deal.Outcome.DONE, lot, own, dealer != null)
     }
 

@@ -9,10 +9,12 @@ import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
 import io.github.vaspyyy.guildmark.trade.Hauls
 import io.github.vaspyyy.guildmark.trade.Ledger
 import io.github.vaspyyy.guildmark.village.VillageNames
+import io.github.vaspyyy.guildmark.village.live.Villages
 import net.minecraft.ChatFormatting
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands
 import net.minecraft.commands.SharedSuggestionProvider
+import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.MutableComponent
 import net.neoforged.neoforge.common.NeoForge
@@ -103,31 +105,65 @@ object MarketCommand {
 
     // ---- The market you stand in ----
 
-    /** The market of the capital [context]'s player stands in, opened now if need be; null (and why, said) if there isn't one. */
+    /** The market of the capital or village [context]'s player stands in, opened now if need be; null (and why, said) if there isn't one. */
     private fun entry(context: CommandContext<CommandSourceStack>): Markets.Entry? {
         val source = context.source
         val level = source.level
-        val capital = Capitals.covering(level, source.playerOrException.blockPosition())
-        if (capital == null) {
-            fail(source, "You're not in a capital.")
-            return null
-        }
+        val here = source.playerOrException.blockPosition()
+        val capital = Capitals.covering(level, here)
+        if (capital == null) return village(source, here)
         if (!Markets.enabled()) say(source, grey("The markets are switched off (setting: Capital Markets): this one stands still."))
         val entry = Markets.of(level, capital)
         if (entry == null) fail(source, if (CityPlaces.failed(capital)) "Its places couldn't be worked out (see the log)." else "Its places are still being worked out: try again in a second.")
         return entry
     }
 
+    /** The market of the village [here] is in, opened now if its census is done and it has none; null (and why, said) if there isn't one. */
+    private fun village(source: CommandSourceStack, here: BlockPos): Markets.Entry? {
+        val level = source.level
+        val rec = Villages.at(level, here)
+        if (rec == null) {
+            fail(source, "You're not in a capital or a village.")
+            return null
+        }
+        if (!VillageMarkets.enabled()) {
+            fail(source, "Villages have no markets just now (settings: Capital Markets, Living Villages and Village Markets are all needed).")
+            return null
+        }
+        VillageMarkets.find(level, rec.key)?.let { return it }
+        val places = Villages.places(level, rec.key)
+        if (places == null) {
+            fail(source, "${rec.name} has not been counted yet, so it has no market: try /guildmark village census now.")
+            return null
+        }
+        return VillageMarkets.open(level, rec, places)
+    }
+
+    /** The name the market [entry] is of, for its heading: the capital's or the village's. */
+    private fun nameOf(source: CommandSourceStack, entry: Markets.Entry): String {
+        val level = source.level
+        Capitals.covering(level, entry.capital)?.let { return VillageNames.of(it.boardAnchor) }
+        return Villages.byKey(level, entry.market.capital)?.name ?: "the town"
+    }
+
+    /** Of the meals a day, how many going short make it a hungry day (the model of the villages design, section 18, counts it so). */
+    private const val HUNGRY_DAY = 0.5
+
     private fun list(context: CommandContext<CommandSourceStack>): Int {
         val source = context.source
         val entry = entry(context) ?: return 0
         val m = entry.market
         val town = entry.town
-        val capital = Capitals.covering(source.level, source.playerOrException.blockPosition())
         val c = Conditions(m.hour)
-        say(source, header("The market of ${capital?.let { VillageNames.of(it.boardAnchor) } ?: "the capital"}: day ${c.day}, ${clock(c.clock)}" + if (c.restDay) " (rest day)" else ""))
+        val village = VillageMarkets.owns(source.level, entry)
+        say(source, header("The market of ${nameOf(source, entry)}: day ${c.day}, ${clock(c.clock)}" + if (c.restDay) " (rest day)" else ""))
         say(source, grey("People: $town"))
         town.planned?.let { built -> if (built.people != town.people) say(source, grey("Built for ${built.people} (${built.people - town.people} gone)")) }
+        // A village's hungry days are counted beside its town (the villages design, section 18.7)
+        if (village && m.hungry.isNotEmpty()) {
+            val hungry = m.hungry.count { it >= HUNGRY_DAY }
+            say(source, line().append(label("Hungry days: ")).append(plain("$hungry of the last ${m.hungry.size}")).append(grey(" (a day on which half a meal or more went short)")))
+        }
         if (m.events.isNotEmpty()) say(source, line().append(label("Under way: ")).append(plain(m.events.joinToString(", ") { e ->
             e.kind.id + (e.good?.let { " (${it.id})" } ?: "") + (if (e.goods.isNotEmpty()) " (${e.goods.joinToString("+") { it.id }})" else "") +
                 (if (e.place.isNotEmpty()) " at the ${e.place}" else "") + " x%.2f, %d h left".format(e.factor, e.until - m.hour)
@@ -261,12 +297,12 @@ object MarketCommand {
             val place = Caravans.PLACES.random()
             m.events.add(Event(kind, null, factor, m.hour, m.hour + length, lost, place))
             m.say("news.guildmark.market.event.${kind.id}", lost.first())
-            Markets.get(source.level).changed()
+            VillageMarkets.changed(source.level, entry)
             return say(source, plain("Started waylaid (at the $place) on ${lost.joinToString(", ") { it.id }} for ${length / 24} days (x%.2f).".format(factor)))
         }
         m.events.add(Event(kind, good, factor, m.hour, m.hour + length))
         m.say("news.guildmark.market.event.${kind.id}", good)
-        Markets.get(source.level).changed()
+        VillageMarkets.changed(source.level, entry)
         return say(source, plain("Started ${kind.id}" + (good?.let { " on ${it.id}" } ?: "") + " for ${length / 24} days (x%.2f).".format(factor)))
     }
 
@@ -285,10 +321,11 @@ object MarketCommand {
         val entry = entry(context) ?: return 0
         val m = entry.market
         val from = m.hour
-        for (h in 1..hours) Markets.step(source.level, entry, from + h)
+        val village = VillageMarkets.get(source.level)[entry.market.capital]?.takeIf { it.entry === entry }
+        for (h in 1..hours) if (village != null) VillageMarkets.step(source.level, village, from + h) else Markets.step(source.level, entry, from + h)
         // Then back to the clock's hour, as if those hours had been lived already
         Markets.rewind(m, hours.toLong())
-        Markets.get(source.level).changed()
+        VillageMarkets.changed(source.level, entry)
         return say(source, plain("Worked out $hours hours of the market at once; it carries on from the clock's hour."))
     }
 
@@ -343,16 +380,26 @@ object MarketCommand {
         val shop = Shop.byId(id) ?: return fail(source, "No shop called $id: " + Shop.entries.joinToString(", ") { it.id })
         if (!Markets.enabled()) return fail(source, "The markets are switched off (setting: Capital Markets).")
         val player = source.playerOrException
-        val capital = Capitals.covering(source.level, player.blockPosition()) ?: return fail(source, "You're not in a capital.")
         val entry = entry(context) ?: return 0
-        Stalls.open(player, shop, entry, capital, null)
-        return say(source, grey("Opened the ${shop.id} screen. Nobody keeps it, so nobody acts the deals out; walk out of the capital and it closes."))
+        val capital = Capitals.covering(source.level, player.blockPosition())
+        val town = capital?.let { MarketTown.of(it) } ?: MarketTown(BlockPos.of(entry.market.capital), nameOf(source, entry))
+        Stalls.open(player, shop, entry, town, null)
+        return say(source, grey("Opened the ${shop.id} screen. Nobody keeps it, so nobody acts the deals out; walk out of the ${if (capital != null) "capital" else "village"} and it closes."))
     }
 
     private fun open(context: CommandContext<CommandSourceStack>): Int {
         val source = context.source
         val level = source.level
-        val capital = Capitals.covering(level, source.playerOrException.blockPosition()) ?: return fail(source, "You're not in a capital.")
+        val here = source.playerOrException.blockPosition()
+        val capital = Capitals.covering(level, here)
+        if (capital == null) {
+            // A village's market opened afresh, from the census it has (the town counted now, wherever the box is loaded)
+            val rec = Villages.at(level, here) ?: return fail(source, "You're not in a capital or a village.")
+            if (!VillageMarkets.enabled()) return fail(source, "Villages have no markets just now (settings: Capital Markets, Living Villages and Village Markets are all needed).")
+            val places = Villages.places(level, rec.key) ?: return fail(source, "${rec.name} has not been counted yet: try /guildmark village census now.")
+            val entry = VillageMarkets.open(level, rec, places)
+            return say(source, plain("Opened the market afresh: everything at what the village likes to keep. People: ${entry.town}"))
+        }
         val places = CityPlaces.of(level, capital) ?: return fail(source, "Its places are still being worked out: try again in a second.")
         val entry = Markets.get(level).open(level, places)
         return say(source, plain("Opened the market afresh: everything at what the town likes to keep. People: ${entry.town}"))
