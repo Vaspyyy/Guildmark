@@ -79,5 +79,10 @@ object GuildmarkClientConfig {
         .comment("How loud the festivals' own music is in a town's square (as a share of the game's Jukebox/Note Blocks volume). 0 silences it.")
         .defineInRange("festivalMusic", 100, 0, 100)
 
+    // Tales (tales/, living-world/stories/design.md section 12.1)
+    val TALE_BANNERS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Show a banner across the screen when a tale you are in begins, turns and ends.")
+        .define("taleBanners", true)
+
     val SPEC: ModConfigSpec = BUILDER.build()
 }

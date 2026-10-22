@@ -195,6 +195,20 @@ object GuildmarkConfig {
         .comment("Newcomers come in through a gate to take the homes and trades of the dead, and good times grow a capital by up to a fifth; after five hard days a household may leave (one a week at most, never below 85% of the plan), and they're the first to come back. Off, nobody comes or goes, and households away are home again.")
         .define("townComings", true)
 
+    // Tales: a capital's troubles told as stories, with endings that last (tales/, living-world/stories/design.md section 12.1)
+    val TOWN_TALES: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Tales: now and then something in a capital's records (a debt, a death, a wagon taken, a child gone down the road) becomes a story the people tell you in their own words, with choices that change how it ends and what the town remembers. Off, no tale starts, shows or moves, and the people go about their days; tales already open wait for it to come back on.")
+        .define("townTales", true)
+    val TOWN_TALE_SCENES: ModConfigSpec.BooleanValue = BUILDER
+        .comment("The street scenes of tales: the people act their trouble out where you can see it (a quarrel in the lane, a calling at the gate, a laying of flowers), and the story sets a child on the road or a family at a camp where it needs them. Off, tales are told by talk, rumour and the tracker alone, and the five that need a person set in the world are not begun.")
+        .define("townTaleScenes", true)
+    val TOWN_TALE_PACE: ModConfigSpec.DoubleValue = BUILDER
+        .comment("How readily a capital you visit starts a tale once its records show a trouble: 1 is even odds each day, 2 is every day, 0.5 one day in four, and 0 starts none (tales already open go on). Eight quiet days follow every tale whatever this says.")
+        .defineInRange("townTalePace", 1.0, 0.0, 2.0)
+    val TOWN_TALE_MEMORIALS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("The marks tales leave in the world: a memorial stone in a capital, a cairn by the road, and a posy and a lantern beside them. Off, they are remembered in the town's talk and chronicle but no block is set.")
+        .define("townTaleMemorials", true)
+
     // Seasons and festivals (season/, festival/)
     val SEASONS: ModConfigSpec.BooleanValue = BUILDER
         .comment("Seasons in the overworld: spring, summer, autumn and winter turn the land's colours, bring blossom, falling leaves and winter snow, and pace the crops. Off, the calendar still counts (for the festivals) but nothing changes with it.")
