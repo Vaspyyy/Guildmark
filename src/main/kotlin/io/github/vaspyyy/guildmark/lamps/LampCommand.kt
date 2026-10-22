@@ -20,7 +20,8 @@ import net.neoforged.neoforge.common.NeoForge
 import net.neoforged.neoforge.event.RegisterCommandsEvent
 
 /**
- * Testing commands for a capital's street lamps, run standing in the capital. `/guildmark capital lamps` tells of the
+ * Testing commands for a capital's street lamps, run standing in the capital (the village's are VillageLampsCommand's, which use this
+ * object's [report] and its words). `/guildmark capital lamps` tells of the
  * round of lamps nearest you: who keeps it and where they are, when it begins this evening (or this morning) and how
  * far it has got, and how the capital's lamps stand. `lamps light` and `lamps out` light or put out every lamp of the
  * capital now (the clock takes them up again at its next change); `lamps round` sets the nearest round going now,
@@ -72,15 +73,22 @@ object LampCommand {
         val capital = town.capital ?: return 0
         val anchor = (town.plan as? LampPlan)?.let { capital.boardAnchor(it.plan) } ?: capital.center
         val off = if (StreetLamps.enabled()) null else "The street lamps are switched off (setting: Street Lamps): they burn day and night, and older lanterns aren't swapped."
-        return report(context.source, town, "The street lamps of ${VillageNames.of(anchor)}", Where("the capital", "/guildmark capital lamps"), off)
+        val where = Where(
+            "the capital",
+            listOf(
+                Triple("[Light them all]", "/guildmark capital lamps light", "Light every lamp of the capital now"),
+                Triple("[Put them all out]", "/guildmark capital lamps out", "Put out every lamp of the capital now"),
+                Triple("[Start this round]", "/guildmark capital lamps round", "Set the round nearest you going now"),
+            ),
+        )
+        return report(context.source, town, "The street lamps of ${VillageNames.of(anchor)}", where, off)
     }
 
     /**
      * What a lamp command says about [town], the capital's or a village's: [title], and [off] if the lamps are switched off, how
-     * the clock has the day and how the lamps stand, the round nearest the player and who keeps it. [where] is what the town is
-     * called in the buttons, and the command they run.
+     * the clock has the day and how the lamps stand, the round nearest the player and who keeps it, and [where]'s buttons.
      */
-    class Where(val town: String, val command: String)
+    class Where(val town: String, val buttons: List<Triple<String, String, String>>)
 
     internal fun report(source: CommandSourceStack, town: LampTown, title: String, where: Where, off: String?): Int {
         val level = source.level
@@ -143,14 +151,12 @@ object LampCommand {
             else -> grey("all its lamps out for the day")
         }
         say(source, line().append(label("  Now: ")).append(doing))
-        say(
-            source, line()
-                .append(button("[Light them all]", "${where.command} light", "Light every lamp of ${where.town} now"))
-                .append(plain(" "))
-                .append(button("[Put them all out]", "${where.command} out", "Put out every lamp of ${where.town} now"))
-                .append(plain(" "))
-                .append(button("[Start this round]", "${where.command} round", "Set the round nearest you going now")),
-        )
+        val buttons = line()
+        where.buttons.forEachIndexed { k, b ->
+            if (k > 0) buttons.append(plain(" "))
+            buttons.append(button(b.first, b.second, b.third))
+        }
+        say(source, buttons)
         return 1
     }
 
