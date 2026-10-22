@@ -21,10 +21,10 @@ import net.neoforged.neoforge.common.NeoForge
  * ([LadenLayer]) and the harness on a pack animal ([PackHarnessLayer]). It is the client's own entry for this part, beside
  * [io.github.vaspyyy.guildmark.client.GuildmarkClient], so that the start-up code of the client is left as it was.
  *
- * Both layers draw from art stream X2's meshes through one call each ([LadenArt.table], [PackHarnessArt.table]); until those meshes are on
- * main both answer null and this registers the listeners and nothing else: no layer is added to anyone, no animal loses its chest boxes,
- * no pot clinks, and the game looks and sounds as it did. What the layers draw from is synced from the server (`Carry.LADEN` on a player,
- * `Carry.PACK_KIT` on an animal), so a switch turned off on the server leaves nothing to draw.
+ * Both layers draw from art stream X2's meshes through one call each ([LadenArt.table], [PackHarnessArt.table]); a table that answers null
+ * (or a mesh that cannot be baked, or colours that do not match the kit's) registers the listeners and nothing else: no layer is added to
+ * anyone, no animal loses its chest boxes, no pot clinks, and the game looks and sounds as it did. What the layers draw from is synced from
+ * the server (`Carry.LADEN` on a player, `Carry.PACK_KIT` on an animal), so a switch turned off on the server leaves nothing to draw.
  */
 @Mod(value = Guildmark.MOD_ID, dist = [Dist.CLIENT])
 class CarryClient(modBus: IEventBus) {

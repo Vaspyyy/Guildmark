@@ -9,6 +9,7 @@ import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap
 import net.minecraft.client.Minecraft
 import net.minecraft.client.entity.ClientAvatarEntity
 import net.minecraft.client.renderer.entity.state.AvatarRenderState
+import net.minecraft.core.component.DataComponents
 import net.minecraft.resources.Identifier
 import net.minecraft.sounds.SoundSource
 import net.minecraft.util.Mth
@@ -16,17 +17,23 @@ import net.minecraft.util.RandomSource
 import net.minecraft.util.context.ContextKey
 import net.minecraft.world.entity.Avatar
 import net.minecraft.world.entity.LivingEntity
+import net.minecraft.world.entity.Pose
 import net.neoforged.neoforge.client.renderstate.AvatarRenderStateModifier
 import kotlin.math.floor
 import kotlin.math.min
 
 /**
  * How one trader's pack stands on their back at this moment, as the layer draws it (build part D1): which of the three packs, how far it
- * has come up onto the back (settling a little past full when it has just been put on), and where its weight is swinging to.
+ * has come up onto the back (settling a little past full when it has just been put on), and where its weight is swinging to. [appear] is
+ * the same coming up onto the back before it is eased (0 to 1, and back down to 0 as it goes), and [tilt] how far the body has leaned into
+ * a sneak, eased over a few ticks (radians: 0, up to the 0.5 the player model leans by): what X2's rig works from, which eases and scales
+ * the pack itself.
  */
 internal class LadenFrame(
     val level: Int,
     val grow: Float,
+    val appear: Float,
+    val tilt: Float,
     val pitch: Float,
     val roll: Float,
     val bounce: Float,
@@ -55,6 +62,10 @@ internal class LadenLook : Look() {
     private var sprint = 0f
     private var sprintO = 0f
 
+    /** How far into a sneak the body is (0 to 1), now and a tick ago: the body's lean snaps in the game, what the pack does with it does not. */
+    private var crouch = 0f
+    private var crouchO = 0f
+
     /** Steps what is kept of [e] up to this tick; [laden] is what the server has told this client of their load (null for none). */
     fun update(e: LivingEntity, laden: LadenState?) {
         val want = laden?.level ?: 0
@@ -71,6 +82,8 @@ internal class LadenLook : Look() {
             leaving = false
             sprint = if (e.isSprinting) 1f else 0f
             sprintO = sprint
+            crouch = if (e.isCrouching) 1f else 0f
+            crouchO = crouch
             return
         }
         for (i in 0 until steps) step(e, want, i == 0)
@@ -103,6 +116,8 @@ internal class LadenLook : Look() {
         if (want > 0) appear = min(1f, appear + 1f / GROW)
         sprintO = sprint
         sprint += ((if (e.isSprinting && motion.moved > 0.05f) 1f else 0f) - sprint) * 0.2f
+        crouchO = crouch
+        crouch += ((if (e.isCrouching) 1f else 0f) - crouch) * CROUCH_EASE
         // Only the first step of several works with how the body really moved; the rest let the weight go on swinging
         val forward = if (fresh) motion.forward else 0f
         val left = if (fresh) motion.left else 0f
@@ -120,8 +135,8 @@ internal class LadenLook : Look() {
         if (a <= 0.002f) return null
         val grow = if (leaving) Ease.smooth(a) else Ease.back(a)
         return LadenFrame(
-            level = shown, grow = grow, pitch = pitch.at(partial), roll = roll.at(partial), bounce = bounce.at(partial),
-            dangle = dangle.at(partial), sprint = Mth.lerp(partial, sprintO, sprint),
+            level = shown, grow = grow, appear = a, tilt = Mth.lerp(partial, crouchO, crouch) * CROUCH_TILT, pitch = pitch.at(partial),
+            roll = roll.at(partial), bounce = bounce.at(partial), dangle = dangle.at(partial), sprint = Mth.lerp(partial, sprintO, sprint),
         )
     }
 
@@ -140,6 +155,10 @@ internal class LadenLook : Look() {
         const val GROW = 7f
         const val VANISH = 6f
         const val SWAP_FROM = 0.55f
+
+        /** How much of the way to a sneak (or back out of one) the body's lean is taken each tick (a few ticks to settle), and the lean the player model gives a sneak, in radians. */
+        const val CROUCH_EASE = 0.4f
+        const val CROUCH_TILT = 0.5f
     }
 }
 
@@ -152,6 +171,10 @@ internal object LadenClient {
 
     private val looks = Looks { LadenLook() }
 
+    /** Whether a pack is drawn on this player at all: not for a spectator, a glider or one lying in a bed (the pack goes on the back of a body that stands). */
+    fun shows(state: AvatarRenderState): Boolean =
+        !(state.isSpectator || state.isFallFlying || state.chestEquipment.has(DataComponents.GLIDER) || state.hasPose(Pose.SLEEPING))
+
     /** Fills in the pack for each player drawn who wears one; registered beside the other modifiers of players. */
     val AVATAR = object : AvatarRenderStateModifier() {
         override fun <T> accept(entity: T, state: AvatarRenderState) where T : Avatar, T : ClientAvatarEntity {
@@ -159,7 +182,10 @@ internal object LadenClient {
             if (LadenArt.packs == null) return
             val look = looks.of(entity)
             look.update(entity, entity.getExistingDataOrNull(Carry.LADEN))
-            state.setRenderData(FRAME, look.frame(state.partialTick))
+            val frame = look.frame(state.partialTick)
+            state.setRenderData(FRAME, frame)
+            // The cape hangs where the pack stands, and would pass through it: it is not drawn while the pack is
+            if (frame != null && shows(state)) state.showCape = false
         }
     }
 

@@ -44,7 +44,8 @@ internal class ShownGood(val model: ItemStackRenderState, val middle: Vector3f, 
 /**
  * How one pack animal's harness stands at this moment, as the layer draws it (build part D1): the colour of its blanket, how full the
  * panniers are (between steps while they change, with a squash as they take the change), how its weight is swinging, where its bell is
- * and what shows on top.
+ * and what shows on top. [ring] is how much of its swing the bell is let have (1, or [HarnessLook.HUSHED] while it is hushed, eased between
+ * the two): X2's rig swings the bell with the stride itself, so a hushed bell is quietened by the layer.
  */
 internal class HarnessFrame(
     val kind: HarnessKind,
@@ -56,6 +57,7 @@ internal class HarnessFrame(
     val bounce: Float,
     val dangle: Float,
     val bell: Float,
+    val ring: Float,
     val trot: Float,
     val goods: List<ShownGood>,
 )
@@ -86,6 +88,8 @@ internal class HarnessLook : Look() {
     private var walked = 0f
     private var side = 1f
     private var hush = 1f
+    private var ring = 1f
+    private var ringO = 1f
 
     /** The ids of the goods that show, and the models made of them. */
     private var ids: List<Int> = emptyList()
@@ -114,12 +118,17 @@ internal class HarnessLook : Look() {
             trot = 0f
             trotO = 0f
             walked = 0f
+            ring = hush
+            ringO = hush
             return
         }
         for (i in 0 until steps) step(kit, i == 0)
     }
 
     private fun step(kit: PackKit, fresh: Boolean) {
+        // The bell is hushed and let ring again over a few ticks
+        ringO = ring
+        ring += (hush - ring) * RING_EASE
         // The panniers fill (or empty) a step at a time, squashing a little as they take it
         fillO = fill
         fill = Mth.approach(fill, kit.fill.toFloat(), 1f / SETTLE)
@@ -156,7 +165,7 @@ internal class HarnessLook : Look() {
     fun frame(kind: HarnessKind, partial: Float): HarnessFrame = HarnessFrame(
         kind = kind, colour = colour, fill = Mth.lerp(partial, fillO, fill), pop = Mth.lerp(partial, popO, pop),
         pitch = pitch.at(partial), roll = roll.at(partial), bounce = bounce.at(partial), dangle = dangle.at(partial),
-        bell = bell.at(partial), trot = Mth.lerp(partial, trotO, trot), goods = goods,
+        bell = bell.at(partial), ring = Mth.lerp(partial, ringO, ring), trot = Mth.lerp(partial, trotO, trot), goods = goods,
     )
 
     private companion object {
@@ -174,8 +183,9 @@ internal class HarnessLook : Look() {
         const val WALK_KICK = 0.12f
         const val TROT_KICK = 0.20f
 
-        /** What is left of the bell's swing when it is hushed, and the least a tick's walk that counts as walking (blocks). */
+        /** What is left of the bell's swing when it is hushed, the part of the way to it (or back) the bell goes each tick, and the least a tick's walk that counts as walking (blocks). */
         const val HUSHED = 0.12f
+        const val RING_EASE = 0.15f
         const val STANDING = 0.02f
 
         /** Ticks for the panniers to settle one step of fullness (the design's six: eased, not a pop), and for the squash of a change to die away. */
