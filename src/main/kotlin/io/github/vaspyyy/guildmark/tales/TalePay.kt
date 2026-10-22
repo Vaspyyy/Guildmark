@@ -188,10 +188,15 @@ object TalePay {
         if (any) c.data.changed()
     }
 
-    /** A player who is not on is owed [s]: a line for their next login with the points still owing, and the part is marked paid. */
+    /**
+     * A player who is not on is owed [s]: a line for their next login with the points still owing, and the part is marked paid. A line is
+     * kept even when nothing is owing if there is a keepsake to give with it; with neither (an ending W that the tale's notes paid more
+     * than) there is nothing to wait for, and the player is not told that something is.
+     */
     private fun later(data: TaleData, t: Tale, s: TaleShares.Share) {
         val points = s.owing
         s.part.paid = maxOf(s.part.paid, s.points)
+        if (points <= 0 && !keepsakeFor(t.ending)) return
         TaleOwed.add(data, TaleData.Owed(s.part.player, t.id, t.template, points, t.ending, 0))
     }
 
