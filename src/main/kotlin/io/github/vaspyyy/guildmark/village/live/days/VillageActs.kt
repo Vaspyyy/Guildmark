@@ -101,6 +101,19 @@ object VillageActs {
         }
     }
 
+    /** For the market scene: [life] keeps stall [index] from now, the stall set out and then kept. */
+    fun keepNow(p: Townsperson, life: Life, index: Int): Task? {
+        life.keeper = index
+        life.market = true
+        return setUp(p, life)?.andThen(Later(p) { keep(p, life) })
+    }
+
+    /** For the market scene: [life] is about the green as on a market day (the children playing there). */
+    fun greenNow(p: Townsperson, life: Life): Task {
+        life.market = true
+        return if (p.role == TownRole.CHILD) play(p, life) else gather(p, life)
+    }
+
     /** A keeper's post is theirs only while they keep the stall: when the stretch is another, they have none. */
     private fun release(p: Townsperson, life: Life, stretch: Stretch) {
         val post = p.post ?: return

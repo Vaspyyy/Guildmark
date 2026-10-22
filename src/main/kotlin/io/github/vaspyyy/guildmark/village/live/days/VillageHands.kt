@@ -35,14 +35,7 @@ object VillageHands {
         val living = folk.filter { it.alive && it.id >= 0 }
         val bellman = BellKeeper.holder(level, centre, day)
         val poster = Posters.pick(folk, centre, day)
-        val barns = places.lodgings.values.filter { it.kind == "BARN" }
-        fun out(r: Resident): Double {
-            val home = places.lodgings[r.home]?.box?.center ?: return Double.MAX_VALUE
-            return barns.minOfOrNull { it.box.center.distSqr(home) } ?: Double.MAX_VALUE
-        }
-        val carts = if (living.size >= TWO_CARTS) 2 else 1
-        val carters = living.filter { it.role == TownRole.CITIZEN && it.id != bellman }
-            .sortedWith(compareBy<Resident>({ out(it) }, { it.id })).take(carts).map { it.id }.toSet()
+        val carters = carters(places, living, bellman)
         val guards = living.filter { it.role == TownRole.GUARD }.sortedBy { it.id }
         val night = guards.filterIndexed { i, _ -> i % 3 == 1 }.map { it.id }.toSet()
         val market = market(level, centre, day)
@@ -51,6 +44,25 @@ object VillageHands {
             keepers = if (Days.restDay(day)) mapOf() else keepers(places, living, carters, bellman),
             bellman = bellman, poster = poster, night = night, market = market,
         )
+    }
+
+    /** The carters among [living]: citizens other than [bellman], those living nearest a barn first; two in a village of [TWO_CARTS] folk or more. */
+    private fun carters(places: TownPlaces, living: List<Resident>, bellman: Int?): Set<Int> {
+        val barns = places.lodgings.values.filter { it.kind == "BARN" }
+        fun out(r: Resident): Double {
+            val home = places.lodgings[r.home]?.box?.center ?: return Double.MAX_VALUE
+            return barns.minOfOrNull { it.box.center.distSqr(home) } ?: Double.MAX_VALUE
+        }
+        val carts = if (living.size >= TWO_CARTS) 2 else 1
+        return living.filter { it.role == TownRole.CITIZEN && it.id != bellman }
+            .sortedWith(compareBy<Resident>({ out(it) }, { it.id })).take(carts).map { it.id }.toSet()
+    }
+
+    /** Who would keep each stall on town day [day] were it a working day (for the market scene, which plays on the rest day too): resident id to stall. */
+    fun keepersOn(level: ServerLevel, places: TownPlaces, day: Long): Map<Int, Int> {
+        val living = Residents.get(level).byCentre(places.centre).filter { it.alive && it.id >= 0 }
+        val bellman = BellKeeper.holder(level, places.centre, day)
+        return keepers(places, living, carters(places, living, bellman), bellman)
     }
 
     /** Whether it is the market day of the village at [centre] on town day [day]: its own, unless the rest day keeps it. */
