@@ -210,7 +210,7 @@ object KitchenCommand {
                 line().append(label("Prices: ")).append(
                     plain(
                         "index x${n2(Index.of(rec, entry))} (${Index.seen(rec)} of ${Pricing.WINDOW} hours seen), season ${season?.name?.lowercase() ?: "off"}, " +
-                            "palate of a ${h.capital.style.name.lowercase()} town, plain meal ${n2(Pricing.M_BASE)} Marks",
+                            "palate of a ${h.capital.style.name.lowercase()} town, plain meal ${n4(Pricing.M_BASE)} Marks",
                     ),
                 ),
             )
@@ -249,7 +249,7 @@ object KitchenCommand {
             source,
             plain(
                 "Worked out $hours hours of the market at once, the kitchens' meal hours with them: ${Pantry.portions - portions} portions served at ${Pantry.meals - meals} meals " +
-                    "(over every capital with a ledger). It carries on from the clock's hour; `cook kitchens` shows what is left.",
+                    "(in this capital). It carries on from the clock's hour; `cook kitchens` shows what is left.",
             ),
         )
     }
@@ -316,8 +316,8 @@ object KitchenCommand {
             source,
             line().append(label("One portion's value: ")).append(
                 plain(
-                    "${n2(Pricing.M_BASE)} plain meal x ${kind.factor} ${kind.id} x ${deal.tier.value} ${deal.tier.name.lowercase()} x ${n2(deal.index)} index x ${n2(deal.season)} season x " +
-                        "${n2(deal.palate)} palate x ${n2(Pricing.freshness(deal.stage))} freshness = ${n3(deal.value)} Marks",
+                    "${n4(Pricing.M_BASE)} plain meal x ${kind.factor} ${kind.id} x ${deal.tier.value} ${deal.tier.name.lowercase()} x ${n3(deal.index)} index x ${n3(deal.season)} season x " +
+                        "${n3(deal.palate)} palate x ${n2(Pricing.freshness(deal.stage))} freshness = ${n3(deal.value)} Marks",
                 ),
             ),
         )
@@ -470,6 +470,7 @@ object KitchenCommand {
 
     private fun n2(x: Double): String = String.format(Locale.ROOT, "%.2f", x)
     private fun n3(x: Double): String = String.format(Locale.ROOT, "%.3f", x)
+    private fun n4(x: Double): String = String.format(Locale.ROOT, "%.4f", x)
 
     private fun onOff(on: Boolean): String = if (on) "on" else "off"
 
