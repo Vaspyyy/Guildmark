@@ -98,6 +98,12 @@ neoForge.runs.configureEach {
     }
 }
 
+// Tales (tales/Tales.kt): -Pwith_tales=true turns the story chains on in a dev run before the lead flips Tales.SHIPPED.
+// A shipped jar never sets the property, so it plays as SHIPPED says
+neoForge.runs.configureEach {
+    systemProperty 'guildmark.tales', String.valueOf(project.findProperty('with_tales') ?: 'false')
+}
+
 // A companion jar from Modrinth fetched the plain Java way, for jars with a "+" in their name (Sodium's, Iris's).
 // Modrinth's maven redirects to its CDN with the "+" escaped as %2B, Gradle's HTTP client unescapes it when it
 // follows, and the CDN at times answers 404 for the bare "+" while serving the escaped name fine (2026-10-15:
