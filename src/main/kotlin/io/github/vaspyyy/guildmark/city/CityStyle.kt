@@ -201,6 +201,19 @@ enum class CityStyle {
             // The mills' hubs, drawn turning by the game (their block entities are set up by WorldCanvas)
             M.SAILS -> facing(io.github.vaspyyy.guildmark.mill.MillRegistry.SAILS.get(), b.dir)
             M.WATER_WHEEL -> facing(io.github.vaspyyy.guildmark.mill.MillRegistry.WHEEL.get(), b.dir)
+
+            // Hearthcraft's stations and helpers (the plan draws them from the kitchens' part on)
+            M.STEWPOT -> io.github.vaspyyy.guildmark.cooking.CookRegistry.STEWPOT.get().defaultBlockState().setValue(
+                io.github.vaspyyy.guildmark.cooking.vessel.StewpotBlock.STYLE,
+                if (b.v == 1) io.github.vaspyyy.guildmark.cooking.vessel.StewpotStyle.CAMP else io.github.vaspyyy.guildmark.cooking.vessel.StewpotStyle.HEARTH,
+            )
+            M.HOB -> io.github.vaspyyy.guildmark.cooking.CookRegistry.HOB.get().defaultBlockState()
+            M.BAKE_OVEN -> facing(io.github.vaspyyy.guildmark.cooking.CookRegistry.BAKE_OVEN.get(), b.dir)
+            M.SPIT -> facing(io.github.vaspyyy.guildmark.cooking.CookRegistry.SPIT.get(), b.dir)
+            M.PREP_BOARD -> io.github.vaspyyy.guildmark.cooking.CookRegistry.PREP_BOARD.get().defaultBlockState()
+            M.PLATE -> io.github.vaspyyy.guildmark.cooking.CookRegistry.PLATE.get().defaultBlockState()
+            M.LARDER -> io.github.vaspyyy.guildmark.cooking.CookRegistry.LARDER.get().defaultBlockState()
+            M.MENU_BOARD -> facing(io.github.vaspyyy.guildmark.cooking.CookRegistry.MENU_BOARD.get(), b.dir)
         }
     }
 

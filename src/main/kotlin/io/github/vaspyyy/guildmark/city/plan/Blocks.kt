@@ -73,6 +73,10 @@ enum class M(val rgb: Int, val solid: Boolean = true) {
     // The mills' hubs, each a block the game draws turning (see FarmWindmill and FarmWheel), facing the way the sails or
     // the wheel look out: the windmill's sails, their cloth in [B.color], and the watermill's wheel
     SAILS(0xE0D8C8, false), WATER_WHEEL(0x6A4A2A, false),
+    // Hearthcraft's stations and helpers, each the block of its own name (the plan draws them from the kitchens' part on; a
+    // [STEWPOT]'s [B.v] is 1 for a camp pot on three sticks, else a pot on a hearth's crane; an oven, a spit and a menu board face [B.dir])
+    STEWPOT(0x4A4A52, false), HOB(0x8A4A3A, false), BAKE_OVEN(0xB86A44, false), SPIT(0x5A5A62, false),
+    PREP_BOARD(0xA07848, false), PLATE(0xE8E4DA, false), LARDER(0x8A6A3A), MENU_BOARD(0x2A2A30, false),
 }
 
 /**

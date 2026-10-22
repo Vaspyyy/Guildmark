@@ -223,6 +223,16 @@ internal class IslandStyle(climate: Climate) {
         // The mills' hubs (an island builds no mills)
         M.SAILS -> Bk.of("guildmark:windmill_sails", "facing" to face(b))
         M.WATER_WHEEL -> Bk.of("guildmark:water_wheel", "facing" to face(b))
+
+        // Hearthcraft's stations and helpers (an island builds no kitchens)
+        M.STEWPOT -> Bk.of("guildmark:stewpot", "style" to if (b.v == 1) "camp" else "hearth")
+        M.HOB -> Bk.of("guildmark:hob")
+        M.BAKE_OVEN -> Bk.of("guildmark:bake_oven", "facing" to face(b))
+        M.SPIT -> Bk.of("guildmark:spit", "facing" to face(b))
+        M.PREP_BOARD -> Bk.of("guildmark:prep_board")
+        M.PLATE -> Bk.of("guildmark:plate")
+        M.LARDER -> Bk.of("guildmark:larder")
+        M.MENU_BOARD -> Bk.of("guildmark:menu_board", "facing" to face(b))
     }
 
     private fun face(b: B): String = b.dir?.let { CityBridge.dir(it).id } ?: "north"
