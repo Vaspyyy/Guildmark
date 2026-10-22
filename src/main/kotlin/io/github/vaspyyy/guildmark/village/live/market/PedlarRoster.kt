@@ -1,7 +1,6 @@
 package io.github.vaspyyy.guildmark.village.live.market
 
 import io.github.vaspyyy.guildmark.townsfolk.Names
-import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import net.minecraft.core.BlockPos
 import kotlin.random.Random
 
@@ -28,6 +27,9 @@ object PedlarRoster {
 
     /** A wagon that has called on a village within this many days is its supply; the pedlar then comes on market day alone. */
     const val WAGON_DAYS = 4
+
+    /** Days a village goes without a pedlar after one was killed. */
+    const val SLAIN_DAYS = 7
 
     /** A square of this many blocks each way is a region with its four pedlars (about eight villages of the country's spacing). */
     const val REGION = 1024
@@ -70,6 +72,9 @@ object PedlarRoster {
         /** An op held this visit back (`village cart skip`). */
         HELD("held", false),
 
+        /** The pedlar was killed: his place is kept empty for a week and then another is named. */
+        SLAIN("slain", false),
+
         /** The pedlar's switch is off. */
         OFF("off", false),
         ;
@@ -90,11 +95,15 @@ object PedlarRoster {
     /**
      * Whether he comes on [day], and why. [rest]: the rest day; [market]: the village's market day; [next]: the day his round is next
      * due ([NONE] before his first); [wagon]: a wagon has called lately; [closed]: every road to the village is closed; [band]: a band
-     * is camped near; [held]: visits an op has held back.
+     * is camped near; [held]: visits an op has held back; [away]: his place is empty after a pedlar was killed.
      */
-    fun verdict(bell: Long, day: Long, rest: Boolean, market: Boolean, next: Long, wagon: Boolean, closed: Boolean, band: Boolean, held: Int): Why {
+    fun verdict(
+        bell: Long, day: Long, rest: Boolean, market: Boolean, next: Long, wagon: Boolean, closed: Boolean, band: Boolean, held: Int,
+        away: Boolean = false,
+    ): Why {
         if (rest) return Why.REST
         if (closed) return Why.CLOSED
+        if (away) return Why.SLAIN
         val round = round(day, next)
         if (!market && !round) return Why.NOT_DUE
         if (!market && wagon) return Why.WAGON
@@ -125,7 +134,8 @@ object PedlarRoster {
         return List(4) { i ->
             val look = 4 + i % 2
             val s = seed * 31L + i
-            val woman = Names.woman(TownRole.MERCHANT, look, s)
+            // The looks the art gives them: 4 a man, 5 a woman (villages design, section 17.2)
+            val woman = look == 5
             var given = Names.given(null, woman, s)
             var tries = 0
             while (!used.add(given) && tries++ < 8) given = Names.given(null, woman, s + 1000L * tries)
@@ -133,9 +143,9 @@ object PedlarRoster {
         }
     }
 
-    /** The pedlar of the village whose bell is [bell]. */
-    fun of(bell: Long): Person {
+    /** The pedlar of the village whose bell is [bell]; after [slain] have been killed there, the next of the region's four takes his place. */
+    fun of(bell: Long, slain: Int = 0): Person {
         val people = roster(region(bell))
-        return people[Math.floorMod(bell * -0x61c8864680b583ebL ushr 33, 4L).toInt()]
+        return people[Math.floorMod((bell * -0x61c8864680b583ebL ushr 33) + slain, 4L).toInt()]
     }
 }

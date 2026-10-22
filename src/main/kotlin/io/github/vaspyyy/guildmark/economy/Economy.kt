@@ -639,6 +639,9 @@ object Economy {
     /** The most caravans' worth a call brings, however long since the last: a week's worth at three a day. */
     const val CALL_MOST = 21
 
+    /** How many caravans' worth a call brings after [hours] since the last: one for every [CALL_HOURS], one to [CALL_MOST]. */
+    fun callTimes(hours: Long): Int = Math.ceil(hours / CALL_HOURS).toInt().coerceIn(1, CALL_MOST)
+
     /**
      * A village cart's call on [m] (a pedlar's, or a capital's wagon coming to the end of its road; the villages design, section
      * 7.4): the three daily caravans' arithmetic done in one go. What the market holds beyond [GLUT] times its target leaves, half
@@ -655,8 +658,7 @@ object Economy {
             out[g.ordinal] = took
         }
         // One caravan's share for every eight hours since the last call (three a day), a week's worth at the most
-        val times = Math.ceil(hours / CALL_HOURS).toInt().coerceIn(1, CALL_MOST)
-        val inn = bring(m, town, first = true, coming = null, times = times)
+        val inn = bring(m, town, first = true, coming = null, times = callTimes(hours))
         for (g in Good.entries) {
             val n = inn[g.ordinal]
             if (n <= 0.0) continue

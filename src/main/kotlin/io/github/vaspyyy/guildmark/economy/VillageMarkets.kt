@@ -52,7 +52,8 @@ class VillageMarkets(private val records: MutableMap<Long, Rec> = HashMap()) : S
      * What a village's cart has done and will do: the day his round is next due ([next]), the visits made ([calls], which seed the
      * gaps), when the last call was made ([lastHour], [lastDay], and [by] whom) and what it took and brought ([took], [brought], by
      * good), the last day a visit was lost and why ([missed], [why]), today's verdict ([decided], [comes]) and the day whose call is
-     * made ([called]), visits an op holds back ([held]) and when a wagon last called ([wagon], a market hour).
+     * made ([called]), visits an op holds back ([held]), when a wagon last called ([wagon], a market hour), and how many pedlars have been
+     * killed there ([slain], which names the next) and the day his place is filled again ([away]).
      */
     class Cart(
         var next: Long = NONE,
@@ -69,6 +70,8 @@ class VillageMarkets(private val records: MutableMap<Long, Rec> = HashMap()) : S
         var called: Long = NONE,
         var held: Int = 0,
         var wagon: Long = NONE,
+        var slain: Int = 0,
+        var away: Long = NONE,
     ) {
         /** The clock set back [days] days and [hours] hours: every date the cart keeps goes back with it. */
         fun back(days: Long, hours: Long) {
@@ -79,9 +82,10 @@ class VillageMarkets(private val records: MutableMap<Long, Rec> = HashMap()) : S
             if (decided != NONE) decided -= days
             if (called != NONE) called -= days
             if (wagon != NONE) wagon -= hours
+            if (away != NONE) away -= days
         }
 
-        private class Rounds(val next: Long, val calls: Int, val held: Int, val wagon: Long)
+        private class Rounds(val next: Long, val calls: Int, val held: Int, val wagon: Long, val slain: Int, val away: Long)
         private class Last(val hour: Long, val day: Long, val by: String, val took: Map<String, Double>, val brought: Map<String, Double>)
         private class Today(val missed: Long, val why: String, val decided: Long, val comes: Boolean, val called: Long)
 
@@ -94,6 +98,8 @@ class VillageMarkets(private val records: MutableMap<Long, Rec> = HashMap()) : S
                     Codec.INT.optionalFieldOf("calls", 0).forGetter(Rounds::calls),
                     Codec.INT.optionalFieldOf("held", 0).forGetter(Rounds::held),
                     Codec.LONG.optionalFieldOf("wagon", NONE).forGetter(Rounds::wagon),
+                    Codec.INT.optionalFieldOf("slain", 0).forGetter(Rounds::slain),
+                    Codec.LONG.optionalFieldOf("away", NONE).forGetter(Rounds::away),
                 ).apply(i, ::Rounds)
             }
 
@@ -119,11 +125,11 @@ class VillageMarkets(private val records: MutableMap<Long, Rec> = HashMap()) : S
 
             val CODEC: Codec<Cart> = RecordCodecBuilder.create { i ->
                 i.group(
-                    ROUNDS.forGetter { Rounds(it.next, it.calls, it.held, it.wagon) },
+                    ROUNDS.forGetter { Rounds(it.next, it.calls, it.held, it.wagon, it.slain, it.away) },
                     LAST.forGetter { Last(it.lastHour, it.lastDay, it.by, it.took, it.brought) },
                     TODAY.forGetter { Today(it.missed, it.why, it.decided, it.comes, it.called) },
                 ).apply(i) { r, l, t ->
-                    Cart(r.next, r.calls, l.hour, l.day, l.by, l.took, l.brought, t.missed, t.why, t.decided, t.comes, t.called, r.held, r.wagon)
+                    Cart(r.next, r.calls, l.hour, l.day, l.by, l.took, l.brought, t.missed, t.why, t.decided, t.comes, t.called, r.held, r.wagon, r.slain, r.away)
                 }
             }
         }
@@ -220,6 +226,12 @@ class VillageMarkets(private val records: MutableMap<Long, Rec> = HashMap()) : S
 
         /** The market of the village [key] if there is one and villages have markets; the capitals' markets are [Markets.get]'s. */
         fun find(level: ServerLevel, key: Long): Markets.Entry? = if (enabled()) get(level).records[key]?.entry else null
+
+        /** The market, cart and mail of the village [key], if it has a market and villages have markets. */
+        fun rec(level: ServerLevel, key: Long): Rec? = if (enabled()) get(level).records[key] else null
+
+        /** Every village's market, cart and mail, for the commands. */
+        fun recs(level: ServerLevel): List<Rec> = if (enabled()) get(level).records.values.toList() else emptyList()
 
         /** The market of the village [key] in the world now, for those that have no level in hand (V7's wagons). */
         fun entry(key: Long): Markets.Entry? {
@@ -445,7 +457,8 @@ class VillageMarkets(private val records: MutableMap<Long, Rec> = HashMap()) : S
                 val rest = Days.restDay(day)
                 val wagon = rec.links.isNotEmpty() && cart.wagon != NONE && day - Conditions(cart.wagon).day <= PedlarRoster.WAGON_DAYS
                 val closed = rec.links.isNotEmpty() && rec.links.all { closedRoad(level, it.capital, it.road) }
-                val verdict = PedlarRoster.verdict(bell, day, rest, market, cart.next, wagon, closed, bandNear(level, rec), cart.held)
+                val away = cart.away != NONE && day < cart.away
+                val verdict = PedlarRoster.verdict(bell, day, rest, market, cart.next, wagon, closed, bandNear(level, rec), cart.held, away)
                 // A visit held back or lost to a band counts as the round's, so he tries again a gap on
                 if (verdict == PedlarRoster.Why.HELD) cart.held--
                 if (verdict.comes) {
@@ -454,7 +467,7 @@ class VillageMarkets(private val records: MutableMap<Long, Rec> = HashMap()) : S
                 } else if ((verdict == PedlarRoster.Why.HELD || verdict == PedlarRoster.Why.BAND) && round) {
                     cart.next = day + PedlarRoster.gap(bell, cart.calls + 1)
                 }
-                if (verdict == PedlarRoster.Why.HELD || verdict == PedlarRoster.Why.BAND) cart.missed = day
+                if (verdict == PedlarRoster.Why.HELD || verdict == PedlarRoster.Why.BAND || verdict == PedlarRoster.Why.SLAIN) cart.missed = day
                 verdict
             }
             cart.decided = day
@@ -483,10 +496,33 @@ class VillageMarkets(private val records: MutableMap<Long, Rec> = HashMap()) : S
             }
         }
 
+        /** The hours a call made at market [hour] brings a load for: those since the cart's last, or a day's for the first. */
+        private fun callHours(cart: Cart, hour: Long): Long = if (cart.lastHour == NONE) 24L else (hour - cart.lastHour).coerceAtLeast(1L)
+
+        /** What a call made at market [hour] would bring the village now, by the good's place in [Good.entries]: the cart's load, shown before the call is made. */
+        fun preview(v: Rec, hour: Long): DoubleArray =
+            Economy.bring(v.entry.market, v.entry.town, first = true, coming = null, times = Economy.callTimes(callHours(v.cart, hour)))
+
+        /** The pedlar of the village [key] was killed on [day]: the place stays empty for a week, then the next of the region's four is named. */
+        fun slain(level: ServerLevel, key: Long, day: Long) {
+            val data = get(level)
+            val cart = data.records[key]?.cart ?: return
+            cart.slain++
+            cart.away = day + PedlarRoster.SLAIN_DAYS
+            cart.missed = day
+            cart.why = PedlarRoster.Why.SLAIN.id
+            // Killed before he made today's call, he does not make it
+            if (cart.called != day) {
+                cart.decided = day
+                cart.comes = false
+            }
+            data.setDirty()
+        }
+
         /** The cart calls on the village at market [hour] of [day] ([by] the pedlar, or the command): what it takes and brings is kept. */
         fun call(v: Rec, m: Market, town: Town, hour: Long, day: Long, by: String): Exchange {
             val cart = v.cart
-            val hours = if (cart.lastHour == NONE) 24L else (hour - cart.lastHour).coerceAtLeast(1L)
+            val hours = callHours(cart, hour)
             val ex = Economy.call(m, town, hours)
             cart.lastHour = hour
             cart.lastDay = day
