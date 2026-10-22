@@ -154,6 +154,10 @@ enum class Bonus(
     POTION_POTENCY("potion_potency", Shown.PERCENT),
     FOOD_SATURATION("food_saturation", Shown.PERCENT),
     FOOD_HEAL("food_heal", Shown.FLAT),
+    /** The dishes you cook come out better: added to a batch's quality, which runs from 0 to 1 (Hearthcraft, 2.5). */
+    COOK_CRAFT("cook_craft", Shown.PERCENT),
+    /** The dishes you cook keep longer before they go stale, by this much of their keeping time (Hearthcraft, 3.2). */
+    COOK_KEEP("cook_keep", Shown.PERCENT),
     XP_ORBS("xp_orbs", Shown.PERCENT),
     ENCHANT_REFUND("enchant_refund", Shown.PERCENT),
 

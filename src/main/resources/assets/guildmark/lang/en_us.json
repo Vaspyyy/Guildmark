@@ -6512,5 +6512,7 @@
   "say.guildmark.talk.trade.hunted_1": "Someone was robbed out on the road, I heard.",
   "say.guildmark.talk.trade.hunted_2": "The outlaws have been at the carriers again.",
   "say.guildmark.talk.trade.child_0": "The cart came!",
-  "say.guildmark.talk.trade.child_1": "Look at all the sacks!"
+  "say.guildmark.talk.trade.child_1": "Look at all the sacks!",
+  "bonus.guildmark.cook_craft": "%s to the quality of the dishes you cook",
+  "bonus.guildmark.cook_keep": "%s longer before the dishes you cook go stale"
 }

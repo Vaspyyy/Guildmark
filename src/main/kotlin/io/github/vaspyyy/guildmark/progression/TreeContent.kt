@@ -210,12 +210,12 @@ object TreeContent {
         t.branch(COOKING, "cooking", Skill.COOKING) {
             a(e(FOOD_SATURATION, 0.05))
             b(xp(Skill.COOKING, 0.10))
-            c(e(COOK_EXTRA, 0.04))
+            c(e(COOK_EXTRA, 0.04), e(COOK_CRAFT, 0.01))
             notable("hearty_meals", e(FOOD_SATURATION, 0.15))
             notable("second_helping", e(COOK_EXTRA, 0.15))
             notable("comfort_food", e(FOOD_HEAL, 2.0))
-            notable("camp_cook", e(REGEN, 1.0), e(STAMINA_REGEN, 0.05))
-            keystone("feast_maker", e(FOOD_HEAL, 4.0), e(FOOD_SATURATION, 0.40), e(COOK_EXTRA, 0.20))
+            notable("camp_cook", e(REGEN, 1.0), e(STAMINA_REGEN, 0.05), e(COOK_KEEP, 0.50))
+            keystone("feast_maker", e(FOOD_HEAL, 4.0), e(FOOD_SATURATION, 0.40), e(COOK_EXTRA, 0.20), e(COOK_CRAFT, 0.03))
         }
 
         // ---- Coin and the guild ----
