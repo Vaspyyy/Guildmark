@@ -396,7 +396,7 @@ object Lookout {
     }
 
     /** Whether [p] is up on a tower's platform. */
-    fun up(p: Townsperson): Boolean = aloft[p]?.let { there(p, it) } == true
+    fun up(p: Townsperson): Boolean = aloft[p]?.let { there(p, it) } == true || io.github.vaspyyy.guildmark.village.live.days.VillageWatch.up(p)
 
     /**
      * For `/guildmark capital scene lookout`, with no tower to keep: [p] keeps a watch where they stand, as they would

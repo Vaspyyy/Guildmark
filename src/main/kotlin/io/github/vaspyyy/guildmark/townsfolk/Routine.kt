@@ -203,7 +203,7 @@ class Routine(private val p: Townsperson) {
         val stretch = Days.stretch(life, level.overworldClockTime)
         val was = life.stretch
         if (stretch !== was) {
-            if (was != null && was.doing == stretch.doing) life.stretch = stretch
+            if (was != null && was.doing == stretch.doing && was.tag == stretch.tag) life.stretch = stretch
             else {
                 Days.begin(p, life, stretch)
                 if (was != null) windDown(stretch.doing)

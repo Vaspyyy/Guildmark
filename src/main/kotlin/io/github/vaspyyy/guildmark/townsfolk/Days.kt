@@ -4,7 +4,10 @@ import io.github.vaspyyy.guildmark.GuildmarkConfig
 import io.github.vaspyyy.guildmark.city.Capitals
 import io.github.vaspyyy.guildmark.economy.Economy
 import io.github.vaspyyy.guildmark.faction.Faction
+import io.github.vaspyyy.guildmark.village.live.days.VillageActs
+import io.github.vaspyyy.guildmark.village.live.days.VillageDays
 import io.github.vaspyyy.guildmark.village.live.days.VillageLife
+import io.github.vaspyyy.guildmark.village.live.days.VillageWatch
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.item.Item
 import net.minecraft.world.item.ItemStack
@@ -139,6 +142,17 @@ object Days {
         life.mill = crew.millers[life.resident.id]?.let { life.places.lodgings[it] }
         life.crier = life.resident.id == crew.crier
         life.labourer = life.resident.id in crew.labourers
+        // A village's market day, its stall, its bell and its board (see VillageHands)
+        if (life.places.kind == TownKind.VILLAGE) {
+            life.market = crew.market
+            life.keeper = crew.keepers[life.resident.id] ?: -1
+            life.bellman = life.resident.id == crew.bellman
+            life.poster = life.resident.id == crew.poster
+            if (life.resident.role == TownRole.GUARD) {
+                life.nightWatch = life.resident.id in crew.night
+                p.nightWatch = life.nightWatch
+            }
+        }
     }
 
     /**
@@ -153,14 +167,15 @@ object Days {
         // Up out of bed, for whatever they were still abed for when the world was saved
         if (p.isSleeping && stretch.doing != Doing.SLEEP && stretch.doing != Doing.BED) p.stopSleeping()
         // Off a watchtower's platform by its ladder when the watch is over, rather than walked off its edge
-        Lookout.down(p, life, stretch)?.let { return it }
+        val village = life.places.kind == TownKind.VILLAGE
+        (if (village) VillageWatch.down(p, life, stretch) else Lookout.down(p, life, stretch))?.let { return it }
         while (life.step < life.script.size) {
             val part = life.script[life.step++]
             if (!part.laden) p.carried = ItemStack.EMPTY
             part.make()?.let { return it }
         }
         p.carried = ItemStack.EMPTY
-        return Acts.filler(p, life, stretch.doing)
+        return if (village) VillageActs.filler(p, life, stretch) else Acts.filler(p, life, stretch.doing)
     }
 
     /** [life] is in [stretch] from now on: its parts are laid out afresh. */
@@ -169,7 +184,7 @@ object Days {
         life.step = 0
         life.balked = 0
         life.bound = null
-        life.script = Acts.script(p, life, stretch.doing)
+        life.script = if (life.places.kind == TownKind.VILLAGE) VillageActs.script(p, life, stretch) else Acts.script(p, life, stretch.doing)
     }
 
     /** [life]'s day as it stands at [time], one line a stretch, the one they're in marked. */
@@ -188,7 +203,9 @@ object Days {
 
     /** [life]'s day number [day]. */
     fun plan(life: Life, day: Long): Agenda =
-        plan(life.resident, day, life.places.lodgings.values.any { it.kind in CityPlaces.TEMPLES || it.kind == "LIBRARY" }, life.nightWatch, life.carter, life.crier, life.labourer)
+        plan(life.resident, day, life.places.lodgings.values.any { it.kind in CityPlaces.TEMPLES || it.kind == "LIBRARY" }, life.nightWatch, life.carter, life.crier, life.labourer).let {
+            if (life.places.kind == TownKind.VILLAGE) VillageDays.shape(life, it, day) else it
+        }
 
     /**
      * [r]'s day number [day], where children go to [lessons] if there's a temple or a library, a guard may keep the
@@ -541,6 +558,15 @@ class Life(val resident: Resident, val places: TownPlaces, val home: CityPlaces.
 
     /** Lent to the town's works today ([Hands], [Labour]): a building day. */
     var labourer = false
+
+    /**
+     * In a village ([Hands], [io.github.vaspyyy.guildmark.village.live.days.VillageHands]): its market day today, the stall they keep
+     * today (its index in [TownPlaces.stalls], or -1), whether they hold the bell for the week and whether they pin the board's note.
+     */
+    var market = false
+    var keeper = -1
+    var bellman = false
+    var poster = false
 
     /** For a guard, the road whose watchtower they last kept watch at ([Lookout]), or -1. */
     var tower = -1

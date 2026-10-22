@@ -692,7 +692,15 @@ object Hands {
      * or null if there's no one to be it), as worked out at game time [at]; and, with the works on, the citizens lent
      * to its works on town day [day] ([labourers], resident ids: see [Labour]).
      */
-    class Crew(val carters: Set<Int>, val millers: Map<Int, Int>, val crier: Int?, val at: Long, val labourers: Set<Int> = setOf(), val day: Long = Long.MIN_VALUE)
+    class Crew(
+        val carters: Set<Int>, val millers: Map<Int, Int>, val crier: Int?, val at: Long, val labourers: Set<Int> = setOf(), val day: Long = Long.MIN_VALUE,
+        /**
+         * A village's day ([io.github.vaspyyy.guildmark.village.live.days.VillageHands]): the stall each keeper keeps (resident id to the
+         * stall's index in [TownPlaces.stalls]), who holds the bell and who pins the board's note, the guards who keep the night, and
+         * whether it is market day.
+         */
+        val keepers: Map<Int, Int> = mapOf(), val bellman: Int? = null, val poster: Int? = null, val night: Set<Int> = setOf(), val market: Boolean = false,
+    )
 
     /** How often (in game ticks) a capital's crew is worked out again. */
     private const val AGAIN = 2400L
@@ -706,7 +714,7 @@ object Hands {
         val center = places.centre
         asking[center]?.let { return it }
         // A new day's labourers are asked for as the day begins, not when the crew next comes due
-        val day = if (io.github.vaspyyy.guildmark.economy.works.Works.enabled()) Days.dayOf(level.overworldClockTime) else Long.MIN_VALUE
+        val day = if (places.kind == TownKind.VILLAGE || io.github.vaspyyy.guildmark.economy.works.Works.enabled()) Days.dayOf(level.overworldClockTime) else Long.MIN_VALUE
         crews[center]?.let { if (level.gameTime - it.at in 0 until AGAIN && it.day == day) return it }
         return work(level, places, day).also { crews[center] = it }
     }
@@ -734,6 +742,8 @@ object Hands {
 
     /** The crew of [places]' capital for town day [day]: the carters, millers and crier, and (with the works on) those lent to them. */
     private fun work(level: ServerLevel, places: TownPlaces, day: Long): Crew {
+        // A village's: its bell, its board, its stalls and its watch, with no mills or crier (see VillageHands)
+        if (places.kind == TownKind.VILLAGE) return io.github.vaspyyy.guildmark.village.live.days.VillageHands.crew(level, places, day, level.gameTime)
         val base = base(level, places)
         if (!io.github.vaspyyy.guildmark.economy.works.Works.enabled()) return base
         val center = places.centre
