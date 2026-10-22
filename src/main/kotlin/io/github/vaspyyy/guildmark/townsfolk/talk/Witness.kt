@@ -701,9 +701,12 @@ object Witness {
 
     // ---- A delivery from the road (Trade, living-world/trader/design.md Part 6) ----
 
-    /** The units a delivery has to come to for the town to talk of it (a consignment), and for the talk to be of a great haul (as a relief ticket's always is). */
-    private const val HAULED_TALK = 64
-    private const val HAULED_GREAT = 128
+    /**
+     * The units a delivery has to come to for the town to take note of it, on its page and in its talk (a consignment), and to be a great haul (the
+     * talk at its hottest, and the street cheering; a relief ticket's always is, and a feast's).
+     */
+    const val HAULED_UNITS = 64
+    const val HAULED_GREAT = 128
 
     /** The fourth fact of a `trade.hauled` rumour when the delivery was a relief ticket's: what [relieved] looks for, and what the Word's topics can tell it apart by. */
     const val RELIEF_WORD = "relief"
@@ -713,6 +716,9 @@ object Witness {
      * how many of the shop's own it warmed to the player, and how many residents knew of it first.
      */
     class Hauled(val rumour: Rumour?, val warmed: Int, val knew: Int)
+
+    /** The name of the town whose heart is [capital], as its orders keep it or its ground has it; "" if neither is known. */
+    fun townOf(level: ServerLevel, capital: BlockPos): String = Suppliers.place(level, capital).ifEmpty { Spread.view(capital).places?.name.orEmpty() }
 
     /** As [hauled], for a delivery [player] made in person. */
     fun hauled(level: ServerLevel, entry: Markets.Entry, player: ServerPlayer, haul: Haul, units: Int, crowd: Collection<Int> = listOf()): Hauled =
@@ -734,8 +740,8 @@ object Witness {
         // A delivery of any kind warms the shop's own to whoever brought it
         for (r in own) TownTalk.hauled(level, r, player)
         val relief = haul.kind == HaulKind.RELIEF
-        if (units < HAULED_TALK && !relief) return Hauled(null, own.size, 0)
-        val town = Suppliers.place(level, capital).ifEmpty { Spread.view(capital).places?.name.orEmpty() }
+        if (units < HAULED_UNITS && !relief) return Hauled(null, own.size, 0)
+        val town = townOf(level, capital)
         if (town.isEmpty()) return Hauled(null, own.size, 0)
         val knowers = (own.mapIndexed { k, r -> r.id to (if (k == 0) Venue.SEEN else Venue.HOUSEHOLD) } + crowd.map { it to Venue.SEEN }).distinctBy { it.first }
             .ifEmpty { some(level, capital, haul.id * 31L + units).map { it.id to Venue.STREET } }

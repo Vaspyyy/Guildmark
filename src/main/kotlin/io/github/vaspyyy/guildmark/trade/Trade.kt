@@ -47,5 +47,6 @@ object Trade {
         // G: the trading house
 
         // H: the town answers
+        WorldAnswers.register()
     }
 }
