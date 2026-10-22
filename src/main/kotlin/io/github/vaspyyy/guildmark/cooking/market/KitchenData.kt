@@ -52,8 +52,9 @@ class Lot(val kind: DishKind, val tier: Tier, val cook: UUID?, val cookName: Str
  * What one sale came to: [taken] portions off the stack for [marks] whole Marks, whether it was the [first] of its kind
  * sold in the town (paid double), the [tier] and [stage] it was judged at, the keeper's [verdict] on the mix (null when
  * none was given), and whether the door is [full] for the day. Added after the contract's seven, all defaulted: [asked] of
- * the [taken] portions went to the day's request, [refusal] is why nothing was taken (null when something was) and [kind]
- * is the kind of dish it was (null when the hand held no dish).
+ * the [taken] portions went to the day's request, [refusal] is why nothing was taken (null when something was), [kind]
+ * is the kind of dish it was (null when the hand held no dish) and [locked] that it was the day's request but the seller is
+ * not yet Known, so it was sold as any dish.
  */
 class Sale(
     val taken: Int,
@@ -66,6 +67,7 @@ class Sale(
     val asked: Int = 0,
     val refusal: Refusal? = null,
     val kind: DishKind? = null,
+    val locked: Boolean = false,
 )
 
 /** A capital's request of the day: [portions] of [kind], and whether it is [filled]. */

@@ -68,6 +68,9 @@ class KitchenDoor private constructor(
     /** The tick (the keeper's own) the step under way ends; -1 with none. */
     private var beatEnds = -1
 
+    /** Ticks after it began that a sale that has not paid is cut short: [CUTOFF], or more for a scene whose beats add up to more (a sale with every remark). */
+    private var limit = CUTOFF
+
     private var keeper: Townsperson? = null
     private var started = 0L
     private var health = 0f
@@ -91,7 +94,7 @@ class KitchenDoor private constructor(
     override fun over(level: ServerLevel, now: Long): Boolean {
         if (ended) return true
         val p = keeper ?: return true
-        return p.isRemoved || !p.isAlive || p.director !== this || now - started > CUTOFF + FINISH
+        return p.isRemoved || !p.isAlive || p.director !== this || now - started > limit + FINISH
     }
 
     override fun tick(p: Townsperson) {
@@ -99,7 +102,7 @@ class KitchenDoor private constructor(
         val now = level.gameTime
         val who = level.getPlayerByUUID(player) as? ServerPlayer
         // Cut short: the player has gone, died or walked off, the keeper is hurt, or twelve seconds pass before the Marks are given
-        val late = now - started > (if (slip != null) CUTOFF else CUTOFF + FINISH)
+        val late = now - started > (if (slip != null) limit else limit + FINISH)
         val hurt = p.hurtTime > 0 || p.health < health - 0.01f
         if (who == null || !who.isAlive || who.hasDisconnected() || who.distanceToSqr(p) > FAR * FAR || hurt || late) return cut(p, level)
         p.navigation.stop()
@@ -201,6 +204,7 @@ class KitchenDoor private constructor(
         if (sale.stage == Stage.STALE) beats += Beat(Activity.TALK, STALE) { q, _ -> DoorLines.say(q, "kitchen.stale") }
         beats += Beat(Activity.TALK, REMARK) { q, l -> remark(q, l, sale) }
         if (sale.asked > 0) beats += Beat(Activity.TALK, REMARK) { q, _ -> DoorLines.say(q, "kitchen.request") }
+        if (sale.locked) beats += Beat(Activity.TALK, REMARK) { q, _ -> DoorLines.say(q, "kitchen.request.known") }
         if (sale.first) beats += Beat(Activity.TALK, REMARK) { q, _ -> DoorLines.say(q, "kitchen.first") }
         if (sale.marks > 0) {
             beats += Beat(Activity.COUNT, COUNTING, mark, minOf(COUNTED, sale.marks))
@@ -213,6 +217,8 @@ class KitchenDoor private constructor(
             }
         }
         if (sale.full && hand > sale.taken) beats += Beat(Activity.SHRUG, GESTURE) { q, _ -> DoorLines.say(q, "kitchen.full") }
+        // The twelve seconds are for a scene that is stuck: one whose every remark is said (a verdict, the stale, the request, the first of its kind) takes longer than that and is not cut short for it
+        limit = maxOf(CUTOFF, beats.sumOf { it.ticks }.toLong() + FINISH)
         next(p, level)
     }
 
@@ -274,6 +280,7 @@ class KitchenDoor private constructor(
         }
         if (sale.first) line.append(" ").append(Component.translatable("message.guildmark.cook.door.first", dish))
         if (sale.asked > 0) line.append(" ").append(Component.translatable("message.guildmark.cook.door.request"))
+        if (sale.locked) line.append(" ").append(Component.translatable("message.guildmark.cook.door.request.locked"))
         if (sale.stage == Stage.STALE) line.append(" ").append(Component.translatable("message.guildmark.cook.door.stale"))
         return line
     }

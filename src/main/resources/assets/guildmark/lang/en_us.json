@@ -6872,5 +6872,9 @@
   "say.guildmark.talk.kitchen.door.carry_0": "That's not a whole Mark yet. I'll keep the rest for your next.",
   "say.guildmark.talk.kitchen.door.carry_1": "Less than a Mark, that. I'll count it with the next.",
   "say.guildmark.talk.kitchen.door.request_0": "That's the very dish I asked for. Thank you.",
-  "say.guildmark.talk.kitchen.door.request_1": "Just what the slate asked for. A little extra for you."
+  "say.guildmark.talk.kitchen.door.request_1": "Just what the slate asked for. A little extra for you.",
+  "gui.guildmark.cook.menu.request.known": "Requests are for cooks the innkeeper knows.",
+  "message.guildmark.cook.door.request.locked": "The day's request is kept for cooks the innkeeper knows: paid as any dish.",
+  "say.guildmark.talk.kitchen.door.request_known_0": "That's a special order, and I keep those for cooks I know.",
+  "say.guildmark.talk.kitchen.door.request_known_1": "I'll pay the usual for that. Special orders go to cooks I know better."
 }

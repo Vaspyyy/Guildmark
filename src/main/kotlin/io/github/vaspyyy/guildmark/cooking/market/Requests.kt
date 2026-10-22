@@ -3,6 +3,8 @@ package io.github.vaspyyy.guildmark.cooking.market
 import io.github.vaspyyy.guildmark.cooking.DishKind
 import io.github.vaspyyy.guildmark.cooking.Door
 import io.github.vaspyyy.guildmark.cooking.recipe.Tastes
+import io.github.vaspyyy.guildmark.economy.SupplierRank
+import io.github.vaspyyy.guildmark.economy.Suppliers
 import io.github.vaspyyy.guildmark.economy.fortune.Times
 import io.github.vaspyyy.guildmark.season.Season
 import io.github.vaspyyy.guildmark.season.Seasons
@@ -30,6 +32,12 @@ object Requests {
 
     /** How much more likely the season's good kinds, and broth and pottage in lean times, are to be wanted. */
     const val LEANING = 2.0
+
+    /** The standing a request goes to: the innkeeper gives her special orders to cooks she knows (6.3, and `ladder.py`'s `REQUEST_RANK`): Known, 30 points. */
+    val RANK: Int = SupplierRank.KNOWN.ordinal
+
+    /** Whether a cook of standing [rank] may fill the request. With standing switched off nobody has a rank, so then the request is anyone's. */
+    fun open(rank: Int): Boolean = rank >= RANK || !Suppliers.enabled()
 
     /** The season on the town's [day], or null with seasons off (then no kind is the season's). */
     fun season(level: ServerLevel, day: Long): Season? = if (Seasons.enabled()) Seasons.dateOn(level.server, day).season else null

@@ -75,10 +75,13 @@ object DoorLines {
         "kitchen.mess" to listOf("say.guildmark.talk.kitchen.door.mess_0", "say.guildmark.talk.kitchen.door.mess_1"),
         "kitchen.carry" to listOf("say.guildmark.talk.kitchen.door.carry_0", "say.guildmark.talk.kitchen.door.carry_1"),
         "kitchen.request" to listOf("say.guildmark.talk.kitchen.door.request_0", "say.guildmark.talk.kitchen.door.request_1"),
+        "kitchen.request.known" to listOf("say.guildmark.talk.kitchen.door.request_known_0", "say.guildmark.talk.kitchen.door.request_known_1"),
     )
 
     /** The families that are the door's own and so are never asked of Part J. */
-    private val OWN = setOf("kitchen.inn.no", "kitchen.off", "kitchen.spoilt", "kitchen.gruel", "kitchen.mess", "kitchen.carry", "kitchen.request")
+    private val OWN = setOf(
+        "kitchen.inn.no", "kitchen.off", "kitchen.spoilt", "kitchen.gruel", "kitchen.mess", "kitchen.carry", "kitchen.request", "kitchen.request.known",
+    )
 
     /** The role a verdict is about, said after it, for a verdict that is too much of it and for one that is too little (unvoiced). */
     private val OVER: Map<Role, String> = mapOf(

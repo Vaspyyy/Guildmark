@@ -3,6 +3,7 @@
   "gui.guildmark.cook.menu.full": "%s (full)",
   "gui.guildmark.cook.menu.request": "Request: %s x%s",
   "gui.guildmark.cook.menu.request.filled": "Request filled: %s",
+  "gui.guildmark.cook.menu.request.known": "Requests are for cooks the innkeeper knows.",
   "gui.guildmark.cook.menu.pot": "Tonight's pot: %s %s, cooked by %s",
   "gui.guildmark.cook.menu.cook": "Cook of the day: %s",
   "gui.guildmark.cook.menu.bare": "The slate is bare.",
@@ -19,6 +20,7 @@
   "message.guildmark.cook.door.sold.carry": "Sold %s %s %s. Not a whole Mark yet: you carry %s of one to your next sale here.",
   "message.guildmark.cook.door.first": "First %s sold here: paid double.",
   "message.guildmark.cook.door.request": "That counts toward the day's request: paid extra.",
+  "message.guildmark.cook.door.request.locked": "The day's request is kept for cooks the innkeeper knows: paid as any dish.",
   "message.guildmark.cook.door.stale": "A little stale: paid less.",
   "say.guildmark.talk.detail.kitchen.door.over.body": "Too heavy on the starch.",
   "say.guildmark.talk.detail.kitchen.door.over.meat": "Too heavy on the meat.",
@@ -91,5 +93,7 @@
   "say.guildmark.talk.kitchen.door.carry_0": "That's not a whole Mark yet. I'll keep the rest for your next.",
   "say.guildmark.talk.kitchen.door.carry_1": "Less than a Mark, that. I'll count it with the next.",
   "say.guildmark.talk.kitchen.door.request_0": "That's the very dish I asked for. Thank you.",
-  "say.guildmark.talk.kitchen.door.request_1": "Just what the slate asked for. A little extra for you."
+  "say.guildmark.talk.kitchen.door.request_1": "Just what the slate asked for. A little extra for you.",
+  "say.guildmark.talk.kitchen.door.request_known_0": "That's a special order, and I keep those for cooks I know.",
+  "say.guildmark.talk.kitchen.door.request_known_1": "I'll pay the usual for that. Special orders go to cooks I know better."
 }

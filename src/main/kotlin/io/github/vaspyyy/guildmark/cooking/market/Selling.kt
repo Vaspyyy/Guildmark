@@ -43,7 +43,8 @@ enum class Refusal {
  * What selling a stack at a door comes to, worked out and not written: [taken] portions of [kind] for [marks] whole Marks
  * (with [kept] carried), or why none are ([refusal]). The back door, the `cook door` command and the sale itself all read one
  * of these, so what the command shows is what the sale pays. [request] portions go to the day's request and [atDoor] to the
- * door; [room] is what the door would have taken of the kind before this sale.
+ * door; [room] is what the door would have taken of the kind before this sale. [locked]: the dish is the day's request but the
+ * player's standing is below Known ([Requests.RANK]), so it is sold at the door as any dish.
  */
 class Deal(
     val door: Door,
@@ -68,6 +69,7 @@ class Deal(
     val carry: Double = 0.0,
     val marks: Int = 0,
     val kept: Double = 0.0,
+    val locked: Boolean = false,
 ) {
     /** Portions that leave the hand. */
     val taken: Int get() = request + atDoor
@@ -113,8 +115,11 @@ object Selling {
         val people = entry.town.people
         val wanted = kitchens.wanted(level, capital, day)
         val ask = kitchens.request(level, capital, day)
+        val pos = BlockPos.of(capital)
+        val rank = Suppliers.rank(level, pos, uuid)
         val asked = door == Door.INN && ask != null && ask.kind == kind && !ask.filled
-        val request = if (asked && hand >= Requests.PORTIONS) Requests.PORTIONS else 0
+        val known = Requests.open(rank)
+        val request = if (asked && known && hand >= Requests.PORTIONS) Requests.PORTIONS else 0
         val room = Doors.room(stand, door, kind, uuid, people, day)
         val atDoor = minOf(room, hand - request).coerceAtLeast(0)
         if (request == 0 && !Doors.takes(door, kind)) return refused(door, kind, tier, stage, hand, Refusal.WRONG_DOOR)
@@ -124,8 +129,6 @@ object Selling {
         val palate = Tastes.palate(style ?: styleOf(level, capital, player), kind)
         val index = Index.of(rec, entry)
         val value = Pricing.value(kind, tier, stage, index, season, palate)
-        val pos = BlockPos.of(capital)
-        val rank = Suppliers.rank(level, pos, uuid)
         val share = Suppliers.share(level, pos, uuid)
         val liked = door != Door.INN || kind in wanted
         val first = atDoor > 0 && !Doors.tasted(stand, uuid, kind)
@@ -135,7 +138,7 @@ object Selling {
         val paid = Doors.count(total, carry)
         return Deal(
             door, kind, tier, stage, null, hand, request, atDoor, room, first, liked, asked, index, season, palate, value, rank, share,
-            total, carry, paid.marks, paid.carry,
+            total, carry, paid.marks, paid.carry, asked && !known,
         )
     }
 
@@ -171,7 +174,7 @@ object Selling {
         if (deal.request > 0) kitchens.addLot(level, capital, Door.INN, Lot(kind, deal.tier, uuid, name, deal.request, day))
         kitchens.changed()
         if (verdict != null) Journal.learn(player, kind, verdict)
-        return Sale(deal.taken, deal.marks, deal.first, deal.tier, deal.stage, verdict, deal.full, deal.request, null, kind)
+        return Sale(deal.taken, deal.marks, deal.first, deal.tier, deal.stage, verdict, deal.full, deal.request, null, kind, deal.locked)
     }
 
     /**

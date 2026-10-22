@@ -15,6 +15,7 @@ import net.minecraft.ChatFormatting
 import net.minecraft.core.BlockPos
 import net.minecraft.core.particles.ParticleTypes
 import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.contents.TranslatableContents
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.sounds.SoundSource
@@ -192,12 +193,23 @@ object MenuBoards {
             player.sendOverlayMessage(Component.translatable("gui.guildmark.cook.menu.off"))
             return
         }
-        val lines = (level.getBlockEntity(pos) as? MenuBoardBlockEntity)?.lines ?: emptyList()
+        val board = level.getBlockEntity(pos) as? MenuBoardBlockEntity
+        val lines = board?.lines ?: emptyList()
         if (lines.isEmpty()) {
             player.sendOverlayMessage(Component.translatable("gui.guildmark.cook.menu.bare"))
             return
         }
         player.sendSystemMessage(lines[0].copy().withStyle(ChatFormatting.GOLD))
         for (i in 1 until lines.size) player.sendSystemMessage(Component.literal("  ").append(lines[i]))
+        // The request goes to cooks the innkeeper knows: a reader who is not yet one is told why theirs would sell as any dish
+        val home = board?.home ?: return
+        if (home == UNKNOWN || home == ELSEWHERE || board.kept || lines.none { isRequest(it) }) return
+        if (!Requests.open(Suppliers.rank(level, BlockPos.of(home), player.uuid))) {
+            player.sendSystemMessage(Component.translatable("gui.guildmark.cook.menu.request.known").withStyle(ChatFormatting.GRAY))
+        }
     }
+
+    /** Whether [line] is the slate's request line (open or filled). */
+    private fun isRequest(line: Component): Boolean =
+        (line.contents as? TranslatableContents)?.key?.startsWith("gui.guildmark.cook.menu.request") == true
 }

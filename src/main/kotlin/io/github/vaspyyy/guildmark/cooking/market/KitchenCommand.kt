@@ -17,6 +17,7 @@ import io.github.vaspyyy.guildmark.cooking.recipe.Hints
 import io.github.vaspyyy.guildmark.cooking.recipe.Ideal
 import io.github.vaspyyy.guildmark.economy.Conditions
 import io.github.vaspyyy.guildmark.economy.Markets
+import io.github.vaspyyy.guildmark.economy.SupplierRank
 import io.github.vaspyyy.guildmark.economy.Suppliers
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
@@ -140,6 +141,10 @@ object KitchenCommand {
 
     private fun place(h: Here): String = Suppliers.place(h.level, h.capital.center).ifEmpty { "the capital at ${h.capital.center.x}, ${h.capital.center.z}" }
 
+    /** The player's standing here, by name ("stranger"), with "(standing is off)" when the switch is. */
+    private fun rankOf(h: Here): String =
+        SupplierRank.entries[Suppliers.rank(h.level, h.capital.center, h.player.uuid)].id + if (Suppliers.enabled()) "" else " (supplier standing is off, so the request is open to all)"
+
     // ---- cook kitchens ----
 
     private fun ledger(context: CommandContext<CommandSourceStack>): Int {
@@ -161,7 +166,10 @@ object KitchenCommand {
         say(
             source,
             line().append(label("Request: ")).append(
-                plain(if (ask == null) "none (the back doors are off)" else "${ask.portions} ${ask.kind.id}, ${if (ask.filled) "filled" else "open"}"),
+                plain(
+                    if (ask == null) "none (the back doors are off)"
+                    else "${ask.portions} ${ask.kind.id}, ${if (ask.filled) "filled" else "open"}; it goes to cooks of rank ${SupplierRank.entries[Requests.RANK].id} and above, you are ${rankOf(h)}",
+                ),
             ),
         )
         val people = h.entry?.town?.people
@@ -269,7 +277,15 @@ object KitchenCommand {
             "clear" -> "Back to the seed's own request, unfilled. "
             else -> ""
         }
-        return say(source, line().append(label("Request of day ${h.day}: ")).append(plain(said + "${ask.portions} ${ask.kind.id}, ${if (ask.filled) "filled" else "open"} (the inn pays ${Doors.REQUEST} x the value, to the first who fills it)")))
+        return say(
+            source,
+            line().append(label("Request of day ${h.day}: ")).append(
+                plain(
+                    said + "${ask.portions} ${ask.kind.id}, ${if (ask.filled) "filled" else "open"} (the inn pays ${Doors.REQUEST} x the value, to the first cook of rank " +
+                        "${SupplierRank.entries[Requests.RANK].id} or above who fills it; you are ${rankOf(h)})",
+                ),
+            ),
+        )
     }
 
     // ---- cook door ----
@@ -316,6 +332,16 @@ object KitchenCommand {
                 ),
             ),
         )
+        if (deal.locked) {
+            say(
+                source,
+                line().append(label("The request: ")).append(
+                    plain("this is today's request, but you are ${SupplierRank.entries[deal.rank].id} and requests go to ${SupplierRank.entries[Requests.RANK].id} and above (${SupplierRank.entries[Requests.RANK].points} points), so it sells as any dish."),
+                ),
+            )
+        } else if (deal.asked && deal.request == 0) {
+            say(source, line().append(label("The request: ")).append(plain("this is today's request, but it takes ${Requests.PORTIONS} at once and you hold ${deal.hand}, so it sells as any dish.")))
+        }
         DishMix.of(stack)?.let { mix ->
             val v = Hints.verdict(h.level, kind, mix)
             say(source, line().append(label("The keeper would say: ")).append(plain(verdict(v.role, v.over, v.items, v.close))))
