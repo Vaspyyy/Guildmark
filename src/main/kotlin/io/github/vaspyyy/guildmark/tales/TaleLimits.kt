@@ -40,6 +40,9 @@ object TaleLimits {
     /** The days a template's longest route may take (`tale check`), inside [TALE_DAYS]. */
     const val ROUTE_DAYS = 9
 
+    /** Times a template may throw in a tale before the tale is ended at W (the strikes rule, 15.2). */
+    const val STRIKES = 3
+
     /** "Not now" costs a player nothing: the days before the cast ask again, and how many more times they do. */
     const val ASK_AGAIN_DAYS = 2
     const val ASKS_MORE = 2
