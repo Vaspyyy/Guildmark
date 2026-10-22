@@ -1,8 +1,107 @@
 """
-(placeholder: the real header is written when the clips are done)
+The cook's own clips: the seventeen the player plays in third person at the cook's stations and when she eats, the ten that move the item in her
+hand in first person, and the generated client/cooking/CookGrips.kt those ten turn it about. Same kit and skeleton as the combat and ship clips
+(animkit.py; the third-person ones are solved in the manner of ship_anims.py, the first-person ones are an item moved about a grip as the weapon
+scripts' are), read by the game's CombatAnimator and FirstPersonCombat; Hearthcraft Part E plays them (living-world/cook/design.md 11.3). Run from
+the repo root:
+
+    python3 -B art/scripts/cook_anims.py src/main/resources/assets/guildmark [preview-dir [steve.png]]
+
+Writes assets/guildmark/animations/player/ (17 clips), assets/guildmark/animations/first_person/ (10) and
+src/main/kotlin/io/github/vaspyyy/guildmark/client/cooking/CookGrips.kt. With a preview dir it also writes five GIFs there (player_pot, player_fire,
+player_board, player_oven_cold, player_eating): every clip played again and again in three-quarter view, over what she sees in first person where the
+clip has a first-person side and over her from the other side where it has not; steve.png dresses the model, else it is a plain cook; the tools'
+sprites are read from assets/guildmark/textures/item/ and drawn as a plain stroke where one is missing. Prints what it checked for every clip and
+exits 1 if a line says '!! OFF'. Run with no arguments it prints this. Everything is computed, so a rerun gives the same files. A clean run takes
+about three minutes without a preview dir (the third-person reaches are solved a sample at a time) and about seven with the five GIFs on a busy
+machine, a few seconds from a cache. Environment: COOK_ANIMS_CACHE=<dir> keeps every solve there and bakes from it next time; COOK_ANIMS_ONLY=cook_chop,eat_bite makes just those (and writes no CookGrips.kt); COOK_ANIMS_GROUPS=
+board draws just that GIF; COOK_ANIMS_TEX=<dir:dir> adds folders of item textures for the previews.
+
+    third person (player/)   ticks rate blend    what her body does
+    cook_add                    10    4  1/3      the ingredient swung low and forward from behind the hip, over the pot's near rim, flicked out above the stew
+    cook_feed                   12    4  1/3      a slight crouch, the fuel swung up from behind the hip, underhand, and let go low toward the fire
+    cook_stir                   24    4  1.5/3    ONE hand on the ladle, two slow circles round the pot, the body rocking from the hips, the head a beat behind
+    cook_taste                  40    2  1.5/4    the ladle dipped, lifted out and held ahead of her face, a blow, a sip, a look aside, put back
+    cook_ease                   14    4  1/3      both hands up on the chain, a hand-over-hand pull twice each, her body rocking back with each
+    cook_skim                   16    4  1/3      the ladle laid on the far side of the stew, drawn across the surface, flicked out over the rim
+    cook_serve                  20    4  1/3      the ladle dips and rises full, tips into the bowl her left hand holds out at the pot's left lip
+    cook_serve_peel             22    4  1.5/4    the turner as a peel in at the oven's mouth, under the loaf, out with it, then she turns away holding it out
+    cook_chop                    8    4  .75/2.5   the knife's two chops at the board, the left hand steadying
+    cook_flip                   14    4  1/3      the turner under the food in the pan, a flick of the wrist, level again to catch it, drawn out
+    cook_turn                   12    4  1/3      the spit's crank turned a quarter turn with the whole arm, the left hand on her thigh
+    cook_carve                  20    4  1/4      the knife drawn across the roast twice, the second cut deeper, the left hand held out to steady it
+    cook_slice                  16    4  1/3      the knife down through a pie twice a wedge apart, then flat under the slice to slide it aside
+    cook_shiver                 40    4  0/0      LOOP: arms hugged, shoulders drawn up, head sunk, trembling in waves; only arms, shoulders and head are keyed
+    eat_spoon                   32    2  2/4      the bowl at her breastbone in the right hand, the left fist spooning to her lips three times, her head to each
+    drink_bowl                  32    2  2/4      both hands raise the bowl, her head going back, a long drink with two swallows, lowered on a breath out
+    eat_bite                    24    4  1.5/3    the food raised to her mouth in the right hand, a bite, lowered while she chews, raised, a second bite
+
+    first person (first_person/) ticks rate blend   bones             what moves
+    cook_stir                   24    4  1.5/4     item              the ladle's bowl carried round the stew in two slow circles
+    cook_taste                  40    2  1.5/4     item              dip, scoop, up to the lower middle of the view, a blow, a sip, aside, back over the pot
+    cook_serve                  20    4  1/3       item, offhand     the ladle dips, rises full, goes left and tips into the bowl the other hand holds out
+    cook_chop                    8   10  .75/2.5   item              the knife twice on the carrot (wind-up, a strike that stops dead, a bounce)
+    cook_slice                  16    4  1/3       item              the knife down through the pie twice, then flat under the wedge to slide it aside
+    cook_flip                   14    4  1/3       item              the turner under the food, a flick, the food turns over, caught, lowered
+    cook_carve                  20    4  1/4       item              the knife across the roast twice, a slice falling at each cut, flicked away
+    eat_spoon                   32    2  2/4       item, offhand     the dish held up and offered to three spoonfuls; the offhand is the spoon
+    eat_bite                    24    4  1.5/3     item              the food up to the face, a bite, lowered while she chews, a second bite
+    drink_bowl                  32    2  2/4       item              the bowl rises and tips toward the eye, two swallows, lowered
+
+The ticks things happen at (the clips' `marks`; the JSON has no room for them, so Part E's sounds and puffs take them from here). Third person: cook_add
+release 4.9; cook_feed release 5.4; cook_taste blow 17, sip 23.5, aside 29; cook_ease pull 3.8, 6.0 and 7.8; cook_turn push 4; cook_serve_peel in 8,
+out 14.5, lift 18; cook_chop 2.4 and 4.2; cook_slice cuts 3 and 6.5, slide 10; cook_flip flick 6.6, land 7.9; cook_carve cuts 8 and 14.5; eat_spoon sips
+9, 16 and 23, breath 27; drink_bowl drink 9.5, gulps 13.8 and 18.8, lower 26; eat_bite bites 5 and 13.5. First person, the same except: cook_stir
+circles 11.6 and 20; cook_taste dip 5, sip 23.5; cook_serve dip 4.5, pour 13.
+
+Third person: gestures at a stand-in station. A clip is in place and plays wherever the player happens to stand (she may click a block from some way
+off), so each is a gesture at a nominal stand-in station: its block's near face STAND (8 px) ahead of her middle, the numbers Hearthcraft M1's own
+(M1_STATION_BOXES is cook_art.STATION_BOXES, the click regions; the models' constants are in station_boxes), drawn in the previews as a few boxes (the
+pot's walls and hearth, the oven's sill and lintel, the board). At the pot she stands with it a little to her right (POT_DX -4.5 px) and close (POT_DZ
+3 px), as a right-handed cook does, so that her lean reaches the stew: its middle is then 13 px ahead and 4.5 px to her right, the rim 10 px above the
+ground, the stew's surface 8.5 and its mouth 3 px in radius. What a clip owes the real station is that no part of her and no tool goes through it, and
+that is what is checked (against M1's vessel and fire regions and the stand-in's solid parts); the working end meets its mark at the stand-in (the ladle's
+bowl in the stew, the knife's tip on the board, the peel under the loaf). cook_ease and cook_turn work at a stand-in chain and crank in the air before her,
+with no station box to keep out of: where they land on the real chain and crank depends on where she stands.
+
+How a third-person clip is made. Each is a Spec: the body's style as functions of the tick (the torso's pitch, yaw and roll, the hips' sideways and back
+offsets, a crouch, the feet, the head's bob), the arms' plans (the point of the stand-in a hand is to bring the tool's working end to, along which
+direction, and how firmly) and the checks it is held to. solve() poses every sample by least squares: the style is nudged the least it takes for the
+arms to reach (they are rigid blocks, 10 px from the shoulder and no elbow, so a hand's work point stays on a sphere about its shoulder: a reach is made by
+leaning and crouching, and the counter clips lean 35 to 45 degrees) with the body clear of them, eased in by how far into its reach each arm is, so a body
+never leans for a hand that is not on its way yet; a swing from a hanging arm to a reach is bowed by the least that takes it round her body, her head, her
+other arm and the station. The baked clip is then read back with the game's own chain (animkit.pose_clip) and every check is run on that, at every half
+tick at full weight (the blends taken off). What is printed for each clip: how deep any part of her goes into the station; how deep the tool does; how far
+the working end is from its mark; how deep her arms go into her body, her head and each other (a block arm folded to a bowl or a fist at her chest has to
+touch: the tolerance is on the line); that the tool's grip is in her fist; that her planted feet stay on the ground and do not slide; for cook_shiver, that
+only her arms, shoulders and head are keyed and that the loop joins (the first and last samples differ by 0.0000).
+
+The eating clips. Part E plays them while she eats, with the dish in her main hand, so the right arm has it: eat_spoon has the bowl at her breastbone in
+the right hand and the left fist, which holds nothing (the game draws no spoon; the previews draw a stand-in), spooning to her lips three times; drink_bowl
+has both hands on the bowl, the left under its far edge; eat_bite the food in the right hand. Checked: what is to meet her lips does (the left fist and its
+5.6 px spoon at each sip, the bowl's face at the drink, the food's at each bite), and the bowl at her breastbone stays clear of her lips.
+
+cook_shiver has no blend (0/0): Part E eases it in and out by the frame's own weight, and it goes with any legs, for only the arms, shoulders and head are
+keyed.
+
+First person. A clip moves the held item (bone `item`) or what the other hand holds (`offhand`) about its grip: each sample is an offset of the grip from
+where vanilla holds it (FP_BASE) and a turn about the grip, as FirstPersonCombat reads its HOLDS. The tracks are authored in camera space (x right, y up,
+-z ahead, blocks) for a right hand; the game mirrors the offhand's, which is what the previews draw. They are made against a nominal stand-in stage: the stew,
+board or pan top 1.09 blocks below the eye and 0.85 ahead of it, her head pitched 35 degrees down (VIEW_PITCH): the real station is wherever the player
+looks, so how a clip lands on it depends on where she stands. cook_stir, cook_taste, cook_serve, cook_chop, cook_slice, cook_flip and cook_carve move the tool
+(a ladle, a knife, the turner); cook_serve's offhand is the bowl held out for the ladle. eat_spoon, eat_bite and drink_bowl move the dish; eat_spoon's offhand
+is the spoon (the game's offhand item, or nothing: it is the ladle's sprite and geometry in the previews). The sprites are flat, so a tool is angled across the
+screen for its blade to be seen, and a flat dish is rolled to face the eye. Rates: cook_chop 10 (so that its impacts, 2.4 and 4.2, fall on a sample: the game
+interpolates linearly between them); cook_stir, cook_serve, cook_slice, cook_flip, cook_carve and eat_bite 4; cook_taste, eat_spoon and drink_bowl 2.
+Checked for every one: the first and last samples are the rest pose (no jump into or out of the game's own hold); the item's middle and working end stay on
+the screen while the clip holds the hand; the item never comes nearer the camera than 0.3 block; no turn is faster than 150 degrees a tick; and what it
+works at (the ladle's bowl in the stew, the knife's tip on the board at each chop, the turner under the food, the spoon at the lips).
+
+CookGrips.kt is the grip point of each held thing, as FirstPersonCombat's HOLDS gives one for a weapon: the ladle, the gilded ladle, the knife and the turner
+close the hand at pixel (7, 25) of their 32 px sprites (TOOL_LAYOUT, M1's cook_tools.LAYOUT) and the bowl, like anything flat, is held by its middle (FLAT).
+grip(item) gives the point for those five and null for anything else, which Part E holds as FLAT. A clip's offset is of THAT point from vanilla's hand.
 """
 import copy
-import json
 import math
 import os
 import sys
@@ -15,8 +114,8 @@ from scipy.optimize import least_squares
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
-from animkit import (Clip, qeuler, qmul, qaxis, qmat, qfrommat, qslerp, frame_to, unit, I, pose_clip, vanilla_pose, raster, ortho,
-                     perspective, T, Rq, S, apply, box_quads, PLAYER, FACE_LIGHT, Geo, SWORD, FP_BASE, fp, fp_rest, sprite_quads, Scene)
+from animkit import (Clip, qeuler, qmul, qmat, qfrommat, qslerp, frame_to, unit, I, pose_clip, vanilla_pose, raster, ortho,
+                     perspective, T, Rq, S, apply, PLAYER, Geo, SWORD, FP_BASE, fp, fp_rest, sprite_quads, Scene)
 
 GROUP = 'player'
 FP_GROUP = 'first_person'
@@ -501,7 +600,6 @@ class Spec:
         a hair's breadth of movement, and the solve, which moves the body a sample at a time, finds one side of it at one sample and the other
         at the next. So the roll is asked once of the body in its style alone, unwound over the ticks (where it is well fixed), laid across
         the samples where it is not, and smoothed over time; the solve then takes the wrist as given."""
-        n = len(self.times)
         raw = {RIGHT: {}, LEFT: {}}
         for i, t in enumerate(self.times):
             body = self.body_at(t, self.x_style(t))
@@ -1287,7 +1385,6 @@ def self_clear(rep, spec, clip, label, tol=0.3, arm_tol=None):
     for t in ticks_of(clip):
         pose = pose_full(spec, clip, t)
         arms = {s: part_pts(pose, s, ARM_GRID[s]) for s in SIDES}
-        body = part_pts(pose, 'body', [(-4.0, 0.0, -2.0), (4.0, 12.0, 2.0)])
         # the body's box in its own space: the arms' points taken there
         qr, pr = pose['root']
         q, pv = pose['body']
@@ -1438,7 +1535,6 @@ def spec_stir():
         return Plan(free=FREE, w=env_r(t), work=work, target=tip(t), blade=blade, want=want_blade(t), arc=(0.3, 0.1), roll=ROLL, carry=carried(t))
 
     def left_plan(t, ctx):
-        e = env_r(t)
         # hanging from the leaning body, a little forward of it, and trailing its rock
         d = unit(DOWN * 0.97 + FWD * (0.22 + 0.1 * math.sin(phi(t) + 0.5)) + LEFTWARD * (0.12 + 0.1 * math.sin(phi(t) + 1.7)))
         return Plan(free=('torso', d, None))
@@ -2350,7 +2446,6 @@ def spec_eat_spoon():
     sp.pen_w = 3.0
     sp.style.update(pitch=lambda t: 4.0 * e(t) + 4.0 * sip(t), yaw=lambda t: -3.0 * e(t) - 3.0 * sip(t))
     sp.head = lambda t: (4.0 * e(t) + 12.0 * sip(t) - 9.0 * breath(t), 18.0 * sip(t) - 4.0 * dip(t), -4.0 * sip(t))
-    up = np.array([0.0, -1.0, 0.0])
     sp.pa = {RIGHT: lambda t: np.array([0.0, -0.8 * breath(t), 0.0]), LEFT: lambda t: np.array([0.0, -0.8 * breath(t), 0.0])}
     B = np.array([-0.5, 6.6, -7.6])                                                       # the bowl's middle: at her breastbone, 7.6 px ahead of it
     sp.items = {RIGHT: lambda t: (BOWL, 'bowl'), LEFT: lambda t: None}
@@ -2374,7 +2469,6 @@ def spec_eat_spoon():
                LEFT: lambda t, ctx: hand_plan(LEFT, LFREE, spoon_pt(t), kL(t), palm=palm_L)}
 
     def extras(t, pose):
-        a = part_pt(pose, RIGHT, PLATE[RIGHT]) + np.array([2.4, -2.0, 2.0])
         b = lips_of(pose)
         s = sip(t)
         tip = part_pt(pose, RIGHT, PLATE[RIGHT]) + (b - part_pt(pose, RIGHT, PLATE[RIGHT])) * s
@@ -2618,7 +2712,8 @@ def fp_checks(spec, tip_label='the working end'):
                     turn = max(turn, math.degrees(2.0 * math.acos(min(1.0, abs(float(np.dot(prev[1], q)))))) * 4.0)
                 prev = (off, q)
             where = 'always' if not lost else 'off it at t=' + ', '.join(f'{t:g}' for t in sorted(set(lost))[:6])
-            rep.line(f"{bone}: the item's middle and {tip_label} stay on the screen while the clip holds the hand ({where})", not lost)
+            what = tip_label.get(bone, 'the working end') if isinstance(tip_label, dict) else tip_label
+            rep.line(f"{bone}: the item's middle and {what} stay on the screen while the clip holds the hand ({where})", not lost)
             rep.line(f'{bone}: nearest to the camera {nearest:.2f} block (held to 0.3 or more); fastest {speed:.2f} blocks a tick, fastest turn {turn:.0f} degrees a tick '
                      '(held to 150: more is a flip)', nearest >= 0.3 and turn <= 150.0)
     return checks
@@ -2916,7 +3011,7 @@ def fp_eat_spoon():
             tip = np.array([-tip[0], tip[1], tip[2]])                 # as the screen shows it
             miss.append(float(np.linalg.norm(tip - mouth)))
         rep.line(f"the spoon's bowl meets the mouth point at the three sips: off by {max(miss):.3f} block at the most (held to 0.03)", max(miss) <= 0.03)
-    sp.checks += [fp_checks(sp, 'the dish'), spoon_checks]
+    sp.checks += [fp_checks(sp, {'item': 'the dish', 'offhand': "the spoon's bowl"}), spoon_checks]
     return sp
 
 
@@ -3045,7 +3140,7 @@ def fp_serve():
             c = np.array([-c[0], c[1], c[2]])
             far = max(far, float(np.linalg.norm((tip - c)[:2])))
         rep.line(f"the ladle's bowl over the bowl while it tips: {far:.2f} block across the view from the bowl's middle at the most (held to 0.17)", far <= 0.17)
-    sp.checks += [fp_checks(sp, "the ladle's bowl"), checks]
+    sp.checks += [fp_checks(sp, {'item': "the ladle's bowl", 'offhand': 'the bowl'}), checks]
     return sp
 
 
@@ -3248,7 +3343,7 @@ def fp_flip():
             tip = item_points(TURNER, off, q, (1.0,))[0]
             want = W(FX, -1.10 + flip_food_y(t) - 0.015, -0.85)
             worst = max(worst, float(np.linalg.norm(tip - want)))
-        rep.line(f"the turner's head under the food as it lands and is lowered: off by {worst:.3f} block at the most (held to 0.09)", worst <= 0.09)
+        rep.line(f"the turner's head under the food as it lands and is lowered: off by {worst:.3f} block at the most (held to 0.05)", worst <= 0.05)
     sp.checks += [fp_checks(sp, "the turner's head"), checks]
     return sp
 
@@ -3306,5 +3401,289 @@ def fp_carve():
 
 
 FP_SPECS['cook_carve'] = fp_carve
-# ================================================================== end of the kit
-# ---- (clips go above this line)
+
+
+# ================================================================== the files: the clips, CookGrips.kt, the previews
+
+COOK_GRIPS_PATH = 'src/main/kotlin/io/github/vaspyyy/guildmark/client/cooking/CookGrips.kt'
+GRIP_ITEMS = [('cooks_ladle', LADLE), ('gilded_ladle', LADLE), ('cooks_knife', KNIFE), ('turner', TURNER), ('bowl', FLAT)]
+
+
+def kt_vec(v):
+    return 'Vector3f(' + ', '.join(f'{float(c):.4f}f' for c in v) + ')'
+
+
+def cook_grips_kt():
+    """The generated client/cooking/CookGrips.kt: where each tool is turned about in first person (a clip's `item` and `offhand` tracks are authored
+    about these points: an offset of the grip from vanilla's hand position and a turn about the grip, as FirstPersonCombat reads its HOLDS)."""
+    rows = ''.join(f'        "{name}" to {kt_vec(geo.fp_grip)},\n' for name, geo in GRIP_ITEMS)
+    return f'''package io.github.vaspyyy.guildmark.client.cooking
+
+import net.minecraft.core.registries.BuiltInRegistries
+import net.minecraft.world.item.Item
+import org.joml.Vector3f
+
+/**
+ * Where a first-person cooking clip turns a held tool about (living-world/cook/design.md 11.3, 12.3): the grip point of the
+ * ladle, the bowl, the knife and the turner, as `FirstPersonCombat`'s `HOLDS` gives one for a weapon. A clip's `item` and `offhand`
+ * tracks (assets/guildmark/animations/first_person/) are an offset of the grip from vanilla's hand position and a turn about the
+ * grip, so Part E turns the held thing about the point this gives and the clips land where they were drawn.
+ *
+ * GENERATED by `python3 -B art/scripts/cook_anims.py` (the sprites' layouts in `TOOL_LAYOUT`); change it there, not here.
+ */
+object CookGrips {{
+    /** The grip point of a flat thing a hand holds by its middle (a dish, a loaf, a slice, anything that is not a tool): [grip] has none for those. Read only. */
+    val FLAT = {kt_vec(FLAT.fp_grip)}
+
+    private val BY_PATH: Map<String, Vector3f> = mapOf(
+{rows}    )
+
+    /** The grip point of [item] (read only), or null when none is known: a tool or the bowl has one, anything else is held as [FLAT] is. */
+    fun grip(item: Item): Vector3f? = BY_PATH[BuiltInRegistries.ITEM.getKey(item).path]
+}}
+'''
+
+
+def repo_root(assets):
+    root = os.path.abspath(assets)
+    for _ in range(5):                                          # <root>/src/main/resources/assets/guildmark
+        root = os.path.dirname(root)
+    return root
+
+
+def grip_check(rep, spec, clip):
+    """A held tool is in her fist: its grip point against the fist's closing point, at every half tick it is held (the worst), by the game's own chain."""
+    worst, who = 0.0, []
+    for side in SIDES:
+        fn = spec.items.get(side)
+        for t in ticks_of(clip) if fn else ():
+            held = fn(t)
+            if not held or not any(held[0] is g for g in (LADLE, KNIFE, TURNER)):
+                continue
+            pose = pose_full(spec, clip, t)
+            d = float(np.linalg.norm(tool_pt_world(pose, side, held[0], held[0].grip) - part_pts(pose, side, [hand_pt(side)])[0]))
+            worst = max(worst, d)
+            if held[0].name not in who:
+                who.append(held[0].name)
+    if who:
+        rep.line(f"the {' and '.join(who)} in her fist: its grip point is {worst:.2f} px from the fist's closing point at the most (held to 1.5)", worst <= 1.5)
+
+
+def cached_solve(sp, name):
+    """The solve, kept in $COOK_ANIMS_CACHE (a directory) when that is set: to bake and draw again without solving again. A clean run is what the
+    committed files come from."""
+    import pickle
+    d = os.environ.get('COOK_ANIMS_CACHE')
+    path = os.path.join(d, f'cache_{name}.pkl') if d else None
+    if path and os.path.exists(path):
+        sp.load(pickle.load(open(path, 'rb')))
+        return sp
+    sp.solve()
+    if path:
+        os.makedirs(d, exist_ok=True)
+        pickle.dump(sp.state(), open(path, 'wb'))
+    return sp
+
+
+def build_all(assets, only=None):
+    """Every clip solved or baked, checked and written: returns ({name: (spec, clip)} for the third-person ones, the same for the first-person ones, how
+    many checks are off)."""
+    tp, fp_, bad = {}, {}, 0
+    for kind, table, group, out in (('third person', SPECS, GROUP, tp), ('first person', FP_SPECS, FP_GROUP, fp_)):
+        for name, build in table.items():
+            if only and name not in only:
+                continue
+            t0 = __import__('time').time()
+            sp = build()
+            if kind == 'third person':
+                cached_solve(sp, name)
+            clip = sp.bake()
+            rep = Report()
+            for fn in sp.checks:
+                fn(rep, clip, sp)
+            if kind == 'third person':
+                grip_check(rep, sp, clip)
+            bad += rep.bad
+            path = clip.write(assets, group)
+            print(f'--- {name} ({kind}): {clip.length:g} ticks, rate {clip.rate}, blend {clip.blend_in:g}/{clip.blend_out:g}, '
+                  f'{sorted(clip.keys)}  ({__import__("time").time() - t0:.0f} s)')
+            print('\n'.join(rep))
+            print(f'  wrote {os.path.relpath(path, repo_root(assets))}')
+            out[name] = (sp, clip)
+    return tp, fp_, bad
+
+# ================================================================== the GIF previews
+# One GIF for each group of clips, as the preview kit makes them (weapon_anim_gifs.py): a 240 x 300 cell for each clip, her in three-quarter view above
+# and what she sees below it (a clip with no first-person side shows her from the other side instead), 20 frames a second, a frame to the tick, each
+# clip played again and again with a rest between, one palette for the whole GIF. A mark (the clip's `marks`) is named at the top right for three ticks.
+
+LOOPS = ('cook_shiver',)                          # played as loops (the time modulo the length); every other clip is played once and rests
+GIF_CELL, GIF_TP_H = (240, 300), 165
+GIF_VIEWS = ((35.0, 12.0, 4.3, 7.0), (-40.0, 12.0, 4.3, 7.0))      # (yaw, pitch, px per model px, centre y): from her right front, from her left front
+GIF_GAP, GIF_MIN = 6, 60                          # the fewest ticks of rest between one play and the next; the fewest ticks a GIF runs
+GIF_BG, GIF_RULE = (30, 32, 40), (30, 32, 40)
+GIF_GROUPS = {                                    # key: (file name, [(clip, label) | None, ...]) two cells wide
+    'pot': ('player_pot', [('cook_stir', 'Stir'), ('cook_taste', 'Taste'), ('cook_serve', 'Serve a bowl'), ('cook_skim', 'Skim')]),
+    'fire': ('player_fire', [('cook_add', 'Add to the pot'), ('cook_feed', 'Feed the fire'), ('cook_ease', 'Ease the chain'), ('cook_turn', 'Turn the crank')]),
+    'board': ('player_board', [('cook_chop', 'Chop'), ('cook_slice', 'Slice a pie'), ('cook_flip', 'Flip'), ('cook_carve', 'Carve')]),
+    'oven': ('player_oven_cold', [('cook_serve_peel', 'Serve from the oven'), ('cook_shiver', 'Chilled (a loop)')]),
+    'eating': ('player_eating', [('eat_spoon', 'Eat with a spoon'), ('drink_bowl', 'Drink from a bowl'), ('eat_bite', 'Eat a bite'), None]),
+}
+GIF_CARD = {'eating': ('Eating', 'The dish is the item her main hand holds, so her right arm has it; her left arm mimes the spoon (the previews draw one).')}
+_CTX = {}
+
+
+def gif_cell(job):
+    """One cell: [job] is (clip name, tick)."""
+    name, t = job
+    tp, fp_, prev, fprev = _CTX['tp'], _CTX['fp'], _CTX['prev'], _CTX['fprev']
+    W, H = GIF_CELL
+    sp, clip = tp[name]
+    cell = Image.new('RGB', (W, H), GIF_BG)
+    cell.paste(prev.image(sp, clip, t, (W, GIF_TP_H), GIF_VIEWS[0]), (0, 0))
+    if name in fp_:
+        fsp, fclip = fp_[name]
+        low = fprev.image(fsp, fclip, t, (W, H - GIF_TP_H))
+        d = ImageDraw.Draw(low)
+        cx, cy = W // 2, (H - GIF_TP_H) // 2
+        d.line([(cx - 5, cy), (cx + 5, cy)], fill=(235, 235, 235), width=1)
+        d.line([(cx, cy - 5), (cx, cy + 5)], fill=(235, 235, 235), width=1)
+    else:
+        low = prev.image(sp, clip, t, (W, H - GIF_TP_H), GIF_VIEWS[1])
+    cell.paste(low, (0, GIF_TP_H))
+    return cell
+
+
+def gif_plan(clips):
+    """(how many ticks a GIF runs, {clip: the ticks it starts at}) for [clips] ({name: (length, is a loop)}): the longest clip twice with GIF_GAP ticks
+    of rest at the least (never fewer than GIF_MIN ticks in all), whole loops for the loops; every other clip plays as often as it fits, evenly spaced,
+    so the GIF joins up where it begins again."""
+    total = max([GIF_MIN] + [2 * (int(math.ceil(length)) + GIF_GAP) for length, loop in clips.values()])
+    loops = [int(length) for length, loop in clips.values() if loop]
+    while any(total % n for n in loops):
+        total += 1
+    starts = {}
+    for name, (length, loop) in clips.items():
+        if loop:
+            starts[name] = [0]
+        else:
+            reps = max(1, total // (int(math.ceil(length)) + GIF_GAP))
+            starts[name] = [int(round(j * total / reps)) for j in range(reps)]
+    return total, starts
+
+
+def gif_time(length, loop, starts, k):
+    """The clip's own tick at the GIF's tick [k] (0, its rest, between two plays)."""
+    if loop:
+        return float(k % int(length))
+    for s in starts:
+        if s <= k <= s + length:
+            return float(k - s)
+    return 0.0
+
+
+def label(d, x, y, text, font, fill=(245, 240, 225)):
+    d.text((x + 1, y + 1), text, font=font, fill=(0, 0, 0))
+    d.text((x, y), text, font=font, fill=fill)
+
+
+def wrapped(text, font, width):
+    """[text] broken into lines no wider than [width] px."""
+    lines, cur = [], ''
+    for word in text.split():
+        trial = (cur + ' ' + word).strip()
+        if font.getlength(trial) <= width:
+            cur = trial
+        else:
+            lines.append(cur)
+            cur = word
+    return lines + ([cur] if cur else [])
+
+
+def make_gifs(tp, fp_, outdir, skin=None, tex_dirs=(), only=None):
+    """Writes the GIF of every group in GIF_GROUPS (those in [only], when given) that has a clip in [tp]; [fp_] is the first-person clips. Needs
+    ImageMagick's `convert` to tighten them."""
+    import subprocess
+    from multiprocessing import get_context
+    os.makedirs(outdir, exist_ok=True)
+    _CTX.update(tp=tp, fp=fp_, prev=Preview(skin, tex_dirs), fprev=FpPreview(tex_dirs))
+    font = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', 14)
+    small = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', 12)
+    W, H = GIF_CELL
+    with get_context('fork').Pool(3) as pool:
+        for key, (fname, cells) in GIF_GROUPS.items():
+            if only and key not in only:
+                continue
+            names = [c[0] for c in cells if c and c[0] in tp]
+            if not names:
+                continue
+            total, starts = gif_plan({n: (tp[n][1].length, n in LOOPS) for n in names})
+            at = lambda n, k: gif_time(tp[n][1].length, n in LOOPS, starts[n], k)
+            imgs = pool.map(gif_cell, [(n, at(n, k)) for k in range(total) for n in names], chunksize=4)
+            cols, rows = 2, int(math.ceil(len(cells) / 2))
+            frames = []
+            for k in range(total):
+                sheet = Image.new('RGB', (W * cols, H * rows), GIF_BG)
+                d = ImageDraw.Draw(sheet)
+                for i, c in enumerate(cells):
+                    x, y = (i % cols) * W, (i // cols) * H
+                    if c is None or c[0] not in tp:
+                        d.rectangle((x, y, x + W, y + H), fill=(40, 44, 56))
+                        if key in GIF_CARD:
+                            label(d, x + 14, y + 22, GIF_CARD[key][0], font)
+                            for n_, line in enumerate(wrapped(GIF_CARD[key][1], small, W - 28)):
+                                label(d, x + 14, y + 48 + 17 * n_, line, small)
+                        continue
+                    n, text = c
+                    sheet.paste(imgs[k * len(names) + names.index(n)], (x, y))
+                    label(d, x + 8, y + 6, text, font)
+                    if n in fp_:
+                        label(d, x + 8, y + GIF_TP_H + 4, 'first person', small, (210, 220, 235))
+                    t = at(n, k)
+                    named = [(mt, m) for m, mt in tp[n][1].marks.items() if 0.0 <= t - mt < 3.0]
+                    if named:
+                        label(d, x + 8, y + 24, max(named)[1], small, (255, 214, 120))
+                for i in range(1, cols):
+                    d.line([(i * W, 0), (i * W, sheet.height)], fill=GIF_RULE, width=2)
+                for j in range(1, rows):
+                    d.line([(0, j * H), (sheet.width, j * H)], fill=GIF_RULE, width=2)
+                frames.append(sheet)
+            probe = Image.new('RGB', (W * cols, H * rows * 4))
+            for m, k in enumerate(range(0, total, max(1, total // 4))):
+                if m < 4:
+                    probe.paste(frames[k], (0, m * H * rows))
+            pal = probe.quantize(colors=255, method=Image.Quantize.MEDIANCUT)
+            q = [f.quantize(palette=pal, dither=Image.Dither.NONE) for f in frames]
+            path = os.path.join(outdir, fname + '.gif')
+            q[0].save(path, save_all=True, append_images=q[1:], duration=50, loop=0, optimize=False, disposal=1)
+            raw = os.path.getsize(path)
+            subprocess.run(['convert', path, '-layers', 'OptimizeTransparency', '+map', path + '.tmp.gif'], check=True)
+            os.replace(path + '.tmp.gif', path)
+            print(f'  {fname}.gif: {total} frames, {raw / 1e6:.2f} -> {os.path.getsize(path) / 1e6:.2f} MB', flush=True)
+
+
+def main(argv):
+    if len(argv) < 2:
+        print(__doc__)
+        return 0
+    assets = argv[1]
+    previews = argv[2] if len(argv) > 2 else None
+    skin = argv[3] if len(argv) > 3 else None
+    only = set(os.environ['COOK_ANIMS_ONLY'].split(',')) if os.environ.get('COOK_ANIMS_ONLY') else None
+    tp, fp_, bad = build_all(assets, only)
+    if not only:
+        path = os.path.join(repo_root(assets), COOK_GRIPS_PATH)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w') as f:
+            f.write(cook_grips_kt())
+        print(f'wrote {COOK_GRIPS_PATH}')
+    if previews:
+        tex = [os.path.join(assets, 'textures', 'item')] + [d for d in os.environ.get('COOK_ANIMS_TEX', '').split(':') if d]
+        groups = set(os.environ['COOK_ANIMS_GROUPS'].split(',')) if os.environ.get('COOK_ANIMS_GROUPS') else None
+        make_gifs(tp, fp_, previews, skin, tex, groups)
+    print(f'{len(tp)} third-person and {len(fp_)} first-person clips written; ' + (f'{bad} checks are off' if bad else 'every check holds'))
+    return 1 if bad else 0
+
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv))
