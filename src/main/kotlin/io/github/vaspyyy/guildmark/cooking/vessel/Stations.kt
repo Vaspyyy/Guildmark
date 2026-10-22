@@ -64,5 +64,7 @@ object Stations {
             "${loaded.size} loaded, $lit lit, $advances ticks worked out at ${"%.1f".format(each)} us each"
         }
         VesselCommand.init()
+        // Part C's `cook view`: a made-up state on the station in view
+        ViewCommand.init()
     }
 }
