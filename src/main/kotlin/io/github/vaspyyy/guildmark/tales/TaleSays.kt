@@ -27,6 +27,10 @@ internal object TaleSays {
         return Manner(gesture ?: if (toward != null) Activity.POINT else null, toward)
     }
 
+    /** What the voice has a cast member who does not ask say when turned to, or null for the talk's own. */
+    fun greet(turn: TaleTurn, voice: TaleVoice?): TaleSay? =
+        TaleVoiceGuard.run(turn.id, "greet", null) { voice?.greet(turn) }
+
     /** What the cast member offers at the tale's step, at most [MOST] of it. */
     fun options(turn: TaleTurn, voice: TaleVoice?): List<TaleOption> =
         TaleVoiceGuard.run(turn.id, "options", listOf<TaleOption>()) { voice?.options(turn).orEmpty() }.take(MOST)

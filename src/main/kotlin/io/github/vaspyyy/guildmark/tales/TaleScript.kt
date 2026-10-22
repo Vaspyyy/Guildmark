@@ -26,6 +26,10 @@ import java.util.UUID
  * An option is offered at the step the tale was at: its id carries the step, so a player whose screen shows what another player has
  * since decided hears "It's been decided." and the choices as they stand now. Everything is decided here, on the server, from the
  * record, each time it is asked: the script keeps only how many reasons it has told.
+ *
+ * A cast member who does **not** ask ([asks] false: the lender the player goes to, one of three who saw) has none of the above but what
+ * the template offers through them at the step (the MEET of the design): they are turned to, say "What can I do for you?" or the voice's
+ * own line, and offer those options and "Something else...", to a player who has taken the tale up.
  */
 internal class TaleScript(
     private val tale: Tale,
@@ -33,6 +37,7 @@ internal class TaleScript(
     private val template: Template,
     private val voice: TaleVoice?,
     private val player: UUID,
+    private val asks: Boolean = true,
 ) : Script {
     /** How many of the reasons have been told this talk. */
     private var told = 0
@@ -47,11 +52,12 @@ internal class TaleScript(
         val turn = turn(ask) ?: return utter(ask, gone())
         handing = false
         stood = false
-        return utter(ask, if (following(turn)) stand(turn) else request(turn))
+        return utter(ask, if (!asks) greet(turn) else if (following(turn)) stand(turn) else request(turn))
     }
 
     override fun choices(ask: Ask): List<Choice> {
         val turn = turn(ask) ?: return listOf(Choice(BACK, TaleSays.label("talk.guildmark.choice.tale.back")))
+        if (!asks) return meet(turn)
         if (!following(turn)) {
             val lead = TaleSays.otherLead(turn) != null
             return listOf(
@@ -65,6 +71,14 @@ internal class TaleScript(
         if (!stood) out += Choice(STAND, TaleSays.label("talk.guildmark.choice.tale.${turn.id}.stand", "talk.guildmark.choice.tale.stand"))
         // "Why?" once the tale has turned (5.4), while it has a reason left to tell
         if (tale.step > 0 && told < reasons(turn).size) out += Choice(if (told == 0) WHY else WHY_MORE, TaleSays.label(if (told == 0) "talk.guildmark.choice.tale.why" else "talk.guildmark.choice.tale.why_more"))
+        out += Choice(BACK, TaleSays.label("talk.guildmark.choice.tale.back"))
+        return out
+    }
+
+    /** What a cast member who does not ask offers: what the template offers through them at the step, to a player who has taken the tale up, and a way back. */
+    private fun meet(turn: TaleTurn): List<Choice> {
+        val out = ArrayList<Choice>()
+        if (following(turn)) for (option in TaleSays.options(turn, voice)) out += Choice("o${turn.step}.${option.id}", option.label)
         out += Choice(BACK, TaleSays.label("talk.guildmark.choice.tale.back"))
         return out
     }
@@ -88,6 +102,8 @@ internal class TaleScript(
 
     private fun reply(turn: TaleTurn, choice: String): TaleReply {
         stood = false
+        // Of the general choices a cast member who does not ask has only the way back: a pick of another is of a screen the person was shown elsewhere
+        if (!asks && choice != BACK && !choice.startsWith("o")) return decided()
         return when {
             choice == YES -> yes(turn)
             choice == LATER -> later(turn)
@@ -97,6 +113,13 @@ internal class TaleScript(
             choice.startsWith("o") -> option(turn, choice)
             else -> decided()
         }
+    }
+
+    /** A cast member who does not ask, turned to by a player who has taken the tale up: the voice's own line, or the talk's "What can I do for you?". */
+    private fun greet(turn: TaleTurn): TaleReply {
+        val manner = TaleSays.manner(turn, voice, "greet")
+        val own = TaleSays.greet(turn, voice)
+        return if (own != null) TaleReply(listOf(own), manner.gesture, manner.toward) else TaleReply("ask.yes", gesture = manner.gesture ?: Activity.NOD)
     }
 
     /** The request: what the cast member wants, and the tale as it now stands for a player who comes after another (3.6). */

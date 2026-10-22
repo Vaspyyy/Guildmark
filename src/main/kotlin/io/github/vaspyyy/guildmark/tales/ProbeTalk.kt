@@ -12,6 +12,8 @@ import net.minecraft.resources.Identifier
  * [TaleVoice], and this is the model of one: the asker, the grey words of each beat from the numbers the tale keeps, and what is
  * offered at each of its verbs.
  *
+ *  - The **helper** (who does not ask) offers one thing at every step, once the player has taken the probe up: "Any word on it?", which
+ *    answers with a line and changes nothing: it is the generic talk with a cast member who does not ask (a MEET), tried on the bench.
  *  - **CHOOSE** (step 1): two replies, the first word wins (`n[0]`), and the second player hears "It's been decided.".
  *  - **GIVE** (step 2): one Mark, or the rest of the sum, put into the tale (`TaleOptions.put`, held until the step is met).
  *  - **DO** (step 5): a plain note for a stick (4.6): "I'll take the note.", "I lost the note." while it is given and not carried, and
@@ -50,11 +52,24 @@ internal object ProbeTalk : TaleVoice {
         }
     }
 
-    override fun options(turn: TaleTurn): List<TaleOption> = when (turn.step) {
-        AT_CHOOSE -> listOf(reply(1), reply(2))
-        AT_GIVE -> give(turn)
-        AT_DO -> note(turn)
+    /**
+     * The asker offers what each step wants. The helper, who does not ask, offers one thing at every step, to a player who has taken the probe
+     * up: "Any word on it?" (a MEET without a consequence), so that a cast member who does not ask can be talked to in the bench.
+     */
+    override fun options(turn: TaleTurn): List<TaleOption> = when {
+        turn.slot == "helper" -> listOf(word())
+        turn.slot != "asker" -> listOf()
+        turn.step == AT_CHOOSE -> listOf(reply(1), reply(2))
+        turn.step == AT_GIVE -> give(turn)
+        turn.step == AT_DO -> note(turn)
         else -> listOf()
+    }
+
+    // ---- The helper ----
+
+    /** A word from the helper, and nothing else: it changes nothing in the tale. */
+    private fun word() = TaleOption("word", Component.translatable("talk.guildmark.choice.tale.probe.word")) { turn ->
+        TaleReply(turn.family("helper"), gesture = Activity.NOD)
     }
 
     // ---- CHOOSE ----

@@ -7664,5 +7664,8 @@
   "say.guildmark.talk.detail.tale.age.weeks": "A couple of weeks ago",
   "say.guildmark.talk.detail.tale.age.month": "About a month ago",
   "say.guildmark.talk.detail.tale.age.months": "Some months back",
-  "say.guildmark.talk.detail.tale.age.long": "Long ago"
+  "say.guildmark.talk.detail.tale.age.long": "Long ago",
+  "talk.guildmark.choice.tale.probe.word": "Any word on it?",
+  "say.guildmark.talk.tale.probe.helper_0": "Nothing yet. I'm keeping my eyes open.",
+  "say.guildmark.talk.tale.probe.helper_1": "Not a word. You'll hear it from me first."
 }

@@ -58,6 +58,7 @@
   "talk.guildmark.choice.tale.probe.take_note": "I'll take the note.",
   "talk.guildmark.choice.tale.probe.lost_note": "I lost the note.",
   "talk.guildmark.choice.tale.probe.done_note": "I've done it.",
+  "talk.guildmark.choice.tale.probe.word": "Any word on it?",
 
   "say.guildmark.talk.tale.probe.ask_0": "I've a small errand and no one to send. Would you?",
   "say.guildmark.talk.tale.probe.ask_1": "Could you spare a hand? It's small, but it matters.",
@@ -88,6 +89,8 @@
   "say.guildmark.talk.tale.probe.late_1": "Too late for the note, but I'm obliged to you.",
   "say.guildmark.talk.tale.probe.nonote_0": "I've no note to give just now. Ask me again.",
   "say.guildmark.talk.tale.probe.nonote_1": "Nothing in hand for that. Try once more.",
+  "say.guildmark.talk.tale.probe.helper_0": "Nothing yet. I'm keeping my eyes open.",
+  "say.guildmark.talk.tale.probe.helper_1": "Not a word. You'll hear it from me first.",
 
   "say.guildmark.talk.detail.tale.probe.ask": "%1$s would have a reply chosen, %2$s Marks given and a note carried. This step closes %3$s.",
   "say.guildmark.talk.detail.tale.probe.passing": "%s has a small errand and no one to send.",

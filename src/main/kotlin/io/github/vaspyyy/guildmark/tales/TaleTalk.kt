@@ -128,7 +128,7 @@ object TaleTalk {
             source,
             TaleCommand.line().append(TaleCommand.label("${found.slot} "))
                 .append(TaleCommand.plain("of the ${t.template} tale #${t.id}, step ${t.step}${verb?.let { " ($it)" }.orEmpty()}, closing in ${(t.by - today).coerceAtLeast(0)} market day(s); "))
-                .append(TaleCommand.grey(if (found.asks) "they are the one who asks." else "they do not ask: that is the $asker.")),
+                .append(TaleCommand.grey(if (found.asks) "they are the one who asks." else "they do not ask: that is the $asker. They talk of the tale once you are in it, when it offers something through them.")),
         )
         val part = t.part(player.uuid)
         val due = TaleSpeakers.askable(t, player.uuid, today)
@@ -190,7 +190,11 @@ object TaleTalk {
         val found = TaleSpeakers.find(ask.level, ask.speaker) ?: return
         val player = ask.player ?: return
         val turn = TaleTurn(answer, found.tale, found.slot, found.template, player)
-        val said = if (TaleSpeakers.joined(turn.mine)) TaleSay(TaleSays.standFamily(turn), TaleSays.detail(turn, found.voice, "stand")) else TaleSays.ask(turn, found.voice)
+        val said = when {
+            !found.asks -> TaleSays.greet(turn, found.voice) ?: TaleSay("ask.yes")
+            TaleSpeakers.joined(turn.mine) -> TaleSay(TaleSays.standFamily(turn), TaleSays.detail(turn, found.voice, "stand"))
+            else -> TaleSays.ask(turn, found.voice)
+        }
         val part = TaleLines.part(answer, said.family, said.detail)
         TaleCommand.say(source, TaleCommand.label("It first says (${said.family}): "))
         if (part != null) render(source, Utterance(listOf(part))) else TaleCommand.say(source, TaleCommand.grey("  nothing: no take, no typed wording and no detail."))

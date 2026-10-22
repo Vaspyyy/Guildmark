@@ -156,7 +156,19 @@ interface TaleVoice {
      */
     fun yes(turn: TaleTurn): TaleSay? = null
 
-    /** What the cast member in [TaleTurn.slot] offers the player at the step the tale is at, at most four: the choices of a CHOOSE, the sums of a GIVE, the tools of a MEET, the note of a DO. */
+    /**
+     * What a cast member who does not ask says when a player who has taken the tale up turns to them, at a step the tale offers something
+     * through them ([options], a MEET), if it is a line of the tale's own; null for the talk's "What can I do for you?". The asker says the
+     * request and how it stands instead.
+     */
+    fun greet(turn: TaleTurn): TaleSay? = null
+
+    /**
+     * What the cast member in [TaleTurn.slot] offers the player at the step the tale is at, at most four: the choices of a CHOOSE, the sums of a
+     * GIVE, the tools of a MEET, the note of a DO. For a cast member who does not ask it is also what makes "About the note..." appear on their
+     * screen, once the player has taken the tale up (a template may instead give such a person a script of its own, `Template.script`).
+     * **It is asked of every cast member the player talks to**, so return nothing for a slot that has nothing to offer at this step.
+     */
     fun options(turn: TaleTurn): List<TaleOption> = listOf()
 }
 

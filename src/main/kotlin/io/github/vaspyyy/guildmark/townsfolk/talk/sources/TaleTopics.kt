@@ -22,6 +22,7 @@ import io.github.vaspyyy.guildmark.townsfolk.talk.Topic
 import io.github.vaspyyy.guildmark.townsfolk.talk.TopicSource
 import io.github.vaspyyy.guildmark.townsfolk.talk.TownTalk
 import io.github.vaspyyy.guildmark.townsfolk.talk.Utterance
+import net.minecraft.server.level.ServerPlayer
 
 /**
  * What the townsfolk say of the town's open tale (living-world/stories/design.md 3.1 and 3.2), Part C. A tale is a town's trouble, not a
@@ -43,7 +44,9 @@ import io.github.vaspyyy.guildmark.townsfolk.talk.Utterance
  * the rumour, in the tale's `rumour` family with the live words after it, pointing to the cast member's door when it is near. A
  * rumour is told in the street as news without its rumour mark, and said to a player who has not taken the tale up.
  *
- * A template adds its own through `Template.topics` (a cast member's other words) and `Template.script` (a conversation wholly its own).
+ * A template adds its own through `Template.topics` (a cast member's other words) and `Template.script` (a conversation wholly its own). A cast
+ * member who does not ask has no opener, no words in passing and no "How does it stand?"; to a player who has taken the tale up they have the choice
+ * (pressing 0.9) while the template's voice offers something through them at the step (a MEET), or a script of the template's own.
  *
  * Once a tale has ended, [TaleAfter] has its people say what they think of it (thanks, gladness, sorrow, old times), and tells the ending's
  * rumour, which `RumourWords` leaves to this source.
@@ -60,9 +63,10 @@ object TaleTopics : TopicSource {
     private const val RUMOUR_MIN = 0.15
     private const val RUMOUR_HEAT = 0.55
 
-    /** How pressing the choice is among the two the screen shows (3.1): before the player has taken the tale up, and after. */
+    /** How pressing the choice is among the two the screen shows (3.1): before the player has taken the tale up, and after; and, from a cast member the tale now offers something through. */
     private const val PRESSING = 0.95
     private const val PRESSING_AFTER = 0.6
+    private const val PRESSING_MEET = 0.9
 
     /** The cast member's door is pointed to from this far at most. */
     private const val HOME_NEAR = 64.0
@@ -164,16 +168,22 @@ object TaleTopics : TopicSource {
         val player = ask.player ?: return null
         if (!Tales.live) return null
         val found = TaleSpeakers.find(ask.level, ask.speaker) ?: return null
-        if (!found.asks && own(ask, found) == null) return null
+        val talks = found.asks || own(ask, found) != null
         val joined = TaleSpeakers.joined(found.tale.part(player.uuid))
         val id = found.tale.template
-        val label = if (joined) {
-            TaleSays.label("talk.guildmark.choice.tale.$id.stand", "talk.guildmark.choice.tale.stand")
-        } else {
-            TaleSays.label("talk.guildmark.choice.tale.$id.about", "talk.guildmark.choice.tale.about")
+        // A cast member who does not ask has something to say to a player who has taken the tale up, while the tale offers something through them
+        if (!talks && !(joined && meets(ask, found, player))) return null
+        val label = when {
+            !found.asks -> TaleSays.label("talk.guildmark.choice.tale.$id.${found.slot}", "talk.guildmark.choice.tale.$id.about", "talk.guildmark.choice.tale.about")
+            joined -> TaleSays.label("talk.guildmark.choice.tale.$id.stand", "talk.guildmark.choice.tale.stand")
+            else -> TaleSays.label("talk.guildmark.choice.tale.$id.about", "talk.guildmark.choice.tale.about")
         }
-        return Choice(ASK, label, pressing = if (joined) PRESSING_AFTER else PRESSING)
+        return Choice(ASK, label, pressing = if (!found.asks) PRESSING_MEET else if (joined) PRESSING_AFTER else PRESSING)
     }
+
+    /** Whether the voice offers [player] something through this cast member at the step the tale is at (a MEET): all a cast member who does not ask has to say. */
+    private fun meets(ask: Ask, found: TaleSpeakers.Found, player: ServerPlayer): Boolean =
+        TaleSays.options(TaleTurn(ask, found.tale, found.slot, found.template, player), found.voice).isNotEmpty()
 
     /** The conversation the choice opens, in place: the template's own if it has one for this cast member, else the same for every tale. */
     override fun script(ask: Ask, choice: String): Script? {
@@ -181,8 +191,8 @@ object TaleTopics : TopicSource {
         val player = ask.player ?: return null
         val found = TaleSpeakers.find(ask.level, ask.speaker) ?: return null
         own(ask, found)?.let { return it }
-        if (!found.asks) return null
-        return TaleScript(found.tale, found.slot, found.template, found.voice, player.uuid)
+        if (!found.asks && !(TaleSpeakers.joined(found.tale.part(player.uuid)) && meets(ask, found, player))) return null
+        return TaleScript(found.tale, found.slot, found.template, found.voice, player.uuid, found.asks)
     }
 
     /** The template's own talk with this cast member, if it gives one (guarded: a template that throws has none). */
