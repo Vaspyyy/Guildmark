@@ -18,6 +18,7 @@ import io.github.vaspyyy.guildmark.village.live.keptList
 import io.github.vaspyyy.guildmark.village.live.market.PedlarRoster
 import io.github.vaspyyy.guildmark.village.live.market.PedlarRoster.NONE
 import io.github.vaspyyy.guildmark.village.live.market.Pedlars
+import io.github.vaspyyy.guildmark.village.live.market.VillageCartCommand
 import io.github.vaspyyy.guildmark.village.live.market.VillageTown
 import net.minecraft.core.BlockPos
 import net.minecraft.resources.Identifier
@@ -211,9 +212,10 @@ class VillageMarkets(private val records: MutableMap<Long, Rec> = HashMap()) : S
         /** Whether villages have good times and hard: their markets on, and Village Fortunes (off, every village reads steady). */
         fun fortunes(): Boolean = enabled() && flag { GuildmarkConfig.VILLAGE_FORTUNES.get() }
 
-        /** At setup: the registry's word of a village counted, the pedlars, and the lines of `village info`. */
+        /** At setup: the registry's word of a village counted, the pedlars, and the lines and commands of `village`. */
         fun register() {
             Pedlars.register()
+            VillageCartCommand.init()
             Villages.listen(object : Villages.Listener {
                 override fun counted(level: ServerLevel, rec: VillageRec, places: VillagePlaces) {
                     if (enabled()) opened(level, rec, places)
