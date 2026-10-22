@@ -1,0 +1,40 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:block_state",
+    "block_state_property": "kind",
+    "cases": [
+      {
+        "when": "stone",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/memorial_stone"
+        }
+      },
+      {
+        "when": "cairn",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/memorial_cairn"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:select",
+      "property": "minecraft:custom_model_data",
+      "cases": [
+        {
+          "when": "cairn",
+          "model": {
+            "type": "minecraft:model",
+            "model": "guildmark:item/memorial_cairn"
+          }
+        }
+      ],
+      "fallback": {
+        "type": "minecraft:model",
+        "model": "guildmark:item/memorial_stone"
+      }
+    }
+  }
+}

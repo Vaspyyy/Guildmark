@@ -1,0 +1,882 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone"
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn"
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "north",
+        "mossy": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone_moss"
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "north",
+        "mossy": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn_moss"
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "east",
+        "mossy": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone_moss_east"
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "east",
+        "mossy": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn_moss_east"
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "south",
+        "mossy": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone_moss_south"
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "south",
+        "mossy": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn_moss_south"
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "west",
+        "mossy": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone_moss_west"
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "west",
+        "mossy": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn_moss_west"
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "north",
+        "candles": "1|2|3|4"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone_candle_1"
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "north",
+        "candles": "1|2|3|4",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone_flame_1"
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "north",
+        "candles": "2|3|4"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone_candle_2"
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "north",
+        "candles": "2|3|4",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone_flame_2"
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "north",
+        "candles": "3|4"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone_candle_3"
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "north",
+        "candles": "3|4",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone_flame_3"
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "north",
+        "candles": "4"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone_candle_4"
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "north",
+        "candles": "4",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone_flame_4"
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "north",
+        "candles": "1|2|3|4"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn_candle_1"
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "north",
+        "candles": "1|2|3|4",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn_flame_1"
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "north",
+        "candles": "2|3|4"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn_candle_2"
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "north",
+        "candles": "2|3|4",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn_flame_2"
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "north",
+        "candles": "3|4"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn_candle_3"
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "north",
+        "candles": "3|4",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn_flame_3"
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "north",
+        "candles": "4"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn_candle_4"
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "north",
+        "candles": "4",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn_flame_4"
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "east",
+        "candles": "1|2|3|4"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone_candle_1",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "east",
+        "candles": "1|2|3|4",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone_flame_1",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "east",
+        "candles": "2|3|4"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone_candle_2",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "east",
+        "candles": "2|3|4",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone_flame_2",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "east",
+        "candles": "3|4"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone_candle_3",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "east",
+        "candles": "3|4",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone_flame_3",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "east",
+        "candles": "4"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone_candle_4",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "east",
+        "candles": "4",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone_flame_4",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "east",
+        "candles": "1|2|3|4"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn_candle_1",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "east",
+        "candles": "1|2|3|4",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn_flame_1",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "east",
+        "candles": "2|3|4"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn_candle_2",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "east",
+        "candles": "2|3|4",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn_flame_2",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "east",
+        "candles": "3|4"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn_candle_3",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "east",
+        "candles": "3|4",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn_flame_3",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "east",
+        "candles": "4"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn_candle_4",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "east",
+        "candles": "4",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn_flame_4",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "south",
+        "candles": "1|2|3|4"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone_candle_1",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "south",
+        "candles": "1|2|3|4",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone_flame_1",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "south",
+        "candles": "2|3|4"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone_candle_2",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "south",
+        "candles": "2|3|4",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone_flame_2",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "south",
+        "candles": "3|4"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone_candle_3",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "south",
+        "candles": "3|4",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone_flame_3",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "south",
+        "candles": "4"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone_candle_4",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "south",
+        "candles": "4",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone_flame_4",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "south",
+        "candles": "1|2|3|4"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn_candle_1",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "south",
+        "candles": "1|2|3|4",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn_flame_1",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "south",
+        "candles": "2|3|4"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn_candle_2",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "south",
+        "candles": "2|3|4",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn_flame_2",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "south",
+        "candles": "3|4"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn_candle_3",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "south",
+        "candles": "3|4",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn_flame_3",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "south",
+        "candles": "4"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn_candle_4",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "south",
+        "candles": "4",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn_flame_4",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "west",
+        "candles": "1|2|3|4"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone_candle_1",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "west",
+        "candles": "1|2|3|4",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone_flame_1",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "west",
+        "candles": "2|3|4"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone_candle_2",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "west",
+        "candles": "2|3|4",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone_flame_2",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "west",
+        "candles": "3|4"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone_candle_3",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "west",
+        "candles": "3|4",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone_flame_3",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "west",
+        "candles": "4"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone_candle_4",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "kind": "stone",
+        "facing": "west",
+        "candles": "4",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_stone_flame_4",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "west",
+        "candles": "1|2|3|4"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn_candle_1",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "west",
+        "candles": "1|2|3|4",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn_flame_1",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "west",
+        "candles": "2|3|4"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn_candle_2",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "west",
+        "candles": "2|3|4",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn_flame_2",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "west",
+        "candles": "3|4"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn_candle_3",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "west",
+        "candles": "3|4",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn_flame_3",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "west",
+        "candles": "4"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn_candle_4",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "kind": "cairn",
+        "facing": "west",
+        "candles": "4",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/memorial_cairn_flame_4",
+        "y": 270
+      }
+    }
+  ]
+}

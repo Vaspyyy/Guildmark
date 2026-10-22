@@ -1,0 +1,78 @@
+{
+  "parent": "minecraft:block/block",
+  "ambientocclusion": false,
+  "textures": {
+    "particle": "guildmark:block/memorial_flame_b",
+    "flame_b": "guildmark:block/memorial_flame_b"
+  },
+  "elements": [
+    {
+      "from": [
+        1.6,
+        12.2,
+        -10.8
+      ],
+      "to": [
+        5.6,
+        16.2,
+        -10.8
+      ],
+      "light_emission": 15,
+      "shade": false,
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#flame_b"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#flame_b"
+        }
+      }
+    },
+    {
+      "from": [
+        3.6,
+        12.2,
+        -12.8
+      ],
+      "to": [
+        3.6,
+        16.2,
+        -8.8
+      ],
+      "light_emission": 15,
+      "shade": false,
+      "faces": {
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#flame_b"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#flame_b"
+        }
+      }
+    }
+  ]
+}
