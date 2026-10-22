@@ -214,12 +214,15 @@ class TownTalkData(private val entries: MutableMap<Long, Entry> = HashMap()) : S
             ).apply(i) { r, h, f, v, w, t -> Heard(r, h, f, Venue.entries.firstOrNull { it.name == v } ?: Venue.STREET, w, t) }
         }
 
-        private val FELT: Codec<Felt> = RecordCodecBuilder.create { i ->
+        /** An experience as it's kept: its name (one this build doesn't know is let go, as a favour is), the day and what it concerned. */
+        private class Befell(val experience: String, val day: Int, val about: Int)
+
+        private val FELT: Codec<Befell> = RecordCodecBuilder.create { i ->
             i.group(
-                Codec.STRING.fieldOf("e").forGetter { it.experience.name },
-                Codec.INT.fieldOf("d").forGetter(Felt::day),
-                Codec.INT.optionalFieldOf("a", -1).forGetter(Felt::about),
-            ).apply(i) { e, d, a -> Felt(Experience.entries.firstOrNull { it.name == e } ?: Experience.FRIGHTENED, d, a) }
+                Codec.STRING.fieldOf("e").forGetter(Befell::experience),
+                Codec.INT.fieldOf("d").forGetter(Befell::day),
+                Codec.INT.optionalFieldOf("a", -1).forGetter(Befell::about),
+            ).apply(i) { e, d, a -> Befell(e, d, a) }
         }
 
         private val MIND: Codec<Mind> = RecordCodecBuilder.create { i ->
@@ -227,12 +230,12 @@ class TownTalkData(private val entries: MutableMap<Long, Entry> = HashMap()) : S
                 Codec.INT.fieldOf("i").forGetter(Mind::id),
                 ACQ.listOf().optionalFieldOf("q").forGetter { some(it.known.values.toList()) },
                 HEARD.listOf().optionalFieldOf("k").forGetter { some(it.heard.values.toList()) },
-                FELT.listOf().optionalFieldOf("e").forGetter { some(it.felt) },
+                FELT.listOf().optionalFieldOf("e").forGetter { some(it.felt.map { f -> Befell(f.experience.name, f.day, f.about) }) },
             ).apply(i) { id, q, k, e ->
                 Mind(id).also { m ->
                     q.ifPresent { list -> for (a in list) m.known[a.player] = a }
                     k.ifPresent { list -> for (h in list) m.heard[h.rumour] = h }
-                    e.ifPresent { m.felt.addAll(it) }
+                    e.ifPresent { list -> for (b in list) Experience.entries.firstOrNull { it.name == b.experience }?.let { m.felt.add(Felt(it, b.day, b.about)) } }
                 }
             }
         }

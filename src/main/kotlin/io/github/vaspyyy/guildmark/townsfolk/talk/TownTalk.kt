@@ -480,7 +480,22 @@ enum class Favour(val amount: Double) {
     /** Brought materials to the yard of the works they're labouring on (M6): from its crew, once a day ([TownTalk.brought]). */
     BROUGHT(0.5),
     /** Gave at the alms table on a day they ate there (M6): once a day ([TownTalk.fed]). */
-    FED(0.5);
+    FED(0.5),
+
+    // Appended for the living-world designs, in the order they were accepted (living-world/build-plan.md section 2): the
+    // names and amounts only; each design's part says when one counts, and whether it counts once a day ([daily])
+    /** A Sound dish of the player's, relished at a meal (Hearthcraft). */
+    RELISHED(0.5),
+    /** A Fine or Hallmarked dish of the player's, relished at a meal (Hearthcraft). */
+    RELISHED_FINE(1.0),
+    /** Goods the player hauled to the town from afar (Trade): from the shop's residents. */
+    HAULED(1.0),
+    /** A relief the player brought the town (Trade): from every resident who hears of it. */
+    RELIEVED(2.0),
+    /** Helped see a tale through to a good end (Tales): from the people it was about and their households. */
+    TALE_HELPED(3.0),
+    /** A tale's good end, heard of (Tales): from each resident who hears the rumour, once for each tale. */
+    TALE_HEARD(1.0);
 
     /** Counted at most once a day from each resident, and only while the favour felt is small ([Memory.DAILY_CAP]). */
     val daily: Boolean get() = this == BROUGHT || this == FED
@@ -556,9 +571,10 @@ class Known(val rumour: Rumour, val heard: Heard)
 
 /**
  * What befell a resident lately, and how many days it stays with them: LABOURED, a building day on one of the town's
- * works (M6), stays a month, the labourer's own pride in it (see [TownTalk.laboured]).
+ * works (M6), stays a month, the labourer's own pride in it (see [TownTalk.laboured]). FEASTED, a week, is a player's
+ * dish well eaten, its [Felt.about] the dish's kind (Hearthcraft, living-world/cook/design.md section 8.2).
  */
-enum class Experience(val days: Int) { HUNGRY(7), FRIGHTENED(7), ROBBED(15), SAVED(15), BEREAVED(30), LABOURED(30) }
+enum class Experience(val days: Int) { HUNGRY(7), FRIGHTENED(7), ROBBED(15), SAVED(15), BEREAVED(30), LABOURED(30), FEASTED(7) }
 
 /**
  * Something that befell a resident on [day]; [about] is the resident it concerned (the one who died), for LABOURED
