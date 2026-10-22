@@ -117,10 +117,11 @@ object VillageInfoCommand {
             }
         }
 
-        // What the record keeps of the homes
-        val homes = rec.homes.filter { !it.gone }
-        val gone = rec.homes.size - homes.size
-        say(source, line().append(label("The record: ")).append(plain("${homes.size} homes with ${homes.sumOf { it.beds.size }} beds" + if (gone > 0) ", $gone gone" else "")))
+        // What the record keeps: an entry for every building the census named (a home, a shop, a tower), each by the id it was given
+        val kept = rec.homes.filter { !it.gone }
+        val gone = rec.homes.size - kept.size
+        val homes = kept.count { it.beds.isNotEmpty() }
+        say(source, line().append(label("The record: ")).append(plain("${kept.size} buildings ($homes homes with ${kept.sumOf { it.beds.size }} beds)" + if (gone > 0) ", $gone gone" else "")))
 
         if (found == null) {
             say(source, grey(nothingKept(rec)))
@@ -252,7 +253,7 @@ object VillageInfoCommand {
         val d = c.diff
         out.add(
             line().append(label("The record: ")).append(
-                plain("${d.added} new, ${d.gone} gone, ${d.back} found again; ${d.homes} homes with ${d.beds} beds" + if (d.bedsBefore != d.beds) " (${d.bedsBefore} before)" else ""),
+                plain("${d.added} new, ${d.gone} gone, ${d.back} found again; ${d.homes} buildings kept, with ${d.beds} beds" + if (d.bedsBefore != d.beds) " (${d.bedsBefore} before)" else ""),
             ),
         )
         out.add(cost(f.stats, f.partial))
