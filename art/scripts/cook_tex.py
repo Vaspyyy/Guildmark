@@ -281,8 +281,10 @@ def charred_end(seed=471):
     return cv.image()
 
 
-def log_glow(seed=481):
-    """What glows in a burning log: the cracks of its char, orange and gold, the rest see-through (laid over the log, bright at night)."""
+def log_glow(seed=481, frames=8):
+    """What glows in a burning log: the cracks of its char, orange and gold, the rest see-through (laid over the log, bright at night), 32x32 a frame,
+    [frames] frames in a strip. The same cracks are lit in every frame and only their colour breathes, each stretch of crack in a phase of its own, so the
+    log shimmers as embers do and no two cracks pulse together (the alpha never changes, so the game's blend of one frame into the next cannot dim a hole)."""
     best, second, owner, pts = _wrap_vor(26, 461)           # the same checks as charred_log
     edge_d = second - best
     xs, ys = grid(T)
@@ -290,11 +292,17 @@ def log_glow(seed=481):
     crack = edge_d < 1.0
     patch = fbm(T, T, 9, seed + 7)
     heat = np.clip(1.0 - edge_d / 1.2, 0, 1) * (0.55 + 0.9 * n) * np.clip((patch - 0.38) * 5.0, 0, 1)
-    cv = Canvas(T)
     m = crack & (heat > 0.18)
-    cv.put(m, bands(GLOW, np.clip(0.15 + heat * 0.95, 0, 1), 0.2))
-    cv.a[~m] = 0
-    return cv.image()
+    phase = fbm(T, T, 5, seed + 9) * 9.0
+    out = Image.new('RGBA', (T, T * frames))
+    for k in range(frames):
+        a = 2 * math.pi * k / frames
+        breath = 0.5 + 0.5 * np.sin(a + phase)
+        cv = Canvas(T)
+        cv.put(m, bands(GLOW, np.clip(0.15 + heat * (0.62 + 0.62 * breath) * 0.95, 0, 1), 0.2))
+        cv.a[~m] = 0
+        out.paste(cv.image(), (0, k * T))
+    return out
 
 
 def darkwood(seed=491, vertical=True):
@@ -667,6 +675,7 @@ ANIMATED = {
     'coals': {'frametime': 4, 'interpolate': True},
     'flame': {'frametime': 2},
     'oven_glow': {'frametime': 5, 'interpolate': True},
+    'log_glow': {'frametime': 5, 'interpolate': True},
 }
 
 
