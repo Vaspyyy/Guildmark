@@ -70,7 +70,7 @@ object TradeCommand {
         row(source, "The Town Answers", TradeConfig.world(), TradeConfig.setting(GuildmarkConfig.TRADE_WORLD), "Trader's Life", "")
         row(source, "Cheer", TradeConfig.cheer(), TradeConfig.setting(GuildmarkConfig.TRADE_CHEER), "The Town Answers", "")
         source.player?.let { player ->
-            val book = TradeBooks.get(level)[player.uuid]
+            val book = TradeBooks.peek(level)?.get(player.uuid)
             if (book == null) {
                 say(source, grey("Your book has nothing written in it yet."))
             } else {
