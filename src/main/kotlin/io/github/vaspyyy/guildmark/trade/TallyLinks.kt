@@ -20,8 +20,8 @@ import java.util.UUID
  * days differently, that call gives each parcel with its days left and whether it is one of the book's, to map as [ledger] does.)
  */
 object TallyLinks {
-    /** Whether part A is in: the tickets are real, and the Routes page's Book button can book them. Greyed while it is false. */
-    val HAULS: Boolean = false
+    /** Whether part A is in: the tickets are real, and the Routes page's Book button can book them. Greyed while it is false; joined by the lead. */
+    val HAULS: Boolean = true
 
     /**
      * Some of [pay] for [units] of the [of] a ticket asks for: what part of a ticket pays, to the whole Mark. A ticket's pay is for all of its units, and a
@@ -33,7 +33,8 @@ object TallyLinks {
      * The tickets open at the capital whose heart is [capital] now, as the Word keeps them: the units nobody has booked, and what those pay. Part A:
      * `Hauls.open(level, capital).map { h -> Sight.Ticket(h.id, h.good, h.open, part(h.pay, h.open, h.units), h.shop, h.due, h.kind) }`.
      */
-    fun open(level: ServerLevel, capital: BlockPos): List<Sight.Ticket> = listOf()
+    fun open(level: ServerLevel, capital: BlockPos): List<Sight.Ticket> =
+        Hauls.open(level, capital).map { h -> Sight.Ticket(h.id, h.good, h.open, part(h.pay, h.open, h.units), h.shop, h.due, h.kind) }
 
     /** A ticket [player] holds booked: the [haul] as it stands and the units of it [owes] that are still to come in on their booking. */
     data class Held(val haul: Haul, val owes: Int)
@@ -42,7 +43,8 @@ object TallyLinks {
      * The tickets [player] holds booked, at any capital, soonest due first. Part A (its `Hauls.held` only counts them): `Hauls.all(level).mapNotNull { h ->
      * Hauls.bookedOn(level, player.uuid, h.id)?.let { Held(h, it.left) } }.sortedBy { it.haul.due }`.
      */
-    fun held(level: ServerLevel, player: ServerPlayer): List<Held> = listOf()
+    fun held(level: ServerLevel, player: ServerPlayer): List<Held> =
+        Hauls.all(level).mapNotNull { h -> Hauls.bookedOn(level, player.uuid, h.id)?.let { Held(h, it.left) } }.sortedBy { it.haul.due }
 
     /**
      * [player] books [units] of ticket [haul] (as the Word last heard of it) at its capital, checked against the town now, as the shop's
@@ -50,7 +52,13 @@ object TallyLinks {
      * null if it was made ([Booked.DONE]), else why not as a key: `gone` is [Booked.GONE], `off` is [Booked.NOT_YET], and any other (`taken`,
      * `yours`, `warrant`, `first_call`, `limit`, `poor`) is [Booked.REFUSED].
      */
-    fun book(level: ServerLevel, player: ServerPlayer, haul: Int, capital: BlockPos, units: Int): Booked = Booked.NOT_YET
+    fun book(level: ServerLevel, player: ServerPlayer, haul: Int, capital: BlockPos, units: Int): Booked =
+        when (Hauls.book(level, haul, Taker.Player(player.uuid), units, player.gameProfile.name)) {
+            null -> Booked.DONE
+            "gone" -> Booked.GONE
+            "off" -> Booked.NOT_YET
+            else -> Booked.REFUSED
+        }
 
     /** A delivery [player] made at a capital that its people still thank them for: [units] of [good], on the town's day [day]. */
     class Filled(val good: Good, val units: Int, val day: Long)
@@ -61,7 +69,11 @@ object TallyLinks {
      * not by id: `val name = level.server.playerList.getPlayer(player)?.gameProfile?.name ?: return null`, then `Hauls.fills(capital).filter { it.who == name
      * && Days.dayOf(it.hour * Word.HOUR) >= since }.maxByOrNull { it.hour }?.let { Filled(it.good, it.count, Days.dayOf(it.hour * Word.HOUR)) }`.
      */
-    fun filled(level: ServerLevel, capital: BlockPos, player: UUID, since: Long): Filled? = null
+    fun filled(level: ServerLevel, capital: BlockPos, player: UUID, since: Long): Filled? {
+        val name = level.server.playerList.getPlayer(player)?.gameProfile?.name ?: return null
+        return Hauls.fills(capital).filter { it.who == name && Days.dayOf(it.hour * Word.HOUR) >= since }.maxByOrNull { it.hour }
+            ?.let { Filled(it.good, it.count, Days.dayOf(it.hour * Word.HOUR)) }
+    }
 
     /** How a booking asked for from the Tally went. */
     enum class Booked(val key: String) {
