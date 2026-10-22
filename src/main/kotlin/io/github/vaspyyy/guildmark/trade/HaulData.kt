@@ -41,6 +41,9 @@ class Ticket(val id: Int, val shop: Shop, val good: Good, var units: Int, val ea
     var done = 0
     val bookings = ArrayList<Booking>()
 
+    /** Whether the ticket was posted by hand or for a festival or another part (see [Hauls.postFeast]): the town's stock reaching its target does not withdraw it, only its day. */
+    var fixed = false
+
     /** The Marks the whole ticket pays. */
     val pay: Int get() = HaulRules.pay(each, units)
 
@@ -57,9 +60,13 @@ class Ticket(val id: Int, val shop: Shop, val good: Good, var units: Int, val ea
 /** A ticket filled at a capital, at market [hour]: [units] of [good] brought to [shop] by [who] for [pay] Marks, of the given [kind]; for the crier's thanks (see [Hauls.fills]). */
 class HaulFill(var hour: Long, val good: Good, val shop: Shop, val units: Int, val who: String, val kind: HaulKind, val pay: Int)
 
+/** [player] let a booking at [shop] lapse at market [hour]; its keeper has a word for them next time they step up. */
+class HaulLapse(val player: UUID, val shop: Shop, var hour: Long)
+
 /**
  * One capital's tickets: [tickets] out, the market hour last worked out ([hour]), the tickets filled lately ([fills]) and the market hour each
- * staple last had a relief ticket posted ([relief], by the good's id), so that a good has one a day at most. Every hour kept here moves with the
+ * staple last had a relief ticket posted ([relief], by the good's id), so that a good has one a day at most, and the bookings let lapse lately
+ * ([lapses], for the keepers' word). Every hour kept here moves with the
  * clock when the days stand still or the clock is set back, as an order's do (see [Hauls]).
  */
 class HaulBook(val capital: Long) {
@@ -67,6 +74,7 @@ class HaulBook(val capital: Long) {
     var hour = Long.MIN_VALUE
     val fills = ArrayList<HaulFill>()
     val relief = HashMap<String, Long>()
+    val lapses = ArrayList<HaulLapse>()
 
     fun find(id: Int): Ticket? = tickets.firstOrNull { it.id == id }
 }
@@ -141,11 +149,13 @@ class HaulData(
                 Codec.LONG.fieldOf("due").forGetter(Ticket::due),
                 Codec.INT.optionalFieldOf("done", 0).forGetter(Ticket::done),
                 BOOKING.listOf().optionalFieldOf("bookings", listOf()).forGetter { it.bookings },
-            ).apply(i) { id, shop, good, units, each, kind, posted, due, done, bookings ->
+                Codec.BOOL.optionalFieldOf("fixed", false).forGetter(Ticket::fixed),
+            ).apply(i) { id, shop, good, units, each, kind, posted, due, done, bookings, fixed ->
                 // A ticket for a shop or good no longer known is let go with the rest of its kind: it is read as the hall's wheat and lapses in its time
                 Ticket(id, Shop.byId(shop) ?: Shop.HALL, Good.byId(good) ?: Good.WHEAT, units, each, HaulKind.byId(kind) ?: HaulKind.PARCEL, posted, due).also {
                     it.done = done
                     it.bookings.addAll(bookings)
+                    it.fixed = fixed
                 }
             }
         }
@@ -164,6 +174,14 @@ class HaulData(
             }
         }
 
+        private val LAPSE: Codec<HaulLapse> = RecordCodecBuilder.create { i ->
+            i.group(
+                UUIDUtil.CODEC.fieldOf("player").forGetter(HaulLapse::player),
+                Codec.STRING.fieldOf("shop").forGetter { it.shop.id },
+                Codec.LONG.fieldOf("hour").forGetter(HaulLapse::hour),
+            ).apply(i) { player, shop, hour -> HaulLapse(player, Shop.byId(shop) ?: Shop.HALL, hour) }
+        }
+
         private val BOOK: Codec<HaulBook> = RecordCodecBuilder.create { i ->
             i.group(
                 Codec.LONG.fieldOf("capital").forGetter(HaulBook::capital),
@@ -171,12 +189,14 @@ class HaulData(
                 Codec.LONG.optionalFieldOf("hour", Long.MIN_VALUE).forGetter(HaulBook::hour),
                 FILL.listOf().optionalFieldOf("fills", listOf()).forGetter { it.fills },
                 Codec.unboundedMap(Codec.STRING, Codec.LONG).optionalFieldOf("relief", mapOf()).forGetter { it.relief },
-            ).apply(i) { capital, tickets, hour, fills, relief ->
+                LAPSE.listOf().optionalFieldOf("lapses", listOf()).forGetter { it.lapses },
+            ).apply(i) { capital, tickets, hour, fills, relief, lapses ->
                 HaulBook(capital).also {
                     it.tickets.addAll(tickets)
                     it.hour = hour
                     it.fills.addAll(fills)
                     it.relief.putAll(relief)
+                    it.lapses.addAll(lapses)
                 }
             }
         }
