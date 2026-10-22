@@ -21,6 +21,9 @@ import java.util.UUID
 /** The day of something that has not happened: before any day there is. */
 const val NO_DAY: Long = Long.MIN_VALUE / 4
 
+/** The key of a capital that is not known (no block position packs to it: it is beyond the world's edge): a slip with it pays Marks and no standing. */
+const val NO_KEY: Long = Long.MIN_VALUE
+
 /**
  * A lot in a door's pantry: [portions] of [kind] at [tier] bought or given and not yet served, cooked by [cook]
  * ([cookName]). [day] is the town's day it came in (the ledger stamps it when the lot is added), which is how a lot more
@@ -69,10 +72,11 @@ class Sale(
 class Request(val kind: DishKind, val portions: Int, val filled: Boolean)
 
 /**
- * Whole Marks earned at a back door that could not be handed over (the player left in the middle of the sale, or was
- * not alive to take them): [marks] for [kind] at [door], paid at the player's next chance (5.3, 7.7).
+ * Whole Marks earned at a back door and not yet in the player's hand (the sale is written down with them, and the scene
+ * counts them out; if it is cut short, or the player left or was not alive, they wait here): [marks] for [kind] at [door] of
+ * the capital keyed [capital], paid at the player's next chance (5.3, 7.7; see [Owed]).
  */
-class Owing(val door: Door, val kind: DishKind?, var marks: Int)
+class Owing(val door: Door, val kind: DishKind?, var marks: Int, val capital: Long = NO_KEY)
 
 /** The request's saved state for one day: [salt] is what `cook request new` changes, so the draw is another. */
 class Asked(val day: Long, val salt: Int, val filled: Boolean, val by: UUID?) {

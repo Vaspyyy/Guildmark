@@ -33,7 +33,7 @@ import java.util.function.Supplier
  */
 class Kitchens(
     private val recs: MutableMap<Long, Rec> = HashMap(),
-    /** Whole Marks earned at a back door that could not be handed over, by player (7.7). */
+    /** Whole Marks earned at a back door and not yet in the player's hand, by player: written with the sale, taken off when paid ([Owed], 7.7). */
     val owing: MutableMap<UUID, MutableList<Owing>> = HashMap(),
 ) : SavedData() {
     /** The record of the capital kept under [capital], if it has one. */
@@ -150,7 +150,8 @@ class Kitchens(
                 Codec.INT.optionalFieldOf("door", Door.INN.ordinal).forGetter { it.door.ordinal },
                 Codec.STRING.optionalFieldOf("kind").forGetter { Optional.ofNullable(it.kind?.id) },
                 Codec.INT.optionalFieldOf("marks", 0).forGetter { it.marks },
-            ).apply(i) { door, kind, marks -> Owing(Door.entries.getOrElse(door) { Door.INN }, kind.map { DishKind.byId(it) }.orElse(null), marks) }
+                Codec.LONG.optionalFieldOf("capital", NO_KEY).forGetter { it.capital },
+            ).apply(i) { door, kind, marks, capital -> Owing(Door.entries.getOrElse(door) { Door.INN }, kind.map { DishKind.byId(it) }.orElse(null), marks, capital) }
         }
 
         private val CODEC: Codec<Kitchens> = RecordCodecBuilder.create { i ->
