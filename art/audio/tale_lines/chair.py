@@ -96,4 +96,9 @@ DELIVERY = {
 }
 SPEED_FOR = {}
 SAY_AS = {}
-PHONEMES = {}
+# Each fix says what Whisper heard without it
+PHONEMES = {
+    ("talk.tale.chair.ask_1", "man"): "aɪ kˈiːp sˈɛtɪŋ tˈuː bˈoʊʊlz.",  # "bowls", not "balls"
+    ("talk.tale.chair.ask_1", "woman"): "aɪ kˈiːp sˈɛtɪŋ tˈuː bˈoʊlz.",  # "bowls", not "balls"
+    ("talk.tale.chair.stand_0", "man"): "θɹˈiː wˈɜːdz, θɹˈiː kˈandəlz, ˈand ɐ plˈeɪs.",  # "and a place", not "in a place"
+}

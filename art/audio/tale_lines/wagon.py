@@ -93,4 +93,7 @@ DELIVERY = {
 }
 SPEED_FOR = {}
 SAY_AS = {}
-PHONEMES = {}
+# Each fix says what Whisper heard without it
+PHONEMES = {
+    ("talk.tale.wagon.ask_0", "man"): "ðˈeɪ tˈʊk ðə wˈaɡən, and maɪ ˈəʊn wˈɛnt wɪð ɪt.",  # "They took", not "He took"
+}

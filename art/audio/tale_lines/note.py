@@ -110,4 +110,8 @@ DELIVERY = {
 }
 SPEED_FOR = {}
 SAY_AS = {}
-PHONEMES = {}
+# Each fix says what Whisper heard without it
+PHONEMES = {
+    "talk.tale.note.ask_1": "aɪ bˈɒɹəʊd ɐɡˈɛnst ðˈɪss stˈɔːl, and nˈaʊ ɪts djˈuː.",  # "this stall", not "the stall"
+    ("talk.tale.note.stand_1", "man"): "wɪɹ nˈɪɹɚ, θˈaŋks tə juː.",  # "We're nearer", not "We're near a"
+}

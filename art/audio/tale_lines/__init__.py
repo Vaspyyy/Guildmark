@@ -55,7 +55,7 @@ PLEA = dict(speed=0.96, pitch=20, level=0.5)  # begging
 RELIEF = dict(speed=0.97, level=1.5)  # the breath let go
 
 # The tiers whose takes are made, and so whose families are in make_talk_voices.GROUPS (see above)
-RECORDED = ()
+RECORDED = (1,)
 
 from . import shared, note, chair, wagon, child, fence, lute, moot, cart, lantern, informer, locket, brother  # noqa: E402
 

@@ -153,4 +153,7 @@ DELIVERY = {
 }
 SPEED_FOR = {}
 SAY_AS = {}
-PHONEMES = {}
+# Each fix says what Whisper heard without it
+PHONEMES = {
+    ("talk.tale.informer.thanks_0", "man"): "juːv dˈʌn ðə tˈaʊn ˈeɪ sˈɜːvɪs. aɪ wəʊnt fɚɡˈɛt.",  # "a service", not "of service"
+}

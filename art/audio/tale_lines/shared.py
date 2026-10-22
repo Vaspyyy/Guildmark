@@ -125,4 +125,9 @@ DELIVERY = {
 }
 SPEED_FOR = {}
 SAY_AS = {}
-PHONEMES = {}
+# Each fix says what Whisper heard without it
+PHONEMES = {
+    "talk.tale.ask.decided_0": "ɪts bɪn dɪsˈaɪdɪd.",  # "It's been", not "It's being"
+    "talk.tale.ask.decided_1": "ðˈats, sˈɛtəld, θˈaŋk juː.",  # "That's settled", not "That settled"
+    ("talk.tale.set.rest_0", "man"): "ɐ mˈəʊmənt. dˈɪɹ. ðiːz lˈɛɡz.",  # "A moment, dear", not "A moment to hear"
+}

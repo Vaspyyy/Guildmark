@@ -131,6 +131,14 @@ DELIVERY = {
     "tale.locket.shame": TIRED,  # sorry for the shame
     "tale.locket.lost": GRIEF,  # given up for lost
 }
-SPEED_FOR = {}
+SPEED_FOR = {
+    ("talk.tale.locket.stand_1", "man"): 1.1,  # "No one hurt": slower, the last "t" came out as "hurts"
+}
 SAY_AS = {}
-PHONEMES = {}
+# Each fix says what Whisper heard without it
+PHONEMES = {
+    "talk.tale.locket.ask_0": "sˈʌmθɪŋ smˈɔːl and dˈiəɹ ɪz ɡɒn fɹˈɒm maɪ sˈɪl.",  # "from my sill", not "for my sill"
+    ("talk.tale.locket.ask_1", "man"): "maɪ lˈɑːkɪt ɪz ɡˈɒn, and aɪ kˈant stˈɒp lˈʊkɪŋ.",  # "locket", not "luck"
+    ("talk.tale.locket.ask_1", "woman"): "maɪ lˈɒkɪt ɪz ɡˈɒn, and aɪ kˈant stˈɒp lˈʊkɪŋ.",  # "locket", not "lock it's"
+    ("talk.tale.locket.stand_1", "man"): "aɪ ˈəʊnli wˈɒnt ɪt bˈak. nˈəʊ wˈʌn hˈɜːt.",
+}

@@ -129,6 +129,11 @@ DELIVERY = {
     "tale.brother.delver_back": dict(speed=0.97, level=0.5),  # found alive
     "tale.brother.home": dict(speed=0.95, level=0.5),  # home at last
 }
-SPEED_FOR = {}
+SPEED_FOR = {
+    ("talk.tale.brother.ask_1", "man"): 0.9,  # slower, so the "n" of "mine" is heard
+}
 SAY_AS = {}
-PHONEMES = {}
+# Each fix says what Whisper heard without it
+PHONEMES = {
+    ("talk.tale.brother.ask_1", "man"): "ðeɪ wɛnt tə ðɪ ˈəʊld mˈaɪn. nˈəʊ wˈɜːd sˈɪns.",  # "old mine", not "old mind"
+}

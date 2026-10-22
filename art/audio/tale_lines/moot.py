@@ -79,6 +79,14 @@ DELIVERY = {
     "tale.moot.broke": dict(speed=1.04, level=2.0),  # the chair, angry
     "tale.moot.call": dict(level=1.5),  # the chair, asking the room
 }
-SPEED_FOR = {}
+SPEED_FOR = {
+    ("talk.tale.moot.ask_1", "man"): 0.95,  # "Say", not "See" (and with its phonemes, below)
+}
 SAY_AS = {}
-PHONEMES = {}
+# Each fix says what Whisper heard without it. The man's "rung" is still heard as "wrong", by every reading tried.
+PHONEMES = {
+    "talk.tale.moot.ask_0": "ðə tˈaʊn kˈant, ɐɡɹˈiː, and ɪt wɪl kˈɒst ˌʌs ˈɔːl.",  # "can't agree", not "can agree"
+    ("talk.tale.moot.ask_1", "man"): "ðə bˈɛl ɪz ɹˈʌŋ. sˈeɪ wɒt juː wˈɪl.",
+    ("talk.tale.moot.ask_1", "woman"): "ðə bˈɛl ɪz ɹˈʌŋɡ. sˈeɪ wɒt juː wˈɪl.",  # "rung", not "wrong"
+    ("talk.tale.moot.stand_0", "woman"): "ðə mˈuːt, mˈiːts sˈuːn. bˈiː ɹˈɛdi.",  # "meets", not "mates"
+}

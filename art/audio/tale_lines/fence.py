@@ -97,4 +97,7 @@ DELIVERY = {
 }
 SPEED_FOR = {}
 SAY_AS = {}
-PHONEMES = {}
+# Each fix says what Whisper heard without it
+PHONEMES = {
+    ("talk.tale.fence.ask_1", "woman"): "aɪv sˈɛd θˈɪŋz aɪ kˈant ˌʌnsˈeɪ.",  # "can't unsay", not "can't say"
+}

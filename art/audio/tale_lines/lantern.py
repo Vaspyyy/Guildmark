@@ -94,6 +94,11 @@ DELIVERY = {
     "tale.lantern.candle": dict(level=1.0),  # a candle, at last
     "tale.lantern.arrive": RELIEF,  # the square at last
 }
-SPEED_FOR = {}
+SPEED_FOR = {
+    ("talk.tale.lantern.ask_0", "old"): 1.15,  # eleven long words: at the old man's own pace it ran 4.26 s, over the 4.0 s limit
+}
 SAY_AS = {}
-PHONEMES = {}
+# Each fix says what Whisper heard without it
+PHONEMES = {
+    ("talk.tale.lantern.thanks_1", "man"): "juːv ɐ kˈaɪnd hˈɑːɹt. ðˈeɪd hav lˈaɪkt juː.",  # "They'd have", not "that have"
+}
