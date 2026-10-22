@@ -65,7 +65,7 @@ object ChillOverlay : GuiLayer {
     private const val THAW = 1.0f
 
     /** How loud the wind is at its fullest, before the option's share. */
-    private const val WIND_LEVEL = 0.5f
+    private const val WIND_LEVEL = 0.8f
 
     private const val ICE = 0xFFFFFF
 

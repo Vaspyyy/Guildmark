@@ -27,8 +27,20 @@ object CookSounds {
         "cook.chop", "cook.slice", "cook.carve", "cook.loaf_down", "cook.plate", "cook.chalk", "cook.larder", "cook.chill",
     )
 
+    /**
+     * The events heard further than the game's 16 blocks (11.2's reach column): a sound played on the server reaches only
+     * 16 blocks at a volume of 1, so these carry their own range. The rest are heard over 16 blocks or less, which their
+     * `attenuation_distance` in `sounds.json` sets.
+     */
+    private val REACH: Map<String, Float> = mapOf(
+        "cook.simmer" to 24f, "cook.crackle" to 20f, "cook.sizzle" to 20f, "cook.oven_hum" to 20f, "cook.spit_creak" to 20f,
+    )
+
     private val EVENTS: Map<String, DeferredHolder<SoundEvent, SoundEvent>> = NAMES.associateWith { name ->
-        SOUNDS.register(name) { -> SoundEvent.createVariableRangeEvent(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, name)) }
+        SOUNDS.register(name) { ->
+            val id = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, name)
+            REACH[name]?.let { SoundEvent.createFixedRangeEvent(id, it) } ?: SoundEvent.createVariableRangeEvent(id)
+        }
     }
 
     /** The event named [name], one of [NAMES] (`cook.stir`, `cook.tier.fine`...). */

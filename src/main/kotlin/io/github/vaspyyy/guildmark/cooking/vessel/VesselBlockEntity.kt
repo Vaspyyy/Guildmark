@@ -584,7 +584,6 @@ open class VesselBlockEntity(type: BlockEntityType<*>, pos: BlockPos, state: Blo
             stack.hurtAndBreak(1, player, hand)
         }
         ring(level, "cook.ignite", 1.0f, 1.0f)
-        level.playSound(null, blockPos, SoundEvents.FLINTANDSTEEL_USE, SoundSource.BLOCKS, 0.6f, 1.0f)
         CookActions.play(player, CookAction.FEED, blockPos)
         return Used.DONE
     }
