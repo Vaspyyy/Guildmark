@@ -509,7 +509,7 @@ object FortuneReasons {
 /**
  * The reasons noted as they happen (see [Fortunes.note]): each one's kind, its points, how many market days it
  * lasts, and for crime which kind of crime it was ([what], put first among the note's words). The calls, one line
- * each, where they happen: `Residents.died` (MOURNING), `Witness.robbed` and `caught` (THEFT, CAUGHT), `Raids.start`
+ * each, where they happen: `Residents.pass` (MOURNING), `Witness.robbed` and `caught` (THEFT, CAUGHT), `Raids.start`
  * (RAID), a heist's escape (HEIST), `Witness.dealt` and `filled` (SUPPLIED); and [Fortunes]' own listeners for the
  * road (WAYLAID, RELIEF, ESCORTED), the works (RAISED, EASED) and the households (NEWCOMERS, LEAVING). The last three
  * belong to the later designs: a delivery from afar (HAULED), a siege held or lost (HELD, LOST). A tale's reason has no

@@ -326,16 +326,24 @@ class Residents(
 
         /** [p] died: their life here ends (and their home and trade wait for someone new). */
         fun died(level: ServerLevel, p: Townsperson) {
-            val data = get(level)
-            val r = data.of(p) ?: return
+            val r = get(level).of(p) ?: return
+            pass(level, r, p)
+        }
+
+        /**
+         * The record half of a death, which needs no body: [r]'s life here ends, the day it did is kept, their bed is free,
+         * the town mourns them and, if [p] is their body, the street hears of it. What a death in a tale or a siege adds
+         * goes here as one line each, so a resident who is put to rest with no body is as dead on the record as one who fell.
+         */
+        fun pass(level: ServerLevel, r: Resident, p: Townsperson? = null) {
             r.alive = false
             r.died = VillageBoards.day(level)
             // Their bed is free for whoever comes to live there next
             r.bed?.let { Furnish.release(level, it) }
             r.bed = null
-            data.changed()
+            get(level).changed()
             Fortunes.note(level, r.capital.asLong(), Noted.MOURNING, listOf(r.name))
-            io.github.vaspyyy.guildmark.townsfolk.talk.Witness.died(level, p)
+            if (p != null) io.github.vaspyyy.guildmark.townsfolk.talk.Witness.died(level, p)
         }
     }
 }
