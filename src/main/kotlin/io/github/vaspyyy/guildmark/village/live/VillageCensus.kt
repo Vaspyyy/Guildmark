@@ -82,8 +82,11 @@ object VillageCensus {
     const val MAX_HOMES = 40
     const val MAX_BUILDINGS = 64
 
-    /** How far past its beds a household's flood may reach, and past a job block that of a building with no beds. */
-    const val REACH = 6
+    /**
+     * How far past its beds a household's flood may reach (a bed can be at the far end of a house from its door), and past a job block
+     * that of a building with no beds.
+     */
+    const val REACH = 12
     const val JOB_REACH = 10
 
     /** How close to the bell the column pass looks down into a roofed well. */
@@ -282,7 +285,7 @@ object VillageCensus {
 
     private enum class Phase { POIS, HOMES, COLUMNS, FINISH, LIVESTOCK, GREEN, DONE }
     private enum class Sub { IDLE, FLOODING, SCANNING }
-    private enum class Finish { WELLS, STALLS, BENCHES, FIELDS, TOWERS }
+    private enum class Finish { WELLS, STALLS, FIELDS, TOWERS }
 
     /**
      * One census of the village whose bell is at [bell] (key [key]), begun at game time [now]. [old] is the last one, whose parts in
@@ -354,7 +357,6 @@ object VillageCensus {
         private val fieldCells = ArrayList<Long>()
         private val waters = ArrayList<Long>()
         private val lamps = ArrayList<BlockPos>()
-        private val seatCells = ArrayList<Long>()
         private val wool = HashSet<Long>()
         private val posts = ArrayList<BlockPos>()
         private var finish = Finish.WELLS
@@ -480,6 +482,8 @@ object VillageCensus {
             }
             // As `Advances.villageRadius` has it: just outside the furthest bed, kept between 20 and 48 (18 with no bed)
             radius = ((if (furthest < 0.0) 18.0 else furthest).toInt() + 6).coerceIn(20, 48)
+            // The furthest bed may lie in ground that is not loaded: the village does not shrink for what could not be read
+            if (old != null && old.radius > radius && unloadedWithin(t, old.radius)) radius = old.radius
             val reach = radius + GREEN.toDouble()
             beds = bedPois.filter { it.first <= reach }.sortedBy { it.first }.take(MAX_BEDS).map { it.second }
             jobs = jobPois.filter { it.first <= reach }.sortedBy { it.first }.take(MAX_JOBS).map { it.second }
@@ -599,7 +603,8 @@ object VillageCensus {
         /** The flood is done: scan the box round the inside for what stands in it. */
         private fun startScan(t: Terrain) {
             if (flood.unloaded) unloadedParts = true
-            if (flood.cells >= 2) {
+            // Round a job block, a room has walls: a canopy on posts, or a corner of open ground with a roof over it, is not a building
+            if (flood.cells >= 2 && (curJob == null || (!flood.capped && flood.solid >= 2 * flood.loose))) {
                 sx0 = flood.minX - 1
                 sy0 = flood.minY - 1
                 sz0 = flood.minZ - 1
@@ -681,14 +686,27 @@ object VillageCensus {
             val c = Cls.of(s)
             when {
                 c and Cls.FARMLAND != 0 -> if (fieldCells.size < MAX_FIELD_CELLS) fieldCells.add(BlockPos.asLong(x, top, z))
-                c and Cls.WATER != 0 -> if (waters.size < MAX_WATER) waters.add(BlockPos.asLong(x, y, z))
+                c and Cls.WATER != 0 -> if (waters.size < MAX_WATER && rimmed(t, x, y, z)) waters.add(BlockPos.asLong(x, y, z))
                 c and Cls.LAMP_BLOCK != 0 -> if (lamps.size < MAX_LAMPS) lamps.add(BlockPos(x, y, z))
                 c and Cls.LANTERN != 0 -> lantern(t, x, y, z)
-                c and Cls.SEAT != 0 -> if (seatCells.size < 4 * MAX_BENCHES) seatCells.add(BlockPos.asLong(x, y, z))
+                c and Cls.SEAT != 0 -> if (benches.size < MAX_BENCHES) Scanner.seat(t, x, y, z, s)?.let { benches.add(it) }
                 c and Cls.WOOL != 0 -> wool.add(BlockPos.asLong(x, y, z))
                 Cls.feature(c) == Cls.F_POST -> posts.add(BlockPos(x, y, z))
                 d2 <= WELL_LOOK * WELL_LOOK && c and Cls.FLOOR != 0 -> hollow(t, x, y, z)
             }
+        }
+
+        /**
+         * Whether water at ([x], [y], [z]) has a block of stone beside it at its own level. A pool that is a well has one all round, so
+         * every well has such a cell; a lake or the sea, whose thousands of cells would fill the list before a well further on is
+         * reached, mostly has none.
+         */
+        private fun rimmed(t: Terrain, x: Int, y: Int, z: Int): Boolean {
+            for (dir in Ways.ALL) {
+                val s = t.state(x + dir.stepX, y, z + dir.stepZ) ?: continue
+                if (Cls.of(s) and Cls.STONE != 0) return true
+            }
+            return false
         }
 
         /** A lantern standing on two fence posts or walls at least is a lamp post. */
@@ -731,10 +749,6 @@ object VillageCensus {
                     }
                     Finish.STALLS -> {
                         findStalls(t)
-                        finish = Finish.BENCHES
-                    }
-                    Finish.BENCHES -> {
-                        findBenches(t)
                         finish = Finish.FIELDS
                     }
                     Finish.FIELDS -> {
@@ -781,6 +795,9 @@ object VillageCensus {
                     if (cls and Cls.WATER != 0) {
                         if (seen.add(BlockPos.asLong(nx, c.y, nz))) {
                             if (cells.size >= POOL) ringed = false else cells.add(BlockPos(nx, c.y, nz))
+                        } else if (cells.none { it.x == nx && it.z == nz }) {
+                            // Water an earlier look met and found to be in a pool too big: this is the same pool
+                            ringed = false
                         }
                     } else if (cls and Cls.STONE == 0) {
                         ringed = false
@@ -840,42 +857,53 @@ object VillageCensus {
             }
         }
 
-        /** Benches: the seats the pass found that have room and a way off, and are no step in a stair. */
-        private fun findBenches(t: Terrain) {
-            for (key in seatCells) {
-                if (benches.size >= MAX_BENCHES) break
-                val x = BlockPos.getX(key)
-                val y = BlockPos.getY(key)
-                val z = BlockPos.getZ(key)
-                val s = t.state(x, y, z) ?: continue
-                Scanner.seat(t, x, y, z, s)?.let { benches.add(it) }
-            }
-        }
-
         /** Fields: farmland (with a crop or without) within [FIELD_GAP] of each other, a field of [FIELD_LEAST] cells at least. */
         private fun findFields() {
             if (fieldCells.isEmpty()) return
-            val cells = HashMap<Long, Int>(fieldCells.size * 2)
-            for (k in fieldCells) cells[BlockPos.asLong(BlockPos.getX(k), 0, BlockPos.getZ(k))] = BlockPos.getY(k)
-            val seen = HashSet<Long>()
+            // The farmland laid in a grid over its box, each cell by its height (none where there is no farmland), so that a field is
+            // followed over arrays and not through a map: a farm of thousands of cells is a field of a fraction of a millisecond
+            var x0 = Int.MAX_VALUE
+            var x1 = Int.MIN_VALUE
+            var z0 = Int.MAX_VALUE
+            var z1 = Int.MIN_VALUE
+            for (k in fieldCells) {
+                val x = BlockPos.getX(k)
+                val z = BlockPos.getZ(k)
+                if (x < x0) x0 = x
+                if (x > x1) x1 = x
+                if (z < z0) z0 = z
+                if (z > z1) z1 = z
+            }
+            val w = x1 - x0 + 1
+            val ys = IntArray(w * (z1 - z0 + 1))
+            java.util.Arrays.fill(ys, NO_FIELD)
+            for (k in fieldCells) ys[(BlockPos.getZ(k) - z0) * w + (BlockPos.getX(k) - x0)] = BlockPos.getY(k)
+            val seen = BooleanArray(ys.size)
+            val queue = IntArray(ys.size)
             for (start in fieldCells.sorted()) {
-                val sk = BlockPos.asLong(BlockPos.getX(start), 0, BlockPos.getZ(start))
-                if (!seen.add(sk)) continue
-                val queue = arrayListOf(sk)
+                val si = (BlockPos.getZ(start) - z0) * w + (BlockPos.getX(start) - x0)
+                if (seen[si]) continue
+                seen[si] = true
+                var head = 0
+                var tail = 0
+                queue[tail++] = si
                 val crops = ArrayList<BlockPos>()
-                var k = 0
-                while (k < queue.size) {
-                    val key = queue[k++]
-                    val x = BlockPos.getX(key)
-                    val z = BlockPos.getZ(key)
-                    val y = cells[key] ?: continue
+                while (head < tail) {
+                    val i = queue[head++]
+                    val x = x0 + i % w
+                    val z = z0 + i / w
+                    val y = ys[i]
                     crops.add(BlockPos(x, y, z))
                     for (dx in -FIELD_GAP..FIELD_GAP) for (dz in -FIELD_GAP..FIELD_GAP) {
                         if (dx == 0 && dz == 0) continue
-                        val nk = BlockPos.asLong(x + dx, 0, z + dz)
-                        val ny = cells[nk] ?: continue
-                        if (abs(ny - y) > FIELD_GAP || !seen.add(nk)) continue
-                        queue.add(nk)
+                        val nx = x + dx
+                        val nz = z + dz
+                        if (nx < x0 || nx > x1 || nz < z0 || nz > z1) continue
+                        val ni = (nz - z0) * w + (nx - x0)
+                        val ny = ys[ni]
+                        if (ny == NO_FIELD || abs(ny - y) > FIELD_GAP || seen[ni]) continue
+                        seen[ni] = true
+                        queue[tail++] = ni
                     }
                 }
                 if (crops.size < FIELD_LEAST) continue
@@ -917,10 +945,10 @@ object VillageCensus {
                 if (cursor >= towerClusters.size) return true
                 if (buildings.size >= MAX_BUILDINGS + MAX_TOWERS) return true
                 val g = towerClusters[cursor]
-                sx0 = g.minOf { it.x } - 2
-                sz0 = g.minOf { it.z } - 2
-                sx1 = g.maxOf { it.x } + 2
-                sz1 = g.maxOf { it.z } + 2
+                sx0 = g.minOf { it.x } - TOWER_MARGIN
+                sz0 = g.minOf { it.z } - TOWER_MARGIN
+                sx1 = g.maxOf { it.x } + TOWER_MARGIN
+                sz1 = g.maxOf { it.z } + TOWER_MARGIN
                 sy0 = maxOf(t.minY, g.minOf { it.y } - 12)
                 sy1 = g.maxOf { it.y } + 1
                 scanner.begin(sx0, sy0, sz0, sx1, sy1, sz1)
@@ -940,6 +968,23 @@ object VillageCensus {
             hens = inside.count { it.hen }
             barns = pens(t, inside.filter { !it.hen }, 2)
             coops = pens(t, inside.filter { it.hen }, 3)
+            // Animals in a chunk that is not loaded are not seen: what was seen of them in the last count stands
+            if (old != null && unloadedWithin(t, radius)) {
+                barns = maxOf(barns, old.barns)
+                coops = maxOf(coops, old.coops)
+                cattle = maxOf(cattle, old.cattle)
+                hens = maxOf(hens, old.hens)
+            }
+        }
+
+        /** Whether any chunk of the square [r] blocks each way from the bell is not loaded. */
+        private fun unloadedWithin(t: Terrain, r: Int): Boolean {
+            val x0 = (bell.x - r) shr 4
+            val x1 = (bell.x + r) shr 4
+            val z0 = (bell.z - r) shr 4
+            val z1 = (bell.z + r) shr 4
+            for (cx in x0..x1) for (cz in z0..z1) if (!t.loaded(cx, cz)) return true
+            return false
         }
 
         /** The number of groups of at least [least] animals standing within 6 blocks of each other (chained) and fenced in. */
@@ -961,39 +1006,45 @@ object VillageCensus {
                         group.add(j)
                     }
                 }
-                if (group.size >= least && fenced(t, group.map { animals[it] })) pens++
+                if (group.size >= least && fencedIn(t, group.map { animals[it] })) pens++
             }
             return pens
         }
 
-        /** Whether at least a third of the ring of blocks round the group's box is fence, gate or wall (at the height the animals stand, or above). */
-        private fun fenced(t: Terrain, group: List<Beast>): Boolean {
-            val x0 = Math.floor(group.minOf { it.x }).toInt() - 1
-            val x1 = Math.floor(group.maxOf { it.x }).toInt() + 1
-            val z0 = Math.floor(group.minOf { it.z }).toInt() - 1
-            val z1 = Math.floor(group.maxOf { it.z }).toInt() + 1
-            val y = Math.floor(group.sumOf { it.y } / group.size).toInt()
-            var ring = 0
-            var posts = 0
-            fun look(x: Int, z: Int) {
-                ring++
-                for (dy in 0..1) {
-                    val s = t.state(x, y + dy, z) ?: return
-                    if (Cls.of(s) and Cls.POST != 0) {
-                        posts++
-                        return
-                    }
+        /**
+         * Whether the group stands fenced in: the ground they walk on, followed out from where they stand over cells a body fits in
+         * (a fence, a closed gate, a wall or water stops it), comes to an end within [PEN_CELLS] cells. A pasture with no fence runs on
+         * past that; so does a meadow too big to be a pen. Ground that is not loaded is not known to end.
+         */
+        private fun fencedIn(t: Terrain, group: List<Beast>): Boolean {
+            // Their feet are at the top of what they stand on (a path or farmland is 15/16 of a block): the cells they walk through are at the nearest whole height
+            val y = Math.round(group.sumOf { it.y } / group.size).toInt()
+            val seen = HashSet<Long>()
+            val queue = ArrayList<Long>()
+            for (b in group) {
+                val x = Math.floor(b.x).toInt()
+                val z = Math.floor(b.z).toInt()
+                val s = t.state(x, y, z) ?: return false
+                if (Cls.of(s) and Cls.PASS == 0) continue
+                if (seen.add(BlockPos.asLong(x, y, z))) queue.add(BlockPos.asLong(x, y, z))
+            }
+            if (queue.isEmpty()) return false
+            var k = 0
+            while (k < queue.size) {
+                if (queue.size > PEN_CELLS) return false
+                val key = queue[k++]
+                val x = BlockPos.getX(key)
+                val z = BlockPos.getZ(key)
+                for (dir in Ways.ALL) {
+                    val nk = BlockPos.asLong(x + dir.stepX, y, z + dir.stepZ)
+                    if (nk in seen) continue
+                    val s = t.state(x + dir.stepX, y, z + dir.stepZ) ?: return false
+                    if (Cls.of(s) and Cls.PASS == 0) continue
+                    seen.add(nk)
+                    queue.add(nk)
                 }
             }
-            for (x in x0..x1) {
-                look(x, z0)
-                look(x, z1)
-            }
-            for (z in z0 + 1 until z1) {
-                look(x0, z)
-                look(x1, z)
-            }
-            return posts * 3 >= ring
+            return true
         }
 
         // ---- Slice E: the green ----
@@ -1032,25 +1083,54 @@ object VillageCensus {
             var keptStalls: List<CityPlaces.Stall> = stalls
             var keptJobs: List<CityPlaces.Station> = stations
             var keptFields: List<CityPlaces.Field> = fields
+            var keptTowers: List<BlockPos> = towers
+            var keptRadius = radius
+            var keptBoard = board
+            var keptFacing = boardFacing
+            var keptAdvances = advances
             var partial = unloadedParts
             if (old != null && unloadedParts) {
-                // What stood where nothing could be read this time stands as it did
+                // What stood where nothing could be read this time stands as it did; a thing that spans the edge of the loaded ground, which
+                // this count found the loaded part of (or the whole of), is the one this count found
                 fun dark(p: BlockPos): Boolean = !t.loaded(p.x shr 4, p.z shr 4)
-                homes = buildings + old.buildings.filter { b -> dark(b.door) && buildings.none { it.box.intersects(b.box) } }
-                keptWells = wells + old.wells.filter { dark(it) }
+                fun touchesDark(p: BlockPos, r: Int): Boolean {
+                    for (cx in ((p.x - r) shr 4)..((p.x + r) shr 4)) for (cz in ((p.z - r) shr 4)..((p.z + r) shr 4)) if (!t.loaded(cx, cz)) return true
+                    return false
+                }
+                fun near(a: BlockPos, b: BlockPos): Boolean = abs(a.x - b.x) <= 3 && abs(a.z - b.z) <= 3
+                fun same(a: Building, b: Building): Boolean =
+                    a.beds.any { it in b.beds } || a.stations.any { s -> b.stations.any { it.pos == s.pos } } || (near(a.door, b.door) && abs(a.door.y - b.door.y) <= 3)
+                homes = buildings + old.buildings.filter { ob -> dark(ob.door) && buildings.none { same(it, ob) } }
+                // A building this count found the loaded part of keeps the beds it had in the part that is not loaded
+                for (ob in old.buildings) {
+                    val nb = buildings.firstOrNull { same(it, ob) } ?: continue
+                    for (bed in ob.beds) if (dark(bed) && bed !in nb.beds) nb.beds.add(bed)
+                }
+                keptWells = wells + old.wells.filter { w -> touchesDark(w, 2) && wells.none { near(it, w) } }
                 keptLamps = lamps + old.lamps.filter { dark(it) }
-                keptBenches = benches + old.benches.filter { dark(it.pos) }
-                keptStalls = stalls + old.stalls.filter { dark(it.keeper.pos) }.mapIndexed { i, s ->
+                // A bench is looked at one block round it: one at the edge of the loaded ground could not be, and stands as it did
+                keptBenches = benches + old.benches.filter { b -> touchesDark(b.pos, 1) && benches.none { it.pos == b.pos } }
+                keptStalls = stalls + old.stalls.filter { s -> touchesDark(s.keeper.pos, 2) && stalls.none { near(it.keeper.pos, s.keeper.pos) } }.mapIndexed { i, s ->
                     CityPlaces.Stall(stalls.size + i, s.keeper, s.customer, s.counter, s.goods, s.trade)
                 }
                 keptJobs = stations + old.jobs.filter { dark(it.pos) }
-                keptFields = fields + old.fields.filter { dark(it.crops[0]) }.mapIndexed { i, f -> CityPlaces.Field(fields.size + i, f.crops, f.box, f.lodging) }
+                keptFields = fields + old.fields.filter { f -> f.crops.any { dark(it) } && fields.none { it.box.intersects(f.box) } }
+                    .mapIndexed { i, f -> CityPlaces.Field(fields.size + i, f.crops, f.box, f.lodging) }
+                keptTowers = towers + old.towers.filter { dark(it) }
+                // The village does not shrink for ground that could not be read, and its board stands where its chunk is not loaded
+                keptRadius = maxOf(radius, old.radius)
+                val oldBoard = old.board
+                if (board == null && oldBoard != null && dark(oldBoard)) {
+                    keptBoard = oldBoard
+                    keptFacing = old.boardFacing
+                    keptAdvances = old.advances
+                }
                 partial = true
             }
             val stats = Stats(ticks, nanos, worst, slices.copyOf(), reads, counted, misses)
             Perf.add(stats)
             return Found(
-                bell, radius, board, boardFacing, advances, homes, towers.toList(), keptJobs, keptWells, keptLamps, keptBenches, keptStalls,
+                bell, keptRadius, keptBoard, keptFacing, keptAdvances, homes, keptTowers.toList(), keptJobs, keptWells, keptLamps, keptBenches, keptStalls,
                 keptFields.toList(), green, barns, coops, cattle, hens, now, partial, stats,
             )
         }
@@ -1073,8 +1153,17 @@ object VillageCensus {
     /** How far from the bell a board may stand to be the village's: the same 48 the board's own search uses. */
     private const val BOARD_REACH = 48
 
+    /** The most cells of ground a pen may enclose (a pen of 12 by 16 is about that). */
+    private const val PEN_CELLS = 200
+
     /** The most cells a pool of water may have to be a well. */
     private const val POOL = 16
     private const val MAX_STALLS = 12
     private const val MAX_TOWERS = 8
+
+    /** How far past its Archer Posts a tower is looked at, for the ladder up its side (a post may stand at one corner only). */
+    private const val TOWER_MARGIN = 5
+
+    /** The height of a cell of the grid of farmland that has none. */
+    private const val NO_FIELD = Int.MIN_VALUE
 }
