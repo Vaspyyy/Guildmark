@@ -1735,6 +1735,72 @@ def part_names():
     return [p.name for b in BUILDERS for p in b()[1].walk()]
 
 
+# ================================================================== the trade's props (art/scripts/trade_clips.py)
+
+# The clerks', carters' and wardens' (trade X4): a seal stamp, the corner of a cart's canvas, a laden basket, a trace, a sack
+# for the scale, a ledger and a satchel to rummage in. townsfolk.py packs their cubes after everyone else's (group 6), so
+# adding them moved no cube already on the texture. Where a clip's track runs a prop (the basket, the canvas, the trace,
+# the sack, the satchel), the track places it in the clip's own space and its rest placement here only shows it untracked.
+
+STAMP_FACE = (0.0, 4.6, 0.0)             # stamp space: the middle of the seal's working face
+
+
+def seal_face_painter(key):
+    """The seal's block: bevelled brass; its working face (the bottom) engraved, still red in a ring of wax."""
+    def fn(face, w, h, rng):
+        a = metal(w, h, BRASS, BRASS_D, BRASS_L, rng, wear=0.1)
+        if face == 'bottom' and min(w, h) >= 3:
+            U, V = uv(w, h)
+            r = np.maximum(np.abs(U - 0.5), np.abs(V - 0.5)) * 2
+            ring = r > 0.62
+            a[..., :3] = np.where(ring[..., None], mix(a[..., :3], WAX, 0.88), a[..., :3])
+        return a
+    return painter(key, fn)
+
+
+def _stamp():
+    # A seal stamp in the right fist: a turned beech knob over the fist, the shaft through it, a brass collar and neck
+    # under it and the seal's block (4 px square) on the end, hanging along the arm. STAMP's track holds it pointing down
+    # whichever way the arm reaches, and twists it on the wax.
+    return 'right_arm', Part('stamp', RIGHT_GRIP, (0, 0, 0), cubes=[
+        C((-1.3, -4.8, -1.3), (2.6, 1.2, 2.6), 't_stamp_knob', wood_painter('t_stamp_knob', OAK_L, OAK, (196, 158, 108), 'y')),
+        C((-0.8, -3.6, -0.8), (1.6, 5.2, 1.6), 't_stamp_grip', wood_painter('t_stamp_grip', OAK, OAK_D, OAK_L, 'y')),
+        C((-1.2, 1.6, -1.2), (2.4, 0.8, 2.4), 't_stamp_collar', brass_painter('t_stamp_collar')),
+        C((-0.7, 2.4, -0.7), (1.4, 1.0, 1.4), 't_stamp_neck', brass_painter('t_stamp_neck')),
+        C((-2.0, 3.4, -2.0), (4.0, 1.2, 4.0), 't_stamp_face', seal_face_painter('t_stamp_face')),
+    ])
+
+
+CANVAS_W, CANVAS_H = 11.0, 9.0
+
+
+def _canvas_flap():
+    # The corner of the cart's canvas that CHECK_LOAD lifts: a patch CANVAS_W across and CANVAS_H down, pinned at its top
+    # corner (the part's pivot: the track swings the patch about that point), a ring in the opposite corner (where the
+    # hand pinches it) and the cord tail of its tie.
+    return 'body', Part('canvas_flap', (0.0, 0.0, 0.0), (0, 0, 0), cubes=[
+        C((0.0, 0.0, -0.15), (CANVAS_W, CANVAS_H, 0.3), 't_canvas_flap', flap_painter('t_canvas_flap')),
+        C((CANVAS_W - 1.9, CANVAS_H - 1.7, -0.6), (1.4, 1.4, 1.2), 't_canvas_ring', iron_painter('t_canvas_ring')),
+        C((CANVAS_W - 1.4, CANVAS_H - 0.3, -0.4), (0.6, 2.2, 0.8), 't_canvas_tie', cord_painter('t_canvas_tie')),
+    ])
+
+
+TRADE_BUILDERS = [_stamp, _canvas_flap]
+BUILDERS.extend(TRADE_BUILDERS)
+TOOL_NOTES.update({
+    'stamp': 'right hand, a seal stamp hanging along the arm (STAMP\'s track holds it pointing down and twists it on the '
+             'wax); the middle of the seal\'s face at part (0, 4.6, 0)',
+    'canvas_flap': f'body; the corner of the cart\'s canvas, a patch {CANVAS_W:g} across and {CANVAS_H:g} down from its pinned '
+                   'top corner (the pivot); CHECK_LOAD\'s track swings it about that corner and the ring in the opposite '
+                   'corner is where the hand pinches it',
+})
+
+
+def trade_cube_names():
+    """The trade's cubes among them (trade X4: townsfolk.py packs them last of all)."""
+    return {c.name for b in TRADE_BUILDERS for p in b()[1].walk() for c in p.cubes}
+
+
 def install(g):
     """Adds the props to townsfolk_tools' tables ([g]: its globals)."""
     if g.get('_LIVING_PROPS'):

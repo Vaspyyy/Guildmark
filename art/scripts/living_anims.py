@@ -3284,6 +3284,8 @@ import street_clips  # noqa: E402
 street_clips.build(sys.modules[__name__])
 import cook_clips  # noqa: E402
 cook_clips.build(sys.modules[__name__])
+import trade_clips  # noqa: E402
+trade_clips.build(sys.modules[__name__])
 
 
 # ================================================================== the tales' six clips (art/scripts/tale_clips.py)
