@@ -245,6 +245,36 @@ enum class Activity(val clip: String, val ticks: Int, val loop: Boolean, val ove
     LIGHT_BEACON("light_beacon", 50, false),
     SHUT_STALL("shut_stall", 30, false),
     SOUND_HORN("sound_horn", 40, false),
+    // The moves four designs share (living-world/build-plan.md section 2), put in ahead of all four so none waits on
+    // another: each design's own part makes its clips (art/scripts) and plays its moves. A move whose clip isn't made yet
+    // plays nothing: the townsperson keeps the humanoid's pose (TownsfolkRenderer.frame has no clip for it)
+    // Hearthcraft's kitchens (living-world/cook/design.md section 7.5; art/scripts/cook_clips.py)
+    STIR("stir", 80, true),
+    TASTE("taste", 40, false),
+    FLIP("flip", 30, false),
+    TURN_SPIT("turn_spit", 40, true),
+    CARVE("carve", 50, false),
+    SLICE("slice", 40, false),
+    PEEL("peel", 50, false),
+    // Trade's checks, loads and weighings (living-world/trader/design.md section 10; art/scripts/trade_clips.py)
+    STAMP("stamp", 20, false),
+    CHECK_LOAD("check_load", 30, false),
+    LOAD_PACK("load_pack", 40, false),
+    HITCH("hitch", 50, false),
+    WEIGH("weigh", 60, false),
+    HALT("halt", 25, false),
+    RUMMAGE("rummage", 60, true),
+    // Tales' grief, greetings and keepsakes (living-world/stories/design.md section 4.3.9; art/scripts/tale_clips.py)
+    GRIEVE("grieve", 80, true),
+    WRING_HANDS("wring_hands", 60, true),
+    SHAKE_HANDS("shake_hands", 30, false),
+    FEED_FIRE("feed_fire", 40, false),
+    HOBBLE("hobble", 40, true, true),
+    LAY_POSY("lay_posy", 40, false),
+    // The villages' doors, memorials and cradles (living-world/villages/design.md section 17.1; art/scripts/village_clips.py)
+    BOLT_DOOR("bolt_door", 50, false),
+    LAY_CANDLE("lay_candle", 60, false),
+    CRADLE("cradle", 60, true),
     ;
 
     /** Seated activities keep the townsperson on their seat (a wagon's bench and tailboard among them). */
