@@ -16,7 +16,7 @@ object Templates {
      * part that builds it (the group after the id) uncomments it. None is built yet.
      */
     val ALL: List<Template> = listOf(
-        // Note,      // 1  note      size 2  T1 (the pilot)
+        io.github.vaspyyy.guildmark.tales.templates.Note, // 1  note      size 2  T1 (the pilot)
         // Chair,     // 2  chair     size 2  T4
         // Wagon,     // 3  wagon     size 3  T3
         // Child,     // 4  child     size 2  T2
