@@ -20,8 +20,10 @@ import java.util.function.Supplier
  * lean for five days") and adds one for every turn the player or the world takes ([Tale.addWhy]); "Why?" reads them back.
  *
  * The sentence is the language key `fortune.guildmark.reason.tale.why.<kind>` with [args] filled in. A template's own kinds
- * start with its id (`note.lean`, `chair.died`), the engine's are bare words (`died`, `left`, `stood_in`, `none_left`,
- * `late`, `skipped`, `finished`), so two parts never write the same key. A few short strings: names, a number as text.
+ * start with its id (`note.lean`, `chair.died`), the engine's are bare words (`died` and `left` with the name, `stood_in` with
+ * the new name and the old, `none_left`, `late`, `skipped`, `broke`, and `finished_a`, `finished_b`, `finished_c` or
+ * `finished_w`, which close a tale at its ending), so two parts never write the same key. A few short strings: names, a number
+ * as text. [TaleKeys.why] is the key.
  */
 class Why(val kind: String, val args: List<String> = listOf()) {
     companion object {
@@ -38,9 +40,11 @@ class Why(val kind: String, val args: List<String> = listOf()) {
  * One person of a tale's cast (1.2): the [slot]'s name in the template ("debtor", "lender"), the [resident]'s id (-1 for a
  * figure the tale makes that has no record), the [name] kept so the chronicle can still say it when they are dead or gone,
  * and whether the resident's day is the tale's for now ([held], 4.4: their day body is not made, and the household cannot
- * leave from under it). Whether a slot is essential or standing is the template's to say, not the record's.
+ * leave from under it). Whether a slot is essential or standing is the template's to say ([Template.standing]), not the
+ * record's. [gone] is how the person went once the engine has seen them go (5.6): "died" or "left", "" while they are with
+ * the tale; the engine hands a gone person to the template's own path once, and a standing slot a stand-in, who is not gone.
  */
-class Cast(val slot: String, var resident: Int = -1, var name: String = "", var held: Boolean = false) {
+class Cast(val slot: String, var resident: Int = -1, var name: String = "", var held: Boolean = false, var gone: String = "") {
     companion object {
         val CODEC: Codec<Cast> = RecordCodecBuilder.create { i ->
             i.group(
@@ -48,7 +52,8 @@ class Cast(val slot: String, var resident: Int = -1, var name: String = "", var 
                 Codec.INT.optionalFieldOf("resident", -1).forGetter(Cast::resident),
                 Codec.STRING.optionalFieldOf("name", "").forGetter(Cast::name),
                 Codec.BOOL.optionalFieldOf("held", false).forGetter(Cast::held),
-            ).apply(i) { slot, resident, name, held -> Cast(slot, resident, name, held) }
+                Codec.STRING.optionalFieldOf("gone", "").forGetter(Cast::gone),
+            ).apply(i) { slot, resident, name, held, gone -> Cast(slot, resident, name, held, gone) }
         }
     }
 }
@@ -480,7 +485,7 @@ class TaleData(
 
     /** What one capital remembers: the pace and the lists of 11.1, keyed by the capital's heart. */
     class Town(
-        /** The market day before which no new tale starts here (9.1). */
+        /** The last market day of the quiet: no new tale is drawn here through it (9.1). A tale that ended on day `e` sets `e + 8`, so the first draw is on day `e + 9`. */
         var quiet: Long = NEVER,
         /** The last market day a player was in the capital; `Tales.look` sets it. */
         var seen: Long = NEVER,

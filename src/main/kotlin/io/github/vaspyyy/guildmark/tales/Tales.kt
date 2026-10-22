@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.tales
 
+import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.GuildmarkConfig
 import io.github.vaspyyy.guildmark.economy.Conditions
 import io.github.vaspyyy.guildmark.economy.Good
@@ -66,6 +67,56 @@ object Tales : Comings.Listener {
 
     /** Whether the street scenes of tales play (townTaleScenes), on top of [live]: the stage, the made figures and the motes ask. */
     fun scenes(): Boolean = live && setting { GuildmarkConfig.TOWN_TALE_SCENES.get() }
+
+    /** The pace (townTalePace): a capital draws `min(1, TaleLimits.TALE_CHANCE x pace)` each day (9.2). 1.0 before the config is read. */
+    fun pace(): Double = try {
+        GuildmarkConfig.TOWN_TALE_PACE.get()
+    } catch (e: IllegalStateException) {
+        1.0
+    }
+
+    /** Whether memorials are set in the world (townTaleMemorials), on top of [live]: the street job queue asks. Off, they are recorded and not placed (11.5). */
+    fun memorials(): Boolean = live && setting { GuildmarkConfig.TOWN_TALE_MEMORIALS.get() }
+
+    /**
+     * What wants to know how a tale goes, besides the templates: the following (banner, sound), the telling (a stage that
+     * is due), the milestones. Add one with [listen] from [register]. Every call is guarded, so one that throws is logged
+     * and the rest still hear; none is called while tales are off.
+     */
+    interface Listener {
+        /** A tale was seeded in [level]'s capital (its cast chosen, the first step entered). */
+        fun started(level: ServerLevel, t: Tale) {}
+
+        /** [t] moved to another step (not the first one it began at). */
+        fun stepped(level: ServerLevel, t: Tale) {}
+
+        /** [player] took [t] up: their part is IN (the begin banner and its chime, 5.3). */
+        fun joined(level: ServerLevel, t: Tale, player: ServerPlayer) {}
+
+        /** [t] ended and every stage of the finish has run, or been tried: stage 10 (6.7). */
+        fun ended(level: ServerLevel, t: Tale) {}
+
+        /** Tales went off (11.5): the stages end, the bodies are let go, the rows are emptied, and nothing is written to any tale. */
+        fun paused(level: ServerLevel) {}
+    }
+
+    private val listeners = ArrayList<Listener>()
+
+    /** Adds [listener], once, at setup. */
+    fun listen(listener: Listener) {
+        if (listener !in listeners) listeners += listener
+    }
+
+    /** Tells every [Listener] by [what], each guarded. */
+    internal fun hear(what: (Listener) -> Unit) {
+        for (l in listeners.toList()) {
+            try {
+                what(l)
+            } catch (e: Exception) {
+                Guildmark.LOGGER.warn("Something listening to the tales failed", e)
+            }
+        }
+    }
 
     /**
      * Sets [live] to [enabled]. Part A calls it at server start, once a second, and at the top of every [day], and adds

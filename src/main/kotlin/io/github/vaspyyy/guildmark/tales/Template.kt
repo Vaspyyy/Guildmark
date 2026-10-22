@@ -98,7 +98,17 @@ class Ending(val letter: String, val word: String) {
 }
 
 /** How a cast member went, for `Template.gone` (5.6): they died, or their household left the town. */
-enum class Gone { DIED, LEFT }
+enum class Gone {
+    DIED, LEFT;
+
+    /** "died" or "left": what [Cast.gone] keeps and the `Why` kind the engine adds. */
+    val id: String get() = name.lowercase()
+
+    companion object {
+        /** The way [id] names, or null for "" and anything else. */
+        fun of(id: String): Gone? = entries.firstOrNull { it.id == id }
+    }
+}
 
 /**
  * What a template's `seed` is given (2.1): the records are read through [level] and the capital's [here] (its places) and market
@@ -279,6 +289,14 @@ interface Template {
     /** Whether the tale's days move on with the clock when tales come back on (11.5). False for the one tied to a festival's date (the lantern). */
     val thaws: Boolean get() = true
 
+    /**
+     * The cast slots that are standing, not essential (1.2, 5.6; the "Kind" column of each tale's cast table in section 8): when
+     * a standing person dies or their household leaves, the engine casts a stand-in of the same trade from the nearest home and
+     * adds a `Why`, and only if there is none does the template's [gone] run. Every other slot is essential: [gone] runs at once,
+     * and a tale whose essential slots have all gone ends at W. Empty (every slot essential) unless a template says.
+     */
+    val standing: Set<String> get() = setOf()
+
     /** The names of the `n` slots it uses, in order (at most [TaleLimits.NUMBERS]), for `tale show` and `tale check`. */
     val numbers: List<String> get() = listOf()
 
@@ -314,6 +332,12 @@ interface Template {
 
     /** A cast member died or left (5.6): the template's path, after the engine's own. */
     fun gone(c: Ctx, t: Tale, slot: String, how: Gone)
+
+    /**
+     * A standing slot's person went and a stand-in was cast in their place (5.6): [wasHeld] says the slot was held, so the
+     * template holds the new person where the old one stood (`c.hold`). Nothing by default.
+     */
+    fun stoodIn(c: Ctx, t: Tale, slot: String, wasHeld: Boolean) {}
 
     /** The consequences of an ending (6, stage 2 of the finish pipeline): the household, the flips, the works, the stall's seal, the memorial. */
     fun end(c: Ctx, t: Tale, ending: String)
