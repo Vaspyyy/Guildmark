@@ -4,7 +4,6 @@ and the pieces the renderer moves: the door (shut, and shut and hot), a tray.
 
 Authored facing north: its front is at z = 1, toward -z, and the block's `facing` turns it.
 """
-import math
 
 from cook_geo import cube, ring, disc
 import cook_hob as H

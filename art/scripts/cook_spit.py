@@ -4,9 +4,8 @@ of an enamel drip tray, unlit and lit, a burnt overlay, and the pieces the rende
 
 Authored facing north: the rod runs east to west (along x) and the crank is at the east end; the block's `facing` turns the lot.
 """
-import math
 
-from cook_geo import cube, crossed, along
+from cook_geo import cube, crossed
 import cook_tex
 
 # ---------------------------------------------------------------- the numbers (px)
@@ -35,7 +34,6 @@ def posts():
         z0, z1 = POST_Z
         zm0, zm1 = 7.5, 8.5
         # The post: full where there is no rest, a fork (two prongs) at each rest, the slot 1.0 tall with the rod resting at its foot
-        runs = [(2.0, REST_Y[2] - 0.5)]
         cuts = [(REST_Y[2] - 0.5, REST_Y[2] + 0.6), (REST_Y[1] - 0.5, REST_Y[1] + 0.6), (REST_Y[0] - 0.5, REST_Y[0] + 0.6)]
         full = [(2.0, cuts[0][0])]
         for a, b in zip(cuts, cuts[1:]):

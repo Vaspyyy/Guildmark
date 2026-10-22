@@ -9,7 +9,7 @@ import math
 
 import numpy as np
 
-from cook_geo import cube, along, ring, lathe, disc, crossed, move, Ry, euler_xyz, r3
+from cook_geo import cube, along, ring, lathe, disc, crossed, Ry, euler_xyz, r3
 import cook_tex
 
 # ---------------------------------------------------------------- the numbers (px)

@@ -5,9 +5,8 @@ purple flower spikes with a few white flowers at the last age.
 import math
 
 import numpy as np
-from PIL import Image
 
-from hdkit import Canvas, grid, seg_dist, bands, rand, fbm, outline, rim, poly, disc, tone
+from hdkit import Canvas, grid, seg_dist, bands, rand, outline, rim, disc
 
 T = 32
 LEAF = [(20, 34, 28), (38, 62, 46), (62, 98, 64), (96, 134, 84), (138, 170, 108), (186, 208, 148)]       # sage green, a little grey in the lights

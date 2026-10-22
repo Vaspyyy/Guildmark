@@ -15,8 +15,7 @@ from PIL import Image
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
-from hdkit import (PAL, Canvas, grid, vnoise, fbm, rand, bands, mix, tone, ramp, blur, light, cavity, seg_dist, disc, ellipse,
-                   rect, poly, edge, grow, dist_in)
+from hdkit import PAL, Canvas, grid, vnoise, fbm, rand, bands, light, cavity, seg_dist, edge
 
 T = 32
 ALL = np.ones((T, T), bool)
@@ -252,7 +251,6 @@ def charred_log(seed=461):
     xs, ys = grid(T)
     rng = np.random.default_rng(seed + 1)
     # The checks are long in the grain's direction (across the texture)
-    stretch = np.hypot((xs - pts[owner, 0] + T / 2) % T - T / 2, ((ys - pts[owner, 1] + T / 2) % T - T / 2) * 1.6)
     H = np.clip(edge_d, 0, 2.2) * 0.9 + 0.1 * fbm(T, T, 3, seed + 2)
     t = 0.5 + rng.uniform(-0.1, 0.1, len(pts))[owner] + 0.9 * light(H, 1.4) + 0.12 * (fbm(T, T, 4, seed + 3) - 0.5)
     t = np.where(edge_d < 0.8, t - 0.22, t)

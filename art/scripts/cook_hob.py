@@ -4,11 +4,8 @@ that sits on top (the renderer's piece, which lays the pieces of food in it).
 
 Authored facing north: its front (the mouth, the damper) is at z = 1, toward -z. The pan is centred on (8, 8).
 """
-import math
 
-import numpy as np
-
-from cook_geo import cube, along, ring, lathe, disc, crossed, quad
+from cook_geo import cube, ring, disc, crossed
 import cook_tex
 
 # ---------------------------------------------------------------- the numbers (px)

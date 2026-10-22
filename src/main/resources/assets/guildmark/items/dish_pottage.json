@@ -1,0 +1,146 @@
+{
+  "model": {
+    "type": "minecraft:composite",
+    "models": [
+      {
+        "type": "minecraft:select",
+        "property": "minecraft:component",
+        "component": "guildmark:dish_stage",
+        "cases": [
+          {
+            "when": 1,
+            "model": {
+              "type": "minecraft:select",
+              "property": "minecraft:component",
+              "component": "guildmark:dish_tier",
+              "cases": [
+                {
+                  "when": 1,
+                  "model": {
+                    "type": "minecraft:model",
+                    "model": "guildmark:item/cook/dish_pottage_pale",
+                    "tints": [
+                      {
+                        "type": "minecraft:constant",
+                        "value": 13091512
+                      }
+                    ]
+                  }
+                }
+              ],
+              "fallback": {
+                "type": "minecraft:model",
+                "model": "guildmark:item/dish_pottage",
+                "tints": [
+                  {
+                    "type": "minecraft:constant",
+                    "value": 13091512
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "when": 2,
+            "model": {
+              "type": "minecraft:select",
+              "property": "minecraft:component",
+              "component": "guildmark:dish_tier",
+              "cases": [
+                {
+                  "when": 1,
+                  "model": {
+                    "type": "minecraft:model",
+                    "model": "guildmark:item/cook/dish_pottage_pale",
+                    "tints": [
+                      {
+                        "type": "minecraft:constant",
+                        "value": 10405760
+                      }
+                    ]
+                  }
+                }
+              ],
+              "fallback": {
+                "type": "minecraft:model",
+                "model": "guildmark:item/dish_pottage",
+                "tints": [
+                  {
+                    "type": "minecraft:constant",
+                    "value": 10405760
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "fallback": {
+          "type": "minecraft:select",
+          "property": "minecraft:component",
+          "component": "guildmark:dish_tier",
+          "cases": [
+            {
+              "when": 1,
+              "model": {
+                "type": "minecraft:model",
+                "model": "guildmark:item/cook/dish_pottage_pale"
+              }
+            }
+          ],
+          "fallback": {
+            "type": "minecraft:model",
+            "model": "guildmark:item/dish_pottage"
+          }
+        }
+      },
+      {
+        "type": "minecraft:select",
+        "property": "minecraft:component",
+        "component": "guildmark:dish_stage",
+        "cases": [
+          {
+            "when": 1,
+            "model": {
+              "type": "minecraft:empty"
+            }
+          },
+          {
+            "when": 2,
+            "model": {
+              "type": "minecraft:model",
+              "model": "guildmark:item/cook/flies"
+            }
+          }
+        ],
+        "fallback": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/cook/dish_pottage_steam"
+        }
+      },
+      {
+        "type": "minecraft:select",
+        "property": "minecraft:component",
+        "component": "guildmark:dish_tier",
+        "cases": [
+          {
+            "when": 3,
+            "model": {
+              "type": "minecraft:model",
+              "model": "guildmark:item/cook/stamp_fine"
+            }
+          },
+          {
+            "when": 4,
+            "model": {
+              "type": "minecraft:model",
+              "model": "guildmark:item/cook/stamp_hallmarked"
+            }
+          }
+        ],
+        "fallback": {
+          "type": "minecraft:empty"
+        }
+      }
+    ]
+  }
+}

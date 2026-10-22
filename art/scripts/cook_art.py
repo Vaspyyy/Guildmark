@@ -72,8 +72,6 @@ Part M3 reads them too, for its "hand through the box" check. The helpers are on
 TOOLS (Part M3): each tool model carries a `display` block for the held item, grip toward the sprite's lower left and the working end toward
 its upper right, as the swords are; `TOOL_LAYOUT` below gives each tool's grip and tip on its 32 px sprite (x, y from the top left).
 """
-import json
-import math
 import os
 import sys
 
@@ -88,6 +86,8 @@ import cook_oven
 import cook_spit
 import cook_helpers
 import cook_herb
+import cook_tools
+import cook_itemdefs
 
 ROOT = os.path.normpath(os.path.join(HERE, '..', '..'))
 ASSETS = os.path.join(ROOT, 'src/main/resources/assets/guildmark')
@@ -102,12 +102,7 @@ STATION_BOXES = {
 }
 
 # ---------------------------------------------------------------- the tools: grip and tip on the 32 px sprite (x, y from the top left)
-TOOL_LAYOUT = {
-    'cooks_ladle': {'grip': (6, 26), 'tip': (24, 8)},
-    'cooks_knife': {'grip': (6, 26), 'tip': (25, 7)},
-    'turner': {'grip': (6, 26), 'tip': (24, 8)},
-    'gilded_ladle': {'grip': (6, 26), 'tip': (24, 8)},
-}
+TOOL_LAYOUT = cook_tools.LAYOUT                    # painted by cook_tools.py, from its own constants
 
 MODULES = (cook_stewpot, cook_hob, cook_oven, cook_spit, cook_helpers)
 
@@ -244,6 +239,7 @@ def main(argv):
     write_textures(assets)
     write_models(assets, block_models())
     write_states_and_items(assets)
+    cook_itemdefs.write_items(assets)
 
 
 if __name__ == '__main__':

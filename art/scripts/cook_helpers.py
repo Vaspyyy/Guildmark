@@ -6,10 +6,7 @@ Authored facing north (front toward -z); the block's `facing` turns the ones tha
 """
 import math
 
-import numpy as np
-
-from cook_geo import cube, along, ring, disc, crossed, quad
-import cook_tex
+from cook_geo import cube, quad
 
 # ---------------------------------------------------------------- the numbers (px)
 BOARD_TOP = 10.2                                         # the Prep Board: the top of the chopping board (where the heap lies)
@@ -115,7 +112,6 @@ def _larder_door(angle_free=True):
     ya, yb = 2.7, y1 - 1.2
     els = []
     f = ('up', 'down', 'north', 'south', 'west', 'east')
-    t = 0.7
     z_a, z_b = hz - 0.0, hz + 0.9                          # the door's thickness
     els.append(cube((hx, ya, z_a), (hx + 1.3, yb, z_b), 'darkwood', f))
     els.append(cube((dx1 - 1.3, ya, z_a), (dx1, yb, z_b), 'darkwood', f))
