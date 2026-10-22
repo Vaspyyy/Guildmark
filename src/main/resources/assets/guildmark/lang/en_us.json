@@ -7667,5 +7667,18 @@
   "say.guildmark.talk.detail.tale.age.long": "Long ago",
   "talk.guildmark.choice.tale.probe.word": "Any word on it?",
   "say.guildmark.talk.tale.probe.helper_0": "Nothing yet. I'm keeping my eyes open.",
-  "say.guildmark.talk.tale.probe.helper_1": "Not a word. You'll hear it from me first."
+  "say.guildmark.talk.tale.probe.helper_1": "Not a word. You'll hear it from me first.",
+  "message.guildmark.cook.home.fit.pot": "A pot now hangs over the hearth.",
+  "message.guildmark.cook.home.fit.pot.kitchen": "A pot now stands in the kitchen.",
+  "message.guildmark.cook.home.fit.oven": "A bake oven is built into the wall.",
+  "message.guildmark.cook.home.fit.hob": "A hob is built in beside the fire.",
+  "message.guildmark.cook.home.fit.board": "A prep board stands by the door.",
+  "message.guildmark.cook.home.fit.plate": "A plate is laid on the table.",
+  "message.guildmark.cook.home.fit.plates": "%s plates are laid on the table.",
+  "message.guildmark.cook.home.fit.larder": "A larder stands ready for the pantry.",
+  "message.guildmark.cook.home.fit.larder.slab": "The sideboard now holds a larder.",
+  "message.guildmark.cook.home.fit.menu": "A menu board stands by the door, to list the pantry.",
+  "message.guildmark.cook.home.fit.spit": "A spit is set at the chimney breast, with a clockwork jack to turn it.",
+  "message.guildmark.cook.home.fit.herbs": "%s herb plots are sown in the kitchen bed.",
+  "message.guildmark.cook.home.fit.herbs.one": "A herb plot is sown in the kitchen bed."
 }
