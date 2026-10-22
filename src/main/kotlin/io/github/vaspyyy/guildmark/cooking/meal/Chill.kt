@@ -36,8 +36,8 @@ import kotlin.math.roundToInt
  *  5. they do not have the Warmth effect;
  *  6. they wear fewer than two pieces of `#minecraft:freeze_immune_wearables` (leather), and play in survival or adventure.
  *
- * Chilled is the harmful effect [CookRegistry.CHILLED], refreshed to five seconds at each look while the six hold and
- * taken off at the first look they do not, so it ends within a moment of a roof, a fire, daylight or a hot meal. It costs
+ * Chilled is the harmful effect [CookRegistry.CHILLED], refreshed at each look while the six hold and taken off by name at
+ * the first look they do not, so it ends within two seconds of a roof, a fire, daylight or a hot meal. It costs
  * a little hunger and a slower return of stamina ([Meals.regen]). **It never does damage** (nothing here hurts anyone),
  * **never stops sprinting or healing** (the hunger is not added where it could take food under what natural healing,
  * or a sprint, needs: [starve]) and **cannot kill** (it never takes food below 7, so never to starvation, and it
@@ -47,8 +47,12 @@ object Chill {
     /** How often the cold is looked at, in ticks (9.3). */
     internal const val PERIOD = 40
 
-    /** What Chilled is refreshed to at each look, in ticks: it ends within five seconds of the cold going. */
-    private const val HOLD = 100
+    /**
+     * What Chilled is refreshed to at each look, in ticks. The game blinks the icon of an effect with 200 ticks or fewer left, which
+     * at the design's five seconds would be the whole time, so this is a little over that and the icon stays steady. It is only the
+     * fallback: [release] takes Chilled off by name at the first look that fails, so the cold ends within [PERIOD] ticks of its cause.
+     */
+    private const val HOLD = 260
 
     /** The action-bar line comes at most once in five minutes (4.3), in ticks. */
     private const val LINE_EVERY = 6000L
