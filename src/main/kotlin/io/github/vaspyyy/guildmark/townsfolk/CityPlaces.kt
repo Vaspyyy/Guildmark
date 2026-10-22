@@ -8,6 +8,7 @@ import io.github.vaspyyy.guildmark.city.plan.Folk
 import io.github.vaspyyy.guildmark.city.plan.Housing
 import io.github.vaspyyy.guildmark.city.plan.Kind
 import io.github.vaspyyy.guildmark.city.plan.M
+import io.github.vaspyyy.guildmark.village.VillageNames
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.server.level.ServerLevel
@@ -21,7 +22,7 @@ import java.util.concurrent.CompletableFuture
  * plan's residents lives (see [Census] and [Housing], which work it out in the city's own frame). Worked out off
  * the server thread the first time anyone asks, and kept for the session.
  */
-class CityPlaces(val capital: CapitalPiece, val census: Census, val housing: Housing) {
+class CityPlaces(val capital: CapitalPiece, val census: Census, val housing: Housing) : TownPlaces {
     /** A door's lower half; [inside] and [outside] are the blocks to stand on either side of it. */
     class Door(val pos: BlockPos, val inward: Direction) {
         val inside: BlockPos get() = pos.relative(inward)
@@ -67,7 +68,7 @@ class CityPlaces(val capital: CapitalPiece, val census: Census, val housing: Hou
     private fun world(a: At): BlockPos = capital.world(a.x, a.y, a.z)
     private fun dir(d: io.github.vaspyyy.guildmark.city.plan.Dir): Direction = capital.direction(d)
 
-    val lodgings: Map<Int, Lodging> = census.lodges.mapValues { (_, l) ->
+    override val lodgings: Map<Int, Lodging> = census.lodges.mapValues { (_, l) ->
         val a = capital.world(l.lot.x0, minOf(l.bottom, l.y), l.lot.z0)
         val b = capital.world(l.lot.x1, maxOf(l.top, l.y + 2), l.lot.z1)
         val box = BoundingBox(minOf(a.x, b.x), minOf(a.y, b.y), minOf(a.z, b.z), maxOf(a.x, b.x), maxOf(a.y, b.y), maxOf(a.z, b.z))
@@ -87,47 +88,52 @@ class CityPlaces(val capital: CapitalPiece, val census: Census, val housing: Hou
         )
     }
 
-    val stalls: List<Stall> = census.stalls.mapIndexed { i, s ->
+    override val stalls: List<Stall> = census.stalls.mapIndexed { i, s ->
         Stall(i, Spot(world(s.keeper), dir(s.facing)), Spot(world(s.customer), dir(s.facing.opposite)), s.counter.map(::world), s.goods.map(::world), s.trade)
     }
 
     /** Where the merchants who keep no market stall stand to serve, facing their customers: at the quay's stalls and the like. */
-    val counters: List<Spot> = census.residents.filter { it.folk == Folk.MERCHANT && it.post != null }
+    override val counters: List<Spot> = census.residents.filter { it.folk == Folk.MERCHANT && it.post != null }
         .map { Spot(world(it.post!!), dir(it.facing ?: io.github.vaspyyy.guildmark.city.plan.Dir.N)) }
         .filter { s -> stalls.none { it.keeper.pos == s.pos } }
 
-    val wells: List<BlockPos> = census.wells.map(::world)
-    val lamps: List<BlockPos> = census.lamps.map(::world)
-    val benches: List<Spot> = census.benches.map { Spot(world(it.at), dir(it.facing)) }
+    override val wells: List<BlockPos> = census.wells.map(::world)
+    override val lamps: List<BlockPos> = census.lamps.map(::world)
+    override val benches: List<Spot> = census.benches.map { Spot(world(it.at), dir(it.facing)) }
 
-    val fields: List<Field> = census.fields.mapIndexed { i, f ->
+    override val fields: List<Field> = census.fields.mapIndexed { i, f ->
         val crops = f.crops.map(::world)
         var box = BoundingBox(crops.first())
         for (c in crops) box = box.encapsulate(c)
         Field(i, crops, box, f.lodge)
     }
 
-    val woodpiles: List<Woodpile> = census.woodpiles.map { Woodpile(world(it.at), dir(it.along), it.lodge) }
+    override val woodpiles: List<Woodpile> = census.woodpiles.map { Woodpile(world(it.at), dir(it.along), it.lodge) }
 
     /** The market square's middle, at its standing height. */
-    val market: BlockPos = census.plan.market.let { m -> capital.standing(census.plan, io.github.vaspyyy.guildmark.city.plan.CityPlan.Pos((m.x0 + m.x1) / 2, (m.z0 + m.z1) / 2)) }
+    override val market: BlockPos = census.plan.market.let { m -> capital.standing(census.plan, io.github.vaspyyy.guildmark.city.plan.CityPlan.Pos((m.x0 + m.x1) / 2, (m.z0 + m.z1) / 2)) }
 
-    val bell: BlockPos = capital.bell
+    override val bell: BlockPos = capital.bell
+
+    override val centre: BlockPos get() = capital.center
+    override val name: String get() = VillageNames.of(capital.boardAnchor)
+    override val kind: TownKind get() = TownKind.CAPITAL
+    override val harbour: Boolean get() = census.plan.harbour != null
 
     /** The market board: its anchor (the bottom middle cell), and the way its face looks (see [io.github.vaspyyy.guildmark.block.MarketBoardBlock]). */
-    val marketBoard: Spot = census.plan.let { plan ->
+    override val marketBoard: Spot = census.plan.let { plan ->
         Spot(capital.world(plan.marketBoard.x, plan.level(plan.marketBoard.x, plan.marketBoard.z), plan.marketBoard.z), dir(plan.marketBoardFacing))
     }
 
     /** The building whose ground [pos] is on, if any. */
-    fun lodgingAt(pos: BlockPos): Lodging? {
+    override fun lodgingAt(pos: BlockPos): Lodging? {
         val (x, z) = capital.local(pos.x, pos.z)
         val l = census.lodgeAt(x, z) ?: return null
         return lodgings[l.id]
     }
 
     /** Every lodging of [kind], nearest [pos] first. */
-    fun nearest(pos: BlockPos, kinds: Collection<String>): List<Lodging> =
+    override fun nearest(pos: BlockPos, kinds: Collection<String>): List<Lodging> =
         lodgings.values.filter { it.kind in kinds }.sortedBy { it.box.center.distSqr(pos) }
 
     /**
