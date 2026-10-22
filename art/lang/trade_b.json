@@ -1,5 +1,11 @@
 {
   "item.guildmark.tally": "Tally",
+  "gui.guildmark.tally.page.word": "Word",
+  "gui.guildmark.tally.page.routes": "Routes",
+  "gui.guildmark.tally.page.held": "Held",
+  "gui.guildmark.tally.page.ledger": "Ledger",
+  "gui.guildmark.tally.page.standing": "Standing",
+  "gui.guildmark.tally.page.key": "Press %s",
   "message.guildmark.trade.report.filed": "Your slip is taken and the board's row is chalked again from it. The town thinks the better of you.",
   "message.guildmark.trade.report.off": "The Word is off: there is no board to report to.",
   "message.guildmark.trade.report.nowhere": "A report is handed in at a town's board: stand in a capital.",

@@ -7890,5 +7890,11 @@
   "say.guildmark.talk.detail.trade.unit.hour": "hour",
   "say.guildmark.talk.detail.trade.unit.hours": "hours",
   "say.guildmark.talk.detail.trade.unit.day": "day",
-  "say.guildmark.talk.detail.trade.unit.days": "days"
+  "say.guildmark.talk.detail.trade.unit.days": "days",
+  "gui.guildmark.tally.page.word": "Word",
+  "gui.guildmark.tally.page.routes": "Routes",
+  "gui.guildmark.tally.page.held": "Held",
+  "gui.guildmark.tally.page.ledger": "Ledger",
+  "gui.guildmark.tally.page.standing": "Standing",
+  "gui.guildmark.tally.page.key": "Press %s"
 }
