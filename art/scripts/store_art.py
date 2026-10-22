@@ -470,9 +470,302 @@ def door_board_model():
     return K.model(els, 'w_iron')
 
 
+# ================================================================== the strongbox and the counting frame: their materials
+def coin_tile(seed=7301):
+    """A heap of gold Marks seen from above, 32 x 32 texels (a block face at two to a pixel), wrapping on itself: about fifty coins
+    lying about each other, each a bright rim round a worn field with a small mark struck in it and a shadow under it, the dark of
+    the gaps between them showing through."""
+    n = 32
+    p = Pic(n)
+    p.flat(p.R(0, 0, n, n), K.COIN, 0.05)
+    rng = np.random.default_rng(seed)
+    coins = sorted(((rng.uniform(0, n), rng.uniform(0, n), rng.uniform(2.6, 3.4), rng.uniform(0.7, 1.0), rng.uniform(0, 180),
+                     rng.uniform(0.42, 0.78), rng.uniform(0.0, 1.0)) for _ in range(52)), key=lambda c: c[6])
+    for cx0, cy0, r, sq, rot, tone, _ in coins:
+        for ox in (-n, 0, n):
+            for oy in (-n, 0, n):
+                cx, cy = cx0 + ox, cy0 + oy
+                if cx < -r - 2 or cx > n + r + 2 or cy < -r - 2 or cy > n + r + 2:
+                    continue
+                body = p.E(cx, cy, r, r * sq, rot)
+                p.cv.over(p.E(cx + 0.9, cy + 1.1, r, r * sq, rot) & ~body, K.COIN[0], 0.6)
+                p.cel(body, K.COIN, base=tone, hi=0.26, lo=0.3, lw=1, dw=1)
+                inner = p.E(cx, cy, r - 1.2, (r - 1.2) * sq, rot)
+                p.flat(inner, K.COIN, tone - 0.1)
+                p.flat(p.E(cx + 0.3, cy + 0.3, 0.8, 0.8 * sq, rot) & inner, K.COIN, tone - 0.22)
+                if 0 <= int(cx - 0.4) < n and 0 <= int(cy - 0.4) < n:
+                    p.px(cx - 0.4, cy - 0.4, K.COIN[4], 0.9)
+    return p.cv
+
+
+W.TILE_PAINTERS['coins'] = coin_tile
+
+# the block models name a mesh painter's tile by the picture it is saved as
+BLOCK_TEX = {'dark_h': 'fit_dark_h', 'dark_v': 'fit_dark_v', 'dark_end': 'fit_dark_end', 'brass': 'fit_brass', 'leather': 'fit_leather',
+             'parch': 'fit_parchment', 'coins': 'fit_coins', 'iron': 'w_iron'}
+FACE_BLOCK = {'front': 'north', 'back': 'south', 'top': 'up', 'bottom': 'down', 'right': 'east', 'left': 'west'}
+ALL_FACES = tuple(FACE_BLOCK)
+
+
+def box(name, b, tiles, faces=ALL_FACES):
+    """A box of a mesh part, written once for the mesh and for the block model: [b] is (x0, x1, y0, y1, z0, z1) from its part's origin,
+    [tiles] the tile of each face ('*' for the rest), [faces] the faces it shows (the mesh's names)."""
+    return (name, b, tiles, tuple(faces))
+
+
+def mesh_box(spec, edge=0.2):
+    name, (x0, x1, y0, y1, z0, z1), tiles, faces = spec
+    return mbox(name, x0, x1, y0, y1, z0, z1, K.tiled(name, tiles, edge), faces)
+
+
+def model_box(spec, origin, turn=0.0):
+    """The block-model element of [spec]: its part standing at [origin] (block px), turned [turn] degrees about x (model space)."""
+    name, (x0, x1, y0, y1, z0, z1), tiles, faces = spec
+    ox, oy, oz = origin
+    tex = {FACE_BLOCK[f]: BLOCK_TEX[t] for f, t in tiles.items() if f != '*'}
+    tex['*'] = BLOCK_TEX[tiles['*']]
+    return W.cube((ox + x0, oy + y0, oz + z0), (ox + x1, oy + y1, oz + z1), tex, [FACE_BLOCK[f] for f in faces],
+                  rot=W.Rx(turn) if turn else None, origin=origin)
+
+
+# ================================================================== the strongbox
+BOX_X, BOX_Z, BOX_Y = (1.0, 15.0), (2.7, 11.3), (0.7, 7.0)      # the body: across, front to back, the foot of its walls to its rim
+LID_PIVOT = (8.0, 7.0, 11.6)                                    # the hinge pin, in the block's model space: the lid turns about x through it
+LID_OPEN = 94.0                                                 # the most it opens (degrees): it leans back a little, short of the wall behind
+LID_OPEN_TICKS, LID_SHUT_TICKS, LID_SETTLE_TICKS = 6.0, 8.0, 30.0
+LID_OVER, LID_FALL, LID_BOUNCE = 0.9, 6.0, 0.045                # opening: the curve's overshoot (3%); shutting: ticks it falls, the rebound's fraction
+HASP_SWING, HASP_TAU, HASP_PERIOD = 16.0, 7.0, 10.0
+LID_HALF, LID_FRONT, LID_BACK = 7.3, -9.7, 0.5                  # in the lid's frame (origin at the pin, z south): half its width, its front, its back
+LID_SKIRT, LID_CROWN = 1.5, 3.2                                 # the height of its rim, and of the top of its arch
+LID_FLAT = (-6.0, -3.2)                                         # the flat of the arch, front to back
+BEVEL = math.degrees(math.atan2(LID_CROWN - LID_SKIRT, LID_FLAT[0] - LID_FRONT))      # the arch's two slopes
+BEVEL_LEN = math.hypot(LID_CROWN - LID_SKIRT, LID_FLAT[0] - LID_FRONT)
+HASP_AT = (0.0, 0.0, LID_FRONT)                                 # where the hasp hangs from, in the lid's frame: its pin, at the seam
+BAND_X, BAND_W = 4.3, 1.5                                       # the lid's two iron straps: their middles' distance from the middle, their width
+LOCK = ((5.8, 10.2), (1.4, 5.6), BOX_Z[0] - 0.8)                          # the lock case on the body's front: across, from the floor, how far out its face stands (z)
+
+
+def lid_layout():
+    """The lid by the part that holds each box: [(part, (y, z) of its origin in the lid's frame, turn about x, [boxes])]. The part "lid" is
+    the root (a skirt, the flat of the arch, the straps over it, the hinge's knuckles); "lid_slope_f" and "lid_slope_b" are the arch's two
+    slopes (turned about their lower edges so that their tops rise to the flat), its children; "hasp" is the iron strap that hangs from
+    the lid's front over the lock case: a part of its own, since it hangs from the lid and swings free of it."""
+    H, SK, CR, F, B = LID_HALF, LID_SKIRT, LID_CROWN, LID_FRONT, LID_BACK
+    fl0, fl1 = LID_FLAT
+    wood = {'*': 'dark_h', 'left': 'dark_end', 'right': 'dark_end'}
+    iron = {'*': 'iron'}
+    root = [box('lid_skirt', (-H, H, 0.0, SK, F, B), {**wood, 'bottom': 'leather'}, ('front', 'back', 'bottom', 'left', 'right')),
+            box('lid_flat', (-H, H, SK, CR, fl0, fl1), wood, ('top', 'left', 'right'))]
+    f_ = [box('lid_slope_f', (-H, H, -1.0, 0.0, 0.0, BEVEL_LEN), wood, ('top', 'left', 'right'))]
+    b_ = [box('lid_slope_b', (-H, H, -1.0, 0.0, -BEVEL_LEN, 0.0), wood, ('top', 'left', 'right'))]
+    for k, sx in enumerate((-BAND_X, BAND_X)):
+        x0, x1 = sx - BAND_W / 2, sx + BAND_W / 2
+        root += [box(f'lid_band_flat{k}', (x0, x1, CR, CR + 0.22, fl0, fl1), iron, ('top', 'left', 'right')),
+                 box(f'lid_band_front{k}', (x0, x1, 0.0, SK, F - 0.18, F), iron, ('front', 'left', 'right', 'bottom', 'top')),
+                 box(f'lid_band_back{k}', (x0, x1, 0.0, SK, B, B + 0.18), iron, ('back', 'left', 'right', 'bottom', 'top')),
+                 box(f'lid_hinge{k}', (x0, x1, 0.0, SK, B + 0.18, B + 0.4), iron, ('back', 'left', 'right', 'bottom', 'top')),
+                 box(f'lid_knuckle{k}', (sx - 1.5, sx + 1.5, -0.5, 0.5, -0.5, 0.5), iron)]
+        f_.append(box(f'lid_band_slope_f{k}', (x0, x1, 0.0, 0.22, 0.0, BEVEL_LEN), iron, ('top', 'left', 'right')))
+        b_.append(box(f'lid_band_slope_b{k}', (x0, x1, 0.0, 0.22, -BEVEL_LEN, 0.0), iron, ('top', 'left', 'right')))
+        for j, z in enumerate((-5.4, -3.8)):                                       # nail heads along the strap's flat
+            root.append(box(f'lid_nail{k}{j}', (sx - 0.3, sx + 0.3, CR + 0.22, CR + 0.42, z - 0.3, z + 0.3), {'*': 'brass'}, ('top', 'front', 'back', 'left', 'right')))
+    hasp = [box('hasp_strap', (-1.3, 1.3, -2.8, 0.6, -0.5, 0.0), iron, ('front', 'left', 'right', 'bottom', 'top')),
+            box('hasp_tongue', (-0.9, 0.9, -3.6, -2.8, -0.5, 0.0), iron, ('front', 'left', 'right', 'bottom')),
+            box('hasp_knuckle', (-1.7, 1.7, -0.5, 0.7, -0.8, 0.2), {'*': 'brass'}),
+            box('hasp_rivet0', (-1.0, -0.4, -1.8, -1.2, -0.7, -0.5), {'*': 'brass'}, ('front', 'top', 'left', 'right')),
+            box('hasp_rivet1', (0.4, 1.0, -1.8, -1.2, -0.7, -0.5), {'*': 'brass'}, ('front', 'top', 'left', 'right'))]
+    return [('lid', (0.0, 0.0), 0.0, root), ('lid_slope_f', (SK, F), -BEVEL, f_), ('lid_slope_b', (SK, B), BEVEL, b_),
+            ('hasp', (HASP_AT[1], HASP_AT[2]), 0.0, hasp)]
+
+
+def lid_parts():
+    """The strongbox mesh's parts: "lid" (with the two slopes as its children) and "hasp", each standing at its own origin."""
+    built = {}
+    for name, (y, z), turn, boxes in lid_layout():
+        built[name] = mpart(name, (0.0, y, z), (turn, 0.0, 0.0), [mesh_box(b) for b in boxes])
+    built['hasp'].pivot = (0.0, 0.0, 0.0)           # a part drawn on its own stands at its origin: the table gives where
+    built['lid'].children = [built['lid_slope_f'], built['lid_slope_b']]
+    return [built['lid'], built['hasp']]
+
+
+def lid_reach(angle):
+    """The furthest south (z from the pin) any corner of the lid and the hasp (hanging plumb) comes with the lid turned [angle] degrees."""
+    th = math.radians(angle)
+    far = -1e9
+    for name, (oy, oz), turn, boxes in lid_layout():
+        t = math.radians(turn)
+        for _, (x0, x1, y0, y1, z0, z1), _, _ in boxes:
+            if name == 'hasp':                         # it hangs plumb from its pivot, which goes with the lid
+                far = max(far, oy * math.sin(th) + oz * math.cos(th) + z1)
+                continue
+            for y in (y0, y1):
+                for z in (z0, z1):
+                    yl, zl = oy + y * math.cos(t) - z * math.sin(t), oz + y * math.sin(t) + z * math.cos(t)
+                    far = max(far, yl * math.sin(th) + zl * math.cos(th))
+    return far
+
+
+def lid_elements():
+    """The lid and its hasp, shut, as block-model elements: what strongbox_shut shows."""
+    px, py, pz = LID_PIVOT
+    els = []
+    for name, (y, z), turn, boxes in lid_layout():
+        els += [model_box(b, (px, py + y, pz + z), turn) for b in boxes]
+    return els
+
+
+def strongbox_body(coins=True):
+    """The strongbox without its lid: dark oak planks bound in iron (straps up the front and back, plates on the corners, a band and
+    a carrying ring on each end, four iron shoes), a brass lock case in the middle of its front, and, open to the top, the coins heaped in it."""
+    c = W.cube
+    x0, x1 = BOX_X
+    z0, z1 = BOX_Z
+    y0, y1 = BOX_Y
+    t = 1.1
+    plank = {'*': 'fit_dark_h', 'up': 'fit_dark_end'}
+    els = [c((x0, y0, z0), (x1, y0 + 0.9, z1), {'*': 'fit_dark_h', 'down': 'fit_dark_end'}),
+           c((x0, y0 + 0.9, z0), (x1, y1, z0 + t), plank),
+           c((x0, y0 + 0.9, z1 - t), (x1, y1, z1), plank),
+           c((x0, y0 + 0.9, z0 + t), (x0 + t, y1, z1 - t), plank),
+           c((x1 - t, y0 + 0.9, z0 + t), (x1, y1, z1 - t), plank)]
+    for fx in (x0 + 0.4, x1 - 2.4):                                           # the iron shoes
+        for fz in (z0 + 0.5, z1 - 2.5):
+            els.append(c((fx, 0.0, fz), (fx + 2.0, y0 + 0.02, fz + 2.0), 'w_iron'))
+    for cx, sx in ((x0, 1.0), (x1, -1.0)):                                    # the corners' plates
+        for cz, sz in ((z0, 1.0), (z1, -1.0)):
+            ax, bx = sorted((cx - 0.15 * sx, cx + 1.4 * sx))
+            az, bz = sorted((cz - 0.15 * sz, cz + 1.4 * sz))
+            els.append(c((ax, y0, az), (bx, y1, bz), 'w_iron', ('north', 'south', 'west', 'east', 'up')))
+    for sx in (4.8, 11.2):                                                    # the straps up the front and the back, rivets on the front's
+        els.append(c((sx - 0.75, y0, z0 - 0.15), (sx + 0.75, y1, z0), 'w_iron', ('north', 'west', 'east', 'up')))
+        els.append(c((sx - 0.75, y0, z1), (sx + 0.75, y1, z1 + 0.15), 'w_iron', ('south', 'west', 'east', 'up')))
+        for ry in (1.9, 3.5, 5.1, 6.3):
+            els.append(c((sx - 0.3, ry, z0 - 0.3), (sx + 0.3, ry + 0.5, z0 - 0.15), 'fit_brass', ('north', 'up', 'west', 'east')))
+    for ax, bx, out, s in ((x0 - 0.15, x0, 'west', -1.0), (x1, x1 + 0.15, 'east', 1.0)):       # a band round each end, and a carrying ring
+        els.append(c((ax, 2.4, z0 + 1.4), (bx, 3.9, z1 - 1.4), 'w_iron', (out, 'north', 'south', 'up')))
+        ex = x0 if s < 0 else x1
+        for ez in (z0 + 3.0, z1 - 3.8):
+            a, b = sorted((ex, ex + 0.6 * s))
+            els.append(c((a, 4.1, ez), (b, 5.3, ez + 0.8), 'w_iron'))
+        a, b = sorted((ex + 0.5 * s, ex + 1.1 * s))
+        els.append(c((a, 4.5, z0 + 3.0), (b, 5.3, z1 - 3.0), 'w_iron'))
+    (lx0, lx1), (ly0, ly1), lz = LOCK                                          # the lock case, its keyhole
+    els.append(c((lx0, ly0, lz), (lx1, ly1, z0), 'fit_brass', ('north', 'up', 'down', 'west', 'east')))
+    els.append(c((7.55, ly0 + 0.9, lz - 0.1), (8.45, ly0 + 1.7, lz), 'fit_dark_end', ('north',)))
+    if coins:
+        els += [c((x0 + 1.3, y0 + 0.9, z0 + t + 0.2), (x1 - 1.3, 5.4, z1 - t - 0.2), 'fit_coins'),
+                c((x0 + 1.6, 5.4, z0 + t + 0.5), (x1 - 1.6, 6.1, z1 - t - 0.5), 'fit_coins'),
+                c((4.0, 6.1, 6.6), (12.0, 6.7, 10.2), 'fit_coins', ('up', 'north', 'south', 'west', 'east'))]
+        for cx, cz in ((5.4, 7.0), (7.4, 9.6), (9.0, 7.6)):                                        # coins lying on the heap
+            els += W.disc(cx, cz, 6.7, 6.95, 1.0, 'fit_coins')
+        els += W.disc(11.0, 8.6, 6.7, 6.85, 1.0, 'fit_coins') + W.disc(11.0, 8.6, 6.85, 7.0, 0.9, 'fit_coins')      # and a pair stacked
+    return els
+
+
+def strongbox_model(shut=False):
+    return K.model(strongbox_body(coins=not shut) + (lid_elements() if shut else []), 'fit_dark_h')
+
+
+def strongbox_mesh():
+    return K.Mesh('strongboxMesh', 'store_strongbox', lid_parts(), 96, 48, 2,
+                  'The strongbox\'s moving pieces: "lid" (turning about x at the hinge pin, [StoreArt.LID_X] and the rest, as [StoreArt.lidAngle] says; '
+                  'positive lifts its front, toward -z; "lid_slope_f" and "lid_slope_b" are its children) and "hasp", the iron strap that hangs from the '
+                  'lid\'s front over the lock case and swings free of it (drawn at [StoreArt.HASP_X] and the rest, in the lid\'s own frame, turned about '
+                  'x by [StoreArt.haspAngle]).')
+
+
+# ================================================================== the counting frame
+FRAME_X, POST_W = (1.0, 15.0), 1.2
+FRAME_INNER = (FRAME_X[0] + POST_W, FRAME_X[1] - POST_W)       # the rods' free length: from post to post
+ROD_Z = 8.0
+ROWS, COLS = 6, 9                                              # rods, and beads on a rod
+ROD_Y0, ROD_DY = 3.4, 1.7                                      # the lowest rod, the distance between rods
+BEAD = (0.85, 1.5, 1.5)                                        # a bead: along the rod, tall, deep
+BEAD_TICKS, BEAD_STAGGER, BEAD_ROW_GAP = 7.0, 0.7, 5.0         # ticks a bead takes to slide; between one bead's start and the next's; between one row's and the next's
+BEAD_REBOUND = 0.035                                           # how far a bead springs back off the stack it hits (a fraction of its slide)
+
+
+def bead_y(row):
+    return ROD_Y0 + ROD_DY * row
+
+
+def bead_rest(i, counted):
+    """The x bead [i] rests at: [counted] (against the west post, the viewer's right, bead 0 nearest it) or not (against the east post,
+    bead 8 nearest it)."""
+    w = BEAD[0]
+    return FRAME_INNER[0] + (i + 0.5) * w if counted else FRAME_INNER[1] - (COLS - i - 0.5) * w
+
+
+def counting_frame_model():
+    c = W.cube
+    x0, x1 = FRAME_X
+    inner0, inner1 = FRAME_INNER
+    z0, z1 = 6.5, 9.5
+    cap = {'*': 'w_oak_h', 'up': 'w_oak_end'}
+    els = []
+    for fx0, fx1 in ((x0, x0 + 2.4), (x1 - 2.4, x1)):                                                # the feet, crossways
+        els.append(c((fx0, 0.0, 4.9), (fx1, 0.8, 11.1), {'*': 'w_oak_h', 'up': 'w_oak_end', 'down': 'w_oak_end'}))
+    for px0, px1 in ((x0, x0 + POST_W), (x1 - POST_W, x1)):                                          # the posts
+        els.append(c((px0, 0.8, z0), (px1, 14.6, z1), {'*': 'w_oak', 'up': 'w_oak_end'}))
+    els.append(c((inner0, 0.8, z0 + 0.4), (inner1, 2.6, z1 - 0.4), cap))                              # the bottom beam
+    els.append(c((inner0, 12.8, z0 + 0.4), (inner1, 13.9, z1 - 0.4), cap))                            # the top beam
+    els.append(c((x0 - 0.3, 13.9, z0 - 0.3), (x1 + 0.3, 14.6, z1 + 0.3), cap))                        # its cap rail
+    for kx in (x0 + 0.2, x1 - 1.4):                                                                  # a brass knob on each post
+        els.append(c((kx + 0.2, 14.6, z0 + 0.9), (kx + 1.0, 15.2, z1 - 0.9), 'fit_brass'))
+    for r in range(ROWS):                                                                            # the rods, a brass nut at each end
+        y = bead_y(r)
+        els.append(c((inner0, y - 0.22, ROD_Z - 0.22), (inner1, y + 0.22, ROD_Z + 0.22), 'fit_brass'))
+        els.append(c((x0 - 0.25, y - 0.4, ROD_Z - 0.4), (x0, y + 0.4, ROD_Z + 0.4), 'fit_brass'))
+        els.append(c((x1, y - 0.4, ROD_Z - 0.4), (x1 + 0.25, y + 0.4, ROD_Z + 0.4), 'fit_brass'))
+    els.append(c((6.6, 12.9, z0 + 0.3), (9.4, 13.8, z0 + 0.4), 'fit_brass', ('north',)))               # the maker's plate on the top beam
+    els.append(c((3.0, 1.0, z0 + 0.3), (6.6, 2.4, z0 + 0.4), 'fit_parchment', ('north',)))            # a tally slip pinned on the bottom beam
+    return K.model(els, 'w_oak_h')
+
+
+def bead_painter(key, ramp_):
+    """A bead: glossy, lit from above left, its ends (against its neighbours) in shade."""
+    def fn(face, w, h, rng):
+        a = np.zeros((h, w, 4))
+        ys, xs = np.mgrid[0:h, 0:w]
+        v = ys / max(1.0, h - 1.0)
+        u = xs / max(1.0, w - 1.0)
+        if face in ('front', 'back'):
+            t = 0.82 - 0.52 * v - 0.08 * u + 0.04 * (rng.random((h, w)) - 0.5)
+            t = np.where((v < 0.34) & (u < 0.55), t + 0.12, t)
+        elif face == 'top':
+            t = np.full((h, w), 0.8) + 0.04 * (rng.random((h, w)) - 0.5)
+        elif face == 'bottom':
+            t = np.full((h, w), 0.18)
+        else:
+            t = np.full((h, w), 0.34) + 0.04 * (rng.random((h, w)) - 0.5)
+        a[..., :3] = bands(ramp_, t, 0.0)
+        a[..., 3] = 255
+        return a
+    return K.tt.painter(key, fn, light=False)
+
+
+def beads_parts():
+    out = []
+    bw, bh, bd = BEAD
+    for r in range(ROWS):
+        ramp_ = K.COLOURS[r][2]
+        for i in range(COLS):
+            n = f'bead_{r}_{i}'
+            out.append(mpart(n, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), [mbox(n, -bw / 2, bw / 2, -bh / 2, bh / 2, -bd / 2, bd / 2, bead_painter(n, ramp_))]))
+    return out
+
+
+def beads_mesh():
+    return K.Mesh('beadsMesh', 'store_beads', beads_parts(), 64, 40, 4,
+                  'The counting frame\'s %d beads, each its own part "bead_<row>_<i>" (row 0 the lowest rod, painted red, blue, green, amber, violet '
+                  'and teal going up; i from 0 to %d, bead 0 the one that rests nearest the west post when counted), standing at its own middle: '
+                  'draw it where [StoreArt.beadY] and [StoreArt.beadX] put it.' % (ROWS * COLS, COLS - 1))
+
+
 def models():
     """Every block model: its name under models/block/ and its JSON."""
-    return {'store_scale': scale_model(), 'store_name_board': name_board_model(), 'store_door_board': door_board_model()}
+    return {'store_scale': scale_model(), 'store_name_board': name_board_model(), 'store_door_board': door_board_model(),
+            'strongbox': strongbox_model(), 'strongbox_shut': strongbox_model(shut=True), 'counting_frame': counting_frame_model()}
 
 
 def blockstates():
@@ -481,13 +774,15 @@ def blockstates():
 
 def block_textures():
     """Every picture the block models use that the works do not have: name -> image, under textures/block/trade/."""
-    out = {name: K.tile_image(tile) for name, tile in (('fit_brass', 'brass'), ('fit_leather', 'leather'), ('fit_parchment', 'parch'))}
+    out = {name: K.tile_image(tile) for name, tile in (('fit_brass', 'brass'), ('fit_leather', 'leather'), ('fit_parchment', 'parch'),
+                                                       ('fit_dark_h', 'dark_h'), ('fit_dark_v', 'dark_v'), ('fit_dark_end', 'dark_end'),
+                                                       ('fit_coins', 'coins'))}
     out['store_scale_dial'] = dial_texture()
     return out
 
 
 def meshes():
-    return [scale_mesh(), boards_mesh()]
+    return [scale_mesh(), boards_mesh(), strongbox_mesh(), beads_mesh()]
 
 
 # ================================================================== the boards' motion
@@ -511,6 +806,58 @@ def door_turn(age, frm, to):
     return damped(age, frm, to, DOOR_TICKS, DOOR_TAU, DOOR_PERIOD, DOOR_FADE)
 
 
+# ================================================================== the strongbox's and the frame's motion
+def lid_angle(age, frm, to):
+    """Degrees the lid is turned about its pin (positive lifts its front), [age] ticks after it was told to go from [frm] to [to]. Opening
+    (LID_OPEN_TICKS): quick off the mark, a little past the stop and back. Shutting (LID_SHUT_TICKS): it falls, quickening, strikes the
+    rim at LID_FALL and springs up a few degrees and down again."""
+    if age <= 0:
+        return frm
+    if to > frm:
+        if age >= LID_OPEN_TICKS:
+            return to
+        w = age / LID_OPEN_TICKS - 1.0
+        return frm + (to - frm) * (1.0 + (LID_OVER + 1.0) * w ** 3 + LID_OVER * w ** 2)
+    if age >= LID_SHUT_TICKS:
+        return to
+    d = frm - to
+    if age < LID_FALL:
+        u = age / LID_FALL
+        return to + d * (1.0 - u * u)
+    return to + d * LID_BOUNCE * math.sin(math.pi * (age - LID_FALL) / (LID_SHUT_TICKS - LID_FALL))
+
+
+def hasp_angle(age, frm, to):
+    """Degrees the hasp is turned about x relative to the lid (positive lifts its tip toward -z): it hangs plumb, so against the lid it
+    turns the opposite way to the lid's own turn, and as the lid starts and stops it swings a little, rattling on for LID_SETTLE_TICKS."""
+    swing = 0.0
+    if 0.0 < age < LID_SETTLE_TICKS:
+        swing = (HASP_SWING * abs(to - frm) / LID_OPEN * math.exp(-age / HASP_TAU) * math.sin(2.0 * math.pi * age / HASP_PERIOD)
+                 * (1.0 - smooth((age - 22.0) / 8.0)))
+    return -lid_angle(age, frm, to) + swing
+
+
+def bead_progress(age):
+    """How far (0 to 1) a bead has slid [age] ticks after it was pushed: away fast, slowing, and as it meets the stack it springs back a hair."""
+    if age <= 0:
+        return 0.0
+    if age >= BEAD_TICKS:
+        return 1.0
+    u = age / BEAD_TICKS
+    s = 1.0 - (1.0 - u) ** 3
+    if u > 0.8:
+        s -= BEAD_REBOUND * math.sin(math.pi * (u - 0.8) / 0.2)
+    return s
+
+
+def bead_x(i, to_counted, age, order):
+    """The x of bead [i] sliding to the counted side (or back off it) [age] ticks after its row was told, [order] beads ahead of it in the
+    push (0 for the first away): each starts BEAD_STAGGER after the one before, so a push runs along the row."""
+    frm, to = bead_rest(i, not to_counted), bead_rest(i, to_counted)
+    return frm + (to - frm) * bead_progress(age - order * BEAD_STAGGER)
+
+
+
 # ================================================================== StoreArt.kt
 KT_HEADER = '// GENERATED by art/scripts/store_art.py: edit the script, not this file.\n'
 
@@ -523,13 +870,15 @@ def kotlin_store(meshes_):
     return KT_HEADER + f'''package io.github.vaspyyy.guildmark.client.trade
 
 {K.KT_MESH_IMPORTS}import kotlin.math.PI
+import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.exp
 import kotlin.math.sin
 
 /**
  * The Carriers' Store's fittings as their renderers draw them: the clerk's scale (its beam and two pans), the name board over the
- * door and the open / shut board on it, with the numbers each is moved by. Sizes are pixels (a sixteenth of a block) in the block's
+ * door and the open / shut board on it, the strongbox's lid and hasp and the counting frame's beads, with the numbers each is moved
+ * by. Sizes are pixels (a sixteenth of a block) in the block's
  * own model space (x east, y up, z south, the block facing north, its front toward -z), which a renderer turns by its facing as
  * the blockstate turns the model; times are ticks; angles degrees. Each mesh part's origin is its pivot: the renderer translates to
  * where the table below puts it, rotates about it, then scale(-1f, -1f, 1f) and submitModelPart, as WorksHoistRenderer does.
@@ -537,6 +886,8 @@ import kotlin.math.sin
 internal object StoreArt {{
     const val SCALE_TEXTURE = "textures/block/trade/store_scale.png"
     const val BOARDS_TEXTURE = "textures/block/trade/store_boards.png"
+    const val STRONGBOX_TEXTURE = "textures/block/trade/store_strongbox.png"
+    const val BEADS_TEXTURE = "textures/block/trade/store_beads.png"
 
     // ---------------------------------------------------------------- the scale
 
@@ -632,6 +983,122 @@ internal object StoreArt {{
     /** The door board's turn in degrees, [age] ticks after it was told to turn from [from] to [to] (0: OPEN, 180: SHUT): round, a little past, back, still by [DOOR_TICKS]. */
     fun doorTurn(age: Float, from: Float, to: Float): Float = damped(age, from, to, DOOR_TICKS, {kf(DOOR_TAU)}, {kf(DOOR_PERIOD)}, {kf(DOOR_FADE)})
 
+    // ---------------------------------------------------------------- the strongbox
+
+    /**
+     * The strongbox's hinge pin in its block's model space: "lid" is drawn there, turned about x by [lidAngle] (rotateDegrees(Axis.XP, angle)
+     * in model space: positive lifts the lid's front, toward -z); it opens as far as [LID_OPEN] and then leans back a little. The two
+     * slopes of its arch are its children and go with it.
+     */
+    const val LID_X = {kf(LID_PIVOT[0])}
+    const val LID_Y = {kf(LID_PIVOT[1])}
+    const val LID_Z = {kf(LID_PIVOT[2])}
+    const val LID_OPEN = {kf(LID_OPEN)}
+
+    /** Where "hasp" is drawn, in the lid's own frame (its origin is the pin; x across, y up, z south): after the lid's turn, translate here and turn about x by [haspAngle], then draw it. */
+    const val HASP_X = {kf(HASP_AT[0])}
+    const val HASP_Y = {kf(HASP_AT[1])}
+    const val HASP_Z = {kf(HASP_AT[2])}
+
+    /** Ticks the lid takes to open and to shut, and after which the lid and its hasp are quite still. */
+    const val LID_OPEN_TICKS = {kf(LID_OPEN_TICKS)}
+    const val LID_SHUT_TICKS = {kf(LID_SHUT_TICKS)}
+    const val LID_SETTLE_TICKS = {kf(LID_SETTLE_TICKS)}
+    private const val LID_OVER = {kf(LID_OVER)}
+    private const val LID_FALL = {kf(LID_FALL)}
+    private const val LID_BOUNCE = {kf(LID_BOUNCE)}
+    private const val HASP_SWING = {kf(HASP_SWING)}
+    private const val HASP_TAU = {kf(HASP_TAU)}
+    private const val HASP_PERIOD = {kf(HASP_PERIOD)}
+
+    /**
+     * The lid's turn in degrees [age] ticks after it was told to go from [from] to [to] (0 shut, [LID_OPEN] open). Opening takes
+     * [LID_OPEN_TICKS]: quick off the mark, a little past the stop and back. Shutting takes [LID_SHUT_TICKS]: it falls, quickening, strikes
+     * the rim at {LID_FALL:g} ticks and springs up a few degrees and down again.
+     */
+    fun lidAngle(age: Float, from: Float, to: Float): Float {{
+        if (age <= 0f) return from
+        if (to > from) {{
+            if (age >= LID_OPEN_TICKS) return to
+            val w = age / LID_OPEN_TICKS - 1f
+            return from + (to - from) * (1f + (LID_OVER + 1f) * w * w * w + LID_OVER * w * w)
+        }}
+        if (age >= LID_SHUT_TICKS) return to
+        val d = from - to
+        if (age < LID_FALL) {{
+            val u = age / LID_FALL
+            return to + d * (1f - u * u)
+        }}
+        return to + d * LID_BOUNCE * sin(PI.toFloat() * (age - LID_FALL) / (LID_SHUT_TICKS - LID_FALL))
+    }}
+
+    /**
+     * The hasp's turn in degrees about x in model space, relative to the lid (positive lifts its tip toward -z), [age] ticks after the lid was
+     * told to go from [from] to [to]: it hangs plumb, so against the lid it turns the other way to the lid's own turn, and as the lid starts
+     * and stops it swings, rattling on until [LID_SETTLE_TICKS].
+     */
+    fun haspAngle(age: Float, from: Float, to: Float): Float {{
+        var swing = 0f
+        if (age > 0f && age < LID_SETTLE_TICKS) {{
+            swing = HASP_SWING * abs(to - from) / LID_OPEN * exp(-age / HASP_TAU) * sin(2f * PI.toFloat() * age / HASP_PERIOD) *
+                (1f - smooth((age - 22f) / 8f))
+        }}
+        return -lidAngle(age, from, to) + swing
+    }}
+
+    // ---------------------------------------------------------------- the counting frame
+
+    /** Rods (rows, row 0 the lowest) and the beads on each of them: [beadsMesh] has "bead_<row>_<i>" for each. */
+    const val BEAD_ROWS = {ROWS}
+    const val BEAD_COLS = {COLS}
+
+    /** Each rod's z and the first one's y in the block's model space, and the distance between rods: a bead is drawn at its x, [beadY] and [BEAD_Z]. */
+    const val BEAD_Z = {kf(ROD_Z)}
+    const val BEAD_Y0 = {kf(ROD_Y0)}
+    const val BEAD_DY = {kf(ROD_DY)}
+    private const val ROD_LO = {kf(FRAME_INNER[0])}
+    private const val ROD_HI = {kf(FRAME_INNER[1])}
+    private const val BEAD_W = {kf(BEAD[0])}
+
+    fun beadY(row: Int): Float = BEAD_Y0 + BEAD_DY * row
+
+    /**
+     * The x bead [i] rests at: [counted], set against the west post (the viewer's right, bead 0 nearest it), or not, against the east post
+     * (bead 8 nearest it). A row showing a count of n has beads 0 until n counted.
+     */
+    fun beadRestX(i: Int, counted: Boolean): Float =
+        if (counted) ROD_LO + (i + 0.5f) * BEAD_W else ROD_HI - (BEAD_COLS - i - 0.5f) * BEAD_W
+
+    /** Ticks a bead takes to slide, between one bead's start and the next's in a push, and between one row's start and the next's when several change. */
+    const val BEAD_TICKS = {kf(BEAD_TICKS)}
+    const val BEAD_STAGGER = {kf(BEAD_STAGGER)}
+    const val BEAD_ROW_GAP = {kf(BEAD_ROW_GAP)}
+    private const val BEAD_REBOUND = {kf(BEAD_REBOUND)}
+
+    /** How far (0 to 1) a bead has slid [age] ticks after it was pushed: away fast, slowing, and as it meets the stack it springs back a hair. */
+    fun beadProgress(age: Float): Float {{
+        if (age <= 0f) return 0f
+        if (age >= BEAD_TICKS) return 1f
+        val u = age / BEAD_TICKS
+        var s = 1f - (1f - u) * (1f - u) * (1f - u)
+        if (u > 0.8f) s -= BEAD_REBOUND * sin(PI.toFloat() * (u - 0.8f) / 0.2f)
+        return s
+    }}
+
+    /**
+     * The x of bead [i] sliding to the counted side (or back off it) [age] ticks after its row was told, [order] beads ahead of it in the
+     * push (0 for the first away: the lowest-numbered when counting up, the highest when counting down), each starting [BEAD_STAGGER] after
+     * the one before. A bead not moving is at [beadRestX].
+     */
+    fun beadX(i: Int, toCounted: Boolean, age: Float, order: Int): Float {{
+        val from = beadRestX(i, !toCounted)
+        val to = beadRestX(i, toCounted)
+        return from + (to - from) * beadProgress(age - order * BEAD_STAGGER)
+    }}
+
+    /** Ticks a row takes to settle when [moved] of its beads slide. */
+    fun rowTicks(moved: Int): Float = BEAD_TICKS + BEAD_STAGGER * (moved - 1).coerceAtLeast(0)
+
     // ---------------------------------------------------------------- the common
 
     private fun smooth(u: Float): Float {{
@@ -669,9 +1136,23 @@ def check(assets, kotlin_dir, models_dir, meshes_):
     byname = {m.fun: m for m in meshes_}
     c.mesh_parts(byname['scaleMesh'], ['beam', 'pan_goods', 'pan_weights'])
     c.mesh_parts(byname['boardsMesh'], ['board', 'door_board'])
-    for want in ('beam', 'tongue', 'pan_goods', 'pan_weights', 'sack', 'weight_0', 'weight_1', 'weight_2'):
-        if want not in [p.name for m in meshes_ for p in m.model.all_parts()]:
-            c.bad('the scale lacks the part ' + want)
+    c.mesh_parts(byname['strongboxMesh'], ['lid', 'hasp'])
+    c.mesh_parts(byname['beadsMesh'], [f'bead_{r}_{i}' for r in range(ROWS) for i in range(COLS)])
+    have = [p.name for m in meshes_ for p in m.model.all_parts()]
+    for want in ('beam', 'tongue', 'pan_goods', 'pan_weights', 'sack', 'weight_0', 'weight_1', 'weight_2', 'lid_slope_f', 'lid_slope_b'):
+        if want not in have:
+            c.bad('a mesh lacks the part ' + want)
+    # the lid's tip, at its widest open, is short of the wall behind the box; every bead rests between the posts and clear of its neighbours
+    if LID_PIVOT[2] + lid_reach(LID_OPEN * (1.0 + 4.0 * LID_OVER ** 3 / (27.0 * (LID_OVER + 1.0) ** 2))) > 16.0:
+        c.bad('the strongbox lid, open, reaches the wall behind it')
+    for counted in (False, True):
+        xs = [bead_rest(i, counted) for i in range(COLS)]
+        if min(np.diff(xs)) < BEAD[0] - 1e-6 or xs[0] - BEAD[0] / 2 < FRAME_INNER[0] - 1e-6 or xs[-1] + BEAD[0] / 2 > FRAME_INNER[1] + 1e-6:
+            c.bad('the beads do not fit on the rod')
+    for lo, hi in ((0.0, LID_OPEN), (LID_OPEN, 0.0)):
+        top = max(lid_angle(a, lo, hi) for a in np.arange(0.0, 12.0, 0.25))
+        if top > LID_OPEN * 1.05:
+            c.bad('the lid goes past its stop by more than a twentieth')
     kt = os.path.join(kotlin_dir, 'StoreArt.kt')
     if not os.path.exists(kt):
         c.bad('StoreArt.kt is missing')

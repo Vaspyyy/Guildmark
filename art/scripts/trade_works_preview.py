@@ -37,13 +37,14 @@ def mp(rx=0.0, ry=0.0, rz=0.0):
     return W.Rz(rz) @ W.Ry(-ry) @ W.Rx(-rx)
 
 
-def draw(sc, mesh, part, at, extra=None, drop=(), scale=1.0, double=False, yaw=0.0, y=0, ref=None):
-    """Part [part] of [mesh], standing at [at] in model px (turned [yaw] about up, the block turned [y] as its blockstate does)."""
+def draw(sc, mesh, part, at, extra=None, drop=(), scale=1.0, double=False, yaw=0.0, y=0, ref=None, pose=None):
+    """Part [part] of [mesh], standing at [at] in model px (turned [yaw] about up, the block turned [y] as its blockstate does); [pose]
+    {part name: matrix} turns one of its children against the rest."""
     p = next(q for q in mesh.parts if q.name == part)
     q = without(p, set(drop)) if drop else p
     shim = type('M', (), {})()
     shim.parts, shim.model, shim.texture = [q], mesh.model, mesh.texture
-    sc.mesh(shim, part, W.placer(at=at, yaw=yaw, y=y, extra=extra), scale=scale, double=double, ref=ref)
+    sc.mesh(shim, part, W.placer(at=at, yaw=yaw, y=y, extra=extra), pose=pose, scale=scale, double=double, ref=ref)
 
 
 def preview_dir(out, *names):
@@ -91,7 +92,7 @@ def store_previews(assets, out):
     work = tempfile.mkdtemp(prefix='trade_store_')
     pa = scratch_assets(assets, work, S.block_textures(), ms)
     mods = S.models()
-    scale_m, boards_m = ms
+    scale_m, boards_m, box_m, beads_m = ms
     done = []
 
     # ---- the scale at a weighing: the sack set down, three weights added one by one until it is level
@@ -154,6 +155,95 @@ def store_previews(assets, out):
 
     frames = [boards_frame(t, False) for t in np.arange(0.0, 190.0, 2.0)]
     done.append(K.save_gif(frames, os.path.join(out, 'store_boards.gif'), ms=100))
+
+    # ---- the strongbox: shut, opened (the scribe pays in), held, shut again (the lid falls, strikes and the hasp rattles)
+    def lid_at(sc, at, angle, rel):
+        px, py, pz = S.LID_PIVOT
+        draw(sc, box_m, 'lid', (at[0] + px, at[1] + py, at[2] + pz), extra=mp(rx=angle), double=True)
+        th = math.radians(angle)
+        hx, hy, hz = S.HASP_AT
+        draw(sc, box_m, 'hasp', (at[0] + px + hx, at[1] + py + hy * math.cos(th) - hz * math.sin(th), at[2] + pz + hy * math.sin(th) + hz * math.cos(th)),
+             extra=mp(rx=angle + rel))
+
+    def lid_state(t):
+        """(from, to, age): the lid is told to open at tick 12 and to shut at tick 78."""
+        if t < 12:
+            return 0.0, 0.0, 0.0
+        if t < 78:
+            return 0.0, S.LID_OPEN, t - 12.0
+        return S.LID_OPEN, 0.0, t - 78.0
+
+    def box_frame(t, yaw=196.0, elev=24.0):
+        frm, to, age = lid_state(t)
+        angle, rel = S.lid_angle(age, frm, to), S.hasp_angle(age, frm, to)
+        if t < 12:
+            angle, rel = 0.0, 0.0
+        sc = K.Scene(pa)
+        floor(sc, -8, -8, 24, 24)
+        sc.model(mods['strongbox'])
+        lid_at(sc, (0, 0, 0), angle, rel)
+        return shot(sc, yaw=yaw, elev=elev, scale=17.0, size=(320, 300), center=(8, 6, 8))
+
+    frames = [box_frame(t) for t in np.arange(0.0, 130.0, 1.0)]
+    done.append(K.save_gif(frames, os.path.join(out, 'store_strongbox.gif'), ms=50))
+
+    # ---- the counting frame: rows pushed one after another, a run of beads away at a time, then some pulled back
+    plan = [(10.0, (4, 7, 2, 9, 5, 1)), (62.0, (6, 3, 8, 0, 5, 9)), (112.0, (0, 0, 0, 0, 0, 0))]
+
+    def row_state(r, t):
+        """(count before, count after, start tick) of the last change of row [r] begun by tick [t]."""
+        cur, ev = 0, (0, 0, -1e9)
+        for t0, counts in plan:
+            if counts[r] != cur:
+                start = t0 + r * S.BEAD_ROW_GAP
+                if t >= start:
+                    ev = (cur, counts[r], start)
+                cur = counts[r]
+        return ev
+
+    def frame_scene(t, counts_at=None):
+        sc = K.Scene(pa)
+        floor(sc, -8, -8, 24, 24)
+        sc.model(mods['counting_frame'])
+        for r in range(S.ROWS):
+            frm, to, start = row_state(r, t)
+            age = t - start
+            for i in range(S.COLS):
+                was, now = i < frm, i < to
+                if was == now:
+                    x = S.bead_rest(i, now)
+                else:
+                    order = (i - frm) if to > frm else (frm - 1 - i)
+                    x = S.bead_x(i, now, age, order)
+                draw(sc, beads_m, f'bead_{r}_{i}', (x, S.bead_y(r), S.ROD_Z))
+        return sc
+
+    def frame_frame(t):
+        return shot(frame_scene(t), yaw=192.0, elev=8.0, scale=19.0, size=(330, 340), center=(8, 7.5, 8))
+
+    frames = [frame_frame(t) for t in np.arange(0.0, 160.0, 1.0)]
+    done.append(K.save_gif(frames, os.path.join(out, 'store_counting_frame.gif'), ms=50))
+
+    # ---- the three beside the scale and the works' own "To let" board, at a size a room shows them
+    sc = K.Scene(pa)
+    floor(sc, -16, -16, 130, 40)
+    sc.model(works_model(assets, 'to_let_board'), at=(0, 0, 0))
+    sc.model(mods['store_scale'], at=(22, 0, 0))
+    px, py, pz = S.SCALE_PIVOT
+    draw(sc, scale_m, 'beam', (22 + px, py, pz))
+    for name, side in (('pan_goods', S.GOODS), ('pan_weights', S.WEIGHTS)):
+        hx, hy = S.hook_at(side, 0.0)
+        draw(sc, scale_m, name, (22 + hx, hy, 8.0))
+    sc.model(mods['strongbox_shut'], at=(48, 0, 0))
+    sc.model(mods['strongbox'], at=(70, 0, 0))
+    lid_at(sc, (70, 0, 0), S.LID_OPEN, S.hasp_angle(99.0, 0.0, S.LID_OPEN))
+    sc.model(mods['counting_frame'], at=(94, 0, 0))
+    for r in range(S.ROWS):
+        count = (3, 6, 1, 9, 4, 7)[r]
+        for i in range(S.COLS):
+            draw(sc, beads_m, f'bead_{r}_{i}', (94 + S.bead_rest(i, i < count), S.bead_y(r), S.ROD_Z))
+    done.append(save_sheet([sc.render(yaw=192.0, elev=14.0, scale=7.0, size=(860, 330), center=(66, 9, 8), ss=2)],
+                           os.path.join(out, 'store_fittings.png'), cols=1))
 
     # ---- the pictures: every texture, large
     items = [(n, im) for n, im in S.block_textures().items()] + [(m.texture, m.paint(), 800) for m in ms]

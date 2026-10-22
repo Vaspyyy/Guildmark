@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "guildmark:block/strongbox_shut"
+    },
+    "facing=east": {
+      "model": "guildmark:block/strongbox_shut",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "guildmark:block/strongbox_shut",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "guildmark:block/strongbox_shut",
+      "y": 270
+    }
+  }
+}

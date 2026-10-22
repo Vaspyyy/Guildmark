@@ -322,10 +322,18 @@ def tile_image(name):
 
 def write_bbmodel(models_dir, name, m, tex):
     """The mesh's Blockbench file (a modded entity, as the works' are), its texture shown at the declared size."""
+    import random
+    import uuid
     os.makedirs(models_dir, exist_ok=True)
     small = tex.resize((m.model.tex_w, m.model.tex_h), Image.LANCZOS)
+    rng, real = random.Random(name), uuid.uuid4
+    uuid.uuid4 = lambda: uuid.UUID(int=rng.getrandbits(128), version=4)           # the same ids every run, so a rerun changes nothing
+    try:
+        data = m.model.bbmodel(small, m.texture)
+    finally:
+        uuid.uuid4 = real
     with open(os.path.join(models_dir, name + '.bbmodel'), 'w') as f:
-        json.dump(m.model.bbmodel(small, m.texture), f)
+        json.dump(data, f)
 
 
 # ================================================================== the check of what was written

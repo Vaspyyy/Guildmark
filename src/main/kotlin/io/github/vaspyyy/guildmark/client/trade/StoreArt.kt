@@ -9,13 +9,15 @@ import net.minecraft.client.model.geom.builders.MeshDefinition
 import net.minecraft.core.Direction
 import java.util.EnumSet
 import kotlin.math.PI
+import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.exp
 import kotlin.math.sin
 
 /**
  * The Carriers' Store's fittings as their renderers draw them: the clerk's scale (its beam and two pans), the name board over the
- * door and the open / shut board on it, with the numbers each is moved by. Sizes are pixels (a sixteenth of a block) in the block's
+ * door and the open / shut board on it, the strongbox's lid and hasp and the counting frame's beads, with the numbers each is moved
+ * by. Sizes are pixels (a sixteenth of a block) in the block's
  * own model space (x east, y up, z south, the block facing north, its front toward -z), which a renderer turns by its facing as
  * the blockstate turns the model; times are ticks; angles degrees. Each mesh part's origin is its pivot: the renderer translates to
  * where the table below puts it, rotates about it, then scale(-1f, -1f, 1f) and submitModelPart, as WorksHoistRenderer does.
@@ -23,6 +25,8 @@ import kotlin.math.sin
 internal object StoreArt {
     const val SCALE_TEXTURE = "textures/block/trade/store_scale.png"
     const val BOARDS_TEXTURE = "textures/block/trade/store_boards.png"
+    const val STRONGBOX_TEXTURE = "textures/block/trade/store_strongbox.png"
+    const val BEADS_TEXTURE = "textures/block/trade/store_beads.png"
 
     // ---------------------------------------------------------------- the scale
 
@@ -119,6 +123,122 @@ internal object StoreArt {
     /** The door board's turn in degrees, [age] ticks after it was told to turn from [from] to [to] (0: OPEN, 180: SHUT): round, a little past, back, still by [DOOR_TICKS]. */
     fun doorTurn(age: Float, from: Float, to: Float): Float = damped(age, from, to, DOOR_TICKS, 3.4f, 8f, 4f)
 
+    // ---------------------------------------------------------------- the strongbox
+
+    /**
+     * The strongbox's hinge pin in its block's model space: "lid" is drawn there, turned about x by [lidAngle] (rotateDegrees(Axis.XP, angle)
+     * in model space: positive lifts the lid's front, toward -z); it opens as far as [LID_OPEN] and then leans back a little. The two
+     * slopes of its arch are its children and go with it.
+     */
+    const val LID_X = 8f
+    const val LID_Y = 7f
+    const val LID_Z = 11.6f
+    const val LID_OPEN = 94f
+
+    /** Where "hasp" is drawn, in the lid's own frame (its origin is the pin; x across, y up, z south): after the lid's turn, translate here and turn about x by [haspAngle], then draw it. */
+    const val HASP_X = 0f
+    const val HASP_Y = 0f
+    const val HASP_Z = -9.7f
+
+    /** Ticks the lid takes to open and to shut, and after which the lid and its hasp are quite still. */
+    const val LID_OPEN_TICKS = 6f
+    const val LID_SHUT_TICKS = 8f
+    const val LID_SETTLE_TICKS = 30f
+    private const val LID_OVER = 0.9f
+    private const val LID_FALL = 6f
+    private const val LID_BOUNCE = 0.045f
+    private const val HASP_SWING = 16f
+    private const val HASP_TAU = 7f
+    private const val HASP_PERIOD = 10f
+
+    /**
+     * The lid's turn in degrees [age] ticks after it was told to go from [from] to [to] (0 shut, [LID_OPEN] open). Opening takes
+     * [LID_OPEN_TICKS]: quick off the mark, a little past the stop and back. Shutting takes [LID_SHUT_TICKS]: it falls, quickening, strikes
+     * the rim at 6 ticks and springs up a few degrees and down again.
+     */
+    fun lidAngle(age: Float, from: Float, to: Float): Float {
+        if (age <= 0f) return from
+        if (to > from) {
+            if (age >= LID_OPEN_TICKS) return to
+            val w = age / LID_OPEN_TICKS - 1f
+            return from + (to - from) * (1f + (LID_OVER + 1f) * w * w * w + LID_OVER * w * w)
+        }
+        if (age >= LID_SHUT_TICKS) return to
+        val d = from - to
+        if (age < LID_FALL) {
+            val u = age / LID_FALL
+            return to + d * (1f - u * u)
+        }
+        return to + d * LID_BOUNCE * sin(PI.toFloat() * (age - LID_FALL) / (LID_SHUT_TICKS - LID_FALL))
+    }
+
+    /**
+     * The hasp's turn in degrees about x in model space, relative to the lid (positive lifts its tip toward -z), [age] ticks after the lid was
+     * told to go from [from] to [to]: it hangs plumb, so against the lid it turns the other way to the lid's own turn, and as the lid starts
+     * and stops it swings, rattling on until [LID_SETTLE_TICKS].
+     */
+    fun haspAngle(age: Float, from: Float, to: Float): Float {
+        var swing = 0f
+        if (age > 0f && age < LID_SETTLE_TICKS) {
+            swing = HASP_SWING * abs(to - from) / LID_OPEN * exp(-age / HASP_TAU) * sin(2f * PI.toFloat() * age / HASP_PERIOD) *
+                (1f - smooth((age - 22f) / 8f))
+        }
+        return -lidAngle(age, from, to) + swing
+    }
+
+    // ---------------------------------------------------------------- the counting frame
+
+    /** Rods (rows, row 0 the lowest) and the beads on each of them: [beadsMesh] has "bead_<row>_<i>" for each. */
+    const val BEAD_ROWS = 6
+    const val BEAD_COLS = 9
+
+    /** Each rod's z and the first one's y in the block's model space, and the distance between rods: a bead is drawn at its x, [beadY] and [BEAD_Z]. */
+    const val BEAD_Z = 8f
+    const val BEAD_Y0 = 3.4f
+    const val BEAD_DY = 1.7f
+    private const val ROD_LO = 2.2f
+    private const val ROD_HI = 13.8f
+    private const val BEAD_W = 0.85f
+
+    fun beadY(row: Int): Float = BEAD_Y0 + BEAD_DY * row
+
+    /**
+     * The x bead [i] rests at: [counted], set against the west post (the viewer's right, bead 0 nearest it), or not, against the east post
+     * (bead 8 nearest it). A row showing a count of n has beads 0 until n counted.
+     */
+    fun beadRestX(i: Int, counted: Boolean): Float =
+        if (counted) ROD_LO + (i + 0.5f) * BEAD_W else ROD_HI - (BEAD_COLS - i - 0.5f) * BEAD_W
+
+    /** Ticks a bead takes to slide, between one bead's start and the next's in a push, and between one row's start and the next's when several change. */
+    const val BEAD_TICKS = 7f
+    const val BEAD_STAGGER = 0.7f
+    const val BEAD_ROW_GAP = 5f
+    private const val BEAD_REBOUND = 0.035f
+
+    /** How far (0 to 1) a bead has slid [age] ticks after it was pushed: away fast, slowing, and as it meets the stack it springs back a hair. */
+    fun beadProgress(age: Float): Float {
+        if (age <= 0f) return 0f
+        if (age >= BEAD_TICKS) return 1f
+        val u = age / BEAD_TICKS
+        var s = 1f - (1f - u) * (1f - u) * (1f - u)
+        if (u > 0.8f) s -= BEAD_REBOUND * sin(PI.toFloat() * (u - 0.8f) / 0.2f)
+        return s
+    }
+
+    /**
+     * The x of bead [i] sliding to the counted side (or back off it) [age] ticks after its row was told, [order] beads ahead of it in the
+     * push (0 for the first away: the lowest-numbered when counting up, the highest when counting down), each starting [BEAD_STAGGER] after
+     * the one before. A bead not moving is at [beadRestX].
+     */
+    fun beadX(i: Int, toCounted: Boolean, age: Float, order: Int): Float {
+        val from = beadRestX(i, !toCounted)
+        val to = beadRestX(i, toCounted)
+        return from + (to - from) * beadProgress(age - order * BEAD_STAGGER)
+    }
+
+    /** Ticks a row takes to settle when [moved] of its beads slide. */
+    fun rowTicks(moved: Int): Float = BEAD_TICKS + BEAD_STAGGER * (moved - 1).coerceAtLeast(0)
+
     // ---------------------------------------------------------------- the common
 
     private fun smooth(u: Float): Float {
@@ -173,5 +293,79 @@ internal object StoreArt {
         root.addOrReplaceChild("board", CubeListBuilder.create().texOffs(0, 0).addBox(-14f, 1.2f, -0.6f, 28f, 8.5f, 1.2f).texOffs(60, 3).addBox(9.7f, -0.1f, -0.3f, 0.6f, 1.5f, 0.6f).texOffs(60, 0).addBox(-10.3f, -0.1f, -0.3f, 0.6f, 1.5f, 0.6f), PartPose.offset(0f, 0f, 0f))
         root.addOrReplaceChild("door_board", CubeListBuilder.create().texOffs(0, 11).addBox(-3f, 1.5f, -0.3f, 6f, 5f, 0.6f).texOffs(60, 6).addBox(-0.2f, 0f, -0.2f, 0.4f, 1.6f, 0.4f), PartPose.offset(0f, 0f, 0f))
         return LayerDefinition.create(mesh, 64, 32)
+    }
+
+    /** The strongbox's moving pieces: "lid" (turning about x at the hinge pin, [StoreArt.LID_X] and the rest, as [StoreArt.lidAngle] says; positive lifts its front, toward -z; "lid_slope_f" and "lid_slope_b" are its children) and "hasp", the iron strap that hangs from the lid's front over the lock case and swings free of it (drawn at [StoreArt.HASP_X] and the rest, in the lid's own frame, turned about x by [StoreArt.haspAngle]). On a 96 x 48 texture (store_strongbox.png ships at 2x that). */
+    @Suppress("LocalVariableName", "UNUSED_VARIABLE")
+    fun strongboxMesh(): LayerDefinition {
+        val mesh = MeshDefinition()
+        val root = mesh.root
+        val lid = root.addOrReplaceChild("lid", CubeListBuilder.create().texOffs(0, 0).addBox(-7.3f, -1.5f, -9.7f, 14.6f, 1.5f, 10.2f, EnumSet.of(Direction.WEST, Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.UP)).texOffs(14, 13).addBox(-7.3f, -3.2f, -6f, 14.6f, 1.7f, 2.8f, EnumSet.of(Direction.WEST, Direction.EAST, Direction.DOWN)).texOffs(22, 18).addBox(3.55f, -3.42f, -6f, 1.5f, 0.22f, 2.8f, EnumSet.of(Direction.WEST, Direction.EAST, Direction.DOWN)).texOffs(64, 18).addBox(3.55f, -1.5f, -9.88f, 1.5f, 1.5f, 0.18f, EnumSet.of(Direction.WEST, Direction.NORTH, Direction.EAST, Direction.DOWN, Direction.UP)).texOffs(52, 18).addBox(3.55f, -1.5f, 0.5f, 1.5f, 1.5f, 0.18f, EnumSet.of(Direction.WEST, Direction.EAST, Direction.SOUTH, Direction.DOWN, Direction.UP)).texOffs(76, 18).addBox(3.55f, -1.5f, 0.68f, 1.5f, 1.5f, 0.22f, EnumSet.of(Direction.WEST, Direction.EAST, Direction.SOUTH, Direction.DOWN, Direction.UP)).texOffs(88, 18).addBox(2.8f, -0.5f, -0.5f, 3f, 1f, 1f, EnumSet.of(Direction.WEST, Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.DOWN, Direction.UP)).texOffs(0, 21).addBox(4f, -3.62f, -5.7f, 0.6f, 0.2f, 0.6f, EnumSet.of(Direction.WEST, Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.DOWN)).texOffs(4, 21).addBox(4f, -3.62f, -4.1f, 0.6f, 0.2f, 0.6f, EnumSet.of(Direction.WEST, Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.DOWN)).texOffs(32, 18).addBox(-5.05f, -3.42f, -6f, 1.5f, 0.22f, 2.8f, EnumSet.of(Direction.WEST, Direction.EAST, Direction.DOWN)).texOffs(70, 18).addBox(-5.05f, -1.5f, -9.88f, 1.5f, 1.5f, 0.18f, EnumSet.of(Direction.WEST, Direction.NORTH, Direction.EAST, Direction.DOWN, Direction.UP)).texOffs(58, 18).addBox(-5.05f, -1.5f, 0.5f, 1.5f, 1.5f, 0.18f, EnumSet.of(Direction.WEST, Direction.EAST, Direction.SOUTH, Direction.DOWN, Direction.UP)).texOffs(82, 18).addBox(-5.05f, -1.5f, 0.68f, 1.5f, 1.5f, 0.22f, EnumSet.of(Direction.WEST, Direction.EAST, Direction.SOUTH, Direction.DOWN, Direction.UP)).texOffs(0, 19).addBox(-5.8f, -0.5f, -0.5f, 3f, 1f, 1f, EnumSet.of(Direction.WEST, Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.DOWN, Direction.UP)).texOffs(8, 21).addBox(-4.6f, -3.62f, -5.7f, 0.6f, 0.2f, 0.6f, EnumSet.of(Direction.WEST, Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.DOWN)).texOffs(42, 21).addBox(-4.6f, -3.62f, -4.1f, 0.6f, 0.2f, 0.6f, EnumSet.of(Direction.WEST, Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.DOWN)), PartPose.offset(0f, 0f, 0f))
+        lid.addOrReplaceChild("lid_slope_f", CubeListBuilder.create().texOffs(52, 6).addBox(-7.3f, 0f, 0f, 14.6f, 1f, 4.072f, EnumSet.of(Direction.WEST, Direction.EAST, Direction.DOWN)).texOffs(80, 12).addBox(3.55f, -0.22f, 0f, 1.5f, 0.22f, 4.072f, EnumSet.of(Direction.WEST, Direction.EAST, Direction.DOWN)).texOffs(0, 13).addBox(-5.05f, -0.22f, 0f, 1.5f, 0.22f, 4.072f, EnumSet.of(Direction.WEST, Direction.EAST, Direction.DOWN)), PartPose.offsetAndRotation(0f, -1.5f, -9.7f, 0.431f, 0f, 0f))
+        lid.addOrReplaceChild("lid_slope_b", CubeListBuilder.create().texOffs(52, 0).addBox(-7.3f, 0f, -4.072f, 14.6f, 1f, 4.072f, EnumSet.of(Direction.WEST, Direction.EAST, Direction.DOWN)).texOffs(52, 12).addBox(3.55f, -0.22f, -4.072f, 1.5f, 0.22f, 4.072f, EnumSet.of(Direction.WEST, Direction.EAST, Direction.DOWN)).texOffs(66, 12).addBox(-5.05f, -0.22f, -4.072f, 1.5f, 0.22f, 4.072f, EnumSet.of(Direction.WEST, Direction.EAST, Direction.DOWN)), PartPose.offsetAndRotation(0f, -1.5f, 0.5f, -0.431f, 0f, 0f))
+        root.addOrReplaceChild("hasp", CubeListBuilder.create().texOffs(14, 18).addBox(-1.3f, -0.6f, -0.5f, 2.6f, 3.4f, 0.5f, EnumSet.of(Direction.WEST, Direction.NORTH, Direction.EAST, Direction.DOWN, Direction.UP)).texOffs(8, 19).addBox(-0.9f, 2.8f, -0.5f, 1.8f, 0.8f, 0.5f, EnumSet.of(Direction.WEST, Direction.NORTH, Direction.EAST, Direction.UP)).texOffs(42, 18).addBox(-1.7f, -0.7f, -0.8f, 3.4f, 1.2f, 1f, EnumSet.of(Direction.WEST, Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.DOWN, Direction.UP)).texOffs(88, 20).addBox(0.4f, 1.2f, -0.7f, 0.6f, 0.6f, 0.2f, EnumSet.of(Direction.WEST, Direction.NORTH, Direction.EAST, Direction.DOWN)).texOffs(92, 20).addBox(-1f, 1.2f, -0.7f, 0.6f, 0.6f, 0.2f, EnumSet.of(Direction.WEST, Direction.NORTH, Direction.EAST, Direction.DOWN)), PartPose.offset(0f, 0f, 0f))
+        return LayerDefinition.create(mesh, 96, 48)
+    }
+
+    /** The counting frame's 54 beads, each its own part "bead_<row>_<i>" (row 0 the lowest rod, painted red, blue, green, amber, violet and teal going up; i from 0 to 8, bead 0 the one that rests nearest the west post when counted), standing at its own middle: draw it where [StoreArt.beadY] and [StoreArt.beadX] put it. On a 64 x 40 texture (store_beads.png ships at 4x that). */
+    @Suppress("LocalVariableName", "UNUSED_VARIABLE")
+    fun beadsMesh(): LayerDefinition {
+        val mesh = MeshDefinition()
+        val root = mesh.root
+        root.addOrReplaceChild("bead_0_0", CubeListBuilder.create().texOffs(0, 0).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_0_1", CubeListBuilder.create().texOffs(6, 0).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_0_2", CubeListBuilder.create().texOffs(12, 0).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_0_3", CubeListBuilder.create().texOffs(18, 0).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_0_4", CubeListBuilder.create().texOffs(24, 0).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_0_5", CubeListBuilder.create().texOffs(30, 0).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_0_6", CubeListBuilder.create().texOffs(36, 0).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_0_7", CubeListBuilder.create().texOffs(42, 0).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_0_8", CubeListBuilder.create().texOffs(48, 0).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_1_0", CubeListBuilder.create().texOffs(54, 0).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_1_1", CubeListBuilder.create().texOffs(0, 4).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_1_2", CubeListBuilder.create().texOffs(6, 4).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_1_3", CubeListBuilder.create().texOffs(12, 4).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_1_4", CubeListBuilder.create().texOffs(18, 4).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_1_5", CubeListBuilder.create().texOffs(24, 4).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_1_6", CubeListBuilder.create().texOffs(30, 4).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_1_7", CubeListBuilder.create().texOffs(36, 4).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_1_8", CubeListBuilder.create().texOffs(42, 4).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_2_0", CubeListBuilder.create().texOffs(48, 4).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_2_1", CubeListBuilder.create().texOffs(54, 4).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_2_2", CubeListBuilder.create().texOffs(0, 8).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_2_3", CubeListBuilder.create().texOffs(6, 8).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_2_4", CubeListBuilder.create().texOffs(12, 8).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_2_5", CubeListBuilder.create().texOffs(18, 8).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_2_6", CubeListBuilder.create().texOffs(24, 8).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_2_7", CubeListBuilder.create().texOffs(30, 8).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_2_8", CubeListBuilder.create().texOffs(36, 8).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_3_0", CubeListBuilder.create().texOffs(42, 8).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_3_1", CubeListBuilder.create().texOffs(48, 8).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_3_2", CubeListBuilder.create().texOffs(54, 8).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_3_3", CubeListBuilder.create().texOffs(0, 12).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_3_4", CubeListBuilder.create().texOffs(6, 12).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_3_5", CubeListBuilder.create().texOffs(12, 12).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_3_6", CubeListBuilder.create().texOffs(18, 12).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_3_7", CubeListBuilder.create().texOffs(24, 12).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_3_8", CubeListBuilder.create().texOffs(30, 12).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_4_0", CubeListBuilder.create().texOffs(36, 12).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_4_1", CubeListBuilder.create().texOffs(42, 12).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_4_2", CubeListBuilder.create().texOffs(48, 12).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_4_3", CubeListBuilder.create().texOffs(54, 12).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_4_4", CubeListBuilder.create().texOffs(0, 16).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_4_5", CubeListBuilder.create().texOffs(6, 16).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_4_6", CubeListBuilder.create().texOffs(12, 16).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_4_7", CubeListBuilder.create().texOffs(18, 16).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_4_8", CubeListBuilder.create().texOffs(24, 16).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_5_0", CubeListBuilder.create().texOffs(30, 16).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_5_1", CubeListBuilder.create().texOffs(36, 16).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_5_2", CubeListBuilder.create().texOffs(42, 16).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_5_3", CubeListBuilder.create().texOffs(48, 16).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_5_4", CubeListBuilder.create().texOffs(54, 16).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_5_5", CubeListBuilder.create().texOffs(0, 20).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_5_6", CubeListBuilder.create().texOffs(6, 20).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_5_7", CubeListBuilder.create().texOffs(12, 20).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        root.addOrReplaceChild("bead_5_8", CubeListBuilder.create().texOffs(18, 20).addBox(-0.425f, -0.75f, -0.75f, 0.85f, 1.5f, 1.5f), PartPose.offset(0f, 0f, 0f))
+        return LayerDefinition.create(mesh, 64, 40)
     }
 }
