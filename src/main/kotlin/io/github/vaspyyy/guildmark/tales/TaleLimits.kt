@@ -107,4 +107,20 @@ object TaleLimits {
 
     /** Blocks a tale sets in a tick (only memorials, a posy and a lantern). */
     const val BLOCKS_A_TICK = 4
+
+    // ---- What a tale pays (design 7.1) ----
+
+    /** A size's base in reward points, the ending scaling it (A 1.0, B 0.9, C 0.6, W 0.25), rounded: one row a size, A B C W. */
+    private val POINTS = arrayOf(
+        intArrayOf(18, 16, 11, 5),
+        intArrayOf(34, 31, 20, 9),
+        intArrayOf(56, 50, 34, 14),
+    )
+
+    /** The reward points of a tale of [size] (1 to 3) ending at [ending] (a letter of `Ending.LETTERS`); 0 for anything else. */
+    fun points(size: Int, ending: String): Int {
+        val row = POINTS.getOrNull(size - 1) ?: return 0
+        val i = Ending.LETTERS.indexOf(ending)
+        return if (i < 0) 0 else row[i]
+    }
 }
