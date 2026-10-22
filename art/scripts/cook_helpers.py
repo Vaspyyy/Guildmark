@@ -190,15 +190,17 @@ HERB_AGES = 4
 
 
 def herb(age):
-    """A crop in the vanilla pattern: four upright quads in a tic-tac-toe at 4 and 12 px, the texture of the age (herb_stage<age>)."""
+    """A crop in the vanilla pattern (the game's `block/crop`): four upright quads in a tic-tac-toe at 4 and 12 px, from 1 px below the cell to 15, so
+    that the plant stands on the top of farmland (15 px) and not above it, and lit as the game lights its crops (as a face looking up); the texture
+    of the age (herb_stage<age>)."""
     tex = 'herb_stage%d' % age
     els = []
     uv = (0, 0, 16, 16)
     for fixed in (4.0, 12.0):
         for face in ('north', 'south'):
-            els.append(quad((0, 0, fixed), (16, 16, fixed), face, tex, uv))
+            els.append(quad((0, -1, fixed), (16, 15, fixed), face, tex, uv, shade_direction_override='up'))
         for face in ('west', 'east'):
-            els.append(quad((fixed, 0, 0), (fixed, 16, 16), face, tex, uv))
+            els.append(quad((fixed, -1, 0), (fixed, 15, 16), face, tex, uv, shade_direction_override='up'))
     return els
 
 

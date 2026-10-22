@@ -47,7 +47,8 @@ turns its pieces the same way, about the middle of the cell (8, 8). Angles are d
   cook_larder_door            vertical hinge at x 2.0, z 3.0     yaw 0 (shut) to +100 degrees about the hinge (positive swings OUTWARD, -z)
 
 Also models, not pieces: `larder` (door shut: the door is part of the shell), `larder_open` (no door: the renderer draws cook_larder_door swung),
-`menu_board_wall` (the slate flat on the wall behind, at z 16; no blockstate uses it) and the four `herb_stage0..3`.
+`menu_board_wall` (the slate flat on the wall behind, at z 16; no blockstate uses it) and the four `herb_stage0..3` (four crossed quads from y -1 to 15, as
+the game's own `block/crop` has them, so that the plant stands on the top of farmland; the blockstate's `age` picks one).
 
 WHERE THINGS ARE DRAWN (px, model space, facing north):
   stewpot     the liquid's surface is a quad at y 6.7 (a ladleful) up to 9.4 (full) at notch 0, 2.9 px from the middle to each edge (the
