@@ -19,5 +19,16 @@
   "gui.guildmark.works.stage_of.cookshop.openings": "The back windows glazed, a lantern hung, and the Bake oven set into its block.",
   "gui.guildmark.works.stage_of.cookshop.fitting": "The larder, hob and prep board along the back, the menu board on its barrel, and a plate on the counter for each dish.",
   "gui.guildmark.works.why.owner": "Only its owner pays for a stall or a cookshop of their own.",
-  "gui.guildmark.works.part.pitch.tip": "Your stall's or cookshop's place in the square."
+  "gui.guildmark.works.part.pitch.tip": "Your stall's or cookshop's place in the square.",
+  "message.guildmark.cook.shop.open": "Your cookshop is open. Stock its larder and the keeper sells for you three times a day; use the menu board for the takings.",
+  "message.guildmark.cook.shop.closed": "Your cookshop has been taken down.",
+  "message.guildmark.cook.shop.paid": "Its till is paid out: %s.",
+  "message.guildmark.cook.shop.back": "The %s dishes from its larder are yours again.",
+  "gui.guildmark.cook.shop.menu.title": "%s's cookshop",
+  "gui.guildmark.cook.shop.menu.title.none": "Cookshop",
+  "gui.guildmark.cook.shop.menu.shut": "Shut. Open from seven until half past five.",
+  "gui.guildmark.cook.shop.menu.empty": "Nothing in the larder to sell.",
+  "gui.guildmark.cook.shop.menu.more": "...and %s more",
+  "gui.guildmark.cook.shop.menu.line": "%1$s %2$s x%3$s: %4$s Marks",
+  "gui.guildmark.cook.shop.menu.stale": "%s (stale)"
 }

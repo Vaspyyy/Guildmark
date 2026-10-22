@@ -366,6 +366,7 @@ internal object WorksAtWork {
             WorksKind.TOWER -> beacon(level, w, f, hour)
             WorksKind.STALL, WorksKind.COOKSHOP -> awning(level, w, site, f, hour, near)
         }
+        if (w.kind == WorksKind.COOKSHOP) CookShops.second(level, w, site, capital, hour)
         if (!rec.firstUse) firstUse(level, w, rec, site, f, hour, near)
         mend(level, w, rec, site, capital, hour, near)
     }
