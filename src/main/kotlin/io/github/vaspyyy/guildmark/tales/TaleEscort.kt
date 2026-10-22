@@ -13,6 +13,8 @@ import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.util.Mth
+import net.minecraft.world.entity.Mob
+import net.minecraft.world.entity.monster.Enemy
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.phys.Vec3
 import java.util.UUID
@@ -46,6 +48,8 @@ class TaleEscort(
     private val prop: ItemStack? = null,
     private val until: Long = 0L,
     private val leads: Boolean = false,
+    /** The child's variant (the child tale, living-world/stories/design.md 8.4): a child's pace at the player's side, no stoop, no rests, and a cower when a hostile mob is near. */
+    private val child: Boolean = false,
 ) : Director {
     private enum class Mode { FOLLOW, TO_BENCH, SIT_DOWN, SITTING, STAND_UP, BREATH }
 
@@ -58,6 +62,8 @@ class TaleEscort(
     private var bench: BlockPos? = null
     private var walker: Walker? = null
     private var started = false
+    private var scaredAt = -SCARED_EVERY
+    private var afraid = false
 
     /** With [leads]: the walk to the target, and the game time before which a way that could not be found is not looked for again. */
     private var way: Walker? = null
@@ -89,6 +95,7 @@ class TaleEscort(
             stop(p)
             return
         }
+        if (child && cower(level, p, who, now)) return
         last?.let { from ->
             val d = sqrt((p.x - from.x) * (p.x - from.x) + (p.z - from.z) * (p.z - from.z))
             if (d < 3.0) walked += d
@@ -136,9 +143,9 @@ class TaleEscort(
             stop(p)
             return
         }
-        // A rest, while the player is near enough to wait for it
-        if (dist < NEAR_REST && walked >= EVERY) return rest(level, p, null, now)
-        if (dist < NEAR_REST && walked >= BENCH_AFTER) {
+        // A rest, while the player is near enough to wait for it (a child does not tire)
+        if (!child && dist < NEAR_REST && walked >= EVERY) return rest(level, p, null, now)
+        if (!child && dist < NEAR_REST && walked >= BENCH_AFTER) {
             val seat = benchNear(level, p)
             if (seat != null) return rest(level, p, seat, now)
         }
@@ -152,7 +159,7 @@ class TaleEscort(
                 }
                 go(p, who)
             }
-            dist > 3.5 -> go(p, who)
+            dist > (if (child) CHILD_SIDE else 3.5) -> go(p, who)
             else -> {
                 p.navigation.stop()
                 if (p.activity == Activity.HOBBLE) p.act(Activity.NONE)
@@ -237,11 +244,41 @@ class TaleEscort(
         stop(p)
     }
 
-    /** At the pace of a stoop towards the player. */
+    /** At the pace of a stoop towards the player (a child's, upright and quicker). */
     private fun go(p: Townsperson, who: ServerPlayer) {
-        if (p.navigation.isDone || p.tickCount % 20 == 0) p.navigation.moveTo(who, PACE)
+        if (p.navigation.isDone || p.tickCount % 20 == 0) p.navigation.moveTo(who, if (child) CHILD_PACE else PACE)
+        if (child) {
+            if (p.activity == Activity.HOBBLE || p.activity == Activity.COWER) p.act(Activity.NONE)
+            return
+        }
         if (p.activity != Activity.HOBBLE && (p.activity.loop || p.actDone)) p.act(Activity.HOBBLE)
     }
+
+    /**
+     * The child's fright (8.4): a hostile mob within eight blocks and the player within reach, and they cower where they stand and call out
+     * (`tale.child.scared`, once in twenty seconds at most); the walk goes on when it has gone. True while they cower.
+     */
+    private fun cower(level: ServerLevel, p: Townsperson, who: ServerPlayer, now: Long): Boolean {
+        // Looked for five times a second at most
+        if (p.tickCount % 5 == 0) afraid = p.distanceTo(who) < FRIGHT_PLAYER && frightened(level, p)
+        val cowering = p.activity == Activity.COWER
+        if (afraid) {
+            if (!cowering) {
+                p.navigation.stop()
+                p.act(Activity.COWER)
+                if (now - scaredAt >= SCARED_EVERY) {
+                    scaredAt = now
+                    Words.sayWith(p, "tale.child.scared", why = "a frightened child", force = true)
+                }
+            }
+            return true
+        }
+        if (cowering) p.act(Activity.NONE)
+        return false
+    }
+
+    private fun frightened(level: ServerLevel, p: Townsperson): Boolean =
+        level.getEntitiesOfClass(Mob::class.java, p.boundingBox.inflate(FRIGHT)) { it is Enemy && it.isAlive }.isNotEmpty()
 
     private fun rest(level: ServerLevel, p: Townsperson, seat: BlockPos?, now: Long) {
         walked = 0.0
@@ -318,7 +355,7 @@ class TaleEscort(
 
     private fun stop(p: Townsperson) {
         p.navigation.stop()
-        if (p.activity == Activity.HOBBLE) p.act(Activity.NONE)
+        if (p.activity == Activity.HOBBLE || p.activity == Activity.COWER) p.act(Activity.NONE)
     }
 
     /** Hurt, fighting or running: a body that is not a tale's is let go to react as ever (a tale's cannot be hurt, and trusts the player). */
@@ -345,7 +382,7 @@ class TaleEscort(
         val seat = bench
         if (level != null && seat != null) Claims.release(level, seat, p)
         p.navigation.stop()
-        if (!p.activity.overlay || p.activity == Activity.HOBBLE) p.act(Activity.NONE)
+        if (!p.activity.overlay || p.activity == Activity.HOBBLE || p.activity == Activity.COWER) p.act(Activity.NONE)
         if (prop != null && ItemStack.isSameItemSameComponents(p.carried, prop)) {
             p.carried = ItemStack.EMPTY
             p.carriedUntil = 0
@@ -376,6 +413,13 @@ class TaleEscort(
         const val PACE = 0.45
         const val ARRIVE = 4.0
 
+        /** The child's pace, how near their side they keep, how near a hostile mob frightens them, how near the player must be for it, and ticks between two cries. */
+        const val CHILD_PACE = 0.6
+        const val CHILD_SIDE = 2.5
+        const val FRIGHT = 8.0
+        const val FRIGHT_PLAYER = 24.0
+        const val SCARED_EVERY = 400L
+
         /** Blocks ahead in sight that is "left behind", blocks away out of sight that is far, and ticks of it before they are caught up. */
         const val AHEAD = 24.0
         const val CATCH_UP = 40.0
@@ -402,11 +446,13 @@ class TaleEscort(
          * Starts [who] (the body in [slot] of [t], held in place first if it is not yet; with [t] null, any free adult) on the walk to
          * [target], following [player]. The tale hears [Event.Arrived] when they get there. [prop] is what they carry on the way (the
          * lantern), [until] the game time to let go at (0: not before they arrive). With [leads] and a [target] they walk the way there
-         * themselves with the player beside them, rather than following (see the class). False if they cannot be taken just now.
+         * themselves with the player beside them, rather than following (see the class); [child] is the child's variant (a child's pace,
+         * afraid of the night's mobs). False if they cannot be taken just now.
          */
         fun start(
             level: ServerLevel, t: Tale?, slot: String, who: Townsperson, player: ServerPlayer, target: BlockPos?, prop: ItemStack? = null, until: Long = 0L,
             leads: Boolean = false,
+            child: Boolean = false,
         ): Boolean {
             if (t != null) {
                 if (who.tale != t.id) TaleBodies.hold(level, t, slot, null, null)
@@ -420,7 +466,7 @@ class TaleEscort(
                 who.routine.interrupt()
                 who.standUp()
             }
-            val escort = TaleEscort(player.uuid, target, t?.id ?: -1, slot, prop, until, leads)
+            val escort = TaleEscort(player.uuid, target, t?.id ?: -1, slot, prop, until, leads, child)
             who.director = escort
             who.navigation.stop()
             // Only a tale's walk is kept by the tidy (given back after a talk, ended with the switch); the command's is its own

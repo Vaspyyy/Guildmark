@@ -282,8 +282,9 @@ object TaleLook {
         if ((player.tickCount / 20) % 2 != 0) return
         val part = tale.part(player.uuid)
         if (part != null && part.status != Part.Status.UNMET && part.status != Part.Status.ASKED) return
-        val asker = tale.cast.firstOrNull() ?: return
-        val body = TaleBodies.body(level, tale, asker.slot) ?: return
+        // The one who asks is the voice's choice, else the first of the cast (a tale whose asker has not asked yet, the child's mother before three, names none)
+        val slot = Templates.find(tale.template)?.let { t -> TaleVoiceGuard.run(tale.template, "asker", null) { TaleVoices.of(t)?.asker(tale) } } ?: tale.cast.firstOrNull()?.slot ?: return
+        val body = TaleBodies.body(level, tale, slot) ?: return
         if (!body.isAlive || body.distanceToSqr(player) > MOTES * MOTES || !player.hasLineOfSight(body)) return
         val r = level.random
         // Over the left shoulder, a little behind

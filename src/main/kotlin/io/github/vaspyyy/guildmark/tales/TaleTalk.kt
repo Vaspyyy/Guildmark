@@ -64,7 +64,7 @@ object TaleTalk {
      * Starts [t]'s seed rumour (3.2): nothing if its asker is no one with a record, or nobody has one to know it, or the tale has no
      * words for a neighbour to tell it in (the moot has none: the crier calls it).
      */
-    private fun rumour(level: ServerLevel, t: Tale) {
+    internal fun rumour(level: ServerLevel, t: Tale) {
         if (!Tales.READY) return
         val template = Templates.find(t.template) ?: return
         if (!TaleLines.exists("tale.${t.template}.rumour")) return
