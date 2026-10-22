@@ -254,9 +254,10 @@ class Lairs(val lairs: MutableList<Lair> = mutableListOf()) : SavedData() {
 
     /**
      * A Wardfire on the way in, beyond where the lair wakes. It's raised as the first player comes near
-     * (lairs from before Wardfires get one too), so the land round the lair is already there.
+     * (lairs from before Wardfires get one too), so the land round the lair is already there. Internal: a tale that
+     * needs the fire before anyone has come near raises it too (tales/).
      */
-    private fun raiseFire(level: ServerLevel, lair: Lair) {
+    internal fun raiseFire(level: ServerLevel, lair: Lair) {
         lair.fire = true
         setDirty()
         if (WardfireSites.enabled() && !WardfireSites.near(level, lair.pos, 40)) WardfireSites.placeNear(level, lair.pos, 24, 32)
@@ -270,7 +271,8 @@ class Lairs(val lairs: MutableList<Lair> = mutableListOf()) : SavedData() {
         true
     }
 
-    private fun layout(lair: Lair, state: DungeonState): DungeonLayout =
+    // Internal: a tale asks where a dug lair's halls are (tales/)
+    internal fun layout(lair: Lair, state: DungeonState): DungeonLayout =
         layouts.getOrPut(lair.id) { DungeonLayout(state, state.plan ?: DungeonPlanner.plan(state.seed, lair.rank, lair.shard >= 0)) }
 
     /**
