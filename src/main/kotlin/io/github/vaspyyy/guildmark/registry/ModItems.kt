@@ -7,6 +7,8 @@ import io.github.vaspyyy.guildmark.item.RelicCacheItem
 import io.github.vaspyyy.guildmark.item.WardensFlaskItem
 import io.github.vaspyyy.guildmark.tales.KeepsakeItem
 import io.github.vaspyyy.guildmark.trade.WarrantItem
+import io.github.vaspyyy.guildmark.trade.carry.DroversWhistleItem
+import io.github.vaspyyy.guildmark.trade.carry.PackHarnessItem
 import net.minecraft.core.component.DataComponents
 import net.minecraft.world.entity.EquipmentSlotGroup
 import net.minecraft.world.entity.ai.attributes.AttributeModifier
@@ -67,6 +69,18 @@ object ModItems {
     /** The Carrier's Warrant a Chapman is given at the hall's counter (living-world/trader/design.md, Part 5); the trader's book is what counts, this is its proof. */
     val CARRIERS_WARRANT: DeferredItem<WarrantItem> = ITEMS.registerItem("carriers_warrant", ::WarrantItem, UnaryOperator<Item.Properties> {
         it.stacksTo(1).rarity(Rarity.UNCOMMON)
+    })
+
+    // Trade: carrying (build part D1)
+
+    /** Bought at the market hall's counter; used on a tame donkey, mule or llama it makes a pack animal that follows. */
+    val PACK_HARNESS: DeferredItem<PackHarnessItem> = ITEMS.registerItem("pack_harness", ::PackHarnessItem, UnaryOperator<Item.Properties> {
+        it.stacksTo(16)
+    })
+
+    /** Comes with the harness: blown, it calls every pack animal of yours; blown while sneaking, it has them stay. */
+    val DROVERS_WHISTLE: DeferredItem<DroversWhistleItem> = ITEMS.registerItem("drovers_whistle", ::DroversWhistleItem, UnaryOperator<Item.Properties> {
+        it.stacksTo(1)
     })
 
     // Spawn eggs for the new combat's creatures
