@@ -17,6 +17,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import io.github.vaspyyy.guildmark.townsfolk.talk.Ask
 import io.github.vaspyyy.guildmark.townsfolk.talk.Memory
 import io.github.vaspyyy.guildmark.townsfolk.talk.Occasion
+import io.github.vaspyyy.guildmark.townsfolk.talk.Street
 import io.github.vaspyyy.guildmark.townsfolk.talk.Talk
 import io.github.vaspyyy.guildmark.townsfolk.talk.TalkLines
 import io.github.vaspyyy.guildmark.townsfolk.talk.Topics
@@ -43,7 +44,8 @@ import java.util.Locale
  *
  *  - `cook talk [occasion]` lists what the kitchen's topics offer them for you now, with each one's weight, factors and score
  *    (as `talk topics` does for all), the ones they would not say to someone they know as little as you, and, for an
- *    innkeeper or a baker, the choice "About the kitchen..." and what it would answer.
+ *    innkeeper or a baker, the choice "About the kitchen..." and what it would answer. For `chat` it asks as the street does
+ *    of a chat between neighbours (the one nearest them, no player in it), which is where a good supper is told.
  *  - `cook talk say <family>` has them say each wording of a kitchen family in turn, as takes if the family is recorded and as
  *    text if not, and prints the wordings.
  *  - `cook rumour hallmark|cookoff|burnt [dish]` starts that rumour at your feet, seen by those near.
@@ -55,6 +57,9 @@ import java.util.Locale
 object TalkCookCommand {
     /** The most topics `cook talk` lists. */
     private const val SHOWN = 12
+
+    /** How far from them `cook talk chat` looks for the neighbour they would chat with (blocks). */
+    private const val CHAT_REACH = 8.0
 
     /** Part J's registration: the `talk`, `rumour` and `relish` branches under `cook`, the line `cook perf` prints and the clearing of its counters. */
     fun register() {
@@ -135,13 +140,20 @@ object TalkCookCommand {
         val player = source.playerOrException
         val p = person(source, player) ?: return 0
         val level = source.level
-        val ask = Talk.ask(level, p, player, occasion)
+        // A chat is between neighbours with no player in it: asked as the street asks it, of the nearest townsperson to them
+        val other = if (occasion == Occasion.CHAT) {
+            level.getEntitiesOfClass(Townsperson::class.java, p.boundingBox.inflate(CHAT_REACH)) { it !== p && it.isAlive }.minByOrNull { it.distanceToSqr(p) }
+        } else {
+            null
+        }
+        val ask = if (occasion == Occasion.CHAT) Street.chat(level, p, other) else Talk.ask(level, p, player, occasion)
         val offered = Topics.offered(ask).filter { it.id.startsWith("kitchen.") }
         val scored = offered.filter { ask.familiarity.reaches(it.least) }.map { Topics.score(ask, it) }.sortedByDescending { it.score }
         val hidden = offered.filter { !ask.familiarity.reaches(it.least) }
+        val with = if (occasion == Occasion.CHAT) ", with ${other?.name?.string ?: "no one near"}" else ""
         say(
             source,
-            header("${p.name.string} (${p.role.id}), ${occasion.name.lowercase(Locale.ROOT)}").append(
+            header("${p.name.string} (${p.role.id}), ${occasion.name.lowercase(Locale.ROOT)}$with").append(
                 grey(" ${ask.familiarity.name.lowercase(Locale.ROOT)}, ${scored.size} kitchen topics" + if (hidden.isEmpty()) "" else ", ${hidden.size} they would not say yet"),
             ),
         )
@@ -157,7 +169,7 @@ object TalkCookCommand {
         }
         if (scored.size > SHOWN) say(source, grey("  ...and ${scored.size - SHOWN} more."))
         for (topic in hidden) say(source, line().append(grey("  not yet: ")).append(plain(topic.id)).append(grey(" (needs them to know you as ${topic.least.name.lowercase(Locale.ROOT)})")))
-        choice(source, p, player)
+        if (occasion != Occasion.CHAT) choice(source, p, player)
         return 1
     }
 

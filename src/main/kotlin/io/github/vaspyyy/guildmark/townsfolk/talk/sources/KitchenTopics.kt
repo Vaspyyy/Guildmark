@@ -4,6 +4,7 @@ import io.github.vaspyyy.guildmark.cooking.Cooking
 import io.github.vaspyyy.guildmark.cooking.DishKind
 import io.github.vaspyyy.guildmark.cooking.Door
 import io.github.vaspyyy.guildmark.cooking.dish.Dishes
+import io.github.vaspyyy.guildmark.cooking.market.Doors
 import io.github.vaspyyy.guildmark.cooking.market.Kitchens
 import io.github.vaspyyy.guildmark.cooking.market.Rec
 import io.github.vaspyyy.guildmark.cooking.market.Request
@@ -13,6 +14,7 @@ import io.github.vaspyyy.guildmark.cooking.vessel.Stations
 import io.github.vaspyyy.guildmark.cooking.vessel.StewpotBlockEntity
 import io.github.vaspyyy.guildmark.cooking.vessel.StewpotMode
 import io.github.vaspyyy.guildmark.cooking.vessel.Vessel
+import io.github.vaspyyy.guildmark.economy.Markets
 import io.github.vaspyyy.guildmark.economy.SupplierRank
 import io.github.vaspyyy.guildmark.economy.Suppliers
 import io.github.vaspyyy.guildmark.progression.Skill
@@ -51,7 +53,8 @@ import java.util.UUID
  * Each line is a voiced family of [KitchenLines] with its changing facts (a dish, a number, a name) as unvoiced detail after
  * it, or, while the family has no take, one of its wordings as words with the same detail in grey. Everything is worked out
  * from the ledger, the calendar and what the resident remembers each time they are asked; nothing is kept here but two
- * counters for `cook perf`, and nothing is scanned but the cooking stations loaded near a child. Nothing at all while Kitchen
+ * counters for `cook perf`, and nothing is looked through but the cooking stations loaded near a child, or near the
+ * innkeeper when she answers "About the kitchen...". Nothing at all while Kitchen
  * Talk is off ([Cooking.talk]); the rumours need the town to be passing them on ([Say.rumours]) or to have seen the thing
  * themselves, as the news does.
  */
@@ -153,26 +156,42 @@ object KitchenTopics : TopicSource {
     // ---- What the inn wants today ----
 
     /**
-     * What the ledger and the calendar say of the speaker's town on its day: the [centre] of its capital, the three kinds the inn
-     * [wanted], the day's [request], and the day's [rec]ord of what sold (null while it is another day's).
+     * What the ledger and the calendar say of the speaker's town on its day: the [centre] of its capital and how many [people] its
+     * market counts, the three kinds the inn [wanted], the day's [request], and the day's [rec]ord of what sold (null while it is
+     * another day's).
      */
-    private class Today(val centre: BlockPos, val day: Long, val wanted: List<DishKind>, val request: Request?, val rec: Rec?)
+    private class Today(val centre: BlockPos, val day: Long, val people: Int, val wanted: List<DishKind>, val request: Request?, val rec: Rec?)
 
-    /** Today's facts for the town [ask]'s speaker lives in; null for a village's folk (a back door is a capital's) and with the back doors off. */
+    /**
+     * Today's facts for the town [ask]'s speaker lives in; null for a village's folk (a back door is a capital's), with the back
+     * doors or the capital markets off, and for a capital whose market has not opened: the Menu board is blank then, and the doors
+     * are shut.
+     */
     private fun todayOf(ask: Ask): Today? {
-        if (!Cooking.doors()) return null
+        if (!Cooking.doors() || !Markets.enabled()) return null
         val centre = (ask.life?.places as? CityPlaces)?.capital?.center ?: return null
-        val kitchens = Kitchens.get(ask.level)
         val key = centre.asLong()
+        val people = Markets.find(ask.level, key)?.town?.people ?: return null
+        val kitchens = Kitchens.get(ask.level)
         val day = Cooking.today(ask.level)
         val wanted = kitchens.wanted(ask.level, key, day)
         if (wanted.isEmpty()) return null
-        return Today(centre, day, wanted, kitchens.request(ask.level, key, day), kitchens.rec(key)?.takeIf { it.day == day })
+        return Today(centre, day, people, wanted, kitchens.request(ask.level, key, day), kitchens.rec(key)?.takeIf { it.day == day })
     }
 
-    /** The kinds a [role] tells of: the innkeeper all three, the baker those the bakery takes too. */
+    /**
+     * The kinds a [role] tells of: of the three the inn is after, the innkeeper those the inn will still take today, the baker those
+     * the bakery bakes and will still take. A kind that is full is not wanted: the Menu board greys it, and she would turn it away.
+     */
     private fun kindsFor(role: TownRole, today: Today): List<DishKind> =
-        if (role == TownRole.BAKER) today.wanted.filter { Door.BAKERY in it.doors } else today.wanted
+        if (role == TownRole.BAKER) today.wanted.filter { Door.BAKERY in it.doors && !full(today, Door.BAKERY, it) }
+        else today.wanted.filter { !full(today, Door.INN, it) }
+
+    /** Whether [door] will take no more of [kind] today: its day is full, or this kind's share of it is (the sums a sale makes, and the Menu board's "(full)"). */
+    private fun full(today: Today, door: Door, kind: DishKind): Boolean {
+        val rec = today.rec ?: return false
+        return rec.soldAt(door) >= Doors.cap(door, today.people) || rec.sold[door.ordinal][kind.ordinal] >= Doors.kindCap(door, today.people)
+    }
 
     /** The standing of [player] in the capital, 0 (a stranger) to 4 (its purveyor); 0 with standing off. */
     private fun rank(level: ServerLevel, today: Today, player: ServerPlayer): Int = Suppliers.rank(level, today.centre, player.uuid)
@@ -182,7 +201,8 @@ object KitchenTopics : TopicSource {
         today.request?.takeIf { !it.filled && Requests.open(rank(level, today, player)) }
 
     /**
-     * The slate: the innkeeper tells all three kinds, the baker the baked ones, anyone by the inn now and then. In passing, and from
+     * The slate: the innkeeper tells the kinds of the three the inn will still take today, the baker those of them she bakes and will
+     * still take, anyone by the inn now and then (as the Menu board has it). None when none is left to tell. In passing, and from
      * anyone but the keepers, only within a few blocks of the inn.
      */
     private fun slate(ask: Ask, today: Today, out: MutableList<Topic>) {
@@ -442,11 +462,9 @@ object KitchenTopics : TopicSource {
     /** The lang key of a wording of [family] for the speaker to say to the player, as a detail's argument (its text shows in grey). */
     private fun wording(ask: Ask, family: String): String? = KitchenLines.wording(ask.speaker, ask.player, family)?.let { LANG + it }
 
-    /** Whether the inn has a back pot: one loaded near the speaker in guest mode, else whether the town has its kitchens at all. */
-    private fun backPot(ask: Ask): Boolean {
-        val pots = Stations.near(ask.level, ask.speaker.blockPosition(), POT).filterIsInstance<StewpotBlockEntity>()
-        return if (pots.isNotEmpty()) pots.any { it.mode == StewpotMode.GUEST } else Cooking.townKitchens()
-    }
+    /** Whether the inn has a back pot: a Stewpot in guest mode stands loaded near the speaker (so it is said of the pot she can see, and of none an old town never had). */
+    private fun backPot(ask: Ask): Boolean =
+        Stations.near(ask.level, ask.speaker.blockPosition(), POT).any { it is StewpotBlockEntity && it.mode == StewpotMode.GUEST }
 
     /** Who sold the most today at the inn and the bakery between them (as the menu board counts it), if anyone did. */
     private fun cookOfTheDay(today: Today): UUID? = today.rec?.mine?.entries
