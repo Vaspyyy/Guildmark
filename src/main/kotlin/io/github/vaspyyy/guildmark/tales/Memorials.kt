@@ -218,6 +218,16 @@ object Memorials {
         data.changed()
     }
 
+    /**
+     * From `Tales.wants` (and so `Streets.wants`, as a chunk with the memorial's pieces loads): whether the piece at [pos] of memorial [run]
+     * (the stone itself, its lantern, the posy's pot) is still wanted: true while the memorial is on file, so the block is never put back as
+     * it was; with the file's entry gone (a command removed it) the generic restore drops the piece's record and leaves the block.
+     */
+    fun wants(level: ServerLevel, column: Long, pos: BlockPos, run: Long): Boolean {
+        val here = dimension(level)
+        return TaleData.get(level).memorials.any { it.id.toLong() == run && it.dimension == here }
+    }
+
     /** The record of the memorial at [pos], if the town has one. */
     fun recordAt(level: ServerLevel, pos: BlockPos): TaleData.Memorial? {
         val here = dimension(level)

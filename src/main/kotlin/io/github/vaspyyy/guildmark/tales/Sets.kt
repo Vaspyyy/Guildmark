@@ -638,7 +638,7 @@ object Sets {
     private const val CAIRN_REACH = 2.75
 
     /** The streets' band for a tale's blocks (Part F's `Streets.TALES`, beside `FLAPS`), with the memorial's id as the run. */
-    private const val TALES_BAND = -2044
+    private const val TALES_BAND = Streets.TALES
 
     /**
      * The ticks of LAY_POSY the set acts on: the posy is down at 14 (the set calls Part F's [Memorials.posy] at 15), it leaves her

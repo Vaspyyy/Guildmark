@@ -247,7 +247,7 @@ object Tales : Comings.Listener {
     fun cries(level: ServerLevel, entry: Markets.Entry, c: Conditions, at: Long): List<Crier.Cry> = TaleTold.cries(level, entry, c, at)
 
     /** From `Streets.wants` (F places the call): whether the memorial at [pos] in [column] is still wanted by the record of [run]. */
-    fun wants(level: ServerLevel, column: Long, pos: BlockPos, run: Long): Boolean = false
+    fun wants(level: ServerLevel, column: Long, pos: BlockPos, run: Long): Boolean = Memorials.wants(level, column, pos, run)
 
     /** From `ShutStall.bare` (T1 places the call): whether the stall at [key] is sealed by a tale at game time [gameTime]. */
     fun sealed(key: Long, gameTime: Long): Boolean = NoteStall.sealed(key, gameTime)

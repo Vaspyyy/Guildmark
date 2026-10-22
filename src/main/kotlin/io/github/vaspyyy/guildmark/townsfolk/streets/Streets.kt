@@ -7,6 +7,7 @@ import io.github.vaspyyy.guildmark.festival.FestivalOrnamentBlockEntity
 import io.github.vaspyyy.guildmark.festival.FestivalRestores
 import io.github.vaspyyy.guildmark.festival.OrnamentData
 import io.github.vaspyyy.guildmark.lamps.StreetLamps
+import io.github.vaspyyy.guildmark.tales.Tales
 import io.github.vaspyyy.guildmark.townsfolk.Comings
 import io.github.vaspyyy.guildmark.townsfolk.scenes.Alms
 import io.github.vaspyyy.guildmark.townsfolk.scenes.Scenes
@@ -61,13 +62,16 @@ object Streets {
     const val ALMS = -2046
     const val FLAPS = -2045
 
+    /** The tales' memorials (living-world/stories/design.md 6.4): a stone or a cairn, with the lantern and the posy's pot set beside it; the run is the memorial's id. */
+    const val TALES = -2044
+
     /** A capital's column: its heart's x and z, which the signs' records and their saved data go by. */
     fun column(capital: CapitalPiece): Long = BlockPos.asLong(capital.center.x, 0, capital.center.z)
 
     /** The column of [key] (a capital's heart, or one of the signs' site keys). */
     fun column(key: Long): Long = BlockPos.asLong(BlockPos.getX(key), 0, BlockPos.getZ(key))
 
-    /** The site key of [column]'s [band] of pieces (one of [DRESSING], [BOARDS], [ALMS] and [FLAPS]). */
+    /** The site key of [column]'s [band] of pieces (one of [DRESSING], [BOARDS], [ALMS], [FLAPS] and [TALES]). */
     fun site(column: Long, band: Int): Long = BlockPos.asLong(BlockPos.getX(column), band, BlockPos.getZ(column))
 
     /**
@@ -76,13 +80,14 @@ object Streets {
      */
     fun wants(level: ServerLevel, pos: BlockPos, record: FestivalRestores.PieceRecord): Boolean {
         val band = BlockPos.getY(record.site)
-        if (band < DRESSING || band > FLAPS) return false
+        if (band < DRESSING || band > TALES) return false
         val column = column(record.site)
         return try {
             when (band) {
                 DRESSING -> Dressing.wants(level, column, pos, record.run)
                 BOARDS -> Signs.wants(level, column, pos, record.run)
                 ALMS -> AlmsTable.wants(level, column, pos, record.run)
+                TALES -> Tales.wants(level, column, pos, record.run)
                 else -> Awnings.wants(level, column, pos, record.run)
             }
         } catch (e: RuntimeException) {
