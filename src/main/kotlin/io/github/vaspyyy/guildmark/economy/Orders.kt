@@ -496,7 +496,7 @@ class Orders(private val books: MutableMap<Long, Book> = HashMap(), private var 
         }
 
         /** A good the businesses could ask for: which of them would, how much the town needs of it a day ([need]) and how far short of its keep it is ([short]), and what that's worth ([weight]). */
-        private class Want(val good: Good, val shops: List<Shop>, val need: Double, val short: Double, val weight: Double)
+        internal class Want(val good: Good, val shops: List<Shop>, val need: Double, val short: Double, val weight: Double)
 
         /** The businesses at [book]'s capital that would ask [town] for [good] and have no order out for it. */
         private fun askers(book: Book, town: Town, good: Good): List<Shop> =
@@ -584,7 +584,7 @@ class Orders(private val books: MutableMap<Long, Book> = HashMap(), private var 
             return order
         }
 
-        private fun <T> pick(list: List<T>, random: Random, weight: (T) -> Double): T {
+        internal fun <T> pick(list: List<T>, random: Random, weight: (T) -> Double): T {
             var r = random.nextDouble() * list.sumOf(weight)
             for (x in list) {
                 r -= weight(x)
@@ -594,7 +594,7 @@ class Orders(private val books: MutableMap<Long, Book> = HashMap(), private var 
         }
 
         /** How many an order for [want] asks for: [days] days of what the town needs and what it's short, in one of [SIZES], no more than [OF_TARGET] times what it keeps. */
-        private fun amount(want: Want, target: Double, days: Int): Int {
+        internal fun amount(want: Want, target: Double, days: Int): Int {
             val most = max(target * OF_TARGET, SIZES.first().toDouble())
             val wanted = (want.need * days + want.short).coerceIn(SIZES.first().toDouble(), most)
             return SIZES.filter { it <= most }.minByOrNull { abs(ln(it / wanted)) } ?: SIZES.first()
