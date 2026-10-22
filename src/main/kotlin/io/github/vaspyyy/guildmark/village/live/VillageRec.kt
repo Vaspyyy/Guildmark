@@ -62,7 +62,7 @@ enum class Live {
 /**
  * One of a village's homes: a door and the beds behind it. Its [id] is stable (homes are appended and never reordered),
  * so a resident's home is the number, not the place. [gone] when its door and beds are both gone; [kind] is what the census
- * called it (HOUSE, HALL, LIBRARY, TOWER or BARN).
+ * called it, by the strings the daily-life code looks at (HOUSE, GUILD_HALL, LIBRARY, TEMPLE, SMITHY, BAKERY, WORKSHOP, BARN or TOWER).
  */
 class Home(val id: Int, val door: Long, var beds: List<Long>, var kind: String, var gone: Boolean) {
     companion object {
@@ -126,7 +126,8 @@ data class Link(val capital: Long, val road: Int, val length: Int) {
  * within 64 blocks of it. The [key] is the bell's `BlockPos.asLong()`; [board] is the Guildmark board's anchor cell, or
  * -1; [found] is the day it was first counted, and [counted] the game time of the last census, or -1 before the first;
  * [seen] is the game time a player was last within [Live.LIVE]'s reach; [radius] is how far the village reaches (20 to 48);
- * [folk] is false after `village release`, when nobody is taken in until `village adopt`.
+ * [folk] is false after `village release`, when nobody is taken in until `village adopt`. [lostDay] is the day its bell was
+ * found gone (the state is [Live.LOST] from then), or -1 while it stands.
  *
  * The lists are bounded: [dead] holds the last [MAX_DEAD] and [chronicle] the last [MAX_CHRON] (read back the same, whatever
  * the file holds), and [homes] only grows. What is not here is worked out when wanted or kept in a store of its own: the
@@ -151,6 +152,7 @@ class VillageRec(
     val links: MutableList<Link> = ArrayList(),
     val dead: MutableList<Dead> = ArrayList(),
     val chronicle: MutableList<Chron> = ArrayList(),
+    var lostDay: Long = -1L,
 ) {
     /** [d] is the latest to die here; the oldest is dropped past [MAX_DEAD]. */
     fun bury(d: Dead) {
@@ -171,6 +173,7 @@ class VillageRec(
     fun back(days: Long) {
         if (days <= 0L) return
         found = maxOf(0L, found - days)
+        if (lostDay >= 0L) lostDay = maxOf(0L, lostDay - days)
         dead.replaceAll { Dead(it.name, maxOf(0L, it.day - days), it.cause, it.home) }
         chronicle.replaceAll { Chron(maxOf(0L, it.day - days), it.kind, it.arg) }
     }
@@ -181,6 +184,7 @@ class VillageRec(
     /** The second: what it has kept, and when it was last looked at. */
     private class Ledger(
         val seen: Long, val counted: Long, val homes: List<Home>, val links: List<Link>, val dead: List<Dead>, val chronicle: List<Chron>,
+        val lostDay: Long,
     )
 
     companion object {
@@ -211,6 +215,7 @@ class VillageRec(
                 keptList(Link.CODEC).lenientOptionalFieldOf("links", listOf()).forGetter(Ledger::links),
                 keptList(Dead.CODEC).lenientOptionalFieldOf("dead", listOf()).forGetter(Ledger::dead),
                 keptList(Chron.CODEC).lenientOptionalFieldOf("chronicle", listOf()).forGetter(Ledger::chronicle),
+                Codec.LONG.optionalFieldOf("lost", -1L).forGetter(Ledger::lostDay),
             ).apply(i, ::Ledger)
         }
 
@@ -219,11 +224,12 @@ class VillageRec(
             i.group(
                 Codec.LONG.fieldOf("key").forGetter(VillageRec::key),
                 CORE.forGetter { Core(it.board, it.name, it.found, it.radius, it.size, it.state, it.folk) },
-                LEDGER.forGetter { Ledger(it.seen, it.counted, it.homes, it.links, it.dead, it.chronicle) },
+                LEDGER.forGetter { Ledger(it.seen, it.counted, it.homes, it.links, it.dead, it.chronicle, it.lostDay) },
             ).apply(i) { key, core, ledger ->
                 VillageRec(
                     key, core.board, core.name, core.found, core.radius, core.size, core.state, core.folk, ledger.seen, ledger.counted,
                     ArrayList(ledger.homes), ArrayList(ledger.links), ArrayList(ledger.dead.takeLast(MAX_DEAD)), ArrayList(ledger.chronicle.takeLast(MAX_CHRON)),
+                    ledger.lostDay,
                 )
             }
         }
