@@ -78,6 +78,8 @@ object HomesteadClaims {
         }
         val wide = inflate(box, TOWN_MARGIN)
         for (zone in TownZones.get(level).zones) {
+            // A counted village's zone is the village's: the village check below refuses it as it always has
+            if (zone.village) continue
             if (wide.intersects(zone.center.x - zone.radius, zone.center.z - zone.radius, zone.center.x + zone.radius, zone.center.z + zone.radius)) return no("town")
         }
         if (Capitals.enabled()) {
