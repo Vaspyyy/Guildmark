@@ -9,7 +9,6 @@ import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import net.minecraft.core.BlockPos
 import net.minecraft.core.particles.ItemParticleOption
 import net.minecraft.core.particles.ParticleTypes
-import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.sounds.SoundEvent
 import net.minecraft.sounds.SoundEvents
@@ -24,14 +23,8 @@ import net.minecraft.world.entity.EntityTypes
 import net.minecraft.world.entity.EquipmentSlot
 import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.Mob
-import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal
-import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal
-import net.minecraft.world.entity.ai.goal.RandomStrollGoal
-import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal
-import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal
 import net.minecraft.world.entity.item.ItemEntity
 import net.minecraft.world.entity.monster.illager.Pillager
-import net.minecraft.world.entity.player.Player
 import net.minecraft.world.entity.raid.Raider
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
@@ -207,23 +200,7 @@ internal class Waylay(val show: Show, private var strike: Caravans.Strike?) {
     }
 
     /** One of the band, at [at]: dropping nothing, going for nobody until a player joins in. */
-    private fun spawn(type: EntityType<out Raider>, at: Vec3): Mob? {
-        val mob = type.create(level, EntitySpawnReason.EVENT) ?: return null
-        mob.snapTo(at.x, at.y, at.z, random.nextFloat() * 360f, 0f)
-        mob.finalizeSpawn(level, level.getCurrentDifficultyAt(BlockPos.containing(at)), EntitySpawnReason.EVENT, null)
-        mob.setCanJoinRaid(false)
-        mob.setPersistenceRequired()
-        mob.addTag(TAG)
-        mob.customName = Component.translatable("entity.guildmark.outlaw")
-        for (slot in EquipmentSlot.values()) mob.setDropChance(slot, 0f)
-        mob.targetSelector.removeAllGoals { true }
-        mob.goalSelector.removeAllGoals { g ->
-            g is RandomStrollGoal || g is LookAtPlayerGoal || g is RandomLookAroundGoal ||
-                g.javaClass.name.let { it.contains("Raid") || it.contains("Banner") || it.contains("Celebrat") }
-        }
-        mob.isAggressive = true
-        return if (level.addFreshEntity(mob)) mob else null
-    }
+    private fun spawn(type: EntityType<out Raider>, at: Vec3): Mob? = Waylayers.spawn(level, type, at, random.nextFloat() * 360f, TAG)
 
     /** Where everyone stands for the fight, the wagon still now: guards out on the band's side, each with a foe before them, the bowmen further off. */
     private fun spots() {
@@ -440,12 +417,7 @@ internal class Waylay(val show: Show, private var strike: Caravans.Strike?) {
     private fun arm(m: Man) {
         if (m.real) return
         m.real = true
-        val mob = m.mob
-        mob.navigation.stop()
-        (mob as? Pillager)?.setChargingCrossbow(false)
-        (mob as? Raider)?.let { mob.targetSelector.addGoal(1, HurtByTargetGoal(it, Raider::class.java)) }
-        mob.targetSelector.addGoal(2, NearestAttackableTargetGoal(mob, Player::class.java, true))
-        mob.targetSelector.addGoal(3, NearestAttackableTargetGoal(mob, Townsperson::class.java, 10, true, false) { e, _ -> guardOf(e) })
+        Waylayers.arm(m.mob, ::guardOf)
     }
 
     /** Whether [e] is one of this caravan's guards (or the tower's watch) still standing. */
@@ -973,13 +945,7 @@ internal class Waylay(val show: Show, private var strike: Caravans.Strike?) {
     /** What one of the band drops as they fall: the sack they carried off, if they had one, marked as off the wagon. */
     fun drops(e: Entity): List<ItemStack> {
         val m = band.firstOrNull { it.mob === e } ?: return listOf()
-        val out = ArrayList<ItemStack>()
-        for ((g, n) in m.carry) {
-            val stack = Caravans.dropped(level, id, g, n)
-            if (!stack.isEmpty) out.add(stack)
-        }
-        m.carry.clear()
-        return out
+        return Waylayers.drops(level, id, m.carry)
     }
 
     /**
