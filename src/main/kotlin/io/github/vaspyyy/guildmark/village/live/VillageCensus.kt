@@ -131,11 +131,16 @@ object VillageCensus {
             private set
         val slices = LongArray(SLICES)
 
+        /** A tick of the census, as the budget gave it (a count in the middle of the others, or the one that finished): [spent] nanoseconds in all. */
+        fun tick(spent: Long) {
+            ticks++
+            nanos += spent
+            if (spent > worstTick) worstTick = spent
+        }
+
+        /** A count is done: what it read and where its time went, by slice. (Its ticks are told by [tick], as they happen.) */
         fun add(s: Stats) {
             runs++
-            ticks += s.ticks
-            nanos += s.nanos
-            if (s.worstTick > worstTick) worstTick = s.worstTick
             if (s.nanos > worstRun) worstRun = s.nanos
             reads += s.reads
             columns += s.columns
