@@ -18,6 +18,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Task
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import io.github.vaspyyy.guildmark.townsfolk.Walk
+import io.github.vaspyyy.guildmark.townsfolk.scenes.Stage
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.phys.Vec3
@@ -34,6 +35,7 @@ import net.minecraft.world.phys.Vec3
  *
  *  - while a lute tale of the capital is open, from its seed until the lute is back in her hands (the full sum, the first half of a B, or the
  *    night's loan: `n[BACK]`);
+ *  - in the hush before the concert (see [silentBy]): the lute is hers, but she sits the evening out until the stage asks for her;
  *  - for ten market days after an ending W (the lute was sold) and after an ending C (the lute went back to the keeper), from the day it ended.
  *
  * Off (tales off), none of it holds, and the bards play as they ever did.
@@ -43,6 +45,9 @@ object LuteSilence {
 
     /** Market days the silence lasts after an ending W, and after the lute of a C has gone back to its keeper. */
     const val TAIL = 10
+
+    /** The hours of the evening the concert plays in and the bard is kept for it (her tavern stretch, to eight). */
+    val HUSH: ClosedFloatingPointRange<Double> = 18.0..20.0
 
     /** Ticks a capital's answer is kept before the record is read again. */
     private const val KEPT = 100L
@@ -86,17 +91,29 @@ object LuteSilence {
         val today = TaleEngine.today(level, capital)
         for (t in TaleData.get(level).all()) {
             if (t.template != ID || t.capital != capital) continue
-            if (silentBy(t, today)) return true
+            if (silentBy(level, t, today)) return true
         }
         return false
     }
 
-    /** Whether the lute tale [t] holds the square silent on market [today]. */
-    fun silentBy(t: Tale, today: Long): Boolean = when {
-        t.open -> t.n[LuteSlots.BACK] == 0
-        t.ending == Ending.W || t.ending == Ending.C -> t.ended != TaleData.NEVER && today - t.ended in 0..TAIL.toLong()
+    /**
+     * Whether the lute tale [t] holds the square silent on market [today]:
+     *
+     *  - while it is open and the lute is not in her hands (`n[BACK]` 0);
+     *  - in the hush before the concert: the lute is hers again but the evening's song is still to be played (step 3, `n[PLAYED]` 0, the
+     *    hours the concert may play in), so that she is sitting, hands empty, when the stage asks for her, and not already playing (a bard
+     *    at her `Perform` is anchored and no scene may take her);
+     *  - for [TAIL] market days from the day an ending W or C ended, unless the tale's own bard is gone (then the bards who are left play).
+     */
+    fun silentBy(level: ServerLevel, t: Tale, today: Long): Boolean = when {
+        t.open -> t.n[LuteSlots.BACK] == 0 || hush(level, t)
+        t.ending == Ending.W || t.ending == Ending.C -> t.ended != TaleData.NEVER && today - t.ended in 0..TAIL.toLong() && t.cast("bard")?.gone.isNullOrEmpty()
         else -> false
     }
+
+    /** Whether it is the hush before the concert of [t]: its step, the evening hours, and scenes on. */
+    private fun hush(level: ServerLevel, t: Tale): Boolean =
+        t.step == LuteSlots.AT_SCENE && t.n[LuteSlots.PLAYED] == 0 && Tales.scenes() && Stage.within(level, HUSH)
 
     /** The market day the silence of the ended tale [t] lifts (its last silent day), or null if an ending leaves none. */
     fun until(t: Tale): Long? =
@@ -135,8 +152,7 @@ object LuteSilence {
 
 /**
  * The numbers the lute tale keeps in `Tale.n`, by their place (`Lute.numbers` names them for `tale show`): the way chosen at the keeper, the Marks
- * put in so far, the sum, whether the lute is in the bard's hands, whether the concert has played through, and the market day of the first half
- * of a B (for its three days).
+ * put in so far, the sum, whether the lute is in the bard's hands and whether the concert has played through.
  */
 object LuteSlots {
     const val WAY = 0
@@ -144,7 +160,9 @@ object LuteSlots {
     const val SUM = 2
     const val BACK = 3
     const val PLAYED = 4
-    const val FIRST = 5
+
+    /** The step the concert is (the template's table: ask, choose, give, scene). */
+    const val AT_SCENE = 3
 
     /** The ways: none chosen yet, A (all at once), B (in two parts), C (a night's loan). */
     const val NONE = 0
