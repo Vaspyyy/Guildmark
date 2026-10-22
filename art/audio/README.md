@@ -476,8 +476,8 @@ python3 -B art/audio/make_order_voices.py sounds
 
 `make_trade_voices.py` voices the trader's life (living-world/trader/design.md section 10): 94 lines in 205 takes, and
 the trade's ten talk families in 86 more. The hall's merchant (`trade_board` to `trade_warrant`: the board's calls, the
-Tally, a report, a booking, and the harness, donkey, cart, wagon and Warrant he sells), the Store's clerk, the Counting
-House's scribe and carters and the gate guards (`trade_clerk_*`, `trade_scribe_*`, `trade_carter_*`,
+Tally, a report, a booking, and the harness, donkey, cart, wagon and Warrant sold at the counter), the Store's clerk,
+the Counting House's scribe and carters and the gate guards (`trade_clerk_*`, `trade_scribe_*`, `trade_carter_*`,
 `trade_gate_house`), a Hunt's outlaws and a hired guard are in the man's and the woman's timbres; the keeper at the
 counter (`trade_delivered`, `_relief`, `_part`, `_street`, `_firstcall`) and the street's passers-by and cheer are in the
 old man's too. The crier's 12 (`crier_hauls_*`, `crier_house`) are the man's and the woman's, join `CRIER` for the run
@@ -493,7 +493,8 @@ and blows are 2.5 to 3 dB over, "Wise. We'll take our due." said low. A hired gu
 shouted; a carter robbed is slow, low and 1 dB under. Three families of outlaw lines are shouted across a distance, so
 their `sounds.json` entries carry them further than the default sixteen blocks (at which a call "at twelve blocks"
 would reach the player at a quarter of its volume): the leader's `trade_hold_*` and the curse after a player who got
-away, `trade_lost_*`, 32 blocks; the rout, `trade_flee_*`, 24 (`REACH`).
+away, `trade_lost_*`, 32 blocks; the rout, `trade_flee_*`, 24 (`REACH`). A caller gives `Townsperson.say` a `hearing`
+of at least as much, since it says a line only while a player is within it (20 by default).
 
 Every line is read from espeak's British phonemes with the r's of its American reading sounded (as the talk is), then
 `PHONEMES` and the line's own `PHONEMES_FOR` put right what Whisper heard wrong, each with a comment saying what it
@@ -530,7 +531,9 @@ group against the everyday lines' -20.9 LUFS and its own level: the hall's -20.7
 with the cheer, the outlaws' -18.8, the guard's -20.4, the Store's -20.8, the crier's -19.1 and the talk's -20.9 on
 average (the worst take 1.0 LU off its family's level), and no true peak is over -1.0 dBTP. The longest non-talk take is
 3.7 s and the longest talk take 3.93 s. `listen` writes every take in turn, each line in each of its voices, as one MP3
-and a text file of what is said when.
+and a text file of what is said when. In the game, `/guildmark trade say [key]` (`trade/TradeSayCommand.kt`; operators)
+has the townsperson you look at say the 94 lines in turn, or one line, or every line that starts so, in their own voice,
+with the key and the words in chat; `/guildmark talk family trade.short` and the other nine say a talk family's.
 
 ```
 <venv>/bin/python -I -B art/audio/make_trade_voices.py tts --model <dl>/kokoro-v1.0.onnx --voices <dl>/voices-v1.0.bin --out <raw-dir> [--timbres man] [--keys '^trade_board'] [--force] [--espeak-data <dir>]
