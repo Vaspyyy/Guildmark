@@ -25,6 +25,7 @@
   "gui.guildmark.cook.book.makes": "%s to cook · %s portions",
   "gui.guildmark.cook.book.bill": "Standard bill",
   "gui.guildmark.cook.book.know": "What the pot has told you",
+  "gui.guildmark.cook.book.know.head": "Told by the pot",
   "gui.guildmark.cook.book.know.tip": "Only what tasting and the keepers' verdicts have shown you. The world's own answer is never written here.",
   "gui.guildmark.cook.book.know.none": "Nothing yet. Taste a pot with the ladle, or sell a dish to a keeper.",
   "gui.guildmark.cook.book.know.line": "In this world you know: %s.",

@@ -58,6 +58,9 @@ class CookBookScreen : Screen(Component.translatable("gui.guildmark.cook.book"))
         private const val CELL = 29
         private const val PER_LINE = 6
 
+        /** The cell when a count has two figures ("×12" is 18 wide, and 17 + 18 does not fit in 29): five to a line then fill the page. */
+        private const val CELL_WIDE = 35
+
         private fun sprite(name: String) = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "cook/$name")
         private val PAGE = sprite("book_page")
         private val RIBBON = sprite("book_ribbon")
@@ -266,7 +269,7 @@ class CookBookScreen : Screen(Component.translatable("gui.guildmark.cook.book"))
         // What the cook has found out of this world
         graphics.blitSprite(RenderPipelines.GUI_TEXTURED, POT, x0, y0 + 70, 12, 12, ARGB.color(turn, 0xFFFFFF))
         val know = knowLine(kind, entry)
-        val head = Component.translatable("gui.guildmark.cook.book.know")
+        val head = Component.translatable("gui.guildmark.cook.book.know.head")
         graphics.text(font, head, x0 + 15, y0 + 72, ARGB.color(turn, INK_FAINT), false)
         val known = Role.entries.filter { (entry?.direction?.get(it.ordinal) ?: 0) != 0 }
         for ((n, role) in known.withIndex()) {
@@ -277,7 +280,7 @@ class CookBookScreen : Screen(Component.translatable("gui.guildmark.cook.book"))
             }
         }
         if (mouseX in x0 until x0 + w - 11 * known.size && mouseY in y0 + 70 until y0 + 82) {
-            tip(graphics, Component.translatable("gui.guildmark.cook.book.know.tip"), mouseX, mouseY)
+            tip(graphics, Component.translatable("gui.guildmark.cook.book.know").append("\n").append(Component.translatable("gui.guildmark.cook.book.know.tip")), mouseX, mouseY)
         }
         // written out as the page opens, line by line as it will stand
         var reveal = ((Util.getMillis() - changed - 150L) / 11L).toInt().coerceAtLeast(0)
@@ -328,21 +331,25 @@ class CookBookScreen : Screen(Component.translatable("gui.guildmark.cook.book"))
     private fun time(seconds: Int): String = "%d:%02d".format(seconds / 60, seconds % 60)
 
     /**
-     * A block of foods, [PER_LINE] to a line: each its item and, beside it, how many ("x3"); under the cursor, its name and
-     * the count. With [bob] each rises and falls a little, out of step with its neighbours.
+     * A block of foods, [PER_LINE] to a line (one fewer, in wider cells, when a count has two figures): each its item and,
+     * beside it, how many ("x3"); under the cursor, its name and the count. With [bob] each rises and falls a little, out
+     * of step with its neighbours.
      */
     private fun foods(
         graphics: GuiGraphicsExtractor, x0: Int, y0: Int, stacks: List<ItemStack>, alpha: Float,
         mouseX: Int, mouseY: Int, seconds: Float, bob: Boolean,
     ) {
+        val wide = stacks.any { it.count >= 10 }
+        val cell = if (wide) CELL_WIDE else CELL
+        val perLine = if (wide) PER_LINE - 1 else PER_LINE
         for ((i, stack) in stacks.withIndex()) {
-            val cx = x0 + (i % PER_LINE) * CELL
-            val cy = y0 + (i / PER_LINE) * 18
+            val cx = x0 + (i % perLine) * cell
+            val cy = y0 + (i / perLine) * 18
             val lift = if (bob) (sin(seconds * 2f + i * 0.9f) * 0.8f).roundToInt() else 0
             graphics.item(stack, cx, cy + lift)
             if (alpha < 0.99f) graphics.fill(cx, cy, cx + 16, cy + 16, ARGB.color((1f - alpha) * 0.9f, PARCHMENT))
             graphics.text(font, "×${stack.count}", cx + 17, cy + 5, ARGB.color(alpha, INK_SOFT), false)
-            if (mouseX in cx until cx + CELL - 1 && mouseY in cy until cy + 16) {
+            if (mouseX in cx until cx + cell - 1 && mouseY in cy until cy + 16) {
                 tip(graphics, Component.translatable("gui.guildmark.cook.book.food.tip", stack.count, stack.hoverName), mouseX, mouseY)
             }
         }

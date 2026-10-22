@@ -6778,5 +6778,6 @@
   "message.guildmark.cook.plate_ruined": "That is not fit for a plate.",
   "message.guildmark.cook.plate_show": "This plate is laid for show.",
   "message.guildmark.cook.plate_occupied": "There is a dish on the plate already.",
-  "message.guildmark.cook.plate_sated": "You are too full to eat."
+  "message.guildmark.cook.plate_sated": "You are too full to eat.",
+  "gui.guildmark.cook.book.know.head": "Told by the pot"
 }
