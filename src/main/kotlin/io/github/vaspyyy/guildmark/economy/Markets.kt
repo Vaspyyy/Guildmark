@@ -10,6 +10,7 @@ import io.github.vaspyyy.guildmark.city.plan.FarmPropKind
 import io.github.vaspyyy.guildmark.city.plan.Folk
 import io.github.vaspyyy.guildmark.city.plan.Kind
 import io.github.vaspyyy.guildmark.city.plan.Trade
+import io.github.vaspyyy.guildmark.cooking.market.Kitchens
 import io.github.vaspyyy.guildmark.economy.fortune.Fortunes
 import io.github.vaspyyy.guildmark.economy.works.Works
 import io.github.vaspyyy.guildmark.tales.Tales
@@ -187,7 +188,9 @@ class Markets(private val entries: MutableMap<Long, Entry> = HashMap()) : SavedD
             val felt = conditions(level, hour, entry.capital).spending(Fortunes.spend(level, entry.market.capital))
             entry.felt = felt
             val carried = Caravans.hour(level, entry, hour)
-            Economy.hour(entry.market, entry.town, felt, random(entry.market, hour), OwnStalls.seller(level, entry), carried, afar = true)
+            // What the inn, the bakery and the alms table serve at a meal hour the town does not eat as plain meals (cooking/market)
+            val served = Kitchens.step(level, entry, hour)
+            Economy.hour(entry.market, entry.town, felt, random(entry.market, hour), OwnStalls.seller(level, entry), carried, served = served, afar = true)
             // The town's works: at the close, what the day showed a need of; every hour, what they did and their freight
             if (felt.clock == Economy.NEW_DAY) Works.day(level, entry)
             Works.hour(level, entry, hour, carried)

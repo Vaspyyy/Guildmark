@@ -6,9 +6,10 @@ import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.cooking.Cooking
 import io.github.vaspyyy.guildmark.cooking.DishKind
 import io.github.vaspyyy.guildmark.cooking.Door
-import io.github.vaspyyy.guildmark.cooking.Stage
-import io.github.vaspyyy.guildmark.cooking.Tier
+import io.github.vaspyyy.guildmark.cooking.shop.CookShops
 import io.github.vaspyyy.guildmark.cooking.shop.ShopRec
+import io.github.vaspyyy.guildmark.economy.Conditions
+import io.github.vaspyyy.guildmark.economy.Economy
 import io.github.vaspyyy.guildmark.economy.Markets
 import io.github.vaspyyy.guildmark.economy.fortune.Fortunes
 import net.minecraft.core.UUIDUtil
@@ -172,8 +173,40 @@ class Kitchens(
         /**
          * One market hour of the kitchens (5.3): the meal-hour serving and the cookshops' selling hours, called by
          * [Markets.step] just before the economy works the hour out, and what it answers is the portions served, which
-         * the town does not eat as plain meals (stub: 0, nothing served).
+         * the town does not eat as plain meals. At the clock hours 8, 12 and 16 the cookshops sell ([CookShops.sellHour]) and
+         * what they sold waits in the record for the next meal; at 7, 12 and 18 the doors' lots are served ([Pantry.serve]) with
+         * those portions added. A capital that nothing was ever sold, given or asked of has no record and costs nothing here.
+         *
+         * Each hour is worked out for its own town's day, so hours caught up in order serve the lots as they would have been
+         * served hour by hour; a record found to be for a later day than the clock's own (the clock was set back) has its
+         * counters zeroed and its lots kept, as a sale would find it ([Kitchens.roll]).
          */
-        fun step(level: ServerLevel, entry: Markets.Entry, hour: Long): Double = 0.0
+        fun step(level: ServerLevel, entry: Markets.Entry, hour: Long): Double {
+            if (!Cooking.enabled()) return 0.0
+            val kitchens = get(level)
+            val capital = entry.market.capital
+            val at = Conditions(hour)
+            val clock = at.clock
+            val sold = if (clock in Pantry.SHOP_CLOCKS && Cooking.shops()) CookShops.sellHour(level, entry, hour) else 0.0
+            val rec = (if (sold > 0.0) kitchens.recOrNew(capital) else kitchens.rec(capital)) ?: return 0.0
+            val today = Cooking.today(level)
+            // A clock set back leaves the record in a day to come; an hour worked out ahead of the clock (the test commands) does not mean that
+            if (rec.day != NO_DAY && rec.day > today && hour <= Markets.hourOf(level)) kitchens.roll(rec, today)
+            if (rec.day == NO_DAY || at.day > rec.day) kitchens.roll(rec, at.day)
+            val doors = Cooking.doors()
+            if (doors) {
+                Index.record(rec, entry, hour)
+                kitchens.changed()
+            }
+            if (sold > 0.0) {
+                rec.pending += sold
+                kitchens.changed()
+            }
+            if (!Economy.meal(clock)) return 0.0
+            val served = Pantry.serve(level, rec, entry, hour, at.day, clock, doors) + rec.pending
+            rec.pending = 0.0
+            kitchens.changed()
+            return served
+        }
     }
 }
