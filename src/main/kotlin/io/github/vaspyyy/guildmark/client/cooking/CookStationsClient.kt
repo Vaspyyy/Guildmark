@@ -35,6 +35,8 @@ object CookStationsClient {
         NeoForge.EVENT_BUS.addListener(ClientTickEvent.Post::class.java) { _ -> StationFx.tick() }
         NeoForge.EVENT_BUS.addListener(ClientPlayerNetworkEvent.LoggingOut::class.java) { _ -> StationFx.reset() }
         CookStats.readout("stations seen and heard") { StationFx.readout() }
+        // After the stations' tick, whose aim the hints read
+        CookHints.register(modBus)
     }
 
     private fun renderers(event: EntityRenderersEvent.RegisterRenderers) {
