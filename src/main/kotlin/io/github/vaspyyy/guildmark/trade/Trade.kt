@@ -30,6 +30,7 @@ object Trade {
         HaulCommand.init()
 
         // B: the Word and the Tally
+        Word.register(modBus)
 
         // C: the Haul Board
 
