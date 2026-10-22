@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.client.townsfolk
 
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.client.cooking.TownKitchen
 import io.github.vaspyyy.guildmark.client.works.WorksClient
 import io.github.vaspyyy.guildmark.townsfolk.Activity
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
@@ -312,6 +313,9 @@ internal object LivingMoments {
             "eat_bowl" -> sound(level, at, sfx("streets.bowl"), 0.6f)
             // Each of the pair pats the other's back
             "embrace" -> sound(level, at, sfx("streets.pat"), 1.0f)
+            // ---- Hearthcraft (TownKitchen.kt): the kitchen's clips, their cook.* sounds and steam ----
+            "stir", "taste", "flip", "turn_spit", "carve", "slice", "peel" -> TownKitchen.moment(p, clip, m, at)
+            // ---- end Hearthcraft ----
             // The caravan crew's clips: their caravan.* sounds (client/caravan's CaravanSounds)
             else -> caravan?.invoke(p, clip, m.name, at)
         }
