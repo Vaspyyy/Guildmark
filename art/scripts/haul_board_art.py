@@ -1,29 +1,45 @@
-"""The Haul Board and the trade's small art: the chip atlas, the ticket art, the dealer's lot's mark, and the Kotlin table the
-game draws them from.
+"""The Haul Board and the trade's small art: the board (its models, textures, blockstate, item and Blockbench file), the chip atlas,
+the ticket art, the dealer's lot's mark, and the Kotlin table the game draws them from.
 
     python3 -B art/scripts/haul_board_art.py src/main/resources/assets/guildmark [kotlin-dir] [art/models] [preview-dir]
 
-The pictures themselves are painted in haul_board_icons.py (the goods' chips, the events' badges, the road pennants, the hourglass, the
-booker's seals, the notches, the ticket's paper and the rest); this script packs them and writes what the game reads. All at the
-HD scale (a screen sprite is drawn at half its texels, as ui_hd.py's are), every picture seeded, so a rerun writes the same files.
+The pictures of the atlas are painted in haul_board_icons.py (the goods' chips, the events' badges, the road pennants, the hourglass, the
+booker's seals, the notches, the ticket's paper and the rest); the board itself is haul_board_model.py (its geometry, its six cell models
+and its numbers), haul_board_paint.py (its paintings, its materials and the animated crest) and haul_board_item.py (its icon); this
+script packs the atlas and writes what the game reads. All at the HD scale (a screen sprite is drawn at half its texels, as ui_hd.py's
+are), every picture seeded, so a rerun writes the same files.
 
 Writes:
+  textures/block/haul_board/{front,back,wood,post,cap,trim,props}.png   the board's paintings and materials (front and back are
+                                                96 x 64 texels over the whole 3 x 2 blocks, 32 texels to a block, as the market board's)
+  textures/block/haul_board/crest.png (+ .mcmeta)   the crest on the head board: 12 frames of 128 x 56 in a strip, the first held
+                                                for 160 ticks, then a glint crossing the gilt in 22 (no code needed)
+  models/block/haul_board_<part>.json           the six cells (bottom_left .. top_right), authored facing north
+  blockstates/haul_board.json                   the 24 multipart entries (4 facings x 6 parts), as the market board's
+  items/haul_board.json, models/item/haul_board.json, textures/item/haul_board.png (+ .mcmeta)   the item and its moving icon
   textures/block/haul_board/atlas.png           the atlas, for the board's renderer (a block-atlas sprite, drawn as quads)
   textures/gui/trade/atlas.png                  the same pixels as a plain texture, for the screens (drawn with explicit uv)
   textures/gui/sprites/trade/<name>.png         what the market screen's Hauls section draws as sprites: the dealer's lot's
                                                 wheel, the ticket row in three kinds (nine-slice, with their .mcmeta), the relief
                                                 cross, the festoon, the six seals and the grey one to tint, the two notches
   client/trade/HaulBoardArt.kt                  GENERATED: where every cell of the atlas is, the sprites' names and sizes, and the
-                                                numbers the pictures are laid out by (see the file's own comment)
-and, with a preview dir, contact sheets of all of it (at 1x and 3x, on dark and light) for a look.
+                                                numbers the board's writing and tickets are laid out by (see the file's own comment)
+  art/models/haul_board.bbmodel                 the whole board as one Blockbench project (Java Block format)
+and, with a preview dir, the board in 3D beside the market board, straight on filled in, in close-ups, the textures and the crest's
+glint, and contact sheets of the atlas and the sprites (at 1x and 3x, on dark and light) for a look.
 
 Textures have binary alpha throughout (a pixel is there or it is not), so the atlas draws the same cut out as in a screen.
 Sizes: a screen draws a chip, a badge and a seal at half their texels, a sprite likewise; on the board a chip is 0.07 block across.
+What the board shows is drawn by its renderer, from the Kotlin table: the rows on the slate, the tickets on the pegs, the writing on the
+header. The cells carry everything else (frame, slate, rail, shelf with inkwell, quill and bell, crest), so the board stands complete
+without it.
 """
 import json
 import math
 import os
+import re
 import sys
+import textwrap
 
 import numpy as np
 from PIL import Image, ImageDraw
@@ -32,6 +48,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
 import haul_board_icons as H
+import haul_board_item as HI
+import haul_board_model as M
+import haul_board_paint as P
 import market_board_art as MB
 
 # ================================================================ the atlas
@@ -52,13 +71,15 @@ ROW_BORDER = 5
 # clear of the printed rule, the eyelet, the seal and the strip.
 TICKET_BOXES = {
     'CHIP': (10, 13, 26, 26),
-    'COUNT': (38, 15, 18, 12),
+    'COUNT': (38, 17, 18, 12),
     'PAY': (10, 41, 46, 9),
     'SHOP': (10, 51, 46, 6),
     'SEAL': (35, 31, 22, 22),
-    'CROSS': (40, 10, 16, 16),
+    'CROSS': (44, 1, 16, 16),
     'FESTOON': (0, 0, 64, 19),
 }
+PENNANT_HOIST = (2, 3)                       # where the cloth's hoist lies on the pole: texels across it and down it
+STRUCK_END = 12                              # texels at each end of the struck-through stroke that must not be stretched
 NOTCH_AT = (4, H.TICKET_H - 1 - H.NOTCH_H)   # the first notch's top left on the paper; the next ones follow at NOTCH_PITCH
 NOTCH_PITCH = 8
 NOTCH_MAX = 7                                # how many fit along the paper's foot
@@ -110,6 +131,56 @@ def gui_sprites():
     for name in ('ticket_row', 'ticket_row_relief', 'ticket_row_feast'):
         meta[name] = {'gui': {'scaling': {'type': 'nine_slice', 'width': ROW_NOMINAL[0], 'height': ROW_NOMINAL[1], 'border': ROW_BORDER}}}
     return imgs, meta
+
+
+# ================================================================ the board
+
+BLOCK_DIR = os.path.join('textures', 'block', 'haul_board')
+FACINGS = (('north', 0), ('east', 90), ('south', 180), ('west', 270))
+
+
+def board_textures():
+    """{name: image} of the board's textures under textures/block/haul_board/ (the crest is the strip of all its frames)."""
+    return {'front': P.paint_front().image(), 'back': P.paint_back().image(), 'wood': P.paint_wood().image(),
+            'post': P.paint_post().image(), 'cap': P.paint_cap().image(), 'trim': P.paint_trim().image(),
+            'props': P.paint_props().image(), 'crest': P.paint_crest()}
+
+
+def blockstate():
+    """The multipart blockstate: for each facing and part the cell's model, turned (y) to the facing. Models are authored facing north."""
+    out = []
+    for facing, y in FACINGS:
+        for part in M.PARTS:
+            apply = {'model': 'guildmark:block/haul_board_' + part}
+            if y:
+                apply['y'] = y
+            out.append({'when': {'facing': facing, 'part': part}, 'apply': apply})
+    return {'multipart': out}
+
+
+def bb_images(textures):
+    """The textures as the Blockbench file holds them: the crest as its first frame (the strip is the game's)."""
+    out = {k: im for k, im in textures.items() if k != 'crest'}
+    out['crest'] = textures['crest'].crop((0, 0, P.CREST_W, P.CREST_H))
+    return out
+
+
+def write_board(assets, models_dir):
+    """Writes everything of the board but the atlas and the table; gives the textures, the models and the item's frames."""
+    textures = board_textures()
+    for name, im in textures.items():
+        write_png(im, os.path.join(assets, BLOCK_DIR, name + '.png'))
+    write_json(P.crest_meta(), os.path.join(assets, BLOCK_DIR, 'crest.png.mcmeta'))
+    models = {part: M.model(part) for part in M.PARTS}
+    for part, m in models.items():
+        write_json(m, os.path.join(assets, 'models', 'block', 'haul_board_%s.json' % part))
+    write_json(blockstate(), os.path.join(assets, 'blockstates', 'haul_board.json'))
+    frames = HI.write(assets)
+    if models_dir:
+        os.makedirs(models_dir, exist_ok=True)
+        with open(os.path.join(models_dir, 'haul_board.bbmodel'), 'w') as f:
+            json.dump(M.bbmodel(bb_images(textures)), f)
+    return textures, models, frames
 
 
 # ================================================================ the Kotlin table
@@ -164,8 +235,8 @@ def kotlin(where, atlas_size, sprites):
     w('    val ROADS = arrayOf(' + ', '.join('"%s"' % r for r in H.ROADS) + ')')
     w('    val PENNANT = arrayOf(' + ', '.join(ints(where['pennant/%s' % r]) for r in H.ROADS) + ')')
     w('    val PENNANT_POLE = ' + ints(where['pennant/pole']))
-    w('    const val PENNANT_HOIST_Y = 3')
-    w('    const val PENNANT_HOIST_X = 2')
+    w('    const val PENNANT_HOIST_Y = %d' % PENNANT_HOIST[1])
+    w('    const val PENNANT_HOIST_X = %d' % PENNANT_HOIST[0])
     w('')
     w('    /**')
     w('     * The hourglass: its [HOURGLASS_LEVELS] whole pictures from new (all the sand above) to spent (all below), and its parts for')
@@ -212,7 +283,7 @@ def kotlin(where, atlas_size, sprites):
     w('')
     w('    /** A stroke of chalk to strike through a stale row (its two ends are 12 texels each; the middle may be stretched), and a small quill. */')
     w('    val STRUCK = ' + ints(where['mark/struck']))
-    w('    const val STRUCK_END = 12')
+    w('    const val STRUCK_END = %d' % STRUCK_END)
     w('    val QUILL = ' + ints(where['mark/quill']))
     w('')
     w('    /**')
@@ -260,7 +331,21 @@ def kotlin(where, atlas_size, sprites):
     w('    const val NOTCH_SPENT_SPRITE = "trade/notch_spent"')
     w('    const val NOTCH_PX_W = %d' % (H.NOTCH_W // 2))
     w('    const val NOTCH_PX_H = %d' % (H.NOTCH_H // 2))
+    w('')
+    w('    // ---- the board: where its writing and its tickets go (art/scripts/haul_board_model.py)')
+    for doc, group in M.LAYOUT_GROUPS:
+        w('')
+        w('    /**')
+        for line in textwrap.wrap(doc, 120):
+            w('     * ' + line)
+        w('     */')
+        for k, v in group.items():
+            w('    const val %s = %s' % (k, ('%d' % v) if isinstance(v, int) else ('%sf' % repr(round(v, 6)))))
     w('}')
+    names = [m.group(1) for ln in lines for m in [re.match(r'\s+(?:const )?val (\w+)', ln)] if m]
+    dup = sorted({n for n in names if names.count(n) > 1})
+    if dup:
+        raise SystemExit('haul_board_art: the Kotlin table names %s twice' % ', '.join(dup))
     return '\n'.join(lines) + '\n'
 
 
@@ -314,6 +399,78 @@ def verify(atlas, where, sprites, meta):
         raise SystemExit('haul_board_art: ' + '; '.join(problems))
 
 
+def verify_board(assets, textures, models, frames, models_dir):
+    """The board's checks, which fail the run rather than ship a wrong file: texture sizes, every model's textures there and every
+    element inside the game's -16..32 and turned only by the angles it allows, every face's uv inside the texture, the blockstate
+    naming a model for each facing and part (and equal to the market board's, names swapped), the crest's .mcmeta fitting its
+    strip, the icon's own checks, and the Blockbench file holding every element and texture."""
+    problems = []
+    expect = {'front': (M.PW, M.PH), 'back': (M.PW, M.PH), 'props': (64, 64), 'crest': (P.CREST_W, P.CREST_H * P.CREST_FRAMES)}
+    for k, size in expect.items():
+        if textures[k].size != size:
+            problems.append('texture %s is %s, not %s' % (k, textures[k].size, size))
+    for k, im in textures.items():
+        if not (np.asarray(im.convert('RGBA'))[..., 3] == 255).all():
+            problems.append('texture %s is not fully opaque (a model texture must be: nothing cuts it out)' % k)
+    meta = json.load(open(os.path.join(assets, BLOCK_DIR, 'crest.png.mcmeta')))['animation']
+    if (meta['width'], meta['height']) != (P.CREST_W, P.CREST_H) or textures['crest'].height % meta['height']:
+        problems.append('the crest .mcmeta does not fit its strip')
+    shown = {e if isinstance(e, int) else e['index'] for e in meta['frames']}
+    if shown != set(range(textures['crest'].height // meta['height'])):
+        problems.append('the crest .mcmeta does not show every frame, or shows one that is not there')
+    allowed = {0.0, 22.5, -22.5, 45.0, -45.0}
+    total = 0
+    for part, m in models.items():
+        if not m['elements']:
+            problems.append('cell %s has no elements' % part)
+        total += len(m['elements'])
+        for name, ref in m['textures'].items():
+            if name == 'particle' or ref.startswith('#'):
+                continue
+            ns, _, path = ref.partition(':')
+            if not os.path.exists(os.path.join(assets, 'textures', path + '.png')):
+                problems.append('cell %s: texture %s is not there' % (part, ref))
+        for n, e in enumerate(m['elements']):
+            tag = 'cell %s element %d' % (part, n)
+            if any(not -16 <= v <= 32 for v in e['from'] + e['to']):
+                problems.append('%s lies outside -16..32: %s %s' % (tag, e['from'], e['to']))
+            if any(t - f <= 0 for f, t in zip(e['from'], e['to'])):
+                problems.append('%s has no volume' % tag)
+            if 'rotation' in e and (e['rotation']['angle'] not in allowed or e['rotation']['axis'] not in 'xyz'):
+                problems.append('%s turns by %s about %s' % (tag, e['rotation']['angle'], e['rotation']['axis']))
+            for d, f in e['faces'].items():
+                if f['texture'][1:] not in m['textures']:
+                    problems.append('%s face %s names %s, which the cell has no texture for' % (tag, d, f['texture']))
+                if any(not -1e-3 <= v <= 16 + 1e-3 for v in f['uv']):
+                    problems.append('%s face %s has its uv outside the texture: %s' % (tag, d, f['uv']))
+    bs = blockstate()
+    if len(bs['multipart']) != 4 * len(M.PARTS):
+        problems.append('the blockstate has %d entries' % len(bs['multipart']))
+    market = os.path.join(assets, 'blockstates', 'market_board.json')
+    if os.path.exists(market):
+        with open(market) as f:
+            twin = json.loads(f.read().replace('market_board', 'haul_board'))
+        if twin != bs:
+            problems.append('the blockstate is not the market board\'s with the names swapped')
+    problems += HI.verify(assets, frames)
+    if models_dir:
+        with open(os.path.join(models_dir, 'haul_board.bbmodel')) as f:
+            bb = json.load(f)
+        ids = {e['uuid'] for e in bb['elements']}
+        if len(bb['elements']) != total or len(ids) != total:
+            problems.append('the Blockbench file holds %d elements, the cells %d' % (len(bb['elements']), total))
+        if {c for g in bb['outliner'] for c in g['children']} != ids:
+            problems.append('the Blockbench file\'s groups do not hold exactly its elements')
+        if len(bb['textures']) != len(M.BB_TEXTURES):
+            problems.append('the Blockbench file holds %d textures' % len(bb['textures']))
+        for e in bb['elements']:
+            for d, f in e['faces'].items():
+                if f['texture'] is not None and not 0 <= f['texture'] < len(bb['textures']):
+                    problems.append('Blockbench element %s names texture %s' % (e['name'], f['texture']))
+    if problems:
+        raise SystemExit('haul_board_art: ' + '; '.join(problems))
+
+
 def build():
     items = pieces()
     atlas, where = pack(items)
@@ -325,6 +482,7 @@ def main(argv):
     assets = argv[1]
     root = os.path.abspath(os.path.join(assets, '..', '..', '..'))
     kt_dir = argv[2] if len(argv) > 2 else os.path.join(root, 'kotlin', 'io', 'github', 'vaspyyy', 'guildmark', 'client', 'trade')
+    models_dir = argv[3] if len(argv) > 3 else os.path.join(root, '..', '..', 'art', 'models')
     prev = argv[4] if len(argv) > 4 else None
     atlas, where, sprites, meta = build()
     verify(atlas, where, sprites, meta)
@@ -334,11 +492,16 @@ def main(argv):
         write_png(im, os.path.join(assets, SPRITE_DIR, name + '.png'))
         if name in meta:
             write_json(meta[name], os.path.join(assets, SPRITE_DIR, name + '.png.mcmeta'))
+    textures, models, frames = write_board(assets, models_dir)
+    verify_board(assets, textures, models, frames, models_dir)
     os.makedirs(kt_dir, exist_ok=True)
     with open(os.path.join(kt_dir, 'HaulBoardArt.kt'), 'w') as f:
         f.write(kotlin(where, atlas.size, sprites))
+    print('haul_board_art: %d atlas cells, %d sprites, %d cells with %d elements, a %d-frame icon' %
+          (len(where), len(sprites), len(models), sum(len(m['elements']) for m in models.values()), len(frames)))
     if prev:
         previews(prev, atlas, where, sprites)
+        board_previews(assets, prev, frames)
 
 
 # ================================================================ previews
@@ -353,6 +516,35 @@ def previews(out, atlas, where, sprites):
     ims = [sprites[n] for n in names]
     H.sheet(ims, names, 3, 6, dark).save(os.path.join(out, 'haul_sprites_dark.png'))
     H.sheet(ims, names, 3, 6, light).save(os.path.join(out, 'haul_sprites_light.png'))
+
+
+def board_previews(assets, out, frames):
+    """The board's previews (see haul_board_preview.py) and its icon: large, small beside the market board's, and moving."""
+    import shutil
+    import tempfile
+    import haul_board_preview as PRV
+    import trade_items as TI
+    work = tempfile.mkdtemp(prefix='haul_board_')
+    try:
+        PRV.previews(assets, out, work)
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+    others = []
+    for n in ('market_board', 'bounty_board'):
+        path = os.path.join(assets, 'textures', 'item', n + '.png')
+        if os.path.exists(path):
+            others.append(Image.open(path).convert('RGBA'))
+    imgs = [frames[0]] + others + frames[1:5] + frames[5:7]
+    labels = ['haul board'] + ['market board', 'bounty board'][:len(others)] + ['stir %d' % k for k in range(1, 5)] + ['sweep 1', 'sweep 2']
+    TI.tiles(imgs, labels, 8, 5, TI.BG_DARK).save(os.path.join(out, 'haul_board_icon.png'))
+    rows = [TI.small_row([frames[0]] + others, bg, size, zoom) for _, bg in TI.BACKDROPS for size, zoom in ((32, 3), (16, 6))]
+    sheet = Image.new('RGBA', (max(r.width for r in rows), sum(r.height + 6 for r in rows)), (*TI.BG_DARK, 255))
+    y = 0
+    for r in rows:
+        sheet.alpha_composite(r, (0, y))
+        y += r.height + 6
+    sheet.save(os.path.join(out, 'haul_board_icon_small.png'))
+    TI.gif(frames, os.path.join(out, 'haul_board_icon.gif'), TI.BG_DARK, TI.playlist(HI.TIMELINE), 10)
 
 
 if __name__ == '__main__':

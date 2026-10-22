@@ -109,11 +109,11 @@ internal object HaulBoardArt {
     const val NOTCH_PITCH = 8
     const val NOTCH_MAX = 7
     val TICKET_CHIP = intArrayOf(10, 13, 26, 26)
-    val TICKET_COUNT = intArrayOf(38, 15, 18, 12)
+    val TICKET_COUNT = intArrayOf(38, 17, 18, 12)
     val TICKET_PAY = intArrayOf(10, 41, 46, 9)
     val TICKET_SHOP = intArrayOf(10, 51, 46, 6)
     val TICKET_SEAL = intArrayOf(35, 31, 22, 22)
-    val TICKET_CROSS = intArrayOf(40, 10, 16, 16)
+    val TICKET_CROSS = intArrayOf(44, 1, 16, 16)
     val TICKET_FESTOON = intArrayOf(0, 0, 64, 19)
 
     /**
@@ -140,4 +140,133 @@ internal object HaulBoardArt {
     const val NOTCH_SPENT_SPRITE = "trade/notch_spent"
     const val NOTCH_PX_W = 4
     const val NOTCH_PX_H = 5
+
+    // ---- the board: where its writing and its tickets go (art/scripts/haul_board_model.py)
+
+    /**
+     * Where the faces are: the slate that takes the rows (its left and right, top and foot), the panel of hooks (its left and
+     * right), the header plank (its top and foot), and how far back each lies. The writing is drawn just in front of them.
+     */
+    const val SLATE_U0 = 0.21875f
+    const val SLATE_U1 = 1.421875f
+    const val HOOKS_U0 = 1.515625f
+    const val HOOKS_U1 = 2.78125f
+    const val PANEL_V0 = 0.3125f
+    const val PANEL_V1 = 1.59375f
+    const val HEADER_V0 = 0.125f
+    const val HEADER_V1 = 0.3125f
+    const val SLATE_DEPTH = 0.796875f
+    const val HEADER_DEPTH = 0.703125f
+
+    /**
+     * The chalk ledge under the slate, where the merchant's chalk lies: its left and right, the v of its top and how far back
+     * its front is.
+     */
+    const val LEDGE_U0 = 0.28125f
+    const val LEDGE_U1 = 1.375f
+    const val LEDGE_V = 1.5625f
+    const val LEDGE_DEPTH = 0.671875f
+
+    /**
+     * The slate: ROWS rows, the margins left, right and at the foot (clear of the ledge), the title's baseline and the v, down
+     * from the slate's top, where the first row starts, and a row's height. The size of the writing, in blocks to a pixel of
+     * the market board's lettering (market_board_letters): the title, a town's name, the age beside the hourglass and the
+     * number of tickets by the seal.
+     */
+    const val ROWS = 8
+    const val PAD_L = 0.04f
+    const val PAD_R = 0.03f
+    const val PAD_B = 0.06f
+    const val TITLE_BASE = 0.097f
+    const val ROWS_TOP = 0.125f
+    const val ROW_PITCH = 0.137031f
+    const val S_TITLE = 0.0078f
+    const val S_NAME = 0.0075f
+    const val S_AGE = 0.0062f
+    const val S_COUNT = 0.0062f
+
+    /**
+     * In a row (blocks from its top left, after PAD_L): the name's left and baseline; the chips' top, pitch and where the red
+     * ones and the green ones start (a chip is CHIP_BLOCKS square); the hourglass's left and middle and the blocks a texel of
+     * the atlas is drawn at (the pennant's and its pole's too); the age's left and baseline; the pennant's left and top; the
+     * seal's left and middle and the blocks a texel of it is drawn at; the number of tickets, its left and baseline, to the
+     * seal's right; and the top of a stale row's strike-through stroke, laid over the middle of the name.
+     */
+    const val NAME_X = 0.0f
+    const val NAME_BASE = 0.06f
+    const val CHIP_TOP = 0.067f
+    const val CHIP_PITCH = 0.073f
+    const val CHIP_RED_X = 0.0f
+    const val CHIP_GREEN_X = 0.3f
+    const val HOURGLASS_X = 0.585f
+    const val HOURGLASS_MID = 0.0685f
+    const val TEXEL = 0.0035f
+    const val AGE_X = 0.665f
+    const val AGE_BASE = 0.081f
+    const val PENNANT_X = 0.915f
+    const val PENNANT_TOP = 0.0115f
+    const val SEAL_X = 1.0f
+    const val SEAL_MID = 0.0685f
+    const val SEAL_TEXEL = 0.0029f
+    const val COUNT_X = 1.078f
+    const val COUNT_BASE = 0.0905f
+    const val STRUCK_Y = 0.032f
+
+    /**
+     * The header plank's lettering (a town's name, or the board's, as the renderer likes): the baseline down from the plank's
+     * top and the size in blocks to a pixel of the lettering, and how far the cap's eave covers the plank's top seen straight
+     * on (keep the letters clear of it).
+     */
+    const val HEADER_BASE = 0.153f
+    const val S_HEADER = 0.0105f
+    const val HEADER_EAVE = 0.027f
+
+    /**
+     * Past FADE_NEAR blocks from the viewer the writing fades, and by FADE_FAR it is gone.
+     */
+    const val FADE_NEAR = 20.0f
+    const val FADE_FAR = 24.0f
+
+    /**
+     * The pegs: the depth of a peg, the depth of the plane a ticket hangs in, a ticket's width (its height follows the paper's
+     * TICKET_W x TICKET_H texels), the u of the first peg and the pitch between them, and the v of the pegs on each of the two
+     * rails (HOOK_V0 the upper). A ticket hangs from its eyelet (TICKET_EYELET_X and _Y of the atlas) on the peg.
+     */
+    const val HOOK_DEPTH = 0.698438f
+    const val TICKET_DEPTH = 0.696875f
+    const val TICKET_BLOCKS = 0.25f
+    const val HOOK_PITCH = 0.316406f
+    const val HOOK_U0 = 1.673828f
+    const val HOOK_V0 = 0.425f
+    const val HOOK_V1 = 0.775f
+
+    /**
+     * The shelf under the panel: its left and right, the v of its top, and how far back its front and its back are; where the
+     * merchant's satchel is set down (the middle of its foot: u, v, depth); the brass bell (the middle of its plate: u, v of
+     * its middle, depth, and the radius of its plate); the inkwell (the middle of its foot).
+     */
+    const val SHELF_U0 = 1.5625f
+    const val SHELF_U1 = 2.71875f
+    const val SHELF_V = 1.5625f
+    const val SHELF_DEPTH0 = 0.515625f
+    const val SHELF_DEPTH1 = 0.796875f
+    const val SATCHEL_U = 1.7625f
+    const val SATCHEL_V = 1.5625f
+    const val SATCHEL_DEPTH = 0.65625f
+    const val BELL_U = 2.58125f
+    const val BELL_V = 1.485937f
+    const val BELL_DEPTH = 0.653125f
+    const val BELL_R = 0.09375f
+    const val INK_U = 2.19375f
+    const val INK_V = 1.425f
+    const val INK_DEPTH = 0.68125f
+
+    /**
+     * The crest over the cap's ridge: its left and right, its top and foot (v), and how far back its face is.
+     */
+    const val CREST_U0 = 1.0f
+    const val CREST_U1 = 2.0f
+    const val CREST_V0 = -0.3375f
+    const val CREST_V1 = 0.1f
+    const val CREST_DEPTH = 0.775f
 }
