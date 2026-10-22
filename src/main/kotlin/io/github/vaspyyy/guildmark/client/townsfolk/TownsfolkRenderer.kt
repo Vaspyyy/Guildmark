@@ -5,6 +5,7 @@ import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.client.combat.Clip
 import io.github.vaspyyy.guildmark.client.combat.Clips
 import io.github.vaspyyy.guildmark.client.combat.CombatAnimator
+import io.github.vaspyyy.guildmark.client.cooking.TownPlateLayer
 import io.github.vaspyyy.guildmark.client.ui.TalkClient
 import io.github.vaspyyy.guildmark.festival.FestivalSite
 import io.github.vaspyyy.guildmark.townsfolk.Activity
@@ -34,6 +35,9 @@ class TownsfolkRenderer(context: EntityRendererProvider.Context) :
         // ---- Living World (LivingGoodsLayer.kt): the goods in hand ----
         addLayer(LivingGoodsLayer(this))
         // ---- end Living World ----
+        // ---- Hearthcraft (TownPlateLayer.kt): the dish on the table in front of a diner at the inn ----
+        addLayer(TownPlateLayer(this))
+        // ---- end Hearthcraft ----
     }
 
     override fun createRenderState(): TownsfolkRenderState = TownsfolkRenderState()
