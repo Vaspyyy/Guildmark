@@ -2,6 +2,7 @@ package io.github.vaspyyy.guildmark.client.atlas
 
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.client.GuildmarkClientConfig
+import io.github.vaspyyy.guildmark.client.TaleTracker
 import io.github.vaspyyy.guildmark.client.combat.Cutscenes
 import io.github.vaspyyy.guildmark.client.region.RegionTitle
 import io.github.vaspyyy.guildmark.client.season.SeasonBanner
@@ -146,13 +147,16 @@ object TaleBanner : GuiLayer {
 
     fun enabled(): Boolean = !GuildmarkClientConfig.SPEC.isLoaded || GuildmarkClientConfig.TALE_BANNERS.get()
 
-    /** At setup, from `GuildmarkClient`: the layer, the clock, and the clean slate on leaving a world. */
+    /** At setup, from `GuildmarkClient`: the layer, the clock, and the clean slate on leaving a world (the banners', and the tracker's tales). */
     fun register(modBus: IEventBus) {
         modBus.addListener(RegisterGuiLayersEvent::class.java) { event ->
             event.registerBelow(VanillaGuiLayers.TITLE, ID, TaleBanner)
         }
         NeoForge.EVENT_BUS.addListener(ClientTickEvent.Post::class.java) { _ -> tick() }
-        NeoForge.EVENT_BUS.addListener(ClientPlayerNetworkEvent.LoggingOut::class.java) { _ -> reset() }
+        NeoForge.EVENT_BUS.addListener(ClientPlayerNetworkEvent.LoggingOut::class.java) { _ ->
+            reset()
+            TaleTracker.reset()
+        }
     }
 
     // ---- What comes ----

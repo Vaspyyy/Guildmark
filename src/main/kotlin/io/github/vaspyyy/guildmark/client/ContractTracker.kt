@@ -25,6 +25,7 @@ import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
 import net.minecraft.locale.Language
 import net.minecraft.resources.Identifier
+import net.minecraft.util.ARGB
 import net.minecraft.util.Mth
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.item.ItemStack
@@ -32,6 +33,7 @@ import net.minecraft.world.item.Items
 import net.minecraft.world.level.block.Blocks
 import net.neoforged.neoforge.client.gui.GuiLayer
 import kotlin.math.atan2
+import kotlin.math.min
 import kotlin.math.sqrt
 
 /**
@@ -66,16 +68,22 @@ object ContractTracker : GuiLayer {
 
     private class Entry(val stack: ItemStack, val note: QuestNote, val state: ContractState)
 
-    /** One line of the tracker: a contract, a rival's challenge, or the main story's next step. */
-    private class Row(val icon: ItemStack, val title: Component, val status: Component, val color: Int, val target: BlockPos?, val kind: Int)
+    /**
+     * One line of the tracker: a contract, a rival's challenge, the main story's next step, an order, or a tale (then [tale] says how
+     * it is drawn and moves, see [TaleTracker]). [key] names it while rows glide to their places.
+     */
+    private class Row(val icon: ItemStack, val title: Component, val status: Component, val color: Int, val target: BlockPos?, val kind: Int, val tale: TaleTracker.Line? = null) {
+        var key: String = ""
+    }
 
-    /** Somewhere the tracker points, for the compass and the map. */
-    class Waypoint(val pos: BlockPos, val title: Component, val kind: Int)
+    /** Somewhere the tracker points, for the compass and the map; [lines] are what the map's tooltip says under its title, if the row has more to tell. */
+    class Waypoint(val pos: BlockPos, val title: Component, val kind: Int, val lines: List<Component> = listOf())
 
     const val CONTRACT = 0
     const val CHALLENGE = 1
     const val STORY = 2
     const val ORDER = 3
+    const val TALE = 4
 
     private val SHARD_ICON: ItemStack by lazy { MainQuest.shard(0) }
     private val STORY_INK = 0xFF6A3A9A.toInt()
@@ -88,48 +96,79 @@ object ContractTracker : GuiLayer {
         val player = minecraft.player ?: return
         if (!shown || minecraft.gui.hud.isHidden) return
 
-        val rows = rows(player)
+        // The tales' rows keep a time of their own, and a tale that has just left stays a moment to fade (TaleTracker)
+        TaleTracker.frame(minecraft)
+        val live = rows(player)
+        TaleTracker.observe(live.mapNotNull { it.tale })
+        val rows = withGhosts(live)
         // Below the combat bars when they're showing
         val top = 4 + CombatHud.reservedHeight()
-        if (rows.isEmpty()) {
-            renderParty(graphics, minecraft, player, top)
-            return
-        }
 
         val shownEntries = rows.take(MAX_SHOWN)
         val extra = rows.size - shownEntries.size
-        val height = PADDING * 2 + shownEntries.size * ROW_HEIGHT - 4 + if (extra > 0) 10 else 0
+        // The panel grows and shrinks to its rows rather than jumping, and is gone when it is down to nothing
+        val height = TaleTracker.height(if (rows.isEmpty()) 0 else PADDING * 2 + shownEntries.size * ROW_HEIGHT - 4 + if (extra > 0) 10 else 0)
+        if (height <= 0) {
+            renderParty(graphics, minecraft, player, top)
+            return
+        }
         val left = 4
         graphics.blitSprite(RenderPipelines.GUI_TEXTURED, PANEL, left, top, WIDTH, height)
+        // The rows are drawn inside the panel as it is now, so a row that comes while it is still growing is uncovered with it
+        graphics.enableScissor(left, top, left + WIDTH, top + height)
 
         val font = minecraft.font
         shownEntries.forEachIndexed { i, entry ->
-            val y = top + PADDING + i * ROW_HEIGHT
+            val y = TaleTracker.slide(entry.key, top + PADDING + i * ROW_HEIGHT)
             val x = left + PADDING
-            graphics.item(entry.icon, x, y + 2)
-
             val textWidth = WIDTH - PADDING * 2 - 20 - 26
-            val title = font.substrByWidth(entry.title, textWidth)
-            graphics.text(font, Language.getInstance().getVisualOrder(title), x + 20, y + 1, INK, false)
-            graphics.text(font, Language.getInstance().getVisualOrder(font.substrByWidth(entry.status, textWidth)), x + 20, y + 11, entry.color, false)
+            val tale = entry.tale
+            var fade = 1f
+            if (tale != null) {
+                fade = TaleTracker.draw(graphics, font, tale, x, y, textWidth)
+            } else {
+                graphics.item(entry.icon, x, y + 2)
+
+                val title = font.substrByWidth(entry.title, textWidth)
+                graphics.text(font, Language.getInstance().getVisualOrder(title), x + 20, y + 1, INK, false)
+                graphics.text(font, Language.getInstance().getVisualOrder(font.substrByWidth(entry.status, textWidth)), x + 20, y + 11, entry.color, false)
+            }
 
             val target = entry.target ?: return@forEachIndexed
+            if (fade < 0.05f) return@forEachIndexed
             val dx = target.x + 0.5 - player.x
             val dz = target.z + 0.5 - player.z
             val distance = sqrt(dx * dx + dz * dz)
             if (distance < NEAR) return@forEachIndexed
             val arrowX = left + WIDTH - PADDING - 13
-            drawArrow(graphics, arrowX, y + 6, Math.toDegrees(atan2(dz, dx)).toFloat() - 90.0f - player.yRot)
+            drawArrow(graphics, arrowX, y + 6, Math.toDegrees(atan2(dz, dx)).toFloat() - 90.0f - player.yRot, fade)
             val label = if (distance >= 1000) "%.1fk".format(distance / 1000) else "${distance.toInt()}"
-            graphics.text(font, Component.literal(label), arrowX - font.width(label) / 2, y + 13, FADED_INK, false)
+            graphics.text(font, Component.literal(label), arrowX - font.width(label) / 2, y + 13, if (tale != null) ARGB.color(fade, TaleTracker.DISTANCE_INK) else FADED_INK, false)
         }
         if (extra > 0) {
             graphics.text(font, Component.translatable("gui.guildmark.tracker.more", extra), left + PADDING, top + height - PADDING - 8, FADED_INK, false)
         }
+        graphics.disableScissor()
+        TaleTracker.sweep()
         renderParty(graphics, minecraft, player, top + height + 3)
     }
 
-    /** Rival challenges first, then the main story, then the contracts carried, soonest deadline first, then the orders taken, soonest due first. */
+    /** The rows to draw: the live ones, and a tale that has just left, fading where it stood. */
+    private fun withGhosts(live: List<Row>): List<Row> {
+        val ghosts = TaleTracker.ghosts()
+        if (ghosts.isEmpty()) return live
+        val rows = live.toMutableList()
+        val start = live.count { it.kind == CHALLENGE || it.kind == STORY }
+        val tales = live.count { it.kind == TALE }
+        for (ghost in ghosts) {
+            val row = Row(TaleTracker.QUILL, ghost.title, ghost.status, TaleTracker.inkOf(ghost.tone), null, TALE, ghost)
+            row.key = "t${ghost.id}"
+            rows.add(start + min(ghost.index, tales), row)
+        }
+        return rows
+    }
+
+    /** Rival challenges first, then the main story, then the tales followed, then the contracts carried, soonest deadline first, then the orders taken, soonest due first. */
     private fun rows(player: Player): List<Row> {
         val entries = (0 until player.inventory.containerSize)
             .map { player.inventory.getItem(it) }
@@ -142,11 +181,58 @@ object ContractTracker : GuiLayer {
         val rows = mutableListOf<Row>()
         challengeRows(player).forEach { rows.add(it) }
         storyRow(player)?.let { rows.add(it) }
+        // A tale is a row of its own and takes up the contract its step is working, so one tale is one row
+        val folded = HashSet<Entry>()
+        rows.addAll(taleRows(player, entries, folded))
         for (entry in entries) {
+            if (entry in folded) continue
             val (status, color) = status(player, entry)
             rows.add(Row(entry.stack, entry.note.title(), status, color, target(player, entry), CONTRACT))
         }
         rows.addAll(orderRows(player))
+        return keyed(rows)
+    }
+
+    /**
+     * The tales the player follows, as the server last sent them (`ModAttachments.TALES`), each as one row, after the story. A row
+     * takes up the contract its step is working when that is in the pack (a note whose chain, `tale:<tale>:<step>`, names this tale
+     * and this step): the count of it rides at the end of the row's status, and the row says so when it is done (and points at the
+     * board) or has lapsed. A contract that no row asks for stays a row of its own, so nothing the player carries is hidden.
+     */
+    private fun taleRows(player: Player, entries: List<Entry>, folded: MutableSet<Entry>): List<Row> {
+        val tales = player.getData(ModAttachments.TALES)
+        if (tales.isEmpty()) return listOf()
+        val level = player.level()
+        return tales.mapIndexed { index, tale ->
+            val entry = entries.firstOrNull { e -> TaleTracker.chain(e.note.chain)?.let { it.first == tale.id && it.second == tale.step } == true }
+            var board: BlockPos? = null
+            val count = entry?.let { e ->
+                folded.add(e)
+                val lapsed = e.state.isExpired(level.gameTime)
+                val done = isDone(player, e)
+                if (done && !lapsed && e.state.dimension == level.dimension()) board = e.state.boardPos
+                val have = when (e.note.type) {
+                    QuestType.FETCH -> Contracts.countFetchItems(player, e.note)
+                    QuestType.HUNT, QuestType.CLEAR, QuestType.CHAMPION, QuestType.TRIAL, QuestType.CHART -> e.state.progress
+                    else -> -1
+                }
+                TaleTracker.Count(min(have, e.note.count).coerceAtLeast(0), if (have >= 0) e.note.count else 0, done, lapsed)
+            }
+            val line = TaleTracker.line(tale, count, index)
+            val place = board ?: if (tale.dimension == level.dimension()) tale.place else null
+            Row(TaleTracker.QUILL, line.title, line.status, TaleTracker.inkOf(line.tone), place, TALE, line)
+        }
+    }
+
+    /** Names the rows, so that each keeps its place while the others come and go: a tale by its id, any other by what it says (a second of the same words gets a number). */
+    private fun keyed(rows: List<Row>): List<Row> {
+        val seen = HashMap<String, Int>()
+        for (row in rows) {
+            val name = row.tale?.let { "t${it.id}" } ?: "${row.kind}:${row.title.string}"
+            val n = (seen[name] ?: 0) + 1
+            seen[name] = n
+            row.key = if (n == 1) name else "$name#$n"
+        }
         return rows
     }
 
@@ -184,7 +270,7 @@ object ContractTracker : GuiLayer {
     }
 
     /** Where the tracker's rows point, in the dimension the player is in. */
-    fun waypoints(player: Player): List<Waypoint> = rows(player).mapNotNull { row -> row.target?.let { Waypoint(it, row.title, row.kind) } }
+    fun waypoints(player: Player): List<Waypoint> = rows(player).mapNotNull { row -> row.target?.let { Waypoint(it, row.title, row.kind, row.tale?.tip ?: listOf()) } }
 
     /** The party: each other member's name, health and how far away they are. */
     private fun renderParty(graphics: GuiGraphicsExtractor, minecraft: Minecraft, player: Player, top: Int) {
@@ -241,13 +327,14 @@ object ContractTracker : GuiLayer {
         return Row(SHARD_ICON, title, status, STORY_INK, state.target.orElse(null), STORY)
     }
 
-    /** An arrow centred on (x, y), turned [degrees] clockwise from straight ahead. */
-    private fun drawArrow(graphics: GuiGraphicsExtractor, x: Int, y: Int, degrees: Float) {
+    /** An arrow centred on (x, y), turned [degrees] clockwise from straight ahead, [alpha] visible (a tale's arrow comes and goes with its row). */
+    private fun drawArrow(graphics: GuiGraphicsExtractor, x: Int, y: Int, degrees: Float, alpha: Float = 1f) {
         val pose = graphics.pose()
         pose.pushMatrix()
         pose.translate(x.toFloat(), y.toFloat())
         pose.rotate(Mth.wrapDegrees(degrees) * Mth.DEG_TO_RAD)
-        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, ARROW, -5, -5, 11, 11)
+        if (alpha >= 1f) graphics.blitSprite(RenderPipelines.GUI_TEXTURED, ARROW, -5, -5, 11, 11)
+        else graphics.blitSprite(RenderPipelines.GUI_TEXTURED, ARROW, -5, -5, 11, 11, ARGB.white(alpha))
         pose.popMatrix()
     }
 
