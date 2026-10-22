@@ -48,6 +48,7 @@ object CartClient {
     fun register(modBus: IEventBus) {
         modBus.addListener(EntityRenderersEvent.RegisterRenderers::class.java) { event ->
             event.registerEntityRenderer(Handcarts.HANDCART.get(), ::HandcartRenderer)
+            event.registerEntityRenderer(Handcarts.PLAYER_CART.get(), ::HandcartRenderer)
         }
         modBus.addListener(EntityRenderersEvent.RegisterLayerDefinitions::class.java) { event ->
             event.registerLayerDefinition(HandcartModel.LAYER, HandcartMesh::cart)

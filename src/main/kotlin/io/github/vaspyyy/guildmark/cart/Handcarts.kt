@@ -57,6 +57,20 @@ object Handcarts {
             .build(ResourceKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "handcart")))
     }
 
+    /**
+     * The Chapman's Cart ([PlayerCart], trader design Part 3): a player's own handcart, saved with the world, never summoned. It is in none of
+     * this registry's lists: the trader's code keeps it (trade/carry/CartHitch), so nothing here steps it, clears it or counts it.
+     */
+    val PLAYER_CART: DeferredHolder<EntityType<*>, EntityType<PlayerCart>> = ENTITIES.register("player_cart") { ->
+        EntityType.Builder.of(::PlayerCart, MobCategory.MISC)
+            .sized(1.4f, 1.0f)
+            .noSummon()
+            .fireImmune()
+            .clientTrackingRange(10)
+            .updateInterval(1)
+            .build(ResourceKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "player_cart")))
+    }
+
     /** The pulling move: leaning into it, both hands back on the shafts. Play it over the walk, and standing, while the cart is in hand. */
     val PULL: Activity = Activity.PULL_CART
 

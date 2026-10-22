@@ -7,6 +7,7 @@ import io.github.vaspyyy.guildmark.item.RelicCacheItem
 import io.github.vaspyyy.guildmark.item.WardensFlaskItem
 import io.github.vaspyyy.guildmark.tales.KeepsakeItem
 import io.github.vaspyyy.guildmark.trade.WarrantItem
+import io.github.vaspyyy.guildmark.trade.carry.ChapmansCartItem
 import io.github.vaspyyy.guildmark.trade.carry.DroversWhistleItem
 import io.github.vaspyyy.guildmark.trade.carry.PackHarnessItem
 import net.minecraft.core.component.DataComponents
@@ -80,6 +81,13 @@ object ModItems {
 
     /** Comes with the harness: blown, it calls every pack animal of yours; blown while sneaking, it has them stay. */
     val DROVERS_WHISTLE: DeferredItem<DroversWhistleItem> = ITEMS.registerItem("drovers_whistle", ::DroversWhistleItem, UnaryOperator<Item.Properties> {
+        it.stacksTo(1)
+    })
+
+    // Trade: the Chapman's Cart (build part D2)
+
+    /** Bought by a Chapman at the hall's counter, which brings the cart itself round; set down from the item it is a cart of yours (its `dyed_color` is the pennant's colour). */
+    val CHAPMANS_CART: DeferredItem<ChapmansCartItem> = ITEMS.registerItem("chapmans_cart", ::ChapmansCartItem, UnaryOperator<Item.Properties> {
         it.stacksTo(1)
     })
 
