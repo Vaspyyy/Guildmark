@@ -115,6 +115,12 @@ object Economy {
      */
     val HERD_STOPPED: Set<Good> = setOf(Good.FEATHER, Good.WOOL, Good.LEATHER, Good.APPLE)
     const val HERD_STOP = 1.0
+    /**
+     * How far short of its stop the herds leave a stock, in units: the carts' sums come out a hair over or under, and a
+     * market holding a hair more than it likes to keep takes no lot at all of a good whose room is worth under a
+     * Mark (feathers; see [Lots.sell]), so the stop is kept a hair under, where rounding can't cross it.
+     */
+    const val HERD_MARGIN = 1e-6
     /** Ale an innkeeper brews in an hour, and the grain each measure takes. */
     const val BREW = 12.0
     const val BREW_WHEAT = 1.0 / 3.0
@@ -274,11 +280,11 @@ object Economy {
     /**
      * What the herds, coops and orchards make of [good] this hour: the [amount] they would, or for a good of
      * [HERD_STOPPED] no more than brings the market's stock and what waits in the yard for the carts up to its stop
-     * (see [herdStopAt]), nothing once it's there.
+     * (see [herdStopAt]; a hair short of it, [HERD_MARGIN]), nothing once it's there.
      */
     private fun herded(m: Market, town: Town, good: Good, amount: Double): Double {
         val stop = herdStopAt(m, town, good) ?: return amount
-        return minOf(amount, maxOf(stop - m.stock(good) - m[Site.FARMS, good], 0.0))
+        return minOf(amount, maxOf(stop - HERD_MARGIN - m.stock(good) - m[Site.FARMS, good], 0.0))
     }
 
     /**
