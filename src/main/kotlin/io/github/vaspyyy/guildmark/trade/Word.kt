@@ -265,9 +265,8 @@ object Word {
         return sight
     }
 
-    /** The haul tickets the capital whose heart is [capital] has out, as a sight keeps them. */
-    fun tickets(level: ServerLevel, capital: BlockPos): List<Sight.Ticket> =
-        TallyLinks.open(level, capital).map { Sight.Ticket(it.id, it.good, it.units, it.pay, it.shop, it.due, it.kind) }
+    /** The haul tickets the capital whose heart is [capital] has out, as a sight keeps them: what is still to be taken of each, and what that pays. */
+    fun tickets(level: ServerLevel, capital: BlockPos): List<Sight.Ticket> = TallyLinks.open(level, capital)
 
     /** Snapshots every opened capital now (`trade word snap`). Gives how many. */
     fun snapAll(level: ServerLevel): Int {

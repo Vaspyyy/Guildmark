@@ -190,7 +190,7 @@ data class TallyRoutes(
     }
 }
 
-/** A ticket the trader holds booked: number [id] at the capital [capital] ([place]), [units] of [good] to the [shop] for [pay] Marks, due at the clock tick [due]; [carried] of the good are with them now. */
+/** A ticket the trader holds booked: number [id] at the capital [capital] ([place]), [units] of [good] still to bring to the [shop] for [pay] Marks, due at the clock tick [due]; [carried] of them are with the trader and came far enough to count, which is what they could hand in now. */
 data class TallyHeld(
     val id: Int,
     val capital: Long,
@@ -220,7 +220,7 @@ data class TallyHeld(
     }
 }
 
-/** A good the held tickets still need ([units] of [good] more than are carried) and where the Tally knows it cheapest: the capital [at] ([place]), [each] Marks a unit, [stock] held on the news of the clock tick [tick]; [at] is [TallyRoutes.NONE] if nowhere is known. */
+/** A good the held tickets still need ([units] of [good] more than could be handed in now) and where the Tally knows it cheapest: the capital [at] ([place]), [each] Marks a unit, [stock] held on the news of the clock tick [tick]; [at] is [TallyRoutes.NONE] if the book knows no town far enough from the tickets' to count. */
 data class TallyNeed(val good: String, val units: Int, val at: Long, val place: String, val each: Float, val stock: Int, val tick: Long) {
     companion object {
         val STREAM_CODEC: StreamCodec<ByteBuf, TallyNeed> = StreamCodec.composite(

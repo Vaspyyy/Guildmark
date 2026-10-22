@@ -137,7 +137,8 @@ object Routes {
     /**
      * What the plan is made under: [slots] free in the pack, the [dealer]'s share a stall pays for goods that came [haulMin] blocks or more, the
      * [roomDays] days of the wagons' load a stall has room for beyond its own for them, and which kinds of ticket the trader may take [may]. With
-     * the haul tickets off ([tickets] false) there are no tickets, no dealer's share and no haul room, and the stalls are as they were.
+     * the haul tickets off ([tickets] false) there are no tickets, no dealer's share and no haul room, and the stalls are as they were. [bonus] is
+     * what more than its own pay a ticket gives this trader (the Trade tree's pay perk, `Perk.HAUL_PAY`): a tenth is 0.1.
      */
     class Terms(
         val slots: Int,
@@ -146,6 +147,7 @@ object Routes {
         val haulMin: Int = TradeConfig.haulMin(),
         val roomDays: Int = TradeConfig.haulRoomDays(),
         val may: (HaulKind) -> Boolean = { true },
+        val bonus: Double = 0.0,
     )
 
     /** Some of a ticket's units a basket fills. */
@@ -248,7 +250,7 @@ object Routes {
         if (terms.tickets && hauled) {
             // A ticket's goods come onto the shelf as they are handed over, and the price stays down for them
             for (t in sight.ticketsFor(good).filter { terms.may(it.kind) }.sortedByDescending { it.each }) {
-                out.add(Sale(t.units, t.pay.toDouble(), t))
+                out.add(Sale(t.units, t.pay * (1.0 + terms.bonus), t))
                 shelf.sold(t.units)
             }
         }

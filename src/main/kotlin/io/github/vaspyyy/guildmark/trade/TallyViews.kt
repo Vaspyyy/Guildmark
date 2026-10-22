@@ -108,7 +108,9 @@ internal object TallyViews {
         }
         if (dests.isEmpty()) return listOf()
         // The dealer's share and the haul room are what part A's stalls pay: until its tickets are joined (TallyLinks.HAULS) the stalls pay the ordinary share, and the page says no more than that
-        val terms = Routes.Terms(slots(player), tickets = TallyLinks.HAULS && TradeConfig.hauls(), may = { kind -> Rungs.may(player, kind) })
+        val terms = Routes.Terms(
+            slots(player), tickets = TallyLinks.HAULS && TradeConfig.hauls(), may = { kind -> Rungs.may(player, kind) }, bonus = Rungs.perk(player, Perk.HAUL_PAY),
+        )
         return Routes.rank(start.here, BlockPos.of(start.origin.capital), dests, terms)
     }
 
@@ -170,17 +172,32 @@ internal object TallyViews {
         val hauls = TallyLinks.held(level, player)
         if (hauls.isEmpty()) return listOf<TallyHeld>() to listOf<TallyNeed>()
         fun place(capital: BlockPos): String = nameOf(level, capital.asLong(), towns)
-        val held = hauls.map { h ->
-            TallyHeld(h.id, h.capital.asLong(), place(h.capital), h.shop.id, h.good.id, h.units, h.pay, h.kind.id, h.due * Word.HOUR, carried(player, h.good))
+        val haulMin = TradeConfig.haulMin()
+        // What of the goods they carry a ticket will take: only what came far enough counts, and a unit counts for one ticket (Hauls.deliverable has the same sum for one)
+        val ready = Handing.ready(hauls.map { Handing.Want(it.haul.good, it.haul.capital, it.owes) }, TallyLinks.ledger(level, player).map { it.parcel }, { carried(player, it) }, haulMin)
+        // What a booking pays them is the ticket's own pay for the units it still owes, and the Trade tree's pay perk on top
+        val bonus = 1.0 + Rungs.perk(player, Perk.HAUL_PAY)
+        val held = hauls.mapIndexed { i, (h, owes) ->
+            val pay = (TallyLinks.part(h.pay, owes, h.units) * bonus).roundToInt()
+            TallyHeld(h.id, h.capital.asLong(), place(h.capital), h.shop.id, h.good.id, owes, pay, h.kind.id, h.due * Word.HOUR, ready[i])
         }
-        val needs = hauls.groupBy { it.good }.mapNotNull { (good, list) ->
-            val need = list.sumOf { it.units } - carried(player, good)
-            if (need <= 0) return@mapNotNull null
-            val cheapest = towns.filter { it.sight.stock(good) >= 1.0 }.minByOrNull { it.sight.price(good) }
-            if (cheapest == null) TallyNeed(good.id, need, TallyRoutes.NONE, "", 0f, 0, 0L)
-            else TallyNeed(
-                good.id, need, cheapest.capital, cheapest.name.ifEmpty { nameOf(level, cheapest.capital, towns) },
-                (Math.round(cheapest.sight.price(good) * 100.0) / 100.0).toFloat(), cheapest.sight.stock(good).toInt(), cheapest.sight.tick,
+        val needs = ArrayList<TallyNeed>()
+        for ((good, group) in hauls.indices.groupBy { hauls[it].haul.good }) {
+            val short = group.filter { hauls[it].owes > ready[it] }
+            if (short.isEmpty()) continue
+            val need = short.sumOf { hauls[it].owes - ready[it] }
+            // The cheapest town the book knows it in that is far enough from the towns that want it: one nearer would not count as hauled
+            val capitals = short.map { hauls[it].haul.capital }
+            val stocked = towns.filter { it.sight.stock(good) >= 1.0 }
+            val far = stocked.filter { t -> capitals.all { Handing.far(BlockPos.of(t.capital), it, haulMin) } }
+                .ifEmpty { stocked.filter { t -> Handing.far(BlockPos.of(t.capital), capitals.first(), haulMin) } }
+            val cheapest = far.minByOrNull { it.sight.price(good) }
+            needs.add(
+                if (cheapest == null) TallyNeed(good.id, need, TallyRoutes.NONE, "", 0f, 0, 0L)
+                else TallyNeed(
+                    good.id, need, cheapest.capital, cheapest.name.ifEmpty { nameOf(level, cheapest.capital, towns) },
+                    (Math.round(cheapest.sight.price(good) * 100.0) / 100.0).toFloat(), cheapest.sight.stock(good).toInt(), cheapest.sight.tick,
+                ),
             )
         }
         return held to needs
@@ -202,7 +219,7 @@ internal object TallyViews {
             val origin = h.parcel.origin
             val distance = hypot((origin.x - ref.x).toDouble(), (origin.z - ref.z).toDouble())
             val left = (h.of - (today - h.parcel.boughtAt)).toInt().coerceIn(0, h.of)
-            out.add(TallyParcel(good.id, units, origin.asLong(), nameOf(level, origin.asLong(), towns), distance.roundToInt(), left, h.of, h.bonded, distance >= TradeConfig.haulMin()))
+            out.add(TallyParcel(good.id, units, origin.asLong(), nameOf(level, origin.asLong(), towns), distance.roundToInt(), left, h.of, h.bonded, Handing.far(origin, ref, TradeConfig.haulMin())))
         }
         return out
     }

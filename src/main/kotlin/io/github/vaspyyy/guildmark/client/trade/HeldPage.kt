@@ -105,7 +105,7 @@ class HeldPage : TallyPage("held") {
         pen.restore()
     }
 
-    /** One ticket's row: its good, how many, its pay, the town, and what is left of its time as notches (or hours on its last day), with the share of the goods already carried as a line under it. */
+    /** One ticket's row: its good, how many, its pay, the town, and what is left of its time as notches (or hours on its last day), with the share of the goods already carried, and far enough come to count, as a line under it. */
     private fun row(c: Ctx, h: TallyHeld, i: Int) {
         val pen = c.pen
         val book = c.book
@@ -143,7 +143,7 @@ class HeldPage : TallyPage("held") {
         } else {
             pen.notches(x + w - 4, oy + 11, days, c.t, k)
         }
-        // the share carried: the foot of the slip is inked green as far as the goods are in the pack
+        // the share carried: the foot of the slip is inked green as far as the goods that count as hauled are in the pack
         val fill = Beat.out(Beat.clamp(((c.since - 0.25 - 0.06 * i) / 0.5).toFloat()))
         val frac = if (h.units > 0) (h.carried.toFloat() / h.units).coerceIn(0f, 1f) * fill else 0f
         val len = ((w - 2) * frac).roundToInt()
