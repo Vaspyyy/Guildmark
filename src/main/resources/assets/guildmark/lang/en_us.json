@@ -7602,5 +7602,6 @@
   "talk.guildmark.choice.tale.back": "Something else...",
   "talk.guildmark.choice.tale.why": "Why?",
   "talk.guildmark.choice.tale.why_more": "And before that?",
-  "fortune.guildmark.reason.tale.why.took_up": "%s took it up."
+  "fortune.guildmark.reason.tale.why.took_up": "%s took it up.",
+  "say.guildmark.talk.detail.tale.hearsay": "So the street has it. It may have grown."
 }

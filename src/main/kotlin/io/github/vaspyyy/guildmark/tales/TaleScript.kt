@@ -6,7 +6,6 @@ import io.github.vaspyyy.guildmark.townsfolk.talk.Ask
 import io.github.vaspyyy.guildmark.townsfolk.talk.Choice
 import io.github.vaspyyy.guildmark.townsfolk.talk.Script
 import io.github.vaspyyy.guildmark.townsfolk.talk.Utterance
-import net.minecraft.network.chat.Component
 import java.util.UUID
 
 /**
@@ -52,21 +51,21 @@ internal class TaleScript(
     }
 
     override fun choices(ask: Ask): List<Choice> {
-        val turn = turn(ask) ?: return listOf(Choice(BACK, label("talk.guildmark.choice.tale.back")))
+        val turn = turn(ask) ?: return listOf(Choice(BACK, TaleSays.label("talk.guildmark.choice.tale.back")))
         if (!following(turn)) {
             val lead = TaleSays.otherLead(turn) != null
             return listOf(
-                Choice(YES, label("talk.guildmark.choice.tale.${turn.id}.yes", if (lead) "talk.guildmark.choice.tale.yes_lead" else "talk.guildmark.choice.tale.yes")),
-                Choice(LATER, label("talk.guildmark.choice.tale.${turn.id}.later", "talk.guildmark.choice.tale.later")),
-                Choice(BACK, label("talk.guildmark.choice.tale.back")),
+                Choice(YES, TaleSays.label("talk.guildmark.choice.tale.${turn.id}.yes", if (lead) "talk.guildmark.choice.tale.yes_lead" else "talk.guildmark.choice.tale.yes")),
+                Choice(LATER, TaleSays.label("talk.guildmark.choice.tale.${turn.id}.later", "talk.guildmark.choice.tale.later")),
+                Choice(BACK, TaleSays.label("talk.guildmark.choice.tale.back")),
             )
         }
         val out = ArrayList<Choice>()
         for (option in TaleSays.options(turn, voice)) out += Choice("o${turn.step}.${option.id}", option.label)
-        if (!stood) out += Choice(STAND, label("talk.guildmark.choice.tale.${turn.id}.stand", "talk.guildmark.choice.tale.stand"))
+        if (!stood) out += Choice(STAND, TaleSays.label("talk.guildmark.choice.tale.${turn.id}.stand", "talk.guildmark.choice.tale.stand"))
         // "Why?" once the tale has turned (5.4), while it has a reason left to tell
-        if (tale.step > 0 && told < reasons(turn).size) out += Choice(if (told == 0) WHY else WHY_MORE, label(if (told == 0) "talk.guildmark.choice.tale.why" else "talk.guildmark.choice.tale.why_more"))
-        out += Choice(BACK, label("talk.guildmark.choice.tale.back"))
+        if (tale.step > 0 && told < reasons(turn).size) out += Choice(if (told == 0) WHY else WHY_MORE, TaleSays.label(if (told == 0) "talk.guildmark.choice.tale.why" else "talk.guildmark.choice.tale.why_more"))
+        out += Choice(BACK, TaleSays.label("talk.guildmark.choice.tale.back"))
         return out
     }
 
@@ -139,9 +138,7 @@ internal class TaleScript(
     /** How it stands: the step's own line (`stand_<step>` if the tale has one, else `stand`) with the live numbers in grey. */
     private fun stand(turn: TaleTurn): TaleReply {
         stood = true
-        val step = turn.family("stand_${turn.step}")
-        val family = if (TaleLines.exists(step)) step else turn.family("stand")
-        return TaleReply(listOf(TaleSay(family, TaleSays.detail(turn, voice, "stand"))))
+        return TaleReply(listOf(TaleSay(TaleSays.standFamily(turn), TaleSays.detail(turn, voice, "stand"))))
     }
 
     /** One reason, newest first (5.4): a short lead and the reason in the tale's own sentence, in grey; "That's all I know." when none is left. */
@@ -179,10 +176,6 @@ internal class TaleScript(
 
     /** The reasons the tale can tell, newest first: those whose sentence the language has. */
     private fun reasons(turn: TaleTurn): List<Why> = tale.why.asReversed().filter { TaleLines.has(TaleKeys.why(it.kind)) }
-
-    /** The label under the first key the language has. */
-    private fun label(vararg keys: String): Component =
-        Component.translatable(keys.firstOrNull { TaleLines.quiet(it) } ?: keys.last())
 
     /** [reply] as the screen is sent it: each line as [TaleLines.part] builds it, the one it names instead if it has nothing. */
     private fun utter(ask: Ask, reply: TaleReply): Utterance {

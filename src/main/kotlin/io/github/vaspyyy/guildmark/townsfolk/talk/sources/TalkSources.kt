@@ -42,6 +42,7 @@ object TalkSources {
         HouseholdTopics, MarketTopics, WeatherTopics, SeasonTopics, FestivalTopics, TownTopics, DeedTopics, DealingTopics,
         NewsTopics, HomesteadTopics, WorksTopics, FortuneTopics,
         KitchenTopics,
+        TaleTopics,
     )
 
     /** Registers every source with [Topics] and starts what they keep watch on: once, at setup (Townsfolk.init). */
@@ -70,6 +71,7 @@ object TalkSources {
         NewsTopics.forget()
         WorksTopics.forget()
         FortuneTopics.forget()
+        TaleTopics.forget()
     }
 }
 

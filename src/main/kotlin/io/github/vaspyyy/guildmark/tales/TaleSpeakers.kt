@@ -3,6 +3,7 @@ package io.github.vaspyyy.guildmark.tales
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
+import java.util.UUID
 
 /**
  * Who in a tale a townsperson is, and where a player stands with the tale they speak for (living-world/stories/design.md 3.1, 3.5),
@@ -44,6 +45,16 @@ internal object TaleSpeakers {
             Part.Status.DECLINED -> part.asks < 1 + TaleLimits.ASKS_MORE && today - part.lastAsk >= TaleLimits.ASK_AGAIN_DAYS
             else -> false
         }
+    }
+
+    /**
+     * Whether the cast ask [player] now (the opener, and what is said in passing to one who has not been asked): [due], and the tale has
+     * room for a part for them. A ninth player is told the tale if they ask, but is not asked: they could not take it up. Reads only.
+     */
+    fun askable(t: Tale, player: UUID, today: Long): Boolean {
+        val part = t.part(player)
+        if (!due(part, today)) return false
+        return part != null || t.parts.size < TaleLimits.PARTS || t.parts.any { it.did == 0 && it.escrow == 0 && (it.status == Part.Status.UNMET || it.status == Part.Status.ASKED) }
     }
 
     /** Whether [part] has taken the tale up (IN) or seen it through (DONE). */
