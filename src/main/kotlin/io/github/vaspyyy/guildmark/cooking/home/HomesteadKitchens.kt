@@ -31,14 +31,18 @@ import net.minecraft.sounds.SoundEvents
 import net.minecraft.sounds.SoundSource
 import net.minecraft.world.Container
 import net.minecraft.world.entity.LivingEntity
+import net.minecraft.world.entity.item.ItemEntity
+import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.level.block.entity.CampfireBlockEntity
 import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.phys.AABB
+import net.neoforged.bus.api.EventPriority
 import net.neoforged.fml.ModLoadingContext
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent
 import net.neoforged.neoforge.common.NeoForge
+import net.neoforged.neoforge.event.level.BlockDropsEvent
 import net.neoforged.neoforge.event.server.ServerAboutToStartEvent
 import net.neoforged.neoforge.event.tick.ServerTickEvent
 
@@ -109,6 +113,8 @@ object HomesteadKitchens {
         bus.addListener(HomesteadEvent.TierChanged::class.java) { onTier(it) }
         bus.addListener(HomesteadEvent.Removed::class.java) { onRemoved(it) }
         bus.addListener(ServerTickEvent.Post::class.java) { tick(it.server) }
+        // After the land has cleared what its plan's cells drop, so that a station of the owner's gives itself back
+        bus.addListener(EventPriority.LOWEST, BlockDropsEvent::class.java) { onDrops(it) }
         Cooking.onForget {
             jobs.clear()
             finds.clear()
@@ -459,6 +465,29 @@ object HomesteadKitchens {
         }
         if (!stateOf(home, thing, pick).getCollisionShape(level, pos).isEmpty && crowded(level, pos)) return Verdict(Cell.WAIT, "someone stands in it")
         return Verdict(Cell.FIT)
+    }
+
+    /** The blocks the fit-out sets as stations (the herb is a crop, which the land lets drop its own sprigs). */
+    private fun isStation(block: Block): Boolean =
+        block === CookRegistry.STEWPOT.get() || block === CookRegistry.BAKE_OVEN.get() || block === CookRegistry.HOB.get() ||
+            block === CookRegistry.PREP_BOARD.get() || block === CookRegistry.PLATE.get() || block === CookRegistry.LARDER.get() ||
+            block === CookRegistry.MENU_BOARD.get() || block === CookRegistry.SPIT.get()
+
+    /**
+     * A station the fit-out set, broken, gives itself back. The land clears what the cells of its plan drop (the builders' work
+     * gives nothing back), and the station on such a cell would give nothing either; it is the owner's, so it is returned, and
+     * only at a cell the record says the fit-out filled and only if nothing dropped.
+     */
+    private fun onDrops(event: BlockDropsEvent) {
+        if (!on() || event.drops.isNotEmpty()) return
+        val level = event.level as? ServerLevel ?: return
+        val block = event.state.block
+        if (!isStation(block)) return
+        val home = Homesteads.at(level, event.pos) ?: return
+        val rec = HomeKitchenData.get(level).home(home.id) ?: return
+        if (rec.items.values.none { it.status == HomeKitchenData.Status.DONE && event.pos in it.cells }) return
+        val pos = event.pos
+        event.drops.add(ItemEntity(level, pos.x + 0.5, pos.y + 0.5, pos.z + 0.5, ItemStack(block)))
     }
 
     /** Whether the block entity at [pos] holds something (a barrel's goods, a furnace's fuel, what cooks on a campfire). */
