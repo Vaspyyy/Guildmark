@@ -66,7 +66,8 @@ import make_townsfolk_sfx as tf  # noqa: E402
 import make_ship_audio as ship  # noqa: E402
 from make_townsfolk_sfx import level, write_checked, true_peak, loudness_curve, nrm, lead_in, knock  # noqa: E402
 from make_ship_audio import (Ring, Bus, bubble, grain_cloud, hann_burst, loop_start, oak, iron_ring, path,
-                             periodic_phase, rn, seam_report, squeal, tame, bell_modes, bell_blow)  # noqa: E402
+                             periodic_phase, rn, seam_report, squeal, timber_modes, creak_voice, tame, bell_modes,
+                             bell_blow)  # noqa: E402
 
 SOUND_DIR = "cook"
 LOOP_MARGIN_DB = 0.8  # a loop's peaks are held this far under its ceiling, for the encoder's own overshoot
@@ -881,11 +882,99 @@ def buff(v, rng):
 # chimes>>
 
 
+# <<iron
+# =========================================================================== the oven, the spit and the crank
+def door_modes(rng):
+    """the iron door of a bake oven: the same plate every time it swings, ringing at a few low notes"""
+    return timber_modes(rng_for("cook", "door"), 160.0, 2600.0, 22, 0.14, 0.03, peaks=(260, 620))
+
+
+@effect("oven_open", 2, 0.9, "An oven door opens", loud=-23.0, fade_out=0.3,
+        when=("The oven door swings open (1.6): a player looks at it with food in hand, or the baker's peel scene (7.5)."))
+def oven_open(v, rng):
+    """the iron door of a brick oven opened: the latch lifted off its keeper (a tick and a small clink), the heavy door groaning
+    on its pivot with a squeal of dry iron, swinging back to rest against the oven's face with a dull knock, and the oven's
+    breath coming out over it, a warm rush with the low roar of the fire behind. v2 is a quicker door that squeals twice"""
+    dur = 0.9
+    m = Bus(dur)
+    m.add(nrm(hann_burst(0.002, rng, 2000.0, 8000.0)), 0.0, 0.25)
+    m.add(nrm(ping(0.1, [1900.0 * rng.uniform(0.97, 1.03), 3100.0], [0.04, 0.025], [1.0, 0.5], rng)), 0.002, 0.45)
+    m.add(nrm(oak(0.12, rng, 380.0, t60=0.03, hard=0.5, ex=0.002, lo=200.0)), 0.004, 0.3)
+    sd = [0.42, 0.34][v]
+    sq = squeal(sd, rng, path([(0, 420.0), (0.3 * sd, 520.0), (sd, 700.0)], sd), bell(sd, 0.5, 1.2, 1.5), harmonics=8, tilt=1.0,
+                chatter=0.5, wobble=0.02, peak_hz=1100.0)
+    m.add(sq, 0.06, 0.55)
+    gd = sd + 0.08
+    rate = path([(0, 14.0), (0.3 * gd, 55.0), (0.7 * gd, 38.0), (gd, 12.0)], gd)
+    m.add(creak_voice(gd, rng, rate, bell(gd, 0.45, 1.2, 1.5), door_modes(rng), vowel=[(path([(0, 250.0), (gd, 380.0)], gd), 4.0, 0.6)],
+                      jitter=0.1), 0.05, 0.6)
+    if v == 1:
+        m.add(squeal(0.12, rng, path([(0, 560.0), (0.12, 640.0)], 0.12), bell(0.12, 0.4, 1.2, 1.5), harmonics=6, chatter=0.5,
+                     wobble=0.02, peak_hz=1100.0), 0.06 + sd + 0.02, 0.25)
+    at = 0.06 + sd + 0.06
+    m.add(pot_ring(0.35, rng, 245.0, t60=0.3, wet=0.0), at, 0.45)
+    m.add(thump(0.15, 110.0, 70.0, rng, decay=0.035, click=0.05, noise=0.5, nlp=450.0), at, 0.4)
+    breath = lp(colored(0.62, rng, -2.0), 1500.0, 2) * bell(0.62, 0.3, 1.4, 1.8) * (0.8 + 0.2 * smooth_random(0.62, rng, 9))
+    m.add(breath, 0.12, 0.55)
+    m.add(lp(brown(0.6, rng), 260.0, 2) * bell(0.6, 0.45, 1.5, 1.6), 0.15, 0.4)
+    return through_brick(lp(fit(m.out(), ns(dur)), 9000.0), 0.12, 5351 + v, cut=5000.0)
+
+
+@effect("oven_shut", 2, 0.5, "An oven door shuts", loud=-22.0, fade_out=0.2, limit=3.0,
+        when=("The oven door shuts (1.6): the player looks away, or 40 ticks go by."))
+def oven_shut(v, rng):
+    """the iron door of a brick oven slammed to: the plate of it meeting its frame with a deep clang (a plate's own inharmonic
+    notes, a low one the loudest, ringing on a third of a second), the brick giving a dull thud under it, the latch dropping
+    into its keeper with a clink and the handle rattling. v2 is a lighter shove"""
+    dur = 0.5
+    m = Bus(dur)
+    g = [1.0, 0.75][v]
+    f0 = [265.0, 285.0][v]
+    plate = modal(0.5, metal_partials(f0, "plate", n=11, rng=rng, spread=0.01), [0.34, 0.3, 0.26, 0.22, 0.18, 0.15, 0.13, 0.11, 0.09, 0.08, 0.07],
+                  [1.0, 0.8, 0.7, 0.55, 0.5, 0.42, 0.35, 0.3, 0.25, 0.2, 0.15], rng)
+    m.add(plate, 0.0, 1.0 * g)
+    m.add(hann_burst(0.003, rng, 800.0, 7000.0), 0.0, 0.35 * g)
+    m.add(thump(0.25, 100.0, 60.0, rng, decay=0.06, click=0.0, noise=0.4, nlp=400.0), 0.0, 0.6 * g)
+    m.add(nrm(ping(0.12, [2100.0 * rng.uniform(0.97, 1.03), 3300.0], [0.05, 0.03], [1.0, 0.5], rng)), 0.07, 0.4)
+    for k in range(3):
+        m.add(nrm(ping(0.08, [rng.uniform(1100.0, 1700.0)], [0.035], [1.0], rng)), 0.11 + 0.035 * k + rng.uniform(0, 0.01),
+              0.18 * 0.7 ** k)
+    return through_brick(fit(m.out(), ns(dur)), 0.1, 5353 + v, cut=6000.0)
+
+
+def pawl_tick(rng, f=1.0, load=1.0):
+    """a ratchet's pawl dropping over a tooth: a tick of iron on iron, its small bright ring and the dull little knock of the
+    wooden handle it is cranked by"""
+    m = Mix(0.14)
+    m.add(nrm(hann_burst(0.002, rng, 2500.0, 9000.0)), 0.0, 0.3)
+    m.add(nrm(ping(0.1, [1650.0 * f * rng.uniform(0.96, 1.04), 2480.0 * f], [0.04, 0.03], [1.0, 0.6], rng)), 0.0015, 0.8)
+    m.add(nrm(oak(0.12, rng, 330.0 * f, t60=0.04, hard=0.7, ex=0.002, lo=200.0)), 0.002, 0.6 * load)
+    return m.out()
+
+
+@effect("crank", 3, 0.4, "A crank turns", reach=12, loud=-29.0, fade_out=0.1, limit=4.0,
+        when=("One click of the Spit's crank, a quarter turn at a time (1.4, 1.6: TURN answered with an empty hand)."))
+def crank(v, rng):
+    """a spit's crank turned a quarter: the ratchet's pawl clicking over its teeth (two clicks, three quick ones, one with the
+    handle squeaking in the hand), the wooden handle knocking at each"""
+    dur = 0.4
+    m = Bus(dur)
+    plan = [[(0.0, 1.0, 1.0), (0.085, 1.04, 0.8)], [(0.0, 0.97, 1.0), (0.06, 1.0, 0.8), (0.125, 1.03, 0.75)],
+            [(0.0, 1.02, 1.0)]][v]
+    for at, f, g in plan:
+        m.add(pawl_tick(rng, f, g), at, g)
+    if v == 2:
+        m.add(squeal(0.16, rng, path([(0, 980.0), (0.16, 1250.0)], 0.16), bell(0.16, 0.4, 1.2, 1.5), harmonics=5, chatter=0.5, wobble=0.02,
+                     peak_hz=1900.0), 0.03, 0.25)
+    return kitchen(fit(m.out(), ns(dur)), 0.05, 5355 + v)
+# iron>>
+
+
 # =========================================================================== the order of the sounds
 # the order of CookSounds.NAMES (the design's Appendix C.5): the order of the fragments and of the listen-through
 ORDER = ["place", "pour", "plop.soft", "plop.meat", "plop.grain", "fuel", "ignite", "stir", "simmer", "crackle", "sizzle",
          "boil_over", "ready", "ripe", "tier.plain", "tier.sound", "tier.fine", "tier.hallmark", "burnt", "buff", "oven_hum",
-         "spit_creak", "drip", "flare", "flip", "chill"]
+         "oven_open", "oven_shut", "spit_creak", "crank", "drip", "flare", "flip", "chill"]
 
 assert sorted(ORDER) == sorted(EVENTS), "every sound is in ORDER, once: " + str(set(ORDER) ^ set(EVENTS))
 for _name in ORDER:
