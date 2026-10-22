@@ -31,6 +31,8 @@ import io.github.vaspyyy.guildmark.trade.Taker
 import io.github.vaspyyy.guildmark.trade.TradeConfig
 import io.github.vaspyyy.guildmark.trade.TradeSounds
 import io.github.vaspyyy.guildmark.village.live.Villages
+import io.github.vaspyyy.guildmark.village.live.market.Pedlars
+import io.github.vaspyyy.guildmark.village.live.market.VillageStall
 import net.minecraft.ChatFormatting
 import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
@@ -148,7 +150,9 @@ object Stalls {
         // Something else has charge of them (a job, a festival): theirs to answer for
         val serving = p.director
         if (serving != null && serving !is Serving) return false
-        val life = Days.life(p) ?: return false
+        // A village's pedlar keeps the counter at his cart, and he has no day of a resident's (see Pedlars)
+        Pedlars.counter(level, player, p)?.let { return it }
+        val life = Days.life(p) ?: VillageStall.life(p) ?: return false
         // Who keeps a shop is the one rule of Shop.kept: a merchant, baker, smith or innkeeper, and in a village its farmers, fishers and stall keepers
         val shop = Shop.kept(p) ?: return false
         val doing = Days.stretch(life, level.overworldClockTime).doing
