@@ -1506,30 +1506,36 @@ def made_of(fn):
 def write_when(marks, path_):
     """the text of what plays when: for each sound, its files, length, reach and subtitle, what it is made of, the moment it
     belongs to, and where it is in the listen-through"""
-    import textwrap
     at = {}
     for a, _, _, event, v in marks:
         at.setdefault(event, []).append(a)
+    # (a paragraph is one line, for a phone's reader to wrap)
     lines = ["Hearthcraft sounds: what plays when", "=" * 36, "",
-             "cook_all.mp3 plays every file once, in the order of the game's list (CookSounds.NAMES), with a chapter mark at each",
-             "(a phone's player shows them). Each loop plays for 12 seconds so that its join is heard once. The times are where",
-             "each file starts in it. A sound's moment is as the design names it (living-world/cook/design.md 1.4 to 1.6, 3.3, 4.3,",
-             "7.3 to 7.5); which part of the game plays it, and whether it does yet, is for the game test (Parts C, E, F and I3 play",
-             "them; Part F's buff and chill are the only two already wired).", ""]
+             "cook_all.mp3 plays every file once, in the order of the game's list (CookSounds.NAMES), with a chapter mark at each "
+             "(a phone's player shows them). Each loop plays for 12 seconds so that its join is heard once. The times are where "
+             "each file starts in it. A sound's moment is as the design names it (living-world/cook/design.md 1.4 to 1.6, 3.3, "
+             "4.3, 7.3 to 7.5); which part of the game plays it, and whether it does yet, is for the game test (Parts C, E, F and "
+             "I3 play them; Part F's buff and chill are the only two already wired).",
+             "",
+             "The sounds are at the game's own levels, so they keep their balance with each other, and the game's levels are "
+             "quiet: turn the phone up until the first one, cook.place, is comfortable and judge the rest against it. The five "
+             "loops are the quietest of all, by design: they live under the town's own sounds.", ""]
     for event, r in EVENTS.items():
         files = r["files"]
         if r["kind"] == "loop":
             what = f"one loop of {r['length']:g} s, built to join itself"
+        elif files > 1:
+            what = f"{files} files, {r['length']:g} s each"
         else:
-            what = f"{files} file{'s' if files > 1 else ''}, {r['length']:g} s each"
+            what = f"1 file, {r['length']:g} s"
         reach = "the player alone (unpositioned)" if r["reach"] is None else f"carries {r['reach']} blocks"
         if event == "buff":
             reach = "the eater alone"
-        lines.append(f"cook.{event}   {what}; {reach}")
-        lines.append(f"    subtitle: \"{r['subtitle']}\"")
-        lines.append("    in cook_all.mp3: " + ", ".join(clock(t) for t in at.get(event, [])))
-        for label, text in (("made of", made_of(r["fn"])), ("plays", r["when"])):
-            lines += textwrap.wrap(text, width=112, initial_indent=f"    {label}: ", subsequent_indent=" " * (6 + len(label)))
+        lines.append(f"cook.{event}: {what}; {reach}")
+        lines.append(f"  subtitle: \"{r['subtitle']}\"")
+        lines.append("  in cook_all.mp3: " + ", ".join(clock(t) for t in at.get(event, [])))
+        lines.append(f"  made of: {made_of(r['fn'])}")
+        lines.append(f"  plays: {r['when']}")
         lines.append("")
     os.makedirs(os.path.dirname(os.path.abspath(path_)), exist_ok=True)
     with open(path_, "w", encoding="utf-8") as f:
