@@ -702,7 +702,7 @@ object Hands {
     /** A capital's crew while its labourers are being asked for: what [of] gives meanwhile (the works may ask it). */
     private val asking = HashMap<BlockPos, Crew>()
 
-    fun of(level: ServerLevel, places: CityPlaces): Crew {
+    fun of(level: ServerLevel, places: TownPlaces): Crew {
         val center = places.centre
         asking[center]?.let { return it }
         // A new day's labourers are asked for as the day begins, not when the crew next comes due
@@ -716,7 +716,7 @@ object Hands {
      * duty (never a carter, the crier, a miller, a guard of either watch, or a child), by resident id, lowest first. The
      * building (Part B) picks [Works.labourers] from these; it asks this, never [of], which is what asks it.
      */
-    fun spare(level: ServerLevel, places: CityPlaces): List<Int> {
+    fun spare(level: ServerLevel, places: TownPlaces): List<Int> {
         val center = places.centre
         val crew = asking[center] ?: crews[center] ?: base(level, places)
         return spare(level, places, crew)
@@ -727,13 +727,13 @@ object Hands {
         asking.clear()
     }
 
-    private fun spare(level: ServerLevel, places: CityPlaces, crew: Crew): List<Int> =
+    private fun spare(level: ServerLevel, places: TownPlaces, crew: Crew): List<Int> =
         Residents.get(level).of(places.centre)
             .filter { it.alive && it.role == TownRole.CITIZEN && it.id !in crew.carters && it.id != crew.crier && it.id !in crew.millers }
             .map { it.id }.sorted()
 
     /** The crew of [places]' capital for town day [day]: the carters, millers and crier, and (with the works on) those lent to them. */
-    private fun work(level: ServerLevel, places: CityPlaces, day: Long): Crew {
+    private fun work(level: ServerLevel, places: TownPlaces, day: Long): Crew {
         val base = base(level, places)
         if (!io.github.vaspyyy.guildmark.economy.works.Works.enabled()) return base
         val center = places.centre
@@ -747,7 +747,7 @@ object Hands {
         return Crew(base.carters, base.millers, base.crier, base.at, lent, day)
     }
 
-    private fun base(level: ServerLevel, places: CityPlaces): Crew {
+    private fun base(level: ServerLevel, places: TownPlaces): Crew {
         val center = places.centre
         val living = Residents.get(level).of(center).filter { it.alive }
         val farms = places.lodgings.values.filter { it.farm && it.kind in Trades.MILLS + setOf(FarmKind.BARN.name, FarmKind.FARMHOUSE.name) }
@@ -757,7 +757,7 @@ object Hands {
         val carters = living.filter { it.role == TownRole.CITIZEN }
             .sortedWith(compareBy<Resident>({ if (places.lodgings[it.home]?.farm == true) 0 else 1 }, { out(it) }, { it.id }))
             .take(carts).map { it.id }.toSet()
-        val board = places.marketBoard.pos
+        val board = places.marketBoard?.pos ?: places.bell
         val crier = living.filter { it.role == TownRole.CITIZEN && it.id !in carters }
             .minWithOrNull(compareBy<Resident>({ home(it)?.distSqr(board) ?: Double.MAX_VALUE }, { it.id }))?.id
         val farmers = living.filter { it.role == TownRole.FARMER }.toMutableList()

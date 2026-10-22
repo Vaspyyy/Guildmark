@@ -1,11 +1,11 @@
 package io.github.vaspyyy.guildmark.townsfolk.talk.sources
 
 import io.github.vaspyyy.guildmark.townsfolk.Activity
-import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
 import io.github.vaspyyy.guildmark.townsfolk.Days
 import io.github.vaspyyy.guildmark.townsfolk.Resident
 import io.github.vaspyyy.guildmark.townsfolk.Residents
 import io.github.vaspyyy.guildmark.townsfolk.Speech
+import io.github.vaspyyy.guildmark.townsfolk.TownPlaces
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import io.github.vaspyyy.guildmark.townsfolk.Trait
 import io.github.vaspyyy.guildmark.townsfolk.talk.Ask
@@ -136,5 +136,5 @@ object HouseholdTopics : TopicSource {
     }
 
     /** The middle of lodging [home] of [places], if it's one of theirs. */
-    private fun middle(places: CityPlaces, home: Int): BlockPos? = places.lodgings[home]?.box?.center
+    private fun middle(places: TownPlaces, home: Int): BlockPos? = places.lodgings[home]?.box?.center
 }

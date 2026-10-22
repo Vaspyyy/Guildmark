@@ -2,7 +2,7 @@ package io.github.vaspyyy.guildmark.economy
 
 import io.github.vaspyyy.guildmark.city.plan.Kind
 import io.github.vaspyyy.guildmark.city.plan.M
-import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
+import io.github.vaspyyy.guildmark.townsfolk.TownPlaces
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import net.minecraft.core.BlockPos
@@ -58,7 +58,7 @@ enum class Shop(val id: String, val goods: List<Good>) {
         }
 
         /** The shop kept from [pos]: the stall whose keeper stands there, the market hall, or else the fish market on the quay. */
-        fun at(places: CityPlaces, pos: BlockPos): Shop {
+        fun at(places: TownPlaces, pos: BlockPos): Shop {
             places.stalls.firstOrNull { it.keeper.pos.distSqr(pos) <= NEAR }?.let { stall -> of(stall.trade)?.let { return it } }
             if (places.lodgingAt(pos)?.kind == Kind.MARKET_HALL.name) return HALL
             return if (places.harbour) QUAY else HALL

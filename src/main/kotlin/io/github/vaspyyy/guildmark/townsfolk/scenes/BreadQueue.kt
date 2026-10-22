@@ -22,6 +22,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Places
 import io.github.vaspyyy.guildmark.townsfolk.Spot
 import io.github.vaspyyy.guildmark.townsfolk.Step
 import io.github.vaspyyy.guildmark.townsfolk.Task
+import io.github.vaspyyy.guildmark.townsfolk.TownPlaces
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import io.github.vaspyyy.guildmark.townsfolk.Trades
@@ -97,7 +98,7 @@ internal object BreadQueue {
     /** The clock's hour, 0 at midnight. */
     private fun clock(level: ServerLevel): Int = Math.floorMod(Math.floorDiv(level.overworldClockTime, 1000L) + 6, 24L).toInt()
 
-    private fun market(level: ServerLevel, places: CityPlaces): Market? =
+    private fun market(level: ServerLevel, places: TownPlaces): Market? =
         if (Markets.enabled()) Markets.get(level)[places.centre]?.market else null
 
     /** Whether bread is short at [m] this morning while the ovens are baking or flour is on its way: the queue's cause. */

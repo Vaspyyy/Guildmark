@@ -58,7 +58,7 @@ object Ways {
      * [overlay] and [exact] as for [Walk]). Outside a capital, or between floors with no ladder, just a walk.
      */
     fun to(
-        p: Townsperson, places: CityPlaces?, target: BlockPos, speed: Double = Jobs.WALK, near: Double = 1.5,
+        p: Townsperson, places: TownPlaces?, target: BlockPos, speed: Double = Jobs.WALK, near: Double = 1.5,
         overlay: Activity = Activity.NONE, exact: Boolean = false,
     ): Task {
         val walk = Walk(p, target, speed, near, overlay, exact)

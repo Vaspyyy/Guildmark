@@ -5,7 +5,6 @@ import io.github.vaspyyy.guildmark.economy.Markets
 import io.github.vaspyyy.guildmark.economy.Tally
 import io.github.vaspyyy.guildmark.economy.fortune.Fortunes
 import io.github.vaspyyy.guildmark.townsfolk.Activity
-import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
 import io.github.vaspyyy.guildmark.townsfolk.Days
 import io.github.vaspyyy.guildmark.townsfolk.Doing
 import io.github.vaspyyy.guildmark.townsfolk.Idle
@@ -13,6 +12,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Jobs
 import io.github.vaspyyy.guildmark.townsfolk.Life
 import io.github.vaspyyy.guildmark.townsfolk.Schedule
 import io.github.vaspyyy.guildmark.townsfolk.Task
+import io.github.vaspyyy.guildmark.townsfolk.TownPlaces
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import io.github.vaspyyy.guildmark.townsfolk.Ways
@@ -77,7 +77,7 @@ internal object Cold {
     }
 
     /** Whether [p] is out of doors (in no building of the capital's). */
-    private fun outdoors(p: Townsperson, places: CityPlaces): Boolean {
+    private fun outdoors(p: Townsperson, places: TownPlaces): Boolean {
         val pos = p.blockPosition()
         return places.lodgingAt(pos)?.contains(pos) != true
     }
