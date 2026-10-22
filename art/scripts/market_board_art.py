@@ -19,8 +19,8 @@ Writes, all at 32x with the HD art kit (hdkit.py):
                                                                      market_board_letters.py), the chalk stick, dust
   textures/block/market_board/slips.png                             the papers a slip can be on (in Slip.Kind's order:
                                                                      trouble, good, price, word, year, talk, fortune,
-                                                                     works), a tack, shadows, an order's ticket (front
-                                                                     and back) and its stamp
+                                                                     works, tale), a tack, shadows, an order's ticket
+                                                                     (front and back) and its stamp
   textures/block/market_board/medallion.png                         the medallion's five faces and its end (80x320)
   textures/item/market_board.png                                    the item icon
   models/block/market_board_<part>.json                             the six cells (the blockstate already picks them;
@@ -259,10 +259,11 @@ COLOURS = {
 
 # The papers, in Slip.Kind's order, and for each the corner its decoration takes (texels of the 64x32 paper; text
 # keeps clear of it)
-SLIP_KINDS = ['trouble', 'good', 'price', 'word', 'year', 'talk', 'fortune', 'works']
+SLIP_KINDS = ['trouble', 'good', 'price', 'word', 'year', 'talk', 'fortune', 'works', 'tale']
 SLIP_PX = (64, 32)
 SLIP_KEEP = {'trouble': (47, 17, 64, 32), 'good': (0, 0, 9, 32), 'price': (0, 21, 16, 32), 'word': (45, 15, 64, 32),
-             'year': (0, 18, 17, 32), 'talk': TALK.KEEP, 'fortune': (46, 13, 64, 32), 'works': (0, 14, 19, 32)}
+             'year': (0, 18, 17, 32), 'talk': TALK.KEEP, 'fortune': (46, 13, 64, 32), 'works': (0, 14, 19, 32),
+             'tale': (46, 15, 64, 32)}
 
 
 # ================================================================ painting
@@ -1125,6 +1126,8 @@ PAPERS = {
     # A printed broadsheet's cheap grey-white, and a builder's buff ruled sheet
     'fortune': [(62, 60, 56), (108, 104, 96), (156, 150, 138), (196, 190, 176), (222, 216, 202), (238, 234, 222)],
     'works': [(70, 58, 40), (122, 106, 76), (172, 154, 116), (208, 192, 152), (230, 216, 180), (244, 234, 204)],
+    # A tale's notice: ivory cream, warmer and paler than the straw of the good news
+    'tale': [(80, 66, 60), (136, 118, 104), (190, 172, 150), (224, 210, 184), (240, 230, 206), (252, 246, 228)],
 }
 PRINT_INK = (30, 26, 26)
 WORKS_INK = (46, 52, 104)
@@ -1226,6 +1229,8 @@ def paper(kind, seed):
         fortune_print(cv, m, pal, seed)
     elif kind == 'works':
         works_ruling(cv, m, pal, seed)
+    elif kind == 'tale':
+        tale_decor(cv, m, pal, seed)
     # The edges a shade darker, as paper's are
     cv.over(m & (dist_in(m, 2) == 1), pal[2], 0.3)
     return cv
@@ -1290,6 +1295,82 @@ def works_ruling(cv, m, pal, seed):
     tools |= dt < 0.55
     stamp_ink = (rings | (tools & (d < 5.9))) & m & (rand(W, H, seed + 4) > 0.08)
     cv.over(stamp_ink, WORKS_INK, 0.8 * press)
+
+
+STAR_INK = (150, 108, 50)
+FEATHER = [(58, 36, 20), (110, 70, 32), (156, 108, 48), (196, 150, 70), (226, 186, 102), (250, 224, 150)]
+QUILL_INK = (34, 26, 30)
+
+
+def tale_decor(cv, m, pal, seed):
+    """A tale's notice: a faint border of small stars round the paper, a plus and a dot by turns in a faded gold, kept off the pin,
+    and in the bottom right corner (the keep) a quill lying slantwise across it from its dark nib, low on the left, to the tip of
+    its feather, high on the right: the feather tawny gold, lit on its upper side, with its rib and a split in it, a bead of ink
+    on the nib and a few spots beside it, and its shadow on the paper."""
+    W, H = SLIP_PX
+    xs, ys = grid(W, H)
+    # The stars, along the top and the bottom as far as the quill, and down the sides
+    spots = []
+    for k, x in enumerate(np.linspace(3, W - 4, 8)):
+        spots.append((x, 3, k))
+        if x < 43:
+            spots.append((x, H - 4, k + 1))
+    for k, y in enumerate(np.linspace(3, H - 4, 4)[1:-1]):
+        spots.append((3, y, k))
+        if y < 13:
+            spots.append((W - 4, y, k))
+    alpha = np.zeros((H, W))
+    for x, y, k in spots:
+        cx, cy = int(round(x)), int(round(y))
+        if k % 2 == 0:
+            alpha[cy, cx] = 0.6
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                alpha[cy + dy, cx + dx] = 0.4
+        else:
+            alpha[cy, cx] = 0.45
+    cv.over((alpha > 0) & m, STAR_INK, alpha)
+
+    # The quill on the diagonal: its nib at (nx, ny), the tip of its feather at (tx, ty); u runs along it, v across it
+    # toward the lower right
+    nx, ny, tx, ty = 49.5, 27.0, 62.5, 15.5
+    L = math.hypot(tx - nx, ty - ny)
+    ux, uy = (tx - nx) / L, (ty - ny) / L
+    vx, vy = -uy, ux
+    du = (xs - nx) * ux + (ys - ny) * uy
+    dv = (xs - nx) * vx + (ys - ny) * vy
+    VANE0 = 5.2
+    s = np.clip((du - VANE0) / (L - VANE0), 0, 1)
+    bend = 1.2 * np.sin(np.pi * s)                             # the feather bows a little toward its lower side
+    prof = np.sin(np.pi * s ** 0.72) ** 0.8
+    up = dv - bend < 0
+    hw = np.where(up, 3.6, 2.6) * prof                         # the upper side the fuller
+    vane = (du >= VANE0) & (du <= L) & (np.abs(dv - bend) <= hw) & (np.abs(dv - bend) > 0.5)
+    # A split in it, slanting in from the lower edge
+    sx0, sy0 = nx + 9.6 * ux + 4.4 * vx, ny + 9.6 * uy + 4.4 * vy
+    sx1, sy1 = nx + 11.4 * ux + 1.6 * vx, ny + 11.4 * uy + 1.6 * vy
+    vane &= ~(seg_dist(sx0, sy0, sx1, sy1, W, H)[0] < 0.55)
+    rib = (du >= VANE0 - 1.0) & (du <= L - 1.2) & (np.abs(dv - bend) <= 0.5)
+    barrel = (du >= -0.5) & (du < VANE0 - 0.6) & (np.abs(dv) <= 0.8)
+    vane, rib, barrel = vane & m, rib & m, barrel & m
+    body = vane | rib | barrel
+    # Its shadow on the paper, to the lower right
+    cv.over(shift(body, 1, 1) & ~body & m, pal[0], 0.32)
+    # The feather: two tones, the upper side lit, its barbs a slant of darker gold, the rim a shade darker on the lower side
+    barb = np.mod(du + 0.8 * (dv - bend) * np.where(up, 1, -1), 3.0) < 0.9
+    t = np.where(up, 0.82, 0.58) - 0.14 * barb * ~up + 0.1 * (1 - s)
+    cv.put(vane, bands(FEATHER, t, 0.1))
+    cv.over(vane & (dist_in(vane, 2) == 1) & ~up, FEATHER[1], 0.5)
+    cv.over(vane & (dist_in(vane, 2) == 1) & up, FEATHER[3], 0.5)
+    cv.put(rib, bands(FEATHER, np.where(dv < bend, 0.4, 0.28), 0))
+    # The barrel, bare gold, and the dark nib at its foot with a bead of ink
+    cv.put(barrel & ~vane, bands(PAL['gold'], np.where(dv < 0, 0.9, 0.55), 0))
+    nib = (du >= -2.6) & (du < -0.5) & (np.abs(dv) <= 0.95 * (du + 2.6) / 2.1 + 0.15) & m
+    cv.put(nib, bands(PAL['iron'], np.where(dv < 0, 0.55, 0.25), 0))
+    for (bx, by, r, a) in ((46.5, 29.5, 0.55, 1.0), (45.2, 26.2, 0.5, 0.8), (47.0, 24.2, 0.45, 0.7)):
+        dm, _ = disc(bx, by, r, W, H)
+        cv.over(dm & m, QUILL_INK, a)
+    gx, gy = nx + 10.0 * ux - 2.4 * vx, ny + 10.0 * uy - 2.4 * vy
+    glint(cv, int(gx), int(gy), 1, (255, 246, 214))
 
 
 def tack():
@@ -1764,7 +1845,7 @@ def kotlin(where, chalk, ink, letters_size, slips_where, slips_size):
     w('    /** The slips\' papers in Slip.Kind order, their shadow and the tack: x, y, w, h in texels of the slips sprite. */')
     w('    val PAPERS = arrayOf(' + ', '.join('intArrayOf(%d, %d, %d, %d)' % slips_where[k] for k in SLIP_KINDS) + ')')
     w('    val PAPER_KINDS = arrayOf(' + ', '.join(f'"{k}"' for k in SLIP_KINDS) + ')')
-    w('    /** Where on each paper (texels of 64x32) its seal, ribbon, dust, stamp, sprig, heads or woodcut is: the writing keeps off it. */')
+    w('    /** Where on each paper (texels of 64x32) its seal, ribbon, dust, stamp, sprig, heads, woodcut or quill is: the writing keeps off it. */')
     w('    val PAPER_KEEP = arrayOf(' + ', '.join('intArrayOf(%d, %d, %d, %d)' % SLIP_KEEP[k] for k in SLIP_KINDS) + ')')
     w('    val SLIP_SHADOW = intArrayOf(%d, %d, %d, %d)' % slips_where['shadow'])
     w('    val TACK = intArrayOf(%d, %d, %d, %d)' % slips_where['tack'])
