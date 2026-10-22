@@ -532,6 +532,14 @@ enum class Slight(val amount: Double, val halfLife: Int) {
     KILLING_SEEN(2.0, 15),
     /** Killed one of their household. */
     KILLED_KIN(8.0, 60),
+
+    // Appended for the living-world designs, in the order they were accepted (living-world/build-plan.md section 2)
+    /** Gave their word on the Marlow note and broke it (Tales): the lender and the debtor. */
+    WORD_BROKEN(1.5, 15),
+    /** Accused the wrong person of the locket (Tales): the one accused. */
+    WRONGED(2.0, 15),
+    /** Broke a stone or a cairn the town set down (Tales): the household it was for. */
+    DEFACED(1.0, 15),
 }
 
 /** How fast a rumour cools: its heat is multiplied by [daily] each dawn. */

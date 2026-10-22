@@ -3,6 +3,7 @@ package io.github.vaspyyy.guildmark.tales
 import io.github.vaspyyy.guildmark.block.MarketBoardBlockEntity.Slip
 import io.github.vaspyyy.guildmark.economy.Conditions
 import io.github.vaspyyy.guildmark.economy.Markets
+import io.github.vaspyyy.guildmark.guild.GuildNews
 import io.github.vaspyyy.guildmark.townsfolk.Crier
 import io.github.vaspyyy.guildmark.townsfolk.Resident
 import io.github.vaspyyy.guildmark.townsfolk.Residents
@@ -21,7 +22,7 @@ import kotlin.math.abs
 
 /**
  * Stage 5 of `Tales.finish` (living-world/stories/design.md 6.7), Part E: what is told. [run] starts the ending's rumour
- * (6.2, through [rumour]); the crier's cry and the board's slip are
+ * (6.2, through [rumour]) and adds the guild's news for a size-3 tale that ended A or B; the crier's cry and the board's slip are
  * not queued anywhere but worked out when the crier asks (`Tales.cries`, [cries]), from the record, so they are the same every time
  * they are asked and cannot be lost or doubled by a restart. The chronicle line is written by stage 1 (the engine), not here. Runs
  * once for a tale; the engine guards it.
@@ -75,6 +76,7 @@ object TaleTold {
         val tone = tone(t.ending)
         if (tone == 0) return
         rumour(c, t, tone)
+        news(c, t)
     }
 
     /**
@@ -110,6 +112,16 @@ object TaleTold {
             .forEach { out.add(it.id to Venue.WORK) }
         for (r in cast.take(STREETS)) for (n in Witness.neighbours(level, r)) out.add(n.id to Venue.STREET)
         return out.distinctBy { it.first }.take(KNOWERS)
+    }
+
+    /** The guild's news of a great turn (6.2): a size-3 tale ended A or B, "<the lead> brought the Fourth Wagon home to <town>". */
+    private fun news(c: Ctx, t: Tale) {
+        if (!Tales.READY || TaleWords.size(t) < 3 || t.ending != Ending.A && t.ending != Ending.B) return
+        val level = c.level
+        val hero = TaleWords.lead(level, t).ifEmpty {
+            TaleShares.shares(3, t.ending, t.parts).firstOrNull()?.part?.player?.let { TaleWords.leadName(level, it) }.orEmpty()
+        }
+        GuildNews.add(level, "news.guildmark.tale.${t.template}", hero.ifEmpty { "?" }, TaleWords.town(level, t.capital).ifEmpty { "?" })
     }
 
     // ---- The crier ----

@@ -569,6 +569,7 @@ object Crier {
             "guild_founded" -> "guild" to 0
             "claimed", "lost_village", "rival_challenge", "rival_repelled" -> "banners" to 0
             "king_slain" -> "king" to 1
+            "tale.wagon", "tale.informer", "tale.brother" -> "tale" to 1
             "story_done", "shard", "character_arrived", "faction_joined", "faction_expelled", "companion_sworn" -> "deeds" to 0
             else -> "more" to 0
         }
