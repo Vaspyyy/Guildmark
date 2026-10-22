@@ -1,4 +1,7 @@
 {
   "fortune.guildmark.reason.relief.hauled": "A trader brought the town relief by %s.",
-  "news.guildmark.trade.relief": "A trader, %s, brought relief to %s."
+  "news.guildmark.trade.relief": "A trader, %s, brought relief to %s.",
+  "say.guildmark.talk.detail.trade.delivered": "%s %s from %s.",
+  "say.guildmark.talk.detail.trade.delivered.relief": "Relief: %s %s from %s.",
+  "say.guildmark.talk.detail.trade.child": "%s, brought in by the carrier."
 }

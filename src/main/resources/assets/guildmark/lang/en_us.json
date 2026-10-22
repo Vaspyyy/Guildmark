@@ -8237,5 +8237,8 @@
   "say.guildmark.talk.kitchen.scene_own.roast_1": "Roast on the spit, come and get it!",
   "say.guildmark.talk.kitchen.scene_own.roast_2": "Hot off the spit, the rest-day roast!",
   "fortune.guildmark.reason.relief.hauled": "A trader brought the town relief by %s.",
-  "news.guildmark.trade.relief": "A trader, %s, brought relief to %s."
+  "news.guildmark.trade.relief": "A trader, %s, brought relief to %s.",
+  "say.guildmark.talk.detail.trade.delivered": "%s %s from %s.",
+  "say.guildmark.talk.detail.trade.delivered.relief": "Relief: %s %s from %s.",
+  "say.guildmark.talk.detail.trade.child": "%s, brought in by the carrier."
 }

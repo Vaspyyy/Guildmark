@@ -63,6 +63,7 @@ object Scenes {
         started = true
         Works.listen(ToppingOut)
         Comings.listen(Neighbours)
+        io.github.vaspyyy.guildmark.trade.scenes.ReliefCheer.init() // Trade: the street's cheer for a delivery
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> forget() }
     }
 
