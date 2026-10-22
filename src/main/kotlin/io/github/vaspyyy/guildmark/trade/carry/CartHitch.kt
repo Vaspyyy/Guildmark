@@ -11,6 +11,7 @@ import io.github.vaspyyy.guildmark.trade.Carrier
 import io.github.vaspyyy.guildmark.trade.Carriers
 import io.github.vaspyyy.guildmark.trade.TradeConfig
 import io.github.vaspyyy.guildmark.trade.TradeSounds
+import io.github.vaspyyy.guildmark.trade.scenes.ReliefCheer
 import net.minecraft.ChatFormatting
 import net.minecraft.core.BlockPos
 import net.minecraft.core.particles.BlockParticleOption
@@ -141,6 +142,8 @@ object CartHitch {
         Carry.reports.add(Carry.Report { player -> report(player) })
         Carry.recalls.add(Carry.Bring { player -> bringAll(player, held = false) })
         Carry.unsticks.add(Carry.Bring { player -> bringAll(player, held = true) })
+        // The town's children run to the trader's cart when a relief delivery is cheered (H finds it by its name too, and by whose it says it is)
+        ReliefCheer.addCarrying(ReliefCheer.Carrying { player, radius -> cartsOf(player.uuid).filter { it.level() === player.level() && it.distanceTo(player) <= radius } })
         CartScenes.register()
         CartCommand.init()
     }
@@ -493,7 +496,13 @@ object CartHitch {
         }
         if (heard == 0) return
         whistled[player.uuid] = now
-        saying[player.uuid] = Component.translatable("message.guildmark.trade.cart.whistle." + (if (stay) "stay" else "come") + (if (heard == 1) ".one" else ".many"), heard)
+        val key = when {
+            stay && heard == 1 -> "message.guildmark.trade.cart.whistle.stay.one"
+            stay -> "message.guildmark.trade.cart.whistle.stay.many"
+            heard == 1 -> "message.guildmark.trade.cart.whistle.come.one"
+            else -> "message.guildmark.trade.cart.whistle.come.many"
+        }
+        saying[player.uuid] = Component.translatable(key, heard)
     }
 
     private fun say(server: net.minecraft.server.MinecraftServer) {

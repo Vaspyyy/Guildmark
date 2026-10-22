@@ -17,8 +17,10 @@ import net.minecraft.world.InteractionHand
 import net.minecraft.world.InteractionResult
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.Entity.RemovalReason
+import net.minecraft.world.entity.EntityReference
 import net.minecraft.world.entity.EntityType
 import net.minecraft.world.entity.LivingEntity
+import net.minecraft.world.entity.OwnableEntity
 import net.minecraft.world.entity.SlotAccess
 import net.minecraft.world.entity.player.Inventory
 import net.minecraft.world.entity.player.Player
@@ -51,7 +53,7 @@ import kotlin.math.max
  * was doing when it was saved ([state]; a cart loads parked whatever it was) and its 27 stacks. The server places it each tick, after
  * everyone has moved ([CartHitch]), the way [Handcarts] places a carter's.
  */
-class PlayerCart(type: EntityType<out PlayerCart>, level: Level) : Handcart(type, level), ContainerEntity {
+class PlayerCart(type: EntityType<out PlayerCart>, level: Level) : Handcart(type, level), ContainerEntity, OwnableEntity {
 
     /** What it is doing. */
     enum class State {
@@ -79,6 +81,9 @@ class PlayerCart(type: EntityType<out PlayerCart>, level: Level) : Handcart(type
     var ownerId: UUID? = null
         internal set
 
+    /** Whose it is, as the game's ownable things say it: the combat and the spells leave their owner's cart alone, and the town's children (ReliefCheer) run only to their own. */
+    override fun getOwnerReference(): EntityReference<LivingEntity>? = ownerId?.let { EntityReference.of(it) }
+
     /** Their name when it was set down or last used by them, for the line "That is Ransom's cart.". */
     var ownerName: String = ""
         internal set
@@ -99,6 +104,10 @@ class PlayerCart(type: EntityType<out PlayerCart>, level: Level) : Handcart(type
     internal var blockedFor = 0
     internal var rolling = 0.0
     internal var knock = -1
+
+    /** What a client keeps to draw it besides the handcart's own (springs, the canvas's fold, the axle's creak): the client's, never read on a server. */
+    @JvmField
+    var feel: Any? = null
 
     override fun defineSynchedData(builder: SynchedEntityData.Builder) {
         super.defineSynchedData(builder)
