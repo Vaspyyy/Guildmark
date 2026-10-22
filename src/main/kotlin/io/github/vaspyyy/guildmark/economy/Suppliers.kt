@@ -9,6 +9,7 @@ import io.github.vaspyyy.guildmark.progression.Skill
 import io.github.vaspyyy.guildmark.progression.Skills
 import io.github.vaspyyy.guildmark.progression.Talents
 import io.github.vaspyyy.guildmark.townsfolk.Days
+import io.github.vaspyyy.guildmark.trade.LeftoverCommand
 import io.github.vaspyyy.guildmark.village.VillageNames
 import net.minecraft.ChatFormatting
 import net.minecraft.core.BlockPos
@@ -331,9 +332,13 @@ class Suppliers(
             SupplierLink.bought = { level, player, capital, good -> bought(level, capital, player, good) }
         }
 
-        /** Hooks the Trade XP kept for players who were away into the game: it is given when they log in (see [settle]). */
+        /**
+         * Hooks the Trade XP kept for players who were away into the game: it is given when they log in (see [settle]).
+         * Also sets the market's loose ends' testing commands (`trade herd`, `freight` and `owed`) going.
+         */
         fun register() {
             NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerLoggedInEvent::class.java) { event -> (event.entity as? ServerPlayer)?.let { settle(it) } }
+            LeftoverCommand.init()
         }
 
         // ---- Kept by the market and its orders ----

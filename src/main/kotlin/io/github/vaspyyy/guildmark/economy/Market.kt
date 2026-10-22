@@ -4,6 +4,7 @@ import com.mojang.serialization.Codec
 import com.mojang.serialization.codecs.RecordCodecBuilder
 import io.github.vaspyyy.guildmark.GuildmarkConfig
 import kotlin.math.abs
+import kotlin.math.ln
 import kotlin.math.pow
 import kotlin.math.sqrt
 
@@ -328,6 +329,18 @@ class Market(val capital: Long) {
         }
     }
 
+    /**
+     * Days until [good]'s carry is within [within] of its goal, easing at the rate it does now (the same sum
+     * [easeCarry] works hour by hour): 0 if it is already, or if the ease is off and the next hour puts it there. With
+     * [CARRY_SNAP] it is the days until it lands exactly on its goal.
+     */
+    fun carryDays(good: Good, within: Double = CARRY_SNAP): Double {
+        val gap = abs(carryGoal[good.ordinal] - carry[good.ordinal])
+        val rate = carryEaseRate()
+        if (gap <= within || rate >= 1.0) return 0.0
+        return ln(within / gap) / ln(1.0 - rate)
+    }
+
     /** Starts what the market has held lately afresh from what it holds, and [brought] from how [town] usually fares. */
     fun reset(town: Town) {
         for (g in Good.entries) {
@@ -419,7 +432,7 @@ class Market(val capital: Long) {
 
         /** How much of what is left of the gap to its new value what bringing a good in costs closes in a day, and how near its goal counts as there. */
         private const val CARRY_EASE = 0.3
-        private const val CARRY_SNAP = 0.001
+        const val CARRY_SNAP = 0.001
 
         /** The share of the gap to a good's new carry that closes in a day: the config marketCarryEaseRate, or 1 (the old jump) with marketCarryEase off. */
         fun carryEaseRate(): Double = try {
