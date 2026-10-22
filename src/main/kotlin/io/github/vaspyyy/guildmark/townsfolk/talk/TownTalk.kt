@@ -151,10 +151,15 @@ object TownTalk {
     /**
      * [mind] has just heard [s] for the first time ([Rumours.hear] calls it): a works paid for or raised is the
      * town's thanks to its patron and anyone who gave a quarter of its price ([Favour.FUNDED]), once for each works,
-     * whichever of its rumours they hear first. Never for a stall: that's its owner's own.
+     * whichever of its rumours they hear first. Never for a stall: that's its owner's own. A tale's rumour (kind
+     * `tale.<template>.<word>`) is left to the tales' memory, which thanks the one a good ending is about ([Favour.TALE_HEARD]).
      */
     internal fun heard(entry: TownTalkData.Entry, mind: Mind, s: Story) {
         val kind = s.rumour.kind
+        if (kind.startsWith("tale.")) {
+            io.github.vaspyyy.guildmark.tales.TaleMemory.heard(entry, mind, s)
+            return
+        }
         if (kind != Rumours.WORKS_FUNDED && kind != Rumours.WORKS_RAISED || mind.id < 0) return
         if (!Memory.enabled() || !Works.enabled()) return
         val id = s.rumour.args.firstOrNull()?.toIntOrNull() ?: return
