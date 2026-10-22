@@ -25,13 +25,13 @@ internal object VillageShow {
 
     /** How far round the player places are drawn, and how many at most in a draw. */
     const val NEAR = 64
-    private const val MAX_DRAWN = 160
+    private const val MAX_DRAWN = 240
 
     /** What each colour is, in the order the legend gives them. */
     enum class Kind(val rgb: Int, val color: String, val what: String) {
-        DOOR(0x3CE05A, "green", "a home's door"),
+        DOOR(0x3CE05A, "green", "a door of a home"),
         BED(0x4A7DFF, "blue", "a bed"),
-        BUILDING(0xC8C8C8, "grey", "the door of a building that is no home"),
+        BUILDING(0xC8C8C8, "grey", "a door of a building that is no home"),
         WELL(0x30D5E0, "cyan", "a well"),
         LAMP(0xFFE04A, "yellow", "a lamp"),
         BENCH(0xFF9A3C, "orange", "a bench"),
@@ -91,7 +91,8 @@ internal object VillageShow {
         }
         for (b in f.buildings) {
             if (b.kind == "TOWER") continue
-            add(if (b.beds.isEmpty()) Kind.BUILDING else Kind.DOOR, b.door, 1.0)
+            val kind = if (b.beds.isEmpty()) Kind.BUILDING else Kind.DOOR
+            if (b.doors.isEmpty()) add(kind, b.door, 1.0) else for (d in b.doors) add(kind, d.pos, 1.0)
             for (bed in b.beds) add(Kind.BED, bed, 0.8)
         }
         for (p in f.wells) add(Kind.WELL, p, 1.0)
