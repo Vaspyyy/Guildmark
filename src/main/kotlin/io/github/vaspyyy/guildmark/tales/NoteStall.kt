@@ -26,6 +26,9 @@ import net.neoforged.neoforge.server.ServerLifecycleHooks
  * - **Leased** ([leased]): after the note's lease (ending C) the stall stays open and its slate is chalked "<lender>'s lease" for ten market
  *   days. Not a saved field of its own: it is read back from the ended tale, which the record keeps forty days.
  * - **The slate's words** ([word]): "Closed: the note" on a sealed stall's slate, `slate.guildmark.sealed`.
+ * - **The scene first** ([hold], [chalk]): when the ending's scene is going to show the awning let down, or the lease chalked, the look of it
+ *   waits ninety seconds for the scene, though the record has it already; the scene shows it ([seal] without `staged`, [chalk]) and the
+ *   look is the record's again. With no scene played, the stall is as the record has it when the ninety seconds are over.
  * - `tale seal list|clear`: which stalls are sealed or leased, and until when; `clear` lets them all go.
  */
 internal object NoteStall {
@@ -40,9 +43,26 @@ internal object NoteStall {
     const val STALL = 1
     private const val NOTE = "note"
 
+    /**
+     * The note tales whose ending a scene has already shown at the stall (the step-3 scene, which then ends the tale), by tale id: the ending's
+     * own scene is not played again for them. Memory only; a tale that ended while no scene was played has its ending scene queued once, as the
+     * engine does for any ending.
+     */
+    internal val shown = HashSet<Int>()
+
     private class Look(val at: Long, val sealed: Boolean)
 
     private val looked = HashMap<Long, Look>()
+
+    /** Ticks a sealed stall's or a leased stall's look waits for its scene (ninety seconds). */
+    private const val WAIT = 1800L
+
+    /** The stalls (by key) whose look waits for a scene until a game time, and the lease the scene has chalked and until when it stands without the record. */
+    private val held = HashMap<Long, Long>()
+
+    private class Chalk(val name: String, val until: Long)
+
+    private val chalked = HashMap<Long, Chalk>()
 
     private class Lease(val name: String, val capital: Long, val until: Long)
 
@@ -64,6 +84,7 @@ internal object NoteStall {
         val data = TaleData.get(level)
         if (data.sealed.isEmpty()) return false
         val until = data.sealed[key] ?: return false
+        if (held[key]?.let { gameTime < it } == true) return false
         looked[key]?.let { if (gameTime - it.at in 0L..19L) return it.sealed }
         val yes = today(level, data, key) <= until
         looked[key] = Look(gameTime, yes)
@@ -77,6 +98,8 @@ internal object NoteStall {
     /** The lender's name the lease of the stall at [key] is chalked with ("Vale", for "Vale's lease") while its lease lasts, else null. */
     fun leased(level: ServerLevel, key: Long, now: Long): String? {
         if (!Tales.live) return null
+        chalked[key]?.let { if (now < it.until) return it.name else chalked.remove(key) }
+        if (held[key]?.let { now < it } == true) return null
         if (now - leasesAt !in 0L..99L) {
             leasesAt = now
             leases = readLeases(level)
@@ -89,18 +112,36 @@ internal object NoteStall {
     /**
      * Seals the stall at [key] from market day [Ctx.day] for [DAYS] days (the last of them is `day + DAYS - 1`), in the record, and holds it
      * bare for the minute it takes the record to be read. Done again it changes nothing while the seal lasts, so the scene and the ending may
-     * both ask. At [TaleLimits.SEALED] the seal that ends soonest is let go to make room.
+     * both ask. At [TaleLimits.SEALED] the seal that ends soonest is let go to make room. With [staged] a scene is to let the awning down:
+     * the record has the seal, and the stall keeps its look for ninety seconds, until the scene shows it ([seal] again, not staged).
      */
-    fun seal(c: Ctx, key: Long) {
+    fun seal(c: Ctx, key: Long, staged: Boolean = false) {
         val data = c.data
-        if (data.sealed[key]?.let { it >= c.day } == true) return
-        while (data.sealed.size >= TaleLimits.SEALED && key !in data.sealed) {
-            data.sealed.remove(data.sealed.minByOrNull { it.value }?.key ?: break)
+        if (data.sealed[key]?.let { it >= c.day } != true) {
+            while (data.sealed.size >= TaleLimits.SEALED && key !in data.sealed) {
+                data.sealed.remove(data.sealed.minByOrNull { it.value }?.key ?: break)
+            }
+            data.sealed[key] = c.day + DAYS - 1
+            data.changed()
+            looked.remove(key)
         }
-        data.sealed[key] = c.day + DAYS - 1
-        data.changed()
-        looked.remove(key)
-        ShutStall.lock(key, c.level.gameTime + BRIDGE)
+        if (staged) {
+            held[key] = c.level.gameTime + WAIT
+        } else {
+            held.remove(key)
+            ShutStall.lock(key, c.level.gameTime + BRIDGE)
+        }
+    }
+
+    /** The lease of the stall at [key] is to be shown by a scene: its slate waits ninety seconds for the lender's chalk ([chalk]). */
+    fun hold(level: ServerLevel, key: Long) {
+        held[key] = level.gameTime + WAIT
+    }
+
+    /** The lender has chalked "[name]'s lease" on the stall at [key] in a scene: it stands on the slate until the record has it. */
+    fun chalk(level: ServerLevel, key: Long, name: String) {
+        held.remove(key)
+        chalked[key] = Chalk(name, level.gameTime + WAIT)
     }
 
     /** The lender's name for a slate: the last word of his name ("Orrin Vale" is "Vale"). */
@@ -130,6 +171,7 @@ internal object NoteStall {
     /** Appends `tale seal` to the `tale` command (one line in [Tales.register]). */
     fun register() {
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> forget() }
+        NoteStages.register()
         TaleCommand.sub += { tale ->
             tale.then(
                 Commands.literal("seal")
@@ -183,6 +225,8 @@ internal object NoteStall {
         }
         if (n > 0) data.changed()
         looked.clear()
+        held.clear()
+        chalked.clear()
         leasesAt = Long.MIN_VALUE / 2
         leases = mapOf()
         return TaleCommand.say(
@@ -194,6 +238,9 @@ internal object NoteStall {
     /** Memory forgotten, as the server stops. */
     fun forget() {
         looked.clear()
+        shown.clear()
+        held.clear()
+        chalked.clear()
         leases = mapOf()
         leasesAt = Long.MIN_VALUE / 2
     }
