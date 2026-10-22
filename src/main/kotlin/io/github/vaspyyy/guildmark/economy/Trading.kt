@@ -2,6 +2,9 @@ package io.github.vaspyyy.guildmark.economy
 
 import io.github.vaspyyy.guildmark.guild.TownControl
 import io.github.vaspyyy.guildmark.registry.ModItems
+import io.github.vaspyyy.guildmark.trade.Hauls
+import io.github.vaspyyy.guildmark.trade.Ledger
+import io.github.vaspyyy.guildmark.trade.TradeConfig
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.util.Prediction
@@ -81,6 +84,12 @@ class Quote(
      * flour it carried.
      */
     val trouble: Event? = null,
+    /**
+     * The dealer's lot (the haul tickets, see [Hauls.room]): what the market buys at a dealer's share, with room for the caravans' load on top, of goods that
+     * came a long way, if the player has that many hauled units of it with them; and [hauledLeft], how many such units they have, whether or not a lot is offered.
+     */
+    val hauledSell: Lot? = null,
+    val hauledLeft: Int = 0,
 ) {
     /** Where on the road the waylaid wagon behind its price was taken, if one was ("ford"; see [Caravans.PLACES]). */
     val place: String? get() = trouble?.place?.takeIf { it.isNotEmpty() }
@@ -88,9 +97,9 @@ class Quote(
 
 /**
  * What came of a player's offer: [lot] is what changed hands, or what would have; [own] is how many of the goods sold
- * had come off the market's own stalls lately (see [Suppliers.sold]).
+ * had come off the market's own stalls lately (see [Suppliers.sold]); [hauled] if it was a dealer's lot.
  */
-class Deal(val outcome: Outcome, val lot: Lot? = null, val own: Int = 0) {
+class Deal(val outcome: Outcome, val lot: Lot? = null, val own: Int = 0, val hauled: Boolean = false) {
     enum class Outcome {
         DONE,
         /** The market has none to sell, or wants no more. */
@@ -120,8 +129,11 @@ object Trading {
     private const val LEAN = 0.8
     private const val FULL = 1.2
 
-    /** What [entry]'s market says of [good], the lot it buys paying [share] of its price (a supplier's standing lifts it, see [Suppliers.share]). */
-    fun quote(entry: Markets.Entry, good: Good, share: Double = Lots.SELL_SHARE): Quote {
+    /**
+     * What [entry]'s market says of [good], the lot it buys paying [share] of its price (a supplier's standing lifts it, see [Suppliers.share]).
+     * [hauled] is how many units of it the player has with them that came a long way (see [Hauls.hauledHere]), for the dealer's lot.
+     */
+    fun quote(entry: Markets.Entry, good: Good, share: Double = Lots.SELL_SHARE, hauled: Int = 0): Quote {
         val m = entry.market
         val town = entry.town
         val price = m.price(town, good)
@@ -138,8 +150,21 @@ object Trading {
         val wants = maxOf(Lots.wants(m, town, good), sell?.count ?: 0)
         return Quote(
             good, floor(m.stock(good) + 1e-6).toInt(), price, usual, Lots.buy(m, town, good), sell,
-            wants, m.trend(town, good), why, event, trouble,
+            wants, m.trend(town, good), why, event, trouble, dealerLot(entry, good, share, hauled, sell), hauled,
         )
+    }
+
+    /**
+     * The dealer's lot of [good] [entry]'s market will buy from a player with [hauled] hauled units of it: priced at the dealer's share (or the
+     * player's own if it is higher) with the haul room added to the market's usual room (see [Hauls.room]), and hauled whole or not at all: null if
+     * the lot is bigger than they have, if the market takes none, or if it comes out the same as the [ordinary] lot (no edge, no hauled units spent).
+     */
+    internal fun dealerLot(entry: Markets.Entry, good: Good, share: Double, hauled: Int, ordinary: Lot?): Lot? {
+        if (hauled <= 0 || !TradeConfig.hauls()) return null
+        val lot = Lots.sell(entry.market, entry.town, good, maxOf(share, TradeConfig.dealerShare()), Hauls.room(entry, good)) ?: return null
+        if (lot.count > hauled) return null
+        if (ordinary != null && ordinary.count == lot.count && ordinary.marks == lot.marks) return null
+        return lot
     }
 
     /**
@@ -173,18 +198,24 @@ object Trading {
     fun sell(player: ServerPlayer, entry: Markets.Entry, good: Good): Deal {
         val item = good.item ?: return Deal(Deal.Outcome.NONE)
         val level = player.level()
-        val lot = Lots.sell(entry.market, entry.town, good, Suppliers.share(level, entry.capital, player.uuid)) ?: return Deal(Deal.Outcome.NONE)
+        val share = Suppliers.share(level, entry.capital, player.uuid)
+        val ordinary = Lots.sell(entry.market, entry.town, good, share)
+        // Goods that came a long way sell at a dealer's share, with more room, if the lot is no bigger than what they carry of them (see dealerLot)
+        val dealer = dealerLot(entry, good, share, Hauls.hauledHere(level, player, entry, good), ordinary)
+        val lot = dealer ?: ordinary ?: return Deal(Deal.Outcome.NONE)
         // Salvage off its own waylaid wagons it won't buy back: that's to be handed in (see Marked)
         val free = count(player.inventory, item, entry.capital)
         if (free < lot.count) {
             return Deal(if (free == 0 && count(player.inventory, item) > 0) Deal.Outcome.OWN_WAGON else Deal.Outcome.LACKING, lot)
         }
         take(player.inventory, item, lot.count, entry.capital)
+        // A hauled unit comes off the ledger once, as it is sold at a dealer's share
+        if (dealer != null) Ledger.take(level, player.uuid, good, lot.count, entry.capital)
         give(player, ModItems.GUILD_MARK.get(), lot.marks)
         Lots.sold(entry.market, good, lot)
         Markets.get(level).changed()
         val own = Suppliers.sold(level, entry.capital, player.uuid, good, lot.count, lot.marks)
-        return Deal(Deal.Outcome.DONE, lot, own)
+        return Deal(Deal.Outcome.DONE, lot, own, dealer != null)
     }
 
     /** How many of [item] [inventory] holds. */
