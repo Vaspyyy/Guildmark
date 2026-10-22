@@ -18,6 +18,10 @@ import net.neoforged.neoforge.network.handling.IPayloadContext
  * [wants], which way the price is going ([trend], 1 up, -1 down), how far it is off its usual ([off], the price
  * over the usual), why if that's far enough off to say ([why], a lang key that takes the good's name, "" if not;
  * [dear] which way), and how many of it the player [carried].
+ *
+ * The haul tickets (living-world/trader/design.md, Part 2) add the dealer's lot: of the goods the player carries that came a long way
+ * ([hauledLeft] of them, whether or not a lot is offered), the lot the market buys at a dealer's share ([hauledCount] for [hauledMarks], 0 for 0
+ * when there is none, or when it would be the ordinary lot).
  */
 data class MarketGood(
     val good: String,
@@ -33,23 +37,51 @@ data class MarketGood(
     val why: String,
     val dear: Boolean,
     val carried: Int,
+    val hauledCount: Int = 0,
+    val hauledMarks: Int = 0,
+    val hauledLeft: Int = 0,
 ) {
     companion object {
-        val STREAM_CODEC: StreamCodec<ByteBuf, MarketGood> = StreamCodec.composite(
-            ByteBufCodecs.STRING_UTF8, MarketGood::good,
-            ByteBufCodecs.VAR_INT, MarketGood::stock,
-            ByteBufCodecs.VAR_INT, MarketGood::keep,
-            ByteBufCodecs.VAR_INT, MarketGood::buyCount,
-            ByteBufCodecs.VAR_INT, MarketGood::buyMarks,
-            ByteBufCodecs.VAR_INT, MarketGood::sellCount,
-            ByteBufCodecs.VAR_INT, MarketGood::sellMarks,
-            ByteBufCodecs.VAR_INT, MarketGood::wants,
-            ByteBufCodecs.VAR_INT, MarketGood::trend,
-            ByteBufCodecs.FLOAT, MarketGood::off,
-            ByteBufCodecs.STRING_UTF8, MarketGood::why,
-            ByteBufCodecs.BOOL, MarketGood::dear,
-            ByteBufCodecs.VAR_INT, MarketGood::carried,
-            ::MarketGood,
+        // Sixteen fields are more than StreamCodec.composite takes (fourteen), so they are written and read one after the other
+        val STREAM_CODEC: StreamCodec<ByteBuf, MarketGood> = StreamCodec.of<ByteBuf, MarketGood>(
+            { buf, g ->
+                ByteBufCodecs.STRING_UTF8.encode(buf, g.good)
+                ByteBufCodecs.VAR_INT.encode(buf, g.stock)
+                ByteBufCodecs.VAR_INT.encode(buf, g.keep)
+                ByteBufCodecs.VAR_INT.encode(buf, g.buyCount)
+                ByteBufCodecs.VAR_INT.encode(buf, g.buyMarks)
+                ByteBufCodecs.VAR_INT.encode(buf, g.sellCount)
+                ByteBufCodecs.VAR_INT.encode(buf, g.sellMarks)
+                ByteBufCodecs.VAR_INT.encode(buf, g.wants)
+                ByteBufCodecs.VAR_INT.encode(buf, g.trend)
+                ByteBufCodecs.FLOAT.encode(buf, g.off)
+                ByteBufCodecs.STRING_UTF8.encode(buf, g.why)
+                ByteBufCodecs.BOOL.encode(buf, g.dear)
+                ByteBufCodecs.VAR_INT.encode(buf, g.carried)
+                ByteBufCodecs.VAR_INT.encode(buf, g.hauledCount)
+                ByteBufCodecs.VAR_INT.encode(buf, g.hauledMarks)
+                ByteBufCodecs.VAR_INT.encode(buf, g.hauledLeft)
+            },
+            { buf ->
+                MarketGood(
+                    ByteBufCodecs.STRING_UTF8.decode(buf),
+                    ByteBufCodecs.VAR_INT.decode(buf),
+                    ByteBufCodecs.VAR_INT.decode(buf),
+                    ByteBufCodecs.VAR_INT.decode(buf),
+                    ByteBufCodecs.VAR_INT.decode(buf),
+                    ByteBufCodecs.VAR_INT.decode(buf),
+                    ByteBufCodecs.VAR_INT.decode(buf),
+                    ByteBufCodecs.VAR_INT.decode(buf),
+                    ByteBufCodecs.VAR_INT.decode(buf),
+                    ByteBufCodecs.FLOAT.decode(buf),
+                    ByteBufCodecs.STRING_UTF8.decode(buf),
+                    ByteBufCodecs.BOOL.decode(buf),
+                    ByteBufCodecs.VAR_INT.decode(buf),
+                    ByteBufCodecs.VAR_INT.decode(buf),
+                    ByteBufCodecs.VAR_INT.decode(buf),
+                    ByteBufCodecs.VAR_INT.decode(buf),
+                )
+            },
         )
     }
 }
@@ -59,7 +91,7 @@ data class MarketGood(
  * screen, which nobody keeps), the capital it's in ([place]), the player's Guild Marks, and the shop's goods; the
  * player's supplier standing there ([standing], the rank 0 to 4, or -1 with standing switched off), their [points]
  * and the points the next rank takes ([next], -1 at the top), how many orders they hold everywhere ([held]) and may
- * hold ([most]), and the business's orders as they stand for the player.
+ * hold ([most]), and the business's orders as they stand for the player, and the haul tickets out at the business ([hauls]).
  */
 data class MarketView(
     val shop: String,
@@ -73,6 +105,7 @@ data class MarketView(
     val held: Int = 0,
     val most: Int = 0,
     val orders: List<MarketOrder> = listOf(),
+    val hauls: List<MarketHaul> = listOf(),
 ) {
     companion object {
         val STREAM_CODEC: StreamCodec<ByteBuf, MarketView> = StreamCodec.composite(
@@ -87,6 +120,7 @@ data class MarketView(
             ByteBufCodecs.VAR_INT, MarketView::held,
             ByteBufCodecs.VAR_INT, MarketView::most,
             MarketOrder.STREAM_CODEC.apply(ByteBufCodecs.list()), MarketView::orders,
+            MarketHaul.STREAM_CODEC.apply(ByteBufCodecs.list()), MarketView::hauls,
             ::MarketView,
         )
     }
