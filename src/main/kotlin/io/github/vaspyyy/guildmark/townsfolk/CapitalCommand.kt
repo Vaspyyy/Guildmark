@@ -76,10 +76,15 @@ object CapitalCommand {
     private const val MAKE_WAY = 32
     private const val MAKE_WAY_MOST = 128
 
-    /** The moves that show what someone has in hand: given one with empty hands, they hold a loaf (or what you hold). */
+    /** The moves that show what someone has in hand: given one with empty hands, they hold what you hold, or else a loaf (or
+     *  the move's own thing in [STAND_INS]). */
     private val HANDLED = setOf(
         Activity.PICK_UP, Activity.PUT_DOWN, Activity.HAND_OVER, Activity.RECEIVE, Activity.SET_UP, Activity.CARRY_BASKET,
+        Activity.FEED_FIRE, Activity.LAY_POSY,
     )
+
+    /** What a move of [HANDLED] is given instead of a loaf: the note it burns, the posy it lays. */
+    private val STAND_INS = mapOf(Activity.FEED_FIRE to Items.PAPER, Activity.LAY_POSY to Items.POPPY)
 
     /** Each kind of place `show` marks: its name and colour. */
     private enum class Mark(val label: String, val colour: Int) {
@@ -452,7 +457,7 @@ object CapitalCommand {
         person.navigation.stop()
         val gave = activity in HANDLED && person.carried.isEmpty
         if (gave) {
-            person.carried = player.mainHandItem.takeUnless { it.isEmpty }?.copyWithCount(1) ?: ItemStack(Items.BREAD)
+            person.carried = player.mainHandItem.takeUnless { it.isEmpty }?.copyWithCount(1) ?: ItemStack(STAND_INS[activity] ?: Items.BREAD)
             person.carriedUntil = 0
         }
         person.director = Acting(activity, person.tickCount + ticks, person.yawTo(player.position()), gave)
