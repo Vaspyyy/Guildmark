@@ -16,6 +16,9 @@ import net.neoforged.bus.api.IEventBus
 object Trade {
     /** Registers the trader's life: called once, at the mod's setup. */
     fun register(modBus: IEventBus) {
+        // X5: the sounds (the 37 events, silent until their files land; the operators' `trade sound` comes with them)
+        TradeSounds.register(modBus)
+
         // X6: the voices (the operators' `trade say`, which has a townsperson say the trade's lines to hear them)
         TradeSayCommand.init()
 
