@@ -573,14 +573,19 @@ object HomesteadKitchens {
         val post = home.post
         if (!level.hasNearbyAlivePlayer(post.x + 0.5, post.y + 0.5, post.z + 0.5, SIGHT)) return
         val here = peopleHome(level, home)
+        // The one round that falls in the last [ROUND] ticks of the grace puts the fire out itself, so that the pot is seen to go
+        // out (left to its own clock it would go out a moment later, and mostly with no one looking)
+        val since = seen[home.id]
+        val leaving = !here || (since != null && level.gameTime - since >= GRACE - ROUND)
         val rec = HomeKitchenData.get(level).home(home.id) ?: return
         for ((key, entry) in rec.items) {
             if (entry.status != HomeKitchenData.Status.DONE || !key.endsWith(".pot")) continue
             val pos = entry.cells.firstOrNull() ?: continue
-            warm(level, pos, here)
+            warm(level, pos, !leaving)
         }
     }
 
+    /** Lights the hearth pot at [pos] while its people are [here], and puts it out when they are not, if it is the household's to see to. */
     private fun warm(level: ServerLevel, pos: BlockPos, here: Boolean) {
         if (!level.isLoaded(pos)) return
         val pot = level.getBlockEntity(pos) as? StewpotBlockEntity ?: return
@@ -599,12 +604,12 @@ object HomesteadKitchens {
                 level.sendParticles(ParticleTypes.SMOKE, pos.x + 0.5, pos.y + 0.8, pos.z + 0.5, 3, 0.15, 0.1, 0.15, 0.01)
             }
         } else if (v.lit && v.fuel <= 0.0) {
+            // The fire dies down: a hiss, as the pot's own fire makes when it goes out, and a last billow of smoke
+            v.lit = false
+            v.dirty = true
             pot.catchUp(level)
-            if (!v.lit) {
-                // The fire dies down: a hiss and a last billow of smoke
-                level.playSound(null, pos, SoundEvents.FIRE_EXTINGUISH, SoundSource.BLOCKS, 0.3f, 1.0f)
-                level.sendParticles(ParticleTypes.LARGE_SMOKE, pos.x + 0.5, pos.y + 0.7, pos.z + 0.5, 6, 0.2, 0.15, 0.2, 0.02)
-            }
+            level.playSound(null, pos, SoundEvents.FIRE_EXTINGUISH, SoundSource.BLOCKS, 0.6f, 1.2f)
+            level.sendParticles(ParticleTypes.LARGE_SMOKE, pos.x + 0.5, pos.y + 0.7, pos.z + 0.5, 6, 0.2, 0.15, 0.2, 0.02)
         }
     }
 
