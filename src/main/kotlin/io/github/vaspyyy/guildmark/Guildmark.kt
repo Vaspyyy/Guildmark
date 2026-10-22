@@ -418,12 +418,16 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
             if (!owner.level().isClientSide()) {
                 Contracts.onKill(owner, event.entity)
                 Parties.onKill(owner, event.entity)
+                // A tale hears of it (tales/)
+                if (level is ServerLevel) io.github.vaspyyy.guildmark.tales.Tales.onKill(level, victim, owner)
             }
             return
         }
         if (!killer.level().isClientSide()) {
             Contracts.onKill(killer, event.entity)
             Parties.onKill(killer, event.entity)
+            // A tale hears of it (tales/)
+            if (level is ServerLevel) io.github.vaspyyy.guildmark.tales.Tales.onKill(level, victim, killer)
             if (killer is ServerPlayer) Work.onKill(killer, victim, event.source)
         }
     }
