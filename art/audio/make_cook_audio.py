@@ -62,10 +62,11 @@ from scipy import signal
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from sfxkit import *  # noqa: E402,F401,F403
+import make_townsfolk_sfx as tf  # noqa: E402
 import make_ship_audio as ship  # noqa: E402
 from make_townsfolk_sfx import level, write_checked, true_peak, loudness_curve, nrm, lead_in, knock  # noqa: E402
-from make_ship_audio import (Ring, grain_cloud, hann_burst, loop_start, oak, iron_ring, path, periodic_phase, rn,
-                             seam_report, squeal, tame)  # noqa: E402
+from make_ship_audio import (Ring, Bus, bubble, grain_cloud, hann_burst, loop_start, oak, iron_ring, path,
+                             periodic_phase, rn, seam_report, squeal, tame)  # noqa: E402
 
 SOUND_DIR = "cook"
 LOOP_MARGIN_DB = 0.8  # a loop's peaks are held this far under its ceiling, for the encoder's own overshoot
@@ -334,9 +335,190 @@ def chill(rg, rng):
 # loops>>
 
 
+# <<pot
+# =========================================================================== iron, water and the pot
+def pot_ring(dur, rng, f0, t60=0.3, wet=0.0):
+    """a cast-iron pot struck: a thick bowl of iron rings dull and short (modes 1, 2.32, 3.9, 5.7 and 7.9 times the lowest, the
+    upper ones dying first, each a close pair that beats); `wet` is how full it is, for what is in it takes the ring away"""
+    r = np.array([1.0, 2.32, 3.9, 5.7, 7.9]) * rng.uniform(0.995, 1.005, 5)
+    t60s = t60 * (1.0 - 0.75 * wet) * np.array([1.0, 0.7, 0.45, 0.3, 0.2])
+    return tf.ring(dur, f0 * r, t60s, [1.0, 0.75, 0.5, 0.32, 0.18], rng, doublet=0.003, doublet_amp=0.6)
+
+
+def chain_links(rng, count=8, f_lo=1500.0, f_hi=3800.0, span=0.22, decay=0.5, size=1.0):
+    """the links of an iron chain shifting against one another as a weight settles: a quick scatter of small clinks, more of
+    them at first, each link a short ring of its own"""
+    m = Mix(span + 0.1)
+    for _ in range(count):
+        tt = span * rng.random() ** 1.6
+        f = float(np.exp(rng.uniform(np.log(f_lo), np.log(f_hi)))) / size ** 0.3
+        t60 = rng.uniform(0.02, 0.06) * size
+        link = ping(0.08, [f, f * 2.76, f * 5.4], [t60, t60 * 0.5, t60 * 0.3], [1.0, 0.5, 0.25], rng, ex_len=0.0004)
+        m.add(nrm(link), tt, rng.uniform(0.25, 1.0) * np.exp(-tt / (span * decay)))
+    return m.out()
+
+
+def spatter(dur, rng, rate0, tau, lo=500.0, hi=5000.0, gain_lo=0.2):
+    """droplets landing in water, a patter that thins out: each a tiny bubble's plip with the tick of its fall"""
+    n = ns(dur)
+    t = tvec(dur)
+    out = np.zeros(n + ns(0.1))
+    idx = np.nonzero(rng.random(n) < rate0 * np.exp(-t / tau) / SR)[0]
+    for i in idx:
+        r = rng.uniform(0.7, 2.6)
+        b = bubble(r, rng, rise=rng.uniform(0.3, 0.8), max_dur=0.08) * rng.uniform(gain_lo, 1.0)
+        out[i:i + len(b)] += b
+    return bp(out[:n], lo, hi)
+
+
+def swirl(dur, rng, f_lo, f_hi, peak=0.5, q=0.8, lumps=0.0):
+    """a ladle drawn through thick stew: a low rush of the liquid heaving round it (its band climbing and sinking with the
+    speed of the stroke), lumps knocking against the bowl of it"""
+    s = bell(dur, peak, 1.5, 1.6)
+    wob = 1.0 + 0.12 * np.sin(2 * np.pi * rng.uniform(1.0, 1.6) * tvec(dur) + rng.uniform(0, 6.28))
+    y = tvf(colored(dur, rng, -2.0), "bp", (f_lo + (f_hi - f_lo) * s) * wob, q) * s ** 1.2
+    y = y * (0.7 + 0.3 * smooth_random(dur, rng, 14))
+    if lumps:
+        for _ in range(int(rng.integers(2, 5))):
+            at = rng.uniform(0.1, 0.8) * dur
+            i = ns(at)
+            b = blup(rng, rng.uniform(140.0, 260.0), rng.uniform(0.018, 0.035), rising=bool(rng.random() < 0.5), pop=0.1)
+            m = min(len(b), len(y) - i)
+            if m > 0:
+                y[i:i + m] += lumps * np.max(np.abs(y)) * b[:m] * rng.uniform(0.3, 1.0)
+    return y
+
+
+@effect("place", 2, 0.5, "A cooking station is set down", loud=-22.0, fade_out=0.12, limit=3.0,
+        when=("A cook sets a station down (the pot's first moment, 1.5): the tripod meets the ground and the pot swings on "
+              "its chain."))
+def place(v, rng):
+    """the Stewpot set down: its wooden tripod meeting the ground with a low thud, the iron pot swinging on its chain and
+    knocking the legs with a dull 'tonk', and the chain's links rattling as it settles (one rattle). v2 a little lighter and
+    higher, the rattle a beat later"""
+    dur = 0.5
+    m = Bus(dur)
+    f = [1.0, 1.08][v]
+    m.add(thump(0.3, 135 * f, 72 * f, rng, decay=0.07, click=0.12, noise=0.45, nlp=520), 0.0, 1.0)
+    m.add(oak(0.25, rng, 175 * f, t60=0.11, hard=0.7, ex=0.003), 0.0, 0.7)
+    m.add(hann_burst(0.003, rng, 400.0, 3500.0), 0.0, 0.25)
+    m.add(pot_ring(0.4, rng, 330 * f, t60=0.28, wet=0.0), [0.035, 0.05][v], 0.42)
+    m.add(hann_burst(0.002, rng, 1500.0, 6000.0), [0.035, 0.05][v], 0.12)
+    m.add(chain_links(rng, count=[9, 8][v], f_lo=1400.0, f_hi=3600.0, span=0.2, size=1.0), [0.075, 0.1][v], 0.42)
+    return kitchen(fit(m.out(), ns(dur)), 0.1, 5301 + v)
+
+
+@effect("pour", 2, 1.0, "Water pours into a pot", reach=12, loud=-25.0, fade_out=0.15,
+        when=("Water is poured into the empty pot from a bucket (moment 2)."))
+def pour(v, rng):
+    """water poured into the empty iron pot: the first of it landing on the iron bottom (a splash and a short 'tink' of the
+    pot), then a stream falling into what is already there, its note climbing as the pot fills (the pot's air column, a pipe
+    that gets shorter), a babble of small bubbles and the glug of the bucket tipping, a last trickle and two drops. v2
+    pours in two heaves"""
+    dur = 1.0
+    pd = [0.84, 0.8][v]
+    t = tvec(pd)
+    u = t / pd
+    m = Bus(dur)
+    m.add(bp(white(0.05, rng), 700.0, 5500.0) * np.exp(-tvec(0.05) / 0.012), 0.0, 0.4)
+    m.add(pot_ring(0.3, rng, 300.0, t60=0.2, wet=0.1), 0.0, 0.25)
+    env = np.clip(t / 0.05, 0, 1) * np.clip((pd - t) / 0.1, 0, 1) ** 1.5 * (0.6 + 0.4 * np.clip(t / 0.3, 0, 1))
+    if v == 1:
+        env = env * (0.55 + 0.45 * (0.5 + 0.5 * np.cos(2 * np.pi * t / 0.45 + 0.5)) ** 0.8)
+    glug = 1.0 - 0.35 * (0.5 + 0.5 * np.sin(phase_from_freq(7.0 * (1 + 0.1 * smooth_random(pd, rng, 3)), len(t))))
+    babble = ship.bubbles(pd, rng, 650.0 * env + 20.0, 0.7, 3.0, beta=1.8, level=1.0, weight=0.4, rise=0.5)
+    src = colored(pd, rng, -1.0) + 0.9 * nrm(babble)
+    stream = tvf(src, "bp", 380.0 * (1.0 + 2.6 * u ** 1.2), 4.0)
+    wash = bp(colored(pd, rng, -1.5), 600.0, 4500.0) * (0.6 + 0.4 * smooth_random(pd, rng, 25))
+    m.add((nrm(stream) + 0.25 * nrm(wash)) * env * glug, 0.02, 1.0)
+    m.add(grain_cloud(pd, rng, 500.0 * env + 5.0, decay=0.0005, f_lo=2500.0, f_hi=8000.0, size_var=0.6) * env, 0.02, 0.12)
+    # the iron shimmering under the stream: what falls on it excites the pot's own notes, which the water in it keeps short
+    shim = resonators(nrm(bp(wash, 500.0, 3000.0)) * env, [300.0 * 2.32, 300.0 * 3.9, 300.0 * 5.7], [0.1, 0.07, 0.05], [1.0, 0.8, 0.5])
+    m.add(shim, 0.02, 0.14)
+    for i, at in enumerate([pd + 0.05, pd + 0.13]):
+        m.add(ship.drip(rng), at, 0.4 * 0.7 ** i)
+    return kitchen(lp(fit(m.out(), ns(dur)), 8500.0), 0.08, 5303 + v)
+
+
+@effect("plop.soft", 3, 0.4, "Something drops into a pot", reach=12, loud=-25.0, fade_out=0.1,
+        when=("An ingredient goes into the pot (moment 3), chosen by what it is: a soft thing (a leaf, a root, an onion, a "
+              "mushroom). Played for a friend watching, too."))
+def plop_soft(v, rng):
+    """a soft thing (a leaf, a root, a slice of onion) dropped into the pot: a small splash, a bubble's rising 'plip' with the
+    pot's hollow round it, the droplets falling back; three sizes of bubble for three kinds of thing"""
+    dur = 0.4
+    r_mm = [2.9, 2.2, 3.7][v]
+    m = Bus(dur)
+    m.add(bp(white(0.04, rng), 500.0, 5000.0) * np.exp(-tvec(0.04) / 0.009), 0.0, 0.4)
+    m.add(bubble(r_mm, rng, rise=0.8, max_dur=0.2), 0.003, 1.0)
+    m.add(resonators(bp(white(0.012, rng), 300.0, 2500.0) * np.hanning(ns(0.012)), [420.0, 780.0, 1250.0], [0.06, 0.045, 0.03],
+                     [1.0, 0.5, 0.3]), 0.0, 0.25)
+    m.add(spatter(0.25, rng, 50.0, 0.055), 0.05, 0.25)
+    return kitchen(lp(fit(m.out(), ns(dur)), 7500.0), 0.08, 5305 + v)
+
+
+@effect("plop.meat", 3, 0.4, "Something drops into a pot", reach=12, loud=-23.0, fade_out=0.1,
+        when=("An ingredient goes into the pot (moment 3): a heavy, wet thing (meat, fish, bone)."))
+def plop_meat(v, rng):
+    """a heavy, wet thing (a joint, a chunk of mutton, a fish) let fall into the pot: the slap of it on the water, a deep 'bloop'
+    as the water closes over it and the bubbles it lets go, a dull knock of it against the iron; three weights of it"""
+    dur = 0.4
+    size = [0.1, 0.07, 0.14][v]
+    m = Bus(dur)
+    m.add(ship.splash(0.4, rng, size=size, hard=0.8, crown=False), 0.0, 1.0)
+    m.add(thump(0.15, 150.0, 90.0, rng, decay=0.03, click=0.0, noise=0.6, nlp=500), 0.0, 0.5)
+    m.add(pot_ring(0.25, rng, 300.0 * [1.0, 1.1, 0.9][v], t60=0.2, wet=0.6), 0.004, 0.18)
+    m.add(grain_cloud(0.15, rng, 500.0, decay=0.0007, f_lo=500.0, f_hi=3000.0) * np.exp(-tvec(0.15) / 0.05), 0.02, 0.3)
+    return kitchen(lp(fit(m.out(), ns(dur)), 6000.0), 0.08, 5308 + v)
+
+
+@effect("plop.grain", 3, 0.4, "Something drops into a pot", reach=12, loud=-26.0, fade_out=0.1,
+        when=("An ingredient goes into the pot (moment 3): a handful of grain, pease or oats."))
+def plop_grain(v, rng):
+    """a handful of grain (barley, oats, pease) let run into the pot: a hiss of it falling, a patter of tiny splashes as the
+    grains reach the water, thinning out, one or two grains ticking on the iron"""
+    dur = 0.4
+    m = Bus(dur)
+    gd = [0.26, 0.2, 0.3][v]
+    gt = tvec(gd)
+    env = np.clip(gt / 0.015, 0, 1) * np.exp(-gt / (gd * 0.5))
+    m.add(bp(white(gd, rng), 2500.0, 8000.0) * env, 0.0, 0.5)
+    m.add(spatter(0.35, rng, [380.0, 300.0, 460.0][v], 0.09, lo=900.0, hi=7000.0), 0.0, 1.0)
+    for i in range(int(rng.integers(2, 5))):
+        m.add(ping(0.04, [2300.0 * rng.uniform(0.9, 1.1), 3800.0], [0.008, 0.005], [1.0, 0.5], rng, ex_len=0.0004, hi=9000.0),
+              rng.uniform(0.0, 0.15), rng.uniform(0.2, 0.5))
+    return kitchen(lp(fit(m.out(), ns(dur)), 9500.0), 0.07, 5311 + v)
+
+
+@effect("stir", 3, 0.8, "A pot is stirred", loud=-26.0, fade_out=0.15,
+        when=("The ladle on the pot (moments 6 and 9, and every stir after). The innkeeper's stir scene plays it every 20 "
+              "ticks while she stirs the house pot (7.3)."))
+def stir(v, rng):
+    """a wooden ladle drawn round in a heavy iron pot of stew: a slow swish of the thick liquid round the bowl of it and the odd
+    blup of a lump, one knock of the ladle's wood on the iron rim as it goes by, the pot's low hum answering. v1 knocks as the
+    ladle goes in, v2 grazes the rim half way round, v3 knocks at the end and scrapes the bottom a moment first"""
+    dur = 0.8
+    m = Bus(dur)
+    sd = [0.62, 0.7, 0.66][v]
+    m.add(swirl(sd, rng, 280.0, [720.0, 640.0, 680.0][v], peak=[0.5, 0.45, 0.55][v], q=1.6, lumps=0.5), [0.02, 0.0, 0.0][v], 1.0)
+    at = [0.02, 0.4, 0.66][v]
+    hard = [0.8, 0.6, 0.9][v]
+    m.add(oak(0.1, rng, [980.0, 850.0, 1050.0][v], t60=0.025, hard=hard, ex=0.0015, lo=500.0), at, 0.5)
+    m.add(pot_ring(0.4, rng, [470.0, 440.0, 500.0][v], t60=0.3, wet=0.45), at + 0.001, 0.55)
+    m.add(hann_burst(0.002, rng, 1500.0, 6000.0), at, 0.12)
+    hum = resonators(fit(hann_burst(0.01, rng, 60.0, 400.0), ns(0.7)), [96.0, 190.0], [0.5, 0.3], [1.0, 0.5])
+    m.add(hum, at, 0.16)
+    if v == 2:
+        rub = bp(colored(0.18, rng, -1.0), 800.0, 3200.0) * bell(0.18, 0.4, 1.2, 1.5) * (0.5 + 0.5 * smooth_random(0.18, rng, 45))
+        m.add(rub, 0.28, 0.28)
+    return kitchen(lp(fit(m.out(), ns(dur)), 7500.0), 0.08, 5314 + v)
+# pot>>
+
+
 # =========================================================================== the order of the sounds
 # the order of CookSounds.NAMES (the design's Appendix C.5): the order of the fragments and of the listen-through
-ORDER = ["simmer", "sizzle", "oven_hum", "spit_creak", "chill"]
+ORDER = ["place", "pour", "plop.soft", "plop.meat", "plop.grain", "stir", "simmer", "sizzle", "oven_hum", "spit_creak",
+         "chill"]
 
 assert sorted(ORDER) == sorted(EVENTS), "every sound is in ORDER, once: " + str(set(ORDER) ^ set(EVENTS))
 for _name in ORDER:
