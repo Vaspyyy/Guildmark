@@ -164,14 +164,14 @@ object MenuBoards {
             ?: level.server.services().nameToIdCache().get(top.first).map { it.name }.orElse(null)
     }
 
-    /** The word for a dish's tier ("Fine"), the same the keeper's action bar line uses. */
+    /** The word for a dish's tier ("Fine"), the same the keeper's action bar line uses (Part A's). */
     private fun tierWord(tier: Tier): Component = Component.translatable(
         when (tier) {
-            Tier.HALLMARKED -> "message.guildmark.cook.door.tier.hallmarked"
-            Tier.FINE -> "message.guildmark.cook.door.tier.fine"
-            Tier.SOUND -> "message.guildmark.cook.door.tier.sound"
-            Tier.SPOILT -> "message.guildmark.cook.door.tier.spoilt"
-            Tier.PLAIN -> "message.guildmark.cook.door.tier.plain"
+            Tier.HALLMARKED -> "message.guildmark.cook.tier.hallmarked"
+            Tier.FINE -> "message.guildmark.cook.tier.fine"
+            Tier.SOUND -> "message.guildmark.cook.tier.sound"
+            Tier.SPOILT -> "message.guildmark.cook.tier.spoilt"
+            Tier.PLAIN -> "message.guildmark.cook.tier.plain"
         },
     )
 

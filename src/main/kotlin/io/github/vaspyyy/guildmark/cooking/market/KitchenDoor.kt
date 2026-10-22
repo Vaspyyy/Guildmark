@@ -336,14 +336,14 @@ class KitchenDoor private constructor(
 
         private val COIN: SoundEvent = SoundEvent.createVariableRangeEvent(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "townsfolk.thief.coin"))
 
-        /** The word for a dish's tier on the action bar ("Fine"). */
+        /** The word for a dish's tier on the action bar ("Fine"), the one Part A's ladle uses. */
         private fun tierWord(tier: Tier): Component = Component.translatable(
             when (tier) {
-                Tier.HALLMARKED -> "message.guildmark.cook.door.tier.hallmarked"
-                Tier.FINE -> "message.guildmark.cook.door.tier.fine"
-                Tier.SOUND -> "message.guildmark.cook.door.tier.sound"
-                Tier.SPOILT -> "message.guildmark.cook.door.tier.spoilt"
-                Tier.PLAIN -> "message.guildmark.cook.door.tier.plain"
+                Tier.HALLMARKED -> "message.guildmark.cook.tier.hallmarked"
+                Tier.FINE -> "message.guildmark.cook.tier.fine"
+                Tier.SOUND -> "message.guildmark.cook.tier.sound"
+                Tier.SPOILT -> "message.guildmark.cook.tier.spoilt"
+                Tier.PLAIN -> "message.guildmark.cook.tier.plain"
             },
         )
 
