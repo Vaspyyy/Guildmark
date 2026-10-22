@@ -132,9 +132,13 @@ object Rungs {
     /** Hooks the ladder into the game (once, at setup): the deliveries counted, a look at login and now and then, and the Warrant. */
     fun register() {
         Hauls.listen(Counting)
+        WarrantScene.register()
         NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerLoggedInEvent::class.java) { event -> (event.entity as? ServerPlayer)?.let { check(it.level(), it) } }
         NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { tick(it.server) }
-        NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> pinned.clear() }
+        NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ ->
+            pinned.clear()
+            WarrantScene.forget()
+        }
     }
 
     /** The rung the gates ask about: the top one with the ladder off, else the one held. */
@@ -147,8 +151,9 @@ object Rungs {
         Perk.ROAD_WARY -> Bonus.ROAD_WARY
     }
 
-    /** Every few seconds, a look at each player online, so a rung ties when standing crosses its line at a stall. */
+    /** Every few seconds, a look at each player online, so a rung ties when standing crosses its line at a stall; and a Warrant overdue is handed over. */
     private fun tick(server: MinecraftServer) {
+        WarrantScene.tick(server)
         if (server.tickCount % LOOK != 0 || !TradeConfig.life() || !TradeConfig.rungs()) return
         for (player in server.playerList.players) if (player.uuid !in pinned) settle(player.level(), player)
     }
