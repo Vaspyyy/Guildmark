@@ -70,7 +70,7 @@ internal object TaleFinish {
         TaleEngine.reindex()
         try {
             val town = c.data.town(t.capital)
-            val names = t.cast.map { it.name }.filter { it.isNotBlank() }.distinct().take(3)
+            val names = TaleWords.names(t).distinct().take(3)
             val lead = t.lead?.let { TaleEngine.playerName(c.level, it.player) }.orEmpty()
             town.chronicle.add(TaleData.Line(t.template, ending, c.day, names, lead))
             while (town.chronicle.size > TaleLimits.CHRONICLE) town.chronicle.removeAt(0)
