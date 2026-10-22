@@ -66,7 +66,7 @@ WHERE THINGS ARE DRAWN (px, model space, facing north):
   menu_board  the chalking area is x 1.9 to 14.1, y 6.7 to 14.3 on the plane z 7.05 (it looks toward -z); on the wall variant x 1.9 to 14.1,
               y 3.3 to 12.7 on z 14.75.
 
-CLICK REGIONS (1.1): `STATION_BOXES` below, each box (x0, y0, z0, x1, y1, z1), at least 4 px each way, facing north. They are the art's
+CLICK REGIONS (1.1): `STATION_BOXES` below, each box (x0, y0, z0, x1, y1, z1), at least 4 px each way and inside the block's cell, facing north. They are the art's
 suggestion for Part B (a click is read from where it lands in the block's own shape, and each box holds the hit points of what it names);
 Part M3 reads them too, for its "hand through the box" check. The helpers are one region each and have no boxes.
 
@@ -103,7 +103,7 @@ STATION_BOXES = {
     'stewpot_hearth': {'vessel': (4.0, 4.0, 4.0, 12.0, 10.5, 12.0), 'fire': (3.2, 0.0, 3.2, 12.8, 4.0, 12.8), 'heat': (6.0, 10.5, 6.0, 10.0, 15.4, 10.0)},
     'hob': {'vessel': (2.5, 9.5, 2.5, 13.5, 14.0, 13.5), 'fire': (3.5, 0.0, 0.0, 12.5, 4.5, 6.0), 'heat': (1.0, 5.0, 0.0, 15.0, 9.0, 5.0)},
     'bake_oven': {'vessel': (3.6, 8.0, 0.0, 12.4, 14.6, 4.0), 'fire': (4.5, 0.0, 0.0, 11.5, 4.0, 6.0), 'heat': (3.4, 4.0, 0.0, 12.6, 8.0, 4.0)},
-    'spit': {'vessel': (2.4, 6.4, 5.5, 12.0, 11.8, 10.5), 'fire': (2.4, 0.0, 4.0, 12.6, 4.0, 12.0), 'heat': (12.0, 5.5, 5.5, 16.4, 13.4, 10.5)},
+    'spit': {'vessel': (2.4, 6.4, 5.5, 12.0, 11.8, 10.5), 'fire': (2.4, 0.0, 4.0, 12.6, 4.0, 12.0), 'heat': (11.6, 5.5, 5.5, 16.0, 13.4, 10.5)},
 }
 
 # ---------------------------------------------------------------- the tools: grip and tip on the 32 px sprite (x, y from the top left)
@@ -130,6 +130,7 @@ def check_contract():
     for station, boxes in STATION_BOXES.items():
         for region, (x0, y0, z0, x1, y1, z1) in boxes.items():
             assert min(x1 - x0, y1 - y0, z1 - z0) >= 4.0 - 1e-9, (station, region)
+            assert min(x0, y0, z0) >= 0.0 and max(x1, y1, z1) <= 16.0, (station, region)       # inside the block's own cell
 
 
 # ================================================================ writing
