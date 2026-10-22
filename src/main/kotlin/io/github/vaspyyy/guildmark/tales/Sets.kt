@@ -2,6 +2,9 @@ package io.github.vaspyyy.guildmark.tales
 
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.GuildmarkConfig
+import io.github.vaspyyy.guildmark.cooking.vessel.OvenBlock
+import io.github.vaspyyy.guildmark.cooking.vessel.StewpotBlock
+import io.github.vaspyyy.guildmark.cooking.vessel.StewpotStyle
 import io.github.vaspyyy.guildmark.season.Season
 import io.github.vaspyyy.guildmark.season.Seasons
 import io.github.vaspyyy.guildmark.townsfolk.Activity
@@ -134,9 +137,15 @@ object Sets {
         return null
     }
 
-    /** Whether [state] is a fire a paper can be burnt in: an oven or a smoker, a furnace, or a campfire that is lit. */
+    /**
+     * Whether [state] is a fire a paper can be burnt in: an oven or a smoker, a furnace, or a campfire that is lit. Also (Tales T1a, after
+     * Hearthcraft I1, whose plan version 3 puts them where the tavern's hearth campfire and the bakery's furnace were) a Bake oven and a Stewpot
+     * in the hearth style, the house pot on its crane in the tavern's hearth: like the furnace and the hearth campfire they replace they take a
+     * paper lit or not (the pot is lit only from 10:00 to 24:00, the old campfire burned all day).
+     */
     fun fire(state: BlockState): Boolean =
-        Jobs.oven(state) || state.`is`(Blocks.BLAST_FURNACE) || (state.`is`(Blocks.CAMPFIRE) || state.`is`(Blocks.SOUL_CAMPFIRE)) && state.getValue(CampfireBlock.LIT)
+        Jobs.oven(state) || state.`is`(Blocks.BLAST_FURNACE) || (state.`is`(Blocks.CAMPFIRE) || state.`is`(Blocks.SOUL_CAMPFIRE)) && state.getValue(CampfireBlock.LIT) ||
+            state.block is OvenBlock || state.block is StewpotBlock && state.getValue(StewpotBlock.STYLE) == StewpotStyle.HEARTH
 
     /** The nearest fire (see [fire]) within [r] blocks of [at], if any. */
     fun fireNear(level: ServerLevel, at: BlockPos, r: Int = 16): BlockPos? = Places.nearest(level, at, r, 4, null) { state, _ -> fire(state) }
@@ -251,7 +260,7 @@ object Sets {
     /**
      * S4 The Handing (4.3): [giver] walks to a block from [taker] with [item] in hand, turns, and holds it out (HAND_OVER, the
      * item in the hand for the first half of it); [taker] RECEIVEs it as the giver lets go, counts it over (COUNT) and nods.
-     * About 15 seconds. With [burnAt] (an oven, a smoker, a furnace or a lit campfire: see [fireNear]) it is the Burning, the note's
+     * About 15 seconds. With [burnAt] (an oven, a smoker, a furnace, a Bake oven, a hearth pot or a lit campfire: see [fire]) it is the Burning, the note's
      * good ending: the taker (who leaves a post or a seat for it: [Rise]) carries the paper to the fire and stands in the cell before
      * it, in the middle of the mouth and half a block from the front face, which is where FEED_FIRE is made to be played; the paper is in
      * the hand before the clip, takes at tick 14 with flame, a ribbon of smoke and ash at the paper, and is gone from the hand by 24; the
