@@ -1,5 +1,7 @@
 package io.github.vaspyyy.guildmark.townsfolk.streets
 
+import io.github.vaspyyy.guildmark.cooking.Cooking
+import io.github.vaspyyy.guildmark.cooking.dish.DishItem
 import io.github.vaspyyy.guildmark.economy.Good
 import io.github.vaspyyy.guildmark.festival.FestivalRestores
 import io.github.vaspyyy.guildmark.festival.Festivities
@@ -87,6 +89,11 @@ class AlmsTableBlock(properties: Properties) : Block(properties), EntityBlock, F
     override fun useItemOn(
         stack: ItemStack, state: BlockState, level: Level, pos: BlockPos, player: Player, hand: InteractionHand, hitResult: BlockHitResult,
     ): InteractionResult {
+        // A cook's dish is not a Good: it has its own way in, counted by the kitchens' ledger (Hearthcraft, AlmsTable.giveDish)
+        if (stack.item is DishItem && Cooking.enabled()) {
+            if (level is ServerLevel && player is ServerPlayer) AlmsTable.giveDish(level, middle(pos, state), player, hand)
+            return InteractionResult.SUCCESS
+        }
         val food = Good.of(stack.item)?.takeIf { it.food > 0.0 } ?: return InteractionResult.TRY_WITH_EMPTY_HAND
         if (level is ServerLevel && player is ServerPlayer) AlmsTable.give(level, middle(pos, state), player, hand, food)
         return InteractionResult.SUCCESS

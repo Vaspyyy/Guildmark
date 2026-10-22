@@ -6,6 +6,7 @@ import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.cooking.Cooking
 import io.github.vaspyyy.guildmark.cooking.DishKind
 import io.github.vaspyyy.guildmark.cooking.Door
+import io.github.vaspyyy.guildmark.cooking.Tier
 import io.github.vaspyyy.guildmark.cooking.shop.CookShops
 import io.github.vaspyyy.guildmark.cooking.shop.ShopRec
 import io.github.vaspyyy.guildmark.economy.Conditions
@@ -112,6 +113,23 @@ class Kitchens(
         setDirty()
     }
 
+    /**
+     * Writes into the ledger what [player] gave at the alms table of [capital] (7.6): [portions] of a dish of [kind] and [tier] as
+     * a lot of the alms door, or of Gruel ([kind] null), which has no kind, as a count of its own. Nothing is paid, and the market
+     * is not told: the portions wait in the pantry and are served with the next meal hour like any door's, which is how the town
+     * eats them, counted once.
+     */
+    fun gift(level: ServerLevel, capital: Long, player: ServerPlayer, kind: DishKind?, tier: Tier, portions: Int) {
+        if (portions <= 0) return
+        if (kind == null) {
+            val rec = recOrNew(capital)
+            rec.gruel = minOf(rec.gruel + portions, GRUEL_MOST)
+            setDirty()
+            return
+        }
+        addLot(level, capital, Door.ALMS, Lot(kind, tier, player.uuid, player.name.string, portions))
+    }
+
     /** The lots in [door]'s pantry, oldest first. */
     fun lots(capital: Long, door: Door): List<Lot> = recs[capital]?.lots?.get(door.ordinal) ?: emptyList()
 
@@ -144,6 +162,9 @@ class Kitchens(
     companion object {
         /** A lot more than this many days old is dropped at the 2:00 reckoning: the town ate it. */
         private const val LOT_DAYS = 2L
+
+        /** The most Gruel a capital's alms table keeps waiting to be served: three days' worth of the pot. */
+        private const val GRUEL_MOST = 96
 
         private val OWING: Codec<Owing> = RecordCodecBuilder.create { i ->
             i.group(

@@ -1,6 +1,13 @@
 package io.github.vaspyyy.guildmark.townsfolk.streets
 
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.cooking.CookRegistry
+import io.github.vaspyyy.guildmark.cooking.Stage
+import io.github.vaspyyy.guildmark.cooking.Tier
+import io.github.vaspyyy.guildmark.cooking.dish.DishItem
+import io.github.vaspyyy.guildmark.cooking.dish.Dishes
+import io.github.vaspyyy.guildmark.cooking.market.DoorLines
+import io.github.vaspyyy.guildmark.cooking.market.Kitchens
 import io.github.vaspyyy.guildmark.economy.Economy
 import io.github.vaspyyy.guildmark.economy.Good
 import io.github.vaspyyy.guildmark.economy.Markets
@@ -56,7 +63,8 @@ import kotlin.math.min
  * nothing in the market. What a player gives at the table (food in hand, used on it; the whole stack while sneaking) is
  * real food added: it goes into the market for the town's next meal ([Economy.given], tallied GIVEN), counts as
  * supplied ([Fortunes.note]), tops the pot up, and earns the player a small favour of each who eats there that day
- * ([TownTalk.fed]). It's all checked here on the server, one table a capital.
+ * ([TownTalk.fed]). A cook's dish (Hearthcraft) is given the same way but is the kitchens' ledger's to count, not the
+ * market's ([giveDish]). It's all checked here on the server, one table a capital.
  *
  * The table is [AlmsTableBlock]'s three blocks under the record of what stood there ([Streets.ALMS], run: the day and
  * which block), so whatever happens it's put back as it was. Its day is kept in [StreetsData]. All of it waits on
@@ -193,16 +201,7 @@ object AlmsTable : Alms.Source {
      * as much as the pot has room for. Checked here: the table must be up and serving its pot.
      */
     fun give(level: ServerLevel, middle: BlockPos, player: ServerPlayer, hand: InteractionHand, good: Good) {
-        val record = FestivalRestores.recordAt(level, middle) ?: return
-        if (BlockPos.getY(record.site) != Streets.ALMS) return
-        val column = Streets.column(record.site)
-        val data = StreetsData.get(level)
-        val t = data[column] ?: return
-        val be = level.getBlockEntity(middle) as? AlmsTableBlockEntity
-        if (!on(level, column) || t.almsPos != middle || t.almsState != StreetsData.ALMS_UP || be == null || !be.pot) {
-            player.sendOverlayMessage(Component.translatable("message.guildmark.streets.alms_closed"))
-            return
-        }
+        val (column, data, t, be) = gate(level, middle, player) ?: return
         val stack = player.getItemInHand(hand)
         if (stack.isEmpty || Good.of(stack.item) != good || good.food <= 0.0) return
         val room = t.cap - t.soup
@@ -236,6 +235,78 @@ object AlmsTable : Alms.Source {
             if (bowls > 0) Component.translatable("message.guildmark.streets.alms_given", bowls)
             else Component.translatable("message.guildmark.streets.alms_given_little"),
         )
+    }
+
+    /**
+     * [player] gives the dish in [hand] at the table whose middle is [middle] (living-world/cook/design.md 7.6): a Gruel, or a
+     * Plain, Sound, Fine or Hallmarked dish, fresh or stale (the poor are not proud); one portion a bowl, one, or the whole stack
+     * while sneaking, as many as the pot has room for. A dish that has gone off is refused ("That has gone off."), and so is a
+     * Scorched mess ("That's not food."). It pays no Marks, and the market is not told of it as food ([Economy.given] is not
+     * called, or the dish would be counted twice): the portions are written into the ledger as lots of the alms door
+     * ([Kitchens.gift]) and served with the next meal hour, which is how the town eats them, once. A Fine or Hallmarked dish
+     * makes the keeper say so.
+     */
+    fun giveDish(level: ServerLevel, middle: BlockPos, player: ServerPlayer, hand: InteractionHand) {
+        val (column, data, t, be) = gate(level, middle, player) ?: return
+        val stack = player.getItemInHand(hand)
+        val dish = stack.item as? DishItem ?: return
+        if (stack.isEmpty) return
+        val gruel = dish === CookRegistry.GRUEL.get()
+        val tier = Dishes.dataOf(stack)?.tier ?: Tier.PLAIN
+        // A Scorched mess is not food, nor is a spoilt portion of anything (Gruel is a plain bowl, welcome here and only here)
+        if (!gruel && (dish.kind == null || tier == Tier.SPOILT)) {
+            player.sendOverlayMessage(Component.translatable("message.guildmark.cook.alms.mess"))
+            return
+        }
+        // Stale is welcome, gone off is not (Gruel has no kind to keep, so it is never judged)
+        if (dish.kind != null && Dishes.stage(level, stack) == Stage.GONE) {
+            player.sendOverlayMessage(Component.translatable("message.guildmark.cook.alms.gone"))
+            return
+        }
+        val room = t.cap - t.soup
+        if (room <= 0) {
+            player.sendOverlayMessage(Component.translatable("message.guildmark.streets.alms_full"))
+            return
+        }
+        val bowls = min(room, if (player.isShiftKeyDown) stack.count else 1)
+        if (!player.isCreative) stack.shrink(bowls)
+        t.soup = min(t.cap, t.soup + bowls)
+        if (player.uuid !in t.givers) t.givers += player.uuid
+        data.changed()
+        if (t.soup > 0) keeping[column]?.spentAt = -1L
+        be.set(t.soup, t.cap, true, min(AlmsTableBlockEntity.BOWLS, t.soup).coerceAtLeast(be.bowls))
+        be.gift(level.gameTime)
+        level.playSound(null, middle, SoundEvents.GENERIC_SPLASH, SoundSource.NEUTRAL, 0.35f, 1.3f + level.random.nextFloat() * 0.2f)
+        // Into the ledger for the next meal hour, and counted as supplied; not into the market as food
+        market(level, column)?.let { entry ->
+            Kitchens.get(level).gift(level, entry.market.capital, player, dish.kind, tier, bowls)
+            Fortunes.note(level, entry.market.capital, "supplied", 1, 3, about = player.uuid)
+        }
+        // A favour from each who's eaten here today already
+        for (id in t.fed.toList()) Residents.get(level)[id]?.let { favour(level, it, player.uuid) }
+        keeping[column]?.keeper?.thank(player, !gruel && tier.ordinal >= Tier.FINE.ordinal)
+        player.sendOverlayMessage(Component.translatable("message.guildmark.streets.alms_given", bowls))
+    }
+
+    /** A table taking gifts: its [column], the streets' [data], the day's record [t] of it and its block entity [be]. */
+    private data class Gate(val column: Long, val data: StreetsData, val t: StreetsData.Town, val be: AlmsTableBlockEntity)
+
+    /**
+     * The table whose middle is [middle] if it is up and serving its pot, as [give] and [giveDish] need it; else null, with
+     * [player] told it is not serving if it is one of the table's blocks at all.
+     */
+    private fun gate(level: ServerLevel, middle: BlockPos, player: ServerPlayer): Gate? {
+        val record = FestivalRestores.recordAt(level, middle) ?: return null
+        if (BlockPos.getY(record.site) != Streets.ALMS) return null
+        val column = Streets.column(record.site)
+        val data = StreetsData.get(level)
+        val t = data[column] ?: return null
+        val be = level.getBlockEntity(middle) as? AlmsTableBlockEntity
+        if (!on(level, column) || t.almsPos != middle || t.almsState != StreetsData.ALMS_UP || be == null || !be.pot) {
+            player.sendOverlayMessage(Component.translatable("message.guildmark.streets.alms_closed"))
+            return null
+        }
+        return Gate(column, data, t, be)
     }
 
     /** [player] speaks to the table at [middle] (empty-handed): its keeper has a word for them. */
@@ -835,8 +906,9 @@ private class AlmsKeeper(private val column: Long, private val p: Townsperson) :
         return true
     }
 
-    /** A player gave at the table: a bow to them. */
-    fun thank(player: ServerPlayer) {
+    /** A player gave at the table: a bow to them, and for a [fine] dish (Fine or Hallmarked) a word of it (living-world/cook/design.md 7.6). */
+    fun thank(player: ServerPlayer, fine: Boolean = false) {
+        if (fine && serving) DoorLines.say(p, "kitchen.alms.fine")
         if (s != S.SERVE) return
         p.lookAt(player.eyePosition)
         p.act(Activity.BOW)
