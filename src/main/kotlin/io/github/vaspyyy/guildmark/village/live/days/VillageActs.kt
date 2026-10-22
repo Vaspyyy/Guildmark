@@ -41,6 +41,9 @@ import net.minecraft.world.item.Items
  *   the green; the children play there.
  * - The evening, with no tavern to go to: the green's benches and a word on the green in the warm for those whose night for the
  *   tavern it is, and for a third of the others by turns ([outTonight]); the hearth in the cold, the rain and the winter.
+ * - A keeper of the lamps ([VillageDays.LAMPS], [VillageDays.SNUFF]): the round itself is their lamplighter's own, which takes them off their
+ *   day when the clock has it begin (townsfolk/Lamplighters); the evening before and after it is at home, and the morning they rise,
+ *   wash at the well and breakfast when it is done.
  * - The service, with no temple: a prayer out by the bell.
  * - Someone with no home that stands: meals and the evening on the green, the night under a roof (a seat in a barn or another
  *   building, else just inside its door; a bench only where the village has no building with a door) until a bed is free; never
@@ -60,6 +63,8 @@ object VillageActs {
             VillageDays.GREEN -> return if (stretch.doing == Doing.PLAY) listOf() else Acts.script(p, life, Doing.MARKET)
             VillageDays.BELL -> return listOf(Acts.Part { BellKeeper.errand(p, life) })
             VillageDays.BOARD -> return listOf(Acts.Part { Posters.errand(p, life) })
+            VillageDays.LAMPS -> return listOf()
+            VillageDays.SNUFF -> return Acts.script(p, life, Doing.RISE)
         }
         if (life.home == null) {
             when (stretch.doing) {
@@ -91,6 +96,9 @@ object VillageActs {
             VillageDays.BELL -> return Acts.filler(p, life, Doing.EVENING)
             // The note pinned (or nothing to pin): a turn about the village
             VillageDays.BOARD -> return Acts.filler(p, life, Doing.STROLL)
+            // The round walked (or the lamplighter not yet fetched): at home of an evening; breakfast after the morning's
+            VillageDays.LAMPS -> return Acts.filler(p, life, Doing.EVENING)
+            VillageDays.SNUFF -> return Acts.filler(p, life, Doing.BREAKFAST)
         }
         if (life.home == null) {
             when (stretch.doing) {

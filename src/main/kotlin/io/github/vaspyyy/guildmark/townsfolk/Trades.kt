@@ -700,6 +700,11 @@ object Hands {
          * whether it is market day.
          */
         val keepers: Map<Int, Int> = mapOf(), val bellman: Int? = null, val poster: Int? = null, val night: Set<Int> = setOf(), val market: Boolean = false,
+        /**
+         * The residents who keep a round of the village's lamps ([io.github.vaspyyy.guildmark.village.live.VillageLamps.keepers]): their
+         * evening and their morning have the round in them.
+         */
+        val lamps: Set<Int> = setOf(),
     )
 
     /** How often (in game ticks) a capital's crew is worked out again. */

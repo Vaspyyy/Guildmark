@@ -8,6 +8,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Residents
 import io.github.vaspyyy.guildmark.townsfolk.TownPlaces
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import io.github.vaspyyy.guildmark.village.Festivals
+import io.github.vaspyyy.guildmark.village.live.VillageLamps
 import io.github.vaspyyy.guildmark.village.live.Villages
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel
@@ -24,6 +25,7 @@ import net.minecraft.server.level.ServerLevel
  * - Of the guards, every third from the second (by their ids) keeps the night, so a village with two guards has one for each.
  * - Market day is the village's own (one in seven, by its board's position: [Festivals.isMarketDay]) unless it falls on the
  *   rest day, which wins.
+ * - The keepers of the lamps are [VillageLamps]': the residents its rounds are saved with, who live still.
  */
 object VillageHands {
     /** A village of this many folk or more has two carters. */
@@ -43,6 +45,7 @@ object VillageHands {
             carters, mapOf(), null, now, setOf(), day,
             keepers = if (Days.restDay(day)) mapOf() else keepers(places, living, carters, bellman),
             bellman = bellman, poster = poster, night = night, market = market,
+            lamps = VillageLamps.keepers(level, centre),
         )
     }
 

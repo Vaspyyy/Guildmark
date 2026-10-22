@@ -18,6 +18,8 @@ import io.github.vaspyyy.guildmark.townsfolk.TownRole
  *   (a lunch on a bench if they like), and the children play on the green the day through.
  * - [BELL]: the holder of the bell goes to it and rings the dusk bell at half past five.
  * - [BOARD]: the day's poster takes a note to the board and nails it up.
+ * - [LAMPS] and [SNUFF]: a keeper of the lamps is free of an evening from five to seven for the round, and up of a morning from a
+ *   quarter past five to a quarter to seven to put them out (cutting their sleep short), every day of the week.
  *
  * The rest day keeps its own shape (the service, the market, visits); the stalls rest and market day gives way to it. The guards'
  * stretches and the children's lessons are the capital's as they are, played on the village's places ([VillageActs]).
@@ -27,6 +29,8 @@ object VillageDays {
     const val GREEN = "green"
     const val BELL = "bell"
     const val BOARD = "board"
+    const val LAMPS = "lamps"
+    const val SNUFF = "snuff"
 
     /** The hour a keeper is at the stall from, on a working day and on a market day, and until. */
     private const val STALL_FROM = 10.0
@@ -40,6 +44,12 @@ object VillageDays {
     /** The bellman's errand: from five, to be at the bell and to wait for the hour ([BellKeeper.DUSK]); at ten to six they are let go. */
     private const val BELL_FROM = 17.0
     private const val BELL_TO = 17.9
+
+    /** The lamp keeper's evening, free for the round, and their morning, up to put the lamps out. */
+    private const val LAMPS_FROM = 17.0
+    private const val LAMPS_TO = 19.0
+    private const val SNUFF_FROM = 5.25
+    private const val SNUFF_TO = 6.75
 
     /** What is never cut across: bed, the watch and the crier's and builders' stretches. */
     private val KEPT = setOf(Doing.SLEEP, Doing.BED, Doing.WATCH, Doing.CRY, Doing.BUILD)
@@ -55,6 +65,11 @@ object VillageDays {
                 life.market && r.role == TownRole.CHILD -> children(list)
                 life.market && r.role.adult && r.role != TownRole.GUARD && !life.carter -> interrupt(list, GREEN_FROM, GREEN_TO, Doing.MARKET, GREEN)
             }
+        }
+        // The rounds of the lamps, every evening and morning of the week: the keeper's evening is free of other things, their morning up early
+        if (life.lamps) {
+            interrupt(list, LAMPS_FROM, LAMPS_TO, Doing.ERRAND, LAMPS)
+            wake(list, SNUFF_FROM, SNUFF_TO, SNUFF)
         }
         // The day's note to the board, in the day's own slot or the next that fits; not if it is pinned already (the day is re-planned)
         if (life.poster && r.pinned != day) {
@@ -79,6 +94,31 @@ object VillageDays {
             val s = list[i]
             if ((s.doing == Doing.LESSONS || s.doing == Doing.PLAY) && s.start in from until to) list[i] = Stretch(s.start, Doing.PLAY, GREEN)
         }
+    }
+
+    /** What is never cut across, but for sleep: the watch and the crier's and builders' stretches. */
+    private val HARD = setOf(Doing.WATCH, Doing.CRY, Doing.BUILD)
+
+    /**
+     * An errand ([SNUFF]) from hour [from] to hour [to] in place of what the day had in between, sleep too: they are up early for it, and
+     * at [to] the day goes on as it did, but for sleep (they are up for the day, and rise). False, and the day as it was, if it would
+     * cut across the watch or anything else [HARD].
+     */
+    private fun wake(list: MutableList<Stretch>, from: Double, to: Double, tag: String): Boolean {
+        val a = Days.clock(from)
+        val b = Days.clock(to)
+        if (b <= a) return false
+        val at = list.lastOrNull { it.start <= a } ?: return false
+        val resume = list.lastOrNull { it.start <= b } ?: return false
+        if (at.doing in HARD || resume.doing in HARD || list.any { it.start in (a + 1)..b && it.doing in HARD }) return false
+        list.removeAll { it.start in a until b }
+        list.add(Stretch(a, Doing.ERRAND, tag))
+        if (list.none { it.start == b }) {
+            val abed = resume.doing == Doing.SLEEP || resume.doing == Doing.BED
+            list.add(if (abed) Stretch(b, Doing.RISE) else Stretch(b, resume.doing, resume.tag))
+        }
+        list.sortBy { it.start }
+        return true
     }
 
     /**
