@@ -186,7 +186,7 @@ object Pantry {
             picked.add(r.id)
             var draw = rng.nextInt(weight)
             val lot = cooked.firstOrNull { draw -= it.portions; draw < 0 } ?: cooked.last()
-            if (lot.tier.ordinal >= Tier.SOUND.ordinal) TownTalk.relished(level, r, lot.cook!!, lot.tier)
+            if (lot.tier.ordinal >= Tier.SOUND.ordinal) TownTalk.relished(level, r, lot.cook!!, lot.tier, lot.kind)
         }
     }
 

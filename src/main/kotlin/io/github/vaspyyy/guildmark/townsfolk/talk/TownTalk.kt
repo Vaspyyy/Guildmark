@@ -1,5 +1,8 @@
 package io.github.vaspyyy.guildmark.townsfolk.talk
 
+import io.github.vaspyyy.guildmark.cooking.Cooking
+import io.github.vaspyyy.guildmark.cooking.DishKind
+import io.github.vaspyyy.guildmark.cooking.Tier
 import io.github.vaspyyy.guildmark.economy.works.Works
 import io.github.vaspyyy.guildmark.economy.works.WorksKind
 import io.github.vaspyyy.guildmark.economy.works.WorksView
@@ -9,6 +12,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Resident
 import io.github.vaspyyy.guildmark.townsfolk.Residents
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
+import io.github.vaspyyy.guildmark.townsfolk.talk.sources.Feasted
 import io.github.vaspyyy.guildmark.village.Standing
 import io.github.vaspyyy.guildmark.village.StandingTier
 import net.minecraft.core.BlockPos
@@ -135,12 +139,24 @@ object TownTalk {
     fun brought(level: ServerLevel, r: Resident, player: UUID) = once(level, r, player, Favour.BROUGHT)
 
     /**
-     * [r] relished a dish of [tier] that [cook] cooked (Hearthcraft, living-world/cook/design.md 8.2): Sound earns
-     * [Favour.RELISHED], Fine and Hallmarked [Favour.RELISHED_FINE], Plain and Gruel nothing, once a day. The ledger calls it
-     * for a sample of the diners at a meal hour, and the back door for the keeper. Part J's body; until it lands this
-     * remembers nothing.
+     * [r] relished a dish of [tier] (of [kind], if it is told) that [cook] cooked (Hearthcraft, living-world/cook/design.md
+     * 8.2): Sound earns [Favour.RELISHED], Fine and Hallmarked [Favour.RELISHED_FINE], Plain and Spoilt nothing, once a day and
+     * only while the favour felt is small, as the other daily favours are; and a Sound dish or better stays with them for a
+     * week as a feast ([Experience.FEASTED], kept as [Feasted] says), which has them say "that stew of yours" to the cook and
+     * "best supper in weeks" to anyone. The ledger calls it for a sample of the diners at a meal hour, and the back door for
+     * the keeper. With Kitchen Talk or the townsfolk's memory off it remembers nothing.
      */
-    fun relished(level: ServerLevel, r: Resident, cook: UUID, tier: io.github.vaspyyy.guildmark.cooking.Tier) {}
+    fun relished(level: ServerLevel, r: Resident, cook: UUID, tier: Tier, kind: DishKind? = null) {
+        if (!Cooking.talk() || !Memory.enabled()) return
+        val favour = when (tier) {
+            Tier.SOUND -> Favour.RELISHED
+            Tier.FINE, Tier.HALLMARKED -> Favour.RELISHED_FINE
+            else -> return
+        }
+        once(level, r, cook, favour)
+        val mind = mind(level, r, true) ?: return
+        if (Feasted.keep(mind, Memory.day(level), Feasted.about(cook, kind))) changed(level, r)
+    }
 
     private fun once(level: ServerLevel, r: Resident, player: UUID, favour: Favour) {
         val a = acq(level, r, player) ?: return

@@ -252,8 +252,8 @@ class KitchenDoor private constructor(
         if (tier.ordinal < Tier.FINE.ordinal) return
         level.sendParticles(ParticleTypes.HAPPY_VILLAGER, p.x, p.y + 1.9, p.z, if (tier == Tier.HALLMARKED) 14 else 6, 0.35, 0.25, 0.35, 0.0)
         val who = level.getPlayerByUUID(player) as? ServerPlayer ?: return
-        Residents.get(level).of(p)?.takeIf { it.alive }?.let { TownTalk.relished(level, it, player, tier) }
         val kind = sale.kind
+        Residents.get(level).of(p)?.takeIf { it.alive }?.let { TownTalk.relished(level, it, player, tier, kind) }
         if (tier == Tier.HALLMARKED && kind != null) KitchenRumours.hallmark(level, p.blockPosition(), who, kind)
     }
 

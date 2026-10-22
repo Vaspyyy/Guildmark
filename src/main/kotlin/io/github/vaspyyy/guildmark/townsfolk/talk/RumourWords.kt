@@ -151,11 +151,11 @@ object RumourWords {
     /** The news that's about what a band did, said with the band's name before any place it names. */
     private val BANDS = setOf("band", "band_broken")
 
-    /** The heads of kinds told by their own sources, not as news (M6: the works' and the households', see [theirs]). */
-    private val OWN = setOf("market", "salvage", "order", "road", "works", "household", "trade", "tale")
+    /** The heads of kinds told by their own sources, not as news (M6: the works' and the households'; Hearthcraft: the kitchen's, see [theirs]). */
+    private val OWN = setOf("market", "salvage", "order", "road", "works", "household", "kitchen", "trade", "tale")
 
-    /** The heads of kinds only their own sources tell (M6, and the trader's): not the deeds, the news nor the crier. */
-    private val THEIRS = setOf("works", "household", "trade", "tale")
+    /** The heads of kinds only their own sources tell (M6, Hearthcraft's and the trader's): not the deeds, the news nor the crier. */
+    private val THEIRS = setOf("works", "household", "kitchen", "trade", "tale")
 
     /**
      * Whether a rumour of [kind] is the town's works' or households' (M6), told only by WorksTopics and FortuneTopics:
