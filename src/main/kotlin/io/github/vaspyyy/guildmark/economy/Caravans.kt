@@ -448,6 +448,19 @@ object Caravans {
         return ItemStack.EMPTY
     }
 
+    /**
+     * [cargo] is carried to [band]'s camp: it joins the band's loot as a taken wagon's goods do (the oldest dropped past 48 lots), to lie in
+     * the pile by the camp when the band is broken and to be had back from a body that still carries it ([dropped]). The Hunt's sacks come here.
+     */
+    fun loot(level: ServerLevel, band: OutlawBand, cargo: List<Cargo>) {
+        if (cargo.isEmpty()) return
+        val data = CaravanData.get(level)
+        val rec = data.band(band.id)
+        rec.loot.addAll(cargo)
+        while (rec.loot.size > 48) rec.loot.removeAt(0)
+        data.changed()
+    }
+
     private fun wrecksOf(level: ServerLevel, pos: BlockPos, range: Double, piles: Boolean): List<Wreck> {
         if (level.dimension() != Level.OVERWORLD) return listOf()
         val at = Vec3(pos.x + 0.5, pos.y.toDouble(), pos.z + 0.5)
@@ -887,34 +900,63 @@ object Caravans {
     }
 
     /**
-     * The odds of [band] striking [c] at [point] (section 2's table): 0.15, less the further its camp lies off the
-     * road, more by night, in rain or a storm and on a road that's been good to it, less for each guard over two, at
-     * most 0.6; with an escort along at least an even chance on a Troubled or Perilous road and a certainty on a
+     * The odds of [band] striking [c] at [point] (section 2's table): [chanceFor] for the wagon, less again for a tower's watch
+     * over the strike point; with an escort along at least an even chance on a Troubled or Perilous road and a certainty on a
      * Closed one; never within two days of its last strike, nor the day after it raided a village.
      */
     fun chance(level: ServerLevel, data: CaravanData, c: CaravanRec, band: OutlawBand, point: Double, escorted: Boolean): Double {
         val at = c.setOut + c.held + travel(point)
         if (!allowed(level, data, band, at)) return 0.0
-        var p = 0.15
-        if (c.reach > 96.0) p *= (1.0 - 0.75 * (c.reach - 96.0) / 160.0).coerceAtLeast(0.25)
-        val clock = clockOf(Math.floorDiv(at, HOUR))
-        if (clock >= 19 || clock < 6) p *= 1.5
-        val felt = Markets.conditions(level, Math.floorDiv(at, HOUR), BlockPos.of(c.capital))
-        if (felt.thunder) p *= 1.5 else if (felt.rain) p *= 1.2
-        p *= 0.85.pow((c.guards - 2).coerceAtLeast(0))
-        val peril = data.roadOrNull(c.capital, c.road)?.peril ?: 0
-        p *= 1.0 + peril / 4.0
-        p = p.coerceAtMost(0.6)
+        var p = chanceFor(level, data, band, Exposure(c.reach, at, (c.guards - 2).coerceAtLeast(0), c.capital, c.road))
         p *= io.github.vaspyyy.guildmark.economy.works.WorksWatch.wary(level, c, band, point, at)
         if (escorted) {
+            val peril = data.roadOrNull(c.capital, c.road)?.peril ?: 0
             val stage = RoadPeril.stage(peril)
             if (stage == RoadPeril.Stage.CLOSED) p = 1.0 else if (stage.troubled) p = max(p, 0.5)
         }
         return p
     }
 
+    /**
+     * Who a band's strike falls on, as far as its odds care (not the band, whose rest and strength are its own): how far its camp
+     * lies off the road ([reach], blocks), the clock time the strike falls at ([at]), the guards that count against it ([guards],
+     * already net: a wagon's are its guards less two, a trader's are all its followers) and the capital and road whose peril and weather it
+     * is under ([road] -1 or unknown has no peril). A wagon's is read off its record; the Hunt's (trade/hunt) off where a trader stands.
+     */
+    class Exposure(val reach: Double, val at: Long, val guards: Int, val capital: Long, val road: Int)
+
+    /**
+     * The odds of [band] striking someone [e] describes (section 2's table): 0.15 times each of [factors], times [extra] (a trader's own:
+     * the laden factor, a tower's watch, the settings and the ladder's perks; 1 for a wagon), at most 0.6; none within two days of its
+     * last strike, nor the day it raided a village or the day after. [chance] and the Hunt's (trade/hunt) both serve here.
+     */
+    fun chanceFor(level: ServerLevel, data: CaravanData, band: OutlawBand, e: Exposure, extra: Double = 1.0): Double {
+        if (!allowed(level, data, band, e.at)) return 0.0
+        var p = 0.15
+        for ((_, f) in factors(level, data, e)) p *= f
+        p *= extra
+        return p.coerceAtMost(0.6)
+    }
+
+    /**
+     * What multiplies the odds of 0.15 for someone [e] describes, each by the name it goes by in the commands, 1 for one that does not apply:
+     * less the further the camp lies off the road ("reach", down to a quarter), more by night ("night", 1.5), in rain or a storm
+     * ("weather", 1.2 or 1.5), less for each guard that counts ("company", 0.85 each) and more on a road that has been good to the band
+     * ("peril", a quarter more for each point). Kept apart so that `trade hunt chance` can show them as the number is made.
+     */
+    fun factors(level: ServerLevel, data: CaravanData, e: Exposure): List<Pair<String, Double>> {
+        val reach = if (e.reach > 96.0) (1.0 - 0.75 * (e.reach - 96.0) / 160.0).coerceAtLeast(0.25) else 1.0
+        val clock = clockOf(Math.floorDiv(e.at, HOUR))
+        val night = if (clock >= 19 || clock < 6) 1.5 else 1.0
+        val felt = Markets.conditions(level, Math.floorDiv(e.at, HOUR), BlockPos.of(e.capital))
+        val weather = if (felt.thunder) 1.5 else if (felt.rain) 1.2 else 1.0
+        val company = 0.85.pow(e.guards.coerceAtLeast(0))
+        val peril = 1.0 + (data.roadOrNull(e.capital, e.road)?.peril ?: 0) / 4.0
+        return listOf("reach" to reach, "night" to night, "weather" to weather, "company" to company, "peril" to peril)
+    }
+
     /** Whether [band] may strike at clock time [at]: not within two days of its last strike, nor the day it raided a village or the day after. */
-    private fun allowed(level: ServerLevel, data: CaravanData, band: OutlawBand, at: Long): Boolean {
+    internal fun allowed(level: ServerLevel, data: CaravanData, band: OutlawBand, at: Long): Boolean {
         if (band.slain) return false
         val rec = data.bandOrNull(band.id)
         if (rec != null && at - rec.struck < BAND_REST) return false
@@ -951,7 +993,7 @@ object Caravans {
     }
 
     /** What a band carries off of [load]: [share] of it by count, the dearest goods by the unit first. */
-    private fun taken(load: DoubleArray, share: Double): List<Pair<Good, Int>> {
+    internal fun taken(load: DoubleArray, share: Double): List<Pair<Good, Int>> {
         val units = Good.entries.associateWith { floor(load[it.ordinal] + 1e-6).toInt() }.filterValues { it > 0 }
         var left = Math.round(units.values.sum() * share).toInt()
         val out = ArrayList<Pair<Good, Int>>()

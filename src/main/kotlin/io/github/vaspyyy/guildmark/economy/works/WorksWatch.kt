@@ -94,6 +94,40 @@ internal object WorksWatch {
     /** What a tower does to [band]'s chance of striking [c] at [point], at clock time [at]: the hook in Caravans.chance, before an escort's floor. */
     fun wary(level: ServerLevel, c: CaravanRec, band: OutlawBand, point: Double, at: Long): Double = factor(seen(level, c, band, point, at))
 
+    /** What a tower's watch does to a party that would stop a trader it sees (the Hunt's, trade/hunt): the chance halves. */
+    const val WARY_SIGHT = 0.5
+
+    /**
+     * The watch of the tower whose sight covers [pos]: the nearest standing tower (works on) within [SIGHT] blocks of it, whether or not anyone is
+     * posted at it just now; null if none. It looks only at roads whose way is already known (it never works one out), so a look is cheap.
+     */
+    fun near(level: ServerLevel, pos: BlockPos): Watch? = nearest(level, pos)?.second
+
+    private fun nearest(level: ServerLevel, pos: BlockPos): Pair<WorksRec, Watch>? {
+        if (!Works.enabled()) return null
+        var best: Pair<WorksRec, Watch>? = null
+        var bestSq = SIGHT * SIGHT
+        for (w in WorksData.get(level).works.values) {
+            if (w.kind != WorksKind.TOWER || w.state != WorksState.DONE) continue
+            val leg = CaravanRoutes.cached(w.capital, w.road) ?: continue
+            val watch = place(w, leg)
+            val dx = (watch.pos.x - pos.x).toDouble()
+            val dz = (watch.pos.z - pos.z).toDouble()
+            val sq = dx * dx + dz * dz
+            if (sq <= bestSq) {
+                best = w to watch
+                bestSq = sq
+            }
+        }
+        return best
+    }
+
+    /** What a tower does to a party's chance of stopping someone standing at [pos], at clock time [at]: [WARY_SIGHT] if a tower sees [pos] with its watch posted, else 1. */
+    fun wary(level: ServerLevel, pos: BlockPos, at: Long): Double {
+        val (works, _) = nearest(level, pos) ?: return 1.0
+        return if (watchmen(level, works.capital, Caravans.clockOf(Math.floorDiv(at, 1000L))) > 0) WARY_SIGHT else 1.0
+    }
+
     /**
      * [c]'s strike settled as it sets out (or as its escort meets it, [escorted]): its dice [roll] against [p], the
      * chance with the tower in it. Gives whether a strike falls in a watch's sight (the record's `watched`, so the
