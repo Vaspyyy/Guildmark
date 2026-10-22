@@ -6,6 +6,7 @@ import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.suggestion.SuggestionProvider
 import io.github.vaspyyy.guildmark.cooking.CookRegistry
+import io.github.vaspyyy.guildmark.cooking.Cooking
 import io.github.vaspyyy.guildmark.cooking.DishKind
 import io.github.vaspyyy.guildmark.cooking.Station
 import io.github.vaspyyy.guildmark.cooking.recipe.Quality
@@ -111,6 +112,13 @@ object VesselCommand {
         return 0
     }
 
+    /** Whether Hearthcraft is off, which stops time at every station: a command that works time out or makes a call says so and does nothing. */
+    private fun off(context: CommandContext<CommandSourceStack>): Boolean {
+        if (Cooking.enabled()) return false
+        fail(context, "Hearthcraft is off (setting), so nothing at a station moves; turn it on first.")
+        return true
+    }
+
     // ---- The commands ----
 
     private fun status(context: CommandContext<CommandSourceStack>): Int {
@@ -119,6 +127,9 @@ object VesselCommand {
         val cookLevel = context.source.player?.let { Skills.level(it, Skill.COOKING) } ?: 1
         val bonus = context.source.player?.let { Quality.bonus(it) } ?: 0.0
         context.source.sendSuccess({ Component.literal("== Vessel ==").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD) }, false)
+        if (!Cooking.enabled()) {
+            context.source.sendSuccess({ Component.literal("Hearthcraft is off (setting): this station keeps what it holds and does not move.").withStyle(ChatFormatting.GRAY) }, false)
+        }
         for (line in be.describe(level, cookLevel, bonus)) say(context, line)
         return 1
     }
@@ -169,6 +180,7 @@ object VesselCommand {
 
     /** Works out [seconds] as an absence: the vessel's stamp is moved back and it is brought up to date, with no calls issued or missed. */
     private fun advance(context: CommandContext<CommandSourceStack>, seconds: Double): Int {
+        if (off(context)) return 0
         val be = target(context) ?: return 0
         val level = context.source.level
         val v = be.vessel
@@ -179,6 +191,7 @@ object VesselCommand {
     }
 
     private fun call(context: CommandContext<CommandSourceStack>, word: String): Int {
+        if (off(context)) return 0
         val be = target(context) ?: return 0
         val level = context.source.level
         val v = be.vessel
