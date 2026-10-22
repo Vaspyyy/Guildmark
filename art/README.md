@@ -151,6 +151,14 @@ and Kotlin model code always agree.
   different number of ticks, then moves, then a light crosses what is shiny), its model and its item definition. With a preview
   dir it writes the sheets and a GIF of each moving item and the cart in every dye; with `TRADE_VANILLA` set to a folder of the
   game's item textures, the items beside those they stand in for. It checks what it wrote.
+- `scripts/pack_harness.py` (with `carrier_kit.py` and `carrier_paint.py` beside it, which the carriers' other scripts share) is
+  the Pack Harness on a donkey, a mule and a llama: a pack saddle and leather, a blanket in the owner's colour, two wicker
+  panniers that fill in four steps, a brass bell with a clapper of its own, a halter and a crupper. It is laid over the vanilla
+  animal's own model the way the game dresses a saddled horse, so every part the animal's model looks up is there. It writes
+  `textures/entity/trade/pack_harness.png`, the two Blockbench files (`art/models/pack_harness_donkey.bbmodel`, `_llama`) and
+  `client/trade/PackHarnessMesh.kt` (generated: the meshes and the numbers the renderer poses the moving parts by; change the
+  script, not the Kotlin). It checks its own numbers, that nothing moving goes into the animal and what it wrote. With a preview
+  dir it renders the animals beside the vanilla ones from four sides, the four fills, the six colours and walking GIFs.
 
 Rebuild a model (needs Python 3 with Pillow and numpy), from the repo root:
 
@@ -174,6 +182,7 @@ python3 -B art/scripts/festival_art.py src/main/resources/assets/guildmark [prev
 python3 -B art/scripts/cook_art.py src/main/resources/assets/guildmark [preview-dir [game assets/minecraft]]
 python3 -B art/scripts/haul_board_art.py src/main/resources/assets/guildmark [kotlin-dir [art/models [preview-dir]]]
 python3 -B art/scripts/trade_items.py src/main/resources/assets/guildmark [preview-dir]
+python3 -B art/scripts/pack_harness.py [assets-dir [kotlin-dir [art/models [preview-dir [game assets/minecraft]]]]]
 ```
 
 Each run writes the textures into the mod's assets, the `.bbmodel` into `art/models`, and a preview
