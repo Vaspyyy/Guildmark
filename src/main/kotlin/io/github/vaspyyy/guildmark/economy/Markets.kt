@@ -116,6 +116,13 @@ class Markets(private val entries: MutableMap<Long, Entry> = HashMap()) : SavedD
             return data.open(level, places)
         }
 
+        /**
+         * The market kept under [key] (the key of a capital's centre), or null if none has opened there. Opens nothing and
+         * writes nothing. A village's market is found here too once villages have markets (the villages design, section
+         * 7.1); for now only a capital's is.
+         */
+        fun find(level: ServerLevel, key: Long): Entry? = get(level).entries[key]
+
         private fun tick(server: MinecraftServer) {
             if (server.tickCount % TICK != 0 || !enabled()) return
             val level = server.overworld()

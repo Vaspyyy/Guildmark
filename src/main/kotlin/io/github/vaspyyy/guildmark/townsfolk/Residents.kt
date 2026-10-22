@@ -183,6 +183,15 @@ class Residents(
     fun changed() = setDirty()
 
     /**
+     * [id] is put away from [day] on, as a captive of a raid is (living-world/villages/design.md part V10): no body, no
+     * bed kept, not dead. Does nothing yet; the part that takes residents captive fills it in.
+     */
+    fun away(id: Int, day: Long) {}
+
+    /** [id], put away (see [away]), is given back with [p] for a body. Does nothing yet. */
+    fun restore(id: Int, p: Townsperson) {}
+
+    /**
      * The day [r] died on, as the town's talk counts it: [Resident.died], but for a death a clock set back took before
      * the world's first day, whose record stands on day 0 ([Resident.died] is never below 0 but for -1, "not dead") and
      * whose own day is below it (still -1 for the living and those away).
