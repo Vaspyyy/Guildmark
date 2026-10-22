@@ -17,6 +17,8 @@ import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.registry.ModBlocks
 import io.github.vaspyyy.guildmark.registry.ModVillagers
 import io.github.vaspyyy.guildmark.village.live.Villages
+import io.github.vaspyyy.guildmark.village.live.days.Poster
+import io.github.vaspyyy.guildmark.village.live.days.Posters
 import io.github.vaspyyy.guildmark.wardfire.WardfireSites
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
@@ -36,7 +38,6 @@ import net.minecraft.world.level.Level
 import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.level.levelgen.Heightmap
-import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import java.util.function.Predicate
 import kotlin.math.abs
@@ -49,6 +50,9 @@ object VillageBoards {
     private const val STARTER_NOTES = 3
     private const val BELL_SEARCH_RADIUS = 64
     private const val VILLAGE_BOARD_RADIUS = 48
+
+    /** The tick of the day (from six in the morning) a village's residents take up the board's work from: three in the afternoon. */
+    private const val RESIDENTS_FROM = 9000L
 
     /** Index of the current in-game day; sleeping through the night advances it. */
     fun day(level: Level): Long = level.overworldClockTime / 24000L
@@ -81,11 +85,9 @@ object VillageBoards {
         val cells = BoardPart.entries.mapNotNull {
             serverLevel.getBlockEntity(QuestBoardBlock.cellPos(anchor, facing, it)) as? QuestBoardBlockEntity
         }
-        val villagers = serverLevel.getEntitiesOfClass(Villager::class.java, AABB(anchor).inflate(VILLAGER_RANGE)) {
-            it.isAlive && !it.isBaby && !it.isSleeping && it.getData(ModAttachments.LAST_PINNED_DAY) != today
-        }
-        for ((villager, cell) in villagers.shuffled().zip(cells.shuffled()).take(STARTER_NOTES)) {
-            pinNote(serverLevel, villager, cell, facing, cells)
+        val posters = Posters.near(serverLevel, anchor, VILLAGER_RANGE.toInt()).filter { !Posters.pinnedToday(it, today) }
+        for ((poster, cell) in posters.shuffled().zip(cells.shuffled()).take(STARTER_NOTES)) {
+            pinFor(serverLevel, poster, cell, facing, cells)
         }
     }
 
@@ -123,35 +125,41 @@ object VillageBoards {
         val empty = cells.filter { it.note == null }
         if (empty.isEmpty()) return
 
-        val villagers = level.getEntitiesOfClass(Villager::class.java, AABB(anchor).inflate(VILLAGER_RANGE)) {
-            it.isAlive && !it.isBaby && !it.isSleeping && it.getData(ModAttachments.LAST_PINNED_DAY) != today
-        }
-        if (villagers.isEmpty()) return
+        // A village's residents take the board's work from the afternoon, when the day's poster has not been (see Posters)
+        val late = level.overworldClockTime % 24000L >= RESIDENTS_FROM
+        val posters = Posters.near(level, anchor, VILLAGER_RANGE.toInt()).filter { (!it.resident || late) && !Posters.pinnedToday(it, today) }
+        if (posters.isEmpty() && !late) return
 
         val front = anchor.relative(facing)
-        val atBoard = villagers.firstOrNull { villager ->
-            cells.any { villager.position().closerThan(Vec3.atCenterOf(it.blockPos.relative(facing)), PIN_REACH) }
+        val atBoard = posters.firstOrNull { poster ->
+            cells.any { poster.entity.position().closerThan(Vec3.atCenterOf(it.blockPos.relative(facing)), PIN_REACH) }
         }
         if (atBoard != null) {
-            pinNote(level, atBoard, empty.random(), facing, cells)
+            pinFor(level, atBoard, empty.random(), facing, cells)
+        } else if (late && Posters.send(level, anchor)) {
+            // A resident is on the way to it
         } else if (level.random.nextInt(4) == 0) {
             // Nudge someone over; their own routine may win, which is fine
-            villagers.random().brain.setMemory(MemoryModuleType.WALK_TARGET, WalkTarget(front, 0.5f, 1))
+            val villagers = posters.mapNotNull { it.entity as? Villager }
+            if (villagers.isNotEmpty()) villagers.random().brain.setMemory(MemoryModuleType.WALK_TARGET, WalkTarget(front, 0.5f, 1))
         }
     }
 
-    private fun pinNote(level: ServerLevel, villager: Villager, cell: QuestBoardBlockEntity, facing: Direction, cells: List<QuestBoardBlockEntity>) {
-        val profession = villager.villagerData.profession().unwrapKey().orElse(null)?.identifier()
+    /**
+     * [poster] pins a note on [cell]: written as their trade has it, about their land, signed with their name; the day marked as
+     * theirs. [quiet]: a resident at the nail, whose hammer made the noise, not the villager's clip.
+     */
+    fun pinFor(level: ServerLevel, poster: Poster, cell: QuestBoardBlockEntity, facing: Direction, cells: List<QuestBoardBlockEntity>, quiet: Boolean = false) {
         val tier = QuestGenerator.tierAt(cell.blockPos.x, cell.blockPos.z)
-        val poster = posterName(villager, profession)
+        val name = poster.name.string
         val anchor = QuestBoardBlock.anchorPos(cell.blockPos, cell.blockState)
-        cell.updateNote(plea(level, anchor, cells, poster, tier)
-            ?: Situations.note(level, villager, anchor, poster, tier)
-            ?: QuestGenerator.generate(level.random, profession, poster, tier, surroundings(level, anchor)))
-        villager.setData(ModAttachments.LAST_PINNED_DAY, day(level))
-        villager.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, Vec3.atCenterOf(cell.blockPos))
+        cell.updateNote(plea(level, anchor, cells, name, tier)
+            ?: Situations.note(level, poster.land, anchor, name, tier)
+            ?: QuestGenerator.generate(level.random, poster.profession, name, tier, surroundings(level, anchor)))
+        Posters.mark(poster, day(level))
+        if (!poster.resident) poster.entity.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, Vec3.atCenterOf(cell.blockPos))
         val spot = Vec3.atCenterOf(cell.blockPos.relative(facing))
-        level.playSound(null, cell.blockPos, SoundEvents.VILLAGER_WORK_CARTOGRAPHER, SoundSource.NEUTRAL, 1.0f, 1.0f)
+        if (!quiet) level.playSound(null, cell.blockPos, SoundEvents.VILLAGER_WORK_CARTOGRAPHER, SoundSource.NEUTRAL, 1.0f, 1.0f)
         level.sendParticles(ParticleTypes.HAPPY_VILLAGER, spot.x, spot.y, spot.z, 4, 0.3, 0.3, 0.3, 0.0)
     }
 
@@ -196,7 +204,7 @@ object VillageBoards {
     }
 
     /** Name tag if it has one, otherwise a first name fixed by its UUID: "Maren the Librarian". */
-    private fun posterName(villager: Villager, profession: Identifier?): String {
+    internal fun posterName(villager: Villager, profession: Identifier?): String {
         villager.customName?.let { return it.string }
         val uuid = villager.uuid
         return "${QuestGenerator.nameFor(uuid.mostSignificantBits xor uuid.leastSignificantBits)} the ${QuestGenerator.title(profession)}"

@@ -40,7 +40,11 @@ object Situations {
     private val RIVAL = listOf(Job(QuestType.CLEAR, "zombie", 8, 14, 0.7f), Job(QuestType.HUNT, "skeleton", 6, 12, 0.9f),
         Job(QuestType.HUNT, "creeper", 4, 8, 1.2f))
 
-    fun note(level: ServerLevel, villager: Villager, anchor: BlockPos, poster: String, tier: Int): QuestNote? {
+    fun note(level: ServerLevel, villager: Villager, anchor: BlockPos, poster: String, tier: Int): QuestNote? =
+        note(level, villager.villagerData.type().unwrapKey().orElse(null)?.identifier()?.path, anchor, poster, tier)
+
+    /** [landType] is the poster's land ("desert", "snow", ...: a villager's type, or the biome at the board for a resident), or null for plains. */
+    fun note(level: ServerLevel, landType: String?, anchor: BlockPos, poster: String, tier: Int): QuestNote? {
         val random = level.random
         if (random.nextFloat() >= CHANCE) return null
         val board = level.getBlockEntity(anchor) as? QuestBoardBlockEntity ?: return null
@@ -55,7 +59,7 @@ object Situations {
             rival != null && random.nextBoolean() -> Quad(RIVAL, "rival", listOf(village, rival.displayName), 1.4f)
             random.nextInt(4) == 0 -> return QuestGenerator.generateLair(random, rank, poster).copy(story = story("den", random, listOf(village)))
             else -> {
-                val land = villager.villagerData.type().unwrapKey().orElse(null)?.identifier()?.path ?: "plains"
+                val land = landType ?: "plains"
                 Quad(LAND[land] ?: LAND.getValue("plains"), "land.${if (land in LAND) land else "plains"}", listOf(village), 1.2f)
             }
         }

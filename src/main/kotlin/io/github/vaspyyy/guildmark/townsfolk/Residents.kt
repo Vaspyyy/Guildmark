@@ -83,6 +83,11 @@ class Resident(
      * which stall in a village goes by it (living-world/villages/design.md section 7.6). A capital's people have none.
      */
     val craft: String = "",
+    /**
+     * The day (as [VillageBoards.day] counts) they last pinned a note on their village's board, or -1: kept here for a resident in
+     * place of the villager's LAST_PINNED_DAY (living-world/villages/design.md section 6.5).
+     */
+    var pinned: Long = -1L,
 ) {
     val name: String get() = "$given $family"
 
@@ -97,12 +102,13 @@ class Resident(
          * The last of a resident's fields, in a group of their own: a record codec holds no more than sixteen, and
          * [CODEC] had sixteen. A group nested in another is flat in what's saved, so older worlds read as they did.
          */
-        private class Tail(val left: Long, val craft: String)
+        private class Tail(val left: Long, val craft: String, val pinned: Long)
 
         private val TAIL: MapCodec<Tail> = RecordCodecBuilder.mapCodec { i ->
             i.group(
                 Codec.LONG.optionalFieldOf("left", -1L).forGetter(Tail::left),
                 Codec.STRING.optionalFieldOf("craft", "").forGetter(Tail::craft),
+                Codec.LONG.optionalFieldOf("pinned", -1L).forGetter(Tail::pinned),
             ).apply(i, ::Tail)
         }
 
@@ -123,11 +129,11 @@ class Resident(
                 Codec.BOOL.optionalFieldOf("alive", true).forGetter(Resident::alive),
                 Codec.LONG.optionalFieldOf("died", -1L).forGetter(Resident::died),
                 Codec.LONG.optionalFieldOf("since", 0L).forGetter(Resident::since),
-                TAIL.forGetter { Tail(it.left, it.craft) },
+                TAIL.forGetter { Tail(it.left, it.craft, it.pinned) },
             ).apply(i) { id, uuid, capital, planned, given, family, role, look, home, bed, furnished, traits, alive, died, since, tail ->
                 Resident(
                     id, uuid.orElse(null), capital, planned, given, family, TownRole.byName(role) ?: TownRole.CITIZEN, look,
-                    home, bed.orElse(null), furnished, traits, alive, died, since, tail.left, tail.craft,
+                    home, bed.orElse(null), furnished, traits, alive, died, since, tail.left, tail.craft, tail.pinned,
                 )
             }
         }
@@ -212,6 +218,7 @@ class Residents(
         for (r in people.values) {
             r.since -= days
             if (r.left >= 0) r.left = maxOf(0L, r.left - days)
+            if (r.pinned >= 0) r.pinned = maxOf(-1L, r.pinned - days)
             if (r.died >= 0) {
                 val day = diedOn(r) - days
                 r.died = maxOf(0L, day)

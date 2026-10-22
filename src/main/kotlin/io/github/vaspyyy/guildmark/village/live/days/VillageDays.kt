@@ -56,6 +56,10 @@ object VillageDays {
                 life.market && r.role.adult && r.role != TownRole.GUARD && !life.carter -> interrupt(list, GREEN_FROM, GREEN_TO, Doing.MARKET, GREEN)
             }
         }
+        // The day's note to the board, in the day's own slot or the next that fits; not if it is pinned already (the day is re-planned)
+        if (life.poster && r.pinned != day) {
+            for ((from, to) in Posters.slots(life.places.centre, day, rest)) if (interrupt(list, from, to, Doing.ERRAND, BOARD)) break
+        }
         // The dusk bell, every day of the week
         if (life.bellman) interrupt(list, BELL_FROM, BELL_TO, Doing.ERRAND, BELL)
         return if (list.size == base.stretches.size && list.indices.all { list[it] === base.stretches[it] }) base else Agenda(day, list)

@@ -58,6 +58,7 @@ object VillageActs {
             VillageDays.STALL -> return listOf(Acts.Part { setUp(p, life) })
             VillageDays.GREEN -> return if (stretch.doing == Doing.PLAY) listOf() else Acts.script(p, life, Doing.MARKET)
             VillageDays.BELL -> return listOf(Acts.Part { BellKeeper.errand(p, life) })
+            VillageDays.BOARD -> return listOf(Acts.Part { Posters.errand(p, life) })
         }
         if (life.home == null) {
             when (stretch.doing) {
@@ -81,6 +82,8 @@ object VillageActs {
             VillageDays.GREEN -> return if (stretch.doing == Doing.PLAY) play(p, life) else gather(p, life)
             // The bell rung (or not to be rung): home for supper
             VillageDays.BELL -> return Acts.filler(p, life, Doing.EVENING)
+            // The note pinned (or nothing to pin): a turn about the village
+            VillageDays.BOARD -> return Acts.filler(p, life, Doing.STROLL)
         }
         if (life.home == null) {
             when (stretch.doing) {
