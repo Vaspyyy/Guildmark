@@ -71,6 +71,7 @@ PREFIXES = {
         "advancements.guildmark.tales_", "handbook.guildmark.page19", "character.guildmark.pip.verse.tales_three",
         "guildmark.configuration.townTale", "guildmark.configuration.taleBanners",
         "slate.guildmark.sealed", "gui.guildmark.works.why.moot",
+        "board.guildmark.slip.word.tale",
     ),
     "villages": (
         "say.guildmark.talk.village.", "say.guildmark.talk.detail.village.", "subtitles.guildmark.village.",
