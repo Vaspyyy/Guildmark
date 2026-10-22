@@ -5,6 +5,7 @@ import io.github.vaspyyy.guildmark.network.TallyParcel
 import io.github.vaspyyy.guildmark.network.TallyRoutes
 import io.github.vaspyyy.guildmark.network.TallyTown
 import io.github.vaspyyy.guildmark.network.TallyView
+import io.github.vaspyyy.guildmark.trade.Routes
 import kotlin.math.max
 
 /** Where the trader stands in the world, for the Word's map to put them on. */
@@ -67,21 +68,55 @@ class TallyBook(view: TallyView, val env: Env) {
 
     // What is picked on each page
     var town: Long = TallyRoutes.NONE
+        private set
     var leg = 0
+        private set
     var held = 0
+        private set
     var parcel = 0
+        private set
+
+    /** When a way, a ticket and a parcel were last picked on their pages (a pick starts that page's picture of it over). */
+    var legAt = -10.0
+        private set
+    var heldAt = -10.0
+        private set
+    var parcelAt = -10.0
+        private set
+
+    /** When the town on the Word page was last picked, when the hourglass last turned over and how far its sand had run before (0 to 1: three days is all of it). */
+    var pickedAt = -10.0
+        private set
+    var glassAt = -10.0
+        private set
+    var glassFrom = 0.0
+        private set
 
     /** When a town's sight came fresher than the one the screen had (its ring pulses, its glass turns), or the town first showed. */
     val pulsed = HashMap<Long, Double>()
     val shown = HashMap<Long, Double>()
 
+    /** The things a drawing does once, at a moment of it (a sound played as a knife bites), by the name each was given. */
+    private val fired = HashSet<String>()
+
     /** When a parcel's notch was last cut (by its good and origin), and the days it had left before. */
     val cut = HashMap<String, Double>()
     val spent = HashMap<String, Int>()
 
-    /** When a rung was last climbed to (the knot is tied), and when a report was last filed (the stamp comes down) or tickets were last booked. */
+    /** When a ticket first showed in the book's own list (it flutters in), by its number. */
+    val arrived = HashMap<Int, Double>()
+
+    /** When each of the next rung's asks was met (its tick is inked), by its key. */
+    val metAt = HashMap<String, Double>()
+
+    /** A page the book is asked to turn to (a link on a page); the stage turns the leaf as it does for a tab. -1 for none. */
+    var want = -1
+        private set
+
+    /** When a rung was last climbed to (the knot is tied), whether the Standing page has shown it since, and when a report was last filed (the stamp comes down) or tickets were last booked. */
     var tiedAt = -1e9
     var tiedRung = -1
+    var tieSeen = true
     var filedAt = -1e9
     var filedTown = TallyRoutes.NONE
     var bookedAt = -1e9
@@ -94,13 +129,28 @@ class TallyBook(view: TallyView, val env: Env) {
     private var refreshed = 0.0
 
     init {
-        for (town in view.towns) shown[town.capital] = 0.0
+        val glassSeen = HashMap<Long, Double>()
+        for (town in view.towns) {
+            shown[town.capital] = 0.0
+            // A sight fresher than the one this session last saw of the town: its ring pulses once as the book opens, and its glass turns
+            val before = seenTick[town.capital]
+            if (before != null && town.tick > before && !town.live) {
+                pulsed[town.capital] = OPEN_PULSE
+                glassSeen[town.capital] = ((view.now - before) / STRIKE).coerceIn(0.0, 1.0)
+            }
+            seenTick[town.capital] = town.tick
+        }
         for (p in view.parcels) spent[key(p)] = p.left
-        this.town = pick(view)
+        this.town = first(view)
+        glassSeen[this.town]?.let {
+            glassFrom = it
+            glassAt = OPEN_PULSE
+        }
         if (shownRung < 0) shownRung = view.standing.rung
         tiedRung = view.standing.rung
         if (view.standing.rung > shownRung) {
             tiedAt = 0.55
+            tieSeen = page == STANDING
             shownRung = view.standing.rung
         }
     }
@@ -122,27 +172,41 @@ class TallyBook(view: TallyView, val env: Env) {
     fun update(next: TallyView) {
         val before = view
         val old = before.towns.associateBy { it.capital }
-        for (town in next.towns) {
-            val was = old[town.capital]
-            if (was == null) shown[town.capital] = t
-            else if (town.tick > was.tick && !town.live) pulsed[town.capital] = t
+        for (sight in next.towns) {
+            val was = old[sight.capital]
+            if (was == null) {
+                shown[sight.capital] = t
+            } else if (sight.tick > was.tick && !sight.live) {
+                // A fresher sight: its ring pulses once, and if it is the town on the page the hourglass is turned over
+                pulsed[sight.capital] = t
+                if (sight.capital == town) {
+                    glassFrom = sand(was)
+                    glassAt = t
+                    if (page == WORD) env.sound("trade.hourglass", 1f, 0.6f)
+                }
+            }
+            seenTick[sight.capital] = sight.tick
         }
-        // A day gone from a parcel's days: its notch is cut
+        // A day gone from a parcel's days: its notch is cut (the ledger page's knife does it, and sounds it, when it is next looked at)
         for (p in next.parcels) {
             val k = key(p)
             val had = spent[k]
-            if (had != null && p.left < had) {
-                cut[k] = t
-                if (page == LEDGER) env.sound("trade.tally_notch", 1f, 0.7f)
-            }
+            if (had != null && p.left < had) cut[k] = t
             spent[k] = p.left
         }
+        // A rung climbed: the next knot is tied (the standing page's rope does it, and sounds it)
         if (next.standing.rung > before.standing.rung && next.standing.rung > shownRung) {
             tiedAt = t
+            tieSeen = page == STANDING
             tiedRung = next.standing.rung
             shownRung = next.standing.rung
-            if (page == STANDING) env.sound("trade.seal_press", 1f, 0.7f)
         }
+        // An ask of the next rung met: its tick is inked
+        val unmet = before.standing.asks.filter { it.have < it.need }.map { it.key }.toSet()
+        for (ask in next.standing.asks) if (ask.have >= ask.need && ask.key in unmet) metAt[ask.key] = t
+        // Tickets that came into the book flutter in
+        val had = before.held.map { it.id }.toSet()
+        for (h in next.held) if (h.id !in had) arrived[h.id] = t
         // A report that went (one fewer left, and the town no longer asks it) and tickets that came
         if (next.reports < before.reports && asked != TallyRoutes.NONE && t - askedAt < 8.0) {
             filedAt = t
@@ -152,14 +216,84 @@ class TallyBook(view: TallyView, val env: Env) {
         if (next.held.size > before.held.size) bookedAt = t
         view = next
         viewAt = t
-        if (town == TallyRoutes.NONE || next.towns.none { it.capital == town }) town = pick(next)
+        if (town == TallyRoutes.NONE || next.towns.none { it.capital == town }) town = first(next)
         leg = leg.coerceIn(0, max(0, next.routes.legs.size - 1))
         held = held.coerceIn(0, max(0, next.held.size - 1))
         parcel = parcel.coerceIn(0, max(0, next.parcels.size - 1))
     }
 
     /** The town the Word page opens at: where the trader stands, else the freshest news. */
-    private fun pick(v: TallyView): Long = v.towns.firstOrNull { it.capital == v.here }?.capital ?: v.towns.firstOrNull()?.capital ?: TallyRoutes.NONE
+    private fun first(v: TallyView): Long = v.towns.firstOrNull { it.capital == v.here }?.capital ?: v.towns.firstOrNull()?.capital ?: TallyRoutes.NONE
+
+    /** Picks the town [capital] on the Word page: its detail is turned to, and the hourglass is turned over to show how old its news is. */
+    fun pick(capital: Long) {
+        if (capital == town || view.towns.none { it.capital == capital }) return
+        glassFrom = sand(selected)
+        town = capital
+        pickedAt = t
+        glassAt = t
+        env.select()
+        if (page == WORD) env.sound("trade.hourglass", 1f, 0.6f)
+    }
+
+    /** How far the sand of a sight has run: 0 for news of this moment, 1 for news of three days, when it is struck through. */
+    fun sand(town: TallyTown?): Double = if (town == null) 0.0 else (age(town) / STRIKE).coerceIn(0.0, 1.0)
+
+    /**
+     * Whether the moment [at] of a drawing has come that was not yet seen to by [key]: true once, the first time it is asked after [at] (and no more than
+     * [grace] seconds after it: a sound that is late for its moment is not played).
+     */
+    fun due(key: String, at: Double, grace: Double = 0.4): Boolean {
+        if (t < at) return false
+        if (!fired.add(key)) return false
+        return t - at <= grace
+    }
+
+    /** The Standing page shows the rung that was climbed to while it was not showing: its knot is tied from [at]. */
+    fun seeTie(at: Double) {
+        if (tieSeen) return
+        tieSeen = true
+        if (tiedAt > -1e8) tiedAt = max(tiedAt, at)
+    }
+
+    // ---- Picks ----
+
+    /** Picks the way [i] on the Routes page. */
+    fun pickLeg(i: Int) {
+        val to = i.coerceIn(0, max(0, view.routes.legs.size - 1))
+        if (to == leg) return
+        leg = to
+        legAt = t
+        env.select()
+    }
+
+    /** Picks the ticket [i] of the Held page. */
+    fun pickHeld(i: Int) {
+        val to = i.coerceIn(0, max(0, view.held.size - 1))
+        if (to == held) return
+        held = to
+        heldAt = t
+        env.select()
+    }
+
+    /** Picks the parcel [i] of the Ledger page. */
+    fun pickParcel(i: Int) {
+        val to = i.coerceIn(0, max(0, view.parcels.size - 1))
+        if (to == parcel) return
+        parcel = to
+        parcelAt = t
+        env.select()
+    }
+
+    /** Asks the book to turn to [page] (the stage does it). */
+    fun go(page: Int) {
+        want = page.coerceIn(0, Book.PAGES - 1)
+    }
+
+    /** The stage has turned to what the book asked: nothing is asked now. */
+    fun went() {
+        want = -1
+    }
 
     // ---- Pages ----
 
@@ -205,9 +339,23 @@ class TallyBook(view: TallyView, val env: Env) {
         /** Seconds between the open screen's questions to the server (it answers one in two seconds at most). */
         const val EVERY = 5.0
 
+        /** The news of three days, in ticks: at it a sight is struck through and the sand of its glass has all run. */
+        const val STRIKE = 72_000.0
+
+        /** When, after the book opens, a ring pulses for a sight fresher than the one this session last showed (the rings have drawn themselves by then). */
+        const val OPEN_PULSE = 1.1
+
+        /** A day's ticks, and the Routes' own figures: how many blocks an hour's walk covers, and the hours spent at the stalls at the end of a way. */
+        const val DAY = 24_000.0
+        const val WALK = Routes.WALK
+        const val VISIT = Routes.VISIT
+
         /** The page the book was last open at, and the rung it last showed, for the session. */
         var lastPage = 0
         var shownRung = -1
+
+        /** The tick of the sight of each town the session last showed, to tell at the next opening that a sight is fresher. */
+        val seenTick = HashMap<Long, Long>()
 
         /** A parcel's name in the maps above: its good and where it came from. */
         fun key(p: TallyParcel): String = "${p.good}@${p.origin}"

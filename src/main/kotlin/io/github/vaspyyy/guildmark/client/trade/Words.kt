@@ -32,8 +32,14 @@ object Words {
     /** The name of the good [id] ("Iron Ingot"), as the market screens write it. */
     fun good(id: String): String = tr("good.guildmark.$id")
 
+    /** The name of the shop [id] ("bakery", "smithy"...), as the market screens write it. */
+    fun shop(id: String): String = tr("shop.guildmark.$id")
+
+    /** The name of the good [id] for [units] of it ("Iron Ingot" for one, "Iron Ingots" for more), without the count. */
+    fun name(id: String, units: Int): String = if (units == 1) good(id) else tr("good.guildmark.$id.many")
+
     /** [units] of the good [id] as a count ("12 Iron Ingots"): the plural line for more than one. */
-    fun goods(id: String, units: Int): String = "$units " + (if (units == 1) good(id) else tr("good.guildmark.$id.many"))
+    fun goods(id: String, units: Int): String = "$units " + name(id, units)
 
     /** A whole number with its thousands set apart ("1,010"). */
     fun num(n: Int): String = String.format(Locale.ROOT, "%,d", n)
@@ -50,6 +56,9 @@ object Words {
     /** How old a thing is that was [ticks] game ticks ago (a thousand to the hour): "now", "under 1 h", "5 h", "1 d 12 h", "3 d". */
     fun age(ticks: Double): String = if (ticks < 500.0) t("age.now") else span(ticks)
 
+    /** How long ago a thing was that was [ticks] game ticks back, as a phrase: "just now", "5 h ago". */
+    fun ago(ticks: Double): String = if (ticks < 500.0) t("age.justnow") else t("age.ago", span(ticks))
+
     /** How long is left to a thing that is due in [ticks] game ticks: "under 1 h", "5 h", "1 d 12 h", and "gone" at none. */
     fun left(ticks: Double): String = if (ticks <= 0.0) t("age.gone") else span(ticks)
 
@@ -64,4 +73,19 @@ object Words {
 
     /** The name of a town, or what to call one that has no name yet. */
     fun town(name: String): String = name.ifEmpty { t("town.unnamed") }
+
+    /** The ids of the ladder's five rungs, lowest first. */
+    val RUNGS = listOf("pedlar", "hawker", "chapman", "factor", "house")
+
+    /** The name of the rung [i] ("Pedlar", "Hawker", "Chapman", "Factor", "Trader of the House"), as the ladder's own lines have it. */
+    fun rung(i: Int): String = tr("gui.guildmark.trade.ladder.rung.${RUNGS[i.coerceIn(0, RUNGS.size - 1)]}")
+
+    /** The name of a standing, 0 to 4, as the stall's own screen writes it ("Known Supplier", "Purveyor to Aldford"): [place] is the town the purveyor serves. */
+    fun rank(i: Int, place: String): String = tr("gui.guildmark.stall.rank.${i.coerceIn(0, 4)}", place)
+
+    /** The name of a haul ticket's kind ("parcel", "consignment", "relief", "feast"). */
+    fun kind(id: String): String = t("kind.$id")
+
+    /** What a way pays an hour of its walk: one place ("+7.5/h"). */
+    fun per(v: Float): String = t("per.hour", String.format(Locale.ROOT, if (v >= 100f) "%.0f" else "%.1f", v))
 }

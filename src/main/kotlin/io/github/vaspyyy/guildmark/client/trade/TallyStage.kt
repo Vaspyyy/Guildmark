@@ -37,6 +37,12 @@ class TallyStage(val book: TallyBook) {
     /** Draws the book for a screen {[w] x [h]} with the mouse at {[mouseX], [mouseY]}; [book]'s time is the moment it is drawn for. */
     fun draw(pen: Pen, w: Int, h: Int, mouseX: Int, mouseY: Int) {
         val t = book.t
+        // A page asked the book for another page (a link): the leaf turns as it does for a tab
+        if (book.want >= 0) {
+            val to = book.want
+            book.went()
+            turnTo(to)
+        }
         left = (w - Book.W) / 2
         top = (h - Book.H) / 2 - 6
         if (flipTo >= 0 && t - flipAt >= FLIP) {
@@ -150,13 +156,42 @@ class TallyStage(val book: TallyBook) {
             val lit = !on && inTab(i, mouseX, mouseY)
             pen.sprite(if (on) "trade/tally_tab_on" else "trade/tally_tab", x + (if (lit) 2 else 0), y, TAB_W, TAB_H)
             pen.sprite("trade/tally_ico_${Book.NAMES[i]}", x + 5 + (if (lit) 2 else 0), y + 7, 10, 10, if (on || lit) Pen.WHITE else 0xFFC0B8A8.toInt())
+            // a dot at the corner of a tab whose page has something to show that is not on show: it beats, and a ring goes out of it
+            val dot = badge(i)
+            if (dot != 0) {
+                val beat = 0.5f + 0.5f * sin(book.t * 4.5 + i).toFloat()
+                val bx = x + 12 + (if (lit) 2 else 0)
+                pen.ring(bx + 0.5f, y + 4.5f, 2.5f + 3.5f * beat, Ink.fade(dot, 0.6f * (1f - beat)), 1, 1f, 0f, 3 + i, 0f)
+                pen.disc(bx, y + 4, 2, Ink.SHADE)
+                pen.disc(bx, y + 4, 1, dot)
+            }
+        }
+    }
+
+    /**
+     * The colour of the dot on tab [i], 0 for none: red on the Held for a ticket that is due within the day (or past its time), amber on the Ledger for a parcel on its last day, gold on the
+     * Standing for a rung climbed that its page has not shown yet. The page that is open has no dot: what it has to say is in front of the reader.
+     */
+    private fun badge(i: Int): Int {
+        if (i == book.page) return 0
+        val view = book.view
+        return when (i) {
+            TallyBook.HELD -> if (view.held.any { it.due - book.ticks() < TallyBook.DAY }) DOT_RED else 0
+            TallyBook.LEDGER -> if (view.parcels.any { it.left <= 1 }) DOT_AMBER else 0
+            TallyBook.STANDING -> if (!book.tieSeen) DOT_GOLD else 0
+            else -> 0
         }
     }
 
     private fun inTab(i: Int, x: Int, y: Int): Boolean = x >= left + Book.W - 3 && x < left + Book.W - 3 + TAB_W + 3 && y >= tabY(i) && y < tabY(i) + TAB_H
 
     private fun tabTip(x: Int, y: Int): List<String>? {
-        for (i in 0 until Book.PAGES) if (inTab(i, x, y)) return listOf(Words.t("page.${Book.NAMES[i]}"), Words.t("page.key", i + 1))
+        for (i in 0 until Book.PAGES) {
+            if (!inTab(i, x, y)) continue
+            val lines = arrayListOf(Words.t("page.${Book.NAMES[i]}"), Words.t("page.key", i + 1))
+            if (badge(i) != 0) lines.add(Words.t(if (i == TallyBook.HELD) "tab.held.urgent" else if (i == TallyBook.LEDGER) "tab.ledger.urgent" else "tab.standing.new"))
+            return lines
+        }
         return null
     }
 
@@ -177,7 +212,15 @@ class TallyStage(val book: TallyBook) {
         }
     }
 
-    private fun drawTip(pen: Pen, lines: List<String>, mx: Int, my: Int, w: Int, h: Int) {
+    private fun drawTip(pen: Pen, tip: List<String>, mx: Int, my: Int, w: Int, h: Int) {
+        if (tip.isEmpty()) return
+        // A long line is broken at its spaces; the first line is the tip's name
+        val lines = ArrayList<String>()
+        val heads = ArrayList<Boolean>()
+        for ((i, line) in tip.withIndex()) for (part in pen.wrap(line, min(TIP_W, w - 24))) {
+            lines.add(part)
+            heads.add(i == 0)
+        }
         if (lines.isEmpty()) return
         var tw = 0
         for (line in lines) tw = max(tw, pen.width(line))
@@ -192,7 +235,7 @@ class TallyStage(val book: TallyBook) {
         pen.fill(x + 1, y + bh, x + bw + 1, y + bh + 1, 0x50000000)
         pen.fill(x, y, x + bw, y + bh, Ink.NOTE)
         pen.frame(x, y, bw, bh, Ink.SOFT)
-        for ((i, line) in lines.withIndex()) pen.text(line, x + 6, y + 4 + i * 10, if (i == 0) Ink.BLACK else Ink.SOFT)
+        for ((i, line) in lines.withIndex()) pen.text(line, x + 6, y + 4 + i * 10, if (heads[i]) Ink.BLACK else Ink.SOFT)
     }
 
     // ---- Input ----
@@ -261,6 +304,14 @@ class TallyStage(val book: TallyBook) {
 
         const val TAB_W = 16
         const val TAB_H = 24
+
+        /** The widest a tip's line is set before it breaks. */
+        const val TIP_W = 176
+
+        /** The dots on the tabs, bright on the dark leather. */
+        const val DOT_RED = 0xFFE5432F.toInt()
+        const val DOT_AMBER = 0xFFF2A62A.toInt()
+        const val DOT_GOLD = 0xFFF6D060.toInt()
 
         /** A mouse position far off every page. */
         const val FAR = -10000

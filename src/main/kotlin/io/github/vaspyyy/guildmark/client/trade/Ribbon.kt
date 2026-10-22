@@ -14,15 +14,15 @@ import kotlin.math.sin
  * given, so a picture of it can be had at any moment.
  */
 object Ribbon {
-    private val FRONT = 0xFF9E262E.toInt()
-    private val LIT = 0xFFC6423E.toInt()
-    private val EDGE_L = 0xFFD8605A.toInt()
-    private val EDGE_R = 0xFF5A0F1C.toInt()
-    private val BACK = 0xFF6E1622.toInt()
-    private val BACK_L = 0xFF8A2430.toInt()
-    private val SHADOW = 0x55120808
+    private val FRONT = 0xFF7C2430.toInt()
+    private val LIT = 0xFF9C3A40.toInt()
+    private val EDGE_L = 0xFFA6504E.toInt()
+    private val EDGE_R = 0xFF46101C.toInt()
+    private val BACK = 0xFF541824.toInt()
+    private val BACK_L = 0xFF6C2630.toInt()
+    private val SHADOW = 0x40120808
 
-    private const val WIDTH = 6f
+    private const val WIDTH = 4.5f
 
     /**
      * Draws the ribbon with its head at {[cx], [top]}: it lies straight to [free] (where it leaves the book) and hangs to [end]. [t] is the book's time in seconds and
