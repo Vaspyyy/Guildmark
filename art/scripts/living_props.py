@@ -1619,10 +1619,104 @@ TOOL_NOTES.update({
                    'SHUT_STALL\'s track drops it and hooks it on the counter',
 })
 
+# ================================================================== the cook's props (Hearthcraft M3)
+# art/scripts/cook_clips.py (the seven kitchen clips) holds these. Both are held in the right hand the way the spoon is:
+# at right angles to the arm, so with the arm hanging they point ahead, the part's +z down. townsfolk.py packs their
+# cubes after every other group's (cook_cube_names()), so adding them moved no cube already on the texture. The
+# ladle, spoon, bowl and peel the kitchen clips also use are the ones above (and the older tools') as they were.
+
+TURNER_BLADE = (0.0, 7.2, 1.5)           # turner space: the middle of its blade's face
+TURNER_EDGE = (0.0, 9.3, 1.5)            # the middle of its leading edge, which goes under the food
+KNIFE_BLADE = (0.0, 6.05, 0.2)           # knife space: the middle of its blade
+KNIFE_EDGE = (0.0, 6.05, 0.9)            # the middle of its cutting edge, which goes through the food
+KNIFE_TIP = (0.0, 9.4, 0.9)              # its point
+
+
+def turner_blade_painter(key):
+    """A turner's blade: bright worn iron, its leading edge (the end that goes under the food) honed brighter still, three
+    slots cut through it (clear, so they are holes, once the texture is fine enough to show them), its corners rounded."""
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        a = metal(w, h, (150, 154, 166), (88, 92, 104), (214, 220, 232), rng, bevel=False, wear=0.07)
+        if face in ('front', 'back'):
+            edge = V > 1.0 - max(0.12, 1.2 / h)
+            a[..., :3] = np.where(edge[..., None], mix(a[..., :3], STEEL_L, 0.7), a[..., :3])
+            a[..., :3] *= (1.0 + 0.10 * (0.5 - V))[..., None]
+            if w >= 6 and h >= 6:
+                for cx in (0.2, 0.5, 0.8):
+                    slot = (np.abs(U - cx) < max(0.06, 0.45 / w)) & (V > 0.3) & (V < 0.76)
+                    a[slot] = 0
+            if w >= 6:
+                corner = (V > 1.0 - 1.4 / h) & ((U < 1.2 / w) | (U > 1.0 - 1.2 / w))
+                a[corner] = 0
+        return a
+    return painter(key, fn)
+
+
+def cook_blade_painter(key):
+    """A cook's knife blade: bright steel, honed along its edge (the cube's +z face, and a bevel on each flat), a dark spine
+    along the other, the knife's own, slimmer than the driver's."""
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        a = metal(w, h, (166, 172, 184), (104, 108, 120), (226, 232, 244), rng, bevel=False, wear=0.05)
+        if face == 'back':
+            a[..., :3] = mix(a[..., :3], (246, 248, 252), 0.8)
+        elif face == 'front':
+            a[..., :3] = mix(a[..., :3], (56, 58, 66), 0.55)
+        elif face in ('right', 'left') and w >= 2:
+            # u runs from +z to -z across the right flat and from -z to +z across the left, so [across] is 0 at the edge
+            across = U if face == 'right' else 1.0 - U
+            k = max(1, int(round(w * 0.34)))
+            texel = np.floor(across * w)
+            a[..., :3] = np.where((texel < k)[..., None], mix(a[..., :3], (240, 244, 250), 0.65), a[..., :3])
+            a[..., :3] = np.where((texel >= w - k)[..., None], mix(a[..., :3], (76, 78, 88), 0.5), a[..., :3])
+        return a
+    return painter(key, fn)
+
+
+def _turner():
+    # A cook's turner held like the spoon: the handle through the fist, the flat blade on a cranked shank under it
+    # (part +z), slotted, its leading edge ahead. Fist to the leading edge: 9.3 px.
+    return 'right_arm', Part('turner', RIGHT_GRIP, (-90, 0, 0), cubes=[
+        C((-0.5, -1.8, -0.5), (1.0, 5.0, 1.0), 't_turner_handle', wood_painter('t_turner_handle', BEECH, BEECH_D, BEECH_L, 'y')),
+        C((-0.6, 3.2, -0.6), (1.2, 0.5, 1.2), 't_turner_ferrule', iron_painter('t_turner_ferrule')),
+        C((-0.25, 3.7, -0.25), (0.5, 1.6, 0.5), 't_turner_shank', iron_painter('t_turner_shank')),
+        C((-0.25, 5.1, -0.2), (0.5, 0.5, 1.7), 't_turner_crank', iron_painter('t_turner_crank')),
+        C((-1.8, 5.1, 1.3), (3.6, 4.2, 0.4), 't_turner_blade', turner_blade_painter('t_turner_blade')),
+    ])
+
+
+def _knife():
+    # A cook's knife held like the spoon, its edge (part +z) down: with the arm hanging it points ahead. A slim blade
+    # 6.7 px long that narrows to a point (the spine steps down toward it; the edge is one line), on a walnut handle with
+    # a brass bolster: not the stout driver's knife.
+    return 'right_arm', Part('knife', RIGHT_GRIP, (-90, 0, 0), cubes=[
+        C((-0.55, -1.8, -0.7), (1.1, 4.0, 1.4), 't_knife_handle', wood_painter('t_knife_handle', (112, 72, 44), (72, 44, 26), (150, 104, 66), 'y')),
+        C((-0.6, 2.2, -0.75), (1.2, 0.5, 1.5), 't_knife_bolster', brass_painter('t_knife_bolster')),
+        C((-0.15, 2.7, -0.5), (0.3, 3.8, 1.4), 't_knife_blade', cook_blade_painter('t_knife_blade')),
+        C((-0.15, 6.5, -0.2), (0.3, 1.9, 1.1), 't_knife_belly', cook_blade_painter('t_knife_belly')),
+        C((-0.15, 8.4, 0.3), (0.3, 1.0, 0.6), 't_knife_point', cook_blade_painter('t_knife_point')),
+    ])
+
+
+COOK_BUILDERS = [_turner, _knife]
+BUILDERS.extend(COOK_BUILDERS)
+TOOL_NOTES.update({
+    'turner': 'right hand, at right angles to the arm like the spoon, the flat of its blade (part +z, under the handle) '
+              f'level with the arm hanging; the blade\'s middle at part {TURNER_BLADE}, its leading edge at {TURNER_EDGE}',
+    'knife': 'right hand, at right angles to the arm like the spoon, its edge (part +z) down; the blade\'s middle at part '
+             f'{KNIFE_BLADE}, its cutting edge at {KNIFE_EDGE}, its point at {KNIFE_TIP}',
+})
+
 
 def works_cube_names():
     """The works' and the streets' cubes among them (M6: townsfolk.py packs them last of all)."""
     return {c.name for b in WORKS_BUILDERS for p in b()[1].walk() for c in p.cubes}
+
+
+def cook_cube_names():
+    """The cook's cubes among them (Hearthcraft M3: townsfolk.py packs them last of all)."""
+    return {c.name for b in COOK_BUILDERS for p in b()[1].walk() for c in p.cubes}
 
 
 def cube_names():

@@ -204,16 +204,17 @@ def pack_uv(model):
     cubes = list(model.all_cubes())
     sky = [[0, 0, W]]              # segments: x, height, width
     # ---- Living World: its props (living_props.py) are packed after the companions', so they never move a cube either,
-    # the road's (M4) after those and the works' and the streets' (M6) last
+    # the road's (M4) after those, the works' and the streets' (M6) after those and the cook's (Hearthcraft M3) last
     try:
         import living_props
         living, road = living_props.cube_names(), living_props.road_cube_names()
         works = living_props.works_cube_names() if hasattr(living_props, 'works_cube_names') else set()
+        cook = living_props.cook_cube_names() if hasattr(living_props, 'cook_cube_names') else set()
     except ImportError:
-        living, road, works = set(), set(), set()
-    for late in (0, 1, 2, 3, 4):
-        group = [c for c in cubes if (4 if c.name in works else 3 if c.name in road else 2 if c.name in living else
-                                      1 if c.name in LATE_CUBES else 0) == late]
+        living, road, works, cook = set(), set(), set(), set()
+    for late in (0, 1, 2, 3, 4, 5):
+        group = [c for c in cubes if (5 if c.name in cook else 4 if c.name in works else 3 if c.name in road else
+                                      2 if c.name in living else 1 if c.name in LATE_CUBES else 0) == late]
         for c in sorted(group, key=lambda c: (-c.footprint()[1], -c.footprint()[0], c.name)):
             sky = _skyline_place(model, sky, c)
     # ---- Living World: end
