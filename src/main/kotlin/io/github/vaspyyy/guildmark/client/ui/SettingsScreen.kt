@@ -292,6 +292,7 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
             c.TOWN_TALES, c.TOWN_TALE_SCENES, c.TOWN_TALE_PACE, c.TOWN_TALE_MEMORIALS,
             c.CARAVANS, c.ROAD_AMBUSHES, c.CARAVAN_ESCORTS, c.ROAD_SALVAGE,
             c.MARKET_HERD_STOP, c.MARKET_HERD_STOP_AT, c.MARKET_CARRY_EASE, c.MARKET_CARRY_EASE_RATE, c.TRADE_OWED_XP, c.TRADE_OWED_XP_MOST,
+            c.TRADE_LIFE, c.TRADE_HUNT,
             c.TOWNSFOLK_TALK, c.TOWNSFOLK_MEMORY, c.TOWNSFOLK_RUMOURS, c.TOWNSFOLK_BARKS,
             c.REGIONS, c.REGION_TERRAIN, c.REGION_ENEMIES,
             // Living villages
@@ -337,6 +338,7 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
             slider(c.MARKET_CARRY_EASE_RATE, spec, editable, listOf(0.05, 0.1, 0.2, 0.3, 0.5, 0.75, 1.0), ::percentOf) { c.MARKET_CARRY_EASE_RATE.set(it) },
             toggle(c.TRADE_OWED_XP, spec, editable),
             slider(c.TRADE_OWED_XP_MOST, spec, editable, listOf(0.0, 300.0, 600.0, 1200.0, 2400.0, 4800.0, 12000.0, 100000.0), ::plain) { c.TRADE_OWED_XP_MOST.set(it.roundToInt()) },
+            toggle(c.TRADE_LIFE, spec, editable),
             toggle(c.MARKET_DISPLAYS, spec, editable),
             toggle(c.TURNING_MILLS, spec, editable),
             toggle(c.STREET_LAMPS, spec, editable),
@@ -380,6 +382,7 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
             toggle(c.BANDITS, spec, editable),
             toggle(c.OUTLAWS, spec, editable),
             toggle(c.ROAD_AMBUSHES, spec, editable),
+            toggle(c.TRADE_HUNT, spec, editable),
             toggle(c.RIVALS, spec, editable),
             toggle(c.REGION_ENEMIES, spec, editable),
             header("story"),
