@@ -73,6 +73,8 @@ object AtlasClient {
         // Named for its owner, whose name the label carries
         AtlasPlace.HOMESTEAD -> if (mark.has(AtlasMark.YOURS)) Component.translatable("atlas.guildmark.homestead.yours")
         else Component.translatable("atlas.guildmark.homestead", mark.label)
+        // Named for the people it remembers, whose names the label carries (the plain kind if it carries none)
+        AtlasPlace.MEMORIAL -> if (mark.label.isEmpty()) Component.translatable("atlas.guildmark.kind.memorial") else Component.translatable("atlas.guildmark.memorial", mark.label)
         else -> Component.translatable(mark.label)
     }
 
@@ -87,6 +89,7 @@ object AtlasClient {
         mark.kind == AtlasPlace.HOMESTEAD ->
             Component.translatable("gui.guildmark.homestead.tier.${io.github.vaspyyy.guildmark.homestead.HomesteadTiers.key(mark.size)}")
         mark.kind == AtlasPlace.ISLAND -> Component.translatable(IslandMarks.kindKey(mark.standing))
+        mark.kind == AtlasPlace.MEMORIAL -> Component.translatable("atlas.guildmark.kind.memorial")
         mark.has(AtlasMark.VAULT) -> Component.translatable("atlas.guildmark.kind.vault")
         else -> Component.translatable("atlas.guildmark.kind.lair")
     }

@@ -181,6 +181,9 @@ object Atlas {
                 if (places.any { it.kind == AtlasPlace.ISLAND && it.dimension == dimension && it.pos == middle }) continue
                 found(AtlasPlace(AtlasPlace.ISLAND, dimension, middle, ref = IslandMarks.ref(spec), size = spec.radius, found = now))
             }
+            // A memorial a tale left, once you're by it; one the town no longer keeps is struck off once you're there to see it gone
+            if (places.removeIf { io.github.vaspyyy.guildmark.tales.MemorialAtlas.gone(level, it, here) }) changed = true
+            for (place in io.github.vaspyyy.guildmark.tales.MemorialAtlas.found(level, here, places, now)) found(place)
         }
 
         if (changed) player.setData(ModAttachments.ATLAS, AtlasState(places))
@@ -260,6 +263,8 @@ object Atlas {
                 AtlasPlace.HOMESTEAD -> io.github.vaspyyy.guildmark.homestead.HomesteadAtlas.mark(level, player, place, restingAt)
                 // Named from what it is; the client tells what sort of island it is from the same number
                 AtlasPlace.ISLAND -> AtlasMark(AtlasPlace.ISLAND, place.pos, IslandMarks.name(place.ref), place.size, 0, "", 0, place.ref, listOf())
+                // Named for the people it remembers, whose names the label carries; none if the town no longer keeps it
+                AtlasPlace.MEMORIAL -> io.github.vaspyyy.guildmark.tales.MemorialAtlas.mark(level, place)
                 else -> null
             }
         }
