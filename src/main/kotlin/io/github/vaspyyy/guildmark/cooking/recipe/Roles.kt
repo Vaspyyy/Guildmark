@@ -69,15 +69,20 @@ object Roles {
         return stack.`is`(TagKey.create(Registries.ITEM, id))
     }
 
-    /** Part A's registration: the `cook_roles` reload listener, the clearing of the table when the server stops and its line for `cook perf`. */
+    /**
+     * Part A's registration: the `cook_roles` reload listener, the recipe commands (`cook roles`, `ideal`, `rate`, `quality`,
+     * `xp`), the clearing of the table when the server stops and its line for `cook perf`.
+     */
     fun register() {
         NeoForge.EVENT_BUS.addListener(AddServerReloadListenersEvent::class.java) { event ->
             event.addListener(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "cook_roles"), CookRolesLoader())
         }
+        RecipeCommand.init()
         Cooking.onForget { install(RoleTable.EMPTY) }
         CookStats.readout("recipes") {
             val t = table
-            "${t.foods.size} foods (${t.itemCount} items, ${t.tagCount} tags) from ${t.files} files"
+            "${t.foods.size} foods (${t.itemCount} items, ${t.tagCount} tags) from ${t.files} files; " +
+                "${Recognise.runs} recognised, ${Ideal.made} ideals worked out, ${CookXp.paid} batches paid"
         }
     }
 }
