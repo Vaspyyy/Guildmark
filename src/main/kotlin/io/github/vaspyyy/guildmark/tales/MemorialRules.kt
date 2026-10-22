@@ -1,5 +1,7 @@
 package io.github.vaspyyy.guildmark.tales
 
+import io.github.vaspyyy.guildmark.city.plan.Grid
+import io.github.vaspyyy.guildmark.city.plan.Use
 import kotlin.math.abs
 
 /**
@@ -21,8 +23,9 @@ import kotlin.math.abs
  * way with the most room. The search goes outward from the place asked for, nearest first, up to [STONE_REACH] blocks ([CAIRN_REACH]
  * for a cairn), and takes the first spot that passes.
  *
- * Pure Kotlin on a small [Terrain] of its own and no Minecraft class, so that the game ([MemorialSites], over the level and the
- * capital's plan) and the city-preview kit (over the voxel maps the city is drawn into) ask the very same rules.
+ * Pure Kotlin on a small [Terrain] of its own and no Minecraft class (only the city plan's own `Use` and `Grid`, which have none), so that
+ * the game ([MemorialSites], over the level and the capital's plan) and the city-preview kit (over the voxel maps the city is drawn into)
+ * ask the very same rules, and read the plan's word for a column the very same way ([plotOf]).
  */
 object MemorialRules {
     /** How far from the place asked for a stone may be put, and a cairn (6.4). */
@@ -94,6 +97,31 @@ object MemorialRules {
 
         /** No plan here: natural land. */
         WILD,
+    }
+
+    /** What the plan's [use] of a column says of it to the rules: open ground, a street, a lot, a field, a wall, or no plan's business. */
+    fun plotOf(use: Use): Plot = when (use) {
+        Use.GARDEN, Use.YARD, Use.FREE -> Plot.OPEN
+        Use.LOT, Use.HAMLET, Use.FARMYARD -> Plot.LOT
+        Use.FIELD -> Plot.FIELD
+        Use.WALL, Use.TOWER, Use.GATE, Use.KEEP_WALL, Use.INNER_WALL, Use.GLACIS -> Plot.WALL
+        Use.OUTSIDE, Use.CLEARING, Use.PASTURE, Use.ORCHARD, Use.VERGE -> Plot.WILD
+        // The streets, the squares, the lanes, the roads, the stairs, the quays and the drill ground
+        else -> Plot.STREET
+    }
+
+    /** How far past the glacis' foot the road is looked for. */
+    const val ROAD_FROM = 4
+
+    /**
+     * The first column of a road out of the capital's gates in its plan's own frame, beyond the glacis' foot ([levelled]) and short of
+     * the plan's [reach] (south, east, west, north); null if none is found on the axes.
+     */
+    fun roadside(grid: Grid, levelled: Int, reach: Int): Pair<Int, Int>? {
+        for ((dx, dz) in listOf(0 to 1, 1 to 0, -1 to 0, 0 to -1)) {
+            for (k in levelled + ROAD_FROM until reach) if (grid[dx * k, dz * k] == Use.ROAD) return dx * k to dz * k
+        }
+        return null
     }
 
     /** Why a spot was not taken, for the count that `tale memorial place` shows (the first rule a spot fails). */

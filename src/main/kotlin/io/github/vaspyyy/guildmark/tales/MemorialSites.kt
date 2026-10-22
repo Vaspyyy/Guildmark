@@ -2,7 +2,6 @@ package io.github.vaspyyy.guildmark.tales
 
 import io.github.vaspyyy.guildmark.city.CapitalPiece
 import io.github.vaspyyy.guildmark.city.plan.Grid
-import io.github.vaspyyy.guildmark.city.plan.Use
 import io.github.vaspyyy.guildmark.tales.MemorialRules.Cell
 import io.github.vaspyyy.guildmark.tales.MemorialRules.Plot
 import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
@@ -48,15 +47,7 @@ internal class MemorialSites(
         val c = capital ?: return Plot.WILD
         if (!c.reaches(x, z)) return Plot.WILD
         val (lx, lz) = c.local(x, z)
-        return when (g[lx, lz]) {
-            Use.GARDEN, Use.YARD, Use.FREE -> Plot.OPEN
-            Use.LOT, Use.HAMLET, Use.FARMYARD -> Plot.LOT
-            Use.FIELD -> Plot.FIELD
-            Use.WALL, Use.TOWER, Use.GATE, Use.KEEP_WALL, Use.INNER_WALL, Use.GLACIS -> Plot.WALL
-            Use.OUTSIDE, Use.CLEARING, Use.PASTURE, Use.ORCHARD, Use.VERGE -> Plot.WILD
-            // The streets, the squares, the lanes, the roads, the stairs, the quays and the drill ground
-            else -> Plot.STREET
-        }
+        return MemorialRules.plotOf(g[lx, lz])
     }
 
     override fun door(x: Int, z: Int, r: Int): Boolean = doors.any { abs(it.x - x) <= r && abs(it.z - z) <= r }
@@ -110,18 +101,11 @@ internal class MemorialSites(
         } catch (e: IllegalStateException) {
             return null
         }
-        for ((dx, dz) in listOf(0 to 1, 1 to 0, -1 to 0, 0 to -1)) {
-            for (k in plan.levelled + ROAD_FROM..plan.reach - 1) {
-                if (g[dx * k, dz * k] == Use.ROAD) return c.world(dx * k, plan.level(dx * k, dz * k), dz * k)
-            }
-        }
-        return null
+        val (lx, lz) = MemorialRules.roadside(g, plan.levelled, plan.reach) ?: return null
+        return c.world(lx, plan.level(lx, lz), lz)
     }
 
     private companion object {
-        /** How far past the glacis' foot the road is looked for. */
-        const val ROAD_FROM = 4
-
         /** How many temples and wells are tried as the place a memorial belongs. */
         const val TEMPLES = 2
         const val WELLS = 2
