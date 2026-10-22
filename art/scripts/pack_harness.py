@@ -12,7 +12,9 @@ SCALE x the declared TEX_WIDTH x TEX_HEIGHT), `client/trade/PackHarnessMesh.kt` 
 [model dir], default `art/models`) and, with a [preview dir], the sheets and GIFs (the optional last argument is a game
 `assets/minecraft` folder unpacked from the jar, read only: the vanilla animals' skins drawn under the harness). `-` stands for a
 default. A rerun gives the same files. Before any file it checks its own numbers against this page (`check_contract`: the table
-below, the vanilla parts' names, the pictures, and that no moving part goes into the animal over sampled poses), and after writing
+below, the vanilla parts' names, the pictures, that no moving part goes through the animal, the straps or the blanket over sampled poses
+(the layer's springs pushed to their limits among them), that the animal's own neck goes no further into the still shells than 2 px over a
+sweep of the head's look, and that nothing floats), and after writing
 it checks what it wrote (`check_written`); it stops with the list if anything is off. Run it from the repository's root.
 
 HOW IT IS DRAWN (for the layer that draws it) -----------------------------------------------------------------------------------
@@ -64,7 +66,8 @@ Angles are degrees here (the Kotlin takes radians, as ModelPart does). `w` is th
                                                                     the left when the neck comes down in front of it (the head lowered
                                                                     over 0.3..2.2 px) or stands up (pitch under 15 degrees)
   bell                           (0, 7.9, -14.25) = BELL_DONKEY     swings fore and aft about x, forward only (the chest is behind
-                                                                    it): 0 to -24 deg by walk speed, twice a stride; breathes 2 deg
+                                                                    it): 0 to -24 deg (the llama's -17) by walk speed, twice a stride;
+                                                                    breathes 2 deg
   bell_clapper                   (0, 1.1, 0) in the bell            lags the bell and runs round an ellipse, x 22 and z 14 deg at most
   halter_ring                    (0, -5.7, -5.3) in head_parts      hangs plumb below the chin whatever the head does; swings 9 deg
                                                                     with the stride
@@ -86,6 +89,43 @@ Up to three goods show on top as small items (`GOODS`: x, z from the opening's m
 rim at `OPENING` in the chest's frame: draw them as children of the chest's pose so that they sway with the basket. Ease the fill
 over 6 ticks (`fillEase`; `fillStep` maps used slots to the four looks). The bell strikes twice a stride, at the top of its swing
 (`bellBeat` steps up there): the sound is the caller's.
+
+THE LAYER'S SPRINGS: what starts, stops, turns, a knock and a step taken add to the stride --------------------------------------------
+Optional arguments of `Rig.pose(fill, walkPos, walkSpeed, age, trot, pitch, roll, knock, pop)` and `WoolRig.pose(walkPos, walkSpeed, age,
+trot, dangle)` (radians, as the layer's own springs give them; all 0 gives the stride alone, exactly). Each is eased off by `fit` (a tanh,
+as the stride's own swing passes untouched and only what is added beyond it is held) where the animal leaves the load no room; the limits
+are the room measured over the fit poses (see `check_fit`, which pushes every spring past its limit in every sign, at a trot, with the
+head lowered, raised and rearing, and stops the run if anything goes further into the animal, the straps or the blanket than that).
+
+  argument  what it adds                                                    held to (degrees)
+  --------  --------------------------------------------------------------  ----------------------------------------------------------
+  trot      0 to 1: the stride's sway, lift and settle up to 1.5 times      the baskets' roll stops growing at 1.0, the tassels' at 1.05
+  pitch     the pair of baskets lags a start and leads a stop (x 1.2)       2.4 back (the tail), 3.5 forward (the girth ring, the tassels)
+  roll      the pair swings to the animal's right (x 1.4): the basket       3.2 in (the flank is that close), 14 out (nothing there)
+            that way is pressed to the flank, the other swings free
+  dangle    the tassels trail backward (x 0.5)                              22 forward, 26 back
+  knock     0 or more: the bell swings further forward, its clapper rattles 24 more (the llama: none at a full gait; her legs swing
+                                                                            through where it hangs)
+  pop       0 to 1: a step taken squashes a heap (x and z up 4%, y down 3%) -
+
+The donkey's bell fades to a tenth of its swing as the head's pitch (30 at rest) goes from 75 to 95 degrees (the muzzle comes down in front
+of it); the llama's bell swings at most 17 degrees. The two things the fit poses leave over are listed in `CLIP_ALLOW`: the donkey's crupper
+ring sits half inside the rump as the tail wags, the llama's bell lip touches the top of a front leg by 0.7 px for a couple of frames at a
+sprint.
+
+THE HEAD'S SWING: the animal's own neck goes into what stands on its back ----------------------------------------------------------------
+The vanilla neck is a box that turns about the base of the neck, and the blanket, the saddle's front rail and the girth stand just behind it, so
+a neck tipped back (a llama looking up at a player on a slope) or forward (a donkey looking down at one below it) goes into their front edges,
+as it goes into the vanilla body. `check_fit` holds the still cubes of the harness against the part of the animal that turns away from them
+(`neck_table`: the neck against the shells, and the halter's and the collar's cubes, which turn with the head, against the body) to
+`NECK_LIMIT` (2.0 px beyond what the pair does at rest) over the look pitch `HEAD_CLEAR`, in steps of 5 degrees, standing and walking: the
+donkey from 45 degrees up to 60 down, the llama from 20 degrees up to 60 down (the pitch is the state's xRot: negative looks up). Over those
+ranges the worst is the donkey's blanket going 1.4 px into the neck at 45 degrees down and the llama's going 1.8 px at 20 degrees up (her
+saddle's front rail 1.6, her collar 1.0 into the body). Past them the neck goes further in and the check does not hold it: the llama looking
+up 35 degrees, 3.5 px into the saddle's front rail, up to 4.6 px at 60 degrees (her blanket, pad and girth); the donkey stays under 1.3 px
+as far as 60 degrees up, and looking 70 degrees or more down puts its bell's tiers up to 1 px into the ring that hangs under the chin and,
+from 75, its lip up to 1.2 px into the muzzle. What goes into the neck is hidden inside it (the cloth and the rail read as tucked under the
+neck; the llama's neck is 6 px deep, the donkey's 7, and nothing reaches a far face).
 """
 import copy
 import json
@@ -428,6 +468,9 @@ DEG = math.pi / 180.0
 ROLL, PITCH, IDLE_ROLL, LOAD_DAMP = 2.6, 1.2, 0.35, 0.35
 BOB = 0.12                                  # px: the heap settles this far with each step
 BELL_MAX, BELL_IDLE, BELL_PHASE = 24.0, 2.2, 0.9
+BELL_MAX_LLAMA = 17.0                       # the llama's bell hangs where the front legs swing: it may swing this far forward at most ...
+KNOCK_DAMP_LLAMA = 1.0                      # ... and a knock adds that much less of its swing the faster she walks (a full gait takes it all: the legs are in the way)
+BELL_FADE = (75.0, 95.0, 0.1)               # the donkey's bell swing fades to a tenth over the head's pitch (degrees, 30 at rest) from 75 to 95: the muzzle comes down in front of it
 CLAPPER_X, CLAPPER_Z, CLAPPER_LAG = 22.0, 14.0, 1.3
 FLAP_LIFT = 4.0
 TASSEL_BASE, TASSEL_SPEED, TASSEL_LAG = 3.0, 16.0, 0.55
@@ -437,9 +480,32 @@ SLIDE_DIP = (0.3, 2.2)                      # ... over this much of the head's d
 SLIDE_UP = (15.0, 3.0)                      # ... or as the head's pitch (degrees; 30 at rest) goes down through this: the neck standing up
 FILL_STEPS = 3                              # fill runs 0 (empty) to 3 (full): four looks
 
+# The layer's own springs (Trade D1's frame: what starts, stops, turns, a knock and a step taken add to the stride) come in as optional
+# arguments, each kept where the animal leaves the load room (`fit`): up to what the stride itself swings a part it passes untouched, beyond
+# that it eases off toward the limit and never past it. The limits are the room measured over the fit poses (`check_fit` holds them).
+TROT_GAIN = 0.5                             # `trot` 0 to 1: the stride's sway, lift and settle are up to this much bigger
+ROLL_SP_MAX = 1.0                           # ... but a basket's sideways sway stops growing here (the flank is that close) ...
+TASSEL_SP_MAX = 1.05                        # ... and the tassels' swing here
+GAIN_PITCH, GAIN_ROLL, GAIN_DANGLE = 1.2, 1.4, 0.5      # how much of a spring's angle a basket takes (fore-aft, sideways) and a tassel (the layer's weights)
+PITCH_LIMIT = (-3.5, 2.4)                   # a basket's fore-aft swing about its hanging point, degrees (negative: forward): the girth ring and the tail
+ROLL_IN, ROLL_OUT = 3.2, 14.0               # its sideways swing, degrees: in toward the flank (the basket on that side presses on it), out (free)
+TASSEL_LIMIT = (-22.0, 26.0)                # a tassel's swing, degrees (negative: forward): the girth ring and the pannier behind it
+KNOCK_MAX = 24.0                            # a knock swings the bell this much further forward at most, degrees
+POP_X, POP_Y = 0.04, 0.03                   # a step taken squashes a heap: x and z grow by POP_X, y shrinks by POP_Y
+
 
 def clamp(v, lo, hi):
     return max(lo, min(hi, v))
+
+
+def fit(x, lo, knee_lo, knee_hi, hi):
+    """[x] kept between [lo] and [hi] (lo < knee_lo <= 0 <= knee_hi < hi): as it is between the knees (what the stride alone swings), beyond
+    them eased toward the limit by tanh, never past it."""
+    if x > knee_hi:
+        return knee_hi + (hi - knee_hi) * math.tanh((x - knee_hi) / (hi - knee_hi))
+    if x < knee_lo:
+        return knee_lo - (knee_lo - lo) * math.tanh((knee_lo - x) / (knee_lo - lo))
+    return x
 
 
 def tier_t(fill, k):
@@ -447,19 +513,29 @@ def tier_t(fill, k):
     return K.smooth(clamp(fill - (k - 1), 0.0, 1.0))
 
 
-def pannier_pose(fill, walk_pos, walk_speed, age):
+def pannier_pose(fill, walk_pos, walk_speed, age, trot=0.0, pitch=0.0, roll=0.0, pop=0.0):
     """The pose of both panniers (their wrappers, baskets and the three tiers of each heap): {part name: pose} as `K.faces_of`
     takes it. The pair sways as one about the hanging points (a roll the same way on both sides), pitches a little with each
-    step, swells with the load, and the heap grows tier by tier from its base and settles with each step."""
+    step, swells with the load, and the heap grows tier by tier from its base and settles with each step. The springs: [trot]
+    (0 to 1) lengthens the stride; [pitch] and [roll] (degrees, as the layer's own springs give them: positive, the baskets lag
+    backward, and swing to the animal's right) add to the pair's sway, the basket on the side the swing carries in toward the flank
+    pressing on it (it gets the little room there is, `ROLL_IN`) and the other swinging free (`ROLL_OUT`); [pop] (0 to 1) squashes
+    the heap, as a step taken does."""
     w = walk_pos * 0.6662
-    sp = min(walk_speed, 1.0)
+    sp = min(walk_speed, 1.0) * (1.0 + TROT_GAIN * trot)
     load = clamp(fill / FILL_STEPS, 0.0, 1.0)
     damp = 1.0 - LOAD_DAMP * load
-    roll = -(ROLL * sp * math.sin(w) + IDLE_ROLL * math.sin(age * 0.071)) * damp
+    spr = min(sp, ROLL_SP_MAX)
+    stride_roll = -(ROLL * spr * math.sin(w) + IDLE_ROLL * math.sin(age * 0.071)) * damp
+    knee_roll = (ROLL * spr + IDLE_ROLL) * damp
+    knee_pitch = (PITCH * sp + 0.15) * damp
     out = {}
     for sg, side in ((1, 'l'), (-1, 'r')):
-        pitch = (PITCH * sp * math.sin(2 * w + 0.7 + (0.0 if sg > 0 else 0.5 * math.pi)) + 0.15 * math.sin(age * 0.053 + sg * 1.1)) * damp
-        out['left_chest' if sg > 0 else 'right_chest'] = {'rot': (pitch, 0.0, roll)}
+        stride_pitch = (PITCH * sp * math.sin(2 * w + 0.7 + (0.0 if sg > 0 else 0.5 * math.pi)) + 0.15 * math.sin(age * 0.053 + sg * 1.1)) * damp
+        p = fit(stride_pitch + GAIN_PITCH * pitch, PITCH_LIMIT[0], -knee_pitch, knee_pitch, PITCH_LIMIT[1])
+        # a turn about z carries the left basket's foot in toward the flank when it is positive, the right one's when it is negative
+        inward = fit(sg * (stride_roll + GAIN_ROLL * roll), -ROLL_OUT, -knee_roll, knee_roll, ROLL_IN)
+        out['left_chest' if sg > 0 else 'right_chest'] = {'rot': (p, 0.0, sg * inward)}
         out['pannier_' + side] = {'scale': (1.0 + BELLY * load, 1.0, 1.0)}
         for k in (1, 2, 3):
             t = tier_t(fill, k)
@@ -467,23 +543,35 @@ def pannier_pose(fill, walk_pos, walk_speed, age):
                 out[f'fill{k}_{side}'] = {'hide': True}
             else:
                 bob = -BOB * sp * math.sin(2 * w + 0.7 + 0.35 * k) * t
-                out[f'fill{k}_{side}'] = {'scale': (0.6 + 0.4 * t, t, 0.6 + 0.4 * t), 'move': (0.0, bob, 0.0)}
+                out[f'fill{k}_{side}'] = {'scale': ((0.6 + 0.4 * t) * (1.0 + POP_X * pop), t * (1.0 - POP_Y * pop), (0.6 + 0.4 * t) * (1.0 + POP_X * pop)),
+                                          'move': (0.0, bob, 0.0)}
     return out
 
 
-def bell_pose(walk_pos, walk_speed, age, hung_from_x=0.0):
-    """The bell and its clapper. The bell swings forward only (the chest is behind it): from 0 to -BELL_MAX degrees about x, once a
+def bell_fade(head_x):
+    """How much of its swing the donkey's bell keeps with the head at [head_x] (degrees, 30 at rest): all of it, until the muzzle comes
+    down in front of the chest, then a tenth."""
+    return 1.0 - (1.0 - BELL_FADE[2]) * K.smooth((head_x - BELL_FADE[0]) / (BELL_FADE[1] - BELL_FADE[0]))
+
+
+def bell_pose(walk_pos, walk_speed, age, hung_from_x=0.0, knock=0.0, max_swing=BELL_MAX, fade=1.0, knock_damp=0.0):
+    """The bell and its clapper. The bell swings forward only (the chest is behind it): from 0 to -[max_swing] degrees about x, once a
     step, harder with speed; at a stand it breathes forward a little. The clapper hangs inside it, a pendulum that lags the bell
     and runs round an ellipse, never past what the lip allows. [hung_from_x]: the pitch (degrees) of the part the bell hangs
-    from when that turns (the llama's head), taken off so that the bell hangs plumb."""
+    from when that turns (the llama's head), taken off so that the bell hangs plumb. [knock] (degrees, forward, 0 or more: a
+    bell knocked by a start or a stop) swings it further forward, softly up to `KNOCK_MAX` more, and sets the clapper going.
+    [fade] (0 to 1, [bell_fade]) is how much of the swing the head's pose leaves it; [knock_damp] how much of a knock the stride takes away
+    at a full gait."""
     w = walk_pos * 0.6662
     g = clamp(walk_speed / 0.7, 0.0, 1.0)
     u = 0.5 + 0.5 * math.sin(2 * w + BELL_PHASE)
     breathe = 0.5 + 0.5 * math.sin(age * 0.083)
-    swing = -(BELL_IDLE * (1 - g) * breathe + BELL_MAX * g * u)
+    extra = KNOCK_MAX * math.tanh(max(knock, 0.0) / KNOCK_MAX) * (1.0 - knock_damp * g)
+    k = extra / KNOCK_MAX
+    swing = -((BELL_IDLE * (1 - g) * breathe + max_swing * g * u) + extra) * fade
     ph = 2 * w + BELL_PHASE - CLAPPER_LAG
-    cx = clamp(CLAPPER_X * g * math.sin(ph) + 3.0 * (1 - g) * math.sin(age * 0.21), -CLAPPER_X, CLAPPER_X)
-    cz = clamp(CLAPPER_Z * g * math.cos(ph) + 2.0 * (1 - g) * math.sin(age * 0.17 + 1.0), -CLAPPER_Z, CLAPPER_Z)
+    cx = clamp(CLAPPER_X * g * math.sin(ph) + 3.0 * (1 - g) * math.sin(age * 0.21) + 0.8 * CLAPPER_X * k * math.sin(age * 0.9), -CLAPPER_X, CLAPPER_X)
+    cz = clamp(CLAPPER_Z * g * math.cos(ph) + 2.0 * (1 - g) * math.sin(age * 0.17 + 1.0) + 0.8 * CLAPPER_Z * k * math.cos(age * 0.9 + 0.5), -CLAPPER_Z, CLAPPER_Z)
     return {'bell': {'rot': (swing - hung_from_x, 0.0, 0.0)}, 'bell_clapper': {'rot': (cx, 0.0, cz)}}
 
 
@@ -510,40 +598,44 @@ def halter_pose(walk_pos, walk_speed, age, head_x):
     return {'halter_ring': {'rot': (clamp(-head_x + swing, -40.0, 40.0), 0.0, 0.0)}}
 
 
-def wool_pose(walk_pos, walk_speed, age, tassels):
+def wool_pose(walk_pos, walk_speed, age, tassels, trot=0.0, dangle=0.0):
     """The blanket's two flaps (they lift off the flank with speed and breathe) and their [tassels] (how many each): pendulums,
-    a wave running back along the hem."""
+    a wave running back along the hem. The springs: [trot] (0 to 1) lengthens the stride; [dangle] (degrees, positive: they trail
+    backward) is what a start or a stop adds to the tassels' swing, as much as the girth ring in front of them and the pannier behind
+    them leave (`TASSEL_LIMIT`)."""
     w = walk_pos * 0.6662
-    sp = min(walk_speed, 1.0)
+    sp = min(walk_speed, 1.0) * (1.0 + TROT_GAIN * trot)
     lift = FLAP_LIFT * sp * (0.5 + 0.5 * math.sin(1.7 * w + 0.3)) + 0.5 * math.sin(age * 0.049)
-    amp = TASSEL_BASE + TASSEL_SPEED * sp
+    amp = TASSEL_BASE + TASSEL_SPEED * min(sp, TASSEL_SP_MAX)
+    knee = amp + 1.6
     out = {}
     for sg, side in ((1, 'l'), (-1, 'r')):
         out['flap_' + side] = {'rot': (0.0, 0.0, -sg * lift)}
         for i in range(tassels):
             ph = 2 * w - TASSEL_LAG * i
-            xr = amp * math.sin(ph + 0.4 * sg) + 1.6 * math.sin(age * 0.09 + i * 0.8)
+            xr = fit(amp * math.sin(ph + 0.4 * sg) + 1.6 * math.sin(age * 0.09 + i * 0.8) + GAIN_DANGLE * dangle, TASSEL_LIMIT[0], -knee, knee, TASSEL_LIMIT[1])
             zr = -sg * (2.0 + 0.35 * amp * (0.5 + 0.5 * math.sin(ph + 1.3)))
             out[f'tassel_{side}{i}'] = {'rot': (xr, 0.0, zr)}
     return out
 
 
-def harness_pose(kind, fill, walk_pos=0.0, walk_speed=0.0, age=0.0, **vanilla):
+def harness_pose(kind, fill, walk_pos=0.0, walk_speed=0.0, age=0.0, trot=0.0, pitch=0.0, roll=0.0, dangle=0.0, knock=0.0, pop=0.0, **vanilla):
     """The pose of the whole dressed animal ([kind] 'donkey' or 'llama'): the vanilla model's own (`K.equine_pose` or `K.llama_pose`,
-    with [vanilla]'s head and rear-up arguments) and the harness's, for every layer of that kind at once."""
+    with [vanilla]'s head and rear-up arguments) and the harness's, for every layer of that kind at once. [trot], [pitch], [roll],
+    [dangle], [knock] and [pop] are the layer's springs (see `pannier_pose`, `bell_pose` and `wool_pose`); all 0 gives the stride alone."""
     if kind == 'donkey':
         pose = K.equine_pose(walk_pos, walk_speed, age, **vanilla)
         head_x = pose['head_parts']['rot'][0]
         pose['hanger'] = {'move': (bell_slide(head_x, pose['head_parts']['move'][1]), 0.0, 0.0)}
-        pose.update(bell_pose(walk_pos, walk_speed, age))
+        pose.update(bell_pose(walk_pos, walk_speed, age, knock=knock, fade=bell_fade(head_x)))
         pose.update(halter_pose(walk_pos, walk_speed, age, head_x))
-        pose.update(wool_pose(walk_pos, walk_speed, age, len(TASSEL_Z)))
+        pose.update(wool_pose(walk_pos, walk_speed, age, len(TASSEL_Z), trot, dangle))
     else:
         pose = K.llama_pose(walk_pos, walk_speed, **vanilla)
         head_x = pose['head']['rot'][0]
-        pose.update(bell_pose(walk_pos, walk_speed, age, head_x))
-        pose.update(wool_pose(walk_pos, walk_speed, age, len(TASSEL_Z_LLAMA)))
-    pose.update(pannier_pose(fill, walk_pos, walk_speed, age))
+        pose.update(bell_pose(walk_pos, walk_speed, age, head_x, knock, max_swing=BELL_MAX_LLAMA, knock_damp=KNOCK_DAMP_LLAMA))
+        pose.update(wool_pose(walk_pos, walk_speed, age, len(TASSEL_Z_LLAMA), trot, dangle))
+    pose.update(pannier_pose(fill, walk_pos, walk_speed, age, trot, pitch, roll, pop))
     return pose
 
 
@@ -614,6 +706,7 @@ import kotlin.math.floor
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
+import kotlin.math.tanh
 '''
 
 KOTLIN_OBJECT = '''
@@ -738,9 +831,41 @@ object PackHarnessMesh {
     private const val SLIDE_UP_FROM = @SLIDE_UP_FROM@
     private const val SLIDE_UP_TO = @SLIDE_UP_TO@
 
+    // the layer's springs (Trade D1's frame): what starts, stops, turns, a knock and a step taken add to the stride, each eased off by [fit]
+    private const val TROT_GAIN = @TROT_GAIN@
+    private const val ROLL_SP_MAX = @ROLL_SP_MAX@
+    private const val TASSEL_SP_MAX = @TASSEL_SP_MAX@
+    private const val GAIN_PITCH = @GAIN_PITCH@
+    private const val GAIN_ROLL = @GAIN_ROLL@
+    private const val GAIN_DANGLE = @GAIN_DANGLE@
+    private const val PITCH_FORWARD = @PITCH_FORWARD@
+    private const val PITCH_BACK = @PITCH_BACK@
+    private const val ROLL_IN = @ROLL_IN@
+    private const val ROLL_OUT = @ROLL_OUT@
+    private const val TASSEL_FORWARD = @TASSEL_FORWARD@
+    private const val TASSEL_BACK = @TASSEL_BACK@
+    private const val KNOCK_MAX = @KNOCK_MAX@
+    private const val KNOCK_DAMP_LLAMA = @KNOCK_DAMP_LLAMA@
+    private const val BELL_MAX_LLAMA = @BELL_MAX_LLAMA@
+    private const val BELL_FADE_FROM = @BELL_FADE_FROM@
+    private const val BELL_FADE_TO = @BELL_FADE_TO@
+    private const val BELL_FADE_MIN = @BELL_FADE_MIN@
+    private const val POP_X = @POP_X@
+    private const val POP_Y = @POP_Y@
+
     private fun smooth(x: Float): Float {
         val c = x.coerceIn(0f, 1f)
         return c * c * (3f - 2f * c)
+    }
+
+    /**
+     * [x] kept between [lo] and [hi] ([lo] < [kneeLo] <= 0 <= [kneeHi] < [hi]): as it is between the knees (what the stride alone swings), eased off
+     * toward the limit beyond them (tanh), never past it.
+     */
+    private fun fit(x: Float, lo: Float, kneeLo: Float, kneeHi: Float, hi: Float): Float = when {
+        x > kneeHi -> kneeHi + (hi - kneeHi) * tanh((x - kneeHi) / (hi - kneeHi))
+        x < kneeLo -> kneeLo - (kneeLo - lo) * tanh((kneeLo - x) / (kneeLo - lo))
+        else -> x
     }
 
     /** How much of tier [k] (1 to 3) of a heap shows at [fill]: 0 to 1, eased. */
@@ -776,6 +901,15 @@ object PackHarnessMesh {
      * their hanging points, pitch a little with each step and swell with [pose]'s `fill`; the heap grows tier by tier and settles
      * with each step; the bell swings forward only, harder with speed, its clapper lagging and running round an ellipse; the
      * halter's chin ring hangs plumb below the chin.
+     *
+     * The layer's own springs come in as optional arguments to [pose], each kept where the animal leaves the load room (the numbers are the
+     * script's fit poses' limits): [pose]'s `trot` (0 to 1) lengthens the stride; `pitch` and `roll` (radians, as the layer's frame gives them:
+     * the baskets lag backward when it is positive and swing to the animal's right) add to the pair's sway, the basket on the side the swing
+     * carries in toward the flank getting the little room there is ([ROLL_IN] degrees) and the other swinging free ([ROLL_OUT]), and the fore-aft
+     * swing kept between [PITCH_FORWARD] and [PITCH_BACK]; `knock` (radians, 0 or more) swings the bell further forward, up to [KNOCK_MAX]
+     * degrees more, and sets its clapper going; `pop` (0 to 1) squashes the heap, as a step taken does. The bell's swing fades as the donkey's
+     * head comes down in front of it, and the llama's is shorter ([BELL_MAX_LLAMA]) and takes no knock at a full gait (her legs swing through
+     * where it hangs).
      */
     class Rig(root: ModelPart, private val llama: Boolean) {
         private val head: ModelPart = root.getChild(if (llama) "head" else "head_parts")
@@ -794,19 +928,29 @@ object PackHarnessMesh {
         private val clapper: ModelPart = bell.getChild("bell_clapper")
         private val ring: ModelPart? = if (llama) null else head.getChild("halter").getChild("halter_ring")
 
-        /** [fill] 0 to [FILL_STEPS] (the eased value, see [fillEase]); [walkPos], [walkSpeed] and [age] are the render state's `walkAnimationPos`, `walkAnimationSpeed` and `ageInTicks`. */
-        fun pose(fill: Float, walkPos: Float, walkSpeed: Float, age: Float) {
+        /**
+         * [fill] 0 to [FILL_STEPS] (the eased value, see [fillEase]); [walkPos], [walkSpeed] and [age] are the render state's `walkAnimationPos`,
+         * `walkAnimationSpeed` and `ageInTicks`; [trot], [pitch], [roll], [knock] and [pop] are the springs described above (all 0: the stride alone).
+         */
+        fun pose(fill: Float, walkPos: Float, walkSpeed: Float, age: Float, trot: Float = 0f, pitch: Float = 0f, roll: Float = 0f, knock: Float = 0f, pop: Float = 0f) {
             val w = walkPos * 0.6662f
-            val sp = min(walkSpeed, 1f)
+            val sp = min(walkSpeed, 1f) * (1f + TROT_GAIN * trot.coerceIn(0f, 1f))
             val load = (fill / FILL_STEPS).coerceIn(0f, 1f)
             val damp = 1f - LOAD_DAMP * load
-            val roll = -(ROLL * sp * sin(w) + IDLE_ROLL * sin(age * 0.071f)) * damp * DEG
+            val spr = min(sp, ROLL_SP_MAX)
+            val strideRoll = -(ROLL * spr * sin(w) + IDLE_ROLL * sin(age * 0.071f)) * damp
+            val kneeRoll = (ROLL * spr + IDLE_ROLL) * damp
+            val kneePitch = (PITCH * sp + 0.15f) * damp
+            val squash = pop.coerceIn(0f, 1f)
             for (s in 0..1) {
                 val sg = if (s == 0) 1f else -1f
-                val pitch = (PITCH * sp * sin(2f * w + 0.7f + (if (s == 0) 0f else HALF_PI)) + 0.15f * sin(age * 0.053f + sg * 1.1f)) * damp * DEG
+                val stridePitch = (PITCH * sp * sin(2f * w + 0.7f + (if (s == 0) 0f else HALF_PI)) + 0.15f * sin(age * 0.053f + sg * 1.1f)) * damp
+                val lag = fit(stridePitch + GAIN_PITCH * pitch / DEG, PITCH_FORWARD, -kneePitch, kneePitch, PITCH_BACK)
+                // a turn about z carries the left basket's foot in toward the flank when it is positive, the right one's when it is negative
+                val inward = fit(sg * (strideRoll + GAIN_ROLL * roll / DEG), -ROLL_OUT, -kneeRoll, kneeRoll, ROLL_IN)
                 chest[s].visible = true
-                chest[s].xRot = pitch
-                chest[s].zRot = roll
+                chest[s].xRot = lag * DEG
+                chest[s].zRot = sg * inward * DEG
                 basket[s].xScale = 1f + BELLY * load
                 for (k in 0..2) {
                     val t = tierT(fill, k + 1)
@@ -815,9 +959,9 @@ object PackHarnessMesh {
                         p.visible = false
                     } else {
                         p.visible = true
-                        p.xScale = 0.6f + 0.4f * t
-                        p.yScale = t
-                        p.zScale = 0.6f + 0.4f * t
+                        p.xScale = (0.6f + 0.4f * t) * (1f + POP_X * squash)
+                        p.yScale = t * (1f - POP_Y * squash)
+                        p.zScale = (0.6f + 0.4f * t) * (1f + POP_X * squash)
                         p.y = tierY[s * 3 + k] - BOB * sp * sin(2f * w + 0.7f + 0.35f * (k + 1)) * t
                     }
                 }
@@ -830,18 +974,24 @@ object PackHarnessMesh {
             val g = (walkSpeed / 0.7f).coerceIn(0f, 1f)
             val u = 0.5f + 0.5f * sin(2f * w + BELL_PHASE)
             val breathe = 0.5f + 0.5f * sin(age * 0.083f)
-            val swing = -(BELL_IDLE * (1f - g) * breathe + BELL_MAX * g * u)
+            val extra = KNOCK_MAX * tanh(max(knock / DEG, 0f) / KNOCK_MAX) * (1f - (if (llama) KNOCK_DAMP_LLAMA else 0f) * g)
+            val k = extra / KNOCK_MAX
+            val fade = if (llama) 1f else 1f - (1f - BELL_FADE_MIN) * smooth((headX - BELL_FADE_FROM) / (BELL_FADE_TO - BELL_FADE_FROM))
+            val reach = if (llama) BELL_MAX_LLAMA else BELL_MAX
+            val swing = -((BELL_IDLE * (1f - g) * breathe + reach * g * u) + extra) * fade
             bell.xRot = (swing - (if (llama) headX else 0f)) * DEG
             val ph = 2f * w + BELL_PHASE - CLAPPER_LAG
-            clapper.xRot = (CLAPPER_X * g * sin(ph) + 3f * (1f - g) * sin(age * 0.21f)).coerceIn(-CLAPPER_X, CLAPPER_X) * DEG
-            clapper.zRot = (CLAPPER_Z * g * cos(ph) + 2f * (1f - g) * sin(age * 0.17f + 1f)).coerceIn(-CLAPPER_Z, CLAPPER_Z) * DEG
+            clapper.xRot = (CLAPPER_X * g * sin(ph) + 3f * (1f - g) * sin(age * 0.21f) + 0.8f * CLAPPER_X * k * sin(age * 0.9f)).coerceIn(-CLAPPER_X, CLAPPER_X) * DEG
+            clapper.zRot = (CLAPPER_Z * g * cos(ph) + 2f * (1f - g) * sin(age * 0.17f + 1f) + 0.8f * CLAPPER_Z * k * cos(age * 0.9f + 0.5f)).coerceIn(-CLAPPER_Z, CLAPPER_Z) * DEG
             ring?.xRot = (-headX + RING_SWING * sp * sin(w + 0.4f) + 3f * sin(age * 0.13f)).coerceIn(-40f, 40f) * DEG
         }
     }
 
     /**
      * Poses the blanket's moving parts on a baked [donkeyWool], [muleWool] or [llamaWool] layer, after the vanilla `setupAnim`: the two
-     * flaps lift off the flank with speed and breathe, and every tassel is a pendulum, a wave running back along the hem.
+     * flaps lift off the flank with speed and breathe, and every tassel is a pendulum, a wave running back along the hem. The springs, as
+     * the [Rig]'s: `trot` (0 to 1) lengthens the stride; `dangle` (radians, positive: they trail backward) is what a start or a stop adds
+     * to the tassels' swing, as far as the girth ring in front of them and the pannier behind them leave ([TASSEL_FORWARD] to [TASSEL_BACK] degrees).
      */
     class WoolRig(root: ModelPart, llama: Boolean) {
         private val n: Int = if (llama) TASSELS_LLAMA else TASSELS_DONKEY
@@ -849,17 +999,19 @@ object PackHarnessMesh {
         private val flap: Array<ModelPart> = arrayOf(blanket.getChild("flap_l"), blanket.getChild("flap_r"))
         private val tassel: Array<Array<ModelPart>> = Array(2) { s -> Array(n) { i -> flap[s].getChild("tassel_" + (if (s == 0) "l" else "r") + i) } }
 
-        fun pose(walkPos: Float, walkSpeed: Float, age: Float) {
+        fun pose(walkPos: Float, walkSpeed: Float, age: Float, trot: Float = 0f, dangle: Float = 0f) {
             val w = walkPos * 0.6662f
-            val sp = min(walkSpeed, 1f)
+            val sp = min(walkSpeed, 1f) * (1f + TROT_GAIN * trot.coerceIn(0f, 1f))
             val lift = FLAP_LIFT * sp * (0.5f + 0.5f * sin(1.7f * w + 0.3f)) + 0.5f * sin(age * 0.049f)
-            val amp = TASSEL_BASE + TASSEL_SPEED * sp
+            val amp = TASSEL_BASE + TASSEL_SPEED * min(sp, TASSEL_SP_MAX)
+            val knee = amp + 1.6f
+            val trail = GAIN_DANGLE * dangle / DEG
             for (s in 0..1) {
                 val sg = if (s == 0) 1f else -1f
                 flap[s].zRot = -sg * lift * DEG
                 for (i in 0 until n) {
                     val ph = 2f * w - TASSEL_LAG * i
-                    tassel[s][i].xRot = (amp * sin(ph + 0.4f * sg) + 1.6f * sin(age * 0.09f + i * 0.8f)) * DEG
+                    tassel[s][i].xRot = fit(amp * sin(ph + 0.4f * sg) + 1.6f * sin(age * 0.09f + i * 0.8f) + trail, TASSEL_FORWARD, -knee, knee, TASSEL_BACK) * DEG
                     tassel[s][i].zRot = -sg * (2f + 0.35f * amp * (0.5f + 0.5f * sin(ph + 1.3f))) * DEG
                 }
             }
@@ -900,6 +1052,14 @@ def kotlin_source(models, height):
         'TASSEL_LAG': K.kt_float(TASSEL_LAG), 'RING_SWING': K.kt_float(RING_SWING),
         'SLIDE_X': K.kt_float(SLIDE_X), 'SLIDE_DIP_FROM': K.kt_float(SLIDE_DIP[0]), 'SLIDE_DIP_TO': K.kt_float(SLIDE_DIP[1]),
         'SLIDE_UP_FROM': K.kt_float(SLIDE_UP[0]), 'SLIDE_UP_TO': K.kt_float(SLIDE_UP[1]),
+        'TROT_GAIN': K.kt_float(TROT_GAIN), 'ROLL_SP_MAX': K.kt_float(ROLL_SP_MAX), 'TASSEL_SP_MAX': K.kt_float(TASSEL_SP_MAX),
+        'GAIN_PITCH': K.kt_float(GAIN_PITCH), 'GAIN_ROLL': K.kt_float(GAIN_ROLL), 'GAIN_DANGLE': K.kt_float(GAIN_DANGLE),
+        'PITCH_FORWARD': K.kt_float(PITCH_LIMIT[0]), 'PITCH_BACK': K.kt_float(PITCH_LIMIT[1]),
+        'ROLL_IN': K.kt_float(ROLL_IN), 'ROLL_OUT': K.kt_float(ROLL_OUT),
+        'TASSEL_FORWARD': K.kt_float(TASSEL_LIMIT[0]), 'TASSEL_BACK': K.kt_float(TASSEL_LIMIT[1]),
+        'KNOCK_MAX': K.kt_float(KNOCK_MAX), 'KNOCK_DAMP_LLAMA': K.kt_float(KNOCK_DAMP_LLAMA), 'BELL_MAX_LLAMA': K.kt_float(BELL_MAX_LLAMA),
+        'BELL_FADE_FROM': K.kt_float(BELL_FADE[0]), 'BELL_FADE_TO': K.kt_float(BELL_FADE[1]), 'BELL_FADE_MIN': K.kt_float(BELL_FADE[2]),
+        'POP_X': K.kt_float(POP_X), 'POP_Y': K.kt_float(POP_Y),
     }
     body = KOTLIN_OBJECT
     for k, v in tok.items():
@@ -989,7 +1149,7 @@ def write_all(assets=ASSETS, kotlin_dir=KOTLIN, model_dir=MODELS):
     small = tex.resize((TEX_W, height), Image.LANCZOS)
     for kind in ('donkey', 'llama'):
         with open(os.path.join(model_dir, f'pack_harness_{kind}.bbmodel'), 'w') as f:
-            json.dump(merged(models, kind).bbmodel(small, 'pack_harness'), f)
+            f.write(K.steady_uuids(json.dumps(merged(models, kind).bbmodel(small, 'pack_harness')), 'pack_harness_' + kind))
     check_written(models, tex, height, assets, kotlin_dir, model_dir)
     return models, tex, height
 
@@ -1016,7 +1176,8 @@ def check_written(models, tex, height, assets, kotlin_dir, model_dir):
         cubes = [c for p in models[key].all_parts() for c in p.cubes]
         if len(offs) != len(cubes):
             problems.append(f'{fn} has {len(offs)} cubes, the model {len(cubes)}')
-    for const, val in (('ROLL', ROLL), ('BELL_MAX', BELL_MAX), ('BELLY', BELLY), ('TASSEL_SPEED', TASSEL_SPEED), ('BELL_PHASE', BELL_PHASE)):
+    for const, val in (('ROLL', ROLL), ('BELL_MAX', BELL_MAX), ('BELLY', BELLY), ('TASSEL_SPEED', TASSEL_SPEED), ('BELL_PHASE', BELL_PHASE),
+                       ('ROLL_IN', ROLL_IN), ('ROLL_OUT', ROLL_OUT), ('KNOCK_MAX', KNOCK_MAX), ('BELL_MAX_LLAMA', BELL_MAX_LLAMA), ('POP_X', POP_X)):
         if f'{const} = {K.kt_float(val)}' not in src:
             problems.append(f'the Kotlin does not carry {const} = {K.kt_float(val)}')
     for kind in ('donkey', 'llama'):
@@ -1044,7 +1205,11 @@ def report(models, height):
 # ================================================================== the fit and clip check: what moves must not go through what stands
 
 # The poses it samples (label, harness_pose's arguments): standing at every fill, walking and trotting through the stride, the head
-# turned and raised and lowered as far as a mob's look goes, grazing (the head down on the ground), rearing.
+# turned and raised and lowered as far as a mob's look goes, grazing (the head down on the ground), rearing, and the layer's springs
+# pushed past their caps in every sign (a spring is eased off before it reaches a limit, so the largest push is the worst case).
+SPRING_PUSH = dict(pitch=40.0, roll=40.0, dangle=60.0, knock=90.0, pop=1.0)
+
+
 def fit_poses(kind):
     out = [(f'stand fill {f}', dict(fill=f)) for f in (0, 1, 2, 3)]
     for i in range(8):
@@ -1053,14 +1218,38 @@ def fit_poses(kind):
     for h in (-35.0, 0.0, 45.0, 60.0):
         for y in (-20.0, 20.0):
             out.append((f'head pitch {h:g} yaw {y:g}', dict(fill=3, head_pitch=h, head_yaw=y)))
+        # walking with it, the bell at the top of its swing (walk_pos 0.5, and a stride on)
+        out += [(f'head pitch {h:g}, bell up {i}', dict(fill=3, head_pitch=h, walk_pos=0.503 + 4.716 * i, walk_speed=0.9, age=i * 6.0)) for i in range(2)]
     if kind == 'donkey':
         out += [(f'graze {e:g}', dict(fill=3, eat=e)) for e in (0.15, 0.3, 0.5, 0.7, 1.0)]
         out += [(f'rear {s:g}', dict(fill=3, stand=s, walk_pos=2.0)) for s in (0.5, 1.0)]
         out.append(('graze, walking', dict(fill=2, eat=1.0, walk_pos=3.0, walk_speed=0.8, age=11.0)))
+    out += spring_poses(kind)
     return out
 
 
-MOVER_PARTS = ('bell', 'bell_clapper', 'hanger', 'halter_ring', 'crupper_ring')
+def spring_poses(kind):
+    """The springs at their pushed limits: each alone in each sign, standing, at the empty and the full baskets; every one at once, in
+    all eight combinations of signs, at a trot through the stride; with the head lowered, raised and rearing."""
+    out = []
+    for fill in (0, 3):
+        for name, amount in SPRING_PUSH.items():
+            for sg in ((1, -1) if name in ('pitch', 'roll', 'dangle') else (1,)):
+                out.append((f'stand fill {fill}, {name} {sg * amount:+g}', dict(fill=fill, **{name: sg * amount})))
+    for i in range(16):
+        a, b, c = (1 if i & 1 else -1), (1 if i & 2 else -1), (1 if i & 4 else -1)
+        out.append((f'trot {i} with springs {a:+d}{b:+d}{c:+d}', dict(
+            fill=(1 if i & 8 else 3), walk_pos=i * 1.1, walk_speed=1.0, trot=1.0, age=i * 9.0,
+            pitch=a * 40.0, roll=b * 40.0, dangle=c * 60.0, knock=90.0, pop=1.0)))
+    for h in (-35.0, 60.0):
+        out.append((f'head pitch {h:g}, springs', dict(fill=3, head_pitch=h, walk_pos=1.0, walk_speed=0.6, **SPRING_PUSH)))
+    if kind == 'donkey':
+        out.append(('graze, springs', dict(fill=3, eat=1.0, walk_pos=3.0, walk_speed=0.8, age=11.0, **SPRING_PUSH)))
+        out.append(('rear, springs', dict(fill=3, stand=1.0, walk_pos=2.0, **SPRING_PUSH)))
+    return out
+
+
+MOVER_PARTS = ('bell', 'bell_clapper', 'hanger', 'halter_ring', 'crupper_ring', 'pannier_l', 'pannier_r')
 MOVER_PREFIX = ('tassel_', 'flap_', 'fill')            # the heap's tiers, the flaps and their tassels
 HIDDEN_CHESTS = ('left_chest', 'right_chest')          # the animal's own chests (when it has them they are inside the baskets)
 
@@ -1069,24 +1258,42 @@ def is_mover(part_name):
     return part_name in MOVER_PARTS or part_name.startswith(MOVER_PREFIX)
 
 
+def group_of(part_name):
+    """The parts that are built to lie against one another and move as one family: a basket with its heap, the bell with its clapper
+    and the arm it hangs from, a flap with its tassels. A pair inside a family is a join, not a clip."""
+    if part_name in ('pannier_l', 'pannier_r') or part_name.startswith('fill'):
+        return 'basket_' + part_name[-1]
+    if part_name in ('bell', 'bell_clapper', 'hanger'):
+        return 'bell'
+    if part_name.startswith('tassel_'):
+        return 'flap_' + part_name[7]
+    return part_name
+
+
 def clip_table(models, kind='donkey', poses=None):
     """The moving parts of the harness ([is_mover]) against every cube of the vanilla animal (but its chests, which a basket
-    covers) over the sampled poses: {(harness cube, vanilla cube): (the deepest extra overlap beyond the same pair standing at that
-    fill, px; the pose label)}. A cube that lies wholly inside the other (a pin in a board, a flap lying on the flank) is a fit, not
-    a clip, and is left out. Also returns the standing overlaps, {fill: {pair: depth}}, for the page."""
+    covers), every still cube of the harness (the saddle, the girth, the straps, the blanket) and every moving cube of another
+    family ([group_of]) over the sampled poses: {(moving cube, other cube): (the deepest extra overlap beyond the same pair standing
+    at that fill, px; the pose label)}. A cube that lies wholly inside the other (a pin in a board, a flap lying on the flank) is a
+    fit, not a clip, and is left out. Also returns the standing overlaps, {fill: {pair: depth}}, for the page."""
     harness = [models[kind], models[kind + '_wool']]
     van = K.vanilla_equine() if kind == 'donkey' else K.vanilla_llama()
     root = K.root_pose(K.DONKEY_SCALE) if kind == 'donkey' else K.root_pose(1.0)
     rest = {}
 
     def depths(pose):
-        hb = [b for m in harness for b in K.boxes_of(m, pose, root=root) if is_mover(b.part)]
+        hb = [b for m in harness for b in K.boxes_of(m, pose, root=root)]
+        moving = [b for b in hb if is_mover(b.part)]
         vpose = {k: v for k, v in pose.items() if k not in HIDDEN_CHESTS}
-        vb = [b for b in K.boxes_of(van, vpose, root=root) if b.cube not in HIDDEN_CHESTS]
+        others = [b for b in K.boxes_of(van, vpose, root=root) if b.cube not in HIDDEN_CHESTS] + [b for b in hb if not is_mover(b.part)]
         out = {}
-        for a in hb:
-            for b in vb:
+        for i, a in enumerate(moving):
+            for b in others + moving[i + 1:]:
                 if np.any(a.lo > b.hi) or np.any(b.lo > a.hi):
+                    continue
+                if is_mover(b.part) and group_of(a.part) == group_of(b.part):
+                    continue
+                if a.cube.startswith('cr_') and b.cube.startswith('cr_'):       # the crupper strap and the ring it runs through
                     continue
                 d = K.box_depth(a, b)
                 if d > 0.0 and not (K.box_inside(a, b) or K.box_inside(b, a)):
@@ -1106,22 +1313,131 @@ def clip_table(models, kind='donkey', poses=None):
     return worst, rest
 
 
+# The animal's own head and neck swing through what stands on its back, as the vanilla neck swings through the vanilla body: the
+# neck is a box that turns about the base of the neck, and the harness's still shells (the blanket, the saddle's rails, the girth)
+# stand just behind it. So the other half of the check: the still cubes of the harness against the part of the animal that turns away
+# from them (the head and neck against the body-borne shells; the halter's and the collar's cubes, which turn with the head, against the
+# body), over a sweep of the head's look pitch (degrees, the state's xRot: negative looks up) that is as far as the look of a mob goes
+# on a hill or at a player standing below it. Past the range the neck goes further in (the report prints how far) and is not held.
+HEAD_VANILLA = {'donkey': ('head_parts', 'head', 'left_ear', 'right_ear', 'mane', 'upper_mouth'), 'llama': ('head',)}    # vanilla parts that turn with the head
+HEAD_HARNESS = {'donkey': ('halter', 'halter_ring'), 'llama': ('collar',)}                                               # the harness's own
+HEAD_CLEAR = {'donkey': (-45.0, 60.0), 'llama': (-20.0, 60.0)}
+NECK_LIMIT = 2.0                          # px beyond what the pair does at rest: the neck is a thick box in a thin cloth or a rail, not a cut into a bar
+
+
+def head_sweep(kind):
+    """The look pitches of [kind]'s clear range in steps of 5 degrees, standing and walking (the neck also nods a little with the walk)."""
+    lo, hi = HEAD_CLEAR[kind]
+    out, h = [], lo
+    while h <= hi + 1e-6:
+        out.append((f'look {h:g}', dict(fill=3, head_pitch=h)))
+        out.append((f'look {h:g}, walking', dict(fill=3, head_pitch=h, walk_pos=1.0 + h, walk_speed=0.8, age=h + 50.0)))
+        h += 5.0
+    return out
+
+
+def neck_table(models, kind, poses=None):
+    """The still cubes of the harness against the part of the animal that turns away from them: the vanilla head and neck against the
+    harness's body-borne cubes that stand still, and the harness's head-borne cubes (the halter, the collar) against the vanilla body, legs
+    and tail. {(harness cube, vanilla cube): (the deepest extra overlap beyond the same pair at rest, px; the pose)} over [poses]
+    (default: [head_sweep]), for the fill 3. A cube that lies wholly inside the other is a fit, not a clip."""
+    harness = [models[kind], models[kind + '_wool']]
+    van = K.vanilla_equine() if kind == 'donkey' else K.vanilla_llama()
+    root = K.root_pose(K.DONKEY_SCALE) if kind == 'donkey' else K.root_pose(1.0)
+    vhead, hhead = HEAD_VANILLA[kind], HEAD_HARNESS[kind]
+
+    def depths(pose):
+        hb = [b for m in harness for b in K.boxes_of(m, pose, root=root) if not is_mover(b.part)]
+        vb = [b for b in K.boxes_of(van, {k: v for k, v in pose.items() if k not in HIDDEN_CHESTS}, root=root) if b.cube not in HIDDEN_CHESTS]
+        out = {}
+        for a in hb:
+            for b in vb:
+                if (a.part in hhead) == (b.part in vhead):               # both turn with the head, or neither does: they keep their places
+                    continue
+                if np.any(a.lo > b.hi) or np.any(b.lo > a.hi):
+                    continue
+                d = K.box_depth(a, b)
+                if d > 0.0 and not (K.box_inside(a, b) or K.box_inside(b, a)):
+                    out[(a.cube, b.cube)] = d
+        return out
+
+    rest = depths(harness_pose(kind, 3))
+    worst = {}
+    for label, args in poses or head_sweep(kind):
+        args = dict(args)
+        for key, d in depths(harness_pose(kind, args.pop('fill'), **args)).items():
+            extra = d - rest.get(key, 0.0)
+            if extra > worst.get(key, (0.0, ''))[0]:
+                worst[key] = (extra, label)
+    return worst, rest
+
+
 # How far a moving part may go into the animal beyond what it does standing (px): the tolerance is the model's own looseness, a
 # fraction of a texel (the HD texture is 2 texels to the px). The pairs that go further are listed with the reason.
 CLIP_LIMIT = 0.6
-CLIP_ALLOW = {('cr_ring', 'body'): 1.6}                 # the crupper's own ring sits half inside the rump as the tail wags (nothing of it shows there)
+SOFT_LIMIT = 1.0                                        # cloth (the blanket, its flaps and tassels) gives under a basket or a ring: a pair with it may go this far
+CLIP_ALLOW = {                                          # (animal, moving cube, other cube): how far it may go, and why
+    ('donkey', 'cr_ring', 'body'): 1.6,                 # the crupper's own ring sits half inside the rump as the tail wags (nothing of it shows there)
+    ('llama', 'bl_lip', 'right_front_leg'): 0.8,        # the vanilla llama's front legs swing 80 degrees at a full gait, through where the bell hangs: the lip's corner
+    ('llama', 'bl_lip', 'left_front_leg'): 0.8,         # touches a leg's top by 0.7 px for a couple of frames of the sprint
+}
+
+
+def is_soft(cube_name):
+    """Whether a cube is cloth: the blanket's slab, its flaps and their tassels."""
+    return cube_name == 'bl_slab' or cube_name.startswith('bl_flap') or re.match(r'ts\d_', cube_name) is not None
+
+
+def check_knees():
+    """The springs' limits stand beyond what the stride alone swings at its largest (a trot, empty baskets): `fit` needs that room to
+    ease into. The problems, as lines."""
+    problems = []
+    knee_roll = ROLL * ROLL_SP_MAX + IDLE_ROLL
+    knee_pitch = PITCH * (1.0 + TROT_GAIN) + 0.15
+    knee_tassel = TASSEL_BASE + TASSEL_SPEED * TASSEL_SP_MAX + 1.6
+    if not knee_roll < ROLL_IN:
+        problems.append(f'the stride alone rolls a basket {knee_roll:g} degrees toward the flank, ROLL_IN is {ROLL_IN:g}')
+    if not PITCH_LIMIT[0] < -knee_pitch < knee_pitch < PITCH_LIMIT[1]:
+        problems.append(f'the stride alone pitches a basket {knee_pitch:g} degrees, PITCH_LIMIT is {PITCH_LIMIT}')
+    if not TASSEL_LIMIT[0] < -knee_tassel < knee_tassel < TASSEL_LIMIT[1]:
+        problems.append(f'the stride alone swings a tassel {knee_tassel:g} degrees, TASSEL_LIMIT is {TASSEL_LIMIT}')
+    if not (0.0 < BELL_FADE[2] <= 1.0 and BELL_FADE[0] < BELL_FADE[1]):
+        problems.append(f'BELL_FADE {BELL_FADE} is not a fade')
+    return problems
 
 
 def check_fit(models):
     """The clip check of both animals: (the problems, {kind: worst}) for `check_contract` and the page."""
-    problems, tables = [], {}
+    problems, tables = check_knees(), {}
     for kind in ('donkey', 'llama'):
         worst, _ = clip_table(models, kind)
         tables[kind] = worst
         for (a, b), (d, label) in sorted(worst.items(), key=lambda kv: -kv[1][0]):
-            if d > CLIP_ALLOW.get((a, b), CLIP_LIMIT):
+            if d > CLIP_ALLOW.get((kind, a, b), SOFT_LIMIT if is_soft(a) or is_soft(b) else CLIP_LIMIT):
                 problems.append(f'{kind}: {a} goes {d:.2f} px further into {b} than it does standing (in the pose "{label}")')
+        neck, _ = neck_table(models, kind)
+        for (a, b), (d, label) in sorted(neck.items(), key=lambda kv: -kv[1][0]):
+            if d > NECK_LIMIT:
+                problems.append(f'{kind}: {a} and {b} (one turns with the head, the other does not) go {d:.2f} px further into each other than they do at rest (in the pose "{label}")')
+        problems += check_attached(models, kind)
     return problems, tables
+
+
+def check_attached(models, kind):
+    """Nothing floats: over the sampled poses each basket still overlaps the strap it hangs from. The problems, as lines."""
+    root = K.root_pose(K.DONKEY_SCALE) if kind == 'donkey' else K.root_pose(1.0)
+    problems = []
+    for label, args in fit_poses(kind):
+        args = dict(args)
+        pose = harness_pose(kind, args.pop('fill'), **args)
+        boxes = K.boxes_of(models[kind], pose, root=root)
+        for side in 'lr':
+            straps = [b for b in boxes if b.cube.startswith('hg_top') and b.cube.endswith(side)]
+            basket = [b for b in boxes if b.part == f'pannier_{side}']
+            reach = max(K.box_depth(a, s) for a in basket for s in straps)
+            if reach < -0.05:
+                problems.append(f'{kind}: the {side} basket has come {-reach:.2f} px off its strap in the pose "{label}"')
+    return problems
 
 
 
@@ -1219,6 +1535,40 @@ def lineup(models, tex, V):
     return out
 
 
+def sheet_springs(models, tex, V, kind):
+    """The layer's springs pushed past their limits, one at a time, standing: what the eased-off result looks like at its most (the
+    pitch and roll of the baskets, the tassels trailing, the bell knocked forward, a heap squashed)."""
+    d = kind == 'donkey'
+    want = [
+        ('standing', 'side', {}),
+        ('pitch +40: held to 2.4 back', 'side', dict(pitch=40.0)),
+        ('pitch -40: held to 3.5 forward', 'side', dict(pitch=-40.0)),
+        ('dangle +60: tassels trail, held to 26', 'side', dict(dangle=60.0)),
+        ('knock 90: the bell 24 further forward', '3/4', dict(knock=90.0)),
+        ('roll +40 from behind: left basket in 3.2, right out 14', 'back', dict(roll=40.0)),
+        ('roll -40 from behind', 'back', dict(roll=-40.0)),
+        ('pop 1: a heap squashed (full)', '3/4', dict(pop=1.0)),
+    ]
+    tiles = []
+    for label, view, kw in want:
+        tiles.append(K.caption(draw(models, tex, V, kind, view, fill=3 if 'pop' in kw else 2, size=(300, 310), zoom=1.0, **kw), label))
+    return K.sheet(tiles, 4, title=f'The {kind}: the layer\'s springs pushed past their limits, one at a time')
+
+
+def sheet_head_pitch(models, tex, V):
+    """The head's look pitch from far up to far down, from the side, full baskets: the neck turning into the front edge of the blanket and
+    the saddle's rail. The pitches inside `HEAD_CLEAR` are the ones `check_fit` holds (to `NECK_LIMIT`); the others are marked."""
+    tiles = []
+    for kind, pitches, centre, zoom in (('donkey', (-60, -45, -25, 0, 25, 45, 75), (0.0, 12.0, -9.0), 0.78),
+                                        ('llama', (-60, -45, -30, -20, 0, 30, 60), (0.0, 6.0, -8.0), 0.72)):
+        lo, hi = HEAD_CLEAR[kind]
+        for h in pitches:
+            note = 'held' if lo <= h <= hi else 'past the held range'
+            tiles.append(K.caption(draw(models, tex, V, kind, 'side', fill=3, size=(300, 330), zoom=zoom, centre=centre, head_pitch=float(h)),
+                                   f'{kind}, look {h:+d} ({note})'))
+    return K.sheet(tiles, 7, title='The head tipped up and down: the neck goes into the front edge of the blanket and the rail (held to 2 px over the marked range)')
+
+
 def sheet_texture(tex):
     big = tex.resize((tex.width * 3, tex.height * 3), Image.NEAREST)
     bg = Image.new('RGB', big.size, (44, 46, 54))
@@ -1274,6 +1624,45 @@ def gif_bell(models, tex, V, kind, path, size=(300, 300)):
     return K.save_gif(out, path, ms=50)
 
 
+class Spring:
+    """A damped spring a layer would keep (k, c per tick), driven each tick by an input u: the lag of a load that is dragged."""
+
+    def __init__(self, k=0.35, c=0.28):
+        self.k, self.c, self.x, self.v = k, c, 0.0, 0.0
+
+    def step(self, u):
+        self.v += (-self.k * self.x - self.c * self.v + u)
+        self.x += self.v
+        return self.x
+
+
+def gif_start_stop(models, tex, V, kind, path, view='3/4', size=(400, 340), zoom=0.8, centre=(0.0, 9.0, -6.0)):
+    """The animal standing, setting off, turning left, walking, and stopping, with the layer's springs driven by the speed's change and
+    the turn's rate as a layer would (damped springs, their output well past the limits): the baskets lag a start and lead a stop,
+    swing out in the turn, the bell is knocked and the tassels trail, all held by the rig. The camera follows the animal's body."""
+    pitch, roll, knock, dangle = Spring(), Spring(0.3, 0.22), Spring(0.5, 0.2), Spring(0.4, 0.25)
+    speed, heading, pos, z, out = 0.0, 0.0, 0.0, 0.0, []
+    for t in range(96):
+        target = 0.0 if t < 10 or t >= 62 else 0.75
+        new = speed + clamp(target - speed, -0.05, 0.04)                    # a start is slower than a stop
+        accel = new - speed
+        speed = new
+        turn = 0.0
+        if 40 <= t < 54:
+            turn = 0.05 * math.sin(math.pi * (t - 40) / 14.0)               # radians per tick: a left turn of about 25 degrees
+        heading += turn
+        pos += speed * 0.9
+        p = pitch.step(2.6 * accel)
+        r = roll.step(6.0 * speed * turn)
+        k = knock.step(6.0 * abs(accel))
+        a = dangle.step(5.0 * max(accel, 0.0))
+        yaw, pit = VIEWS[view]
+        out.append(draw(models, tex, V, kind, (yaw + math.degrees(heading), pit), fill=2, walk_pos=pos, walk_speed=speed, age=float(t) + 40.0,
+                        pitch=math.degrees(p), roll=math.degrees(r), knock=math.degrees(abs(k)), dangle=math.degrees(a),
+                        size=size, zoom=zoom, centre=centre))
+    return K.save_gif(out, path, ms=50)
+
+
 def previews(models, tex, out_dir, game_assets=None):
     """Every sheet and GIF into [out_dir] (made if need be); returns the paths. [game_assets]: an unpacked game `assets/minecraft`
     folder, for the animals' own skins (a plain stand-in colour where there is none)."""
@@ -1293,6 +1682,9 @@ def previews(models, tex, out_dir, game_assets=None):
     save(sheet_colours(models, tex, V), 'pack_harness_colours.png')
     save(lineup(models, tex, V), 'pack_harness_lineup_and_wagon.png')
     save(sheet_texture(tex), 'pack_harness_texture.png')
+    save(sheet_springs(models, tex, V, 'donkey'), 'pack_harness_donkey_springs.png')
+    save(sheet_springs(models, tex, V, 'llama'), 'pack_harness_llama_springs.png')
+    save(sheet_head_pitch(models, tex, V), 'pack_harness_head_pitch.png')
     out.append(gif_walk(models, tex, V, 'donkey', os.path.join(out_dir, 'pack_harness_donkey_walk.gif')))
     out.append(gif_walk(models, tex, V, 'donkey', os.path.join(out_dir, 'pack_harness_donkey_trot.gif'), view='3/4', speed=1.0, frames=40, fill=3,
                         size=(380, 340), centre=(0.0, 9.0, -4.0)))
@@ -1301,6 +1693,8 @@ def previews(models, tex, out_dir, game_assets=None):
     out.append(gif_fill(models, tex, V, 'donkey', os.path.join(out_dir, 'pack_harness_fill_steps.gif')))
     out.append(gif_graze(models, tex, V, os.path.join(out_dir, 'pack_harness_graze_bell_slides.gif')))
     out.append(gif_bell(models, tex, V, 'donkey', os.path.join(out_dir, 'pack_harness_bell_closeup.gif')))
+    out.append(gif_start_stop(models, tex, V, 'donkey', os.path.join(out_dir, 'pack_harness_donkey_start_turn_stop.gif')))
+    out.append(gif_start_stop(models, tex, V, 'llama', os.path.join(out_dir, 'pack_harness_llama_start_turn_stop.gif'), size=(380, 360), centre=(0.0, 6.0, -3.0)))
     return out
 
 

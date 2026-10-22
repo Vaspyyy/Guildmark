@@ -1632,7 +1632,7 @@ def write_all(assets=ASSETS, kotlin_dir=KOTLIN, model_dir=MODELS):
     os.makedirs(model_dir, exist_ok=True)
     small = tex.resize((TEX_W, height), Image.LANCZOS)
     with open(os.path.join(model_dir, 'laden_pack.bbmodel'), 'w') as f:
-        json.dump(model.bbmodel(small, 'laden_pack'), f)
+        f.write(K.steady_uuids(json.dumps(model.bbmodel(small, 'laden_pack')), 'laden_pack'))
     check_written(model, tex, glow, height, assets, kotlin_dir, model_dir)
     return model, tex, glow, height
 

@@ -444,6 +444,20 @@ def save_gif(frames, path, ms=50):
     return path
 
 
+def steady_uuids(text, key):
+    """The .bbmodel [text] with each of its uuids made from [key] and the order it first appears in (the same uuid stays the same
+    uuid, so the groups still list their cubes), so that a rerun writes the same file."""
+    import re
+    import uuid
+    seen = {}
+
+    def sub(m):
+        if m.group(0) not in seen:
+            seen[m.group(0)] = str(uuid.uuid5(uuid.NAMESPACE_URL, f'guildmark/{key}/{len(seen)}'))
+        return seen[m.group(0)]
+    return re.sub(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', sub, text)
+
+
 # ================================================================== Kotlin helpers
 
 def kt_float(v):

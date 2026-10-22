@@ -13,6 +13,7 @@ import kotlin.math.floor
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
+import kotlin.math.tanh
 
 /**
  * The Pack Harness on a donkey, a mule and a llama (art/scripts/pack_harness.py), box UV on the one [TEX_WIDTH] x [TEX_HEIGHT]
@@ -258,9 +259,41 @@ object PackHarnessMesh {
     private const val SLIDE_UP_FROM = 15f
     private const val SLIDE_UP_TO = 3f
 
+    // the layer's springs (Trade D1's frame): what starts, stops, turns, a knock and a step taken add to the stride, each eased off by [fit]
+    private const val TROT_GAIN = 0.5f
+    private const val ROLL_SP_MAX = 1f
+    private const val TASSEL_SP_MAX = 1.05f
+    private const val GAIN_PITCH = 1.2f
+    private const val GAIN_ROLL = 1.4f
+    private const val GAIN_DANGLE = 0.5f
+    private const val PITCH_FORWARD = -3.5f
+    private const val PITCH_BACK = 2.4f
+    private const val ROLL_IN = 3.2f
+    private const val ROLL_OUT = 14f
+    private const val TASSEL_FORWARD = -22f
+    private const val TASSEL_BACK = 26f
+    private const val KNOCK_MAX = 24f
+    private const val KNOCK_DAMP_LLAMA = 1f
+    private const val BELL_MAX_LLAMA = 17f
+    private const val BELL_FADE_FROM = 75f
+    private const val BELL_FADE_TO = 95f
+    private const val BELL_FADE_MIN = 0.1f
+    private const val POP_X = 0.04f
+    private const val POP_Y = 0.03f
+
     private fun smooth(x: Float): Float {
         val c = x.coerceIn(0f, 1f)
         return c * c * (3f - 2f * c)
+    }
+
+    /**
+     * [x] kept between [lo] and [hi] ([lo] < [kneeLo] <= 0 <= [kneeHi] < [hi]): as it is between the knees (what the stride alone swings), eased off
+     * toward the limit beyond them (tanh), never past it.
+     */
+    private fun fit(x: Float, lo: Float, kneeLo: Float, kneeHi: Float, hi: Float): Float = when {
+        x > kneeHi -> kneeHi + (hi - kneeHi) * tanh((x - kneeHi) / (hi - kneeHi))
+        x < kneeLo -> kneeLo - (kneeLo - lo) * tanh((kneeLo - x) / (kneeLo - lo))
+        else -> x
     }
 
     /** How much of tier [k] (1 to 3) of a heap shows at [fill]: 0 to 1, eased. */
@@ -296,6 +329,15 @@ object PackHarnessMesh {
      * their hanging points, pitch a little with each step and swell with [pose]'s `fill`; the heap grows tier by tier and settles
      * with each step; the bell swings forward only, harder with speed, its clapper lagging and running round an ellipse; the
      * halter's chin ring hangs plumb below the chin.
+     *
+     * The layer's own springs come in as optional arguments to [pose], each kept where the animal leaves the load room (the numbers are the
+     * script's fit poses' limits): [pose]'s `trot` (0 to 1) lengthens the stride; `pitch` and `roll` (radians, as the layer's frame gives them:
+     * the baskets lag backward when it is positive and swing to the animal's right) add to the pair's sway, the basket on the side the swing
+     * carries in toward the flank getting the little room there is ([ROLL_IN] degrees) and the other swinging free ([ROLL_OUT]), and the fore-aft
+     * swing kept between [PITCH_FORWARD] and [PITCH_BACK]; `knock` (radians, 0 or more) swings the bell further forward, up to [KNOCK_MAX]
+     * degrees more, and sets its clapper going; `pop` (0 to 1) squashes the heap, as a step taken does. The bell's swing fades as the donkey's
+     * head comes down in front of it, and the llama's is shorter ([BELL_MAX_LLAMA]) and takes no knock at a full gait (her legs swing through
+     * where it hangs).
      */
     class Rig(root: ModelPart, private val llama: Boolean) {
         private val head: ModelPart = root.getChild(if (llama) "head" else "head_parts")
@@ -314,19 +356,29 @@ object PackHarnessMesh {
         private val clapper: ModelPart = bell.getChild("bell_clapper")
         private val ring: ModelPart? = if (llama) null else head.getChild("halter").getChild("halter_ring")
 
-        /** [fill] 0 to [FILL_STEPS] (the eased value, see [fillEase]); [walkPos], [walkSpeed] and [age] are the render state's `walkAnimationPos`, `walkAnimationSpeed` and `ageInTicks`. */
-        fun pose(fill: Float, walkPos: Float, walkSpeed: Float, age: Float) {
+        /**
+         * [fill] 0 to [FILL_STEPS] (the eased value, see [fillEase]); [walkPos], [walkSpeed] and [age] are the render state's `walkAnimationPos`,
+         * `walkAnimationSpeed` and `ageInTicks`; [trot], [pitch], [roll], [knock] and [pop] are the springs described above (all 0: the stride alone).
+         */
+        fun pose(fill: Float, walkPos: Float, walkSpeed: Float, age: Float, trot: Float = 0f, pitch: Float = 0f, roll: Float = 0f, knock: Float = 0f, pop: Float = 0f) {
             val w = walkPos * 0.6662f
-            val sp = min(walkSpeed, 1f)
+            val sp = min(walkSpeed, 1f) * (1f + TROT_GAIN * trot.coerceIn(0f, 1f))
             val load = (fill / FILL_STEPS).coerceIn(0f, 1f)
             val damp = 1f - LOAD_DAMP * load
-            val roll = -(ROLL * sp * sin(w) + IDLE_ROLL * sin(age * 0.071f)) * damp * DEG
+            val spr = min(sp, ROLL_SP_MAX)
+            val strideRoll = -(ROLL * spr * sin(w) + IDLE_ROLL * sin(age * 0.071f)) * damp
+            val kneeRoll = (ROLL * spr + IDLE_ROLL) * damp
+            val kneePitch = (PITCH * sp + 0.15f) * damp
+            val squash = pop.coerceIn(0f, 1f)
             for (s in 0..1) {
                 val sg = if (s == 0) 1f else -1f
-                val pitch = (PITCH * sp * sin(2f * w + 0.7f + (if (s == 0) 0f else HALF_PI)) + 0.15f * sin(age * 0.053f + sg * 1.1f)) * damp * DEG
+                val stridePitch = (PITCH * sp * sin(2f * w + 0.7f + (if (s == 0) 0f else HALF_PI)) + 0.15f * sin(age * 0.053f + sg * 1.1f)) * damp
+                val lag = fit(stridePitch + GAIN_PITCH * pitch / DEG, PITCH_FORWARD, -kneePitch, kneePitch, PITCH_BACK)
+                // a turn about z carries the left basket's foot in toward the flank when it is positive, the right one's when it is negative
+                val inward = fit(sg * (strideRoll + GAIN_ROLL * roll / DEG), -ROLL_OUT, -kneeRoll, kneeRoll, ROLL_IN)
                 chest[s].visible = true
-                chest[s].xRot = pitch
-                chest[s].zRot = roll
+                chest[s].xRot = lag * DEG
+                chest[s].zRot = sg * inward * DEG
                 basket[s].xScale = 1f + BELLY * load
                 for (k in 0..2) {
                     val t = tierT(fill, k + 1)
@@ -335,9 +387,9 @@ object PackHarnessMesh {
                         p.visible = false
                     } else {
                         p.visible = true
-                        p.xScale = 0.6f + 0.4f * t
-                        p.yScale = t
-                        p.zScale = 0.6f + 0.4f * t
+                        p.xScale = (0.6f + 0.4f * t) * (1f + POP_X * squash)
+                        p.yScale = t * (1f - POP_Y * squash)
+                        p.zScale = (0.6f + 0.4f * t) * (1f + POP_X * squash)
                         p.y = tierY[s * 3 + k] - BOB * sp * sin(2f * w + 0.7f + 0.35f * (k + 1)) * t
                     }
                 }
@@ -350,18 +402,24 @@ object PackHarnessMesh {
             val g = (walkSpeed / 0.7f).coerceIn(0f, 1f)
             val u = 0.5f + 0.5f * sin(2f * w + BELL_PHASE)
             val breathe = 0.5f + 0.5f * sin(age * 0.083f)
-            val swing = -(BELL_IDLE * (1f - g) * breathe + BELL_MAX * g * u)
+            val extra = KNOCK_MAX * tanh(max(knock / DEG, 0f) / KNOCK_MAX) * (1f - (if (llama) KNOCK_DAMP_LLAMA else 0f) * g)
+            val k = extra / KNOCK_MAX
+            val fade = if (llama) 1f else 1f - (1f - BELL_FADE_MIN) * smooth((headX - BELL_FADE_FROM) / (BELL_FADE_TO - BELL_FADE_FROM))
+            val reach = if (llama) BELL_MAX_LLAMA else BELL_MAX
+            val swing = -((BELL_IDLE * (1f - g) * breathe + reach * g * u) + extra) * fade
             bell.xRot = (swing - (if (llama) headX else 0f)) * DEG
             val ph = 2f * w + BELL_PHASE - CLAPPER_LAG
-            clapper.xRot = (CLAPPER_X * g * sin(ph) + 3f * (1f - g) * sin(age * 0.21f)).coerceIn(-CLAPPER_X, CLAPPER_X) * DEG
-            clapper.zRot = (CLAPPER_Z * g * cos(ph) + 2f * (1f - g) * sin(age * 0.17f + 1f)).coerceIn(-CLAPPER_Z, CLAPPER_Z) * DEG
+            clapper.xRot = (CLAPPER_X * g * sin(ph) + 3f * (1f - g) * sin(age * 0.21f) + 0.8f * CLAPPER_X * k * sin(age * 0.9f)).coerceIn(-CLAPPER_X, CLAPPER_X) * DEG
+            clapper.zRot = (CLAPPER_Z * g * cos(ph) + 2f * (1f - g) * sin(age * 0.17f + 1f) + 0.8f * CLAPPER_Z * k * cos(age * 0.9f + 0.5f)).coerceIn(-CLAPPER_Z, CLAPPER_Z) * DEG
             ring?.xRot = (-headX + RING_SWING * sp * sin(w + 0.4f) + 3f * sin(age * 0.13f)).coerceIn(-40f, 40f) * DEG
         }
     }
 
     /**
      * Poses the blanket's moving parts on a baked [donkeyWool], [muleWool] or [llamaWool] layer, after the vanilla `setupAnim`: the two
-     * flaps lift off the flank with speed and breathe, and every tassel is a pendulum, a wave running back along the hem.
+     * flaps lift off the flank with speed and breathe, and every tassel is a pendulum, a wave running back along the hem. The springs, as
+     * the [Rig]'s: `trot` (0 to 1) lengthens the stride; `dangle` (radians, positive: they trail backward) is what a start or a stop adds
+     * to the tassels' swing, as far as the girth ring in front of them and the pannier behind them leave ([TASSEL_FORWARD] to [TASSEL_BACK] degrees).
      */
     class WoolRig(root: ModelPart, llama: Boolean) {
         private val n: Int = if (llama) TASSELS_LLAMA else TASSELS_DONKEY
@@ -369,17 +427,19 @@ object PackHarnessMesh {
         private val flap: Array<ModelPart> = arrayOf(blanket.getChild("flap_l"), blanket.getChild("flap_r"))
         private val tassel: Array<Array<ModelPart>> = Array(2) { s -> Array(n) { i -> flap[s].getChild("tassel_" + (if (s == 0) "l" else "r") + i) } }
 
-        fun pose(walkPos: Float, walkSpeed: Float, age: Float) {
+        fun pose(walkPos: Float, walkSpeed: Float, age: Float, trot: Float = 0f, dangle: Float = 0f) {
             val w = walkPos * 0.6662f
-            val sp = min(walkSpeed, 1f)
+            val sp = min(walkSpeed, 1f) * (1f + TROT_GAIN * trot.coerceIn(0f, 1f))
             val lift = FLAP_LIFT * sp * (0.5f + 0.5f * sin(1.7f * w + 0.3f)) + 0.5f * sin(age * 0.049f)
-            val amp = TASSEL_BASE + TASSEL_SPEED * sp
+            val amp = TASSEL_BASE + TASSEL_SPEED * min(sp, TASSEL_SP_MAX)
+            val knee = amp + 1.6f
+            val trail = GAIN_DANGLE * dangle / DEG
             for (s in 0..1) {
                 val sg = if (s == 0) 1f else -1f
                 flap[s].zRot = -sg * lift * DEG
                 for (i in 0 until n) {
                     val ph = 2f * w - TASSEL_LAG * i
-                    tassel[s][i].xRot = (amp * sin(ph + 0.4f * sg) + 1.6f * sin(age * 0.09f + i * 0.8f)) * DEG
+                    tassel[s][i].xRot = fit(amp * sin(ph + 0.4f * sg) + 1.6f * sin(age * 0.09f + i * 0.8f) + trail, TASSEL_FORWARD, -knee, knee, TASSEL_BACK) * DEG
                     tassel[s][i].zRot = -sg * (2f + 0.35f * amp * (0.5f + 0.5f * sin(ph + 1.3f))) * DEG
                 }
             }

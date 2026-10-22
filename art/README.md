@@ -157,8 +157,13 @@ and Kotlin model code always agree.
   animal's own model the way the game dresses a saddled horse, so every part the animal's model looks up is there. It writes
   `textures/entity/trade/pack_harness.png`, the two Blockbench files (`art/models/pack_harness_donkey.bbmodel`, `_llama`) and
   `client/trade/PackHarnessMesh.kt` (generated: the meshes and the numbers the renderer poses the moving parts by; change the
-  script, not the Kotlin). It checks its own numbers, that nothing moving goes into the animal and what it wrote. With a preview
-  dir it renders the animals beside the vanilla ones from four sides, the four fills, the six colours and walking GIFs.
+  script, not the Kotlin). Its `Rig` also takes the layer's own springs (starts, stops, turns, a knock, a step taken) as optional
+  arguments, each eased off where the animal leaves the load no room. It checks its own numbers, that nothing moving goes through
+  the animal, the straps or the blanket (the springs pushed to their limits among the poses), that the animal's own neck goes no
+  further than 2 px into the still shells over its look (a llama from 20 degrees up to 60 down, a donkey from 45 up to 60 down),
+  that nothing floats and what it wrote. With a preview dir it renders the animals beside the vanilla ones from four sides, the
+  four fills, the six colours, the springs pushed past their limits, the head tipped up and down, and walking and
+  start-turn-stop GIFs.
 - `scripts/laden_pack.py` is the three back-packs of the laden look, in the player's own space: a blanket roll and a sack (25
   Marks), an ash frame with two sacks, a cup and a lit lantern (100), and an oak ladder-frame with sacks, a keg and two pots that
   clink (250). Each level is a layer carrying the player model's own part names (so `PlayerModel` can stand on it), with every
