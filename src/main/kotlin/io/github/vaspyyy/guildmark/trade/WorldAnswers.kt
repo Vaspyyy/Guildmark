@@ -33,7 +33,7 @@ import kotlin.math.abs
  * only the cheer out. Nothing is saved but what the page, the talk and the news save as they always do. A step that fails is logged and the
  * others still go on, and a failure never reaches the ticket (A's listeners are told one at a time, too).
  *
- * [Trade.register] calls [register].
+ * [Trade.register] calls [register]; the operators' `trade witness` and `trade cheer` ([WorldCommand]) play [answer] and the cheer without a ticket.
  */
 object WorldAnswers : Hauls.Listener {
     /** The key of the guild news a relief delivered chalks: "A trader, [name], brought relief to [town]." */
@@ -55,11 +55,12 @@ object WorldAnswers : Hauls.Listener {
 
     private var registered = false
 
-    /** Hears the tickets filled, once, at setup. */
+    /** Hears the tickets filled, once, at setup; and sets the operators' commands going. */
     fun register() {
         if (registered) return
         registered = true
         Hauls.listen(this)
+        WorldCommand.init()
     }
 
     override fun delivered(level: ServerLevel, haul: Haul, delivery: Delivery) {
