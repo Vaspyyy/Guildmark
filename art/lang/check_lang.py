@@ -41,6 +41,8 @@ PREFIXES = {
         "block.guildmark.stewpot", "block.guildmark.hob", "block.guildmark.bake_oven", "block.guildmark.spit",
         "block.guildmark.prep_board", "block.guildmark.plate", "block.guildmark.larder", "block.guildmark.menu_board",
         "item.guildmark.dish_", "item.guildmark.gilded_ladle", "effect.guildmark.",
+        "item.guildmark.cooks_", "item.guildmark.turner", "item.guildmark.cook_book", "item.guildmark.herb_sprig",
+        "item.guildmark.gruel", "item.guildmark.scorched_mess", "block.guildmark.herb",
         "bonus.guildmark.cook_", "guildmark.configuration.cook", "gui.guildmark.settings.section.cooking",
         "gui.guildmark.cook.", "message.guildmark.cook.", "gui.guildmark.talk.kitchen", "subtitles.guildmark.cook.",
         "say.guildmark.talk.kitchen.", "say.guildmark.talk.detail.kitchen.",
