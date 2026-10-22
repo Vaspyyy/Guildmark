@@ -32,9 +32,10 @@ object KitchenDoors {
     /** The game time each player last held a dish out to a keeper, so the same click does not also eat it (see [onUseItem]). */
     private val poked = HashMap<UUID, Long>()
 
-    /** Part G's registration: the `EntityInteract` listener, the payment of what is owed, and the server's tick. */
+    /** Part G's registration: the `EntityInteract` listener, the payment of what is owed, the server's tick, and its commands (`cook kitchens|request|door|caps|owed`). */
     fun register() {
         Cooking.onForget { poked.clear() }
+        KitchenCommand.register()
         val bus = NeoForge.EVENT_BUS
         bus.addListener(PlayerInteractEvent.EntityInteract::class.java, ::onUseEntity)
         bus.addListener(PlayerInteractEvent.RightClickItem::class.java, ::onUseItem)
