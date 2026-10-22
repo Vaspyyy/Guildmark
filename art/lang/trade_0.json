@@ -1,0 +1,9 @@
+{
+  "guildmark.configuration.marketHerdStop": "Herd Stop",
+  "guildmark.configuration.marketHerdStopAt": "Herd Stop Height",
+  "guildmark.configuration.marketCarryEase": "Carry Ease",
+  "guildmark.configuration.marketCarryEaseRate": "Carry Ease Rate",
+  "guildmark.configuration.tradeOwedXp": "Owed Trade XP",
+  "guildmark.configuration.tradeOwedXpMost": "Most Owed Trade XP",
+  "message.guildmark.trade.owed": "While you were away your carters' dealing taught you a little more of trade: +%s Trade XP."
+}

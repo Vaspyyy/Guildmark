@@ -137,6 +137,26 @@ object GuildmarkConfig {
         .comment("A Trusted Supplier of a capital may rent a table in its market hall by the week and stock it from their pack, and it sells to the town while they're away: each market hour up to a third of what the town buys of each good on it, at the market's price less a tenth. Off, no table is let and the stalls already let sell nothing (their goods and tills can still be taken back).")
         .define("ownStalls", true)
 
+    // The market's loose ends (living-world/trader/design.md, Part 7): wool and apples for the stalls, fish that climbs, Trade XP for dealing done away
+    val MARKET_HERD_STOP: ModConfigSpec.BooleanValue = BUILDER
+        .comment("The herds, coops and orchards stop making wool, leather, feathers and apples once the market holds what the town likes to keep of them (counting what waits in the yard for the carts), so the stalls have room for a player's lot instead of standing full. Meat and chicken are as they were, and a town whose road is in trouble keeps its whole buffer. Off, they make as before and these goods stand full.")
+        .define("marketHerdStop", true)
+    val MARKET_HERD_STOP_AT: ModConfigSpec.DoubleValue = BUILDER
+        .comment("Where the herds, coops and orchards stop: this many times what the town likes to keep of wool, leather, feathers and apples. 1 is the target itself; a lower number leaves the stalls more room, a higher one less.")
+        .defineInRange("marketHerdStopAt", 1.0, 0.8, 1.5)
+    val MARKET_CARRY_EASE: ModConfigSpec.BooleanValue = BUILDER
+        .comment("What it costs a capital to bring a good in eases to its new value over about a week when it changes (a new capital's market opening, a town found to have something to spare), instead of jumping in an hour: inland fish no longer doubles in price the moment a coastal market opens. Off, it jumps as before.")
+        .define("marketCarryEase", true)
+    val MARKET_CARRY_EASE_RATE: ModConfigSpec.DoubleValue = BUILDER
+        .comment("How much of what is left of the gap to its new value what it costs to bring a good in closes each day while it eases: 0.3 is nine tenths of the way in a week; 1 is the old jump. Needs Carry Ease.")
+        .defineInRange("marketCarryEaseRate", 0.3, 0.05, 1.0)
+    val TRADE_OWED_XP: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Trade XP for dealing done while you're away (a carter shipping from your homestead, and later a trading house's carters) is kept for you and given when you next log in, with a grey line saying so. Off, dealing while you're away teaches nothing, as before.")
+        .define("tradeOwedXp", true)
+    val TRADE_OWED_XP_MOST: ModConfigSpec.IntValue = BUILDER
+        .comment("The most dealing, in Guild Marks, kept for a player while they're away (each Mark is 2 Trade XP when it's given): 1200 is about a real day away at a farmer's pace. Anything beyond is dropped, so a server left running for a month doesn't hand its owner a month of levels. 0 keeps nothing.")
+        .defineInRange("tradeOwedXpMost", 1200, 0, 100000)
+
     val MARKET_DISPLAYS: ModConfigSpec.BooleanValue = BUILDER
         .comment("The market's goods on show in the capitals: baskets, crates, racks, boards, trays, shelves and sacks on the stalls and counters, heaped with the real goods as full as the market's stock of each. Off, newly built capitals keep the old stall props, no more displays are set out in capitals built before, and those already out stand still.")
         .define("marketDisplays", true)
