@@ -172,7 +172,7 @@ object GuildmarkConfig {
         .comment("Hours the road adds to the age of the Word for every block between two towns: at 0.024 a town 740 blocks off is news 18 hours older than the base. 0 makes all news the same age however far it came.")
         .defineInRange("tradeWordPerBlock", 0.024, 0.0, 0.1)
     val TRADE_HAULS: ModConfigSpec.BooleanValue = BUILDER
-        .comment("Haul tickets: a capital short of a good that another can spare posts a ticket to have it brought, paid to the carrier who books it and delivers it to the shop it names; goods carried from far away sell to the stalls at a dealer's share, with room for more. Off, no ticket is posted, the open ones lapse unpaid, and the stalls take the usual share and the usual room. Needs Trader's Life.")
+        .comment("Haul tickets: a capital short of a good that another can spare posts a ticket to have it brought, paid to the carrier who books it and delivers it to the shop it names; goods carried from far away sell to the stalls at a dealer's share, with room for more. Off, no ticket is posted, the open ones wait with their days standing still until it is on again, and the stalls take the usual share and the usual room. Needs Trader's Life.")
         .define("tradeHauls", true)
     val TRADE_HAUL_RATE: ModConfigSpec.DoubleValue = BUILDER
         .comment("The most haul tickets a capital posts in a day, at dawn (a fraction is the chance of one more); in practice about one, as it posts only for a good it is short of that another town can spare. 0 posts none.")

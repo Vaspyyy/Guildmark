@@ -82,6 +82,9 @@ OVERRIDES = {
     # Hearthcraft Part H: they now serve a cookshop as well as a stall
     "gui.guildmark.works.why.owner",
     "gui.guildmark.works.part.pitch.tip",
+    # Trade A, worded by the lead so that they read for one as well as for several
+    "message.guildmark.trade.haul.deposit_back",
+    "message.guildmark.trade.haul.standing",
 }
 
 
