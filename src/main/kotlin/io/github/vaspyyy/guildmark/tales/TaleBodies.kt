@@ -99,9 +99,6 @@ object TaleBodies {
     private fun figureBody(level: ServerLevel, f: Figure?): Townsperson? =
         f?.body?.let { level.getEntity(it) as? Townsperson }?.takeIf { it.isAlive && !it.isRemoved }
 
-    /** Whether [id]'s day is a tale's for now: the open tale that casts them holds them. For `Tales.holds` and the places that ask it. */
-    fun holds(level: ServerLevel, id: Int): Boolean = TaleData.get(level).castIn(id)?.cast?.any { it.resident == id && it.held } == true
-
     // ---- Holding a resident (Tales.hold, Tales.release) ----
 
     /**
