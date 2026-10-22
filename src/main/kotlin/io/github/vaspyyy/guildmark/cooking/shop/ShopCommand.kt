@@ -117,7 +117,7 @@ internal object ShopCommand {
     private fun mine(source: CommandSourceStack, h: Here): WorksRec? {
         val works = h.works
         if (works == null) {
-            fail(source, "You have no cookshop in ${place(h)}. `works propose cookshop`, `works fund <id>`, `works start` and `works finish <id>` raise one (a Trusted Supplier here, a cook of 25).")
+            fail(source, "You have no cookshop in ${place(h)}. `works propose cookshop`, `works fund <id>`, `works start <id>` and `works finish <id>` raise one (a Trusted Supplier here, a cook of 25).")
             return null
         }
         return works

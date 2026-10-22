@@ -269,24 +269,31 @@ internal object WorksSiting {
 
     /**
      * A clear 5 by 4 of the market square, its back to the nearest edge first, as a stall finds its pitch but with no lot of the plan's to
-     * try first, and with its buyers' ground and its keeper's way in left free to walk on. A middling capital's square has no clear 5 by 4
-     * against its edge (its stalls and wells and the houses on its south rim are there), so the spots away from the edge are tried after.
+     * try first, and with its buyers' ground (all five cells before the counter) and its keeper's way in (round the flank to the alley's near
+     * end) left free to walk on. A middling capital's square has no clear 5 by 4 against its edge (its stalls and wells and the houses on its
+     * south rim are there), so the spots away from the edge are tried after: the strips beside the avenue, with the row before the counter
+     * on the avenue's edge (the avenue's own ground, three out from its middle, stays clear). One that would face the back of a stall is
+     * not sited, for the row before its counter is not free there.
      */
     private fun cookshop(level: ServerLevel, w: WorksRec, rec: BuildRec, capital: CapitalPiece): Boolean? {
         val plan = capital.plan
-        val search = searches.getOrPut(w.id) { Search(pitches(plan, Cookshop.LOT, Int.MAX_VALUE)) }
+        val search = searches.getOrPut(w.id) { Search(pitches(plan, Cookshop.LOT, Int.MAX_VALUE, AVENUE_EDGE)) }
         return find(
             level, w, rec, capital, search, Cookshop.LOT, Cookshop.DOOR, street = true, uses = setOf(Use.SQUARE),
-            walks = listOf(Cookshop.DOOR, Cookshop.WAY_IN),
+            walks = Cookshop.FRONT + Cookshop.FLANK,
         )
     }
+
+    /** How far from the middle of the avenue its own ground goes: the row before a cookshop's counter may reach the cell just beyond. */
+    private const val AVENUE_EDGE = 3
 
     /**
      * The spots of the market square a stall or a cookshop could take ([lot]: 3 by 3, or 5 by 4), those nearest its edge
      * first: clear of the avenue down its middle and of the ground before any door, the pitch's front onto the square, and its back
-     * no more than [near] from the square's edge (a stall's two).
+     * no more than [near] from the square's edge (a stall's two). The lot stays more than four from the avenue's middle (clear of its
+     * own ground, its lamps and a cell besides); the row before it more than [frontBand] (four, as a stall's does).
      */
-    private fun pitches(plan: CityPlan, lot: Rect, near: Int = 2): List<Cand> {
+    private fun pitches(plan: CityPlan, lot: Rect, near: Int = 2, frontBand: Int = 4): List<Cand> {
         val m = plan.market
         val doors = HashSet<Long>()
         for (b in plan.buildings) {
@@ -300,7 +307,7 @@ internal object WorksSiting {
             for (lx in lot.x0..lot.x1) for (lz in lot.z0 - 1..lot.z1) {
                 val px = pf.worldX(lx, lz)
                 val pz = pf.worldZ(lx, lz)
-                if (!m.contains(px, pz) || abs(px) <= 4 || key(px, pz) in doors || plan.grid[px, pz] != Use.SQUARE) ok = false
+                if (!m.contains(px, pz) || abs(px) <= (if (lz < lot.z0) frontBand else 4) || key(px, pz) in doors || plan.grid[px, pz] != Use.SQUARE) ok = false
             }
             if (!ok) continue
             // Its back to the nearest edge: nearer the edge first

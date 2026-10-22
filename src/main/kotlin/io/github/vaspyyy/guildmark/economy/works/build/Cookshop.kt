@@ -109,6 +109,12 @@ class Cookshop(y0: Int, private val patron: Dye) : WorksDrawing(WorksKind.COOKSH
         /** Where its keeper comes in to the alley, from the side (the alley's near end, x 2, z 1): ground that is to be left to walk on. */
         val WAY_IN = Pin(3, 0, 1, Dir.W)
 
+        /** The five cells before its counter, where its buyers stand and queue: ground that is to be left to walk on. */
+        val FRONT: List<Pin> = (-2..2).map { Pin(it, 0, -1, Dir.S) }
+
+        /** The way round the flank from the row before its counter to the alley's near end, for its keeper: ground that is to be left to walk on. */
+        val FLANK: List<Pin> = listOf(Pin(3, 0, -1, Dir.W), Pin(3, 0, 0, Dir.W), WAY_IN)
+
         /** The counter's planks, the dark ground-floor ones. */
         private val COUNTER = B(M.PLANKS, v = 1)
     }

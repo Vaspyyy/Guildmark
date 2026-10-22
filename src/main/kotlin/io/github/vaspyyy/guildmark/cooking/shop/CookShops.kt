@@ -360,7 +360,7 @@ object CookShops {
             }
         }
         link(level, lay, shop)
-        val open = Cooking.shops() && hour >= OPEN && hour < SHUT
+        val open = Cooking.shops() && Works.enabled() && hour >= OPEN && hour < SHUT
         fires(level, lay, open)
         chimney(level, lay, open)
         val day = Cooking.today(level)
