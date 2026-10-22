@@ -407,8 +407,8 @@ object FortuneReasons {
             }
             // The side the goods came in from ("n", "e", "s", "w"); a note by hand has none, and reads as its kind's name
             HAULED -> a.getOrNull(0)?.let { say("hauled", way(it)) }
-            // "<template>.<ending>" ("note.paid") then the names its sentence uses; a sentence the language file lacks reads "A tale."
-            TALE -> a.getOrNull(0)?.let { sayOr("tale.$it", TALE_FALLBACK, a.getOrNull(1).orEmpty(), a.getOrNull(2).orEmpty()) }
+            // "<template>.<ending>" ("note.paid") then the names its sentence uses (the first two of the cast, then the lead); a sentence the language file lacks reads "A tale."
+            TALE -> a.getOrNull(0)?.let { sayOr("tale.$it", TALE_FALLBACK, a.getOrNull(1).orEmpty(), a.getOrNull(2).orEmpty(), a.getOrNull(3).orEmpty()) }
             HELD -> say("held")
             LOST -> say("lost")
             else -> null
