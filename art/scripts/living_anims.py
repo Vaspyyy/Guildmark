@@ -3284,5 +3284,12 @@ import street_clips  # noqa: E402
 street_clips.build(sys.modules[__name__])
 
 
+# ================================================================== the tales' six clips (art/scripts/tale_clips.py)
+
+# Built on this kit, written with the rest: grieve, wring_hands, shake_hands, feed_fire, hobble and lay_posy.
+import tale_clips  # noqa: E402
+tale_clips.build(sys.modules[__name__])
+
+
 if __name__ == '__main__':
     main(sys.argv)
