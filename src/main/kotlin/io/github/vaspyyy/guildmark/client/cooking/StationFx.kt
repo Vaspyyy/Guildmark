@@ -82,6 +82,11 @@ object StationFx : StationHooks {
         drawNanos += nanos
     }
 
+    /** More time a drawing took, after it was reported (the geometry a renderer wrote when the game came to draw it). */
+    fun spent(nanos: Long) {
+        drawNanos += nanos
+    }
+
     /** The line `cook perf` prints for the stations as seen and heard. */
     fun readout(): String {
         val tick = if (ticks > 0) tickNanos / ticks / 1000.0 else 0.0

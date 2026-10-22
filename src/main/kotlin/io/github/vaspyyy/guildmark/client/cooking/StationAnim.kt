@@ -58,6 +58,9 @@ class Plop(val item: Int, val at: Long, val dx: Float, val dz: Float, val index:
 /** A ring spreading over the surface from ([x], [z]) px, started [at] this tick, [power] big (1 an ordinary plop). */
 class Ripple(val at: Long, val x: Float, val z: Float, val power: Float)
 
+/** The item at place [index] that left the station [at] this tick (a pot's chunk was at ([x], [z]) px): it sinks and fades where it lay. */
+class Leaving(val item: Int, val at: Long, val index: Int, val x: Float, val z: Float)
+
 /**
  * What one station's picture is now (living-world/cook/design.md 1.8: the client animates everything from the clock against
  * the stamps the server sent): the [StationView] it was last given, and the numbers each renderer draws from it, every one of
@@ -144,6 +147,16 @@ class StationAnim(val pos: BlockPos, val kind: Station?, var be: StationBlockEnt
     /** The swipe that clears a film: 0 when none, then 0 to 1 as it sweeps. */
     val wipe = ease()
 
+    /** How dull the surface has gone (a SEASON asks for salt) and how thick the bubbling (a STICK): 0 to 1. */
+    val dull = ease()
+    val thick = ease()
+
+    /** The bowls out on the house pot's shelf: each bowl is set down (or taken up) as the count eases past it. */
+    val bowls = ease()
+
+    /** The oven's upper tray: 0 when it holds nothing (and is not there), 1 when it is. */
+    val upper = ease()
+
     /** How much of the ready ring shows (0 to 1, it fades in and out), and the phase it was last at, which it keeps while it fades out. */
     val ringA = ease()
     var ringLast = 0f
@@ -195,6 +208,12 @@ class StationAnim(val pos: BlockPos, val kind: Station?, var be: StationBlockEnt
     /** Items going in, and rings spreading, as they were made. */
     val plops = ArrayList<Plop>(MAX_PLOPS)
     val ripples = ArrayList<Ripple>(MAX_RIPPLES)
+
+    /** Chunks that left the pot (served, tipped out), sinking and fading where they lay: a pot emptied does not blink. */
+    val leaving = ArrayList<Leaving>(MAX_LEAVING)
+
+    /** The items the view held at the last step, to see which left. */
+    private var lastIds = IntArray(0)
 
     /** The hearth's crane swings off and on for a change of heat: ticks since it began, or -1; and the notch the pot is shown at meanwhile. */
     private var swing = -1
@@ -282,6 +301,10 @@ class StationAnim(val pos: BlockPos, val kind: Station?, var be: StationBlockEnt
         lastNotch = v.notch
         lastSwirl = v.swirlUntil
         lastItems = v.items.size
+        lastIds = v.items.copyOf()
+        leaving.clear()
+        plops.clear()
+        ripples.clear()
         val doorOpen = doorWanted(v, now)
         shownNotch = v.notch
         swing = -1
@@ -308,6 +331,8 @@ class StationAnim(val pos: BlockPos, val kind: Station?, var be: StationBlockEnt
         film.snap(filmTarget(v, now))
         foam.snap(foamTarget(v, now))
         crust.snap(if (v.burnt) 1f else 0f)
+        bowls.snap(v.bowls.toFloat())
+        upper.snap(if (kind == Station.OVEN && v.items.size > 5) 1f else 0f)
         soot.snap(sootTarget(v))
         brown.snap(brownTarget(v, now))
         door.snap(if (doorOpen) 1f else 0f)
@@ -342,6 +367,15 @@ class StationAnim(val pos: BlockPos, val kind: Station?, var be: StationBlockEnt
                 sway(2.4f, -1.5f)
             }
         }
+        // What left (served, tipped out, taken off): it sinks and fades where it lay, and does not blink out
+        if (v.items.size < lastIds.size) {
+            for (k in v.items.size until lastIds.size) {
+                if (leaving.size >= MAX_LEAVING) leaving.removeAt(0)
+                val at = if (kind == Station.STEWPOT) chunkAt(k, lastIds[k], orbit.cur) else ZERO_AT
+                leaving.add(Leaving(lastIds[k], now, k, at[0], at[1]))
+            }
+        }
+        if (!lastIds.contentEquals(v.items)) lastIds = v.items.copyOf()
         lastItems = v.items.size
 
         // The state
@@ -388,6 +422,8 @@ class StationAnim(val pos: BlockPos, val kind: Station?, var be: StationBlockEnt
                 } else {
                     missed = was
                     missedAt = now
+                    // A call let go: the pot jolts
+                    if (kind == Station.STEWPOT) sway(3.4f, 3.4f)
                 }
                 callNow = null
             }
@@ -500,6 +536,19 @@ class StationAnim(val pos: BlockPos, val kind: Station?, var be: StationBlockEnt
     /** Whether the oven's door should be open: the server's swirl, a townsperson at it, or this client's player aiming at it with food. */
     private fun doorWanted(v: StationView, now: Long): Boolean = kind == Station.OVEN && (v.swirlUntil > now || townDoor || aimed)
 
+    /**
+     * The continuous time, in ticks, that a frame [partial] of the way from one tick to the next shows: the eased values' `prev` is
+     * the tick before [stamp], so a frame between the two last steps is at `stamp - 1 + partial`, and a clock-driven thing (a ring
+     * rippling, an item arcing in) read at this time moves with them and never jumps at a tick.
+     */
+    fun time(partial: Float): Double = stamp - 1.0 + partial
+
+    /**
+     * A small number of ticks that grows with the frames (a glint drifting, a chunk tipping, a flame leaning): the same time as
+     * [time] but counted from when this anim began and wrapped every 100 000 ticks, so a float keeps its fine steps however long the world has run.
+     */
+    fun wander(partial: Float): Float = ((age - 1L) % 100_000L).toFloat() + partial
+
     /** How far into its call this station is, 0 at the cue and 1 at the deadline (clamped), at game time [t]. */
     fun callProgress(t: Double): Float {
         if (dueAt <= cueAt) return 0f
@@ -547,6 +596,14 @@ class StationAnim(val pos: BlockPos, val kind: Station?, var be: StationBlockEnt
             film.ease(filmGoal, if (filmGoal > film.cur) 0.1f else 0.14f)
         }
         foam.ease(foamTarget(v, now), if (foamTarget(v, now) > foam.cur) 0.12f else 0.11f)
+
+        // A SEASON dulls the surface as it goes unanswered; a STICK thickens the bubbling
+        val asked = pendingCall(v, now)
+        val progress = callProgress(now.toDouble())
+        bowls.ease(v.bowls.toFloat(), 0.16f)
+        upper.ease(if (kind == Station.OVEN && v.items.size > 5) 1f else 0f, 0.16f)
+        dull.ease(if (asked == Call.SEASON) 0.3f + 0.7f * progress else 0f, if (asked == Call.SEASON) 0.06f else 0.12f)
+        thick.ease(if (asked == Call.STICK) 0.25f + 0.75f * progress else 0f, if (asked == Call.STICK) 0.05f else 0.1f)
 
         // The pot's own sway: a pendulum that every kick sets going, and a boil that keeps it trembling
         swayX.spring(0f, 0.07f, 0.93f)
@@ -656,8 +713,24 @@ class StationAnim(val pos: BlockPos, val kind: Station?, var be: StationBlockEnt
         r: Float = 1f, g: Float = 1f, b: Float = 1f, size: Float = 1f, alpha: Float = 1f,
     ) {
         if (!near || !spend()) return
-        val w = CookGeo.world(pos, facing, px, py, pz)
-        val d = CookGeo.turn(facing, vx, vz)
+        var qx = px
+        var qz = pz
+        var wx = vx
+        var wz = vz
+        if (kind == Station.STEWPOT && hearth && abs(crane.cur) > 0.05f) {
+            // The pot has been swung off the fire by the crane: what leaves it leaves from where it is now
+            val a = Math.toRadians(crane.cur.toDouble()).toFloat()
+            val c = cos(a)
+            val s = sin(a)
+            val dx = px - CookGeo.CRANE_X
+            val dz = pz - CookGeo.CRANE_Z
+            qx = CookGeo.CRANE_X + dx * c + dz * s
+            qz = CookGeo.CRANE_Z - dx * s + dz * c
+            wx = vx * c + vz * s
+            wz = -vx * s + vz * c
+        }
+        val w = CookGeo.world(pos, facing, qx, py, qz)
+        val d = CookGeo.turn(facing, wx, wz)
         fx.particle(type, w.x, w.y, w.z, d[0].toDouble(), vy.toDouble(), d[1].toDouble(), r, g, b, size, alpha)
     }
 
@@ -699,6 +772,7 @@ class StationAnim(val pos: BlockPos, val kind: Station?, var be: StationBlockEnt
     /** What is made in this tick: plops landing, the ripples, steam and bubbles, the signs of a call, smoke, sizzle, drips. */
     private fun emit(v: StationView, now: Long, fx: StationHooks) {
         refill()
+        landings(now, fx)
         when (kind) {
             Station.STEWPOT -> potEmit(v, now, fx)
             Station.HOB -> hobEmit(v, now, fx)
@@ -709,6 +783,32 @@ class StationAnim(val pos: BlockPos, val kind: Station?, var be: StationBlockEnt
         // Old rings and plops are done with
         ripples.removeAll { now - it.at > RIPPLE_LIFE }
         plops.removeAll { now - it.at > PLOP_FLY + PLOP_BOB + PLOP_SINK + 2 }
+        leaving.removeAll { now - it.at > LEAVE_TICKS }
+    }
+
+    /** An item that has come down in a pan, on a tray or on the rod: a speck of fat, a puff of crumbs, a shiver of the joint. (A pot's own landings are in [potEmit].) */
+    private fun landings(now: Long, fx: StationHooks) {
+        if (kind == null || kind == Station.STEWPOT) return
+        for (q in plops) {
+            if (q.landed || now < q.at + PLOP_FLY) continue
+            q.landed = true
+            when (kind) {
+                Station.HOB -> {
+                    val s = panSlot(q.index)
+                    repeat(2) { spawn(fx, CookParticles.SIZZLE.get(), s[0] + (random.nextFloat() - 0.5f), 11f, s[1] + (random.nextFloat() - 0.5f), (random.nextFloat() - 0.5f) * 0.012f, 0.03f, (random.nextFloat() - 0.5f) * 0.012f) }
+                }
+                Station.OVEN -> {
+                    val slot = CookGeo.TRAY_SLOTS[q.index % 5]
+                    val y = CookGeo.TRAY_ITEM_Y + (if (q.index >= 5) CookGeo.TRAY_LIFT else 0f) + 0.6f
+                    spawn(fx, CookParticles.CRUMB.get(), slot[0], y, slot[1] - tray.cur * CookGeo.TRAY_SLIDE, 0f, 0.02f, 0f)
+                }
+                Station.SPIT -> {
+                    val x = CookGeo.JOINT_X[q.index.coerceIn(0, 5)]
+                    spawn(fx, CookParticles.SIZZLE.get(), x, CookGeo.AXIS_Y + 1.2f, CookGeo.AXIS_Z, 0f, 0.03f, 0f)
+                }
+                else -> {}
+            }
+        }
     }
 
     // ---- The pot ----
@@ -755,21 +855,22 @@ class StationAnim(val pos: BlockPos, val kind: Station?, var be: StationBlockEnt
 
         // Steam over the mouth: thin when it is warming, a thick plume when it is ready
         if (e > 0.06f) {
-            val rate = 0.5f + 2.6f * e + (if (v.state == STATE_READY) 1.4f * gloss.cur else 0f)
+            // A dull surface (a SEASON asked for) steams thin and pale
+            val rate = (0.5f + 2.6f * e + (if (v.state == STATE_READY) 1.4f * gloss.cur else 0f)) * (1f - 0.62f * dull.cur)
             if (chance(rate)) {
                 val a = random.nextFloat() * 2f * PI.toFloat()
                 val r = random.nextFloat() * 2.4f
                 val gold = v.state == STATE_READY && random.nextInt(4) == 0
                 spawn(
                     fx, CookParticles.STEAM.get(), 8f + cos(a) * r, rim + 0.4f, 8f + sin(a) * r, (random.nextFloat() - 0.5f) * 0.004f, 0.022f + 0.016f * e, (random.nextFloat() - 0.5f) * 0.004f,
-                    if (gold) 1f else 1f, if (gold) 0.9f else 1f, if (gold) 0.62f else 1f, 0.9f + 0.5f * e,
+                    1f, if (gold) 0.9f else 1f, if (gold) 0.62f else 1f, (0.9f + 0.5f * e) * (1f - 0.3f * dull.cur), 1f - 0.45f * dull.cur,
                 )
             }
         }
-        // Bubbles at the rim of a pot that is heating, harder when it boils
-        if (e > 0.4f && chance(0.6f + 2.2f * (e - 0.4f))) {
+        // Bubbles at the rim of a pot that is heating, harder when it boils; a thickening pot (a STICK) blups slowly and big
+        if (e > 0.4f && chance((0.6f + 2.2f * (e - 0.4f)) * (1f - 0.75f * thick.cur))) {
             val a = random.nextFloat() * 2f * PI.toFloat()
-            spawn(fx, CookParticles.BUBBLE.get(), 8f + cos(a) * 2.5f, sy + 0.2f, 8f + sin(a) * 2.5f, 0f, 0.01f, 0f)
+            spawn(fx, CookParticles.BUBBLE.get(), 8f + cos(a) * 2.5f, sy + 0.2f, 8f + sin(a) * 2.5f, 0f, 0.01f, 0f, size = 1f + 0.7f * thick.cur)
         }
 
         // The sign of a call: glints, and what it asks for
@@ -955,8 +1056,7 @@ class StationAnim(val pos: BlockPos, val kind: Station?, var be: StationBlockEnt
         // A drip lands: a speck and a hiss on the coals
         if (v.items.isNotEmpty() && v.lit && e > 0.2f) {
             val k = Math.floorDiv(now - DRIP_FALL, DRIP_EVERY)
-            val landed = k * DRIP_EVERY + DRIP_FALL + Mix.unit(k.toInt(), 3).times(DRIP_EVERY - 4).toLong()
-            if (landed == now && dripSlot(k)) {
+            if (dripLanding(k) == now && dripSlot(k)) {
                 val at = dripPlace(k)
                 spawn(fx, CookParticles.SIZZLE.get(), at[0], 2.2f, at[1], 0f, 0.03f, 0f)
                 if (dripHush == 0) {
@@ -988,11 +1088,14 @@ class StationAnim(val pos: BlockPos, val kind: Station?, var be: StationBlockEnt
         }
     }
 
-    /** Where drip [k] lands on the tray: x and z in px. */
+    /** The game time drip [k] lands at: its slot of the schedule and a place in it. */
+    fun dripLanding(k: Long): Long = k * DRIP_EVERY + DRIP_FALL + (Mix.unit(k.toInt(), 3) * (DRIP_EVERY - 4)).toLong()
+
+    /** Where drip [k] lands on the tray: x and z in px (all on the near side, in a bunch, while a TURN is asked for: the drip flares on one side). */
     fun dripPlace(k: Long): FloatArray {
         val j = (Mix.unit(k.toInt(), 11) * 5.999f).toInt()
         val x = CookGeo.JOINT_X[j] + (Mix.unit(k.toInt(), 12) - 0.5f) * 0.8f
-        val z = 6.6f + Mix.unit(k.toInt(), 13) * 2.8f
+        val z = if (callNow == Call.TURN) 6.5f + Mix.unit(k.toInt(), 13) * 1.1f else 6.6f + Mix.unit(k.toInt(), 13) * 2.8f
         return floatArrayOf(x, z)
     }
 
@@ -1027,6 +1130,11 @@ class StationAnim(val pos: BlockPos, val kind: Station?, var be: StationBlockEnt
 
         const val MAX_PLOPS = 6
         const val MAX_RIPPLES = 7
+
+        /** Chunks sinking out of sight at most, how long they take, and where a station's that have no place of their own lay. */
+        const val MAX_LEAVING = 12
+        const val LEAVE_TICKS = 16L
+        private val ZERO_AT = floatArrayOf(8f, 8f)
 
         /** Ticks a thrown item is in the air, bobs on the surface, sinks, and a ring lasts. */
         const val PLOP_FLY = 6
