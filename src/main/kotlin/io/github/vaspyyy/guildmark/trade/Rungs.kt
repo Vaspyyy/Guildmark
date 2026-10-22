@@ -3,7 +3,9 @@ package io.github.vaspyyy.guildmark.trade
 import io.github.vaspyyy.guildmark.economy.Markets
 import io.github.vaspyyy.guildmark.economy.OwnStalls
 import io.github.vaspyyy.guildmark.economy.SupplierLink
+import io.github.vaspyyy.guildmark.progression.Bonus
 import io.github.vaspyyy.guildmark.progression.Milestones
+import io.github.vaspyyy.guildmark.progression.Talents
 import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.Component
 import net.minecraft.server.MinecraftServer
@@ -52,8 +54,12 @@ object Rungs {
     /** How many guards [player] may have hired at once (the top rung's, with the ladder off). */
     fun guardLimit(player: ServerPlayer): Int = Ladder.guardLimit(held(player))
 
-    /** The size of [perk] for [player], as [Perk] says; 0.0 for none. The tree's bonuses, kept within what the design allows. */
-    fun perk(player: ServerPlayer, perk: Perk): Double = 0.0
+    /**
+     * The size of [perk] for [player], as [Perk] says; 0.0 for none. It is what the Trade tree's nodes the player has learned come to,
+     * kept within [Ladder.most]. It does not depend on the rung or on `tradeRungs`: a perk is the player's own, and the parts that read it are
+     * switched by their own settings.
+     */
+    fun perk(player: ServerPlayer, perk: Perk): Double = Ladder.capped(perk, Talents[player, bonus(perk)])
 
     /** Whether [player] has any of [perk]. */
     fun has(player: ServerPlayer, perk: Perk): Boolean = perk(player, perk) > 0.0
@@ -133,6 +139,13 @@ object Rungs {
 
     /** The rung the gates ask about: the top one with the ladder off, else the one held. */
     private fun held(player: ServerPlayer): Rung = if (TradeConfig.rungs()) of(player) else Rung.HOUSE
+
+    /** The tree's bonus a perk is. */
+    private fun bonus(perk: Perk): Bonus = when (perk) {
+        Perk.HAUL_PAY -> Bonus.HAUL_PAY
+        Perk.WORD_FRESH -> Bonus.WORD_FRESH
+        Perk.ROAD_WARY -> Bonus.ROAD_WARY
+    }
 
     /** Every few seconds, a look at each player online, so a rung ties when standing crosses its line at a stall. */
     private fun tick(server: MinecraftServer) {

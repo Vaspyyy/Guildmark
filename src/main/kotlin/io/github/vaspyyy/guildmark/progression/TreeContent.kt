@@ -223,11 +223,11 @@ object TreeContent {
             a(e(CONTRACT_MARKS, 0.03))
             b(xp(Skill.TRADE, 0.10))
             c(e(STANDING, 0.05))
-            notable("silver_tongue", e(STANDING, 0.15))
+            notable("silver_tongue", e(STANDING, 0.15), e(WORD_FRESH, 3.0))
             notable("shrewd_bargainer", e(TRADE_REFUND, 0.10))
-            notable("guild_broker", e(CONTRACT_MARKS, 0.08), e(GUILD_XP, 0.05))
-            notable("well_connected", e(DEADLINE_DAYS, 1.0), e(STANDING, 0.10))
-            keystone("merchant_prince", e(CONTRACT_MARKS, 0.15), e(TRADE_REFUND, 0.15), e(STANDING, 0.25))
+            notable("guild_broker", e(CONTRACT_MARKS, 0.08), e(GUILD_XP, 0.05), e(HAUL_PAY, 0.03))
+            notable("well_connected", e(DEADLINE_DAYS, 1.0), e(STANDING, 0.10), e(WORD_FRESH, 2.0), e(ROAD_WARY, 0.10))
+            keystone("merchant_prince", e(CONTRACT_MARKS, 0.15), e(TRADE_REFUND, 0.15), e(STANDING, 0.25), e(HAUL_PAY, 0.05))
         }
         t.branch(GUILD, "guild", null) {
             spec.ranks = mapOf(

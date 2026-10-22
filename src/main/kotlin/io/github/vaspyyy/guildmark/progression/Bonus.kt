@@ -129,6 +129,12 @@ enum class Bonus(
     SKILL_XP("skill_xp", Shown.PERCENT),
     STANDING("standing", Shown.PERCENT),
     TRADE_REFUND("trade_refund", Shown.PERCENT),
+    /** The share added to the pay of a haul ticket when it is delivered (the Trade tree's brokers; `Rungs.perk` keeps the sum within a tenth). */
+    HAUL_PAY("haul_pay", Shown.PERCENT),
+    /** Hours taken off the age of the Word of the other towns. */
+    WORD_FRESH("word_fresh", Shown.FLAT),
+    /** The share taken off the Hunt's chance against the loads you carry. */
+    ROAD_WARY("road_wary", Shown.PERCENT),
 
     // ---- Working the land and the forge ----
     ORE_DOUBLE("ore_double", Shown.PERCENT),
