@@ -25,6 +25,7 @@ object Trade {
 
         // A: hauls and the dealer's lot (the ticket payload; the hourly run, bookings and the ledger come with it)
         Hauls.register(modBus)
+        HaulCommand.init()
 
         // B: the Word and the Tally
 

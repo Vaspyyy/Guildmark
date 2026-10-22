@@ -151,7 +151,7 @@ internal object HaulRun {
     }
 
     /** [b] has stood a day without a quarter of its goods bought far enough away: the units go back to the board, the deposit is lost, and its booker is told. */
-    private fun lapse(level: ServerLevel, data: HaulData, book: HaulBook, t: Ticket, b: Booking, hour: Long) {
+    internal fun lapse(level: ServerLevel, data: HaulData, book: HaulBook, t: Ticket, b: Booking, hour: Long) {
         val lost = (b.deposit - b.repaid).coerceAtLeast(0)
         val owing = b.left
         Hauls.letGo(level, data, t, b, refund = false)
@@ -165,7 +165,7 @@ internal object HaulRun {
     }
 
     /** [t]'s day is up: whoever still owes units forfeits the deposit held for them and is told, and the ticket goes. */
-    private fun end(level: ServerLevel, data: HaulData, book: HaulBook, t: Ticket, hour: Long) {
+    internal fun end(level: ServerLevel, data: HaulData, book: HaulBook, t: Ticket, hour: Long) {
         val rest = t.left
         for (b in t.bookings.toList()) {
             if (b.left <= 0 || b.house) continue

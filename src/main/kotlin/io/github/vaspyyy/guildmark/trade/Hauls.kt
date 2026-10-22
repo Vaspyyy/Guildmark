@@ -366,7 +366,7 @@ object Hauls {
     }
 
     /** The capital most of [parcels] were bought at, if there are any. */
-    private fun mostFrom(parcels: List<Parcel>): BlockPos? =
+    internal fun mostFrom(parcels: List<Parcel>): BlockPos? =
         parcels.groupBy { it.origin }.maxByOrNull { (_, ps) -> ps.sumOf { it.units } }?.key
 
     /** [n] more units of [t] are in, brought by [taker] against [b]; every check has been made. */
