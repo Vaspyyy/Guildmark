@@ -689,7 +689,7 @@ object VillageCensus {
                 c and Cls.WATER != 0 -> if (waters.size < MAX_WATER && rimmed(t, x, y, z)) waters.add(BlockPos.asLong(x, y, z))
                 c and Cls.LAMP_BLOCK != 0 -> if (lamps.size < MAX_LAMPS) lamps.add(BlockPos(x, y, z))
                 c and Cls.LANTERN != 0 -> lantern(t, x, y, z)
-                c and Cls.SEAT != 0 -> if (benches.size < MAX_BENCHES) Scanner.seat(t, x, y, z, s)?.let { benches.add(it) }
+                c and Cls.SEAT != 0 -> if (benches.size < MAX_BENCHES) Scanner.bench(t, x, y, z, s)?.let { benches.add(it) }
                 c and Cls.WOOL != 0 -> wool.add(BlockPos.asLong(x, y, z))
                 Cls.feature(c) == Cls.F_POST -> posts.add(BlockPos(x, y, z))
                 d2 <= WELL_LOOK * WELL_LOOK && c and Cls.FLOOR != 0 -> hollow(t, x, y, z)
@@ -1108,8 +1108,8 @@ object VillageCensus {
                 }
                 keptWells = wells + old.wells.filter { w -> touchesDark(w, 2) && wells.none { near(it, w) } }
                 keptLamps = lamps + old.lamps.filter { dark(it) }
-                // A bench is looked at one block round it: one at the edge of the loaded ground could not be, and stands as it did
-                keptBenches = benches + old.benches.filter { b -> touchesDark(b.pos, 1) && benches.none { it.pos == b.pos } }
+                // A bench is looked at the ground round it: one at the edge of the loaded ground could not be, and stands as it did
+                keptBenches = benches + old.benches.filter { b -> touchesDark(b.pos, Scanner.BENCH_AROUND) && benches.none { it.pos == b.pos } }
                 keptStalls = stalls + old.stalls.filter { s -> touchesDark(s.keeper.pos, 2) && stalls.none { near(it.keeper.pos, s.keeper.pos) } }.mapIndexed { i, s ->
                     CityPlaces.Stall(stalls.size + i, s.keeper, s.customer, s.counter, s.goods, s.trade)
                 }

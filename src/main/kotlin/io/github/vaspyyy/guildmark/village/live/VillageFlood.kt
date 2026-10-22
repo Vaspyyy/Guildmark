@@ -577,5 +577,36 @@ internal class Scanner {
             if (down.block is StairBlock && down.getValue(StairBlock.FACING) == back) return null
             return Spot(BlockPos(x, y, z), front)
         }
+
+        /** How many blocks under a bench must be solid, and how far round it the ground is looked for. */
+        const val BENCH_SUPPORT = 4
+        const val BENCH_AROUND = 3
+
+        /** The most a bench may stand above the lowest ground [BENCH_AROUND] blocks round it. */
+        const val BENCH_RISE = 3
+
+        /**
+         * A bench out of doors: a [seat] that stands on the ground, and not on a roof. Under it the ground is solid for [BENCH_SUPPORT]
+         * blocks (a roof has the room it covers under it), and it is no more than [BENCH_RISE] blocks above the lowest ground within
+         * [BENCH_AROUND] blocks of it (a stair along the edge of a roof stands on a wall, which is solid, but the ground is a step
+         * away and far below). A cell it needs that is in a chunk that is not loaded makes it none.
+         */
+        fun bench(t: Terrain, x: Int, y: Int, z: Int, s: BlockState): Spot? {
+            val spot = seat(t, x, y, z, s) ?: return null
+            for (d in 1..BENCH_SUPPORT) {
+                val under = t.state(x, y - d, z) ?: return null
+                if (Cls.of(under) and Cls.FLOOR == 0) return null
+            }
+            var low = Int.MAX_VALUE
+            for (dz in -BENCH_AROUND..BENCH_AROUND) {
+                for (dx in -BENCH_AROUND..BENCH_AROUND) {
+                    val top = t.top(x + dx, z + dz)
+                    if (top == Terrain.UNLOADED) return null
+                    if (top < low) low = top
+                }
+            }
+            // A column's top is the first free cell above its highest block, so the ground itself is one below it
+            return if (y - (low - 1) > BENCH_RISE) null else spot
+        }
     }
 }
