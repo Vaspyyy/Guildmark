@@ -62,5 +62,11 @@
   "message.guildmark.cook.wants_knife": "That wants a knife.",
   "message.guildmark.cook.use_knife": "A pie or a tart is cut with the knife.",
   "message.guildmark.cook.use_turner": "That is lifted out with the turner.",
-  "message.guildmark.cook.shut_first": "Shut the door first: an empty hand on it."
+  "message.guildmark.cook.shut_first": "Shut the door first: an empty hand on it.",
+  "message.guildmark.cook.not_prep": "Only vegetables, roots, fruit, meat and fish can be prepared.",
+  "message.guildmark.cook.board_busy": "The board holds something else: take that off first.",
+  "message.guildmark.cook.board_full": "The board is full.",
+  "message.guildmark.cook.board_empty": "There is nothing on the board.",
+  "message.guildmark.cook.already_prepared": "That has been prepared already.",
+  "item.guildmark.prepared": "Prepared"
 }

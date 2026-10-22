@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
+    "guildmark:prep_board",
     "guildmark:charred_log",
     "guildmark:shipping_crate",
     "guildmark:produce_basket",

@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "#": "#minecraft:planks",
+    "S": "minecraft:stick"
+  },
+  "pattern": [
+    "###",
+    " S "
+  ],
+  "result": {
+    "count": 1,
+    "id": "guildmark:prep_board"
+  }
+}
