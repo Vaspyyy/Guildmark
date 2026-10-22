@@ -15,6 +15,7 @@ import io.github.vaspyyy.guildmark.city.plan.M
 import io.github.vaspyyy.guildmark.city.plan.Rect
 import io.github.vaspyyy.guildmark.city.plan.Spawn
 import io.github.vaspyyy.guildmark.city.plan.Wares
+import io.github.vaspyyy.guildmark.cooking.town.KitchenFit
 import io.github.vaspyyy.guildmark.economy.WaresBlockEntity
 import io.github.vaspyyy.guildmark.economy.WaresRegistry
 import io.github.vaspyyy.guildmark.guild.GuildHall
@@ -77,6 +78,8 @@ class WorldCanvas(
         if (!writable(pos)) return
         place(pos, planned(piece, b, pos))
         if (b.m == io.github.vaspyyy.guildmark.city.plan.M.SAILS || b.m == io.github.vaspyyy.guildmark.city.plan.M.WATER_WHEEL) mill(pos, At(x, y, z), b)
+        // The pots the plan draws are the town's: the hearth's the innkeeper's, the camp pot the guests' (cooking/town/KitchenFit.kt)
+        if (real && b.m == M.STEWPOT) KitchenFit.potDrawn(level, pos, b.v == 1)
     }
 
     override fun wares(x: Int, y: Int, z: Int, wares: Wares, facing: Dir, was: B?) {

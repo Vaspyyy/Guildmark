@@ -1,7 +1,10 @@
 package io.github.vaspyyy.guildmark.cooking.town
 
+import io.github.vaspyyy.guildmark.cooking.vessel.StewpotBlockEntity
+import io.github.vaspyyy.guildmark.cooking.vessel.StewpotMode
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.level.LevelAccessor
 
 /** How a retrofit run goes (living-world/cook/design.md 7.2): [PREVIEW] only lists what it would do, [SEEN] does it with a puff and a sound, [FULL] also tries the Spit. */
 enum class FitMode { PREVIEW, SEEN, FULL }
@@ -25,4 +28,14 @@ object KitchenFit {
 
     /** Runs the retrofit once on the capital with centre [capital] in [mode] (stub: nothing found, nothing done). */
     fun run(level: ServerLevel, capital: Long, mode: FitMode): FitReport = FitReport()
+
+    /**
+     * The plan's own pots are the town's (7.1): the pot a new capital's plan draws in the tavern's hearth is the innkeeper's
+     * (HOUSE), the camp pot in its back corner the guests' (GUEST). Called by the city's canvas as it draws one, after the block is
+     * placed; the pot's block entity is, in a chunk still being made, only a note of one, which [LevelAccessor.getBlockEntity]
+     * turns into the real one, so the mode is set on it before the chunk is saved.
+     */
+    fun potDrawn(level: LevelAccessor, pos: BlockPos, guest: Boolean) {
+        (level.getBlockEntity(pos) as? StewpotBlockEntity)?.mode = if (guest) StewpotMode.GUEST else StewpotMode.HOUSE
+    }
 }
