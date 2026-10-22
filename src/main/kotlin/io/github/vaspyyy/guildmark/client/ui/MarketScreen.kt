@@ -3,6 +3,7 @@ package io.github.vaspyyy.guildmark.client.ui
 import com.mojang.blaze3d.platform.InputConstants
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.client.combat.Cutscenes
+import io.github.vaspyyy.guildmark.client.trade.HaulBoardArt
 import io.github.vaspyyy.guildmark.client.trade.MarketPanel
 import io.github.vaspyyy.guildmark.client.trade.MarketPanels
 import io.github.vaspyyy.guildmark.economy.Good
@@ -84,9 +85,9 @@ class MarketScreen(private var view: MarketView) : Screen(Component.translatable
         var pressedBuy = -100
         var pressedSell = -100
 
-        /** Why the price is where it is, cut to the row's width, and the row's height with it. */
+        /** Why the price is where it is, cut to the row's width, and the row's height with it (a line taller for the ordinary lot, when a dealer's lot is offered beside it). */
         var reason: List<FormattedCharSequence> = listOf()
-        val height: Int get() = ROW + reason.size * LINE
+        val height: Int get() = ROW + max(reason.size, if (g.hauledCount > 0) 1 else 0) * LINE
 
         fun wrap() {
             reason = if (g.why.isEmpty()) listOf() else font.split(Component.translatable(g.why, name()), textWidth()).take(2)
@@ -240,7 +241,7 @@ class MarketScreen(private var view: MarketView) : Screen(Component.translatable
             if (g.stock < old.stock) row.ghost = max(row.ghost, row.bar) else if (g.stock > old.stock) row.ghost = min(row.ghost, row.bar)
             if (g.trend != old.trend) row.trendAt = ticks
             if (g.buyCount != old.buyCount || g.buyMarks != old.buyMarks) row.buyAt = ticks
-            if (g.sellCount != old.sellCount || g.sellMarks != old.sellMarks) row.sellAt = ticks
+            if (g.sellCount != old.sellCount || g.sellMarks != old.sellMarks || g.hauledCount != old.hauledCount || g.hauledMarks != old.hauledMarks) row.sellAt = ticks
             if (g.carried != old.carried) {
                 row.carriedAt = ticks
                 val y = rowTop(row)
@@ -471,7 +472,12 @@ class MarketScreen(private var view: MarketView) : Screen(Component.translatable
     // ---- What can be done ----
 
     private fun canBuy(g: MarketGood): Boolean = g.buyCount > 0 && view.marks >= g.buyMarks
-    private fun canSell(g: MarketGood): Boolean = g.sellCount > 0 && g.carried >= g.sellCount
+
+    /** The lot the sell button offers: the dealer's lot of goods that came a long way when there is one (see Trading.dealerLot), else the ordinary lot. */
+    private fun sellCount(g: MarketGood): Int = if (g.hauledCount > 0) g.hauledCount else g.sellCount
+    private fun sellMarks(g: MarketGood): Int = if (g.hauledCount > 0) g.hauledMarks else g.sellMarks
+
+    private fun canSell(g: MarketGood): Boolean = sellCount(g) > 0 && g.carried >= sellCount(g)
 
     private fun lot(count: Int, marks: Int): Component =
         Component.translatable(if (marks == 1) "gui.guildmark.market.lot.one" else "gui.guildmark.market.lot", count, marks)
@@ -487,8 +493,17 @@ class MarketScreen(private var view: MarketView) : Screen(Component.translatable
             view.marks < g.buyMarks -> lines.add(Component.translatable("gui.guildmark.market.tip.poor", marks(g.buyMarks), marks(view.marks)) to Ui.TEXT)
             else -> lines.add(Component.translatable("gui.guildmark.market.tip.buy", g.buyCount, row.many(), marks(g.buyMarks)) to Ui.TEXT)
         } else when {
-            g.sellCount == 0 -> lines.add(Component.translatable("gui.guildmark.market.tip.full", row.many()) to Ui.TEXT)
-            g.carried < g.sellCount -> lines.add(Component.translatable("gui.guildmark.market.tip.lacking", g.sellCount, g.carried) to Ui.TEXT)
+            sellCount(g) == 0 -> lines.add(Component.translatable("gui.guildmark.market.tip.full", row.many()) to Ui.TEXT)
+            g.carried < sellCount(g) -> lines.add(Component.translatable("gui.guildmark.market.tip.lacking", sellCount(g), g.carried) to Ui.TEXT)
+            g.hauledCount > 0 -> {
+                // The dealer's lot, and what the ordinary one would be beside it
+                lines.add(Component.translatable("gui.guildmark.trade.dealer_lot.tip", g.hauledCount, row.many(), marks(g.hauledMarks)) to Ui.GOLD)
+                lines.add(Component.translatable("gui.guildmark.trade.dealer_lot.why", g.hauledLeft) to Ui.TEXT_SOFT)
+                lines.add(
+                    (if (g.sellCount > 0) Component.translatable("gui.guildmark.trade.dealer_lot.ordinary", g.sellCount, marks(g.sellMarks))
+                    else Component.translatable("gui.guildmark.trade.dealer_lot.none")) to Ui.TEXT_SOFT,
+                )
+            }
             else -> lines.add(Component.translatable("gui.guildmark.market.tip.sell", g.sellCount, row.many(), marks(g.sellMarks)) to Ui.TEXT)
         }
         if (if (buying) canBuy(g) else canSell(g)) lines.add(Component.translatable("gui.guildmark.market.tip.shift", Stalls.MANY) to Ui.TEXT_FAINT)
@@ -899,6 +914,15 @@ class MarketScreen(private var view: MarketView) : Screen(Component.translatable
 
         // Why the price is where it is
         for ((i, line) in row.reason.withIndex()) graphics.text(font, line, textX, y + ROW + i * LINE - 1, fade(if (g.dear) Ui.GOLD else Ui.BLUE, k), false)
+
+        // The ordinary lot, under the dealer's
+        if (g.hauledCount > 0) {
+            val ordinary = Component.translatable(
+                "gui.guildmark.trade.dealer_lot.row",
+                if (g.sellCount > 0) Component.translatable("gui.guildmark.market.lot.short", g.sellCount, g.sellMarks) else Component.translatable("gui.guildmark.market.none"),
+            )
+            graphics.text(font, ordinary, bx + buttonWidth - font.width(ordinary), y + ROW - 1, fade(Ui.TEXT_FAINT, k), false)
+        }
         pose.popMatrix()
     }
 
@@ -1103,8 +1127,9 @@ class MarketScreen(private var view: MarketView) : Screen(Component.translatable
     /** A lot's button: lit under the cursor, flashing when pressed or when the lot changes, dimmed when it can't be had. */
     private fun drawButton(graphics: GuiGraphicsExtractor, row: Row, buying: Boolean, x: Int, y: Int, k: Float, mouseX: Int, mouseY: Int, t: Float, shift: Boolean) {
         val g = row.g
-        val count = if (buying) g.buyCount else g.sellCount
-        val marks = if (buying) g.buyMarks else g.sellMarks
+        val count = if (buying) g.buyCount else sellCount(g)
+        val marks = if (buying) g.buyMarks else sellMarks(g)
+        val dealer = !buying && g.hauledCount > 0
         val ok = if (buying) canBuy(g) else canSell(g)
         val lit = ok && mouseX >= x && mouseX < x + buttonWidth && mouseY >= y && mouseY < y + 13 && mouseY >= listTop && mouseY < listBottom
         val pressedAt = if (buying) row.pressedBuy else row.pressedSell
@@ -1126,18 +1151,29 @@ class MarketScreen(private var view: MarketView) : Screen(Component.translatable
             },
             Stalls.MANY,
         )
+        // A dealer's lot wears the small wagon wheel, which turns while the button is lit
+        val wheel = if (dealer) DEALER_LOT_PX + 2 else 0
         var shown = lot(count, marks)
-        if (font.width(verb) + 6 + font.width(shown) > buttonWidth - 8) shown = Component.translatable("gui.guildmark.market.lot.short", count, marks)
-        val withVerb = font.width(verb) + 6 + font.width(shown) <= buttonWidth - 8
+        if (font.width(verb) + 6 + font.width(shown) + wheel > buttonWidth - 8) shown = Component.translatable("gui.guildmark.market.lot.short", count, marks)
+        val withVerb = font.width(verb) + 6 + font.width(shown) + wheel <= buttonWidth - 8
         val lotColor = when {
             !ok -> Ui.TEXT_FAINT
             lit -> Ui.GOLD_BRIGHT
+            dealer -> Ui.GOLD
             else -> Ui.TEXT
         }
+        if (dealer) {
+            val pose = graphics.pose()
+            pose.pushMatrix()
+            pose.translate(x + 4f + DEALER_LOT_PX / 2f - 0.5f, ty + 3f)
+            if (lit) pose.rotate(t * 0.12f)
+            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, DEALER_LOT, -DEALER_LOT_PX / 2, -DEALER_LOT_PX / 2, DEALER_LOT_PX, DEALER_LOT_PX, ARGB.white(if (ok) k else k * 0.5f))
+            pose.popMatrix()
+        }
         if (withVerb) {
-            graphics.text(font, verb, x + 5, ty, fade(if (ok) (if (shift) Ui.GOLD_BRIGHT else Ui.GOLD) else Ui.TEXT_FAINT, k), false)
+            graphics.text(font, verb, x + 5 + wheel, ty, fade(if (ok) (if (shift) Ui.GOLD_BRIGHT else Ui.GOLD) else Ui.TEXT_FAINT, k), false)
             graphics.text(font, shown, x + buttonWidth - 5 - font.width(shown), ty, fade(lotColor, k), false)
-        } else graphics.centeredText(font, shown, x + buttonWidth / 2, ty, fade(lotColor, k))
+        } else graphics.centeredText(font, shown, x + buttonWidth / 2 + wheel / 2, ty, fade(lotColor, k))
     }
 
     /** The purse: the player's Guild Marks, counting up or down to what they have now, and the hint for shift-clicking. */
@@ -1226,6 +1262,10 @@ class MarketScreen(private var view: MarketView) : Screen(Component.translatable
         val STEADY = sprite("market/steady")
         val SHADE = sprite("market/shade")
         val COIN = sprite("compass/lost_marks")
+
+        /** The dealer's lot's wagon wheel (art/scripts/haul_board_art.py), and the size it is drawn at. */
+        val DEALER_LOT = sprite(HaulBoardArt.DEALER_LOT)
+        const val DEALER_LOT_PX = HaulBoardArt.DEALER_LOT_PX
         val MARK: ItemStack by lazy { ItemStack(ModItems.GUILD_MARK.get()) }
 
         /** An order's slip, the wax seal of a standing one, the stamp on one promised to someone else, and each rank's emblem (as orders_art.py draws them). */
