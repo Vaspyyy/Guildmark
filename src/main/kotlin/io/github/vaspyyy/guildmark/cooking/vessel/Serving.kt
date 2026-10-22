@@ -12,6 +12,7 @@ import io.github.vaspyyy.guildmark.cooking.Tier
 import io.github.vaspyyy.guildmark.cooking.dish.DishItem
 import io.github.vaspyyy.guildmark.cooking.dish.Dishes
 import io.github.vaspyyy.guildmark.cooking.dish.Journal
+import io.github.vaspyyy.guildmark.cooking.market.DishMix
 import io.github.vaspyyy.guildmark.cooking.recipe.CookXp
 import io.github.vaspyyy.guildmark.cooking.recipe.Hints
 import io.github.vaspyyy.guildmark.cooking.recipe.Ideal
@@ -166,8 +167,9 @@ internal object Serving {
     // ---- What a portion is ----
 
     /**
-     * [count] portions of the frozen batch: its dish; Gruel for a pot that could name nothing; Scorched mess for a batch that
-     * came out Spoilt. A portion without a [bowl] has no bowl to give back when it is eaten (1.1).
+     * [count] portions of the frozen batch: its dish, carrying the batch's mix for a keeper to taste (5.2); Gruel for a pot that
+     * could name nothing; Scorched mess for a batch that came out Spoilt. A portion without a [bowl] has no bowl to give back
+     * when it is eaten (1.1).
      */
     fun portion(v: Vessel, count: Int, bowl: Boolean): ItemStack {
         val tier = v.tier ?: Tier.PLAIN
@@ -176,7 +178,7 @@ internal object Serving {
         val stack = when {
             tier == Tier.SPOILT -> other(CookRegistry.SCORCHED_MESS.get(), data, count)
             kind == null -> other(CookRegistry.GRUEL.get(), data, count)
-            else -> Dishes.make(kind, data, count)
+            else -> Dishes.make(kind, data, count).also { DishMix.stamp(it, v.share) }
         }
         if (!bowl) stack.remove(DataComponents.USE_REMAINDER)
         return stack
