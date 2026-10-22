@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.trade
 
+import io.github.vaspyyy.guildmark.trade.carry.Carry
 import net.neoforged.bus.api.IEventBus
 
 /**
@@ -30,6 +31,7 @@ object Trade {
         // C: the Haul Board
 
         // D: carrying (the pack animal, the cart, the wagon)
+        Carry.register(modBus)
 
         // E: the Hunt and the hired guard
 
