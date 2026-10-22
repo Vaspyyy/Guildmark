@@ -44,6 +44,9 @@ import io.github.vaspyyy.guildmark.townsfolk.talk.Utterance
  * rumour is told in the street as news without its rumour mark, and said to a player who has not taken the tale up.
  *
  * A template adds its own through `Template.topics` (a cast member's other words) and `Template.script` (a conversation wholly its own).
+ *
+ * Once a tale has ended, [TaleAfter] has its people say what they think of it (thanks, gladness, sorrow, old times), and tells the ending's
+ * rumour, which `RumourWords` leaves to this source.
  */
 object TaleTopics : TopicSource {
     override val id = "tale"
@@ -65,10 +68,14 @@ object TaleTopics : TopicSource {
     private const val HOME_NEAR = 64.0
 
     override fun offer(ask: Ask, out: MutableList<Topic>) {
-        if (!Tales.live || TaleEngine.openTales(ask.level).isEmpty()) return
-        val found = TaleSpeakers.find(ask.level, ask.speaker)
-        if (found != null) cast(ask, found, out)
-        rumours(ask, found, out)
+        if (!Tales.live) return
+        if (TaleEngine.openTales(ask.level).isNotEmpty()) {
+            val found = TaleSpeakers.find(ask.level, ask.speaker)
+            if (found != null) cast(ask, found, out)
+            rumours(ask, found, out)
+        }
+        // What is said of a tale once it has ended: thanks, gladness or sorrow, old times (slice 2)
+        TaleAfter.offer(ask, out)
     }
 
     // ---- The cast ----
@@ -182,5 +189,6 @@ object TaleTopics : TopicSource {
         TaleLines.forget()
         TaleVoiceGuard.forget()
         TaleOptions.forget()
+        TaleAfter.forget()
     }
 }

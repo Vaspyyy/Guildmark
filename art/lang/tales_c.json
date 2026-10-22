@@ -22,6 +22,14 @@
 
   "say.guildmark.talk.detail.tale.hearsay": "So the street has it. It may have grown.",
 
+  "say.guildmark.talk.detail.tale.old": "%2$s: %1$s",
+  "say.guildmark.talk.detail.tale.age.recent": "A day or two ago",
+  "say.guildmark.talk.detail.tale.age.week": "About a week ago",
+  "say.guildmark.talk.detail.tale.age.weeks": "A couple of weeks ago",
+  "say.guildmark.talk.detail.tale.age.month": "About a month ago",
+  "say.guildmark.talk.detail.tale.age.months": "Some months back",
+  "say.guildmark.talk.detail.tale.age.long": "Long ago",
+
   "say.guildmark.talk.tale.yes_0": "Thank you. That means a great deal.",
   "say.guildmark.talk.tale.yes_1": "I'm glad of it. Truly.",
   "say.guildmark.talk.tale.yes_2": "Bless you for it.",

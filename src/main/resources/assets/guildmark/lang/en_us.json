@@ -7657,5 +7657,12 @@
   "say.guildmark.talk.detail.tale.probe.gave": "%1$s of %2$s Marks given.",
   "fortune.guildmark.reason.tale.why.probe.chose": "%1$s chose reply %2$s.",
   "fortune.guildmark.reason.tale.why.probe.gave_one": "%1$s gave a Mark.",
-  "fortune.guildmark.reason.tale.why.probe.gave": "%1$s gave %2$s Marks."
+  "fortune.guildmark.reason.tale.why.probe.gave": "%1$s gave %2$s Marks.",
+  "say.guildmark.talk.detail.tale.old": "%2$s: %1$s",
+  "say.guildmark.talk.detail.tale.age.recent": "A day or two ago",
+  "say.guildmark.talk.detail.tale.age.week": "About a week ago",
+  "say.guildmark.talk.detail.tale.age.weeks": "A couple of weeks ago",
+  "say.guildmark.talk.detail.tale.age.month": "About a month ago",
+  "say.guildmark.talk.detail.tale.age.months": "Some months back",
+  "say.guildmark.talk.detail.tale.age.long": "Long ago"
 }
