@@ -104,7 +104,8 @@ object TaleTopics : TopicSource {
         val tale = found.tale
         // Said, the ask is counted; the id carries the asks so far, so that a second ask is not the same topic as the first
         out.add(Topic(
-            "tale.${tale.id}.ask.${turn.mine?.asks ?: 0}", Kind.TALE, OPENER, Utterance(listOf(part)), tone = -1, first = true,
+            "tale.${tale.id}.ask.${turn.mine?.asks ?: 0}", Kind.TALE, OPENER, Utterance(listOf(part)), tone = -1,
+            gesture = TaleSays.gesture(turn, found.voice, "ask"), first = true,
             onSaid = { a -> a.player?.let { TaleSpeakers.asked(a.level, tale, it, true) } },
         ))
     }
@@ -114,7 +115,7 @@ object TaleTopics : TopicSource {
         val family = turn.family("passing")
         if (!TaleLines.exists(family)) return
         val part = TaleLines.part(ask, family, TaleSays.detail(turn, found.voice, "passing")) ?: return
-        out.add(Topic("tale.${found.tale.id}.passing", Kind.TALE, PASSING, Utterance(listOf(part)), tone = -1))
+        out.add(Topic("tale.${found.tale.id}.passing", Kind.TALE, PASSING, Utterance(listOf(part)), tone = -1, gesture = TaleSays.gesture(turn, found.voice, "passing")))
     }
 
     // ---- The rumours ----
@@ -141,12 +142,13 @@ object TaleTopics : TopicSource {
             }
             val template = Templates.find(tale.template) ?: continue
             val turn = TaleTurn(ask, tale, "", template, player)
-            val detail = if (k.heard.warp == 0) TaleSays.detail(turn, TaleVoices.of(template), "rumour") else TaleLines.facts("talk.detail.tale.hearsay")
+            val voice = TaleVoices.of(template)
+            val detail = if (k.heard.warp == 0) TaleSays.detail(turn, voice, "rumour") else TaleLines.facts("talk.detail.tale.hearsay")
             val part = TaleLines.part(ask, turn.family("rumour"), detail) ?: continue
             val home = rumour.origin?.takeIf { it.distSqr(ask.speaker.blockPosition()) <= HOME_NEAR * HOME_NEAR }
             out.add(Topic(
                 "tale.rumour.${rumour.id}.${k.heard.warp}", Kind.TALE, RUMOUR_MIN + RUMOUR_HEAT * rumour.heat, Utterance(listOf(part)), tone = -1,
-                gesture = if (home != null) Activity.POINT else null, toward = home, rumour = rumour.id.takeIf { !bark },
+                gesture = if (home != null) Activity.POINT else TaleSays.gesture(turn, voice, "rumour"), toward = home, rumour = rumour.id.takeIf { !bark },
                 // The talk marks what a player is told when they ask for news; what it opens with or answers with is marked here
                 onSaid = { a -> if (!bark && a.occasion != Occasion.NEWS) a.player?.let { TownTalk.told(a.level, a.resident, it, rumour.id) } },
             ))

@@ -102,7 +102,7 @@ internal class TaleScript(
     /** The request: what the cast member wants, and the tale as it now stands for a player who comes after another (3.6). */
     private fun request(turn: TaleTurn): TaleReply {
         turn.player?.let { TaleSpeakers.asked(turn.level, tale, it, false) }
-        return TaleReply(listOf(TaleSays.ask(turn, voice)))
+        return TaleReply(listOf(TaleSays.ask(turn, voice)), TaleSays.gesture(turn, voice, "ask"))
     }
 
     /** A yes: the part goes IN (the banner and the chime are the following's), and the cast member thanks them. */
@@ -138,7 +138,7 @@ internal class TaleScript(
     /** How it stands: the step's own line (`stand_<step>` if the tale has one, else `stand`) with the live numbers in grey. */
     private fun stand(turn: TaleTurn): TaleReply {
         stood = true
-        return TaleReply(listOf(TaleSay(TaleSays.standFamily(turn), TaleSays.detail(turn, voice, "stand"))))
+        return TaleReply(listOf(TaleSay(TaleSays.standFamily(turn), TaleSays.detail(turn, voice, "stand"))), TaleSays.gesture(turn, voice, "stand"))
     }
 
     /** One reason, newest first (5.4): a short lead and the reason in the tale's own sentence, in grey; "That's all I know." when none is left. */

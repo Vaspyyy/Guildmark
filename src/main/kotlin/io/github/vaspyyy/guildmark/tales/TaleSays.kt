@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.tales
 
+import io.github.vaspyyy.guildmark.townsfolk.Activity
 import net.minecraft.network.chat.Component
 
 /**
@@ -11,6 +12,10 @@ internal object TaleSays {
     /** The grey words of [beat] from [voice] (the template's), or null: a voice that throws is logged once and its talk goes on without them. */
     fun detail(turn: TaleTurn, voice: TaleVoice?, beat: String): String? =
         TaleVoiceGuard.run(turn.id, "detail $beat", null) { voice?.detail(beat, turn) }
+
+    /** The gesture the voice makes [beat] with, or null for the talk's own. */
+    fun gesture(turn: TaleTurn, voice: TaleVoice?, beat: String): Activity? =
+        TaleVoiceGuard.run(turn.id, "gesture $beat", null) { voice?.gesture(beat, turn) }
 
     /** What the cast member offers at the tale's step, at most [MOST] of it. */
     fun options(turn: TaleTurn, voice: TaleVoice?): List<TaleOption> =
