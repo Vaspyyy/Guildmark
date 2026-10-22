@@ -212,5 +212,55 @@ object GuildmarkConfig {
         .comment("A grand festival in every capital and village once a season: decorations, music, dancing townsfolk, a contest with prizes and fireworks at dusk.")
         .define("festivals", true)
 
+    // Living villages (living-world/villages/design.md section 15.1)
+    val LIVING_VILLAGES: ModConfigSpec.BooleanValue = BUILDER
+        .comment("The Living World outside the capitals: every village is counted (its homes, beds, wells, lamps and stalls) when a player first comes near, and its people, market, wagons, lamps, festivals and sieges go by what really happens there. Off, no village is counted, villagers who were made townsfolk are given back at night, and wagons, lamps, festivals and sieges are as they were; what was recorded is kept for when it's on again.")
+        .define("livingVillages", true)
+    val VILLAGE_FOLK: ModConfigSpec.BooleanValue = BUILDER
+        .comment("A village's villagers become townsfolk, each with a name, a home, a bed, a trade and a day of their own, who talk and remember as a capital's do; the vanilla villager is kept, so its real trades are still on offer in the talk. They are swapped at night, out of sight, with nobody within 48 blocks. Off, nobody new is taken in and those taken in are given back at night, village by village. The village is still counted and its market, pedlar, wagons, lamps and building still run, but what needs a townsperson (days, talk, memory, the bellman, the watch, shelter, births and newcomers) is not there for vanilla villagers.")
+        .define("villageFolk", true)
+    val VILLAGE_MARKETS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("A village has a market like a capital's: it grows, makes, eats and trades real goods an hour at a time, and its counters (the baker's oven, the smith's anvil, and stalls once it has built a market) buy and sell at prices that follow what it holds. Needs Capital Markets. Off, villages have no market, no pedlar, no wagon calls and no fortunes.")
+        .define("villageMarkets", true)
+    val VILLAGE_PEDLAR: ModConfigSpec.BooleanValue = BUILDER
+        .comment("A pedlar comes down the road with a handcart every two to four days and on market day, parks it on the green and trades; he is how a village on no capital's road is supplied. Needs Village Markets. Off, there is no pedlar: only a capital's wagons supply a village, and a village with no wagon goes without.")
+        .define("villagePedlar", true)
+    val VILLAGE_WAGONS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("A capital's wagons make a round trip to the village at the end of their road: the village's surplus goes in, the capital's goods and news come back, a wagon taken is a hole in both stocks, and a shut road cuts the village off. Needs Caravans and Village Markets. Off, the wagons are the capital's alone, as they were, and the pedlar serves a linked village.")
+        .define("villageWagons", true)
+    val VILLAGE_FORTUNES: ModConfigSpec.BooleanValue = BUILDER
+        .comment("A village has good times and hard, worked out each day from what really happened to it (hunger, a wagon taken, a siege held or lost, deaths and festivals), and they show in what its people say and in its dressing. Needs Town Fortunes and Village Markets. Off, every village reads steady and has no dressing.")
+        .define("villageFortunes", true)
+    val VILLAGE_BELLMAN: ModConfigSpec.BooleanValue = BUILDER
+        .comment("A bellman, the villager who holds the bell for the week, goes to the bell at noon on market days and whenever there is news worth telling (a cart or a wagon in, the road shut, a birth, a death, a siege held or lost, the capital's news by the wagon) and cries it; the villagers talk of the village's own affairs. Off, no cry and no village talk: the villagers say what they said before.")
+        .define("villageBellman", true)
+    val VILLAGE_LAMPS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("A village's lamp posts are lit at dusk and put out at dawn by a lamplighter on a round of his own, and plain lanterns on posts are swapped for street lamps, out of sight. Needs Street Lamps. Off, the lamps burn day and night as before; a lamp already swapped stays a street lamp, lit.")
+        .define("villageLamps", true)
+    val VILLAGE_DRESSING: ModConfigSpec.BooleanValue = BUILDER
+        .comment("In good times garlands and pennants go up on the green and the cottages, and come down when times are hard. Needs Village Fortunes. Off, none are put up and those that are up are taken down.")
+        .define("villageDressing", true)
+    val VILLAGE_TROUBLE: ModConfigSpec.BooleanValue = BUILDER
+        .comment("When a siege or a raid comes, the folk run to the nearest door and bolt it, a village watch of guards stands the walls, the dead are remembered with a candle at a stone by the bell, and a crew mends the damage next morning. Needs Village Sieges for sieges. Off, sieges and raids are as before: the folk flee on their own, nothing is mended and nobody is remembered.")
+        .define("villageTrouble", true)
+    val VILLAGE_BUILDS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("A project funded at a village's board (lamp posts, hall, road, palisade, tower, market, walls, keep) is laid by a crew over one to five days: the village's own craftsfolk, hands from the road and a foreman, putting the blocks up in their order. Off, a project goes up at once, as before.")
+        .define("villageBuilds", true)
+    val VILLAGE_BUILD_SPEED: ModConfigSpec.DoubleValue = BUILDER
+        .comment("How fast a village's crews work: 1 lays a project in one to five days; 2 is twice as fast.")
+        .defineInRange("villageBuildSpeed", 1.0, 0.1, 20.0)
+    val VILLAGE_GROWTH: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Villages grow from within: a home with a free bed and a fed household has a child every week or so, who grows up in about eight days, and a newcomer comes in off the road to fill an empty home. Off, no new people come, the dead stay dead and a village shrinks only by what happens to it.")
+        .define("villageGrowth", true)
+    val VILLAGE_GOLEMS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("A village with too few iron golems for its folk is given one back at night, out of sight (one for every ten folk, at least one and at most three). Off, only vanilla's own golem spawning applies.")
+        .define("villageGolems", true)
+    val MAX_LIVE_VILLAGES: ModConfigSpec.IntValue = BUILDER
+        .comment("The most villages worked out at once. Past it, the ones seen longest ago are paused, and caught up (72 hours at most) when they wake. Lower is lighter on the server.")
+        .defineInRange("maxLiveVillages", 48, 4, 200)
+    val MAX_VILLAGE_FOLK: ModConfigSpec.IntValue = BUILDER
+        .comment("The most people one village can have. At the cap no children are born and no newcomers come.")
+        .defineInRange("maxVillageFolk", 60, 8, 120)
+
     val SPEC: ModConfigSpec = BUILDER.build()
 }

@@ -76,6 +76,7 @@ PREFIXES = {
         "guildmark.configuration.village", "gui.guildmark.settings.section.villages",
         "fortune.guildmark.kind.held", "fortune.guildmark.kind.lost",
         "fortune.guildmark.reason.held", "fortune.guildmark.reason.lost",
+        "guildmark.configuration.livingVillages", "guildmark.configuration.maxLiveVillages", "guildmark.configuration.maxVillageFolk",
     ),
 }
 

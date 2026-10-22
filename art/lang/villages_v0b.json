@@ -1,0 +1,19 @@
+{
+  "gui.guildmark.settings.section.villages": "Villages",
+  "guildmark.configuration.livingVillages": "Living Villages",
+  "guildmark.configuration.villageFolk": "Village Folk Are Townsfolk",
+  "guildmark.configuration.villageMarkets": "Village Markets",
+  "guildmark.configuration.villagePedlar": "Pedlars on the Road",
+  "guildmark.configuration.villageWagons": "Wagons to the Villages",
+  "guildmark.configuration.villageFortunes": "Village Fortunes",
+  "guildmark.configuration.villageBellman": "Bellmen and Village Talk",
+  "guildmark.configuration.villageLamps": "Village Lamps",
+  "guildmark.configuration.villageDressing": "Village Bunting",
+  "guildmark.configuration.villageTrouble": "Shelter and the Watch",
+  "guildmark.configuration.villageBuilds": "Village Building Crews",
+  "guildmark.configuration.villageBuildSpeed": "Village Building Speed",
+  "guildmark.configuration.villageGrowth": "Births and Newcomers",
+  "guildmark.configuration.villageGolems": "Village Golems",
+  "guildmark.configuration.maxLiveVillages": "Villages Alive at Once",
+  "guildmark.configuration.maxVillageFolk": "Most Folk in a Village"
+}
