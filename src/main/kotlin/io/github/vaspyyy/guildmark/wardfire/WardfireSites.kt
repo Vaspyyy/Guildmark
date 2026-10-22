@@ -56,6 +56,29 @@ object WardfireSites {
         return false
     }
 
+    /**
+     * The nearest Wardfire, lit or cold, within [radius] blocks of [pos] counted across the ground only (so a hall far
+     * below a lair's mouth is near the fire outside it), or null. Looked for as [near] does, in loaded land only.
+     */
+    fun nearest(level: ServerLevel, pos: BlockPos, radius: Int): BlockPos? {
+        val within = radius.toDouble() * radius
+        var best: BlockPos? = null
+        var bestSq = Double.MAX_VALUE
+        for (cx in ((pos.x - radius) shr 4)..((pos.x + radius) shr 4)) for (cz in ((pos.z - radius) shr 4)..((pos.z + radius) shr 4)) {
+            if (level.chunkSource.getChunkNow(cx, cz) == null) continue
+            level.poiManager.getInChunk({ it.`is`(ModVillagers.WARDFIRE_POI.key!!) }, ChunkPos(cx, cz), PoiManager.Occupancy.ANY).forEach {
+                val dx = (it.pos.x - pos.x).toDouble()
+                val dz = (it.pos.z - pos.z).toDouble()
+                val sq = dx * dx + dz * dz
+                if (sq <= within && sq < bestSq) {
+                    best = it.pos
+                    bestSq = sq
+                }
+            }
+        }
+        return best
+    }
+
     /** The village round [bell] gets a Wardfire, unless it already has one. */
     fun forVillage(level: ServerLevel, bell: BlockPos) {
         if (!near(level, bell, VILLAGE_RANGE)) placeNear(level, bell, 10, 22)
