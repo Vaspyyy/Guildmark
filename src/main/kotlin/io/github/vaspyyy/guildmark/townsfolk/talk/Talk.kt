@@ -64,6 +64,9 @@ object Talk {
     private const val IDLE = 30 * 20L
     private const val LONGEST = 2 * 60 * 20L
 
+    /** A script a source's choice opened in place is read slowly, and weighed over: three minutes with no choice made end it, and it has no two minutes in all. */
+    private const val SCRIPT_IDLE = 3 * 60 * 20L
+
     /** How soon a stretch of their day that won't wait must be due to cut a talk short, or keep them from stopping. */
     private const val DUE = 100
 
@@ -90,7 +93,20 @@ object Talk {
     private enum class Ending { BYE, WALKED, IDLE, OFF, GONE }
 
     /** One player's talk with one townsperson. */
-    private class Session(val player: ServerPlayer, val p: Townsperson, val script: Script?, val started: Long) {
+    private class Session(val player: ServerPlayer, val p: Townsperson, var script: Script?, val started: Long) {
+        /**
+         * Whether [script] was taken up in place, from a source's choice, on the screen that was already up ([Topics.script]):
+         * the talk is the ordinary one again when the script hands it back ([Script.back]), and while it runs it is read at a
+         * script's pace, not hurried out by the ordinary talk's half minute and two.
+         */
+        var inPlace = false
+
+        /** Whether a script was taken up in place in this talk at any time: walking off a talk that had one is no slight. */
+        var scripted = false
+
+        /** Where the ordinary talk's two minutes are counted from: the start, or the moment the script in place handed the talk back. */
+        var since = started
+
         /** The number of the say on the player's screen now: a choice answers it, once. */
         var serial = 0
 
@@ -294,7 +310,10 @@ object Talk {
             s.asked += choice
             val (said, ends) = script.answer(ask, choice)
             if (ends) s.ending = Ending.BYE
-            queue(s, spoken(ask, said, Activity.TALK, null), ends)
+            // A script that hands the talk back with this answer is done: what it says is said, and the ordinary choices follow it
+            else if (script.back(ask, choice)) handBack(s, level)
+            val parts = spoken(ask, said, said.gesture ?: Activity.TALK, said.toward)
+            queue(s, if (parts.isEmpty() && s.inPlace) silence(s, ask) else parts, ends)
             return
         }
         when (choice) {
@@ -379,12 +398,41 @@ object Talk {
         queue(s, parts.ifEmpty { listOf(Spoken("greet_0", "greet_0", Activity.NOD, UNTIMED, null)) }, false)
     }
 
-    /** A source's own choice ("About the festival..."): asked once; an answer about somewhere (the works) points there as it begins. */
+    /**
+     * A source's own choice ("About the festival..."): asked once; an answer about somewhere (the works) points there as it
+     * begins. A choice that opens a script ([Topics.script]) takes it up in place instead: the same screen, the same person.
+     */
     private fun source(s: Session, ask: Ask, choice: String) {
         s.asked += choice
+        Topics.script(ask, choice)?.let { return take(s, ask, it) }
         val said = Topics.answer(ask, choice)
         queue(s, said?.let { spoken(ask, it, if (it.toward != null) Activity.POINT else Activity.EXPLAIN, it.toward) } ?: listOfNotNull(part(ask, "ask.dunno", Activity.SHRUG)).ifEmpty { old(Lines.reply(s.p)) }, false)
     }
+
+    /**
+     * [script] is taken up in place, with no Open and no Close to the screen: its opener is said as an answer is (the words of the
+     * last answer rise away, these are typed in their place) and its choices come with it, as an answer's do, so the screen never
+     * blinks. The ordinary talk is what the player is back to when it hands the talk back ([handBack]).
+     */
+    private fun take(s: Session, ask: Ask, script: Script) {
+        s.script = script
+        s.inPlace = true
+        s.scripted = true
+        val said = script.opener(ask)
+        val parts = spoken(ask, said, said.gesture ?: if (said.toward != null) Activity.POINT else Activity.EXPLAIN, said.toward)
+        queue(s, parts.ifEmpty { silence(s, ask) }, false)
+    }
+
+    /** The script in place hands the talk back to the ordinary one: from now its two minutes count, and its choices are the ordinary ones. */
+    private fun handBack(s: Session, level: ServerLevel) {
+        s.script = null
+        s.inPlace = false
+        s.since = level.gameTime
+    }
+
+    /** What a script that had nothing to put into words says instead of leaving the screen bare: a pause to think. */
+    private fun silence(s: Session, ask: Ask): List<Spoken> =
+        listOfNotNull(part(ask, "ask.think", Activity.THINK)).ifEmpty { old(Lines.reply(s.p)) }
 
     /** One of the old lines as an answer, while the new ones aren't recorded. */
     private fun old(line: String): List<Spoken> = listOf(Spoken(line, line, Activity.TALK, UNTIMED, null))
@@ -617,11 +665,12 @@ object Talk {
             Wire.alive(player, p, s.serial)
             s.sent = now
         }
-        if (s.script != null || queues[p]?.any { it.session === s } == true) return
+        // A director's script is never idled out; one a source's choice opened in place is, slowly, and has no two minutes in all
+        if (s.script != null && !s.inPlace || queues[p]?.any { it.session === s } == true) return
         val ask = ask(level, p, player, Occasion.FAREWELL)
         when {
-            now - s.last > IDLE -> farewell(s, ask, Ending.IDLE)
-            now - s.started > LONGEST -> farewell(s, ask, Ending.OFF)
+            now - s.last > (if (s.script != null) SCRIPT_IDLE else IDLE) -> farewell(s, ask, Ending.IDLE)
+            s.script == null && now - s.since > LONGEST -> farewell(s, ask, Ending.OFF)
             due(level, p) -> farewell(s, ask, Ending.OFF)
         }
     }
@@ -638,7 +687,7 @@ object Talk {
         }
         val r = ask.resident
         val today = Days.dayOf(level.overworldClockTime)
-        if (r != null && s.script == null) {
+        if (r != null && s.script == null && !s.scripted) {
             val key = "${r.id}:${s.player.uuid}"
             if (walkedOff[key] != today) {
                 walkedOff[key] = today
@@ -801,4 +850,12 @@ interface Script {
 
     /** What they say to [choice], and whether that ends the talk. */
     fun answer(ask: Ask, choice: String): Pair<Utterance, Boolean>
+
+    /**
+     * Whether, with the answer to [choice] just given, the script is done and hands the talk back: what it said is still said,
+     * and the ordinary choices (what are you up to, any news, the sources' own, goodbye) come with it, so the player goes on
+     * talking of other things with the same person. A script that ends the talk is not asked. False by default: a director's
+     * script (the festival host's, the driver's at the gate) keeps the talk to the end.
+     */
+    fun back(ask: Ask, choice: String): Boolean = false
 }

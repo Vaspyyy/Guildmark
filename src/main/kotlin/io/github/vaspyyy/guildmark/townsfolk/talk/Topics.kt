@@ -49,9 +49,10 @@ enum class Familiarity {
 
 /**
  * A line as it's said: one or two voiced parts, each with an unvoiced detail. An answer to a source's choice may name
- * where it's about ([toward]: the works asked after): the first part is said pointing there.
+ * where it's about ([toward]: the works asked after): the first part is said pointing there. A script's answer may name
+ * the [gesture] the first part is made with (else the talk's own: explaining, or the plain talk of a script).
  */
-class Utterance(val parts: List<Part>, val toward: BlockPos? = null) {
+class Utterance(val parts: List<Part>, val toward: BlockPos? = null, val gesture: Activity? = null) {
     /**
      * [line]: a voiced key (say.guildmark.<line>, townsfolk.voice.<timbre>.<line>), or "" for text alone.
      * [detail]: Speech-format text after it ("talk.detail.price|item.minecraft.bread|3"), or null.
@@ -85,6 +86,10 @@ class Topic(
     val rumour: Int? = null,
     /** The player it's about. */
     val about: UUID? = null,
+    /** Said ahead of the draw when it scores [Topics.pick]'s least: a telling that must come first, and once (the tale that wants a hand). */
+    val first: Boolean = false,
+    /** Called when it is chosen to be said (not when it is only on offer): the source notes that it was told. */
+    val onSaid: ((Ask) -> Unit)? = null,
 )
 
 /** Everything a source may look at. */
@@ -121,6 +126,13 @@ interface TopicSource {
 
     /** The answer to this source's choice, or null if it no longer applies. */
     fun answer(ask: Ask, choice: String): Utterance? = null
+
+    /**
+     * Else this source's choice opens a short talk of its own on the same screen, with the same person: the script's opener is
+     * said as an answer would be, its choices follow, and when it hands the talk back ([Script.back]) the ordinary choices
+     * return. [answer] is not asked then. Null if the choice is not one that opens a script.
+     */
+    fun script(ask: Ask, choice: String): Script? = null
 }
 
 /** A topic on offer as [Topics.all] weighs it: its weight times how it suits the listener, the speaker and the moment. */
@@ -181,13 +193,27 @@ object Topics {
      */
     fun pick(ask: Ask, least: Double, allow: (Topic) -> Boolean): Topic? {
         if (sources.isEmpty()) return old(ask)?.takeIf(allow)
-        val best = all(ask).filter { allow(it.topic) }.take(DRAW).filter { it.score >= least }
+        val ranked = all(ask).filter { allow(it.topic) }
+        // A telling that must come first comes ahead of the draw (the best of them), if it scores enough to be said at all
+        val first = ranked.firstOrNull { it.topic.first && it.score >= least }
+        val best = if (first != null) listOf(first) else ranked.take(DRAW).filter { it.score >= least }
         if (best.isEmpty()) return null
         // The chance goes with the score squared, so the best usually wins and the others come up now and then
         var roll = ask.speaker.random.nextDouble() * best.sumOf { it.score * it.score }
         val chosen = best.firstOrNull { roll -= it.score * it.score; roll <= 0 } ?: best.first()
         said(ask, chosen.topic)
+        noted(ask, chosen.topic)
         return chosen.topic
+    }
+
+    /** [topic] was chosen to be said: whatever its source keeps of that is told (a source that throws is skipped and logged once). */
+    private fun noted(ask: Ask, topic: Topic) {
+        val note = topic.onSaid ?: return
+        try {
+            note(ask)
+        } catch (e: Exception) {
+            if (broken.add("said")) Guildmark.LOGGER.error("Townsfolk talk: noting that {} was said failed", topic.id, e)
+        }
     }
 
     /** Every topic on offer, scored, with the reasons, best first (for /guildmark talk topics). */
@@ -225,6 +251,17 @@ object Topics {
             source.answer(ask, choice)
         } catch (e: Exception) {
             if (broken.add(source.id)) Guildmark.LOGGER.error("Townsfolk talk: the {} answer failed and is skipped", source.id, e)
+            null
+        }
+    }
+
+    /** The script [choice] ("<source id>:<what>") opens in place, from the source it names; null if it opens none, or no longer applies. */
+    fun script(ask: Ask, choice: String): Script? {
+        val source = sources.firstOrNull { choice.startsWith(it.id + ":") } ?: return null
+        return try {
+            source.script(ask, choice)
+        } catch (e: Exception) {
+            if (broken.add(source.id + ":script")) Guildmark.LOGGER.error("Townsfolk talk: the {} script failed and is skipped", source.id, e)
             null
         }
     }
