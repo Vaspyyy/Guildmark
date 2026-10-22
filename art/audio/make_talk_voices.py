@@ -1849,6 +1849,17 @@ PHONEMES = {
     ("talk.fortune.why.trouble.oven_cracked_0", "old"): "ɐ nˈʌvənz kɹˈakt ˈat ðə bˈeɪkɚɹi.",  # not "cracked to the"
 }
 
+# The kitchen's 56 families (kitchen_lines.py; living-world/cook/design.md sections 8.5 and 11.5), a module of its own entered
+# here by this one block, as the build plan asks. Only the tiers whose takes exist are in its groups (kitchen_lines.RECORDED, none
+# yet), for `table` wants every family in GROUPS to have all its takes; the text of every wording is the game's already
+# (art/lang/cook_lines.json)
+import kitchen_lines  # noqa: E402
+GROUPS += kitchen_lines.groups(MWO, CHILD, TALK)
+DELIVERY.update(kitchen_lines.DELIVERY)
+SPEED_FOR.update(kitchen_lines.SPEED_FOR)
+SAY_AS.update(kitchen_lines.SAY_AS)
+PHONEMES.update(kitchen_lines.PHONEMES)
+
 # The trade's ten families (trade_talk.py; living-world/trader/design.md section 10), a module of its own entered here by this
 # one block, as the build plan asks
 import trade_talk  # noqa: E402
