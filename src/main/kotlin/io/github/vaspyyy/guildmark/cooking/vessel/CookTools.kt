@@ -1,7 +1,11 @@
 package io.github.vaspyyy.guildmark.cooking.vessel
 
+import net.minecraft.core.BlockPos
+import net.minecraft.world.entity.player.Player
 import net.minecraft.world.item.Item
+import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Rarity
+import net.minecraft.world.level.LevelReader
 import java.util.function.UnaryOperator
 
 /**
@@ -16,8 +20,18 @@ enum class CookTool(val id: String) {
     GILDED_LADLE("gilded_ladle"),
 }
 
-/** A cook's tool in the hand. Part B's: until it lands, it can be held and nothing more. */
+/**
+ * A cook's tool in the hand (living-world/cook/design.md 1.1): what it does is the station's to say, when it is used on one
+ * (the ladle stirs and serves, the knife carves and chops, the turner turns and lifts).
+ */
 class CookToolItem(properties: Properties, val tool: CookTool) : Item(properties) {
+    /**
+     * A cook sneaking with a tool still works the station it is used on: the ladle tastes with sneak (2.6) and the knife and the
+     * turner have nothing else to be told apart by. Anything else a sneaking player uses a tool on is as it always was.
+     */
+    override fun doesSneakBypassUse(stack: ItemStack, level: LevelReader, pos: BlockPos, player: Player): Boolean =
+        level.getBlockState(pos).block is StationBlock
+
     companion object {
         /**
          * How a tool is made (1.1): the ladle lasts 250 uses, the knife and the turner 200, and the Gilded Ladle has no

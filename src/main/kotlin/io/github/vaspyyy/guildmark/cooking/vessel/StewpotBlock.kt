@@ -23,7 +23,7 @@ enum class StewpotStyle(private val id: String) : StringRepresentable {
 
 /**
  * The Stewpot (living-world/cook/design.md 1.1, 11.1): a pot over a fire, in the camp style or the hearth style, lit or
- * not, burnt or not. Part B's; until it lands it is an inert block.
+ * not, burnt or not. Part B's: its [StewpotBlockEntity] holds the vessel and answers every click the base class sends it.
  */
 class StewpotBlock(properties: Properties) : StationBlock(properties) {
     init {

@@ -8,13 +8,17 @@ import com.mojang.brigadier.suggestion.SuggestionProvider
 import io.github.vaspyyy.guildmark.cooking.CookRegistry
 import io.github.vaspyyy.guildmark.cooking.DishKind
 import io.github.vaspyyy.guildmark.cooking.Station
+import io.github.vaspyyy.guildmark.cooking.recipe.Quality
+import io.github.vaspyyy.guildmark.cooking.recipe.Roles
 import io.github.vaspyyy.guildmark.progression.Skill
 import io.github.vaspyyy.guildmark.progression.Skills
 import net.minecraft.ChatFormatting
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands
 import net.minecraft.commands.SharedSuggestionProvider
+import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.network.chat.Component
+import net.minecraft.resources.Identifier
 import net.minecraft.world.item.Item
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
@@ -65,6 +69,7 @@ object VesselCommand {
             )
             .then(callNode)
             .then(Commands.literal("burn").executes { burn(it) })
+            .then(Commands.literal("tip").executes { tip(it) })
             .then(Commands.literal("clear").executes { clear(it) })
         dispatcher.register(
             Commands.literal("guildmark")
@@ -112,8 +117,9 @@ object VesselCommand {
         val be = target(context) ?: return 0
         val level = context.source.level
         val cookLevel = context.source.player?.let { Skills.level(it, Skill.COOKING) } ?: 1
+        val bonus = context.source.player?.let { Quality.bonus(it) } ?: 0.0
         context.source.sendSuccess({ Component.literal("== Vessel ==").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD) }, false)
-        for (line in be.describe(level, cookLevel)) say(context, line)
+        for (line in be.describe(level, cookLevel, bonus)) say(context, line)
         return 1
     }
 
@@ -196,6 +202,15 @@ object VesselCommand {
         return say(context, "It has caught.")
     }
 
+    /** The tip-out of a sneak and an empty hand, without the second click that asks: Scorched mess falls from a burnt one, the raw items from an open one. */
+    private fun tip(context: CommandContext<CommandSourceStack>): Int {
+        val be = target(context) ?: return 0
+        val v = be.vessel
+        if (v.state == Vessel.State.EMPTY && v.items.isEmpty() && v.water <= 0) return fail(context, "It is empty.")
+        be.emptyOut(context.source.level)
+        return say(context, "Tipped out; the fire, its fuel and the heat are as they were.")
+    }
+
     private fun clear(context: CommandContext<CommandSourceStack>): Int {
         val be = target(context) ?: return 0
         val v = be.vessel
@@ -210,8 +225,18 @@ object VesselCommand {
 
     // ---- The bill ----
 
-    /** The item a name of a standard bill stands for (Appendix B.3: the names of the role data). */
-    private fun billItem(name: String): Item? = when (name) {
+    /** The item a name of a standard bill stands for (Appendix B.3): the first item the role data names for that food, else the usual one. */
+    private fun billItem(name: String): Item? {
+        for (id in Roles.current().itemsOf(name)) {
+            val key = Identifier.tryParse(id) ?: continue
+            val item = BuiltInRegistries.ITEM.getOptional(key).orElse(null)
+            if (item != null) return item
+        }
+        return usualItem(name)
+    }
+
+    /** The usual item of a food of the standard bills, for a world whose role data names none. */
+    private fun usualItem(name: String): Item? = when (name) {
         "potato" -> Items.POTATO
         "carrot" -> Items.CARROT
         "wheat" -> Items.WHEAT

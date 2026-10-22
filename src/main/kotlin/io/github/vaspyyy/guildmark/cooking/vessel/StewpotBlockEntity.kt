@@ -1,5 +1,8 @@
 package io.github.vaspyyy.guildmark.cooking.vessel
 
+import io.github.vaspyyy.guildmark.cooking.CookAction
+import io.github.vaspyyy.guildmark.cooking.CookActions
+import io.github.vaspyyy.guildmark.cooking.CookParticles
 import io.github.vaspyyy.guildmark.cooking.CookRegistry
 import io.github.vaspyyy.guildmark.cooking.Station
 import io.github.vaspyyy.guildmark.economy.SupplierRank
@@ -10,7 +13,9 @@ import io.github.vaspyyy.guildmark.townsfolk.talk.sources.KitchenRumours
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.InteractionHand
 import net.minecraft.world.item.ItemStack
+import net.minecraft.world.item.Items
 import net.minecraft.world.level.Level
 import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.level.storage.ValueInput
@@ -146,6 +151,75 @@ class StewpotBlockEntity(pos: BlockPos, state: BlockState) : VesselBlockEntity(C
         mode = StewpotMode.entries.firstOrNull { it.name.equals(name, ignoreCase = true) } ?: StewpotMode.PLAYER
         houseBowls = input.getIntOr("houseBowls", 0).coerceIn(0, 8)
         houseTint = input.getIntOr("houseTint", 0)
+    }
+
+    // ---- What a click does (1.5) ----
+
+    override fun use(level: ServerLevel, player: ServerPlayer, hand: InteractionHand, stack: ItemStack, region: Region): Used {
+        if (stack.isEmpty) return emptyHand(level, player, region)
+        if (stack.`is`(Items.WATER_BUCKET)) return Actions.pour(this, level, player, hand)
+        if (Actions.isLadle(stack)) return ladle(level, player, hand, stack)
+        if (Actions.toolOf(stack) != null) {
+            say(player, "wants_ladle")
+            return Used.REFUSED
+        }
+        if (region == Region.FIRE) {
+            say(player, "not_fuel")
+            return Used.REFUSED
+        }
+        return Actions.ingredient(this, level, player, stack)
+    }
+
+    /**
+     * The ladle on the pot: sneaking it tastes; on a pot still open the first stir starts the clock; on one cooking it answers a
+     * STICK (stir) or a SKIM, and stirs for nothing otherwise; on a ready, overdone or served one it serves a portion.
+     */
+    private fun ladle(level: ServerLevel, player: ServerPlayer, hand: InteractionHand, stack: ItemStack): Used {
+        val v = vessel
+        if (player.isShiftKeyDown) return Serving.taste(this, level, player)
+        if (v.open) {
+            val used = Actions.start(this, level, player)
+            if (used == Used.DONE) {
+                stir(level, player, CookAction.STIR, 1.0f)
+                Actions.wear(player, hand, stack)
+            }
+            return used
+        }
+        val pending = v.call
+        if (pending == Call.STICK || pending == Call.SKIM) {
+            Actions.answer(this, level, player, Call.STICK, Call.SKIM)
+            if (pending == Call.SKIM) {
+                ring(level, "cook.skim", 1.0f, 1.0f)
+                stir(level, player, CookAction.SKIM, 0.0f)
+            } else {
+                stir(level, player, CookAction.STIR, 1.0f)
+            }
+            Actions.wear(player, hand, stack)
+            return Used.DONE
+        }
+        return when (v.state) {
+            Vessel.State.READY, Vessel.State.DONE, Vessel.State.SERVED -> {
+                val used = Serving.serve(this, level, player, CookAction.SERVE)
+                if (used == Used.DONE) Actions.wear(player, hand, stack)
+                used
+            }
+            Vessel.State.BURNT -> {
+                say(player, "burnt")
+                Used.REFUSED
+            }
+            else -> {
+                stir(level, player, CookAction.STIR, 1.0f)
+                Used.DONE
+            }
+        }
+    }
+
+    /** The surface swirls (and the ladle scrapes the iron if [stirVolume] is not 0). */
+    private fun stir(level: ServerLevel, player: ServerPlayer, action: CookAction, stirVolume: Float) {
+        swirl(level.gameTime + STIR_TICKS)
+        if (stirVolume > 0.0f) ring(level, "cook.stir", stirVolume, 1.0f)
+        puff(level, CookParticles.STEAM.get(), 3, 0.2)
+        CookActions.play(player, action, blockPos)
     }
 
     // ---- Whose pot it is ----

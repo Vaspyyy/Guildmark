@@ -9,6 +9,8 @@ import io.github.vaspyyy.guildmark.cooking.Cooking
 import io.github.vaspyyy.guildmark.cooking.Role
 import io.github.vaspyyy.guildmark.cooking.Station
 import io.github.vaspyyy.guildmark.cooking.dish.Journal
+import io.github.vaspyyy.guildmark.cooking.recipe.Ideal
+import io.github.vaspyyy.guildmark.cooking.recipe.Quality
 import io.github.vaspyyy.guildmark.cooking.recipe.Recognise
 import io.github.vaspyyy.guildmark.cooking.recipe.Roles
 import io.github.vaspyyy.guildmark.party.Parties
@@ -17,6 +19,7 @@ import net.minecraft.core.Direction
 import net.minecraft.core.HolderLookup
 import net.minecraft.core.component.DataComponents
 import net.minecraft.core.particles.ParticleOptions
+import net.minecraft.core.particles.ParticleTypes
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.network.chat.Component
@@ -112,6 +115,19 @@ open class VesselBlockEntity(type: BlockEntityType<*>, pos: BlockPos, state: Blo
     /** The last item put in (its raw id) and a counter that goes up with each, so every client plays a plop for each new one. */
     protected var added = 0
     protected var addedCount = 0
+
+    /** The vessel shows a stir, an open door or a turning crank until game time [until]. */
+    internal fun swirl(until: Long) {
+        swirlUntil = until
+        vessel.dirty = true
+    }
+
+    /** An item went in: every client plays a plop for it (the view's `added` and its counter). */
+    internal fun noteAdded(stack: ItemStack) {
+        added = BuiltInRegistries.ITEM.getId(stack.item)
+        addedCount++
+        vessel.dirty = true
+    }
 
     /** Whether the fire is free as last asked; not saved, asked again at most once a second while lit (1.3). */
     protected var freeFire = false
@@ -486,7 +502,10 @@ open class VesselBlockEntity(type: BlockEntityType<*>, pos: BlockPos, state: Blo
     override fun predicts(player: Player, hand: InteractionHand, stack: ItemStack, hit: BlockHitResult): Boolean {
         if (!Cooking.enabled()) return false
         if (stack.isEmpty) return true
-        return lighter(stack) || stack.item is CookToolItem || stack.`is`(Items.WATER_BUCKET) || stack.has(DataComponents.COOKING_FUEL)
+        // Only what the client itself can tell: the cook's data (Roles) is the server's, and the server answers with this same
+        // function, so a swing is never missing or doubled. An ingredient the guess misses is swung by the server instead.
+        return lighter(stack) || stack.item is CookToolItem || stack.`is`(Items.WATER_BUCKET) || stack.has(DataComponents.COOKING_FUEL) ||
+            stack.has(DataComponents.FOOD) || Prep.preparable(stack) || Actions.isAccent(stack)
     }
 
     override fun interact(player: ServerPlayer, hand: InteractionHand, stack: ItemStack, hit: BlockHitResult): InteractionResult {
@@ -593,11 +612,7 @@ open class VesselBlockEntity(type: BlockEntityType<*>, pos: BlockPos, state: Blo
     }
 
     /** Puts [stack] in the pack of [player], and what does not fit at the station's foot (a full pack never strands a portion, 9.6). */
-    internal fun give(level: ServerLevel, player: ServerPlayer, stack: ItemStack) {
-        if (stack.isEmpty) return
-        player.inventory.add(stack)
-        if (!stack.isEmpty) Block.popResource(level, blockPos.above(), stack)
-    }
+    internal fun give(level: ServerLevel, player: ServerPlayer, stack: ItemStack) = Actions.give(level, blockPos, player, stack)
 
     /** Minutes and seconds as "3:20". */
     internal fun clock(seconds: Double): String {
@@ -617,10 +632,14 @@ open class VesselBlockEntity(type: BlockEntityType<*>, pos: BlockPos, state: Blo
         return Used.REFUSED
     }
 
-    /** An empty hand: the heat control on the heat region, else the readout of the fire. */
-    protected open fun emptyHand(level: ServerLevel, player: ServerPlayer, region: Region): Used {
-        if (region == Region.HEAT) return heat(level, player)
-        return status(player)
+    /**
+     * An empty hand: the heat control on the heat region; a sneaking one on the vessel or the fire tips it out; else the
+     * readout of the fire. The oven's door and the spit's crank take their own clicks first.
+     */
+    protected open fun emptyHand(level: ServerLevel, player: ServerPlayer, region: Region): Used = when {
+        region == Region.HEAT -> heat(level, player)
+        player.isShiftKeyDown && (region == Region.VESSEL || region == Region.FIRE) -> tipOut(level, player)
+        else -> status(player)
     }
 
     /** What the fire is doing, in the action bar. */
@@ -658,6 +677,46 @@ open class VesselBlockEntity(type: BlockEntityType<*>, pos: BlockPos, state: Blo
         return Used.DONE
     }
 
+    // ---- Tipping out (1.5 row 21, 9.6) ----
+
+    /**
+     * Sneak and an empty hand: the vessel is upended. A pot that burnt is emptied at once and Scorched mess falls; one still
+     * open gives back what was put in; a dish that is cooking, ready or being served would be lost, so it asks once more
+     * within four seconds before it goes.
+     */
+    protected fun tipOut(level: ServerLevel, player: ServerPlayer): Used {
+        val v = vessel
+        if (v.state == Vessel.State.EMPTY && v.items.isEmpty() && v.water <= 0) {
+            say(player, "tip_empty")
+            return Used.REFUSED
+        }
+        val now = level.gameTime
+        if (v.started && v.state != Vessel.State.BURNT && (tipBy != player.uuid || now > tipUntil)) {
+            tipBy = player.uuid
+            tipUntil = now + TIP_CONFIRM_TICKS
+            say(player, "tip_sure")
+            return Used.REFUSED
+        }
+        tipBy = null
+        emptyOut(level)
+        CookActions.play(player, CookAction.ADD, blockPos)
+        say(player, "tipped")
+        return Used.DONE
+    }
+
+    /**
+     * Empties the vessel as a tip-out does (`cook vessel tip` too): what that drops falls at the station's foot, and the dish
+     * in the making is lost; the fire, its fuel and the heat stay as they were.
+     */
+    fun emptyOut(level: ServerLevel) {
+        val drops = Serving.tipped(level, vessel)
+        vessel.empty()
+        for (stack in drops) Serving.drop(level, blockPos.above(), stack)
+        ring(level, "cook.pour", 0.8f, 0.7f)
+        puff(level, ParticleTypes.SPLASH, 12, 0.3)
+        settle()
+    }
+
     // ---- Taken apart ----
 
     override fun preRemoveSideEffects(pos: BlockPos, state: BlockState) {
@@ -667,9 +726,12 @@ open class VesselBlockEntity(type: BlockEntityType<*>, pos: BlockPos, state: Blo
         dropContents(level, pos)
     }
 
-    /** What the station held falls at its foot when it is broken (a vessel that is open gives back what was put in). */
+    /**
+     * What the station held falls at its foot when it is broken: the raw items of a vessel not yet served from (it never
+     * became a dish), Scorched mess for a burnt one, and the portions still in one that was served from.
+     */
     protected open fun dropContents(level: ServerLevel, pos: BlockPos) {
-        for (stack in vessel.items) Block.popResource(level, pos, stack.copy())
+        for (stack in Serving.broken(level, vessel)) Serving.drop(level, pos, stack)
         vessel.items.clear()
     }
 
@@ -679,7 +741,7 @@ open class VesselBlockEntity(type: BlockEntityType<*>, pos: BlockPos, state: Blo
     fun settleNow() = settle()
 
     /** Where the vessel stands, in lines for an operator: the state, what is in it, what it was taken for, the clocks, the call and the credit, and who has done what. */
-    fun describe(level: ServerLevel, cookLevel: Int): List<String> {
+    fun describe(level: ServerLevel, cookLevel: Int, bonus: Double = 0.0): List<String> {
         val v = vessel
         val now = level.gameTime
         val out = ArrayList<String>()
@@ -696,6 +758,15 @@ open class VesselBlockEntity(type: BlockEntityType<*>, pos: BlockPos, state: Blo
             out += "dish-clock " + "%.1f".format(v.p) + " of " + "%.0f".format(v.cookTime) + " dish-seconds (ready from " + "%.0f".format(v.cookTime - Vessel.WINDOW) +
                 " to " + "%.0f".format(v.cookTime + Vessel.WINDOW) + "), timing " + "%.2f".format(v.timing()) + ", heated " + "%.1f".format(v.heated) + " of " +
                 Vessel.HEAT_SECONDS.roundToInt() + " s"
+            val kind = v.kind
+            if (kind != null && v.tier == null) {
+                // What the first serve would freeze, with the viewer's own bonus (2.5: 0.45 mix + 0.17 timing + 0.17 attention + 0.11 care + bonus)
+                val mix = Quality.mix(v.share, Ideal.of(level, kind))
+                val care = Prep.care(v.items, v.attention())
+                val q = Quality.q(mix, v.timing(), v.attention(), care, bonus)
+                out += "if served now: mix " + "%.2f".format(mix) + ", timing " + "%.2f".format(v.timing()) + ", attention " + "%.2f".format(v.attention()) +
+                    ", care " + "%.2f".format(care) + ", bonus " + "%.3f".format(bonus) + ", q " + "%.3f".format(q) + " = " + Quality.tier(q).name.lowercase()
+            }
         } else if (v.items.size >= 2) {
             val guess = Recognise.run(level, v.station, v.items, cookLevel)
             out += "would be taken for: " + (guess.kind?.id ?: "gruel") + ", " + guess.portions + " portions, distance " + "%.3f".format(guess.distance) +
