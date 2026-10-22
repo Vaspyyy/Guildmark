@@ -99,6 +99,7 @@ class MarketPanels private constructor(private val list: List<MarketPanel>) {
          */
         private val ALL: List<MarketPanel> = listOf(
             // A: the Hauls section, beside the Orders
+            HaulsPanel,
 
             // D: the Carriers section, at the hall's counter
             CarriersPanel,
