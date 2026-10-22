@@ -26,6 +26,10 @@ internal object Feasted {
     private const val NO_KIND = (1 shl KIND_BITS) - 1
     private const val TAG_MASK = (1 shl 23) - 1
 
+    /** What `cook perf` reads: the feasts kept since the server started. */
+    @JvmField
+    var kept = 0L
+
     /** The tag of [cook]: some of their id's bits, the same every time. */
     fun tag(cook: UUID): Int = (cook.mostSignificantBits xor cook.leastSignificantBits).hashCode() and TAG_MASK
 
@@ -55,6 +59,7 @@ internal object Feasted {
         val excess = feasts.size + 1 - room
         if (excess > 0) mind.felt.removeAll(feasts.sortedBy { it.day }.take(excess).toSet())
         Memory.felt(mind, Experience.FEASTED, day, about)
+        kept++
         return true
     }
 }
