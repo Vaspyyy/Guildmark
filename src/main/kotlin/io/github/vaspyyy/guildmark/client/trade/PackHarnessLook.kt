@@ -178,8 +178,8 @@ internal class HarnessLook : Look() {
         const val HUSHED = 0.12f
         const val STANDING = 0.02f
 
-        /** Ticks for the panniers to settle one step of fullness, and for the squash of a change to die away. */
-        const val SETTLE = 8f
+        /** Ticks for the panniers to settle one step of fullness (the design's six: eased, not a pop), and for the squash of a change to die away. */
+        const val SETTLE = 6f
         const val POP = 7f
 
         /** Makes the models of the goods whose item ids are [ids] (up to three), skipping any this version does not know. */
