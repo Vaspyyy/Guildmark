@@ -659,6 +659,10 @@ object TalkCommand {
             }
             FortuneReasons.NEWCOMERS -> 1 to listOf("grow", family)
             FortuneReasons.LEAVING -> -1 to listOf("hard", family)
+            FortuneReasons.HAULED -> 1 to listOf(side)
+            FortuneReasons.TALE -> 1 to listOf("note.paid", family, me)
+            FortuneReasons.HELD -> 2 to listOf<String>()
+            FortuneReasons.LOST -> -3 to listOf<String>()
             else -> -1 to listOf<String>()
         }
     }

@@ -58,10 +58,20 @@ object FortuneReasons {
     const val NEWCOMERS = "newcomers"
     const val LEAVING = "leaving"
 
+    /**
+     * Added by the designs after the table, in the order they were accepted (living-world/build-plan.md section 2): a
+     * big delivery from afar (Trade), a tale's ending (Tales), a village's siege held or lost (Villages).
+     */
+    const val HAULED = "hauled"
+    const val TALE = "tale"
+    const val HELD = "held"
+    const val LOST = "lost"
+
     /** Every kind of reason, in the table's order. */
     val KINDS: List<String> = listOf(
         HUNGRY, FED, DEAR, CHEAP, WANTING, IDLE, ROAD, WAYLAID, RELIEF, ESCORTED, SUPPLIED,
         PLENTY, TROUBLE, FEVER, MOURNING, CRIME, FESTIVAL, BUILDING, RAISED, EASED, NEWCOMERS, LEAVING,
+        HAULED, TALE, HELD, LOST,
     )
 
     // ---- What the close reads ----
@@ -268,11 +278,12 @@ object FortuneReasons {
     private val CAPS: Map<String, IntRange> = mapOf(
         WAYLAID to -2..0, RELIEF to 0..2, ESCORTED to 0..2, SUPPLIED to 0..2, MOURNING to -2..0, CRIME to -3..0,
         RAISED to 0..2, EASED to 0..1, NEWCOMERS to 0..1, LEAVING to -1..0,
+        HAULED to 0..2, TALE to -2..2, HELD to 0..2, LOST to -3..0,
     )
     private val ANY = Fortunes.LOWEST..Fortunes.HIGHEST
 
-    /** Kinds whose notes, said again on the same day of the same works or player, are the one note (a player selling twice, a granary easing each hour). */
-    internal val SAME: Set<String> = setOf(SUPPLIED, RAISED, EASED)
+    /** Kinds whose notes, said again on the same day of the same works or player, are the one note (a player selling twice, a granary easing each hour, a player delivering twice). */
+    internal val SAME: Set<String> = setOf(SUPPLIED, RAISED, EASED, HAULED)
 
     /** The most notes a capital keeps (the oldest go first; every kind is capped well under it). */
     internal const val NOTES = 64
@@ -394,6 +405,12 @@ object FortuneReasons {
                     else -> say("$kind.one")
                 }
             }
+            // The side the goods came in from ("n", "e", "s", "w"); a note by hand has none, and reads as its kind's name
+            HAULED -> a.getOrNull(0)?.let { say("hauled", way(it)) }
+            // "<template>.<ending>" ("note.paid") then the names its sentence uses; a sentence the language file lacks reads "A tale."
+            TALE -> a.getOrNull(0)?.let { sayOr("tale.$it", TALE_FALLBACK, a.getOrNull(1).orEmpty(), a.getOrNull(2).orEmpty()) }
+            HELD -> say("held")
+            LOST -> say("lost")
             else -> null
         }
         return said ?: label(reason.kind).append(".")
@@ -421,6 +438,13 @@ object FortuneReasons {
     fun works(kind: String): MutableComponent = Component.translatableWithFallback("fortune.guildmark.works.$kind", kind.replace('_', ' '))
 
     private fun say(key: String, vararg args: Any): MutableComponent = Component.translatable("fortune.guildmark.reason.$key", *args)
+
+    /** As [say], for a sentence the language file may not have (each tale's is its own): [fallback] reads in its place, never the key. */
+    private fun sayOr(key: String, fallback: String, vararg args: Any): MutableComponent =
+        Component.translatableWithFallback("fortune.guildmark.reason.$key", fallback, *args)
+
+    /** What a tale's reason reads when its sentence is missing: its kind's name (fortune.guildmark.kind.tale), with the stop [text] puts after one. */
+    private const val TALE_FALLBACK = "A tale."
 
     private fun many(g: Good): MutableComponent = Component.translatable(g.key + ".many")
 
@@ -487,7 +511,9 @@ object FortuneReasons {
  * lasts, and for crime which kind of crime it was ([what], put first among the note's words). The calls, one line
  * each, where they happen: `Residents.died` (MOURNING), `Witness.robbed` and `caught` (THEFT, CAUGHT), `Raids.start`
  * (RAID), a heist's escape (HEIST), `Witness.dealt` and `filled` (SUPPLIED); and [Fortunes]' own listeners for the
- * road (WAYLAID, RELIEF, ESCORTED), the works (RAISED, EASED) and the households (NEWCOMERS, LEAVING).
+ * road (WAYLAID, RELIEF, ESCORTED), the works (RAISED, EASED) and the households (NEWCOMERS, LEAVING). The last three
+ * belong to the later designs: a delivery from afar (HAULED), a siege held or lost (HELD, LOST). A tale's reason has no
+ * entry here, as its points and days go by its ending (`Fortunes.note` with the kind [FortuneReasons.TALE]).
  */
 enum class Noted(val kind: String, val points: Int, val days: Int, val what: String? = null) {
     WAYLAID(FortuneReasons.WAYLAID, -1, 3),
@@ -503,4 +529,7 @@ enum class Noted(val kind: String, val points: Int, val days: Int, val what: Str
     EASED(FortuneReasons.EASED, 1, 3),
     NEWCOMERS(FortuneReasons.NEWCOMERS, 1, 5),
     LEAVING(FortuneReasons.LEAVING, -1, 5),
+    HAULED(FortuneReasons.HAULED, 1, 3),
+    HELD(FortuneReasons.HELD, 2, 5),
+    LOST(FortuneReasons.LOST, -3, 5),
 }
