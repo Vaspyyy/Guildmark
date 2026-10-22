@@ -26,7 +26,8 @@ import kotlin.math.abs
  * and it is turned square to the street: the carved face looks the way the nearest street is (a building in the way hides it), else the
  * way with the most open ground. The search goes outward from the place asked for, nearest first, up to [STONE_REACH] blocks
  * ([CAIRN_REACH] for a cairn), and takes the first spot that passes. A memorial that is given no place starts from where its kind belongs
- * in the town ([anchors]) and goes through them all, near ones first ([findFrom]).
+ * in the town ([anchors]) and goes through them all, near ones first ([findFrom]); a cairn tries the road out of a gate, near and far,
+ * before the town's places.
  *
  * Pure Kotlin on a small [Terrain] of its own and no Minecraft class (only the city plan's own classes, which have none), so that the
  * game ([MemorialSites], over the level and the capital's plan) and the city-preview kit (over the voxel maps the city is drawn into)
@@ -194,12 +195,15 @@ object MemorialRules {
 
     // ---- Where a memorial belongs ----
 
+    /** The [Anchor.kind] of the road out of a gate, where a cairn belongs first. */
+    const val ROAD = "road"
+
     /** A place a search starts from: what it is ([kind]: a temple's door, a well, the market...), the column, and about the height of the ground there. */
     class Anchor(val kind: String, val x: Int, val y: Int, val z: Int) {
         /** The place in words after "at" or "N blocks from", for the command's reply and the log: "the temple's door", "a well". */
         val words: String
             get() = when (kind) {
-                "road" -> "the road out of a gate"
+                ROAD -> "the road out of a gate"
                 "temple" -> "the temple's door"
                 "temple corner" -> "the corner of the temple's lot"
                 "well" -> "a well"
@@ -224,7 +228,7 @@ object MemorialRules {
      */
     fun anchors(plan: CityPlan, census: Census, cairn: Boolean): List<Anchor> {
         val out = ArrayList<Anchor>()
-        if (cairn) roadside(plan.grid, plan.levelled, plan.reach)?.let { (x, z) -> out += Anchor("road", x, plan.level(x, z), z) }
+        if (cairn) roadside(plan.grid, plan.levelled, plan.reach)?.let { (x, z) -> out += Anchor(ROAD, x, plan.level(x, z), z) }
         val temples = census.lodges.values.filter { it.kind == Kind.CATHEDRAL.name || it.kind == Kind.TEMPLE.name }
             .sortedBy { val cx = (it.lot.x0 + it.lot.x1) / 2; val cz = (it.lot.z0 + it.lot.z1) / 2; cx * cx + cz * cz }
             .take(TEMPLES)
@@ -253,28 +257,36 @@ object MemorialRules {
 
     /**
      * Looks for a spot for a stone (a [cairn] if so) near any of the [anchors] (the best first): at each of them as far as [STONE_NEAR]
-     * ([CAIRN_NEAR]) blocks, and then, if none has room, at each again as far as [STONE_REACH] ([CAIRN_REACH]). An anchor that is not
-     * [loaded] is passed over (and counted as not loaded), for no rule looks at ground that is not there. [others] are the memorials
-     * already standing and [seed] breaks the ties, as for [find]. The counts of why places were refused are all the searches' together.
+     * ([CAIRN_NEAR]) blocks, and then, if none has room, at each again as far as [STONE_REACH] ([CAIRN_REACH]). The road a cairn belongs
+     * by ([ROAD]) is a place of its own kind: it goes through both reaches before the town's places are looked at, so a cairn is set
+     * in the town only if the road has no room at all. An anchor that is not [loaded] is passed over (and counted as not loaded), for
+     * no rule looks at ground that is not there. [others] are the memorials already standing and [seed] breaks the ties, as for
+     * [find]. The counts of why places were refused are all the searches' together.
      */
     fun findFrom(
         t: Terrain, cairn: Boolean, anchors: List<Anchor>, others: List<Column> = listOf(), seed: Long = 0L, loaded: (Anchor) -> Boolean = { true },
     ): Hit {
         val refused = java.util.EnumMap<Refusal, Int>(Refusal::class.java)
         var tried = 0
-        var within = 0
-        for ((pass, reach) in listOf(if (cairn) CAIRN_NEAR else STONE_NEAR, if (cairn) CAIRN_REACH else STONE_REACH).withIndex()) {
-            for ((i, a) in anchors.withIndex()) {
-                if (!loaded(a)) {
-                    refused.merge(Refusal.UNLOADED, 1, Int::plus)
-                    continue
+        val indexed = anchors.withIndex().toList()
+        val roads = indexed.filter { it.value.kind == ROAD }
+        for (group in listOf(roads, indexed.filter { it.value.kind != ROAD })) {
+            var within = 0
+            for ((pass, reach) in listOf(if (cairn) CAIRN_NEAR else STONE_NEAR, if (cairn) CAIRN_REACH else STONE_REACH).withIndex()) {
+                for ((i, a) in group) {
+                    if (!loaded(a)) {
+                        refused.merge(Refusal.UNLOADED, 1, Int::plus)
+                        continue
+                    }
+                    val f = find(t, cairn, a.x, a.y, a.z, others, seed, reach, within)
+                    tried += f.tried
+                    if (f.spot != null) return Hit(Found(f.spot, tried, refused), i, pass)
+                    for ((why, n) in f.refused) refused.merge(why, n, Int::plus)
                 }
-                val f = find(t, cairn, a.x, a.y, a.z, others, seed, reach, within)
-                tried += f.tried
-                if (f.spot != null) return Hit(Found(f.spot, tried, refused), i, pass)
-                for ((why, n) in f.refused) refused.merge(why, n, Int::plus)
+                within = reach
             }
-            within = reach
+            // Ground by the road that is not loaded yet: the cairn waits for it, it is not put in the town for want of it
+            if (group === roads && (refused[Refusal.UNLOADED] ?: 0) > 0) break
         }
         return Hit(Found(null, tried, refused), -1, 1)
     }

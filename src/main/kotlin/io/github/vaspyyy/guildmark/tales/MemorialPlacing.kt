@@ -117,7 +117,8 @@ internal object MemorialPlacing {
     /**
      * Tries to set [rec] down: finds its spot by the rules, from where it wants to be, and builds the block. A memorial that was given no
      * place started from where its kind belongs (the first of [MemorialSites.anchors]) and, if that has no room, goes on to the next best
-     * of them, now or on a later try alike ([MemorialRules.findFrom]: every one of them near, then every one far); one whose tale named
+     * of them, now or on a later try alike ([MemorialRules.findFrom]: every one of them near, then every one far, a cairn's road before
+     * the town's places); one whose tale named
      * its place has only that place, as far as [MemorialRules.STONE_REACH] ([MemorialRules.CAIRN_REACH]). A [sync] attempt is made as a
      * tale ends (a scene is waiting to see the block): it needs only the chunk; one from the waiting list sets a cairn only with a player
      * within [NEAR_CAIRN] blocks and nobody close to it or looking. Ground not yet loaded is a wait, never a refusal.
