@@ -17,6 +17,7 @@ import io.github.vaspyyy.guildmark.progression.SkillState
 import io.github.vaspyyy.guildmark.road.TrafficState
 import io.github.vaspyyy.guildmark.road.TravelProgress
 import io.github.vaspyyy.guildmark.story.MainQuestState
+import io.github.vaspyyy.guildmark.tales.TaleLog
 import net.minecraft.core.BlockPos
 import net.minecraft.core.UUIDUtil
 import io.github.vaspyyy.guildmark.wardfire.FlaskState
@@ -230,5 +231,13 @@ object ModAttachments {
     /** A creature's stance under the new combat (server side, never saved). */
     val STANCE: DeferredHolder<AttachmentType<*>, AttachmentType<StanceState>> = ATTACHMENTS.register("stance") { ->
         AttachmentType.builder { -> StanceState() }.build()
+    }
+
+    /** What a player's tales have left on them (see TaleLog): the tales they were part of and where. Kept through death, never synced. */
+    val TALE_LOG: DeferredHolder<AttachmentType<*>, AttachmentType<TaleLog>> = ATTACHMENTS.register("tale_log") { ->
+        AttachmentType.builder { -> TaleLog() }
+            .serialize(TaleLog.CODEC.fieldOf("log")) { it.any }
+            .copyOnDeath()
+            .build()
     }
 }

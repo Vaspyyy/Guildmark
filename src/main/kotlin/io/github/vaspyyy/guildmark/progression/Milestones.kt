@@ -44,6 +44,9 @@ object Milestones {
     const val SEVEN_SHARDS = "seven_shards"
     const val HOLLOW_KING = "hollow_king"
     const val WARDFIRE = "wardfire"
+    const val TALE = "tale"
+    const val TALES_THREE = "tales_three"
+    const val TALES_ALL = "tales_all"
 
     private fun holder(player: ServerPlayer, id: String): AdvancementHolder? =
         player.level().server.advancements.get(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "guildmark/$id"))

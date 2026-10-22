@@ -79,17 +79,19 @@ object TalePay {
         val points = s.owing
         s.part.paid = maxOf(s.part.paid, s.points)
         val keepsake = if (keepsakeFor(t.ending)) keepsake(level, t, t.ending, day) else null
-        return give(level, player, points, origin, TaleWords.town(level, t.capital), TaleWords.sentence(level, t), keepsake, t.id)
+        return give(level, player, points, origin, TaleWords.town(level, t.capital), TaleWords.sentence(level, t), keepsake, t.id, t.capital)
     }
 
     /**
      * The one place pay is made: [points] through `payOut` at [origin] (none: no bonus and no standing), the milestone, the companion's
      * deed and the village's standing after it, then the [keepsake] of tale [tale] if there is one, with the words that say what
-     * really happened (the Marks and XP `payOut` gave, the standing that really rose). Null if [points] is nothing.
+     * really happened (the Marks and XP `payOut` gave, the standing that really rose). A tale that ended well, A or B, is put on the
+     * player's [TaleLog] (and the tales' milestones looked at) as it is paid, whenever that is; [capital] is the town it was in, or
+     * null if the tale is no longer kept. Null if [points] is nothing.
      */
     private fun give(
         level: ServerLevel, player: ServerPlayer, points: Int, origin: BlockPos?, town: String, sentence: Component,
-        keepsake: TaleKeepsake?, tale: Int,
+        keepsake: TaleKeepsake?, tale: Int, capital: Long?,
     ): Delivered? {
         var done: Delivered? = null
         if (points > 0) {
@@ -113,6 +115,7 @@ object TalePay {
             player.inventory.placeItemBackInInventory(stack, Prediction.SERVER_ONLY)
             player.sendSystemMessage(Component.translatable("message.guildmark.tale.keepsake", stack.hoverName).withStyle(ChatFormatting.GRAY))
         }
+        if (keepsake != null && TaleLog.counts(keepsake.ending)) TaleLogs.record(player, tale, keepsake.template, keepsake.ending, capital)
         return done
     }
 
@@ -230,7 +233,7 @@ object TalePay {
             t?.let { keepsake(level, it, l.ending, 0L) }
                 ?: TaleKeepsake(l.template, l.ending, Templates.byId(l.template)?.ending(l.ending)?.word ?: l.ending.lowercase())
         } else null
-        give(level, player, l.points, t?.let { origin(level, it) }, t?.let { TaleWords.town(level, it.capital) }.orEmpty(), sentence, keepsake, l.tale)
+        give(level, player, l.points, t?.let { origin(level, it) }, t?.let { TaleWords.town(level, it.capital) }.orEmpty(), sentence, keepsake, l.tale, t?.capital)
     }
 
     /** Pays what is owed on login, from a listener of this file's own (so it also runs with tales switched off). Called once, from setup. */
