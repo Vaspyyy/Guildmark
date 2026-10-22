@@ -10,6 +10,7 @@ import io.github.vaspyyy.guildmark.cooking.Stage
 import io.github.vaspyyy.guildmark.cooking.Tier
 import io.github.vaspyyy.guildmark.cooking.shop.ShopRec
 import io.github.vaspyyy.guildmark.economy.Markets
+import io.github.vaspyyy.guildmark.economy.fortune.Fortunes
 import net.minecraft.core.UUIDUtil
 import net.minecraft.resources.Identifier
 import net.minecraft.server.level.ServerLevel
@@ -49,11 +50,48 @@ class Kitchens(
     fun sell(level: ServerLevel, capital: Long, door: Door, player: ServerPlayer, stack: ItemStack): Sale =
         Sale(0, 0, false, Tier.PLAIN, Stage.FRESH, null, false)
 
-    /** The three kinds the town wants on [day] (5.2; stub: none). */
-    fun wanted(level: ServerLevel, capital: Long, day: Long): List<DishKind> = emptyList()
+    /**
+     * The three kinds the inn wants on [day] (5.2), drawn from the world's seed, the capital and the day with the season's
+     * good kinds twice as likely (and broth and pottage in lean times): the same answer whenever it is asked, and nothing
+     * saved. None while the back doors are off.
+     */
+    fun wanted(level: ServerLevel, capital: Long, day: Long): List<DishKind> {
+        if (!Cooking.doors()) return emptyList()
+        return Requests.wanted(level.seed, capital, day, Requests.season(level, day), Fortunes.times(level, capital))
+    }
 
-    /** The request of [day] (5.4; stub: none). */
-    fun request(level: ServerLevel, capital: Long, day: Long): Request? = null
+    /**
+     * The request of [day] (5.4): one kind, 5 portions, and whether it is filled. It is drawn from the seed like the wanted
+     * kinds, so only whether it was filled (and `cook request new`'s salt) is kept. None while the back doors are off.
+     */
+    fun request(level: ServerLevel, capital: Long, day: Long): Request? {
+        if (!Cooking.doors()) return null
+        val asked = recs[capital]?.asked?.takeIf { it.day == day }
+        return Request(Requests.requested(level.seed, capital, day, asked?.salt ?: 0), Requests.PORTIONS, asked?.filled == true)
+    }
+
+    /** [capital]'s record brought to the town's [day] (and started if [create]), or null if it has none. */
+    fun rolled(capital: Long, day: Long, create: Boolean = false): Rec? {
+        val rec = (if (create) recOrNew(capital) else recs[capital]) ?: return null
+        roll(rec, day)
+        return rec
+    }
+
+    /**
+     * Brings [rec] to the town's [day] if it is for another: the counters of the old day are zeroed, those who sold lately
+     * are remembered for two days, and lots more than two days old are dropped (the town ate them). A clock set back is the
+     * same without the dropping, so the lots are kept and the counters start again. Done the same wherever it is first noticed.
+     */
+    fun roll(rec: Rec, day: Long) {
+        if (rec.day == day) return
+        val back = rec.day != NO_DAY && day < rec.day
+        for (row in rec.sold) row.fill(0)
+        rec.mine.clear()
+        for (seen in rec.seen) seen.values.removeIf { it < day - Doors.ABOUT }
+        if (!back) for (list in rec.lots) list.removeIf { it.day != NO_DAY && day - it.day > LOT_DAYS }
+        rec.day = day
+        setDirty()
+    }
 
     /**
      * Puts [lot] in the pantry of [door] (the inn's, the bakery's or the alms table's), stamped with today's date if it
@@ -98,6 +136,9 @@ class Kitchens(
     }
 
     companion object {
+        /** A lot more than this many days old is dropped at the 2:00 reckoning: the town ate it. */
+        private const val LOT_DAYS = 2L
+
         private val OWING: Codec<Owing> = RecordCodecBuilder.create { i ->
             i.group(
                 Codec.INT.optionalFieldOf("door", Door.INN.ordinal).forGetter { it.door.ordinal },
