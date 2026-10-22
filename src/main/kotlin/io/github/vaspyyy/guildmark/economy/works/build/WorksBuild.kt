@@ -15,6 +15,7 @@ import io.github.vaspyyy.guildmark.homestead.HomesteadProtection
 import io.github.vaspyyy.guildmark.homestead.Laid
 import io.github.vaspyyy.guildmark.homestead.plan.Stage
 import io.github.vaspyyy.guildmark.homestead.plan.StepKind
+import io.github.vaspyyy.guildmark.tales.Tales
 import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
 import io.github.vaspyyy.guildmark.townsfolk.Days
 import io.github.vaspyyy.guildmark.townsfolk.Director
@@ -546,8 +547,12 @@ object WorksBuild {
         val spare = Hands.spare(level, places)
         if (spare.isEmpty()) return listOf()
         val want = WorksKinds.crew(w.kind).coerceAtMost(spare.size)
-        val start = Math.floorMod(day * 7L + w.id * 3L, spare.size.toLong()).toInt()
-        return List(want) { spare[(start + it) % spare.size] }
+        // Tales T1a: the volunteers a tale has made (the Fence Between's mended neighbours, for ten days) who are spare go first; Tales off: none
+        val first = Tales.volunteers(capital).let { v -> if (v.isEmpty()) listOf() else spare.filter { it in v }.take(want) }
+        val rest = if (first.isEmpty()) spare else spare.filter { it !in first }
+        if (first.size >= want || rest.isEmpty()) return first
+        val start = Math.floorMod(day * 7L + w.id * 3L, rest.size.toLong()).toInt()
+        return first + List(want - first.size) { rest[(start + it) % rest.size] }
     }
 
     /** Today's labourers from the town at works [id] (for its screen): none unless it's where the town's labourers go now. */
