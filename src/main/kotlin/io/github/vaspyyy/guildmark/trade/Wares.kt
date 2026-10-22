@@ -10,7 +10,7 @@ import java.util.concurrent.CopyOnWriteArrayList
  * donkey, a cart, the Warrant, a Wagon Bill, a hired guard. Each part that has one registers it from its own `register` with [Wares.add].
  *
  * - [id] is what the screen and the commands name it by; its words are `ware.guildmark.<id>` (and `.tip` for the tooltip).
- * - [price] is in Marks, taken whole before [action] runs.
+ * - [price] is in Marks, taken whole before [action] runs; it is fixed, or follows a setting if the ware was made with a function (the hired guard's wage).
  * - [gate] answers null if [player] may buy it, or the lang key of what is missing (a rung not reached, a Warrant not held, the
  *   standing not yet Trusted), which the screen shows greyed under the ware.
  * - [action] hands over what was bought; it answers false if it could not (nothing was taken, or it is given back).
@@ -19,11 +19,23 @@ import java.util.concurrent.CopyOnWriteArrayList
  */
 class Ware(
     val id: String,
-    val price: Int,
+    private val cost: () -> Int,
     val gate: (ServerPlayer) -> String? = { null },
     val action: (ServerPlayer) -> Boolean = { true },
     val scene: ((ServerPlayer, Townsperson) -> Unit)? = null,
-)
+) {
+    /** A ware at a fixed [price]. */
+    constructor(
+        id: String,
+        price: Int,
+        gate: (ServerPlayer) -> String? = { null },
+        action: (ServerPlayer) -> Boolean = { true },
+        scene: ((ServerPlayer, Townsperson) -> Unit)? = null,
+    ) : this(id, { price }, gate, action, scene)
+
+    /** Its price in Marks as it stands now: a ware whose price follows a setting (the hired guard's wage) is asked each time it is read. */
+    val price: Int get() = cost()
+}
 
 /**
  * The hall counter's list of [Ware]s, in the order they were added. Nothing is added here: each part adds its own (Part 3 the

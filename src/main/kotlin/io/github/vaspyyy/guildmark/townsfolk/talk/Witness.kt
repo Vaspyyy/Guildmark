@@ -16,6 +16,7 @@ import io.github.vaspyyy.guildmark.festival.FestivalContest
 import io.github.vaspyyy.guildmark.homestead.HomesteadEvent
 import io.github.vaspyyy.guildmark.homestead.HomesteadTiers
 import io.github.vaspyyy.guildmark.homestead.plan.Stage
+import io.github.vaspyyy.guildmark.outlaw.OutlawBand
 import io.github.vaspyyy.guildmark.outlaw.OutlawCamps
 import io.github.vaspyyy.guildmark.outlaw.Outlaws
 import io.github.vaspyyy.guildmark.tales.Tales
@@ -529,8 +530,24 @@ object Witness {
 
     // ---- The roads (M4) ----
 
+    /**
+     * [player], a trader, was stopped on the road to [capital] by [band]'s Hunt and robbed of [goods] (the dearest first): the nearest town hears
+     * of it as it hears of a wagon waylaid (`road.waylaid`, heat 0.8, the town's scope), about the trader, its gate guards and keepers knowing it
+     * first. The Hunt (trade/hunt) calls this once it has taken its share.
+     */
+    fun hunted(level: ServerLevel, capital: BlockPos, player: ServerPlayer, band: OutlawBand?, goods: List<Good>) = Road.hunted(level, capital, player, band, goods)
+
     /** What the town hears of its wagons: one waylaid, or one a player brought in safe. */
     private object Road : Caravans.Listener {
+        fun hunted(level: ServerLevel, capital: BlockPos, player: ServerPlayer, band: OutlawBand?, goods: List<Good>) {
+            val town = Spread.nearest(level, capital, BELL) ?: return
+            val name = band?.let { "${Outlaws.NAME_KEY}.${it.name}" } ?: ""
+            TownTalk.begin(
+                level, BlockPos.of(town), "road.waylaid", player.uuid, -1, listOf(name, goods.firstOrNull()?.key ?: ""),
+                0.8f, Fade.SMALL, Scope.TOWN, 0, null, Rumours.TOWN, gate(level, town).map { it.id to Venue.SEEN },
+            )
+        }
+
         override fun struck(level: ServerLevel, caravan: Caravans.View, strike: Caravans.Strike) {
             if (!strike.waylaid) return
             val capital = Spread.nearest(level, caravan.capital, BELL) ?: return

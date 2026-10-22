@@ -11,6 +11,7 @@ import io.github.vaspyyy.guildmark.loot.Rarity
 import io.github.vaspyyy.guildmark.loot.Relics
 import io.github.vaspyyy.guildmark.registry.ModEntities
 import io.github.vaspyyy.guildmark.registry.ModItems
+import io.github.vaspyyy.guildmark.trade.TradeConfig
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands
 import net.minecraft.core.UUIDUtil
@@ -38,7 +39,10 @@ import java.util.function.Supplier
 enum class ErrandKind(val id: String, val days: Int, val risk: Float, val minPay: Int, val maxPay: Int, val cacheChance: Float, val cache: Rarity) {
     PATROL("patrol", 1, 0.06f, 8, 14, 0.0f, Rarity.COMMON),
     NEST("nest", 2, 0.15f, 18, 28, 0.3f, Rarity.COMMON),
-    RUIN("ruin", 3, 0.25f, 30, 45, 0.6f, Rarity.UNCOMMON);
+    RUIN("ruin", 3, 0.25f, 30, 45, 0.6f, Rarity.UNCOMMON),
+
+    /** Riding with a House's wagons as a guard (trader design Part 4): paid nothing, the leader's gain is a safer wagon. Offered only while the Trading House is on. */
+    RIDE("ride", 3, 0.05f, 0, 0, 0f, Rarity.COMMON);
 
     val title: Component get() = Component.translatable("errand.guildmark.$id")
 
@@ -97,6 +101,9 @@ class Errands(val errands: MutableList<Errand> = mutableListOf()) : SavedData() 
 
         private fun risk(kind: ErrandKind, veteran: Int): Float = (kind.risk - 0.03f * veteran).coerceAtLeast(0.02f)
 
+        /** Whether [kind] is on offer: every errand, but riding with a House's wagons only while the Trading House is on. */
+        private fun offered(kind: ErrandKind): Boolean = kind != ErrandKind.RIDE || TradeConfig.house()
+
         /** The leader's members close by, and the ones away. */
         fun list(player: ServerPlayer) {
             val level = player.level()
@@ -108,11 +115,15 @@ class Errands(val errands: MutableList<Errand> = mutableListOf()) : SavedData() 
             for (member in near) {
                 val buttons = Component.empty()
                 for (kind in ErrandKind.entries) {
+                    if (!offered(kind)) continue
                     buttons.append(" ").append(Component.literal("[").append(kind.title).append("]").withStyle {
+                        val chance = (risk(kind, member.veteran) * 100).toInt()
                         it.withColor(0x7FD87F).withUnderlined(true)
                             .withClickEvent(ClickEvent.RunCommand("/guild send ${member.uuid} ${kind.id}"))
-                            .withHoverEvent(HoverEvent.ShowText(Component.translatable("message.guildmark.errand.hover", kind.title, kind.days,
-                                (risk(kind, member.veteran) * 100).toInt(), kind.minPay, kind.maxPay)))
+                            .withHoverEvent(HoverEvent.ShowText(
+                                if (kind.maxPay == 0) Component.translatable("message.guildmark.errand.hover_ride", kind.title, kind.days, chance)
+                                else Component.translatable("message.guildmark.errand.hover", kind.title, kind.days, chance, kind.minPay, kind.maxPay),
+                            ))
                     })
                 }
                 player.sendSystemMessage(Component.translatable("message.guildmark.errand.member", member.name, member.veteran, buttons))
@@ -125,7 +136,7 @@ class Errands(val errands: MutableList<Errand> = mutableListOf()) : SavedData() 
 
         fun send(player: ServerPlayer, memberId: String, kindId: String): Boolean {
             val level = player.level()
-            val kind = ErrandKind.byId(kindId) ?: return false
+            val kind = ErrandKind.byId(kindId)?.takeIf { offered(it) } ?: return false
             val uuid = runCatching { UUID.fromString(memberId) }.getOrNull() ?: return false
             val member = level.getEntity(uuid) as? GuildMember
             if (member == null || member.leader != player.uuid || member.distanceTo(player) > SEND_RANGE || !member.isAlive) {
@@ -176,13 +187,14 @@ class Errands(val errands: MutableList<Errand> = mutableListOf()) : SavedData() 
                 guilds.addMember(guild, member.uuid)
 
                 val pay = ((errand.kind.minPay + level.random.nextInt(errand.kind.maxPay - errand.kind.minPay + 1)) * (1.0f + 0.1f * errand.veteran)).toInt()
-                player.inventory.placeItemBackInInventory(ItemStack(ModItems.GUILD_MARK.get(), pay), Prediction.SERVER_ONLY)
+                if (pay > 0) player.inventory.placeItemBackInInventory(ItemStack(ModItems.GUILD_MARK.get(), pay), Prediction.SERVER_ONLY)
                 val cache = level.random.nextFloat() < errand.kind.cacheChance
                 if (cache) player.inventory.placeItemBackInInventory(Relics.cache(errand.kind.cache), Prediction.SERVER_ONLY)
                 level.sendParticles(ParticleTypes.HAPPY_VILLAGER, member.x, member.y + 1.2, member.z, 12, 0.4, 0.5, 0.4, 0.0)
                 member.playSound(SoundEvents.VILLAGER_CELEBRATE, 1.0f, 1.0f)
-                player.sendSystemMessage(Component.translatable(if (cache) "message.guildmark.errand.back_cache" else "message.guildmark.errand.back",
-                    errand.name, errand.kind.title, pay, member.veteran).withStyle { it.withColor(0x7FD87F) })
+                val back = if (pay <= 0) Component.translatable("message.guildmark.errand.back_ride", errand.name, errand.kind.title, member.veteran)
+                else Component.translatable(if (cache) "message.guildmark.errand.back_cache" else "message.guildmark.errand.back", errand.name, errand.kind.title, pay, member.veteran)
+                player.sendSystemMessage(back.withStyle { it.withColor(0x7FD87F) })
             }
         }
 
