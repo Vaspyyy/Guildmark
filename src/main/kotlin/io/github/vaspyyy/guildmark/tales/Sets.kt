@@ -64,7 +64,7 @@ import kotlin.math.sqrt
 object Sets {
     // ---- Props ----
 
-    /** The vanilla stand-in of each look of the carried props (13.2.3) until the drawn `tale_prop` is in. */
+    /** The vanilla stand-in of each look of the carried props (13.2.3), held where [TaleArt] has not drawn the look. */
     private val STAND_INS: Map<String, Item> = mapOf(
         "note_sealed" to Items.PAPER,
         "ransom_pouch" to Items.BUNDLE,
@@ -81,10 +81,10 @@ object Sets {
     )
 
     /**
-     * What a body holds for the look [look] of the carried props (13.2.3): [standIn], the vanilla item that does for it, until
-     * the drawn `tale_prop` is in (then this one function gives it, and nothing that calls it changes).
+     * What a body holds for the look [look] of the carried props (13.2.3): the drawn `tale_prop` of that look, which is Part E's
+     * ([TaleArt.prop]), or [standIn], the vanilla item that does for it, for a look that is not drawn.
      */
-    fun prop(look: String, standIn: Item): ItemStack = ItemStack(standIn)
+    fun prop(look: String, standIn: Item): ItemStack = TaleArt.prop(look, standIn)
 
     /** The prop of [look] with its own stand-in (a look that is not one of the twelve is a sheet of paper). */
     fun prop(look: String): ItemStack = prop(look, STAND_INS[look] ?: Items.PAPER)

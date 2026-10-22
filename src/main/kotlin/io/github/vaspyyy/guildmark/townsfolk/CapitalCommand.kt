@@ -14,6 +14,7 @@ import io.github.vaspyyy.guildmark.economy.MarketBoards
 import io.github.vaspyyy.guildmark.economy.Markets
 import io.github.vaspyyy.guildmark.economy.Route
 import io.github.vaspyyy.guildmark.economy.works.Works
+import io.github.vaspyyy.guildmark.tales.TaleArt
 import io.github.vaspyyy.guildmark.townsfolk.scenes.SceneCommand
 import io.github.vaspyyy.guildmark.village.VillageNames
 import net.minecraft.ChatFormatting
@@ -77,14 +78,18 @@ object CapitalCommand {
     private const val MAKE_WAY_MOST = 128
 
     /** The moves that show what someone has in hand: given one with empty hands, they hold what you hold, or else a loaf (or
-     *  the move's own thing in [STAND_INS]). */
+     *  the move's own thing in [standIn]). */
     private val HANDLED = setOf(
         Activity.PICK_UP, Activity.PUT_DOWN, Activity.HAND_OVER, Activity.RECEIVE, Activity.SET_UP, Activity.CARRY_BASKET,
         Activity.FEED_FIRE, Activity.LAY_POSY,
     )
 
-    /** What a move of [HANDLED] is given instead of a loaf: the note it burns, the posy it lays. */
-    private val STAND_INS = mapOf(Activity.FEED_FIRE to Items.PAPER, Activity.LAY_POSY to Items.POPPY)
+    /** What a move of [HANDLED] is given instead of a loaf: the note it burns, the posy it lays (the tales' drawn posy, with the poppy that stands in for it where it is not drawn). */
+    private fun standIn(activity: Activity): ItemStack = when (activity) {
+        Activity.FEED_FIRE -> ItemStack(Items.PAPER)
+        Activity.LAY_POSY -> TaleArt.prop("posy", Items.POPPY)
+        else -> ItemStack(Items.BREAD)
+    }
 
     /** Each kind of place `show` marks: its name and colour. */
     private enum class Mark(val label: String, val colour: Int) {
@@ -457,7 +462,7 @@ object CapitalCommand {
         person.navigation.stop()
         val gave = activity in HANDLED && person.carried.isEmpty
         if (gave) {
-            person.carried = player.mainHandItem.takeUnless { it.isEmpty }?.copyWithCount(1) ?: ItemStack(STAND_INS[activity] ?: Items.BREAD)
+            person.carried = player.mainHandItem.takeUnless { it.isEmpty }?.copyWithCount(1) ?: standIn(activity)
             person.carriedUntil = 0
         }
         person.director = Acting(activity, person.tickCount + ticks, person.yawTo(player.position()), gave)
