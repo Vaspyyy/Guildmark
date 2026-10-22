@@ -129,7 +129,8 @@ and Kotlin model code always agree.
   (`textures/entity/cook/`). With a preview dir it writes the contact sheets and GIFs (`cook_prev.py`, about six
   minutes); the third argument, an unpacked game `assets/minecraft`, adds the vanilla campfire and furnace beside the
   stations at true scale, the herb on farmland and the tavern and bakery dioramas. The cookshop's parchment on the works
-  post is in `works_art.py`.
+  post is in `works_art.py`. Before any preview it checks what it wrote (`cook_check.py`, which also runs alone: every
+  id has its files and everything they name exists) and stops with the list if something is wrong.
   Run it with `python3 -B art/scripts/cook_art.py [assets dir [preview dir [game assets dir]]]`.
 
 Rebuild a model (needs Python 3 with Pillow and numpy), from the repo root:

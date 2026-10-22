@@ -8,7 +8,8 @@ writes every file under `src/main/resources/assets/guildmark/` (or [assets dir])
 `textures/gui/sprites/cook/`, `textures/particle/` and `particles/`; with a [preview dir] it also draws the contact sheets and GIFs there, `cook_prev.py`
 lists them (the third argument, a game `assets/minecraft` folder unpacked from the jar, is read only: for the vanilla campfire and furnace drawn beside the
 blocks, the farmland and wheat beside the herb, and the walls and furniture of the two dioramas). A rerun gives the same files (the previews take about six
-minutes). Run it from the repository's root.
+minutes). Before any preview it runs `cook_check.py` on what it wrote (every id has its files, everything they name exists, no model the game would
+refuse) and stops with the list if there is a problem; that check also runs alone. Run it from the repository's root.
 
 THE MOVING PIECES: the contract with Part C (who draws them) -----------------------------------------------------------------------
 Every model below is a block model in `models/block/`, authored in model space (x east, y up, z south, 16 px to a block; the renderer divides by
@@ -251,6 +252,10 @@ def main(argv):
     cook_gui.write(assets)
     cook_part.write(assets)
     cook_render.write(assets)
+    import cook_check
+    problems, summary = cook_check.check(assets)
+    if problems:
+        raise SystemExit('Hearthcraft\'s files have problems (%s):\n  %s' % (summary, '\n  '.join(problems)))
     if len(argv) > 1:
         import cook_prev
         files = cook_prev.previews(assets, argv[1], argv[2] if len(argv) > 2 else None)
