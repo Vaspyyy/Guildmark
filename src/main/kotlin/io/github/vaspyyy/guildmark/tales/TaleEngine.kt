@@ -62,6 +62,7 @@ internal object TaleEngine {
         Comings.listen(Tales)
         Caravans.listen(TaleListeners.Road)
         Works.listen(TaleListeners.Building)
+        TaleEngineCommands.add()
     }
 
     private fun start(server: MinecraftServer) {

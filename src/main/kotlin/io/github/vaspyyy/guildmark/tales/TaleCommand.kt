@@ -84,15 +84,7 @@ object TaleCommand {
         else -> "Tales are off (setting: Town Tales)."
     }
 
-    private fun show(context: CommandContext<CommandSourceStack>): Int {
-        val source = context.source
-        off()?.let { return say(source, grey(it)) }
-        val here = here(context) ?: return 0
-        say(source, header("Tales in ${here.name}"))
-        say(source, plain("No tale here."))
-        say(source, grey("This build has no tale engine yet, so none can be open."))
-        return 1
-    }
+    private fun show(context: CommandContext<CommandSourceStack>): Int = TaleEngineCommands.overview(context)
 
     // ---- Text ----
 
