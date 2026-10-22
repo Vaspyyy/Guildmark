@@ -25,12 +25,17 @@ object TallyLinks {
     /** The tickets open at the capital whose heart is [capital] now. Part A: `Hauls.open(level, capital)`. */
     fun open(level: ServerLevel, capital: BlockPos): List<Haul> = listOf()
 
-    /** The tickets [player] holds booked, at any capital, soonest due first. Part A: the tickets of `Hauls.open` for each capital that [player] holds a booking on. */
+    /**
+     * The tickets [player] holds booked, at any capital, soonest due first. Part A (its `Hauls.held` only counts them):
+     * `Hauls.all(level).filter { Hauls.bookedOn(level, player.uuid, it.id) != null }.sortedBy { it.due }`.
+     */
     fun held(level: ServerLevel, player: ServerPlayer): List<Haul> = listOf()
 
     /**
      * [player] books [units] of ticket [haul] (as the Word last heard of it) at its capital, checked against the town now, as the shop's
-     * Take button does. Gives how it went. Part A: `Hauls.book(level, player, haul.capital, haul.id, units)`.
+     * Take button does. Gives how it went. Part A: `Hauls.book(level, haul, Taker.Player(player.uuid), units, player.gameProfile.name)` gives
+     * null if it was made ([Booked.DONE]), else why not as a key: `gone` is [Booked.GONE], `off` is [Booked.NOT_YET], and any other (`taken`,
+     * `yours`, `warrant`, `first_call`, `limit`, `poor`) is [Booked.REFUSED].
      */
     fun book(level: ServerLevel, player: ServerPlayer, haul: Int, capital: BlockPos, units: Int): Booked = Booked.NOT_YET
 
