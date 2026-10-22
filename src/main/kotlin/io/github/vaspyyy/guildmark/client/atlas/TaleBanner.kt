@@ -354,6 +354,8 @@ object TaleBanner : GuiLayer {
         if (strength < 0.03f) return
         for ((from, to, share) in GLINT) {
             val a = strength * share
+            // The game draws text whose alpha is almost nothing as fully opaque, so a band this faint is left out
+            if (a < 0.02f) continue
             graphics.enableScissor((at + from).toInt(), -2, (at + to).toInt(), 12)
             graphics.text(font, title, -width / 2, Ui.HEADING_RISE, ARGB.color(a, 0xFFF4D8), false)
             graphics.disableScissor()
