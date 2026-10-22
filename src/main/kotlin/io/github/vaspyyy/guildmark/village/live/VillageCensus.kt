@@ -170,8 +170,9 @@ object VillageCensus {
     /**
      * Puts [found]'s buildings into [rec]'s homes and answers the id of each (in the order of [Found.buildings]). A home keeps its id
      * if its door is within 3 blocks of a known one's (or they share a bed); a new one is appended; a home whose door and beds are
-     * both gone, in chunks that were loaded, is marked gone; and a bed with a sleeper in it is never taken out (it waits for the next
-     * count). The record keeps the board, the radius and the size the count found, and the name it was given the first time.
+     * both gone, in chunks that were loaded, is marked gone (one whose door stands but that no building took keeps the beds that are
+     * still beds and none other); and a bed with a sleeper in it is never taken out (it waits for the next count). The record keeps
+     * the board, the radius and the size the count found, and the name it was given the first time.
      */
     fun merge(rec: VillageRec, found: Found, t: Terrain): Pair<List<Int>, Diff> {
         val before = rec.homes.filter { !it.gone }
@@ -217,9 +218,14 @@ object VillageCensus {
         var gone = 0
         for ((k, h) in rec.homes.withIndex()) {
             if (h.id in used || h.gone) continue
-            if (!standsNoMore(t, h)) continue
-            rec.homes[k] = Home(h.id, h.door, h.beds, h.kind, true)
-            gone++
+            if (standsNoMore(t, h)) {
+                rec.homes[k] = Home(h.id, h.door, h.beds, h.kind, true)
+                gone++
+            } else {
+                // No building took it, but its door (or a bed) is there: it stays, and keeps the beds that are still beds
+                val still = h.beds.filter { bedStands(t, it) }
+                if (still.size != h.beds.size) rec.homes[k] = Home(h.id, h.door, still, h.kind, false)
+            }
         }
         // The list only grows; the oldest homes that are gone go first past the cap
         while (rec.homes.size > MAX_HOME_RECORDS) {
@@ -243,6 +249,13 @@ object VillageCensus {
         val p = BlockPos.of(bed)
         val s = t.state(p.x, p.y, p.z) ?: return false
         return Cls.of(s) and Cls.BED_HEAD != 0 && s.hasProperty(BlockStateProperties.OCCUPIED) && s.getValue(BlockStateProperties.OCCUPIED)
+    }
+
+    /** Whether the bed at [bed] is a bed, or cannot be told because its chunk is not loaded (then it is taken to be one). */
+    private fun bedStands(t: Terrain, bed: Long): Boolean {
+        val p = BlockPos.of(bed)
+        val s = t.state(p.x, p.y, p.z) ?: return true
+        return Cls.of(s) and Cls.BED_HEAD != 0
     }
 
     /**
