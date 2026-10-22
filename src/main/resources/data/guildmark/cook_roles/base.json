@@ -1,0 +1,25 @@
+{
+  "foods": [
+    {"name": "wheat", "items": ["minecraft:wheat"], "roles": {"body": 1.0}},
+    {"name": "bread", "items": ["minecraft:bread"], "roles": {"body": 1.0}},
+    {"name": "potato", "items": ["minecraft:potato", "minecraft:baked_potato"], "roles": {"body": 0.8, "green": 0.2}},
+    {"name": "carrot", "items": ["minecraft:carrot"], "roles": {"green": 0.6, "sweet": 0.4}},
+    {"name": "beetroot", "items": ["minecraft:beetroot"], "roles": {"green": 0.5, "sweet": 0.3, "savour": 0.2}},
+    {"name": "apple", "items": ["minecraft:apple"], "roles": {"sweet": 0.8, "green": 0.2}},
+    {"name": "berries", "items": ["minecraft:sweet_berries"], "roles": {"sweet": 0.9, "savour": 0.1}},
+    {"name": "honey", "items": ["minecraft:honey_bottle"], "roles": {"sweet": 1.0}, "returns": "minecraft:glass_bottle"},
+    {"name": "sugar", "items": ["minecraft:sugar"], "roles": {"sweet": 1.0}},
+    {"name": "beef", "items": ["minecraft:beef", "minecraft:cooked_beef"], "roles": {"meat": 1.0}},
+    {"name": "pork", "items": ["minecraft:porkchop", "minecraft:cooked_porkchop"], "roles": {"meat": 0.8, "rich": 0.2}},
+    {"name": "mutton", "items": ["minecraft:mutton", "minecraft:cooked_mutton"], "roles": {"meat": 0.8, "savour": 0.2}},
+    {"name": "chicken", "items": ["minecraft:chicken", "minecraft:cooked_chicken"], "roles": {"meat": 0.9, "rich": 0.1}},
+    {"name": "cod", "items": ["minecraft:cod", "minecraft:cooked_cod"], "roles": {"sea": 1.0}},
+    {"name": "salmon", "items": ["minecraft:salmon", "minecraft:cooked_salmon"], "roles": {"sea": 0.8, "rich": 0.2}},
+    {"name": "kelp", "items": ["minecraft:kelp", "minecraft:dried_kelp"], "roles": {"sea": 0.5, "savour": 0.5}},
+    {"name": "egg", "items": ["minecraft:egg"], "roles": {"rich": 1.0}},
+    {"name": "milk", "items": ["minecraft:milk_bucket"], "roles": {"rich": 1.0}, "returns": "minecraft:bucket"},
+    {"name": "mushroom", "items": ["minecraft:brown_mushroom", "minecraft:red_mushroom"], "roles": {"savour": 0.7, "green": 0.3}},
+    {"name": "bone", "items": ["minecraft:bone"], "roles": {"savour": 0.6, "meat": 0.4}},
+    {"name": "herb", "items": ["guildmark:herb_sprig"], "roles": {"savour": 1.0}}
+  ]
+}
