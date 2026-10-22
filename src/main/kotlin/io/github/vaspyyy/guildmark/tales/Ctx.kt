@@ -7,6 +7,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Resident
 import io.github.vaspyyy.guildmark.townsfolk.Residents
 import io.github.vaspyyy.guildmark.townsfolk.Trait
 import io.github.vaspyyy.guildmark.townsfolk.scenes.Scenes
+import io.github.vaspyyy.guildmark.townsfolk.scenes.Words
 import io.github.vaspyyy.guildmark.townsfolk.talk.Favour
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel
@@ -41,10 +42,13 @@ class Ctx(
     // ---- The telling (Part B, 4.2 to 4.4): the people of the tale act in the street ----
 
     /** [slot]'s body says a take of the tale family [family] (`tale.<template>.<beat>`) with the grey [detail], through `Words.sayWith`; nothing if no body is near or the family is not recorded (4.5). */
-    fun say(t: Tale, slot: String, family: String, detail: String? = null) {}
+    fun say(t: Tale, slot: String, family: String, detail: String? = null) {
+        if (!Tales.scenes()) return
+        TaleBodies.body(level, t, slot)?.let { Words.sayWith(it, family, listOf(), detail, "tale ${t.template}") }
+    }
 
     /** [slot]'s body plays [activity] (a clip) as a one-person part of the stage (4.2). */
-    fun act(t: Tale, slot: String, activity: Activity) {}
+    fun act(t: Tale, slot: String, activity: Activity) = TaleLook.act(this, t, slot, activity)
 
     /** Holds [slot]'s resident for the tale (4.4 rule 2): their day body is not made, and their tale body stands at [at] playing [clip]. False if they cannot be held (three at once, or tales' scenes off). */
     fun hold(t: Tale, slot: String, at: BlockPos? = null, clip: Activity? = null): Boolean = Tales.hold(level, t, slot, at, clip)

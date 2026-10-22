@@ -5,6 +5,7 @@ import io.github.vaspyyy.guildmark.city.Capitals
 import io.github.vaspyyy.guildmark.economy.fortune.Fortunes
 import io.github.vaspyyy.guildmark.economy.works.Works
 import io.github.vaspyyy.guildmark.economy.works.WorksView
+import io.github.vaspyyy.guildmark.tales.Tales
 import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
 import io.github.vaspyyy.guildmark.townsfolk.Comings
 import io.github.vaspyyy.guildmark.townsfolk.Labour
@@ -66,7 +67,7 @@ object Scenes {
     }
 
     /** Whether any of M6's scenes are on. */
-    fun any(): Boolean = Works.enabled() || Fortunes.enabled() || Comings.enabled()
+    fun any(): Boolean = Works.enabled() || Fortunes.enabled() || Comings.enabled() || Tales.enabled()
 
     /** Each tick for each player, from [io.github.vaspyyy.guildmark.townsfolk.Crowds.tick]. */
     fun tick(level: ServerLevel, player: ServerPlayer) {
@@ -77,10 +78,12 @@ object Scenes {
         val homes = Comings.enabled()
         // The scene command's cold goes on biting while it lasts, whatever the switches say
         val cold = streets || Cold.forcing()
-        if (!works && !cold && !homes) return
+        // A tale's telling goes with townTales, as the engine last read it (tales/)
+        val tales = Tales.live
+        if (!works && !cold && !homes && !tales) return
         if (player.isSpectator || level.dimension() != Level.OVERWORLD) return
         val slot = player.tickCount % 20
-        if (slot % 2 == 0 || slot < 3 || slot > 17) return
+        if (slot % 2 == 0 || slot < 3 || slot > 19) return
         val here = here(level, player) ?: return
         when (slot) {
             3 -> if (works) Watchers.look(level, player, here)
@@ -91,6 +94,7 @@ object Scenes {
             13 -> if (streets) Alms.look(level, player, here)
             15 -> if (homes) Neighbours.look(level, player)
             17 -> if (streets) ShutStall.look(level, player, here)
+            19 -> if (tales) Tales.look(level, player, here)
         }
     }
 
@@ -143,5 +147,6 @@ object Scenes {
         ShutStall.forget()
         Alms.forget()
         Lookout.forget()
+        Tales.forget()
     }
 }

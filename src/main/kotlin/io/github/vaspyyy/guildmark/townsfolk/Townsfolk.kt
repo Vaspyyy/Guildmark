@@ -62,6 +62,9 @@ object Townsfolk {
     /** The sparks that fly when a smith's hammer meets hot iron. */
     val FORGE_SPARK: DeferredHolder<ParticleType<*>, SimpleParticleType> = PARTICLES.register("forge_spark") { -> SimpleParticleType(false) }
 
+    /** The gold specks that rise from the shoulder of a tale's cast member who wants a player's help (living-world/stories/design.md 3.3). */
+    val TALE_MOTE: DeferredHolder<ParticleType<*>, SimpleParticleType> = PARTICLES.register("tale_mote") { -> SimpleParticleType(false) }
+
     /** Registers townsfolk with the game; called once from the mod's constructor. */
     fun init(modBus: IEventBus) {
         ENTITIES.register(modBus)

@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.townsfolk.scenes
 
+import io.github.vaspyyy.guildmark.townsfolk.Speech
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import io.github.vaspyyy.guildmark.townsfolk.talk.Kind
 import io.github.vaspyyy.guildmark.townsfolk.talk.Occasion
@@ -32,6 +33,9 @@ internal object Words {
     fun over(p: Townsperson): Boolean =
         p.level().getEntitiesOfClass(Townsperson::class.java, p.boundingBox.inflate(OVER, 3.0, OVER)) { it !== p && it.speech.isNotEmpty() }.isNotEmpty()
 
+    /** Whether [p] could say a take of [family] at all just now: the street talk is on, a player is in hearing and the family is recorded. */
+    fun can(p: Townsperson, family: String): Boolean = on() && hearer(p) != null && (TalkLines.FAMILIES[family]?.count ?: 0) > 0
+
     /** The nearest player in hearing of [p], if any. */
     fun hearer(p: Townsperson): ServerPlayer? = p.level().getNearestPlayer(p, HEARING) as? ServerPlayer
 
@@ -56,6 +60,29 @@ internal object Words {
         if (!on()) return false
         val player = hearer(p) ?: return false
         return say(p, player, of(p, player, family), why, force)
+    }
+
+    /**
+     * A take of [family] (a tale's, `tale.<template>.<beat>`) for [p] to say in [player]'s hearing, with [args] after the wording
+     * (the placeholders it has) and the grey [detail] under it, the way a talk builds its parts (living-world/stories/design.md 4.2,
+     * 4.5): null if none is recorded, or every take has been heard lately.
+     */
+    fun lineWith(p: Townsperson, player: ServerPlayer?, family: String, args: List<String> = listOf(), detail: String? = null): Street.Line? {
+        val base = of(p, player, family) ?: return null
+        val speech = if (args.isEmpty()) base.speech else Speech.of(base.speech, *args.toTypedArray())
+        return Street.Line(Speech.withDetail(speech, detail), base.voiced, base.ticks)
+    }
+
+    /**
+     * [p] says a take of [family] now with [args] and the grey [detail] ([lineWith]), overheard by whoever is in hearing ([why]
+     * goes in the talk's log); with [force], even over others talking. The line said, or null if nothing was (street talk off,
+     * no player in hearing, the family not recorded, or someone near talking).
+     */
+    fun sayWith(p: Townsperson, family: String, args: List<String> = listOf(), detail: String? = null, why: String = "a tale", force: Boolean = false): Street.Line? {
+        if (!on()) return null
+        val player = hearer(p) ?: return null
+        val line = lineWith(p, player, family, args, detail) ?: return null
+        return if (say(p, player, line, why, force)) line else null
     }
 
     /** [p] says [line] now in [player]'s hearing, if they're free to; true if it was said. */

@@ -79,7 +79,9 @@ object Tales : Comings.Listener {
     fun pause(level: ServerLevel) {}
 
     /** At setup, after the streets: the listeners (Part A), and each of B to F adds a block of its own. Registers nothing yet. */
-    fun register(modBus: IEventBus) {}
+    fun register(modBus: IEventBus) {
+        TaleSceneCommand.register()
+    }
 
     // ---- The clock ----
 
@@ -92,10 +94,10 @@ object Tales : Comings.Listener {
     // ---- The scene ----
 
     /** From `Scenes.tick`, slot 19, each second for a player in a capital ([here]): the scene due, the motes, the tidy (Part B). */
-    fun look(level: ServerLevel, player: ServerPlayer, here: Scenes.Here) {}
+    fun look(level: ServerLevel, player: ServerPlayer, here: Scenes.Here) = TaleLook.look(level, player, here)
 
     /** From `Scenes.forget`, as the server stops: every stage, figure and mote let go (Part B). */
-    fun forget() {}
+    fun forget() = TaleLook.forget()
 
     // ---- The people ----
 

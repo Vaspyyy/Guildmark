@@ -48,6 +48,7 @@ object TownsfolkClient {
         }
         modBus.addListener(RegisterParticleProvidersEvent::class.java) { event ->
             event.registerSpriteSet(Townsfolk.FORGE_SPARK.get()) { sprites -> ForgeSparkParticle.Provider(sprites) }
+            event.registerSpriteSet(Townsfolk.TALE_MOTE.get()) { sprites -> TaleMoteParticle.Provider(sprites) }
         }
         NeoForge.EVENT_BUS.addListener(ClientPlayerNetworkEvent.LoggingOut::class.java) { _ -> tunes.clear() }
     }

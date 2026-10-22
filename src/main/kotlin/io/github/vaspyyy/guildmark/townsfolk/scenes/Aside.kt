@@ -5,6 +5,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Activity
 import io.github.vaspyyy.guildmark.townsfolk.Audience
 import io.github.vaspyyy.guildmark.townsfolk.Chase
 import io.github.vaspyyy.guildmark.townsfolk.Chat
+import io.github.vaspyyy.guildmark.townsfolk.Claims
 import io.github.vaspyyy.guildmark.townsfolk.Climb
 import io.github.vaspyyy.guildmark.townsfolk.Days
 import io.github.vaspyyy.guildmark.townsfolk.Director
@@ -84,6 +85,17 @@ class Aside(
     /** Whether their part is over. */
     val over: Boolean get() = done
 
+    /** Whether their part was played through to its end (not broken off by danger, a word, a new stretch or the like). */
+    var completed = false
+        private set
+
+    /** The stage this part belongs to, if it is a part of one (living-world/stories/design.md 4.2), and the name of the barrier it waits at. */
+    internal var stage: Stage? = null
+    internal var barrier: String? = null
+
+    /** Set by [take] for a part played at a post or in a seat: the worker sets their work down first and takes it up after. */
+    internal var post: Post? = null
+
     override fun tick(p: Townsperson) {
         if (done) return
         val level = p.level() as? ServerLevel ?: return
@@ -98,13 +110,24 @@ class Aside(
             if (doing != null && life != null && Days.stretch(life, level.overworldClockTime).doing != doing) return end(p, drop = true)
         }
         if (p.tickCount % 40 == 0 && level.getNearestPlayer(p, reach) == null) return end(p, drop = fresh)
+        val post = post
+        if (post != null) {
+            // Nobody takes their place at the counter meanwhile
+            if (age % 100 == 0) Claims.held(p, 400)
+            if (!post.settle(p, p.level().gameTime)) return
+        }
         if (i < 0) next(p)
         while (!done && i < moves.size) {
             if (moves[i].tick(p, this, t++)) return
             moves[i].stop(p)
             next(p)
         }
-        if (!done) end(p, drop = fresh)
+        if (!done) {
+            // At a post they turn back to it and take the work up again before they go
+            if (post != null && !post.leave(p, p.level().gameTime)) return
+            completed = true
+            end(p, drop = fresh)
+        }
     }
 
     private fun next(p: Townsperson) {
@@ -126,8 +149,19 @@ class Aside(
         if (i in moves.indices) moves[i].stop(p)
         if (p.director === this) p.director = null
         p.navigation.stop()
-        if (!p.activity.overlay) p.act(Activity.NONE)
+        val post = post
+        // Played through at a post: the work they were at carries on from the move it had
+        if (completed && post != null && !drop) p.act(post.was)
+        else if (!p.activity.overlay) p.act(Activity.NONE)
         if (drop || fresh) p.routine.interrupt()
+        onEnd?.invoke()
+    }
+
+    /** Lets go of a part that was taken but never began (the stage could not be taken whole): they are as they were. */
+    internal fun cancel(p: Townsperson) {
+        if (done) return
+        done = true
+        if (p.director === this) p.director = null
         onEnd?.invoke()
     }
 
@@ -146,7 +180,7 @@ class Aside(
          * in no danger, hands empty, in no hurry (whatever they're at is idle enough to break off for a chat), not
          * up a tower or a ladder, and in no scene already. With [seated], someone sitting may be got up too.
          */
-        fun free(p: Townsperson, seated: Boolean = false): Boolean {
+        fun free(p: Townsperson, seated: Boolean = false, station: Boolean = false): Boolean {
             if (!p.isAlive || p.isRemoved || p.director != null || p.captiveOf >= 0 || p.isLeader || p.watcher) return false
             if (p.isSleeping || p.isPassenger || p.attending != null || p.target != null || p.hurtTime > 0) return false
             if (p.activity == Activity.FLEE || !p.carried.isEmpty || Faction.of(p.role) != null) return false
@@ -155,13 +189,23 @@ class Aside(
             val task = p.routine.task ?: return true
             if (task is Scened || task is Chat || task is Hear || task is Audience || task is Follow || task is Chase || task is Run || task is Climb || task is Pull) return false
             if (p.seat != null) return true
+            // At their post (a keeper at the counter, a smith at the anvil): theirs to play where they stand
+            if (station && p.routine.anchored && !p.isSleeping) return true
             return task.leisure && !task.anchored
         }
 
-        /** Gives [p] [aside] to play, if they're free to; true if taken. */
-        fun take(p: Townsperson, aside: Aside, seated: Boolean = false): Boolean {
-            if (!free(p, seated)) return false
-            if (p.seat != null) {
+        /**
+         * Gives [p] [aside] to play, if they're free to; true if taken. With [station] a worker at their post can be taken
+         * and plays their part where they stand (they set the work down first, and turn back to it and take it up at the end,
+         * as a talk has it: [io.github.vaspyyy.guildmark.townsfolk.talk.Talking]), and someone seated stays in their seat
+         * rather than being got up (living-world/stories/design.md 4.2).
+         */
+        fun take(p: Townsperson, aside: Aside, seated: Boolean = false, station: Boolean = false): Boolean {
+            if (!free(p, seated, station)) return false
+            val post = station && (p.seat != null || p.routine.anchored)
+            if (post) {
+                aside.post = Post(p.activity, p.yBodyRot, p.seat != null)
+            } else if (p.seat != null) {
                 p.routine.interrupt()
                 p.standUp()
             }
@@ -175,6 +219,65 @@ class Aside(
             if (p.hurtTime > 0 || p.target != null || p.activity == Activity.FLEE) return true
             return p.tickCount % 10 == 0 && p.threat() != null
         }
+    }
+}
+
+/**
+ * What a part played at a post or in a seat remembers: what they were at ([was]) and the way they faced ([yaw]). At their
+ * work they let the move they are in play through (at most [SETTLE] ticks) and then set the work down ([Activity.PAUSE_WORK]);
+ * at the end they turn back and take it up ([Activity.PICK_UP]), exactly as a talk does. Someone seated ([sitting]) simply
+ * stays seated.
+ */
+internal class Post(val was: Activity, val yaw: Float, val sitting: Boolean) {
+    private var since = -1L
+    private var paused = -1L
+    private var ready = false
+    private var leaving = -1L
+    private var taking = -1L
+
+    /** True once the part may begin. */
+    fun settle(p: Townsperson, now: Long): Boolean {
+        if (ready) return true
+        if (since < 0) since = now
+        if (sitting) {
+            ready = true
+            return true
+        }
+        if (paused < 0) {
+            val a = p.activity
+            val through = a == Activity.NONE || if (a.loop) p.actTicks % a.ticks == 0 else p.actDone
+            if (!through && now - since < SETTLE) return false
+            p.act(Activity.PAUSE_WORK)
+            paused = now
+        }
+        if (now - paused >= SET_DOWN) ready = true
+        return ready
+    }
+
+    /** True once they are back at it and the work is in their hands again. */
+    fun leave(p: Townsperson, now: Long): Boolean {
+        if (sitting) return true
+        if (leaving < 0) leaving = now
+        if (taking < 0) {
+            if (abs(Mth.degreesDifference(p.yBodyRot, yaw)) > 6f && now - leaving < TURN_BACK) {
+                p.face(Mth.approachDegrees(p.yBodyRot, yaw, Aside.TURN))
+                return false
+            }
+            p.face(yaw)
+            p.act(Activity.PICK_UP)
+            taking = now
+            return false
+        }
+        return p.actDone || now - taking >= Activity.PICK_UP.ticks
+    }
+
+    companion object {
+        /** The most ticks they finish the move they are in before setting their work down, and how long the setting down takes. */
+        const val SETTLE = 30
+        const val SET_DOWN = 12
+
+        /** The most ticks they take to turn back to the post. */
+        const val TURN_BACK = 40
     }
 }
 
