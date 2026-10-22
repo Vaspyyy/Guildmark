@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.economy
 
+import io.github.vaspyyy.guildmark.GuildmarkConfig
 import io.github.vaspyyy.guildmark.economy.works.Ovens
 import io.github.vaspyyy.guildmark.economy.works.Reserve
 import io.github.vaspyyy.guildmark.economy.works.Works
@@ -106,6 +107,14 @@ object Economy {
      * keep of their goods: a little under what the stalls take in, so there's room left for a player's lot.
      */
     const val STOCKED = 1.1
+    /**
+     * The herds, coops and orchards make [HERD_STOPPED] only up to [HERD_STOP] times what the town likes to keep of
+     * them, the market's stock and the yard's together, so the stalls always have room for a player's lot of wool,
+     * leather, feathers and apples instead of standing full of them (see [herds]; the config marketHerdStop and
+     * marketHerdStopAt). Meat and chicken already have room on nearly every day, and are left to make as they did.
+     */
+    val HERD_STOPPED: Set<Good> = setOf(Good.FEATHER, Good.WOOL, Good.LEATHER, Good.APPLE)
+    const val HERD_STOP = 1.0
     /** Ale an innkeeper brews in an hour, and the grain each measure takes. */
     const val BREW = 12.0
     const val BREW_WHEAT = 1.0 / 3.0
@@ -257,9 +266,36 @@ object Economy {
 
     private fun herds(m: Market, town: Town, c: Conditions) {
         val tended = if (town.farmers > 0) 1.0 else UNTENDED
-        for ((g, rate) in BARN) make(m, Site.FARMS, g, town.barns * rate / FIELD_HOURS * c.pace(g) * tended * m.factor(null, g))
-        for ((g, rate) in COOP) make(m, Site.FARMS, g, town.coops * rate / FIELD_HOURS * c.pace(g) * tended * m.factor(null, g))
-        make(m, Site.FARMS, Good.APPLE, town.trees * TREE / FIELD_HOURS * c.pace(Good.APPLE))
+        for ((g, rate) in BARN) make(m, Site.FARMS, g, herded(m, town, g, town.barns * rate / FIELD_HOURS * c.pace(g) * tended * m.factor(null, g)))
+        for ((g, rate) in COOP) make(m, Site.FARMS, g, herded(m, town, g, town.coops * rate / FIELD_HOURS * c.pace(g) * tended * m.factor(null, g)))
+        make(m, Site.FARMS, Good.APPLE, herded(m, town, Good.APPLE, town.trees * TREE / FIELD_HOURS * c.pace(Good.APPLE)))
+    }
+
+    /**
+     * What the herds, coops and orchards make of [good] this hour: the [amount] they would, or for a good of
+     * [HERD_STOPPED] no more than brings the market's stock and what waits in the yard for the carts up to its stop
+     * (see [herdStopAt]), nothing once it's there.
+     */
+    private fun herded(m: Market, town: Town, good: Good, amount: Double): Double {
+        val stop = herdStopAt(m, town, good) ?: return amount
+        return minOf(amount, maxOf(stop - m.stock(good) - m[Site.FARMS, good], 0.0))
+    }
+
+    /**
+     * The stock of [good] at which [m]'s herds, coops and orchards stop making it: [herdStop] times [town]'s target.
+     * Null where they don't stop: for any good but [HERD_STOPPED]'s, with the stop switched off, and while a waylaid
+     * wagon has the market in trouble, when they make all they can and a besieged town keeps its whole buffer.
+     */
+    fun herdStopAt(m: Market, town: Town, good: Good): Double? {
+        if (good !in HERD_STOPPED || m.waylaid() != null) return null
+        return town.target(good) * (herdStop() ?: return null)
+    }
+
+    /** How many times its target the herds' stop holds [HERD_STOPPED] at, or null with it switched off (the config marketHerdStop and marketHerdStopAt). */
+    fun herdStop(): Double? = try {
+        if (GuildmarkConfig.MARKET_HERD_STOP.get()) GuildmarkConfig.MARKET_HERD_STOP_AT.get() else null
+    } catch (e: IllegalStateException) {
+        HERD_STOP
     }
 
     private fun fish(m: Market, town: Town, c: Conditions) {
