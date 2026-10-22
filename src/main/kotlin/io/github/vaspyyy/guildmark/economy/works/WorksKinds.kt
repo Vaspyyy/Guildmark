@@ -9,7 +9,7 @@ import kotlin.math.roundToInt
  * What each works costs and takes (design-influence.md section 1): its bill of materials (by [Stuff.PAID], counted the
  * homestead's way), its crew (labourers, under a master builder who counts as one more), its days of daylight work,
  * and its price, made of parts the works screen shows: the builders' wages, the materials, a granary's first
- * filling and the stall's pitch. Each part is rounded to the nearest five Marks. A works' price is fixed when it's
+ * filling and the pitch of a stall or a cookshop. Each part is rounded to the nearest five Marks. A works' price is fixed when it's
  * wanted, so it doesn't drift as the town changes.
  */
 internal object WorksKinds {
@@ -19,7 +19,7 @@ internal object WorksKinds {
     /** Marks a unit of each paid material, by [Stuff.PAID]: timber, stone, glass, iron, wool. */
     private val UNIT = doubleArrayOf(0.3, 0.25, 1.0, 1.5, 1.0)
 
-    /** The town's charge for a place in its square, for a stall of one's own. */
+    /** The town's charge for a place in its square, for a stall or a cookshop of one's own. */
     const val PITCH = 40
 
     /** The parts of a price, as [WorksView.parts] names them. */
@@ -43,6 +43,7 @@ internal object WorksKinds {
         WorksKind.GREAT_GRANARY -> intArrayOf(260, 320, 10, 12, 0)
         WorksKind.TOWER -> intArrayOf(160, 300, 4, 12, 0)
         WorksKind.STALL -> intArrayOf(40, 0, 0, 2, 6)
+        WorksKind.COOKSHOP -> intArrayOf(60, 80, 4, 6, 4)
     }
 
     /** The labourers [kind] takes, the master builder besides. */
@@ -52,6 +53,7 @@ internal object WorksKinds {
         WorksKind.GREAT_GRANARY -> 4
         WorksKind.TOWER -> 2
         WorksKind.STALL -> 1
+        WorksKind.COOKSHOP -> 2
     }
 
     /** Days of daylight work [kind] takes at `townWorksBuildSpeed` 1. */
@@ -61,12 +63,13 @@ internal object WorksKinds {
         WorksKind.GREAT_GRANARY -> 2.0
         WorksKind.TOWER -> 2.0
         WorksKind.STALL -> 0.5
+        WorksKind.COOKSHOP -> 1.0
     }
 
     /**
      * [kind]'s price in [town], by its parts, in the order the screen lists them: the wages (a builder-day each for
      * the crew and the master), the materials, a granary's first filling (the room it adds, at the goods' base
-     * prices, so it scales with the planned town) and the stall's pitch.
+     * prices, so it scales with the planned town) and the pitch of a stall or a cookshop.
      */
     fun parts(kind: WorksKind, town: Town): Map<String, Int> {
         val out = LinkedHashMap<String, Int>()
@@ -77,7 +80,7 @@ internal object WorksKinds {
             val filling = filling(kind, town)
             out[FILLING] = fives(Good.entries.sumOf { filling[it.ordinal] * it.base })
         }
-        if (kind == WorksKind.STALL) out[PLACE] = PITCH
+        if (kind.per == WorksKind.Per.PLAYER) out[PLACE] = PITCH
         return out
     }
 

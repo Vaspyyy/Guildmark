@@ -585,7 +585,7 @@ object TalkCommand {
         if (!Works.enabled()) return fail(source, "The works are off (Works.READY, townWorks): nothing eases anything.")
         if (what !in EASES) return fail(source, "Say what it eased: " + EASES.joinToString(", "))
         val w = Works.get(level, works) ?: return fail(source, "There's no works #$works (`/guildmark works` lists them).")
-        if (w.state != WorksState.DONE || w.kind == WorksKind.STALL) return fail(source, "Works #$works isn't one of the town's standing: only those raised ease anything.")
+        if (w.state != WorksState.DONE || w.kind.per == WorksKind.Per.PLAYER) return fail(source, "Works #$works isn't one of the town's standing: only those raised ease anything.")
         // Each eases only what it does in the market and on the road (Works.day, WorksFreight)
         val fits = when (what) {
             Works.MILL -> w.kind == WorksKind.GRANARY || w.kind == WorksKind.GREAT_GRANARY
@@ -630,7 +630,7 @@ object TalkCommand {
         val me = player.name.string
         val people = Residents.get(level).of(capital)
         val works = Works.all(level, at)
-        val standing = works.filter { it.state == WorksState.DONE && it.kind != WorksKind.STALL }.maxByOrNull { it.done }
+        val standing = works.filter { it.state == WorksState.DONE && it.kind.per != WorksKind.Per.PLAYER }.maxByOrNull { it.done }
         val family = people.firstOrNull { it.alive && it.family.isNotEmpty() }?.family ?: "Thatcher"
         return when (kind) {
             FortuneReasons.HUNGRY -> -2 to listOf("6", "5")
@@ -649,7 +649,7 @@ object TalkCommand {
             FortuneReasons.MOURNING -> -1 to listOfNotNull(people.filter { !it.alive && it.died >= 0 }.maxByOrNull { it.died }?.name ?: people.firstOrNull()?.name)
             FortuneReasons.CRIME -> -1 to listOf("theft")
             FortuneReasons.FESTIVAL -> 3 to listOf(FestivalKind.entries.first().id, "fed")
-            FortuneReasons.BUILDING -> 1 to works.filter { it.state == WorksState.BUILDING && it.kind != WorksKind.STALL }.map { it.kind.id }.distinct().ifEmpty { listOf("granary") }
+            FortuneReasons.BUILDING -> 1 to works.filter { it.state == WorksState.BUILDING && it.kind.per != WorksKind.Per.PLAYER }.map { it.kind.id }.distinct().ifEmpty { listOf("granary") }
             FortuneReasons.RAISED -> 2 to listOf(standing?.kind?.id ?: "granary", me)
             FortuneReasons.EASED -> 1 to when (val k = standing?.kind) {
                 null -> listOf("granary", Works.MILL, me, "any")

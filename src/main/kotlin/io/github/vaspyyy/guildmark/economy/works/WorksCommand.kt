@@ -7,6 +7,7 @@ import com.mojang.brigadier.builder.RequiredArgumentBuilder
 import com.mojang.brigadier.context.CommandContext
 import io.github.vaspyyy.guildmark.city.CapitalPiece
 import io.github.vaspyyy.guildmark.city.Capitals
+import io.github.vaspyyy.guildmark.cooking.shop.CookShops
 import io.github.vaspyyy.guildmark.economy.CaravanRoutes
 import io.github.vaspyyy.guildmark.economy.Caravans
 import io.github.vaspyyy.guildmark.economy.Conditions
@@ -302,6 +303,7 @@ object WorksCommand {
                 val goods = s.goods().joinToString(", ") { "${s.whole(it)} ${it.id}" }.ifEmpty { "nothing on it" }
                 "sells for ${s.name}: $goods; %.1f Marks in its till".format(s.till) + if (s.wages > 1e-6) ", its keeper owed %.2f".format(s.wages) else ""
             }
+            WorksKind.COOKSHOP -> CookShops.describe(level, w)
         }
     }
 
@@ -329,7 +331,7 @@ object WorksCommand {
                 return fail(source, "The ${kind.id} follows on from the ${first.id}: propose and finish that first.")
             }
         }
-        val owner = if (kind == WorksKind.STALL) player.uuid else null
+        val owner = if (kind.per == WorksKind.Per.PLAYER) player.uuid else null
         val w = Works.proposeNow(level, here.capital, kind, road, owner)
         if (w == null) {
             val had = Works.records(level, here.capital).firstOrNull {

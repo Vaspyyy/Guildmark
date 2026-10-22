@@ -568,7 +568,7 @@ object Witness {
     private object Building : Works.Listener {
         override fun funded(level: ServerLevel, w: WorksView) {
             if (!Works.enabled()) return
-            val stall = w.kind == WorksKind.STALL
+            val stall = w.kind.per == WorksKind.Per.PLAYER
             start(level, w, Rumours.WORKS_FUNDED, if (stall) 0.4f else 0.6f, Fade.SMALL, if (stall) 0 else 1, street(level, w))
         }
 
@@ -579,7 +579,7 @@ object Witness {
         override fun finished(level: ServerLevel, w: WorksView) {
             if (!Works.enabled()) return
             labour(level, w)
-            val stall = w.kind == WorksKind.STALL
+            val stall = w.kind.per == WorksKind.Per.PLAYER
             // The crew saw it raised; the street round it heard as it went up
             val knowers = (crew(level, w, Experience.LABOURED.days).map { it.id to Venue.SEEN } + street(level, w)).distinctBy { it.first }
             start(level, w, Rumours.WORKS_RAISED, if (stall) 0.4f else 0.75f, if (stall) Fade.SMALL else Fade.BIG, if (stall) 0 else 1, knowers)

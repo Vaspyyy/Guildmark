@@ -1167,7 +1167,7 @@ class WorksScreen(private var data: WorksLedgerPayload) : Screen(Component.trans
         val ly = by + 26
         Ui.divider(g, x, ly - 3, w, gem = false)
         if (l.pledges.isEmpty()) {
-            g.textWithWordWrap(font, Component.translatable(if (kindOf(l.kind) == WorksKind.STALL) "gui.guildmark.works.pledges.none_stall" else "gui.guildmark.works.pledges.none"), x, ly + 3, w, Ui.TEXT_FAINT, false)
+            g.textWithWordWrap(font, Component.translatable(if (kindOf(l.kind).per == WorksKind.Per.PLAYER) "gui.guildmark.works.pledges.none_${kindOf(l.kind).id}" else "gui.guildmark.works.pledges.none"), x, ly + 3, w, Ui.TEXT_FAINT, false)
             return
         }
         val shown = l.pledges.withIndex().drop(pledgeScroll).take(PLEDGE_ROWS)

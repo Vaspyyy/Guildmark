@@ -4,6 +4,7 @@ import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.GuildmarkConfig
 import io.github.vaspyyy.guildmark.block.VillageBoards
 import io.github.vaspyyy.guildmark.city.plan.Dir
+import io.github.vaspyyy.guildmark.cooking.shop.CookShops
 import io.github.vaspyyy.guildmark.economy.CaravanRoutes
 import io.github.vaspyyy.guildmark.economy.Conditions
 import io.github.vaspyyy.guildmark.economy.Markets
@@ -787,6 +788,11 @@ object Comings {
         if (w.kind == WorksKind.STALL && owner != null) {
             val stall = OwnStalls.get(c.level).find(c.key)?.pitches?.get(owner)
             if (stall != null) return ComingsData.Post(r.id, null, stall.at.relative(stall.front.opposite), stall.front, null)
+        }
+        // A cookshop's keeper stands behind its counter facing the front
+        if (w.kind == WorksKind.COOKSHOP) {
+            val behind = Works.record(c.level, works)?.let { CookShops.post(c.level, it) }
+            if (behind != null) return ComingsData.Post(r.id, null, behind, w.site?.facing, null)
         }
         val site = w.site ?: return null
         return ComingsData.Post(r.id, site.origin, null, null, null)

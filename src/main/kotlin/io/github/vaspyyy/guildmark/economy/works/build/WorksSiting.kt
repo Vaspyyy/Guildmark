@@ -70,7 +70,7 @@ internal object WorksSiting {
     private val FREE_USES = setOf(Use.FREE, Use.GARDEN, Use.YARD, Use.CLEARING)
 
     /** The works whose siting reads the city's plan at every look. */
-    private val ON_PLAN = setOf(WorksKind.OVEN, WorksKind.GRANARY, WorksKind.STALL)
+    private val ON_PLAN = setOf(WorksKind.OVEN, WorksKind.GRANARY, WorksKind.STALL, WorksKind.COOKSHOP)
 
     /** A lot to try: the drawing's (0, 0) at [ox], [oz] in the city's frame, its front toward [front]. */
     private class Cand(val ox: Int, val oz: Int, val front: Dir)
@@ -145,6 +145,7 @@ internal object WorksSiting {
             WorksKind.GREAT_GRANARY -> great(level, w, rec, capital)
             WorksKind.TOWER -> tower(level, w, rec, capital)
             WorksKind.STALL -> stall(level, w, rec, capital)
+            WorksKind.COOKSHOP -> cookshop(level, w, rec, capital)
         } ?: return
         if (found) {
             forget(w.id)
@@ -260,15 +261,24 @@ internal object WorksSiting {
             }
         }
         if (waiting) return null
-        val search = searches.getOrPut(w.id) { Search(pitches(plan)) }
+        val search = searches.getOrPut(w.id) { Search(pitches(plan, Stall.LOT)) }
         return find(level, w, rec, capital, search, Stall.LOT, Stall.DOOR, street = true, uses = setOf(Use.SQUARE))
     }
 
+    // ---- The cookshop ----
+
+    /** A clear 5 by 4 of the market square, its back to the nearest edge, as a stall finds its pitch but with no lot of the plan's to try first. */
+    private fun cookshop(level: ServerLevel, w: WorksRec, rec: BuildRec, capital: CapitalPiece): Boolean? {
+        val plan = capital.plan
+        val search = searches.getOrPut(w.id) { Search(pitches(plan, Cookshop.LOT)) }
+        return find(level, w, rec, capital, search, Cookshop.LOT, Cookshop.DOOR, street = true, uses = setOf(Use.SQUARE))
+    }
+
     /**
-     * The 3 by 3 spots of the market square a stall could take, those nearest its edge first: clear of the avenue
-     * down its middle and of the ground before any door, the pitch's front onto the square.
+     * The spots of the market square a stall or a cookshop could take ([lot]: 3 by 3, or 5 by 4), those nearest its edge
+     * first: clear of the avenue down its middle and of the ground before any door, the pitch's front onto the square.
      */
-    private fun pitches(plan: CityPlan): List<Cand> {
+    private fun pitches(plan: CityPlan, lot: Rect): List<Cand> {
         val m = plan.market
         val doors = HashSet<Long>()
         for (b in plan.buildings) {
@@ -279,15 +289,15 @@ internal object WorksSiting {
         for (x in m.x0..m.x1) for (z in m.z0..m.z1) for (front in Dir.entries) {
             val pf = planFrame(x, z, front)
             var ok = true
-            for (lx in -1..1) for (lz in -1..2) {
+            for (lx in lot.x0..lot.x1) for (lz in lot.z0 - 1..lot.z1) {
                 val px = pf.worldX(lx, lz)
                 val pz = pf.worldZ(lx, lz)
                 if (!m.contains(px, pz) || abs(px) <= 4 || key(px, pz) in doors || plan.grid[px, pz] != Use.SQUARE) ok = false
             }
             if (!ok) continue
             // Its back to the nearest edge: nearer the edge first
-            val bx = pf.worldX(0, 3)
-            val bz = pf.worldZ(0, 3)
+            val bx = pf.worldX(0, lot.z1 + 1)
+            val bz = pf.worldZ(0, lot.z1 + 1)
             val edge = min(min(bx - m.x0, m.x1 - bx), min(bz - m.z0, m.z1 - bz))
             if (edge > 2) continue
             out.add((edge.coerceAtLeast(0) * 1000 + abs(x) + abs(z - (m.z0 + m.z1) / 2)) to Cand(x, z, front))

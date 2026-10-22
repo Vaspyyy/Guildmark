@@ -1,5 +1,7 @@
 package io.github.vaspyyy.guildmark.economy.works
 
+import io.github.vaspyyy.guildmark.cooking.Cooking
+import io.github.vaspyyy.guildmark.cooking.shop.CookShops
 import io.github.vaspyyy.guildmark.economy.CaravanData
 import io.github.vaspyyy.guildmark.economy.CaravanRoutes
 import io.github.vaspyyy.guildmark.economy.Caravans
@@ -15,13 +17,15 @@ import io.github.vaspyyy.guildmark.economy.SupplierRank
 import io.github.vaspyyy.guildmark.economy.Suppliers
 import io.github.vaspyyy.guildmark.economy.Tally
 import io.github.vaspyyy.guildmark.economy.Town
+import io.github.vaspyyy.guildmark.progression.Skill
+import io.github.vaspyyy.guildmark.progression.Skills
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel
 import java.util.UUID
 import kotlin.math.floor
 import kotlin.math.roundToInt
 
-/** A works the day's close found wanted: its kind, its road (a tower's) or owner (a stall's), and why (a lang key). */
+/** A works the day's close found wanted: its kind, its road (a tower's) or owner (a stall's or a cookshop's), and why (a lang key). */
 internal class Want(val kind: WorksKind, val road: Int, val owner: UUID?, val why: String)
 
 /**
@@ -84,6 +88,12 @@ internal object WorksWants {
         if (Suppliers.enabled() && OwnStalls.enabled()) for (player in level.server.playerList.players) {
             if (taken(data, capital, WorksKind.STALL, owner = player.uuid) || !trusted(level, capital, player.uuid)) continue
             out.add(Want(WorksKind.STALL, -1, player.uuid, "gui.guildmark.works.why.stall.trusted"))
+        }
+        // A cookshop of your own only where Hearthcraft's shops are on, to a Trusted Supplier who is a cook of 25 (Cookshops)
+        if (Suppliers.enabled() && Cooking.shops()) for (player in level.server.playerList.players) {
+            if (taken(data, capital, WorksKind.COOKSHOP, owner = player.uuid) || !trusted(level, capital, player.uuid)) continue
+            if (Skills.level(player, Skill.COOKING) < CookShops.LEVEL) continue
+            out.add(Want(WorksKind.COOKSHOP, -1, player.uuid, "gui.guildmark.works.why.cookshop"))
         }
         return out
     }
@@ -164,6 +174,23 @@ internal object WorksWants {
                         val points = Suppliers.get(level)[BlockPos.of(capital), player]?.points ?: 0.0
                         NotYet(WorksKind.STALL, -1, "gui.guildmark.works.not_yet.stall", listOf(floor(points).toInt().toString(), SupplierRank.TRUSTED.points.toString()))
                     }
+                },
+            )
+        }
+        if (player != null && Cooking.shops() && !taken(data, capital, WorksKind.COOKSHOP, owner = player)) {
+            val cook = level.server.playerList.getPlayer(player)?.let { Skills.level(it, Skill.COOKING) } ?: 0
+            out.add(
+                when {
+                    !Suppliers.enabled() -> NotYet(WorksKind.COOKSHOP, -1, "gui.guildmark.works.not_yet.cookshop.standing", listOf())
+                    !trusted(level, capital, player) -> {
+                        val points = Suppliers.get(level)[BlockPos.of(capital), player]?.points ?: 0.0
+                        NotYet(
+                            WorksKind.COOKSHOP, -1, "gui.guildmark.works.not_yet.cookshop",
+                            listOf(floor(points).toInt().toString(), SupplierRank.TRUSTED.points.toString(), cook.toString()),
+                        )
+                    }
+                    cook < CookShops.LEVEL -> NotYet(WorksKind.COOKSHOP, -1, "gui.guildmark.works.not_yet.cookshop.level", listOf(cook.toString()))
+                    else -> NotYet(WorksKind.COOKSHOP, -1, "gui.guildmark.works.not_yet.cookshop.close", listOf())
                 },
             )
         }

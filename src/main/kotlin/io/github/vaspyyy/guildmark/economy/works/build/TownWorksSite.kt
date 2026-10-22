@@ -7,6 +7,9 @@ import io.github.vaspyyy.guildmark.city.plan.Dir
 import io.github.vaspyyy.guildmark.city.plan.Dye
 import io.github.vaspyyy.guildmark.city.plan.M
 import io.github.vaspyyy.guildmark.city.plan.Wares
+import io.github.vaspyyy.guildmark.cooking.dish.LarderBlock
+import io.github.vaspyyy.guildmark.cooking.market.MenuBoardBlock
+import io.github.vaspyyy.guildmark.cooking.vessel.StationBlock
 import io.github.vaspyyy.guildmark.economy.WaresBlock
 import io.github.vaspyyy.guildmark.economy.WaresBlockEntity
 import io.github.vaspyyy.guildmark.economy.WaresRegistry
@@ -744,7 +747,9 @@ class TownWorksSite(override val level: ServerLevel, val rec: BuildRec, val plan
 
     /**
      * Whether what's [here] is as good as [want]: the same block, its open doors and lit fires, a display's look and a
-     * barrel's lid left as they are (the works' life opens and closes them), a stall's display whatever goods it shows.
+     * barrel's lid left as they are (the works' life opens and closes them), a stall's display whatever goods it shows, a cooking
+     * station, a larder or a menu board whatever its state (a lit oven or a swung larder door is not "wrong", and laying it again
+     * would lose what is in it).
      */
     private fun same(here: BlockState, want: BlockState): Boolean {
         if (here == want) return true
@@ -752,7 +757,7 @@ class TownWorksSite(override val level: ServerLevel, val rec: BuildRec, val plan
         if (b is WaresBlock && want.block is WaresBlock) return kind == WorksKind.STALL || b === want.block
         if (b !== want.block) return false
         return b is DoorBlock || b is TrapDoorBlock || b is FenceGateBlock || b is CampfireBlock || b is BarrelBlock || b is ChestBlock ||
-            b is ComposterBlock || ours(here)
+            b is ComposterBlock || b is StationBlock || b is LarderBlock || b is MenuBoardBlock || ours(here)
     }
 
     /** Makes room at [pos] for [want]: whoever stands where a solid block goes is waited for, and after ten seconds lifted onto it. */

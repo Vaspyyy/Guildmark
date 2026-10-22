@@ -142,7 +142,7 @@ internal object WorksYard {
         }.minByOrNull { it.distanceToSqr(middle) } ?: return false
         val stand = Places.beside(level, spot, crier.blockPosition()) ?: return false
         val head = Vec3(spot.x + 0.5, spot.y + 0.9, spot.z + 0.5)
-        val line = if (w.kind == WorksKind.STALL) null else "crier_works_wanted_${w.kind.id}"
+        val line = if (w.kind.per == WorksKind.Per.PLAYER) null else "crier_works_wanted_${w.kind.id}"
         val aside = Aside(
             listOf(
                 Now { it.carried = ItemStack(Items.OAK_FENCE) },

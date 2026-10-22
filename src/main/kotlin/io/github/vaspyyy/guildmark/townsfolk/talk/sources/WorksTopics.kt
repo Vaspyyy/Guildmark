@@ -165,7 +165,7 @@ object WorksTopics : TopicSource {
     /** A works wanted, and why, the day it showed; then (in a talk) where pledges go and what it still wants. */
     private fun wanted(s: Seen, out: MutableList<Topic>) {
         val w = s.w
-        if (w.kind == WorksKind.STALL) return
+        if (w.kind.per == WorksKind.Per.PLAYER) return
         val ask = s.ask
         val age = s.town.today - w.wanted
         if (s.bark && !s.near && age > FRESH) return
@@ -204,7 +204,7 @@ object WorksTopics : TopicSource {
 
     /** A works paid for and not yet begun: waiting on the wagon with its first materials. */
     private fun funded(s: Seen, out: MutableList<Topic>) {
-        if (s.bark || s.w.kind == WorksKind.STALL) return
+        if (s.bark || s.w.kind.per == WorksKind.Per.PLAYER) return
         out.add(Topic("works.funded.${s.w.id}", Kind.WORKS, 0.45, Utterance(paid(s)), tone = 1, toward = s.at))
     }
 
@@ -304,13 +304,13 @@ object WorksTopics : TopicSource {
         val w = s.w
         val ask = s.ask
         val age = s.town.today - w.done
-        val stall = w.kind == WorksKind.STALL
-        // A stall of one's own is news to everyone but its owner
+        val stall = w.kind.per == WorksKind.Per.PLAYER
+        // A stall or a cookshop of one's own is news to everyone but its owner
         if (age in 0..RAISED_DAYS && !(stall && ask.player?.uuid == w.owner) && (!s.bark || s.near || age <= FRESH)) {
             val detail = when {
-                stall -> owner(ask, w)?.let { Speech.of("talk.detail.works.raised.stall", it, Say.ago(age)) }
+                stall -> owner(ask, w)?.let { Speech.of("talk.detail.works.raised.${w.kind.id}", it, Say.ago(age)) }
                 else -> patronName(ask, s)?.let { Speech.of("talk.detail.works.raised", Say.ago(age), it) }
-            } ?: Speech.of(if (stall) "talk.detail.works.raised.stall.nobody" else "talk.detail.works.raised.nobody", Say.ago(age))
+            } ?: Speech.of(if (stall) "talk.detail.works.raised.${w.kind.id}.nobody" else "talk.detail.works.raised.nobody", Say.ago(age))
             Say.line(ask, "works.raised.${w.kind.id}", detail)?.let {
                 out.add(Topic("works.raised.${w.id}", Kind.WORKS, 0.65 - 0.05 * age, it, tone = 1, toward = s.at))
             }
@@ -344,7 +344,7 @@ object WorksTopics : TopicSource {
         val w = s.w
         val ask = s.ask
         val player = ask.player ?: return
-        if (ask.occasion !in THANKS || w.kind == WorksKind.STALL || w.state == WorksState.WANTED) return
+        if (ask.occasion !in THANKS || w.kind.per == WorksKind.Per.PLAYER || w.state == WorksState.WANTED) return
         // Knowing you for the one who paid is remembering you (Townsfolk Remember You): off, you're a stranger here too
         if (!Say.memory() || player.uuid !in TownTalk.givers(w)) return
         val heard = s.heard
@@ -373,7 +373,7 @@ object WorksTopics : TopicSource {
     private fun patron(s: Seen, out: MutableList<Topic>) {
         val w = s.w
         val ask = s.ask
-        if (w.kind == WorksKind.STALL || w.state == WorksState.WANTED) return
+        if (w.kind.per == WorksKind.Per.PLAYER || w.state == WorksState.WANTED) return
         val patron = w.patron ?: return
         val heard = s.heard
         if (heard == null && s.laboured == null) return
@@ -499,7 +499,7 @@ object WorksTopics : TopicSource {
 
     /** [town]'s works to answer of, most worth telling first: going up, paid for, wanted (the most given first), raised (the newest first). */
     private fun ranked(town: Town): List<WorksView> = town.works
-        .filter { it.kind != WorksKind.STALL || it.state == WorksState.DONE && town.today - it.done in 0..RAISED_DAYS }
+        .filter { it.kind.per != WorksKind.Per.PLAYER || it.state == WorksState.DONE && town.today - it.done in 0..RAISED_DAYS }
         .sortedWith(compareBy<WorksView> { rank(town, it) }.thenByDescending { if (it.state == WorksState.DONE) it.done else it.pledged.toLong() })
 
     private fun rank(town: Town, w: WorksView): Int = when (w.state) {
@@ -528,7 +528,7 @@ object WorksTopics : TopicSource {
             }
             WorksState.DONE -> {
                 val age = s.town.today - w.done
-                val detail = if (w.kind == WorksKind.STALL) owner(ask, w)?.let { Speech.of("talk.detail.works.raised.stall", it, Say.ago(age)) }
+                val detail = if (w.kind.per == WorksKind.Per.PLAYER) owner(ask, w)?.let { Speech.of("talk.detail.works.raised.${w.kind.id}", it, Say.ago(age)) }
                 else patronName(ask, s)?.let { Speech.of("talk.detail.works.raised", Say.ago(age), it) }
                 listOfNotNull(Say.part(ask, "works.raised.${w.kind.id}", detail ?: Speech.of("talk.detail.works.raised.nobody", Say.ago(age))))
             }
@@ -552,11 +552,11 @@ object WorksTopics : TopicSource {
             WorksState.BUILDING -> Say.lead(ask, "works.also.building.$kind") ?: Utterance.Part("", Speech.of("talk.detail.works.ask.building", s.kind))
             WorksState.DONE -> {
                 val ago = Say.ago(s.town.today - w.done)
-                val stall = w.kind == WorksKind.STALL
+                val stall = w.kind.per == WorksKind.Per.PLAYER
                 val by = if (stall) owner(ask, w) else patronName(ask, s)
                 val detail = when {
-                    stall && by != null -> Speech.of("talk.detail.works.raised.stall", by, ago)
-                    stall -> Speech.of("talk.detail.works.raised.stall.nobody", ago)
+                    stall && by != null -> Speech.of("talk.detail.works.raised.${w.kind.id}", by, ago)
+                    stall -> Speech.of("talk.detail.works.raised.${w.kind.id}.nobody", ago)
                     by != null -> Speech.of("talk.detail.works.raised", ago, by)
                     else -> Speech.of("talk.detail.works.raised.nobody", ago)
                 }

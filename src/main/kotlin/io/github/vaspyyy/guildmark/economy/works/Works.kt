@@ -2,6 +2,7 @@ package io.github.vaspyyy.guildmark.economy.works
 
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.GuildmarkConfig
+import io.github.vaspyyy.guildmark.cooking.shop.CookShops
 import io.github.vaspyyy.guildmark.economy.CaravanRoutes
 import io.github.vaspyyy.guildmark.economy.Caravans
 import io.github.vaspyyy.guildmark.economy.Conditions
@@ -41,7 +42,7 @@ import java.util.UUID
 
 /**
  * What players' Marks can have built in a capital (living-world/design-influence.md section 1): a second oven, a
- * granary and then a great one, a watchtower on a road in, and a stall of one's own. [per]: one for the town, one for
+ * granary and then a great one, a watchtower on a road in, a stall of one's own and a cookshop. [per]: one for the town, one for
  * each road in, or one for each player; [after]: the works it follows on from.
  */
 enum class WorksKind(val id: String, val per: Per, val grade: Int, val after: WorksKind?) {
@@ -49,7 +50,8 @@ enum class WorksKind(val id: String, val per: Per, val grade: Int, val after: Wo
     GRANARY("granary", Per.TOWN, 1, null),
     GREAT_GRANARY("great_granary", Per.TOWN, 2, GRANARY),
     TOWER("tower", Per.ROAD, 1, null),
-    STALL("stall", Per.PLAYER, 1, null);
+    STALL("stall", Per.PLAYER, 1, null),
+    COOKSHOP("cookshop", Per.PLAYER, 1, null);
 
     enum class Per { TOWN, ROAD, PLAYER }
 
@@ -149,9 +151,9 @@ object Works {
         return data.of(capital).map { view(level, it) }
     }
 
-    /** The works [capital] offers [player]: every works but other players' stalls not yet built (only its owner sees one offered). */
+    /** The works [capital] offers [player]: every works but other players' stalls and cookshops not yet built (only its owner sees one offered). */
     fun offered(level: ServerLevel, capital: Long, player: UUID?): List<WorksView> =
-        all(level, capital).filter { it.kind != WorksKind.STALL || it.state == WorksState.DONE || it.owner == player }
+        all(level, capital).filter { it.kind.per != WorksKind.Per.PLAYER || it.state == WorksState.DONE || it.owner == player }
 
     /** The works [capital] doesn't want yet, for [player] (a stall is theirs alone), and what would make it. */
     fun notYet(level: ServerLevel, capital: Long, player: UUID?): List<NotYet> {
@@ -184,7 +186,7 @@ object Works {
         val data = data(level)
         val w = data.works[id] ?: return Refusal("gui.guildmark.works.why.gone")
         if (w.paid) return Refusal("gui.guildmark.works.why.paid")
-        if (w.kind == WorksKind.STALL && w.owner != player.uuid) return Refusal("gui.guildmark.works.why.owner")
+        if (w.kind.per == WorksKind.Per.PLAYER && w.owner != player.uuid) return Refusal("gui.guildmark.works.why.owner")
         if (marks <= 0) return Refusal("gui.guildmark.works.why.none")
         // "The rest" and anything over it come to what it still wants
         val n = minOf(marks, w.price - w.pledged)
@@ -356,6 +358,12 @@ object Works {
     fun stall(level: ServerLevel, capital: Long, player: UUID): WorksSite? {
         if (!READY) return null
         return data(level).find(capital, WorksKind.STALL, owner = player)?.takeIf { it.state == WorksState.DONE }?.site
+    }
+
+    /** Where [player]'s own cookshop stands in [capital]'s square, if they have one built (the shop code asks, living-world/cook/design.md 6.4). */
+    fun cookshop(level: ServerLevel, capital: Long, player: UUID): WorksSite? {
+        if (!READY) return null
+        return data(level).find(capital, WorksKind.COOKSHOP, owner = player)?.takeIf { it.state == WorksState.DONE }?.site
     }
 
     /**
@@ -631,6 +639,7 @@ object Works {
                 w.landed = hourOf(level, w.capital)
             }
             WorksKind.TOWER -> {}
+            WorksKind.COOKSHOP -> CookShops.open(level, w)
             WorksKind.STALL -> w.owner?.let { owner ->
                 val site = w.site
                 val name = w.pledges.lastOrNull { it.player == owner }?.name ?: level.server.playerList.getPlayer(owner)?.name?.string ?: ""
@@ -660,6 +669,7 @@ object Works {
                 }
             }
             WorksKind.TOWER -> {}
+            WorksKind.COOKSHOP -> CookShops.close(level, w)
             WorksKind.STALL -> w.owner?.let { OwnStalls.closing(level, w.capital, it) }
         }
         Markets.get(level).changed()
@@ -674,7 +684,7 @@ object Works {
         if (w.hired >= 0 && Residents.get(level)[w.hired]?.alive == true) return
         val role = when (w.kind) {
             WorksKind.OVEN -> TownRole.BAKER
-            WorksKind.STALL -> TownRole.MERCHANT
+            WorksKind.STALL, WorksKind.COOKSHOP -> TownRole.MERCHANT
             else -> return
         }
         val id = Comings.hire(level, w.capital, role, w.id)
@@ -784,6 +794,7 @@ object Works {
             WorksKind.GRANARY, WorksKind.GREAT_GRANARY -> 12 to 11
             WorksKind.TOWER -> 5 to 5
             WorksKind.STALL -> 3 to 3
+            WorksKind.COOKSHOP -> 5 to 4
         }
         val lot = BoundingBox(pos.x - sx / 2, pos.y, pos.z - sz / 2, pos.x - sx / 2 + sx - 1, pos.y + 7, pos.z - sz / 2 + sz - 1)
         val front = pos.relative(facing, maxOf(sx, sz) / 2 + 1)
@@ -835,7 +846,7 @@ object Works {
         }
         val list = pledges.values.toList()
         // The patron pledged most (the earlier on a tie); a stall's is its owner
-        val patron = if (w.kind == WorksKind.STALL) w.owner else list.withIndex().maxWithOrNull(compareBy({ it.value.marks }, { -it.index }))?.value?.player
+        val patron = if (w.kind.per == WorksKind.Per.PLAYER) w.owner else list.withIndex().maxWithOrNull(compareBy({ it.value.marks }, { -it.index }))?.value?.player
         return WorksView(
             w.id, w.capital, w.kind, w.road, w.owner, w.state, w.site, w.price, w.parts, list, patron,
             w.bill.copyOf(), w.here.copyOf(), WorksFreight.onWay(level, w.capital, w.id),

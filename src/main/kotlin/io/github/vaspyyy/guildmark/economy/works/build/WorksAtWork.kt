@@ -2,6 +2,7 @@ package io.github.vaspyyy.guildmark.economy.works.build
 
 import io.github.vaspyyy.guildmark.city.CapitalPiece
 import io.github.vaspyyy.guildmark.city.plan.M
+import io.github.vaspyyy.guildmark.cooking.shop.CookShops
 import io.github.vaspyyy.guildmark.economy.CaravanRoutes
 import io.github.vaspyyy.guildmark.economy.Economy
 import io.github.vaspyyy.guildmark.economy.Good
@@ -363,7 +364,7 @@ internal object WorksAtWork {
             WorksKind.OVEN -> flue(level, w, f)
             WorksKind.GRANARY, WorksKind.GREAT_GRANARY -> doors(level, w, site, f, near)
             WorksKind.TOWER -> beacon(level, w, f, hour)
-            WorksKind.STALL -> awning(level, w, site, f, hour, near)
+            WorksKind.STALL, WorksKind.COOKSHOP -> awning(level, w, site, f, hour, near)
         }
         if (!rec.firstUse) firstUse(level, w, rec, site, f, hour, near)
         mend(level, w, rec, site, capital, hour, near)
@@ -499,12 +500,12 @@ internal object WorksAtWork {
         fire(level, pos, want, sound = WorksBuild.watched(w.id))
     }
 
-    /** A stall's awning: drawn up while it trades (its keeper's working day, with something on it to sell), let down at night. */
+    /** A stall's or a cookshop's awning: drawn up while it trades (its keeper's working day, with something on it to sell), let down at night. */
     private fun awning(level: ServerLevel, w: WorksRec, site: TownWorksSite, f: Fittings, hour: Double, near: Boolean) {
         val pos = f.awning ?: return
         val owner = w.owner ?: return
         val stall = OwnStalls.get(level).find(w.capital)?.pitches?.get(owner)
-        val stocked = stall != null && stall.stock.any { it > 1e-6 }
+        val stocked = if (w.kind == WorksKind.COOKSHOP) CookShops.stocked(level, w) else stall != null && stall.stock.any { it > 1e-6 }
         val trades = Works.enabled() && stocked && hour >= TRADES_FROM && hour < TRADES_TO
         val set = { up: Boolean, sound: Boolean ->
             if (level.isLoaded(pos)) {
@@ -570,6 +571,8 @@ internal object WorksAtWork {
                 if (!near || hour < 7.0 || hour >= 16.0) return
                 firstLoaves(level, w, site, done)
             }
+            // Its keeper's first plates come with the shop's scenes
+            WorksKind.COOKSHOP -> done()
             WorksKind.STALL -> {
                 val k = key(w.id, FIRST_USE)
                 val e = errands[k]

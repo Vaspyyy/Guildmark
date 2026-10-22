@@ -4,7 +4,9 @@ import io.github.vaspyyy.guildmark.economy.Markets
 import io.github.vaspyyy.guildmark.economy.works.WorksRec
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import net.minecraft.core.BlockPos
+import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerLevel
+import java.util.UUID
 
 /**
  * The cookshop, a works of the town (living-world/cook/design.md 6.4): its opening and closing, its three selling hours,
@@ -12,6 +14,9 @@ import net.minecraft.server.level.ServerLevel
  * functions are `internal` because [WorksRec] is.
  */
 object CookShops {
+    /** The cooking level a cook must have before the town offers a cookshop. */
+    const val LEVEL = 25
+
     /** The portions the shops of [entry]'s market sold in [hour]; the ledger's `Kitchens.step` asks at 8:00, 12:00 and 16:00 (stub: 0). */
     fun sellHour(level: ServerLevel, entry: Markets.Entry, hour: Long): Double = 0.0
 
@@ -32,6 +37,12 @@ object CookShops {
 
     /** Whether [works] has something to sell, for its awning (stub: no). */
     internal fun stocked(level: ServerLevel, works: WorksRec): Boolean = false
+
+    /** What `works` says of a standing cookshop (stub: nothing to say yet). */
+    internal fun describe(level: ServerLevel, works: WorksRec): String = "a cookshop with nothing recorded yet"
+
+    /** The works screen's line for a standing cookshop: the dishes in its larder and the Marks in its till (stub: none). */
+    fun doing(level: ServerLevel, capital: Long, owner: UUID?): Component = Component.empty()
 
     /** Part H's registration: the keeper's click and the `cook shop` command (stub: nothing). */
     fun register() {}

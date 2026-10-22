@@ -180,7 +180,7 @@ object TownTalk {
         if (!Memory.enabled() || !Works.enabled()) return
         val id = s.rumour.args.firstOrNull()?.toIntOrNull() ?: return
         val level = ServerLifecycleHooks.getCurrentServer()?.overworld() ?: return
-        val w = Works.get(level, id)?.takeIf { it.capital == entry.capital && it.kind != WorksKind.STALL } ?: return
+        val w = Works.get(level, id)?.takeIf { it.capital == entry.capital && it.kind.per != WorksKind.Per.PLAYER } ?: return
         val day = Memory.day(level)
         var thanked = false
         for (giver in givers(w)) {

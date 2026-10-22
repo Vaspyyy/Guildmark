@@ -1,0 +1,23 @@
+{
+  "gui.guildmark.works.kind.cookshop": "Cookshop of Your Own",
+  "board.guildmark.slip.works.kind.cookshop": "Cookshop",
+  "fortune.guildmark.works.cookshop": "cookshop",
+  "say.guildmark.talk.detail.works.raised.cookshop": "%s's own, raised %s.",
+  "say.guildmark.talk.detail.works.raised.cookshop.nobody": "A new cookshop, raised %s.",
+  "gui.guildmark.works.why.cookshop": "You're a Trusted Supplier here, and a cook of 25.",
+  "gui.guildmark.works.not_yet.cookshop": "Offered once you're a Trusted Supplier here (your standing: %1$s of %2$s) and a cook of 25 (you are %3$s).",
+  "gui.guildmark.works.not_yet.cookshop.standing": "Offered to the town's Trusted Suppliers who are cooks of 25, and its suppliers are switched off.",
+  "gui.guildmark.works.not_yet.cookshop.level": "You're a Trusted Supplier here: the town offers a cookshop to a cook of 25 (you are %1$s).",
+  "gui.guildmark.works.not_yet.cookshop.close": "You're a Trusted Supplier and a cook of 25: the town offers you a cookshop at its next close.",
+  "gui.guildmark.works.doing.cookshop": "Dishes in its larder: %s. In its till: %s Marks.",
+  "gui.guildmark.works.pledges.none_cookshop": "Only you can pay for a cookshop of your own.",
+  "gui.guildmark.works.stage_of.cookshop.groundwork": "Its pitch on the square swept clear.",
+  "gui.guildmark.works.stage_of.cookshop.footings": "Boards laid over the paving, and the oven's hearth in stone.",
+  "gui.guildmark.works.stage_of.cookshop.walls": "The counter, the oven block of stone, and the back wall.",
+  "gui.guildmark.works.stage_of.cookshop.roof": "The slate roof, the chimney carried up through it, and the awning, in its patron's colour.",
+  "gui.guildmark.works.stage_of.cookshop.topping": "The patron's banner flown, and the chimney's first fire lit.",
+  "gui.guildmark.works.stage_of.cookshop.openings": "The back windows glazed, a lantern hung, and the Bake oven set into its block.",
+  "gui.guildmark.works.stage_of.cookshop.fitting": "The larder, hob and prep board along the back, the menu board on its barrel, and a plate on the counter for each dish.",
+  "gui.guildmark.works.why.owner": "Only its owner pays for a stall or a cookshop of their own.",
+  "gui.guildmark.works.part.pitch.tip": "Your stall's or cookshop's place in the square."
+}

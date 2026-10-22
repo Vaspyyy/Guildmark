@@ -48,6 +48,8 @@ PREFIXES = {
         "say.guildmark.talk.kitchen.", "say.guildmark.talk.detail.kitchen.",
         "say.guildmark.talk.works.raised.cookshop", "say.guildmark.talk.works.also.raised.cookshop",
         "gui.guildmark.works.why.cookshop", "gui.guildmark.works.doing.cookshop", "fortune.guildmark.works.cookshop",
+        "gui.guildmark.works.kind.cookshop", "board.guildmark.slip.works.kind.cookshop", "gui.guildmark.works.not_yet.cookshop",
+        "gui.guildmark.works.stage_of.cookshop", "gui.guildmark.works.pledges.none_cookshop", "say.guildmark.talk.detail.works.raised.cookshop",
         "message.guildmark.festival.hint.sheafmoot_cook",
     ),
     "trade": (

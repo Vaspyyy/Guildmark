@@ -2,6 +2,7 @@ package io.github.vaspyyy.guildmark.economy
 
 import io.github.vaspyyy.guildmark.city.plan.Kind
 import io.github.vaspyyy.guildmark.city.plan.M
+import io.github.vaspyyy.guildmark.cooking.shop.CookShops
 import io.github.vaspyyy.guildmark.townsfolk.TownPlaces
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
@@ -52,7 +53,7 @@ enum class Shop(val id: String, val goods: List<Good>) {
                 TownRole.BAKER -> BAKERY
                 TownRole.SMITH -> SMITHY
                 TownRole.INNKEEPER -> INN
-                TownRole.MERCHANT -> at(places, p.post ?: p.work ?: p.blockPosition())
+                TownRole.MERCHANT -> if (CookShops.keeps(p)) null else at(places, p.post ?: p.work ?: p.blockPosition())
                 else -> null
             }
         }

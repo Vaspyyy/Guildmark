@@ -2,6 +2,7 @@ package io.github.vaspyyy.guildmark.economy.works.build
 
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.city.Capitals
+import io.github.vaspyyy.guildmark.cooking.shop.CookShops
 import io.github.vaspyyy.guildmark.economy.CaravanData
 import io.github.vaspyyy.guildmark.economy.CaravanRoutes
 import io.github.vaspyyy.guildmark.economy.Caravans
@@ -400,7 +401,7 @@ object WorksLedger {
         val site = WorksBuild.live(v.id)
         val pledges = v.pledges.map { WorksPledgeLine(it.name, it.marks, it.day, it.player == player.uuid) }
         val patron = v.pledges.indexOfFirst { it.player == v.patron }
-        val owner = if (v.kind == WorksKind.STALL) v.owner?.let { name(level, v, it) } ?: "" else ""
+        val owner = if (v.kind.per == WorksKind.Per.PLAYER) v.owner?.let { name(level, v, it) } ?: "" else ""
         val used = w?.used?.copyOf() ?: IntArray(Stuff.PAID.size)
         val ships = ships(level, v)
         val sited = rec != null && rec.sited && v.site != null
@@ -554,6 +555,7 @@ object WorksLedger {
                 val s = OwnStalls.get(level).find(v.capital)?.pitches?.get(owner) ?: return Component.empty()
                 Component.translatable("gui.guildmark.works.doing.stall", s.goods().size, s.till.roundToInt())
             }
+            WorksKind.COOKSHOP -> CookShops.doing(level, v.capital, v.owner)
         }
     }
 
