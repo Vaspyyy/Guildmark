@@ -28,7 +28,8 @@ import kotlin.math.sqrt
  *   beds, wells, benches, lamps, stalls, fields, towers and animals, what the last count cost, and the lines the other parts add;
  * - `census [now]` counts it again (`now` in one go, outside the budget) and says what changed and what it cost;
  * - `list [page]` lists every record: name, state, where, how far;
- * - `clear` forgets the record of the village (it is made afresh the next time its bell is seen).
+ * - `clear` forgets the record of the village (it is made afresh the next time its bell is seen);
+ * - `show [seconds|off]` draws what the last count found in coloured dust, for the one who asked, so a miss is seen where it stands.
  *
  * Each ends in plain words: what a number is and where it came from, so a village that looks wrong can be followed to the thing
  * the census saw (or did not).
@@ -69,7 +70,15 @@ object VillageInfoCommand {
                             Commands.literal("list").executes { list(it, 1) }
                                 .then(Commands.argument("page", IntegerArgumentType.integer(1)).executes { list(it, IntegerArgumentType.getInteger(it, "page")) }),
                         )
-                        .then(Commands.literal("clear").executes { clear(it) }.then(Commands.literal("here").executes { clear(it) })),
+                        .then(Commands.literal("clear").executes { clear(it) }.then(Commands.literal("here").executes { clear(it) }))
+                        .then(
+                            Commands.literal("show").executes { show(it, VillageShow.SECONDS) }
+                                .then(Commands.literal("off").executes { showOff(it) })
+                                .then(
+                                    Commands.argument("seconds", IntegerArgumentType.integer(1, VillageShow.LONGEST))
+                                        .executes { show(it, IntegerArgumentType.getInteger(it, "seconds")) },
+                                ),
+                        ),
                 ),
         )
     }
@@ -100,6 +109,13 @@ object VillageInfoCommand {
             say(source, line().append(red("Lost since day ${rec.lostDay}: ")).append(plain("its bell is gone and no board stands; the record is dropped in $left days unless the bell is put back.")))
         }
         say(source, board(rec, found))
+        if (rec.state != Live.LOST) {
+            // A village is lost when its bell and its board are both gone: one gone and one standing is not yet, and says so
+            val t = LevelTerrain(level)
+            if (VillageTick.bellOf(t, rec) == VillageTick.Stands.NO && VillageTick.boardOf(t, rec) == VillageTick.Stands.YES) {
+                say(source, grey("Its bell is gone, but its board stands, so the village is not lost yet: it is lost when both are gone."))
+            }
+        }
 
         // What the record keeps of the homes
         val homes = rec.homes.filter { !it.gone }
@@ -328,6 +344,30 @@ object VillageInfoCommand {
                 ),
             ),
         )
+        return 1
+    }
+
+    // ---- show ----
+
+    private fun show(context: CommandContext<CommandSourceStack>, seconds: Int): Int {
+        val source = context.source
+        val player = source.player ?: return fail(source, "Only a player can be shown it: run it as one.")
+        if (!Villages.enabled()) return fail(source, "Living Villages is off: nothing is counted, so there is nothing to show.")
+        val rec = target(source) ?: return 0
+        if (Villages.places(source.level, rec.key)?.found == null) {
+            return fail(source, "${rec.name} has not been counted this session (${rec.state.name}): there is nothing to show yet. `village census` counts it; a village is counted when a player is within ${VillageTick.LIVE_NEAR.toInt()} blocks.")
+        }
+        VillageShow.start(source.level, player, rec.key, seconds)
+        say(source, line().append(label("Showing ${rec.name} for $seconds s: ")).append(plain("the places the last count found, within ${VillageShow.NEAR} blocks of you, in coloured dust that only you see.")))
+        for (c in VillageShow.legend()) say(source, c)
+        say(source, grey("A place with no dust is a place the count did not find; `village info` lists the same places by position, and `village show off` ends this."))
+        return 1
+    }
+
+    private fun showOff(context: CommandContext<CommandSourceStack>): Int {
+        val source = context.source
+        val player = source.player ?: return fail(source, "Only a player can be shown it: run it as one.")
+        say(source, grey(if (VillageShow.stop(player)) "The show is ended." else "No show was on."))
         return 1
     }
 

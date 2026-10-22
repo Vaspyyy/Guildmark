@@ -86,6 +86,7 @@ internal object VillageTick {
         try {
             if (server.tickCount % LOOK == LOOK_AT) look(level)
             census(level)
+            VillageShow.tick(server, level)
         } catch (e: RuntimeException) {
             failed(level, e)
         }
@@ -111,6 +112,7 @@ internal object VillageTick {
         asks.clear()
         job = null
         Villages.forgetAll()
+        VillageShow.clear()
         val zones = TownZones.get(level)
         if (zones.zones.removeIf { it.village }) zones.setDirty()
     }
@@ -123,6 +125,7 @@ internal object VillageTick {
         swept = false
         lastFailure = -1L
         Villages.forgetAll()
+        VillageShow.clear()
         VillageBudget.forget()
         VillageCensus.Perf.forget()
         PoiKinds.forget()
