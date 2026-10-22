@@ -7,11 +7,13 @@ import com.mojang.brigadier.context.CommandContext
 import io.github.vaspyyy.guildmark.GuildmarkConfig
 import io.github.vaspyyy.guildmark.city.Capitals
 import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
+import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands
 import net.minecraft.commands.SharedSuggestionProvider
 import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.phys.Vec3
 import kotlin.math.roundToInt
 
 /**
@@ -24,6 +26,8 @@ import kotlin.math.roundToInt
  *   place was refused is said. In a capital it is one of its six; out in the open it belongs to no town.
  * - `remove <id>`: takes a memorial away, with the lantern and the pot the Laying set for it, where their chunks are loaded.
  * - `posy <id>`: lays a posy on the stone as the Laying does, now; `candles <id> <0-4> [lit]` sets candles on its ledge (lit till dawn).
+ * - `lay <id>`: plays the Laying at that stone now, as `tale scene laying` does at a stand-in: whoever is free near it kneels two blocks from
+ *   it and lays the posy on its ledge, a priest prays, one embraces her, and at dusk (17:00 to 22:00) a lantern is set before it.
  *
  * The ones that write say why they will not, and change nothing, while tales or the memorials are off; `list` always answers.
  */
@@ -48,6 +52,7 @@ internal object MemorialCommand {
                     )
                     .then(Commands.literal("remove").then(id().executes { remove(it) }))
                     .then(Commands.literal("posy").then(id().executes { posy(it) }))
+                    .then(Commands.literal("lay").then(id().executes { lay(it) }))
                     .then(
                         Commands.literal("candles").then(
                             id().then(
@@ -206,6 +211,33 @@ internal object MemorialCommand {
         val laid = rec.placed && pos != null && level.isLoaded(pos) && level.getBlockState(pos).let { it.`is`(MemorialRegistry.MEMORIAL.get()) && it.getValue(MemorialBlock.POSY) }
         if (!laid) return fail(source, "Memorial #${rec.id} has no stone standing in a loaded chunk, so no posy was laid.")
         return TaleCommand.say(source, Component.empty().append(TaleCommand.grey("A posy lies on memorial #${rec.id}; it dries in ${Memorials.WILT_DAYS} market days and the wind takes it on the ${Memorials.POSY_DAYS}th.")))
+    }
+
+    /** The Laying at the stone of [rec], with whoever is free within 24 blocks of it (the telling's own set, S5), made to run now whatever the hour. */
+    private fun lay(context: CommandContext<CommandSourceStack>): Int {
+        val source = context.source
+        if (refuse(source)) return 0
+        val rec = record(context) ?: return 0
+        val level = source.level
+        val pos = rec.pos
+        if (!rec.placed || pos == null || !level.isLoaded(pos) || !level.getBlockState(pos).`is`(MemorialRegistry.MEMORIAL.get())) {
+            return fail(source, "Memorial #${rec.id} has no stone standing in a loaded chunk.")
+        }
+        val free = Sets.freeAdults(level, Vec3.atCenterOf(pos), 24.0)
+        val mourner = free.firstOrNull() ?: return fail(source, "Nobody free within 24 blocks of memorial #${rec.id}.")
+        val rest = free.drop(1)
+        val priest = rest.firstOrNull { it.role == TownRole.PRIEST }
+        val others = rest.filter { it !== priest }.take(3)
+        val said = try {
+            TaleSceneCommand.begin(
+                level, Sets.laying(mourner, pos, others, priest, memorial = rec, hours = null),
+                "${TaleSceneCommand.name(mourner)} kneels at memorial #${rec.id} and lays a posy" + (if (priest != null) ", ${TaleSceneCommand.name(priest)} praying" else "") +
+                    (if (others.isNotEmpty()) "; ${others.size} stand by" else "") + ". (At dusk, 17:00 to 22:00, a lantern is set before it.)",
+            )
+        } catch (e: TaleSceneCommand.Unplayable) {
+            return fail(source, "The Laying cannot be played at memorial #${rec.id}: ${e.why}")
+        }
+        return TaleCommand.say(source, TaleCommand.grey(said))
     }
 
     private fun candles(context: CommandContext<CommandSourceStack>, lit: Boolean): Int {

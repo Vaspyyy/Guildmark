@@ -117,12 +117,9 @@ object Memorials {
         return true
     }
 
-    /**
-     * The one place a candle catching at a memorial is heard. Tales H's `TaleSounds` is not in this tree, so it is silent here: when it is
-     * merged, the body of this function is `TaleSounds.at(level, pos, TaleSounds.Sound.CANDLE_LIGHT)` and nothing else (never a raw sound id).
-     */
+    /** The one place a candle catching at a memorial is heard: Tales H's match struck and the wick taking (never a raw sound id here). */
     fun candleLit(level: ServerLevel, pos: BlockPos) {
-        // SEAM (Tales H): TaleSounds.at(level, pos, TaleSounds.Sound.CANDLE_LIGHT)
+        TaleSounds.at(level, pos, TaleSounds.Sound.CANDLE_LIGHT)
     }
 
     /** [player] pinches the flames out with their fingers. */
