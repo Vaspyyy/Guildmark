@@ -34,6 +34,7 @@ object Trade {
         // E: the Hunt and the hired guard
 
         // F: the ladder, the Carriers' Store and the Counting House
+        Rungs.register()
 
         // G: the trading house
 
