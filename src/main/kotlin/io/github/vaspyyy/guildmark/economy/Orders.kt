@@ -600,6 +600,9 @@ class Orders(private val books: MutableMap<Long, Book> = HashMap(), private var 
             return SIZES.filter { it <= most }.minByOrNull { abs(ln(it / wanted)) } ?: SIZES.first()
         }
 
+        /** The same for a town that needs [need] of a good a day and is [short] of what it keeps, for whoever has no [Want] to hand (the haul tickets, which size themselves as orders do). */
+        internal fun amount(need: Double, short: Double, target: Double, days: Int): Int = amount(Want(Good.WHEAT, listOf(), need, short, 0.0), target, days)
+
         /**
          * What a unit of [good] is worth to [entry]'s market over [amount] more of it than it holds now (counting what's
          * gone lately into [book]'s other stores): the average of its price as each unit comes in. What an order for
