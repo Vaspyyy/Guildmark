@@ -175,6 +175,7 @@ internal object WorksArt {
         "great_granary" to intArrayOf(103, 1),
         "tower" to intArrayOf(154, 1),
         "stall" to intArrayOf(205, 1),
+        "cookshop" to intArrayOf(52, 56),
     )
 
     /** px the wind lifts the parchment at most (half again in rain). */

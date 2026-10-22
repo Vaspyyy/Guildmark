@@ -118,6 +118,17 @@ and Kotlin model code always agree.
   Crown as worn, the sky lantern particle, and the JSON that points at them: the trim's blockstate (the poles, the
   rest the vanilla blocks' models), the ornament's, the poles' models, the prizes' item models and definitions and the
   crown's equipment asset. With a preview dir it writes a contact sheet.
+- `scripts/cook_art.py` (with the `cook_*.py` beside it) is Hearthcraft's art: the four stations (the stewpot in its camp
+  and hearth styles, the hob, the bake oven, the spit), the prep board, plate, larder, menu board and the herb's four ages,
+  as block models, blockstates and 32x textures, with every moving piece (the pot on its chain, the pan, the oven's door,
+  the spit's rod and crank, the larder's door) a model of its own: the list of their pivots and ranges, the click boxes and the
+  places the renderers draw things is the first comment block of `cook_art.py`, the contract with the renderers. It also
+  draws the twenty items (the thirteen dishes with their tier stamps and stage looks, steam and flies over them, and the
+  tools, whose `display` blocks set how they are held), the five effect icons, the cold vignette, the 21 GUI sprites, the
+  seven kitchen particles and the four textures the renderers draw (`textures/entity/cook/`). With a preview dir it writes
+  the contact sheets and GIFs (`cook_prev.py`); the third argument, an unpacked game `assets/minecraft`, adds the vanilla
+  campfire and furnace beside the stations at true scale. The cookshop's parchment on the works post is in `works_art.py`.
+  Run it with `python3 -B art/scripts/cook_art.py [assets dir [preview dir [game assets dir]]]`.
 
 Rebuild a model (needs Python 3 with Pillow and numpy), from the repo root:
 
@@ -138,6 +149,7 @@ python3 -B art/scripts/vanilla_hd.py <minecraft-26.3 jar> src/main/resources/res
 python3 -B art/scripts/market_board_art.py src/main/resources/assets/guildmark [preview-dir [minecraft-26.3 jar]]
 python3 -B art/scripts/season_art.py src/main/resources/assets/guildmark [preview-dir]
 python3 -B art/scripts/festival_art.py src/main/resources/assets/guildmark [preview-dir]
+python3 -B art/scripts/cook_art.py src/main/resources/assets/guildmark [preview-dir [game assets/minecraft]]
 ```
 
 Each run writes the textures into the mod's assets, the `.bbmodel` into `art/models`, and a preview

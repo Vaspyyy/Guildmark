@@ -1911,8 +1911,9 @@ PAPER_Z = BOARD_LO[2] - 0.04                             # the face looks north 
 PAPER_W = int(round((PAPER_HI[0] - PAPER_LO[0]) * PAPER_TPX))      # 48 texels
 PAPER_H = int(round((PAPER_HI[1] - PAPER_LO[1]) * PAPER_TPX))      # 50
 PLICA = 1.5                                              # px: the parchment's foot, folded up, the seals' cords through it
-WORKS = ('oven', 'granary', 'great_granary', 'tower', 'stall')     # WorksKind's ids, in its order
-PAPER_AT = {k: (1 + 51 * i, 1) for i, k in enumerate(WORKS)}       # each works' parchment's top left in post.png
+WORKS = ('oven', 'granary', 'great_granary', 'tower', 'stall', 'cookshop')     # WorksKind's ids, in its order
+PAPER_AT = {k: (1 + 51 * i, 1) for i, k in enumerate(WORKS[:5])}   # each works' parchment's top left in post.png: five fill its first row
+PAPER_AT['cookshop'] = (52, 56)                                    # the sixth is in the second row, clear of the seals and the stamp (x 2 to 44)
 POST_TEX = (256, 128)
 SEALS = 10                                               # a seal for each tenth pledged
 SEAL_W = 1.5                                             # a seal across (px)
@@ -1925,9 +1926,9 @@ STAMP = (0.74, 0.6, 5.2, 14.0)                           # the stamp pressed: it
                                                          # clockwise as seen)
 INK = (66, 44, 30)
 WASH = {'oven': (196, 112, 76), 'granary': (206, 170, 104), 'tower': (150, 146, 136), 'stall': (186, 64, 52),
-        'roof': (150, 96, 70), 'dark': (40, 26, 18)}
+        'roof': (150, 96, 70), 'dark': (40, 26, 18), 'cookshop': (222, 154, 52)}
 WORKS_TITLE = {'oven': 'Second oven', 'granary': 'Granary', 'great_granary': 'Great granary', 'tower': 'Watchtower',
-               'stall': 'Stall'}
+               'stall': 'Stall', 'cookshop': 'Cookshop'}
 
 
 def paper_xy(u, v):
@@ -2179,8 +2180,67 @@ def draw_stall(sh):
     sh.wash(sh.poly([(44, 7.5), (47.2, 9.0), (44, 10.5)]), WASH['stall'], 0.7)
 
 
+def draw_cookshop(sh):
+    """A cookshop: a small timber house under a gable with its chimney smoking, and against it the serving counter under an awning in gold
+    and cream stripes, a pie steaming on the counter and a pot beside it, the patron's pennant on its pole."""
+    g = 29.5
+    sh.ink([(3, g), (45, g)], 0.5, k=0.7)
+    # the house: boards, a post or two, a door and a small window, a gable roof and the chimney through it
+    sh.wash(sh.rect(4.5, 13, 21, g), WASH['granary'], 0.3)
+    sh.box(4.5, 13, 21, g)
+    for x in (10, 15.5):
+        sh.ink([(x, 13), (x, g)], 0.4, k=0.7)
+    sh.ink([(4.5, 21), (21, 21)], 0.3, k=0.55)
+    sh.box(7.2, 20.5, 12.2, g, width=0.45)
+    sh.wash(sh.rect(7.2, 20.5, 12.2, g), (90, 60, 40), 0.5)
+    sh.dot(11.0, 25.4, 0.5, (222, 196, 120))
+    sh.box(16.6, 16, 20.0, 20, width=0.4)
+    sh.wash(sh.rect(16.6, 16, 20.0, 20), (90, 60, 40), 0.45)
+    sh.ink([(18.3, 16), (18.3, 20)], 0.25, k=0.8)
+    sh.ink([(16.6, 18), (20.0, 18)], 0.25, k=0.8)
+    _roof(sh, 4.5, 21, 13, 5.5)
+    sh.box(14.5, 2.6, 18.0, 9.4, width=0.45)
+    sh.wash(sh.rect(14.5, 2.6, 18.0, 9.4), WASH['oven'], 0.4)
+    sh.box(13.7, 1.6, 18.8, 2.8, width=0.4)
+    sh.ink([(16.1, 0.9), (17.5, -0.1)], 0.3, k=0.45)
+    # the counter's shed: the awning's stripes with a scalloped edge, a post at its end, the plank counter below
+    aw = sh.poly([(21, 9.5), (41.5, 9.5), (43.3, 14.0), (21, 14.0)])
+    stripes = ((sh.xs // 4) % 2) == 0
+    sh.wash(aw, (240, 230, 206), 0.85)
+    sh.wash(aw & stripes, WASH['cookshop'], 0.8)
+    sh.ink([(21, 9.5), (41.5, 9.5), (43.3, 14.0), (21, 14.0)], 0.45)
+    for k in range(6):
+        x0 = 21 + 3.7 * k
+        sh.ink([(x0 + 1.85 + 1.85 * math.cos(a), 14.0 + 1.5 * math.sin(a)) for a in np.linspace(0, math.pi, 7)], 0.3)
+    sh.ink([(41.2, 14), (41.2, g)], 0.55)
+    sh.wash(sh.rect(21, 24, 41.2, g), WASH['granary'], 0.3)
+    sh.box(21, 24, 41.2, g, width=0.5)
+    sh.ink([(21, 25.6), (41.2, 25.6)], 0.35)
+    for x in np.arange(25.0, 41, 4.0):
+        sh.ink([(x, 25.6), (x, g)], 0.25, k=0.45)
+    # a pie on the counter, crimped, its steam curling up; a pot beside it
+    dome = (((sh.xs - 28.8) / 3.9) ** 2 + ((sh.ys - 24.0) / 3.0) ** 2 <= 1) & (sh.ys < 24.0)
+    sh.wash(dome, WASH['roof'], 0.7)
+    sh.wash(dome & (sh.xs < 27.8) & (sh.ys < 22.6), (252, 220, 150), 0.4)
+    sh.ink([(28.8 + 3.9 * math.cos(a), 24.0 - 3.0 * math.sin(a)) for a in np.linspace(0, math.pi, 18)], 0.4)
+    for x in np.arange(25.6, 32.2, 1.4):
+        sh.dot(x, 23.7, 0.45, INK, 0.7)
+    sh.dot(28.8, 21.4, 0.5, INK, 0.6)
+    sh.ink([(27.6, 19.2), (26.8, 17.8), (27.8, 16.6), (27.0, 15.4)], 0.32, k=0.65)
+    sh.ink([(30.2, 19.0), (31.0, 17.6), (30.0, 16.4), (30.8, 15.2)], 0.32, k=0.65)
+    pot = (((sh.xs - 36.6) / 3.0) ** 2 + ((sh.ys - 21.9) / 2.5) ** 2 <= 1) & (sh.ys < 24.0)
+    sh.wash(pot, WASH['dark'], 0.7)
+    sh.ink([(36.6 + 3.0 * math.cos(a), 21.9 - 2.5 * math.sin(a)) for a in np.linspace(0, math.pi, 14)], 0.4)
+    sh.ink([(33.4, 20.6), (33.4, 22.8)], 0.3)
+    sh.ink([(39.8, 20.6), (39.8, 22.8)], 0.3)
+    sh.ink([(35.6, 19.4), (36.2, 18.2), (35.6, 17.2)], 0.27, k=0.55)
+    # the patron's pennant on its pole beyond the shed
+    sh.ink([(44.4, g), (44.4, 4.0)], 0.45)
+    sh.wash(sh.poly([(44.4, 4.0), (47.0, 5.4), (44.4, 6.8)]), WASH['cookshop'], 0.8)
+
+
 DRAWINGS = {'oven': draw_oven, 'granary': draw_granary, 'great_granary': draw_great_granary, 'tower': draw_tower,
-            'stall': draw_stall}
+            'stall': draw_stall, 'cookshop': draw_cookshop}
 
 
 def seal_sprite(cord):
@@ -3359,15 +3419,15 @@ def slate_faces(sc, m, t):
 
 def write_previews(assets, out):
     """The previews for Ransom, into [out]: GIFs of the yard filling, the post sealed and stamped, the beacon, the alms
-    table's pot, the hoist hauling, and the "To let" board, tub, plaque and slate; a sheet of the five drawings."""
+    table's pot, the hoist hauling, and the "To let" board, tub, plaque and slate; a sheet of the six drawings."""
     os.makedirs(out, exist_ok=True)
     pa = preview_assets(assets, out)
     ms = models()
     mesh = {m.fun: m for m in meshes()}
     written = []
 
-    # ---- the five drawings, and the post with its seals at five counts
-    sheet_ = Image.new('RGB', (5 * (PAPER_W * 4 + 12) + 12, PAPER_H * 4 + 40), (36, 34, 40))
+    # ---- the six drawings, and the post with its seals at five counts
+    sheet_ = Image.new('RGB', (len(WORKS) * (PAPER_W * 4 + 12) + 12, PAPER_H * 4 + 40), (36, 34, 40))
     for i, k in enumerate(WORKS):
         im = paper_sheet(k).resize((PAPER_W * 4, PAPER_H * 4), Image.NEAREST)
         bg = Image.new('RGBA', im.size, (90, 84, 76, 255))
