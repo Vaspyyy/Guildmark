@@ -50,7 +50,8 @@ object PlateEating {
         if (level.dimension() != spot.dimension || level.gameTime > spot.until || !level.isLoaded(spot.pos)) return
         val hand = player.usedItemHand
         val held = player.getItemInHand(hand)
-        if (held.item !is DishItem || held.count != 1) return
+        // the dish that was being eaten, not another that a change of slot has put in the hand
+        if (held.item !is DishItem || held.count != 1 || !ItemStack.isSameItemSameComponents(held, event.item)) return
         if (player.distanceToSqr(Vec3.atCenterOf(spot.pos)) > RANGE_SQ) return
         val plate = level.getBlockEntity(spot.pos) as? PlateBlockEntity ?: return
         if (plate.lay(held)) player.setItemInHand(hand, ItemStack.EMPTY)
