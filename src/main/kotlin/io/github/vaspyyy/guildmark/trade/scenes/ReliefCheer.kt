@@ -34,6 +34,7 @@ import net.minecraft.sounds.SoundEvents
 import net.minecraft.sounds.SoundSource
 import net.minecraft.util.Mth
 import net.minecraft.world.entity.Entity
+import net.minecraft.world.entity.OwnableEntity
 import net.minecraft.world.entity.animal.equine.AbstractChestedHorse
 import net.minecraft.world.entity.animal.equine.AbstractHorse
 import net.minecraft.world.item.ItemStack
@@ -512,14 +513,21 @@ object ReliefCheer {
             }
         }.filter { it.isAlive && !it.isRemoved }.minByOrNull { it.distanceToSqr(player) }
 
-    /** The player's tame donkeys, mules and llamas, and their carts, as the children find them until the trader's own are made. */
+    /**
+     * The player's tame donkeys, mules and llamas (the pack animals the Carriers section sells are tamed to whoever buys them, and so are found), and
+     * their carts: a `player_cart` within reach counts if it is theirs, where it says whose it is (an ownable entity), and if it says nothing, for it
+     * is a cart a trader leaves at their side. A part that makes carts or wagons of another kind adds them with [addCarrying].
+     */
     private fun beasts(player: ServerPlayer, radius: Double): List<Entity> =
         player.level().getEntitiesOfClass(Entity::class.java, player.boundingBox.inflate(radius)) { e ->
             e.isAlive && when (e) {
                 is AbstractChestedHorse -> e.isTamed && e.ownerReference?.uuid == player.uuid
-                else -> BuiltInRegistries.ENTITY_TYPE.getKey(e.type).let { it.namespace == Guildmark.MOD_ID && it.path == "player_cart" }
+                else -> isCart(e) && ((e as? OwnableEntity)?.let { it.ownerReference?.uuid == player.uuid } ?: true)
             }
         }
+
+    /** Whether [e] is the trader's cart, by the name its type is registered under. */
+    private fun isCart(e: Entity): Boolean = BuiltInRegistries.ENTITY_TYPE.getKey(e.type).let { it.namespace == Guildmark.MOD_ID && it.path == "player_cart" }
 
     /** The first child pats and jumps round what the goods rode in on; the next tries a sack and cannot lift it. One child alone does both. How long, from now. */
     private fun planChild(s: Scene, p: Townsperson, k: Int, n: Int): Long {
