@@ -123,6 +123,7 @@ object HomesteadKitchens {
         CookStats.readout("homestead") {
             "$fitted items fitted, $kept kept, $notFound not found; ${jobs.size} fit-outs waiting; fire asked $asked times, free $granted"
         }
+        HomeCommand.init()
     }
 
     private var herbSeasoned = false
@@ -138,7 +139,7 @@ object HomesteadKitchens {
     // ---- What is on ----
 
     /** Whether homestead kitchens are on: Hearthcraft, its `homeKitchens` rule, and homesteads themselves. */
-    private fun on(): Boolean = Cooking.homeKitchens() && Homesteads.enabled()
+    internal fun on(): Boolean = Cooking.homeKitchens() && Homesteads.enabled()
 
     // ---- What happened, for `cook perf` and `cook homestead` ----
 
@@ -150,10 +151,11 @@ object HomesteadKitchens {
 
     // ---- The fit-out ----
 
-    /** How one cell of an item stood when it was looked at. */
-    private enum class Cell { PLACED, ALREADY, KEPT, WAIT }
+    /** How one cell of an item stands when it is looked at: it may be set now, it has just been, it is a station of the item already, it is left alone, or it must wait. */
+    internal enum class Cell { FIT, PLACED, ALREADY, KEPT, WAIT }
 
-    private class Verdict(val cell: Cell, val why: String = "")
+    /** What a look at one cell found, and in words why it is left alone or waits. */
+    internal class Verdict(val cell: Cell, val why: String = "")
 
     /** One homestead's fit-out in hand: the item it is at, the cell it will try next, and what it has done so far. */
     private class Job(val id: Int, var readyAt: Long) {
@@ -304,8 +306,9 @@ object HomesteadKitchens {
                 val pos = home.frame.world(pick.x, pick.y, pick.z)
                 val verdict = fitCell(level, home, item, pick, pos)
                 when (verdict.cell) {
-                    Cell.WAIT -> {
-                        // Not yet: its chunk is away or someone stands in it. No verdict is written, and a scan comes back to it.
+                    Cell.WAIT, Cell.FIT -> {
+                        // Not yet: its chunk is away or someone stands in it (fitCell never answers FIT: it sets the cell that fits).
+                        // No verdict is written, and a scan comes back to it.
                         job.item = null
                         return false
                     }
@@ -384,13 +387,24 @@ object HomesteadKitchens {
         return home.cityStyle.state(B(m, pick.dir), 0).rotate(home.frame.rotation)
     }
 
-    /**
-     * Looks at one cell of [item] and sets the station in it if it may be: it must be the plan's own block (or what the plan
-     * drew on a table, or nothing where the plan drew nothing), holding nothing, with nobody standing in it. A station of the
-     * item that is there already counts as set.
-     */
+    /** Looks at one cell of [item] and sets the station in it if it may be (see [look]); what became of the cell. */
     private fun fitCell(level: ServerLevel, home: Homestead, item: Item, pick: Pick, pos: BlockPos): Verdict {
-        if (!level.isLoaded(pos)) return Verdict(Cell.WAIT)
+        val seen = look(level, home, item, pick, pos)
+        if (seen.cell != Cell.FIT) return seen
+        val state = stateOf(home, item.thing, pick)
+        level.setBlock(pos, state, Block.UPDATE_ALL)
+        dressed(level, home, pos)
+        show(level, pos, state, item.thing)
+        return Verdict(Cell.PLACED)
+    }
+
+    /**
+     * How one cell of [item] stands, changing nothing: it may be set if it is the plan's own block (or what the plan drew on a
+     * table, or nothing where the plan drew nothing), holding nothing, with nobody standing in it, and its chunk is loaded. A
+     * station of the item that is there already counts as set.
+     */
+    internal fun look(level: ServerLevel, home: Homestead, item: Item, pick: Pick, pos: BlockPos): Verdict {
+        if (!level.isLoaded(pos)) return Verdict(Cell.WAIT, "its chunk is not loaded")
         val thing = item.thing
         val here = level.getBlockState(pos)
         if (here.block === stationBlock(thing)) return Verdict(Cell.ALREADY)
@@ -420,12 +434,8 @@ object HomesteadKitchens {
                 if (!here.isAir && here.block !== style.state(plan.steps[pick.step].b, 0).block) return Verdict(Cell.KEPT, "its cell holds another crop")
             }
         }
-        val state = stateOf(home, thing, pick)
-        if (!state.getCollisionShape(level, pos).isEmpty && crowded(level, pos)) return Verdict(Cell.WAIT)
-        level.setBlock(pos, state, Block.UPDATE_ALL)
-        dressed(level, home, pos)
-        show(level, pos, state, thing)
-        return Verdict(Cell.PLACED)
+        if (!stateOf(home, thing, pick).getCollisionShape(level, pos).isEmpty && crowded(level, pos)) return Verdict(Cell.WAIT, "someone stands in it")
+        return Verdict(Cell.FIT)
     }
 
     /** Whether the block entity at [pos] holds something (a barrel's goods, a furnace's fuel, what cooks on a campfire). */
@@ -537,6 +547,71 @@ object HomesteadKitchens {
             if (!v.lit) level.playSound(null, pos, SoundEvents.FIRE_EXTINGUISH, SoundSource.BLOCKS, 0.3f, 1.0f)
         }
     }
+
+    // ---- For `cook homestead` ----
+
+    /** One item of a homestead's kitchen and what became of it: its verdict (null while it has none), the cells it took, a word on how or why, and the cell to point at. */
+    internal class Row(val item: Item, val status: HomeKitchenData.Status?, val cells: List<BlockPos>, val note: String, val where: BlockPos?)
+
+    /** Every item of the tiers [home] has reached, in the order of fitting, with what became of it. */
+    internal fun rows(level: ServerLevel, home: Homestead): List<Row> {
+        val rec = HomeKitchenData.get(level).home(home.id)
+        val out = ArrayList<Row>()
+        for (tier in 1..minOf(home.tier, 3)) {
+            for (item in itemsOf(level, home, tier)) {
+                val entry = rec?.items?.get(item.key)
+                val where = entry?.cells?.firstOrNull() ?: item.picks.firstOrNull()?.let { home.frame.world(it.x, it.y, it.z) }
+                out.add(Row(item, entry?.status, entry?.cells ?: emptyList(), entry?.note ?: item.why, where))
+            }
+        }
+        return out
+    }
+
+    /** What each cell of [item] would do if the kitchen were fitted now, one line each; nothing is placed. */
+    internal fun preview(level: ServerLevel, home: Homestead, item: Item): List<String> {
+        if (!item.found) return listOf(item.why)
+        val out = ArrayList<String>()
+        for (pick in item.picks) {
+            val pos = home.frame.world(pick.x, pick.y, pick.z)
+            val seen = look(level, home, item, pick, pos)
+            val what = when (seen.cell) {
+                Cell.FIT, Cell.PLACED -> "would be set"
+                Cell.ALREADY -> "is a ${item.thing.word} already"
+                Cell.KEPT -> "would be left alone: ${seen.why}"
+                Cell.WAIT -> "would wait: ${seen.why}"
+            }
+            out.add("${pos.x} ${pos.y} ${pos.z}: $what")
+        }
+        return out
+    }
+
+    /** Takes back the verdicts of [home] that left an item out (kept, not found), so that the next fitting looks at them again; how many. */
+    internal fun retake(level: ServerLevel, home: Homestead): Int {
+        val data = HomeKitchenData.get(level)
+        val rec = data.home(home.id) ?: return 0
+        var taken = 0
+        for ((key, entry) in rec.items.entries.toList()) {
+            if (entry.status != HomeKitchenData.Status.DONE && data.unsettle(home.id, key)) taken++
+        }
+        return taken
+    }
+
+    /** How the fire at a place stands: the homestead whose land it is on, whether it is free, and the ticks since one of its people was last there (-1: never, since the world was loaded). */
+    internal class Fire(val home: Homestead?, val free: Boolean, val since: Long, val grace: Long)
+
+    /** [freeAt]'s answer for the fire at [pos], with the reason, and counting nothing. */
+    internal fun fireAt(level: ServerLevel, pos: BlockPos): Fire {
+        val home = Homesteads.at(level, pos)
+        if (home == null || home.tier < 1) return Fire(home, false, -1L, GRACE)
+        val free = on() && peopleHome(level, home)
+        val since = seen[home.id]?.let { level.gameTime - it } ?: -1L
+        return Fire(home, free, since, GRACE)
+    }
+
+    /** How many times the fire has been asked about, and how many times it was free, since the world was loaded. */
+    internal fun asks(): Long = asked
+
+    internal fun grants(): Long = granted
 
     // ---- The pantry ----
 
