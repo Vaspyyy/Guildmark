@@ -42,7 +42,7 @@ internal object Shopping {
         if (forced.isNotEmpty()) forced[p]?.let { (times, until) -> if (p.level().gameTime <= until) return times else forced.remove(p) }
         if (!Fortunes.enabled()) return null
         val level = p.level() as? ServerLevel ?: return null
-        return Fortunes.times(level, life.places.capital.center.asLong())
+        return Fortunes.times(level, life.places.centre.asLong())
     }
 
     /** For the scene command: [p] shops by [times] for the next [ticks]. */

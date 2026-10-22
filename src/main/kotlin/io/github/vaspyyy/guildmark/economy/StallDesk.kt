@@ -415,7 +415,7 @@ object StallDesk {
         val p = event.target as? Townsperson ?: return
         if (event.hand != InteractionHand.MAIN_HAND || player.isSpectator) return
         val level = player.level()
-        val centre = Days.life(p)?.places?.capital?.center ?: return
+        val centre = Days.life(p)?.places?.centre ?: return
         if (!hallMerchant(p, centre)) return
         val hall = OwnStalls.get(level).find(centre.asLong()) ?: return
         val kept = hall.kept[player.uuid] ?: return
@@ -450,7 +450,7 @@ object StallDesk {
     private fun hallMerchant(p: Townsperson, centre: BlockPos): Boolean {
         if (p.role != TownRole.MERCHANT || !p.isAlive) return false
         val places = Days.life(p)?.places ?: return false
-        if (places.capital.center != centre) return false
+        if (places.centre != centre) return false
         return places.lodgingAt(p.post ?: p.work ?: p.blockPosition())?.kind == Kind.MARKET_HALL.name
     }
 

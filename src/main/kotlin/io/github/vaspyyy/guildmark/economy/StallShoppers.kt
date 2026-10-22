@@ -110,7 +110,7 @@ object StallShoppers {
         val centre = t.capital.center
         val p = level.getEntitiesOfClass(Townsperson::class.java, AABB(t.middle, t.middle).inflate(FROM, 5.0, FROM)) {
             it.isAlive && !it.isSleeping && it.director == null && it.role in SHOPPERS && !it.crowd && !it.bound && it.seat == null &&
-                it.attending == null && Days.life(it)?.places?.capital?.center == centre && Claims.free(level, spot.pos, it)
+                it.attending == null && Days.life(it)?.places?.centre == centre && Claims.free(level, spot.pos, it)
         }.minByOrNull { it.distanceToSqr(t.middle) } ?: return false
         val shopping = Shopping(level, t, stall, good, spot, p, level.gameTime + PATIENCE)
         // Whatever they were at ends here, as when they're called away from it

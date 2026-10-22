@@ -125,7 +125,7 @@ object Alms {
         if (role != TownRole.CITIZEN && role != TownRole.CHILD) return false
         val day = Days.dayOf(level.overworldClockTime)
         val household = (life.home?.id ?: life.resident.id).toLong()
-        val hard = Fortunes.times(level, life.places.capital.center.asLong()) == Times.HARD
+        val hard = Fortunes.times(level, life.places.centre.asLong()) == Times.HARD
         return Math.floorMod(household * 31L + day, if (hard) 2L else 3L) == 0L
     }
 
@@ -153,7 +153,7 @@ object Alms {
     fun join(p: Townsperson, life: Life): Task? {
         if (!Fortunes.enabled() && standIns.isEmpty()) return null
         val level = p.level() as? ServerLevel ?: return null
-        val capital = life.places.capital.center.asLong()
+        val capital = life.places.centre.asLong()
         val standIn = standIns[capital]?.let { level.gameTime <= it.second } == true
         if (!standIn && !Fortunes.enabled()) return null
         val table = table(level, capital)?.takeIf { it.serving } ?: return null

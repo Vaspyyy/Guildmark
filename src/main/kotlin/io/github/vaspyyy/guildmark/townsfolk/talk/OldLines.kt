@@ -140,7 +140,7 @@ internal object OldLines {
 
     /** Where [p]'s capital has its heart, if they belong to one or stand in one. */
     private fun capital(level: ServerLevel, p: Townsperson): BlockPos? =
-        Days.life(p)?.places?.capital?.center ?: Residents.get(level).of(p)?.capital ?: Capitals.covering(level, p.blockPosition())?.center
+        Days.life(p)?.places?.centre ?: Residents.get(level).of(p)?.capital ?: Capitals.covering(level, p.blockPosition())?.center
 
     private fun market(level: ServerLevel, p: Townsperson): Markets.Entry? {
         if (!Markets.enabled()) return null

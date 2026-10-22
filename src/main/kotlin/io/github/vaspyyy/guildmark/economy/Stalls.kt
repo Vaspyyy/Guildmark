@@ -148,7 +148,7 @@ object Stalls {
         // The inn's keeper is only a business to those it has an order for, and only while they're at their work
         if (shop == Shop.INN) {
             if (serving == null && (p.isSleeping || doing != Doing.WORK)) return false
-            if (!innOrders(level, player, life.places.capital.center)) return false
+            if (!innOrders(level, player, life.places.centre)) return false
         }
         if (serving == null && (p.isSleeping || doing != Doing.WORK && !atStall(p))) {
             val shut = StallTalk.shut(p, life, doing, shop, level)

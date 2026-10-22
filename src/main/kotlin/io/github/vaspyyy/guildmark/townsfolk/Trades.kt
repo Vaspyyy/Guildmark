@@ -53,7 +53,7 @@ object Trades {
 
     /** [life]'s capital's market, if the markets are on and it keeps one yet. */
     fun market(p: Townsperson, life: Life): Markets.Entry? =
-        if (Markets.enabled()) Markets.get(level(p))[life.places.capital.center] else null
+        if (Markets.enabled()) Markets.get(level(p))[life.places.centre] else null
 
     /** The clock's hour, 0 at midnight. */
     private fun clock(level: ServerLevel): Int = Math.floorMod(Math.floorDiv(level.overworldClockTime, 1000L) + 6, 24L).toInt()
@@ -272,7 +272,7 @@ object Trades {
      */
     private fun reserve(p: Townsperson, life: Life, n: Int): Task? {
         val level = level(p)
-        val door = Works.door(level, life.places.capital.center.asLong(), WorksKind.GRANARY)
+        val door = Works.door(level, life.places.centre.asLong(), WorksKind.GRANARY)
         if (door == null || !Places.loaded(level, door, 1)) return granary(p, life, n)
         val at = Places.beside(level, door, p.blockPosition()) ?: return granary(p, life, n)
         return grain(p, life, n, door to at)
@@ -703,7 +703,7 @@ object Hands {
     private val asking = HashMap<BlockPos, Crew>()
 
     fun of(level: ServerLevel, places: CityPlaces): Crew {
-        val center = places.capital.center
+        val center = places.centre
         asking[center]?.let { return it }
         // A new day's labourers are asked for as the day begins, not when the crew next comes due
         val day = if (io.github.vaspyyy.guildmark.economy.works.Works.enabled()) Days.dayOf(level.overworldClockTime) else Long.MIN_VALUE
@@ -717,7 +717,7 @@ object Hands {
      * building (Part B) picks [Works.labourers] from these; it asks this, never [of], which is what asks it.
      */
     fun spare(level: ServerLevel, places: CityPlaces): List<Int> {
-        val center = places.capital.center
+        val center = places.centre
         val crew = asking[center] ?: crews[center] ?: base(level, places)
         return spare(level, places, crew)
     }
@@ -728,7 +728,7 @@ object Hands {
     }
 
     private fun spare(level: ServerLevel, places: CityPlaces, crew: Crew): List<Int> =
-        Residents.get(level).of(places.capital.center)
+        Residents.get(level).of(places.centre)
             .filter { it.alive && it.role == TownRole.CITIZEN && it.id !in crew.carters && it.id != crew.crier && it.id !in crew.millers }
             .map { it.id }.sorted()
 
@@ -736,7 +736,7 @@ object Hands {
     private fun work(level: ServerLevel, places: CityPlaces, day: Long): Crew {
         val base = base(level, places)
         if (!io.github.vaspyyy.guildmark.economy.works.Works.enabled()) return base
-        val center = places.capital.center
+        val center = places.centre
         asking[center] = base
         val lent = try {
             val spare = spare(level, places, base).toSet()
@@ -748,7 +748,7 @@ object Hands {
     }
 
     private fun base(level: ServerLevel, places: CityPlaces): Crew {
-        val center = places.capital.center
+        val center = places.centre
         val living = Residents.get(level).of(center).filter { it.alive }
         val farms = places.lodgings.values.filter { it.farm && it.kind in Trades.MILLS + setOf(FarmKind.BARN.name, FarmKind.FARMHOUSE.name) }
         fun home(r: Resident): BlockPos? = places.lodgings[r.home]?.box?.center

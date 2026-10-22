@@ -49,7 +49,7 @@ object Labour {
     /** Where [life]'s capital's labourers report for work, if anywhere. */
     fun site(p: Townsperson, life: Life): BlockPos? {
         val level = p.level() as? ServerLevel ?: return null
-        return Works.workAt(level, life.places.capital.center.asLong())
+        return Works.workAt(level, life.places.centre.asLong())
     }
 
     /** A building stretch's first part: to the site, if they aren't there. */

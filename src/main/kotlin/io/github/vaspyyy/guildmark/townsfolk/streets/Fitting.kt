@@ -79,7 +79,7 @@ object Fitting {
     fun hire(level: ServerLevel, near: BlockPos, heart: BlockPos, not: Set<Int>, loose: Boolean, roles: Set<TownRole> = HANDS): Townsperson? {
         val at = Vec3.atCenterOf(near)
         return level.getEntitiesOfClass(Townsperson::class.java, AABB(near).inflate(REACH, 8.0, REACH)) { p ->
-            p.id !in not && p.role in roles && p.life?.places?.capital?.center == heart && (if (loose) able(p) else Aside.free(p, seated = true))
+            p.id !in not && p.role in roles && p.life?.places?.centre == heart && (if (loose) able(p) else Aside.free(p, seated = true))
         }.minByOrNull { it.distanceToSqr(at) }
     }
 
@@ -114,7 +114,7 @@ object Fitting {
         val now = level.gameTime
         if (now - (cheered[column] ?: Long.MIN_VALUE / 2) < CHEER_EVERY) return
         val child = level.getEntitiesOfClass(Townsperson::class.java, AABB.ofSize(at, CHEER_REACH * 2, 8.0, CHEER_REACH * 2)) { p ->
-            p.role == TownRole.CHILD && p.life?.places?.capital?.center == heart && Aside.free(p)
+            p.role == TownRole.CHILD && p.life?.places?.centre == heart && Aside.free(p)
         }.minByOrNull { it.distanceToSqr(at) } ?: return
         val aside = Aside(listOf(
             Turn({ at }, 16),
@@ -421,7 +421,7 @@ object Fitting {
             if (p.activity == Activity.CARRY || p.activity == Activity.HANG || p.activity == Activity.CLIMB || p.activity == Activity.STAKE) p.act(Activity.NONE)
         }
 
-        private fun heart(p: Townsperson): BlockPos = p.life?.places?.capital?.center ?: p.blockPosition()
+        private fun heart(p: Townsperson): BlockPos = p.life?.places?.centre ?: p.blockPosition()
 
         override fun stop(p: Townsperson) {
             walker?.stop()

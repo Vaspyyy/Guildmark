@@ -13,7 +13,6 @@ import io.github.vaspyyy.guildmark.registry.ModItems
 import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
 import io.github.vaspyyy.guildmark.townsfolk.Furnish
 import io.github.vaspyyy.guildmark.townsfolk.talk.Witness
-import io.github.vaspyyy.guildmark.village.VillageNames
 import net.minecraft.ChatFormatting
 import net.minecraft.core.BlockPos
 import net.minecraft.core.UUIDUtil
@@ -383,10 +382,10 @@ class Orders(private val books: MutableMap<Long, Book> = HashMap(), private var 
 
         /** What [book]'s capital has of the businesses that post orders, and where each is kept, from its [places]. */
         fun learn(data: Orders, book: Book, places: CityPlaces) {
-            val name = VillageNames.of(places.capital.boardAnchor)
+            val name = places.name
             val shops = LinkedHashMap<Shop, BlockPos>()
             for (stall in places.stalls) Shop.of(stall.trade)?.let { shops.putIfAbsent(it, stall.keeper.pos) }
-            if (places.census.plan.harbour != null) {
+            if (places.harbour) {
                 places.counters.firstOrNull { Shop.at(places, it.pos) == Shop.QUAY }?.let { shops[Shop.QUAY] = it.pos }
             }
             fun at(l: CityPlaces.Lodging): BlockPos = l.front?.outside ?: l.box.center

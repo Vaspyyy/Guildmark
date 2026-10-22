@@ -61,7 +61,7 @@ enum class Shop(val id: String, val goods: List<Good>) {
         fun at(places: CityPlaces, pos: BlockPos): Shop {
             places.stalls.firstOrNull { it.keeper.pos.distSqr(pos) <= NEAR }?.let { stall -> of(stall.trade)?.let { return it } }
             if (places.lodgingAt(pos)?.kind == Kind.MARKET_HALL.name) return HALL
-            return if (places.census.plan.harbour != null) QUAY else HALL
+            return if (places.harbour) QUAY else HALL
         }
 
         /** How near a stall's keeper spot (squared) someone has to stand to keep it. */

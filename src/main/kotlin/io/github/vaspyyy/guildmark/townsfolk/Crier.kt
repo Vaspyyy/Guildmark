@@ -283,7 +283,7 @@ object Crier {
 
     /** What [places]' crier cries at [c]'s noon: the same each time it's asked that day (see [news]). */
     fun today(level: ServerLevel, places: CityPlaces, entry: Markets.Entry?, c: Conditions): List<Cry> =
-        news(level, entry, c, Random(c.day * 0x2545F4914F6CDD1DL + places.capital.center.asLong()))
+        news(level, entry, c, Random(c.day * 0x2545F4914F6CDD1DL + places.centre.asLong()))
 
     /** The folk about the square who are free to stop come over to hear the news. */
     private fun gather(crier: Townsperson) {

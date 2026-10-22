@@ -107,7 +107,7 @@ object Lookout {
      */
     fun post(level: ServerLevel, life: Life): Int {
         if (!Works.enabled() || life.resident.role != TownRole.GUARD || life.resident.id < 0) return -1
-        val center = life.places.capital.center
+        val center = life.places.centre
         val capital = center.asLong()
         val towers = towers(level, capital)
         if (towers.isEmpty()) return -1
@@ -222,7 +222,7 @@ object Lookout {
 
     /** The tower on [road] into [life]'s capital that keeps a watch, if it stands. */
     private fun tower(level: ServerLevel, life: Life, road: Int): WorksView? =
-        towers(level, life.places.capital.center.asLong()).firstOrNull { it.road == road }
+        towers(level, life.places.centre.asLong()).firstOrNull { it.road == road }
 
     // --- Up on the platform ---
 

@@ -55,7 +55,7 @@ internal object Cold {
     fun biting(p: Townsperson, life: Life): Boolean {
         if (forced.isEmpty() && !Fortunes.enabled()) return false
         val level = p.level() as? ServerLevel ?: return false
-        return biting(level, life.places.capital.center.asLong())
+        return biting(level, life.places.centre.asLong())
     }
 
     /**

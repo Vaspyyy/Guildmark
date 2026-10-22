@@ -25,7 +25,6 @@ import io.github.vaspyyy.guildmark.townsfolk.Trait
 import io.github.vaspyyy.guildmark.townsfolk.talk.sources.DailySource
 import io.github.vaspyyy.guildmark.village.Standing
 import io.github.vaspyyy.guildmark.village.StandingTier
-import io.github.vaspyyy.guildmark.village.VillageNames
 import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
 import net.minecraft.server.MinecraftServer
@@ -757,9 +756,8 @@ object Talk {
     private fun epithet(ask: Ask): Component {
         val p = ask.speaker
         val life = ask.life
-        val capital = life?.places?.capital
+        val town = life?.places?.name
             ?: return if (p.customName == null) Component.empty() else Component.translatable("entity.guildmark.townsperson.${p.role.id}")
-        val town = VillageNames.of(capital.boardAnchor)
         val trade = when {
             life.crier -> "crier"
             life.mill != null -> "miller"
