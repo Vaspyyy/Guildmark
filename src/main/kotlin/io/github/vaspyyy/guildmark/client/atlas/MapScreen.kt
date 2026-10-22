@@ -457,6 +457,11 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
                 }
                 if (mark.has(AtlasMark.RESTED)) lines.add(Component.translatable("gui.guildmark.map.tip.homestead_rested"))
                 out.add(Spot(x, z, if (yours) HOMESTEAD_YOURS else HOMESTEAD, name, lines, if (yours) 3 else 1, label = name, labelFrom = if (yours) 0.5 else 1.0))
+            } else if (mark.kind == AtlasPlace.MEMORIAL) {
+                // A stone or a cairn a tale left: what it is, and its name written on the map once you are close in
+                lines.add(AtlasClient.kindName(mark))
+                lines.add(Component.translatable("gui.guildmark.map.tip.memorial"))
+                out.add(Spot(x, z, MEMORIAL, name, lines, 1, label = name, labelFrom = 1.0))
             } else {
                 val throne = mark.kind == AtlasPlace.THRONE
                 val camp = mark.kind == AtlasPlace.FIELD_BOSS
@@ -490,9 +495,12 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
                 ContractTracker.STORY -> "story"
                 ContractTracker.CHALLENGE -> "challenge"
                 ContractTracker.ORDER -> "order"
+                ContractTracker.TALE -> "tale"
                 else -> "contract"
             }
-            out.add(Spot(waypoint.pos.x + 0.5, waypoint.pos.z + 0.5, CONTRACT, waypoint.title, listOf(Component.translatable("gui.guildmark.map.tip.$kind")), 3))
+            // A tale's pin is its own quill, and its tooltip goes on to the full status and the days left
+            val icon = if (waypoint.kind == ContractTracker.TALE) TALE else CONTRACT
+            out.add(Spot(waypoint.pos.x + 0.5, waypoint.pos.z + 0.5, icon, waypoint.title, listOf(Component.translatable("gui.guildmark.map.tip.$kind")) + waypoint.lines, 3))
         }
         for (pin in MapData.pins) {
             val name = Component.literal(pin.name)
@@ -860,6 +868,8 @@ class MapScreen : Screen(Component.translatable("gui.guildmark.map")) {
         private val HOMESTEAD_YOURS = sprite("homestead_yours")
         private val SHIP = sprite("ship")
         private val ISLAND = sprite("island")
+        private val TALE = sprite("tale")
+        private val MEMORIAL = sprite("memorial")
         private val ROSE = sprite("rose")
         private val VIGNETTE = sprite("frame")
         private val COACH_BADGE = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "compass/coach")

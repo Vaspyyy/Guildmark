@@ -48,6 +48,8 @@ object CompassHud : GuiLayer {
     private val ICON_VAULT = sprite("vault")
     private val ICON_CONTRACT = sprite("contract")
     private val ICON_ORDER = sprite("order")
+    private val ICON_TALE = sprite("tale")
+    private val ICON_MEMORIAL = sprite("memorial")
     private val ICON_PARTY = sprite("party")
     private val ICON_DEATH = sprite("death")
     private val ICON_PIN = sprite("pin")
@@ -205,6 +207,8 @@ object CompassHud : GuiLayer {
                 mark.kind == AtlasPlace.ISLAND -> 900.0
                 mark.kind == AtlasPlace.VILLAGE -> 640.0
                 mark.kind == AtlasPlace.WARDFIRE -> 512.0
+                // A memorial is a small thing in a town: worth the strip when you are within reach of it
+                mark.kind == AtlasPlace.MEMORIAL -> 256.0
                 mark.has(AtlasMark.CLEARED) -> 192.0
                 else -> 384.0
             }
@@ -218,6 +222,7 @@ object CompassHud : GuiLayer {
                 mark.kind == AtlasPlace.FIELD_BOSS -> if (mark.has(AtlasMark.CLEARED)) ICON_TROLL_SLAIN else ICON_TROLL
                 mark.kind == AtlasPlace.OUTLAW_CAMP -> if (mark.has(AtlasMark.CLEARED)) ICON_OUTLAW_SLAIN else ICON_OUTLAW
                 mark.kind == AtlasPlace.HOMESTEAD -> if (mark.has(AtlasMark.YOURS)) ICON_HOMESTEAD_YOURS else ICON_HOMESTEAD
+                mark.kind == AtlasPlace.MEMORIAL -> ICON_MEMORIAL
                 mark.has(AtlasMark.CLEARED) -> ICON_LAIR_CLEARED
                 mark.has(AtlasMark.AWAKE) -> ICON_BOSS
                 else -> ICON_LAIR
@@ -228,6 +233,7 @@ object CompassHud : GuiLayer {
                 AtlasPlace.ISLAND -> mark.size.toDouble()
                 AtlasPlace.THRONE -> 24.0
                 AtlasPlace.WARDFIRE -> 6.0
+                AtlasPlace.MEMORIAL -> 6.0
                 else -> 12.0
             }
             out.add(Marker(at, icon, AtlasClient.name(mark), if (mark.kind == AtlasPlace.VILLAGE) 0 else 1, hide))
@@ -254,6 +260,7 @@ object CompassHud : GuiLayer {
                 ContractTracker.STORY -> ICON_VAULT
                 ContractTracker.CHALLENGE -> ICON_BOSS
                 ContractTracker.ORDER -> ICON_ORDER
+                ContractTracker.TALE -> ICON_TALE
                 else -> ICON_CONTRACT
             }
             out.add(Marker(Vec3.atCenterOf(waypoint.pos), icon, waypoint.title, 4, 6.0))

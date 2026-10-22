@@ -7040,5 +7040,7 @@
   "gui.guildmark.tale.banner.ended": "%s · Ended",
   "gui.guildmark.tale.banner.off": "Tale banners are off (Settings, Interface, Tale Banners)",
   "gui.guildmark.tale.days.last": "Today is the last day",
-  "gui.guildmark.tale.row.hand_in": "To the board"
+  "gui.guildmark.tale.row.hand_in": "To the board",
+  "gui.guildmark.map.tip.tale": "A tale",
+  "gui.guildmark.map.tip.memorial": "A place the town remembers"
 }
