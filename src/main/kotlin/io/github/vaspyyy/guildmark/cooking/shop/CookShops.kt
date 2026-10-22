@@ -2,6 +2,8 @@ package io.github.vaspyyy.guildmark.cooking.shop
 
 import io.github.vaspyyy.guildmark.city.CapitalPiece
 import io.github.vaspyyy.guildmark.cooking.Cooking
+import io.github.vaspyyy.guildmark.cooking.DishData
+import io.github.vaspyyy.guildmark.cooking.DishKind
 import io.github.vaspyyy.guildmark.cooking.Tier
 import io.github.vaspyyy.guildmark.cooking.dish.Dishes
 import io.github.vaspyyy.guildmark.cooking.dish.LarderBlockEntity
@@ -246,6 +248,18 @@ object CookShops {
     /** Where a cookshop's keeper stands: behind the middle of the counter. */
     internal fun post(level: ServerLevel, works: WorksRec): BlockPos? = layout(level, works.id)?.stand
 
+    /**
+     * The plate a new cookshop's keeper hands out first, for nothing: one portion of the first dish in its larder, else a Sound pie.
+     * Only a plate to be seen; nothing comes out of the stock.
+     */
+    internal fun firstPlate(level: ServerLevel, works: WorksRec): ItemStack {
+        shopOf(level, works)?.stock?.firstOrNull { sellable(it) }?.let { return it.copyWithCount(1) }
+        return Dishes.make(DishKind.PIE, DishData(Tier.SOUND, Cooking.today(level), "", null, 0), 1)
+    }
+
+    /** [p], a cookshop's keeper, says "Fresh from the new oven!" with the first plate (in the shop's words, if it can be said). */
+    internal fun firstWords(p: Townsperson) = CookshopScene.speak(p, ShopLines.FIRST)
+
     /** Whether [p] keeps a cookshop, so that no market shop is made for them (a click on them is a talk, not the hall's screen). */
     fun keeps(p: Townsperson): Boolean {
         if (p.role != TownRole.MERCHANT || p.resident < 0) return false
@@ -266,7 +280,7 @@ object CookShops {
     }
 
     /** Works [id]'s parts, if it is sited. */
-    private fun layout(level: ServerLevel, id: Int): ShopLayout? {
+    internal fun layout(level: ServerLevel, id: Int): ShopLayout? {
         val rec = WorksBuildData.get(level)[id]?.takeIf { it.sited && !it.removed } ?: return null
         return layout(id, WorksPlans.of(rec))
     }
@@ -427,5 +441,7 @@ object CookShops {
         NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerLoggedInEvent::class.java) { event -> (event.entity as? ServerPlayer)?.let { login(it) } }
         MenuBoards.onUse(MenuBoards.Use { level, pos, player -> ShopTill.use(level, pos, player) })
         ShopKeeper.register()
+        CookshopScene.register()
+        CookShoppers.register()
     }
 }

@@ -21,8 +21,8 @@ import kotlin.math.abs
 
 /**
  * Where a cookshop's parts stand in the world, found once from its drawing (living-world/cook/design.md 6.4): the Larder, the
- * Hob and the Bake oven, the Menu board, the five plates (the middle one first, then outward), the chimney's fire, where the keeper
- * stands behind the counter and where the buyers do before it.
+ * Hob and the Bake oven, the Prep Board, the Menu board, the five plates (the middle one first, then outward), the chimney's fire,
+ * where the keeper stands behind the counter and where the buyers do before it.
  */
 internal class ShopLayout(val planned: WorksPlans.Planned) {
     var larder: BlockPos? = null
@@ -32,6 +32,8 @@ internal class ShopLayout(val planned: WorksPlans.Planned) {
     var oven: BlockPos? = null
         private set
     var board: BlockPos? = null
+        private set
+    var prep: BlockPos? = null
         private set
     var chimney: BlockPos? = null
         private set
@@ -58,6 +60,7 @@ internal class ShopLayout(val planned: WorksPlans.Planned) {
                 M.HOB -> hob = pos
                 M.BAKE_OVEN -> oven = pos
                 M.MENU_BOARD -> board = pos
+                M.PREP_BOARD -> prep = pos
                 M.CAMPFIRE -> chimney = pos
                 M.PLATE -> across.add(s.x to pos)
                 else -> {}

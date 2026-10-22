@@ -572,8 +572,17 @@ internal object WorksAtWork {
                 if (!near || hour < 7.0 || hour >= 16.0) return
                 firstLoaves(level, w, site, done)
             }
-            // Its keeper's first plates come with the shop's scenes
-            WorksKind.COOKSHOP -> done()
+            WorksKind.COOKSHOP -> {
+                val k = key(w.id, FIRST_USE)
+                val e = errands[k]
+                if (e != null) {
+                    if (e.aside.over) errands.remove(k)
+                    return
+                }
+                if (since > UNSEEN_FIRST || w.hired < 0 && since > UNSEEN_FIRST / 3) return done()
+                if (!near || hour < TRADES_FROM || hour >= TRADES_TO) return
+                firstPlates(level, w, site, done)
+            }
             WorksKind.STALL -> {
                 val k = key(w.id, FIRST_USE)
                 val e = errands[k]
@@ -635,6 +644,34 @@ internal object WorksAtWork {
                 Play(Activity.SET_UP, at = { display }),
                 Now { it.carried = ItemStack.EMPTY },
                 Play(Activity.ARRANGE, 60, at = { display }),
+            ),
+            reach = SEEN + 16.0, most = 1200,
+        )
+        aside.onEnd = {
+            keeper.carried = ItemStack.EMPTY
+            done()
+        }
+        WorksYard.send(keeper, aside)
+        errands[key(w.id, FIRST_USE)] = Errand(keeper, aside)
+    }
+
+    /** The cookshop's keeper sets its first plate on the counter and hands it to whoever is by: "Fresh from the new oven!" */
+    private fun firstPlates(level: ServerLevel, w: WorksRec, site: TownWorksSite, done: () -> Unit) {
+        val behind = keeperStand(site)
+        val keeper = body(level, w.hired)?.takeIf { it.distanceToSqr(Vec3.atCenterOf(behind)) < SEEK * SEEK && WorksYard.sendable(level, it) } ?: return
+        val counter = site.frame.centre(site.drawing.heart.x.toDouble(), site.drawing.y0 + 1.2, site.drawing.heart.z.toDouble())
+        val folk = { p: Townsperson -> who(level, p) }
+        val plate = CookShops.firstPlate(level, w)
+        val aside = Aside(
+            listOf(
+                GoTo({ behind }, Jobs.WALK, 0.6, Activity.NONE, 900),
+                Turn({ counter }),
+                Now { it.carried = plate.copy() },
+                Play(Activity.ARRANGE, 40, at = { counter }),
+                Turn({ folk(keeper) }),
+                Play(Activity.HAND_OVER, at = { folk(keeper) }) { CookShops.firstWords(it) },
+                Wait({ _, _ -> false }, 30, Activity.NONE) { folk(keeper) },
+                Now { it.carried = ItemStack.EMPTY },
             ),
             reach = SEEN + 16.0, most = 1200,
         )
