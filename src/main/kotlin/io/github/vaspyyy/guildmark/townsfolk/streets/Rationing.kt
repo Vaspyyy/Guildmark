@@ -19,42 +19,53 @@ object Rationing : StreetLamps.Rationing {
     /** The streets command's rationed evenings, by capital column: the game time each lasts until. This session's only. */
     private val forced = HashMap<Long, Long>()
 
-    override fun rationed(level: ServerLevel, capital: CapitalPiece): Boolean {
-        val column = Streets.column(capital)
+    override fun rationed(level: ServerLevel, key: Long): Boolean {
+        val column = Streets.column(key)
         val until = forced[column]
         if (until != null) {
             if (Streets.testing && level.gameTime < until) return true
             forced.remove(column)
         }
-        return Fortunes.enabled() && short(level, capital)
+        return Fortunes.enabled() && short(level, key)
     }
 
-    /** Whether [capital]'s candles are short: under [LOW] of what it keeps in, or run short yesterday. */
-    fun short(level: ServerLevel, capital: CapitalPiece): Boolean {
-        val entry = Markets.get(level)[capital.center] ?: return false
+    /** Whether the candles of the town under [key] (a capital's centre, a village's bell) are short: under [LOW] of what it keeps in, or run short yesterday. */
+    fun short(level: ServerLevel, key: Long): Boolean {
+        val entry = Markets.find(level, key) ?: return false
         val m = entry.market
         return m.stock(Good.CANDLE) < entry.town.target(Good.CANDLE) * LOW || m.yesterday(Tally.SHORT, Good.CANDLE) > NONE
     }
 
     /** For the streets command: whether [capital]'s lamps are rationed and why, in a few words. */
-    fun why(level: ServerLevel, capital: CapitalPiece): String {
-        val column = Streets.column(capital)
+    fun why(level: ServerLevel, capital: CapitalPiece): String = why(level, capital.center.asLong())
+
+    /** Whether the lamps of the town under [key] (a capital's centre, a village's bell) are rationed and why, in a few words. */
+    fun why(level: ServerLevel, key: Long): String {
+        val column = Streets.column(key)
         val until = forced[column]
         if (until != null && Streets.testing && level.gameTime < until) return "rationed by the streets command (${(until - level.gameTime) / 20}s left)"
         if (!Fortunes.enabled()) return "not rationed (the times are off)"
-        val entry = Markets.get(level)[capital.center] ?: return "not rationed (no market open)"
+        val entry = Markets.find(level, key) ?: return "not rationed (no market open)"
         val m = entry.market
         val stock = m.stock(Good.CANDLE)
         val target = entry.town.target(Good.CANDLE)
         val short = m.yesterday(Tally.SHORT, Good.CANDLE)
         val said = String.format(Locale.ROOT, "candles %.1f of %.1f kept in, %.1f short yesterday", stock, target, short)
-        return if (short(level, capital)) "rationed tonight: $said" else "not rationed: $said"
+        return if (short(level, key)) "rationed tonight: $said" else "not rationed: $said"
     }
 
     /** `/guildmark streets lamps`: [capital]'s lamps rationed for the next [ticks], whatever its candles. */
-    fun force(level: ServerLevel, capital: CapitalPiece, ticks: Long) {
+    fun force(level: ServerLevel, capital: CapitalPiece, ticks: Long) = force(level, capital.center.asLong(), ticks)
+
+    /** The lamps of the town under [key] (a capital's centre, a village's bell) rationed for the next [ticks], whatever its candles. */
+    fun force(level: ServerLevel, key: Long, ticks: Long) {
         Streets.testing = true
-        forced[Streets.column(capital)] = level.gameTime + ticks
+        forced[Streets.column(key)] = level.gameTime + ticks
+    }
+
+    /** An evening forced for the town under [key] is forgotten: it is rationed as its candles have it. */
+    fun unforce(key: Long) {
+        forced.remove(Streets.column(key))
     }
 
     fun forget() = forced.clear()

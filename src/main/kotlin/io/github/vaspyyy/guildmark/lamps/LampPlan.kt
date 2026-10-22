@@ -24,7 +24,7 @@ import kotlin.math.sqrt
  * lit along the streets (the plan's own street columns, walked a column at a time), straightened out where it crosses
  * itself, then cut into stretches each a lamplighter can walk and light in about [ROUND_TICKS].
  */
-class LampPlan(val plan: CityPlan, census: Census) {
+class LampPlan(val plan: CityPlan, census: Census) : LampSet {
     /**
      * One lamp: its lantern at [at] (the post's foot three blocks under it); [city] for a street lamp inside the walls,
      * [farm] the lodging id (see [Census.lodges]) of the farmhouse whose farmer sees to it, or -1; the ways from the post
@@ -45,8 +45,8 @@ class LampPlan(val plan: CityPlan, census: Census) {
         val ticks: Int get() = ticks(lamps.size, walk)
     }
 
-    val lamps: List<Lamp>
-    val rounds: List<Round>
+    override val lamps: List<Lamp>
+    override val rounds: List<Round>
 
     /** For each lamp, its round's index (or -1), and its place in it. */
     val roundOf: IntArray

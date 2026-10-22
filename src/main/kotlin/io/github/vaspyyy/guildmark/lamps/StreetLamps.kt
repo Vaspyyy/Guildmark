@@ -120,12 +120,13 @@ object StreetLamps {
     var taker: Taker? = null
 
     /**
-     * Whether a capital's lamps are rationed tonight (M6 Part D2's rationed lamps: candles short): its lamplighters light
+     * Whether a town's lamps are rationed tonight (M6 Part D2's rationed lamps: candles short): its lamplighters light
      * every other lamp of their rounds, and the rest catch by themselves a little before seven ([skipped]). Asked as
-     * the evening's rounds begin; null (as until Part D2 sets it), nothing is rationed.
+     * the evening's rounds begin, of the town with this [key][LampTown.key] (a capital's centre or a village's bell, as a
+     * block position's long); null (as until Part D2 sets it), nothing is rationed.
      */
     fun interface Rationing {
-        fun rationed(level: ServerLevel, capital: CapitalPiece): Boolean
+        fun rationed(level: ServerLevel, key: Long): Boolean
     }
 
     @JvmStatic
@@ -133,7 +134,7 @@ object StreetLamps {
 
     /** Whether [town]'s lamps are rationed tonight, as [rationing] has it (false if it fails). */
     private fun rationed(level: ServerLevel, town: LampTown): Boolean = try {
-        rationing?.rationed(level, town.capital) == true
+        rationing?.rationed(level, town.key.asLong()) == true
     } catch (e: RuntimeException) {
         false
     }
@@ -288,7 +289,7 @@ object StreetLamps {
         if (job == null) {
             val places = CityPlaces.of(level, capital) ?: return
             working[capital.center] = CompletableFuture.supplyAsync({
-                LampTown(capital, places, LampPlan(places.census.plan, places.census))
+                LampTown.capital(capital, places, LampPlan(places.census.plan, places.census))
             }, Util.backgroundExecutor())
             return
         }
@@ -556,7 +557,7 @@ object StreetLamps {
      * Whether [director] still has [run] of [town] (not handed back for going quiet, nor a new stretch of the day begun,
      * nor the capital let go of with no player near).
      */
-    fun holds(town: LampTown, run: LampTown.Run, director: Director): Boolean = run.held === director && towns[town.capital.center] === town
+    fun holds(town: LampTown, run: LampTown.Run, director: Director): Boolean = run.held === director && towns[town.key] === town
 
     /** The stretch of the day it is for [town]'s lamps just now. */
     fun stretchNow(level: ServerLevel, town: LampTown): Stretch = setUp(level, town, level.overworldClockTime, level.isRaining)

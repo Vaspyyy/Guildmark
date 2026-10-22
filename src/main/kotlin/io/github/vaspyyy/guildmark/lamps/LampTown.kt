@@ -3,21 +3,28 @@ package io.github.vaspyyy.guildmark.lamps
 import io.github.vaspyyy.guildmark.city.CapitalPiece
 import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
 import io.github.vaspyyy.guildmark.townsfolk.Director
+import io.github.vaspyyy.guildmark.townsfolk.TownPlaces
 import net.minecraft.core.BlockPos
 
 /**
- * One capital's street lamps as [StreetLamps] keeps them while players are about it: where each lamp is in the world,
+ * One town's street lamps as [StreetLamps] keeps them while players are about it: where each lamp is in the world,
  * what it was last set to, and its [Run]s (the rounds the lamps are lit and put out in) with how far each has got this
- * evening or this morning. Made from the capital's [LampPlan] once that is worked out.
+ * evening or this morning. A capital's ([capital]) is made from its [LampPlan] once that is worked out, a village's
+ * ([village]) from the posts its census found ([VillageLampPlan]). The town goes by its [key]: a capital's centre, a village's
+ * bell. The [plan] numbers its lamps in its own frame, and [world] says where a point of it is in the world (a capital's frame is
+ * the city's own, a village's the world's).
  */
-class LampTown(val capital: CapitalPiece, val places: CityPlaces, val plan: LampPlan) {
+class LampTown(val key: BlockPos, val places: TownPlaces, val plan: LampSet, world: (Int, Int, Int) -> BlockPos, val capital: CapitalPiece? = null) {
+    /** Whether this is a village's. */
+    val isVillage: Boolean get() = capital == null
+
     /** Each lamp's lantern in the world. */
-    val pos: Array<BlockPos> = Array(plan.lamps.size) { i -> plan.lamps[i].at.let { capital.world(it.x, it.y, it.z) } }
+    val pos: Array<BlockPos> = Array(plan.lamps.size) { i -> plan.lamps[i].at.let { world(it.x, it.y, it.z) } }
 
     /** Where a lamplighter may stand to each lamp, a block from its post facing it, best first (see [LampPlan.Lamp.stands]). */
     val stands: Array<List<BlockPos>> = Array(plan.lamps.size) { i ->
         val l = plan.lamps[i]
-        l.stands.map { d -> capital.world(l.at.x + d.dx, l.at.y - 3, l.at.z + d.dz) }
+        l.stands.map { d -> world(l.at.x + d.dx, l.at.y - 3, l.at.z + d.dz) }
     }
 
     /** What each lamp was last set to by the keeper or a lamplighter ([UNKNOWN] until it's been looked at). */
@@ -131,6 +138,10 @@ class LampTown(val capital: CapitalPiece, val places: CityPlaces, val plan: Lamp
     }
 
     companion object {
+        /** A capital's lamps: the city's frame is [capital]'s, its key the capital's centre. */
+        fun capital(capital: CapitalPiece, places: CityPlaces, plan: LampPlan): LampTown =
+            LampTown(capital.center, places, plan, { x, y, z -> capital.world(x, y, z) }, capital)
+
         const val UNKNOWN: Byte = 0
         const val LIT: Byte = 1
         const val OUT: Byte = 2

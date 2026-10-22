@@ -69,11 +69,23 @@ object LampCommand {
 
     private fun status(context: CommandContext<CommandSourceStack>): Int {
         val town = town(context) ?: return 0
-        val source = context.source
+        val capital = town.capital ?: return 0
+        val anchor = (town.plan as? LampPlan)?.let { capital.boardAnchor(it.plan) } ?: capital.center
+        val off = if (StreetLamps.enabled()) null else "The street lamps are switched off (setting: Street Lamps): they burn day and night, and older lanterns aren't swapped."
+        return report(context.source, town, "The street lamps of ${VillageNames.of(anchor)}", Where("the capital", "/guildmark capital lamps"), off)
+    }
+
+    /**
+     * What a lamp command says about [town], the capital's or a village's: [title], and [off] if the lamps are switched off, how
+     * the clock has the day and how the lamps stand, the round nearest the player and who keeps it. [where] is what the town is
+     * called in the buttons, and the command they run.
+     */
+    class Where(val town: String, val command: String)
+
+    internal fun report(source: CommandSourceStack, town: LampTown, title: String, where: Where, off: String?): Int {
         val level = source.level
-        val capital = town.capital
-        say(source, header("The street lamps of ${VillageNames.of(capital.boardAnchor(town.plan.plan))}"))
-        if (!StreetLamps.enabled()) say(source, grey("The street lamps are switched off (setting: Street Lamps): they burn day and night, and older lanterns aren't swapped."))
+        say(source, header(title))
+        if (off != null) say(source, grey(off))
         val clock = level.overworldClockTime
         val time = StreetLamps.since(clock)
         val stretch = StreetLamps.stretchNow(level, town)
@@ -87,7 +99,7 @@ object LampCommand {
             source, line().append(label("It's ${StreetLamps.hour(time)}, ")).append(plain(words(stretch)))
                 .append(grey(" Lit by ${StreetLamps.hour(litBy)}, put out from ${StreetLamps.hour(StreetLamps.dawnOf(town))} and all out by ${StreetLamps.hour(StreetLamps.outBy(town))}.$weather")),
         )
-        // How the capital's lamps stand
+        // How the lamps stand
         var loaded = 0
         var burning = 0
         var old = 0
@@ -133,11 +145,11 @@ object LampCommand {
         say(source, line().append(label("  Now: ")).append(doing))
         say(
             source, line()
-                .append(button("[Light them all]", "/guildmark capital lamps light", "Light every lamp of the capital now"))
+                .append(button("[Light them all]", "${where.command} light", "Light every lamp of ${where.town} now"))
                 .append(plain(" "))
-                .append(button("[Put them all out]", "/guildmark capital lamps out", "Put out every lamp of the capital now"))
+                .append(button("[Put them all out]", "${where.command} out", "Put out every lamp of ${where.town} now"))
                 .append(plain(" "))
-                .append(button("[Start this round]", "/guildmark capital lamps round", "Set the round nearest you going now")),
+                .append(button("[Start this round]", "${where.command} round", "Set the round nearest you going now")),
         )
         return 1
     }
@@ -179,7 +191,10 @@ object LampCommand {
 
     private fun all(context: CommandContext<CommandSourceStack>, lit: Boolean): Int {
         val town = town(context) ?: return 0
-        val source = context.source
+        return all(context.source, town, lit)
+    }
+
+    internal fun all(source: CommandSourceStack, town: LampTown, lit: Boolean): Int {
         val n = StreetLamps.setAll(source.level, town, lit)
         return say(
             source, line().append(plain(if (lit) "Lit $n lamps." else "Put out $n lamps."))
@@ -189,9 +204,13 @@ object LampCommand {
 
     private fun round(context: CommandContext<CommandSourceStack>): Int {
         val town = town(context) ?: return 0
-        val source = context.source
+        if (!StreetLamps.enabled()) return fail(context.source, "The street lamps are switched off (setting: Street Lamps): switch them on first.")
+        return round(context.source, town)
+    }
+
+    /** The round of [town] nearest the player set going now. */
+    internal fun round(source: CommandSourceStack, town: LampTown): Int {
         val level = source.level
-        if (!StreetLamps.enabled()) return fail(source, "The street lamps are switched off (setting: Street Lamps): switch them on first.")
         val near = town.nearest(source.playerOrException.blockPosition()) ?: return fail(source, "It has no lamps.")
         val run = town.runs[town.runOf[near]]
         val lighting = StreetLamps.startNow(level, town, run)
@@ -208,7 +227,7 @@ object LampCommand {
     }
 
     /** A position to click to go to. */
-    private fun at(pos: BlockPos): MutableComponent = Component.literal("[${pos.x} ${pos.y} ${pos.z}]").withStyle {
+    internal fun at(pos: BlockPos): MutableComponent = Component.literal("[${pos.x} ${pos.y} ${pos.z}]").withStyle {
         it.withColor(ChatFormatting.AQUA)
             .withClickEvent(ClickEvent.RunCommand("/tp @s ${pos.x} ${pos.y + 1} ${pos.z}"))
             .withHoverEvent(HoverEvent.ShowText(Component.literal("Click to go there")))
@@ -220,18 +239,18 @@ object LampCommand {
             .withHoverEvent(HoverEvent.ShowText(Component.literal(hover)))
     }
 
-    private fun line(): MutableComponent = Component.empty()
-    private fun plain(s: String): MutableComponent = Component.literal(s).withStyle(ChatFormatting.WHITE)
-    private fun grey(s: String): MutableComponent = Component.literal(s).withStyle(ChatFormatting.GRAY)
-    private fun label(s: String): MutableComponent = Component.literal(s).withStyle(ChatFormatting.YELLOW)
-    private fun header(s: String): MutableComponent = Component.literal("== $s ==").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)
+    internal fun line(): MutableComponent = Component.empty()
+    internal fun plain(s: String): MutableComponent = Component.literal(s).withStyle(ChatFormatting.WHITE)
+    internal fun grey(s: String): MutableComponent = Component.literal(s).withStyle(ChatFormatting.GRAY)
+    internal fun label(s: String): MutableComponent = Component.literal(s).withStyle(ChatFormatting.YELLOW)
+    internal fun header(s: String): MutableComponent = Component.literal("== $s ==").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)
 
-    private fun say(source: CommandSourceStack, c: Component): Int {
+    internal fun say(source: CommandSourceStack, c: Component): Int {
         source.sendSuccess({ c }, false)
         return 1
     }
 
-    private fun fail(source: CommandSourceStack, message: String): Int {
+    internal fun fail(source: CommandSourceStack, message: String): Int {
         source.sendFailure(Component.literal(message))
         return 0
     }

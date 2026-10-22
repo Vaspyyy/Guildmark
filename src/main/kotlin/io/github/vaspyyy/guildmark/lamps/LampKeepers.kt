@@ -57,7 +57,7 @@ class LampKeepers(private val towns: MutableMap<BlockPos, IntArray> = HashMap())
          */
         fun assign(level: ServerLevel, town: LampTown) {
             val residents = Residents.get(level)
-            val center = town.capital.center
+            val center = town.key
             val data = get(level)
             val rounds = town.plan.rounds.size
             val kept = data[center]?.takeIf { it.size == rounds }?.copyOf() ?: IntArray(rounds) { -1 }
