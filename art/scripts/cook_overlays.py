@@ -180,8 +180,9 @@ def sweep(img, lo=0.0, hi=34.0, frames=9, width=2.2, star=None):
     """[frames] frames of [img] with a bright band crossing its opaque pixels from the lower left to the upper right, and (if [star] is a
     point) a four-point sparkle growing and fading there in the middle frames. The first frame is the plain image."""
     base = np.array(img).astype(float)
-    xs, ys = grid(N)
-    pos = ((xs - 3.0) - (ys - 29.0)) * math.sqrt(0.5)
+    n = img.width
+    xs, ys = grid(n)
+    pos = ((xs - 3.0 * n / N) - (ys - 29.0 * n / N)) * math.sqrt(0.5)       # the band's zero runs through the lower left, scaled to the sprite
     solid = base[..., 3] > 0
     out = [img]
     for i in range(1, frames):
@@ -199,7 +200,7 @@ def sweep(img, lo=0.0, hi=34.0, frames=9, width=2.2, star=None):
                 for r in range(0, size + 1):
                     for (ddx, ddy) in ((r, 0), (-r, 0), (0, r), (0, -r)):
                         x, y = sx + ddx, sy + ddy
-                        if 0 <= x < N and 0 <= y < N:
+                        if 0 <= x < n and 0 <= y < n:
                             fa = 1.0 - 0.28 * r
                             if fr[y, x, 3] == 0:
                                 fr[y, x, :3] = (255, 250, 232)

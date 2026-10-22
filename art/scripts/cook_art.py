@@ -88,6 +88,10 @@ import cook_helpers
 import cook_herb
 import cook_tools
 import cook_itemdefs
+import cook_fx
+import cook_gui
+import cook_part
+import cook_render
 
 ROOT = os.path.normpath(os.path.join(HERE, '..', '..'))
 ASSETS = os.path.join(ROOT, 'src/main/resources/assets/guildmark')
@@ -240,6 +244,10 @@ def main(argv):
     write_models(assets, block_models())
     write_states_and_items(assets)
     cook_itemdefs.write_items(assets)
+    cook_fx.write(assets)
+    cook_gui.write(assets)
+    cook_part.write(assets)
+    cook_render.write(assets)
 
 
 if __name__ == '__main__':
