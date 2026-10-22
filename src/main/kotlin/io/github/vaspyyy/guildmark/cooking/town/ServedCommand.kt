@@ -84,6 +84,7 @@ object ServedCommand {
         Cooking.onForget {
             tests.clear()
             sent = 0
+            versions = 0
         }
     }
 
