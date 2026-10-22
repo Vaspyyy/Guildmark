@@ -67,19 +67,19 @@ LONGEST_WORDS = 12
 # them. The timbre sets are "MWO" (man, woman and old) and "CHILD", as make_talk_voices.py names them.
 TABLE = [
     ("The kitchen: at the pot, the oven and the spit", "MWO", 1, [
-        # the innkeeper tastes her pot and it wants salt (one scene time in two, at the taste)
-        ("kitchen.scene.salt", "the innkeeper, tasting her pot, when it wants salt", [
+        # the innkeeper tastes their pot and it wants salt (one scene time in two, at the taste)
+        ("kitchen.scene.salt", "the innkeeper, tasting their pot, when it wants salt", [
             "Needs a pinch of salt.",
             "A touch more salt, I think.",
         ]),
         # ... and it is right
-        ("kitchen.scene.right", "the innkeeper, tasting her pot, when it is right", [
+        ("kitchen.scene.right", "the innkeeper, tasting their pot, when it is right", [
             "Just as it should be.",
             "Mm. That's the way.",
             "There. Perfect.",
         ]),
-        # she ladles the first bowls (the house pot is a pot dish: pottage, stew, broth or chowder)
-        ("kitchen.scene.hot", "the innkeeper, back at her bar after ladling the first bowls", [
+        # the innkeeper ladles the first bowls (the house pot is a pot dish: pottage, stew, broth or chowder)
+        ("kitchen.scene.hot", "the innkeeper, back at their bar after ladling the first bowls", [
             "Hot soup!",
             "Soup's up!",
             "Mind your fingers, it's hot!",
@@ -220,7 +220,7 @@ TABLE = [
             "I've a request on the slate, if you're a cook.",
             "Someone wants several portions of one dish. See the slate.",
         ]),
-        # no request is open to this player: it is filled, or the player is not yet one the innkeeper gives her special orders to
+        # no request is open to this player: it is filled, or the player is not yet one the innkeeper gives special orders to
         # ("Nothing special today." is not true of the second, for the slate shows the order to everyone)
         ("kitchen.none", "the innkeeper, when there is no request for this player to fill", [
             "Nothing special for you today.",
