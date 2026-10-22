@@ -7572,5 +7572,6 @@
   "subtitles.guildmark.trade.beads": "Counting beads slide",
   "subtitles.guildmark.trade.house_bell": "Bell rings over the door",
   "subtitles.guildmark.trade.carter_hail": "Carter calls out",
-  "subtitles.guildmark.trade.cheer": "Townsfolk cheer"
+  "subtitles.guildmark.trade.cheer": "Townsfolk cheer",
+  "say.guildmark.talk.detail.tale.pass": "%s"
 }
