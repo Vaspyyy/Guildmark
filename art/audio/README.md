@@ -472,6 +472,76 @@ python3 -B art/audio/make_order_voices.py process --raw <raw-dir> --assets src/m
 python3 -B art/audio/make_order_voices.py sounds
 ```
 
+### Trade voices
+
+`make_trade_voices.py` voices the trader's life (living-world/trader/design.md section 10): 94 lines in 205 takes, and
+the trade's ten talk families in 86 more. The hall's merchant (`trade_board` to `trade_warrant`: the board's calls, the
+Tally, a report, a booking, and the harness, donkey, cart, wagon and Warrant he sells), the Store's clerk, the Counting
+House's scribe and carters and the gate guards (`trade_clerk_*`, `trade_scribe_*`, `trade_carter_*`,
+`trade_gate_house`), a Hunt's outlaws and a hired guard are in the man's and the woman's timbres; the keeper at the
+counter (`trade_delivered`, `_relief`, `_part`, `_street`, `_firstcall`) and the street's passers-by and cheer are in the
+old man's too. The crier's 12 (`crier_hauls_*`, `crier_house`) are the man's and the woman's, join `CRIER` for the run
+and are cried through `process_crier`, at -19 LUFS, none over 4.5 s, heard 48 blocks off. None of the lines says a name,
+a number, a good or a place. The outlaws' "Lost them!" and "Gone to ground. Back to the camp." do not take the player
+for a man.
+
+`DELIVERY` sets a family's speed, pitch and level (dB over the speech level) and how much of the street's reverb it
+has. What is called across a hall, a square or a yard (the board's calls, the street's, the scribe's and the carters',
+the gate's) is a little louder and has a little more of it; the cheer is 60 cents up and 3 dB over. The outlaws are
+rough: mostly 40 to 80 cents lower (the rout 20 higher), with grit and half the reverb, as on the open road; their calls
+and blows are 2.5 to 3 dB over, "Wise. We'll take our due." said low. A hired guard's greeting is steady and their warning
+shouted; a carter robbed is slow, low and 1 dB under. Three families of outlaw lines are shouted across a distance, so
+their `sounds.json` entries carry them further than the default sixteen blocks (at which a call "at twelve blocks"
+would reach the player at a quarter of its volume): the leader's `trade_hold_*` and the curse after a player who got
+away, `trade_lost_*`, 32 blocks; the rout, `trade_flee_*`, 24 (`REACH`).
+
+Every line is read from espeak's British phonemes with the r's of its American reading sounded (as the talk is), then
+`PHONEMES` and the line's own `PHONEMES_FOR` put right what Whisper heard wrong, each with a comment saying what it
+heard: a hard or stressed vowel or consonant ("Fit" heard "With", "Let" "lit", "has" "is", "Some" "So"), a letter
+the voice swallowed ("Fresher" heard "Fresh", "Booked" "Book to", "Counted" "Count it", the scribe's "A wagon" "wagging"),
+a pause the comma didn't give ("Bless the road, that brought it", "Off, off!" read with the long vowel), and
+"short of" heard "sure to" in the man's `trade_scribe_float_0` until a breath after "of" parted it from "float". The
+man's "Hurrah" is read "hurray" in full phonemes (`FULL`) and set 2.2 dB louder than its family (`LEVEL_FOR`), where it
+measured 2.2 LU under. `SPEED_FOR` slows two of the man's outlaw lines ("Wise" ran into "we'll", "stand" into
+"still").
+
+The talk families are `trade_talk.py`, a module of its own that one block in `make_talk_voices.py` (after `PHONEMES`)
+enters into `GROUPS`, `DELIVERY`, `SPEED_FOR`, `SAY_AS` and `PHONEMES`; they are recorded and processed by
+`make_talk_voices.py` (`tts` and `process` with `--keys '^talk\.trade\.'`) and `table` writes their entries and
+`TalkLines.kt`. The man, the woman and the old man say the 28 wordings of nine families (what is heard of a town's
+shortage, glut and big delivery; a guard's word of the roads and a merchant's of the board; the town's thanks, a trader
+of repute, a player robbed and a trader robbed), the child the two of hers. Four wordings differ from the design's: "Heard that a
+carrier saved a town's shelves, not long ago." and "That was good carrying. We noticed." (the design says "last
+week", which a delivery of yesterday's would make untrue), "The cart came!" (the design's "The cart man" takes the
+trader for a man) and "Oh, the carrier!" (Kokoro's "Ah" before "the" was heard "All", "Are" and "or", cut off on its
+own too, and "Oh" is heard right in all three voices). The old man's `trade.board_1` ran 4.54 s at his pace, over the
+4.0 s limit, and is read at 1.24 times it.
+
+Checked with Whisper base.en on the encoded files (`check`): of the 291 takes 263 come back word for word and 28 right
+but for a homophone, a spelling or a contraction, none wrong (98.4% of the words of the 205, 99.4% of the 86). The 28
+are "Hall Board" heard "Haul Board" (the crier's six), "hall's" "halls" (`trade_warrant_0`, two), "Honour" "Honor" (two),
+"Hurrah" "hooray" (the three `trade_cheer_0`), "Mind" "mined" (`trade_sell_cart_0`, two), "chalked" "chocked" (three; to
+the American voices they are one sound), "Wagon's" "Waggons", "strongbox" "strong box" (three), "we're" "were" (two),
+"they're" "they are", "trader" "traitor" (three; both are flapped) and a "(buzzing)" Whisper adds after the woman's
+`trade_scribe_float_0` as its room tail dies away. They are listed in `HOMOPHONES` and `loosely`. The recogniser's venv
+(onnxruntime 1.29) and the recording venv (1.31) read the same phonemes a little differently, so a fix tried in one is
+only known good once the take is recorded again and checked: do that with `tts --force --keys`. `loudness` reads each
+group against the everyday lines' -20.9 LUFS and its own level: the hall's -20.7, the keeper's -20.6, the street's -19.6
+with the cheer, the outlaws' -18.8, the guard's -20.4, the Store's -20.8, the crier's -19.1 and the talk's -20.9 on
+average (the worst take 1.0 LU off its family's level), and no true peak is over -1.0 dBTP. The longest non-talk take is
+3.7 s and the longest talk take 3.93 s. `listen` writes every take in turn, each line in each of its voices, as one MP3
+and a text file of what is said when.
+
+```
+<venv>/bin/python -I -B art/audio/make_trade_voices.py tts --model <dl>/kokoro-v1.0.onnx --voices <dl>/voices-v1.0.bin --out <raw-dir> [--timbres man] [--keys '^trade_board'] [--force] [--espeak-data <dir>]
+python3 -B art/audio/make_trade_voices.py process --raw <raw-dir> --assets src/main/resources/assets/guildmark [--timbres ...] [--keys ...] [--wav <dir>]
+<venv>/bin/python -I -B art/audio/make_trade_voices.py phonemes --model ... --voices ... [--timbres ...] [--keys ...]
+<venv with sherpa_onnx>/bin/python -I -B art/audio/make_trade_voices.py check --asr <sherpa-onnx-whisper-base.en dir> --assets src/main/resources/assets/guildmark [--timbres ...] [--keys ...] [--json <file>]
+python3 -B art/audio/make_trade_voices.py loudness --assets src/main/resources/assets/guildmark [--keys ...]
+python3 -B art/audio/make_trade_voices.py listen --assets src/main/resources/assets/guildmark --out <dir> [--timbres ...] [--keys ...]
+python3 -B art/audio/make_trade_voices.py fragments   # trade_voices_sounds.json and trade_voices_lang.json, then art/lang/merge_lang.py
+```
+
 ### Talk voices
 
 `make_talk_voices.py` voices the townsfolk's talk (living-world/design-voices.md section 5, `townsfolk/talk`): what the

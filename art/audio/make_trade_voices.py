@@ -210,7 +210,7 @@ TABLE = [
             "Stay behind me!",
             "Get back, I'll deal with them!",
         ]),
-        ("trade_guard_end", "his days end", MW, [
+        ("trade_guard_end", "the hired days end", MW, [
             "My days are up. Good road to you.",
             "That's my time served. Hire me again if you like.",
         ]),
