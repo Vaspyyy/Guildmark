@@ -261,6 +261,24 @@ python3 -B art/scripts/townsfolk_anims.py src/main/resources/assets/guildmark <p
   `client/festival/FestivalOrnamentRenderer.kt` ties the Ribbonwake's ribbons to (`RIBBON_HANDS`), and where the
   released lantern is (`FestivalSite.LET_GO_*`), so paste those in when a step changes:
   `python3 -B art/scripts/festival_anims.py src/main/resources/assets/guildmark <preview-dir> [clip ...]`.
+- `scripts/cook_anims.py` is the cook's own clips for Hearthcraft's stations, made in the manner of `ship_anims.py`: the
+  player's seventeen third-person clips (`cook_add`, `cook_feed`, `cook_stir`, `cook_taste`, `cook_ease`, `cook_skim`,
+  `cook_serve`, `cook_serve_peel`, `cook_chop`, `cook_flip`, `cook_turn`, `cook_carve`, `cook_slice`, the `cook_shiver` loop,
+  and `eat_spoon`, `drink_bowl` and `eat_bite`), baked to `assets/guildmark/animations/player/`, and the ten that move the held
+  item in first person, baked to `animations/first_person/`, with the generated `client/cooking/CookGrips.kt` those ten turn
+  the item about. Each third-person clip is a body style (lean, twist, crouch, feet, head) and the reaches of the two arms at
+  a stand-in station drawn from the cook blocks' own boxes, fitted by a least-squares solve and read back with the game's own
+  chain; the script prints what it checked (nothing of her or her tool through the station, the working end on its mark, her
+  arms clear of her body, the loop's join, the first-person item in view all through) and exits 1 if a line is off. Its
+  header, which it prints when run with no arguments, holds the clip table and the ticks things happen at (the JSON carries
+  no marks). With a preview dir it also draws five GIFs of all 27 clips (`player_*.gif`; a clean run is about three minutes
+  without them, seven with them on a busy machine):
+  `python3 -B art/scripts/cook_anims.py src/main/resources/assets/guildmark [preview-dir [steve.png]]`.
+- `scripts/cook_clips.py` is the cook's seven townsfolk clips (`stir`, `taste`, `flip`, `turn_spit`, `slice`, `carve`, `peel`)
+  with their props' tracks and moments, built on `living_anims.py`'s kit and imported at the end of it like the works' and the
+  streets' clip scripts, so running `living_anims.py` writes them to `assets/guildmark/animations/townsfolk/` and into
+  `client/townsfolk/LivingSchedule.kt` with the rest. The `turner` and the cook's knife (`cooks_knife`) they hold are built in
+  `living_props.py` and packed into the model by `townsfolk.py` (which rewrites `TownsfolkMesh.kt`), after every older cube.
 
 ## Screens
 
