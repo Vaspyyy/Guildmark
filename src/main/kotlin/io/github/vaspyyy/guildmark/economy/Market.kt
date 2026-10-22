@@ -2,6 +2,9 @@ package io.github.vaspyyy.guildmark.economy
 
 import com.mojang.serialization.Codec
 import com.mojang.serialization.codecs.RecordCodecBuilder
+import io.github.vaspyyy.guildmark.GuildmarkConfig
+import kotlin.math.abs
+import kotlin.math.pow
 import kotlin.math.sqrt
 
 /** What a day's tallies count, for each good. */
@@ -180,9 +183,17 @@ class Market(val capital: Long) {
 
     /**
      * What bringing each good in costs here, of its base, for all of it brought: by the road from the nearest capital
-     * with it to spare, or from afar (see [Carriage], which works it out; not kept).
+     * with it to spare, or from afar. [Carriage] works out where it should stand ([carryGoal]) and it eases there
+     * through the days ([settle]), so a price doesn't leap when a neighbour's market opens. Kept with the world while
+     * the ease is on (see [carryKnown]).
      */
     val carry = DoubleArray(Good.entries.size) { Economy.FREIGHT }
+
+    /** Where [carry] is heading: what [Carriage] last found bringing each good in costs here (not kept; it is found again as the markets load). */
+    val carryGoal = DoubleArray(Good.entries.size) { Economy.FREIGHT }
+
+    /** Whether [carry] has been set from a goal, or kept from a save: until it has, the first [Carriage.reckon] puts it at its goal at once. */
+    var carryKnown = false
 
     /** Each good's price at the close of each of the last [HISTORY] days, oldest first, as a share of its base. */
     val closes: Array<DoubleArray> = Array(Good.entries.size) { DoubleArray(0) }
@@ -293,11 +304,27 @@ class Market(val capital: Long) {
         return moved
     }
 
-    /** At the end of an hour: what the market holds now counts a little toward what it's held lately. */
+    /** At the end of an hour: what the market holds now counts a little toward what it's held lately, and what bringing goods in costs a little toward where it's heading. */
     fun settle() {
         for (g in Good.entries) {
             held[g.ordinal] += (stock(g) - held[g.ordinal]) * SETTLE
             mark[g.ordinal] = stock(g)
+        }
+        easeCarry(1)
+    }
+
+    /**
+     * [carry] eases toward [carryGoal] for [hours] hours: each day closes [carryEaseRate] of what is left of the gap (a
+     * share of 0.3 gets nine tenths of the way in a week), so what a good costs to bring in works its way to its new
+     * level instead of leaping, and the price with it. With the ease off, or at a rate of 1, it is at its goal at once.
+     * Each good ends exactly at its goal, however long it takes.
+     */
+    fun easeCarry(hours: Int) {
+        val open = (1.0 - carryEaseRate()).pow(hours / 24.0)
+        for (i in carry.indices) {
+            val gap = carryGoal[i] - carry[i]
+            if (gap == 0.0) continue
+            carry[i] = if (abs(gap) * open < CARRY_SNAP) carryGoal[i] else carryGoal[i] - gap * open
         }
     }
 
@@ -390,6 +417,20 @@ class Market(val capital: Long) {
         private const val SETTLE = 0.15
         private const val BROUGHT = 0.3
 
+        /** How much of what is left of the gap to its new value what bringing a good in costs closes in a day, and how near its goal counts as there. */
+        private const val CARRY_EASE = 0.3
+        private const val CARRY_SNAP = 0.001
+
+        /** The share of the gap to a good's new carry that closes in a day: the config marketCarryEaseRate, or 1 (the old jump) with marketCarryEase off. */
+        fun carryEaseRate(): Double = try {
+            if (GuildmarkConfig.MARKET_CARRY_EASE.get()) GuildmarkConfig.MARKET_CARRY_EASE_RATE.get() else 1.0
+        } catch (e: IllegalStateException) {
+            CARRY_EASE
+        }
+
+        /** Whether the carry eases to its goal over days rather than jumping there (marketCarryEase on, at a rate under 1). */
+        fun easing(): Boolean = carryEaseRate() < 1.0
+
         /** How far trouble or luck under way moves a price before the market feels it. */
         private const val LEAN_DEAR = 0.3
         private const val LEAN_CHEAP = 0.15
@@ -406,6 +447,9 @@ class Market(val capital: Long) {
         private fun fill(into: DoubleArray, from: Map<String, Double>) {
             for ((id, v) in from) Good.byId(id)?.let { into[it.ordinal] = v }
         }
+
+        /** The carry for the save: only while the ease is on and it has been set; off, nothing new is written and a load takes the goals at once, as it always has. */
+        private fun carried(m: Market): Map<String, Map<String, Double>> = if (m.carryKnown && easing()) mapOf("carry" to goods(m.carry)) else mapOf()
 
         private val GOODS = Codec.unboundedMap(Codec.STRING, Codec.DOUBLE)
         private val TABLE = Codec.unboundedMap(Codec.STRING, GOODS)
@@ -426,7 +470,7 @@ class Market(val capital: Long) {
                 Event.CODEC.listOf().optionalFieldOf("events", listOf()).forGetter { it.events },
                 News.CODEC.listOf().optionalFieldOf("news", listOf()).forGetter { it.news },
                 Codec.DOUBLE.listOf().optionalFieldOf("hungry", listOf()).forGetter { it.hungry.toList() },
-                TABLE.optionalFieldOf("held", mapOf()).forGetter { m -> mapOf("held" to goods(m.held), "mark" to goods(m.mark), "brought" to goods(m.brought)) },
+                TABLE.optionalFieldOf("held", mapOf()).forGetter { m -> mapOf("held" to goods(m.held), "mark" to goods(m.mark), "brought" to goods(m.brought)) + carried(m) },
             ).apply(i) { capital, hour, stores, today, yesterday, idle, closes, events, news, hungry, held ->
                 Market(capital).also { m ->
                     m.hour = hour
@@ -441,6 +485,12 @@ class Market(val capital: Long) {
                     held["held"]?.let { fill(m.held, it) }
                     held["mark"]?.let { fill(m.mark, it) }
                     held["brought"]?.let { fill(m.brought, it) }
+                    // A save before the ease, or made with it off, has no carry: its first reckon takes the goals at once
+                    held["carry"]?.let {
+                        fill(m.carry, it)
+                        fill(m.carryGoal, it)
+                        m.carryKnown = true
+                    }
                 }
             }
         }
