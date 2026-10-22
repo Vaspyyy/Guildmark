@@ -283,6 +283,201 @@ def store_previews(assets, out):
     return done
 
 
+# ================================================================== the Counting House's
+def hcat(images, pad=4):
+    """[images] side by side on the preview ground."""
+    h = max(i.height for i in images)
+    out = Image.new('RGB', (sum(i.width for i in images) + pad * (len(images) - 1), h), W.PREVIEW_BG)
+    x = 0
+    for im in images:
+        out.paste(im, (x, (h - im.height) // 2))
+        x += im.width + pad
+    return out
+
+
+def rot2(deg, x, y):
+    """A point turned [deg] about z in model space (positive takes +x toward +y)."""
+    a = math.radians(deg)
+    return x * math.cos(a) - y * math.sin(a), x * math.sin(a) + y * math.cos(a)
+
+
+# a made-up country for the map: towns (world x, world z, class), threads between them (a, b, in use), and the wagons on them
+DEMO_TOWNS = [(-100, 20, 3), (330, -250, 2), (-520, -200, 1), (-300, 300, 0), (560, 150, 1), (50, -300, 0), (-650, 80, 0), (200, 330, 2)]
+DEMO_POP = [0, 6, 11, 16, 21, 26, 31, 36]
+DEMO_EDGES = [(0, 1, True), (0, 2, False), (0, 3, False), (0, 5, False), (0, 7, False), (1, 5, False), (1, 4, False), (2, 6, False),
+              (2, 5, False), (3, 6, False), (3, 7, False), (7, 4, True)]
+# (edge, colour, speed px a tick, the tick it sets out, how far along it starts)
+DEMO_WAGONS = [(0, 0, 0.115, 70, 0.0), (11, 4, 0.14, 78, 1.5), (3, 1, 0.10, 84, 0.0), (7, 2, 0.12, 92, 4.0), (9, 3, 0.11, 98, 1.0),
+               (1, 5, 0.13, 106, 0.0), (5, 0, 0.12, 112, 2.0), (10, 2, 0.105, 120, 0.0)]
+
+
+def house_previews(assets, out):
+    import house_art as H
+    import store_art as S
+    ms = H.meshes()
+    work = tempfile.mkdtemp(prefix='trade_house_')
+    pa = scratch_assets(assets, work, H.block_textures(), ms)
+    mods = H.models()
+    map_m, boards_m, bell_m = ms
+    done = []
+
+    # ---- the map: where a town is, how a wagon sits on its thread, and what moves
+    xs_, zs_ = [t[0] for t in DEMO_TOWNS], [t[1] for t in DEMO_TOWNS]
+    cx, cz = (min(xs_) + max(xs_)) / 2.0, (min(zs_) + max(zs_)) / 2.0
+    k = H.map_scale(max(xs_) - min(xs_), max(zs_) - min(zs_))
+    pts = [(H.map_x(x, cx, k), H.map_y(z, cz, k)) for x, z, _ in DEMO_TOWNS]
+    Z = H.MAP_Z
+
+    def thread(sc, a, b, hot, grow):
+        (x0, y0), (x1, y1) = pts[a], pts[b]
+        dx, dy = x1 - x0, y1 - y0
+        L = math.hypot(dx, dy) * grow
+        ang = math.degrees(math.atan2(dy, dx))
+        draw(sc, map_m, 'thread_hot' if hot else 'thread', (x0, y0, Z), extra=mp(rz=ang) @ np.diag([max(L, 1e-4), 1.0, 1.0]))
+
+    def pin(sc, i, age, t):
+        cls = DEMO_TOWNS[i][2]
+        s = H.pin_pop(age)
+        if s <= 0.0:
+            return
+        x, y = pts[i]
+        draw(sc, map_m, f'pin_{cls}', (x, y, Z), scale=s)
+        g = H.glint_at(t, i)
+        if g > 0.02 and s >= 1.0:
+            draw(sc, map_m, 'glint', (x + H.PIN_D[cls] * 0.2, y + H.PIN_D[cls] * 0.2, Z), scale=g)
+
+    def wagon(sc, ci, x, y, dx, dy, dist, t, phase, run=1.0, scale=1.0):
+        """The renderer's order: translate, tilt about z, flip about up, draw the wagon and its pennant; the wheels turn about z too."""
+        name = H.NAMES[ci]
+        tilt = H.wagon_tilt(dx, dy) + H.wagon_rock(abs(dist), phase)
+        flip = H.wagon_flip(dx)
+        at = np.array([x, y + H.wagon_bob(abs(dist), phase) * scale, Z + H.WAGON_DZ * scale])
+        draw(sc, map_m, f'wagon_{name}', at, extra=mp(ry=flip, rz=tilt), scale=scale)
+        fx, fy = H.FLAG_AT
+        px_, py_ = rot2(tilt, fx * (-1 if flip else 1), fy)
+        yaw, roll = H.flag_yaw(t, phase, run), H.flag_roll(t, phase, run)
+        extra = W.Rz(tilt) @ W.Ry(-flip) @ W.Ry(-yaw) @ W.Rz(roll)
+        draw(sc, map_m, f'flag_{name}', (at[0] + px_ * scale, at[1] + py_ * scale, at[2]), extra=extra, scale=scale)
+        for wx, wy in H.WHEEL_AT:
+            px_, py_ = rot2(tilt, wx, wy)
+            draw(sc, map_m, 'wheel', (at[0] + px_ * scale, at[1] + py_ * scale, at[2] - H.WHEEL_Z * scale),
+                 extra=mp(rz=tilt + H.wheel_turn(dist)), scale=scale)
+
+    def wagon_state(j, t):
+        e, ci, speed, t0, off = DEMO_WAGONS[j]
+        a, b, _ = DEMO_EDGES[e]
+        (x0, y0), (x1, y1) = pts[a], pts[b]
+        L = math.hypot(x1 - x0, y1 - y0)
+        ux, uy = (x1 - x0) / L, (y1 - y0) / L
+        d = ((t - t0) * speed + off) % (2.0 * L)
+        out_ = d < L
+        path = d if out_ else 2.0 * L - d
+        dx, dy = (ux, uy) if out_ else (-ux, -uy)
+        return x0 + ux * path, y0 + uy * path, dx, dy, -ux * path          # the last: the way rolled toward the viewer's right (-x)
+
+    def map_scene(t):
+        sc = K.Scene(pa)
+        sc.model(mods['house_map'])
+        for a, b, hot in DEMO_EDGES:
+            grow = H.thread_grow(t - (max(DEMO_POP[a], DEMO_POP[b]) + 4.0))
+            if grow > 0.0:
+                thread(sc, a, b, hot, grow)
+        for i in range(len(DEMO_TOWNS)):
+            pin(sc, i, t - DEMO_POP[i], t)
+        for j, (e, ci, speed, t0, off) in enumerate(DEMO_WAGONS):
+            if t >= t0:
+                x, y, dx, dy, dist = wagon_state(j, t)
+                wagon(sc, ci, x, y, dx, dy, dist, t, 0.9 * j, scale=max(0.01, H.pin_pop(t - t0)))
+        return sc
+
+    def map_shot(t, scale=11.0, size=(560, 372), yaw=186.0, elev=5.0):
+        return shot(map_scene(t), yaw=yaw, elev=elev, scale=scale, size=size, center=(8, 16, 15))
+
+    frames = [map_shot(t) for t in np.arange(0.0, 230.0, 2.0)]
+    done.append(K.save_gif(frames, os.path.join(out, 'house_map.gif'), ms=60))
+
+    # ---- the map at the size a room shows it: 3, 5 and 9 screen px to a model px, straight on
+    imgs = [shot(map_scene(215.0), yaw=180.0, elev=0.0, scale=sc_, size=sz, center=(8, 16, 15))
+            for sc_, sz in ((3.0, (160, 108)), (5.0, (260, 176)), (9.0, (470, 312)))]
+    done.append(save_sheet([K.label(i, f'{s} px to a model px') for i, s in zip(imgs, (3, 5, 9))], os.path.join(out, 'house_map_sizes.png'), cols=3))
+
+    # ---- the four pins and the six wagons on the parchment, to tell them apart at a distance
+    def census(scale, size):
+        sc = K.Scene(pa)
+        sc.model(mods['house_map'])
+        for c in range(4):
+            draw(sc, map_m, f'pin_{c}', (22.0 - c * 5.0, 22.0, Z))
+        draw(sc, map_m, 'glint', (22.0 - 3 * 5.0 + 1.0, 23.0, Z))
+        for c in range(len(H.COLOURS)):
+            wagon(sc, c, 22.0 - c * 4.6, 14.0, -1.0, 0.0, 0.0, 12.0 * c, 0.9 * c, run=0.4)
+            wagon(sc, c, 22.0 - c * 4.6, 8.0, 1.0, 0.0, 0.0, 12.0 * c + 4, 0.9 * c + 1.0, run=0.4)
+        return shot(sc, yaw=180.0, elev=0.0, scale=scale, size=size, center=(8, 16, 15))
+    imgs = [census(sc_, sz) for sc_, sz in ((3.0, (160, 108)), (6.0, (310, 210)), (12.0, (600, 400)))]
+    done.append(save_sheet([K.label(i, f'{s} px to a model px') for i, s in zip(imgs, (3, 6, 12))],
+                           os.path.join(out, 'house_pins_and_wagons.png'), cols=1))
+
+    # ---- the bell: rung (the rope pulled down at tick 10), the swing building, the clapper striking, dying away; from the front and from the side
+    bx, by, bz = H.BELL_AXLE
+
+    def bell_scene(t, pull=10.0):
+        age = t - pull
+        th = H.bell_swing(age) + H.idle_swing(t) * (1.0 if age <= 0 or age >= H.RING_TICKS else 0.25)
+        sc = K.Scene(pa)
+        floor(sc, -8, -8, 24, 24)
+        sc.model(mods['house_bell'])
+        draw(sc, bell_m, 'bell', (bx, by, bz), extra=mp(rx=th))
+        draw(sc, bell_m, 'clapper', (bx, by, bz), extra=mp(rx=th + H.clapper_rel(age)))
+        dy, dz = H.rope_at(th)
+        pulled = 1.4 * S.smooth(age / 4.0) * (1.0 - S.smooth((age - 4.0) / 10.0)) if age > 0 else 0.0     # the rope is hauled down a little, and let go
+        draw(sc, bell_m, 'rope', (bx + H.WHEEL_X, by + dy - pulled, bz - H.WHEEL_RAD + dz), extra=mp(rx=H.rope_sway(age)))
+        return sc
+
+    def bell_frame(t):
+        a = shot(bell_scene(t), yaw=205.0, elev=10.0, scale=17.0, size=(300, 330), center=(8, 8.5, 6))
+        b = shot(bell_scene(t), yaw=270.0, elev=4.0, scale=17.0, size=(300, 330), center=(8, 8.5, 6))
+        return hcat([a, b])
+    frames = [bell_frame(t) for t in np.arange(0.0, 170.0, 1.0)]
+    done.append(K.save_gif(frames, os.path.join(out, 'house_bell.gif'), ms=50))
+
+    # ---- the six name boards on their brackets, each swinging in its own breeze, and from tick 100 in rain
+    def board_shot(c, t):
+        sc = K.Scene(pa)
+        floor(sc, -16, -16, 32, 32)
+        sc.model(mods['house_name_board'])
+        draw(sc, boards_m, f'board_{H.NAMES[c]}', S.BOARD_PIVOT, extra=mp(rx=H.board_swing(t, 0.9 * c + 0.3, t >= 100)))
+        return sc.render(yaw=186.0, elev=9.0, scale=9.0, size=(260, 170), center=(8, 10, 8), ss=2)
+
+    def boards_frame(t):
+        shots = [board_shot(c, t) for c in range(len(H.COLOURS))]
+        row = lambda ims: hcat(ims, pad=2)
+        out_ = Image.new('RGB', (3 * 260 + 4, 2 * 170 + 2), W.PREVIEW_BG)
+        out_.paste(row(shots[0:3]), (0, 0))
+        out_.paste(row(shots[3:6]), (0, 172))
+        return out_
+    frames = [boards_frame(t) for t in np.arange(0.0, 200.0, 2.0)]
+    done.append(K.save_gif(frames, os.path.join(out, 'house_name_boards.gif'), ms=80))
+
+    # ---- beside the works' own, at the size a room shows them: the map, the "To let" board, the bell, a name board
+    sc = K.Scene(pa)
+    floor(sc, -40, -16, 190, 40)
+    sc.model(mods['house_map'], at=(0, 0, 0))
+    sc.model(works_model(assets, 'to_let_board'), at=(60, 0, 0))
+    sc.model(mods['house_bell'], at=(84, 0, 0))
+    draw(sc, bell_m, 'bell', (84 + bx, by, bz))
+    draw(sc, bell_m, 'clapper', (84 + bx, by, bz))
+    draw(sc, bell_m, 'rope', (84 + bx + H.WHEEL_X, by, bz - H.WHEEL_RAD))
+    sc.model(mods['house_name_board'], at=(108, 0, 0))
+    draw(sc, boards_m, 'board_blue', (108 + S.BOARD_PIVOT[0], S.BOARD_PIVOT[1], S.BOARD_PIVOT[2]))
+    done.append(save_sheet([sc.render(yaw=184.0, elev=7.0, scale=5.4, size=(900, 330), center=(66, 14, 8), ss=2)],
+                           os.path.join(out, 'house_beside_works.png'), cols=1))
+
+    # ---- the pictures: every texture, large
+    items = [(n, im) for n, im in H.block_textures().items()] + [(m.texture, m.paint(), 800) for m in ms]
+    done.append(flow_sheet(items, os.path.join(out, 'house_pictures.png')))
+    shutil.rmtree(work, ignore_errors=True)
+    return done
+
+
 def save_sheet(images, path, cols=None, title=None):
     cols = cols or min(4, len(images))
     w = max(i.width for i in images)

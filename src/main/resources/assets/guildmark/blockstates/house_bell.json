@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "guildmark:block/house_bell"
+    },
+    "facing=east": {
+      "model": "guildmark:block/house_bell",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "guildmark:block/house_bell",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "guildmark:block/house_bell",
+      "y": 270
+    }
+  }
+}
