@@ -80,7 +80,7 @@ DELIVERY = {
     "tale.moot.call": dict(level=1.5),  # the chair, asking the room
 }
 SPEED_FOR = {
-    ("talk.tale.moot.ask_1", "man"): 0.95,  # "Say", not "See" (and with its phonemes, below)
+    ("talk.tale.moot.ask_1", "man"): 0.95,  # with its phonemes, below
     ("talk.tale.moot.for_0", "man"): 0.92,  # with its phonemes
     ("talk.tale.moot.good_0", "man"): 0.892,  # heard "The mood has hurt the town will give."
 }
@@ -88,7 +88,7 @@ SAY_AS = {}
 # Each fix says what Whisper heard without it. The man's "rung" is still heard as "wrong", by every reading tried.
 PHONEMES = {
     "talk.tale.moot.ask_0": "ðə tˈaʊn kˈant, ɐɡɹˈiː, and ɪt wɪl kˈɒst ˌʌs ˈɔːl.",  # "can't agree", not "can agree"
-    ("talk.tale.moot.ask_1", "man"): "ðə bˈɛl ɪz ɹˈʌŋ. sˈeɪ wɒt juː wˈɪl.",
+    ("talk.tale.moot.ask_1", "man"): "ðə bˈɛl ɪz ɹˈʌŋ. sˈA wɒt juː wˈɪl.",  # "Say", not "See": the one-token A of eɪ
     ("talk.tale.moot.ask_1", "woman"): "ðə bˈɛl ɪz ɹˈʌŋɡ. sˈeɪ wɒt juː wˈɪl.",  # "rung", not "wrong"
     ("talk.tale.moot.stand_0", "woman"): "ðə mˈuːt, mˈiːts sˈuːn. bˈiː ɹˈɛdi.",  # "meets", not "mates"
     ("talk.tale.moot.broke_0", "woman"): "ɪnˈʌf! ðə mˈuːt ˈɪz ˈɛndɪd, and bˈadli.",  # heard "Enough the mood has ended and badly."
