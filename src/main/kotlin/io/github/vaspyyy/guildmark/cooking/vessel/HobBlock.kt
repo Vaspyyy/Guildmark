@@ -27,6 +27,8 @@ class HobBlock(properties: Properties) : StationBlock(properties) {
 
     companion object {
         /** How the block is made (hardness, sound, light...): the owner's to tune, so the registry never needs to change. */
-        val PROPERTIES: UnaryOperator<BlockBehaviour.Properties> = UnaryOperator { it.mapColor(MapColor.COLOR_RED).strength(3.0f).sound(SoundType.STONE) }
+        val PROPERTIES: UnaryOperator<BlockBehaviour.Properties> = UnaryOperator {
+            it.mapColor(MapColor.COLOR_RED).strength(3.0f).sound(SoundType.STONE).lightLevel { state -> if (state.getValue(StationProps.LIT)) Fuel.LIGHT else 0 }
+        }
     }
 }

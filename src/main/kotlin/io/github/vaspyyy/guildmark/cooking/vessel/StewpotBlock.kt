@@ -41,6 +41,9 @@ class StewpotBlock(properties: Properties) : StationBlock(properties) {
         val BURNT: BooleanProperty = BooleanProperty.create("burnt")
 
         /** How the block is made (hardness, sound, light...): the owner's to tune, so the registry never needs to change. */
-        val PROPERTIES: UnaryOperator<BlockBehaviour.Properties> = UnaryOperator { it.mapColor(MapColor.METAL).strength(2.5f).sound(SoundType.METAL).noOcclusion() }
+        val PROPERTIES: UnaryOperator<BlockBehaviour.Properties> = UnaryOperator {
+            it.mapColor(MapColor.METAL).strength(2.5f).sound(SoundType.METAL).noOcclusion()
+                .lightLevel { state -> if (!state.getValue(StationProps.LIT)) 0 else if (state.getValue(STYLE) == StewpotStyle.HEARTH) Fuel.LIGHT_HEARTH else Fuel.LIGHT }
+        }
     }
 }

@@ -22,7 +22,8 @@ class PrepBoardBlock(properties: Properties) : StationBlock(properties) {
     override fun newBlockEntity(pos: BlockPos, state: BlockState): BlockEntity = PrepBoardBlockEntity(pos, state)
 
     companion object {
-        private val SHAPE: VoxelShape = Block.box(1.0, 0.0, 1.0, 15.0, 3.0, 15.0)
+        /** The counter: its slab overhangs the legs, 0.6 to 15.4 and 2 to 14 px, and the board on it reaches 10.2 px (art/scripts/cook_helpers.py). */
+        private val SHAPE: VoxelShape = Block.box(0.6, 0.0, 2.0, 15.4, 10.2, 14.0)
 
         /** How the block is made (hardness, sound, light...): the owner's to tune, so the registry never needs to change. */
         val PROPERTIES: UnaryOperator<BlockBehaviour.Properties> = UnaryOperator { it.mapColor(MapColor.WOOD).strength(1.5f).sound(SoundType.WOOD).noOcclusion() }

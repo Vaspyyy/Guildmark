@@ -14,6 +14,7 @@ import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.level.block.state.StateDefinition
 import net.minecraft.world.level.material.MapColor
 import net.minecraft.world.phys.shapes.CollisionContext
+import net.minecraft.world.phys.shapes.Shapes
 import net.minecraft.world.phys.shapes.VoxelShape
 import java.util.function.UnaryOperator
 
@@ -39,14 +40,21 @@ class SpitBlock(properties: Properties) : StationBlock(properties) {
     override fun mirror(state: BlockState, mirror: Mirror): BlockState =
         state.rotate(mirror.getRotation(state.getValue(StationProps.FACING)))
 
-    override fun getShape(state: BlockState, level: BlockGetter, pos: BlockPos, context: CollisionContext): VoxelShape = SHAPE
+    override fun getShape(state: BlockState, level: BlockGetter, pos: BlockPos, context: CollisionContext): VoxelShape =
+        SHAPES.getValue(state.getValue(StationProps.FACING))
 
     override fun newBlockEntity(pos: BlockPos, state: BlockState): BlockEntity = SpitBlockEntity(pos, state)
 
     companion object {
-        private val SHAPE: VoxelShape = Block.box(0.0, 0.0, 0.0, 16.0, 8.0, 16.0)
+        /**
+         * The outline: the stone base, the two uprights at their finials (13.9 px) and the rod and crank out to the east end, authored
+         * facing north as the model is (art/scripts/cook_spit.py) and turned for each facing.
+         */
+        private val SHAPES: Map<Direction, VoxelShape> = Shapes.rotateHorizontal(Block.box(0.4, 0.0, 3.2, 16.0, 14.0, 12.8))
 
         /** How the block is made (hardness, sound, light...): the owner's to tune, so the registry never needs to change. */
-        val PROPERTIES: UnaryOperator<BlockBehaviour.Properties> = UnaryOperator { it.mapColor(MapColor.METAL).strength(2.5f).sound(SoundType.METAL).noOcclusion() }
+        val PROPERTIES: UnaryOperator<BlockBehaviour.Properties> = UnaryOperator {
+            it.mapColor(MapColor.METAL).strength(2.5f).sound(SoundType.METAL).noOcclusion().lightLevel { state -> if (state.getValue(StationProps.LIT)) Fuel.LIGHT else 0 }
+        }
     }
 }

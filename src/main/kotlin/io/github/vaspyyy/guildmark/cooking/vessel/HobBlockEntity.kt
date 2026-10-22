@@ -5,5 +5,5 @@ import io.github.vaspyyy.guildmark.cooking.Station
 import net.minecraft.core.BlockPos
 import net.minecraft.world.level.block.state.BlockState
 
-/** The Hob's vessel (living-world/cook/design.md 1.6). Part B's; until it lands it is a cold, empty pan. */
-class HobBlockEntity(pos: BlockPos, state: BlockState) : StationBlockEntity(CookRegistry.HOB_ENTITY.get(), pos, state, Station.HOB)
+/** The Hob's vessel (living-world/cook/design.md 1.6): a pan that holds six items laid flat. */
+class HobBlockEntity(pos: BlockPos, state: BlockState) : VesselBlockEntity(CookRegistry.HOB_ENTITY.get(), pos, state, Station.HOB)
