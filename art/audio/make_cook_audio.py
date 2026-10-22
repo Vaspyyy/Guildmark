@@ -1224,12 +1224,152 @@ def ease(v, rng):
 # serving>>
 
 
+# <<mouth
+# =========================================================================== the table: mouths and spoons
+def gulp(rng, f0=480.0, size=1.0):
+    """a swallow: the throat's wet 'glunk' (a dull note that drops as the gullet closes over it, with the wet of it) and the small
+    thud of the muscles"""
+    gt = tvec(0.14)
+    fg = f0 * (0.42 + 0.58 * np.exp(-gt / 0.03)) * (1.0 + 0.06 * (smooth_random(0.14, rng, 60) - 0.5))
+    glunk = np.sin(phase_from_freq(fg, len(gt))) * np.exp(-gt / (0.028 * size))
+    wet = tvf(white(0.14, rng), "bp", fg * 1.1, 2.2) * np.exp(-gt / 0.026)
+    y = (0.6 * nrm(glunk) + nrm(wet)) * np.clip(gt / 0.002, 0, 1)
+    m = Mix(0.14)
+    m.add(nrm(y), 0.006, 0.9)
+    m.add(nrm(bp(white(0.006, rng), 900.0, 4500.0) * np.exp(-tvec(0.006) / 0.0012)), 0.0, 0.3)
+    m.add(nrm(thump(0.1, 165.0, 90.0, rng, decay=0.02, click=0.0, noise=0.3, nlp=500.0)), 0.004, 0.4)
+    return m.out()
+
+
+def slurp(dur, rng, f_start=1700.0, f_end=3000.0, strength=1.0):
+    """liquid drawn in through the lips: a thin turbulent rush of air through the narrow opening (a band that climbs as the lips
+    close on the rim), small wet bubbles in it, the mouth's vowel shifting and, at the end, the lips parting with a soft smack"""
+    t = tvec(dur)
+    u = t / dur
+    env = np.clip(t / 0.06, 0, 1) ** 1.2 * np.clip((dur - t) / 0.04, 0, 1) * (0.6 + 0.4 * smooth_random(dur, rng, 12))
+    air = tvf(colored(dur, rng, -1.0), "bp", f_start + (f_end - f_start) * u ** 1.3, 1.8) * env
+    bub = ship.bubbles(dur, rng, 260.0 * env + 10.0, 0.7, 2.2, beta=1.8, level=1.0, weight=0.5, rise=0.5)
+    low = lp(formants(colored(dur, rng, -2.0) * env, "u", "i", scale=1.1), 2500.0)
+    return strength * (nrm(air) + 0.6 * nrm(bub) + 0.4 * nrm(low))
+
+
+def chew(count, rng, rate=4.5, moist=1.0, size=1.0):
+    """chewing with the mouth shut: a soft wet squelch for each closing of the jaw (low, a little vowel moving in it) with small
+    wet pops in it and, now and then, a faint tick of teeth"""
+    per = 1.0 / rate
+    m = Mix(count * per + 0.12)
+    for k in range(count):
+        at = k * per * rng.uniform(0.92, 1.08)
+        d = 0.09 * size
+        sq = lp(formants(colored(d, rng, -1.5), "u", "o", scale=0.95 + 0.1 * rng.random()), 1800.0) * bell(d, 0.4, 1.2, 1.4)
+        m.add(nrm(sq), at, 0.8 * rng.uniform(0.7, 1.0))
+        m.add(ship.bubbles(d, rng, 260.0 * moist, 0.6, 2.0, beta=1.8, level=1.0, weight=0.4, rise=0.3), at, 0.3 * moist)
+        if rng.random() < 0.4:
+            m.add(nrm(ping(0.02, [2600.0], [0.004], [1.0], rng, ex_len=0.0003)), at + d * 0.8, 0.05)
+    return m.out()
+
+
+@effect("taste", 2, 0.9, "Someone tastes the pot", reach=8, loud=-27.0, fade_out=0.2,
+        when=("Sneak-click the pot with the ladle (moments 5 and 16). The innkeeper's taste scene plays it (7.3; the clip's "
+              "ticks 24 and 30 are asked for, which would overlap it: once is enough)."))
+def taste(v, rng):
+    """tasting the pot from a ladle: a blow across the hot stew (a soft, breathy 'fooo' with the surface rippling under it), then
+    the slurp of a sip (a thin rush of air and liquid over the lips with small bubbles in it) and the soft smack of the lips
+    after it"""
+    dur = 0.9
+    m = Bus(dur)
+    bd = [0.3, 0.26][v]
+    blow = formants(white(bd, rng), "u", "o", scale=1.25) * bell(bd, 0.4, 1.3, 1.5) * (0.7 + 0.3 * smooth_random(bd, rng, 18))
+    m.add(lp(blow, 5000.0), 0.0, 0.6)
+    m.add(ship.bubbles(bd, rng, 35.0 * bell(bd, 0.5, 1.2, 1.5), 1.5, 4.0, beta=1.8, level=1.0, weight=0.4, rise=0.4), 0.05, 0.12)
+    sa = [0.4, 0.34][v]
+    sd = [0.3, 0.28][v]
+    m.add(slurp(sd, rng, strength=1.0), sa, 1.0)
+    m.add(nrm(bp(white(0.03, rng), 200.0, 1200.0) * np.exp(-tvec(0.03) / 0.008)), sa + sd, 0.25)
+    m.add(nrm(bp(white(0.005, rng), 1000.0, 5000.0) * np.exp(-tvec(0.005) / 0.001)), sa + sd - 0.005, 0.15)
+    return kitchen(lp(fit(m.out(), ns(dur)), 8500.0), 0.06, 5391 + v)
+
+
+@effect("eat.spoon", 3, 1.6, "Someone eats", reach=8, loud=-28.0, fade_out=0.3, limit=3.0,
+        when=("Eating a pot dish from a bowl (3.3): three spoonfuls and a swallow. Also the tavern diners' spoon clinks "
+              "(7.4)."))
+def eat_spoon(v, rng):
+    """eating stew from a bowl with a spoon: three spoonfuls, each the spoon's clink on the glazed bowl and a scrape of its
+    bowl-end, a faint slurp as it is taken, and after the last a swallow. v2 slower, ending on a pleased breath out; v3 quicker"""
+    dur = 1.6
+    m = Bus(dur)
+    gap = [0.5, 0.52, 0.44][v]
+    first = [0.05, 0.08, 0.04][v]
+    at = first
+    for k in range(3):
+        at += 0.0 if k == 0 else gap * rng.uniform(0.9, 1.1)
+        f = [2450.0, 2300.0, 2600.0][v] * rng.uniform(0.96, 1.04)
+        m.add(nrm(ping(0.14, [f, f * 2.7, f * 4.9], [0.05, 0.03, 0.02], [1.0, 0.5, 0.25], rng)), at, 0.6)
+        m.add(tf.ring(0.2, 1100.0 * np.array([1.0, 2.2, 3.6]), [0.08, 0.05, 0.03], [1.0, 0.5, 0.25], rng, doublet=0.003), at, 0.25)
+        sc = bp(colored(0.07, rng, -1.0), 1500.0, 6000.0) * bell(0.07, 0.4, 1.2, 1.5) * (0.5 + 0.5 * smooth_random(0.07, rng, 80))
+        m.add(sc, at + 0.015, 0.18)
+        m.add(slurp(0.12, rng, 1800.0, 2800.0, strength=0.6), at + 0.2, 0.22)
+    sw = at + 0.3
+    m.add(gulp(rng, f0=[470.0, 440.0, 500.0][v]), sw, 0.9)
+    if v == 1:
+        ex = formants(white(0.28, rng), "uh", "a", scale=0.95) * bell(0.28, 0.35, 1.3, 1.6)
+        m.add(lp(ex, 3500.0), sw + 0.18, 0.2)
+    return kitchen(lp(fit(m.out(), ns(dur)), 8500.0), 0.06, 5393 + v)
+
+
+@effect("eat.bite", 3, 1.2, "Someone eats", reach=8, loud=-26.0, fade_out=0.25,
+        when=("Eating a solid dish (pie slice, tart, cakes, fish, roast, loaf, strips, roots; 3.3): a crunch and a chew."))
+def eat_bite(v, rng):
+    """biting into something and eating it: the teeth going through the crust with a crunch (a quick spray of little fractures
+    and a dull knock of the jaw), a few wet chews, a second, smaller bite, more chewing and a small swallow. v1 a crusty loaf, v2
+    a crisp pie crust, v3 something soft and moist, meat or fish"""
+    dur = 1.2
+    m = Bus(dur)
+    crisp = [1.0, 1.4, 0.35][v]
+    moist = [0.7, 0.6, 1.5][v]
+    for at, g in ((0.0, 1.0), (0.63, 0.7)):
+        cd = 0.11
+        ct = tvec(cd)
+        env = np.clip(ct / 0.005, 0, 1) * np.exp(-ct / 0.04)
+        m.add(crunch(cd, rng, 2200.0 * crisp * env + 20.0, lo=700.0 if v < 2 else 400.0, hi=[6000.0, 7500.0, 3500.0][v], decay=0.0007) * env,
+              at, 0.9 * g * min(1.0, 0.4 + crisp * 0.6))
+        m.add(nrm(lp(white(0.06, rng), 400.0, 2) * np.exp(-tvec(0.06) / 0.015)), at, 0.5 * g)
+        if v == 2:
+            m.add(ship.bubbles(0.1, rng, 500.0, 0.6, 2.0, beta=1.8, level=1.0, weight=0.4, rise=0.3), at, 0.3 * g)
+    m.add(chew(3, rng, rate=4.4, moist=moist), 0.15, 0.7)
+    m.add(chew(3, rng, rate=4.6, moist=moist), 0.78, 0.6)
+    m.add(gulp(rng, f0=420.0, size=0.8), 1.08, 0.35)
+    return kitchen(lp(fit(m.out(), ns(dur)), 8000.0), 0.06, 5396 + v)
+
+
+@effect("drink", 2, 1.4, "Someone drinks broth", reach=8, loud=-27.0, fade_out=0.25,
+        when=("Drinking broth (3.3): a long sip and a gulp."))
+def drink(v, rng):
+    """broth drunk from a bowl: one long sip (the rim at the lips, a slow slurp of liquid and air with small bubbles in it, rising
+    as the bowl tips), then the gulp that follows it and a soft breath out after. v2 two gulps"""
+    dur = 1.4
+    m = Bus(dur)
+    sd = [0.66, 0.56][v]
+    m.add(nrm(ping(0.08, [1700.0, 2800.0], [0.03, 0.02], [1.0, 0.5], rng)), 0.0, 0.18)
+    m.add(slurp(sd, rng, 1500.0, 3300.0, strength=1.0), 0.03, 1.0)
+    g1 = 0.03 + sd + 0.1
+    m.add(gulp(rng, f0=[470.0, 450.0][v]), g1, 0.9)
+    if v == 1:
+        m.add(gulp(rng, f0=420.0, size=0.9), g1 + 0.24, 0.7)
+    ex_at = g1 + (0.28 if v == 1 else 0.17) + 0.1
+    ex = formants(white(0.34, rng), "a", "uh", scale=0.95) * bell(0.34, 0.3, 1.3, 1.6)
+    m.add(lp(ex, 3500.0), ex_at, 0.22)
+    return kitchen(lp(fit(m.out(), ns(dur)), 8500.0), 0.06, 5399 + v)
+# mouth>>
+
+
 # =========================================================================== the order of the sounds
 # the order of CookSounds.NAMES (the design's Appendix C.5): the order of the fragments and of the listen-through
-ORDER = ["place", "pour", "plop.soft", "plop.meat", "plop.grain", "fuel", "ignite", "stir", "simmer", "call", "crackle",
-         "sizzle", "ease", "boil_over", "skim", "ready", "ripe", "serve", "tier.plain", "tier.sound", "tier.fine",
-         "tier.hallmark", "burnt", "buff", "oven_hum", "oven_open", "oven_shut", "spit_creak", "crank", "drip", "flare",
-         "flip", "chop", "slice", "carve", "loaf_down", "plate", "chalk", "larder", "chill"]
+ORDER = ["place", "pour", "plop.soft", "plop.meat", "plop.grain", "fuel", "ignite", "stir", "taste", "simmer", "call",
+         "crackle", "sizzle", "ease", "boil_over", "skim", "ready", "ripe", "serve", "tier.plain", "tier.sound", "tier.fine",
+         "tier.hallmark", "burnt", "eat.spoon", "eat.bite", "drink", "buff", "oven_hum", "oven_open", "oven_shut",
+         "spit_creak", "crank", "drip", "flare", "flip", "chop", "slice", "carve", "loaf_down", "plate", "chalk", "larder",
+         "chill"]
 
 assert sorted(ORDER) == sorted(EVENTS), "every sound is in ORDER, once: " + str(set(ORDER) ^ set(EVENTS))
 for _name in ORDER:
