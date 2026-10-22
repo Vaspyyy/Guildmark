@@ -412,11 +412,12 @@ object TownPlates {
     /** The chance a sitter or an eater is one of the diners for [portions] served (7.4): `min(0.8, 0.15 + 0.05 x portions)`. */
     private fun chance(portions: Int): Double = if (portions <= 0) 0.0 else min(0.8, 0.15 + 0.05 * portions)
 
-    /** What the dice for [p] and [meal] are thrown from: who they are, and which meal (a made-up meal each time it is told, so telling it again draws afresh). */
-    private fun who(p: Townsperson, meal: ServedState.Meal): Long {
-        val seed = if (meal.test) meal.serial.toLong() else meal.window.toLong()
-        return mix(p.uuid.mostSignificantBits xor mix(p.uuid.leastSignificantBits, 17L), seed)
-    }
+    /**
+     * What the dice for [p] and [meal] are thrown from: who they are, and which meal (its window, which for a made-up meal is its
+     * version), so every client draws the same diners for the same meal.
+     */
+    private fun who(p: Townsperson, meal: ServedState.Meal): Long =
+        mix(p.uuid.mostSignificantBits xor mix(p.uuid.leastSignificantBits, 17L), meal.window.toLong())
 
     private const val SALT_TAVERN = 1L
     private const val SALT_KIND = 2L

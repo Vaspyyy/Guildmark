@@ -22,8 +22,9 @@ import kotlin.math.min
  * still shown is worked out from the clock, with the server's own limit, not from when it happened to arrive here. Told again
  * of a meal already known, the client keeps it as it was (the same diners go on eating, none decided afresh).
  *
- * A made-up meal (`cook served`, [ServedCommand.TEST_WINDOW]) has no hour and is shown for [ServedCommand.TEST_TICKS] from
- * its arrival; one told with nothing in it takes a capital's meal away. A meal's tables are the kinds the inn sells and its
+ * A made-up meal (`cook served`, [ServedCommand.isTest]) has no hour and is shown for [ServedCommand.TEST_TICKS] from its
+ * arrival (its window is a version number, so every client draws the same diners from it); one told with nothing in it takes a
+ * capital's meal away. A meal's tables are the kinds the inn sells and its
  * benches the baked kinds (a cake, a pie or a tart is both, the payload counting them once), each weighted by its count.
  */
 internal object ServedState {
@@ -44,8 +45,8 @@ internal object ServedState {
         val window: Int = payload.window
         val inn: BoundingBox = payload.inn
 
-        /** Whether the meal is a made-up one (`cook served`), which has no hour. */
-        val test: Boolean = payload.window == ServedCommand.TEST_WINDOW
+        /** Whether the meal is a made-up one (`cook served`, [ServedCommand.isTest]), which has no hour. */
+        val test: Boolean = ServedCommand.isTest(payload.window)
 
         /** The market hour it was served at (meaningless for a made-up meal). */
         val hour: Long = 24L * Math.floorDiv(window, 3) + MEAL_HOURS[Math.floorMod(window, 3)]
