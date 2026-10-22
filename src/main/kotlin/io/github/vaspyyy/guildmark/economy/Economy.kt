@@ -180,8 +180,11 @@ object Economy {
      * bought this hour (see [OwnStalls]) once it's bought it, before the stores go off and the caravans come.
      * [carried]: this hour's caravan comes on a wagon along the road (see [Caravans]), which brings its goods when it
      * gets in, or doesn't; otherwise they come in at the hour as they always have.
+     * [afar]: whether the three caravans a day (which take away what the town has to spare and bring in what it lacks,
+     * from afar) run at all. A capital's do. A village's market trades by its own carts and wagons instead (the villages
+     * design, section 7.3), so its hours are worked out with this false.
      */
-    fun hour(m: Market, town: Town, c: Conditions, random: Random, stalls: ((Market, Town) -> Unit)? = null, carried: Boolean = false) {
+    fun hour(m: Market, town: Town, c: Conditions, random: Random, stalls: ((Market, Town) -> Unit)? = null, carried: Boolean = false, afar: Boolean = true) {
         m.hour = c.hour
         m.worked.fill(0.0)
         m.drawn.fill(0.0)
@@ -216,7 +219,7 @@ object Economy {
         if (tavern(h)) drink(m, town, c)
         stalls?.invoke(m, town)
         spoil(m)
-        if (caravan(h)) caravans(m, town, first = h == 9, carried = carried)
+        if (afar && caravan(h)) caravans(m, town, first = h == 9, carried = carried)
         m.settle()
     }
 

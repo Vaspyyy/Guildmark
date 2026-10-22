@@ -186,7 +186,7 @@ class Markets(private val entries: MutableMap<Long, Entry> = HashMap()) : SavedD
             val felt = conditions(level, hour, entry.capital).spending(Fortunes.spend(level, entry.market.capital))
             entry.felt = felt
             val carried = Caravans.hour(level, entry, hour)
-            Economy.hour(entry.market, entry.town, felt, random(entry.market, hour), OwnStalls.seller(level, entry), carried)
+            Economy.hour(entry.market, entry.town, felt, random(entry.market, hour), OwnStalls.seller(level, entry), carried, afar = true)
             // The town's works: at the close, what the day showed a need of; every hour, what they did and their freight
             if (felt.clock == Economy.NEW_DAY) Works.day(level, entry)
             Works.hour(level, entry, hour, carried)
