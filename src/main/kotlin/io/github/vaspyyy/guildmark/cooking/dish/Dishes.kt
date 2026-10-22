@@ -44,10 +44,14 @@ object Dishes {
         return Freshness.age(Cooking.today(level), data)
     }
 
-    /** Part D's registration: its readout for `cook perf`, the hand-over of the Cook's Book at the first use of a station, and the Larder's menu. */
+    /**
+     * Part D's registration: its readout for `cook perf`, the hand-over of the Cook's Book at the first use of a station, the
+     * Larder's menu, and the return of a dish to its plate when a meal at it is stopped.
+     */
     fun register() {
         CookStats.readout("dishes") { "${Freshness.looks} stack looks, ${Freshness.writes} stage writes" }
         Journal.register()
         LarderMenus.register()
+        PlateEating.register()
     }
 }

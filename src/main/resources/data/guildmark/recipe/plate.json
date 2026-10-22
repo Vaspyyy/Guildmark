@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "B": "minecraft:bowl",
+    "S": "#minecraft:wooden_slabs"
+  },
+  "pattern": [
+    "B",
+    "S"
+  ],
+  "result": {
+    "count": 1,
+    "id": "guildmark:plate"
+  }
+}

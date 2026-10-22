@@ -62,5 +62,9 @@
   "gui.guildmark.cook.larder.off": "Dishes are not going stale",
   "gui.guildmark.cook.larder.fresh": "%s fresh",
   "gui.guildmark.cook.larder.stale": "%s stale",
-  "gui.guildmark.cook.larder.gone": "%s gone off"
+  "gui.guildmark.cook.larder.gone": "%s gone off",
+  "message.guildmark.cook.plate_ruined": "That is not fit for a plate.",
+  "message.guildmark.cook.plate_show": "This plate is laid for show.",
+  "message.guildmark.cook.plate_occupied": "There is a dish on the plate already.",
+  "message.guildmark.cook.plate_sated": "You are too full to eat."
 }
