@@ -102,7 +102,9 @@ class PlateBlock(properties: Properties) : Block(properties), EntityBlock {
      * eating a dish (its food at how it has kept, the talents' extra on it, the bowl back, the effect of the meal, the
      * pose and the mouthful's sound) is exactly what eating it from the pack does. It is the game that says whether the
      * player may eat (a dish with a meal may be eaten with the food bar full, a sweet one waits for an appetite): if it
-     * will not have it, the dish goes back and they are told.
+     * will not have it, the dish goes back and they are told. Once the meal has begun the pack is sent to the player at
+     * once (the call the game makes to put a hand right): in a tick the "using" flag leaves with the entity data, ahead
+     * of the player's own inventory, and a client that had the flag before the dish in its hand would not raise the arm.
      */
     private fun eat(level: ServerLevel, player: ServerPlayer, plate: PlateBlockEntity, pos: BlockPos): InteractionResult {
         val portion = plate.take(level)
@@ -116,6 +118,7 @@ class PlateBlock(properties: Properties) : Block(properties), EntityBlock {
             return InteractionResult.CONSUME
         }
         PlateEating.begin(player, level, pos)
+        player.inventoryMenu.sendAllDataToRemote()
         return InteractionResult.SUCCESS
     }
 
