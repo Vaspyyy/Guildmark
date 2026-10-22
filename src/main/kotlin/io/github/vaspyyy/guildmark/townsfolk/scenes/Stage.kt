@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.townsfolk.scenes
 
 import io.github.vaspyyy.guildmark.tales.TaleLimits
+import io.github.vaspyyy.guildmark.tales.TaleSounds
 import io.github.vaspyyy.guildmark.townsfolk.Activity
 import io.github.vaspyyy.guildmark.townsfolk.Days
 import io.github.vaspyyy.guildmark.townsfolk.Townsfolk
@@ -9,7 +10,6 @@ import net.minecraft.core.particles.ParticleOptions
 import net.minecraft.core.particles.ParticleTypes
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.sounds.SoundEvent
-import net.minecraft.sounds.SoundEvents
 import net.minecraft.sounds.SoundSource
 import net.minecraft.util.Mth
 import net.minecraft.world.item.ItemStack
@@ -511,17 +511,16 @@ class Stage(
                         send(level, ParticleTypes.SMALL_FLAME, pos.add(0.05, 0.05, 0.0), 0, 0.0, 0.03, 0.0, 1.0)
                         send(level, ParticleTypes.SMOKE, pos.add(0.0, 0.15, 0.0), 0, 0.01, 0.05, 0.0, 1.0)
                         send(level, ParticleTypes.ASH, pos.add(0.0, 0.1, 0.0), 2, 0.2, 0.15, 0.2, 0.01)
-                        if (t == 0) sound(level, SoundEvents.FIRECHARGE_USE, pos, 0.6f, 1.3f)
-                        else if (t % 16 == 0) sound(level, SoundEvents.FIRE_AMBIENT, pos, 0.5f, 1.0f)
+                        if (t == 0) TaleSounds.at(level, pos, TaleSounds.Sound.NOTE_BURN)
                     }
                     Kind.CANDLE -> {
                         send(level, ParticleTypes.SMALL_FLAME, pos, 0, 0.0, 0.02, 0.0, 1.0)
-                        if (t == 0) sound(level, SoundEvents.FLINTANDSTEEL_USE, pos, 0.4f, 1.4f)
+                        if (t == 0) TaleSounds.at(level, pos, TaleSounds.Sound.CANDLE_LIGHT)
                     }
                     Kind.MEND -> {
                         send(level, ParticleTypes.POOF, pos, 5, 0.4, 0.1, 0.4, 0.02)
                         send(level, ParticleTypes.CLOUD, pos, 3, 0.3, 0.05, 0.3, 0.01)
-                        if (t == 0) sound(level, SoundEvents.WOOD_PLACE, pos, 1.0f, 0.8f)
+                        if (t == 0) TaleSounds.at(level, pos, TaleSounds.Sound.CART_MEND)
                     }
                 }
             }

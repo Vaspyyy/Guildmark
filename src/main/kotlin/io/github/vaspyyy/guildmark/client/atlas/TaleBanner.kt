@@ -8,7 +8,7 @@ import io.github.vaspyyy.guildmark.client.region.RegionTitle
 import io.github.vaspyyy.guildmark.client.season.SeasonBanner
 import io.github.vaspyyy.guildmark.client.ui.Ui
 import io.github.vaspyyy.guildmark.network.TaleBannerPayload
-import io.github.vaspyyy.guildmark.registry.ModSounds
+import io.github.vaspyyy.guildmark.tales.TaleSounds
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.Font
@@ -18,7 +18,6 @@ import net.minecraft.client.renderer.RenderPipelines
 import net.minecraft.locale.Language
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
-import net.minecraft.sounds.SoundEvent
 import net.minecraft.util.ARGB
 import net.minecraft.util.Util
 import net.neoforged.bus.api.IEventBus
@@ -81,31 +80,26 @@ object TaleBanner : GuiLayer {
         val rising: Boolean,
         /** Whether a glint runs once along the capitals. */
         val glint: Boolean,
-        /** The event the sound is in the pack under (`townsfolk.tale.<event>`), and how loud it is played. */
-        val event: String,
-        val volume: Float,
-        /** What plays until the pack has it: a sound that exists, its pitch and its volume. */
-        val stand: () -> SoundEvent,
-        val standPitch: Float,
-        val standVolume: Float,
+        /** Its sting, one of the tales' seven (TaleSounds names them, with what stands in while the pack lacks one). */
+        val sound: TaleSounds.Sound,
     )
 
     private fun lookOf(kind: Int): Look = when (kind) {
         TaleBannerPayload.BEGIN -> Look(
             5.5f, 0.7f, 1.2f, 2f, Ui.GOLD_BRIGHT, Ui.GOLD, 0xFFF0C0, 0.55f, 14, true, true,
-            "begin", 0.8f, { ModSounds.UI_PAGE.get() }, 0.85f, 0.7f,
+            TaleSounds.Sound.BEGIN,
         )
         TaleBannerPayload.STEP -> Look(
             3.5f, 0.5f, 0.9f, 1.5f, Ui.GOLD, Ui.GOLD, 0xFFFFFF, 0f, 0, true, false,
-            "step", 0.6f, { ModSounds.UI_PAGE.get() }, 1.1f, 0.5f,
+            TaleSounds.Sound.STEP,
         )
         TaleBannerPayload.GOOD -> Look(
             6f, 0.7f, 1.2f, 2f, Ui.GOLD_BRIGHT, 0xFFB8DC96.toInt(), 0xE8FFC0, 0.5f, 16, true, true,
-            "end_good", 0.8f, { ModSounds.UI_SEAL.get() }, 1f, 0.7f,
+            TaleSounds.Sound.END_GOOD,
         )
         else -> Look(
             6f, 0.9f, 1.4f, 2f, Ui.TEXT, Ui.RED, 0xC8BBA8, 0.22f, 8, false, false,
-            "end_ill", 0.8f, { ModSounds.UI_DEATH_TOLL.get() }, 0.9f, 0.6f,
+            TaleSounds.Sound.END_ILL,
         )
     }
 
@@ -244,12 +238,9 @@ object TaleBanner : GuiLayer {
         }
     }
 
-    /** The banner's sound: the pack's own once it has it, the stand-in until then (design 13.4). */
+    /** The banner's sound: its sting through TaleSounds, the pack's own, or the stand-in while the pack lacks it (design 13.4). */
     private fun play(card: Card) {
-        val look = card.look
-        val id = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "townsfolk.tale.${look.event}")
-        if (Minecraft.getInstance().soundManager.getSoundEvent(id) != null) Ui.play(SoundEvent.createVariableRangeEvent(id), 1f, look.volume)
-        else Ui.play(look.stand(), look.standPitch, look.standVolume)
+        TaleSounds.ui(card.look.sound)
     }
 
     // ---- Drawing ----

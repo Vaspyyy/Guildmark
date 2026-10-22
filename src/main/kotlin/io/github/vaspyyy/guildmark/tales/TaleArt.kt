@@ -32,9 +32,6 @@ object TaleArt {
         "informer", "informer_c", "locket", "locket_c", "brother", "brother_c",
     )
 
-    /** The tales' sounds that are recorded (Part H's); none yet, so the stage and the banner play what stands in. */
-    val SOUNDS: Set<String> = setOf()
-
     /**
      * What a person carries as the prop [look]: the drawn `tale_prop` of that look when it is in [PROPS], a keepsake's own picture
      * when it is one of the two looks used again as props (`child`, the wooden horse, and `informer`, the tally stick, 13.2.3),
