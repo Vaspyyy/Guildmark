@@ -133,6 +133,7 @@ object Rungs {
     fun register() {
         Hauls.listen(Counting)
         WarrantScene.register()
+        RungCommand.init()
         NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerLoggedInEvent::class.java) { event -> (event.entity as? ServerPlayer)?.let { check(it.level(), it) } }
         NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { tick(it.server) }
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ ->
@@ -205,6 +206,6 @@ object Rungs {
         }
     }
 
-    /** A count that nothing reaches, kept so that it cannot run round. */
-    private const val MOST_DELIVERIES = 1_000_000
+    /** A count that nothing reaches, kept so that it cannot run round (the most the `trade rung deliveries` command takes). */
+    internal const val MOST_DELIVERIES = 1_000_000
 }
