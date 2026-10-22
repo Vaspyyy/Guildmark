@@ -49,6 +49,7 @@ object Villages {
         })
         VillageTick.register()
         VillageInfoCommand.init()
+        io.github.vaspyyy.guildmark.village.live.folk.VillageAdopt.register()
     }
 
     /**
