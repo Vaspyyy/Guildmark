@@ -184,6 +184,8 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
         io.github.vaspyyy.guildmark.client.mill.MillClient.register(modBus)
         // The seasons' colours, air, compass medallion, banner and Almanac, and the festivals' music and trim (client/season, client/festival)
         io.github.vaspyyy.guildmark.client.season.SeasonClient.register(modBus)
+        // Hearthcraft: the stations seen and heard, the cook's pose and hands, the Cook's Book, the cold vignette, the town's plates (client/cooking)
+        io.github.vaspyyy.guildmark.client.cooking.CookClient.register(modBus)
         HdPack.register(modBus)
         modBus.addListener(RegisterRenderStateModifiersEvent::class.java) { event ->
             event.registerAvatarEntityModifier(CombatAnimator.AVATAR)
@@ -191,6 +193,8 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
             // After the combat animator's, which clears the frame this one fills when no move is playing
             event.registerAvatarEntityModifier(io.github.vaspyyy.guildmark.client.ship.ShipClient.AVATAR)
             event.registerAvatarEntityModifier(io.github.vaspyyy.guildmark.client.sea.SeaClient.AVATAR)
+            // The cook at their station, after the combat animator's, which clears the frame this one fills
+            event.registerAvatarEntityModifier(io.github.vaspyyy.guildmark.client.cooking.CookClient.AVATAR)
             event.registerEntityModifier<LivingEntity, LivingEntityRenderState>(LivingEntityRenderer::class.java) { entity, state ->
                 CombatAnimator.onLivingState(entity, state)
             }
