@@ -7,8 +7,10 @@ import io.github.vaspyyy.guildmark.cooking.CookSounds
 import io.github.vaspyyy.guildmark.cooking.CookStats
 import io.github.vaspyyy.guildmark.cooking.Cooking
 import io.github.vaspyyy.guildmark.cooking.market.MenuBoardBlockEntity
+import io.github.vaspyyy.guildmark.cooking.market.MenuBoards
 import io.github.vaspyyy.guildmark.cooking.vessel.Fuel
 import io.github.vaspyyy.guildmark.cooking.vessel.SpitBlockEntity
+import io.github.vaspyyy.guildmark.cooking.vessel.StationProps
 import io.github.vaspyyy.guildmark.cooking.vessel.StewpotBlockEntity
 import io.github.vaspyyy.guildmark.cooking.vessel.StewpotMode
 import io.github.vaspyyy.guildmark.cooking.vessel.Vessel
@@ -57,6 +59,10 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent
  * of its people is on the land or was within the last 30 seconds, by a clock of this object's own. The homestead's people
  * also light the hearth pot (an empty one, which they would otherwise find cold) while they are home, and it goes out a while
  * after the last of them leaves, as the campfire the pot took the place of did ([household]).
+ *
+ * **The pantry.** The Menu board fitted by the farmhouse door lists what the homestead's larders hold ([pantryLines], worked
+ * out in [HomePantry]): written when it is set, and every hundred ticks after while a player is by and the pantry reads
+ * differently, with a scratch of chalk ([chalkBoard]).
  *
  * Everything here asks the switch (`homeKitchens`, and homesteads) first: off, nothing is fitted, lit or counted, and nothing
  * is written. Nothing here walks the world; the loaded land is looked at only where a record says there is something to see.
@@ -213,7 +219,10 @@ object HomesteadKitchens {
         for (home in homes) {
             if (home.tier < 1) continue
             if (Math.floorMod(now + home.id * 13L, ROUND) == 0L) household(level, home)
-            if (Math.floorMod(now + home.id * 7L, SCAN) == 0L) scan(level, home, now)
+            if (Math.floorMod(now + home.id * 7L, SCAN) == 0L) {
+                scan(level, home, now)
+                chalkBoard(level, home)
+            }
         }
     }
 
@@ -430,12 +439,16 @@ object HomesteadKitchens {
     private fun crowded(level: ServerLevel, pos: BlockPos): Boolean =
         level.getEntitiesOfClass(LivingEntity::class.java, AABB(pos)) { it.isAlive && !it.isSpectator }.isNotEmpty()
 
-    /** What a station just set is given: the owner's name on it, a clockwork jack on the manor's spit, a blank slate. */
+    /** What a station just set is given: the owner's name on it, a clockwork jack on the manor's spit, the pantry's lines on the menu board. */
     private fun dressed(level: ServerLevel, home: Homestead, pos: BlockPos) {
         val be = level.getBlockEntity(pos)
         if (be is VesselBlockEntity) be.placer = home.owner
         if (be is SpitBlockEntity) be.jack = true
-        if (be is MenuBoardBlockEntity) be.setLines(emptyList())
+        if (be is MenuBoardBlockEntity) {
+            // The board is the pantry's from the first: what the larders hold now, which is nothing if they are not fitted yet
+            val chalk = pantryChalk(level, home) ?: MenuBoards.Chalk(listOf(Component.translatable("gui.guildmark.cook.home.pantry.bare")), listOf(""))
+            be.setLines(chalk.lines, chalk.kinds)
+        }
     }
 
     /** The dust of the new block, a puff, and the block's own sound, with the cook's (which is silent until the sounds land). */
@@ -525,6 +538,53 @@ object HomesteadKitchens {
         }
     }
 
-    /** The lines for the Menu board by the farmhouse door at [board] (stub: none). */
-    fun pantryLines(level: ServerLevel, board: BlockPos): List<Component> = emptyList()
+    // ---- The pantry ----
+
+    /** How near a player must be for the board to be written up, blocks (the inn's boards are written under the same). */
+    private const val SEEN = 48.0
+
+    /**
+     * The lines for the Menu board by the farmhouse door at [board]: what the larders fitted in the homestead whose land it
+     * stands on hold ([HomePantry]), as they are now. None if there is no homestead there, kitchens are off, or one of its
+     * larders is in a chunk that is away.
+     */
+    fun pantryLines(level: ServerLevel, board: BlockPos): List<Component> {
+        val home = Homesteads.at(level, board) ?: return emptyList()
+        return pantryChalk(level, home)?.lines ?: emptyList()
+    }
+
+    /** The lines and icons of [home]'s board, or null while kitchens are off or a larder is out of reach. */
+    internal fun pantryChalk(level: ServerLevel, home: Homestead): MenuBoards.Chalk? {
+        if (!on()) return null
+        val rec = HomeKitchenData.get(level).home(home.id)
+        val cells = ArrayList<BlockPos>()
+        if (rec != null) {
+            for ((key, entry) in rec.items) if (entry.status == HomeKitchenData.Status.DONE && key.contains(".larder")) cells.addAll(entry.cells)
+        }
+        return HomePantry.chalk(level, cells)
+    }
+
+    /**
+     * Every hundred ticks, if a player is by the board and the pantry reads differently from what is chalked, the board is
+     * rewritten with a scratch of chalk and a little dust. A board the owner has taken away is not looked for.
+     */
+    private fun chalkBoard(level: ServerLevel, home: Homestead) {
+        val entry = HomeKitchenData.get(level).home(home.id)?.items?.get("f.menu") ?: return
+        if (entry.status != HomeKitchenData.Status.DONE) return
+        val pos = entry.cells.firstOrNull() ?: return
+        if (!level.isLoaded(pos)) return
+        val board = level.getBlockEntity(pos) as? MenuBoardBlockEntity ?: return
+        if (level.getNearestPlayer(pos.x + 0.5, pos.y + 0.5, pos.z + 0.5, SEEN, false) == null) return
+        val chalk = pantryChalk(level, home) ?: return
+        if (board.kept && board.lines == chalk.lines && board.kinds == chalk.kinds) return
+        board.setLines(chalk.lines, chalk.kinds)
+        scratch(level, pos, board)
+    }
+
+    /** The scratch of chalk and a little dust in front of the slate as it is written up (the inn's board does the same). */
+    private fun scratch(level: ServerLevel, pos: BlockPos, board: MenuBoardBlockEntity) {
+        val front = board.blockState.getValue(StationProps.FACING)
+        level.sendParticles(ParticleTypes.WHITE_ASH, pos.x + 0.5 + front.stepX * 0.3, pos.y + 0.7, pos.z + 0.5 + front.stepZ * 0.3, 7, 0.22, 0.14, 0.22, 0.01)
+        level.playSound(null, pos, CookSounds.get("cook.chalk"), SoundSource.BLOCKS, 0.8f, 0.95f + level.random.nextFloat() * 0.1f)
+    }
 }

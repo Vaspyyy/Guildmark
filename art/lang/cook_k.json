@@ -11,5 +11,17 @@
   "message.guildmark.cook.home.fit.menu": "A menu board stands by the door, to list the pantry.",
   "message.guildmark.cook.home.fit.spit": "A spit is set at the chimney breast, with a clockwork jack to turn it.",
   "message.guildmark.cook.home.fit.herbs": "%s herb plots are sown in the kitchen bed.",
-  "message.guildmark.cook.home.fit.herbs.one": "A herb plot is sown in the kitchen bed."
+  "message.guildmark.cook.home.fit.herbs.one": "A herb plot is sown in the kitchen bed.",
+  "gui.guildmark.cook.home.pantry": "The pantry holds:",
+  "gui.guildmark.cook.home.pantry.bare": "The pantry is bare.",
+  "gui.guildmark.cook.home.pantry.line": "%s %s, %s",
+  "gui.guildmark.cook.home.pantry.line.stale": "%s %s, %s (stale)",
+  "gui.guildmark.cook.home.pantry.plain": "%s %s",
+  "gui.guildmark.cook.home.pantry.plain.stale": "%s %s (stale)",
+  "gui.guildmark.cook.home.pantry.more": "and %s more portions",
+  "gui.guildmark.cook.home.pantry.more.one": "and 1 more portion",
+  "gui.guildmark.cook.home.pantry.next.stale": "%s goes stale within %s days",
+  "gui.guildmark.cook.home.pantry.next.off": "%s goes off within %s days",
+  "gui.guildmark.cook.home.pantry.gone": "%s have gone off",
+  "gui.guildmark.cook.home.pantry.gone.one": "1 has gone off"
 }
