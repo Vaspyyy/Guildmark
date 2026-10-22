@@ -1,3 +1,37 @@
 {
-  "say.guildmark.talk.detail.tale.pass": "%s"
+  "say.guildmark.talk.detail.tale.pass": "%s",
+
+  "say.guildmark.talk.detail.tale.when.0": "today",
+  "say.guildmark.talk.detail.tale.when.1": "tomorrow",
+  "say.guildmark.talk.detail.tale.when.2": "in 2 days",
+  "say.guildmark.talk.detail.tale.when.3": "in 3 days",
+  "say.guildmark.talk.detail.tale.when.4": "in 4 days",
+  "say.guildmark.talk.detail.tale.when.5": "in 5 days",
+  "say.guildmark.talk.detail.tale.when.6": "in 6 days",
+  "say.guildmark.talk.detail.tale.when.7": "in 7 days",
+  "say.guildmark.talk.detail.tale.when.8": "in 8 days",
+  "say.guildmark.talk.detail.tale.when.9": "in 9 days",
+  "say.guildmark.talk.detail.tale.when.10": "in 10 days",
+  "say.guildmark.talk.detail.tale.when.11": "in 11 days",
+  "say.guildmark.talk.detail.tale.when.12": "in 12 days",
+
+  "say.guildmark.talk.detail.tale.lead": "%s is seeing to it. Next: %s.",
+  "say.guildmark.talk.detail.tale.lead.alone": "%s is seeing to it.",
+  "say.guildmark.talk.detail.tale.lead.someone": "Someone is seeing to it. Next: %s.",
+  "say.guildmark.talk.detail.tale.lead.nobody": "Someone is seeing to it.",
+
+  "say.guildmark.talk.tale.yes_0": "Thank you. That means a great deal.",
+  "say.guildmark.talk.tale.yes_1": "I'm glad of it. Truly.",
+  "say.guildmark.talk.tale.yes_2": "Bless you for it.",
+
+  "talk.guildmark.choice.tale.about": "About their trouble...",
+  "talk.guildmark.choice.tale.stand": "How does it stand?",
+  "talk.guildmark.choice.tale.yes": "I'll see to it.",
+  "talk.guildmark.choice.tale.yes_lead": "I'll lend a hand.",
+  "talk.guildmark.choice.tale.later": "Not now.",
+  "talk.guildmark.choice.tale.back": "Something else...",
+  "talk.guildmark.choice.tale.why": "Why?",
+  "talk.guildmark.choice.tale.why_more": "And before that?",
+
+  "fortune.guildmark.reason.tale.why.took_up": "%s took it up."
 }

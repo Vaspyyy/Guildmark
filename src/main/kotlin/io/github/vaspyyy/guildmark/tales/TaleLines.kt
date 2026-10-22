@@ -4,6 +4,7 @@ import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.townsfolk.Speech
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import io.github.vaspyyy.guildmark.townsfolk.talk.Ask
+import io.github.vaspyyy.guildmark.townsfolk.talk.TalkLines
 import io.github.vaspyyy.guildmark.townsfolk.talk.Utterance
 import io.github.vaspyyy.guildmark.townsfolk.talk.sources.Say
 import net.minecraft.locale.Language
@@ -56,6 +57,18 @@ internal object TaleLines {
         return false
     }
 
+    /** Whether the language has [key], with no word in the log if it has not: for a choice's label, which has a plainer line to fall back to. */
+    fun quiet(key: String): Boolean {
+        val language = Language.getInstance()
+        return !language.has(CANARY) || language.has(key)
+    }
+
+    /**
+     * The word for a number of market days away, as an argument of a detail ("Due %s."): "today", "tomorrow", "in 3 days", up to
+     * twelve (a tale lasts no longer). A language key of its own, so that a detail never says "in 1 days".
+     */
+    fun due(days: Long): String = "say.guildmark.talk.detail.tale.when.${days.coerceIn(0L, 12L)}"
+
     /** Whether the detail [facts] (a Speech line without its `say.guildmark.`) names a line the language has. */
     private fun named(facts: String): Boolean = has("say.guildmark." + facts.substringBefore('|'))
 
@@ -93,9 +106,12 @@ internal object TaleLines {
         return facts?.let { Utterance.Part("", it) }
     }
 
+    /** Whether [family] has anything of its own to say: takes recorded, or a typed wording the language has. */
+    fun exists(family: String): Boolean = (TalkLines.FAMILIES[family]?.count ?: 0) > 0 || wordings("talk.$family").isNotEmpty()
+
     /** One typed wording of [family] (`talk.<family>_<n>`) that [speaker] has not said lately, if the language has any. */
     private fun typed(speaker: Townsperson, family: String): String? {
-        val keys = if (loaded()) (0 until WORDINGS).map { "talk.${family}_$it" }.takeWhile { Language.getInstance().has("say.guildmark.$it") } else listOf("talk.${family}_0")
+        val keys = wordings("talk.$family")
         if (keys.isEmpty()) return null
         val mine = lately.getOrPut(speaker) { ArrayDeque() }
         val fresh = keys.filter { it !in mine }.ifEmpty { keys }
@@ -104,6 +120,10 @@ internal object TaleLines {
         while (mine.size > KEPT) mine.removeFirst()
         return key
     }
+
+    /** The typed wordings of [prefix] (`talk.tale.ask.later` for `talk.tale.ask.later_0`, `_1`...) the language has, in order from 0 with no gap. */
+    private fun wordings(prefix: String): List<String> =
+        if (loaded()) (0 until WORDINGS).map { "${prefix}_$it" }.takeWhile { Language.getInstance().has("say.guildmark.$it") } else listOf("${prefix}_0")
 
     /** Everything the talk remembers of what was said lately is let go (the server stopped). */
     fun forget() {
