@@ -101,6 +101,7 @@ class MarketPanels private constructor(private val list: List<MarketPanel>) {
             // A: the Hauls section, beside the Orders
 
             // D: the Carriers section, at the hall's counter
+            CarriersPanel,
         )
 
         /** The sections for the screen of the shop that [view] is for. */

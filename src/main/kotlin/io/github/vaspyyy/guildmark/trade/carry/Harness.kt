@@ -5,19 +5,24 @@ import io.github.vaspyyy.guildmark.party.Parties
 import io.github.vaspyyy.guildmark.registry.ModItems
 import io.github.vaspyyy.guildmark.trade.TradeConfig
 import io.github.vaspyyy.guildmark.trade.TradeSounds
+import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.sounds.SoundSource
 import net.minecraft.world.InteractionHand
 import net.minecraft.world.InteractionResult
+import net.minecraft.world.entity.EntitySpawnReason
+import net.minecraft.world.entity.EntityType
 import net.minecraft.world.entity.animal.equine.AbstractChestedHorse
 import net.minecraft.world.entity.animal.equine.AbstractHorse
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
+import net.minecraft.world.phys.Vec3
 import net.neoforged.neoforge.common.NeoForge
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent
+import kotlin.math.atan2
 
 /**
  * Buckling a Pack Harness on an animal, taking it off, and who may use an animal that wears one (living-world/trader/design.md,
@@ -126,6 +131,24 @@ object Harness {
             if (sneaking) player.isShiftKeyDown = true
         }
         return animal.hasChest()
+    }
+
+    /**
+     * A new tame [type] of [player]'s, added to the world: theirs by vanilla's own owner, with nothing on it (no chest yet, no harness),
+     * as the hall's donkey and `trade pack spawn` make one. It stands at [at] looking towards the player, or, with none, on a free spot
+     * a few blocks behind them. Null if it could not be made or added. It does not despawn.
+     */
+    fun tame(player: ServerPlayer, type: EntityType<out AbstractChestedHorse>, at: Vec3? = null, reason: EntitySpawnReason = EntitySpawnReason.COMMAND): AbstractChestedHorse? {
+        val level = player.level() as? ServerLevel ?: return null
+        val animal = type.create(level, reason) ?: return null
+        val spot = at ?: PackFollow.spotNear(level, animal, player) ?: player.position()
+        val yaw = if (at == null) player.yRot + 180f else (atan2(player.z - spot.z, player.x - spot.x) * (180.0 / Math.PI)).toFloat() - 90f
+        animal.snapTo(spot.x, spot.y, spot.z, yaw, 0f)
+        animal.finalizeSpawn(level, level.getCurrentDifficultyAt(BlockPos.containing(spot)), reason, null)
+        animal.setTamed(true)
+        animal.setOwner(player)
+        animal.setPersistenceRequired()
+        return if (level.addFreshEntity(animal)) animal else null
     }
 
     /**

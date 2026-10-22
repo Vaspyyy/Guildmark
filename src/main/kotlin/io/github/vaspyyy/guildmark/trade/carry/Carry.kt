@@ -72,12 +72,13 @@ object Carry {
         Trading.give(player, ModItems.DROVERS_WHISTLE.get(), 1)
     }
 
-    /** Registers this part: its attachments, the count of a trader's load, the pack animal and its harness, and its commands. */
+    /** Registers this part: its attachments, the count of a trader's load, the pack animal and its harness, the wares it puts on the hall's counter, and its commands. */
     fun register(modBus: IEventBus) {
         ATTACHMENTS.register(modBus)
         Laden.register()
         PackFollow.register()
         Harness.register()
+        CarryShop.register(modBus)
         Carriers.add(Carrier { player, radius -> PackFollow.holdings(player, radius) })
         CarryCommand.init()
     }

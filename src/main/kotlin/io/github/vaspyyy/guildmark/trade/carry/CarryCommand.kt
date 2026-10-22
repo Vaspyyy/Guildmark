@@ -13,7 +13,6 @@ import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.MutableComponent
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.InteractionHand
-import net.minecraft.world.entity.EntitySpawnReason
 import net.minecraft.world.entity.EntityType
 import net.minecraft.world.entity.EntityTypes
 import net.minecraft.world.entity.animal.equine.AbstractChestedHorse
@@ -141,23 +140,16 @@ object CarryCommand {
     private fun spawn(context: CommandContext<CommandSourceStack>, kind: String): Int {
         val source = context.source
         val player = source.playerOrException
-        val level = source.level
         val type: EntityType<out AbstractChestedHorse> = when (kind) {
             "mule" -> EntityTypes.MULE
             "llama" -> EntityTypes.LLAMA
             else -> EntityTypes.DONKEY
         }
-        val animal = type.create(level, EntitySpawnReason.COMMAND)
+        val animal = Harness.tame(player, type)
         if (animal == null) {
             say(source, red("Could not make a $kind."))
             return 0
         }
-        val at = PackFollow.spotNear(level, animal, player) ?: player.position()
-        animal.snapTo(at.x, at.y, at.z, player.yRot + 180f, 0f)
-        animal.finalizeSpawn(level, level.getCurrentDifficultyAt(player.blockPosition()), EntitySpawnReason.COMMAND, null)
-        animal.setTamed(true)
-        animal.setOwner(player)
-        level.addFreshEntity(animal)
         if (!Harness.fitChest(player, animal, InteractionHand.MAIN_HAND)) {
             say(source, red("The $kind would not take a chest; it is tame and yours, without a harness."))
             return 0
