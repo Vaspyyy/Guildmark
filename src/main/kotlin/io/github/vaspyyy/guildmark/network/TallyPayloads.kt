@@ -157,9 +157,19 @@ data class TallyLeg(
 
 /**
  * The Routes page: the ways from the capital [from] ([name]; [live] if the trader stands in it, else it is as they last saw it, on the news of the clock tick [tick]), best an hour
- * first, for the [slots] free in the pack. [book] says whether the Book button works (the haul tickets are in and on).
+ * first, for the [slots] free in the pack. [book] says whether the Book button works (the haul tickets are in and on), [locked] that the page is not
+ * open to this trader yet (it opens at the Hawker's rung) and so lists no way.
  */
-data class TallyRoutes(val from: Long, val name: String, val live: Boolean, val tick: Long, val slots: Int, val book: Boolean, val legs: List<TallyLeg>) {
+data class TallyRoutes(
+    val from: Long,
+    val name: String,
+    val live: Boolean,
+    val tick: Long,
+    val slots: Int,
+    val book: Boolean,
+    val legs: List<TallyLeg>,
+    val locked: Boolean = false,
+) {
     companion object {
         /** No capital to start from. */
         const val NONE = Long.MIN_VALUE
@@ -174,6 +184,7 @@ data class TallyRoutes(val from: Long, val name: String, val live: Boolean, val 
             ByteBufCodecs.VAR_INT, TallyRoutes::slots,
             ByteBufCodecs.BOOL, TallyRoutes::book,
             TallyLeg.STREAM_CODEC.apply(ByteBufCodecs.list()), TallyRoutes::legs,
+            ByteBufCodecs.BOOL, TallyRoutes::locked,
             ::TallyRoutes,
         )
     }
@@ -271,9 +282,10 @@ data class TallyAsk(val key: String, val have: Int, val need: Int) {
 
 /**
  * The Standing page: the [rung] they hold (0 Pedlar up to 4 the House), what the next rung [asks], the tickets they have filled ([filled]), and
- * their standing at the capital they stand in ([rank] 0 to 4 or -1 where there is none to tell, with [points] and the [next] rank's points, -1 at the top).
+ * their standing at the capital they stand in ([rank] 0 to 4 or -1 where there is none to tell, with [points] and the [next] rank's points, -1 at the top),
+ * and how many tickets they may hold booked at once ([limit], their rung's).
  */
-data class TallyStanding(val rung: Int, val asks: List<TallyAsk>, val filled: Int, val rank: Int, val points: Int, val next: Int) {
+data class TallyStanding(val rung: Int, val asks: List<TallyAsk>, val filled: Int, val rank: Int, val points: Int, val next: Int, val limit: Int = 2) {
     companion object {
         val EMPTY = TallyStanding(0, listOf(), 0, -1, 0, -1)
 
@@ -284,6 +296,7 @@ data class TallyStanding(val rung: Int, val asks: List<TallyAsk>, val filled: In
             ByteBufCodecs.VAR_INT, TallyStanding::rank,
             ByteBufCodecs.VAR_INT, TallyStanding::points,
             ByteBufCodecs.VAR_INT, TallyStanding::next,
+            ByteBufCodecs.VAR_INT, TallyStanding::limit,
             ::TallyStanding,
         )
     }

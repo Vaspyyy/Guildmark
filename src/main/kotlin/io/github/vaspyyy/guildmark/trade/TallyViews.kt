@@ -111,16 +111,20 @@ internal object TallyViews {
         return Routes.rank(start.here, BlockPos.of(start.origin.capital), dests, terms)
     }
 
+    /** Whether the Routes page is open to [player]: it opens at the Hawker's rung (the ladder's stub opens it to everyone). */
+    private fun open(player: ServerPlayer): Boolean = Rungs.reached(player, Rung.HAWKER)
+
     private fun routes(level: ServerLevel, player: ServerPlayer, here: BlockPos?, towns: List<Seen>): TallyRoutes {
-        val start = start(level, player, here, towns) ?: return TallyRoutes.EMPTY
-        val legs = ranked(level, player, start, towns).take(LEGS).map { leg ->
+        val locked = !open(player)
+        val start = start(level, player, here, towns) ?: return TallyRoutes.EMPTY.copy(locked = locked)
+        val legs = (if (locked) listOf<Routes.Leg>() else ranked(level, player, start, towns).take(LEGS)).map { leg ->
             TallyLeg(
                 leg.to.capital.asLong(), leg.to.name, leg.distance.roundToInt(), leg.hours.toFloat(), leg.cost, leg.pay.roundToInt(), leg.perHour.toFloat(), leg.to.sight.tick,
                 leg.lines.map { l -> TallyLine(l.good.id, l.units, l.cost, l.pay.roundToInt(), l.slots, l.serves.map { TallyServe(it.ticket.id, it.units) }) },
             )
         }
         val name = start.origin.name.ifEmpty { nameOf(level, start.origin.capital, towns) }
-        return TallyRoutes(start.origin.capital, name, start.live, start.origin.sight.tick, slots(player), TallyLinks.HAULS && TradeConfig.hauls(), legs)
+        return TallyRoutes(start.origin.capital, name, start.live, start.origin.sight.tick, slots(player), TallyLinks.HAULS && TradeConfig.hauls() && !locked, legs, locked)
     }
 
     /**
@@ -128,6 +132,7 @@ internal object TallyViews {
      * (the tickets its basket fills). Null if the page offers none to it.
      */
     fun leg(level: ServerLevel, player: ServerPlayer, about: Long): Routes.Leg? {
+        if (!open(player)) return null
         val here = Furnish.capitalAt(level, player.blockPosition())?.center
         val towns = known(level, player, here)
         val start = start(level, player, here, towns) ?: return null
@@ -217,6 +222,6 @@ internal object TallyViews {
             points = s?.points?.toInt() ?: 0
             next = standing.next?.points ?: -1
         }
-        return TallyStanding(view.rung.ordinal, asks, filled, rank, points, next)
+        return TallyStanding(view.rung.ordinal, asks, filled, rank, points, next, Rungs.heldLimit(player))
     }
 }
