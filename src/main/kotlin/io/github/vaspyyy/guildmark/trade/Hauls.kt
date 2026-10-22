@@ -520,9 +520,12 @@ object Hauls {
         return true
     }
 
-    /** "in 30 hours", or "in 3 days" from two days on, for [hours] market hours left (the chat and the screen's tooltips). */
-    fun due(hours: Int): Component =
-        if (hours < 48) Component.translatable("message.guildmark.trade.haul.due.hours", hours.coerceAtLeast(1)) else Component.translatable("message.guildmark.trade.haul.due.days", (hours + 23) / 24)
+    /** "in 30 hours", "in 3 days" from two days on, or "within the hour" for the last, for [hours] market hours left (the chat and the screen's tooltips). */
+    fun due(hours: Int): Component = when {
+        hours <= 1 -> Component.translatable("message.guildmark.trade.haul.due.soon")
+        hours < 48 -> Component.translatable("message.guildmark.trade.haul.due.hours", hours)
+        else -> Component.translatable("message.guildmark.trade.haul.due.days", (hours + 23) / 24)
+    }
 
     /** The colour (0 to 5) of [taker]'s seal: the same for the same player every time. */
     internal fun seal(taker: UUID): Int = Math.floorMod(taker.hashCode(), SEALS)

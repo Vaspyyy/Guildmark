@@ -148,9 +148,12 @@ internal object HaulsPanel : MarketPanel {
 
     private fun marks(n: Int): Component = Component.translatable(if (n == 1) "gui.guildmark.market.marks.one" else "gui.guildmark.market.marks", n)
 
-    /** "in 30 hours", or "in 3 days" from two days on. */
-    private fun due(hours: Int): Component =
-        if (hours < 48) Component.translatable("message.guildmark.trade.haul.due.hours", max(1, hours)) else Component.translatable("message.guildmark.trade.haul.due.days", (hours + 23) / 24)
+    /** "in 30 hours", "in 3 days" from two days on, or "within the hour" for the last (as Hauls.due says it in the chat). */
+    private fun due(hours: Int): Component = when {
+        hours <= 1 -> Component.translatable("message.guildmark.trade.haul.due.soon")
+        hours < 48 -> Component.translatable("message.guildmark.trade.haul.due.hours", hours)
+        else -> Component.translatable("message.guildmark.trade.haul.due.days", (hours + 23) / 24)
+    }
 
     private fun kindOf(h: MarketHaul): HaulKind = HaulKind.entries.getOrNull(h.kind) ?: HaulKind.PARCEL
 
@@ -470,7 +473,7 @@ internal object HaulsPanel : MarketPanel {
         val lines = ArrayList<Pair<Component, Int>>()
         val shopName = Shop.byId(frame.view.shop)?.let { Component.translatable(it.key) } ?: Component.literal(frame.view.shop)
         lines.add(Component.translatable("gui.guildmark.trade.haul.tip.title", h.units, goodName(h), shopName) to Ui.GOLD)
-        lines.add(Component.translatable("gui.guildmark.trade.haul.tip.kind." + kindOf(h).id) to Ui.TEXT_SOFT)
+        lines.add(Component.translatable("gui.guildmark.trade.haul.tip.kind.${kindOf(h).id}") to Ui.TEXT_SOFT)
         val booked = h.units - h.done - h.open
         lines.add(Component.translatable("gui.guildmark.trade.haul.tip.in", h.done, h.units, booked, h.open) to Ui.TEXT)
         when {
@@ -487,7 +490,7 @@ internal object HaulsPanel : MarketPanel {
             lines.add(Component.translatable("gui.guildmark.trade.haul.tip.deposit.would", marks(h.deposit)) to Ui.TEXT_SOFT)
         }
         if (h.who.isNotEmpty()) lines.add(Component.translatable("gui.guildmark.trade.haul.tip.who", h.who) to Ui.TEXT_FAINT)
-        if (h.mine == 0 && h.why.isNotEmpty() && h.why != "taken") lines.add(Component.translatable("gui.guildmark.trade.haul.refused." + h.why) to Ui.RED)
+        if (h.mine == 0 && h.why.isNotEmpty() && h.why != "taken") lines.add(Component.translatable("gui.guildmark.trade.haul.refused.${h.why}") to Ui.RED)
         return lines
     }
 
@@ -496,7 +499,7 @@ internal object HaulsPanel : MarketPanel {
         val line = when (action) {
             MarketHaulPayload.TAKE ->
                 if (can(h, action)) Component.translatable("gui.guildmark.trade.haul.tip.take", h.open, marks(h.deposit), due(h.hours))
-                else Component.translatable("gui.guildmark.trade.haul.refused." + h.why.ifEmpty { "taken" })
+                else Component.translatable("gui.guildmark.trade.haul.refused.${h.why.ifEmpty { "taken" }}")
             MarketHaulPayload.DELIVER -> when {
                 h.deliverable > 0 -> Component.translatable("gui.guildmark.trade.haul.tip.deliver", h.deliverable, goodName(h))
                 h.carried > 0 -> Component.translatable("gui.guildmark.trade.haul.refused.not_hauled")
