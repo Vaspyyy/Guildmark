@@ -147,10 +147,11 @@ INK_GOLD = PAL['gold']
 
 
 def _stamp(pal, field_pal, centre, seed):
-    """A small round stamp at the sprite's lower right: a lit ring, a dark field, a bright mark in its middle, a dark outline."""
+    """A small round stamp at the sprite's lower left: a lit ring, a dark field, a bright mark in its middle, a dark outline. It sits on the left
+    because the game writes a stack's number at the slot's lower right (white, from x 17 minus its width, y 9 of the 16), which would hide it there."""
     cv = Canvas(N)
     xs, ys = grid(N)
-    cx, cy, R = 26.0, 26.0, 4.2
+    cx, cy, R = 6.0, 26.0, 4.2
     d = np.hypot(xs - cx, ys - cy)
     m = d <= R
     toward = (-(xs - cx) - (ys - cy)) * math.sqrt(0.5) / R
@@ -212,11 +213,11 @@ def sweep(img, lo=0.0, hi=34.0, frames=9, width=2.2, star=None):
 
 
 def stamp_frames_fine():
-    return sweep(stamp_fine(), 14.0, 34.0, 8)
+    return sweep(stamp_fine(), 0.0, 20.0, 8)
 
 
 def stamp_frames_hallmarked():
-    return sweep(stamp_hallmarked(), 14.0, 34.0, 9, star=(23, 23))
+    return sweep(stamp_hallmarked(), 0.0, 20.0, 9, star=(9, 23))
 
 
 # ---------------------------------------------------------------- timing

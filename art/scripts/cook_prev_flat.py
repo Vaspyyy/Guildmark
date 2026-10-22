@@ -83,22 +83,26 @@ def item_sheets(assets, out):
             sheet.alpha_composite(cell, (left + j * (wid + 2), y))
         y += s_ + 2 * pad + 2
     written.append(P.save_png(sheet, os.path.join(out, 'cook_dishes_sizes.png')))
-    # ---- the four tier marks and the two stage washes on every dish, at the 16 px a GUI scale of 1 gives them (true size, then three times over)
-    variants = [(tname, 'mark', comps(tier)) for tier, tname in TIERS] + [('Stale', 'Sound, washed', comps(2, 1)), ('Gone off', 'Sound, washed', comps(2, 2))]
+    # ---- the four tier marks and the two stage washes on every dish, at the 16 px a GUI scale of 1 gives them (true size, then three times over), and
+    # the two finer marks again under the number of a full stack (8 a dish, 16 a ration), written where the game writes it
+    variants = ([(tname, 'mark', comps(tier), '') for tier, tname in TIERS] + [('Stale', 'Sound, washed', comps(2, 1), ''), ('Gone off', 'Sound, washed', comps(2, 2), '')]
+                + [('Fine', 'stack of 8', comps(3), '8'), ('Hallmarked', 'stack of 16', comps(4), '16')])
     cw = 16 + 6 + 48 + 8
     left = 112
     head = 36
     row_h = 52
     sheet = Image.new('RGBA', (left + len(variants) * cw + 6, head + len(names) * row_h + 6), P.BG + (255,))
     d = ImageDraw.Draw(sheet)
-    for j, (vname, vnote, _) in enumerate(variants):
+    for j, (vname, vnote, _, _) in enumerate(variants):
         P.text(d, (left + j * cw + cw // 2, 5), vname, P.INK, 11, 'ma')
         P.text(d, (left + j * cw + cw // 2, 19), vnote, P.DIM, 10, 'ma')
     for i, n in enumerate(names):
         y = head + i * row_h
         P.text(d, (6, y + row_h // 2 - 2), NICE[n], P.INK, 12, 'lm')
-        for j, (_, _, c) in enumerate(variants):
+        for j, (_, _, c, count) in enumerate(variants):
             small = it.render(n, c, TICK).resize((16, 16), Image.NEAREST)
+            if count and n != 'scorched_mess':
+                small = P.stack_count(small, count)
             x = left + j * cw
             tile = P.tiled_bg(16 + 4, 16 + 4)
             tile.alpha_composite(small, (2, 2))

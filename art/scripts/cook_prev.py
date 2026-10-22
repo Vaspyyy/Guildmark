@@ -12,7 +12,7 @@ THE FILES
   cook_everything.png        every item and block on one sheet
   cook_dish_states.png       the dishes by tier and stage, 64 px
   cook_dishes_sizes.png      every dish at 16, 32 and 64 px
-  cook_dishes_marks_16.png   the four tier marks and two stage washes on every dish at 16 px
+  cook_dishes_marks_16.png   the four tier marks and two stage washes on every dish at 16 px, and the two finer marks under a full stack's number
   cook_dishes.gif            what moves on the dishes (steam, sheen, smoke, flies, stamp glints)
   cook_tools.png / .gif      the tools, the book and the herb sprig, with grip and tip; and their glints
   cook_stewpot.png, cook_hob.png, cook_oven.png, cook_spit.png

@@ -58,6 +58,36 @@ def sprite_cell(img, k, bg=None, pad=3):
     return cell
 
 
+# The game writes a stack's number over a slot's lower right: white with a dark shadow a pixel down and right, from x 17 minus its width, y 9 of the
+# slot's 16 (`GuiGraphicsExtractor.itemCount`). These digits only stand in for the game's own font; their place and size are the game's.
+COUNT_GLYPHS = {
+    '0': ('.###.', '#...#', '#...#', '#...#', '#...#', '#...#', '.###.'),
+    '1': ('..#..', '.##..', '..#..', '..#..', '..#..', '..#..', '.###.'),
+    '2': ('.###.', '#...#', '....#', '...#.', '..#..', '.#...', '#####'),
+    '3': ('.###.', '#...#', '....#', '..##.', '....#', '#...#', '.###.'),
+    '4': ('...#.', '..##.', '.#.#.', '#..#.', '#####', '...#.', '...#.'),
+    '5': ('#####', '#....', '####.', '....#', '....#', '#...#', '.###.'),
+    '6': ('.###.', '#....', '#....', '####.', '#...#', '#...#', '.###.'),
+    '7': ('#####', '....#', '...#.', '..#..', '.#...', '.#...', '.#...'),
+    '8': ('.###.', '#...#', '#...#', '.###.', '#...#', '#...#', '.###.'),
+    '9': ('.###.', '#...#', '#...#', '.####', '....#', '....#', '.###.'),
+}
+
+
+def stack_count(img16, count):
+    """[img16] (an item at a GUI scale of 1, 16 x 16) with the string [count] written over it where the game writes a stack's number."""
+    out = img16.convert('RGBA').copy()
+    x0, y0 = 17 - 6 * len(count), 9
+    for color, off in (((63, 63, 63, 255), 1), ((255, 255, 255, 255), 0)):
+        for i, ch in enumerate(count):
+            for gy, row in enumerate(COUNT_GLYPHS[ch]):
+                for gx, c in enumerate(row):
+                    x, y = x0 + 6 * i + gx + off, y0 + gy + off
+                    if c == '#' and 0 <= x < out.width and 0 <= y < out.height:
+                        out.putpixel((x, y), color)
+    return out
+
+
 def contact(cells, cols, labels=None, gap=8, title=None, bg=BG, label_size=12, cell_size=None):
     """[cells] (images, any size) in a grid of [cols] columns, each with its label under it and an optional [title] over all."""
     cw = max(c.width for c in cells) if cell_size is None else cell_size[0]
