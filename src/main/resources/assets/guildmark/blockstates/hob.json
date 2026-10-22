@@ -1,0 +1,44 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "lit": "false"
+      },
+      "apply": {
+        "model": "guildmark:block/hob"
+      }
+    },
+    {
+      "when": {
+        "lit": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/hob_lit"
+      }
+    },
+    {
+      "when": {
+        "notch": "0"
+      },
+      "apply": {
+        "model": "guildmark:block/hob_damper_0"
+      }
+    },
+    {
+      "when": {
+        "notch": "1"
+      },
+      "apply": {
+        "model": "guildmark:block/hob_damper_1"
+      }
+    },
+    {
+      "when": {
+        "notch": "2"
+      },
+      "apply": {
+        "model": "guildmark:block/hob_damper_2"
+      }
+    }
+  ]
+}

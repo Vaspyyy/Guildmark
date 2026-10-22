@@ -1,0 +1,344 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "guildmark:block/cook/pot_iron",
+    "pot_iron": "guildmark:block/cook/pot_iron",
+    "iron_inside": "guildmark:block/cook/iron_inside"
+  },
+  "elements": [
+    {
+      "from": [2.8, 10, 5.846],
+      "to": [13.2, 10.5, 10.154],
+      "faces": {
+        "down": {
+          "uv": [2.8, 5.846, 13.2, 10.154],
+          "texture": "#pot_iron"
+        },
+        "up": {
+          "uv": [2.8, 5.846, 13.2, 10.154],
+          "texture": "#iron_inside"
+        },
+        "west": {
+          "uv": [5.846, 5.5, 10.154, 6],
+          "texture": "#pot_iron"
+        },
+        "east": {
+          "uv": [5.846, 5.5, 10.154, 6],
+          "texture": "#pot_iron"
+        }
+      }
+    },
+    {
+      "from": [2.8, 10, 5.846],
+      "to": [13.2, 10.492, 10.154],
+      "rotation": {
+        "origin": [8, 10, 8],
+        "x": 0,
+        "y": 45,
+        "z": 0
+      },
+      "faces": {
+        "down": {
+          "uv": [2.8, 5.846, 13.2, 10.154],
+          "texture": "#pot_iron"
+        },
+        "up": {
+          "uv": [2.8, 5.846, 13.2, 10.154],
+          "texture": "#iron_inside"
+        },
+        "west": {
+          "uv": [5.846, 5.508, 10.154, 6],
+          "texture": "#pot_iron"
+        },
+        "east": {
+          "uv": [5.846, 5.508, 10.154, 6],
+          "texture": "#pot_iron"
+        }
+      }
+    },
+    {
+      "from": [2.8, 10, 5.846],
+      "to": [13.2, 10.484, 10.154],
+      "rotation": {
+        "origin": [8, 10, 8],
+        "x": 0,
+        "y": 90,
+        "z": 0
+      },
+      "faces": {
+        "down": {
+          "uv": [2.8, 5.846, 13.2, 10.154],
+          "texture": "#pot_iron"
+        },
+        "up": {
+          "uv": [2.8, 5.846, 13.2, 10.154],
+          "texture": "#iron_inside"
+        },
+        "west": {
+          "uv": [5.846, 5.516, 10.154, 6],
+          "texture": "#pot_iron"
+        },
+        "east": {
+          "uv": [5.846, 5.516, 10.154, 6],
+          "texture": "#pot_iron"
+        }
+      }
+    },
+    {
+      "from": [2.8, 10, 5.846],
+      "to": [13.2, 10.476, 10.154],
+      "rotation": {
+        "origin": [8, 10, 8],
+        "x": 0,
+        "y": 135,
+        "z": 0
+      },
+      "faces": {
+        "down": {
+          "uv": [2.8, 5.846, 13.2, 10.154],
+          "texture": "#pot_iron"
+        },
+        "up": {
+          "uv": [2.8, 5.846, 13.2, 10.154],
+          "texture": "#iron_inside"
+        },
+        "west": {
+          "uv": [5.846, 5.524, 10.154, 6],
+          "texture": "#pot_iron"
+        },
+        "east": {
+          "uv": [5.846, 5.524, 10.154, 6],
+          "texture": "#pot_iron"
+        }
+      }
+    },
+    {
+      "from": [5.763, 10.5, 2.6],
+      "to": [10.237, 11.5, 3.2],
+      "faces": {
+        "north": {
+          "uv": [5.763, 4.5, 10.237, 5.5],
+          "texture": "#pot_iron"
+        },
+        "south": {
+          "uv": [5.763, 4.5, 10.237, 5.5],
+          "texture": "#iron_inside"
+        },
+        "up": {
+          "uv": [5.763, 2.6, 10.237, 3.2],
+          "texture": "#pot_iron"
+        }
+      }
+    },
+    {
+      "from": [5.763, 10.5, 12.8],
+      "to": [10.237, 11.5, 13.4],
+      "faces": {
+        "south": {
+          "uv": [5.763, 4.5, 10.237, 5.5],
+          "texture": "#pot_iron"
+        },
+        "north": {
+          "uv": [5.763, 4.5, 10.237, 5.5],
+          "texture": "#iron_inside"
+        },
+        "up": {
+          "uv": [5.763, 12.8, 10.237, 13.4],
+          "texture": "#pot_iron"
+        }
+      }
+    },
+    {
+      "from": [2.6, 10.5, 5.763],
+      "to": [3.2, 11.5, 10.237],
+      "faces": {
+        "west": {
+          "uv": [5.763, 4.5, 10.237, 5.5],
+          "texture": "#pot_iron"
+        },
+        "east": {
+          "uv": [5.763, 4.5, 10.237, 5.5],
+          "texture": "#iron_inside"
+        },
+        "up": {
+          "uv": [2.6, 5.763, 3.2, 10.237],
+          "texture": "#pot_iron"
+        }
+      }
+    },
+    {
+      "from": [12.8, 10.5, 5.763],
+      "to": [13.4, 11.5, 10.237],
+      "faces": {
+        "east": {
+          "uv": [5.763, 4.5, 10.237, 5.5],
+          "texture": "#pot_iron"
+        },
+        "west": {
+          "uv": [5.763, 4.5, 10.237, 5.5],
+          "texture": "#iron_inside"
+        },
+        "up": {
+          "uv": [12.8, 5.763, 13.4, 10.237],
+          "texture": "#pot_iron"
+        }
+      }
+    },
+    {
+      "from": [5.763, 10.5, 2.6],
+      "to": [10.237, 11.488, 3.2],
+      "rotation": {
+        "origin": [8, 10.5, 8],
+        "x": 0,
+        "y": 45,
+        "z": 0
+      },
+      "faces": {
+        "north": {
+          "uv": [5.763, 4.512, 10.237, 5.5],
+          "texture": "#pot_iron"
+        },
+        "south": {
+          "uv": [5.763, 4.512, 10.237, 5.5],
+          "texture": "#iron_inside"
+        },
+        "up": {
+          "uv": [5.763, 2.6, 10.237, 3.2],
+          "texture": "#pot_iron"
+        }
+      }
+    },
+    {
+      "from": [5.763, 10.5, 12.8],
+      "to": [10.237, 11.488, 13.4],
+      "rotation": {
+        "origin": [8, 10.5, 8],
+        "x": 0,
+        "y": 45,
+        "z": 0
+      },
+      "faces": {
+        "south": {
+          "uv": [5.763, 4.512, 10.237, 5.5],
+          "texture": "#pot_iron"
+        },
+        "north": {
+          "uv": [5.763, 4.512, 10.237, 5.5],
+          "texture": "#iron_inside"
+        },
+        "up": {
+          "uv": [5.763, 12.8, 10.237, 13.4],
+          "texture": "#pot_iron"
+        }
+      }
+    },
+    {
+      "from": [2.6, 10.5, 5.763],
+      "to": [3.2, 11.488, 10.237],
+      "rotation": {
+        "origin": [8, 10.5, 8],
+        "x": 0,
+        "y": 45,
+        "z": 0
+      },
+      "faces": {
+        "west": {
+          "uv": [5.763, 4.512, 10.237, 5.5],
+          "texture": "#pot_iron"
+        },
+        "east": {
+          "uv": [5.763, 4.512, 10.237, 5.5],
+          "texture": "#iron_inside"
+        },
+        "up": {
+          "uv": [2.6, 5.763, 3.2, 10.237],
+          "texture": "#pot_iron"
+        }
+      }
+    },
+    {
+      "from": [12.8, 10.5, 5.763],
+      "to": [13.4, 11.488, 10.237],
+      "rotation": {
+        "origin": [8, 10.5, 8],
+        "x": 0,
+        "y": 45,
+        "z": 0
+      },
+      "faces": {
+        "east": {
+          "uv": [5.763, 4.512, 10.237, 5.5],
+          "texture": "#pot_iron"
+        },
+        "west": {
+          "uv": [5.763, 4.512, 10.237, 5.5],
+          "texture": "#iron_inside"
+        },
+        "up": {
+          "uv": [12.8, 5.763, 13.4, 10.237],
+          "texture": "#pot_iron"
+        }
+      }
+    },
+    {
+      "from": [11.78, 10.7, 7.3],
+      "to": [15.18, 11.2, 8.7],
+      "faces": {
+        "down": {
+          "uv": [11.78, 7.3, 15.18, 8.7],
+          "texture": "#pot_iron"
+        },
+        "up": {
+          "uv": [11.78, 7.3, 15.18, 8.7],
+          "texture": "#pot_iron"
+        },
+        "north": {
+          "uv": [0.82, 4.8, 4.22, 5.3],
+          "texture": "#pot_iron"
+        },
+        "south": {
+          "uv": [11.78, 4.8, 15.18, 5.3],
+          "texture": "#pot_iron"
+        },
+        "west": {
+          "uv": [7.3, 4.8, 8.7, 5.3],
+          "texture": "#pot_iron"
+        },
+        "east": {
+          "uv": [7.3, 4.8, 8.7, 5.3],
+          "texture": "#pot_iron"
+        }
+      }
+    },
+    {
+      "from": [14.78, 10.7, 7],
+      "to": [15.98, 11.2, 9],
+      "faces": {
+        "down": {
+          "uv": [14.78, 7, 15.98, 9],
+          "texture": "#pot_iron"
+        },
+        "up": {
+          "uv": [14.78, 7, 15.98, 9],
+          "texture": "#pot_iron"
+        },
+        "north": {
+          "uv": [0.02, 4.8, 1.22, 5.3],
+          "texture": "#pot_iron"
+        },
+        "south": {
+          "uv": [14.78, 4.8, 15.98, 5.3],
+          "texture": "#pot_iron"
+        },
+        "west": {
+          "uv": [7, 4.8, 9, 5.3],
+          "texture": "#pot_iron"
+        },
+        "east": {
+          "uv": [7, 4.8, 9, 5.3],
+          "texture": "#pot_iron"
+        }
+      }
+    }
+  ]
+}

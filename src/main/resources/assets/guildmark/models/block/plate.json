@@ -1,0 +1,130 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "guildmark:block/cook/board",
+    "board": "guildmark:block/cook/board",
+    "stoneware": "guildmark:block/cook/stoneware"
+  },
+  "elements": [
+    {
+      "from": [1.6, 0, 3.2],
+      "to": [14.4, 1, 12.8],
+      "faces": {
+        "down": {
+          "uv": [1.6, 3.2, 14.4, 12.8],
+          "texture": "#board"
+        },
+        "up": {
+          "uv": [1.6, 3.2, 14.4, 12.8],
+          "texture": "#board"
+        },
+        "north": {
+          "uv": [1.6, 15, 14.4, 16],
+          "texture": "#board"
+        },
+        "south": {
+          "uv": [1.6, 15, 14.4, 16],
+          "texture": "#board"
+        },
+        "west": {
+          "uv": [3.2, 15, 12.8, 16],
+          "texture": "#board"
+        },
+        "east": {
+          "uv": [3.2, 15, 12.8, 16],
+          "texture": "#board"
+        }
+      }
+    },
+    {
+      "from": [3.6, 1, 6.177],
+      "to": [12.4, 1.55, 9.823],
+      "faces": {
+        "up": {
+          "uv": [0.453, 4.874, 15.547, 11.126],
+          "texture": "#stoneware"
+        },
+        "west": {
+          "uv": [0, 5, 2, 6],
+          "texture": "#stoneware"
+        },
+        "east": {
+          "uv": [0, 5, 2, 6],
+          "texture": "#stoneware"
+        }
+      }
+    },
+    {
+      "from": [3.6, 1, 6.177],
+      "to": [12.4, 1.544, 9.823],
+      "rotation": {
+        "origin": [8, 1, 8],
+        "x": 0,
+        "y": 45,
+        "z": 0
+      },
+      "faces": {
+        "up": {
+          "uv": [0.453, 4.874, 15.547, 11.126],
+          "texture": "#stoneware"
+        },
+        "west": {
+          "uv": [0, 5, 2, 6],
+          "texture": "#stoneware"
+        },
+        "east": {
+          "uv": [0, 5, 2, 6],
+          "texture": "#stoneware"
+        }
+      }
+    },
+    {
+      "from": [3.6, 1, 6.177],
+      "to": [12.4, 1.538, 9.823],
+      "rotation": {
+        "origin": [8, 1, 8],
+        "x": 0,
+        "y": 90,
+        "z": 0
+      },
+      "faces": {
+        "up": {
+          "uv": [0.453, 4.874, 15.547, 11.126],
+          "texture": "#stoneware"
+        },
+        "west": {
+          "uv": [0, 5, 2, 6],
+          "texture": "#stoneware"
+        },
+        "east": {
+          "uv": [0, 5, 2, 6],
+          "texture": "#stoneware"
+        }
+      }
+    },
+    {
+      "from": [3.6, 1, 6.177],
+      "to": [12.4, 1.532, 9.823],
+      "rotation": {
+        "origin": [8, 1, 8],
+        "x": 0,
+        "y": 135,
+        "z": 0
+      },
+      "faces": {
+        "up": {
+          "uv": [0.453, 4.874, 15.547, 11.126],
+          "texture": "#stoneware"
+        },
+        "west": {
+          "uv": [0, 5, 2, 6],
+          "texture": "#stoneware"
+        },
+        "east": {
+          "uv": [0, 5, 2, 6],
+          "texture": "#stoneware"
+        }
+      }
+    }
+  ]
+}

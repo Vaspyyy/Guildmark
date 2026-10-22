@@ -1,0 +1,101 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "guildmark:block/cook/iron_band",
+    "iron_band": "guildmark:block/cook/iron_band",
+    "brass": "guildmark:block/cook/brass",
+    "darkwood": "guildmark:block/cook/darkwood"
+  },
+  "elements": [
+    {
+      "from": [14.8, 8.5, 7.4],
+      "to": [15.4, 12.9, 8.6],
+      "faces": {
+        "up": {
+          "uv": [14.8, 7.4, 15.4, 8.6],
+          "texture": "#iron_band"
+        },
+        "down": {
+          "uv": [14.8, 7.4, 15.4, 8.6],
+          "texture": "#iron_band"
+        },
+        "north": {
+          "uv": [0.6, 3.1, 1.2, 7.5],
+          "texture": "#iron_band"
+        },
+        "south": {
+          "uv": [14.8, 3.1, 15.4, 7.5],
+          "texture": "#iron_band"
+        },
+        "west": {
+          "uv": [7.4, 3.1, 8.6, 7.5],
+          "texture": "#iron_band"
+        },
+        "east": {
+          "uv": [7.4, 3.1, 8.6, 7.5],
+          "texture": "#iron_band"
+        }
+      }
+    },
+    {
+      "from": [14.5, 8.1, 7],
+      "to": [15.5, 10.1, 9],
+      "faces": {
+        "down": {
+          "uv": [0, 0, 2, 2],
+          "texture": "#brass"
+        },
+        "up": {
+          "uv": [0, 0, 2, 2],
+          "texture": "#brass"
+        },
+        "north": {
+          "uv": [0, 0, 2, 2],
+          "texture": "#brass"
+        },
+        "south": {
+          "uv": [0, 0, 2, 2],
+          "texture": "#brass"
+        },
+        "west": {
+          "uv": [0, 0, 2, 2],
+          "texture": "#brass"
+        },
+        "east": {
+          "uv": [0, 0, 2, 2],
+          "texture": "#brass"
+        }
+      }
+    },
+    {
+      "from": [15.4, 11.8, 7.3],
+      "to": [16.3, 13.2, 8.7],
+      "faces": {
+        "down": {
+          "uv": [15.1, 7.3, 16, 8.7],
+          "texture": "#darkwood"
+        },
+        "up": {
+          "uv": [15.1, 7.3, 16, 8.7],
+          "texture": "#darkwood"
+        },
+        "north": {
+          "uv": [15.1, 2.8, 16, 4.2],
+          "texture": "#darkwood"
+        },
+        "south": {
+          "uv": [15.1, 2.8, 16, 4.2],
+          "texture": "#darkwood"
+        },
+        "west": {
+          "uv": [7.3, 2.8, 8.7, 4.2],
+          "texture": "#darkwood"
+        },
+        "east": {
+          "uv": [7.3, 2.8, 8.7, 4.2],
+          "texture": "#darkwood"
+        }
+      }
+    }
+  ]
+}

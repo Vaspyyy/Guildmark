@@ -1,0 +1,130 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "guildmark:block/cook/iron",
+    "iron": "guildmark:block/cook/iron",
+    "brass": "guildmark:block/cook/brass"
+  },
+  "elements": [
+    {
+      "from": [6, 5.3, 0.48],
+      "to": [9.4, 7.1, 0.93],
+      "faces": {
+        "down": {
+          "uv": [6, 15.07, 9.4, 15.52],
+          "texture": "#iron"
+        },
+        "up": {
+          "uv": [6, 0.48, 9.4, 0.93],
+          "texture": "#iron"
+        },
+        "north": {
+          "uv": [6.6, 8.9, 10, 10.7],
+          "texture": "#iron"
+        },
+        "south": {
+          "uv": [6, 8.9, 9.4, 10.7],
+          "texture": "#iron"
+        },
+        "west": {
+          "uv": [0.48, 8.9, 0.93, 10.7],
+          "texture": "#iron"
+        },
+        "east": {
+          "uv": [15.07, 8.9, 15.52, 10.7],
+          "texture": "#iron"
+        }
+      }
+    },
+    {
+      "from": [6.1, 5.7, 0.05],
+      "to": [7.1, 6.7, 0.48],
+      "faces": {
+        "down": {
+          "uv": [0, 0, 2, 2],
+          "texture": "#brass"
+        },
+        "up": {
+          "uv": [0, 0, 2, 2],
+          "texture": "#brass"
+        },
+        "north": {
+          "uv": [0, 0, 2, 2],
+          "texture": "#brass"
+        },
+        "south": {
+          "uv": [0, 0, 2, 2],
+          "texture": "#brass"
+        },
+        "west": {
+          "uv": [0, 0, 2, 2],
+          "texture": "#brass"
+        },
+        "east": {
+          "uv": [0, 0, 2, 2],
+          "texture": "#brass"
+        }
+      }
+    },
+    {
+      "from": [3.7, 5.15, 0.35],
+      "to": [4.2, 7.25, 0.93],
+      "faces": {
+        "down": {
+          "uv": [3.7, 15.07, 4.2, 15.65],
+          "texture": "#iron"
+        },
+        "up": {
+          "uv": [3.7, 0.35, 4.2, 0.93],
+          "texture": "#iron"
+        },
+        "north": {
+          "uv": [11.8, 8.75, 12.3, 10.85],
+          "texture": "#iron"
+        },
+        "south": {
+          "uv": [3.7, 8.75, 4.2, 10.85],
+          "texture": "#iron"
+        },
+        "west": {
+          "uv": [0.35, 8.75, 0.93, 10.85],
+          "texture": "#iron"
+        },
+        "east": {
+          "uv": [15.07, 8.75, 15.65, 10.85],
+          "texture": "#iron"
+        }
+      }
+    },
+    {
+      "from": [11.3, 5.15, 0.35],
+      "to": [11.8, 7.25, 0.93],
+      "faces": {
+        "down": {
+          "uv": [11.3, 15.07, 11.8, 15.65],
+          "texture": "#iron"
+        },
+        "up": {
+          "uv": [11.3, 0.35, 11.8, 0.93],
+          "texture": "#iron"
+        },
+        "north": {
+          "uv": [4.2, 8.75, 4.7, 10.85],
+          "texture": "#iron"
+        },
+        "south": {
+          "uv": [11.3, 8.75, 11.8, 10.85],
+          "texture": "#iron"
+        },
+        "west": {
+          "uv": [0.35, 8.75, 0.93, 10.85],
+          "texture": "#iron"
+        },
+        "east": {
+          "uv": [15.07, 8.75, 15.65, 10.85],
+          "texture": "#iron"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,89 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "guildmark:block/cook/soot_wall",
+    "soot_wall": "guildmark:block/cook/soot_wall"
+  },
+  "elements": [
+    {
+      "from": [0.6, 1.98, 3.2],
+      "to": [15.4, 2.05, 4.2],
+      "faces": {
+        "up": {
+          "uv": [0.6, 3.2, 15.4, 4.2],
+          "texture": "#soot_wall"
+        }
+      }
+    },
+    {
+      "from": [0.6, 1.98, 11.8],
+      "to": [15.4, 2.05, 12.8],
+      "faces": {
+        "up": {
+          "uv": [0.6, 11.8, 15.4, 12.8],
+          "texture": "#soot_wall"
+        }
+      }
+    },
+    {
+      "from": [2.4, 1.9, 4.2],
+      "to": [12.6, 1.95, 11.8],
+      "faces": {
+        "up": {
+          "uv": [2.4, 4.2, 12.6, 11.8],
+          "texture": "#soot_wall"
+        }
+      }
+    },
+    {
+      "from": [3.2, 1.88, 6.4],
+      "to": [12, 1.91, 9.6],
+      "faces": {
+        "up": {
+          "uv": [3.2, 6.4, 12, 9.6],
+          "texture": "#soot_wall"
+        }
+      }
+    },
+    {
+      "from": [0.75, 2, 6.75],
+      "to": [2.25, 6.4, 6.8],
+      "faces": {
+        "north": {
+          "uv": [13.75, 9.6, 15.25, 14],
+          "texture": "#soot_wall"
+        }
+      }
+    },
+    {
+      "from": [0.75, 2, 6.8],
+      "to": [0.8, 6.4, 9.2],
+      "faces": {
+        "west": {
+          "uv": [6.8, 9.6, 9.2, 14],
+          "texture": "#soot_wall"
+        }
+      }
+    },
+    {
+      "from": [12.95, 2, 6.75],
+      "to": [14.45, 6.4, 6.8],
+      "faces": {
+        "north": {
+          "uv": [1.55, 9.6, 3.05, 14],
+          "texture": "#soot_wall"
+        }
+      }
+    },
+    {
+      "from": [12.95, 2, 6.8],
+      "to": [13, 6.4, 9.2],
+      "faces": {
+        "west": {
+          "uv": [6.8, 9.6, 9.2, 14],
+          "texture": "#soot_wall"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "open=false": {
+      "model": "guildmark:block/larder"
+    },
+    "open=true": {
+      "model": "guildmark:block/larder_open"
+    }
+  }
+}

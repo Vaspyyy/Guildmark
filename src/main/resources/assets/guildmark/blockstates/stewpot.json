@@ -1,0 +1,58 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "style": "camp",
+        "lit": "false"
+      },
+      "apply": {
+        "model": "guildmark:block/stewpot_camp"
+      }
+    },
+    {
+      "when": {
+        "style": "camp",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/stewpot_camp_lit"
+      }
+    },
+    {
+      "when": {
+        "style": "hearth",
+        "lit": "false"
+      },
+      "apply": {
+        "model": "guildmark:block/stewpot_hearth"
+      }
+    },
+    {
+      "when": {
+        "style": "hearth",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/stewpot_hearth_lit"
+      }
+    },
+    {
+      "when": {
+        "style": "camp",
+        "burnt": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/stewpot_camp_burnt"
+      }
+    },
+    {
+      "when": {
+        "style": "hearth",
+        "burnt": "true"
+      },
+      "apply": {
+        "model": "guildmark:block/stewpot_hearth_burnt"
+      }
+    }
+  ]
+}
