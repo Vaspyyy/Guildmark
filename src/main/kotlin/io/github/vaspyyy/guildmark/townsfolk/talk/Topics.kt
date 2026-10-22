@@ -19,8 +19,12 @@ import java.util.concurrent.CopyOnWriteArrayList
 /** What a line is for. */
 enum class Occasion { GREET, OPENER, DOING, NEWS, ANSWER, BARK, CHAT, FAREWELL }
 
-/** What a line is about: the weights and the "not twice" rules go by it. */
-enum class Kind { DOING, TRADE, HOUSEHOLD, MARKET, EVENT, SEASON, FESTIVAL, WEATHER, DEEDS, DEALINGS, NEWS, ROAD, FACTION, HOMESTEAD, WORKS, FORTUNE }
+/**
+ * What a line is about: the weights and the "not twice" rules go by it. KITCHEN (Hearthcraft's, what was eaten and who
+ * cooked it) is said to whom the market's talk is; TALE (Tales', a cast member's trouble and how it stands) to whom the
+ * plain kinds' is, strangers among them, for a stranger is told the same tale.
+ */
+enum class Kind { DOING, TRADE, HOUSEHOLD, MARKET, EVENT, SEASON, FESTIVAL, WEATHER, DEEDS, DEALINGS, NEWS, ROAD, FACTION, HOMESTEAD, WORKS, FORTUNE, KITCHEN, TALE }
 
 /** How well the speaker knows the player (living-world/design-voices.md section 3). */
 enum class Familiarity {
@@ -274,8 +278,8 @@ object Topics {
     /** Whom it's said to (section 1's table). */
     private fun familiarity(kind: Kind, f: Familiarity): Double {
         val row = when (kind) {
-            Kind.DOING, Kind.TRADE, Kind.WEATHER, Kind.SEASON, Kind.FACTION -> PLAIN
-            Kind.MARKET, Kind.EVENT, Kind.FESTIVAL, Kind.ROAD, Kind.HOMESTEAD, Kind.WORKS, Kind.FORTUNE -> TOWN
+            Kind.DOING, Kind.TRADE, Kind.WEATHER, Kind.SEASON, Kind.FACTION, Kind.TALE -> PLAIN
+            Kind.MARKET, Kind.EVENT, Kind.FESTIVAL, Kind.ROAD, Kind.HOMESTEAD, Kind.WORKS, Kind.FORTUNE, Kind.KITCHEN -> TOWN
             Kind.NEWS -> NEWS
             Kind.HOUSEHOLD -> HOUSEHOLD
             Kind.DEEDS -> DEEDS
