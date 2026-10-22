@@ -28,6 +28,7 @@ import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import io.github.vaspyyy.guildmark.trade.Haul
 import io.github.vaspyyy.guildmark.trade.HaulKind
+import io.github.vaspyyy.guildmark.trade.Word
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
@@ -717,8 +718,13 @@ object Witness {
      */
     class Hauled(val rumour: Rumour?, val warmed: Int, val knew: Int)
 
-    /** The name of the town whose heart is [capital], as its orders keep it or its ground has it; "" if neither is known. */
-    fun townOf(level: ServerLevel, capital: BlockPos): String = Suppliers.place(level, capital).ifEmpty { Spread.view(capital).places?.name.orEmpty() }
+    /**
+     * The name of the town whose heart is [capital], as the trader's Word names it (so the rumour of a delivery, the guild's news and the commands
+     * name a town as the board, the book and the other rumours of the trade do), else as its orders keep it or its ground has it; "" if none is known.
+     */
+    fun townOf(level: ServerLevel, capital: BlockPos): String =
+        Word.nameOf(level, capital.asLong()).ifEmpty { Word.found(level, capital.asLong()) }
+            .ifEmpty { Suppliers.place(level, capital) }.ifEmpty { Spread.view(capital).places?.name.orEmpty() }
 
     /** As [hauled], for a delivery [player] made in person. */
     fun hauled(level: ServerLevel, entry: Markets.Entry, player: ServerPlayer, haul: Haul, units: Int, crowd: Collection<Int> = listOf()): Hauled =
