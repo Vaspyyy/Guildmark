@@ -20,6 +20,7 @@ import io.github.vaspyyy.guildmark.townsfolk.scenes.Stage
 import io.github.vaspyyy.guildmark.townsfolk.talk.Ask
 import io.github.vaspyyy.guildmark.townsfolk.talk.Script
 import io.github.vaspyyy.guildmark.townsfolk.talk.Topic
+import net.minecraft.core.BlockPos
 import java.util.UUID
 
 /**
@@ -130,9 +131,11 @@ object Probe : Template {
     /** Nothing but what the engine leaves (a `Why`, the chronicle line); the rest is pay and memory's. */
     override fun end(c: Ctx, t: Tale, ending: String) {}
 
+    /** The probe has no door or camp of its own, so its row points at its town's heart: the pin, the compass mark and the arrow can be tried on it. */
     override fun view(t: Tale, player: UUID): View = View(
         title = TaleKeys.title(id),
         status = TaleKeys.status(id, t.step),
+        target = BlockPos.of(t.capital),
     )
 
     /** Where the parts got: A for a note handed in, B for a gift or a choice, C for a part taken up, W for nothing. */
