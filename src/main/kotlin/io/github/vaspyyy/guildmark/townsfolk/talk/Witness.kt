@@ -130,7 +130,7 @@ object Witness {
         if (r.home < 0) listOf() else Residents.get(level).of(r.capital).filter { it.alive && it.id != r.id && it.home == r.home }
 
     /** Those living in the [NEIGHBOURS] homes nearest [r]'s (where the capital's places are known). */
-    private fun neighbours(level: ServerLevel, r: Resident): List<Resident> {
+    internal fun neighbours(level: ServerLevel, r: Resident): List<Resident> {
         val places = Spread.view(r.capital).places ?: return listOf()
         val at = places.lodgings[r.home]?.box?.center ?: return listOf()
         val living = Residents.get(level).of(r.capital).filter { it.alive && it.id != r.id && it.home >= 0 && it.home != r.home }
@@ -239,29 +239,48 @@ object Witness {
         val r = residents.of(p) ?: return
         val source = p.lastDamageSource
         val killer = source?.entity as? ServerPlayer ?: p.killCredit as? ServerPlayer
-        val household = household(level, r)
-        if (killer != null) {
-            val seen = seen(level, p.position(), p, SIGHT, true).filter { it.second.id != r.id }
-            val kin = household.map { it.id }.toSet()
-            val knowers = (seen.map { it.second.id to Venue.SEEN } + household.map { it.id to Venue.HOUSEHOLD }).distinctBy { it.first }
-            TownTalk.begin(
-                level, r.capital, "slight.murder", killer.uuid, r.id, listOf(named(killer.name.string), named(r.name)),
-                1.0f, Fade.BIG, Scope.REGION, -1, p.blockPosition(), Rumours.TOWN, knowers,
-            )
-            for ((_, w) in seen) if (w.id !in kin) TownTalk.slight(level, w, killer.uuid, Slight.KILLING_SEEN)
-            for (h in household) TownTalk.slight(level, h, killer.uuid, Slight.KILLED_KIN)
-        } else {
-            val by = source?.entity?.takeIf { it !is Player && it !== p }?.type?.descriptionId
-            val trade = residents.of(r.capital).filter { it.alive && it.id != r.id && it.role == r.role }.take(TRADE)
-            val knowers = (household.map { it.id to Venue.HOUSEHOLD } + trade.map { it.id to Venue.WORK } + neighbours(level, r).map { it.id to Venue.STREET })
-                .distinctBy { it.first }
-            TownTalk.begin(
-                level, r.capital, "death", null, r.id, listOfNotNull(named(r.name), "entity.guildmark.townsperson.${r.role.id}", by),
-                0.8f, Fade.SMALL, Scope.TOWN, -1, p.blockPosition(), Rumours.TOWN, knowers,
-            )
+        // No killing to tell of: any other death in town is told as the record tells it
+        if (killer == null) {
+            passed(level, r, p.blockPosition(), source?.entity?.takeIf { it !is Player && it !== p }?.type?.descriptionId)
+            return
         }
+        val household = household(level, r)
+        val seen = seen(level, p.position(), p, SIGHT, true).filter { it.second.id != r.id }
+        val kin = household.map { it.id }.toSet()
+        val knowers = (seen.map { it.second.id to Venue.SEEN } + household.map { it.id to Venue.HOUSEHOLD }).distinctBy { it.first }
+        TownTalk.begin(
+            level, r.capital, "slight.murder", killer.uuid, r.id, listOf(named(killer.name.string), named(r.name)),
+            1.0f, Fade.BIG, Scope.REGION, -1, p.blockPosition(), Rumours.TOWN, knowers,
+        )
+        for ((_, w) in seen) if (w.id !in kin) TownTalk.slight(level, w, killer.uuid, Slight.KILLING_SEEN)
+        for (h in household) TownTalk.slight(level, h, killer.uuid, Slight.KILLED_KIN)
+        grieve(level, r, household)
+    }
+
+    /**
+     * [r], whose record is already marked dead, has passed on with no killer to tell of, and the town hears it at [at]:
+     * their household grieves, those of their trade and their street talk of it, and their own memory is let go. [by] is
+     * what killed them (an entity's name), if anything did. [died] tells it from a body; `Residents.pass` calls this when
+     * there is none, as when a tale ends someone's life (living-world/stories/design.md 4.4).
+     */
+    fun passed(level: ServerLevel, r: Resident, at: BlockPos, by: String? = null) {
+        val household = household(level, r)
+        val trade = Residents.get(level).of(r.capital).filter { it.alive && it.id != r.id && it.role == r.role }.take(TRADE)
+        val knowers = (household.map { it.id to Venue.HOUSEHOLD } + trade.map { it.id to Venue.WORK } + neighbours(level, r).map { it.id to Venue.STREET })
+            .distinctBy { it.first }
+        TownTalk.begin(
+            level, r.capital, "death", null, r.id, listOfNotNull(named(r.name), "entity.guildmark.townsperson.${r.role.id}", by),
+            0.8f, Fade.SMALL, Scope.TOWN, -1, at, Rumours.TOWN, knowers,
+        )
+        grieve(level, r, household)
+    }
+
+    /** The front door of [r]'s home, or their capital's heart where its places aren't known yet: where a death with no body is heard from. */
+    fun homeDoor(r: Resident): BlockPos = Spread.view(r.capital).places?.lodgings?.get(r.home)?.front?.pos ?: r.capital
+
+    /** [r]'s [household] feels the loss, and what [r] remembered goes with them: their death is a rumour now. */
+    private fun grieve(level: ServerLevel, r: Resident, household: List<Resident>) {
         for (h in household) felt(level, h, Experience.BEREAVED, r.id)
-        // Their death is a rumour now: what they remembered goes with them
         val data = TownTalkData.get(level)
         data[r.capital]?.minds?.remove(r.id)
         data.changed()
@@ -664,7 +683,7 @@ object Witness {
     }
 
     /** Those living in the [NEIGHBOURS] homes nearest [at] in [capital] (but home [except]), where its places are known. */
-    private fun round(level: ServerLevel, capital: BlockPos, at: BlockPos, except: Int = -1): List<Resident> {
+    internal fun round(level: ServerLevel, capital: BlockPos, at: BlockPos, except: Int = -1): List<Resident> {
         val places = Spread.view(capital).places ?: return listOf()
         val living = Residents.get(level).of(capital).filter { it.alive && it.home >= 0 && it.home != except }
         val homes = living.map { it.home }.distinct()
