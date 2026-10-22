@@ -100,22 +100,19 @@ class PlateBlock(properties: Properties) : Block(properties), EntityBlock {
     /**
      * Lifts the dish into the empty hand and starts the game's own eating of it, so that everything that belongs to
      * eating a dish (its food at how it has kept, the talents' extra on it, the bowl back, the effect of the meal, the
-     * pose and the mouthful's sound) is exactly what eating it from the pack does. If the game will not let the player
-     * eat (they are full), the dish goes back and they are told.
+     * pose and the mouthful's sound) is exactly what eating it from the pack does. It is the game that says whether the
+     * player may eat (a dish with a meal may be eaten with the food bar full, a sweet one waits for an appetite): if it
+     * will not have it, the dish goes back and they are told.
      */
     private fun eat(level: ServerLevel, player: ServerPlayer, plate: PlateBlockEntity, pos: BlockPos): InteractionResult {
-        if (!player.canEat(false)) {
-            player.sendOverlayMessage(Component.translatable("message.guildmark.cook.plate_sated"))
-            return InteractionResult.CONSUME
-        }
         val portion = plate.take(level)
         if (portion.isEmpty) return InteractionResult.PASS
         player.setItemInHand(InteractionHand.MAIN_HAND, portion)
         portion.use(level, player, InteractionHand.MAIN_HAND)
         if (!player.isUsingItem) {
-            // The game would not have it: back on the plate it goes
             player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY)
             plate.lay(portion)
+            player.sendOverlayMessage(Component.translatable("message.guildmark.cook.plate_sated"))
             return InteractionResult.CONSUME
         }
         PlateEating.begin(player, level, pos)
