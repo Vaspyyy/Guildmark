@@ -14,7 +14,8 @@ import java.util.function.Supplier
  * What became of each item of each homestead's kitchen (living-world/cook/design.md 6.7), kept with the overworld so a kitchen
  * is fitted once and a station an owner took away is not fitted again. The plan itself is never saved: only the verdicts. An
  * item with no record is still to be looked at (it waits for its chunk, or for the tier). A homestead gets a record when its
- * first item is settled, so a world with no homesteads, or with the kitchens off, keeps nothing here and writes nothing.
+ * first item is settled. A world with no homesteads, or with the kitchens off, never asks for this at all, so it creates no
+ * file and writes nothing; a homestead's record is written only when one of its items is settled.
  */
 class HomeKitchenData(private val homes: MutableMap<Int, Home> = HashMap()) : SavedData() {
     /** How an item ended. */

@@ -8,7 +8,6 @@ import io.github.vaspyyy.guildmark.cooking.CookStats
 import io.github.vaspyyy.guildmark.cooking.Cooking
 import io.github.vaspyyy.guildmark.cooking.market.MenuBoardBlockEntity
 import io.github.vaspyyy.guildmark.cooking.market.MenuBoards
-import io.github.vaspyyy.guildmark.cooking.vessel.Fuel
 import io.github.vaspyyy.guildmark.cooking.vessel.SpitBlockEntity
 import io.github.vaspyyy.guildmark.cooking.vessel.StationProps
 import io.github.vaspyyy.guildmark.cooking.vessel.StewpotBlockEntity
@@ -589,14 +588,23 @@ object HomesteadKitchens {
         val v = pot.vessel
         if (v.items.isNotEmpty() || v.water > 0 || (v.state != Vessel.State.EMPTY)) return
         if (here) {
-            if (v.lit || !Fuel.free(level, pos)) return
+            if (v.lit) return
             v.lit = true
             v.dirty = true
             pot.catchUp(level)
-            if (v.lit) pot.ring(level, "cook.ignite", 0.6f, 1.0f)
+            if (v.lit) {
+                // The fire catches: a spark, a few flames and a curl of smoke over the pot
+                pot.ring(level, "cook.ignite", 0.6f, 1.0f)
+                level.sendParticles(ParticleTypes.FLAME, pos.x + 0.5, pos.y + 0.35, pos.z + 0.5, 8, 0.2, 0.1, 0.2, 0.01)
+                level.sendParticles(ParticleTypes.SMOKE, pos.x + 0.5, pos.y + 0.8, pos.z + 0.5, 3, 0.15, 0.1, 0.15, 0.01)
+            }
         } else if (v.lit && v.fuel <= 0.0) {
             pot.catchUp(level)
-            if (!v.lit) level.playSound(null, pos, SoundEvents.FIRE_EXTINGUISH, SoundSource.BLOCKS, 0.3f, 1.0f)
+            if (!v.lit) {
+                // The fire dies down: a hiss and a last billow of smoke
+                level.playSound(null, pos, SoundEvents.FIRE_EXTINGUISH, SoundSource.BLOCKS, 0.3f, 1.0f)
+                level.sendParticles(ParticleTypes.LARGE_SMOKE, pos.x + 0.5, pos.y + 0.7, pos.z + 0.5, 6, 0.2, 0.15, 0.2, 0.02)
+            }
         }
     }
 
