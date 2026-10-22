@@ -37,6 +37,10 @@ object VillageDays {
     private const val GREEN_FROM = 10.5
     private const val GREEN_TO = 13.5
 
+    /** The bellman's errand: from five, to be at the bell and to wait for the hour ([BellKeeper.DUSK]); at ten to six they are let go. */
+    private const val BELL_FROM = 17.0
+    private const val BELL_TO = 17.9
+
     /** What is never cut across: bed, the watch and the crier's and builders' stretches. */
     private val KEPT = setOf(Doing.SLEEP, Doing.BED, Doing.WATCH, Doing.CRY, Doing.BUILD)
 
@@ -52,6 +56,8 @@ object VillageDays {
                 life.market && r.role.adult && r.role != TownRole.GUARD && !life.carter -> interrupt(list, GREEN_FROM, GREEN_TO, Doing.MARKET, GREEN)
             }
         }
+        // The dusk bell, every day of the week
+        if (life.bellman) interrupt(list, BELL_FROM, BELL_TO, Doing.ERRAND, BELL)
         return if (list.size == base.stretches.size && list.indices.all { list[it] === base.stretches[it] }) base else Agenda(day, list)
     }
 
