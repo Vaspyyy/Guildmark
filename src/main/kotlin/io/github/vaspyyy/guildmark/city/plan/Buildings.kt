@@ -10,7 +10,7 @@ class Buildings(private val plan: CityPlan, private val canvas: Canvas) {
         when (b.kind) {
             Kind.HOUSE, Kind.WORKSHOP -> townhouse(f, b, r)
             Kind.CATHEDRAL, Kind.PALACE, Kind.MANOR -> Landmarks(f, b, r).draw()
-            else -> GreatBuildings(f, b, r, plan.layout.version).draw()
+            else -> GreatBuildings(f, b, r, plan.layout.version, plan.grid).draw()
         }
     }
 

@@ -38,9 +38,11 @@ class Layout(val tier: Tier, val upper: Int, val citadel: Int, val harbour: Dir?
          * The plans as capitals are generated now. 1: townsfolk keep every market stall (in capitals generated
          * before, version 0, villagers keep half of them). 2: the town works' lots are kept (CityPlan.worksLots: the
          * granary's, and two stall pitches on the market square) and the bakery is drawn with its other back corner
-         * clear for a second oven, its flue's footing laid (M6).
+         * clear for a second oven, its flue's footing laid (M6). 3: the kitchens (Hearthcraft): the tavern's fire is the
+         * innkeeper's pot on a crane, its back corner a guest pot on a hearthstone beside a spit, the bakery's furnace is a
+         * bake oven, and each has a menu board by its door.
          */
-        const val VERSION = 2
+        const val VERSION = 3
 
         /** The plans before the town works: new capitals are drawn to them until the works are wired in (Works.ready). */
         const val BEFORE_WORKS = 1

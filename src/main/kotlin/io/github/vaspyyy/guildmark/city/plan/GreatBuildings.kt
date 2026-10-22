@@ -9,9 +9,25 @@ import kotlin.math.sqrt
  * stables in the keep's ward. The plan gives each a lot of a set size and each is drawn to fit it, as the plans of
  * [version] have it (Layout.VERSION).
  */
-class GreatBuildings(private val f: Frame, private val b: Building, private val r: Random, private val version: Int = Layout.BEFORE_WORKS) {
+class GreatBuildings(
+    private val f: Frame, private val b: Building, private val r: Random, private val version: Int = Layout.BEFORE_WORKS,
+    private val grid: Grid? = null,
+) {
     private val w = f.w
     private val d = f.d
+
+    /**
+     * Whether the menu board may stand at [u] just outside the front wall: only on open ground (a street, square, yard or
+     * garden, never in another building's lot) with the same in front of it, so it never shuts a way through. Where the
+     * plan has no grid to ask it may.
+     */
+    private fun boardRoom(u: Int): Boolean {
+        val g = grid ?: return true
+        return (-2..-1).all { v ->
+            val use = g[f.x(u, v), f.z(u, v)]
+            use.street || use == Use.YARD || use == Use.GARDEN || use == Use.FREE
+        }
+    }
 
     fun draw() {
         when (b.kind) {
@@ -222,6 +238,8 @@ class GreatBuildings(private val f: Frame, private val b: Building, private val 
         f.door(door, 0, 0, hingeRight = true)
         f.door(door + 1, 0, 0)
         for (u in listOf(door - 2, door + 3)) f.set(u, 2, -1, B(M.BANNER, Dir.N, color = sign))
+        // The inn's menu board on its post, one cell to the door's left as the street sees it, under the overhang (clear of the brackets above it)
+        if (version >= 3 && boardRoom(door + 2)) f.set(door + 2, 0, -1, B(M.MENU_BOARD, Dir.N))
         Buildings.roof(f, w, d, -1, top, ROOF_RED, true, PLASTER)
 
         // The taproom: tables lit by candles, the bar across the back, barrels behind it
@@ -230,7 +248,12 @@ class GreatBuildings(private val f: Frame, private val b: Building, private val 
         f.set(2, 1, bar, B(M.LANTERN))
         f.set(w - 5, 1, bar, B(M.CANDLE))
         for (u in 1..w - 6) for (y in 0..1) f.set(u, y, d - 2, B(M.BARREL, Dir.N))
-        f.set(w - 4, 0, d - 2, B(M.SMOKER, Dir.N))
+        if (version >= 3) {
+            // The back corner is the guests' pot, on a hearthstone let into the floor, and the spit stands in the clear cell beside it
+            f.set(w - 4, -1, d - 2, STONE)
+            f.set(w - 4, 0, d - 2, B(M.STEWPOT, Dir.N, v = 1))
+            f.set(w - 5, 0, d - 2, B(M.SPIT, Dir.N))
+        } else f.set(w - 4, 0, d - 2, B(M.SMOKER, Dir.N))
         for ((u, v) in listOf(3 to 4, 7 to 4, 3 to 8, 7 to 8)) {
             f.set(u, 0, v, TABLE)
             f.set(u, 1, v, B(M.CANDLE))
@@ -245,7 +268,7 @@ class GreatBuildings(private val f: Frame, private val b: Building, private val 
             f.set(w - 2, y, hearth + 1, STONE)
         }
         f.set(w - 2, 2, hearth, STONE)
-        f.set(w - 2, 0, hearth, B(M.CAMPFIRE))
+        if (version >= 3) f.set(w - 2, 0, hearth, B(M.STEWPOT, Dir.N, v = 0)) else f.set(w - 2, 0, hearth, B(M.CAMPFIRE))
         for (y in 0..top + 5) f.set(w - 1, y, hearth, STONE)
         f.set(w - 1, top + 6, hearth, B(M.CAMPFIRE))
         f.spawn(Spawn.VILLAGER, 4, 0, d - 3)
@@ -511,11 +534,14 @@ class GreatBuildings(private val f: Frame, private val b: Building, private val 
             f.set(w - 1, y, v, WINDOW)
         }
         for (u in listOf(door - 1, door + 2)) f.set(u, 2, -1, B(M.BANNER, Dir.N, color = Dye.YELLOW))
+        // The bakery's menu board on its post, one cell to the door's left as the street sees it, under its banner
+        if (version >= 3 && boardRoom(door + 2)) f.set(door + 2, 0, -1, B(M.MENU_BOARD, Dir.N))
         Buildings.roof(f, w, d, 0, top, r.nextInt(3), true, PLASTER)
         // The oven: a block of stone with fire in its mouth, its flue up through the roof
         for (u in w - 5..w - 2) for (v in d - 5..d - 2) for (y in 0..2) f.set(u, y, v, STONE)
         f.set(w - 4, 0, d - 5, B(M.SMOKER, Dir.N))
-        f.set(w - 3, 0, d - 5, B(M.FURNACE, Dir.N))
+        // Since the kitchens the great oven is a bake oven with a door of its own; the smoker beside it stays, which keeps the baker's job (Jobs.oven)
+        if (version >= 3) f.set(w - 3, 0, d - 5, B(M.BAKE_OVEN, Dir.N)) else f.set(w - 3, 0, d - 5, B(M.FURNACE, Dir.N))
         for (y in 3..top + 6) f.set(w - 3, y, d - 3, STONE)
         f.set(w - 3, top + 7, d - 3, B(M.CAMPFIRE))
         // A table by the oven to knead the dough on

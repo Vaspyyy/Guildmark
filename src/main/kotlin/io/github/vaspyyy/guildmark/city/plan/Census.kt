@@ -234,7 +234,10 @@ class Census(val plan: CityPlan) {
                 M.BARREL -> l.stores.add(Store(at, null, dir))
                 M.ANVIL, M.GRINDSTONE, M.SMITHING_TABLE, M.STONECUTTER, M.CARTOGRAPHY_TABLE, M.FLETCHING_TABLE, M.LOOM,
                 M.CAULDRON, M.BREWING_STAND, M.COMPOSTER, M.LECTERN, M.CRAFTING_TABLE, M.FURNACE, M.SMOKER,
-                M.BLAST_FURNACE, M.HAY, M.CRATE, M.BOOKSHELF -> l.stations.add(Station(at, m, dir))
+                M.BLAST_FURNACE, M.HAY, M.CRATE, M.BOOKSHELF,
+                M.STEWPOT, M.HOB, M.BAKE_OVEN, M.SPIT, M.PREP_BOARD, M.PLATE, M.LARDER, M.MENU_BOARD -> l.stations.add(Station(at, m, dir))
+                // A tavern's fire is a station too (and only there), so the kitchens' retrofit finds an old capital's hearth from its plan
+                M.CAMPFIRE -> if (l.kind == Kind.TAVERN.name) l.stations.add(Station(at, m, dir))
                 else -> {}
             }
         }
