@@ -32,4 +32,10 @@ object Templates {
 
     /** The built template with this id, or null (not one of the twelve, or not built yet). */
     fun byId(id: String): Template? = ALL.firstOrNull { it.id == id }
+
+    /** The probe tale (`tales/templates/Probe.kt`): never in the draw nor in `tale seeds`; only `tale start probe` makes it. */
+    val PROBE: Template get() = io.github.vaspyyy.guildmark.tales.templates.Probe
+
+    /** The template a tale is stepped by: a built one, or the probe. Null for an id this build does not know (a later build rolled back, 11.4). */
+    fun find(id: String): Template? = byId(id) ?: PROBE.takeIf { it.id == id }
 }

@@ -96,10 +96,10 @@ class Ctx(
     // ---- The tale itself (Part A) ----
 
     /** Adds a `Why` to [t] (1.1): [kind] and its [args], oldest first, at most eight (the second is dropped at the cap). See [Why] for the key a sentence is. */
-    fun why(t: Tale, kind: String, vararg args: String) {}
+    fun why(t: Tale, kind: String, vararg args: String) = TaleSteps.why(this, t, kind, args)
 
     /** Moves [t] on to step [step]: its days (`stepDay`, `by`) are set from the template's table and the template's `enter` is called. */
-    fun go(t: Tale, step: Int) {}
+    fun go(t: Tale, step: Int) = TaleSteps.go(this, t, step)
 
     /** Moves [t] on to the next step; the same as [go] with the step after this one. */
     fun next(t: Tale) = go(t, t.step + 1)

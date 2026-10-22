@@ -13,6 +13,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Comings
 import io.github.vaspyyy.guildmark.townsfolk.ComingsData
 import io.github.vaspyyy.guildmark.townsfolk.Crier
 import io.github.vaspyyy.guildmark.townsfolk.Days
+import io.github.vaspyyy.guildmark.townsfolk.Household
 import io.github.vaspyyy.guildmark.townsfolk.Resident
 import io.github.vaspyyy.guildmark.townsfolk.Task
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
@@ -123,24 +124,50 @@ object Tales : Comings.Listener {
      * [pause] when it finds the switch gone off.
      */
     fun refresh() {
+        val was = live
         live = enabled()
+        if (was && !live) TaleEngine.paused()
     }
 
     /** The switch went off: the stages end and the tale bodies are let go, and nothing is written to any tale (Part A, B; design 11.5). */
-    fun pause(level: ServerLevel) {}
+    fun pause(level: ServerLevel) {
+        TaleEngine.pause(level)
+    }
 
     /** At setup, after the streets: the listeners (Part A), and each of B to F adds a block of its own. Registers nothing yet. */
     fun register(modBus: IEventBus) {
+        TaleEngine.register()
         TaleLook.register()
     }
 
     // ---- The clock ----
 
     /** From `Markets.step`, after `Fortunes.day`: [entry]'s capital's close, once a day. The engine settles, seeds and starts tales here (Part A). */
-    fun day(level: ServerLevel, entry: Markets.Entry) {}
+    fun day(level: ServerLevel, entry: Markets.Entry) {
+        TaleClose.day(level, entry)
+    }
+
+    /** From `Scenes.tick` or the engine's own second: a player is in the capital whose heart is [capital] today (`seen`, 2.2 step 4). Part A keeps it itself each second, so a caller need not. */
+    fun see(level: ServerLevel, capital: Long) {
+        if (live) TaleEngine.see(level, capital)
+    }
 
     /** From `Comings.Listener.back`, once the clock is set back [days] market days: every tale's days go back with it (Part A). */
-    override fun back(level: ServerLevel, days: Long) {}
+    override fun back(level: ServerLevel, days: Long) {
+        if (!live) return
+        try {
+            TaleKeep.back(TaleData.get(level), days)
+        } catch (e: Exception) {
+            Guildmark.LOGGER.warn("The tales' days did not go back with the clock", e)
+        }
+    }
+
+    /** `Comings.Listener`: a household came in, went, or came home. A cast member's going is the engine's to note (5.6); the tale hears of each (10.1). */
+    override fun arrived(level: ServerLevel, h: Household) = TaleListeners.household(level, "arrived", h)
+
+    override fun left(level: ServerLevel, h: Household) = TaleListeners.household(level, "left", h)
+
+    override fun returned(level: ServerLevel, h: Household) = TaleListeners.household(level, "returned", h)
 
     // ---- The scene ----
 
@@ -153,10 +180,14 @@ object Tales : Comings.Listener {
     // ---- The people ----
 
     /** Whether resident [id]'s day is a tale's for now (they are held), so their day body is not made. From `Residents.onJoin` and `Comings.leavers`. */
-    fun holds(id: Int): Boolean = false
+    fun holds(id: Int): Boolean = live && TaleEngine.holds(id)
 
     /** From `Residents.pass`, after the record half of a death: [r] died, or was put to rest, and a tale that cast them copes (Part A). */
-    fun died(level: ServerLevel, r: Resident) {}
+    fun died(level: ServerLevel, r: Resident) {
+        if (!live) return
+        TaleGone.died(level, r)
+        tell(level, Event.Died(r))
+    }
 
     /** From `Guildmark.onLivingDeath`: [killer] (or their companion) killed [victim]; the handcart's camp counts it (T2). */
     fun onKill(level: ServerLevel, victim: LivingEntity, killer: Player) {}
@@ -188,10 +219,20 @@ object Tales : Comings.Listener {
     fun lanternRelease(level: ServerLevel, centre: Vec3) {}
 
     /** From `Contracts.turnIn` (E places the call): [player] handed in [note] (its chain begins `tale:`) in [state]. */
-    fun contractDone(level: ServerLevel, player: Player, note: QuestNote, state: ContractState) {}
+    fun contractDone(level: ServerLevel, player: Player, note: QuestNote, state: ContractState) = contract(level, player, note, state, false)
 
     /** From `Contracts.turnIn` (E places the call): [player] handed in [note] after its deadline. */
-    fun contractExpired(level: ServerLevel, player: Player, note: QuestNote, state: ContractState) {}
+    fun contractExpired(level: ServerLevel, player: Player, note: QuestNote, state: ContractState) = contract(level, player, note, state, true)
+
+    /** The note's chain is `tale:<tale>:<step>`; the tale it names hears that it was handed in. A chain that does not read so is none of ours. */
+    private fun contract(level: ServerLevel, player: Player, note: QuestNote, state: ContractState, expired: Boolean) {
+        if (!live) return
+        val chain = note.chain.split(':')
+        if (chain.size < 3 || chain[0] != "tale") return
+        val tale = chain[1].toIntOrNull() ?: return
+        val step = chain[2].toIntOrNull() ?: return
+        tell(level, Event.Contract(tale, step, player, note, state, expired))
+    }
 
     // ---- What a tale shows, placed by the part that shows it ----
 
@@ -211,7 +252,7 @@ object Tales : Comings.Listener {
     fun quiet(p: Townsperson): Task? = null
 
     /** From `WorksBuild.labourers` (T1 places the call): the ids of [capital]'s residents the works take on first. Part A keeps the set. */
-    fun volunteers(capital: Long): Set<Int> = setOf()
+    fun volunteers(capital: Long): Set<Int> = if (live) TaleEngine.volunteers(capital) else setOf()
 
     // ---- The calls that need a Tale (tales A1: declared here, each a no-op or a plain "no" until its owner fills it in; design 14.4, 14.5) ----
 
@@ -233,16 +274,23 @@ object Tales : Comings.Listener {
     fun protect(c: Ctx, t: Tale, home: Int, days: Int) {}
 
     /** Part A (6.7): the one door every ending goes through, whoever or whatever caused it: [t] ends with [ending] and the ten stages run, each guarded, each marked in [Tale.done]. */
-    fun finish(c: Ctx, t: Tale, ending: String) {}
+    fun finish(c: Ctx, t: Tale, ending: String) {
+        if (live) TaleFinish.finish(c, t, ending)
+    }
 
     /** Part A (2.2 step 7): seeds [template] in [c]'s capital now and answers the tale (step 0, a `Why`, the cast held, the first step entered), or null; [forced] is `tale start`. */
-    fun seed(c: Ctx, template: Template, forced: Boolean = false): Tale? = null
+    fun seed(c: Ctx, template: Template, forced: Boolean = false): Tale? = TaleSeeding.attempt(c, template, forced).tale
 
     /** Part A: tells the tale [e] concerns (the open tale of its capital, or the one it names) so its template can hear it. How `Event.Arrived` (B) and `Event.Gave` (C) reach the engine. */
-    fun tell(level: ServerLevel, e: Event) {}
+    fun tell(level: ServerLevel, e: Event) {
+        if (live) TaleEvents.tell(level, e)
+    }
+
+    /** Part A: whether any open tale would hear an event of [kind] now, so a hot hook (every kill, every deal) can skip making one when none would. False with tales off. */
+    fun listening(level: ServerLevel, kind: Event.Kind): Boolean = live && TaleEvents.listening(level, kind)
 
     /** Part A (1.3, 3.1): [player] said yes to [t]: their part goes IN (and their party mates', 4.7), the banner and the chime follow, and an ASK step ends. How the talk (C) hands the word to the engine. */
-    fun join(level: ServerLevel, t: Tale, player: ServerPlayer): Boolean = false
+    fun join(level: ServerLevel, t: Tale, player: ServerPlayer): Boolean = TaleSteps.join(level, t, player)
 
     /** Part E (6.5): changes the ways of [r], of [t]'s cast, to [to] (the opposite is cleared, the flip is logged in `TaleData.flips`); false if a limit stops it (two a tale, one a resident in forty days) and a `Why` says so. */
     fun flip(c: Ctx, t: Tale, r: Resident, to: Trait): Boolean = false
