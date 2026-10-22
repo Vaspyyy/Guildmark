@@ -5,6 +5,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Activity
 import io.github.vaspyyy.guildmark.townsfolk.Director
 import io.github.vaspyyy.guildmark.townsfolk.Town
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
+import io.github.vaspyyy.guildmark.village.live.VillageFeast
 import io.github.vaspyyy.guildmark.townsfolk.Townsfolk
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import it.unimi.dsi.fastutil.ints.IntList
@@ -394,7 +395,7 @@ class FestivalSite(
         FestivalPart.HOST -> 1
         FestivalPart.PLAY -> plan.band.size
         FestivalPart.DANCE -> plan.dance?.n ?: 0
-        FestivalPart.WATCH -> if (plan.capital) plan.crowd.size else min(plan.crowd.size, 4)
+        FestivalPart.WATCH -> if (plan.capital) plan.crowd.size else min(plan.crowd.size, 8)
         FestivalPart.HELP -> 0
     }
 
@@ -970,6 +971,8 @@ class FestivalSite(
             level.sendParticles(ParticleTypes.HAPPY_VILLAGER, villager.x, villager.y + 2.0, villager.z, 5, 0.3, 0.3, 0.3, 0.0)
             villager.jumpControl.jump()
         }
+        // A village's own folk in the crowd cheer too
+        VillageFeast.cheer(level, this)
     }
 
     // =============================================================================================== the evening
@@ -1070,6 +1073,8 @@ class FestivalSite(
                 if (setStart >= 0 && random.nextInt(2) == 0) villager.jumpControl.jump()
             }
         }
+        // And the village's own folk, who are not of the cast, drift in to the second row of the crowd
+        VillageFeast.drift(level, this, members.keys)
     }
 
     // =============================================================================================== telling the players

@@ -4,6 +4,7 @@ import io.github.vaspyyy.guildmark.block.QuestBoardBlock
 import io.github.vaspyyy.guildmark.block.VillageBoards
 import io.github.vaspyyy.guildmark.festival.Festivities
 import io.github.vaspyyy.guildmark.guild.TownControl
+import io.github.vaspyyy.guildmark.village.live.VillageFeast
 import net.minecraft.core.BlockPos
 import net.minecraft.core.particles.ParticleTypes
 import net.minecraft.network.chat.Component
@@ -91,6 +92,8 @@ object Festivals {
             level.playSound(null, villager.blockPosition(), SoundEvents.VILLAGER_YES, SoundSource.NEUTRAL, 0.5f, 0.9f + random.nextFloat() * 0.3f)
             level.sendParticles(ParticleTypes.HAPPY_VILLAGER, villager.x, villager.y + 2.1, villager.z, 3, 0.3, 0.2, 0.3, 0.0)
         }
+        // And its own townspeople, who clap and cheer
+        VillageFeast.market(level, bell, random)
         val time = Math.floorMod(level.overworldClockTime, 24000L)
         if (traderDay[anchor] != today && time in 1000L until TRADER_UNTIL) {
             traderDay[anchor] = today
