@@ -26,6 +26,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Trait
 import io.github.vaspyyy.guildmark.townsfolk.talk.sources.DailySource
 import io.github.vaspyyy.guildmark.village.Standing
 import io.github.vaspyyy.guildmark.village.StandingTier
+import io.github.vaspyyy.guildmark.village.live.folk.OldWares
 import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
 import net.minecraft.server.MinecraftServer
@@ -320,6 +321,7 @@ object Talk {
         when (choice) {
             "bye" -> farewell(s, ask, Ending.BYE)
             "trade" -> trade(level, s)
+            "wares" -> wares(level, s)
             "doing" -> doing(s, ask)
             "news" -> news(s, ask)
             "name" -> name(s, ask)
@@ -358,6 +360,20 @@ object Talk {
         if (talkers(s.p) > 0) return
         (s.p.director as? Talking)?.hand(s.p)
         Stalls.interact(level, s.player, s.p)
+    }
+
+    /**
+     * "Their old wares", for a villager taken in as one of the townsfolk (village/live/folk): the talk screen closes and the vanilla
+     * trading screen of the villager they were comes up in its place, as it does for a trade; someone else talking with them gets a word.
+     */
+    private fun wares(level: ServerLevel, s: Session) {
+        end(s, Ending.GONE)
+        if (talkers(s.p) > 0) {
+            s.player.sendOverlayMessage(Component.translatable("message.guildmark.village.wares_busy", s.p.displayName))
+            return
+        }
+        (s.p.director as? Talking)?.hand(s.p)
+        OldWares.open(level, s.player, s.p)
     }
 
     private fun doing(s: Session, ask: Ask) {
@@ -523,6 +539,8 @@ object Talk {
         val out = ArrayList<Choice>()
         out += Choice("doing", label("doing"), "doing" in s.asked)
         out += Choice("news", label(if ("news" in s.asked) "news_more" else "news"), "news.all" in s.asked)
+        // A villager taken in from the vanilla ones still has its old trades to show (village/live/folk)
+        if (OldWares.offered(ask.level, s.p)) out += Choice("wares", label("wares"))
         if (ask.resident != null && ask.knows?.named != true && "name" !in s.asked) {
             out += Choice("name", Component.translatable("talk.guildmark.choice.name", s.player.gameProfile.name))
         }

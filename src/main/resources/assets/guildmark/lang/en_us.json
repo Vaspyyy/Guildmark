@@ -8135,5 +8135,9 @@
   "gui.guildmark.tally.standing.knot.here": "The rung you hold.",
   "gui.guildmark.tally.standing.knot.held": "Tied: a rung you have climbed.",
   "gui.guildmark.tally.standing.knot.next": "The next knot to tie.",
-  "gui.guildmark.tally.standing.knot.far": "Higher up the rope."
+  "gui.guildmark.tally.standing.knot.far": "Higher up the rope.",
+  "talk.guildmark.choice.wares": "Your old wares",
+  "gui.guildmark.village.wares_title": "%1$s's old wares (%2$s)",
+  "message.guildmark.village.wares_busy": "%s is busy just now.",
+  "message.guildmark.village.wares_none": "%s has nothing to sell just now."
 }

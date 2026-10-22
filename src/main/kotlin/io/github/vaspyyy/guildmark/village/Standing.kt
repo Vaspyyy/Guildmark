@@ -94,5 +94,7 @@ object Standing {
                 tier.gossip < current -> gossips.remove(player.uuid, GossipType.MAJOR_POSITIVE, current - tier.gossip)
             }
         }
+        // The villagers taken in as townsfolk are kept villagers: their word is kept with them (village/live/folk)
+        io.github.vaspyyy.guildmark.village.live.folk.VillageKeepsakes.spreadWord(level, center, player, tier.gossip)
     }
 }
