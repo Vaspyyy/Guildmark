@@ -142,12 +142,13 @@ Kokoro voices of their own, and the renegade Silvan Marrow made cold and a littl
   also a lamp put out by hand or going out by itself in sight, 2), levelled as `make_townsfolk_sfx.py`'s are; the lamp
   catching (`lamp.light`) is `make_living_sfx.py`'s. It writes `lamp_sounds.json` and `lamp_lang.json` beside itself
   (their `sounds.json` entries and subtitles), merged by hand. `--mp3 <file>` joins them into one listen-through MP3.
-- `make_cook_audio.py`: Hearthcraft's kitchen (`cook/`, 44 events and 88 mono files, `guildmark:cook.<name>` in the
+- `make_cook_audio.py`: Hearthcraft's kitchen (`cook/`, 45 events and 91 mono files, `guildmark:cook.<name>` in the
   order of `cooking/CookSounds.kt`; a dot in a name is a folder, `cook.plop.soft` is `cook/plop/soft1.ogg`): the pot and
   its water (`place`, `pour`, three `plop`s, `stir`, `taste`, `serve`, `skim`, `ease`), the fire and the pan (`fuel`,
   `ignite`, `crackle`, `flare`, `drip`, `flip`, `boil_over`, `burnt`), the oven's door, the spit's crank, the board and
   the larder (`oven_open`, `oven_shut`, `crank`, `chop`, `slice`, `carve`, `loaf_down`, `plate`, `chalk`, `larder`), the
-  table (`eat.spoon`, `eat.bite`, `drink`), the cues (`call`, `ready`, `ripe`, the four `tier` motifs and the eater's
+  table (`eat.spoon`, `eat.bite`, `drink`, and `eat.clink`, one spoon clink for a seated diner's sip, last in the order),
+  the cues (`call`, `ready`, `ripe`, the four `tier` motifs and the eater's
   `buff`; the only tuned sounds, a wooden hand-chime and a small bronze bell) and five loops: `simmer` (8 s, reach 24),
   `sizzle` (6 s, 20), `oven_hum` (8 s, 20, heard through brick), `spit_creak` (6 s, 20) and `chill` (10 s: the wind the
   frost plays to the player alone). Synthesised with `sfxkit.py`, `make_townsfolk_sfx.py`'s helpers (levelling, knocks,

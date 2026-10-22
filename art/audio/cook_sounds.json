@@ -508,5 +508,22 @@
       }
     ],
     "subtitle": "subtitles.guildmark.cook.chill"
+  },
+  "cook.eat.clink": {
+    "sounds": [
+      {
+        "name": "guildmark:cook/eat/clink1",
+        "attenuation_distance": 8
+      },
+      {
+        "name": "guildmark:cook/eat/clink2",
+        "attenuation_distance": 8
+      },
+      {
+        "name": "guildmark:cook/eat/clink3",
+        "attenuation_distance": 8
+      }
+    ],
+    "subtitle": "subtitles.guildmark.cook.eat.clink"
   }
 }

@@ -1,6 +1,7 @@
 """Hearthcraft's kitchen: every sound of the cook's stations, made from nothing (the cook design's 11.2, Part M2).
 
-44 events and 88 mono 44.1 kHz Ogg files in `sounds/cook/` (a dot in an event's name is a folder: `cook.plop.soft` is
+45 events and 91 mono 44.1 kHz Ogg files in `sounds/cook/` (the design's 44 events and 88 files, and `eat.clink` after them, which
+the lead added: a diner's single spoon clink; a dot in an event's name is a folder: `cook.plop.soft` is
 `cook/plop/soft1.ogg` ...), each with the number of files, the length and the reach of its row in the design. The game names them
 `guildmark:cook.<name>` (`cooking/CookSounds.kt`, whose order ORDER keeps). No sample is used: every sound is noise and
 resonators, laid out with `sfxkit.py`, the townsfolk's helpers (`make_townsfolk_sfx.py`: the levelling, the knocks and rings) and
@@ -14,8 +15,8 @@ steel, the market's coin sounds, the festival fanfare) are not remade here.
     chimes                   call  ready  ripe  tier.plain  tier.sound  tier.fine  tier.hallmark  buff
     the oven, spit, crank    oven_open  oven_shut  crank
     board, counter, larder   chop  slice  carve  loaf_down  plate  chalk  larder
-    the table                eat.spoon  eat.bite  drink
-    five loops               simmer (8 s)  sizzle (6 s)  oven_hum (8 s)  spit_creak (6 s)  chill (10 s)
+    the table                eat.spoon  eat.bite  drink  eat.clink (a diner's sip: one clink, the last of the order)
+    five loops              simmer (8 s)  sizzle (6 s)  oven_hum (8 s)  spit_creak (6 s)  chill (10 s)
 
 Each recipe says in its docstring what it is made of, and what each of its variants does that the others do not; the moment each
 belongs to is in WHEN (the design's 1.4 to 1.6, 3.3, 4.3 and 7.3 to 7.5), which `--mp3` writes out beside the listen-through.
@@ -34,9 +35,9 @@ elsewhere.
 usage (from the repo root; the full render takes about two minutes, `nice -n 10` for it):
     python3 -B art/audio/make_cook_audio.py src/main/resources/assets/guildmark [--wav DIR] [--only a,b,...] [--mp3 FILE] [--audit]
 
-  (no --only)  renders all 88 files and writes `cook_sounds.json` (their sounds.json entries: a loop with `"stream": false` and
+  (no --only)  renders all 91 files and writes `cook_sounds.json` (their sounds.json entries: a loop with `"stream": false` and
                its reach as `attenuation_distance`, as the mills'; a one-shot with its reach when it is not the game's 16) and
-               `cook_lang.json` (the 44 subtitles `subtitles.guildmark.cook.<name>`) beside this script; run
+               `cook_lang.json` (the 45 subtitles `subtitles.guildmark.cook.<name>`) beside this script; run
                `python3 -B art/lang/merge_lang.py` after it, which adds them to sounds.json and en_us.json
   --only       events or groups: `stir,plop,eat,tier,loops` (`cook.stir` also works); no fragments are written
   --wav DIR    also writes WAV copies for listening
@@ -44,8 +45,9 @@ usage (from the repo root; the full render takes about two minutes, `nice -n 10`
                so that its join is heard once), and writes `cook_what_plays_when.txt` beside it: each sound's files, length,
                reach, subtitle, what it is made of, the moment it belongs to and where it is in the MP3
   --audit      renders nothing: reads every file back (what it declares, mono 44.1 kHz Vorbis, exactly the row's length; peak and
-               true peak; the loudest 100 ms against the target; a loop's RMS and join) and checks the 44 events and 88 files
-               against the design, the order against CookSounds.NAMES and the fragments against the files; exits 1 on a problem
+               true peak; the loudest 100 ms against the target; a loop's RMS and join) and checks the 45 events and 91 files
+               against the design (11.2's 44 and 88, and eat.clink's three), the order against CookSounds.NAMES and the fragments
+               against the files; exits 1 on a problem
 """
 import argparse
 import json
@@ -1360,6 +1362,27 @@ def drink(v, rng):
     ex = formants(white(0.34, rng), "a", "uh", scale=0.95) * bell(0.34, 0.3, 1.3, 1.6)
     m.add(lp(ex, 3500.0), ex_at, 0.22)
     return kitchen(lp(fit(m.out(), ns(dur)), 8500.0), 0.06, 5399 + v)
+
+
+@effect("eat.clink", 3, 0.3, "A spoon clinks on a bowl", reach=8, loud=-29.0, fade_out=0.1, limit=3.0,
+        when=("A seated tavern diner's sip (7.4, Part I3): one clink of the spoon on the bowl, where cook.eat.spoon would play "
+              "three spoonfuls and a swallow. Added after the design's 44, at the lead's word."))
+def eat_clink(v, rng):
+    """a spoon clinking on a bowl, for a seated diner's sip: the bowl of the spoon touching the glaze with a small hard 'tink' (the
+    spoonful of eat.spoon with nothing after it), the bowl ringing a moment under it, a faint scrape of the spoon on the wall of the
+    bowl. v1 a glazed bowl; v2 a deeper, duller one, the spoon dragged to its wall first; v3 a lighter touch that rebounds once"""
+    dur = 0.3
+    m = Bus(dur)
+    f = [2450.0, 2200.0, 2750.0][v] * rng.uniform(0.97, 1.03)
+    fb = [1100.0, 950.0, 1250.0][v]
+    at = [0.0, 0.07, 0.0][v]
+    m.add(nrm(ping(0.14, [f, f * 2.7, f * 4.9], [0.05, 0.03, 0.02], [1.0, 0.5, 0.25], rng)), at, 0.6)
+    m.add(tf.ring(0.2, fb * np.array([1.0, 2.2, 3.6]), [0.08, 0.05, 0.03], [1.0, 0.5, 0.25], rng, doublet=0.003), at, 0.25)
+    sc = bp(colored(0.07, rng, -1.0), 1500.0, 6000.0) * bell(0.07, 0.4, 1.2, 1.5) * (0.5 + 0.5 * smooth_random(0.07, rng, 80))
+    m.add(sc, 0.0 if v == 1 else at + 0.015, 0.18)
+    if v == 2:
+        m.add(nrm(ping(0.08, [f * 1.03, f * 2.7], [0.03, 0.02], [1.0, 0.5], rng)), 0.085, 0.22)
+    return kitchen(lp(fit(m.out(), ns(dur)), 8500.0), 0.06, 5401 + v)
 # mouth>>
 
 
@@ -1369,7 +1392,7 @@ ORDER = ["place", "pour", "plop.soft", "plop.meat", "plop.grain", "fuel", "ignit
          "crackle", "sizzle", "ease", "boil_over", "skim", "ready", "ripe", "serve", "tier.plain", "tier.sound", "tier.fine",
          "tier.hallmark", "burnt", "eat.spoon", "eat.bite", "drink", "buff", "oven_hum", "oven_open", "oven_shut",
          "spit_creak", "crank", "drip", "flare", "flip", "chop", "slice", "carve", "loaf_down", "plate", "chalk", "larder",
-         "chill"]
+         "chill", "eat.clink"]  # (eat.clink was added after the design's 44, and so comes after them)
 
 assert sorted(ORDER) == sorted(EVENTS), "every sound is in ORDER, once: " + str(set(ORDER) ^ set(EVENTS))
 for _name in ORDER:
@@ -1418,7 +1441,7 @@ def select(only):
 
 # =========================================================================== fragments
 def fragments():
-    """(the sounds.json entries of the 44 events, their subtitles). A one-shot that carries other than the game's 16 blocks has its
+    """(the sounds.json entries of the 45 events, their subtitles). A one-shot that carries other than the game's 16 blocks has its
     reach as the sound's attenuation_distance; a loop is not streamed and has its reach so, as the mills' have; the wind under the
     frost (reach None) is heard by the player alone, unpositioned, and has neither"""
     sounds, lang = {}, {}
@@ -1515,7 +1538,7 @@ def write_when(marks, path_):
              "(a phone's player shows them). Each loop plays for 12 seconds so that its join is heard once. The times are where "
              "each file starts in it. A sound's moment is as the design names it (living-world/cook/design.md 1.4 to 1.6, 3.3, "
              "4.3, 7.3 to 7.5); which part of the game plays it, and whether it does yet, is for the game test (Parts C, E, F and "
-             "I3 play them; Part F's buff and chill are the only two already wired).",
+             "I3 play them, and some are wired already). The last, cook.eat.clink, was added after the design's 44 sounds.",
              "",
              "The sounds are at the game's own levels, so they keep their balance with each other, and the game's levels are "
              "quiet: turn the phone up until the first one, cook.place, is comfortable and judge the rest against it. The five "
@@ -1600,8 +1623,8 @@ def audit(assets):
             if notes:
                 bad.append(f"{stem}: " + "; ".join(notes))
     total = sum(r["files"] for r in EVENTS.values())
-    if len(EVENTS) != 44 or total != 88:
-        bad.append(f"{len(EVENTS)} events and {total} files, the design says 44 and 88")
+    if len(EVENTS) != 45 or total != 91:
+        bad.append(f"{len(EVENTS)} events and {total} files, the design says 44 and 88 and eat.clink adds 1 and 3")
     want_sounds, want_lang = fragments()
     for fname, want in (("cook_sounds.json", want_sounds), ("cook_lang.json", want_lang)):
         fp = os.path.join(HERE, fname)
