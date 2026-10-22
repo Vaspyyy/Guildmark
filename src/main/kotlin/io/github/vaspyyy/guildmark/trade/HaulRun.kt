@@ -28,9 +28,14 @@ import kotlin.random.Random
  *
  * Each hour of a capital's book, in this order: a booking that has bought a quarter of its goods far enough away (or is a House's, or has
  * delivered) stands, and one that has not lapses a day after it was made; a ticket whose day is up ends, the deposit of what was not
- * brought forfeit; a ticket the town no longer wants (its stock at the target) is withdrawn, its booked units standing; and at dawn (hour 0 of the
- * town's day) the capital posts a few new ones: a relief ticket for each staple it was short of yesterday, then up to the posting rate in
+ * brought forfeit; and at dawn (hour 0 of the town's day) a ticket the town no longer wants (its stock at the target) is withdrawn, its booked
+ * units standing, and the capital posts a few new ones: a relief ticket for each staple it was short of yesterday, then up to the posting rate in
  * parcels and consignments, each for a good it is short of that another capital has to spare (see [HaulRules.plan]).
+ *
+ * The withdrawal is once a day, at the posting, as the model's boards had it (Table 6 is reckoned so). Withdrawing every hour was written first
+ * and the trader harness showed what it costs: the caravans refill a town's stock through the afternoon, a ticket was gone before a carrier who
+ * had set out for it got back, and a Chapman's day (summer, news a day and a half old, rate 2.5) came to 9.1 Marks against the table's 12.3
+ * (12.8 with the withdrawal at dawn); over the table's twenty-four cells the hourly rule paid 38 per cent under it, the dawn rule 7 over.
  *
  * Switched off (`tradeHauls`), nothing is posted, booked or paid and the days stand still against the clock, as an order's do: what was out
  * when the switch went off is out again, with the days it had left, when it comes back. A clock set back moves every hour with it.
@@ -124,8 +129,10 @@ internal object HaulRun {
     private fun hour(level: ServerLevel, data: HaulData, book: HaulBook, entry: Markets.Entry, hour: Long) {
         stand(level, data, book, hour)
         for (t in book.tickets.filter { it.due <= hour }) end(level, data, book, t, hour)
-        withdraw(level, data, book, entry)
-        if (Math.floorMod(hour, 24L) == 0L) dawn(level, data, book, entry, hour)
+        if (Math.floorMod(hour, 24L) == 0L) {
+            withdraw(level, data, book, entry)
+            dawn(level, data, book, entry, hour)
+        }
         book.fills.removeAll { hour - it.hour > FILLS_KEPT }
         book.lapses.removeAll { hour - it.hour > LAPSES_KEPT }
     }
@@ -182,7 +189,7 @@ internal object HaulRun {
         if (rest > 0) Hauls.lapsed(level, book, t)
     }
 
-    /** A ticket for a good the town now holds all it likes to keep of is withdrawn; units already booked still stand, and the ticket shrinks to them. A fixed ticket (posted by hand or for a festival) stays until its day. */
+    /** At dawn, a ticket for a good the town now holds all it likes to keep of is withdrawn; units already booked still stand, and the ticket shrinks to them. A fixed ticket (posted by hand or for a festival) stays until its day. */
     private fun withdraw(level: ServerLevel, data: HaulData, book: HaulBook, entry: Markets.Entry) {
         for (t in book.tickets.toList()) {
             if (t.fixed || entry.market.stock(t.good) < entry.town.target(t.good)) continue
