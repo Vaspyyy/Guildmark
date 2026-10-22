@@ -114,6 +114,7 @@ internal object LivingProps {
             }
         }
         if (spans != null) goods(p, living, name, spans, time)?.let { span ->
+            // Hearthcraft (TownPlates.kt): a lunch dish takes the place of the loaf of `eat`
             (LivingSchedule.GOODS_REPLACE[name] ?: TownPlates.replaces(name))?.let { replaced ->
                 held = held - replaced
                 living.shown -= replaced
@@ -139,6 +140,7 @@ internal object LivingProps {
 
     /** The goods [p] has in hand at [time] of [name]'s clip, made ready to draw: the span they're in, or null if none show. */
     private fun goods(p: Townsperson, living: State, name: String, spans: List<LivingSchedule.Goods>, time: Float): LivingSchedule.Goods? {
+        // Hearthcraft (TownPlates.kt): a served baked dish in place of what they carry, for a lunch-eater who is one of the diners
         var stack = TownPlates.shown(p, p.carried)
         if (stack.isEmpty) {
             if (name in LivingSchedule.GOODS_ONLY_CARRIED) return null
