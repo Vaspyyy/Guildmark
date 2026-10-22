@@ -24,6 +24,8 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent
  * - `trade rung deliveries <n>` sets your count of deliveries (a parcel counts 1, a consignment 2, a relief 3) and looks at your rung.
  * - `trade warrant give` writes the Warrant in your book and hands you the sheet, and looks at your rung; `trade warrant take` takes the sheet
  *   from your pack and leaves the book as it is, so the counter's free copy can be tried.
+ * - `trade warrant scene` (or `scene copy`) has the nearest merchant play the counter's scene for you as if you had just asked for the Warrant
+ *   (or its copy), with no Marks taken and the book as it was, so the scene can be watched without the counter's screen.
  *
  * Reading never makes the saved record; setting does. [Rungs.register] calls [init]. The `trade` literal is the one [TradeCommand] has, with
  * the same permission, so Brigadier merges them by name.
@@ -45,6 +47,7 @@ object RungCommand {
         val warrant = Commands.literal("warrant")
             .then(Commands.literal("give").executes { give(it) })
             .then(Commands.literal("take").executes { take(it) })
+            .then(Commands.literal("scene").executes { scene(it, copy = false) }.then(Commands.literal("copy").executes { scene(it, copy = true) }))
         dispatcher.register(
             Commands.literal("guildmark")
                 .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
@@ -71,9 +74,10 @@ object RungCommand {
             source,
             label("Book: ").append(
                 plain(
-                    "${facts.deliveries} deliveries (a parcel counts 1, a consignment 2, a relief 3); " +
+                    "${count(facts.deliveries, "delivery", "deliveries")} (a parcel counts 1, a consignment 2, a relief 3); " +
                         (if (facts.warrant) "the Warrant is in the book, and ${if (carried) "you carry the sheet" else "the sheet is not in your pack"}" else "no Warrant in the book") +
-                        "; Stores at ${facts.stores.size} capitals, stalls at ${facts.stalls.size}${if (facts.stallsOn) "" else " (stalls are off)"}, Houses at ${facts.houses.size}",
+                        "; Stores at ${count(facts.stores.size, "capital")}, stalls at ${count(facts.stalls.size, "capital")}${if (facts.stallsOn) "" else " (stalls are off)"}, " +
+                        "Houses at ${count(facts.houses.size, "capital")}",
                 ),
             ),
         )
@@ -81,7 +85,7 @@ object RungCommand {
             source,
             label("Standing: ").append(
                 plain(
-                    "${facts.ranks.size} capitals open; Known or better at ${Ladder.known(facts)}, Trusted or better at ${Ladder.trusted(facts)}" +
+                    "${count(facts.ranks.size, "capital")} open; Known or better at ${Ladder.known(facts)}, Trusted or better at ${Ladder.trusted(facts)}" +
                         (if (facts.ranks.isEmpty()) " (no market is open, so no standing is asked)" else ""),
                 ),
             ),
@@ -90,7 +94,7 @@ object RungCommand {
             source,
             label("Gates: ").append(
                 plain(
-                    "${Ladder.heldLimit(facts.rung)} tickets held, ${Ladder.guardLimit(facts.rung)} guards, " +
+                    "${count(Ladder.heldLimit(facts.rung), "ticket")} held, ${count(Ladder.guardLimit(facts.rung), "guard")}, " +
                         (if (Ladder.bigTickets(facts.rung)) "consignments, relief and feast tickets" else "parcels only"),
                 ),
             ),
@@ -105,7 +109,9 @@ object RungCommand {
                 say(source, line.withStyle(if (ask.met) ChatFormatting.GREEN else ChatFormatting.YELLOW))
             }
             val would = Ladder.rung(facts)
-            if (would > facts.rung) say(source, grey("The book will tie this knot at the next look (a login, a delivery or a few seconds); `trade rung deliveries` looks now."))
+            if (would > facts.rung) {
+                say(source, grey("Every ask is met, so the book will tie this knot at its next look: within a few seconds, or, after a rung set by hand, at your next login or delivery. `trade rung deliveries <n>` looks now."))
+            }
         }
         return 1
     }
@@ -126,7 +132,7 @@ object RungCommand {
             source,
             plain("Your rung is ").append(name(rung)).append(plain(" (it was ")).append(name(was)).append(
                 plain(
-                    "). The book has ${if (book.warrant) "you down for" else "no"} Warrant. " +
+                    "). The book has ${if (book.warrant) "you down for a" else "no"} Warrant. " +
                         "It stays so until something real is looked at for you (a login, a delivery, a Warrant, a Store or a House).",
                 ),
             ),
@@ -182,7 +188,32 @@ object RungCommand {
         return taken
     }
 
+    /**
+     * Plays the counter's scene with the nearest merchant, as if the Warrant (or, with [copy], a copy of it) had just been asked for at the
+     * counter: no Marks are taken and the book is as it was, but the sheet is handed over at the end. For watching the scene without the
+     * counter's screen.
+     */
+    private fun scene(context: CommandContext<CommandSourceStack>, copy: Boolean): Int {
+        val source = context.source
+        val player = source.playerOrException
+        val merchant = WarrantScene.merchantNear(player)
+        if (merchant == null) {
+            say(source, red("There is no merchant within 12 blocks to play the counter's scene: stand by one at their post."))
+            return 0
+        }
+        val began = WarrantScene.rehearse(player, merchant, copy)
+        say(
+            source,
+            if (began) plain("The merchant begins the ${if (copy) "copy" else "Warrant"} (no Marks are taken and your book is as it was); the sheet is handed over at the end.")
+            else grey("The merchant is busy or away from their post, so there was no scene; the sheet was handed over at once. Try again in a moment."),
+        )
+        return 1
+    }
+
     // ---- Words ----
+
+    /** "1 capital", "3 capitals": [n] of a thing, in the plural unless it is one ([many] when that is not [one] and an s). */
+    private fun count(n: Int, one: String, many: String = one + "s"): String = "$n ${if (n == 1) one else many}"
 
     /** The rung's name, in the style of whatever it is appended to. */
     private fun name(rung: Rung): MutableComponent = Component.translatable("gui.guildmark.trade.ladder.rung.${rung.id}")

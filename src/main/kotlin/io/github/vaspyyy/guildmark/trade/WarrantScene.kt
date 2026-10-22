@@ -2,6 +2,7 @@ package io.github.vaspyyy.guildmark.trade
 
 import io.github.vaspyyy.guildmark.registry.ModItems
 import io.github.vaspyyy.guildmark.townsfolk.Activity
+import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import io.github.vaspyyy.guildmark.townsfolk.scenes.Aside
 import io.github.vaspyyy.guildmark.townsfolk.scenes.Move
@@ -134,12 +135,32 @@ object WarrantScene {
     // ---- The scene ----
 
     /**
-     * The hall's merchant, at the counter, writes out the Warrant for [player] and hands it across. If the merchant cannot be taken for it
-     * (they are in another scene, hurt or away from their post) the sheet is handed over at once, with no scene.
+     * For `trade warrant scene`: [merchant] plays the counter's scene for [player] as if a Warrant (or, with [copy], a copy of one) had
+     * just been asked for, with no Marks taken and the book left as it is, so that the scene can be watched without the counter's screen.
+     * The sheet is handed over at its end, as at the counter. True if the merchant took the part; false if they were busy, in which case
+     * the sheet was handed over at once.
      */
-    private fun play(player: ServerPlayer, merchant: Townsperson, copy: Boolean) {
-        val level = merchant.level() as? ServerLevel ?: return handOver(player)
-        val entry = owed[player.uuid] ?: return
+    internal fun rehearse(player: ServerPlayer, merchant: Townsperson, copy: Boolean): Boolean {
+        owed[player.uuid] = Owed(player.level().gameTime + WAIT, copy)
+        return play(player, merchant, copy)
+    }
+
+    /** The nearest merchant to [player] within [reach] blocks, who will do to play the counter's scene. */
+    internal fun merchantNear(player: ServerPlayer, reach: Double = 12.0): Townsperson? =
+        player.level().getEntitiesOfClass(Townsperson::class.java, player.boundingBox.inflate(reach)) { it.isAlive && it.role == TownRole.MERCHANT }
+            .minByOrNull { it.distanceToSqr(player) }
+
+    /**
+     * The hall's merchant, at the counter, writes out the Warrant for [player] and hands it across. If the merchant cannot be taken for it
+     * (they are in another scene, hurt or away from their post) the sheet is handed over at once, with no scene. True if the scene began.
+     */
+    private fun play(player: ServerPlayer, merchant: Townsperson, copy: Boolean): Boolean {
+        val level = merchant.level() as? ServerLevel
+        val entry = owed[player.uuid]
+        if (level == null || entry == null) {
+            handOver(player)
+            return false
+        }
         entry.town = merchant.life?.places?.name
         val key = if (copy) "trade_warrant_1" else "trade_warrant_${merchant.random.nextInt(3)}"
         val line = Talk.ticks(merchant, key)
@@ -171,13 +192,19 @@ object WarrantScene {
         moves.add(Beat(Activity.NONE, maxOf(0, line - 30 + 8), toward))
         val aside = Aside(moves, reach = SEEN, most = 900)
         aside.onEnd = { handOver(player) }
-        if (Aside.take(merchant, aside, seated = true, station = true)) entry.due = level.gameTime + ALLOWED else handOver(player)
+        val taken = Aside.take(merchant, aside, seated = true, station = true)
+        if (taken) entry.due = level.gameTime + ALLOWED else handOver(player)
+        return taken
     }
 
-    /** The sheet is handed to [player] (once): it goes into their pack, or at their feet if that is full, and the rope looks for its knot. */
+    /**
+     * The sheet is handed to [player] (once): it goes into their pack, or at their feet if that is full, and the rope looks for its knot. A
+     * player who is gone from the world or dead is not handed anything and the sheet stays owed, for [tick] to give to whoever answers to
+     * their name once it falls due.
+     */
     private fun handOver(player: ServerPlayer) {
+        if (player.isRemoved || !player.isAlive) return
         val entry = owed.remove(player.uuid) ?: return
-        if (player.isRemoved) return
         val level = player.level()
         player.inventory.placeItemBackInInventory(WarrantItem.stack(player.name, entry.town), Prediction.SERVER_ONLY)
         level.playSound(null, player.x, player.y, player.z, SoundEvents.ITEM_PICKUP, SoundSource.PLAYERS, 0.3f, 1.1f)
