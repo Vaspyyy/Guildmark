@@ -41,8 +41,7 @@ object TalePay {
 
     fun run(c: Ctx, t: Tale) {
         val level = c.level
-        // A tale the world ended at W gives back whatever its players still have in it; the engine zeroes escrow when a step is met
-        if (t.ending == Ending.W) refund(c, t)
+        // What a player still has in a tale that ended W is given back by the engine as this stage ends (TaleFinish, in a finally); at A, B and C it was spent
         val payees = TaleShares.shares(TaleWords.size(t), t.ending, t.parts)
         if (payees.isEmpty()) return
         val origin = c.here.capital.boardAnchor
@@ -236,7 +235,7 @@ object TalePay {
         val sentence: Component = t?.let { TaleWords.sentence(level, it) } ?: Component.translatable("message.guildmark.tale.unknown")
         val keepsake = if (keepsakeFor(l.ending)) {
             t?.let { keepsake(level, it, l.ending, 0L) }
-                ?: TaleKeepsake(l.template, l.ending, Templates.byId(l.template)?.ending(l.ending)?.word ?: l.ending.lowercase())
+                ?: TaleKeepsake(l.template, l.ending, Templates.find(l.template)?.ending(l.ending)?.word ?: l.ending.lowercase())
         } else null
         give(level, player, l.points, t?.let { origin(level, it) }, t?.let { TaleWords.town(level, it.capital) }.orEmpty(), sentence, keepsake, l.tale, t?.capital)
     }

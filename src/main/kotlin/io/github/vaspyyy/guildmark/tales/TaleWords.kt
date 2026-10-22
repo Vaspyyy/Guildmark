@@ -33,20 +33,20 @@ object TaleWords {
 
     /** The names [t] is told with: the template's own words if it gives them, else the cast's names in cast order. */
     fun names(t: Tale): List<String> =
-        ((Templates.byId(t.template) as? Names)?.words(t) ?: t.cast.map { it.name }).filter { it.isNotBlank() }
+        ((Templates.find(t.template) as? Names)?.words(t) ?: t.cast.map { it.name }).filter { it.isNotBlank() }
 
-    /** The word of [t]'s ending ("paid", "time"): the template's own, else the letter in lower case for a tale no template is built for (the probe). */
+    /** The word of [t]'s ending ("paid", "time"): the template's own (the probe's too, `Templates.find`), else the letter in lower case for a tale whose template this build does not know. */
     fun word(t: Tale, letter: String = t.ending): String =
-        Templates.byId(t.template)?.ending(letter)?.word ?: letter.lowercase()
+        Templates.find(t.template)?.ending(letter)?.word ?: letter.lowercase()
 
     /** The key of the sentence of an ending, `<template>.<word>`, as the times' reason and the rumour's kind carry it. */
     fun id(t: Tale, letter: String = t.ending): String = "${t.template}.${word(t, letter)}"
 
     /** The size of [t]'s template, 1 to 3; 1 for one no template is built for. */
-    fun size(t: Tale): Int = Templates.byId(t.template)?.size?.coerceIn(1, 3) ?: 1
+    fun size(t: Tale): Int = Templates.find(t.template)?.size?.coerceIn(1, 3) ?: 1
 
     /** Whether [t]'s template is one whose world's way hurts others (6.1). */
-    fun hurts(t: Tale): Boolean = Templates.byId(t.template)?.hurts ?: false
+    fun hurts(t: Tale): Boolean = Templates.find(t.template)?.hurts ?: false
 
     /** The lead's name (the one who took the tale up), whether they are on or not; "" if there is none or the world no longer knows them. */
     fun lead(level: ServerLevel, t: Tale): String = t.lead?.let { leadName(level, it.player) }.orEmpty()
@@ -77,7 +77,7 @@ object TaleWords {
 
     /** The sentence the chronicle's [line] says, said with the names and the lead it kept. */
     fun sentence(line: TaleData.Line): MutableComponent = sentence(
-        listOf("${line.template}.${Templates.byId(line.template)?.ending(line.ending)?.word ?: line.ending.lowercase()}") +
+        listOf("${line.template}.${Templates.find(line.template)?.ending(line.ending)?.word ?: line.ending.lowercase()}") +
             listOf(line.names.getOrElse(0) { "" }, line.names.getOrElse(1) { "" }, line.lead),
     )
 }

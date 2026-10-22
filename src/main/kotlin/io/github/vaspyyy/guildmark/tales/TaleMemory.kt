@@ -20,20 +20,17 @@ import java.util.UUID
  * W, and never a slight for saying no, for a step that lapsed, or for an ending W (3.5, "Never punish no"). Runs once for a
  * tale; the engine guards it. With the townsfolk's memory off (`townsfolkMemory`) `TownTalk.favour` keeps nothing.
  *
- * Who "the people the tale was about" are: every resident of the cast who is alive, unless the template says better by implementing
- * [Helps] (the lender who only held a note is not whom a thanked stall keeper's household means).
+ * Who "the people the tale was about" are (6.6): each essential member of the cast who is alive at the end, and their household. A slot
+ * is essential unless the template names it as standing ([Template.standing], 5.6): a neighbour who only hushes them in the scene is
+ * any one of their trade, and is not whom the tale was about.
  */
 object TaleMemory {
-    /** A template may implement this, besides [Template], to name the cast slots whose people the town thanks: the essential ones (8.x, "Cast"). Without it, the whole cast is thanked. */
-    interface Helps {
-        fun helped(t: Tale): List<String>
-    }
-
     fun run(c: Ctx, t: Tale) {
         if (t.ending != Ending.A && t.ending != Ending.B) return
         val players = t.parts.filter { TaleShares.holds(it) }.map { it.player }
         if (players.isEmpty()) return
-        val slots = (Templates.byId(t.template) as? Helps)?.helped(t) ?: t.cast.map { it.slot }
+        val standing = Templates.find(t.template)?.standing.orEmpty()
+        val slots = t.cast.map { it.slot }.filter { it !in standing }
         for (player in players) {
             val thanked = HashSet<Int>()
             for (slot in slots) favour(c, t, slot, player, Favour.TALE_HELPED, thanked)
