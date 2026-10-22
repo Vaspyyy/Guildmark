@@ -5,6 +5,7 @@ import io.github.vaspyyy.guildmark.cooking.Cooking
 import io.github.vaspyyy.guildmark.cooking.DishKind
 import io.github.vaspyyy.guildmark.cooking.Tier
 import io.github.vaspyyy.guildmark.cooking.Verdict
+import io.github.vaspyyy.guildmark.cooking.vessel.StationBlock
 import io.github.vaspyyy.guildmark.progression.Skill
 import io.github.vaspyyy.guildmark.progression.Skills
 import net.minecraft.core.registries.BuiltInRegistries
@@ -12,6 +13,8 @@ import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.util.Prediction
 import net.minecraft.world.item.ItemStack
+import net.neoforged.neoforge.common.NeoForge
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent
 import kotlin.math.roundToInt
 
 /**
@@ -75,5 +78,16 @@ object Journal {
         player.setData(CookRegistry.COOK_BOOK_GIVEN, true)
         player.inventory.placeItemBackInInventory(ItemStack(CookRegistry.COOK_BOOK.get()), Prediction.SERVER_ONLY)
         player.sendOverlayMessage(Component.translatable("message.guildmark.cook.book_given"))
+    }
+
+    /**
+     * The Book is handed over at the first use of a station, whichever of the five it is: the stations know nothing of
+     * it, so this watches for the click itself (a click that is then refused counts too: the Book is a welcome, not a prize).
+     */
+    fun register() {
+        NeoForge.EVENT_BUS.addListener(PlayerInteractEvent.RightClickBlock::class.java) { event ->
+            val player = event.entity as? ServerPlayer ?: return@addListener
+            if (event.level.getBlockState(event.pos).block is StationBlock) give(player)
+        }
     }
 }
