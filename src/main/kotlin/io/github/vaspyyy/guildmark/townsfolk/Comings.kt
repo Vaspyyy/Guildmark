@@ -14,6 +14,7 @@ import io.github.vaspyyy.guildmark.economy.works.Works
 import io.github.vaspyyy.guildmark.economy.works.WorksKind
 import io.github.vaspyyy.guildmark.faction.Faction
 import io.github.vaspyyy.guildmark.lamps.LampKeepers
+import io.github.vaspyyy.guildmark.tales.Tales
 import io.github.vaspyyy.guildmark.townsfolk.scenes.Neighbours
 import io.github.vaspyyy.guildmark.townsfolk.talk.Witness
 import net.minecraft.core.BlockPos
@@ -816,6 +817,7 @@ object Comings {
             if (members.any { it.role != TownRole.CITIZEN && it.role != TownRole.CHILD }) continue
             if (members.any { it.id in crew.carters || it.id == crew.crier || it.id in crew.millers || it.id in crew.labourers || it.id in hired || it.id in lamps }) continue
             if (members.any { ComingsBodies.busy(it.id) || body(c.level, it)?.let { p -> Labour.lentNow(p) } == true }) continue
+            if (Tales.stays(c.level, c.key, home, members)) continue
             out += Leaver(lodging, members)
         }
         return out.sortedWith(compareByDescending<Leaver> { it.came }.thenByDescending { it.newest })
@@ -823,10 +825,11 @@ object Comings {
 
     /**
      * A household leaves [c]'s capital now (the newest that may; with [near], the one living nearest it), unless the
-     * town is at or under [FLOOR] of its planned people ([force]: a command's, whatever the town). The household, or
-     * null with why not noted.
+     * town is at or under [FLOOR] of its planned people ([force]: a command's, whatever the town). [why] is what the record
+     * says of the cause where it isn't the usual (a tale sending one: `tale <template> <id>`). The household, or null
+     * with why not noted.
      */
-    internal fun leave(c: Ctx, today: Long, force: Boolean, near: BlockPos?): Household? {
+    internal fun leave(c: Ctx, today: Long, force: Boolean, near: BlockPos?, why: String? = null): Household? {
         val living = living(c)
         if (!force && living <= FLOOR * c.planned) {
             note(c, "Hard times, but nobody leaves: the town is down to $living of the ${c.planned} people it was planned for, and nobody leaves at or under ${(FLOOR * 100).toInt()}%.")
@@ -850,8 +853,8 @@ object Comings {
         val id = c.data.newId()
         val ids = members.map { it.id }
         val run = hardRun(c.level, c.key, today)
-        val why = if (force) "sent off by a command" else "after $run hard days running"
-        c.town.away += ComingsData.Moved(id, ids, pick.home.id, dated(c.level), HARD, why)
+        val said = why ?: if (force) "sent off by a command" else "after $run hard days running"
+        c.town.away += ComingsData.Moved(id, ids, pick.home.id, dated(c.level), HARD, said)
         if (!force) c.town.left = today
         c.town.why = ""
         c.data.changed()

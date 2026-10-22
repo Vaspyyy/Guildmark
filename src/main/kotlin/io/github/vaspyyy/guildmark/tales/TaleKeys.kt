@@ -33,7 +33,7 @@ object TaleKeys {
     /** The `Why` kind that closes a tale at [ending] (a letter of [Ending.LETTERS]): `finished_a` to `finished_w`. */
     fun closing(ending: String): String = "finished_" + ending.lowercase()
 
-    /** Every reason the engine adds itself, in full. `died` and `left` take the name; `stood_in` the new name and the old. */
+    /** Every reason the engine adds itself, in full. `died` and `left` take the name; `stood_in` the new name and the old; `stays`, `stays_kept` and `stays_off` the household's family name. */
     val ENGINE_WHY: List<String> = listOf(
         "fortune.guildmark.reason.tale.why.died",
         "fortune.guildmark.reason.tale.why.left",
@@ -46,6 +46,9 @@ object TaleKeys {
         "fortune.guildmark.reason.tale.why.finished_b",
         "fortune.guildmark.reason.tale.why.finished_c",
         "fortune.guildmark.reason.tale.why.finished_w",
+        "fortune.guildmark.reason.tale.why.stays",
+        "fortune.guildmark.reason.tale.why.stays_kept",
+        "fortune.guildmark.reason.tale.why.stays_off",
     )
 
     /** The other lines the engine sends a player. */

@@ -6601,5 +6601,8 @@
   "fortune.guildmark.reason.tale.probe.lapsed": "The probe lapsed, and the town went its own way.",
   "fortune.guildmark.reason.tale.why.probe.start": "%s asked for a hand with a test.",
   "fortune.guildmark.reason.tale.why.probe.settled": "The test went on past step %s on its own.",
-  "fortune.guildmark.reason.tale.why.probe.helper_gone": "%s, the helper, was missed."
+  "fortune.guildmark.reason.tale.why.probe.helper_gone": "%s, the helper, was missed.",
+  "fortune.guildmark.reason.tale.why.stays": "The %s household stayed: the town was too thin to let anyone go.",
+  "fortune.guildmark.reason.tale.why.stays_kept": "The %s household stayed: they had a trade, a duty or a promise to keep.",
+  "fortune.guildmark.reason.tale.why.stays_off": "The %s household stayed: the comings and goings are switched off."
 }

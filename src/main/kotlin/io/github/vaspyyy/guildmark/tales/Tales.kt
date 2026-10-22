@@ -265,13 +265,16 @@ object Tales : Comings.Listener {
     }
 
     /** Part A, slice 2 (6.5): sends the household of lodging [home] away for [t] (`Comings.leave` for one named household, the reason recorded as `tale <template> <id>`); false if the town is at its floor and the household stays. [why] is the `Why` kind to add when it does. */
-    fun leave(c: Ctx, t: Tale, home: Int, why: String? = null): Boolean = false
+    fun leave(c: Ctx, t: Tale, home: Int, why: String? = null): Boolean = TaleHouseholds.leave(c, t, home, why)
 
     /** Part A, slice 2 (6.5): brings the household [away] home through [gate] (`Comings.comeBack` with force); false if it could not. */
-    fun bringHome(c: Ctx, t: Tale, away: ComingsData.Moved, gate: BlockPos? = null): Boolean = false
+    fun bringHome(c: Ctx, t: Tale, away: ComingsData.Moved, gate: BlockPos? = null): Boolean = TaleHouseholds.bringHome(c, t, away, gate)
 
     /** Part A, slice 2 (6.5): protects the household of lodging [home] from leaving for [days] market days after [Ctx.day]. */
-    fun protect(c: Ctx, t: Tale, home: Int, days: Int) {}
+    fun protect(c: Ctx, t: Tale, home: Int, days: Int) = TaleHouseholds.protect(c, t, home, days)
+
+    /** From `Comings.leavers` (Part A, 6.5): whether the household at lodging [home] of [capital], with [members] living in it, may not leave now: one of them is in the cast of an open tale, or a tale protects it. False with tales off. */
+    fun stays(level: ServerLevel, capital: Long, home: Int, members: List<Resident>): Boolean = live && TaleHouseholds.stays(level, capital, home, members)
 
     /** Part A (6.7): the one door every ending goes through, whoever or whatever caused it: [t] ends with [ending] and the ten stages run, each guarded, each marked in [Tale.done]. */
     fun finish(c: Ctx, t: Tale, ending: String) {
