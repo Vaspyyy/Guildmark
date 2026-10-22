@@ -110,6 +110,8 @@ def load_model(roots, model, ns='guildmark'):
     textures = {}
     elements = m.get('elements')
     parent = m.get('parent')
+    if parent and ':' not in parent:
+        parent = 'minecraft:' + parent                    # a reference with no namespace means the game's, as it does in the game
     if parent and parent not in ('minecraft:block/block',):
         pm = load_model(roots, parent)
         textures.update(pm.get('textures', {}))
