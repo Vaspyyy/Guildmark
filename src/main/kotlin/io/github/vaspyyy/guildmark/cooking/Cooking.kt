@@ -3,6 +3,7 @@ package io.github.vaspyyy.guildmark.cooking
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.GuildmarkConfig
 import io.github.vaspyyy.guildmark.cooking.dish.Dishes
+import io.github.vaspyyy.guildmark.cooking.dish.LarderMenus
 import io.github.vaspyyy.guildmark.cooking.feast.HarvestTable
 import io.github.vaspyyy.guildmark.cooking.home.HomesteadKitchens
 import io.github.vaspyyy.guildmark.cooking.market.KitchenDoors
@@ -88,6 +89,7 @@ object Cooking {
         CookRegistry.register(modBus)
         CookSounds.register(modBus)
         CookParticles.register(modBus)
+        LarderMenus.register(modBus) // D: the Larder's menu type, on the same bus as the cook's other registries
         modBus.addListener(RegisterPayloadHandlersEvent::class.java) { event -> CookPayloads.register(event) }
         Roles.register() // A
         Stations.register() // B

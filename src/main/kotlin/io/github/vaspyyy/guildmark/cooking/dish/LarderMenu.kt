@@ -11,15 +11,12 @@ import net.minecraft.world.inventory.MenuType
 import net.minecraft.world.inventory.Slot
 import net.minecraft.world.item.ItemStack
 import net.neoforged.bus.api.IEventBus
-import net.neoforged.fml.ModContainer
-import net.neoforged.fml.ModList
-import net.neoforged.fml.ModLoadingContext
 import net.neoforged.neoforge.registries.DeferredHolder
 import net.neoforged.neoforge.registries.DeferredRegister
 
 /**
  * The Larder's menu type (living-world/cook/design.md 1.1, 6.4): a chest of two rows over the Larder's 18 slots, whose
- * slots take dishes only. It has a registry of its own, put on the mod bus by [Dishes.register] so that no shared
+ * slots take dishes only. It has a registry of its own, put on the mod bus by `Cooking.register` so that no shared
  * registry file is edited.
  */
 object LarderMenus {
@@ -32,25 +29,10 @@ object LarderMenus {
     var registered = false
         private set
 
-    /**
-     * Puts the registry on the mod bus of the mod being loaded. [Dishes.register] runs inside the mod's constructor
-     * (from `Cooking.register`), where the loading context knows which mod that is, so the part needs no bus handed to it;
-     * failing that, the bus is asked of the mod's own container.
-     */
-    fun register() {
-        val bus = busOf { ModLoadingContext.get().activeContainer } ?: busOf { ModList.get().getModContainerById(Guildmark.MOD_ID).orElse(null) }
-        if (bus == null) {
-            Guildmark.LOGGER.warn("The Larder's menu could not be registered (no mod bus to put it on); a Larder cannot be opened")
-            return
-        }
-        MENUS.register(bus)
+    /** Puts the registry on the mod bus `Cooking.register` hands it, beside the cook's own registries. */
+    fun register(modBus: IEventBus) {
+        MENUS.register(modBus)
         registered = true
-    }
-
-    private fun busOf(container: () -> ModContainer?): IEventBus? = try {
-        container()?.eventBus
-    } catch (e: RuntimeException) {
-        null
     }
 }
 

@@ -45,13 +45,12 @@ object Dishes {
     }
 
     /**
-     * Part D's registration: its readout for `cook perf`, the Larder's menu, the return of a dish to its plate when a meal at
-     * it is stopped, and the `cook give|age|book` commands.
+     * Part D's registration: its readout for `cook perf`, the return of a dish to its plate when a meal at it is
+     * stopped, and the `cook give|age|book` commands. Its Larder menu type is put on the bus by `Cooking.register`.
      */
     fun register() {
         CookStats.readout("dishes") { "${Freshness.looks} stack looks, ${Freshness.writes} stage writes" }
         Journal.register()
-        LarderMenus.register()
         PlateEating.register()
         DishCommand.register()
     }
