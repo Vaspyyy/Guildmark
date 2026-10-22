@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.townsfolk
 
+import io.github.vaspyyy.guildmark.tales.Tales
 import io.github.vaspyyy.guildmark.townsfolk.scenes.Builders
 import io.github.vaspyyy.guildmark.townsfolk.talk.Street
 import net.minecraft.core.BlockPos
@@ -303,6 +304,8 @@ object Jobs {
     }
 
     private fun bard(p: Townsperson, evening: Boolean): Task? {
+        // A tale has taken the music out of the square (the lute, living-world/stories/design.md 8.6): she sits it out, hands empty
+        if (Tales.silent(p)) return Tales.quiet(p)
         val level = level(p)
         val square = p.town?.square
         val post = p.post
@@ -397,7 +400,7 @@ object Leisure {
         if (p.role == TownRole.CHILD) return child(p)
         if (p.role == TownRole.NOBLE && p.random.nextInt(3) != 0) return stroll(p)
         if (p.role == TownRole.GUARD) return Patrol(p, listOfNotNull(Places.street(level, p.blockPosition(), 28, p.random, minR = 10)))
-        if (p.role == TownRole.BARD && crowd && p.random.nextInt(2) == 0) {
+        if (p.role == TownRole.BARD && crowd && p.random.nextInt(2) == 0 && !Tales.silent(p)) {
             Places.street(level, p.blockPosition(), 4, p.random)?.let { return Perform(p, it, p.blockPosition()) }
         }
         return when (p.random.nextInt(20)) {

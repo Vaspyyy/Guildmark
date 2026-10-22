@@ -253,10 +253,10 @@ object Tales : Comings.Listener {
     fun sealed(key: Long, gameTime: Long): Boolean = NoteStall.sealed(key, gameTime)
 
     /** From `Jobs.bard` (T1 places the call): whether [p], a bard, plays no music for a tale's sake. */
-    fun silent(p: Townsperson): Boolean = false
+    fun silent(p: Townsperson): Boolean = io.github.vaspyyy.guildmark.tales.templates.LuteSilence.silent(p)
 
     /** From `Jobs.bard` (T1 places the call): what a bard who [silent] does instead of playing. */
-    fun quiet(p: Townsperson): Task? = null
+    fun quiet(p: Townsperson): Task? = io.github.vaspyyy.guildmark.tales.templates.LuteSilence.quiet(p)
 
     /** From `WorksBuild.labourers` (T1 places the call): the ids of [capital]'s residents the works take on first. Part A keeps the set. */
     fun volunteers(capital: Long): Set<Int> = if (live) TaleEngine.volunteers(capital) else setOf()
