@@ -34626,5 +34626,426 @@
       }
     ],
     "subtitle": "subtitles.guildmark.cook.eat.clink"
+  },
+  "trade.board_stamp": {
+    "sounds": [
+      "guildmark:trade/board_stamp1",
+      "guildmark:trade/board_stamp2",
+      "guildmark:trade/board_stamp3"
+    ],
+    "subtitle": "subtitles.guildmark.trade.board_stamp"
+  },
+  "trade.seal_press": {
+    "sounds": [
+      {
+        "name": "guildmark:trade/seal_press1",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:trade/seal_press2",
+        "attenuation_distance": 12
+      }
+    ],
+    "subtitle": "subtitles.guildmark.trade.seal_press"
+  },
+  "trade.ticket_peel": {
+    "sounds": [
+      {
+        "name": "guildmark:trade/ticket_peel1",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:trade/ticket_peel2",
+        "attenuation_distance": 12
+      }
+    ],
+    "subtitle": "subtitles.guildmark.trade.ticket_peel"
+  },
+  "trade.hourglass": {
+    "sounds": [
+      {
+        "name": "guildmark:trade/hourglass1",
+        "attenuation_distance": 8
+      },
+      {
+        "name": "guildmark:trade/hourglass2",
+        "attenuation_distance": 8
+      }
+    ],
+    "subtitle": "subtitles.guildmark.trade.hourglass"
+  },
+  "trade.tally_open": {
+    "sounds": [
+      {
+        "name": "guildmark:trade/tally_open1",
+        "attenuation_distance": 8
+      },
+      {
+        "name": "guildmark:trade/tally_open2",
+        "attenuation_distance": 8
+      }
+    ],
+    "subtitle": "subtitles.guildmark.trade.tally_open"
+  },
+  "trade.tally_page": {
+    "sounds": [
+      {
+        "name": "guildmark:trade/tally_page1",
+        "attenuation_distance": 8
+      },
+      {
+        "name": "guildmark:trade/tally_page2",
+        "attenuation_distance": 8
+      },
+      {
+        "name": "guildmark:trade/tally_page3",
+        "attenuation_distance": 8
+      }
+    ],
+    "subtitle": "subtitles.guildmark.trade.tally_page"
+  },
+  "trade.tally_notch": {
+    "sounds": [
+      {
+        "name": "guildmark:trade/tally_notch1",
+        "attenuation_distance": 8
+      },
+      {
+        "name": "guildmark:trade/tally_notch2",
+        "attenuation_distance": 8
+      },
+      {
+        "name": "guildmark:trade/tally_notch3",
+        "attenuation_distance": 8
+      }
+    ],
+    "subtitle": "subtitles.guildmark.trade.tally_notch"
+  },
+  "trade.report_file": {
+    "sounds": [
+      {
+        "name": "guildmark:trade/report_file1",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:trade/report_file2",
+        "attenuation_distance": 12
+      }
+    ],
+    "subtitle": "subtitles.guildmark.trade.report_file"
+  },
+  "trade.knock": {
+    "sounds": [
+      "guildmark:trade/knock1",
+      "guildmark:trade/knock2",
+      "guildmark:trade/knock3",
+      "guildmark:trade/knock4"
+    ],
+    "subtitle": "subtitles.guildmark.trade.knock"
+  },
+  "trade.deliver": {
+    "sounds": [
+      "guildmark:trade/deliver1",
+      "guildmark:trade/deliver2",
+      "guildmark:trade/deliver3"
+    ],
+    "subtitle": "subtitles.guildmark.trade.deliver"
+  },
+  "trade.bell_step": {
+    "sounds": [
+      {
+        "name": "guildmark:trade/bell_step1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:trade/bell_step2",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:trade/bell_step3",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.trade.bell_step"
+  },
+  "trade.bell_trot": {
+    "sounds": [
+      {
+        "name": "guildmark:trade/bell_trot1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:trade/bell_trot2",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:trade/bell_trot3",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.trade.bell_trot"
+  },
+  "trade.harness_buckle": {
+    "sounds": [
+      "guildmark:trade/harness_buckle1",
+      "guildmark:trade/harness_buckle2"
+    ],
+    "subtitle": "subtitles.guildmark.trade.harness_buckle"
+  },
+  "trade.whistle_come": {
+    "sounds": [
+      {
+        "name": "guildmark:trade/whistle_come1",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:trade/whistle_come2",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "subtitles.guildmark.trade.whistle_come"
+  },
+  "trade.whistle_stay": {
+    "sounds": [
+      {
+        "name": "guildmark:trade/whistle_stay1",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:trade/whistle_stay2",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "subtitles.guildmark.trade.whistle_stay"
+  },
+  "trade.pack_clink": {
+    "sounds": [
+      "guildmark:trade/pack_clink1",
+      "guildmark:trade/pack_clink2",
+      "guildmark:trade/pack_clink3",
+      "guildmark:trade/pack_clink4"
+    ],
+    "subtitle": "subtitles.guildmark.trade.pack_clink"
+  },
+  "trade.cart_creak": {
+    "sounds": [
+      {
+        "name": "guildmark:trade/cart_creak1",
+        "stream": false,
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.trade.cart_creak"
+  },
+  "trade.shafts_lift": {
+    "sounds": [
+      "guildmark:trade/shafts_lift1",
+      "guildmark:trade/shafts_lift2"
+    ],
+    "subtitle": "subtitles.guildmark.trade.shafts_lift"
+  },
+  "trade.shafts_drop": {
+    "sounds": [
+      "guildmark:trade/shafts_drop1",
+      "guildmark:trade/shafts_drop2"
+    ],
+    "subtitle": "subtitles.guildmark.trade.shafts_drop"
+  },
+  "trade.canvas_flap": {
+    "sounds": [
+      "guildmark:trade/canvas_flap1",
+      "guildmark:trade/canvas_flap2"
+    ],
+    "subtitle": "subtitles.guildmark.trade.canvas_flap"
+  },
+  "trade.tailboard": {
+    "sounds": [
+      "guildmark:trade/tailboard1",
+      "guildmark:trade/tailboard2"
+    ],
+    "subtitle": "subtitles.guildmark.trade.tailboard"
+  },
+  "trade.rein_slack": {
+    "sounds": [
+      "guildmark:trade/rein_slack1",
+      "guildmark:trade/rein_slack2"
+    ],
+    "subtitle": "subtitles.guildmark.trade.rein_slack"
+  },
+  "trade.wagon_brake": {
+    "sounds": [
+      {
+        "name": "guildmark:trade/wagon_brake1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:trade/wagon_brake2",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.trade.wagon_brake"
+  },
+  "trade.hunt_horn": {
+    "sounds": [
+      {
+        "name": "guildmark:trade/hunt_horn1",
+        "attenuation_distance": 80
+      },
+      {
+        "name": "guildmark:trade/hunt_horn2",
+        "attenuation_distance": 80
+      }
+    ],
+    "subtitle": "subtitles.guildmark.trade.hunt_horn"
+  },
+  "trade.hunt_shout": {
+    "sounds": [
+      {
+        "name": "guildmark:trade/hunt_shout1",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:trade/hunt_shout2",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:trade/hunt_shout3",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "subtitles.guildmark.trade.hunt_shout"
+  },
+  "trade.hunt_win": {
+    "sounds": [
+      {
+        "name": "guildmark:trade/hunt_win1",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:trade/hunt_win2",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "subtitles.guildmark.trade.hunt_win"
+  },
+  "trade.sack_lift": {
+    "sounds": [
+      "guildmark:trade/sack_lift1",
+      "guildmark:trade/sack_lift2"
+    ],
+    "subtitle": "subtitles.guildmark.trade.sack_lift"
+  },
+  "trade.guard_step": {
+    "sounds": [
+      "guildmark:trade/guard_step1",
+      "guildmark:trade/guard_step2",
+      "guildmark:trade/guard_step3"
+    ],
+    "subtitle": "subtitles.guildmark.trade.guard_step"
+  },
+  "trade.warrant_seal": {
+    "sounds": [
+      "guildmark:trade/warrant_seal1",
+      "guildmark:trade/warrant_seal2"
+    ],
+    "subtitle": "subtitles.guildmark.trade.warrant_seal"
+  },
+  "trade.store_key": {
+    "sounds": [
+      {
+        "name": "guildmark:trade/store_key1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "guildmark:trade/store_key2",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.trade.store_key"
+  },
+  "trade.scale_settle": {
+    "sounds": [
+      {
+        "name": "guildmark:trade/scale_settle1",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:trade/scale_settle2",
+        "attenuation_distance": 12
+      }
+    ],
+    "subtitle": "subtitles.guildmark.trade.scale_settle"
+  },
+  "trade.hoist_creak": {
+    "sounds": [
+      {
+        "name": "guildmark:works.hoist",
+        "type": "event"
+      }
+    ],
+    "subtitle": "subtitles.guildmark.trade.hoist_creak"
+  },
+  "trade.strongbox": {
+    "sounds": [
+      "guildmark:trade/strongbox1",
+      "guildmark:trade/strongbox2"
+    ],
+    "subtitle": "subtitles.guildmark.trade.strongbox"
+  },
+  "trade.beads": {
+    "sounds": [
+      {
+        "name": "guildmark:trade/beads1",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:trade/beads2",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:trade/beads3",
+        "attenuation_distance": 12
+      }
+    ],
+    "subtitle": "subtitles.guildmark.trade.beads"
+  },
+  "trade.house_bell": {
+    "sounds": [
+      {
+        "name": "guildmark:trade/house_bell1",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:trade/house_bell2",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "subtitles.guildmark.trade.house_bell"
+  },
+  "trade.carter_hail": {
+    "sounds": [
+      {
+        "name": "guildmark:trade/carter_hail1",
+        "attenuation_distance": 40
+      },
+      {
+        "name": "guildmark:trade/carter_hail2",
+        "attenuation_distance": 40
+      }
+    ],
+    "subtitle": "subtitles.guildmark.trade.carter_hail"
+  },
+  "trade.cheer": {
+    "sounds": [
+      {
+        "name": "guildmark:trade/cheer1",
+        "attenuation_distance": 40
+      },
+      {
+        "name": "guildmark:trade/cheer2",
+        "attenuation_distance": 40
+      }
+    ],
+    "subtitle": "subtitles.guildmark.trade.cheer"
   }
 }
