@@ -63,9 +63,10 @@ object TaleTopics : TopicSource {
     private const val RUMOUR_MIN = 0.15
     private const val RUMOUR_HEAT = 0.55
 
-    /** How pressing the choice is among the two the screen shows (3.1): before the player has taken the tale up, and after; and, from a cast member the tale now offers something through. */
+    /** How pressing the choice is among the two the screen shows (3.1): before the player has taken the tale up, and after; and, from a cast member the tale now offers something through.
+     *  After is the lead's 0.88, not the design's 0.6: a festival day (0.85), hard times, a works going up or a road in trouble must not crowd "How does it stand?" off the asker's screen. */
     private const val PRESSING = 0.95
-    private const val PRESSING_AFTER = 0.6
+    private const val PRESSING_AFTER = 0.88
     private const val PRESSING_MEET = 0.9
 
     /** The cast member's door is pointed to from this far at most. */
