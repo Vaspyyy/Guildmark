@@ -308,12 +308,13 @@ object Talk {
         val ask = ask(level, s.p, player, Occasion.ANSWER)
         s.script?.let { script ->
             s.asked += choice
+            val inPlace = s.inPlace
             val (said, ends) = script.answer(ask, choice)
             if (ends) s.ending = Ending.BYE
             // A script that hands the talk back with this answer is done: what it says is said, and the ordinary choices follow it
             else if (script.back(ask, choice)) handBack(s, level)
             val parts = spoken(ask, said, said.gesture ?: Activity.TALK, said.toward)
-            queue(s, if (parts.isEmpty() && s.inPlace) silence(s, ask) else parts, ends)
+            queue(s, if (parts.isEmpty() && inPlace) silence(s, ask) else parts, ends)
             return
         }
         when (choice) {
