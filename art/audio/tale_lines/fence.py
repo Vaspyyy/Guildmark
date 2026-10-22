@@ -95,9 +95,14 @@ DELIVERY = {
     "tale.fence.same": WARM,  # and the same back
     "tale.fence.glum": TIRED,  # giving the friendship up
 }
-SPEED_FOR = {}
+# Each fix says what Whisper heard without it
+SPEED_FOR = {
+    ("talk.tale.fence.arranged_0", "man"): 0.92,  # heard "At the welled desk, I'll come."
+}
 SAY_AS = {}
 # Each fix says what Whisper heard without it
 PHONEMES = {
     ("talk.tale.fence.ask_1", "woman"): "aɪv sˈɛd θˈɪŋz aɪ kˈant ˌʌnsˈeɪ.",  # "can't unsay", not "can't say"
+    ("talk.tale.fence.shout_a_1", "man"): "ˈaɪl nˌɒt biː tˈəʊld baɪ juː!",  # heard "I'm not be told by you."
+    ("talk.tale.fence.third_1", "man"): "nˈɒt ɪnðə lˈeɪn, plˈiːz.",  # heard "None in the lane please."
 }

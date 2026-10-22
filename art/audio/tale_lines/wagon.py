@@ -91,9 +91,17 @@ DELIVERY = {
     "tale.wagon.released": dict(speed=0.96, pitch=-20),  # the band letting go, with no love
     "tale.wagon.found": GENTLE,  # weak and glad
 }
-SPEED_FOR = {}
+# Each fix says what Whisper heard without it
+SPEED_FOR = {
+    ("talk.tale.wagon.driver_hand_1", "man"): 0.96,  # with its phonemes
+    ("talk.tale.wagon.found_1", "man"): 0.865,  # heard "My leg, mine, my leg."
+    ("talk.tale.wagon.found_1", "woman"): 0.865,  # heard "My leg, mine my leg."
+}
 SAY_AS = {}
 # Each fix says what Whisper heard without it
 PHONEMES = {
     ("talk.tale.wagon.ask_0", "man"): "ðˈeɪ tˈʊk ðə wˈaɡən, and maɪ ˈəʊn wˈɛnt wɪð ɪt.",  # "They took", not "He took"
+    ("talk.tale.wagon.driver_hand_1", "man"): "ðˈeɪ kˈɛpt ðə sˈɛkənd hˈand. ðˈeɪ wˈɒnt pˈeɪɪŋ.",  # heard "They kept the second hand they want peeing."
+    ("talk.tale.wagon.captain_yes_0", "woman"): "aɪl ɹˈaɪd ˈat dˈɔːn, ˌɒn jɔːɹ wˈɜːd.",  # heard "I'll write it dawn on your word."
+    ("talk.tale.wagon.parley_1", "woman"): "ðə pɹˈaɪs ˈɪz sˈɛt. pˈeɪ, and wˈɔːk.",  # heard "The prices set pay and walk."
 }

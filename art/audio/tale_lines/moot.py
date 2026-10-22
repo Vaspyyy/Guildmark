@@ -81,6 +81,8 @@ DELIVERY = {
 }
 SPEED_FOR = {
     ("talk.tale.moot.ask_1", "man"): 0.95,  # "Say", not "See" (and with its phonemes, below)
+    ("talk.tale.moot.for_0", "man"): 0.92,  # with its phonemes
+    ("talk.tale.moot.good_0", "man"): 0.892,  # heard "The mood has hurt the town will give."
 }
 SAY_AS = {}
 # Each fix says what Whisper heard without it. The man's "rung" is still heard as "wrong", by every reading tried.
@@ -89,4 +91,7 @@ PHONEMES = {
     ("talk.tale.moot.ask_1", "man"): "ðə bˈɛl ɪz ɹˈʌŋ. sˈeɪ wɒt juː wˈɪl.",
     ("talk.tale.moot.ask_1", "woman"): "ðə bˈɛl ɪz ɹˈʌŋɡ. sˈeɪ wɒt juː wˈɪl.",  # "rung", not "wrong"
     ("talk.tale.moot.stand_0", "woman"): "ðə mˈuːt, mˈiːts sˈuːn. bˈiː ɹˈɛdi.",  # "meets", not "mates"
+    ("talk.tale.moot.broke_0", "woman"): "ɪnˈʌf! ðə mˈuːt ˈɪz ˈɛndɪd, and bˈadli.",  # heard "Enough the mood has ended and badly."
+    ("talk.tale.moot.broke_0", "man"): "ɪnˈʌf! ðə mˈuːt ˈɪz ˈɛndɪd, and bˈadli.",  # heard "Enough the mood has ended and badly."
+    ("talk.tale.moot.for_0", "man"): "wiː nˈiːd ɪt. ˈɛvɹɪ dˈA wiː wˈAt kˈɒsts ˌʌs.",  # heard "We need it every day we wait cost us."
 }

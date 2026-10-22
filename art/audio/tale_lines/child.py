@@ -86,6 +86,12 @@ DELIVERY = {
     "tale.child.agree": dict(speed=0.95, level=-1.0),  # timid
     "tale.child.scared": dict(speed=1.06, level=1.5),  # frightened, hurrying
 }
-SPEED_FOR = {}
+# Each fix says what Whisper heard without it
+SPEED_FOR = {
+    ("talk.tale.child.guard_1", "woman"): 0.92,  # heard "I saw when go out, I thought a parent was behind."
+}
 SAY_AS = {}
-PHONEMES = {}
+# Each fix says what Whisper heard without it
+PHONEMES = {
+    ("talk.tale.child.rumour_1", "man"): "ðeɪ sˈA ɐ tʃˈaɪldz ɡɒn ˈɒf dˌaʊn ðə ɹˈəʊd.",  # heard "They see a child's gone off down the road."
+}

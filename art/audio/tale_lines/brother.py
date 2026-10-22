@@ -131,9 +131,15 @@ DELIVERY = {
 }
 SPEED_FOR = {
     ("talk.tale.brother.ask_1", "man"): 0.9,  # slower, so the "n" of "mine" is heard
+    ("talk.tale.brother.delver_back_1", "man"): 0.892,  # heard "A life hurt but they'll mend."
+    ("talk.tale.brother.rumour_1", "man"): 0.92,  # heard "They say a Dalvar is missing in the workings."
+    ("talk.tale.brother.passing_0", "man"): 0.874,  # with its phonemes
 }
 SAY_AS = {}
 # Each fix says what Whisper heard without it
 PHONEMES = {
     ("talk.tale.brother.ask_1", "man"): "ðeɪ wɛnt tə ðɪ ˈəʊld mˈaɪn. nˈəʊ wˈɜːd sˈɪns.",  # "old mine", not "old mind"
+    ("talk.tale.brother.paid_0", "man"): "dˈʌn. wiː ɡˌəʊ, ˈat, ðə klˈəʊs.",  # heard "Don, we go with the close."
+    ("talk.tale.brother.rise_1", "man"): "jˈɔːɹ fˈaɪɚ. ˈaɪd ˈɔːlməʊst ɡˈɪvən ˈʌp.",  # heard "You're fire at almost given up."
+    ("talk.tale.brother.passing_0", "man"): "ðə fˈɔːɹdʒ fˈiːlz ˈɛmpti. nˈQ wˈɜːd at ˈɔːl.",  # heard "The forage feels empty, no word at all."
 }

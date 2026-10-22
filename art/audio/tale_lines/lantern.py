@@ -96,9 +96,13 @@ DELIVERY = {
 }
 SPEED_FOR = {
     ("talk.tale.lantern.ask_0", "old"): 1.15,  # eleven long words: at the old man's own pace it ran 4.26 s, over the 4.0 s limit
+    ("talk.tale.lantern.late_1", "man"): 0.874,  # heard "The lanterns will go without me, it's alright."
+    ("talk.tale.lantern.arrive_0", "woman"): 1.048,  # heard "here or here at last."
 }
 SAY_AS = {}
 # Each fix says what Whisper heard without it
 PHONEMES = {
     ("talk.tale.lantern.thanks_1", "man"): "juːv ɐ kˈaɪnd hˈɑːɹt. ðˈeɪd hav lˈaɪkt juː.",  # "They'd have", not "that have"
+    ("talk.tale.lantern.arrive_0", "man"): "hˈɪɹ. hˈɪɹ, ˈat lˈast.",  # heard "here here last"
+    ("talk.tale.lantern.shall_1", "old"): "ˈɪts ˈɐ lˈɒŋ wˈeɪ. wˈɪl jˈuː wˈɔːk wˈɪð mˈiː?",  # heard "it it it it it it it it"
 }

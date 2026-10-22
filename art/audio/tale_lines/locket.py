@@ -133,6 +133,7 @@ DELIVERY = {
 }
 SPEED_FOR = {
     ("talk.tale.locket.stand_1", "man"): 1.1,  # "No one hurt": slower, the last "t" came out as "hurts"
+    ("talk.tale.locket.returned_0", "woman"): 0.865,  # with its phonemes
 }
 SAY_AS = {}
 # Each fix says what Whisper heard without it
@@ -141,4 +142,7 @@ PHONEMES = {
     ("talk.tale.locket.ask_1", "man"): "maɪ lˈɑːkɪt ɪz ɡˈɒn, and aɪ kˈant stˈɒp lˈʊkɪŋ.",  # "locket", not "luck"
     ("talk.tale.locket.ask_1", "woman"): "maɪ lˈɒkɪt ɪz ɡˈɒn, and aɪ kˈant stˈɒp lˈʊkɪŋ.",  # "locket", not "lock it's"
     ("talk.tale.locket.stand_1", "man"): "aɪ ˈəʊnli wˈɒnt ɪt bˈak. nˈəʊ wˈʌn hˈɜːt.",
+    ("talk.tale.locket.sight_side_1", "man"): "sˈʌmwɒn hˈʌɹid ˈɒf ˈat dˈʌsk. aɪ sˈɔː wˌɪtʃ wˈeɪ.",  # heard "Someone hurried off a desk, I saw which way."
+    ("talk.tale.locket.quiet_0", "man"): "tˈeɪk ɪt. sˈA nˈʌθɪŋ, aɪ bˈɛɡ juː.",  # heard "Take it, see nothing I beg you."
+    ("talk.tale.locket.returned_0", "woman"): "mI lˈɒkɪt. ˈQ, jɔːɹ hˈQm ɐɡˈɛn.",  # heard "My luck at \"oh, you're home again.\""
 }

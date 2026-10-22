@@ -81,6 +81,14 @@ DELIVERY = {
     "tale.lute.glum": TIRED,  # giving up on the song
     "tale.lute.returned": WARM,  # the lute handed back
 }
-SPEED_FOR = {}
+# Each fix says what Whisper heard without it
+SPEED_FOR = {
+    ("talk.tale.lute.keeper_1", "woman"): 1.08,  # heard "I'm not a charity I'm an in."
+    ("talk.tale.lute.parts_0", "woman"): 1.08,  # heard "Hoff now, Hoff after, and she can play."
+    ("talk.tale.lute.keeper_1", "man"): 0.92,  # with its phonemes
+}
 SAY_AS = {}
-PHONEMES = {}
+# Each fix says what Whisper heard without it
+PHONEMES = {
+    ("talk.tale.lute.keeper_1", "man"): "Im nˌɒtə tʃˈaɹɪti. Im ɐn ˈɪn.",  # heard "I'm not a charity, I'm an N."
+}

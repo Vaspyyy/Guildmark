@@ -94,11 +94,17 @@ DELIVERY = {
     "tale.chair.leave": GRIEF,  # no heart to stay
     "tale.chair.candles": GENTLE,  # three lights
 }
-SPEED_FOR = {}
+# Each fix says what Whisper heard without it
+SPEED_FOR = {
+    ("talk.tale.chair.candles_1", "man"): 0.865,  # heard "3 lights then that's right."
+    ("talk.tale.chair.rumour_1", "man"): 1.015,  # heard "They say nobody's latest down."
+}
 SAY_AS = {}
 # Each fix says what Whisper heard without it
 PHONEMES = {
     ("talk.tale.chair.ask_1", "man"): "aɪ kˈiːp sˈɛtɪŋ tˈuː bˈoʊʊlz.",  # "bowls", not "balls"
     ("talk.tale.chair.ask_1", "woman"): "aɪ kˈiːp sˈɛtɪŋ tˈuː bˈoʊlz.",  # "bowls", not "balls"
     ("talk.tale.chair.stand_0", "man"): "θɹˈiː wˈɜːdz, θɹˈiː kˈandəlz, ˈand ɐ plˈeɪs.",  # "and a place", not "in a place"
+    ("talk.tale.chair.laying_1", "man"): "lˈaɪt and pˈiːs tə wˈʌn hˈuː ˈɪz ɡˈɒn.",  # heard "Light and peace to when he was gone."
+    ("talk.tale.chair.word_b_0", "man"): "nˈɛvɚɹ ˈɐ dˈeɪ wɪðˌaʊt wˈɜːk dˈʌn wˈɛl.",  # heard "Never day without work done well."
 }

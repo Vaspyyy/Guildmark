@@ -151,9 +151,20 @@ DELIVERY = {
     "tale.informer.caught": dict(speed=1.06, level=1.0),  # caught out
     "tale.informer.sorry": dict(speed=0.93, pitch=-15, level=-1.0),  # contrite
 }
-SPEED_FOR = {}
+# Each fix says what Whisper heard without it
+SPEED_FOR = {
+    ("talk.tale.informer.rumour_0", "woman"): 0.92,  # heard "They say the band always knows the wackens days."
+    ("talk.tale.informer.who_1", "woman"): 0.892,  # heard "Name the one the band listen to."
+    ("talk.tale.informer.lowlie_1", "man"): 1.06,  # with its phonemes
+}
 SAY_AS = {}
 # Each fix says what Whisper heard without it
 PHONEMES = {
     ("talk.tale.informer.thanks_0", "man"): "juːv dˈʌn ðə tˈaʊn ˈeɪ sˈɜːvɪs. aɪ wəʊnt fɚɡˈɛt.",  # "a service", not "of service"
+    ("talk.tale.informer.forgive_1", "man"): "sˈɪt dˈaʊn. ˈɪts sˈɛd, and wˈiːl lˈiːv ɪt ðˈɛɹ.",  # heard "Sit down, it's set and we'll leave it there."
+    ("talk.tale.informer.tell_friend_1", "man"): "wiəɹ ˈəʊld fɹˈɛndz. wiː tˈɔːk ˈɒv ˈəʊld dˈeɪz.",  # heard "We're old friends, we talk about days."
+    ("talk.tale.informer.who_0", "man"): "hˌuː dˈɪd juː tˈɛl? sˈeɪ ˈɪt plˈeɪn.",  # heard "Who did you tell, say a plane?"
+    ("talk.tale.informer.lowlie_1", "man"): "nˈʌθɪŋ stˈɜːd. ðə bˈand mˈʌst biː ɹˈɛstɪŋ.",  # heard "Nothing stirred the ban must be resting."
+    ("talk.tale.informer.lowlie_1", "woman"): "nˈʌθɪŋ stˈɜːd. ðə bˈand, mˈʌst, biː ɹˈɛstɪŋ.",  # heard "Nothing stirred the ban must be resting."
+    ("talk.tale.informer.sorry_0", "woman"): "aɪm sˈɒɹi. aɪ nˈɛvɚ mˈɛnt, hˈɑːɹm.",  # heard "I'm sorry I never met harm."
 }

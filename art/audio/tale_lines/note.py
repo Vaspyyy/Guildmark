@@ -114,4 +114,12 @@ SAY_AS = {}
 PHONEMES = {
     "talk.tale.note.ask_1": "aɪ bˈɒɹəʊd ɐɡˈɛnst ðˈɪss stˈɔːl, and nˈaʊ ɪts djˈuː.",  # "this stall", not "the stall"
     ("talk.tale.note.stand_1", "man"): "wɪɹ nˈɪɹɚ, θˈaŋks tə juː.",  # "We're nearer", not "We're near a"
+    ("talk.tale.note.lender_hard_1", "man"): "ˈaɪ, lˈɛnt, ˈɪn, ɡˈʊd fˈeɪθ.",  # heard "I'm letting good faith."
+    ("talk.tale.note.lender_sums_1", "man"): "ˈaɪ mɪskˈaʊntɪd. aɪl mˈɛnd ɪt.",  # heard "I'm discounted, I'll mend it."
+    ("talk.tale.note.quits_0", "man"): "pˈeɪd ɪn fˈʊl. wˈiː ˈɑːɹ kwˈɪts.",  # heard "Paid in full wear quits."
+    ("talk.tale.note.quits_1", "man"): "ðˈɛn, ˈɪts, sˈɛtəld bɪtwˈiːn ˌʌs.",  # heard "Then it settled between us."
+    ("talk.tale.note.sealed_1", "man"): "ˈaɪl, nˌɒt, bˈɛɡ. ʃˈʌt ɪt ˈʌp.",  # heard "I'm not big, shut it up."
+    ("talk.tale.note.lease_1", "woman"): "ðə stˈɔːl ɪz mˈaɪn nˈaʊ. ʃiːl kˈiːp ɪt fˈɔːɹ mˌiː.",  # heard "The stall is mine now, she'll keep it from me."
+    ("talk.tale.note.lender_sums_1", "woman"): "ˈaɪ, mɪskˈaʊntɪd. aɪl mˈɛnd ɪt.",  # heard "I'm discounted, I'll mend it."
+    ("talk.tale.note.lender_word_1", "man"): "hˈɜːd. wˈiːl sˈA nˈəʊmˌɔːɹ ɒv ɪt.",  # heard "Heard we'll see no more of it."
 }

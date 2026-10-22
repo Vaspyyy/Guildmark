@@ -119,6 +119,17 @@ DELIVERY = {
     "tale.cart.keep": WARM,  # glad of the company
     "tale.cart.loaf": WARM,  # a loaf baked in case they came
 }
-SPEED_FOR = {}
+# Each fix says what Whisper heard without it
+SPEED_FOR = {
+    ("talk.tale.cart.night_0", "woman"): 1.08,  # heard "The roads bad after dark will go at first light."
+    ("talk.tale.cart.safe_0", "woman"): 1.026,  # heard "The road's quiet wheel set off at first light."
+}
 SAY_AS = {}
-PHONEMES = {}
+# Each fix says what Whisper heard without it
+PHONEMES = {
+    ("talk.tale.cart.guard_set_0", "man"): "dˈʌn. wiː ɹˈaɪd, ˈat, fˈɜːst lˈaɪt.",  # heard "Done we ride a first light."
+    ("talk.tale.cart.guard_yes_0", "man"): "tˈuː ɒv ˌʌs kan ɹˈaɪd ˈat fˈɜːst lˈaɪt, fɔːɹ ɐ fˈiː.",  # heard "Two of us can ride a first light for a fee."
+    ("talk.tale.cart.guard_yes_1", "man"): "wˈiːl wˈɔːk ðˌɛm ˈɪn. ˈɪt wəʊnt biː fɹˈiː.",  # heard "We will walk them in and won't be free."
+    ("talk.tale.cart.mended_1", "man"): "sˈaʊnd ˈaz njˈuː. wiəɹ ɪn jɔːɹ dˈɛt.",  # heard "Sound is new, we're in your debt."
+    ("talk.tale.cart.safe_1", "man"): "sˈeɪf ˈat lˈast. wiː kan ɡˌəʊ nˈaʊ.",  # heard "Safe a last we can go now."
+}
