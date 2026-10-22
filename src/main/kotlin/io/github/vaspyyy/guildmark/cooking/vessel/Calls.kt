@@ -57,8 +57,12 @@ object Calls {
     /** A SEASON call may come once the cook is this far through its time (the last third, 1.4). */
     const val SEASON_FROM = 2.0 / 3.0
 
-    /** Until Part C's signs are on the screen, a call is also said in the action bar of the player it goes to. */
-    const val SAY_CALLS = true
+    /**
+     * Whether a call is also said in the action bar of the player it goes to. It was, until Part C drew the signs (the knock and
+     * the glint, the wisp, the climbing foam, the film, the flare, the golden edge, the turning trays): now the call is shown and
+     * not written. Set true again, it brings the lines back.
+     */
+    const val SAY_CALLS = false
 
     /** Ticks a player waits between two tastes of one vessel (6 s, 2.6). */
     const val TASTE_TICKS = 120L
