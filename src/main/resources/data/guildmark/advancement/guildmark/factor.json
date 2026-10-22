@@ -1,0 +1,23 @@
+{
+  "parent": "guildmark:guildmark/chapman",
+  "display": {
+    "icon": {
+      "id": "minecraft:barrel"
+    },
+    "title": {
+      "translate": "advancements.guildmark.factor.title"
+    },
+    "description": {
+      "translate": "advancements.guildmark.factor.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

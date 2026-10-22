@@ -1,0 +1,23 @@
+{
+  "parent": "guildmark:guildmark/factor",
+  "display": {
+    "icon": {
+      "id": "minecraft:bell"
+    },
+    "title": {
+      "translate": "advancements.guildmark.trading_house.title"
+    },
+    "description": {
+      "translate": "advancements.guildmark.trading_house.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

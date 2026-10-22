@@ -48,6 +48,11 @@ object Milestones {
     const val TALES_THREE = "tales_three"
     const val TALES_ALL = "tales_all"
 
+    // The trader's ladder (living-world/trader/design.md, Part 5): the rungs that come with a title
+    const val CHAPMAN = "chapman"
+    const val FACTOR = "factor"
+    const val TRADING_HOUSE = "trading_house"
+
     private fun holder(player: ServerPlayer, id: String): AdvancementHolder? =
         player.level().server.advancements.get(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "guildmark/$id"))
 
