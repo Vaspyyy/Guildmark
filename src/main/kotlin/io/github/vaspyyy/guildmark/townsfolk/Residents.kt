@@ -143,13 +143,21 @@ class Residents(
     private val byUuid = HashMap<UUID, Resident>().also { map -> for (r in people.values) r.uuid?.let { map[it] = r } }
     // Someone new in the plan's place of one who died has it after them, the newest last (as [add] has it)
     private val byPlan = HashMap<Pair<BlockPos, Int>, Resident>().also { map -> for (r in people.values.sortedBy { it.id }) if (r.planned >= 0) map[r.capital to r.planned] = r }
+    // Each town's people, in the order [people] has them (the newest last, as [add] has it); no one leaves [people], the dead stay in it
+    private val byTown = HashMap<BlockPos, MutableList<Resident>>().also { map -> for (r in people.values) map.getOrPut(r.capital) { ArrayList() }.add(r) }
 
     operator fun get(id: Int): Resident? = people[id]
 
     fun of(p: Townsperson): Resident? = if (p.resident >= 0) people[p.resident] else null
 
     /** Everyone living (or who lived) in the capital at [capital]. */
-    fun of(capital: BlockPos): List<Resident> = people.values.filter { it.capital == capital }
+    fun of(capital: BlockPos): List<Resident> = byCentre(capital)
+
+    /**
+     * Everyone living (or who lived) in the town at [centre], a capital's or a village's bell, without a look at
+     * everyone else: a list of its own, so people may be taken in (see [add]) while it is read.
+     */
+    fun byCentre(centre: BlockPos): List<Resident> = byTown[centre]?.toList() ?: listOf()
 
     fun all(): Collection<Resident> = people.values
 
@@ -157,7 +165,14 @@ class Residents(
     fun planned(capital: BlockPos, planned: Int): Resident? = byPlan[capital to planned]
 
     fun add(r: Resident) {
-        people[r.id] = r
+        val old = people.put(r.id, r)
+        if (old !== r) {
+            if (old != null && old.capital != r.capital) byTown[old.capital]?.remove(old)
+            // Where the one it replaces stood, else last
+            val town = byTown.getOrPut(r.capital) { ArrayList() }
+            val at = if (old == null) -1 else town.indexOf(old)
+            if (at >= 0) town[at] = r else town.add(r)
+        }
         r.uuid?.let { byUuid[it] = r }
         if (r.planned >= 0) byPlan[r.capital to r.planned] = r
         setDirty()
