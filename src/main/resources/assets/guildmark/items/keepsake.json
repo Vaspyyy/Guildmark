@@ -1,0 +1,124 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:custom_model_data",
+    "cases": [
+      {
+        "when": "note",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/keepsake/note"
+        }
+      },
+      {
+        "when": "note_c",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/keepsake/note_c"
+        }
+      },
+      {
+        "when": "chair",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/keepsake/chair"
+        }
+      },
+      {
+        "when": "wagon",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/keepsake/wagon"
+        }
+      },
+      {
+        "when": "child",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/keepsake/child"
+        }
+      },
+      {
+        "when": "fence",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/keepsake/fence"
+        }
+      },
+      {
+        "when": "lute",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/keepsake/lute"
+        }
+      },
+      {
+        "when": "moot",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/keepsake/moot"
+        }
+      },
+      {
+        "when": "cart",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/keepsake/cart"
+        }
+      },
+      {
+        "when": "lantern",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/keepsake/lantern"
+        }
+      },
+      {
+        "when": "informer",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/keepsake/informer"
+        }
+      },
+      {
+        "when": "informer_c",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/keepsake/informer_c"
+        }
+      },
+      {
+        "when": "locket",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/keepsake/locket"
+        }
+      },
+      {
+        "when": "locket_c",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/keepsake/locket_c"
+        }
+      },
+      {
+        "when": "brother",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/keepsake/brother"
+        }
+      },
+      {
+        "when": "brother_c",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/keepsake/brother_c"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "guildmark:item/contract"
+    }
+  }
+}

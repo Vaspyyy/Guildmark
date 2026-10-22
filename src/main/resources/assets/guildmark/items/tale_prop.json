@@ -1,0 +1,96 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:custom_model_data",
+    "cases": [
+      {
+        "when": "note_sealed",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/tale_prop/note_sealed"
+        }
+      },
+      {
+        "when": "ransom_pouch",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/tale_prop/ransom_pouch"
+        }
+      },
+      {
+        "when": "slate",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/tale_prop/slate"
+        }
+      },
+      {
+        "when": "thread_paper",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/tale_prop/thread_paper"
+        }
+      },
+      {
+        "when": "locket",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/tale_prop/locket"
+        }
+      },
+      {
+        "when": "blanket",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/tale_prop/blanket"
+        }
+      },
+      {
+        "when": "washing",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/tale_prop/washing"
+        }
+      },
+      {
+        "when": "lantern_paper_dark",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/tale_prop/lantern_paper_dark"
+        }
+      },
+      {
+        "when": "lantern_paper_lit",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/tale_prop/lantern_paper_lit"
+        }
+      },
+      {
+        "when": "miners_lamp_dark",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/tale_prop/miners_lamp_dark"
+        }
+      },
+      {
+        "when": "miners_lamp_lit",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/tale_prop/miners_lamp_lit"
+        }
+      },
+      {
+        "when": "posy",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildmark:item/tale_prop/posy"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "guildmark:item/tale_prop/note_sealed"
+    }
+  }
+}
