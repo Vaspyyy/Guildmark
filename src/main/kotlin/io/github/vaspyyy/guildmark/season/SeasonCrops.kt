@@ -49,7 +49,7 @@ object SeasonCrops {
     /** How much of a pace above 1 turns into extra stages (a pace of 1.2 gives one more stage every fifth time). */
     private const val BOOST = 1f
 
-    private val PROFILES: Map<Block, Profile> = mapOf(
+    private val PROFILES: MutableMap<Block, Profile> = mutableMapOf(
         Blocks.WHEAT to Profile(1.15f, 1.0f, 0.85f, 0.4f),
         Blocks.CARROTS to Profile(1.0f, 0.85f, 1.15f, 0.5f),
         Blocks.POTATOES to Profile(1.15f, 0.9f, 1.0f, 0.45f),
@@ -65,8 +65,7 @@ object SeasonCrops {
         Blocks.BAMBOO to Profile(1.0f, 1.0f, 0.9f, 0.5f),
     )
 
-    /** The seeds and harvests that name each crop, for their tooltips and the Almanac. */
-    val ITEMS: Map<Item, Block> = mapOf(
+    private val itemBlocks: MutableMap<Item, Block> = mutableMapOf(
         Items.WHEAT_SEEDS to Blocks.WHEAT, Items.WHEAT to Blocks.WHEAT,
         Items.CARROT to Blocks.CARROTS, Items.POTATO to Blocks.POTATOES,
         Items.BEETROOT_SEEDS to Blocks.BEETROOTS, Items.BEETROOT to Blocks.BEETROOTS,
@@ -76,6 +75,19 @@ object SeasonCrops {
         Items.COCOA_BEANS to Blocks.COCOA, Items.TORCHFLOWER_SEEDS to Blocks.TORCHFLOWER_CROP,
         Items.PITCHER_POD to Blocks.PITCHER_CROP, Items.CACTUS to Blocks.CACTUS, Items.BAMBOO to Blocks.BAMBOO,
     )
+
+    /** The seeds and harvests that name each crop, for their tooltips and the Almanac. */
+    val ITEMS: Map<Item, Block> = itemBlocks
+
+    /**
+     * Puts a crop of another system into the seasons' pacing, at common setup (both sides, before a world or a tooltip reads
+     * the tables): [block] grows by [profile] from then on, and each of [items] names it in its tooltip. The Almanac's rows
+     * ([SHOWN]) are left alone, so its layout does not change.
+     */
+    fun add(block: Block, profile: Profile, vararg items: Item) {
+        PROFILES[block] = profile
+        for (item in items) itemBlocks[item] = block
+    }
 
     /** The crops, each by the item the Almanac shows for it. */
     val SHOWN: List<Pair<Item, Block>> = listOf(

@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "condition": {
+        "type": "minecraft:random_chance",
+        "chance": 0.04
+      },
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "guildmark:herb_sprig"
+        }
+      ]
+    }
+  ],
+  "random_sequence": "guildmark:inject/herb_wild"
+}

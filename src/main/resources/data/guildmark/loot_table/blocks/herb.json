@@ -8,8 +8,28 @@
       },
       "entries": [
         {
-          "type": "minecraft:item",
-          "name": "guildmark:herb_sprig"
+          "type": "minecraft:alternatives",
+          "children": [
+            {
+              "type": "minecraft:item",
+              "condition": {
+                "type": "minecraft:match_block",
+                "blocks": "guildmark:herb",
+                "state": {
+                  "age": "3"
+                }
+              },
+              "modifier": {
+                "type": "minecraft:set_count",
+                "count": 2
+              },
+              "name": "guildmark:herb_sprig"
+            },
+            {
+              "type": "minecraft:item",
+              "name": "guildmark:herb_sprig"
+            }
+          ]
         }
       ]
     }

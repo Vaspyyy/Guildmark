@@ -4,6 +4,7 @@ import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.context.CommandContext
+import io.github.vaspyyy.guildmark.cooking.CookRegistry
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands
 import net.minecraft.commands.SharedSuggestionProvider
@@ -49,7 +50,7 @@ object SeasonCommand {
         }, false)
         val weight = Seasons.temperate(level, pos)
         val sheltered = SeasonCrops.sheltered(level, pos)
-        val paces = listOf(Blocks.WHEAT, Blocks.CARROTS, Blocks.POTATOES, Blocks.BEETROOTS, Blocks.PUMPKIN_STEM, Blocks.MELON_STEM)
+        val paces = listOf(Blocks.WHEAT, Blocks.CARROTS, Blocks.POTATOES, Blocks.BEETROOTS, Blocks.PUMPKIN_STEM, Blocks.MELON_STEM, CookRegistry.HERB.get())
             .joinToString(", ") { block -> "%s %.2f".format(block.name.string, SeasonCrops.pace(level, pos, block.defaultBlockState())) }
         source.sendSuccess({ Component.translatable("commands.guildmark.season.here", "%.2f".format(weight), sheltered.toString(), paces) }, false)
         if (!Seasons.enabled()) source.sendSuccess({ Component.translatable("commands.guildmark.season.off") }, false)
