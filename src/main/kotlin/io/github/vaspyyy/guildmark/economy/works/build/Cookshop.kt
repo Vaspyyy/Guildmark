@@ -106,6 +106,9 @@ class Cookshop(y0: Int, private val patron: Dye) : WorksDrawing(WorksKind.COOKSH
         /** Where its buyers stand, before the middle of the counter. */
         val DOOR = Pin(0, 0, -1, Dir.S)
 
+        /** Where its keeper comes in to the alley, from the side (the alley's near end, x 2, z 1): ground that is to be left to walk on. */
+        val WAY_IN = Pin(3, 0, 1, Dir.W)
+
         /** The counter's planks, the dark ground-floor ones. */
         private val COUNTER = B(M.PLANKS, v = 1)
     }

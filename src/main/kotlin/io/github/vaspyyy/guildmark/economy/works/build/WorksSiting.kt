@@ -267,18 +267,26 @@ internal object WorksSiting {
 
     // ---- The cookshop ----
 
-    /** A clear 5 by 4 of the market square, its back to the nearest edge, as a stall finds its pitch but with no lot of the plan's to try first. */
+    /**
+     * A clear 5 by 4 of the market square, its back to the nearest edge first, as a stall finds its pitch but with no lot of the plan's to
+     * try first, and with its buyers' ground and its keeper's way in left free to walk on. A middling capital's square has no clear 5 by 4
+     * against its edge (its stalls and wells and the houses on its south rim are there), so the spots away from the edge are tried after.
+     */
     private fun cookshop(level: ServerLevel, w: WorksRec, rec: BuildRec, capital: CapitalPiece): Boolean? {
         val plan = capital.plan
-        val search = searches.getOrPut(w.id) { Search(pitches(plan, Cookshop.LOT)) }
-        return find(level, w, rec, capital, search, Cookshop.LOT, Cookshop.DOOR, street = true, uses = setOf(Use.SQUARE))
+        val search = searches.getOrPut(w.id) { Search(pitches(plan, Cookshop.LOT, Int.MAX_VALUE)) }
+        return find(
+            level, w, rec, capital, search, Cookshop.LOT, Cookshop.DOOR, street = true, uses = setOf(Use.SQUARE),
+            walks = listOf(Cookshop.DOOR, Cookshop.WAY_IN),
+        )
     }
 
     /**
      * The spots of the market square a stall or a cookshop could take ([lot]: 3 by 3, or 5 by 4), those nearest its edge
-     * first: clear of the avenue down its middle and of the ground before any door, the pitch's front onto the square.
+     * first: clear of the avenue down its middle and of the ground before any door, the pitch's front onto the square, and its back
+     * no more than [near] from the square's edge (a stall's two).
      */
-    private fun pitches(plan: CityPlan, lot: Rect): List<Cand> {
+    private fun pitches(plan: CityPlan, lot: Rect, near: Int = 2): List<Cand> {
         val m = plan.market
         val doors = HashSet<Long>()
         for (b in plan.buildings) {
@@ -299,7 +307,7 @@ internal object WorksSiting {
             val bx = pf.worldX(0, lot.z1 + 1)
             val bz = pf.worldZ(0, lot.z1 + 1)
             val edge = min(min(bx - m.x0, m.x1 - bx), min(bz - m.z0, m.z1 - bz))
-            if (edge > 2) continue
+            if (edge > near) continue
             out.add((edge.coerceAtLeast(0) * 1000 + abs(x) + abs(z - (m.z0 + m.z1) / 2)) to Cand(x, z, front))
         }
         return out.sortedBy { it.first }.map { it.second }
@@ -420,12 +428,12 @@ internal object WorksSiting {
     /**
      * Works through [search]'s lots for one [lot] will stand on: on the plan, all of it on one of [uses] at one
      * height, the ground before its [door] a street (or free ground, if not [street]); in the world, loaded, clear
-     * and on solid ground, and the drawing laid there with nothing in its way. Null while there are lots still to
-     * try; false when they're all tried.
+     * and on solid ground, and the drawing laid there with nothing in its way, and each of [walks] (pins outside the lot: the ground before its
+     * door, a way in) somewhere to stand. Null while there are lots still to try; false when they're all tried.
      */
     private fun find(
         level: ServerLevel, w: WorksRec, rec: BuildRec, capital: CapitalPiece, search: Search, lot: Rect, door: Pin,
-        street: Boolean, uses: Set<Use> = FREE_USES,
+        street: Boolean, uses: Set<Use> = FREE_USES, walks: List<Pin> = emptyList(),
     ): Boolean? {
         val plan = capital.plan
         var planned = 0
@@ -444,6 +452,7 @@ internal object WorksSiting {
             val y0 = capital.center.y + h
             val frame = WorksFrame(capital.world(c.ox, y0, c.oz), capital.direction(c.front))
             if (!worldFit(level, frame, lot, y0)) continue
+            if (walks.any { !walkable(level, frame.world(it.x, y0, it.z)) }) continue
             val t = trial(level, w, capital, frame, y0, 0)
             if (t.inWay() != null || taken(level, w, t.box)) continue
             settle(level, w, rec, capital, frame, y0, 0, false)
