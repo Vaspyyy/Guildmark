@@ -224,7 +224,7 @@ object ReliefCheer {
         shop: Shop? = null, what: Delivered? = null, force: Boolean = false,
     ): Played {
         if (!started) init()
-        if (!force && !TradeConfig.cheer()) return Played("the cheer is switched off (setting: Cheer a Delivery, or The Town Answers, or Trader's Life)")
+        if (!force && !TradeConfig.cheer()) return Played("the cheer is switched off (setting: Cheer, or The Town Answers, or Trader's Life)")
         if (!force && !Scenes.any()) return Played("every scene is switched off")
         if (level.dimension() != Level.OVERWORLD) return Played("it is played in the overworld's towns")
         if (!player.isAlive || player.isRemoved || player.level() !== level) return Played("there is no one to see it")

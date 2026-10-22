@@ -179,7 +179,7 @@ object WorldCommand {
         val level = source.level
         val player = source.player ?: return fail(source, "Stand where the street can see you: this needs a player.")
         if (!TradeConfig.cheer()) {
-            say(source, grey("The cheer is switched off (setting: Cheer a Delivery, The Town Answers or Trader's Life); this plays all the same."))
+            say(source, grey("The cheer is switched off (setting: Cheer, or The Town Answers, or Trader's Life); this plays all the same."))
         }
         val played = ReliefCheer.at(level, player.blockPosition(), player, big, force = true)
         if (!played.played) return fail(source, "Nothing played: ${played.why}.")
