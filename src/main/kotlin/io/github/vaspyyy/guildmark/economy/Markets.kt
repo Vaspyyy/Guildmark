@@ -12,6 +12,7 @@ import io.github.vaspyyy.guildmark.city.plan.Kind
 import io.github.vaspyyy.guildmark.city.plan.Trade
 import io.github.vaspyyy.guildmark.economy.fortune.Fortunes
 import io.github.vaspyyy.guildmark.economy.works.Works
+import io.github.vaspyyy.guildmark.tales.Tales
 import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
 import io.github.vaspyyy.guildmark.townsfolk.Furnish
 import io.github.vaspyyy.guildmark.townsfolk.Residents
@@ -192,6 +193,8 @@ class Markets(private val entries: MutableMap<Long, Entry> = HashMap()) : SavedD
             Works.hour(level, entry, hour, carried)
             // Its fortunes after the works, so the close reads the day the works finished
             Fortunes.day(level, entry)
+            // Its tales after its fortunes, which they note their endings to (tales/)
+            Tales.day(level, entry)
         }
 
         /** The world in [entry]'s market's hour as it feels it there (the season and any feast with it), for why its prices stand where they do. */
