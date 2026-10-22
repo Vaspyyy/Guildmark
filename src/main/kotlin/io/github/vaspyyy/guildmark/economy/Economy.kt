@@ -632,4 +632,46 @@ object Economy {
         }
         return Event(kind, good, factor, c.hour, c.hour + length * 24L)
     }
+
+    /** The hours of the day's three caravans, apart: a cart's call brings one caravan's share for every this many hours since the last. */
+    const val CALL_HOURS = 8.0
+
+    /** The most caravans' worth a call brings, however long since the last: a week's worth at three a day. */
+    const val CALL_MOST = 21
+
+    /**
+     * A village cart's call on [m] (a pedlar's, or a capital's wagon coming to the end of its road; the villages design, section
+     * 7.4): the three daily caravans' arithmetic done in one go. What the market holds beyond [GLUT] times its target leaves, half
+     * of it as [exports] says ([taking]: false for a call that only brings), and then the market is brought what it is short of,
+     * [bring]'s load for each caravan there would have been in the [hours] since the last call, at most a week's worth. Nothing is
+     * made up: a call brings only what the market's own gap asks for, and a village whose stores are full is brought nothing.
+     */
+    fun call(m: Market, town: Town, hours: Long, taking: Boolean = true): Exchange {
+        val out = DoubleArray(Good.entries.size)
+        if (taking) for ((g, n) in exports(m, town)) {
+            val took = m.take(Site.MARKET, g, n)
+            if (took <= 0.0) continue
+            m.tally(Tally.EXPORTED, g, took)
+            out[g.ordinal] = took
+        }
+        // One caravan's share for every eight hours since the last call (three a day), a week's worth at the most
+        val times = Math.ceil(hours / CALL_HOURS).toInt().coerceIn(1, CALL_MOST)
+        val inn = bring(m, town, first = true, coming = null, times = times)
+        for (g in Good.entries) {
+            val n = inn[g.ordinal]
+            if (n <= 0.0) continue
+            m.add(site(g), g, n)
+            m.tally(Tally.IMPORTED, g, n)
+        }
+        return Exchange(out, inn)
+    }
+}
+
+/** What a cart's call took away from a market ([out]) and brought it ([inn]), each good's units by ordinal (see [Economy.call]). */
+class Exchange(val out: DoubleArray, val inn: DoubleArray) {
+    /** The goods that left, with how many. */
+    fun taken(): List<Pair<Good, Double>> = Good.entries.filter { out[it.ordinal] > 0.0 }.map { it to out[it.ordinal] }
+
+    /** The goods that came, with how many. */
+    fun brought(): List<Pair<Good, Double>> = Good.entries.filter { inn[it.ordinal] > 0.0 }.map { it to inn[it.ordinal] }
 }
