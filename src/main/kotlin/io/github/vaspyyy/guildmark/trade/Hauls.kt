@@ -108,6 +108,13 @@ object Hauls {
      */
     var carterCount: () -> Int = { 0 }
 
+    /** Blocks between two capitals' hearts across the ground, as the freight reckons them (see [io.github.vaspyyy.guildmark.economy.Carriage]). */
+    fun distance(a: BlockPos, b: BlockPos): Double {
+        val dx = (a.x - b.x).toDouble()
+        val dz = (a.z - b.z).toDouble()
+        return Math.sqrt(dx * dx + dz * dz)
+    }
+
     /** Registers the market screen's payload for a ticket (see [MarketHaulPayload]); part A adds the hourly run beside it. */
     fun register(modBus: IEventBus) {
         modBus.addListener(RegisterPayloadHandlersEvent::class.java) { event ->
