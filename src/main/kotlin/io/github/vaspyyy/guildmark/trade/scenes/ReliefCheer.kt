@@ -445,9 +445,8 @@ object ReliefCheer {
         s.peaked = true
         val player = s.player
         if (!player.isAlive || player.isRemoved) return
-        s.level.playSound(
-            null, player.x, player.y, player.z, TradeSounds.get("trade.cheer"), SoundSource.NEUTRAL, (0.7f + 0.05f * s.cheering).coerceAtMost(1f), 1.0f,
-        )
+        // The swell is made for volume 1 and carries 40 blocks as its event is registered (TradeSounds.RANGES)
+        s.level.playSound(null, player.x, player.y, player.z, TradeSounds.get("trade.cheer"), SoundSource.NEUTRAL, 1.0f, 1.0f)
         later(s.level.gameTime + 14L) { keeperSpeaks(s) }
     }
 
@@ -579,12 +578,12 @@ object ReliefCheer {
         Aside.take(p, aside, seated = true)
     }
 
-    /** The animal's bell rings once as the first hand lands on it (a cart has none). */
+    /** The animal's bell rings once as the first hand lands on it (a cart has none), at the 0.55 the file of its stride is levelled for (X5; the pack animal plays it so). */
     private fun bell(s: Scene) {
         val c = s.carrier ?: return
         if (s.belled || c !is AbstractHorse) return
         s.belled = true
-        s.level.playSound(null, c.x, c.y + 0.9, c.z, TradeSounds.get("trade.bell_step"), SoundSource.NEUTRAL, 0.8f, 1.0f)
+        s.level.playSound(null, c.x, c.y + 0.9, c.z, TradeSounds.get("trade.bell_step"), SoundSource.NEUTRAL, 0.55f, 1.0f)
     }
 
     /** A child's whoop of joy: the villagers' celebrating, high, and a few sparks. */
