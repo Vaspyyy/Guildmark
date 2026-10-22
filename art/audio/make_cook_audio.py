@@ -1133,12 +1133,103 @@ def larder(v, rng):
 # board>>
 
 
+# <<serving
+# =========================================================================== calls, the ladle and the bowl
+@effect("call", 2, 0.3, "The pot calls for attention", reach=12, loud=-21.0, fade_out=0.08, limit=3.0,
+        when=("The cue of every call (moment 8, 1.4): two knocks near the vessel before its sign shows."))
+def call(v, rng):
+    """the pot calling for you: two short knocks on wood (knuckles on the pot's wooden handle and its hanging post, hollow and
+    clear, the second a little higher and softer)"""
+    dur = 0.3
+    m = Bus(dur)
+    plan = [[(0.0, 410.0, 1.0), (0.135, 460.0, 0.8)], [(0.0, 370.0, 1.0), (0.125, 400.0, 0.85)]][v]
+    for at, f, g in plan:
+        f = f * rng.uniform(0.99, 1.01)
+        m.add(knock(0.18, [f, f * 1.8, f * 2.9], [0.07, 0.05, 0.03], [1.0, 0.6, 0.3], rng, lo=200, hi=4500, ex_len=0.0015), at, 1.0 * g)
+        m.add(oak(0.1, rng, f * 1.9, t60=0.03, hard=0.9, ex=0.0015, lo=400.0), at, 0.35 * g)
+        m.add(hann_burst(0.002, rng, 800.0, 5000.0), at, 0.2 * g)
+    return kitchen(tame(lp(fit(m.out(), ns(dur)), 9000.0), 14.0), 0.06, 5381 + v)
+
+
+@effect("skim", 2, 0.6, "A pot is skimmed", reach=8, loud=-27.0, fade_out=0.15,
+        when=("The ladle skims the grey film off the surface (moment 13)."))
+def skim(v, rng):
+    """a slotted ladle skimming a pot: a soft sweep across the surface (the water slipping through its slots as it goes), the
+    droplets falling back from it into the pot, a flick of it over the rim with a small tick of iron"""
+    dur = 0.6
+    m = Bus(dur)
+    sd = [0.3, 0.26][v]
+    env = bell(sd, 0.4, 1.3, 1.5)
+    m.add(tvf(colored(sd, rng, -1.5), "bp", 500.0 + 1400.0 * env, 0.8) * env ** 1.2 * (0.7 + 0.3 * smooth_random(sd, rng, 20)), 0.0, 0.7)
+    m.add(spatter(0.4, rng, 130.0, 0.14, lo=800.0, hi=5500.0), 0.1, 0.7)
+    m.add(ship.bubbles(sd, rng, 30.0 * env, 1.0, 3.0, beta=1.8, level=1.0, weight=0.4, rise=0.6), 0.0, 0.25)
+    at = sd + 0.04
+    m.add(bp(white(0.03, rng), 1500.0, 6000.0) * np.exp(-tvec(0.03) / 0.007), at, 0.25)
+    m.add(nrm(ping(0.1, [1750.0 * rng.uniform(0.96, 1.04), 2900.0, 4600.0], [0.05, 0.03, 0.02], [1.0, 0.5, 0.25], rng)), at, 0.4)
+    return kitchen(lp(fit(m.out(), ns(dur)), 9500.0), 0.07, 5383 + v)
+
+
+@effect("serve", 3, 1.0, "A dish is served", reach=12, loud=-25.0, fade_out=0.2,
+        when=("A ladleful poured into a bowl (moment 17); the innkeeper's ladling step plays it too (7.3)."))
+def serve(v, rng):
+    """a ladleful of stew poured into a bowl: the ladle's lip touching the bowl with a clink, the stew running in (thick, so a
+    low burble with lumps knocking in it, its note rising as the bowl fills), the last of it dripping off the ladle and a tap of
+    the ladle on the bowl's rim. v2 a smaller ladleful, v3 a heavier one with a lump or two"""
+    dur = 1.0
+    m = Bus(dur)
+    pd = [0.58, 0.46, 0.66][v]
+    t = tvec(pd)
+    u = t / pd
+    m.add(nrm(ping(0.12, [2350.0 * rng.uniform(0.97, 1.03), 3900.0, 5600.0], [0.06, 0.04, 0.025], [1.0, 0.5, 0.25], rng)), 0.0, 0.5)
+    m.add(tf.ring(0.2, 1150.0 * np.array([1.0, 2.2, 3.6]), [0.09, 0.06, 0.04], [1.0, 0.5, 0.25], rng, doublet=0.003), 0.0, 0.25)
+    env = np.clip(t / 0.05, 0, 1) * np.clip((pd - t) / 0.12, 0, 1) ** 1.4 * (0.7 + 0.3 * np.clip(t / 0.2, 0, 1))
+    babble = ship.bubbles(pd, rng, 220.0 * env + 8.0, 1.2, 6.0, beta=1.7, level=1.0, weight=0.5, rise=0.4)
+    stream = tvf(colored(pd, rng, -1.5) + 0.8 * nrm(babble), "bp", 420.0 * (1.0 + 1.4 * u), 2.2) * env
+    m.add(nrm(stream), 0.04, 1.0)
+    for k in range([1, 0, 2][v]):
+        f0 = float(np.exp(rng.uniform(np.log(120.0), np.log(250.0))))
+        m.add(blup(rng, f0, rng.uniform(0.025, 0.04), rising=True, pop=0.15), 0.1 + rng.uniform(0, pd * 0.7), 0.5)
+    m.add(lp(colored(pd, rng, -2.5), 1100.0, 2) * env, 0.04, 0.3)
+    end = 0.04 + pd
+    for i, at in enumerate([end + 0.02, end + 0.09]):
+        m.add(ship.drip(rng), at, 0.4 * 0.7 ** i)
+    tap = end + [0.13, 0.12, 0.16][v]
+    m.add(nrm(ping(0.12, [2300.0 * rng.uniform(0.97, 1.03), 3800.0], [0.05, 0.03], [1.0, 0.5], rng)), tap, 0.25)
+    return kitchen(lp(fit(m.out(), ns(dur)), 8500.0), 0.08, 5385 + v)
+
+
+@effect("ease", 2, 0.6, "A heat is eased", reach=12, loud=-24.0, fade_out=0.15, limit=3.0,
+        when=("The heat eased a notch with an empty hand on the heat region (moment 11): the chain hauled, the damper slid."))
+def ease(v, rng):
+    """the heat eased: the pot's chain hauled hand over hand through its hook (links clanking over the iron, three pulls, each
+    a heavier clank) and the damper's iron plate slid across in its guides with a dry rasp and a dull seating knock. v2 two
+    pulls and a longer slide"""
+    dur = 0.6
+    m = Bus(dur)
+    pulls = [(0.0, 1.0), (0.13, 0.85), (0.27, 1.0)] if v == 0 else [(0.0, 1.0), (0.17, 0.9)]
+    for at, g in pulls:
+        f = 820.0 * rng.uniform(0.95, 1.05)
+        m.add(nrm(iron_ring(0.2, rng, [f], t60=0.12, gains=[1.0])), at, 0.55 * g)
+        m.add(chain_links(rng, count=6, f_lo=1200.0, f_hi=3000.0, span=0.07, decay=0.6, size=1.3), at, 0.6 * g)
+        m.add(nrm(hann_burst(0.002, rng, 1500.0, 7000.0)), at, 0.12 * g)
+    sd = [0.15, 0.22][v]
+    at = pulls[-1][0] + 0.07
+    rate = path([(0, 40.0), (0.5 * sd, 120.0), (sd, 60.0)], sd)
+    modes = timber_modes(rng_for("cook", "damper"), 400.0, 4200.0, 16, 0.05, 0.015, peaks=(900,))
+    m.add(creak_voice(sd, rng, rate, bell(sd, 0.5, 1.2, 1.4), modes, jitter=0.15, rub=0.25, bright=5000.0, unsteady=0.2), at, 0.4)
+    seat = at + sd
+    m.add(pot_ring(0.3, rng, 230.0, t60=0.2, wet=0.0), seat, 0.3)
+    m.add(thump(0.12, 120.0, 80.0, rng, decay=0.03, click=0.05, noise=0.5, nlp=450.0), seat, 0.3)
+    return kitchen(lp(fit(m.out(), ns(dur)), 10000.0), 0.07, 5387 + v)
+# serving>>
+
+
 # =========================================================================== the order of the sounds
 # the order of CookSounds.NAMES (the design's Appendix C.5): the order of the fragments and of the listen-through
-ORDER = ["place", "pour", "plop.soft", "plop.meat", "plop.grain", "fuel", "ignite", "stir", "simmer", "crackle", "sizzle",
-         "boil_over", "ready", "ripe", "tier.plain", "tier.sound", "tier.fine", "tier.hallmark", "burnt", "buff", "oven_hum",
-         "oven_open", "oven_shut", "spit_creak", "crank", "drip", "flare", "flip", "chop", "slice", "carve", "loaf_down",
-         "plate", "chalk", "larder", "chill"]
+ORDER = ["place", "pour", "plop.soft", "plop.meat", "plop.grain", "fuel", "ignite", "stir", "simmer", "call", "crackle",
+         "sizzle", "ease", "boil_over", "skim", "ready", "ripe", "serve", "tier.plain", "tier.sound", "tier.fine",
+         "tier.hallmark", "burnt", "buff", "oven_hum", "oven_open", "oven_shut", "spit_creak", "crank", "drip", "flare",
+         "flip", "chop", "slice", "carve", "loaf_down", "plate", "chalk", "larder", "chill"]
 
 assert sorted(ORDER) == sorted(EVENTS), "every sound is in ORDER, once: " + str(set(ORDER) ^ set(EVENTS))
 for _name in ORDER:
