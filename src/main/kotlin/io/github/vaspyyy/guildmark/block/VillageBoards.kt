@@ -16,6 +16,7 @@ import io.github.vaspyyy.guildmark.road.RoadNetwork
 import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.registry.ModBlocks
 import io.github.vaspyyy.guildmark.registry.ModVillagers
+import io.github.vaspyyy.guildmark.village.live.Villages
 import io.github.vaspyyy.guildmark.wardfire.WardfireSites
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
@@ -206,10 +207,12 @@ object VillageBoards {
     fun checkNearbyVillages(level: ServerLevel, around: BlockPos) {
         val boards = GuildmarkConfig.AUTO_BOARDS.get()
         val fires = GuildmarkConfig.WARDFIRES.get()
-        if (!boards && !fires) return
+        if (!boards && !fires && !Villages.enabled()) return
         val poi = level.poiManager
         val bells = poi.findAll({ it.`is`(PoiTypes.MEETING) }, { true }, around, BELL_SEARCH_RADIUS, PoiManager.Occupancy.ANY).toList()
         for (bell in bells) {
+            Villages.sight(level, bell)
+            if (!boards && !fires) continue
             val chunk = level.getChunkAt(bell)
             if (boards && !chunk.getData(ModAttachments.VILLAGE_BOARD_CHECKED)) {
                 chunk.setData(ModAttachments.VILLAGE_BOARD_CHECKED, true)
