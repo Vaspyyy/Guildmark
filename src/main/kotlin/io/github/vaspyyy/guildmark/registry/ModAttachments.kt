@@ -18,6 +18,7 @@ import io.github.vaspyyy.guildmark.road.TrafficState
 import io.github.vaspyyy.guildmark.road.TravelProgress
 import io.github.vaspyyy.guildmark.story.MainQuestState
 import io.github.vaspyyy.guildmark.tales.TaleLog
+import io.github.vaspyyy.guildmark.tales.TaleRow
 import net.minecraft.core.BlockPos
 import net.minecraft.core.UUIDUtil
 import io.github.vaspyyy.guildmark.wardfire.FlaskState
@@ -147,6 +148,13 @@ object ModAttachments {
     val CHALLENGES: DeferredHolder<AttachmentType<*>, AttachmentType<List<RivalChallenge>>> = ATTACHMENTS.register("challenges") { ->
         AttachmentType.builder { -> listOf<RivalChallenge>() }
             .sync({ holder, player -> holder === player }, RivalChallenge.STREAM_CODEC.apply(ByteBufCodecs.list()))
+            .build()
+    }
+
+    /** The tales a player is IN, as the tracker shows them (tales/TaleRows.kt). Synced to its player and never saved: rebuilt from the tales' record every 40 ticks and on login. */
+    val TALES: DeferredHolder<AttachmentType<*>, AttachmentType<List<TaleRow>>> = ATTACHMENTS.register("tale_rows") { ->
+        AttachmentType.builder { -> listOf<TaleRow>() }
+            .sync({ holder, player -> holder === player }, TaleRow.STREAM_CODEC.apply(ByteBufCodecs.list()))
             .build()
     }
 
