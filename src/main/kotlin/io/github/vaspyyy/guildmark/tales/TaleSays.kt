@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.tales
 
 import io.github.vaspyyy.guildmark.townsfolk.Activity
+import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
 
 /**
@@ -13,9 +14,18 @@ internal object TaleSays {
     fun detail(turn: TaleTurn, voice: TaleVoice?, beat: String): String? =
         TaleVoiceGuard.run(turn.id, "detail $beat", null) { voice?.detail(beat, turn) }
 
-    /** The gesture the voice makes [beat] with, or null for the talk's own. */
-    fun gesture(turn: TaleTurn, voice: TaleVoice?, beat: String): Activity? =
-        TaleVoiceGuard.run(turn.id, "gesture $beat", null) { voice?.gesture(beat, turn) }
+    /** How a cast member says a line: the [gesture] they make (null: the talk's own) and the place they point to as they say it. */
+    class Manner(val gesture: Activity?, val toward: BlockPos?)
+
+    /**
+     * How the voice has its cast member say [beat]: its gesture, and the place it names, which is pointed to (POINT) unless the voice
+     * names another gesture. Nothing of either if the voice has none, or throws.
+     */
+    fun manner(turn: TaleTurn, voice: TaleVoice?, beat: String): Manner {
+        val gesture = TaleVoiceGuard.run(turn.id, "gesture $beat", null) { voice?.gesture(beat, turn) }
+        val toward = TaleVoiceGuard.run(turn.id, "toward $beat", null) { voice?.toward(beat, turn) }
+        return Manner(gesture ?: if (toward != null) Activity.POINT else null, toward)
+    }
 
     /** What the cast member offers at the tale's step, at most [MOST] of it. */
     fun options(turn: TaleTurn, voice: TaleVoice?): List<TaleOption> =
@@ -40,10 +50,18 @@ internal object TaleSays {
      */
     fun ask(turn: TaleTurn, voice: TaleVoice?): TaleSay {
         val lead = otherLead(turn)
-        if (lead != null) return TaleSay(LEAD, leadDetail(turn, lead))
-        val stand = standFamily(turn)
-        if (turn.step > 0 && TaleLines.exists(stand)) return TaleSay(stand, detail(turn, voice, "stand"))
-        return TaleSay(turn.family("ask"), detail(turn, voice, "ask"))
+        return when (askBeat(turn)) {
+            "lead" -> TaleSay(LEAD, lead?.let { leadDetail(turn, it) })
+            "stand" -> TaleSay(standFamily(turn), detail(turn, voice, "stand"))
+            else -> TaleSay(turn.family("ask"), detail(turn, voice, "ask"))
+        }
+    }
+
+    /** Which beat [ask] says the request as: "lead" to a player who comes after another, "stand" once the tale has turned and can say so, else "ask". */
+    fun askBeat(turn: TaleTurn): String = when {
+        otherLead(turn) != null -> "lead"
+        turn.step > 0 && TaleLines.exists(standFamily(turn)) -> "stand"
+        else -> "ask"
     }
 
     /** "{lead} is seeing to it. Next: {status}.": who has it, and the tale's tracker line as it stands (in the server's language). */

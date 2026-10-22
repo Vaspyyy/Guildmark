@@ -27,7 +27,7 @@ import net.minecraft.world.item.ItemStack
  *
  *  - which cast member asks ([TaleVoice.asker]),
  *  - the grey words that go with each line it says, from the numbers it keeps ([TaleVoice.detail]),
- *  - the gesture it says a line with, if it is not the talk's own ([TaleVoice.gesture]),
+ *  - the gesture it says a line with, if it is not the talk's own ([TaleVoice.gesture]), and the place it points to ([TaleVoice.toward]),
  *  - what it says at a yes, if that is not the talk's own thanks ([TaleVoice.yes]),
  *  - what a cast member offers the player to say or do at the step the tale is at ([TaleVoice.options]).
  *
@@ -142,6 +142,12 @@ interface TaleVoice {
      * for a trouble, an explaining for the rest): wringing hands for a mother at a gate, grieving for a loss (4.5). Null for the talk's own.
      */
     fun gesture(beat: String, turn: TaleTurn): Activity? = null
+
+    /**
+     * The place the line of [beat] is about, if it is somewhere other than where the cast member stands (the cart at the south gate, the
+     * stall they keep): they point there as they say it, unless [gesture] names another way (4.1). Null for nowhere in particular.
+     */
+    fun toward(beat: String, turn: TaleTurn): BlockPos? = null
 
     /**
      * What the asker says the moment the player says yes, if it is a line of the tale's own (`tale.note.thanks`, "You'd stand for us?
