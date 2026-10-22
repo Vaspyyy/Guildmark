@@ -56,6 +56,7 @@ object Crowds {
         Scenes.tick(level, player)
         if (player.tickCount % 40 != 7 || player.isSpectator || !enabled()) return
         val town = Towns.around(level, player.uuid, player.blockPosition()) ?: return
+        if (town.village) return
         live.removeIf { it.isRemoved }
         if (live.size >= MAX) return
         val about = level.getEntitiesOfClass(Townsperson::class.java, player.boundingBox.inflate(40.0, 16.0, 40.0)) { it.isAlive }.size

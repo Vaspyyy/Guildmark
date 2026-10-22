@@ -18,9 +18,9 @@ import kotlin.math.abs
 /**
  * A place with townsfolk: a square of [radius] blocks round [center], with a [square] where people gather
  * (a capital's bell, or the middle of a town zone), and the quays and piers of a capital's [harbour] below its
- * walls, if it has one.
+ * walls, if it has one. A [village] (a zone marked as one: see [TownZones.Zone]) has its own people and no crowds.
  */
-class Town(val center: BlockPos, val radius: Int, val square: BlockPos, val harbour: BoundingBox? = null) {
+class Town(val center: BlockPos, val radius: Int, val square: BlockPos, val harbour: BoundingBox? = null, val village: Boolean = false) {
     fun contains(x: Int, z: Int): Boolean =
         abs(x - center.x) <= radius && abs(z - center.z) <= radius ||
             harbour != null && x >= harbour.minX() && x <= harbour.maxX() && z >= harbour.minZ() && z <= harbour.maxZ()
@@ -58,23 +58,25 @@ object Towns {
 
 /** Town zones registered by hand or by other features, kept with each level. */
 class TownZones(val zones: MutableList<Zone> = mutableListOf()) : SavedData() {
-    data class Zone(val center: BlockPos, val radius: Int) {
+    /** A [village] zone is a vanilla village's (living-world/villages/design.md section 4.5), whose people are its own: crowds don't gather there. */
+    data class Zone(val center: BlockPos, val radius: Int, val village: Boolean = false) {
         fun contains(pos: BlockPos): Boolean = abs(pos.x - center.x) <= radius && abs(pos.z - center.z) <= radius
-        fun town(): Town = Town(center, radius, center)
+        fun town(): Town = Town(center, radius, center, village = village)
 
         companion object {
             val CODEC: Codec<Zone> = RecordCodecBuilder.create { i ->
                 i.group(
                     BlockPos.CODEC.fieldOf("center").forGetter(Zone::center),
                     Codec.INT.fieldOf("radius").forGetter(Zone::radius),
+                    Codec.BOOL.optionalFieldOf("village", false).forGetter(Zone::village),
                 ).apply(i, ::Zone)
             }
         }
     }
 
-    fun add(center: BlockPos, radius: Int) {
+    fun add(center: BlockPos, radius: Int, village: Boolean = false) {
         zones.removeIf { it.center == center }
-        zones.add(Zone(center, radius))
+        zones.add(Zone(center, radius, village))
         setDirty()
     }
 
