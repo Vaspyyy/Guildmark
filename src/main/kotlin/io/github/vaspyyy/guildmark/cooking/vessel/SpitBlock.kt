@@ -20,7 +20,8 @@ import java.util.function.UnaryOperator
 
 /**
  * The Spit (living-world/cook/design.md 1.6, 11.1): two iron uprights over a fire pit and a drip tray, a rod turned by a
- * crank, its height (the `notch`, 0 to 2) over the coals, facing along the rod. Part B's; until it lands it is an inert block.
+ * crank, its height (the `notch`, 0 to 2) over the coals, facing along the rod. Part B's: its [SpitBlockEntity] holds the vessel and
+ * answers every click the base class sends it.
  */
 class SpitBlock(properties: Properties) : StationBlock(properties) {
     init {

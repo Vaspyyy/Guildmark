@@ -12,7 +12,7 @@ import java.util.function.UnaryOperator
 
 /**
  * The Hob (living-world/cook/design.md 1.6, 11.1): a low brick plinth with an iron top, a firebox mouth and a slide-damper
- * (the `notch`, 0 to 2) for the pan. Part B's; until it lands it is an inert block.
+ * (the `notch`, 0 to 2) for the pan. Part B's: its [HobBlockEntity] holds the vessel and answers every click the base class sends it.
  */
 class HobBlock(properties: Properties) : StationBlock(properties) {
     init {

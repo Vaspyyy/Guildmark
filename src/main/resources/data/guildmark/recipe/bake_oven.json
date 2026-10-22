@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "B": "minecraft:bricks",
+    "C": "minecraft:clay",
+    "I": "minecraft:iron_ingot"
+  },
+  "pattern": [
+    "BCB",
+    "I I"
+  ],
+  "result": {
+    "count": 1,
+    "id": "guildmark:bake_oven"
+  }
+}

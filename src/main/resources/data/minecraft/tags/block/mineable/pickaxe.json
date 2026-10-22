@@ -2,6 +2,9 @@
   "replace": false,
   "values": [
     "guildmark:stewpot",
+    "guildmark:hob",
+    "guildmark:bake_oven",
+    "guildmark:spit",
     "guildmark:ember_vent",
     "guildmark:icicle",
     "guildmark:small_glimmer_cluster",

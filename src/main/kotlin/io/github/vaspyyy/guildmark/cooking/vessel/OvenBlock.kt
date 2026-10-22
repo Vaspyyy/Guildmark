@@ -16,7 +16,8 @@ import java.util.function.UnaryOperator
 
 /**
  * The Bake oven (living-world/cook/design.md 1.6, 11.1): a domed clay-brick oven with an arched door, a firebox mouth and a
- * damper plate (the `notch`, 0 to 2), facing the way its door opens. Part B's; until it lands it is an inert block.
+ * damper plate (the `notch`, 0 to 2), facing the way its door opens. Part B's: its [OvenBlockEntity] holds the vessel and answers
+ * every click the base class sends it.
  */
 class OvenBlock(properties: Properties) : StationBlock(properties) {
     init {

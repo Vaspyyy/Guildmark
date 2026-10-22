@@ -497,16 +497,18 @@ class Vessel(val station: Station) {
         day = today
         keep = keepPercent
         state = State.SERVED
+        // A pot's surface is its water; the pan, the tray and the rod show how much of the dish is left in the same eighths
+        if (station != Station.STEWPOT) water = WATER_FULL
         dropHold()
         call = null
         callWho = null
         dirty = true
     }
 
-    /** One portion is taken: how many are left, the surface falling to match (and the vessel empty when the last goes). */
+    /** One portion is taken: how many are left, the surface (or the dish, in eighths) falling to match, and the vessel empty when the last goes. */
     fun portionTaken() {
         if (left > 0) left--
-        if (station == Station.STEWPOT && total > 0) {
+        if (total > 0) {
             val full = if (water > 0) water.coerceAtLeast(1) else WATER_FULL
             if (waterAtFreeze <= 0) waterAtFreeze = full
             water = (waterAtFreeze * left + total - 1) / total

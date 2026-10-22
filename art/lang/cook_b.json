@@ -57,5 +57,10 @@
   "message.guildmark.cook.served.hallmarked": "%s",
   "message.guildmark.cook.served.spoilt": "It came out as %s.",
   "message.guildmark.cook.served.gruel": "That is no dish anyone knows: %s.",
-  "message.guildmark.cook.wants_ladle": "That wants a ladle."
+  "message.guildmark.cook.wants_ladle": "That wants a ladle.",
+  "message.guildmark.cook.wants_turner": "That wants the turner.",
+  "message.guildmark.cook.wants_knife": "That wants a knife.",
+  "message.guildmark.cook.use_knife": "A pie or a tart is cut with the knife.",
+  "message.guildmark.cook.use_turner": "That is lifted out with the turner.",
+  "message.guildmark.cook.shut_first": "Shut the door first: an empty hand on it."
 }

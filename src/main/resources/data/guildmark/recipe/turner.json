@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "equipment",
+  "ingredients": [
+    "minecraft:iron_ingot",
+    "#minecraft:planks",
+    "minecraft:stick"
+  ],
+  "result": {
+    "count": 1,
+    "id": "guildmark:turner"
+  }
+}
