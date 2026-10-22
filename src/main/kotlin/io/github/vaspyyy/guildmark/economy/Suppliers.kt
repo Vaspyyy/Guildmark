@@ -7,6 +7,7 @@ import io.github.vaspyyy.guildmark.GuildmarkConfig
 import io.github.vaspyyy.guildmark.city.Capitals
 import io.github.vaspyyy.guildmark.progression.Skill
 import io.github.vaspyyy.guildmark.progression.Skills
+import io.github.vaspyyy.guildmark.progression.Talents
 import io.github.vaspyyy.guildmark.townsfolk.Days
 import io.github.vaspyyy.guildmark.village.VillageNames
 import net.minecraft.ChatFormatting
@@ -15,8 +16,11 @@ import net.minecraft.core.UUIDUtil
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
 import net.minecraft.server.level.ServerLevel
+import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.level.saveddata.SavedData
 import net.minecraft.world.level.saveddata.SavedDataType
+import net.neoforged.neoforge.common.NeoForge
+import net.neoforged.neoforge.event.entity.player.PlayerEvent
 import java.util.UUID
 import java.util.function.Supplier
 import kotlin.math.roundToInt
@@ -87,7 +91,8 @@ class Standing(var points: Double = 0.0, var filled: Int = 0, var lapsed: Int = 
  * stall of their own there or from shipping to it, a bonus for an order filled in full and in time, and a loss for
  * one let lapse. The better a player's standing, the more a capital's stalls pay them, the more orders they may
  * hold, and the more its businesses offer them. Every Mark earned dealing at a market so also grows the Trade skill
- * (see [dealt]), standing switched on or off.
+ * (see [dealt]), standing switched on or off; dealing done while its player is away is kept for their next login
+ * ([owed]).
  *
  * Each capital also remembers what a player bought at its market in the last [WEEK] days: those goods can't be
  * delivered to its orders or set out on a stall of the player's own there, and selling them back earns no standing
@@ -96,7 +101,11 @@ class Standing(var points: Double = 0.0, var filled: Int = 0, var lapsed: Int = 
  *
  * Players' own stalls and their homesteads' shipping hear of standing through [SupplierLink] (see [link]).
  */
-class Suppliers(private val capitals: MutableMap<Long, MutableMap<UUID, Standing>> = HashMap()) : SavedData() {
+class Suppliers(
+    private val capitals: MutableMap<Long, MutableMap<UUID, Standing>> = HashMap(),
+    /** Marks of dealing done for each player while they were away, to be given as Trade XP when they next log in (see [dealt] and [settle]). */
+    val owed: MutableMap<UUID, Double> = HashMap(),
+) : SavedData() {
     /** [player]'s standing at the capital whose centre is [capital], if they have any. */
     operator fun get(capital: BlockPos, player: UUID): Standing? = capitals[capital.asLong()]?.get(player)
 
@@ -120,6 +129,9 @@ class Suppliers(private val capitals: MutableMap<Long, MutableMap<UUID, Standing
 
         /** Trade skill XP for each Mark earned dealing at a market, as a contract gives for each Mark of its reward. */
         const val TRADE_XP = 2.0
+
+        /** The most Marks of dealing done while a player is away that are kept for their next login (the config tradeOwedXpMost): about a real day away at a farmer's pace. */
+        const val OWED_MOST = 1200
 
         private val BOUGHT: Codec<Triple<Long, String, Int>> = RecordCodecBuilder.create { i ->
             i.group(
@@ -159,8 +171,9 @@ class Suppliers(private val capitals: MutableMap<Long, MutableMap<UUID, Standing
                 CAPITAL.listOf().optionalFieldOf("capitals", listOf()).forGetter { s ->
                     s.capitals.map { (capital, players) -> capital to players.map { (uuid, standing) -> Saved(uuid, standing) } }
                 },
-            ).apply(i) { list ->
-                Suppliers(list.associate { (capital, players) -> capital to players.associate { it.player to it.standing }.toMutableMap() }.toMutableMap())
+                Codec.unboundedMap(UUIDUtil.STRING_CODEC, Codec.DOUBLE).optionalFieldOf("owed", mapOf()).forGetter { it.owed },
+            ).apply(i) { list, owed ->
+                Suppliers(list.associate { (capital, players) -> capital to players.associate { it.player to it.standing }.toMutableMap() }.toMutableMap(), HashMap(owed))
             }
         }
 
@@ -203,13 +216,65 @@ class Suppliers(private val capitals: MutableMap<Long, MutableMap<UUID, Standing
         }
 
         /**
-         * [player], if they're on, earned [marks] dealing at a market for goods they didn't buy there lately (sold at
-         * its stalls, from a stall of their own, shipped to it, or delivered to its orders): [TRADE_XP] each of the
-         * Trade skill.
+         * [player] earned [marks] dealing at a market for goods they didn't buy there lately (sold at its stalls, from a
+         * stall of their own, shipped to it, or delivered to its orders): [TRADE_XP] each of the Trade skill. If they're
+         * away (a carter shipping from their homestead) it is kept for their next login instead (see [owe] and [settle]).
          */
         fun dealt(level: ServerLevel, player: UUID, marks: Double) {
             if (marks <= 0.0) return
-            level.server.playerList.getPlayer(player)?.let { Skills.gain(it, Skill.TRADE, marks * TRADE_XP) }
+            val on = level.server.playerList.getPlayer(player)
+            if (on != null) Skills.gain(on, Skill.TRADE, marks * TRADE_XP) else owe(level, player, marks)
+        }
+
+        /**
+         * [marks] of dealing by [player], who is away, kept for their next login, no more than [owedMost] Marks in all
+         * (the rest is dropped); nothing is kept with the owed XP switched off, as it never was.
+         */
+        private fun owe(level: ServerLevel, player: UUID, marks: Double) {
+            if (!owedEnabled()) return
+            val data = get(level)
+            val was = data.owed[player] ?: 0.0
+            val now = minOf(was + marks, owedMost().toDouble())
+            if (now <= was) return
+            data.owed[player] = now
+            data.setDirty()
+        }
+
+        /**
+         * [player], logging in, is given the Trade XP their dealing earned while they were away, [TRADE_XP] for each Mark
+         * kept for them (see [owe]) through [Skills.gain] as for any XP, and told so in a grey line. Gives the XP asked of
+         * [Skills.gain] (before their tree's and the config's multipliers); 0 if nothing was owed or the owed XP is
+         * switched off, and 0 for someone in creative or spectator, who would have been given none for the same dealing
+         * on, so theirs is kept for a later login.
+         */
+        fun settle(player: ServerPlayer): Double {
+            if (!owedEnabled()) return 0.0
+            val data = get(player.level())
+            val kept = data.owed[player.uuid] ?: return 0.0
+            if (player.isCreative || player.isSpectator) return 0.0
+            data.owed.remove(player.uuid)
+            data.setDirty()
+            val xp = minOf(kept, owedMost().toDouble()) * TRADE_XP
+            if (xp <= 0.0) return 0.0
+            Skills.gain(player, Skill.TRADE, xp)
+            // What the skill really got, as Skills.gain works it out, so the line says what the bar moved by
+            val got = (xp * (1.0 + Talents.build(player).skillXp(Skill.TRADE)).coerceAtLeast(0.0) * GuildmarkConfig.SKILL_XP_MULTIPLIER.get()).roundToInt()
+            if (got >= 1) player.sendSystemMessage(Component.translatable("message.guildmark.trade.owed", got).withStyle(ChatFormatting.GRAY))
+            return xp
+        }
+
+        /** Whether dealing done while a player is away is kept for them as Trade XP (the config tradeOwedXp). */
+        fun owedEnabled(): Boolean = try {
+            GuildmarkConfig.TRADE_OWED_XP.get()
+        } catch (e: IllegalStateException) {
+            true
+        }
+
+        /** The most Marks of away dealing kept for a player (the config tradeOwedXpMost). */
+        fun owedMost(): Int = try {
+            GuildmarkConfig.TRADE_OWED_XP_MOST.get()
+        } catch (e: IllegalStateException) {
+            OWED_MOST
         }
 
         /**
@@ -264,6 +329,11 @@ class Suppliers(private val capitals: MutableMap<Long, MutableMap<UUID, Standing
             SupplierLink.rank = { level, player, capital -> if (enabled()) rank(level, capital, player) else SupplierLink.TRUSTED }
             SupplierLink.earned = { level, player, capital, marks -> earned(level, capital, player, marks) }
             SupplierLink.bought = { level, player, capital, good -> bought(level, capital, player, good) }
+        }
+
+        /** Hooks the Trade XP kept for players who were away into the game: it is given when they log in (see [settle]). */
+        fun register() {
+            NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerLoggedInEvent::class.java) { event -> (event.entity as? ServerPlayer)?.let { settle(it) } }
         }
 
         // ---- Kept by the market and its orders ----

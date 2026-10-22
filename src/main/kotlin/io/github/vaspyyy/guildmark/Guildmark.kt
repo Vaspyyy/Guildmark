@@ -222,6 +222,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         // stalls and their homesteads' shipping go by too)
         io.github.vaspyyy.guildmark.economy.Orders.register(modBus)
         io.github.vaspyyy.guildmark.economy.Suppliers.link()
+        io.github.vaspyyy.guildmark.economy.Suppliers.register()
         io.github.vaspyyy.guildmark.economy.SupplierCommand.init()
         // The caravans on the roads in: their records, the outlaws working the roads, escorts and salvage
         io.github.vaspyyy.guildmark.economy.Caravans.register()
