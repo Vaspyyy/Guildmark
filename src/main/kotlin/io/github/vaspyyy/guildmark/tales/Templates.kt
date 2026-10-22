@@ -21,7 +21,7 @@ object Templates {
         // Wagon,     // 3  wagon     size 3  T3
         // Child,     // 4  child     size 2  T2
         io.github.vaspyyy.guildmark.tales.templates.Fence, // 5  fence     size 1  T1
-        // Lute,      // 6  lute      size 1  T1
+        io.github.vaspyyy.guildmark.tales.templates.Lute, // 6  lute      size 1  T1
         // Moot,      // 7  moot      size 2  T4
         // Cart,      // 8  cart      size 2  T2
         // Lantern,   // 9  lantern   size 1  T2
