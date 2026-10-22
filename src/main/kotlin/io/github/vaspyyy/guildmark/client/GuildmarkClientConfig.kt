@@ -79,6 +79,26 @@ object GuildmarkClientConfig {
         .comment("How loud the festivals' own music is in a town's square (as a share of the game's Jukebox/Note Blocks volume). 0 silences it.")
         .defineInRange("festivalMusic", 100, 0, 100)
 
+    // Hearthcraft, the cook's life (client/cooking/, living-world/cook/design.md section 10.2)
+    val COOK_HINTS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("The small hint on the crosshair at a cooking station: \"Add to the pot\", \"Feed the fire\", \"Lower the pot\".")
+        .define("cookHints", true)
+    val COOK_PARTICLES: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Steam, bubbles, sizzle, crumbs and the glint that says a pot wants attention. The game's own smoke and flame stay.")
+        .define("cookParticles", true)
+    val COOK_SOUNDS: ModConfigSpec.IntValue = BUILDER
+        .comment("How loud the cooking stations' loops and sounds are: a simmering pot, a sizzling pan, a roaring oven, a turning spit (as a share of the game's Ambient/Environment volume). 0 silences them.")
+        .defineInRange("cookSounds", 100, 0, 100)
+    val COOK_HANDS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("The first-person motions of the ladle, the knife, the turner and the bowl.")
+        .define("cookHands", true)
+    val TOWN_PLATES: ModConfigSpec.BooleanValue = BUILDER
+        .comment("The town's diners and the plates at their tables, set from what the town was served. Off, the town eats what it always has.")
+        .define("townPlates", true)
+    val CHILL_OVERLAY: ModConfigSpec.BooleanValue = BUILDER
+        .comment("The icy edges of the screen while you are Chilled. The Chilled effect itself stays.")
+        .define("chillOverlay", true)
+
     // Tales (tales/, living-world/stories/design.md section 12.1)
     val TALE_BANNERS: ModConfigSpec.BooleanValue = BUILDER
         .comment("Show a banner across the screen when a tale you are in begins, turns and ends.")

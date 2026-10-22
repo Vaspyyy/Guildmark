@@ -265,7 +265,7 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
             toggle(c.REGION_MUSIC, spec, true),
             slider(c.ISLAND_SOUNDS, spec, true, PERCENTS, ::percent) { c.ISLAND_SOUNDS.set(it.roundToInt()) },
             header("city"),
-        ) + city.map { value -> slider(value, spec, true, PERCENTS, ::percent) { value.set(it.roundToInt()) } } + others(c, spec, listed, true)
+        ) + city.map { value -> slider(value, spec, true, PERCENTS, ::percent) { value.set(it.roundToInt()) } } + hearthcraftOptions() + others(c, spec, listed + hearthcraftOptionValues(), true)
     }
 
     /** The tale banners' switch for the interface page, once tales are in the game (Tales.READY); nothing before. */
@@ -392,8 +392,51 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
             slider(c.TOWN_TALE_PACE, spec, editable, linear(0.0, 2.0, false), ::times) { c.TOWN_TALE_PACE.set(it) },
             toggle(c.TOWN_TALE_MEMORIALS, spec, editable),
         )
-        rows += others(c, spec, listed, editable)
+        rows += hearthcraftRules(editable)
+        rows += others(c, spec, listed + hearthcraftRuleValues(), editable)
         return rows
+    }
+
+    // ---- Hearthcraft, the cook's life (cooking/): its own group on the World page, its options on the Interface page ----
+
+    private fun hearthcraftRuleValues(): List<ModConfigSpec.ConfigValue<*>> = with(GuildmarkConfig) {
+        listOf(COOKING, KITCHEN_DOORS, COOK_SHOPS, COOK_OFF, HOME_KITCHENS, TOWN_KITCHENS, COOK_ROAST, COOK_TALK, WINTER_CHILL, DISH_SPOILAGE, COOK_POTS_PRIVATE, COOK_FUEL_SCALE)
+    }
+
+    private fun hearthcraftRules(editable: Boolean): List<Row> = with(GuildmarkConfig) {
+        val spec = SPEC
+        listOf(
+            header("cooking"),
+            toggle(COOKING, spec, editable),
+            toggle(KITCHEN_DOORS, spec, editable),
+            toggle(COOK_SHOPS, spec, editable),
+            toggle(COOK_OFF, spec, editable),
+            toggle(HOME_KITCHENS, spec, editable),
+            toggle(TOWN_KITCHENS, spec, editable),
+            toggle(COOK_ROAST, spec, editable),
+            toggle(COOK_TALK, spec, editable),
+            toggle(WINTER_CHILL, spec, editable),
+            toggle(DISH_SPOILAGE, spec, editable),
+            toggle(COOK_POTS_PRIVATE, spec, editable),
+            slider(COOK_FUEL_SCALE, spec, editable, listOf(1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 15.0, 20.0), ::times) { COOK_FUEL_SCALE.set(it) },
+        )
+    }
+
+    private fun hearthcraftOptionValues(): List<ModConfigSpec.ConfigValue<*>> = with(GuildmarkClientConfig) {
+        listOf(COOK_HINTS, COOK_PARTICLES, COOK_SOUNDS, COOK_HANDS, TOWN_PLATES, CHILL_OVERLAY)
+    }
+
+    private fun hearthcraftOptions(): List<Row> = with(GuildmarkClientConfig) {
+        val spec = SPEC
+        listOf(
+            header("cooking"),
+            toggle(COOK_HINTS, spec, true),
+            toggle(COOK_PARTICLES, spec, true),
+            slider(COOK_SOUNDS, spec, true, PERCENTS, ::percent) { COOK_SOUNDS.set(it.roundToInt()) },
+            toggle(COOK_HANDS, spec, true),
+            toggle(TOWN_PLATES, spec, true),
+            toggle(CHILL_OVERLAY, spec, true),
+        )
     }
 
     /**
