@@ -1,0 +1,15 @@
+{
+  "item.guildmark.tally": "Tally",
+  "message.guildmark.trade.report.filed": "Your slip is taken and the board's row is chalked again from it. The town thinks the better of you.",
+  "message.guildmark.trade.report.off": "The Word is off: there is no board to report to.",
+  "message.guildmark.trade.report.nowhere": "A report is handed in at a town's board: stand in a capital.",
+  "message.guildmark.trade.report.here": "You stand in that town: the board knows it as it is.",
+  "message.guildmark.trade.report.unknown": "Your Tally has no sight of that town.",
+  "message.guildmark.trade.report.no_row": "This board keeps no row for that town: it is too far off, or has no news yet.",
+  "message.guildmark.trade.report.stale": "Your news of that town is not fresher than the board's by six hours: nobody would learn from it.",
+  "message.guildmark.trade.report.tired": "You have filed three reports today. Come back tomorrow.",
+  "message.guildmark.trade.tally.booked": "Booked: the tickets of that route are yours.",
+  "message.guildmark.trade.tally.gone": "Word was old: that one's gone. Nothing was taken.",
+  "message.guildmark.trade.tally.refused": "The town will not take that booking now. Nothing was taken.",
+  "message.guildmark.trade.tally.not_yet": "Haul tickets are not open yet: there is nothing to book."
+}

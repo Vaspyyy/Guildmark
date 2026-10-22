@@ -237,7 +237,7 @@ object WordCommand {
 
     private fun num(x: Double): String = if (x == Math.rint(x)) x.toLong().toString() else "%.3f".format(Locale.ROOT, x).trimEnd('0')
 
-    private fun line(): MutableComponent = Component.empty()
+    internal fun line(): MutableComponent = Component.empty()
     internal fun plain(s: String): MutableComponent = Component.literal(s).withStyle(ChatFormatting.WHITE)
     internal fun grey(s: String): MutableComponent = Component.literal(s).withStyle(ChatFormatting.GRAY)
     internal fun label(s: String): MutableComponent = Component.literal(s).withStyle(ChatFormatting.YELLOW)

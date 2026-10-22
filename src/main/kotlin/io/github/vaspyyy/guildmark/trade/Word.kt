@@ -310,12 +310,14 @@ object Word {
     // ---- The hours ----
 
     /**
-     * Registers part B: the Word's watch on the markets' hours (the snapshots) and its commands.
+     * Registers part B: the Word's watch on the markets' hours (the snapshots), its commands, and (each after its own comment) the Tally, and the
+     * rumours and talk that tell the Word in the street.
      */
     fun register(modBus: IEventBus) {
         WordCommand.init()
         NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { tick(it.server) }
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> reset() }
+        Tally.register(modBus)
     }
 
     /** Server ticks between looks at the markets, and between namings of rings. */
