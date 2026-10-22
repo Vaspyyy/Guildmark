@@ -159,6 +159,15 @@ and Kotlin model code always agree.
   `client/trade/PackHarnessMesh.kt` (generated: the meshes and the numbers the renderer poses the moving parts by; change the
   script, not the Kotlin). It checks its own numbers, that nothing moving goes into the animal and what it wrote. With a preview
   dir it renders the animals beside the vanilla ones from four sides, the four fills, the six colours and walking GIFs.
+- `scripts/laden_pack.py` is the three back-packs of the laden look, in the player's own space: a blanket roll and a sack (25
+  Marks), an ash frame with two sacks, a cup and a lit lantern (100), and an oak ladder-frame with sacks, a keg and two pots that
+  clink (250). Each level is a layer carrying the player model's own part names (so `PlayerModel` can stand on it), with every
+  loose part (sacks, tufts, rope ends, lantern, cup, pots, lid, the frame's crown) a named part of its own. It writes
+  `textures/entity/trade/laden_pack.png` and `laden_pack_glow.png` (the lantern's lit glass), `art/models/laden_pack.bbmodel` and
+  `client/trade/LadenPackMesh.kt` (generated: the three meshes, the numbers and a `Rig` that poses every part from the walk;
+  change the script, not the Kotlin). It checks its own numbers, that nothing goes through the wearer over a hundred poses,
+  that nothing floats and what it wrote. With a preview dir it renders the packs on a player from five sides, strides, sneaks,
+  armour, cape and head-up limits, and GIFs (walking, sprinting, sneaking, the lantern and the pots close up, a pack appearing).
 
 Rebuild a model (needs Python 3 with Pillow and numpy), from the repo root:
 
@@ -183,6 +192,7 @@ python3 -B art/scripts/cook_art.py src/main/resources/assets/guildmark [preview-
 python3 -B art/scripts/haul_board_art.py src/main/resources/assets/guildmark [kotlin-dir [art/models [preview-dir]]]
 python3 -B art/scripts/trade_items.py src/main/resources/assets/guildmark [preview-dir]
 python3 -B art/scripts/pack_harness.py [assets-dir [kotlin-dir [art/models [preview-dir [game assets/minecraft]]]]]
+python3 -B art/scripts/laden_pack.py [assets-dir [kotlin-dir [art/models [preview-dir [game assets/minecraft]]]]]
 ```
 
 Each run writes the textures into the mod's assets, the `.bbmodel` into `art/models`, and a preview
