@@ -7,13 +7,16 @@ import io.github.vaspyyy.guildmark.economy.Good
 import io.github.vaspyyy.guildmark.economy.Marked
 import io.github.vaspyyy.guildmark.economy.Markets
 import io.github.vaspyyy.guildmark.economy.Shop
+import io.github.vaspyyy.guildmark.economy.Stalls
 import io.github.vaspyyy.guildmark.economy.Suppliers
 import io.github.vaspyyy.guildmark.economy.Tally
 import io.github.vaspyyy.guildmark.economy.Trading
 import io.github.vaspyyy.guildmark.guild.TownControl
+import io.github.vaspyyy.guildmark.network.MarketHaul
 import io.github.vaspyyy.guildmark.network.MarketHaulPayload
 import io.github.vaspyyy.guildmark.registry.ModItems
 import net.minecraft.core.BlockPos
+import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.ContainerHelper
@@ -171,8 +174,8 @@ object Hauls {
         HaulRun.register()
     }
 
-    /** What [player] asked to do ([MarketHaulPayload]'s TAKE, DELIVER or GIVE_UP) with ticket [haul] at the shop whose screen they have open. Does nothing yet. */
-    fun act(player: ServerPlayer, haul: Int, action: Int) {}
+    /** What [player] asked to do ([MarketHaulPayload]'s TAKE, DELIVER or GIVE_UP) with ticket [haul] at the shop whose screen they have open: the shop's keeper deals with it (see [Stalls.haul]). */
+    fun act(player: ServerPlayer, haul: Int, action: Int) = Stalls.haul(player, haul, action)
 
     // ---- Seeing the tickets ----
 
@@ -495,5 +498,75 @@ object Hauls {
         val ledger = Ledger.count(level, player.uuid, good, entry.capital)
         if (ledger <= 0) return 0
         return min(ledger, Trading.count(player.inventory, item, entry.capital))
+    }
+
+    // ---- The shop's screen ----
+
+    /** How many colours the booker's seal comes in (the six seals of the market screen's art). */
+    private const val SEALS = 6
+
+    /** [player]'s own booking on ticket [id], if they have one. */
+    fun bookedOn(level: ServerLevel, player: UUID, id: Int): Booking? =
+        HaulData.peek(level)?.find(id)?.second?.let { bookingOf(it, Taker.Player(player)) }
+
+    /** Whether [player] let a booking at [shop] in the capital whose heart is [capital] lapse lately and has not heard of it from the keeper yet: they are told now (once). */
+    fun scold(level: ServerLevel, capital: BlockPos, player: UUID, shop: Shop): Boolean {
+        if (!TradeConfig.hauls()) return false
+        val data = HaulData.peek(level) ?: return false
+        val book = data[capital.asLong()] ?: return false
+        val lapse = book.lapses.firstOrNull { it.player == player && it.shop == shop } ?: return false
+        book.lapses.remove(lapse)
+        data.changed()
+        return true
+    }
+
+    /** "in 30 hours", or "in 3 days" from two days on, for [hours] market hours left (the chat and the screen's tooltips). */
+    fun due(hours: Int): Component =
+        if (hours < 48) Component.translatable("message.guildmark.trade.haul.due.hours", hours.coerceAtLeast(1)) else Component.translatable("message.guildmark.trade.haul.due.days", (hours + 23) / 24)
+
+    /** The colour (0 to 5) of [taker]'s seal: the same for the same player every time. */
+    internal fun seal(taker: UUID): Int = Math.floorMod(taker.hashCode(), SEALS)
+
+    /**
+     * The tickets out at [shop] in the capital whose heart is [capital], as [player]'s screen shows them: the ones they hold a booking on first, then the ones
+     * they can take, then the rest. Nothing with the tickets off, and nothing made if there are none.
+     */
+    fun view(level: ServerLevel, player: ServerPlayer, capital: BlockPos, shop: Shop): List<MarketHaul> {
+        if (!TradeConfig.hauls()) return listOf()
+        val data = HaulData.peek(level) ?: return listOf()
+        val book = data[capital.asLong()] ?: return listOf()
+        val rows = book.tickets.filter { it.shop == shop }.map { row(level, data, book, it, player) }
+        return rows.sortedWith(compareBy({ if (it.mine > 0) 0 else if (it.why.isEmpty()) 1 else 2 }, { it.id }))
+    }
+
+    /** Whether there is a ticket out at [shop] in the capital whose heart is [capital] that [player] holds a booking on or could take: what opens the inn's screen. */
+    fun waiting(level: ServerLevel, player: UUID, capital: BlockPos, shop: Shop): Boolean {
+        if (!TradeConfig.hauls()) return false
+        val book = HaulData.peek(level)?.get(capital.asLong()) ?: return false
+        return book.tickets.any { t -> t.shop == shop && (t.open > 0 || t.bookings.any { it.taker == player && !it.house && it.left > 0 }) }
+    }
+
+    /** Ticket [t] of [book] as [player] sees it (see [MarketHaul]). */
+    private fun row(level: ServerLevel, data: HaulData, book: HaulBook, t: Ticket, player: ServerPlayer): MarketHaul {
+        val capital = BlockPos.of(book.capital)
+        val taker = Taker.Player(player.uuid)
+        val b = bookingOf(t, taker)
+        val mine = b?.left ?: 0
+        // What the units they hold, or could take, or that are left, pay them, with the rung's perk, as the delivery will work it out
+        val each = t.each * (1.0 + Rungs.perk(player, Perk.HAUL_PAY))
+        val share = if (mine > 0) mine else if (t.open > 0) t.open else t.left
+        val pay = (HaulRules.owed(each, t.units, t.done + share) - HaulRules.owed(each, t.units, t.done)).coerceAtLeast(0)
+        val why = if (b != null) "" else refusal(data, book, t, taker, player, t.open) ?: ""
+        val others = t.bookings.filter { it !== b && it.left > 0 }
+        val first = b ?: others.firstOrNull()
+        val carried = if (b != null) carried(player, t.good, capital) else 0
+        val deliverable = if (b != null) deliverable(level, player, capital, t, b) else 0
+        val deposit = if (b != null) (b.deposit - b.repaid).coerceAtLeast(0) else deposit(t, t.open)
+        val hour = clock(level, book)
+        return MarketHaul(
+            t.id, t.good.id, t.units, t.done, mine, t.open, pay, t.kind.ordinal, (t.due - hour).coerceIn(0L, 100000L).toInt(),
+            (t.due - t.posted).coerceIn(1L, 100000L).toInt(), why, carried, deliverable, deposit,
+            others.map { it.name }.filter { it.isNotEmpty() }.distinct().joinToString(", "), first?.let { seal(it.taker) } ?: -1,
+        )
     }
 }

@@ -214,4 +214,18 @@ object StallTalk {
     const val BOUGHT_HERE = "order_bought_here"
     const val STANDING = "order_standing"
     const val DECLINED = "order_declined"
+
+    // ---- Haul tickets, spoken (the trade's voice lines, see Hauls) ----
+
+    private fun hauled(p: Townsperson, key: String, n: Int): String = "trade_${key}_${p.random.nextInt(n)}"
+
+    /** A haul ticket booked ("Stamped and sealed. It's yours to fill."). */
+    fun booked(p: Townsperson): String = hauled(p, "book", 2)
+
+    /** A haul ticket filled ("Just what we were short of."), or a relief ticket ("Bless you. We were running out."); and part of one ("That's a start. Bring the rest by the day."). */
+    fun haulFilled(p: Townsperson, relief: Boolean): String = if (relief) hauled(p, "relief", 2) else hauled(p, "delivered", 4)
+    fun haulPart(p: Townsperson): String = hauled(p, "part", 2)
+
+    /** To a trader who let a booking lapse here lately, as they step up ("You never brought the goods. Another will."). */
+    fun haulLapsed(p: Townsperson): String = hauled(p, "lapsed", 2)
 }

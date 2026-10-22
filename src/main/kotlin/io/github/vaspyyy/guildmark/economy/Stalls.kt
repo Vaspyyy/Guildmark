@@ -6,6 +6,7 @@ import io.github.vaspyyy.guildmark.city.Capitals
 import io.github.vaspyyy.guildmark.guild.TownControl
 import io.github.vaspyyy.guildmark.network.MarketClosePayload
 import io.github.vaspyyy.guildmark.network.MarketGood
+import io.github.vaspyyy.guildmark.network.MarketHaulPayload
 import io.github.vaspyyy.guildmark.network.MarketOrderPayload
 import io.github.vaspyyy.guildmark.network.MarketRefreshPayload
 import io.github.vaspyyy.guildmark.network.MarketTradePayload
@@ -24,6 +25,11 @@ import io.github.vaspyyy.guildmark.townsfolk.Trait
 import io.github.vaspyyy.guildmark.townsfolk.talk.Street
 import io.github.vaspyyy.guildmark.townsfolk.talk.Talk
 import io.github.vaspyyy.guildmark.townsfolk.talk.Witness
+import io.github.vaspyyy.guildmark.trade.HaulKind
+import io.github.vaspyyy.guildmark.trade.Hauls
+import io.github.vaspyyy.guildmark.trade.Taker
+import io.github.vaspyyy.guildmark.trade.TradeConfig
+import io.github.vaspyyy.guildmark.trade.TradeSounds
 import io.github.vaspyyy.guildmark.village.VillageNames
 import net.minecraft.ChatFormatting
 import net.minecraft.core.BlockPos
@@ -165,8 +171,9 @@ object Stalls {
         return true
     }
 
-    /** Whether the inn at [capital] has an order [player] could see: one to be had, or one of theirs. */
+    /** Whether the inn at [capital] has an order [player] could see: one to be had, or one of theirs; or a haul ticket of the same kind. */
     private fun innOrders(level: ServerLevel, player: ServerPlayer, capital: BlockPos): Boolean {
+        if (Hauls.waiting(level, player.uuid, capital, Shop.INN)) return true
         if (!Suppliers.enabled()) return false
         val book = Orders.get(level)[capital] ?: return false
         return book.orders.any { it.shop == Shop.INN && (it.state == OrderState.OPEN || it.taker == player.uuid) }
@@ -214,14 +221,16 @@ object Stalls {
             // A rank they've risen to comes first, then an order they let lapse here; an order to be had comes up after
             val rank = risen(level, s.capital, player.uuid)
             val scold = rank == null && Orders.scold(level, s.capital, player.uuid, shop)
+            // Or a booking on a haul ticket they let lapse here
+            val lapsed = rank == null && !scold && Hauls.scold(level, s.capital, player.uuid, shop)
             val word = when {
                 Orders.offered(level, player.uuid, s.capital, shop) -> StallTalk.STANDING
                 Orders.toBeHad(level, player.uuid, s.capital, shop) -> StallTalk.offer(keeper)
                 else -> null
             }
             // Cool on a player who kept what they took off the capital's wagon, for a week (see Marked.lapse)
-            val cool = rank == null && !scold && Marked.cool(level, s.capital, player.uuid)
-            serving.arrive(keeper, player, shop, again, word ?: news?.let(StallTalk::price), rank, scold, cool)
+            val cool = rank == null && !scold && !lapsed && Marked.cool(level, s.capital, player.uuid)
+            serving.arrive(keeper, player, shop, again, word ?: news?.let(StallTalk::price), rank, scold || lapsed, cool, haul = lapsed)
             Witness.opened(level, keeper, player)
         }
         PacketDistributor.sendToPlayer(player, OpenMarketPayload(view(s, entry, player)))
@@ -280,6 +289,7 @@ object Stalls {
         s.active = now
         var done = 0
         var own = 0
+        var dealer = 0
         var stop: Deal? = null
         // Selling what came off another capital's waylaid wagon is trade, but the keeper remarks on the mark, once
         val marked = !buying && Marked.foreign(player, s.capital, good)
@@ -291,11 +301,14 @@ object Stalls {
             }
             done++
             own += deal.own
+            if (deal.hauled) dealer += deal.lot?.count ?: 0
         }
         s.lots += done
         val level = player.level()
         // Goods that came off its own stalls lately sell, but earn no standing: the keeper says so the first time
         if (own > 0) player.sendOverlayMessage(Component.translatable("gui.guildmark.order.own_sold", own, Component.translatable(good.key + ".many")))
+        // Goods that came a long way sold as a dealer's lot (see Trading.dealerLot)
+        if (dealer > 0) player.sendOverlayMessage(Component.translatable("gui.guildmark.trade.dealer_lot.sold", dealer, Component.translatable(good.key + ".many")))
         // Salvage off this capital's own wagon: not for sale here, but to be handed in
         if (done == 0 && stop?.outcome == Deal.Outcome.OWN_WAGON) player.sendOverlayMessage(Component.translatable("gui.guildmark.market.own_wagon", s.place))
         val serving = keeper?.director as? Serving
@@ -407,6 +420,94 @@ object Stalls {
         if (d.offered) serving.after(keeper, StallTalk.STANDING)
     }
 
+    // ---- Haul tickets ----
+
+    /**
+     * [player] asks to do [action] (see [MarketHaulPayload]) with the haul ticket [id] at the shop whose screen they have open: to book what is still unbooked of
+     * it (a deposit held), to hand over what they carry of its good that came a long way, or to give their booking up (the deposit is lost). The keeper takes
+     * the goods as for an order, and the counting is knocked out on a tally stick.
+     */
+    fun haul(player: ServerPlayer, id: Int, action: Int) {
+        val s = sessions[player.uuid] ?: return
+        val level = player.level()
+        val now = level.gameTime
+        s.heard = now
+        val entry = check(player, s, REACH + SLACK) ?: return
+        val keeper = s.keeper
+        if (keeper != null && player.distanceToSqr(keeper) > REACH * REACH) {
+            player.sendOverlayMessage(Component.translatable("gui.guildmark.market.closer"))
+            return send(player, s, entry)
+        }
+        // One a tick however fast the clicks come
+        if (s.dealt == now || !TradeConfig.hauls()) return send(player, s, entry)
+        s.dealt = now
+        s.active = now
+        val serving = keeper?.director as? Serving
+        val h = Hauls.find(level, id)?.takeIf { it.capital == s.capital && it.shop == s.shop }
+        if (h == null) {
+            turnedAway(player, keeper, serving, "gone")
+            return everyone(player, s, entry)
+        }
+        val name = Component.translatable(h.good.key + ".many")
+        when (action) {
+            MarketHaulPayload.TAKE -> {
+                val why = Hauls.book(level, id, Taker.Player(player.uuid))
+                val row = if (why == null) Hauls.view(level, player, s.capital, s.shop).firstOrNull { it.id == id } else null
+                if (row == null) turnedAway(player, keeper, serving, why ?: "gone") else {
+                    s.lots++
+                    player.sendSystemMessage(
+                        Component.translatable(
+                            "message.guildmark.trade.haul.booked", row.mine, name, Orders.shopName(h.shop), s.place, Orders.marks(row.pay), Orders.marks(row.deposit), Hauls.due(row.hours),
+                        ).withStyle(ChatFormatting.YELLOW),
+                    )
+                    if (keeper != null) serving?.booked(keeper, StallTalk.booked(keeper))
+                }
+            }
+            MarketHaulPayload.DELIVER -> {
+                val why = Hauls.cannotDeliver(level, player, id)
+                val d = if (why == null) Hauls.deliver(level, player, id) else null
+                if (d == null) turnedAway(player, keeper, serving, why ?: "none") else {
+                    s.lots++
+                    val filled = d.left <= 0
+                    player.sendSystemMessage(
+                        Component.translatable(
+                            if (filled) "message.guildmark.trade.haul.delivered.all" else "message.guildmark.trade.haul.delivered",
+                            d.units, name, Orders.shopName(d.shop), Orders.marks(d.pay), d.left,
+                        ).withStyle(ChatFormatting.YELLOW),
+                    )
+                    if (d.refund > 0) player.sendSystemMessage(Component.translatable("message.guildmark.trade.haul.deposit_back", Orders.marks(d.refund)).withStyle(ChatFormatting.GRAY))
+                    if (d.pay > 0 && Suppliers.enabled()) player.sendSystemMessage(Component.translatable("message.guildmark.trade.haul.standing", d.pay, s.place).withStyle(ChatFormatting.GRAY))
+                    if (keeper != null && serving != null) {
+                        val relief = d.kind == HaulKind.RELIEF
+                        serving.hauled(keeper, d.good, if (filled) StallTalk.haulFilled(keeper, relief) else StallTalk.haulPart(keeper), d.pay, d.units, filled, relief)
+                        risen(level, s.capital, player.uuid)?.let { serving.risen(keeper, it) }
+                    }
+                }
+            }
+            MarketHaulPayload.GIVE_UP -> {
+                val booking = Hauls.bookedOn(level, player.uuid, id)
+                val left = booking?.left ?: 0
+                val lost = booking?.let { (it.deposit - it.repaid).coerceAtLeast(0) } ?: 0
+                if (booking == null || Hauls.release(level, player.uuid, id) < 0) turnedAway(player, keeper, serving, "not_yours") else {
+                    player.sendSystemMessage(
+                        Component.translatable(
+                            if (lost > 0) "message.guildmark.trade.haul.given_up" else "message.guildmark.trade.haul.given_up.free",
+                            left, name, Orders.shopName(h.shop), s.place, Orders.marks(lost),
+                        ).withStyle(ChatFormatting.GRAY),
+                    )
+                    if (keeper != null) serving?.gesture(keeper, Activity.SHRUG, StallTalk.GIVEN_UP)
+                }
+            }
+        }
+        everyone(player, s, entry)
+    }
+
+    /** [player] can't do what they asked with a haul ticket: told [why] (a key under gui.guildmark.trade.haul.refused.), with a shrug from the keeper. */
+    private fun turnedAway(player: ServerPlayer, keeper: Townsperson?, serving: Serving?, why: String) {
+        player.sendOverlayMessage(Component.translatable("gui.guildmark.trade.haul.refused.$why"))
+        if (keeper != null) serving?.gesture(keeper, Activity.SHRUG, null)
+    }
+
     /** [player] can't do what they asked with an order: told [why] (a key under gui.guildmark.order.refused.), with a shrug from the keeper. */
     private fun refuse(player: ServerPlayer, keeper: Townsperson?, serving: Serving?, why: String) {
         player.sendOverlayMessage(Component.translatable("gui.guildmark.order.refused.$why"))
@@ -487,8 +588,8 @@ object Stalls {
         if (keeper.director !is Serving) return "called_away"
         if (player.distanceToSqr(keeper) > reach * reach) return "far"
         if (Shop.kept(keeper) != s.shop) return "moved"
-        // The inn's screen is nothing but its orders
-        if (s.shop == Shop.INN && !Suppliers.enabled()) return "orders_off"
+        // The inn's screen is nothing but its orders, and its haul tickets
+        if (s.shop == Shop.INN && !Suppliers.enabled() && !TradeConfig.hauls()) return "orders_off"
         return null
     }
 
@@ -549,22 +650,24 @@ object Stalls {
         val share = Suppliers.share(level, s.capital, player.uuid)
         val goods = s.shop.goods.mapNotNull { g ->
             val item = g.item?.takeIf { g.traded } ?: return@mapNotNull null
-            val q = Trading.quote(entry, g, share)
+            val q = Trading.quote(entry, g, share, Hauls.hauledHere(level, player, entry, g))
             MarketGood(
                 g.id, q.stock, floor(entry.town.target(g)).toInt(), q.buy?.count ?: 0, q.buy?.marks ?: 0, q.sell?.count ?: 0,
                 q.sell?.marks ?: 0, q.wants, q.trend, (q.price / q.usual).toFloat(), reason(q), q.why?.dear == true, Trading.count(player.inventory, item),
+                q.hauledSell?.count ?: 0, q.hauledSell?.marks ?: 0, q.hauledLeft,
             )
         }
         val keeper = s.keeper?.id ?: -1
         val marks = TownControl.marks(player)
-        if (!Suppliers.enabled()) return MarketView(s.shop.id, keeper, s.place, marks, goods)
+        val hauls = Hauls.view(level, player, s.capital, s.shop)
+        if (!Suppliers.enabled()) return MarketView(s.shop.id, keeper, s.place, marks, goods, hauls = hauls)
         val points = Suppliers.get(level)[s.capital, player.uuid]?.points ?: 0.0
         val rank = SupplierRank.of(points)
         val orders = Orders.get(level)
         val shown = orders[s.capital]?.let { Orders.view(level, player, it, s.shop) } ?: listOf()
         return MarketView(
             s.shop.id, keeper, s.place, marks, goods, rank.ordinal, floor(points).toInt(), rank.next?.points ?: -1,
-            orders.held(player.uuid).size, Suppliers.best(level, player.uuid).orders, shown,
+            orders.held(player.uuid).size, Suppliers.best(level, player.uuid).orders, shown, hauls,
         )
     }
 
@@ -606,6 +709,11 @@ class Serving : Director {
     private var clinks = 0
     private var clinkAt = 0
 
+    /** A trade sound (`trade.knock`...) to play at the keeper when their own tick count reaches [at]: the tally stick's knocks, the crate set down, the ticket peeled off. */
+    private class Cue(val at: Int, val sound: String)
+
+    private val cues = ArrayList<Cue>()
+
     /** The steps still to come, and the tick (their own) that the one under way ends; -1 with none under way. */
     private val beats = ArrayDeque<Beat>()
     private var beatEnds = -1
@@ -641,6 +749,15 @@ class Serving : Director {
             clinkAt = p.tickCount + 5
             level.playSound(null, p.x, p.y + 1.0, p.z, COIN, SoundSource.NEUTRAL, 0.5f, 0.9f + p.random.nextFloat() * 0.25f)
         }
+        if (cues.isNotEmpty()) {
+            val waiting = cues.iterator()
+            while (waiting.hasNext()) {
+                val cue = waiting.next()
+                if (p.tickCount < cue.at) continue
+                waiting.remove()
+                level.playSound(null, p.x, p.y + 1.0, p.z, TradeSounds.get(cue.sound), SoundSource.NEUTRAL, 0.7f, 0.95f + p.random.nextFloat() * 0.1f)
+            }
+        }
         val line = later
         if (line != null && now >= laterAt) {
             later = null
@@ -658,11 +775,12 @@ class Serving : Director {
      * [player] has stepped up to [shop]: a greeting, then, a little later, [news] (an order to be had, or why a price is
      * where it is). A [rank] they've risen to there is greeted in its place, in the keeper's own way; else, if they
      * let an order lapse here lately, they hear about it ([scold]); else, if they kept what they took off the capital's
-     * waylaid wagon, a [cool] word. [quiet] if they've something else to say at once (salvage handed back), so no greeting.
+     * waylaid wagon, a [cool] word. [quiet] if they've something else to say at once (salvage handed back), so no greeting. The [scold] is for a booking
+     * on a haul ticket they let lapse if [haul] is set.
      */
     fun arrive(
         p: Townsperson, player: ServerPlayer, shop: Shop, again: Boolean, news: String?, rank: SupplierRank? = null, scold: Boolean = false,
-        cool: Boolean = false, quiet: Boolean = false,
+        cool: Boolean = false, quiet: Boolean = false, haul: Boolean = false,
     ) {
         val level = p.level() as? ServerLevel ?: return
         val busy = customers.any { it != player.uuid }
@@ -677,7 +795,7 @@ class Serving : Director {
         val known = if (rank == null && !scold && !cool && !busy && !again) Street.counter(level, p, player) else null
         val greeting = when {
             rank != null -> StallTalk.rank(rank)
-            scold -> StallTalk.lapsed(p)
+            scold -> if (haul) StallTalk.haulLapsed(p) else StallTalk.lapsed(p)
             cool && !busy -> StallTalk.COOL
             known != null -> known.first
             else -> StallTalk.greet(p, Days.life(p), shop, level, busy, again)
@@ -758,6 +876,27 @@ class Serving : Director {
             Beat(Activity.COUNT, mark, COUNTING, coins = minOf(COUNTED, pay)),
             Beat(Activity.PAY, mark, HANDING, coins = minOf(HANDED, pay)),
         )
+    }
+
+    /** A haul ticket booked: they hand over its slip saying [line], to the clerk's stamp and then the booker's seal. */
+    fun booked(p: Townsperson, line: String) {
+        took(p, line)
+        cues.add(Cue(p.tickCount + STAMP, "trade.board_stamp"))
+        cues.add(Cue(p.tickCount + SEAL, "trade.seal_press"))
+    }
+
+    /**
+     * Goods delivered to a haul ticket: they take [good] across the counter and pay as for an order ([delivered]) saying [line], counting [units] of it on a tally
+     * stick as they go (a knock of wood for every ten, up to [KNOCKS]) and setting it down with a thud; a ticket [filled] peels off the board as the pay is counted
+     * out, and a [relief] ticket filled is bowed over.
+     */
+    fun hauled(p: Townsperson, good: Good, line: String, pay: Int, units: Int, filled: Boolean, relief: Boolean) {
+        delivered(p, good, line, pay)
+        val at = p.tickCount
+        for (i in 0 until (units / 10).coerceIn(1, KNOCKS)) cues.add(Cue(at + KNOCK_FIRST + i * KNOCK_EVERY, "trade.knock"))
+        cues.add(Cue(at + HANDING, "trade.deliver"))
+        if (filled) cues.add(Cue(at + HANDING + PUTTING + COUNTING, "trade.ticket_peel"))
+        if (filled && relief) next(p, Beat(Activity.BOW, ItemStack.EMPTY, Activity.BOW.ticks))
     }
 
     /** A supplier they're serving has risen to [rank] at their capital: once what's under way is through, they mark it in their own way. */
@@ -884,6 +1023,13 @@ class Serving : Director {
         /** The most clinks of coin while counting out the pay, and while handing it over. */
         const val COUNTED = 6
         const val HANDED = 3
+
+        /** The most knocks of the tally stick for a delivery, the tick of the first and the ticks between them; the ticks into a booking that the stamp falls and the seal is pressed. */
+        const val KNOCKS = 8
+        const val KNOCK_FIRST = 4
+        const val KNOCK_EVERY = 5
+        const val STAMP = 6
+        const val SEAL = 14
 
         val COIN: SoundEvent = SoundEvent.createVariableRangeEvent(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "townsfolk.thief.coin"))
     }
