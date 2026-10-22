@@ -367,6 +367,7 @@ object Meals {
             val per = if (rationRuns == 0L) 0.0 else rationNanos / 1000.0 / rationRuns
             "$eaten meal effects given ($swapped replaced another family, $kept changed nothing); Provisioned gave back $credited food points in $rationRuns runs, ${"%.1f".format(per)} us each; Winter Chill: ${Chill.stats()}"
         }
+        MealCommand.register()
     }
 
     /** The Hearthcraft effect an event is about, or null for any other (the event's instance may be missing). */
