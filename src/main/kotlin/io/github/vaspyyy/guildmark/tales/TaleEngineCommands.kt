@@ -4,6 +4,9 @@ import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.context.CommandContext
 import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
+import io.github.vaspyyy.guildmark.townsfolk.ComingsData
+import io.github.vaspyyy.guildmark.townsfolk.Resident
+import io.github.vaspyyy.guildmark.townsfolk.Residents
 import io.github.vaspyyy.guildmark.townsfolk.scenes.Scenes
 import net.minecraft.ChatFormatting
 import net.minecraft.commands.CommandSourceStack
@@ -68,6 +71,13 @@ internal object TaleEngineCommands {
                 ),
             )
             tale.then(Commands.literal("check").executes { TaleCheck.run(it.source) })
+            tale.then(
+                Commands.literal("home")
+                    .executes { home(it) }
+                    .then(Commands.literal("leave").executes { homeLeave(it, false) }.then(Commands.literal("force").executes { homeLeave(it, true) }))
+                    .then(Commands.literal("back").executes { homeBack(it) })
+                    .then(Commands.literal("keep").then(Commands.argument("days", IntegerArgumentType.integer(1, 60)).executes { homeKeep(it, IntegerArgumentType.getInteger(it, "days")) })),
+            )
         }
     }
 
@@ -291,7 +301,7 @@ internal object TaleEngineCommands {
         val key = here.c.capital
         repeat(n) {
             val began = System.nanoTime()
-            val said = TaleClose.live(here.c.level, key) ?: return fail(source, "Its places are still being worked out: try again in a second.")
+            val said = TaleHouseholds.byHand { TaleClose.live(here.c.level, key) } ?: return fail(source, "Its places are still being worked out: try again in a second.")
             val ms = (System.nanoTime() - began) / 1_000_000.0
             say(source, TaleCommand.line().append(TaleCommand.plain(said)).append(TaleCommand.grey("  (%.2f ms)".format(ms))))
         }
@@ -315,7 +325,7 @@ internal object TaleEngineCommands {
         val t = openTale(source, c) ?: return 0
         val template = Templates.find(t.template) ?: return fail(source, "This build has no ${t.template} tale: the next close ends it quietly.")
         val was = t.step
-        TaleSteps.lapse(c, t)
+        TaleHouseholds.byHand { TaleSteps.lapse(c, t) }
         return say(source, TaleCommand.plain("Settled step $was (${template.steps.getOrNull(was)?.verb?.name ?: "?"}) of the ${t.template} tale #${t.id} by the world's way: " + where(t)))
     }
 
@@ -326,7 +336,7 @@ internal object TaleEngineCommands {
         val c = at(context)?.c ?: return 0
         val t = openTale(source, c) ?: return 0
         val was = t.step
-        TaleSteps.skip(c, t)
+        TaleHouseholds.byHand { TaleSteps.skip(c, t) }
         return say(source, TaleCommand.plain("Skipped step $was of the ${t.template} tale #${t.id}: " + where(t)))
     }
 
@@ -340,7 +350,7 @@ internal object TaleEngineCommands {
         val t = openTale(source, c) ?: return 0
         val template = Templates.find(t.template)
         if (template != null && template.ending(ending) == null) return fail(source, "The ${t.template} tale has no ending $ending.")
-        Tales.finish(c, t, ending)
+        TaleHouseholds.byHand { Tales.finish(c, t, ending) }
         return say(source, TaleCommand.plain("Ended the ${t.template} tale #${t.id} at $ending. Finished: " + Finish.entries.joinToString(" ") { (if (t.done and it.bit != 0) "+" else "-") + it.name.lowercase() }))
     }
 
@@ -376,6 +386,75 @@ internal object TaleEngineCommands {
         part.status = to
         c.data.changed()
         return say(source, TaleCommand.plain("${player.name.string}'s part in the ${t.template} tale #${t.id} is ${to.id} now."))
+    }
+
+    // ---- tale home ----
+
+    /** The family name of the household at [home], from [people] (the capital's residents, living or away). */
+    private fun family(people: List<Resident>, home: Int): String = people.firstOrNull { it.home == home }?.family ?: "nobody's"
+
+    /** `tale home`: the households here a tale keeps, protects or has sent away. */
+    private fun home(context: CommandContext<CommandSourceStack>): Int {
+        val source = context.source
+        if (notReady(source)) return 1
+        val here = at(context) ?: return 0
+        val c = here.c
+        TaleCommand.off()?.let { say(source, TaleCommand.grey(it)) }
+        say(source, TaleCommand.header("Households and tales in ${here.name}: day ${c.day}"))
+        val people = Residents.get(c.level).of(c.here.capital.center)
+        val open = c.data.openIn(c.capital)
+        val kept = open?.cast?.mapNotNull { cast -> people.firstOrNull { it.id == cast.resident && it.home >= 0 } }.orEmpty()
+        say(source, labelled("Kept by the open tale", kept.joinToString("; ") { "${it.family} (home #${it.home})" }.ifEmpty { if (open == null) "no tale is open here" else "none of its cast has a home" }))
+        val shielded = c.data.find(c.capital)?.protect.orEmpty().filter { it.until >= c.day }
+        say(source, labelled("Protected", shielded.joinToString("; ") { "${family(people, it.home)} (home #${it.home}) through day ${it.until}" }.ifEmpty { "none" }))
+        val sent = ComingsData.get(c.level).find(c.capital)?.away.orEmpty().filter { it.why.startsWith("tale ") }
+        say(source, labelled("Sent away by a tale", sent.joinToString("; ") { "${family(people, it.home)} (home #${it.home}) after ${it.why.removePrefix("tale ")}" }.ifEmpty { "none" }))
+        say(source, TaleCommand.grey("tale home leave [force], back and keep <days> do to the open tale's first cast member's household what a template's leave, bringHome and protect do."))
+        return 1
+    }
+
+    /** The first of the open tale's cast who has a home, or none (and says why). */
+    private fun householdOf(source: CommandSourceStack, c: Ctx, t: Tale): Resident? =
+        t.cast.firstNotNullOfOrNull { cast -> c.resident(t, cast.slot)?.takeIf { it.home >= 0 } }
+            ?: run {
+                fail(source, "None of the ${t.template} tale's cast has a home to speak of.")
+                null
+            }
+
+    /** `tale home leave [force]`: the household of the open tale's first cast member is sent away as a template's `leave` sends one; without `force` the town's floor is kept. */
+    private fun homeLeave(context: CommandContext<CommandSourceStack>, force: Boolean): Int {
+        val source = context.source
+        if (refuse(source)) return 0
+        val c = at(context)?.c ?: return 0
+        val t = openTale(source, c) ?: return 0
+        val r = householdOf(source, c, t) ?: return 0
+        val sent = if (force) TaleHouseholds.byHand { c.leave(t, r.home) } else c.leave(t, r.home)
+        if (sent) return say(source, TaleCommand.plain("The ${r.family} household (home #${r.home}) is sent away by the ${t.template} tale #${t.id}: /guildmark comings says so."))
+        val why = t.why.lastOrNull()?.let { TaleKeys.text(it) }
+        return say(source, TaleCommand.line().append(TaleCommand.plain("The ${r.family} household (home #${r.home}) stays. ")).append(why ?: TaleCommand.grey("(no reason was noted)")))
+    }
+
+    /** `tale home back`: the household the open tale sent away comes home, by the comings' own return. */
+    private fun homeBack(context: CommandContext<CommandSourceStack>): Int {
+        val source = context.source
+        if (refuse(source)) return 0
+        val c = at(context)?.c ?: return 0
+        val t = openTale(source, c) ?: return 0
+        val away = ComingsData.get(c.level).find(c.capital)?.away?.firstOrNull { it.why == TaleHouseholds.reason(t) }
+            ?: return fail(source, "No household is away for the ${t.template} tale #${t.id}: tale home leave sends one.")
+        if (!c.bringHome(t, away)) return fail(source, "They could not come home: there is no house for them, or the comings are off.")
+        return say(source, TaleCommand.plain("The household of home #${away.home} comes home: the comings' own return plays."))
+    }
+
+    /** `tale home keep <days>`: the household of the open tale's first cast member is protected from leaving for that many days. */
+    private fun homeKeep(context: CommandContext<CommandSourceStack>, days: Int): Int {
+        val source = context.source
+        if (refuse(source)) return 0
+        val c = at(context)?.c ?: return 0
+        val t = openTale(source, c) ?: return 0
+        val r = householdOf(source, c, t) ?: return 0
+        c.protect(t, r.home, days)
+        return say(source, TaleCommand.plain("The ${r.family} household (home #${r.home}) cannot be sent away by the comings through day ${c.day + days}."))
     }
 
     /** Where a tale stands after a step: its step, or its end. */
