@@ -6,6 +6,8 @@ import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.context.CommandContext
 import io.github.vaspyyy.guildmark.city.Capitals
 import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
+import io.github.vaspyyy.guildmark.trade.Hauls
+import io.github.vaspyyy.guildmark.trade.Ledger
 import io.github.vaspyyy.guildmark.village.VillageNames
 import net.minecraft.ChatFormatting
 import net.minecraft.commands.CommandSourceStack
@@ -20,7 +22,7 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent
  * Testing commands for a capital's market, run standing in the capital. `/guildmark market` lists every good: what
  * the market holds against what the town likes to keep, the lots to buy and sell, which way the price is going and
  * why it's off, if it is; `good <good>` is one good in full (every store, today's and yesterday's tallies, the last
- * closes); `news` the market's news; `event <kind> [good] [days]` starts trouble or luck now; `run <hours>` works
+ * closes, and the dealer's lot for goods of yours that came a long way); `news` the market's news; `event <kind> [good] [days]` starts trouble or luck now; `run <hours>` works
  * the market ahead; `buy <good> [lots]` and `sell <good> [lots]` trade with what you carry; `shop <shop>` is what a
  * shop would show, and `screen <shop>` opens its market screen with nobody keeping it; `open` starts the market afresh.
  */
@@ -194,6 +196,7 @@ object MarketCommand {
             say(source, line().append(label("You buy ")).append(plain(q.buy?.toString() ?: "none"))
                 .append(label("  you sell ")).append(plain(q.sell?.toString() ?: "it's full")).append(grey(" (takes ${q.wants} more)")))
             if (q.why != null) say(source, line().append(label("Why: ")).append(reason(q)))
+            dealer(source, entry, g)?.let { say(source, it) }
         }
         fun tallies(of: (Tally) -> Double) = Tally.entries.filter { of(it) > 0.0 }.joinToString(", ") { "${it.id} %.1f".format(of(it)) }.ifEmpty { "nothing" }
         say(source, line().append(label("Today: ")).append(plain(tallies { m.today(it, g) })))
@@ -201,6 +204,25 @@ object MarketCommand {
         val closes = m.closes[g.ordinal]
         if (closes.isNotEmpty()) say(source, line().append(label("Closes (x base): ")).append(plain(closes.joinToString("  ") { "%.2f".format(it) })))
         return 1
+    }
+
+    /**
+     * What the market pays the sender for goods of theirs that came a long way (the dealer's lot, see [Trading.dealerLot]), beside the ordinary lot; null
+     * if their ledger holds none of [g] that counts at this market, so the output is as it was for anyone who has hauled nothing.
+     */
+    private fun dealer(source: CommandSourceStack, entry: Markets.Entry, g: Good): MutableComponent? {
+        val player = source.player ?: return null
+        val level = source.level
+        val ledger = Ledger.count(level, player.uuid, g, entry.capital)
+        if (ledger <= 0) return null
+        val carried = Hauls.hauledHere(level, player, entry, g)
+        val q = Trading.quote(entry, g, Suppliers.share(level, entry.capital, player.uuid), carried)
+        val out = line().append(label("Hauled: ")).append(plain("$ledger on your ledger, $carried of them in your pack"))
+        val lot = q.hauledSell
+        if (lot == null) {
+            return out.append(grey("; no dealer's lot (it would be bigger than you carry, or the market takes none, or it is no better than the ordinary lot)"))
+        }
+        return out.append(grey("; dealer's lot ")).append(plain(lot.toString())).append(grey(" (the ordinary lot: ${q.sell?.toString() ?: "none"})"))
     }
 
     private fun news(context: CommandContext<CommandSourceStack>): Int {
@@ -278,6 +300,7 @@ object MarketCommand {
         var units = 0
         var marks = 0
         var done = 0
+        var dealers = 0
         var last: Deal? = null
         repeat(lots) {
             val deal = if (buying) Trading.buy(player, entry, g) else Trading.sell(player, entry, g)
@@ -286,9 +309,13 @@ object MarketCommand {
             units += deal.lot!!.count
             marks += deal.lot.marks
             done++
+            if (deal.hauled) dealers++
         }
         val name = Component.translatable(g.key)
-        if (done > 0) say(source, line().append(plain(if (buying) "Bought $units " else "Sold $units ")).append(name).append(plain(" for $marks Marks in $done lots.")))
+        if (done > 0) {
+            say(source, line().append(plain(if (buying) "Bought $units " else "Sold $units ")).append(name).append(plain(" for $marks Marks in $done lots.")))
+            if (dealers > 0) say(source, grey("$dealers of the lots were dealer's lots: goods that came a long way, off your ledger."))
+        }
         val stop = last?.takeIf { it.outcome != Deal.Outcome.DONE }
         if (stop != null) say(source, grey(when (stop.outcome) {
             Deal.Outcome.NONE -> if (buying) "The market has none left to sell." else "The market won't take any more."
