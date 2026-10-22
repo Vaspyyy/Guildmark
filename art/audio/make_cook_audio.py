@@ -66,7 +66,7 @@ import make_townsfolk_sfx as tf  # noqa: E402
 import make_ship_audio as ship  # noqa: E402
 from make_townsfolk_sfx import level, write_checked, true_peak, loudness_curve, nrm, lead_in, knock  # noqa: E402
 from make_ship_audio import (Ring, Bus, bubble, grain_cloud, hann_burst, loop_start, oak, iron_ring, path,
-                             periodic_phase, rn, seam_report, squeal, tame)  # noqa: E402
+                             periodic_phase, rn, seam_report, squeal, tame, bell_modes, bell_blow)  # noqa: E402
 
 SOUND_DIR = "cook"
 LOOP_MARGIN_DB = 0.8  # a loop's peaks are held this far under its ceiling, for the encoder's own overshoot
@@ -750,10 +750,142 @@ def burnt(v, rng):
 # fire>>
 
 
+# <<chimes
+# =========================================================================== the chimes
+D5, FS5, A5, D6 = 587.33, 739.99, 880.0, 1174.66  # the tier motif: a D major arpeggio
+
+
+def bar_note(dur, rng, f, t60=0.6, bright=1.0):
+    """one note of a wooden hand-chime: a tuned bar of rosewood struck with a soft mallet (partials at 1, 3.93 and 9.2 times the
+    pitch, the upper ones gone in a moment), the mallet's soft tick, and the hollow knock of the bar on its cord"""
+    r = np.array([1.0, 3.93, 9.2]) * rng.uniform(0.998, 1.002, 3)
+    y = tf.ring(dur, f * r, t60 * np.array([1.0, 0.3, 0.1]), [1.0, 0.4 * bright, 0.14 * bright], rng, doublet=0.0012,
+                doublet_amp=0.5, attack=0.0008)
+    t = tvec(0.014)
+    mallet = lp(white(0.014, rng), 3500.0, 2) * np.exp(-t / 0.002) * np.clip(t / 0.0008, 0, 1)
+    m = Mix(dur)
+    m.add(nrm(y), 0.0, 1.0)
+    m.add(nrm(mallet), 0.0, 0.12 * bright)
+    m.add(nrm(oak(0.06, rng, f * 0.5, t60=0.02, hard=0.4, ex=0.002, lo=150.0)), 0.0, 0.08)
+    return m.out()
+
+
+def shimmer(dur, rng, f, depth=1.0):
+    """the glimmer on a last note: two faint upper partials a few cycles a second apart from each other, so that they swell and
+    fade against each other as the note dies, and a thread of high sparkle above them"""
+    t = tvec(dur)
+    env = np.clip(t / 0.03, 0, 1) * np.exp(-t / 0.55)
+    y = np.zeros(len(t))
+    for fr, g, beat in ((f * 2.0, 0.5, 4.6), (f * 3.0, 0.35, 6.1), (f * 4.0, 0.25, 7.3)):
+        ph = rng.uniform(0, 6.28)
+        y += g * (np.sin(2 * np.pi * fr * t + ph) + np.sin(2 * np.pi * (fr + beat) * t + 2 * ph))
+    return y * env * depth
+
+
+MOTIFS = {"plain": [(0.0, D5)], "sound": [(0.0, D5), (0.24, A5)], "fine": [(0.0, D5), (0.2, FS5), (0.4, A5)],
+          "hallmark": [(0.0, D5), (0.19, FS5), (0.38, A5), (0.58, D6)]}
+
+
+def motif(tier, dur, rng, t60=0.55):
+    m = Mix(dur)
+    notes = MOTIFS[tier]
+    for i, (at, f) in enumerate(notes):
+        last = i == len(notes) - 1
+        g = [0.8, 0.85, 0.95, 1.0][min(i, 3)] if len(notes) > 1 else 1.0
+        m.add(bar_note(dur - at, rng, f * rng.uniform(0.999, 1.001), t60=t60 * (1.6 if last else 1.0)), at, g)
+        if last and tier == "hallmark":
+            m.add(shimmer(dur - at, rng, f), at, 0.16)
+    return m.out()
+
+
+@effect("tier.plain", 1, 0.6, "A plain dish", reach=12, loud=-28.0, fade_out=0.2, limit=3.0,
+        when=("The first bowl of a batch is served (moment 18): a Plain dish, one note."))
+def tier_plain(v, rng):
+    """a plain dish: one note on a wooden hand-chime (D), quiet"""
+    return kitchen(motif("plain", 0.6, rng, t60=0.45), 0.06, 5341)
+
+
+@effect("tier.sound", 1, 0.9, "A sound dish", reach=12, loud=-27.0, fade_out=0.25, limit=3.0,
+        when=("The first bowl of a batch is served (moment 18): a Sound dish, two notes."))
+def tier_sound(v, rng):
+    """a sound dish: two notes (D, A), quiet"""
+    return kitchen(motif("sound", 0.9, rng, t60=0.5), 0.06, 5342)
+
+
+@effect("tier.fine", 1, 1.3, "A fine dish", reach=12, loud=-27.0, fade_out=0.35, limit=3.0,
+        when=("The first bowl of a batch is served (moment 18): a Fine dish, three notes."))
+def tier_fine(v, rng):
+    """a fine dish: three notes (D, F sharp, A), quiet"""
+    return kitchen(motif("fine", 1.3, rng, t60=0.55), 0.06, 5343)
+
+
+@effect("tier.hallmark", 1, 2.0, "A hallmarked dish", reach=12, loud=-26.0, fade_out=0.6, limit=3.0,
+        when=("The first bowl of a batch is served (moment 18): a Hallmarked dish, four notes, the last with a shimmer."))
+def tier_hallmark(v, rng):
+    """a hallmarked dish: four notes (D, F sharp, A, D above), the last ringing on in a shimmer, quiet"""
+    return kitchen(motif("hallmark", 2.0, rng, t60=0.6), 0.07, 5344)
+
+
+SOFT_BELL = [  # (multiple of the strike note, level dB, T60 s, beat Hz): a small bronze bell, struck softly, mostly its low modes
+    (0.5, -9.0, 1.3, 0.7), (1.0, 0.0, 1.2, 1.1), (1.19, -7.0, 1.0, 1.5), (1.5, -9.0, 0.8, 1.5), (2.0, -11.0, 0.6, 1.9),
+    (2.62, -17.0, 0.35, 2.4), (3.0, -19.0, 0.3, 2.7), (4.0, -23.0, 0.2, 3.2),
+]
+
+
+@effect("ready", 1, 1.2, "A dish is ready", loud=-24.0, fade_out=0.35, limit=3.0,
+        when=("The dish becomes ready (moment 15): a soft low chime at the start of its window."))
+def ready(v, rng):
+    """a dish ready: one soft, low chime, a small bronze bell touched rather than struck (a gentle G with its hum an octave below
+    and the minor third that makes a bell a bell), ringing on and beating softly as it dies"""
+    dur = 1.2
+    modes = bell_modes(392.0, rng_for("cook", "ready", "bell"), table=SOFT_BELL)
+    m = Mix(dur)
+    m.add(bell_blow(dur, modes, hard=0.5, fc=1800.0, build=0.004), 0.0, 1.0)
+    m.add(nrm(oak(0.05, rng, 700.0, t60=0.015, hard=0.3, ex=0.002, lo=200.0)), 0.0, 0.08)
+    return kitchen(lp(fit(m.out(), ns(dur)), 7000.0), 0.08, 5345)
+
+
+@effect("ripe", 1, 0.5, "A dish is at its best", loud=-27.0, fade_out=0.2, limit=3.0,
+        when=("The dish is at its best (moment 15): one small bright ting at the centre of the window."))
+def ripe(v, rng):
+    """a dish at its best: one small bright ting (a little steel bell, A above the staff, its upper partials a shimmering pair)"""
+    dur = 0.5
+    f = 1760.0
+    y = tf.ring(dur, f * np.array([1.0, 2.32, 4.12, 6.3]), [0.4, 0.2, 0.12, 0.07], [1.0, 0.4, 0.22, 0.1], rng, doublet=0.002,
+                doublet_amp=0.6, attack=0.0004)
+    t = tvec(0.004)
+    tick = bp(white(0.004, rng), 3000.0, 12000.0) * np.exp(-t / 0.0005) * np.clip(t / 0.0002, 0, 1)
+    m = Mix(dur)
+    m.add(nrm(y), 0.0, 1.0)
+    m.add(nrm(tick), 0.0, 0.15)
+    return kitchen(fit(m.out(), ns(dur)), 0.07, 5346)
+
+
+@effect("buff", 1, 1.0, "A meal takes hold", loud=-19.5, fade_out=0.3, limit=3.0,
+        when=("A meal takes hold (moment 23): the chime the eater alone hears, played by Part F at 0.6 of its level and at "
+              "a pitch from 0.9 (a plain dish) to 1.2 (a hallmarked one)."))
+def buff(v, rng):
+    """a meal taking hold: a soft, warm chime, played to the eater alone (the game plays it at 0.6 of its level and from pitch 0.9
+    to 1.2 by the dish's tier). A round bell-like note (D, partials at 1, 2, 3 and 4.2 times it, the low ones the strongest) that
+    blooms in a hundredth of a second and fades slowly, a fifth (A) coming in under it a moment later, glowing and beating as
+    both fade"""
+    dur = 1.0
+    m = Mix(dur)
+    for at, f, g in ((0.0, D5, 1.0), (0.09, A5, 0.5)):
+        y = tf.ring(dur - at, f * np.array([1.0, 2.0, 3.0, 4.2]), [0.95, 0.6, 0.35, 0.2], [1.0, 0.45, 0.2, 0.08], rng, doublet=0.0016,
+                    doublet_amp=0.7, attack=0.006)
+        m.add(nrm(y), at, g)
+    t = tvec(0.01)
+    m.add(nrm(lp(white(0.01, rng), 2500.0, 2) * np.exp(-t / 0.002)), 0.0, 0.05)
+    return kitchen(fit(m.out(), ns(dur)), 0.06, 5347)
+# chimes>>
+
+
 # =========================================================================== the order of the sounds
 # the order of CookSounds.NAMES (the design's Appendix C.5): the order of the fragments and of the listen-through
 ORDER = ["place", "pour", "plop.soft", "plop.meat", "plop.grain", "fuel", "ignite", "stir", "simmer", "crackle", "sizzle",
-         "boil_over", "burnt", "oven_hum", "spit_creak", "drip", "flare", "flip", "chill"]
+         "boil_over", "ready", "ripe", "tier.plain", "tier.sound", "tier.fine", "tier.hallmark", "burnt", "buff", "oven_hum",
+         "spit_creak", "drip", "flare", "flip", "chill"]
 
 assert sorted(ORDER) == sorted(EVENTS), "every sound is in ORDER, once: " + str(set(ORDER) ^ set(EVENTS))
 for _name in ORDER:
