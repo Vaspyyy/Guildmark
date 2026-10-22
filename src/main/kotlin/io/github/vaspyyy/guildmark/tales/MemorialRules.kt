@@ -291,8 +291,8 @@ object MemorialRules {
                     }
                     val f = find(t, cairn, a.x, a.y, a.z, others, seed, reach, within, ways)
                     tried += f.tried
-                    if (f.spot != null) return Hit(Found(f.spot, tried, refused), i, pass)
                     for ((why, n) in f.refused) refused.merge(why, n, Int::plus)
+                    if (f.spot != null) return Hit(Found(f.spot, tried, refused), i, pass)
                 }
                 within = reach
             }
