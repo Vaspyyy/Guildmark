@@ -172,6 +172,7 @@ internal object NoteStall {
     fun register() {
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> forget() }
         NoteStages.register()
+        FenceStages.register()
         TaleCommand.sub += { tale ->
             tale.then(
                 Commands.literal("seal")
