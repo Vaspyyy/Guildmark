@@ -35,7 +35,8 @@ Wording changes from the design's 11.5 list (every one so that a wording is true
 notes in the table): the scene's "Not the back pot again!" and "Hot off the spit", the verdicts' "Good, but", the plain
 tier's "Warm", the hallmark tier's "in years" (a cook who sells a Hallmarked batch every day is not the best in years each
 day), "bowl", "a day or two old", "comes out of an oven", "whenever you like" of the back pot, the slate's "short of" (the
-wanted kinds are a draw, not a want) and the request's "in number", the autumn's "The harvest is in", the palates (they
+wanted kinds are a draw, not a want) and the request's "in number", the none's "Nothing special today" (the order is on the slate
+for everyone and may not be for this player), the autumn's "The harvest is in", the palates (they
 name the two dishes each style likes, Tastes.LIKES), the relished "other night" and fedwell's "supper" and "last night"
 (the meal may be any meal), the chilled "Cold night" and "bowl", the told rumours' "at the inn" (a Hallmarked dish may be
 sold at the bakery) and "nobody owned up" and "new cook", the shop's "Fresh from the oven", "hot" and the cookshop's first
@@ -219,12 +220,13 @@ TABLE = [
             "I've a request on the slate, if you're a cook.",
             "Someone wants several portions of one dish. See the slate.",
         ]),
-        # no request is open, or it is filled
-        ("kitchen.none", "the innkeeper, when there is no request to fill", [
-            "Nothing special today.",
+        # no request is open to this player: it is filled, or the player is not yet one the innkeeper gives her special orders to
+        # ("Nothing special today." is not true of the second, for the slate shows the order to everyone)
+        ("kitchen.none", "the innkeeper, when there is no request for this player to fill", [
+            "Nothing special for you today.",
             "Nothing on the slate for you today.",
         ]),
-        # where and how to sell (what the door takes follows as text)
+        # where and how to sell (that the back pot is the player's, and that they are the cook of the day, follow as grey text)
         ("kitchen.backdoor", "the innkeeper or the baker, of selling a dish at the back door", [
             "Hold it out to me and I'll taste it.",
             "Bring me what you've cooked and I'll make you an offer.",
