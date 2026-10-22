@@ -970,11 +970,175 @@ def crank(v, rng):
 # iron>>
 
 
+# <<board
+# =========================================================================== the board, the counter and the larder
+def crunch(dur, rng, rate, lo=900.0, hi=6500.0, decay=0.0006, size_var=1.0):
+    """something crisp breaking: many little fractures at once, each a short click of its own (the crust, the root, the rind),
+    their number following `rate` (a number or a curve), with a few bigger cracks among them"""
+    n = ns(dur)
+    y = grain_cloud(dur, rng, rate, decay=decay, f_lo=lo, f_hi=hi, size_var=size_var, kernels=6)
+    big = np.zeros(n)
+    r = np.broadcast_to(np.asarray(rate, dtype=float), (n,))
+    for i in np.nonzero(rng.random(n) < r * 0.012 / SR)[0]:
+        e = ping(0.012, [rng.uniform(1100.0, 2600.0)], [0.004], [1.0], rng, ex_len=0.0005, hi=8000.0)
+        m = min(len(e), n - i)
+        big[i:i + m] += e[:m] * rng.uniform(0.5, 1.0)
+    return y / (np.max(np.abs(y)) + 1e-12) + 1.2 * big / (np.max(np.abs(big)) + 1e-12)
+
+
+@effect("chop", 3, 0.3, "Something is chopped", reach=10, loud=-25.0, fade_out=0.08, limit=3.0,
+        when=("A knife chopping on the Prep board."))
+def chop(v, rng):
+    """a knife chopping on a board: the edge meeting the wood with a short hard 'tock' (the board's own low knock, the blade's
+    brief thin ring), the food parting under it in a small crisp crunch. v1 a carrot, crisp and bright; v2 an onion, softer
+    and wetter; v3 a herb bunch, light, with the blade settling"""
+    dur = 0.3
+    m = Bus(dur)
+    f0 = [250.0, 215.0, 280.0][v]
+    hard = [1.0, 0.7, 0.8][v]
+    m.add(oak(0.2, rng, f0, t60=0.05, hard=hard, ex=0.002, lo=200.0), 0.0, 1.0)
+    m.add(hann_burst(0.002, rng, 1500.0, 7000.0), 0.0, 0.3 * hard)
+    m.add(nrm(ping(0.06, [3600.0 * rng.uniform(0.95, 1.05), 6900.0], [0.012, 0.006], [1.0, 0.5], rng)), 0.0, 0.12 * hard)
+    cd = [0.07, 0.09, 0.06][v]
+    ct = tvec(cd)
+    env = np.clip(ct / 0.004, 0, 1) * np.exp(-ct / (cd * 0.4))
+    m.add(crunch(cd, rng, [1700.0, 700.0, 900.0][v] * env + 10.0, lo=[1500.0, 700.0, 1800.0][v], hi=[7000.0, 4000.0, 8000.0][v]) * env, 0.001,
+          [0.7, 0.5, 0.4][v])
+    if v == 2:
+        m.add(nrm(ping(0.05, [3300.0, 6300.0], [0.01, 0.005], [1.0, 0.5], rng)), 0.09, 0.1)
+        m.add(nrm(oak(0.1, rng, 300.0, t60=0.02, hard=0.4, ex=0.002, lo=200.0)), 0.09, 0.15)
+    return kitchen(tame(lp(fit(m.out(), ns(dur)), 10000.0), 15.0), 0.06, 5361 + v)
+
+
+@effect("slice", 3, 0.5, "A pie is sliced", reach=10, loud=-26.0, fade_out=0.15,
+        when=("The Knife on a pie or tart (1.6): the baker's and the cookshop keeper's slice scene (7.5)."))
+def slice_sound(v, rng):
+    """a knife slicing a pie: the point breaking the crust (a fine, dense crackle of the pastry that comes up and goes as the
+    blade draws through it), a soft drag through the filling, the edge reaching the tin with a small tick and a ring. v2 the
+    slice slid out from the rest with a short scrape of pastry on tin; v3 a heavier cut"""
+    dur = 0.5
+    m = Bus(dur)
+    sd = [0.2, 0.18, 0.24][v]
+    env = bell(sd, 0.35, 1.2, 1.6)
+    m.add(crunch(sd, rng, [1700.0, 1500.0, 1900.0][v] * env + 20.0, lo=1500.0, hi=7500.0, decay=0.0004, size_var=0.8) * env, 0.0, 1.0)
+    m.add(lp(colored(sd, rng, -2.0), 1400.0, 2) * env ** 1.3 * (0.6 + 0.4 * smooth_random(sd, rng, 30)), 0.0, 0.35)
+    at = sd - 0.02
+    m.add(nrm(ping(0.15, [1250.0 * rng.uniform(0.96, 1.04), 2150.0, 3400.0], [0.06, 0.04, 0.025], [1.0, 0.5, 0.25], rng)), at, 0.4)
+    m.add(nrm(oak(0.1, rng, 240.0, t60=0.025, hard=0.4, ex=0.002, lo=150.0)), at, 0.25)
+    if v == 1:
+        sc = bp(colored(0.12, rng, -1.0), 1000.0, 4500.0) * bell(0.12, 0.4, 1.2, 1.5) * (0.5 + 0.5 * smooth_random(0.12, rng, 70))
+        m.add(sc, at + 0.06, 0.25)
+    return kitchen(lp(fit(m.out(), ns(dur)), 10000.0), 0.06, 5364 + v)
+
+
+@effect("carve", 3, 0.6, "A roast is carved", reach=10, loud=-26.0, fade_out=0.15,
+        when=("The Knife on the spit's joint (1.6): the innkeeper's rest-day carving (7.5)."))
+def carve(v, rng):
+    """a knife carving a roast: the point through the crackling of the crust, then the long, wet, soft stroke of the blade drawn
+    through the meat (a low, moist rasp with a few small squelches in it), a last tick of the edge on the plate under it.
+    v1 two strokes, v2 one long, v3 three short"""
+    dur = 0.6
+    m = Bus(dur)
+    strokes = [[(0.0, 0.24), (0.27, 0.2)], [(0.0, 0.42)], [(0.0, 0.14), (0.16, 0.14), (0.32, 0.14)]][v]
+    for k, (at, sd) in enumerate(strokes):
+        env = bell(sd, 0.4, 1.2, 1.5)
+        if k == 0:
+            m.add(crunch(0.09, rng, 1000.0 * np.exp(-tvec(0.09) / 0.04) + 40.0, lo=1200.0, hi=6000.0, decay=0.0005) * np.exp(-tvec(0.09) / 0.04),
+                  at, 0.55)
+        rasp = tvf(colored(sd, rng, -2.0), "bp", 500.0 + 900.0 * env, 0.9) * env ** 1.2 * (0.6 + 0.4 * smooth_random(sd, rng, 40))
+        m.add(rasp, at, 0.6)
+        m.add(ship.bubbles(sd, rng, 40.0 * env, 0.8, 2.5, beta=1.8, level=1.0, weight=0.4, rise=0.4), at, 0.25)
+    end = strokes[-1][0] + strokes[-1][1]
+    m.add(nrm(ping(0.15, [1400.0 * rng.uniform(0.96, 1.04), 2300.0, 3600.0], [0.07, 0.045, 0.03], [1.0, 0.5, 0.25], rng)), end, 0.3)
+    m.add(nrm(oak(0.1, rng, 260.0, t60=0.03, hard=0.4, ex=0.002, lo=150.0)), end, 0.2)
+    return kitchen(lp(fit(m.out(), ns(dur)), 9000.0), 0.06, 5367 + v)
+
+
+@effect("loaf_down", 2, 0.5, "Loaves are set down", reach=12, loud=-25.0, fade_out=0.15,
+        when=("The baker sets the loaves on the counter after the peel (7.5)."))
+def loaf_down(v, rng):
+    """loaves set down on a counter: each a soft, dull thud of a heavy crust on a scrubbed plank (the plank's own low knock, a
+    crinkle of crust and a rustle of flour); two loaves, one a beat behind the other, v2 three"""
+    dur = 0.5
+    m = Bus(dur)
+    plan = [[(0.0, 1.0, 1.0), (0.13, 0.85, 1.1)], [(0.0, 1.0, 1.0), (0.1, 0.8, 0.9), (0.21, 0.9, 1.15)]][v]
+    for at, g, f in plan:
+        m.add(tf.thud(0.12, rng, f=150.0 * f, decay=0.02, tone=0.25), at, 0.8 * g)
+        m.add(oak(0.2, rng, 175.0 * f, t60=0.07, hard=0.5, ex=0.004, lo=120.0), at, 0.7 * g)
+        m.add(crunch(0.06, rng, 600.0 * np.exp(-tvec(0.06) / 0.02) + 20.0, lo=1500.0, hi=6000.0, decay=0.0007, size_var=0.8) * np.exp(-tvec(0.06) / 0.02),
+              at + 0.003, 0.25 * g)
+        m.add(bp(white(0.08, rng), 2500.0, 7000.0) * bell(0.08, 0.3, 1.2, 1.5), at + 0.01, 0.12 * g)
+    return kitchen(lp(fit(m.out(), ns(dur)), 8000.0), 0.07, 5370 + v)
+
+
+@effect("plate", 2, 0.4, "A plate is set down", reach=8, loud=-27.0, fade_out=0.12, limit=3.0,
+        when=("A plate set down on a table (the Plate station, 3.5)."))
+def plate(v, rng):
+    """a plate set down on a table: the foot of it meeting the wood with a short knock, the glaze ringing a moment in its own
+    thin notes, and the plate settling, rattling twice as it comes to rest (v1 a glazed plate, v2 a pewter one, duller)"""
+    dur = 0.4
+    m = Bus(dur)
+    f0 = [1450.0, 1050.0][v]
+    t60 = [0.1, 0.16][v]
+    ratios = np.array([1.0, 1.65, 2.9, 4.6, 6.4]) * rng.uniform(0.99, 1.01, 5)
+    m.add(tf.ring(0.4, f0 * ratios, t60 * np.array([1.0, 0.75, 0.5, 0.35, 0.25]), [1.0, 0.7, 0.45, 0.3, 0.2], rng, doublet=0.003, doublet_amp=0.6), 0.0, 0.6)
+    m.add(oak(0.15, rng, 210.0, t60=0.04, hard=0.6, ex=0.003, lo=150.0), 0.0, 0.8)
+    m.add(hann_burst(0.002, rng, 1200.0, 6000.0), 0.0, 0.25)
+    for k in range(2):
+        at = 0.07 + 0.045 * k + rng.uniform(0, 0.01)
+        m.add(nrm(ping(0.06, [f0 * 1.1, f0 * 1.9], [0.03, 0.02], [1.0, 0.5], rng)), at, 0.22 * 0.6 ** k)
+        m.add(nrm(oak(0.06, rng, 230.0, t60=0.015, hard=0.4, ex=0.002, lo=150.0)), at, 0.18 * 0.6 ** k)
+    return kitchen(lp(fit(m.out(), ns(dur)), 10000.0), 0.06, 5373 + v)
+
+
+@effect("chalk", 2, 1.0, "Chalk scratches a slate", reach=8, loud=-27.0, fade_out=0.25,
+        when=("The Menu board's chalked text going up (1.1, 5.4)."))
+def chalk(v, rng):
+    """a line chalked on the Menu board's slate: the chalk set down with a tick, a dry gritty scratch of a first short stroke and
+    a quicker second (the chalk catching and slipping on the stone, the slate's own faint ring under it), a squeak where it bites,
+    and a tap for the full stop. v2 a longer first line and an underlining stroke"""
+    dur = 1.0
+    m = Bus(dur)
+    plan = [[(0.0, 0.3, 1.0), (0.4, 0.26, 1.2)], [(0.0, 0.42, 0.9), (0.52, 0.3, 1.25)]][v]
+    for at, sd, sp in plan:
+        m.add(nrm(tf.chalk_tick(rng, 0.5)), at, 0.3)
+        m.add(tf.chalk_stroke(sd, rng, sp), at + 0.004, 1.0)
+    sq_at = plan[0][0] + plan[0][1] * 0.55
+    m.add(nrm(tf.chalk_squeak(0.06, rng, [2500.0, 2300.0][v])), sq_at, 0.2)
+    last = plan[-1][0] + plan[-1][1] + 0.1
+    m.add(nrm(tf.chalk_tick(rng, 1.0)), last, 0.5)
+    return kitchen(lp(hp(lead_in(fit(m.out(), ns(dur))), 300.0), 10500.0), 0.05, 5375 + v)
+
+
+@effect("larder", 2, 0.5, "A larder opens", reach=8, loud=-27.0, fade_out=0.15,
+        when=("A Larder opened (1.1)."))
+def larder(v, rng):
+    """a slatted larder door opened: the thumb-latch lifted (a tick and a small clink), the dry wood of the door rubbing on its
+    frame with a short soft creak, the slats rattling in it, a draught of cool air and the faint clink of crockery on the shelves
+    inside. v2 a heavier door, slower"""
+    dur = 0.5
+    m = Bus(dur)
+    m.add(nrm(hann_burst(0.002, rng, 1800.0, 7000.0)), 0.0, 0.25)
+    m.add(nrm(ping(0.08, [2300.0 * rng.uniform(0.96, 1.04), 3700.0], [0.03, 0.02], [1.0, 0.5], rng)), 0.002, 0.45)
+    cd = [0.2, 0.3][v]
+    rate = path([(0, 20.0), (0.4 * cd, 60.0), (cd, 18.0)], cd)
+    modes = timber_modes(rng_for("cook", "larder", "door"), 180.0, 2400.0, 18, 0.07, 0.02, peaks=(420, 900))
+    m.add(creak_voice(cd, rng, rate, bell(cd, 0.45, 1.2, 1.5), modes, jitter=0.1, rub=0.15), 0.03, 0.55)
+    for k in range(5 + 2 * v):
+        m.add(nrm(oak(0.05, rng, rng.uniform(650.0, 1250.0), t60=0.014, hard=0.8, ex=0.001, lo=300.0)), 0.04 + rng.uniform(0, cd) * 0.9, rng.uniform(0.1, 0.3))
+    m.add(lp(colored(0.3, rng, -2.0), 1200.0, 2) * bell(0.3, 0.35, 1.3, 1.7), 0.08, 0.18)
+    for k in range(int(rng.integers(1, 3))):
+        m.add(nrm(ping(0.07, [rng.uniform(2300.0, 3300.0), 5100.0], [0.03, 0.015], [1.0, 0.4], rng)), 0.15 + 0.1 * k + rng.uniform(0, 0.04), 0.1)
+    return kitchen(lp(fit(m.out(), ns(dur)), 9000.0), 0.07, 5377 + v)
+# board>>
+
+
 # =========================================================================== the order of the sounds
 # the order of CookSounds.NAMES (the design's Appendix C.5): the order of the fragments and of the listen-through
 ORDER = ["place", "pour", "plop.soft", "plop.meat", "plop.grain", "fuel", "ignite", "stir", "simmer", "crackle", "sizzle",
          "boil_over", "ready", "ripe", "tier.plain", "tier.sound", "tier.fine", "tier.hallmark", "burnt", "buff", "oven_hum",
-         "oven_open", "oven_shut", "spit_creak", "crank", "drip", "flare", "flip", "chill"]
+         "oven_open", "oven_shut", "spit_creak", "crank", "drip", "flare", "flip", "chop", "slice", "carve", "loaf_down",
+         "plate", "chalk", "larder", "chill"]
 
 assert sorted(ORDER) == sorted(EVENTS), "every sound is in ORDER, once: " + str(set(ORDER) ^ set(EVENTS))
 for _name in ORDER:
