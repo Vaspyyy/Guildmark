@@ -17,6 +17,7 @@ import io.github.vaspyyy.guildmark.registry.ModParticles
 import io.github.vaspyyy.guildmark.registry.ModSounds
 import io.github.vaspyyy.guildmark.road.Coaches
 import io.github.vaspyyy.guildmark.story.HollowKing
+import io.github.vaspyyy.guildmark.tales.Tales
 import net.minecraft.core.BlockPos
 import net.minecraft.core.GlobalPos
 import net.minecraft.core.particles.ParticleTypes
@@ -75,7 +76,8 @@ object Wardfires {
         if (!state.getValue(WardfireBlock.LIT)) kindle(level, pos, state, player) else rest(level, pos, player)
     }
 
-    private fun kindle(level: ServerLevel, pos: BlockPos, state: BlockState, player: ServerPlayer) {
+    // Internal: a tale's own lighting of a fire is told through the same hook (tales/)
+    internal fun kindle(level: ServerLevel, pos: BlockPos, state: BlockState, player: ServerPlayer) {
         level.setBlock(pos, state.setValue(WardfireBlock.LIT, true), Block.UPDATE_ALL)
         level.gameEvent(player, GameEvent.BLOCK_CHANGE, pos)
         level.playSound(null, pos, ModSounds.WARDFIRE_KINDLE.get(), SoundSource.BLOCKS, 1f, 1f)
@@ -87,6 +89,8 @@ object Wardfires {
         // A cold fire lit again: Ysolde's chapter counts it, and those who keep the roads are glad of it
         Trials.credit(player, "kindle")
         Companions.deed(player, Deed.KINDLE)
+        // A tale that waits on this fire hears it is lit (tales/)
+        Tales.kindled(level, pos, player)
     }
 
     /** Puts the Wardfire at [pos] on the player's map, if it isn't already. */
