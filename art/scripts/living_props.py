@@ -1687,10 +1687,11 @@ def _turner():
 
 
 def _knife():
+    # (Named cooks_knife, like its item: Kestrel's belt knife, a look piece, is already the part called knife.)
     # A cook's knife held like the spoon, its edge (part +z) down: with the arm hanging it points ahead. A slim blade
     # 6.7 px long that narrows to a point (the spine steps down toward it; the edge is one line), on a walnut handle with
     # a brass bolster: not the stout driver's knife.
-    return 'right_arm', Part('knife', RIGHT_GRIP, (-90, 0, 0), cubes=[
+    return 'right_arm', Part('cooks_knife', RIGHT_GRIP, (-90, 0, 0), cubes=[
         C((-0.55, -1.8, -0.7), (1.1, 4.0, 1.4), 't_knife_handle', wood_painter('t_knife_handle', (112, 72, 44), (72, 44, 26), (150, 104, 66), 'y')),
         C((-0.6, 2.2, -0.75), (1.2, 0.5, 1.5), 't_knife_bolster', brass_painter('t_knife_bolster')),
         C((-0.15, 2.7, -0.5), (0.3, 3.8, 1.4), 't_knife_blade', cook_blade_painter('t_knife_blade')),
@@ -1704,7 +1705,7 @@ BUILDERS.extend(COOK_BUILDERS)
 TOOL_NOTES.update({
     'turner': 'right hand, at right angles to the arm like the spoon, the flat of its blade (part +z, under the handle) '
               f'level with the arm hanging; the blade\'s middle at part {TURNER_BLADE}, its leading edge at {TURNER_EDGE}',
-    'knife': 'right hand, at right angles to the arm like the spoon, its edge (part +z) down; the blade\'s middle at part '
+    'cooks_knife': 'right hand, at right angles to the arm like the spoon, its edge (part +z) down; the blade\'s middle at part '
              f'{KNIFE_BLADE}, its cutting edge at {KNIFE_EDGE}, its point at {KNIFE_TIP}',
 })
 
