@@ -143,6 +143,8 @@ object Tales : Comings.Listener {
         TaleTalk.register()
         NoteStall.register()
         Memorials.register(modBus)
+        // T1b: the Silent Lute's `tale lute` and its scenes (after the scene command has its own, so they are added to them)
+        io.github.vaspyyy.guildmark.tales.templates.LuteCommands.register()
     }
 
     // ---- The clock ----
