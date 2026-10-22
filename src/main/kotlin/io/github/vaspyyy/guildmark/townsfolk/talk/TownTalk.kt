@@ -134,6 +134,14 @@ object TownTalk {
     /** [player] brought materials to the yard of the works [r] labours on: the crew's thanks ([Favour.BROUGHT]), once a day (Witness hears it). */
     fun brought(level: ServerLevel, r: Resident, player: UUID) = once(level, r, player, Favour.BROUGHT)
 
+    /**
+     * [r] relished a dish of [tier] that [cook] cooked (Hearthcraft, living-world/cook/design.md 8.2): Sound earns
+     * [Favour.RELISHED], Fine and Hallmarked [Favour.RELISHED_FINE], Plain and Gruel nothing, once a day. The ledger calls it
+     * for a sample of the diners at a meal hour, and the back door for the keeper. Part J's body; until it lands this
+     * remembers nothing.
+     */
+    fun relished(level: ServerLevel, r: Resident, cook: UUID, tier: io.github.vaspyyy.guildmark.cooking.Tier) {}
+
     private fun once(level: ServerLevel, r: Resident, player: UUID, favour: Favour) {
         val a = acq(level, r, player) ?: return
         val day = Memory.day(level)
@@ -498,7 +506,7 @@ enum class Favour(val amount: Double) {
     TALE_HEARD(1.0);
 
     /** Counted at most once a day from each resident, and only while the favour felt is small ([Memory.DAILY_CAP]). */
-    val daily: Boolean get() = this == BROUGHT || this == FED
+    val daily: Boolean get() = this == BROUGHT || this == FED || this == RELISHED || this == RELISHED_FINE
 }
 
 /** A wrong a player did a resident: how much it counts, and its half-life in days (section 3). */

@@ -41,6 +41,7 @@ object TalkSources {
     val ALL: List<TopicSource> = listOf(
         HouseholdTopics, MarketTopics, WeatherTopics, SeasonTopics, FestivalTopics, TownTopics, DeedTopics, DealingTopics,
         NewsTopics, HomesteadTopics, WorksTopics, FortuneTopics,
+        KitchenTopics,
     )
 
     /** Registers every source with [Topics] and starts what they keep watch on: once, at setup (Townsfolk.init). */
