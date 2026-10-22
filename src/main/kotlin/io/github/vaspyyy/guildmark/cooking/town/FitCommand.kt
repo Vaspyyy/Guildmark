@@ -100,9 +100,16 @@ internal object FitCommand {
     /** Says what came of one capital; returns how many blocks were made (or would be, in a preview). */
     private fun describe(source: CommandSourceStack, level: ServerLevel, capital: CapitalPiece, result: KitchenFit.Result): Int {
         val place = Suppliers.place(level, capital.center).ifEmpty { "the capital at ${capital.center.x}, ${capital.center.z}" }
-        say(source, header("Kitchen fit of $place: plan version ${result.version}"))
+        val noPlan = capital.layout == null
+        say(source, header("Kitchen fit of $place: ${if (noPlan) "no plan" else "plan version ${result.version}"}"))
         if (!result.old) {
-            say(source, grey("  This capital was drawn with the kitchens (plan version ${KitchenFit.KITCHENS} or later), so there is nothing to fit."))
+            say(
+                source,
+                grey(
+                    if (noPlan) "  This capital was saved by an older version of the mod and has no plan, so there is nothing to fit."
+                    else "  This capital was drawn with the kitchens (plan version ${KitchenFit.KITCHENS} or later), so there is nothing to fit.",
+                ),
+            )
             return 0
         }
         if (!result.places) {
