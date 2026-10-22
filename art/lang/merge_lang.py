@@ -14,11 +14,17 @@ The fragments are found by name, so a new one needs no edit here. A design's fra
 (DESIGNS: the build plan's spelling first, then the spelling its own scripts use), and are, for the language file:
 
     art/lang/<design>_<part>.json        a part's lines     (cook_0, trade_a0, tales_t1, villages_v1, cook_lines ...)
-    art/audio/<design>_lang.json         its sounds' subtitles
+    art/audio/<design>_lang.json         its sounds' subtitles (and art/audio/<design>_<stream>_lang.json, such as a
+                                         voice stream's, trade_voices_lang.json, beside the sounds')
 
 and for sounds.json:
 
-    art/audio/<design>_sounds.json       its sound events
+    art/audio/<design>_sounds.json       its sound events (and art/audio/<design>_<stream>_sounds.json)
+
+After the four designs come the voice tables every design's voices add to: art/audio/talk_sounds.json and
+talk_lang.json, which `make_talk_voices.py table` writes whole, and townsfolk_sounds.json and townsfolk_lang.json,
+which `make_townsfolk_voices.py fragments` writes whole. Their old lines are in the two files already, so only a
+design's new talk families and crier lines are added; a part that runs `table` or `fragments` runs this after it.
 
 Each fragment is a JSON object of its own. The designs go in the order the build plan accepts them (Hearthcraft, Trade,
 Tales, Villages), a design's fragments by name, and each key a fragment brings is:
@@ -55,13 +61,21 @@ DESIGNS = (
     ("Trade", ("trade",)),
     ("Tales", ("tales", "tale")),
     ("Villages", ("villages", "village")),
+    # The shared voice tables, written whole by the voice scripts (see the head of this file)
+    ("Voices", ("talk", "townsfolk")),
 )
+
+# Groups whose fragments are never reported as "not there yet"
+QUIET = {"Voices"}
 
 # What each target is merged from ({d} is each of a design's names), and what each of its values must be.
 TARGETS = (
-    (LANG, str, ("art/lang/{d}_*.json", "art/audio/{d}_lang.json")),
-    (SOUNDS, dict, ("art/audio/{d}_sounds.json",)),
+    (LANG, str, ("art/lang/{d}_*.json", "art/audio/{d}_lang.json", "art/audio/{d}_*_lang.json")),
+    (SOUNDS, dict, ("art/audio/{d}_sounds.json", "art/audio/{d}_*_sounds.json")),
 )
+
+# Patterns a design may have nothing for, never reported as "not there yet"
+OPTIONAL = {"art/audio/{d}_*_lang.json", "art/audio/{d}_*_sounds.json"}
 
 # Keys a fragment may give a different value than the target already has; the target's is replaced where it stands.
 OVERRIDES = {
@@ -122,7 +136,7 @@ def short(value, most=70):
 def fragment_files(patterns):
     """-> (files, pending): the fragments there are, in the order they merge, and the patterns nothing is there for yet."""
     files, pending = [], []
-    for _, names in DESIGNS:
+    for group, names in DESIGNS:
         for pattern in patterns:
             hits = []
             for name in names:
@@ -133,7 +147,7 @@ def fragment_files(patterns):
                     hits.append(p)
             if hits:
                 files += hits
-            else:
+            elif group not in QUIET and pattern not in OPTIONAL:
                 pending.append(pattern.format(d=names[0]))
     return files, pending
 
