@@ -107,7 +107,8 @@ internal object TallyViews {
             Routes.Dest(at, it.name.ifEmpty { nameOf(level, it.capital, towns) }, it.sight, Suppliers.share(level, at, player.uuid))
         }
         if (dests.isEmpty()) return listOf()
-        val terms = Routes.Terms(slots(player), may = { kind -> Rungs.may(player, kind) })
+        // The dealer's share and the haul room are what part A's stalls pay: until its tickets are joined (TallyLinks.HAULS) the stalls pay the ordinary share, and the page says no more than that
+        val terms = Routes.Terms(slots(player), tickets = TallyLinks.HAULS && TradeConfig.hauls(), may = { kind -> Rungs.may(player, kind) })
         return Routes.rank(start.here, BlockPos.of(start.origin.capital), dests, terms)
     }
 
