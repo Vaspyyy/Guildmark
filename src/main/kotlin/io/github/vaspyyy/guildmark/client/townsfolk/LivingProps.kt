@@ -3,6 +3,7 @@ package io.github.vaspyyy.guildmark.client.townsfolk
 import io.github.vaspyyy.guildmark.client.combat.Clip
 import io.github.vaspyyy.guildmark.client.combat.Clips
 import io.github.vaspyyy.guildmark.client.combat.CombatAnimator
+import io.github.vaspyyy.guildmark.client.cooking.TownPlates
 import io.github.vaspyyy.guildmark.townsfolk.Activity
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import net.minecraft.client.Minecraft
@@ -43,6 +44,9 @@ internal object LivingProps {
         /** The goods in hand, for [LivingGoodsLayer], while [span] says where they are. */
         val goods = ItemStackRenderState()
         var span: LivingSchedule.Goods? = null
+        // ---- Hearthcraft (TownPlates.kt): the plate in front of a tavern diner, for TownPlateLayer ----
+        var plate: TownPlates.Plate? = null
+        // ---- end Hearthcraft ----
         /** The middle of the goods' model and its largest extent (in the item's own space, blocks). */
         val middle = Vector3f()
         var extent = 1f
@@ -73,6 +77,7 @@ internal object LivingProps {
         living.clip = null
         living.name = ""
         living.span = null
+        living.plate = null
         living.shown.clear()
         // The pole's wick: burning on the way to light the lamps (the lantern flag stands for it), out to snuff them
         living.wick = when (p.shownActivity) {
@@ -89,7 +94,12 @@ internal object LivingProps {
         val activity = p.shownActivity
         val name = TownsfolkClient.clipName(p, activity)
         val ours = name in LivingSchedule.CLIPS
-        val spans = LivingSchedule.GOODS[name]
+        // ---- Hearthcraft (TownPlates.kt): a served dish in the hand of someone eating out of doors at lunch ----
+        val spans = LivingSchedule.GOODS[name] ?: TownPlates.inHand(p, name)
+        // ---- end Hearthcraft ----
+        // ---- Hearthcraft (TownPlates.kt): a tavern diner's plate, and the spoon where the mug was (here, before the clips that are not the Living World's return, and after the cached held set is looked up) ----
+        TownPlates.eat(p, state)
+        // ---- end Hearthcraft ----
         if (!ours && spans == null) return
         val time = frame.time
         living.clip = frame.clip
@@ -104,7 +114,7 @@ internal object LivingProps {
             }
         }
         if (spans != null) goods(p, living, name, spans, time)?.let { span ->
-            LivingSchedule.GOODS_REPLACE[name]?.let { replaced ->
+            (LivingSchedule.GOODS_REPLACE[name] ?: TownPlates.replaces(name))?.let { replaced ->
                 held = held - replaced
                 living.shown -= replaced
             }
@@ -129,7 +139,7 @@ internal object LivingProps {
 
     /** The goods [p] has in hand at [time] of [name]'s clip, made ready to draw: the span they're in, or null if none show. */
     private fun goods(p: Townsperson, living: State, name: String, spans: List<LivingSchedule.Goods>, time: Float): LivingSchedule.Goods? {
-        var stack = p.carried
+        var stack = TownPlates.shown(p, p.carried)
         if (stack.isEmpty) {
             if (name in LivingSchedule.GOODS_ONLY_CARRIED) return null
             stack = LivingSchedule.GOODS_DEFAULT[name]?.let { id ->

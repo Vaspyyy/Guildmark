@@ -171,7 +171,7 @@ object TownKitchen {
      * [count] particles of [type] near [at], scattered by up to [spread] and rising (or falling, if [rise] is negative) at about
      * [rise]; when the game has no provider for [type] yet (the cook's own particles are Part C's) they are [fallback] instead.
      */
-    private fun puff(level: Level, type: ParticleOptions, fallback: ParticleOptions, at: Vec3, count: Int, spread: Double, rise: Double) {
+    internal fun puff(level: Level, type: ParticleOptions, fallback: ParticleOptions, at: Vec3, count: Int, spread: Double, rise: Double) {
         if (!particlesOn()) return
         val random = level.random
         val engine = Minecraft.getInstance().particleEngine

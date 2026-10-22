@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.client.townsfolk
 
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.client.cooking.TownPlates
 import io.github.vaspyyy.guildmark.magic.MagicRegistry
 import io.github.vaspyyy.guildmark.townsfolk.Activity
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
@@ -136,7 +137,8 @@ object TownsfolkClient {
                 float(p, level)?.let { spot -> repeat(10) { puff(level, ParticleTypes.SPLASH, spot, 0.2, 0.15, 0.06) } }
             }
             Activity.CLAP -> if (t == 6 || t == 12 || t == 18) sound(p, "clap", 0.6f)
-            Activity.DRINK, Activity.SIT_DRINK -> if (t == 38) sound(p, "tavern.sip", 0.45f, voicePitch(p))
+            // A diner at the inn's table (TownPlates.kt) clinks the spoon on the bowl in place of the mug's sip
+            Activity.DRINK, Activity.SIT_DRINK -> if (t == 38 && !TownPlates.sip(p)) sound(p, "tavern.sip", 0.45f, voicePitch(p))
             Activity.CHEER -> if (t == 12) sound(p, "tavern.clink", 0.7f)
             Activity.POUR -> if (t == 14) sound(p, "tavern.pour", 0.6f)
             Activity.SWEEP -> if (t == 8 || t == 23) {

@@ -2,6 +2,7 @@ package io.github.vaspyyy.guildmark.client.townsfolk
 
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.client.cooking.TownKitchen
+import io.github.vaspyyy.guildmark.client.cooking.TownPlates
 import io.github.vaspyyy.guildmark.client.works.WorksClient
 import io.github.vaspyyy.guildmark.townsfolk.Activity
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
@@ -17,6 +18,7 @@ import net.minecraft.sounds.SoundEvent
 import net.minecraft.sounds.SoundEvents
 import net.minecraft.sounds.SoundSource
 import net.minecraft.world.item.Item
+import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 import net.minecraft.world.level.Level
 import net.minecraft.world.level.block.Blocks
@@ -123,10 +125,17 @@ internal object LivingMoments {
             }
             "eat" -> {
                 sound(level, at, SoundEvents.GENERIC_EAT.value(), 0.5f, 0.9f + p.random.nextFloat() * 0.2f)
-                val food = p.carried.takeUnless { it.isEmpty }?.item ?: Items.BREAD
+                // ---- Hearthcraft (TownPlates.kt): the crumbs are the served dish's own ----
+                val food = TownPlates.shown(p, p.carried).takeUnless { it.isEmpty }?.item ?: Items.BREAD
+                // ---- end Hearthcraft ----
                 crumbs(p, level, at, food, 5)
             }
-            "sit_eat" -> sound(level, at, SoundEvents.GENERIC_EAT.value(), 0.25f, 1.25f)
+            "sit_eat" -> {
+                sound(level, at, SoundEvents.GENERIC_EAT.value(), 0.25f, 1.25f)
+                // ---- Hearthcraft (TownPlates.kt): a slice of a served dish eaten on a bench crumbles ----
+                TownPlates.shown(p, ItemStack.EMPTY).takeUnless { it.isEmpty }?.let { crumbs(p, level, at, it.item, 2) }
+                // ---- end Hearthcraft ----
+            }
             "wash" -> when (m.name) {
                 "scoop" -> {
                     sound(level, at, mod("wash.scoop"), 0.5f)
