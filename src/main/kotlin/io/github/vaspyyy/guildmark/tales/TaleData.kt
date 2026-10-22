@@ -537,6 +537,20 @@ class TaleData(
     /** Every tale, open or ended, in no particular order. */
     fun all(): Collection<Tale> = tales.values
 
+    /**
+     * The open tale of [capital], or null: there is one at a time (11.2). A look at the kept tales (24 a capital at most) that
+     * changes nothing; the engine (Part A2) may keep an index behind this same call, so ask it freely but not per tick.
+     */
+    fun openIn(capital: Long): Tale? = tales.values.firstOrNull { it.open && it.capital == capital }
+
+    /** The open tale that has the resident [resident] in its cast, or null (a resident is in at most one, 1.2; -1 is no one). */
+    fun castIn(resident: Int): Tale? = if (resident < 0) null else tales.values.firstOrNull { t -> t.open && t.cast.any { it.resident == resident } }
+
+    /** The open tales [player] has taken up (a part that is IN or DONE), oldest first: two at most (11.2). */
+    fun joinedBy(player: UUID): List<Tale> = tales.values
+        .filter { t -> t.open && t.part(player)?.let { it.status == Part.Status.IN || it.status == Part.Status.DONE } == true }
+        .sortedBy { it.id }
+
     /** Adds [t] (its id came from [newId]). */
     fun add(t: Tale) {
         tales[t.id] = t
