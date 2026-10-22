@@ -226,6 +226,44 @@ object GuildmarkConfig {
         .comment("A grand festival in every capital and village once a season: decorations, music, dancing townsfolk, a contest with prizes and fireworks at dusk.")
         .define("festivals", true)
 
+    // Hearthcraft, the cook's life (cooking/, living-world/cook/design.md section 10.1): read through Cooking, so an unloaded spec reads as the default
+    val COOKING: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Hearthcraft, the cook's life: stewpots, hobs, bake ovens and spits to cook at, twelve kinds of dish that give a meal's effect, the back doors of the capitals' inns and bakeries that buy them, and the town's kitchens, talk and plates round them. Off, the stations stand and say Hearthcraft is off; nothing is cooked, sold or judged, the town's kitchens, talk and plates go quiet, Winter Chill stops, and a dish in the pack feeds as plain food with no effect. Pots keep what is in them.")
+        .define("cooking", true)
+    val KITCHEN_DOORS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Cooks sell dishes at the back doors of a capital's inn and bakery, and fill the day's request on the inn's slate. Off, the innkeeper and the baker buy nothing (\"I only buy through the market\"), there is no slate and no request; the alms table still takes dishes. Needs Hearthcraft and Capital Markets.")
+        .define("kitchenDoors", true)
+    val COOK_SHOPS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("A trusted cook can have a cookshop of their own in a capital, a works the town builds, which sells their dishes while they are away. Off, no cookshop is wanted and an open one stops selling (its stock and till are kept) and its keeper idles. Needs Hearthcraft, Capital Markets and Town Works.")
+        .define("cookShops", true)
+    val COOK_OFF: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Sheafmoot's Harvest Table: a cook-off beside the Produce Show, a dish judged by the host, the town's own entries, and the Gilded Ladle for the prize. Off, Sheafmoot has only its Produce Show and the host says they only look at the harvest. Needs Hearthcraft and Festivals.")
+        .define("cookOff", true)
+    val HOME_KITCHENS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("A homestead is fitted with a kitchen as it grows, a stewpot, an oven and a herb bed, and its stations burn no fuel while its people are home. Off, no kitchen is fitted into a homestead and its stations pay for fuel like anyone's; what was fitted stays. Needs Hearthcraft and Homesteads.")
+        .define("homeKitchens", true)
+    val TOWN_KITCHENS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("The capitals' kitchens come alive: the innkeeper and the baker work at a pot, an oven and a spit in scenes you can watch, older capitals are fitted with the same stations, and the diners' plates are laid at the tables. Off, no kitchen scene plays and no older capital is refitted (the house pot is a still display); a new capital's plan still draws its kitchen blocks, and the back doors do not depend on this. Needs Hearthcraft and Living Capitals.")
+        .define("townKitchens", true)
+    val COOK_ROAST: ModConfigSpec.BooleanValue = BUILDER
+        .comment("The rest-day roast: on a rest day the baker's spit turns and a roast is carved for the square. Off, no roast; the spit stands.")
+        .define("cookRoast", true)
+    val COOK_TALK: ModConfigSpec.BooleanValue = BUILDER
+        .comment("The townsfolk talk about the kitchen: what the inn is serving, the day's request, a dish that was relished, a pot that burnt, a hallmarked plate. Off, the kitchen is no topic and its choice says nothing; the keepers still taste and pay at the back door. Needs Hearthcraft and Townsfolk Talk.")
+        .define("cookTalk", true)
+    val WINTER_CHILL: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Winter bites: a player out in the cold of winter is Chilled (a little hunger, slower stamina, never damage) until they find a roof, a fire, a torch, daylight, leather or a hot meal. Off, nobody is ever Chilled. Needs Hearthcraft and Seasons.")
+        .define("winterChill", true)
+    val DISH_SPOILAGE: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Dishes go stale and then off with the days (a stale dish sells for less and gives less; one gone off only feeds, as rotten flesh does). Off, nothing ever ages.")
+        .define("dishSpoilage", true)
+    val COOK_POTS_PRIVATE: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Only the player who set a cooking station down, and their party, can use it. Off, anyone can add to, serve from and tip out a public pot. (A homestead's own protection already closes its stations.)")
+        .define("cookPotsPrivate", false)
+    val COOK_FUEL_SCALE: ModConfigSpec.DoubleValue = BUILDER
+        .comment("How far fuel goes under a cooking pot: seconds of mid-heat cooking for each second of a fuel's furnace burn time. 4 is the usual; 1 is the furnace's own pace.")
+        .defineInRange("cookFuelScale", 4.0, 1.0, 20.0)
+
     // Living villages (living-world/villages/design.md section 15.1)
     val LIVING_VILLAGES: ModConfigSpec.BooleanValue = BUILDER
         .comment("The Living World outside the capitals: every village is counted (its homes, beds, wells, lamps and stalls) when a player first comes near, and its people, market, wagons, lamps, festivals and sieges go by what really happens there. Off, no village is counted, villagers who were made townsfolk are given back at night, and wagons, lamps, festivals and sieges are as they were; what was recorded is kept for when it's on again.")

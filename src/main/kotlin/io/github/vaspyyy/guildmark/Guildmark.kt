@@ -250,6 +250,8 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         io.github.vaspyyy.guildmark.townsfolk.Comings.register()
         // The streets as the times go: the dressing, rationed lamps, the empty stall's slate, To let boards, the alms table (townsfolk/streets/)
         io.github.vaspyyy.guildmark.townsfolk.streets.Streets.register(modBus)
+        // Hearthcraft, the cook's life: the stations and dishes, the back doors and the town's kitchens (cooking/)
+        io.github.vaspyyy.guildmark.cooking.Cooking.register(modBus)
         // Tales, the story chains that grow out of a capital's records: the surface the hooks call and `/guildmark tale` (tales/)
         io.github.vaspyyy.guildmark.tales.Tales.register(modBus)
         io.github.vaspyyy.guildmark.tales.TaleCommand.init()
