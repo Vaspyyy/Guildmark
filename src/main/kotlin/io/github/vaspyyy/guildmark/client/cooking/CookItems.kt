@@ -61,9 +61,25 @@ object CookItems {
         return if (state.isEmpty) null else state
     }
 
+    /**
+     * The full model of [stack] (a dish as it looks today, a stack that is not just its item), as the game draws an item standing in the
+     * world; null if it has none. A new one is made each time, so the caller keeps it for as long as the stack is the same one.
+     */
+    fun stateOf(stack: ItemStack, resolver: ItemModelResolver, level: Level?, seed: Int): ItemStackRenderState? {
+        if (stack.isEmpty) return null
+        val state = ItemStackRenderState()
+        resolver.updateForTopItem(state, stack, ItemDisplayContext.FIXED, level, null, seed)
+        return if (state.isEmpty) null else state
+    }
+
+    /** How many times the resources have reloaded: a model a block keeps for itself (a dish on a plate) is made again when this has moved on. */
+    var generation = 0
+        private set
+
     /** The resources reloaded: every picture is looked up again. */
     fun clear() {
         flats.clear()
         states.clear()
+        generation++
     }
 }
