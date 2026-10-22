@@ -1,7 +1,6 @@
 package io.github.vaspyyy.guildmark.village.live
 
 import com.mojang.brigadier.CommandDispatcher
-import com.mojang.brigadier.context.CommandContext
 import io.github.vaspyyy.guildmark.GuildmarkConfig
 import net.minecraft.ChatFormatting
 import net.minecraft.commands.CommandSourceStack
@@ -13,10 +12,10 @@ import net.neoforged.neoforge.common.NeoForge
 import net.neoforged.neoforge.event.RegisterCommandsEvent
 
 /**
- * The testing commands for living villages, run by operators (living-world/villages/design.md section 15.2). `/guildmark
- * village info` says whether Living Villages is on and which villages are counted, then which of its switches are on and
- * off now. This is the root: each later part adds its own commands under `village` from its own file (Brigadier merges
- * the repeated `guildmark` and `village`), and the part that counts villages replaces this `info` with its own.
+ * The testing commands for living villages, run by operators (living-world/villages/design.md section 15.2). This is the root:
+ * each part adds its own commands under `village` from its own file (Brigadier merges the repeated `guildmark` and
+ * `village`). `village info` is the registry's, in `VillageInfoCommand`, which ends with the lines of [settings]: which of the
+ * switches are on and off now.
  */
 object VillageCommand {
     /** The switches that are on or off, with the line each is named by in the settings. */
@@ -44,20 +43,14 @@ object VillageCommand {
         dispatcher.register(
             Commands.literal("guildmark")
                 .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
-                .then(
-                    Commands.literal("village")
-                        .then(Commands.literal("info").executes { info(it) }),
-                ),
+                .then(Commands.literal("village")),
         )
     }
 
-    // ---- info ----
+    // ---- Settings ----
 
-    private fun info(context: CommandContext<CommandSourceStack>): Int {
-        val source = context.source
-        val on = flag(GuildmarkConfig.LIVING_VILLAGES)
-        // Nothing counts villages yet: the registry is the next part's
-        say(source, line().append(named("guildmark.configuration.livingVillages")).append(plain(if (on) " is on; no village counted yet" else " is off; no village is counted while it is")))
+    /** Says which of the switches are on and off now, and the numbers that go with them (the foot of `village info`). */
+    fun settings(source: CommandSourceStack) {
         say(source, line().append(label("On: ")).append(names(SWITCHES.filter { flag(it.second) })))
         say(source, line().append(label("Off: ")).append(names(SWITCHES.filter { !flag(it.second) })))
         say(
@@ -66,7 +59,6 @@ object VillageCommand {
                 .append(plain("  ")).append(named("guildmark.configuration.maxLiveVillages")).append(plain(" ${number(GuildmarkConfig.MAX_LIVE_VILLAGES).toInt()}"))
                 .append(plain("  ")).append(named("guildmark.configuration.maxVillageFolk")).append(plain(" ${number(GuildmarkConfig.MAX_VILLAGE_FOLK).toInt()}")),
         )
-        return 1
     }
 
     // ---- Words ----
