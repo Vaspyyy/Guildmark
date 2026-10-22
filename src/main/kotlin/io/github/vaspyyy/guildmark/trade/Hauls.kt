@@ -89,7 +89,9 @@ sealed interface Taker {
  * [capital] and was paid [pay] whole Marks for a ticket of the given [kind]. [from] is where most of the goods came from (the capital whose
  * heart it was bought at), or null if that is not known. Part A appended [refund], the part of the booking's deposit given back with the
  * pay (for a House it is the House's to put back in its purse, as the pay is), and [left], how many units of the ticket are still to come
- * in after this delivery (0 when it is filled).
+ * in after this delivery (0 when it is filled). The listeners hear of a booking once, when its last unit is in, and so of all of it: [units],
+ * [pay] and [refund] are the booking's in all, however many handovers it took. What [Hauls.deliver] and [Hauls.fill] give back is the handover
+ * itself, for the shop's keeper and the screen to speak of.
  */
 data class Delivery(
     val taker: Taker,
@@ -122,6 +124,9 @@ object Hauls {
     /**
      * Hears a ticket's life: posted, booked, filled (with what was delivered), lapsed for want of goods, and withdrawn because the
      * town no longer wants it. Each is called on the server, with the ticket as it stood. Subscribe once, at setup, with [listen].
+     * `delivered` is heard once for a booking brought in full, as one handover or several (a ticket filled in full, in the usual case of one
+     * booker), with the whole of it in the [Delivery]; a handover that leaves some to come is not heard, so a count of deliveries cannot be run up
+     * a handful at a time.
      */
     interface Listener {
         fun posted(level: ServerLevel, haul: Haul) {}
@@ -382,6 +387,7 @@ object Hauls {
         val pay = (HaulRules.owed(each, t.units, t.done) - before).coerceAtLeast(0)
         val refund = (HaulRules.repayable(b.deposit, b.units, b.done) - b.repaid).coerceAtLeast(0)
         b.repaid += refund
+        b.paid += pay
         if (b.left <= 0) t.bookings.remove(b)
         // The goods go into the market as an order's do: the price stays down for them
         val m = entry.market
@@ -400,9 +406,9 @@ object Hauls {
             book.fills.add(HaulFill(clock(level, book), t.good, t.shop, t.units, b.name, t.kind, t.pay))
         }
         data.changed()
-        val delivery = Delivery(taker, capital, t.shop, t.good, n, pay, t.kind, from, refund, left)
-        heard { it.delivered(level, haul(book, t), delivery) }
-        return delivery
+        // The listeners hear of a booking when its last unit is in, and of all of it (what a delivery counts for), not of each handful
+        if (b.left <= 0) heard { it.delivered(level, haul(book, t), Delivery(taker, capital, t.shop, t.good, b.done, b.paid, t.kind, from, b.repaid, left)) }
+        return Delivery(taker, capital, t.shop, t.good, n, pay, t.kind, from, refund, left)
     }
 
     /** Gives [player] [marks] Marks, or keeps them for when they next join if they are away. */

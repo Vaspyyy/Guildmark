@@ -17,13 +17,15 @@ import java.util.function.Supplier
  * One taker's hold on a ticket: [units] of it booked by [taker] (a player, or a House when [house] is set; [name] is what the ticket shows),
  * at market hour [at]. [done] of them are in. The booking held a [deposit] of Marks when it was made, of which [repaid] have been given
  * back as units came in (see [HaulRules.repayable]); what is left of it is lost if the booking ends short. It [stands] once the booker has bought
- * a quarter of its goods far enough away, or when made by a House; until then it lapses [HaulRules.BOOKING_HOURS] after [at].
+ * a quarter of its goods far enough away, or when made by a House; until then it lapses [HaulRules.BOOKING_HOURS] after [at]. [paid] is what its
+ * units have been paid so far, in whole Marks (the listeners hear of the booking whole when its last unit is in).
  */
 class Booking(val taker: UUID, val house: Boolean, var name: String, var units: Int, var at: Long) {
     var done = 0
     var deposit = 0
     var repaid = 0
     var stands = false
+    var paid = 0
 
     /** How many are still to come in. */
     val left: Int get() = (units - done).coerceAtLeast(0)
@@ -127,12 +129,14 @@ class HaulData(
                 Codec.INT.optionalFieldOf("deposit", 0).forGetter(Booking::deposit),
                 Codec.INT.optionalFieldOf("repaid", 0).forGetter(Booking::repaid),
                 Codec.BOOL.optionalFieldOf("stands", false).forGetter(Booking::stands),
-            ).apply(i) { taker, house, name, units, at, done, deposit, repaid, stands ->
+                Codec.INT.optionalFieldOf("paid", 0).forGetter(Booking::paid),
+            ).apply(i) { taker, house, name, units, at, done, deposit, repaid, stands, paid ->
                 Booking(taker, house, name, units, at).also {
                     it.done = done
                     it.deposit = deposit
                     it.repaid = repaid
                     it.stands = stands
+                    it.paid = paid
                 }
             }
         }
