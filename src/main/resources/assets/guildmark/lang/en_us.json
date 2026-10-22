@@ -6710,5 +6710,22 @@
   "advancements.guildmark.tales_all.description": "See each of the twelve tales through to a good end",
   "title.guildmark.good_neighbour": "Good Neighbour",
   "handbook.guildmark.page19": "TALES\n\nA town has troubles of its own. A word at a door may ask for your help. Say yes, then watch your tracker: amber, there is time; red, today.\n\nAsk a neighbour Why? Saying no costs nothing.",
-  "character.guildmark.pip.verse.tales_three": "Three troubles in the towns, and not a dragon among them, and %s mended every one. The neighbours call it good neighbouring. Pip calls it a song."
+  "character.guildmark.pip.verse.tales_three": "Three troubles in the towns, and not a dragon among them, and %s mended every one. The neighbours call it good neighbouring. Pip calls it a song.",
+  "message.guildmark.cook.scorched": "Burnt past eating.",
+  "gui.guildmark.cook.dish.named": "%s %s",
+  "gui.guildmark.cook.dish.stage.fresh": "Fresh",
+  "gui.guildmark.cook.dish.stage.stale": "Stale",
+  "gui.guildmark.cook.dish.stage.gone": "Gone off",
+  "gui.guildmark.cook.dish.by": "cooked by %s",
+  "gui.guildmark.cook.dish.when.today": "today",
+  "gui.guildmark.cook.dish.when.yesterday": "yesterday",
+  "gui.guildmark.cook.dish.when.days": "%s days ago",
+  "gui.guildmark.cook.dish.scorched": "Burnt to a ruin. It is no use to anyone.",
+  "gui.guildmark.cook.dish.stale": "Stale: %s%% of the food.",
+  "gui.guildmark.cook.dish.stale.meal": "Stale: %s%% of the food and %s%% of the effect.",
+  "gui.guildmark.cook.dish.rotten": "Gone off: it feeds you next to nothing, gives no effect, and makes you hungry.",
+  "gui.guildmark.cook.dish.keeps.stale": "Goes stale in %s days",
+  "gui.guildmark.cook.dish.keeps.stale.one": "Goes stale tomorrow",
+  "gui.guildmark.cook.dish.keeps.off": "Goes off in %s days",
+  "gui.guildmark.cook.dish.keeps.off.one": "Goes off tomorrow"
 }

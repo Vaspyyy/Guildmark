@@ -20,8 +20,11 @@ import net.minecraft.world.item.Item
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.ItemUseAnimation
 import net.minecraft.world.item.Items
+import net.minecraft.world.item.TooltipFlag
 import net.minecraft.world.item.component.Consumable
+import net.minecraft.world.item.component.TooltipDisplay
 import net.minecraft.world.level.Level
+import java.util.function.Consumer
 import java.util.function.UnaryOperator
 
 /**
@@ -74,6 +77,15 @@ class DishItem(properties: Properties, val kind: DishKind?) : Item(properties) {
         val left = super.finishUsingItem(stack, level, entity)
         DishEating.finish(entity, kind, data, stage)
         return left
+    }
+
+    /** "Fine Drover's Stew": the tier first, in its colour (see [DishTooltip]). */
+    override fun getName(stack: ItemStack): Component = DishTooltip.name(stack, super.getName(stack))
+
+    /** How it has kept, who cooked it, the meal it gives and what is coming (see [DishTooltip]). */
+    override fun appendHoverText(stack: ItemStack, context: TooltipContext, display: TooltipDisplay, builder: Consumer<Component>, flag: TooltipFlag) {
+        super.appendHoverText(stack, context, display, builder, flag)
+        DishTooltip.append(stack, context.level(), builder)
     }
 
     companion object {

@@ -1,16 +1,15 @@
 package io.github.vaspyyy.guildmark.cooking.dish
 
 import io.github.vaspyyy.guildmark.cooking.DishKind
-import io.github.vaspyyy.guildmark.cooking.Family
 import io.github.vaspyyy.guildmark.cooking.Stage
 import io.github.vaspyyy.guildmark.cooking.Tier
 import net.minecraft.world.food.FoodProperties
 import kotlin.math.roundToInt
 
 /**
- * What a portion feeds (living-world/cook/design.md 3.1) and what its meal is worth to read (4.1): the one table of
- * nutrition and saturation by kind, the tier's share of it, the stage's share of that, and the figures the tooltip quotes
- * for the family's effect. Nothing here ticks and nothing here is saved; a stack's `FOOD` component is made from it.
+ * What a portion feeds (living-world/cook/design.md 3.1): the one table of nutrition and saturation by kind, the tier's
+ * share of it and the stage's share of that. Nothing here ticks and nothing here is saved; a stack's `FOOD` component is
+ * made from it. The meal a dish gives is Part F's, and so are the numbers the tooltip quotes for it (`Meals.describe`).
  *
  * The table is a Sound portion's. A Fine dish has one more nutrition and a Hallmarked two; saturation is scaled by the
  * tier (Plain x0.8, Sound x1.0, Fine x1.15, Hallmarked x1.3). A stale portion has three quarters of both, a gone-off one
@@ -41,9 +40,6 @@ object DishFood {
 
     /** What a stale portion keeps of its food (3.2). */
     const val STALE_SHARE = 0.75
-
-    /** What a stale portion keeps of its meal effect (3.2, 4.1). */
-    const val STALE_EFFECT = 0.6
 
     /** How long a gone-off portion's Hunger lasts, in ticks (30 seconds, as rotten flesh). */
     const val HUNGER_TICKS = 600
@@ -101,54 +97,4 @@ object DishFood {
 
     /** Seconds it takes to eat a portion (3.3): a bowl 1.6, anything else 1.2. */
     fun seconds(kind: DishKind?): Float = if (bowl(kind)) 1.6f else 1.2f
-
-    // ---- What the meal says on the tooltip (4.1) ----
-
-    /**
-     * The meal a portion of [kind] at [tier] gives, as the tooltip tells it: the [family], how many [minutes] it lasts and
-     * the figures that family quotes, each already scaled by the tier (4.1). The effect itself is Part F's; this is the
-     * table of 4.1 read the same way, so the line on the dish and the effect on the player agree.
-     */
-    class Meal(val family: Family, val minutes: Int, val figures: List<Number>)
-
-    /** The meal of [kind] at [tier], or null for a sweet dish, Gruel and Scorched mess, which give none. */
-    fun meal(kind: DishKind?, tier: Tier): Meal? {
-        if (tier == Tier.SPOILT) return null
-        val family = kind?.family ?: return null
-        val strong = if (kind.strong) 1.3 else 1.0
-        val k = tier.strength
-        return when (family) {
-            Family.WARMTH -> Meal(family, scaled(when (kind) {
-                DishKind.POTTAGE -> 10.0
-                DishKind.CHOWDER -> 12.0
-                else -> 15.0
-            }, k), listOf())
-            Family.HEARTY -> Meal(family, scaled(12.0, k), listOf(hearts(tier)))
-            Family.STEADY -> Meal(
-                family,
-                scaled(if (kind.strong) 10.0 else 8.0, k),
-                listOf(percent(12.0 * strong * k), trimmed(5.0 * strong * k), trimmed(10.0 * strong * k)),
-            )
-            Family.PROVISIONED -> Meal(family, scaled(if (kind.strong) 40.0 else 30.0, k), listOf(percent(50.0 * k)))
-        }
-    }
-
-    /** The maximum health a Hearty meal adds at [tier]: the amplifier of 4.2, 2 for Plain to 5 for Hallmarked, plus one. */
-    fun hearts(tier: Tier): Int = when (tier) {
-        Tier.SPOILT -> 0
-        Tier.PLAIN -> 3
-        Tier.SOUND -> 4
-        Tier.FINE -> 5
-        Tier.HALLMARKED -> 6
-    }
-
-    private fun scaled(minutes: Double, strength: Double): Int = (minutes * strength).roundToInt().coerceAtLeast(1)
-
-    private fun percent(value: Double): Int = value.roundToInt()
-
-    /** A figure to one decimal place, without the ".0": 6.5, 8, 10.4. */
-    private fun trimmed(value: Double): Number {
-        val tenth = (value * 10).roundToInt()
-        return if (tenth % 10 == 0) tenth / 10 else tenth / 10.0
-    }
 }

@@ -1,0 +1,19 @@
+{
+  "message.guildmark.cook.scorched": "Burnt past eating.",
+  "gui.guildmark.cook.dish.named": "%s %s",
+  "gui.guildmark.cook.dish.stage.fresh": "Fresh",
+  "gui.guildmark.cook.dish.stage.stale": "Stale",
+  "gui.guildmark.cook.dish.stage.gone": "Gone off",
+  "gui.guildmark.cook.dish.by": "cooked by %s",
+  "gui.guildmark.cook.dish.when.today": "today",
+  "gui.guildmark.cook.dish.when.yesterday": "yesterday",
+  "gui.guildmark.cook.dish.when.days": "%s days ago",
+  "gui.guildmark.cook.dish.scorched": "Burnt to a ruin. It is no use to anyone.",
+  "gui.guildmark.cook.dish.stale": "Stale: %s%% of the food.",
+  "gui.guildmark.cook.dish.stale.meal": "Stale: %s%% of the food and %s%% of the effect.",
+  "gui.guildmark.cook.dish.rotten": "Gone off: it feeds you next to nothing, gives no effect, and makes you hungry.",
+  "gui.guildmark.cook.dish.keeps.stale": "Goes stale in %s days",
+  "gui.guildmark.cook.dish.keeps.stale.one": "Goes stale tomorrow",
+  "gui.guildmark.cook.dish.keeps.off": "Goes off in %s days",
+  "gui.guildmark.cook.dish.keeps.off.one": "Goes off tomorrow"
+}
