@@ -4,6 +4,8 @@ import io.github.vaspyyy.guildmark.city.CapitalPiece
 import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
 import io.github.vaspyyy.guildmark.townsfolk.Director
 import io.github.vaspyyy.guildmark.townsfolk.TownPlaces
+import io.github.vaspyyy.guildmark.village.live.VillagePlaces
+import io.github.vaspyyy.guildmark.village.live.VillageRec
 import net.minecraft.core.BlockPos
 
 /**
@@ -83,6 +85,28 @@ class LampTown(val key: BlockPos, val places: TownPlaces, val plan: LampSet, wor
         }
     }
 
+    /**
+     * A village's posts as they stood when this town was made ([stamp]): once its census finds them otherwise, the town is made
+     * again from the new ones, carrying on from this one ([carry]).
+     */
+    var stamp = 0L
+
+    /**
+     * Takes up where [old] (the same village's lamps, before its posts changed) left off: what each lamp that stands still was last
+     * set to, and the night, the weather and the candles as they were.
+     */
+    fun carry(old: LampTown) {
+        val was = HashMap<Long, Int>(old.pos.size * 2)
+        old.pos.forEachIndexed { i, at -> was[at.asLong()] = i }
+        for (i in pos.indices) was[pos[i].asLong()]?.let { j -> applied[i] = old.applied[j] }
+        night = old.night
+        reached = old.reached
+        rainyDusk = old.rainyDusk
+        rainyDawn = old.rainyDawn
+        rationed = old.rationed
+        seen = old.seen
+    }
+
     /** A lamp's phase (0 to 1): how far into the lighting-up its clock has it, nobody seeing to it. */
     fun phase(i: Int): Double = plan.lamps[i].phase
 
@@ -141,6 +165,26 @@ class LampTown(val key: BlockPos, val places: TownPlaces, val plan: LampSet, wor
         /** A capital's lamps: the city's frame is [capital]'s, its key the capital's centre. */
         fun capital(capital: CapitalPiece, places: CityPlaces, plan: LampPlan): LampTown =
             LampTown(capital.center, places, plan, { x, y, z -> capital.world(x, y, z) }, capital)
+
+        /**
+         * A village's lamps: [posts] are the lanterns on the posts its census found (see [VillagePlaces.lamps]), points of the
+         * world itself; the town goes by the village's bell, and has a round or two of them ([VillageLampPlan]).
+         */
+        fun village(rec: VillageRec, places: VillagePlaces, posts: List<BlockPos>): LampTown {
+            val bell = BlockPos.of(rec.key)
+            return LampTown(bell, places, VillageLampPlan(bell, posts), { x, y, z -> BlockPos(x, y, z) }).also { it.stamp = stamp(posts) }
+        }
+
+        /** A number for a set of posts, the same whatever order the census lists them in. */
+        fun stamp(posts: Collection<BlockPos>): Long {
+            var sum = 0L
+            for (p in posts.toSet()) {
+                var h = p.asLong() * -0x61C8864680B583EBL
+                h = (h xor (h ushr 29)) * -0x4B47D5FB3AC29A3FL
+                sum += h xor (h ushr 32)
+            }
+            return sum
+        }
 
         const val UNKNOWN: Byte = 0
         const val LIT: Byte = 1

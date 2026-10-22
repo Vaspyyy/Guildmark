@@ -187,7 +187,7 @@ class LampPlan(val plan: CityPlan, census: Census) : LampSet {
         }
 
         /** A number from 0 to 1 that looks random but is fixed for the spot. */
-        private fun phase(x: Int, z: Int): Double {
+        internal fun phase(x: Int, z: Int): Double {
             var h = x * 0x9E3779B97F4A7C15uL.toLong() xor z * 0xC2B2AE3D27D4EB4FuL.toLong()
             h = (h xor (h ushr 31)) * -0x40a7b892e31b1a47L
             h = h xor (h ushr 29)
