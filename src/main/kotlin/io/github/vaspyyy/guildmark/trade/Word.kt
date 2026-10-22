@@ -8,6 +8,8 @@ import io.github.vaspyyy.guildmark.economy.Caravans
 import io.github.vaspyyy.guildmark.economy.Markets
 import io.github.vaspyyy.guildmark.economy.Orders
 import io.github.vaspyyy.guildmark.economy.Suppliers
+import io.github.vaspyyy.guildmark.townsfolk.talk.Topics
+import io.github.vaspyyy.guildmark.townsfolk.talk.sources.TradeTopics
 import net.minecraft.core.BlockPos
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.ListTag
@@ -318,6 +320,8 @@ object Word {
         NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { tick(it.server) }
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> reset() }
         Tally.register(modBus)
+        TradeRumours.register()
+        Topics.register(TradeTopics)
     }
 
     /** Server ticks between looks at the markets, and between namings of rings. */
