@@ -324,6 +324,11 @@ object FortuneReasons {
                 for (n in notes) n.args.firstOrNull()?.let { counts[it] = (counts[it] ?: 0) + 1 }
                 listOf(Reason(kind, notes.sumOf { it.points }.coerceIn(cap), until, counts.flatMap { (what, n) -> listOf(what, n.toString()) }, about, -1))
             }
+            // One point for each way the goods came in by (the side each note named), up to the cap: two from one side are the one
+            HAULED -> {
+                val sides = notes.mapNotNull { it.args.firstOrNull() }.distinct()
+                listOf(Reason(kind, sides.size.coerceAtLeast(1).coerceIn(cap), until, sides, about, -1))
+            }
             // How many, then the last one's words
             WAYLAID, NEWCOMERS, LEAVING -> listOf(
                 Reason(kind, notes.sumOf { it.points }.coerceIn(cap), until, listOf(notes.size.toString()) + last.args, about, last.works),
@@ -363,7 +368,8 @@ object FortuneReasons {
             WAYLAID -> a.getOrNull(0)?.toIntOrNull()?.let { n ->
                 if (n == 1 && a.size >= 3) say("waylaid.one", place(a[1]), way(a[2])) else say("waylaid.many", n)
             }
-            RELIEF -> say("relief", way(a.getOrNull(0)))
+            // A band broken and a relief wagon sent, or (its second word "hauled") a trader's relief ticket filled
+            RELIEF -> if (a.getOrNull(1) == "hauled") say("relief.hauled", way(a.getOrNull(0))) else say("relief", way(a.getOrNull(0)))
             ESCORTED -> a.getOrNull(0)?.toIntOrNull()?.let { n ->
                 val who = a.drop(1).filter { it.isNotEmpty() }.takeIf { it.isNotEmpty() } ?: return@let null
                 if (n == 1) say("escorted.one", names(who)) else say("escorted.many", names(who), n)
@@ -405,8 +411,8 @@ object FortuneReasons {
                     else -> say("$kind.one")
                 }
             }
-            // The side the goods came in from ("n", "e", "s", "w"); a note by hand has none, and reads as its kind's name
-            HAULED -> a.getOrNull(0)?.let { say("hauled", way(it)) }
+            // The sides the goods came in from ("n", "e", "s", "w"), each as a road; a note by hand has none, and reads as its kind's name
+            HAULED -> a.takeIf { it.isNotEmpty() }?.let { say("hauled", list(it.map(::way))) }
             // "<template>.<ending>" ("note.paid") then the names its sentence uses (the first two of the cast, then the lead); a sentence the language file lacks reads "A tale."
             TALE -> a.getOrNull(0)?.let { sayOr("tale.$it", TALE_FALLBACK, a.getOrNull(1).orEmpty(), a.getOrNull(2).orEmpty(), a.getOrNull(3).orEmpty()) }
             HELD -> say("held")
