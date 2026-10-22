@@ -8,27 +8,36 @@ import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands
 import net.minecraft.commands.SharedSuggestionProvider
 import net.minecraft.core.BlockPos
+import net.minecraft.core.Direction
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.item.ItemStack
+import net.minecraft.world.item.Items
 import net.minecraft.world.phys.Vec3
 
 /**
  * `/guildmark tale scene <name>` (living-world/stories/design.md 12.4, Part B), game masters only: plays one of the set pieces
  * of 4.3 now, near you, whatever the switches say, with whoever is free nearby and stand-ins for what is not there yet (a stone
- * three blocks ahead that sets no block, a household's gate), as `capital scene` does for M6's scenes. It is a test of the
+ * two blocks ahead that sets no block, a household's gate), as `capital scene` does for M6's scenes. It is a test of the
  * telling: no tale is needed and none is touched. The names are in [scenes]; a template that has a set of its own adds one
  * there ([add]) so its helper can see it from the command too.
  *
  * - `count`: the nearest worker at their post (else the nearest free adult) counts coins, sighs, shrugs and grieves; a
  *   passer-by walks up, says a word of comfort and goes on, and the worker waves them off.
  * - `handing`: one hands a sealed paper to another, who receives it and counts it over.
- * - `burning`: the same, and the paper is carried to the nearest stove or fire and burnt, the onlookers cheering.
+ * - `burning`: the same, and the paper is carried to the nearest stove or fire and burnt, the onlookers cheering (the burner stands
+ *   in the cell before the fire, half a block from it, and the paper takes at tick 14 of the clip).
  * - `cheer`: a toast, and up to four others cheer and clap under falling petals; a bell near is rung.
  * - `calling`: someone goes a few blocks ahead of you and calls a child's name down the road; up to two others hurry up, ask which
  *   way, and search off in different directions.
  * - `quarrel`: two shout at each other, point, recoil and grumble, a third hushes them and they go to their doors; up to three look on.
  *   `moot` is the same with up to five in a half ring calling out.
- * - `laying`: someone kneels at a stone three blocks ahead (no block is set) and lays a posy, a priest among the others prays, and one embraces them.
+ * - `laying`: someone kneels two blocks from a stone two blocks ahead (no block is set; she kneels to your right of it, so that she is not on you)
+ *   and lays a posy, a priest among the others prays, and one embraces them. `memorial` is the same for a recorded, placed memorial (still no block):
+ *   Part F's `Memorials.posy` is called as the posy lands and, at dusk (17:00 to 22:00), a lit lantern is set before the stone. `steps` is the same
+ *   for a memorial that found no room: the posy goes in a flower pot of the season on the nearest bench or step. The lantern and the pot are real
+ *   (vanilla) blocks, set through the streets' record; break them by hand.
+ * - `shaking`: one hands a loaf to another and they shake hands, a block apart on the same tick; a seated one gets up (STAND_UP) first.
  * - `reunion`: one waits looking out, another comes near, they run to each other and embrace, up to three clap and cheer, and you are thanked.
  * - `walk`: the nearest free adult follows you at a stoop for two minutes, resting every thirty blocks or on a bench.
  *
@@ -110,7 +119,10 @@ internal object TaleSceneCommand {
         add("calling", ::calling)
         add("quarrel") { level, player -> quarrel(level, player, false) }
         add("moot") { level, player -> quarrel(level, player, true) }
-        add("laying", ::laying)
+        add("laying") { level, player -> laying(level, player, "") }
+        add("memorial") { level, player -> laying(level, player, "memorial") }
+        add("steps") { level, player -> laying(level, player, "steps") }
+        add("shaking", ::shaking)
         add("reunion", ::reunion)
         add("walk", ::walk)
     }
@@ -157,6 +169,15 @@ internal object TaleSceneCommand {
         return begin(
             level, Sets.handing(giver, taker, Sets.prop("note_sealed"), fire, onlookers, hours = null),
             "${name(giver)} hands a sealed paper to ${name(taker)}, who burns it in the fire at ${fire.toShortString()}; ${onlookers.size} look on.",
+        )
+    }
+
+    private fun shaking(level: ServerLevel, player: ServerPlayer): String {
+        val (giver, taker) = pair(level, player)
+        val seated = taker.seat != null
+        return begin(
+            level, Sets.handing(giver, taker, ItemStack(Items.BREAD), hours = null, shake = true),
+            "${name(giver)} hands a loaf to ${name(taker)}" + (if (seated) ", who gets up (STAND_UP)" else "") + ", and they shake hands a block apart.",
         )
     }
 
@@ -211,19 +232,50 @@ internal object TaleSceneCommand {
         )
     }
 
-    private fun laying(level: ServerLevel, player: ServerPlayer): String {
+    /**
+     * The sides of a stand-in stone the mourner may kneel on (she kneels two blocks from its middle, so not the side the player stands
+     * on if there is a choice): to the player's right, else left, else back towards the player, else beyond the stone.
+     */
+    private fun sidesFor(player: ServerPlayer): List<Direction> {
+        val look = Direction.getApproximateNearest(player.lookAngle.x, 0.0, player.lookAngle.z)
+        return listOf(look.clockWise, look.counterClockWise, look.opposite, look)
+    }
+
+    /**
+     * `laying` (nothing set), `memorial` (the stone is a recorded, placed memorial with no block: Part F's [Memorials.posy] is called and,
+     * at dusk, a lantern is set before it) and `steps` (the memorial found no room: the posy goes in a flower pot on the nearest bench or step).
+     */
+    private fun laying(level: ServerLevel, player: ServerPlayer, mode: String): String {
         val free = Sets.freeAdults(level, player.position(), 24.0)
         val mourner = free.firstOrNull() ?: throw Unplayable("Nobody free within 24 blocks of you.")
-        val stone = ahead(level, player, 3.0) ?: throw Unplayable("Nowhere to stand three blocks ahead of you for a stone.")
+        val stone = ahead(level, player, 2.0) ?: throw Unplayable("Nowhere to stand two blocks ahead of you for a stone.")
         val rest = free.drop(1)
         val priest = rest.firstOrNull { it.role == TownRole.PRIEST }
         val others = rest.filter { it !== priest }.take(3)
-        val laid = { dusk: Boolean ->
-            player.sendSystemMessage(TaleCommand.grey("The posy is laid at ${stone.toShortString()}" + if (dusk) ", and a lit lantern would be set beside it." else "."))
+        val record = when (mode) {
+            "memorial" -> TaleData.Memorial(-1, "stone", stone, "minecraft:overworld", listOf(), "", "", 0L, player.blockPosition().asLong(), true)
+            "steps" -> TaleData.Memorial(-1, "stone", null, "minecraft:overworld", listOf(), "", "", 0L, player.blockPosition().asLong(), false)
+            else -> null
+        }
+        val laid = { dusk: Boolean, onSteps: Boolean ->
+            val said = when {
+                onSteps -> "The posy is laid on the steps: a flower pot of the season is set on the nearest bench or step."
+                mode == "memorial" -> "The posy is laid: Memorials.posy was called" + if (dusk) ", and a lit lantern is set before the stone." else " (at dusk, 17:00 to 22:00, a lantern is set before the stone)."
+                else -> "The posy is laid at ${stone.toShortString()}." + if (dusk) " (A memorial would have a lit lantern set before it now.)" else ""
+            }
+            player.sendSystemMessage(TaleCommand.grey(said))
+        }
+        val stage = sidesFor(player).firstNotNullOfOrNull { side ->
+            Sets.laying(mourner, stone, others, priest, memorial = record, front = side, onLaid = laid, hours = null)
+        }
+        val where = when (mode) {
+            "memorial" -> "a memorial stone two blocks ahead of you (no block is set)"
+            "steps" -> "the nearest bench or step (the stone found no room)"
+            else -> "the stone ${stone.toShortString()} (no block is set)"
         }
         return begin(
-            level, Sets.laying(mourner, stone, others, priest, onLaid = laid, hours = null),
-            "${name(mourner)} lays a posy at the stone ${stone.toShortString()} (no block is set)" + (if (priest != null) ", ${name(priest)} praying" else "") +
+            level, stage,
+            "${name(mourner)} kneels two blocks from $where and lays a posy" + (if (priest != null) ", ${name(priest)} praying" else "") +
                 (if (others.isNotEmpty()) "; ${others.size} stand by." else "."),
         )
     }

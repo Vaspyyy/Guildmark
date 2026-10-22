@@ -20,7 +20,8 @@ import kotlin.math.abs
  * A player's word comes first: it steps aside for the talk ([Townsperson] `Talking`), and [TaleBodies.tend] gives it back when the
  * talk is over, within a second. A stage that takes the body leaves it here as it found it ([rest] says where it ended).
  *
- * A [seat] (a bench or a doorstep stair) keeps them sitting on it for a sitting clip; a clip with nowhere to sit plays standing.
+ * A [seat] (a bench or a doorstep stair) keeps them sitting on it for a sitting clip; a clip with nowhere to sit plays standing. The
+ * two clips drawn standing (GRIEVE, WRING_HANDS) are never played on a seat: whoever sits there sits it out ([Sets.fit]).
  */
 class TaleHold(var mark: BlockPos, var yaw: Float? = null, var clip: Activity? = null, var seat: BlockPos? = null) : Director {
     private var walker: Walker? = null
@@ -75,8 +76,8 @@ class TaleHold(var mark: BlockPos, var yaw: Float? = null, var clip: Activity? =
             yaw?.let { p.face(it) }
             faced = true
         }
-        // The step's clip, on a loop
-        val c = clip
+        // The step's clip, on a loop (a clip drawn standing, GRIEVE or WRING_HANDS, is never played on a seat: they sit it out)
+        val c = clip?.let { Sets.fit(p, it) }
         if (c != null && p.activity != c && (p.activity.loop || p.actDone)) p.act(c)
         // Eyes on a player near; the body turns to them only when it has nothing to hold
         val near = level.getNearestPlayer(p, LOOK)

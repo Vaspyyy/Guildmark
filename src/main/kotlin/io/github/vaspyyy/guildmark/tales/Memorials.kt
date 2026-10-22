@@ -8,4 +8,7 @@ package io.github.vaspyyy.guildmark.tales
  */
 object Memorials {
     fun place(c: Ctx, t: Tale) {}
+
+    /** Part F fills this in: the posy goes down on [memorialId]'s stone (6.4) as the Laying's LAY_POSY lands; `Sets.laying` calls it at tick 15 of the clip (the posy is down at 14, leaves her hands at 18). Part B's stub. */
+    fun posy(level: net.minecraft.server.level.ServerLevel, memorialId: Int) {}
 }

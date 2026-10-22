@@ -14,6 +14,8 @@ import net.minecraft.sounds.SoundSource
 import net.minecraft.util.Mth
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.phys.Vec3
+import kotlin.math.abs
+import kotlin.math.sqrt
 
 /**
  * A scene with several people in it (living-world/stories/design.md 4.2): a set of named [parts], each an ordinary [Aside], taken
@@ -356,6 +358,111 @@ class Stage(
         override fun start(p: Townsperson, a: Aside) = give(p, stack)
 
         override fun tick(p: Townsperson, a: Aside, t: Int): Boolean = false
+    }
+
+    /**
+     * Stands the part exactly on [at], facing [toward]: the last step of a clip made against a measured distance (the Laying's kneel two
+     * blocks from the stone, the Burning's half block from the fire, a handshake one block apart), which the walk's "near enough" cannot
+     * give. They slide the last bit at [SLIDE] blocks a tick, level, at the height they stand (their legs walk it, as the client sees them
+     * move), turning as they go; the move is done when they are on the spot and facing it, or after [most] ticks. A spot [FAR] blocks off
+     * or more is not slid to (the walk before did not bring them near): the part goes on from where it stands, and so it does if a body
+     * would not fit on the way (a wall, a bench, the stone): they stand short of the spot rather than in it. With [overlay] (CARRY) that
+     * pose is kept while they slide.
+     */
+    class Stand(
+        private val at: () -> Vec3?, private val toward: (() -> Vec3?)? = null, private val most: Int = 40,
+        private val overlay: Activity = Activity.NONE,
+    ) : Move() {
+        private var goal: Vec3? = null
+
+        override fun start(p: Townsperson, a: Aside) {
+            p.navigation.stop()
+            if (overlay != Activity.NONE) p.act(overlay)
+            goal = at()?.takeIf { flat(p, it) < FAR }
+        }
+
+        override fun tick(p: Townsperson, a: Aside, t: Int): Boolean {
+            if (overlay != Activity.NONE && p.activity != overlay && (p.activity.loop || p.actDone)) p.act(overlay)
+            var there = true
+            val g = goal
+            if (g != null) {
+                val d = flat(p, g)
+                if (d > 0.001) {
+                    val step = minOf(d, SLIDE)
+                    val dx = (g.x - p.x) / d * step
+                    val dz = (g.z - p.z) / d * step
+                    if (p.level().noCollision(p, p.boundingBox.move(dx, 0.0, dz))) {
+                        p.setPos(p.x + dx, p.y, p.z + dz)
+                        there = d <= SLIDE
+                    } else {
+                        // Where a body would not fit (a wall, a bench, the stone) they stand short of the spot
+                        goal = null
+                    }
+                }
+            }
+            var facing = true
+            val look = toward?.invoke()
+            if (look != null) {
+                p.lookAt(look)
+                val yaw = p.yawTo(look)
+                if (abs(Mth.degreesDifference(p.yBodyRot, yaw)) <= 3f) {
+                    p.face(yaw)
+                } else {
+                    p.face(Mth.approachDegrees(p.yBodyRot, yaw, Aside.TURN))
+                    facing = false
+                }
+            }
+            return t < most && !(there && facing)
+        }
+
+        override fun stop(p: Townsperson) {
+            if (overlay != Activity.NONE && p.activity == overlay) p.act(Activity.NONE)
+        }
+
+        private fun flat(p: Townsperson, to: Vec3): Double {
+            val dx = to.x - p.x
+            val dz = to.z - p.z
+            return sqrt(dx * dx + dz * dz)
+        }
+
+        companion object {
+            /** Blocks a tick they slide, and the furthest they are slid to. */
+            const val SLIDE = 0.1
+            const val FAR = 1.6
+        }
+    }
+
+    /**
+     * Lets a part that was taken at its post or in its seat ([Part.station]) leave it for the rest of the scene: a scene that walks them
+     * off (the Burning's taker carries the paper to the fire) or has them on their feet for a clip (a handshake). A seated one gets up
+     * (STAND_UP, then onto the floor in front of the seat); a worker has set the work down already. They are no post to be turned back to
+     * any more: when the part is over their day picks up afresh and takes them back to wherever it has them. A part that was not at a
+     * post or in a seat does nothing.
+     */
+    class Rise : Move() {
+        private var getting = false
+
+        override fun start(p: Townsperson, a: Aside) {
+            getting = false
+            val post = a.post ?: return
+            p.navigation.stop()
+            if (post.sitting && p.seat != null) {
+                getting = true
+                p.act(Activity.STAND_UP)
+            }
+        }
+
+        override fun tick(p: Townsperson, a: Aside, t: Int): Boolean = getting && t < Activity.STAND_UP.ticks
+
+        override fun stop(p: Townsperson) {
+            val a = p.director as? Aside ?: return
+            if (a.post == null) return
+            a.post = null
+            if (p.seat != null) p.standUp()
+            // What they were at is not taken up again where they now stand: their day starts afresh with the part's end
+            p.routine.interrupt()
+            if (!p.activity.overlay) p.act(Activity.NONE)
+        }
     }
 
     /**

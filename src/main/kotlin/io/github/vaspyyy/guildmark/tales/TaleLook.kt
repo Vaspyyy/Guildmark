@@ -258,14 +258,15 @@ object TaleLook {
 
     /**
      * `Ctx.act` (4.2): [slot]'s body plays [activity] once as a one-person part of the stage, where they stand (a worker at their
-     * post goes back to it), ahead of the forty seconds between two scenes. Nothing if no body is about or no player is within 48
-     * blocks of it, or if the capital's stage already has an urgent scene waiting.
+     * post goes back to it), ahead of the forty seconds between two scenes; someone sitting plays SIT for a clip drawn standing
+     * (GRIEVE, WRING_HANDS: [Sets.fit]). Nothing if no body is about or no player is within 48 blocks of it, or if the capital's
+     * stage already has an urgent scene waiting.
      */
     fun act(c: Ctx, t: Tale, slot: String, activity: Activity) {
         if (!Tales.scenes()) return
         val body = TaleBodies.body(c.level, t, slot) ?: return
         if (c.level.getNearestPlayer(body, NEAR) == null) return
-        val part = Stage.Part(slot, body, true, listOf(Play(activity)), station = true, seated = body.seat != null)
+        val part = Stage.Part(slot, body, true, listOf(Play(Sets.fit(body, activity))), station = true, seated = body.seat != null)
         queue(c.level, c.capital, Stage("act", listOf(part)), urgent = true)
     }
 
