@@ -36,6 +36,8 @@ data class AtlasPlace(
         const val OUTLAW_CAMP = 6
         /** Someone else's homestead, at its Charter Post; [ref] is its id in Homesteads (homestead/HomesteadAtlas). */
         const val HOMESTEAD = 7
+        /** A memorial a tale left, a stone or a cairn (Tales); [ref] is the memorial's id. Nothing builds a mark of it yet. */
+        const val MEMORIAL = 8
 
         /** A village's [ref] when it's a capital city. */
         const val CAPITAL_REF = 1

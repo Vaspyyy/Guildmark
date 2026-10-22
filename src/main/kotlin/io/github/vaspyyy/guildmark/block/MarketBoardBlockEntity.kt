@@ -79,6 +79,9 @@ class MarketBoardBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(Mod
 
             /** A works wanted, funded or raised (economy/works/Works.kt). */
             WORKS("works"),
+
+            /** A tale's ending, told: its name and what became of it (Tales). Drawn on the word paper until its own paper is drawn. */
+            TALE("tale"),
         }
 
         companion object {
