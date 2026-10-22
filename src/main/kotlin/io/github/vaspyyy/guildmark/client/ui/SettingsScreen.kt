@@ -338,7 +338,6 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
             slider(c.MARKET_CARRY_EASE_RATE, spec, editable, listOf(0.05, 0.1, 0.2, 0.3, 0.5, 0.75, 1.0), ::percentOf) { c.MARKET_CARRY_EASE_RATE.set(it) },
             toggle(c.TRADE_OWED_XP, spec, editable),
             slider(c.TRADE_OWED_XP_MOST, spec, editable, listOf(0.0, 300.0, 600.0, 1200.0, 2400.0, 4800.0, 12000.0, 100000.0), ::plain) { c.TRADE_OWED_XP_MOST.set(it.roundToInt()) },
-            toggle(c.TRADE_LIFE, spec, editable),
             toggle(c.MARKET_DISPLAYS, spec, editable),
             toggle(c.TURNING_MILLS, spec, editable),
             toggle(c.STREET_LAMPS, spec, editable),
@@ -396,7 +395,8 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
             toggle(c.TOWN_TALE_MEMORIALS, spec, editable),
         )
         rows += hearthcraftRules(editable)
-        rows += others(c, spec, listed + hearthcraftRuleValues(), editable)
+        rows += tradeRules(editable)
+        rows += others(c, spec, listed + hearthcraftRuleValues() + tradeRuleValues(), editable)
         return rows
     }
 
@@ -422,6 +422,54 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
             toggle(DISH_SPOILAGE, spec, editable),
             toggle(COOK_POTS_PRIVATE, spec, editable),
             slider(COOK_FUEL_SCALE, spec, editable, listOf(1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 15.0, 20.0), ::times) { COOK_FUEL_SCALE.set(it) },
+        )
+    }
+
+    // ---- The trader's life (trade/): its own group on the World page, after Hearthcraft's; The Hunt stays under Threats ----
+
+    private fun tradeRuleValues(): List<ModConfigSpec.ConfigValue<*>> = with(GuildmarkConfig) {
+        listOf(
+            TRADE_LIFE, TRADE_WORD, TRADE_WORD_BASE, TRADE_WORD_PER_BLOCK, TRADE_HAULS, TRADE_HAUL_RATE, TRADE_HAUL_RATE_MAX, TRADE_HAUL_DEPOSIT,
+            TRADE_DEALER_SHARE, TRADE_HAUL_MIN, TRADE_HAUL_ROOM_DAYS, TRADE_CARRY, TRADE_WAGON, TRADE_CART_SLOW, TRADE_WAGON_REIN, TRADE_HUNT_CHANCE,
+            TRADE_HUNT_LADEN, TRADE_HUNT_REACH, TRADE_HUNT_KILLS, TRADE_HUNT_PURSE, TRADE_GUARD_WAGE, TRADE_RUNGS, TRADE_STORES, TRADE_HOUSE,
+            TRADE_CARTERS, TRADE_CARTER_WAGE, TRADE_HOUSE_OFFLINE, TRADE_WORLD, TRADE_CHEER,
+        )
+    }
+
+    /** Every slider's steps hold the setting's default, so touching one never moves a number nobody chose. */
+    private fun tradeRules(editable: Boolean): List<Row> = with(GuildmarkConfig) {
+        val spec = SPEC
+        listOf(
+            header("trade"),
+            toggle(TRADE_LIFE, spec, editable),
+            toggle(TRADE_WORD, spec, editable),
+            slider(TRADE_WORD_BASE, spec, editable, listOf(0.0, 3.0, 6.0, 9.0, 12.0, 18.0, 24.0, 36.0, 48.0, 72.0), ::hours) { TRADE_WORD_BASE.set(it) },
+            slider(TRADE_WORD_PER_BLOCK, spec, editable, listOf(0.0, 0.005, 0.01, 0.015, 0.02, 0.024, 0.03, 0.04, 0.05, 0.075, 0.1), ::fineHours) { TRADE_WORD_PER_BLOCK.set(it) },
+            toggle(TRADE_HAULS, spec, editable),
+            slider(TRADE_HAUL_RATE, spec, editable, listOf(0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0, 6.0), ::aDay) { TRADE_HAUL_RATE.set(it) },
+            slider(TRADE_HAUL_RATE_MAX, spec, editable, listOf(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0), ::aDay) { TRADE_HAUL_RATE_MAX.set(it) },
+            slider(TRADE_HAUL_DEPOSIT, spec, editable, listOf(0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5), ::percentOf) { TRADE_HAUL_DEPOSIT.set(it) },
+            slider(TRADE_DEALER_SHARE, spec, editable, listOf(0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9), ::percentOf) { TRADE_DEALER_SHARE.set(it) },
+            slider(TRADE_HAUL_MIN, spec, editable, listOf(0.0, 100.0, 200.0, 300.0, 400.0, 500.0, 600.0, 800.0, 1000.0, 1200.0, 1500.0, 2000.0), ::blocks) { TRADE_HAUL_MIN.set(it.roundToInt()) },
+            slider(TRADE_HAUL_ROOM_DAYS, spec, editable, listOf(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0), ::days) { TRADE_HAUL_ROOM_DAYS.set(it.roundToInt()) },
+            toggle(TRADE_CARRY, spec, editable),
+            toggle(TRADE_WAGON, spec, editable),
+            slider(TRADE_CART_SLOW, spec, editable, listOf(0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5), ::percentOf) { TRADE_CART_SLOW.set(it) },
+            slider(TRADE_WAGON_REIN, spec, editable, listOf(8.0, 12.0, 16.0, 20.0, 24.0, 32.0, 40.0, 48.0), ::blocks) { TRADE_WAGON_REIN.set(it.roundToInt()) },
+            slider(TRADE_HUNT_CHANCE, spec, editable, listOf(0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 2.5, 3.0), ::times) { TRADE_HUNT_CHANCE.set(it) },
+            slider(TRADE_HUNT_LADEN, spec, editable, listOf(0.0, 10.0, 25.0, 50.0, 75.0, 100.0, 150.0, 200.0, 300.0, 500.0), ::marks) { TRADE_HUNT_LADEN.set(it.roundToInt()) },
+            slider(TRADE_HUNT_REACH, spec, editable, listOf(32.0, 64.0, 96.0, 128.0, 160.0, 200.0, 250.0, 300.0, 400.0), ::blocks) { TRADE_HUNT_REACH.set(it.roundToInt()) },
+            toggle(TRADE_HUNT_KILLS, spec, editable),
+            slider(TRADE_HUNT_PURSE, spec, editable, linear(0.0, 10.0, true), ::marks) { TRADE_HUNT_PURSE.set(it.roundToInt()) },
+            slider(TRADE_GUARD_WAGE, spec, editable, listOf(0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0), ::marksADay) { TRADE_GUARD_WAGE.set(it) },
+            toggle(TRADE_RUNGS, spec, editable),
+            toggle(TRADE_STORES, spec, editable),
+            toggle(TRADE_HOUSE, spec, editable),
+            slider(TRADE_CARTERS, spec, editable, listOf(-1.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0), ::carters) { TRADE_CARTERS.set(it.roundToInt()) },
+            slider(TRADE_CARTER_WAGE, spec, editable, linear(0.0, 10.0, true), ::marksADay) { TRADE_CARTER_WAGE.set(it.roundToInt()) },
+            slider(TRADE_HOUSE_OFFLINE, spec, editable, listOf(0.0, 1.0, 2.0, 3.0, 5.0, 7.0, 10.0, 14.0, 21.0, 30.0), ::days) { TRADE_HOUSE_OFFLINE.set(it.roundToInt()) },
+            toggle(TRADE_WORLD, spec, editable),
+            toggle(TRADE_CHEER, spec, editable),
         )
     }
 
@@ -800,6 +848,16 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
         private fun percent(value: Double) = "${value.roundToInt()}%"
         private fun percentOf(value: Double) = "${(value * 100).roundToInt()}%"
         private fun plain(value: Double) = trimmed(value)
+        private fun hours(value: Double) = trimmed(value) + " h"
+        private fun fineHours(value: Double) = "%.3f".format(value).trimEnd('0').trimEnd('.', ',') + " h"
+        private fun aDay(value: Double) = trimmed(value) + " a day"
+        private fun blocks(value: Double) = trimmed(value) + " blocks"
+        private fun days(value: Double) = trimmed(value) + if (value.roundToInt() == 1) " day" else " days"
+        private fun marks(value: Double) = trimmed(value) + if (value.roundToInt() == 1) " Mark" else " Marks"
+        private fun marksADay(value: Double) = trimmed(value) + " a day"
+
+        /** House Carters: -1 is a quarter of the open capitals, at most six. */
+        private fun carters(value: Double) = if (value.roundToInt() < 0) "Auto" else trimmed(value)
 
         val CREST: Identifier = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "ui/crest")
 

@@ -29,5 +29,6 @@
   "guildmark.configuration.tradeHouseOffline": "House Days Away",
   "guildmark.configuration.tradeWorld": "The Town Answers",
   "guildmark.configuration.tradeCheer": "Cheer",
-  "gui.guildmark.trade.off": "The trade is switched off (setting: Trader's Life)."
+  "gui.guildmark.trade.off": "The trade is switched off (setting: Trader's Life).",
+  "gui.guildmark.settings.section.trade": "Trade"
 }
