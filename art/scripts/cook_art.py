@@ -52,6 +52,9 @@ Also models, not pieces: `larder` (door shut: the door is part of the shell), `l
 `menu_board_wall` (the slate flat on the wall behind, at z 16; no blockstate uses it) and the four `herb_stage0..3` (four crossed quads from y -1 to 15, as
 the game's own `block/crop` has them, so that the plant stands on the top of farmland; the blockstate's `age` picks one).
 
+A lit shell carries its own moving fire as animated, emissive textures (`flame`, `coals`, `oven_glow`, `log_glow`), so a renderer draws no flames and no
+glow of its own; it adds what a shell cannot hold: the liquid, the pieces, steam, smoke, sizzle, drips and the spit's flare.
+
 WHERE THINGS ARE DRAWN (px, model space, facing north):
   stewpot     the liquid's surface is a quad at y 6.7 (a ladleful) up to 9.4 (full) at notch 0, 2.9 px from the middle to each edge (the
               texture is a disc), lowered with the pot; ingredient chunks bob within 2.4 px of (8, 8); steam leaves the pot's mouth, 3.0 px
