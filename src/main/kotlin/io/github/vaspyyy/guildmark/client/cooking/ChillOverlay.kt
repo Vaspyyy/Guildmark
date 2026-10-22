@@ -76,23 +76,27 @@ object ChillOverlay : GuiLayer {
     private const val GLOW_STEPS = 14
     private const val GLOW_REACH = 0.15f
 
-    /** A family's tint when its meal takes: the effect, the colour (as the icon's), how strong it starts and how many seconds it lasts. */
+    /**
+     * A family's tint when its meal takes: the effect, the colour (the one its tooltip line has, which is the icon's made a little
+     * lighter for Steady and Provisioned so that it still shows over a night sky and dark grass), how strong it starts and how many
+     * seconds it lasts. A night is when the cold is about, so 0.28 is what shows there.
+     */
     private class Glow(val effect: Holder<MobEffect>, val colour: Int, val peak: Float, val seconds: Float) {
         /** The effect's time left and its amplifier at the last tick, or -1 when it was not there. */
         var last = -1
         var amp = -1
     }
 
-    private val WARMTH = Glow(CookRegistry.WARMTH, 0xE8893C, 0.20f, 3f)
+    private val WARMTH = Glow(CookRegistry.WARMTH, 0xE8893C, 0.28f, 3f)
     private val GLOWS = listOf(
         WARMTH,
-        Glow(CookRegistry.HEARTY, 0xC24B3F, 0.20f, 1.8f),
-        Glow(CookRegistry.STEADY, 0x4F7FC4, 0.20f, 1.8f),
-        Glow(CookRegistry.PROVISIONED, 0x8A6A42, 0.20f, 1.8f),
+        Glow(CookRegistry.HEARTY, 0xC24B3F, 0.28f, 1.8f),
+        Glow(CookRegistry.STEADY, 0x6F9BE0, 0.28f, 1.8f),
+        Glow(CookRegistry.PROVISIONED, 0xB08A5A, 0.28f, 1.8f),
     )
 
     /** A Warmth meal that lifts the frost glows this strongly (4.3: the vignette thaws and a warm tint breathes for three seconds). */
-    private const val LIFTING = 0.34f
+    private const val LIFTING = 0.40f
 
     private val random = RandomSource.create()
 
