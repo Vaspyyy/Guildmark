@@ -15,8 +15,9 @@ import java.util.UUID
  * open anywhere, none is booked, and the Tally's Book button is greyed.
  *
  * **To join them** once part A's `Hauls` is in: set [HAULS] to true, and give each function below the one call its comment names.
- * Nothing else of B calls A. ([ledger] already answers from the market ledgers' own records, which is what A's `Ledger` reads; swap
- * it for A's only if A keeps the days differently.)
+ * Nothing else of B calls A. ([ledger] already answers from the market ledgers' own records and the book's `held` list, which is what A's
+ * `Ledger.lines(level, player.uuid)` reads, so it needs no swap; if A ever keeps the days differently, that call gives each parcel with its days
+ * left and whether it is one of the book's, to map as [ledger] does.)
  */
 object TallyLinks {
     /** Whether part A is in: the tickets are real, and the Routes page's Book button can book them. Greyed while it is false. */
@@ -69,7 +70,8 @@ object TallyLinks {
     /**
      * The hauled goods [player] has bought and not sold back, oldest first (the Ledger page lays them against what they carry): what each capital's
      * market remembers of their purchases for [Suppliers.KEPT] days (`Standing.bought`), and the parcels a Store or a delivery put back into their
-     * record ([TradeBooks.Book.held]), which keep for thirty days. Reads only. Part A, if its `Ledger` keeps them differently: `Ledger.hauled(level, player)`.
+     * record ([TradeBooks.Book.held]), which keep for thirty days. Reads only. Nothing is [Hauled.bonded] here: a Store's own goods are not carried, so they
+     * are not in this list (part F2 may bring them in). Part A's `Ledger.lines(level, player.uuid)` lists the same parcels.
      */
     fun ledger(level: ServerLevel, player: ServerPlayer): List<Hauled> {
         val today = Days.dayOf(level.overworldClockTime)

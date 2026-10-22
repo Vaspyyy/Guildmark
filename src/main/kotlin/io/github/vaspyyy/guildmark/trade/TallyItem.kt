@@ -30,7 +30,7 @@ class TallyItem(properties: Item.Properties) : Item(properties) {
 
 /**
  * What the Tally adds to the registries: the item, in a register of its own (as the seasons' Almanac and the stalls' wares have), so that no
- * shared registry is touched. Its model is `items/tally.json`; until the trade's art stream lands the real one, it points at the book's.
+ * shared registry is touched. Its model is `items/tally.json` (the trade's art stream's): the closed book in the pack, on the ground and on a shelf, an open one in the hand.
  */
 object TallyItems {
     val ITEMS: DeferredRegister.Items = DeferredRegister.createItems(Guildmark.MOD_ID)
