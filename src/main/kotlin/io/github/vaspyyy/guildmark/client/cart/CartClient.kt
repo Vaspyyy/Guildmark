@@ -3,6 +3,7 @@ package io.github.vaspyyy.guildmark.client.cart
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.cart.Handcart
 import io.github.vaspyyy.guildmark.cart.Handcarts
+import io.github.vaspyyy.guildmark.cart.PlayerCart
 import io.github.vaspyyy.guildmark.client.townsfolk.LivingSchedule
 import io.github.vaspyyy.guildmark.client.townsfolk.TownsfolkRenderState
 import io.github.vaspyyy.guildmark.client.townsfolk.TownsfolkRenderer
@@ -48,7 +49,6 @@ object CartClient {
     fun register(modBus: IEventBus) {
         modBus.addListener(EntityRenderersEvent.RegisterRenderers::class.java) { event ->
             event.registerEntityRenderer(Handcarts.HANDCART.get(), ::HandcartRenderer)
-            event.registerEntityRenderer(Handcarts.PLAYER_CART.get(), ::HandcartRenderer)
         }
         modBus.addListener(EntityRenderersEvent.RegisterLayerDefinitions::class.java) { event ->
             event.registerLayerDefinition(HandcartModel.LAYER, HandcartMesh::cart)
@@ -182,9 +182,15 @@ object CartClient {
             if (first) look.restO[s] = look.rest[s]
         }
         rattle(cart, look)
+        // The Chapman's Cart has more of its own to work out
+        if (cart is PlayerCart) PlayerCartClient.tick(cart, look)
     }
 
+    /** The cart [id] (a puller's entity id) is drawn pulling, while the shafts are in (or leaving) their hands. */
+    fun pulledBy(id: Int): Handcart? = pulled.get(id)
+
     private fun removed(cart: Handcart) {
+        if (cart is PlayerCart) PlayerCartClient.removed(cart)
         val look = cart.look as? Look ?: return
         if (look.puller >= 0 && pulled.get(look.puller) === cart) pulled.remove(look.puller)
         (look.rattle as? Rattle)?.end()

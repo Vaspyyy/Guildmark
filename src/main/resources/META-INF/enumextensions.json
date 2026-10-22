@@ -8,6 +8,15 @@
         "class": "io/github/vaspyyy/guildmark/client/combat/CombatArmPose",
         "field": "PROXY"
       }
+    },
+    {
+      "enum": "net/minecraft/client/model/HumanoidModel$ArmPose",
+      "name": "GUILDMARK_CART",
+      "constructor": "(ZZLnet/neoforged/neoforge/client/IArmPoseTransformer;)V",
+      "parameters": {
+        "class": "io/github/vaspyyy/guildmark/client/cart/CartArmPose",
+        "field": "PROXY"
+      }
     }
   ]
 }

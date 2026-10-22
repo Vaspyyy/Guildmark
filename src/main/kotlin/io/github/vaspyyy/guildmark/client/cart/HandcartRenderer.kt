@@ -30,7 +30,7 @@ import kotlin.math.sqrt
  * far they rolled, and its load is heaped on the bed (each piece of HandcartMesh's, the goods showing in the open
  * ones, the hen in a household's coop looking about her), settling on as it's put there and lifting off as it's taken.
  */
-class HandcartRenderer(context: EntityRendererProvider.Context) : EntityRenderer<Handcart, HandcartRenderState>(context) {
+open class HandcartRenderer(context: EntityRendererProvider.Context) : EntityRenderer<Handcart, HandcartRenderState>(context) {
     private val model = HandcartModel(context.bakeLayer(HandcartModel.LAYER))
     private val load = context.bakeLayer(HandcartModel.LOAD)
     private val parts = HandcartMesh.PIECES.map { load.getChild(it.part) }
@@ -126,6 +126,8 @@ class HandcartRenderer(context: EntityRendererProvider.Context) : EntityRenderer
         poseStack.rotateDegrees(Axis.ZP, state.roll)
         poseStack.scale(-1f, -1f, 1f)
         collector.submitModel(model, state, poseStack, TEXTURE, state.lightCoords, OverlayTexture.NO_OVERLAY, state.outlineColor)
+        poseStack.pushPose()
+        shake(state, poseStack)
         for (i in 0 until state.pieces) {
             val piece = HandcartMesh.PIECES[state.kind[i]]
             poseStack.pushPose()
@@ -161,8 +163,16 @@ class HandcartRenderer(context: EntityRendererProvider.Context) : EntityRenderer
             poseStack.popPose()
         }
         poseStack.popPose()
+        dressed(state, poseStack, collector)
+        poseStack.popPose()
         super.submit(state, poseStack, collector, camera)
     }
+
+    /** Moves the load before it is drawn, in the cart's own space (px, y down): nothing for a carter's cart; the Chapman's Cart's load rocks. */
+    protected open fun shake(state: HandcartRenderState, poseStack: PoseStack) {}
+
+    /** Draws what a cart has besides the bed and its load, in the cart's own space after the load: nothing for a carter's cart; the Chapman's Cart's pennant and canvas. */
+    protected open fun dressed(state: HandcartRenderState, poseStack: PoseStack, collector: SubmitNodeCollector) {}
 
     // Its box is the bed's middle: the shafts reach well ahead of it, the tail a little behind
     override fun getBoundingBoxForCulling(cart: Handcart, partialTicks: Float): AABB =

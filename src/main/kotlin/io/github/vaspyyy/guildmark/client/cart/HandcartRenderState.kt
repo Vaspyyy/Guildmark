@@ -7,7 +7,7 @@ import net.minecraft.client.renderer.item.ItemStackRenderState
  * What a handcart's renderer needs to draw it: how it's turned, tipped and leaning, how far its wheels have
  * turned, and the pieces of its load (on the bed, settling onto it or being lifted off) with what shows in them.
  */
-class HandcartRenderState : EntityRenderState() {
+open class HandcartRenderState : EntityRenderState() {
     /** Degrees: which way it heads (Minecraft yaw: 0 faces south, 90 west). */
     var yaw = 0f
 
