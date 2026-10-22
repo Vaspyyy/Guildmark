@@ -1388,13 +1388,21 @@ def small_row(images, bg, size, zoom=3, per_row=None):
 
 def gif(frames, path, bg, plays, scale=8):
     """A looping preview of an animation, each frame on the backdrop, played as the .mcmeta plays it ([plays] is [(frame, ticks)])."""
-    out = []
+    rgb = []
     for i, _ in plays:
         f = frames[i]
         base = Image.new('RGBA', (f.width * scale, f.height * scale), (*bg, 255))
         base.alpha_composite(f.resize((f.width * scale, f.height * scale), Image.NEAREST))
-        out.append(base.convert('P', palette=Image.ADAPTIVE, colors=128))
-    out[0].save(path, save_all=True, append_images=out[1:], duration=[50 * t for _, t in plays], loop=0, disposal=2)
+        rgb.append(base.convert('RGB'))
+    # One palette for every frame, and no palette optimising on save: frames that each carried their own palette came out
+    # in false colours, as the saver kept one frame's palette for the others' indices
+    sheet = Image.new('RGB', (rgb[0].width, rgb[0].height * len(rgb)))
+    for k, im in enumerate(rgb):
+        sheet.paste(im, (0, k * im.height))
+    pal = sheet.quantize(colors=255, method=Image.Quantize.MEDIANCUT)
+    out = [im.quantize(palette=pal, dither=Image.Dither.NONE) for im in rgb]
+    out[0].save(path, save_all=True, append_images=out[1:], duration=[50 * t for _, t in plays], loop=0, disposal=2,
+                optimize=False)
 
 
 def previews(made, outdir):
