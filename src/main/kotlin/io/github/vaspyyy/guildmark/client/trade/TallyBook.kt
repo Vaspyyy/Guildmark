@@ -122,6 +122,9 @@ class TallyBook(view: TallyView, val env: Env) {
     var filedTown = TallyRoutes.NONE
     var bookedAt = -1e9
 
+    /** When the deliveries counted last rose (the Standing page cuts a stroke in its tally). */
+    var filledAt = -1e9
+
     /** The town a report was last asked for, to answer it when the next view says it went. */
     private var asked = TallyRoutes.NONE
     private var askedAt = -1e9
@@ -218,6 +221,7 @@ class TallyBook(view: TallyView, val env: Env) {
             asked = TallyRoutes.NONE
         }
         if (next.held.size > before.held.size) bookedAt = t
+        if (next.standing.filled > before.standing.filled) filledAt = t
         view = next
         viewAt = t
         if (town == TallyRoutes.NONE || next.towns.none { it.capital == town }) town = first(next)
