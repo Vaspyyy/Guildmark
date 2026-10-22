@@ -195,7 +195,19 @@ object MemorialRules {
     // ---- Where a memorial belongs ----
 
     /** A place a search starts from: what it is ([kind]: a temple's door, a well, the market...), the column, and about the height of the ground there. */
-    class Anchor(val kind: String, val x: Int, val y: Int, val z: Int)
+    class Anchor(val kind: String, val x: Int, val y: Int, val z: Int) {
+        /** The place in words after "at" or "N blocks from", for the command's reply and the log: "the temple's door", "a well". */
+        val words: String
+            get() = when (kind) {
+                "road" -> "the road out of a gate"
+                "temple" -> "the temple's door"
+                "temple corner" -> "the corner of the temple's lot"
+                "well" -> "a well"
+                "market corner" -> "a corner of the market"
+                "market" -> "the middle of the market"
+                else -> "the place asked for"
+            }
+    }
 
     /** How many temples a memorial is set by (the ones nearest the centre), and how many wells (the nearest the centre) are tried. */
     const val TEMPLES = 2

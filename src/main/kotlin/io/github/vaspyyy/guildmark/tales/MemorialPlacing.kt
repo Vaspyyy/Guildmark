@@ -65,8 +65,8 @@ internal object MemorialPlacing {
     /** How an attempt to set a memorial down ended. */
     enum class Result { PLACED, WAIT, NO_ROOM }
 
-    /** An attempt's [result] and, when the search was made, what it [found]. */
-    class Outcome(val result: Result, val found: MemorialRules.Found? = null)
+    /** An attempt's [result] and, when the search was made, what it [found] and, if it set the memorial down, where ([where]: "at the temple's door"). */
+    class Outcome(val result: Result, val found: MemorialRules.Found? = null, val where: String? = null)
 
     // ---- Settling a memorial just asked for ----
 
@@ -129,11 +129,11 @@ internal object MemorialPlacing {
         if (!level.isLoaded(want)) return Outcome(Result.WAIT)
         if (!sync && cairn && (level.getNearestPlayer(want.x + 0.5, want.y + 0.5, want.z + 0.5, NEAR_CAIRN, false) == null || !unseen(level, want))) return Outcome(Result.WAIT)
         val town = sites ?: sitesFor(level, rec, cairn) ?: return Outcome(Result.WAIT)
-        val belongs = town.anchors(cairn)
-        val wants = listOf(want) + if (belongs.firstOrNull() == want) belongs.drop(1) else listOf()
-        val found = MemorialRules.findFrom(
-            town, cairn, wants.map { MemorialRules.Anchor("place", it.x, it.y, it.z) }, others(level, rec), rec.id * SALT,
-        ) { level.isLoaded(BlockPos(it.x, it.y, it.z)) }.found
+        val belongs = town.named(cairn)
+        val first = belongs.firstOrNull()
+        val wants = if (first != null && first.x == want.x && first.y == want.y && first.z == want.z) belongs else listOf(MemorialRules.Anchor("place", want.x, want.y, want.z))
+        val hit = MemorialRules.findFrom(town, cairn, wants, others(level, rec), rec.id * SALT) { level.isLoaded(BlockPos(it.x, it.y, it.z)) }
+        val found = hit.found
         val spot = found.spot
         if (spot == null) {
             if (found.unloaded) return Outcome(Result.WAIT, found)
@@ -142,7 +142,12 @@ internal object MemorialPlacing {
             TaleData.get(level).changed()
             return Outcome(Result.NO_ROOM, found)
         }
-        return Outcome(if (build(level, rec, spot)) Result.PLACED else Result.WAIT, found)
+        if (!build(level, rec, spot)) return Outcome(Result.WAIT, found)
+        val from = wants[hit.index]
+        val away = Math.round(Math.sqrt(((spot.x - from.x) * (spot.x - from.x) + (spot.z - from.z) * (spot.z - from.z)).toDouble())).toInt()
+        val where = if (away == 0) "at ${from.words}" else "$away blocks from ${from.words}"
+        Guildmark.LOGGER.info("Memorial #{}: the {} for {} is set at {} {} {}, {} ({})", rec.id, rec.kind, rec.names, spot.x, spot.y, spot.z, where, describe(found))
+        return Outcome(Result.PLACED, found, where)
     }
 
     /** Builds [rec]'s block at [spot] and writes what it keeps. False if the cell was taken in the meantime (somebody stands in it). */

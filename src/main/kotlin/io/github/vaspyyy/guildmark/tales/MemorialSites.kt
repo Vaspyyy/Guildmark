@@ -94,9 +94,12 @@ internal class MemorialSites(
      * very list the city-preview kit asks, put in the world. The search takes the first of them it finds room near. Empty where the
      * capital's places are not known.
      */
-    fun anchors(cairn: Boolean): List<BlockPos> {
+    fun anchors(cairn: Boolean): List<BlockPos> = named(cairn).map { BlockPos(it.x, it.y, it.z) }
+
+    /** The same places with what each is ([MemorialRules.Anchor.kind]), in the world's coordinates. */
+    fun named(cairn: Boolean): List<MemorialRules.Anchor> {
         val c = capital ?: return listOf()
         val census = (places ?: return listOf()).census
-        return MemorialRules.anchors(census.plan, census, cairn).map { c.world(it.x, it.y, it.z) }
+        return MemorialRules.anchors(census.plan, census, cairn).map { a -> c.world(a.x, a.y, a.z).let { MemorialRules.Anchor(a.kind, it.x, it.y, it.z) } }
     }
 }

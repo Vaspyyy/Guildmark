@@ -24,6 +24,9 @@ import kotlin.math.roundToInt
  *   within 16 blocks, 24 for a cairn): natural level ground, not in a building, road, crop or water, no door close, turned square to the
  *   street, room before it for the lantern and the one who kneels, who is not walled in. If no place near you passes, nothing is set and
  *   the count of why each place was refused is said. In a capital it is one of its six; out in the open it belongs to no town.
+ * - `town <stone|cairn> <name[, name]>`: the same, asked as a tale that names no place asks: from where the kind belongs in the capital you
+ *   stand in (a stone at a temple's door, round its lot's corners, by a well, in the market; a cairn by the road out of a gate first), each
+ *   of them near and then far, and the reply says which of them gave the place.
  * - `remove <id>`: takes a memorial away, with the lantern and the pot the Laying set for it, where their chunks are loaded.
  * - `posy <id>`: lays a posy on the stone as the Laying does, now; `candles <id> <0-4> [lit]` sets candles on its ledge (lit till dawn).
  * - `lay <id>`: plays the Laying at that stone now, as `tale scene laying` does at a stand-in: whoever is free near it kneels two blocks from
@@ -43,13 +46,8 @@ internal object MemorialCommand {
                 Commands.literal("memorial")
                     .executes { list(it) }
                     .then(Commands.literal("list").executes { list(it) })
-                    .then(
-                        Commands.literal("place").then(
-                            Commands.argument("kind", StringArgumentType.word())
-                                .suggests { _, b -> SharedSuggestionProvider.suggest(MemorialKind.entries.map { it.id }, b) }
-                                .then(Commands.argument("names", StringArgumentType.greedyString()).executes { place(it) }),
-                        ),
-                    )
+                    .then(placing("place", false))
+                    .then(placing("town", true))
                     .then(Commands.literal("remove").then(id().executes { remove(it) }))
                     .then(Commands.literal("posy").then(id().executes { posy(it) }))
                     .then(Commands.literal("lay").then(id().executes { lay(it) }))
@@ -65,6 +63,13 @@ internal object MemorialCommand {
             )
         }
     }
+
+    /** `place` or `town`: a kind and the names, then [place]. */
+    private fun placing(word: String, town: Boolean) = Commands.literal(word).then(
+        Commands.argument("kind", StringArgumentType.word())
+            .suggests { _, b -> SharedSuggestionProvider.suggest(MemorialKind.entries.map { it.id }, b) }
+            .then(Commands.argument("names", StringArgumentType.greedyString()).executes { place(it, town) }),
+    )
 
     private fun id(): RequiredArgumentBuilder<CommandSourceStack, Int> =
         Commands.argument("id", IntegerArgumentType.integer(0))
@@ -142,7 +147,8 @@ internal object MemorialCommand {
 
     // ---- place ----
 
-    private fun place(context: CommandContext<CommandSourceStack>): Int {
+    /** `place`: the memorial is asked for where you stand; `town`: as a tale that names no place asks, from where its kind belongs in the capital you stand in. */
+    private fun place(context: CommandContext<CommandSourceStack>, town: Boolean): Int {
         val source = context.source
         if (refuse(source)) return 0
         val player = source.playerOrException
@@ -150,11 +156,17 @@ internal object MemorialCommand {
         val said = StringArgumentType.getString(context, "kind")
         val kind = MemorialKind.entries.firstOrNull { it.id == said } ?: return fail(source, "The kind is stone or cairn, not '$said'.")
         val names = StringArgumentType.getString(context, "names").split(',').map { it.trim() }.filter { it.isNotEmpty() }.distinct().take(NAMES)
-        if (names.isEmpty()) return fail(source, "Give a name, or two with a comma between: tale memorial place stone Tam Hale, Jo Ward.")
+        if (names.isEmpty()) return fail(source, "Give a name, or two with a comma between: tale memorial ${if (town) "town" else "place"} stone Tam Hale, Jo Ward.")
         val capital = Capitals.covering(level, player.blockPosition())
         val places = capital?.let { CityPlaces.of(level, it) }
         if (capital != null && places == null) {
             return fail(source, if (CityPlaces.failed(capital)) "Its places couldn't be worked out (see the log)." else "Its places are still being worked out: try again in a second.")
+        }
+        val sites = MemorialSites(level, capital, places)
+        val start = if (town) {
+            sites.anchors(kind == MemorialKind.CAIRN).firstOrNull() ?: return fail(source, "Stand in a capital: a memorial that names no place starts from where its kind belongs in one (a temple's door, a well, the market).")
+        } else {
+            player.blockPosition()
         }
         val key = capital?.center?.asLong() ?: 0L
         val data = TaleData.get(level)
@@ -162,17 +174,18 @@ internal object MemorialCommand {
             return fail(source, "This capital already keeps ${TaleLimits.MEMORIALS} memorials: tale memorial remove <id> takes one away.")
         }
         val rec = TaleData.Memorial(
-            data.newMemorialId(), kind.id, player.blockPosition(), Memorials.dimension(level), names, "", player.name.string,
+            data.newMemorialId(), kind.id, start, Memorials.dimension(level), names, "", player.name.string,
             Memorials.today(level, key.takeIf { it != 0L }), key, false,
         )
         data.memorials.add(rec)
-        val outcome = MemorialPlacing.tryPlace(level, rec, MemorialSites(level, capital, places), sync = true)
+        val outcome = MemorialPlacing.tryPlace(level, rec, sites, sync = true)
         val found = outcome.found
         if (outcome.result == MemorialPlacing.Result.PLACED) {
             val face = level.getBlockState(rec.pos ?: player.blockPosition()).let { if (it.`is`(MemorialRegistry.MEMORIAL.get())) it.getValue(MemorialBlock.FACING).getName() else "?" }
             return TaleCommand.say(
                 source,
-                TaleCommand.line().append(TaleCommand.label("#${rec.id} ")).append(TaleCommand.plain("A ${kind.id} is set for ${names.joinToString(", ")} at ${rec.pos?.toShortString()}, facing $face."))
+                TaleCommand.line().append(TaleCommand.label("#${rec.id} "))
+                    .append(TaleCommand.plain("A ${kind.id} is set for ${names.joinToString(", ")} at ${rec.pos?.toShortString()}, facing $face" + (outcome.where?.let { " ($it)" } ?: "") + "."))
                     .append(TaleCommand.grey(" " + (found?.let { MemorialPlacing.describe(it) } ?: ""))),
             )
         }
@@ -180,10 +193,10 @@ internal object MemorialCommand {
         data.memorials.remove(rec)
         data.changed()
         val why = when {
-            found == null -> "its ground is not loaded"
+            found == null -> if (town) "the ground it starts from, at ${start.toShortString()}, is not loaded: go nearer to it" else "its ground is not loaded"
             found.spot != null -> "somebody is standing where it would go: try again"
-            found.unloaded -> "some of the ground round you is not loaded yet: try again in a moment (${MemorialPlacing.describe(found)})"
-            else -> "no place near you passes the rules (${MemorialPlacing.describe(found)})"
+            found.unloaded -> "some of the ground ${if (town) "about the places it starts from" else "round you"} is not loaded yet: try again in a moment (${MemorialPlacing.describe(found)})"
+            else -> "no place ${if (town) "in this town" else "near you"} passes the rules (${MemorialPlacing.describe(found)})"
         }
         return fail(source, "No ${kind.id} was set: $why.")
     }
