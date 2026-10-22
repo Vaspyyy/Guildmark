@@ -33,7 +33,9 @@ TABLE = [
         # word of a big delivery made elsewhere (by a trader, to a town)
         ("trade.hauled", "anyone who has heard of a big delivery elsewhere", [
             "A trader brought a whole cartload to the next town, they say.",
-            "Heard a carrier saved a town's shelves, not long ago.",  # the design says "last week": the word may be a day old
+            # the design says "Heard a carrier saved a town's shelves last week": the word may be a day old, and the man's
+            # "Heard a" was always heard "Her to" (a "that" after it is not)
+            "Heard that a carrier saved a town's shelves, not long ago.",
             "Good carrying, I hear, somewhere down the road.",
         ]),
     ]),
@@ -61,7 +63,9 @@ TABLE = [
         ]),
         # to a trader of repute
         ("trade.fame", "to a trader of repute", [
-            "Ah, the carrier! You've done the town a service.",
+            # the design says "Ah, the carrier!": Kokoro's "Ah" before "the" was heard "All", "Are" and "or" in the voices,
+            # on its own too, and "Oh" is heard right in all three
+            "Oh, the carrier! You've done the town a service.",
             "They talk of your carrying, round here.",
             "You're the one who kept us supplied, aren't you?",
         ]),
@@ -107,11 +111,27 @@ DELIVERY = {}
 
 # A take's own speed where its timbre's reading would run over the limit, misread or rush (key, timbre) -> times the
 # timbre's own, instead of its family's
-SPEED_FOR = {}
+SPEED_FOR = {
+    # 14 words: 4.54 s at the old man's pace, over the 4.0 s limit (the man's and the woman's are 3.9 s); he says it a little
+    # quicker than the man does his
+    ("talk.trade.board_1", "old"): 1.24,
+}
 
 # Text the TTS reads better (the subtitles keep the line as written): {key: {written: said}}
 SAY_AS = {}
 
 # A take's phonemes written out in full (its r's sounded), as make_talk_voices.PHONEMES: (key, timbre) or key -> phonemes,
 # for the lines the recogniser heard wrong as espeak reads them. Each comment says what Whisper base.en heard without it
-PHONEMES = {}
+PHONEMES = {
+    ("talk.trade.short_0", "woman"): "aɪ hˈɪɹ ðeɪɹ ʃˈɔːɹt ɒv sˈʌmθɪŋ ˌəʊvɚ jˈɒndɚ.",  # "I hear there short of"
+    ("talk.trade.short_0", "old"): "aɪ hˈɪɹ ðeɪɹ ʃˈɔːɹt ɒv sˈʌmθɪŋ ˌəʊvɚ jˈɒndɚ.",  # "they are" (it is heard so now)
+    ("talk.trade.road_0", "man"): "tˈeɪk kˈʌmpəni ˌɒn ðat ɹˈəʊd ɪf jɔːɹ lˈeɪdᵊn.",  # "if you're late in"
+    ("talk.trade.thanks_1", "man"): "wˈiːd hav ɹˈʌn ʃˈɔːɹt wɪðˌaʊt ɐ ɡˈʊd kˈaɹiɚ.",  # "He'd have run short"
+    ("talk.trade.fame_0", "man"): "ˈəʊ, ðə kˈaɹiɚ! juːv dˈʌn ðə tˈaʊn, ɐ sˈɜːvɪs.",  # "the town of service"
+    ("talk.trade.robbed_2", "woman"): "ɹˈɑːbd ɒnðə ɹˈəʊd, aɪ hˈɪɹ. ɪts ɐ hˈɑːɹd tɹˈeɪd.",  # "Roped on the road"
+    ("talk.trade.robbed_2", "old"): "ɹˈɑːbd ɒnðə ɹˈəʊd, aɪ hˈɪɹ. ɪts ɐ hˈɑːɹd tɹˈeɪd.",  # "rubbed on the road"
+    "talk.trade.hunted_0": "ðeɪ sˈeɪ, ɐ tɹˈeɪdɚ wɒz hˈɛld ˌʌp ɒnðə ɹˈəʊd.",  # the man's "The SAI trader"
+    ("talk.trade.hunted_1", "man"): "sˈʌmwɒn wɒz ɹˈɑbd ˈaʊt ɒnðə ɹˈəʊd, aɪ hˈɜːd.",  # "rubbed out on the road"
+    "talk.trade.child_0": "ðə kˈɑːɹt kˈɛɪm!",  # "The cart game."
+    "talk.trade.child_1": "lˈʊk ˈæt ˈɔːl ðə sˈaks!",  # "Look at all this accent."
+}

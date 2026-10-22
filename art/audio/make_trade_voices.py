@@ -590,9 +590,10 @@ def words(s):
 # from one heard right but for these: its notes of a sound in brackets ("(buzzing)", "[BLANK_AUDIO]", or one cut off at
 # "(buzz" as the room tail dies away), a possessive's or a contraction's apostrophe, a British or American spelling, a
 # compound written as two words, and words it can only pick between because they sound the same (mind and mined are one
-# sound; so are chalked and chocked to Kokoro's American voices, and "Wagon's" and "waggons")
+# sound; so are chalked and chocked to Kokoro's American voices, and "Wagon's" and "waggons", and "trader" and "traitor",
+# which they flap alike)
 HOMOPHONES = {"haul": "hall", "hours": "ours", "hooray": "hurrah", "hoorah": "hurrah", "honor": "honour",
-              "mined": "mind", "chocked": "chalked", "waggons": "wagons"}
+              "mined": "mind", "chocked": "chalked", "waggons": "wagons", "traitor": "trader"}
 
 
 def heard_words(heard):
@@ -600,7 +601,7 @@ def heard_words(heard):
 
 
 def loosely(ws):
-    s = " ".join(ws).replace("'", "").replace("strong box", "strongbox")
+    s = " ".join(ws).replace("'", "").replace("strong box", "strongbox").replace("they are", "theyre")
     return [HOMOPHONES.get(w, w) for w in s.split()]
 
 

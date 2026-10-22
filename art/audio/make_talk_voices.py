@@ -1849,6 +1849,15 @@ PHONEMES = {
     ("talk.fortune.why.trouble.oven_cracked_0", "old"): "ɐ nˈʌvənz kɹˈakt ˈat ðə bˈeɪkɚɹi.",  # not "cracked to the"
 }
 
+# The trade's ten families (trade_talk.py; living-world/trader/design.md section 10), a module of its own entered here by this
+# one block, as the build plan asks
+import trade_talk  # noqa: E402
+GROUPS += trade_talk.groups(MWO, CHILD, TALK)
+DELIVERY.update(trade_talk.DELIVERY)
+SPEED_FOR.update(trade_talk.SPEED_FOR)
+SAY_AS.update(trade_talk.SAY_AS)
+PHONEMES.update(trade_talk.PHONEMES)
+
 
 # ------------------------------------------------------------------ the lines
 class Line:
