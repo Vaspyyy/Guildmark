@@ -165,15 +165,28 @@ object TownTalk {
     }
 
     /**
+     * [player] had goods brought to [r]'s shop, by their own hand or a carter's of theirs (Trade, living-world/trader/design.md Part 6): a small favour
+     * ([Favour.HAULED]), counted once a day and only while the favour [r] feels for them is small ([Memory.DAILY_CAP]), so a delivery every day cannot
+     * buy a town's love past it. [Witness.hauled] calls it for the shop's keeper and household.
+     */
+    fun hauled(level: ServerLevel, r: Resident, player: UUID) = once(level, r, player, Favour.HAULED)
+
+    /**
      * [mind] has just heard [s] for the first time ([Rumours.hear] calls it): a works paid for or raised is the
      * town's thanks to its patron and anyone who gave a quarter of its price ([Favour.FUNDED]), once for each works,
      * whichever of its rumours they hear first. Never for a stall: that's its owner's own. A tale's rumour (kind
-     * `tale.<template>.<word>`) is left to the tales' memory, which thanks the one a good ending is about ([Favour.TALE_HEARD]).
+     * `tale.<template>.<word>`) is left to the tales' memory, which thanks the one a good ending is about ([Favour.TALE_HEARD]), and a
+     * trader's delivery (kind `trade.hauled`) to [Witness.relieved], which thanks a relief ticket's ([Favour.RELIEVED]).
      */
     internal fun heard(entry: TownTalkData.Entry, mind: Mind, s: Story) {
         val kind = s.rumour.kind
         if (kind.startsWith("tale.")) {
             io.github.vaspyyy.guildmark.tales.TaleMemory.heard(entry, mind, s)
+            return
+        }
+        // A trader's delivery heard of: the town thanks a relief ([Favour.RELIEVED]), once for each rumour
+        if (kind == Rumours.TRADE_HAULED) {
+            Witness.relieved(entry, mind, s)
             return
         }
         if (kind != Rumours.WORKS_FUNDED && kind != Rumours.WORKS_RAISED || mind.id < 0) return
@@ -527,7 +540,7 @@ enum class Favour(val amount: Double) {
     TALE_HEARD(1.0);
 
     /** Counted at most once a day from each resident, and only while the favour felt is small ([Memory.DAILY_CAP]). */
-    val daily: Boolean get() = this == BROUGHT || this == FED || this == RELISHED || this == RELISHED_FINE
+    val daily: Boolean get() = this == BROUGHT || this == FED || this == RELISHED || this == RELISHED_FINE || this == HAULED
 }
 
 /** A wrong a player did a resident: how much it counts, and its half-life in days (section 3). */

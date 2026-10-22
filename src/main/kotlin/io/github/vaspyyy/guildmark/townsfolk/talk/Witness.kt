@@ -4,6 +4,7 @@ import io.github.vaspyyy.guildmark.economy.Caravans
 import io.github.vaspyyy.guildmark.economy.Good
 import io.github.vaspyyy.guildmark.economy.Markets
 import io.github.vaspyyy.guildmark.economy.Shop
+import io.github.vaspyyy.guildmark.economy.Suppliers
 import io.github.vaspyyy.guildmark.economy.Trading
 import io.github.vaspyyy.guildmark.economy.fortune.Fortunes
 import io.github.vaspyyy.guildmark.economy.fortune.Noted
@@ -25,6 +26,8 @@ import io.github.vaspyyy.guildmark.townsfolk.Resident
 import io.github.vaspyyy.guildmark.townsfolk.Residents
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
+import io.github.vaspyyy.guildmark.trade.Haul
+import io.github.vaspyyy.guildmark.trade.HaulKind
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
@@ -44,6 +47,7 @@ import net.neoforged.neoforge.common.NeoForge
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent
 import net.neoforged.neoforge.event.server.ServerStoppedEvent
+import net.neoforged.neoforge.server.ServerLifecycleHooks
 import java.util.UUID
 
 /**
@@ -694,4 +698,67 @@ object Witness {
     /** Three of [capital]'s grown citizens, the same three for the same [salt], to know first where nobody else would. */
     private fun some(level: ServerLevel, capital: BlockPos, salt: Long): List<Resident> =
         Residents.get(level).of(capital).filter { it.alive && it.role == TownRole.CITIZEN }.sortedBy { Spread.mix(it.id * 17L + salt) }.take(3)
+
+    // ---- A delivery from the road (Trade, living-world/trader/design.md Part 6) ----
+
+    /** The units a delivery has to come to for the town to talk of it (a consignment), and for the talk to be of a great haul (as a relief ticket's always is). */
+    private const val HAULED_TALK = 64
+    private const val HAULED_GREAT = 128
+
+    /** The fourth fact of a `trade.hauled` rumour when the delivery was a relief ticket's: what [relieved] looks for, and what the Word's topics can tell it apart by. */
+    const val RELIEF_WORD = "relief"
+
+    /**
+     * What the town made of a delivery ([hauled]): the rumour it started or heated (none for a delivery under 64 units that was not a relief ticket's),
+     * how many of the shop's own it warmed to the player, and how many residents knew of it first.
+     */
+    class Hauled(val rumour: Rumour?, val warmed: Int, val knew: Int)
+
+    /** As [hauled], for a delivery [player] made in person. */
+    fun hauled(level: ServerLevel, entry: Markets.Entry, player: ServerPlayer, haul: Haul, units: Int, crowd: Collection<Int> = listOf()): Hauled =
+        hauled(level, entry, player.uuid, player.name.string, haul, units, crowd)
+
+    /**
+     * [player] (called [name]) brought [units] of [haul]'s good to its shop in [entry]'s capital, in person or by a carter of their House (the town's
+     * answer to a delivery, living-world/trader/design.md Part 6; `WorldAnswers` calls it from `Hauls.Listener.delivered`). The shop's own, its keeper and
+     * their household, think the better of them ([Favour.HAULED], once a day each, up to the daily cap). A consignment of 64 units or more, or a relief
+     * ticket's, is also talked of: a `trade.hauled` rumour [=player, the good's key, =town, and "relief" for a relief ticket's] at 0.6 of its heat, or 0.8 for
+     * 128 units or more and for a relief (which goes to the other capitals as word of the region), told first by the keeper and household who saw it and by
+     * [crowd], the residents who stood in the cheer (three citizens of the town if none of them is known). A relief is thanked by every resident who hears
+     * of it ([relieved]).
+     */
+    fun hauled(level: ServerLevel, entry: Markets.Entry, player: UUID, name: String, haul: Haul, units: Int, crowd: Collection<Int> = listOf()): Hauled {
+        val capital = entry.capital
+        val keeper = keeper(level, capital, haul.shop)
+        val own = keeper?.let { listOf(it) + household(level, it) }.orEmpty()
+        // A delivery of any kind warms the shop's own to whoever brought it
+        for (r in own) TownTalk.hauled(level, r, player)
+        val relief = haul.kind == HaulKind.RELIEF
+        if (units < HAULED_TALK && !relief) return Hauled(null, own.size, 0)
+        val town = Suppliers.place(level, capital).ifEmpty { Spread.view(capital).places?.name.orEmpty() }
+        if (town.isEmpty()) return Hauled(null, own.size, 0)
+        val knowers = (own.mapIndexed { k, r -> r.id to (if (k == 0) Venue.SEEN else Venue.HOUSEHOLD) } + crowd.map { it to Venue.SEEN }).distinctBy { it.first }
+            .ifEmpty { some(level, capital, haul.id * 31L + units).map { it.id to Venue.STREET } }
+        val facts = listOfNotNull(named(name), haul.good.key, named(town), RELIEF_WORD.takeIf { relief })
+        val heat = if (relief || units >= HAULED_GREAT) 0.8f else 0.6f
+        val story = TownTalk.begin(
+            level, capital, Rumours.TRADE_HAULED, player, keeper?.id ?: -1, facts, heat, Fade.SMALL, if (relief) Scope.REGION else Scope.TOWN, 1,
+            null, Rumours.TOWN, knowers,
+        ).first
+        return Hauled(story.rumour, own.size, knowers.size)
+    }
+
+    /**
+     * [mind] has just heard [s], a trader's delivery (kind `trade.hauled`), for the first time ([TownTalk.heard] calls it): if it was a relief ticket's and
+     * was brought to this very town (not word of it from afar), they thank the one who brought it ([Favour.RELIEVED]), once for each rumour.
+     */
+    internal fun relieved(entry: TownTalkData.Entry, mind: Mind, s: Story) {
+        val rumour = s.rumour
+        val player = rumour.about ?: return
+        if (s.by != Rumours.TOWN || rumour.args.getOrNull(3) != RELIEF_WORD || mind.id < 0 || !Memory.enabled()) return
+        val level = ServerLifecycleHooks.getCurrentServer()?.overworld() ?: return
+        val day = Memory.day(level)
+        val acq = Memory.acq(mind, player, day, true) ?: return
+        if (Memory.favourOnce(acq, day, Favour.RELIEVED, rumour.id.toLong())) TownTalkData.get(level).changed()
+    }
 }
