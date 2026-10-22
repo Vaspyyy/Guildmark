@@ -7,6 +7,9 @@ import io.github.vaspyyy.guildmark.city.Capitals
 import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
 import io.github.vaspyyy.guildmark.townsfolk.Director
 import io.github.vaspyyy.guildmark.townsfolk.Furnish
+import io.github.vaspyyy.guildmark.village.live.VillageLamps
+import io.github.vaspyyy.guildmark.village.live.VillageRec
+import io.github.vaspyyy.guildmark.village.live.Villages
 import net.minecraft.core.BlockPos
 import net.minecraft.core.registries.Registries
 import net.minecraft.server.MinecraftServer
@@ -25,7 +28,9 @@ import java.util.concurrent.CompletableFuture
 /**
  * The capitals' street lamps, lit at dusk and put out at dawn (the Street Lamps setting). For each capital a player is
  * about (within [PROBE] blocks of its ground), its lamps are kept as a [LampTown]: every [PASS] ticks the clock says
- * what each lamp should be just now, and a lamp is touched only when that changes from what it was last set to.
+ * what each lamp should be just now, and a lamp is touched only when that changes from what it was last set to. A village's
+ * lamps are kept the same way, as a [LampTown] of their own, while the village is live (a player within 96 blocks of its bell)
+ * and for a minute after ([VillageLamps]): its posts are one round or two, and its keepers are named from its folk.
  *
  * The lamps go in rounds ([LampTown.Run]): a lamplighter's round of the streets, the lamps at a farm's gate that its
  * farmer sees to, and lamps out on the roads and along the harbour's quays and piers that keep their own time. At dusk each round begins about half past five
@@ -161,10 +166,14 @@ object StreetLamps {
         true
     }
 
+    /** Whether [town]'s lamps are worked to the clock: Street Lamps on, and for a village Village Lamps too. Off, they burn day and night. */
+    fun enabled(town: LampTown): Boolean = enabled() && (!town.isVillage || VillageLamps.on())
+
     private fun clear() {
         towns.clear()
         working.clear()
         failed.clear()
+        broken.clear()
         known.clear()
         nowhere.clear()
         scanned = Long.MIN_VALUE / 2
@@ -226,6 +235,7 @@ object StreetLamps {
         if (time - scanned >= SCAN) {
             scanned = time
             scan(level, time)
+            scanVillages(level, time)
         }
         for (town in towns.values.toList()) pass(level, town, time)
     }
@@ -316,6 +326,60 @@ object StreetLamps {
     /** Whether working out [capital]'s lamps went wrong. */
     fun failed(capital: CapitalPiece): Boolean = capital.center in failed
 
+    // ---- The villages players are about ----
+
+    /** The posts a village's lamps could not be worked out from (its bell, and the stamp of the posts), so as not to try again until they change. */
+    private val broken = HashMap<BlockPos, Long>()
+
+    /** Keeps the lamps of the villages that are live now (see [VillageLamps.live]), and so lets go of those that are not, after a while (see [scan]). */
+    private fun scanVillages(level: ServerLevel, time: Long) {
+        for (rec in VillageLamps.live(level)) keepVillage(level, rec, time)
+    }
+
+    /**
+     * Keeps the lamps of the village [rec] from now, made from the posts its last census found: none is made before it has been
+     * counted, nor for a village with no post. Posts the census finds otherwise later are taken up in a quiet stretch of the day,
+     * never while a round is on, carrying on from the town as it was. The village's lamps if they are kept, else null.
+     */
+    fun keepVillage(level: ServerLevel, rec: VillageRec, time: Long): LampTown? {
+        val key = BlockPos.of(rec.key)
+        val old = towns[key]
+        val places = Villages.places(level, rec.key)
+        if (places == null) return old?.also { it.seen = time }
+        val posts = places.lamps
+        val stamp = LampTown.stamp(posts)
+        if (old != null) {
+            old.seen = time
+            if (old.stamp == stamp || !quiet(level, old)) return old
+        }
+        if (posts.isEmpty()) {
+            towns.remove(key)
+            return null
+        }
+        if (broken[key] == stamp) return old
+        val town = try {
+            LampTown.village(rec, places, posts)
+        } catch (e: RuntimeException) {
+            Guildmark.LOGGER.warn("Couldn't work out the street lamps of the village at {}", key, e)
+            broken[key] = stamp
+            return old
+        }
+        broken.remove(key)
+        town.seen = time
+        if (old != null) town.carry(old)
+        towns[key] = town
+        return town
+    }
+
+    /** Whether no round of [town]'s is on or about to be: the afternoon, the night and the morning, with nobody going round. */
+    private fun quiet(level: ServerLevel, town: LampTown): Boolean {
+        val stretch = stretch(town, since(level.overworldClockTime), level.isRaining)
+        return stretch != Stretch.DUSK && stretch != Stretch.DAWN && town.runs.none { it.held != null }
+    }
+
+    /** The lamps of the village under [key] if they are kept just now, for the testing commands. */
+    fun villageTown(key: BlockPos): LampTown? = towns[key]
+
     // ---- A pass over a capital's lamps ----
 
     private fun pass(level: ServerLevel, town: LampTown, now: Long) {
@@ -323,7 +387,7 @@ object StreetLamps {
         val time = since(clock)
         val raining = level.isRaining
         val stretch = setUp(level, town, clock, raining)
-        val enabled = enabled()
+        val enabled = enabled(town)
         if (enabled) for (run in town.runs) {
             // A lamplighter gone quiet (hurt, called away, out of reach of the players) hands their lamps back to the clock
             val held = run.held
@@ -609,7 +673,7 @@ object StreetLamps {
         val time = since(clock)
         val raining = level.isRaining
         val stretch = setUp(level, town, clock, raining)
-        val enabled = enabled()
+        val enabled = enabled(town)
         val afterDark = level.gameTime - darkAt
         val sinceDark = level.gameTime - darkFrom
         for (i in town.pos.indices) {
@@ -631,14 +695,15 @@ object StreetLamps {
 
     /**
      * Sets [run] going now, whatever the hour: its lamps lit one after another if most of them are out, put out if most are
-     * lit, by its keeper if they can be had, or by the clock. It holds until the day's next stretch.
+     * lit (or lit, or put out, as [lighting] says), by its keeper if they can be had, or by the clock. It holds until the day's next
+     * stretch.
      */
-    fun startNow(level: ServerLevel, town: LampTown, run: LampTown.Run): Boolean {
+    fun startNow(level: ServerLevel, town: LampTown, run: LampTown.Run, lighting: Boolean? = null): Boolean {
         val clock = level.overworldClockTime
         val time = since(clock)
         setUp(level, town, clock, level.isRaining)
         val lit = run.lamps.count { i -> StreetLampBlock.burning(level.getBlockState(town.pos[i])) }
-        val dusk = lit * 2 < run.lamps.size
+        val dusk = lighting ?: (lit * 2 < run.lamps.size)
         if (dusk) town.rationed = rationed(level, town)
         val previous = run.held
         if (previous != null) release(level, town, run, previous)
@@ -648,5 +713,19 @@ object StreetLamps {
         val director = taker?.take(level, town, run, dusk, time)
         if (director != null) hold(town, run, director, 0, level.gameTime)
         return dusk
+    }
+
+    /**
+     * Gives [town]'s lamps back to the clock: a round set going by hand is let go, and so is a keeper going round one (who puts the
+     * pole away), and the day's stretch is begun again, so that the keepers are named and the rounds timed as if the town had just
+     * been kept. Rationing set going by hand is forgotten by the caller.
+     */
+    fun clearForced(level: ServerLevel, town: LampTown) {
+        for (run in town.runs) {
+            run.held?.let { release(level, town, run, it) }
+            run.force = 0
+            run.lookAt = 0L
+        }
+        town.window = Long.MIN_VALUE
     }
 }

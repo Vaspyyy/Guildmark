@@ -5,8 +5,11 @@ import com.mojang.serialization.codecs.RecordCodecBuilder
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.townsfolk.Days
 import io.github.vaspyyy.guildmark.townsfolk.Doing
+import io.github.vaspyyy.guildmark.townsfolk.Resident
 import io.github.vaspyyy.guildmark.townsfolk.Residents
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
+import io.github.vaspyyy.guildmark.village.live.VillageLamps
+import io.github.vaspyyy.guildmark.village.live.days.BellKeeper
 import net.minecraft.core.BlockPos
 import net.minecraft.resources.Identifier
 import net.minecraft.server.level.ServerLevel
@@ -20,6 +23,9 @@ import java.util.function.Supplier
  * there. A round with nobody (or whose lamplighter has died) is given the nearest free grown-up with their evenings to
  * themselves: a townsman, a merchant or a fisher, failing those a guard (the night watch light the lamps on their way
  * to the walls). A farm's lamps are kept by the farmer of that farmhouse, coming in from the fields and going out to them.
+ * A village's rounds are kept the same way, by any grown-up of its folk with a home (the guards last), but the one who holds
+ * the village's bell, who rings it at the hour the round begins; a village with no folk of its own has no keepers. The rounds are
+ * kept by the village's bell in place of a capital's centre.
  */
 class LampKeepers(private val towns: MutableMap<BlockPos, IntArray> = HashMap()) : SavedData() {
     operator fun get(capital: BlockPos): IntArray? = towns[capital]
@@ -58,6 +64,14 @@ class LampKeepers(private val towns: MutableMap<BlockPos, IntArray> = HashMap())
         fun assign(level: ServerLevel, town: LampTown) {
             val residents = Residents.get(level)
             val center = town.key
+            // A village's keepers are any grown-up of its folk but the holder of the bell, and nobody where it has no folk of its own
+            val village = town.isVillage
+            if (village && !VillageLamps.folk(level, center.asLong())) {
+                for (run in town.runs) run.keeper = -1
+                return
+            }
+            val bellman = if (village) BellKeeper.holder(level, center, Days.dayOf(level.overworldClockTime)) else null
+            fun may(r: Resident): Boolean = if (village) r.role.adult && r.id != bellman else r.role in KEEPERS
             val data = get(level)
             val rounds = town.plan.rounds.size
             val kept = data[center]?.takeIf { it.size == rounds }?.copyOf() ?: IntArray(rounds) { -1 }
@@ -65,7 +79,7 @@ class LampKeepers(private val towns: MutableMap<BlockPos, IntArray> = HashMap())
             val taken = HashSet<Int>()
             for (run in city) {
                 val r = residents[kept[run.round]]
-                if (r != null && r.alive && r.capital == center && r.role in KEEPERS) {
+                if (r != null && r.alive && r.capital == center && may(r)) {
                     run.keeper = r.id
                     taken.add(r.id)
                 } else {
@@ -74,7 +88,7 @@ class LampKeepers(private val towns: MutableMap<BlockPos, IntArray> = HashMap())
                 }
             }
             val open = city.filter { it.keeper < 0 }
-            val people = if (open.isEmpty()) listOf() else residents.of(center).filter { it.alive && it.id !in taken && it.home >= 0 && it.role in KEEPERS }
+            val people = if (open.isEmpty()) listOf() else residents.of(center).filter { it.alive && it.id !in taken && it.home >= 0 && may(it) }
             if (open.isNotEmpty() && people.isNotEmpty()) {
                 // Nearest pairs first, of each round's first lamp and each free grown-up's door; a guard only once the rest are gone
                 class Pair(val run: LampTown.Run, val id: Int, val score: Double)
