@@ -36,7 +36,8 @@ enum class Title(val id: String, val milestone: String) {
     STALWART("stalwart", Milestones.REPELLED),
     S_RANK("s_rank", "rank_s"),
     SHARD_SEEKER("shard_seeker", Milestones.FIRST_SHARD),
-    WARDEN("warden", Milestones.HOLLOW_KING);
+    WARDEN("warden", Milestones.HOLLOW_KING),
+    GOOD_NEIGHBOUR("good_neighbour", Milestones.TALES_THREE);
 
     val label: Component get() = Component.translatable("title.guildmark.$id")
 

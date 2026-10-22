@@ -1,0 +1,23 @@
+{
+  "parent": "guildmark:guildmark/tales_three",
+  "display": {
+    "icon": {
+      "id": "guildmark:tale_quill"
+    },
+    "title": {
+      "translate": "advancements.guildmark.tales_all.title"
+    },
+    "description": {
+      "translate": "advancements.guildmark.tales_all.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

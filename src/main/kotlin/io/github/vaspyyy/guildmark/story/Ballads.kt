@@ -20,7 +20,7 @@ object Ballads {
     private val DEEDS = listOf(
         Milestones.HOLLOW_KING, Milestones.SEVEN_SHARDS, Milestones.TAKEOVER, Milestones.CITY, Milestones.LEGENDARY,
         Milestones.REPELLED, Milestones.SIEGE, Milestones.BANNER, Milestones.GUILD_FOUNDED, Milestones.FIRST_SHARD,
-        Milestones.LAIR, Milestones.TRADE_ROAD, Milestones.CHAMPION, Milestones.ADVANCE_BUILT, Milestones.PAID,
+        Milestones.LAIR, Milestones.TRADE_ROAD, Milestones.CHAMPION, Milestones.ADVANCE_BUILT, Milestones.TALES_THREE, Milestones.PAID,
     )
 
     private fun deeds(player: Player): List<String> = DEEDS.filter { Milestones.done(player, it) }
