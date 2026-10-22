@@ -135,7 +135,8 @@ class MemorialItem(block: Block, properties: Properties) : BlockItem(block, prop
  * with a ledge at its foot, two blocks high in a one-cell block) and a [MemorialKind.CAIRN] (a pile of fieldstone, three blocks across
  * at the foot, with a flagstone step in front). Part G's models draw it all from the state: `facing` (the way its carved face looks,
  * which is where a mourner kneels), `candles` (0 to 4 stand on the ledge or the step), `lit` (their flames), `mossy` (set once it is ten
- * market days old) and `posy` (a bunch of flowers laid on the ledge by the Laying, withering after a few days).
+ * market days old), `posy` (a bunch of flowers laid on the ledge by the Laying) and `wilted` (that posy some days on: dried, its heads down,
+ * a petal now and then drifting from it, until the wind takes it).
  *
  * What it holds is in [MemorialBlockEntity]: the names, the template and lead of the tale it is for, the day it was laid, and the
  * village's key when a village keeps it (every field optional, so the villages' memorials are the same block). A right-click reads the
@@ -147,12 +148,12 @@ class MemorialBlock(properties: Properties) : Block(properties), EntityBlock {
     init {
         registerDefaultState(
             stateDefinition.any().setValue(KIND, MemorialKind.STONE).setValue(FACING, Direction.NORTH).setValue(CANDLES, 0)
-                .setValue(LIT, false).setValue(MOSSY, false).setValue(POSY, false),
+                .setValue(LIT, false).setValue(MOSSY, false).setValue(POSY, false).setValue(WILTED, false),
         )
     }
 
     override fun createBlockStateDefinition(builder: StateDefinition.Builder<Block, BlockState>) {
-        builder.add(KIND, FACING, CANDLES, LIT, MOSSY, POSY)
+        builder.add(KIND, FACING, CANDLES, LIT, MOSSY, POSY, WILTED)
     }
 
     /** Set down by hand it faces the one who placed it, as a stone set for a visitor to read does. */
@@ -221,14 +222,24 @@ class MemorialBlock(properties: Properties) : Block(properties), EntityBlock {
     override fun getCloneItemStack(level: LevelReader, pos: BlockPos, state: BlockState, includeData: Boolean, player: Player): ItemStack =
         MemorialRegistry.stack(state.getValue(KIND))
 
-    /** A thread of smoke from each candle that is lit; the flame itself is in the model, so nothing is added to it. */
+    /**
+     * A petal now and then from a posy that has withered; a thread of smoke from each candle that is lit (the flame itself is in the model,
+     * so nothing is added to it).
+     */
     override fun animateTick(state: BlockState, level: Level, pos: BlockPos, random: RandomSource) {
-        if (!state.getValue(LIT)) return
         val facing = state.getValue(FACING)
         val kind = state.getValue(KIND)
+        val posy = state.getValue(POSY)
+        if (posy && state.getValue(WILTED) && random.nextInt(SHED) == 0) {
+            val at = posyAt(kind, facing, pos)
+            level.addParticle(
+                ParticleTypes.CHERRY_LEAVES, at.x + (random.nextDouble() - 0.5) * 0.12, at.y + 0.06, at.z + (random.nextDouble() - 0.5) * 0.12, 0.0, 0.0, 0.0,
+            )
+        }
+        if (!state.getValue(LIT)) return
         for (i in 0 until state.getValue(CANDLES)) {
             if (random.nextInt(4) != 0) continue
-            val tip = tip(kind, i, facing, pos)
+            val tip = tip(kind, i, facing, pos, posy)
             level.addParticle(ParticleTypes.SMOKE, tip.x, tip.y, tip.z, 0.0, 0.0, 0.0)
         }
         // The wick's small crackle, as a vanilla candle makes it
@@ -245,11 +256,18 @@ class MemorialBlock(properties: Properties) : Block(properties), EntityBlock {
         val KIND: EnumProperty<MemorialKind> = EnumProperty.create("kind", MemorialKind::class.java)
         val FACING: EnumProperty<Direction> = BlockStateProperties.HORIZONTAL_FACING
 
-        /** The candles that stand on the ledge (0 to 4) and whether their flames burn; moss grown at the foot; a posy laid on the ledge. */
+        /**
+         * The candles that stand on the ledge (0 to 4) and whether their flames burn; moss grown at the foot; a posy laid on the ledge and
+         * whether it has withered (only ever with a posy: the models draw the one or the other, and the candles stand clear of it).
+         */
         val CANDLES: IntegerProperty = IntegerProperty.create("candles", 0, MAX_CANDLES)
         val LIT: BooleanProperty = BlockStateProperties.LIT
         val MOSSY: BooleanProperty = BooleanProperty.create("mossy")
         val POSY: BooleanProperty = BooleanProperty.create("posy")
+        val WILTED: BooleanProperty = BooleanProperty.create("wilted")
+
+        /** A withered posy sheds a petal on one in this many of the client's visits to the block. */
+        private const val SHED = 5
 
         /** The state of a memorial of [kind] facing [facing]: no candles, no moss, no posy. */
         fun state(kind: MemorialKind, facing: Direction): BlockState =
@@ -272,25 +290,33 @@ class MemorialBlock(properties: Properties) : Block(properties), EntityBlock {
 
         /**
          * Where each of the four candles' flames burns, in sixteenths of the cell, facing north: `candle_tip` in `art/scripts/tale_blocks.py`
-         * (which lays the candles out) gives the same numbers; they are copied here, and the script says so.
+         * (which lays the candles out) gives the same numbers, and `python3 art/scripts/tale_blocks.py --numbers` writes them as they are
+         * written here (the same for [TIPS_POSY] and [POSY_AT]): they are copied, and the script says so. With a posy lying on the ledge the
+         * candles stand in other places, so there are two sets.
          */
         private val TIPS: Map<MemorialKind, List<Vec3>> = mapOf(
-            MemorialKind.STONE to listOf(Vec3(5.0, 11.6, 1.9), Vec3(2.3, 10.6, 2.2), Vec3(7.7, 12.1, 2.1), Vec3(13.9, 10.1, 1.9)),
-            MemorialKind.CAIRN to listOf(Vec3(5.0, 14.7, -10.4), Vec3(2.3, 13.7, -11.0), Vec3(7.7, 15.2, -9.7), Vec3(13.9, 13.2, -10.4)),
+            MemorialKind.STONE to listOf(Vec3(8.6, 11.6, 2.1), Vec3(5.6, 10.6, 1.9), Vec3(11.6, 12.1, 1.9), Vec3(3.2, 10.1, 2.2)),
+            MemorialKind.CAIRN to listOf(Vec3(8.6, 14.7, -10.8), Vec3(5.6, 13.7, -11.4), Vec3(11.6, 15.2, -11.4), Vec3(3.2, 13.2, -10.8)),
+        )
+        private val TIPS_POSY: Map<MemorialKind, List<Vec3>> = mapOf(
+            MemorialKind.STONE to listOf(Vec3(6.6, 11.6, 2.0), Vec3(4.25, 10.6, 2.2), Vec3(14.1, 12.1, 2.0), Vec3(1.9, 10.1, 2.1)),
+            MemorialKind.CAIRN to listOf(Vec3(6.2, 14.7, -11.8), Vec3(3.6, 13.7, -11.7), Vec3(6.4, 15.2, -9.4), Vec3(3.9, 13.2, -9.35)),
         )
 
         /**
-         * Where the posy lies, in sixteenths of the cell, facing north: 2.8 to the left of the mourner (who stands before the carved face)
-         * of the stone's middle, 1.8 in from the plinth's front edge, on the ledge; on the cairn's step the same way (`POSY_AT` in
-         * `art/scripts/tale_blocks.py` lays the flowers there, and these are copied from it).
+         * Where the posy lies, in sixteenths of the cell, facing north: about 2.8 to the left of the mourner (who stands before the carved
+         * face) of the stone's middle, 1.8 in from the plinth's front edge, on the ledge; on the cairn's step the same way (`POSY_AT` in
+         * `art/scripts/tale_blocks.py` lays the flowers there, and these are copied from it). The stone's is half a pixel nearer the middle
+         * than the clip sets the posy down (10.8): the ledge is 14.5 wide and holds four candles as well.
          */
         private val POSY_AT: Map<MemorialKind, Vec3> = mapOf(
-            MemorialKind.STONE to Vec3(10.8, 5.5, 2.3),
+            MemorialKind.STONE to Vec3(10.3, 5.5, 2.3),
             MemorialKind.CAIRN to Vec3(10.8, 8.6, -11.2),
         )
 
-        /** Over the flame of candle [i] (0 to 3) of a memorial of [kind] facing [facing] at [pos], in the world. */
-        fun tip(kind: MemorialKind, i: Int, facing: Direction, pos: BlockPos): Vec3 = turned(TIPS.getValue(kind)[i.coerceIn(0, MAX_CANDLES - 1)], facing, pos)
+        /** Over the flame of candle [i] (0 to 3) of a memorial of [kind] facing [facing] at [pos], in the world; [posy]: one lies on the ledge, so the candles stand clear of it. */
+        fun tip(kind: MemorialKind, i: Int, facing: Direction, pos: BlockPos, posy: Boolean = false): Vec3 =
+            turned((if (posy) TIPS_POSY else TIPS).getValue(kind)[i.coerceIn(0, MAX_CANDLES - 1)], facing, pos)
 
         /** On the posy that lies on a memorial of [kind] facing [facing] at [pos], in the world. */
         fun posyAt(kind: MemorialKind, facing: Direction, pos: BlockPos): Vec3 = turned(POSY_AT.getValue(kind), facing, pos)

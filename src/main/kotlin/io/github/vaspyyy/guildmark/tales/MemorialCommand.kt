@@ -131,7 +131,7 @@ internal object MemorialCommand {
         val candles = state.getValue(MemorialBlock.CANDLES)
         if (candles > 0) extras += "$candles candle" + (if (candles > 1) "s" else "") + if (state.getValue(MemorialBlock.LIT)) " lit" else ""
         if (state.getValue(MemorialBlock.MOSSY)) extras += "mossy"
-        if (state.getValue(MemorialBlock.POSY)) extras += "a posy"
+        if (state.getValue(MemorialBlock.POSY)) extras += if (state.getValue(MemorialBlock.WILTED)) "a withered posy" else "a posy"
         return "set at ${pos.toShortString()} facing ${state.getValue(MemorialBlock.FACING).getName()}" + if (extras.isEmpty()) "" else ", " + extras.joinToString(", ")
     }
 
@@ -205,7 +205,7 @@ internal object MemorialCommand {
         val pos = rec.pos
         val laid = rec.placed && pos != null && level.isLoaded(pos) && level.getBlockState(pos).let { it.`is`(MemorialRegistry.MEMORIAL.get()) && it.getValue(MemorialBlock.POSY) }
         if (!laid) return fail(source, "Memorial #${rec.id} has no stone standing in a loaded chunk, so no posy was laid.")
-        return TaleCommand.say(source, Component.empty().append(TaleCommand.grey("A posy lies on memorial #${rec.id}; it withers in ${Memorials.POSY_DAYS} market days.")))
+        return TaleCommand.say(source, Component.empty().append(TaleCommand.grey("A posy lies on memorial #${rec.id}; it dries in ${Memorials.WILT_DAYS} market days and the wind takes it on the ${Memorials.POSY_DAYS}th.")))
     }
 
     private fun candles(context: CommandContext<CommandSourceStack>, lit: Boolean): Int {

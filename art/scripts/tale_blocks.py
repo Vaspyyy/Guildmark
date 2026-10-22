@@ -5,23 +5,28 @@ names cut in the stone, and candles.
     python3 -B art/scripts/tale_blocks.py src/main/resources/assets/guildmark [preview-dir]
 
 One block (`guildmark:memorial`), two looks chosen by the block-state property `kind` (`stone`, `cairn`), and `facing`, `candles` (0 to
-4), `lit` and `mossy` besides. The blockstate is a multipart: for the way it faces, the base of its kind (turned), the moss over it if
-`mossy`, then a candle stub for each candle that stands and, if `lit`, its flame. Writes
+4), `lit`, `mossy`, `posy` and `wilted` besides. The blockstate is a multipart: for the way it faces, the base of its kind (turned), the
+moss over it if `mossy`, the posy if `posy` (the withered one if `wilted`), then a candle stub for each candle that stands and, if
+`lit`, its flame; with a posy lying on the ledge the candles stand in other places (they are the same pillars, set clear of it). Writes
 
   * `blockstates/memorial.json`;
   * `models/block/`: `memorial_stone`, `memorial_cairn` (the bases); `memorial_<kind>_moss` and `_moss_east`, `_moss_south`, `_moss_west`
     (the moss for each way the memorial faces: laid out in the world's frame, so it grows on the world's north side whichever way
-    the stone looks); `memorial_<kind>_candle_1..4` and `memorial_<kind>_flame_1..4`;
+    the stone looks); `memorial_<kind>_candle_1..4` and `memorial_<kind>_flame_1..4`, and the same with `_posy` after them for the places
+    beside a posy; `memorial_<kind>_posy` and `memorial_<kind>_posy_wilted`;
   * `models/item/memorial_stone.json`, `memorial_cairn.json` (the creative hand's, each with two lit candles) and `items/memorial.json`;
-  * the textures `memorial_stone`, `memorial_cairn` (sheets), `memorial_moss`, `memorial_wax` and the two flame strips `memorial_flame_a`
-    and `_b`, each animated by its `.mcmeta`.
+  * the textures `memorial_stone`, `memorial_cairn` (sheets), `memorial_moss`, `memorial_wax`, `memorial_posy` (the posy fresh and withered) and
+    the two flame strips `memorial_flame_a` and `_b`, each animated by its `.mcmeta`.
 
 Authored facing north (the carved face, the name-slab and the candles toward -z); the blockstate turns it. A model element may not
 run past -16..32 (the game refuses the whole model), so the stone, two blocks high, cannot have a candle on its top: the candles
 stand on a ledge at the front (the stone's foot, the cairn's step), where a mourner kneels to set them. `candle_tip` says where each
-flame burns, for the smoke the block adds. Everything is seeded: a rerun gives the same files. With a preview dir it also writes the
-sheets (both looks from four sides, every candle state by day and by night, the four facings with their moss, the flames moving, the
-creative hand's two models, the textures).
+flame burns, for the smoke the block adds, and `python3 tale_blocks.py --numbers` writes the numbers MemorialBlock.kt copies (those
+and `POSY_AT`, where the posy lies: LAY_POSY in tale_clips.py sets it down there). `verify` also checks by number that every candle stands on
+its ledge, that none touches another or the posy, and that the posy (either) lies on the ledge. Everything is seeded: a rerun gives the
+same files. With a preview dir it also writes the sheets (both looks from four sides, every candle state by day and by night, the four
+facings with their moss, the posy fresh and withered with the candles beside it, the flames moving, the creative hand's two models, the
+textures).
 """
 import json
 import math
@@ -35,7 +40,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
 from hdkit import PAL, Canvas, grid, fbm, rand, bands, mix, shift, light, blur, path_dist
-from works_art import cube, Rx, Ry, Rz, SIX
+from works_art import cube, along, Rx, Ry, Rz, SIX
 import island_blockview as BV
 
 NS = 'guildmark:block/'
@@ -314,9 +319,19 @@ TILE_AT = ((0, 0), (32, 0), (0, 32), (32, 32))      # the four 32 x 32 texel til
 # Where the candles stand: on the front ledge (the stone's foot, the cairn's step), each kind's own four places, (x, z) with the front
 # at -z, the first candle first; and the height of the ledge they stand on.
 LEDGE = {'stone': 5.5, 'cairn': 8.6}
-SLOTS = {'stone': ((8.6, 2.1), (5.6, 1.9), (11.6, 1.9), (3.6, 2.2)),
-         'cairn': ((8.6, -10.8), (5.6, -11.4), (11.6, -11.4), (3.6, -10.8))}
+SLOTS = {'stone': ((8.6, 2.1), (5.6, 1.9), (11.6, 1.9), (3.2, 2.2)),
+         'cairn': ((8.6, -10.8), (5.6, -11.4), (11.6, -11.4), (3.2, -10.8))}
+# With a posy lying on the ledge the candles stand where it is not: it keeps the stone's front on the mourner's left (the cairn's step
+# has room for a second row behind its front one). The blockstate picks the one set or the other by `posy`.
+SLOTS_POSY = {'stone': ((6.6, 2.0), (4.25, 2.2), (14.1, 2.0), (1.9, 2.1)),
+              'cairn': ((6.2, -11.8), (3.6, -11.7), (6.4, -9.4), (3.9, -9.35))}
+# What the ledge reaches, as (x0, z0, x1, z1): a candle's pool of wax is kept inside it
+LEDGE_BOX = {'stone': (0.75, 0.5, 15.25, 3.5), 'cairn': (2.0, -13.0, 14.0, -5.5)}
 CANDLE_H = (4.5, 3.5, 5.0, 3.0)         # the stubs' heights, no two alike: one is burnt lower, one is new
+# Where the posy lies, (x, the ledge's top, z), with its heads toward +x: LAY_POSY (tale_clips.py) sets it down 2.8 px to the mourner's left of
+# the stone's middle (x = 10.8) and 1.8 px in from the plinth's front edge (the step's, on the cairn); MemorialBlock.POSY_AT in the code copies
+# these. The stone's is half a pixel nearer the middle (the clip's tolerance is a pixel): a ledge 14.5 wide has to hold four candles as well.
+POSY_AT = {'stone': (10.3, 5.5, 2.3), 'cairn': (10.8, 8.6, -11.2)}
 
 
 def uv_px(w, h, x0, y0, x1, y1):
@@ -554,23 +569,31 @@ def cairn_moss_elements(k):
 
 # ---------------------------------------------------------------- the candles and their flames
 
-def candle_elements(kind, i):
-    """Candle [i] (0 to 3) of a [kind]: a pool of wax it stands in, a stub two pixels square, a wick."""
-    cx, cz = SLOTS[kind][i]
+def slot_of(kind, i, posy=False):
+    """Where candle [i] of a [kind] stands: (x, z), the front at -z; the places with a posy lying on the ledge are [posy]'s."""
+    return (SLOTS_POSY if posy else SLOTS)[kind][i]
+
+
+def candle_elements(kind, i, posy=False):
+    """Candle [i] (0 to 3) of a [kind]: a pool of wax it stands in, a stub two pixels square, a wick. With [posy] it stands where the posy
+    leaves room."""
+    cx, cz = slot_of(kind, i, posy)
     y = LEDGE[kind]
     h = CANDLE_H[i]
     faces = ('north', 'south', 'west', 'east', 'up')
-    pool = cube((cx - 1.5, y, cz - 1.5), (cx + 1.5, y + 0.45, cz + 1.5), 'wax', faces, uv={'*': [0, 12, 4, 16], 'up': [8, 12, 12, 16]})
+    bx0, bz0, bx1, bz1 = LEDGE_BOX[kind]
+    pool = cube((max(cx - 1.5, bx0), y, max(cz - 1.5, bz0)), (min(cx + 1.5, bx1), y + 0.45, min(cz + 1.5, bz1)), 'wax', faces,
+                uv={'*': [0, 12, 4, 16], 'up': [8, 12, 12, 16]})
     stub = cube((cx - 1.0, y + 0.4, cz - 1.0), (cx + 1.0, y + h, cz + 1.0), 'wax', faces,
                 uv={'north': [0, 0, 4, 2 * h], 'south': [4, 0, 8, 2 * h], 'west': [0, 0, 4, 2 * h], 'east': [4, 0, 8, 2 * h], 'up': [8, 0, 12, 4]})
     wick = cube((cx - 0.25, y + h, cz - 0.25), (cx + 0.25, y + h + 0.9, cz + 0.25), 'wax', faces, uv={'*': [12, 0, 14, 2]})
     return [pool, stub, wick]
 
 
-def flame_elements(kind, i):
+def flame_elements(kind, i, posy=False):
     """Candle [i]'s flame: two planes crossed over the wick, full bright, in the animated flame strip (two strips, so the candles do
     not flicker together). The planes are 4 pixels square, the flame in them about two wide and three tall."""
-    cx, cz = SLOTS[kind][i]
+    cx, cz = slot_of(kind, i, posy)
     y0 = LEDGE[kind] + CANDLE_H[i] + 0.6
     w = 4.0
     var = 'flame_a' if i % 2 == 0 else 'flame_b'
@@ -579,15 +602,265 @@ def flame_elements(kind, i):
             cube((cx, y0, cz - w / 2), (cx, y0 + w, cz + w / 2), var, ('west', 'east'), uv=full, light_emission=15, shade=False)]
 
 
-def candle_tip(kind, i):
+def candle_tip(kind, i, posy=False):
     """Where candle [i]'s flame burns, (x, y, z) in 16ths of the cell, authored facing north (the code that adds smoke turns it by facing)."""
-    cx, cz = SLOTS[kind][i]
+    cx, cz = slot_of(kind, i, posy)
     return (cx, LEDGE[kind] + CANDLE_H[i] + 1.6, cz)
+
+
+# ---------------------------------------------------------------- the posy
+
+# The posy the mourner lays (LAY_POSY): the prop's own five blooms (tale_items.py's prop:posy: a gold of six petals, two whites, a blue and a
+# crimson, each round a heart), two leaves and a cork tie, lying on the ledge with its heads toward the mourner's left. Drawn twice, fresh and
+# withered (the same flowers days on: dried to brown, the heads down, a few petals fallen); the block-state `wilted` picks which.
+PETAL_WHITE = [(70, 66, 66), (130, 124, 118), (188, 182, 170), (226, 222, 208), (246, 242, 230)]
+PETAL_GOLD = [(70, 44, 14), (130, 88, 24), (190, 140, 40), (232, 184, 66), (252, 226, 130)]
+PETAL_BLUE = [(18, 26, 62), (36, 56, 120), (66, 96, 170), (110, 142, 210), (180, 204, 240)]
+BLOOM_NAMES = ('gold', 'white', 'blue', 'crimson', 'white2')
+# per bloom: the petal ramp, the heart's colour, the petals' count and where the first one points (radians), as the prop draws it
+BLOOMS = {'gold': (PETAL_GOLD, PAL['moss'][4], 6, 0.3), 'white': (PETAL_WHITE, PAL['gold'][3], 5, 0.5),
+          'blue': (PETAL_BLUE, PAL['gold'][4], 5, 0.1), 'crimson': (PAL['crimson'], PAL['gold'][3], 5, 0.9),
+          'white2': (PETAL_WHITE, PAL['crimson'][3], 5, 0.2)}
+DRY = np.array((122, 94, 60), float)    # what a petal and a leaf go as they dry
+
+POSY_W, POSY_H = 64, 32                 # the posy's sheet, in texels: the fresh set on the upper half and the withered set WILT rows below it
+WILT = 16
+BLOOM_T = 6                             # a bloom's top, texels square
+# where each piece is on the sheet, (x0, y0, x1, y1) in texels (the withered set is the same box WILT rows lower)
+POSY_AT_TEX = {'green': (30, 0, 34, 4), 'cork': (34, 0, 38, 4), 'leaf': (0, 8, 8, 12),
+               'petal_gold': (38, 0, 42, 4), 'petal_white': (42, 0, 46, 4), 'petal_blue': (38, 4, 42, 8)}
+for _i, _n in enumerate(BLOOM_NAMES):
+    POSY_AT_TEX['top_' + _n] = (BLOOM_T * _i, 0, BLOOM_T * _i + BLOOM_T, BLOOM_T)
+    POSY_AT_TEX['side_' + _n] = (BLOOM_T * _i, BLOOM_T, BLOOM_T * _i + BLOOM_T, BLOOM_T + 2)
+
+
+def bloom_top(name):
+    """A bloom seen from above, 6 x 6 texels: its petals round a heart, each petal lit from the upper left as the prop's are (its own
+    lighting) and a tone darker at the tip and in the crease by the heart."""
+    pal, heart, petals, turn = BLOOMS[name]
+    out = np.zeros((BLOOM_T, BLOOM_T, 3))
+    mid = (BLOOM_T - 1) / 2
+    for y in range(BLOOM_T):
+        for x in range(BLOOM_T):
+            dx, dy = x - mid, y - mid
+            r = math.hypot(dx, dy)
+            if r <= 1.05:
+                out[y, x] = heart
+                continue
+            k = int(((math.atan2(dy, dx) - turn) / math.tau % 1.0) * petals)
+            ac = turn + (k + 0.5) * math.tau / petals                  # the direction this petal points
+            lit = 0.62 + 0.22 * (-(math.cos(ac) * 0.6 + math.sin(ac) * 0.8)) - (0.10 if r > 2.55 else 0.0) - (0.12 if r < 1.5 else 0.0)
+            out[y, x] = pal[int(np.clip(round(lit * (len(pal) - 1)), 0, len(pal) - 1))]
+    return out
+
+
+def bloom_side(name):
+    """A bloom's rim, 6 x 2 texels: the petals' edge lit above and in shade below."""
+    pal = BLOOMS[name][0]
+    return np.array([[pal[i] for i in (3, 2, 3, 3, 2, 3)], [pal[i] for i in (1, 2, 1, 2, 2, 1)]], float)
+
+
+def posy_tex():
+    """memorial_posy (64 x 32): the posy's pieces, the fresh set on the upper half and the withered set (dried to brown, the blooms dull)
+    WILT rows below it: the five blooms' tops (6 x 6) and rims (6 x 2), the stems' green, the cork thread of the tie, a leaf with its rib, and the
+    three kinds of petal that fall."""
+    cv = Canvas(POSY_W, POSY_H)
+    moss, cork = PAL['moss'], PAL['cork']
+    for wilt in (0, 1):
+        dy = WILT * wilt
+
+        def dull(rgb):
+            rgb = np.asarray(rgb, float)
+            return rgb if not wilt else mix(rgb, DRY, 0.58) * 0.9
+
+        def lay(name, rgb):
+            x0, y0, x1, y1 = POSY_AT_TEX[name]
+            put(cv, dull(np.asarray(rgb, float)[:y1 - y0, :x1 - x0]), x0, y0 + dy)
+
+        for name in BLOOM_NAMES:
+            lay('top_' + name, bloom_top(name))
+            lay('side_' + name, bloom_side(name))
+        lay('green', [[moss[2], moss[3], moss[3], moss[2]], [moss[3], moss[4], moss[3], moss[2]],
+                      [moss[2], moss[3], moss[4], moss[3]], [moss[1], moss[2], moss[3], moss[2]]])
+        lay('cork', [[cork[3], cork[2], cork[3], cork[2]], [cork[2], cork[4], cork[2], cork[3]],
+                     [cork[3], cork[2], cork[3], cork[4]], [cork[1], cork[2], cork[1], cork[2]]])
+        leaf = np.zeros((4, 8, 3))
+        for y in range(4):
+            for x in range(8):
+                tone = 2 if y in (0, 3) else (4 if (y == 1 and x % 2 == 0) else 3)           # darker edges, a lighter rib down the middle
+                leaf[y, x] = moss[max(tone - (1 if x >= 6 else 0), 0)]
+        lay('leaf', leaf)
+        for name, pal in (('gold', PETAL_GOLD), ('white', PETAL_WHITE), ('blue', PETAL_BLUE)):
+            lay('petal_' + name, [[pal[3], pal[3], pal[4], pal[3]], [pal[3], pal[4], pal[3], pal[2]],
+                                  [pal[2], pal[3], pal[3], pal[3]], [pal[2], pal[2], pal[3], pal[2]]])
+    return cv
+
+
+def posy_uv(name, wilt=False):
+    x0, y0, x1, y1 = POSY_AT_TEX[name]
+    d = WILT if wilt else 0
+    return uv_px(POSY_W, POSY_H, x0, y0 + d, x1, y1 + d)
+
+
+POSY_YAW = 8.0                          # how far the bunch is turned from the ledge's line, its heads toward the mourner
+TIE_U = -0.7                            # the tie, along the bunch (its middle is at 0)
+CUT_U = -2.0                            # where the stems are cut
+# the heads: name, width, along, across (+ toward the stone), up, turned round (degrees), pitched (+ the head end up), rolled (+ the stone side down).
+# The ledge of a stone is three pixels deep and has four candles to share it, so the bunch is about four long and three across, the heads
+# tipped a little toward the mourner.
+HEADS = (('gold', 1.35, 1.5, 0.0, 0.92, 4.0, -6.0, -10.0),
+         ('white', 1.1, 0.9, -0.92, 0.7, -16.0, -3.0, -12.0),
+         ('blue', 1.15, 1.0, 1.0, 0.74, 18.0, -4.0, -6.0),
+         ('crimson', 1.05, 0.15, -0.55, 0.6, -8.0, 0.0, -9.0),
+         ('white2', 1.1, 0.2, 0.6, 0.64, 12.0, 2.0, -5.0))
+HEAD_H = 0.55                           # a bloom's thickness
+STEM = 0.4                              # a stem's thickness
+
+
+def posy_elements(kind, wilt=False):
+    """The posy lying on a [kind]'s ledge, facing north: three stems cut square past the tie, five more fanning from it to the five blooms,
+    two leaves, the cork thread. Everything is a box turned about its own middle (the game takes a free turn about three axes). [wilt] is
+    the same posy days on: each head come down to rest on the ledge at its own slant, the colours dried, the stems and leaves slack, three
+    petals fallen."""
+    px, py, pz = POSY_AT[kind]
+    rng = np.random.default_rng(57)
+    ca, sa = math.cos(math.radians(POSY_YAW)), math.sin(math.radians(POSY_YAW))
+
+    def at(u, v, h):
+        """A point [u] along the bunch (the heads at +u), [v] across it (+ toward the stone), [h] above the ledge, in the block."""
+        return np.array([px + u * ca + v * sa, py + h, pz - u * sa + v * ca])
+
+    def turned(turn, pitch, roll):
+        return Ry(POSY_YAW + turn) @ Rz(pitch) @ Rx(roll)
+
+    def box(centre, size, uv, turn=0.0, pitch=0.0, roll=0.0):
+        """A box of [size] (along, up, across the bunch) about [centre], turned with the bunch and then by [turn] round, [pitch] and [roll]."""
+        half = np.asarray(size, float) / 2
+        return cube(centre - half, centre + half, 'posy', SIX, rot=turned(turn, pitch, roll), origin=centre, uv=uv)
+
+    els = []
+    green = {'*': posy_uv('green', wilt)}
+    tie = at(TIE_U, 0.0, 0.46 - (0.1 if wilt else 0.0))
+    # the three stems cut square, a little apart at their ends
+    for v in (-0.5, 0.0, 0.5):
+        els.append(along(tie, at(CUT_U, v * (1.4 if wilt else 1.0), 0.27 - (0.07 if wilt else 0.0)), STEM, STEM, 'posy', SIX, uv=green))
+    # the five stems to the five heads, and the heads
+    for name, width, u, v, h, turn, pitch, roll in HEADS:
+        if wilt:
+            u, v = u + 0.25 * float(rng.uniform(-0.4, 1.0)), v
+            turn, pitch, roll = turn * 1.3, -float(rng.uniform(20.0, 32.0)), float(rng.uniform(-16.0, 16.0))
+            low = min((turned(turn, pitch, roll) @ np.array([sx * width / 2, sy * HEAD_H / 2, sz * width / 2]))[1]
+                      for sx in (-1, 1) for sy in (-1, 1) for sz in (-1, 1))
+            h = 0.05 - low                                     # the head rests on the ledge
+        centre = at(u, v, h)
+        under = centre - turned(turn, pitch, roll) @ np.array([0.0, 0.22, 0.0])
+        els.append(along(tie, under, STEM, STEM, 'posy', SIX, uv=green))
+        els.append(box(centre, (width, HEAD_H, width), {'up': posy_uv('top_' + name, wilt), '*': posy_uv('side_' + name, wilt)}, turn, pitch, roll))
+    # the thread round the bunch at the tie
+    els.append(box(tie, (0.7, 0.86, 1.08), {'*': posy_uv('cork', wilt)}))
+    # two leaves from the tie, out to either side
+    for side in (-1, 1):
+        centre = at(TIE_U + 0.55, side * 0.8, 0.4 - (0.2 if wilt else 0.0))
+        els.append(box(centre, (1.6, 0.1, 0.7), {'up': posy_uv('leaf', wilt), 'down': posy_uv('leaf', wilt), '*': posy_uv('green', wilt)},
+                       -side * 45.0, -4.0 if wilt else 8.0, side * 14.0 if wilt else 0.0))
+    if wilt:
+        # the petals that have come away, lying flat on the ledge
+        for (name, u, v, turn) in (('gold', -1.3, 0.8, 40.0), ('white', 1.95, -0.6, -25.0), ('blue', 0.4, 1.1, 70.0)):
+            els.append(box(at(u, v, 0.04), (0.9, 0.06, 0.62), {'*': posy_uv('petal_' + name, True)}, turn))
+    return els
+
+
+# ---------------------------------------------------------------- what stands where
+
+CANDLE_GAP = 0.3                        # the least room between two candle stubs
+POSY_GAP = 0.3                          # and between a stub and the posy
+LEAN = 0.5                              # how far the posy may lean into what stands behind the ledge (its flowers against the stone)
+
+
+def element_corners(el):
+    """The eight corners of an element with its turn applied, as the game reads `rotation` (island_blockview's reading)."""
+    lo, hi = np.array(el['from'], float), np.array(el['to'], float)
+    c = np.array([[x, y, z] for x in (lo[0], hi[0]) for y in (lo[1], hi[1]) for z in (lo[2], hi[2])])
+    rot = el.get('rotation')
+    if rot:
+        o = np.array(rot['origin'], float)
+        c = (c - o) @ BV.rotation_matrix(rot).T + o
+    return c
+
+
+def hull_xz(points):
+    """The convex hull of 2D points, counter-clockwise (Andrew's monotone chain)."""
+    pts = sorted({(round(float(x), 5), round(float(z), 5)) for x, z in points})
+
+    def half(ps):
+        out = []
+        for p in ps:
+            while len(out) >= 2 and (out[-1][0] - out[-2][0]) * (p[1] - out[-2][1]) - (out[-1][1] - out[-2][1]) * (p[0] - out[-2][0]) <= 0:
+                out.pop()
+            out.append(p)
+        return out
+    return half(pts)[:-1] + half(pts[::-1])[:-1]
+
+
+def footprint(elements):
+    """Each element's outline seen from above, as a convex polygon of (x, z)."""
+    return [hull_xz(element_corners(e)[:, [0, 2]]) for e in elements]
+
+
+def room(a, b):
+    """How far apart two convex polygons are along the best separating axis (an edge's normal): at least this much lies between them, and
+    it is negative when they overlap."""
+    best = -1e9
+    for poly in (a, b):
+        for i in range(len(poly)):
+            (x0, z0), (x1, z1) = poly[i], poly[(i + 1) % len(poly)]
+            nx, nz = z0 - z1, x1 - x0
+            n = math.hypot(nx, nz)
+            if n < 1e-9:
+                continue
+            pa = [(nx * x + nz * z) / n for x, z in a]
+            pb = [(nx * x + nz * z) / n for x, z in b]
+            best = max(best, min(pa) - max(pb), min(pb) - max(pa))
+    return best
+
+
+def stub_outline(kind, i, posy):
+    cx, cz = slot_of(kind, i, posy)
+    return [(cx - 1.0, cz - 1.0), (cx + 1.0, cz - 1.0), (cx + 1.0, cz + 1.0), (cx - 1.0, cz + 1.0)]
+
+
+def geometry_problems():
+    """What the models promise about where things stand, by number: every candle's stub is on the ledge, no two stubs touch, the posy (fresh or
+    withered) lies on the ledge (its flowers may lean on what stands behind), and the candles that stand with a posy keep clear of it."""
+    bad = []
+    for kind in ('stone', 'cairn'):
+        x0, z0, x1, z1 = LEDGE_BOX[kind]
+        posies = {'fresh': footprint(posy_elements(kind)), 'wilted': footprint(posy_elements(kind, True))}
+        for label, hulls in posies.items():
+            for h in hulls:
+                if any(x < x0 + 0.05 or x > x1 - 0.05 or z < z0 + 0.05 or z > z1 + LEAN for x, z in h):
+                    bad.append(f'{kind} {label} posy: a piece reaches {[(round(x, 2), round(z, 2)) for x, z in h]}, off the ledge {LEDGE_BOX[kind]}')
+        for posy in (False, True):
+            tag = 'with a posy' if posy else 'bare'
+            stubs = [stub_outline(kind, i, posy) for i in range(4)]
+            for i, s in enumerate(stubs):
+                if any(x < x0 or x > x1 or z < z0 or z > z1 for x, z in s):
+                    bad.append(f'{kind} candle {i + 1} ({tag}): its stub is not on the ledge')
+                for j in range(i + 1, 4):
+                    if room(s, stubs[j]) < CANDLE_GAP:
+                        bad.append(f'{kind} candles {i + 1} and {j + 1} ({tag}) stand {room(s, stubs[j]):.2f} apart, under {CANDLE_GAP}')
+                if posy:
+                    for label, hulls in posies.items():
+                        worst = min(room(s, h) for h in hulls)
+                        if worst < POSY_GAP:
+                            bad.append(f'{kind} candle {i + 1} stands {worst:.2f} from the {label} posy, under {POSY_GAP}')
+    return bad
 
 
 # ================================================================ the files
 
-TEXTURE_OF = {'moss': NS + 'memorial_moss', 'wax': NS + 'memorial_wax', 'flame_a': NS + 'memorial_flame_a', 'flame_b': NS + 'memorial_flame_b'}
+TEXTURE_OF ={'moss': NS + 'memorial_moss', 'wax': NS + 'memorial_wax', 'flame_a': NS + 'memorial_flame_a', 'flame_b': NS + 'memorial_flame_b',
+              'posy': NS + 'memorial_posy'}
 
 
 def textures_for(elements, kind):
@@ -614,7 +887,8 @@ def model_json(elements, kind='stone', extra=None):
 
 
 def models():
-    """Every block model, by file name: the two bases, their moss (one for each way the memorial can face), the candles and the flames."""
+    """Every block model, by file name: the two bases, their moss (one for each way the memorial can face), the candles and the flames, each
+    candle and flame also as it stands beside a posy (`_posy`), and the posy fresh and withered."""
     out = {'memorial_stone': model_json(stone_elements(), 'stone'), 'memorial_cairn': model_json(cairn_elements(), 'cairn')}
     for k, f in enumerate(FACINGS):
         suffix = '' if k == 0 else '_' + f
@@ -622,14 +896,18 @@ def models():
         out['memorial_cairn_moss' + suffix] = model_json(cairn_moss_elements(k), 'cairn')
     for kind in ('stone', 'cairn'):
         for i in range(4):
-            out[f'memorial_{kind}_candle_{i + 1}'] = model_json(candle_elements(kind, i), kind)
-            out[f'memorial_{kind}_flame_{i + 1}'] = model_json(flame_elements(kind, i), kind)
+            for posy, tail in ((False, ''), (True, '_posy')):
+                out[f'memorial_{kind}_candle_{i + 1}{tail}'] = model_json(candle_elements(kind, i, posy), kind)
+                out[f'memorial_{kind}_flame_{i + 1}{tail}'] = model_json(flame_elements(kind, i, posy), kind)
+        out[f'memorial_{kind}_posy'] = model_json(posy_elements(kind), kind)
+        out[f'memorial_{kind}_posy_wilted'] = model_json(posy_elements(kind, True), kind)
     return out
 
 
 def blockstate():
     """The multipart: for each way it faces, the base of its kind (turned), the moss if `mossy` (laid out for that facing, not turned),
-    and, for each candle that stands, its stub (turned) and, if `lit`, its flame."""
+    the posy if `posy` (withered if `wilted`) and, for each candle that stands, its stub (turned) and, if `lit`, its flame, at the places a
+    posy leaves free if there is one."""
     parts = []
     for k, f in enumerate(FACINGS):
         y = {'y': 90 * k} if k else {}
@@ -641,11 +919,16 @@ def blockstate():
     for k, f in enumerate(FACINGS):
         y = {'y': 90 * k} if k else {}
         for kind in ('stone', 'cairn'):
+            for wilted, tail in (('false', ''), ('true', '_wilted')):
+                parts.append({'when': {'kind': kind, 'facing': f, 'posy': 'true', 'wilted': wilted},
+                              'apply': {'model': f'{NS}memorial_{kind}_posy{tail}', **y}})
             for n in range(1, 5):
                 stands = '|'.join(str(c) for c in range(n, 5))
-                parts.append({'when': {'kind': kind, 'facing': f, 'candles': stands}, 'apply': {'model': f'{NS}memorial_{kind}_candle_{n}', **y}})
-                parts.append({'when': {'kind': kind, 'facing': f, 'candles': stands, 'lit': 'true'},
-                              'apply': {'model': f'{NS}memorial_{kind}_flame_{n}', **y}})
+                for posy, tail in (('false', ''), ('true', '_posy')):
+                    parts.append({'when': {'kind': kind, 'facing': f, 'candles': stands, 'posy': posy},
+                                  'apply': {'model': f'{NS}memorial_{kind}_candle_{n}{tail}', **y}})
+                    parts.append({'when': {'kind': kind, 'facing': f, 'candles': stands, 'lit': 'true', 'posy': posy},
+                                  'apply': {'model': f'{NS}memorial_{kind}_flame_{n}{tail}', **y}})
     return {'multipart': parts}
 
 
@@ -709,7 +992,8 @@ def item_definition():
 def textures():
     """Every texture of the block, by file name."""
     return {'memorial_stone': stone_sheet().image(), 'memorial_cairn': cairn_sheet().image(), 'memorial_moss': moss_tex().image(),
-            'memorial_wax': wax_tex().image(), 'memorial_flame_a': flame_frames(0).image(), 'memorial_flame_b': flame_frames(2).image()}
+            'memorial_wax': wax_tex().image(), 'memorial_flame_a': flame_frames(0).image(), 'memorial_flame_b': flame_frames(2).image(),
+            'memorial_posy': posy_tex().image()}
 
 
 MCMETA = {'memorial_flame_a': {'animation': {'frametime': 2, 'frames': [0, 1, 2, 3, 4, 5, 3, 1]}},
@@ -754,8 +1038,8 @@ def write_all(assets):
 
 def verify(assets):
     """Every model sound: elements inside -16..32, uvs inside the texture and over painted texels, every named texture there; the
-    blockstate names only models that exist; no fully saturated pixel anywhere."""
-    bad = []
+    blockstate names only models that exist; no fully saturated pixel anywhere; and `geometry_problems`."""
+    bad = geometry_problems()
     imgs = {}
 
     def img(ref):
@@ -840,16 +1124,19 @@ def _turned_faces(model):
     return out
 
 
-def compose(kind, k=0, candles=0, lit=False, mossy=False):
-    """A preview model of the block in a state: what the multipart would apply, the elements of each marked with how they are turned."""
+def compose(kind, k=0, candles=0, lit=False, mossy=False, posy=None):
+    """A preview model of the block in a state: what the multipart would apply, the elements of each marked with how they are turned.
+    [posy] is None (none lies there), 'fresh' or 'wilted'."""
     base = stone_elements() if kind == 'stone' else cairn_elements()
     els = [dict(e, _turn=k) for e in base]
     if mossy:
         els += [dict(e, _turn=0) for e in (stone_moss_elements(k) if kind == 'stone' else cairn_moss_elements(k))]
+    if posy:
+        els += [dict(e, _turn=k) for e in posy_elements(kind, posy == 'wilted')]
     for i in range(candles):
-        els += [dict(e, _turn=k) for e in candle_elements(kind, i)]
+        els += [dict(e, _turn=k) for e in candle_elements(kind, i, bool(posy))]
         if lit:
-            els += [dict(e, _turn=k) for e in flame_elements(kind, i)]
+            els += [dict(e, _turn=k) for e in flame_elements(kind, i, bool(posy))]
     return {'textures': textures_for(els, kind), 'elements': els}
 
 
@@ -922,6 +1209,17 @@ def previews(assets, out_dir):
     rows = [[panel(view(stone(mossy=m), A, yaw=y, bg=DAY, scale=8, size=(260, 340), center=(8, 14, 8)), f'stone moss {m} yaw {y}') for m in (False, True) for y in (150, 30)],
             [panel(view(cairn(mossy=m), A, yaw=y, bg=DAY, scale=4.2, size=(260, 300), center=(8, 12, 8)), f'cairn moss {m} yaw {y}') for m in (False, True) for y in (150, 30)]]
     grid_of(rows).save(os.path.join(out_dir, 'tales_memorial_moss.png'))
+    # the posy, fresh and withered, with the candles that stand beside it, by day and by night, and from above
+    rows = []
+    for kind, c in (('stone', dict(center=(9, 7.5, 2.5))), ('cairn', dict(center=(8, 10.5, -9.5)))):
+        c = dict(c, scale=11, size=(290, 230))
+        rows.append([panel(view(compose(kind, posy=p, candles=n, lit=True), A, yaw=y, elev=e, bg=b, ambient=am, **c), f'{kind} {p}, {n} candles, {lbl}')
+                     for p, n, y, e, b, am, lbl in (('fresh', 0, 175, 28, DAY, 1.0, 'day'), ('fresh', 4, 160, 30, DAY, 1.0, 'day'),
+                                                    ('fresh', 3, 190, 30, NIGHT, 0.28, 'night'), ('wilted', 0, 175, 28, DAY, 1.0, 'day'),
+                                                    ('wilted', 2, 160, 30, DAY, 1.0, 'day'))])
+        rows.append([panel(view(compose(kind, posy=p, candles=4), A, yaw=180, elev=88, bg=DAY, **c), f'{kind} {p} from above') for p in ('fresh', 'wilted')]
+                    + [panel(view(compose(kind, posy=p, candles=4), A, yaw=180, elev=10, bg=DAY, **c), f'{kind} {p} low') for p in ('fresh', 'wilted')])
+    grid_of(rows).save(os.path.join(out_dir, 'tales_memorial_posy.png'))
     # the flames moving
     frames = []
     for t in range(0, 36, 2):
@@ -945,7 +1243,7 @@ def previews(assets, out_dir):
     for name in ('memorial_stone', 'memorial_cairn'):
         sheets.append(Image.open(os.path.join(assets, 'textures', 'block', name + '.png')).convert('RGBA').resize((512, 256), Image.NEAREST))
     small = []
-    for name in ('memorial_moss', 'memorial_wax'):
+    for name in ('memorial_moss', 'memorial_wax', 'memorial_posy'):
         im = Image.open(os.path.join(assets, 'textures', 'block', name + '.png')).convert('RGBA')
         small.append(im.resize((im.width * 6, im.height * 6), Image.NEAREST))
     for name in ('memorial_flame_a', 'memorial_flame_b'):
@@ -969,13 +1267,36 @@ def main(assets, previews_dir=None):
     problems = verify(assets)
     for p in problems:
         print('PROBLEM', p)
-    print('memorial: %d block models, 2 item models, 6 textures%s' % (len(models()), '' if not problems else ', %d problems' % len(problems)))
+    print('memorial: %d block models, 2 item models, 7 textures%s' % (len(models()), '' if not problems else ', %d problems' % len(problems)))
     if previews_dir:
         previews(assets, previews_dir)
     return problems
 
 
+def kotlin_numbers():
+    """The numbers MemorialBlock.kt copies (its TIPS, TIPS_POSY and POSY_AT), written as it writes them, to paste in again when the art moves."""
+    def num(v):
+        s = ('%.2f' % v).rstrip('0')
+        return s + '0' if s.endswith('.') else s
+
+    def vec(p):
+        return 'Vec3(%s)' % ', '.join(num(v) for v in p)
+
+    lines = []
+    for name, posy in (('TIPS', False), ('TIPS_POSY', True)):
+        lines.append(name)
+        for kind in ('stone', 'cairn'):
+            lines.append('    MemorialKind.%s to listOf(%s),' % (kind.upper(), ', '.join(vec(candle_tip(kind, i, posy)) for i in range(4))))
+    lines.append('POSY_AT')
+    for kind in ('stone', 'cairn'):
+        lines.append('    MemorialKind.%s to %s,' % (kind.upper(), vec(POSY_AT[kind])))
+    return '\n'.join(lines)
+
+
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         raise SystemExit(__doc__)
+    if sys.argv[1] == '--numbers':
+        print(kotlin_numbers())
+        sys.exit(0)
     sys.exit(1 if main(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else None) else 0)

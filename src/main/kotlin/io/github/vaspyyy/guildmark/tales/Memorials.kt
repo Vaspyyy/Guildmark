@@ -35,9 +35,13 @@ import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent
  * block is set; a stone already standing stays and is read and aged as ever.
  */
 object Memorials {
-    /** The days after which the foot of a memorial is green (13.2.1), and a posy laid on its ledge withers and the wind takes it (0: it stays). */
+    /**
+     * The days after which the foot of a memorial is green (13.2.1), and a posy laid on its ledge has dried with its heads down
+     * ([WILT_DAYS]) and the wind takes it ([POSY_DAYS]; 0: it stays as it is laid).
+     */
     const val MOSS_DAYS = 10L
     const val POSY_DAYS = 5L
+    const val WILT_DAYS = 3L
 
     /** The reasons a memorial adds to its tale (`fortune.guildmark.reason.tale.why.<kind>`, each given the names as a label). */
     const val WHY_STONE = "memorial.stone"
@@ -158,7 +162,7 @@ object Memorials {
         val kind = state.getValue(MemorialBlock.KIND)
         val facing = state.getValue(MemorialBlock.FACING)
         for (i in 0 until state.getValue(MemorialBlock.CANDLES)) {
-            val tip = MemorialBlock.tip(kind, i, facing, pos)
+            val tip = MemorialBlock.tip(kind, i, facing, pos, state.getValue(MemorialBlock.POSY))
             level.sendParticles(ParticleTypes.SMOKE, tip.x, tip.y, tip.z, 3, 0.02, 0.04, 0.02, 0.005)
         }
     }
@@ -180,8 +184,8 @@ object Memorials {
         if (capital != null) TaleEngine.today(level, capital) else Conditions(Markets.hourOf(level)).day
 
     /**
-     * The block's random tick: the moss grows once the memorial is [MOSS_DAYS] market days old (13.2.1), and a posy on its ledge withers
-     * after [POSY_DAYS] and the wind takes it. Each is written once.
+     * The block's random tick: the moss grows once the memorial is [MOSS_DAYS] market days old (13.2.1), and a posy on its ledge dries
+     * with its heads down after [WILT_DAYS] (a few petals come away) and the wind takes it after [POSY_DAYS]. Each is written once.
      */
     fun age(level: ServerLevel, pos: BlockPos, state: BlockState) {
         val be = level.getBlockEntity(pos) as? MemorialBlockEntity
@@ -194,18 +198,24 @@ object Memorials {
         var next = state
         val laid = be?.day
         if (!state.getValue(MemorialBlock.MOSSY) && laid != null && now - laid >= MOSS_DAYS) next = next.setValue(MemorialBlock.MOSSY, true)
+        if (!state.getValue(MemorialBlock.POSY) && state.getValue(MemorialBlock.WILTED)) next = next.setValue(MemorialBlock.WILTED, false)
         if (state.getValue(MemorialBlock.POSY) && be != null) {
             val since = be.posyDay
+            val at = MemorialBlock.posyAt(state.getValue(MemorialBlock.KIND), state.getValue(MemorialBlock.FACING), pos)
             if (since == null) {
                 // Set by hand, with no day: its days are counted from now
                 be.posyDay = now
                 be.setChanged()
             } else if (POSY_DAYS > 0 && now - since >= POSY_DAYS) {
-                next = next.setValue(MemorialBlock.POSY, false)
+                next = next.setValue(MemorialBlock.POSY, false).setValue(MemorialBlock.WILTED, false)
                 be.posyDay = null
                 be.setChanged()
-                level.sendParticles(ParticleTypes.CHERRY_LEAVES, pos.x + 0.5, pos.y + 0.4, pos.z + 0.5, 10, 0.25, 0.1, 0.25, 0.03)
+                level.sendParticles(ParticleTypes.CHERRY_LEAVES, at.x, at.y + 0.1, at.z, 10, 0.2, 0.08, 0.2, 0.03)
                 level.playSound(null, pos, SoundEvents.PINK_PETALS_FALL, SoundSource.BLOCKS, 0.6f, 0.8f)
+            } else if (POSY_DAYS > WILT_DAYS && !state.getValue(MemorialBlock.WILTED) && now - since >= WILT_DAYS) {
+                // Days on it has dried and its heads have come down, a few petals come away
+                next = next.setValue(MemorialBlock.WILTED, true)
+                level.sendParticles(ParticleTypes.CHERRY_LEAVES, at.x, at.y + 0.1, at.z, 4, 0.08, 0.03, 0.08, 0.01)
             }
         }
         if (next != state) level.setBlock(pos, next, Block.UPDATE_ALL)
@@ -324,8 +334,9 @@ object Memorials {
 
     /**
      * The posy goes down on [memorialId]'s stone (6.4) as the Laying's LAY_POSY lands; `Sets.laying` calls it at tick 15 of the clip (the posy is
-     * down at 14, leaves her hands at 18). It lies on the ledge (the cairn's step) five market days and withers ([age]). Nothing if no such
-     * stone stands: the Laying had put its posy in a pot, or in no place at all.
+     * down at 14, leaves her hands at 18). It lies on the ledge (the cairn's step) fresh for [WILT_DAYS] market days, withered until the
+     * [POSY_DAYS]th, and the wind takes it ([age]); one laid on a withered one replaces it. Nothing if no such stone stands: the Laying
+     * had put its posy in a pot, or in no place at all.
      */
     fun posy(level: ServerLevel, memorialId: Int) {
         val pos = standing(level, memorialId) ?: return
@@ -334,7 +345,9 @@ object Memorials {
             it.posyDay = today(level, it.capital)
             it.setChanged()
         }
-        if (!state.getValue(MemorialBlock.POSY)) level.setBlock(pos, state.setValue(MemorialBlock.POSY, true), Block.UPDATE_ALL)
+        if (!state.getValue(MemorialBlock.POSY) || state.getValue(MemorialBlock.WILTED)) {
+            level.setBlock(pos, state.setValue(MemorialBlock.POSY, true).setValue(MemorialBlock.WILTED, false), Block.UPDATE_ALL)
+        }
         // A few petals shaken from it as it settles
         val at = MemorialBlock.posyAt(state.getValue(MemorialBlock.KIND), state.getValue(MemorialBlock.FACING), pos)
         level.sendParticles(ParticleTypes.CHERRY_LEAVES, at.x, at.y + 0.1, at.z, 5, 0.1, 0.04, 0.1, 0.02)
