@@ -123,11 +123,13 @@ and Kotlin model code always agree.
   as block models, blockstates and 32x textures, with every moving piece (the pot on its chain, the pan, the oven's door,
   the spit's rod and crank, the larder's door) a model of its own: the list of their pivots and ranges, the click boxes and the
   places the renderers draw things is the first comment block of `cook_art.py`, the contract with the renderers. It also
-  draws the twenty items (the thirteen dishes with their tier stamps and stage looks, steam and flies over them, and the
-  tools, whose `display` blocks set how they are held), the five effect icons, the cold vignette, the 21 GUI sprites, the
-  seven kitchen particles and the four textures the renderers draw (`textures/entity/cook/`). With a preview dir it writes
-  the contact sheets and GIFs (`cook_prev.py`); the third argument, an unpacked game `assets/minecraft`, adds the vanilla
-  campfire and furnace beside the stations at true scale. The cookshop's parchment on the works post is in `works_art.py`.
+  draws the twenty items (the fourteen dishes, the scorched mess among them, with their tier stamps and stage looks,
+  steam and flies over them, and the tools, whose `display` blocks set how they are held), the five effect icons, the cold
+  vignette, the 21 GUI sprites, the seven kitchen particles and the four textures the renderers draw
+  (`textures/entity/cook/`). With a preview dir it writes the contact sheets and GIFs (`cook_prev.py`, about six
+  minutes); the third argument, an unpacked game `assets/minecraft`, adds the vanilla campfire and furnace beside the
+  stations at true scale, the herb on farmland and the tavern and bakery dioramas. The cookshop's parchment on the works
+  post is in `works_art.py`.
   Run it with `python3 -B art/scripts/cook_art.py [assets dir [preview dir [game assets dir]]]`.
 
 Rebuild a model (needs Python 3 with Pillow and numpy), from the repo root:
