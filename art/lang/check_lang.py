@@ -54,7 +54,7 @@ PREFIXES = {
         "block.guildmark.haul_board", "item.guildmark.tally", "item.guildmark.carriers_warrant",
         "item.guildmark.pack_harness", "item.guildmark.drovers_whistle", "item.guildmark.chapmans_cart",
         "item.guildmark.wagon_bill", "entity.guildmark.player_cart",
-        "gui.guildmark.trade.", "message.guildmark.trade.", "news.guildmark.trade.", "subtitles.guildmark.trade.",
+        "gui.guildmark.trade.", "gui.guildmark.tally.", "message.guildmark.trade.", "news.guildmark.trade.", "subtitles.guildmark.trade.",
         "skill.guildmark.chapman", "skill.guildmark.factor", "title.guildmark.chapman", "title.guildmark.factor",
         "title.guildmark.trading_house", "guildmark.configuration.trade",
         "say.guildmark.trade_", "say.guildmark.talk.trade.", "say.guildmark.talk.detail.trade.",
