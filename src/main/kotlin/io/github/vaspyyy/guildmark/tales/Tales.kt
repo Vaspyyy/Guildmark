@@ -149,6 +149,8 @@ object Tales : Comings.Listener {
         io.github.vaspyyy.guildmark.tales.templates.LocketCommands.register()
         // T2b: the lantern's `tale tradition` and `tale lantern`, its scenes, and the open lantern tales seen to each second
         io.github.vaspyyy.guildmark.tales.templates.LanternFestival.register()
+        // T2a: the child's and the cart's watch and `tale protect`
+        TalesT2a.register()
     }
 
     // ---- The clock ----
