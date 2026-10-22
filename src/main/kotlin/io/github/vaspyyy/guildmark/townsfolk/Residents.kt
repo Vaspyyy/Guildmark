@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.townsfolk
 
 import com.mojang.serialization.Codec
+import com.mojang.serialization.MapCodec
 import com.mojang.serialization.codecs.RecordCodecBuilder
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.block.VillageBoards
@@ -74,6 +75,11 @@ class Resident(
      * is false and [died] stays -1.
      */
     var left: Long = -1L,
+    /**
+     * The vanilla profession they had before they were taken in (its id, such as "minecraft:farmer"), or "": who keeps
+     * which stall in a village goes by it (living-world/villages/design.md section 7.6). A capital's people have none.
+     */
+    val craft: String = "",
 ) {
     val name: String get() = "$given $family"
 
@@ -83,6 +89,19 @@ class Resident(
         /** Someone in from outside for the day (see [Visitors]): no one the town keeps a record of. */
         fun visitor(capital: BlockPos, role: TownRole): Resident =
             Resident(-1, null, capital, -1, "", "", role, 0, -1, null, true, 0, true, -1L, 0L)
+
+        /**
+         * The last of a resident's fields, in a group of their own: a record codec holds no more than sixteen, and
+         * [CODEC] had sixteen. A group nested in another is flat in what's saved, so older worlds read as they did.
+         */
+        private class Tail(val left: Long, val craft: String)
+
+        private val TAIL: MapCodec<Tail> = RecordCodecBuilder.mapCodec { i ->
+            i.group(
+                Codec.LONG.optionalFieldOf("left", -1L).forGetter(Tail::left),
+                Codec.STRING.optionalFieldOf("craft", "").forGetter(Tail::craft),
+            ).apply(i, ::Tail)
+        }
 
         val CODEC: Codec<Resident> = RecordCodecBuilder.create { i ->
             i.group(
@@ -101,11 +120,11 @@ class Resident(
                 Codec.BOOL.optionalFieldOf("alive", true).forGetter(Resident::alive),
                 Codec.LONG.optionalFieldOf("died", -1L).forGetter(Resident::died),
                 Codec.LONG.optionalFieldOf("since", 0L).forGetter(Resident::since),
-                Codec.LONG.optionalFieldOf("left", -1L).forGetter(Resident::left),
-            ).apply(i) { id, uuid, capital, planned, given, family, role, look, home, bed, furnished, traits, alive, died, since, left ->
+                TAIL.forGetter { Tail(it.left, it.craft) },
+            ).apply(i) { id, uuid, capital, planned, given, family, role, look, home, bed, furnished, traits, alive, died, since, tail ->
                 Resident(
                     id, uuid.orElse(null), capital, planned, given, family, TownRole.byName(role) ?: TownRole.CITIZEN, look,
-                    home, bed.orElse(null), furnished, traits, alive, died, since, left,
+                    home, bed.orElse(null), furnished, traits, alive, died, since, tail.left, tail.craft,
                 )
             }
         }
