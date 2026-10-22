@@ -88,8 +88,8 @@ object CarryShop {
                 .playToServer(CarriersQueryPayload.TYPE, CarriersQueryPayload.STREAM_CODEC, CarriersQueryPayload::handle)
                 .playToServer(CarriersBuyPayload.TYPE, CarriersBuyPayload.STREAM_CODEC, CarriersBuyPayload::handle)
         }
-        Wares.add(Ware(HARNESS, HARNESS_PRICE, gate = ::gate, action = ::sellHarness))
-        Wares.add(Ware(DONKEY, DONKEY_PRICE, gate = ::gate, action = ::sellDonkey))
+        Wares.add(Ware(HARNESS, HARNESS_PRICE, gate = ::gate, action = ::sellHarness, scene = CounterScenes::harness))
+        Wares.add(Ware(DONKEY, DONKEY_PRICE, gate = ::gate, action = CounterScenes::buyDonkey, scene = CounterScenes::donkey))
         NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerLoggedOutEvent::class.java) { event ->
             asked.remove(event.entity.uuid)
             sold.remove(event.entity.uuid)
@@ -115,10 +115,11 @@ object CarryShop {
         return true
     }
 
-    /** A tame donkey, the player's, beside them. */
-    private fun sellDonkey(player: ServerPlayer): Boolean = donkeyBeside(player) != null
-
-    /** A new tame donkey of [player]'s standing beside them (nothing on it: it has no chest and wears no harness), or null if there is no room to put one. */
+    /**
+     * A new tame donkey of [player]'s standing beside them (nothing on it: it has no chest and wears no harness), or null if there is no
+     * room to put one. The donkey of the counter scene ([CounterScenes.buyDonkey]) is brought round by the carter instead; this is where
+     * it is put when there is no way to bring it.
+     */
     fun donkeyBeside(player: ServerPlayer): AbstractChestedHorse? = Harness.tame(player, EntityTypes.DONKEY, null, EntitySpawnReason.EVENT)
 
     // ---- The list, and the sale ----
