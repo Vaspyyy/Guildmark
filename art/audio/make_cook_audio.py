@@ -515,10 +515,245 @@ def stir(v, rng):
 # pot>>
 
 
+# <<fire
+# =========================================================================== fire, fat and steam
+def hiss(dur, rng, lo, hi, attack=0.02, tau=0.2, color=-0.5, order=2):
+    """steam or air let out: band-limited noise that comes up over `attack` seconds and dies away with time constant `tau`"""
+    t = tvec(dur)
+    return bp(colored(dur, rng, color), lo, hi, order) * np.clip(t / max(attack, 1e-4), 0, 1) ** 1.5 * np.exp(-t / tau)
+
+
+def spit_pop(rng, size=1.0, sizzle=1.0):
+    """a drop of fat bursting on hot iron: the film's sharp little crack, the small hard 'pok' of the pan answering it, and the
+    sizzle of what is left boiling off"""
+    d = 0.18 * size
+    m = Mix(d)
+    m.add(nrm(bp(white(0.003, rng), 1500.0, 9000.0) * np.exp(-tvec(0.003) / 0.0005)), 0.0, 0.6)
+    f = rng.uniform(900.0, 2200.0)
+    m.add(nrm(ping(0.04, [f, f * 1.8, f * 2.9], [0.008, 0.006, 0.004], [1.0, 0.5, 0.3], rng, ex_len=0.0008, hi=6000.0)),
+          0.0, 0.5)
+    t = tvec(d)
+    m.add(nrm(hp(white(d, rng), 3500.0) * np.exp(-t / (0.035 * size)) * np.clip(t / 0.002, 0, 1)), 0.001, 0.4 * sizzle)
+    return m.out()
+
+
+def flutter(dur, rng, lo=180.0, hi=1100.0, rate=13.0, peak=0.2):
+    """a flame burning, its body of soft low noise wavering as flames do"""
+    s = bell(dur, peak, 1.2, 1.5)
+    return nrm(bp(pink(dur, rng), lo, hi) * s * (0.35 + 0.65 * smooth_random(dur, rng, rate)))
+
+
+def ember_fall(dur, rng, rate0, tau, f_lo=1500.0, f_hi=6000.0, clinks=3):
+    """embers and charcoal shifting under a log: a crackle that thins out as they settle, and the small hard clinks of
+    pieces of coal against each other"""
+    t = tvec(dur)
+    y = grain_cloud(dur, rng, rate0 * np.exp(-t / tau) + 6.0, decay=0.0007, f_lo=f_lo, f_hi=f_hi, size_var=0.8)
+    m = Mix(dur)
+    m.add(nrm(y), 0.0, 1.0)
+    for _ in range(clinks):
+        f = rng.uniform(2300.0, 4200.0)
+        m.add(nrm(ping(0.05, [f, f * 1.9], [0.02, 0.012], [1.0, 0.5], rng, ex_len=0.0004, hi=9000.0)),
+              rng.exponential(tau * 0.7) % (dur * 0.9), rng.uniform(0.08, 0.25))
+    return m.out()
+
+
+@effect("fuel", 2, 0.6, "Fuel is thrown on a fire", loud=-22.0, fade_out=0.15, limit=3.0,
+        when=("Logs or coal are thrown at the fire region of a station (moment 4)."))
+def fuel(v, rng):
+    """logs thrown onto embers: the heavy one landing with a low wooden thud and the bark scuffing, a smaller one clattering
+    against it, the embers breaking and crackling under them in a shower of small sparks with the clink of coal on coal, the
+    draught of the fire answering with a soft rush. v2 is two small logs"""
+    dur = 0.6
+    m = Bus(dur)
+    if v == 0:
+        logs = [(0.0, 150.0, 0.7, 1.0), (0.1, 270.0, 0.8, 0.6)]
+    else:
+        logs = [(0.0, 215.0, 0.8, 0.8), (0.07, 290.0, 0.9, 0.7)]
+    for at, f0, hard, g in logs:
+        m.add(oak(0.3, rng, f0, t60=0.12, hard=hard, ex=0.003, lo=150.0), at, g)
+        m.add(thump(0.2, f0 * 0.8, f0 * 0.45, rng, decay=0.05, click=0.0, noise=0.5, nlp=f0 * 3.0), at, 0.5 * g)
+        m.add(grain_cloud(0.06, rng, 1500.0, decay=0.001, f_lo=600.0, f_hi=3500.0) * np.exp(-tvec(0.06) / 0.015), at, 0.25 * g)
+    m.add(ember_fall(0.5, rng, [300.0, 240.0][v], 0.12), 0.012, 0.6)
+    rush = bp(colored(0.4, rng, -1.5), 350.0, 2200.0) * bell(0.4, 0.2, 1.3, 1.6)
+    m.add(rush, 0.03, 0.25)
+    return kitchen(lp(fit(m.out(), ns(dur)), 9000.0), 0.08, 5321 + v)
+
+
+@effect("ignite", 2, 0.9, "A cooking fire catches", loud=-23.0, fade_out=0.2,
+        when=("Flint and steel or a fire charge lights the station's fire (moment 4), over the game's own flint-and-steel "
+              "sound."))
+def ignite(v, rng):
+    """a cooking fire catching: the striker's quick rasp over the flint and a few sparks, the tinder taking with a soft 'ffp',
+    then the whoomf of the kindling lighting (a low rush that swells in a tenth of a second and settles), crackling as the
+    sticks catch and the little flames fluttering after. v2 is slower to take, with more crackle"""
+    dur = 0.9
+    m = Bus(dur)
+    rd = [0.13, 0.17][v]
+    rt = tvec(rd)
+    rasp = tvf(white(rd, rng), "bp", 2600.0 + 4600.0 * rt / rd, 1.2) * np.clip(rt / 0.004, 0, 1) * np.exp(-np.maximum(rt - rd * 0.5, 0) / (rd * 0.2))
+    rasp = rasp * (0.6 + 0.4 * smooth_random(rd, rng, 350))
+    m.add(rasp, 0.0, 0.28)
+    m.add(grain_cloud(rd + 0.04, rng, 800.0, decay=0.0003, f_lo=2500.0, f_hi=11000.0, size_var=0.9), 0.0, 0.18)
+    at = [0.12, 0.17][v]
+    ft = tvec(0.2)
+    m.add(tvf(colored(0.2, rng, -1.5), "lp", 500.0 + 3000.0 * np.exp(-ft / 0.03), 0.9) * np.clip(ft / 0.01, 0, 1) * np.exp(-ft / 0.06), at, 0.5)
+    wd = 0.62
+    wt = tvec(wd)
+    wf = [0.07, 0.1][v]
+    s = np.clip(wt / wf, 0, 1) ** 1.6 * np.exp(-np.maximum(wt - wf, 0) / [0.2, 0.26][v])
+    whoomf = tvf(colored(wd, rng, -3.0), "lp", 300.0 + 900.0 * s, 0.8) * s
+    m.add(whoomf, at + 0.01, 1.0, end_fade=0.2)
+    m.add(sine_sweep(0.2, 90.0, 55.0, 2.0) * np.exp(-tvec(0.2) / 0.07) * np.clip(tvec(0.2) / 0.01, 0, 1), at + 0.01, 0.25)
+    cd = 0.55
+    ct = tvec(cd)
+    m.add(grain_cloud(cd, rng, ([160.0, 260.0][v]) * np.sin(np.pi * np.clip(ct / cd, 0, 1)) ** 0.8 + 10.0, decay=0.0008,
+                      f_lo=1200.0, f_hi=6500.0, size_var=0.8), at + 0.04, 0.45)
+    m.add(flutter(0.55, rng, peak=0.15), at + 0.3, 0.3)
+    return kitchen(lp(fit(m.out(), ns(dur)), 10000.0), 0.08, 5323 + v)
+
+
+@effect("crackle", 2, 2.0, "Food crackles", reach=20, loud=-25.0, fade_out=0.4, limit=3.0,
+        when=("A missed call gets worse (moment 14): a pot catching, fat spitting; overdone food (moment 19)."))
+def crackle_sound(v, rng):
+    """fat spitting in a hot pan and a pot catching: a ragged run of pops and spits (each a crack, a hard 'pok' of the iron and a
+    little sizzle behind it) that comes in bursts and slackens, scorching dry crackle between them. v1 spits, wet and sharp;
+    v2 is the dry crackle of a pot that has caught, finer and closer together"""
+    dur = 2.0
+    m = Bus(dur)
+    t = tvec(dur)
+    if v == 0:
+        env = np.clip(t / 0.05, 0, 1) * (0.55 + 0.45 * smooth_random(dur, rng, 2.2)) * np.exp(-np.maximum(t - 0.9, 0) / 0.7)
+        at = 0.0
+        while at < dur - 0.2:
+            m.add(spit_pop(rng, size=rng.uniform(0.6, 1.6), sizzle=rng.uniform(0.5, 1.2)), at, 0.55 * env[min(ns(at), len(env) - 1)] ** 0.8 + 0.05)
+            at += rng.gamma(1.4, 0.075 / max(env[min(ns(at), len(env) - 1)], 0.15))
+        m.add(grain_cloud(dur, rng, 700.0 * env + 20.0, decay=0.0005, f_lo=2500.0, f_hi=9000.0, size_var=0.8) * env, 0.0, 0.3)
+        m.add(hiss(dur, rng, 4000.0, 9500.0, attack=0.03, tau=0.7, color=-0.5) * env, 0.0, 0.12)
+    else:
+        env = np.clip(t / 0.08, 0, 1) * (0.6 + 0.4 * smooth_random(dur, rng, 3.0)) * np.exp(-np.maximum(t - 1.0, 0) / 0.6)
+        m.add(grain_cloud(dur, rng, 1500.0 * env + 30.0, decay=0.0006, f_lo=1500.0, f_hi=7500.0, size_var=0.9) * env, 0.0, 1.0)
+        m.add(grain_cloud(dur, rng, 5200.0 * env + 100.0, decay=0.0003, f_lo=3500.0, f_hi=11000.0, size_var=0.7) * env, 0.0, 0.5)
+        at = 0.1
+        while at < dur - 0.3:
+            m.add(spit_pop(rng, size=rng.uniform(0.5, 1.0), sizzle=0.5), at, 0.4 * env[min(ns(at), len(env) - 1)])
+            at += rng.gamma(1.5, 0.2)
+        m.add(hiss(dur, rng, 3500.0, 9000.0, attack=0.05, tau=0.9, color=-0.5) * env, 0.0, 0.2)
+    return kitchen(tame(lp(fit(m.out(), ns(dur)), 11000.0), 13.0), 0.07, 5325 + v)
+
+
+@effect("flare", 2, 0.8, "Fat flares in the fire", loud=-25.0, fade_out=0.25,
+        when=("A FLARE call's sign at the hob, the oven or the spit (1.4): the fat catches, a lick of flame."))
+def flare(v, rng):
+    """fat catching in the fire: a lick of flame, a soft 'whup' as the vapour lights, a quick roar that climbs and falls away
+    in a tenth of a second over a flutter of flame, crackling, a hiss of fat. v2 is a smaller flame that gutters"""
+    dur = 0.8
+    m = Bus(dur)
+    fd = [0.6, 0.55][v]
+    ft = tvec(fd)
+    s = np.clip(ft / 0.05, 0, 1) ** 1.4 * np.exp(-np.maximum(ft - 0.05, 0) / [0.2, 0.15][v])
+    roar = tvf(colored(fd, rng, -2.0), "bp", 450.0 + 2200.0 * s, 0.9) * s * (0.6 + 0.4 * smooth_random(fd, rng, 18))
+    m.add(roar, 0.0, 1.0)
+    m.add(sine_sweep(0.12, 160.0, 90.0, 2.0) * np.exp(-tvec(0.12) / 0.04) * np.clip(tvec(0.12) / 0.008, 0, 1), 0.0, 0.3)
+    cd = 0.5
+    ct = tvec(cd)
+    m.add(grain_cloud(cd, rng, [260.0, 180.0][v] * s[:ns(cd)] + 10.0, decay=0.0007, f_lo=1500.0, f_hi=6000.0, size_var=0.8) *
+          np.clip((cd - ct) / 0.2, 0, 1), 0.02, 0.4)
+    m.add(hiss(0.5, rng, 3000.0, 6500.0, attack=0.02, tau=0.16), 0.05, 0.14)
+    m.add(flutter(0.5, rng, lo=250.0, hi=1500.0, rate=17.0, peak=0.25) * np.clip((cd - ct) / 0.2, 0, 1), 0.1, 0.25)
+    return kitchen(lp(fit(m.out(), ns(dur)), 7500.0), 0.07, 5327 + v)
+
+
+@effect("drip", 2, 0.4, "Fat drips on the coals", reach=12, loud=-29.0, fade_out=0.12, limit=4.0,
+        when=("Fat dripping on the coals under the spit (1.6)."))
+def drip(v, rng):
+    """a drop of fat falling on hot coals: the tick of it landing, a bright small 'tsst' as it boils off and a faint pop of its
+    steam. v2 has a second, smaller drop close behind"""
+    dur = 0.4
+    m = Bus(dur)
+    drops = [(0.0, 1.0)] if v == 0 else [(0.0, 1.0), (0.17, 0.5)]
+    for at, g in drops:
+        m.add(spit_pop(rng, size=rng.uniform(0.7, 1.0), sizzle=1.6), at, g)
+        m.add(nrm(bubble(rng.uniform(1.0, 1.8), rng, rise=0.6, max_dur=0.06)), at + 0.002, 0.18 * g)
+    return kitchen(lp(fit(m.out(), ns(dur)), 10000.0), 0.06, 5329 + v)
+
+
+@effect("flip", 3, 0.6, "Food is turned", reach=12, loud=-26.0, fade_out=0.15,
+        when=("TURN answered (1.4, 1.6): the turner under food on the pan or a tray; the cookshop keeper's flip (7.5)."))
+def flip(v, rng):
+    """a turner slid under food on a hot pan and flicked over: the iron blade scraping under it (a thin metallic rasp over the
+    pan), the little push of the flick, the food landing back with a soft slap and the sizzle of its fresh side on the iron
+    (v3 turns two pieces, one after the other)"""
+    dur = 0.6
+    m = Bus(dur)
+    sd = [0.14, 0.12, 0.15][v]
+    st = tvec(sd)
+    scrape = tvf(colored(sd, rng, -0.5), "bp", 2200.0 + 1200.0 * st / sd, 1.3) * bell(sd, 0.4, 1.2, 1.5) * (0.5 + 0.5 * smooth_random(sd, rng, 90))
+    m.add(scrape, 0.0, 0.5)
+    m.add(resonators(scrape, [2100.0, 3300.0, 5200.0], [0.02, 0.015, 0.01], [1.0, 0.6, 0.3]), 0.0, 0.25)
+    m.add(ping(0.05, [1800.0, 3100.0], [0.012, 0.008], [1.0, 0.5], rng, ex_len=0.0005, hi=8000.0), sd, 0.3)
+    lands = [[sd + 0.1]] if v < 2 else [[sd + 0.1], [sd + 0.2]]
+    for k, (at,) in enumerate(lands):
+        g = 1.0 if k == 0 else 0.75
+        m.add(tf.thud(0.08, rng, f=210.0, decay=0.014, tone=0.2), at, 0.5 * g)
+        m.add(bp(white(0.03, rng), 500.0, 4000.0) * np.exp(-tvec(0.03) / 0.006), at, 0.35 * g)
+        sz = tvec(0.3)
+        m.add(hp(colored(0.3, rng, -0.5), 3000.0) * np.clip(sz / 0.004, 0, 1) * np.exp(-sz / 0.11), at, 0.55 * g, end_fade=0.12)
+        m.add(grain_cloud(0.3, rng, 1300.0 * np.exp(-sz / 0.1) + 10.0, decay=0.0004, f_lo=2500.0, f_hi=9500.0), at, 0.3 * g,
+              end_fade=0.12)
+    return kitchen(lp(fit(m.out(), ns(dur)), 10500.0), 0.07, 5331 + v)
+
+
+@effect("boil_over", 2, 1.2, "A pot boils over", loud=-23.0, fade_out=0.3,
+        when=("The BOIL_OVER call's sign (moment 10): foam spilling and the lid rattling; the burst if the call is missed."))
+def boil_over(v, rng):
+    """a pot boiling over onto the hot iron and the fire: the foam heaving up and spilling with a heavy burble, a rush of steam
+    hissing as it hits and spitting, and the lid chattering on the pot's rim with the steam under it. v2 is a softer spill and
+    a longer rattle"""
+    dur = 1.2
+    m = Bus(dur)
+    t = tvec(dur)
+    s = np.clip(t / 0.09, 0, 1) ** 1.3 * np.exp(-np.maximum(t - 0.12, 0) / [0.55, 0.42][v])
+    m.add(tvf(colored(dur, rng, -0.8), "bp", 4200.0 + 1200.0 * s, 0.6) * s * (0.7 + 0.3 * smooth_random(dur, rng, 30)), 0.0, 1.0)
+    m.add(grain_cloud(dur, rng, 1100.0 * s + 15.0, decay=0.0006, f_lo=1500.0, f_hi=7500.0, size_var=0.8) * s, 0.0, 0.45)
+    m.add(ship.bubbles(0.7, rng, 55.0 * np.exp(-tvec(0.7) / 0.35) + 4.0, 3.0, 9.0, beta=1.6, level=1.0, weight=0.5, rise=0.3), 0.0, 0.35)
+    m.add(lp(brown(0.5, rng), 300.0, 2) * bell(0.5, 0.25, 1.3, 1.6), 0.0, 0.3)
+    n_clink = [9, 12][v]
+    at = 0.18
+    for i in range(n_clink):
+        f = rng.uniform(780.0, 1150.0)
+        g = (0.55 + 0.45 * rng.random()) * np.exp(-max(0.0, at - 0.5) / 0.5)
+        m.add(nrm(iron_ring(0.1, rng, [f], t60=0.045, gains=[1.0])), at, 0.5 * g)
+        m.add(nrm(hann_burst(0.002, rng, 1500.0, 7000.0)), at, 0.12 * g)
+        at += rng.uniform(0.055, 0.1) * (1.0 + 0.5 * i / n_clink)
+    return kitchen(lp(fit(m.out(), ns(dur)), 10500.0), 0.08, 5333 + v)
+
+
+@effect("burnt", 2, 1.2, "A pot burns", loud=-23.0, fade_out=0.3,
+        when=("The pot burns (moment 20): a hiss, a crackle and a sour glop."))
+def burnt(v, rng):
+    """a pot gone to a burn: a hiss of steam and scorched fat, a dry crackle of the crust catching and blackening, then a sour,
+    thick 'glop' as the last of the liquid collapses on the iron (v2 glops twice)"""
+    dur = 1.2
+    m = Bus(dur)
+    m.add(hiss(0.9, rng, 2500.0, 8500.0, attack=0.02, tau=0.3, color=-0.8), 0.0, 1.0, end_fade=0.3)
+    cr = 0.95
+    ct = tvec(cr)
+    m.add(grain_cloud(cr, rng, 420.0 * np.exp(-ct / 0.4) + 25.0, decay=0.0007, f_lo=1000.0, f_hi=6000.0, size_var=0.9), 0.0, 0.6,
+          end_fade=0.35)
+    for i in range(int(rng.integers(3, 6))):
+        m.add(spit_pop(rng, size=rng.uniform(0.5, 1.0), sizzle=0.3), rng.uniform(0.05, 0.6), rng.uniform(0.2, 0.4))
+    glops = [(0.55, 125.0, 1.0)] if v == 0 else [(0.52, 140.0, 0.9), (0.75, 105.0, 1.0)]
+    for at, f0, g in glops:
+        m.add(blup(rng, f0, 0.07, rising=False, pop=0.3), at, 0.9 * g)
+        m.add(lp(brown(0.25, rng), 250.0, 2) * bell(0.25, 0.3, 1.2, 1.6), at, 0.25 * g)
+    return kitchen(lp(fit(m.out(), ns(dur)), 9500.0), 0.08, 5335 + v)
+# fire>>
+
+
 # =========================================================================== the order of the sounds
 # the order of CookSounds.NAMES (the design's Appendix C.5): the order of the fragments and of the listen-through
-ORDER = ["place", "pour", "plop.soft", "plop.meat", "plop.grain", "stir", "simmer", "sizzle", "oven_hum", "spit_creak",
-         "chill"]
+ORDER = ["place", "pour", "plop.soft", "plop.meat", "plop.grain", "fuel", "ignite", "stir", "simmer", "crackle", "sizzle",
+         "boil_over", "burnt", "oven_hum", "spit_creak", "drip", "flare", "flip", "chill"]
 
 assert sorted(ORDER) == sorted(EVENTS), "every sound is in ORDER, once: " + str(set(ORDER) ^ set(EVENTS))
 for _name in ORDER:
