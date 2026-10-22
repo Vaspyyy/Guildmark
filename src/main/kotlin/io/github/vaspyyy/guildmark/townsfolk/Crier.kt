@@ -356,7 +356,7 @@ object Crier {
         }
         word.drop(1).forEach { groups.add(it) }
         // The town's works and its times come last, with room kept for them (see Fortunes.cries)
-        val last = if (entry != null) Fortunes.cries(level, entry, c, at) else listOf()
+        val last = if (entry != null) Fortunes.cries(level, entry, c, at) + io.github.vaspyyy.guildmark.tales.Tales.cries(level, entry, c, at) else listOf()
         val chosen = ArrayList<Cry>()
         for (g in groups) if (chosen.size + g.size <= MOST - last.size) chosen.addAll(g)
         chosen.addAll(last)
