@@ -2,6 +2,7 @@ package io.github.vaspyyy.guildmark.client
 
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.client.combat.CombatHud
+import io.github.vaspyyy.guildmark.client.ui.Ui
 import io.github.vaspyyy.guildmark.economy.Good
 import io.github.vaspyyy.guildmark.economy.Orders
 import io.github.vaspyyy.guildmark.economy.Shop
@@ -52,10 +53,11 @@ object ContractTracker : GuiLayer {
     private const val PADDING = 5
     /** Closer than this, the target counts as reached and the arrow is hidden. */
     private const val NEAR = 6.0
-    private val INK = 0xFF2B1D0E.toInt()
-    private val FADED_INK = 0xFF6B5236.toInt()
-    private val DONE_INK = 0xFF2E6B1F.toInt()
-    private val LATE_INK = 0xFF9A2A1A.toInt()
+    // The panel is the interface's dark one since the HD pass, so the rows are inked with its palette (they were brown for the parchment it was)
+    private val INK = Ui.TEXT
+    private val FADED_INK = Ui.TEXT_SOFT
+    private val DONE_INK = Ui.GREEN
+    private val LATE_INK = Ui.RED
 
     /** Toggled with the tracker key or in Guildmark's settings, and kept between games. */
     var shown: Boolean
@@ -86,7 +88,7 @@ object ContractTracker : GuiLayer {
     const val TALE = 4
 
     private val SHARD_ICON: ItemStack by lazy { MainQuest.shard(0) }
-    private val STORY_INK = 0xFF6A3A9A.toInt()
+    private val STORY_INK = 0xFFB892E8.toInt()
 
     /** The orders the player holds as a supplier, at every capital, as the server last sent them. */
     var orders: List<TrackedOrder> = listOf()

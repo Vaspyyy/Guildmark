@@ -77,7 +77,7 @@ internal object TaleTracker {
     }
 
     private val AMBER = 0xFFE3AE4A.toInt()
-    private val RED = 0xFFE5624C.toInt()
+    private val RED = Ui.RED
     private val WHITE = 0xFFFFFFFF.toInt()
 
     /** The ink of a [TaleRow] tone: amber by default, red on the step's last two days, green when only the telling is left. */
