@@ -7034,5 +7034,9 @@
   "subtitles.guildmark.cook.plate": "A plate is set down",
   "subtitles.guildmark.cook.chalk": "Chalk scratches a slate",
   "subtitles.guildmark.cook.larder": "A larder opens",
-  "subtitles.guildmark.cook.chill": "The cold bites"
+  "subtitles.guildmark.cook.chill": "The cold bites",
+  "gui.guildmark.tale.banner.begin": "A tale begins in %s",
+  "gui.guildmark.tale.banner.begin_bare": "A tale begins",
+  "gui.guildmark.tale.banner.ended": "%s · Ended",
+  "gui.guildmark.tale.banner.off": "Tale banners are off (Settings, Interface, Tale Banners)"
 }

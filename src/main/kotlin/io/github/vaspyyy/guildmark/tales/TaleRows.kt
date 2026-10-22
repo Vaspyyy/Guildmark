@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.tales
 
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.network.TaleBannerPayload
 import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.netty.buffer.ByteBuf
 import net.minecraft.core.BlockPos
@@ -89,9 +90,10 @@ internal object TaleRows : Tales.Listener {
     /** The tales whose template threw in `view`, told to the log once each. */
     private val warned = HashSet<Int>()
 
-    /** At setup, from `Tales.register`: the listener, the clock, the login and respawn hooks, and the commands. */
+    /** At setup, from `Tales.register`: the listener, the banner's payload, the clock, the login and respawn hooks, and the commands. */
     fun register(modBus: IEventBus) {
         Tales.listen(this)
+        TaleBannerPayload.register(modBus)
         NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { if (it.server.tickCount % EVERY == 0) pass(it.server) }
         NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerLoggedInEvent::class.java) { (it.entity as? ServerPlayer)?.let(::loggedIn) }
         NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerRespawnEvent::class.java) { (it.entity as? ServerPlayer)?.let(::refresh) }
@@ -185,22 +187,26 @@ internal object TaleRows : Tales.Listener {
     private fun loggedOut(player: ServerPlayer) {
         shown.remove(player.uuid)
         sent.remove(player.uuid)
+        TaleBannerPayload.forget(player.uuid)
     }
 
     private fun forget() {
         shown.clear()
         sent.clear()
         warned.clear()
+        TaleBannerPayload.forgetAll()
     }
 
     // ---- What the engine tells the following ----
 
     override fun joined(level: ServerLevel, t: Tale, player: ServerPlayer) {
         refresh(player)
+        TaleBannerPayload.begin(level, t, player)
     }
 
     override fun stepped(level: ServerLevel, t: Tale) {
         refresh(level, t)
+        TaleBannerPayload.step(level, t)
     }
 
     override fun ended(level: ServerLevel, t: Tale) {
@@ -208,11 +214,12 @@ internal object TaleRows : Tales.Listener {
         warned.remove(t.id)
     }
 
-    /** Tales went off: every tracker is emptied. */
+    /** Tales went off: every tracker is emptied, and no banner is owed. */
     override fun paused(level: ServerLevel) {
         for (id in shown.toList()) {
             val player = level.server.playerList.getPlayer(id)
             if (player == null) shown.remove(id) else set(player, listOf())
         }
+        TaleBannerPayload.forgetAll()
     }
 }

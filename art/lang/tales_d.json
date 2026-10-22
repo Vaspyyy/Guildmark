@@ -1,0 +1,6 @@
+{
+  "gui.guildmark.tale.banner.begin": "A tale begins in %s",
+  "gui.guildmark.tale.banner.begin_bare": "A tale begins",
+  "gui.guildmark.tale.banner.ended": "%s · Ended",
+  "gui.guildmark.tale.banner.off": "Tale banners are off (Settings, Interface, Tale Banners)"
+}

@@ -186,6 +186,8 @@ class GuildmarkClient(modBus: IEventBus, container: ModContainer) {
         io.github.vaspyyy.guildmark.client.season.SeasonClient.register(modBus)
         // Hearthcraft: the stations seen and heard, the cook's pose and hands, the Cook's Book, the cold vignette, the town's plates (client/cooking)
         io.github.vaspyyy.guildmark.client.cooking.CookClient.register(modBus)
+        // Tales: the banner of a tale you are in, across the upper screen (client/atlas/TaleBanner)
+        io.github.vaspyyy.guildmark.client.atlas.TaleBanner.register(modBus)
         HdPack.register(modBus)
         modBus.addListener(RegisterRenderStateModifiersEvent::class.java) { event ->
             event.registerAvatarEntityModifier(CombatAnimator.AVATAR)
