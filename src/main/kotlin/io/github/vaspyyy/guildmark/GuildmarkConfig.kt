@@ -157,6 +157,99 @@ object GuildmarkConfig {
         .comment("The most dealing, in Guild Marks, kept for a player while they're away (each Mark is 2 Trade XP when it's given): 1200 is about a real day away at a farmer's pace. Anything beyond is dropped, so a server left running for a month doesn't hand its owner a month of levels. 0 keeps nothing.")
         .defineInRange("tradeOwedXpMost", 1200, 0, 100000)
 
+    // The trader's life (living-world/trader/design.md section 9): hauls, the Word, carrying, the Hunt, the ladder, the House and the town's answer.
+    // Read through trade/TradeConfig, which folds each in with what it needs, so an unloaded spec reads as the defaults. Landed ahead of the systems.
+    val TRADE_LIFE: ModConfigSpec.BooleanValue = BUILDER
+        .comment("The trader's life, all of it: haul tickets for what a capital runs short of, the Word of the other towns' markets, pack animals, carts and wagons, the Hunt on the road, the ladder from Pedlar to a trading house, and the town's answer to a good delivery. Off, none of it runs: no tickets, boards, Word, Hunts or new House trips, and nothing can be bought for it; what players hold or have written down stays, and every container still opens. Needs Capital Markets.")
+        .define("tradeLife", true)
+    val TRADE_WORD: ModConfigSpec.BooleanValue = BUILDER
+        .comment("The Word: each capital's market is read four times a day, and the boards and the Tally show what the other towns' markets looked like, as old as the road between makes the news. Off, nothing is read, the boards stay blank and a Tally keeps only what its holder has seen. Needs Trader's Life.")
+        .define("tradeWord", true)
+    val TRADE_WORD_BASE: ModConfigSpec.DoubleValue = BUILDER
+        .comment("How old, in hours, news from another town is before the road adds to it: the Word reads this many hours plus Word Delay a Block for every block between the two towns. 0 leaves only the road's share.")
+        .defineInRange("tradeWordBase", 12.0, 0.0, 72.0)
+    val TRADE_WORD_PER_BLOCK: ModConfigSpec.DoubleValue = BUILDER
+        .comment("Hours the road adds to the age of the Word for every block between two towns: at 0.024 a town 740 blocks off is news 18 hours older than the base. 0 makes all news the same age however far it came.")
+        .defineInRange("tradeWordPerBlock", 0.024, 0.0, 0.1)
+    val TRADE_HAULS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Haul tickets: a capital short of a good that another can spare posts a ticket to have it brought, paid to the carrier who books it and delivers it to the shop it names; goods carried from far away sell to the stalls at a dealer's share, with room for more. Off, no ticket is posted, the open ones lapse unpaid, and the stalls take the usual share and the usual room. Needs Trader's Life.")
+        .define("tradeHauls", true)
+    val TRADE_HAUL_RATE: ModConfigSpec.DoubleValue = BUILDER
+        .comment("The most haul tickets a capital posts in a day, at dawn (a fraction is the chance of one more); in practice about one, as it posts only for a good it is short of that another town can spare. 0 posts none.")
+        .defineInRange("tradeHaulRate", 2.5, 0.0, 6.0)
+    val TRADE_HAUL_RATE_MAX: ModConfigSpec.DoubleValue = BUILDER
+        .comment("The most that rate rises to as more carriers take to the roads: half a ticket a day more for every other carrier who delivered in the last two days, or every carter a trading house hires.")
+        .defineInRange("tradeHaulRateMax", 4.0, 0.0, 8.0)
+    val TRADE_HAUL_DEPOSIT: ModConfigSpec.DoubleValue = BUILDER
+        .comment("The share of a ticket's pay (and at least a Mark) held when a carrier books it, and paid back with the pay; what is not delivered by the due hour costs its share of it. 0 holds nothing.")
+        .defineInRange("tradeHaulDeposit", 0.1, 0.0, 0.5)
+    val TRADE_DEALER_SHARE: ModConfigSpec.DoubleValue = BUILDER
+        .comment("The share of a good's price a stall pays for goods carried from far away (see Haul Distance), where the ordinary share is 0.6 and tops out at 0.68. 0.6 takes the dealer's edge away.")
+        .defineInRange("tradeDealerShare", 0.8, 0.6, 0.9)
+    val TRADE_HAUL_MIN: ModConfigSpec.IntValue = BUILDER
+        .comment("How far, in blocks, a good must have come in the last ten days, from the market it was bought at to the one it is sold or delivered to, to count as hauled.")
+        .defineInRange("tradeHaulMin", 600, 0, 2000)
+    val TRADE_HAUL_ROOM_DAYS: ModConfigSpec.IntValue = BUILDER
+        .comment("Days of the caravans' load a stall makes room for, on top of its usual room, for hauled goods while the town's stock is under what it likes to keep. 0 gives them no extra room.")
+        .defineInRange("tradeHaulRoomDays", 2, 0, 6)
+    val TRADE_CARRY: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Carrying: a harness and a drover's whistle make a tame donkey, mule or llama follow with its panniers, a Chapman's cart is pulled behind you and a Factor's wagon follows on a rein; the market hall's counter sells them. Off, the Carriers section is greyed, harnesses stop following, carts and wagons cannot be taken up, and every container (panniers, cart, wagon) still opens. Needs Trader's Life.")
+        .define("tradeCarry", true)
+    val TRADE_WAGON: ModConfigSpec.BooleanValue = BUILDER
+        .comment("The Carrier's Wagon alone, the one piece that can be cut out whole: the Wagon Bill and its draught horse. Off, no Wagon Bill is sold and a wagon already owned can only be recalled and emptied. Needs Carrying.")
+        .define("tradeWagon", true)
+    val TRADE_CART_SLOW: ModConfigSpec.DoubleValue = BUILDER
+        .comment("How much a cart drags whoever pulls it: 0.15 slows them by 15%. 0 pulls it free.")
+        .defineInRange("tradeCartSlow", 0.15, 0.0, 0.5)
+    val TRADE_WAGON_REIN: ModConfigSpec.IntValue = BUILDER
+        .comment("How many blocks ahead of its wagon a player may walk, leading it by the rein, before it waits for them.")
+        .defineInRange("tradeWagonRein", 20, 8, 48)
+    val TRADE_HUNT: ModConfigSpec.BooleanValue = BUILDER
+        .comment("The Hunt: an outlaw band within reach of a laden trader out on the road may send a party of two to four after their goods, which the trader can fight for, run with or give up. Off, no band hunts anyone. Needs Trader's Life and Road Ambushes.")
+        .define("tradeHunt", true)
+    val TRADE_HUNT_CHANCE: ModConfigSpec.DoubleValue = BUILDER
+        .comment("The Hunt's chance, as a factor on the one worked out for a band and a trader: 1 is as designed, 0.5 half as often, 0 never.")
+        .defineInRange("tradeHuntChance", 1.0, 0.0, 3.0)
+    val TRADE_HUNT_LADEN: ModConfigSpec.IntValue = BUILDER
+        .comment("The least value, in Marks, of the goods a trader carries for a band to think them worth a strike.")
+        .defineInRange("tradeHuntLaden", 25, 0, 500)
+    val TRADE_HUNT_REACH: ModConfigSpec.IntValue = BUILDER
+        .comment("How far, in blocks, a band's camp sees a laden trader.")
+        .defineInRange("tradeHuntReach", 160, 32, 400)
+    val TRADE_HUNT_KILLS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Whether a Hunt's party may kill. Off, they hunt for goods only and never kill.")
+        .define("tradeHuntKills", false)
+    val TRADE_HUNT_PURSE: ModConfigSpec.IntValue = BUILDER
+        .comment("The purse, in Marks, for every outlaw of a Hunt's party downed, paid when it is won. 0 pays none.")
+        .defineInRange("tradeHuntPurse", 2, 0, 10)
+    val TRADE_GUARD_WAGE: ModConfigSpec.DoubleValue = BUILDER
+        .comment("A hired guard's wage, in Marks a day, paid up front for one to three days. 0 hires them free.")
+        .defineInRange("tradeGuardWage", 2.5, 0.0, 10.0)
+    val TRADE_RUNGS: ModConfigSpec.BooleanValue = BUILDER
+        .comment("The ladder: a trader's deliveries and standing raise them from Pedlar to Hawker, Chapman, Factor and the head of a trading house, and each rung opens what the counter sells and how many tickets and guards they may hold. Off, every gate passes (for testing).")
+        .define("tradeRungs", true)
+    val TRADE_STORES: ModConfigSpec.BooleanValue = BUILDER
+        .comment("The Carriers' Store and the Counting House, the two works the town builds for a trader: offered on the Works screen once a player holds a Warrant and is Trusted there. Off, neither is offered; those already built stand. Needs Town Works.")
+        .define("tradeStores", true)
+    val TRADE_HOUSE: ModConfigSpec.BooleanValue = BUILDER
+        .comment("Hired carters: the owner of a Counting House may hire carters to run wagons on tickets while they are away. Off, no carter is hired and no new trip is set out; the ones on the road finish. Needs Carriers' Stores and Haul Tickets.")
+        .define("tradeHouse", true)
+    val TRADE_CARTERS: ModConfigSpec.IntValue = BUILDER
+        .comment("The most carters a trading house may hire: -1 leaves it at a quarter of the open capitals (the most the pool of tickets can use), 0 allows none.")
+        .defineInRange("tradeCarters", -1, -1, 6)
+    val TRADE_CARTER_WAGE: ModConfigSpec.IntValue = BUILDER
+        .comment("A hired carter's wage, in Marks a day, paid from the House's purse. 0 hires them free.")
+        .defineInRange("tradeCarterWage", 3, 0, 10)
+    val TRADE_HOUSE_OFFLINE: ModConfigSpec.IntValue = BUILDER
+        .comment("How many days a trading house goes on sending out trips after its owner was last in the game; after that it waits for them. 0 stops it the moment they log off.")
+        .defineInRange("tradeHouseOffline", 7, 0, 30)
+    val TRADE_WORLD: ModConfigSpec.BooleanValue = BUILDER
+        .comment("The town's answer to a good delivery: the street turns and cheers, the capital's fortunes note it, residents warm to the carrier, and word of a big one travels to the other towns. Off, no cheer, favour, fortune or rumour; deliveries still pay. Needs Trader's Life.")
+        .define("tradeWorld", true)
+    val TRADE_CHEER: ModConfigSpec.BooleanValue = BUILDER
+        .comment("The street cheering a delivery, the scene alone. Off, nobody turns or cheers (the fortunes, favours and rumours go on). Needs The Town Answers.")
+        .define("tradeCheer", true)
+
     val MARKET_DISPLAYS: ModConfigSpec.BooleanValue = BUILDER
         .comment("The market's goods on show in the capitals: baskets, crates, racks, boards, trays, shelves and sacks on the stalls and counters, heaped with the real goods as full as the market's stock of each. Off, newly built capitals keep the old stall props, no more displays are set out in capitals built before, and those already out stand still.")
         .define("marketDisplays", true)
