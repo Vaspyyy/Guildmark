@@ -4,6 +4,7 @@ import com.mojang.blaze3d.platform.InputConstants
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.GuildmarkConfig
 import io.github.vaspyyy.guildmark.client.GuildmarkClientConfig
+import io.github.vaspyyy.guildmark.tales.Tales
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.components.AbstractSliderButton
@@ -241,12 +242,14 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
         val c = GuildmarkClientConfig
         val spec = c.SPEC
         val city = listOf(c.CITY_SOUNDS, c.CITY_BELLS, c.CITY_CROWDS, c.CITY_WORKSHOPS, c.CITY_HARBOUR, c.CITY_WIND)
-        val listed = listOf(c.COMPASS, c.CONTRACT_TRACKER, c.PLACE_BANNERS, c.REGION_TITLES, c.REGION_ATMOSPHERE, c.COMBAT_HUD, c.DEATH_SCREEN, c.TITLE_SCREEN, c.CAMERA_SHAKE, c.CUTSCENES, c.DIALOGUE_CAMERA, c.MENU_SOUNDS, c.MENU_MUSIC, c.REGION_MUSIC, c.ISLAND_SOUNDS) + city
+        val listed = listOf(c.COMPASS, c.CONTRACT_TRACKER, c.PLACE_BANNERS, c.TALE_BANNERS, c.REGION_TITLES, c.REGION_ATMOSPHERE, c.COMBAT_HUD, c.DEATH_SCREEN, c.TITLE_SCREEN, c.CAMERA_SHAKE, c.CUTSCENES, c.DIALOGUE_CAMERA, c.MENU_SOUNDS, c.MENU_MUSIC, c.REGION_MUSIC, c.ISLAND_SOUNDS) + city
         return listOf(
             header("screen"),
             toggle(c.COMPASS, spec, true),
             toggle(c.CONTRACT_TRACKER, spec, true),
             toggle(c.PLACE_BANNERS, spec, true),
+            // Tales (tales/): the banner of a tale you are in, shown once tales are in the game (Tales.READY)
+            *taleBanners(spec),
             toggle(c.REGION_TITLES, spec, true),
             toggle(c.REGION_ATMOSPHERE, spec, true),
             toggle(c.COMBAT_HUD, spec, true),
@@ -265,6 +268,10 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
         ) + city.map { value -> slider(value, spec, true, PERCENTS, ::percent) { value.set(it.roundToInt()) } } + others(c, spec, listed, true)
     }
 
+    /** The tale banners' switch for the interface page, once tales are in the game (Tales.READY); nothing before. */
+    private fun taleBanners(spec: ModConfigSpec): Array<Row> =
+        if (Tales.READY) arrayOf<Row>(toggle(GuildmarkClientConfig.TALE_BANNERS, spec, true)) else arrayOf<Row>()
+
     private fun worldPage(width: Int): List<Row> {
         val c = GuildmarkConfig
         val spec = c.SPEC
@@ -282,6 +289,7 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
             c.DUNGEONS, c.FIELD_BOSSES, c.CAPITALS, c.ISLANDS, c.DUSK_RIDERS, c.DRAGONS, c.SEA_MONSTERS, c.SIEGES, c.SIEGE_CHANCE, c.BANDITS, c.OUTLAWS, c.RIVALS, c.CHARACTERS,
             c.TOWNSFOLK_CROWDS, c.TOWNSFOLK_CROWD_DENSITY, c.LIVING_WORLD, c.TOWNSFOLK_BEDS, c.MARKETS, c.SUPPLIER_ORDERS, c.HANDCARTS, c.MARKET_DISPLAYS, c.TURNING_MILLS, c.STREET_LAMPS,
             c.TOWN_WORKS, c.TOWN_WORKS_BUILD_SPEED, c.TOWN_FORTUNES, c.TOWN_COMINGS,
+            c.TOWN_TALES, c.TOWN_TALE_SCENES, c.TOWN_TALE_PACE, c.TOWN_TALE_MEMORIALS,
             c.CARAVANS, c.ROAD_AMBUSHES, c.CARAVAN_ESCORTS, c.ROAD_SALVAGE,
             c.MARKET_HERD_STOP, c.MARKET_HERD_STOP_AT, c.MARKET_CARRY_EASE, c.MARKET_CARRY_EASE_RATE, c.TRADE_OWED_XP, c.TRADE_OWED_XP_MOST,
             c.TOWNSFOLK_TALK, c.TOWNSFOLK_MEMORY, c.TOWNSFOLK_RUMOURS, c.TOWNSFOLK_BARKS,
@@ -376,6 +384,13 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
             toggle(c.REGION_ENEMIES, spec, editable),
             header("story"),
             toggle(c.CHARACTERS, spec, editable),
+        )
+        // Tales (tales/): the story chains' switches, shown once tales are in the game (Tales.READY)
+        if (Tales.READY) rows += listOf(
+            toggle(c.TOWN_TALES, spec, editable),
+            toggle(c.TOWN_TALE_SCENES, spec, editable),
+            slider(c.TOWN_TALE_PACE, spec, editable, linear(0.0, 2.0, false), ::times) { c.TOWN_TALE_PACE.set(it) },
+            toggle(c.TOWN_TALE_MEMORIALS, spec, editable),
         )
         rows += others(c, spec, listed, editable)
         return rows

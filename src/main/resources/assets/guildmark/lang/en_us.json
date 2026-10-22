@@ -6298,5 +6298,10 @@
   "guildmark.configuration.villageGrowth": "Births and Newcomers",
   "guildmark.configuration.villageGolems": "Village Golems",
   "guildmark.configuration.maxLiveVillages": "Villages Alive at Once",
-  "guildmark.configuration.maxVillageFolk": "Most Folk in a Village"
+  "guildmark.configuration.maxVillageFolk": "Most Folk in a Village",
+  "guildmark.configuration.townTales": "Town Tales",
+  "guildmark.configuration.townTaleScenes": "Tale Scenes",
+  "guildmark.configuration.townTalePace": "Tale Pace",
+  "guildmark.configuration.townTaleMemorials": "Tale Memorials",
+  "guildmark.configuration.taleBanners": "Tale Banners"
 }
