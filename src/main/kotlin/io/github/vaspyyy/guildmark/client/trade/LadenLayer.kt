@@ -1,0 +1,180 @@
+package io.github.vaspyyy.guildmark.client.trade
+
+import com.mojang.blaze3d.vertex.PoseStack
+import net.minecraft.client.model.Model
+import net.minecraft.client.model.geom.ModelPart
+import net.minecraft.client.model.geom.builders.LayerDefinition
+import net.minecraft.client.model.player.PlayerModel
+import net.minecraft.client.player.AbstractClientPlayer
+import net.minecraft.client.renderer.SubmitNodeCollector
+import net.minecraft.client.renderer.entity.LivingEntityRenderer
+import net.minecraft.client.renderer.entity.RenderLayerParent
+import net.minecraft.client.renderer.entity.layers.RenderLayer
+import net.minecraft.client.renderer.entity.player.AvatarRenderer
+import net.minecraft.client.renderer.entity.state.AvatarRenderState
+import net.minecraft.client.renderer.rendertype.RenderTypes
+import net.minecraft.core.component.DataComponents
+import net.minecraft.resources.Identifier
+import net.neoforged.neoforge.client.event.EntityRenderersEvent
+import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.sin
+
+/**
+ * Where the laden look gets its art (living-world/trader/design.md, Part 3, "Your back"; build parts D1 and X2): the three back-packs of
+ * art stream X2's `LadenPackMesh` (generated, as the caravans' `WagonMesh` is) with their textures under `textures/entity/trade/`.
+ *
+ * **What the animation reads of a pack's mesh.** Each pack is a model of its own, built in the player model's own space (pixels, y down,
+ * the origin at the neck, the body's back at z = 2; the layer follows the body part, so the pack leans with a crouch, a swim and a
+ * combat move, and stands a pixel off a chestplate). Every part below is optional and found by its name wherever it is in the tree; the
+ * names are the same in each of the three:
+ *
+ * - `pack`: the whole load, pivoting where it hangs from the shoulders; it leans with the speeding up and slowing down, rolls and twists
+ *   with the hips and lifts with each step. (Without one the whole model is moved instead.)
+ * - `swing_0` to `swing_7`: things hung on it (a pot, the lantern, a coil of rope), each pivoting at its hook; they swing, out of step
+ *   with one another, more than the pack does, and a sprint rattles them.
+ * - `flap_0` to `flap_7`: loose cloth and strap ends, pivoting at where they are fixed; they ripple with the stride.
+ */
+internal object LadenArt {
+    /** One back-pack: its mesh and the texture painted on it. */
+    class Pack(val mesh: () -> LayerDefinition, val texture: Identifier)
+
+    /**
+     * THE ONE CALL (stream X2): the three back-packs in order (a rolled blanket and a sack; a frame with two sacks and a hooked lantern; a
+     * tall frame with sacks, a small barrel and pots), or null while `LadenPackMesh` has not landed on main. With null nothing at all is
+     * done: no layer is added to anyone, no sound is played, and the game looks as it did. When it lands this is the one line to change,
+     * to a list of `Pack(LadenPackMesh::<its function for that pack>, Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "textures/entity/trade/<its png>"))`.
+     */
+    fun table(): List<Pack>? = null
+
+    /** The packs as baked for the layers added the last time the renderers were made (null for none: nothing is drawn). */
+    var packs: List<LadenModel>? = null
+        private set
+
+    /** Adds the layer to every player renderer, if the packs' art is in. */
+    fun addTo(event: EntityRenderersEvent.AddLayers) {
+        packs = null
+        val table = table() ?: return
+        val models = table.map { LadenModel(it.mesh().bakeRoot()) }
+        val textures = table.map { it.texture }
+        for (skin in event.skins) {
+            val renderer = event.getPlayerRenderer<AvatarRenderer<AbstractClientPlayer>>(skin) ?: continue
+            renderer.addLayer(LadenLayer(renderer, models, textures))
+        }
+        packs = models
+    }
+}
+
+/**
+ * How a pack is posed for one drawing, in radians and pixels: the lean of the load, its roll and twist, the lift of the stride, the swing of
+ * what hangs on it, and the rattle of a sprint (see [LadenModel]).
+ */
+internal class LadenPose(
+    val pitch: Float,
+    val roll: Float,
+    val twist: Float,
+    val bob: Float,
+    val dangle: Float,
+    val shake: Float,
+    val phase: Float,
+    val gait: Float,
+    val age: Float,
+)
+
+/** A back-pack of X2's, posed by [LadenPose] when it is drawn (see [LadenArt] for the parts it moves). */
+internal class LadenModel(root: ModelPart) : Model<LadenPose>(root, RenderTypes::entityCutout) {
+    private val lookup = root.createPartLookup()
+    private val pack: ModelPart? = lookup.apply("pack")
+    private val swingers: List<ModelPart> = named("swing_")
+    private val flappers: List<ModelPart> = named("flap_")
+
+    private fun named(prefix: String): List<ModelPart> = (0 until MOST).mapNotNull { lookup.apply(prefix + it) }
+
+    override fun setupAnim(pose: LadenPose) {
+        resetPose()
+        val load = pack ?: root
+        load.xRot += pose.pitch
+        load.zRot += pose.roll
+        load.yRot += pose.twist
+        load.y += pose.bob
+        for ((i, part) in swingers.withIndex()) {
+            // Each hangs a little out of step with the rest, and is shaken more by a sprint
+            part.xRot += pose.dangle * cos(i * 1.3f) + pose.shake * sin(i * 2.1f + 1f)
+            part.zRot += pose.dangle * sin(i * 1.3f + 0.8f) * 0.7f + pose.shake * cos(i * 1.7f)
+        }
+        for ((i, part) in flappers.withIndex()) {
+            // Cloth ripples along with the stride, and stirs a little on its own
+            part.xRot += sin(pose.phase * 2f - i * 0.9f) * 0.18f * pose.gait + sin(pose.age * 0.15f + i * 1.9f) * 0.05f
+        }
+    }
+
+    private companion object {
+        const val MOST = 8
+    }
+}
+
+/**
+ * The pack on a trader's back (design Part 3, "Your back"; build part D1): it is drawn in the body's own space, so it goes wherever the body
+ * does, and it sways with the stride (the hips' roll, the shoulders' twist, a lift with every step), leans as the wearer speeds up and slows
+ * down and turns ([LadenLook]), and is shaken by a sprint. It comes up onto the back when the load reaches a level, goes down off it when
+ * the load is gone, and pops onto it when the load grows into the next size. Nothing is drawn for a spectator or a glider, and nothing at
+ * all while [LadenArt.table] gives no packs.
+ */
+internal class LadenLayer(
+    parent: RenderLayerParent<AvatarRenderState, PlayerModel>,
+    private val packs: List<LadenModel>,
+    private val textures: List<Identifier>,
+) : RenderLayer<AvatarRenderState, PlayerModel>(parent) {
+    override fun submit(poseStack: PoseStack, collector: SubmitNodeCollector, light: Int, state: AvatarRenderState, yRot: Float, xRot: Float) {
+        val frame = state.getRenderData(LadenClient.FRAME) ?: return
+        if (state.isSpectator || state.isFallFlying || state.chestEquipment.has(DataComponents.GLIDER)) return
+        val model = packs.getOrNull(frame.level - 1) ?: return
+        val texture = textures.getOrNull(frame.level - 1) ?: return
+        val gait = state.walkAnimationSpeed.coerceIn(0f, 1f) * (1f + SPRINT_GAIT * frame.sprint)
+        val phase = state.walkAnimationPos * STRIDE
+        val crouch = if (state.isCrouching) 1f else 0f
+        val pose = LadenPose(
+            pitch = frame.pitch + (LEAN + LIFT * cos(phase * 2f)) * gait + CROUCH_LEAN * crouch,
+            roll = frame.roll + cos(phase) * HIPS * gait,
+            twist = sin(phase) * SHOULDERS * gait,
+            bob = frame.bounce + abs(cos(phase)) * STEP * gait,
+            dangle = frame.dangle + sin(phase * 2f + 0.6f) * HANG * gait,
+            shake = frame.sprint * (sin(state.ageInTicks * 2.9f) * 0.05f + sin(state.ageInTicks * 4.3f + 1.3f) * 0.03f),
+            phase = phase,
+            gait = gait,
+            age = state.ageInTicks,
+        )
+        poseStack.pushPose()
+        // The body's own place: it leans, crouches and swims, and the pack with it
+        parentModel.body.translateAndRotate(poseStack)
+        if (!state.chestEquipment.isEmpty) poseStack.translate(0f, 0f, ARMOUR)
+        val grow = frame.grow
+        if (grow != 1f) poseStack.scale(grow, grow, grow)
+        collector.submitModel(model, pose, poseStack, texture, light, LivingEntityRenderer.getOverlayCoords(state, 0f), state.outlineColor)
+        poseStack.popPose()
+    }
+
+    private companion object {
+        /** The walk animation's step in radians per unit of its position, as the legs swing. */
+        const val STRIDE = 0.6662f
+
+        /** How much more of the stride's sway a sprint gives. */
+        const val SPRINT_GAIT = 0.55f
+
+        /** The load's steady lean forward when walking, and the lift of it twice a stride, in radians. */
+        const val LEAN = 0.03f
+        const val LIFT = 0.02f
+
+        /** The extra lean over a crouch, the roll of the hips, the twist of the shoulders and the swing of what hangs on it, in radians. */
+        const val CROUCH_LEAN = 0.05f
+        const val HIPS = 0.05f
+        const val SHOULDERS = 0.045f
+        const val HANG = 0.09f
+
+        /** The lift of each step, in pixels. */
+        const val STEP = 0.55f
+
+        /** A chestplate stands a pixel off the body. */
+        const val ARMOUR = 1f / 16f
+    }
+}
