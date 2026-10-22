@@ -3,6 +3,8 @@ package io.github.vaspyyy.guildmark.client.ui
 import com.mojang.blaze3d.platform.InputConstants
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.client.combat.Cutscenes
+import io.github.vaspyyy.guildmark.client.trade.MarketPanel
+import io.github.vaspyyy.guildmark.client.trade.MarketPanels
 import io.github.vaspyyy.guildmark.economy.Good
 import io.github.vaspyyy.guildmark.economy.Lots
 import io.github.vaspyyy.guildmark.economy.Orders
@@ -122,6 +124,9 @@ class MarketScreen(private var view: MarketView) : Screen(Component.translatable
     }
 
     private var tickets: List<Ticket> = view.orders.map { Ticket(it) }
+
+    /** The sections other systems add between the orders and the goods (client/trade/MarketPanel): none are listed yet, so the list is as it was. */
+    private val panels = MarketPanels.at(view)
 
     /** The order whose Give up was pressed once, and when: a second press soon after gives it up. */
     private var unsure = -1
@@ -365,11 +370,17 @@ class MarketScreen(private var view: MarketView) : Screen(Component.translatable
     /** Whether the business's orders show: it has some out, or nothing else to show (the inn). */
     private fun ordersShown(): Boolean = view.standing >= 0 && (tickets.isNotEmpty() || rows.isEmpty())
 
-    /** How far down the list the goods start: under the orders (a line saying there are none, if there aren't), with a heading over each. */
-    private fun waresAt(): Int {
-        if (!ordersShown()) return 0
-        return SECTION + max(1, tickets.size) * (ORDER_ROW + GAP) + if (rows.isEmpty()) 0 else SECTION
-    }
+    /** How far down the list the sections other systems add start: under the orders, when they show (a line saying there are none, if there aren't). */
+    private fun panelsAt(): Int = if (ordersShown()) SECTION + max(1, tickets.size) * (ORDER_ROW + GAP) else 0
+
+    /** Where those sections start on screen now. */
+    private fun panelsTop(): Int = listTop - scrollShown.roundToInt() + panelsAt()
+
+    /** What those sections are told of the screen. */
+    private fun frame(): MarketPanel.Frame = MarketPanel.Frame(view, font, innerX, innerWidth, textX, textWidth(), buttonWidth, listTop, listBottom, ticks)
+
+    /** How far down the list the goods start: under the orders and those sections, with a heading over the goods when the orders show. */
+    private fun waresAt(): Int = panelsAt() + panels.height(view) + if (ordersShown() && rows.isNotEmpty()) SECTION else 0
 
     private fun maxScroll(): Float = max(0, waresAt() + rows.sumOf { it.height + GAP } - (listBottom - listTop)).toFloat()
 
@@ -596,6 +607,7 @@ class MarketScreen(private var view: MarketView) : Screen(Component.translatable
     override fun mouseClicked(event: MouseButtonEvent, doubleClick: Boolean): Boolean {
         if (event.button() == InputConstants.MOUSE_BUTTON_LEFT) {
             if (MarketTalk.click(view.keeper, panelX + panelWidth, panelY + 21, event.x(), event.y())) return true
+            if (panels.click(frame(), panelsTop(), event.x(), event.y(), event.hasShiftDown())) return true
             orderButtonAt(event.x(), event.y())?.let { return order(it) }
             val (row, buying) = buttonAt(event.x(), event.y()) ?: return super.mouseClicked(event, doubleClick)
             val ok = if (buying) canBuy(row.g) else canSell(row.g)
@@ -668,6 +680,7 @@ class MarketScreen(private var view: MarketView) : Screen(Component.translatable
             val my = mouseY.toDouble()
             val lines = orderButtonAt(mx, my)?.let { orderTip(it.ticket, it.action) }
                 ?: ticketAt(mx, my)?.let { ticketTip(it) }
+                ?: panels.tooltip(frame(), panelsTop(), mx, my)
                 ?: buttonAt(mx, my)?.let { (row, buying) -> tip(row, buying) }
                 ?: rowAt(mx, my)?.let { goodTip(it) }
                 ?: if (overRank(mx, my)) rankTip() else null
@@ -820,10 +833,12 @@ class MarketScreen(private var view: MarketView) : Screen(Component.translatable
                 if (y + ORDER_ROW > listTop && y < listBottom && k > 0f) drawTicket(graphics, ticket, y, k, mouseX, mouseY, t, a)
                 y += ORDER_ROW + GAP
             }
-            if (rows.isNotEmpty()) {
-                drawSection(graphics, Component.translatable("gui.guildmark.market.wares"), null, y, arrive())
-                y += SECTION
-            }
+        }
+        // The sections other systems add (client/trade/MarketPanel), then the goods, under their own heading when the orders show
+        y += panels.render(graphics, frame(), y, mouseX, mouseY, t)
+        if (ordersShown() && rows.isNotEmpty()) {
+            drawSection(graphics, Component.translatable("gui.guildmark.market.wares"), null, y, arrive())
+            y += SECTION
         }
         for (row in rows) {
             val h = row.height
