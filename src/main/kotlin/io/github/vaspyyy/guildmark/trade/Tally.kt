@@ -91,10 +91,13 @@ object Tally {
     const val STANDING = 2.0
     const val XP = 4.0
 
-    /** The least game ticks between two askings of one open screen, so that a screen (or a client that is not one) cannot make the server work out its page over and over. */
+    /** The least game ticks between two pages worked out for one open screen unless a press has just changed something, so that a screen (or a client that is not one) cannot make the server work out its page over and over. */
     private const val ASKED = 40L
 
-    /** The most reports the Word keeps in all, oldest dropped first (each is a sight of about 120 bytes). */
+    /** The least game ticks between two presses of the screen's buttons (a report, a booking) that the server will look at: each is checked against the world, and no hand presses faster. */
+    private const val PRESSED = 10L
+
+    /** The most reports the Word keeps in all, oldest dropped first (each is a sight of some 800 bytes of NBT, as the world saves it, so these come to some 80 kilobytes at most). */
     private const val FILED = 96
 
     // ---- The sights ----
@@ -275,32 +278,44 @@ object Tally {
 
     // ---- What the screen asks ----
 
-    /** When each open screen last asked (game time); kept in memory only. */
+    /** When each open screen was last sent a page (game time), and when each last pressed a button; kept in memory only. */
     private val asked = HashMap<UUID, Long>()
+    private val pressed = HashMap<UUID, Long>()
 
-    /** The screen of [player] asks the server to do [action] ([TallyActPayload]'s REFRESH, REPORT or BOOK) about the capital whose key is [about]. */
+    /**
+     * The screen of [player] asks the server to do [action] ([TallyActPayload]'s REFRESH, REPORT or BOOK) about the capital whose key is [about]. A page is
+     * worked out for a screen no oftener than every [ASKED] ticks, except to show what a press has just changed (a report filed, a booking made): a
+     * press that changed nothing is answered in the chat and gets a page only when one is due, and presses come no faster than [PRESSED] ticks apart.
+     */
     fun act(player: ServerPlayer, action: Int, about: Long) {
         val level = player.level() as? ServerLevel ?: return
         if (!TradeConfig.life() || !has(player)) return
         val now = level.gameTime
+        val due = now - (asked[player.uuid] ?: Long.MIN_VALUE / 2) >= ASKED
         when (action) {
-            TallyActPayload.REFRESH -> {
-                if (now - (asked[player.uuid] ?: Long.MIN_VALUE / 2) < ASKED) return
-                asked[player.uuid] = now
+            TallyActPayload.REFRESH -> if (!due) return
+            TallyActPayload.REPORT, TallyActPayload.BOOK -> {
+                if (now - (pressed[player.uuid] ?: Long.MIN_VALUE / 2) < PRESSED) return
+                pressed[player.uuid] = now
+                val changed = if (action == TallyActPayload.REPORT) tell(player, report(level, player, about)) else tell(player, book(level, player, about))
+                if (!changed && !due) return
             }
-            TallyActPayload.REPORT -> tell(player, report(level, player, about))
-            TallyActPayload.BOOK -> tell(player, book(level, player, about))
             else -> return
         }
+        asked[player.uuid] = now
         PacketDistributor.sendToPlayer(player, TallyPayload(TallyViews.build(level, player), false))
     }
 
-    private fun tell(player: ServerPlayer, what: Reported) {
+    /** Tells [player] how a report went. Gives whether it was filed. */
+    private fun tell(player: ServerPlayer, what: Reported): Boolean {
         player.sendSystemMessage(Component.translatable(what.key).withStyle(if (what == Reported.FILED) ChatFormatting.GREEN else ChatFormatting.GRAY))
+        return what == Reported.FILED
     }
 
-    private fun tell(player: ServerPlayer, what: TallyLinks.Booked) {
+    /** Tells [player] how a booking went. Gives whether it was made. */
+    private fun tell(player: ServerPlayer, what: TallyLinks.Booked): Boolean {
         player.sendSystemMessage(Component.translatable(what.key).withStyle(if (what == TallyLinks.Booked.DONE) ChatFormatting.GREEN else ChatFormatting.GRAY))
+        return what == TallyLinks.Booked.DONE
     }
 
     // ---- Booking from the Routes page ----
@@ -415,10 +430,12 @@ object Tally {
         NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { tick(it.server) }
         NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerLoggedOutEvent::class.java) { event ->
             asked.remove(event.entity.uuid)
+            pressed.remove(event.entity.uuid)
             dwelling.remove(event.entity.uuid)
         }
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ ->
             asked.clear()
+            pressed.clear()
             dwelling.clear()
         }
     }

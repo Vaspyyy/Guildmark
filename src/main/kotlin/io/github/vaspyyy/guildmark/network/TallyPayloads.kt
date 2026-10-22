@@ -365,7 +365,7 @@ data class TallyPayload(val view: TallyView, val open: Boolean) : CustomPacketPa
 /**
  * Client's Tally screen asks the server to do [action] (one of [REFRESH] and the rest) about the capital whose key is [about]: the open screen asks
  * for fresh news every few seconds, and the buttons ask to file a report or to book a route's tickets. The server decides all of it, and answers with
- * a fresh [TallyPayload].
+ * a fresh [TallyPayload]: no oftener than every two seconds, except to show what a press has just changed.
  */
 data class TallyActPayload(val action: Int, val about: Long) : CustomPacketPayload {
     override fun type(): CustomPacketPayload.Type<TallyActPayload> = TYPE
