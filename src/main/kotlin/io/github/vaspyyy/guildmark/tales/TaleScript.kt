@@ -54,7 +54,7 @@ internal class TaleScript(
     override fun choices(ask: Ask): List<Choice> {
         val turn = turn(ask) ?: return listOf(Choice(BACK, label("talk.guildmark.choice.tale.back")))
         if (!following(turn)) {
-            val lead = otherLead(turn) != null
+            val lead = TaleSays.otherLead(turn) != null
             return listOf(
                 Choice(YES, label("talk.guildmark.choice.tale.${turn.id}.yes", if (lead) "talk.guildmark.choice.tale.yes_lead" else "talk.guildmark.choice.tale.yes")),
                 Choice(LATER, label("talk.guildmark.choice.tale.${turn.id}.later", "talk.guildmark.choice.tale.later")),
@@ -62,7 +62,7 @@ internal class TaleScript(
             )
         }
         val out = ArrayList<Choice>()
-        for (option in options(turn)) out += Choice("o${turn.step}.${option.id}", option.label)
+        for (option in TaleSays.options(turn, voice)) out += Choice("o${turn.step}.${option.id}", option.label)
         if (!stood) out += Choice(STAND, label("talk.guildmark.choice.tale.${turn.id}.stand", "talk.guildmark.choice.tale.stand"))
         // "Why?" once the tale has turned (5.4), while it has a reason left to tell
         if (tale.step > 0 && told < reasons(turn).size) out += Choice(if (told == 0) WHY else WHY_MORE, label(if (told == 0) "talk.guildmark.choice.tale.why" else "talk.guildmark.choice.tale.why_more"))
@@ -103,9 +103,7 @@ internal class TaleScript(
     /** The request: what the cast member wants, and the tale as it now stands for a player who comes after another (3.6). */
     private fun request(turn: TaleTurn): TaleReply {
         turn.player?.let { TaleSpeakers.asked(turn.level, tale, it, false) }
-        val lead = otherLead(turn)
-        val say = if (lead != null) TaleSay("tale.ask.lead", leadDetail(turn, lead)) else TaleSay(turn.family("ask"), detail(turn, "ask"))
-        return TaleReply(listOf(say))
+        return TaleReply(listOf(TaleSays.ask(turn, voice)))
     }
 
     /** A yes: the part goes IN (the banner and the chime are the following's), and the cast member thanks them. */
@@ -128,7 +126,7 @@ internal class TaleScript(
     /** What the asker says at the yes: the tale's own line if its voice has one the language can say, else the talk's general thanks. */
     private fun thanks(turn: TaleTurn): TaleSay {
         val own = TaleVoiceGuard.run(turn.id, "yes", null) { voice?.yes(turn) }
-        return if (own != null) TaleSay(own.family, own.detail, instead = own.instead ?: GENERAL_YES) else TaleSay(GENERAL_YES, detail(turn, "yes"))
+        return if (own != null) TaleSay(own.family, own.detail, instead = own.instead ?: GENERAL_YES) else TaleSay(GENERAL_YES, TaleSays.detail(turn, voice, "yes"))
     }
 
     /** "Not now" (3.5): the cast say "Another time, then.", ask again after two market days at most twice more, and the talk goes on. */
@@ -143,7 +141,7 @@ internal class TaleScript(
         stood = true
         val step = turn.family("stand_${turn.step}")
         val family = if (TaleLines.exists(step)) step else turn.family("stand")
-        return TaleReply(listOf(TaleSay(family, detail(turn, "stand"))))
+        return TaleReply(listOf(TaleSay(family, TaleSays.detail(turn, voice, "stand"))))
     }
 
     /** One reason, newest first (5.4): a short lead and the reason in the tale's own sentence, in grey; "That's all I know." when none is left. */
@@ -160,7 +158,7 @@ internal class TaleScript(
         val dot = body.indexOf('.')
         if (dot < 0 || body.substring(0, dot).toIntOrNull() != turn.step) return decided()
         val id = body.substring(dot + 1)
-        val option = options(turn).firstOrNull { it.id == id } ?: return decided()
+        val option = TaleSays.options(turn, voice).firstOrNull { it.id == id } ?: return decided()
         return option.run(turn) ?: decided()
     }
 
@@ -178,34 +176,6 @@ internal class TaleScript(
     }
 
     private fun following(turn: TaleTurn): Boolean = TaleSpeakers.joined(turn.mine)
-
-    /** The player who has taken the tale up, if it is another than the one talking (3.6). */
-    private fun otherLead(turn: TaleTurn): Part? = tale.lead?.takeIf { it.player != player }
-
-    /** "{lead} is seeing to it. Next: {status}.": who has it, and the tale's tracker line as it stands (in the server's language). */
-    private fun leadDetail(turn: TaleTurn, lead: Part): String? {
-        val name = TaleWords.leadName(turn.level, lead.player)
-        val next = status(turn)
-        return when {
-            name.isNotBlank() && next.isNotBlank() -> TaleLines.facts("talk.detail.tale.lead", TaleLines.lit(name), TaleLines.lit(next))
-            name.isNotBlank() -> TaleLines.facts("talk.detail.tale.lead.alone", TaleLines.lit(name))
-            next.isNotBlank() -> TaleLines.facts("talk.detail.tale.lead.someone", TaleLines.lit(next))
-            else -> TaleLines.facts("talk.detail.tale.lead.nobody")
-        }
-    }
-
-    /** What the tracker says the tale's next step is, for the player talking: the template's own row, said in words. */
-    private fun status(turn: TaleTurn): String = TaleVoiceGuard.run(turn.id, "view", "") {
-        val view = template.view(tale, player)
-        Component.translatable(view.status, *view.statusArgs.toTypedArray()).string
-    }
-
-    /** The grey words of [beat], from the template's voice. */
-    private fun detail(turn: TaleTurn, beat: String): String? = TaleVoiceGuard.run(turn.id, "detail $beat", null) { voice?.detail(beat, turn) }
-
-    /** What the cast member offers at this step, at most [MOST] of it. */
-    private fun options(turn: TaleTurn): List<TaleOption> =
-        TaleVoiceGuard.run(turn.id, "options", listOf<TaleOption>()) { voice?.options(turn).orEmpty() }.take(MOST)
 
     /** The reasons the tale can tell, newest first: those whose sentence the language has. */
     private fun reasons(turn: TaleTurn): List<Why> = tale.why.asReversed().filter { TaleLines.has(TaleKeys.why(it.kind)) }
@@ -230,8 +200,5 @@ internal class TaleScript(
 
         /** The talk's general thanks at a yes, for a tale whose voice has no line of its own for it (one wording is `say.guildmark.talk.tale.yes_0`). */
         const val GENERAL_YES = "tale.yes"
-
-        /** The most options a step shows: with "How does it stand?", "Why?" and "Something else...", the screen has room for these. */
-        const val MOST = 4
     }
 }
