@@ -58,6 +58,15 @@ object Villages {
      */
     fun sight(level: ServerLevel, bell: BlockPos) {
         if (!enabled() || level.dimension() != Level.OVERWORLD) return
+        try {
+            seen(level, bell)
+        } catch (e: RuntimeException) {
+            // A bell that can't be taken in costs that bell, not the walk that found it
+            Guildmark.LOGGER.warn("A bell at {} could not be taken into the registry of villages", bell.toShortString(), e)
+        }
+    }
+
+    private fun seen(level: ServerLevel, bell: BlockPos) {
         val data = VillageData.get(level)
         val key = bell.asLong()
         val rec = data.records[key]

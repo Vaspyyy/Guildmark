@@ -62,6 +62,7 @@ internal object VillageTick {
     private val asks = HashMap<Long, Ask>()
     private var job: VillageCensus.Job? = null
     private var swept = false
+    private var lastFailure = -1L
 
     /** Whether a bell stands: seen standing, seen gone, or not seen because its chunk is not loaded. */
     enum class Stands { YES, NO, UNKNOWN }
@@ -82,8 +83,25 @@ internal object VillageTick {
             return
         }
         swept = false
-        if (server.tickCount % LOOK == LOOK_AT) look(level)
-        census(level)
+        try {
+            if (server.tickCount % LOOK == LOOK_AT) look(level)
+            census(level)
+        } catch (e: RuntimeException) {
+            failed(level, e)
+        }
+    }
+
+    /**
+     * Something in the villages' own work threw: the count in hand is given up, so that one village it can't read costs a count and
+     * not the server, and it is logged (the first time, then at most once in [RECOUNT] ticks, so a fault that repeats can't fill the log).
+     */
+    private fun failed(level: ServerLevel, e: RuntimeException) {
+        job = null
+        val now = level.gameTime
+        if (lastFailure < 0L || now < lastFailure || now - lastFailure >= RECOUNT) {
+            lastFailure = now
+            Guildmark.LOGGER.error("The work of the villages failed; the count in hand is given up (this is told once in {} ticks)", RECOUNT, e)
+        }
     }
 
     /** The switch is off: the zones are taken away once, what was waiting is dropped, and the records are left as they are. */
@@ -103,6 +121,7 @@ internal object VillageTick {
         asks.clear()
         job = null
         swept = false
+        lastFailure = -1L
         Villages.forgetAll()
         VillageBudget.forget()
         VillageCensus.Perf.forget()
@@ -126,6 +145,41 @@ internal object VillageTick {
     /** The squared distance from the bell [key] to the nearest of [players], or the largest there is with none. */
     fun nearest(players: List<ServerPlayer>, key: Long): Double =
         players.minOfOrNull { Villages.flat(it.x, it.z, key) } ?: Double.MAX_VALUE
+
+    /**
+     * Who is awake. A record with a player [near] it is LIVE and seen at [now]; the rest, the ones seen most lately first (then by
+     * key), are SLEEPING while fewer than [cap] villages are awake and PAUSED past that ([paused] is told of each). A LIVE village is
+     * never paused, however many there are; a LOST one is left as it is. Answers whether any record's state changed.
+     */
+    fun settle(records: Collection<VillageRec>, now: Long, cap: Int, near: (VillageRec) -> Boolean, paused: (VillageRec) -> Unit): Boolean {
+        var live = 0
+        var changed = false
+        val rest = ArrayList<VillageRec>()
+        for (rec in records) {
+            if (rec.state == Live.LOST) continue
+            if (near(rec)) {
+                rec.seen = now
+                live++
+                if (rec.state != Live.LIVE) {
+                    rec.state = Live.LIVE
+                    changed = true
+                }
+            } else {
+                rest.add(rec)
+            }
+        }
+        val room = (cap - live).coerceAtLeast(0)
+        rest.sortWith(compareByDescending<VillageRec> { it.seen }.thenBy { it.key })
+        for ((i, rec) in rest.withIndex()) {
+            val want = if (i < room) Live.SLEEPING else Live.PAUSED
+            if (rec.state != want) {
+                rec.state = want
+                changed = true
+            }
+            if (want == Live.PAUSED) paused(rec)
+        }
+        return changed
+    }
 
     private fun look(level: ServerLevel) {
         val data = VillageData.get(level)
@@ -161,31 +215,7 @@ internal object VillageTick {
 
         // Who is near: LIVE; the rest follow the cap, the ones seen last paused first
         val players = level.players()
-        var live = 0
-        val rest = ArrayList<VillageRec>()
-        for (rec in data.records.values) {
-            if (rec.state == Live.LOST) continue
-            if (near(players, rec.key)) {
-                rec.seen = now
-                live++
-                if (rec.state != Live.LIVE) {
-                    rec.state = Live.LIVE
-                    dirty = true
-                }
-            } else {
-                rest.add(rec)
-            }
-        }
-        val room = (cap() - live).coerceAtLeast(0)
-        rest.sortWith(compareByDescending<VillageRec> { it.seen }.thenBy { it.key })
-        for ((i, rec) in rest.withIndex()) {
-            val want = if (i < room) Live.SLEEPING else Live.PAUSED
-            if (rec.state != want) {
-                rec.state = want
-                dirty = true
-            }
-            if (want == Live.PAUSED) Villages.forget(rec.key)
-        }
+        if (settle(data.records.values, now, cap(), { near(players, it.key) }, { Villages.forget(it.key) })) dirty = true
 
         // The zones follow the records
         val have = HashSet<Long>()
