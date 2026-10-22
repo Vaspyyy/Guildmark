@@ -236,6 +236,7 @@ object WorksLedger {
 
     private fun start(level: ServerLevel, player: ServerPlayer, capital: Long, id: Int, at: Vec3) {
         Works.owed(level, player)
+        io.github.vaspyyy.guildmark.tales.Tales.owed(level, player)
         val s = Session(capital, id, at)
         s.page = when (Works.get(level, id)?.state) {
             WorksState.WANTED -> PLEDGES_PAGE

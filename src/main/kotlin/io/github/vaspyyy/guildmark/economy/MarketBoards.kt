@@ -142,6 +142,7 @@ object MarketBoards {
     fun read(level: ServerLevel, player: ServerPlayer, anchor: BlockPos) {
         // What called-off works owe the reader is paid as they use the board (M6)
         Works.owed(level, player)
+        io.github.vaspyyy.guildmark.tales.Tales.owed(level, player)
         val board = level.getBlockEntity(anchor) as? MarketBoardBlockEntity
         if (board == null || board.day < 0 || board.lines.isEmpty()) {
             player.sendOverlayMessage(Component.translatable("board.guildmark.market.bare"))

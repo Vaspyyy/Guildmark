@@ -258,6 +258,7 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         // Tales, the story chains that grow out of a capital's records: the surface the hooks call and `/guildmark tale` (tales/)
         io.github.vaspyyy.guildmark.tales.Tales.register(modBus)
         io.github.vaspyyy.guildmark.tales.TaleCommand.init()
+        io.github.vaspyyy.guildmark.tales.TalePay.listen()
         // Living villages: each village counted, with its folk, market, wagons, lamps and building, and the village commands (village/live/)
         io.github.vaspyyy.guildmark.village.live.Villages.register()
         io.github.vaspyyy.guildmark.village.live.VillageCommand.init()

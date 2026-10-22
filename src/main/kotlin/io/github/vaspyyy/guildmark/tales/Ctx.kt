@@ -59,13 +59,13 @@ class Ctx(
     // ---- Pay and memory (Part E, 6.1, 6.2, 6.5, 6.6, 7): what the town does with the tale ----
 
     /** Leaves the times a `tale` reason of [points] for [days] market days (6.1): `Fortunes.note(level, capital, "tale", points, days, ["<template>.<word>", names...], about)`. */
-    fun note(t: Tale, points: Int, days: Int, about: UUID? = null) {}
+    fun note(t: Tale, points: Int, days: Int, about: UUID? = null) = TaleTimes.note(this, t, points, days, about)
 
     /** Starts the tale's rumour (6.2): kind `tale.<template>.<word>`, the lead, the cast, their household, neighbours and workmates as the ones who know, [tone] +1 (A, B) or -1 (C, W). */
-    fun rumour(t: Tale, tone: Int) {}
+    fun rumour(t: Tale, tone: Int) = TaleTold.rumour(this, t, tone)
 
     /** The town remembers [player] for the tale (6.6): [favour] to the resident in [slot] and their household. */
-    fun favour(t: Tale, slot: String, player: UUID, favour: Favour) {}
+    fun favour(t: Tale, slot: String, player: UUID, favour: Favour) = TaleMemory.favour(this, t, slot, player, favour)
 
     /** Pays [player] for the tale (7): the points of their part through `payOut`, less what the tale's own notes have paid. */
     fun pay(t: Tale, player: ServerPlayer) = Tales.pay(level, player, t)

@@ -138,6 +138,7 @@ object Tales : Comings.Listener {
     fun register(modBus: IEventBus) {
         TaleEngine.register()
         TaleLook.register()
+        TaleLedger.register()
     }
 
     // ---- The clock ----
@@ -237,7 +238,7 @@ object Tales : Comings.Listener {
     // ---- What a tale shows, placed by the part that shows it ----
 
     /** From `Crier.news` (E places the call): what [entry]'s crier cries of tales at [c]'s noon, [at] being the game time. None yet. */
-    fun cries(level: ServerLevel, entry: Markets.Entry, c: Conditions, at: Long): List<Crier.Cry> = listOf()
+    fun cries(level: ServerLevel, entry: Markets.Entry, c: Conditions, at: Long): List<Crier.Cry> = TaleTold.cries(level, entry, c, at)
 
     /** From `Streets.wants` (F places the call): whether the memorial at [pos] in [column] is still wanted by the record of [run]. */
     fun wants(level: ServerLevel, column: Long, pos: BlockPos, run: Long): Boolean = false
@@ -296,13 +297,13 @@ object Tales : Comings.Listener {
     fun join(level: ServerLevel, t: Tale, player: ServerPlayer): Boolean = TaleSteps.join(level, t, player)
 
     /** Part E (6.5): changes the ways of [r], of [t]'s cast, to [to] (the opposite is cleared, the flip is logged in `TaleData.flips`); false if a limit stops it (two a tale, one a resident in forty days) and a `Why` says so. */
-    fun flip(c: Ctx, t: Tale, r: Resident, to: Trait): Boolean = false
+    fun flip(c: Ctx, t: Tale, r: Resident, to: Trait): Boolean = TaleFlips.flip(c, t, r, to)
 
     /** Part E (7.3): pays [player] for [t] through `Contracts.payOut`: the points of their part (7.2), less what the tale's own notes have paid, and the keepsake. */
-    fun pay(level: ServerLevel, player: ServerPlayer, t: Tale) {}
+    fun pay(level: ServerLevel, player: ServerPlayer, t: Tale) = TalePay.pay(level, player, t)
 
     /** Part E (7.4): pays [player] what is owed them in `TaleData.owed` (pay earned while away, escrow given back), once each; on login and when the board or a works screen opens. */
-    fun owed(level: ServerLevel, player: ServerPlayer) {}
+    fun owed(level: ServerLevel, player: ServerPlayer) = TalePay.owed(level, player)
 
     /** Part T2 (6.5, 8.9): the traditions [capital]'s festival keeps; the lantern's release and the crier's festival cry read them. None yet. */
     fun traditions(level: ServerLevel, capital: Long): List<TaleData.Tradition> = listOf()
