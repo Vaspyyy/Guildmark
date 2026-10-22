@@ -1858,6 +1858,12 @@ SPEED_FOR.update(trade_talk.SPEED_FOR)
 SAY_AS.update(trade_talk.SAY_AS)
 PHONEMES.update(trade_talk.PHONEMES)
 
+# The tales' families whose takes are made (art/audio/tale_lines: a tier joins the table in the commit that adds its takes)
+import tale_lines  # noqa: E402
+GROUPS += tale_lines.groups()
+DELIVERY.update(tale_lines.DELIVERY); SPEED_FOR.update(tale_lines.SPEED_FOR)
+SAY_AS.update(tale_lines.SAY_AS); PHONEMES.update(tale_lines.PHONEMES)
+
 
 # ------------------------------------------------------------------ the lines
 class Line:
