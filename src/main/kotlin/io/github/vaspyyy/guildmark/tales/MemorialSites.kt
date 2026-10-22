@@ -52,6 +52,17 @@ internal class MemorialSites(
 
     override fun door(x: Int, z: Int, r: Int): Boolean = doors.any { abs(it.x - x) <= r && abs(it.z - z) <= r }
 
+    /** The capital's doors the plan knows, and any door block standing within [r] of the cell (a house somebody built by the town, or in a village, is no plan's). */
+    override fun doorNear(x: Int, y: Int, z: Int, r: Int): Boolean {
+        if (door(x, z, r)) return true
+        for (dx in -r..r) for (dz in -r..r) for (dy in -1..2) {
+            at.set(x + dx, y + dy, z + dz)
+            if (level.isOutsideBuildHeight(y + dy) || !level.isLoaded(at)) continue
+            if (level.getBlockState(at).`is`(BlockTags.DOORS)) return true
+        }
+        return false
+    }
+
     override fun walk(x: Int, y: Int, z: Int): Boolean? {
         at.set(x, y, z)
         if (level.isOutsideBuildHeight(y) || !level.isInWorldBounds(at) || !level.isLoaded(at)) return null
@@ -78,36 +89,14 @@ internal class MemorialSites(
     // ---- Where a memorial belongs when the tale names no place ----
 
     /**
-     * The places a memorial of a kind belongs when its tale names none (6.4), the best first: a stone at the door of a temple, else by a
-     * well in the square, else in the market; a cairn beside the road a gate leads out by, and then where a stone would go. The search
-     * takes the first of them it finds room near. Empty where the capital's places are not known.
+     * The places a memorial of a kind belongs when its tale names none (6.4), the best first: [MemorialRules.anchors] (a stone at the door
+     * of a temple, round its lot's corners, by a well in the town, in the market; a cairn beside the road a gate leads out by first), the
+     * very list the city-preview kit asks, put in the world. The search takes the first of them it finds room near. Empty where the
+     * capital's places are not known.
      */
     fun anchors(cairn: Boolean): List<BlockPos> {
-        val p = places ?: return listOf()
-        val out = ArrayList<BlockPos>()
-        if (cairn) roadside()?.let { out += it }
-        for (temple in p.nearest(p.centre, CityPlaces.TEMPLES).take(TEMPLES)) temple.front?.outside?.let { out += it }
-        out += p.wells.take(WELLS)
-        out += p.market
-        return out
-    }
-
-    /** The first column of a road out of the capital's gates, beyond the glacis (south, east, west, north), at its standing height; null if none is found on the axes. */
-    private fun roadside(): BlockPos? {
-        val c = capital ?: return null
-        val g = grid ?: return null
-        val plan = try {
-            c.plan
-        } catch (e: IllegalStateException) {
-            return null
-        }
-        val (lx, lz) = MemorialRules.roadside(g, plan.levelled, plan.reach) ?: return null
-        return c.world(lx, plan.level(lx, lz), lz)
-    }
-
-    private companion object {
-        /** How many temples and wells are tried as the place a memorial belongs. */
-        const val TEMPLES = 2
-        const val WELLS = 2
+        val c = capital ?: return listOf()
+        val census = (places ?: return listOf()).census
+        return MemorialRules.anchors(census.plan, census, cairn).map { c.world(it.x, it.y, it.z) }
     }
 }

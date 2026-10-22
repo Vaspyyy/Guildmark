@@ -21,9 +21,9 @@ import kotlin.math.roundToInt
  *
  * - `list`: every memorial of this dimension with its names, its place, whether it is set, waiting or found no room, and what stands on it.
  * - `place <stone|cairn> <name[, name]>`: sets a memorial for the names where you stand, by the same rules as the tales' own (nearest first
- *   within 8 blocks, 16 for a cairn): natural level ground, not in a building, road, crop or water, no door close, turned square to the
- *   street, room before it for the lantern and the one who kneels. If no place near you passes, nothing is set and the count of why each
- *   place was refused is said. In a capital it is one of its six; out in the open it belongs to no town.
+ *   within 16 blocks, 24 for a cairn): natural level ground, not in a building, road, crop or water, no door close, turned square to the
+ *   street, room before it for the lantern and the one who kneels, who is not walled in. If no place near you passes, nothing is set and
+ *   the count of why each place was refused is said. In a capital it is one of its six; out in the open it belongs to no town.
  * - `remove <id>`: takes a memorial away, with the lantern and the pot the Laying set for it, where their chunks are loaded.
  * - `posy <id>`: lays a posy on the stone as the Laying does, now; `candles <id> <0-4> [lit]` sets candles on its ledge (lit till dawn).
  * - `lay <id>`: plays the Laying at that stone now, as `tale scene laying` does at a stand-in: whoever is free near it kneels two blocks from

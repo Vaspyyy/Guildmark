@@ -5,7 +5,6 @@ import io.github.vaspyyy.guildmark.economy.CaravanRoutes
 import io.github.vaspyyy.guildmark.festival.FestivalRestores
 import io.github.vaspyyy.guildmark.tales.MemorialRules.Column
 import io.github.vaspyyy.guildmark.tales.MemorialRules.Face
-import io.github.vaspyyy.guildmark.tales.MemorialRules.Refusal
 import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
 import io.github.vaspyyy.guildmark.townsfolk.streets.Streets
 import net.minecraft.core.BlockPos
@@ -24,7 +23,6 @@ import net.minecraft.world.phys.Vec3
 import net.neoforged.neoforge.common.NeoForge
 import net.neoforged.neoforge.event.server.ServerStoppedEvent
 import net.neoforged.neoforge.event.tick.ServerTickEvent
-import java.util.EnumMap
 
 /**
  * How a memorial is set down (living-world/stories/design.md 6.4, 14.10): the record in `TaleData.memorials`, the safe-site search
@@ -79,9 +77,8 @@ internal object MemorialPlacing {
     fun settle(c: Ctx, t: Tale, rec: TaleData.Memorial) {
         val sites = MemorialSites(c.level, c.here.capital, c.here.places)
         val cairn = rec.kind == MemorialKind.CAIRN.id
-        // No place named: where the kind belongs, and the next best places if that has no room
-        val anchors = if (rec.pos == null) sites.anchors(cairn) else listOf()
-        if (rec.pos == null) rec.pos = anchors.firstOrNull()
+        // No place named: where the kind belongs (`tryPlace` goes on to the next best places if that has no room)
+        if (rec.pos == null) rec.pos = sites.anchors(cairn).firstOrNull()
         c.data.changed()
         val label = MemorialWords.label(rec.names)
         if (rec.pos == null) {
@@ -92,7 +89,7 @@ internal object MemorialPlacing {
             c.why(t, Memorials.WHY_OFF, label)
             return
         }
-        when (tryPlace(c.level, rec, sites, sync = true, more = anchors.drop(1)).result) {
+        when (tryPlace(c.level, rec, sites, sync = true).result) {
             Result.PLACED -> c.why(t, if (cairn) Memorials.WHY_CAIRN else Memorials.WHY_STONE, label)
             Result.NO_ROOM -> c.why(t, Memorials.WHY_NOROOM, label)
             Result.WAIT -> c.why(t, Memorials.WHY_WAIT, label)
@@ -118,19 +115,25 @@ internal object MemorialPlacing {
     // ---- Setting one down ----
 
     /**
-     * Tries to set [rec] down: finds its spot by the rules, from where it wants to be (and from each of [more], the next best places, if
-     * the first has no room), and builds the block. A [sync] attempt is made as a tale ends (a scene is waiting to see the block): it
-     * needs only the chunk; one from the waiting list sets a cairn only with a player within [NEAR_CAIRN] blocks and nobody close to it or
-     * looking. Ground not yet loaded is a wait, never a refusal.
+     * Tries to set [rec] down: finds its spot by the rules, from where it wants to be, and builds the block. A memorial that was given no
+     * place started from where its kind belongs (the first of [MemorialSites.anchors]) and, if that has no room, goes on to the next best
+     * of them, now or on a later try alike ([MemorialRules.findFrom]: every one of them near, then every one far); one whose tale named
+     * its place has only that place, as far as [MemorialRules.STONE_REACH] ([MemorialRules.CAIRN_REACH]). A [sync] attempt is made as a
+     * tale ends (a scene is waiting to see the block): it needs only the chunk; one from the waiting list sets a cairn only with a player
+     * within [NEAR_CAIRN] blocks and nobody close to it or looking. Ground not yet loaded is a wait, never a refusal.
      */
-    fun tryPlace(level: ServerLevel, rec: TaleData.Memorial, sites: MemorialSites?, sync: Boolean, more: List<BlockPos> = listOf()): Outcome {
+    fun tryPlace(level: ServerLevel, rec: TaleData.Memorial, sites: MemorialSites?, sync: Boolean): Outcome {
         if (rec.placed) return Outcome(Result.PLACED)
         val want = rec.pos ?: return Outcome(Result.NO_ROOM)
         val cairn = rec.kind == MemorialKind.CAIRN.id
         if (!level.isLoaded(want)) return Outcome(Result.WAIT)
         if (!sync && cairn && (level.getNearestPlayer(want.x + 0.5, want.y + 0.5, want.z + 0.5, NEAR_CAIRN, false) == null || !unseen(level, want))) return Outcome(Result.WAIT)
         val town = sites ?: sitesFor(level, rec, cairn) ?: return Outcome(Result.WAIT)
-        val found = search(level, town, cairn, listOf(want) + more, others(level, rec), rec.id * SALT)
+        val belongs = town.anchors(cairn)
+        val wants = listOf(want) + if (belongs.firstOrNull() == want) belongs.drop(1) else listOf()
+        val found = MemorialRules.findFrom(
+            town, cairn, wants.map { MemorialRules.Anchor("place", it.x, it.y, it.z) }, others(level, rec), rec.id * SALT,
+        ) { level.isLoaded(BlockPos(it.x, it.y, it.z)) }.found
         val spot = found.spot
         if (spot == null) {
             if (found.unloaded) return Outcome(Result.WAIT, found)
@@ -140,23 +143,6 @@ internal object MemorialPlacing {
             return Outcome(Result.NO_ROOM, found)
         }
         return Outcome(if (build(level, rec, spot)) Result.PLACED else Result.WAIT, found)
-    }
-
-    /** The first spot from the [wants], nearest first from each in turn; the counts of why places were refused are all the searches'. */
-    private fun search(level: ServerLevel, town: MemorialSites, cairn: Boolean, wants: List<BlockPos>, others: List<Column>, seed: Long): MemorialRules.Found {
-        val refused = EnumMap<Refusal, Int>(Refusal::class.java)
-        var tried = 0
-        for (w in wants) {
-            if (!level.isLoaded(w)) {
-                refused.merge(Refusal.UNLOADED, 1, Int::plus)
-                continue
-            }
-            val found = MemorialRules.find(town, cairn, w.x, w.y, w.z, others, seed)
-            tried += found.tried
-            if (found.spot != null) return MemorialRules.Found(found.spot, tried, refused)
-            for ((why, n) in found.refused) refused.merge(why, n, Int::plus)
-        }
-        return MemorialRules.Found(null, tried, refused)
     }
 
     /** Builds [rec]'s block at [spot] and writes what it keeps. False if the cell was taken in the meantime (somebody stands in it). */
