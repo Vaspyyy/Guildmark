@@ -25,10 +25,11 @@ internal object Ways {
 
 /**
  * The inside of one building, found by flooding from the cells its people sleep or work in: out through every open cell that
- * has a roof over it, never through a wall, and never out under the open sky. A door that has the open sky on its far side is a
- * door of the building; one that has another roofed room beyond is a way through, and the flood goes on. It reads a cell once
- * (the cells it has seen are marked), asks the world nothing else but the height of a column once, and stops at [MAX_CELLS]. It is
- * a queue that keeps its place, so [run] can stop for the tick and go on in the next.
+ * has a roof over it, never through a wall (a bottom slab is one: a floor of them is not flooded under), and never out under the
+ * open sky. A door that has the open sky on its far side is a door of the building. So is one that has only a porch or a yard
+ * under the eaves beyond; [roomBeyond] tells that from a room, which is shut in, and through whose door the flood goes on. It
+ * reads a cell once (the cells it has seen are marked), asks the world nothing else but the height of a column once, and stops
+ * at [MAX_CELLS]. It is a queue that keeps its place, so [run] can stop for the tick and go on in the next.
  */
 internal class Flood {
     private var x0 = 0
@@ -37,11 +38,18 @@ internal class Flood {
     private var w = 0
     private var d = 0
     private var h = 0
+
+    /** By cell: [LOOKED] at, in the [CELL]s of the flood, and in a [FAILED] region (what a look beyond a door found to be no room). */
     private var seen = ByteArray(0)
     private var tops = IntArray(0)
     private var queue = IntArray(0)
     private var head = 0
     private var tail = 0
+
+    /** The look beyond a door: the cells it has found, and which look (by number) last passed each cell. */
+    private var around = IntArray(0)
+    private val ring = IntArray(ROOM_CELLS + 2)
+    private var looks = 0
 
     /** The cells found to be inside, and the box round them. */
     var cells = 0
@@ -57,6 +65,15 @@ internal class Flood {
     var minZ = 0
         private set
     var maxZ = 0
+        private set
+
+    /**
+     * What the flood met at the sides of its cells, to tell a room from a roof on posts: [solid] sides are walls and doors, [loose] ones
+     * posts and fences and open ground under the sky.
+     */
+    var solid = 0
+        private set
+    var loose = 0
         private set
 
     /** Whether a cell the flood needed was in a chunk that is not loaded; whether it stopped at [MAX_CELLS]. */
@@ -80,6 +97,7 @@ internal class Flood {
         if (seen.size < n) {
             seen = ByteArray(n)
             queue = IntArray(n)
+            around = IntArray(n)
         } else {
             java.util.Arrays.fill(seen, 0, n, 0.toByte())
         }
@@ -95,6 +113,8 @@ internal class Flood {
         maxY = Int.MIN_VALUE
         minZ = Int.MAX_VALUE
         maxZ = Int.MIN_VALUE
+        solid = 0
+        loose = 0
         unloaded = false
         capped = false
         doors.clear()
@@ -116,8 +136,11 @@ internal class Flood {
         return top
     }
 
-    /** Whether the cell is solid enough to be a wall (a ladder is no wall; a door is dealt with before this). */
-    private fun wall(c: Int): Boolean = c and Cls.FLOOR != 0 && c and Cls.LADDER == 0
+    /**
+     * Whether the cell is solid enough to be a wall (a ladder is no wall; a door is dealt with before this). A bottom slab is one too:
+     * a floor of them has a crawl space under it that leads out under the eaves, which no room is.
+     */
+    private fun wall(c: Int): Boolean = c and (Cls.FLOOR or Cls.HALF) != 0 && c and Cls.LADDER == 0
 
     /** Puts the cell ([x], [y], [z]) in the queue as a start, if it is in the box, new, open and roofed. */
     fun seed(t: Terrain, x: Int, y: Int, z: Int) {
@@ -140,6 +163,7 @@ internal class Flood {
     }
 
     private fun add(x: Int, y: Int, z: Int, i: Int) {
+        seen[i] = (seen[i].toInt() or LOOKED or CELL).toByte()
         queue[tail++] = i
         cells++
         if (x < minX) minX = x
@@ -171,14 +195,30 @@ internal class Flood {
                 val nx = x + dx
                 val ny = y + dy
                 val nz = z + dz
-                if (!inside(nx, ny, nz)) continue
+                if (!inside(nx, ny, nz)) {
+                    // Open ground that runs on past what is looked at is no room
+                    if (dy == 0 && openBeyond(t, nx, ny, nz)) loose++
+                    continue
+                }
                 val j = index(nx, ny, nz)
-                if (seen[j].toInt() != 0) continue
-                seen[j] = 1
+                val m = seen[j].toInt()
+                if (m != 0) {
+                    // Ground that a look found to be no room is open to us as well, where we meet it at the side
+                    if (m and FAILED != 0 && dy == 0) loose++
+                    continue
+                }
+                seen[j] = LOOKED.toByte()
                 visit(t, x, y, z, nx, ny, nz, dx, dy, dz, j)
             }
         }
         return true
+    }
+
+    /** Whether the cell outside the box is one a body fits in (not a wall, not a door, and loaded). */
+    private fun openBeyond(t: Terrain, x: Int, y: Int, z: Int): Boolean {
+        val s = t.state(x, y, z) ?: return false
+        val c = Cls.of(s)
+        return c and Cls.DOOR == 0 && !wall(c)
     }
 
     private fun visit(t: Terrain, x: Int, y: Int, z: Int, nx: Int, ny: Int, nz: Int, dx: Int, dy: Int, dz: Int, j: Int) {
@@ -189,17 +229,29 @@ internal class Flood {
         }
         val c = Cls.of(s)
         if (c and Cls.DOOR != 0) {
-            if (dy == 0 && c and Cls.DOOR_LOWER != 0) door(t, nx, ny, nz, dx, dz)
+            if (dy == 0) {
+                solid++
+                if (c and Cls.DOOR_LOWER != 0) door(t, nx, ny, nz, dx, dz)
+            }
             return
         }
-        if (wall(c)) return
+        if (wall(c)) {
+            if (dy == 0) {
+                if (c and Cls.POST != 0) loose++ else solid++
+            }
+            return
+        }
         val top = topOf(t, nx, nz)
         if (top == Terrain.UNLOADED) {
             unloaded = true
             return
         }
-        if (ny < top) add(nx, ny, nz, j)
-        else if (dy == 0 && doors.size < MAX_DOORS) doorway(t, x, y, z, nx, ny, nz, dx, dz)
+        if (ny < top) {
+            add(nx, ny, nz, j)
+        } else if (dy == 0) {
+            loose++
+            if (doors.size < MAX_DOORS) doorway(t, x, y, z, nx, ny, nz, dx, dz)
+        }
     }
 
     /** A door's lower half at ([px], [py], [pz]), reached by stepping ([sx], [sz]) from a cell inside. */
@@ -218,11 +270,117 @@ internal class Flood {
             unloaded = true
             return
         }
-        if (py < top) {
-            // Another room under the same roof: through it, and on
-            seed(t, ox, py, oz)
-        } else if (doors.size < MAX_DOORS) {
-            doors.add(CityPlaces.Door(BlockPos(px, py, pz), Ways.of(-sx, -sz)))
+        if (py >= top || !inside(ox, py, oz)) {
+            addDoor(px, py, pz, sx, sz)
+            return
+        }
+        val m = seen[index(ox, py, oz)].toInt()
+        // Where the flood is already, the door is a way through; where a look found no room, it is a door of the building
+        if (m and CELL != 0) return
+        if (m and FAILED != 0 || !roomBeyond(t, ox, py, oz)) addDoor(px, py, pz, sx, sz)
+    }
+
+    private fun addDoor(px: Int, py: Int, pz: Int, sx: Int, sz: Int) {
+        if (doors.size < MAX_DOORS) doors.add(CityPlaces.Door(BlockPos(px, py, pz), Ways.of(-sx, -sz)))
+    }
+
+    /**
+     * Whether the roofed ground at ([sx], [sy], [sz]), beyond a door, is a room of the building: a look at it, out through its open
+     * cells as the flood goes, but never through a door, and at most [ROOM_CELLS] of them. A porch, or a yard under the eaves, has
+     * the open sky at its sides (or a fence, or the edge of what is looked at) where a room has walls: it is a room if it is shut
+     * in all round and has walls and doors on at least twice as many sides as it has open ones. A room's cells join the flood; the
+     * cells of what is no room are marked, so that the next door to it is told at once, and the flood, meeting it at its side,
+     * counts it open.
+     */
+    private fun roomBeyond(t: Terrain, sx: Int, sy: Int, sz: Int): Boolean {
+        if (looks == Int.MAX_VALUE) {
+            java.util.Arrays.fill(around, 0)
+            looks = 0
+        }
+        val look = ++looks
+        val start = index(sx, sy, sz)
+        around[start] = look
+        ring[0] = start
+        var n = 1
+        var next = 0
+        var walls = 0
+        var gaps = 0
+        var shut = true
+        while (next < n) {
+            val i = ring[next++]
+            val x = x0 + i % w
+            val z = z0 + (i / w) % d
+            val y = y0 + i / (w * d)
+            for (k in 0 until 6) {
+                val dx = DX[k]
+                val dy = DY[k]
+                val dz = DZ[k]
+                val nx = x + dx
+                val ny = y + dy
+                val nz = z + dz
+                if (!inside(nx, ny, nz)) {
+                    shut = false
+                    continue
+                }
+                val j = index(nx, ny, nz)
+                if (around[j] == look) continue
+                val m = seen[j].toInt()
+                if (m and CELL != 0) continue
+                if (m and FAILED != 0) {
+                    shut = false
+                    continue
+                }
+                around[j] = look
+                val s = t.state(nx, ny, nz)
+                if (s == null) {
+                    unloaded = true
+                    shut = false
+                    continue
+                }
+                val c = Cls.of(s)
+                if (c and Cls.DOOR != 0) {
+                    if (dy == 0) walls++
+                    continue
+                }
+                if (wall(c)) {
+                    if (dy == 0) {
+                        if (c and Cls.POST != 0) gaps++ else walls++
+                    }
+                    continue
+                }
+                val top = topOf(t, nx, nz)
+                if (top == Terrain.UNLOADED) {
+                    unloaded = true
+                    shut = false
+                    continue
+                }
+                if (ny < top) {
+                    ring[n++] = j
+                    if (n > ROOM_CELLS) {
+                        mark(n, FAILED)
+                        return false
+                    }
+                } else if (dy == 0) {
+                    gaps++
+                }
+            }
+        }
+        if (!shut || walls < 2 * gaps) {
+            mark(n, FAILED)
+            return false
+        }
+        for (r in 0 until n) {
+            val i = ring[r]
+            add(x0 + i % w, y0 + i / (w * d), z0 + (i / w) % d, i)
+        }
+        return true
+    }
+
+    /** Marks the first [n] cells of the look with [bit]. */
+    private fun mark(n: Int, bit: Int) {
+        for (r in 0 until n) {
+            val i = ring[r]
+            seen[i] = (seen[i].toInt() or bit).toByte()
         }
     }
 
@@ -250,6 +408,12 @@ internal class Flood {
         const val MAX_SIDE = 48
         const val MAX_HIGH = 40
 
+        /** The most cells a look beyond a door follows: a place bigger than that is not taken for a room of the building. */
+        const val ROOM_CELLS = 160
+
+        private const val LOOKED = 1
+        private const val CELL = 2
+        private const val FAILED = 8
         private const val UNSET = Int.MAX_VALUE
         private val DX = intArrayOf(1, -1, 0, 0, 0, 0)
         private val DY = intArrayOf(0, 0, 1, -1, 0, 0)
@@ -383,8 +547,8 @@ internal class Scanner {
 
         /**
          * The seat a bottom stair at ([x], [y], [z]) is, if it is one: with room above it for a body, a way to step off at its front
-         * or sides, and not a step in a stair (which has another of its own way above it in front or below it behind).
-         * It faces away from its back, as `Places.seatFacing` has it.
+         * or sides, and not a step in a stair (which has another of its own way above it in front or below it behind). A cell it
+         * needs that is in a chunk that is not loaded makes it none. It faces away from its back, as `Places.seatFacing` has it.
          */
         fun seat(t: Terrain, x: Int, y: Int, z: Int, s: BlockState): Spot? {
             val above = t.state(x, y + 1, z) ?: return null
@@ -406,10 +570,11 @@ internal class Scanner {
                 }
             }
             if (!access) return null
-            val up = t.state(x + back.stepX, y + 1, z + back.stepZ)
-            if (up != null && up.block is StairBlock && up.getValue(StairBlock.FACING) == back) return null
-            val down = t.state(x + front.stepX, y - 1, z + front.stepZ)
-            if (down != null && down.block is StairBlock && down.getValue(StairBlock.FACING) == back) return null
+            // What is not known (a chunk not loaded) is not taken to be no stair: the stairs of a roof, at the edge of the loaded ground, are no benches
+            val up = t.state(x + back.stepX, y + 1, z + back.stepZ) ?: return null
+            if (up.block is StairBlock && up.getValue(StairBlock.FACING) == back) return null
+            val down = t.state(x + front.stepX, y - 1, z + front.stepZ) ?: return null
+            if (down.block is StairBlock && down.getValue(StairBlock.FACING) == back) return null
             return Spot(BlockPos(x, y, z), front)
         }
     }

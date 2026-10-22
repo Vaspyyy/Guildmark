@@ -30,12 +30,14 @@ import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.level.block.DoorBlock
 import net.minecraft.world.level.block.LanternBlock
+import net.minecraft.world.level.block.SlabBlock
 import net.minecraft.world.level.block.StairBlock
 import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.level.block.state.properties.BedPart
 import net.minecraft.world.level.block.state.properties.BlockStateProperties
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf
 import net.minecraft.world.level.block.state.properties.Half
+import net.minecraft.world.level.block.state.properties.SlabType
 import net.minecraft.world.level.block.state.properties.StairsShape
 import net.minecraft.world.level.chunk.LevelChunk
 import net.minecraft.world.level.levelgen.Heightmap
@@ -149,6 +151,9 @@ object Cls {
     /** One of the mod's own street lamps. */
     const val LAMP_BLOCK = 1 shl 16
 
+    /** A bottom slab: no top to stand on at 0.8, but a floor all the same, which the flood of a building takes for a wall. */
+    const val HALF = 1 shl 17
+
     /** The upper bits say what a block is besides (see [feature]): a table, a store, an Archer Post, a polished andesite counter, or a work block. */
     const val FEATURE_SHIFT = 20
     const val F_TABLE = 1
@@ -221,6 +226,7 @@ object Cls {
             s.getValue(StairBlock.SHAPE) == StairsShape.STRAIGHT && !s.getValue(StairBlock.WATERLOGGED)
         ) f = f or SEAT
         if (s.`is`(BlockTags.FENCES) || s.`is`(BlockTags.FENCE_GATES) || s.`is`(BlockTags.WALLS)) f = f or POST
+        if (block is SlabBlock && s.getValue(SlabBlock.TYPE) == SlabType.BOTTOM) f = f or HALF
         if (block is LanternBlock) f = f or (if (s.getValue(BlockStateProperties.HANGING)) HANGING else LANTERN)
         if (mods.streetLamp(s)) f = f or LAMP_BLOCK
         if (s.`is`(BlockTags.WOOL)) f = f or WOOL
