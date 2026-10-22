@@ -257,10 +257,18 @@ internal object TaleSceneCommand {
             "steps" -> TaleData.Memorial(-1, "stone", null, "minecraft:overworld", listOf(), "", "", 0L, player.blockPosition().asLong(), false)
             else -> null
         }
+        // The set sets no block for a memorial while townTaleMemorials is off (Sets.memorialsOn), so then nothing below is called or set
+        val blocks = try {
+            io.github.vaspyyy.guildmark.GuildmarkConfig.TOWN_TALE_MEMORIALS.get()
+        } catch (e: IllegalStateException) {
+            true
+        }
         val laid = { dusk: Boolean, onSteps: Boolean ->
             val said = when {
                 onSteps -> "The posy is laid on the steps: a flower pot of the season is set on the nearest bench or step."
-                mode == "memorial" -> "The posy is laid: Memorials.posy was called" + if (dusk) ", and a lit lantern is set before the stone." else " (at dusk, 17:00 to 22:00, a lantern is set before the stone)."
+                mode != "laying" && !blocks -> "No posy is laid on a block and no lantern or pot is set: Tale Memorials is switched off, so a memorial sets no block."
+                mode == "memorial" -> "The posy is laid on the stand-in stone, which has no block of its own, so Memorials.posy finds none to put it on" +
+                    if (dusk) "; a lit lantern is set before the stone." else " (at dusk, 17:00 to 22:00, a lantern is set before the stone)."
                 else -> "The posy is laid at ${stone.toShortString()}." + if (dusk) " (A memorial would have a lit lantern set before it now.)" else ""
             }
             player.sendSystemMessage(TaleCommand.grey(said))

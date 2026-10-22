@@ -60,17 +60,21 @@ object Memorials {
     /** The most names cut in one memorial. */
     private const val NAMES = 8
 
-    /** At setup: the block, its item and entity, and the stone and the cairn in the creative hand; the waiting list. */
+    /**
+     * At setup: the block, its item and entity, and (in a build where tales are wired in) the stone and the cairn in the creative hand; the
+     * waiting list; the `tale memorial` commands.
+     */
     fun register(modBus: IEventBus) {
         MemorialRegistry.BLOCKS.register(modBus)
         MemorialRegistry.ITEMS.register(modBus)
         MemorialRegistry.BLOCK_ENTITIES.register(modBus)
         modBus.addListener(BuildCreativeModeTabContentsEvent::class.java) { event ->
-            if (event.tabKey != ModCreativeTabs.MAIN.key) return@addListener
+            if (event.tabKey != ModCreativeTabs.MAIN.key || !Tales.READY) return@addListener
             event.accept(MemorialRegistry.stack(MemorialKind.STONE))
             event.accept(MemorialRegistry.stack(MemorialKind.CAIRN))
         }
         MemorialPlacing.register()
+        MemorialCommand.register()
     }
 
     // ---- Reading ----
