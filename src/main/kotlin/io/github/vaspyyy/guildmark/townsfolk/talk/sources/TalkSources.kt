@@ -93,17 +93,21 @@ internal object Say {
     /** A take of [family] for [ask]'s speaker: one their listener hasn't heard lately, or "" while none is recorded. */
     fun take(ask: Ask, family: String): String = TalkLines.pick(family, Topics.avoid(ask.speaker, ask.player), ask.speaker.random) ?: ""
 
-    /** [family] said with [detail] after it; null if there'd be nothing to show (no take recorded, and no detail). */
+    /**
+     * [family] said with [detail] after it; null if there'd be nothing to show (no take recorded, and no detail). A family of the
+     * kitchen's with no take is read as one of its wordings, the detail in grey after it ([KitchenLines]).
+     */
     fun part(ask: Ask, family: String, detail: String?): Utterance.Part? {
         val take = take(ask, family)
+        if (take.isEmpty()) KitchenLines.text(ask, family, detail)?.let { return it }
         if (take.isEmpty() && detail.isNullOrEmpty()) return null
         return Utterance.Part(take, detail, take.isNotEmpty() && TalkLines.FAMILIES[family]?.named == true)
     }
 
-    /** A take of [family] said ahead of another part (a lead-in), with [detail]; null while it has no take. */
+    /** A take of [family] said ahead of another part (a lead-in), with [detail]; null while it has no take (but for a kitchen family, which reads as one of its wordings). */
     fun lead(ask: Ask, family: String, detail: String? = null): Utterance.Part? {
         val take = take(ask, family)
-        if (take.isEmpty()) return null
+        if (take.isEmpty()) return KitchenLines.text(ask, family, detail)
         return Utterance.Part(take, detail, TalkLines.FAMILIES[family]?.named == true)
     }
 
