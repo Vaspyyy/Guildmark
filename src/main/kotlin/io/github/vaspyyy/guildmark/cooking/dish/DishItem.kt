@@ -1,19 +1,27 @@
 package io.github.vaspyyy.guildmark.cooking.dish
 
 import io.github.vaspyyy.guildmark.cooking.CookRegistry
+import io.github.vaspyyy.guildmark.cooking.DishData
 import io.github.vaspyyy.guildmark.cooking.DishKind
 import io.github.vaspyyy.guildmark.cooking.Stage
 import io.github.vaspyyy.guildmark.cooking.Tier
 import net.minecraft.core.registries.BuiltInRegistries
+import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerLevel
+import net.minecraft.server.level.ServerPlayer
 import net.minecraft.sounds.SoundEvents
+import net.minecraft.world.InteractionHand
+import net.minecraft.world.InteractionResult
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.EquipmentSlot
+import net.minecraft.world.entity.LivingEntity
+import net.minecraft.world.entity.player.Player
 import net.minecraft.world.item.Item
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.ItemUseAnimation
 import net.minecraft.world.item.Items
 import net.minecraft.world.item.component.Consumable
+import net.minecraft.world.level.Level
 import java.util.function.UnaryOperator
 
 /**
@@ -36,6 +44,36 @@ class DishItem(properties: Properties, val kind: DishKind?) : Item(properties) {
         super.inventoryTick(stack, level, entity, slot)
         if ((level.gameTime + entity.id) % Freshness.RECHECK != 0L) return
         Freshness.sync(level, stack)
+    }
+
+    /**
+     * Using a dish starts the game's own eating (3.3), after bringing the stack up to date, so that the food it is
+     * eaten as and the food the talents add to are those of how it has kept; then, on the server, the mouthful's sound
+     * and the pose are asked for ([DishEating.begin]). Scorched mess is not food: it says so and does nothing.
+     */
+    override fun use(level: Level, player: Player, hand: InteractionHand): InteractionResult {
+        if (scorched) {
+            if (!level.isClientSide) player.sendOverlayMessage(Component.translatable("message.guildmark.cook.scorched"))
+            return InteractionResult.FAIL
+        }
+        if (level is ServerLevel) Freshness.sync(level, player.getItemInHand(hand))
+        val result = super.use(level, player, hand)
+        if (player is ServerPlayer && player.isUsingItem && player.usedItemHand == hand) DishEating.begin(player, kind)
+        return result
+    }
+
+    /**
+     * The portion is eaten: the game feeds the player, hands the bowl back and takes one portion off the stack; then the
+     * hunger of a gone-off portion, and the meal's effect, which Part F gives ([DishEating.finish]). How the dish had
+     * kept is worked out again here, from its day, and never taken from what the stack last said.
+     */
+    override fun finishUsingItem(stack: ItemStack, level: Level, entity: LivingEntity): ItemStack {
+        if (scorched || level !is ServerLevel || entity !is ServerPlayer) return super.finishUsingItem(stack, level, entity)
+        val stage = Freshness.sync(level, stack)
+        val data = Dishes.dataOf(stack) ?: DishData.PLAIN
+        val left = super.finishUsingItem(stack, level, entity)
+        DishEating.finish(entity, kind, data, stage)
+        return left
     }
 
     companion object {
