@@ -74,7 +74,7 @@ object TalkCommand {
     private val KINDS = listOf(
         "deed.town", "deed.saved", "deed.rescue", "deed.dragon", "deed.beast", "deed.escort", "slight.assault", "slight.murder",
         "slight.theft", "death", "newcomer", "festival.won", "homestead.raised", "market.event.blight", "market.hungry",
-        "road.waylaid", "road.relief", "guild.advance",
+        "road.waylaid", "road.relief", "guild.advance", "trade.short", "trade.glut", "trade.hauled",
     )
 
     /** Kinds of good news and of bad besides the deeds, slights, outlaws and the market's events and their ends (see [Rumours]). */

@@ -48,6 +48,10 @@ import kotlin.random.Random
  *   `works.raised` [the same]: raised (0.75, big, +1; a stall 0.4, small, 0). Whoever hears either thanks the patron
  *   and anyone who gave a quarter of its price, once ([TownTalk.heard]). `household.gone` / `household.back`
  *   [=family]: a household gone in hard times, or come home, about its first member (0.6, small, -1 / +1).
+ * - The trader's (living-world/trader/design.md), told only by TradeTopics, never as news nor by the crier:
+ *   `trade.short` [the good's key, =town]: a ticket posted for a good the town is short of (0.55, small, goes to the other
+ *   capitals); `trade.glut` [the same]: a good at 1.8 times what the town keeps (0.45, small, stays in the town);
+ *   `trade.hauled` [=player, the good's key, =town]: a consignment of 64 or more delivered (0.6, 0.8 for 128, small).
  */
 object Rumours {
     /** How a rumour began ([Story.by]): in the town itself, the guild's news, the market's news, or from another capital. */
@@ -96,6 +100,11 @@ object Rumours {
     const val WORKS_RAISED = "works.raised"
     const val HOUSEHOLD_GONE = "household.gone"
     const val HOUSEHOLD_BACK = "household.back"
+
+    /** The kinds of the trader's life: see above. They are started by the Word (short, glut) and by the town's answer to a delivery (hauled). */
+    const val TRADE_SHORT = "trade.short"
+    const val TRADE_GLUT = "trade.glut"
+    const val TRADE_HAULED = "trade.hauled"
 
     fun enabled(): Boolean = try {
         GuildmarkConfig.TOWNSFOLK_RUMOURS.get()
