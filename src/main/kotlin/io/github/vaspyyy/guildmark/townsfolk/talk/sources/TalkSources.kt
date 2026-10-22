@@ -42,6 +42,7 @@ object TalkSources {
         HouseholdTopics, MarketTopics, WeatherTopics, SeasonTopics, FestivalTopics, TownTopics, DeedTopics, DealingTopics,
         NewsTopics, HomesteadTopics, WorksTopics, FortuneTopics,
         KitchenTopics,
+        TradeTopics,
         TaleTopics,
     )
 

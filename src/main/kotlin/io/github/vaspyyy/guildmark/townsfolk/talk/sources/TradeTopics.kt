@@ -33,8 +33,8 @@ import kotlin.math.roundToInt
  * town and the good after it in grey, "The east town is short of iron; so I heard two days ago."; the hall's merchants and the inn's keeper give what the
  * Haul Board says of the nearest town that has news; the gate's guards, the road's trouble, as advice to someone laden; and anyone who has had a ticket
  * filled in their town lately is thanked for it. "About the trade..." asks the freshest of these, and is among the choices only while there is something
- * to tell (always in a merchant's talk). It is registered with the Word ([Word.register]), and every fact is checked each time it is asked, so the switches
- * work without a restart: with the trader's life off nothing is offered, with the Word off a board is blank, and a rumour is told as the talk switches have it.
+ * to tell (always in a merchant's talk). It is one of [TalkSources.ALL] (after the Hearthcraft's, before the tales'), and every fact is checked each time
+ * it is asked, so the switches work without a restart: with the trader's life off nothing is offered, with the Word off a board is blank, and a rumour is told as the talk switches have it.
  *
  * A rumour told wrongly (a muddled or tall telling) loses its town: "Some town is short of iron".
  */

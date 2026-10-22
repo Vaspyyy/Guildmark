@@ -8,8 +8,6 @@ import io.github.vaspyyy.guildmark.economy.Caravans
 import io.github.vaspyyy.guildmark.economy.Markets
 import io.github.vaspyyy.guildmark.economy.Orders
 import io.github.vaspyyy.guildmark.economy.Suppliers
-import io.github.vaspyyy.guildmark.townsfolk.talk.Topics
-import io.github.vaspyyy.guildmark.townsfolk.talk.sources.TradeTopics
 import net.minecraft.core.BlockPos
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.ListTag
@@ -311,8 +309,9 @@ object Word {
     // ---- The hours ----
 
     /**
-     * Registers part B: the Word's watch on the markets' hours (the snapshots), its commands, and (each after its own comment) the Tally, and the
-     * rumours and talk that tell the Word in the street.
+     * Registers part B: the Word's watch on the markets' hours (the snapshots), its commands, and (each after its own comment) the Tally and the
+     * rumours that tell the Word in the street. The talk that tells them ([io.github.vaspyyy.guildmark.townsfolk.talk.sources.TradeTopics]) is one of
+     * the talk sources, `TalkSources.ALL`'s.
      */
     fun register(modBus: IEventBus) {
         WordCommand.init()
@@ -320,7 +319,6 @@ object Word {
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> reset() }
         Tally.register(modBus)
         TradeRumours.register()
-        Topics.register(TradeTopics)
     }
 
     /** Server ticks between looks at the markets, and between namings of rings. */
