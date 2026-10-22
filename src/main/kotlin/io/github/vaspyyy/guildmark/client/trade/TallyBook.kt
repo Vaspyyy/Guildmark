@@ -5,6 +5,7 @@ import io.github.vaspyyy.guildmark.network.TallyParcel
 import io.github.vaspyyy.guildmark.network.TallyRoutes
 import io.github.vaspyyy.guildmark.network.TallyTown
 import io.github.vaspyyy.guildmark.network.TallyView
+import io.github.vaspyyy.guildmark.townsfolk.Days
 import io.github.vaspyyy.guildmark.trade.Routes
 import kotlin.math.max
 
@@ -162,6 +163,9 @@ class TallyBook(view: TallyView, val env: Env) {
 
     /** How old the news of [town] is, in ticks: none if it is live. */
     fun age(town: TallyTown): Double = if (town.live) 0.0 else max(0.0, ticks() - town.tick)
+
+    /** The ticks until the town's day next turns, when a parcel loses a day (the town counts its days from a little before the world's, as [Days] has it). */
+    fun untilDay(): Double = DAY - Days.offsetOf(ticks().toLong())
 
     /** How long ago the screen was last given a view, in seconds. */
     fun stale(): Double = t - viewAt
