@@ -154,7 +154,13 @@ object WorldCommand {
             }
             warmed + told
         }
-        say(source, line().append(label("Talk: ")).append(plain(said)).append(grey(". `memory` by the shop's keeper and `rumour list` show it.")))
+        // The rumour is told by the trade's topics: whoever knows it says it when asked "About the trade..." (not in passing to the one it is about)
+        val where = if (talk?.rumour != null) {
+            ". `memory` by the shop's keeper and `rumour list` show it; ask the keeper, or anyone who stood in the cheer, \"About the trade...\" to hear it told."
+        } else {
+            ". `memory` by the shop's keeper shows it."
+        }
+        say(source, line().append(label("Talk: ")).append(plain(said)).append(grey(where)))
         say(source, line().append(label("News: ")).append(plain(answered.news ?: "only a relief is chalked")))
         val cheer = answered.cheer
         say(source, line().append(label("Cheer: ")).append(plain(if (cheer == null) "it failed (see the log)" else describe(cheer))))
