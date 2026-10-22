@@ -1,0 +1,611 @@
+"""Hearthcraft's kitchen: every sound of the cook's stations, made from nothing (the cook design's 11.2, Part M2).
+
+44 events and 88 mono 44.1 kHz Ogg files in `sounds/cook/` (a dot in an event's name is a folder: `cook.plop.soft` is
+`cook/plop/soft1.ogg` ...), each with the number of files, the length and the reach of its row in the design. The game names them
+`guildmark:cook.<name>` (`cooking/CookSounds.kt`, whose order ORDER keeps). No sample is used: every sound is noise and
+resonators, laid out with `sfxkit.py`, the townsfolk's helpers (`make_townsfolk_sfx.py`: the levelling, the knocks and rings) and
+the cog's (`make_ship_audio.py`: bubbles, splashes, creaks, a loop built in a circle), each seeded by its event and file, so that a
+rerun is bit-identical. The stone kitchen they are heard in is a small hard room (`kitchen`), the oven's fire is heard through
+brick (`through_brick`). The sounds the design says are reused as they are (the game's campfire crackle, bucket and flint and
+steel, the market's coin sounds, the festival fanfare) are not remade here.
+
+    the pot and its water    place  pour  plop.soft  plop.meat  plop.grain  stir  taste  serve  skim  ease
+    fire, fat and the pan    fuel  ignite  crackle  flare  drip  flip  boil_over  burnt
+    chimes                   call  ready  ripe  tier.plain  tier.sound  tier.fine  tier.hallmark  buff
+    the oven, spit, crank    oven_open  oven_shut  crank
+    board, counter, larder   chop  slice  carve  loaf_down  plate  chalk  larder
+    the table                eat.spoon  eat.bite  drink
+    five loops               simmer (8 s)  sizzle (6 s)  oven_hum (8 s)  spit_creak (6 s)  chill (10 s)
+
+Each recipe says in its docstring what it is made of, and what each of its variants does that the others do not; the moment each
+belongs to is in WHEN (the design's 1.4 to 1.6, 3.3, 4.3 and 7.3 to 7.5), which `--mp3` writes out beside the listen-through.
+
+Levelling, as the lamps' and the townsfolk's are: a one-shot's loudest 100 ms goes to a K-weighted loudness set per sound (the
+stations' a little under the lamps': from -22 for a log landing and an oven door to -29 for a spit's crank and a drop of fat, the
+tier motifs quiet at -26 to -28, the eater's buff -19.5 because the game plays it at 0.6), its true peak held under -1 dBFS and
+re-encoded lower if the encoder overshoots; a sound too sharp to reach its target within a few dB of limiting stops short of it
+and says so. The five loops are built in a circle
+(`make_ship_audio.Ring`: periodic noise, events laid at the same moment of every lap, filters and rooms run three laps, the middle
+one kept), so that the sample after the last is the first with no seam, then set to -27 dBFS RMS with their peaks (true peaks
+too) held under -10, a margin for the encoder, and turned to start at a quiet zero crossing. After the encoder each loop is read
+back: its length, the step across the join against the usual step between samples, the highs round the join against the highs
+elsewhere.
+
+usage (from the repo root; the full render takes about two minutes, `nice -n 10` for it):
+    python3 -B art/audio/make_cook_audio.py src/main/resources/assets/guildmark [--wav DIR] [--only a,b,...] [--mp3 FILE] [--audit]
+
+  (no --only)  renders all 88 files and writes `cook_sounds.json` (their sounds.json entries: a loop with `"stream": false` and
+               its reach as `attenuation_distance`, as the mills'; a one-shot with its reach when it is not the game's 16) and
+               `cook_lang.json` (the 44 subtitles `subtitles.guildmark.cook.<name>`) beside this script; run
+               `python3 -B art/lang/merge_lang.py` after it, which adds them to sounds.json and en_us.json
+  --only       events or groups: `stir,plop,eat,tier,loops` (`cook.stir` also works); no fragments are written
+  --wav DIR    also writes WAV copies for listening
+  --mp3 FILE   joins what was rendered into one listen-through MP3, a chapter mark at each file (a loop plays for twelve seconds,
+               so that its join is heard once), and writes `cook_what_plays_when.txt` beside it: each sound's files, length,
+               reach, subtitle, what it is made of, the moment it belongs to and where it is in the MP3
+  --audit      renders nothing: reads every file back (what it declares, mono 44.1 kHz Vorbis, exactly the row's length; peak and
+               true peak; the loudest 100 ms against the target; a loop's RMS and join) and checks the 44 events and 88 files
+               against the design, the order against CookSounds.NAMES and the fragments against the files; exits 1 on a problem
+"""
+import argparse
+import json
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+import time
+
+import numpy as np
+from scipy import signal
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+from sfxkit import *  # noqa: E402,F401,F403
+import make_ship_audio as ship  # noqa: E402
+from make_townsfolk_sfx import level, write_checked, true_peak, loudness_curve, nrm, lead_in, knock  # noqa: E402
+from make_ship_audio import (Ring, grain_cloud, hann_burst, loop_start, oak, iron_ring, path, periodic_phase, rn,
+                             seam_report, squeal, tame)  # noqa: E402
+
+SOUND_DIR = "cook"
+LOOP_MARGIN_DB = 0.8  # a loop's peaks are held this far under its ceiling, for the encoder's own overshoot
+EVENTS = {}  # event (without the "cook." prefix) -> recipe, in the order of CookSounds.NAMES
+
+
+# =========================================================================== registry and finishing
+def effect(event, files, length, subtitle, reach=16, loud=-25.0, fade_out=0.05, tail_db=-70.0, limit=2.0, peak_db=-3.0,
+           when=""):
+    """registers a one-shot: `files` variants, each `length` seconds long exactly (as the design's table says), with the
+    subtitle the game writes. loud is the target for its loudest 100 ms (K-weighted LUFS), limit the most dB of peak
+    limiting allowed to get there, reach how many blocks it carries (its attenuation_distance when it isn't the game's 16),
+    when the moment it belongs to (the design's 1.4 to 1.6, 3.3, 4.3, 7.3 to 7.5), for the text of what plays when"""
+    def deco(fn):
+        EVENTS[event] = dict(kind="effect", fn=fn, files=files, length=length, subtitle=subtitle, reach=reach, loud=loud,
+                             fade_out=fade_out, tail_db=tail_db, limit=limit, peak_db=peak_db, when=when)
+        return fn
+    return deco
+
+
+def loop(event, period, reach, subtitle, rms_db=-27.0, ceiling_db=-10.0, when=""):
+    """registers a seamless loop of `period` seconds: the recipe is handed a Ring and gives back the three periods it laid
+    out; the file is the middle one, levelled by RMS with its peaks held under ceiling_db"""
+    def deco(fn):
+        EVENTS[event] = dict(kind="loop", fn=fn, files=1, length=period, subtitle=subtitle, reach=reach, rms_db=rms_db,
+                             ceiling_db=ceiling_db, when=when)
+        return fn
+    return deco
+
+
+def sound_path(event, n):
+    """'plop.soft', 1 -> 'cook/plop/soft1'"""
+    return f"{SOUND_DIR}/{event.replace('.', '/')}{n}"
+
+
+def build_effect(event, r, v):
+    """one variant of a one-shot, finished: trimmed, faded, exactly as long as its row, its loudest 100 ms at the target"""
+    rng = rng_for("cook", event, v)
+    x = r["fn"](v, rng)
+    x = finalize(lead_in(x), peak_db=r["peak_db"], fade_out=r["fade_out"], max_len=r["length"], tail_db=r["tail_db"])
+    x = fit(x, ns(r["length"]))
+    return level(x, r["loud"], max_limit_db=r["limit"])
+
+
+def render_loop(event, r):
+    """a loop, finished: the middle period of the three the recipe laid out, high-passed, levelled to its RMS with its peaks
+    held under the ceiling, and turned to start at a quiet zero crossing (the cog's render_loop)"""
+    rg = Ring(r["length"])
+    x = hp(r["fn"](rg, rng_for("cook", event, 0)), 25.0)
+    ceiling = db(r["ceiling_db"] - LOOP_MARGIN_DB)
+    held, limited = ceiling, False
+    for _ in range(8):
+        y = rg.middle(x)
+        x = x * (db(r["rms_db"]) / (rms(y) + 1e-12))
+        tp = true_peak(rg.middle(x))
+        if tp <= ceiling * 1.001:
+            break
+        if limited:
+            held *= ceiling / tp  # the limiter holds the samples; the true peak between them ran a little over
+        x = limiter(x, ceiling=held, lookahead=0.003, release=0.08)
+        limited = True
+    return loop_start(rg.middle(x))
+
+
+# =========================================================================== the kitchen's own parts
+def kitchen(x, wet=0.1, seed=5100):
+    """a stone kitchen: flagged floor, plastered walls, a vault overhead; a hard small room, so a quick slap and a short,
+    fairly bright tail"""
+    return reverb(x, wet=wet, rt60=0.5, predelay=0.006, hf_damp=0.45, seed=seed, early_span=0.03)
+
+
+def through_brick(x, wet=0.3, seed=5200, cut=1800.0):
+    """a fire heard from outside its oven: the brick vault gives it a short dull room and takes the top off"""
+    y = reverb(x, wet=wet, rt60=0.7, predelay=0.005, hf_damp=0.6, seed=seed, early_span=0.02)
+    return lp(lp(y, cut, 2), cut * 1.6, 2)
+
+
+def ring_grains(rg, rng, rate, decay=0.0006, f_lo=700.0, f_hi=5000.0, size_var=0.7, kernels=5):
+    """tiny dry grains laid round the ring, about `rate` a second (a number, or a curve over the three periods of which the
+    middle is read), the same in every period so that the cloud joins itself"""
+    n = rg.n
+    r = np.broadcast_to(np.asarray(rate, dtype=float), (rg.N,))[n:2 * n]
+    idx = np.nonzero(rng.random(n) < r / SR)[0]
+    sel = rng.integers(0, kernels, len(idx))
+    mag = rng.standard_normal(len(idx)) * np.exp(size_var * rng.standard_normal(len(idx)))
+    out = rg.new()
+    k = max(8, ns(decay * 6))
+    for j in range(kernels):
+        kern = np.exp(-np.arange(k) / max(1, ns(decay))) * rng.standard_normal(k)
+        imp = np.zeros(n)
+        m = sel == j
+        imp[idx[m]] = mag[m]
+        out += signal.fftconvolve(rg.tile(imp), kern)[:rg.N]
+    return bp(out, f_lo, min(f_hi, SR * 0.45))
+
+
+def wrap(rg, at):
+    """a moment folded into the period"""
+    return float(at) % rg.P
+
+
+def ping(dur, freqs, t60s, amps, rng, ex_len=0.0004, hi=12000.0):
+    """a small hard ring (a latch, a link, a lid, a spoon): the knock bank with the skirt taken off under its lowest mode, so
+    that it is a tick and a ring and no thump (the resonators have a flat low skirt, about 11 dB down at the bottom of the
+    range, which a tiny knock would otherwise carry as a thump under it)"""
+    y = knock(dur, freqs, t60s, amps, rng, lo=max(500.0, 0.6 * min(freqs)), hi=hi, ex_len=ex_len)
+    return hp(y, 0.55 * min(freqs), 2)
+
+
+# <<loops
+# =========================================================================== the five loops
+def blup(rng, f0, tau, rising=True, pop=0.25):
+    """a bubble of thick stew breaking at the surface: the film's little tick and the rounded 'blup' of the pocket it leaves, a
+    low note that bends as the pocket closes. Thick stew is nothing like clean water, so the note is half breath (noise through
+    a moving band, as wet and uneven as the stew) and half a tone with a ripple in its pitch and its level"""
+    dur = tau * 6
+    n = ns(dur)
+    t = np.arange(n) / SR
+    bend = (1.0 + 0.45 * np.exp(-t / (tau * 0.8))) if not rising else (1.35 - 0.35 * np.exp(-t / (tau * 1.5)))
+    fc = f0 * bend * (1.0 + 0.04 * (smooth_random(dur, rng, 35) - 0.5))
+    env = np.exp(-t / tau) * np.clip(t / 0.004, 0, 1)
+    ph = phase_from_freq(fc, n)
+    tone = np.sin(ph) + 0.3 * np.sin(2.07 * ph + 1.3) + 0.12 * np.sin(3.1 * ph + 0.4)
+    breath = tvf(white(dur, rng), "bp", fc * 1.2, 3.0)
+    y = (0.55 * tone / (np.std(tone) + 1e-12) + 0.85 * breath / (np.std(breath) + 1e-12)) * env
+    y = y * (0.75 + 0.25 * smooth_random(dur, rng, 60))
+    out = y / (np.max(np.abs(y)) + 1e-12)
+    tick = bp(white(0.004, rng), 1000, 4500) * np.exp(-tvec(0.004) / 0.0008)
+    out[:len(tick)] += pop * tick / (np.max(np.abs(tick)) + 1e-12)
+    return out
+
+
+@loop("simmer", 8.0, 24, "A pot simmers",
+        when=("Loop. A pot that is heating or cooking simmers (moment 7), and the inn's house pot from 10:00 to 24:00 "
+              "(7.3). At most three loops are heard at once (9.5)."))
+def simmer(rg, rng):
+    """a pot at a gentle simmer, low: the whole pot rolling over slowly (the boil swelling and slackening about once a
+    second, a heave of water in iron), big slow blups of thick stew breaking at the surface, and under them the fine
+    fizz of small bubbles rising; the iron gives it a hollow note about the pitch of its mouth"""
+    P = rg.P
+    roll = 0.5 + 0.5 * np.tanh(1.1 * rg.curve(rng, 5, 11, 0.8))
+    body = lp(rg.noise(rng, -6.0), 300.0, 2) * (0.45 + 0.75 * roll) * np.exp(0.2 * rg.curve(rng, 6, 30, 1.0))
+    wash = bp(rg.noise(rng, -3.0), 350.0, 1800.0, 2) * (0.2 + 0.8 * roll) ** 1.5 * np.exp(0.3 * rg.curve(rng, 12, 60, 0.9))
+    blups = rg.new()
+    for at in rg.times(rng, 2.6 * (0.4 + 1.1 * roll), shape=1.5):
+        f0 = float(np.exp(rng.uniform(np.log(95.0), np.log(340.0))))
+        ev = blup(rng, f0, rng.uniform(0.016, 0.06), rising=bool(rng.random() < 0.6), pop=rng.uniform(0.1, 0.4))
+        rg.place(blups, ev, at, np.exp(0.5 * rng.standard_normal()) * (0.5 + 0.5 * roll[rg.n + int(at * SR)]))
+    fizz = rg.circ(ship.bubbles(P, rng, 70.0 * (0.4 + 1.2 * roll[rg.n:2 * rg.n]), 0.7, 1.8, beta=2.0, level=1.0, weight=0.4,
+                                keep_tail=True))
+    sparkle = ring_grains(rg, rng, 90.0 * (0.4 + 1.2 * roll), decay=0.0004, f_lo=1500.0, f_hi=4200.0)
+    x = 1.0 * rn(body) + 0.28 * rn(wash) + 0.75 * rn(blups) + 0.22 * rn(fizz) + 0.1 * rn(sparkle)
+    x = eq(x, "peak", 280.0, 1.3, 4.0)
+    return lp(x, 4800.0, 2)
+
+
+@loop("sizzle", 6.0, 20, "Food sizzles",
+        when=("Loop. Food in a hot pan: the Hob while it cooks, and the STICK sign at a pan (1.4, 1.6)."))
+def sizzle(rg, rng):
+    """fat and water on a hot iron pan: thousands of tiny steam bubbles bursting a second (a bright bed of dry grains that
+    comes in clusters), small pops among them, the odd spit of fat with the pan answering faintly, a thin hiss under it all"""
+    busy = 0.5 + 0.5 * np.tanh(1.0 * rg.curve(rng, 2, 5, 0.8))
+    flurry = np.exp(0.45 * rg.curve(rng, 10, 50, 0.7))
+    fine = ring_grains(rg, rng, 4200.0 * (0.5 + 0.7 * busy) * flurry, decay=0.00035, f_lo=3200.0, f_hi=10500.0, size_var=0.6)
+    mid = ring_grains(rg, rng, 420.0 * (0.4 + 0.9 * busy) * flurry, decay=0.0009, f_lo=1800.0, f_hi=6500.0, size_var=0.8)
+    hiss = hp(rg.noise(rng, -1.0), 4500.0, 2) * (0.3 + 0.6 * busy) * np.exp(0.25 * rg.curve(rng, 20, 90, 0.8))
+    spits = rg.new()
+    for at in rg.times(rng, 3.0, shape=1.6):
+        f = rng.uniform(2200.0, 4200.0)
+        ev = grain_cloud(0.03, rng, 1500.0, decay=0.0012, f_lo=1200.0, f_hi=7000.0, size_var=0.5) * np.exp(-tvec(0.03) / 0.008)
+        ev = ev + 0.4 * resonators(ev, [f, f * 1.7, f * 2.4], [0.02, 0.014, 0.01], [1, .6, .35])
+        rg.place(spits, ev, at, np.exp(0.5 * rng.standard_normal()))
+    pan = rg.new()
+    for at in rg.times(rng, 2.2, shape=1.5):
+        ev = iron_ring(0.12, rng, [rng.uniform(1900.0, 3100.0)], t60=0.05, gains=[1.0])
+        rg.place(pan, ev, at, rng.uniform(0.3, 1.0))
+    x = 1.0 * rn(fine) + 0.7 * rn(mid) + 0.3 * rn(hiss) + 0.5 * rn(spits) + 0.12 * rn(pan)
+    return tame(lp(x, 11000.0, 2), 13.0)
+
+
+@loop("oven_hum", 8.0, 20, "An oven roars",
+        when=("Loop. A lit Bake oven's fire heard through its brick (heating and cooking), and the baker's morning oven "
+              "(7.5)."))
+def oven_hum(rg, rng):
+    """a fire's low roar inside a closed brick oven, heard through its walls: a deep steady roar that breathes as the draught
+    does, the flames flickering in it a few times a second, the vault ringing faintly on its own low notes, and now and then
+    a log shifting or a knot popping"""
+    draw = 0.5 + 0.5 * np.tanh(1.2 * rg.curve(rng, 2, 6, 1.0))
+    flick = np.exp(0.35 * rg.curve(rng, 8, 40, 0.9))
+    roar = lp(rg.noise(rng, -5.0), 420.0, 4) * (0.55 + 0.6 * draw) * flick
+    rush = bp(rg.noise(rng, -2.0), 300.0, 1500.0, 2) * (0.25 + 0.8 * draw) ** 1.5 * np.exp(0.3 * rg.curve(rng, 20, 90, 0.8))
+    vault = resonators(bp(rg.noise(rng, -3.0), 60.0, 400.0), [96.0, 148.0, 211.0, 297.0], [0.25, 0.2, 0.16, 0.12],
+                       [1.0, 0.8, 0.55, 0.35])
+    pops = rg.new()
+    for at in rg.times(rng, 1.4, shape=1.3):
+        ev = oak(0.12, rng, rng.uniform(160.0, 260.0), t60=0.04, hard=0.5)
+        ev = ev + 0.5 * fit(grain_cloud(0.05, rng, 1200.0, decay=0.0008, f_lo=900.0, f_hi=4500.0) * np.exp(-tvec(0.05) / 0.012),
+                            len(ev))
+        rg.place(pops, ev, at, np.exp(0.5 * rng.standard_normal()))
+    crack = ring_grains(rg, rng, 60.0 * (0.4 + 1.0 * draw), decay=0.0008, f_lo=800.0, f_hi=4000.0)
+    x = 1.0 * rn(roar) + 0.45 * rn(rush) + 0.25 * rn(vault) + 0.3 * rn(pops) + 0.2 * rn(crack)
+    return through_brick(x, 0.3, 5201)
+
+
+@loop("spit_creak", 6.0, 20, "A spit turns",
+        when=("Loop. The Spit's rod turning in its cradle while it is cranked (1.6), and the innkeeper's rest-day roast "
+              "(7.5)."))
+def spit_creak(rg, rng):
+    """an iron spit turning in dry notches: the rod lifted a notch at a time (a dry tick of iron on iron and the low knock of
+    its weight settling), most notches with a short dry squeak of the rod in its cradle, and after each the faint rub of iron on
+    iron as the rod swings over; the notches come about a second apart but never quite evenly"""
+    P = rg.P
+    k = 6
+    gaps = np.maximum(0.5, 1.0 + 0.16 * rng.standard_normal(k))
+    gaps = gaps / gaps.sum() * P
+    at_list = np.cumsum(gaps) - gaps + 0.25 * gaps[0]
+    rod = rg.new()
+    squeaks = rg.new()
+    for i, at in enumerate(at_list):
+        g = rng.uniform(0.6, 1.0)
+        ev = Mix(0.3)
+        ev.add(nrm(hann_burst(0.002, rng, 2500.0, 9000.0)), 0.0, 0.3)
+        ev.add(nrm(iron_ring(0.12, rng, [rng.uniform(1500.0, 1900.0), 2480.0], t60=0.05, gains=[1.0, 0.6])), 0.003, 0.7)
+        ev.add(nrm(oak(0.2, rng, rng.uniform(250.0, 320.0), t60=0.07, hard=0.8, lo=200.0)), 0.003, 0.6)
+        rg.place(rod, ev.out(), wrap(rg, at), g)
+        if rng.random() < 0.75:
+            sd = rng.uniform(0.08, 0.26)
+            f = rng.uniform(950.0, 1700.0)
+            sq = squeal(sd, rng, path([(0, f * 0.9), (sd * 0.4, f), (sd, f * 1.12 * rng.uniform(0.95, 1.05))], sd),
+                        bell(sd, 0.4, 1.2, 1.6), harmonics=6, tilt=1.1, chatter=0.5, wobble=0.02, peak_hz=2100.0)
+            rg.place(squeaks, sq, wrap(rg, at + 0.05), rng.uniform(0.3, 0.9))
+    rub = bp(rg.noise(rng, -1.5), 600.0, 2600.0, 2) * rg.bumps(at_list + 0.1, rng.uniform(0.6, 1.0, k), 0.04, 0.12) * \
+        (0.6 + 0.4 * np.exp(0.5 * rg.curve(rng, 6, 30, 1.0)))
+    x = 1.0 * rn(rod) + 0.5 * rn(squeaks) + 0.2 * rn(rub)
+    return kitchen(x, 0.12, 5202)
+
+
+@loop("chill", 10.0, None, "The cold bites",
+        when=("Loop. Winter Chill: the wind under the frost, heard only by the chilled player, at half of the ambience "
+              "slider (4.3, Part F)."))
+def chill(rg, rng):
+    """a thin cold wind with a faint chatter: air slipping by in gusts, thin and high (a band that climbs in the gusts), a few
+    faint whistles round corners that rise and sink with them, and three short spells of teeth chattering, very faint"""
+    gust = 0.5 + 0.5 * np.tanh(1.3 * rg.curve(rng, 1, 4, 1.1))
+    wind = bp(rg.noise(rng, -3.0), 450.0, 3800.0, 2) * (0.3 + 0.7 * gust) ** 1.4 * np.exp(0.3 * rg.curve(rng, 8, 40, 0.9))
+    air = hp(rg.noise(rng, -1.0), 3000.0, 2) * gust ** 2.0 * np.exp(0.3 * rg.curve(rng, 20, 90, 0.8))
+    whistles = np.zeros(rg.N)
+    for f0, g, lag in [(880.0, 0.8, 0.0), (1240.0, 0.6, 1.4), (1730.0, 0.4, 2.7)]:
+        gu = 0.5 + 0.5 * np.tanh(1.3 * np.roll(rg.curve(rng, 1, 4, 1.1), int(lag * SR)))
+        f = f0 * (1 + 0.09 * (gu - 0.5) + 0.012 * rg.curve(rng, 5, 25, 1.0) + 0.006 * rg.curve(rng, 30, 70, 0.6))
+        phs = periodic_phase(rg, f)
+        amp = np.clip((gu - 0.55) / 0.45, 0, 1) ** 1.5 * (0.7 + 0.3 * np.exp(0.5 * rg.curve(rng, 10, 60, 0.8)))
+        breath = tvf(rg.noise(rng, 0.0), "bp", f, 14.0, block=256)
+        whistles += g * amp * (np.sin(phs + rng.uniform(0, 6.28)) + 0.2 * np.sin(2 * phs + rng.uniform(0, 6.28))
+                               + 1.2 * breath / (np.std(breath) + 1e-12))
+    chatter = rg.new()
+    for at, count in ((1.4, 9), (4.9, 7), (8.0, 8)):
+        tt = 0.0
+        for j in range(count):
+            ev = ping(0.03, [2300.0 * rng.uniform(0.9, 1.1), 3900.0, 5600.0], [0.006, 0.005, 0.004], [1.0, 0.6, 0.4], rng,
+                      ex_len=0.0005, hi=9000.0)
+            rg.place(chatter, ev, wrap(rg, at + tt), rng.uniform(0.5, 1.0))
+            tt += rng.uniform(0.07, 0.1)
+    x = 1.0 * rn(wind) + 0.25 * rn(air) + 0.45 * rn(whistles) + 0.12 * rn(chatter)
+    return lp(x, 9500.0, 2)
+# loops>>
+
+
+# =========================================================================== the order of the sounds
+# the order of CookSounds.NAMES (the design's Appendix C.5): the order of the fragments and of the listen-through
+ORDER = ["simmer", "sizzle", "oven_hum", "spit_creak", "chill"]
+
+assert sorted(ORDER) == sorted(EVENTS), "every sound is in ORDER, once: " + str(set(ORDER) ^ set(EVENTS))
+for _name in ORDER:
+    EVENTS[_name] = EVENTS.pop(_name)
+
+
+# =========================================================================== main
+def build(assets, names, wav_dir=None):
+    written = []
+    for event in names:
+        r = EVENTS[event]
+        for v in range(r["files"]):
+            t0 = time.time()
+            name = sound_path(event, v + 1)
+            p = os.path.join(assets, "sounds", name + ".ogg")
+            if r["kind"] == "loop":
+                x = render_loop(event, r)
+                x = write_checked(p, x)
+                d_len, step, seam = seam_report(p, len(x))
+                extra = (f"  loop {len(x)} samples (file {d_len:+d}), join {step:4.1f}x a step, {seam:4.2f}x the usual highs")
+            else:
+                x, over, short = build_effect(event, r, v)
+                x = write_checked(p, x)
+                extra = (f"  limited {over:.1f} dB" if over > 0.05 else "") + \
+                    (f"  {short:.1f} dB under (set by peak)" if short > 0.05 else "")
+            if wav_dir:
+                write_wav(os.path.join(wav_dir, name + ".wav"), x)
+            y = read_audio(p)[0]
+            print(f"{name:26s} {len(y) / SR:6.3f}s  peak {to_db(np.max(np.abs(y))):6.1f}  tp {20 * np.log10(true_peak(y)):6.1f}  "
+                  f"rms {to_db(rms(y)):6.1f}  short {float(np.max(loudness_curve(y))):6.1f}  {time.time() - t0:5.2f}s{extra}",
+                  flush=True)
+            written.append(name)
+    return written
+
+
+def select(only):
+    names = []
+    for s in (s.strip() for s in only.split(",") if s.strip()):
+        s = s.removeprefix("cook.")
+        hits = [e for e in EVENTS if e == s or e.startswith(s + ".") or (s == "loops" and EVENTS[e]["kind"] == "loop")]
+        if not hits:
+            raise SystemExit(f"unknown: {s} (events: {', '.join(EVENTS)}, loops)")
+        names += [e for e in hits if e not in names]
+    return names
+
+
+# =========================================================================== fragments
+def fragments():
+    """(the sounds.json entries of the 44 events, their subtitles). A one-shot that carries other than the game's 16 blocks has its
+    reach as the sound's attenuation_distance; a loop is not streamed and has its reach so, as the mills' have; the wind under the
+    frost (reach None) is heard by the player alone, unpositioned, and has neither"""
+    sounds, lang = {}, {}
+    for event, r in EVENTS.items():
+        entries = []
+        for v in range(r["files"]):
+            name = f"guildmark:{sound_path(event, v + 1)}"
+            e = {"name": name}
+            if r["kind"] == "loop":
+                e["stream"] = False
+            if r["reach"] and (r["reach"] != 16 or r["kind"] == "loop"):
+                e["attenuation_distance"] = r["reach"]
+            entries.append(e if len(e) > 1 else name)
+        sounds[f"cook.{event}"] = {"sounds": entries, "subtitle": f"subtitles.guildmark.cook.{event}"}
+        lang[f"subtitles.guildmark.cook.{event}"] = r["subtitle"]
+    return sounds, lang
+
+
+def write_fragments():
+    """cook_sounds.json and cook_lang.json beside this script, for art/lang/merge_lang.py to add to sounds.json and en_us.json"""
+    sounds, lang = fragments()
+    for fname, data in (("cook_sounds.json", sounds), ("cook_lang.json", lang)):
+        with open(os.path.join(HERE, fname), "w", encoding="utf-8") as f:
+            f.write(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
+        print(os.path.join(HERE, fname), len(data), "entries")
+
+
+# =========================================================================== the listen-through
+LOOP_SHOWN = 12.0  # how long each loop plays in the listen-through (so that its join is heard once)
+GAP = 0.65
+
+
+def chapter_title(event, v, r):
+    return f"cook.{event}" + (f" {v + 1} of {r['files']}" if r["files"] > 1 else "") + (" (loop, 12 s)" if r["kind"] == "loop" else "")
+
+
+def listen_through(assets, names, path_):
+    """one MP3 to listen to on a phone: every file that was just written, in the game's order, read back from disk (so it is what
+    the game will play), a gap between and a chapter mark at each; a loop plays for twelve seconds, so that its join is heard
+    once. Returns the chapter list [(start, end, title, event, v)], for write_when"""
+    pieces, marks, at = [], [], 0.0
+    for event in names:
+        r = EVENTS[event]
+        for v in range(r["files"]):
+            stem = sound_path(event, v + 1)
+            p = os.path.join(assets, "sounds", stem + ".ogg")
+            if not os.path.exists(p):
+                print(f"(skipped, not rendered: {stem})")
+                continue
+            x = read_audio(p)[0]
+            if r["kind"] == "loop":
+                x = fade(np.tile(x, int(np.ceil(LOOP_SHOWN * SR / len(x))))[:ns(LOOP_SHOWN)], 0.0, 0.3)
+            marks.append((at, at + len(x) / SR + GAP, chapter_title(event, v, r), event, v))
+            pieces += [x, np.zeros(ns(GAP))]
+            at += len(x) / SR + GAP
+    audio = np.concatenate(pieces).astype(np.float32)
+    with tempfile.TemporaryDirectory() as td:
+        wav, meta, mp3 = os.path.join(td, "all.wav"), os.path.join(td, "chapters.txt"), os.path.join(td, "all.mp3")
+        write_wav(wav, audio)
+        with open(meta, "w", encoding="utf-8") as f:
+            f.write(";FFMETADATA1\ntitle=Guildmark Hearthcraft sounds\nartist=Guildmark\n")
+            for a, b, title, _, _ in marks:
+                f.write(f"[CHAPTER]\nTIMEBASE=1/1000\nSTART={int(round(a * 1000))}\nEND={int(round(b * 1000))}\n"
+                        f"title={title}\n")
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", wav, "-i", meta, "-map", "0:a", "-map_metadata", "1",
+                        "-map_chapters", "1", "-c:a", "libmp3lame", "-q:a", "2", "-ac", "1", "-id3v2_version", "3",
+                        "-fflags", "+bitexact", "-flags:a", "+bitexact", mp3], check=True)
+        os.makedirs(os.path.dirname(os.path.abspath(path_)), exist_ok=True)
+        shutil.copyfile(mp3, path_)  # (encoded aside, then copied: ffmpeg seeks back in a file to finish its header)
+    print(f"{path_}  {at:.1f}s, {len(marks)} files, {os.path.getsize(path_) / 1e6:.2f} MB")
+    return marks
+
+
+def clock(t):
+    return f"{int(t // 60)}:{t % 60:04.1f}"
+
+
+def made_of(fn):
+    """the first paragraph of a recipe's docstring, on one line"""
+    import inspect
+    doc = inspect.getdoc(fn) or ""
+    return " ".join(doc.split("\n\n")[0].split())
+
+
+def write_when(marks, path_):
+    """the text of what plays when: for each sound, its files, length, reach and subtitle, what it is made of, the moment it
+    belongs to, and where it is in the listen-through"""
+    import textwrap
+    at = {}
+    for a, _, _, event, v in marks:
+        at.setdefault(event, []).append(a)
+    lines = ["Hearthcraft sounds: what plays when", "=" * 36, "",
+             "cook_all.mp3 plays every file once, in the order of the game's list (CookSounds.NAMES), with a chapter mark at each",
+             "(a phone's player shows them). Each loop plays for 12 seconds so that its join is heard once. The times are where",
+             "each file starts in it. A sound's moment is as the design names it (living-world/cook/design.md 1.4 to 1.6, 3.3, 4.3,",
+             "7.3 to 7.5); which part of the game plays it, and whether it does yet, is for the game test (Parts C, E, F and I3 play",
+             "them; Part F's buff and chill are the only two already wired).", ""]
+    for event, r in EVENTS.items():
+        files = r["files"]
+        if r["kind"] == "loop":
+            what = f"one loop of {r['length']:g} s, built to join itself"
+        else:
+            what = f"{files} file{'s' if files > 1 else ''}, {r['length']:g} s each"
+        reach = "the player alone (unpositioned)" if r["reach"] is None else f"carries {r['reach']} blocks"
+        if event == "buff":
+            reach = "the eater alone"
+        lines.append(f"cook.{event}   {what}; {reach}")
+        lines.append(f"    subtitle: \"{r['subtitle']}\"")
+        lines.append("    in cook_all.mp3: " + ", ".join(clock(t) for t in at.get(event, [])))
+        for label, text in (("made of", made_of(r["fn"])), ("plays", r["when"])):
+            lines += textwrap.wrap(text, width=112, initial_indent=f"    {label}: ", subsequent_indent=" " * (6 + len(label)))
+        lines.append("")
+    os.makedirs(os.path.dirname(os.path.abspath(path_)), exist_ok=True)
+    with open(path_, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
+    print(path_, len(lines), "lines")
+
+
+# =========================================================================== audit
+def probe(path_):
+    """(samples, channels, rate, codec) the file declares, by ffprobe"""
+    out = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "a:0", "-show_entries",
+                          "stream=duration_ts,channels,sample_rate,codec_name", "-of", "json", path_],
+                         capture_output=True, text=True, check=True).stdout
+    st = json.loads(out)["streams"][0]
+    return int(st["duration_ts"]), int(st["channels"]), int(st["sample_rate"]), st["codec_name"]
+
+
+def audit(assets):
+    """every file of every event read back from disk and held to its row of the design: it is there, mono 44.1 kHz Vorbis, as
+    many files as the row says, each exactly as long as the row says (what the file declares; a decoder may add or drop a few
+    samples of a one-shot, which no game hears), its peak and true peak under -1 dBFS (a loop's under -10), a one-shot's loudest
+    100 ms near its target, a loop's RMS at -27 dBFS with its join checked. Prints a line for each; returns 1 if any fails"""
+    import re
+    bad, files = [], 0
+    for event, r in EVENTS.items():
+        for v in range(r["files"]):
+            stem = sound_path(event, v + 1)
+            p = os.path.join(assets, "sounds", stem + ".ogg")
+            files += 1
+            if not os.path.exists(p):
+                bad.append(f"{stem}: missing")
+                continue
+            frames, ch, rate, codec = probe(p)
+            y = read_audio(p)[0]
+            pk, tp = to_db(np.max(np.abs(y))), 20 * np.log10(true_peak(y))
+            short = float(np.max(loudness_curve(y)))
+            notes = []
+            if (ch, rate, codec) != (1, SR, "vorbis"):
+                notes.append(f"is {ch} ch {rate} Hz {codec}")
+            if frames != ns(r["length"]):
+                notes.append(f"is {frames} samples, the row says {ns(r['length'])}")
+            if r["kind"] == "loop":
+                d_len, step, seam = seam_report(p, ns(r["length"]))
+                lim = r["ceiling_db"]
+                if d_len != 0:
+                    notes.append(f"decodes {d_len:+d} samples")
+                if abs(to_db(rms(y)) - r["rms_db"]) > 0.4:
+                    notes.append(f"RMS {to_db(rms(y)):.1f}, wanted {r['rms_db']}")
+                if tp > lim or pk > lim:
+                    notes.append(f"peak {pk:.1f} / true peak {tp:.1f} over {lim}")
+                if step > 3.0 or seam > 1.5:
+                    notes.append(f"join {step:.1f}x a step, {seam:.2f}x the highs")
+                tail = f"rms {to_db(rms(y)):6.1f}  join {step:4.1f}x a step, {seam:4.2f}x the highs"
+            else:
+                if tp > -1.0:
+                    notes.append(f"true peak {tp:.1f}")
+                if abs(short - r["loud"]) > 1.6:
+                    notes.append(f"loudest 100 ms {short:.1f}, wanted {r['loud']}")
+                tail = f"short {short:6.1f}  (target {r['loud']})"
+            print(f"{stem:26s} {frames / SR:6.3f}s  peak {pk:6.1f}  tp {tp:6.1f}  {tail}" +
+                  ("   <-- " + "; ".join(notes) if notes else ""))
+            if notes:
+                bad.append(f"{stem}: " + "; ".join(notes))
+    total = sum(r["files"] for r in EVENTS.values())
+    if len(EVENTS) != 44 or total != 88:
+        bad.append(f"{len(EVENTS)} events and {total} files, the design says 44 and 88")
+    want_sounds, want_lang = fragments()
+    for fname, want in (("cook_sounds.json", want_sounds), ("cook_lang.json", want_lang)):
+        fp = os.path.join(HERE, fname)
+        if not os.path.exists(fp):
+            bad.append(f"{fname} is missing (a full render writes it)")
+        elif json.load(open(fp, encoding="utf-8")) != want:
+            bad.append(f"{fname} is not what the recipes say (a full render writes it)")
+    for key, ent in want_sounds.items():
+        for e in ent["sounds"]:
+            n = e if isinstance(e, str) else e["name"]
+            if not os.path.exists(os.path.join(assets, "sounds", n.split(":", 1)[1] + ".ogg")):
+                bad.append(f"{key}: {n} has no file")
+    names_kt = os.path.join(HERE, "..", "..", "src", "main", "kotlin", "io", "github", "vaspyyy", "guildmark", "cooking",
+                            "CookSounds.kt")
+    if os.path.exists(names_kt):
+        kt = re.search(r"val NAMES: List<String> = listOf\((.*?)\n    \)", open(names_kt, encoding="utf-8").read(), re.S)
+        if kt and re.findall(r'"cook\.([a-z_.]+)"', kt.group(1)) != list(EVENTS):
+            bad.append("the events are not CookSounds.NAMES, in its order")
+    print(f"\n{len(EVENTS)} events, {files} files checked: " + ("all as the design says" if not bad else f"{len(bad)} problems"))
+    for b in bad:
+        print("  PROBLEM:", b)
+    return 1 if bad else 0
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Hearthcraft's kitchen: the sounds of the cook's stations")
+    ap.add_argument("assets", help="the assets folder, e.g. src/main/resources/assets/guildmark")
+    ap.add_argument("--wav", default=None, help="also write WAV copies here")
+    ap.add_argument("--only", default=None, help="comma-separated events or groups, e.g. stir,plop,eat,loops")
+    ap.add_argument("--mp3", default=None, help="also write one listen-through MP3 of what was rendered, and "
+                                                "cook_what_plays_when.txt beside it")
+    ap.add_argument("--audit", action="store_true", help="render nothing: read every file back and check it against the design")
+    a = ap.parse_args()
+    if a.audit:
+        raise SystemExit(audit(a.assets))
+    names = select(a.only) if a.only else list(EVENTS)
+    build(a.assets, names, a.wav)
+    if not a.only:
+        write_fragments()
+    if a.mp3:
+        marks = listen_through(a.assets, names, a.mp3)
+        write_when(marks, os.path.join(os.path.dirname(os.path.abspath(a.mp3)), "cook_what_plays_when.txt"))
+
+
+if __name__ == "__main__":
+    main()
