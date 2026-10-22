@@ -7,7 +7,7 @@ from the upper left, a fine dark outline round each thing. Stream X1 of the Trad
 Writes, for each item id the code registers (`tally`, `carriers_warrant`, `pack_harness`, `drovers_whistle`, `chapmans_cart`,
 `wagon_bill`), its item definition `items/<id>.json`, its model `models/item/<id>.json` and its texture `textures/item/<id>.png`
 (a strip of 32 x 32 frames and a `.mcmeta` where the item moves). Nothing else: the items' names, recipes and behaviour are the
-code parts'.
+code parts'. The cart's second layer, `chapmans_cart_pennant`, is written the same way (a texture and a model; the item is the cart's).
 
 WHAT EACH ITEM DOES ON ITS OWN, with no code behind it:
   tally             in the inventory, on the ground and in a frame it is the closed book (a ribbon hangs from its pages and sways;
@@ -19,9 +19,12 @@ WHAT EACH ITEM DOES ON ITS OWN, with no code behind it:
                     item definition also has the branch a held, used whistle takes (`minecraft:using_item`: raised to the lips in
                     the goat horn's pose, the sound leaving it in arcs that grow outward); it shows only if a part gives the
                     whistle a use time, as the goat horn has.
-  chapmans_cart     a hand-cart under its canvas: the pennant flutters. The pennant is its own layer painted in greys and tinted
-                    by `minecraft:dye` (the `dyed_color` component of the stack, if a part sets one; white if not).
-  wagon_bill        a bill of sale: a light crosses the seal, a corner of the sheet stirs.
+  chapmans_cart     a hand-cart tipped forward onto its shafts, a canvas folded on its bed: now and then a breeze streams the
+                    pennant and billows the canvas's loose end, and a light crosses its brass. The pennant's cloth is a texture of
+                    its own (`chapmans_cart_pennant`, a second layer of the model, on the same clock), painted in greys and tinted by
+                    `minecraft:dye`: the `dyed_color` of the stack if a part sets one, white if not.
+  wagon_bill        a printed sheet with the hall's wheel and a red wax seal: a gust turns its dog-eared corner over and lets it
+                    drop, and a light crosses the wax.
 Every moving item rests a few seconds between its movements and no two rest the same, so a hotbar of them is not in step.
 
 Everything is seeded, so a rerun gives the same files. With a preview dir it also writes the sheets: every item large on a dark
@@ -866,6 +869,259 @@ def drovers_whistle_blow(frame=0):
     return sound_arcs(img, mx - 1.2, my - 1.2, 135, frame, (4.6, 8.8))
 
 
+# ---------------------------------------------------------------- the Chapman's Cart
+
+# A hand-cart seen from its side, nose to the left, set down tipped forward onto its shafts (the bed's lines climb toward the rear). It
+# is two textures laid one over the other, as a leather helmet's are: the cart itself (the bed, the wheel, the canvas folded on it, the
+# pole) and the pennant's cloth, painted in greys so that `minecraft:dye` tints it in the colour of the stack's `dyed_color`. They play
+# one timeline, so they stay in step: a breeze comes up, the pennant streams and the canvas's loose end lifts, then it dies down.
+CART_HUB = (19.0, 22.4)               # the wheel's hub, which is the axle
+CART_R = 7.6                          # the wheel's outer radius
+CART_TILT = 0.19                      # how far the bed's lines climb toward the rear, px per px
+CART_POLE_X = 10.0                    # the pennant's pole: the line between its two columns
+CART_CLOTH = (11.0, 5.4, 14.5)        # the cloth: where it meets the pole (x), the height of its middle there (y), its length
+CART_LAM = 8.0                        # the wavelength of the cloth's ripple, px
+CART_REST = (1.0, 0.0, 0.0)           # (the ripple's amplitude, how far the cloth is lifted, how far the canvas billows) at rest
+CART_GUST = [(1.5, 0.4, 0.0), (1.9, 0.9, 0.3), (2.2, 1.2, 0.8), (2.4, 1.3, 1.2), (2.3, 1.3, 1.4),
+             (2.2, 1.2, 1.2), (1.9, 1.0, 0.9), (1.6, 0.7, 0.6), (1.35, 0.4, 0.3), (1.1, 0.2, 0.1)]
+CLOTH = [(100, 100, 104), (140, 140, 144), (180, 180, 184), (216, 216, 218), (244, 244, 244)]       # the cloth in greys, for the dye
+TARP = [(50, 46, 40), (96, 90, 78), (146, 138, 118), (188, 180, 156), (216, 208, 182), (238, 230, 204)]     # sun-bleached sailcloth
+BED = (8.0, 29.8, 13.0, 19.6)         # the bed's side in the cart's own coordinates: its front, its rear, its top, its foot
+
+
+def breeze(frame):
+    """(ripple amplitude, ripple phase, how far the cloth is lifted, how far the canvas billows) at a frame of the strip. The ripple
+    runs along the cloth twice round over the gust, so the last frame is where the first began."""
+    if frame == 0:
+        a, r, b = CART_REST
+        return a, 0.0, r, b
+    a, r, b = CART_GUST[frame - 1]
+    return a, 4 * math.pi * frame / len(CART_GUST), r, b
+
+
+def cart_xy():
+    """The pixel grid in the cart's own coordinates, where the bed's lines are level (on the screen they climb to the rear)."""
+    return XS, YS + CART_TILT * (XS - CART_HUB[0])
+
+
+def cart_bed(cv, lx, ly):
+    """The two shafts (the bed's foot rails run on ahead of it), the bed's side in three planks with their joints and two iron straps."""
+    x0, x1, top, foot = BED
+    far = (lx >= 2.6) & (lx < x0 + 1.0) & (ly >= 16.6) & (ly <= 18.4)
+    flat(cv, far, PAL['wood'], 0.30 + 0.12 * (ly < 17.2))
+    near = (lx >= 1.2) & (lx <= x1) & (ly >= 19.0) & (ly <= 20.9)
+    flat(cv, near, PAL['wood'], 0.50 + 0.14 * (ly < 19.7) - 0.14 * (ly > 20.3) + 0.10 * np.clip((16.0 - lx) / 8.0, -1, 1))
+    tip = (lx >= 1.2) & (lx < 3.0) & near
+    flat(cv, tip, PAL['iron'], 0.36 + 0.16 * (ly < 19.7))
+    body = (lx >= x0) & (lx <= x1) & (ly >= top) & (ly <= foot)
+    v = ly - top
+    k = np.clip(np.floor(v / 2.2), 0, 2).astype(int)
+    f = v - k * 2.2
+    joint = np.choose(k, [15.0, 22.2, 17.4])
+    t = 0.57 + 0.05 * np.choose(k, [0, 1, -1]) + 0.11 * (f >= 0.7) * (f < 1.5) + 0.10 * (lx < 16.0) - 0.06 * (lx > 24.0)
+    t = np.where((k == 0) & (f < 0.7), t + 0.16, t)                                 # the rim, lit
+    t = np.where((k > 0) & (f < 0.7), t - 0.34, t)                                  # a seam between planks
+    t = np.where(np.abs(lx - joint) < 0.55, t - 0.30, t)                            # a butt joint
+    t = t + 0.05 * (fbm(N, N, 3, 41) - 0.5) * 2
+    flat(cv, body, PAL['wood'], t)
+    for xa, xb in ((9.0, 10.0), (27.6, 28.6)):                                      # the iron straps
+        strap = body & (lx >= xa) & (lx < xb)
+        flat(cv, strap, PAL['iron'], 0.40 + 0.12 * (ly < foot - 1.0))
+    return body
+
+
+def cart_canvas(cv, lx, ly, billow):
+    """The canvas folded on the bed: a low dome with a crease along it, roped down at two places; its rear end lifts and billows
+    when the breeze comes (a dark gap opens under its hem)."""
+    x0, x1, hem0 = 11.0, 29.5, BED[2] + 0.9
+    s = np.clip((lx - x0) / (x1 - x0), 0, 1)
+    rear = np.clip((s - 0.4) / 0.6, 0, 1) ** 1.4
+    hem = hem0 - billow * 0.9 * rear
+    top = hem - 4.0 * np.sin(math.pi * s) ** 0.65 - billow * 0.8 * rear
+    inside = (lx >= x0) & (lx <= x1)
+    under = inside & (ly > hem) & (ly <= hem0 + 1.0) & (ly >= BED[2])
+    cv.over(under, np.asarray(PAL['darkwood'][1], float), 0.78)                      # the shadow under a lifted hem
+    mask = inside & (ly >= top) & (ly <= hem)
+    h = np.clip((ly - top) / np.maximum(hem - top, 0.5), 0, 1)
+    t = 0.90 - 0.50 * h ** 1.3 + 0.08 * (1 - s)
+    t = t - 0.20 * (np.abs((ly - top) - 1.9) < 0.5) + 0.04 * (fbm(N, N, 3, 17) - 0.5) * 2
+    cv.put(mask, nb(TARP, t, 0.2))
+    for sx in (15.5, 24.2):                                                         # the ropes
+        rope = inside & (np.abs(lx - sx) < 0.55) & (ly >= top) & (ly <= BED[2] + 3.0)
+        flat(cv, rope, PAL['leather'], 0.50 + 0.14 * (lx < sx))
+    return mask
+
+
+def cart_wheel(cv, spin=11.0):
+    """The near wheel: an iron tyre, a wooden felloe, eight spokes round a hub, the far side of the wheel dark between them."""
+    hx, hy = CART_HUB
+    dx, dy = XS - hx, YS - hy
+    d = np.hypot(dx, dy)
+    g = shade_xy(hx, hy, CART_R)
+    inner = d <= CART_R - 2.6
+    flat(cv, inner, PAL['darkwood'], 0.30 + 0.10 * g)
+    spokes = np.zeros((N, N), bool)
+    for i in range(8):
+        a = math.radians(spin + 45 * i)
+        ux, uy = math.cos(a), math.sin(a)
+        along = dx * ux + dy * uy
+        across = np.abs(-dx * uy + dy * ux)
+        spokes |= (along > 1.0) & (along < CART_R - 2.2) & (across < 0.6)
+    flat(cv, spokes & inner, PAL['wood'], 0.70 + 0.28 * g)
+    felloe = (d <= CART_R - 1.2) & (d > CART_R - 2.6)
+    flat(cv, felloe, PAL['wood'], 0.56 + 0.30 * g)
+    tyre = (d <= CART_R) & (d > CART_R - 1.2)
+    flat(cv, tyre, PAL['iron'], 0.36 + 0.26 * g)
+    flat(cv, d <= 2.1, PAL['iron'], 0.36 + 0.30 * g)
+    ball = D(hx, hy, 1.3)
+    flat(cv, ball, PAL['brass'], 0.60 + 0.34 * shade_xy(hx, hy, 1.3))
+
+
+def cart_pole(cv):
+    """The pole the pennant flies from, on an iron collar at the bed's front corner, a brass ball on its top."""
+    x, foot = CART_POLE_X, 14.8
+    pole = (XS >= x - 1.0) & (XS < x + 1.0) & (YS >= 3.0) & (YS < foot - 1.0)
+    flat(cv, pole, PAL['wood'], 0.50 + 0.24 * (XS < x))
+    collar = (XS >= x - 2.0) & (XS < x + 2.0) & (YS >= foot - 1.8) & (YS < foot + 0.4)
+    flat(cv, collar, PAL['iron'], 0.44 + 0.18 * (YS < foot - 0.8) - 0.08 * (XS >= x + 1.0))
+    ball = D(x, 2.9, 1.6)
+    flat(cv, ball, PAL['brass'], 0.62 + 0.30 * shade_xy(x, 2.9, 1.6))
+
+
+@painter('chapmans_cart', frames=1 + len(CART_GUST))
+def chapmans_cart(frame=0):
+    """The Chapman's Cart without its pennant's cloth (see below): a hand-cart in profile on its big spoked wheel, tipped forward onto
+    its shafts, a canvas folded on its bed and roped down, a short pole at the front. Frame 0 is at rest; in the others the canvas's
+    rear end billows in a breeze."""
+    cv = Canvas(N)
+    lx, ly = cart_xy()
+    cart_bed(cv, lx, ly)
+    cart_canvas(cv, lx, ly, breeze(frame)[3])
+    cart_wheel(cv)
+    cart_pole(cv)
+    return finish(cv)
+
+
+@painter('chapmans_cart_pennant', frames=1 + len(CART_GUST))
+def chapmans_cart_pennant(frame=0):
+    """The pennant's cloth alone, in greys, for the item definition's `minecraft:dye` to tint: a long pointed cloth streaming from
+    the pole with a ripple running along it. Frame 0 is the soft ripple of the rest; the others the gust."""
+    amp, phase, rise, _ = breeze(frame)
+    cv = Canvas(N)
+    x0, y0, ln = CART_CLOTH
+    u = np.clip((XS - x0) / ln, 0, 1)
+    centre = y0 - rise * u + 0.7 * u ** 2 + amp * u ** 0.9 * np.sin(2 * math.pi * (XS - x0) / CART_LAM - phase)
+    half = 0.95 + 2.0 * (1 - u) ** 0.9
+    mask = (XS >= x0) & (XS <= x0 + ln) & (np.abs(YS - centre) <= half)
+    slope = np.gradient(centre, axis=1)
+    side = np.clip((centre - YS) / half, -1, 1)
+    t = 0.70 + 0.30 * np.clip(-slope * 1.6, -1, 1) + 0.12 * side - 0.18 * (u < 0.06)
+    cv.put(mask, nb(CLOTH, t, 0.15))
+    outline(cv, 0.85)
+    cv.a[~mask & (XS < x0)] = 0                                                      # the pole's own outline is there already
+    return cv.image()
+
+
+# ---------------------------------------------------------------- the Wagon Bill
+
+# A sheet of heavy cream paper, printed in red and ink: a ruled border, a heading, the hall's wheel as its device, two lines of writing
+# and the carriers' red wax over the end of the last of them. A corner of it is dog-eared, and when a draught comes the corner is turned
+# further over and drops back. (No letters are printed on it, so there is nothing in it to translate.)
+PAPER = [(62, 54, 50), (122, 112, 100), (178, 170, 150), (214, 208, 188), (236, 232, 214), (250, 248, 236)]
+BILL = (5, 1, 26, 31)                 # the sheet: its left and top, and the first pixel past its right and its foot
+BILL_FOLD = 3.5                       # the legs of the dog-eared corner at rest, px
+BILL_STIR = [4.2, 5.0, 5.8, 6.2, 5.8, 5.0, 4.2, 3.6]          # how far a gust has folded the corner over, frame by frame
+
+
+def inked(cv, x, y, col, a=1.0):
+    """Ink a pixel: the colour blended into what is there by [a], the pixel as solid as it was."""
+    if 0 <= x < N and 0 <= y < N:
+        cv.rgb[y, x] = cv.rgb[y, x] * (1 - a) + np.asarray(col, float) * a
+
+
+def bill_sheet(cv, fold):
+    """The sheet itself: paper with a faint fibre, lit at its upper left edges and thick and dark at its lower right ones, its
+    top right corner folded over by [fold] pixels. Returns (the sheet's mask, the folded flap's mask)."""
+    x0, y0, x1, y1 = BILL
+    c = (x1 - fold) - y0                                                         # the fold lies along x - y = c
+    sheet = (XS >= x0) & (XS < x1) & (YS >= y0) & (YS < y1) & ((XS - YS) <= c)
+    flap = sheet & ((XS - YS) < c) & (XS >= x1 - fold) & (YS <= y0 + fold)
+    t = 0.80 + 0.05 * (1.0 - (XS - x0) / (x1 - x0)) - 0.03 * (YS - y0) / (y1 - y0)
+    t = t + 0.05 * (fbm(N, N, 3, 61) - 0.5) * 2
+    b = edge_bands(sheet, 1, 2)
+    t = t + 0.13 * (b > 0) - 0.24 * (b < 0)
+    cv.put(sheet, nb(PAPER, t, 0.15))
+    rng = np.random.default_rng(14)                                              # the odd fibre in heavy paper
+    for _ in range(9):
+        x, y = int(rng.integers(x0 + 2, x1 - 2)), int(rng.integers(y0 + 2, y1 - 2))
+        if sheet[y, x] and not flap[y, x]:
+            inked(cv, x, y, PAPER[1], 0.45)
+    return sheet, flap
+
+
+def bill_print(cv, sheet):
+    """What is printed on it: a red rule round it, a heading, the hall's wheel and two lines of writing."""
+    red = np.asarray(INK_RED, float)
+    ink = np.asarray(INK, float)
+    x0, y0, x1, y1 = BILL
+    fx0, fx1, fy0, fy1 = x0 + 2, x1 - 3, y0 + 2, y1 - 3                          # the border's lines
+    for x in range(fx0, fx1 + 1):
+        for y in (fy0, fy1):
+            if sheet[y, x]:
+                inked(cv, x, y, red, 0.85)
+    for y in range(fy0, fy1 + 1):
+        for x in (fx0, fx1):
+            if sheet[y, x]:
+                inked(cv, x, y, red, 0.85)
+    # the heading: a bold line of print and a finer one under it, as a title is set
+    for y, x, widths, h, a in ((fy0 + 2, fx0 + 2, (2, 3, 2, 3), 2, 0.95), (fy0 + 5, fx0 + 3, (2, 3, 1, 2), 1, 0.85)):
+        for w in widths:
+            for i in range(w):
+                for j in range(h):
+                    inked(cv, x + i, y + j, red, a)
+            x += w + 1
+    # the hall's wheel, printed in red as an official paper's device: a ring, eight spokes, a hub with a light eye
+    wcx, wcy = 15, 16
+    for dy in range(-5, 6):
+        for dx in range(-5, 6):
+            d = math.hypot(dx, dy)
+            ring = 4.5 <= d < 5.5
+            spoke = d < 4.5 and (dx == 0 or dy == 0 or abs(dx) == abs(dy))
+            hub = max(abs(dx), abs(dy)) <= 1
+            if (ring or spoke or hub) and sheet[wcy + dy, wcx + dx]:
+                inked(cv, wcx + dx, wcy + dy, red, 0.95)
+    inked(cv, wcx, wcy, PAPER[4], 1.0)
+    # lines of writing, short where the seal will lie over them
+    for y, xe, seed in ((fy1 - 4, fx1 - 7, 31), (fy1 - 2, fx1 - 9, 32)):
+        rng = np.random.default_rng(seed)
+        x = fx0 + 2
+        while x < xe:
+            w = int(rng.integers(2, 5))
+            for i in range(min(w, xe - x)):
+                inked(cv, x + i, y, ink, 0.85)
+            x += w + 1
+
+
+@painter('wagon_bill', frames=1 + len(BILL_STIR))
+def wagon_bill(frame=0):
+    """The Wagon Bill: a sheet of heavy cream paper with a red printed border and heading, the hall's wheel and two lines of
+    writing, sealed with red wax and the wheel again, its top right corner dog-eared. Frame 0 is at rest; the others the corner
+    turned further over and dropping back."""
+    cv = Canvas(N)
+    fold = BILL_FOLD if frame == 0 else BILL_STIR[frame - 1]
+    sheet, flap = bill_sheet(cv, fold)
+    bill_print(cv, sheet)
+    _, y0, x1, _ = BILL
+    seal(cv, 19.6, 25.4, 3.9, seed=7, lift=0.1)
+    # the flap: the back of the paper, blank and lit, with a shadow under its free edge
+    below = sheet & ~flap & (YS >= y0 + fold) & (YS < y0 + fold + 1.5) & (XS >= x1 - fold - 0.5)
+    cv.over(below, np.asarray(PAPER[0], float), 0.45)
+    ft = 0.94 - 0.30 * (np.abs((XS - YS) - ((x1 - fold) - y0)) < 1.4)
+    ft = np.where(flap & ((XS < x1 - fold + 1.0) | (YS > y0 + fold - 1.0)), 0.70, ft)                    # its two free edges, a shade darker
+    cv.put(flap, nb(PAPER, ft, 0.0))
+    return finish(cv)
+
+
 # ================================================================ the light that crosses what is shiny
 
 SWEEP = 8                      # the frames of a sweep of light, each held for SWEEP_TICKS
@@ -904,6 +1160,8 @@ SHINE = {
     'carriers_warrant': [PAL['wax']],
     'pack_harness': [PAL['gold'], PAL['brass']],
     'drovers_whistle': [PAL['brass']],
+    'chapmans_cart': [PAL['brass']],
+    'wagon_bill': [PAL['wax']],
 }
 
 
@@ -939,6 +1197,20 @@ def strip_whistle_blow():
     return [PAINTERS['drovers_whistle_blow'](i) for i in range(BLOW_FRAMES)]
 
 
+def strip_cart():
+    rest = PAINTERS['chapmans_cart'](0)
+    return [rest] + [PAINTERS['chapmans_cart'](i) for i in range(1, 1 + len(CART_GUST))] + sweep_frames(rest, SHINE['chapmans_cart'])
+
+
+def strip_cart_pennant():
+    return [PAINTERS['chapmans_cart_pennant'](i) for i in range(1 + len(CART_GUST))]
+
+
+def strip_bill():
+    rest = PAINTERS['wagon_bill'](0)
+    return [rest] + [PAINTERS['wagon_bill'](i) for i in range(1, 1 + len(BILL_STIR))] + sweep_frames(rest, SHINE['wagon_bill'])
+
+
 # name -> (the strip's frames, the timeline). The names are the texture names: `textures/item/<name>.png`.
 STRIPS = {
     'tally': (strip_tally, [(0, 64)] + seq(1, 8) + [(0, 16)] + seq(9, 16)),
@@ -950,9 +1222,17 @@ STRIPS = {
     'drovers_whistle': (strip_whistle, [(0, 70), 1, (2, 3), 1, 0, 3, (4, 3), 3, 0, 5, 0, 6, (0, 12)] + seq(7, 14)),
     # raised to the lips: the sound's arcs grow outward, over and over (no rest: it plays only while the whistle is blown)
     'drovers_whistle_blow': (strip_whistle_blow, [(0, 3), (1, 3), (2, 3)]),
+    # a breeze: the pennant streams and ripples and the canvas's loose end billows, then the brass takes a light. The cloth is a texture
+    # of its own that keeps the same hours (it shows its rest while the light crosses), so the two lie one on the other and stay in step
+    'chapmans_cart': (strip_cart, [(0, 76)] + seq(1, 10) + [(0, 20)] + seq(11, 18)),
+    'chapmans_cart_pennant': (strip_cart_pennant, [(0, 76)] + seq(1, 10) + [(0, 36)]),
+    # a gust turns the dog-ear further over and lets it drop, then the wax takes a light
+    'wagon_bill': (strip_bill, [(0, 90)] + seq(1, 8) + [(0, 24)] + seq(9, 16)),
 }
 
 LOOPING = {'drovers_whistle_blow'}          # strips with no rest: they play only while something is held to the lips
+COMPANIONS = {'chapmans_cart_pennant': 'chapmans_cart'}     # a texture that lies on another's and keeps its hours: no item of its own
+PENNANT_WHITE = 0xFFFFFF                    # what the dye tint gives when the stack has no `dyed_color`: the cloth as painted
 
 
 def mcmeta(timeline):
@@ -982,6 +1262,11 @@ def definitions():
         # in the hand, raised to the lips, the sound leaving it; for a part that gives the whistle a use time, as the goat horn has
         'drovers_whistle': {'model': {'type': 'minecraft:condition', 'property': 'minecraft:using_item',
                                       'on_true': leaf('drovers_whistle_blow'), 'on_false': leaf('drovers_whistle')}},
+        # the cart, and over it the pennant's cloth tinted by the stack's `dyed_color` (the cloth as painted, white, when it has none)
+        'chapmans_cart': {'model': {'type': 'minecraft:composite', 'models': [
+            leaf('chapmans_cart'),
+            {**leaf('chapmans_cart_pennant'), 'tints': [{'type': 'minecraft:dye', 'default': PENNANT_WHITE}]}]}},
+        'wagon_bill': {'model': leaf('wagon_bill')},
     }
 
 
@@ -1063,6 +1348,7 @@ def verify(assets, made):
             if not exists('textures/%s.png' % tex.partition(':')[2]):
                 problems.append('%s: missing texture %s' % (item, tex))
     rests = {}
+    played = {}
     for name, frames in made.items():
         path = os.path.join(assets, 'textures', 'item', name + '.png')
         im = Image.open(path)
@@ -1075,6 +1361,7 @@ def verify(assets, made):
             else:
                 with open(meta_path) as f:
                     plays = playlist([e if isinstance(e, int) else (e['index'], e['time']) for e in json.load(f)['animation']['frames']])
+                played[name] = plays
                 if any(not 0 <= i < len(frames) or t < 1 for i, t in plays):
                     problems.append(name + ': the .mcmeta plays a frame that is not there')
                 if plays[0][0] != 0:
@@ -1083,7 +1370,7 @@ def verify(assets, made):
                     problems.append(name + ': the resting frame is not the longest hold')
                 if len({i for i, _ in plays}) != len(frames):
                     problems.append(name + ': a frame is never shown')
-                if name not in LOOPING:
+                if name not in LOOPING and name not in COMPANIONS:
                     rests.setdefault(plays[0][1], []).append(name)
         elif os.path.exists(meta_path):
             problems.append(name + ': a .mcmeta beside a single frame')
@@ -1102,6 +1389,12 @@ def verify(assets, made):
     for t, names in rests.items():
         if len(names) > 1:
             problems.append('rest alike (%d ticks): %s' % (t, ', '.join(names)))
+    for name, mate in COMPANIONS.items():
+        if name in played and mate in played:
+            a = [i for i, t in played[mate] for _ in range(t)]            # the frame the item's own texture shows at each tick
+            b = [i for i, t in played[name] for _ in range(t)]            # and the one its companion shows
+            if len(a) != len(b) or any(y != (x if 1 <= x < len(made[name]) else 0) for x, y in zip(a, b)):
+                problems.append('%s does not keep the hours of %s' % (name, mate))
     return problems
 
 
@@ -1114,7 +1407,29 @@ VANILLA = os.environ.get('TRADE_VANILLA', '')       # a folder holding the game'
 
 # the game's own item each of ours stands in for until it is used
 STAND_IN = {'tally': 'book', 'tally_open': 'writable_book', 'carriers_warrant': 'paper', 'pack_harness': 'saddle',
-            'drovers_whistle': 'lead', 'drovers_whistle_blow': 'goat_horn'}
+            'drovers_whistle': 'lead', 'drovers_whistle_blow': 'goat_horn', 'chapmans_cart': 'chest_minecart', 'wagon_bill': 'paper'}
+# the colours a pennant is dyed in (the booker's six, and white as it is painted), for the sheet of dyes
+DYES = [('white', (255, 255, 255)), ('red', (196, 52, 48)), ('blue', (56, 100, 190)), ('green', (62, 150, 76)),
+        ('amber', (214, 150, 40)), ('violet', (132, 72, 190)), ('teal', (44, 150, 146))]
+
+
+def tinted(im, rgb):
+    """The image multiplied by a colour, as the game's dye tint does it."""
+    a = np.asarray(im.convert('RGBA'), float)
+    a[..., :3] = a[..., :3] * np.asarray(rgb, float) / 255.0
+    return Image.fromarray(np.clip(a, 0, 255).round().astype(np.uint8), 'RGBA')
+
+
+def cart_composed(made, rgb=(255, 255, 255)):
+    """The cart's frames as the item shows them: the pennant's cloth, tinted, laid over each (it shows its rest where the cart has
+    only the light crossing)."""
+    base, cloth = made['chapmans_cart'], made['chapmans_cart_pennant']
+    out = []
+    for k, b in enumerate(base):
+        im = b.copy()
+        im.alpha_composite(tinted(cloth[k if k < len(cloth) else 0], rgb))
+        out.append(im)
+    return out
 
 
 def tiles(images, labels, scale, cols, bg, pad=10):
@@ -1168,7 +1483,9 @@ def previews(made, outdir):
     """The sheets: every item large on the dark and on the light ground, then small as the game shows them, beside the game's own
     item where we have it, and a moving picture of each animated texture, played as its .mcmeta plays it."""
     os.makedirs(outdir, exist_ok=True)
-    names = list(made)
+    raw = made
+    made = {**made, 'chapmans_cart': cart_composed(made)}
+    names = [n for n in made if n not in COMPANIONS]
     stills = [made[n][0] for n in names]
     for key, bg in BACKDROPS:
         tiles(stills, names, 8, 4, bg).save(os.path.join(outdir, 'trade_items_%s.png' % key))
@@ -1196,6 +1513,8 @@ def previews(made, outdir):
     for n in names:
         if len(made[n]) > 1:
             gif(made[n], os.path.join(outdir, 'trade_item_%s.gif' % n), BG_DARK, playlist(STRIPS[n][1]), 10)
+    dyed = [cart_composed(raw, rgb)[0] for _, rgb in DYES]
+    tiles(dyed, [n for n, _ in DYES], 8, 4, BG_DARK).save(os.path.join(outdir, 'trade_cart_dyes.png'))
 
 
 # ================================================================ main

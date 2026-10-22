@@ -1,0 +1,21 @@
+{
+  "model": {
+    "type": "minecraft:composite",
+    "models": [
+      {
+        "type": "minecraft:model",
+        "model": "guildmark:item/chapmans_cart"
+      },
+      {
+        "type": "minecraft:model",
+        "model": "guildmark:item/chapmans_cart_pennant",
+        "tints": [
+          {
+            "type": "minecraft:dye",
+            "default": 16777215
+          }
+        ]
+      }
+    ]
+  }
+}
