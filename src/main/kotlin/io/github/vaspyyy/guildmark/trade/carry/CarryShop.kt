@@ -40,12 +40,13 @@ import java.util.UUID
  * not a menu"; build part D1): the two wares this part puts on the counter, the list the screen is sent, and the sale.
  *
  * The screen only ever asks. A press on a row is a request to buy it, and everything that makes it a sale is decided here: the
- * player is standing at a hall counter with its merchant serving, carrying is on, the ware's own gate is open ([Ware.gate]) and the
- * Marks are in the pack. The Marks are taken whole, then [Ware.action] hands the goods over; if that cannot be done the Marks are
- * given back. The counter scene ([Ware.scene]) is played after that, behind the sale, never in front of it: whatever happens in it,
- * the goods are already in the player's hands.
+ * player is standing at a hall counter with its merchant serving, the ware's own gate is open ([Ware.gate], asked again at the sale)
+ * and the Marks are in the pack. The Marks are taken whole, then [Ware.action] hands the goods over; if that cannot be done the Marks
+ * are given back. The counter scene ([Ware.scene]) is played after that, behind the sale, never in front of it: whatever happens in
+ * it, the goods are already in the player's hands. The list is the hall's [Wares] whole, so the wares of other parts stand in it
+ * beside this part's two (the Warrant, and the free copy of one that was lost, which costs nothing and so takes and gives back nothing).
  *
- * With carrying switched off ([TradeConfig.carry]) every ware's gate says so, the rows are greyed and nothing can be bought.
+ * With carrying switched off ([TradeConfig.carry]) this part's wares say so in their gate, the rows are greyed and they cannot be bought.
  */
 object CarryShop {
     /** The ids of this part's wares: their words are `ware.guildmark.<id>`, `.line` (one short line) and `.tip`. */
@@ -155,10 +156,13 @@ object CarryShop {
         if (ware == null) return turnDown(player, id, null, GONE)
         if (now - (sold[player.uuid] ?: Long.MIN_VALUE / 2) < BUY_GAP) return
         val keeper = counter(player) ?: return turnDown(player, id, null, AWAY)
+        // What stands in the way is asked again here, at the sale, and not taken from the list the screen was last sent
         val why = Wares.missing(player, ware)
         if (why != null) return turnDown(player, id, keeper, why)
-        if (TownControl.marks(player) < ware.price) return turnDown(player, id, keeper, SHORT)
-        TownControl.pay(player, ware.price)
+        // A ware may cost nothing (the Warrant's free copy): then nothing is looked for, taken or given back
+        val price = ware.price
+        if (price > 0 && TownControl.marks(player) < price) return turnDown(player, id, keeper, SHORT)
+        if (price > 0) TownControl.pay(player, price)
         val done = try {
             ware.action(player)
         } catch (e: RuntimeException) {
@@ -166,11 +170,11 @@ object CarryShop {
             false
         }
         if (!done) {
-            Trading.give(player, ModItems.GUILD_MARK.get(), ware.price)
+            if (price > 0) Trading.give(player, ModItems.GUILD_MARK.get(), price)
             return turnDown(player, id, keeper, FAILED)
         }
         sold[player.uuid] = now
-        level.playSound(null, keeper.x, keeper.y + 1.0, keeper.z, COIN, SoundSource.NEUTRAL, 0.6f, 1.0f)
+        if (price > 0) level.playSound(null, keeper.x, keeper.y + 1.0, keeper.z, COIN, SoundSource.NEUTRAL, 0.6f, 1.0f)
         // The scene is walked behind the sale: whatever goes wrong in it, the goods are in the player's hands already
         try {
             ware.scene?.invoke(player, keeper)

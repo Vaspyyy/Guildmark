@@ -166,25 +166,32 @@ object CarriersPanel : MarketPanel {
         val down = answer != null && since < 3f
         graphics.blitSprite(RenderPipelines.GUI_TEXTURED, Ui.BUTTON.get(ok, lit), bx + shake, by + if (down) 1 else 0, frame.buttonWidth, BUTTON, ARGB.white(k))
         val ty = by + 3 + if (down) 1 else 0
-        val verb = Component.translatable("gui.guildmark.trade.carriers.buy")
+        // A ware that costs nothing (the Warrant's free copy) is taken, not bought, and shows no price and no Mark
+        val free = row.price <= 0
+        val verb = Component.translatable(if (free) "gui.guildmark.trade.carriers.take" else "gui.guildmark.trade.carriers.buy")
         graphics.text(font, verb, bx + 5 + shake, ty, fade(if (ok) (if (lit) Ui.GOLD_BRIGHT else Ui.GOLD) else Ui.TEXT_FAINT, k), false)
-        val price = row.price.toString()
-        val priceColor = when {
-            gated || waiting -> Ui.TEXT_FAINT
-            short -> Ui.RED
-            lit -> Ui.GOLD_BRIGHT
-            else -> Ui.TEXT
-        }
         val right = bx + frame.buttonWidth - 5 + shake
-        graphics.text(font, price, right - 9 - font.width(price), ty, fade(priceColor, k), false)
-        pose.pushMatrix()
-        pose.translate((right - 8).toFloat(), (ty - 1).toFloat())
-        pose.scale(0.5f, 0.5f)
-        if (k > 0.3f) graphics.item(mark, 0, 0)
-        pose.popMatrix()
+        if (free) {
+            val none = Component.translatable("gui.guildmark.trade.carriers.free")
+            graphics.text(font, none, right - font.width(none), ty, fade(if (gated || waiting) Ui.TEXT_FAINT else if (lit) Ui.GOLD_BRIGHT else Ui.TEXT_SOFT, k), false)
+        } else {
+            val price = row.price.toString()
+            val priceColor = when {
+                gated || waiting -> Ui.TEXT_FAINT
+                short -> Ui.RED
+                lit -> Ui.GOLD_BRIGHT
+                else -> Ui.TEXT
+            }
+            graphics.text(font, price, right - 9 - font.width(price), ty, fade(priceColor, k), false)
+            pose.pushMatrix()
+            pose.translate((right - 8).toFloat(), (ty - 1).toFloat())
+            pose.scale(0.5f, 0.5f)
+            if (k > 0.3f) graphics.item(mark, 0, 0)
+            pose.popMatrix()
+        }
 
         // The price rising from the button when it is paid
-        if (answer?.bought == true && since in 0f..24f) {
+        if (!free && answer?.bought == true && since in 0f..24f) {
             val rise = ease(since / 24f)
             val a = if (since < 16f) 1f else (24f - since) / 8f
             graphics.text(font, "-${row.price}", bx - font.width("-${row.price}") - 4, (by - rise * 9f).toInt() + 3, ARGB.color(a.coerceIn(0f, 1f), Ui.GOLD_BRIGHT), true)
@@ -192,10 +199,16 @@ object CarriersPanel : MarketPanel {
         pose.popMatrix()
     }
 
-    /** The icon of the ware [id]: its own item if there is one, else a stand-in. */
+    /**
+     * The icon of the ware [id]: its own item if there is one, else the item of the ware it is another copy of (`carriers_warrant_again`
+     * shows the Warrant), else a stand-in.
+     */
     private fun iconOf(id: String): ItemStack = icons.getOrPut(id) {
-        ICONS[id] ?: BuiltInRegistries.ITEM.getOptional(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, id)).map { ItemStack(it) }.orElse(ItemStack(Items.PAPER))
+        ICONS[id] ?: itemNamed(id) ?: itemNamed(id.removeSuffix("_again")) ?: ItemStack(Items.PAPER)
     }
+
+    private fun itemNamed(id: String): ItemStack? =
+        BuiltInRegistries.ITEM.getOptional(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, id)).map { ItemStack(it) }.orElse(null)
 
     /** The one line under a ware's name: its own, or the start of its tooltip if it has none. */
     private fun lineOf(id: String): Component {
@@ -222,11 +235,13 @@ object CarriersPanel : MarketPanel {
         val lines = ArrayList<Pair<Component, Int>>()
         lines.add(Component.translatable("ware.guildmark.${row.id}") to Ui.GOLD)
         lines.add(Component.translatable("ware.guildmark.${row.id}.tip") to Ui.TEXT)
-        lines.add(Component.translatable("gui.guildmark.trade.carriers.price", row.price) to Ui.TEXT_SOFT)
+        lines.add(
+            (if (row.price <= 0) Component.translatable("gui.guildmark.trade.carriers.nothing") else Component.translatable("gui.guildmark.trade.carriers.price", row.price)) to Ui.TEXT_SOFT,
+        )
         when {
             row.gate.isNotEmpty() -> lines.add(Component.translatable(row.gate) to Ui.RED)
             frame.view.marks < row.price -> lines.add(Component.translatable("gui.guildmark.trade.carriers.short") to Ui.RED)
-            CarriersClient.rows != null -> lines.add(Component.translatable("gui.guildmark.trade.carriers.click") to Ui.TEXT_FAINT)
+            CarriersClient.rows != null -> lines.add(Component.translatable(if (row.price <= 0) "gui.guildmark.trade.carriers.click_free" else "gui.guildmark.trade.carriers.click") to Ui.TEXT_FAINT)
         }
         return lines
     }
