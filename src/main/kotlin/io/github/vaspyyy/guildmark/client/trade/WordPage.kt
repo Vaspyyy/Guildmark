@@ -462,7 +462,8 @@ class WordPage : TallyPage("word") {
         if (struck) pen.stroke(RX0, 13, RX0 + min(108, pen.headingWidth(shownName)), 12, Ink.fade(Ink.RED, 0.8f), 0.5f, 4, 1)
         hourglass(c, town, 133, 6)
         pen.text(pen.fit(newsLine(book, town), 112), RX0, 29, if (town.live) Ink.GREEN else if (struck) Ink.RED else Ink.BLACK)
-        pen.text(pen.fit(sourceLine(book, town), RX1 - RX0), RX0, 39, Ink.SOFT, false, true)
+        pen.text(pen.fit(sourceLine(town), RX1 - RX0), RX0, 39, Ink.SOFT, false, true)
+        c.hot(RX0, 38, RX1 - RX0, 10, sourceTip(book, town))
         pen.rule(RX0, RX1, 50, Ink.fade(Ink.SOFT, 0.45f), 5)
         goods(c, town, since)
         notes(c, town, since)
@@ -485,10 +486,13 @@ class WordPage : TallyPage("word") {
         pen.restore()
     }
 
-    private fun sourceLine(book: TallyBook, town: TallyTown): String {
-        val got = max(0.0, book.ticks() - town.copied)
-        val from = Words.t("word.from.${town.from.coerceIn(0, 3)}")
-        return if (town.from == 2 || (town.live && town.capital == book.view.here)) from else Words.t("word.from", from, Words.ago(got))
+    /** How the trader got the sight, as the page has room to say it (the news line above already tells how old the news is). */
+    private fun sourceLine(town: TallyTown): String = Words.t("word.from.${town.from.coerceIn(0, 3)}")
+
+    /** What the mouse over that line adds: how long ago the trader got it. Nothing for a town kept live (the trader has it this moment). */
+    private fun sourceTip(book: TallyBook, town: TallyTown): List<String>? {
+        if (town.from == 2 || (town.live && town.capital == book.view.here)) return null
+        return listOf(Words.t("word.from", sourceLine(town), Words.ago(max(0.0, book.ticks() - town.copied))))
     }
 
     /**
