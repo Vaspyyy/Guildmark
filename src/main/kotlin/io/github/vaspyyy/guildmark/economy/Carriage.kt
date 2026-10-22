@@ -41,21 +41,34 @@ object Carriage {
     fun reckon(entries: Collection<Markets.Entry>) {
         val all = entries.toList()
         val easing = Market.easing()
-        for (entry in all) {
-            val here = entry.capital
-            for (good in Good.entries) {
-                var nearest = Double.MAX_VALUE
-                if (good.traded) for (other in all) {
-                    if (other === entry || !spare(other.town, good)) continue
-                    val dx = (other.capital.x - here.x).toDouble()
-                    val dz = (other.capital.z - here.z).toDouble()
-                    nearest = minOf(nearest, sqrt(dx * dx + dz * dz))
-                }
-                val goal = if (nearest == Double.MAX_VALUE) Economy.FREIGHT else minOf(FAR, nearest * WINDING * PER_BLOCK)
-                entry.market.carryGoal[good.ordinal] = goal
-                if (!easing || !entry.market.carryKnown) entry.market.carry[good.ordinal] = goal
+        for (entry in all) goal(entry, all, easing)
+    }
+
+    /**
+     * The same for the markets of villages, which are receivers and never sources (the villages design, section 7.3): a good a
+     * capital of [capitals] has to spare comes from the nearest such capital along the road, and anything else from afar, as a
+     * capital's does. The capitals' own goals are not touched, so their prices do not move when a village's market opens.
+     */
+    fun reckonVillages(capitals: Collection<Markets.Entry>, villages: Collection<Markets.Entry>) {
+        val sources = capitals.toList()
+        val easing = Market.easing()
+        for (entry in villages) goal(entry, sources, easing)
+    }
+
+    private fun goal(entry: Markets.Entry, sources: List<Markets.Entry>, easing: Boolean) {
+        val here = entry.capital
+        for (good in Good.entries) {
+            var nearest = Double.MAX_VALUE
+            if (good.traded) for (other in sources) {
+                if (other === entry || !spare(other.town, good)) continue
+                val dx = (other.capital.x - here.x).toDouble()
+                val dz = (other.capital.z - here.z).toDouble()
+                nearest = minOf(nearest, sqrt(dx * dx + dz * dz))
             }
-            entry.market.carryKnown = true
+            val goal = if (nearest == Double.MAX_VALUE) Economy.FREIGHT else minOf(FAR, nearest * WINDING * PER_BLOCK)
+            entry.market.carryGoal[good.ordinal] = goal
+            if (!easing || !entry.market.carryKnown) entry.market.carry[good.ordinal] = goal
         }
+        entry.market.carryKnown = true
     }
 }

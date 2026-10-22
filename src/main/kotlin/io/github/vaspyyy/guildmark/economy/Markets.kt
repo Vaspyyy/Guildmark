@@ -105,6 +105,7 @@ class Markets(private val entries: MutableMap<Long, Entry> = HashMap()) : SavedD
 
         fun register() {
             NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { tick(it.server) }
+            VillageMarkets.register()
         }
 
         /** The hour of the overworld's clock it is, counted from the world's first (0 is six in the morning). */
@@ -119,18 +120,21 @@ class Markets(private val entries: MutableMap<Long, Entry> = HashMap()) : SavedD
         }
 
         /**
-         * The market kept under [key] (the key of a capital's centre), or null if none has opened there. Opens nothing and
-         * writes nothing. A village's market is found here too once villages have markets (the villages design, section
-         * 7.1); for now only a capital's is.
+         * The market kept under [key]: a capital's (the key of its centre) or a village's (the key of its bell), or null if none has
+         * opened there. Opens nothing and writes nothing. A village's is found only while villages have markets (see [VillageMarkets]).
          */
-        fun find(level: ServerLevel, key: Long): Entry? = get(level).entries[key]
+        fun find(level: ServerLevel, key: Long): Entry? = get(level).entries[key] ?: VillageMarkets.find(level, key)
 
         private fun tick(server: MinecraftServer) {
             if (server.tickCount % TICK != 0 || !enabled()) return
             val level = server.overworld()
             val data = get(level)
-            if (server.tickCount % LOOK == 0) look(level, data)
-            run(level, data)
+            if (server.tickCount % LOOK == 0) {
+                look(level, data)
+                VillageMarkets.look(level)
+            }
+            // The villages work out their hours after the capitals, with the steps the capitals leave
+            VillageMarkets.run(level, run(level, data))
         }
 
         /** Opens the market of every capital a player stands on, and counts its people again now and then. */
@@ -151,8 +155,8 @@ class Markets(private val entries: MutableMap<Long, Entry> = HashMap()) : SavedD
             }
         }
 
-        /** Works out the hours every market is behind, [STEPS] of them at most this run; the rest wait for the next. */
-        private fun run(level: ServerLevel, data: Markets) {
+        /** Works out the hours every market is behind, [STEPS] of them at most this run; the rest wait for the next. Gives the steps left. */
+        private fun run(level: ServerLevel, data: Markets): Int {
             val now = hourOf(level)
             var steps = STEPS
             for (entry in data.entries.values) {
@@ -177,6 +181,7 @@ class Markets(private val entries: MutableMap<Long, Entry> = HashMap()) : SavedD
                     data.setDirty()
                 }
             }
+            return steps
         }
 
         /**
