@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.trade
 
+import io.github.vaspyyy.guildmark.economy.Markets
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import net.minecraft.server.level.ServerPlayer
 import java.util.concurrent.CopyOnWriteArrayList
@@ -33,6 +34,9 @@ object Wares {
     /** The lang key of why nothing can be bought: the trader's life is switched off (and with it every purchase). */
     const val OFF = "gui.guildmark.trade.off"
 
+    /** The lang key of why nothing can be bought when it is the capital markets that are switched off (the trader's life needs them). */
+    const val OFF_MARKETS = "gui.guildmark.trade.off.markets"
+
     private val wares = CopyOnWriteArrayList<Ware>()
 
     /** Adds [ware] to the counter, once, at setup. A second ware with the same id is a mistake and is refused. */
@@ -47,8 +51,12 @@ object Wares {
     fun byId(id: String): Ware? = wares.firstOrNull { it.id == id }
 
     /**
-     * What stands between [player] and [ware]: null if nothing does, or the lang key of what does ([OFF] when the trade is switched
-     * off, else the ware's own gate). A ware's own gate is only asked once the trade is on.
+     * What stands between [player] and [ware]: null if nothing does, or the lang key of what does ([OFF_MARKETS] when the capital markets are
+     * switched off, [OFF] when it is the trader's life that is, else the ware's own gate). A ware's own gate is only asked once the trade is on.
      */
-    fun missing(player: ServerPlayer, ware: Ware): String? = if (!TradeConfig.life()) OFF else ware.gate(player)
+    fun missing(player: ServerPlayer, ware: Ware): String? = when {
+        !Markets.enabled() -> OFF_MARKETS
+        !TradeConfig.life() -> OFF
+        else -> ware.gate(player)
+    }
 }
