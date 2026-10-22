@@ -532,7 +532,7 @@ TA_LEN = 40
 TA_SIP = 24.0
 SPOON_BOWL = np.array([0.0, 4.7, -0.2])         # the spoon's part space: the middle of its bowl
 TA_UP = [(0, 0.0), (1.0, 0.0), (9.0, 1.0), (26.0, 1.0), (37.0, 0.0), (40, 0.0)]          # the spoon from the hip to the lips
-TA_LEFT = [(0, 0.0), (3.0, 0.0), (9.5, 1.0), (28.0, 1.0), (37.0, 0.0), (40, 0.0)]        # the left hand cupped under it
+TA_LEFT = [(0, 0.0), (3.0, 0.0), (9.5, 1.0), (25.0, 1.0), (33.0, 0.0), (40, 0.0)]        # the left hand cupped under it, let go from the sip on
 TA_P = [(0, 0.0), (8.0, 5.0), (14.0, 7.0), (22.0, 5.5), (26.0, 3.5), (31.0, 3.0), (38.0, 0.5), (40, 0.0)]
 TA_Y = [(0, 0.0), (28.0, 0.0), (34.0, -7.0), (38.0, -2.0), (40, 0.0)]                    # the body turns a little with the look aside
 TA_HP = [(0, 0.0), (4.0, 12.0), (9.0, 9.0), (12.0, 7.0), (17.0, 8.0), (21.0, 5.0), (24.0, -6.0), (27.0, -1.0), (30.0, 5.0),
@@ -541,7 +541,9 @@ TA_HY = [(0, 0.0), (29.0, 0.0), (32.0, 6.0), (34.5, 24.0), (36.5, 20.0), (38.5, 
 TA_HR = [(0, 0.0), (22.0, 0.0), (25.0, -4.0), (28.0, 0.0), (34.0, 5.0), (37.0, 2.0), (40, 0.0)]
 TA_TIP = [(0, 0.0), (17.0, 0.0), (21.0, 0.6), (24.0, 1.0), (27.0, 0.3), (30.0, 0.0), (40, 0.0)]  # the spoon tilted up to be emptied
 TA_AXIS = v(f=-0.6, u=0.2, r=-0.8)
-TA_AXIS_SIP = v(f=-0.45, u=0.62, r=-0.65)
+TA_AXIS_SIP = v(f=-0.62, u=0.42, r=-0.66)
+TA_LIPS_Z = -1.0                                  # the spoon's bowl is held this far behind the face's front plane (px; negative: in front of it)
+TA_LIMIT, TA_POS_W, TA_DIR_W = 2.4, 3.0, 0.5      # the shoulder may roll this far (px) to bring the spoon up; how much the bowl at the lips and the spoon's slant weigh
 
 
 def taste():
@@ -557,11 +559,11 @@ def taste():
         puff = 3.0 * bump(t, 10.5, 17.5) * math.sin(2 * math.pi * (t - 10.5) / 3.5)          # two small blows
         gulp = 1.5 * bump(t, 28.0, 32.0) * math.sin(2 * math.pi * (t - 28.0) / 4.0)
         q_head = qeuler(x=K(TA_HP, t) + puff + gulp, y=K(TA_HY, t), z=K(TA_HR, t))
-        lips = ta.head_point(fr, q_head, LIPS) + np.array([0.0, 0.0, 0.4])
+        lips = ta.head_point(fr, q_head, LIPS) + np.array([0.0, 0.0, TA_LIPS_Z])
         tip = K(TA_TIP, t)
         axis = unit(TA_AXIS * (1.0 - tip) + TA_AXIS_SIP * tip)
-        rpose = arms.slack('right_arm', fr, [(tool_point('spoon', SPOON_BOWL), lips, 3.0)],
-                           [(tool_dir('spoon', (0, 1, 0)), axis, 0.5)], limit=2.4)
+        rpose = arms.slack('right_arm', fr, [(tool_point('spoon', SPOON_BOWL), lips, TA_POS_W)],
+                           [(tool_dir('spoon', (0, 1, 0)), axis, TA_DIR_W)], limit=TA_LIMIT)
         under = lips + np.array([2.2, 5.6, -3.4])
         lpose = reach_arm(arms, 'left_arm', fr, under, palm=U, palm_w=0.5, slack=0.4, limit=2.0)
         key_frame(c, t, fr, ease='linear')
@@ -573,7 +575,7 @@ def taste():
     for k in (14.0, 18.0, TA_SIP):           # held to the lips for the blows and the sip; lowered from the swallow on
         fr = ta.frame_at(c, k)
         check(c, f'spoon at the lips (t={k:g})', ta.fk(c, k, 'spoon', SPOON_BOWL),
-              ta.head_point(fr, c.sample('head', k)[0], LIPS) + np.array([0.0, 0.0, 0.4]), tol=0.9)
+              ta.head_point(fr, c.sample('head', k)[0], LIPS) + np.array([0.0, 0.0, TA_LIPS_Z]), tol=0.9)
     self_clear(c, 'arms', tol=0.4)
     joins_idle(c)
     return c
