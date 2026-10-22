@@ -72,7 +72,7 @@ object Carry {
         Trading.give(player, ModItems.DROVERS_WHISTLE.get(), 1)
     }
 
-    /** Registers this part: its attachments, the count of a trader's load, the pack animal and its harness, the wares it puts on the hall's counter with the scenes the merchant and the carter play behind a sale, and its commands. */
+    /** Registers this part: its attachments, the count of a trader's load, the pack animal and its harness, the wares it puts on the hall's counter with the scenes the merchant and the carter play behind a sale, the town noticing a trader on the road, and its commands. */
     fun register(modBus: IEventBus) {
         ATTACHMENTS.register(modBus)
         Laden.register()
@@ -80,6 +80,7 @@ object Carry {
         Harness.register()
         CarryShop.register(modBus)
         CounterScenes.register()
+        Notice.register()
         Carriers.add(Carrier { player, radius -> PackFollow.holdings(player, radius) })
         CarryCommand.init()
     }

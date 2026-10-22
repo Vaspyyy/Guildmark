@@ -105,6 +105,9 @@ object PackFollow {
         var lastZ = animal.z
         var walked = 0.0
 
+        /** When a ring of the bell next turns the heads of the townsfolk about ([Notice]). */
+        var noticeAt = 0L
+
         /** The owner's pace in blocks a tick, as last worked out, and where and when it was sampled. */
         var pace = 0.0
         var sample: Vec3? = null
@@ -304,6 +307,7 @@ object PackFollow {
         if (!kit.bell) return
         val pitch = 0.9f + animal.getRandom().nextFloat() * 0.2f
         level.playSound(null, animal, TradeSounds.get(if (trot) "trade.bell_trot" else "trade.bell_step"), SoundSource.NEUTRAL, if (trot) 0.7f else 0.55f, pitch)
+        Notice.bell(rig)
     }
 
     /** Looks at the panniers: how full they are and what shows on them, and whether the bell is hushed; the kit is set only if something differs. */

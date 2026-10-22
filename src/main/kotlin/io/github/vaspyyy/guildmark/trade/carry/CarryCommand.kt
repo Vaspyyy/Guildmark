@@ -29,7 +29,8 @@ import java.util.Locale
  *   a whistle). `trade pack unharness`: takes the harness off the nearest pack animal of yours.
  * - `trade carry status`: every carrier of yours, where and in what state. `recall`: brings them all to you now. `unstick`: lets go
  *   of leads and hitches and puts them on the ground beside you. `bolt [seconds]` and `alarm [seconds]`: what the Hunt will do to your
- *   pack animals, to try them without a Hunt.
+ *   pack animals, to try them without a Hunt. `notice`: who near you could remark on your load or turn at a bell, and why not if nobody
+ *   does; it lets the town forget it has, so the next pass is remarked on again.
  */
 object CarryCommand {
     fun init() {
@@ -67,6 +68,7 @@ object CarryCommand {
                                 .then(literal("status").executes { status(it) })
                                 .then(literal("recall").executes { recall(it) })
                                 .then(literal("unstick").executes { unstick(it) })
+                                .then(literal("notice").executes { notice(it) })
                                 .then(
                                     literal("bolt")
                                         .executes { bolt(it, PackFollow.BOLT_TICKS / 20) }
@@ -252,6 +254,36 @@ object CarryCommand {
         val n = PackFollow.alarm(player, player.position().add(player.lookAngle.scale(30.0)), seconds * 20)
         say(source, line().append(label("Alarm: ")).append(plain("$n pack animal(s) stand with their heads up, towards where you look, for $seconds seconds.")))
         return n
+    }
+
+    /** Says who near the sender could remark on their load or turn at a bell, and what stops them; then lets the town forget it has, so the next pass is remarked on again. */
+    private fun notice(context: CommandContext<CommandSourceStack>): Int {
+        val source = context.source
+        val player = source.playerOrException
+        say(source, header("The town's notice"))
+        val s = Notice.survey(player)
+        if (s == null) {
+            say(source, grey("You are not in a place the town can be asked in."))
+            return 0
+        }
+        if (!s.carry) say(source, line().append(red("Carrying is off")).append(grey(" (setting: Carrying, or Trader's Life): nobody remarks on a pack or a bell.")))
+        if (!s.world) say(source, line().append(red("The Town Answers is off")).append(grey(" (setting: The Town Answers, or Trader's Life): nobody remarks on a pack or a bell.")))
+        val remarked = if (s.level >= 2) "a frame or more, so a word in passing is possible" else "a word in passing wants a frame (${Laden.FRAME} Marks)"
+        say(source, line().append(label("Your load: ")).append(plain("level ${s.level} (${LOOKS[s.level]})")).append(grey(" - $remarked")))
+        say(
+            source,
+            line().append(label("Townsfolk: "))
+                .append(plain("${s.near} within ${Notice.BELL.toInt()} blocks, ${s.free} of them free to look about (not a leader, nor at a counter, in a talk, in bed or seated)")),
+        )
+        say(
+            source,
+            line().append(label("Within ${Notice.SPEAK.toInt()} blocks: "))
+                .append(plain("${s.close} free, ${s.ready} of those in view of you and not spoken so lately"))
+                .append(grey(if (s.wait > 0) " - you were spoken to lately: ${s.wait} more seconds before anyone would again (let go now)" else "")),
+        )
+        Notice.forget()
+        say(source, grey("The town has forgotten whom it has remarked on: walk past someone, or ring a bell near them, to try it again."))
+        return 1
     }
 
     // ---- Words ----
