@@ -551,6 +551,19 @@ object Economy {
         .map { it to (m.stock(it) - town.target(it) * GLUT) * 0.5 }
 
     /**
+     * What one caravan's wagon brings in of [good] for [town]: a third of what the market is short of, as much as they
+     * usually carry for the town and a little more, or a share of how far short it is, whichever is more, and never
+     * more than the shortfall; it comes out zero or below when the market is at its target or past it. [stock] is
+     * what the market holds of it, [bring] adding what is on the road. The one load, so that [bring] and the haul
+     * room (`Hauls.room`) are the same thing.
+     */
+    fun load(m: Market, town: Town, good: Good, stock: Double = m.stock(good)): Double {
+        val target = town.target(good)
+        val most = maxOf((town.use(good) + town.spoils(good)) * (town.shortfall(good) + SPARE), (target - stock) * CATCH_UP, LEAST / 4) / 3
+        return minOf(target - stock, most)
+    }
+
+    /**
      * What one of the day's caravans brings in of each good, by ordinal: a third of what the market is short of, as
      * much as they usually carry for the town and a little more, or a share of how far short it is, whichever is
      * more; and on the [first] of the day, the flour a town with no mill buys, for its bakehouse. [coming] is what's
@@ -562,10 +575,8 @@ object Economy {
             for (g in Good.entries) {
                 if (!g.traded && g != Good.TOOLS) continue
                 val stock = m.stock(g) + (coming?.get(g.ordinal) ?: 0.0) + out[g.ordinal]
-                val target = town.target(g)
-                if (stock > target * GLUT) continue
-                val most = maxOf((town.use(g) + town.spoils(g)) * (town.shortfall(g) + SPARE), (target - stock) * CATCH_UP, LEAST / 4) / 3
-                val n = minOf(target - stock, most)
+                if (stock > town.target(g) * GLUT) continue
+                val n = load(m, town, g, stock)
                 if (n > 0.0) out[g.ordinal] += n
             }
         }
