@@ -5,6 +5,7 @@ import io.github.vaspyyy.guildmark.economy.WagonMark
 import io.github.vaspyyy.guildmark.loot.RelicData
 import io.github.vaspyyy.guildmark.quest.ContractState
 import io.github.vaspyyy.guildmark.quest.QuestNote
+import io.github.vaspyyy.guildmark.tales.TaleKeepsake
 import com.mojang.serialization.Codec
 import net.minecraft.core.component.DataComponentType
 import net.minecraft.core.registries.Registries
@@ -59,6 +60,16 @@ object ModDataComponents {
         "contract_state",
         UnaryOperator<DataComponentType.Builder<ContractState>> {
             it.persistent(ContractState.CODEC).networkSynchronized(ByteBufCodecs.fromCodec(ContractState.CODEC))
+        },
+    )
+
+    // ---- Tales (living-world/stories/design.md 7.6) ----
+
+    /** What a tale's keepsake remembers: the tale, how it ended, the town and day, the names (see tales/TaleKeepsake). */
+    val TALE_KEEPSAKE: DeferredHolder<DataComponentType<*>, DataComponentType<TaleKeepsake>> = COMPONENTS.registerComponentType(
+        "tale_keepsake",
+        UnaryOperator<DataComponentType.Builder<TaleKeepsake>> {
+            it.persistent(TaleKeepsake.CODEC).networkSynchronized(ByteBufCodecs.fromCodec(TaleKeepsake.CODEC))
         },
     )
 }

@@ -5,6 +5,7 @@ import io.github.vaspyyy.guildmark.item.ContractItem
 import io.github.vaspyyy.guildmark.item.DuskBridleItem
 import io.github.vaspyyy.guildmark.item.RelicCacheItem
 import io.github.vaspyyy.guildmark.item.WardensFlaskItem
+import io.github.vaspyyy.guildmark.tales.KeepsakeItem
 import net.minecraft.core.component.DataComponents
 import net.minecraft.world.entity.EquipmentSlotGroup
 import net.minecraft.world.entity.ai.attributes.AttributeModifier
@@ -147,4 +148,21 @@ object ModItems {
     /** Netherite doesn't burn. */
     private fun tiered(material: ToolMaterial, properties: Item.Properties): Item.Properties =
         if (material == ToolMaterial.NETHERITE) properties.fireResistant() else properties
+
+    // ---- Tales (living-world/stories/design.md 7.6, 13.2): in no creative tab and no loot ----
+
+    /** What a tale leaves a player who helped: one item for sixteen looks, its story in its TALE_KEEPSAKE component (see tales/TaleKeepsake). */
+    val KEEPSAKE: DeferredItem<KeepsakeItem> = ITEMS.registerItem("keepsake", ::KeepsakeItem, UnaryOperator<Item.Properties> {
+        it.stacksTo(1).rarity(Rarity.UNCOMMON)
+    })
+
+    /** Only what a person in a tale's scene holds in a hand, drawn by its custom model data; never given out (see tales/TaleArt). */
+    val TALE_PROP: DeferredItem<Item> = ITEMS.registerSimpleItem("tale_prop", UnaryOperator<Item.Properties> {
+        it.stacksTo(1)
+    })
+
+    /** The little quill the tracker's tale rows, the three advancements and the Handbook page are marked with; never given out. */
+    val TALE_QUILL: DeferredItem<Item> = ITEMS.registerSimpleItem("tale_quill", UnaryOperator<Item.Properties> {
+        it.stacksTo(1)
+    })
 }
