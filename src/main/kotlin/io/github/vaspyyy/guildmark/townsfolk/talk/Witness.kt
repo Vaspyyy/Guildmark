@@ -18,6 +18,7 @@ import io.github.vaspyyy.guildmark.homestead.HomesteadTiers
 import io.github.vaspyyy.guildmark.homestead.plan.Stage
 import io.github.vaspyyy.guildmark.outlaw.OutlawCamps
 import io.github.vaspyyy.guildmark.outlaw.Outlaws
+import io.github.vaspyyy.guildmark.tales.Tales
 import io.github.vaspyyy.guildmark.townsfolk.Comings
 import io.github.vaspyyy.guildmark.townsfolk.Days
 import io.github.vaspyyy.guildmark.townsfolk.Hands
@@ -464,6 +465,8 @@ object Witness {
         val r = Residents.get(level).of(keeper)?.takeIf { it.alive } ?: return
         val quote = Trading.quote(entry, good)
         val marks = lots * ((if (buying) quote.buy else quote.sell)?.marks ?: 0)
+        // The Marlow note counts what is bought at its debtor's stall (Tales T1a)
+        if (buying) Tales.bought(level, keeper, player, entry, good, true, lots, marks)
         TownTalk.traded(level, r, player, marks, !buying && quote.why?.dear == true)
     }
 

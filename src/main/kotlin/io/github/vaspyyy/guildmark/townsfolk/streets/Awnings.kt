@@ -9,6 +9,8 @@ import io.github.vaspyyy.guildmark.festival.FestivalOrnamentBlockEntity
 import io.github.vaspyyy.guildmark.festival.OrnamentData
 import io.github.vaspyyy.guildmark.festival.OrnamentKind
 import io.github.vaspyyy.guildmark.season.Seasons
+import io.github.vaspyyy.guildmark.tales.NoteStall
+import io.github.vaspyyy.guildmark.tales.Tales
 import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import io.github.vaspyyy.guildmark.townsfolk.Trades
@@ -62,13 +64,16 @@ object Awnings : ShutStall.Awning {
         )
         if (!Streets.place(level, pos, FestivalOrnamentBlock.state(0, false), column, Streets.FLAPS, stall.index.toLong(), solid = false, data = data)) return
         if (!found) Streets.sound(level, pos.x + 0.5, pos.y + 0.9, pos.z + 0.5, "streets.awning", REACH, 0.8f, 0.95f + level.random.nextFloat() * 0.1f)
-        // The slate goes up as they tidy the counter (at once with nobody by to see it)
+        // The slate goes up as they tidy the counter (at once with nobody by to see it); its words are "Nothing today" but for a stall
+        // a tale has sealed (Tales T1a, the Marlow note: "Closed: the note")
         val display = display(level, stall) ?: return
+        val key = stall.keeper.pos.asLong()
+        val word = NoteStall.word(level, key)
         if (found || !Streets.seen(level, display, SLATE_SEEN)) {
-            wares(level, display)?.slate(level, -1L)
+            wares(level, display)?.slate(level, -1L, word)
             return
         }
-        Streets.after(level, SLATE_AFTER) { lvl -> if (ShutStall.isShut(stall)) wares(lvl, display)?.slate(lvl, lvl.gameTime) }
+        Streets.after(level, SLATE_AFTER) { lvl -> if (ShutStall.isShut(stall)) wares(lvl, display)?.slate(lvl, lvl.gameTime, NoteStall.word(lvl, key)) }
     }
 
     override fun up(level: ServerLevel, stall: CityPlaces.Stall, by: Townsperson) {
@@ -113,6 +118,7 @@ object Awnings : ShutStall.Awning {
     /** Whether [stall]'s flap stays down: its keeper has it shut, or (the times on) it has nothing to sell. */
     private fun keep(level: ServerLevel, h: Scenes.Here, stall: CityPlaces.Stall): Boolean {
         if (ShutStall.isShut(stall)) return true
+        if (Tales.sealed(stall.keeper.pos.asLong(), level.gameTime)) return true
         if (!Fortunes.enabled()) return false
         val entry = Markets.get(level)[h.capital.center] ?: return false
         return Trades.wares(entry, stall.trade).isEmpty()
@@ -124,11 +130,37 @@ object Awnings : ShutStall.Awning {
             val pos = flapAt(stall)
             if (!level.isLoaded(pos) || pos.asLong() in rolling) continue
             val shut = ShutStall.isShut(stall)
-            if (!shut) display(level, stall)?.let { d -> wares(level, d)?.takeIf { it.slate != 0L }?.slate(level, 0L) }
+            if (!shut) lease(level, stall, now)
             if (!Streets.mine(level, pos, column, Streets.FLAPS, stall.index.toLong())) continue
             if (keep(level, h, stall)) continue
             if (Streets.seen(level, pos, Streets.SIGHT)) rollUp(level, column, pos, sound = true) else Streets.restore(level, pos, column, Streets.FLAPS)
         }
+    }
+
+    /**
+     * An open stall's slate: taken away, but for the one chalked "<lender>'s lease" after the Marlow note's lease (Tales T1a), which stays
+     * on the display for as long as the lease does and is put back after a restart.
+     */
+    private fun lease(level: ServerLevel, stall: CityPlaces.Stall, now: Long) {
+        val d = display(level, stall) ?: return
+        val wares = wares(level, d) ?: return
+        val name = NoteStall.leased(level, stall.keeper.pos.asLong(), now)
+        if (name != null) {
+            if (wares.slate == 0L) wares.slate(level, -1L, WaresBlockEntity.SLATE_LEASE, name)
+        } else if (wares.slate != 0L) {
+            wares.slate(level, 0L)
+        }
+    }
+
+    /**
+     * Tales T1a: the lender has the Marlow note's lease of [stall] signed, and the slate is chalked "<lender>'s lease" as the keeper
+     * is seen with it (at once with nobody by to see it).
+     */
+    fun chalk(level: ServerLevel, stall: CityPlaces.Stall, name: String) {
+        val d = display(level, stall) ?: return
+        val wares = wares(level, d) ?: return
+        val since = if (Streets.seen(level, d, SLATE_SEEN)) level.gameTime else -1L
+        wares.slate(level, since, WaresBlockEntity.SLATE_LEASE, name)
     }
 
     /** For the streets command: [stall]'s flap and slate as they are. */

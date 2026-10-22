@@ -48,6 +48,9 @@ class WaresRenderState : BlockEntityRenderState() {
     var slateFacing: Direction = Direction.NORTH
     var slateAge = 0f
     var slateGone = 1e9f
+    /** Which words are chalked on it, and the name in them (Tales T1a: WaresBlockEntity.SLATE_*). */
+    var slateWord = WaresBlockEntity.SLATE_NOTHING
+    var slateName = ""
 }
 
 /**
@@ -99,6 +102,8 @@ class WaresRenderer(context: BlockEntityRendererProvider.Context) : BlockEntityR
         state.slateFacing = display.blockState.getValue(WaresBlock.FACING)
         state.slateAge = if (since > 0L) (now - since).coerceIn(0L, 1_000_000L) + partialTicks else 1e6f
         state.slateGone = if (since == 0L) (now - display.slateGone).coerceIn(0L, 1_000_000L) + partialTicks else 1e9f
+        state.slateWord = display.slateWord
+        state.slateName = display.slateName
     }
 
     /** [display]'s places as they stand now; null while they're worked out (it's set going if need be). */
@@ -126,7 +131,7 @@ class WaresRenderer(context: BlockEntityRendererProvider.Context) : BlockEntityR
 
     override fun submit(state: WaresRenderState, poseStack: PoseStack, collector: SubmitNodeCollector, camera: CameraRenderState) {
         if (state.slate || state.slateGone < SLATE_GONE) {
-            StreetSlate.submit(poseStack, collector, font, state.slateFacing, state.lightCoords, state.slate, state.slateAge, state.slateGone)
+            StreetSlate.submit(poseStack, collector, font, state.slateFacing, state.lightCoords, state.slate, state.slateAge, state.slateGone, state.slateWord, state.slateName)
         }
         val drawn = state.drawn ?: return
         val fx = drawn.facing.stepX.toFloat()

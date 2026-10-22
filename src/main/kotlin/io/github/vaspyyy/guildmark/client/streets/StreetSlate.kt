@@ -5,6 +5,7 @@ import com.mojang.math.Axis
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.client.works.WorksArt
 import io.github.vaspyyy.guildmark.client.works.WorksMesh
+import io.github.vaspyyy.guildmark.economy.WaresBlockEntity
 import net.minecraft.client.gui.Font
 import net.minecraft.client.model.geom.ModelPart
 import net.minecraft.client.renderer.SubmitNodeCollector
@@ -13,6 +14,7 @@ import net.minecraft.client.renderer.rendertype.RenderTypes
 import net.minecraft.client.renderer.texture.OverlayTexture
 import net.minecraft.core.Direction
 import net.minecraft.locale.Language
+import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.Style
 import net.minecraft.resources.Identifier
 import net.minecraft.util.FormattedCharSequence
@@ -38,7 +40,10 @@ object StreetSlate {
      * Draws the slate on a display whose front is to [facing], lit [light]: [up] while it's there, [age] ticks since it
      * was set down (huge for "there already"); else [gone] ticks since it was taken away.
      */
-    fun submit(poseStack: PoseStack, collector: SubmitNodeCollector, font: Font, facing: Direction, light: Int, up: Boolean, age: Float, gone: Float) {
+    fun submit(
+        poseStack: PoseStack, collector: SubmitNodeCollector, font: Font, facing: Direction, light: Int, up: Boolean, age: Float, gone: Float,
+        word: Int = WaresBlockEntity.SLATE_NOTHING, name: String = "",
+    ) {
         // How far it's come from the keeper's side (0) to leaning in its place (1), and its size as it goes
         val u: Float
         var size = 1f
@@ -68,7 +73,7 @@ object StreetSlate {
         collector.submitModelPart(slate, poseStack, TYPE, light, OverlayTexture.NO_OVERLAY, null)
         poseStack.popPose()
         // The chalk, a letter at a time once it's set down
-        val text = text()
+        val text = text(word, name)
         val written = if (!up) text.letters else ((age - WRITE_FROM) / PER_LETTER).toInt().coerceIn(0, text.letters)
         if (written > 0) chalk(poseStack, collector, font, text, written, light)
         poseStack.popPose()
@@ -83,8 +88,13 @@ object StreetSlate {
 
     private var text: Text? = null
 
-    private fun text(): Text {
-        val whole = Language.getInstance().getOrDefault(KEY, "Nothing today")
+    private fun text(word: Int, name: String): Text {
+        // The words of the Marlow note (Tales T1a): its seal, or the lender's lease with his name in it
+        val whole = when (word) {
+            WaresBlockEntity.SLATE_SEALED -> Language.getInstance().getOrDefault("slate.guildmark.sealed", "Closed: the note")
+            WaresBlockEntity.SLATE_LEASE -> Component.translatableWithFallback("slate.guildmark.lease", "%s's lease", name).string
+            else -> Language.getInstance().getOrDefault(KEY, "Nothing today")
+        }
         text?.let { if (it.whole == whole) return it }
         // Two lines as even as the words allow (one if it's one word)
         val words = whole.split(' ').filter { it.isNotEmpty() }

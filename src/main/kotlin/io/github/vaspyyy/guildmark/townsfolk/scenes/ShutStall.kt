@@ -2,6 +2,7 @@ package io.github.vaspyyy.guildmark.townsfolk.scenes
 
 import io.github.vaspyyy.guildmark.economy.Markets
 import io.github.vaspyyy.guildmark.economy.fortune.Fortunes
+import io.github.vaspyyy.guildmark.tales.Tales
 import io.github.vaspyyy.guildmark.townsfolk.Activity
 import io.github.vaspyyy.guildmark.townsfolk.Acts
 import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
@@ -68,6 +69,26 @@ object ShutStall {
     /** For `/guildmark capital scene shut`: stalls (by their keeper's place) bare until a game time, whatever the record says. */
     private val forced = HashMap<Long, Long>()
 
+    /**
+     * Tales T1a (the Marlow note, living-world/stories/design.md 8.1): the stall at [key] (its keeper's place) is bare until game time
+     * [until], whatever the market holds. A bridge of a minute at most: what keeps a sealed stall shut for its ten days, and across a
+     * restart, is the tales' record, which [bare] asks first ([Tales.sealed]).
+     */
+    fun lock(key: Long, until: Long) {
+        forced[key] = until
+    }
+
+    /** Tales T1a: the stall at [key] is no longer held bare by [lock] (`tale seal clear`). */
+    fun unlock(key: Long) {
+        forced.remove(key)
+    }
+
+    /** Tales T1a: [by] lets [stall]'s awning down now, on the cue of a tale's scene (the Seal), and the stall is held bare till [until] (a game time). */
+    fun letDown(level: ServerLevel, stall: CityPlaces.Stall, by: Townsperson, until: Long) {
+        lock(stall.keeper.pos.asLong(), until)
+        down(level, stall, by)
+    }
+
     /** Whether [stall]'s keeper has let its awning down: none of its goods to sell. */
     @JvmStatic
     fun isShut(stall: CityPlaces.Stall): Boolean = stall.keeper.pos.asLong() in shut
@@ -81,6 +102,8 @@ object ShutStall {
     /** Whether [stall] has none of its goods to sell (never, with nothing known of the market). */
     private fun bare(level: ServerLevel, p: Townsperson, life: Life, stall: CityPlaces.Stall): Boolean {
         val key = stall.keeper.pos.asLong()
+        // A stall a tale has sealed (Tales T1a): the tales' record, saved, and off with Town Tales
+        if (Tales.sealed(key, level.gameTime)) return true
         forced[key]?.let { if (level.gameTime <= it) return true else forced.remove(key) }
         if (!Fortunes.enabled()) return false
         val entry = Trades.market(p, life) ?: return false
@@ -190,7 +213,7 @@ object ShutStall {
         val entry = Markets.get(level)[here.places.centre] ?: return
         for (stall in here.places.stalls) {
             if (stall.keeper.pos.distSqr(player.blockPosition()) > SEEN * SEEN) continue
-            if (isShut(stall) || Trades.wares(entry, stall.trade).isNotEmpty()) continue
+            if (isShut(stall) || Trades.wares(entry, stall.trade).isNotEmpty() && !Tales.sealed(stall.keeper.pos.asLong(), level.gameTime)) continue
             val keeper = Acts.keeper(level, stall) as? Townsperson ?: continue
             if (keeper.role != TownRole.MERCHANT || keeper.director != null || keeper.routine.task is Scened) continue
             val life = Days.life(keeper) ?: continue

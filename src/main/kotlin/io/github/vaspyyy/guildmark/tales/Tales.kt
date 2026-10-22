@@ -141,6 +141,7 @@ object Tales : Comings.Listener {
         TaleLedger.register()
         TaleRows.register(modBus)
         TaleTalk.register()
+        NoteStall.register()
     }
 
     // ---- The clock ----
@@ -204,7 +205,9 @@ object Tales : Comings.Listener {
      * From `Witness.dealt` (T1 places the call): [player] dealt [lots] lots of [good] at [keeper]'s stall of [entry]'s
      * market, [buying] or selling, for [marks] Marks as `dealt` reckons them. The Marlow note counts what is bought at its debtor's stall.
      */
-    fun bought(level: ServerLevel, keeper: Townsperson, player: ServerPlayer, entry: Markets.Entry, good: Good, buying: Boolean, lots: Int, marks: Int) {}
+    fun bought(level: ServerLevel, keeper: Townsperson, player: ServerPlayer, entry: Markets.Entry, good: Good, buying: Boolean, lots: Int, marks: Int) {
+        if (buying) NoteStall.bought(level, keeper, player, good, lots, marks)
+    }
 
     /** From `Lairs.onBossDeath` (T5 places the call): [lair] fell, with [heroes] about. */
     fun lairCleared(level: ServerLevel, lair: Lair, heroes: List<ServerPlayer>) {}
@@ -246,7 +249,7 @@ object Tales : Comings.Listener {
     fun wants(level: ServerLevel, column: Long, pos: BlockPos, run: Long): Boolean = false
 
     /** From `ShutStall.bare` (T1 places the call): whether the stall at [key] is sealed by a tale at game time [gameTime]. */
-    fun sealed(key: Long, gameTime: Long): Boolean = false
+    fun sealed(key: Long, gameTime: Long): Boolean = NoteStall.sealed(key, gameTime)
 
     /** From `Jobs.bard` (T1 places the call): whether [p], a bard, plays no music for a tale's sake. */
     fun silent(p: Townsperson): Boolean = false

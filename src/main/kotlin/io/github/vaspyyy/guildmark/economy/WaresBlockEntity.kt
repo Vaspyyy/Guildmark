@@ -75,14 +75,29 @@ class WaresBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(WaresRegi
     var slate = 0L
         private set
 
+    /**
+     * Which words are chalked on the slate (Tales T1a, the Marlow note): [SLATE_NOTHING] "Nothing today", [SLATE_SEALED] "Closed:
+     * the note", [SLATE_LEASE] "<name>'s lease", with [slateName] filled in. Sent to clients with the slate, never saved.
+     */
+    var slateWord = SLATE_NOTHING
+        private set
+    var slateName = ""
+        private set
+
     /** Client side: the game time the slate was last taken away (it's lifted off as it's seen). */
     @JvmField
     var slateGone = Long.MIN_VALUE / 2
 
     /** Server side: the slate set down at [since] (-1: there already), or taken away (0), telling clients. */
-    fun slate(level: ServerLevel, since: Long) {
-        if (since == slate || since != 0L && slate != 0L) return
+    fun slate(level: ServerLevel, since: Long, word: Int = SLATE_NOTHING, name: String = "") {
+        val words = if (since == 0L) SLATE_NOTHING else word
+        val named = if (since == 0L) "" else name
+        if (since == slate && words == slateWord && named == slateName) return
+        // One up already stays as it is, unless its words are not these
+        if (since != 0L && slate != 0L && words == slateWord && named == slateName) return
         slate = since
+        slateWord = words
+        slateName = named
         level.sendBlockUpdated(blockPos, blockState, blockState, Block.UPDATE_CLIENTS)
     }
 
@@ -188,6 +203,8 @@ class WaresBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(WaresRegi
         val level = level
         if (level != null && level.isClientSide() && slate != 0L && nextSlate == 0L) slateGone = level.gameTime
         slate = nextSlate
+        slateWord = input.getInt("slateWord").orElse(SLATE_NOTHING)
+        slateName = input.getString("slateName").orElse("")
     }
 
     /** Client side: sets moving the items new counts bring or take away, unless these are its first (or its goods changed). */
@@ -211,7 +228,11 @@ class WaresBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(WaresRegi
     }
 
     override fun getUpdateTag(registries: HolderLookup.Provider): CompoundTag = saveCustomOnly(registries).also { tag ->
-        if (slate != 0L) tag.putLong("slate", slate)
+        if (slate != 0L) {
+            tag.putLong("slate", slate)
+            if (slateWord != SLATE_NOTHING) tag.putInt("slateWord", slateWord)
+            if (slateName.isNotEmpty()) tag.putString("slateName", slateName)
+        }
     }
 
     override fun getUpdatePacket(): ClientboundBlockEntityDataPacket = ClientboundBlockEntityDataPacket.create(this)
@@ -231,5 +252,10 @@ class WaresBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(WaresRegi
 
         /** The longest any items take to settle in or lift out (ticks; see client/economy/WaresRenderer). */
         const val LONGEST = 60L
+
+        /** The words of the slate (Tales T1a): the streets' "Nothing today", the note's seal, and the lender's lease. */
+        const val SLATE_NOTHING = 0
+        const val SLATE_SEALED = 1
+        const val SLATE_LEASE = 2
     }
 }

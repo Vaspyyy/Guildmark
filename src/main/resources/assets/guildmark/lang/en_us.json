@@ -8240,5 +8240,7 @@
   "news.guildmark.trade.relief": "A trader, %s, brought relief to %s.",
   "say.guildmark.talk.detail.trade.delivered": "%s %s from %s.",
   "say.guildmark.talk.detail.trade.delivered.relief": "Relief: %s %s from %s.",
-  "say.guildmark.talk.detail.trade.child": "%s, brought in by the carrier."
+  "say.guildmark.talk.detail.trade.child": "%s, brought in by the carrier.",
+  "slate.guildmark.sealed": "Closed: the note",
+  "slate.guildmark.lease": "%s's lease"
 }
