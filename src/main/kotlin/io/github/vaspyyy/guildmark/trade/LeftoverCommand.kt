@@ -168,36 +168,47 @@ object LeftoverCommand {
         val source = context.source
         val level = source.level
         val entry = entry(source, town) ?: return 0
+        // The lot a stall pays the sender, at the share their standing there earns them (the usual share for no one)
+        val share = source.player?.let { Suppliers.share(level, entry.capital, it.uuid) } ?: Lots.SELL_SHARE
+        for (line in herdLines(nameOf(level, entry), entry, share)) say(source, line)
+        return 1
+    }
+
+    /**
+     * What `trade herd` says of [entry]'s market, called [name]: whether the stop holds, is lifted or is off, then for each
+     * good it stops the stalls' stock, the yard, where the stop is, and the lot a stall would pay with [share] of its price.
+     * (Apart from the command so that the lines can be read without a server.)
+     */
+    fun herdLines(name: String, entry: Markets.Entry, share: Double): List<Component> {
+        val out = ArrayList<Component>()
         val m = entry.market
         val factor = Economy.herdStop()
         val trouble = m.waylaid()
-        // The lot a stall pays the sender, at the share their standing there earns them (the usual share for no one)
-        val share = source.player?.let { Suppliers.share(level, entry.capital, it.uuid) } ?: Lots.SELL_SHARE
-        say(source, header("The herds' stop at ${nameOf(level, entry)}"))
-        when {
-            factor == null -> say(source, grey("Off (setting: Herd Stop): the herds, coops and orchards make as they always did."))
-            trouble != null -> say(source, line().append(gold("Lifted")).append(grey(": a waylaid wagon has the road in trouble for ${days(trouble.until - m.hour)} more, so the herds make all they can.")))
-            else -> say(source, grey("On, at %.0f%% of what the town keeps (setting: Herd Stop Height): the herds make no more once the stalls and the yard hold that, so the stalls have room.".format(factor * 100)))
-        }
+        out.add(header("The herds' stop at $name"))
+        out.add(when {
+            factor == null -> grey("Off (setting: Herd Stop): the herds, coops and orchards make as they always did.")
+            trouble != null -> line().append(gold("Lifted")).append(grey(": a waylaid wagon has the road in trouble for ${days(trouble.until - m.hour)} more, so the herds make all they can."))
+            else -> grey("On, at %.0f%% of what the town keeps (setting: Herd Stop Height): the herds make no more once the stalls and the yard hold that, so the stalls have room.".format(factor * 100))
+        })
         for (g in Economy.HERD_STOPPED.sortedBy { it.ordinal }) {
             val q = Trading.quote(entry, g, share)
             val keeps = entry.town.target(g)
             val stock = m.stock(g)
             val yard = m[Site.FARMS, g]
-            say(source, line().append(Component.translatable(g.key).withStyle(ChatFormatting.YELLOW))
+            out.add(line().append(Component.translatable(g.key).withStyle(ChatFormatting.YELLOW))
                 .append(plain(": %.1f in the stalls (%.2f of the %.0f it keeps) and %.1f in the yard".format(stock, stock / keeps, keeps, yard))))
             val stop = Economy.herdStopAt(m, entry.town, g)
-            say(source, when {
+            out.add(when {
                 factor == null -> line().append(red("   off")).append(grey(": it is made all the day's working hours"))
                 stop == null -> line().append(gold("   lifted")).append(grey(": it is made all the day's working hours while the wagon is out"))
                 stock + yard >= stop - AT_STOP -> line().append(green("   holds")).append(grey(": the stalls and the yard are at the stop of %.1f, so none is made".format(stop)))
                 else -> line().append(green("   holds")).append(grey(": %.1f short of the stop of %.1f, made up in working hours".format(stop - stock - yard, stop)))
             })
-            val lot = q.sell?.let { "a stall pays ${it.marks} Marks for ${it.count}" }
+            val lot = q.sell?.let { "a stall pays ${marksOf(it.marks)} for ${it.count}" }
                 ?: if (q.wants < 1) "no room" else "no lot (the room is worth under a Mark, and a market holding more than it keeps takes none then)"
-            say(source, grey("   price %.3f against %.3f usual (x%.2f); room for %d; %s".format(q.price, q.usual, q.price / q.usual, q.wants, lot)))
+            out.add(grey("   price %.3f against %.3f usual (x%.2f); room for %d; %s".format(q.price, q.usual, q.price / q.usual, q.wants, lot)))
         }
-        return 1
+        return out
     }
 
     // ---- What bringing goods in costs ----
@@ -209,22 +220,32 @@ object LeftoverCommand {
         val asGood = town?.takeIf { good == null && find(source, it) == null }?.let { Good.byId(it) }
         val entry = entry(source, if (asGood != null) null else town) ?: return 0
         val only = asGood ?: good?.let { id -> Good.byId(id)?.takeIf { it.traded } ?: return fail(source, "The market doesn't deal in $id.") }
+        for (line in freightLines(nameOf(level, entry), entry, only)) say(source, line)
+        return 1
+    }
+
+    /**
+     * What `trade freight` says of [entry]'s market, called [name]: how the carry is easing, then [only]'s carry against its
+     * goal, or every good's (the ones still on their way first, and the rest in a line).
+     */
+    fun freightLines(name: String, entry: Markets.Entry, only: Good?): List<Component> {
+        val out = ArrayList<Component>()
         val m = entry.market
-        say(source, header("What bringing goods in costs at ${nameOf(level, entry)}"))
-        say(source, grey(
+        out.add(header("What bringing goods in costs at $name"))
+        out.add(grey(
             if (Market.easing()) "The carry closes %.0f%% of the way to its goal each day (setting: Carry Ease Rate).".format(Market.carryEaseRate() * 100)
             else "Not easing (setting: Carry Ease is off, or its rate is 100%): the carry jumps to its goal.",
         ))
         if (only != null) {
-            say(source, carryRow(m, only))
-            say(source, grey("   %.2f of what the town uses lately came by caravan; its price is %.3f against %.3f usual".format(m.brought[only.ordinal], m.price(entry.town, only), only.base * m.freight(only))))
-            return 1
+            out.add(carryRow(m, only))
+            out.add(grey("   %.2f of what the town uses lately came by caravan; its price is %.3f against %.3f usual".format(m.brought[only.ordinal], m.price(entry.town, only), only.base * m.freight(only))))
+            return out
         }
         val (moving, there) = Good.TRADED.partition { abs(m.carryGoal[it.ordinal] - m.carry[it.ordinal]) >= SAME }
-        for (g in moving.sortedByDescending { abs(m.carryGoal[it.ordinal] - m.carry[it.ordinal]) }) say(source, carryRow(m, g))
-        if (there.isNotEmpty()) say(source, grey("On their goals: " + there.joinToString(", ") { Component.translatable(it.key).string + " %.3f".format(m.carry[it.ordinal]) }))
-        say(source, grey("${moving.size} of ${Good.TRADED.size} goods are on their way."))
-        return 1
+        for (g in moving.sortedByDescending { abs(m.carryGoal[it.ordinal] - m.carry[it.ordinal]) }) out.add(carryRow(m, g))
+        if (there.isNotEmpty()) out.add(grey("On their goals: " + there.joinToString(", ") { Component.translatable(it.key).string + " %.3f".format(m.carry[it.ordinal]) }))
+        out.add(grey("${moving.size} of ${Good.TRADED.size} goods are on their way."))
+        return out
     }
 
     /** One good's carry against its goal: the days to within a few hundredths of it and to being on it, and what that does to the freight on its price. */
@@ -258,18 +279,25 @@ object LeftoverCommand {
 
     /** Says which carries [what] moved, from [before] to where they stand, and keeps the market. */
     private fun moved(source: CommandSourceStack, entry: Markets.Entry, before: DoubleArray, what: String): Int {
-        val m = entry.market
         Markets.get(source.level).changed()
+        for (line in movedLines(entry, before, what)) say(source, line)
+        return Good.TRADED.count { abs(entry.market.carry[it.ordinal] - before[it.ordinal]) >= SAME }
+    }
+
+    /** What `trade freight snap` and `ease` say: each carry that moved from [before] to where [entry]'s market has it now. */
+    fun movedLines(entry: Markets.Entry, before: DoubleArray, what: String): List<Component> {
+        val m = entry.market
         val goods = Good.TRADED.filter { abs(m.carry[it.ordinal] - before[it.ordinal]) >= SAME }
-        if (goods.isEmpty()) return say(source, plain("$what, but no carry had anywhere to go: every one is on its goal already, or the ease is off."))
-        say(source, plain("$what: ${goods.size} of ${Good.TRADED.size} goods moved."))
+        if (goods.isEmpty()) return listOf(plain("$what, but no carry had anywhere to go: every one is on its goal already."))
+        val out = ArrayList<Component>()
+        out.add(plain("$what: ${goods.size} of ${Good.TRADED.size} goods moved."))
         for (g in goods.sortedByDescending { abs(m.carry[it.ordinal] - before[it.ordinal]) }) {
             val i = g.ordinal
-            say(source, line().append(Component.translatable(g.key).withStyle(ChatFormatting.YELLOW))
+            out.add(line().append(Component.translatable(g.key).withStyle(ChatFormatting.YELLOW))
                 .append(plain(": %.3f to %.3f".format(before[i], m.carry[i])))
                 .append(grey(" (goal %.3f, freight x%.2f)".format(m.carryGoal[i], m.freight(g)))))
         }
-        return goods.size
+        return out
     }
 
     // ---- The owed Trade XP ----
@@ -293,8 +321,8 @@ object LeftoverCommand {
             say(source, line().append(label("${who.name}: ")).append(plain("nothing owed.")))
         } else {
             val given = minOf(kept, most.toDouble())
-            say(source, line().append(label("${who.name}: ")).append(plain("${num(kept)} Marks of dealing owed, ${num(given * Suppliers.TRADE_XP)} Trade XP when it is given (before their talents and the XP multiplier).")))
-            if (kept > most) say(source, grey("   More than the most kept for a player ($most Marks; setting: Most Owed Trade XP): only that much is given."))
+            say(source, line().append(label("${who.name}: ")).append(plain("${marksOf(kept)} of dealing owed, ${num(given * Suppliers.TRADE_XP)} Trade XP when it is given (before their talents and the XP multiplier).")))
+            if (kept > most) say(source, grey("   More than the most kept for a player (${marksOf(most)}; setting: Most Owed Trade XP): only that much is given."))
         }
         if (player == null) {
             say(source, grey("   Not on: what is owed them is given when they next log in."))
@@ -310,11 +338,11 @@ object LeftoverCommand {
         for (p in who) {
             val was = data.owed[p.id]
             if (marks > 0) data.owed[p.id] = marks.toDouble() else data.owed.remove(p.id)
-            say(source, plain("${p.name} is owed $marks Marks of dealing now" + (was?.let { " (was ${num(it)})" } ?: "") + ": ${num(marks * Suppliers.TRADE_XP)} Trade XP when it is given."))
+            say(source, plain("${p.name} is owed ${marksOf(marks)} of dealing now" + (was?.let { " (was ${num(it)})" } ?: "") + ": ${num(marks * Suppliers.TRADE_XP)} Trade XP when it is given."))
         }
         data.changed()
         if (!Suppliers.owedEnabled()) say(source, grey("Owed Trade XP is switched off (setting: Owed Trade XP): nothing is given at login while it is."))
-        else if (marks > Suppliers.owedMost()) say(source, grey("Only ${Suppliers.owedMost()} Marks are given (setting: Most Owed Trade XP)."))
+        else if (marks > Suppliers.owedMost()) say(source, grey("At most ${marksOf(Suppliers.owedMost())} of it is given (setting: Most Owed Trade XP)."))
         return who.size
     }
 
@@ -333,7 +361,7 @@ object LeftoverCommand {
                 else -> {
                     val level = Skills.level(player, Skill.TRADE)
                     val xp = Suppliers.settle(player)
-                    say(source, plain("Settled ${p.name}'s ${num(kept)} Marks of dealing: ${num(xp)} Trade XP asked of the skill (their grey line says what it took, with their talents and the XP multiplier). Trade was level $level; the XP lands within half a second."))
+                    say(source, plain("Settled ${p.name}'s ${marksOf(kept)} of dealing:${num(xp)} Trade XP asked of the skill (their grey line says what it took, with their talents and the XP multiplier). Trade was level $level; the XP lands within half a second."))
                     given++
                 }
             }
@@ -355,6 +383,11 @@ object LeftoverCommand {
 
     /** A count of Marks or XP, with a decimal only where it has one. */
     private fun num(x: Double): String = if (abs(x - x.roundToInt()) < 0.05) "%.0f".format(x) else "%.1f".format(x)
+
+    /** "1 Mark" and "2 Marks" (a count that may have a decimal, as [num] has it). */
+    private fun marksOf(x: Double): String = num(x).let { if (it == "1") "1 Mark" else "$it Marks" }
+
+    private fun marksOf(n: Int): String = if (n == 1) "1 Mark" else "$n Marks"
 
     private fun days(hours: Long): String = "%.1f days".format(hours / 24.0)
 
