@@ -390,10 +390,12 @@ object HaulCommand {
         val level = source.level
         val player = source.player ?: return fail(source, "Only a player has a ledger.")
         val good = Good.byId(goodId)?.takeIf { it.traded } ?: return fail(source, "The market doesn't deal in $goodId.")
-        // Bought far from where the sender stands: at the farthest open market if that is far enough, else at a place that is
+        // Bought far from the capital the sender stands in (from where they stand, if in none), as its tickets and stalls will reckon it: at the farthest open
+        // market if that is far enough, else at a place that is
         val here = player.blockPosition()
-        val far = Markets.get(level).all().map { it.capital }.maxByOrNull { Hauls.distance(it, here) }
-        val origin = if (far != null && Hauls.distance(far, here) >= TradeConfig.haulMin()) far else BlockPos(here.x + TradeConfig.haulMin() + FAR_EXTRA, here.y, here.z)
+        val heart = Capitals.covering(level, here)?.center ?: here
+        val far = Markets.get(level).all().map { it.capital }.maxByOrNull { Hauls.distance(it, heart) }
+        val origin = if (far != null && Hauls.distance(far, heart) >= TradeConfig.haulMin()) far else BlockPos(heart.x + TradeConfig.haulMin() + FAR_EXTRA, heart.y, heart.z)
         val keeps = days ?: Suppliers.KEPT.toInt()
         val boughtAt = Suppliers.today(level) + keeps - Ledger.HELD_DAYS
         Ledger.add(level, player.uuid, listOf(Parcel(good, units, origin, boughtAt)))
