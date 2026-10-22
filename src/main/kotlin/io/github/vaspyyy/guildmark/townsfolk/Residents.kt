@@ -343,14 +343,17 @@ class Residents(
          * The record half of a death, which needs no body: [r]'s life here ends, the day it did is kept, their bed is free,
          * the town mourns them and, if [p] is their body, the street hears of it. What a death in a tale or a siege adds
          * goes here as one line each, so a resident who is put to rest with no body is as dead on the record as one who fell.
+         * [cause] is how they died in words, if it's known ("fell in the siege"), for a village's dead list.
          */
-        fun pass(level: ServerLevel, r: Resident, p: Townsperson? = null) {
+        fun pass(level: ServerLevel, r: Resident, p: Townsperson? = null, cause: String = "") {
             r.alive = false
             r.died = VillageBoards.day(level)
             // Their bed is free for whoever comes to live there next
             r.bed?.let { Furnish.release(level, it) }
             r.bed = null
             get(level).changed()
+            // A village's dead list (living-world/villages/design.md section 11.4); a capital's people are in none
+            io.github.vaspyyy.guildmark.village.live.Villages.died(level, r, cause)
             Fortunes.note(level, r.capital.asLong(), Noted.MOURNING, listOf(r.name))
             if (p != null) io.github.vaspyyy.guildmark.townsfolk.talk.Witness.died(level, p)
         }
