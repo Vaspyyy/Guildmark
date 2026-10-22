@@ -4,6 +4,7 @@ import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
 import io.github.vaspyyy.guildmark.townsfolk.Spot
 import io.github.vaspyyy.guildmark.townsfolk.TownKind
 import io.github.vaspyyy.guildmark.townsfolk.TownPlaces
+import io.github.vaspyyy.guildmark.village.live.market.VillageStall
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 
@@ -36,7 +37,7 @@ class VillagePlaces(
         out
     }
 
-    override val stalls: List<CityPlaces.Stall> get() = found?.stalls ?: emptyList()
+    override val stalls: List<CityPlaces.Stall> get() = VillageStall.with(bell.asLong(), found?.stalls ?: emptyList())
     override val counters: List<Spot> get() = emptyList()
     override val wells: List<BlockPos> get() = found?.wells ?: emptyList()
     override val lamps: List<BlockPos> get() = found?.lamps ?: emptyList()

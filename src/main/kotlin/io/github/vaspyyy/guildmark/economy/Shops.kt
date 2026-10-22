@@ -54,7 +54,7 @@ enum class Shop(val id: String, val goods: List<Good>) {
          * a stall today the stall they stand at (see [VillageStall]).
          */
         fun kept(p: Townsperson): Shop? {
-            val places = p.life?.places ?: return null
+            val places = p.life?.places ?: VillageStall.places(p) ?: return null
             return when (p.role) {
                 TownRole.BAKER -> BAKERY
                 TownRole.SMITH -> SMITHY
