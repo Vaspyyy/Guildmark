@@ -250,6 +250,9 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         io.github.vaspyyy.guildmark.townsfolk.Comings.register()
         // The streets as the times go: the dressing, rationed lamps, the empty stall's slate, To let boards, the alms table (townsfolk/streets/)
         io.github.vaspyyy.guildmark.townsfolk.streets.Streets.register(modBus)
+        // Living villages: each village counted, with its folk, market, wagons, lamps and building, and the village commands (village/live/)
+        io.github.vaspyyy.guildmark.village.live.Villages.register()
+        io.github.vaspyyy.guildmark.village.live.VillageCommand.init()
         modBus.addListener(EntityAttributeCreationEvent::class.java) {
             it.put(ModEntities.GUILD_MEMBER.get(), GuildMember.createAttributes().build())
             it.put(ModEntities.STORY_NPC.get(), StoryNpc.createAttributes().build())
