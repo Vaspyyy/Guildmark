@@ -101,6 +101,9 @@ object TownPlates {
         var since = INSTANT
         var ended = -1f
 
+        /** Whether it was taken up for good because its diner is no longer one (the meal has changed), so it is not set down again when they sit again. */
+        var over = false
+
         /** How much of its size the plate has, 0 to 1: it grows out of the table as it is set down and shrinks away as it is taken up. */
         fun grow(age: Float): Float {
             var g = smooth(((age - since) / ARRIVE).coerceIn(0f, 1f))
@@ -264,13 +267,19 @@ object TownPlates {
         }
         val cell = p.blockPosition().asLong()
         if (seen.serial != meal.serial || seen.cell != cell || plate == null && now - seen.checked > RECHECK) {
-            plate = lay(p, meal, activity, age)
+            // A diner already at this table goes on with the dish they have if it is still the one they would have; one who is no
+            // longer a diner (the meal has changed) sees it taken up
+            val kept = if (seen.cell == cell) plate else null
+            plate = lay(p, meal, activity, age, kept) ?: kept?.also {
+                if (it.ended < 0f) it.ended = age
+                it.over = true
+            }
             seen.plate = plate
             seen.serial = meal.serial
             seen.cell = cell
             seen.checked = now
             seen.start = p.shownStart
-        } else if (plate != null && activity == Activity.SIT_DOWN && seen.start != p.shownStart) {
+        } else if (plate != null && !plate.over && activity == Activity.SIT_DOWN && seen.start != p.shownStart) {
             // Sat down at the same table again: the plate is set down again
             plate.since = age
             plate.ended = -1f
@@ -279,16 +288,23 @@ object TownPlates {
         return plate
     }
 
-    /** The plate [p] is to have for [meal], or null if they are not one of the diners or there is no table with room for one. */
-    private fun lay(p: Townsperson, meal: ServedState.Meal, activity: Activity, age: Float): Plate? {
+    /**
+     * The plate [p] is to have for [meal], or null if they are not one of the diners or there is no table with room for one.
+     * [kept] is the plate they have now at this table, if any: it is the answer again if it is still the dish they would have
+     * (the meal told again with more in it changes the dice's chance and the kinds' shares, but a diner's dish need not change
+     * with it), and a diner who has one is not turned away by the limit on diners, which counts them.
+     */
+    private fun lay(p: Townsperson, meal: ServedState.Meal, activity: Activity, age: Float, kept: Plate?): Plate? {
         val who = who(p, meal)
-        if (unit(mix(who, SALT_TAVERN)) >= chance(meal.tavernTotal) || diners >= MAX_DINERS) return null
+        val diner = kept != null && kept.ended < 0f
+        if (unit(mix(who, SALT_TAVERN)) >= chance(meal.tavernTotal) || !diner && diners >= MAX_DINERS) return null
         val kind = meal.pick(meal.tavern, meal.tavernTotal, unit(mix(who, SALT_KIND)))
         if (kind < 0) return null
         val spot = TownTables.spot(p.level(), p.blockPosition()) ?: return null
         val dish = dishFor(DishKind.entries[kind], meal.tierOf(kind))
         if (!ready(dish, p)) return null
-        diners++
+        if (kept != null && diner && kept.dish === dish) return kept
+        if (!diner) diners++
         val plate = Plate(spot, dish)
         // Set down in front of someone sitting down, or of those already seated when the meal is served; else it was always there
         plate.since = if (activity == Activity.SIT_DOWN || now - meal.arrived < FRESH) age else INSTANT
@@ -413,11 +429,12 @@ object TownPlates {
     private fun chance(portions: Int): Double = if (portions <= 0) 0.0 else min(0.8, 0.15 + 0.05 * portions)
 
     /**
-     * What the dice for [p] and [meal] are thrown from: who they are, and which meal (its window, which for a made-up meal is its
-     * version), so every client draws the same diners for the same meal.
+     * What the dice for [p] and [meal] are thrown from: who they are, and which meal (its window), so every client draws the same
+     * diners for the same meal. A made-up meal has no window of its own to tell it by, so it is one throw for each person: the
+     * same people eat as the portions are changed, more of them as there are more portions, and a client told it later draws them too.
      */
     private fun who(p: Townsperson, meal: ServedState.Meal): Long =
-        mix(p.uuid.mostSignificantBits xor mix(p.uuid.leastSignificantBits, 17L), meal.window.toLong())
+        mix(p.uuid.mostSignificantBits xor mix(p.uuid.leastSignificantBits, 17L), if (meal.test) 0L else meal.window.toLong())
 
     private const val SALT_TAVERN = 1L
     private const val SALT_KIND = 2L

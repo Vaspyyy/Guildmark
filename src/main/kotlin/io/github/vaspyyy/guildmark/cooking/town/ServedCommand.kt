@@ -43,16 +43,15 @@ import kotlin.math.min
  */
 object ServedCommand {
     /**
-     * The windows a made-up meal carries: [TEST_WINDOW] and the [TEST_SPAN] after it, a number that goes up each time the meal
-     * is changed. No real meal's window is ever near them (a real one is a town day's third, and counts up from 0), so a client
-     * knows the meal for a test; and as the diners are drawn by the window, every client shown the same made-up meal draws the
-     * same diners, a player who is told it later (the command run again) among them.
+     * The window a made-up meal carries: no real meal's window is ever this (a real one is a town day's third, and counts up from
+     * 0), so a client knows the meal for a test. The diners of a made-up meal are drawn without a window to tell it by, one throw
+     * for each person (`TownPlates`), so every client told the same meal draws the same diners, one told later (the command run
+     * again) among them, and the same people go on eating as portions are added.
      */
     const val TEST_WINDOW = Int.MIN_VALUE
-    const val TEST_SPAN = 1_000_000
 
     /** Whether [window] is a made-up meal's. */
-    fun isTest(window: Int): Boolean = window < TEST_WINDOW + TEST_SPAN
+    fun isTest(window: Int): Boolean = window == TEST_WINDOW
 
     /** Game ticks a client shows a made-up meal for from the moment it arrives (twelve minutes). */
     const val TEST_TICKS = 14_400L
@@ -67,24 +66,16 @@ object ServedCommand {
     @Volatile
     var clientStats: (() -> String)? = null
 
-    /**
-     * A capital's made-up meal as the commands have built it: portions and best tier of each kind, the game time of the last
-     * command, and the version of it (which of the windows it is told at; it goes up when the portions change, so the clients
-     * draw the diners afresh, and stays when the same meal is told again, so they keep them).
-     */
-    private class Test(var at: Long, val counts: IntArray, val best: ByteArray) {
-        var version = 0
-    }
+    /** A capital's made-up meal as the commands have built it: portions and best tier of each kind, and the game time of the last change. */
+    private class Test(var at: Long, val counts: IntArray, val best: ByteArray)
 
     private val tests = HashMap<Long, Test>()
     private var sent = 0
-    private var versions = 0
 
     init {
         Cooking.onForget {
             tests.clear()
             sent = 0
-            versions = 0
         }
     }
 
@@ -164,14 +155,8 @@ object ServedCommand {
         val now = source.level.gameTime
         val test = tests[here.key]?.takeIf { now - it.at <= TEST_TICKS && now >= it.at } ?: Test(now, IntArray(DishKind.entries.size), ByteArray(DishKind.entries.size) { (-1).toByte() }).also { tests[here.key] = it }
         test.at = now
-        val best = if (n > 0) tier.ordinal.toByte() else (-1).toByte()
-        // A changed meal is a new version of it (the diners are drawn afresh); the same meal told again is the same one
-        if (test.version == 0 || test.counts[kind.ordinal] != n || test.best[kind.ordinal] != best) {
-            versions = versions % (TEST_SPAN - 1) + 1
-            test.version = versions
-        }
         test.counts[kind.ordinal] = n
-        test.best[kind.ordinal] = best
+        test.best[kind.ordinal] = if (n > 0) tier.ordinal.toByte() else (-1).toByte()
         val shown = tell(source, here, test)
         val total = test.counts.sum()
         if (total == 0) tests.remove(here.key)
@@ -208,7 +193,7 @@ object ServedCommand {
             val dx = player.x - (centre.x + 0.5)
             val dz = player.z - (centre.z + 0.5)
             if (dx * dx + dz * dz > RANGE * RANGE) continue
-            PacketDistributor.sendToPlayer(player, ServedPayload(here.key, TEST_WINDOW + test.version, here.box, test.counts.copyOf(), test.best.copyOf()))
+            PacketDistributor.sendToPlayer(player, ServedPayload(here.key, TEST_WINDOW, here.box, test.counts.copyOf(), test.best.copyOf()))
             told++
         }
         sent++

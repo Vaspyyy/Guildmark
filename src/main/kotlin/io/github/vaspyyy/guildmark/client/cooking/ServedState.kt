@@ -23,8 +23,7 @@ import kotlin.math.min
  * of a meal already known, the client keeps it as it was (the same diners go on eating, none decided afresh).
  *
  * A made-up meal (`cook served`, [ServedCommand.isTest]) has no hour and is shown for [ServedCommand.TEST_TICKS] from its
- * arrival (its window is a version number, so every client draws the same diners from it); one told with nothing in it takes a
- * capital's meal away. A meal's tables are the kinds the inn sells and its
+ * arrival; one told with nothing in it takes a capital's meal away. A meal's tables are the kinds the inn sells and its
  * benches the baked kinds (a cake, a pie or a tart is both, the payload counting them once), each weighted by its count.
  */
 internal object ServedState {
