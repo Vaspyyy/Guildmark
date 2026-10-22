@@ -108,7 +108,7 @@ object Days {
         p.life?.let { if (it.resident.id == p.resident && it.resident.alive) return it.also { life -> duties(p, life) } }
         if (p.tickCount < p.lifeLooked) return null
         p.lifeLooked = p.tickCount + 200
-        if (p.crowd || p.watcher || p.captiveOf >= 0 || Faction.of(p.role) != null) return null
+        if (p.crowd || p.watcher || p.captiveOf >= 0 || p.tale >= 0 || Faction.of(p.role) != null) return null
         val level = p.level() as? ServerLevel ?: return null
         val resident = Residents.get(level).of(p)?.takeIf { it.alive } ?: return null
         val capital = Capitals.covering(level, resident.capital) ?: return null

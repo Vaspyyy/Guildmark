@@ -243,7 +243,7 @@ object Neighbours : Comings.Listener {
     }
 
     /** A hug: both of them, facing (the neighbour waves instead if [member] can't hug back), with a word from the first. */
-    private class Hug(private val member: Townsperson, private val family: String, private val why: String, private val speak: Boolean) : Move() {
+    internal class Hug(private val member: Townsperson, private val family: String, private val why: String, private val speak: Boolean) : Move() {
         private var what = Activity.WAVE
 
         override fun start(p: Townsperson, a: Aside) {

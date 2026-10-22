@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.townsfolk.scenes
 
 import io.github.vaspyyy.guildmark.faction.Faction
+import io.github.vaspyyy.guildmark.tales.TaleHold
 import io.github.vaspyyy.guildmark.townsfolk.Activity
 import io.github.vaspyyy.guildmark.townsfolk.Audience
 import io.github.vaspyyy.guildmark.townsfolk.Chase
@@ -96,6 +97,9 @@ class Aside(
     /** Set by [take] for a part played at a post or in a seat: the worker sets their work down first and takes it up after. */
     internal var post: Post? = null
 
+    /** The hold a tale keeps a body under, which this part took them from and gives them back to, where the part leaves them (living-world/stories/design.md 4.4). */
+    internal var restore: TaleHold? = null
+
     override fun tick(p: Townsperson) {
         if (done) return
         val level = p.level() as? ServerLevel ?: return
@@ -139,6 +143,8 @@ class Aside(
     /** A player's word comes first: their part ends, and the talk takes them up from their day. */
     override fun interact(p: Townsperson, player: ServerPlayer): Boolean {
         end(p, drop = false)
+        // A tale's body goes back under its hold (where the part left them), but for the talk it is in nobody's charge: the tidy gives it back after
+        if (p.director is TaleHold) p.director = null
         return false
     }
 
@@ -147,7 +153,7 @@ class Aside(
         if (done) return
         done = true
         if (i in moves.indices) moves[i].stop(p)
-        if (p.director === this) p.director = null
+        if (p.director === this) release(p)
         p.navigation.stop()
         val post = post
         // Played through at a post: the work they were at carries on from the move it had
@@ -161,8 +167,15 @@ class Aside(
     internal fun cancel(p: Townsperson) {
         if (done) return
         done = true
-        if (p.director === this) p.director = null
+        if (p.director === this) p.director = restore
         onEnd?.invoke()
+    }
+
+    /** Lets go of the body: back under the tale's hold if it came from one (which now holds it where it stands), else free. */
+    private fun release(p: Townsperson) {
+        val hold = restore
+        p.director = hold
+        hold?.rest(p)
     }
 
     companion object {
@@ -178,10 +191,13 @@ class Aside(
         /**
          * Whether [p] can be caught by a scene just now: up and about out of doors or in the street, in nobody's charge,
          * in no danger, hands empty, in no hurry (whatever they're at is idle enough to break off for a chat), not
-         * up a tower or a ladder, and in no scene already. With [seated], someone sitting may be got up too.
+         * up a tower or a ladder, and in no scene already. With [seated], someone sitting may be got up too. With [held], a tale's own
+         * body waiting at its mark under a [TaleHold] is free too (the tale's stage may take it; no other scene does).
          */
-        fun free(p: Townsperson, seated: Boolean = false, station: Boolean = false): Boolean {
-            if (!p.isAlive || p.isRemoved || p.director != null || p.captiveOf >= 0 || p.isLeader || p.watcher) return false
+        fun free(p: Townsperson, seated: Boolean = false, station: Boolean = false, held: Boolean = false): Boolean {
+            if (!p.isAlive || p.isRemoved || p.captiveOf >= 0 || p.isLeader || p.watcher) return false
+            val director = p.director
+            if (director != null && !(held && p.tale >= 0 && director is TaleHold)) return false
             if (p.isSleeping || p.isPassenger || p.attending != null || p.target != null || p.hurtTime > 0) return false
             if (p.activity == Activity.FLEE || !p.carried.isEmpty || Faction.of(p.role) != null) return false
             if (p.seat != null && !seated) return false
@@ -200,8 +216,9 @@ class Aside(
          * as a talk has it: [io.github.vaspyyy.guildmark.townsfolk.talk.Talking]), and someone seated stays in their seat
          * rather than being got up (living-world/stories/design.md 4.2).
          */
-        fun take(p: Townsperson, aside: Aside, seated: Boolean = false, station: Boolean = false): Boolean {
-            if (!free(p, seated, station)) return false
+        fun take(p: Townsperson, aside: Aside, seated: Boolean = false, station: Boolean = false, held: Boolean = false): Boolean {
+            if (!free(p, seated, station, held)) return false
+            aside.restore = p.director as? TaleHold
             val post = station && (p.seat != null || p.routine.anchored)
             if (post) {
                 aside.post = Post(p.activity, p.yBodyRot, p.seat != null)

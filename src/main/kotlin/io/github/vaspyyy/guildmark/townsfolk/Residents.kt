@@ -334,7 +334,7 @@ class Residents(
             val dead = !r.alive && r.died >= 0
             val stale = r.alive && r.uuid != p.uuid && Comings.renewed(level, r)
             // A tale that holds their day makes its own body for them, so this one goes too (tales/)
-            val held = Tales.holds(r.id)
+            val held = Tales.holds(r.id) && p.tale < 0
             if (away || dead || stale || held) event.isCanceled = true
         }
 

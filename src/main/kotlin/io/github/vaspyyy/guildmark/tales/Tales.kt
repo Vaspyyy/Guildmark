@@ -80,7 +80,7 @@ object Tales : Comings.Listener {
 
     /** At setup, after the streets: the listeners (Part A), and each of B to F adds a block of its own. Registers nothing yet. */
     fun register(modBus: IEventBus) {
-        TaleSceneCommand.register()
+        TaleLook.register()
     }
 
     // ---- The clock ----
@@ -165,10 +165,12 @@ object Tales : Comings.Listener {
     // ---- The calls that need a Tale (tales A1: declared here, each a no-op or a plain "no" until its owner fills it in; design 14.4, 14.5) ----
 
     /** Part B (4.4 rule 2): holds the resident in [slot] of [t] away from their day, their tale body at [at] playing [clip]; false if they cannot be held (three at once, scenes off, no such slot). */
-    fun hold(level: ServerLevel, t: Tale, slot: String, at: BlockPos? = null, clip: Activity? = null): Boolean = false
+    fun hold(level: ServerLevel, t: Tale, slot: String, at: BlockPos? = null, clip: Activity? = null): Boolean = TaleBodies.hold(level, t, slot, at, clip)
 
     /** Part B (4.4 rule 4): lets the held resident in [slot] of [t] go back to their day. */
-    fun release(level: ServerLevel, t: Tale, slot: String) {}
+    fun release(level: ServerLevel, t: Tale, slot: String) {
+        TaleBodies.release(level, t, slot)
+    }
 
     /** Part A, slice 2 (6.5): sends the household of lodging [home] away for [t] (`Comings.leave` for one named household, the reason recorded as `tale <template> <id>`); false if the town is at its floor and the household stays. [why] is the `Why` kind to add when it does. */
     fun leave(c: Ctx, t: Tale, home: Int, why: String? = null): Boolean = false

@@ -6,6 +6,7 @@ import io.github.vaspyyy.guildmark.faction.Factions
 import io.github.vaspyyy.guildmark.faction.Pickpocket
 import io.github.vaspyyy.guildmark.faction.SwornKnight
 import io.github.vaspyyy.guildmark.outlaw.Captives
+import io.github.vaspyyy.guildmark.tales.TaleBodies
 import io.github.vaspyyy.guildmark.townsfolk.talk.Talk
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
@@ -160,6 +161,12 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
 
     /** Game time a passer-by starts looking for a quiet moment to leave. */
     var leaveAt = -1L
+
+    /**
+     * The tale (its id) whose body this is, or -1: a resident a tale holds, or a figure it made (see [io.github.vaspyyy.guildmark.tales.TaleBodies]).
+     * Such a body is never adopted as a new resident, has no day of its own, cannot be hurt, and a made figure is not kept when saved.
+     */
+    var tale = -1
 
     /** Their own offset to the day's timetable, so a street doesn't all get up at once. */
     var shift = 0
@@ -419,6 +426,8 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
             discard()
             return
         }
+        // A tale's body is seen to once a second, whether a player is in the capital or not
+        if (tale >= 0 && tickCount % 20 == 5) TaleBodies.tend(level, this)
         if (speech.isNotEmpty() && level.gameTime >= speechUntil) entityData.set(SPEECH, "")
         if (carriedUntil != 0 && tickCount >= carriedUntil) {
             carried = ItemStack.EMPTY
@@ -455,7 +464,7 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
             town = Towns.at(level, home ?: blockPosition())
         }
         // Passers-by, captives and the named are no one's neighbours
-        if (resident < 0 && !crowd && !watcher && captiveOf < 0 && customName == null && tickCount % 40 == 7) Residents.adopt(level, this)
+        if (resident < 0 && !crowd && !watcher && captiveOf < 0 && tale < 0 && customName == null && tickCount % 40 == 7) Residents.adopt(level, this)
     }
 
     private var townLooked = false
@@ -565,8 +574,8 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
     }
 
     override fun hurtServer(level: ServerLevel, source: DamageSource, amount: Float): Boolean {
-        // The leaders are beyond harm: the factions need them
-        if (isLeader && !source.`is`(DamageTypeTags.BYPASSES_INVULNERABILITY)) return false
+        // The leaders are beyond harm: the factions need them; so is a tale's body, a child on the night road is never lost to it
+        if ((isLeader || tale >= 0) && !source.`is`(DamageTypeTags.BYPASSES_INVULNERABILITY)) return false
         val hurt = super.hurtServer(level, source, amount)
         if (hurt) {
             if (seat != null) standUp()
@@ -611,6 +620,7 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
         if (patrol.isNotEmpty()) output.store("patrol", BlockPos.CODEC.listOf(), patrol)
         if (isLeader) output.putBoolean("leader", true)
         if (watcher) output.putBoolean("watcher", true)
+        if (tale >= 0) output.putInt("tale", tale)
         if (pursedDay >= 0) output.putLong("pursed_day", pursedDay)
         if (captiveOf >= 0) output.putInt("captive_of", captiveOf)
         output.storeNullable("rescuer", UUIDUtil.CODEC, rescuer)
@@ -639,6 +649,9 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
         shift = input.getIntOr("shift", 0)
         nightWatch = input.getBooleanOr("night_watch", false)
         resident = input.getIntOr("resident", -1)
+        // A tale's body: a made figure is never kept (the tale makes it again while a player is near), a held resident's is looked after once it ticks
+        tale = input.getIntOr("tale", -1)
+        if (tale >= 0 && resident < 0) discardOnLoad = true
         patrol = input.read("patrol", BlockPos.CODEC.listOf()).orElse(listOf())
         isLeader = input.getBooleanOr("leader", false)
         // A heist's watchers only keep watch while it's on

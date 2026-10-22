@@ -6,12 +6,20 @@ import io.github.vaspyyy.guildmark.economy.fortune.Fortunes
 import io.github.vaspyyy.guildmark.townsfolk.Activity
 import io.github.vaspyyy.guildmark.townsfolk.Townsfolk
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
+import io.github.vaspyyy.guildmark.townsfolk.scenes.Move
+import io.github.vaspyyy.guildmark.townsfolk.scenes.Now
 import io.github.vaspyyy.guildmark.townsfolk.scenes.Play
 import io.github.vaspyyy.guildmark.townsfolk.scenes.Scenes
 import io.github.vaspyyy.guildmark.townsfolk.scenes.Stage
+import io.github.vaspyyy.guildmark.townsfolk.scenes.Turn
+import io.github.vaspyyy.guildmark.townsfolk.scenes.Words
+import io.github.vaspyyy.guildmark.townsfolk.talk.Kind
+import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.phys.Vec3
+import net.neoforged.neoforge.common.NeoForge
+import net.neoforged.neoforge.event.tick.ServerTickEvent
 
 /**
  * The telling of a capital's open tale as the player sees it (living-world/stories/design.md 4.2, 3.3 and 6.7 stage 7), Part B.
@@ -22,6 +30,11 @@ import net.minecraft.world.phys.Vec3
  *   [Stage.then] hears `false` and the step is settled in the record without a scene), and, forty seconds after the last,
  *   asks the open tale's template for its next scene (`Template.scene`) when a player is within 48 blocks of its cast;
  * - and sends the motes of the cast member who wants the player ([motes]).
+ *
+ * When a seed scene or an ending plays, the street hears it: up to two free adults near it turn and watch ([hear]).
+ * Once a second for the whole world, whether a player is in a capital or not, a listener on the server tick ([register]) tidies
+ * the held residents and the made figures ([TaleBodies.tidy]) and sees to the stages ([upkeep]): one that is over is heard to be,
+ * one gone stale is cut off, and with the scenes switched off the capitals' stages are let go.
  *
  * Everything here is memory and is rebuilt: a restart loses the stages, the counts of how often a seed scene has played and
  * the motes, and the next second begins them again where the record says. A hash lookup of the capital's slot and the open
@@ -39,6 +52,13 @@ object TaleLook {
 
     /** The most times a seed scene plays in one step. */
     private const val PLAYS = 3
+
+    /** How far from a scene a free adult is who turns to watch it, and how many (the street hears). */
+    private const val HEARS = 16.0
+    private const val HEARERS = 2
+
+    /** Ticks between two warnings in the log from the same kind of failure in the once-a-second work. */
+    private const val WARN_EVERY = 1200L
 
     /** Ticks between one stage and the next in a capital, between asks of a template, and the longest a stage waits to be taken. */
     private const val GAP = TaleLimits.STAGE_GAP_SECONDS * 20L
@@ -58,6 +78,9 @@ object TaleLook {
         var tale = -1
         var step = -1
         var urgent = false
+
+        /** Whether the street hears it when it plays (a seed scene or an ending, not a one-person clip). */
+        var hears = false
     }
 
     private val slots = HashMap<Long, Slot>()
@@ -130,6 +153,7 @@ object TaleLook {
                 s.pending = null
                 s.tries = 0
                 if (s.tale >= 0 && !s.urgent) plays.merge(playKey(s.tale, s.step), 1, Int::plus)
+                if (s.hears) hear(level, waiting)
             }
             ++s.tries >= TRIES || level.gameTime - s.queued > WAITS -> give(s, level, waiting)
         }
@@ -161,6 +185,7 @@ object TaleLook {
         s.tale = tale.id
         s.step = tale.step
         s.urgent = false
+        s.hears = true
     }
 
     private fun ctx(level: ServerLevel, here: Scenes.Here): Ctx? {
@@ -198,15 +223,15 @@ object TaleLook {
         } ?: return
         val at = stage.anchor()
         if (c.level.getNearestPlayer(at.x, at.y, at.z, NEAR, false) == null) return
-        queue(c.level, c.capital, stage, urgent = true, replace = true)
+        queue(c.level, c.capital, stage, urgent = true, replace = true, hears = true)
     }
 
     /**
      * Queues [stage] on [capital]'s one stage, ahead of the forty seconds between two scenes (a one-person clip a template asks
      * for, an ending): false if an urgent one is already waiting for the stage (a seed scene waiting is replaced by one that is
-     * not), and with [replace] the scene that is playing is cut short first.
+     * not), and with [replace] the scene that is playing is cut short first. With [hears] the street turns to watch it ([hear]).
      */
-    fun queue(level: ServerLevel, capital: Long, stage: Stage, urgent: Boolean, replace: Boolean = false): Boolean {
+    fun queue(level: ServerLevel, capital: Long, stage: Stage, urgent: Boolean, replace: Boolean = false, hears: Boolean = false): Boolean {
         val s = slots.getOrPut(capital) { Slot() }
         val waiting = s.pending
         if (waiting != null) {
@@ -227,6 +252,7 @@ object TaleLook {
         s.tale = -1
         s.step = -1
         s.urgent = urgent
+        s.hears = hears
         return true
     }
 
@@ -273,6 +299,86 @@ object TaleLook {
         }
     }
 
+    // ---- The street hears ----
+
+    /**
+     * The street hears (4.3): when a seed scene or an ending plays, up to two free adults within 16 blocks of it turn and watch (a
+     * gaze, then folded arms or a nod) and are let go as it ends; the first may say a line of the town's old talk (a fortune or a
+     * deed, through [Words.about]) so the usual talk goes on round it. They are not cast: the stage takes them as bystanders.
+     */
+    fun hear(level: ServerLevel, stage: Stage) {
+        if (!stage.playing) return
+        val at = stage.anchor()
+        val busy = stage.taken().map { it.body } + stage.onlookers()
+        for ((i, p) in Sets.freeAdults(level, at, HEARS, busy).take(HEARERS).withIndex()) {
+            val m = ArrayList<Move>()
+            m += Turn({ at })
+            m += Stage.Await("-", 300, Activity.GAZE, { at })
+            if (i == 0) m += Now { who -> Words.about(level, who, if (level.random.nextBoolean()) Kind.FORTUNE else Kind.DEEDS, null, "the street hears a tale") }
+            if (i == 1 || level.random.nextBoolean()) m += Play(Activity.NOD, at = { at })
+            m += Stage.Await("-", 3000, Activity.ARMS_FOLDED, { at })
+            stage.onlook(level, Stage.Part("hears${i + 1}", p, false, m))
+        }
+    }
+
+    // ---- The world's second ----
+
+    /** One line in [Tales.register]: the `tale` commands of Part B, and the once-a-second tidy of the held residents, the made figures and the stages. */
+    fun register() {
+        TaleSceneCommand.register()
+        NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { tick(it.server) }
+    }
+
+    private fun tick(server: MinecraftServer) {
+        if (server.tickCount % 20 != 11) return
+        val level = server.overworld()
+        guarded(level, "the tidy of the tale bodies") { TaleBodies.tidy(server) }
+        guarded(level, "the upkeep of the stages") { upkeep(level) }
+    }
+
+    /** Game time of the last warning from [guarded], so a failure that comes every second is in the log once a minute. */
+    private var warned = -WARN_EVERY
+
+    /**
+     * Runs [block] from the server's tick or a body's: one that fails is logged (once a minute at most) and the world goes on, as a
+     * tick that throws takes the server down. Whatever it left undone, the record is the truth and the next second sees to it again.
+     */
+    internal fun guarded(level: ServerLevel, what: String, block: () -> Unit) {
+        try {
+            block()
+        } catch (e: RuntimeException) {
+            if (level.gameTime - warned >= WARN_EVERY) {
+                warned = level.gameTime
+                Guildmark.LOGGER.warn("Tales: {} failed", what, e)
+            }
+        }
+    }
+
+    /**
+     * Once a second whether a player is in a capital or not: a stage that is over is heard to be (its `then`), one that has gone stale
+     * is cut off, and, with the scenes switched off, the capitals' stages are let go (the `tale scene` command's are the game master's own).
+     */
+    private fun upkeep(level: ServerLevel) {
+        val on = Tales.scenes()
+        for (s in slots.values) {
+            if (!on) {
+                s.pending?.let { fire(it, false) }
+                s.pending = null
+                s.playing?.cancel(level)
+            }
+            val st = s.playing ?: continue
+            if (st.finished) {
+                s.playing = null
+                s.last = st.endedAt
+                fire(st, true)
+            } else if (st.stale(level)) {
+                st.cancel(level)
+            }
+        }
+        manual.removeAll { it.finished }
+        for (st in manual.toList()) if (st.stale(level)) st.cancel(level)
+    }
+
     // ---- For the commands and the switch ----
 
     /** Notes a stage played by the `tale scene` command, so it can be listed and let go. */
@@ -293,7 +399,10 @@ object TaleLook {
         return out
     }
 
-    /** Lets every stage go now, back to their day (the switch went off, or `tale figures release`). */
+    /**
+     * Lets every stage go now, back to their day (`tale figures release`; the switch going off does the same once a second, for the
+     * capitals' stages, in [upkeep]). The bodies are [TaleBodies.pause]'s.
+     */
     fun pause(level: ServerLevel) {
         for (s in slots.values) {
             s.pending?.let { fire(it, false) }
@@ -305,12 +414,13 @@ object TaleLook {
         manual.clear()
     }
 
-    /** Everything forgotten, as the server stops. */
+    /** Everything forgotten, as the server stops: the stages, the held residents' marks and the made figures with them. */
     fun forget() {
         slots.clear()
         plays.clear()
         endings.clear()
         manual.clear()
+        TaleBodies.forget()
     }
 
     /** The loaded bodies of [tale]'s cast within [r] blocks of [at]. */

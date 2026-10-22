@@ -31,6 +31,10 @@ import net.minecraft.world.phys.Vec3
  * [hours] are the clock hours (a 24-hour clock, as the days keep it) the set may play in, or null for any; [at] is where it
  * happens (the nearest player's reach to it is what [io.github.vaspyyy.guildmark.tales.TaleLook] asks), by default where the first
  * part stands.
+ *
+ * [extras] are the bystanders of a scene (the crowd round a quarrel): up to [EXTRAS] more people who watch it, each an [Aside] of its
+ * own that [Await]s the barriers the parts have passed, taken if they are free and left out if they are not. They are not parts: they
+ * are not counted against the five, nothing waits for them and nothing they do cuts the scene short, and they are let go as it ends.
  */
 class Stage(
     val name: String,
@@ -38,6 +42,7 @@ class Stage(
     val hours: ClosedFloatingPointRange<Double>? = null,
     private val at: Vec3? = null,
     val most: Int = TaleLimits.STAGE_TICKS,
+    val extras: List<Part> = listOf(),
 ) {
     /**
      * One person's part, named by its [slot]: [body] plays [moves]. An [essential] part must be taken or the stage is not played;
@@ -54,6 +59,7 @@ class Stage(
     )
 
     private val asides = LinkedHashMap<Part, Aside>()
+    private val bystanders = LinkedHashMap<Part, Aside>()
     private var closing = false
 
     /** The barriers each part has among its moves: a barrier waits only for the parts that have it. */
@@ -90,13 +96,7 @@ class Stage(
     val playing: Boolean get() = started && !finished
 
     /** Whether the hour of the day suits the set. */
-    fun inHours(level: ServerLevel): Boolean {
-        val h = hours ?: return true
-        val now = Days.offsetOf(level.overworldClockTime)
-        val from = Days.clock(h.start)
-        val to = Days.clock(h.endInclusive)
-        return if (from <= to) now in from..to else now >= from || now <= to
-    }
+    fun inHours(level: ServerLevel): Boolean = within(level, hours)
 
     /**
      * Takes every part with [Aside.take]: all of the essential ones or none (each is checked free before any is taken, so
@@ -108,7 +108,7 @@ class Stage(
         val going = ArrayList<Part>()
         for (part in parts) {
             val b = part.body
-            val ok = b.isAlive && !b.isRemoved && b.level() === level && Aside.free(b, part.seated, part.station)
+            val ok = b.isAlive && !b.isRemoved && b.level() === level && Aside.free(b, part.seated, part.station, held = b.tale >= 0)
             if (ok) going += part else if (part.essential) return false
         }
         if (going.isEmpty() || going.map { it.body }.toSet().size != going.size) return false
@@ -116,7 +116,7 @@ class Stage(
             val aside = Aside(part.moves, most = most)
             aside.stage = this
             aside.onEnd = { partEnded(aside) }
-            if (!Aside.take(part.body, aside, part.seated, part.station)) {
+            if (!Aside.take(part.body, aside, part.seated, part.station, held = part.body.tale >= 0)) {
                 closing = true
                 for ((q, a) in asides) a.cancel(q.body)
                 closing = false
@@ -127,8 +127,30 @@ class Stage(
         }
         started = true
         since = level.gameTime
+        // The bystanders, if they are free: the scene does not wait for those who are not
+        for (part in extras.take(EXTRAS)) onlook(level, part)
         return true
     }
+
+    /**
+     * Takes [part]'s body as a bystander of the scene now it is on (the crowd of a quarrel, the street that hears a tale: living-world/
+     * stories/design.md 4.3), if there is room for one ([EXTRAS]) and they are free: they play [Part.moves] as a part of their own that
+     * nothing waits for, and are let go as the scene ends. True if taken.
+     */
+    fun onlook(level: ServerLevel, part: Part): Boolean {
+        if (!playing || bystanders.size >= EXTRAS) return false
+        val b = part.body
+        if (!b.isAlive || b.isRemoved || b.level() !== level) return false
+        if (asides.keys.any { it.body === b } || bystanders.keys.any { it.body === b }) return false
+        val aside = Aside(part.moves, most = most)
+        aside.stage = this
+        if (!Aside.take(b, aside, part.seated, part.station, held = b.tale >= 0)) return false
+        bystanders[part] = aside
+        return true
+    }
+
+    /** The bodies of the bystanders taken. */
+    fun onlookers(): List<Townsperson> = bystanders.keys.map { it.body }
 
     /** Lets everyone go now, back to their day, wherever they stand (the switch went off, the server stops, a body is gone). */
     fun cancel(level: ServerLevel) {
@@ -164,6 +186,9 @@ class Stage(
         if (finished) return
         finished = true
         endedAt = now
+        // The bystanders go back to their day with the scene
+        for ((q, a) in bystanders) a.end(q.body, drop = false)
+        bystanders.clear()
         for ((p, stack) in props) {
             if (ItemStack.isSameItemSameComponents(p.carried, stack)) {
                 p.carried = ItemStack.EMPTY
@@ -174,6 +199,18 @@ class Stage(
     }
 
     companion object {
+        /** The most bystanders a scene has (the crowd of a quarrel in the moot). */
+        const val EXTRAS = 5
+
+        /** Whether the hour of the day is within [hours] (a 24-hour clock as the days keep it; null: any hour). */
+        fun within(level: ServerLevel, hours: ClosedFloatingPointRange<Double>?): Boolean {
+            val h = hours ?: return true
+            val now = Days.offsetOf(level.overworldClockTime)
+            val from = Days.clock(h.start)
+            val to = Days.clock(h.endInclusive)
+            return if (from <= to) now in from..to else now >= from || now <= to
+        }
+
         /** [stack] put in [p]'s hands for the scene, taken out again as the stage ends (null, or empty: taken out now). */
         fun give(p: Townsperson, stack: ItemStack?) {
             val props = (p.director as? Aside)?.stage?.props
@@ -225,6 +262,30 @@ class Stage(
 
         override fun stop(p: Townsperson) {
             (p.director as? Aside)?.barrier = null
+        }
+    }
+
+    /**
+     * What a bystander of a scene ([extras]) does in place of a [Barrier]: waits, in [pose] and looking at what [at] gives, until the
+     * parts have come to the barrier [name] (and gone on from it), the scene is over, or [most] ticks. Nothing waits for them.
+     */
+    class Await(
+        private val name: String, private val most: Int = 1200, private val pose: Activity = Activity.NONE, private val at: (() -> Vec3?)? = null,
+    ) : Move() {
+        override fun start(p: Townsperson, a: Aside) {
+            p.navigation.stop()
+            if (pose != Activity.NONE || !p.activity.overlay) p.act(pose)
+        }
+
+        override fun tick(p: Townsperson, a: Aside, t: Int): Boolean {
+            val stage = a.stage ?: return false
+            if (stage.finished || name in stage.passed || t >= most) return false
+            at?.invoke()?.let { there ->
+                p.lookAt(there)
+                p.face(Mth.approachDegrees(p.yBodyRot, p.yawTo(there), Aside.TURN))
+            }
+            if (p.activity != pose && (p.activity.loop || p.actDone)) p.act(pose)
+            return true
         }
     }
 
