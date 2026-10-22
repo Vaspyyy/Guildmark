@@ -142,7 +142,9 @@ and Kotlin model code always agree.
   `client/trade/HaulBoardArt.kt`, where every cell of the atlas is and the numbers the board's lettering, rows and tickets are
   laid out by: change the layout in the script, not the Kotlin. The board's lettering is not painted, only room is left for it.
   Before it is done it checks what it wrote. With a preview dir it renders the board offline with the same numbers (straight on,
-  bare, in 3D beside the market board, close-ups, the crest's glint) and sheets of every picture.
+  bare, in 3D beside the market board, close-ups, the crest's glint, and eight seconds of the board alive: the sand running, a
+  glass turned, the pennants rippling, the tickets stirring, a ticket peeled off and a new one hung and stamped) and sheets of
+  every picture. The moving picture shows what the cells allow; how the game's renderer moves them is that renderer's.
 - `scripts/trade_items.py` is the trade's six items at 32x: the Tally (closed in the inventory, open in a hand), the Carrier's
   Warrant, the Pack Harness, the Drover's Whistle (with the raised variant a held, used whistle takes), the Chapman's Cart (its
   pennant a second layer, tinted by the stack's dye) and the Wagon Bill. Each is a strip with a `.mcmeta` (every one rests a
