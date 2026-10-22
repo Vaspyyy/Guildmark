@@ -39,6 +39,21 @@ OLD = ("old",)
 CHILD = ("child",)
 GREETING, TALK = 2.5, 4.0
 
+# The deliveries the families share, in make_talk_voices.DELIVERY's terms (speed: times the timbre's own; pitch: cents added;
+# level: dB over the common speech level), so a family names what its speaker feels and the numbers are set once. The
+# existing tables stay within these amounts (speed 0.92 to 1.06, pitch down to -30, level -4 to +2.5): the voices are
+# Kokoro's, which takes a small change well and a large one badly.
+WORRY = dict(speed=1.04, level=0.5)  # asking in a hurry, afraid of the answer
+TIRED = dict(speed=0.95, level=-1.0)  # ashamed, worn out or flat: a little slower and under
+GRIEF = dict(speed=0.90, pitch=-25, level=-1.5)  # a held-back sorrow: slower, lower, softer
+GENTLE = dict(speed=0.94, level=-1.0)  # comfort and tenderness
+WARM = dict(speed=0.95, level=0.5)  # thanks that mean it
+CALL = dict(speed=1.05, pitch=15, level=2.5)  # calling out after someone, over a distance
+CHEER = dict(speed=1.03, level=1.5)  # a glass raised, a crowd's pleasure
+HUSH = dict(level=-3.0)  # said low, in confidence
+PLEA = dict(speed=0.96, pitch=20, level=0.5)  # begging
+RELIEF = dict(speed=0.97, level=1.5)  # the breath let go
+
 # The tiers whose takes are made, and so whose families are in make_talk_voices.GROUPS (see above)
 RECORDED = ()
 

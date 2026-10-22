@@ -3,7 +3,7 @@ wordings in the form of make_talk_voices.GROUPS. A family is one meaning said tw
 says when it is said, and what follows it in grey (the detail, never voiced) where one does. The tier of each
 family is read from its beat (tale_lines.tier).
 """
-from . import GREETING, MW, TALK
+from . import GENTLE, GREETING, GRIEF, MW, RELIEF, TALK, TIRED, WORRY
 
 GROUPS = [
     ("The Brother Under the Hill", MW, TALK, {
@@ -113,7 +113,22 @@ GROUPS = [
 
 # This tale's delivery, where a family wants one other than the plain reading (see make_talk_voices.py: DELIVERY
 # by family or prefix, SPEED_FOR by (key, timbre), SAY_AS by key, PHONEMES by key or (key, timbre))
-DELIVERY = {}
+DELIVERY = {
+    "tale.brother.ask": WORRY,  # two nights, and no word
+    "tale.brother.passing": TIRED,  # a forge gone quiet, listening for the door
+    "tale.brother.stand": WORRY,  # asking again for any word at all
+    "tale.brother.thanks": dict(speed=0.93, level=0.5),  # owing everything
+    "tale.brother.light": dict(speed=0.97),  # hope, said carefully
+    "tale.brother.cairn": GENTLE,  # a lamp kept for the dead
+    "tale.brother.late": GRIEF,  # too many nights
+    "tale.brother.found": dict(speed=0.95, level=-0.5),  # weak, and glad
+    "tale.brother.follow": dict(level=-1.5),  # kept low in the dark
+    "tale.brother.scared": dict(speed=1.08, level=2.5),  # shouted: something is coming
+    "tale.brother.rise": RELIEF,  # the light seen
+    "tale.brother.freed": dict(level=-0.5),  # hushed wonder
+    "tale.brother.delver_back": dict(speed=0.97, level=0.5),  # found alive
+    "tale.brother.home": dict(speed=0.95, level=0.5),  # home at last
+}
 SPEED_FOR = {}
 SAY_AS = {}
 PHONEMES = {}

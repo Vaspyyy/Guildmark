@@ -3,7 +3,7 @@ wordings in the form of make_talk_voices.GROUPS. A family is one meaning said tw
 says when it is said, and what follows it in grey (the detail, never voiced) where one does. The tier of each
 family is read from its beat (tale_lines.tier).
 """
-from . import GREETING, MW, MWO, TALK
+from . import GENTLE, GREETING, GRIEF, MW, MWO, RELIEF, TALK, TIRED, WARM
 
 GROUPS = [
     ("A Lantern for Nell: the old resident", MWO, TALK, {
@@ -81,7 +81,19 @@ GROUPS = [
 
 # This tale's delivery, where a family wants one other than the plain reading (see make_talk_voices.py: DELIVERY
 # by family or prefix, SPEED_FOR by (key, timbre), SAY_AS by key, PHONEMES by key or (key, timbre))
-DELIVERY = {}
+DELIVERY = {
+    "tale.lantern.ask": GENTLE,  # an old tenderness: one lantern a year for the one they miss
+    "tale.lantern.passing": GENTLE,  # watching from a window
+    "tale.lantern.stand": dict(speed=0.97),  # asking someone to walk with them
+    "tale.lantern.thanks": WARM,  # thanks, dear
+    "tale.lantern.shall": GENTLE,  # setting out together, slowly
+    "tale.lantern.late": TIRED,  # too late for the square
+    "tale.lantern.release": dict(speed=0.93),  # the lantern let go: tender
+    "tale.lantern.window": GENTLE,  # letting it go from the door
+    "tale.lantern.dark": GRIEF,  # no lantern this year
+    "tale.lantern.candle": dict(level=1.0),  # a candle, at last
+    "tale.lantern.arrive": RELIEF,  # the square at last
+}
 SPEED_FOR = {}
 SAY_AS = {}
 PHONEMES = {}

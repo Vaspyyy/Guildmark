@@ -3,7 +3,7 @@ wordings in the form of make_talk_voices.GROUPS. A family is one meaning said tw
 says when it is said, and what follows it in grey (the detail, never voiced) where one does. The tier of each
 family is read from its beat (tale_lines.tier).
 """
-from . import GREETING, MW, TALK
+from . import GENTLE, GREETING, GRIEF, MW, TALK, TIRED, WARM
 
 GROUPS = [
     ("The Sergeant's Friend", MW, TALK, {
@@ -133,7 +133,24 @@ GROUPS = [
 
 # This tale's delivery, where a family wants one other than the plain reading (see make_talk_voices.py: DELIVERY
 # by family or prefix, SPEED_FOR by (key, timbre), SAY_AS by key, PHONEMES by key or (key, timbre))
-DELIVERY = {}
+DELIVERY = {
+    "tale.informer.ask": dict(level=-1.5),  # a thing not said loudly
+    "tale.informer.passing": dict(level=-1.5),  # muttered: somebody is talking
+    "tale.informer.rumour": dict(level=-1.5),  # the town's talk of it, lowered
+    "tale.informer.stand": dict(level=-2.0),  # kept low: someone is still listening
+    "tale.informer.thanks": WARM,  # the road made safer
+    "tale.informer.plan": dict(level=-2.0),  # a plan whispered
+    "tale.informer.tell": dict(speed=1.03, level=0.5),  # defensive
+    "tale.informer.struck": dict(speed=0.96, pitch=-15),  # the decoy struck: grim
+    "tale.informer.who": dict(speed=0.97, level=1.0),  # asking sternly
+    "tale.informer.named": GRIEF,  # a friend named
+    "tale.informer.hush": dict(speed=0.97),  # resolved
+    "tale.informer.forgive": GENTLE,  # forgiving
+    "tale.informer.w": TIRED,  # another wagon lost
+    "tale.informer.slip_ok": dict(level=-0.5),  # a sly answer
+    "tale.informer.caught": dict(speed=1.06, level=1.0),  # caught out
+    "tale.informer.sorry": dict(speed=0.93, pitch=-15, level=-1.0),  # contrite
+}
 SPEED_FOR = {}
 SAY_AS = {}
 PHONEMES = {}

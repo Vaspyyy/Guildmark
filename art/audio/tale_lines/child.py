@@ -3,7 +3,7 @@ wordings in the form of make_talk_voices.GROUPS. A family is one meaning said tw
 says when it is said, and what follows it in grey (the detail, never voiced) where one does. The tier of each
 family is read from its beat (tale_lines.tier).
 """
-from . import CHILD, GREETING, MW, TALK
+from . import CHILD, GREETING, MW, PLEA, TALK, TIRED
 
 GROUPS = [
     ("Where the Little One Went", MW, TALK, {
@@ -76,7 +76,16 @@ GROUPS = [
 
 # This tale's delivery, where a family wants one other than the plain reading (see make_talk_voices.py: DELIVERY
 # by family or prefix, SPEED_FOR by (key, timbre), SAY_AS by key, PHONEMES by key or (key, timbre))
-DELIVERY = {}
+DELIVERY = {
+    "tale.child.ask": dict(speed=1.06, level=1.0),  # a parent in distress, the words tumbling
+    "tale.child.passing": dict(speed=1.06, level=1.0),  # the same, asking of whoever passes
+    "tale.child.stand": PLEA,  # begging
+    "tale.child.thanks": dict(speed=0.93, level=0.5),  # overcome
+    "tale.child.leave": TIRED,  # giving the town up
+    "tale.child.found": dict(speed=0.95, level=-0.5),  # a small voice, homesick
+    "tale.child.agree": dict(speed=0.95, level=-1.0),  # timid
+    "tale.child.scared": dict(speed=1.06, level=1.5),  # frightened, hurrying
+}
 SPEED_FOR = {}
 SAY_AS = {}
 PHONEMES = {}

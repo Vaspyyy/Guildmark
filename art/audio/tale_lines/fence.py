@@ -3,7 +3,7 @@ wordings in the form of make_talk_voices.GROUPS. A family is one meaning said tw
 says when it is said, and what follows it in grey (the detail, never voiced) where one does. The tier of each
 family is read from its beat (tale_lines.tier).
 """
-from . import GREETING, MW, TALK
+from . import CALL, GENTLE, GREETING, MW, TALK, TIRED, WARM
 
 GROUPS = [
     ("The Fence Between: short lines", MW, GREETING, {
@@ -84,7 +84,17 @@ GROUPS = [
 
 # This tale's delivery, where a family wants one other than the plain reading (see make_talk_voices.py: DELIVERY
 # by family or prefix, SPEED_FOR by (key, timbre), SAY_AS by key, PHONEMES by key or (key, timbre))
-DELIVERY = {}
+DELIVERY = {
+    "tale.fence.ask": TIRED,  # ashamed of a quarrel
+    "tale.fence.stand": TIRED,  # a few flat words about the silence
+    "tale.fence.shout_a": CALL,  # the quarrel aloud
+    "tale.fence.shout_b": CALL,
+    "tale.fence.third": dict(level=1.5),  # a third party stepping between them
+    "tale.fence.willing": TIRED,  # not quite ready
+    "tale.fence.sorry": GENTLE,  # an apology
+    "tale.fence.same": WARM,  # and the same back
+    "tale.fence.glum": TIRED,  # giving the friendship up
+}
 SPEED_FOR = {}
 SAY_AS = {}
 PHONEMES = {}

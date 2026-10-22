@@ -3,7 +3,7 @@ wordings in the form of make_talk_voices.GROUPS. A family is one meaning said tw
 says when it is said, and what follows it in grey (the detail, never voiced) where one does. The tier of each
 family is read from its beat (tale_lines.tier).
 """
-from . import GREETING, MW, TALK
+from . import GENTLE, GREETING, MW, TALK, TIRED, WARM, WORRY
 
 GROUPS = [
     ("The Fourth Wagon", MW, TALK, {
@@ -80,7 +80,17 @@ GROUPS = [
 
 # This tale's delivery, where a family wants one other than the plain reading (see make_talk_voices.py: DELIVERY
 # by family or prefix, SPEED_FOR by (key, timbre), SAY_AS by key, PHONEMES by key or (key, timbre))
-DELIVERY = {}
+DELIVERY = {
+    "tale.wagon.ask": WORRY,  # the wagon taken, the hand gone with it
+    "tale.wagon.passing": WORRY,  # sleepless, watching the gate
+    "tale.wagon.stand": TIRED,  # no word yet: worn out with waiting
+    "tale.wagon.thanks": WARM,  # the family brought back
+    "tale.wagon.captain_yes": dict(level=0.5),  # a captain's word, firm
+    "tale.wagon.cairn": GENTLE,  # a place to come to
+    "tale.wagon.parley": dict(speed=0.96, pitch=-20),  # the band's price, hard
+    "tale.wagon.released": dict(speed=0.96, pitch=-20),  # the band letting go, with no love
+    "tale.wagon.found": GENTLE,  # weak and glad
+}
 SPEED_FOR = {}
 SAY_AS = {}
 PHONEMES = {}

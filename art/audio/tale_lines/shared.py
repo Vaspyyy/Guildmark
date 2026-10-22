@@ -2,7 +2,7 @@
 reasons of 5.4, the set pieces of 4.3 and the after-lines of 6.6, recorded once and used by all twelve
 tales. All of them are tier 1 (tale_lines.tier), so they are the first takes made.
 """
-from . import GREETING, MW, MWO, OLD, TALK
+from . import CALL, CHEER, GENTLE, GREETING, MW, MWO, OLD, RELIEF, TALK, WARM, WORRY
 
 GROUPS = [
     ("Tales: the lines every tale shares: short lines", MW, GREETING, {
@@ -109,7 +109,20 @@ GROUPS = [
 
 # This tale's delivery, where a family wants one other than the plain reading (see make_talk_voices.py: DELIVERY
 # by family or prefix, SPEED_FOR by (key, timbre), SAY_AS by key, PHONEMES by key or (key, timbre))
-DELIVERY = {}
+DELIVERY = {
+    "tale.why.lead": dict(speed=0.95),  # a breath taken before the telling
+    "tale.set.helper": WORRY,  # asking which way, in a hurry
+    "tale.set.home": RELIEF,  # the breath let go as the missing come home
+    "tale.set.toast": CHEER,  # a cup raised
+    "tale.set.comfort": GENTLE,  # the kind word to someone sitting alone: slower, softer
+    "tale.set.call": CALL,  # calling the missing from the gate, over a distance
+    "tale.after.thanks": WARM,  # the thanks in the first talk after
+    "tale.after.glad": dict(level=0.5),  # pleased to hear it
+    "tale.after.sorry": dict(speed=0.92, pitch=-20, level=-1.5),  # sorry to hear it: slower, lower, softer
+    "tale.set.wait": dict(speed=1.02, level=1.5),  # an old walker calling after the one who leads them
+    "tale.set.rest": dict(speed=0.93, level=-0.5),  # an old walker out of breath
+    "tale.after.old": dict(speed=0.96, pitch=-10, level=-0.5),  # an elder remembering
+}
 SPEED_FOR = {}
 SAY_AS = {}
 PHONEMES = {}

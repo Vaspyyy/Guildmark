@@ -3,7 +3,7 @@ wordings in the form of make_talk_voices.GROUPS. A family is one meaning said tw
 says when it is said, and what follows it in grey (the detail, never voiced) where one does. The tier of each
 family is read from its beat (tale_lines.tier).
 """
-from . import MW, TALK
+from . import GRIEF, MW, TALK, TIRED, WARM
 
 GROUPS = [
     ("The Locket", MW, TALK, {
@@ -114,7 +114,23 @@ GROUPS = [
 
 # This tale's delivery, where a family wants one other than the plain reading (see make_talk_voices.py: DELIVERY
 # by family or prefix, SPEED_FOR by (key, timbre), SAY_AS by key, PHONEMES by key or (key, timbre))
-DELIVERY = {}
+DELIVERY = {
+    "tale.locket.ask": TIRED,  # something small and dear gone, and no peace
+    "tale.locket.passing": TIRED,  # a hand reaching for what is not there
+    "tale.locket.stand": dict(speed=0.97),  # earnest: only wanting it back
+    "tale.locket.alibi": dict(speed=1.03, level=0.5),  # defensive
+    "tale.locket.wrongly": dict(speed=1.05, level=2.0),  # indignant
+    "tale.locket.read": dict(level=0.5),  # amazed
+    "tale.locket.confess": dict(speed=0.93, pitch=-15, level=-1.5),  # ashamed, and hungry
+    "tale.locket.law": TIRED,  # giving way to the Order
+    "tale.locket.quiet": dict(speed=0.96, level=-2.0),  # begging not to be named
+    "tale.locket.bread": WARM,  # fed instead of punished
+    "tale.locket.returned": dict(speed=0.94, level=0.5),  # the locket home
+    "tale.locket.forgive": WARM,  # a loaf for the thief
+    "tale.locket.found": WARM,  # thanks, however it came back
+    "tale.locket.shame": TIRED,  # sorry for the shame
+    "tale.locket.lost": GRIEF,  # given up for lost
+}
 SPEED_FOR = {}
 SAY_AS = {}
 PHONEMES = {}

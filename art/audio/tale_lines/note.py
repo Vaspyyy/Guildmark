@@ -3,7 +3,7 @@ wordings in the form of make_talk_voices.GROUPS. A family is one meaning said tw
 says when it is said, and what follows it in grey (the detail, never voiced) where one does. The tier of each
 family is read from its beat (tale_lines.tier).
 """
-from . import GREETING, MW, TALK
+from . import GREETING, MW, TALK, TIRED, WARM
 
 GROUPS = [
     ("The Marlow Note", MW, TALK, {
@@ -97,7 +97,17 @@ GROUPS = [
 
 # This tale's delivery, where a family wants one other than the plain reading (see make_talk_voices.py: DELIVERY
 # by family or prefix, SPEED_FOR by (key, timbre), SAY_AS by key, PHONEMES by key or (key, timbre))
-DELIVERY = {}
+DELIVERY = {
+    "tale.note.ask": dict(level=-0.5),  # a debtor's worry, said low
+    "tale.note.passing": TIRED,  # the same trouble, muttered to whoever passes
+    "tale.note.thanks": WARM,  # moved that someone would stand for them
+    "tale.note.paid": WARM,  # the breath let go: the note is paid
+    "tale.note.sealed": TIRED,  # giving up the stall without a fight
+    "tale.note.progress": WARM,  # a coin at a time
+    "tale.note.lender_hard": dict(speed=0.97, level=0.5),  # the lender, firm
+    "tale.note.lender_law": TIRED,  # the lender, giving way to the Order's law
+    "tale.note.lender_word": dict(level=-1.5),  # a quiet word, answered quietly
+}
 SPEED_FOR = {}
 SAY_AS = {}
 PHONEMES = {}

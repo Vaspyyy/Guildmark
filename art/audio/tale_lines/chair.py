@@ -3,7 +3,7 @@ wordings in the form of make_talk_voices.GROUPS. A family is one meaning said tw
 says when it is said, and what follows it in grey (the detail, never voiced) where one does. The tier of each
 family is read from its beat (tale_lines.tier).
 """
-from . import GREETING, MW, TALK
+from . import GENTLE, GREETING, GRIEF, MW, TALK
 
 GROUPS = [
     ("The Empty Chair", MW, TALK, {
@@ -80,7 +80,20 @@ GROUPS = [
 
 # This tale's delivery, where a family wants one other than the plain reading (see make_talk_voices.py: DELIVERY
 # by family or prefix, SPEED_FOR by (key, timbre), SAY_AS by key, PHONEMES by key or (key, timbre))
-DELIVERY = {}
+DELIVERY = {
+    "tale.chair.ask": GRIEF,  # the empty chair: a held-back sorrow
+    "tale.chair.passing": GRIEF,  # the same, said to the air
+    "tale.chair.rumour": GENTLE,  # the town's talk of it, lowered
+    "tale.chair.stand": GENTLE,  # solemn, wanting it done well
+    "tale.chair.thanks": GENTLE,  # a quiet thanks for remembering
+    "tale.chair.priest": dict(speed=0.95),  # what is proper, said evenly
+    "tale.chair.word_a": GENTLE,  # a kind word for the dead
+    "tale.chair.word_b": GENTLE,
+    "tale.chair.word_c": GENTLE,
+    "tale.chair.laying": dict(speed=0.9, pitch=-15, level=-0.5),  # the stone laid: solemn
+    "tale.chair.leave": GRIEF,  # no heart to stay
+    "tale.chair.candles": GENTLE,  # three lights
+}
 SPEED_FOR = {}
 SAY_AS = {}
 PHONEMES = {}

@@ -3,7 +3,7 @@ wordings in the form of make_talk_voices.GROUPS. A family is one meaning said tw
 says when it is said, and what follows it in grey (the detail, never voiced) where one does. The tier of each
 family is read from its beat (tale_lines.tier).
 """
-from . import GREETING, MW, TALK
+from . import GENTLE, GREETING, GRIEF, MW, TALK, TIRED, WARM
 
 GROUPS = [
     ("The Silent Lute", MW, TALK, {
@@ -72,7 +72,15 @@ GROUPS = [
 
 # This tale's delivery, where a family wants one other than the plain reading (see make_talk_voices.py: DELIVERY
 # by family or prefix, SPEED_FOR by (key, timbre), SAY_AS by key, PHONEMES by key or (key, timbre))
-DELIVERY = {}
+DELIVERY = {
+    "tale.lute.ask": GRIEF,  # no heart to play
+    "tale.lute.passing": TIRED,  # turning down a song
+    "tale.lute.stand": GENTLE,  # wistful
+    "tale.lute.thanks": dict(speed=0.97, level=1.0),  # glad to tears
+    "tale.lute.intro": dict(speed=0.97, level=1.5),  # a song announced to the square
+    "tale.lute.glum": TIRED,  # giving up on the song
+    "tale.lute.returned": WARM,  # the lute handed back
+}
 SPEED_FOR = {}
 SAY_AS = {}
 PHONEMES = {}
