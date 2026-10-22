@@ -44,6 +44,7 @@ object CookStationsClient {
         event.registerBlockEntityRenderer(CookRegistry.SPIT_ENTITY.get(), ::SpitRenderer)
         event.registerBlockEntityRenderer(CookRegistry.PREP_BOARD_ENTITY.get(), ::PrepBoardRenderer)
         event.registerBlockEntityRenderer(CookRegistry.PLATE_ENTITY.get(), ::PlateRenderer)
+        event.registerBlockEntityRenderer(CookRegistry.LARDER_ENTITY.get(), ::LarderRenderer)
     }
 
     /** The pictures of items that the renderers keep are looked up again when the resources reload (the atlases they point into are made again). */
