@@ -272,3 +272,12 @@ renders previews of it without the game: see `shaderkit/README.md`.
   Python ones. Its bottom faces take their texture as Minecraft lays it, back to front like the top's (modelkit's
   `world_faces` lays the bottom the other way round).
   Run it with `python3 -B art/scripts/mill_art.py [--check] [assets dir [preview dir [models dir]]]`.
+- `lang/` is how the four living-world designs (Hearthcraft, Trade, Tales, Villages; `living-world/build-plan.md`
+  section 6) add language and sound lines. The game's `en_us.json` and `sounds.json` (`src/main/resources/assets/guildmark/lang/`
+  and `src/main/resources/assets/guildmark/`) are output: no part edits either by hand. A part writes its lines into a
+  fragment of its own (`lang/<design>_<part>.json`; a design's subtitles in `audio/<design>_lang.json`, its sound events
+  in `audio/<design>_sounds.json`) and `lang/merge_lang.py` adds them to the end of the two files. It refuses a line the
+  files already have with other words, a repeated key and bad JSON, and a second run changes nothing (`--check` only says
+  what a run would do). `lang/check_lang.py` reads the Kotlin for the keys under each design's prefixes and lists every one
+  `en_us.json` lacks.
+  Run them with `python3 -B art/lang/merge_lang.py [--check]` and `python3 -B art/lang/check_lang.py [cook|trade|tales|villages]`.

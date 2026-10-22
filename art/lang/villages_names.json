@@ -1,0 +1,6 @@
+{
+  "fortune.guildmark.kind.held": "A siege held",
+  "fortune.guildmark.kind.lost": "A siege lost",
+  "fortune.guildmark.reason.held": "The village held out against a siege.",
+  "fortune.guildmark.reason.lost": "The village lost a siege, and has damage to mend."
+}

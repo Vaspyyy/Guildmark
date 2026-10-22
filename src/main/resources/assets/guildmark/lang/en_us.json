@@ -6267,5 +6267,12 @@
   "say.guildmark.talk.detail.caravan.camp.marked": "I've marked it on your map.",
   "say.guildmark.talk.detail.caravan.camp.known": "You've got it on your map already.",
   "say.guildmark.talk.detail.caravan.camp.gone": "I never saw where they went.",
-  "say.guildmark.talk.detail.caravan.next": "Break that band, or ride along with the next wagon."
+  "say.guildmark.talk.detail.caravan.next": "Break that band, or ride along with the next wagon.",
+  "fortune.guildmark.kind.hauled": "Goods hauled in",
+  "fortune.guildmark.reason.hauled": "A great haul came in from afar by %s.",
+  "fortune.guildmark.kind.tale": "A tale",
+  "fortune.guildmark.kind.held": "A siege held",
+  "fortune.guildmark.kind.lost": "A siege lost",
+  "fortune.guildmark.reason.held": "The village held out against a siege.",
+  "fortune.guildmark.reason.lost": "The village lost a siege, and has damage to mend."
 }
