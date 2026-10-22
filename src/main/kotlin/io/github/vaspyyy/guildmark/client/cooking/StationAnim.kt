@@ -58,7 +58,10 @@ class Plop(val item: Int, val at: Long, val dx: Float, val dz: Float, val index:
 /** A ring spreading over the surface from ([x], [z]) px, started [at] this tick, [power] big (1 an ordinary plop). */
 class Ripple(val at: Long, val x: Float, val z: Float, val power: Float)
 
-/** The item at place [index] that left the station [at] this tick (a pot's chunk was at ([x], [z]) px): it sinks and fades where it lay. */
+/**
+ * The item at place [index] that left the station [at] this tick: it sinks and fades where it lay (a pot's chunk was at ([x], [z]) px),
+ * or, from a prep board, goes toward the cook ([x], [z] are then the unit direction on the ground it goes in; 0, 0 for none).
+ */
 class Leaving(val item: Int, val at: Long, val index: Int, val x: Float, val z: Float)
 
 /**
@@ -205,6 +208,18 @@ class StationAnim(val pos: BlockPos, val kind: Station?, var be: StationBlockEnt
     var flipAt = Long.MIN_VALUE / 2
         private set
 
+    /** The last chop at a prep board: when the knife came down, on which place of the heap, of what, and the direction (toward the cook) it came from. */
+    var chopAt = Long.MIN_VALUE / 2
+        private set
+    var chopIndex = 0
+        private set
+    var chopItem = 0
+        private set
+    var chopDx = 0f
+        private set
+    var chopDz = 0f
+        private set
+
     /** Items going in, and rings spreading, as they were made. */
     val plops = ArrayList<Plop>(MAX_PLOPS)
     val ripples = ArrayList<Ripple>(MAX_RIPPLES)
@@ -310,6 +325,7 @@ class StationAnim(val pos: BlockPos, val kind: Station?, var be: StationBlockEnt
         swing = -1
         stateAt = now - 2 * LONG
         flipAt = now - 2 * LONG
+        chopAt = now - 2 * LONG
         callNow = null
         val pending = pendingCall(v, now)
         if (pending != null) {
@@ -371,9 +387,19 @@ class StationAnim(val pos: BlockPos, val kind: Station?, var be: StationBlockEnt
         if (v.items.size < lastIds.size) {
             for (k in v.items.size until lastIds.size) {
                 if (leaving.size >= MAX_LEAVING) leaving.removeAt(0)
-                val at = if (kind == Station.STEWPOT) chunkAt(k, lastIds[k], orbit.cur) else ZERO_AT
+                val at = when (kind) {
+                    Station.STEWPOT -> chunkAt(k, lastIds[k], orbit.cur)
+                    // A board's piece leaves toward the cook: the direction stands where a pot's chunk has its place
+                    null -> fx.towardPlayer(pos)
+                    else -> ZERO_AT
+                }
                 leaving.add(Leaving(lastIds[k], now, k, at[0], at[1]))
             }
+        }
+        // The prep board counts nothing that was added: the heap growing is the sign that items were laid on it, one after another
+        if (kind == null && v.items.size > lastItems) {
+            val first = max(lastItems, v.items.size - MAX_PLOPS)
+            for (k in first until v.items.size) addPlop(v.items[k], now + 2L * (k - first), k, fx)
         }
         if (!lastIds.contentEquals(v.items)) lastIds = v.items.copyOf()
         lastItems = v.items.size
@@ -399,6 +425,15 @@ class StationAnim(val pos: BlockPos, val kind: Station?, var be: StationBlockEnt
                 swirlTo = v.swirlUntil
                 swirlFrom = max(now - 2L, v.swirlUntil - swirlLength())
                 if (kind == Station.SPIT) clicks++
+                if (kind == null) {
+                    // A chop: the knife comes down on the piece that was on top (the heap lost it in the same sync), from the cook's side
+                    val dir = fx.towardPlayer(pos)
+                    chopAt = now
+                    chopIndex = v.items.size
+                    chopItem = leaving.lastOrNull { it.at == now }?.item ?: (if (v.items.isNotEmpty()) v.items[0] else 0)
+                    chopDx = dir[0]
+                    chopDz = dir[1]
+                }
             }
             lastSwirl = v.swirlUntil
         }
@@ -778,7 +813,7 @@ class StationAnim(val pos: BlockPos, val kind: Station?, var be: StationBlockEnt
             Station.HOB -> hobEmit(v, now, fx)
             Station.OVEN -> ovenEmit(v, now, fx)
             Station.SPIT -> spitEmit(v, now, fx)
-            null -> {}
+            null -> boardEmit(now, fx)
         }
         // Old rings and plops are done with
         ripples.removeAll { now - it.at > RIPPLE_LIFE }
@@ -1101,6 +1136,21 @@ class StationAnim(val pos: BlockPos, val kind: Station?, var be: StationBlockEnt
 
     // ---- The prep board ----
 
+    /** What a chop throws up where the knife bites: a few crumbs of what was cut (the knife meets the piece [CHOP_BITE] ticks into the stroke). */
+    private fun boardEmit(now: Long, fx: StationHooks) {
+        for (l in leaving) {
+            if (l.at != chopAt || now != l.at + CHOP_BITE_TICK) continue
+            val place = FloatArray(6)
+            Heap.place(l.index, l.item, place)
+            repeat(2) {
+                spawn(
+                    fx, CookParticles.CRUMB.get(), place[0] + (random.nextFloat() - 0.5f), place[1] + 0.8f, place[2] + (random.nextFloat() - 0.5f),
+                    (random.nextFloat() - 0.5f) * 0.02f, 0.02f + random.nextFloat() * 0.015f, (random.nextFloat() - 0.5f) * 0.02f, size = 0.7f,
+                )
+            }
+        }
+    }
+
     /** A chop is showing (the knife at work) at game time [t]: how far through it, 0 to 1, or -1 when none. */
     fun chopPhase(t: Double): Float {
         if (swirlTo <= swirlFrom) return -1f
@@ -1141,6 +1191,12 @@ class StationAnim(val pos: BlockPos, val kind: Station?, var be: StationBlockEnt
         const val PLOP_BOB = 56
         const val PLOP_SINK = 24
         const val RIPPLE_LIFE = 26L
+
+        /** A chop at a prep board: ticks from the start of the stroke to the bite (when the piece goes and the crumbs fly), the whole stroke, and a piece's flight; the tick the crumbs are made in. */
+        const val CHOP_BITE = 2.4f
+        const val CHOP_STROKE = 6f
+        const val CHOP_FLIGHT = 9f
+        const val CHOP_BITE_TICK = 3L
 
         /** The wipe of a film, in ticks; the flip of a piece, its length and the gap between two. */
         const val WIPE_TICKS = 7L
