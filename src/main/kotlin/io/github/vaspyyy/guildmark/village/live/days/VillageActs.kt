@@ -39,11 +39,12 @@ import net.minecraft.world.item.Items
  * - A keeper at their stall ([VillageDays.STALL]): the stall set out, then kept, calling to those who come by.
  * - Market day about the green ([VillageDays.GREEN]): a round of the stalls, then a bench, a word with a neighbour or a lunch on
  *   the green; the children play there.
- * - The evening, with no tavern to go to: the green's benches and a word on the green in the warm; the hearth in the cold, the rain
- *   and the winter.
+ * - The evening, with no tavern to go to: the green's benches and a word on the green in the warm for those whose night for the
+ *   tavern it is, and for a third of the others by turns ([outTonight]); the hearth in the cold, the rain and the winter.
  * - The service, with no temple: a prayer out by the bell.
- * - Someone with no home that stands: meals on a bench, the evening on the green and the night in a barn, or on a bench, in a
- *   bed-less sit, until a bed is free; never out in the street.
+ * - Someone with no home that stands: meals and the evening on the green, the night under a roof (a seat in a barn or another
+ *   building, else just inside its door; a bench only where the village has no building with a door) until a bed is free; never
+ *   out in the street.
  *
  * [Days] asks here, in place of [Acts], for a village's people.
  */
@@ -71,9 +72,15 @@ object VillageActs {
         return when (stretch.doing) {
             Doing.WORSHIP -> listOf(Acts.Part { worship(p, life) })
             Doing.TAVERN -> if (p.role == TownRole.BARD) Acts.script(p, life, stretch.doing) else listOf(Acts.Part { green(p, life) })
+            Doing.EVENING -> if (outTonight(p, life)) listOf(Acts.Part { green(p, life) }) else Acts.script(p, life, stretch.doing)
             else -> Acts.script(p, life, stretch.doing)
         }
     }
+
+    /** Whether [life] spends tonight's evening out on the green (a third of the grown-up folk, by turns: in the warm; the hearth otherwise). */
+    private fun outTonight(p: Townsperson, life: Life): Boolean =
+        life.resident.role.adult && life.resident.role != TownRole.GUARD &&
+            Math.floorMod(life.resident.id + Days.dayOf(level(p).overworldClockTime), 3L) == 0L
 
     /** What fills the rest of [stretch] once its parts are done. */
     fun filler(p: Townsperson, life: Life, stretch: Stretch): Task {
@@ -97,6 +104,7 @@ object VillageActs {
             Doing.WATCH -> VillageWatch.keep(p, life) ?: Jobs.guard(p)
             Doing.WORSHIP -> worship(p, life) ?: Acts.filler(p, life, Doing.EVENING)
             Doing.TAVERN -> if (p.role == TownRole.BARD) Acts.filler(p, life, stretch.doing) else green(p, life) ?: Acts.filler(p, life, Doing.EVENING)
+            Doing.EVENING -> if (outTonight(p, life)) green(p, life) ?: Acts.filler(p, life, stretch.doing) else Acts.filler(p, life, stretch.doing)
             else -> Acts.filler(p, life, stretch.doing)
         }
     }
