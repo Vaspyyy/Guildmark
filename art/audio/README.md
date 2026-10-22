@@ -163,6 +163,32 @@ Kokoro voices of their own, and the renegade Silvan Marrow made cold and a littl
   `--audit` renders nothing and reads every file back against the design (length, level, true peak, a loop's RMS and
   join), exiting 1 on a problem. A full run writes `cook_sounds.json` and `cook_lang.json` here (their `sounds.json`
   entries and subtitles), merged by `art/lang/merge_lang.py`.
+- `make_trade_sfx.py`: the trader's sounds (`trade/`, 37 events and 84 mono files, `guildmark:trade.<name>` in the order
+  of `trade/TradeSounds.NAMES`; `trade.hoist_creak` has no file, its `sounds.json` entry is an event that points at the
+  granary's `works.hoist`): the board and the Tally (a stamp, a wax seal, a ticket peeling, a sand glass, the Tally opened,
+  a page turned, a notch cut, a slip filed), a haul delivered (`knock`, one tally-stick knock for each ten units, and a
+  crate set down), carrying (the bell on the pack animal in three strides and a trot, the harness buckled, the drover's
+  two whistles, the clink of pots on a laden back, the Chapman's Cart's creak as a seamless loop, the shafts lifted and
+  dropped, the canvas flapping, the tailboard, a rein slack, the wagon's brake), the Hunt (the outlaws' horn that carries
+  80 blocks, `hunt_shout` as a bark, a laugh and a snarl, a fanfare, a sack heaved up, a spear butt on stone) and the
+  ladder (the Warrant's seal, the Store's key, its scale settling, the strongbox, the counting frame's beads, the bell over
+  the Counting House's door, a carter's call) and the street's cheer. Synthesised with `sfxkit.py`, the townsfolk's helpers
+  (levelling, knocks, rings, paper, a coin), the cog's (stick-slip creaks, a bronze bell's modes, oak, struck iron,
+  `Ring`), the crew's (a crowd's hurrah) and the works' (stone, cloth, a door's boom), each seeded by event and file. A
+  one-shot's loudest 100 ms is set to a K-weighted loudness of its own (-13 for the horn to -27 for a sand glass) with its
+  true peak under -1 dBFS, re-encoded lower if the encoder overshoots, and where the code plays a sound below full volume
+  the file is levelled for that (`vol=` in the recipe: the bell at 0.55 and 0.7, the clink at 0.3, the keeper's stamp, seal, knocks, crate and ticket at 0.7). `cart_creak` is built in a
+  circle to the cart's own wheel (eight turns of a wheel of radius 10/16 of a block at the pulled cart's 3.67 blocks a
+  second, 8.56 s: play it at pitch = speed / 3.67) at -25 dBFS RMS with its peaks under -9, and read back after the
+  encoder. Each recipe is an `@effect(...)`, `@loop(...)` or `alias(...)` carrying its file count, length, reach, subtitle and
+  `when=` (the moment that plays it). A sound that carries other than 16 blocks has its reach as its files'
+  `attenuation_distance` and as its event's range in `TradeSounds.RANGES`. `--only` takes events (`knock,bell_step,loops`);
+  `--mp3 <file>` joins what was rendered into one listen-through MP3 at the volumes the code plays them at (a chapter mark at
+  each file, the loop for 12 s) and writes `trade_what_plays_when.txt` beside it; `--audit` renders nothing and reads every
+  file back against the design (length, level, true peak, the loop's RMS and join, the 37 names and ranges against
+  `TradeSounds.kt`, the fragments against the files and `sounds.json`), exiting 1 on a problem. A full run writes
+  `trade_sounds.json` and `trade_lang.json` here (their `sounds.json` entries and subtitles), merged by
+  `art/lang/merge_lang.py`. `/guildmark trade sound [name] [blocks]` (operators) plays them in game.
 - `make_caravan_sfx.py`: the caravans on the roads (`caravan/`, 43 events, 119 mono files): the wagon (`roll`,
   `roll_stone` and `roll_planks` are seamless loops for a looping sound that follows the wagon's speed; creaks,
   harness bells, the brake's squeal, the canvas flapping, a crate set down), a waylaying (the band's two-note
@@ -205,6 +231,7 @@ python3 -B art/audio/make_island_music.py src/main/resources/assets/guildmark [-
 python3 -B art/audio/make_mill_audio.py src/main/resources/assets/guildmark [--wav <dir>] [--only sails,wheel] [--mp3 <file>]
 python3 -B art/audio/make_lamp_sfx.py src/main/resources/assets/guildmark [--wav <dir>] [--only lamp.clink,lamp.hiss] [--mp3 <file>]
 python3 -B art/audio/make_cook_audio.py src/main/resources/assets/guildmark [--wav <dir>] [--only stir,plop,loops] [--mp3 <file>] [--audit]
+python3 -B art/audio/make_trade_sfx.py src/main/resources/assets/guildmark [--wav <dir>] [--only knock,bell_step,loops] [--mp3 <file>] [--audit]
 python3 -B art/audio/make_caravan_sfx.py src/main/resources/assets/guildmark [--wav <dir>] [--only roll,whistle] [--mp3 <file>]
 python3 -B art/audio/make_festival_music.py src/main/resources/assets/guildmark [--work <tmp-dir>] [--only ribbonwake,stings,fanfare] [--mp3 <dir>]
 ```
