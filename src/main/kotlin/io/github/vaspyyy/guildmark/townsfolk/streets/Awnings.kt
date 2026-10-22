@@ -45,7 +45,7 @@ object Awnings : ShutStall.Awning {
 
     override fun down(level: ServerLevel, stall: CityPlaces.Stall, by: Townsperson) {
         if (!on()) return
-        val places = by.life?.places ?: return
+        val places = by.life?.places as? CityPlaces ?: return
         val column = Streets.column(places.capital)
         val pos = flapAt(stall)
         rolling.remove(pos.asLong())
@@ -72,7 +72,7 @@ object Awnings : ShutStall.Awning {
     }
 
     override fun up(level: ServerLevel, stall: CityPlaces.Stall, by: Townsperson) {
-        val places = by.life?.places ?: return
+        val places = by.life?.places as? CityPlaces ?: return
         val column = Streets.column(places.capital)
         display(level, stall)?.let { wares(level, it)?.slate(level, 0L) }
         val pos = flapAt(stall)

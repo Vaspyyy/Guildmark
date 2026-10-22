@@ -11,6 +11,7 @@ import io.github.vaspyyy.guildmark.network.TalkPayloads
 import io.github.vaspyyy.guildmark.network.TalkSayPayload
 import io.github.vaspyyy.guildmark.townsfolk.talk.sources.Say
 import io.github.vaspyyy.guildmark.townsfolk.Activity
+import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
 import io.github.vaspyyy.guildmark.townsfolk.Days
 import io.github.vaspyyy.guildmark.townsfolk.Director
 import io.github.vaspyyy.guildmark.townsfolk.Doing
@@ -745,7 +746,7 @@ object Talk {
     /** Whether the player is a hero at the capital's board. */
     internal fun hero(ask: Ask): Boolean {
         val player = ask.player ?: return false
-        val capital = ask.life?.places?.capital ?: return false
+        val capital = (ask.life?.places as? CityPlaces)?.capital ?: return false
         return Standing.tier(ask.level, capital.boardAnchor, player) == StandingTier.HERO
     }
 

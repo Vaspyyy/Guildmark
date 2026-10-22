@@ -14,6 +14,7 @@ import io.github.vaspyyy.guildmark.network.MarketView
 import io.github.vaspyyy.guildmark.network.OpenMarketPayload
 import io.github.vaspyyy.guildmark.registry.ModItems
 import io.github.vaspyyy.guildmark.townsfolk.Activity
+import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
 import io.github.vaspyyy.guildmark.townsfolk.Days
 import io.github.vaspyyy.guildmark.townsfolk.Director
 import io.github.vaspyyy.guildmark.townsfolk.Doing
@@ -158,8 +159,9 @@ object Stalls {
             p.say(shut, force = true)
             return true
         }
-        val entry = Markets.of(level, life.places.capital) ?: return false
-        open(player, shop, entry, life.places.capital, p)
+        val capital = (life.places as? CityPlaces)?.capital ?: return false
+        val entry = Markets.of(level, capital) ?: return false
+        open(player, shop, entry, capital, p)
         return true
     }
 

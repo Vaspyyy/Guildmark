@@ -508,7 +508,7 @@ object Days {
  * [home]. Kept on the [Townsperson] ([Townsperson.life]) while they're about, with today's agenda and how far
  * they've got with the stretch they're in.
  */
-class Life(val resident: Resident, val places: CityPlaces, val home: CityPlaces.Lodging?) {
+class Life(val resident: Resident, val places: TownPlaces, val home: CityPlaces.Lodging?) {
     var agenda: Agenda? = null
 
     /** The stretch they're in, and how many of its parts they've been through. */

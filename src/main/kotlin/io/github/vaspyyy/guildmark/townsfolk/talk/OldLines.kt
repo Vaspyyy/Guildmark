@@ -16,6 +16,7 @@ import io.github.vaspyyy.guildmark.guild.GuildNews
 import io.github.vaspyyy.guildmark.outlaw.OutlawCamps
 import io.github.vaspyyy.guildmark.outlaw.Outlaws
 import io.github.vaspyyy.guildmark.story.HollowThrone
+import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
 import io.github.vaspyyy.guildmark.townsfolk.Days
 import io.github.vaspyyy.guildmark.townsfolk.Resident
 import io.github.vaspyyy.guildmark.townsfolk.Residents
@@ -207,7 +208,7 @@ internal object OldLines {
 
     /** Notes up on the capital's quest board. */
     private fun contracts(level: ServerLevel, p: Townsperson): Boolean {
-        val anchor = (Days.life(p)?.places?.capital ?: Capitals.covering(level, p.blockPosition()))?.boardAnchor ?: return false
+        val anchor = ((Days.life(p)?.places as? CityPlaces)?.capital ?: Capitals.covering(level, p.blockPosition()))?.boardAnchor ?: return false
         if (!level.isLoaded(anchor)) return false
         val state = level.getBlockState(anchor)
         if (state.block !is QuestBoardBlock) return false

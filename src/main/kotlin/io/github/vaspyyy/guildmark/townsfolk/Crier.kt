@@ -137,23 +137,24 @@ object Crier {
      */
     fun round(p: Townsperson, life: Life, now: Boolean = false): Task? {
         val level = level(p)
+        val places = life.places as? CityPlaces ?: return null
         val c = conditions(level)
         val entry = Trades.market(p, life)
-        val board = MarketBoards.board(level, life.places)
+        val board = MarketBoards.board(level, places)
         if (c.clock < 11 && !now) {
             if (life.chalked == c.day) return null
             life.chalked = c.day
             if (entry == null || board == null) return null
             // Nothing to write up and no new orders to hang
-            if (MarketBoards.current(board, c.day to false) && MarketBoards.unhung(level, board, life.places.capital.center).isEmpty()) return null
+            if (MarketBoards.current(board, c.day to false) && MarketBoards.unhung(level, board, places.centre).isEmpty()) return null
             return chalk(p, life, noon = false, slips = listOf())
         }
         if (!now) {
             if (life.cried == c.day) return null
             life.cried = c.day
         }
-        val cries = today(level, life.places, entry, c)
-        val spot = cryingSpot(life.places)
+        val cries = today(level, places, entry, c)
+        val spot = cryingSpot(places)
         val crowd = Vec3.atBottomCenterOf(spot.pos.relative(spot.facing, 6)).add(0.0, 1.5, 0.0)
         var waiting = !now
         var base = 0
@@ -217,22 +218,23 @@ object Crier {
      */
     private fun chalk(p: Townsperson, life: Life, noon: Boolean, slips: List<Slip>): Task? {
         val level = level(p)
+        val places = life.places as? CityPlaces ?: return null
         val entry = Trades.market(p, life) ?: return null
-        if (MarketBoards.board(level, life.places) == null) return null
+        if (MarketBoards.board(level, places) == null) return null
         crying.remove(p)
-        val spot = writingSpot(life.places)
-        val slate = Vec3.atCenterOf(life.places.marketBoard.pos).add(0.0, 0.6, 0.0)
-        val rail = Vec3.atBottomCenterOf(life.places.marketBoard.pos).add(0.0, 0.3, 0.0)
-        val capital = life.places.capital.center
+        val spot = writingSpot(places)
+        val slate = Vec3.atCenterOf(places.marketBoard.pos).add(0.0, 0.6, 0.0)
+        val rail = Vec3.atBottomCenterOf(places.marketBoard.pos).add(0.0, 0.3, 0.0)
+        val capital = places.centre
         var todo: List<Int>? = null
         var orders: List<Int> = listOf()
         var pinned = 0
         var written = 0
         val plan = plan@{ i: Int ->
-            val board = MarketBoards.board(level, life.places) ?: return@plan null
+            val board = MarketBoards.board(level, places) ?: return@plan null
             val list = todo ?: run {
                 val c = conditions(level)
-                board.begin(MarketBoards.town(life.places.capital), c.day, noon)
+                board.begin(MarketBoards.town(places.capital), c.day, noon)
                 if (noon) board.unpin()
                 orders = MarketBoards.unhung(level, board, capital).map { it.order }
                 val at = level.gameTime
@@ -249,7 +251,7 @@ object Crier {
             }
         }
         return Acts.via(p, life, spot.pos, Work(p, spot, slate, plan, onTick = { s, t ->
-            val board = MarketBoards.board(level, life.places)
+            val board = MarketBoards.board(level, places)
             if (board != null) when (s.activity) {
                 Activity.HAND_OVER -> if (t == 16 && pinned < slips.size) {
                     val slip = slips[pinned++]
@@ -282,7 +284,7 @@ object Crier {
     }
 
     /** What [places]' crier cries at [c]'s noon: the same each time it's asked that day (see [news]). */
-    fun today(level: ServerLevel, places: CityPlaces, entry: Markets.Entry?, c: Conditions): List<Cry> =
+    fun today(level: ServerLevel, places: TownPlaces, entry: Markets.Entry?, c: Conditions): List<Cry> =
         news(level, entry, c, Random(c.day * 0x2545F4914F6CDD1DL + places.centre.asLong()))
 
     /** The folk about the square who are free to stop come over to hear the news. */

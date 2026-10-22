@@ -3,6 +3,7 @@ package io.github.vaspyyy.guildmark.townsfolk.scenes
 import io.github.vaspyyy.guildmark.economy.works.Works
 import io.github.vaspyyy.guildmark.economy.works.WorksState
 import io.github.vaspyyy.guildmark.townsfolk.Activity
+import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
 import io.github.vaspyyy.guildmark.townsfolk.Jobs
 import io.github.vaspyyy.guildmark.townsfolk.Places
 import io.github.vaspyyy.guildmark.townsfolk.Task
@@ -50,7 +51,7 @@ internal object Builders {
     fun game(p: Townsperson): Task? {
         if (!Works.enabled() || p.role != TownRole.CHILD) return null
         val level = p.level() as? ServerLevel ?: return null
-        val town = p.town ?: p.life?.places?.capital?.town ?: return null
+        val town = p.town ?: (p.life?.places as? CityPlaces)?.capital?.town ?: return null
         val w = Scenes.works(level, town.center.asLong()).firstOrNull { w ->
             w.state == WorksState.BUILDING && w.site?.lot?.let { Vec3.atCenterOf(it.center).distanceToSqr(p.position()) < NEAR * NEAR } == true
         } ?: return null
