@@ -7,6 +7,7 @@ import io.github.vaspyyy.guildmark.tales.MemorialRules.Plot
 import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
 import io.github.vaspyyy.guildmark.townsfolk.Places
 import net.minecraft.core.BlockPos
+import net.minecraft.core.Direction
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.tags.BlockTags
 import net.minecraft.world.level.block.Blocks
@@ -63,10 +64,13 @@ internal class MemorialSites(
         return false
     }
 
+    /** [Places.standable], but not on the top of a fence, a wall or a closed gate (their tops are half a block above the cell, and nothing steps onto them). */
     override fun walk(x: Int, y: Int, z: Int): Boolean? {
         at.set(x, y, z)
         if (level.isOutsideBuildHeight(y) || !level.isInWorldBounds(at) || !level.isLoaded(at)) return null
-        return Places.standable(level, at)
+        if (!Places.standable(level, at)) return false
+        val under = at.below()
+        return level.getBlockState(under).getCollisionShape(level, under).max(Direction.Axis.Y) <= 1.0
     }
 
     /** What [state] at [pos] is to the rules. */
@@ -76,15 +80,17 @@ internal class MemorialSites(
         state.`is`(BlockTags.CROPS) || state.`is`(Blocks.FARMLAND) || state.`is`(Blocks.SWEET_BERRY_BUSH) -> Cell.FARM
         // What `Streets.place` builds over: short grass, a fern, a thin snow layer (never a flower, a tall plant or a block with an entity)
         state.canBeReplaced() && !state.hasBlockEntity() && state.block !is DoublePlantBlock -> Cell.PLANT
+        // The land lays gravel and coarse dirt in patches, but the town's yards, tracks and cart ruts are worn to them: only the plan tells which
+        state.`is`(Blocks.GRAVEL) || state.`is`(Blocks.COARSE_DIRT) -> Cell.WORN
         natural(state) -> Cell.GROUND
         Places.floor(level, pos) -> Cell.PAVED
         else -> Cell.OTHER
     }
 
-    /** Ground the land itself lays: grass, dirt in its kinds, sand, gravel, clay, a natural stone, terracotta (never a path, paving or planks). */
+    /** Ground the land itself lays: grass, dirt in its other kinds, sand, clay, a natural stone, terracotta (never a path, paving or planks). */
     private fun natural(state: BlockState): Boolean =
         state.`is`(BlockTags.DIRT) || state.`is`(BlockTags.SAND) || state.`is`(BlockTags.BASE_STONE_OVERWORLD) || state.`is`(BlockTags.TERRACOTTA) ||
-            state.`is`(Blocks.GRAVEL) || state.`is`(Blocks.CLAY) || state.`is`(Blocks.SNOW_BLOCK)
+            state.`is`(Blocks.CLAY) || state.`is`(Blocks.SNOW_BLOCK)
 
     // ---- Where a memorial belongs when the tale names no place ----
 

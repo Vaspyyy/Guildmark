@@ -11,16 +11,17 @@ import kotlin.math.abs
  * Where a memorial may stand (living-world/stories/design.md 6.4, 14.10): the safe-site check and the spiral search that never overrules it.
  * A stone a town sets for its dead must never look careless, so a spot is taken only if all of this holds:
  *
- * - the ground under it is natural ground (grass, dirt, sand, a natural stone), level under the whole of its foot, with the room above
- *   it free (the stone is two blocks high; the cairn is three blocks across and two high), so it is never in a building, on a road or a
- *   path, in a crop, under water, or on a block somebody placed;
+ * - the ground under it is natural ground (grass, dirt, sand, a natural stone; gravel and coarse dirt too, but only in a garden, a yard or
+ *   a free patch, where the town lays them: out on the land they are what a track and a cart's ruts are worn to), level under the whole
+ *   of its foot, with the room above it free (the stone is two blocks high; the cairn is three blocks across and two high), so it is
+ *   never in a building, on a road or a path, in a crop, under water, or on a block somebody placed;
  * - the town's plan agrees: the foot is on open ground (a garden, a yard, a free patch), not on a street, a lot, a field or a wall, and
  *   no building, field or wall is within a block of it (a stone hard against a wall looks careless);
  * - no door is within [DOOR_CLEAR] blocks of it;
  * - there is room in front of the carved face for the lantern and the one who kneels (`Sets.laying`, S5): the cell before the stone, flat
  *   and open ground, for the lantern, and one more beyond it that a body can stand in, on open ground or a street (the cairn's foot is
  *   three across, so its two are the cells beyond the foot); and the one who kneels is not walled in: from that cell a body can walk, a
- *   block up or down at a time and through no gate or door, to a street (or out into open land);
+ *   block up or down at a time and through no gate or door, over no fence or wall, to a street (or out over open land);
  * - it keeps [APART] blocks from another memorial;
  *
  * and it is turned square to the street: the carved face looks the way the nearest street is (a building in the way hides it), else the
@@ -80,8 +81,14 @@ object MemorialRules {
         /** Any fluid. */
         WATER,
 
-        /** Natural ground to set a stone on: grass, dirt, coarse dirt, podzol, sand, gravel, clay, a natural stone. */
+        /** Natural ground to set a stone on: grass, dirt, podzol, sand, clay, a natural stone. */
         GROUND,
+
+        /**
+         * Gravel and coarse dirt. The land lays them in patches, but a yard, a track and the ruts of a cart are worn to them too (the
+         * temperate style's yard is coarse dirt), and nothing but the plan tells which: they are taken only in a garden, a yard or a free patch.
+         */
+        WORN,
 
         /** Anything else solid to stand on: a path, paving, planks, bricks, a wall's top. */
         PAVED,
@@ -175,7 +182,10 @@ object MemorialRules {
          */
         fun doorNear(x: Int, y: Int, z: Int, r: Int): Boolean = door(x, z, r)
 
-        /** Whether a body can stand with its feet in the cell at [x], [y], [z] (a solid top below, room for a body); null if it is not known. */
+        /**
+         * Whether a body can stand with its feet in the cell at [x], [y], [z] (a solid top below it no higher than the cell, room for a body:
+         * nobody stands on a fence, a wall or a closed gate, whose tops are above their cells); null if it is not known.
+         */
         fun walk(x: Int, y: Int, z: Int): Boolean?
     }
 
@@ -268,6 +278,7 @@ object MemorialRules {
     ): Hit {
         val refused = java.util.EnumMap<Refusal, Int>(Refusal::class.java)
         var tried = 0
+        val ways = Ways()
         val indexed = anchors.withIndex().toList()
         val roads = indexed.filter { it.value.kind == ROAD }
         for (group in listOf(roads, indexed.filter { it.value.kind != ROAD })) {
@@ -278,7 +289,7 @@ object MemorialRules {
                         refused.merge(Refusal.UNLOADED, 1, Int::plus)
                         continue
                     }
-                    val f = find(t, cairn, a.x, a.y, a.z, others, seed, reach, within)
+                    val f = find(t, cairn, a.x, a.y, a.z, others, seed, reach, within, ways)
                     tried += f.tried
                     if (f.spot != null) return Hit(Found(f.spot, tried, refused), i, pass)
                     for ((why, n) in f.refused) refused.merge(why, n, Int::plus)
@@ -295,17 +306,18 @@ object MemorialRules {
      * Looks for a spot for a stone (a [cairn] if so) as near column [x], [z] as the rules allow, [y] being about the height of the
      * ground there; [others] are the memorials already standing (their columns), [seed] breaks the ties between spots as far from
      * the place as each other, so that two stones asked for the same place are not always in the same corner. Only the places more than
-     * [beyond] blocks from it are tried (a search that has been through those nearer does not go through them again).
+     * [beyond] blocks from it are tried (a search that has been through those nearer does not go through them again). The [ways] are what
+     * the searches of one ask have learnt of the ground they have walked (see [Ways]).
      */
     fun find(
         t: Terrain, cairn: Boolean, x: Int, y: Int, z: Int, others: List<Column> = listOf(), seed: Long = 0L,
-        reach: Int = if (cairn) CAIRN_REACH else STONE_REACH, beyond: Int = 0,
+        reach: Int = if (cairn) CAIRN_REACH else STONE_REACH, beyond: Int = 0, ways: Ways = Ways(),
     ): Found {
         val refused = java.util.EnumMap<Refusal, Int>(Refusal::class.java)
         var tried = 0
         for (o in offsets(reach, beyond, seed)) {
             tried++
-            val spot = try1(t, cairn, x + o.first, y, z + o.second, others, seed, refused)
+            val spot = try1(t, cairn, x + o.first, y, z + o.second, others, seed, refused, ways = ways)
             if (spot != null) return Found(spot, tried, refused)
         }
         return Found(null, tried, refused)
@@ -315,6 +327,16 @@ object MemorialRules {
     fun check(t: Terrain, cairn: Boolean, s: Spot, others: List<Column> = listOf()): Refusal? {
         val refused = java.util.EnumMap<Refusal, Int>(Refusal::class.java)
         return if (try1(t, cairn, s.x, s.y, s.z, others, 0L, refused, only = s.face) != null) null else refused.keys.firstOrNull()
+    }
+
+    /**
+     * What a search has learnt of the ground it has walked, cell by cell: the lands it found shut in (every cell of a paddock whose rails
+     * close it) and the lands it found a way out of. A land is walked once, however many of the places the search tries lie in it, for
+     * all of its cells are alike: a body that can walk from one can walk from any.
+     */
+    class Ways {
+        internal val shut = HashSet<Long>()
+        internal val open = HashSet<Long>()
     }
 
     /** The offsets more than [beyond] and within [reach] blocks of the place, nearest first, those equally near in an order [seed] picks. */
@@ -336,8 +358,9 @@ object MemorialRules {
     /** The spot at column [x], [z] (the ground found about height [hint]) if it passes every rule, else null with the reason counted. */
     private fun try1(
         t: Terrain, cairn: Boolean, x: Int, hint: Int, z: Int, others: List<Column>, seed: Long, refused: MutableMap<Refusal, Int>, only: Face? = null,
+        ways: Ways = Ways(),
     ): Spot? {
-        val why = judge(t, cairn, x, hint, z, others, seed, only)
+        val why = judge(t, cairn, x, hint, z, others, seed, only, ways)
         if (why.first != null) {
             refused.merge(why.first!!, 1, Int::plus)
             return null
@@ -345,7 +368,7 @@ object MemorialRules {
         return why.second
     }
 
-    private fun judge(t: Terrain, cairn: Boolean, x: Int, hint: Int, z: Int, others: List<Column>, seed: Long, only: Face?): Pair<Refusal?, Spot?> {
+    private fun judge(t: Terrain, cairn: Boolean, x: Int, hint: Int, z: Int, others: List<Column>, seed: Long, only: Face?, ways: Ways): Pair<Refusal?, Spot?> {
         fun no(r: Refusal) = r to null
         val apart = if (cairn) APART_CAIRN else APART
         if (others.any { abs(it.x - x) < apart && abs(it.z - z) < apart }) return no(Refusal.CROWDED)
@@ -374,7 +397,7 @@ object MemorialRules {
             val fx = x + dx
             val fz = z + dz
             val floor = t.cell(fx, y - 1, fz) ?: return no(Refusal.UNLOADED)
-            if (floor != Cell.GROUND) return no(floorWhy(floor))
+            if (!footing(t, floor, fx, fz)) return no(floorWhy(floor))
             val rooms = if (dx == 0 && dz == 0) HEADROOM else 2
             for (k in 0 until rooms) {
                 val c = t.cell(fx, y + k, fz) ?: return no(Refusal.UNLOADED)
@@ -404,7 +427,7 @@ object MemorialRules {
         if (looks.isEmpty()) return no(if (sawUnloaded) Refusal.UNLOADED else Refusal.NO_ROOM)
         for ((f, room) in looks.sortedByDescending { score(t, x, z, it.first, seed) }) {
             val k = room.kneel!!
-            if (hasWayOut(t, k[0], k[1], k[2])) return null to Spot(x, y, z, f)
+            if (hasWayOut(t, ways, k[0], k[1], k[2])) return null to Spot(x, y, z, f)
         }
         return no(Refusal.NO_WAY)
     }
@@ -437,10 +460,13 @@ object MemorialRules {
     /** How far above and below the height asked for the ground is looked for. */
     private const val SCAN = 6
 
+    /** Whether [floor], the block under column [x], [z], is ground a memorial may stand on or have its lantern on: the land's own, or worn ground in a garden, a yard or a free patch. */
+    private fun footing(t: Terrain, floor: Cell, x: Int, z: Int): Boolean = floor == Cell.GROUND || floor == Cell.WORN && t.plot(x, z) == Plot.OPEN
+
     private fun floorWhy(c: Cell): Refusal = when (c) {
         Cell.AIR, Cell.PLANT -> Refusal.UNEVEN
         Cell.WATER -> Refusal.WATER
-        Cell.PAVED -> Refusal.PAVED
+        Cell.PAVED, Cell.WORN -> Refusal.PAVED
         Cell.FARM -> Refusal.CROP
         else -> Refusal.PLACED
     }
@@ -473,7 +499,7 @@ object MemorialRules {
         }
         val floor = t.cell(lx, y - 1, lz) ?: return NOT_LOADED
         val body = t.cell(lx, y, lz) ?: return NOT_LOADED
-        if (floor != Cell.GROUND || body != Cell.AIR && body != Cell.PLANT) return NO_SPACE
+        if (!footing(t, floor, lx, lz) || body != Cell.AIR && body != Cell.PLANT) return NO_SPACE
         val mx = x + f.dx * (lamp + 1)
         val mz = z + f.dz * (lamp + 1)
         // The one who kneels does not kneel in a field, on a wall, or in somebody's lot
@@ -495,37 +521,55 @@ object MemorialRules {
     private const val WALK = 1500
 
     /**
-     * Whether the one who kneels at [x], [y], [z] is not walled in: from that cell a body can walk (the steps of [STEPS]; a gate is not
-     * opened, nor a door) to a street, or on over more than [WALK] cells, or to ground that is not loaded, which is all as good as open
-     * land. A garden with a fence all round it, or a courtyard, is walled in. Where the plan has nothing to say ([Plot.WILD]: natural
-     * land, a clearing in a wood) there is no street to walk to and nobody is walled in.
+     * Whether the one who kneels at [x], [y], [z] is not walled in: from that cell a body can walk (the steps of [STEPS]; over no fence
+     * or wall, through no gate or door) to a street, or on over more than [WALK] cells, or to ground that is not loaded, which is all as
+     * good as open land. A garden with a fence all round it, a courtyard, or a pasture whose rails close it in, is walled in; natural
+     * land with no plan to walk to (a verge, a hillside, a clearing in a wood) is open once it runs on for [WALK] cells.
      */
-    private fun hasWayOut(t: Terrain, x: Int, y: Int, z: Int): Boolean {
-        val here = t.plot(x, z)
-        if (here == Plot.STREET || here == Plot.WILD) return true
-        fun key(a: Int, b: Int, c: Int): Long = ((a - x + 2048).toLong() shl 40) or ((c - z + 2048).toLong() shl 20) or (b - y + 512).toLong()
+    private fun hasWayOut(t: Terrain, ways: Ways, x: Int, y: Int, z: Int): Boolean {
+        if (t.plot(x, z) == Plot.STREET) return true
+        // The cell as BlockPos.asLong packs it, so that what one walk learnt serves the next
+        fun key(a: Int, b: Int, c: Int): Long = ((a.toLong() and 0x3FFFFFF) shl 38) or ((c.toLong() and 0x3FFFFFF) shl 12) or (b.toLong() and 0xFFF)
+        val start = key(x, y, z)
+        if (start in ways.open) return true
+        if (start in ways.shut) return false
         val seen = HashSet<Long>()
         val queue = ArrayDeque<IntArray>()
-        seen.add(key(x, y, z))
+        seen.add(start)
         queue.addLast(intArrayOf(x, y, z))
         var cells = 0
-        while (queue.isNotEmpty()) {
+        var way = false
+        search@ while (queue.isNotEmpty()) {
             val p = queue.removeFirst()
             for (f in Face.entries) {
                 val nx = p[0] + f.dx
                 val nz = p[2] + f.dz
                 for (dy in STEPS) {
                     val ny = p[1] + dy
-                    val w = t.walk(nx, ny, nz) ?: return true
+                    val w = t.walk(nx, ny, nz)
+                    if (w == null) {
+                        way = true
+                        break@search
+                    }
                     if (!w) continue
-                    if (!seen.add(key(nx, ny, nz))) break
-                    if (t.plot(nx, nz) == Plot.STREET || ++cells >= WALK) return true
+                    val k = key(nx, ny, nz)
+                    if (k in ways.open) {
+                        way = true
+                        break@search
+                    }
+                    if (!seen.add(k)) break
+                    if (t.plot(nx, nz) == Plot.STREET || ++cells >= WALK) {
+                        way = true
+                        break@search
+                    }
                     queue.addLast(intArrayOf(nx, ny, nz))
                     break
                 }
             }
         }
-        return false
+        // Every cell it walked is in the land it ended in: shut in if the walk ran out of cells, else a land with a way out
+        (if (way) ways.open else ways.shut).addAll(seen)
+        return way
     }
 
     /**
