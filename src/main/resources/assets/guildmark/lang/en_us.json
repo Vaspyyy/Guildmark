@@ -7424,5 +7424,12 @@
   "say.guildmark.talk.tale.brother.home_0": "I'm home. I'm really home.",
   "say.guildmark.talk.tale.brother.home_1": "Never again. I swear it.",
   "say.guildmark.crier_tale_moot": "The moot is called! Come, and say your piece!",
-  "say.guildmark.crier_tale_custom": "A custom of the town is kept tonight!"
+  "say.guildmark.crier_tale_custom": "A custom of the town is kept tonight!",
+  "subtitles.guildmark.townsfolk.tale.begin": "A tale begins",
+  "subtitles.guildmark.townsfolk.tale.step": "A tale turns",
+  "subtitles.guildmark.townsfolk.tale.end_good": "A tale ends well",
+  "subtitles.guildmark.townsfolk.tale.end_ill": "A tale ends in sorrow",
+  "subtitles.guildmark.townsfolk.tale.note_burn": "A paper burns",
+  "subtitles.guildmark.townsfolk.tale.candle_light": "A candle is lit",
+  "subtitles.guildmark.townsfolk.tale.cart_mend": "A cart wheel is set"
 }

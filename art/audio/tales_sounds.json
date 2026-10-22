@@ -1,0 +1,52 @@
+{
+  "townsfolk.tale.begin": {
+    "sounds": [
+      "guildmark:townsfolk/tale/begin1",
+      "guildmark:townsfolk/tale/begin2"
+    ],
+    "subtitle": "subtitles.guildmark.townsfolk.tale.begin"
+  },
+  "townsfolk.tale.step": {
+    "sounds": [
+      "guildmark:townsfolk/tale/step1",
+      "guildmark:townsfolk/tale/step2"
+    ],
+    "subtitle": "subtitles.guildmark.townsfolk.tale.step"
+  },
+  "townsfolk.tale.end_good": {
+    "sounds": [
+      "guildmark:townsfolk/tale/end_good1",
+      "guildmark:townsfolk/tale/end_good2"
+    ],
+    "subtitle": "subtitles.guildmark.townsfolk.tale.end_good"
+  },
+  "townsfolk.tale.end_ill": {
+    "sounds": [
+      "guildmark:townsfolk/tale/end_ill1",
+      "guildmark:townsfolk/tale/end_ill2"
+    ],
+    "subtitle": "subtitles.guildmark.townsfolk.tale.end_ill"
+  },
+  "townsfolk.tale.note_burn": {
+    "sounds": [
+      "guildmark:townsfolk/tale/note_burn1",
+      "guildmark:townsfolk/tale/note_burn2",
+      "guildmark:townsfolk/tale/note_burn3"
+    ],
+    "subtitle": "subtitles.guildmark.townsfolk.tale.note_burn"
+  },
+  "townsfolk.tale.candle_light": {
+    "sounds": [
+      "guildmark:townsfolk/tale/candle_light1",
+      "guildmark:townsfolk/tale/candle_light2"
+    ],
+    "subtitle": "subtitles.guildmark.townsfolk.tale.candle_light"
+  },
+  "townsfolk.tale.cart_mend": {
+    "sounds": [
+      "guildmark:townsfolk/tale/cart_mend1",
+      "guildmark:townsfolk/tale/cart_mend2"
+    ],
+    "subtitle": "subtitles.guildmark.townsfolk.tale.cart_mend"
+  }
+}
