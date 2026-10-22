@@ -32,16 +32,21 @@ import kotlin.math.sin
  * stack's own.
  */
 class LarderScreen(menu: ChestMenu, inventory: Inventory, title: Component) : ContainerScreen(menu, inventory, title) {
+    private companion object {
+        /** The bar under a dish is 10 wide from the slot's left edge, so that a count of one figure, which sits at the right, is clear of it. */
+        const val BAR = 10
+    }
+
     override fun extractSlot(graphics: GuiGraphicsExtractor, slot: Slot, mouseX: Int, mouseY: Int) {
         super.extractSlot(graphics, slot, mouseX, mouseY)
         if (!Cooking.spoilage()) return
         val level = Minecraft.getInstance().level ?: return
         val stack = slot.item
         val look = Look.of(stack, Freshness.today(level)) ?: return
-        val x = slot.x + 2
+        val x = slot.x + 1
         val y = slot.y + 13
-        graphics.fill(x, y, x + 13, y + 2, ARGB.color(1f, 0x000000))
-        val full = if (look.stage == Stage.GONE) 1 else Mth.ceil(look.life * 13f).coerceIn(1, 13)
+        graphics.fill(x, y, x + BAR, y + 2, ARGB.color(1f, 0x000000))
+        val full = if (look.stage == Stage.GONE) 1 else Mth.ceil(look.life * BAR).coerceIn(1, BAR)
         val alpha = if (look.stage == Stage.GONE) 0.65f + 0.35f * sin(Util.getMillis() / 380.0).toFloat() else 1f
         graphics.fill(x, y, x + full, y + 1, ARGB.color(alpha, look.color))
     }
