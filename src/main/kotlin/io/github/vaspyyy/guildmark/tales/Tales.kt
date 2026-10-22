@@ -140,6 +140,7 @@ object Tales : Comings.Listener {
         TaleLook.register()
         TaleLedger.register()
         TaleRows.register(modBus)
+        TaleTalk.register()
     }
 
     // ---- The clock ----

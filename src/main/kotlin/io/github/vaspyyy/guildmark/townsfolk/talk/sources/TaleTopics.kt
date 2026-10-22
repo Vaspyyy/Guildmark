@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.townsfolk.talk.sources
 
 import io.github.vaspyyy.guildmark.tales.TaleData
+import io.github.vaspyyy.guildmark.tales.TaleEngine
 import io.github.vaspyyy.guildmark.tales.TaleLines
 import io.github.vaspyyy.guildmark.tales.TaleOptions
 import io.github.vaspyyy.guildmark.tales.TaleSays
@@ -64,7 +65,7 @@ object TaleTopics : TopicSource {
     private const val HOME_NEAR = 64.0
 
     override fun offer(ask: Ask, out: MutableList<Topic>) {
-        if (!Tales.live) return
+        if (!Tales.live || TaleEngine.openTales(ask.level).isEmpty()) return
         val found = TaleSpeakers.find(ask.level, ask.speaker)
         if (found != null) cast(ask, found, out)
         rumours(ask, found, out)

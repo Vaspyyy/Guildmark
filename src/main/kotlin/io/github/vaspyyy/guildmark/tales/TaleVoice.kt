@@ -186,15 +186,24 @@ object TaleOptions {
     enum class Hand { NONE, NOT_YET, DONE, EXPIRED, LATER }
 
     /**
+     * Why a try at [put] of [marks] cannot be done now (SHORT: the pack holds fewer; LATER: the tale cannot hear it yet), or null if it can:
+     * for an option that writes something of its own into the record first (a reason), and only when it is sure to be done. Changes nothing.
+     */
+    fun check(turn: TaleTurn, marks: Int): Put? {
+        val player = turn.player ?: return Put.LATER
+        if (marks <= 0 || !Tales.live || !turn.tale.open || turn.ctx() == null || turn.mine == null) return Put.LATER
+        return if (TownControl.marks(player) < marks) Put.SHORT else null
+    }
+
+    /**
      * The player puts [marks] Marks into the tale, at its GIVE step (7.5): taken from the pack, held in their part's escrow (the engine
      * spends it when the step is met and gives it back in full if the step lapses or the tale ends), and the tale hears an `Event.Gave`.
      * The template's `heard` counts it and moves the tale on when the sum is met. Nothing is taken if the tale cannot hear it yet.
      */
     fun put(turn: TaleTurn, marks: Int): Put {
+        check(turn, marks)?.let { return it }
         val player = turn.player ?: return Put.LATER
-        if (marks <= 0 || !Tales.live || !turn.tale.open || turn.ctx() == null) return Put.LATER
         val part = turn.part() ?: return Put.LATER
-        if (TownControl.marks(player) < marks) return Put.SHORT
         TownControl.pay(player, marks)
         part.escrow += marks
         turn.changed()
