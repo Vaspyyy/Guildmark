@@ -177,6 +177,10 @@ class TradeBooks(private val books: MutableMap<UUID, Book> = HashMap()) : SavedD
         /** The saved data's type: [get] makes the record if there is none (and the game saves what it made, however empty), so a part that only looks reads it with `dataStorage.get(TYPE)` instead. */
         internal val TYPE = SavedDataType(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "trade_books"), Supplier { TradeBooks() }, CODEC)
 
+        /** The books, made (and so saved, even empty) if there are none yet: for whoever writes to them. */
         fun get(level: ServerLevel): TradeBooks = level.server.overworld().dataStorage.computeIfAbsent(TYPE)
+
+        /** The books if they exist, else null, making nothing: for a look or a status line, which must not leave an empty `trade_books.dat` behind. */
+        fun peek(level: ServerLevel): TradeBooks? = level.server.overworld().dataStorage.get(TYPE)
     }
 }
