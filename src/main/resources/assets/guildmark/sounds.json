@@ -29279,5 +29279,515 @@
       "guildmark:townsfolk/voice/child/talk.trade.child_1"
     ],
     "subtitle": "say.guildmark.talk.trade.child_1"
+  },
+  "cook.place": {
+    "sounds": [
+      "guildmark:cook/place1",
+      "guildmark:cook/place2"
+    ],
+    "subtitle": "subtitles.guildmark.cook.place"
+  },
+  "cook.pour": {
+    "sounds": [
+      {
+        "name": "guildmark:cook/pour1",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:cook/pour2",
+        "attenuation_distance": 12
+      }
+    ],
+    "subtitle": "subtitles.guildmark.cook.pour"
+  },
+  "cook.plop.soft": {
+    "sounds": [
+      {
+        "name": "guildmark:cook/plop/soft1",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:cook/plop/soft2",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:cook/plop/soft3",
+        "attenuation_distance": 12
+      }
+    ],
+    "subtitle": "subtitles.guildmark.cook.plop.soft"
+  },
+  "cook.plop.meat": {
+    "sounds": [
+      {
+        "name": "guildmark:cook/plop/meat1",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:cook/plop/meat2",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:cook/plop/meat3",
+        "attenuation_distance": 12
+      }
+    ],
+    "subtitle": "subtitles.guildmark.cook.plop.meat"
+  },
+  "cook.plop.grain": {
+    "sounds": [
+      {
+        "name": "guildmark:cook/plop/grain1",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:cook/plop/grain2",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:cook/plop/grain3",
+        "attenuation_distance": 12
+      }
+    ],
+    "subtitle": "subtitles.guildmark.cook.plop.grain"
+  },
+  "cook.fuel": {
+    "sounds": [
+      "guildmark:cook/fuel1",
+      "guildmark:cook/fuel2"
+    ],
+    "subtitle": "subtitles.guildmark.cook.fuel"
+  },
+  "cook.ignite": {
+    "sounds": [
+      "guildmark:cook/ignite1",
+      "guildmark:cook/ignite2"
+    ],
+    "subtitle": "subtitles.guildmark.cook.ignite"
+  },
+  "cook.stir": {
+    "sounds": [
+      "guildmark:cook/stir1",
+      "guildmark:cook/stir2",
+      "guildmark:cook/stir3"
+    ],
+    "subtitle": "subtitles.guildmark.cook.stir"
+  },
+  "cook.taste": {
+    "sounds": [
+      {
+        "name": "guildmark:cook/taste1",
+        "attenuation_distance": 8
+      },
+      {
+        "name": "guildmark:cook/taste2",
+        "attenuation_distance": 8
+      }
+    ],
+    "subtitle": "subtitles.guildmark.cook.taste"
+  },
+  "cook.simmer": {
+    "sounds": [
+      {
+        "name": "guildmark:cook/simmer1",
+        "stream": false,
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.guildmark.cook.simmer"
+  },
+  "cook.call": {
+    "sounds": [
+      {
+        "name": "guildmark:cook/call1",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:cook/call2",
+        "attenuation_distance": 12
+      }
+    ],
+    "subtitle": "subtitles.guildmark.cook.call"
+  },
+  "cook.crackle": {
+    "sounds": [
+      {
+        "name": "guildmark:cook/crackle1",
+        "attenuation_distance": 20
+      },
+      {
+        "name": "guildmark:cook/crackle2",
+        "attenuation_distance": 20
+      }
+    ],
+    "subtitle": "subtitles.guildmark.cook.crackle"
+  },
+  "cook.sizzle": {
+    "sounds": [
+      {
+        "name": "guildmark:cook/sizzle1",
+        "stream": false,
+        "attenuation_distance": 20
+      }
+    ],
+    "subtitle": "subtitles.guildmark.cook.sizzle"
+  },
+  "cook.ease": {
+    "sounds": [
+      {
+        "name": "guildmark:cook/ease1",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:cook/ease2",
+        "attenuation_distance": 12
+      }
+    ],
+    "subtitle": "subtitles.guildmark.cook.ease"
+  },
+  "cook.boil_over": {
+    "sounds": [
+      "guildmark:cook/boil_over1",
+      "guildmark:cook/boil_over2"
+    ],
+    "subtitle": "subtitles.guildmark.cook.boil_over"
+  },
+  "cook.skim": {
+    "sounds": [
+      {
+        "name": "guildmark:cook/skim1",
+        "attenuation_distance": 8
+      },
+      {
+        "name": "guildmark:cook/skim2",
+        "attenuation_distance": 8
+      }
+    ],
+    "subtitle": "subtitles.guildmark.cook.skim"
+  },
+  "cook.ready": {
+    "sounds": [
+      "guildmark:cook/ready1"
+    ],
+    "subtitle": "subtitles.guildmark.cook.ready"
+  },
+  "cook.ripe": {
+    "sounds": [
+      "guildmark:cook/ripe1"
+    ],
+    "subtitle": "subtitles.guildmark.cook.ripe"
+  },
+  "cook.serve": {
+    "sounds": [
+      {
+        "name": "guildmark:cook/serve1",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:cook/serve2",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:cook/serve3",
+        "attenuation_distance": 12
+      }
+    ],
+    "subtitle": "subtitles.guildmark.cook.serve"
+  },
+  "cook.tier.plain": {
+    "sounds": [
+      {
+        "name": "guildmark:cook/tier/plain1",
+        "attenuation_distance": 12
+      }
+    ],
+    "subtitle": "subtitles.guildmark.cook.tier.plain"
+  },
+  "cook.tier.sound": {
+    "sounds": [
+      {
+        "name": "guildmark:cook/tier/sound1",
+        "attenuation_distance": 12
+      }
+    ],
+    "subtitle": "subtitles.guildmark.cook.tier.sound"
+  },
+  "cook.tier.fine": {
+    "sounds": [
+      {
+        "name": "guildmark:cook/tier/fine1",
+        "attenuation_distance": 12
+      }
+    ],
+    "subtitle": "subtitles.guildmark.cook.tier.fine"
+  },
+  "cook.tier.hallmark": {
+    "sounds": [
+      {
+        "name": "guildmark:cook/tier/hallmark1",
+        "attenuation_distance": 12
+      }
+    ],
+    "subtitle": "subtitles.guildmark.cook.tier.hallmark"
+  },
+  "cook.burnt": {
+    "sounds": [
+      "guildmark:cook/burnt1",
+      "guildmark:cook/burnt2"
+    ],
+    "subtitle": "subtitles.guildmark.cook.burnt"
+  },
+  "cook.eat.spoon": {
+    "sounds": [
+      {
+        "name": "guildmark:cook/eat/spoon1",
+        "attenuation_distance": 8
+      },
+      {
+        "name": "guildmark:cook/eat/spoon2",
+        "attenuation_distance": 8
+      },
+      {
+        "name": "guildmark:cook/eat/spoon3",
+        "attenuation_distance": 8
+      }
+    ],
+    "subtitle": "subtitles.guildmark.cook.eat.spoon"
+  },
+  "cook.eat.bite": {
+    "sounds": [
+      {
+        "name": "guildmark:cook/eat/bite1",
+        "attenuation_distance": 8
+      },
+      {
+        "name": "guildmark:cook/eat/bite2",
+        "attenuation_distance": 8
+      },
+      {
+        "name": "guildmark:cook/eat/bite3",
+        "attenuation_distance": 8
+      }
+    ],
+    "subtitle": "subtitles.guildmark.cook.eat.bite"
+  },
+  "cook.drink": {
+    "sounds": [
+      {
+        "name": "guildmark:cook/drink1",
+        "attenuation_distance": 8
+      },
+      {
+        "name": "guildmark:cook/drink2",
+        "attenuation_distance": 8
+      }
+    ],
+    "subtitle": "subtitles.guildmark.cook.drink"
+  },
+  "cook.buff": {
+    "sounds": [
+      "guildmark:cook/buff1"
+    ],
+    "subtitle": "subtitles.guildmark.cook.buff"
+  },
+  "cook.oven_hum": {
+    "sounds": [
+      {
+        "name": "guildmark:cook/oven_hum1",
+        "stream": false,
+        "attenuation_distance": 20
+      }
+    ],
+    "subtitle": "subtitles.guildmark.cook.oven_hum"
+  },
+  "cook.oven_open": {
+    "sounds": [
+      "guildmark:cook/oven_open1",
+      "guildmark:cook/oven_open2"
+    ],
+    "subtitle": "subtitles.guildmark.cook.oven_open"
+  },
+  "cook.oven_shut": {
+    "sounds": [
+      "guildmark:cook/oven_shut1",
+      "guildmark:cook/oven_shut2"
+    ],
+    "subtitle": "subtitles.guildmark.cook.oven_shut"
+  },
+  "cook.spit_creak": {
+    "sounds": [
+      {
+        "name": "guildmark:cook/spit_creak1",
+        "stream": false,
+        "attenuation_distance": 20
+      }
+    ],
+    "subtitle": "subtitles.guildmark.cook.spit_creak"
+  },
+  "cook.crank": {
+    "sounds": [
+      {
+        "name": "guildmark:cook/crank1",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:cook/crank2",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:cook/crank3",
+        "attenuation_distance": 12
+      }
+    ],
+    "subtitle": "subtitles.guildmark.cook.crank"
+  },
+  "cook.drip": {
+    "sounds": [
+      {
+        "name": "guildmark:cook/drip1",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:cook/drip2",
+        "attenuation_distance": 12
+      }
+    ],
+    "subtitle": "subtitles.guildmark.cook.drip"
+  },
+  "cook.flare": {
+    "sounds": [
+      "guildmark:cook/flare1",
+      "guildmark:cook/flare2"
+    ],
+    "subtitle": "subtitles.guildmark.cook.flare"
+  },
+  "cook.flip": {
+    "sounds": [
+      {
+        "name": "guildmark:cook/flip1",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:cook/flip2",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:cook/flip3",
+        "attenuation_distance": 12
+      }
+    ],
+    "subtitle": "subtitles.guildmark.cook.flip"
+  },
+  "cook.chop": {
+    "sounds": [
+      {
+        "name": "guildmark:cook/chop1",
+        "attenuation_distance": 10
+      },
+      {
+        "name": "guildmark:cook/chop2",
+        "attenuation_distance": 10
+      },
+      {
+        "name": "guildmark:cook/chop3",
+        "attenuation_distance": 10
+      }
+    ],
+    "subtitle": "subtitles.guildmark.cook.chop"
+  },
+  "cook.slice": {
+    "sounds": [
+      {
+        "name": "guildmark:cook/slice1",
+        "attenuation_distance": 10
+      },
+      {
+        "name": "guildmark:cook/slice2",
+        "attenuation_distance": 10
+      },
+      {
+        "name": "guildmark:cook/slice3",
+        "attenuation_distance": 10
+      }
+    ],
+    "subtitle": "subtitles.guildmark.cook.slice"
+  },
+  "cook.carve": {
+    "sounds": [
+      {
+        "name": "guildmark:cook/carve1",
+        "attenuation_distance": 10
+      },
+      {
+        "name": "guildmark:cook/carve2",
+        "attenuation_distance": 10
+      },
+      {
+        "name": "guildmark:cook/carve3",
+        "attenuation_distance": 10
+      }
+    ],
+    "subtitle": "subtitles.guildmark.cook.carve"
+  },
+  "cook.loaf_down": {
+    "sounds": [
+      {
+        "name": "guildmark:cook/loaf_down1",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:cook/loaf_down2",
+        "attenuation_distance": 12
+      }
+    ],
+    "subtitle": "subtitles.guildmark.cook.loaf_down"
+  },
+  "cook.plate": {
+    "sounds": [
+      {
+        "name": "guildmark:cook/plate1",
+        "attenuation_distance": 8
+      },
+      {
+        "name": "guildmark:cook/plate2",
+        "attenuation_distance": 8
+      }
+    ],
+    "subtitle": "subtitles.guildmark.cook.plate"
+  },
+  "cook.chalk": {
+    "sounds": [
+      {
+        "name": "guildmark:cook/chalk1",
+        "attenuation_distance": 8
+      },
+      {
+        "name": "guildmark:cook/chalk2",
+        "attenuation_distance": 8
+      }
+    ],
+    "subtitle": "subtitles.guildmark.cook.chalk"
+  },
+  "cook.larder": {
+    "sounds": [
+      {
+        "name": "guildmark:cook/larder1",
+        "attenuation_distance": 8
+      },
+      {
+        "name": "guildmark:cook/larder2",
+        "attenuation_distance": 8
+      }
+    ],
+    "subtitle": "subtitles.guildmark.cook.larder"
+  },
+  "cook.chill": {
+    "sounds": [
+      {
+        "name": "guildmark:cook/chill1",
+        "stream": false
+      }
+    ],
+    "subtitle": "subtitles.guildmark.cook.chill"
   }
 }
