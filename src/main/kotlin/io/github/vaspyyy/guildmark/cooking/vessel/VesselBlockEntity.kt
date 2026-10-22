@@ -504,7 +504,7 @@ open class VesselBlockEntity(type: BlockEntityType<*>, pos: BlockPos, state: Blo
         if (stack.isEmpty) return true
         // Only what the client itself can tell: the cook's data (Roles) is the server's, and the server answers with this same
         // function, so a swing is never missing or doubled. An ingredient the guess misses is swung by the server instead.
-        return lighter(stack) || stack.item is CookToolItem || stack.`is`(Items.WATER_BUCKET) || stack.has(DataComponents.COOKING_FUEL) ||
+        return lighter(stack) || stack.item is CookToolItem || stack.`is`(Items.WATER_BUCKET) || (stack.has(DataComponents.COOKING_FUEL) && !stack.isDamageableItem) ||
             stack.has(DataComponents.FOOD) || Prep.preparable(stack) || Actions.isAccent(stack)
     }
 
@@ -534,9 +534,16 @@ open class VesselBlockEntity(type: BlockEntityType<*>, pos: BlockPos, state: Blo
         }
     }
 
-    /** Whether the item is fed to the fire: it burns, and it is not something the pot would take from the vessel's side. */
+    /**
+     * Whether [stack] is something to feed the fire: it burns in a furnace, and it is not a tool, a weapon or a piece of armour
+     * (a click on a station never burns a wooden axe, enchanted or not, though a furnace would take it).
+     */
+    internal fun fuelItem(level: ServerLevel, stack: ItemStack): Boolean =
+        !stack.isEmpty && !stack.isDamageableItem && Fuel.burnTicks(level, stack) > 0
+
+    /** Whether the item is fed to the fire: it is a fuel, and it is not something the pot would take from the vessel's side. */
     private fun isFuel(level: ServerLevel, stack: ItemStack, region: Region): Boolean {
-        if (stack.isEmpty || Fuel.burnTicks(level, stack) <= 0) return false
+        if (!fuelItem(level, stack)) return false
         return !(region == Region.VESSEL && Roles.of(stack) != null)
     }
 
@@ -551,7 +558,7 @@ open class VesselBlockEntity(type: BlockEntityType<*>, pos: BlockPos, state: Blo
         val party = Parties.get(level.server).of(owner)
         if (party != null && player.uuid in party.members) return true
         // A pot kept private still takes fuel and a light from anyone (1.7: "others can only add fuel")
-        if (lighter(stack) || (!stack.isEmpty && Fuel.burnTicks(level, stack) > 0)) return true
+        if (lighter(stack) || fuelItem(level, stack)) return true
         say(player, "private")
         return false
     }
