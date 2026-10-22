@@ -108,7 +108,7 @@ object DishTooltip {
             Stage.FRESH -> {}
         }
 
-        // what is coming: the days to the next stage (the town's day turns at dawn, so "tomorrow" is the next dawn)
+        // what is coming: the days to the next stage (the town's day turns at two in the morning, so "tomorrow" is the next two o'clock)
         if (level != null && dated && stage != Stage.GONE && Cooking.spoilage()) {
             val limit = Freshness.limits(kind, data.keep)
             val ahead = (if (stage == Stage.FRESH) limit[0] else limit[1]) + 1 - age
