@@ -71,7 +71,7 @@ PREFIXES = {
         "advancements.guildmark.tales_", "handbook.guildmark.page19", "character.guildmark.pip.verse.tales_three",
         "guildmark.configuration.townTale", "guildmark.configuration.taleBanners",
         "slate.guildmark.sealed", "gui.guildmark.works.why.moot",
-        "board.guildmark.slip.word.tale",
+        "board.guildmark.slip.word.tale", "title.guildmark.good_neighbour", "say.guildmark.talk.detail.deal.slight.word_broken", "say.guildmark.talk.detail.deal.slight.wronged", "say.guildmark.talk.detail.deal.slight.defaced", "gui.guildmark.works.regard.cool.slight.word_broken", "gui.guildmark.works.regard.cool.slight.wronged", "gui.guildmark.works.regard.cool.slight.defaced",
     ),
     "villages": (
         "say.guildmark.talk.village.", "say.guildmark.talk.detail.village.", "subtitles.guildmark.village.",
