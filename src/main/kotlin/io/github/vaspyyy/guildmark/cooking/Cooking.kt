@@ -2,11 +2,24 @@ package io.github.vaspyyy.guildmark.cooking
 
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.GuildmarkConfig
+import io.github.vaspyyy.guildmark.cooking.dish.Dishes
+import io.github.vaspyyy.guildmark.cooking.feast.HarvestTable
+import io.github.vaspyyy.guildmark.cooking.home.HomesteadKitchens
+import io.github.vaspyyy.guildmark.cooking.market.KitchenDoors
+import io.github.vaspyyy.guildmark.cooking.meal.Meals
+import io.github.vaspyyy.guildmark.cooking.recipe.Roles
+import io.github.vaspyyy.guildmark.cooking.shop.CookShops
+import io.github.vaspyyy.guildmark.cooking.talk.TalkCookCommand
+import io.github.vaspyyy.guildmark.cooking.town.KitchenFit
+import io.github.vaspyyy.guildmark.cooking.town.KitchenScenes
+import io.github.vaspyyy.guildmark.cooking.town.ServedCommand
+import io.github.vaspyyy.guildmark.cooking.vessel.Stations
 import io.github.vaspyyy.guildmark.townsfolk.Days
 import net.minecraft.server.level.ServerLevel
 import net.neoforged.bus.api.IEventBus
 import net.neoforged.neoforge.common.NeoForge
 import net.neoforged.neoforge.event.server.ServerStoppedEvent
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent
 
 /**
  * Hearthcraft, the cook's life (living-world/cook/design.md): stations to cook at, dishes of twelve kinds that give a
@@ -66,11 +79,31 @@ object Cooking {
     fun fuelScale(): Double = rule(4.0) { GuildmarkConfig.COOK_FUEL_SCALE.get() }
 
     /**
-     * Registers all of Hearthcraft: called once, from Guildmark.kt. Each part's own `register()` follows, in the fixed
-     * order of the design (12.5); a part that adds a payload, a block entity type, a listener or a command branch does
-     * it inside its own `register()`, so this is the only place that lists them.
+     * Registers all of Hearthcraft: called once, from Guildmark.kt. First the registries and the two payloads, then each
+     * part's own `register()` in the fixed order of the design (12.5), then the command root and the clearing at stop. A
+     * part that adds a block entity type, a listener or a command branch does it inside its own `register()`, so this is
+     * the only place that lists them and no part edits this file or Guildmark.kt again. A stub's `register()` is empty.
      */
     fun register(modBus: IEventBus) {
+        CookRegistry.register(modBus)
+        CookSounds.register(modBus)
+        CookParticles.register(modBus)
+        modBus.addListener(RegisterPayloadHandlersEvent::class.java) { event -> CookPayloads.register(event) }
+        Roles.register() // A
+        Stations.register() // B
+        Dishes.register() // D
+        CookActions.register() // E
+        Meals.register() // F
+        KitchenDoors.register() // G
+        CookShops.register() // H
+        KitchenFit.register() // I1
+        KitchenScenes.register() // I2
+        ServedCommand.register() // I3
+        TalkCookCommand.register() // J
+        HomesteadKitchens.register() // K
+        HarvestTable.register() // L
+        PerfCommand.register() // M
+        CookCommand.init()
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> forget() }
     }
 
