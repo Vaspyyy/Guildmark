@@ -79,7 +79,7 @@ object AdvanceBuilders {
         fun spaced(pos: BlockPos) = posts.none { it.distSqr(pos) < 10.0 * 10.0 }
         fun post(base: BlockPos) {
             for (i in 0..2) place(level, base.above(i), Blocks.SPRUCE_FENCE.defaultBlockState())
-            place(level, base.above(3), Blocks.LANTERN.defaultBlockState().setValue(LanternBlock.HANGING, false))
+            place(level, base.above(3), io.github.vaspyyy.guildmark.village.live.VillageLamps.lantern())
             posts.add(base)
         }
         for (path in paths) {
