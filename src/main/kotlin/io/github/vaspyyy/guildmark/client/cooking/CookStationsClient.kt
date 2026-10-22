@@ -39,6 +39,9 @@ object CookStationsClient {
 
     private fun renderers(event: EntityRenderersEvent.RegisterRenderers) {
         event.registerBlockEntityRenderer(CookRegistry.STEWPOT_ENTITY.get(), ::StewpotRenderer)
+        event.registerBlockEntityRenderer(CookRegistry.HOB_ENTITY.get(), ::HobRenderer)
+        event.registerBlockEntityRenderer(CookRegistry.OVEN_ENTITY.get(), ::OvenRenderer)
+        event.registerBlockEntityRenderer(CookRegistry.SPIT_ENTITY.get(), ::SpitRenderer)
     }
 
     /** The pictures of items that the renderers keep are looked up again when the resources reload (the atlases they point into are made again). */
