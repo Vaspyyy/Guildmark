@@ -6,6 +6,7 @@ import io.github.vaspyyy.guildmark.item.DuskBridleItem
 import io.github.vaspyyy.guildmark.item.RelicCacheItem
 import io.github.vaspyyy.guildmark.item.WardensFlaskItem
 import io.github.vaspyyy.guildmark.tales.KeepsakeItem
+import io.github.vaspyyy.guildmark.trade.WarrantItem
 import net.minecraft.core.component.DataComponents
 import net.minecraft.world.entity.EquipmentSlotGroup
 import net.minecraft.world.entity.ai.attributes.AttributeModifier
@@ -62,6 +63,11 @@ object ModItems {
 
     /** Only what a Dusk Rider's lantern wisp looks like in flight; never given out. */
     val LANTERN_WISP: DeferredItem<Item> = ITEMS.registerSimpleItem("lantern_wisp")
+
+    /** The Carrier's Warrant a Chapman is given at the hall's counter (living-world/trader/design.md, Part 5); the trader's book is what counts, this is its proof. */
+    val CARRIERS_WARRANT: DeferredItem<WarrantItem> = ITEMS.registerItem("carriers_warrant", ::WarrantItem, UnaryOperator<Item.Properties> {
+        it.stacksTo(1).rarity(Rarity.UNCOMMON)
+    })
 
     // Spawn eggs for the new combat's creatures
     val HOLLOW_SOLDIER_SPAWN_EGG: DeferredItem<SpawnEggItem> = ITEMS.registerItem("hollow_soldier_spawn_egg", ::SpawnEggItem, UnaryOperator<Item.Properties> {
