@@ -105,4 +105,5 @@ PHONEMES = {
     ("talk.tale.fence.ask_1", "woman"): "aɪv sˈɛd θˈɪŋz aɪ kˈant ˌʌnsˈeɪ.",  # "can't unsay", not "can't say"
     ("talk.tale.fence.shout_a_1", "man"): "ˈaɪl nˌɒt biː tˈəʊld baɪ juː!",  # heard "I'm not be told by you."
     ("talk.tale.fence.third_1", "man"): "nˈɒt ɪnðə lˈeɪn, plˈiːz.",  # heard "None in the lane please."
+    ("talk.tale.fence.arranged_1", "man"): "dˈʌsk. ðˈɛn. aɪl bɹˈɪŋ maɪ ˈəʊn kˈʌp.",  # heard "Dust then I'll bring my own cup."
 }

@@ -167,4 +167,5 @@ PHONEMES = {
     ("talk.tale.informer.lowlie_1", "man"): "nˈʌθɪŋ stˈɜːd. ðə bˈand mˈʌst biː ɹˈɛstɪŋ.",  # heard "Nothing stirred the ban must be resting."
     ("talk.tale.informer.lowlie_1", "woman"): "nˈʌθɪŋ stˈɜːd. ðə bˈand, mˈʌst, biː ɹˈɛstɪŋ.",  # heard "Nothing stirred the ban must be resting."
     ("talk.tale.informer.sorry_0", "woman"): "aɪm sˈɒɹi. aɪ nˈɛvɚ mˈɛnt, hˈɑːɹm.",  # heard "I'm sorry I never met harm."
+    ("talk.tale.informer.sorry_0", "man"): "Im sˈɒɹi. I nˈɛvɚ mˈɛnnt hˈɑːɹm.",  # heard "I'm sorry I never met harm."
 }

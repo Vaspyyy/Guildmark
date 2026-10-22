@@ -104,4 +104,7 @@ PHONEMES = {
     ("talk.tale.wagon.driver_hand_1", "man"): "ðˈeɪ kˈɛpt ðə sˈɛkənd hˈand. ðˈeɪ wˈɒnt pˈeɪɪŋ.",  # heard "They kept the second hand they want peeing."
     ("talk.tale.wagon.captain_yes_0", "woman"): "aɪl ɹˈaɪd ˈat dˈɔːn, ˌɒn jɔːɹ wˈɜːd.",  # heard "I'll write it dawn on your word."
     ("talk.tale.wagon.parley_1", "woman"): "ðə pɹˈaɪs ˈɪz sˈɛt. pˈeɪ, and wˈɔːk.",  # heard "The prices set pay and walk."
+    ("talk.tale.wagon.driver_hand_0", "man"): "ðA tˈʊk wˈʌn ɐlˈIv. ɐ ɹˈId ɚ kˈAm ɐbˌWt ɐ pɹˈIs.",  # heard "They took one alive, a writer came about a price."
+    ("talk.tale.wagon.driver_hand_0", "woman"): "ðA tˈʊk wˈʌn ɐlˈIv. ɐ ɹˈId ɚ kˈAm ɐbˌWt ɐ pɹˈIs.",  # heard "They took one alive, a writer came about a price."
+    ("talk.tale.wagon.found_0", "man"): "juː kˈAm. I hˈQpt… sˈʌmwɒn wˈʊd.",  # heard "You came, I hope someone would."
 }

@@ -122,4 +122,5 @@ PHONEMES = {
     ("talk.tale.note.lease_1", "woman"): "ðə stˈɔːl ɪz mˈaɪn nˈaʊ. ʃiːl kˈiːp ɪt fˈɔːɹ mˌiː.",  # heard "The stall is mine now, she'll keep it from me."
     ("talk.tale.note.lender_sums_1", "woman"): "ˈaɪ, mɪskˈaʊntɪd. aɪl mˈɛnd ɪt.",  # heard "I'm discounted, I'll mend it."
     ("talk.tale.note.lender_word_1", "man"): "hˈɜːd. wˈiːl sˈA nˈəʊmˌɔːɹ ɒv ɪt.",  # heard "Heard we'll see no more of it."
+    ("talk.tale.note.lender_hard_0", "man"): "ɐ dˈɛtt ɪz ɐ dˈɛtt.",  # heard "A dad is a dad."
 }

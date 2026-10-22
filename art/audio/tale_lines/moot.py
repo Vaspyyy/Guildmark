@@ -94,4 +94,5 @@ PHONEMES = {
     ("talk.tale.moot.broke_0", "woman"): "ɪnˈʌf! ðə mˈuːt ˈɪz ˈɛndɪd, and bˈadli.",  # heard "Enough the mood has ended and badly."
     ("talk.tale.moot.broke_0", "man"): "ɪnˈʌf! ðə mˈuːt ˈɪz ˈɛndɪd, and bˈadli.",  # heard "Enough the mood has ended and badly."
     ("talk.tale.moot.for_0", "man"): "wiː nˈiːd ɪt. ˈɛvɹɪ dˈA wiː wˈAt kˈɒsts ˌʌs.",  # heard "We need it every day we wait cost us."
+    ("talk.tale.moot.half_0", "man"): "hˈæf, ðˈɛn. and mˈA ˈɪt biː ɪnˈʌf.",  # heard "Hosten and may be enough."
 }

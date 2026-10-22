@@ -142,4 +142,5 @@ PHONEMES = {
     ("talk.tale.brother.paid_0", "man"): "dˈʌn. wiː ɡˌəʊ, ˈat, ðə klˈəʊs.",  # heard "Don, we go with the close."
     ("talk.tale.brother.rise_1", "man"): "jˈɔːɹ fˈaɪɚ. ˈaɪd ˈɔːlməʊst ɡˈɪvən ˈʌp.",  # heard "You're fire at almost given up."
     ("talk.tale.brother.passing_0", "man"): "ðə fˈɔːɹdʒ fˈiːlz ˈɛmpti. nˈQ wˈɜːd at ˈɔːl.",  # heard "The forage feels empty, no word at all."
+    ("talk.tale.brother.rumour_0", "woman"): "sˈʌmwɒn wɛnt dˌWn ðɪ ˈQld mˈIn. nˈQ sˈIn. . sˈɪns.",  # heard "Someone went down the old mine, no signsense."
 }

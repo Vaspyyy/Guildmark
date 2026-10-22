@@ -132,4 +132,5 @@ PHONEMES = {
     ("talk.tale.cart.guard_yes_1", "man"): "wˈiːl wˈɔːk ðˌɛm ˈɪn. ˈɪt wəʊnt biː fɹˈiː.",  # heard "We will walk them in and won't be free."
     ("talk.tale.cart.mended_1", "man"): "sˈaʊnd ˈaz njˈuː. wiəɹ ɪn jɔːɹ dˈɛt.",  # heard "Sound is new, we're in your debt."
     ("talk.tale.cart.safe_1", "man"): "sˈeɪf ˈat lˈast. wiː kan ɡˌəʊ nˈaʊ.",  # heard "Safe a last we can go now."
+    ("talk.tale.cart.rumour_0", "man"): "ðA sˈA ɐ fˈamɪliz kˈamptt bI ðə ɹˈQd, stˈʌk.",  # heard "They see a family's camp by the road stuck."
 }
