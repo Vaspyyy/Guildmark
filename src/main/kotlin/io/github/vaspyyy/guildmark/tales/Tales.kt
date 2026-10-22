@@ -142,6 +142,7 @@ object Tales : Comings.Listener {
         TaleRows.register(modBus)
         TaleTalk.register()
         NoteStall.register()
+        Memorials.register(modBus)
     }
 
     // ---- The clock ----
