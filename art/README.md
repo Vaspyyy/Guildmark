@@ -132,6 +132,23 @@ and Kotlin model code always agree.
   post is in `works_art.py`. Before any preview it checks what it wrote (`cook_check.py`, which also runs alone: every
   id has its files and everything they name exists) and stops with the list if something is wrong.
   Run it with `python3 -B art/scripts/cook_art.py [assets dir [preview dir [game assets dir]]]`.
+- `scripts/haul_board_art.py` (with `haul_board_icons.py`, `haul_board_model.py`, `haul_board_paint.py`, `haul_board_item.py`
+  and `haul_board_preview.py` beside it) is the trade's board and its small art: the Haul Board (dark oak and iron, in the
+  market board's six cells and blockstate: a slate with a chalk ledge, a rail of eight pegs, a shelf with an inkwell, a quill
+  and a brass bell, a cap with a wheel-and-sheaf crest whose glint is an animated texture), its moving 32x icon, a Blockbench
+  file of the whole board (`art/models/haul_board.bbmodel`, Java Block format) and the chip atlas (the 23 goods short and in
+  glut, the event badges, the road pennants, the hourglass in eight sand levels, the booker's six seals, the notches, a ticket's
+  paper), written both as a block-atlas texture and as a plain one, with the screens' sprites. It writes
+  `client/trade/HaulBoardArt.kt`, where every cell of the atlas is and the numbers the board's lettering, rows and tickets are
+  laid out by: change the layout in the script, not the Kotlin. The board's lettering is not painted, only room is left for it.
+  Before it is done it checks what it wrote. With a preview dir it renders the board offline with the same numbers (straight on,
+  bare, in 3D beside the market board, close-ups, the crest's glint) and sheets of every picture.
+- `scripts/trade_items.py` is the trade's six items at 32x: the Tally (closed in the inventory, open in a hand), the Carrier's
+  Warrant, the Pack Harness, the Drover's Whistle (with the raised variant a held, used whistle takes), the Chapman's Cart (its
+  pennant a second layer, tinted by the stack's dye) and the Wagon Bill. Each is a strip with a `.mcmeta` (every one rests a
+  different number of ticks, then moves, then a light crosses what is shiny), its model and its item definition. With a preview
+  dir it writes the sheets and a GIF of each moving item and the cart in every dye; with `TRADE_VANILLA` set to a folder of the
+  game's item textures, the items beside those they stand in for. It checks what it wrote.
 
 Rebuild a model (needs Python 3 with Pillow and numpy), from the repo root:
 
@@ -153,6 +170,8 @@ python3 -B art/scripts/market_board_art.py src/main/resources/assets/guildmark [
 python3 -B art/scripts/season_art.py src/main/resources/assets/guildmark [preview-dir]
 python3 -B art/scripts/festival_art.py src/main/resources/assets/guildmark [preview-dir]
 python3 -B art/scripts/cook_art.py src/main/resources/assets/guildmark [preview-dir [game assets/minecraft]]
+python3 -B art/scripts/haul_board_art.py src/main/resources/assets/guildmark [kotlin-dir [art/models [preview-dir]]]
+python3 -B art/scripts/trade_items.py src/main/resources/assets/guildmark [preview-dir]
 ```
 
 Each run writes the textures into the mod's assets, the `.bbmodel` into `art/models`, and a preview
