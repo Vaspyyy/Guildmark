@@ -52,10 +52,13 @@ class ShopRec(val owner: UUID, val stock: Array<ItemStack>, var till: Int, val s
     val waiting: ArrayList<ItemStack> = ArrayList()
     var waitingSince: Long = -1L
 
-    /** What the last selling hour came to: when (game time), how many portions and how many Marks (before the keeper's wage). */
+    /** What the last selling hour came to: when (game time), how many portions and how many Marks (after the keeper's wage). */
     var lastAt: Long = -1L
     var lastPortions: Int = 0
     var lastMarks: Double = 0.0
+
+    /** When (game time) the last selling hour left the larder with nothing to sell, for the keeper's shrug; -1 when it has not. */
+    var soldOutAt: Long = -1L
 
     /** Brings [sold] to the town's [today]: another day's counts are zeroed. */
     fun roll(today: Long) {
@@ -115,16 +118,25 @@ class ShopWeek {
     val marks: DoubleArray = DoubleArray(DAYS)
     val kinds: IntArray = IntArray(DAYS * KINDS)
 
-    /** Writes [portions] of [kind] sold for [takings] Marks on the town's [day]. */
-    fun add(day: Long, kind: DishKind, portions: Int, takings: Double) {
+    /** The slot of [day], zeroed if another day wrote to it last. */
+    private fun slot(day: Long): Int {
         val slot = Math.floorMod(day, DAYS.toLong()).toInt()
         if (days[slot] != day) {
             days[slot] = day
             marks[slot] = 0.0
             for (k in 0 until KINDS) kinds[slot * KINDS + k] = 0
         }
-        marks[slot] += takings
-        kinds[slot * KINDS + kind.ordinal] += portions
+        return slot
+    }
+
+    /** Writes that [portions] of [kind] were sold on the town's [day]. */
+    fun sold(day: Long, kind: DishKind, portions: Int) {
+        kinds[slot(day) * KINDS + kind.ordinal] += portions
+    }
+
+    /** Writes that the till took [taken] Marks on the town's [day] (after the keeper's wage). */
+    fun took(day: Long, taken: Double) {
+        marks[slot(day)] += taken
     }
 
     /** Whether [slot] is a day of the week ending on [today]. */

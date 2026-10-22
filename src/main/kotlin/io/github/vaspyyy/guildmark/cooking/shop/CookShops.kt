@@ -324,6 +324,8 @@ object CookShops {
             shop.touched = false
             dressed[works.id] = key
             ShopLook.dress(level, shop, lay, open, Prices.of(level, works.capital, kitchens.rec(works.capital), shop, day))
+            // The dishes seen through the Larder's slats follow the stock
+            lay.larder?.takeIf { level.isLoaded(it) }?.let { (level.getBlockEntity(it) as? LarderBlockEntity)?.refresh() }
         }
     }
 
@@ -378,8 +380,11 @@ object CookShops {
 
     // ---- Selling ----
 
-    /** The portions the shops of [entry]'s market sold in [hour]; the ledger's `Kitchens.step` asks at 8:00, 12:00 and 16:00 (stub: 0). */
-    fun sellHour(level: ServerLevel, entry: Markets.Entry, hour: Long): Double = 0.0
+    /**
+     * The portions the shops of [entry]'s market sold in [hour] (a market hour, counted from the world's first): the ledger's
+     * `Kitchens.step` asks at the clock hours 8, 12 and 16 and adds what is answered to what the town ate. See [ShopSales].
+     */
+    fun sellHour(level: ServerLevel, entry: Markets.Entry, hour: Long): Double = ShopSales.hour(level, entry, hour)
 
     // ---- Registration ----
 
