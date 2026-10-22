@@ -357,12 +357,12 @@ class Residents(
             r.bed?.let { Furnish.release(level, it) }
             r.bed = null
             get(level).changed()
-            // A village's dead list (living-world/villages/design.md section 11.4); a capital's people are in none
-            io.github.vaspyyy.guildmark.village.live.Villages.died(level, r, cause)
             Fortunes.note(level, r.capital.asLong(), Noted.MOURNING, listOf(r.name))
             if (p != null) Witness.died(level, p) else Witness.passed(level, r, Witness.homeDoor(r))
             // A tale that cast them copes with it (tales/)
             Tales.died(level, r)
+            // A village's dead list (living-world/villages/design.md section 11.4); a capital's people are in none
+            io.github.vaspyyy.guildmark.village.live.Villages.died(level, r, cause)
         }
     }
 }
