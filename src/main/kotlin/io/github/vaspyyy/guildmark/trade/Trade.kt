@@ -20,6 +20,7 @@ object Trade {
     fun register(modBus: IEventBus) {
         // X5: the sounds (the 37 events, silent until their files land; the operators' `trade sound` comes with them)
         TradeSounds.register(modBus)
+        TradeSoundCommand.init()
 
         // X6: the voices (the operators' `trade say`, which has a townsperson say the trade's lines to hear them)
         TradeSayCommand.init()
