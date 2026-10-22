@@ -7,12 +7,15 @@ import io.github.vaspyyy.guildmark.economy.Markets
 import io.github.vaspyyy.guildmark.lair.Lair
 import io.github.vaspyyy.guildmark.quest.ContractState
 import io.github.vaspyyy.guildmark.quest.QuestNote
+import io.github.vaspyyy.guildmark.townsfolk.Activity
 import io.github.vaspyyy.guildmark.townsfolk.Comings
+import io.github.vaspyyy.guildmark.townsfolk.ComingsData
 import io.github.vaspyyy.guildmark.townsfolk.Crier
 import io.github.vaspyyy.guildmark.townsfolk.Days
 import io.github.vaspyyy.guildmark.townsfolk.Resident
 import io.github.vaspyyy.guildmark.townsfolk.Task
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
+import io.github.vaspyyy.guildmark.townsfolk.Trait
 import io.github.vaspyyy.guildmark.townsfolk.scenes.Scenes
 import io.github.vaspyyy.guildmark.townsfolk.talk.Talk
 import net.minecraft.core.BlockPos
@@ -156,6 +159,47 @@ object Tales : Comings.Listener {
 
     /** From `WorksBuild.labourers` (T1 places the call): the ids of [capital]'s residents the works take on first. Part A keeps the set. */
     fun volunteers(capital: Long): Set<Int> = setOf()
+
+    // ---- The calls that need a Tale (tales A1: declared here, each a no-op or a plain "no" until its owner fills it in; design 14.4, 14.5) ----
+
+    /** Part B (4.4 rule 2): holds the resident in [slot] of [t] away from their day, their tale body at [at] playing [clip]; false if they cannot be held (three at once, scenes off, no such slot). */
+    fun hold(level: ServerLevel, t: Tale, slot: String, at: BlockPos? = null, clip: Activity? = null): Boolean = false
+
+    /** Part B (4.4 rule 4): lets the held resident in [slot] of [t] go back to their day. */
+    fun release(level: ServerLevel, t: Tale, slot: String) {}
+
+    /** Part A, slice 2 (6.5): sends the household of lodging [home] away for [t] (`Comings.leave` for one named household, the reason recorded as `tale <template> <id>`); false if the town is at its floor and the household stays. [why] is the `Why` kind to add when it does. */
+    fun leave(c: Ctx, t: Tale, home: Int, why: String? = null): Boolean = false
+
+    /** Part A, slice 2 (6.5): brings the household [away] home through [gate] (`Comings.comeBack` with force); false if it could not. */
+    fun bringHome(c: Ctx, t: Tale, away: ComingsData.Moved, gate: BlockPos? = null): Boolean = false
+
+    /** Part A, slice 2 (6.5): protects the household of lodging [home] from leaving for [days] market days after [Ctx.day]. */
+    fun protect(c: Ctx, t: Tale, home: Int, days: Int) {}
+
+    /** Part A (6.7): the one door every ending goes through, whoever or whatever caused it: [t] ends with [ending] and the ten stages run, each guarded, each marked in [Tale.done]. */
+    fun finish(c: Ctx, t: Tale, ending: String) {}
+
+    /** Part A (2.2 step 7): seeds [template] in [c]'s capital now and answers the tale (step 0, a `Why`, the cast held, the first step entered), or null; [forced] is `tale start`. */
+    fun seed(c: Ctx, template: Template, forced: Boolean = false): Tale? = null
+
+    /** Part A: tells the tale [e] concerns (the open tale of its capital, or the one it names) so its template can hear it. How `Event.Arrived` (B) and `Event.Gave` (C) reach the engine. */
+    fun tell(level: ServerLevel, e: Event) {}
+
+    /** Part A (1.3, 3.1): [player] said yes to [t]: their part goes IN (and their party mates', 4.7), the banner and the chime follow, and an ASK step ends. How the talk (C) hands the word to the engine. */
+    fun join(level: ServerLevel, t: Tale, player: ServerPlayer): Boolean = false
+
+    /** Part E (6.5): changes the ways of [r], of [t]'s cast, to [to] (the opposite is cleared, the flip is logged in `TaleData.flips`); false if a limit stops it (two a tale, one a resident in forty days) and a `Why` says so. */
+    fun flip(c: Ctx, t: Tale, r: Resident, to: Trait): Boolean = false
+
+    /** Part E (7.3): pays [player] for [t] through `Contracts.payOut`: the points of their part (7.2), less what the tale's own notes have paid, and the keepsake. */
+    fun pay(level: ServerLevel, player: ServerPlayer, t: Tale) {}
+
+    /** Part E (7.4): pays [player] what is owed them in `TaleData.owed` (pay earned while away, escrow given back), once each; on login and when the board or a works screen opens. */
+    fun owed(level: ServerLevel, player: ServerPlayer) {}
+
+    /** Part T2 (6.5, 8.9): the traditions [capital]'s festival keeps; the lantern's release and the crier's festival cry read them. None yet. */
+    fun traditions(level: ServerLevel, capital: Long): List<TaleData.Tradition> = listOf()
 
     /** [get], or true before the world's config is read (as every switch answers). */
     private inline fun setting(get: () -> Boolean): Boolean = try {
