@@ -6,5 +6,6 @@
   "message.guildmark.cook.meal.kept": "%s stays as it was: this meal is no stronger and no longer.",
   "message.guildmark.cook.meal.replaced": "%s gives way to %s: one kind of meal holds at a time.",
   "message.guildmark.cook.meal.ended": "%s wears off.",
-  "message.guildmark.cook.chill.lifted": "The warmth drives the cold out of you."
+  "message.guildmark.cook.chill.lifted": "The warmth drives the cold out of you.",
+  "message.guildmark.cook.chill.bites": "The cold bites. A hot meal would help."
 }

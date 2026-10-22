@@ -365,7 +365,7 @@ object Meals {
         Cooking.onForget { clear() }
         CookStats.readout("meals") {
             val per = if (rationRuns == 0L) 0.0 else rationNanos / 1000.0 / rationRuns
-            "$eaten meal effects given ($swapped replaced another family, $kept changed nothing); Provisioned gave back $credited food points in $rationRuns runs, ${"%.1f".format(per)} us each"
+            "$eaten meal effects given ($swapped replaced another family, $kept changed nothing); Provisioned gave back $credited food points in $rationRuns runs, ${"%.1f".format(per)} us each; Winter Chill: ${Chill.stats()}"
         }
     }
 
@@ -377,12 +377,14 @@ object Meals {
         // Staggered by entity id so no two players share a tick
         val phase = player.tickCount + player.id
         if (phase % 200 == 0) staminaCheck(player)
+        if (phase % Chill.PERIOD == 0) Chill.check(player)
     }
 
     private fun forget(id: UUID) {
         steadyDirty.remove(id)
         staminaSeen.remove(id)
         rations.remove(id)
+        Chill.forget(id)
     }
 
     /** The server stopped (9.3): every table here starts empty in the next world. */
@@ -390,6 +392,7 @@ object Meals {
         steadyDirty.clear()
         staminaSeen.clear()
         rations.clear()
+        Chill.clear()
     }
 
     // ---- Words ----
