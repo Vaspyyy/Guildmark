@@ -142,6 +142,26 @@ Kokoro voices of their own, and the renegade Silvan Marrow made cold and a littl
   also a lamp put out by hand or going out by itself in sight, 2), levelled as `make_townsfolk_sfx.py`'s are; the lamp
   catching (`lamp.light`) is `make_living_sfx.py`'s. It writes `lamp_sounds.json` and `lamp_lang.json` beside itself
   (their `sounds.json` entries and subtitles), merged by hand. `--mp3 <file>` joins them into one listen-through MP3.
+- `make_cook_audio.py`: Hearthcraft's kitchen (`cook/`, 44 events and 88 mono files, `guildmark:cook.<name>` in the
+  order of `cooking/CookSounds.kt`; a dot in a name is a folder, `cook.plop.soft` is `cook/plop/soft1.ogg`): the pot and
+  its water (`place`, `pour`, three `plop`s, `stir`, `taste`, `serve`, `skim`, `ease`), the fire and the pan (`fuel`,
+  `ignite`, `crackle`, `flare`, `drip`, `flip`, `boil_over`, `burnt`), the oven's door, the spit's crank, the board and
+  the larder (`oven_open`, `oven_shut`, `crank`, `chop`, `slice`, `carve`, `loaf_down`, `plate`, `chalk`, `larder`), the
+  table (`eat.spoon`, `eat.bite`, `drink`), the cues (`call`, `ready`, `ripe`, the four `tier` motifs and the eater's
+  `buff`; the only tuned sounds, a wooden hand-chime and a small bronze bell) and five loops: `simmer` (8 s, reach 24),
+  `sizzle` (6 s, 20), `oven_hum` (8 s, 20, heard through brick), `spit_creak` (6 s, 20) and `chill` (10 s: the wind the
+  frost plays to the player alone). Synthesised with `sfxkit.py`, `make_townsfolk_sfx.py`'s helpers (levelling, knocks,
+  rings, the chalk) and the cog's parts from `make_ship_audio.py` (bubbles, oak, struck iron, creaks, `Ring`), each heard
+  in a small hard stone room and seeded by event and file. A one-shot's loudest 100 ms is set to a K-weighted loudness of
+  its own (-19.5 to -29 LUFS, the stations a little under the lamps') with its true peak under -1 dBFS, re-encoded lower
+  if the encoder overshoots; the loops are built in a circle so that they join with no seam, at -27 dBFS RMS with their
+  peaks (true peaks too) under -10, and each is read back after the encoder. Each recipe is an `@effect(...)` or
+  `@loop(...)` carrying its file count, length, reach, subtitle and `when=` (the moment that plays it). `--only` takes
+  events or groups (`stir`, `plop`, `eat`, `tier`, `loops`); `--mp3 <file>` joins what was rendered into one
+  listen-through MP3, a chapter mark at each file and each loop for 12 s, and writes `cook_what_plays_when.txt` beside it;
+  `--audit` renders nothing and reads every file back against the design (length, level, true peak, a loop's RMS and
+  join), exiting 1 on a problem. A full run writes `cook_sounds.json` and `cook_lang.json` here (their `sounds.json`
+  entries and subtitles), merged by `art/lang/merge_lang.py`.
 - `make_caravan_sfx.py`: the caravans on the roads (`caravan/`, 43 events, 119 mono files): the wagon (`roll`,
   `roll_stone` and `roll_planks` are seamless loops for a looping sound that follows the wagon's speed; creaks,
   harness bells, the brake's squeal, the canvas flapping, a crate set down), a waylaying (the band's two-note
@@ -183,6 +203,7 @@ python3 -B art/audio/make_island_audio.py src/main/resources/assets/guildmark [-
 python3 -B art/audio/make_island_music.py src/main/resources/assets/guildmark [--work <tmp-dir>] [--wav <dir>] [--mp3 <file>] [--reuse]
 python3 -B art/audio/make_mill_audio.py src/main/resources/assets/guildmark [--wav <dir>] [--only sails,wheel] [--mp3 <file>]
 python3 -B art/audio/make_lamp_sfx.py src/main/resources/assets/guildmark [--wav <dir>] [--only lamp.clink,lamp.hiss] [--mp3 <file>]
+python3 -B art/audio/make_cook_audio.py src/main/resources/assets/guildmark [--wav <dir>] [--only stir,plop,loops] [--mp3 <file>] [--audit]
 python3 -B art/audio/make_caravan_sfx.py src/main/resources/assets/guildmark [--wav <dir>] [--only roll,whistle] [--mp3 <file>]
 python3 -B art/audio/make_festival_music.py src/main/resources/assets/guildmark [--work <tmp-dir>] [--only ribbonwake,stings,fanfare] [--mp3 <dir>]
 ```
