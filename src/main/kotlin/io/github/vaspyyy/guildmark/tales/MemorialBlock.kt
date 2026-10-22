@@ -279,9 +279,24 @@ class MemorialBlock(properties: Properties) : Block(properties), EntityBlock {
             MemorialKind.CAIRN to listOf(Vec3(5.0, 14.7, -10.4), Vec3(2.3, 13.7, -11.0), Vec3(7.7, 15.2, -9.7), Vec3(13.9, 13.2, -10.4)),
         )
 
+        /**
+         * Where the posy lies, in sixteenths of the cell, facing north: 2.8 to the left of the mourner (who stands before the carved face)
+         * of the stone's middle, 1.8 in from the plinth's front edge, on the ledge; on the cairn's step the same way (`POSY_AT` in
+         * `art/scripts/tale_blocks.py` lays the flowers there, and these are copied from it).
+         */
+        private val POSY_AT: Map<MemorialKind, Vec3> = mapOf(
+            MemorialKind.STONE to Vec3(10.8, 5.5, 2.3),
+            MemorialKind.CAIRN to Vec3(10.8, 8.6, -11.2),
+        )
+
         /** Over the flame of candle [i] (0 to 3) of a memorial of [kind] facing [facing] at [pos], in the world. */
-        fun tip(kind: MemorialKind, i: Int, facing: Direction, pos: BlockPos): Vec3 {
-            val p = TIPS.getValue(kind)[i.coerceIn(0, MAX_CANDLES - 1)]
+        fun tip(kind: MemorialKind, i: Int, facing: Direction, pos: BlockPos): Vec3 = turned(TIPS.getValue(kind)[i.coerceIn(0, MAX_CANDLES - 1)], facing, pos)
+
+        /** On the posy that lies on a memorial of [kind] facing [facing] at [pos], in the world. */
+        fun posyAt(kind: MemorialKind, facing: Direction, pos: BlockPos): Vec3 = turned(POSY_AT.getValue(kind), facing, pos)
+
+        /** [p] (sixteenths of the cell, facing north) as the block faces [facing] at [pos], in the world. */
+        private fun turned(p: Vec3, facing: Direction, pos: BlockPos): Vec3 {
             // Turned about the cell's middle as the blockstate's `y` turns the model: north is as authored, then a quarter turn clockwise each
             var x = p.x
             var z = p.z

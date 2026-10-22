@@ -39,7 +39,28 @@ object Memorials {
     const val MOSS_DAYS = 10L
     const val POSY_DAYS = 5L
 
-    /** At setup: the block, its item and entity, and the stone and the cairn in the creative hand. */
+    /** The reasons a memorial adds to its tale (`fortune.guildmark.reason.tale.why.<kind>`, each given the names as a label). */
+    const val WHY_STONE = "memorial.stone"
+    const val WHY_CAIRN = "memorial.cairn"
+    const val WHY_NOROOM = "memorial.noroom"
+    const val WHY_FULL = "memorial.full"
+    const val WHY_OFF = "memorial.off"
+    const val WHY_WAIT = "memorial.wait"
+
+    /** Every key a reason of the memorials can be, in full, so that the language check sees them. */
+    val WHY_KEYS: List<String> = listOf(
+        "fortune.guildmark.reason.tale.why.memorial.stone",
+        "fortune.guildmark.reason.tale.why.memorial.cairn",
+        "fortune.guildmark.reason.tale.why.memorial.noroom",
+        "fortune.guildmark.reason.tale.why.memorial.full",
+        "fortune.guildmark.reason.tale.why.memorial.off",
+        "fortune.guildmark.reason.tale.why.memorial.wait",
+    )
+
+    /** The most names cut in one memorial. */
+    private const val NAMES = 8
+
+    /** At setup: the block, its item and entity, and the stone and the cairn in the creative hand; the waiting list. */
     fun register(modBus: IEventBus) {
         MemorialRegistry.BLOCKS.register(modBus)
         MemorialRegistry.ITEMS.register(modBus)
@@ -49,6 +70,7 @@ object Memorials {
             event.accept(MemorialRegistry.stack(MemorialKind.STONE))
             event.accept(MemorialRegistry.stack(MemorialKind.CAIRN))
         }
+        MemorialPlacing.register()
     }
 
     // ---- Reading ----
@@ -78,14 +100,21 @@ object Memorials {
         if (state.getValue(MemorialBlock.CANDLES) == 0 || state.getValue(MemorialBlock.LIT)) return false
         if (stack.`is`(Items.FIRE_CHARGE)) {
             if (!player.isCreative) stack.shrink(1)
-            level.playSound(null, pos, SoundEvents.FIRECHARGE_USE, SoundSource.BLOCKS, 1.0f, 1.0f)
         } else {
             stack.hurtAndBreak(1, player, hand)
-            level.playSound(null, pos, SoundEvents.FLINTANDSTEEL_USE, SoundSource.BLOCKS, 1.0f, 1.0f)
         }
         burn(level, pos, state, ticksTo(level, DAWN))
+        candleLit(level, pos)
         level.gameEvent(player, GameEvent.BLOCK_CHANGE, pos)
         return true
+    }
+
+    /**
+     * The one place a candle catching at a memorial is heard. Tales H's `TaleSounds` is not in this tree, so it is silent here: when it is
+     * merged, the body of this function is `TaleSounds.at(level, pos, TaleSounds.Sound.CANDLE_LIGHT)` and nothing else (never a raw sound id).
+     */
+    fun candleLit(level: ServerLevel, pos: BlockPos) {
+        // SEAM (Tales H): TaleSounds.at(level, pos, TaleSounds.Sound.CANDLE_LIGHT)
     }
 
     /** [player] pinches the flames out with their fingers. */
@@ -237,10 +266,95 @@ object Memorials {
     /** [level]'s dimension as a memorial's record keeps it. */
     fun dimension(level: ServerLevel): String = level.dimension().identifier().toString()
 
-    // ---- Setting it down (stage 8 of the finish) ----
+    // ---- Asking for one, and setting it down (stage 8 of the finish) ----
 
-    fun place(c: Ctx, t: Tale) {}
+    /**
+     * The memorials of [t] on file (a tale has no link to them; they are found by its template, its capital and the day it ended, or the
+     * day it is ending if it has not): oldest first. What a template's scene asks for the stone's place and whether it stands.
+     */
+    fun of(c: Ctx, t: Tale): List<TaleData.Memorial> {
+        val day = dayOf(c, t)
+        val here = dimension(c.level)
+        return c.data.memorials.filter { it.template == t.template && it.capital == c.capital && it.day == day && it.dimension == here }.sortedBy { it.id }
+    }
 
-    /** Part F fills this in: the posy goes down on [memorialId]'s stone (6.4) as the Laying's LAY_POSY lands; `Sets.laying` calls it at tick 15 of the clip (the posy is down at 14, leaves her hands at 18). Part B's stub. */
-    fun posy(level: net.minecraft.server.level.ServerLevel, memorialId: Int) {}
+    private fun dayOf(c: Ctx, t: Tale): Long = if (t.ended > TaleData.NEVER) t.ended else c.day
+
+    /**
+     * `Ctx.memorial`: records a memorial of [kind] for [names] in [t]'s capital, as near [at] as the rules allow (null: where the kind
+     * belongs, 6.4), and sets it down at once if its chunk is loaded: the Laying's scene is made at stage 7, before stage 8, and kneels
+     * to the stone only if it stands. Six to a capital: a seventh is not recorded and a `Why` says so (null). Asked twice for the same
+     * names it is the same memorial. With `townTaleMemorials` off it is recorded and no block is set.
+     */
+    fun ask(c: Ctx, t: Tale, kind: String, names: List<String>, at: BlockPos?): TaleData.Memorial? {
+        val id = MemorialKind.of(kind).id
+        val cut = names.map { it.trim() }.filter { it.isNotEmpty() }.distinct().take(NAMES)
+        of(c, t).firstOrNull { it.kind == id && it.names == cut }?.let { return it }
+        val data = c.data
+        if (data.memorials.count { it.capital == c.capital } >= TaleLimits.MEMORIALS) {
+            c.why(t, WHY_FULL, MemorialWords.label(cut))
+            return null
+        }
+        val lead = t.lead?.let { TaleEngine.playerName(c.level, it.player) }.orEmpty()
+        val rec = TaleData.Memorial(data.newMemorialId(), id, at, dimension(c.level), cut, t.template, lead, dayOf(c, t), c.capital, false)
+        data.memorials.add(rec)
+        data.changed()
+        MemorialPlacing.settle(c, t, rec)
+        return rec
+    }
+
+    /** Where a memorial of a kind belongs in [c]'s capital when its tale names no place (a temple's door, a well, the market; a cairn by a road out of the gates): for a template that stands its people there before the stone is set. Null where the places are not known. */
+    fun anchor(c: Ctx, cairn: Boolean): BlockPos? = MemorialSites(c.level, c.here.capital, c.here.places).anchors(cairn).firstOrNull()
+
+    /** Stage 8 of the finish: every memorial of [t] that is not set down yet gets another try. */
+    fun place(c: Ctx, t: Tale) = MemorialPlacing.sweep(c, t)
+
+    /** The position of the memorial block of record [memorialId], if it stands in a loaded chunk. */
+    private fun standing(level: ServerLevel, memorialId: Int): BlockPos? {
+        val here = dimension(level)
+        val rec = TaleData.get(level).memorials.firstOrNull { it.id == memorialId && it.dimension == here } ?: return null
+        val pos = rec.pos ?: return null
+        if (!rec.placed || !level.isLoaded(pos) || !level.getBlockState(pos).`is`(MemorialRegistry.MEMORIAL.get())) return null
+        return pos
+    }
+
+    /**
+     * The posy goes down on [memorialId]'s stone (6.4) as the Laying's LAY_POSY lands; `Sets.laying` calls it at tick 15 of the clip (the posy is
+     * down at 14, leaves her hands at 18). It lies on the ledge (the cairn's step) five market days and withers ([age]). Nothing if no such
+     * stone stands: the Laying had put its posy in a pot, or in no place at all.
+     */
+    fun posy(level: ServerLevel, memorialId: Int) {
+        val pos = standing(level, memorialId) ?: return
+        val state = level.getBlockState(pos)
+        (level.getBlockEntity(pos) as? MemorialBlockEntity)?.let {
+            it.posyDay = today(level, it.capital)
+            it.setChanged()
+        }
+        if (!state.getValue(MemorialBlock.POSY)) level.setBlock(pos, state.setValue(MemorialBlock.POSY, true), Block.UPDATE_ALL)
+        // A few petals shaken from it as it settles
+        val at = MemorialBlock.posyAt(state.getValue(MemorialBlock.KIND), state.getValue(MemorialBlock.FACING), pos)
+        level.sendParticles(ParticleTypes.CHERRY_LEAVES, at.x, at.y + 0.1, at.z, 5, 0.1, 0.04, 0.1, 0.02)
+        level.playSound(null, pos, SoundEvents.PINK_PETALS_PLACE, SoundSource.BLOCKS, 0.8f, 1.0f)
+    }
+
+    /**
+     * For a template (the chair's: the neighbours come with candles): puts candles on the ledge of [memorialId]'s stone until [count] stand
+     * (0 to [MemorialBlock.MAX_CANDLES]; never fewer than stand already) and, if [light], lights them until the coming dawn. False if no such
+     * stone stands in a loaded chunk.
+     */
+    fun candles(level: ServerLevel, memorialId: Int, count: Int, light: Boolean): Boolean {
+        val pos = standing(level, memorialId) ?: return false
+        var state = level.getBlockState(pos)
+        val n = count.coerceIn(state.getValue(MemorialBlock.CANDLES), MemorialBlock.MAX_CANDLES)
+        if (n != state.getValue(MemorialBlock.CANDLES)) {
+            state = state.setValue(MemorialBlock.CANDLES, n)
+            level.setBlock(pos, state, Block.UPDATE_ALL)
+            level.playSound(null, pos, SoundEvents.CANDLE_PLACE, SoundSource.BLOCKS, 1.0f, 1.0f)
+        }
+        if (light && n > 0 && !state.getValue(MemorialBlock.LIT)) {
+            burn(level, pos, state, ticksTo(level, DAWN))
+            candleLit(level, pos)
+        }
+        return true
+    }
 }

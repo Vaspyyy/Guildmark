@@ -80,7 +80,7 @@ class Ctx(
      * kind belongs). It records it in [TaleData.memorials], not yet placed (six a capital; a seventh is not recorded and a `Why`
      * says so), and answers it; `Memorials.place` (stage 8 of the finish) sets down every memorial of the tale that is not placed.
      */
-    fun memorial(t: Tale, kind: String, names: List<String>, at: BlockPos? = null): TaleData.Memorial? = null
+    fun memorial(t: Tale, kind: String, names: List<String>, at: BlockPos? = null): TaleData.Memorial? = Memorials.ask(this, t, kind, names, at)
 
     // ---- The households (Part A, 6.5) ----
 
