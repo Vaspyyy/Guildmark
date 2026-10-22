@@ -4,6 +4,7 @@ import io.github.vaspyyy.guildmark.GuildmarkConfig
 import io.github.vaspyyy.guildmark.city.Capitals
 import io.github.vaspyyy.guildmark.economy.Economy
 import io.github.vaspyyy.guildmark.faction.Faction
+import io.github.vaspyyy.guildmark.village.live.days.VillageLife
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.item.Item
 import net.minecraft.world.item.ItemStack
@@ -54,8 +55,8 @@ enum class Doing(val phase: Phase) {
 }
 
 /** A stretch of a day: [doing] from [start] ticks into it until the next stretch starts. */
-class Stretch(val start: Int, val doing: Doing) {
-    override fun toString(): String = "${Days.hourOf(start)} ${doing.name.lowercase()}"
+class Stretch(val start: Int, val doing: Doing, val tag: String = "") {
+    override fun toString(): String = "${Days.hourOf(start)} ${doing.name.lowercase()}" + if (tag.isEmpty()) "" else " ($tag)"
 }
 
 /** One person's day number [day]: its [stretches] in order, the first starting as the day does. */
@@ -105,13 +106,17 @@ object Days {
      */
     fun life(p: Townsperson): Life? {
         if (p.resident < 0 || !enabled()) return null
-        p.life?.let { if (it.resident.id == p.resident && it.resident.alive) return it.also { life -> duties(p, life) } }
+        p.life?.let { if (it.resident.id == p.resident && it.resident.alive && !VillageLife.stale(p, it)) return it.also { life -> duties(p, life) } }
         if (p.tickCount < p.lifeLooked) return null
         p.lifeLooked = p.tickCount + 200
         if (p.crowd || p.watcher || p.captiveOf >= 0 || p.tale >= 0 || Faction.of(p.role) != null) return null
         val level = p.level() as? ServerLevel ?: return null
         val resident = Residents.get(level).of(p)?.takeIf { it.alive } ?: return null
-        val capital = Capitals.covering(level, resident.capital) ?: return null
+        // Not a capital's: a village's, if the resident is one of its folk (see [VillageLife])
+        val capital = Capitals.covering(level, resident.capital) ?: return VillageLife.of(p, level, resident)?.also { life ->
+            duties(p, life)
+            p.life = life
+        }
         val places = CityPlaces.of(level, capital) ?: return null
         val home = places.lodgings[resident.home]
         val life = Life(resident, places, home)

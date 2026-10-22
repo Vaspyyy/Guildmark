@@ -262,7 +262,7 @@ class Residents(
             val places = capital?.let { CityPlaces.of(level, it) }
             // Its places are still being worked out: next time
             if (capital != null && places == null && !CityPlaces.failed(capital)) return
-            val center = capital?.center ?: p.town?.center ?: p.blockPosition()
+            val center = capital?.center ?: p.town?.center ?: Towns.at(level, p.blockPosition())?.takeIf { it.village }?.center ?: p.blockPosition()
             // Someone already living the plan's life for this spot (a second body set down for it) is someone new
             val planned = (if (places != null) places.planned(p.role, p.home ?: p.blockPosition()) else -1)
                 .takeIf { it >= 0 && data.planned(center, it)?.alive != true } ?: -1
