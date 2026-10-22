@@ -224,6 +224,8 @@ class Guildmark(modBus: IEventBus, container: ModContainer) {
         io.github.vaspyyy.guildmark.economy.Suppliers.link()
         io.github.vaspyyy.guildmark.economy.Suppliers.register()
         io.github.vaspyyy.guildmark.economy.SupplierCommand.init()
+        // The trader's life: haul tickets, the Word, carrying, the Hunt, the ladder and the House (trade/); each part registers itself in Trade.register
+        io.github.vaspyyy.guildmark.trade.Trade.register(modBus)
         // The caravans on the roads in: their records, the outlaws working the roads, escorts and salvage
         io.github.vaspyyy.guildmark.economy.Caravans.register()
         io.github.vaspyyy.guildmark.economy.CaravanCommand.init()
