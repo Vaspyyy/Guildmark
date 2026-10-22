@@ -267,9 +267,9 @@ object StationFx : StationHooks {
         return floatArrayOf((bx / len).toFloat(), (bz / len).toFloat())
     }
 
+    /** A one-shot the anim asks for (the drip off the spit). It is played on the Blocks channel at [volume]; Hearthcraft Sounds is applied on its way in, by [CookSoundGate], as for the server's. */
     override fun sound(pos: BlockPos, facing: Direction, px: Float, py: Float, pz: Float, name: String, volume: Float, pitch: Float) {
-        val scale = soundScale()
-        if (scale <= 0.01f) return
+        if (soundScale() <= 0.01f) return
         val level = world ?: return
         val event = try {
             CookSounds.get(name)
@@ -277,7 +277,7 @@ object StationFx : StationHooks {
             return
         }
         val at = CookGeo.world(pos, facing, px, py, pz)
-        level.playLocalSound(at.x, at.y, at.z, event, SoundSource.BLOCKS, volume * scale, pitch, false)
+        level.playLocalSound(at.x, at.y, at.z, event, SoundSource.BLOCKS, volume, pitch, false)
     }
 
     private val ZERO = floatArrayOf(0f, 0f)

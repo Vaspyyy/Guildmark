@@ -14,6 +14,7 @@ import net.neoforged.neoforge.client.event.ClientTickEvent
 import net.neoforged.neoforge.client.event.EntityRenderersEvent
 import net.neoforged.neoforge.client.event.ModelEvent
 import net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent
+import net.neoforged.neoforge.client.event.sound.PlaySoundEvent
 import net.neoforged.neoforge.common.NeoForge
 
 /**
@@ -21,8 +22,9 @@ import net.neoforged.neoforge.common.NeoForge
  * providers, the loops and the crosshair hints. Part C's; [CookClient.register] calls it, so C edits no shared file.
  *
  * What is here: [StationFx] (the stations alive on this client, stepped each tick), [CookParticleProviders] (the seven
- * particles), [CookLoops] (the four loops, three at most), the renderers (each in its own file: the Stewpot, the Hob, the Bake
- * oven, the Spit, the Prep Board, the Plate, the Larder and the Menu board), [CookPieces] (the moving pieces they draw) and [CookHints].
+ * particles), [CookLoops] (the four loops, three at most), [CookSoundGate] (Hearthcraft Sounds on the one-shots the server plays), the
+ * renderers (each in its own file: the Stewpot, the Hob, the Bake oven, the Spit, the Prep Board, the Plate, the Larder and the Menu
+ * board), [CookPieces] (the moving pieces they draw) and [CookHints].
  */
 object CookStationsClient {
     private val ITEMS_ID: Identifier = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "cook_items")
@@ -34,6 +36,8 @@ object CookStationsClient {
         modBus.addListener(AddClientReloadListenersEvent::class.java) { event -> event.addListener(ITEMS_ID, ItemsReload) }
         NeoForge.EVENT_BUS.addListener(ClientTickEvent.Post::class.java) { _ -> StationFx.tick() }
         NeoForge.EVENT_BUS.addListener(ClientPlayerNetworkEvent.LoggingOut::class.java) { _ -> StationFx.reset() }
+        // Hearthcraft Sounds also turns down the one-shots the server plays at a station
+        NeoForge.EVENT_BUS.addListener(PlaySoundEvent::class.java) { event -> CookSoundGate.onPlay(event) }
         CookStats.readout("stations seen and heard") { StationFx.readout() }
         // After the stations' tick, whose aim the hints read
         CookHints.register(modBus)
