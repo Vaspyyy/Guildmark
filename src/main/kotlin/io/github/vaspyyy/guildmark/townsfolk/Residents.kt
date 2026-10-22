@@ -8,6 +8,8 @@ import io.github.vaspyyy.guildmark.block.VillageBoards
 import io.github.vaspyyy.guildmark.city.Capitals
 import io.github.vaspyyy.guildmark.economy.fortune.Fortunes
 import io.github.vaspyyy.guildmark.economy.fortune.Noted
+import io.github.vaspyyy.guildmark.tales.Tales
+import io.github.vaspyyy.guildmark.townsfolk.talk.Witness
 import net.minecraft.core.BlockPos
 import net.minecraft.core.UUIDUtil
 import net.minecraft.network.chat.Component
@@ -64,7 +66,8 @@ class Resident(
     var bed: BlockPos?,
     /** Whether a bed has been made up for them (so one isn't made twice). */
     var furnished: Boolean,
-    val traits: Int,
+    /** Their ways, a bit for each [Trait]. A tale may flip one for good (living-world/stories/design.md 6.5). */
+    var traits: Int,
     var alive: Boolean,
     /** The day they died, or -1 (a death before the world's first day stands on day 0: see [Residents.diedOn]). */
     var died: Long,
@@ -330,7 +333,9 @@ class Residents(
             val away = !r.alive && r.died < 0 && r.left >= 0
             val dead = !r.alive && r.died >= 0
             val stale = r.alive && r.uuid != p.uuid && Comings.renewed(level, r)
-            if (away || dead || stale) event.isCanceled = true
+            // A tale that holds their day makes its own body for them, so this one goes too (tales/)
+            val held = Tales.holds(r.id)
+            if (away || dead || stale || held) event.isCanceled = true
         }
 
         /** [p] died: their life here ends (and their home and trade wait for someone new). */
@@ -355,7 +360,9 @@ class Residents(
             // A village's dead list (living-world/villages/design.md section 11.4); a capital's people are in none
             io.github.vaspyyy.guildmark.village.live.Villages.died(level, r, cause)
             Fortunes.note(level, r.capital.asLong(), Noted.MOURNING, listOf(r.name))
-            if (p != null) io.github.vaspyyy.guildmark.townsfolk.talk.Witness.died(level, p)
+            if (p != null) Witness.died(level, p) else Witness.passed(level, r, Witness.homeDoor(r))
+            // A tale that cast them copes with it (tales/)
+            Tales.died(level, r)
         }
     }
 }
