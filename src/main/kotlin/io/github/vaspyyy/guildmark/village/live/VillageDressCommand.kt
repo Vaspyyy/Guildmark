@@ -136,7 +136,7 @@ object VillageDressCommand {
         if (!VillageDressing.working()) {
             return listOf(LampCommand.line().append(label).append(LampCommand.grey("off (Living Villages or Village Dressing is off): none is put up, and what is up comes down")))
         }
-        val status = Dressing.status(level, Streets.column(rec.key), rec.key)
+        val status = Dressing.status(level, Streets.column(rec.key), rec.key, "`village dress`:")
         val note = when {
             !VillageLamps.folk(level, rec.key) -> "; no folk of its own to hang it (the times do not dress it)"
             !Fortunes.enabled() -> "; the times are off (Town Fortunes): only `village dress` puts it up"

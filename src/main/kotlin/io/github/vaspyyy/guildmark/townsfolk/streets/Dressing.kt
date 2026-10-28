@@ -635,9 +635,10 @@ object Dressing : Fortunes.Listener {
 
     /**
      * For the streets command: what [column]'s dressing (the capital whose heart is [key]) is doing, and why, in a few
-     * words: with the times on, the market day it goes up (or comes down) on, if that's still to come.
+     * words: with the times on, the market day it goes up (or comes down) on, if that's still to come. [command] names the command
+     * that forces it, as the line says when it has (the streets command's, unless a village's `village dress` is given).
      */
-    fun status(level: ServerLevel, column: Long, key: Long): String {
+    fun status(level: ServerLevel, column: Long, key: Long, command: String = "the streets command's"): String {
         val t = StreetsData.get(level)[column]
         val run = t?.run ?: 0L
         val test = t != null && forced(t)
@@ -657,7 +658,7 @@ object Dressing : Fortunes.Listener {
             else -> ""
         }
         val why = when {
-            test -> " (the streets command's ${listOf("", "good", "thriving", "down").getOrElse(t!!.force) { "" }})"
+            test -> " ($command ${listOf("", "good", "thriving", "down").getOrElse(t!!.force) { "" }})"
             !times -> ""
             else -> {
                 val good = from(level, key, Times.GOOD, today)
