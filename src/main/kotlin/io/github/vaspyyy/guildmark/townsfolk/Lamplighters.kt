@@ -75,8 +75,18 @@ object Lamplighters : StreetLamps.Taker {
     }
 
     /** What they say now and then on their round, and to someone who speaks to them. */
-    internal fun line(p: Townsperson, dusk: Boolean): String = if (dusk) "lamplighter_dusk_${p.random.nextInt(DUSK_LINES)}"
+    internal fun line(p: Townsperson, dusk: Boolean): String = if (dusk) "lamplighter_dusk_${duskLine(p)}"
     else "lamplighter_dawn_${p.random.nextInt(DAWN_LINES)}"
+
+    /** Which of the dusk lines: a village's keeper never says the one that speaks of the city ([CITY_LINE]). */
+    private fun duskLine(p: Townsperson): Int {
+        if (p.life?.places?.kind != TownKind.VILLAGE) return p.random.nextInt(DUSK_LINES)
+        val n = p.random.nextInt(DUSK_LINES - 1)
+        return if (n >= CITY_LINE) n + 1 else n
+    }
+
+    /** The dusk line "Not a dark street in the city tonight." */
+    private const val CITY_LINE = 2
 
     internal fun hello(p: Townsperson): String = "lamplighter_hello_${p.random.nextInt(HELLO_LINES)}"
 
