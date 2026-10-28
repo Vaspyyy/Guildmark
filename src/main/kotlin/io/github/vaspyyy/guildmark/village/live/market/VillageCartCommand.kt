@@ -25,11 +25,14 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent
 /**
  * `/guildmark village cart [call|come|skip|clear]` (the villages design, section 15.2), run by operators in a village, or beside one:
  *
- * - bare: the village's cart and its pedlar: who he is, whether he comes today and why (or why not), when he last called and what he
- *   took and brought, when his round next falls, the visits lost, the wagon, whether he is at the green now and what he is at, and how
- *   many days of the market's last the village went hungry;
- * - `call` makes the cart's call now, in the record (the village's goods are taken and brought as at nine), whether or not he is seen;
- * - `come` makes today a pedlar day for the village (so he walks in at half past eight tomorrow, or, if it is past nine already, at once);
+ * - bare: the village's cart and its pedlar: who the pedlar is, whether they come today and why (or why not), when they last called and
+ *   what the call took and brought, when the round next falls, the visits lost, the wagon, whether the pedlar is at the green now and
+ *   what they are at, and how many days of the market's last the village went hungry;
+ * - `call` makes the cart's call now, in the record (the village's goods are taken and brought as at nine), whether or not anyone is seen;
+ * - `come` makes today a pedlar day for the village (the pedlar walks in from half past eight; past nine, the call is made at once and
+ *   the pedlar walks in as soon as nobody would see them appear);
+ *
+ * The words are the plain English of the other `village` commands. The pedlar is "they" in all of them.
  * - `skip` holds the next visit back: it is lost, as a band near would lose it, and the village's talk and this command say so;
  * - `clear` sends every pedlar off.
  *
@@ -72,8 +75,8 @@ object VillageCartCommand {
             source,
             grey(
                 "Pedlars come every 2 to 4 days and always on the market day, never on the rest day; a wagon that called in the last " +
-                    "${PedlarRoster.WAGON_DAYS} days leaves market day alone; a closed road or a band near (one visit in ${PedlarRoster.BAND_ONE_IN}) keeps him off. " +
-                    "'call' makes the call now, 'come' makes today his day, 'skip' holds the next visit back, 'clear' sends the pedlars off.",
+                    "${PedlarRoster.WAGON_DAYS} days leaves market day alone; a closed road or a band near (one visit in ${PedlarRoster.BAND_ONE_IN}) keeps them off. " +
+                    "'call' makes the call now, 'come' makes today a pedlar day, 'skip' holds the next visit back, 'clear' sends the pedlars off.",
             ),
         )
         return 1
@@ -98,7 +101,7 @@ object VillageCartCommand {
         val time = level.overworldClockTime
         val day = Days.dayOf(time)
         if (cart.decided == day && cart.comes) {
-            say(source, line().append(label("He is due today already: ")).append(plain(why(level, rec, cart))))
+            say(source, line().append(label("The pedlar is due today already: ")).append(plain(why(level, rec, cart))))
             return 1
         }
         cart.decided = day
@@ -110,9 +113,9 @@ object VillageCartCommand {
         val clock = Pedlars.clock(level)
         if (clock >= PedlarRoster.SET_UP && cart.called != day) {
             VillageMarkets.call(v, v.entry.market, v.entry.town, Markets.hourOf(level), day, "command")
-            say(source, line().append(label("He comes today. ")).append(plain("It is past nine: the call was made now, took ${goods(cart.took)}, brought ${goods(cart.brought)}.")))
+            say(source, line().append(label("The pedlar comes today. ")).append(plain("It is past nine: the call was made now, took ${goods(cart.took)}, brought ${goods(cart.brought)}.")))
         } else {
-            say(source, line().append(label("He comes today. ")).append(plain("The call is made at nine; he walks in from half past eight.")))
+            say(source, line().append(label("The pedlar comes today. ")).append(plain("The call is made at nine; they walk in from half past eight.")))
         }
         VillageMarkets.changed(level, v.entry)
         return 1
@@ -143,7 +146,7 @@ object VillageCartCommand {
         val out = ArrayList<Component>()
         val day = Days.dayOf(level.overworldClockTime)
         val person = PedlarRoster.of(rec.key, cart.slain)
-        out += line().append(label("Pedlar: ")).append(plain("${person.name}, ${if (person.woman) "she" else "he"} comes on the road from the region of ${PedlarRoster.region(rec.key).let { "${it.first},${it.second}" }}"))
+        out += line().append(label("Pedlar: ")).append(plain("${person.name}, one of the four who walk the roads of this part of the country (region ${PedlarRoster.region(rec.key).let { "${it.first}, ${it.second}" }})"))
         out += line().append(label("Today (day $day): ")).append(plain(why(level, rec, cart)))
         Pedlars.present(rec.key)?.let { (who, doing) -> out += line().append(label("At the green: ")).append(plain("${who.name}, $doing")) }
         if (cart.lastHour == NONE) {
@@ -152,7 +155,7 @@ object VillageCartCommand {
             val c = Conditions(cart.lastHour)
             out += line().append(label("Last call: ")).append(plain("day ${c.day} at ${"%02d".format(c.clock)}:00, by ${cart.by.ifEmpty { "the pedlar" }}: took ${goods(cart.took)}; brought ${goods(cart.brought)}"))
         }
-        out += line().append(label("Next round: ")).append(plain(if (cart.next == NONE) "not yet fixed (his first visit is on his first day)" else "day ${cart.next}")).append(plain("   visits so far ${cart.calls}"))
+        out += line().append(label("Next round: ")).append(plain(if (cart.next == NONE) "not fixed yet (the first visit is on the first day the pedlar is wanted)" else "day ${cart.next}")).append(plain("   visits so far ${cart.calls}"))
         if (cart.missed != NONE) {
             out += line().append(label("Last visit lost: ")).append(plain("day ${cart.missed}" + (PedlarRoster.Why.of(cart.why)?.takeIf { !it.comes }?.let { " (${it.id})" } ?: "")))
         }
@@ -169,7 +172,7 @@ object VillageCartCommand {
         }
         val m = v.entry.market
         if (m.hungry.isNotEmpty()) {
-            out += line().append(label("Hungry days: ")).append(plain("${m.hungry.count { it >= HUNGRY_DAY }} of the last ${m.hungry.size}")).append(grey(" (a day on which half a meal or more went short)"))
+            out += line().append(label("Hungry days: ")).append(plain("${m.hungry.count { it > HUNGRY_DAY }} of the last ${m.hungry.size}")).append(grey(" (a day on which more than half a meal went short)"))
         }
         out += line().append(label("Pedlars about: ")).append(plain("${Pedlars.alive()} of ${Pedlars.MAX} allowed"))
         return out
@@ -182,14 +185,14 @@ object VillageCartCommand {
         val cart = v.cart
         val out = ArrayList<Component>()
         out += line().append(label("Market: ")).append(plain("${v.entry.town}")).append(
-            plain(if (m.hungry.isNotEmpty()) "; hungry ${m.hungry.count { it >= HUNGRY_DAY }} of the last ${m.hungry.size} days" else ""),
+            plain(if (m.hungry.isNotEmpty()) "; hungry ${m.hungry.count { it > HUNGRY_DAY }} of the last ${m.hungry.size} days" else ""),
         )
         val person = PedlarRoster.of(rec.key, cart.slain)
-        out += line().append(label("Pedlar: ")).append(plain("${person.name};${why(level, rec, cart)}" + if (cart.next != NONE) "; next round day ${cart.next}" else ""))
+        out += line().append(label("Pedlar: ")).append(plain("${person.name}; ${why(level, rec, cart)}" + if (cart.next != NONE) "; next round day ${cart.next}" else ""))
         return out
     }
 
-    /** Whether he comes today and why, in plain words. */
+    /** Whether the pedlar comes today and why, in plain words. */
     private fun why(level: ServerLevel, rec: VillageRec, cart: VillageMarkets.Cart): String {
         val day = Days.dayOf(level.overworldClockTime)
         val known = if (cart.decided == day) PedlarRoster.Why.of(cart.why) else null
@@ -203,16 +206,16 @@ object VillageCartCommand {
         }
         val settled = known != null
         val first = when (verdict) {
-            PedlarRoster.Why.ROUND -> "he comes, it is his round"
-            PedlarRoster.Why.MARKET -> "he comes, it is the market day"
-            PedlarRoster.Why.REST -> "he does not come, it is the rest day"
-            PedlarRoster.Why.NOT_DUE -> "he does not come, it is not his day"
-            PedlarRoster.Why.WAGON -> "he does not come, a wagon called lately and the road is the village's supply"
-            PedlarRoster.Why.CLOSED -> "he does not come, the road is closed"
-            PedlarRoster.Why.BAND -> "he does not come, a band camped near kept him off"
-            PedlarRoster.Why.HELD -> "he does not come, a visit was held back"
-            PedlarRoster.Why.SLAIN -> "he does not come, the last pedlar was killed" + if (cart.away != NONE) " and the place is empty until day ${cart.away}" else ""
-            PedlarRoster.Why.OFF -> "he does not come, pedlars are off"
+            PedlarRoster.Why.ROUND -> "the pedlar comes, it is the round's day"
+            PedlarRoster.Why.MARKET -> "the pedlar comes, it is the market day"
+            PedlarRoster.Why.REST -> "no pedlar, it is the rest day"
+            PedlarRoster.Why.NOT_DUE -> "no pedlar, it is not the round's day"
+            PedlarRoster.Why.WAGON -> "no pedlar, a wagon called lately and the road is the village's supply"
+            PedlarRoster.Why.CLOSED -> "no pedlar, the road is closed"
+            PedlarRoster.Why.BAND -> "no pedlar, a band camped near kept them off"
+            PedlarRoster.Why.HELD -> "no pedlar, a visit was held back"
+            PedlarRoster.Why.SLAIN -> "no pedlar, the last pedlar was killed" + if (cart.away != NONE) " and the place is empty until day ${cart.away}" else ""
+            PedlarRoster.Why.OFF -> "no pedlar, pedlars are off"
         }
         return if (settled || verdict == PedlarRoster.Why.REST || verdict == PedlarRoster.Why.OFF) first else "$first (not decided yet: wagons, roads and bands are read when the day begins)"
     }
@@ -250,7 +253,7 @@ object VillageCartCommand {
 
     // ---- Words ----
 
-    /** Of the meals a day, how many going short make it a hungry day (the villages design, section 18). */
+    /** A day on which more than this many meals went short is a hungry day (as the villages design's model counts it, section 18). */
     private const val HUNGRY_DAY = 0.5
 
     private fun line(): MutableComponent = Component.empty()

@@ -146,7 +146,7 @@ object MarketCommand {
         return Villages.byKey(level, entry.market.capital)?.name ?: "the town"
     }
 
-    /** Of the meals a day, how many going short make it a hungry day (the model of the villages design, section 18, counts it so). */
+    /** A day on which more than this many meals went short is a hungry day (as the villages design's model counts it, section 18). */
     private const val HUNGRY_DAY = 0.5
 
     private fun list(context: CommandContext<CommandSourceStack>): Int {
@@ -161,8 +161,8 @@ object MarketCommand {
         town.planned?.let { built -> if (built.people != town.people) say(source, grey("Built for ${built.people} (${built.people - town.people} gone)")) }
         // A village's hungry days are counted beside its town (the villages design, section 18.7)
         if (village && m.hungry.isNotEmpty()) {
-            val hungry = m.hungry.count { it >= HUNGRY_DAY }
-            say(source, line().append(label("Hungry days: ")).append(plain("$hungry of the last ${m.hungry.size}")).append(grey(" (a day on which half a meal or more went short)")))
+            val hungry = m.hungry.count { it > HUNGRY_DAY }
+            say(source, line().append(label("Hungry days: ")).append(plain("$hungry of the last ${m.hungry.size}")).append(grey(" (a day on which more than half a meal went short)")))
         }
         if (m.events.isNotEmpty()) say(source, line().append(label("Under way: ")).append(plain(m.events.joinToString(", ") { e ->
             e.kind.id + (e.good?.let { " (${it.id})" } ?: "") + (if (e.goods.isNotEmpty()) " (${e.goods.joinToString("+") { it.id }})" else "") +
