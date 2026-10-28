@@ -22,6 +22,9 @@ import kotlin.math.abs
  *   and open ground, for the lantern, and one more beyond it that a body can stand in, on open ground or a street (the cairn's foot is
  *   three across, so its two are the cells beyond the foot); and the one who kneels is not walled in: from that cell a body can walk, a
  *   block up or down at a time and through no gate or door, over no fence or wall, to a street (or out over open land);
+ * - it closes no way: once it and its lantern stand there, a body can still walk round them to every cell beside them that it could have
+ *   stepped to through them (never in the one gap of a garden's fence, across a narrow way, or so that the one who kneels walked out only
+ *   through the stone's own cell);
  * - it keeps [APART] blocks from another memorial;
  *
  * and it is turned square to the street: the carved face looks the way the nearest street is (a building in the way hides it), else the
@@ -162,6 +165,7 @@ object MemorialRules {
         DOOR("by a door"),
         NO_ROOM("no room in front"),
         NO_WAY("walled in"),
+        ACROSS("across a way through"),
         CROWDED("by another memorial"),
     }
 
@@ -425,11 +429,14 @@ object MemorialRules {
             if (room.unknown) sawUnloaded = true else if (room.kneel != null) looks += f to room
         }
         if (looks.isEmpty()) return no(if (sawUnloaded) Refusal.UNLOADED else Refusal.NO_ROOM)
+        var across = false
         for ((f, room) in looks.sortedByDescending { score(t, x, z, it.first, seed) }) {
             val k = room.kneel!!
-            if (hasWayOut(t, ways, k[0], k[1], k[2])) return null to Spot(x, y, z, f)
+            if (!hasWayOut(t, ways, k[0], k[1], k[2])) continue
+            if (keepsWays(t, cairn, x, y, z, f, k)) return null to Spot(x, y, z, f)
+            across = true
         }
-        return no(Refusal.NO_WAY)
+        return no(if (across) Refusal.ACROSS else Refusal.NO_WAY)
     }
 
     /** The ground at column [x], [z]: the cell a body stands in, nearest to height [hint], or why there is none. */
@@ -528,8 +535,6 @@ object MemorialRules {
      */
     private fun hasWayOut(t: Terrain, ways: Ways, x: Int, y: Int, z: Int): Boolean {
         if (t.plot(x, z) == Plot.STREET) return true
-        // The cell as BlockPos.asLong packs it, so that what one walk learnt serves the next
-        fun key(a: Int, b: Int, c: Int): Long = ((a.toLong() and 0x3FFFFFF) shl 38) or ((c.toLong() and 0x3FFFFFF) shl 12) or (b.toLong() and 0xFFF)
         val start = key(x, y, z)
         if (start in ways.open) return true
         if (start in ways.shut) return false
@@ -570,6 +575,68 @@ object MemorialRules {
         // Every cell it walked is in the land it ended in: shut in if the walk ran out of cells, else a land with a way out
         (if (way) ways.open else ways.shut).addAll(seen)
         return way
+    }
+
+    /** A cell as BlockPos.asLong packs it, so that what one walk learnt serves the next. */
+    private fun key(a: Int, b: Int, c: Int): Long = ((a.toLong() and 0x3FFFFFF) shl 38) or ((c.toLong() and 0x3FFFFFF) shl 12) or (b.toLong() and 0xFFF)
+
+    /**
+     * Whether the memorial at [x], [y], [z] with its face [f], and the lantern before it, close no way. [hasWayOut] walks the ground as it
+     * is before they stand there, through their cells too; this walks from where she kneels ([k]) round them and never through them, and
+     * asks that it reach every cell beside them a body could have stepped to from them. If it does, every way that went through them
+     * still goes round, hers too; if not, the stone would stand in the one gap of a garden's fence or across a narrow way, or she could
+     * have walked out only through the stone's own cell. Ground that is not loaded is as good as open (as for [hasWayOut]); a way round
+     * of more than [WALK] cells is no way. A search walks this only for the places that pass every other rule, a few cells each.
+     */
+    private fun keepsWays(t: Terrain, cairn: Boolean, x: Int, y: Int, z: Int, f: Face, k: IntArray): Boolean {
+        val radius = if (cairn) 1 else 0
+        val lamp = if (cairn) 2 else 1
+        // The columns the foot and the lantern stand in: nobody walks through them, nor over them
+        val cells = ArrayList<IntArray>()
+        for (dx in -radius..radius) for (dz in -radius..radius) cells += intArrayOf(x + dx, z + dz)
+        cells += intArrayOf(x + f.dx * lamp, z + f.dz * lamp)
+        fun closed(a: Int, b: Int): Boolean = cells.any { it[0] == a && it[1] == b }
+        // The cells beside them that a body could step to from them, while they were not there
+        val wanted = HashSet<Long>()
+        for (c in cells) {
+            if (t.walk(c[0], y, c[1]) != true) continue
+            for (g in Face.entries) {
+                val nx = c[0] + g.dx
+                val nz = c[1] + g.dz
+                if (closed(nx, nz)) continue
+                for (dy in STEPS) {
+                    val w = t.walk(nx, y + dy, nz) ?: break
+                    if (!w) continue
+                    wanted += key(nx, y + dy, nz)
+                    break
+                }
+            }
+        }
+        val seen = HashSet<Long>()
+        val queue = ArrayDeque<IntArray>()
+        seen.add(key(k[0], k[1], k[2]))
+        wanted.remove(key(k[0], k[1], k[2]))
+        queue.addLast(k)
+        while (queue.isNotEmpty() && wanted.isNotEmpty()) {
+            val p = queue.removeFirst()
+            for (g in Face.entries) {
+                val nx = p[0] + g.dx
+                val nz = p[2] + g.dz
+                if (closed(nx, nz)) continue
+                for (dy in STEPS) {
+                    val ny = p[1] + dy
+                    val w = t.walk(nx, ny, nz) ?: return true
+                    if (!w) continue
+                    val c = key(nx, ny, nz)
+                    if (!seen.add(c)) break
+                    if (seen.size > WALK) return false
+                    wanted.remove(c)
+                    queue.addLast(intArrayOf(nx, ny, nz))
+                    break
+                }
+            }
+        }
+        return wanted.isEmpty()
     }
 
     /**
