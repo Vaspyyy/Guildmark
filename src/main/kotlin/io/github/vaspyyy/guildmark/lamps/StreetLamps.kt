@@ -166,8 +166,8 @@ object StreetLamps {
         true
     }
 
-    /** Whether [town]'s lamps are worked to the clock: Street Lamps on, and for a village Village Lamps too. Off, they burn day and night. */
-    fun enabled(town: LampTown): Boolean = enabled() && (!town.isVillage || VillageLamps.on())
+    /** Whether [town]'s lamps are worked to the clock: Street Lamps on, and for a village Living Villages and Village Lamps too. Off, they burn day and night. */
+    fun enabled(town: LampTown): Boolean = enabled() && (!town.isVillage || VillageLamps.working())
 
     private fun clear() {
         towns.clear()
@@ -331,9 +331,18 @@ object StreetLamps {
     /** The posts a village's lamps could not be worked out from (its bell, and the stamp of the posts), so as not to try again until they change. */
     private val broken = HashMap<BlockPos, Long>()
 
-    /** Keeps the lamps of the villages that are live now (see [VillageLamps.live]), and so lets go of those that are not, after a while (see [scan]). */
+    /**
+     * Keeps the lamps of the villages that are live now (see [VillageLamps.live]), and so lets go of those that are not, after a while (see
+     * [scan]). With Living Villages off no village is live, so the village lamps kept already are kept on while a player is within [PROBE]
+     * blocks of the bell: not worked ([enabled]), they are lit, to burn day and night as a village's lanterns did, and then let go.
+     */
     private fun scanVillages(level: ServerLevel, time: Long) {
         for (rec in VillageLamps.live(level)) keepVillage(level, rec, time)
+        if (Villages.enabled()) return
+        val reach = PROBE.toDouble() * PROBE
+        for (town in towns.values) {
+            if (town.isVillage && level.players().any { it.blockPosition().distSqr(town.key) <= reach }) town.seen = time
+        }
     }
 
     /**
