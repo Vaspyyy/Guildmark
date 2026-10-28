@@ -140,6 +140,7 @@ object VillageDressCommand {
         val note = when {
             !VillageLamps.folk(level, rec.key) -> "; no folk of its own to hang it (the times do not dress it)"
             !Fortunes.enabled() -> "; the times are off (Town Fortunes): only `village dress` puts it up"
+            !VillageDressing.times() -> "; the village's times are off (Village Markets or Village Fortunes): only `village dress` puts it up"
             else -> ""
         }
         return listOf(LampCommand.line().append(label).append(LampCommand.plain(status)).append(LampCommand.grey(note)))

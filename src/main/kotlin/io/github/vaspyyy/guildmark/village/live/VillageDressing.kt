@@ -2,6 +2,7 @@ package io.github.vaspyyy.guildmark.village.live
 
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.GuildmarkConfig
+import io.github.vaspyyy.guildmark.economy.VillageMarkets
 import io.github.vaspyyy.guildmark.townsfolk.Places
 import io.github.vaspyyy.guildmark.townsfolk.TownPlaces
 import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
@@ -42,7 +43,7 @@ import kotlin.math.sqrt
  * waits on them, and `village dress` ([VillageDressCommand]) puts it up or takes it down whatever they say, for the session.
  *
  * A village whose record has no folk of its own (Village Folk off, or not adopted) is not dressed by the times: there is nobody to
- * hang it. With Living Villages or Village Dressing off, none is put up and what is up is taken down as the pieces' chunks load
+ * hang it. Nor is one whose times are off (Village Markets or Village Fortunes off: every village reads steady, [times]). With Living Villages or Village Dressing off, none is put up and what is up is taken down as the pieces' chunks load
  * ([allows]). A capital's dressing is not touched.
  */
 object VillageDressing {
@@ -123,8 +124,11 @@ object VillageDressing {
         if (before != null && before !== places) stale += column
         if (column in stale && Dressing.relay(column)) stale -= column
         val folk = VillageLamps.folk(level, rec.key)
-        Dressing.look(level, column, places.centre, now, may = folk, hands = folk) { lay(level, places, column) }
+        Dressing.look(level, column, places.centre, now, may = folk && times(), hands = folk) { lay(level, places, column) }
     }
+
+    /** Whether a village has good times and hard to be dressed for: its market, and Village Fortunes, on (off, every village reads steady). */
+    fun times(): Boolean = VillageMarkets.fortunes()
 
     fun forget() {
         laid.clear()
