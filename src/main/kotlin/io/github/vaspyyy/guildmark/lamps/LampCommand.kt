@@ -123,9 +123,9 @@ object LampCommand {
         val quays = town.plan.lamps.count { it.quay }
         say(
             source, line().append(label("Lamps: ")).append(plain("${town.pos.size}"))
-                .append(grey(" ($city in the streets in ${town.plan.rounds.size} rounds, $farms at farm gates, $quays on the quays, ${town.pos.size - city - farms - quays} out on the roads); "))
+                .append(grey(if (town.isVillage) " (on the posts its census found, in ${town.plan.rounds.size} round${if (town.plan.rounds.size == 1) "" else "s"}); " else " ($city in the streets in ${town.plan.rounds.size} rounds, $farms at farm gates, $quays on the quays, ${town.pos.size - city - farms - quays} out on the roads); "))
                 .append(plain("$burning of the $loaded loaded are lit"))
-                .append(grey(if (old > 0) "; $old older lanterns wait to be swapped for street lamps once nobody is within ${StreetLamps.UNSEEN.toInt()} blocks" else "")),
+                .append(grey(if (old > 0) "; $old older lanterns wait to be swapped for street lamps once nobody is within ${StreetLamps.UNSEEN.toInt()} blocks${if (town.isVillage) " at night" else ""}" else "")),
         )
         // The round nearest
         val near = town.nearest(source.playerOrException.blockPosition()) ?: return say(source, grey("It has no lamps."))

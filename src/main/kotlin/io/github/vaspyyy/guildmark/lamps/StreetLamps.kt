@@ -559,6 +559,11 @@ object StreetLamps {
             old(state) -> {
                 if (enabled) {
                     if (now < town.retry[i]) return
+                    // A village's are swapped only at night, as everything an older world has is changed (living-world/villages/design.md 10.1)
+                    if (town.isVillage && stretch(town, since(level.overworldClockTime), level.isRaining) != Stretch.NIGHT) {
+                        town.retry[i] = now + RETRY
+                        return
+                    }
                     if (seen(level, pos, UNSEEN)) {
                         town.retry[i] = now + RETRY
                         return

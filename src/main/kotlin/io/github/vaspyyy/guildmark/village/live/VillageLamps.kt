@@ -21,7 +21,7 @@ import net.minecraft.world.level.block.state.BlockState
  * home by seven, and from half past five of a morning put them out. A village's keepers are named from its folk
  * ([io.github.vaspyyy.guildmark.lamps.LampKeepers]); with nobody to keep a round, the clock lights its lamps, each at its own phase,
  * with a quiet flicker if a player is by, and a village is never dark all night. Candles short in its market ration its lamps as a
- * capital's. An older world's plain lanterns on posts are swapped for street lamps while nobody is within 48 blocks, and new posts are
+ * capital's. An older world's plain lanterns on posts are swapped for street lamps at night while nobody is within 48 blocks, and new posts are
  * built with a street lamp, unlit ([lantern]).
  *
  * This file is the village's side of it: the switch, what posts a village has, who keeps them (the crew's, for [VillageHands]),
