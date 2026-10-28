@@ -14,6 +14,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Days
 import io.github.vaspyyy.guildmark.townsfolk.Life
 import io.github.vaspyyy.guildmark.townsfolk.Places
 import io.github.vaspyyy.guildmark.townsfolk.Resident
+import io.github.vaspyyy.guildmark.townsfolk.Speech
 import io.github.vaspyyy.guildmark.townsfolk.Spot
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import io.github.vaspyyy.guildmark.townsfolk.Townsfolk
@@ -329,6 +330,25 @@ object Pedlars {
         }
         return goods.entries.sortedByDescending { it.value }.mapNotNull { e -> Good.byId(e.key)?.let { Handcarts.stack(it) } }
             .filter { !it.isEmpty }.distinctBy { it.item }.take(Handcarts.ON_TOP)
+    }
+
+    /**
+     * What the pedlar cries to the street ([pick] a number from 0 to 3): two of the goods the day's call brought that the village still
+     * has, the most first ("Candles and coal, fresh from the road!"), else one, else a cry that names no good; so a good is cried only
+     * while it is really on the cart. Before the call is made, and when it brought nothing, the cries that name none.
+     */
+    fun cry(level: ServerLevel, bell: Long, day: Long, pick: Int): String {
+        val v = VillageMarkets.rec(level, bell)
+        val m = v?.entry?.market
+        val goods = if (v == null || m == null || v.cart.called != day) emptyList() else v.cart.brought.entries.sortedByDescending { it.value }
+            .mapNotNull { Good.byId(it.key) }.filter { m.stock(it) >= 1.0 }
+        fun named(g: Good) = g.key + ".many"
+        return when {
+            pick < 2 && goods.size >= 2 -> Speech.of("pedlar_call_goods", named(goods[0]), named(goods[1]))
+            pick < 2 && goods.size == 1 -> Speech.of("pedlar_call_good", named(goods[0]))
+            pick <= 2 -> "pedlar_call_look"
+            else -> "pedlar_call_road"
+        }
     }
 
     /** Whether the market's record has made the day's call yet. */

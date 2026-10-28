@@ -111,7 +111,7 @@ class Pedlar(
             Stage.SETTLE, Stage.HITCH -> "arriving"
             Stage.WALK_IN, Stage.STOP -> "coming in with the cart"
             Stage.SIDE, Stage.SET_UP, Stage.BELL, Stage.UNPACK -> "setting up at the green"
-            Stage.MIND -> "at his cart on the green"
+            Stage.MIND -> "at the cart on the green"
             Stage.PACK, Stage.UNLOAD, Stage.LOAD, Stage.FETCH, Stage.TAKE, Stage.WAVE -> "packing up"
             Stage.WALK_OUT -> "leaving by the road"
         }
@@ -264,7 +264,7 @@ class Pedlar(
         }
     }
 
-    /** "Roads were bad. Sorry to keep you waiting." as he comes up to the green late. */
+    /** "Sorry to keep you waiting! Setting up now." as he comes up to the green after half past nine. */
     private fun lateWord(p: Townsperson, level: ServerLevel) {
         if (!late || level.gameTime % 20L != 0L) return
         if (p.blockPosition().distSqr(bay) > 12.0 * 12.0) return
@@ -334,7 +334,7 @@ class Pedlar(
                 beatEnds = tick + next.ticks + 10
             }
             Activity.CALL_OUT -> {
-                p.say("pedlar_call_${1 + p.random.nextInt(3)}", hearing = SPEAK, ticks = 70)
+                p.say(Pedlars.cry(level, bell, day, p.random.nextInt(4)), hearing = SPEAK, ticks = 70)
                 nextCall = now + CALL_GAP + p.random.nextInt(CALL_GAP.toInt())
                 beatEnds = tick + next.ticks + 10
             }
