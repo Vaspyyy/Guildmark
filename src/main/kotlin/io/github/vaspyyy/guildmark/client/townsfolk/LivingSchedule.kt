@@ -31,7 +31,7 @@ internal object LivingSchedule {
     class Moment(val name: String, val tick: Float, val x: Float, val y: Float, val z: Float)
 
     /** The clips these are for. */
-    val CLIPS: Set<String> = setOf("sit_down", "stand_up", "nod", "shrug", "point", "bow", "yawn", "stretch", "knock", "climb", "climb_top", "eat", "sit_eat", "wash", "pick_up", "put_down", "hand_over", "receive", "pay", "browse", "set_up", "sow", "carry_basket", "gather", "scythe", "grind", "chop", "pour_sack", "ring_bell", "announce", "draw_water", "explain", "gossip", "shush", "wave_off", "sigh", "think", "tip_hat", "introduce", "arms_folded", "recoil", "wave_walk", "nod_walk", "sit_gossip", "sit_laugh", "pause_work", "carry_pole", "light_lamp", "snuff_lamp", "drive", "drive_urge", "drive_brake", "ride_tail", "jump_down", "climb_up", "cut_loose", "hand_down", "cower", "catch_breath", "recount", "wounded", "grumble", "mix_mortar", "trowel", "hoist", "carry_beam", "chisel", "plumb", "survey", "unveil", "toast", "lookout", "light_beacon", "sound_horn", "queue", "shiver", "empty_basket", "haggle", "ladle", "hold_out", "eat_bowl", "take_bowl", "pack", "embrace", "look_about", "show_in", "shut_stall", "grieve", "wring_hands", "shake_hands", "feed_fire", "hobble", "lay_posy")
+    val CLIPS: Set<String> = setOf("sit_down", "stand_up", "nod", "shrug", "point", "bow", "yawn", "stretch", "knock", "climb", "climb_top", "eat", "sit_eat", "wash", "pick_up", "put_down", "hand_over", "receive", "pay", "browse", "set_up", "sow", "carry_basket", "gather", "scythe", "grind", "chop", "pour_sack", "ring_bell", "announce", "draw_water", "explain", "gossip", "shush", "wave_off", "sigh", "think", "tip_hat", "introduce", "arms_folded", "recoil", "wave_walk", "nod_walk", "sit_gossip", "sit_laugh", "pause_work", "carry_pole", "light_lamp", "snuff_lamp", "drive", "drive_urge", "drive_brake", "ride_tail", "jump_down", "climb_up", "cut_loose", "hand_down", "cower", "catch_breath", "recount", "wounded", "grumble", "mix_mortar", "trowel", "hoist", "carry_beam", "chisel", "plumb", "survey", "unveil", "toast", "lookout", "light_beacon", "sound_horn", "queue", "shiver", "empty_basket", "haggle", "ladle", "hold_out", "eat_bowl", "take_bowl", "pack", "embrace", "look_about", "show_in", "shut_stall", "stir", "taste", "flip", "turn_spit", "slice", "carve", "peel", "grieve", "wring_hands", "shake_hands", "feed_fire", "hobble", "lay_posy")
 
     /** Each prop's own part, and the part it hangs on. */
     val PARENT: Map<String, String> = mapOf(
@@ -93,6 +93,8 @@ internal object LivingSchedule {
         "flap_rail" to "body",
         "flap_cloth" to "body",
         "flap_batten" to "body",
+        "turner" to "right_arm",
+        "cooks_knife" to "right_arm",
     )
 
     /** By clip: the props it shows, and when. */
@@ -292,6 +294,25 @@ internal object LivingSchedule {
         "shut_stall" to listOf(
             Shown("well_rope", 0f, END),
         ),
+        "stir" to listOf(
+            Shown("ladle", 0f, END),
+        ),
+        "taste" to listOf(
+            Shown("spoon", 0f, END),
+        ),
+        "flip" to listOf(
+            Shown("turner", 0f, END),
+        ),
+        "slice" to listOf(
+            Shown("cooks_knife", 1.5f, 33.5f),
+        ),
+        "carve" to listOf(
+            Shown("bowl_empty", 2f, 41f),
+            Shown("cooks_knife", 1.5f, 44.5f),
+        ),
+        "peel" to listOf(
+            Shown("peel", 2f, 43f),
+        ),
     )
 
     /** By clip: the props its file turns, places and stretches itself tick by tick ("prop:<part>" bones). */
@@ -319,6 +340,10 @@ internal object LivingSchedule {
         "take_bowl" to listOf("bowl", "spoon"),
         "pack" to listOf("bundle"),
         "shut_stall" to listOf("well_rope"),
+        "flip" to listOf("turner"),
+        "slice" to listOf("cooks_knife"),
+        "carve" to listOf("bowl_empty", "cooks_knife"),
+        "peel" to listOf("peel"),
     )
 
     /** Props that hang straight down from the hand holding them (where no track runs them). */
@@ -364,6 +389,18 @@ internal object LivingSchedule {
         "hand_down" to listOf(
             Goods(7f, 16f, How.HANDS, "", 2f, 0f, 0f, "", 0f, 0f, 0f, 0f, 8f),
         ),
+        "slice" to listOf(
+            Goods(0f, END, How.GROUND, "", 0f, 12f, -13.38f, "", 0f, 0f, 0f, 0f, 6f),
+        ),
+        "carve" to listOf(
+            Goods(19.5f, 22.6f, How.GROUND, "", -1.46f, 12.6f, -12.48f, "", 0f, 0f, 0f, 0f, 2.4f),
+            Goods(22.6f, 28f, How.TOSS, "", -1.46f, 12.6f, -12.48f, "bowl_empty", 0f, -6.1f, 1f, 1f, 2.4f),
+            Goods(28f, 30f, How.TOSS, "", 3.2f, 12.2f, -10.48f, "bowl_empty", 0f, -2.9f, 1f, 0.4f, 2.4f),
+            Goods(30f, 41f, How.PART, "bowl_empty", 0f, -2.9f, 1f, "", 0f, 0f, 0f, 0f, 2.4f),
+        ),
+        "peel" to listOf(
+            Goods(22f, 43f, How.PART, "peel", 0f, 15f, 0.4f, "", 0f, 0f, 0f, 0f, 5f),
+        ),
         "feed_fire" to listOf(
             Goods(0f, 24f, How.PART, "right_arm", -1f, 11.2f, -1.5f, "", 0f, 0f, 0f, 0f, 5f),
         ),
@@ -379,7 +416,7 @@ internal object LivingSchedule {
     val GOODS_ONLY_CARRIED: Set<String> = setOf("carry", "pay")
 
     /** By clip: the item shown when nothing is carried (a crop pulled up is a carrot). */
-    val GOODS_DEFAULT: Map<String, String> = mapOf("gather" to "minecraft:carrot")
+    val GOODS_DEFAULT: Map<String, String> = mapOf("gather" to "minecraft:carrot", "slice" to "minecraft:bread", "carve" to "minecraft:cooked_beef", "peel" to "minecraft:bread")
 
     /** By clip: its moments, the ticks things happen on (a knock, a bite, a bell rung), for their sounds and dust. */
     val MOMENTS: Map<String, List<Moment>> = mapOf(
@@ -766,6 +803,36 @@ internal object LivingSchedule {
         ),
         "shut_stall" to listOf(
             Moment("pull", 6.5f, 0f, -23.6f, -8f),
+        ),
+        "stir" to listOf(
+            Moment("stir", 10f, -0.249f, 15.355f, -15.106f),
+            Moment("stir", 30f, -0.254f, 15.625f, -13.488f),
+            Moment("stir", 50f, -0.249f, 15.355f, -15.106f),
+            Moment("stir", 70f, -0.254f, 15.625f, -13.488f),
+        ),
+        "taste" to listOf(
+            Moment("taste", 24f, -0.095f, -1.023f, -6.092f),
+        ),
+        "flip" to listOf(
+            Moment("flip", 15f, -2.999f, 4.194f, -13.907f),
+            Moment("land", 20f, -3f, 13.5f, -14.1f),
+        ),
+        "turn_spit" to listOf(
+            Moment("crank", 22.2f, -0.098f, 11.727f, -4.957f),
+        ),
+        "slice" to listOf(
+            Moment("slice", 12.5f, -2.121f, 13.469f, -13.376f),
+            Moment("slice", 22.5f, -1.152f, 13.511f, -13.44f),
+        ),
+        "carve" to listOf(
+            Moment("carve", 19.5f, -1.273f, 14.493f, -12.994f),
+            Moment("plate", 30f, 3.3f, 15.055f, -10.568f),
+        ),
+        "peel" to listOf(
+            Moment("door", 1f, 0f, 13.4f, -7.28f),
+            Moment("peel", 8f, 0.33f, 14.3f, -4.38f),
+            Moment("peel", 36f, 0.33f, 13.65f, -3.98f),
+            Moment("down", 43f, 1.74f, 10.671f, -1.167f),
         ),
     )
 }
