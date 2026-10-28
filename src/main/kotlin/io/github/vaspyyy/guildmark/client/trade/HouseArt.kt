@@ -92,8 +92,9 @@ internal object HouseArt {
     fun mapY(wz: Float, cz: Float, k: Float): Float = MAP_CY - (wz - cz) * k
 
     /**
-     * A pin head's diameter by town class (0 medium, 1 large, 2 grand, 3 the House's own capital: "pin_0" to "pin_3", the last with a gilt ring
-     * [PIN_HOME_RING] times its head), and the pin's scale [age] ticks after it was set: grows from nothing, a little past, and settles.
+     * A pin head's diameter, "pin_0" to "pin_3": sizes 0 to 2 for the other capitals (the renderer's pick: part 37 shows by a pin's size how
+     * much the House trades at that capital; a town's class serves as well), 3 the House's own capital, the last with a gilt ring [PIN_HOME_RING]
+     * times its head; and the pin's scale [age] ticks after it was set: grows from nothing, a little past, and settles.
      */
     val PIN_D = floatArrayOf(1.8f, 2.4f, 3f, 3.6f)
     const val PIN_HOME_RING = 1.45f
