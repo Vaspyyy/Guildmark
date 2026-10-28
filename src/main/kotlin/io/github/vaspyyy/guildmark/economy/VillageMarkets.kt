@@ -222,6 +222,8 @@ class VillageMarkets(private val records: MutableMap<Long, Rec> = HashMap()) : S
                 }
 
                 override fun dropped(level: ServerLevel, rec: VillageRec) {
+                    // Off, nothing is written: the market of a village dropped meanwhile is kept, and runs nowhere
+                    if (!enabled()) return
                     val data = get(level)
                     if (data.records.remove(rec.key) != null) data.setDirty()
                 }

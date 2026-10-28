@@ -169,7 +169,7 @@ class WaresBlockEntity(pos: BlockPos, state: BlockState) : BlockEntity(WaresRegi
         if (level.gameTime - sought < SEEK) return null
         sought = level.gameTime
         // A capital's, or the village's whose ground it stands on (its shelves show the village's stock)
-        val found = Furnish.capitalAt(level, blockPos)?.center ?: Villages.at(level, blockPos)?.let { BlockPos.of(it.key) } ?: return null
+        val found = Furnish.capitalAt(level, blockPos)?.center ?: Villages.at(level, blockPos)?.takeIf { VillageMarkets.enabled() }?.let { BlockPos.of(it.key) } ?: return null
         capital = found
         setChanged()
         return found
