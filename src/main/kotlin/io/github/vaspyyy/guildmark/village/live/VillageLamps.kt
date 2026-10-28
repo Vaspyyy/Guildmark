@@ -31,6 +31,13 @@ import net.minecraft.world.level.block.state.BlockState
  * lamp that is a street lamp already burning too, and nothing is swapped.
  */
 object VillageLamps {
+    /** At setup, part V8's: the lamps' commands and lines of `village info`, the good times' dressing, and the folk at a feast. */
+    fun init() {
+        VillageLampsCommand.init()
+        VillageDressing.init()
+        VillageFeast.init()
+    }
+
     /** Whether the Village Lamps switch is on; on until the settings are loaded. */
     fun on(): Boolean = try {
         GuildmarkConfig.VILLAGE_LAMPS.get()

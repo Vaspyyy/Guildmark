@@ -28,6 +28,8 @@ import net.minecraft.util.RandomSource
 import net.minecraft.world.level.levelgen.Heightmap
 import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
+import net.neoforged.neoforge.common.NeoForge
+import net.neoforged.neoforge.event.server.ServerStoppedEvent
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
@@ -70,6 +72,17 @@ object VillageFeast {
     /** Of those sent, one in this many goes to the pedlar's cart instead between dances; and how many may be at it at once. */
     private const val CART_ONE_IN = 3
     private const val AT_CART = 3
+
+    /** At setup: what is kept in memory is forgotten as the server stops. */
+    fun init() {
+        NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> forget() }
+    }
+
+    fun forget() {
+        cheered.clear()
+        rows.clear()
+        browsing.clear()
+    }
 
     // ---- The crowd ----
 
