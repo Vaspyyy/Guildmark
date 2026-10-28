@@ -8,13 +8,18 @@ ones the streets and the bakery already use.
 
 living_anims.py imports this at its end and calls build() with itself, so these go out with the Living World's other
 clips and LivingSchedule.kt stays one generated file. The blocks they work at (the Stewpot's crane and pot, the Hob,
-the Spit, the Prep Board, the Bake oven) are Hearthcraft M1's; until those models are on the tree the stations below
-are stand-ins at the sizes the design gives, and every number a clip leans on (where the pot stands, how high its
-rim is, where the crane's post is, where the crank turns) is a named constant here, written up in the test guide, so
-that a block that stands elsewhere is one number to change. Each clip's header says what it needs of its block.
+the Spit, the Prep Board, the Bake oven) are Hearthcraft M1's (cook_stewpot.py, cook_hob.py, cook_spit.py, cook_oven.py,
+cook_helpers.py); the stations below are drawn from those models' numbers, and every number a clip leans on (where the
+pot stands, how high its rim is, where the crane's post is, where the crank turns) is a named constant here, written up
+in the test guide, so that a block made otherwise is one number to change. Each clip's header says what it needs of its
+block.
 
 Clip space as every townsfolk clip's: pixels, y down, facing -z, the right hand at -x, the feet at y 24; the block the
-townsperson works at is the one a block ahead (x -8..8, y 8..24, z -24..-8).
+townsperson works at is the one ahead, brought NEAR px nearer than the cell's middle would put it, because that is where
+Part I2's kitchen scenes stand the keeper (Stands in cooking/town/KitchenScene.kt: 0.12 block toward the work), so at
+z -24 + NEAR .. -8 + NEAR. Each clip's stance (her feet and hips) is set NEAR px back with it, so her body stands to the
+work as it was designed to at the cell's middle while the game's position is where I2 put it. The cookshop's hob (flip) is
+the one station a keeper does not walk up to: it is a block ahead.
 """
 import math
 import os
@@ -170,21 +175,29 @@ def circle_phase(t, turn, t0, wobble=0.0, phase=0.0):
 # ================================================================== the stations the previews draw
 # Hearthcraft M1's blocks, at the sizes their models give them (the numbers are the ones in cook_art.py's header and its
 # station modules, in block px: x east, y up, z south, 16 to a block, every model authored facing north, its front toward
-# -z). Until those models are on the tree these boxes stand in for them; every number a clip leans on is a named constant
-# below and is written up in the test guide, so a block that is made otherwise is one number to change (and the generator
-# run again). A station's boxes are in clip space for the way the townsperson faces it: 'S' she stands in front of the
-# block and looks at its front (the Hob, the Prep Board, the Bake oven), 'E' she looks east at a block whose crane is at
-# its north-east corner (the Stewpot in the tavern's hearth), 'W' she stands at the east end of the Spit, at its crank.
+# -z), as boxes; every number a clip leans on is a named constant below and is written up in the test guide, so a block
+# that is made otherwise is one number to change (and the generator run again). A station's boxes are in clip space for the
+# way the townsperson faces it: 'S' she stands in front of the block and looks at its front (the Prep Board, the Bake oven),
+# 'E' she looks east at a block whose crane is at its north-east corner (the Stewpot in the tavern's hearth), 'W' she stands
+# at the east end of the Spit, at its crank, and 'H' is 'S' for the cookshop's Hob, whose keeper does not step up to it.
+
+# Part I2's scenes stand the keeper at a station a hand's breadth toward it, not in the middle of the cell before it
+# (cooking/town/KitchenScene.kt, Stands.TOWARD: 0.12 block): the block is that much nearer her (px).
+NEAR = 0.12 * 16.0
+
 
 def at(frame, p):
-    """A block-space point in clip space for a townsperson facing [frame]."""
+    """A block-space point in clip space for a townsperson facing [frame] ('S', 'E', 'W': standing where Part I2's scenes
+    stand her, NEAR px in from the cell's middle; 'H': as 'S' from the middle of the cell, the cookshop keeper at the hob)."""
     x, y, z = (float(v) for v in p)
-    if frame == 'S':
+    if frame == 'H':
         return (x - 8.0, 24.0 - y, -8.0 - z)
+    if frame == 'S':
+        return (x - 8.0, 24.0 - y, -8.0 - z + NEAR)
     if frame == 'E':
-        return (8.0 - z, 24.0 - y, -8.0 - x)
+        return (8.0 - z, 24.0 - y, -8.0 - x + NEAR)
     if frame == 'W':
-        return (z - 8.0, 24.0 - y, x - 24.0)
+        return (z - 8.0, 24.0 - y, x - 24.0 + NEAR)
     raise ValueError(frame)
 
 
@@ -211,50 +224,67 @@ POT_BELLY = 3.65                                # its widest apothem
 SURFACE_B = 8.5                                 # the stew's surface (the renderer: 6.7 a ladleful up to 9.4 full)
 CRANE_B = (13.2, 2.8)                           # the crane's post (x, z)
 HEARTH_B = 1.8                                  # the hearth slab's height
-POT_AT = np.array([at(SP_FRAME, (POT_B[0], 0, POT_B[1]))[0], 0.0, at(SP_FRAME, (POT_B[0], 0, POT_B[1]))[2]])   # (0, ., -16)
+POT_AT = np.array([at(SP_FRAME, (POT_B[0], 0, POT_B[1]))[0], 0.0, at(SP_FRAME, (POT_B[0], 0, POT_B[1]))[2]])   # (0, ., -16 + NEAR)
 POT_RIM = 24.0 - POT_TOP_B                      # clip y of the rim: 14.0
 POT_BOTTOM = 24.0 - POT_BOTTOM_B
 POT_SURFACE = 24.0 - SURFACE_B                  # 15.5
 
 
-def _stewpot(t=None):
+def _stewpot(t=None, turn=0):
+    """The Stewpot's boxes; [turn]: the block turned that many quarter turns about its middle. The Stewpot has no facing, so its
+    crane stands at the world's north-east corner however the tavern stands, and she may find it at her far left (0, the
+    previews' and the plans' way: she faces east), her near left (1), her near right (2) or her far right (3)."""
     f = SP_FRAME
+
+    def blk_(lo, hi, col, lit=True):
+        def turned(p):
+            x, y, z = (float(v) for v in p)
+            dx, dz = x - 8.0, z - 8.0
+            for _ in range(turn % 4):
+                dx, dz = dz, -dx
+            return (8.0 + dx, y, 8.0 + dz)
+        return blk(f, turned(lo), turned(hi), col, lit)
     cx, cz = POT_B
-    b = [blk(f, lo, hi, HEARTH) for lo, hi in (((0.5, 0, 0.5), (15.5, HEARTH_B, 3.2)), ((0.5, 0, 12.8), (15.5, HEARTH_B, 15.5)),
+    b = [blk_(lo, hi, HEARTH) for lo, hi in (((0.5, 0, 0.5), (15.5, HEARTH_B, 3.2)), ((0.5, 0, 12.8), (15.5, HEARTH_B, 15.5)),
                                               ((0.5, 0, 3.2), (3.2, HEARTH_B, 12.8)), ((12.8, 0, 3.2), (15.5, HEARTH_B, 12.8)))]
-    b.append(blk(f, (3.2, 0.3, 3.2), (12.8, 0.7, 12.8), EMBER, False))                          # the coals
+    b.append(blk_((3.2, 0.3, 3.2), (12.8, 0.7, 12.8), EMBER, False))                          # the coals
     px, pz = CRANE_B
-    b += [blk(f, (px - 1.6, HEARTH_B, pz - 1.6), (px + 1.6, HEARTH_B + 0.4, pz + 1.6), IRON_D),      # its footplate
-          blk(f, (px - 0.6, HEARTH_B + 0.4, pz - 0.6), (px + 0.6, 15.4, pz + 0.6), IRON),          # the post
-          blk(f, (px - 1.0, HEARTH_B + 0.4, pz - 1.0), (px + 1.0, HEARTH_B + 1.4, pz + 1.0), IRON_D),
-          blk(f, (px - 0.9, 15.0, pz - 0.9), (px + 0.9, 15.8, pz + 0.9), IRON_D)]                 # its cap
+    b += [blk_((px - 1.6, HEARTH_B, pz - 1.6), (px + 1.6, HEARTH_B + 0.4, pz + 1.6), IRON_D),      # its footplate
+          blk_((px - 0.6, HEARTH_B + 0.4, pz - 0.6), (px + 0.6, 15.4, pz + 0.6), IRON),          # the post
+          blk_((px - 1.0, HEARTH_B + 0.4, pz - 1.0), (px + 1.0, HEARTH_B + 1.4, pz + 1.0), IRON_D),
+          blk_((px - 0.9, 15.0, pz - 0.9), (px + 0.9, 15.8, pz + 0.9), IRON_D)]                 # its cap
     d = np.array([cx - px, cz - pz])
     length = float(np.linalg.norm(d))
     d /= length
     for s_ in (0.9, 2.3, 3.7, 5.1, 6.5, length - 0.2):                                              # the arm over the pot
         mx, mz = px + d[0] * s_, pz + d[1] * s_
-        b.append(blk(f, (mx - 0.8, 14.4, mz - 0.8), (mx + 0.8, 15.4, mz + 0.8), IRON))
-    b.append(blk(f, (cx - 1.2, 12.9, cz - 1.2), (cx + 1.2, 14.4, cz + 1.2), IRON_D))                # the lug at its end
-    b.append(blk(f, (cx - 0.5, 12.4, cz - 0.5), (cx + 0.5, 13.0, cz + 0.5), IRON))                  # the chain
+        b.append(blk_((mx - 0.8, 14.4, mz - 0.8), (mx + 0.8, 15.4, mz + 0.8), IRON))
+    b.append(blk_((cx - 1.2, 12.9, cz - 1.2), (cx + 1.2, 14.4, cz + 1.2), IRON_D))                # the lug at its end
+    for k in range(7):                                                                             # the brace under it
+        u = k / 6.0
+        s_ = 0.6 + u * (0.62 * length - 0.6)
+        mx, mz, my = px + d[0] * s_, pz + d[1] * s_, 8.2 + u * 6.1
+        b.append(blk_((mx - 0.45, my - 0.45, mz - 0.45), (mx + 0.45, my + 0.45, mz + 0.45), IRON))
+    b.append(blk_((cx - 0.5, 12.4, cz - 0.5), (cx + 0.5, 13.0, cz + 0.5), IRON))                  # the chain
     top = POT_TOP_B
     wire = [(cx - 3.7, top - 0.2), (cx - 3.0, top + 1.05), (cx, top + 1.75), (cx + 3.0, top + 1.05), (cx + 3.7, top - 0.2)]
     for (xa, ya), (xb_, yb) in zip(wire, wire[1:]):                                                 # the bail's arch across the mouth
-        b.append(blk(f, (min(xa, xb_), min(ya, yb) - 0.3, cz - 0.3), (max(xa, xb_), max(ya, yb) + 0.3, cz + 0.3), IRON))
-    b.append(blk(f, (cx - 0.7, top + 1.5, cz - 0.3), (cx + 0.7, top + 2.5, cz + 0.3), IRON))        # its eye
+        b.append(blk_((min(xa, xb_), min(ya, yb) - 0.3, cz - 0.3), (max(xa, xb_), max(ya, yb) + 0.3, cz + 0.3), IRON))
+    b.append(blk_((cx - 0.7, top + 1.5, cz - 0.3), (cx + 0.7, top + 2.5, cz + 0.3), IRON))        # its eye
     r, w = 3.6, 0.6                                                                                # the pot: floor and four walls
-    b += [blk(f, (cx - 2.5, POT_BOTTOM_B, cz - 2.5), (cx + 2.5, POT_BOTTOM_B + 0.6, cz + 2.5), IRON_D),
-          blk(f, (cx - r, POT_BOTTOM_B + 0.6, cz - r), (cx + r, top, cz - r + w), IRON),
-          blk(f, (cx - r, POT_BOTTOM_B + 0.6, cz + r - w), (cx + r, top, cz + r), IRON),
-          blk(f, (cx - r, POT_BOTTOM_B + 0.6, cz - r + w), (cx - r + w, top, cz + r - w), IRON),
-          blk(f, (cx + r - w, POT_BOTTOM_B + 0.6, cz - r + w), (cx + r, top, cz + r - w), IRON),
-          blk(f, (cx - 2.9, SURFACE_B - 0.1, cz - 2.9), (cx + 2.9, SURFACE_B + 0.1, cz + 2.9), STEW, False)]
+    b += [blk_((cx - 2.5, POT_BOTTOM_B, cz - 2.5), (cx + 2.5, POT_BOTTOM_B + 0.6, cz + 2.5), IRON_D),
+          blk_((cx - r, POT_BOTTOM_B + 0.6, cz - r), (cx + r, top, cz - r + w), IRON),
+          blk_((cx - r, POT_BOTTOM_B + 0.6, cz + r - w), (cx + r, top, cz + r), IRON),
+          blk_((cx - r, POT_BOTTOM_B + 0.6, cz - r + w), (cx - r + w, top, cz + r - w), IRON),
+          blk_((cx + r - w, POT_BOTTOM_B + 0.6, cz - r + w), (cx + r, top, cz + r - w), IRON),
+          blk_((cx - 2.9, SURFACE_B - 0.1, cz - 2.9), (cx + 2.9, SURFACE_B + 0.1, cz + 2.9), STEW, False)]
     return b
 
 
 # ---- the Hob (flip): a low brick plinth with an iron top and a raised rim, the flat pan on it (a shallow dish 10.8 across
 # with a handle reaching out to the east), six places in it for a piece of food. Needs: the top of the iron (where the pan
 # stands), the pan's floor and its places, the plinth's front face.
-HB_FRAME = 'S'
+HB_FRAME = 'H'
 HOB_BODY = (1.0, 0.0, 1.0, 15.0, 9.0, 15.0)
 HOB_TOP_B, HOB_RIM_B = 10.0, 11.2
 PAN_R, PAN_FLOOR_B = 5.4, 10.5
@@ -446,11 +476,11 @@ STATION_COLOUR = {'stewpot': (96, 92, 86), 'hob': (104, 98, 90), 'spit': (96, 92
 ST_LEN = 80
 ST_TURN = 40.0                                  # ticks to a circle
 ST_STIRS = (10.0, 30.0, 50.0, 70.0)             # the ladle at the far and near walls in turn: the scrape (stir)
-ST_FEET = {'right_leg': (-3.0, -2.2), 'left_leg': (2.8, -5.2)}
-ST_BACK = -3.4
+ST_FEET = {'right_leg': (-3.0, -2.2 + NEAR), 'left_leg': (2.8, -5.2 + NEAR)}     # (she stands as far from the pot as at the cell's middle)
+ST_BACK = -3.4 + NEAR
 ST_DIP = 2.4                                    # the knees give
-ST_RX, ST_RZ = 1.1, 0.85                        # the bowl's circle, in the pot's mouth (radius 3.0, the bowl 2.6 across)
-ST_C = np.array([POT_AT[0] - 0.15, POT_SURFACE + 0.2, POT_AT[2] - 0.2])    # the ladle bowl's middle at the middle of its circle
+ST_RX, ST_RZ = 1.15, 0.85                       # the bowl's circle, in the pot's mouth (radius 3.0, the bowl 2.6 across)
+ST_C = np.array([POT_AT[0] - 0.15, POT_SURFACE - 0.05, POT_AT[2] - 0.2])   # the ladle bowl's middle at the middle of its circle
 ST_BOWL = np.asarray(lp.LADLE_BOWL, float)
 ST_WOBBLE = 0.22
 LADLE_PTS = [(0.0, y, 0.0) for y in (-1.2, 1.0, 3.0, 5.0)] + [(x, y, z) for x in (-1.3, 1.3) for y in (5.4, 7.4) for z in (-0.4, 2.2)]
@@ -462,7 +492,7 @@ def st_theta(t):
 
 def st_bowl(t):
     th = st_theta(t)
-    heave = 0.3 * math.cos(th - 2.2)            # a little deeper in the push, up on the draw
+    heave = 0.25 * math.cos(th - 2.2)           # a little deeper in the push, up on the draw (the stew is 2.3 px deep)
     return ST_C + np.array([-ST_RX * math.sin(th), heave, -ST_RZ * math.cos(th)])
 
 
@@ -472,14 +502,31 @@ def st_look(t):
     return np.array([-2.2 * math.sin(th), POT_SURFACE, POT_AT[2] - 2.0 * math.cos(th)])
 
 
+ST_KEEP = []
+
+
+def st_keep():
+    """(LO, HI): the Stewpot's solid boxes in all four of its turns, which the ladle's arm keeps out of."""
+    if not ST_KEEP:
+        boxes = [(lo, hi) for k in range(4) for lo, hi, col, lit in _stewpot(None, k) if lit]
+        ST_KEEP.append((np.array([lo for lo, hi in boxes], float), np.array([hi for lo, hi in boxes], float)))
+    return ST_KEEP[0]
+
+
 def st_res(t):
     bowl = st_bowl(t)
     pb = tool_point('ladle', ST_BOWL)
+    LP = np.array([tool_point('ladle', p) for p in LADLE_PTS])
+    LO, HI = st_keep()
 
     def res(fr, qa, qb):
         Ra, ja = arm_world('right_arm', qa, **fr)
         out = list((ja + Ra @ pb - bowl) * 5.0)
         out += [clear_of_body(fr, ja + Ra @ RIGHT_FIST), ta.arm_dir('right_arm', qa, fr, (1, 0, 0))[1] * 0.6]   # no rolled forearm
+        P = ja + np.array(ARM_CORNERS['right_arm'] + ARM_GRID['right_arm']) @ Ra.T
+        out += list(penetration(P, LO, HI, 0.15) * 4.0)            # over the crane's post wherever it stands
+        out += list(torso_depth(fr, P, 0.2) * 5.0)
+        out += list(penetration(ja + LP @ Ra.T, LO, HI, 0.15) * 4.0)   # the ladle under the bail's arch and off the pot's floor
         out += list(np.asarray(qb, float) * 0.0)                     # (the left arm is not solved: it hangs)
         return out
     return res
@@ -493,10 +540,10 @@ def stir():
 
     def step(t, guess):
         th = st_theta(t)
-        pitch = 22.0 + 2.2 * math.cos(th)
-        yaw = 3.0 * math.sin(th)
-        rz = ST_BACK - 0.6 * math.cos(th)
-        fr, qa, qb, x = solve_standing(st_res(t), ST_FEET, pitch, yaw, (0.4 * math.sin(th), rz), dip=ST_DIP, guess=guess,
+        pitch = 22.0 + 2.5 * math.cos(th)
+        yaw = 3.5 * math.sin(th)
+        rz = ST_BACK - 0.7 * math.cos(th)
+        fr, qa, qb, x = solve_standing(st_res(t), ST_FEET, pitch, yaw, (0.5 * math.sin(th), rz), dip=ST_DIP, guess=guess,
                                        pitch_w=0.12, yaw_w=0.15, sink_w=1.5, root_w=1.0, arms_w=0.01)
         return (fr, qa, qb), x
     sols = loop_solve(times, step)
@@ -504,7 +551,7 @@ def stir():
         fr, qa, qb = sols[t]
         key_frame(c, t, fr, ease='linear')
         c.key('right_arm', t, qa, ease='linear')
-        set_arm(c, 'left_arm', t, rest_arm('left_arm', fr, fwd=8.0 + 4.0 * math.sin(st_theta(t))))
+        set_arm(c, 'left_arm', t, rest_arm('left_arm', fr, fwd=3.0 + 3.0 * math.sin(st_theta(t))))
         stand(c, t, fr, feet=ST_FEET)
         c.key('head', t, qslerp(I, gaze_head(fr, st_look(t - 2.0)), 0.6), ease='linear')
     c.mode('head', 'set')
@@ -516,6 +563,11 @@ def stir():
     keepout(c, 'ladle clear of pot and crane', solids('stewpot'), [('ladle', LADLE_PTS)], tol=0.1)
     keepout(c, 'arms clear of pot and crane', solids('stewpot'), arm_parts('right_arm', 'left_arm'), tol=0.1)
     keepout(c, 'body and head clear of the hearth', solids('stewpot'), [('body', BODY_CORNERS), ('head', HEAD_CORNERS)], tol=0.1)
+    # the Stewpot has no facing, so the crane may stand at any corner of it as she sees it: nothing goes through it at any
+    for k in (1, 2, 3):
+        keepout(c, f'clear of the crane at her {("near left", "near right", "far right")[k - 1]}',
+                [(lo, hi) for lo, hi, col, lit in _stewpot(None, k) if lit],
+                [('ladle', LADLE_PTS), ('body', BODY_CORNERS), ('head', HEAD_CORNERS)] + arm_parts('right_arm', 'left_arm'), tol=0.1)
     self_clear(c, 'arms', tol=0.4)
     return c
 
@@ -697,8 +749,10 @@ def turner_angles(d):
 def from_clip(frame, p):
     """A clip-space point as block space (the inverse of at())."""
     x, y, z = (float(v) for v in p)
-    if frame == 'S':
+    if frame == 'H':
         return (x + 8.0, 24.0 - y, -8.0 - z)
+    if frame == 'S':
+        return (x + 8.0, 24.0 - y, -8.0 - z + NEAR)
     raise ValueError(frame)
 
 
@@ -719,7 +773,7 @@ def hob_piece(t):
 
     def on_blade(tt):
         e, R = fl_turner(tt)
-        return np.array(from_clip('S', e - R @ np.array([0.0, 2.6, 0.0]) - R[:, 2] * 0.65))
+        return np.array(from_clip(HB_FRAME, e - R @ np.array([0.0, 2.6, 0.0]) - R[:, 2] * 0.65))
     if t < FL_LAUNCH:
         return on_blade(t), half, False
     land = rest + np.array([0.2, 0.0, 0.1])
@@ -885,7 +939,7 @@ def flip():
         set_arm(c, 'right_arm', t, (qa, np.zeros(3)))
         set_arm(c, 'left_arm', t, rest_arm('left_arm', fr, fwd=3.0 + 6.0 * bump(t, 11.0, 24.0)))
         mid, _, _ = hob_piece(t)
-        look = np.array(at('S', mid)) + np.array([0.0, -0.4, 0.0])
+        look = np.array(at(HB_FRAME, mid)) + np.array([0.0, -0.4, 0.0])
         hw = 0.85 * smooth(K([(0, 0.0), (1.2, 0.0), (5.5, 1.0), (25.0, 1.0), (29.5, 0.0), (30, 0.0)], t))
         c.key('head', t, qslerp(I, gaze_head(fr, look), hw), ease='linear')
     c.mode('head', 'set')
@@ -925,16 +979,18 @@ def flip():
 # face against the heat, the palm to the fire, her head turned a little from it and following the roast. Needs of the
 # block: the crank's middle (CRANK_C), the knob's circle (CRANK_ARM), the rod's height (the crank is low: she stoops over
 # it, the knees giving), the east post and the plinth in front of her (nothing of her goes through them), and the turn
-# kept in step by the game: the knob's angle is crank_angle(tick of the clip).
+# kept in step by the game: the knob's angle is crank_angle(tick of the clip). One moment, `crank`, as the knob goes over
+# the top (TS_OVER), for the crank's click once a turn.
 TS_LEN = 40
-TS_FEET = {'right_leg': (-4.0, 1.0), 'left_leg': (3.6, -2.6)}
+TS_FEET = {'right_leg': (-4.0, 1.0 + NEAR), 'left_leg': (3.6, -2.6 + NEAR)}     # (as far from the crank as at the cell's middle)
 TS_DIP = 4.5                                    # the knees give
 TS_PITCH = 30.0
 TS_YAW = -10.0                                  # she stands a little across the crank: the right shoulder leads
-TS_ROOT = (1.0, -1.6)
+TS_ROOT = (1.0, -1.6 + NEAR)
 TS_FRONT = unit(L + D * 0.3 + F * 0.2)         # the front of her right arm turns in and a little down as she grips the knob
 TS_GRIP_Z = 1.3                                 # the fist sits this far to the wrist's side of the knob's middle
 TS_ROAST = np.array([0.0, CRANK_C[1] - 0.6, CRANK_C[2] - 4.8])           # where she looks: the nearest joint of the roast
+TS_OVER = round(CRANK_A0 * CRANK_TURN / 360.0, 1)                        # the knob goes over the top (22.2): the crank's click (crank)
 TS_X = SOLUTIONS.setdefault('turn_spit', {})
 
 
@@ -972,7 +1028,7 @@ def ts_res(t, designed, qh=None):
 
 
 def turn_spit():
-    c = la.clip('turn_spit', TS_LEN, True, look=('innkeeper', 0), tools_=(), station_='spit',
+    c = la.clip('turn_spit', TS_LEN, True, look=('innkeeper', 0), tools_=(), station_='spit', events=[('crank', TS_OVER)],
                 traces=[('right_arm', tuple(RIGHT_FIST), (240, 220, 160))], views=((40, -14, True), (90, -6), (-45, -10)))
     times = la.every(TS_LEN)
 
@@ -1191,14 +1247,14 @@ def gaze_key(fr, look, w):
 # over the loaf's right end, two cuts through it with a short saw on each, the cut slices slid apart with the knife's flat, the
 # knife put back. She steps up to the counter's edge and bends to it from the hips, the knees giving; the blade lies along her
 # line of sight (pointing away, its edge down), the loaf along the board from her right to her left. Needs of the block: the
-# board's top (BOARD_TOP_B) and where it lies (BOARD_B), the counter's edge in front of her (clip z -10).
+# board's top (BOARD_TOP_B) and where it lies (BOARD_B), the counter's edge in front of her (clip z -10 + NEAR).
 SL_LEN = 40
-SL_FEET = {'right_leg': (-2.8, -1.4), 'left_leg': (2.8, -2.6)}           # the left foot a little forward: the body turned a little
+SL_FEET = {'right_leg': (-2.8, -1.4 + NEAR), 'left_leg': (2.8, -2.6 + NEAR)}    # the left foot a little forward: the body turned a little
 SL_STEPS = [(0.4, 3.2, 'left_leg', SL_FEET['left_leg']), (1.4, 4.2, 'right_leg', SL_FEET['right_leg']),
             (33.0, 36.2, 'right_leg', FEET['right_leg']), (34.0, 37.2, 'left_leg', FEET['left_leg'])]
 SL_BOARD = 24.0 - BOARD_TOP_B                                   # the chopping board's top
 SL_SIZE = 6.0                                                   # the loaf (bread, drawn as the item, a card standing on the board): this big
-SL_Z = float(at(PB_FRAME, (0, 0, BOARD_B[1]))[2]) - 3.1         # in from the board's near edge (-12.2): where the cuts and her left hand are
+SL_Z = float(at(PB_FRAME, (0, 0, BOARD_B[1]))[2]) - 3.1         # in from the board's near edge (-12.2 + NEAR): where the cuts and her left hand are
 SL_LOAF = np.array([0.0, SL_BOARD - 1.8, SL_Z])                 # the loaf's middle (the card's empty foot sunk a little into the board)
 SL_LOAF_TOP = SL_BOARD - 3.3                                    # the bread's top
 SL_CUTS = (-2.1, -1.1)                                          # where the two cuts are (x): a slice thick from the loaf's right end
@@ -1223,7 +1279,7 @@ SL_X_SOL = SOLUTIONS.setdefault('slice', {})
 
 def sl_work(t):
     """How far her hands are into the work: the right (the knife's), the left (on the loaf), the knife's own turn."""
-    wr = smooth(t / 4.8) * (1.0 - smooth((t - 28.5) / 5.5))
+    wr = smooth((t - 0.5) / 4.6) * (1.0 - smooth((t - 28.5) / 5.5))
     wl = smooth((t - 0.4) / 3.2) * (1.0 - smooth((t - 30.0) / 5.0))
     wk = smooth((t - 1.0) / 3.4) * (1.0 - smooth((t - 28.0) / 4.0))
     return wr, wl, wk
@@ -1335,12 +1391,12 @@ CV_FRAME = 'S'
 CV_JOINT = 2                                    # the joint she carves: the third from her right
 JOINT_C = np.array(at(CV_FRAME, (JOINT_X_B[CV_JOINT], SPIT_AXIS_B[0], SPIT_AXIS_B[1])))       # its middle (the axis there)
 JOINT_TOP = float(JOINT_C[1]) - 1.1             # clip y of the joint's top (13.8)
-JOINT_NEAR = float(JOINT_C[2]) + 1.1            # of its near face (-14.9)
+JOINT_NEAR = float(JOINT_C[2]) + 1.1            # of its near face (-14.9 + NEAR)
 ROD_TOP = float(JOINT_C[1]) - 0.5               # the rod's top (14.4): the blade stays above it
 CV_CX = float(JOINT_C[0]) + 0.1                 # where on the joint she cuts: near its middle
 CV_CUT, CV_PLATE = 19.5, 30.0                   # the slice parts; it lands in the bowl
 CV_LIFT, CV_REL = 22.6, 28.0                    # the slice rides off the joint on the flat blade; it slides off it
-CV_FEET = {'right_leg': (-2.2, -1.2), 'left_leg': (3.0, -3.6)}                  # the left foot forward
+CV_FEET = {'right_leg': (-2.2, -1.2 + NEAR), 'left_leg': (3.0, -3.6 + NEAR)}    # the left foot forward
 CV_STEPS = [(0.4, 3.2, 'left_leg', CV_FEET['left_leg']), (1.4, 4.2, 'right_leg', CV_FEET['right_leg']),
             (44.0, 47.2, 'right_leg', FEET['right_leg']), (45.0, 48.2, 'left_leg', FEET['left_leg'])]
 CV_SIZE = 2.4                                   # the slice: the item drawn this big
@@ -1355,12 +1411,20 @@ CV_DIR_TILT = unit(L * 0.88 + F * 0.2 + D * 0.25)
 CV_FRONT_R = unit(U * 0.6 + L * 0.5 + F * 0.2)
 CV_ARC = 1.0                                    # the slice rises this far above the straight way to the bowl
 _x, _top = CV_CX, JOINT_TOP
-CV_EDGE_LIFT = np.array([_x - 0.2, _top + 0.25, -15.1])        # the cutting point as the slice is lifted
-CV_EDGE = [(4.6, (_x + 0.3, _top - 1.7, -17.4)), (6.6, (_x, _top - 0.15, -17.1)),             # in over the far top, laid on it
+# (the z of the points below are as for the Spit a block ahead, its rod at z -16; nearer() brings them NEAR px in with it)
+
+
+def nearer(keys, since=0.0):
+    """Keys (t, point) designed for the station a whole cell ahead, from tick [since] on, brought NEAR px nearer with it."""
+    return [(k, (p[0], p[1], p[2] + NEAR) if k >= since else p) for k, p in keys]
+
+
+CV_EDGE_LIFT = np.array([_x - 0.2, _top + 0.25, -15.1 + NEAR])        # the cutting point as the slice is lifted
+CV_EDGE = nearer([(4.6, (_x + 0.3, _top - 1.7, -17.4)), (6.6, (_x, _top - 0.15, -17.1)),             # in over the far top, laid on it
            (9.4, (_x, _top + 0.2, -16.0)), (11.2, (_x, _top + 0.35, -15.0)),               # the first draw, toward her
            (12.8, (_x, _top - 0.45, -16.2)), (14.4, (_x, _top - 0.05, -17.0)),             # lifted a hair and back
            (17.4, (_x, _top + 0.35, -15.6)), (CV_CUT - 0.1, (_x, _top + 0.45, -14.8)),     # the second draw: through
-           (CV_LIFT, tuple(CV_EDGE_LIFT))]                                                 # the wrist turned flat under it
+           (CV_LIFT, tuple(CV_EDGE_LIFT - np.array([0.0, 0.0, NEAR])))])                   # the wrist turned flat under it
 CV_SAW = 0.55
 CV_P = [(0, 0.0), (3.0, 20.0), (6.0, 33.0), (10.0, 36.0), (19.0, 36.0), (24.0, 32.0), (30.0, 31.0), (36.0, 29.0), (41.0, 16.0),
         (46.0, 4.0), (50, 0.0)]
@@ -1369,11 +1433,11 @@ CV_DIP = [(0, 0.0), (4.0, 3.5), (8.0, 5.0), (30.0, 5.0), (38.0, 3.5), (44.0, 1.0
 # the bowl's bottom's middle: out of the hip at once, up and in front of the roast and held under the joints, lifted a hair to
 # the slice, down a hair as it lands, held out to the left to be taken
 CV_BOWL_AT, CV_BOWL_GONE = 1.6, 41.0
-CV_BOWL = [(CV_BOWL_AT, (5.0, 17.9, -5.5)), (5.0, (4.3, 16.6, -11.0)), (8.0, (3.4, 16.3, -12.4)), (10.5, (3.2, 16.3, -12.4)), (CV_REL, (3.2, 16.3, -12.4)),
+CV_BOWL = nearer([(CV_BOWL_AT, (5.0, 17.9, -5.5)), (5.0, (4.3, 16.6, -11.0)), (8.0, (3.4, 16.3, -12.4)), (10.5, (3.2, 16.3, -12.4)), (CV_REL, (3.2, 16.3, -12.4)),
            (CV_PLATE, (3.2, 16.2, -12.4)), (31.0, (3.2, 16.5, -12.4)), (32.6, (3.2, 16.2, -12.2)), (34.5, (3.5, 15.9, -11.6)),
-           (37.0, (4.0, 15.7, -10.8)), (39.5, (4.4, 15.5, -9.9)), (CV_BOWL_GONE, (4.5, 15.4, -9.6))]
-CV_EDGE_AFTER = [(30.4, (_x + 3.0, _top - 1.1, -13.3)), (32.6, (_x + 1.4, _top - 0.9, -14.9)),
-                 (34.8, (_x - 0.3, _top - 0.8, -16.2))]
+           (37.0, (4.0, 15.7, -10.8)), (39.5, (4.4, 15.5, -9.9)), (CV_BOWL_GONE, (4.5, 15.4, -9.6))])
+CV_EDGE_AFTER = nearer([(30.4, (_x + 3.0, _top - 1.1, -13.3)), (32.6, (_x + 1.4, _top - 0.9, -14.9)),
+                        (34.8, (_x - 0.3, _top - 0.8, -16.2))])
 CV_X_SOL = SOLUTIONS.setdefault('carve', {})
 
 
@@ -1457,9 +1521,9 @@ def cv_fist(t):
 
 
 def cv_look(t):
-    keys = [(0.0, (0.0, 4.0, -40.0)), (2.5, (CV_CX, JOINT_TOP - 0.5, -14.0)), (5.0, (CV_CX, JOINT_TOP, -16.0)),
+    keys = [(0.0, (0.0, 4.0, -40.0))] + nearer([(2.5, (CV_CX, JOINT_TOP - 0.5, -14.0)), (5.0, (CV_CX, JOINT_TOP, -16.0)),
             (CV_LIFT, (CV_CX, JOINT_TOP, -15.6)), (26.0, (CV_CX + 1.8, JOINT_TOP + 1.0, -13.6)), (CV_PLATE, (3.2, 15.0, -12.6)),
-            (36.0, (3.4, 15.0, -12.2)), (42.0, (0.0, 6.0, -40.0)), (50, (0.0, 6.0, -40.0))]
+            (36.0, (3.4, 15.0, -12.2))]) + [(42.0, (0.0, 6.0, -40.0)), (50, (0.0, 6.0, -40.0))]
     return path_keys(keys, t)
 
 
@@ -1502,7 +1566,7 @@ def carve():
         return {'right_arm': front_want(CV_FRONT_R, wr), 'left_arm': front_want(LEFT_HELD, wl)}
 
     def head_at_(t, fr):
-        return gaze_key(fr, cv_look(t), 0.7 * smooth(t / 5.0) * (1.0 - smooth((t - 42.0) / 5.0)))
+        return gaze_key(fr, cv_look(t), (0.7 - 0.3 * bump(t, 30.0, 40.0)) * smooth(t / 5.0) * (1.0 - smooth((t - 42.0) / 5.0)))   # (her eyes, not her chin, go to the bowl as the knife comes back past it)
 
     def res_at(t, fr_w):
         wr, wl, wk = cv_work(t)
@@ -1554,20 +1618,21 @@ def carve():
 
 # ================================================================== peel
 
-# ---- peel (50, once): the baker at the Bake oven. The door swings open (the client drives it; the previews draw it opening
-# over ticks 0 to 5 and shutting over 46 to 50, so the leaf is wide before the blade comes near it) and she steps back from
+# ---- peel (50, once): the baker at the Bake oven. The door swings open (door, tick 1: the client drives it; the previews draw
+# it opening over ticks 0 to 5 and shutting over 46 to 50, so the leaf is wide before the blade comes near it) and she steps back from
 # the heat and takes the long peel (it is in her right fist from tick 1.6), brings its blade up to the mouth and down to the
 # sill (peel, tick 8: its tip meets the sill), steps in with the left foot and slides it in along the sill and the tray's top
 # to the back, works it a hair under the loaves and lifts, draws it out with them (peel, tick 36: the blade clears the sill),
-# swings it out to her left and holds it up in front of her in both hands (41.5), and lets go (the peel and the loaves gone
-# at tick 43: the next step, PUT_DOWN, takes the loaves) and steps in to where she began. The peel is a pole of 15 beyond
+# swings it out to her left and holds it up in front of her in both hands (41.5), and lets go (down, tick 43: the peel and the
+# loaves gone; the counter or the next step takes the loaves) and steps in to where she began. The moments in that order (door,
+# peel, peel, down) are what Part I3's TownKitchen plays: the oven's door at the first, the loaves set down at the last. The peel is a pole of 15 beyond
 # the grip's origin and a blade of 6 by 5, and the mouth is only 6.4 wide (and its leaf, open, stands out to the right of it),
 # so the blade goes in square, flat, where it is designed to go (its middle is the clip's design, tick by tick, and the
 # pole's lean to either side is limited to what the mouth allows); her hands take the pole wherever her arms reach it and
 # slide along it as it goes in (so the pole is drawn through her fists, the right hand at the butt when it is deepest); she
-# stands side-on to the oven (the hips 6 to 8 px to the left of the cell's middle and 2 to 6 px back from it, bent 21 to 27
-# degrees forward and turned 50 to 64, which the guide tells the scene) so that the arms, which are straight and 10 long,
-# reach the pole.
+# stands side-on to the oven (the hips 6 to 8 px to the left of the cell's middle and 2 to 6 px back from it, so 4 to 8 back
+# from where Part I2 stands her, bent 21 to 27 degrees forward and turned 50 to 64, which the guide tells the scene) so that
+# the arms, which are straight and 10 long, reach the pole.
 # Needs of the block: the mouth's width and height (OV_OPEN_B), the sill's top, where the front stands (OV_FRONT_B), the
 # chamber's back (OV_CAVITY_Z_B), the door's hinge side and how far it swings (OV_HINGE_B, OV_DOOR_MAX) and when
 # (OV_DOOR_OPENS, OV_DOOR_SHUTS).
@@ -1582,22 +1647,24 @@ PEEL_DENSE = np.array([(x, y, z) for x in (-2.5, -1.25, 0.0, 1.25, 2.5) for y in
                       [(0.0, y, 0.0) for y in (-3.0, 0.0, 3.0, 6.0, 9.0, 12.0)], float)
 # the loaves as the game draws them (the item, 5 across, lying flat on the blade's upper face): the outline and the middle
 PEEL_LOAF = np.array([(x, y, 0.4) for x in (-2.5, 0.0, 2.5) for y in (12.5, 15.0, 17.5)], float)
-PL_FRONT = at(OV_FRAME, (8.0, 0.0, OV_FRONT_B))[2]                 # the oven's front face (-9.2)
+PL_FRONT = at(OV_FRAME, (8.0, 0.0, OV_FRONT_B))[2]                 # the oven's front face (-9.2 + NEAR)
 PL_SILL = 24.0 - OV_OPEN_B[1]                   # the sill's top (15.2)
-PL_BACK = at(OV_FRAME, (8.0, 0.0, OV_CAVITY_Z_B[1]))[2]            # the chamber's back wall (-16.8)
+PL_BACK = at(OV_FRAME, (8.0, 0.0, OV_CAVITY_Z_B[1]))[2]            # the chamber's back wall (-16.8 + NEAR)
 PL_X, PL_XD = 0.33, 0.1                         # the blade's middle goes in at this x (the mouth is -3.2 to 3.2, the open door's inner
                                                 # face at -2.54, the blade 5 wide: so 0.16 to 0.5 while its rear is outside), then at the other
 PL_Y = PL_SILL - 0.75                           # its height over the sill
-PL_DEEP = PL_BACK + 3.0 + 0.4                   # the blade's middle at the deepest: its far end 0.4 short of the back (-13.4)
+PL_DEEP = PL_BACK + 3.0 + 0.4                   # the blade's middle at the deepest: its far end 0.4 short of the back (-13.4 + NEAR)
 PL_FIRST, PL_OUT = 8.0, 36.0                    # the blade's tip meets the sill going in; the blade clears the sill coming out
 PL_APPEAR, PL_GONE = 1.6, 43.0                  # the peel is in her hand from, and gone at
+PL_DOOR = 1.0                                   # the door is swinging open
+PL_MOUTH = np.array(at(OV_FRAME, (8.0, 10.6, OV_FRONT_B)))         # the middle of the oven's mouth, in its front face
 PL_L = (6.6, 14.6)                              # how far behind the blade's middle her right fist may take the pole: least, most
 PL_GAP = (2.6, 7.0, 4.2)                        # how far ahead of the right fist the left takes it: least, most, preferred
 PL_START_DIR = unit(np.array([0.0, -0.45, -0.9]))                  # as it appears: her fist at the rest's, the blade ahead and up ...
 PL_START_N = 9.0                                # ... this far from the fist
 # where the blade's middle goes: raised and brought up to the mouth, lowered to the sill, slid in along it and the tray, worked
 # a hair under the loaves and lifted, drawn out, swung out to her left, held up in front of her, lowered a little
-PL_B = [(3.6, (0.5, 7.8, -7.4)), (4.4, (0.47, 9.3, PL_FRONT + 3.1)), (5.2, (0.43, 11.3, PL_FRONT + 3.2)), (6.0, (0.4, 13.0, PL_FRONT + 3.2)),
+PL_B = [(3.6, (0.5, 7.8, -7.4 + NEAR)), (4.4, (0.47, 9.3, PL_FRONT + 3.1)), (5.2, (0.43, 11.3, PL_FRONT + 3.2)), (6.0, (0.4, 13.0, PL_FRONT + 3.2)),
         (PL_FIRST, (PL_X, PL_Y - 0.15, PL_FRONT + 2.9)),
         (9.5, (PL_X, PL_Y - 0.1, PL_FRONT - 0.5)), (12.0, (PL_X, PL_Y, PL_FRONT - 2.4)), (14.5, (PL_X - 0.15, PL_Y + 0.1, PL_FRONT - 4.0)),
         (16.8, (PL_XD, PL_Y + 0.1, PL_DEEP)), (18.6, (PL_XD, PL_Y + 0.1, PL_DEEP + 0.9)), (20.4, (PL_XD, PL_Y + 0.1, PL_DEEP + 0.1)),
@@ -1615,18 +1682,18 @@ PL_SLOPE = [(0, -26.0), (3.6, -33.0), (6.0, -10.0), (PL_FIRST, 3.0), (12.0, 4.0)
 PL_LPREF = [(0, 9.0), (PL_APPEAR, 9.0), (6.0, 7.6), (PL_FIRST, 7.4), (12.0, 10.5), (16.8, 12.2), (24.0, 12.0), (31.0, 9.5), (PL_OUT, 7.8),
             (41.5, 7.6), (50, 9.0)]
 # her stance: the feet, then the lean, turn, knees and hips she wishes (the solve keeps near them)
-PL_READY_F = {'right_leg': (5.0, 9.0), 'left_leg': (7.2, 5.2)}                                      # side-on to the oven, 5 to 7 px left of the cell's middle
-PL_LUNGE_F = {'right_leg': (5.0, 9.0), 'left_leg': (6.4, 2.4)}                                      # the left foot forward
-PL_STEPS = [(0.4, 2.6, 'left_leg', (4.4, 2.6)), (1.2, 3.4, 'right_leg', (2.2, 5.8)),
+PL_READY_F = {'right_leg': (5.0, 9.0 + NEAR), 'left_leg': (7.2, 5.2 + NEAR)}                                   # side-on to the oven, 5 to 7 px left of the cell's middle
+PL_LUNGE_F = {'right_leg': (5.0, 9.0 + NEAR), 'left_leg': (6.4, 2.4 + NEAR)}                                   # the left foot forward
+PL_STEPS = [(0.4, 2.6, 'left_leg', (4.4, 2.6 + NEAR)), (1.2, 3.4, 'right_leg', (2.2, 5.8 + NEAR)),
             (2.8, 5.2, 'left_leg', PL_READY_F['left_leg']), (3.6, 6.0, 'right_leg', PL_READY_F['right_leg']),
             (9.5, 12.5, 'left_leg', PL_LUNGE_F['left_leg']), (24.0, 27.0, 'left_leg', PL_READY_F['left_leg']),
-            (41.0, 44.0, 'right_leg', (2.0, 5.0)), (42.0, 45.0, 'left_leg', (4.4, 2.6)),
+            (41.0, 44.0, 'right_leg', (2.0, 5.0 + NEAR)), (42.0, 45.0, 'left_leg', (4.4, 2.6 + NEAR)),
             (44.5, 47.5, 'right_leg', FEET['right_leg']), (45.5, 48.5, 'left_leg', FEET['left_leg'])]
 PL_P = [(0, 0.0), (3.0, 10.0), (6.0, 19.0), (9.0, 21.0), (18.0, 21.0), (26.0, 20.0), (34.0, 19.0), (40.0, 15.0), (46.0, 6.0), (50, 0.0)]
 PL_YAW = [(0, 0.0), (3.0, 22.0), (6.0, 48.0), (9.0, 58.0), (26.0, 57.0), (34.0, 52.0), (40.0, 38.0), (46.0, 10.0), (50, 0.0)]
 PL_DIP = [(0, 0.0), (3.0, 1.5), (7.0, 3.0), (12.0, 4.0), (18.0, 4.5), (26.0, 4.0), (34.0, 3.0), (41.0, 2.0), (46.0, 1.0), (50, 0.0)]
-PL_ROOT_Z = [(0, 0.0), (3.0, 3.0), (6.0, 6.5), (9.0, 7.0), (12.0, 6.0), (17.0, 5.8), (24.0, 6.0), (30.0, 6.5), (36.0, 6.8), (42.0, 5.5),
-             (46.0, 3.0), (50, 0.0)]
+PL_ROOT_Z = [(0, 0.0)] + [(k, z + NEAR) for k, z in ((3.0, 3.0), (6.0, 6.5), (9.0, 7.0), (12.0, 6.0), (17.0, 5.8), (24.0, 6.0), (30.0, 6.5),
+                                                    (36.0, 6.8), (42.0, 5.5), (46.0, 3.0))] + [(50, 0.0)]
 PL_FRONT_R = unit(L + D * 0.1)                          # the fronts of her arms: toward the middle (the pole's side), the arm hanging
 PL_FRONT_L = unit(R + D * 0.1)                          # steeply, so the front is never along the arm
 PL_X_SOL = SOLUTIONS.setdefault('peel', {})
@@ -1799,7 +1866,7 @@ def pl_res_at(t, fr_w):
 
 def peel_():
     c = la.clip('peel', PL_LEN, False, look=('baker', 0), tools_=('peel',), station_='bake_oven',
-                events=[('peel', PL_FIRST), ('peel', PL_OUT)], traces=[('peel', tuple(PEEL_BLADE_MID), (240, 220, 160))],
+                events=[('door', PL_DOOR), ('peel', PL_FIRST), ('peel', PL_OUT), ('down', PL_GONE)], traces=[('peel', tuple(PEEL_BLADE_MID), (240, 220, 160))],
                 views=((40, -14, True), (90, -4), (-50, -10)))
     PL_START_B[:] = [pl_start_blade()]
     times = la.every(PL_LEN)
@@ -1874,9 +1941,11 @@ def cook_moment_specs():
         'stir': {'stir': ('part', 'ladle', tuple(lp.LADLE_BOWL))},
         'taste': {'taste': ('part', 'head', (0.0, -1.3, -5.2))},
         'flip': {'flip': ('part', 'turner', tuple(lp.TURNER_EDGE)), 'land': ('point', tuple(PAN_SLOTS[FLIP_SLOT]))},
+        'turn_spit': {'crank': ('part', 'right_arm', tuple(RIGHT_FIST))},
         'slice': {'slice': ('part', KNIFE, tuple(KNIFE_CUT))},
         'carve': {'carve': ('part', KNIFE, tuple(KNIFE_CUT)), 'plate': ('part', 'bowl_empty', tuple(BOWL_IN))},
-        'peel': {'peel': ('part', 'peel', tuple(PEEL_BLADE_MID))},
+        'peel': {'door': ('point', tuple(PL_MOUTH)), 'peel': ('part', 'peel', tuple(PEEL_BLADE_MID)),
+                 'down': ('part', 'peel', tuple(PEEL_LOAVES))},
     }
 
 

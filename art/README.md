@@ -279,6 +279,9 @@ python3 -B art/scripts/townsfolk_anims.py src/main/resources/assets/guildmark <p
   streets' clip scripts, so running `living_anims.py` writes them to `assets/guildmark/animations/townsfolk/` and into
   `client/townsfolk/LivingSchedule.kt` with the rest. The `turner` and the cook's knife (`cooks_knife`) they hold are built in
   `living_props.py` and packed into the model by `townsfolk.py` (which rewrites `TownsfolkMesh.kt`), after every older cube.
+  The stations it checks against are drawn to the numbers of Hearthcraft's own block scripts (`cook_stewpot.py`, `cook_hob.py`,
+  `cook_spit.py`, `cook_oven.py`, `cook_helpers.py`), each placed where the kitchen scenes stand the keeper (`NEAR`, 0.12 of a
+  block in from the cell's middle; the cookshop's hob at the middle), and every number a clip leans on is a named constant there.
 
 ## Screens
 
