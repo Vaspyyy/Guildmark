@@ -79,6 +79,8 @@ object VillageHands {
         if (places.stalls.isEmpty()) return out
         val able = living.filter { it.role in KEEPERS && it.id != bellman && it.id !in carters }.sortedBy { it.id }
         places.stalls.forEachIndexed { i, stall ->
+            // The pedlar's cart (V4, index -1, last in the list while the pedlar is at the green) is the pedlar's to keep
+            if (stall.index < 0) return@forEachIndexed
             val shop = Shop.of(stall.trade)
             val keeper = able.firstOrNull { it.id !in out && fits(it, shop) } ?: able.firstOrNull { it.id !in out && it.role == TownRole.CITIZEN }
             if (keeper != null) out[keeper.id] = i
