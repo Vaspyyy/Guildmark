@@ -247,15 +247,18 @@ object Locket : Template, TaleVoice, TaleWords.Names {
     /**
      * The owner on their doorstep by day (the opener with a passer-by's comfort; while the words are gathered and the thief looked for, alone), the
      * scene of the way at step 4 (the Return at dusk for the loaves, the Naming at the well for the street and the Order's word), which ends the tale
-     * once it has played; and, as the tale ends, the Clasp of a B and the owner who has stopped looking of a W, if it is their hour.
+     * once it has played; and, as the tale ends, the Clasp of a B, the owner who has stopped looking of a W, and the Return or the Naming of an A
+     * or a C that no scene showed (`tale end`), if it is their hour (an ending at the close, at two in the morning, is not seen).
      */
     override fun scene(c: Ctx, t: Tale): Stage? {
         if (!Tales.scenes()) return null
         if (!t.open) {
+            // The ending seen, once, as it is made (`tale end`, a word in the talk), when no scene of step 4 showed it already and it is its hour
             return when (t.ending) {
+                Ending.A -> if (t.n[LocketSlots.PLAYED] == 0) LocketScenes.homecomingFor(c, t, BooleanArray(1)) else null
                 Ending.B -> LocketScenes.claspFor(c, t)
-                Ending.W -> LocketScenes.lostFor(c, t)
-                else -> null
+                Ending.C -> if (t.n[LocketSlots.PLAYED] == 0 && t.n[LocketSlots.WAY] != LocketSlots.SILL) LocketScenes.namingFor(c, t, BooleanArray(1)) else null
+                else -> LocketScenes.lostFor(c, t)
             }
         }
         return when (t.step) {
