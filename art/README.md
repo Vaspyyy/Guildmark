@@ -173,6 +173,19 @@ and Kotlin model code always agree.
   change the script, not the Kotlin). It checks its own numbers, that nothing goes through the wearer over a hundred poses,
   that nothing floats and what it wrote. With a preview dir it renders the packs on a player from five sides, strides, sneaks,
   armour, cape and head-up limits, and GIFs (walking, sprinting, sneaking, the lantern and the pots close up, a pack appearing).
+- `scripts/store_art.py` and `scripts/house_art.py` (with `trade_works_kit.py` and `trade_works_preview.py` beside them, on
+  `works_art.py`'s materials and mesh packing) are the Carriers' Store's and the Counting House's fittings, in the works' form:
+  each a block model facing north turned by its blockstate (`store_scale`, `store_name_board`, `store_door_board`, `strongbox`,
+  `strongbox_shut`, `counting_frame`; `house_map`, three blocks by two, `house_name_board`, `house_bell`) with what stands still,
+  and a mesh of what moves, every moving piece a named part at its own pivot: the scale's beam and pans, the boards, the
+  strongbox's lid and hasp, the counting frame's 54 beads, the map's pins, threads, wagons, wheels and pennants in the six House
+  colours, the bell, its clapper and rope. They write `textures/block/trade/`, `models/block/`, `blockstates/`, the Blockbench
+  files (`art/models/store_*.bbmodel`, `house_*.bbmodel`) and `client/trade/StoreArt.kt` and `HouseArt.kt` (generated: the
+  meshes and the functions the renderers move every piece by; change the script, not the Kotlin). No picture carries a letter:
+  the boards' lettering is the renderers'. They check what they wrote (every file there, every element in range, no partly clear
+  texel, the lid short of the wall, the beads clear of each other, the bell at rest by its last tick) and stop if not. With a
+  preview dir they render the fittings beside the works' own and at room sizes, sheets of every picture, and GIFs drawn by the
+  tables' own numbers (a weighing, the boards, the lid, the beads, the map alive, the bell rung).
 
 Rebuild a model (needs Python 3 with Pillow and numpy), from the repo root:
 
@@ -198,6 +211,8 @@ python3 -B art/scripts/haul_board_art.py src/main/resources/assets/guildmark [ko
 python3 -B art/scripts/trade_items.py src/main/resources/assets/guildmark [preview-dir]
 python3 -B art/scripts/pack_harness.py [assets-dir [kotlin-dir [art/models [preview-dir [game assets/minecraft]]]]]
 python3 -B art/scripts/laden_pack.py [assets-dir [kotlin-dir [art/models [preview-dir [game assets/minecraft]]]]]
+python3 -B art/scripts/store_art.py src/main/resources/assets/guildmark src/main/kotlin/io/github/vaspyyy/guildmark/client/trade art/models [preview-dir]
+python3 -B art/scripts/house_art.py src/main/resources/assets/guildmark src/main/kotlin/io/github/vaspyyy/guildmark/client/trade art/models [preview-dir]
 ```
 
 Each run writes the textures into the mod's assets, the `.bbmodel` into `art/models`, and a preview
