@@ -26,7 +26,7 @@ object Templates {
         // Cart,      // 8  cart      size 2  T2
         // Lantern,   // 9  lantern   size 1  T2
         // Informer,  // 10 informer  size 3  T3
-        // Locket,    // 11 locket    size 2  T1
+        io.github.vaspyyy.guildmark.tales.templates.Locket, // 11 locket    size 2  T1
         // Brother,   // 12 brother   size 3  T5
     )
 
