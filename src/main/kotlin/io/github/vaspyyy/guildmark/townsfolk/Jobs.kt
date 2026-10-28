@@ -304,7 +304,7 @@ object Jobs {
     }
 
     private fun bard(p: Townsperson, evening: Boolean): Task? {
-        // A tale has taken the music out of the square (the lute, living-world/stories/design.md 8.6): she sits it out, hands empty
+        // A tale has taken the music out of the square (the lute, living-world/stories/design.md 8.6): the bard sits it out, hands empty
         if (Tales.silent(p)) return Tales.quiet(p)
         val level = level(p)
         val square = p.town?.square
@@ -400,7 +400,8 @@ object Leisure {
         if (p.role == TownRole.CHILD) return child(p)
         if (p.role == TownRole.NOBLE && p.random.nextInt(3) != 0) return stroll(p)
         if (p.role == TownRole.GUARD) return Patrol(p, listOfNotNull(Places.street(level, p.blockPosition(), 28, p.random, minR = 10)))
-        if (p.role == TownRole.BARD && crowd && p.random.nextInt(2) == 0 && !Tales.silent(p)) {
+        if (p.role == TownRole.BARD && crowd && p.random.nextInt(2) == 0) {
+            if (Tales.silent(p)) return Tales.quiet(p) ?: Idle(p, 200)
             Places.street(level, p.blockPosition(), 4, p.random)?.let { return Perform(p, it, p.blockPosition()) }
         }
         return when (p.random.nextInt(20)) {

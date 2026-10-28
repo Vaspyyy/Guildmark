@@ -127,7 +127,7 @@ object Lute : Template, TaleVoice {
         val level = c.level
         val pool = TaleCast.pool(level, c.here.capital.center)
         val bards = pool.filter { it.role == TownRole.BARD }
-        if (bards.isEmpty()) return c.none("no bard is at home to have pawned her lute")
+        if (bards.isEmpty()) return c.none("no bard is at home to have pawned their lute")
         val keepers = pool.filter { it.role == TownRole.INNKEEPER }.ifEmpty { pool.filter { it.role == TownRole.MERCHANT } }
         if (keepers.isEmpty()) return c.none("neither an innkeeper nor a merchant is at home to hold the lute")
         val trigger = trigger(c) ?: return c.none("the times are not lean, and no festival is within $FESTIVAL_DAYS days")
@@ -162,7 +162,7 @@ object Lute : Template, TaleVoice {
             if (days in 1..FESTIVAL_DAYS) return Trigger(Why("lute.fest_${kind.id}"))
         }
         if (!c.forced) return null
-        return Trigger(Why("lute.lean"), "the lean times she pawned her lute in (the times here are ${times.id}, and no festival is within $FESTIVAL_DAYS days)")
+        return Trigger(Why("lute.lean"), "the lean times the lute was pawned in (the times here are ${times.id}, and no festival is within $FESTIVAL_DAYS days)")
     }
 
     /** The one who used to listen: a grown person of another trade, from one of the five homes nearest the bard's. */

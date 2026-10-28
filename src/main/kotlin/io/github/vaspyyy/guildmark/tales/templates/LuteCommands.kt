@@ -64,7 +64,7 @@ internal object LuteCommands {
             TaleCommand.say(source, line("Tale", "#${t.id}, $state"))
             TaleCommand.say(source, line("Way", way))
             TaleCommand.say(source, line("Marks", "${t.n[LuteSlots.PAID]} of ${t.n[LuteSlots.SUM]} paid"))
-            TaleCommand.say(source, line("The lute", if (t.n[LuteSlots.BACK] == 1) "in her hands" else "not in her hands"))
+            TaleCommand.say(source, line("The lute", if (t.n[LuteSlots.BACK] == 1) "in the bard's hands" else "not in the bard's hands"))
             TaleCommand.say(source, line("The concert", if (t.n[LuteSlots.PLAYED] == 1) "played" else "not played"))
         }
         val today = TaleEngine.today(level, capital)
@@ -78,7 +78,7 @@ internal object LuteCommands {
     private fun why(level: ServerLevel, tales: List<Tale>, today: Long): String {
         val t = tales.firstOrNull { LuteSilence.silentBy(level, it, today) } ?: return "no tale holds it"
         return when {
-            t.open && t.n[LuteSlots.BACK] == 0 -> "the open tale #${t.id} has the lute out of her hands"
+            t.open && t.n[LuteSlots.BACK] == 0 -> "the open tale #${t.id} has the lute out of the bard's hands"
             t.open -> "the hush before the concert of the open tale #${t.id} (18:00 to 20:00, until it has played)"
             t.ending == Ending.W -> "the lute was sold (tale #${t.id}), until day ${LuteSilence.until(t)}"
             else -> "the lute went back to its keeper (tale #${t.id}), until day ${LuteSilence.until(t)}"
@@ -111,8 +111,8 @@ internal object LuteCommands {
         val stage = LuteScenes.concert(bard, listeners, player.blockPosition(), hours = null, played = BooleanArray(1))
         return TaleSceneCommand.begin(
             level, stage,
-            "${name(bard)} walks to where you stand, says her line and plays the lute for a song, and bows" +
-                if (listeners.isNotEmpty()) "; ${listeners.size} walk to a ring before her and clap." else " (nobody else free to listen; anyone free within 16 blocks may join on their own).",
+            "${name(bard)} walks to where you stand, says their line and plays the lute for a song, and bows" +
+                if (listeners.isNotEmpty()) "; ${listeners.size} walk to a ring before them and clap." else " (nobody else free to listen; anyone free within 16 blocks may join on their own).",
         )
     }
 
@@ -122,7 +122,7 @@ internal object LuteCommands {
         val keeper = free.drop(1).minByOrNull { it.distanceToSqr(bard) } ?: throw TaleSceneCommand.Unplayable("Only one person free within 24 blocks of you: it needs two.")
         return TaleSceneCommand.begin(
             level, LuteScenes.giveBack(bard, keeper, hours = null),
-            "${name(bard)} walks the lute to ${name(keeper)}, who takes it and says his word.",
+            "${name(bard)} walks the lute to ${name(keeper)}, who takes it and says their word.",
         )
     }
 }
