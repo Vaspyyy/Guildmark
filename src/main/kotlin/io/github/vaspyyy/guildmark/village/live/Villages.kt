@@ -52,6 +52,7 @@ object Villages {
         io.github.vaspyyy.guildmark.village.live.folk.VillageAdopt.register()
         io.github.vaspyyy.guildmark.village.live.days.VillageSceneCommand.init()
         VillageLampsCommand.init()
+        VillageDressing.init()
     }
 
     /**

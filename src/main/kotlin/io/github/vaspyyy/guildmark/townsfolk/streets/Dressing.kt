@@ -19,6 +19,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Places
 import io.github.vaspyyy.guildmark.townsfolk.Residents
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import io.github.vaspyyy.guildmark.townsfolk.scenes.Scenes
+import io.github.vaspyyy.guildmark.village.live.VillageDressing
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.server.level.ServerLevel
@@ -112,6 +113,8 @@ object Dressing : Fortunes.Listener {
         val t = StreetsData.get(level)[column] ?: return false
         if (Math.floorDiv(run, 4L) != t.run) return false
         if (!(Fortunes.enabled() || forced(t))) return false
+        // A village's, only while Village Dressing is on and the village is not given up
+        if (!VillageDressing.allows(level, column)) return false
         return when (part) {
             PIECES -> t.dress != StreetsData.NONE
             LANTERN_PART -> t.dress != StreetsData.NONE && t.lanterns != StreetsData.NONE
