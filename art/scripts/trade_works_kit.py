@@ -340,6 +340,13 @@ def write_bbmodel(models_dir, name, m, tex):
 FLAT_FACES = {0: ('west', 'east'), 1: ('down', 'up'), 2: ('north', 'south')}
 
 
+def partly_clear(im):
+    """Whether picture [im] has a texel neither clear nor whole: the game puts a block face that shows one in its translucent layer
+    (ChunkSectionLayer.byTransparency), and a cutout mesh draws it whole."""
+    a = np.asarray(im.getchannel('A'))
+    return bool(((a > 0) & (a < 255)).any())
+
+
 class Check:
     """What a script wrote, looked at as the game would load it: every blockstate names models that exist, every model's textures are there
     (the trade's own or the works'), its elements are in the range the game takes and its faces on the sides they can be, its uvs lie
@@ -383,7 +390,10 @@ class Check:
         if ns != 'guildmark' or name in self.textures:
             return
         self.textures.add(name)
-        self.picture('textures/%s.png' % name, who)
+        im = self.picture('textures/%s.png' % name, who)
+        if im is not None and partly_clear(im):
+            self.bad('textures/%s.png has partly clear texels: the game would draw every face of %s that shows it in the translucent layer'
+                     % (name, who))
 
     def element(self, name, i, e, textures):
         fr, to = e['from'], e['to']
@@ -447,6 +457,8 @@ class Check:
         im = self.picture('textures/block/trade/%s.png' % name)
         if im is not None and im.size != (tex_w * scale, tex_h * scale):
             self.bad('textures/block/trade/%s.png is %s, its mesh says %s' % (name, im.size, (tex_w * scale, tex_h * scale)))
+        if im is not None and partly_clear(im):
+            self.bad('textures/block/trade/%s.png has partly clear texels: entityCutout draws them whole, in their own colour' % name)
 
     def mesh_parts(self, m, want):
         """The mesh [m] has each of the part names in [want] at the top level, and every cube is painted (it has something on each face

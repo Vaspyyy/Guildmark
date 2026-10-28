@@ -493,8 +493,11 @@ def coin_tile(seed=7301):
                 inner = p.E(cx, cy, r - 1.2, (r - 1.2) * sq, rot)
                 p.flat(inner, K.COIN, tone - 0.1)
                 p.flat(p.E(cx + 0.3, cy + 0.3, 0.8, 0.8 * sq, rot) & inner, K.COIN, tone - 0.22)
-                if 0 <= int(cx - 0.4) < n and 0 <= int(cy - 0.4) < n:
-                    p.px(cx - 0.4, cy - 0.4, K.COIN[4], 0.9)
+                hx, hy = int(cx - 0.4), int(cy - 0.4)
+                if 0 <= hx < n and 0 <= hy < n:
+                    # the glint is blended in, not set at a lower alpha: one partly clear texel would put every face of the
+                    # heap in the game's translucent layer
+                    p.cv.rgb[hy, hx] = p.cv.rgb[hy, hx] * 0.1 + np.asarray(K.COIN[4], float)[:3] * 0.9
     return p.cv
 
 
