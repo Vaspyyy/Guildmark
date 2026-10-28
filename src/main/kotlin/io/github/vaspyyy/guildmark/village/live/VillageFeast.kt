@@ -6,7 +6,9 @@ import io.github.vaspyyy.guildmark.festival.FestivalPhase
 import io.github.vaspyyy.guildmark.festival.FestivalSite
 import io.github.vaspyyy.guildmark.festival.Festivities
 import io.github.vaspyyy.guildmark.townsfolk.Activity
+import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
 import io.github.vaspyyy.guildmark.townsfolk.Jobs
+import io.github.vaspyyy.guildmark.townsfolk.Places
 import io.github.vaspyyy.guildmark.townsfolk.TownKind
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
@@ -15,6 +17,7 @@ import io.github.vaspyyy.guildmark.townsfolk.scenes.GoTo
 import io.github.vaspyyy.guildmark.townsfolk.scenes.Move
 import io.github.vaspyyy.guildmark.townsfolk.scenes.Play
 import io.github.vaspyyy.guildmark.village.live.days.VillageLife
+import io.github.vaspyyy.guildmark.village.live.market.VillageStall
 import net.minecraft.core.BlockPos
 import net.minecraft.core.particles.ParticleTypes
 import net.minecraft.server.level.ServerLevel
@@ -24,6 +27,7 @@ import net.minecraft.util.Mth
 import net.minecraft.util.RandomSource
 import net.minecraft.world.level.levelgen.Heightmap
 import net.minecraft.world.phys.AABB
+import net.minecraft.world.phys.Vec3
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
@@ -34,9 +38,11 @@ import kotlin.math.sin
  *
  * - [drift]: the free folk of the village who are not of the festival's cast are sent, one in three each scan, to a place in the second
  *   row of the crowd round the ring ([FestivalSite.spotFor], the festival's own answer to where a townsperson who is not directed by it
- *   stands), as a vanilla villager is sent to the green. There they face the ring and clap along with the band, and at the end of
- *   each set, and at the prize-giving, they cheer. They are a part of a scene ([Aside]), not directed by the festival: a word from a
- *   player, a monster, or the day's next stretch lets them go back to their day.
+ *   stands), as a vanilla villager is sent to the green: each to a place of their own, nobody on another's. There they face the ring
+ *   and clap along with the band, and at the end of each set, and at the prize-giving, they cheer. They are a part of a scene
+ *   ([Aside]), not directed by the festival: a word from a player, a monster, or the day's next stretch lets them go back to their day.
+ *   Between dances, while the pedlar's cart stands open at the fair ([cartSpot]), one in [CART_ONE_IN] of those sent goes to it instead,
+ *   [AT_CART] at a time, looks over the goods and haggles a little, and comes away.
  * - [cheer]: the prize-giving's cheer, for the same folk.
  * - [market]: on a village's market day, one of the folk about the bell in eight, now and then, cheers or claps and is in good spirits, as
  *   a vanilla villager is.
@@ -57,6 +63,14 @@ object VillageFeast {
     /** The game time each festival's prize-giving last cheered (by its site's key). */
     private val cheered = HashMap<Long, Long>()
 
+    /** Who holds each place of the second row (its index, to the townsperson's entity id), and who is at the pedlar's cart, by festival site. */
+    private val rows = HashMap<Long, HashMap<Int, Int>>()
+    private val browsing = HashMap<Long, HashSet<Int>>()
+
+    /** Of those sent, one in this many goes to the pedlar's cart instead between dances; and how many may be at it at once. */
+    private const val CART_ONE_IN = 3
+    private const val AT_CART = 3
+
     // ---- The crowd ----
 
     /**
@@ -68,14 +82,75 @@ object VillageFeast {
         val c = site.centre
         val reach = site.plan.square + 16.0
         val row = site.plan.crowd.size.coerceAtLeast(1)
+        if (rows.size > 64) rows.clear()
+        if (browsing.size > 64) browsing.clear()
+        // A place whose holder is gone from the world (their land unloaded with them in it) is free again
+        val held = rows.getOrPut(site.key) { HashMap() }
+        held.values.removeIf { id -> gone(level, id) }
+        val atCart = browsing.getOrPut(site.key) { HashSet() }
+        atCart.removeIf { id -> gone(level, id) }
+        // Between dances, the pedlar's cart at the fair, if it stands open
+        val cart = if (site.bar < 0 && site.phase == FestivalPhase.FAIR) cartAt(level, site) else null
         for (p in level.getEntitiesOfClass(Townsperson::class.java, AABB(c.x, c.y, c.z, c.x, c.y, c.z).inflate(reach, 8.0, reach)) { eligible(it, taken) }) {
             if (level.random.nextInt(ONE_IN) != 0) continue
-            // The second row: a place behind the cast's own, the same one all day for the same person
-            val index = row + Math.floorMod(p.resident, row)
+            if (cart != null && atCart.size < AT_CART && level.random.nextInt(CART_ONE_IN) == 0 && browse(level, site, p, cart, atCart)) continue
+            // The second row: a place behind the cast's own, the same one all day for the same person where nobody else has it
+            val start = Math.floorMod(p.resident, row)
+            val index = (0 until row).map { row + (start + it) % row }.firstOrNull { it !in held } ?: continue
             val there = { site.spotFor(index, FestivalPart.WATCH)?.pos?.let { BlockPos.containing(it) } }
-            Aside.take(p, Aside(listOf(GoTo(there, Jobs.STROLL, near = 1.0, most = 900), Crowd(site, index)), most = STAY, fresh = true))
+            val aside = Aside(listOf(GoTo(there, Jobs.STROLL, near = 1.0, most = 900), Crowd(site, index)), most = STAY, fresh = true)
+            if (!Aside.take(p, aside)) continue
+            val id = p.id
+            held[index] = id
+            aside.onEnd = { held.remove(index, id) }
         }
     }
+
+    /** Whether the townsperson [id] is gone from the world, or dead. */
+    private fun gone(level: ServerLevel, id: Int): Boolean = (level.getEntity(id) as? Townsperson)?.let { it.isRemoved || !it.isAlive } ?: true
+
+    /** The pedlar's cart at the village of [site], while it stands open: its counter's stall. */
+    private fun cartAt(level: ServerLevel, site: FestivalSite): CityPlaces.Stall? {
+        val rec = Villages.at(level, BlockPos.containing(site.centre)) ?: return null
+        return VillageStall.cart(rec.key)
+    }
+
+    /**
+     * [p] goes over to the pedlar's [cart] between dances: to a place of their own by it on the customers' side, looks the goods
+     * over, haggles a little (or nods), and comes away; false if there is nowhere to stand or they would not go.
+     */
+    private fun browse(level: ServerLevel, site: FestivalSite, p: Townsperson, cart: CityPlaces.Stall, atCart: HashSet<Int>): Boolean {
+        val customer = cart.customer.pos
+        val keeper = cart.keeper.pos
+        val counter = cart.counter.firstOrNull() ?: return false
+        val near = AROUND.map { (dx, dz) -> customer.offset(dx, 0, dz) }
+            .flatMap { listOf(it, it.above(), it.below()) }
+            .filter { it != keeper && it.distSqr(counter) <= 9.0 && Places.standable(level, it) }
+        if (near.isEmpty()) return false
+        val stand = near[Math.floorMod(p.resident, near.size)]
+        val look = { Vec3.atCenterOf(counter) }
+        val haggle = level.random.nextInt(2) == 0
+        val aside = Aside(
+            listOf(
+                GoTo({ stand }, Jobs.STROLL, near = 0.8, most = 600),
+                Play(Activity.BROWSE, BROWSE_TICKS + level.random.nextInt(BROWSE_TICKS), look),
+                Play(if (haggle) Activity.HAGGLE else Activity.NOD, at = look),
+            ),
+            most = BROWSE_MOST, fresh = true,
+        )
+        if (!Aside.take(p, aside)) return false
+        val id = p.id
+        atCart += id
+        aside.onEnd = { atCart.remove(id) }
+        return true
+    }
+
+    /** Where about the cart's customers' place the folk may stand to look its goods over. */
+    private val AROUND = listOf(0 to 0, 1 to 0, -1 to 0, 0 to 1, 0 to -1, 1 to 1, -1 to 1, 1 to -1, -1 to -1)
+
+    /** Ticks a look over the pedlar's goods takes (and up to as long again), and the longest a turn at the cart lasts. */
+    private const val BROWSE_TICKS = 120
+    private const val BROWSE_MOST = 1500
 
     private fun eligible(p: Townsperson, taken: Collection<Int>): Boolean =
         p.isAlive && p.resident >= 0 && !p.crowd && !p.isSleeping && p.role !in AT_WORK && p.id !in taken && p.life?.places?.kind == TownKind.VILLAGE
@@ -148,16 +223,16 @@ object VillageFeast {
 
     /**
      * Where the pedlar's cart parks at the village with this [bell] on the day of a grand festival, in place of the green: the ring's
-     * road side, [PARK] blocks out from the square's edge, towards [from] (where the road comes in; away from the bell if not given).
-     * Null when no festival is on at that village, or it is nearly over: the cart parks on the green as ever.
+     * road side, [PARK] blocks out beyond the square from its middle, along [road] (the bearing in radians the road comes in by, from
+     * the green; away from the bell if not given). Null when no festival is on at that village, or it is nearly over: the cart parks on
+     * the green as ever. The pedlar's arrival asks it (village/live/market/Pedlars).
      */
-    fun cartSpot(level: ServerLevel, bell: BlockPos, from: BlockPos? = null): BlockPos? {
+    fun cartSpot(level: ServerLevel, bell: BlockPos, road: Double? = null): BlockPos? {
+        if (!VillageLife.enabled()) return null
         val site = Festivities.sceneAt(level, bell) as? FestivalSite ?: return null
         if (site.plan.capital || !site.live || site.phase.ordinal > FestivalPhase.DUSK.ordinal) return null
         val c = site.centre
-        val towards = from ?: bell
-        val away = if (from != null) 1.0 else -1.0
-        val a = atan2((towards.z + 0.5 - c.z) * away, (towards.x + 0.5 - c.x) * away)
+        val a = road ?: atan2(c.z - (bell.z + 0.5), c.x - (bell.x + 0.5))
         val out = site.plan.square + PARK
         val x = c.x + cos(a) * out
         val z = c.z + sin(a) * out

@@ -191,7 +191,9 @@ object Pedlars {
         val person = PedlarRoster.of(rec.key, v.cart.slain)
         val angle = bearing(rec)
         val toward = Direction.getApproximateNearest(cos(angle), 0.0, sin(angle))
-        val bay = bay(level, green, toward)?.takeIf { level.isPositionEntityTicking(it) } ?: return false
+        // On a grand festival's day the cart stands at the ring's road side, not on the green (living-world/villages/design.md 10.3, part V8)
+        val fair = io.github.vaspyyy.guildmark.village.live.VillageFeast.cartSpot(level, BlockPos.of(rec.key), angle)
+        val bay = (fair?.let { bay(level, it, toward) } ?: bay(level, green, toward))?.takeIf { level.isPositionEntityTicking(it) } ?: return false
         val exit = approach(level, green, angle, hidden = false) ?: return false
         // Nine has gone and the green is out of sight: he is at his cart already, as the day has him
         if (h >= PedlarRoster.SET_UP + 0.1 && unseen(level, bay) && kept(level, bay)) {
