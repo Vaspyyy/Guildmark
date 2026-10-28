@@ -368,7 +368,7 @@ object GuildmarkConfig {
         .comment("A village has a market like a capital's: it grows, makes, eats and trades real goods an hour at a time, and its counters (the baker's oven, the smith's anvil, and stalls once it has built a market) buy and sell at prices that follow what it holds. Needs Capital Markets. Off, villages have no market, no pedlar, no wagon calls and no fortunes.")
         .define("villageMarkets", true)
     val VILLAGE_PEDLAR: ModConfigSpec.BooleanValue = BUILDER
-        .comment("A pedlar comes down the road with a handcart every two to four days and on market day, parks it on the green and trades; he is how a village on no capital's road is supplied. Needs Village Markets. Off, there is no pedlar: only a capital's wagons supply a village, and a village with no wagon goes without.")
+        .comment("A pedlar comes down the road with a handcart every two to four days and on market day, parks it on the green and trades; the pedlar is how a village on no capital's road is supplied. Needs Village Markets. Off, there is no pedlar: only a capital's wagons supply a village, and a village with no wagon goes without.")
         .define("villagePedlar", true)
     val VILLAGE_WAGONS: ModConfigSpec.BooleanValue = BUILDER
         .comment("A capital's wagons make a round trip to the village at the end of their road: the village's surplus goes in, the capital's goods and news come back, a wagon taken is a hole in both stocks, and a shut road cuts the village off. Needs Caravans and Village Markets. Off, the wagons are the capital's alone, as they were, and the pedlar serves a linked village.")
