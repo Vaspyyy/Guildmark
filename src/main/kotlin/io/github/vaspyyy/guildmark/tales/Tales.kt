@@ -145,6 +145,8 @@ object Tales : Comings.Listener {
         Memorials.register(modBus)
         // T1b: the Silent Lute's `tale lute` and its scenes (after the scene command has its own, so they are added to them)
         io.github.vaspyyy.guildmark.tales.templates.LuteCommands.register()
+        // T1b: the Locket's `tale locket` and its scenes
+        io.github.vaspyyy.guildmark.tales.templates.LocketCommands.register()
     }
 
     // ---- The clock ----
