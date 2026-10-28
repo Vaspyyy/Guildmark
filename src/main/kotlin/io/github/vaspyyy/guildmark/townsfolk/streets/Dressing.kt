@@ -48,6 +48,10 @@ import kotlin.math.abs
  * their own ([run]: the dressing's count, so a stray from an earlier one is known, and which part of it the piece is),
  * so whatever happens they're put back. All of it waits on [Fortunes.enabled] but for `/guildmark streets dress`'s
  * tests, which last the session.
+ *
+ * A village's is the same dressing of a town at its heart (a capital's centre, a village's bell): the village's pieces are laid out
+ * from its places by [io.github.vaspyyy.guildmark.village.live.VillageDressing] (living-world/villages/design.md 10.4, part V8b),
+ * which looks at it as the streets look at a capital's, and its tests are `village dress`'s ([tests]).
  */
 object Dressing : Fortunes.Listener {
     /** What a piece is. */
@@ -115,8 +119,11 @@ object Dressing : Fortunes.Listener {
         }
     }
 
-    /** Whether the streets command has [t]'s dressing up or down this session, whatever the times. */
-    private fun forced(t: StreetsData.Town): Boolean = Streets.testing && t.force != StreetsData.FORCE_NONE
+    /** The columns of the villages whose dressing `village dress` has up or down this session (a capital's is the streets command's: [Streets.testing]). */
+    private val tests = HashSet<Long>()
+
+    /** Whether a command has [t]'s dressing up or down this session, whatever the times. */
+    private fun forced(t: StreetsData.Town): Boolean = (Streets.testing || t.column in tests) && t.force != StreetsData.FORCE_NONE
 
     // ---- The times ----
 
@@ -174,16 +181,24 @@ object Dressing : Fortunes.Listener {
 
     // ---- Once a second, a player in the capital ----
 
-    fun look(level: ServerLevel, column: Long, h: Scenes.Here, now: Long) {
+    fun look(level: ServerLevel, column: Long, h: Scenes.Here, now: Long) = look(level, column, h.capital.center, now, may = true, hands = true) { lay(h) }
+
+    /**
+     * The dressing of the town at [heart] (a capital's centre, a village's bell), [column]'s, looked at: what's wanted worked out
+     * and the pieces seen to. [lay] gives its pieces once (null: it can't be laid out yet, try again); [may] is whether the times
+     * may dress it (not a village with no folk to do it: what's up comes down, but for a test); with no [hands] (nobody of the town
+     * can hang a piece) every piece goes up or down as it would out of sight.
+     */
+    fun look(level: ServerLevel, column: Long, heart: BlockPos, now: Long, may: Boolean, hands: Boolean, lay: () -> List<Piece>?) {
         val data = StreetsData.get(level)
         val t = data[column]
         // A test of another session's is over
-        if (t != null && t.force != StreetsData.FORCE_NONE && !Streets.testing) {
+        if (t != null && t.force != StreetsData.FORCE_NONE && !Streets.testing && column !in tests) {
             t.force = StreetsData.FORCE_NONE
             data.changed()
         }
-        val key = h.capital.center.asLong()
-        val want = wanted(level, key, t)
+        val key = heart.asLong()
+        val want = if (may || (t != null && forced(t))) wanted(level, key, t) else Want(dress = false, lanterns = false)
         if (t == null && !want.dress) return
         val town = t ?: data.town(column)
         // Up, coming down, or back up again (the times come round before it was all down)
@@ -213,16 +228,24 @@ object Dressing : Fortunes.Listener {
             return
         }
         val crew = crews.getOrPut(column) { Crew(column) }
-        val pieces = crew.pieces ?: lay(h).also { crew.pieces = it }
-        work(level, data, town, crew, pieces, h, now)
+        val pieces = crew.pieces ?: lay()?.also { crew.pieces = it } ?: return
+        work(level, data, town, crew, pieces, heart, hands, now)
+    }
+
+    /** [column]'s pieces laid out afresh when next they are needed (its places were counted again), if no round of them is out; false if one is. */
+    fun relay(column: Long): Boolean {
+        val crew = crews[column] ?: return true
+        if (crew.rounds != 0 || crew.busy.isNotEmpty()) return false
+        crew.pieces = null
+        return true
     }
 
     /** Each piece seen to: up if it's wanted and isn't, down if it is and isn't; the lanterns lit with their lamps. */
-    private fun work(level: ServerLevel, data: StreetsData, town: StreetsData.Town, crew: Crew, pieces: List<Piece>, h: Scenes.Here, now: Long) {
+    private fun work(level: ServerLevel, data: StreetsData, town: StreetsData.Town, crew: Crew, pieces: List<Piece>, heart: BlockPos, hands: Boolean, now: Long) {
         val column = crew.column
         val dressUp = town.dress == StreetsData.UP
         val lanternsUp = dressUp && town.lanterns == StreetsData.UP
-        homes(level, crew, h, now)
+        homes(level, crew, heart, now)
         lost(crew)
         var standing = 0
         var lanternsStanding = 0
@@ -249,7 +272,7 @@ object Dressing : Fortunes.Listener {
             else if (!want && mine) take += piece
         }
         // All down: the dressing's over (once every piece's land has been seen, or two days on regardless)
-        val day = if (Fortunes.enabled()) Fortunes.today(level, h.capital.center.asLong()) else Days.dayOf(level.overworldClockTime)
+        val day = if (Fortunes.enabled()) Fortunes.today(level, heart.asLong()) else Days.dayOf(level.overworldClockTime)
         val settled = crew.busy.isEmpty() && put.isEmpty()
         if (town.lanterns == StreetsData.DOWN && lanternsStanding == 0 && settled && (!unloaded || day - town.downFrom >= HELD)) {
             town.lanterns = StreetsData.NONE
@@ -265,30 +288,30 @@ object Dressing : Fortunes.Listener {
         }
         val forcedNow = forced(town)
         val inSight = ArrayList<Piece>()
-        for (piece in put) if (Streets.seen(level, piece.pos, Streets.SIGHT)) inSight += piece else later(level, column, town.run, piece, putting = true)
+        for (piece in put) if (hands && Streets.seen(level, piece.pos, Streets.SIGHT)) inSight += piece else later(level, column, town.run, piece, putting = true)
         val putting = inSight.isNotEmpty()
         val takeSight = ArrayList<Piece>()
-        for (piece in take) if (Streets.seen(level, piece.pos, Streets.SIGHT)) takeSight += piece else later(level, column, town.run, piece, putting = false)
+        for (piece in take) if (hands && Streets.seen(level, piece.pos, Streets.SIGHT)) takeSight += piece else later(level, column, town.run, piece, putting = false)
         // People do what's in sight, by day (the command's tests whenever), a few rounds at a time
         if (!forcedNow && !daytime(level)) return
         val jobs = if (putting) inSight else takeSight
         if (jobs.isEmpty() || crew.rounds >= ROUNDS) return
-        round(level, town, crew, jobs, putting, h, now)
+        round(level, town, crew, jobs, putting, heart, now)
     }
 
     /** Whether a home's door is dressed: one somebody lives in, and not left empty. */
     private fun homeDressed(crew: Crew, piece: Piece): Boolean = piece.home < 0 || piece.home !in crew.empty && piece.home in crew.lived
 
     /** The homes left empty and those lived in, looked up again now and then. */
-    private fun homes(level: ServerLevel, crew: Crew, h: Scenes.Here, now: Long) {
+    private fun homes(level: ServerLevel, crew: Crew, heart: BlockPos, now: Long) {
         if (now - crew.homesAt < HOMES_EVERY) return
         crew.homesAt = now
         crew.empty = try {
-            Comings.empty(level, h.capital.center.asLong()).toSet()
+            Comings.empty(level, heart.asLong()).toSet()
         } catch (e: RuntimeException) {
             setOf()
         }
-        crew.lived = Residents.get(level).of(h.capital.center).filter { it.alive && it.home >= 0 }.map { it.home }.toSet()
+        crew.lived = Residents.get(level).of(heart).filter { it.alive && it.home >= 0 }.map { it.home }.toSet()
     }
 
     /** A piece out of anyone's sight put up (or taken down) in a tick or so, as it would have been. */
@@ -303,7 +326,7 @@ object Dressing : Fortunes.Listener {
     }
 
     /** A round of [jobs]' first few near one another, for someone near them to see to, if anyone's free. */
-    private fun round(level: ServerLevel, town: StreetsData.Town, crew: Crew, jobs: List<Piece>, putting: Boolean, h: Scenes.Here, now: Long) {
+    private fun round(level: ServerLevel, town: StreetsData.Town, crew: Crew, jobs: List<Piece>, putting: Boolean, heart: BlockPos, now: Long) {
         // The one nearest a player first, so it's seen; then the nearest on from each
         val first = jobs.minByOrNull { p -> level.players().minOfOrNull { it.distanceToSqr(Vec3.atCenterOf(p.pos)) } ?: Double.MAX_VALUE } ?: return
         val left = jobs.toMutableList()
@@ -317,7 +340,7 @@ object Dressing : Fortunes.Listener {
             chosen += next
         }
         val loose = crew.waiting >= 0 && now - crew.waiting > LOOSE
-        val p = Fitting.hire(level, first.pos, h.capital.center, crew.workers.keys, loose)
+        val p = Fitting.hire(level, first.pos, heart, crew.workers.keys, loose)
         if (p == null) {
             if (crew.waiting < 0) crew.waiting = now
             return
@@ -572,8 +595,8 @@ object Dressing : Fortunes.Listener {
     // ---- The streets command ----
 
     /** `/guildmark streets dress <how>`: [column]'s dressing up as in good or thriving times, or down, now; or cleared at once. */
-    fun force(level: ServerLevel, column: Long, how: Int): Int {
-        Streets.testing = true
+    fun force(level: ServerLevel, column: Long, how: Int, village: Boolean = false): Int {
+        if (village) tests += column else Streets.testing = true
         val data = StreetsData.get(level)
         val town = data.town(column)
         town.force = how
@@ -590,6 +613,7 @@ object Dressing : Fortunes.Listener {
         val data = StreetsData.get(level)
         val town = data[column] ?: return 0
         town.force = StreetsData.FORCE_NONE
+        tests.remove(column)
         if (!Fortunes.enabled()) {
             town.dress = StreetsData.NONE
             town.lanterns = StreetsData.NONE
@@ -649,7 +673,10 @@ object Dressing : Fortunes.Listener {
         return if (run > 0) "dressing #$run $state$lanterns$why$pieces" else "$state$why"
     }
 
-    fun forget() = crews.clear()
+    fun forget() {
+        crews.clear()
+        tests.clear()
+    }
 
     // ---- Numbers ----
 
@@ -671,11 +698,11 @@ object Dressing : Fortunes.Listener {
     /** Doors across the avenue paired within this many blocks along it, a square's door to a lamp this near, and the longest string. */
     private const val PAIR = 3
     private const val TO_LAMP = 18.0
-    private const val LONGEST = 18.0
+    internal const val LONGEST = 18.0
 
     /** A garland's half-width over the door, and how near the wall its ties are (from the block's middle). */
-    private const val GARLAND_HALF = 0.85
-    private const val TIE_IN = 0.44
+    internal const val GARLAND_HALF = 0.85
+    internal const val TIE_IN = 0.44
 
     /** The lantern strings' light while their lamps burn. */
     private const val LIT = 11
