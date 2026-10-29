@@ -285,7 +285,7 @@ object CookActionHandler {
         val step = dx * dx + dz * dz
         return when {
             play.loop -> step > STILL * STILL || abs(entity.y - entity.yo) > DROP || entity.isUsingItem || entity.isPassenger ||
-                entity.isSwimming || entity.isFallFlying || entity.isInWater
+                entity.isSwimming || entity.isFallFlying || entity.isInWater || entity.abilities.flying
             play.eating || isEating(play.action) -> false
             else -> step > WALK * WALK || entity.isFallFlying || entity.isSwimming
         }
