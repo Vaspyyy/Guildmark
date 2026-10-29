@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.trade
 
+import io.github.vaspyyy.guildmark.caravan.Ground
 import io.github.vaspyyy.guildmark.city.plan.Dir
 import io.github.vaspyyy.guildmark.client.works.WorksArt
 import io.github.vaspyyy.guildmark.economy.StallDesk
@@ -27,6 +28,7 @@ import io.github.vaspyyy.guildmark.townsfolk.scenes.Now
 import io.github.vaspyyy.guildmark.townsfolk.scenes.Play
 import io.github.vaspyyy.guildmark.townsfolk.scenes.Turn
 import io.github.vaspyyy.guildmark.townsfolk.scenes.Wait
+import io.github.vaspyyy.guildmark.trade.carry.LedShow
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.sounds.SoundSource
@@ -40,7 +42,9 @@ import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import net.neoforged.neoforge.common.NeoForge
 import net.neoforged.neoforge.event.server.ServerStoppedEvent
+import kotlin.math.abs
 import kotlin.math.ceil
+import kotlin.math.hypot
 
 /**
  * The Carriers' Store's life, watched (living-world/trader/design.md, Part 5; build part F2), from the works' second (WorksAtWork.second
@@ -381,11 +385,14 @@ internal object StoreLife {
         val pan = centre(site, Store.SCALE_AT, 1.1)
         val desk = centre(site, Store.DESK_AT, 1.0)
         val stores = centre(site, Pin(5, 0, 5), 0.6)
+        // WEIGH is made for the middle of the clerk's block facing the scale square (north in the drawing): the sack goes onto the pan
+        val spot = centre(site, Store.CLERK, 0.0)
+        val square = centre(site, Store.SCALE_AT, 0.0).let { LedShow.yawOf(it.x - spot.x, it.z - spot.z) }
         send(
             w, clerk,
             listOf(
                 GoTo({ stand }, Jobs.WALK, 0.6, Activity.NONE, 600),
-                Turn({ pan }),
+                Stand({ spot }, { square }),
                 Now { it.carried = SACK },
                 Handle(Activity.WEIGH, pan, SET_ON) {
                     it.carried = ItemStack.EMPTY
@@ -592,6 +599,53 @@ internal object StoreLife {
             p.face(Mth.approachDegrees(p.yBodyRot, p.yawTo(at), Aside.TURN))
             if (t == mark) what(p)
             return t < activity.ticks
+        }
+    }
+
+    /**
+     * The last steps onto exactly what [at] gives (on the ground there), slowly and by hand, turning meanwhile to what [yaw] gives: the
+     * spot and the facing a clip is made to be played from, which a [GoTo] only comes within reach of. [pose] is played meanwhile (null:
+     * whatever they are in). Done once they stand there so; put there at once after [most] ticks.
+     */
+    class Stand(
+        private val at: () -> Vec3?, private val yaw: () -> Float?, private val pose: Activity? = null, private val most: Int = 24,
+    ) : Move() {
+        override fun start(p: Townsperson, a: Aside) {
+            p.navigation.stop()
+            if (pose != null && p.activity != pose) p.act(pose)
+        }
+
+        override fun tick(p: Townsperson, a: Aside, t: Int): Boolean {
+            val there = at() ?: return false
+            val face = yaw() ?: p.yBodyRot
+            val dx = there.x - p.x
+            val dz = there.z - p.z
+            val d = hypot(dx, dz)
+            if (t >= most) {
+                put(p, there.x, there.z, face)
+                return false
+            }
+            val turned = Mth.approachDegrees(p.yBodyRot, face, Aside.TURN)
+            if (d > STEP) {
+                put(p, p.x + dx / d * STEP, p.z + dz / d * STEP, turned)
+                return true
+            }
+            put(p, there.x, there.z, turned)
+            return abs(Mth.degreesDifference(turned, face)) > 0.01f
+        }
+
+        companion object {
+            /** Blocks a tick of the last steps (a slow walk: the legs go as the body moves). */
+            private const val STEP = 0.09
+
+            /** [p] stood at [x], [z] on the ground there (as high as they stand now if it is a step or more off), facing [yaw]. */
+            fun put(p: Townsperson, x: Double, z: Double, yaw: Float) {
+                val level = p.level() as? ServerLevel
+                val g = if (level == null) Double.NaN else Ground.at(level, x, z, p.y + 0.5)
+                p.setPos(x, if (g.isNaN() || abs(g - p.y) > 0.6) p.y else g, z)
+                p.deltaMovement = Vec3.ZERO
+                p.face(yaw)
+            }
         }
     }
 }
