@@ -34,6 +34,7 @@ object Trade {
         Word.register(modBus)
 
         // C: the Haul Board
+        HaulBoards.register(modBus)
 
         // D: carrying (the pack animal, the cart, the wagon)
         Carry.register(modBus)

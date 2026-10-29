@@ -8811,5 +8811,7 @@
   "message.guildmark.feast.next": "Yours next, once I've finished with this one.",
   "message.guildmark.feast.town_only": "No visiting cook brought a dish this year, so the Harvest Table stays in town: well done, %s, with %s!",
   "message.guildmark.feast.town_won": "So it stays in town, with %s! Nobody takes the Gilded Ladle home this year.",
-  "commands.guildmark.festival.info.cook": "%s: %s"
+  "commands.guildmark.festival.info.cook": "%s: %s",
+  "block.guildmark.haul_board": "Haul Board",
+  "message.guildmark.trade.board.bare": "This board stands in no capital: there is no town's word to chalk on it."
 }

@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "condition": {
+        "type": "minecraft:survives_explosion"
+      },
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "guildmark:haul_board",
+          "condition": {
+            "type": "minecraft:match_block",
+            "blocks": "guildmark:haul_board",
+            "state": {
+              "part": "bottom_middle"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "random_sequence": "guildmark:blocks/haul_board"
+}

@@ -3,6 +3,7 @@ package io.github.vaspyyy.guildmark.registry
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.block.ArcherPostBlock
 import io.github.vaspyyy.guildmark.block.BountyBoardBlock
+import io.github.vaspyyy.guildmark.block.HaulBoardBlock
 import io.github.vaspyyy.guildmark.block.MarketBoardBlock
 import io.github.vaspyyy.guildmark.block.MistGateBlock
 import io.github.vaspyyy.guildmark.block.QuestBoardBlock
@@ -50,5 +51,10 @@ object ModBlocks {
     /** Placed by the Archer Tower advance; not craftable. */
     val ARCHER_POST: DeferredBlock<ArcherPostBlock> = BLOCKS.registerBlock("archer_post", ::ArcherPostBlock, UnaryOperator<BlockBehaviour.Properties> {
         it.mapColor(MapColor.WOOD).strength(2.5f).sound(SoundType.WOOD)
+    })
+
+    /** A capital's Haul Board, beside its market board: the Word of the towns round about on a slate, this town's haul tickets on a rail. */
+    val HAUL_BOARD: DeferredBlock<HaulBoardBlock> = BLOCKS.registerBlock("haul_board", ::HaulBoardBlock, UnaryOperator<BlockBehaviour.Properties> {
+        it.mapColor(MapColor.COLOR_BROWN).strength(2.5f).sound(SoundType.WOOD).noOcclusion().pushReaction(PushReaction.IMMOVEABLE)
     })
 }
