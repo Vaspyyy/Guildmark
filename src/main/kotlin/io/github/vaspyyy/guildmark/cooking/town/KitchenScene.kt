@@ -155,7 +155,7 @@ internal object SceneLines {
  * The client plays the clips' own sounds, steam and crumbs from their moments, and opens the oven's door and turns the spit's
  * crank for a keeper in the right activity within three blocks and facing it (`TownKitchen`), so the scene stands the keeper
  * there; what the server adds is only what the client does not: the pot's swirl and shelf, the pour and the bowl's clink, the
- * spit's drip and flare, the keeper's words.
+ * roast on the spit (its fire, its joints) and its flare, the keeper's words.
  *
  * [forced] is a scene played by the command: it ignores the clock (the roast carves after two turns of the rod). [roast] is the
  * roast of the day, with the clock of its carving ([carveAt], an offset into the town's day) for a scene of the natural round;
@@ -187,7 +187,11 @@ internal class KitchenScene(
         /** The roast's window ends here (13:00), as an offset into the town's day. */
         private val WINDOW_END = Days.clock(13.0)
 
+        /** The slices the roast is carved into, one joint of the roast's each. */
         private const val SLICES = 3
+
+        /** The tick of the carve clip at which the slice parts (its `carve` moment, 19.5). */
+        private const val CUT = 20
 
         /** The farthest a scene walks a keeper from where it takes them (blocks); a stand farther than this is no scene. */
         private const val FAR = 22.0
@@ -284,6 +288,7 @@ internal class KitchenScene(
                 val stand = Stands.at(level, pos, here, facing)?.takeIf { near(it) } ?: return false
                 plan.add(Go(stand, Jobs.BRISK))
                 plan.add(Roasting(stand.yaw, Vec3.atCenterOf(pos).add(0.0, 0.2, 0.0), pos))
+                plan.add(Run { lv, _ -> spit(lv)?.showRoast(false, 0) })
                 plan.add(Go(home, Jobs.WALK))
             }
         }
@@ -416,10 +421,13 @@ internal class KitchenScene(
         }
     }
 
-    /** Puts the pot and the spit back: no swirl, the rod still. The bowls stay on the shelf (the table of kitchens takes them off in time). */
+    /** Puts the pot and the spit back: no swirl, the rod still, no roast. The bowls stay on the shelf (the table of kitchens takes them off in time). */
     private fun cleanup(level: ServerLevel) {
         pot(level)?.let { it.showHouse(if (it.swirlUntil > level.gameTime) level.gameTime else it.swirlUntil, bowls) }
-        spit(level)?.turning = false
+        spit(level)?.let {
+            it.turning = false
+            it.showRoast(false, 0)
+        }
     }
 
     // ---- The steps ----
@@ -522,9 +530,10 @@ internal class KitchenScene(
 
     /**
      * The roast: the rod turned by the crank in bouts, the brow wiped between them, and the roast carved (three slices onto
-     * bowls) at noon, or after the second bout in a scene played by the command. The Spit shows it turns while she cranks
-     * and not while she wipes or carves. Fat drips and flares now and then; the cry is made once a day, when a player first comes
-     * within twelve blocks.
+     * bowls) at noon, or after the second bout in a scene played by the command. The Spit shows the roast, lit and with its three
+     * joints, from the first turn ([SpitBlockEntity.showRoast]; its fat drips as any lit spit's does), a joint less at each slice;
+     * it shows it turns while she cranks and not while she wipes or carves. Fat flares now and then; the cry is made once a day,
+     * when a player first comes within twelve blocks.
      */
     private inner class Roasting(private val yaw: Float, private val look: Vec3, private val spitPos: BlockPos) : Step() {
         private var phase = RoastPhase.TURN
@@ -537,6 +546,7 @@ internal class KitchenScene(
 
         override fun begin(level: ServerLevel, p: Townsperson) {
             roast.day = Days.dayOf(level.overworldClockTime)
+            spit(level)?.showRoast(true, SLICES)
             turn(level, p)
         }
 
@@ -597,7 +607,9 @@ internal class KitchenScene(
                 RoastPhase.WIPE -> if (phaseAge >= 40) {
                     if (carveNext || due(level)) carve(level, p) else turn(level, p)
                 }
-                RoastPhase.CARVE -> if (phaseAge >= 50) {
+                RoastPhase.CARVE -> if (phaseAge == CUT) {
+                    spit(level)?.let { it.showRoast(true, it.roastJoints - 1) }
+                } else if (phaseAge >= 50) {
                     sliced++
                     if (sliced >= SLICES) {
                         roast.carved = true
@@ -616,16 +628,12 @@ internal class KitchenScene(
             if (SceneLines.say(p, "kitchen.scene.roast", "roast")) roast.cried = true
         }
 
-        /** Fat off the joint onto the coals: a drip and its hiss now and then, a small flare now and again. */
+        /** Fat off the joint onto the coals: a small flare now and again (the drips are the lit spit's own, drawn by each client). */
         private fun fat(level: ServerLevel, p: Townsperson) {
             val random = p.random
             val x = spitPos.x + 0.5
             val y = spitPos.y.toDouble()
             val z = spitPos.z + 0.5
-            if (random.nextInt(60) == 0) {
-                level.sendParticles(ParticleTypes.FALLING_LAVA, x, y + 0.55, z, 1, 0.12, 0.0, 0.12, 0.0)
-                level.playSound(null, x, y, z, CookSounds.get("cook.drip"), SoundSource.BLOCKS, 0.5f, 0.9f + random.nextFloat() * 0.2f)
-            }
             if (random.nextInt(240) == 0) {
                 level.sendParticles(ParticleTypes.SMALL_FLAME, x, y + 0.3, z, 4, 0.14, 0.05, 0.14, 0.01)
                 level.playSound(null, x, y, z, CookSounds.get("cook.flare"), SoundSource.BLOCKS, 0.5f, 0.95f + random.nextFloat() * 0.1f)
