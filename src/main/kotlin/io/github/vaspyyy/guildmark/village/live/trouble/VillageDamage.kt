@@ -45,8 +45,8 @@ object VillageDamage {
         val kept = data.peek(rec.key) ?: return
         if (kept.damage.isEmpty() || kept.mendFrom != TroubleData.NONE) return
         val today = VillageBoards.day(level)
-        // A siege after midnight is the night before this town day's morning: "the next morning" is this one, if the hour is early
-        var day = if (Trouble.hour(level) < 6.0) today else today + 1
+        // The town day turns at six in the morning, so "the next morning" is always the next town day's, after midnight too
+        var day = today + 1
         var mornings = if (Fortunes.times(level, rec.key) == Times.HARD) 2 else 1
         while (true) {
             if (!Days.restDay(day)) mornings--

@@ -43,6 +43,8 @@ class TroubleData(val villages: MutableMap<Long, Kept> = HashMap()) : SavedData(
         val taken: MutableList<Taken> = ArrayList(),
         /** The last town day closed here (see [Trouble.daily]), so a day is closed once. */
         var day: Long = NONE,
+        /** The blocks the mend under way has put back so far (see [Mend]). */
+        var mended: Int = 0,
     ) {
         /** Whether there is nothing here worth keeping. */
         val empty: Boolean
@@ -129,12 +131,13 @@ class TroubleData(val villages: MutableMap<Long, Kept> = HashMap()) : SavedData(
                 keptList(DUE).lenientOptionalFieldOf("due", listOf()).forGetter { it.kept.due },
                 keptList(TAKEN).lenientOptionalFieldOf("taken", listOf()).forGetter { it.kept.taken },
                 Codec.LONG.optionalFieldOf("day", NONE).forGetter { it.kept.day },
-            ).apply(i) { key, stone, candles, waiting, damage, mendFrom, mendBegun, golemNight, due, taken, day ->
+                Codec.INT.optionalFieldOf("mended", 0).forGetter { it.kept.mended },
+            ).apply(i) { key, stone, candles, waiting, damage, mendFrom, mendBegun, golemNight, due, taken, day, mended ->
                 Entry(
                     key,
                     Kept(
                         stone, ArrayList(candles), ArrayList(waiting), ArrayList(damage.take(VillageDamage.MOST)), mendFrom, mendBegun, golemNight,
-                        ArrayList(due), ArrayList(taken), day,
+                        ArrayList(due), ArrayList(taken), day, mended,
                     ),
                 )
             }

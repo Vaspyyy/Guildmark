@@ -91,6 +91,7 @@ object Trouble {
         RaidWatch.forget()
         Memorial.forget()
         Watch.forget()
+        Mend.forget()
         bells.clear()
         logs.clear()
         closed.clear()
@@ -109,6 +110,7 @@ object Trouble {
             if (Shelter.any()) Shelter.endAll(level)
             if (Memorial.any()) Memorial.endAll()
             if (Watch.any()) Watch.endAll()
+            if (Mend.any()) Mend.endAll()
             return
         }
         guarded("the shelter") { Shelter.tick(level) }
@@ -124,6 +126,7 @@ object Trouble {
             guarded("the chronicle of ${rec.name}") { built(level, rec, day) }
             guarded("the memorial of ${rec.name}") { Memorial.look(level, rec, day) }
             guarded("the watch of ${rec.name}") { Watch.look(level, rec, day) }
+            guarded("the mend of ${rec.name}") { Mend.look(level, rec, day) }
         }
     }
 
