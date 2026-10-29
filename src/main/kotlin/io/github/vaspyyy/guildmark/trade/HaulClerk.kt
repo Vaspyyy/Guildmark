@@ -29,7 +29,7 @@ import net.minecraft.world.phys.Vec3
  * The hall's merchant at the Haul Board (living-world/trader/design.md, Part 1 and 12.6). At half past seven in the morning and half past twelve, with
  * a player by to watch, and when tickets are posted between the rounds, they take their satchel across the square to the board, set it on the shelf,
  * chalk up only the rows that changed, a stroke at a time (the glass of a row whose news is new is tipped first), then hang each new ticket on its hook
- * and bring the hall's stamp down on it. They take the satchel up again, say a word to the square and go back to their counter. The board changes as
+ * and press the hall's seal on it by hand. They take the satchel up again, say a word to the square and go back to their counter. The board changes as
  * their hand does: each row is written, each ticket hung and each stamp put on at the moment of the clip that does it, so whoever watches sees the
  * board written up by the hand at it (the client draws the strokes from the times the board keeps; see [HaulBoardBlockEntity]).
  *
@@ -46,14 +46,20 @@ object HaulClerk {
     /** How far from the board the capital's hall merchants are looked for. */
     private const val SEARCH = 64.0
 
-    /** The tick of a hang that the ticket is on its hook, of a stamp that it comes down, of a row that the chalk touches the slate, and of the setting down and taking up of the satchel. */
+    /**
+     * The tick of a hang that the ticket is on its hook, of a stamp that the seal goes on (HAND_OVER's handoff: the hands pressed flat to the
+     * ticket on the board), of a row that the chalk touches the slate, and of the setting down and taking up of the satchel.
+     */
     private const val HANG_AT = 16
-    private const val STAMP_AT = 9
+    private const val STAMP_AT = 16
     private const val CHALK_AT = 2
     private const val SATCHEL_AT = 8
 
     /** How far a merchant may be heard saying their word to the square. */
     private const val HEARD = 32.0
+
+    /** Blocks out from the plane a ticket hangs in that the merchant stands to put it up: HAND_OVER's hands, held out, meet the board there (15 px). */
+    private const val HELD_OUT = 15.0 / 16.0
 
     /** The boards a clerk is at, by anchor, each with the game time after which the clerk is taken to be lost (so the board is free again). */
     private val busy = HashMap<Long, Long>()
@@ -142,10 +148,12 @@ object HaulClerk {
             }
             moves.add(Now { board.done() })
         }
-        // The rail: each new ticket hung on its hook and stamped
+        // The rail: each new ticket hung on its hook and stamped, from square before it, where both hands held out reach the board
         for (ticket in hang) {
             val hook = HaulBoards.hook(anchor, facing, ticket.slot)
+            val before = Vec3(hook.x + facing.stepX * HELD_OUT, hook.y, hook.z + facing.stepZ * HELD_OUT)
             moves.add(GoTo({ HaulBoards.stand(anchor, facing, HaulBoards.column(ticket.slot)) }, Jobs.WALK, 1.0))
+            moves.add(StoreLife.Stand({ before }, { facing.opposite.toYRot() }))
             moves.add(Beat(Activity.NONE, 4, { hook }))
             moves.add(
                 Beat(Activity.HAND_OVER, HaulBoardBlockEntity.HANG_TICKS, { hook }) { _, t ->
@@ -158,8 +166,9 @@ object HaulClerk {
                     }
                 },
             )
+            // The hall's seal pressed on with both hands flat to the ticket (the STAMP clip comes down onto a counter: the board is upright)
             moves.add(
-                Beat(Activity.STAMP, HaulBoardBlockEntity.STAMP_TICKS, { hook }) { _, t ->
+                Beat(Activity.HAND_OVER, Activity.HAND_OVER.ticks, { hook }) { _, t ->
                     if (t == STAMP_AT && board.ticket(ticket.id)?.stamped == HaulBoardBlockEntity.UNSTAMPED) {
                         board.stamp(ticket.id)
                         HaulBoards.sound(level, hook, "trade.board_stamp", 1.0f)
