@@ -18,7 +18,7 @@ object Templates {
     val ALL: List<Template> = listOf(
         io.github.vaspyyy.guildmark.tales.templates.Note, // 1  note      size 2  T1 (the pilot)
         io.github.vaspyyy.guildmark.tales.templates.Chair, // 2  chair     size 2  T4
-        // Wagon,     // 3  wagon     size 3  T3
+        io.github.vaspyyy.guildmark.tales.templates.Wagon, // 3  wagon     size 3  T3
         io.github.vaspyyy.guildmark.tales.templates.Child, // 4  child     size 2  T2
         io.github.vaspyyy.guildmark.tales.templates.Fence, // 5  fence     size 1  T1
         io.github.vaspyyy.guildmark.tales.templates.Lute, // 6  lute      size 1  T1
