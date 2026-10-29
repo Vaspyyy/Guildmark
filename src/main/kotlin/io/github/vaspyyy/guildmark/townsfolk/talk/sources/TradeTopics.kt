@@ -100,12 +100,22 @@ object TradeTopics : TopicSource {
         if (known.isEmpty()) return
         val player = ask.player
         val theirs = if (player != null) TownTalk.heard(level, r.capital, player.uuid) else mapOf()
+        var famed = false
         for (k in known) {
             val rumour = k.rumour
             val warp = k.heard.warp.coerceIn(0, 3)
             if (rumour.heat < OLD && !asked || bark && rumour.heat < BARK_AT) continue
             // The one a rumour is about is thanked, not told of; and what they have heard already, in this telling or a truer, is not told again
-            if (player != null && rumour.about == player.uuid) continue
+            if (player != null && rumour.about == player.uuid) {
+                // Where they are not thanked, the one a delivery is talked of hears that their name is known (trade.fame; trade part G gives it its owner)
+                if (!famed && !bark && rumour.kind == Rumours.TRADE_HAULED && warp <= 1 && thanks(ask) == null) {
+                    Say.part(ask, "trade.fame", null)?.let { part ->
+                        out.add(Topic("trade.fame.${rumour.id}", Kind.DEALINGS, 0.35, Utterance(listOf(part)), tone = 1, about = player.uuid))
+                        famed = true
+                    }
+                }
+                continue
+            }
             val had = theirs[rumour.id]
             if (had != null && had <= warp) continue
             val part = part(ask, rumour, warp) ?: continue

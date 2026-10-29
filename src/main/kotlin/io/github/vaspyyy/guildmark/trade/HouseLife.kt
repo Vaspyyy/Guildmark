@@ -104,6 +104,8 @@ internal object HouseLife {
         val board = StoreLife.board(level, w, site)
         if (board != null && owner != null) board.set(StoreLife.name(level, w, owner), StallDesk.colorOf(level, owner))
         if (!rec.firstUse) return
+        // The House's own: its carters in the yard and its wagons on the map (part G)
+        YardShow.second(level, w, site, near)
         val now = level.gameTime
         if (owner != null && now - (mapped[w.id] ?: Long.MIN_VALUE / 2) >= MAP_EVERY) {
             mapped[w.id] = now
@@ -180,16 +182,17 @@ internal object HouseLife {
     /** The map's pins and colour brought up to what [owner] knows (new pins popping in if [show], else there as though long since). */
     private fun map(level: ServerLevel, w: WorksRec, site: TownWorksSite, owner: UUID, show: Boolean) {
         val map = StoreLife.fitting<HouseMapBlockEntity>(level, site, CountingHouse.MAP_AT) ?: return
-        map.colour(StallDesk.colorOf(level, owner))
+        map.colour(Houses.colourOf(level, owner) ?: StallDesk.colorOf(level, owner))
         map.pin(known(level, owner, w.capital), show)
     }
 
     /**
      * The sum the counting frame shows: what the owner's Store in the House's town holds, good by good at that town's market price
-     * today, in whole Marks (its units, where there is no market to price them). Part G puts the House's own purse beside it.
+     * today, in whole Marks (its units, where there is no market to price them). Once the House keeps books (part G) it is the House's purse.
      */
     fun worth(level: ServerLevel, w: WorksRec): Long {
         val owner = w.owner ?: return 0L
+        Houses.purseOf(level, owner, w.capital)?.let { return it.toLong().coerceIn(0L, CountingFrameBlockEntity.MOST) }
         val store = TradeStores.peek(level)?.find(w.capital, owner) ?: return 0L
         val entry = if (Markets.enabled()) Markets.get(level)[BlockPos.of(w.capital)] else null
         var sum = 0.0

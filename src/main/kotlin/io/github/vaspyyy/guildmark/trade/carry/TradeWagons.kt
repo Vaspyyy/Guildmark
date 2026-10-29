@@ -93,7 +93,7 @@ class TradeWagons(private val wagons: MutableMap<UUID, WagonRec> = LinkedHashMap
          * The colour [owner]'s wagon is painted in: the colour their pennant flies in at the market (their homestead's, else their guild's, else
          * one of their own), a dye id. The one place the wagon's colour comes from, for the trading house (build part G) to point at its own tint.
          */
-        fun colourOf(level: ServerLevel, owner: UUID): Int = StallDesk.colorOf(level, owner)
+        fun colourOf(level: ServerLevel, owner: UUID): Int = io.github.vaspyyy.guildmark.trade.Houses.colourOf(level, owner) ?: StallDesk.colorOf(level, owner)
 
         private val POS: Codec<List<Double>> = Codec.DOUBLE.listOf()
 
