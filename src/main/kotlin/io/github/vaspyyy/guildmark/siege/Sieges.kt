@@ -123,6 +123,8 @@ object Sieges {
         if (siege.mobs.isEmpty()) return false
         sieges[siege.id] = siege
         level.playSound(null, bell, SoundEvents.RAID_HORN.value(), SoundSource.HOSTILE, 64.0f, 1.0f)
+        // A village of the registry: its folk to their doors, its bell rung hard, its watch to the wall (village/live/trouble, V10)
+        io.github.vaspyyy.guildmark.village.live.trouble.SiegeHorde.started(level, bell, siege.from)
         val message = Component.translatable("message.guildmark.siege_start", VillageNames.of(anchor), Component.translatable("direction.guildmark.${siege.from.serializedName}"))
         for (player in watchers(level, siege)) player.sendSystemMessage(message)
         TownControl.onSiegeStart(level, anchor, bell)
@@ -160,11 +162,13 @@ object Sieges {
             mob.snapTo(spot.x + 0.5, spot.y.toDouble(), spot.z + 0.5)
             mob.finalizeSpawn(level, level.getCurrentDifficultyAt(spot), EntitySpawnReason.EVENT, null)
             mob.setData(ModAttachments.SIEGE, siege.id)
+            io.github.vaspyyy.guildmark.village.live.trouble.SiegeHorde.armAt(level, mob, siege.center)
             level.addFreshEntity(mob)
             siege.mobs.add(mob.uuid)
             siege.spawnedTotal++
         }
         if (siege.wave > 1) {
+            io.github.vaspyyy.guildmark.village.live.trouble.SiegeHorde.wave(level, siege.center)
             val message = Component.translatable("message.guildmark.siege_wave", siege.wave, siege.totalWaves)
             for (player in watchers(level, siege)) player.sendSystemMessage(message)
         }
@@ -217,7 +221,13 @@ object Sieges {
 
     /** A villager died: if it was in a besieged village, the defence is failing. */
     fun onDeath(level: ServerLevel, victim: LivingEntity) {
-        if (victim !is Villager || level.dimension() != net.minecraft.world.level.Level.OVERWORLD) return
+        if (level.dimension() != net.minecraft.world.level.Level.OVERWORLD) return
+        if (victim !is Villager) {
+            // A village's own townsperson counts as a villager does (village/live/trouble, V10)
+            if (sieges.isEmpty()) return
+            for (siege in sieges.values) if (victim.blockPosition().closerThan(siege.center, WATCH_RANGE) && io.github.vaspyyy.guildmark.village.live.trouble.SiegeHorde.folkOf(level, victim, siege.center)) siege.villagersLost++
+            return
+        }
         for (siege in sieges.values) {
             if (victim.blockPosition().closerThan(siege.center, WATCH_RANGE)) siege.villagersLost++
         }
@@ -246,6 +256,7 @@ object Sieges {
             }
             level.playSound(null, siege.center, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.NEUTRAL, 2.0f, 1.0f)
             GuildNews.add(level, "news.guildmark.siege_won", VillageNames.of(siege.anchor))
+            io.github.vaspyyy.guildmark.village.live.trouble.SiegeHorde.held(level, siege.center, fighters)
         } else {
             damage(level, siege)
             for (player in defenders) {
@@ -253,6 +264,7 @@ object Sieges {
                 player.sendSystemMessage(Component.translatable("message.guildmark.siege_lost", VillageNames.of(siege.anchor)))
             }
             GuildNews.add(level, "news.guildmark.siege_lost", VillageNames.of(siege.anchor))
+            io.github.vaspyyy.guildmark.village.live.trouble.SiegeHorde.lost(level, siege.center, siege.villagersLost)
         }
         // Stragglers melt away at the end
         for (id in siege.mobs) (level.getEntity(id) as? Mob)?.let { if (!won) it.discard() }
@@ -264,7 +276,11 @@ object Sieges {
         for (pos in BlockPos.betweenClosed(siege.center.offset(-radius, -6, -radius), siege.center.offset(radius, 10, radius))) {
             val state = level.getBlockState(pos)
             val breakable = state.`is`(Blocks.STRIPPED_SPRUCE_LOG) || state.`is`(Blocks.LANTERN)
-            if (breakable && level.random.nextInt(3) == 0) level.destroyBlock(pos.immutable(), false)
+            if (breakable && level.random.nextInt(3) == 0) {
+                // Written down first, for the mend the morning after (village/live/trouble, V10)
+                io.github.vaspyyy.guildmark.village.live.trouble.VillageDamage.record(level, siege.center, pos.immutable(), state)
+                level.destroyBlock(pos.immutable(), false)
+            }
         }
         (level.getBlockEntity(siege.anchor) as? QuestBoardBlockEntity)?.let { it.setAdvanceProgress(it.advanceIndex, 0) }
     }

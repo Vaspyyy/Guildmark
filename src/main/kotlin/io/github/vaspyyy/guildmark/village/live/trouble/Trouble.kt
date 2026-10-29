@@ -14,6 +14,7 @@ import io.github.vaspyyy.guildmark.village.live.Live
 import io.github.vaspyyy.guildmark.village.live.VillageInfoCommand
 import io.github.vaspyyy.guildmark.village.live.VillageRec
 import io.github.vaspyyy.guildmark.village.live.Villages
+import io.github.vaspyyy.guildmark.village.live.talk.VillageCry
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.server.MinecraftServer
@@ -78,7 +79,10 @@ object Trouble {
     }
 
     private fun forget() {
+        Shelter.forget()
+        SiegeHorde.forget()
         bells.clear()
+        logs.clear()
         looked = 0L
     }
 
@@ -86,7 +90,12 @@ object Trouble {
 
     private fun tick(server: MinecraftServer) {
         val level = server.overworld()
-        if (!on()) return
+        if (!on()) {
+            // Turned off: whoever is sheltering comes out now
+            if (Shelter.any()) Shelter.endAll(level)
+            return
+        }
+        guarded("the shelter") { Shelter.tick(level) }
         guarded("the bells") { strike(level) }
         val now = level.gameTime
         if (now - looked < LOOK && now >= looked) return
@@ -143,6 +152,29 @@ object Trouble {
             if (!level.isLoaded(s.bell)) continue
             (level.getBlockState(s.bell).block as? BellBlock)?.attemptToRing(level, s.bell, s.from)
         }
+    }
+
+    // ---- What happened ----
+
+    /** The last things that happened in each village's trouble, for `village watch`: memory only. */
+    private val logs = HashMap<Long, ArrayDeque<String>>()
+
+    /** Something happened in [rec]'s trouble: kept for `village watch` (the last [LOGGED]), with the clock's time. */
+    fun log(level: ServerLevel, rec: VillageRec, what: String) {
+        val q = logs.getOrPut(rec.key) { ArrayDeque() }
+        q.addLast("${Days.hourOf(Days.offsetOf(level.overworldClockTime))} $what")
+        while (q.size > LOGGED) q.removeFirst()
+    }
+
+    /** What [log] kept for the village [key], the oldest first. */
+    fun logged(key: Long): List<String> = logs[key]?.toList().orEmpty()
+
+    private const val LOGGED = 10
+
+    /** Whether [rec] has a wall standing (its palisade or more), so the lines that name a wall are said there only. */
+    fun walled(level: ServerLevel, rec: VillageRec): Boolean {
+        val board = VillageCry.board(level, rec) ?: return false
+        return VillageCry.walled(level, rec, board)
     }
 
     // ---- Who is whose ----
