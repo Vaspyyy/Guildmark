@@ -10,6 +10,7 @@ import io.github.vaspyyy.guildmark.trade.WarrantItem
 import io.github.vaspyyy.guildmark.trade.carry.ChapmansCartItem
 import io.github.vaspyyy.guildmark.trade.carry.DroversWhistleItem
 import io.github.vaspyyy.guildmark.trade.carry.PackHarnessItem
+import io.github.vaspyyy.guildmark.trade.carry.WagonBillItem
 import net.minecraft.core.component.DataComponents
 import net.minecraft.world.entity.EquipmentSlotGroup
 import net.minecraft.world.entity.ai.attributes.AttributeModifier
@@ -88,6 +89,13 @@ object ModItems {
 
     /** Bought by a Chapman at the hall's counter, which brings the cart itself round; set down from the item it is a cart of yours (its `dyed_color` is the pennant's colour). */
     val CHAPMANS_CART: DeferredItem<ChapmansCartItem> = ITEMS.registerItem("chapmans_cart", ::ChapmansCartItem, UnaryOperator<Item.Properties> {
+        it.stacksTo(1)
+    })
+
+    // Trade: the Carrier's Wagon (build part D3)
+
+    /** Bought with the wagon at the Carriers' Store's desk; read at the Store's yard it rolls the wagon out, read anywhere else it calls the wagon home. */
+    val WAGON_BILL: DeferredItem<WagonBillItem> = ITEMS.registerItem("wagon_bill", ::WagonBillItem, UnaryOperator<Item.Properties> {
         it.stacksTo(1)
     })
 

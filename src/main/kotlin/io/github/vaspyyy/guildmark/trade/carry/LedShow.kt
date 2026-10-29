@@ -215,6 +215,8 @@ internal object LedShow {
             holds.clear()
             lastUse.clear()
         }
+        WagonBill.register()
+        WagonCommand.init()
         Carriers.add(Carrier { player, radius -> holdings(player, radius) })
         Carry.reports.add(Carry.Report { player -> report(player) })
         Carry.recalls.add(Carry.Bring { player -> if (bringBeside(player, led = false)) 1 else 0 })
@@ -241,7 +243,7 @@ internal object LedShow {
     /** Every wagon's bodies out now, for the commands. */
     fun all(): Collection<Shown> = shown.values
 
-    private fun recOf(sh: Shown): WagonRec? = TradeWagons.peek(sh.level)?.get(sh.owner)
+    fun recOf(sh: Shown): WagonRec? = TradeWagons.peek(sh.level)?.get(sh.owner)
 
     // ---- Making and letting go of the bodies ----
 
@@ -583,8 +585,7 @@ internal object LedShow {
             val hz = sin(a)
             val nx = ex + hx * STEP
             val nz = ez + hz * STEP
-            val ref = if (abs(owner.y - ey) < 3.0) owner.y else ey
-            val (ny, blocked) = point(sh.level, nx, nz, ref, ey, hx, hz)
+            val (ny, blocked) = point(sh.level, nx, nz, ey, hx, hz)
             if (!cutLoop(sh, nx, nz, hx, hz) && t.full && t.along(1) > sh.rearS - 0.5) {
                 // The way ahead is longer than it can keep: it waits rather than lose it
                 lost(sh, owner)
@@ -618,13 +619,15 @@ internal object LedShow {
     }
 
     /**
-     * The ground at [x], [z] near the height [ref] for a point of the way after one at [prevY] heading ([hx], [hz]), and whether the wagon can
-     * go there: not if nobody can see it, it is more than a block up or down, a wall stands at its height or its sides, a roof over it, the
-     * water is deep, or it is the top of a tree.
+     * The ground at [x], [z] for a point of the way after one on the ground at [prevY] heading ([hx], [hz]), and whether the wagon can go
+     * there: not if nobody can see it, it is more than a block up or down, a wall stands at its height or its sides, a roof over it, the
+     * water is deep, or it is the top of a tree. The ground is looked for from the way's own height, not the owner's, so a jump or a
+     * climb they make is not a step the wagon takes.
      */
-    fun point(level: ServerLevel, x: Double, z: Double, ref: Double, prevY: Double, hx: Double, hz: Double): Pair<Double, Boolean> {
-        val g = Ground.at(level, x, z, ref + 0.2)
-        if (g.isNaN() || g <= ref + 0.2 - 2.95) return prevY to true
+    fun point(level: ServerLevel, x: Double, z: Double, prevY: Double, hx: Double, hz: Double): Pair<Double, Boolean> {
+        val ref = prevY + 0.2
+        val g = Ground.at(level, x, z, ref)
+        if (g.isNaN() || g <= ref - 2.95) return prevY to true
         if (abs(g - prevY) > STEP_MOST) return g to true
         for (up in UP) if (Ground.solid(level, x, g + up, z)) return g to true
         val rx = -hz * SIDE
@@ -637,8 +640,9 @@ internal object LedShow {
         return g to false
     }
 
-    private val UP = doubleArrayOf(1.2, 2.2, 3.0)
-    private val SIDE_UP = doubleArrayOf(1.1, 2.0)
+    /** Heights over the ground looked at for a roof (the canvas's hoops are under 2.7), and at its sides for a wall (a wheel's hub, the bed, the canvas). */
+    private val UP = doubleArrayOf(1.2, 2.2, 2.7)
+    private val SIDE_UP = doubleArrayOf(0.6, 1.1, 2.0)
 
     /** The wagon's front axle from its back axle, px (WagonMesh.WHEELBASE). */
     private const val WHEELBASE_PX = 32f
@@ -670,6 +674,9 @@ internal object LedShow {
             reseed(sh)
             sh.heldUp = false
             sh.toldHeld = false
+        } else if (nose < NOSE && sh.v == 0.0 && sh.trail.endAlong - sh.s > 1.0) {
+            // At its nose with it standing: whatever way it had ahead (a turn back to it, a loop) is forgotten
+            reseed(sh)
         }
         if (beside || sh.halting) sh.budget = 0.0 else {
             sh.budget += jump
@@ -748,7 +755,7 @@ internal object LedShow {
     }
 
     /** [sh] along its trail as it is now: the horse at [Shown.s], the front and back axles behind it (or, with no horse in the shafts, straight). */
-    private fun place(sh: Shown, snap: Boolean) {
+    fun place(sh: Shown, snap: Boolean) {
         val p = sh.trail
         if (p.size == 0) return
         val h = p.at(sh.s)
@@ -783,7 +790,7 @@ internal object LedShow {
     const val TETHER_Z = -14f
 
     /** The brake goes on: the lever hauled, the squeal. */
-    private fun brake(sh: Shown) {
+    fun brake(sh: Shown) {
         if (sh.wagon.has(Wagon.FLAG_BRAKE)) return
         sh.wagon.flag(Wagon.FLAG_BRAKE, true)
         val at = sh.wagon.point(-11f, -24f, -40f)
@@ -791,7 +798,7 @@ internal object LedShow {
     }
 
     /** The record brought up to date with where [sh] stands, in [state]. */
-    private fun keep(sh: Shown, rec: WagonRec, state: WagonRec.State) {
+    fun keep(sh: Shown, rec: WagonRec, state: WagonRec.State) {
         val w = sh.wagon
         val at = w.position()
         val moved = rec.at?.let { it.distanceToSqr(at) > 0.25 } ?: true
@@ -1002,7 +1009,7 @@ internal object LedShow {
     private const val PIECES_FULL = 64.0
 
     /** The lantern lit at dusk and in a storm, once it has been rolled out. */
-    private fun lantern(sh: Shown, rec: WagonRec) {
+    fun lantern(sh: Shown, rec: WagonRec) {
         val day = Math.floorMod(sh.level.overworldClockTime, 24000L)
         sh.wagon.flag(Wagon.FLAG_LANTERN, rec.state != WagonRec.State.YARD && sh.raised >= 0L && (day in DUSK..DAWN || sh.level.isThundering))
     }
@@ -1096,7 +1103,7 @@ internal object LedShow {
         while (d <= Train.LENGTH + HEAD_AHEAD) {
             val x = rear.x + fx * d
             val z = rear.z + fz * d
-            val (y, blocked) = point(level, x, z, prev, prev, fx, fz)
+            val (y, blocked) = point(level, x, z, prev, fx, fz)
             if (blocked) return false
             prev = y
             d += STEP

@@ -89,3 +89,63 @@ data class WagonSyncPayload(
         }
     }
 }
+
+/**
+ * What the Carriers' Store desk's Wagon tab shows (build part D3), sent at the end of [StoreView]: whether wagons are [on] and the reader is
+ * a [factor]; the [state] of their wagon ([NONE], on its way ([COMING], [dueSecs] seconds off), waiting in this Store's yard ([HERE]) or
+ * another's ([YARD], in [place]), [PARKED] or [LED]) and where it is ([x], [y], [z], [far] blocks off, -1 in another dimension); its
+ * [horse] and the horse's name; how many of its 54 slots are [used]; what a recall costs now ([fee], 0 on its first day); whether they
+ * carry its Bill ([hasBill]); and the Bill's and a horse's prices.
+ */
+data class StoreWagon(
+    val on: Boolean,
+    val factor: Boolean,
+    val state: Int,
+    val place: String,
+    val x: Int,
+    val y: Int,
+    val z: Int,
+    val far: Int,
+    val dueSecs: Int,
+    val horse: Boolean,
+    val horseName: String,
+    val used: Int,
+    val fee: Int,
+    val hasBill: Boolean,
+    val billPrice: Int,
+    val horsePrice: Int,
+) {
+    fun write(buf: RegistryFriendlyByteBuf) {
+        buf.writeBoolean(on)
+        buf.writeBoolean(factor)
+        buf.writeVarInt(state)
+        buf.writeUtf(place, 128)
+        buf.writeVarInt(x)
+        buf.writeVarInt(y)
+        buf.writeVarInt(z)
+        buf.writeVarInt(far)
+        buf.writeVarInt(dueSecs)
+        buf.writeBoolean(horse)
+        buf.writeUtf(horseName, 64)
+        buf.writeVarInt(used)
+        buf.writeVarInt(fee)
+        buf.writeBoolean(hasBill)
+        buf.writeVarInt(billPrice)
+        buf.writeVarInt(horsePrice)
+    }
+
+    companion object {
+        const val NONE = 0
+        const val COMING = 1
+        const val HERE = 2
+        const val YARD = 3
+        const val PARKED = 4
+        const val LED = 5
+
+        fun read(buf: RegistryFriendlyByteBuf): StoreWagon = StoreWagon(
+            buf.readBoolean(), buf.readBoolean(), buf.readVarInt(), buf.readUtf(128), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(),
+            buf.readVarInt(), buf.readVarInt(), buf.readBoolean(), buf.readUtf(64), buf.readVarInt(), buf.readVarInt(), buf.readBoolean(),
+            buf.readVarInt(), buf.readVarInt(),
+        )
+    }
+}
