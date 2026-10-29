@@ -65,6 +65,13 @@ open class Handcart(type: EntityType<out Handcart>, level: Level) : Entity(type,
         get() = entityData.get(BROKEN)
         set(value) = entityData.set(BROKEN, value)
 
+    // ---- Villages (V12a): the pedlar's cart (living-world/villages/design.md 17.2), never saved
+    /** Whether it is a village pedlar's: drawn with its striped hood, its pots and its lantern (client/cart's PedlarCartRenderer). Set on the server. */
+    var pedlar: Boolean
+        get() = entityData.get(PEDLAR)
+        set(value) = entityData.set(PEDLAR, value)
+    // ---- end Villages (V12a)
+
     /** What this client keeps to draw it (client/cart); null on the server. */
     @JvmField
     var look: Any? = null
@@ -97,6 +104,7 @@ open class Handcart(type: EntityType<out Handcart>, level: Level) : Entity(type,
         builder.define(ROLL, 0f)
         for (slot in GOODS) builder.define(slot, ItemStack.EMPTY)
         builder.define(BROKEN, false)
+        builder.define(PEDLAR, false)
     }
 
     // Drawn the same few ticks behind the server as the townsfolk are, so the shafts stay in their hands
@@ -511,6 +519,7 @@ open class Handcart(type: EntityType<out Handcart>, level: Level) : Entity(type,
         private val GOODS: Array<EntityDataAccessor<ItemStack>> =
             Array(SLOTS) { SynchedEntityData.defineId(Handcart::class.java, EntityDataSerializers.ITEM_STACK) }
         private val BROKEN: EntityDataAccessor<Boolean> = SynchedEntityData.defineId(Handcart::class.java, EntityDataSerializers.BOOLEAN)
+        private val PEDLAR: EntityDataAccessor<Boolean> = SynchedEntityData.defineId(Handcart::class.java, EntityDataSerializers.BOOLEAN)
 
         /** Run on the client each tick for each cart (client/cart: its shafts, its wheels, its load as drawn). */
         @JvmStatic

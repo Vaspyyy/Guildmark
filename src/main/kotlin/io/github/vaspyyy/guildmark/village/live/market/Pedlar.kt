@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.village.live.market
 
+import io.github.vaspyyy.guildmark.cart.Handcart
 import io.github.vaspyyy.guildmark.cart.Handcarts
 import io.github.vaspyyy.guildmark.townsfolk.Activity
 import io.github.vaspyyy.guildmark.townsfolk.Days
@@ -156,7 +157,7 @@ class Pedlar(
         when (stage) {
             Stage.SETTLE -> settle(p, level)
             Stage.HITCH -> {
-                if (carts() && Handcarts.hitch(p) == null) return retry(p)
+                if (carts() && hitch(p) == null) return retry(p)
                 tries = 0
                 wanted = Pedlars.pieces(level, bell, day)
                 shown = ArrayList(wanted)
@@ -239,7 +240,7 @@ class Pedlar(
     /** Set down at the cart: the cart brought round and let go, he beside it, the goods shown as they are. */
     private fun settle(p: Townsperson, level: ServerLevel) {
         if (carts()) {
-            if (Handcarts.hitch(p) == null) return retry(p)
+            if (hitch(p) == null) return retry(p)
         }
         tries = 0
         wanted = Pedlars.pieces(level, bell, day)
@@ -419,7 +420,7 @@ class Pedlar(
             return
         }
         Handcarts.parked(p)?.let { p.face(it.yRot) }
-        Handcarts.hitch(p)
+        hitch(p)
         if (Handcarts.pulling(p)) {
             p.act(Handcarts.PULL)
             stage = Stage.WAVE
@@ -446,7 +447,7 @@ class Pedlar(
     private fun out(p: Townsperson, level: ServerLevel) {
         if (!outbound) {
             outbound = true
-            if (carts() && !Handcarts.pulling(p)) Handcarts.hitch(p)
+            if (carts() && !Handcarts.pulling(p)) hitch(p)
             // Give him time to be out of the green before anyone may see him go (the crowd's rule: out of sight, then gone)
             p.leaveAt = level.gameTime + LEAVE_AFTER
             p.act(Handcarts.PULL)
@@ -472,6 +473,11 @@ class Pedlar(
     // ---- Small things ----
 
     private fun carts(): Boolean = Handcarts.enabled()
+
+    // ---- Villages (V12a): the pedlar's own cart
+    /** [Handcarts.hitch], the cart marked as a pedlar's: drawn with its striped hood, its pots and its lantern (client/cart's PedlarCartRenderer). */
+    private fun hitch(p: Townsperson): Handcart? = Handcarts.hitch(p)?.also { it.pedlar = true }
+    // ---- end Villages (V12a)
 
     private fun go(p: Townsperson, to: BlockPos, speed: Double, near: Double = 1.5, exact: Boolean = false) {
         goal = to
