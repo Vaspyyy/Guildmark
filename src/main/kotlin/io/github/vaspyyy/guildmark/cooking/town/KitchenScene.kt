@@ -88,7 +88,15 @@ internal object Stands {
                 best = side
             }
         }
-        val side = best ?: return null
+        return best?.let { facing(work, it) }
+    }
+
+    /** A stand on the first of [sides] of the block at [work] that is open, facing it; null if none is. */
+    fun on(level: ServerLevel, work: BlockPos, sides: List<Direction>): Stand? =
+        sides.firstOrNull { open(level, work.relative(it)) }?.let { facing(work, it) }
+
+    /** The stand in the cell on [side] of [work], [TOWARD] of the way toward it and facing it. */
+    private fun facing(work: BlockPos, side: Direction): Stand {
         val cell = work.relative(side)
         val toward = side.opposite
         return Stand(cell, Vec3(cell.x + 0.5 + toward.stepX * TOWARD, cell.y.toDouble(), cell.z + 0.5 + toward.stepZ * TOWARD), toward.toYRot())
@@ -190,8 +198,9 @@ internal class KitchenScene(
         /** The slices the roast is carved into, one joint of the roast's each. */
         private const val SLICES = 3
 
-        /** The tick of the carve clip at which the slice parts (its `carve` moment, 19.5). */
+        /** The tick of the carve clip at which the slice parts (its `carve` moment, 19.5), and the clip's length. */
         private const val CUT = 20
+        private const val CARVE_TICKS = 50
 
         /** The farthest a scene walks a keeper from where it takes them (blocks); a stand farther than this is no scene. */
         private const val FAR = 22.0
@@ -530,7 +539,9 @@ internal class KitchenScene(
 
     /**
      * The roast: the rod turned by the crank in bouts, the brow wiped between them, and the roast carved (three slices onto
-     * bowls) at noon, or after the second bout in a scene played by the command. The Spit shows the roast, lit and with its three
+     * bowls) at noon, or after the second bout in a scene played by the command. The carve is made from the Spit's front, as
+     * its clip is (or its back, if the front is shut): the turning ends there and the scene walks her round and carves
+     * ([toFront]); only with both long sides shut does she carve from the crank end. The Spit shows the roast, lit and with its three
      * joints, from the first turn ([SpitBlockEntity.showRoast]; its fat drips as any lit spit's does), a joint less at each slice;
      * it shows it turns while she cranks and not while she wipes or carves. Fat flares now and then; the cry is made once a day,
      * when a player first comes within twelve blocks.
@@ -598,18 +609,23 @@ internal class KitchenScene(
                         if (!forced && Days.offsetOf(level.overworldClockTime) >= WINDOW_END) return true
                         if (due(level)) {
                             carveNext = true
-                            if (sinceWipe >= 200) wipe(level, p) else carve(level, p)
+                            if (sinceWipe >= 200) wipe(level, p) else if (toFront(level)) return true else carve(level, p)
                         } else {
                             wipe(level, p)
                         }
                     }
                 }
                 RoastPhase.WIPE -> if (phaseAge >= 40) {
-                    if (carveNext || due(level)) carve(level, p) else turn(level, p)
+                    if (carveNext || due(level)) {
+                        if (toFront(level)) return true
+                        carve(level, p)
+                    } else {
+                        turn(level, p)
+                    }
                 }
                 RoastPhase.CARVE -> if (phaseAge == CUT) {
                     spit(level)?.let { it.showRoast(true, it.roastJoints - 1) }
-                } else if (phaseAge >= 50) {
+                } else if (phaseAge >= CARVE_TICKS) {
                     sliced++
                     if (sliced >= SLICES) {
                         roast.carved = true
@@ -620,6 +636,29 @@ internal class KitchenScene(
                 }
             }
             return false
+        }
+
+        /**
+         * The carve from the Spit's front (its facing side) or else its back, where the clip is made for: a walk round to it, the
+         * three slices, a joint off the rod at each cut, and the roast marked carved; put first in the plan, after this step.
+         * False, and nothing changed, when neither side is open or the spit has no facing.
+         */
+        private fun toFront(level: ServerLevel): Boolean {
+            val state = level.getBlockState(spitPos)
+            if (!state.hasProperty(StationProps.FACING)) return false
+            val front = state.getValue(StationProps.FACING)
+            val stand = Stands.on(level, spitPos, listOf(front, front.opposite))?.takeIf { near(it) } ?: return false
+            val steps = ArrayList<Step>()
+            steps.add(Go(stand, Jobs.WALK))
+            repeat(SLICES) {
+                steps.add(Do(Activity.CARVE, CARVE_TICKS, stand.yaw, look) { t, lv, _ -> if (t == CUT) spit(lv)?.let { it.showRoast(true, it.roastJoints - 1) } })
+            }
+            steps.add(Run { _, _ ->
+                roast.carved = true
+                carvedHere = true
+            })
+            for (s in steps.asReversed()) plan.addFirst(s)
+            return true
         }
 
         /** The cry of the day, when a player has come within twelve blocks. */
