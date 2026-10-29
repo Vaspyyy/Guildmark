@@ -110,7 +110,7 @@ object Informer : Template, TaleVoice, TaleWords.Names {
     /** The sergeant is any guard of the town, the gate's two neighbours any citizens near it; the friend is themselves. */
     override val standing: Set<String> = setOf(SERGEANT, NEIGHBOUR_A, NEIGHBOUR_B)
 
-    override val numbers: List<String> = listOf("men told and heard", "man under test", "road, gate and drop", "band", "closes lain low", "flags", "answer", "day chosen")
+    override val numbers: List<String> = listOf("told and heard", "told, not yet tried", "road, gate and drop", "band", "closes lain low", "flags", "answer", "day chosen")
     override val strings: List<String> = listOf("band", "side")
 
     // ---- The record ----
