@@ -60,8 +60,12 @@ internal object GrowScenes {
     /** HAND_OVER's hand-off: from that tick the piece is the cart's (as ComingsBodies has it). */
     private const val HANDOFF = 16
 
-    /** Loops of CRADLE the baby is shown for, and the ticks in each loop its coos are heard (the clip's `coo` moments). */
+    /**
+     * Loops of CRADLE the baby is shown for, at least and at most (on until the neighbours have had their look); the ticks in each
+     * loop its coos are heard (the clip's `coo` moments).
+     */
     private const val CRADLE_LOOPS = 3
+    private const val CRADLE_MOST = 9
     private val COOS = intArrayOf(16, 46)
 
     private val scenes = ArrayList<Scene>()
@@ -108,7 +112,12 @@ internal object GrowScenes {
         s.age++
         s.t++
         // Anyone taken up by something else meanwhile (a fight, a tale) is out of it
-        s.crew.removeIf { h -> !h.p.isAlive || h.p.isRemoved || h.p.director != null && h.p.director !== h }
+        s.crew.removeIf { h ->
+            (!h.p.isAlive || h.p.isRemoved || h.p.director != null && h.p.director !== h).also { out ->
+                // The baby goes in with whoever has them now, not left in their arms
+                if (out) h.p.swaddled = false
+            }
+        }
         for (h in s.crew) if (h.p.director == null) h.p.director = h
         if (s.age % 20 == 0) {
             val near = s.level.players().any { pl -> pl.distanceToSqr(s.at) < NEAR * NEAR || s.crew.any { it.p.distanceToSqr(pl) < NEAR * NEAR } }
@@ -503,8 +512,11 @@ internal object GrowScenes {
         }
     }
 
-    /** The baby held up for the lane to see (CRADLE, [loops] times), facing whatever [at] says, its coos heard at the clip's moments. */
-    class Cradle(private val loops: Int, private val at: (Hand) -> Vec3?) : Act() {
+    /**
+     * The baby held up for the lane to see (CRADLE, [least] times, and on up to [most] until [ready]), facing whatever [at] says,
+     * its coos heard at the clip's moments.
+     */
+    class Cradle(private val least: Int, private val most: Int, private val ready: () -> Boolean, private val at: (Hand) -> Vec3?) : Act() {
         private var t = 0
 
         override fun start(h: Hand) {
@@ -522,7 +534,10 @@ internal object GrowScenes {
             if (h.p.activity == Activity.CRADLE && loopT in COOS) {
                 io.github.vaspyyy.guildmark.village.live.VillageSounds.play(h.scene.level, eye(h.p).subtract(0.0, 0.3, 0.0), io.github.vaspyyy.guildmark.village.live.VillageSounds.BABY, 0.8f)
             }
-            return t < loops * Activity.CRADLE.ticks
+            // Held up a loop at a time: at least [least] times, and on (to [most]) until the neighbours have had their look
+            if (t % Activity.CRADLE.ticks != 0) return true
+            val loops = t / Activity.CRADLE.ticks
+            return loops < least || loops < most && !ready()
         }
     }
 
@@ -610,6 +625,7 @@ internal object GrowScenes {
         private var shown = 0
         private var back = false
         private var cheers = 0
+        private var expected = 0
         private var said = false
         private var called = false
         private var parent: Hand? = null
@@ -633,7 +649,7 @@ internal object GrowScenes {
                 Go({ door.inside }, io.github.vaspyyy.guildmark.townsfolk.Jobs.STROLL, 0.8),
                 Go({ lane }, io.github.vaspyyy.guildmark.townsfolk.Jobs.STROLL, 0.6),
                 Do { show() },
-                Cradle(CRADLE_LOOPS, toStreet),
+                Cradle(CRADLE_LOOPS, CRADLE_MOST, { called && cheers >= expected && crowd.none { it.p.position().distanceToSqr(at) > 9.0 * 9.0 } }, toStreet),
                 Do { back = true },
                 Go({ door.inside }, io.github.vaspyyy.guildmark.townsfolk.Jobs.STROLL, 0.8),
                 Go({ cot }, io.github.vaspyyy.guildmark.townsfolk.Jobs.STROLL, 1.0),
@@ -670,6 +686,7 @@ internal object GrowScenes {
             called = true
             val p = parent?.p ?: return
             val came = neighbours(level, key, p.position(), household)
+            expected = came.size
             val street = street()
             for ((k, n) in came.withIndex()) {
                 val h = hand(n, n.resident)
