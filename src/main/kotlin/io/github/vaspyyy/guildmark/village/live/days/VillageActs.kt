@@ -28,6 +28,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Ways
 import io.github.vaspyyy.guildmark.townsfolk.Work
 import io.github.vaspyyy.guildmark.townsfolk.scenes.Cold
 import io.github.vaspyyy.guildmark.townsfolk.talk.Street
+import io.github.vaspyyy.guildmark.village.live.market.VillageTimes
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
@@ -82,10 +83,13 @@ object VillageActs {
         }
     }
 
-    /** Whether [life] spends tonight's evening out on the green (a third of the grown-up folk, by turns: in the warm; the hearth otherwise). */
+    /**
+     * Whether [life] spends tonight's evening out on the green (a third of the grown-up folk, by turns, fewer in hard times and more in
+     * good: VillageTimes; in the warm; the hearth otherwise).
+     */
     private fun outTonight(p: Townsperson, life: Life): Boolean =
         life.resident.role.adult && life.resident.role != TownRole.GUARD &&
-            Math.floorMod(life.resident.id + Days.dayOf(level(p).overworldClockTime), 3L) == 0L
+            VillageTimes.outTonight(level(p), life.places.centre.asLong(), life.resident.id, Days.dayOf(level(p).overworldClockTime))
 
     /** What fills the rest of [stretch] once its parts are done. */
     fun filler(p: Townsperson, life: Life, stretch: Stretch): Task {

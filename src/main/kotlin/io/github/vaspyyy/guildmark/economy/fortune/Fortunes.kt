@@ -23,6 +23,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Furnish
 import io.github.vaspyyy.guildmark.townsfolk.Household
 import io.github.vaspyyy.guildmark.townsfolk.Residents
 import io.github.vaspyyy.guildmark.village.live.Villages
+import io.github.vaspyyy.guildmark.village.live.market.VillageTimes
 import net.minecraft.ChatFormatting
 import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
@@ -226,6 +227,8 @@ object Fortunes {
         Caravans.listen(Road)
         Works.listen(Building)
         Comings.listen(Households)
+        // A village's times in `village info` (villages design 8.1)
+        VillageTimes.init()
     }
 
     // ---- The close ----
