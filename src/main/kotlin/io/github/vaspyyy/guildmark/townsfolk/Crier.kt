@@ -288,7 +288,7 @@ object Crier {
         news(level, entry, c, Random(c.day * 0x2545F4914F6CDD1DL + places.centre.asLong()))
 
     /** The folk about the square who are free to stop come over to hear the news. */
-    private fun gather(crier: Townsperson) {
+    internal fun gather(crier: Townsperson) {
         val level = level(crier)
         val folk = level.getEntitiesOfClass(Townsperson::class.java, crier.boundingBox.inflate(GATHER, 4.0, GATHER)) {
             it !== crier && it.isAlive && !it.isSleeping && it.attending == null && !it.routine.anchored &&
