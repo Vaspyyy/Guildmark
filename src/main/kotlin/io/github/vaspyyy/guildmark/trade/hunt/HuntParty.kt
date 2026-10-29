@@ -302,9 +302,9 @@ internal class HuntParty(private val level: ServerLevel, private val tag: String
 
     // ---- Taking it away ----
 
-    /** Each of [sacks] to one of the party (the leader first), in the off hand as the dearest good in it: the torch gives way to it. */
+    /** Each of [sacks] to one of the party still on their feet (the leader first), in the off hand as the dearest good in it: the torch gives way to it. */
     fun giveSacks(sacks: List<List<Pair<Good, Int>>>) {
-        for ((i, m) in members.withIndex()) {
+        for ((i, m) in alive().withIndex()) {
             m.carry.clear()
             val sack = sacks.getOrNull(i) ?: continue
             m.carry.addAll(sack)

@@ -131,6 +131,8 @@ internal object GuardDirector : Director {
             rise(level, g)
             return
         }
+        // Up off the seat first
+        if (p.activity == Activity.STAND_UP && !p.actDone) return
         val spot = place(owner, pace, g.slot)
         val d = hypot(spot.x - p.x, spot.z - p.z)
         val moving = (pace?.speed ?: 0.0) > 0.4

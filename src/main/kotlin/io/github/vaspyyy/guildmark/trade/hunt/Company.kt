@@ -448,7 +448,7 @@ internal object Company {
                 val last = counted[id]
                 counted[id] = clock
                 var left = tag.getLongOr("left", 0L)
-                if (last != null && player.level() === level) {
+                if (last != null) {
                     left -= (clock - last).coerceIn(0L, DAY)
                     tag.putLong("left", left)
                     dirty = true

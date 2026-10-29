@@ -92,6 +92,9 @@ object Hunt {
     /** How far the party calls (blocks), and how near it stops (the leader's circle). */
     private const val CALL = 12.0
 
+    /** How far from the party, and from where they stopped, a trader has broken away from a search. */
+    private const val BROKE_AWAY = 7.0
+
     /** Ticks the search lasts, and the least a lesson's search is. */
     private const val SEARCH_LEAST = 90
     private const val SEARCH_MORE = 40
@@ -161,7 +164,7 @@ object Hunt {
         /** A blow that would have left the trader under half a heart was cut short. */
         var lesson = false
 
-        /** The lesson was given: while they go through the pack after it, nothing of the trader's side touches them. */
+        /** The lesson was given: from then on nothing of the trader's side touches them, in the search or on the run for the camp. */
         var lessoned = false
 
         /** Nothing of the party's hurts anyone any more: the lesson was given, the share taken, the rout begun. */
@@ -509,8 +512,23 @@ object Hunt {
             }
         }
         r.party.burn()
+        // Broken away from them in the middle of it: the search is off and the chase is on again (a run, not a gift)
+        val d = alive.minOf { it.mob.distanceTo(player).toDouble() }
+        if (d > BROKE_AWAY && player.distanceToSqr(r.stoppedAt) > BROKE_AWAY * BROKE_AWAY) return breakAway(r, now)
         r.party.search(player, now, now - r.phaseAt, r.dearest, r.work?.takeIf { it.isAlive && it.distanceToSqr(player) <= Carriers.REACH * Carriers.REACH }?.position())
-        if (now >= r.searchEnds) rob(level, r, player, now)
+        if (now >= r.searchEnds) {
+            // The share is taken by hands on the pack: not from a trader who has got clear of them
+            if (d > BROKE_AWAY) breakAway(r, now) else rob(level, r, player, now)
+        }
+    }
+
+    /** The trader has broken away in the search: the party comes on again, and searches again from the start when it has them. */
+    private fun breakAway(r: Run, now: Long) {
+        r.phase = Phase.COMING
+        r.phaseAt = now
+        r.reached = false
+        r.work = null
+        r.lastSight = now
     }
 
     /** What the second of the party works at in [r]'s search: a cart of [player]'s within eight blocks (let go of, if they hold it), else a pack animal that stood its ground. */
@@ -691,7 +709,7 @@ object Hunt {
 
     /**
      * The band is beaten (every member down, or the leader down): the bar fills green, the survivors break and scatter with their torches out, the trader
-     * is paid the purse, the band is wounded for each one fallen, the road's peril falls, the town's guild hears of it and the trader's standing rises.
+     * is paid the purse for each one fallen, the band is wounded for each of them, the road's peril falls, the town's guild hears of it and the trader's standing rises.
      */
     private fun win(level: ServerLevel, r: Run, player: ServerPlayer, now: Long) {
         if (r.phase == Phase.ROUT) return
@@ -716,7 +734,7 @@ object Hunt {
             if (r.stand.onRoad) RoadPeril.change(data, r.stand.capital, r.stand.road, RoadPeril.HELPED, Math.floorDiv(clock, 1000L))
             if (Suppliers.enabled()) Suppliers.gain(level, heart, player.uuid, STANDING)
         }
-        val purse = TradeConfig.huntPurse() * r.party.size
+        val purse = TradeConfig.huntPurse() * fallen
         if (purse > 0) {
             Trading.give(player, ModItems.GUILD_MARK.get(), purse)
             coins(level, r, player)
@@ -1019,8 +1037,8 @@ object Hunt {
             val side = attacker != null && (attacker is ServerPlayer || attacker is CompanionEntity || Company.isGuardOf(attacker, partyVictim.player))
             if (!side) return
             when {
-                // Beaten, the trader is not to lay a hand on them while they go through the pack
-                partyVictim.lessoned && partyVictim.phase == Phase.SEARCH -> event.isCanceled = true
+                // Beaten, the trader's side is not to lay a hand on them again, in the search or after it (no purse for a lesson taken)
+                partyVictim.lessoned -> event.isCanceled = true
                 // Run down with the sacks: the one struck turns to fight, the rest run on
                 partyVictim.robbed && partyVictim.phase == Phase.LEAVE -> partyVictim.party.of(victim)?.let { if (!it.turned) partyVictim.turn = it }
                 !partyVictim.sealed && !partyVictim.fight -> partyVictim.blow = true
