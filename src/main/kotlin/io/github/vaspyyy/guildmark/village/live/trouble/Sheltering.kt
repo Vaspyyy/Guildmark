@@ -44,7 +44,8 @@ import net.minecraft.world.phys.Vec3
  * - EMERGE: at the all-clear, each in their turn: the door opened, out into the lane, a look about, then the end's own beat (a cheer
  *   and a clap for a siege held or a raid beaten off, a sigh and a slow walk to the broken wall for a siege lost), and back to the day.
  *
- * Hurt, or had by something else for more than a few ticks (the flee), they are let go and taken again a little later.
+ * Hurt, or had by something else for more than a few ticks (the flee), they are let go and taken again a little later; one a raider
+ * puts on a rope is let go and not taken again while they are on it.
  */
 class Sheltering internal constructor(internal val called: Shelter.Called, val p: Townsperson, private val alert: Int, private val shout: Boolean) : Director {
     enum class S { ALERT, RUN, IN, BOLT, KNOCK, WAIT, OPEN, COWER, EMERGE }
@@ -88,6 +89,11 @@ class Sheltering internal constructor(internal val called: Shelter.Called, val p
         val level = p.level() as? ServerLevel ?: return
         if (done) return
         if (called.over || called.ending == null && !Trouble.on()) return finish()
+        // Put on a raider's rope (the raid leaving with a hostage): the shelter lets go, so they are not steered against the rope
+        if (p.isLeashed) {
+            Shelter.handed(this)
+            return finish()
+        }
         // Back from something that had them meanwhile (running from a monster), or hurt: theirs again; taken again in a while
         if (lastTick >= 0 && p.tickCount - lastTick > 5 || p.hurtTime > 0) {
             Shelter.handed(this)

@@ -303,6 +303,8 @@ object Shelter {
     /** Whether [p] answers [c]'s call: one of its folk, alive and their own, not on the watch, not held by someone else's director. */
     private fun able(level: ServerLevel, c: Called, p: Townsperson): Boolean {
         if (!p.isAlive || p.isRemoved || p.captiveOf >= 0 || p.isLeader || p.isPassenger || p.fights || p.role == TownRole.GUARD || p.tale >= 0) return false
+        // On a raider's rope: being led off, not sheltering
+        if (p.isLeashed) return false
         if (p.crowd || p.watcher) return false
         if (c.folk[p.id]?.done == false) return false
         c.handed[p.id]?.let { if (p.tickCount - it < AGAIN && p.tickCount >= it) return false }
