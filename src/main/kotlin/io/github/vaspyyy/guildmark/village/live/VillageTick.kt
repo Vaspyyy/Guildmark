@@ -68,9 +68,10 @@ internal object VillageTick {
     enum class Stands { YES, NO, UNKNOWN }
 
     fun register() {
-        // First of all, so that what the villages may spend this tick is known to whatever comes after
+        // First of all, so that what the villages may spend this tick is known to whatever comes after; with Living Villages off
+        // too, since the folk given back then are given back two a second for a village and eight in all by its tickets
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, false, ServerTickEvent.Pre::class.java) {
-            if (Villages.enabled()) VillageBudget.begin(it.server.overworld())
+            VillageBudget.begin(it.server.overworld())
         }
         NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { VillagePerf.timed(VillagePerf.Piece.REGISTRY) { post(it.server) } }
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> forget() }
