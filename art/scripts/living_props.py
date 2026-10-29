@@ -1899,6 +1899,122 @@ def trade_cube_names():
     return {c.name for b in TRADE_BUILDERS for p in b()[1].walk() for c in p.cubes}
 
 
+# ================================================================== the villages' props (art/scripts/village_clips.py)
+
+# The villages' (V12a): a baby swaddled in a shawl, held in both arms (CRADLE, and CARRY played as carry_swaddle while
+# someone walks with one), and the lit candle carried to a memorial and set on its ledge (LAY_CANDLE). townsfolk.py packs
+# their cubes after the trade's (group 7), so adding them moved no cube already on the texture.
+
+SWADDLE = (238, 230, 212); SWADDLE_D = (186, 174, 150); SWADDLE_L = (250, 246, 236)       # an undyed wool shawl
+SWADDLE_BAND = (120, 146, 176)                                                            # its woven blue band
+BABY = (240, 204, 182); BABY_D = (214, 160, 140); BABY_CHEEK = (236, 156, 142)
+CANDLE = (222, 210, 178); CANDLE_D = (176, 160, 124); CANDLE_L = (240, 232, 208)          # the memorial's own wax (memorial_wax)
+SWADDLE_AT = (0.0, 3.6, -8.8)            # body space: the bundle's middle, lying across the forearms before the chest
+SWADDLE_TILT = (8.0, 40.0)               # its head end (+x, the holder's left) 8 up; its top turned 40 out, to the forearms' slope
+SWADDLE_ROT = euler_from_axes((math.cos(math.radians(SWADDLE_TILT[0])), -math.sin(math.radians(SWADDLE_TILT[0])), 0.0),
+                              (math.sin(math.radians(SWADDLE_TILT[0])) * math.cos(math.radians(SWADDLE_TILT[1])),
+                               math.cos(math.radians(SWADDLE_TILT[0])) * math.cos(math.radians(SWADDLE_TILT[1])),
+                               math.sin(math.radians(SWADDLE_TILT[1]))))
+SWADDLE_FACE = (2.9, -2.05, 0.0)         # swaddle space: the middle of the baby's face, on the hood's top
+SWADDLE_FEET = (-3.4, 0.0, 0.0)          # and the foot of the bundle
+CANDLE_BASE = (0.0, 1.5, 0.0)            # candle space: the middle of its foot (the fist has it 1.5 above that)
+CANDLE_WICK = (0.0, -3.5, 0.0)           # the wick's tip, where candle_flame stands
+
+
+def swaddle_painter(key, part='body'):
+    """A baby wrapped in an undyed wool shawl: the wraps crossing the body in soft diagonal folds, a woven blue band near the
+    shawl's edge; on the hood ([part] 'head') the face looking up out of its round opening: pink, the eyes shut, rosy cheeks."""
+    def fn(face, w, h, rng):
+        U, V = uv(w, h)
+        a = noise_fill(w, h, SWADDLE, rng, 0.035)
+        wrap = np.sin((U * 1.6 + V * (0.9 if face in ('top', 'bottom') else 0.6)) * math.pi * 2.6)
+        a[..., :3] = mix(a[..., :3], SWADDLE_D, np.clip(-wrap, 0, 1)[..., None] * 0.45)
+        a[..., :3] = mix(a[..., :3], SWADDLE_L, np.clip(wrap - 0.5, 0, 1)[..., None] * 0.7)
+        if part == 'body' and face in ('front', 'back', 'top', 'bottom'):
+            band = np.abs(U - 0.22 - 0.25 * V) < 0.06
+            a[..., :3] = np.where(band[..., None], mix(a[..., :3], SWADDLE_BAND, 0.75), a[..., :3])
+        if part == 'head' and face == 'top':
+            # the face in the hood's opening (the face's u runs along the bundle, toward its head end)
+            d = np.hypot((U - 0.42) * 1.15, (V - 0.5))
+            skin = d < 0.33
+            a[..., :3] = np.where((d < 0.42)[..., None] & ~skin[..., None], mix(a[..., :3], SWADDLE_D, 0.55), a[..., :3])
+            a[..., :3] = np.where(skin[..., None], mix(np.array(BABY, float), np.array(BABY_D, float), np.clip(d * 2.2, 0, 1)[..., None] * 0.6), a[..., :3])
+            for cv in (0.36, 0.64):
+                eye = (np.abs(U - 0.48) < 0.06) & (np.abs(V - cv) < 0.08)
+                a[..., :3] = np.where(eye[..., None], np.array((112, 72, 60), float), a[..., :3])
+                cheek = np.hypot(U - 0.36, V - cv) < 0.09
+                a[..., :3] = np.where(cheek[..., None], mix(a[..., :3], BABY_CHEEK, 0.5), a[..., :3])
+        return shade_edges(a, 0.14)
+    return painter(key, fn)
+
+
+def candle_painter(key, part='wax'):
+    """A plain candle of the memorial's cream wax, a drip run down one side from the lip; its wick black, singed."""
+    def fn(face, w, h, rng):
+        if part == 'wick':
+            return noise_fill(w, h, (40, 32, 28), rng, 0.08)
+        U, V = uv(w, h)
+        a = noise_fill(w, h, CANDLE, rng, 0.03)
+        if face in ('front', 'back', 'right', 'left'):
+            a[..., :3] = mix(a[..., :3], CANDLE_L, np.clip(0.35 - np.abs(U - 0.4), 0, 0.35)[..., None])
+            if face == 'front':
+                drip = (np.abs(U - 0.7) < 0.14) & (V < 0.55)
+                a[..., :3] = np.where(drip[..., None], mix(a[..., :3], CANDLE_L, 0.8), a[..., :3])
+            a[..., :3] = mix(a[..., :3], CANDLE_D, np.clip(V - 0.75, 0, 0.25)[..., None] * 1.2)
+        elif face == 'top':
+            d = np.hypot(U - 0.5, V - 0.5)
+            a[..., :3] = mix(a[..., :3], CANDLE_D, np.clip(0.3 - d, 0, 0.3)[..., None] * 1.5)
+        return shade_edges(a, 0.12)
+    return painter(key, fn)
+
+
+def _swaddle():
+    # The baby, lying across both forearms before the chest, its head at the holder's left: a bundle of wool 8 px long,
+    # its hood a little fuller than the wrapped body, the face looking up out of it at whoever holds it (and, tipped out to
+    # the forearms' slope, at whoever is in front). On the body, so it rocks with them; CRADLE's and carry_swaddle's arms
+    # run under it (village_clips.py).
+    return 'body', Part('swaddle', SWADDLE_AT, SWADDLE_ROT, cubes=[
+        C((-4.2, -1.6, -2.0), (5.9, 3.2, 4.0), 'v_swaddle_body', swaddle_painter('v_swaddle_body')),
+        C((1.6, -1.9, -2.2), (2.6, 3.8, 4.4), 'v_swaddle_head', swaddle_painter('v_swaddle_head', 'head')),
+    ])
+
+
+def _candle_lit():
+    # The candle LAY_CANDLE carries to the memorial, lit, upright in the right fist (its track keeps it standing up
+    # whichever way the forearm points); the memorial's own candle (Tales G's model, the same 2 x 4.1 of wax) shows in
+    # its place once it is set down.
+    return 'right_arm', Part('candle_lit', RIGHT_GRIP, (0, 0, 0), cubes=[
+        C((-1.0, -2.6, -1.0), (2.0, 4.1, 2.0), 'v_candle_wax', candle_painter('v_candle_wax')),
+        C((-0.25, -3.5, -0.25), (0.5, 0.9, 0.5), 'v_candle_wick', candle_painter('v_candle_wick', 'wick')),
+    ])
+
+
+def _candle_flame():
+    # Its flame (it glows: GLOW_CUBES), standing on the wick: LAY_CANDLE's track keeps it upright, leaning back from the
+    # way the hand moves and flickering, shrinking low behind the shielding hand as it is carried.
+    return 'right_arm', Part('candle_flame', tuple(float(v) for v in np.add(RIGHT_GRIP, CANDLE_WICK)), (0, 0, 0), cubes=[
+        C((-0.8, -3.0, -0.8), (1.6, 3.0, 1.6), 't_candle_flame', upright_flame_painter('t_candle_flame')),
+        C((-0.35, -1.5, -0.35), (0.7, 1.4, 0.7), 't_candle_flame_core', upright_flame_painter('t_candle_flame_core', core=True)),
+    ])
+
+
+VILLAGE_BUILDERS = [_swaddle, _candle_lit, _candle_flame]
+BUILDERS.extend(VILLAGE_BUILDERS)
+GLOW_CUBES.update({'t_candle_flame', 't_candle_flame_core'})
+TOOL_NOTES.update({
+    'swaddle': f'body, a swaddled baby lying across the forearms before the chest, its head end at the holder\'s left; its face '
+               f'at part {SWADDLE_FACE}, its foot at {SWADDLE_FEET}; the arms run under it (CRADLE, carry_swaddle)',
+    'candle_lit': 'right hand, a candle upright in the fist (LAY_CANDLE\'s track stands it up); its foot at part (0, 1.5, 0), '
+                  'the wick\'s tip at (0, -3.5, 0)',
+    'candle_flame': 'right hand, the candle\'s flame (glows), tracked to stand on the wick',
+})
+
+
+def village_cube_names():
+    """The villages' cubes among them (villages V12a: townsfolk.py packs them last of all)."""
+    return {c.name for b in VILLAGE_BUILDERS for p in b()[1].walk() for c in p.cubes}
+
+
 def install(g):
     """Adds the props to townsfolk_tools' tables ([g]: its globals)."""
     if g.get('_LIVING_PROPS'):

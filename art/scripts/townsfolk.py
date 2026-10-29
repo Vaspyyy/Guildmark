@@ -159,6 +159,31 @@ COMPANION_PIECES = sorted(p.name for ps in _companion_pieces().values() for p in
 PIECES = PIECES + COMPANION_PIECES
 
 
+# ---- Villages (V12a): the pedlar's pack, worn by merchant_4 (villages/design.md 17.2)
+def _village_pieces():
+    """The pieces only the villages' pedlar wears: the pack on his back on two straps over the shoulders, the blanket rolled
+    and tied on top of it, and the pot hung on its back. Look pieces, packed after every older cube (pack_uv's last group,
+    with the villages' props), so no older look's texture moves."""
+    body = [
+        # the pack: a tall canvas sack riding on a wooden frame off the small of the back, its top over the shoulders and behind
+        # the head (clear of it: the head's back is at z 4), clear of the arms (x 4 out); two straps down the chest
+        Part('pedlar_pack', cubes=[C((-4, -2, 4.5), (8, 10.5, 3), 'pack_body'), C((-3.5, 6, 2), (7, 2.5, 2.5), 'pack_frame'),
+                                   C((-3.25, 0.5, -2.5), (1.25, 6.5, 0.5), 'pack_strap_r'), C((2, 0.5, -2.5), (1.25, 6.5, 0.5), 'pack_strap_l')]),
+        # the blanket rolled and tied on the pack's top, its ends showing either side of the head
+        Part('pedlar_roll', cubes=[C((-6, -4.5, 4.75), (12, 2.5, 2.5), 'pack_roll')]),
+        # a black iron pot hung on the pack's back by its bail, and a tin cup at its side
+        Part('pedlar_pot', cubes=[C((-1.5, 4, 7.5), (3, 2.5, 2.5), 'pack_pot'), C((-1.75, 3, 8.5), (3.5, 1, 0.5), 'pack_pot_bail'),
+                                  C((4, 2, 5.5), (1.5, 1.5, 1.5), 'pack_cup')]),
+    ]
+    return {'body': body}
+
+
+VILLAGE_CUBES = {c.name for ps in _village_pieces().values() for p in ps for q in p.walk() for c in q.cubes}
+VILLAGE_PIECES = sorted(p.name for ps in _village_pieces().values() for p in ps)
+PIECES = PIECES + VILLAGE_PIECES
+# ---- Villages: end
+
+
 def _tools():
     """The held props (townsfolk_tools.py, the animation helper's): parts by parent, painters, glowing cubes."""
     try:
@@ -177,6 +202,8 @@ def build_model():
     """The townsfolk model: the humanoid at the standard pivots, every look piece and every tool, UV packed."""
     pieces = _pieces()
     for parent, more in _companion_pieces().items():
+        pieces[parent] = pieces[parent] + more
+    for parent, more in _village_pieces().items():
         pieces[parent] = pieces[parent] + more
     tools = _tools()[0]
     def kids(name): return pieces.get(name, []) + list(tools.get(name, []))
@@ -205,19 +232,21 @@ def pack_uv(model):
     sky = [[0, 0, W]]              # segments: x, height, width
     # ---- Living World: its props (living_props.py) are packed after the companions', so they never move a cube either,
     # the road's (M4) after those, the works' and the streets' (M6) after those, the cook's (Hearthcraft M3) after those
-    # and the trade's (X4) last
+    # and the trade's (X4) after those; the villages' (V12a: their props and the pedlars' pieces) last
     try:
         import living_props
         living, road = living_props.cube_names(), living_props.road_cube_names()
         works = living_props.works_cube_names() if hasattr(living_props, 'works_cube_names') else set()
         cook = living_props.cook_cube_names() if hasattr(living_props, 'cook_cube_names') else set()
         trade = living_props.trade_cube_names() if hasattr(living_props, 'trade_cube_names') else set()
+        village = living_props.village_cube_names() if hasattr(living_props, 'village_cube_names') else set()
     except ImportError:
-        living, road, works, cook, trade = set(), set(), set(), set(), set()
-    for late in (0, 1, 2, 3, 4, 5, 6):
-        group = [c for c in cubes if (6 if c.name in trade else 5 if c.name in cook else 4 if c.name in works else
-                                      3 if c.name in road else 2 if c.name in living else 1 if c.name in LATE_CUBES else
-                                      0) == late]
+        living, road, works, cook, trade, village = set(), set(), set(), set(), set(), set()
+    village = village | VILLAGE_CUBES
+    for late in (0, 1, 2, 3, 4, 5, 6, 7):
+        group = [c for c in cubes if (7 if c.name in village else 6 if c.name in trade else 5 if c.name in cook else
+                                      4 if c.name in works else 3 if c.name in road else 2 if c.name in living else
+                                      1 if c.name in LATE_CUBES else 0) == late]
         for c in sorted(group, key=lambda c: (-c.footprint()[1], -c.footprint()[0], c.name)):
             sky = _skyline_place(model, sky, c)
     # ---- Living World: end
@@ -5020,6 +5049,227 @@ def inked_hands(ink=INK, seed=0):
     return hook
 
 
+# ================================================================ the villages' pedlars (V12a)
+
+# The pedlar who walks the villages with his pack (merchant_4) and the pedlar who walks them with her basket (merchant_5):
+# looks beyond MERCHANT's four, which only the villages' pedlars wear (TownRole.MERCHANT's reserved count keeps the stall
+# keepers' draws off them). Travel-worn where the stall merchants are rich: a coat mended with patches of other cloth, the
+# pack and its blanket roll and pot (_village_pieces); a shawl, a straw hat tied under the chin and a basket on the arm.
+
+PACK_CANVAS = (200, 182, 138)       # the pack's sailcloth, undyed and weathered
+PEDLAR_COAT = (110, 84, 60)         # his coat: a brown worsted gone soft with wear
+PEDLAR_PATCHES = ((70, 98, 122), (152, 64, 50), (178, 154, 96), (86, 104, 64))      # blue, madder, straw and moss cloth
+PEDLAR_RIBBONS = ((196, 52, 60), (232, 186, 64), (64, 122, 168))                    # the ribbons he sells, tied to his hat
+
+
+def pedlar_pack_painters(col, flap, webbing, seed=0):
+    """The pedlar's pack: a canvas sack, a leather flap over its top buckled down the back, seams and scuffs, darkened where it
+    rides against the coat; its straps leather, stitched along their edges."""
+    def pack(face, W, H):
+        rng = random.Random(seed + len(face) * 3)
+        cv = Canvas(W, H, col)
+        for y in range(H):
+            for x in range(W):
+                k = 0.3 - 0.5 * y / max(1, H) + (0.12 if (x * 3 + y * 5) % 7 == 0 else 0)
+                cv.set(x, y, tone(col, k))
+        if face == 'bottom':
+            cv.shade_rect(0, 0, W, H, -1.4)
+            return cv
+        if face == 'front':                                         # against his back: in shadow
+            cv.shade_rect(0, 0, W, H, -1.0)
+            return cv
+        if face == 'top':
+            for y in range(H):
+                for x in range(W):
+                    d = min(x, y, W - 1 - x, H - 1 - y)
+                    cv.set(x, y, tone(flap, 0.5 if d == 0 else -0.2 if d == 1 else 0.1))
+            return cv
+        fh = 6 if face == 'back' else 3                             # the flap over the top, down the back
+        for y in range(fh):
+            for x in range(W):
+                cv.set(x, y, tone(flap, 0.55 if y == 0 else -0.6 if y == fh - 1 else (0.15 if x > 0 else 0.4)))
+        if face == 'back':
+            mid = W // 2
+            for x in range(1, W - 1, 2):
+                cv.shade(x, fh - 2, 0.8)                            # stitching round the flap
+            for y in range(fh, H - 2):                              # its strap, buckled
+                cv.set(mid - 1, y, tone(flap, -0.1)); cv.set(mid, y, tone(flap, -0.35))
+            for dx, dy, k in ((-2, 0, 0.9), (1, 0, 0.9), (-2, 1, -0.6), (1, 1, -0.6), (-1, -1, 0.4), (0, -1, 0.4)):
+                cv.set(mid + dx, fh + 2 + dy, tone(BRASS, k))
+            for y in range(fh, H):
+                cv.shade(0, y, 0.3); cv.shade(W - 1, y, -0.5)       # its sides' seams
+        scuffs(cv, rng, tone(col, 1.5), 6, (0, fh, W, H), length=(2, 3))
+        for x in range(W):
+            cv.shade(x, H - 1, -0.7)
+        return cv
+
+    def strap(face, W, H):
+        cv = Canvas(W, H, webbing)
+        for y in range(H):
+            for x in range(W):
+                k = 0.3 if x == 0 or y == 0 else -0.45 if x == W - 1 else (-0.2 if y % 2 else 0.05)
+                cv.set(x, y, tone(webbing, k))
+        if H > 6:                                                   # a buckle near the foot of each
+            for x in range(W):
+                cv.set(x, H - 4, tone(BRASS, 0.7 if x == 0 else -0.3))
+        return cv
+    def frame(face, W, H):
+        wood = (112, 84, 56)
+        cv = Canvas(W, H, wood)
+        for y in range(H):
+            for x in range(W):
+                cv.set(x, y, tone(wood, (0.4 if y == 0 else -0.5 if y == H - 1 else 0.0) + (0.15 if (x // 3 + y) % 2 else -0.1)))
+        if face in ('front', 'back') and W > 6:
+            cv.clear_rect(2, 1, W - 2, H - 1)                       # two uprights and the rails between them, open between
+        return cv
+    out = {'pack_body': faces_of(pack), 'pack_frame': faces_of(frame), 'pack_strap_r': faces_of(strap), 'pack_strap_l': faces_of(strap)}
+    return out
+
+
+def blanket_roll_painter(col, stripe, tie):
+    """The blanket rolled tight on the pack: a madder wool with cream stripes running round the roll, its ends the spiral of the
+    rolled cloth, two leather ties round it."""
+    def fn(face, W, H):
+        cv = Canvas(W, H, col)
+        if face in ('right', 'left'):                               # the roll's ends: the cloth wound round on itself
+            cx, cy = (W - 1) / 2.0, (H - 1) / 2.0
+            for y in range(H):
+                for x in range(W):
+                    r = math.hypot(x - cx, y - cy)
+                    a = math.atan2(y - cy, x - cx)
+                    turn = (r - a * 0.32) % 1.6
+                    c = stripe if turn < 0.45 else col
+                    cv.set(x, y, tone(c, -0.2 - 0.25 * r / max(1.0, cx)))
+            round_corners(cv)
+            return cv
+        for y in range(H):
+            for x in range(W):
+                k = 0.55 if face == 'top' else -0.7 if face == 'bottom' else 0.0
+                if face in ('front', 'back'):
+                    k = 0.45 - 0.9 * y / max(1, H - 1)
+                c = stripe if x % 6 in (1, 2) else col
+                cv.set(x, y, tone(c, k))
+        for tx in (2, W - 3):                                       # the ties
+            for y in range(H):
+                cv.set(tx, y, tone(tie, 0.3 if y == 0 else 0.0))
+                cv.set(tx + 1, y, tone(tie, -0.4))
+        return cv
+    return faces_of(fn)
+
+
+def pot_painters(seed=0):
+    """A small black iron cooking pot, sooted on its bottom, its rim catching the light; its bail of iron wire."""
+    pot = (52, 50, 54)
+
+    def body(face, W, H):
+        rng = random.Random(seed + len(face))
+        cv = Canvas(W, H, pot)
+        if face == 'top':
+            for y in range(H):
+                for x in range(W):
+                    d = min(x, y, W - 1 - x, H - 1 - y)
+                    cv.set(x, y, tone(pot, 1.2 if d == 0 else -1.4))
+            return cv
+        for y in range(H):
+            for x in range(W):
+                cv.set(x, y, tone(pot, (1.3 if y == 0 else 0.4 if y == 1 else 0.0) - 0.6 * y / max(1, H) + (0.6 if x == 1 and y > 1 else 0)))
+        for _ in range(3):
+            cv.shade(rng.randrange(W), rng.randrange(2, H), 0.9)
+        cv.shade_rect(0, H - 2, W, H, -0.8)
+        return cv
+
+    def bail(face, W, H):
+        cv = Canvas(W, H, (88, 86, 92))
+        for x in range(W):
+            for y in range(H):
+                cv.set(x, y, tone((88, 86, 92), 0.6 if y == 0 else -0.5))
+        if face in ('front', 'back') and W > 4 and H > 1:
+            cv.clear_rect(1, 1, W - 1, H)                           # only the wire, over the top and down each side
+        return cv
+    def cup(face, W, H):
+        tin = (176, 178, 172)
+        cv = Canvas(W, H, tin)
+        for y in range(H):
+            for x in range(W):
+                cv.set(x, y, tone(tin, (0.8 if y == 0 else -0.6 if y == H - 1 else 0.0) + (0.5 if x == 0 else 0)))
+        if face == 'top':
+            cv.shade_rect(1, 1, W - 1, H - 1, -1.6)
+        return cv
+    return {'pack_pot': faces_of(body), 'pack_pot_bail': faces_of(bail), 'pack_cup': faces_of(cup)}
+
+
+def pedlar_coat(seed=0):
+    """A torso hook: the pedlar's coat mended with patches of other cloth front and back, a needle and thread stuck in its lapel,
+    a fold of ribbons for sale pinned at his breast."""
+    def hook(faces, sk):
+        F, B = faces['front'], faces['back']
+        patch(F, 1, 13, 4, 4, PEDLAR_PATCHES[0])
+        patch(F, 11, 6, 3, 4, PEDLAR_PATCHES[1], thread=tone(PEDLAR_PATCHES[1], 1.8))
+        patch(B, 3, 15, 5, 4, PEDLAR_PATCHES[2])
+        patch(B, 9, 4, 4, 4, PEDLAR_PATCHES[3], thread=tone(PEDLAR_PATCHES[3], 1.8))
+        for i, c in enumerate(PEDLAR_RIBBONS):                      # the ribbons pinned on his breast, hanging in a fringe
+            for y in range(7, 11 + i % 2):
+                F.set(3 + i, y, tone(c, 0.4 if y == 7 else -0.3 if y > 9 else 0.0))
+        F.set(13, 3, (210, 214, 224)); F.set(13, 4, (150, 154, 164)); F.set(12, 5, tone(PEDLAR_RIBBONS[1], -0.4))
+    return hook
+
+
+def pedlar_ribbons(seed=0):
+    """A torso hook: the ribbons she sells, a fold of them pinned under the shawl's knot, their ends hanging."""
+    def hook(faces, sk):
+        F = faces['front']
+        for i, c in enumerate(PEDLAR_RIBBONS):
+            x = 6 + i * 2
+            for y in range(11, 15 + (i % 2)):
+                F.set(x, y, tone(c, 0.45 if y == 11 else -0.35 if y >= 14 else 0.0))
+    return hook
+
+
+def pedlar_sleeves(seed=0):
+    """An arm hook: a patch at each elbow (a different cloth on each), the cuffs worn pale."""
+    def hook(faces, side, sk):
+        outer = 'right' if side == 'r' else 'left'
+        c = PEDLAR_PATCHES[2] if side == 'r' else PEDLAR_PATCHES[0]
+        for face in ('back', outer):
+            patch(faces[face], 2, 9, 4, 4, c, lit=0.2)
+        for face in ('front', 'back', 'right', 'left'):
+            cv = faces[face]
+            for x in range(0, 8, 2):
+                cv.tint(x, 19, tone(PEDLAR_COAT, 1.6), 0.4)
+    return hook
+
+
+def pedlar_skirts(seed=0):
+    """A skirt hook: the coat's skirts patched and their hem frayed."""
+    def hook(front, back, side, n):
+        patch(front, 3, max(1, n - 9), 4, 4, PEDLAR_PATCHES[3])
+        patch(back, 10, max(1, n - 11), 5, 4, PEDLAR_PATCHES[1], thread=tone(PEDLAR_PATCHES[1], 1.8))
+        for cv in (front, back, side):
+            for x in range(0, cv.W, 3):
+                cv.clear(x, cv.H - 1)
+    return hook
+
+
+def hat_ribbons(hook=None, col=None):
+    """A head_extra hook: a straw hat's ribbon, tied under the chin: down each cheek in front of the ear and across under the jaw,
+    the knot's ends showing at the corners of the jaw ([hook]: another head hook run first)."""
+    c = col or PEDLAR_RIBBONS[2]
+
+    def h(faces, sk):
+        if hook:
+            hook(faces, sk)
+        for face, x, d in (('right', 12, 1), ('left', 3, -1)):
+            cv = faces[face]
+            for y in range(2, 16):
+                cv.set(x, y, tone(c, 0.35 if y < 5 else 0.0))
+                cv.set(x + d, y, tone(c, -0.55))
+        Bt = faces['bottom']
+        for x in range(Bt.W):
+            Bt.set(x, 2, tone(c, -0.1)); Bt.set(x, 3, tone(c, -0.6))
+        Bt.stamp(Bt.W // 2 - 2, 3, ["abba", ".bb."], {'a': tone(c, 0.2), 'b': tone(c, -0.5)})
+    return h
+
+
 # ================================================================ looks
 
 ROLES = ['citizen', 'smith', 'baker', 'merchant', 'guard', 'farmer', 'fisher', 'child', 'noble', 'innkeeper', 'bard', 'priest',
@@ -5214,6 +5464,12 @@ def piece_painters(look, torso_p):
             out['scarf_tail'] = scarf_tail_painter(col or SCARF_WOOL, spec.get('stripe', SCARF_STRIPE), seed + 59)
         elif name == 'pauldron':
             out.update(pauldron_painters(col or BLACKSTEEL, spec.get('paint', HART_GREY), seed + 60, spec.get('wear', 0.8)))
+        elif name == 'pedlar_pack':
+            out.update(pedlar_pack_painters(col or PACK_CANVAS, spec.get('flap', LEATHER), spec.get('strap', (176, 156, 112)), seed + 61))
+        elif name == 'pedlar_roll':
+            out['pack_roll'] = blanket_roll_painter(col or (164, 52, 44), spec.get('stripe', (226, 210, 168)), spec.get('tie', LEATHER_D))
+        elif name == 'pedlar_pot':
+            out.update(pot_painters(seed + 62))
         else:
             raise SystemExit(f'townsfolk: no painter for piece {name}')
     return out
@@ -5550,6 +5806,27 @@ def _looks():
          'sash_tails': dict(col=TEAL),
          'skirt': dict(col=PLUM, panel=dict(col=TEAL, edge=GOLD), trim=GOLD)},
         note='merchant in plum with a teal hat')
+    # ---- Villages (V12a): the villages' pedlars, looks 4 and 5 (TownRole.MERCHANT's reserved two: never a stall keeper's)
+    add('merchant', 'man',
+        man('tan', 'brown', 'swept', 'hazel', beard_col=HAIR['brown'], stubble=0.3, blush=0.2, nose='broad', hat_shadow=3),
+        dict(col=OAT, neck='slit', laces=LEATHER_D, vest=dict(kind='coat', col=PEDLAR_COAT, buttons=(150, 120, 80), trim=tone(PEDLAR_COAT, -0.8)),
+             belt=LEATHER_D, buckle=True, belt_pouch=LEATHER_L, extra=pedlar_coat(seed=63)),
+        dict(col=PEDLAR_COAT, len='long', cuff=tone(PEDLAR_COAT, -0.8), extra=pedlar_sleeves(seed=64)),
+        dict(col=(88, 76, 60), boots=dict(col=BOOT, top=15, cuff_col=tone(BOOT, 0.6))),
+        {'wide_hat': dict(col=(74, 62, 54), band=PEDLAR_RIBBONS[0], edge=tone((74, 62, 54), -0.8)), 'beard': dict(style='short'),
+         'skirt': dict(col=PEDLAR_COAT, kind='coat', len=15, open=OAT, trim=tone(PEDLAR_COAT, -0.8), extra=pedlar_skirts(seed=65)),
+         'pedlar_pack': {}, 'pedlar_roll': {}, 'pedlar_pot': {}},
+        note='pedlar in a patched brown coat and a wide hat, his pack on his back with a blanket rolled on it and a pot')
+    add('merchant', 'woman',
+        woman('olive', 'auburn', 'tied', 'brown', freckles=1, blush=0.35, hat_shadow=1, head_extra=hat_ribbons()),
+        dict(col=MOSS, neck='square', under=CREAM, shawl=dict(col=MADDER, fringe=tone(MADDER, 0.9)), waist=16, skirt=MOSS,
+             belt=LEATHER, belt_y=15, buckle=False, extra=pedlar_ribbons(seed=66)),
+        dict(col=MOSS, len='long', cuff=tone(MOSS, -0.7)),
+        dict(col=(84, 70, 56), kind='hose', boots=dict(col=BOOT, kind='shoe')),
+        {'straw_hat': dict(col=(226, 194, 116), band=PEDLAR_RIBBONS[0]), 'ponytail': dict(tie=PEDLAR_RIBBONS[1]),
+         'skirt': dict(col=MOSS, apron=dict(col=OAT, len=20, x0=4, x1=15), trim=tone(MOSS, -1.0))},
+        tools={'basket'}, note='pedlar in a moss dress and a madder shawl, a straw hat tied under her chin and a basket on her arm')
+    # ---- Villages: end
 
     # ---------------------------------------------------------------- the watch: kettle helm, mail, blue tabard
     def guard(skin, hair, eyes, timbre='man', pieces=None, **kw):

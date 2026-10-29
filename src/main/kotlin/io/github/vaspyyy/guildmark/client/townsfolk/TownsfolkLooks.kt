@@ -17,6 +17,7 @@ object TownsfolkLooks {
         "scabbard", "shoulder_rag", "skirt_l", "skirt_r", "skullcap", "sleeve_l", "sleeve_r", "souwester",
         "straw_hat", "tabard", "tabard_back", "veil", "wide_hat", "widow_hat", "fur_collar", "knife", "lamp_charm",
         "long_scarf", "messy_hair", "pauldron", "plait", "quiver", "satchel", "satchel_papers", "short_cape",
+        "pedlar_pack", "pedlar_pot", "pedlar_roll",
     )
 
     /** By role id (lowercase role name), in look order. */
@@ -46,6 +47,8 @@ object TownsfolkLooks {
             Look("merchant_1", "man", setOf("beard", "belly", "pouch", "skirt_l", "skirt_r", "wide_hat")),
             Look("merchant_2", "woman", setOf("head_wrap", "pouch", "sash_tails", "skirt_l", "skirt_r")),
             Look("merchant_3", "woman", setOf("hair_long", "pouch", "sash_tails", "skirt_l", "skirt_r", "wide_hat")),
+            Look("merchant_4", "man", setOf("beard", "pedlar_pack", "pedlar_pot", "pedlar_roll", "skirt_l", "skirt_r", "wide_hat")),
+            Look("merchant_5", "woman", setOf("basket", "ponytail", "skirt_l", "skirt_r", "straw_hat")),
         ),
         "guard" to listOf(
             Look("guard_0", "man", setOf("boot_l", "boot_r", "kettle_helm", "tabard", "tabard_back")),
