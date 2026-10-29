@@ -57,8 +57,9 @@ A piece whose back edge is under the folded canvas lifts it; one further forward
 sixth of the cover short of it, eased, at least a tenth of the cover long: `weight`), so the folded canvas rests on what is at the tail,
 not on top of the heap ahead of it, and is up before the strip that lands over the heap comes down.
 
-THE WET LOOK: `player_cart_wet.png` holds the canvas only, darker where the water has soaked it, beaded with drops, running down the flap
-in streaks. Draw each canvas strip a second time, in the same pose, through `RenderTypes.entityTranslucent` with it, white with the alpha
+THE WET LOOK: `player_cart_wet.png` holds the canvas only, darker where the water has soaked it, beaded with drops on both faces of each
+strip (folded, the stack's top is strip 1's underside; over the load the undersides face down, out of sight), running down the flap in
+streaks. Draw each canvas strip a second time, in the same pose, through `RenderTypes.entityTranslucent` with it, white with the alpha
 of how wet the canvas is (PlayerCartClient: beading up over three seconds of rain on it, drying over a minute after).
 
 Clearances it checks: the pole, its straps and the pennant against the wheels at every turn; the pennant at its widest flutter against the
@@ -670,21 +671,23 @@ def flap_painter(key):
 # ================================================================== the wet look: the canvas only, on the same layout
 
 def wet_painter(key, k, flap=False):
-    """The water on strip [k] (or the flap): soaked darker (most on the oiled top, where it stands in beads; a damp edge underneath), beads
-    of every size on the top, running down the flap in streaks and hanging in drops from its hem."""
+    """The water on strip [k] (or the flap): soaked darker and beaded with drops of every size on both of a strip's faces (the underside is
+    the stack's top once the canvas is folded back), a damp edge on the flap's inner face, running down the flap in streaks and hanging in
+    drops from its hem."""
     def fn(face, w, h, rng):
         U, V = uv(w, h)
         a = np.zeros((h, w, 4), float)
         a[..., :3] = WET_TONE
-        if face == 'top' or (flap and face == 'back'):
+        sky = face == 'top' or (face == 'bottom' and not flap)
+        if sky or (flap and face == 'back'):
             a[..., 3] = 120 + rng.normal(0, 14, (h, w)).clip(-30, 30)
-        elif face == 'bottom' or (flap and face == 'front'):
+        elif flap and face in ('bottom', 'front'):
             edge = np.minimum(np.minimum(U, 1 - U) * w, np.minimum(V, 1 - V) * h)
             a[..., 3] = np.clip(110 - edge * 40, 0, 110)
         else:
             a[..., 3] = 150
         ys, xs = np.mgrid[0:h, 0:w]
-        if face == 'top':
+        if sky:
             # beads: a dark rim on their lower right, a glint on their upper left; most one texel, a few two
             for _ in range(int(w * h * 0.04)):
                 x, y = int(rng.integers(0, w)), int(rng.integers(0, h))
