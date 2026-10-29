@@ -14,11 +14,16 @@ import io.github.vaspyyy.guildmark.townsfolk.Furnish
 import io.github.vaspyyy.guildmark.townsfolk.Hands
 import io.github.vaspyyy.guildmark.townsfolk.Resident
 import io.github.vaspyyy.guildmark.townsfolk.Residents
+import io.github.vaspyyy.guildmark.townsfolk.TownKind
+import io.github.vaspyyy.guildmark.townsfolk.TownPlaces
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import io.github.vaspyyy.guildmark.townsfolk.Trait
 import io.github.vaspyyy.guildmark.village.Standing
 import io.github.vaspyyy.guildmark.village.VillageNames
+import io.github.vaspyyy.guildmark.village.live.VillageRec
+import io.github.vaspyyy.guildmark.village.live.Villages
+import io.github.vaspyyy.guildmark.village.live.talk.VillageCry
 import net.minecraft.core.BlockPos
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerLevel
@@ -47,7 +52,9 @@ import kotlin.random.Random
  * some of an evening. Faction members and anyone with no record live no days here, so they take no part. Townsfolk
  * outside the capitals (the demo yard, a town marked by command, one set down by hand) are taken in as residents of
  * where they are and talk among themselves the same way, but there's no crier or visitors there, and neither the
- * guild's news nor word from the capitals reaches them ([city]).
+ * guild's news nor word from the capitals reaches them ([kind]). A village's (with Village Bellman) has its market's news,
+ * hungry days and old news as a capital's has, and its places, board and name; its bellman's cry is heard by the folk about
+ * them as it ends (TownCry.listened), not in the hour's model.
  *
  * The spreading needs both [Rumours.enabled] and the Living World ([Days.enabled]); with the rumours off the hours
  * still go by (so nothing bursts out later), the crier still cries, and the town knows only what it saw and heard cried.
@@ -154,10 +161,11 @@ object Spread {
     /**
      * What the talk knows of a capital in memory only: its piece and places once found (and its board and name), its
      * people's day, the players' standing as last seen at its board, today's talk of the town, and how many know what.
+     * A village's: its places, board and name as the village registry has them ([found]).
      */
     class TownView(val capital: Long) {
         var piece: CapitalPiece? = null
-        var places: CityPlaces? = null
+        var places: TownPlaces? = null
         var board: BlockPos? = null
         var name: String? = null
         var tried = Long.MIN_VALUE / 2
@@ -173,7 +181,7 @@ object Spread {
         var commonHour = Long.MIN_VALUE
         var common: List<Int> = listOf()
 
-        /** Whether it's known to be a capital rather than a village (see [city]), and when that was last looked at. */
+        /** Whether it's known to be a capital rather than a village (see [kind]), and when that was last looked at. */
         var city = false
         var checked = Long.MIN_VALUE / 2
     }
@@ -185,13 +193,24 @@ object Spread {
     fun view(capital: BlockPos): TownView = view(capital.asLong())
 
     /**
-     * Whether the town at [capital] is one of the capitals: townsfolk anywhere else (the demo yard, a town marked by
-     * command, one set down by hand) are taken in as residents of where they are, and remember and talk among
-     * themselves, but only a capital has a crier, visitors, word from the others and the guild's news. It's known once
-     * the capital's piece is found, its market is open or the plan's people are taken in there (nobody else's ever
-     * are); until then it's looked at again every [FIND] ticks.
+     * Which kind of town the one at [key] is: [TownKind.CAPITAL] for one of the capitals, [TownKind.VILLAGE] for a village of
+     * the registry whose market is open (with Village Bellman on), null for any other. Townsfolk anywhere else (the demo yard,
+     * a town marked by command, one set down by hand) are taken in as residents of where they are, and remember and talk
+     * among themselves, but only a capital has a crier, visitors, word from the others and the guild's news; a village has
+     * its market's news (see [market]) and its bellman.
      */
-    fun city(level: ServerLevel, capital: Long): Boolean {
+    fun kind(level: ServerLevel, key: Long): TownKind? = when {
+        city(level, key) -> TownKind.CAPITAL
+        village(level, key) -> TownKind.VILLAGE
+        else -> null
+    }
+
+    /**
+     * Whether the town at [capital] is one of the capitals. It's known once the capital's piece is found, its market is
+     * open or the plan's people are taken in there (nobody else's ever are); until then it's looked at again every
+     * [FIND] ticks.
+     */
+    private fun city(level: ServerLevel, capital: Long): Boolean {
         val view = view(capital)
         if (view.city) return true
         if (level.gameTime - view.checked < FIND) return false
@@ -200,6 +219,14 @@ object Spread {
         view.city = view.piece != null || Markets.get(level)[pos] != null || Residents.get(level).of(pos).any { it.planned >= 0 }
         return view.city
     }
+
+    /** Whether the town at [key] is a village of the registry with its market open, with Village Bellman on (nothing is changed by asking). */
+    private fun village(level: ServerLevel, key: Long): Boolean =
+        VillageCry.enabled() && Villages.byKey(level, key) != null && io.github.vaspyyy.guildmark.economy.VillageMarkets.find(level, key) != null
+
+    /** The market of [entry]'s town: a capital's, or a village's ([village]); null while it has none open. */
+    private fun market(level: ServerLevel, entry: TownTalkData.Entry): Markets.Entry? =
+        Markets.get(level)[entry.pos] ?: if (village(level, entry.capital)) io.github.vaspyyy.guildmark.economy.VillageMarkets.find(level, entry.capital) else null
 
     /** What one run of the step came to: tellings tried, rumours heard, hours stepped, and the time it took. */
     class Tally {
@@ -235,9 +262,23 @@ object Spread {
             if (on && data[piece.center] == null) data.open(piece.center, hourOf(level), Memory.day(level).toLong())
             view.board?.let { board -> Standing.board(level, board)?.let { view.standing[player.uuid] = it.standingOf(player.uuid) } }
         }
+        // A village a player stands in, likewise (Village Bellman): its talk opened, its board, name and places learnt
+        if (VillageCry.enabled()) for (player in level.players()) {
+            val rec = Villages.at(level, player.blockPosition())?.takeIf { village(level, it.key) } ?: continue
+            val view = view(rec.key)
+            found(level, view, rec)
+            val centre = BlockPos.of(rec.key)
+            if (on && data[centre] == null) data.open(centre, hourOf(level), Memory.day(level).toLong())
+            view.board?.let { board -> Standing.board(level, board)?.let { view.standing[player.uuid] = it.standingOf(player.uuid) } }
+        }
         // A capital whose piece isn't known yet (after a restart, nobody there): from its centre, once that's loaded
         for (entry in data.all()) {
             val view = view(entry.capital)
+            // A village's places as its last count has them, while it is one (forgotten with Village Bellman off)
+            if (view.piece == null) {
+                val rec = if (village(level, entry.capital)) Villages.byKey(level, entry.capital) else null
+                if (rec != null) found(level, view, rec) else if (view.places?.kind == TownKind.VILLAGE) view.places = null
+            }
             if (view.piece == null && level.gameTime - view.tried >= FIND) {
                 view.tried = level.gameTime
                 Furnish.capitalAt(level, entry.pos)?.let { found(level, view, it) }
@@ -263,6 +304,13 @@ object Spread {
         if (view.places == null) view.places = CityPlaces.of(level, piece)
     }
 
+    /** [view]'s town is the village [rec]: its board and name, and its places as its last count found them (kept in memory by the registry). */
+    fun found(level: ServerLevel, view: TownView, rec: VillageRec) {
+        view.board = if (rec.board == -1L) null else BlockPos.of(rec.board)
+        view.name = rec.name
+        Villages.places(level, rec.key)?.let { view.places = it }
+    }
+
     /**
      * Works out the hours every capital's talk is behind, [STEPS] of them at most this run, and a new day's people for
      * [DAYS] capitals at most; the rest wait for the next. With the markets on, an hour is talked over once the
@@ -281,7 +329,7 @@ object Spread {
                 continue
             }
             if (now - entry.hour > CATCH_UP) entry.hour = now - CATCH_UP
-            val upTo = markets?.get(entry.pos)?.market?.hour?.coerceAtMost(now) ?: now
+            val upTo = (if (markets != null) market(level, entry) else null)?.market?.hour?.coerceAtMost(now) ?: now
             while (entry.hour < upTo && steps > 0) {
                 // An hour whose day's people aren't known yet works them out, as step does
                 if (known(view(entry.capital), Days.dayOf((entry.hour + 1) * 1000L + 500L)) == null) {
@@ -386,7 +434,7 @@ object Spread {
     }
 
     /** The homes someone living in [home] (at [at]) might call at: the [NEIGHBOURS] nearest theirs where the places are known, else any of [homes]. */
-    private fun nearest(home: Int, at: BlockPos?, homes: List<Int>, places: CityPlaces?): List<Int> {
+    private fun nearest(home: Int, at: BlockPos?, homes: List<Int>, places: TownPlaces?): List<Int> {
         val others = homes.filter { it != home }
         if (at == null || places == null) return others
         // The nearest kept as the homes are met, each distance worked out once: nearest first, ties in their order (as sorting them all had it)
@@ -566,7 +614,8 @@ object Spread {
      */
     fun cries(level: ServerLevel, entry: TownTalkData.Entry, view: TownView, hour: Long, keep: Boolean = true): List<Story> {
         val out = ArrayList<Story>()
-        if (Rumours.enabled()) TownCry.pick(entry, view, hour, keep)?.let { out.add(it) }
+        // A village's bellman cries no talk of the town (VillageCry): the folk hear only what was cried
+        if (Rumours.enabled() && !village(level, entry.capital)) TownCry.pick(entry, view, hour, keep)?.let { out.add(it) }
         // The guild's news of the day before, by the guild's own days (six to six), newest first, two at most
         val yesterday = Math.floorDiv(hour, 24L) - 1
         entry.rumours.values.filter { it.by == Rumours.GUILD && Math.floorDiv(it.rumour.born, 24L) == yesterday }
@@ -577,7 +626,7 @@ object Spread {
 
     /** Whether [entry]'s town has a crier to cry the news at noon: a capital, unless its people are known to have none. */
     private fun crier(level: ServerLevel, entry: TownTalkData.Entry, view: TownView): Boolean {
-        if (!city(level, entry.capital)) return false
+        if (kind(level, entry.capital) != TownKind.CAPITAL) return false
         val places = view.places ?: return true
         return Hands.of(level, places).crier != null
     }
@@ -621,7 +670,7 @@ object Spread {
      */
     private fun hunger(level: ServerLevel, entry: TownTalkData.Entry, people: List<Person>, hour: Long) {
         if (people.isEmpty()) return
-        val m = Markets.get(level)[entry.pos] ?: return
+        val m = market(level, entry) ?: return
         // Only a day the market has closed since the last morning (it closes at two): a market standing still says nothing new
         if (m.market.hour < hour - (HUNGER + 24 - CLOSES)) return
         val missed = m.market.hungry.lastOrNull() ?: return
@@ -639,7 +688,7 @@ object Spread {
 
     /** The market's news since it was last looked at goes round: its keepers and the trade it falls on know it first. */
     private fun market(level: ServerLevel, entry: TownTalkData.Entry, view: TownView, hour: Long) {
-        val m = Markets.get(level)[entry.pos]?.market ?: return
+        val m = market(level, entry)?.market ?: return
         // Talk that's just begun takes the market's news in from now on (old news is seeded: see [seed])
         if (entry.news == Long.MIN_VALUE) {
             entry.news = hour
@@ -673,7 +722,7 @@ object Spread {
             else -> null
         }
         val heard = minOf(born, hour)
-        val crier = view.places?.let { Hands.of(level, it).crier }
+        val crier = view.places?.let { Hands.of(level, it).let { crew -> crew.crier ?: crew.bellman } }
         for (r in Residents.get(level).of(entry.pos)) {
             if (!r.alive) continue
             when {
@@ -692,17 +741,17 @@ object Spread {
      * their age leaves them.
      */
     private fun seed(level: ServerLevel, entry: TownTalkData.Entry, view: TownView, people: List<Person>, hour: Long) {
-        val crier = view.places?.let { Hands.of(level, it).crier }
+        val crier = view.places?.let { Hands.of(level, it).let { crew -> crew.crier ?: crew.bellman } }
         fun knows(r: Resident, rumour: Int): Boolean =
             r.role == TownRole.MERCHANT || r.role == TownRole.INNKEEPER || r.id == crier ||
                 r.role.adult && Math.floorMod(mix(r.id * 977L + rumour), 10L) < SEEDED
         val born = ArrayList<Story>()
-        Markets.get(level)[entry.pos]?.market?.news?.forEach { n ->
+        market(level, entry)?.market?.news?.forEach { n ->
             if (n.hour in hour - SEED_MARKET_HOURS..hour) news(level, entry, view, n.hour, n.key, n.good?.key, hour)?.let { born.add(it) }
         }
         val today = Math.floorDiv(hour, 24L)
-        // The guild's news is a capital's (see [city])
-        val items = if (city(level, entry.capital)) GuildNews.get(level).items else listOf()
+        // The guild's news is a capital's (see [kind])
+        val items = if (kind(level, entry.capital) == TownKind.CAPITAL) GuildNews.get(level).items else listOf()
         for (item in items) {
             if (item.day < today - SEED_GUILD_DAYS || item.day > today) continue
             val s = Witness.guild(level, entry, item.key, item.args, item.day * 24L + NOON) ?: continue
@@ -719,13 +768,13 @@ object Spread {
 
     // ---- Between capitals ----
 
-    /** Every capital the talk knows of (and no other town: see [city]): those with talk kept, a market, or people living there. */
+    /** Every capital the talk knows of (and no other town: see [kind]): those with talk kept, a market, or people living there. */
     fun capitals(level: ServerLevel): Set<Long> {
         val out = LinkedHashSet<Long>()
         for (e in TownTalkData.get(level).all()) out.add(e.capital)
         for (m in Markets.get(level).all()) out.add(m.market.capital)
         for (r in Residents.get(level).all()) if (r.alive) out.add(r.capital.asLong())
-        out.removeIf { !city(level, it) }
+        out.removeIf { kind(level, it) != TownKind.CAPITAL }
         return out
     }
 
@@ -809,7 +858,7 @@ object Spread {
      * True if they brought any.
      */
     fun visitors(level: ServerLevel, entry: TownTalkData.Entry, view: TownView, hour: Long): Boolean {
-        if (!city(level, entry.capital)) return false
+        if (kind(level, entry.capital) != TownKind.CAPITAL) return false
         val day = Days.dayOf(hour * 1000L)
         if (entry.brought == day) return false
         entry.brought = day
@@ -818,7 +867,7 @@ object Spread {
         var from = 0L
         var most = Rumours.OLD / Rumours.VISITORS
         for (other in data.all()) {
-            if (other === entry || !city(level, other.capital)) continue
+            if (other === entry || kind(level, other.capital) != TownKind.CAPITAL) continue
             for (s in other.rumours.values) {
                 if (s.by != Rumours.TOWN || s.rumour.born > hour) continue
                 val h = Rumours.heat(s, hour)

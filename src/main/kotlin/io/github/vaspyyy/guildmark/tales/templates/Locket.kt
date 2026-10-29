@@ -456,7 +456,7 @@ object Locket : Template, TaleVoice, TaleWords.Names {
     internal fun given(name: String): String = name.substringBefore(' ')
 
     /** The capital's places, once the talk has found them; null before (seconds, after a restart). */
-    private fun places(t: Tale): CityPlaces? = Spread.view(t.capital).places
+    private fun places(t: Tale): CityPlaces? = Spread.view(t.capital).places as? CityPlaces
 
     /** The front door of the home of the person in [slot], else the middle of the building; null while the capital's places or the person are not known. */
     internal fun doorOf(t: Tale, slot: String): BlockPos? {
