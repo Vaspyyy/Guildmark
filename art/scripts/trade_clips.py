@@ -3,9 +3,9 @@ The trade's seven clips (living-world/trader/design.md, section 10 and the X4 ro
 
     STAMP       20 once    a seal pressed into wax on a counter: the stamp raised, slammed down, held and twisted, lifted
     CHECK_LOAD  30 once    at a covered cart's tail: the canvas's corner lifted, a look under, the goods felt, the canvas let fall
-    LOAD_PACK   40 once    a laden basket heaved up to a pack animal's flank and tipped into its pannier
-    HITCH       50 once    a horse called back into the shafts with the flat of the hand, a trace clipped on and tugged
-    WEIGH       60 once    a sack lifted from the floor onto a scale's pan, the beam watched and read, the figure written
+    LOAD_PACK   40 once    a laden basket taken off the hip, heaved onto a wagon's let-down tailboard and slid home
+    HITCH       50 once    a horse pushed back in the shafts with the flat of the hand, its trace drawn up, hooked on, tugged
+    WEIGH       60 once    a sack swung up onto a scale's pan, the beam read at eye level, the quill made ready
     HALT        25 once    the hand flung up for "Hold!", braced, and let fall
     RUMMAGE     60 loop    head bent over a satchel held open, both hands working through it
 
@@ -14,7 +14,7 @@ build(), which makes the clips, so its verify() and writer take them like the re
 draws the GIF previews (2x2 grids) once living_anims has built everything.
 
 Clip space as every townsfolk clip's: pixels, y down, facing -z, the right hand at -x, the feet at y 24. A clip that acts
-on something beside the townsperson (the counter, the cart's tail, a pack animal's flank, the wagon's swingletree, the
+on something beside the townsperson (the counter, the cart's tail, the wagon's tailboard, the horse in the shafts, the
 scale) says in its comment where that stands (a block is 16 px), and the test guide says where the code must put the
 townsperson for it to line up.
 """
@@ -29,12 +29,14 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
 import townsfolk_anims as ta
-from townsfolk_anims import (qeuler, qslerp, unit, F, U, D, R, L, T, Rq, F_, bend, key_frame, check, seal, smooth, bump,
+from townsfolk_anims import (qeuler, qslerp, unit, F, B, U, D, R, L, T, Rq, F_, bend, key_frame, check, seal, smooth, bump,
                              GRIP, PIVOTS, torso_to_world, sink_for, gaze_head)
 import works_clips as wc
-from works_clips import rest_arm, mix, lifted, set_arm, reach_arm, stand, joins_idle, stepping, FEET
+from works_clips import rest_arm, point_arm, mix, lifted, set_arm, reach_arm, stand, joins_idle, stepping, FEET
+from animkit import v
 import living_props as lp
 import street_clips as sc
+import wagon as wg
 
 la = None           # living_anims, handed to build()
 
@@ -471,11 +473,459 @@ def _cart_covered():
     return out
 
 
+# ================================================================== load_pack
+
+# ---- load_pack (40, once): a laden basket lifted off the hip onto a wagon's let-down tailboard and slid home. Made for
+# the House's yard (YardShow), the one place the game plays it: the carter comes up with the basket on the left hip
+# (carry_basket's first frame is this clip's) and stands square behind the wagon on its middle line, facing it, the
+# feet LP_FEET_Z px behind the back axle (wagon space): the tailboard and the floor are one level 19 px up (clip y 5),
+# from the board's end 9 px ahead to the box's back 15 px ahead and the bed beyond.
+# The torso turns to the hip and the right hand takes the basket's far side (take); it is swung round in front of the
+# belly, the knees dip, and it is heaved up chest high with the body leaning back under it (heave), carried on over the
+# board's end and set down on it (set); a lean and a shove slide it along the board (shove), the hands let go and come
+# away, the body straightens, the palms are brushed together twice (dust) and the arms hang. The basket and what is in it
+# stay on the board to the end, where the code's heap of the load on the bed takes over.
+LP_LEN = 40
+LP_TAKE, LP_HEAVE, LP_SET, LP_SHOVE, LP_LET_GO = 4.0, 12.0, 17.0, 20.0, 22.0
+LP_DUSTS = (30.0, 32.6)
+LP_FEET_Z = wg.BOX_BACK + wg.TAIL_LEN + 9.0         # the feet's line, in the wagon's z (on its middle line)
+
+
+def lp_w(x, y, z):
+    """A point of the wagon's space (wagon.py: the ground under the back axle's middle, facing -z) in this clip's."""
+    return np.array([float(x), 24.0 + float(y), float(z) - LP_FEET_Z])
+
+
+LP_BOARD_Y = 24.0 + wg.FLOOR_TOP                    # the tailboard's top and the floor's (5)
+LP_END_Z = lp_w(0, 0, wg.BOX_BACK + wg.TAIL_LEN)[2]  # the board's end (-9)
+LP_BOX_Z = lp_w(0, 0, wg.BOX_BACK)[2]                # the box's back, where the floor begins (-15)
+# pack_basket space (basket_hip's): its mouth's middle, its bottom's, and where each hand holds it once it is in front
+LP_MOUTH = np.array([0.0, lp.PACK_BASKET_BOX[0][1], 0.0])
+LP_BOTTOM = np.array([0.0, lp.PACK_BASKET_BOX[1][1], 0.0])
+LP_SIDES = {'right_arm': np.array([lp.PACK_BASKET_BOX[0][0] - 0.7, LP_MOUTH[1] + 0.4, 0.0]),
+            'left_arm': np.array([lp.PACK_BASKET_BOX[1][0] + 0.7, LP_MOUTH[1] + 0.4, 0.0])}
+LP_HIP_P = np.array(lp.PACK_BASKET_PIVOT, float)    # on the hip (torso space), as basket_hip sits
+LP_HIP_R = ta.qmat(ta.rot_part(lp.PACK_BASKET_ROT))
+LP_RIM = np.array([8.4, 7.6, -6.4])                 # carry_basket's left hand on the front rim (living_anims BASKET_RIM)
+LP_RIM_B = LP_HIP_R.T @ (LP_RIM - LP_HIP_P)         # ... in the basket's space
+LP_SET_O = np.array([0.0, LP_BOARD_Y - LP_BOTTOM[1], -14.2])        # set down: its near side 2.6 in from the board's end
+LP_HOME_O = np.array([0.0, LP_BOARD_Y - LP_BOTTOM[1], -16.8])       # slid in: its far half over the floor
+LP_P = [(0, 0.0), (2.5, 7.0), (LP_TAKE, 8.0), (7.0, 5.0), (9.5, 13.0), (LP_HEAVE, -4.0), (14.0, -12.0), (15.6, 6.0),
+        (LP_SET, 22.0), (18.6, 20.0), (21.5, 25.0), (LP_LET_GO, 25.0), (24.5, 10.0), (27.0, -2.0), (29.0, 3.0),
+        (34.0, 3.0), (37.0, 0.5), (40, 0.0)]
+LP_STEPS = [(17.4, 19.6, 'right_leg', (-1.9, -3.0)), (23.4, 26.0, 'right_leg', (-1.9, 0.0))]   # a step in to shove
+LP_YAW = [(0, 0.0), (2.5, -12.0), (LP_TAKE, -14.0), (7.0, 0.0), (40, 0.0)]
+LP_DIP = [(0, 0.0), (LP_TAKE, 0.8), (7.0, 0.4), (9.5, 2.6), (LP_HEAVE, 0.4), (14.0, 0.0), (LP_SET, 0.9), (18.4, 1.1),
+          (21.5, 1.0), (24.5, 0.4), (27.0, 0.0), (40, 0.0)]
+LP_RZ = [(0, 0.0), (9.5, 0.4), (LP_HEAVE, 1.0), (14.0, 0.8), (LP_SET, -0.8), (19.6, -2.0), (21.5, -2.4), (LP_LET_GO, -2.4),
+         (26.0, 0.0), (40, 0.0)]
+
+
+def lp_feet(t):
+    return stepping(t, FEET, LP_STEPS, lift=1.4)
+
+
+def lp_frame(t):
+    pitch = K(LP_P, t)
+    feet, _ = lp_feet(t)
+    return F_(qt=bend(pitch, K(LP_YAW, t), 0.0), vt=(0.0, sink_for(pitch), 0.0),
+              pr=la.root_for(feet, 0.0, K(LP_RZ, t), dip=K(LP_DIP, t)))
+
+
+def lp_on_hip(fr):
+    """The basket on the hip as the torso of [fr] carries it: its origin and turn."""
+    return torso_to_world(fr, LP_HIP_P), ta.qmat(ta.qmul(fr['qr'], fr['qt'])) @ LP_HIP_R
+
+
+def lp_path():
+    o_take, r_take = lp_on_hip(lp_frame(LP_TAKE))
+    return [(LP_TAKE, o_take), (7.0, np.array([0.0, 11.6, -5.9])), (9.5, np.array([0.0, 12.4, -5.8])),
+            (LP_HEAVE, np.array([0.0, 6.0, -5.6])), (14.0, np.array([0.0, 1.5, -6.4])), (15.6, np.array([0.0, 1.4, -11.4])),
+            (LP_SET, LP_SET_O), (18.4, LP_SET_O), (21.5, LP_HOME_O)], r_take
+
+
+def lp_basket(t):
+    """The basket's origin and turn (clip space) at [t]: on the hip, swung round square in front of the belly, heaved,
+    set down and slid along the board, then left there."""
+    if t <= LP_TAKE:
+        return lp_on_hip(lp_frame(t))
+    keys, r_take = LP_PATH
+    O = KV(keys, min(t, 21.5))
+    w = smooth((t - LP_TAKE) / (7.0 - LP_TAKE))
+    q = qslerp(ta.qfrommat(r_take), ta.I, w)
+    # it tips back a touch as it is heaved and lands on its far edge first
+    tip = -6.0 * bump(t, 10.0, 15.0) + 5.0 * bump(t, 14.0, LP_SET)
+    return O, ta.qmat(q) @ rot_x(tip)
+
+
+def lp_grip(side, t):
+    """Where [side]'s hand is on the basket (its space) at [t]: the left from the front rim's corner to its side as it
+    comes round in front, the right on its far side."""
+    if side == 'right_arm':
+        return LP_SIDES['right_arm']
+    return LP_RIM_B + (LP_SIDES['left_arm'] - LP_RIM_B) * smooth((t - LP_TAKE) / (7.0 - LP_TAKE))
+
+
+def _pack_track(t, pivot):
+    O, Rb = lp_basket(t)
+    return Rb, O, None
+
+
+LP_PATH = None
+LP_DUST_R = np.array([-0.4, 9.4, -7.6])            # the palms together in front of the belly (the right's grip, the left's)
+LP_DUST_L = np.array([1.4, 9.8, -7.2])
+
+
+def load_pack():
+    global LP_PATH
+    LP_PATH = lp_path()
+    c = la.clip('load_pack', LP_LEN, False, look=('citizen', 3), tools_=('pack_basket',), station_='wagon_tail_load',
+                events=[('take', LP_TAKE), ('heave', LP_HEAVE), ('set', LP_SET), ('shove', LP_SHOVE)] + [('dust', k) for k in LP_DUSTS],
+                traces=[('pack_basket', tuple(LP_MOUTH), (230, 200, 160))], views=((130, -16), (90, -4), (160, -30)))
+    holds = la.Holds()
+    off = {}
+    o_take = LP_PATH[0][0][1]
+    looks = [(0, torso_to_world(lp_frame(0.0), LP_HIP_P + LP_HIP_R @ LP_MOUTH)), (LP_TAKE, o_take + np.array([0.0, -2.0, 0.0])),
+             (7.0, np.array([0.0, 9.0, -6.0])), (9.5, np.array([0.0, 6.0, -14.0])), (LP_HEAVE, LP_SET_O + np.array([0.0, -2.0, 0.0])),
+             (LP_SET, LP_SET_O), (18.8, np.array([0.0, -1.0, -26.0])), (24.0, np.array([0.0, -1.0, -30.0])), (26.0, lp_w(0, -22.0, -20.0)),
+             (29.0, np.array([0.5, 9.4, -7.4])), (33.5, np.array([0.5, 9.4, -7.4])), (37.0, np.array([0.0, -2.0, -40.0])),
+             (40, np.array([0.0, -2.0, -40.0]))]
+    for t in la.every(LP_LEN):
+        fr = lp_frame(t)
+        key_frame(c, t, fr, ease='linear')
+        feet, lift = lp_feet(t)
+        stand(c, t, fr, feet=feet, lift=lift)
+        O, Rb = lp_basket(t)
+        for side in ('right_arm', 'left_arm'):
+            rest = rest_arm(side, fr)
+            on = O + Rb @ lp_grip(side, t)
+            palm = Rb @ (L if side == 'right_arm' else R)
+            if t <= LP_TAKE and side == 'left_arm':
+                pose = reach_arm(holds, side, fr, on, palm=R, palm_w=0.3, slack=0.6, limit=1.6)
+            elif t <= LP_LET_GO:
+                pose = reach_arm(holds, side, fr, on, palm=palm, palm_w=0.4, slack=0.8, limit=1.8)
+                if side == 'right_arm' and t < LP_TAKE:
+                    pose = mix(rest, pose, smooth((t - 0.4) / (LP_TAKE - 0.4)))
+            else:
+                # let go: the hands come up off the rim and away, then together in front for the dusting, then hang
+                if side not in off:
+                    off[side] = O + Rb @ lp_grip(side, LP_LET_GO)
+                lift = off[side] + np.array([0.0, -2.0, 1.6]) * smooth((t - LP_LET_GO) / 2.0)
+                dust = LP_DUST_R if side == 'right_arm' else LP_DUST_L
+                brush = sum(1.6 * bump(t, k - 1.2, k + 1.2) for k in LP_DUSTS) * (1.0 if side == 'right_arm' else 0.0)
+                dust = dust + np.array([0.0, -0.3, -1.0]) * brush
+                w_d = smooth(K([(LP_LET_GO, 0.0), (25.5, 0.0), (28.4, 1.0), (34.0, 1.0), (37.0, 0.0), (40, 0.0)], t))
+                target = lift * (1.0 - w_d) + dust * w_d
+                pose = reach_arm(holds, side, fr, target, palm=(L if side == 'right_arm' else R), palm_w=0.3, slack=0.6, limit=1.6)
+                w_r = smooth(K([(LP_LET_GO, 0.0), (24.5, 0.0), (26.5, 0.6), (28.4, 0.0), (34.0, 0.0), (38.5, 1.0), (40, 1.0)], t))
+                pose = mix(pose, rest, w_r)
+            set_arm(c, side, t, pose)
+        # the head: on the basket on the hip and as it comes round, up to the board for the heave and on the basket as
+        # it is set and slid in; up along the bed, down to the hands brushed, level
+        look = KV(looks, t)
+        gaze = smooth(K([(0, 0.0), (1.5, 0.8), (3.0, 1.0), (26.0, 1.0), (29.0, 0.7), (33.5, 0.7), (37.5, 0.0), (40, 0.0)], t))
+        c.key('head', t, look_at(fr, look, gaze), ease='linear')
+    c.mode('head', 'set')
+    la.TRACKS['load_pack'] = {'pack_basket': _pack_track}
+    # the goods: in the basket on the hip where carry_basket has them, between the hands while they hold it by its rim,
+    # then in its mouth where it is left on the board
+    la.set_goods('load_pack', [(0.0, LP_TAKE, ('part', 'body', (5.6, 7.8, -4.0)), 3.5), (LP_TAKE, LP_LET_GO, ('hands', 0.0), 3.5),
+                               (LP_LET_GO, None, ('ground', tuple(LP_HOME_O + LP_MOUTH + np.array([0.0, 0.4, 0.0]))), 3.5)])
+    for k in (LP_TAKE, 7.0, 9.5, LP_HEAVE, 14.0, 15.6, LP_SET, LP_SHOVE, 21.5):
+        O, Rb = lp_basket(k)
+        for side in ('right_arm', 'left_arm'):
+            check(c, f'{side.replace("_arm", "")} hand on the basket (t={k:g})', ta.fk(c, k, side, GRIP[side]), O + Rb @ lp_grip(side, k), tol=1.2)
+    check(c, 'left hand on the basket\'s rim (t=0)', ta.fk(c, 0.0, 'left_arm', GRIP['left_arm']), LP_RIM, tol=1.2)
+    for k in (8.0, 16.0, 21.0):
+        O, Rb = lp_basket(k)
+        check(c, f'the goods in the basket\'s mouth (t={k:g})', la.between_hands(_mats(c, k)), O + Rb @ (LP_MOUTH + np.array([0.0, 0.4, 0.0])), tol=1.0)
+    O, Rb = lp_basket(LP_SET)
+    check(c, 'the basket set down on the board (t=17: its bottom\'s middle)', O + Rb @ LP_BOTTOM, LP_SET_O + LP_BOTTOM, tol=0.2)
+    times = [i * 0.5 for i in range(2 * LP_LEN + 1)]
+    boxes = la.station_boxes('wagon_tail_load')
+    basket_clear(c, boxes, [k for k in times if k < LP_SET - 0.4])
+    clear_of_station(c, boxes, times, what='the wagon')
+    for side in ('right_arm', 'left_arm'):
+        clear_of(c, side, times, into=('body', 'head'), tol=1.5)
+    wc.maybe_join('load_pack starts on carry_basket (its arms; the basket where basket_hip is)', c, 0, 'carry_basket', 0, tol=1.0)
+    joins_idle(c, start=False)
+    return c
+
+
+def basket_points(Rb, O, n=3):
+    lo, hi = np.asarray(lp.PACK_BASKET_BOX[0], float), np.asarray(lp.PACK_BASKET_BOX[1], float)
+    return [O + Rb @ (lo + (hi - lo) * np.array([i, j, k]) / n) for i in range(n + 1) for j in range(n + 1) for k in range(n + 1)]
+
+
+def basket_clear(c, boxes, times, tol=0.3):
+    """Checks the basket keeps out of the station's [boxes] and the body and head all through [times]."""
+    worst, at = 0.0, 0.0
+    worst_b, at_b = 0.0, 0.0
+    for t in times:
+        O, Rb = lp_basket(t)
+        pts = basket_points(Rb, O)
+        for p in pts:
+            for b in boxes:
+                blo, bhi = np.asarray(b[0], float), np.asarray(b[1], float)
+                inside = min(float(np.min(p - blo)), float(np.min(bhi - p)))
+                if inside > worst:
+                    worst, at = inside, t
+        mats = _mats(c, t)
+        for name in ('body', 'head'):
+            blo, bhi = BOXES[name]
+            Mi = np.linalg.inv(mats[name])
+            for p in pts:
+                q = Mi[:3, :3] @ p + Mi[:3, 3]
+                inside = min(q[0] - blo[0], bhi[0] - q[0], q[1] - blo[1], bhi[1] - q[1], q[2] - blo[2], bhi[2] - q[2])
+                if inside > worst_b:
+                    worst_b, at_b = inside, t
+    check(c, f'the basket clear of the wagon until it is set (deepest, at t={at:g})', (worst,), (0.0,), tol=tol)
+    check(c, f'the basket clear of the body and head (deepest, at t={at_b:g})', (worst_b,), (0.0,), tol=0.8)
+
+
+WAGON_WOOD, WAGON_WOOD_D, WAGON_CANVAS = (138, 100, 62), (104, 74, 46), (214, 204, 176)
+LOAD_SACK = (186, 160, 112)
+
+
+def _wagon_tail_load():
+    """The back of the House's wagon as the loader meets it: the tailboard let down level with the floor, the floor and
+    the box's sides, the canvas tilt over the bed and the first sacks of the load heaped at its front (the wheels left
+    out: from the side they hide the tail)."""
+    out = []
+
+    def box(lo, hi, col):
+        a, b = lp_w(*lo), lp_w(*hi)
+        out.append(bx(np.minimum(a, b), np.maximum(a, b), col))
+    box((-wg.BOX_X + 1.0, wg.FLOOR_TOP, wg.BOX_BACK), (wg.BOX_X - 1.0, wg.FLOOR_TOP + 1.2, wg.BOX_BACK + wg.TAIL_LEN), WAGON_WOOD)
+    box((-wg.BOX_X + 1.0, wg.FLOOR_TOP, wg.BOX_BACK - 34.0), (wg.BOX_X - 1.0, wg.FLOOR_TOP + wg.FLOOR_T, wg.BOX_BACK), WAGON_WOOD_D)
+    for s in (-1, 1):
+        box((s * wg.BOX_X, wg.SIDE_TOP, wg.BOX_BACK - 34.0), (s * (wg.BOX_X - 1.0), wg.FLOOR_TOP + 1.2, wg.BOX_BACK), WAGON_WOOD_D)
+        # the tilt's sides over the bed, from its back hoop on
+        box((s * (wg.BOX_X - 0.3), wg.ARCH_Y, wg.TILT_BACK - 26.0), (s * (wg.BOX_X - 1.3), wg.SIDE_TOP, wg.TILT_BACK), WAGON_CANVAS)
+    box((-wg.BOX_X + 0.3, wg.ARCH_Y - wg.ARCH_H, wg.TILT_BACK - 26.0), (wg.BOX_X - 0.3, wg.ARCH_Y - wg.ARCH_H + 1.2, wg.TILT_BACK), WAGON_CANVAS)
+    for x0, x1 in ((-6.7 - 3.2, -6.7 + 3.2), (-3.2, 3.2), (6.7 - 3.2, 6.7 + 3.2)):
+        z = wg.ROWS_Z[-1]
+        box((x0, wg.FLOOR_TOP - 5.5, z - 3.6), (x1, wg.FLOOR_TOP, z + 3.6), LOAD_SACK)
+    return out
+
+
+# ================================================================== hitch
+
+# ---- hitch (50, once): at a draught horse's right shoulder as it stands in the wagon's shafts, facing it square, HT_OUT
+# px out from its middle line and HT_FWD px ahead of its origin (draught_horse.py's model space: the ground under the
+# middle of its body): where WagonBill's hitch() puts the hand each tick. The right palm flat on its shoulder over the
+# shaft, two shoves to stand it back in the shafts (back); the left hand to the shaft, the right down under it to where
+# the right trace will run (grab: the trace drawn out from there, the prop stretched from HT_ANCHOR), a step to the
+# right, the trace carried under the shaft and up past its tip onto the hook on the hame (clip: where the code's
+# harness() clips the traces on and the world's trace takes over from the prop), two tugs to see it is fast (tug), let go;
+# two pats on the shoulder (pat) and the step back.
+HT_LEN = 50
+HT_BACKS = (3.5, 6.5)
+HT_GRAB, HT_CLIP, HT_LET_GO = 13.0, 25.0, 29.0
+HT_TUGS = (26.6, 28.0)
+HT_PATS = (32.0, 34.4)
+HT_OUT, HT_FWD = 16.0, 4.8
+
+
+def ht_pt(p):
+    """A point of the horse's model space in this clip's."""
+    return np.array([float(p[2]) + HT_FWD, float(p[1]), -HT_OUT - float(p[0])])
+
+
+HT_HAME = ht_pt((-wg.HAMES[0], 24.0 - wg.HAMES[1], wg.HAMES[2]))                 # the right trace's hook on the hame
+HT_SWINGLE = ht_pt((-wg.SWINGLE_HALF, wg.SWINGLE[1] + 24.0, wg.SWINGLE[2] - wg.HORSE_Z))
+HT_DIR = unit(HT_SWINGLE - HT_HAME)                                              # the hitched trace, from the hook back
+HT_ANCHOR = HT_HAME + HT_DIR * 12.0                                               # the prop's root: 12 px back along it
+_HT_TUG = np.array([-wg.SHAFT_X, 24.0 - wg.SHAFT_UP, wg.TUG_Z])
+_HT_HINGE = np.array([-wg.SHAFT_HINGE[0], wg.SHAFT_HINGE[1] + 24.0, wg.SHAFT_HINGE[2] - wg.HORSE_Z])
+_HT_SHAFT = unit(_HT_TUG - _HT_HINGE)
+
+
+def ht_shaft(hz):
+    """The right shaft's middle line at the horse's z [hz] (model space)."""
+    return _HT_TUG + _HT_SHAFT * ((hz - _HT_TUG[2]) / _HT_SHAFT[2])
+
+
+def ht_on_shaft(x):
+    """The top of the right shaft at clip x [x], where a fist rests on it (its grip 3.45 px over the middle: the end
+    of a block arm is its grip, and the fist's near corner comes down past it)."""
+    return ht_pt(ht_shaft(x - HT_FWD)) + np.array([0.0, -wg.SHAFT_T / 2 - 2.6, 0.0])
+
+
+HT_PUSH = ht_pt((-6.6 - 2.0, -1.0, -8.0))          # the right palm flat on the shoulder over the shaft (the grip 2 px off it)
+HT_LEFT = ht_on_shaft(6.0)                          # the left fist on the shaft
+HT_PAT = ht_pt((-6.6 - 1.6, -3.4, -15.3))           # the pats, on top of the shoulder behind the collar
+# the trace's end (where the prop reaches) from its grab, under the shaft, up past its tip, over the hook and onto it
+HT_END = [(HT_GRAB, HT_ANCHOR), (15.2, np.array([-6.0, 7.8, -7.6])), (18.0, np.array([-9.6, 7.6, -7.6])),
+          (21.0, np.array([-13.0, 5.6, -8.2])), (23.0, HT_HAME + np.array([1.0, 1.4, 0.4])), (HT_CLIP, HT_HAME)]
+# the right hand from the shoulder to the trace: back off over the shaft, down before it, in under it
+HT_UNDER = [(7.6, HT_PUSH), (9.0, np.array([-7.6, 1.6, -5.6])), (10.6, np.array([-5.6, 7.0, -6.2]))]
+HT_HOLD = HT_DIR * 1.6 + np.array([0.0, 0.0, 0.9])  # the fist on the trace just behind its end, on the near side
+HT_STEPS = [(8.6, 11.4, 'right_leg', (-4.6, -0.6)), (10.0, 12.8, 'left_leg', (-0.8, -0.4)),
+            (35.4, 38.2, 'left_leg', (1.9, 0.0)), (36.8, 39.8, 'right_leg', (-1.9, 0.0))]
+HT_P = [(0, 0.0), (2.0, 4.0), (HT_BACKS[0], 7.0), (5.0, 4.0), (HT_BACKS[1], 7.0), (8.4, 2.0), (11.0, 3.0), (HT_GRAB, 4.0),
+        (15.2, 5.0), (18.0, 4.0), (21.0, 1.0), (HT_CLIP, 0.0), (HT_LET_GO, 0.0), (31.0, 2.0), (35.0, 2.0), (37.0, 0.5),
+        (40.0, -1.0), (43.0, 0.0), (50, 0.0)]
+HT_YAW = [(0, 0.0), (8.4, 0.0), (11.0, -4.0), (15.0, 0.0), (20.6, 10.0), (HT_LET_GO, 10.0), (31.0, 4.0), (35.0, 2.0),
+          (39.0, 0.0), (50, 0.0)]
+HT_DIP = [(0, 0.0), (HT_BACKS[0], 0.5), (5.0, 0.2), (HT_BACKS[1], 0.5), (8.4, 0.1), (HT_GRAB, 0.9), (15.2, 1.4), (18.0, 1.2),
+          (21.0, 0.3), (HT_CLIP, 0.3), (HT_LET_GO, 0.2), (40.0, 0.0), (50, 0.0)]
+
+
+def ht_feet(t):
+    return stepping(t, FEET, HT_STEPS, lift=1.6)
+
+
+def ht_frame(t):
+    pitch = K(HT_P, t)
+    feet, _ = ht_feet(t)
+    x = 0.5 * (feet['right_leg'][0] + feet['left_leg'][0])
+    z = 0.5 * (feet['right_leg'][1] + feet['left_leg'][1])
+    lean = -0.8 * sum(bump(t, k - 1.2, k + 1.0) for k in HT_BACKS)
+    return F_(qt=bend(pitch, K(HT_YAW, t), 0.0), vt=(0.0, sink_for(pitch), 0.0),
+              pr=la.root_for(feet, x, z + lean, dip=K(HT_DIP, t)))
+
+
+def ht_end(t):
+    """Where the trace's end is (the prop's far end) at [t]: drawn from the anchor, then on the hook."""
+    if t >= HT_CLIP:
+        return HT_HAME
+    return KV(HT_END, max(HT_GRAB, t))
+
+
+def aim_arc(frm, to, length0):
+    """A prop track's turn and stretch for a strap modelled [length0] px along its +y from its pivot, from [frm] to [to]:
+    the shortest turn from +y, as the wagon's renderer turns its traces (so where the prop lies along the world's trace,
+    the two lie alike)."""
+    d = np.asarray(to, float) - np.asarray(frm, float)
+    n = float(np.linalg.norm(d))
+    if n < 1e-6:
+        return np.eye(3), (1.0, 1e-3, 1.0)
+    y = d / n
+    axis = np.cross(np.array([0.0, 1.0, 0.0]), y)
+    s_, c_ = float(np.linalg.norm(axis)), float(y[1])
+    if s_ < 1e-6:
+        return (np.eye(3) if c_ > 0 else np.diag([1.0, -1.0, -1.0])), (1.0, n / length0, 1.0)
+    k = axis / s_
+    Kx = np.array([[0.0, -k[2], k[1]], [k[2], 0.0, -k[0]], [-k[1], k[0], 0.0]])
+    return np.eye(3) + s_ * Kx + (1.0 - c_) * Kx @ Kx, (1.0, n / length0, 1.0)
+
+
+def _trace_track(t, pivot):
+    Rm, S = aim_arc(HT_ANCHOR, ht_end(t), lp.TRACE_LEN)
+    return Rm, HT_ANCHOR, S
+
+
+def hitch():
+    c = la.clip('hitch', HT_LEN, False, look=('farmer', 1), tools_=('trace_end',), station_='horse_hitch',
+                events=[('back', k) for k in HT_BACKS] + [('grab', HT_GRAB), ('clip', HT_CLIP)] + [('tug', k) for k in HT_TUGS]
+                + [('pat', k) for k in HT_PATS],
+                traces=[('right_arm', GRIP['right_arm'], (255, 200, 120))], views=((135, -16), (215, -12), (180, -30)))
+    ta.INFO['hitch']['tools_at'] = wc.tools_when([('trace_end', HT_GRAB, HT_LET_GO + 0.5)])
+    ta.INFO['hitch']['pan'] = np.array([-6.0, 0.0, -4.0])
+    holds = la.Holds()
+    eye = ht_pt((-3.0, -12.0, -33.0))                  # the horse's right eye, near enough
+    # (the eyes kept above the shaft's level: looking further down under it would put the face into the horse's side)
+    looks = [(0, eye), (2.0, HT_PUSH + np.array([-4.0, -4.0, -2.0])), (HT_BACKS[1], eye)]
+    looks += [(k, np.array([p[0], min(p[1], 0.5), p[2]])) for k, p in [(9.0, HT_ANCHOR)] + HT_END] + [(HT_LET_GO, HT_HAME), (31.0, HT_PAT), (35.0, HT_PAT), (37.5, eye), (41.0, eye),
+                                                (45.0, np.array([0.0, -2.0, -40.0])), (50, np.array([0.0, -2.0, -40.0]))]
+    for t in la.every(HT_LEN):
+        fr = ht_frame(t)
+        key_frame(c, t, fr, ease='linear')
+        feet, lift = ht_feet(t)
+        stand(c, t, fr, feet=feet, lift=lift)
+        # the right hand: the palm on the shoulder and its two shoves; down under the shaft to the trace and along with
+        # it onto the hook; two tugs; let go, two pats, down
+        rest = rest_arm('right_arm', fr)
+        shove = sum(bump(t, k - 1.2, k + 1.0) for k in HT_BACKS)
+        if t < 2.0:
+            # up from hanging out in front of the body, onto the shoulder
+            keys = [(0, wc.grip_of('right_arm', rest_arm('right_arm', ht_frame(0.0)), ht_frame(0.0))),
+                    (1.0, np.array([-6.4, 5.0, -6.0])), (2.0, HT_PUSH)]
+            pose = reach_arm(holds, 'right_arm', fr, KV(keys, t), palm=F, palm_w=0.3 * smooth(t / 2.0), slack=0.8, limit=1.8)
+            pose = mix(rest, pose, smooth(t / 0.8))
+        elif t < 7.6:
+            pose = reach_arm(holds, 'right_arm', fr, HT_PUSH + np.array([0.0, 0.0, -0.9]) * shove, palm=F, palm_w=0.5,
+                             slack=0.8, limit=1.8)
+        elif t < HT_GRAB:
+            keys = HT_UNDER + [(HT_GRAB, HT_ANCHOR + HT_HOLD)]
+            pose = reach_arm(holds, 'right_arm', fr, KV(keys, t), palm=F if t < 9.0 else U, palm_w=0.3, slack=0.8, limit=1.8)
+        elif t <= HT_LET_GO:
+            tug = sum(1.1 * bump(t, k - 0.8, k + 0.8) for k in HT_TUGS)
+            pose = reach_arm(holds, 'right_arm', fr, ht_end(t) + HT_HOLD + HT_DIR * tug, palm=U, palm_w=0.3, slack=0.8, limit=1.8)
+        else:
+            pat = sum(bump(t, k - 1.0, k + 1.0) for k in HT_PATS)
+            on = reach_arm(holds, 'right_arm', fr, HT_PAT + np.array([0.0, -0.4, 1.6]) * (1.0 - pat), palm=F, palm_w=0.5,
+                           slack=0.8, limit=1.8)
+            w_on = smooth(K([(HT_LET_GO, 0.0), (31.0, 1.0), (35.4, 1.0), (38.5, 0.0), (50, 0.0)], t))
+            off = HT_HAME + HT_HOLD + np.array([0.0, -0.6, 2.4])
+            if t < 31.0:
+                pose = reach_arm(holds, 'right_arm', fr, off + (HT_PAT - off) * smooth((t - HT_LET_GO) / 2.0), palm=F, palm_w=0.3,
+                                 slack=0.8, limit=1.8)
+            else:
+                pose = mix(rest, on, w_on)
+        set_arm(c, 'right_arm', t, pose)
+        # the left hand: hanging, on the shaft while the trace is brought round and hooked, hanging again
+        rest = rest_arm('left_arm', fr)
+        w = smooth(K([(0, 0.0), (10.4, 0.0), (13.4, 1.0), (HT_LET_GO, 1.0), (32.0, 0.0), (50, 0.0)], t))
+        if w > 1e-4:
+            pose = reach_arm(holds, 'left_arm', fr, HT_LEFT, palm=D, palm_w=0.3, slack=0.6, limit=1.6)
+            rest = mix(rest, pose, w)
+        set_arm(c, 'left_arm', t, rest)
+        gaze = smooth(K([(0, 0.0), (2.0, 0.5), (HT_BACKS[1], 0.6), (9.0, 1.0), (HT_LET_GO, 1.0), (37.5, 0.6), (41.0, 0.5), (45.0, 0.0), (50, 0.0)], t))
+        c.key('head', t, look_at(fr, KV(looks, t), gaze), ease='linear')
+    c.mode('head', 'set')
+    la.TRACKS['hitch'] = {'trace_end': _trace_track}
+    for k in HT_BACKS:
+        check(c, f'the palm on the shoulder (t={k:g}: the grip)', ta.fk(c, k, 'right_arm', GRIP['right_arm']),
+              HT_PUSH + np.array([0.0, 0.0, -0.9]), tol=1.0)
+    for k in (HT_GRAB, 15.0, 18.0, 20.6, 23.0, HT_CLIP):
+        check(c, f'right hand on the trace (t={k:g})', ta.fk(c, k, 'right_arm', GRIP['right_arm']), ht_end(k) + HT_HOLD, tol=1.0)
+    check(c, 'the trace\'s end on the hook (t=25)', ht_end(HT_CLIP), HT_HAME, tol=0.05)
+    for k in (16.0, 22.0, 27.0):
+        check(c, f'left fist on the shaft (t={k:g})', ta.fk(c, k, 'left_arm', GRIP['left_arm']), HT_LEFT, tol=1.0)
+    for k in HT_PATS:
+        check(c, f'the pat on the shoulder (t={k:g})', ta.fk(c, k, 'right_arm', GRIP['right_arm']), HT_PAT, tol=1.0)
+    times = [i * 0.5 for i in range(2 * HT_LEN + 1)]
+    clear_of_station(c, la.station_boxes('horse_hitch'), times, what='the horse and the shaft')
+    for side in ('right_arm', 'left_arm'):
+        clear_of(c, side, times, into=('body', 'head'), tol=1.0)
+    joins_idle(c)
+    return c
+
+
+HORSE_C, HORSE_D, HARNESS_C, BRASS_C, SHAFT_C = (118, 70, 40), (96, 58, 34), (64, 42, 28), (200, 160, 80), (138, 100, 62)
+
+
+def _horse_hitch():
+    """The horse's right side as the one hitching it meets it: its barrel, collar, neck and head, its legs, the right
+    shaft along its side from the tip by its shoulder, and the hook on the hame."""
+    out = []
+
+    def hbox(lo, hi, col):
+        a, b = ht_pt(lo), ht_pt(hi)
+        out.append(bx(np.minimum(a, b), np.maximum(a, b), col))
+    hbox((-6.6, 24.0 - 27.0, -15.0), (6.6, 24.0 - 16.0, 17.0), HORSE_C)
+    hbox((-6.8, 24.0 - 31.0, -21.0), (6.8, 24.0 - 15.0, -15.0), HARNESS_C)
+    hbox((-3.4, 24.0 - 33.0, -30.0), (3.4, 24.0 - 24.0, -17.0), HORSE_C)
+    hbox((-2.6, 24.0 - 33.0, -38.0), (2.6, 24.0 - 26.0, -30.0), HORSE_D)
+    for x, z in ((-3.7, -11.2), (3.7, -11.2), (-3.9, 11.0), (3.9, 11.0)):
+        hbox((x - 1.6, 24.0 - 16.0, z - 1.8), (x + 1.6, 24.0, z + 1.8), HORSE_D)
+    for k in range(28):
+        z0 = wg.SHAFT_TIP_Z + k * 2.0
+        a, b = ht_shaft(z0), ht_shaft(z0 + 2.0)
+        hbox(np.minimum(a, b) - np.array([wg.SHAFT_T / 2] * 2 + [0.0]), np.maximum(a, b) + np.array([wg.SHAFT_T / 2] * 2 + [0.0]), SHAFT_C)
+    h = HT_HAME
+    out.append(bx(h - np.array([0.6, 0.6, 0.4]), h + np.array([0.6, 0.6, 0.6]), BRASS_C))
+    return out
+
+
 # ================================================================== the registry
 
-TRADE_CLIPS = ['stamp', 'check_load']
-MAKERS = [('stamp', stamp), ('check_load', check_load)]
-STATION_BOXES = {'stamp_desk': _stamp_desk, 'cart_covered': _cart_covered}
+TRADE_CLIPS = ['stamp', 'check_load', 'load_pack', 'hitch']
+MAKERS = [('stamp', stamp), ('check_load', check_load), ('load_pack', load_pack), ('hitch', hitch)]
+STATION_BOXES = {'stamp_desk': _stamp_desk, 'cart_covered': _cart_covered, 'wagon_tail_load': _wagon_tail_load,
+                 'horse_hitch': _horse_hitch}
 STATION_COLOUR = {}
 NEEDS = {}
 BUILT = {}
@@ -488,6 +938,11 @@ def trade_moment_specs():
         'check_load': {'lift': ('part', 'canvas_flap', tuple(CL_RING)), 'drop': ('part', 'canvas_flap', tuple(CL_RING)),
                        'feel': ('part', 'right_arm', tuple(GRIP['right_arm'])),
                        'pat': ('part', 'right_arm', tuple(GRIP['right_arm']))},
+        'load_pack': {'take': ('hands', 0.0), 'heave': ('hands', 0.0), 'set': ('part', 'pack_basket', tuple(LP_BOTTOM)),
+                      'shove': ('part', 'pack_basket', tuple(LP_BOTTOM)), 'dust': ('hands', 0.0)},
+        'hitch': {'back': ('part', 'right_arm', tuple(GRIP['right_arm'])), 'grab': ('point', tuple(HT_ANCHOR)),
+                  'clip': ('point', tuple(HT_HAME)), 'tug': ('point', tuple(HT_HAME)),
+                  'pat': ('part', 'right_arm', tuple(GRIP['right_arm']))},
     }
 
 

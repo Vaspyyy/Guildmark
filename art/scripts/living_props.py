@@ -1738,9 +1738,9 @@ def part_names():
 # ================================================================== the trade's props (art/scripts/trade_clips.py)
 
 # The clerks', carters' and wardens' (trade X4): a seal stamp, the corner of a cart's canvas, a laden basket, a trace, a sack
-# for the scale, a ledger and a satchel to rummage in. townsfolk.py packs their cubes after everyone else's (group 6), so
-# adding them moved no cube already on the texture. Where a clip's track runs a prop (the basket, the canvas, the trace,
-# the sack, the satchel), the track places it in the clip's own space and its rest placement here only shows it untracked.
+# for the scale and a pack to rummage in. townsfolk.py packs their cubes after everyone else's (group 6), so adding them
+# moved no cube already on the texture. Where a clip's track runs a prop (the basket, the canvas, the trace, the sack),
+# the track places it in the clip's own space and its rest placement here only shows it untracked.
 
 STAMP_FACE = (0.0, 4.6, 0.0)             # stamp space: the middle of the seal's working face
 
@@ -1785,7 +1785,35 @@ def _canvas_flap():
     ])
 
 
-TRADE_BUILDERS = [_stamp, _canvas_flap]
+PACK_BASKET_PIVOT, PACK_BASKET_ROT = (5.6, 9.5, -4.0), (0, -18, -6)       # basket_hip's place on the left hip
+PACK_BASKET_BOX = ((-3.0, -2.1, -2.6), (3.0, 2.5, 2.6))                    # its basket: the mouth at y -2.1, the bottom at 2.5
+
+
+def _pack_basket():
+    # The laden basket of LOAD_PACK: basket_hip's own (the same size, place and weave: painted from basket_hip's key), so
+    # nothing is seen to change as the clip takes over from carry_basket, but without its cloth. LOAD_PACK's track
+    # carries it off the hip, heaves it and sets it on the wagon's tailboard; the carried goods sit in its mouth.
+    lo, hi = PACK_BASKET_BOX
+    return 'body', Part('pack_basket', PACK_BASKET_PIVOT, PACK_BASKET_ROT, cubes=[
+        C(lo, tuple(b_ - a_ for a_, b_ in zip(lo, hi)), 't_pack_basket', basket_hip_painter('t_basket_hip')),
+    ])
+
+
+TRACE_LEN = 16.0         # trace_end: TRACE_LEN px along +y from its pivot, which HITCH's track stretches
+
+
+def _trace_end():
+    # The right trace's front end as HITCH draws it out and hooks it on the hame: the strap of the wagon's own traces
+    # (wagon.py's 'trace': 1.1 x 0.6 px, 16 px along +y, stretched between two points) in their leather. Its track roots
+    # it on the line the hitched trace runs and stretches it to the hand; on the hook it lies where the world's trace
+    # then runs, so the one takes over from the other unseen.
+    return 'body', Part('trace_end', (0.0, 0.0, 0.0), (0, 0, 0), cubes=[
+        C((-0.55, 0.0, -0.3), (1.1, TRACE_LEN, 0.6), 't_trace_end',
+          strap_painter('t_trace_end', (78, 46, 26), (50, 30, 18), (116, 76, 46))),
+    ])
+
+
+TRADE_BUILDERS = [_stamp, _canvas_flap, _pack_basket, _trace_end]
 BUILDERS.extend(TRADE_BUILDERS)
 TOOL_NOTES.update({
     'stamp': 'right hand, a seal stamp hanging along the arm (STAMP\'s track holds it pointing down and twists it on the '
@@ -1793,6 +1821,10 @@ TOOL_NOTES.update({
     'canvas_flap': f'body; the corner of the cart\'s canvas, a patch {CANVAS_W:g} across and {CANVAS_H:g} down from its pinned '
                    'top corner (the pivot); CHECK_LOAD\'s track swings it about that corner and the ring in the opposite '
                    'corner is where the hand pinches it',
+    'pack_basket': 'body, tracked (LOAD_PACK): basket_hip\'s basket without its cloth, at its place on the left hip untracked; '
+                   'its mouth\'s middle at part (0, -2.1, 0), its bottom\'s at (0, 2.5, 0)',
+    'trace_end': f'body, tracked (HITCH): the front end of the right trace, {TRACE_LEN:g} px along part +y from its root; the '
+                 'track roots it on the line the hitched trace runs and stretches it to the hand',
 })
 
 
