@@ -9591,6 +9591,7 @@
   "message.guildmark.village_build.progress": "%1$s going up: %2$s, %3$s%% done",
   "message.guildmark.village_build.planned": "Builders will come to %2$s at sunrise to put up the %1$s.",
   "message.guildmark.village_build.done": "The crew has finished the %1$s at %2$s!",
+  "guildmark.configuration.villageSounds": "Village Sounds",
   "subtitles.guildmark.village.door_bolt": "Bolt shoots home",
   "subtitles.guildmark.village.hush": "People whisper",
   "subtitles.guildmark.village.cheer": "Villagers cheer",

@@ -241,7 +241,7 @@ class SettingsScreen(private val parent: Screen?) : Screen(Component.translatabl
     private fun interfacePage(width: Int): List<Row> {
         val c = GuildmarkClientConfig
         val spec = c.SPEC
-        val city = listOf(c.CITY_SOUNDS, c.CITY_BELLS, c.CITY_CROWDS, c.CITY_WORKSHOPS, c.CITY_HARBOUR, c.CITY_WIND)
+        val city = listOf(c.CITY_SOUNDS, c.VILLAGE_SOUNDS, c.CITY_BELLS, c.CITY_CROWDS, c.CITY_WORKSHOPS, c.CITY_HARBOUR, c.CITY_WIND)
         val listed = listOf(c.COMPASS, c.CONTRACT_TRACKER, c.PLACE_BANNERS, c.TALE_BANNERS, c.REGION_TITLES, c.REGION_ATMOSPHERE, c.COMBAT_HUD, c.DEATH_SCREEN, c.TITLE_SCREEN, c.CAMERA_SHAKE, c.CUTSCENES, c.DIALOGUE_CAMERA, c.MENU_SOUNDS, c.MENU_MUSIC, c.REGION_MUSIC, c.ISLAND_SOUNDS) + city
         return listOf(
             header("screen"),

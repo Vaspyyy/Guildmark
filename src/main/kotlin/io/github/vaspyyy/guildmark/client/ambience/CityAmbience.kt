@@ -63,8 +63,13 @@ object CityAmbience {
 
     fun hint(capital: Boolean, district: District) {
         this.capital = capital
-        this.district = if (capital) district else District.NONE
+        // A village is told with capital = false; its district is kept so the town's crowd is turned down in it (VillageAmbience has the rest)
+        this.district = if (capital || district == District.VILLAGE || district == District.VILLAGE_MARKET) district else District.NONE
+        VillageAmbience.hint(capital, district)
     }
+
+    /** Whether the player stands in a village, where the town's crowd is thin, with no carts rattling and no criers but on its market day. */
+    private val country: Boolean get() = district == District.VILLAGE || district == District.VILLAGE_MARKET
 
     fun reset() {
         val manager = Minecraft.getInstance().soundManager
@@ -135,6 +140,7 @@ object CityAmbience {
         var crowd = (around.awake.size + urban * 3 + (if (capital) 4 else 0)) * bustle
         if (district == District.MARKET) crowd += 6 * bustle
         if (district == District.QUIET) crowd *= 0.35
+        if (country) crowd *= 0.4
         val light = smoothstep(0.5, 4.0, crowd) * (1 - 0.6 * smoothstep(6.0, 14.0, crowd))
         val busy = smoothstep(6.0, 16.0, crowd)
         val crowds = master * share(GuildmarkClientConfig.CITY_CROWDS) * muffle
@@ -182,8 +188,8 @@ object CityAmbience {
         if (volume <= 0f) return
         val rain = level.getRainLevel(1f)
         val busy = bustle * smoothstep(1.0, 8.0, around.awake.size + urbanity() * 4)
-        // Criers calling their wares across the square, from one of the folk about
-        if (ready("crier", 200, 480) && hour in 7.5..17.5 && busy > 0.25 && rain < 0.4f && district != District.QUIET) {
+        // Criers calling their wares across the square, from one of the folk about (in a village only on its market day)
+        if (ready("crier", 200, 480) && hour in 7.5..17.5 && busy > 0.25 && rain < 0.4f && district != District.QUIET && district != District.VILLAGE) {
             if (district == District.MARKET) due["crier"] = ticks + range(120, 300)
             folkBetween(player, 5.0, 28.0)?.let { emit(CitySounds.HAWKER, it.eyePosition, volume * 0.85f * outside(), pitch(0.04f)) }
         }
@@ -192,7 +198,7 @@ object CityAmbience {
             folkBetween(player, 2.0, 14.0)?.let { emit(CitySounds.COINS, it.position().add(0.0, 1.0, 0.0), volume * 0.6f, pitch(0.05f)) }
         }
         // A cart rattling down a street somewhere near
-        if (ready("cart", 700, 1600) && hour in 7.0..19.0 && urbanity() > 0.5 && rain < 0.6f && district != District.QUIET) {
+        if (ready("cart", 700, 1600) && hour in 7.0..19.0 && urbanity() > 0.5 && rain < 0.6f && district != District.QUIET && !country) {
             ground(level, player, 12.0, 26.0)?.let { emit(CitySounds.CART, it, volume * 0.8f * outside(), pitch(0.05f)) }
         }
         // The watch calls the hour through the night, a little after it turns: always at midnight, otherwise

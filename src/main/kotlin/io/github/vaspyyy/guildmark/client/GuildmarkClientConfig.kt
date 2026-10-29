@@ -51,6 +51,9 @@ object GuildmarkClientConfig {
     val CITY_SOUNDS: ModConfigSpec.IntValue = BUILDER
         .comment("How loud towns and cities sound, from bells and crowds to the wind on the walls (as a share of the game's Ambient/Environment volume). 0 silences them.")
         .defineInRange("citySounds", 100, 0, 100)
+    val VILLAGE_SOUNDS: ModConfigSpec.IntValue = BUILDER
+        .comment("How loud villages sound: hens, birdsong and the wind in the stalks by day, crickets, an owl and a far dog by night, and the market's murmur on market day (as a share of the game's Ambient/Environment volume). 0 silences them.")
+        .defineInRange("villageSounds", 100, 0, 100)
     val CITY_BELLS: ModConfigSpec.IntValue = BUILDER
         .comment("The bells that keep the hours of the day: dawn, noon and dusk struck in full (a big town's chime first), and three strokes at nine, three and nine.")
         .defineInRange("cityBells", 100, 0, 100)
