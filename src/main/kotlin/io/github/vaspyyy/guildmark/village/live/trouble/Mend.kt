@@ -10,6 +10,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Residents
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import io.github.vaspyyy.guildmark.townsfolk.Walker
+import io.github.vaspyyy.guildmark.village.live.Live
 import io.github.vaspyyy.guildmark.village.live.VillageRec
 import io.github.vaspyyy.guildmark.village.live.Villages
 import net.minecraft.core.BlockPos
@@ -304,7 +305,8 @@ object Mend {
             if (lastTick >= 0 && p.tickCount - lastTick > 5 || p.hurtTime > 0) return finish()
             lastTick = p.tickCount
             val level = p.level() as? ServerLevel ?: return finish()
-            val rec = Villages.byKey(level, crew.key) ?: return finish()
+            // The village lost (its bell and board gone) or dropped: the crew goes home
+            val rec = Villages.byKey(level, crew.key)?.takeIf { it.state != Live.LOST } ?: return finish()
             val kept = TroubleData.peek(level)?.peek(crew.key) ?: return finish()
             when (phase) {
                 // To the pile
