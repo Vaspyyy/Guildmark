@@ -338,6 +338,9 @@ object Crier {
                 groups.add(listOf(Cry("crier_hungry", said("crier_hungry"), slip(Slip.Kind.TROUBLE, Component.translatable("board.guildmark.slip.hungry"), said("crier_hungry"), at), -1)))
             }
             orders(level, entry, noon, random).forEach { groups.add(listOf(it)) }
+            // The trader's (living-world/trader, part C): the haul tickets up on the Haul Board, and the town's thanks to those who brought goods in
+            io.github.vaspyyy.guildmark.trade.TradeCries.hauls(level, entry, noon, random)?.let { groups.add(listOf(it)) }
+            io.github.vaspyyy.guildmark.trade.TradeCries.thanks(level, entry, noon).forEach { groups.add(listOf(it)) }
         }
         calendar(level, c, at)?.let { groups.add(it) }
         // The talk of the town: the day's hottest rumour, its details on the slip
@@ -560,6 +563,8 @@ object Crier {
             "advance" -> "works" to 1
             "road" -> "road" to 1
             "ambush", "outlaw.raid_beaten" -> "bandits" to 1
+            // The trader's (living-world/trader, part E): a Hunt beaten off, on the road or in the wild
+            "outlaw.hunt_beaten", "outlaw.hunt_beaten_wild" -> "bandits" to 1
             "siege_won" -> "siege_won" to 1
             "siege_lost" -> "siege_lost" to -1
             "outlaw.caravan", "outlaw.farm", "outlaw.barn", "outlaw.traveller", "outlaw.tithe", "outlaw.patrol", "outlaw.camp", "outlaw.raid" -> "outlaws" to -1

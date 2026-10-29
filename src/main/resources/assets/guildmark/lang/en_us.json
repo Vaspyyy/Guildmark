@@ -8813,5 +8813,7 @@
   "message.guildmark.feast.town_won": "So it stays in town, with %s! Nobody takes the Gilded Ladle home this year.",
   "commands.guildmark.festival.info.cook": "%s: %s",
   "block.guildmark.haul_board": "Haul Board",
-  "message.guildmark.trade.board.bare": "This board stands in no capital: there is no town's word to chalk on it."
+  "message.guildmark.trade.board.bare": "This board stands in no capital: there is no town's word to chalk on it.",
+  "chat.guildmark.crier.hauls": "%2$s: %1$s, %3$s",
+  "chat.guildmark.crier.hauls.more": "%s more on the board"
 }
