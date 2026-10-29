@@ -34,7 +34,7 @@ import kotlin.math.sin
  *   tipped or leaning (parked on its shafts they hang well off the cart's upright), pushed back as it starts, forward as it stops and out
  *   as it turns, jolted by the road as it rolls; knocking against the canvas, the rail and one another and swinging back, never into them
  *   (the limits are PedlarCartMesh's, which the script proves).
- * - **The lantern lit after dark**, its panes and flame drawn full bright and flickering, catching over a second and a half at dusk.
+ * - **The lantern lit after dark** and in a thunderstorm, its panes and flame drawn full bright and flickering, catching over a second and a half.
  * A cart that is not a pedlar's is drawn exactly as HandcartRenderer draws it.
  */
 class PedlarCartRenderer(context: EntityRendererProvider.Context) : HandcartRenderer(context) {
@@ -272,9 +272,10 @@ class PedlarCartRenderer(context: EntityRendererProvider.Context) : HandcartRend
             return (x and 0xFFFFFF) / 16777216f
         }
 
-        /** Whether it is dark enough for the pedlar's lantern: each cart's lit a little apart from the next, from dusk to dawn. */
+        /** Whether it is dark enough for the pedlar's lantern: from dusk to dawn (each cart's lit a little apart from the next), and in a thunderstorm. */
         private fun night(cart: Handcart): Boolean {
             val level = cart.level() as? ClientLevel ?: return false
+            if (level.isThundering) return true
             val time = Math.floorMod(level.overworldClockTime, 24000L)
             val dusk = 12400L + Math.floorMod(cart.id * 97, 400)
             return time in dusk..23300L
