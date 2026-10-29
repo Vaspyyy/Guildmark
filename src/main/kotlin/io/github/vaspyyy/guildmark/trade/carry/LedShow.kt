@@ -16,6 +16,7 @@ import io.github.vaspyyy.guildmark.trade.Carrier
 import io.github.vaspyyy.guildmark.trade.Carriers
 import io.github.vaspyyy.guildmark.trade.TradeConfig
 import io.github.vaspyyy.guildmark.trade.TradeSounds
+import io.github.vaspyyy.guildmark.trade.hunt.GuardDirector
 import io.github.vaspyyy.guildmark.trade.scenes.ReliefCheer
 import net.minecraft.ChatFormatting
 import net.minecraft.core.BlockPos
@@ -212,11 +213,14 @@ internal object LedShow {
         bus.addListener(ServerStoppedEvent::class.java) { _ ->
             for (sh in shown.values) sh.scene?.let { runCatching { it.stop(sh) } }
             shown.clear()
+            WagonRiders.clear()
             holds.clear()
             lastUse.clear()
         }
         WagonBill.register()
         WagonCommand.init()
+        // The owner's hired guards ride on the bench and the tailboard while it is led
+        GuardDirector.seats = WagonRiders
         Carriers.add(Carrier { player, radius -> holdings(player, radius) })
         Carry.reports.add(Carry.Report { player -> report(player) })
         Carry.recalls.add(Carry.Bring { player -> if (bringBeside(player, led = false)) 1 else 0 })
@@ -352,6 +356,7 @@ internal object LedShow {
             sh.holder = null
         }
         if (shown[sh.owner] === sh) shown.remove(sh.owner)
+        WagonRiders.off(sh)
         tellGone(sh)
         discardBodies(sh)
     }
@@ -400,6 +405,7 @@ internal object LedShow {
         val scene = sh.scene
         if (scene != null && !scene.tick(sh)) sh.scene = null
         if (sh.led) lead(sh, rec, now)
+        WagonRiders.sit(sh, now)
         if (now % 100L == (sh.wagon.id % 100).toLong()) lantern(sh, rec)
         if ((now + sh.wagon.id) % 40L == 0L && !sh.led && sh.scene == null && sh.v == 0.0) settle(sh, rec)
         tailboard(sh)

@@ -68,6 +68,8 @@ internal object GuardDirector : Director {
         val owner = level.server.playerList.getPlayer(g.owner) ?: return
         val now = level.gameTime
         if (p.actDone) p.act(Activity.NONE)
+        // D3: on their trader's led wagon (trade/carry/WagonRiders), climbing up, riding or getting down, they do nothing else this tick
+        if (seats?.ride(g, owner, now) == true) return
         when (g.state) {
             Company.State.COMING -> coming(level, g, owner, now)
             Company.State.FOLLOW -> follow(level, g, owner, now)
@@ -76,6 +78,14 @@ internal object GuardDirector : Director {
         }
         step(level, g)
     }
+
+    /** Who has a guard on a seat (build part D3: the Carrier's Wagon's bench and tailboard), asked before anything else each tick: true while they have them. */
+    fun interface Seats {
+        fun ride(g: Company.Guard, owner: ServerPlayer, now: Long): Boolean
+    }
+
+    @Volatile
+    var seats: Seats? = null
 
     override fun interact(p: Townsperson, player: ServerPlayer): Boolean {
         val g = Company.guardOf(p) ?: return true
