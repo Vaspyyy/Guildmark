@@ -57,8 +57,12 @@ object TownsfolkClient {
     /** The look [p] wears, from the role's looks that art/scripts/townsfolk.py painted. */
     fun lookOf(p: Townsperson): TownsfolkLooks.Look? = TownsfolkLooks.BY_ROLE[p.role.id]?.let { it.getOrNull(p.look) ?: it.firstOrNull() }
 
-    /** The clip [activity] plays for [p]: half the folk talk with one set of gestures, half with another. */
-    fun clipName(p: Townsperson, activity: Activity): String = if (activity == Activity.TALK && (p.id and 1) == 1) "talk_b" else activity.clip
+    /**
+     * The clip [activity] plays for [p]: half the folk talk with one set of gestures, half with another; one carrying a swaddled baby
+     * (LivingProps.swaddled, Villages V12a) carries it in the arms (carry_swaddle) and not as goods.
+     */
+    fun clipName(p: Townsperson, activity: Activity): String = if (activity == Activity.TALK && (p.id and 1) == 1) "talk_b"
+        else if (activity == Activity.CARRY && LivingProps.swaddled?.invoke(p) == true) "carry_swaddle" else activity.clip
 
     /** Each client tick for each townsperson. */
     fun tick(p: Townsperson) {

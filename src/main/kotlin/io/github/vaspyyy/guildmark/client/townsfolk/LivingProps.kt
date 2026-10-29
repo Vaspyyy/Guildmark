@@ -112,6 +112,8 @@ internal object LivingProps {
                 if (time < s.from || time >= s.to && s.to != LivingSchedule.END) continue
                 if (s.part in Props.ALL) held = held + s.part else living.shown += s.part
             }
+            // Villages (V12a): the baby is carried in place of CARRY's crate
+            if (name == "carry_swaddle") held = held - "crate"
         }
         if (spans != null) goods(p, living, name, spans, time)?.let { span ->
             // Hearthcraft (TownPlates.kt): a lunch dish takes the place of the loaf of `eat`
@@ -171,6 +173,15 @@ internal object LivingProps {
 
     /** Run after the props are posed (TownsfolkModel.setupAnim): client/caravan's reins and nosebag. */
     var after: ((TownsfolkModel, TownsfolkRenderState) -> Unit)? = null
+
+    // ---- Villages (V12a) ----
+    /**
+     * Whether [p] is carrying a swaddled baby: their CARRY plays carry_swaddle (the bundle across their forearms, tucked in now and then)
+     * in place of carry and its goods (TownsfolkClient.clipName). Set by whatever gives someone a baby to carry; null, and no one does.
+     */
+    @Volatile
+    var swaddled: ((Townsperson) -> Boolean)? = null
+    // ---- end Villages (V12a) ----
 
     /**
      * Each client tick (from LivingMoments.tick): someone put onto a seat or off it is put straight there, not slid
