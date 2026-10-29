@@ -31,7 +31,7 @@ internal object LivingSchedule {
     class Moment(val name: String, val tick: Float, val x: Float, val y: Float, val z: Float)
 
     /** The clips these are for. */
-    val CLIPS: Set<String> = setOf("sit_down", "stand_up", "nod", "shrug", "point", "bow", "yawn", "stretch", "knock", "climb", "climb_top", "eat", "sit_eat", "wash", "pick_up", "put_down", "hand_over", "receive", "pay", "browse", "set_up", "sow", "carry_basket", "gather", "scythe", "grind", "chop", "pour_sack", "ring_bell", "announce", "draw_water", "explain", "gossip", "shush", "wave_off", "sigh", "think", "tip_hat", "introduce", "arms_folded", "recoil", "wave_walk", "nod_walk", "sit_gossip", "sit_laugh", "pause_work", "carry_pole", "light_lamp", "snuff_lamp", "drive", "drive_urge", "drive_brake", "ride_tail", "jump_down", "climb_up", "cut_loose", "hand_down", "cower", "catch_breath", "recount", "wounded", "grumble", "mix_mortar", "trowel", "hoist", "carry_beam", "chisel", "plumb", "survey", "unveil", "toast", "lookout", "light_beacon", "sound_horn", "queue", "shiver", "empty_basket", "haggle", "ladle", "hold_out", "eat_bowl", "take_bowl", "pack", "embrace", "look_about", "show_in", "shut_stall", "stir", "taste", "flip", "turn_spit", "slice", "carve", "peel", "stamp", "check_load", "load_pack", "hitch", "weigh", "halt", "rummage", "grieve", "wring_hands", "shake_hands", "feed_fire", "hobble", "lay_posy")
+    val CLIPS: Set<String> = setOf("sit_down", "stand_up", "nod", "shrug", "point", "bow", "yawn", "stretch", "knock", "climb", "climb_top", "eat", "sit_eat", "wash", "pick_up", "put_down", "hand_over", "receive", "pay", "browse", "set_up", "sow", "carry_basket", "gather", "scythe", "grind", "chop", "pour_sack", "ring_bell", "announce", "draw_water", "explain", "gossip", "shush", "wave_off", "sigh", "think", "tip_hat", "introduce", "arms_folded", "recoil", "wave_walk", "nod_walk", "sit_gossip", "sit_laugh", "pause_work", "carry_pole", "light_lamp", "snuff_lamp", "drive", "drive_urge", "drive_brake", "ride_tail", "jump_down", "climb_up", "cut_loose", "hand_down", "cower", "catch_breath", "recount", "wounded", "grumble", "mix_mortar", "trowel", "hoist", "carry_beam", "chisel", "plumb", "survey", "unveil", "toast", "lookout", "light_beacon", "sound_horn", "queue", "shiver", "empty_basket", "haggle", "ladle", "hold_out", "eat_bowl", "take_bowl", "pack", "embrace", "look_about", "show_in", "shut_stall", "stir", "taste", "flip", "turn_spit", "slice", "carve", "peel", "stamp", "check_load", "load_pack", "hitch", "weigh", "halt", "rummage", "bolt_door", "lay_candle", "cradle", "carry_swaddle", "grieve", "wring_hands", "shake_hands", "feed_fire", "hobble", "lay_posy")
 
     /** Each prop's own part, and the part it hangs on. */
     val PARENT: Map<String, String> = mapOf(
@@ -101,6 +101,9 @@ internal object LivingSchedule {
         "trace_end" to "body",
         "weigh_sack" to "body",
         "rummage_pack" to "body",
+        "swaddle" to "body",
+        "candle_lit" to "right_arm",
+        "candle_flame" to "right_arm",
     )
 
     /** By clip: the props it shows, and when. */
@@ -338,6 +341,16 @@ internal object LivingSchedule {
         "rummage" to listOf(
             Shown("rummage_pack", 0f, END),
         ),
+        "lay_candle" to listOf(
+            Shown("candle_flame", 0f, 24f),
+            Shown("candle_lit", 0f, 24f),
+        ),
+        "cradle" to listOf(
+            Shown("swaddle", 0f, END),
+        ),
+        "carry_swaddle" to listOf(
+            Shown("swaddle", 0f, END),
+        ),
     )
 
     /** By clip: the props its file turns, places and stretches itself tick by tick ("prop:<part>" bones). */
@@ -375,13 +388,14 @@ internal object LivingSchedule {
         "hitch" to listOf("trace_end"),
         "weigh" to listOf("weigh_sack"),
         "rummage" to listOf("rummage_pack"),
+        "lay_candle" to listOf("candle_flame", "candle_lit"),
     )
 
     /** Props that hang straight down from the hand holding them (where no track runs them). */
     val HANG: Set<String> = setOf("bucket", "sack_empty", "loot_sack", "nosebag_held", "plumb_line")
 
     /** Props with a flame that glows in the dark. */
-    val GLOW: Set<String> = setOf("lamp_pole", "torch", "torch_flame")
+    val GLOW: Set<String> = setOf("lamp_pole", "torch", "torch_flame", "candle_flame")
 
     /** By clip: where the goods someone carries are, and when. */
     val GOODS: Map<String, List<Goods>> = mapOf(
@@ -913,6 +927,17 @@ internal object LivingSchedule {
         "rummage" to listOf(
             Moment("look", 9f, -3.682f, 0.009f, -12.055f),
             Moment("shake", 21f, -0.503f, 5.165f, -13.801f),
+        ),
+        "bolt_door" to listOf(
+            Moment("bolt", 30f, -8.6f, 1.6f, -7.6f),
+        ),
+        "lay_candle" to listOf(
+            Moment("set", 24f, 0.6f, 18.1f, -16.5f),
+            Moment("lit", 26f, 0.6f, 13.1f, -16.5f),
+        ),
+        "cradle" to listOf(
+            Moment("coo", 16f, 3.061f, 3.843f, -11.391f),
+            Moment("coo", 46f, 2.389f, 3.732f, -11.688f),
         ),
     )
 }
