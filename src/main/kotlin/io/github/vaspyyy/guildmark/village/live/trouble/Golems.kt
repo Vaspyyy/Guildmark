@@ -64,7 +64,7 @@ object Golems {
 
     /** `village golem`: the top-up now, whatever the hour or the night: the golem made, or why not. */
     fun now(level: ServerLevel, rec: VillageRec): String {
-        if (!Trouble.golemsOn()) return "Village Golems is off: no golem is made."
+        if (!Trouble.golemsOn()) return "Village Golems (villageGolems) is off: no golem is made."
         val have = count(level, rec)
         val want = wanted(level, rec)
         if (have >= want) return "$have golem${if (have == 1) "" else "s"} about, and ${rec.name} wants $want: none made."

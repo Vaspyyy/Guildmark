@@ -134,7 +134,7 @@ object Deaths {
     fun lines(level: ServerLevel, rec: VillageRec): List<Component> {
         val out = ArrayList<Component>()
         if (!Trouble.on()) {
-            if (rec.dead.isNotEmpty()) out.add(label("Dead: ").append(plain("${rec.dead.size} kept (Village Trouble is off: nobody new is entered, no candle laid).")))
+            if (rec.dead.isNotEmpty()) out.add(label("Dead: ").append(plain("${rec.dead.size} kept (Shelter and the Watch is off: nobody new is entered, no candle laid).")))
             return out
         }
         val kept = TroubleData.peek(level)?.peek(rec.key)

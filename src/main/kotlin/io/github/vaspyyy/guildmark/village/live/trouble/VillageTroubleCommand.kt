@@ -94,7 +94,7 @@ object VillageTroubleCommand {
             return null
         }
         if (live && !Trouble.on()) {
-            fail(source, "Village Trouble is off (setting: Village Trouble): sieges and raids at ${rec.name} go as they did before.")
+            fail(source, "Shelter and the Watch is off (setting: villageTrouble): sieges and raids at ${rec.name} go as they did before.")
             return null
         }
         if (live && rec.state != Live.LIVE) {
@@ -111,7 +111,7 @@ object VillageTroubleCommand {
         val source = context.source
         val level = source.level
         say(source, head("${rec.name}: the watch and the shelter"))
-        if (!Trouble.on()) say(source, grey("Village Trouble is off: nothing below is worked out, and sieges and raids go as they did before."))
+        if (!Trouble.on()) say(source, grey("Shelter and the Watch (villageTrouble) is off: nothing below is worked out, and sieges and raids go as they did before."))
         for (line in Watch.describe(level, rec)) say(source, plain(line))
         say(source, label("Shelter: ").append(plain(Shelter.describe(rec.key, level.gameTime).joinToString("; "))))
         for (line in RaidWatch.describe(level, rec.key)) say(source, label("Raid: ").append(plain(line)))
@@ -171,7 +171,7 @@ object VillageTroubleCommand {
     private fun add(context: CommandContext<CommandSourceStack>, name: String): Int {
         val rec = target(context, live = false) ?: return 0
         val source = context.source
-        if (!Trouble.on()) return fail(source, "Village Trouble is off: nobody new is entered among the dead.")
+        if (!Trouble.on()) return fail(source, "Shelter and the Watch (villageTrouble) is off: nobody new is entered among the dead.")
         val clean = name.trim().take(48)
         if (clean.isEmpty()) return fail(source, "Give a name.")
         Deaths.bury(source.level, rec, clean, VillageBoards.day(source.level), "", -1, -1)
