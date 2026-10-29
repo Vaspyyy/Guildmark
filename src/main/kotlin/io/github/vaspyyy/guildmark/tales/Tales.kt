@@ -147,6 +147,8 @@ object Tales : Comings.Listener {
         io.github.vaspyyy.guildmark.tales.templates.LuteCommands.register()
         // T1b: the Locket's `tale locket` and its scenes
         io.github.vaspyyy.guildmark.tales.templates.LocketCommands.register()
+        // T2b: the lantern's `tale tradition` and `tale lantern`, its scenes, and the open lantern tales seen to each second
+        io.github.vaspyyy.guildmark.tales.templates.LanternFestival.register()
     }
 
     // ---- The clock ----
@@ -224,10 +226,10 @@ object Tales : Comings.Listener {
     fun captiveDied(level: ServerLevel, p: Townsperson) {}
 
     /** From `FestivalSite.lanterns` (T2 places the call): the Lanternrise's lanterns are about to go, at the festival's [centre]. */
-    fun lanternStart(level: ServerLevel, centre: Vec3) {}
+    fun lanternStart(level: ServerLevel, centre: Vec3) = io.github.vaspyyy.guildmark.tales.templates.LanternFestival.start(level, centre)
 
     /** From `FestivalSite.lanterns` (T2 places the call), the moment the lanterns are let go at [centre]. */
-    fun lanternRelease(level: ServerLevel, centre: Vec3) {}
+    fun lanternRelease(level: ServerLevel, centre: Vec3) = io.github.vaspyyy.guildmark.tales.templates.LanternFestival.release(level, centre)
 
     /** From `Contracts.turnIn` (E places the call): [player] handed in [note] (its chain begins `tale:`) in [state]. */
     fun contractDone(level: ServerLevel, player: Player, note: QuestNote, state: ContractState) = contract(level, player, note, state, false)
@@ -248,7 +250,8 @@ object Tales : Comings.Listener {
     // ---- What a tale shows, placed by the part that shows it ----
 
     /** From `Crier.news` (E places the call): what [entry]'s crier cries of tales at [c]'s noon, [at] being the game time. None yet. */
-    fun cries(level: ServerLevel, entry: Markets.Entry, c: Conditions, at: Long): List<Crier.Cry> = TaleTold.cries(level, entry, c, at)
+    fun cries(level: ServerLevel, entry: Markets.Entry, c: Conditions, at: Long): List<Crier.Cry> =
+        TaleTold.cries(level, entry, c, at) + io.github.vaspyyy.guildmark.tales.templates.LanternFestival.cries(level, entry, c, at)
 
     /** From `Streets.wants` (F places the call): whether the memorial at [pos] in [column] is still wanted by the record of [run]. */
     fun wants(level: ServerLevel, column: Long, pos: BlockPos, run: Long): Boolean = Memorials.wants(level, column, pos, run)
@@ -316,7 +319,7 @@ object Tales : Comings.Listener {
     fun owed(level: ServerLevel, player: ServerPlayer) = TalePay.owed(level, player)
 
     /** Part T2 (6.5, 8.9): the traditions [capital]'s festival keeps; the lantern's release and the crier's festival cry read them. None yet. */
-    fun traditions(level: ServerLevel, capital: Long): List<TaleData.Tradition> = listOf()
+    fun traditions(level: ServerLevel, capital: Long): List<TaleData.Tradition> = io.github.vaspyyy.guildmark.tales.templates.LanternFestival.traditions(level, capital)
 
     /** [get], or true before the world's config is read (as every switch answers). */
     private inline fun setting(get: () -> Boolean): Boolean = try {

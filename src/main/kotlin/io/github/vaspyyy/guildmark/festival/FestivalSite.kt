@@ -1109,6 +1109,8 @@ class FestivalSite(
                 m.nextIdle = now + LANTERN_TIME
             }
             for (player in nearby(level, plan.square + 24.0)) player.sendOverlayMessage(Component.translatable("message.guildmark.festival.lanterns").withColor(kind.color))
+            // Tales T2b: a lantern tale's old resident at the square lets theirs go with the town's
+            io.github.vaspyyy.guildmark.tales.Tales.lanternStart(level, plan.centre)
             return
         }
         val e = now - lanternsAt
@@ -1128,6 +1130,8 @@ class FestivalSite(
                     0, 0.0, 1.0, 0.0, 0.0,
                 )
             }
+            // Tales T2b: the lantern tale's lantern leaves its hands with these, and the town's lantern traditions rise
+            io.github.vaspyyy.guildmark.tales.Tales.lanternRelease(level, plan.centre)
         }
         // Their arms open after it, and then they watch it go
         if (e == Activity.RELEASE.ticks.toLong()) for (m in members.values) if (m.person.activity == Activity.RELEASE) m.person.act(Activity.GAZE)
