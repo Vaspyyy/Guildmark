@@ -44,6 +44,7 @@ object TalkSources {
         KitchenTopics,
         TradeTopics,
         TaleTopics,
+        io.github.vaspyyy.guildmark.village.live.talk.VillageTopics,
     )
 
     /** Registers every source with [Topics] and starts what they keep watch on: once, at setup (Townsfolk.init). */
@@ -132,10 +133,13 @@ internal object Say {
     fun timbre(p: Townsperson): String =
         TownsfolkLooks.BY_ROLE[p.role.id]?.let { it.getOrNull(p.look) ?: it.firstOrNull() }?.timbre ?: if (child(p)) "child" else "man"
 
-    /** The market of [ask]'s town, if markets are on and it's open. */
+    /** The market of [ask]'s town, if markets are on and it's open: a village's too, with Village Bellman. */
     fun market(ask: Ask): Markets.Entry? {
         if (!Markets.enabled()) return null
-        return ask.market ?: ask.resident?.let { Markets.get(ask.level)[it.capital] }
+        return ask.market ?: ask.resident?.let {
+            Markets.get(ask.level)[it.capital]
+                ?: if (io.github.vaspyyy.guildmark.village.live.talk.VillageCry.enabled()) Markets.find(ask.level, it.capital.asLong()) else null
+        }
     }
 
     /** A player's name as the world knows it, whether they're on or not; null if it doesn't. */

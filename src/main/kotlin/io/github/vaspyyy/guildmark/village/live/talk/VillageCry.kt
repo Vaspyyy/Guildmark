@@ -249,7 +249,7 @@ object VillageCry {
     }
 
     /** The quest board of [rec], if it stands loaded: where its sieges and what has been built are kept. */
-    private fun board(level: ServerLevel, rec: VillageRec): QuestBoardBlockEntity? {
+    internal fun board(level: ServerLevel, rec: VillageRec): QuestBoardBlockEntity? {
         if (rec.board == -1L) return null
         val pos = BlockPos.of(rec.board)
         if (!level.isLoaded(pos)) return null

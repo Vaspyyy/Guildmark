@@ -9760,7 +9760,7 @@
   "say.guildmark.bellman_no_pedlar": "No pedlar this time!",
   "say.guildmark.bellman_times_steady": "Steady times in the village! Neither feast nor famine!",
   "say.guildmark.bellman_market_day": "It's market day! The stalls are out on the green!",
-  "chat.guildmark.bellman.crew": "They are to raise the %s.",
+  "chat.guildmark.bellman.crew": "To be built: %s.",
   "chat.guildmark.bellman.brought": "They brought %s.",
   "chat.guildmark.bellman.why.band": "A band camped near kept the pedlar away.",
   "chat.guildmark.bellman.why.slain": "The pedlar was killed on the way.",
@@ -9780,5 +9780,14 @@
   "board.guildmark.slip.village.dead": "Mourning",
   "board.guildmark.slip.village.no_pedlar": "No pedlar",
   "board.guildmark.slip.village.wagon": "The wagon is in",
-  "board.guildmark.slip.village.late": "No wagon"
+  "board.guildmark.slip.village.late": "No wagon",
+  "say.guildmark.talk.detail.village.from": "From %s.",
+  "say.guildmark.talk.detail.village.since": "The last came %s days ago.",
+  "say.guildmark.talk.detail.village.pedlar.today": "%s, today.",
+  "say.guildmark.talk.detail.village.pedlar.tomorrow": "%s, tomorrow.",
+  "say.guildmark.talk.detail.village.why.band": "A band was camped near.",
+  "say.guildmark.talk.detail.village.why.slain": "The last pedlar was killed on the road.",
+  "say.guildmark.talk.detail.village.who": "%s.",
+  "say.guildmark.talk.detail.village.project.going": "%s, going up.",
+  "say.guildmark.talk.detail.village.project.done": "%s, finished."
 }

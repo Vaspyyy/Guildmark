@@ -145,7 +145,9 @@ internal object OldLines {
 
     private fun market(level: ServerLevel, p: Townsperson): Markets.Entry? {
         if (!Markets.enabled()) return null
-        return Markets.get(level)[capital(level, p) ?: return null]
+        val at = capital(level, p) ?: return null
+        // A village's market too, with Village Bellman (its folk's old lines go by what it has)
+        return Markets.get(level)[at] ?: if (io.github.vaspyyy.guildmark.village.live.talk.VillageCry.enabled()) Markets.find(level, at.asLong()) else null
     }
 
     /** Whether the market has [good] in stock; null if there's no market to go by. */
