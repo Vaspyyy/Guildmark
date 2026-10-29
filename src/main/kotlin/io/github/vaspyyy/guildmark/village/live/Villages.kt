@@ -57,6 +57,8 @@ object Villages {
         VillageVisits.register()
         // Which capitals' wagon roads end at which village, and the wagons' calls (V7)
         io.github.vaspyyy.guildmark.village.live.links.VillageLinks.register()
+        // Births, children growing up, newcomers off the road and households leaving (V13)
+        io.github.vaspyyy.guildmark.village.live.grow.VillageGrowth.register()
     }
 
     /**
