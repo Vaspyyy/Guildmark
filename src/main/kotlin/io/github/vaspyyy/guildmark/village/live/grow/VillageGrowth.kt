@@ -412,6 +412,8 @@ object VillageGrowth {
         val level = server.overworld()
         val now = level.gameTime
         try {
+            // Switched off (or Living Villages off): a household walking in or out, a birth or a word on one grown up, end now
+            if (GrowScenes.any() && !enabled()) GrowScenes.endAll()
             GrowScenes.tick(level)
             if (now % 20L == 7L) vanish(level)
             if (now % STEP == 13L) step(level)

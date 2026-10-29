@@ -89,6 +89,14 @@ internal object GrowScenes {
         held.clear()
     }
 
+    /** Whether any scene is under way. */
+    fun any(): Boolean = scenes.isNotEmpty()
+
+    /** Every scene under way ended now, as one cut short is (Births and Newcomers or Living Villages switched off). */
+    fun endAll() {
+        for (s in scenes.toList()) finish(s, off = true)
+    }
+
     fun start(s: Scene) {
         scenes += s
     }
