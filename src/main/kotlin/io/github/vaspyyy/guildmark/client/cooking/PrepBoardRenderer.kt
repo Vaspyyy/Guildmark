@@ -19,29 +19,33 @@ import kotlin.math.min
 import kotlin.math.sin
 
 /**
- * Where the items of a Prep Board's heap lie (living-world/cook/design.md 1.1, 11.1): a heap of up to twelve pictures in the box the
- * art leaves for it, five on the board, four on those and three on top, each turned and tipped its own way and darker the lower it lies.
+ * Where the items of a Prep Board's heap lie (living-world/cook/design.md 1.1, 11.1): a heap of up to sixteen pictures (the board's
+ * whole capacity) in the box the art leaves for it, six on the board, five on those, four above and one on top, each turned and tipped
+ * its own way and darker the lower it lies.
  * A place is worked from the item's index and its kind alone, so it is the same from one frame to the next and from one client to the
  * next, and an item laid or chopped moves no other.
  */
 object Heap {
-    private val FIRST = intArrayOf(0, 5, 9)
-    private val COUNT = intArrayOf(5, 4, 3)
-    private val RADIUS = floatArrayOf(2.5f, 1.45f, 0.55f)
-    private val LIFT = floatArrayOf(0.42f, 1.5f, 2.55f)
-    private val TILT = floatArrayOf(0.3f, 0.5f, 0.65f)
+    private val FIRST = intArrayOf(0, 6, 11, 15)
+    private val COUNT = intArrayOf(6, 5, 4, 1)
+    private val RADIUS = floatArrayOf(2.6f, 1.6f, 0.8f, 0.15f)
+    private val LIFT = floatArrayOf(0.42f, 1.45f, 2.4f, 3.25f)
+    private val TILT = floatArrayOf(0.3f, 0.45f, 0.6f, 0.7f)
+
+    /** The most pictures the heap has places for. */
+    const val PLACES = 16
 
     /** How much light each layer keeps (the lower the darker, a heap shades itself). */
-    val SHADE = floatArrayOf(0.8f, 0.9f, 1f)
+    val SHADE = floatArrayOf(0.78f, 0.86f, 0.93f, 1f)
 
     /** A picture's half-size, px. */
     const val HALF = 1.55f
 
-    fun layer(index: Int): Int = if (index < 5) 0 else if (index < 9) 1 else 2
+    fun layer(index: Int): Int = if (index < FIRST[1]) 0 else if (index < FIRST[2]) 1 else if (index < FIRST[3]) 2 else 3
 
     /** Writes into [out] the item's x, y, z (px, its middle), its yaw and its tilt about x and about z (radians). */
     fun place(index: Int, id: Int, out: FloatArray) {
-        val i = index.coerceIn(0, 11)
+        val i = index.coerceIn(0, PLACES - 1)
         val layer = layer(i)
         val slot = i - FIRST[layer]
         val angle = Gfx.TAU * slot / COUNT[layer] + layer * 0.9f + Mix.unit(id, i + 3) * 0.5f

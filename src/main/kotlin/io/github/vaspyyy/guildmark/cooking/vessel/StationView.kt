@@ -56,8 +56,8 @@ class StationView(
     }
 
     companion object {
-        /** The most item ids a view carries. */
-        const val MAX_ITEMS = 12
+        /** The most item ids a view carries: a Prep Board's whole heap (the vessels hold 12 at most). */
+        const val MAX_ITEMS = 16
 
         /** A cold, dry, empty station of kind [station]: what a stub station shows and what a missing record reads as. */
         fun cold(station: Station?): StationView =
