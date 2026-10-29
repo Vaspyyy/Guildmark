@@ -30,7 +30,6 @@ import net.neoforged.neoforge.event.server.ServerStoppedEvent
 import net.neoforged.neoforge.event.tick.ServerTickEvent
 import net.neoforged.neoforge.registries.DeferredItem
 import net.neoforged.neoforge.registries.DeferredRegister
-import java.util.UUID
 
 private typealias Hung = HaulBoardBlockEntity.Ticket
 private typealias Chalked = HaulBoardBlockEntity.Row
@@ -97,15 +96,13 @@ object HaulBoards {
     private val tried = HashMap<Long, Long>()
     private var looked = 0L
 
-    /** The boards players have read, to be told what changes (see [HaulBoardViews]). */
-    internal val reading = HashMap<UUID, BlockPos>()
-
     fun register(modBus: IEventBus) {
         ITEMS.register(modBus)
         modBus.addListener(BuildCreativeModeTabContentsEvent::class.java) { event ->
             if (event.tabKey == ModCreativeTabs.MAIN.key) event.accept(HAUL_BOARD.get())
         }
         BoardCommand.init()
+        HaulBoardViews.register(modBus)
         Hauls.listen(object : Hauls.Listener {
             override fun posted(level: ServerLevel, haul: Haul) = refresh(level, haul.capital)
             override fun booked(level: ServerLevel, haul: Haul) = refresh(level, haul.capital)
@@ -129,7 +126,6 @@ object HaulBoards {
         trips.clear()
         up.clear()
         tried.clear()
-        reading.clear()
         looked = 0L
         HaulClerk.reset()
     }
@@ -472,8 +468,6 @@ object HaulBoards {
             player.sendOverlayMessage(Component.translatable("message.guildmark.trade.board.bare"))
             return
         }
-        if (Tally.has(player)) Tally.copyBoard(level, player, capital)
-        reading[player.uuid] = anchor.immutable()
-        player.sendOverlayMessage(Component.translatable("message.guildmark.trade.board.bare"))
+        HaulBoardViews.open(level, player, anchor, capital)
     }
 }
