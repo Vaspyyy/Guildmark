@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.village.live.links
 
+import io.github.vaspyyy.guildmark.economy.VillageMarkets
 import io.github.vaspyyy.guildmark.townsfolk.Activity
 import io.github.vaspyyy.guildmark.townsfolk.Director
 import io.github.vaspyyy.guildmark.townsfolk.Jobs
@@ -85,6 +86,7 @@ class Greeter internal constructor(
     private fun still(level: ServerLevel, now: Long): Boolean {
         if (now - gathering.started > MOST) return false
         if (gathering.why == GreetWhy.WAGON && !VillageLinks.enabled()) return false
+        if (gathering.why == GreetWhy.PEDLAR && !VillageMarkets.pedlars()) return false
         if (SendOff.near(level, gathering.at)) {
             away = 0L
             return true

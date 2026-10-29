@@ -407,7 +407,7 @@ object SendOff {
             if (now % 10L != 0L) return true
             // Someone taken off them meanwhile (a customer, a fright, gone from the world): out of the scene
             for (h in hands) if (h.p.isRemoved || !h.p.isAlive || h.p.director !== h) h.release()
-            if (!VillageLinks.enabled() || now - started > MOST) {
+            if (!VillageLinks.enabled() || now - started > MOST || Villages.byKey(level, key)?.state.let { it == null || it == Live.LOST }) {
                 end()
                 return false
             }
