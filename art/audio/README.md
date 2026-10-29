@@ -797,3 +797,33 @@ python3 -B art/audio/make_talk_voices.py process --raw <raw-dir> --assets src/ma
 python3 -B art/audio/make_townsfolk_voices.py fragments --assets src/main/resources/assets/guildmark   # then art/lang/merge_lang.py
 python3 -B art/audio/make_talk_voices.py table --assets src/main/resources/assets/guildmark             # then art/lang/merge_lang.py again
 ```
+
+### Kitchen voices
+
+`kitchen_lines.py` holds Hearthcraft's talk families (living-world/cook/design.md sections 8.5 and 11.5): what the
+keepers, the judges, the passers-by, the shopkeepers and the children say of the kitchen, 56 families in 144 wordings in
+five groups and two tiers (tier 1, the cook's own loop at the pot, the oven, the spit and the back door: 23 families, 67
+wordings; tier 2, the town's talk, the onlookers, the Harvest Table, the shop and the children: 33 families, 77
+wordings). It is a module of its own, as the build plan asks of every design's voices: it imports nothing from
+`make_talk_voices.py`, which enters it by one block before its `class Line` (`GROUPS += kitchen_lines.groups(MWO, CHILD,
+TALK)`, with its `DELIVERY`, `SPEED_FOR`, `SAY_AS` and `PHONEMES` folded into the script's own), and only for the tiers in
+`RECORDED`: `table` refuses a family with no take. Both tiers are recorded, 420 takes, so the game plays them as it plays
+the town's own talk; a tier taken out of `RECORDED` is read in full as text instead.
+
+`write` puts the text of every wording of every tier, recorded or not, in `art/lang/cook_lines.json`
+(`say.guildmark.talk.<family>_<n>`) and the number of wordings of each family in the generated
+`townsfolk/talk/sources/KitchenWords.kt`, which is how `KitchenLines` picks a wording to read while a family has no take.
+`check` holds every wording to the talk's rule (a whole sentence true whenever its family is picked, naming no person,
+dish, number or role but for the few `CHECK_ALLOWS` lists) and every family to two to four wordings. The takes were
+checked with Whisper base.en as the talk's are; the module's header says what was heard and what was changed. The
+families are `talk.kitchen.*` and the two works families of a raised cookshop (`talk.works.raised.cookshop`,
+`talk.works.also.raised.cookshop`).
+
+```
+python3 -B art/audio/kitchen_lines.py check    # exit 1 on a family that breaks a rule
+python3 -B art/audio/kitchen_lines.py write    # cook_lines.json and KitchenWords.kt, only if they changed; then art/lang/merge_lang.py
+python3 -B art/audio/kitchen_lines.py list     # the groups, their tier and their families
+<venv>/bin/python -I -B art/audio/make_talk_voices.py tts --model <dl>/kokoro-v1.0.onnx --voices <dl>/voices-v1.0.bin --out <raw-dir> --keys '^talk\.(kitchen\.|works\.(also\.)?raised\.cookshop)'
+python3 -B art/audio/make_talk_voices.py process --raw <raw-dir> --assets src/main/resources/assets/guildmark --keys '<the same>'
+python3 -B art/audio/make_talk_voices.py table --assets src/main/resources/assets/guildmark   # then art/lang/merge_lang.py
+```
