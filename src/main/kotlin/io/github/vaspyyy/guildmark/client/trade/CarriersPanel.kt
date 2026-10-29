@@ -89,7 +89,9 @@ object CarriersPanel : MarketPanel {
     private const val NOTE = 80f
 
     /** Wares whose icon is not the item of the same name. */
-    private val ICONS: Map<String, ItemStack> by lazy { mapOf("pack_donkey" to ItemStack(Items.LEAD)) }
+    private val ICONS: Map<String, ItemStack> by lazy {
+        mapOf("pack_donkey" to ItemStack(Items.LEAD)) + (1..3).associate { "hired_guard_$it" to ItemStack(Items.IRON_SPEAR) }
+    }
 
     private val icons = HashMap<String, ItemStack>()
     private val mark by lazy { ItemStack(ModItems.GUILD_MARK.get()) }
