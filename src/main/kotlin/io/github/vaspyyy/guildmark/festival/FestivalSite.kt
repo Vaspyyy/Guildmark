@@ -113,10 +113,13 @@ class FestivalSite(
     private var nextSet = Long.MIN_VALUE
 
     // ---- Contest, prizes and the evening ----
-    val contest = FestivalContest(kind, key xor run)
+    val contest = FestivalContest(kind, key xor run, plan.capital)
     private var ceremonyAt = -1L
     private var ceremonyStep = 0
     private var awarded = false
+    /** Sheafmoot's Harvest Table at the prize-giving (cooking/feast/HarvestTable): how far its calling has got, and whether it is paid. */
+    private var cookStep = 0
+    private var cookAwarded = false
     private var lanternsAt = -1L
     private var nextRocket = 0L
     private var lastRocket = Long.MIN_VALUE / 2
@@ -143,6 +146,7 @@ class FestivalSite(
         if (to.ordinal < FestivalPhase.CEREMONY.ordinal) {
             ceremonyAt = -1L
             ceremonyStep = 0
+            cookStep = 0
         }
     }
 
@@ -214,6 +218,12 @@ class FestivalSite(
             FestivalPhase.SETUP -> {}
         }
         contest.open = next == FestivalPhase.FAIR
+        if (next == FestivalPhase.FAIR && was != FestivalPhase.FAIR) {
+            // The Harvest Table opens (a capital's Sheafmoot): plates left dressed from before a restart are bared, and the town's
+            // cooks enter, once
+            HarvestTable.clear(level, plan)
+            HarvestTable.townEntries(level, this)
+        }
         if (was == FestivalPhase.SETUP && next != FestivalPhase.SETUP) for (g in 0 until groups) doneHelping(g)
         lastSync = Long.MIN_VALUE
     }
@@ -646,6 +656,8 @@ class FestivalSite(
     }
 
     private fun host(level: ServerLevel, p: Townsperson, m: Member, now: Long) {
+        // Tasting a dish for the Harvest Table (cooking/feast/HarvestTable): the tasting has them until it is done
+        if (HarvestTable.hosting(level, this, p)) return
         val spot = plan.host
         if (!walk(p, m, spot.x, spot.y, spot.z, now)) return
         turn(p, spot.yaw, 12f)
@@ -825,6 +837,10 @@ class FestivalSite(
         p.attend(player, 100)
         p.lookAt(player)
         val stack = player.mainHandItem
+        // A dish at a capital's Sheafmoot is for the Harvest Table: the host tastes it (cooking/feast/HarvestTable)
+        if (kind == FestivalKind.SHEAFMOOT) contest.taste(level, player, stack)?.let { return HarvestTable.judge(level, this, p, player, stack, it) }
+        // Busy tasting someone's dish: a word, and no wave in the middle of it
+        val tasting = HarvestTable.tasting(this)
         val handled = when (kind) {
             FestivalKind.SHEAFMOOT -> contest.produce(level, player, stack)
             FestivalKind.LANTERNRISE -> contest.answer(level, player, stack)
@@ -832,9 +848,9 @@ class FestivalSite(
         }
         if (!handled) {
             player.sendSystemMessage(Component.translatable("message.guildmark.festival.host", p.name, contest.hint(player)).withColor(kind.color))
-            p.say("fest_host_${level.random.nextInt(HOST_LINES)}", force = true)
+            if (!tasting) p.say("fest_host_${level.random.nextInt(HOST_LINES)}", force = true)
         }
-        p.act(Activity.WAVE)
+        if (!tasting) p.act(Activity.WAVE)
         return true
     }
 
@@ -917,6 +933,7 @@ class FestivalSite(
         if (ceremonyAt < 0) {
             ceremonyAt = now
             ceremonyStep = 0
+            cookStep = 0
             contest.open = false
         }
         val e = now - ceremonyAt
@@ -928,7 +945,12 @@ class FestivalSite(
             for (player in nearby(level, plan.square + 24.0)) player.sendSystemMessage(Component.translatable("message.guildmark.festival.says", hostName, line))
             host?.act(Activity.CALL_OUT)
         }
+        // Sheafmoot's Harvest Table, when it has entries, is called first, and the rest of the prize-giving waits for it
+        val cooks = if (contest.cooking()) contest.cookResults() else listOf()
+        val shift = if (cooks.isNotEmpty()) COOK_SHIFT else 0
         when {
+            ceremonyStep == 2 && cooks.isNotEmpty() && cookStep < COOK_AT.size && e >= 190 + COOK_AT[cookStep] ->
+                cookCall(level, host, cooks) { key, args -> announce(key, *args.toTypedArray()) }
             ceremonyStep == 0 && e >= 0 -> {
                 ceremonyStep = 1
                 announce("message.guildmark.festival.gather", kind.title)
@@ -939,15 +961,15 @@ class FestivalSite(
                 ceremonyStep = 2
                 announce("message.guildmark.festival.contest_over", contest.title, results.size)
             }
-            ceremonyStep == 2 && e >= 190 -> {
+            ceremonyStep == 2 && e >= 190 + shift -> {
                 ceremonyStep = 3
                 results.getOrNull(2)?.let { announce("message.guildmark.festival.third", it.name, it.score) }
             }
-            ceremonyStep == 3 && e >= 250 -> {
+            ceremonyStep == 3 && e >= 250 + shift -> {
                 ceremonyStep = 4
                 results.getOrNull(1)?.let { announce("message.guildmark.festival.second", it.name, it.score) }
             }
-            ceremonyStep == 4 && e >= 320 -> {
+            ceremonyStep == 4 && e >= 320 + shift -> {
                 ceremonyStep = WINNER_STEP
                 val first = results.firstOrNull()
                 if (first != null) announce("message.guildmark.festival.winner", first.name, first.score, ItemStack(FestivalRegistry.prize(kind)).hoverName)
@@ -968,6 +990,63 @@ class FestivalSite(
         contest.open = false
         io.github.vaspyyy.guildmark.townsfolk.talk.Witness.festival(level, plan.centre, kind.id, contest.results())
         FestivalPrizes.award(level, kind, townName, contest.results())
+        // The Harvest Table's too, if its call never came (the prize-giving missed: nobody near, the festival stopped)
+        awardCook(level)
+    }
+
+    /**
+     * The Harvest Table's part of the prize-giving (cooking/feast/HarvestTable), from the Produce Show's third place's time on: the
+     * host, facing the crowd, calls it in their own voice ("And the Harvest Table goes to..."); the winner is named, with the
+     * fanfare, and the ladle and the Marks arrive as the name is said; then its second and third places. With only the town's
+     * cooks in, one line names the winner, and nobody is paid.
+     */
+    private fun cookCall(level: ServerLevel, host: Townsperson?, cooks: List<FestivalContest.Entry>, say: (String, List<Any>) -> Unit) {
+        val players = cooks.any { !it.npc }
+        val first = cooks.first()
+        when (cookStep) {
+            0 -> host?.let {
+                it.act(Activity.CALL_OUT)
+                HarvestTable.voice(it, "kitchen.judge.win")
+            }
+            1 -> if (!players) {
+                say("message.guildmark.feast.town_only", listOf(FestivalContest.named(first.name), first.score))
+                cheer(level)
+            } else {
+                say("message.guildmark.festival.winner", listOf(FestivalContest.named(first.name), first.score, contest.cookTitle))
+                if (first.npc) say("message.guildmark.feast.town_won", listOf(FestivalContest.named(first.name)))
+                level.playSound(null, BlockPos.containing(plan.host.pos), FestivalRegistry.FANFARE.get(), SoundSource.RECORDS, 3.0f, 1f)
+                awardCook(level)
+                repeat(3) { rocket(level, it) }
+                cheer(level)
+                for (m in members.values) if (m.part != FestivalPart.HOST) m.person.act(if (m.person.role == TownRole.CHILD) Activity.JUMP else Activity.FEST_HURRAH)
+            }
+            2 -> if (players) {
+                cooks.getOrNull(1)?.let { say("message.guildmark.festival.second", listOf(FestivalContest.named(it.name), it.score)) }
+                cooks.getOrNull(2)?.let { say("message.guildmark.festival.third", listOf(FestivalContest.named(it.name), it.score)) }
+            }
+        }
+        cookStep++
+    }
+
+    /**
+     * Pays the Harvest Table's prizes, once (FestivalPrizes, contest "cook"): Marks by place to every player who showed a dish, the
+     * Gilded Ladle to one who beat the town's cooks, and the region's talk of the winner (KitchenRumours.cookoff, in place of the
+     * festival's own rumour, which would say the Sheafmoot). Nothing where the table is not held, or no player came to it. False if
+     * it was paid already.
+     */
+    fun awardCook(level: ServerLevel): Boolean {
+        if (cookAwarded) return false
+        cookAwarded = true
+        if (!contest.cooking()) return true
+        val results = contest.cookResults()
+        if (results.none { !it.npc }) return true
+        FestivalPrizes.award(level, kind, townName, results, FestivalPrizes.COOK)
+        val first = results.first()
+        if (first.npc) return true
+        val winner = level.server.playerList.getPlayer(first.id) ?: return true
+        val dish = contest.dishesOf(first.id).maxByOrNull { it.value }?.key ?: return true
+        io.github.vaspyyy.guildmark.townsfolk.talk.sources.KitchenRumours.cookoff(level, BlockPos.containing(plan.centre), winner, dish)
+        return true
     }
 
     private fun cheer(level: ServerLevel) {
@@ -1181,6 +1260,12 @@ class FestivalSite(
             count(FestivalPart.DANCE), plan.dance?.n ?: 0, count(FestivalPart.WATCH), plan.crowd.size, decor, total))
         val set = if (setStart >= 0) "bar ${bar + 1}/36" else if (nextSet > level.gameTime) "next in ${(nextSet - level.gameTime) / 20}s" else "-"
         lines.add(Component.translatable("commands.guildmark.festival.info.set", set, contest.title, contest.results().take(3).joinToString(", ") { "${it.name} ${it.score}" }.ifEmpty { "-" }))
+        if (contest.cooking()) {
+            // The Harvest Table's first three (the town's cooks among them)
+            val cooks = Component.empty()
+            contest.cookResults().take(3).forEachIndexed { i, it -> cooks.append(if (i > 0) ", " else "").append(FestivalContest.named(it.name)).append(" ${it.score}") }
+            lines.add(Component.translatable("commands.guildmark.festival.info.cook", contest.cookTitle, if (cooks.siblings.isEmpty()) Component.literal("-") else cooks))
+        }
         return lines
     }
 
@@ -1215,6 +1300,12 @@ class FestivalSite(
         const val MUSIC_RANGE = 80
         /** The prize-giving's step when the winner is called. */
         const val WINNER_STEP = 5
+        /**
+         * With Harvest Table results, how much later the Produce Show's places come, and when, after the Produce Show's third place's
+         * time, the table is called, its winner named and its other places said (cooking/feast/HarvestTable).
+         */
+        const val COOK_SHIFT = 90
+        private val COOK_AT = intArrayOf(0, 25, 60)
 
         /** Lines, under say.guildmark.fest_*. */
         const val SETUP_LINES = 4
