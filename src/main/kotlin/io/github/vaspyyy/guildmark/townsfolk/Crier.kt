@@ -30,6 +30,7 @@ import io.github.vaspyyy.guildmark.season.Seasons
 import io.github.vaspyyy.guildmark.townsfolk.talk.TownCry
 import net.minecraft.ChatFormatting
 import net.minecraft.core.BlockPos
+import net.minecraft.core.Direction
 import net.minecraft.core.Holder
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.MutableComponent
@@ -37,6 +38,7 @@ import net.minecraft.resources.Identifier
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.sounds.SoundEvent
 import net.minecraft.sounds.SoundSource
+import net.minecraft.world.level.block.BellBlock
 import net.minecraft.world.phys.Vec3
 import java.util.Random
 import java.util.WeakHashMap
@@ -67,6 +69,16 @@ object Crier {
     /** Ticks of the handbell before the news, and after it. */
     private const val BELL = 60
     private const val BELL_AFTER = 40
+
+    /**
+     * Ticks of a great bell ([GreatBell]) before the news and after it, and the strokes: three before (one each [STRUCK] ticks, the
+     * first [STRIKE] in), one after, the bell left to hum out between.
+     */
+    private const val GREAT_BEFORE = 100
+    private const val GREAT_AFTER = 50
+    private const val STRUCK = 30
+    private const val STRIKE = 10
+    private const val STROKES = 3
 
     /** Ticks the chalk takes over a line. */
     private const val STROKE = 14
@@ -129,7 +141,7 @@ object Crier {
     private fun conditions(level: ServerLevel): Conditions = Conditions(Markets.hourOf(level))
 
     /** The words of the voiced [line]. */
-    private fun said(line: String): MutableComponent = Component.translatable("say.guildmark.$line")
+    internal fun said(line: String): MutableComponent = Component.translatable("say.guildmark.$line")
 
     /**
      * The crier's part of a CRY stretch: before eleven the morning's prices (if the board needs them), after it the
@@ -156,11 +168,33 @@ object Crier {
         val cries = today(level, places, entry, c)
         val spot = cryingSpot(places)
         val crowd = Vec3.atBottomCenterOf(spot.pos.relative(spot.facing, 6)).add(0.0, 1.5, 0.0)
+        val work = crying(p, spot, crowd, cries, now)
+        val crier = Acts.via(p, life, spot.pos, work)
+        if (entry == null || board == null) return crier
+        return crier.andThen(Later(p) { chalk(p, life, noon = true, slips = cries.mapNotNull { it.slip }) })
+    }
+
+    /**
+     * A great bell rung for the cry in place of the crier's handbell ([crying]): the bell at [pos], struck [STROKES] times before the
+     * word and once after it by whoever cries, facing it as they pull; [length] gives each thing cried its own time (the line's and a
+     * breath), and [done] is told once the word is cried to the end.
+     */
+    internal class GreatBell(val pos: BlockPos, val length: (Cry) -> Int, val done: () -> Unit = {})
+
+    /**
+     * The noon cry itself, at [spot] looking toward the [crowd]: until the hour (unless [now]) the news read over from the scroll, a
+     * look about between whiles; then the bell, [cries] a line at a time with the folk about drawn in to hear ([gather]), the bell
+     * again, and everyone about knowing what was cried ([TownCry.listened]). A capital's crier rings their handbell; with a [great]
+     * bell, its own strokes ring out (the ringer is flagged to the client, [Townsperson.greatBell], which draws no handbell).
+     */
+    internal fun crying(p: Townsperson, spot: Spot, crowd: Vec3, cries: List<Cry>, now: Boolean, great: GreatBell? = null): Work {
+        val level = level(p)
         var waiting = !now
         var base = 0
         var unrolled = false
         var said = 0
-        val work = Work(p, spot, crowd, plan = { i ->
+        val after = if (great != null) GREAT_AFTER else BELL_AFTER
+        return Work(p, spot, crowd, plan = { i ->
             if (waiting && conditions(level).clock < MarketBoards.NOON) {
                 // Reading the news over until the hour, a look about between whiles
                 if (i % 2 == 0) Step(Activity.READ, 120) else Step(Activity.NONE, 60)
@@ -171,27 +205,32 @@ object Crier {
                 }
                 val j = i - base
                 when {
-                    j == 0 -> Step(Activity.RING_BELL, BELL)
-                    j <= cries.size -> Step(Activity.ANNOUNCE, LINE)
-                    j == cries.size + 1 -> Step(Activity.RING_BELL, BELL_AFTER)
+                    j == 0 -> Step(Activity.RING_BELL, if (great != null) GREAT_BEFORE else BELL)
+                    j <= cries.size -> Step(Activity.ANNOUNCE, great?.length?.invoke(cries[j - 1]) ?: LINE)
+                    j == cries.size + 1 -> Step(Activity.RING_BELL, after)
                     else -> null
-                }
+                }?.also { if (great != null) p.greatBell = true }
             }
         }, onTick = { s, t ->
             val mouth = p.eyePosition
-            // The scroll comes out the first time it's wanted: to read it over, or (come late) to cry from
-            if (t == 0 && !unrolled && (s.activity == Activity.READ || s.activity == Activity.RING_BELL)) {
+            // The scroll comes out the first time it's wanted: to read it over, or (come late) to cry from; at a great bell, once it's rung
+            val cue = if (great != null) Activity.ANNOUNCE else Activity.RING_BELL
+            if (t == 0 && !unrolled && (s.activity == Activity.READ || s.activity == cue)) {
                 unrolled = true
                 sound(level, mouth, "unroll", 0.7f)
             }
             when (s.activity) {
-                Activity.RING_BELL -> if (t == 0 && said == 0) {
-                    crying[p] = Crying(-1, 0)
-                    gather(p)
-                } else if (said >= cries.size && t == BELL_AFTER - 1) {
-                    crying.remove(p)
-                    TownCry.listened(level, p)
-                    sound(level, mouth, "roll_up", 0.7f)
+                Activity.RING_BELL -> {
+                    if (great != null) strike(p, great, t, if (said == 0) STROKES else 1)
+                    if (t == 0 && said == 0) {
+                        crying[p] = Crying(-1, 0)
+                        gather(p)
+                    } else if (said >= cries.size && t == after - 1) {
+                        crying.remove(p)
+                        TownCry.listened(level, p)
+                        sound(level, mouth, "roll_up", 0.7f)
+                        great?.done?.invoke()
+                    }
                 }
                 Activity.ANNOUNCE -> if (t == 0 && said < cries.size) {
                     val cry = cries[said]
@@ -200,15 +239,23 @@ object Crier {
                         it.tone = cry.tone
                     }
                     said++
-                    p.say(cry.line, force = true, hearing = HEARD, ticks = SHOWN)
+                    p.say(cry.line, force = true, hearing = HEARD, ticks = great?.let { it.length(cry) - 8L } ?: SHOWN)
                     tell(level, p, cry.text)
                 }
                 else -> {}
             }
         })
-        val crier = Acts.via(p, life, spot.pos, work)
-        if (entry == null || board == null) return crier
-        return crier.andThen(Later(p) { chalk(p, life, noon = true, slips = cries.mapNotNull { it.slip }) })
+    }
+
+    /** [t] ticks into a ringing of [great], [p] faces the bell and pulls, striking it on the first of [strokes] strokes' ticks. */
+    private fun strike(p: Townsperson, great: GreatBell, t: Int, strokes: Int) {
+        val level = level(p)
+        val bell = Vec3.atCenterOf(great.pos)
+        p.face(p.yawTo(bell))
+        p.lookAt(bell)
+        if (t < STRIKE || (t - STRIKE) % STRUCK != 0 || (t - STRIKE) / STRUCK >= strokes) return
+        val from = Direction.getApproximateNearest(bell.x - p.x, 0.0, bell.z - p.z)
+        if (level.isLoaded(great.pos)) (level.getBlockState(great.pos).block as? BellBlock)?.attemptToRing(level, great.pos, from)
     }
 
     /**
@@ -217,24 +264,31 @@ object Crier {
      * a word to the street once it's done). Null if there's no board or market to write up.
      */
     private fun chalk(p: Townsperson, life: Life, noon: Boolean, slips: List<Slip>): Task? {
-        val level = level(p)
         val places = life.places as? CityPlaces ?: return null
+        return chalk(p, life, places.marketBoard, { MarketBoards.town(places.capital) }, places.centre, noon, slips)
+    }
+
+    /**
+     * As [chalk], at the board whose anchor stands at [at] (facing its way), headed with the town's [name], in the town whose heart
+     * is [capital] (its orders' tickets): a capital's, or the market board at a village's Hall door that its bellman keeps.
+     */
+    internal fun chalk(p: Townsperson, life: Life, at: Spot, name: () -> Component, capital: BlockPos, noon: Boolean, slips: List<Slip>): Task? {
+        val level = level(p)
         val entry = Trades.market(p, life) ?: return null
-        if (MarketBoards.board(level, places) == null) return null
+        if (MarketBoards.board(level, at.pos) == null) return null
         crying.remove(p)
-        val spot = writingSpot(places)
-        val slate = Vec3.atCenterOf(places.marketBoard.pos).add(0.0, 0.6, 0.0)
-        val rail = Vec3.atBottomCenterOf(places.marketBoard.pos).add(0.0, 0.3, 0.0)
-        val capital = places.centre
+        val spot = Spot(at.pos.relative(at.facing), at.facing.opposite)
+        val slate = Vec3.atCenterOf(at.pos).add(0.0, 0.6, 0.0)
+        val rail = Vec3.atBottomCenterOf(at.pos).add(0.0, 0.3, 0.0)
         var todo: List<Int>? = null
         var orders: List<Int> = listOf()
         var pinned = 0
         var written = 0
         val plan = plan@{ i: Int ->
-            val board = MarketBoards.board(level, places) ?: return@plan null
+            val board = MarketBoards.board(level, at.pos) ?: return@plan null
             val list = todo ?: run {
                 val c = conditions(level)
-                board.begin(MarketBoards.town(places.capital), c.day, noon)
+                board.begin(name(), c.day, noon)
                 if (noon) board.unpin()
                 orders = MarketBoards.unhung(level, board, capital).map { it.order }
                 val at = level.gameTime
@@ -251,7 +305,7 @@ object Crier {
             }
         }
         return Acts.via(p, life, spot.pos, Work(p, spot, slate, plan, onTick = { s, t ->
-            val board = MarketBoards.board(level, places)
+            val board = MarketBoards.board(level, at.pos)
             if (board != null) when (s.activity) {
                 Activity.HAND_OVER -> if (t == 16 && pinned < slips.size) {
                     val slip = slips[pinned++]
@@ -298,7 +352,7 @@ object Crier {
     }
 
     /** What's cried goes out to the players about the square, in chat, with the crier's name. */
-    private fun tell(level: ServerLevel, crier: Townsperson, text: Component) {
+    internal fun tell(level: ServerLevel, crier: Townsperson, text: Component) {
         val message = Component.translatable("chat.guildmark.crier", crier.displayName.copy().withStyle(ChatFormatting.GOLD), text.copy().withStyle(ChatFormatting.WHITE))
         for (player in level.players()) {
             if (!player.isSpectator && player.distanceToSqr(crier) < CHAT * CHAT) player.sendSystemMessage(message)
@@ -374,7 +428,7 @@ object Crier {
      * The calendar's news at [c]'s noon: a new season on its first day, and the festival today or in the next
      * [FESTIVAL_AHEAD] days. Null if there's none.
      */
-    private fun calendar(level: ServerLevel, c: Conditions, at: Long): List<Cry>? {
+    internal fun calendar(level: ServerLevel, c: Conditions, at: Long): List<Cry>? {
         val date = Seasons.dateOn(level.server, Math.floorDiv(c.hour, 24L))
         val cries = ArrayList<Cry>()
         if (Seasons.enabled() && date.day == 1) {
@@ -399,7 +453,7 @@ object Crier {
     }
 
     /** A slip of [kind] for the board, pinned at [at]. */
-    private fun slip(kind: Slip.Kind, headline: Component, text: Component, at: Long): Slip = Slip(kind.id, headline, text, at)
+    internal fun slip(kind: Slip.Kind, headline: Component, text: Component, at: Long): Slip = Slip(kind.id, headline, text, at)
 
     /**
      * The orders at [entry]'s capital since the noon before market hour [noon]: up to [WANTED] newly posted and still
@@ -482,7 +536,7 @@ object Crier {
     }
 
     /** The voiced [line]'s words, [detail] after it in grey. */
-    private fun detailed(line: String, detail: Component): MutableComponent = said(line).append(" ").append(detail.copy().withStyle(ChatFormatting.GRAY))
+    internal fun detailed(line: String, detail: Component): MutableComponent = said(line).append(" ").append(detail.copy().withStyle(ChatFormatting.GRAY))
 
     /** The road [road] into the capital whose heart is [capital], by the gate it comes in at ("the north road"). */
     private fun road(capital: Long, road: Int): Component {
@@ -507,7 +561,7 @@ object Crier {
     }
 
     /** The market's piece of news [n] at [m], cried: trouble or luck starting, or trouble over; and which kind it is. */
-    private fun market(n: News, at: Long, m: Market): Pair<Cry, EventKind>? {
+    internal fun market(n: News, at: Long, m: Market): Pair<Cry, EventKind>? {
         val started = n.key.startsWith(EVENT_NEWS)
         if (!started && !n.key.startsWith(OVER_NEWS)) return null
         val kind = EventKind.byId(n.key.substringAfterLast('.')) ?: return null
@@ -535,7 +589,7 @@ object Crier {
     }
 
     /** A price well off its usual, cried, and why (the trouble or luck behind it, or what the stalls say). */
-    private fun price(q: Quote, at: Long): List<Cry> {
+    internal fun price(q: Quote, at: Long): List<Cry> {
         val why = q.why ?: return listOf()
         val dear = why.dear
         val line = (if (dear) "crier_dear_" else "crier_cheap_") + q.good.id
@@ -554,7 +608,7 @@ object Crier {
     }
 
     /** The guild's piece of news [item], cried: the voiced line for its kind, and the news itself after it in chat. */
-    private fun word(item: NewsItem, at: Long): Cry {
+    internal fun word(item: NewsItem, at: Long): Cry {
         val (kind, tone) = when (item.key.removePrefix("news.guildmark.")) {
             "field_boss" -> "slain" to 1
             "dragon_slain" -> "dragon" to 1

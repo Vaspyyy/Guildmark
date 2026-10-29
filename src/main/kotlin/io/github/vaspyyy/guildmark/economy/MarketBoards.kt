@@ -99,8 +99,10 @@ object MarketBoards {
         board.day > due.first || board.day == due.first && (board.noon || !due.second)
 
     /** The board of [places]' capital, if it stands where the plan put it and its chunk is loaded. */
-    fun board(level: ServerLevel, places: CityPlaces): MarketBoardBlockEntity? {
-        val pos = places.marketBoard.pos
+    fun board(level: ServerLevel, places: CityPlaces): MarketBoardBlockEntity? = board(level, places.marketBoard.pos)
+
+    /** The market board whose anchor is [pos], if one stands there and its chunk is loaded (a capital's, or one at a village's Hall). */
+    fun board(level: ServerLevel, pos: BlockPos): MarketBoardBlockEntity? {
         if (!level.hasChunkAt(pos)) return null
         return level.getBlockEntity(pos) as? MarketBoardBlockEntity
     }
