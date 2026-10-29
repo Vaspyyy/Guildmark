@@ -101,6 +101,9 @@ object FestivalRegistry {
         FestivalKind.LANTERNRISE -> RIDDLERS_LANTERN.get()
     }
 
+    /** The Harvest Table's prize (Sheafmoot's cook-off, living-world/cook/design.md 6.8): the Gilded Ladle, Hearthcraft's own. */
+    fun cookPrize(): Item = io.github.vaspyyy.guildmark.cooking.CookRegistry.TOOLS.getValue(io.github.vaspyyy.guildmark.cooking.vessel.CookTool.GILDED_LADLE).get()
+
     // ---- Effects ----
 
     /** A paper lantern let go at the Lanternrise's dusk, rising and drifting with a candle in it. */

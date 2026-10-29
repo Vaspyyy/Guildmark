@@ -28,13 +28,15 @@ import java.util.function.Supplier
  * place. Anyone who entered but has gone by the prize-giving gets theirs the next time they come on.
  */
 class FestivalPrizes(val pending: MutableList<Award> = mutableListOf()) : SavedData() {
-    /** [place] 0 is the winner. */
-    data class Award(val player: UUID, val kind: String, val place: Int, val marks: Int, val town: String, val year: Int)
+    /** [place] 0 is the winner; [contest] is [COOK] for Sheafmoot's Harvest Table, else "" (the festival's own contest). */
+    data class Award(val player: UUID, val kind: String, val place: Int, val marks: Int, val town: String, val year: Int, val contest: String = "")
 
     companion object {
         /** Guild marks for first, second and third, and for everyone else who entered. */
         val MARKS = intArrayOf(20, 10, 6)
         const val MARKS_ENTERED = 4
+        /** The [Award.contest] of the Harvest Table's prizes (living-world/cook/design.md 6.8). */
+        const val COOK = "cook"
 
         private val AWARD: Codec<Award> = RecordCodecBuilder.create { i ->
             i.group(
@@ -44,6 +46,8 @@ class FestivalPrizes(val pending: MutableList<Award> = mutableListOf()) : SavedD
                 Codec.INT.fieldOf("marks").forGetter(Award::marks),
                 Codec.STRING.fieldOf("town").forGetter(Award::town),
                 Codec.INT.fieldOf("year").forGetter(Award::year),
+                // An award kept from before the Harvest Table is the festival's own
+                Codec.STRING.optionalFieldOf("contest", "").forGetter(Award::contest),
             ).apply(i, ::Award)
         }
 
@@ -56,20 +60,27 @@ class FestivalPrizes(val pending: MutableList<Award> = mutableListOf()) : SavedD
 
         fun get(level: ServerLevel): FestivalPrizes = level.server.overworld().dataStorage.computeIfAbsent(TYPE)
 
-        /** Hands out a festival's prizes, by its contest's [results] (best first). */
-        fun award(level: ServerLevel, kind: FestivalKind, town: String, results: List<FestivalContest.Entry>) {
+        /**
+         * Hands out a festival's prizes, by its contest's [results] (best first); [contest] is [COOK] for the Harvest Table's,
+         * whose town entries ([FestivalContest.Entry.npc]) take their places but are paid nothing, and whose news is only of a
+         * player who won it.
+         */
+        fun award(level: ServerLevel, kind: FestivalKind, town: String, results: List<FestivalContest.Entry>, contest: String = "") {
             if (results.isEmpty()) return
             val year = Seasons.today(level).year
             val saved = get(level)
             results.forEachIndexed { place, entry ->
-                val award = Award(entry.id, kind.id, place, MARKS.getOrElse(place) { MARKS_ENTERED }, town, year)
+                if (entry.npc) return@forEachIndexed
+                val award = Award(entry.id, kind.id, place, MARKS.getOrElse(place) { MARKS_ENTERED }, town, year, contest)
                 val player = level.server.playerList.getPlayer(entry.id)
                 if (player != null) give(player, award) else {
                     saved.pending.add(award)
                     saved.setDirty()
                 }
             }
-            GuildNews.add(level, "news.guildmark.festival_won", results[0].name, "#festival.guildmark.${kind.id}", town)
+            if (results[0].npc) return
+            val title = if (contest == COOK) "#${io.github.vaspyyy.guildmark.cooking.feast.HarvestTable.TITLE}" else "#festival.guildmark.${kind.id}"
+            GuildNews.add(level, "news.guildmark.festival_won", results[0].name, title, town)
         }
 
         /** Gives [player] any prizes kept for them. */
@@ -82,16 +93,26 @@ class FestivalPrizes(val pending: MutableList<Award> = mutableListOf()) : SavedD
             for (award in mine) give(player, award)
         }
 
-        /** The winner's keepsake: "Won at the Ribbonwake in Ashford, in the year 3". */
-        fun keepsake(kind: FestivalKind, town: String, year: Int): ItemStack {
-            val stack = ItemStack(FestivalRegistry.prize(kind))
-            stack.set(DataComponents.LORE, ItemLore(listOf(Component.translatable("item.guildmark.festival_prize.won", kind.title, town, year).withStyle(ChatFormatting.GRAY))))
+        /**
+         * The winner's keepsake: "Won at the Ribbonwake in Ashford, in the year 3". The Harvest Table's ([contest] [COOK]) is the
+         * Gilded Ladle: "Won at the Harvest Table in Ashford, Year 3".
+         */
+        fun keepsake(kind: FestivalKind, town: String, year: Int, contest: String = ""): ItemStack {
+            val stack = ItemStack(prize(kind, contest))
+            stack.set(DataComponents.LORE, ItemLore(listOf(Component.translatable("item.guildmark.festival_prize.won", title(kind, contest), town, year).withStyle(ChatFormatting.GRAY))))
             return stack
         }
 
+        /** The prize of [kind]'s contest, or of the Harvest Table. */
+        private fun prize(kind: FestivalKind, contest: String) = if (contest == COOK) FestivalRegistry.cookPrize() else FestivalRegistry.prize(kind)
+
+        /** The name of the contest an award is for: the festival's own ("Sheafmoot"), or the Harvest Table. */
+        private fun title(kind: FestivalKind, contest: String): Component =
+            if (contest == COOK) Component.translatable(io.github.vaspyyy.guildmark.cooking.feast.HarvestTable.TITLE) else kind.title
+
         private fun give(player: ServerPlayer, award: Award) {
             val kind = FestivalKind.byId(award.kind) ?: return
-            if (award.place == 0) player.inventory.placeItemBackInInventory(keepsake(kind, award.town, award.year), Prediction.SERVER_ONLY)
+            if (award.place == 0) player.inventory.placeItemBackInInventory(keepsake(kind, award.town, award.year, award.contest), Prediction.SERVER_ONLY)
             if (award.marks > 0) player.inventory.placeItemBackInInventory(ItemStack(ModItems.GUILD_MARK.get(), award.marks), Prediction.SERVER_ONLY)
             val key = when (award.place) {
                 0 -> "message.guildmark.festival.prize.first"
@@ -99,7 +120,7 @@ class FestivalPrizes(val pending: MutableList<Award> = mutableListOf()) : SavedD
                 2 -> "message.guildmark.festival.prize.third"
                 else -> "message.guildmark.festival.prize.entered"
             }
-            player.sendSystemMessage(Component.translatable(key, kind.title, award.town, award.marks, ItemStack(FestivalRegistry.prize(kind)).hoverName).withColor(kind.color))
+            player.sendSystemMessage(Component.translatable(key, title(kind, award.contest), award.town, award.marks, ItemStack(prize(kind, award.contest)).hoverName).withColor(kind.color))
             player.level().playSound(null, player.blockPosition(), if (award.place == 0) SoundEvents.PLAYER_LEVELUP else SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 0.8f, 1.0f)
         }
     }
