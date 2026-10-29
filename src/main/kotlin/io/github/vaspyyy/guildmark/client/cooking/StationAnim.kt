@@ -248,6 +248,9 @@ class StationAnim(val pos: BlockPos, val kind: Station?, var be: StationBlockEnt
     private var townDoor = false
     private var townCrank = false
 
+    /** The tick of the crank's clip of the one turning the spit (I3's [TownKitchen.crankTick]), -1 for nobody. */
+    private var townCrankTick = -1
+
     // ---- Particles and sounds it may make ----
 
     /** The tokens of this station's particle budget (six a second): one spent for each particle. */
@@ -302,7 +305,8 @@ class StationAnim(val pos: BlockPos, val kind: Station?, var be: StationBlockEnt
 
     private fun town(level: ClientLevel) {
         townDoor = kind == Station.OVEN && TownKitchen.doorOpen(level, pos)
-        townCrank = kind == Station.SPIT && TownKitchen.cranking(level, pos)
+        townCrankTick = if (kind == Station.SPIT) TownKitchen.crankTick(level, pos) else -1
+        townCrank = townCrankTick >= 0
     }
 
     // ---- First sight: everything where the view says ----
@@ -675,16 +679,28 @@ class StationAnim(val pos: BlockPos, val kind: Station?, var be: StationBlockEnt
         }
         // The larder's door is the larder's own (its renderer drives it from the block state)
 
-        // The spit's rod: a quarter turn a click, a slow turn for a jack or a keeper, easing to a stop between
+        // The spit's rod: a quarter turn a click, a slow turn for a jack, easing to a stop between; and while a keeper cranks, it
+        // goes round with her hand, at the angle her clip has the knob at (this tick's value shows at the clip's next tick)
         if (kind == Station.SPIT) {
-            val turning = v.turning || townCrank
-            rodTarget += clicks * 90f
-            clicks = 0
-            if (turning) rodTarget += SLOW_TURN
-            rod.spring(rodTarget, 0.14f, 0.7f)
+            if (townCrankTick >= 0) {
+                val a = CRANK_A0 - CRANK_PER_TICK * (townCrankTick + 1)
+                val want = a + 360f * Math.round((rod.cur - a) / 360f)
+                if (abs(want - rod.cur) <= CRANK_LOCK) rod.drive(want) else rod.move(want, CRANK_CATCH, 0.35f)
+                rodTarget = rod.cur
+                clicks = 0
+            } else {
+                val turning = v.turning || townCrank
+                rodTarget += clicks * 90f
+                clicks = 0
+                if (turning) rodTarget += SLOW_TURN
+                rod.spring(rodTarget, 0.14f, 0.7f)
+            }
             if (rodTarget > 3600f) {
                 rodTarget -= 3600f
                 rod.shift(-3600f)
+            } else if (rodTarget < -3600f) {
+                rodTarget += 3600f
+                rod.shift(3600f)
             }
         }
 
@@ -1213,8 +1229,18 @@ class StationAnim(val pos: BlockPos, val kind: Station?, var be: StationBlockEnt
         /** A push of one degree per [SWAY_PUSH] speed carries the pot about that far on its spring (k 0.07, d 0.93). */
         const val SWAY_PUSH = 0.25f
 
-        /** Degrees a jack or a keeper turns the rod in a tick (a turn in six seconds). */
+        /** Degrees a jack (or the server's word that a keeper turns, before her clip is seen) turns the rod in a tick (a turn in six seconds). */
         const val SLOW_TURN = 3f
+
+        /**
+         * The crank as a keeper's `turn_spit` has it (`art/scripts/cook_clips.py`: CRANK_A0, CRANK_DIR and CRANK_TURN): the angle at
+         * the clip's tick 0, 0 the arm up and positive toward +z, as the rod's angle is; the degrees it goes back a tick (a turn in
+         * 40); within how far of it the rod is held to it; and how fast the rod catches up to it when she begins.
+         */
+        const val CRANK_A0 = 200f
+        const val CRANK_PER_TICK = 9f
+        const val CRANK_LOCK = 12f
+        const val CRANK_CATCH = 30f
 
         /** Spit drips: one chance a slot of [DRIP_EVERY] ticks, falling for [DRIP_FALL]. */
         const val DRIP_EVERY = 22L

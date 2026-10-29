@@ -8,6 +8,7 @@ import io.github.vaspyyy.guildmark.cooking.Cooking
 import io.github.vaspyyy.guildmark.townsfolk.Activity
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import it.unimi.dsi.fastutil.longs.Long2ByteOpenHashMap
+import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap
 import net.minecraft.client.Minecraft
 import net.minecraft.client.multiplayer.ClientLevel
 import net.minecraft.core.BlockPos
@@ -46,6 +47,12 @@ object TownKitchen {
     private const val YES: Byte = 2
     private val doors = Long2ByteOpenHashMap()
     private val cranks = Long2ByteOpenHashMap()
+
+    /** The tick of the `turn_spit` clip of the one found turning each spit asked about this tick. */
+    private val crankTicks = Long2IntOpenHashMap().apply { defaultReturnValue(-1) }
+
+    /** The ticks of a turn of the crank in `turn_spit` (the clip's length: it loops once a turn). */
+    private const val CRANK_TURN = 40
     private var stamp = Long.MIN_VALUE
     private var enabled = false
 
@@ -55,12 +62,19 @@ object TownKitchen {
     /** Whether a townsperson is turning the spit at [pos], so its crank turns. */
     fun cranking(level: ClientLevel, pos: BlockPos): Boolean = ask(level, pos, cranks, true)
 
+    /**
+     * The tick (0 to 39) the `turn_spit` clip of the townsperson turning the spit at [pos] is at, or -1 if nobody is: the
+     * renderer turns the rod with her hand by it (the knob's angle is the clip's, `art/scripts/cook_clips.py` crank_angle).
+     */
+    fun crankTick(level: ClientLevel, pos: BlockPos): Int = if (cranking(level, pos)) crankTicks.get(pos.asLong()) else -1
+
     private fun ask(level: ClientLevel, pos: BlockPos, known: Long2ByteOpenHashMap, crank: Boolean): Boolean {
         val time = level.gameTime
         if (time != stamp) {
             stamp = time
             doors.clear()
             cranks.clear()
+            crankTicks.clear()
             enabled = Cooking.townKitchens()
         }
         if (!enabled) return false
@@ -91,6 +105,7 @@ object TownKitchen {
                 val least = if (crank) 0.2 else 0.35
                 if (ahead < least) continue
             }
+            if (crank) crankTicks.put(pos.asLong(), Math.floorMod(p.tickCount - p.shownStart, CRANK_TURN))
             return true
         }
         return false

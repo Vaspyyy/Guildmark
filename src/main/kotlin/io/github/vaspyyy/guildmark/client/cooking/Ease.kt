@@ -36,6 +36,15 @@ class Ease(start: Float = 0f) {
         cur = value
     }
 
+    /**
+     * Sets this tick's value outright and takes the change as its speed: a thing driven by another's clock (the spit's rod by a
+     * keeper's hand), which a spring after it carries on with and slows, and does not stop dead.
+     */
+    fun drive(value: Float) {
+        vel = value - cur
+        cur = value
+    }
+
     /** Moves a [rate] of the way toward [target] (0 to 1): fast at first, slower as it arrives. */
     fun ease(target: Float, rate: Float) {
         cur += (target - cur) * rate
