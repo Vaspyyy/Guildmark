@@ -107,8 +107,11 @@ object VillageBuilds {
         }
     }
 
-    /** The overworld's sites, whichever level asks. */
+    /** The overworld's sites, whichever level asks (made, and so written, only when a project is first recorded: [accept]). */
     fun get(level: ServerLevel): Data = level.server.overworld().dataStorage.computeIfAbsent(Data.TYPE)
+
+    /** The overworld's sites if any were ever recorded: nothing is made by asking (with the switches off nothing is written). */
+    private fun peek(level: ServerLevel): Data? = level.server.overworld().dataStorage.get(Data.TYPE)
 
     /** The sites made from their records this session, by id, and the closures their builders left to the end (not saved). */
     private val live = HashMap<Int, VillageSite>()
@@ -143,7 +146,7 @@ object VillageBuilds {
 
     /** Something of a site has changed: the file is written at the next save. */
     fun changed(level: ServerLevel) {
-        get(level).setDirty()
+        peek(level)?.setDirty()
     }
 
     // ---- The sink's questions ----
@@ -159,7 +162,7 @@ object VillageBuilds {
     /** A new project for [key] is about to be built: the village's last, if it is still going up, is finished first (what is loaded at once, the rest as it loads). */
     fun beforeRecord(level: ServerLevel, key: Long) {
         val rec = villageOf(level, key) ?: return
-        val data = get(level)
+        val data = peek(level) ?: return
         for (b in data.sites.values.toList()) {
             if (b.village != rec.key) continue
             b.rushing = true
@@ -170,7 +173,7 @@ object VillageBuilds {
     }
 
     /** Whether the village at [village] has a project going up: its record. */
-    fun recFor(level: ServerLevel, village: Long): VillageBuild? = get(level).sites.values.firstOrNull { it.village == village && !it.rushing }
+    fun recFor(level: ServerLevel, village: Long): VillageBuild? = peek(level)?.sites?.values?.firstOrNull { it.village == village && !it.rushing }
 
     /** The site of the village at [village] going up, made from its record, if its land is loaded. */
     fun siteFor(level: ServerLevel, village: Long): VillageSite? {
@@ -179,7 +182,7 @@ object VillageBuilds {
     }
 
     /** All the sites, for the commands. */
-    fun all(level: ServerLevel): List<VillageBuild> = get(level).sites.values.toList()
+    fun all(level: ServerLevel): List<VillageBuild> = peek(level)?.sites?.values?.toList() ?: listOf()
 
     /** Whether a player is near site [id] (its crew is about it then). */
     fun watched(id: Int): Boolean = id in watched
@@ -188,7 +191,7 @@ object VillageBuilds {
     fun isLoaded(id: Int): Boolean = id in loaded
 
     /** Site [id] made from its record (kept while the record is the same). */
-    fun site(level: ServerLevel, id: Int): VillageSite? = get(level).sites[id]?.let { siteOf(level, it) }
+    fun site(level: ServerLevel, id: Int): VillageSite? = peek(level)?.sites?.get(id)?.let { siteOf(level, it) }
 
     // ---- A recording becomes a site ----
 
@@ -438,7 +441,7 @@ object VillageBuilds {
             for ((at, line) in told) Advances.announce(level, at, line)
             told.clear()
         }
-        val data = get(level)
+        val data = peek(level) ?: return
         if (data.sites.isEmpty()) return
         val now = level.gameTime
         for (b in data.sites.values.toList()) {
@@ -626,7 +629,7 @@ object VillageBuilds {
 
     /** `village build rush`: [b]'s site laid out now, out of sight (what is not loaded, as it loads). */
     fun rushNow(level: ServerLevel, b: VillageBuild): Boolean {
-        val data = get(level)
+        val data = peek(level) ?: return true
         b.rushing = true
         data.setDirty()
         val site = siteOf(level, b)
