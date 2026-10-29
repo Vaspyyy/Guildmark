@@ -40,9 +40,9 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent
  * a capital, or of a bell that is no village of the registry, never reach any of it ([village] answers null for them).
  *
  * Each village's day closes here, once, at the first look after dawn ([daily]: the town day turns at six in the morning, as the
- * residents' days and deaths are kept), whether or not its market runs: the watch is reckoned, the candles due are set for the morning,
- * the mend is opened and those taken and never found are put to rest. What is done with bodies is done in the hours it belongs to, by
- * the tick: the stone and the candles at dawn, the mend in working hours, the watch and the golems at night.
+ * residents' days and deaths are kept), whether or not its market runs: the candles laid a week ago burn down and those taken and
+ * never found are put to rest. What is done with bodies is done in the hours it belongs to, by the looks every five seconds: the stone
+ * and the candles at dawn, the mend in working hours, the watch (reckoned at dawn and at six in the evening) and the golems at night.
  */
 object Trouble {
     /** Ticks between the looks at the villages' days, the stone, the mend, the watch and the golems. */
@@ -142,13 +142,12 @@ object Trouble {
     }
 
     /**
-     * The close of [rec]'s town day [day] (the first look after dawn): the watch reckoned and sent for, the candles due set for this
-     * morning, the mend opened, and those taken and never found put to rest. Once a day; written only if something is to be kept.
+     * The close of [rec]'s town day [day] (the first look after dawn): the candles of a week ago burnt down, and those taken and never
+     * found put to rest. Once a day; written only if something is to be kept.
      */
     internal fun daily(level: ServerLevel, rec: VillageRec, day: Long) {
         RaidWatch.daily(level, rec, day)
         Memorial.daily(level, rec, day)
-        Watch.daily(level, rec, day)
         closed[rec.key] = day
         val kept = TroubleData.peek(level)?.peek(rec.key) ?: return
         kept.day = day

@@ -39,8 +39,8 @@ import kotlin.math.sin
  *
  * **Raised by what the village builds.** `TownRole.GUARD` is no vanilla trade, so a village raises its watch as the works that need
  * one stand: two for the palisade (one in a hamlet of under eight folk), one for an archer tower (or a tower its folk built by hand,
- * which the census names), two for the stone walls, four, the garrison, for the keep: 2, 3, 5 and 9. At the close of a day the
- * watch is reckoned ([daily]); a post short is filled the night after, by a guard who walks in off the road with a bundle (or is
+ * which the census names), two for the stone walls, four, the garrison, for the keep: 2, 3, 5 and 9. At dawn and at six in the
+ * evening the watch is reckoned ([reckon]); a post short is filled the night after, by a guard who walks in off the road with a bundle (or is
  * at home by the record, with nobody near to see), a resident like any other, with a bed in the hall or a free one in a home. A
  * guard who fell is replaced three to seven days on. Never past the village's cap on folk, and only in a village whose folk are
  * townsfolk (one that keeps its vanilla villagers has its golems).
@@ -81,6 +81,12 @@ object Watch {
     /** When each village's tower guard last said the watch was quiet (game time). */
     private val quiet = HashMap<Long, Long>()
 
+    /** When each village's watch was last reckoned (the town day, twice: see [look]). */
+    private val reckoned = HashMap<Long, Long>()
+
+    /** The hour of the evening reckoning. */
+    private const val EVENING = 18.0
+
     // ---- The watch a village wants ----
 
     /** The posts of [rec]'s watch, one entry for each guard it wants and what it is for ("palisade", "tower", "walls", "keep"). */
@@ -103,10 +109,11 @@ object Watch {
         Residents.get(level).byCentre(BlockPos.of(rec.key)).filter { it.alive && it.role == TownRole.GUARD }
 
     /**
-     * The close of [rec]'s town day [day]: the watch reckoned against what it wants, and each post short sent for: tonight for a
-     * post new since, three to seven days on for a guard who fell.
+     * [rec]'s watch reckoned against what it wants on town day [day] (at dawn and again at six in the evening, so a work finished in
+     * the day is manned the night after), and each post short sent for: tonight for a post new since, three to seven days on for a
+     * guard who fell.
      */
-    internal fun daily(level: ServerLevel, rec: VillageRec, day: Long) {
+    private fun reckon(level: ServerLevel, rec: VillageRec, day: Long) {
         if (!VillageAdopt.adopting(rec)) return
         val places = Villages.places(level, rec.key) ?: return
         val want = wanted(level, rec, places)
@@ -138,8 +145,13 @@ object Watch {
 
     // ---- The look (every five seconds, from Trouble) ----
 
-    /** [rec] on town day [day]: at night a guard due comes in, and the tower guard says the watch is quiet. */
+    /** [rec] on town day [day]: the watch reckoned twice a day; at night a guard due comes in, and the tower guard says the watch is quiet. */
     internal fun look(level: ServerLevel, rec: VillageRec, day: Long) {
+        val stamp = day * 2 + if (Trouble.hour(level) >= EVENING) 1 else 0
+        if (reckoned[rec.key] != stamp) {
+            reckoned[rec.key] = stamp
+            reckon(level, rec, day)
+        }
         if (!Trouble.night(level) || Shelter.of(rec.key) != null) return
         val kept = TroubleData.peek(level)?.peek(rec.key)
         val due = kept?.due?.filter { it.day <= day }?.minByOrNull { it.day }
@@ -307,6 +319,7 @@ object Watch {
         coming.clear()
         horns.clear()
         quiet.clear()
+        reckoned.clear()
     }
 
     /** Whether anyone is at the wall or on the way in. */
@@ -454,8 +467,6 @@ object Watch {
                 else -> p.act(Activity.NOD)
             }
         }
-
-        override fun interact(p: Townsperson, player: net.minecraft.server.level.ServerPlayer): Boolean = phase == 1
 
         fun finish() {
             if (done) return
