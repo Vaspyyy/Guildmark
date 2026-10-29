@@ -116,6 +116,18 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
     /** A leader nodding off at their post in the small hours: using them wakes them with a grumble. */
     val dozing: Boolean get() = isLeader && Schedule.phase(this) == Phase.SLEEP
 
+    /**
+     * Ringing a great bell, not a handbell (a village's bell, by its bellman; a bell a tale's scene rings): the bell's own strokes are
+     * its sound, so the client rings no handbell and draws none with the clip. Set by whoever has them ring it, as the ringing starts;
+     * any other activity begun ([act]) clears it.
+     */
+    var greatBell: Boolean
+        get() = entityData.get(FLAGS).toInt() and FLAG_GREAT_BELL != 0
+        set(value) {
+            val flags = entityData.get(FLAGS).toInt()
+            entityData.set(FLAGS, (if (value) flags or FLAG_GREAT_BELL else flags and FLAG_GREAT_BELL.inv()).toByte())
+        }
+
     /** A watcher set to keep an eye on a heist's building while it's on (see Heists); never kept when saved. */
     var watcher = false
 
@@ -323,6 +335,7 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
     /** Starts [what]; a loop that's already playing carries on where it is. */
     fun act(what: Activity) {
         if (what == activity && what.loop) return
+        if (what != Activity.RING_BELL && greatBell) greatBell = false
         serial = (serial + 1) and 0xFFFFFF
         entityData.set(ACTION, (serial shl 8) or what.ordinal)
         activityStart = tickCount
@@ -692,6 +705,7 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
         private val CARRIED: EntityDataAccessor<ItemStack> = SynchedEntityData.defineId(Townsperson::class.java, EntityDataSerializers.ITEM_STACK)
         private const val FLAG_LANTERN = 1
         private const val FLAG_LEADER = 2
+        private const val FLAG_GREAT_BELL = 4
 
         /** How long a leader keeps their eyes on someone talking to them before giving up on them. */
         private const val LISTEN_TICKS = 2400

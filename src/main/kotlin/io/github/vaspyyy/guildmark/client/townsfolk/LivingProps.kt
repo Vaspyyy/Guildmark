@@ -110,6 +110,8 @@ internal object LivingProps {
             held = letGo(held, activity !in LEFT_ONLY && activity !in FREE, activity !in RIGHT_ONLY && activity !in FREE)
             for (s in LivingSchedule.SHOWN[name].orEmpty()) {
                 if (time < s.from || time >= s.to && s.to != LivingSchedule.END) continue
+                // A great bell's ringer (Townsperson.greatBell) pulls at the bell itself: no handbell in the hand
+                if (s.part == "handbell" && name == "ring_bell" && p.greatBell) continue
                 if (s.part in Props.ALL) held = held + s.part else living.shown += s.part
             }
             // Villages (V12a): the baby is carried in place of CARRY's crate

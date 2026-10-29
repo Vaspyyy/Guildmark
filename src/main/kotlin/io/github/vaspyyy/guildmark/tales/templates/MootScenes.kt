@@ -318,7 +318,9 @@ internal object MootScenes {
             Sets.beside(level, bellAt, ringer.position(), 1.4)?.let { stand -> r += GoTo({ stand }, Jobs.BRISK, near = 0.8, most = 400) }
             r += Turn({ bellAt })
             r += Barrier("said", most = 900, at = { bellAt })
-            r += Beat(Activity.RING_BELL, 60, at = { bellAt }) { _, tick ->
+            r += Beat(Activity.RING_BELL, 60, at = { bellAt }) { p, tick ->
+                // The bell's own strokes, not a handbell (Townsperson.greatBell)
+                if (tick == 0) p.greatBell = true
                 if (tick == 6 || tick == 36) Fx.sound(level, SoundEvents.BELL_BLOCK, bellAt, 1.6f, 1.0f)
             }
             parts += walker("bell", ringer, r, essential = false)

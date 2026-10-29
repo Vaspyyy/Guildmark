@@ -83,7 +83,8 @@ object BellKeeper {
             } else {
                 if (base < 0) base = i
                 when (i - base) {
-                    0 -> Step(Activity.RING_BELL, RINGING)
+                    // The bell's own strokes, not a handbell (Townsperson.greatBell)
+                    0 -> Step(Activity.RING_BELL, RINGING).also { p.greatBell = true }
                     1 -> Step(Activity.NONE, 30)
                     else -> null
                 }

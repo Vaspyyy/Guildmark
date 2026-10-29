@@ -430,7 +430,9 @@ object Sets {
                 m += Turn({ bellAt })
                 m += Barrier("ring", most = 400, at = { bellAt })
                 m += Barrier("toasted", most = 300, pose = Activity.NONE, at = { bellAt })
-                m += Beat(Activity.RING_BELL, 60, at = { bellAt }) { _, tick ->
+                m += Beat(Activity.RING_BELL, 60, at = { bellAt }) { p, tick ->
+                    // The bell's own strokes, not a handbell (Townsperson.greatBell)
+                    if (tick == 0) p.greatBell = true
                     if (tick == 6 || tick == 36) Fx.sound(level, SoundEvents.BELL_BLOCK, bellAt, 1.6f, 1.0f)
                 }
             } else {
