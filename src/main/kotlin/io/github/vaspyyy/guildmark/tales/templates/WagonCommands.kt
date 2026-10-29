@@ -397,7 +397,7 @@ internal object WagonCommands {
     private fun waitScene(level: ServerLevel, player: ServerPlayer): String {
         val kin = Sets.freeAdults(level, player.position(), 24.0).firstOrNull() ?: throw TaleSceneCommand.Unplayable("Nobody free within 24 blocks of you.")
         val down = ahead(player, 16.0).add(0.0, 1.5, 0.0)
-        val stage = WagonScenes.waitingAt(kin, down, "Ash", hours = null)
+        val stage = WagonScenes.waitingAt(kin, down, hours = null)
         return TaleSceneCommand.begin(level, stage, "${name(kin)} looks down the road the way you face, sighs, and is comforted by whoever passes (if anyone is free).")
     }
 

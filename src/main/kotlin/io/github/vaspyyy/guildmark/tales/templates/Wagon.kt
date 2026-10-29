@@ -477,7 +477,7 @@ object Wagon : Template, TaleVoice, TaleWords.Names {
         val part = player?.let { t.partFor(it) }
         part?.let { it.did = it.did or Part.WALKED }
         val name = player?.let { TaleEngine.playerName(c.level, it) }.orEmpty()
-        c.why(t, "wagon.freed", name, handName(t))
+        if (name.isEmpty()) c.why(t, "wagon.loose", handName(t)) else c.why(t, "wagon.freed", name, handName(t))
         c.data.changed()
         if (player != null) c.level.getPlayerByUUID(player)?.let { (it as? ServerPlayer)?.let { p -> Tales.join(c.level, t, p) } }
         if (t.step != AT_HOME) c.go(t, AT_HOME)

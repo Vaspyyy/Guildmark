@@ -33,7 +33,7 @@ internal object WagonDriver {
     fun choices(ask: Ask, driver: Caravans.Driver): List<Choice> {
         val t = tale(ask.level, driver) ?: return listOf()
         val out = ArrayList<Choice>()
-        out += Choice(HAND, Component.translatable("talk.guildmark.choice.tale.wagon.hand"))
+        out += Choice(HAND, Component.translatable("talk.guildmark.choice.tale.wagon.second_hand"))
         val status = ask.player?.let { t.part(it.uuid)?.status }
         if (ask.player != null && t.step == Wagon.AT_ASK && status != Part.Status.IN && status != Part.Status.DONE) {
             out += Choice(YES, Component.translatable("talk.guildmark.choice.tale.wagon.driver_yes"))

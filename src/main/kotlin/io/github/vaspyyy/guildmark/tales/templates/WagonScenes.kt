@@ -63,11 +63,11 @@ internal object WagonScenes {
         val front = Wagon.front(c, t)
         if (kin.distanceToSqr(Vec3.atCenterOf(front)) > AT_GATE * AT_GATE) return null
         val far = WayOut.outward(level, c.here, front, 20).lastOrNull() ?: front.relative(c.here.capital.direction(Wagon.gate(t)), 16)
-        return waitingAt(kin, Vec3.atCenterOf(far).add(0.0, 1.0, 0.0), Wagon.given(Wagon.handName(t)), hours)
+        return waitingAt(kin, Vec3.atCenterOf(far).add(0.0, 1.0, 0.0), hours)
     }
 
-    /** The waiting itself: [kin] looks [down] the road for [hand] (a given name, for the grey words). */
-    fun waitingAt(kin: Townsperson, down: Vec3, hand: String, hours: ClosedFloatingPointRange<Double>?): Stage {
+    /** The waiting itself: [kin] looks [down] the road. */
+    fun waitingAt(kin: Townsperson, down: Vec3, hours: ClosedFloatingPointRange<Double>?): Stage {
         val level = kin.level() as ServerLevel
         val road = { down }
         val passer = Sets.passerBy(kin, r = 24.0)
@@ -82,10 +82,7 @@ internal object WagonScenes {
             k += Stage.Barrier("meet", 500, Activity.LOOKOUT, eye(passer))
             k += Turn(eye(passer))
             k += Stage.Barrier("said", 300, Activity.LISTEN, eye(passer))
-            k += Stage.Say(
-                "tale.wagon.passing", TaleLines.facts("talk.detail.tale.wagon.passing", TaleLines.lit(hand)),
-                gesture = Activity.WRING_HANDS, at = eye(passer),
-            )
+            k += Stage.Say("tale.wagon.passing", gesture = Activity.WRING_HANDS, at = eye(passer))
             k += Stage.Barrier("answered", 200, Activity.SIGH, eye(passer))
             val p = ArrayList<Move>()
             p += Stage.Barrier("sighed", 900)
@@ -175,7 +172,7 @@ internal object WagonScenes {
         w += Stage.Barrier("hugged", most = 120, at = eye(hand))
         if (player != null) {
             w += Turn(you)
-            w += Stage.Say("tale.wagon.thanks", TaleLines.facts("talk.detail.tale.wagon.thanks", TaleLines.lit(Wagon.given(hand.name.string))), gesture = Activity.THANK, at = you)
+            w += Stage.Say("tale.wagon.thanks", gesture = Activity.THANK, at = you)
             w += Play(Activity.BOW, at = you)
         }
         val r = ArrayList<Move>()

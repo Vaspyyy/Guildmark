@@ -9,7 +9,6 @@ import io.github.vaspyyy.guildmark.tales.Tale
 import io.github.vaspyyy.guildmark.tales.TaleBodies
 import io.github.vaspyyy.guildmark.tales.TaleEngine
 import io.github.vaspyyy.guildmark.tales.TaleHold
-import io.github.vaspyyy.guildmark.tales.TaleLines
 import io.github.vaspyyy.guildmark.tales.TaleLook
 import io.github.vaspyyy.guildmark.tales.Tales
 import io.github.vaspyyy.guildmark.townsfolk.Activity
@@ -374,9 +373,7 @@ internal object WagonWatch {
             p.isAlive && !p.isSpectator && p.distanceTo(body) < FOUND && t.part(p.uuid)?.let { it.status == Part.Status.IN || it.status == Part.Status.DONE } == true
         } ?: return
         body.lookAt(player)
-        val kin = Wagon.given(t.cast(Wagon.KIN)?.name.orEmpty())
-        val detail = TaleLines.facts("talk.detail.tale.wagon.found", TaleLines.lit(kin))
-        if (Words.sayWith(body, "tale.wagon.found", detail = detail, why = "the wagon's hand found") != null) memo.found = true
+        if (Words.sayWith(body, "tale.wagon.found", why = "the wagon's hand found") != null) memo.found = true
     }
 
     // ---- The reunion ----
