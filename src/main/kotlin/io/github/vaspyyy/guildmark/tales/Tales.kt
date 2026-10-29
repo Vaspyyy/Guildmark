@@ -157,6 +157,8 @@ object Tales : Comings.Listener {
         io.github.vaspyyy.guildmark.tales.templates.ChairWatch.register()
         // T3: the wagon's `tale wagon` and the informer's `tale informer`, their scenes, the open wagons and informers seen to each second, and the band's hand kept from harm
         io.github.vaspyyy.guildmark.tales.templates.WagonWatch.register()
+        // T5: the brother's `tale brother`, its scenes, and the open brother tales seen to each second
+        io.github.vaspyyy.guildmark.tales.templates.BrotherWatch.register()
     }
 
     // ---- The clock ----
@@ -225,7 +227,7 @@ object Tales : Comings.Listener {
     }
 
     /** From `Lairs.onBossDeath` (T5 places the call): [lair] fell, with [heroes] about. */
-    fun lairCleared(level: ServerLevel, lair: Lair, heroes: List<ServerPlayer>) {}
+    fun lairCleared(level: ServerLevel, lair: Lair, heroes: List<ServerPlayer>) = io.github.vaspyyy.guildmark.tales.templates.BrotherWatch.lairCleared(level, lair, heroes)
 
     /** From `Captives.homecoming` (T3 places the call): captive [p] is home. */
     fun captiveHome(level: ServerLevel, p: Townsperson) = io.github.vaspyyy.guildmark.tales.templates.WagonCamp.home(level, p)

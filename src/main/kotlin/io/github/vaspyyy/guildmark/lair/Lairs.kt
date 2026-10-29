@@ -16,6 +16,7 @@ import io.github.vaspyyy.guildmark.registry.ModItems
 import io.github.vaspyyy.guildmark.registry.ModSounds
 import io.github.vaspyyy.guildmark.story.Courtier
 import io.github.vaspyyy.guildmark.story.MainQuest
+import io.github.vaspyyy.guildmark.tales.Tales
 import io.github.vaspyyy.guildmark.wardfire.WardfireSites
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
@@ -567,6 +568,8 @@ class Lairs(val lairs: MutableList<Lair> = mutableListOf()) : SavedData() {
             Milestones.award(player, Milestones.LAIR)
         }
         Contracts.onLairCleared(heroes, lair.id)
+        // Tales T5: one of the smith's house below in this mine comes up (the brother under the hill)
+        Tales.lairCleared(level, lair, heroes)
         if (lair.shard >= 0) MainQuest.onVaultCleared(level, lair, heroes, chestPos.above())
         GuildNews.add(level, "news.guildmark.lair", heroes.joinToString(", ") { it.name.string }.ifEmpty { "?" }, "#lair.guildmark.${lair.theme.id}", lair.pos.x.toString(), lair.pos.z.toString())
     }
