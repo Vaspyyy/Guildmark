@@ -74,8 +74,11 @@ object BuilderCrew {
     /** The town works' sites (set at setup by economy/works/build). */
     var works: Sites? = null
 
-    /** The site the crew of [key] builds, while it's being built: a homestead's (keys from 0) or a town works' (below 0). */
-    fun live(key: Int): Worksite? = if (key >= 0) HomesteadWorks.live(key) else works?.live(key)
+    /** The other builders' sites, tried in turn after the town works' (a village's, village/live/build: keys at or below -1,000,000). */
+    val sites = ArrayList<Sites>()
+
+    /** The site the crew of [key] builds, while it's being built: a homestead's (keys from 0), a town works' (below 0) or another's ([sites]). */
+    fun live(key: Int): Worksite? = if (key >= 0) HomesteadWorks.live(key) else works?.live(key) ?: sites.firstNotNullOfOrNull { it.live(key) }
 
     /**
      * Brings [site]'s crew in, one at a time, while [wanted] (someone near, in working hours), or sends them home.
@@ -854,6 +857,9 @@ object BuilderCrew {
         /** Whether step [i], just laid, made its own sound going in (a works' stake), so the homestead's dig or knock isn't played. */
         protected open fun ownSound(site: Worksite, i: Int): Boolean = false
 
+        /** How much worse a place to stand with the eye at [eye] is for laying [target] than its distance says (a village's crew: one it can't be seen from); nothing, at a homestead. */
+        protected open fun hidden(level: ServerLevel, eye: Vec3, target: BlockPos): Double = 0.0
+
         /** Walks toward [goal] (see [walk]), for a trade's own jobs. */
         protected fun walkTo(level: ServerLevel, goal: Vec3, near: Double): Boolean = walk(level, goal, near)
 
@@ -914,7 +920,9 @@ object BuilderCrew {
                 if (reach > REACH) continue
                 val ground = groundUnder(level, cursor)
                 val high = cursor.y - ground
-                val score = abs(dy + 0.5) * 1.5 + reach + here.distanceTo(Vec3.atBottomCenterOf(cursor)) * 0.15 + high * 0.6
+                var score = abs(dy + 0.5) * 1.5 + reach + here.distanceTo(Vec3.atBottomCenterOf(cursor)) * 0.15 + high * 0.6
+                // A trade's own rule for where not to stand (a village's crew: not where the block can't be seen), looked at only for a better place
+                if (score < bestScore) score += hidden(level, eye, target)
                 if (score < bestScore) {
                     bestScore = score
                     best = cursor.immutable()
