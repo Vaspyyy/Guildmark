@@ -83,7 +83,7 @@ object YardShow {
     /** Where the carters stand about the yard (the drawing's x, z): clear of the barrels, the bell and the way to the gate. */
     private val SPOTS = listOf(3 to 2, 6 to 2, 6 to 1, 3 to 1)
 
-    /** The barrels they fill the baskets at, and where they stand to; the two leaves of the gate, where they hand the baskets up. */
+    /** The barrels they fill the baskets at, and where they stand to; the two leaves of the gate, the way in and out. */
     private val BARRELS = 2 to 2
     private val AT_BARRELS = 2 to 1
     private val GATEWAY = listOf(4 to 0, 5 to 0)
@@ -105,10 +105,13 @@ object YardShow {
     private const val BASKETS = 4
     private const val PER_BASKET = 4
 
-    /** Ticks: the horse led round and backed into the shafts; into the HITCH clip that the traces are clipped. */
+    /** Ticks: the horse led round and backed into the shafts; into the HITCH clip that the traces are clipped (its `clip`, the hook on the hame). */
     private const val LEAD = 30
     private const val BACK = 30
-    private const val CLIPPED = 20
+    private const val CLIPPED = 25
+
+    /** Where a loader stands to heave a basket onto the let-down tailboard (LOAD_PACK's spot): on the wagon's middle line, this many px behind its back axle. */
+    private const val LOAD_AT = 25f
 
     private val OUT = listOf("trade_carter_out_0", "trade_carter_out_1")
     private val HOME = listOf("trade_carter_back_0", "trade_carter_back_1")
@@ -117,7 +120,7 @@ object YardShow {
     private val SCRIBE_BACK = listOf("trade_scribe_back_0", "trade_scribe_back_1", "trade_scribe_back_2")
 
     /** What a carter at the yard does now and then, standing about; and one waiting for their wage. */
-    private val IDLE = listOf(Activity.LOOK_ABOUT, Activity.STRETCH, Activity.MOP_BROW, Activity.CHECK_LOAD, Activity.YAWN)
+    private val IDLE = listOf(Activity.LOOK_ABOUT, Activity.STRETCH, Activity.MOP_BROW, Activity.YAWN)
     private val SULK = listOf(Activity.GRUMBLE, Activity.SIGH, Activity.ARMS_FOLDED)
 
     /** The moves' scene: the yard's moves are played by its own hands, not an [Aside] of the townsfolk's. */
@@ -671,17 +674,20 @@ object YardShow {
             val site = yard.site
             val barrels = block(site, AT_BARRELS.first, AT_BARRELS.second)
             val barrel = centre(site, BARRELS.first.toDouble(), BARRELS.second.toDouble(), 0.6)
-            val gate = GATEWAY[loaded % GATEWAY.size].let { block(site, it.first, it.second) }
+            // LOAD_PACK is made for one spot behind the tail, facing the wagon's way: walked to, and the last steps by hand
+            val spot = wagon.point(0f, 0f, LOAD_AT)
+            val stand = BlockPos.containing(spot.x, spot.y + 0.2, spot.z)
             val tail = wagon.point(0f, -16f, 22f)
+            val ahead = wagon.point(0f, 0f, -83f)
             val good = Good.entries.filter { load[it.ordinal] > 0 }.maxByOrNull { (load[it.ordinal] * 31 + loaded * 17) % 97 }
             val basket = good?.item?.let(::ItemStack) ?: ItemStack(Items.WHEAT)
             val n = loaded + 1
             hand.then(GoTo({ barrels }, Jobs.WALK, 0.6, Activity.NONE, 300))
                 .then(Turn({ barrel }))
                 .then(Play(Activity.PICK_UP, at = { barrel }, first = { p -> p.carried = basket.copy() }))
-                .then(GoTo({ gate }, Jobs.WALK, 0.6, Activity.CARRY_BASKET, 300))
-                .then(Turn({ tail }))
-                .then(Play(Activity.LOAD_PACK, at = { tail }))
+                .then(GoTo({ stand }, Jobs.WALK, 0.6, Activity.CARRY_BASKET, 300))
+                .then(StoreLife.Stand({ spot }, { wagon.yRot }, Activity.CARRY_BASKET))
+                .then(Play(Activity.LOAD_PACK, at = { ahead }))
                 .then(Now { p ->
                     p.carried = ItemStack.EMPTY
                     heap(n)
@@ -714,10 +720,8 @@ object YardShow {
             if (stageAge < BACK) return
             horse.move(DraughtHorse.Move.IDLE)
             next(Stage.HITCH)
-            val (hx, hz) = out
-            val shoulder = Vec3(into.x - hz * 1.0 + hx * 0.3, into.y, into.z + hx * 1.0 + hz * 0.3)
-            hand.then(GoTo({ BlockPos.containing(shoulder.x, shoulder.y + 0.2, shoulder.z) }, Jobs.WALK, 0.6, Activity.NONE, 200))
-                .then(Turn({ horse.position().add(0.0, 1.2, 0.0) }))
+            hand.then(GoTo({ shoulder().let { BlockPos.containing(it.x, it.y + 0.2, it.z) } }, Jobs.WALK, 0.6, Activity.NONE, 200))
+                .then(StoreLife.Stand({ shoulder() }, { atShoulder() }))
                 .then(object : Move() {
                     override fun start(p: Townsperson, a: Aside) {
                         p.navigation.stop()
@@ -725,12 +729,23 @@ object YardShow {
                     }
 
                     override fun tick(p: Townsperson, a: Aside, t: Int): Boolean {
-                        p.lookAt(horse.position().add(0.0, 1.2, 0.0))
+                        // Held at its shoulder, square to it, as the horse stands (as the Bill's yard hand is)
+                        val at = shoulder()
+                        StoreLife.Stand.put(p, at.x, at.z, atShoulder())
                         if (t == CLIPPED) harness()
                         return t < Activity.HITCH.ticks
                     }
                 })
         }
+
+        /** Where HITCH is made to be played: beside the horse's right shoulder, 1.0 block out from its middle line and 0.3 ahead, as it stands now (WagonBill's hitch). */
+        private fun shoulder(): Vec3 {
+            val (fx, fz) = LedShow.forward(horse.yRot)
+            return Vec3(horse.x - fz * 1.0 + fx * 0.3, horse.y, horse.z + fx * 1.0 + fz * 0.3)
+        }
+
+        /** Facing the horse's side square from [shoulder]. */
+        private fun atShoulder(): Float = Mth.wrapDegrees(horse.yRot - 90f)
 
         /** The horse in the shafts and the traces clipped. */
         fun harness() {
