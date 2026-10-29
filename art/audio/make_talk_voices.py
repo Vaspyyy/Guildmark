@@ -1875,6 +1875,15 @@ GROUPS += tale_lines.groups()
 DELIVERY.update(tale_lines.DELIVERY); SPEED_FOR.update(tale_lines.SPEED_FOR)
 SAY_AS.update(tale_lines.SAY_AS); PHONEMES.update(tale_lines.PHONEMES)
 
+# The villages' twenty families (village_talk.py; living-world/villages/design.md section 17.4), a module of its own entered
+# here by this one block, as the build plan asks
+import village_talk  # noqa: E402
+GROUPS += village_talk.groups(MWO, CHILD, TALK)
+DELIVERY.update(village_talk.DELIVERY)
+SPEED_FOR.update(village_talk.SPEED_FOR)
+SAY_AS.update(village_talk.SAY_AS)
+PHONEMES.update(village_talk.PHONEMES)
+
 
 # ------------------------------------------------------------------ the lines
 class Line:
