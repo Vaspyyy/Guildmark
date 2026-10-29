@@ -6,7 +6,6 @@ import io.github.vaspyyy.guildmark.cooking.Cooking
 import io.github.vaspyyy.guildmark.cooking.DishKind
 import io.github.vaspyyy.guildmark.cooking.Station
 import io.github.vaspyyy.guildmark.cooking.dish.Dishes
-import io.github.vaspyyy.guildmark.cooking.vessel.StationProps
 import io.github.vaspyyy.guildmark.economy.works.Works
 import io.github.vaspyyy.guildmark.economy.works.WorksData
 import io.github.vaspyyy.guildmark.economy.works.WorksKind
@@ -25,7 +24,6 @@ import io.github.vaspyyy.guildmark.townsfolk.scenes.Move
 import io.github.vaspyyy.guildmark.townsfolk.scenes.Turn
 import io.github.vaspyyy.guildmark.townsfolk.scenes.Words
 import net.minecraft.core.BlockPos
-import net.minecraft.core.Direction
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.sounds.SoundSource
@@ -42,8 +40,8 @@ import kotlin.math.abs
  * square; at a counter with nothing to sell they shrug ("Sold out, I'm afraid.", the moment the last dish is fetched, or when
  * a player comes by a bare counter) and sit when there is a seat by. Each is a short part of the town's scene kind ([Aside]) played where
  * the keeper stands: they set the work down, do it, and take it up again, and a word from a player ends it. The clips the parts name
- * (`FLIP`, `SLICE`, `PEEL`) are Part I3's and M3's; until they are made the keeper keeps the humanoid's pose, and the sounds and the
- * puffs of steam and crumbs are played all the same. The words are [ShopLines]'.
+ * (`FLIP`, `SLICE`, `PEEL`) are Part I3's and M3's, and their sounds and puffs of steam and crumbs are played on each client at the
+ * clips' own moments (client/cooking/TownKitchen.moment). The words are [ShopLines]'.
  *
  * Nothing here touches what the shop sells or earns, and nothing is scanned: a look every second at the few cookshops there are, and
  * only for the one a player is near. [Sale] and [Serve] are the keeper's part of a sale at the counter, which [CookShoppers] plays
@@ -150,9 +148,9 @@ internal object CookshopScene {
         for (beat in order) {
             val moves = when (beat) {
                 Beat.CRY -> cry(lay, keeper)
-                Beat.FLIP -> lay.hob?.let { flip(level, it) }
-                Beat.PEEL -> lay.oven?.let { peel(level, it) }
-                Beat.SLICE -> lay.prep?.let { slice(level, it) }
+                Beat.FLIP -> lay.hob?.let { flip(it) }
+                Beat.PEEL -> lay.oven?.let { peel(it) }
+                Beat.SLICE -> lay.prep?.let { slice(it) }
             }
             if (moves != null) return moves
         }
@@ -185,50 +183,26 @@ internal object CookshopScene {
         return listOf(Turn(at), Do(if (keeper.random.nextBoolean()) Activity.SIGH else Activity.ARMS_FOLDED, at, emptyMap(), ticks = 80))
     }
 
-    /** A turn to the Hob and two flips of whatever is on it, a sizzle each. */
-    private fun flip(level: ServerLevel, hob: BlockPos): List<Move> {
+    // The flip, the peel and the slice are heard and seen at their clips' own moments, on each client that sees the keeper
+    // (client/cooking/TownKitchen.moment): the sizzle, the oven door and its steam, the loaves set down, the knife and its
+    // crumbs. The server adds none of its own, so none is heard twice or out of step with her hands.
+
+    /** A turn to the Hob and two flips of whatever is on it. */
+    private fun flip(hob: BlockPos): List<Move> {
         val at = sight(hob, 1.0)
-        val flip: (Townsperson) -> Unit = { _ ->
-            sound(level, hob, "cook.flip", 0.8f)
-            level.sendParticles(CookParticles.SIZZLE.get(), hob.x + 0.5, hob.y + 1.0, hob.z + 0.5, 6, 0.15, 0.05, 0.15, 0.02)
-            level.sendParticles(CookParticles.STEAM.get(), hob.x + 0.5, hob.y + 1.0, hob.z + 0.5, 2, 0.1, 0.05, 0.1, 0.01)
-        }
-        return listOf(Turn(at), Do(Activity.FLIP, at, mapOf(8 to flip)), Do(Activity.FLIP, at, mapOf(8 to flip)))
+        return listOf(Turn(at), Do(Activity.FLIP, at, emptyMap()), Do(Activity.FLIP, at, emptyMap()))
     }
 
-    /** A turn to the Bake oven, its door opened and the peel drawn out, a puff of steam and the loaves set down. */
-    private fun peel(level: ServerLevel, oven: BlockPos): List<Move> {
+    /** A turn to the Bake oven, its door opened and the peel drawn out, and the loaves set down. */
+    private fun peel(oven: BlockPos): List<Move> {
         val at = sight(oven, 0.7)
-        val mouth = mouth(level, oven)
-        return listOf(
-            Turn(at),
-            Do(
-                Activity.PEEL, at,
-                mapOf<Int, (Townsperson) -> Unit>(
-                    8 to { _: Townsperson ->
-                        sound(level, oven, "cook.oven_open", 0.9f)
-                        level.sendParticles(CookParticles.STEAM.get(), mouth.x, mouth.y, mouth.z, 8, 0.2, 0.15, 0.2, 0.02)
-                    },
-                    34 to { _: Townsperson -> sound(level, oven, "cook.loaf_down", 0.8f) },
-                ),
-            ),
-        )
+        return listOf(Turn(at), Do(Activity.PEEL, at, emptyMap()))
     }
 
-    /** A turn to the Prep Board and two cuts, crumbs falling. */
-    private fun slice(level: ServerLevel, board: BlockPos): List<Move> {
+    /** A turn to the Prep Board and two cuts. */
+    private fun slice(board: BlockPos): List<Move> {
         val at = sight(board, 1.0)
-        val cut: (Townsperson) -> Unit = { _ ->
-            sound(level, board, "cook.slice", 0.8f)
-            level.sendParticles(CookParticles.CRUMB.get(), board.x + 0.5, board.y + 1.0, board.z + 0.5, 4, 0.12, 0.03, 0.12, 0.01)
-        }
-        return listOf(Turn(at), Do(Activity.SLICE, at, mapOf(10 to cut, 26 to cut)))
-    }
-
-    /** The front of the Bake oven, where its steam comes out: a little before the block, at the height of its mouth. */
-    private fun mouth(level: ServerLevel, oven: BlockPos): Vec3 {
-        val face = level.getBlockState(oven).getOptionalValue(StationProps.FACING).orElse(Direction.NORTH)
-        return Vec3(oven.x + 0.5 + face.stepX * 0.6, oven.y + 0.6, oven.z + 0.5 + face.stepZ * 0.6)
+        return listOf(Turn(at), Do(Activity.SLICE, at, emptyMap()))
     }
 
     /** A sit on a seat near the post (a shop with nothing to sell), as a stall's keeper sits by theirs; false if there is none free. */
@@ -350,6 +324,9 @@ internal object CookshopScene {
     /** The most ticks the keeper takes to turn to a station before the clip begins. */
     private const val TURN_MOST = 12
 
+    /** The tick of the ladle's clip its pour is heard at: the clip's `pour` moment is 12.5 (client/townsfolk/LivingSchedule.MOMENTS). */
+    private const val LADLE_POUR = 13
+
     /** The longest the keeper's part of one sale lasts, whatever becomes of the shopper. */
     private const val SERVE_MOST = 1500
 
@@ -399,7 +376,11 @@ internal object CookshopScene {
             return true
         }
 
-        /** Turns to the station, then plays the clip with its sounds and puffs, and turns back. */
+        /**
+         * Turns to the station, then plays the clip, and turns back. The slice, the carve and the flip are heard and seen at the
+         * clips' own moments (client/cooking/TownKitchen.moment); the ladle's clip has no sound of its own, so the pour is played
+         * here, at the clip's `pour` (12.5, the tick after).
+         */
         private fun prepare(p: Townsperson, there: Vec3, t: Int) {
             if (prepAt < 0) {
                 if (abs(Mth.degreesDifference(p.yBodyRot, p.yawTo(there))) <= 8f || t - began >= TURN_MOST) {
@@ -410,19 +391,9 @@ internal object CookshopScene {
             }
             val level = sale.level
             val at = sale.prep.at(sale.lay) ?: sale.lay.stand
-            when (sale.prep) {
-                Prep.SLICE, Prep.CARVE -> if (t - prepAt == 10 || t - prepAt == 26) {
-                    sound(level, at, if (sale.prep == Prep.SLICE) "cook.slice" else "cook.carve", 0.8f)
-                    level.sendParticles(CookParticles.CRUMB.get(), at.x + 0.5, at.y + 1.0, at.z + 0.5, 4, 0.12, 0.03, 0.12, 0.01)
-                }
-                Prep.FLIP -> if (t - prepAt == 8) {
-                    sound(level, at, "cook.flip", 0.8f)
-                    level.sendParticles(CookParticles.SIZZLE.get(), at.x + 0.5, at.y + 1.0, at.z + 0.5, 6, 0.15, 0.05, 0.15, 0.02)
-                }
-                Prep.LADLE -> if (t - prepAt == 8) {
-                    sound(level, at, "cook.pour", 0.8f)
-                    level.sendParticles(CookParticles.STEAM.get(), at.x + 0.5, at.y + 1.0, at.z + 0.5, 3, 0.12, 0.05, 0.12, 0.01)
-                }
+            if (sale.prep == Prep.LADLE && t - prepAt == LADLE_POUR) {
+                sound(level, at, "cook.pour", 0.8f)
+                level.sendParticles(CookParticles.STEAM.get(), at.x + 0.5, at.y + 1.0, at.z + 0.5, 3, 0.12, 0.05, 0.12, 0.01)
             }
             if (t - prepAt >= sale.prep.activity.ticks) prepOver = true
         }
