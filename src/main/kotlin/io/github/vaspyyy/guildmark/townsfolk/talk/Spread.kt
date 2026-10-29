@@ -23,6 +23,7 @@ import io.github.vaspyyy.guildmark.village.Standing
 import io.github.vaspyyy.guildmark.village.VillageNames
 import io.github.vaspyyy.guildmark.village.live.VillageRec
 import io.github.vaspyyy.guildmark.village.live.Villages
+import io.github.vaspyyy.guildmark.village.live.days.VillageDays
 import io.github.vaspyyy.guildmark.village.live.talk.VillageCry
 import net.minecraft.core.BlockPos
 import net.minecraft.server.MinecraftServer
@@ -415,7 +416,9 @@ object Spread {
             val well = at?.let { h -> wells.indices.minByOrNull { wells[it].distSqr(h) } } ?: 0
             val bands = max(1, (counts[r.role] ?: 1) / CREW)
             val watch = r.role == TownRole.GUARD && nightWatch(level, r)
-            val agenda = Days.plan(r, day, lessons, watch, crew?.carters?.contains(r.id) == true, crew?.crier == r.id, crew?.labourers?.contains(r.id) == true)
+            // A village's folk have the village's day (its green on market day, the bell at noon), a capital's the capital's
+            val agenda = if (places?.kind == TownKind.VILLAGE && crew != null) VillageDays.plan(r, places, crew, day)
+                else Days.plan(r, day, lessons, watch, crew?.carters?.contains(r.id) == true, crew?.crier == r.id, crew?.labourers?.contains(r.id) == true)
             val near = byHome.getOrPut(r.home) { nearest(r.home, at, homes, places) }
             Person(r, agenda, tavern, well, temple, neighbour(r, near, day), Math.floorMod(mix(r.id.toLong()), bands.toLong()).toInt())
         }

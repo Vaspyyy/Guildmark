@@ -3,8 +3,11 @@ package io.github.vaspyyy.guildmark.village.live.days
 import io.github.vaspyyy.guildmark.townsfolk.Agenda
 import io.github.vaspyyy.guildmark.townsfolk.Days
 import io.github.vaspyyy.guildmark.townsfolk.Doing
+import io.github.vaspyyy.guildmark.townsfolk.Hands
 import io.github.vaspyyy.guildmark.townsfolk.Life
+import io.github.vaspyyy.guildmark.townsfolk.Resident
 import io.github.vaspyyy.guildmark.townsfolk.Stretch
+import io.github.vaspyyy.guildmark.townsfolk.TownPlaces
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import io.github.vaspyyy.guildmark.townsfolk.talk.Spread
 import io.github.vaspyyy.guildmark.village.live.market.VillageTimes
@@ -75,6 +78,27 @@ object VillageDays {
 
     /** What is never cut across: bed, the watch and the crier's and builders' stretches. */
     private val KEPT = setOf(Doing.SLEEP, Doing.BED, Doing.WATCH, Doing.CRY, Doing.BUILD)
+
+    /**
+     * [r]'s day number [day] in the village of [places], worked out without a body (for the talk, [Spread.people]): the duties its
+     * [crew] gives them, as [Days] gives a body's for the day (the carts, the market day, the stall, the bell, the board, the lamps,
+     * the site, the night watch), and then their day as a body would have it ([Days.plan], and so [shape]), so that the folk the talk
+     * puts together are where their bodies are: on the green on market day, at the bell at noon.
+     */
+    fun plan(r: Resident, places: TownPlaces, crew: Hands.Crew, day: Long): Agenda {
+        val life = Life(r, places, places.lodgings[r.home]?.takeIf { it.beds.isNotEmpty() })
+        life.carter = r.id in crew.carters
+        life.crier = r.id == crew.crier
+        life.labourer = r.id in crew.labourers
+        life.market = crew.market
+        life.keeper = crew.keepers[r.id] ?: -1
+        life.bellman = r.id == crew.bellman
+        life.poster = r.id == crew.poster
+        life.lamps = r.id in crew.lamps
+        life.builder = r.id in crew.builders
+        life.nightWatch = r.role == TownRole.GUARD && r.id in crew.night
+        return Days.plan(life, day)
+    }
 
     /** [life]'s day number [day] as [base] (the capital's planner's) has it, shaped to the village. */
     fun shape(life: Life, base: Agenda, day: Long): Agenda {
