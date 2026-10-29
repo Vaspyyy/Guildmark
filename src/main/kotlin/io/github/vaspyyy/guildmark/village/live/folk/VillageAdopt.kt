@@ -237,13 +237,13 @@ object VillageAdopt {
         }
     }
 
-    /** Looks at the next village in turn. */
+    /** Looks at the next village in turn (a lost one too: its folk are given back, design 14.5, as a released village's are). */
     private fun look(level: ServerLevel) {
-        val all = Villages.all(level).filter { it.state != Live.LOST }
+        val all = Villages.all(level)
         if (all.isEmpty()) return
         val rec = all.firstOrNull { it.key > cursor } ?: all.first()
         cursor = rec.key
-        val adopt = adopting(rec)
+        val adopt = adopting(rec) && rec.state != Live.LOST
         if (adopt && rec.state != Live.LIVE) return
         reap(level, rec)
         if (!scanning(level)) return
@@ -801,6 +801,17 @@ object VillageAdopt {
             if (giveBack(level, rec, r, body)) given++
         }
         return given
+    }
+
+    /**
+     * How many of [rec]'s folk are still to be given back: those taken in who are townsfolk yet (alive, with their keepsake kept), and
+     * its people an outlaws' camp holds (given back once they are freed and home). A lost village is not dropped while any are, so that
+     * they are given back when their bodies are next met at night, not left townsfolk of a village nobody keeps.
+     */
+    fun owed(level: ServerLevel, rec: VillageRec): Int {
+        val held = HashSet<Int>()
+        for (band in io.github.vaspyyy.guildmark.outlaw.OutlawCamps.get(level).bands) for (c in band.captives) if (c.resident >= 0) held.add(c.resident)
+        return Residents.get(level).byCentre(BlockPos.of(rec.key)).count { r -> r.alive && VillageKeepsakes.has(level, r.id) || r.died < 0 && r.id in held }
     }
 
     /** Whether the body is one the folk may give back: not a tale's, a captive's, a leader's or a crowd's, and not in a talk or at the wares. */

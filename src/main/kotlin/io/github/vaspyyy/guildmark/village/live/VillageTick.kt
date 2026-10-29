@@ -25,7 +25,8 @@ import kotlin.math.abs
  *   the front of the queue gets the share of it that is its own, a little at a time, never loading a chunk;
  * - every 100 ticks (the player look) each record is seen to: LIVE with a player within 96 blocks, SLEEPING further off, PAUSED when
  *   more are awake than `maxLiveVillages` allows (the ones seen longest ago; a LIVE village is never paused), LOST when its bell is gone
- *   and no board stands, found again when the bell is put back, and dropped after 30 days lost. A LIVE village is counted again every
+ *   and no board stands, found again when the bell is put back, and dropped after 30 days lost (once none of the folk it took in is
+ *   left to give back: [io.github.vaspyyy.guildmark.village.live.folk.VillageAdopt.owed]). A LIVE village is counted again every
  *   6,000 ticks, and at once when it has no places kept (the first count, or after a restart);
  * - the town zone of each village follows its record, so that crowds skip it.
  *
@@ -210,7 +211,8 @@ internal object VillageTick {
                         rec.lostDay = day
                         dirty = true
                     }
-                    day - rec.lostDay >= LOST_DAYS -> {
+                    // Kept on while folk it took in are still to be given back (or are held in a camp), so that they are
+                    day - rec.lostDay >= LOST_DAYS && io.github.vaspyyy.guildmark.village.live.folk.VillageAdopt.owed(level, rec) == 0 -> {
                         drop(level, data, rec)
                         dirty = true
                     }
