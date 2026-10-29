@@ -409,11 +409,14 @@ internal class KitchenScene(
         pot.showHouse(level.gameTime + ticks, bowls)
     }
 
-    /** The pour of a bowl at tick [t] of the ladle clip, and its setting down on the shelf. */
+    /** The pour of a bowl at tick [t] of the ladle clip (the pot's surface falls with the bowls, [StewpotBlockEntity.ladleHouse]), and its setting down on the shelf. */
     private fun ladle(level: ServerLevel, pos: BlockPos, t: Int) {
         val at = Vec3.atCenterOf(pos)
         val random = level.random
-        if (t == POUR) level.playSound(null, at.x, at.y, at.z, CookSounds.get("cook.serve"), SoundSource.BLOCKS, 0.7f, 0.95f + random.nextFloat() * 0.1f)
+        if (t == POUR) {
+            level.playSound(null, at.x, at.y, at.z, CookSounds.get("cook.serve"), SoundSource.BLOCKS, 0.7f, 0.95f + random.nextFloat() * 0.1f)
+            pot(level)?.ladleHouse()
+        }
         if (t == GIVE) {
             bowls = min(bowls + 1, 8)
             val pot = pot(level) ?: return

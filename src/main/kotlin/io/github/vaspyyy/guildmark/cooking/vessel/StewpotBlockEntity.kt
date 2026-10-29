@@ -47,6 +47,9 @@ class StewpotBlockEntity(pos: BlockPos, state: BlockState) : VesselBlockEntity(C
         /** The house pot's own pottage, as a colour, until a dish of a player's is the one the inn serves. */
         const val HOUSE_RGB = 0xB89A58
 
+        /** The bowls the keeper ladles from the house pot for its surface to fall a step. */
+        const val HOUSE_BOWLS_A_STEP = 2
+
         private val FROM = Days.clock(HOUSE_FROM)
         private val TO = Days.clock(HOUSE_TO)
     }
@@ -68,6 +71,10 @@ class StewpotBlockEntity(pos: BlockPos, state: BlockState) : VesselBlockEntity(C
     /** What the house display last showed, so it is sent only when it changes. */
     private var houseShown = 0L
 
+    /** The bowls the keeper has ladled from the house pot today, and the town's day that is (saved; none read as none). */
+    private var houseLadled = 0
+    private var houseLadledDay = -1L
+
     /**
      * The innkeeper's scene sets what the house pot shows (7.3): the surface swirls until game time [swirlUntil], and
      * [bowls] stand on the shelf. A pot that is not in [StewpotMode.HOUSE] ignores it.
@@ -81,6 +88,20 @@ class StewpotBlockEntity(pos: BlockPos, state: BlockState) : VesselBlockEntity(C
         vessel.dirty = true
         setChanged()
         (level as? ServerLevel)?.let { settle() }
+    }
+
+    /** A bowl ladled from the house pot by the innkeeper's scene: the surface falls a step for every [HOUSE_BOWLS_A_STEP] of the day's. */
+    fun ladleHouse() {
+        if (mode != StewpotMode.HOUSE) return
+        val level = level as? ServerLevel ?: return
+        val today = Days.dayOf(level.overworldClockTime)
+        if (houseLadledDay != today) {
+            houseLadledDay = today
+            houseLadled = 0
+        }
+        houseLadled++
+        setChanged()
+        showHouseLook(level)
     }
 
     /** What the inn is serving tonight, as a colour (the dish a player sold, else 0 for the house's own pottage). */
@@ -105,12 +126,17 @@ class StewpotBlockEntity(pos: BlockPos, state: BlockState) : VesselBlockEntity(C
         return offset >= FROM && offset < TO
     }
 
-    /** The house pot's surface: from full down to [HOUSE_LOW] through the evening. */
+    /**
+     * The house pot's surface: from full down to [HOUSE_LOW] through the evening, and lower sooner for the bowls ladled from it
+     * today (a step for every [HOUSE_BOWLS_A_STEP]), whichever has taken more.
+     */
     private fun houseWater(level: Level?): Int {
         if (level == null) return HOUSE_FULL
         val span = (TO - FROM).toDouble().coerceAtLeast(1.0)
         val done = ((Days.offsetOf(level.overworldClockTime) - FROM).toDouble() / span).coerceIn(0.0, 1.0)
-        return (HOUSE_FULL - Math.round(done * (HOUSE_FULL - HOUSE_LOW)).toInt()).coerceIn(HOUSE_LOW, HOUSE_FULL)
+        val byHour = Math.round(done * (HOUSE_FULL - HOUSE_LOW)).toInt()
+        val byBowls = if (houseLadledDay == Days.dayOf(level.overworldClockTime)) houseLadled / HOUSE_BOWLS_A_STEP else 0
+        return (HOUSE_FULL - maxOf(byHour, byBowls)).coerceIn(HOUSE_LOW, HOUSE_FULL)
     }
 
     override val shownLit: Boolean get() = if (mode == StewpotMode.HOUSE) simmering(level) else vessel.lit
@@ -130,6 +156,12 @@ class StewpotBlockEntity(pos: BlockPos, state: BlockState) : VesselBlockEntity(C
     override fun tickVessel(level: ServerLevel, now: Long): Boolean {
         if (mode != StewpotMode.HOUSE) return true
         if (now % 20L != 0L) return false
+        showHouseLook(level)
+        return false
+    }
+
+    /** Works out whether the house pot simmers and how full it looks, and tells the clients if that changed. */
+    private fun showHouseLook(level: ServerLevel) {
         val on = simmering(level)
         val shown = (if (on) 1L else 0L) or (houseWater(level).toLong() shl 1)
         if (shown != houseShown) {
@@ -137,13 +169,16 @@ class StewpotBlockEntity(pos: BlockPos, state: BlockState) : VesselBlockEntity(C
             vessel.dirty = true
         }
         settle()
-        return false
     }
 
     override fun saveExtra(output: ValueOutput) {
         if (mode != StewpotMode.PLAYER) output.putString("mode", mode.name.lowercase())
         if (houseBowls != 0) output.putInt("houseBowls", houseBowls)
         if (houseTint != 0) output.putInt("houseTint", houseTint)
+        if (houseLadled != 0) {
+            output.putInt("houseLadled", houseLadled)
+            output.putLong("houseLadledDay", houseLadledDay)
+        }
     }
 
     override fun loadExtra(input: ValueInput) {
@@ -151,6 +186,8 @@ class StewpotBlockEntity(pos: BlockPos, state: BlockState) : VesselBlockEntity(C
         mode = StewpotMode.entries.firstOrNull { it.name.equals(name, ignoreCase = true) } ?: StewpotMode.PLAYER
         houseBowls = input.getIntOr("houseBowls", 0).coerceIn(0, 8)
         houseTint = input.getIntOr("houseTint", 0)
+        houseLadled = input.getIntOr("houseLadled", 0).coerceAtLeast(0)
+        houseLadledDay = input.getLongOr("houseLadledDay", -1L)
     }
 
     // ---- What a click does (1.5) ----
