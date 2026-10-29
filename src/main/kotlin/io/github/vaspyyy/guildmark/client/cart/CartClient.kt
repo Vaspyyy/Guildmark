@@ -48,11 +48,13 @@ object CartClient {
     /** Registers the renderer, the cart's model layers and the puller's turn; called once from the client's setup. */
     fun register(modBus: IEventBus) {
         modBus.addListener(EntityRenderersEvent.RegisterRenderers::class.java) { event ->
-            event.registerEntityRenderer(Handcarts.HANDCART.get(), ::HandcartRenderer)
+            // Villages (V12a): a pedlar's cart has its hood, pots and lantern; any other is drawn as HandcartRenderer draws it
+            event.registerEntityRenderer(Handcarts.HANDCART.get(), ::PedlarCartRenderer)
         }
         modBus.addListener(EntityRenderersEvent.RegisterLayerDefinitions::class.java) { event ->
             event.registerLayerDefinition(HandcartModel.LAYER, HandcartMesh::cart)
             event.registerLayerDefinition(HandcartModel.LOAD, HandcartMesh::load)
+            event.registerLayerDefinition(PedlarCartRenderer.LAYER, PedlarCartMesh::dressing)
         }
         modBus.addListener(RegisterRenderStateModifiersEvent::class.java) { event ->
             event.registerEntityModifier<Townsperson, TownsfolkRenderState>(TownsfolkRenderer::class.java) { p, state ->
