@@ -1739,8 +1739,8 @@ def part_names():
 
 # The clerks', carters' and wardens' (trade X4): a seal stamp, the corner of a cart's canvas, a laden basket, a trace, a sack
 # for the scale and a pack to rummage in. townsfolk.py packs their cubes after everyone else's (group 6), so adding them
-# moved no cube already on the texture. Where a clip's track runs a prop (the basket, the canvas, the trace, the sack),
-# the track places it in the clip's own space and its rest placement here only shows it untracked.
+# moved no cube already on the texture. Where a clip's track runs a prop (the basket, the canvas, the trace, the sack,
+# the pack), the track places it in the clip's own space and its rest placement here only shows it untracked.
 
 STAMP_FACE = (0.0, 4.6, 0.0)             # stamp space: the middle of the seal's working face
 
@@ -1843,7 +1843,39 @@ def _weigh_sack():
     return 'body', Part('weigh_sack', (6.0, 15.5, 0.0), (0, 0, 0), cubes=cubes)
 
 
-TRADE_BUILDERS = [_stamp, _canvas_flap, _pack_basket, _trace_end, _weigh_sack]
+RUMMAGE_PACK_BOX = ((-3.5, 0.0, -2.0), (7.0, 5.5, 4.0))      # the pack's body: its mouth's middle at the origin, open
+
+
+def pack_painter(key):
+    """A worn leather pack: stitched edges, scuffs; its top the open mouth, dark inside a lighter rim."""
+    def fn(face, w, h, rng):
+        a = noise_fill(w, h, (126, 86, 52), rng, 0.06)
+        U, V = uv(w, h)
+        if face == 'top':
+            inside = (U * w > 1) & (U * w < w - 1) & (V * h > 1) & (V * h < h - 1)
+            a[..., :3] = np.where(inside[..., None], mix(a[..., :3], (38, 28, 20), 0.85), mix(a[..., :3], (176, 132, 86), 0.4))
+            return a
+        edge = (U * w < 1) | (U * w > w - 1) | (V * h < 1) | (V * h > h - 1)
+        a[..., :3] = np.where(edge[..., None], mix(a[..., :3], (86, 56, 32), 0.6), a[..., :3])
+        scuff = rng.random((h, w)) > 0.93
+        a[..., :3] = np.where(scuff[..., None], mix(a[..., :3], (170, 128, 84), 0.5), a[..., :3])
+        return shade_edges(a, 0.16)
+    return painter(key, fn)
+
+
+def _rummage_pack():
+    # The pack RUMMAGE goes through: a worn leather pack held open before the belly, its flap thrown back down its far
+    # side and buckled to nothing. RUMMAGE's track holds it in the clip's space; the right hand goes in at its mouth.
+    lo, size = RUMMAGE_PACK_BOX
+    return 'body', Part('rummage_pack', (0.6, 7.0, -5.6), (0, 0, 0), cubes=[
+        C(lo, size, 't_rummage_pack', pack_painter('t_rummage_pack')),
+        C((-3.6, -0.5, -2.5), (7.2, 4.6, 0.5), 't_rummage_flap',
+          leather_painter('t_rummage_flap', (118, 80, 48), (82, 54, 32), (168, 124, 80))),
+        C((-0.7, 3.2, -2.85), (1.4, 1.1, 0.35), 't_rummage_buckle', brass_painter('t_rummage_buckle')),
+    ])
+
+
+TRADE_BUILDERS = [_stamp, _canvas_flap, _pack_basket, _trace_end, _weigh_sack, _rummage_pack]
 BUILDERS.extend(TRADE_BUILDERS)
 TOOL_NOTES.update({
     'stamp': 'right hand, a seal stamp hanging along the arm (STAMP\'s track holds it pointing down and twists it on the '
@@ -1857,6 +1889,8 @@ TOOL_NOTES.update({
                  'track roots it on the line the hitched trace runs and stretches it to the hand',
     'weigh_sack': 'body, tracked (WEIGH): the scale\'s sack (store_art\'s goods pan), the middle of its bottom at the part\'s '
                   'origin; the fist has it by the neck at part (0, -2.8, 0)',
+    'rummage_pack': 'body, tracked (RUMMAGE): a leather pack held open, its mouth\'s middle at the part\'s origin, its body '
+                    '7 across, 5.5 deep and 4 thick under it',
 })
 
 

@@ -1322,10 +1322,231 @@ def preview_station(name, t):
     return fn(t) + [b for b in la.station_boxes(ta.INFO[name]['station']) if b[1][1] - b[0][1] < 0.5 and b[1][0] - b[0][0] > 30]
 
 
+# ================================================================== halt
+
+# ---- halt (25, once): "Hold!" at someone ahead, made to be read from a dozen blocks. A gather (the weight drawn back,
+# the arms in); the right foot stamped out ahead and the stance braced wide as the right arm is flung up high and a
+# little out, the palm to the front, and the left arm thrown out low to the side to bar the way (hold: the shout and the
+# stamp fall here); the chest forward and the head up, the raised hand driven at the one ahead twice (push); then the arms
+# let fall, the feet gathered, the shoulders eased. A big Y from the front and a raised, leaning arm from the side;
+# nothing is held, nothing stood at.
+HL_LEN = 25
+HL_HOLD = 4.4
+HL_PUSHES = (9.0, 13.0)
+HL_STEPS = [(2.2, HL_HOLD, 'right_leg', (-3.2, -3.6)), (2.6, HL_HOLD + 0.4, 'left_leg', (3.2, 0.9)),
+            (18.6, 22.0, 'right_leg', (-1.9, 0.0)), (19.6, 23.2, 'left_leg', (1.9, 0.0))]
+HL_P = [(0, 0.0), (1.4, -3.0), (2.8, -5.0), (HL_HOLD, 6.0), (5.4, 8.0), (7.0, 5.0), (HL_PUSHES[0], 7.5), (11.0, 5.0),
+        (HL_PUSHES[1], 7.5), (15.0, 5.0), (17.5, 3.5), (21.0, 1.0), (25, 0.0)]
+HL_YAW = [(0, 0.0), (2.8, 6.0), (HL_HOLD, -4.0), (7.0, -3.0), (17.5, -2.0), (22.0, 0.0), (25, 0.0)]
+HL_ROLL = [(0, 0.0), (2.8, -1.0), (HL_HOLD + 0.4, 3.0), (17.0, 2.5), (21.0, 0.6), (25, 0.0)]
+HL_DIP = [(0, 0.0), (2.8, 1.2), (HL_HOLD, 2.0), (HL_HOLD + 1.6, 1.2), (17.0, 1.0), (21.0, 0.3), (25, 0.0)]
+
+
+def hl_arm(fr, t):
+    """The right arm: drawn in, flung up high with an overshoot, held, driven forward twice and let fall."""
+    hang = rest_arm('right_arm', fr)
+    drawn = point_arm(fr, v(f=0.35, u=-0.9, r=0.05), palm=L, lift=0.0)
+    snap = point_arm(fr, v(f=0.22, u=1.0, r=0.42), palm=F, lift=1.0)        # past where it holds, the shoulder hunched
+    up = point_arm(fr, v(f=0.38, u=1.0, r=0.34), palm=F, lift=0.8)
+    pushed = point_arm(fr, v(f=1.0, u=0.85, r=0.28), palm=F, lift=1.0)
+    push = sum(bump(t, k - 1.4, k + 1.8) for k in HL_PUSHES)
+    if t < 2.8:
+        return mix(hang, drawn, smooth(t / 2.8))
+    if t < HL_HOLD:
+        return mix(drawn, snap, smooth((t - 2.8) / (HL_HOLD - 2.8)))
+    if t < 6.4:
+        return mix(snap, up, smooth((t - HL_HOLD) / (6.4 - HL_HOLD)))
+    if t < 16.6:
+        return mix(up, pushed, min(1.0, push))
+    # let fall: down through the front to hang
+    w = smooth((t - 16.6) / 5.4)
+    return mix(up, hang, w) if w < 1.0 else hang
+
+
+def hl_left(fr, t):
+    """The left arm: drawn in with the right, thrown out low to the side (the palm to the front) to bar the way, held,
+    let fall."""
+    hang = rest_arm('left_arm', fr)
+    drawn = point_arm(fr, v(f=0.3, u=-0.92, r=-0.12), palm=R, lift=0.0)
+    out_ = point_arm(fr, v(f=0.36, u=-0.18, r=-1.0), palm=F, lift=0.4)
+    overshoot = point_arm(fr, v(f=0.3, u=-0.05, r=-1.0), palm=F, lift=0.5)
+    if t < 2.8:
+        return mix(hang, drawn, smooth(t / 2.8))
+    if t < HL_HOLD + 0.4:
+        return mix(drawn, overshoot, smooth((t - 2.8) / (HL_HOLD + 0.4 - 2.8)))
+    if t < 7.0:
+        return mix(overshoot, out_, smooth((t - HL_HOLD - 0.4) / (7.0 - HL_HOLD - 0.4)))
+    if t < 16.0:
+        return out_
+    w = smooth((t - 16.0) / 5.5)
+    return mix(out_, hang, w) if w < 1.0 else hang
+
+
+def halt():
+    c = la.clip('halt', HL_LEN, False, look=('guard', 1), events=[('hold', HL_HOLD)] + [('push', k) for k in HL_PUSHES],
+                traces=[('right_arm', GRIP['right_arm'], (255, 200, 120))], views=((20, -8), (90, -2), (-35, -12)))
+    for t in la.every(HL_LEN):
+        pitch = K(HL_P, t)
+        feet, lift = stepping(t, FEET, HL_STEPS, lift=2.4)
+        fr = F_(qt=bend(pitch, K(HL_YAW, t), K(HL_ROLL, t)), vt=(0.0, sink_for(pitch), 0.0),
+                pr=la.root_for(feet, 0.5 * (feet['right_leg'][0] + feet['left_leg'][0]),
+                               0.5 * (feet['right_leg'][1] + feet['left_leg'][1]) + 0.6 * smooth(K([(0, 0.0), (2.8, 1.0), (HL_HOLD, -1.0), (17.0, -1.0), (22.0, 0.0), (25, 0.0)], t)),
+                               dip=K(HL_DIP, t)))
+        key_frame(c, t, fr, ease='linear')
+        stand(c, t, fr, feet=feet, lift=lift)
+        set_arm(c, 'right_arm', t, hl_arm(fr, t))
+        set_arm(c, 'left_arm', t, hl_left(fr, t))
+        # the head: down a touch in the gather, then up and level at the one ahead, thrust at the shout and each push
+        thrust = 6.0 * bump(t, HL_HOLD - 1.0, HL_HOLD + 2.5) + sum(3.5 * bump(t, k - 1.0, k + 1.4) for k in HL_PUSHES)
+        c.key('head', t, head_level(fr, x=thrust + 6.0 * bump(t, 0.6, HL_HOLD) - 3.0 * bump(t, HL_HOLD, 19.0)), ease='linear')
+    c.mode('head', 'set')
+    times = [i * 0.5 for i in range(2 * HL_LEN + 1)]
+    for t in (6.5, 8.0, 11.0, 15.0):
+        hand = ta.fk(c, t, 'right_arm', GRIP['right_arm'])
+        head_top = ta.fk(c, t, 'head', (0.0, -8.0, 0.0))
+        check(c, f'the raised hand above the head (t={t:g}: how far under the crown it is)', (max(0.0, hand[1] - head_top[1]),), (0.0,), tol=0.1)
+    for t in (6.5, 12.0):
+        hand = ta.fk(c, t, 'left_arm', GRIP['left_arm'])
+        check(c, f'the left hand out from the side (t={t:g}: how far it is in from 12 px out)', (max(0.0, 12.0 - hand[0]),), (0.0,), tol=0.5)
+    clear_of(c, 'right_arm', times, into=('body', 'head'), tol=1.0)
+    clear_of(c, 'left_arm', times, into=('body', 'head'), tol=1.0)
+    joins_idle(c)
+    return c
+
+
+# ================================================================== rummage
+
+# ---- rummage (60, loop): going through a pack on a counter a block ahead (its top 16 px up, its near face 8 px away),
+# where the game has the merchant look for the hall's copy. The pack stands on the counter, the body leaning over it, the
+# left hand on its side holding the mouth open and the head bent to it; the right hand digs: down one side and the other,
+# up with something to look at and let fall back (look), deeper; the pack lifted by its side and dropped to settle what is
+# in it (shake); a straightening and a glance up, the hand resting on the rim; in again, the pack tipped toward the eyes
+# and the head bent in close.
+RM_LEN = 60
+RM_LOOK = 9.0
+RM_SHAKE = 21.0
+RM_MOUTH = np.array([-0.6, 24.0 - 16.0 - lp.RUMMAGE_PACK_BOX[1][1], -14.0])     # standing on the counter (its bottom at y 8)
+RM_EDGE = RM_MOUTH + np.array([0.0, lp.RUMMAGE_PACK_BOX[1][1], -lp.RUMMAGE_PACK_BOX[0][2]])  # its near bottom edge
+RM_LIFT = [(0, 0.0), (RM_SHAKE - 2.0, 0.0), (RM_SHAKE - 0.6, 1.6), (RM_SHAKE, 0.0), (RM_SHAKE + 1.2, 0.9), (RM_SHAKE + 1.8, 0.0),
+           (60, 0.0)]
+RM_TIP = [(0, -6.0), (8.0, -8.0), (12.0, -6.0), (RM_SHAKE - 2.0, -4.0), (RM_SHAKE + 3.0, -4.0), (30.0, 0.0), (36.0, 0.0),
+          (42.0, -6.0), (48.0, -14.0), (55.0, -14.0), (60, -6.0)]
+RM_TURN = [(0, 0.0), (10.0, 4.0), (20.0, -3.0), (30.0, 0.0), (44.0, -4.0), (52.0, 3.0), (60, 0.0)]
+RM_LEFT = np.array([lp.RUMMAGE_PACK_BOX[0][0] + lp.RUMMAGE_PACK_BOX[1][0] + 0.6, 0.6, 0.0])   # the left fist on its side, at the rim
+# the right hand's grip in the pack (pack space: x across, y down from the mouth, z toward the body), and how hard it works
+RM_DIG = [(0, (-1.2, 1.4, 0.2)), (4.0, (1.2, 2.2, -0.5)), (6.6, (0.4, 1.6, 0.2)), (RM_LOOK, (-3.0, -2.6, 0.6)),
+          (11.0, (-2.2, -1.4, 0.6)), (12.6, (-0.4, 1.2, 0.4)), (15.4, (-1.6, 2.0, 0.3)), (RM_SHAKE - 2.0, (0.6, 1.2, -0.2)),
+          (RM_SHAKE + 3.0, (0.6, 1.4, -0.2)), (27.0, (1.0, 1.8, -0.6)), (29.6, (-2.6, -0.4, 1.6)), (36.0, (-2.6, -0.5, 1.6)),
+          (38.6, (-0.6, 2.0, 0.4)), (42.0, (1.0, 2.4, -0.2)), (45.0, (-1.4, 1.6, 0.6)), (48.6, (0.2, 1.2, -1.2)),
+          (52.0, (0.4, 1.0, -1.3)), (55.0, (0.6, 2.2, -0.4)), (57.6, (-1.0, 1.8, 0.0)), (60, (-1.2, 1.4, 0.2))]
+RM_WORK = [(0, 1.0), (6.6, 1.0), (8.0, 0.0), (12.6, 0.0), (14.0, 1.0), (RM_SHAKE - 3.0, 1.0), (RM_SHAKE - 2.0, 0.0),
+           (RM_SHAKE + 3.0, 0.0), (25.0, 1.0), (28.0, 1.0), (29.0, 0.0), (38.0, 0.0), (39.6, 1.0), (47.6, 1.0), (48.6, 0.0),
+           (53.0, 0.0), (54.0, 1.0), (60, 1.0)]
+RM_P = [(0, 17.0), (6.0, 19.0), (RM_LOOK, 11.0), (12.0, 17.0), (18.0, 18.0), (RM_SHAKE, 15.0), (26.0, 17.0), (30.0, 10.0),
+        (36.0, 9.0), (40.0, 16.0), (46.0, 18.0), (52.0, 21.0), (56.0, 19.0), (60, 17.0)]
+RM_YAW = [(0, 0.0), (8.0, -3.0), (16.0, 3.0), (RM_SHAKE, 0.0), (30.0, -2.0), (40.0, 2.0), (50.0, -2.0), (60, 0.0)]
+RM_DIP = [(0, 0.6), (RM_SHAKE - 1.0, 0.8), (RM_SHAKE + 0.4, 0.3), (RM_SHAKE + 1.6, 0.9), (30.0, 0.2), (36.0, 0.2),
+          (44.0, 0.6), (52.0, 0.9), (60, 0.6)]
+RM_GAZE = [(0, 1.0), (28.0, 1.0), (31.0, 0.0), (35.0, 0.0), (38.0, 1.0), (60, 1.0)]
+RM_UP = np.array([0.0, -4.0, -40.0])            # the glance up, ahead over the counter
+
+
+def rm_pack(t):
+    """The pack's mouth's middle and its turn at [t]: standing on the counter, tipped toward the body on its near bottom
+    edge (about x) and a little round (about y), lifted and dropped for the shake."""
+    R = rot_y(K(RM_TURN, t, RM_LEN)) @ rot_x(K(RM_TIP, t, RM_LEN))
+    return RM_EDGE + R @ (RM_MOUTH - RM_EDGE) + np.array([0.0, -K(RM_LIFT, t, RM_LEN), 0.0]), R
+
+
+def rm_dig(t):
+    """The right hand's grip in the world at [t]: its path through the pack and a quick working of the fingers."""
+    O, R = rm_pack(t)
+    p = np.asarray(KV(RM_DIG, t, RM_LEN), float)
+    w = K(RM_WORK, t, RM_LEN)
+    p = p + w * np.array([0.5 * math.sin(2 * math.pi * t / 4.0), 0.35 * math.sin(2 * math.pi * t / 2.0 + 1.0),
+                          0.4 * math.cos(2 * math.pi * t / 4.0)])
+    return O + R @ p
+
+
+def _rm_track(t, pivot):
+    O, R = rm_pack(t)
+    return R, O, None
+
+
+def rm_frame(t):
+    pitch = K(RM_P, t, RM_LEN)
+    sway = 0.4 * math.sin(2 * math.pi * (t - 6.0) / RM_LEN)
+    return F_(qt=bend(pitch, K(RM_YAW, t, RM_LEN), 0.6 * math.sin(2 * math.pi * t / RM_LEN)), vt=(0.0, sink_for(pitch), 0.0),
+              pr=la.root_for(FEET, x=sway, dip=K(RM_DIP, t, RM_LEN)))
+
+
+def rummage():
+    c = la.clip('rummage', RM_LEN, True, look=('merchant', 2), tools_=('rummage_pack',), station_='stamp_desk',
+                events=[('look', RM_LOOK), ('shake', RM_SHAKE)],
+                traces=[('right_arm', GRIP['right_arm'], (255, 200, 120))], views=((35, -16), (90, -4), (-30, -20)))
+    holds = la.Holds()
+    times = la.every(RM_LEN)
+    for lap in range(2):
+        for t in times:
+            fr = rm_frame(t)
+            O, R = rm_pack(t)
+            lpose = reach_arm(holds, 'left_arm', fr, O + R @ RM_LEFT, palm=R @ np.array([-1.0, 0.0, 0.0]), palm_w=0.3, slack=0.8, limit=1.8)
+            rpose = reach_arm(holds, 'right_arm', fr, rm_dig(t), palm=R @ np.array([0.0, 1.0, 0.0]), palm_w=0.3, slack=0.8,
+                              limit=1.8)
+            look = rm_dig(t) * 0.7 + rm_pack(t)[0] * 0.3
+            q_head = look_at(fr, look if K(RM_GAZE, t, RM_LEN) > 0.999 else look * K(RM_GAZE, t, RM_LEN) + RM_UP * (1.0 - K(RM_GAZE, t, RM_LEN)), 1.0)
+            if lap:
+                key_frame(c, t, fr, ease='linear')
+                stand(c, t, fr)
+                set_arm(c, 'left_arm', t, lpose)
+                set_arm(c, 'right_arm', t, rpose)
+                c.key('head', t, q_head, ease='linear')
+    c.mode('head', 'set')
+    seal(c)
+    la.TRACKS['rummage'] = {'rummage_pack': _rm_track}
+    for k in (0.0, 15.0, 30.0, 45.0):
+        O, R = rm_pack(k)
+        check(c, f'left fist on the pack\'s rim (t={k:g})', ta.fk(c, k, 'left_arm', GRIP['left_arm']), O + R @ RM_LEFT, tol=1.0)
+    for k in (0.0, 4.0, RM_LOOK, 15.4, 27.0, 42.0, 50.0, 55.0):
+        check(c, f'right hand where it works (t={k:g})', ta.fk(c, k, 'right_arm', GRIP['right_arm']), rm_dig(k), tol=1.0)
+    times = [i * 0.5 for i in range(2 * RM_LEN)]
+    pack_clear(c, times)
+    clear_of_station(c, la.station_boxes('stamp_desk'), times, what='a counter a block ahead')
+    for side in ('right_arm', 'left_arm'):
+        clear_of(c, side, times, into=('body', 'head'), tol=1.0)
+    return c
+
+
+def pack_clear(c, times):
+    """Checks the pack keeps out of the body and the head, and out of a counter a block ahead."""
+    lo, size = (np.asarray(x, float) for x in lp.RUMMAGE_PACK_BOX)
+    worst, at, worst_c, at_c = 0.0, 0.0, 0.0, 0.0
+    counter = la.station_boxes('stamp_desk')[0]
+    for t in times:
+        O, R = rm_pack(t)
+        pts = [O + R @ (lo + size * np.array([i, j, k]) / 3) for i in range(4) for j in range(4) for k in range(4)]
+        mats = _mats(c, t)
+        for name in ('body', 'head'):
+            blo, bhi = BOXES[name]
+            Mi = np.linalg.inv(mats[name])
+            for p in pts:
+                q = Mi[:3, :3] @ p + Mi[:3, 3]
+                inside = min(q[0] - blo[0], bhi[0] - q[0], q[1] - blo[1], bhi[1] - q[1], q[2] - blo[2], bhi[2] - q[2])
+                if inside > worst:
+                    worst, at = inside, t
+        for p in pts:
+            inside = min(float(np.min(p - np.asarray(counter[0]))), float(np.min(np.asarray(counter[1]) - p)))
+            if inside > worst_c:
+                worst_c, at_c = inside, t
+    check(c, f'the pack clear of the body and head (deepest, at t={at:g})', (worst,), (0.0,), tol=0.6)
+    check(c, f'the pack clear of a counter a block ahead (deepest, at t={at_c:g})', (worst_c,), (0.0,), tol=0.3)
+
+
 # ================================================================== the registry
 
-TRADE_CLIPS = ['stamp', 'check_load', 'load_pack', 'hitch', 'weigh']
-MAKERS = [('stamp', stamp), ('check_load', check_load), ('load_pack', load_pack), ('hitch', hitch), ('weigh', weigh)]
+TRADE_CLIPS = ['stamp', 'check_load', 'load_pack', 'hitch', 'weigh', 'halt', 'rummage']
+MAKERS = [('stamp', stamp), ('check_load', check_load), ('load_pack', load_pack), ('hitch', hitch), ('weigh', weigh),
+          ('halt', halt), ('rummage', rummage)]
 STATION_BOXES = {'stamp_desk': _stamp_desk, 'cart_covered': _cart_covered, 'wagon_tail_load': _wagon_tail_load,
                  'horse_hitch': _horse_hitch, 'scale_bench': _scale_bench}
 STATION_COLOUR = {}
@@ -1346,6 +1567,8 @@ def trade_moment_specs():
                   'clip': ('point', tuple(HT_HAME)), 'tug': ('point', tuple(HT_HAME)),
                   'pat': ('part', 'right_arm', tuple(GRIP['right_arm']))},
         'weigh': {'set': ('point', tuple(WG_FLOOR)), 'read': ('point', tuple(WG_PIVOT)), 'tally': ('point', tuple(WG_WFLOOR))},
+        'halt': {'hold': ('part', 'right_arm', tuple(GRIP['right_arm'])), 'push': ('part', 'right_arm', tuple(GRIP['right_arm']))},
+        'rummage': {'look': ('part', 'right_arm', tuple(GRIP['right_arm'])), 'shake': ('part', 'rummage_pack', (0.0, 2.8, 0.0))},
     }
 
 
