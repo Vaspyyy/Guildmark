@@ -284,7 +284,7 @@ internal object Newcomers {
         val living = residents.byCentre(BlockPos.of(rec.key)).filter { it.alive }
         val members = living.filter { it.home == l.home }
         val households = living.filter { it.home >= 0 }.map { it.home }.distinct().size
-        val stays = !forced && !VillageGrowth.grows(rec) || members.isEmpty() || members.any { it.role == TownRole.GUARD } ||
+        val stays = !forced && !VillageGrowth.grows(rec) || members.isEmpty() || members.any { it.role == TownRole.GUARD || io.github.vaspyyy.guildmark.tales.Tales.holds(it.id) } ||
             living.size - members.size < GrowthRules.KEEP_PEOPLE || households - 1 < GrowthRules.KEEP_HOUSEHOLDS
         if (stays) {
             g.said(today, "the household of home ${l.home} stays after all")
@@ -295,7 +295,9 @@ internal object Newcomers {
         val first = members.firstOrNull { it.role.adult } ?: members.first()
         // The street hears of it while the records still name them
         Witness.gone(level, Household(first.id, rec.key, l.home, ids, today, "hard"))
+        // Their bodies about now that nothing else has charge of (anyone held by a tale or a scene of another part just goes, unseen)
         val bodies = members.mapNotNull { r -> r.uuid?.let { level.getEntity(it) as? Townsperson }?.takeIf { it.isAlive && it.resident == r.id } }
+            .filter { it.director == null || it.director is io.github.vaspyyy.guildmark.townsfolk.scenes.Aside }
         for (r in members) {
             r.alive = false
             r.left = today
@@ -336,7 +338,7 @@ internal object Newcomers {
         val living = Residents.get(level).byCentre(BlockPos.of(rec.key)).filter { it.alive && it.home >= 0 }
         val households = living.groupBy { it.home }
         val pick = households.entries
-            .filter { (_, m) -> m.any { it.role.adult } && m.none { it.role == TownRole.GUARD } }
+            .filter { (_, m) -> m.any { it.role.adult } && m.none { it.role == TownRole.GUARD || io.github.vaspyyy.guildmark.tales.Tales.holds(it.id) } }
             .sortedByDescending { (_, m) -> m.maxOf { it.since } }
             .firstOrNull { (_, m) -> living.size - m.size >= GrowthRules.KEEP_PEOPLE && households.size - 1 >= GrowthRules.KEEP_HOUSEHOLDS }
             ?: return listOf<Resident>() to "nobody may leave: the village keeps at least ${GrowthRules.KEEP_HOUSEHOLDS} households and ${GrowthRules.KEEP_PEOPLE} people (and its guards)"

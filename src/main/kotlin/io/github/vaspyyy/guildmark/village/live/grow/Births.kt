@@ -139,7 +139,7 @@ internal object Births {
                     data.changed()
                     continue
                 }
-                if (GrowScenes.holds(id)) continue
+                if (GrowScenes.holds(id) || io.github.vaspyyy.guildmark.tales.Tales.holds(id)) continue
                 val body = r.uuid?.let { level.getEntity(it) as? Townsperson }?.takeIf { it.isAlive }
                 if (body != null && (GrowScenes.has(body) || !Comings.unseen(level, body.blockPosition()))) continue
                 grow(level, rec, places, g, r, body, today, clock)

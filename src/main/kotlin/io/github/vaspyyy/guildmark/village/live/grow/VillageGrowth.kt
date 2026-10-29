@@ -8,6 +8,7 @@ import io.github.vaspyyy.guildmark.city.plan.M
 import io.github.vaspyyy.guildmark.client.townsfolk.TownsfolkLooks
 import io.github.vaspyyy.guildmark.economy.VillageMarkets
 import io.github.vaspyyy.guildmark.economy.fortune.Fortunes
+import io.github.vaspyyy.guildmark.tales.Tales
 import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
 import io.github.vaspyyy.guildmark.townsfolk.Comings
 import io.github.vaspyyy.guildmark.townsfolk.Furnish
@@ -173,7 +174,7 @@ object VillageGrowth {
     fun picture(level: ServerLevel, rec: VillageRec, g: Grow, today: Long): Picture {
         val homes = rec.homes.filter { !it.gone && it.beds.isNotEmpty() }.map { Home(it.id, it.beds.size) }
         val people = Residents.get(level).byCentre(BlockPos.of(rec.key))
-        val living = people.filter { it.alive }.map { Person(it.id, it.role.adult, it.home, it.since, it.role == TownRole.GUARD) }
+        val living = people.filter { it.alive }.map { Person(it.id, it.role.adult, it.home, it.since, it.role == TownRole.GUARD || Tales.holds(it.id)) }
         val dead = people.filter { !it.alive && it.died >= 0 && today - it.died in 0..GrowthRules.DEAD_DAYS.toLong() }.map { Dead(it.id, it.died, it.home) }
         // Only those who left by the growth's own doing (a captive is away too, but not to come home on their own)
         val away = people.filter { !it.alive && it.died < 0 && it.left >= 0 && it.id in g.gone }.groupBy { it.home to it.left }
@@ -315,7 +316,7 @@ object VillageGrowth {
                 GrowthData.get(level).changed()
                 continue
             }
-            if (m.from > today || GrowScenes.holds(r.id)) continue
+            if (m.from > today || GrowScenes.holds(r.id) || Tales.holds(r.id)) continue
             val home = places.lodgings[r.home]
             val spot = if (home != null) {
                 if (!Furnish.loaded(level, home) || watched(level, home)) continue
