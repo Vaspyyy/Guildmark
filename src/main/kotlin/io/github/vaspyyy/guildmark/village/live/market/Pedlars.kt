@@ -189,7 +189,7 @@ object Pedlars {
     private fun spawn(level: ServerLevel, rec: VillageRec, places: VillagePlaces, v: VillageMarkets.Rec, day: Long, h: Double): Boolean {
         val green = places.market
         val person = PedlarRoster.of(rec.key, v.cart.slain)
-        val angle = bearing(rec)
+        val angle = bearing(level, rec)
         val toward = Direction.getApproximateNearest(cos(angle), 0.0, sin(angle))
         // On a grand festival's day the cart stands at the ring's road side, not on the green (living-world/villages/design.md 10.3, part V8)
         val fair = io.github.vaspyyy.guildmark.village.live.VillageFeast.cartSpot(level, BlockPos.of(rec.key), angle)
@@ -225,8 +225,9 @@ object Pedlars {
     }
 
     /** The bearing of the road end from the green (radians): toward the village's capital if it is linked, else a way of the bell's own. */
-    private fun bearing(rec: VillageRec): Double {
-        val link = rec.links.firstOrNull()
+    private fun bearing(level: ServerLevel, rec: VillageRec): Double {
+        // Villages (V7): the links as VillageLinks keeps them (none with Village Wagons off)
+        val link = io.github.vaspyyy.guildmark.village.live.links.VillageLinks.linked(level, rec.key).firstOrNull()
         if (link != null) {
             val to = BlockPos.of(link.capital)
             val x = BlockPos.getX(rec.key)

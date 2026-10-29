@@ -461,8 +461,9 @@ class VillageMarkets(private val records: MutableMap<Long, Rec> = HashMap()) : S
                 val round = PedlarRoster.round(day, cart.next)
                 val market = Festivals.isMarketDay(anchor(rec), day)
                 val rest = Days.restDay(day)
-                val wagon = rec.links.isNotEmpty() && cart.wagon != NONE && day - Conditions(cart.wagon).day <= PedlarRoster.WAGON_DAYS
-                val closed = rec.links.isNotEmpty() && rec.links.all { closedRoad(level, it.capital, it.road) }
+                // Villages (V7): the design's rule (7.4): while a linked road is open its wagons are the supply; Troubled or worse and no wagon in for 4 days, the rounds again; every road Closed, none
+                val wagon = io.github.vaspyyy.guildmark.village.live.links.VillageWagons.serves(level, rec, day)
+                val closed = io.github.vaspyyy.guildmark.village.live.links.VillageLinks.linked(level, rec.key).let { links -> links.isNotEmpty() && links.all { closedRoad(level, it.capital, it.road) } }
                 val away = cart.away != NONE && day < cart.away
                 val verdict = PedlarRoster.verdict(bell, day, rest, market, cart.next, wagon, closed, bandNear(level, rec), cart.held, away)
                 // A visit held back or lost to a band counts as the round's, so he tries again a gap on

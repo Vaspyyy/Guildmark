@@ -74,8 +74,8 @@ object VillageCartCommand {
         say(
             source,
             grey(
-                "Pedlars come every 2 to 4 days and always on the market day, never on the rest day; a wagon that called in the last " +
-                    "${PedlarRoster.WAGON_DAYS} days leaves market day alone; a closed road or a band near (one visit in ${PedlarRoster.BAND_ONE_IN}) keeps them off. " +
+                "Pedlars come every 2 to 4 days and always on the market day, never on the rest day; while a road to a capital is open, or a wagon came in in the last " +
+                    "${PedlarRoster.WAGON_DAYS} days, they come on market day alone; every road closed, or a band near (one visit in ${PedlarRoster.BAND_ONE_IN}), keeps them off. " +
                     "'call' makes the call now, 'come' makes today a pedlar day, 'skip' holds the next visit back, 'clear' sends the pedlars off.",
             ),
         )
@@ -165,8 +165,10 @@ object VillageCartCommand {
             val c = Conditions(cart.wagon)
             out += line().append(label("Wagon last called: ")).append(plain("day ${c.day}"))
         }
-        if (rec.links.isNotEmpty()) {
-            out += line().append(label("Roads: ")).append(plain("${rec.links.size} to a capital"))
+        // Villages (V7): the links as VillageLinks keeps them; `village links` tells them
+        val links = io.github.vaspyyy.guildmark.village.live.links.VillageLinks.linked(level, rec.key)
+        if (links.isNotEmpty()) {
+            out += line().append(label("Roads: ")).append(plain("${links.size} to a capital (see /guildmark village links)"))
         } else {
             out += line().append(label("Roads: ")).append(plain("none: the pedlar is the village's only cart"))
         }
@@ -210,7 +212,7 @@ object VillageCartCommand {
             PedlarRoster.Why.MARKET -> "the pedlar comes, it is the market day"
             PedlarRoster.Why.REST -> "no pedlar, it is the rest day"
             PedlarRoster.Why.NOT_DUE -> "no pedlar, it is not the round's day"
-            PedlarRoster.Why.WAGON -> "no pedlar, a wagon called lately and the road is the village's supply"
+            PedlarRoster.Why.WAGON -> "no pedlar, the capital's wagons are the village's supply (a road to it is open, or a wagon came in lately)"
             PedlarRoster.Why.CLOSED -> "no pedlar, the road is closed"
             PedlarRoster.Why.BAND -> "no pedlar, a band camped near kept them off"
             PedlarRoster.Why.HELD -> "no pedlar, a visit was held back"
