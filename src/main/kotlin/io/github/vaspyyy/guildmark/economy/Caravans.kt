@@ -1510,6 +1510,29 @@ object Caravans {
         return null
     }
 
+    // ---- Tales T3: the Sergeant's Friend's decoy ----
+
+    /**
+     * The Sergeant's Friend's decoy (living-world/stories/design.md 8.10): a test run by [leg] into [entry]'s capital setting out now with
+     * nothing on it (nothing comes into the market or goes out of it), no escort bound to it and no strike of the dice; if [struck], [band]
+     * strikes it within seconds and is beaten off, as [ambush] has it. Null if it is on its way, else why [band] would not strike (and no wagon goes).
+     */
+    internal fun decoy(level: ServerLevel, entry: Markets.Entry, leg: CaravanRoutes.Leg, band: OutlawBand, struck: Boolean): String? {
+        val t = level.overworldClockTime
+        if (band.slain) return "that band is broken"
+        if (band.raided >= 0 && Math.floorDiv(t, DAY) - band.raided in 0..1) return "that band raided a village today or yesterday, and lies low"
+        val data = CaravanData.get(level)
+        val c = make(level, data, entry, leg, dueHour(leg, t), Run.TEST, t, RoadPeril.stage(data, entry.market.capital, leg.road).guards, 1)
+        c.strike = -1.0
+        c.watched = false
+        if (io.github.vaspyyy.guildmark.economy.works.Works.enabled()) io.github.vaspyyy.guildmark.economy.works.WorksData.get(level).deterred.remove(c.id)
+        c.phase = Phase.ROLLING
+        val view = view(level, c, t)
+        listeners.forEach { it.setOut(level, view) }
+        data.changed()
+        return if (struck) ambush(level, c, band, false) else null
+    }
+
     /** [c] is in at its stand now, wherever it was on its way (a strike still ahead of it is passed by). False if it isn't on its way. */
     internal fun arriveNow(level: ServerLevel, c: CaravanRec): Boolean {
         val data = CaravanData.get(level)
