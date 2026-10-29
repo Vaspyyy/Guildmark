@@ -56,5 +56,14 @@ object TradeCries {
         return out
     }
 
+    /** The House's cry at [entry]'s noon (build part G): "A trading house is running wagons to us!" while a House's wagon is on its way to the town or back from it. */
+    fun house(level: ServerLevel, entry: Markets.Entry): Crier.Cry? {
+        if (!TradeConfig.house() || !TradeConfig.world()) return null
+        val capital = entry.capital.asLong()
+        val houses = TradeHouses.peek(level)?.houses ?: return null
+        if (houses.none { h -> h.capital != capital && h.trips.any { it.dest == capital && it.stage != Trip.Stage.LOADING } }) return null
+        return Crier.Cry("crier_house", said("crier_house"), null, 1)
+    }
+
     private fun said(line: String): MutableComponent = Component.translatable("say.guildmark.$line")
 }

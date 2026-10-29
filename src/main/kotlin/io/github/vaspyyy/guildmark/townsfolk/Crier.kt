@@ -341,6 +341,7 @@ object Crier {
             // The trader's (living-world/trader, part C): the haul tickets up on the Haul Board, and the town's thanks to those who brought goods in
             io.github.vaspyyy.guildmark.trade.TradeCries.hauls(level, entry, noon, random)?.let { groups.add(listOf(it)) }
             io.github.vaspyyy.guildmark.trade.TradeCries.thanks(level, entry, noon).forEach { groups.add(listOf(it)) }
+            io.github.vaspyyy.guildmark.trade.TradeCries.house(level, entry)?.let { groups.add(listOf(it)) }
         }
         calendar(level, c, at)?.let { groups.add(it) }
         // The talk of the town: the day's hottest rumour, its details on the slip
