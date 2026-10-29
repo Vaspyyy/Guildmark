@@ -87,6 +87,11 @@ OVERRIDES = {
     "message.guildmark.trade.haul.standing",
     # Hearthcraft B, worded by the lead so that the innkeeper is not taken for a woman
     "message.guildmark.cook.guest_no",
+    # Hearthcraft, the kitchen voices: reworded where the recogniser heard no reading of the old words right
+    "say.guildmark.talk.kitchen.scene.right_2",
+    "say.guildmark.talk.kitchen.tier.sound_2",
+    "say.guildmark.talk.kitchen.baker.no_0",
+    "say.guildmark.talk.kitchen.baker.no_2",
 }
 
 

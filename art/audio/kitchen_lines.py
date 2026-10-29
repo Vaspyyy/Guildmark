@@ -18,14 +18,23 @@ dish, a number or a role, with the few exceptions CHECK_ALLOWS lists, where the 
 (the rest-day roast, a style's liked dish). The takes are talk.<family>_<n>, n counted from 0; the man, the woman and the
 old man say every family but the children's.
 
-NOTHING IS RECORDED YET. RECORDED is empty, so groups() returns nothing and the script's `table` runs as it did. The
-game reads every wording in full as text all the same: `write` puts the text of every wording of every tier in
-art/lang/cook_lines.json (say.guildmark.talk.<family>_<n>, whatever RECORDED says) and the number of wordings of every
-family in KitchenWords.kt, which is how townsfolk/talk/sources/KitchenLines.kt picks a wording to read while a family has
-no take (design 8.5). To record a tier: make its takes with make_talk_voices.py (tts, process), put the tier's number in
-RECORDED in the same commit as its takes and the regenerated talk_sounds.json, talk_lang.json and TalkLines.kt (`table`),
-then run `merge_lang.py`. The text of a recorded wording is the same in cook_lines.json and talk_lang.json, so the two
-merge as one.
+TIER 1 IS RECORDED (RECORDED = [1]): groups() returns its two groups, so make_talk_voices.py's tts, process and table take
+them as they take the town's own talk, and the game plays their takes. A tier not in RECORDED is not in GROUPS, and the game
+reads its wordings in full as text: `write` puts the text of every wording of every tier in art/lang/cook_lines.json
+(say.guildmark.talk.<family>_<n>, whatever RECORDED says) and the number of wordings of every family in KitchenWords.kt,
+which is how townsfolk/talk/sources/KitchenLines.kt picks a wording to read while a family has no take (design 8.5). To
+record a tier: put its number in RECORDED, make its takes with make_talk_voices.py (`tts` and `process` with `--keys`
+for its families), check them, run `table` and then `merge_lang.py`, and commit the takes, RECORDED and the regenerated
+talk_sounds.json, talk_lang.json and TalkLines.kt together. The text of a recorded wording is the same in cook_lines.json
+and talk_lang.json, so the two merge as one.
+
+The takes were checked with Whisper base.en on the encoded files, as the README's voice scripts are, and DELIVERY,
+SPEED_FOR and PHONEMES below hold what that needed (each entry says what was heard before). Every take of tier 1 comes back
+word for word or right but for a homophone, a spelling, an apostrophe or a hum written another way ("Hum" for the
+tasters' "Hm" and "Mm", "Supes up" for "Soup's up", "backpot" for "back pot"). Four wordings were changed where no reading
+would do, with their keys in merge_lang.py's OVERRIDES: "There we are. Perfect." (was "There. Perfect.", heard "They're
+perfect"), "That is sound work." (was "That's sound work.", heard "That sound work"), and the baker's two "the innkeeper"
+(were "the inn", heard "the N" or "the end").
 
 Tiers (design 11.5): TIER 1 is the cook's own loop, the pot, oven and spit and the back door (the first two groups: 23
 families, 67 wordings); TIER 2 is the rest, what the town says, the onlookers, the Harvest Table, the shop and the
@@ -55,8 +64,9 @@ KOTLIN_OUT = os.path.join(REPO, "src", "main", "kotlin", "io", "github", "vaspyy
                           "sources", "KitchenWords.kt")
 
 # The tiers whose takes exist: make_talk_voices.py's `table` needs every family in GROUPS to have all of its takes, so a
-# tier goes in here in the commit that adds its takes and nothing before. Empty: nothing is recorded.
-RECORDED = []
+# tier goes in here in the commit that adds its takes and nothing before. Tier 1 (the pot, oven and spit and the back
+# door) is recorded.
+RECORDED = [1]
 
 # The length limit the script gives talk (seconds); a take is about 12 ticks + 0.97 ticks a character long (the fit of the
 # 692 wordings already recorded), the longest of them 66 characters; the limit is held to 64 characters and 12 words
@@ -72,11 +82,11 @@ TABLE = [
             "Needs a pinch of salt.",
             "A touch more salt, I think.",
         ]),
-        # ... and it is right
+        # ... and it is right. "There. Perfect." was heard "They're perfect" in every reading the voices gave it
         ("kitchen.scene.right", "the innkeeper, tasting their pot, when it is right", [
             "Just as it should be.",
             "Mm. That's the way.",
-            "There. Perfect.",
+            "There we are. Perfect.",
         ]),
         # the innkeeper ladles the first bowls (the house pot is a pot dish: pottage, stew, broth or chowder)
         ("kitchen.scene.hot", "the innkeeper, back at their bar after ladling the first bowls", [
@@ -138,10 +148,11 @@ TABLE = [
             "Plain and honest.",
             "Needs a pinch more salt.",
         ]),
+        # "That's sound work." was heard "That sound work" in every reading (its two s's run together), so it is said in full
         ("kitchen.tier.sound", "a keeper or a judge, of a Sound dish", [
             "Good, solid cooking.",
             "Well made.",
-            "That's sound work.",
+            "That is sound work.",
         ]),
         ("kitchen.tier.fine", "a keeper or a judge, of a Fine dish", [
             "Now that's fine cooking.",
@@ -178,11 +189,13 @@ TABLE = [
             "I can't take that. It's turned.",
             "That's off, I'm afraid.",
         ]),
-        # the baker, offered a dish only the inn takes; the bakery also takes cakes, which are made on a hob
+        # the baker, offered a dish only the inn takes; the bakery also takes cakes, which are made on a hob. A line that ends
+        # on "the inn" was heard "the N", "the end" or "the tin" in every reading the man's and the woman's voices gave it,
+        # and "the innkeeper" in all of them; it is the innkeeper who tastes and buys at the inn's back door
         ("kitchen.baker.no", "the baker, offered a dish only the inn takes", [
-            "That's not for me. Try the inn.",
+            "That's not for me. Try the innkeeper.",
             "I only take baked goods here.",
-            "Take that along to the inn.",
+            "Take that along to the innkeeper.",
         ]),
         # a keeper in the middle of something else
         ("kitchen.busy", "a keeper who is in the middle of something else", [
@@ -423,19 +436,61 @@ def wordings():
             for _, _, _, fams in TABLE for family, _, ws in fams for n, text in enumerate(ws)]
 
 
-# A family's delivery, as make_talk_voices.DELIVERY: nothing here is said other than plainly (set when recorded)
-DELIVERY = {}
+# A family's delivery, as make_talk_voices.DELIVERY (speed: times the timbre's own; pitch: cents; level: dB over the speech
+# level). What is called out across a tavern, a bakery or a square is a little louder, as the baker's first bread of M6
+# (streets.first_bread) is; a keeper in the middle of something is a little quicker, as ask.busy is
+DELIVERY = {
+    "kitchen.scene.hot": dict(level=1.5),  # called from the bar to the tables
+    "kitchen.scene.bread": dict(level=1.5),  # called across the bakery
+    "kitchen.scene.roast": dict(level=1.5),  # cried to a player coming near the spit
+    "kitchen.guest.burnt": dict(level=1.0),  # called out at the smell from the back
+    "kitchen.busy": dict(speed=1.04),
+}
 
 # A take's own speed where its timbre's reading would run over the limit, misread or rush (key, timbre) -> times the
-# timbre's own, instead of its family's (set when recorded)
-SPEED_FOR = {}
+# timbre's own, instead of its family's. Each was heard wrong at the timbre's own speed and right so
+SPEED_FOR = {
+    ("talk.kitchen.scene.hot_0", "man"): 0.94,  # "Hot soup!", not "Hot super"
+    ("talk.kitchen.scene.roast_0", "old"): 0.94,  # "roast", not "rose" (with the American o below)
+    ("talk.kitchen.guest.burnt_1", "man"): 0.92,  # "burnt at", not "burn at"
+}
 
-# Text the TTS reads better (the subtitles keep the line as written): {key: {written: said}} (set when recorded)
+# Text the TTS reads better (the subtitles keep the line as written): {key: {written: said}}
 SAY_AS = {}
 
-# A take's phonemes written out in full, as make_talk_voices.PHONEMES: (key, timbre) or key -> phonemes, for the lines the
-# recogniser heard wrong (set when recorded)
-PHONEMES = {}
+# A take's phonemes written out in full, its r's sounded, as make_talk_voices.PHONEMES: (key, timbre) or key -> phonemes, each
+# heard wrong by the recogniser as espeak reads it and right as written here (what it heard in the comment). espeak spells
+# "Hm" and "Mm" out letter by letter ("aitch em", "em em"), and a closed hum ("mmm") was heard "Mum", "Mom", "Moon" or
+# lost, so the taster's "Hm" and "Mm" are the open hum "hˈʌm", which every voice was heard saying as "Hum". The British
+# "pot" of "the back pot" at the end of a line was heard "part", "putt" or "pods", and is given the American vowel there
+PHONEMES = {
+    ("talk.kitchen.scene.salt_0", "man"): "nˈiːdz ɐ pˈɪntʃ əv sˈɔlt.",  # "Needs", not "Need"
+    "talk.kitchen.scene.right_1": "hˈʌm. ðats ðə wˈeɪ.",
+    "talk.kitchen.scene.right_2": "ðˈɛɹ wiː ˈɑːɹ. pˈɜːɹfɛkt.",
+    ("talk.kitchen.scene.hot_0", "old"): "hˈɒt, sˈuːp!",  # "Hot soup", not "Hot super"
+    ("talk.kitchen.scene.hot_1", "old"): "sˈuːps ʌp!",  # not "The soup's up"
+    ("talk.kitchen.scene.bread_0", "old"): "bɹˈɛdzˈaʊt!",  # not "Brids out"
+    ("talk.kitchen.scene.bread_2", "man"): "hˈɒt lˈəʊːvz, mˈaɪnd jɔːɹ bˈaks!",  # "loaves", not "Loves"
+    ("talk.kitchen.scene.roast_0", "old"): "ɹˈɛstdˈeɪ ɹˈoʊst!",
+    ("talk.kitchen.guest.burnt_0", "man"): "hˈuːz bˈɜːnt maɪ pˈɒt?",  # "Who's", not "He's"
+    ("talk.kitchen.guest.burnt_2", "man"): "ˈoʊ nˈoʊ, ðə bˈæk pˈɑt",  # not "or know the back parts"; heard so only unexclaimed
+    ("talk.kitchen.guest.burnt_2", "woman"): "ˈəʊ nˈəʊ, ðə bˈak pˈɑːt!",  # not "the back putt"
+    ("talk.kitchen.guest.burnt_2", "old"): "ˈoʊ nˈoʊ, ðə bˈæk pˈɑt!",  # not "the back part"
+    "talk.kitchen.verdict.over_0": "hˈʌmm. wˈʌn flˈeɪvɚɹ ɪz ɹˈɑːðɚ lˈaʊd.",
+    "talk.kitchen.verdict.under_0": "hˈʌm. ðɛɹz sˈʌmθɪŋ mˈɪsɪŋ.",
+    "talk.kitchen.verdict.far_0": "hˈʌm. ɪt wˈɑːnts wˈɜːɹkɪŋ ˈɒn.",  # "wants", not "once"
+    ("talk.kitchen.verdict.right_1", "man"): "aɪ kˈʊdənt ˈask fɔːɹ bˈɛtɚ.",  # "couldn't", not "can"
+    ("talk.kitchen.tier.plain_3", "man"): "nˈiːdzɐ pˈɪntʃ mˈɔːɹ sˈɒlt.",  # "Needs", not "Need"
+    "talk.kitchen.tier.sound_2": "ðat ɪz sˈaʊnd wˈɜːɹk.",
+    ("talk.kitchen.full_2", "man"): "ðə lˈɑːɹdɚz fˈʊl ɒv ðˈat wˌʌn, aɪm ɐfɹˈeɪd.",  # "larder's", not "Larter's"
+    ("talk.kitchen.stale_0", "man"): "ðats pˈast ɪts bˈɛst, sˌəʊ ˈaɪl pˈeɪ lˈɛs.",  # "I'll", not "all"
+    ("talk.kitchen.gone_2", "man"): "ðats ˈɔf, aɪm ɐfɹˈeɪd.",  # "off", not "all if"
+    "talk.kitchen.baker.no_0": "ðˈats nˌɒt fɔːɹ mˌiː. tɹˈaɪ ðɪ ˈɪnkiːpɚ.",
+    "talk.kitchen.baker.no_2": "tˈeɪk ðat ɐlˈɒŋ tə ðɪ ˈɪnkiːpɚ.",
+    ("talk.kitchen.guest.no_1", "man"): "aɪ dˈəʊnt nˈəʊ juː wˈɛl ɪnˈʌf fɚðə bˈak pˈɔːt.",  # not "the backpods"
+    ("talk.kitchen.guest.no_1", "old"): "aɪ dˈəʊnt nˈəʊ juː wˈɛl ɪnˈʌf fɚðə bˈak pˈɑt.",
+    ("talk.kitchen.guest.yes_1", "old"): "juːv ˈɜːnd ðə jˈuːs ɒvðə bˈak pˈɑːt.",
+}
 
 
 def check():
