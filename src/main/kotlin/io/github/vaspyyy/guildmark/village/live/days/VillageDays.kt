@@ -20,6 +20,8 @@ import io.github.vaspyyy.guildmark.townsfolk.TownRole
  * - [BOARD]: the day's poster takes a note to the board and nails it up.
  * - [LAMPS] and [SNUFF]: a keeper of the lamps is free of an evening from five to seven for the round, and up of a morning from a
  *   quarter past five to a quarter to seven to put them out (cutting their sleep short), every day of the week.
+ * - [BUILD]: one lent to the village's building site works there from seven to noon and from one to a quarter to six, with their
+ *   dinner at home between, on any day but the rest day (townsfolk/Labour hands them to the crew).
  *
  * The rest day keeps its own shape (the service, the market, visits); the stalls rest and market day gives way to it. The guards'
  * stretches and the children's lessons are the capital's as they are, played on the village's places ([VillageActs]).
@@ -31,6 +33,7 @@ object VillageDays {
     const val BOARD = "board"
     const val LAMPS = "lamps"
     const val SNUFF = "snuff"
+    const val BUILD = "build"
 
     /** The hour a keeper is at the stall from, on a working day and on a market day, and until. */
     private const val STALL_FROM = 10.0
@@ -51,6 +54,10 @@ object VillageDays {
     private const val SNUFF_FROM = 5.25
     private const val SNUFF_TO = 6.75
 
+    /** A builder's hours at the village's site (the crew's own day is from sunrise to a quarter to six: VillageSite). */
+    private const val BUILD_FROM = 7.0
+    private const val BUILD_TO = 17.75
+
     /** What is never cut across: bed, the watch and the crier's and builders' stretches. */
     private val KEPT = setOf(Doing.SLEEP, Doing.BED, Doing.WATCH, Doing.CRY, Doing.BUILD)
 
@@ -59,6 +66,8 @@ object VillageDays {
         val r = life.resident
         val list = base.stretches.toMutableList()
         val rest = Days.restDay(day)
+        // Lent to the village's site: its hours, with dinner at home at noon (first, since nothing is laid over a building stretch)
+        if (!rest && life.builder) build(list)
         if (!rest) {
             when {
                 life.keeper >= 0 -> stall(list, life.market)
@@ -78,6 +87,13 @@ object VillageDays {
         // The dusk bell, every day of the week
         if (life.bellman) interrupt(list, BELL_FROM, BELL_TO, Doing.ERRAND, BELL)
         return if (list.size == base.stretches.size && list.indices.all { list[it] === base.stretches[it] }) base else Agenda(day, list)
+    }
+
+    /** A builder's day ([BUILD]): the site from [BUILD_FROM] to noon and from one to [BUILD_TO], their dinner between (laid first, so the morning can end on it). */
+    private fun build(list: MutableList<Stretch>) {
+        interrupt(list, 12.0, 13.0, Doing.LUNCH, "")
+        interrupt(list, BUILD_FROM, 12.0, Doing.BUILD, BUILD)
+        interrupt(list, 13.0, BUILD_TO, Doing.BUILD, BUILD)
     }
 
     /** A keeper's day: the stall from [STALL_FROM] to [STALL_TO], an hour off at noon. */

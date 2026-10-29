@@ -149,6 +149,7 @@ object Days {
             life.bellman = life.resident.id == crew.bellman
             life.poster = life.resident.id == crew.poster
             life.lamps = life.resident.id in crew.lamps
+            life.builder = life.resident.id in crew.builders
             if (life.resident.role == TownRole.GUARD) {
                 life.nightWatch = life.resident.id in crew.night
                 p.nightWatch = life.nightWatch
@@ -571,6 +572,9 @@ class Life(val resident: Resident, val places: TownPlaces, val home: CityPlaces.
 
     /** In a village: whether they keep a round of its lamps (see [io.github.vaspyyy.guildmark.village.live.VillageLamps]). */
     var lamps = false
+
+    /** In a village: whether they are lent to its building site today (see [io.github.vaspyyy.guildmark.village.live.build.VillageCrew]). */
+    var builder = false
 
     /** For a guard, the road whose watchtower they last kept watch at ([Lookout]), or -1. */
     var tower = -1

@@ -705,6 +705,11 @@ object Hands {
          * evening and their morning have the round in them.
          */
         val lamps: Set<Int> = setOf(),
+        /**
+         * The residents lent to the village's building site for the day ([io.github.vaspyyy.guildmark.village.live.build.VillageCrew.lent]):
+         * their day has the site's working hours in it.
+         */
+        val builders: Set<Int> = setOf(),
     )
 
     /** How often (in game ticks) a capital's crew is worked out again. */
