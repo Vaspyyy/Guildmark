@@ -485,10 +485,12 @@ internal class GateTalk(private val driver: Caravans.Driver) : io.github.vaspyyy
         io.github.vaspyyy.guildmark.townsfolk.talk.Utterance.of("driver_took", lost())
 
     override fun choices(ask: io.github.vaspyyy.guildmark.townsfolk.talk.Ask): List<io.github.vaspyyy.guildmark.townsfolk.talk.Choice> = listOf(
-        choice("caravan.happened"), choice("caravan.camp"), choice("caravan.next"), choice("bye"),
-    )
+        choice("caravan.happened"), choice("caravan.camp"), choice("caravan.next"),
+    ) + io.github.vaspyyy.guildmark.tales.templates.WagonDriver.choices(ask, driver) + choice("bye")
 
     override fun answer(ask: io.github.vaspyyy.guildmark.townsfolk.talk.Ask, choice: String): Pair<io.github.vaspyyy.guildmark.townsfolk.talk.Utterance, Boolean> {
+        // Tales T3: the Fourth Wagon's "And the second hand?" (nothing while no wagon tale names this driver's wagon)
+        io.github.vaspyyy.guildmark.tales.templates.WagonDriver.answer(ask, driver, choice)?.let { return it }
         val u = io.github.vaspyyy.guildmark.townsfolk.talk.Utterance
         return when (choice) {
             "caravan.happened" -> u.of("driver_ran", lost()) to false
