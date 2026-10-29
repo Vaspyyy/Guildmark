@@ -199,7 +199,7 @@ internal object Births {
         val residents = Residents.get(level)
         val role = if (places != null) VillageGrowth.lacking(level, rec, places) else TownRole.CITIZEN
         val seed = seed(rec.key, r.id, r.since)
-        val woman = Names.woman(TownRole.CHILD, r.look, seed)
+        val woman = girl(level, rec, r)
         val look = VillageGrowth.look(role, woman, seed)
         val old = r.uuid
         val grown = residents.grownUp(r, role, look)
@@ -214,6 +214,19 @@ internal object Births {
         g.said(today, "${r.name} came of age: now ${if (role == TownRole.CITIZEN) "a citizen" else "the village's new ${role.id}"}")
         GrowthData.get(level).changed()
         return grown
+    }
+
+    /**
+     * Whether the child [r] is a girl, as their name was drawn: by the seed a child of the growth's is drawn by, or the one V2 drew
+     * a villager's child by when it took them in (`VillageAdopt.person`); the look's own word if neither drew it.
+     */
+    private fun girl(level: ServerLevel, rec: VillageRec, r: Resident): Boolean {
+        val style = VillageGrowth.style(level, rec)
+        for (s in longArrayOf(seed(rec.key, r.id, r.since), rec.key * 31 + r.id)) {
+            if (Names.given(style, true, s) == r.given) return true
+            if (Names.given(style, false, s) == r.given) return false
+        }
+        return Names.woman(TownRole.CHILD, r.look, seed(rec.key, r.id, r.since))
     }
 
     /** A neighbour's word on [gr] grown up, if they are about with a player near and a neighbour free; true if it begins. */
