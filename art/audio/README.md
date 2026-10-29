@@ -737,3 +737,63 @@ python3 -B art/audio/make_townsfolk_voices.py process --raw <raw-dir> --assets s
 python3 -B art/audio/make_townsfolk_voices.py fragments --assets src/main/resources/assets/guildmark
 python3 -B art/audio/make_talk_voices.py table --assets src/main/resources/assets/guildmark
 ```
+
+### Village voices
+
+The villages' voices (living-world/villages/design.md section 17.4, Villages V12c) are four groups in
+`make_townsfolk_voices.py` and a module of talk families, 138 lines in 350 takes:
+- **The bellman** (`BELLMAN`, 32 lines in the man's and the woman's voices, 64 takes): the cry's opening and close, the
+  village's times, a project built and a crew coming, a siege, a raid, a birth, a death, newcomers, the wagon, the
+  pedlar and the feast. They join `CRIER` and are cried as the crier's are (`process_crier`), at -19 LUFS, none over
+  4.5 s (the longest 3.81 s), heard 48 blocks off; an old bellman borrows the man's voice lower.
+- **The pedlar** (`PEDLAR`, 12 lines in the man's and the woman's, 24 takes): 17.4's ten and the two cries the game
+  already says (`pedlar_call_look`, `pedlar_call_road`), heard 24 blocks off. No line calls the pedlar he or she.
+- **Shelter and the watch** (`SHELTER`, 24 lines, 52 takes, each in the voices 17.4 gives it, `SHELTER_TIMBRES`; the
+  child's own among them): the horn's shouts, the run, the knock and the door, the hush behind it, the all-clear and
+  what was lost; the watch's calls on the wall, the cheer, the salute and the quiet night. What is shouted at the horn
+  and on the wall carries 32 blocks.
+- **The crews, the carters and the neighbours** (`VILLAGE`, 38 lines in the man's, the woman's and the old man's, 114
+  takes): 17.4's 22 (a crew's stages and mend, the carters at the road end, the candle at the memorial stone, a birth,
+  a child grown, a welcome and its reply) and the 16 lines a village's building crew already showed as text, in the
+  game's words. The carters' greeting carries 24 blocks.
+- **The talk** (`village_talk.py`, 20 families in 32 wordings, 96 takes in the man's, the woman's and the old man's):
+  the wagon, the pedlar, the bell, the watch, a siege, the dead, a birth, newcomers, the city's word, the builders, the
+  player and the days after. Like the trade's, it is a module of its own that one block in `make_talk_voices.py`
+  enters after the tales'; `table` writes their entries and `TalkLines.kt`.
+
+No line names a person, a good, a place, a count or an hour: those follow it in grey. Where 17.4's words would be
+untrue at times the game says them, the line says it another way, and its comment gives the design's words and why:
+the pedlar's first two calls (they named goods the cart may not have), the watch's "east wall" and 18 of the talk's
+32 wordings (the wagon's hour and day, the pedlar's day, the watch's tower and night, a wall a village may not have,
+the candle, the bread). `pedlar_late` and `village_stage_posts` keep the words the game already shows.
+
+Every line, the bellman's too, is read as the talk is (`village_phonemes`: espeak's British reading with the American
+r's sounded), with "Hurrah" said "hooray" as the builders' is (`VILLAGE_FIXES`). `VILLAGE_DELIVERY` gives each line's
+speed, pitch, level and reverb by its longest key prefix: what is called across the green or the road end and shouted
+at the horn is quicker, higher and 2 to 3 dB over, with more of the open air; the hush behind the door, the child's
+fear, the candle at the stone and the crew at dinner are lower and 1 to 4 dB under. The talk's `DELIVERY` says the lost
+wagon, a lost siege, the dead and the night after lower and slower, a birth brighter.
+
+Checked with Whisper base.en on the encoded files (a scratch checker, as the trade's `check`): the first reading had 40
+of the 350 takes heard wrong, nearly all of them short shouts in the man's voice. `VILLAGE_FIXES_FOR`, `VILLAGE_FULL`,
+`VILLAGE_SPEED_FOR`, a lead-in for `welcome_2` and the talk's `PHONEMES` put them right, each with a comment saying what
+was heard: the American a of "wagon", "at", "stand", "Glad" and "Pass" (else "wagging", "come a first light", "with
+sand", "Glide"), the American o of "Bolt", "Hold" and "Posts" (else "both", "All", "Post her in"), a long "in" (else
+"end"), a sounded t (else "slight them well", "weed off"), a pause the punctuation didn't give, and eight of the man's
+takes read a little slower. "All quiet on the wall" was heard "and the walls" in every reading of the man's and is "All
+quiet on this wall." Now all 350 come back right: 294 word for word and 56 but for a homophone, a spelling or a
+contraction ("peddler" for "pedlar", "hooray", "wagons" for "wagon's", "neighbors", "Guildhall", "do" for "due"). Each
+group sits at its level: the bellman's -19.1 LUFS, the pedlar's -20.0, shelter and the watch -20.6 (-25.7 for the hush
+to -17.5 for the horn), the crews' -20.4 and the talk's -20.8 to -21.7, against the everyday lines' -21.0; no take is
+more than 1.4 LU off its level or over -1.0 dBTP, and none but the bellman's over 4.0 s. In the game, `/guildmark talk
+family village.cart.due` (and the other nineteen) has the townsperson you look at say a family's wordings, and
+`/guildmark talk say bellman_open` any one line in their voice.
+
+```
+<venv>/bin/python -I -B art/audio/make_townsfolk_voices.py tts --model <dl>/kokoro-v1.0.onnx --voices <dl>/voices-v1.0.bin --out <raw-dir> --keys '^(bellman_|pedlar_|shelter_|watch_(wall|cheer|salute|quiet)|village_|cart_(greet|count|late)|memorial_lay|born_|grown_up|welcome_)'
+python3 -B art/audio/make_townsfolk_voices.py process --raw <raw-dir> --assets src/main/resources/assets/guildmark --keys '<the same>'
+<venv>/bin/python -I -B art/audio/make_talk_voices.py tts --model <dl>/kokoro-v1.0.onnx --voices <dl>/voices-v1.0.bin --out <raw-dir> --keys '^talk\.village\.' [--force]
+python3 -B art/audio/make_talk_voices.py process --raw <raw-dir> --assets src/main/resources/assets/guildmark --keys '^talk\.village\.'
+python3 -B art/audio/make_townsfolk_voices.py fragments --assets src/main/resources/assets/guildmark   # then art/lang/merge_lang.py
+python3 -B art/audio/make_talk_voices.py table --assets src/main/resources/assets/guildmark             # then art/lang/merge_lang.py again
+```
