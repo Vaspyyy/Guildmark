@@ -15,6 +15,10 @@ enum class District {
     WALLS,
     /** A cathedral close, noble quarter or garden: a hushed crowd, no criers or carts. */
     QUIET,
+    /** A village's ground: the country's quiet (hens and birdsong by day, crickets and a far dog by night) and a thinner crowd than a city's. Told with capital = false. */
+    VILLAGE,
+    /** A village on its market day, from the stalls' opening to their closing: the market's murmur is heard as well. Told with capital = false. */
+    VILLAGE_MARKET,
 }
 
 /**
@@ -22,7 +26,9 @@ enum class District {
  * where they stand: in a capital at all, and in which district. Call [tell] as a player comes into a capital
  * or crosses into another district, and with capital = false as they leave it; the client keeps the last word
  * until it leaves the world. Without it the sounds still follow what they find round the player (the folk,
- * beds, workshops, bells and water); this only sharpens them.
+ * beds, workshops, bells and water); this only sharpens them. A village is told with capital = false and
+ * [District.VILLAGE] or [District.VILLAGE_MARKET] (village/live/VillageVisits), which the village's own sounds
+ * (client/ambience/VillageAmbience) go by.
  */
 object CityDistricts {
     fun tell(player: ServerPlayer, capital: Boolean, district: District = District.NONE) {

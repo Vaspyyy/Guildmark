@@ -53,6 +53,8 @@ object Villages {
         io.github.vaspyyy.guildmark.village.live.days.VillageSceneCommand.init()
         VillageLamps.init()
         io.github.vaspyyy.guildmark.village.live.build.VillageBuilds.register()
+        // Which village each player is in, and whether it is its market day, for the village sounds (client/ambience/VillageAmbience)
+        VillageVisits.register()
     }
 
     /**
