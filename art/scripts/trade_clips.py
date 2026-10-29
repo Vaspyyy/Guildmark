@@ -179,8 +179,8 @@ ST_DIP = [(0, 0.0), (3.0, 0.3), (6.0, 0.1), (7.4, 0.0), (ST_PRESS, 1.3), (12.0, 
 ST_ROOTZ = [(0, 0.0), (3.0, 0.4), (7.4, 0.2), (ST_PRESS, 0.9), (13.0, 0.8), (17.0, 0.3), (20, 0.0)]
 # the seal's face over the sheet, tick by tick (the press holds it on the wax from ST_PRESS to the peel): up on the right
 # of the head (the arm beside it, never across the face), then down to the wax
-ST_PATH = [(2.0, (-5.4, 4.0, -5.0)), (4.5, (-6.0, 2.0, -8.0)), (6.5, (-5.8, 1.2, -9.6)), (7.4, (-5.6, 1.0, -9.8)),
-           (8.0, (-4.6, 3.6, -11.6)), (8.6, (-3.2, 6.8, -13.2)), (ST_PRESS, ST_PP + np.array([0.0, 0.2, 0.0])),
+ST_PATH = [(2.0, (-5.6, 4.0, -5.0)), (4.5, (-7.2, 2.0, -8.0)), (6.5, (-7.4, 1.2, -9.6)), (7.4, (-7.2, 1.0, -9.8)),
+           (8.0, (-6.4, 3.2, -12.2)), (8.6, (-3.2, 6.8, -13.2)), (ST_PRESS, ST_PP + np.array([0.0, 0.2, 0.0])),
            (ST_LIFT, ST_PP + np.array([0.0, 0.2, 0.0])), (14.6, ST_PP + np.array([-0.6, -2.4, 0.0])),
            (16.0, (-5.0, 0.4, -9.8)), (17.6, (-5.6, 2.4, -7.0)), (19.2, (-5.4, 4.0, -5.0))]
 
@@ -287,17 +287,17 @@ CL_PIN = sc.cart_pt(*CL_PIN_C)
 CL_R0 = sc.cart_R()                                                          # the patch at rest lies in the tail's plane
 CL_RING = np.array([lp.CANVAS_W - 1.2, lp.CANVAS_H - 1.0, 0.0])             # patch space: where the hand pinches
 CL_RING0 = CL_PIN + CL_R0 @ CL_RING                                          # the ring lying on the tail
-CL_RING1 = np.array([5.4, -4.2, -14.6])                                      # ... and held up: drawn up and in, a little out
+CL_RING1 = np.array([6.2, -4.4, -14.8])                                      # ... and held up: drawn up and in, a little out
 CL_SIDE = -1.5                                                               # stands this far to the right of the tail's middle
 CL_STEPS = [(0.5, 3.0, 'left_leg', (1.9 + CL_SIDE, -1.0)), (1.8, 4.2, 'right_leg', (-1.9 + CL_SIDE, -1.0)),
             (6.2, 8.6, 'left_leg', (1.9 + CL_SIDE, -3.2)), (7.2, 9.6, 'right_leg', (-1.9 + CL_SIDE, -3.2)),
             (23.8, 26.6, 'right_leg', (-1.9, 0.0)), (25.0, 27.8, 'left_leg', (1.9, 0.0))]
-CL_P = [(0, 0.0), (1.5, 5.0), (3.5, 14.0), (6.4, 14.0), (9.0, 20.0), (15.5, 20.0), (17.5, 18.0), (19.0, 16.0), (21.0, 14.0),
+CL_P = [(0, 0.0), (1.5, 5.0), (3.5, 14.0), (6.4, 14.0), (9.0, 18.5), (15.5, 18.5), (17.5, 18.0), (19.0, 16.0), (21.0, 14.0),
         (22.5, 12.0), (24.0, 9.0), (26.5, 4.0), (28.5, 1.0), (30, 0.0)]
 CL_YAW = [(0, 0.0), (5.0, -4.0), (9.0, -7.0), (15.0, -5.0), (19.0, 0.0), (30, 0.0)]
 CL_DIP = [(0, 0.0), (3.5, 0.8), (6.4, 0.8), (9.0, 0.9), (15.5, 0.9), (20.0, 0.6), (26.0, 0.1), (30, 0.0)]
 CL_LEFT = [(0, 0.0), (3.0, 0.0), (6.4, 1.0), (CL_DROP, 1.0), (CL_DROP + 1.6, 1.0), (24.0, 0.0), (30, 0.0)]
-CL_RIGHT = [(0, 0.0), (2.0, 0.0), (5.0, 1.0), (24.0, 1.0), (27.5, 0.0), (30, 0.0)]
+CL_RIGHT = [(0, 0.0), (2.0, 0.0), (5.0, 1.0), (25.0, 1.0), (28.5, 0.0), (30, 0.0)]
 
 
 def _cp(x, y, z):
@@ -309,13 +309,13 @@ CL_OVER = _cp(-6.0, -10.8, 7.4)                                               # 
 CL_SACK1, CL_SACK2 = (-0.8, 7.6), (1.0, 7.4)                                 # cart (x, z) of the two sacks' tops pressed
 CL_TOP, CL_HOVER = -9.9, -11.4                                               # cart y of a sack top, and a hand over it
 CL_PAT = _cp(-7.0, sc.hc.SIDE_TOP - 3.0, sc.hc.BED_BACK + 1.45)              # a pat on the cloth by the tail's right edge
-CL_PAT_AWAY = CL_PAT + np.array([0.0, -1.2, 3.2])
+CL_PAT_AWAY = CL_PAT + np.array([-0.4, -2.2, 1.8])
 CL_RH = [(5.0, CL_BOARD), (7.6, CL_BOARD), (8.8, CL_OVER), (9.8, _cp(CL_SACK1[0], CL_HOVER, CL_SACK1[1])),
          (CL_FEEL[0], _cp(CL_SACK1[0], CL_TOP, CL_SACK1[1])), (11.3, _cp(CL_SACK1[0], CL_HOVER, CL_SACK1[1])),
          (12.0, _cp(CL_SACK2[0], CL_HOVER, CL_SACK2[1])), (CL_FEEL[1], _cp(CL_SACK2[0], CL_TOP, CL_SACK2[1])),
          (14.4, _cp(CL_SACK2[0], CL_HOVER, CL_SACK2[1])), (15.8, _cp(CL_SACK1[0], CL_HOVER, CL_SACK1[1] + 1.0)),
          (16.8, CL_OVER), (17.8, CL_BOARD), (CL_DROP, CL_BOARD), (20.6, CL_PAT_AWAY), (CL_PATS[0], CL_PAT), (22.4, CL_PAT_AWAY),
-         (CL_PATS[1], CL_PAT), (24.2, CL_PAT_AWAY)]
+         (CL_PATS[1], CL_PAT), (24.2, CL_PAT_AWAY), (25.4, np.array([-7.6, 8.0, -7.0]))]
 CL_SCAN = [(2.0, _cp(1.0, sc.hc.SIDE_TOP - 1.0, sc.hc.BED_BACK + 1.0)), (6.5, _cp(4.0, -10.5, 10.4)),
            (8.4, _cp(3.0, -10.0, 4.0)), (CL_FEEL[0], _cp(CL_SACK1[0], CL_TOP, CL_SACK1[1])),
            (11.5, _cp(1.0, -9.6, 4.0)), (CL_FEEL[1], _cp(CL_SACK2[0], CL_TOP, CL_SACK2[1])), (14.6, _cp(2.0, -10.0, -2.0)),
@@ -410,7 +410,7 @@ def check_load():
         w = smooth(K(CL_RIGHT, t))
         rest = rest_arm('right_arm', fr)
         if w > 1e-4:
-            pose = reach_arm(holds, 'right_arm', fr, KV(CL_RH, max(5.0, min(24.2, t))), slack=0.8, limit=1.8)
+            pose = reach_arm(holds, 'right_arm', fr, KV(CL_RH, max(5.0, min(25.4, t))), slack=0.8, limit=1.8)
             rest = mix(rest, pose, w) if w < 1.0 else pose
         set_arm(c, 'right_arm', t, rest)
         # the head: to the corner, ducked under it, over the load, a nod, to the cloth falling, up
