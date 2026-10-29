@@ -45,7 +45,7 @@ import net.minecraft.world.phys.Vec3
  *   and a clap for a siege held or a raid beaten off, a sigh and a slow walk to the broken wall for a siege lost), and back to the day.
  *
  * Hurt, or had by something else for more than a few ticks (the flee), they are let go and taken again a little later; one a raider
- * puts on a rope is let go and not taken again while they are on it.
+ * puts on a rope is let go (the door they are behind forced open) and not taken again while they are on it.
  */
 class Sheltering internal constructor(internal val called: Shelter.Called, val p: Townsperson, private val alert: Int, private val shout: Boolean) : Director {
     enum class S { ALERT, RUN, IN, BOLT, KNOCK, WAIT, OPEN, COWER, EMERGE }
@@ -91,6 +91,13 @@ class Sheltering internal constructor(internal val called: Shelter.Called, val p
         if (called.over || called.ending == null && !Trouble.on()) return finish()
         // Put on a raider's rope (the raid leaving with a hostage): the shelter lets go, so they are not steered against the rope
         if (p.isLeashed) {
+            // The raiders force the door for the one they take
+            haven?.let { h ->
+                if (h.contains(p.blockPosition()) && !open(level, h)) {
+                    swing(level, h, true)
+                    h.bolted = false
+                }
+            }
             Shelter.handed(this)
             return finish()
         }
