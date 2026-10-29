@@ -723,6 +723,7 @@ object YardShow {
             horse.place(level, leadTo.lerp(into, e), yaw, wagon.y, false)
             if (stageAge < BACK) return
             horse.move(DraughtHorse.Move.IDLE)
+            wagon.flag(Wagon.FLAG_IN_SHAFTS, true)
             next(Stage.HITCH)
             hand.then(GoTo({ shoulder().let { BlockPos.containing(it.x, it.y + 0.2, it.z) } }, Jobs.WALK, 0.6, Activity.NONE, 200))
                 .then(StoreLife.Stand({ shoulder() }, { atShoulder() }))
@@ -759,6 +760,7 @@ object YardShow {
             wagon.horse(horse)
             horse.wagon(wagon)
             wagon.flag(Wagon.FLAG_TRACE_UP, false)
+            wagon.flag(Wagon.FLAG_IN_SHAFTS, false)
             horse.flag(DraughtHorse.FLAG_NOSEBAG, false)
             horse.flag(DraughtHorse.FLAG_REINS_TIED, true)
             horse.move(DraughtHorse.Move.IDLE)

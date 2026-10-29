@@ -315,9 +315,9 @@ internal object WagonClient {
         }
 
         // The shafts drop to the road once the horse is off them (cut loose, or cut from it dead); a horse going down in
-        // them takes them down with it as it goes
+        // them takes them down with it as it goes. Up from when a horse is backed into them to be hitched (at its standard place)
         look.downO = look.down
-        val loose = horse == null || !harnessed
+        val loose = (horse == null || !harnessed) && !w.has(Wagon.FLAG_IN_SHAFTS)
         if (first) {
             look.down = if (loose) 1f else 0f
             look.downO = look.down

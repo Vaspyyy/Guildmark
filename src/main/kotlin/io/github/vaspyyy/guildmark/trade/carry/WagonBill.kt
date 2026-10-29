@@ -656,6 +656,7 @@ internal object WagonBill {
             hand?.let { put(sh, it, Vec3(at.x + fx * 2.1, at.y, at.z + fz * 2.1), Mth.wrapDegrees(w.yRot + 180f)) }
             if (age >= BACK_IN_TICKS) {
                 h.move(DraughtHorse.Move.IDLE)
+                w.flag(Wagon.FLAG_IN_SHAFTS, true)
                 next(Stage.HITCH)
             }
         }
@@ -677,7 +678,10 @@ internal object WagonBill {
         private fun harness(sh: LedShow.Shown) {
             if (hitched) return
             val w = sh.wagon
-            if (!w.isRemoved) w.flag(Wagon.FLAG_TRACE_UP, false)
+            if (!w.isRemoved) {
+                w.flag(Wagon.FLAG_TRACE_UP, false)
+                w.flag(Wagon.FLAG_IN_SHAFTS, false)
+            }
             val h = sh.horse ?: return
             hitched = true
             if (!w.isRemoved && !h.isRemoved) {
