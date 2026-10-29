@@ -305,6 +305,8 @@ internal object LedShow {
         val wagon = Bodies.WAGON.get().create(level, EntitySpawnReason.EVENT) ?: return null
         val horse = if (rec.horse) Bodies.DRAUGHT_HORSE.get().create(level, EntitySpawnReason.EVENT) else null
         horse?.coat(rec.coat)
+        // The wagon's synced colour (build part G), the one its pennant reads
+        wagon.tint(Dye.entries[rec.colour.coerceIn(0, Dye.entries.size - 1)].rgb)
         val sh = Shown(rec.owner, level, wagon, horse)
         val yard = rec.state == WagonRec.State.YARD
         // Known as ours before they join the level, so the caravans' cleanup never takes them for strays

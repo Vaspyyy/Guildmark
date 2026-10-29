@@ -19,6 +19,7 @@ import net.minecraft.client.renderer.rendertype.RenderTypes
 import net.minecraft.client.renderer.state.level.CameraRenderState
 import net.minecraft.client.renderer.texture.OverlayTexture
 import net.minecraft.resources.Identifier
+import net.minecraft.util.ARGB
 import net.minecraft.util.Mth
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.item.ItemDisplayContext
@@ -99,6 +100,9 @@ class WagonRenderState : EntityRenderState() {
     var flap = 0f
     var flapSize = 0f
 
+    /** A trading house's wagon's pennant colour (RGB), or -1 for the caravans' painted one. */
+    var tint = -1
+
     /** Radians: the brake lever's lean and the tailboard's (90 degrees shut). */
     var brake = 0f
     var tail = 0f
@@ -174,10 +178,11 @@ class WagonModel(root: ModelPart) : EntityModel<WagonRenderState>(root, RenderTy
         lantern.xRot = state.lanternX
         lantern.zRot = state.lanternZ
         // The pennant streams back, rippling from its root to its tip
-        val size = state.flapSize
-        pennant.yRot = pennant.initialPose.yRot + PENNANT_SWAY * size * sin(state.flap * 0.5f + 0.7f)
-        pennant1.yRot = PENNANT_1 * size * sin(state.flap)
-        pennant2.yRot = PENNANT_2 * size * sin(state.flap - 1.1f)
+        pennant.yRot = pennant.initialPose.yRot + ripple(0, state)
+        pennant1.yRot = ripple(1, state)
+        pennant2.yRot = ripple(2, state)
+        // A House's pennant is drawn on its own, white and tinted (WagonRenderer)
+        pennant.visible = state.tint == -1
         brake.xRot = state.brake
         tailboard.xRot = state.tail
         // The chains hold the tailboard let down; shut, they hang inside out of sight
@@ -200,6 +205,13 @@ class WagonModel(root: ModelPart) : EntityModel<WagonRenderState>(root, RenderTy
         private val PENNANT_1 = Math.toRadians(14.0).toFloat()
         private val PENNANT_2 = Math.toRadians(22.0).toFloat()
 
+        /** Radians piece [k] of the pennant (0 at the staff) turns about its root beyond its first pose as it ripples in [state]. */
+        fun ripple(k: Int, state: WagonRenderState): Float = state.flapSize * when (k) {
+            0 -> PENNANT_SWAY * sin(state.flap * 0.5f + 0.7f)
+            1 -> PENNANT_1 * sin(state.flap)
+            else -> PENNANT_2 * sin(state.flap - 1.1f)
+        }
+
         /** The tail chains show with the tailboard let down further than this. */
         private val CHAINS_UNDER = Math.toRadians(30.0).toFloat()
     }
@@ -221,6 +233,14 @@ class WagonRenderer(context: EntityRendererProvider.Context) : EntityRenderer<Wa
         (0 until ARROW_COUNT).map { find.apply("w_arrow$it") ?: error("No part w_arrow$it") }
     }
     private val trace: ModelPart = context.bakeLayer(WagonModel.STRAPS).getChild("trace")
+    // A House's pennant: each of its three pieces from a copy of its own, the next piece hidden, so each is drawn alone and turned as it ripples
+    private val flags: List<ModelPart> = listOf("pennant", "pennant_1", "pennant_2").mapIndexed { k, name ->
+        context.bakeLayer(WagonModel.LAYER).createPartLookup().let { find ->
+            val part = find.apply(name) ?: error("No part $name")
+            if (k < 2) (find.apply("pennant_${k + 1}") ?: error("No part pennant_${k + 1}")).visible = false
+            part
+        }
+    }
     private val items: ItemModelResolver = context.itemModelResolver
     private val measure = HorseMeasure(context)
     private val horsePose = HorsePose()
@@ -253,6 +273,7 @@ class WagonRenderer(context: EntityRendererProvider.Context) : EntityRenderer<Wa
         s.sway = rad(Mth.lerp(partial, look.swayO, look.sway))
         s.flap = Mth.lerp(partial, look.flapO, look.flap)
         s.flapSize = look.flapSize
+        s.tint = w.tint
         s.brake = rad(Mth.lerp(partial, look.brakeO, look.brake))
         s.tail = rad(Mth.lerp(partial, look.tailO, look.tail))
         // Going over: faster as it falls, from when this client saw it shoved
@@ -415,6 +436,7 @@ class WagonRenderer(context: EntityRendererProvider.Context) : EntityRenderer<Wa
             poseStack.translate(-x, -WagonMesh.TIP_Y / 16f, 0f)
         }
         collector.submitModel(model, s, poseStack, TEXTURE, s.lightCoords, OverlayTexture.NO_OVERLAY, s.outlineColor)
+        if (s.tint != -1) pennant(s, poseStack, collector)
         // The lantern's glass lit, turned as the lantern hangs
         if (s.lit) {
             val hook = WagonMesh.LANTERN_HOOK
@@ -442,6 +464,31 @@ class WagonRenderer(context: EntityRendererProvider.Context) : EntityRenderer<Wa
         for (i in 0 until s.straps) strap(s, s.strapFrom[i], s.strapTo[i], poseStack, collector)
         poseStack.popPose()
         super.submit(s, poseStack, collector, camera)
+    }
+
+    /**
+     * A trading house's pennant (its tint): the three pieces of white wool tinted, each turned about its root as WagonModel ripples the
+     * painted one, unless something else flies its own on this wagon (a trader's led wagon hides the caravans' pennant).
+     */
+    private fun pennant(s: WagonRenderState, poseStack: PoseStack, collector: SubmitNodeCollector) {
+        val hidden = s.getModelPartVisibility()
+        if (hidden != null && hidden.containsKey("pennant") && !hidden.getBoolean("pennant")) return
+        val colour = ARGB.color(255, s.tint)
+        poseStack.pushPose()
+        for ((k, part) in flags.withIndex()) {
+            val turn = WagonModel.ripple(k, s)
+            // Turned about its own root: the part puts itself there in its first pose as it is drawn
+            poseStack.pushPose()
+            poseStack.translate(part.x / 16f, part.y / 16f, part.z / 16f)
+            poseStack.rotate(Axis.YP.rotation(turn))
+            poseStack.translate(-part.x / 16f, -part.y / 16f, -part.z / 16f)
+            collector.submitModelPart(part, poseStack, FLAG, s.lightCoords, OverlayTexture.NO_OVERLAY, null, colour, s.outlineColor)
+            poseStack.popPose()
+            // And the next piece hangs from this one as it is turned
+            poseStack.translate(part.x / 16f, part.y / 16f, part.z / 16f)
+            poseStack.rotate(q.rotationZYX(part.zRot, part.yRot + turn, part.xRot))
+        }
+        poseStack.popPose()
     }
 
     /** Piece [i] of the load, and the goods showing on top of it if it's an open one. */
@@ -492,6 +539,9 @@ class WagonRenderer(context: EntityRendererProvider.Context) : EntityRenderer<Wa
         private val GLOW_TEXTURE: Identifier = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "textures/entity/caravan/wagon_glow.png")
         val CUTOUT: RenderType = RenderTypes.entityCutout(TEXTURE)
         private val GLOW: RenderType = RenderTypes.eyes(GLOW_TEXTURE)
+
+        /** A House's pennant: vanilla's white wool, tinted with the House's colour. */
+        private val FLAG: RenderType = RenderTypes.entityCutout(Identifier.withDefaultNamespace("textures/block/white_wool.png"))
 
         /** The band's six arrows ("w_arrow0" to 5 of the wreck, posed in the standing wagon's space); 3 and 4 are in the tilt. */
         private const val ARROW_COUNT = 6

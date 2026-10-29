@@ -67,6 +67,9 @@ class Wagon(type: EntityType<out Wagon>, level: Level) : Entity(type, level) {
     /** Goes up when it's shoved over: the clients turn it onto its side from when they see it change. */
     val tipped: Int get() = entityData.get(TIP)
 
+    /** A trading house's wagon's pennant colour (RGB, trade part G), or -1: it flies the caravans' own. */
+    val tint: Int get() = entityData.get(TINT)
+
     /** What this client keeps to draw it (client/caravan); null on the server. */
     @JvmField
     var look: Any? = null
@@ -99,6 +102,7 @@ class Wagon(type: EntityType<out Wagon>, level: Level) : Entity(type, level) {
         builder.define(STACK_B, 0L)
         builder.define(FLAGS, FLAG_TAILBOARD_SHUT)
         builder.define(TIP, 0)
+        builder.define(TINT, -1)
     }
 
     // Drawn a tick behind, as the townsfolk and the handcarts are
@@ -138,6 +142,8 @@ class Wagon(type: EntityType<out Wagon>, level: Level) : Entity(type, level) {
     internal fun horse(horse: DraughtHorse?) = entityData.set(HORSE, horse?.id ?: -1)
 
     internal fun crew(i: Int, id: Int) = entityData.set(CREW[i], id)
+
+    internal fun tint(rgb: Int) = entityData.set(TINT, rgb)
 
     internal fun seat(i: Int, seat: Int) {
         val all = entityData.get(SEATS)
@@ -259,6 +265,7 @@ class Wagon(type: EntityType<out Wagon>, level: Level) : Entity(type, level) {
         private val STACK_B: EntityDataAccessor<Long> = SynchedEntityData.defineId(Wagon::class.java, EntityDataSerializers.LONG)
         private val FLAGS: EntityDataAccessor<Int> = SynchedEntityData.defineId(Wagon::class.java, EntityDataSerializers.INT)
         private val TIP: EntityDataAccessor<Int> = SynchedEntityData.defineId(Wagon::class.java, EntityDataSerializers.INT)
+        private val TINT: EntityDataAccessor<Int> = SynchedEntityData.defineId(Wagon::class.java, EntityDataSerializers.INT)
 
         /** Where a crew member is: on the road, or on the driver's end of the bench, its other end, the let-down tailboard, or standing on it to hand the load down. */
         const val OFF = 0

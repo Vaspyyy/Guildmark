@@ -1252,6 +1252,7 @@ internal class Show private constructor(val level: ServerLevel, first: Caravans.
         }
         w.horse(h)
         h.wagon(w)
+        w.tint(v.tint)
         w.load(if (mode == Mode.STAND || mode == Mode.LEAVE) List(Wagon.SLOTS) { null } else slots(v.load))
         h.move(if (mode == Mode.WAIT) DraughtHorse.Move.GRAZE else if (mode == Mode.STAND) DraughtHorse.Move.NOSEBAG else DraughtHorse.Move.WALK)
         if (mode == Mode.STAND) h.flag(DraughtHorse.FLAG_NOSEBAG, true)
