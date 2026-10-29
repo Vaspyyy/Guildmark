@@ -43,6 +43,7 @@ import net.minecraft.util.RandomSource
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.block.state.BlockState
 import net.neoforged.neoforge.common.NeoForge
+import net.neoforged.neoforge.event.RegisterCommandsEvent
 import net.neoforged.neoforge.event.level.ExplosionEvent
 import net.neoforged.neoforge.event.level.block.BreakBlockEvent
 import java.math.BigDecimal
@@ -230,13 +231,7 @@ object HarvestTable {
      */
     fun judge(level: ServerLevel, site: FestivalSite, p: Townsperson, player: ServerPlayer, stack: ItemStack, tasted: FestivalContest.Tasted): Boolean {
         val table = table(site.plan)
-        if (tasted.judged) {
-            this.tasted++
-            // The table came on in the middle of the fair: the town's cooks enter now
-            if (!table.seeded) townEntries(level, site)
-        } else {
-            refused++
-        }
+        counted(level, site, table, tasted)
         val now = level.gameTime
         table.scene?.let { if (now - it.started > LIMIT) cut(level, site, p, table) }
         val scene = Scene(player.uuid, stack.copyWithCount(1), tasted)
@@ -253,6 +248,26 @@ object HarvestTable {
             }
         }
         return true
+    }
+
+    /**
+     * `cook feast enter`: [player]'s dish, [tasted] at [site] as if shown to the host, with no host near and no tasting: told at once,
+     * in the host's words, and laid on the trestle.
+     */
+    fun enter(level: ServerLevel, site: FestivalSite, player: ServerPlayer, tasted: FestivalContest.Tasted) {
+        counted(level, site, table(site.plan), tasted)
+        site.contest.tell(player, tasted, Component.translatable("festival.guildmark.host"))
+        if (tasted.judged) show(level, site.plan, site.contest)
+    }
+
+    private fun counted(level: ServerLevel, site: FestivalSite, table: Table, tasted: FestivalContest.Tasted) {
+        if (!tasted.judged) {
+            refused++
+            return
+        }
+        this.tasted++
+        // The table came on in the middle of the fair: the town's cooks enter now
+        if (!table.seeded) townEntries(level, site)
     }
 
     /** Whether the host of [site] is tasting a dish now (their own word with anyone else waits). */
@@ -459,6 +474,9 @@ object HarvestTable {
         }
     }
 
+    /** How many of the trestle's plates at [site] show a dish now (as last laid). */
+    fun dressed(site: FestivalSite): Int = tables[site.plan]?.laid?.count { !it.isEmpty } ?: 0
+
     /** Bares every plate on the trestle of [plan] (left dressed from before a restart, say); they stay the town's. */
     fun clear(level: ServerLevel, plan: FestivalPlan) {
         for (pos in plan.trestle) Plate.show(level, pos, ItemStack.EMPTY)
@@ -504,9 +522,10 @@ object HarvestTable {
 
     // =============================================================================================== registration
 
-    /** Part L's registration: its line for `cook perf`, and the trestle's plates kept whole. */
+    /** Part L's registration: its line for `cook perf`, the `cook feast` branch, and the trestle's plates kept whole. */
     fun register() {
         CookStats.readout("Harvest Table") { stats() }
+        NeoForge.EVENT_BUS.addListener(RegisterCommandsEvent::class.java) { FeastCommand.register(it.dispatcher) }
         Cooking.onForget {
             tables.clear()
             dressed = 0

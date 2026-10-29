@@ -119,7 +119,8 @@ class FestivalSite(
     private var awarded = false
     /** Sheafmoot's Harvest Table at the prize-giving (cooking/feast/HarvestTable): how far its calling has got, and whether it is paid. */
     private var cookStep = 0
-    private var cookAwarded = false
+    var cookAwarded = false
+        private set
     private var lanternsAt = -1L
     private var nextRocket = 0L
     private var lastRocket = Long.MIN_VALUE / 2

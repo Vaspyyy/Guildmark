@@ -185,9 +185,10 @@ class FestivalContest(val kind: FestivalKind, private val riddleSeed: Long, val 
     /**
      * [player] shows the host [stack] for the Harvest Table, and the host judges it now, saying nothing yet (the host's tasting
      * says it: cooking/feast/HarvestTable): null when it is not a dish here (not a capital's Sheafmoot, or not a dish at all), so
-     * the Produce Show looks at it; else what the host made of it, the entry made if it was judged. Nothing is taken.
+     * the Produce Show looks at it; else what the host made of it, the entry made if it was judged (only weighed, with [record]
+     * false: `cook feast score`). Nothing is taken.
      */
-    fun taste(level: ServerLevel, player: ServerPlayer, stack: ItemStack): Tasted? {
+    fun taste(level: ServerLevel, player: ServerPlayer, stack: ItemStack, record: Boolean = true): Tasted? {
         val item = stack.item as? DishItem ?: return null
         if (kind != FestivalKind.SHEAFMOOT || !capital) return null
         if (!Cooking.cookOff()) return refused("message.guildmark.feast.off")
@@ -204,9 +205,10 @@ class FestivalContest(val kind: FestivalKind, private val riddleSeed: Long, val 
         val points = HarvestTable.score(dish, data.tier)
         val before = dishes[player.uuid]?.get(dish) ?: 0
         if (points <= before) return refused("message.guildmark.feast.seen", HarvestTable.dishName(dish), before)
-        val mine = dishes.getOrPut(player.uuid) { HashMap() }
+        val mine = if (record) dishes.getOrPut(player.uuid) { HashMap() } else HashMap(dishesOf(player.uuid))
         mine[dish] = points
         val total = mine.values.sortedDescending().take(BEST_DISHES).sum()
+        if (!record) return Tasted(dish, data.tier, points, before, total, min(mine.size, BEST_DISHES), null)
         val e = cooks.getOrPut(player.uuid) { Entry(player.uuid, player.name.string) }.also { it.name = player.name.string }
         if (total != e.score) {
             e.score = total
