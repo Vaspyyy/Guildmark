@@ -28,12 +28,13 @@ enum class Phase(val id: String) {
     }
 }
 
-/** What a caravan is: one of the day's wagons, a Perilous road's noon convoy, the relief after a band is broken, or one set out by hand. */
+/** What a caravan is: one of the day's wagons, a Perilous road's noon convoy, the relief after a band is broken, one set out by hand, or a trading house's wagon (trade part G). */
 enum class Run(val id: String) {
     WAGON("wagon"),
     CONVOY("convoy"),
     RELIEF("relief"),
-    TEST("test");
+    TEST("test"),
+    HOUSE("house");
 
     companion object {
         fun of(id: String): Run = entries.firstOrNull { it.id == id } ?: WAGON
@@ -132,6 +133,10 @@ class CaravanRec(
     /** The slots of the timetable it carries (market hours), and the day's first among them (it brings the bakehouse's flour). */
     var slots: List<Long> = listOf()
 
+    /** A trading house's wagon's pennant colour (RGB, -1 for the wagon's own) and the House's name on its board ("" for none); trade part G. */
+    var tint: Int = -1
+    var label: String = ""
+
     /** Not kept: the game time its bodies last said they're about, and when the record began waiting for them to act an event out. */
     var shown: Long = Long.MIN_VALUE / 2
     var waiting: Long = -1L
@@ -168,7 +173,7 @@ class CaravanRec(
             ).apply(i, ::Roll)
         }
 
-        private class Escort(val job: UUID?, val holder: UUID?, val met: Boolean, val kills: Int, val only: Boolean, val slots: List<Long>)
+        private class Escort(val job: UUID?, val holder: UUID?, val met: Boolean, val kills: Int, val only: Boolean, val slots: List<Long>, val tint: Int = -1, val label: String = "")
 
         private val ESCORT: Codec<Escort> = RecordCodecBuilder.create { i ->
             i.group(
@@ -178,7 +183,9 @@ class CaravanRec(
                 Codec.INT.optionalFieldOf("kills", 0).forGetter(Escort::kills),
                 Codec.BOOL.optionalFieldOf("only", false).forGetter(Escort::only),
                 Codec.LONG.listOf().optionalFieldOf("slots", listOf()).forGetter(Escort::slots),
-            ).apply(i) { job, holder, met, kills, only, slots -> Escort(job.orElse(null), holder.orElse(null), met, kills, only, slots) }
+                Codec.INT.optionalFieldOf("tint", -1).forGetter(Escort::tint),
+                Codec.STRING.optionalFieldOf("label", "").forGetter(Escort::label),
+            ).apply(i) { job, holder, met, kills, only, slots, tint, label -> Escort(job.orElse(null), holder.orElse(null), met, kills, only, slots, tint, label) }
         }
 
         private class Times(val setOut: Long, val held: Long, val until: Long)
@@ -210,7 +217,7 @@ class CaravanRec(
                 ROLL.fieldOf("roll").forGetter {
                     Roll(it.band, it.strike, it.reach, it.struck, it.struckAt, it.waylaid, it.horseDead, it.fought, it.place, it.wx, it.wy, it.wz, it.wyaw, it.gate, it.watched, it.freight)
                 },
-                ESCORT.fieldOf("escort").forGetter { Escort(it.job, it.holder, it.met, it.kills, it.escortOnly, it.slots) },
+                ESCORT.fieldOf("escort").forGetter { Escort(it.job, it.holder, it.met, it.kills, it.escortOnly, it.slots, it.tint, it.label) },
             ).apply(i) { id, capital, bell, road, hour, run, seed, phase, times, length, load, exports, guards, wagons, roll, escort ->
                 CaravanRec(
                     id, capital, bell, road, hour, Run.of(run), seed, Phase.of(phase), times.setOut, times.held, times.until, length,
@@ -238,6 +245,8 @@ class CaravanRec(
                     c.kills = escort.kills
                     c.escortOnly = escort.only
                     c.slots = escort.slots
+                    c.tint = escort.tint
+                    c.label = escort.label
                 }
             }
         }

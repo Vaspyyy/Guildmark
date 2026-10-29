@@ -1,0 +1,10 @@
+{
+  "news.guildmark.trade.house": "A trading house has opened in %s.",
+  "gui.guildmark.works.doing.counting_house.purse": "No carters hired yet; the purse holds %s Marks.",
+  "gui.guildmark.works.doing.counting_house.carters": "%s carters, %s of them out with a wagon; the purse holds %s Marks.",
+  "message.guildmark.trade.house.carter_left": "%s has left your House in %s: three days without a wage.",
+  "message.guildmark.trade.house.waylaid": "%s's wagon was waylaid on the road into %s: %s units lost, and the wright's bill of %s Marks paid from the purse.",
+  "message.guildmark.trade.house.wound_up": "Your Counting House in %s is wound up: its purse of %s Marks is yours.",
+  "message.guildmark.trade.house.back": "Your House in %s kept on while you were away (%s days): the purse is %s Marks up.",
+  "message.guildmark.trade.house.back_waited": "Your House in %s worked for %s days while you were away, then the carters waited for you: the purse is %s Marks up."
+}

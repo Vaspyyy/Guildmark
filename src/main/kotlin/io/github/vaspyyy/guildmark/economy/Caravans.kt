@@ -92,7 +92,7 @@ object Caravans {
     class View(
         val id: Long, val capital: BlockPos, val leg: List<Point>, val now: Double, val state: State,
         val load: List<Pair<Good, Int>>, val exports: List<Pair<Good, Int>>, val guards: Int, val wagons: Int,
-        val escort: UUID?, val strike: Double?, val seed: Long, val deadline: Long,
+        val escort: UUID?, val strike: Double?, val seed: Long, val deadline: Long, val tint: Int = -1,
     )
 
     /** What becomes of the horse when a wagon is waylaid. */
@@ -528,7 +528,8 @@ object Caravans {
         val kept = HashSet<Long>()
         for (c in data.caravans.filter { it.capital == m.capital }) {
             if (c.phase in setOf(Phase.WAITING, Phase.ROLLING, Phase.STRUCK)) {
-                deliver(m, c.load)
+                // A trading house's wagon gets in on the House's own clock once its record goes (trade part G)
+                if (c.run != Run.HOUSE) deliver(m, c.load)
                 kept.addAll(c.slots)
             }
             callOff(level, data, c)
@@ -707,7 +708,7 @@ object Caravans {
      */
     fun nextWagon(level: ServerLevel, capital: Long, road: Int): Long? {
         val data = CaravanData.get(level)
-        data.caravans.filter { it.capital == capital && it.road == road && (it.phase == Phase.PLANNED || it.phase == Phase.WAITING) && it.run != Run.TEST }
+        data.caravans.filter { it.capital == capital && it.road == road && (it.phase == Phase.PLANNED || it.phase == Phase.WAITING) && it.run != Run.TEST && it.run != Run.HOUSE }
             .minOfOrNull { it.setOut }?.let { return it }
         val legs = CaravanRoutes.legs(level, capital) ?: return null
         val leg = legs.firstOrNull { it.road == road } ?: return null
@@ -754,7 +755,7 @@ object Caravans {
     ): CaravanRec {
         val id = data.id()
         var seed = entry.market.capital * -0x61c8864680b583ebL xor hour * 0x2545F4914F6CDD1DL xor (leg.road + 7L) * 0x5851F42D4C957F2DL
-        if (run == Run.RELIEF || run == Run.TEST) seed = seed xor id * 0x632BE59BD9B4E019L
+        if (run == Run.RELIEF || run == Run.TEST || run == Run.HOUSE) seed = seed xor id * 0x632BE59BD9B4E019L
         val c = CaravanRec(
             id, entry.market.capital, leg.bell.asLong(), leg.road, hour, run, seed, Phase.PLANNED, setOut, 0L, 0L, leg.length,
             DoubleArray(Good.entries.size), DoubleArray(Good.entries.size), guards, wagons,
@@ -780,7 +781,7 @@ object Caravans {
             c.freight = io.github.vaspyyy.guildmark.economy.works.WorksFreight.load(level, entry, c)
         }
         c.phase = Phase.ROLLING
-        if (escorts()) CaravanEscorts.bind(data, c)
+        if (escorts() && c.run != Run.HOUSE) CaravanEscorts.bind(data, c)
         if (c.job != null || c.escortOnly) {
             c.phase = Phase.WAITING
             c.until = if (c.escortOnly) Math.floorDiv(at, DAY) * DAY + EVENING else at + ESCORT_WAIT
@@ -1064,6 +1065,12 @@ object Caravans {
             val taken = taken(c.load, 0.5 + 0.2 * u[3])
             val spilled = c.load.copyOf()
             for ((g, n) in taken) spilled[g.ordinal] = (spilled[g.ordinal] - n).coerceAtLeast(0.0)
+            // A trading house's wagon (trade part G): the House pays the wright and books the loss, and what the band left limps in with its carter, so neither the wreck nor the loss holds it
+            if (c.run == Run.HOUSE) {
+                io.github.vaspyyy.guildmark.trade.Houses.struck(level, c, taken, at)
+                for (g in Good.entries) c.load[g.ordinal] = (c.load[g.ordinal] - spilled[g.ordinal]).coerceAtLeast(0.0)
+                spilled.fill(0.0)
+            }
             // Everything on the wagon is lost to the market, so the freight doesn't fall for it
             for (g in Good.entries) if (c.load[g.ordinal] > 0.0) m.tally(Tally.LOST, g, c.load[g.ordinal])
             val lost = Good.entries.filter { c.load[it.ordinal] >= 1.0 }
@@ -1154,7 +1161,13 @@ object Caravans {
     /** [c] is in at [at]: its load into the market, its road's trouble on its way out, its escort seen in, and it stands an hour before leaving. */
     private fun arrive(level: ServerLevel, data: CaravanData, entry: Markets.Entry, c: CaravanRec, at: Long) {
         val m = entry.market
-        deliver(m, c.load)
+        // A trading house's wagon's goods go to its tickets and the stalls by the House's own books (trade part G)
+        if (c.run == Run.HOUSE) {
+            io.github.vaspyyy.guildmark.trade.Houses.arrived(level, c, at)
+            c.load.fill(0.0)
+        } else {
+            deliver(m, c.load)
+        }
         if (c.slots.any { clockOf(it) == 9 }) {
             val out = DoubleArray(Good.entries.size)
             for ((g, n) in Economy.exports(m, entry.town)) out[g.ordinal] = n
@@ -1188,7 +1201,7 @@ object Caravans {
         data.changed()
         Markets.get(level).changed()
         val v = view(level, c, at)
-        val seenIn = View(v.id, v.capital, v.leg, v.now, v.state, v.load, v.exports, v.guards, v.wagons, escort, v.strike, v.seed, v.deadline)
+        val seenIn = View(v.id, v.capital, v.leg, v.now, v.state, v.load, v.exports, v.guards, v.wagons, escort, v.strike, v.seed, v.deadline, v.tint)
         listeners.forEach { it.arrived(level, seenIn) }
     }
 
@@ -1222,7 +1235,7 @@ object Caravans {
     /** The wagons are switched off: whatever of [entry]'s is still on the road comes in at once, and the records go. */
     private fun flush(level: ServerLevel, data: CaravanData, entry: Markets.Entry) {
         for (c in data.caravans.filter { it.capital == entry.market.capital }) {
-            if (c.phase in setOf(Phase.WAITING, Phase.ROLLING, Phase.STRUCK)) deliver(entry.market, c.load)
+            if (c.phase in setOf(Phase.WAITING, Phase.ROLLING, Phase.STRUCK) && c.run != Run.HOUSE) deliver(entry.market, c.load)
             callOff(level, data, c)
         }
     }
@@ -1316,6 +1329,29 @@ object Caravans {
         val c = make(level, data, entry, leg, hour, Run.RELIEF, t, RoadPeril.Stage.OPEN.guards, 1)
         Economy.bring(entry.market, entry.town, true, coming(data, c), RELIEF).copyInto(c.load)
         return true
+    }
+
+    /**
+     * A trading house's wagon (trade part G) into the capital whose heart is [capital], due at its stand at clock time [arrive] with [load] and
+     * [guards], flying [tint] (RGB) and the House's name [label]: by the town's road whose far end lies nearest [from] (the House's town), setting
+     * out along it so as to be in by then (or now, if the road is longer than that), and struck by the same dice as any wagon, once. Gives its
+     * record's id, or -1 if the wagons are off or the town has no market or no road in.
+     */
+    internal fun house(level: ServerLevel, capital: Long, from: BlockPos, arrive: Long, load: DoubleArray, guards: Int, tint: Int, label: String): Long {
+        if (!enabled()) return -1L
+        val entry = Markets.get(level)[BlockPos.of(capital)] ?: return -1L
+        val legs = CaravanRoutes.legs(level, entry.market.capital) ?: return -1L
+        val leg = legs.minByOrNull { flat(it.start, Vec3.atCenterOf(from)) } ?: return -1L
+        val data = CaravanData.get(level)
+        val t = level.overworldClockTime
+        val setOut = max(t, arrive - travel(leg.length))
+        val hour = Math.floorDiv(setOut + travel(leg.length) + HOUR - 1, HOUR)
+        val c = make(level, data, entry, leg, hour, Run.HOUSE, setOut, guards.coerceAtLeast(1), 1)
+        for (g in Good.entries) c.load[g.ordinal] = load.getOrElse(g.ordinal) { 0.0 }
+        c.tint = tint
+        c.label = label
+        data.changed()
+        return c.id
     }
 
     /** [band]'s loot, what it carried off in the last [LOOT] days, in a pile by its camp's loot under a tarp, marked as off its wagons. */
@@ -1539,7 +1575,7 @@ object Caravans {
         val leg = CaravanRoutes.cached(c.capital, c.road)
         return View(
             c.id, BlockPos.of(c.bell), leg?.points ?: listOf(), distance(c, t), state(c.phase), goods(c.load), goods(c.exports), c.guards, c.wagons,
-            c.holder.takeIf { c.met }, c.strike.takeIf { it >= 0.0 && c.struck != 1 }, c.seed, gameAt(level, deadline(c)),
+            c.holder.takeIf { c.met }, c.strike.takeIf { it >= 0.0 && c.struck != 1 }, c.seed, gameAt(level, deadline(c)), c.tint,
         )
     }
 

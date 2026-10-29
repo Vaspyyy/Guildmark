@@ -54,6 +54,7 @@ object Trade {
         Stores.register(modBus)
 
         // G: the trading house
+        Houses.register(modBus)
 
         // H: the town answers
         WorldAnswers.register()
