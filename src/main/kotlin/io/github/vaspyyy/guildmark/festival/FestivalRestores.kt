@@ -3,6 +3,8 @@ package io.github.vaspyyy.guildmark.festival
 import com.mojang.serialization.Codec
 import com.mojang.serialization.codecs.RecordCodecBuilder
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.cooking.dish.PlateBlock
+import io.github.vaspyyy.guildmark.cooking.dish.PlateBlockEntity
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel
@@ -64,13 +66,20 @@ object FestivalRestores {
     fun ours(state: BlockState): Boolean = state.block is FestivalTrimBlock || state.block is FestivalOrnamentBlock || state.block is Restorable
 
     /**
+     * Whether [state] at [pos] is a plate laid for show (a part of the town's, never a player's: Hearthcraft's Plate), the kind
+     * Sheafmoot's Harvest Table puts on its trestle. Its own record says whether it is a decoration; only then is it ours.
+     */
+    private fun shownPlate(level: ServerLevel, pos: BlockPos, state: BlockState): Boolean =
+        state.block is PlateBlock && (level.getBlockEntity(pos) as? PlateBlockEntity)?.let { it.forShow || it.dish.isEmpty } == true
+
+    /**
      * Whether a decoration may go at [pos]: it's loaded, and holds air or a plant anything may build over (or a
      * decoration of ours already). A [solid] one also needs nobody standing there.
      */
     fun free(level: ServerLevel, pos: BlockPos, solid: Boolean): Boolean {
         if (!level.isLoaded(pos)) return false
         val state = level.getBlockState(pos)
-        if (ours(state)) return true
+        if (ours(state) || shownPlate(level, pos, state) && recordAt(level, pos) != null) return true
         if (!state.isAir) {
             if (!state.canBeReplaced() || !state.fluidState.isEmpty || state.hasBlockEntity() || state.block is DoublePlantBlock) return false
         }
@@ -89,7 +98,7 @@ object FestivalRestores {
         val pieces = chunk.getData(FestivalRegistry.PIECES)
         val key = pos.asLong()
         val had = pieces.records.get(key)
-        if (ours(current)) {
+        if (ours(current) || had != null && shownPlate(level, pos, current)) {
             // Ours already: keep what it stood in place of, and claim it for this run
             if (had == null) pieces.records.put(key, PieceRecord(net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), site, run))
             else if (had.site != site || had.run != run) pieces.records.put(key, had.copy(site = site, run = run))
@@ -109,6 +118,9 @@ object FestivalRestores {
     /** Takes the decoration at [pos] down, putting back what stood there if the decoration is still ours. */
     fun restore(level: ServerLevel, pos: BlockPos) {
         if (!level.isLoaded(pos)) return
+        // A plate laid for show on this one (the Harvest Table's trestle) comes off first, so it never falls and breaks
+        val above = pos.above()
+        if (level.isLoaded(above) && shownPlate(level, above, level.getBlockState(above)) && recordAt(level, above) != null) restore(level, above)
         val chunk = level.getChunkAt(pos)
         if (!chunk.hasData(FestivalRegistry.PIECES)) {
             // No record at all: a stray of ours goes, and anything else stays
@@ -119,7 +131,7 @@ object FestivalRestores {
         val record = pieces.records.remove(pos.asLong())
         chunk.markUnsaved()
         val current = level.getBlockState(pos)
-        if (!ours(current)) return
+        if (!ours(current) && !(record != null && shownPlate(level, pos, current))) return
         level.setBlock(pos, record?.original ?: net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL)
     }
 

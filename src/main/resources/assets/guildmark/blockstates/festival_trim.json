@@ -83,6 +83,9 @@
       "model": "guildmark:block/works/to_let_board",
       "y": 90
     },
+    "facing=east,look=trestle": {
+      "model": "minecraft:block/oak_slab_top"
+    },
     "facing=north,look=pole_birch": {
       "model": "guildmark:block/festival_pole_birch"
     },
@@ -161,6 +164,9 @@
     },
     "facing=north,look=to_let": {
       "model": "guildmark:block/works/to_let_board"
+    },
+    "facing=north,look=trestle": {
+      "model": "minecraft:block/oak_slab_top"
     },
     "facing=south,look=pole_birch": {
       "model": "guildmark:block/festival_pole_birch"
@@ -244,6 +250,9 @@
       "model": "guildmark:block/works/to_let_board",
       "y": 180
     },
+    "facing=south,look=trestle": {
+      "model": "minecraft:block/oak_slab_top"
+    },
     "facing=west,look=pole_birch": {
       "model": "guildmark:block/festival_pole_birch"
     },
@@ -326,6 +335,9 @@
     "facing=west,look=to_let": {
       "model": "guildmark:block/works/to_let_board",
       "y": 270
+    },
+    "facing=west,look=trestle": {
+      "model": "minecraft:block/oak_slab_top"
     }
   }
 }

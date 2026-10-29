@@ -1,5 +1,6 @@
 package io.github.vaspyyy.guildmark.festival
 
+import io.github.vaspyyy.guildmark.cooking.feast.HarvestTable
 import io.github.vaspyyy.guildmark.season.Seasons
 import io.github.vaspyyy.guildmark.townsfolk.Activity
 import io.github.vaspyyy.guildmark.townsfolk.Director
@@ -281,9 +282,14 @@ class FestivalSite(
 
     private fun place(level: ServerLevel, k: Int): Boolean {
         val piece = plan.pieces[k]
+        // A plate of the Harvest Table's trestle goes on its slab, never before it
+        val plate = piece.pos in plan.trestle
+        if (plate && !FestivalRestores.ours(level.getBlockState(piece.pos.below()))) return false
         if (!FestivalRestores.place(level, piece.pos, piece.state, key, run, piece.solid)) return false
         up[k] = true
         piece.data?.let { (level.getBlockEntity(piece.pos) as? FestivalOrnamentBlockEntity)?.setup(it) }
+        // Laid for show at once, the town's, with the table's entries if it has any (cooking/feast/HarvestTable)
+        if (plate) HarvestTable.show(level, plan, contest)
         puff(level, piece.pos, true)
         return true
     }

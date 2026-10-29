@@ -36,8 +36,8 @@ import net.minecraft.world.phys.shapes.CollisionContext
 import net.minecraft.world.phys.shapes.Shapes
 import net.minecraft.world.phys.shapes.VoxelShape
 
-/** How solid a piece of festival trim is. */
-enum class TrimShape { NONE, POST, LOW, FULL }
+/** How solid a piece of festival trim is (TOP: the upper half of its block, as a table's top is). */
+enum class TrimShape { NONE, POST, LOW, FULL, TOP }
 
 /**
  * What a piece of festival trim looks like: a vanilla block's look (blockstates/festival_trim.json points each at the
@@ -74,7 +74,10 @@ enum class TrimLook(private val id: String, val shape: TrimShape, val light: Int
     POT_OXEYE_DAISY("pot_oxeye_daisy", TrimShape.NONE, 0),
     POT_CORNFLOWER("pot_cornflower", TrimShape.NONE, 0),
     POT_LILY_OF_THE_VALLEY("pot_lily_of_the_valley", TrimShape.NONE, 0),
-    TO_LET("to_let", TrimShape.POST, 0);
+    TO_LET("to_let", TrimShape.POST, 0),
+
+    // Sheafmoot's Harvest Table (cooking/feast/HarvestTable, Hearthcraft Part L): its trestle, a top oak slab, with a plate on it
+    TRESTLE("trestle", TrimShape.TOP, 0);
 
     override fun getSerializedName(): String = id
 
@@ -112,6 +115,7 @@ class FestivalTrimBlock(properties: Properties) : Block(properties) {
         TrimShape.POST -> POST_SHAPE
         TrimShape.LOW -> LOW_SHAPE
         TrimShape.FULL -> Shapes.block()
+        TrimShape.TOP -> TOP_SHAPE
     }
 
     /** A ladder's outline: the rungs against the wall behind it, facing [facing] (as the vanilla ladder's). */
@@ -155,6 +159,7 @@ class FestivalTrimBlock(properties: Properties) : Block(properties) {
 
         private val POST_SHAPE: VoxelShape = box(5.0, 0.0, 5.0, 11.0, 16.0, 11.0)
         private val LOW_SHAPE: VoxelShape = box(0.0, 0.0, 0.0, 16.0, 7.0, 16.0)
+        private val TOP_SHAPE: VoxelShape = box(0.0, 8.0, 0.0, 16.0, 16.0, 16.0)
         private val CANDLES_SHAPE: VoxelShape = box(5.0, 0.0, 6.0, 11.0, 6.0, 11.0)
         private val BLOSSOM_SHAPE: VoxelShape = box(2.0, 0.0, 2.0, 14.0, 14.0, 14.0)
         /** The vanilla flower pot's, and the vanilla ladder's for each way it faces. */

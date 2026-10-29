@@ -967,6 +967,8 @@ TRIM_LOOKS = ['pole_birch', 'pole_oak', 'pole_spruce', 'hay', 'pumpkin', 'carved
 STREET_POTS = ['poppy', 'dandelion', 'blue_orchid', 'allium', 'azure_bluet', 'red_tulip', 'orange_tulip', 'white_tulip',
                'pink_tulip', 'oxeye_daisy', 'cornflower', 'lily_of_the_valley']
 TRIM_LOOKS += ['ladder'] + [f'pot_{p}' for p in STREET_POTS] + ['to_let']
+# Sheafmoot's Harvest Table (Hearthcraft Part L, TrimLook's TRESTLE): the trestle's top, a top oak slab with a plate on it
+TRIM_LOOKS += ['trestle']
 FACINGS = {'north': 0, 'east': 90, 'south': 180, 'west': 270}
 # The campfire's logs: its south is the model's own way round
 CAMPFIRE_Y = {'south': 0, 'west': 90, 'north': 180, 'east': 270}
@@ -977,6 +979,7 @@ VANILLA = {
     'blossom': 'minecraft:block/flowering_azalea',
     'ladder': 'minecraft:block/ladder', 'to_let': 'guildmark:block/works/to_let_board',
     **{f'pot_{p}': f'minecraft:block/potted_{p}' for p in STREET_POTS},
+    'trestle': 'minecraft:block/oak_slab_top',
 }
 POLE_TEXTURES = {
     'pole_birch': ('guildmark:block/festival_pole_birch', 'minecraft:block/stripped_birch_log_top', True),

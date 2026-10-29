@@ -63,6 +63,8 @@ class FestivalPlan(
     val square: Int,
     /** How far from the centre any of its decorations are. */
     val reach: Int,
+    /** Where the plates stand on Sheafmoot's trestle for the Harvest Table (a capital's only; none where there's no room). */
+    val trestle: List<BlockPos> = listOf(),
 ) {
     val floor: Int get() = floor(centre.y).toInt()
     val centrePos: BlockPos get() = BlockPos.containing(centre)
@@ -98,6 +100,8 @@ class FestivalPlan(
             builder.avoid(listOf(host))
             builder.contest(seed, bandAngle, host, rim + 5.0, 10, 34)
             val crowd = survey.crowd(cx, cz, floor, listOf(rim + 3.5, rim + 4.6), bandAngle, 14, builder.taken)
+            // Last, so the crowd and the rest stand just as they would without it: the Harvest Table's trestle
+            if (kind == FestivalKind.SHEAFMOOT && io.github.vaspyyy.guildmark.cooking.Cooking.cookOff()) builder.trestle(host, crowd, dance)
             return builder.build(true, dance, crowd, band, host, square = (rim + 12).roundToInt(), around = ring + 3.0)
         }
 
@@ -145,6 +149,7 @@ class FestivalPlan(
         val targets = ArrayList<BlockPos>()
         val riddles = ArrayList<BlockPos>()
         val fireworks = ArrayList<Vec3>()
+        val trestle = ArrayList<BlockPos>()
         private val used = HashSet<Long>()
 
         private fun add(pos: BlockPos, state: BlockState, data: OrnamentData? = null, solid: Boolean = true, group: Int = -1): Boolean {
@@ -400,6 +405,42 @@ class FestivalPlan(
             }
         }
 
+        /**
+         * Sheafmoot's trestle for the Harvest Table (Hearthcraft Part L): up to [TRESTLE] cells on the show bench's arc beyond its
+         * two bales, each a top oak slab with a Plate on it, by the bench's own tests (ground, [free], clear of [taken]), and clear
+         * of every place someone stands there: the [crowd]'s, the second row behind it (1.3 blocks out from each, where the
+         * festival puts anyone more and a full ring's dancers: FestivalSite.watchSpots) and the [dance]'s ring at its own
+         * height. A capital's only, so the village pedlar's stand (VillageFeast.cartSpot) is never near one. None if there's
+         * no room, and then the table simply has no plates.
+         */
+        fun trestle(host: Spot, crowd: List<Spot>, dance: FestivalDance?) {
+            val a = atan2(host.z - cz, host.x - cx)
+            val r = max(1.0, hypot(host.x - cx, host.z - cz))
+            val standing = crowd.flatMap { s ->
+                val d = hypot(s.x - cx, s.z - cz).coerceAtLeast(0.01)
+                listOf(s.pos, Vec3(s.x + (s.x - cx) / d * 1.3, s.y, s.z + (s.z - cz) / d * 1.3))
+            }
+            for (k in 3..8) {
+                if (trestle.size >= TRESTLE) break
+                val side = a + k * 1.1 / r
+                val x = floor(cx + cos(side) * r).toInt()
+                val z = floor(cz + sin(side) * r).toInt()
+                val y = survey.groundY(x, z, floor, 1) ?: continue
+                val at = BlockPos(x, y, z)
+                val top = at.above()
+                if (!free(at) || !free(top) || taken.any { hypot(it.x - (x + 0.5), it.z - (z + 0.5)) < 0.9 }) continue
+                if (standing.any { hypot(it.x - (x + 0.5), it.z - (z + 0.5)) < 1.1 }) continue
+                if (dance != null && y <= floor) {
+                    val out = hypot(x + 0.5 - cx, z + 0.5 - cz)
+                    if (out > dance.radius - dance.reach - 1.1 && out < dance.radius + dance.reach + 1.1) continue
+                }
+                add(at, FestivalTrimBlock.state(TrimLook.TRESTLE))
+                add(top, io.github.vaspyyy.guildmark.cooking.CookRegistry.PLATE.get().defaultBlockState(), solid = false)
+                trestle.add(top)
+                taken.add(Vec3(x + 0.5, floor.toDouble(), z + 0.5))
+            }
+        }
+
         fun build(capital: Boolean, dance: FestivalDance?, crowd: List<Spot>, band: List<Spot>, host: Spot, square: Int, around: Double): FestivalPlan {
             // Somewhere for the rockets even with no posts up
             if (fireworks.isEmpty()) for (q in 0 until 4) {
@@ -410,11 +451,14 @@ class FestivalPlan(
             for (p in pieces) reach = max(reach, ceil(hypot(p.pos.x + 0.5 - cx, p.pos.z + 0.5 - cz)).toInt() + 1)
             return FestivalPlan(
                 kind, capital, Vec3(cx, floor.toDouble(), cz), dance, crowd, band, host, pieces, crown, posts, ribbons, targets, riddles, fireworks, square, reach,
+                trestle,
             )
         }
 
         companion object {
             private val DIAGONALS = listOf(1 to 1, -1 to 1, -1 to -1, 1 to -1)
+            /** The most plates on the Harvest Table's trestle. */
+            private const val TRESTLE = 6
         }
     }
 
