@@ -480,12 +480,15 @@ internal object ChildWatch {
 }
 
 /**
- * A walk along [way] for the bringing in at first light (the guard and the child): each point in turn at a walking pace, and [done] when the
- * last is reached, when the way will not go, or after [most] ticks. Unlike [TaleLeave] it is not cut short when nobody is near to watch (the
- * walker itself puts them there when no one can see either end of a leg), so a player waiting at the gate sees them come in. A player's word
- * comes first: they stop for it, and the watch takes the walk up again from where they stand.
+ * A walk along [way] for the bringing in at first light (the guard and the child) and the family setting off from the camp (the cart): each
+ * point in turn at a walking pace, with [overlay] played over the walk (the shafts of a cart in the hands, a bundle in the arms), and [done]
+ * when the last is reached, when the way will not go, or after [most] ticks. Unlike [TaleLeave] it is not cut short when nobody is near to
+ * watch (the walker itself puts them there when no one can see either end of a leg), so a player waiting at the gate sees them come in. A
+ * player's word comes first: they stop for it, and the watch takes the walk up again from where they stand.
  */
-internal class RoadIn(private val way: List<BlockPos>, private val most: Int, private val done: (Townsperson) -> Unit) : Director {
+internal class RoadIn(
+    private val way: List<BlockPos>, private val most: Int, private val overlay: Activity = Activity.NONE, private val done: (Townsperson) -> Unit,
+) : Director {
     private var i = 0
     private var age = 0
     private var walker: Walker? = null
@@ -505,7 +508,11 @@ internal class RoadIn(private val way: List<BlockPos>, private val most: Int, pr
                 walker = null
             }
             Walker.State.FAILED -> end(p)
-            Walker.State.WALKING -> if (p.activity != Activity.NONE && !p.activity.overlay && (p.activity.loop || p.actDone)) p.act(Activity.NONE)
+            Walker.State.WALKING -> when {
+                // Pulling a cart (or carrying) as they go: the overlay is played over the walk
+                overlay != Activity.NONE -> if (p.activity != overlay && (p.activity.loop || p.actDone)) p.act(overlay)
+                p.activity != Activity.NONE && !p.activity.overlay && (p.activity.loop || p.actDone) -> p.act(Activity.NONE)
+            }
         }
     }
 

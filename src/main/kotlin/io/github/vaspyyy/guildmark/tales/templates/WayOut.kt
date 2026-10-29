@@ -15,7 +15,7 @@ import kotlin.math.sqrt
 
 /**
  * The town's gates and the road beyond them, for the two tales that are set on the road out (the child, 8.4, and the cart, 8.8): where
- * a gate's front is, which gate a place on the road belongs to, a spot a seeded draw puts 50 or 90 blocks along a road from the town, and the
+ * a gate's front is, which gate a place on the road belongs to, a spot a seeded draw puts some way along a road from the town, and the
  * word for the side a gate is on. Everything is worked out from the plan and the road network alone, so a seed can point at once and a
  * place far from any player is still a place; nothing here loads a chunk or sets a block.
  */
@@ -52,9 +52,10 @@ internal object WayOut {
 
     /**
      * A point along one of the town's country roads, [min] to [max] blocks from where the town's way out meets the road (counted along the
-     * road), by [random]; null if the town has no road out, or none that reaches [min] blocks.
+     * road), by [random]; null if the town has no road out, or none that reaches [min] blocks. With [gate], only a road that leaves by
+     * that gate (the cart's family went out by the gate nearest their door).
      */
-    fun spot(level: ServerLevel, here: Scenes.Here, random: Random, min: Int, max: Int): Spot? {
+    fun spot(level: ServerLevel, here: Scenes.Here, random: Random, min: Int, max: Int, gate: Dir? = null): Spot? {
         val center = here.capital.center
         val roads = RoadNetwork.get(level).roadsFrom(center).filter { it.points.size >= 2 }.sortedBy { it.id }
         if (roads.isEmpty()) return null
@@ -64,6 +65,7 @@ internal object WayOut {
             val road = roads[(first + k) % roads.size]
             val points = road.pointsFrom(center)
             val start = Capitals.wayOut(here.capital, road.otherEnd(center)).lastOrNull() ?: points.first()
+            if (gate != null && gateNear(here.places, start) != gate) continue
             val i0 = points.indices.minByOrNull { points[it].distSqr(start) } ?: continue
             val want = min + random.nextInt(maxOf(1, max - min + 1))
             var walked = 0.0
