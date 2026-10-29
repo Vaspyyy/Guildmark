@@ -133,6 +133,35 @@ internal object WayOut {
         return out
     }
 
+    /**
+     * The road on from [from], away from the town: the waypoints of the country road nearest it beyond the one nearest [from], [len] blocks of
+     * them or to the road's end (the cart's family going on to the next town). Empty if the town has no road, or [from] is at its far end.
+     */
+    fun outward(level: ServerLevel, here: Scenes.Here, from: BlockPos, len: Int): List<BlockPos> {
+        val center = here.capital.center
+        var best: List<BlockPos> = listOf()
+        var bestD = Double.MAX_VALUE
+        for (road in RoadNetwork.get(level).roadsFrom(center)) {
+            val points = road.pointsFrom(center)
+            val i = points.indices.minByOrNull { points[it].distSqr(from) } ?: continue
+            val d = points[i].distSqr(from).toDouble()
+            if (d < bestD) {
+                bestD = d
+                best = points.subList(minOf(i + 1, points.size), points.size)
+            }
+        }
+        val out = ArrayList<BlockPos>()
+        var walked = 0.0
+        var last = from
+        for (p in best) {
+            out += p
+            walked += flat(last, p)
+            last = p
+            if (walked >= len) break
+        }
+        return out
+    }
+
     /** Blocks from a gate's front within which the road home is walked no further. */
     private const val GATE_NEAR = 12.0
 

@@ -203,10 +203,10 @@ object Tales : Comings.Listener {
     }
 
     /** From `Guildmark.onLivingDeath`: [killer] (or their companion) killed [victim]; the handcart's camp counts it (T2). */
-    fun onKill(level: ServerLevel, victim: LivingEntity, killer: Player) {}
+    fun onKill(level: ServerLevel, victim: LivingEntity, killer: Player) = TalesT2a.killed(level, victim, killer)
 
     /** From `Wardfires.kindle`: [player] kindled the Wardfire at [pos]; the handcart's camp and the mine's fire hear it (T2, T5). */
-    fun kindled(level: ServerLevel, pos: BlockPos, player: ServerPlayer) {}
+    fun kindled(level: ServerLevel, pos: BlockPos, player: ServerPlayer) = TalesT2a.kindled(level, pos, player)
 
     // ---- What a tale hears, placed by the tale that needs it ----
 
