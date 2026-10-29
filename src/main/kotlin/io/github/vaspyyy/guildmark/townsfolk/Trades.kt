@@ -710,6 +710,11 @@ object Hands {
          * their day has the site's working hours in it.
          */
         val builders: Set<Int> = setOf(),
+        /**
+         * The residents who go out to a capital's wagon at the village's road end on the day, to load it and to meet it
+         * ([io.github.vaspyyy.guildmark.village.live.links.VillageWagons.hands]: the carters, and a citizen with them where there is one carter).
+         */
+        val wagon: Set<Int> = setOf(),
     )
 
     /** How often (in game ticks) a capital's crew is worked out again. */

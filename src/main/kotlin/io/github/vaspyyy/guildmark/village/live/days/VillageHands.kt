@@ -28,6 +28,8 @@ import net.minecraft.server.level.ServerLevel
  *   rest day, which wins.
  * - The keepers of the lamps are [VillageLamps]': the residents its rounds are saved with, who live still.
  * - The builders lent to the village's site, while it has one going up, are [VillageCrew]'s: citizens with none of the duties above.
+ * - The helpers at the capital's wagon, while the village is linked to one, are [io.github.vaspyyy.guildmark.village.live.links.VillageWagons.hands]':
+ *   the carters, and one citizen more with no other duty where there is only one carter (no builder is lent from them).
  */
 object VillageHands {
     /** A village of this many folk or more has two carters. */
@@ -47,12 +49,15 @@ object VillageHands {
         val lamps = VillageLamps.keepers(level, centre)
         // The builders lent to the village's site are those with no other duty today
         val taken = carters + keepers.keys + lamps + setOfNotNull(bellman, poster)
+        // The helpers at the capital's wagon, while one calls (V7): the carters, and one more where there is only one
+        val wagon = io.github.vaspyyy.guildmark.village.live.links.VillageWagons.hands(level, centre, living, carters, taken)
         return Hands.Crew(
             carters, mapOf(), null, now, setOf(), day,
             keepers = keepers,
             bellman = bellman, poster = poster, night = night, market = market,
             lamps = lamps,
-            builders = VillageCrew.lent(level, places, day, taken),
+            builders = VillageCrew.lent(level, places, day, taken + wagon),
+            wagon = wagon,
         )
     }
 
