@@ -10,8 +10,11 @@ import io.github.vaspyyy.guildmark.block.MarketBoardBlockEntity
 import io.github.vaspyyy.guildmark.economy.Conditions
 import io.github.vaspyyy.guildmark.economy.MarketBoards
 import io.github.vaspyyy.guildmark.economy.Markets
+import io.github.vaspyyy.guildmark.economy.VillageMarkets
 import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
 import io.github.vaspyyy.guildmark.village.VillageNames
+import io.github.vaspyyy.guildmark.village.live.VillageRec
+import io.github.vaspyyy.guildmark.village.live.Villages
 import net.minecraft.ChatFormatting
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands
@@ -28,6 +31,8 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent
  * spending's share, and what the board's medallion shows; `set <times> [days]` puts the times there now, held for so many closes (3 unless you say);
  * `reason <kind> <points> <days>` notes a reason by hand; `step` works the day's move out now; `clear` forgets the
  * capital's record but for the day it last closed.
+ *
+ * Run standing in a village, each is the village's (its bell's books, living-world/villages/design.md 8.1), with Village Fortunes on.
  */
 object FortuneCommand {
     /** How many closes `fortune set` holds the times through, unless told. */
@@ -79,19 +84,18 @@ object FortuneCommand {
 
     // ---- The capital you stand in ----
 
-    private class Here(val capital: CapitalPiece, val entry: Markets.Entry) {
+    private class Here(val capital: CapitalPiece?, val entry: Markets.Entry, val village: VillageRec? = null) {
         val key: Long get() = entry.market.capital
-        val name: String get() = VillageNames.of(capital.boardAnchor)
+        val name: String get() = capital?.let { VillageNames.of(it.boardAnchor) } ?: village?.name.orEmpty()
     }
 
-    /** The capital [context]'s player stands in, with its market; null (and why, said) if there isn't one. */
+    /** The capital (or else the village) [context]'s player stands in, with its market; null (and why, said) if there isn't one. */
     private fun here(context: CommandContext<CommandSourceStack>): Here? {
         val source = context.source
         val level = source.level
         val capital = Capitals.covering(level, source.playerOrException.blockPosition())
         if (capital == null) {
-            fail(source, "You're not in a capital.")
-            return null
+            return village(source)
         }
         val entry = Markets.of(level, capital)
         if (entry == null) {
@@ -99,6 +103,26 @@ object FortuneCommand {
             return null
         }
         return Here(capital, entry)
+    }
+
+    /** The village [source]'s player stands in, with its market, while the villages' times are worked out; null (and why, said) if not. */
+    private fun village(source: CommandSourceStack): Here? {
+        val level = source.level
+        val rec = Villages.at(level, source.playerOrException.blockPosition())
+        if (rec == null) {
+            fail(source, "You're not in a capital or a village.")
+            return null
+        }
+        if (!VillageMarkets.fortunes()) {
+            fail(source, "A village's times aren't worked out just now (settings: Village Fortunes, with Village Markets, Living Villages and Capital Markets): ${rec.name}'s read steady.")
+            return null
+        }
+        val entry = VillageMarkets.find(level, rec.key)
+        if (entry == null) {
+            fail(source, "${rec.name} has no market open yet, so no fortunes to weigh: /guildmark market, standing in it, opens it once its census is done.")
+            return null
+        }
+        return Here(null, entry, rec)
     }
 
     /** Why the fortunes aren't being worked out, or null if they are. */
@@ -135,7 +159,7 @@ object FortuneCommand {
         if (town.reasons.isEmpty()) say(source, grey("Nothing weighed on it at its last close."))
         else {
             say(source, label("Reasons at the last close, biggest first:"))
-            for (r in town.reasons) say(source, reason(r, today))
+            for (r in town.reasons) say(source, reason(r, today, village = here.village != null))
         }
         // The notes that still count at the next close: each counts at the closes after the day it was made, through its last
         val notes = town.notes.filter { it.until > town.closed }
@@ -165,18 +189,20 @@ object FortuneCommand {
      */
     private fun medallion(context: CommandContext<CommandSourceStack>, here: Here): String? {
         val level = context.source.level
-        val board = CityPlaces.of(level, here.capital)?.let { MarketBoards.board(level, it) } ?: return null
+        // A village's market board has no medallion
+        val capital = here.capital ?: return null
+        val board = CityPlaces.of(level, capital)?.let { MarketBoards.board(level, it) } ?: return null
         val turned = if (board.turned > MarketBoardBlockEntity.LONG_AGO) "turned %.0f s ago in sight of someone".format((level.gameTime - board.turned) / 20.0) else "found turned (nobody saw it go)"
         val pos = board.blockPos
         return "${board.times}, $turned; the board at ${pos.x} ${pos.y} ${pos.z}"
     }
 
-    /** A reason's line: its points, kind, words and how long it has. */
-    private fun reason(r: Reason, today: Long): MutableComponent {
+    /** A reason's line: its points, kind, words (a [village]'s own) and how long it has. */
+    private fun reason(r: Reason, today: Long, village: Boolean = false): MutableComponent {
         val colour = if (r.points < 0) ChatFormatting.RED else ChatFormatting.GREEN
         return line().append(Component.literal("  %+d ".format(r.points)).withStyle(colour))
             .append(label(r.kind + " "))
-            .append(FortuneReasons.text(r).withStyle(ChatFormatting.WHITE))
+            .append((if (village) FortuneReasons.villageText(r) else FortuneReasons.text(r)).withStyle(ChatFormatting.WHITE))
             .append(grey("  (" + FortuneReasons.lasts(r, today) + (if (r.works >= 0) ", works #${r.works}" else "") + ")"))
     }
 
@@ -188,7 +214,7 @@ object FortuneCommand {
         val from = Fortunes.times(source.level, here.key)
         val through = Fortunes.set(source.level, here.key, to, days)
         val held = if (through >= 0) "held there through day $through (the next $days closes)" else "not held: the next close moves them a step toward the score"
-        val moved = if (from != to) "The medallion on the market board turns within a few seconds, and the crier cries it at the next noon with a FORTUNE slip." else "They were ${to.id} already."
+        val moved = if (from != to) (if (here.village != null) VILLAGE_MOVED else "The medallion on the market board turns within a few seconds, and the crier cries it at the next noon with a FORTUNE slip.") else "They were ${to.id} already."
         return say(source, plain("The times in ${here.name} are ${to.id} now, $held. $moved"))
     }
 
@@ -228,6 +254,10 @@ object FortuneCommand {
     }
 
     // ---- Text ----
+
+    /** What follows a village's times moving by `fortune set`. */
+    private const val VILLAGE_MOVED = "Its folk go by them at once: as many of them out on the green of an evening as the times make it, and spending " +
+        "as they go; two market days of good times dress the green, and two after they fall take it down."
 
     private fun clock(h: Int): String = "%02d:00".format(h)
 
