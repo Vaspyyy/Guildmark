@@ -207,7 +207,7 @@ internal object HouseLife {
     // ---- The scenes ----
 
     /** The morning's bell: out to the post, a pull on the rope, and the scribe watches it ring. */
-    private fun bellScene(level: ServerLevel, w: WorksRec, site: TownWorksSite, scribe: Townsperson, then: (() -> Unit)? = null) {
+    internal fun bellScene(level: ServerLevel, w: WorksRec, site: TownWorksSite, scribe: Townsperson, then: (() -> Unit)? = null) {
         val stand = StoreLife.at(site, CountingHouse.RINGER)
         val rope = StoreLife.centre(site, CountingHouse.BELL_AT, ROPE_UP)
         val bell = StoreLife.centre(site, CountingHouse.BELL_AT, 0.6)
@@ -253,7 +253,7 @@ internal object HouseLife {
      * The day's sums: the scribe at the high desk, the beads pushed to the sum now ([changed]: else nothing to move, and they only write),
      * the sum written in the ledger, and a word of it if a player is by to hear.
      */
-    private fun sumsScene(level: ServerLevel, w: WorksRec, site: TownWorksSite, scribe: Townsperson, changed: Boolean, then: (() -> Unit)? = null) {
+    internal fun sumsScene(level: ServerLevel, w: WorksRec, site: TownWorksSite, scribe: Townsperson, changed: Boolean, then: (() -> Unit)? = null) {
         val stand = StoreLife.at(site, CountingHouse.SCRIBE)
         val ledger = StoreLife.centre(site, CountingHouse.LEDGER_AT, 0.4)
         val moves = ArrayList<Move>()

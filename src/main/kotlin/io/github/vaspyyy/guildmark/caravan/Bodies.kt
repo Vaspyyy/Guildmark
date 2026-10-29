@@ -265,7 +265,7 @@ internal object Bodies {
 
     /** Whether [e] (a wagon, a horse, a wreck and its lots, a loot pile) is one of the bodies out now; if not, it goes. */
     fun owns(e: Entity): Boolean = when (e) {
-        is Wagon, is DraughtHorse -> shows.values.any { it.owns(e) } || io.github.vaspyyy.guildmark.trade.carry.LedShow.owns(e)
+        is Wagon, is DraughtHorse -> shows.values.any { it.owns(e) } || io.github.vaspyyy.guildmark.trade.carry.LedShow.owns(e) || io.github.vaspyyy.guildmark.trade.YardShow.owns(e)
         is Wreck, is WreckLot, is LootPile -> WreckShows.owns(e)
         else -> false
     }
