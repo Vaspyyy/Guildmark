@@ -8,6 +8,7 @@ import io.github.vaspyyy.guildmark.economy.works.WorksData
 import io.github.vaspyyy.guildmark.economy.works.WorksKind
 import io.github.vaspyyy.guildmark.economy.works.WorksRec
 import io.github.vaspyyy.guildmark.economy.works.build.BuildRec
+import io.github.vaspyyy.guildmark.economy.works.build.CountingHouse
 import io.github.vaspyyy.guildmark.economy.works.build.MasterBuilder
 import io.github.vaspyyy.guildmark.economy.works.build.Pin
 import io.github.vaspyyy.guildmark.economy.works.build.Store
@@ -34,6 +35,7 @@ import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.DoorBlock
+import net.minecraft.world.level.block.FenceGateBlock
 import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import net.neoforged.neoforge.common.NeoForge
@@ -55,21 +57,23 @@ import kotlin.math.ceil
  *   settles as the weights go on, `trade.scale_settle`) and writes it in the book (SCRIBE); and whenever goods are bonded or taken back
  *   the hoist lifts a crate in or lets one down ([hoist]), the loft's doors opening for it.
  *
+ * A Counting House's day is [HouseLife]'s, on the same helpers (its round of the door, the gate and the lamps is [round]'s).
+ *
  * Nothing here is saved: the scenes are the moment's, and what they leave is in the blocks.
  */
 internal object StoreLife {
     /** The hours the doors stand open; the lamps are lit from [LIT_FROM] to [LIT_TO]. */
-    private const val OPEN_FROM = 7.0
-    private const val OPEN_TO = 17.5
-    private const val LIT_FROM = 17.5
-    private const val LIT_TO = 6.5
+    const val OPEN_FROM = 7.0
+    const val OPEN_TO = 17.5
+    const val LIT_FROM = 17.5
+    const val LIT_TO = 6.5
 
     /** How near the Store the clerk must be to be sent on its errands, and how near a player for a scene to be played at all. */
     private const val SEEK = 48.0
     private const val SEEN = 48.0
 
     /** Ticks a first use waits to be seen (a game day at most; a third of one if the clerk has not come yet) before it is taken as done. */
-    private const val UNSEEN_FIRST = 24000L
+    const val UNSEEN_FIRST = 24000L
 
     /** Fewest ticks between two of the clerk's own weighings, and how many more at most. */
     private const val WEIGH_GAP = 2400
@@ -81,7 +85,7 @@ internal object StoreLife {
     /** Sacks and crates as the clerk and the hoist carry them. */
     private val SACK: ItemStack get() = ItemStack(Items.WHEAT)
     private val CRATE: ItemStack get() = ItemStack(Items.BARREL)
-    private val KEY: ItemStack get() = ItemStack(Items.TRIAL_KEY)
+    val KEY: ItemStack get() = ItemStack(Items.TRIAL_KEY)
 
     /** The clerk's errand at each works (one at a time), what the hoist has still to lift, when each clerk next weighs, and until when the loft's doors stand open. */
     private class Errand(val p: Townsperson, val aside: Aside)
@@ -89,6 +93,9 @@ internal object StoreLife {
     private class Lift(val stack: ItemStack, val down: Boolean)
 
     private val errands = HashMap<Int, Errand>()
+
+    /** Whether works [id]'s clerk or scribe is about an errand of this. */
+    fun busy(id: Int): Boolean = errands[id] != null
     private val lifts = HashMap<Int, ArrayDeque<Lift>>()
     private val weighs = HashMap<Int, Long>()
     private val loftUntil = HashMap<Int, Long>()
@@ -106,6 +113,7 @@ internal object StoreLife {
     private fun reset() {
         for (e in errands.values) e.aside.end(e.p, drop = false)
         errands.clear()
+        HouseLife.reset()
         lifts.clear()
         weighs.clear()
         loftUntil.clear()
@@ -119,6 +127,7 @@ internal object StoreLife {
         errands[w.id]?.let { if (it.aside.over) errands.remove(w.id) }
         when (w.kind) {
             WorksKind.STORE -> store(level, w, rec, site, hour, near)
+            WorksKind.COUNTING_HOUSE -> HouseLife.second(level, w, rec, site, hour, near)
             else -> {}
         }
     }
@@ -141,6 +150,7 @@ internal object StoreLife {
                 if (!near || clerk == null || hour < 6.0 || hour >= 19.0) return
                 firstStore(level, w, site, d, clerk, done)
             }
+            WorksKind.COUNTING_HOUSE -> HouseLife.firstUse(level, w, rec, site, hour, near, by, clerk, done)
             else -> done()
         }
     }
@@ -150,6 +160,8 @@ internal object StoreLife {
         val w = WorksData.get(level).find(capital, WorksKind.STORE, owner = owner)?.id ?: return
         val q = lifts.getOrPut(w) { ArrayDeque() }
         if (q.size < 4) q.addLast(Lift(stack.copyWithCount(1), down))
+        // What the Store holds has changed: a Counting House of the owner's beside it makes its sums again
+        HouseLife.recount(level, capital, owner)
     }
 
     /** [owner]'s Store at [capital]'s clerk weighs a sack now, if they're free to (goods just bonded). */
@@ -185,7 +197,7 @@ internal object StoreLife {
         }
         val open = hour >= OPEN_FROM && hour < OPEN_TO
         val lit = hour >= LIT_FROM || hour < LIT_TO
-        if (round(level, w, site, open, lit, clerk?.takeIf { near }, near)) return
+        if (round(level, w, site, FRONT, open, lit, clerk?.takeIf { near }, near)) return
         if (!open || !near || clerk == null) return
         val due = weighs.getOrPut(w.id) { now + WEIGH_GAP / 2 + level.random.nextInt(WEIGH_MORE) }
         if (now < due) return
@@ -194,39 +206,61 @@ internal object StoreLife {
     }
 
     /**
-     * The Store's door, board and lamps set to [open] and [lit]: by the clerk ([clerk], when free and seen), else at once (where a player is
-     * [near], only once the clerk has been waited for a while: they may be on their way). True if anything was off.
+     * The way into a Store or a House ([front]): its door, the yard's gates, the lamps by the way in, and the open and shut board (the
+     * Store's), each a pin of the drawing.
      */
-    private fun round(level: ServerLevel, w: WorksRec, site: TownWorksSite, open: Boolean, lit: Boolean, clerk: Townsperson?, near: Boolean): Boolean {
-        val door = at(site, Store.FRONT_DOOR)
+    class Front(val door: Pin, val gates: List<Pin>, val lamps: List<Pin>, val doorBoard: Pin?)
+
+    private val FRONT = Front(Store.FRONT_DOOR, listOf(), Store.LAMPS, Store.DOOR_BOARD_AT)
+
+    /**
+     * A Store's or a House's door, gates, board and lamps ([front]) set to [open] and [lit]: by its clerk or scribe ([clerk], when free and
+     * seen), else at once (where a player is [near], only once the clerk has been waited for a while: they may be on their way). True if
+     * anything was off.
+     */
+    fun round(level: ServerLevel, w: WorksRec, site: TownWorksSite, front: Front, open: Boolean, lit: Boolean, clerk: Townsperson?, near: Boolean): Boolean {
+        val door = at(site, front.door)
         val doorWrong = level.isLoaded(door) && level.getBlockState(door).let { it.block is DoorBlock && it.getValue(DoorBlock.OPEN) != open }
-        val boardWrong = doorBoard(level, site)?.let { it.open != open } == true
-        val lamps = Store.LAMPS.map { at(site, it) }.filter { lampWrong(level, it, lit) }
-        if (!doorWrong && !boardWrong && lamps.isEmpty()) {
+        val boardWrong = doorBoard(level, site, front)?.let { it.open != open } == true
+        val gates = front.gates.filter { gateWrong(level, at(site, it), open) }
+        val lamps = front.lamps.map { at(site, it) }.filter { lampWrong(level, it, lit) }
+        if (!doorWrong && !boardWrong && gates.isEmpty() && lamps.isEmpty()) {
             waiting.remove(w.id)
             return false
         }
         if (clerk == null) {
             if (near && level.gameTime - waiting.getOrPut(w.id) { level.gameTime } < CLERK_WAIT) return true
             waiting.remove(w.id)
-            setDoor(level, site, open, sound = near)
-            doorBoard(level, site)?.turn(open, show = true)
+            swing(level, door, open, sound = near)
+            doorBoard(level, site, front)?.turn(open, show = true)
+            for (g in gates) gate(level, at(site, g), open, sound = near)
             for (pos in lamps) StreetLampBlock.set(level, pos, lit)
             return true
         }
         waiting.remove(w.id)
         val moves = ArrayList<Move>()
         val doorMoves = if (doorWrong || boardWrong) {
-            val inside = at(site, Pin(Store.FRONT_DOOR.x, 0, Store.FRONT_DOOR.z + 1))
-            val face = centre(site, Store.FRONT_DOOR, 1.0)
+            val inside = at(site, Pin(front.door.x, 0, front.door.z + 1))
+            val face = centre(site, front.door, 1.0)
             listOf(
                 GoTo({ inside }, Jobs.WALK, 0.8, Activity.NONE, 600),
                 Turn({ face }),
                 Handle(Activity.BOLT_DOOR, face, BOLT_MARK) {
-                    setDoor(level, site, open, sound = true)
-                    doorBoard(level, site)?.turn(open, show = true)
+                    swing(level, door, open, sound = true)
+                    doorBoard(level, site, front)?.turn(open, show = true)
                     play(level, door, "trade.store_key", 0.8f)
                 },
+            )
+        } else listOf()
+        // The yard's gates (a House's), lifted open from inside the yard or swung to and barred
+        val gateMoves = if (gates.isNotEmpty()) {
+            val first = gates.first()
+            val inside = at(site, Pin(first.x, 0, first.z + 1))
+            val face = centre(site, first, 0.6)
+            listOf(
+                GoTo({ inside }, Jobs.WALK, 0.8, Activity.NONE, 600),
+                Turn({ face }),
+                Handle(Activity.BOLT_DOOR, face, BOLT_MARK) { for (g in gates) gate(level, at(site, g), open, sound = g === first) },
             )
         } else listOf()
         val lampMoves = lamps.flatMap { pos ->
@@ -238,20 +272,39 @@ internal object StoreLife {
                 Handle(Activity.LIGHT_LAMP, flame, LAMP_MARK) { if (lit) StreetLampBlock.light(level, pos, show = true) else StreetLampBlock.putOut(level, pos, show = true) },
             )
         }
-        // In the morning the door first, from inside, and then out to the lamps; at dusk the lamps, then in and the door bolted
+        // In the morning the door first, from inside, then the gates and out to the lamps; at dusk the lamps, the gates, then in and the door bolted
         if (open) {
             moves.addAll(doorMoves)
+            moves.addAll(gateMoves)
             moves.addAll(lampMoves)
         } else {
             moves.addAll(lampMoves)
+            moves.addAll(gateMoves)
             moves.addAll(doorMoves)
         }
-        send(w, clerk, moves, 1800) {
-            setDoor(level, site, open, sound = false)
-            doorBoard(level, site)?.turn(open, show = true)
+        send(w, clerk, moves, 2400) {
+            swing(level, door, open, sound = false)
+            doorBoard(level, site, front)?.turn(open, show = true)
+            for (g in gates) gate(level, at(site, g), open, sound = false)
             for (pos in lamps) StreetLampBlock.set(level, pos, lit)
         }
         return true
+    }
+
+    private fun gateWrong(level: ServerLevel, pos: BlockPos, open: Boolean): Boolean {
+        if (!level.isLoaded(pos)) return false
+        val state = level.getBlockState(pos)
+        return state.block is FenceGateBlock && state.getValue(FenceGateBlock.OPEN) != open
+    }
+
+    /** A yard gate's leaf open or shut ([sound]: as a gate sounds when it swings). */
+    fun gate(level: ServerLevel, pos: BlockPos, open: Boolean, sound: Boolean) {
+        if (!level.isLoaded(pos)) return
+        val state = level.getBlockState(pos)
+        val block = state.block as? FenceGateBlock ?: return
+        if (state.getValue(FenceGateBlock.OPEN) == open) return
+        level.setBlock(pos, state.setValue(FenceGateBlock.OPEN, open), Block.UPDATE_CLIENTS or Block.UPDATE_IMMEDIATE)
+        if (sound) level.playSound(null, pos, if (open) block.openSound else block.closeSound, SoundSource.BLOCKS, 1f, 0.9f + level.random.nextFloat() * 0.1f)
     }
 
     private fun lampWrong(level: ServerLevel, pos: BlockPos, lit: Boolean): Boolean {
@@ -264,6 +317,9 @@ internal object StoreLife {
     private fun setDoor(level: ServerLevel, site: TownWorksSite, open: Boolean, sound: Boolean) {
         swing(level, at(site, Store.FRONT_DOOR), open, sound)
     }
+
+    /** A Store's or House's door at [pos] open or shut ([sound]: as the door sounds when it swings). */
+    fun door(level: ServerLevel, pos: BlockPos, open: Boolean, sound: Boolean) = swing(level, pos, open, sound)
 
     /** The loft's loading doors open or shut, for the hoist. */
     private fun loft(level: ServerLevel, site: TownWorksSite, open: Boolean) {
@@ -351,6 +407,30 @@ internal object StoreLife {
         ) { scale()?.clear() }
     }
 
+    // ---- For the testing command ----
+
+    /** The scenes `trade store scene` can ask a Store's clerk for now (a House's are [HouseLife.SCENES]). */
+    val SCENES = listOf("weigh", "hoist", "lower")
+
+    /** [w]'s clerk plays [scene] now (the hoist's lifts go as the hoist next can); a reason it can't, else null. */
+    fun scene(level: ServerLevel, w: WorksRec, site: TownWorksSite, scene: String): String? {
+        if (site.drawing !is Store) return "That works is no Carriers' Store."
+        when (scene) {
+            "hoist", "lower" -> {
+                val q = lifts.getOrPut(w.id) { ArrayDeque() }
+                if (q.size < 4) q.addLast(Lift(if (scene == "hoist") CRATE else SACK, scene == "lower"))
+                return null
+            }
+            "weigh" -> {
+                if (errands[w.id] != null) return "The clerk is busy with something else; try again in a moment."
+                val clerk = clerk(level, w, site) ?: return "The Store's clerk isn't about (not come yet, or away)."
+                weighScene(level, w, site, clerk)
+                return null
+            }
+        }
+        return "No such scene at a Store: ${SCENES.joinToString(", ")}."
+    }
+
     // ---- The first use ----
 
     private fun firstStore(level: ServerLevel, w: WorksRec, site: TownWorksSite, d: Store, clerk: Townsperson, done: () -> Unit) {
@@ -367,16 +447,7 @@ internal object StoreLife {
         val travel = 16f * drop + WorksArt.HOOK_TOP - WorksArt.HOOK_REST
         val hauling = ceil(WorksArt.ticksFor(travel)).toInt()
         val whole = hauling + WorksArt.HOIST_LAND.toInt() + ceil(travel / WorksArt.HOIST_LOWER).toInt()
-        val moves = ArrayList<Move>()
-        // The key from the master builder, if he is still about; else from the clerk's own pocket
-        val master = level.getEntitiesOfClass(Townsperson::class.java, AABB(door).inflate(24.0, 8.0, 24.0)) {
-            it.isAlive && MasterBuilder.TAG in it.entityTags()
-        }.minByOrNull { it.distanceToSqr(Vec3.atCenterOf(door)) }
-        if (master != null) {
-            moves.add(GoTo({ master.blockPosition() }, Jobs.WALK * 1.15, 1.8, Activity.NONE, 400))
-            moves.add(Turn({ master.eyePosition }))
-            moves.add(Handle(Activity.RECEIVE, master.eyePosition, TAKEN) { it.carried = KEY })
-        } else moves.add(Now { it.carried = KEY })
+        val moves = ArrayList<Move>(keyMoves(level, door))
         moves.addAll(
             listOf(
                 Now { it.carried = KEY },
@@ -388,7 +459,7 @@ internal object StoreLife {
                 Now {
                     it.carried = ItemStack.EMPTY
                     setDoor(level, site, true, sound = true)
-                    doorBoard(level, site)?.turn(true, show = true)
+                    doorBoard(level, site, FRONT)?.turn(true, show = true)
                 },
                 // The first crate up into the loft, the clerk stood clear of its swing
                 GoTo({ stand }, Jobs.WALK, 0.6, Activity.NONE, 400),
@@ -414,7 +485,7 @@ internal object StoreLife {
         send(w, clerk, moves, 3600) {
             it.carried = ItemStack.EMPTY
             setDoor(level, site, true, sound = false)
-            doorBoard(level, site)?.turn(true, show = false)
+            doorBoard(level, site, FRONT)?.turn(true, show = false)
             board(level, w, site)?.let { b -> if (b.raised == 0L) b.raise(now = false) }
             done()
         }
@@ -422,8 +493,21 @@ internal object StoreLife {
 
     // ---- Helpers ----
 
+    /** The new keeper's first moves at a works just finished by [door]: the key from the master builder, if he is still about; else from their own pocket. */
+    fun keyMoves(level: ServerLevel, door: BlockPos): List<Move> {
+        val master = level.getEntitiesOfClass(Townsperson::class.java, AABB(door).inflate(24.0, 8.0, 24.0)) {
+            it.isAlive && MasterBuilder.TAG in it.entityTags()
+        }.minByOrNull { it.distanceToSqr(Vec3.atCenterOf(door)) }
+        if (master == null) return listOf(Now { it.carried = KEY })
+        return listOf(
+            GoTo({ master.blockPosition() }, Jobs.WALK * 1.15, 1.8, Activity.NONE, 400),
+            Turn({ master.eyePosition }),
+            Handle(Activity.RECEIVE, master.eyePosition, TAKEN) { it.carried = KEY },
+        )
+    }
+
     /** Gives [clerk] the part [moves] (at most [most] ticks); [after] runs as it ends, however it ends (set the world straight there). */
-    private fun send(w: WorksRec, clerk: Townsperson, moves: List<Move>, most: Int, after: (Townsperson) -> Unit) {
+    fun send(w: WorksRec, clerk: Townsperson, moves: List<Move>, most: Int, after: (Townsperson) -> Unit) {
         val aside = Aside(moves, reach = SEEN + 16.0, most = most)
         aside.onEnd = {
             clerk.carried = ItemStack.EMPTY
@@ -433,8 +517,8 @@ internal object StoreLife {
         errands[w.id] = Errand(clerk, aside)
     }
 
-    /** [w]'s clerk, if they are about the Store and free to be sent. */
-    private fun clerk(level: ServerLevel, w: WorksRec, site: TownWorksSite): Townsperson? {
+    /** [w]'s clerk (or a House's scribe), if they are about the works and free to be sent. */
+    fun clerk(level: ServerLevel, w: WorksRec, site: TownWorksSite): Townsperson? {
         if (w.hired < 0) return null
         val uuid = Residents.get(level)[w.hired]?.uuid ?: return null
         val p = level.getEntity(uuid) as? Townsperson ?: return null
@@ -443,28 +527,36 @@ internal object StoreLife {
     }
 
     /** [owner]'s name as [w]'s pledges knew them, or as they are on now. */
-    private fun name(level: ServerLevel, w: WorksRec, owner: java.util.UUID): String =
+    fun name(level: ServerLevel, w: WorksRec, owner: java.util.UUID): String =
         level.server.playerList.getPlayer(owner)?.name?.string ?: w.pledges.lastOrNull { it.player == owner }?.name ?: ""
 
-    private fun at(site: TownWorksSite, pin: Pin): BlockPos = site.frame.world(pin.x, site.drawing.y0 + pin.y, pin.z)
+    fun at(site: TownWorksSite, pin: Pin): BlockPos = site.frame.world(pin.x, site.drawing.y0 + pin.y, pin.z)
 
-    private fun centre(site: TownWorksSite, pin: Pin, up: Double): Vec3 = site.frame.centre(pin.x.toDouble(), site.drawing.y0 + pin.y + up, pin.z.toDouble())
+    fun centre(site: TownWorksSite, pin: Pin, up: Double): Vec3 = site.frame.centre(pin.x.toDouble(), site.drawing.y0 + pin.y + up, pin.z.toDouble())
 
-    private fun board(level: ServerLevel, w: WorksRec, site: TownWorksSite): NameBoardBlockEntity? {
+    fun board(level: ServerLevel, w: WorksRec, site: TownWorksSite): NameBoardBlockEntity? {
         val pin = when (w.kind) {
             WorksKind.STORE -> Store.NAME_BOARD_AT
+            WorksKind.COUNTING_HOUSE -> CountingHouse.NAME_BOARD_AT
             else -> return null
         }
         val pos = at(site, pin)
         return if (level.isLoaded(pos)) level.getBlockEntity(pos) as? NameBoardBlockEntity else null
     }
 
-    private fun doorBoard(level: ServerLevel, site: TownWorksSite): DoorBoardBlockEntity? {
-        val pos = at(site, Store.DOOR_BOARD_AT)
+    /** The block entity of the kind [T] at [pin] of [site], if its land is loaded. */
+    inline fun <reified T> fitting(level: ServerLevel, site: TownWorksSite, pin: Pin): T? {
+        val pos = at(site, pin)
+        return if (level.isLoaded(pos)) level.getBlockEntity(pos) as? T else null
+    }
+
+    private fun doorBoard(level: ServerLevel, site: TownWorksSite, front: Front): DoorBoardBlockEntity? {
+        val pin = front.doorBoard ?: return null
+        val pos = at(site, pin)
         return if (level.isLoaded(pos)) level.getBlockEntity(pos) as? DoorBoardBlockEntity else null
     }
 
-    private fun play(level: ServerLevel, pos: BlockPos, name: String, volume: Float) {
+    fun play(level: ServerLevel, pos: BlockPos, name: String, volume: Float) {
         level.playSound(null, pos, TradeSounds.get(name), SoundSource.NEUTRAL, volume, 0.95f + level.random.nextFloat() * 0.1f)
     }
 
@@ -478,18 +570,18 @@ internal object StoreLife {
     private val HELLO = listOf("trade_clerk_hello_0", "trade_clerk_hello_1", "trade_clerk_hello_2")
 
     /** The ticks into each clip where its moment falls: the key turned, the lamp caught, the sack set on and taken off the pan, set down, the key taken. */
-    private const val BOLT_MARK = 24
+    const val BOLT_MARK = 24
     private const val LAMP_MARK = 28
     private const val SET_ON = 18
     private const val PICKED = 8
     private const val SET_DOWN = 10
-    private const val TAKEN = 14
+    const val TAKEN = 14
 
     /** Ticks from the clip's end to the scale's last weight going on (the scale's clock: StoreScaleRenderer). */
     private const val BALANCED = 32
 
     /** [activity] played facing [at], with [what] done on its tick [mark] (a key turned, a sack set down). */
-    private class Handle(private val activity: Activity, private val at: Vec3, private val mark: Int, private val what: (Townsperson) -> Unit) : Move() {
+    class Handle(private val activity: Activity, private val at: Vec3, private val mark: Int, private val what: (Townsperson) -> Unit) : Move() {
         override fun start(p: Townsperson, a: Aside) {
             p.navigation.stop()
             p.act(activity)

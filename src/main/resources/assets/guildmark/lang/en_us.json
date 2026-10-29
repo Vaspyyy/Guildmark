@@ -8783,5 +8783,13 @@
   "message.guildmark.trade.store.unpaid": "The clerk of your Carriers' Store in %1$s is owed their wage (%2$s Marks a week): the Store takes no new goods until it's paid at the desk.",
   "message.guildmark.trade.store.taken_down": "Your Carriers' Store in %1$s is taken down. Its %2$s units of goods are kept for you: any market hall's merchant will hand them back.",
   "message.guildmark.trade.store.handed_back": "The goods from your Store in %1$s are back with you: %2$s units, the hauled ones with the days they had.",
-  "message.guildmark.trade.store.paid": "A week's wage paid to your clerk: %1$s Marks. Paid for %2$s days now."
+  "message.guildmark.trade.store.paid": "A week's wage paid to your clerk: %1$s Marks. Paid for %2$s days now.",
+  "block.guildmark.strongbox": "Strongbox",
+  "block.guildmark.strongbox_shut": "Strongbox",
+  "block.guildmark.counting_frame": "Counting Frame",
+  "block.guildmark.house_map": "Map of the Roads",
+  "block.guildmark.house_name_board": "House Name Board",
+  "block.guildmark.house_bell": "Yard Bell",
+  "gui.guildmark.trade.house.board": "Counting House",
+  "message.guildmark.trade.house.no_books": "The House keeps no books yet."
 }

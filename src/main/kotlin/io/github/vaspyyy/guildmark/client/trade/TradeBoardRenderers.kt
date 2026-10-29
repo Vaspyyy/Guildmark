@@ -9,6 +9,7 @@ import io.github.vaspyyy.guildmark.client.works.WorksPaint
 import io.github.vaspyyy.guildmark.trade.DoorBoardBlockEntity
 import io.github.vaspyyy.guildmark.trade.NameBoardBlockEntity
 import io.github.vaspyyy.guildmark.trade.StoreLife
+import io.github.vaspyyy.guildmark.trade.TradeBlocks
 import net.minecraft.client.gui.Font
 import net.minecraft.client.model.geom.ModelPart
 import net.minecraft.client.renderer.SubmitNodeCollector
@@ -36,6 +37,10 @@ import kotlin.math.sin
 /** What a trader's name board needs drawn for one frame: its swing, its lettering, and the owner's pennant on its pole. */
 class NameBoardRenderState : BlockEntityRenderState() {
     var facing: Direction = Direction.NORTH
+
+    /** A Counting House's board (in the House's colour, [colour] of HouseArt's six) rather than a Store's. */
+    var house = false
+    var colour = 0
     var swing = 0f
     var lines: List<FormattedCharSequence> = emptyList()
     var widths: IntArray = IntArray(0)
@@ -62,10 +67,16 @@ class NameBoardRenderState : BlockEntityRenderState() {
  * pennant flies from the pole by the door, drawn from this board's record of it: run up hand over hand the moment the clerk hauls on
  * the halyard ([StoreLife.RAISE_TICKS]), limp as it climbs and flying out as it reaches the top, then streaming in the wind with a
  * ripple running down it. It wears the cloth of the stalls' own pennants, in the owner's colour.
+ *
+ * A Counting House's board (`house_name_board`) is drawn by the same: [HouseArt.boardsMesh]'s board in the one of its six colours nearest
+ * the owner's ([HouseArt.nearest]), a counting frame at each end, lettered with the owner's name over "Counting House"; it flies no pennant.
  */
 class NameBoardRenderer(context: BlockEntityRendererProvider.Context) : BlockEntityRenderer<NameBoardBlockEntity, NameBoardRenderState> {
     private val font: Font = context.font()
     private val board: ModelPart = context.bakeLayer(TradeBlocksClient.STORE_BOARDS).getChild("board")
+    private val houseBoards: Array<ModelPart> = context.bakeLayer(TradeBlocksClient.HOUSE_BOARDS).let { root ->
+        Array(HouseArt.COLOUR_NAMES.size) { root.getChild("board_${HouseArt.COLOUR_NAMES[it]}") }
+    }
 
     override fun createRenderState(): NameBoardRenderState = NameBoardRenderState()
 
@@ -77,11 +88,15 @@ class NameBoardRenderer(context: BlockEntityRendererProvider.Context) : BlockEnt
         val level = be.level ?: return
         val pos = be.blockPos
         state.facing = WorksPaint.facing(be.blockState)
+        state.house = be.blockState.`is`(TradeBlocks.HOUSE_BOARD.get())
+        val dye = Dye.entries[be.color.coerceIn(0, Dye.entries.size - 1)]
+        state.colour = HouseArt.nearest(dye.rgb)
         val time = WorksPaint.time(level.gameTime, partialTicks)
         state.time = time
         state.seed = (Math.floorMod(pos.asLong() * 31L, 997L)).toFloat()
-        state.swing = StoreArt.boardSwing(time, state.seed * 0.013f, level.isRainingAt(pos.above()))
-        val words = words(be)
+        val wet = level.isRainingAt(pos.above())
+        state.swing = if (state.house) HouseArt.boardSwing(time, state.seed * 0.013f, wet) else StoreArt.boardSwing(time, state.seed * 0.013f, wet)
+        val words = words(be, state.house)
         state.lines = words.lines
         state.widths = words.widths
         // The pennant, once it has been run up
@@ -93,7 +108,7 @@ class NameBoardRenderer(context: BlockEntityRendererProvider.Context) : BlockEnt
         state.poleZ = (pole.z - pos.z + 0.5f)
         state.flyX = be.fly.stepX
         state.flyZ = be.fly.stepZ
-        state.rgb = Dye.entries[be.color.coerceIn(0, Dye.entries.size - 1)].rgb
+        state.rgb = dye.rgb
         state.poleLight = LightCoordsUtil.getLightCoords(level, pole.above(be.top))
         val age = if (be.raised <= 1L) WorksPaint.NEVER else WorksPaint.since(level.gameTime, be.raised, partialTicks)
         val u = (age / StoreLife.RAISE_TICKS).coerceIn(0f, 1f)
@@ -106,10 +121,11 @@ class NameBoardRenderer(context: BlockEntityRendererProvider.Context) : BlockEnt
     /** A board's lettering, worked out again only when its name (or the language) changes. */
     private class Words(val key: String, val lines: List<FormattedCharSequence>, val widths: IntArray)
 
-    private fun words(be: NameBoardBlockEntity): Words {
-        val key = "${be.name}|${Language.getInstance().hashCode()}"
+    private fun words(be: NameBoardBlockEntity, house: Boolean): Words {
+        val key = "${be.name}|$house|${Language.getInstance().hashCode()}"
         (be.words as? Words)?.let { if (it.key == key) return it }
-        val texts = if (be.name.isEmpty()) listOf(Component.translatable(STORE)) else listOf(Component.literal(be.name), Component.translatable(STORE))
+        val kind = Component.translatable(if (house) HOUSE else STORE)
+        val texts = if (be.name.isEmpty()) listOf(kind) else listOf(Component.literal(be.name), kind)
         val lines = texts.map { it.visualOrderText }
         return Words(key, lines, IntArray(lines.size) { font.width(lines[it]) }).also { be.words = it }
     }
@@ -119,33 +135,38 @@ class NameBoardRenderer(context: BlockEntityRendererProvider.Context) : BlockEnt
         poseStack.pushPose()
         WorksPaint.model(poseStack, state.facing)
         // The board on its rings, swinging out toward the street and back
-        poseStack.translate(StoreArt.BOARD_X * WorksPaint.PX, StoreArt.BOARD_Y * WorksPaint.PX, StoreArt.BOARD_Z * WorksPaint.PX)
+        val look = if (state.house) HOUSE_LOOK else STORE_LOOK
+        poseStack.translate(look.x * WorksPaint.PX, look.y * WorksPaint.PX, look.z * WorksPaint.PX)
         poseStack.rotateDegrees(Axis.XP, state.swing)
         poseStack.pushPose()
         poseStack.scale(-1f, -1f, 1f)
-        collector.submitModelPart(board, poseStack, CUTOUT, light, OverlayTexture.NO_OVERLAY, null)
+        if (state.house) collector.submitModelPart(houseBoards[state.colour.coerceIn(0, houseBoards.size - 1)], poseStack, HOUSE_CUTOUT, light, OverlayTexture.NO_OVERLAY, null)
+        else collector.submitModelPart(board, poseStack, CUTOUT, light, OverlayTexture.NO_OVERLAY, null)
         poseStack.popPose()
         // Its lettering, on the front (toward the street) and the back
         poseStack.scale(WorksPaint.PX, WorksPaint.PX, WorksPaint.PX)
-        letterFaces(poseStack, collector, state.lines, state.widths, light)
+        letterFaces(poseStack, collector, look, state.lines, state.widths, light)
         poseStack.popPose()
         if (state.pennant) pennant(state, poseStack, collector)
     }
 
-    private fun letterFaces(poseStack: PoseStack, collector: SubmitNodeCollector, lines: List<FormattedCharSequence>, widths: IntArray, light: Int) {
+    /** Where a board hangs and how it is lettered: its rings' line (px), its drop under them, its lines, how far out the letters stand, their ink and edge. */
+    private class Look(val x: Float, val y: Float, val z: Float, val drop: Float, val lines: Array<FloatArray>, val textZ: Float, val ink: Int, val edge: Int)
+
+    private fun letterFaces(poseStack: PoseStack, collector: SubmitNodeCollector, look: Look, lines: List<FormattedCharSequence>, widths: IntArray, light: Int) {
         for ((i, line) in lines.withIndex()) {
-            val spec = StoreArt.NAME_LINES.getOrNull(i) ?: break
+            val spec = look.lines.getOrNull(i) ?: break
             val width = widths[i].coerceAtLeast(1).toFloat()
             val s = min(spec[1] / CAP, spec[2] / width)
-            val top = -StoreArt.BOARD_DROP - spec[0]
+            val top = -look.drop - spec[0]
             for (back in listOf(false, true)) {
                 poseStack.pushPose()
-                poseStack.translate(0f, top, if (back) StoreArt.NAME_TEXT_Z else -StoreArt.NAME_TEXT_Z)
+                poseStack.translate(0f, top, if (back) look.textZ else -look.textZ)
                 if (!back) poseStack.rotateDegrees(Axis.YP, 180f)
                 poseStack.scale(s, -s, s)
-                collector.submitText(poseStack, -width / 2f + EDGE / s, EDGE / s, line, false, Font.DisplayMode.POLYGON_OFFSET, light, EDGE_COLOR, 0, 0)
+                collector.submitText(poseStack, -width / 2f + EDGE / s, EDGE / s, line, false, Font.DisplayMode.POLYGON_OFFSET, light, look.edge, 0, 0)
                 poseStack.translate(0f, 0f, EDGE_FORWARD / s)
-                collector.submitText(poseStack, -width / 2f, 0f, line, false, Font.DisplayMode.POLYGON_OFFSET, light, INK_COLOR, 0, 0)
+                collector.submitText(poseStack, -width / 2f, 0f, line, false, Font.DisplayMode.POLYGON_OFFSET, light, look.ink, 0, 0)
                 poseStack.popPose()
             }
         }
@@ -210,6 +231,16 @@ class NameBoardRenderer(context: BlockEntityRendererProvider.Context) : BlockEnt
 
     companion object {
         private val CUTOUT: RenderType = RenderTypes.entityCutout(WorksPaint.texture(StoreArt.BOARDS_TEXTURE))
+        private val HOUSE_CUTOUT: RenderType = RenderTypes.entityCutout(WorksPaint.texture(HouseArt.BOARDS_TEXTURE))
+
+        private val STORE_LOOK = Look(
+            StoreArt.BOARD_X, StoreArt.BOARD_Y, StoreArt.BOARD_Z, StoreArt.BOARD_DROP, StoreArt.NAME_LINES, StoreArt.NAME_TEXT_Z,
+            (0xFF shl 24) or StoreArt.NAME_INK, (0xFF shl 24) or StoreArt.NAME_EDGE,
+        )
+        private val HOUSE_LOOK = Look(
+            HouseArt.BOARD_X, HouseArt.BOARD_Y, HouseArt.BOARD_Z, HouseArt.BOARD_DROP, HouseArt.NAME_LINES, HouseArt.NAME_TEXT_Z,
+            (0xFF shl 24) or HouseArt.NAME_INK, (0xFF shl 24) or HouseArt.NAME_EDGE,
+        )
 
         /** The stalls' pennant cloth (art/scripts/stall_art.py): its cloth's share of the sheet, its length running out along the fly. */
         private val CLOTH: RenderType = RenderTypes.entityCutout(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "textures/entity/market/stall_pennant.png"))
@@ -218,15 +249,14 @@ class NameBoardRenderer(context: BlockEntityRendererProvider.Context) : BlockEnt
         private const val CLOTH_V0 = 0f
         private const val CLOTH_V1 = 0.75f
 
-        /** The board's second line, under its owner's name. */
+        /** The board's second line, under its owner's name: a Store's, a House's. */
         const val STORE = "gui.guildmark.trade.store.board"
+        const val HOUSE = "gui.guildmark.trade.house.board"
 
         /** A capital's height in font units; the dark edge's offset (px) under and right of each letter, and how far (px) the ink stands out before it. */
         private const val CAP = 7f
         private const val EDGE = 0.12f
         private const val EDGE_FORWARD = 0.006f
-        private const val INK_COLOR = (0xFF shl 24) or StoreArt.NAME_INK
-        private const val EDGE_COLOR = (0xFF shl 24) or StoreArt.NAME_EDGE
 
         /** The pennant (blocks): out from the pole's middle, its length and its height at the pole, narrowing to the tail. */
         private const val POLE_R = 0.14f

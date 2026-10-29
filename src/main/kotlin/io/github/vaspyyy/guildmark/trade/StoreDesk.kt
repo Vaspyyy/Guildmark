@@ -11,6 +11,7 @@ import io.github.vaspyyy.guildmark.economy.works.WorksData
 import io.github.vaspyyy.guildmark.economy.works.WorksKind
 import io.github.vaspyyy.guildmark.economy.works.WorksRec
 import io.github.vaspyyy.guildmark.economy.works.WorksState
+import io.github.vaspyyy.guildmark.economy.works.build.CountingHouse
 import io.github.vaspyyy.guildmark.economy.works.build.Pin
 import io.github.vaspyyy.guildmark.economy.works.build.Store
 import io.github.vaspyyy.guildmark.economy.works.build.WorksBuildData
@@ -86,6 +87,9 @@ object StoreDesk {
     private const val REFRESH = 10L
     private const val WORD_EVERY = 100L
 
+    /** Ticks a strongbox's lid stays up when its owner lifts it for a look. */
+    private const val PEEK = 32
+
     /** Ticks between looks at the open screens, and at the owners about their clerks. */
     private const val SWEEP = 10
     private const val ROUND = 40
@@ -154,23 +158,50 @@ object StoreDesk {
         return planned.frame.world(pin.x, planned.drawing.y0 + pin.y, pin.z)
     }
 
-    /** The standing Store with [pin] at [pos], if one has. */
-    private fun storeWith(level: ServerLevel, pos: BlockPos, pin: Pin): WorksRec? =
-        WorksData.get(level).works.values.firstOrNull { it.kind == WorksKind.STORE && it.state == WorksState.DONE && at(level, it, pin) == pos }
+    /** The standing Store (or, [kind], Counting House) with [pin] at [pos], if one has. */
+    private fun storeWith(level: ServerLevel, pos: BlockPos, pin: Pin, kind: WorksKind = WorksKind.STORE): WorksRec? =
+        WorksData.get(level).works.values.firstOrNull { it.kind == kind && it.state == WorksState.DONE && at(level, it, pin) == pos }
 
-    /** The scale on a Store's counter used: its desk opens, for its owner. */
+    /**
+     * One of the trader's fittings used: the scale on a Store's counter opens its desk, for its owner; a Counting House's counting frame is
+     * its desk ([Houses.desk]), and its strongbox's lid its owner may lift for a look inside.
+     */
     private fun usedFitting(level: ServerLevel, player: ServerPlayer, pos: BlockPos): Boolean {
         if (player.isSpectator || player.isShiftKeyDown) return false
-        val w = storeWith(level, pos, Store.SCALE_AT) ?: return false
-        return open(level, player, w, Vec3.atCenterOf(pos), null)
+        when (level.getBlockState(pos).block) {
+            TradeBlocks.SCALE.get() -> {
+                val w = storeWith(level, pos, Store.SCALE_AT) ?: return false
+                return open(level, player, w, Vec3.atCenterOf(pos), null)
+            }
+            TradeBlocks.COUNTING_FRAME.get() -> {
+                val w = storeWith(level, pos, CountingHouse.FRAME_AT, WorksKind.COUNTING_HOUSE) ?: return false
+                return Houses.desk(level, player, w, null)
+            }
+            TradeBlocks.STRONGBOX.get() -> {
+                val w = storeWith(level, pos, CountingHouse.STRONGBOX_AT, WorksKind.COUNTING_HOUSE) ?: return false
+                if (w.owner != player.uuid) return false
+                val box = level.getBlockEntity(pos) as? StrongboxBlockEntity ?: return false
+                if (!box.open) box.lift(PEEK)
+                return true
+            }
+            else -> return false
+        }
     }
 
-    /** The writing desk behind a Store's counter (a lectern) used, not crouching: its desk opens, for its owner. */
+    /** The writing desk behind a Store's counter (a lectern) used, not crouching: its desk opens, for its owner; and a Counting House's ledger, its desk. */
     private fun onUseBlock(event: PlayerInteractEvent.RightClickBlock) {
         val player = event.entity as? ServerPlayer ?: return
         if (player.isShiftKeyDown || player.isSpectator) return
         val level = player.level()
         if (level.dimension() != Level.OVERWORLD || !level.getBlockState(event.pos).`is`(Blocks.LECTERN)) return
+        val house = storeWith(level, event.pos, CountingHouse.LEDGER_AT, WorksKind.COUNTING_HOUSE)
+        if (house != null) {
+            if (house.owner != player.uuid) return
+            event.isCanceled = true
+            event.cancellationResult = InteractionResult.SUCCESS
+            if (event.hand == InteractionHand.MAIN_HAND) Houses.desk(level, player, house, null)
+            return
+        }
         val w = storeWith(level, event.pos, Store.DESK_AT) ?: return
         if (!may(level, player, w)) return
         event.isCanceled = true
@@ -178,7 +209,7 @@ object StoreDesk {
         if (event.hand == InteractionHand.MAIN_HAND) open(level, player, w, Vec3.atCenterOf(event.pos), null)
     }
 
-    /** Using a Store's clerk: their owner has the desk; and a hall merchant hands back what a Store taken down held. */
+    /** Using a Store's clerk (or a Counting House's scribe): their owner has the desk; and a hall merchant hands back what a Store taken down held. */
     private fun onUseEntity(event: PlayerInteractEvent.EntityInteract) {
         val player = event.entity as? ServerPlayer ?: return
         val p = event.target as? Townsperson ?: return
@@ -188,7 +219,16 @@ object StoreDesk {
         val works = Stores.clerks(level)[p.resident]
         if (works != null) {
             val w = WorksData.get(level).works[works] ?: return
-            if (w.kind != WorksKind.STORE || w.state != WorksState.DONE || w.owner != player.uuid) return
+            if (w.state != WorksState.DONE || w.owner != player.uuid) return
+            // A Counting House's scribe: its desk
+            if (w.kind == WorksKind.COUNTING_HOUSE) {
+                if (Houses.desk(level, player, w, p)) {
+                    event.isCanceled = true
+                    event.cancellationResult = InteractionResult.SUCCESS
+                }
+                return
+            }
+            if (w.kind != WorksKind.STORE) return
             if (open(level, player, w, p.position(), p)) {
                 event.isCanceled = true
                 event.cancellationResult = InteractionResult.SUCCESS

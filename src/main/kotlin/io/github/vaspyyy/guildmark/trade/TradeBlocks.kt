@@ -38,8 +38,9 @@ import net.neoforged.neoforge.registries.DeferredRegister
 import java.util.function.UnaryOperator
 
 /**
- * The Carriers' Store's fittings as blocks (living-world/trader/design.md, Part 5; build part F2): the clerk's scale on its bench, the
- * name board over the door with the owner's pennant on the pole beside it, and the open and shut board by the door. Their ids,
+ * The Carriers' Store's and the Counting House's fittings as blocks (living-world/trader/design.md, Part 5; build part F2): the clerk's
+ * scale on its bench, the name board over the door with the owner's pennant on the pole beside it, and the open and shut board by the
+ * door; the House's strongbox (open by the desk, shut upstairs), counting frame, map of the roads, name board and bell (HouseFittings). Their ids,
  * models and blockstates are art stream X3's (`art/scripts/store_art.py`), each facing north in its model and turned by `facing`; the
  * renderers that move them are `client/trade` ([io.github.vaspyyy.guildmark.client.trade.TradeBlocksClient]). Like the works' own blocks
  * they have no item, drop nothing and cannot be broken by a player: the builders lay them (the drawing's markers, `TownWorksSite`) and
@@ -61,12 +62,42 @@ object TradeBlocks {
     val DOOR_BOARD: DeferredBlock<DoorBoardBlock> =
         BLOCKS.registerBlock("store_door_board", ::DoorBoardBlock, fixed(MapColor.WOOD, SoundType.WOOD) { it.noOcclusion().noCollision() })
 
+    // The Counting House's (HouseFittings)
+
+    /** The strongbox by the scribe's desk, its lid the renderer's; and the shut one in the owner's room upstairs. */
+    val STRONGBOX: DeferredBlock<StrongboxBlock> = BLOCKS.registerBlock("strongbox", ::StrongboxBlock, fixed(MapColor.COLOR_BROWN, SoundType.WOOD) { it.noOcclusion() })
+    val STRONGBOX_SHUT: DeferredBlock<StrongboxShutBlock> =
+        BLOCKS.registerBlock("strongbox_shut", ::StrongboxShutBlock, fixed(MapColor.COLOR_BROWN, SoundType.WOOD) { it.noOcclusion() })
+
+    /** The counting frame on the high desk, its beads the renderer's. */
+    val COUNTING_FRAME: DeferredBlock<CountingFrameBlock> =
+        BLOCKS.registerBlock("counting_frame", ::CountingFrameBlock, fixed(MapColor.WOOD, SoundType.WOOD) { it.noOcclusion() })
+
+    /** The map of the roads: the middle of the bottom row of a panel three wide and two high (the blocks to its sides and the row above stay free). */
+    val HOUSE_MAP: DeferredBlock<HouseMapBlock> = BLOCKS.registerBlock("house_map", ::HouseMapBlock, fixed(MapColor.WOOD, SoundType.WOOD) { it.noOcclusion() })
+
+    /** The House's name board over its door (a [NameBoardBlock], in the House's colour). */
+    val HOUSE_BOARD: DeferredBlock<NameBoardBlock> =
+        BLOCKS.registerBlock("house_name_board", ::NameBoardBlock, fixed(MapColor.WOOD, SoundType.WOOD) { it.noOcclusion().noCollision() })
+
+    /** The bell on its bracket in the yard (its rope hangs into the block below, which stays free). */
+    val HOUSE_BELL: DeferredBlock<HouseBellBlock> =
+        BLOCKS.registerBlock("house_bell", ::HouseBellBlock, fixed(MapColor.METAL, SoundType.LANTERN) { it.noOcclusion().noCollision() })
+
     val SCALE_ENTITY: DeferredHolder<BlockEntityType<*>, BlockEntityType<StoreScaleBlockEntity>> =
         BLOCK_ENTITIES.register("store_scale") { -> BlockEntityType(BlockEntityType.BlockEntitySupplier(::StoreScaleBlockEntity), SCALE.get()) }
     val BOARD_ENTITY: DeferredHolder<BlockEntityType<*>, BlockEntityType<NameBoardBlockEntity>> =
-        BLOCK_ENTITIES.register("trade_name_board") { -> BlockEntityType(BlockEntityType.BlockEntitySupplier(::NameBoardBlockEntity), STORE_BOARD.get()) }
+        BLOCK_ENTITIES.register("trade_name_board") { -> BlockEntityType(BlockEntityType.BlockEntitySupplier(::NameBoardBlockEntity), STORE_BOARD.get(), HOUSE_BOARD.get()) }
     val DOOR_BOARD_ENTITY: DeferredHolder<BlockEntityType<*>, BlockEntityType<DoorBoardBlockEntity>> =
         BLOCK_ENTITIES.register("store_door_board") { -> BlockEntityType(BlockEntityType.BlockEntitySupplier(::DoorBoardBlockEntity), DOOR_BOARD.get()) }
+    val STRONGBOX_ENTITY: DeferredHolder<BlockEntityType<*>, BlockEntityType<StrongboxBlockEntity>> =
+        BLOCK_ENTITIES.register("strongbox") { -> BlockEntityType(BlockEntityType.BlockEntitySupplier(::StrongboxBlockEntity), STRONGBOX.get()) }
+    val FRAME_ENTITY: DeferredHolder<BlockEntityType<*>, BlockEntityType<CountingFrameBlockEntity>> =
+        BLOCK_ENTITIES.register("counting_frame") { -> BlockEntityType(BlockEntityType.BlockEntitySupplier(::CountingFrameBlockEntity), COUNTING_FRAME.get()) }
+    val MAP_ENTITY: DeferredHolder<BlockEntityType<*>, BlockEntityType<HouseMapBlockEntity>> =
+        BLOCK_ENTITIES.register("house_map") { -> BlockEntityType(BlockEntityType.BlockEntitySupplier(::HouseMapBlockEntity), HOUSE_MAP.get()) }
+    val BELL_ENTITY: DeferredHolder<BlockEntityType<*>, BlockEntityType<HouseBellBlockEntity>> =
+        BLOCK_ENTITIES.register("house_bell") { -> BlockEntityType(BlockEntityType.BlockEntitySupplier(::HouseBellBlockEntity), HOUSE_BELL.get()) }
 
     fun register(modBus: IEventBus) {
         BLOCKS.register(modBus)
@@ -84,12 +115,24 @@ object TradeBlocks {
      */
     fun marked(m: M, kind: WorksKind): Block? = when (m) {
         M.GRINDSTONE -> SCALE.get()
-        M.BANNER -> if (kind == WorksKind.STORE) STORE_BOARD.get() else null
+        M.BANNER -> when (kind) {
+            WorksKind.STORE -> STORE_BOARD.get()
+            WorksKind.COUNTING_HOUSE -> HOUSE_BOARD.get()
+            else -> null
+        }
         M.SHUTTER -> DOOR_BOARD.get()
+        M.CHEST -> STRONGBOX.get()
+        M.GOLD -> STRONGBOX_SHUT.get()
+        M.LOOM -> COUNTING_FRAME.get()
+        M.CARTOGRAPHY_TABLE -> HOUSE_MAP.get()
+        M.BELL -> HOUSE_BELL.get()
         else -> null
     }
 
-    /** Hears a player using one of the Store's fittings (the scale: the clerk's desk); set by the Store's desk, nothing until then. */
+    /**
+     * Hears a player using one of the trader's fittings (the Store's scale: the clerk's desk; the House's counting frame: its desk; the
+     * strongbox: a look inside); set by the Store's desk, nothing until then.
+     */
     internal var used: (ServerLevel, ServerPlayer, BlockPos) -> Boolean = { _, _, _ -> false }
 }
 

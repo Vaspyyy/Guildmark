@@ -22,16 +22,30 @@ class TradeBlocksClient(modBus: IEventBus) {
             event.registerBlockEntityRenderer(TradeBlocks.SCALE_ENTITY.get(), ::StoreScaleRenderer)
             event.registerBlockEntityRenderer(TradeBlocks.BOARD_ENTITY.get(), ::NameBoardRenderer)
             event.registerBlockEntityRenderer(TradeBlocks.DOOR_BOARD_ENTITY.get(), ::DoorBoardRenderer)
+            event.registerBlockEntityRenderer(TradeBlocks.STRONGBOX_ENTITY.get(), ::StrongboxRenderer)
+            event.registerBlockEntityRenderer(TradeBlocks.FRAME_ENTITY.get(), ::CountingFrameRenderer)
+            event.registerBlockEntityRenderer(TradeBlocks.MAP_ENTITY.get(), ::HouseMapRenderer)
+            event.registerBlockEntityRenderer(TradeBlocks.BELL_ENTITY.get(), ::HouseBellRenderer)
         }
         modBus.addListener(EntityRenderersEvent.RegisterLayerDefinitions::class.java) { event ->
             event.registerLayerDefinition(SCALE, StoreArt::scaleMesh)
             event.registerLayerDefinition(STORE_BOARDS, StoreArt::boardsMesh)
+            event.registerLayerDefinition(STRONGBOX, StoreArt::strongboxMesh)
+            event.registerLayerDefinition(BEADS, StoreArt::beadsMesh)
+            event.registerLayerDefinition(HOUSE_MAP, HouseArt::mapMesh)
+            event.registerLayerDefinition(HOUSE_BOARDS, HouseArt::boardsMesh)
+            event.registerLayerDefinition(HOUSE_BELL, HouseArt::bellMesh)
         }
     }
 
     companion object {
         val SCALE = layer("store_scale")
         val STORE_BOARDS = layer("store_boards")
+        val STRONGBOX = layer("strongbox")
+        val BEADS = layer("counting_beads")
+        val HOUSE_MAP = layer("house_map")
+        val HOUSE_BOARDS = layer("house_boards")
+        val HOUSE_BELL = layer("house_bell")
 
         private fun layer(name: String) = ModelLayerLocation(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, name), "main")
     }

@@ -27,6 +27,19 @@ object TradeMarks {
 
     /** The open and shut board by the door (store_door_board). */
     val DOOR_BOARD = B(M.SHUTTER, Dir.N, v = WorksDrawing.MARK)
+
+    /** The Counting House's strongbox by the desk (strongbox: its lid the renderer's), and the shut one upstairs (strongbox_shut). */
+    val STRONGBOX = B(M.CHEST, Dir.N, v = WorksDrawing.MARK)
+    val STRONGBOX_SHUT = B(M.GOLD, Dir.N, v = WorksDrawing.MARK)
+
+    /** The counting frame on the high desk (counting_frame). */
+    val COUNTING_FRAME = B(M.LOOM, Dir.N, v = WorksDrawing.MARK)
+
+    /** The map of the roads (house_map): the middle of the bottom row of its three by two panel; the blocks to its sides and the row above are left free. */
+    val MAP = B(M.CARTOGRAPHY_TABLE, Dir.N, v = WorksDrawing.MARK)
+
+    /** The yard's bell on its bracket (house_bell), hung from the post behind it; the block below is left free for its rope. */
+    val BELL = B(M.BELL, Dir.N, v = WorksDrawing.MARK)
 }
 
 /**
@@ -243,9 +256,10 @@ class Store(y0: Int, private val palette: Int, val patron: Dye) : WorksDrawing(W
  *
  * The yard is the front three rows (z 0..2), paved, walled to the front and the flanks (the double gate at x 4 and x 5, a lamp post
  * either side of it); the bell on its post at the left, the hitching post and the barrels at the right. The house is x 1..7, z 3..7:
- * seven across and five deep, its door in the middle of the front. Inside, the counting room: the high desk with the counting frame on
- * it, the scribe behind (facing the door), the strongbox against the right wall, and on the back wall the map of the roads; the ladder
- * in the back left corner to the owner's room above, with its shelves, table and lamp.
+ * seven across and five deep, its door in the middle of the front with the owner's name board over it. Inside, the counting room: the
+ * high desk with the counting frame on it, the scribe behind (facing the door), the strongbox against the right wall, and on the back
+ * wall the map of the roads; the ladder in the back left corner to the owner's room above, with its shelves, table, lamp and the shut
+ * strongbox. The fittings are the trader's own blocks ([TradeMarks]; the House's day is trade/HouseLife's).
  *
  * As the buyer sees it (the front at the foot, x growing to the buyer's left), the counting room:
  * ```
@@ -315,16 +329,19 @@ class CountingHouse(y0: Int, private val palette: Int, val patron: Dye) : WorksD
         for (x in DESK_X) p.set(x, 0, 5, DESK)
         for (x in 3..4) p.set(x, 0, 4, B(M.CARPET, color = patron))
         for (x in listOf(3, 5)) p.set(x, 3, 2, B(M.BANNER, Dir.N, color = patron))
-        p.set(FRAME_AT.x, FRAME_AT.y, FRAME_AT.z, FRAME)
+        p.set(NAME_BOARD_AT.x, NAME_BOARD_AT.y, NAME_BOARD_AT.z, TradeMarks.NAME_BOARD.facing(NAME_BOARD_AT.facing))
+        p.set(FRAME_AT.x, FRAME_AT.y, FRAME_AT.z, TradeMarks.COUNTING_FRAME.facing(FRAME_AT.facing))
         p.set(LEDGER_AT.x, LEDGER_AT.y, LEDGER_AT.z, B(M.LECTERN, LEDGER_AT.facing))
-        p.set(STRONGBOX_AT.x, STRONGBOX_AT.y, STRONGBOX_AT.z, STRONGBOX)
-        p.set(MAP_AT.x, MAP_AT.y, MAP_AT.z, MAP)
+        p.set(STRONGBOX_AT.x, STRONGBOX_AT.y, STRONGBOX_AT.z, TradeMarks.STRONGBOX.facing(STRONGBOX_AT.facing))
+        // The map's panel: its anchor, and the five blocks it hangs over kept clear
+        for (dx in -1..1) for (dy in 0..1) if (dx != 0 || dy != 0) p.air(MAP_AT.x + dx, MAP_AT.y + dy, MAP_AT.z)
+        p.set(MAP_AT.x, MAP_AT.y, MAP_AT.z, TradeMarks.MAP.facing(MAP_AT.facing))
         for (y in 0..4) p.set(LADDER.x, y, LADDER.z, B(M.LADDER, LADDER.facing))
         for (x in listOf(4, 6)) for (y in 5..6) p.set(x, y, 6, B(M.BOOKSHELF))
         p.set(5, 5, 4, B(M.CRAFTING_TABLE))
         p.set(5, 6, 4, B(M.LANTERN))
         p.set(3, 5, 4, B(M.LECTERN, Dir.S))
-        p.set(2, 5, 5, B(M.CHEST, Dir.E))
+        p.set(COFFER_AT.x, COFFER_AT.y, COFFER_AT.z, TradeMarks.STRONGBOX_SHUT.facing(COFFER_AT.facing))
         // Last the yard: its wall with the double gate, the lamp posts either side, the bell on its post, the hitching post and the barrels
         p.stage(Stage.GROUNDS)
         for (x in 0..8) {
@@ -343,12 +360,15 @@ class CountingHouse(y0: Int, private val palette: Int, val patron: Dye) : WorksD
             p.set(lamp.x, 2, lamp.z, B(M.FENCE))
             p.set(lamp.x, lamp.y, lamp.z, B(M.LANTERN, v = STREET_LAMP))
         }
-        for (y in 0..2) p.set(BELL_POST.x, y, BELL_POST.z, B(M.FENCE))
-        p.set(BELL_AT.x, BELL_AT.y, BELL_AT.z, BELL)
+        // The bell's post: a stone foot and a staff of rails, the bell hung from its front on its bracket over the yard, its rope clear below
+        p.set(BELL_POST.x, 0, BELL_POST.z, B(M.WALL_POST))
+        for (y in 1..BELL_AT.y) p.set(BELL_POST.x, y, BELL_POST.z, B(M.FENCE))
+        for (y in 0 until BELL_AT.y) p.air(BELL_AT.x, y, BELL_AT.z)
+        p.set(BELL_AT.x, BELL_AT.y, BELL_AT.z, TradeMarks.BELL.facing(BELL_AT.facing))
         p.set(7, 0, 1, B(M.FENCE))
         p.set(7, 0, 2, B(M.BARREL))
-        p.set(1, 0, 2, B(M.BARREL))
-        p.set(1, 1, 2, B(M.BARREL))
+        p.set(2, 0, 2, B(M.BARREL))
+        p.set(2, 1, 2, B(M.BARREL))
     }
 
     /** A frame on the house for the roof: what the roof would put over the lane behind the lot is dropped. */
@@ -412,8 +432,16 @@ class CountingHouse(y0: Int, private val palette: Int, val patron: Dye) : WorksD
         val FRAME_AT = Pin(3, 1, 5, Dir.N)
         val LEDGER_AT = Pin(4, 1, 5, Dir.N)
 
-        /** The strongbox against the right wall, its front to the scribe. */
+        /** The strongbox against the right wall, its front to the scribe; and the shut one in the owner's room, its back to the wall. */
         val STRONGBOX_AT = Pin(6, 0, 6, Dir.W)
+        val COFFER_AT = Pin(2, 5, 5, Dir.E)
+
+        /** The owner's name board on its bracket over the door, between the two banners and under the plaque. */
+        val NAME_BOARD_AT = Pin(4, 2, 2, Dir.N)
+
+        /** Where the scribe stands at the strongbox (before it, facing it), and the two leaves of the yard's gate. */
+        val COFFER_STAND = Pin(5, 0, 6, Dir.E)
+        val GATES = listOf(Pin(GATE_X, 0, 0, Dir.S), Pin(GATE_X + 1, 0, 0, Dir.S))
 
         /** The map of the roads on the back wall: the middle of the bottom row of a panel three blocks wide and two high, facing the room. */
         val MAP_AT = Pin(4, 2, 6, Dir.N)
@@ -425,9 +453,10 @@ class CountingHouse(y0: Int, private val palette: Int, val patron: Dye) : WorksD
         /** The lanterns on the lamp posts either side of the gate (the street lamps the scribe lights at dusk). */
         val LAMPS = listOf(Pin(3, 3, 0), Pin(6, 3, 0))
 
-        /** The bell on its post in the yard, and where the post stands. */
-        val BELL_POST = Pin(1, 0, 1)
-        val BELL_AT = Pin(1, 3, 1, Dir.N)
+        /** The bell on its post in the yard (hung from the post's front, facing the gate's side of the yard), where the post stands, and where the scribe stands to pull the rope. */
+        val BELL_POST = Pin(1, 0, 2)
+        val BELL_AT = Pin(1, 2, 1, Dir.N)
+        val RINGER = Pin(1, 0, 1, Dir.N)
 
         /** The windows of the ground floor (x, z); the storey over has the same, and [UPPER_WINDOWS] besides. */
         private val WINDOWS = listOf(2 to 3, 6 to 3, 1 to 5, 7 to 5)
@@ -435,11 +464,5 @@ class CountingHouse(y0: Int, private val palette: Int, val patron: Dye) : WorksD
 
         /** The desk's planks, the dark ground-floor ones. */
         private val DESK = B(M.PLANKS, v = 1)
-
-        /** The counting frame, the strongbox, the map and the bell: plain blocks until the House's own stand there. */
-        private val FRAME = B(M.LECTERN, Dir.N)
-        private val STRONGBOX = B(M.CHEST, Dir.W)
-        private val MAP = B(M.CARTOGRAPHY_TABLE)
-        private val BELL = B(M.BELL, Dir.N)
     }
 }

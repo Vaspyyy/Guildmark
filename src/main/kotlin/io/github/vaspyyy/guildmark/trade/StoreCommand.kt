@@ -10,6 +10,11 @@ import io.github.vaspyyy.guildmark.economy.Markets
 import io.github.vaspyyy.guildmark.economy.Suppliers
 import io.github.vaspyyy.guildmark.economy.works.WorksData
 import io.github.vaspyyy.guildmark.economy.works.WorksKind
+import io.github.vaspyyy.guildmark.economy.works.WorksState
+import io.github.vaspyyy.guildmark.economy.works.build.TownWorksSite
+import io.github.vaspyyy.guildmark.economy.works.build.WorksBuild
+import io.github.vaspyyy.guildmark.economy.works.build.WorksBuildData
+import io.github.vaspyyy.guildmark.economy.works.build.WorksPlans
 import io.github.vaspyyy.guildmark.townsfolk.Comings
 import net.minecraft.ChatFormatting
 import net.minecraft.commands.CommandSourceStack
@@ -31,7 +36,9 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent
  * shows the sender's own Store in the capital they stand in (their only one, standing in none), good by good with each parcel's days.
  * `store bond <good> <units> [days]` puts goods in it as though they had been bonded, nothing taken from the pack: hauled goods bought far
  * from it with [days] left (30 if not said; 0 for plain goods). `store wage <days>` sets the days the clerk is paid ahead (0: owing from
- * today). Nothing here makes a file by looking.
+ * today). `store scene <scene>` has the Store's clerk or the Counting House's scribe in the capital the sender stands in (theirs, or
+ * anyone's) play one of their scenes now: `weigh`, `hoist` (a crate lifted in), `lower` (one let down); `bell`, `sums`, `strongbox`. The
+ * list also gives the Counting Houses. Nothing here makes a file by looking.
  */
 object StoreCommand {
     fun init() {
@@ -74,6 +81,13 @@ object StoreCommand {
                                         Commands.argument("days", IntegerArgumentType.integer(0, Stores.AHEAD.toInt()))
                                             .executes { wage(it, IntegerArgumentType.getInteger(it, "days")) },
                                     ),
+                                )
+                                .then(
+                                    Commands.literal("scene").then(
+                                        Commands.argument("scene", StringArgumentType.word())
+                                            .suggests { _, b -> SharedSuggestionProvider.suggest(StoreLife.SCENES + HouseLife.SCENES, b) }
+                                            .executes { scene(it, StringArgumentType.getString(it, "scene")) },
+                                    ),
                                 ),
                         ),
                 ),
@@ -87,10 +101,11 @@ object StoreCommand {
         val level = source.level
         if (!TradeConfig.stores()) say(source, grey("Carriers' Stores are switched off (setting: Carriers' Stores, or what it needs): nothing is bonded and no wage falls due; what is in them can be taken back."))
         val data = TradeStores.peek(level)
-        if (data == null || data.stores.isEmpty() && data.returns.isEmpty()) return say(source, grey("No Carriers' Store has opened in this world."))
-        say(source, header("Carriers' Stores"))
         val works = WorksData.get(level)
-        for (rec in data.stores) {
+        val houses = works.works.values.any { it.kind == WorksKind.COUNTING_HOUSE && it.state == WorksState.DONE }
+        if ((data == null || data.stores.isEmpty() && data.returns.isEmpty()) && !houses) return say(source, grey("No Carriers' Store has opened in this world."))
+        say(source, header("Carriers' Stores"))
+        for (rec in data?.stores ?: listOf()) {
             val w = works.find(rec.capital, WorksKind.STORE, owner = rec.owner)
             val head = line().append(label("${rec.name.ifEmpty { "?" }}'s ")).append(plain("in ${Stores.placeOf(level, rec.capital).ifEmpty { where(rec.capital) }}"))
                 .append(grey(if (w != null) " (works #${w.id})" else " (its works is gone)"))
@@ -103,7 +118,18 @@ object StoreCommand {
             }
             say(source, grey("  holds ${rec.units()} units of ${rec.kinds()} goods, ${rec.hauled()} of them hauled; ${wageLine(level, rec)}$clerk"))
         }
-        for ((owner, back) in data.returns) {
+        for (h in works.works.values.filter { it.kind == WorksKind.COUNTING_HOUSE && it.state == WorksState.DONE }) {
+            val owner = h.owner ?: continue
+            val name = level.server.playerList.getPlayer(owner)?.name?.string ?: h.pledges.lastOrNull { it.player == owner }?.name ?: owner.toString()
+            val scribe = when {
+                h.hired >= 0 -> "its scribe hired"
+                Comings.enabled() -> "its scribe not come yet"
+                else -> "no scribe (newcomers are switched off)"
+            }
+            say(source, line().append(label("$name's Counting House ")).append(plain("in ${Stores.placeOf(level, h.capital).ifEmpty { where(h.capital) }}"))
+                .append(grey(" (works #${h.id}): $scribe; its frame reckons ${HouseLife.worth(level, h)} Marks; ${HouseLife.known(level, owner, h.capital).size} towns pinned on its map")))
+        }
+        for ((owner, back) in data?.returns ?: mapOf()) {
             val name = level.server.playerList.getPlayer(owner)?.name?.string ?: owner.toString()
             say(source, grey("Waiting for $name at any hall merchant: ${back.goods.sum()} units from their Store in ${back.place.ifEmpty { "a town" }}${if (back.told) "" else " (not told yet)"}."))
         }
@@ -125,7 +151,7 @@ object StoreCommand {
         }
         val level = source.level
         val works = WorksData.get(level)
-        val standing = works.works.values.filter { it.kind == WorksKind.STORE && it.owner == player.uuid && it.state == io.github.vaspyyy.guildmark.economy.works.WorksState.DONE }
+        val standing = works.works.values.filter { it.kind == WorksKind.STORE && it.owner == player.uuid && it.state == WorksState.DONE }
         if (standing.isEmpty()) {
             fail(source, "You have no Carriers' Store standing (works propose store, fund it and finish it).")
             return null
@@ -176,6 +202,26 @@ object StoreCommand {
         if (n <= 0) return fail(source, "Your Store has no room for $goodId (${rec.kinds()} kinds of ${Stores.KINDS}, ${rec.of(good)} of ${Stores.MOST}).")
         val what = if (keeps > 0) "hauled from ${Suppliers.place(level, origin).ifEmpty { where(origin.asLong()) }}, $keeps days left" else "plain goods"
         return say(source, line().append(label("Bonded: ")).append(plain("$n $goodId ")).append(grey("$what. The Store holds ${rec.of(good)} of it.")))
+    }
+
+    /** The sender's Store or House in the capital they stand in (or, theirs being none, anyone's there) plays [scene] now. */
+    private fun scene(context: CommandContext<CommandSourceStack>, scene: String): Int {
+        val source = context.source
+        val level = source.level
+        val house = scene in HouseLife.SCENES
+        if (!house && scene !in StoreLife.SCENES) return fail(source, "No such scene: ${(StoreLife.SCENES + HouseLife.SCENES).joinToString(", ")}.")
+        val kind = if (house) WorksKind.COUNTING_HOUSE else WorksKind.STORE
+        val here = Capitals.covering(level, BlockPos.containing(source.position))?.center?.asLong()
+            ?: return fail(source, "Stand in the capital whose ${if (house) "Counting House" else "Store"} you mean.")
+        val standing = WorksData.get(level).works.values.filter { it.kind == kind && it.capital == here && it.state == WorksState.DONE }
+        val w = standing.firstOrNull { it.owner == source.player?.uuid } ?: standing.firstOrNull()
+            ?: return fail(source, "No ${if (house) "Counting House" else "Carriers' Store"} stands in this capital.")
+        val rec = WorksBuildData.get(level)[w.id]?.takeIf { it.sited && !it.removed } ?: return fail(source, "That works has no building.")
+        if (!rec.firstUse) return fail(source, "Its first use hasn't been seen yet: stand near it in the day and watch.")
+        val site = WorksBuild.site(w.id) ?: TownWorksSite(level, rec, WorksPlans.of(rec))
+        val why = if (house) HouseLife.scene(level, w, site, scene) else StoreLife.scene(level, w, site, scene)
+        if (why != null) return fail(source, why)
+        return say(source, grey("Works #${w.id}: $scene, now."))
     }
 
     private fun wage(context: CommandContext<CommandSourceStack>, days: Int): Int {
