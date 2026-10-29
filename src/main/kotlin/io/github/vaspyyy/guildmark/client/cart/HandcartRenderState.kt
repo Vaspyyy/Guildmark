@@ -23,6 +23,9 @@ open class HandcartRenderState : EntityRenderState() {
     /** Radians the left wheel has turned. */
     var spinL = 0f
 
+    /** How far its near wheel is off (the handcart tale's broken cart): 1 off and leaning on the bed, 0 on its axle, eased between as it's mended. */
+    var broken = 0f
+
     /** How many pieces of the load are drawn. */
     var pieces = 0
 

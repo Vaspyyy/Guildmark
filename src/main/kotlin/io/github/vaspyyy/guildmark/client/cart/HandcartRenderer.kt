@@ -78,6 +78,7 @@ open class HandcartRenderer(context: EntityRendererProvider.Context) : EntityRen
         state.roll = Mth.lerp(partialTicks, look.rollO, look.roll)
         state.spinR = Mth.lerp(partialTicks, look.spinRO, look.spinR)
         state.spinL = Mth.lerp(partialTicks, look.spinLO, look.spinL)
+        state.broken = off(cart, partialTicks)
         // The load: each piece on its place, resting on what's under it; settling on, or lifting off
         var n = 0
         for (s in 0 until Handcart.SLOTS) {
@@ -120,10 +121,17 @@ open class HandcartRenderer(context: EntityRendererProvider.Context) : EntityRen
 
     override fun submit(state: HandcartRenderState, poseStack: PoseStack, collector: SubmitNodeCollector, camera: CameraRenderState) {
         poseStack.pushPose()
-        poseStack.translate(0.0, Handcart.AXLE_UP, 0.0)
+        // A broken cart slumps onto the corner whose wheel is off (HandcartModel), and rises again as it's mended
+        val slump = if (state.broken > 0f) HandcartModel.ease(state.broken) else 0f
+        poseStack.translate(0.0, Handcart.AXLE_UP + HandcartModel.LIFT * slump, 0.0)
         poseStack.rotateDegrees(Axis.YP, 180f - state.yaw)
-        poseStack.rotateDegrees(Axis.XP, state.pitch)
+        poseStack.rotateDegrees(Axis.XP, state.pitch + HandcartModel.ROCK * slump)
         poseStack.rotateDegrees(Axis.ZP, state.roll)
+        if (slump > 0f) {
+            poseStack.translate(HandcartModel.PIVOT_X, HandcartModel.PIVOT_Y, 0.0)
+            poseStack.rotateDegrees(Axis.ZP, -HandcartModel.SLUMP * slump)
+            poseStack.translate(-HandcartModel.PIVOT_X, -HandcartModel.PIVOT_Y, 0.0)
+        }
         poseStack.scale(-1f, -1f, 1f)
         collector.submitModel(model, state, poseStack, TEXTURE, state.lightCoords, OverlayTexture.NO_OVERLAY, state.outlineColor)
         poseStack.pushPose()
@@ -168,6 +176,25 @@ open class HandcartRenderer(context: EntityRendererProvider.Context) : EntityRen
         super.submit(state, poseStack, collector, camera)
     }
 
+    /**
+     * How far [cart]'s near wheel is off this frame (the handcart tale's broken cart): 1 off, 0 on, and between while it's set back
+     * on (over [MEND] ticks, the bed settling as it goes). A cart first seen broken is drawn broken at once.
+     */
+    private fun off(cart: Handcart, partialTicks: Float): Float {
+        val now = cart.tickCount + partialTicks
+        val want = if (cart.broken) 1f else 0f
+        val was = mending[cart]
+        if (was == null) {
+            if (want > 0f) mending[cart] = floatArrayOf(want, now)
+            return want
+        }
+        val step = ((now - was[1]).coerceIn(0f, 5f)) / MEND
+        was[0] = if (want > was[0]) minOf(want, was[0] + step) else maxOf(want, was[0] - step)
+        was[1] = now
+        if (was[0] <= 0f && want <= 0f) mending.remove(cart)
+        return was[0]
+    }
+
     /** Moves the load before it is drawn, in the cart's own space (px, y down): nothing for a carter's cart; the Chapman's Cart's load rocks. */
     protected open fun shake(state: HandcartRenderState, poseStack: PoseStack) {}
 
@@ -192,5 +219,11 @@ open class HandcartRenderer(context: EntityRendererProvider.Context) : EntityRen
 
         /** Blocks the shafts reach past its box. */
         private const val REACH = 1.2
+
+        /** Ticks a broken cart's wheel takes going back on. */
+        private const val MEND = 12f
+
+        /** Each broken cart's wheel as last drawn: how far off, and when (its tick and the frame's part of one). */
+        private val mending = java.util.WeakHashMap<Handcart, FloatArray>()
     }
 }

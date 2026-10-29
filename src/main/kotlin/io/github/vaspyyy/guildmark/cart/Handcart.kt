@@ -59,6 +59,12 @@ open class Handcart(type: EntityType<out Handcart>, level: Level) : Entity(type,
     /** What's heaped on place [slot] of the bed (see client/cart's HandcartMesh.SLOTS): empty where nothing is. */
     fun goods(slot: Int): ItemStack = entityData.get(GOODS[slot])
 
+    // The handcart tale (living-world/stories/design.md 8.8): a family's cart with its near wheel off, a made figure's prop, never saved
+    /** Whether its near (right) wheel is off: drawn leaning against the bed, the bed down on that corner. Set on the server. */
+    var broken: Boolean
+        get() = entityData.get(BROKEN)
+        set(value) = entityData.set(BROKEN, value)
+
     /** What this client keeps to draw it (client/cart); null on the server. */
     @JvmField
     var look: Any? = null
@@ -90,6 +96,7 @@ open class Handcart(type: EntityType<out Handcart>, level: Level) : Entity(type,
         builder.define(PULLER, -1)
         builder.define(ROLL, 0f)
         for (slot in GOODS) builder.define(slot, ItemStack.EMPTY)
+        builder.define(BROKEN, false)
     }
 
     // Drawn the same few ticks behind the server as the townsfolk are, so the shafts stay in their hands
@@ -503,6 +510,7 @@ open class Handcart(type: EntityType<out Handcart>, level: Level) : Entity(type,
         private val ROLL: EntityDataAccessor<Float> = SynchedEntityData.defineId(Handcart::class.java, EntityDataSerializers.FLOAT)
         private val GOODS: Array<EntityDataAccessor<ItemStack>> =
             Array(SLOTS) { SynchedEntityData.defineId(Handcart::class.java, EntityDataSerializers.ITEM_STACK) }
+        private val BROKEN: EntityDataAccessor<Boolean> = SynchedEntityData.defineId(Handcart::class.java, EntityDataSerializers.BOOLEAN)
 
         /** Run on the client each tick for each cart (client/cart: its shafts, its wheels, its load as drawn). */
         @JvmStatic
