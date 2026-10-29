@@ -516,6 +516,177 @@ import tale_lines  # noqa: E402
 
 CRIER.update(tale_lines.CRIER)
 
+# ------------------------------------------------------------------ the villages' (Living World, Villages V12c)
+# living-world/villages/design.md section 17.4: what a village's folk say aloud, outside the talk (whose families are
+# village_talk.py's). Typed as the design has them, character for character as say.guildmark.<line>, but for the few
+# changed so that they are true whenever they are said (each has a comment), and none says a name, a good, a place or a
+# number. Where the game already said a line of these before its take was made (the pedlar's, the crews'), the words are
+# the game's.
+#
+# The bellman: the resident who holds the village's bell for the week, who at noon on market days and on any day with news
+# rings the bell and cries the day's word (design 8.2), as a capital's crier does and in the same two voices. The lines join
+# CRIER, so they are cried as the crier's are (process_crier: read slower, cut into calls, drawn out, set in the square at
+# CRIER_LUFS, none over CRIER_MAX_LEN, heard CRIER_REACH blocks off), though read as the village's other lines are
+# (village_phonemes); an old bellman borrows the man's lower.
+BELLMAN = {
+    # the cry's opening and close
+    "bellman_open": "Hear the bell! Hear the word of the day!",
+    "bellman_close": "That is the word. Go well.",
+    # the village's times: the noon after they move to these, and at noon while they hold
+    "bellman_times_hard": "Hard times, neighbours. Share what you can!",
+    "bellman_times_lean": "Lean times in the village! Look out for each other!",
+    "bellman_times_good": "Good times in the village! The green is busy!",
+    "bellman_times_thriving": "The village thrives! Fortune smiles on us all!",
+    "bellman_times_still_hard": "Times are still hard! Share what you can!",
+    "bellman_times_still_lean": "Times are lean still! Waste nothing!",
+    "bellman_times_still_good": "Times are still good! Long may they last!",
+    "bellman_times_still_thriving": "The village thrives still! Fortune is with us!",
+    # a project of the village's built, and a crew coming to build one
+    "bellman_built_lamps": "The lamp posts are up! A light on every lane!",
+    "bellman_built_hall": "The Guild Hall is built! Our thanks to all who gave!",
+    "bellman_built_road": "The road is open! Wagons will come!",
+    "bellman_built_palisade": "The palisade is raised! Sleep sounder now!",
+    "bellman_built_tower": "The watchtower is up! The watch can see far!",
+    "bellman_built_market": "The market is built! Stalls on the green!",
+    "bellman_built_walls": "The stone walls are done! Let them come!",
+    "bellman_built_keep": "The keep is raised! The village is a town to be reckoned with!",
+    "bellman_crew_start": "The builders come at first light!",
+    # trouble, and its end
+    "bellman_siege_held": "The wall held! We stand!",
+    "bellman_siege_lost": "The wall is broken. Mourn our own, and mend!",
+    "bellman_raid_beaten": "The raiders are driven off!",
+    "bellman_rescued": "One of ours is home again!",
+    # the village's own: a birth, a death, newcomers
+    "bellman_born": "A child is born in the village!",
+    "bellman_buried": "We have lost one of our own. A candle by the bell tonight.",
+    "bellman_arrived": "New folk have come to the village. Make them welcome!",
+    # the wagon, the pedlar, the word they carry and the feast
+    "bellman_cart_in": "The wagon is in!",
+    "bellman_cart_late": "No wagon in days! Ration what you have!",
+    "bellman_pedlar": "The pedlar is on the green!",
+    "bellman_from_capital": "News from the city, by the wagon!",
+    "bellman_from_road": "News from the road, by the pedlar!",
+    "bellman_festival_today": "The feast is today! All to the green!",
+}
+CRIER.update(BELLMAN)
+
+# The pedlar (village/live/market/Pedlar.kt), in the man's and the woman's voice (the pedlars' two looks): coming in to the
+# green with the cart, the calls while minding it, a word to a player who comes up or buys or haggles, packing up, and a
+# word for coming late. Heard 24 blocks off. Nothing a player hears or reads calls the pedlar he or she.
+PEDLAR = {
+    "pedlar_arrive": "Fresh from the road!",
+    # the design's "Salt, needles and candles!" and "Ribbons and thread, fair prices!" named goods the cart may not have
+    # (Pedlars.cry names only goods the day's call really brought, and as text)
+    "pedlar_call_1": "Something for every house!",
+    "pedlar_call_2": "Good wares, fair prices!",
+    "pedlar_call_3": "Come and see, come and see!",
+    # the game's two cries that name nothing (Pedlars.cry): the first is pedlar_call_3's words
+    "pedlar_call_look": "Come and see, come and see!",
+    "pedlar_call_road": "Come and see what the road brought!",
+    "pedlar_hello": "Good day to you! Take a look.",
+    "pedlar_sold": "A fair price. Thank you kindly.",
+    "pedlar_haggle": "You drive a hard bargain!",
+    "pedlar_nothing": "Nothing today? Another time, then.",
+    "pedlar_pack": "That's me for today. Mind how you go!",
+    # the game's words, for coming up to the green after half past nine (the design's "Roads were bad. Sorry to keep you
+    # waiting." would be untrue: the pedlar is late when the village's day was already on, whatever the road)
+    "pedlar_late": "Sorry to keep you waiting! Setting up now.",
+}
+
+# A siege or a raid (design 11.2): the folk who answer the horn shout, run, knock, open to a latecomer, hush each other
+# behind the bolted door and come out at the all-clear, each line in the voices SHELTER_TIMBRES gives it (a child's own
+# among them); and the watch on the wall, the man's and the woman's, who call the wall, cheer the rout, salute, and on a
+# quiet night say so to a player close by.
+SHELTER = {
+    "shelter_alert_1": "To your houses!",
+    "shelter_alert_2": "Inside! Bolt the door!",
+    "shelter_alert_3": "Raiders! Get in!",
+    "shelter_run_1": "Run! Run!",
+    "shelter_run_2": "Come on, this way!",
+    "shelter_knock": "Open up! Let me in!",
+    "shelter_open": "Quick, in! Quick!",
+    "shelter_hush_1": "Hush now.",
+    "shelter_hush_2": "Stay low.",
+    "shelter_hush_3": "Keep the little ones quiet.",
+    "shelter_hush_4": "They'll not get in.",
+    "shelter_child_1": "I'm scared.",
+    "shelter_child_2": "Is it over?",
+    "shelter_allclear_1": "It's over. They've gone.",
+    "shelter_allclear_2": "We held. We held!",
+    "shelter_lost": "Gods. Look at the wall.",
+    "watch_wall_1": "To the wall!",
+    "watch_wall_2": "Hold the gate!",
+    "watch_wall_3": "Stand firm!",
+    "watch_wall_4": "Archers, ready!",
+    "watch_cheer": "They're running!",
+    "watch_salute": "Well fought.",
+    # the design's "on the east wall": the watch may stand on any side, and "on the wall" was heard "and the walls" in
+    # every reading of the man's
+    "watch_quiet_1": "All quiet on this wall.",
+    "watch_quiet_2": "Nothing stirring.",
+}
+SHELTER_TIMBRES = {
+    "shelter_alert_1": ("man", "woman"), "shelter_alert_2": ("man", "woman", "old"), "shelter_alert_3": ("man", "woman"),
+    "shelter_run_1": ("man", "woman", "child"), "shelter_run_2": ("man", "woman"), "shelter_knock": ("man", "woman"),
+    "shelter_open": ("man", "woman", "old"), "shelter_hush_1": ("woman", "old"), "shelter_hush_2": ("man", "woman"),
+    "shelter_hush_3": ("woman", "old"), "shelter_hush_4": ("man", "old"), "shelter_child_1": ("child",),
+    "shelter_child_2": ("child",), "shelter_allclear_1": ("man", "woman", "old"), "shelter_allclear_2": ("man", "woman", "old"),
+    "shelter_lost": ("man", "woman", "old"),
+}  # the watch's are the man's and the woman's
+
+# The crews, the carters and the neighbours, in the man's, the woman's and the old man's voices: a crew's stage lines for
+# posts and rails and a mend (design 12.3, 11.6), the mending crew's, the carters meeting a wagon at the road end and
+# counting the load in (9.4), a candle laid on the memorial stone (11.4), a birth shown to the lane and the neighbours'
+# cheer, a child grown, a newcomer welcomed and their reply (5.5, 5.6). After them, the lines a village's building crew
+# already said as text (village/live/build/VillageSite.kt and VillageCrew.kt): back to work after a break, a word to a
+# player in the way, at their dinner, the stages of the hall, the tower, the keep and the stone walls, and each project done.
+VILLAGE = {
+    "village_stage_posts": "Posts are in! Hurrah!",  # the game's words (the design's "The posts are standing!")
+    "village_stage_rails": "Rails are on!",
+    "village_stage_mended": "That's mended. Good as new.",
+    "village_mend_start": "Let's see what the night did.",
+    "village_mend_1": "Mind the splinters.",
+    "village_mend_2": "Fetch another log.",
+    "cart_greet_1": "Here it comes!",
+    "cart_greet_2": "The wagon's in sight!",
+    "cart_count_1": "That's the lot.",
+    "cart_count_2": "Count them twice.",
+    "cart_late": "No wagon again.",
+    "memorial_lay_1": "Rest easy.",
+    "memorial_lay_2": "We'll not forget you.",
+    "memorial_lay_3": "A light for you.",
+    "born_proud": "Meet our newest.",
+    "born_cheer_1": "A healthy little one!",
+    "born_cheer_2": "Congratulations to you both!",
+    "grown_up": "Look how they've grown!",
+    "welcome_1": "Welcome to the village.",
+    "welcome_2": "Glad of another pair of hands.",
+    "welcome_3": "There's a bed ready for you.",
+    "welcome_reply": "Thank you. It's good to be here.",
+    # the building crew's, as the game has them (art/lang/villages_v9.json)
+    "village_build_back": "Right, back to it!",
+    "village_build_mind_1": "Mind out there, friend, this one goes where you're standing!",
+    "village_build_mind_2": "Step aside a moment, would you? This goes there.",
+    "village_build_dinner_1": "Pass the bread, would you?",
+    "village_build_dinner_2": "Good morning's work, that.",
+    "village_stage_groundwork": "Ground's clear!",
+    "village_stage_courses": "Last course laid! Hurrah!",
+    "village_stage_caps": "Caps are on! Hurrah!",
+    "village_done_lamp_posts": "There, the lamps are up. Light them well!",
+    "village_done_guild_hall": "The hall's done! May it see plenty of guild business.",
+    "village_done_palisade": "That's the palisade all round. Sleep sound tonight!",
+    "village_done_archer_tower": "Tower's up. Let them come!",
+    "village_done_market": "Stalls are up! The market's open.",
+    "village_done_stone_walls": "Walls are done. Good stone, to stand a hundred years!",
+    "village_done_keep": "The keep's finished! Hurrah for the village!",
+    "village_done_trade_road": "That's the road done.",
+}
+
+# Every village line said as talk is (not the bellman's), and the timbres that say it
+VILLAGE_LINES = dict(PEDLAR, **SHELTER, **VILLAGE)
+VILLAGE_TIMBRES = dict({k: ("man", "woman") for k in PEDLAR}, **{k: SHELTER_TIMBRES.get(k, ("man", "woman")) for k in SHELTER},
+                       **{k: ("man", "woman", "old") for k in VILLAGE})
+
 # Spelling the TTS reads better than the written text (the subtitles keep the text as written)
 SAY_AS = {
     "Hmph.": "Humph.",  # otherwise spelled out, H-M-P-H
@@ -724,6 +895,134 @@ CRIER_PHONEMES_FOR = {
     ("crier_tale_home", "man"): [("ɪz hˈəʊm", "ˈɪz hˈəʊm")],  # "awaited is home", not "awaited his home"
 }
 
+# ------------------------------------------------------------------ how the villages' lines are said
+# Every one, the bellman's too, is read as the talk is (talk_phonemes: espeak's British reading with the r's of its
+# American reading sounded, which the crier's fixes in CRIER_PHONEMES do a word at a time), then VILLAGE_FIXES and a line's
+# own VILLAGE_FIXES_FOR put right what Whisper base.en heard wrong, (espeak's, Kokoro's) in that order, unless VILLAGE_FULL
+# writes the take's phonemes out: (line, timbre) or line. Each comment says what was heard without it. The bellman's are
+# then cried as the crier's are (process_crier, at CRIER_SPEED); the others are said in their delivery.
+VILLAGE_FIXES = [
+    ("hɚɹˈɑː", "hʊɹˈeɪ"),  # "Hurrah" said "hooray", as the builders' is: Kokoro reads it "her eye" or "Hara"
+]
+# A stressed "at" and "We" with the American "a" of "stand" (else "come a first light", "with sand"), the American o of
+# "Bolt", "Hold" and "Posts" (else "both", "All" and "How old", "Post her in"), a long "in" (else "end", as the builders'
+# "in"), the American "not" (else "knock it in"), a sounded t (else "slight them well", "may see"), a pause the
+# punctuation didn't give (else "Towers uplift and come", "Quick and quick") and the man's "hooray" stressed last, as the
+# builders' is
+VILLAGE_FIXES_FOR = {
+    ("bellman_crew_start", "man"): [("kˈʌm at", "kˈʌm ˈæt")],
+    ("bellman_siege_held", "man"): [("hˈɛld! wiː stˈand", "hˈɛld!  wˈiːː stˈænd")],
+    ("bellman_siege_held", "woman"): [("wiː stˈand", "wˈiː stˈænd")],
+    ("shelter_alert_2", "man"): [("bˈəʊlt ðə", "bˈoʊlt, ðə")],
+    ("shelter_alert_2", "old"): [("bˈəʊlt", "bˈoʊlt")],
+    ("shelter_knock", "man"): [("mˌiː ˈɪn", "mˌiː ˈɪːn")],
+    ("shelter_open", "man"): [("kwˈɪk, ˈɪn!", "kwˈɪk... ˈɪːn!")],
+    ("shelter_open", "woman"): [("kwˈɪk, ˈɪn!", "kwˈɪk, ˈɪːn!")],
+    ("shelter_hush_4", "man"): [("nˌɒt ɡɛt ˈɪn", "nˈɑːt ɡɛt ˈɪːn")],
+    ("shelter_hush_4", "old"): [("ðeɪl nˌɒt ɡɛt ˈɪn", "ðˈeɪl nˈɑːt ɡˈɛt ˈɪn")],  # not "get ins"
+    ("watch_wall_2", "man"): [("hˈəʊld ðə ɡˈeɪt!", "hˈoʊld ðə ɡˈeɪt")],  # "gate", not "gates", without the cry's release
+    ("watch_wall_2", "woman"): [("hˈəʊld", "hˈoʊld")],
+    ("village_stage_posts", "man"): [("pˈəʊsts ɑːɹ", "pˈoʊsts... ɑːɹ"), ("hʊɹˈeɪ", "hʊˈɹeɪ")],
+    ("village_done_lamp_posts", "man"): [("lˈaɪt ðˌɛm", "lˈaɪtʰ ðˌɛm")],
+    ("village_done_guild_hall", "man"): [("mˈeɪ ɪt sˈiː", "mˈeɪ ɪtʰ sˈiː")],
+    ("village_done_guild_hall", "woman"): [("mˈeɪ ɪt sˈiː", "mˈeɪ ɪtʰ sˈiː")],
+    ("village_done_archer_tower", "man"): [("ˈʌp. lˈɛt", "ˈʌp! lˈɛt")],
+    ("welcome_3", "man"): [("bˈɛd", "bˈed")],  # "bed", not "bad": the man says a short vowel a step lower than written
+}
+# Written out: "wagon" with the American a and a breath before "again" (else "No wagging again" in every voice), "Pass"
+# with its American a and "would you" run together (else "Pass the bread with you"), "Glad" with the American a (else
+# "Glide" or "Glut", the man's only right with the lead-in below too), and the child's "Run, run!" (else "Run or run?")
+VILLAGE_FULL = {
+    "cart_late": "nˈoʊ wˈæɡən, ɐɡˈɛn.",
+    "village_build_dinner_1": "pˈæs ðə bɹˈɛd, wˈʊdʒuː?",
+    "welcome_2": "ɡlˈæd ʌv ɐnˈʌðɚ pˈɛɹ ʌv hˈændz.",
+    ("shelter_run_1", "child"): "ɹˈʌn, ɹˈʌn!",
+}
+# Kokoro let the man's "Glad" go at the start of the take (as "Thief", above): a throw-away "oh" is read in front of it
+LEAD_IN.update({"welcome_2": "ˈəʊ! "})
+# Delivery by the longest key prefix that has one, as the trade's (make_trade_voices.DELIVERY): speed, times the timbre's
+# own; pitch, cents added to the timbre's processing; level, dB over the common speech level; wet, the street's reverb.
+# Called across the green or the road end and shouted at the horn: louder, quicker and a little higher, with more of the
+# open air; hushed behind the door, at the stone and between the crew at dinner: lower and quieter; a child scared, softly.
+# VILLAGE_SPEED_FOR is a take's own speed, (line, timbre) -> times the timbre's own, instead of its delivery's.
+VILLAGE_DELIVERY = {
+    "pedlar_arrive": dict(speed=1.02, pitch=20, level=2.0, wet=0.08),
+    "pedlar_call": dict(speed=1.02, pitch=20, level=2.0, wet=0.08),
+    "pedlar_hello": dict(level=1.0),
+    "pedlar_haggle": dict(speed=1.03, level=0.5),
+    "pedlar_nothing": dict(speed=0.97, level=-0.5),
+    "pedlar_pack": dict(level=1.0, wet=0.08),
+    "pedlar_late": dict(speed=1.03, level=1.0, wet=0.08),
+    "shelter_alert": dict(speed=1.08, pitch=40, level=3.0, wet=0.08),
+    "shelter_run": dict(speed=1.1, pitch=40, level=3.0, wet=0.08),
+    "shelter_run_2": dict(speed=1.08, pitch=30, level=2.5, wet=0.08),
+    "shelter_knock": dict(speed=1.06, pitch=30, level=3.0, wet=0.08),
+    "shelter_open": dict(speed=1.08, pitch=20, level=1.0),
+    "shelter_hush": dict(speed=0.92, pitch=-20, level=-4.0, wet=0.03),
+    "shelter_child": dict(speed=0.95, level=-3.0, wet=0.03),
+    "shelter_allclear_1": dict(speed=0.95, pitch=-10),
+    "shelter_allclear_2": dict(speed=1.04, pitch=30, level=2.0, wet=0.08),
+    "shelter_lost": dict(speed=0.9, pitch=-30, level=-1.0),
+    "watch_wall": dict(speed=1.06, pitch=30, level=3.0, wet=0.08),
+    "watch_cheer": dict(speed=1.06, pitch=40, level=3.0, wet=0.08),
+    "watch_salute": dict(speed=0.97, pitch=-10, level=0.5),
+    "watch_quiet": dict(speed=0.95, pitch=-10, level=-1.0),
+    "village_stage": dict(level=2.0),
+    "village_stage_mended": dict(level=1.0),
+    "village_mend": dict(level=0.5),
+    "cart_greet": dict(speed=1.04, pitch=20, level=2.0, wet=0.08),
+    "cart_count": dict(level=0.5),
+    "cart_late": dict(speed=0.95, pitch=-20, level=-1.0),
+    "memorial_lay": dict(speed=0.88, pitch=-20, level=-3.0, wet=0.04),
+    "born_proud": dict(pitch=10, level=0.5),
+    "born_cheer": dict(speed=1.04, pitch=30, level=1.5),
+    "grown_up": dict(level=0.5),
+    "welcome": dict(level=0.5),
+    "welcome_reply": dict(level=0.0),
+    "village_build_back": dict(level=1.5),
+    "village_build_mind": dict(level=1.5),
+    "village_build_dinner": dict(speed=0.97, level=-1.0),
+    "village_done": dict(level=1.5),
+}
+VILLAGE_SPEED_FOR = {  # each the man's, misheard at his delivery's speed and right at this
+    ("shelter_alert_2", "man"): 1.0,  # "Bolt", not "both"
+    ("shelter_open", "man"): 0.92,  # "Quick, in!", not "Quick and quick"
+    ("watch_wall_1", "man"): 0.95,  # "wall", not "wild"
+    ("watch_wall_2", "man"): 0.9,  # "Hold", not "All"
+    ("watch_salute", "man"): 0.88,  # "Well fought", not "We'll fight"
+    ("watch_quiet_1", "man"): 0.9,  # "All quiet", not "I'll quiet"
+    ("welcome_2", "man"): 0.9,  # "Glad", not "Glide"
+    ("village_build_dinner_1", "man"): 0.9,  # "would you", not "with you"
+}
+# How far a line carries (blocks, its sounds.json attenuation_distance) where the default sixteen would leave it quiet:
+# the pedlar's 24 (design 17.4), and what is shouted at the horn, on the wall and to the wagon at the road end
+VILLAGE_REACH = dict({k: 24 for k in PEDLAR},
+                     **{k: 32 for k in SHELTER if k.startswith(("shelter_alert", "shelter_run", "shelter_knock", "watch_wall",
+                                                                 "watch_cheer"))},
+                     **{k: 24 for k in VILLAGE if k.startswith("cart_greet")})
+
+
+def village_delivery(key):
+    """a village line's delivery: VILLAGE_DELIVERY's by the longest key prefix that has one"""
+    d = dict(speed=1.0, pitch=0, level=0.0, wet=None)
+    for k in sorted(VILLAGE_DELIVERY, key=len):
+        if key == k or key.startswith(k + "_"):
+            d.update(VILLAGE_DELIVERY[k])
+    return d
+
+
+def village_phonemes(k, key, timbre):
+    """a village line's phonemes, the bellman's too: VILLAGE_FULL's, else read as the talk is (talk_phonemes) with
+    VILLAGE_FIXES and the line's own VILLAGE_FIXES_FOR put right"""
+    full = VILLAGE_FULL.get((key, timbre)) or VILLAGE_FULL.get(key)
+    if full:
+        return full
+    ph = talk_phonemes(k, BELLMAN[key] if key in BELLMAN else VILLAGE_LINES[key], timbre)
+    for a, b in VILLAGE_FIXES + VILLAGE_FIXES_FOR.get((key, timbre), []):
+        ph = ph.replace(a, b)
+    return ph
+
+
 OUT_SR = 32000
 SPEECH_DB = -19.0  # speech RMS, as the named characters' voices
 SOUND_DIR = "townsfolk/voice"
@@ -749,6 +1048,7 @@ def lines(only=None, keys=None):
             d.update(HOMESTEAD)
             if timbre in MASTER_TIMBRES:
                 d.update(MASTER)
+        d.update({k: v for k, v in VILLAGE_LINES.items() if timbre in VILLAGE_TIMBRES[k]})
         out[timbre] = {k: v for k, v in d.items() if not keys or re.search(keys, k)}
     return out
 
@@ -761,9 +1061,11 @@ def spoken(text):
 
 def say(key, text, timbre=None, k=None):
     """what Kokoro is given for a line: its written-out phonemes (the timbre's own, else the line's) if it has any,
-    a crier line's phonemes (read with the Kokoro k: crier_phonemes), a builder's read as the talk is
-    (talk_phonemes), else its text after SAY_AS, with the line's lead-in in front -> (text or phonemes, is_phonemes)"""
+    a village line's, the bellman's too (village_phonemes), a crier line's (read with the Kokoro k: crier_phonemes), a
+    builder's read as the talk is (talk_phonemes), else its text after SAY_AS, with the line's lead-in in front -> (text or phonemes, is_phonemes)"""
     ph = PHONEMES_FOR.get((key, timbre)) or PHONEMES.get(key)
+    if not ph and (key in BELLMAN or key in VILLAGE_LINES) and k is not None:
+        ph = village_phonemes(k, key, timbre)
     if not ph and key in CRIER and k is not None:
         ph = crier_phonemes(k, key, timbre)
     if not ph and (key in HOMESTEAD or key in MASTER) and k is not None:
@@ -792,9 +1094,12 @@ def crier_phonemes(k, key, timbre):
 
 
 def speed_of(key, timbre):
-    """how quickly Kokoro reads a line: the timbre's speed, or a crier line's (CRIER_SPEED, CRIER_SPEED_FOR)"""
+    """how quickly Kokoro reads a line: the timbre's speed, a crier line's (CRIER_SPEED, CRIER_SPEED_FOR), or a village
+    line's (the timbre's times its delivery's, or VILLAGE_SPEED_FOR's)"""
     if key in CRIER:
         return CRIER_SPEED_FOR.get((key, timbre), CRIER_SPEED[timbre])
+    if key in VILLAGE_LINES:
+        return TIMBRES[timbre]["speed"] * VILLAGE_SPEED_FOR.get((key, timbre), village_delivery(key)["speed"])
     return TIMBRES[timbre]["speed"]
 
 
@@ -1070,6 +1375,12 @@ def cmd_process(a):
                 x = x.mean(axis=1)
             if key in CRIER:
                 y = process_crier(x, sr, timbre, key)
+            elif key in VILLAGE_LINES:  # in its delivery: the timbre's processing with its pitch and reverb, at its level
+                d = village_delivery(key)
+                st = dict(STYLE[timbre], pitch=STYLE[timbre]["pitch"] + d["pitch"])
+                if d["wet"] is not None:
+                    st["wet"] = d["wet"]
+                y = process_line(x, sr, st, key, timbre, d["level"])
             else:
                 y = process_line(x, sr, STYLE[timbre], key, timbre, LEVEL.get(key, 0.0))
             y = sox(y, SR, out_sr=OUT_SR)
@@ -1116,6 +1427,8 @@ def cmd_fragments(a):
             entry = f"guildmark:{name}"
             if key in CRIER:  # the whole square hears the crier
                 entry = {"name": entry, "attenuation_distance": CRIER_REACH}
+            elif key in VILLAGE_REACH:  # the pedlar, and a shout at the horn, on the wall or at the road end
+                entry = {"name": entry, "attenuation_distance": VILLAGE_REACH[key]}
             sounds[f"townsfolk.voice.{timbre}.{key}"] = {"sounds": [entry], "subtitle": f"say.guildmark.{key}"}
             lang[f"say.guildmark.{key}"] = text
     for path, data in ((os.path.join(HERE, "townsfolk_sounds.json"), sounds),
