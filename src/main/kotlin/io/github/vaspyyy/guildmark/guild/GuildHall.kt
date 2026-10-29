@@ -1,6 +1,10 @@
 package io.github.vaspyyy.guildmark.guild
 
+import io.github.vaspyyy.guildmark.block.BoardPart
+import io.github.vaspyyy.guildmark.block.NoticeBoardBlock
 import io.github.vaspyyy.guildmark.quest.QuestGenerator
+import io.github.vaspyyy.guildmark.registry.ModBlocks
+import io.github.vaspyyy.guildmark.village.live.build.BuildSink
 import io.github.vaspyyy.guildmark.registry.ModAttachments
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
@@ -59,6 +63,7 @@ object GuildHall {
         walls(level, frame, floor)
         roof(level, frame, floor)
         furnish(level, frame, floor)
+        if (io.github.vaspyyy.guildmark.economy.VillageMarkets.enabled()) marketBoard(level, frame, floor)
         seatReceptionist(level, frame, floor, anchor)
         return true
     }
@@ -104,8 +109,9 @@ object GuildHall {
         return high
     }
 
+    /** Sets [state] at [pos], as `level.setBlock(pos, state, UPDATE_ALL)`; written down instead while a village's crew is to build the hall (BuildSink). */
     private fun set(level: ServerLevel, pos: BlockPos, state: BlockState) {
-        level.setBlock(pos, state, Block.UPDATE_ALL)
+        BuildSink.put(level, pos, state)
     }
 
     /** Clear the site down to the floor and raise a stone foundation under any low ground. */
@@ -163,11 +169,11 @@ object GuildHall {
         val doorState = Blocks.SPRUCE_DOOR.defaultBlockState().setValue(DoorBlock.FACING, frame.back)
         set(level, doorBase, doorState.setValue(DoorBlock.HALF, DoubleBlockHalf.LOWER))
         set(level, doorBase.above(), doorState.setValue(DoorBlock.HALF, DoubleBlockHalf.UPPER))
-        // Panes join up with their neighbours
+        // Panes join up with their neighbours (as the hall stands so far, recorded or not)
         for (x in 0 until WIDTH) for (z in 0 until DEPTH) for (h in 1..2) {
             val pos = frame.at(x, floor - frame.origin.y + h, z)
-            val state = level.getBlockState(pos)
-            if (state.`is`(Blocks.GLASS_PANE)) set(level, pos, Block.updateFromNeighbourShapes(state, level, pos))
+            val state = BuildSink.stateAt(level, pos)
+            if (state.`is`(Blocks.GLASS_PANE)) set(level, pos, BuildSink.joined(level, pos, state))
         }
     }
 
@@ -221,12 +227,36 @@ object GuildHall {
         }
     }
 
+    /**
+     * The village's market board at the hall door (living-world/villages/design.md 8.2), where the bellman chalks the prices: free-standing
+     * two steps out from the front wall, beside the door, facing the bell; or against the wall if the ground there will not do. None if
+     * neither will (nothing is knocked down for it).
+     */
+    private fun marketBoard(level: ServerLevel, frame: Frame, floor: Int) {
+        val y = floor - frame.origin.y
+        val board = ModBlocks.MARKET_BOARD.get().defaultBlockState().setValue(NoticeBoardBlock.FACING, frame.front)
+        for (z in intArrayOf(-2, -1)) {
+            val anchor = frame.at(WIDTH / 2 + 2, y, z)
+            val cells = BoardPart.entries.map { it to NoticeBoardBlock.cellPos(anchor, frame.front, it) }
+            if (cells.any { (_, pos) -> BuildSink.stateAt(level, pos).let { !it.canBeReplaced() || !it.fluidState.isEmpty } }) continue
+            if (cells.any { (part, pos) -> part.row == 0 && BuildSink.stateAt(level, pos.below()).let { !it.isFaceSturdy(level, pos.below(), Direction.UP) } }) continue
+            for ((part, pos) in cells) set(level, pos, board.setValue(NoticeBoardBlock.PART, part))
+            return
+        }
+    }
+
+    /** The receptionist takes their seat behind the counter once the hall stands (at once, unless a crew is to build it). */
     private fun seatReceptionist(level: ServerLevel, frame: Frame, floor: Int, anchor: BlockPos) {
-        val villager = EntityTypes.VILLAGER.create(level, EntitySpawnReason.EVENT) ?: return
         val spot = frame.at(WIDTH / 2, floor - frame.origin.y, DEPTH - 3)
-        villager.snapTo(spot.x + 0.5, spot.y.toDouble(), spot.z + 0.5, frame.front.toYRot(), 0.0f)
+        BuildSink.afterwards(level, "receptionist", spot, anchor, frame.front.toYRot().toInt())
+    }
+
+    /** Seats the receptionist of the board at [anchor] at [spot], facing [yaw]. */
+    fun seat(level: ServerLevel, spot: BlockPos, anchor: BlockPos, yaw: Float) {
+        val villager = EntityTypes.VILLAGER.create(level, EntitySpawnReason.EVENT) ?: return
+        villager.snapTo(spot.x + 0.5, spot.y.toDouble(), spot.z + 0.5, yaw, 0.0f)
         villager.finalizeSpawn(level, level.getCurrentDifficultyAt(spot), EntitySpawnReason.EVENT, null)
-        villager.yHeadRot = frame.front.toYRot()
+        villager.yHeadRot = yaw
         makeReceptionist(villager, level.registryAccess(), level.random, anchor)
         level.addFreshEntity(villager)
     }

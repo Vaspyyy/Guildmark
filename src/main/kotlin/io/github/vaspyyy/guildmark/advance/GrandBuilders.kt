@@ -8,6 +8,7 @@ import io.github.vaspyyy.guildmark.advance.AdvanceBuilders.surface
 import io.github.vaspyyy.guildmark.guild.Holdings
 import io.github.vaspyyy.guildmark.guild.TownControl
 import io.github.vaspyyy.guildmark.registry.ModBlocks
+import io.github.vaspyyy.guildmark.village.live.build.BuildSink
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.server.level.ServerLevel
@@ -62,16 +63,19 @@ object GrandBuilders {
             stalls.add(BlockPos(x, base, z))
         }
         if (stalls.isEmpty()) return false
-        for (stall in stalls) {
-            EntityTypes.VILLAGER.create(level, EntitySpawnReason.EVENT)?.let { villager ->
-                val spot = stall.relative(Direction.Plane.HORIZONTAL.getRandomDirection(random), 2)
-                val ground = surface(level, spot.x, spot.z)
-                villager.snapTo(spot.x + 0.5, ground.y.toDouble(), spot.z + 0.5)
-                villager.finalizeSpawn(level, level.getCurrentDifficultyAt(ground), EntitySpawnReason.EVENT, null)
-                level.addFreshEntity(villager)
-            }
-        }
+        // Each stall's keeper moves in once it stands (at once, unless a crew is to build it: village/live/build/BuildSink)
+        for (stall in stalls) BuildSink.afterwards(level, "stall_keeper", stall.relative(Direction.Plane.HORIZONTAL.getRandomDirection(random), 2))
         return true
+    }
+
+    /** A villager moves in at [spot] beside a stall, on the ground there, to take up its trade. */
+    fun keeper(level: ServerLevel, spot: BlockPos) {
+        EntityTypes.VILLAGER.create(level, EntitySpawnReason.EVENT)?.let { villager ->
+            val ground = surface(level, spot.x, spot.z)
+            villager.snapTo(spot.x + 0.5, ground.y.toDouble(), spot.z + 0.5)
+            villager.finalizeSpawn(level, level.getCurrentDifficultyAt(ground), EntitySpawnReason.EVENT, null)
+            level.addFreshEntity(villager)
+        }
     }
 
     private fun buildStall(level: ServerLevel, base: BlockPos, facing: Direction, index: Int) {

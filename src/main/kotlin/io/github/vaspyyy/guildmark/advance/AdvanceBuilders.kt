@@ -55,8 +55,9 @@ object AdvanceBuilders {
         return !state.`is`(Blocks.DIRT_PATH) && level.getFluidState(ground).isEmpty && state.isFaceSturdy(level, ground, Direction.UP)
     }
 
+    /** Sets [state] at [pos], as `level.setBlock(pos, state, UPDATE_ALL)`; written down instead while a village's crew is to build it (BuildSink). */
     fun place(level: ServerLevel, pos: BlockPos, state: BlockState) {
-        level.setBlock(pos, state, Block.UPDATE_ALL)
+        io.github.vaspyyy.guildmark.village.live.build.BuildSink.put(level, pos, state)
     }
 
     /**

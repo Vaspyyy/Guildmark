@@ -46,9 +46,10 @@ object Labour {
     /** The game tick the lent were last looked at (halved, so `now - looked` can't overflow before the first look). */
     private var looked = Long.MIN_VALUE / 2
 
-    /** Where [life]'s capital's labourers report for work, if anywhere. */
+    /** Where [life]'s capital's labourers report for work, if anywhere (a village's, at its building site: village/live/build). */
     fun site(p: Townsperson, life: Life): BlockPos? {
         val level = p.level() as? ServerLevel ?: return null
+        if (life.places.kind == TownKind.VILLAGE) return io.github.vaspyyy.guildmark.village.live.build.VillageSites.reportAt(level, life.places.centre.asLong())
         return Works.workAt(level, life.places.centre.asLong())
     }
 
@@ -71,7 +72,8 @@ object Labour {
         if (p.blockPosition().distSqr(at) > AT_SITE * AT_SITE) return Ways.to(p, life.places, at, Jobs.WALK, near = 2.5)
         val now = level.gameTime
         if (now - (asked[p] ?: Long.MIN_VALUE / 2) >= ASK_EVERY) {
-            val director = Works.crew?.labour(level, p)
+            val director = if (life.places.kind == TownKind.VILLAGE) io.github.vaspyyy.guildmark.village.live.build.VillageSites.labour(level, p, life.places.centre.asLong())
+            else Works.crew?.labour(level, p)
             if (director != null) {
                 asked[p] = now
                 return Lending(p, director)

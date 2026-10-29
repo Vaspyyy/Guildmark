@@ -54,7 +54,10 @@ object Advances {
     private fun tryComplete(level: ServerLevel, anchor: BlockPos, board: QuestBoardBlockEntity, advance: Advance) {
         val center = villageCenter(level, anchor)
         if (advance == Advance.TRADE_ROAD) return startTradeRoad(level, anchor, board, center)
-        val failure = AdvanceBuilders.build(advance, level, center, villageRadius(level, center), anchor)
+        // Recorded for the village's crew to lay over days, when they are to build it; built at once, as ever, when not (village/live/build)
+        val failure = io.github.vaspyyy.guildmark.village.live.build.BuildSink.record(level, center.asLong(), advance.ordinal) {
+            AdvanceBuilders.build(advance, level, center, villageRadius(level, center), anchor)
+        }
         if (failure != null) {
             announce(level, center, Component.translatable(failure, advance.title))
             return
