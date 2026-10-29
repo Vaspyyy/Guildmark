@@ -61,6 +61,8 @@ object Villages {
         io.github.vaspyyy.guildmark.village.live.grow.VillageGrowth.register()
         // Trouble: the shelter, the watch, the dead and the memorial, the mend, the golems, the raids (V10)
         io.github.vaspyyy.guildmark.village.live.trouble.Trouble.register()
+        // What the villages cost (village perf) and whether nothing can stick (village check) (V11)
+        VillageSafetyCommand.init()
     }
 
     /**
@@ -140,6 +142,9 @@ object Villages {
      */
     @Suppress("UNUSED_PARAMETER")
     fun places(level: ServerLevel, key: Long): VillagePlaces? = kept[key]
+
+    /** How many villages' places are held in memory now (for `village perf`). */
+    fun placesHeld(): Int = kept.size
 
     /** The records that are [Live.LIVE] or [Live.SLEEPING], the nearest a player first (those with no player to measure from, by their keys). */
     fun awake(level: ServerLevel): List<VillageRec> {
