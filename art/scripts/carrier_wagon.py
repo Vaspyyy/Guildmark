@@ -42,11 +42,11 @@ THE NUMBERS ReinRenderer reads (CarrierWagonMesh):
   STAFF_RUN  how far below its place the pennant is when it begins to run up the staff: its foot then just clears the tilt's top
 
 Clearances it checks: the boards and the seats against every cube of the wagon (the front wheels steered 55 degrees either way and
-rocked 8, the brake lever over its whole swing, the tailboard let down); the pennant against the staff, its knob and the tilt over its
-whole ripple (each segment's swing at its largest, every phase) and all the way up its run; that nothing floats (each board on the box's
-side, the cushion on the bench, the pad on the tailboard, the pennant's sleeve at the staff); that the paint lies only on texels the
-wagon itself paints, and only on the faces it is meant for; and that wagon.png, wagon_glow.png and WagonMesh.kt on disk are still what
-wagon.py writes.
+rocked 8, the brake lever over its whole swing in five steps, the tailboard let down: 225 poses); the pennant against the staff, its
+knob and the tilt over its whole ripple (each segment's swing at its largest, every phase) and all the way up its run; that nothing
+floats (each board on the box's side, the cushion on the bench, the pad on the tailboard, the pennant's sleeve at the staff); that the
+paint lies only on texels the wagon itself paints, and only on the faces it is meant for; and that wagon.png, wagon_glow.png and
+WagonMesh.kt on disk are still what wagon.py writes.
 """
 import json
 import math
@@ -682,7 +682,7 @@ def check_clear(models, dress):
             worst[key] = (d, where)
 
     poses = [dict(spin=s, steer=st, rock=r, brake=br, tail=0.0) for s in (0.0, 9.0, 17.0) for st in (-55.0, -30.0, 0.0, 30.0, 55.0)
-             for r in (-8.0, 0.0, 8.0) for br in (W.BRAKE_REST, W.BRAKE_ON)]
+             for r in (-8.0, 0.0, 8.0) for br in np.linspace(W.BRAKE_REST, W.BRAKE_ON, 5)]
     for kw in poses:
         wb = wagon_boxes(models, **kw)
         for a in still:
