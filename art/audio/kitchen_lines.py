@@ -18,9 +18,9 @@ dish, a number or a role, with the few exceptions CHECK_ALLOWS lists, where the 
 (the rest-day roast, a style's liked dish). The takes are talk.<family>_<n>, n counted from 0; the man, the woman and the
 old man say every family but the children's.
 
-TIER 1 IS RECORDED (RECORDED = [1]): groups() returns its two groups, so make_talk_voices.py's tts, process and table take
-them as they take the town's own talk, and the game plays their takes. A tier not in RECORDED is not in GROUPS, and the game
-reads its wordings in full as text: `write` puts the text of every wording of every tier in art/lang/cook_lines.json
+BOTH TIERS ARE RECORDED (RECORDED = [1, 2]): groups() returns all five groups, so make_talk_voices.py's tts, process and
+table take them as they take the town's own talk, and the game plays their takes. A tier not in RECORDED is not in GROUPS,
+and the game reads its wordings in full as text: `write` puts the text of every wording of every tier in art/lang/cook_lines.json
 (say.guildmark.talk.<family>_<n>, whatever RECORDED says) and the number of wordings of every family in KitchenWords.kt,
 which is how townsfolk/talk/sources/KitchenLines.kt picks a wording to read while a family has no take (design 8.5). To
 record a tier: put its number in RECORDED, make its takes with make_talk_voices.py (`tts` and `process` with `--keys`
@@ -29,12 +29,14 @@ talk_sounds.json, talk_lang.json and TalkLines.kt together. The text of a record
 and talk_lang.json, so the two merge as one.
 
 The takes were checked with Whisper base.en on the encoded files, as the README's voice scripts are, and DELIVERY,
-SPEED_FOR and PHONEMES below hold what that needed (each entry says what was heard before). Every take of tier 1 comes back
-word for word or right but for a homophone, a spelling, an apostrophe or a hum written another way ("Hum" for the
-tasters' "Hm" and "Mm", "Supes up" for "Soup's up", "backpot" for "back pot"). Four wordings were changed where no reading
-would do, with their keys in merge_lang.py's OVERRIDES: "There we are. Perfect." (was "There. Perfect.", heard "They're
-perfect"), "That is sound work." (was "That's sound work.", heard "That sound work"), and the baker's two "the innkeeper"
-(were "the inn", heard "the N" or "the end").
+SPEED_FOR and PHONEMES below hold what that needed (each entry says what was heard before). Every one of the 420 takes
+comes back word for word (355) or right but for a homophone, a spelling, an apostrophe, a contraction written out or a hum
+written another way (65: "Hum" for the tasters' "Hm" and "Mm", "Supes up" for "Soup's up", "backpot" and "cook shop" for
+"back pot" and "cookshop", "I have a request" for "I've a request", "Stu" for "Stew", "one" for "won"). Seven wordings
+were changed where no reading would do, with their keys in merge_lang.py's OVERRIDES: "There we are. Perfect." (was
+"There. Perfect.", heard "They're perfect"), "That is sound work." (was "That's sound work.", heard "That sound work"),
+the baker's two "the innkeeper" (were "the inn", heard "the N" or "the end"), the burnt pot's two "at the tavern" (were
+"at the inn", heard "at the end") and "Here's the till for you." (was "Here's the till.", heard "the tell").
 
 Tiers (design 11.5): TIER 1 is the cook's own loop, the pot, oven and spit and the back door (the first two groups: 23
 families, 67 wordings); TIER 2 is the rest, what the town says, the onlookers, the Harvest Table, the shop and the
@@ -64,9 +66,8 @@ KOTLIN_OUT = os.path.join(REPO, "src", "main", "kotlin", "io", "github", "vaspyy
                           "sources", "KitchenWords.kt")
 
 # The tiers whose takes exist: make_talk_voices.py's `table` needs every family in GROUPS to have all of its takes, so a
-# tier goes in here in the commit that adds its takes and nothing before. Tier 1 (the pot, oven and spit and the back
-# door) is recorded.
-RECORDED = [1]
+# tier goes in here in the commit that adds its takes and nothing before. Both are recorded.
+RECORDED = [1, 2]
 
 # The length limit the script gives talk (seconds); a take is about 12 ticks + 0.97 ticks a character long (the fit of the
 # 692 wordings already recorded), the longest of them 66 characters; the limit is held to 64 characters and 12 words
@@ -305,9 +306,11 @@ TABLE = [
             "Did you hear who won the Harvest Table?",
             "The Harvest Table has been won, you know.",
         ]),
+        # "at the inn" was heard "at the end" in the man's and the woman's voices, whatever the reading; the inn is the town's
+        # tavern, as the town's own talk calls it ("Word in the tavern is...")
         ("kitchen.told.burnt", "anyone who has heard that a whole pot burnt at the inn", [
-            "Someone burnt a whole pot at the inn.",
-            "A whole pot ruined at the inn. What a waste.",
+            "Someone burnt a whole pot at the tavern.",
+            "A whole pot ruined at the tavern. What a waste.",
         ]),
     ]),
     ("The kitchen: onlookers, the Harvest Table and the shop", "MWO", 2, [
@@ -361,9 +364,10 @@ TABLE = [
             "The first plate from the new shop!",
             "Our very first plate, and welcome to it!",
         ]),
+        # the man's "Here's the till." was heard "the tell", "the teal" or "the tow" in every reading
         ("kitchen.shop.report", "a cookshop's keeper, to its owner, with the till", [
             "Here's what the shop took.",
-            "Here's the till.",
+            "Here's the till for you.",
         ]),
         # the works' talk of a raised cookshop (beside works.raised.stall; the same two forms)
         ("works.raised.cookshop", "anyone, of a cookshop raised within the week", [
@@ -445,6 +449,11 @@ DELIVERY = {
     "kitchen.scene.roast": dict(level=1.5),  # cried to a player coming near the spit
     "kitchen.guest.burnt": dict(level=1.0),  # called out at the smell from the back
     "kitchen.busy": dict(speed=1.04),
+    "kitchen.pot.catching": dict(level=1.0),  # a warning, called to the cook
+    "kitchen.judge": dict(level=2.0),  # the host, to the Harvest Table's crowd
+    "kitchen.shop.cry": dict(level=1.5),  # the wares, called across the square
+    "kitchen.shop.first": dict(level=1.0),
+    "kitchen.child.hot": dict(level=1.0),
 }
 
 # A take's own speed where its timbre's reading would run over the limit, misread or rush (key, timbre) -> times the
@@ -453,6 +462,8 @@ SPEED_FOR = {
     ("talk.kitchen.scene.hot_0", "man"): 0.94,  # "Hot soup!", not "Hot super"
     ("talk.kitchen.scene.roast_0", "old"): 0.94,  # "roast", not "rose" (with the American o below)
     ("talk.kitchen.guest.burnt_1", "man"): 0.92,  # "burnt at", not "burn at"
+    ("talk.kitchen.purveyor_0", "man"): 0.92,  # "Folk are", not "Folker" (with the American o below)
+    ("talk.kitchen.shop.sold_2", "man"): 0.92,  # "All gone", not "I'll gone"
 }
 
 # Text the TTS reads better (the subtitles keep the line as written): {key: {written: said}}
@@ -490,6 +501,29 @@ PHONEMES = {
     ("talk.kitchen.guest.no_1", "man"): "aɪ dˈəʊnt nˈəʊ juː wˈɛl ɪnˈʌf fɚðə bˈak pˈɔːt.",  # not "the backpods"
     ("talk.kitchen.guest.no_1", "old"): "aɪ dˈəʊnt nˈəʊ juː wˈɛl ɪnˈʌf fɚðə bˈak pˈɑt.",
     ("talk.kitchen.guest.yes_1", "old"): "juːv ˈɜːnd ðə jˈuːs ɒvðə bˈak pˈɑːt.",
+    # tier 2. espeak's British "we're" ("wiəɹ") was heard "We are", its "stew" ("stjˈuː") "It's due", and "Mmm" is spelled
+    # out ("em em em", heard "MMM"): the passer-by's and the child's are a hum, closed where that was heard as one ("Mm")
+    "talk.kitchen.slate_1": "wɪɹ ˈaftɚɹ ɐ fjˈuː dˈɪʃɪz tədˈeɪ. ɪts ɒnðə slˈeɪt.",
+    ("talk.kitchen.slate_2", "old"): "hav ɐ lˈʊk at ðə slˈeɪt. wɪɹ ˈaftɚɹ ɐ fjˈuː dˈɪʃɪz.",
+    ("talk.kitchen.purveyor_0", "man"): "fˈoʊk ˈɑːɹ ˈaskɪŋ ˈaftɚ jɔːɹ kˈʊkɪŋ.",
+    ("talk.kitchen.palate.northern_0", "man"): "stˈuː ənd smˈoʊktʰ stɹˈɪps: ðats wɒt ðɪs tˈaʊn lˈaɪks.",  # "smoked", not "Smoke"
+    ("talk.kitchen.palate.northern_0", "woman"): "stˈuː and smˈəʊkt stɹˈɪps: ðats wɒt ðɪs tˈaʊn lˈaɪks.",
+    ("talk.kitchen.palate.northern_0", "old"): "stˈuː ənd smˈoʊkt stɹˈɪps: ðats wɒt ðɪs tˈaʊn lˈaɪks.",
+    ("talk.kitchen.palate.savanna_0", "old"): "ɹˈoʊst ˈænd hˈʌnɪ kˈeɪks: ðats wɒt ðɪs tˈaʊn lˈaɪks.",  # not "Rosed and honey kicks"
+    ("talk.kitchen.relished_1", "man"): "wˈɒt juː kˈʊkt ðɪs wˈiːk, aɪ hˈavənt stˈɒpt tˈɔːkɪŋ ɐbˈaʊt ɪt.",  # "What", not "While"
+    ("talk.kitchen.relished_1", "woman"): "wˌɒt juː kˈʊktʰ ðɪs wˈiːk, aɪ hˈavənt stˈɒpt tˈɔːkɪŋ ɐbˈaʊt ɪt.",  # "cooked", not "cook"
+    ("talk.kitchen.chilled_1", "man"): "jɔːɹ blˈuː wɪð kˈoʊld; ɡˈoʊ ənd fˈaɪnd ɐ hˈɒt bˈəʊl.",  # "cold. Go", not "colds go"
+    ("talk.kitchen.chilled_2", "man"): "kˈəʊld ˈaʊt hˈɪɹ... ɡɛt sˈʌmθɪŋ hˈɒt tʊ ˈiːt.",  # "here. Get", not "here gets"
+    ("talk.kitchen.chilled_2", "woman"): "kˈəʊld ˈaʊt hˈɪɹ. ɡˈɛt sˈʌmθɪŋ hˈɒt tʊ ˈiːt.",
+    "talk.kitchen.told.burnt_0": "sˈʌmwʌn bˈɜːnt ɐ hˈoʊl pˈɑt at ðə tˈavɚn.",  # "a whole pot", not "to hold part"
+    ("talk.kitchen.told.burnt_0", "old"): "sˈʌmwʌn bˈɜːnt ɐ hˈoʊl pˈɑt at ðə tˈævɚn.",
+    ("talk.kitchen.pot.catching_1", "old"): "jɔːɹ pˈɑːts kˈætʃɪŋ!",  # not "You're pot-scatching"
+    "talk.kitchen.pot.smells_1": "hˈʌm. ðat smˈɛlz wˈʌndɚfəl.",
+    ("talk.kitchen.pot.smells_1", "man"): "mˈmm. ðat smˈɛlz wˈʌndɚfəl.",
+    ("talk.kitchen.shop.sold_2", "man"): "ˈɔːl ɡˈɒn, aɪm ɐfɹˈeɪd.",
+    ("talk.kitchen.shop.report_1", "man"): "hˈɪɹz ðə tˈɪl fɔːɹ juː.",
+    ("talk.works.also.raised.cookshop_1", "old"): "ðɛɹz ɐ kˈʊkʃɒp ɡˈɔn ˌʌp ɪnðə mˈɑːɹkɪt, tˈuː.",  # "gone", not "going"
+    "talk.kitchen.child.smell_0": "mˈmm, sˈʌmθɪŋ smˈɛlz ɡˈʊd!",
 }
 
 

@@ -92,6 +92,9 @@ OVERRIDES = {
     "say.guildmark.talk.kitchen.tier.sound_2",
     "say.guildmark.talk.kitchen.baker.no_0",
     "say.guildmark.talk.kitchen.baker.no_2",
+    "say.guildmark.talk.kitchen.told.burnt_0",
+    "say.guildmark.talk.kitchen.told.burnt_1",
+    "say.guildmark.talk.kitchen.shop.report_1",
 }
 
 
