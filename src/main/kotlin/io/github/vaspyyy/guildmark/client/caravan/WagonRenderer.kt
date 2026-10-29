@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.math.Axis
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.caravan.Wagon
+import io.github.vaspyyy.guildmark.client.trade.CarrierWagonArt
 import io.github.vaspyyy.guildmark.economy.Good
 import net.minecraft.client.model.EntityModel
 import net.minecraft.client.model.geom.ModelLayerLocation
@@ -445,7 +446,11 @@ class WagonRenderer(context: EntityRendererProvider.Context) : EntityRenderer<Wa
             poseStack.translate(-x, -WagonMesh.TIP_Y / 16f, 0f)
         }
         collector.submitModel(model, s, poseStack, TEXTURE, s.lightCoords, OverlayTexture.NO_OVERLAY, s.outlineColor)
-        if (s.tint != -1) pennant(s, poseStack, collector)
+        if (s.tint != -1) {
+            // A wagon with a colour (a trader's, a House's) wears it: the paint drawn over the wagon in the same pose, after it, tinted
+            PAINT?.let { collector.order(1).submitModel(model, s, poseStack, it, s.lightCoords, OverlayTexture.NO_OVERLAY, ARGB.color(255, s.tint), null, 0) }
+            pennant(s, poseStack, collector)
+        }
         // The lantern's glass lit, turned as the lantern hangs
         if (s.lit) {
             val hook = WagonMesh.LANTERN_HOOK
@@ -549,8 +554,11 @@ class WagonRenderer(context: EntityRendererProvider.Context) : EntityRenderer<Wa
         val CUTOUT: RenderType = RenderTypes.entityCutout(TEXTURE)
         private val GLOW: RenderType = RenderTypes.eyes(GLOW_TEXTURE)
 
-        /** A House's pennant: vanilla's white wool, tinted with the House's colour. */
-        private val FLAG: RenderType = RenderTypes.entityCutout(Identifier.withDefaultNamespace("textures/block/white_wool.png"))
+        /** The paint a wagon with a colour wears over the caravans' own (the carriers' art, CarrierWagonArt), if there is any. */
+        private val PAINT: RenderType? = CarrierWagonArt.active().paint?.let { RenderTypes.entityCutout(it) }
+
+        /** A House's pennant: the carriers' pennant cloth (the paint's, at the pennant's own UVs) or vanilla's white wool, tinted with the House's colour. */
+        private val FLAG: RenderType = RenderTypes.entityCutout(CarrierWagonArt.active().paint ?: Identifier.withDefaultNamespace("textures/block/white_wool.png"))
 
         /** The band's six arrows ("w_arrow0" to 5 of the wreck, posed in the standing wagon's space); 3 and 4 are in the tilt. */
         private const val ARROW_COUNT = 6

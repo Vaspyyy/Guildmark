@@ -23,7 +23,8 @@ import net.minecraft.resources.Identifier
  *   flying from the staff's top. Segment k turns about the vertical at its [Table.ripples] hinge (x, z), the next riding on it; the whole is
  *   [Table.staffRun] px lower while it is furled and runs up the staff as the wagon is rolled out.
  *
- * Nothing else is read: a part that is missing is not drawn.
+ * Nothing else is read: a part that is missing is not drawn. Besides the dressing a table may carry [Table.paint]: the caravans' wagon painted in its
+ * colour, which WagonRenderer draws over any wagon that has one (a trader's, a House's).
  */
 internal object CarrierWagonArt {
     /** A point a part turns about: (x, z) in px. */
@@ -42,14 +43,31 @@ internal object CarrierWagonArt {
         val names: List<Name>,
         val ripples: List<Hinge>,
         val staffRun: Float,
+        /**
+         * The paint a wagon with a colour wears (a trader's or a House's): a texture at the caravans' wagon's own layout, white where the colour
+         * covers it and clear elsewhere, drawn over the wagon tinted; its pennant cloth at the wagon's pennant's own UVs. Null: none (the stand-in).
+         */
+        val paint: Identifier? = null,
     )
 
     /**
-     * THE ONE CALL (stream X2): the dressing drawn from X2's wagon table (the name boards, the seats and the colour), or null while that table has not
-     * landed on main. With null the stand-in below is drawn: plain planks for the boards, a cushion and a pad, a pennant of white wool tinted with the
-     * owner's colour. When it lands this is the one line to change, to `Table(<X2's mesh>, <its texture>, -1, -1, <its names>, <its hinges>, <its run>)`.
+     * THE ONE CALL (stream X2): the dressing drawn from X2's wagon table ([CarrierWagonMesh]: the name boards, the seats, the pennant and the paint in
+     * the owner's colour), or null for the stand-in below: plain planks for the boards, a cushion and a pad, a pennant of white wool tinted with the
+     * owner's colour, and no paint.
      */
-    fun table(): Table? = null
+    fun table(): Table? = x2
+
+    private val x2: Table by lazy {
+        val texture = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, CarrierWagonMesh.TEXTURE)
+        val n = CarrierWagonMesh.NAMES
+        Table(
+            CarrierWagonMesh::dressing, texture, -1, -1,
+            (0 until n.size / 6).map { Name(n[6 * it], n[6 * it + 1], n[6 * it + 2], n[6 * it + 3], n[6 * it + 4], n[6 * it + 5]) },
+            (0 until CarrierWagonMesh.RIPPLES.size / 2).map { Hinge(CarrierWagonMesh.RIPPLES[2 * it], CarrierWagonMesh.RIPPLES[2 * it + 1]) },
+            CarrierWagonMesh.STAFF_RUN,
+            paint = texture,
+        )
+    }
 
     /** The dressing in use: X2's, or the stand-in. */
     fun active(): Table = table() ?: STAND_IN
