@@ -399,7 +399,7 @@ object Witness {
             "siege_won" -> Triple("deed.siege", 0.8f to Fade.BIG, 1)
             "outlaw_slain" -> Triple("deed.band_broken", 0.8f to Fade.BIG, 1)
             "siege_lost" -> Triple("siege.lost", 0.8f to Fade.BIG, -1)
-            "ambush", "outlaw.raid_beaten" -> Triple("deed.band", 0.6f to Fade.SMALL, 1)
+            "ambush", "outlaw.raid_beaten", "outlaw.hunt_beaten", "outlaw.hunt_beaten_wild" -> Triple("deed.band", 0.6f to Fade.SMALL, 1)
             "outlaw.caravan", "outlaw.farm", "outlaw.barn", "outlaw.traveller", "outlaw.tithe", "outlaw.patrol", "outlaw.camp", "outlaw.raid" ->
                 Triple("outlaws." + news.removePrefix("outlaw."), 0.6f to Fade.SMALL, -1)
             "outlaw.raid_taken" -> Triple("outlaws.taken", 0.6f to Fade.SMALL, -1)
