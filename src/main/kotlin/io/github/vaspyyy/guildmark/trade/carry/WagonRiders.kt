@@ -44,8 +44,12 @@ internal object WagonRiders : GuardDirector.Seats {
     /** Ticks a guard keeps their seat once the wagon is let go of (it may be led on again at once). */
     private const val LINGER = 40
 
-    /** Ticks the director may go without asking before a rider is put down (it has let go of them). */
+    /**
+     * Ticks the director may go without asking before a guard walking up to climb is let go of, and before a rider gets down (something else has
+     * them: the fight comes first, and a talk; a rider with someone to fight gets down at once).
+     */
     private const val ASKED = 3L
+    private const val ASKED_RIDING = 100L
 
     private enum class Stage { WALK, CLIMB, SIT, JUMP }
 
@@ -82,22 +86,9 @@ internal object WagonRiders : GuardDirector.Seats {
                     }
                     walk(r, owner, now)
                 }
-                Stage.CLIMB -> {
-                    if (++r.age >= Activity.CLIMB_UP.ticks || g.p.activity != Activity.CLIMB_UP) {
-                        r.stage = Stage.SIT
-                        r.age = 0
-                        g.p.act(Activity.RIDE_TAIL)
-                    }
-                    if (!want && (urgent(g) || r.unwanted > LINGER)) jump(r)
-                }
-                Stage.SIT -> {
-                    if (g.p.activity != Activity.RIDE_TAIL) g.p.act(Activity.RIDE_TAIL)
-                    if (!want && (urgent(g) || r.unwanted > LINGER)) jump(r)
-                }
-                Stage.JUMP -> if (++r.age >= Activity.JUMP_DOWN.ticks || g.p.activity != Activity.JUMP_DOWN) {
-                    land(r)
-                    return false
-                }
+                Stage.CLIMB, Stage.SIT -> if (!want && (urgent(g) || r.unwanted > LINGER)) jump(r)
+                // Getting down: [sit] lands them as the clip ends
+                Stage.JUMP -> {}
             }
             return true
         }
@@ -158,7 +149,10 @@ internal object WagonRiders : GuardDirector.Seats {
         r.g.p.act(Activity.JUMP_DOWN)
     }
 
-    /** Each tick after [sh] has moved: its riders placed on their seats as it now stands, and any the director has let go of put down. */
+    /**
+     * Each tick after [sh] has moved: its riders placed on their seats as it now stands, the climb and the jump played out (the seated clip after
+     * the climb; on their feet as the jump ends), and any the director has let go of put down.
+     */
     fun sit(sh: LedShow.Shown, now: Long) {
         if (riders.isEmpty()) return
         for (r in riders.values.toList()) {
@@ -168,11 +162,22 @@ internal object WagonRiders : GuardDirector.Seats {
                 free(r)
                 continue
             }
-            if (now - r.asked > ASKED) {
-                off(r)
+            if (r.stage == Stage.WALK) {
+                if (now - r.asked > ASKED) off(r)
                 continue
             }
-            if (r.stage != Stage.WALK) seatOn(r)
+            if (r.stage != Stage.JUMP && (p.target != null || now - r.asked > ASKED_RIDING)) jump(r)
+            seatOn(r)
+            when (r.stage) {
+                Stage.CLIMB -> if (++r.age >= Activity.CLIMB_UP.ticks || p.activity != Activity.CLIMB_UP) {
+                    r.stage = Stage.SIT
+                    r.age = 0
+                    p.act(Activity.RIDE_TAIL)
+                }
+                Stage.SIT -> if (p.activity != Activity.RIDE_TAIL) p.act(Activity.RIDE_TAIL)
+                Stage.JUMP -> if (++r.age >= Activity.JUMP_DOWN.ticks || p.activity != Activity.JUMP_DOWN) land(r)
+                Stage.WALK -> {}
+            }
         }
     }
 
