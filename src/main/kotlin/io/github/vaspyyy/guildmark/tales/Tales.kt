@@ -43,10 +43,10 @@ import net.neoforged.bus.api.IEventBus
  */
 object Tales : Comings.Listener {
     /**
-     * Whether tales are on for everyone. False until all twelve are in; the lead flips it then, as `Fortunes.READY`
+     * Whether tales are on for everyone. False until all twelve were in; the lead flipped it then, as `Fortunes.READY`
      * was (living-world/build-plan.md section 4), not after a pilot play.
      */
-    private const val SHIPPED = false
+    private const val SHIPPED = true
 
     /** A dev run started with `-Pwith_tales=true`: build.gradle sets the property `guildmark.tales`, a shipped jar never does. */
     private val tester: Boolean = System.getProperty("guildmark.tales") == "true"
