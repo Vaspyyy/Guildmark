@@ -213,6 +213,21 @@ object VillageBuilds {
             done(level, r.after, r.closures)
             return
         }
+        val data = get(level)
+        val id = data.next++
+        val b = recordOf(id, rec.key, project, level.gameTime, opens(level), plan, yard, r.after)
+        data.sites[id] = b
+        data.setDirty()
+        if (r.closures.isNotEmpty()) closures[id] = r.closures.toList()
+        // Said after the funding's own news (Advances), at the next tick
+        told.add(bell to Component.translatable("message.guildmark.village_build.planned", project.title, nameOf(rec)))
+    }
+
+    /**
+     * The record of site [id] for the village at [village]: [project]'s [plan] as it is saved (each distinct block once, in a palette),
+     * its [yard], what is to be done at its [after] end, the game time it was [born] and the clock time its crew first comes ([opens]).
+     */
+    fun recordOf(id: Int, village: Long, project: Advance, born: Long, opens: Long, plan: VillageOrder.Result, yard: VillageBuild.Yard, after: List<BuildSink.After>): VillageBuild {
         val palette = ArrayList<BlockState>()
         val index = HashMap<BlockState, Int>()
         val pos = LongArray(plan.steps.size)
@@ -220,7 +235,7 @@ object VillageBuilds {
         for ((k, s) in plan.steps.withIndex()) {
             pos[k] = s.pos
             val state = s.state
-            val p = if (state == null) 0 else index.getOrPut(state) { palette.add(state); palette.size - 1 }
+            val p = (state ?: Blocks.AIR.defaultBlockState()).let { st -> index.getOrPut(st) { palette.add(st); palette.size - 1 } }
             meta[k] = VillageBuild.meta(s.kind, s.swap, p)
         }
         val starts = IntArray(VillageBuild.STAGES + 1)
@@ -230,17 +245,7 @@ object VillageBuilds {
             while (k < plan.steps.size && plan.steps[k].stage == stage) k++
         }
         starts[VillageBuild.STAGES] = plan.steps.size
-        val data = get(level)
-        val id = data.next++
-        val b = VillageBuild(
-            id, rec.key, project.ordinal, level.gameTime, opens(level), pos, meta, palette, starts, Build(), yard, r.after.toMutableList(),
-            deps = plan.deps,
-        )
-        data.sites[id] = b
-        data.setDirty()
-        if (r.closures.isNotEmpty()) closures[id] = r.closures.toList()
-        // Said after the funding's own news (Advances), at the next tick
-        told.add(bell to Component.translatable("message.guildmark.village_build.planned", project.title, nameOf(rec)))
+        return VillageBuild(id, village, project.ordinal, born, opens, pos, meta, palette, starts, Build(), yard, after.toMutableList(), deps = plan.deps)
     }
 
     /** What is to be said to those near a village at the next tick. */

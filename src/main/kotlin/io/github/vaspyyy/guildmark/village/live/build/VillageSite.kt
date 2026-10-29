@@ -35,20 +35,13 @@ import net.minecraft.util.RandomSource
 import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.item.DyeColor
-import net.minecraft.world.level.block.BarrelBlock
 import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.Blocks
-import net.minecraft.world.level.block.ChestBlock
-import net.minecraft.world.level.block.CrossCollisionBlock
-import net.minecraft.world.level.block.DoorBlock
-import net.minecraft.world.level.block.FenceGateBlock
 import net.minecraft.world.level.block.LadderBlock
 import net.minecraft.world.level.block.LanternBlock
 import net.minecraft.world.level.block.LeavesBlock
-import net.minecraft.world.level.block.StairBlock
-import net.minecraft.world.level.block.TrapDoorBlock
-import net.minecraft.world.level.block.WallBlock
 import net.minecraft.world.level.block.state.BlockState
+import net.minecraft.world.level.block.state.properties.BlockStateProperties
 import net.minecraft.world.level.gamerules.GameRules
 import net.minecraft.world.level.levelgen.Heightmap
 import net.minecraft.world.level.levelgen.structure.BoundingBox
@@ -281,6 +274,9 @@ class VillageSite(
     /** For the first part of each such thing, the others, in their order. */
     private val members = HashMap<Int, IntArray>()
 
+    /** The step that lays each place (packed), of the blocks of the project. */
+    private val stepAt = HashMap<Long, Int>()
+
     /** Steps someone was standing in the way of, and since when. */
     private val waiting = HashMap<Int, Long>()
 
@@ -298,6 +294,7 @@ class VillageSite(
         val groups = LinkedHashMap<Long, MutableList<Int>>()
         for (i in places.indices) {
             if (rec.kind(i) != VillageBuild.Kinds.BLOCK) continue
+            stepAt[rec.pos[i]] = i
             VillageOrder.groupOf(places[i], states[i])?.let { groups.getOrPut(it) { ArrayList() }.add(i) }
         }
         for (g in groups.values) {
@@ -395,6 +392,10 @@ class VillageSite(
         done(i, free)
         // The rest of what goes in with it
         members[i]?.let { for (m in it) if (!isDone(m) && place(m, fx) == Laid.DONE) done(m, true) }
+        if (rec.kind(i) == VillageBuild.Kinds.BLOCK) {
+            knockOn(places[i])
+            members[i]?.let { for (m in it) knockOn(places[m]) }
+        }
         return Laid.DONE
     }
 
@@ -451,11 +452,14 @@ class VillageSite(
                 Laid.DONE
             }
             VillageBuild.Kinds.PULL -> {
-                for (p in listOf(pos.above(), pos)) {
+                // What stood there before the stake (the grass, a flower) is put back as it was
+                val stake = places.indices.firstOrNull { rec.kind(it) == VillageBuild.Kinds.STAKE && places[it] == pos }
+                val below = stake?.let { back(rec.state(it)) } ?: Blocks.AIR.defaultBlockState()
+                for ((p, was) in listOf(pos.above() to back(rec.state(i)), pos to below)) {
                     val state = level.getBlockState(p)
                     if (state.`is`(Blocks.SPRUCE_FENCE) || state.`is`(Blocks.BANNER.pick(DyeColor.WHITE))) {
                         if (fx) level.levelEvent(2001, p, Block.getId(state))
-                        level.setBlock(p, Blocks.AIR.defaultBlockState(), FLAGS)
+                        level.setBlock(p, was, FLAGS)
                     }
                 }
                 Laid.DONE
@@ -505,6 +509,33 @@ class VillageSite(
         return Laid.DONE
     }
 
+    /** What a stake is pulled back to: what stood there, if it was air or a plant (a stake goes nowhere else), else air. */
+    private fun back(state: BlockState): BlockState = if (state.isAir || VillageOrder.soft(state)) state else Blocks.AIR.defaultBlockState()
+
+    /**
+     * What the step just laid at [pos] knocks off, as setting it would in a direct build: a plant beside it that cannot stand now (the
+     * top of a tall grass whose foot was dug out, the grass on ground that is paved over) goes at once, its clearing done then (or, if
+     * a block of the project is to go there, the air waits for it), and what that knocks off in turn.
+     */
+    private fun knockOn(pos: BlockPos) {
+        val queue = ArrayDeque<BlockPos>()
+        queue.add(pos)
+        var n = 0
+        while (queue.isNotEmpty() && n++ < KNOCK_ON) {
+            val at = queue.removeFirst()
+            for (d in Direction.entries) {
+                val p = at.relative(d)
+                val j = stepAt[p.asLong()] ?: continue
+                if (isDone(j)) continue
+                val here = level.getBlockState(p)
+                if (here.isAir || !VillageOrder.soft(here) || here.canSurvive(level, p)) continue
+                level.setBlock(p, here.fluidState.createLegacyBlock(), FLAGS)
+                if (states[j].isAir) done(j, true)
+                queue.add(p)
+            }
+        }
+    }
+
     /** A lamp post's lantern, of a project of lamp posts: the street lamp or the plain lantern as the village's lamps take them now (VillageLamps.lantern). */
     private fun lamp(state: BlockState): BlockState {
         if (project != Advance.LAMP_POSTS) return state
@@ -541,14 +572,16 @@ class VillageSite(
     }
 
     /**
-     * Whether what is [here] is as good as [want]: the same block, its open doors and gates, a chest or barrel's lid, and a fence,
-     * wall, pane or stair in whatever shape what has been built beside it since has given it.
+     * Whether what is [here] is as good as [want]: the same, or the same opened or shut since (a door, a gate, a barrel's lid). A fence or
+     * a pane in another shape is not: the shape it was recorded in is the one a direct build leaves it in (one that stood already, joined
+     * to what the project puts beside it, is a step of its own).
      */
     private fun same(here: BlockState, want: BlockState): Boolean {
         if (here == want) return true
-        val b = here.block
-        if (b !== want.block) return false
-        return b is DoorBlock || b is TrapDoorBlock || b is FenceGateBlock || b is BarrelBlock || b is ChestBlock || b is CrossCollisionBlock || b is WallBlock || b is StairBlock
+        if (here.block !== want.block) return false
+        var h = here
+        for (p in TOGGLED) if (h.hasProperty(p) && want.hasProperty(p)) h = h.setValue(p, want.getValue(p))
+        return h == want
     }
 
     /**
@@ -653,11 +686,17 @@ class VillageSite(
         private const val GATHER = 300L
         private const val LIFT_AFTER = 200L
 
+        /** The most places one step may knock off in turn (a tall grass and what stands on it). */
+        private const val KNOCK_ON = 16
+
         /** The ticks of a day the crew works: from sunrise to noon and from an hour after noon to a quarter to six (the clock's tick 0 is sunrise). */
         const val MORNING = 6000
         const val AFTERNOON_FROM = 7000
         const val AFTERNOON_TO = 11_700
         const val WORKING = (MORNING + AFTERNOON_TO - AFTERNOON_FROM).toLong()
+
+        /** What may be different about a block from what was recorded, and it still be as good: it was opened, shut or powered since. */
+        private val TOGGLED = listOf(BlockStateProperties.OPEN, BlockStateProperties.POWERED)
 
         val STAKE: BlockState = Blocks.SPRUCE_FENCE.defaultBlockState()
         val FLAG: BlockState = Blocks.BANNER.pick(DyeColor.WHITE).defaultBlockState()

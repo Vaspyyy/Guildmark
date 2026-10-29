@@ -36,8 +36,11 @@ import kotlin.math.atan2
  * the walls, the keep) when their roof is on, and both come away again as the last steps, so that what stands at the end is what the
  * builders drew.
  */
-internal object VillageOrder {
-    /** One step of a plan. [state] is null for the stake and the bough, which are built in. */
+object VillageOrder {
+    /**
+     * One step of a plan. [state] is the block it lays; for a stake, what stood where the post goes, and for pulling it, what stood
+     * where its flag goes (both put back as they were); null for the bough, which is built in.
+     */
     class Planned(val pos: Long, val kind: Int, val state: BlockState?, val swap: Boolean, val stage: Stage)
 
     /** A recorded block on its way into the plan. */
@@ -55,6 +58,9 @@ internal object VillageOrder {
      * against, -1 where the world holds it or it needs nothing), and what is laid out of sight at once because it lies deep underground.
      */
     class Result(val steps: List<Planned>, val buried: List<Pair<Long, BlockState>>, val deps: IntArray = IntArray(steps.size) { -1 })
+
+    /** How far out from a corner of the work its stake may be put, where the corner itself is taken. */
+    private const val STAKE_OUT = 3
 
     /** Deeper than this under the ground is out of the crew's reach (and sight): a hall's path laid at the wrong height is one. */
     private const val DEEP = 24
@@ -95,7 +101,7 @@ internal object VillageOrder {
         val field = Field(level, items)
         val steps = ArrayList<Planned>()
         val stakes = if (project == Advance.GUILD_HALL || project == Advance.ARCHER_TOWER) stakes(level, items) else listOf()
-        for (s in stakes) steps.add(Planned(s.asLong(), VillageBuild.Kinds.STAKE, null, false, Stage.STAKES))
+        for (s in stakes) steps.add(Planned(s.asLong(), VillageBuild.Kinds.STAKE, level.getBlockState(s), false, Stage.STAKES))
         val top = if (project in BIG) top(items, bell) else null
 
         // The stages in turn: what could not go in its stage (its support is later) goes in the next
@@ -119,7 +125,7 @@ internal object VillageOrder {
         }
         // What is still not supported goes last of all: it was drawn that way
         for (it in together(carried)) steps.add(Planned(it.pos, VillageBuild.Kinds.BLOCK, it.state, it.swap, Stage.GROUNDS))
-        for (s in stakes) steps.add(Planned(s.asLong(), VillageBuild.Kinds.PULL, null, false, Stage.GROUNDS))
+        for (s in stakes) steps.add(Planned(s.asLong(), VillageBuild.Kinds.PULL, level.getBlockState(s.above()), false, Stage.GROUNDS))
         if (top != null) steps.add(Planned(top.asLong(), VillageBuild.Kinds.UNTOP, null, false, Stage.GROUNDS))
         return Result(steps, buried, deps(field, steps))
     }
@@ -397,7 +403,10 @@ internal object VillageOrder {
 
     // ---- Stakes and the bough ----
 
-    /** The four corner stakes, outside the corners of the work, where there is room for a post and its banner. */
+    /**
+     * The four corner stakes, outside the corners of the work, where there is room for a post and its banner: at each corner the first
+     * place out from it (a step at a time, up to [STAKE_OUT]) that the work neither takes nor digs away, on firm ground.
+     */
     private fun stakes(level: ServerLevel, items: List<Item>): List<BlockPos> {
         val solid = items.filter { !it.state.isAir }
         if (solid.isEmpty()) return listOf()
@@ -412,14 +421,19 @@ internal object VillageOrder {
             if (it.state.isAir) cleared.add(it.pos)
         }
         val out = ArrayList<BlockPos>()
-        for ((x, z) in listOf(x0 to z0, x1 to z0, x1 to z1, x0 to z1)) {
-            if (!level.hasChunkAt(BlockPos(x, 0, z))) continue
-            val y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z)
-            val pos = BlockPos(x, y, z)
-            if (taken.contains(pos.asLong()) || taken.contains(pos.above().asLong())) continue
-            // Not on ground the work takes away, nor on what isn't firm
-            if (cleared.contains(pos.below().asLong()) || !level.getBlockState(pos.below()).isFaceSturdy(level, pos.below(), Direction.UP)) continue
-            out.add(pos)
+        for ((corner, out1) in listOf((x0 to z0) to (-1 to -1), (x1 to z0) to (1 to -1), (x1 to z1) to (1 to 1), (x0 to z1) to (-1 to 1))) {
+            for (k in 0..STAKE_OUT) {
+                val x = corner.first + out1.first * k
+                val z = corner.second + out1.second * k
+                if (!level.hasChunkAt(BlockPos(x, 0, z))) break
+                val y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z)
+                val pos = BlockPos(x, y, z)
+                if (taken.contains(pos.asLong()) || taken.contains(pos.above().asLong())) continue
+                // Not on ground the work takes away, nor on what isn't firm
+                if (cleared.contains(pos.below().asLong()) || !level.getBlockState(pos.below()).isFaceSturdy(level, pos.below(), Direction.UP)) continue
+                out.add(pos)
+                break
+            }
         }
         return out
     }
