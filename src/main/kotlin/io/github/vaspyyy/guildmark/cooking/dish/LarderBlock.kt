@@ -74,7 +74,10 @@ class LarderBlock(properties: Properties) : Block(properties), EntityBlock {
         /** Whether a player has the door open. */
         val OPEN: BooleanProperty = BlockStateProperties.OPEN
 
-        /** How the block is made (hardness, sound, light...): the owner's to tune, so the registry never needs to change. */
-        val PROPERTIES: UnaryOperator<BlockBehaviour.Properties> = UnaryOperator { it.mapColor(MapColor.WOOD).strength(2.0f).sound(SoundType.WOOD) }
+        /**
+         * How the block is made (hardness, sound, light...): the owner's to tune, so the registry never needs to change. It stands
+         * on feet and is slatted, so it hides none of its neighbours' faces.
+         */
+        val PROPERTIES: UnaryOperator<BlockBehaviour.Properties> = UnaryOperator { it.mapColor(MapColor.WOOD).strength(2.0f).sound(SoundType.WOOD).noOcclusion() }
     }
 }
