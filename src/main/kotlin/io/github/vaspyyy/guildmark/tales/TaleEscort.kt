@@ -151,13 +151,13 @@ class TaleEscort(
         }
         when {
             dist > AHEAD -> {
-                // Left behind: a wave as they come, and a call, now and then
+                // Left behind: a wave as they come, and a call, now and then (a child waves and waits where they are: "these legs" is not theirs)
                 if (now - calledAt >= CALL_EVERY) {
                     calledAt = now
-                    p.act(Activity.WAVE_WALK)
-                    Words.sayWith(p, "tale.set.wait", why = "a slow walk")
+                    p.act(if (child) Activity.WAVE else Activity.WAVE_WALK)
+                    if (!child) Words.sayWith(p, "tale.set.wait", why = "a slow walk")
                 }
-                go(p, who)
+                if (child) stop(p) else go(p, who)
             }
             dist > (if (child) CHILD_SIDE else 3.5) -> go(p, who)
             else -> {
@@ -248,7 +248,9 @@ class TaleEscort(
     private fun go(p: Townsperson, who: ServerPlayer) {
         if (p.navigation.isDone || p.tickCount % 20 == 0) p.navigation.moveTo(who, if (child) CHILD_PACE else PACE)
         if (child) {
-            if (p.activity == Activity.HOBBLE || p.activity == Activity.COWER) p.act(Activity.NONE)
+            // Upright, with whatever they carry held to them (the bundle in their arms)
+            val want = if (p.carried.isEmpty) Activity.NONE else Activity.CARRY
+            if (p.activity != want && (p.activity == Activity.HOBBLE || p.activity == Activity.COWER || p.activity.loop || p.actDone)) p.act(want)
             return
         }
         if (p.activity != Activity.HOBBLE && (p.activity.loop || p.actDone)) p.act(Activity.HOBBLE)

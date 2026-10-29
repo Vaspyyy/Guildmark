@@ -76,6 +76,12 @@ import kotlin.math.sqrt
  * S6). Every step is settled at the close that follows the seed, as the table says: not found is W, found and not home is C, home is A (before
  * 19:00) or B (after).
  *
+ * **First light.** The close decides C or W, but a child is never left on the night road for it: with a player near enough to see, the close
+ * keeps the tale open a few hours more ([DAWN]), the child held where they are (beyond harm, as every tale body is), and at first light the
+ * guard walks out to them and brings them in by the road ([ChildWatch.dawn], W at 06:00, C at 07:00); the tale ends as they reach the gate. With
+ * no one near, the close ends it at once and the record does the rest (the child is home, out of sight). The next settling ends it whatever
+ * happens, so `tale step` twice ends it now.
+ *
  * **What the tale keeps** ([numbers]): the place on the road the child sits at (`x`, `y`, `z`), the flags below, the gate's front (the parent's mark)
  * and the gate. The child's own mark and the clearing the watch found are memory ([ChildWatch]): a restart sets them down again from these.
  */
@@ -125,7 +131,8 @@ object Child : Template, TaleVoice, TaleWords.Names {
 
     /**
      * The flags, in `n[3]`: the child is found; the walk was begun; the child came to the gate; and it was after dusk when they did; the calling
-     * has been played; the rumour begun; the child is out whatever the hour (a forced start); a neighbour asks (no household to protect).
+     * has been played; the rumour begun; the child is out whatever the hour (a forced start); a neighbour asks (no household to protect); the
+     * close has come and gone and the watch brings the child in at first light (C if they were found, else W).
      */
     const val FOUND = 1
     const val WALKING = 2
@@ -135,11 +142,19 @@ object Child : Template, TaleVoice, TaleWords.Names {
     const val RUMOUR = 32
     const val OUT = 64
     const val NEIGHBOUR = 128
+    const val DAWN = 256
 
-    /** The clock, in the offsets the days keep (offset 0 is two in the morning): the child goes at 15:00, the parent misses them at 15:30, and dusk is 19:00. */
+    /**
+     * The clock, in the offsets the days keep (offset 0 is two in the morning): the child goes at 15:00, the parent misses them at 15:30, and
+     * dusk is 19:00; first light is 06:00, when the watch goes out for a child nobody found (W), and 07:00 for one who was found and not walked
+     * home (C); a bring-in not begun by noon is the record's.
+     */
     val LEAVES: Int = Days.clock(15.0)
     val CALLS: Int = Days.clock(15.5)
     val DUSK: Int = Days.clock(19.0)
+    val FIRST_LIGHT: Int = Days.clock(6.0)
+    val WATCH_OUT: Int = Days.clock(7.0)
+    val NOON: Int = Days.clock(12.0)
 
     /** The wardfire a child is found at must be within this many blocks of the place on the road. */
     const val CLEARING = 24
@@ -166,6 +181,15 @@ object Child : Template, TaleVoice, TaleWords.Names {
 
     /** The parent has missed the child: from 15:30 (or at once for a forced start). */
     internal fun missed(level: ServerLevel, t: Tale): Boolean = flag(t, OUT) || t.step >= AT_GUARD || clock(level) >= CALLS
+
+    /** The light is gone: from dusk to first light. */
+    internal fun dark(level: ServerLevel): Boolean = clock(level).let { it >= DUSK || it < FIRST_LIGHT }
+
+    /** The ending the close decided, which the watch brings in at first light: C if the child was found, else W. */
+    internal fun decided(t: Tale): String = if (flag(t, FOUND)) Ending.C else Ending.W
+
+    /** Whether it is the hour the watch goes out for [t]'s child (06:00 for a child nobody found, 07:00 for one found), and not yet noon. */
+    internal fun firstLight(level: ServerLevel, t: Tale): Boolean = clock(level).let { it >= (if (flag(t, FOUND)) WATCH_OUT else FIRST_LIGHT) && it < NOON }
 
     private fun given(name: String): String = name.substringBefore(' ')
 
@@ -281,9 +305,10 @@ object Child : Template, TaleVoice, TaleWords.Names {
         val body = TaleBodies.body(level, t, CHILD)
         val near = level.players().filter { body != null && it.isAlive && !it.isSpectator && it.distanceTo(body) < NEAR_ARRIVAL }.mapNotNull { t.part(it.uuid) }
         for (p in near) p.did = p.did or Part.WALKED
-        // The deciding deed is the walk: the player whose word began it, else the first near, else the one who took the tale up
+        // The deciding deed is the walk: the player whose word began it, else the first near, else the one who took the tale up (after the
+        // close it is the find, which the close has marked: the walk is a real deed, but C was decided)
         val walker = ChildWatch.walkers[t.id]?.let { t.part(it) } ?: near.firstOrNull() ?: t.lead
-        walker?.let { it.did = it.did or Part.WALKED or Part.DECIDED }
+        walker?.let { it.did = it.did or Part.WALKED or (if (flag(t, DAWN)) 0 else Part.DECIDED) }
         c.why(t, "child.home", childName(t))
         c.data.changed()
         c.go(t, AT_SCENE)
@@ -293,16 +318,19 @@ object Child : Template, TaleVoice, TaleWords.Names {
 
     // ---- The world's way ----
 
+    /**
+     * The close (or `tale step`): home is A or B; found and not walked home is C, and the finder's deed settles it; not found is W. A C or a W
+     * with a player near enough to see is brought in by the watch at first light ([DAWN], [ChildWatch.dawn]); with none near, or settled a
+     * second time, it ends now.
+     */
     override fun settle(c: Ctx, t: Tale) {
-        when (t.step) {
-            AT_SCENE -> c.end(t, arrival(t))
-            AT_WALK -> {
-                // Found and not walked home before the close: the finder's deed settles it
-                decide(t)
-                c.end(t, Ending.C)
-            }
-            else -> c.end(t, Ending.W)
-        }
+        if (t.step == AT_SCENE) return c.end(t, arrival(t))
+        val ending = decided(t)
+        if (ending == Ending.C) decide(t)
+        if (flag(t, DAWN) || !ChildWatch.waits(c, t)) return c.end(t, ending)
+        set(t, DAWN)
+        c.why(t, if (ending == Ending.C) "child.dawn_found" else "child.dawn", childName(t))
+        c.data.changed()
     }
 
     /** Whoever found the child settles C: the first with the bit, if no one's deed has settled it yet. */
@@ -311,8 +339,12 @@ object Child : Template, TaleVoice, TaleWords.Names {
         (t.parts.firstOrNull { it.did(Part.WALKED) } ?: t.lead)?.let { it.did = it.did or Part.DECIDED }
     }
 
-    /** A is the child at the mark before dusk, B after. */
-    private fun arrival(t: Tale): String = if (flag(t, NIGHT)) Ending.B else Ending.A
+    /** A is the child at the mark before dusk, B after; after the close it is C, which the close decided. */
+    internal fun arrival(t: Tale): String = when {
+        flag(t, DAWN) -> Ending.C
+        flag(t, NIGHT) -> Ending.B
+        else -> Ending.A
+    }
 
     override fun gone(c: Ctx, t: Tale, slot: String, how: Gone) {
         when (slot) {
@@ -360,6 +392,9 @@ object Child : Template, TaleVoice, TaleWords.Names {
         val home = c.resident(t, CHILD)?.home ?: -1
         val keeps = home >= 0 && !flag(t, NEIGHBOUR)
         ChildWatch.letGo(c, t)
+        // A child this ending finds out on the road in sight of a player walks in by it (the watch has brought one in to the gate already, and
+        // one nobody can see is home in the record)
+        if (ending == Ending.C || ending == Ending.W) ChildWatch.bringIn(c, t)
         when (ending) {
             Ending.A -> {
                 if (keeps) c.protect(t, home, 20)
@@ -371,9 +406,8 @@ object Child : Template, TaleVoice, TaleWords.Names {
                 if (keeps) c.protect(t, home, 10)
                 // The child's own thanks to whoever found them
                 for (p in t.parts.filter { TaleShares.holds(it) && it.did(Part.WALKED) }) c.favour(t, CHILD, p.player, Favour.TALE_HELPED)
-                ChildWatch.bringIn(c, t)
             }
-            Ending.W -> if (!keeps || !goBack(c, t, home)) ChildWatch.bringIn(c, t)
+            Ending.W -> if (keeps) goBack(c, t, home)
         }
         ChildWatch.forget(t.id)
     }
@@ -405,6 +439,8 @@ object Child : Template, TaleVoice, TaleWords.Names {
             AT_GUARD -> listOf()
             else -> listOf(child)
         }
+        // After the close only the bringing in is left: the watch goes out from the gate at first light
+        if (flag(t, DAWN)) return View(title = TaleKeys.title(id), status = DAWN_STATUS, tone = View.Tone.DONE, target = front(t))
         val target = when (t.step) {
             AT_FIND -> ChildWatch.clearings[t.id] ?: place(t)
             else -> front(t)
@@ -412,10 +448,13 @@ object Child : Template, TaleVoice, TaleWords.Names {
         return View(title = TaleKeys.title(id), status = TaleKeys.status(id, t.step), statusArgs = args, target = target)
     }
 
+    /** The tracker's line while the watch is to bring the child in. */
+    private const val DAWN_STATUS = "gui.guildmark.tale.child.status.dawn"
+
     // ---- The telling ----
 
     override fun scene(c: Ctx, t: Tale): Stage? {
-        if (!t.open) return gift(c, t)
+        if (!t.open) return if (t.ending == Ending.C) homecoming(c, t) else gift(c, t)
         return when (t.step) {
             AT_ASK, AT_GUARD -> callingScene(c, t)
             AT_SCENE -> reunion(c, t)
@@ -476,6 +515,22 @@ object Child : Template, TaleVoice, TaleWords.Names {
         stage.then = { if (t.open && t.step == AT_SCENE) c.end(t, arrival(t)) }
         return stage
     }
+
+    /**
+     * The ending C, seen: the watch has brought the child in at first light, and the parent, who waited at the gate all night, runs to them
+     * (S6 with no thanks to anyone: nobody walked them home but the guard, who looks on). Nothing unless both are at the gate.
+     */
+    private fun homecoming(c: Ctx, t: Tale): Stage? {
+        val level = c.level
+        val at = Vec3.atCenterOf(front(t))
+        val parent = TaleBodies.body(level, t, PARENT)?.takeIf { it.distanceToSqr(at) < AT_GATE * AT_GATE } ?: return null
+        val child = TaleBodies.body(level, t, CHILD)?.takeIf { it.distanceToSqr(at) < AT_GATE * AT_GATE } ?: return null
+        val watchers = listOfNotNull(TaleBodies.body(level, t, GUARD)).filter { it.distanceToSqr(at) < NEAR_GATE * NEAR_GATE }
+        return Sets.reunion(parent, child, null, watchers, hours = null)
+    }
+
+    /** How near the gate's front the parent and the child must be for the homecoming to be played there. */
+    private const val AT_GATE = 20.0
 
     /** The ending, seen (A and B): the child holds out the wooden horse for luck, and the parent thanks the player. */
     private fun gift(c: Ctx, t: Tale): Stage? {

@@ -8942,5 +8942,9 @@
   "talk.guildmark.choice.tale.child.calling": "Your family is calling you.",
   "talk.guildmark.choice.tale.child.walk": "I'll walk you back.",
   "talk.guildmark.choice.tale.child.restart": "Come on, let's go home.",
-  "talk.guildmark.choice.tale.child.notnow": "Not now."
+  "talk.guildmark.choice.tale.child.notnow": "Not now.",
+  "gui.guildmark.tale.child.status.dawn": "Wait for dawn",
+  "fortune.guildmark.reason.tale.why.child.dawn": "Nobody found %s on the road before the night was out.",
+  "fortune.guildmark.reason.tale.why.child.dawn_found": "Nobody walked %s home before the night was out.",
+  "fortune.guildmark.reason.tale.why.child.watch_out": "%1$s of the watch went out for %2$s at first light."
 }
