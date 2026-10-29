@@ -173,6 +173,18 @@ and Kotlin model code always agree.
   change the script, not the Kotlin). It checks its own numbers, that nothing goes through the wearer over a hundred poses,
   that nothing floats and what it wrote. With a preview dir it renders the packs on a player from five sides, strides, sneaks,
   armour, cape and head-up limits, and GIFs (walking, sprinting, sneaking, the lantern and the pots close up, a pack appearing).
+- `scripts/player_cart.py` is the Chapman's Cart: a variant of `handcart.py` (which it imports and leaves as it writes) with a
+  model name and a texture of its own. It paints the handcart's own model, on the handcart's UVs, in a trader's livery (green
+  boards lined in cream, red wheels, brass caps, leather grips, a gilt wheel on the tailboard), and adds a dressing: a pole on the
+  left rear post with a swallowtail pennant in four segments (white, tinted with the cart's colour), and a canvas in four strips
+  that folds back onto the tail strip as a roll, the front strip first, with a beaded wet look for rain drawn over it. It writes
+  `textures/entity/trade/player_cart.png` and `player_cart_wet.png`, `art/models/player_cart.bbmodel` and
+  `client/trade/PlayerCartMesh.kt` (generated: the dressing's mesh and the numbers `PlayerCartRenderer` folds, ripples and lifts
+  it by; change the script, not the Kotlin). It checks that the strips never go through each other at any step of the fold, that
+  the canvas clears the pole and every heap the bed can hold (lifted as the renderer lifts it) and the pennant the wheel, the pole
+  and the canvas, that nothing floats, and that the handcart's files on disk are still what `handcart.py` writes. With a preview
+  dir it renders it beside the carters' handcart from four sides, the fold in nine steps, eight loads over and folded, the pennant in
+  the six colours, the rain, parked and pulled, and GIFs (the fold, pulled along, rain beading).
 - `scripts/store_art.py` and `scripts/house_art.py` (with `trade_works_kit.py` and `trade_works_preview.py` beside them, on
   `works_art.py`'s materials and mesh packing) are the Carriers' Store's and the Counting House's fittings, in the works' form:
   each a block model facing north turned by its blockstate (`store_scale`, `store_name_board`, `store_door_board`, `strongbox`,
@@ -211,6 +223,7 @@ python3 -B art/scripts/haul_board_art.py src/main/resources/assets/guildmark [ko
 python3 -B art/scripts/trade_items.py src/main/resources/assets/guildmark [preview-dir]
 python3 -B art/scripts/pack_harness.py [assets-dir [kotlin-dir [art/models [preview-dir [game assets/minecraft]]]]]
 python3 -B art/scripts/laden_pack.py [assets-dir [kotlin-dir [art/models [preview-dir [game assets/minecraft]]]]]
+python3 -B art/scripts/player_cart.py [assets-dir [kotlin-dir [art/models [preview-dir [game assets/minecraft]]]]]
 python3 -B art/scripts/store_art.py src/main/resources/assets/guildmark src/main/kotlin/io/github/vaspyyy/guildmark/client/trade art/models [preview-dir]
 python3 -B art/scripts/house_art.py src/main/resources/assets/guildmark src/main/kotlin/io/github/vaspyyy/guildmark/client/trade art/models [preview-dir]
 ```
