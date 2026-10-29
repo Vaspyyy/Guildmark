@@ -216,7 +216,12 @@ internal object WagonWatch {
         memo.parley?.let { st ->
             if (!st.finished) return
             memo.parley = null
+            // The parley cut short before the band's word: the word is given all the same
+            released(c, t, memo)
+            if (!t.open) return
         }
+        // The price paid and the band's word not given, with no parley waiting (a restart forgot it): it waits again
+        if (memo.parleyAt == 0L && Wagon.flag(t, Wagon.PAID) && !Wagon.freed(t) && !Wagon.flag(t, Wagon.RODE)) memo.parleyAt = level.gameTime
         if (memo.parleyAt > 0L) {
             val rider = TaleBodies.body(level, t, Wagon.RIDER)
             if (rider != null && band != null && Tales.scenes() && rider.attending == null && rider.director is TaleHold) {
