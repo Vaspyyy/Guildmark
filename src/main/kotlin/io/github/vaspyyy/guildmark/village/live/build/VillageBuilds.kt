@@ -125,11 +125,12 @@ object VillageBuilds {
         true
     }
 
-    /** At setup: the tick, and the crews' hook to find the sites. */
+    /** At setup: the tick, the crews' hook to find the sites, and the commands. */
     fun register() {
         BuilderCrew.sites.add(BuilderCrew.Sites { key -> if (key <= VillageSite.KEY) live[VillageSite.KEY - key] else null })
         NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { tick(it.server) }
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> reset() }
+        VillageBuildCommand.init()
     }
 
     private fun reset() {
