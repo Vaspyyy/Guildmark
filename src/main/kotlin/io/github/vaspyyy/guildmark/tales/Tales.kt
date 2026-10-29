@@ -153,6 +153,8 @@ object Tales : Comings.Listener {
         TalesT2a.register()
         // T4: the moot's `tale moot` and its scenes, and the open moots seen to each second
         io.github.vaspyyy.guildmark.tales.templates.MootSquare.register()
+        // T4: the chair's `tale chair` and its scenes, and the open chairs seen to each second
+        io.github.vaspyyy.guildmark.tales.templates.ChairWatch.register()
     }
 
     // ---- The clock ----
