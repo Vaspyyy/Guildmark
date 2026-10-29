@@ -31,7 +31,7 @@ internal object LivingSchedule {
     class Moment(val name: String, val tick: Float, val x: Float, val y: Float, val z: Float)
 
     /** The clips these are for. */
-    val CLIPS: Set<String> = setOf("sit_down", "stand_up", "nod", "shrug", "point", "bow", "yawn", "stretch", "knock", "climb", "climb_top", "eat", "sit_eat", "wash", "pick_up", "put_down", "hand_over", "receive", "pay", "browse", "set_up", "sow", "carry_basket", "gather", "scythe", "grind", "chop", "pour_sack", "ring_bell", "announce", "draw_water", "explain", "gossip", "shush", "wave_off", "sigh", "think", "tip_hat", "introduce", "arms_folded", "recoil", "wave_walk", "nod_walk", "sit_gossip", "sit_laugh", "pause_work", "carry_pole", "light_lamp", "snuff_lamp", "drive", "drive_urge", "drive_brake", "ride_tail", "jump_down", "climb_up", "cut_loose", "hand_down", "cower", "catch_breath", "recount", "wounded", "grumble", "mix_mortar", "trowel", "hoist", "carry_beam", "chisel", "plumb", "survey", "unveil", "toast", "lookout", "light_beacon", "sound_horn", "queue", "shiver", "empty_basket", "haggle", "ladle", "hold_out", "eat_bowl", "take_bowl", "pack", "embrace", "look_about", "show_in", "shut_stall", "stir", "taste", "flip", "turn_spit", "slice", "carve", "peel", "grieve", "wring_hands", "shake_hands", "feed_fire", "hobble", "lay_posy")
+    val CLIPS: Set<String> = setOf("sit_down", "stand_up", "nod", "shrug", "point", "bow", "yawn", "stretch", "knock", "climb", "climb_top", "eat", "sit_eat", "wash", "pick_up", "put_down", "hand_over", "receive", "pay", "browse", "set_up", "sow", "carry_basket", "gather", "scythe", "grind", "chop", "pour_sack", "ring_bell", "announce", "draw_water", "explain", "gossip", "shush", "wave_off", "sigh", "think", "tip_hat", "introduce", "arms_folded", "recoil", "wave_walk", "nod_walk", "sit_gossip", "sit_laugh", "pause_work", "carry_pole", "light_lamp", "snuff_lamp", "drive", "drive_urge", "drive_brake", "ride_tail", "jump_down", "climb_up", "cut_loose", "hand_down", "cower", "catch_breath", "recount", "wounded", "grumble", "mix_mortar", "trowel", "hoist", "carry_beam", "chisel", "plumb", "survey", "unveil", "toast", "lookout", "light_beacon", "sound_horn", "queue", "shiver", "empty_basket", "haggle", "ladle", "hold_out", "eat_bowl", "take_bowl", "pack", "embrace", "look_about", "show_in", "shut_stall", "stir", "taste", "flip", "turn_spit", "slice", "carve", "peel", "stamp", "check_load", "load_pack", "hitch", "weigh", "halt", "rummage", "grieve", "wring_hands", "shake_hands", "feed_fire", "hobble", "lay_posy")
 
     /** Each prop's own part, and the part it hangs on. */
     val PARENT: Map<String, String> = mapOf(
@@ -95,6 +95,12 @@ internal object LivingSchedule {
         "flap_batten" to "body",
         "turner" to "right_arm",
         "cooks_knife" to "right_arm",
+        "stamp" to "right_arm",
+        "canvas_flap" to "body",
+        "pack_basket" to "body",
+        "trace_end" to "body",
+        "weigh_sack" to "body",
+        "rummage_pack" to "body",
     )
 
     /** By clip: the props it shows, and when. */
@@ -313,6 +319,25 @@ internal object LivingSchedule {
         "peel" to listOf(
             Shown("peel", 2f, 43f),
         ),
+        "stamp" to listOf(
+            Shown("stamp", 0f, END),
+        ),
+        "check_load" to listOf(
+            Shown("canvas_flap", 0f, END),
+        ),
+        "load_pack" to listOf(
+            Shown("pack_basket", 0f, END),
+        ),
+        "hitch" to listOf(
+            Shown("trace_end", 13f, 29.5f),
+        ),
+        "weigh" to listOf(
+            Shown("quill", 42f, 55f),
+            Shown("weigh_sack", 0f, 18f),
+        ),
+        "rummage" to listOf(
+            Shown("rummage_pack", 0f, END),
+        ),
     )
 
     /** By clip: the props its file turns, places and stretches itself tick by tick ("prop:<part>" bones). */
@@ -344,6 +369,12 @@ internal object LivingSchedule {
         "slice" to listOf("cooks_knife"),
         "carve" to listOf("bowl_empty", "cooks_knife"),
         "peel" to listOf("peel"),
+        "stamp" to listOf("stamp"),
+        "check_load" to listOf("canvas_flap"),
+        "load_pack" to listOf("pack_basket"),
+        "hitch" to listOf("trace_end"),
+        "weigh" to listOf("weigh_sack"),
+        "rummage" to listOf("rummage_pack"),
     )
 
     /** Props that hang straight down from the hand holding them (where no track runs them). */
@@ -400,6 +431,11 @@ internal object LivingSchedule {
         ),
         "peel" to listOf(
             Goods(22f, 43f, How.PART, "peel", 0f, 15f, 0.4f, "", 0f, 0f, 0f, 0f, 5f),
+        ),
+        "load_pack" to listOf(
+            Goods(0f, 4f, How.PART, "body", 5.6f, 7.8f, -4f, "", 0f, 0f, 0f, 0f, 3.5f),
+            Goods(4f, 22f, How.HANDS, "", 0f, 0f, 0f, "", 0f, 0f, 0f, 0f, 3.5f),
+            Goods(22f, END, How.GROUND, "", 0f, 0.8f, -16.8f, "", 0f, 0f, 0f, 0f, 3.5f),
         ),
         "feed_fire" to listOf(
             Goods(0f, 24f, How.PART, "right_arm", -1f, 11.2f, -1.5f, "", 0f, 0f, 0f, 0f, 5f),
@@ -833,6 +869,50 @@ internal object LivingSchedule {
             Moment("peel", 8f, 0.33f, 14.3f, -4.38f),
             Moment("peel", 36f, 0.33f, 13.65f, -3.98f),
             Moment("down", 43f, 1.74f, 10.671f, -1.167f),
+        ),
+        "stamp" to listOf(
+            Moment("press", 9f, -2.521f, 8.21f, -13.907f),
+            Moment("lift", 13.5f, -2.52f, 8.204f, -13.913f),
+        ),
+        "check_load" to listOf(
+            Moment("lift", 7f, 4.3f, 1.208f, -13.367f),
+            Moment("feel", 10.2f, -0.825f, 1.229f, -16.961f),
+            Moment("feel", 12.8f, 0.599f, 1.752f, -16.539f),
+            Moment("drop", 19f, 6.2f, -4.4f, -14.8f),
+            Moment("pat", 21.6f, -7.068f, -1.121f, -13.645f),
+            Moment("pat", 23.2f, -7.06f, -1.235f, -13.578f),
+        ),
+        "load_pack" to listOf(
+            Moment("take", 4f, 6.524f, 9.811f, -4.785f),
+            Moment("heave", 12f, 0f, 4.465f, -6.049f),
+            Moment("set", 17f, 0f, 5f, -14.2f),
+            Moment("shove", 20f, 0f, 5f, -15.563f),
+            Moment("dust", 30f, 0.457f, 9.279f, -8.1f),
+            Moment("dust", 32.6f, 0.465f, 9.307f, -8.066f),
+        ),
+        "hitch" to listOf(
+            Moment("back", 3.5f, -3.065f, -1.288f, -8.747f),
+            Moment("back", 6.5f, -3.065f, -1.288f, -8.747f),
+            Moment("grab", 13f, -3.768f, 4.996f, -8.909f),
+            Moment("clip", 25f, -15.6f, 3f, -9f),
+            Moment("tug", 26.6f, -15.6f, 3f, -9f),
+            Moment("tug", 28f, -15.6f, 3f, -9f),
+            Moment("pat", 32f, -10.51f, -3.42f, -7.823f),
+            Moment("pat", 34.4f, -10.515f, -3.464f, -7.691f),
+        ),
+        "weigh" to listOf(
+            Moment("set", 18f, 6.6f, 7.8f, -16f),
+            Moment("read", 36f, 0f, -0.2f, -16f),
+            Moment("tally", 48f, -6.6f, 7.8f, -16f),
+        ),
+        "halt" to listOf(
+            Moment("hold", 4.4f, -7.813f, -5.82f, -5.314f),
+            Moment("push", 9f, -5.543f, -4.256f, -10.346f),
+            Moment("push", 13f, -5.582f, -4.279f, -10.322f),
+        ),
+        "rummage" to listOf(
+            Moment("look", 9f, -3.682f, 0.009f, -12.055f),
+            Moment("shake", 21f, -0.503f, 5.165f, -13.801f),
         ),
     )
 }
