@@ -95,6 +95,11 @@ OVERRIDES = {
     "say.guildmark.talk.kitchen.told.burnt_0",
     "say.guildmark.talk.kitchen.told.burnt_1",
     "say.guildmark.talk.kitchen.shop.report_1",
+    # and the same words in the door's, the cookshop's and the scene's own text lines (Hearthcraft G, H and I2), by the lead
+    "say.guildmark.talk.kitchen.door.tier_sound_2",
+    "say.guildmark.talk.kitchen.door.baker_no_0",
+    "say.guildmark.talk.kitchen.cookshop.report_1",
+    "say.guildmark.talk.kitchen.scene_own.right_2",
 }
 
 

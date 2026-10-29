@@ -46,7 +46,7 @@
   "say.guildmark.talk.kitchen.cookshop.first_0": "Fresh from the new oven!",
   "say.guildmark.talk.kitchen.cookshop.first_1": "The first from the new oven, still warm!",
   "say.guildmark.talk.kitchen.cookshop.report_0": "Here's what the shop took.",
-  "say.guildmark.talk.kitchen.cookshop.report_1": "Here's the till.",
+  "say.guildmark.talk.kitchen.cookshop.report_1": "Here's the till for you.",
   "say.guildmark.talk.detail.kitchen.cookshop.report": "%1$s Marks this week; the %2$s went first.",
   "say.guildmark.talk.detail.kitchen.cookshop.report.one": "1 Mark this week; the %s went first.",
   "say.guildmark.talk.detail.kitchen.cookshop.report.none": "Nothing sold this week."
