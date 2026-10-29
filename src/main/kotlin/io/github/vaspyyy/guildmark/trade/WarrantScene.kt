@@ -165,12 +165,12 @@ object WarrantScene {
         val key = if (copy) "trade_warrant_1" else "trade_warrant_${merchant.random.nextInt(3)}"
         val line = Talk.ticks(merchant, key)
         val toward: () -> Vec3? = { if (player.isRemoved) null else player.eyePosition }
-        val hands: () -> Vec3? = { hand(merchant) }
+        val hands: () -> Vec3? = { before(merchant) }
         val moves = ArrayList<Move>()
         moves.add(Turn(toward, 16))
         if (copy) {
-            // Looks in the drawer for the hall's copy
-            moves.add(Beat(Activity.RUMMAGE, 40, hands) { p, t -> if (t == 0) rustle(p) })
+            // Looks in the drawer for the hall's copy: the whole of RUMMAGE's loop, so that it comes round to where it began
+            moves.add(Beat(Activity.RUMMAGE, Activity.RUMMAGE.ticks, hands) { p, t -> if (t == 0) rustle(p) })
         } else {
             // Takes a sheet from the drawer, writes the name, warms the wax at the lamp and drips it on
             moves.add(Beat(Activity.NONE, 12, toward) { p, t -> if (t == 0) rustle(p) })
@@ -219,10 +219,19 @@ object WarrantScene {
             .forEach { it.glance(player, 50) }
     }
 
-    /** Where the merchant's hands are over the counter: just in front of them, at the height of a sheet on it. */
-    private fun hand(p: Townsperson): Vec3 {
+    /** Straight before the merchant over the counter, at the height of a sheet on it: what they face and look at as they work there. */
+    private fun before(p: Townsperson): Vec3 {
         val yaw = Math.toRadians(p.yBodyRot.toDouble())
         return Vec3(p.x - sin(yaw) * 0.45, p.y + 1.0, p.z + cos(yaw) * 0.45)
+    }
+
+    /**
+     * Where the merchant's hands work the sheet on the counter, and the seal comes down on it: [SEAL_AHEAD] in front of them and
+     * [SEAL_RIGHT] to their right, on the counter's top (the STAMP clip's press point, trade_clips.py's ST_PP): the wax is dripped there.
+     */
+    private fun hand(p: Townsperson): Vec3 {
+        val yaw = Math.toRadians(p.yBodyRot.toDouble())
+        return Vec3(p.x - sin(yaw) * SEAL_AHEAD - cos(yaw) * SEAL_RIGHT, p.y + 1.0, p.z + cos(yaw) * SEAL_AHEAD - sin(yaw) * SEAL_RIGHT)
     }
 
     private fun rustle(p: Townsperson) {
@@ -259,6 +268,10 @@ object WarrantScene {
 
     private const val WARM = 30
     private const val DRIP = 14
+
+    /** Blocks: how far before the merchant and to their right the STAMP clip's seal lands (13 px and 2.5 px). */
+    private const val SEAL_AHEAD = 13.0 / 16.0
+    private const val SEAL_RIGHT = 2.5 / 16.0
 
     /** The lang keys of why a copy is not offered. */
     private const val NONE = "gui.guildmark.trade.ladder.warrant.none"
