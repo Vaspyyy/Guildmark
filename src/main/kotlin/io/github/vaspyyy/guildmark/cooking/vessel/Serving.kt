@@ -149,6 +149,7 @@ internal object Serving {
         }
         if (kind != null && sound != null) be.ring(level, sound, 0.9f, 1.0f)
         if (kind != null && tier == Tier.HALLMARKED) be.puff(level, CookParticles.CALL.get(), 16, 0.45)
+        if (kind != null) Onlookers.served(level, be.blockPos, tier)
     }
 
     /** Takes a bowl from the pack for a pot's portion; false if there is none (the portion then comes without one, 1.1). */

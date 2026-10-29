@@ -392,13 +392,19 @@ open class VesselBlockEntity(type: BlockEntityType<*>, pos: BlockPos, state: Blo
         for (e in v.events) {
             when (e.what) {
                 Vessel.Happened.CALLED -> cue(level, e)
-                Vessel.Happened.MISSED -> if (heard) missed(level, e)
+                Vessel.Happened.MISSED -> if (heard) {
+                    missed(level, e)
+                    Onlookers.catching(level, blockPos)
+                }
                 Vessel.Happened.JACKED -> if (heard) {
                     swirlUntil = now + CRANK_TICKS
                     ring(level, "cook.crank", 0.7f, 1.0f)
                 }
                 Vessel.Happened.HEATED -> {}
-                Vessel.Happened.READY -> if (heard) ring(level, "cook.ready", 0.8f, 1.0f)
+                Vessel.Happened.READY -> if (heard) {
+                    ring(level, "cook.ready", 0.8f, 1.0f)
+                    Onlookers.smells(level, blockPos)
+                }
                 Vessel.Happened.RIPE -> if (heard) ring(level, "cook.ripe", 0.6f, 1.0f)
                 Vessel.Happened.DONE -> if (heard) {
                     ring(level, "cook.sizzle", 0.6f, 0.8f)
@@ -460,6 +466,7 @@ open class VesselBlockEntity(type: BlockEntityType<*>, pos: BlockPos, state: Blo
         if (heard) {
             ring(level, "cook.burnt", 1.0f, 1.0f)
             smoke(level, 18)
+            Onlookers.burnt(level, blockPos)
         }
         onBurnt(level)
     }

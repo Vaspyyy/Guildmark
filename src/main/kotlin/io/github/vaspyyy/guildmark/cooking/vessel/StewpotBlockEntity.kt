@@ -269,6 +269,7 @@ class StewpotBlockEntity(pos: BlockPos, state: BlockState) : VesselBlockEntity(C
             }
             StewpotMode.GUEST -> if (!knows(level, player)) {
                 say(player, "guest_no")
+                Onlookers.guestNo(level, blockPos)
                 return false
             }
             StewpotMode.PLAYER -> {}
@@ -283,9 +284,11 @@ class StewpotBlockEntity(pos: BlockPos, state: BlockState) : VesselBlockEntity(C
         return Suppliers.rank(level, capital.center, player.uuid) >= SupplierRank.KNOWN.ordinal
     }
 
-    // ---- A burnt pot at the inn is gossip ----
+    // ---- A burnt pot at the inn is gossip, and the innkeeper is cross ----
 
     override fun onBurnt(level: ServerLevel) {
-        if (mode == StewpotMode.GUEST && vessel.portions >= 6) KitchenRumours.burnt(level, blockPos)
+        if (mode != StewpotMode.GUEST) return
+        Onlookers.guestBurnt(level, blockPos)
+        if (vessel.portions >= 6) KitchenRumours.burnt(level, blockPos)
     }
 }
