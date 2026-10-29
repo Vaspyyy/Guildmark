@@ -37,6 +37,7 @@ from animkit import v
 import living_props as lp
 import street_clips as sc
 import wagon as wg
+import store_art as sa
 
 la = None           # living_anims, handed to build()
 
@@ -920,12 +921,413 @@ def _horse_hitch():
     return out
 
 
+# ================================================================== weigh
+
+# ---- weigh (60, once): at the Carriers' Store's scale (art stream X3's store_scale; StoreLife's weigh scene). Made for
+# the clerk standing on the middle of the block south of the scale's, facing it square (north): the bench's top 12 px up
+# from its near edge 10 px ahead, the beam's pivot 16 px ahead and 24.2 up, the goods pan hanging on the left (its floor
+# at store_art.clip_pan(GOODS)) and the weights pan on the right.
+# The sack hangs from the left fist by its neck: a look down at it and a swing back; swung up on the straight arm,
+# the body leaning back under it, till it is held out at shoulder height; a half step in with the left foot, the body
+# turned to bring the left shoulder on and tipped away from the weight, the sack carried over the pan's near rim between
+# its two near chains and let down onto its floor (set, tick 18: StoreLife's SET_ON, when the scale's own sack takes this
+# one's place and the beam starts to swing); the fist drawn back out of the chains, the step back. The knees bend till
+# the eyes are level with the beam, the left hand on the bench's edge, and the head rides the goods end down and through
+# its swings as the beam settles, along to the other end and back to the middle, a nod (read). Up again: the quill drawn
+# from the sash and held ready, then jabbed at the weights pan as the first weight goes on there (tally, tick 48: the
+# scale's own clock, 30 ticks after the sack), a nod; back into the sash, the arms hang. The figure is written at the
+# desk next (SCRIBE).
+WG_LEN = 60
+WG_SET = 18.0                                   # StoreLife.SET_ON
+WG_READ = 36.0
+WG_TALLY = 48.0                                 # the first weight on: StoreScaleRenderer's WEIGHT_AT[0] after the sack
+WG_DRAWN, WG_SHEATHED = 42.0, 55.0              # the quill out of the sash, and back in it
+WG_WEIGHINGS = [(0.0, 12.0), (30.0, 7.0), (50.0, 2.5), (70.0, 0.0)]    # StoreScaleRenderer: WEIGHT_AT after the sack, TILTS
+WG_FLOOR = np.array(sa.clip_pan(sa.GOODS), float)        # the goods pan's floor at rest (6.6, 7.8, -16)
+WG_WFLOOR = np.array(sa.clip_pan(sa.WEIGHTS), float)
+WG_PIVOT = sa.W.clip_pt(*sa.SCALE_PIVOT, bz=-1)          # the beam's pivot (0, -0.2, -16)
+WG_BENCH_Y = 24.0 - sa.BENCH_TOP                         # the bench's top (12) ...
+WG_BENCH_Z = sa.W.clip_pt(0.0, 0.0, 14.0, bz=-1)[2]      # ... and its near edge (-10)
+WG_NECK = np.array(lp.WEIGH_SACK_NECK, float)
+WG_NIB = (0.0, 4.0, 0.0)                                 # the quill's nib (townsfolk_tools' quill)
+WG_SASH = np.array([-2.6, 10.4, -5.4])                   # the right fist at the sash's front, the quill's place
+WG_READY = np.array([-4.0, 3.8, -10.0])                  # the quill held ready, chest high
+WG_JAB = np.array([-5.2, 3.6, -11.6])                    # ... and jabbed at the weights pan
+
+WG_STEPS = [(7.8, 11.8, 'left_leg', (2.6, -4.0)), (19.4, 22.8, 'left_leg', (1.9, 0.0))]
+WG_P = [(0, 0.0), (2.0, 4.0), (3.6, 2.0), (6.5, -4.0), (8.4, -2.0), (11.0, 5.0), (14.0, 10.0), (WG_SET, 12.0), (20.0, 7.0),
+        (23.0, 2.0), (25.0, 3.0), (28.5, 7.0), (WG_READ, 7.0), (39.0, 4.0), (42.0, 2.0), (WG_TALLY, 5.0), (51.0, 3.0),
+        (55.0, 2.0), (58.0, 0.5), (60, 0.0)]
+WG_YAW = [(0, 0.0), (2.0, -4.0), (4.0, 0.0), (6.5, 4.0), (11.0, 10.0), (WG_SET, 12.0), (21.0, 3.0), (24.0, 0.0),
+          (WG_READ, 0.0), (44.0, 0.0), (WG_TALLY, -8.0), (51.0, -6.0), (55.0, -2.0), (60, 0.0)]
+WG_ROLL = [(0, 0.0), (2.0, -1.0), (6.5, -2.5), (11.0, -3.0), (WG_SET, -1.5), (21.0, 0.0), (60, 0.0)]
+WG_DIP = [(0, 0.0), (2.0, 0.5), (3.6, 0.2), (6.5, 0.8), (8.4, 0.4), (11.0, 0.3), (WG_SET, 0.9), (20.0, 0.6), (23.0, 0.3),
+          (24.5, 0.6), (28.5, 3.4), (WG_READ, 3.4), (38.5, 3.0), (41.5, 0.4), (WG_TALLY, 0.6), (51.0, 0.3), (60, 0.0)]
+WG_RX = [(0, 0.0), (8.0, 0.0), (11.8, 0.8), (WG_SET, 0.8), (22.8, 0.0), (60, 0.0)]
+WG_RZ = [(0, 0.0), (2.0, 0.6), (3.6, 0.4), (6.5, 0.9), (8.4, 0.2), (11.8, -2.8), (WG_SET, -3.0), (19.4, -2.6), (22.8, 0.0),
+         (60, 0.0)]
+
+
+def wg_feet(t):
+    return stepping(t, FEET, WG_STEPS, lift=1.4)
+
+
+def wg_frame(t):
+    pitch = K(WG_P, t)
+    feet, _ = wg_feet(t)
+    return F_(qt=bend(pitch, K(WG_YAW, t), K(WG_ROLL, t)), vt=(0.0, sink_for(pitch), 0.0),
+              pr=la.root_for(feet, K(WG_RX, t), K(WG_RZ, t), dip=K(WG_DIP, t)))
+
+
+def wg_tilt(t):
+    """The beam's tilt (degrees, the goods end down) at [t] of the clip, as StoreScaleRenderer.weighing has it for a sack set
+    on at WG_SET (each change swinging the beam on from wherever the last left it); its never-still idle sway left out."""
+    a = t - WG_SET
+    if a < 0.0:
+        return 0.0
+    frm = to = start = 0.0
+    first = True
+    for at, tilt in WG_WEIGHINGS:
+        if a < at:
+            break
+        frm = 0.0 if first else sa.settle(at - start, frm, to)
+        to, start, first = tilt, at, False
+    return sa.settle(a - start, frm, to)
+
+
+def wg_hook(side, t):
+    """The hook of the pan on [side] (store_art.GOODS or WEIGHTS) at [t], in the clip's space."""
+    hx, hy = sa.hook_at(side, wg_tilt(t))
+    return sa.W.clip_pt(hx, hy, sa.SCALE_PIVOT[2], bz=-1)
+
+
+def wg_pan_floor(side, t):
+    return wg_hook(side, t) + np.array([0.0, sa.CHAIN + 0.7, 0.0])
+
+
+def wg_weights(t):
+    """How many weights are on the weights pan at [t]."""
+    return sum(1 for at, _ in WG_WEIGHINGS[1:] if t - WG_SET >= at)
+
+
+WG_PATH = None
+
+
+# the swing up: the straight arm's angle from hanging (degrees, forward) and how far it is turned out, as it lifts the
+# sack to shoulder height before the step in
+WG_ARC = [(2.0, -12.0, 0.17), (3.6, 0.0, 0.17), (5.0, 38.0, 0.14), (6.8, 76.0, 0.1), (8.4, 90.0, 0.08), (10.4, 93.0, 0.08)]
+
+
+def wg_hand_off(t):
+    """The grip from the neck: just over it while the sack hangs, just behind it as the arm reaches out level."""
+    w = smooth(K([(0, 0.0), (3.6, 0.0), (8.4, 1.0), (WG_SET, 1.0)], min(t, WG_SET)))
+    return np.array([0.0, -0.7, 0.0]) * (1.0 - w) + np.array([0.0, -0.3, 0.7]) * w
+
+
+def wg_path():
+    """The neck's path (where the fist has the sack): from under the hand at rest, swung back and up on the straight arm
+    to shoulder height, carried in over the near rim and let down until the sack stands on the pan's floor."""
+    fr0 = wg_frame(0.0)
+    n0 = wc.grip_of('left_arm', rest_arm('left_arm', fr0), fr0) - wg_hand_off(0.0)
+    keys = [(0, n0)]
+    for k, ang, out in WG_ARC:
+        sh = torso_to_world(wg_frame(k), PIVOTS['left_arm'])
+        a = math.radians(ang)
+        d = unit(np.array([out, math.cos(a), -math.sin(a)]))
+        keys.append((k, sh + 9.9 * d - wg_hand_off(k)))
+    hold = np.array([0.0, -0.3, 0.7])
+    keys += [(12.6, np.array([6.8, 2.9, -14.4]) - hold), (15.0, np.array([6.6, 3.3, -15.3]) - hold),
+             (17.0, WG_FLOOR + WG_NECK + np.array([0.0, -0.3, 0.0])), (WG_SET, WG_FLOOR + WG_NECK)]
+    return keys
+
+
+# the sack's swing on its neck (degrees about x: positive, its bottom toward the clerk), lagging the hand
+WG_SWING = [(0, 0.0), (1.2, 0.0), (2.4, -9.0), (4.0, 6.0), (5.6, 18.0), (7.2, 10.0), (8.8, -6.0), (10.4, -4.0), (12.0, 4.0),
+            (13.6, 3.0), (15.4, -1.5), (17.0, 0.0), (WG_SET, 0.0)]
+
+
+def wg_sack(t):
+    """The sack's origin (the middle of its bottom) and turn at [t] (to WG_SET; then it is the scale's)."""
+    t = min(t, WG_SET)
+    R = rot_x(K(WG_SWING, t))
+    N = KV(WG_PATH, t)
+    return N - R @ WG_NECK, R
+
+
+def wg_hold(t):
+    """Where the left fist's grip is to have the neck."""
+    O, R = wg_sack(t)
+    return O + R @ WG_NECK + wg_hand_off(t)
+
+
+def _sack_track(t, pivot):
+    O, R = wg_sack(t)
+    return R, O, None
+
+
+def sack_points(O, R, n=2):
+    out = []
+    for lo, size in lp.WEIGH_SACK_CUBES.values():
+        lo, size = np.asarray(lo, float), np.asarray(size, float)
+        out += [O + R @ (lo + size * np.array([i, j, k]) / n) for i in range(n + 1) for j in range(n + 1) for k in range(n + 1)]
+    return out
+
+
+def weigh():
+    global WG_PATH
+    WG_PATH = wg_path()
+    c = la.clip('weigh', WG_LEN, False, look=('merchant', 0), tools_=('weigh_sack', 'quill'), station_='scale_bench',
+                events=[('set', WG_SET), ('read', WG_READ), ('tally', WG_TALLY)],
+                traces=[('weigh_sack', tuple(WG_NECK), (230, 200, 160)), ('quill', WG_NIB, (255, 230, 160))],
+                views=((140, -14), (90, -4), (200, -16)))
+    ta.INFO['weigh']['tools_at'] = wc.tools_when([('weigh_sack', 0.0, WG_SET), ('quill', WG_DRAWN, WG_SHEATHED)])
+    holds = la.Holds()
+    left_off = None
+    rec = {}
+    for t in la.every(WG_LEN):
+        fr = wg_frame(t)
+        key_frame(c, t, fr, ease='linear')
+        feet, lift = wg_feet(t)
+        stand(c, t, fr, feet=feet, lift=lift)
+        # the head: on the sack, on the pan as it is carried over and set down and as the pan dips; level with the beam,
+        # riding its goods end, along to the other and back to the middle, a nod; on the quill, on the weights pan
+        O, Rs = wg_sack(t)
+        floor_g = wg_pan_floor(sa.GOODS, t)
+        looks = [(0, O + np.array([0.0, -1.5, 0.0])), (2.4, O + np.array([0.0, -1.5, 0.0])), (6.5, WG_FLOOR + np.array([0.0, -1.0, 2.0])),
+                 (WG_SET, WG_FLOOR + np.array([0.0, -1.0, 0.0])), (24.5, floor_g + np.array([0.0, -1.0, 0.0])),
+                 (28.5, wg_hook(sa.GOODS, t)), (31.0, wg_hook(sa.GOODS, t)), (33.0, wg_hook(sa.WEIGHTS, t)),
+                 (34.6, wg_hook(sa.WEIGHTS, t)), (WG_READ, WG_PIVOT + np.array([0.0, 1.0, 0.0])),
+                 (38.5, WG_PIVOT + np.array([0.0, 3.0, 0.0])), (41.0, np.array([-2.0, 9.0, -9.0])),
+                 (43.5, np.array([-2.0, 9.0, -9.0])), (46.0, WG_READY + np.array([0.0, 1.0, -2.0])),
+                 (WG_TALLY, WG_WFLOOR + np.array([0.0, -1.0, 0.0])), (51.0, WG_WFLOOR + np.array([0.0, -1.0, 0.0])),
+                 (54.0, WG_PIVOT + np.array([0.0, 2.0, 0.0])), (57.5, np.array([0.0, -2.0, -40.0])), (60, np.array([0.0, -2.0, -40.0]))]
+        gaze = smooth(K([(0, 0.0), (1.2, 0.8), (3.0, 1.0), (40.0, 1.0), (42.0, 0.8), (44.0, 0.8), (46.0, 1.0), (54.0, 1.0),
+                         (58.5, 0.0), (60, 0.0)], t))
+        nods = 6.0 * bump(t, WG_READ - 1.4, WG_READ + 2.0) + 5.0 * bump(t, WG_TALLY + 0.4, WG_TALLY + 3.6)
+        tip = 5.0 * bump(t, 29.0, 35.0)                          # the head tipped as it sights along the beam
+        qh = look_at(fr, KV(looks, t), gaze, x=nods, z=tip)
+        c.key('head', t, qh, ease='linear')
+        # the left hand: the sack by the neck, swung, set on the pan; drawn back out between the chains; on the bench's
+        # edge while the beam is read; hanging
+        rest = rest_arm('left_arm', fr)
+        if t <= WG_SET:
+            pose = reach_arm(holds, 'left_arm', fr, wg_hold(t), palm=R if t < 6.0 else D, palm_w=0.3, slack=0.8, limit=1.8)
+            if t < 1.0:
+                pose = mix(rest, pose, smooth(t))
+        else:
+            if left_off is None:
+                left_off = wg_hold(WG_SET)
+            out = left_off + np.array([0.0, -0.4, 3.0]) * smooth((t - WG_SET) / 2.4)
+            edge = np.array([5.4, WG_BENCH_Y - 0.8, WG_BENCH_Z - 0.6])
+            w_edge = smooth(K([(WG_SET, 0.0), (24.5, 0.0), (28.5, 1.0), (38.5, 1.0), (41.5, 0.0), (60, 0.0)], t))
+            w_rest = smooth(K([(WG_SET, 0.0), (20.4, 0.0), (24.5, 1.0), (60, 1.0)], t))
+            on = reach_arm(holds, 'left_arm', fr, out if t < 21.0 else edge, palm=D, palm_w=0.3, slack=0.8, limit=1.8)
+            if t < 21.0:
+                pose = mix(on, rest, w_rest)
+            else:
+                pose = mix(mix(on, rest, w_rest), on, w_edge) if w_edge > 1e-4 else rest
+        set_arm(c, 'left_arm', t, pose)
+        # the right hand: hanging; to the sash for the quill, up to the lips, held ready and jabbed at the weights pan, back
+        # into the sash, hanging
+        rest = rest_arm('right_arm', fr)
+        if t < 38.5 or t > 58.5:
+            pose = rest
+        elif t < WG_DRAWN + 0.5:
+            pose = reach_arm(holds, 'right_arm', fr, WG_SASH, palm=L, palm_w=0.3, slack=0.8, limit=1.8)
+            pose = mix(rest, pose, smooth((t - 38.5) / 3.0))
+        elif t < 52.0:
+            # up out of the sash and held ready, then jabbed at the weights pan as the weight goes on, and back
+            if 'g0' not in rec:
+                rec['g0'] = wc.grip_of('right_arm', rec['pose'], fr)
+            ready = rec['g0'] + (WG_READY - rec['g0']) * smooth((t - (WG_DRAWN + 0.5)) / 3.0)
+            hit = smooth(K([(46.0, 0.0), (WG_TALLY - 0.6, 0.0), (WG_TALLY + 0.4, 1.0), (49.6, 1.0), (51.2, 0.0), (52.0, 0.0)], t))
+            pose = reach_arm(holds, 'right_arm', fr, ready + (WG_JAB - WG_READY) * hit, palm=L, palm_w=0.3, slack=0.8, limit=1.8)
+        elif t < WG_SHEATHED + 0.5:
+            u = smooth((t - 52.0) / (WG_SHEATHED - 52.0))
+            pose = reach_arm(holds, 'right_arm', fr, WG_READY + (WG_SASH - WG_READY) * u, palm=L, palm_w=0.3, slack=0.8, limit=1.8)
+        else:
+            pose = reach_arm(holds, 'right_arm', fr, WG_SASH, palm=L, palm_w=0.3, slack=0.8, limit=1.8)
+            pose = mix(pose, rest, smooth((t - WG_SHEATHED - 0.5) / 3.0))
+        rec['pose'] = pose
+        set_arm(c, 'right_arm', t, pose)
+    c.mode('head', 'set')
+    la.TRACKS['weigh'] = {'weigh_sack': _sack_track}
+    O, Rs = wg_sack(WG_SET)
+    check(c, 'the sack on the pan\'s floor, square (t=18: its bottom\'s middle)', O, WG_FLOOR, tol=0.05)
+    check(c, 'the sack on the pan\'s floor, square (t=18: its turn)', (float(np.abs(Rs - np.eye(3)).max()),), (0.0,), tol=0.01)
+    for k in (0.0, 3.6, 6.5, 9.5, 12.5, 15.0, 17.0, WG_SET):
+        check(c, f'left hand on the sack\'s neck (t={k:g})', ta.fk(c, k, 'left_arm', GRIP['left_arm']), wg_hold(k), tol=1.0)
+    check(c, 'the quill held ready (t=46.5)', ta.fk(c, 46.5, 'right_arm', GRIP['right_arm']), WG_READY, tol=1.0)
+    check(c, 'the quill jabbed at the weights pan (t=48.5)', ta.fk(c, 48.5, 'right_arm', GRIP['right_arm']), WG_JAB, tol=1.0)
+    for k in (30.0, 36.0):
+        check(c, f'left hand on the bench\'s edge (t={k:g})', ta.fk(c, k, 'left_arm', GRIP['left_arm']),
+              np.array([5.4, WG_BENCH_Y - 0.8, WG_BENCH_Z - 0.6]), tol=1.0)
+    times = [i * 0.5 for i in range(2 * WG_LEN + 1)]
+    sack_clear(c, [k for k in times if k <= WG_SET])
+    scale_clear(c, times)
+    for side in ('right_arm', 'left_arm'):
+        clear_of(c, side, times, into=('body', 'head'), tol=1.0)
+    joins_idle(c)
+    return c
+
+
+def sack_clear(c, times):
+    """Checks the sack keeps out of the body and head, the bench, and the pan's rim until it is over the pan's floor."""
+    worst_b, at_b, worst_s, at_s = 0.0, 0.0, 0.0, 0.0
+    fixed = _scale_fixed()
+    for t in times:
+        O, R = wg_sack(t)
+        pts = sack_points(O, R)
+        mats = _mats(c, t)
+        for name in ('body', 'head'):
+            blo, bhi = BOXES[name]
+            Mi = np.linalg.inv(mats[name])
+            for p in pts:
+                q = Mi[:3, :3] @ p + Mi[:3, 3]
+                inside = min(q[0] - blo[0], bhi[0] - q[0], q[1] - blo[1], bhi[1] - q[1], q[2] - blo[2], bhi[2] - q[2])
+                if inside > worst_b:
+                    worst_b, at_b = inside, t
+        boxes = fixed + ([] if t >= WG_SET - 2.5 else _pan_boxes(sa.GOODS, t, chains=False))
+        for p in pts:
+            for b in boxes:
+                blo, bhi = np.asarray(b[0], float), np.asarray(b[1], float)
+                inside = min(float(np.min(p - blo)), float(np.min(bhi - p)))
+                if inside > worst_s:
+                    worst_s, at_s = inside, t
+    check(c, f'the sack clear of the body and head (deepest, at t={at_b:g})', (worst_b,), (0.0,), tol=0.8)
+    check(c, f'the sack clear of the scale and bench until it is down (deepest, at t={at_s:g})', (worst_s,), (0.0,), tol=0.3)
+
+
+def scale_clear(c, times, parts=(('right_arm', 'right hand', 0.8), ('left_arm', 'left hand', 0.8), ('head', 'head', 0.6),
+                                  ('body', 'body', 0.6), ('right_leg', 'right leg', 0.6), ('left_leg', 'left leg', 0.6))):
+    """clear_of_station for the scale, whose pans move: the boxes of [t] at each [t]."""
+    fixed = _scale_fixed()
+    for part, label, tol in parts:
+        worst, at = 0.0, 0.0
+        for t in times:
+            d = deepest_in(c, t, part, fixed + _scale_moving(t, sack=False))
+            if d > worst:
+                worst, at = d, t
+        check(c, f'{label} clear of the scale (deepest, at t={at:g})', (worst,), (0.0,), tol=tol)
+
+
+OAK_C, OAK_DC, BRASS_C2, IRON_C, CHAIN_C = (150, 112, 70), (118, 86, 54), (204, 164, 84), (74, 74, 80), (160, 150, 128)
+LEDGER_C, PARCH_C, SACKCLOTH_C, TIE_C = (112, 64, 42), (232, 222, 192), (204, 194, 168), (120, 94, 56)
+
+
+def _sb(lo, hi, col, out):
+    """A box of the scale's block (model px, x east, y up) as clip boxes, to [out]."""
+    a, b = sa.W.clip_pt(*lo, bz=-1), sa.W.clip_pt(*hi, bz=-1)
+    out.append(bx(np.minimum(a, b), np.maximum(a, b), col))
+
+
+def _scale_fixed():
+    """What of the scale stands still: the bench and its shelf, the ledger and the row of weights on it, the plinth, the
+    post, its fork and cap (store_art.scale_model)."""
+    out = []
+    _sb((0.5, 10.0, 2.0), (15.5, 12.0, 14.0), OAK_C, out)
+    for x0 in (1.2, 13.0):
+        for z0 in (2.8, 11.4):
+            _sb((x0, 0.0, z0), (x0 + 1.8, 10.0, z0 + 1.8), OAK_DC, out)
+    _sb((3.0, 3.0, 4.6), (13.0, 4.0, 11.4), OAK_DC, out)
+    _sb((1.4, 12.0, 2.5), (5.6, 12.9, 6.1), LEDGER_C, out)
+    _sb((1.9, 12.9, 2.9), (5.2, 13.3, 5.7), PARCH_C, out)
+    for i, x in enumerate((7.0, 9.0, 11.2, 13.2)):
+        r, hgt = (1.0, 1.1) if i % 2 == 0 else (0.8, 0.8)
+        _sb((x - r, 12.0, 3.6 - r), (x + r, 12.0 + hgt, 3.6 + r), IRON_C, out)
+    _sb((5.2, 12.0, 5.4), (10.8, 12.9, 10.6), BRASS_C2, out)
+    _sb((6.8, 12.9, 6.8), (9.2, 21.0, 9.2), OAK_C, out)
+    for y0, y1 in ((12.9, 13.7), (20.2, 21.0)):
+        _sb((6.4, y0, 6.4), (9.6, y1, 9.6), BRASS_C2, out)
+    for z0, z1 in ((6.3, 7.3), (8.7, 9.7)):
+        _sb((6.6, 21.0, z0), (9.4, 27.0, z1), OAK_C, out)
+    _sb((6.2, 27.0, 6.1), (9.8, 27.8, 9.9), BRASS_C2, out)
+    _sb((7.3, 27.8, 7.3), (8.7, 28.8, 8.7), BRASS_C2, out)
+    return out
+
+
+def _strut(a, b, r, col, out, n=6):
+    for k in range(n):
+        p = a + (b - a) * (k + 0.5) / n
+        h = np.abs(b - a) / (2 * n) + r
+        out.append(bx(p - h, p + h, col))
+
+
+def _pan_boxes(side, t, chains=True, sack=None, weights=None):
+    """The pan on [side] at [t], hanging plumb from its hook (its sway left out): its rim, dish, foot and chains; on the
+    goods pan the scale's sack once it is on ([sack]: None, by the clip's time), on the other its weights."""
+    out = []
+    h = wg_hook(side, t)
+    fl = h + np.array([0.0, sa.CHAIN + 0.7, 0.0])
+    r, w = sa.RIM_R, 0.6
+    for lo, hi in (((-r, -0.9, -r), (r, 0.0, -r + w)), ((-r, -0.9, r - w), (r, 0.0, r)),
+                   ((-r, -0.9, -r + w), (-r + w, 0.0, r - w)), ((r - w, -0.9, -r + w), (r, 0.0, r - w))):
+        out.append(bx(fl + np.array(lo), fl + np.array(hi), BRASS_C2))
+    out.append(bx(fl + np.array([-r + 0.3, 0.0, -r + 0.3]), fl + np.array([r - 0.3, 0.9, r - 0.3]), BRASS_C2))
+    out.append(bx(fl + np.array([-1.7, 0.9, -1.7]), fl + np.array([1.7, 1.5, 1.7]), BRASS_C2))
+    if chains:
+        for ang in (-90.0, 150.0, 30.0):
+            a = math.radians(ang)
+            foot = h + np.array([-(r - 0.4) * math.cos(a), sa.CHAIN, (r - 0.4) * math.sin(a)])
+            _strut(foot, h, 0.25, CHAIN_C, out)
+    if side == sa.GOODS:
+        if sack if sack is not None else t >= WG_SET:
+            for name, (lo, size) in lp.WEIGH_SACK_CUBES.items():
+                lo = np.asarray(lo, float)
+                out.append(bx(fl + lo, fl + lo + np.asarray(size, float), TIE_C if name == 'tie' else SACKCLOTH_C))
+    else:
+        n = wg_weights(t) if weights is None else weights
+        for i, (x0, x1, z0, z1, hgt) in enumerate(((-1.9, -0.3, -0.8, 0.8, 1.3), (0.2, 1.6, -0.7, 0.7, 0.9),
+                                                   (-0.9, 0.5, 0.9, 2.2, 0.6))[:n]):
+            out.append(bx(fl + np.array([-x1, -hgt, z0]), fl + np.array([-x0, 0.0, z1]), IRON_C))
+    return out
+
+
+def _scale_moving(t, sack=None, weights=None):
+    """The beam at its tilt at [t] (in steps along it: the boxes stand square), its hooks and the two pans."""
+    out = []
+    a = math.radians(wg_tilt(t))
+    for k in range(15):
+        u = -7.5 + k + 0.5
+        half = 1.25 if abs(u) < 2.2 else 0.85 if abs(u) < 4.6 else 0.55 if abs(u) < 6.6 else 0.75
+        p = sa.W.clip_pt(sa.SCALE_PIVOT[0] + u * math.cos(a), sa.SCALE_PIVOT[1] + u * math.sin(a), sa.SCALE_PIVOT[2], bz=-1)
+        out.append(bx(p - np.array([0.5, half, 0.55]), p + np.array([0.5, half, 0.55]), BRASS_C2))
+    for side in (sa.GOODS, sa.WEIGHTS):
+        h = wg_hook(side, t)
+        out.append(bx(h - np.array([0.35, 1.35, 0.3]), h + np.array([0.35, 0.0, 0.3]), IRON_C))
+        out += _pan_boxes(side, t, sack=sack, weights=weights)
+    return out
+
+
+def _scale_bench():
+    """The Store's scale on its bench in the block ahead, as it stands before the sack goes on (the previews that follow
+    the clip's time draw its beam and pans from scale_at)."""
+    return _scale_fixed() + _scale_moving(0.0, sack=False, weights=0)
+
+
+def scale_at(t):
+    """The scale's boxes at [t] of WEIGH: its beam tipped and swinging, the scale's sack on the goods pan from tick 18 and
+    the first weight on the other from tick 48."""
+    return _scale_fixed() + _scale_moving(t)
+
+
+STATION_AT = {'weigh': scale_at}            # the previews' stations that move with the clip's time
+
+
+def preview_station(name, t):
+    """For a preview of [name] at [t]: its station's boxes as they stand then (with the ground), or None if it stands still."""
+    fn = STATION_AT.get(name)
+    if fn is None:
+        return None
+    return fn(t) + [b for b in la.station_boxes(ta.INFO[name]['station']) if b[1][1] - b[0][1] < 0.5 and b[1][0] - b[0][0] > 30]
+
+
 # ================================================================== the registry
 
-TRADE_CLIPS = ['stamp', 'check_load', 'load_pack', 'hitch']
-MAKERS = [('stamp', stamp), ('check_load', check_load), ('load_pack', load_pack), ('hitch', hitch)]
+TRADE_CLIPS = ['stamp', 'check_load', 'load_pack', 'hitch', 'weigh']
+MAKERS = [('stamp', stamp), ('check_load', check_load), ('load_pack', load_pack), ('hitch', hitch), ('weigh', weigh)]
 STATION_BOXES = {'stamp_desk': _stamp_desk, 'cart_covered': _cart_covered, 'wagon_tail_load': _wagon_tail_load,
-                 'horse_hitch': _horse_hitch}
+                 'horse_hitch': _horse_hitch, 'scale_bench': _scale_bench}
 STATION_COLOUR = {}
 NEEDS = {}
 BUILT = {}
@@ -943,6 +1345,7 @@ def trade_moment_specs():
         'hitch': {'back': ('part', 'right_arm', tuple(GRIP['right_arm'])), 'grab': ('point', tuple(HT_ANCHOR)),
                   'clip': ('point', tuple(HT_HAME)), 'tug': ('point', tuple(HT_HAME)),
                   'pat': ('part', 'right_arm', tuple(GRIP['right_arm']))},
+        'weigh': {'set': ('point', tuple(WG_FLOOR)), 'read': ('point', tuple(WG_PIVOT)), 'tally': ('point', tuple(WG_WFLOOR))},
     }
 
 

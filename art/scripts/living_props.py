@@ -1813,7 +1813,37 @@ def _trace_end():
     ])
 
 
-TRADE_BUILDERS = [_stamp, _canvas_flap, _pack_basket, _trace_end]
+# The scale's sack (store_art's pan_part, the goods pan's 'sack'), in its own space: the middle of its bottom at the origin,
+# y down, x as a clip's (the store's model x mirrored), so that set on the pan's floor with no turn it is the scale's.
+WEIGH_SACK_CUBES = {'body': ((-1.4, -2.5, -1.3), (2.9, 2.5, 2.5)), 'lump': ((-1.9, -1.3, 0.5), (1.6, 1.3, 1.5)),
+                    'neck': ((-0.8, -3.1, -0.7), (1.6, 0.6, 1.4)), 'tie': ((-1.0, -2.7, -1.0), (2.0, 0.35, 2.0))}
+WEIGH_SACK_NECK = (0.0, -2.8, 0.0)       # where the fist has it
+
+
+def sackcloth_painter(key):
+    """The Store's sacks: pale undyed canvas (the scale's own sackcloth) in a tight weave, softly creased."""
+    def fn(face, w, h, rng):
+        a = weave(w, h, (204, 194, 168), (168, 158, 132), (224, 218, 196), rng, cell=1)
+        U, V = uv(w, h)
+        crease = np.sin(U * 4.7 + rng.uniform(0, 6)) * np.sin(V * 3.3 + rng.uniform(0, 6))
+        a[..., :3] *= (1 + 0.07 * crease)[..., None]
+        return shade_edges(a, 0.22)
+    return painter(key, fn)
+
+
+def _weigh_sack():
+    # The sack WEIGH sets on the scale: the scale's own (store_art's goods pan 'sack': the same blocks, its pale canvas and
+    # rope tie), so that when the game puts the scale's sack on the pan as the clip lets go of this one, nothing is seen to
+    # change. WEIGH's track hangs it from the left fist by its neck and sets it on the pan's floor; untracked it hangs by
+    # the left hand at rest.
+    cubes = []
+    for name, (lo, size) in WEIGH_SACK_CUBES.items():
+        key = 't_weigh_sack_' + name
+        cubes.append(C(lo, size, key, cord_painter(key) if name == 'tie' else sackcloth_painter(key)))
+    return 'body', Part('weigh_sack', (6.0, 15.5, 0.0), (0, 0, 0), cubes=cubes)
+
+
+TRADE_BUILDERS = [_stamp, _canvas_flap, _pack_basket, _trace_end, _weigh_sack]
 BUILDERS.extend(TRADE_BUILDERS)
 TOOL_NOTES.update({
     'stamp': 'right hand, a seal stamp hanging along the arm (STAMP\'s track holds it pointing down and twists it on the '
@@ -1825,6 +1855,8 @@ TOOL_NOTES.update({
                    'its mouth\'s middle at part (0, -2.1, 0), its bottom\'s at (0, 2.5, 0)',
     'trace_end': f'body, tracked (HITCH): the front end of the right trace, {TRACE_LEN:g} px along part +y from its root; the '
                  'track roots it on the line the hitched trace runs and stretches it to the hand',
+    'weigh_sack': 'body, tracked (WEIGH): the scale\'s sack (store_art\'s goods pan), the middle of its bottom at the part\'s '
+                  'origin; the fist has it by the neck at part (0, -2.8, 0)',
 })
 
 
