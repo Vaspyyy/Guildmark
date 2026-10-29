@@ -34,7 +34,7 @@ class HaulBoardBlock(properties: BlockBehaviour.Properties) : NoticeBoardBlock(p
 
     override fun tick(level: ServerLevel, anchor: BlockPos, state: BlockState) = HaulBoards.tick(level, anchor)
 
-    /** The slate with its cap, header and shelf, which stand as proud as the market board's. */
+    /** The slate with its cap and header, and the shelf that stands out before the rail. */
     override fun getShape(state: BlockState, level: BlockGetter, pos: BlockPos, context: CollisionContext): VoxelShape =
         SHAPES.getValue(state.getValue(FACING))
 
@@ -58,6 +58,6 @@ class HaulBoardBlock(properties: BlockBehaviour.Properties) : NoticeBoardBlock(p
     }
 
     companion object {
-        private val SHAPES: Map<Direction, VoxelShape> = Shapes.rotateHorizontal(Block.box(0.0, 0.0, 10.0, 16.0, 16.0, 16.0))
+        private val SHAPES: Map<Direction, VoxelShape> = Shapes.rotateHorizontal(Block.box(0.0, 0.0, 8.0, 16.0, 16.0, 16.0))
     }
 }
