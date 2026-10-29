@@ -148,6 +148,9 @@ internal object BrotherWatch {
         /** Whether the delvers' leader stands at the tavern; whether `tale brother dawn` has the dawn now, whatever the hour. */
         var delver = false
         var forced = false
+
+        /** Since when a leading given up has had them walking back down to their mark (-1: it has not; they are not sent away meanwhile). */
+        var backSince = -1L
     }
 
     private class Laying {
@@ -290,8 +293,10 @@ internal object BrotherWatch {
         val real = lair?.let { BrotherMine.mark(level, it, Brother.side(t), c.here.capital.center) }
         val kept = memo.placed[Brother.BROTHER]?.takeIf { !BrotherMine.parked(level, it) && mine != null && mine.distanceToSqr(Vec3.atCenterOf(it)) < MARK_FAR * MARK_FAR }
         val mark = real ?: kept ?: BrotherMine.placeholder(level, lair?.pos ?: c.here.capital.center)
-        // A tale body far from the mark (taken where their day had them, after a restart): out of sight it goes, in sight it leaves by the gate
-        if (mine != null && mine.director !is TaleLeave && mine.director !is RoadIn && far(level, mine, mark)) {
+        // A tale body far from the mark (taken where their day had them, after a restart): out of sight it goes, in sight it leaves by the gate.
+        // One a given-up leading left on the way up walks back down to it instead.
+        if (memo.backSince >= 0 && (mine == null || !far(level, mine, mark) || level.gameTime - memo.backSince > LOST_FOR)) memo.backSince = -1
+        if (mine != null && memo.backSince < 0 && mine.director !is TaleLeave && mine.director !is RoadIn && far(level, mine, mark)) {
             away(c, mine)
             memo.placed.remove(Brother.BROTHER)
             return
@@ -490,6 +495,7 @@ internal object BrotherWatch {
         Brother.unset(t, Brother.WAITS)
         c.data.changed()
         memo.placed.remove(Brother.BROTHER)
+        memo.backSince = if (TaleBodies.body(c.level, t, Brother.BROTHER)?.takeIf { it.tale == t.id } != null) now else -1L
     }
 
     /**
