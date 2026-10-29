@@ -61,6 +61,12 @@ class LarderBlock(properties: Properties) : Block(properties), EntityBlock {
         (level.getBlockEntity(pos) as? LarderBlockEntity)?.recheckOpen()
     }
 
+    /** Hands the door's count ([LarderBlockEntity.DOOR_EVENT]) to the block entity, on the server (so it is sent) and on clients. */
+    override fun triggerEvent(state: BlockState, level: Level, pos: BlockPos, id: Int, param: Int): Boolean {
+        super.triggerEvent(state, level, pos, id, param)
+        return level.getBlockEntity(pos)?.triggerEvent(id, param) ?: false
+    }
+
     override fun affectNeighborsAfterRemoval(state: BlockState, level: ServerLevel, pos: BlockPos, movedByPiston: Boolean) {
         Containers.updateNeighboursAfterDestroy(state, level, pos)
     }

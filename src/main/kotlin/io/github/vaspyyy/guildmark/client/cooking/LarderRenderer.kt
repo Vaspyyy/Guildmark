@@ -53,8 +53,10 @@ class LarderRenderer(context: BlockEntityRendererProvider.Context) : SceneRender
     override fun extract(be: LarderBlockEntity, state: LarderState) {
         val level = state.level ?: return
         val block = be.blockState
-        val open = block.hasProperty(LarderBlock.OPEN) && block.getValue(LarderBlock.OPEN)
-        state.open = open
+        val shellOpen = block.hasProperty(LarderBlock.OPEN) && block.getValue(LarderBlock.OPEN)
+        state.open = shellOpen
+        // The door swings to as soon as the server says nobody has it open, a moment before the block shuts (LarderBlockEntity.SHUT_TICKS)
+        val open = shellOpen && be.openersSeen != 0
         val seen = memory.getOrPut(be) { LarderSeen() }
         state.seen = seen
         val n = seen.ticker.due(level.gameTime)
@@ -119,9 +121,10 @@ class LarderRenderer(context: BlockEntityRendererProvider.Context) : SceneRender
         val seen = state.seen ?: return
         val p = state.partial
 
-        // The door, on its hinge. Open, the shell has none; shut, it has one already, and a door still swinging shut fades out as it meets it
+        // The door, on its hinge. Open, the shell has none, so this one is always drawn (shut while the block waits to shut); shut, it
+        // has one already, and a door still swinging fades out as it meets it
         val d = seen.door.at(p).coerceIn(0f, 1.06f)
-        if (d > 0.004f) {
+        if (d > 0.004f || state.open) {
             poseStack.pushPose()
             Gfx.at(poseStack, CookGeo.LARDER_HINGE_X, 0f, CookGeo.LARDER_HINGE_Z)
             poseStack.rotateDegrees(Axis.YP, d * CookGeo.LARDER_MAX)

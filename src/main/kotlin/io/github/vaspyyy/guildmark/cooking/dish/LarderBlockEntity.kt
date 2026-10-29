@@ -72,14 +72,35 @@ class LarderBlockEntity(pos: BlockPos, state: BlockState) : BaseContainerBlockEn
             setOpen(level, pos, state, true)
         }
 
+        // The door swings to first (the count below tells the clients at once) and the block shuts [SHUT_TICKS] later, from the
+        // block's tick, so the swinging door is never drawn over a shell that has its shut door already
         override fun onClose(level: Level, pos: BlockPos, state: BlockState) {
             level.playSound(null, pos, CookSounds.get("cook.larder"), SoundSource.BLOCKS, 0.5f, 0.78f + level.random.nextFloat() * 0.1f)
-            setOpen(level, pos, state, false)
+            shutAt = level.gameTime + SHUT_TICKS
+            level.scheduleTick(pos, state.block, SHUT_TICKS)
         }
 
-        override fun openerCountChanged(level: Level, pos: BlockPos, state: BlockState, previous: Int, current: Int) {}
+        override fun openerCountChanged(level: Level, pos: BlockPos, state: BlockState, previous: Int, current: Int) {
+            level.blockEvent(pos, state.block, DOOR_EVENT, current)
+        }
 
         override fun isOwnContainer(player: Player): Boolean = (player.containerMenu as? ChestMenu)?.container === this@LarderBlockEntity
+    }
+
+    /** The game time the block may shut its door at, a moment after the last one closed it (the server's; not saved). */
+    private var shutAt = 0L
+
+    /**
+     * How many have the door open, as the server last said (the client's copy, from [DOOR_EVENT]); -1 until it has said. The
+     * renderer swings its door to as soon as this is 0, while the block still says open.
+     */
+    var openersSeen = -1
+        private set
+
+    override fun triggerEvent(id: Int, param: Int): Boolean {
+        if (id != DOOR_EVENT) return super.triggerEvent(id, param)
+        openersSeen = param
+        return true
     }
 
     private fun setOpen(level: Level, pos: BlockPos, state: BlockState, open: Boolean) {
@@ -200,11 +221,18 @@ class LarderBlockEntity(pos: BlockPos, state: BlockState) : BaseContainerBlockEn
         return openers.getEntitiesWithContainerOpen(level, blockPos)
     }
 
-    /** From the block's scheduled tick while anyone has it open: closes the door when nobody does. */
+    /**
+     * From the block's scheduled tick while anyone has it open, and once more after the last one closed it: counts again, and
+     * shuts the door when nobody has had it open for [SHUT_TICKS].
+     */
     fun recheckOpen() {
         if (isRemoved) return
         val level = level ?: return
         openers.recheckOpeners(level, blockPos, blockState)
+        val state = blockState
+        if (openers.openerCount > 0 || state.block !is LarderBlock || !state.getValue(LarderBlock.OPEN)) return
+        val wait = shutAt - level.gameTime
+        if (wait > 0) level.scheduleTick(blockPos, state.block, wait.toInt()) else setOpen(level, blockPos, state, false)
     }
 
     // ---- The days ----
@@ -321,6 +349,12 @@ class LarderBlockEntity(pos: BlockPos, state: BlockState) : BaseContainerBlockEn
 
         /** The kinds the door shows through its slats. */
         const val SHOWN_MAX = 3
+
+        /** The block event that tells clients how many have the door open (the chest's 1). */
+        const val DOOR_EVENT = 1
+
+        /** How long the door takes to swing to (the renderer's swing, about six ticks) before the block shuts. */
+        const val SHUT_TICKS = 7
 
         private const val UNSET = Long.MIN_VALUE
 
