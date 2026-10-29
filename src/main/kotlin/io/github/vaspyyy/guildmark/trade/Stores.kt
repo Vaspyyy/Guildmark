@@ -6,6 +6,7 @@ import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerLevel
+import net.neoforged.bus.api.IEventBus
 import java.util.UUID
 
 /**
@@ -16,6 +17,12 @@ import java.util.UUID
  * Reading never writes: [closing] looks at the books with [TradeBooks.peek], so a world nobody has traded in grows no `trade_books.dat`.
  */
 object Stores {
+    /** Registers the Store's and the Counting House's part (build part F2): their fittings' blocks and their daily life. */
+    fun register(modBus: IEventBus) {
+        TradeBlocks.register(modBus)
+        StoreLife.register()
+    }
+
     /** [owner]'s Store in the capital whose heart is [capital] has opened (its works finished): known as [name] in their [colour], its door at [origin] facing [facing]. */
     fun opening(level: ServerLevel, capital: Long, owner: UUID, name: String, colour: Int, origin: BlockPos, facing: Direction) {
         val books = TradeBooks.get(level)

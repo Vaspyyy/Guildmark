@@ -47,6 +47,7 @@ object Trade {
 
         // F: the ladder, the Carriers' Store and the Counting House
         Rungs.register()
+        Stores.register(modBus)
 
         // G: the trading house
 

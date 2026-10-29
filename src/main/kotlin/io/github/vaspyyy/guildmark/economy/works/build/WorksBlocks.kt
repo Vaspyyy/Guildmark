@@ -688,6 +688,10 @@ class WorksHoistBlockEntity(pos: BlockPos, state: BlockState) : WorksBlockEntity
     var ticks: Int = 0
         private set
 
+    /** Whether the lift runs backwards: the empty hook drawn up, and [load] let down from the top to the ground (a Carriers' Store's goods taken out). */
+    var down: Boolean = false
+        private set
+
     /** The load as an item stack, for drawing it. */
     val stack: ItemStack
         get() {
@@ -697,7 +701,8 @@ class WorksHoistBlockEntity(pos: BlockPos, state: BlockState) : WorksBlockEntity
         }
 
     /** Lifts [stack] up from [drop] blocks below over [ticks]. */
-    fun lift(stack: ItemStack, drop: Int, ticks: Int) {
+    fun lift(stack: ItemStack, drop: Int, ticks: Int, down: Boolean = false) {
+        this.down = down
         load = if (stack.isEmpty) "" else BuiltInRegistries.ITEM.getKey(stack.item).toString()
         this.drop = drop.coerceIn(1, 24)
         this.ticks = ticks.coerceAtLeast(1)
@@ -720,6 +725,7 @@ class WorksHoistBlockEntity(pos: BlockPos, state: BlockState) : WorksBlockEntity
         output.putInt("drop", drop)
         output.putLong("from", from)
         output.putInt("ticks", ticks)
+        if (down) output.putBoolean("down", true)
     }
 
     override fun loadAdditional(input: ValueInput) {
@@ -728,6 +734,7 @@ class WorksHoistBlockEntity(pos: BlockPos, state: BlockState) : WorksBlockEntity
         drop = input.getIntOr("drop", 4)
         from = input.getLongOr("from", 0L)
         ticks = input.getIntOr("ticks", 0)
+        down = input.getBooleanOr("down", false)
     }
 }
 

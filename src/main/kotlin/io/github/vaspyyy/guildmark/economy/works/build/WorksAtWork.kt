@@ -39,6 +39,7 @@ import io.github.vaspyyy.guildmark.townsfolk.scenes.Turn
 import io.github.vaspyyy.guildmark.townsfolk.scenes.Wait
 import io.github.vaspyyy.guildmark.townsfolk.scenes.Words
 import io.github.vaspyyy.guildmark.townsfolk.streets.Streets
+import io.github.vaspyyy.guildmark.trade.StoreLife
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.core.particles.ParticleTypes
@@ -365,7 +366,7 @@ internal object WorksAtWork {
             WorksKind.GRANARY, WorksKind.GREAT_GRANARY -> doors(level, w, site, f, near)
             WorksKind.TOWER -> beacon(level, w, f, hour)
             WorksKind.STALL, WorksKind.COOKSHOP -> awning(level, w, site, f, hour, near)
-            WorksKind.STORE, WorksKind.COUNTING_HOUSE -> {}
+            WorksKind.STORE, WorksKind.COUNTING_HOUSE -> StoreLife.second(level, w, rec, site, hour, near)
         }
         if (w.kind == WorksKind.COOKSHOP) CookShops.second(level, w, site, capital, hour)
         if (!rec.firstUse) firstUse(level, w, rec, site, f, hour, near)
@@ -562,7 +563,8 @@ internal object WorksAtWork {
             WorksKind.GRANARY, WorksKind.GREAT_GRANARY -> if (w.fill.all { it <= 1e-6 }) done()
             // Its watch is posted as soon as it stands (the lookouts' own)
             WorksKind.TOWER -> done()
-            WorksKind.STORE, WorksKind.COUNTING_HOUSE -> done()
+            // The clerk takes the key, opens up, the first crate goes in and the pennant up (trade/StoreLife)
+            WorksKind.STORE, WorksKind.COUNTING_HOUSE -> StoreLife.firstUse(level, w, rec, site, hour, near, done)
             WorksKind.OVEN -> {
                 val k = key(w.id, FIRST_USE)
                 val e = errands[k]

@@ -8688,5 +8688,10 @@
   "gui.guildmark.works.stage_of.counting_house.topping": "The bough set on the ridge.",
   "gui.guildmark.works.stage_of.counting_house.openings": "The door, windows in both storeys, and a lantern.",
   "gui.guildmark.works.stage_of.counting_house.fitting": "The high desk with its counting frame, the strongbox, the map of the roads, the ladder, and the owner's room upstairs.",
-  "gui.guildmark.works.stage_of.counting_house.grounds": "The yard's wall with its double gate, the lamp posts, the bell on its post, and the stakes pulled up."
+  "gui.guildmark.works.stage_of.counting_house.grounds": "The yard's wall with its double gate, the lamp posts, the bell on its post, and the stakes pulled up.",
+  "block.guildmark.store_scale": "Clerk's Scale",
+  "block.guildmark.store_name_board": "Store Name Board",
+  "block.guildmark.store_door_board": "Open and Shut Board",
+  "gui.guildmark.trade.store.board": "Carriers' Store",
+  "say.guildmark.trade_clerk_swing": "Mind the swing!"
 }

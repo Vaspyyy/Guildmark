@@ -74,6 +74,12 @@ class WorksHoistRenderer(context: BlockEntityRendererProvider.Context) : BlockEn
         state.facing = facing
         state.drop = be.drop.coerceIn(1, 24)
         state.elapsed = if (be.ticks > 0) WorksPaint.since(level.gameTime, be.from, partialTicks) else WorksPaint.NEVER
+        // A lift run backwards (the hook drawn up empty, the load let down): its clock turned round, and over once the load is down
+        if (be.down && state.elapsed < WorksPaint.NEVER / 2f) {
+            val travel = 16f * be.drop.coerceIn(1, 24) + WorksArt.HOOK_TOP - WorksArt.HOOK_REST
+            val whole = WorksArt.ticksFor(travel) + WorksArt.HOIST_LAND + travel / WorksArt.HOIST_LOWER
+            state.elapsed = if (state.elapsed > whole) WorksPaint.NEVER else (whole - state.elapsed).coerceAtLeast(0f)
+        }
         val stack = if (be.load.isEmpty()) ItemStack.EMPTY else stacks.getOrPut(be.load) { stackOf(be.load) }
         if (stack.isEmpty) state.item.clear()
         else items.updateForTopItem(state.item, stack, ItemDisplayContext.FIXED, level, null, be.blockPos.hashCode())

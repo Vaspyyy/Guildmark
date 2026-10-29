@@ -31,6 +31,7 @@ import io.github.vaspyyy.guildmark.homestead.plan.TierPlan
 import io.github.vaspyyy.guildmark.townsfolk.Names
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import io.github.vaspyyy.guildmark.townsfolk.scenes.ToppingOut
+import io.github.vaspyyy.guildmark.trade.TradeBlocks
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.core.particles.BlockParticleOption
@@ -1041,7 +1042,8 @@ class TownWorksSite(override val level: ServerLevel, val rec: BuildRec, val plan
                 M.CAULDRON -> WorksBlocks.BEACON.get().defaultBlockState().setValue(WorksFacingBlock.FACING, facing)
                 M.CRATE -> WorksBlocks.PITCH.get().defaultBlockState().setValue(WorksFacingBlock.FACING, facing)
                 M.WOOL -> WorksBlocks.AWNING.get().defaultBlockState().setValue(WorksFacingBlock.FACING, facing)
-                else -> Blocks.AIR.defaultBlockState()
+                // The trader's fittings (the Store's and the Counting House's, build part F2)
+                else -> TradeBlocks.marked(b.m, kind)?.defaultBlockState()?.setValue(WorksFacingBlock.FACING, facing) ?: Blocks.AIR.defaultBlockState()
             }
         }
         if (b.m == M.WARES && !WaresRegistry.enabled()) {

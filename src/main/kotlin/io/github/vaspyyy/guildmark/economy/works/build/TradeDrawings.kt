@@ -15,15 +15,31 @@ import io.github.vaspyyy.guildmark.homestead.plan.PlanCanvas
 import io.github.vaspyyy.guildmark.homestead.plan.Stage
 
 /**
+ * The trader's fittings in a drawing (build part F2): each a marker ([WorksDrawing.MARK] on a material no drawing otherwise marks) that
+ * TownWorksSite lays as its own block ([io.github.vaspyyy.guildmark.trade.TradeBlocks.marked]), facing the way the marker does.
+ */
+object TradeMarks {
+    /** The clerk's scale on its bench (store_scale; the block above it is left free for its post and beam). */
+    val SCALE = B(M.GRINDSTONE, Dir.N, v = WorksDrawing.MARK)
+
+    /** The owner's name board on its bracket (store_name_board in a Store, house_name_board in a Counting House). */
+    val NAME_BOARD = B(M.BANNER, Dir.N, v = WorksDrawing.MARK)
+
+    /** The open and shut board by the door (store_door_board). */
+    val DOOR_BOARD = B(M.SHUTTER, Dir.N, v = WorksDrawing.MARK)
+}
+
+/**
  * The Carriers' Store (living-world/trader/design.md, Part 5; build part F2): a trader's warehouse in a capital, raised by the town's
  * builders from the trader's Marks as a stall of one's own is. Nine across and eight deep on its lot, its front facing the square (the
  * drawing's north): a stone ground floor under a timber loft, a steep roof with its gable to the street, and a yard before it.
  *
  * Seven across and six deep inside its walls (x 1..7, z 1..6). The way in is a door in the middle of the front (x 4); above it a pair of
  * loading doors into the loft, and over the porch a hoist beam on a bracket, its rope falling to the ground before the door (the hoist
- * lifts what is bonded in and out through the loft doors). Inside, the clerk's counter with the scale on it and the writing desk behind,
- * crates and sacks along the back, a ladder to the loft; before the door a lamp post either side and the plaque, and at the front right
- * a flagpole for the owner's pennant (the scene runs it up when the Store opens: WorksAtWork).
+ * lifts what is bonded in and out through the loft doors), and under it the owner's name board on its bracket; the plaque on one
+ * side of the door and the open and shut board on the other. Inside, the clerk's counter with the scale on its bench in the middle of it and the
+ * writing desk behind, crates and sacks along the back, a ladder to the loft; before the door a lamp post either side, and at the front
+ * right a flagpole for the owner's pennant (the clerk runs it up when the Store opens: trade/StoreLife).
  *
  * The stages are the works': the stakes and the ground swept, the stone footings and the planks of the floor, the walls course by course
  * with the loft floor and the hoist's bracket, the scaffolding, the roof with its gable ends, the bough and the hoist beam, the doors and
@@ -35,7 +51,7 @@ import io.github.vaspyyy.guildmark.homestead.plan.Stage
  *  z 6   wall    barrel  CHEST   barrel  CHEST   ladder  wall      (the back wall; windows over x 3, x 5)
  *  z 5   wall    .       .       .       .       .       wall
  *  z 4   wall    .       CLERK   desk    .       hay     wall      (the clerk behind the counter, facing the front)
- *  z 3   wall    counter counter+SCALE counter .     hay     wall
+ *  z 3   wall    counter SCALE   counter .       hay     wall      (the scale on its bench, the counter either side)
  *  z 2   wall    barrel  .       .       .       hay     wall
  *  z 1   wall    window  post    DOOR    post    window  wall      (the front wall, the porch before it at z 0)
  * ```
@@ -96,10 +112,12 @@ class Store(y0: Int, private val palette: Int, val patron: Dye) : WorksDrawing(W
         for ((x, z) in WINDOWS) p.set(x, 2, z, WINDOW)
         p.set(4, 3, 4, B(M.LANTERN, top = true))
         p.set(6, 3, 2, B(M.LANTERN, top = true))
+        p.set(NAME_BOARD_AT.x, NAME_BOARD_AT.y, NAME_BOARD_AT.z, TradeMarks.NAME_BOARD)
+        p.set(DOOR_BOARD_AT.x, DOOR_BOARD_AT.y, DOOR_BOARD_AT.z, TradeMarks.DOOR_BOARD)
         // The counter and the scale on it, the writing desk, the stores along the back and by the door, the ladder, the loft's goods
         p.stage(Stage.FITTING)
-        for (x in COUNTER_X) p.set(x, 0, 3, COUNTER)
-        p.set(SCALE_AT.x, SCALE_AT.y, SCALE_AT.z, SCALE)
+        for (x in COUNTER_X) if (x != SCALE_AT.x) p.set(x, 0, 3, COUNTER)
+        p.set(SCALE_AT.x, SCALE_AT.y, SCALE_AT.z, TradeMarks.SCALE)
         p.set(DESK_AT.x, DESK_AT.y, DESK_AT.z, B(M.LECTERN, DESK_AT.facing))
         for (y in 0..1) {
             p.set(2, y, 5, B(M.BARREL))
@@ -128,8 +146,9 @@ class Store(y0: Int, private val palette: Int, val patron: Dye) : WorksDrawing(W
             p.set(lamp.x, 2, lamp.z, B(M.FENCE))
             p.set(lamp.x, lamp.y, lamp.z, B(M.LANTERN, v = STREET_LAMP))
         }
-        for (y in 0..POLE_TOP) p.set(POLE.x, y, POLE.z, B(M.LOG))
-        p.set(POLE.x, POLE_TOP + 1, POLE.z, B(M.FENCE))
+        // The pole: a post in a stone foot and a slim staff of fence rails up from it, which the pennant's halyard runs up
+        p.set(POLE.x, 0, POLE.z, B(M.WALL_POST))
+        for (y in 1..POLE_TOP + 1) p.set(POLE.x, y, POLE.z, B(M.FENCE))
     }
 
     /**
@@ -183,9 +202,16 @@ class Store(y0: Int, private val palette: Int, val patron: Dye) : WorksDrawing(W
         /** The clerk's place behind the counter, facing the buyers. */
         val CLERK = Pin(3, 0, 4, Dir.N)
 
-        /** The counter across the front of the clerk's end, and the scale on it. */
+        /** The counter across the front of the clerk's end, and the scale on its bench in the middle of it (the clerk's side its back). */
         val COUNTER_X = 2..4
-        val SCALE_AT = Pin(3, 1, 3, Dir.N)
+        val SCALE_AT = Pin(3, 0, 3, Dir.N)
+
+        /** The owner's name board on its bracket under the hoist, and the open and shut board beside the door (the plaque is on its other side). */
+        val NAME_BOARD_AT = Pin(4, 3, 0, Dir.N)
+        val DOOR_BOARD_AT = Pin(5, 1, 0, Dir.N)
+
+        /** Where the clerk stands to haul the hoist's rope, and to watch the hook: beside the loading ground, out of the swing. */
+        val HAULER = Pin(5, 0, -1, Dir.N)
 
         /** The writing desk at the clerk's elbow (its front to the clerk). */
         val DESK_AT = Pin(4, 0, 4, Dir.W)
@@ -197,19 +223,16 @@ class Store(y0: Int, private val palette: Int, val patron: Dye) : WorksDrawing(W
         /** The lanterns on the lamp posts either side of the way in (the street lamps the clerk lights at dusk). */
         val LAMPS = listOf(Pin(2, 3, 0), Pin(6, 3, 0))
 
-        /** The owner's flagpole at the front right: its foot, the highest log, and the pennant's place against it (which way the pennant faces). */
+        /** The owner's flagpole at the front right: its foot, the staff's height under its top rail, and which way the pennant flies from it (away from the house). */
         val POLE = Pin(8, 0, 0)
         const val POLE_TOP = 8
-        val PENNANT_FACING = Dir.W
+        val PENNANT_FACING = Dir.E
 
         /** The windows of the ground floor (x, z). */
         private val WINDOWS = listOf(2 to 1, 6 to 1, 3 to 6, 5 to 6, 1 to 3, 7 to 3, 1 to 4, 7 to 4)
 
         /** The counter's planks, the dark ground-floor ones. */
         private val COUNTER = B(M.PLANKS, v = 1)
-
-        /** The scale on the counter: a grindstone until the scale's own block stands there. */
-        private val SCALE = B(M.GRINDSTONE, Dir.N)
     }
 }
 
