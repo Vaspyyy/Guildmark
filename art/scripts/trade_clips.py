@@ -7,7 +7,7 @@ The trade's seven clips (living-world/trader/design.md, section 10 and the X4 ro
     HITCH       50 once    a horse pushed back in the shafts with the flat of the hand, its trace drawn up, hooked on, tugged
     WEIGH       60 once    a sack swung up onto a scale's pan, the beam read at eye level, the quill made ready
     HALT        25 once    the hand flung up for "Hold!", braced, and let fall
-    RUMMAGE     60 loop    head bent over a satchel held open, both hands working through it
+    RUMMAGE     60 loop    head bent over a pack stood open on a counter, one hand holding it, the other digging through it
 
 Their names, lengths and loop flags are TownRole.kt's (Activity); living_anims.py imports this module at its end and calls
 build(), which makes the clips, so its verify() and writer take them like the rest. `python3 -B trade_clips.py <out dir>`
@@ -1079,7 +1079,7 @@ def weigh():
     c = la.clip('weigh', WG_LEN, False, look=('merchant', 0), tools_=('weigh_sack', 'quill'), station_='scale_bench',
                 events=[('set', WG_SET), ('read', WG_READ), ('tally', WG_TALLY)],
                 traces=[('weigh_sack', tuple(WG_NECK), (230, 200, 160)), ('quill', WG_NIB, (255, 230, 160))],
-                views=((140, -14), (90, -4), (200, -16)))
+                views=((120, -12), (230, -12), (90, -4)))
     ta.INFO['weigh']['tools_at'] = wc.tools_when([('weigh_sack', 0.0, WG_SET), ('quill', WG_DRAWN, WG_SHEATHED)])
     holds = la.Holds()
     left_off = None
@@ -1602,3 +1602,122 @@ def build(living, only=None):
     la.moment_specs = moment_specs
     BUILT['done'] = True
     la.WANTED.extend(TRADE_CLIPS)
+
+
+# ================================================================== the previews
+
+# python3 -B trade_clips.py <out dir> [group ...]: the GIFs of the seven clips (living_anims builds them first), as the
+# townsfolk previews are made: a 2x2 grid for each pair of clips, each clip from two views (WEIGH alone, from four), at the
+# game's pace (a frame a tick; a one-shot is held on its last frame for GIF_REST ticks and goes again). The clip's own
+# moments are named on the frames they fall on; WEIGH's scale moves as its renderer moves it.
+GIF_GROUPS = {
+    'stamp_check_load': ['stamp', 'check_load'],
+    'load_pack_hitch': ['load_pack', 'hitch'],
+    'weigh': ['weigh'],
+    'halt_rummage': ['halt', 'rummage'],
+}
+GIF_CELL = (240, 300)
+GIF_REST = 10
+GIF_SS = 2                                      # drawn at twice the size and scaled down: smooth edges
+GIF_VIEWS = {'stamp': ((50, -14), (-50, -14)), 'check_load': ((140, -18), (90, -8)), 'load_pack': ((130, -16), (90, -4)),
+             'hitch': ((135, -16), (215, -12)), 'weigh': ((120, -12), (230, -12), (90, -4), (330, -8)),
+             'halt': ((0, -6), (35, -10)), 'rummage': ((35, -16), (90, -4))}
+GIF_FRAME = {'check_load': (4.4, 8.0), 'load_pack': (4.2, 8.0), 'hitch': (3.6, 6.0), 'weigh': (4.4, 7.0),
+             'halt': (5.0, 8.0), 'rummage': (4.6, 8.0)}       # zoom, the figure's middle
+
+
+def gif_cell(c, t, view):
+    """[c] at [t] from [view] as one cell of a preview."""
+    W, H = GIF_CELL
+    info = ta.INFO[c.name]
+    look = ta.look_for(info['look'])
+    zoom, middle = GIF_FRAME.get(c.name, (5.6, 8.0))
+    project = ta.ortho(view[0], view[1], zoom * GIF_SS, (W * GIF_SS, H * GIF_SS), middle)
+    if info.get('pan') is not None:
+        project = (lambda base_, pan_: (lambda p: base_(np.asarray(p, float) - pan_)))(project, np.asarray(info['pan'], float))
+    boxes = preview_station(c.name, t)
+    keep = ta.station
+    if boxes is not None:
+        ta.station = lambda kind, b_=boxes: [q for lo, hi, col, li in b_ for q in ta.box(lo, hi, col, li)]
+    try:
+        img, _ = ta.render_cell(look, c, t, project, (W * GIF_SS, H * GIF_SS), info['walking'])
+    finally:
+        ta.station = keep
+    return img.resize((W, H), Image.LANCZOS)
+
+
+def gif_time(c, k):
+    """The clip's tick at frame [k] of its preview."""
+    if ta.INFO[c.name]['loop']:
+        return float(k % int(c.length))
+    return float(min(k % (int(c.length) + GIF_REST), c.length))
+
+
+def make_gif(key, out_dir):
+    """The preview [key] of GIF_GROUPS: a 2x2 grid, a clip to a row and its two views across (a clip alone fills both rows
+    with four views); returns its path."""
+    import shutil
+    import subprocess
+    names = GIF_GROUPS[key]
+    clips_ = [la.getc(n) for n in names]
+    cells_at = []                                   # (clip, view) for each of the four cells, row by row
+    for c in clips_:
+        views = GIF_VIEWS[c.name]
+        cells_at += [(c, v_) for v_ in (views if len(clips_) == 1 else views[:2])]
+    cycles = {c.name: int(c.length) if ta.INFO[c.name]['loop'] else int(c.length) + GIF_REST for c in clips_}
+    total = 1
+    for n in cycles.values():
+        total = total * n // math.gcd(total, n)
+    W, H = GIF_CELL
+    font = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', 14)
+    cells = {}
+    for i, (c, view) in enumerate(cells_at):
+        for k in range(cycles[c.name]):
+            cells[(i, k)] = gif_cell(c, gif_time(c, k), view)
+    frames = []
+    for k in range(total):
+        sheet = Image.new('RGB', (W * 2, H * 2), (30, 32, 40))
+        d = ImageDraw.Draw(sheet)
+        for i, (c, view) in enumerate(cells_at):
+            n = cycles[c.name]
+            t = gif_time(c, k % n)
+            x, y = (i % 2) * W, (i // 2) * H
+            sheet.paste(cells[(i, k % n)], (x, y))
+            label = f'{c.name}  {int(c.length)}t {"loop" if ta.INFO[c.name]["loop"] else "once"}   t={t:g}'
+            mark = [ev for ev, at in ta.INFO[c.name]['events'] if abs(at - t) < 0.75]
+            d.text((x + 7, y + 7), label, font=font, fill=(0, 0, 0))
+            d.text((x + 6, y + 6), label, font=font, fill=(255, 255, 160) if mark else (245, 240, 225))
+            if mark:
+                d.text((x + 7, y + 25), f'{mark[0]}!', font=font, fill=(0, 0, 0))
+                d.text((x + 6, y + 24), f'{mark[0]}!', font=font, fill=(255, 255, 160))
+        d.line([(W, 0), (W, 2 * H)], fill=(30, 32, 40), width=2)
+        d.line([(0, H), (2 * W, H)], fill=(30, 32, 40), width=2)
+        frames.append(sheet)
+    # one palette for the whole GIF, so the colours do not flicker from frame to frame
+    probe = Image.new('RGB', (2 * W, 2 * H * 4))
+    for n_, k in enumerate(range(0, total, max(1, total // 4))):
+        if n_ < 4:
+            probe.paste(frames[k], (0, n_ * 2 * H))
+    pal = probe.quantize(colors=255, method=Image.Quantize.MEDIANCUT)
+    q = [f.quantize(palette=pal, dither=Image.Dither.NONE) for f in frames]
+    path = os.path.join(out_dir, f'trade_clips_{key}.gif')
+    q[0].save(path, save_all=True, append_images=q[1:], duration=50, loop=0, optimize=False, disposal=1)
+    if shutil.which('convert'):
+        # the pixels that do not change from the frame before go transparent, which packs far smaller
+        subprocess.run(['convert', path, '-layers', 'OptimizeTransparency', '+map', path + '.tmp.gif'], check=True)
+        os.replace(path + '.tmp.gif', path)
+    return path
+
+
+def gifs(out_dir, only=None):
+    """The previews (all of GIF_GROUPS, or the keys in [only]) written to [out_dir]; their paths."""
+    os.makedirs(out_dir, exist_ok=True)
+    return [make_gif(key, out_dir) for key in GIF_GROUPS if not only or key in only]
+
+
+if __name__ == '__main__':
+    out = sys.argv[1]
+    import living_anims as la_          # noqa: F401  (builds every clip, these among them)
+    import trade_clips as tc_           # (the copy living_anims built)
+    for p in tc_.gifs(out, set(sys.argv[2:])):
+        print('wrote', p)
