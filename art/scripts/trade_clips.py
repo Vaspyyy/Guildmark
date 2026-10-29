@@ -703,7 +703,11 @@ def _wagon_tail_load():
         box((s * wg.BOX_X, wg.SIDE_TOP, wg.BOX_BACK - 34.0), (s * (wg.BOX_X - 1.0), wg.FLOOR_TOP + 1.2, wg.BOX_BACK), WAGON_WOOD_D)
         # the tilt's sides over the bed, from its back hoop on
         box((s * (wg.BOX_X - 0.3), wg.ARCH_Y, wg.TILT_BACK - 26.0), (s * (wg.BOX_X - 1.3), wg.SIDE_TOP, wg.TILT_BACK), WAGON_CANVAS)
-    box((-wg.BOX_X + 0.3, wg.ARCH_Y - wg.ARCH_H, wg.TILT_BACK - 26.0), (wg.BOX_X - 0.3, wg.ARCH_Y - wg.ARCH_H + 1.2, wg.TILT_BACK), WAGON_CANVAS)
+    # and its arch, in eight flat steps
+    arch = [(wg.ARCH_X * math.cos(math.pi * k / 8), wg.ARCH_Y - wg.ARCH_H * math.sin(math.pi * k / 8)) for k in range(9)]
+    for (xa, ya), (xb, yb) in zip(arch, arch[1:]):
+        box((min(xa, xb) - 0.6, min(ya, yb) - 0.6, wg.TILT_BACK - 26.0), (max(xa, xb) + 0.6, max(ya, yb) + 0.6, wg.TILT_BACK),
+            WAGON_CANVAS)
     for x0, x1 in ((-6.7 - 3.2, -6.7 + 3.2), (-3.2, 3.2), (6.7 - 3.2, 6.7 + 3.2)):
         z = wg.ROWS_Z[-1]
         box((x0, wg.FLOOR_TOP - 5.5, z - 3.6), (x1, wg.FLOOR_TOP, z + 3.6), LOAD_SACK)
@@ -1079,7 +1083,7 @@ def weigh():
     c = la.clip('weigh', WG_LEN, False, look=('merchant', 0), tools_=('weigh_sack', 'quill'), station_='scale_bench',
                 events=[('set', WG_SET), ('read', WG_READ), ('tally', WG_TALLY)],
                 traces=[('weigh_sack', tuple(WG_NECK), (230, 200, 160)), ('quill', WG_NIB, (255, 230, 160))],
-                views=((120, -12), (230, -12), (90, -4)))
+                views=((120, 14), (230, 14), (90, 4)))
     ta.INFO['weigh']['tools_at'] = wc.tools_when([('weigh_sack', 0.0, WG_SET), ('quill', WG_DRAWN, WG_SHEATHED)])
     holds = la.Holds()
     left_off = None
@@ -1608,8 +1612,8 @@ def build(living, only=None):
 
 # python3 -B trade_clips.py <out dir> [group ...]: the GIFs of the seven clips (living_anims builds them first), as the
 # townsfolk previews are made: a 2x2 grid for each pair of clips, each clip from two views (WEIGH alone, from four), at the
-# game's pace (a frame a tick; a one-shot is held on its last frame for GIF_REST ticks and goes again). The clip's own
-# moments are named on the frames they fall on; WEIGH's scale moves as its renderer moves it.
+# game's pace (a frame a tick; a one-shot is held on its last frame for GIF_REST ticks, or GIF_HOLD's, and goes again).
+# The clip's own moments are named on the frames they fall on; WEIGH's scale moves as its renderer moves it.
 GIF_GROUPS = {
     'stamp_check_load': ['stamp', 'check_load'],
     'load_pack_hitch': ['load_pack', 'hitch'],
@@ -1618,10 +1622,11 @@ GIF_GROUPS = {
 }
 GIF_CELL = (240, 300)
 GIF_REST = 10
+GIF_HOLD = {'load_pack': 20, 'halt': 5}       # held longer or shorter: a round as long as the other clip's in the grid
 GIF_SS = 2                                      # drawn at twice the size and scaled down: smooth edges
-GIF_VIEWS = {'stamp': ((50, -14), (-50, -14)), 'check_load': ((140, -18), (90, -8)), 'load_pack': ((130, -16), (90, -4)),
-             'hitch': ((135, -16), (215, -12)), 'weigh': ((120, -12), (230, -12), (90, -4), (330, -8)),
-             'halt': ((0, -6), (35, -10)), 'rummage': ((35, -16), (90, -4))}
+GIF_VIEWS = {'stamp': ((40, 18), (-40, 18)), 'check_load': ((140, 18), (90, 8)), 'load_pack': ((130, 16), (90, 6)),
+             'hitch': ((135, 14), (215, 12)), 'weigh': ((120, 14), (230, 14), (90, 4), (330, 12)),
+             'halt': ((0, 4), (35, 8)), 'rummage': ((35, 22), (130, 20))}     # (yaw, pitch): a pitch above 0 looks down
 GIF_FRAME = {'check_load': (4.4, 8.0), 'load_pack': (4.2, 8.0), 'hitch': (3.6, 6.0), 'weigh': (4.4, 7.0),
              'halt': (5.0, 8.0), 'rummage': (4.6, 8.0)}       # zoom, the figure's middle
 
@@ -1650,7 +1655,12 @@ def gif_time(c, k):
     """The clip's tick at frame [k] of its preview."""
     if ta.INFO[c.name]['loop']:
         return float(k % int(c.length))
-    return float(min(k % (int(c.length) + GIF_REST), c.length))
+    return float(min(k % gif_round(c), c.length))
+
+
+def gif_round(c):
+    """The frames before [c]'s preview goes again: its length, and a one-shot's rest at its end."""
+    return int(c.length) + (0 if ta.INFO[c.name]['loop'] else GIF_HOLD.get(c.name, GIF_REST))
 
 
 def make_gif(key, out_dir):
@@ -1664,7 +1674,7 @@ def make_gif(key, out_dir):
     for c in clips_:
         views = GIF_VIEWS[c.name]
         cells_at += [(c, v_) for v_ in (views if len(clips_) == 1 else views[:2])]
-    cycles = {c.name: int(c.length) if ta.INFO[c.name]['loop'] else int(c.length) + GIF_REST for c in clips_}
+    cycles = {c.name: gif_round(c) for c in clips_}
     total = 1
     for n in cycles.values():
         total = total * n // math.gcd(total, n)
