@@ -389,7 +389,7 @@ object GuildmarkConfig {
         .comment("When a siege or a raid comes, the folk run to the nearest door and bolt it, a village watch of guards stands the walls, the dead are remembered with a candle at a stone by the bell, and a crew mends the damage next morning. Needs Village Sieges for sieges. Off, sieges and raids are as before: the folk flee on their own, nothing is mended and nobody is remembered.")
         .define("villageTrouble", true)
     val VILLAGE_BUILDS: ModConfigSpec.BooleanValue = BUILDER
-        .comment("A project funded at a village's board (lamp posts, hall, road, palisade, tower, market, walls, keep) is laid by a crew over one to five days: the village's own craftsfolk, hands from the road and a foreman, putting the blocks up in their order. Off, a project goes up at once, as before.")
+        .comment("A project funded at a village's board (lamp posts, hall, palisade, tower, market, walls, keep) is laid by a crew over one to five days: the village's own craftsfolk, hands from the road and a foreman, putting the blocks up in their order. A trade road is laid along its way as before. Off, a project goes up at once, as before.")
         .define("villageBuilds", true)
     val VILLAGE_BUILD_SPEED: ModConfigSpec.DoubleValue = BUILDER
         .comment("How fast a village's crews work: 1 lays a project in one to five days; 2 is twice as fast.")
