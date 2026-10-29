@@ -274,8 +274,10 @@ sound's waveform and spectrogram, the quickest check of a loop's seam or a bell'
 folder of speech takes from `make_city_voices.py` (below); without it the crowds, criers and watch are
 skipped and keep their files. The second command rewrites the `ambience.*` entries of `sounds.json`
 from the files on disk: `EVENTS` in the script sets how far each sound carries and its subtitle. Run it
-after adding or removing a sound or a variant. A village's sounds need no `--raw`
-(`--modules village`, about forty seconds); their entries also go through `make_village_audio.py`'s fragment.
+after adding or removing a sound or a variant. A village's sounds need no `--raw`:
+`--modules village --only village_,dog_far,hammer_far,child_far` makes just them, in about forty seconds (`village.py`
+loads `wind.py` and `voices.py`, so without `--only` the wind's sounds are made again too, bit-identical, and the
+speech ones skipped); their entries also go through `make_village_audio.py`'s fragment.
 
 The city's speech uses the same virtualenv, model files and `--espeak-data` as the voice lines below:
 
