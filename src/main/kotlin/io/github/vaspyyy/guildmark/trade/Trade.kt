@@ -3,6 +3,7 @@ package io.github.vaspyyy.guildmark.trade
 import io.github.vaspyyy.guildmark.trade.carry.Carry
 import io.github.vaspyyy.guildmark.trade.carry.CartHitch
 import io.github.vaspyyy.guildmark.trade.carry.Laden
+import io.github.vaspyyy.guildmark.trade.carry.LedShow
 import net.neoforged.bus.api.IEventBus
 
 /**
@@ -40,6 +41,8 @@ object Trade {
         Carry.register(modBus)
         // D2: the Chapman's Cart (the shafts, the drag, the whistle, the counter's cart and `trade cart`)
         CartHitch.register(modBus)
+        // D3: the Carrier's Wagon (the record, the led wagon, the Bill, the yard and `trade wagon`)
+        LedShow.register(modBus)
         // A's ledger tells D's look which goods came far: bought at least `tradeHaulMin` blocks from where the trader stands now
         Laden.hauled = { player, good -> Ledger.count(player.level(), player.uuid, good, player.blockPosition()) }
 
