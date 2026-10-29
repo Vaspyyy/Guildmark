@@ -95,7 +95,7 @@ object StallCommand {
         val player = source.playerOrException
         say(source, header("The market hall of ${VillageNames.of(capital.boardAnchor)}"))
         val rank = SupplierLink.rank(level, player.uuid, capital.center)
-        say(source, grey("You: supplier rank $rank (renting takes ${SupplierLink.TRUSTED}), a week's keep ${StallDesk.keep(rank)} Marks."))
+        say(source, grey("You: supplier rank $rank (renting takes ${SupplierLink.TRUSTED}), a week's keep ${StallDesk.keep(rank, player)} Marks."))
         for (t in tables) {
             val s = hall?.stalls?.getOrNull(t.index)
             val head = line().append(label("Table ${t.index + 1} ")).append(at(t))

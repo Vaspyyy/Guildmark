@@ -7,6 +7,7 @@ import io.github.vaspyyy.guildmark.townsfolk.TownKind
 import io.github.vaspyyy.guildmark.townsfolk.TownPlaces
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
+import io.github.vaspyyy.guildmark.trade.Stores
 import io.github.vaspyyy.guildmark.village.live.market.VillageStall
 import net.minecraft.core.BlockPos
 
@@ -59,7 +60,7 @@ enum class Shop(val id: String, val goods: List<Good>) {
                 TownRole.BAKER -> BAKERY
                 TownRole.SMITH -> SMITHY
                 TownRole.INNKEEPER -> INN
-                TownRole.MERCHANT -> if (CookShops.keeps(p)) null else at(places, p.post ?: p.work ?: p.blockPosition())
+                TownRole.MERCHANT -> if (CookShops.keeps(p) || Stores.keeps(p)) null else at(places, p.post ?: p.work ?: p.blockPosition())
                 else -> if (places.kind == TownKind.VILLAGE) VillageStall.kept(p, places) else null
             }
         }

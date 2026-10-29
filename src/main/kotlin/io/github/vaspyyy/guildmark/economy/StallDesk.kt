@@ -20,6 +20,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Days
 import io.github.vaspyyy.guildmark.townsfolk.Furnish
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
+import io.github.vaspyyy.guildmark.trade.Stores
 import io.github.vaspyyy.guildmark.village.VillageNames
 import net.minecraft.ChatFormatting
 import net.minecraft.core.BlockPos
@@ -268,7 +269,7 @@ object StallDesk {
         val t = s.t ?: return "gui.guildmark.stall.why.pitch"
         if (hall.stalls[t.index] != null) return "gui.guildmark.stall.why.taken"
         val rank = SupplierLink.rank(level, player.uuid, t.capital.center)
-        val keep = keep(rank)
+        val keep = keep(rank, player)
         refusal(player, hall, null, rank, keep)?.let { return it }
         TownControl.pay(player, keep)
         hall.stalls[t.index] = OwnStall(player.uuid, player.name.string, colorOf(level, player.uuid), s.place, t.display, t.front, OwnStalls.WEEK)
@@ -283,7 +284,7 @@ object StallDesk {
         val t = s.t ?: return "gui.guildmark.stall.why.pitch"
         val stall = hall.stalls[t.index]?.takeIf { it.renter == player.uuid } ?: return "gui.guildmark.stall.why.not_yours"
         val rank = SupplierLink.rank(level, player.uuid, t.capital.center)
-        val keep = keep(rank)
+        val keep = keep(rank, player)
         refusal(player, hall, stall, rank, keep)?.let { return it }
         TownControl.pay(player, keep)
         stall.left += OwnStalls.WEEK
@@ -394,8 +395,11 @@ object StallDesk {
         return minOf(own, MOST - stall.whole(good)).coerceAtLeast(0)
     }
 
-    /** A week's keep at [rank]: less for a Purveyor. */
-    fun keep(rank: Int): Int = if (rank >= SupplierLink.PURVEYOR) OwnStalls.KEEP_PURVEYOR else OwnStalls.KEEP
+    /** A week's keep at [rank]: less for a Purveyor, and half of it (rounded up) while a Carriers' Store of [player]'s stands ([Stores.halves]). */
+    fun keep(rank: Int, player: ServerPlayer? = null): Int {
+        val keep = if (rank >= SupplierLink.PURVEYOR) OwnStalls.KEEP_PURVEYOR else OwnStalls.KEEP
+        return if (player != null && Stores.halves(player)) (keep + 1) / 2 else keep
+    }
 
     /** [rank]'s name as a supplier of the capital called [place]: "Trusted Supplier", "Purveyor to Hollowmere". */
     fun rankName(rank: Int, place: String): Component = Component.translatable("gui.guildmark.stall.rank.${rank.coerceIn(0, SupplierLink.PURVEYOR)}", place)
@@ -561,7 +565,7 @@ object StallDesk {
             else -> TAKEN
         }
         val rank = SupplierLink.rank(level, player.uuid, centre)
-        val keep = keep(rank)
+        val keep = keep(rank, player)
         val kept = hall?.kept?.get(player.uuid)
         val entry = Markets.get(level)[centre]
         // What they carry of each good to set out: none of it salvage off this capital's own wagons
