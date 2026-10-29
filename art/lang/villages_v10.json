@@ -10,7 +10,7 @@
   "village.guildmark.dead.cause.slain": "slain",
   "village.guildmark.dead.on_day": " (day %s)",
   "village.guildmark.chronicle.line": "Day %s: %s",
-  "village.guildmark.chronicle.built": "built %s",
+  "village.guildmark.chronicle.built": "the %s finished",
   "village.guildmark.chronicle.siege.held": "a siege, beaten off",
   "village.guildmark.chronicle.siege.lost": "a siege, lost",
   "village.guildmark.chronicle.raid.beaten": "a raid, beaten off",
@@ -18,12 +18,13 @@
   "village.guildmark.chronicle.raid.over": "a raid, and the raiders gone",
   "village.guildmark.chronicle.rescued": "%s came home, rescued",
   "village.guildmark.chronicle.born": "%s was born",
-  "village.guildmark.chronicle.arrived": "%s came to live here",
+  "village.guildmark.chronicle.arrived": "the %s household came to live here",
   "village.guildmark.chronicle.died": "%s died",
   "village.guildmark.chronicle.mended": "the siege's damage mended, %s blocks put back",
   "village.guildmark.chronicle.taken": "%s was taken by raiders",
   "village.guildmark.chronicle.lost": "%s was never found",
   "village.guildmark.memorial.heading": "The stone of %s. Here are remembered:",
   "village.guildmark.memorial.none": "A plain stone at the green of %s. No names are cut in it yet.",
-  "village.guildmark.memorial.waiting": "Their candles are to be laid at dawn: %s."
+  "village.guildmark.memorial.waiting": "Their candles are to be laid at dawn: %s.",
+  "village.guildmark.chronicle.watch": "%s came to keep the watch"
 }

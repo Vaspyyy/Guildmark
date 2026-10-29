@@ -187,6 +187,7 @@ object Shelter {
             if (from != null) old.from = from
             old.until = maxOf(old.until, now + CAP)
             gather(level, old)
+            Watch.horn(level, old)
             return
         }
         // The all-clear of the last one still under way: those coming out go back in too
@@ -195,6 +196,7 @@ object Shelter {
         called[key] = c
         Ringer.alarm(level, c)
         gather(level, c)
+        Watch.horn(level, c)
         Trouble.log(level, rec, "sheltering from a ${why.name.lowercase()}: ${c.folk.size} going indoors")
     }
 
@@ -208,6 +210,7 @@ object Shelter {
         c.ending = how
         c.endedAt = level.gameTime
         Ringer.stand(level, c)
+        Watch.allClear(level, key, how)
         // The all-clear: three slow strokes for a siege held, two more for a raid beaten off, one for the rest
         when (how) {
             Outcome.HELD -> Trouble.ring(level, c.bell, 3, 40, after = 20)

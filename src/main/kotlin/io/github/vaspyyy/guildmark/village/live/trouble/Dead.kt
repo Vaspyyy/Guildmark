@@ -104,8 +104,12 @@ object Deaths {
     /** One line of the chronicle, as `village info` and `village dead` read it. */
     fun chron(c: Chron): MutableComponent {
         // A siege's and a raid's say how it went ("held", "lost", "beaten", "taken", "over"); the rest name whom or what it was about
-        val what = if (c.kind == "siege" || c.kind == "raid") Component.translatable("village.guildmark.chronicle.${c.kind}.${c.arg}")
-        else Component.translatable("village.guildmark.chronicle.${c.kind}", c.arg)
+        val what = when (c.kind) {
+            "siege", "raid" -> Component.translatable("village.guildmark.chronicle.${c.kind}.${c.arg}")
+            // A project by its name ("Palisade Walls")
+            "built" -> Component.translatable("village.guildmark.chronicle.built", Component.translatable("advance.guildmark.${c.arg}"))
+            else -> Component.translatable("village.guildmark.chronicle.${c.kind}", c.arg)
+        }
         return Component.translatable("village.guildmark.chronicle.line", c.day, what).withStyle(ChatFormatting.GRAY)
     }
 
@@ -152,6 +156,7 @@ object Deaths {
             out.add(label("Chronicle (the last ${rec.chronicle.size}, the newest first):"))
             for (c in rec.chronicle.asReversed()) out.add(Component.literal("  ").append(chron(c)))
         }
+        Watch.line(level, rec)?.let { out.add(label("Watch: ").append(plain(it))) }
         val broken = kept?.damage?.size ?: 0
         if (broken > 0) {
             val from = kept?.mendFrom ?: TroubleData.NONE

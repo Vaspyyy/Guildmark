@@ -2,6 +2,7 @@ package io.github.vaspyyy.guildmark.village.live.trouble
 
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.GuildmarkConfig
+import io.github.vaspyyy.guildmark.advance.Advance
 import io.github.vaspyyy.guildmark.block.VillageBoards
 import io.github.vaspyyy.guildmark.homestead.BuilderCrew
 import io.github.vaspyyy.guildmark.townsfolk.Activity
@@ -89,12 +90,17 @@ object Trouble {
         SiegeHorde.forget()
         RaidWatch.forget()
         Memorial.forget()
+        Watch.forget()
         bells.clear()
         logs.clear()
+        closed.clear()
         looked = 0L
     }
 
     private var looked = 0L
+
+    /** The day last closed at each village with nothing kept for it (one with a [TroubleData.Kept] keeps its own). */
+    private val closed = HashMap<Long, Long>()
 
     private fun tick(server: MinecraftServer) {
         val level = server.overworld()
@@ -102,18 +108,22 @@ object Trouble {
             // Turned off: whoever is sheltering comes out now
             if (Shelter.any()) Shelter.endAll(level)
             if (Memorial.any()) Memorial.endAll()
+            if (Watch.any()) Watch.endAll()
             return
         }
         guarded("the shelter") { Shelter.tick(level) }
         guarded("the bells") { strike(level) }
         guarded("the raids") { RaidWatch.tick(level) }
+        guarded("the watch") { Watch.tick(level) }
         val now = level.gameTime
         if (now - looked < LOOK && now >= looked) return
         looked = now
         val day = VillageBoards.day(level)
         for (rec in Villages.awake(level)) {
-            guarded("the day of ${rec.name}") { if (TroubleData.peek(level)?.peek(rec.key)?.day != day) daily(level, rec, day) }
+            guarded("the day of ${rec.name}") { if ((TroubleData.peek(level)?.peek(rec.key)?.day ?: closed[rec.key]) != day) daily(level, rec, day) }
+            guarded("the chronicle of ${rec.name}") { built(level, rec, day) }
             guarded("the memorial of ${rec.name}") { Memorial.look(level, rec, day) }
+            guarded("the watch of ${rec.name}") { Watch.look(level, rec, day) }
         }
     }
 
@@ -133,9 +143,21 @@ object Trouble {
     internal fun daily(level: ServerLevel, rec: VillageRec, day: Long) {
         RaidWatch.daily(level, rec, day)
         Memorial.daily(level, rec, day)
+        Watch.daily(level, rec, day)
+        closed[rec.key] = day
         val kept = TroubleData.peek(level)?.peek(rec.key) ?: return
         kept.day = day
         TroubleData.get(level).setDirty()
+    }
+
+    /** The projects [rec] finished since yesterday (as the bellman keeps them, Village Bellman on) go in its chronicle, once each. */
+    private fun built(level: ServerLevel, rec: VillageRec, day: Long) {
+        for (b in VillageCry.builtAt(level, rec.key)) {
+            if (day - b.day !in 0..1L) continue
+            val id = Advance.entries.getOrNull(b.project)?.id ?: continue
+            if (rec.chronicle.any { it.kind == "built" && it.arg == id }) continue
+            Villages.note(level, rec.key, "built", id)
+        }
     }
 
     // ---- The bell, by itself ----
