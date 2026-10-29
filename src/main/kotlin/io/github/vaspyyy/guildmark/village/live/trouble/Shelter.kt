@@ -259,7 +259,7 @@ object Shelter {
                 called.remove(c.key)
                 continue
             }
-            val event = SiegeHorde.on(level, c.key)
+            val event = SiegeHorde.on(level, c.key) || RaidWatch.on(level, c.key)
             if (event) c.until = maxOf(c.until, now + 600L)
             val threat = event || monsters(level, c.bell)
             if (now - c.at < GRACE || threat) {

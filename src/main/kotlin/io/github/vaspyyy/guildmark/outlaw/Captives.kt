@@ -307,6 +307,8 @@ object Captives {
         io.github.vaspyyy.guildmark.townsfolk.talk.Witness.rescued(level, p)
         io.github.vaspyyy.guildmark.tales.Tales.captiveHome(level, p)
         GuildNews.add(level, "news.guildmark.outlaw.rescued", p.name.string, villageName(level, home).string)
+        // A village's own, taken by a raid: their household runs to them, the bell rings once (village/live/trouble, V10)
+        io.github.vaspyyy.guildmark.village.live.trouble.RaidWatch.homecoming(level, p, home)
     }
 
     /** Home and thanked: the band's hold on them is over and they live in their village from now on. */
@@ -316,11 +318,14 @@ object Captives {
         p.rescuer = null
         p.town = p.home?.let { Towns.at(level, it) }
         p.act(Activity.NONE)
+        // The resident a raid took is themselves again (village/live/trouble, V10)
+        io.github.vaspyyy.guildmark.village.live.trouble.RaidWatch.home(level, p)
     }
 
     /** A captive died: the band no longer holds them, and anyone sent for them hears of it. */
     fun onDeath(level: ServerLevel, p: Townsperson) {
         forget(level, p)
+        io.github.vaspyyy.guildmark.village.live.trouble.RaidWatch.died(level, p)
         io.github.vaspyyy.guildmark.tales.Tales.captiveDied(level, p)
         for (player in level.players()) {
             if (contracts(player, p.uuid).isNotEmpty()) player.sendSystemMessage(Component.translatable("message.guildmark.captive_lost", p.name))

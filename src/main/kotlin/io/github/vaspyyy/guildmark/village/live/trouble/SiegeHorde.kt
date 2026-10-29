@@ -39,10 +39,15 @@ object SiegeHorde {
     /** Arms [mob], one of the siege on the village [key], with the goal of going after its townsfolk. */
     fun arm(mob: Mob, key: Long) {
         if (!Trouble.on()) return
-        val level = mob.level() as? ServerLevel ?: return
-        mob.targetSelector.addGoal(3, NearestAttackableTargetGoal(mob, Townsperson::class.java, 10, true, false) { e, _ -> prey(level, e, key) })
+        goal(mob, key)
         // The first wave is set down before the horn: its siege is known from its first mob
         on.getOrPut(key) { On(key, BlockPos.of(key)) }.mobs.add(mob.uuid)
+    }
+
+    /** The goal of going after the village [key]'s townsfolk, given to [mob] (a siege's, or a Bad Omen raider: [RaidWatch]); `mustSee`, so those behind a wall are safe. */
+    internal fun goal(mob: Mob, key: Long) {
+        val level = mob.level() as? ServerLevel ?: return
+        mob.targetSelector.addGoal(3, NearestAttackableTargetGoal(mob, Townsperson::class.java, 10, true, false) { e, _ -> prey(level, e, key) })
     }
 
     /** One of the village [key]'s folk, out to be found: a resident (or a visitor of its town), not a faction's own, a tale's, or a captive. */

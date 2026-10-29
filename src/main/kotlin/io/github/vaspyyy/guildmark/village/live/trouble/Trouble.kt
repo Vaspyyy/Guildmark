@@ -81,6 +81,7 @@ object Trouble {
     private fun forget() {
         Shelter.forget()
         SiegeHorde.forget()
+        RaidWatch.forget()
         bells.clear()
         logs.clear()
         looked = 0L
@@ -97,6 +98,7 @@ object Trouble {
         }
         guarded("the shelter") { Shelter.tick(level) }
         guarded("the bells") { strike(level) }
+        guarded("the raids") { RaidWatch.tick(level) }
         val now = level.gameTime
         if (now - looked < LOOK && now >= looked) return
         looked = now
@@ -120,6 +122,7 @@ object Trouble {
      * morning, the mend opened, and those taken and never found put to rest. Once a day; written only if something is to be kept.
      */
     internal fun daily(level: ServerLevel, rec: VillageRec, day: Long) {
+        RaidWatch.daily(level, rec, day)
         val kept = TroubleData.peek(level)?.peek(rec.key) ?: return
         kept.day = day
         TroubleData.get(level).setDirty()

@@ -153,6 +153,8 @@ object Raids {
         // The alarm: the bell rung, a horn out over the fields
         (level.getBlockState(bell).block as? BellBlock)?.attemptToRing(level, bell, Direction.NORTH)
         level.playSound(null, from, SoundEvents.RAID_HORN.value(), SoundSource.HOSTILE, 48f, 0.85f)
+        // A village of the registry: its folk to their doors, its bell rung hard (village/live/trouble, V10)
+        io.github.vaspyyy.guildmark.village.live.trouble.RaidWatch.started(level, bell, from, raid.raiders)
         for (player in watchers(level, raid)) player.sendSystemMessage(Component.translatable("message.guildmark.raid_start", band.title(), village))
         return true
     }
@@ -253,6 +255,7 @@ object Raids {
             if (level.getBlockState(raid.home).block is QuestBoardBlock) Standing.add(level, raid.home, player, STANDING_GAIN)
         }
         if (band != null) GuildNews.add(level, "news.guildmark.outlaw.raid_beaten", "#${Outlaws.NAME_KEY}.${band.name}", village.string)
+        io.github.vaspyyy.guildmark.village.live.trouble.RaidWatch.beaten(level, raid.bell)
         end(raid)
     }
 
@@ -266,8 +269,10 @@ object Raids {
             val role = (taken as? Townsperson)?.role ?: Captives.roleFor((taken as? Villager)?.villagerData?.profession()?.unwrapKey()?.orElse(null)?.identifier())
             val look = (taken as? Townsperson)?.look ?: level.random.nextInt(role.looks)
             taken.removeLeash()
+            // One of a village's residents is that resident in the camp, their record put away meanwhile (village/live/trouble, V10)
+            val resident = io.github.vaspyyy.guildmark.village.live.trouble.RaidWatch.taken(level, raid.bell, taken, band)
             taken.discard()
-            Captives.take(level, band, name, raid.home, role, look)
+            Captives.take(level, band, name, raid.home, role, look, resident)
             for (player in watchers(level, raid)) player.sendSystemMessage(Component.translatable("message.guildmark.raid_taken", band.title(), name))
             GuildNews.add(level, "news.guildmark.outlaw.raid_taken", "#${Outlaws.NAME_KEY}.${band.name}", name, villageName(level, raid.home).string)
         }
@@ -277,6 +282,7 @@ object Raids {
     private fun end(raid: Foray) {
         raid.bar.removeAllPlayers()
         raids.remove(raid.band)
+        io.github.vaspyyy.guildmark.village.live.trouble.RaidWatch.over(raid.bell)
     }
 
     /** A raider died: if they had the hostage's rope, the hostage is let go (and nobody gets a free lead). */
