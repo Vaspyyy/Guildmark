@@ -67,8 +67,9 @@ import kotlin.math.abs
  * world is open and the game runs, plus the frame's partial tick.
  */
 object CookActionHandler {
-    /** The fewest ticks a clip takes to come in, whatever its own blend says. */
+    /** The fewest ticks a clip takes to come in, whatever its own blend says: [MIN_IN] from rest, [CUT_IN] over another clip it cuts short. */
     private const val MIN_IN = 2f
+    private const val CUT_IN = 4f
 
     /** Ticks a clip cut short (a guess the server refused, a cook who walked off) takes to ease back to the pose under it. */
     const val FADE = 5f
@@ -116,6 +117,9 @@ object CookActionHandler {
         /** Timed by the use state (a dish being eaten), which [start] follows. */
         var eating = false
 
+        /** The fewest ticks it takes to come in: longer over another clip, so the one cut short hands over gently. */
+        var ease = MIN_IN
+
         val loop: Boolean get() = action == CookAction.SHIVER
         val fading: Boolean get() = !fadeAt.isNaN()
 
@@ -126,20 +130,20 @@ object CookActionHandler {
             else -> (now - start).coerceIn(0f, clip.length)
         }
 
-        /** How strongly it shows at [now]: in over at least [MIN_IN] ticks, out by the clip's own blend, and away by [FADE]. */
+        /** How strongly it shows at [now]: in over at least [ease] ticks, out by the clip's own blend, and away by [FADE]. */
         fun weight(now: Float): Float {
             val base = if (loop) {
                 smooth((now - start) / LOOP_IN) * smooth((until - now) / LOOP_OUT)
             } else {
                 val t = time(now)
-                clip.weight(t) * smooth(t / MIN_IN)
+                clip.weight(t) * smooth(t / ease)
             }
             return if (fading) base * (1f - smooth((now - fadeAt) / FADE)) else base
         }
 
-        /** Whether it is over and shows nothing more. */
+        /** Whether it is over and shows nothing more: once it eases away, only when that is done (it may have been near its end). */
         fun over(now: Float): Boolean = when {
-            fading && now - fadeAt >= FADE -> true
+            fading -> now - fadeAt >= FADE
             loop -> now >= until
             else -> now - start >= clip.length
         }
@@ -269,8 +273,13 @@ object CookActionHandler {
         }
         val play = body.play
         if (play != null) {
-            if (play.over(now)) body.play = null
-            else if (!play.fading && moved(entity, play)) play.fade(now)
+            if (play.over(now)) {
+                // What it was easing in over (a refused guess over the clip before it) carries on as it was
+                body.play = body.from?.takeIf { !it.over(now) }
+                body.from = null
+            } else if (!play.fading && moved(entity, play)) {
+                play.fade(now)
+            }
         }
         val from = body.from
         val current = body.play
@@ -302,11 +311,14 @@ object CookActionHandler {
         val from = body.from
         val showing = current?.takeIf { !it.over(now) }?.weight(now) ?: 0f
         val under = from?.takeIf { !it.over(now) }?.let { it.weight(now) * (1f - showing) } ?: 0f
-        body.from = when {
+        val shown = when {
             showing > 0.001f && showing >= under -> current
             under > 0.001f -> from
             else -> null
         }
+        // The same clip again joins its last at rest; another takes longer to come in over the one it cuts
+        if (shown != null && shown.action != play.action) play.ease = CUT_IN
+        body.from = shown
         body.play = play
         body.next = null
         body.cut = null

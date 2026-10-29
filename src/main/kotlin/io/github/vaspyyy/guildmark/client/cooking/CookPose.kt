@@ -57,6 +57,9 @@ object CookPose {
     /** Nearer than this (blocks) the station's bearing means nothing, and the body does not turn. */
     private const val NEAR = 0.3
 
+    /** Ticks a clip takes, at least, to lift the body out of a crouch. */
+    private const val CROUCH_IN = 4f
+
     /** Ticks into the add and the feed at which the hand lets go of what it held (M3's marks). */
     private const val ADD_RELEASE = 4.9f
     private const val FEED_RELEASE = 5.4f
@@ -108,12 +111,14 @@ object CookPose {
         val play = body.play?.takeIf { !it.over(now) }
         val from = body.from?.takeIf { !it.over(now) }
         val main = play ?: from ?: return
-        val w = main.weight(now)
         val under = if (play != null && from != null) from.weight(now) else 0f
-        if (w <= 0.001f && under <= 0.001f) return
         val time = main.time(now)
-        val mirror = CookActionHandler.mirror(player, main)
         val crouching = state.isCrouching
+        // Rising out of a crouch is more of a move than coming out of standing: it takes a little longer
+        val rise = if (crouching && under <= 0.001f && !main.loop) CookActionHandler.smooth(time / CROUCH_IN) else 1f
+        val w = main.weight(now) * rise
+        if (w <= 0.001f && under <= 0.001f) return
+        val mirror = CookActionHandler.mirror(player, main)
         val fromFrame = when {
             under > 0.001f && from != null -> CombatAnimator.Frame(shape(from), from.time(now), under, 0f, 0f, 0f, null, false, CookActionHandler.mirror(player, from))
             crouching -> CROUCH_FRAME
