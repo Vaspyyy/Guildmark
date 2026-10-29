@@ -60,6 +60,9 @@ object BellKeeper {
     /** The town day the dusk bell of the village at [centre] last rang, or [Long.MIN_VALUE] if it has not since the game began. */
     fun rungOn(centre: BlockPos): Long = rung[centre.asLong()] ?: Long.MIN_VALUE
 
+    /** Forgets the days the bells rang (the server stopping: another world's villages may stand at the same places). */
+    fun forget() = rung.clear()
+
     /** The clock's hour as [Days] reckons it (17.5 is half past five). */
     private fun hour(level: ServerLevel): Double = (Days.offsetOf(level.overworldClockTime) / 1000.0 + 2.0) % 24.0
 

@@ -69,6 +69,13 @@ object VillageWatch {
     /** Times a guard could not get up a tower today, by resident id. */
     private val balked = HashMap<Int, Pair<Long, Int>>()
 
+    /** Forgets the towers' platforms, who is up and who balked (the server stopping: another world's towers and residents' ids). */
+    fun forget() {
+        surveyed.clear()
+        aloft.clear()
+        balked.clear()
+    }
+
     /** Whether [p] is up on [up]'s platform (not fallen, not knocked off it). */
     private fun there(p: Townsperson, up: Aloft): Boolean =
         abs(p.y - up.top) < 2.0 && p.x >= up.box.minX() - 1 && p.x <= up.box.maxX() + 2 && p.z >= up.box.minZ() - 1 && p.z <= up.box.maxZ() + 2

@@ -129,6 +129,10 @@ internal object VillageTick {
         VillageBudget.forget()
         VillageCensus.Perf.forget()
         PoiKinds.forget()
+        // The days' own (V3's): the bells rung today, who is off to the board, the towers' platforms
+        io.github.vaspyyy.guildmark.village.live.days.BellKeeper.forget()
+        io.github.vaspyyy.guildmark.village.live.days.Posters.forget()
+        io.github.vaspyyy.guildmark.village.live.days.VillageWatch.forget()
     }
 
     // ---- The look ----

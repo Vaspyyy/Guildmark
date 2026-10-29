@@ -72,6 +72,9 @@ object Posters {
     /** Who is on the way to the board, by the village's key and the tick they set out. */
     private val going = WeakHashMap<Townsperson, Pair<Long, Long>>()
 
+    /** Forgets who was on the way (the server stopping). */
+    fun forget() = going.clear()
+
     // --- Who ---
 
     /**
