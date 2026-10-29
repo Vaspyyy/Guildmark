@@ -288,6 +288,8 @@ object VillageWagons {
         trip?.back = now
         if (end == WAYLAID) trip?.place = c.place
         store.changed()
+        // Taken on the road: the village waits for it in vain at its road end, when it was due
+        if (end == WAYLAID) SendOff.waylaid(level, key, c)
         // Taken on the road, or never set out: no call this trip
         if (end == WAYLAID || end == WITHDRAWN) return
         // A village lost or dropped since, or whose market is gone: nobody to bring it to

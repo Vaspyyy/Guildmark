@@ -63,7 +63,7 @@ object VillageLinks {
         true
     }
 
-    /** At setup (from `Villages.register`): the look, the registry's listener, the wagons' listener and the commands. */
+    /** At setup (from `Villages.register`): the look (and the scenes at the road ends), the registry's listener, the wagons' listener and the commands. */
     fun register() {
         NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { tick(it.server.overworld()) }
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> forget() }
@@ -93,9 +93,13 @@ object VillageLinks {
         day = Long.MIN_VALUE
         stale = true
         VillageWagons.forget()
+        SendOff.forget()
+        Greeters.forget()
     }
 
     private fun tick(level: ServerLevel) {
+        // The scenes at the road ends under way (nothing to do while there are none)
+        SendOff.tick(level)
         if (level.server.tickCount % LOOK != LOOK_AT) return
         if (!enabled()) return
         val today = Days.dayOf(level.overworldClockTime)
@@ -108,6 +112,7 @@ object VillageLinks {
         }
         VillageWagons.look(level)
         VillageNews.look(level)
+        SendOff.look(level)
     }
 
     /** A few numbers that change whenever a link could: each capital, each road into it, whether it is finished and whether its leg is worked out. */
