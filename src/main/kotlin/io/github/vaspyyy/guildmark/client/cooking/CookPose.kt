@@ -127,7 +127,8 @@ object CookPose {
         state.isCrouching = false
 
         val target = main.target
-        if (target != null) {
+        // A screen draws the local player face on (the inventory's figure): turned to a station in the world, it would twist
+        if (target != null && !(player === Minecraft.getInstance().player && Minecraft.getInstance().gui.screen() != null)) {
             val share = if (fromFrame != null && fromFrame !== CROUCH_FRAME && from?.target != null) w + under * (1f - w) else w
             turn(player, state, target, side(main.action), mirror, share)
         }
