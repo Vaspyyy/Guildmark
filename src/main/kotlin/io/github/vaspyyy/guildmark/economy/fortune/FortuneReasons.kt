@@ -18,8 +18,11 @@ import io.github.vaspyyy.guildmark.economy.works.WorksState
 import io.github.vaspyyy.guildmark.festival.FestivalCalendar
 import io.github.vaspyyy.guildmark.festival.FestivalKind
 import io.github.vaspyyy.guildmark.season.Seasons
+import io.github.vaspyyy.guildmark.village.live.Villages
+import io.github.vaspyyy.guildmark.village.live.links.VillageLinks
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.MutableComponent
+import net.minecraft.network.chat.contents.TranslatableContents
 import net.minecraft.server.level.ServerLevel
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -215,10 +218,13 @@ object FortuneReasons {
         return reason(IDLE, -makers.size, day, makers.map { it.id })
     }
 
-    /** -1 Troubled, -2 Perilous, -3 Closed, for the worst road into the capital whose heart is [capital] (with the bands about). */
+    /**
+     * -1 Troubled, -2 Perilous, -3 Closed, for the worst road into the capital whose heart is [capital] (with the bands about);
+     * for a village (its bell), the worst of the capitals' roads that end at it ([linked]).
+     */
     private fun road(level: ServerLevel, capital: Long): Reason? {
         if (!Caravans.ambushes()) return null
-        val worst = CaravanData.get(level).roads.filter { it.capital == capital }.maxByOrNull { it.peril } ?: return null
+        val worst = CaravanData.get(level).roads.filter { it.capital == capital }.maxByOrNull { it.peril } ?: return linked(level, capital)
         val stage = RoadPeril.stage(worst.peril)
         val points = when (stage) {
             RoadPeril.Stage.OPEN -> return null
@@ -227,6 +233,25 @@ object FortuneReasons {
             RoadPeril.Stage.CLOSED -> -3
         }
         return reason(ROAD, points, -1, listOf(stage.id, side(capital, worst.road)))
+    }
+
+    /**
+     * The road reason of the village whose bell is [key]: the worst stage of the roads the capitals it is linked to send their wagons by
+     * (VillageLinks, part V7's), with that capital named ("Outlaws trouble the wagons on the road from Highmoor."); null for a key that is
+     * no village's, and for a village no capital's road ends at (none does until V7 links them).
+     */
+    private fun linked(level: ServerLevel, key: Long): Reason? {
+        if (Villages.byKey(level, key) == null) return null
+        val data = CaravanData.get(level)
+        val (link, road) = VillageLinks.linked(level, key).mapNotNull { l -> data.roadOrNull(l.capital, l.road)?.let { l to it } }.maxByOrNull { it.second.peril } ?: return null
+        val stage = RoadPeril.stage(road.peril)
+        val points = when (stage) {
+            RoadPeril.Stage.OPEN -> return null
+            RoadPeril.Stage.TROUBLED -> -1
+            RoadPeril.Stage.PERILOUS -> -2
+            RoadPeril.Stage.CLOSED -> -3
+        }
+        return reason(ROAD, points, -1, listOf(stage.id, "any", data.capitalOrNull(link.capital)?.name.orEmpty()))
     }
 
     /** The market's luck (+1 for a bumper crop or a good catch), its other trouble (-1 each) and a fever (-2), while they're on. */
@@ -364,7 +389,10 @@ object FortuneReasons {
                 "ovens" in a -> say("idle.ovens")
                 else -> null
             }
-            ROAD -> a.getOrNull(0)?.takeIf { s -> RoadPeril.Stage.entries.any { it.id == s && it != RoadPeril.Stage.OPEN } }?.let { say("road.$it", way(a.getOrNull(1))) }
+            // A village's road reason names the capital whose road it is, third ([linked])
+            ROAD -> a.getOrNull(0)?.takeIf { s -> RoadPeril.Stage.entries.any { it.id == s && it != RoadPeril.Stage.OPEN } }?.let { stage ->
+                a.getOrNull(2)?.takeIf { it.isNotEmpty() }?.let { say("road.$stage.from", it) } ?: say("road.$stage", way(a.getOrNull(1)))
+            }
             WAYLAID -> a.getOrNull(0)?.toIntOrNull()?.let { n ->
                 if (n == 1 && a.size >= 3) say("waylaid.one", place(a[1]), way(a[2])) else say("waylaid.many", n)
             }
@@ -415,12 +443,46 @@ object FortuneReasons {
             HAULED -> a.takeIf { it.isNotEmpty() }?.let { say("hauled", list(it.map(::way))) }
             // "<template>.<ending>" ("note.paid") then the names its sentence uses (the first two of the cast, then the lead); a sentence the language file lacks reads "A tale."
             TALE -> a.getOrNull(0)?.let { sayOr("tale.$it", TALE_FALLBACK, a.getOrNull(1).orEmpty(), a.getOrNull(2).orEmpty(), a.getOrNull(3).orEmpty()) }
-            HELD -> say("held")
-            LOST -> say("lost")
+            // A siege or a raid beaten off (Noted.HELD): what it was, "siege" or "raid" (a siege if not said), then the players who fought beside the folk
+            HELD -> {
+                val raid = a.getOrNull(0) == "raid"
+                val who = a.drop(if (a.getOrNull(0) == "siege" || raid) 1 else 0).filter { it.isNotEmpty() }
+                when {
+                    who.isNotEmpty() -> say(if (raid) "held.raid.by" else "held.by", names(who))
+                    raid -> say("held.raid")
+                    else -> say("held")
+                }
+            }
+            // A siege lost (Noted.LOST): how many of the village's folk fell in it, if any
+            LOST -> when (val fell = a.getOrNull(0)?.toIntOrNull() ?: 0) {
+                0 -> say("lost")
+                1 -> say("lost.one")
+                else -> say("lost.many", fell)
+            }
             else -> null
         }
         return said ?: label(reason.kind).append(".")
     }
+
+    /**
+     * [reason] in a sentence as a village's own commands and page say it: where [text]'s words name "the town" (its hunger, goods gone
+     * short, a supplier, a fever, mourning, crime, builders, households come and gone, a trader's relief), the village's; any other as
+     * [text] says it.
+     */
+    fun villageText(reason: Reason): MutableComponent {
+        val said = text(reason)
+        val words = said.contents as? TranslatableContents ?: return said
+        if (said.siblings.isNotEmpty() || words.key.removePrefix(REASON) !in VILLAGE_WORDS) return said
+        return Component.translatable(words.key + ".village", *words.args)
+    }
+
+    private const val REASON = "fortune.guildmark.reason."
+
+    /** The sentences of [text] that name the town, each with a village's own (its key and ".village"). */
+    private val VILLAGE_WORDS = setOf(
+        "hungry", "wanting", "supplied", "fever", "mourning", "crime", "building", "relief.hauled",
+        "newcomers.family", "newcomers.one", "newcomers.many", "leaving.family", "leaving.one", "leaving.many",
+    )
 
     /**
      * The two biggest of [reasons] (biggest first already) that pull the way [sign] says (1 for the better, -1 for
