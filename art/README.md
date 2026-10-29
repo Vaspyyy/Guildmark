@@ -185,6 +185,19 @@ and Kotlin model code always agree.
   and the canvas, that nothing floats, and that the handcart's files on disk are still what `handcart.py` writes. With a preview
   dir it renders it beside the carters' handcart from four sides, the fold in nine steps, eight loads over and folded, the pennant in
   the six colours, the rain, parked and pulled, and GIFs (the fold, pulled along, rain beading).
+- `scripts/carrier_wagon.py` is the Carrier's Wagon: a variant of `wagon.py` (which it imports and leaves as it writes) with a
+  model name and a texture of its own. Its texture keeps the caravans' wagon's layout: over the wagon's own UVs it holds the paint
+  a wagon with a colour wears (the box's sides in lined panels, the front board, the dash and the tailboard with a wheel in a
+  roundel, the wheels), white to be tinted and clear elsewhere, which the renderer draws over the wagon; at the pennant's UVs a
+  House's pennant cloth; and below them the dressing: a name board on each side (a cream field in a black frame with gilt beads,
+  for the owner's name), the guard's cushion on the bench, a blanket pad on the let-down tailboard and the owner's swallowtail
+  pennant in four segments. It writes `textures/entity/trade/carrier_wagon.png`, `art/models/carrier_wagon.bbmodel` and
+  `client/trade/CarrierWagonMesh.kt` (generated: the dressing's mesh, where the names go, the pennant's hinges and its run up the
+  staff; change the script, not the Kotlin). It checks that the boards and seats clear every cube of the wagon with the front
+  steered and rocked and the brake over its swing, that the pennant clears the staff and the tilt over its ripple and its run,
+  that nothing floats, that the paint lies only where the wagon itself is painted, and that the wagon's files on disk are still
+  what `wagon.py` writes. With a preview dir it renders it beside the caravans' wagon from six sides, in the sixteen colours, the
+  boards with names, the seats with a guard on each, a House's wagon, and GIFs (the pennant run up, rolling, the tailboard).
 - `scripts/store_art.py` and `scripts/house_art.py` (with `trade_works_kit.py` and `trade_works_preview.py` beside them, on
   `works_art.py`'s materials and mesh packing) are the Carriers' Store's and the Counting House's fittings, in the works' form:
   each a block model facing north turned by its blockstate (`store_scale`, `store_name_board`, `store_door_board`, `strongbox`,
@@ -224,6 +237,7 @@ python3 -B art/scripts/trade_items.py src/main/resources/assets/guildmark [previ
 python3 -B art/scripts/pack_harness.py [assets-dir [kotlin-dir [art/models [preview-dir [game assets/minecraft]]]]]
 python3 -B art/scripts/laden_pack.py [assets-dir [kotlin-dir [art/models [preview-dir [game assets/minecraft]]]]]
 python3 -B art/scripts/player_cart.py [assets-dir [kotlin-dir [art/models [preview-dir [game assets/minecraft]]]]]
+python3 -B art/scripts/carrier_wagon.py [assets-dir [kotlin-dir [art/models [preview-dir [game assets/minecraft]]]]]
 python3 -B art/scripts/store_art.py src/main/resources/assets/guildmark src/main/kotlin/io/github/vaspyyy/guildmark/client/trade art/models [preview-dir]
 python3 -B art/scripts/house_art.py src/main/resources/assets/guildmark src/main/kotlin/io/github/vaspyyy/guildmark/client/trade art/models [preview-dir]
 ```
