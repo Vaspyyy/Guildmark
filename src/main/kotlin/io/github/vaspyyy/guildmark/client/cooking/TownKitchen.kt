@@ -121,15 +121,20 @@ object TownKitchen {
                 play(level, at, "cook.taste", 0.6f)
                 puff(level, CookParticles.STEAM.get(), ParticleTypes.WHITE_SMOKE, at, 1, 0.06, 0.01)
             }
-            "flip" -> {
+            // The turner goes under and flicks (the first moment): the sound once, its sizzle where it lands (the last)
+            "flip" -> if (index == 0) {
                 play(level, at, "cook.flip", 0.6f)
-                puff(level, CookParticles.SIZZLE.get(), ParticleTypes.SMOKE, at, 3, 0.2, 0.03)
                 puff(level, CookParticles.STEAM.get(), ParticleTypes.WHITE_SMOKE, at, 1, 0.15, 0.012)
+            } else if (last) {
+                puff(level, CookParticles.SIZZLE.get(), ParticleTypes.SMOKE, at, 3, 0.2, 0.03)
             }
             "turn_spit" -> play(level, at, "cook.crank", 0.5f)
-            "carve" -> {
+            // The knife through the roast (the first moment), then the slice laid in the bowl (the last), a softer sound
+            "carve" -> if (index == 0) {
                 play(level, at, "cook.carve", 0.65f)
                 puff(level, CookParticles.STEAM.get(), ParticleTypes.WHITE_SMOKE, at, 1, 0.15, 0.012)
+            } else if (last) {
+                play(level, at, "cook.plate", 0.35f)
             }
             "slice" -> {
                 play(level, at, "cook.slice", 0.6f)
