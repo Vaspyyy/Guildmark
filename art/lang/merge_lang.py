@@ -100,6 +100,10 @@ OVERRIDES = {
     "say.guildmark.talk.kitchen.door.baker_no_0",
     "say.guildmark.talk.kitchen.cookshop.report_1",
     "say.guildmark.talk.kitchen.scene_own.right_2",
+    # Tales T4, the Empty Chair: C's stone may stand anywhere, and W's household may have stayed (by the lead)
+    "fortune.guildmark.reason.tale.chair.alone",
+    "fortune.guildmark.reason.tale.chair.empty",
+    "item.guildmark.keepsake.chair.alone",
 }
 
 
