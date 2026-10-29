@@ -84,6 +84,7 @@ object VillageLinks {
                 stale = true
             }
         })
+        Caravans.listen(VillageWagons.Heard)
         VillageLinkCommand.init()
     }
 
@@ -91,6 +92,7 @@ object VillageLinks {
         mark = 0L
         day = Long.MIN_VALUE
         stale = true
+        VillageWagons.forget()
     }
 
     private fun tick(level: ServerLevel) {
@@ -104,6 +106,8 @@ object VillageLinks {
             mark = now
             refresh(level)
         }
+        VillageWagons.look(level)
+        VillageNews.look(level)
     }
 
     /** A few numbers that change whenever a link could: each capital, each road into it, whether it is finished and whether its leg is worked out. */

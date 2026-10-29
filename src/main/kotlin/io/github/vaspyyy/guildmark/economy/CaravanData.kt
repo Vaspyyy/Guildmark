@@ -137,6 +137,12 @@ class CaravanRec(
     var tint: Int = -1
     var label: String = ""
 
+    // ---- Villages (V7): the village at the far end of its road (living-world/villages/design.md section 9.2)
+    /** The village it calls on at the start of its leg ([village], the bell's key; -1 for none) and the share of its [load] that is that village's own goods ([fromVillage]). */
+    var village: Long = -1L
+    var fromVillage: DoubleArray = DoubleArray(Good.entries.size)
+    // ---- end Villages (V7)
+
     /** Not kept: the game time its bodies last said they're about, and when the record began waiting for them to act an event out. */
     var shown: Long = Long.MIN_VALUE / 2
     var waiting: Long = -1L
@@ -173,7 +179,10 @@ class CaravanRec(
             ).apply(i, ::Roll)
         }
 
-        private class Escort(val job: UUID?, val holder: UUID?, val met: Boolean, val kills: Int, val only: Boolean, val slots: List<Long>, val tint: Int = -1, val label: String = "")
+        private class Escort(
+            val job: UUID?, val holder: UUID?, val met: Boolean, val kills: Int, val only: Boolean, val slots: List<Long>, val tint: Int = -1, val label: String = "",
+            val village: Long = -1L, val fromVillage: DoubleArray = DoubleArray(Good.entries.size),
+        )
 
         private val ESCORT: Codec<Escort> = RecordCodecBuilder.create { i ->
             i.group(
@@ -185,7 +194,11 @@ class CaravanRec(
                 Codec.LONG.listOf().optionalFieldOf("slots", listOf()).forGetter(Escort::slots),
                 Codec.INT.optionalFieldOf("tint", -1).forGetter(Escort::tint),
                 Codec.STRING.optionalFieldOf("label", "").forGetter(Escort::label),
-            ).apply(i) { job, holder, met, kills, only, slots, tint, label -> Escort(job.orElse(null), holder.orElse(null), met, kills, only, slots, tint, label) }
+                Codec.LONG.optionalFieldOf("village", -1L).forGetter(Escort::village),
+                GoodsCodec.CODEC.optionalFieldOf("from_village", DoubleArray(Good.entries.size)).forGetter(Escort::fromVillage),
+            ).apply(i) { job, holder, met, kills, only, slots, tint, label, village, fromVillage ->
+                Escort(job.orElse(null), holder.orElse(null), met, kills, only, slots, tint, label, village, fromVillage)
+            }
         }
 
         private class Times(val setOut: Long, val held: Long, val until: Long)
@@ -217,7 +230,7 @@ class CaravanRec(
                 ROLL.fieldOf("roll").forGetter {
                     Roll(it.band, it.strike, it.reach, it.struck, it.struckAt, it.waylaid, it.horseDead, it.fought, it.place, it.wx, it.wy, it.wz, it.wyaw, it.gate, it.watched, it.freight)
                 },
-                ESCORT.fieldOf("escort").forGetter { Escort(it.job, it.holder, it.met, it.kills, it.escortOnly, it.slots, it.tint, it.label) },
+                ESCORT.fieldOf("escort").forGetter { Escort(it.job, it.holder, it.met, it.kills, it.escortOnly, it.slots, it.tint, it.label, it.village, it.fromVillage) },
             ).apply(i) { id, capital, bell, road, hour, run, seed, phase, times, length, load, exports, guards, wagons, roll, escort ->
                 CaravanRec(
                     id, capital, bell, road, hour, Run.of(run), seed, Phase.of(phase), times.setOut, times.held, times.until, length,
@@ -247,6 +260,8 @@ class CaravanRec(
                     c.slots = escort.slots
                     c.tint = escort.tint
                     c.label = escort.label
+                    c.village = escort.village
+                    c.fromVillage = escort.fromVillage
                 }
             }
         }

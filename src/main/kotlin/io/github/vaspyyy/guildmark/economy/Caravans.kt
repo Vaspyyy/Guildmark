@@ -779,6 +779,8 @@ object Caravans {
             val share = if (c.run == Run.CONVOY) RoadPeril.CONVOY_SHARE else 1.0
             for (g in Good.entries) c.load[g.ordinal] = load[g.ordinal] * share
             c.freight = io.github.vaspyyy.guildmark.economy.works.WorksFreight.load(level, entry, c)
+            // Villages (V7): of what the capital asked for, the village at the start of the leg sends what it has in glut (villages design 9.2)
+            io.github.vaspyyy.guildmark.village.live.links.VillageWagons.load(level, entry, c)
         }
         c.phase = Phase.ROLLING
         if (escorts() && c.run != Run.HOUSE) CaravanEscorts.bind(data, c)
@@ -1219,6 +1221,8 @@ object Caravans {
     /** [c] is done: its record goes. */
     private fun end(level: ServerLevel, data: CaravanData, c: CaravanRec) {
         if (!data.caravans.remove(c)) return
+        // Villages (V7): back at the start of its leg (or called off, or waylaid), the wagon's call on the village there ends (villages design 9.2)
+        if (c.run == Run.WAGON || c.run == Run.CONVOY) io.github.vaspyyy.guildmark.village.live.links.VillageWagons.home(level, c)
         data.changed()
         listeners.forEach { it.ended(level, c.id) }
     }
