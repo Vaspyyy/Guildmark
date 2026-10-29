@@ -104,7 +104,7 @@ object FeastCommand {
         say(
             source,
             grey(
-                if (plates == 0) "No trestle: there was no room beside the bales, so the table has no plates (it is held all the same)."
+                if (plates == 0) "No trestle: there was no room beside the bales (or the switch was off when the festival was laid out), so the table has no plates; it is held all the same."
                 else "Trestle: $plates plates, ${HarvestTable.dressed(site)} of them showing a dish.",
             ),
         )
