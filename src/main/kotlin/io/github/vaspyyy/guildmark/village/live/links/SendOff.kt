@@ -194,7 +194,7 @@ object SendOff {
         val clock = level.overworldClockTime
         val data = CaravanData.get(level)
         val links = VillageLinks.running(level, key)
-        data.caravans.filter { it.village == key && (it.phase == Phase.LEAVING || it.phase == Phase.STANDING) }.minByOrNull { it.until }?.let { c ->
+        data.caravans.filter { it.village == key && it.phase == Phase.LEAVING }.minByOrNull { it.until }?.let { c ->
             val link = links.firstOrNull { it.capital == c.capital && it.road == c.road } ?: return null
             return WagonWatch(key, link, false, c.id, c.until, seen(rec, link))
         }
@@ -531,7 +531,16 @@ object SendOff {
         private fun setOff(h: Hand) {
             val p = h.p
             if (h.lead && cart) {
-                if (Handcarts.hitch(p) != null) {
+                val got = Handcarts.hitch(p)
+                if (got != null && !Handcarts.pulling(p)) {
+                    // Their own cart stands parked in sight: they walk to its shafts and take it up there
+                    if (++h.tries <= 4) {
+                        Handcarts.fetch(p)?.let { h.moves.go(it, Jobs.WALK, exact = true) } ?: run { h.moves.wait = 20 }
+                        return
+                    }
+                    Handcarts.leave(p)
+                    cart = false
+                } else if (got != null) {
                     h.tries = 0
                     show()
                     h.moves.overlay = Handcarts.PULL
