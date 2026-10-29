@@ -151,6 +151,8 @@ object Tales : Comings.Listener {
         io.github.vaspyyy.guildmark.tales.templates.LanternFestival.register()
         // T2a: the child's and the cart's watch and `tale protect`
         TalesT2a.register()
+        // T4: the moot's `tale moot` and its scenes, and the open moots seen to each second
+        io.github.vaspyyy.guildmark.tales.templates.MootSquare.register()
     }
 
     // ---- The clock ----
@@ -253,7 +255,8 @@ object Tales : Comings.Listener {
 
     /** From `Crier.news` (E places the call): what [entry]'s crier cries of tales at [c]'s noon, [at] being the game time. None yet. */
     fun cries(level: ServerLevel, entry: Markets.Entry, c: Conditions, at: Long): List<Crier.Cry> =
-        TaleTold.cries(level, entry, c, at) + io.github.vaspyyy.guildmark.tales.templates.LanternFestival.cries(level, entry, c, at)
+        TaleTold.cries(level, entry, c, at) + io.github.vaspyyy.guildmark.tales.templates.LanternFestival.cries(level, entry, c, at) +
+            io.github.vaspyyy.guildmark.tales.templates.MootSquare.cries(level, entry, c, at)
 
     /** From `Streets.wants` (F places the call): whether the memorial at [pos] in [column] is still wanted by the record of [run]. */
     fun wants(level: ServerLevel, column: Long, pos: BlockPos, run: Long): Boolean = Memorials.wants(level, column, pos, run)
