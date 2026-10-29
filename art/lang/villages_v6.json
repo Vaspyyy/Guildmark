@@ -38,5 +38,13 @@
   "say.guildmark.talk.detail.village.why.slain": "The last pedlar was killed on the road.",
   "say.guildmark.talk.detail.village.who": "%s.",
   "say.guildmark.talk.detail.village.project.going": "%s, going up.",
-  "say.guildmark.talk.detail.village.project.done": "%s, finished."
+  "say.guildmark.talk.detail.village.project.done": "%s, finished.",
+  "fortune.guildmark.works.village.lamp_posts": "row of lamp posts",
+  "fortune.guildmark.works.village.guild_hall": "Guild Hall",
+  "fortune.guildmark.works.village.trade_road": "trade road",
+  "fortune.guildmark.works.village.palisade": "palisade",
+  "fortune.guildmark.works.village.archer_tower": "archer tower",
+  "fortune.guildmark.works.village.market": "market square",
+  "fortune.guildmark.works.village.stone_walls": "stone wall",
+  "fortune.guildmark.works.village.keep": "keep"
 }

@@ -6,7 +6,10 @@ import io.github.vaspyyy.guildmark.townsfolk.Doing
 import io.github.vaspyyy.guildmark.townsfolk.Life
 import io.github.vaspyyy.guildmark.townsfolk.Stretch
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
+import io.github.vaspyyy.guildmark.townsfolk.talk.Spread
+import io.github.vaspyyy.guildmark.village.live.market.VillageTimes
 import io.github.vaspyyy.guildmark.village.live.talk.Bellman
+import net.neoforged.neoforge.server.ServerLifecycleHooks
 
 /**
  * A village's people's days (living-world/villages/design.md 5.4): the capital's own day for who they are ([Days.plan], a pure
@@ -16,7 +19,8 @@ import io.github.vaspyyy.guildmark.village.live.talk.Bellman
  * - [STALL]: a keeper's day. Their own trade until ten (eight on a market day), the stall until four with an hour at noon, then
  *   their trade again.
  * - [GREEN]: market day for the rest. From half past ten to half past one they are about the green, the stalls and the folk there
- *   (a lunch on a bench if they like), and the children play on the green the day through.
+ *   (a lunch on a bench if they like), and the children play on the green the day through. As many come as the village's times
+ *   bring out ([VillageTimes.busy], as of an evening): in worse times some stay at their day, in better ones they stay on longer.
  * - [BELL]: the holder of the bell goes to it and rings the dusk bell at half past five.
  * - [BOARD]: the day's poster takes a note to the board and nails it up.
  * - [LAMPS] and [SNUFF]: a keeper of the lamps is free of an evening from five to seven for the round, and up of a morning from a
@@ -47,6 +51,9 @@ object VillageDays {
     /** The green's hours on market day. */
     private const val GREEN_FROM = 10.5
     private const val GREEN_TO = 13.5
+
+    /** Hours the green runs on for each whole of the times' crowd above steady (thriving's 1.25: an hour more). */
+    private const val GREEN_LONGER = 4.0
 
     /** The bellman's errand: from five, to be at the bell and to wait for the hour ([BellKeeper.DUSK]); at ten to six they are let go. */
     private const val BELL_FROM = 17.0
@@ -80,7 +87,7 @@ object VillageDays {
             when {
                 life.keeper >= 0 -> stall(list, life.market)
                 life.market && r.role == TownRole.CHILD -> children(list)
-                life.market && r.role.adult && r.role != TownRole.GUARD && !life.carter -> interrupt(list, GREEN_FROM, GREEN_TO, Doing.MARKET, GREEN)
+                life.market && r.role.adult && r.role != TownRole.GUARD && !life.carter -> green(list, life, day)
             }
         }
         // The noon cry, on market day and any day with news worth the telling (Village Bellman)
@@ -98,6 +105,22 @@ object VillageDays {
         if (life.bellman) interrupt(list, BELL_FROM, BELL_TO, Doing.ERRAND, BELL)
         return if (list.size == base.stretches.size && list.indices.all { list[it] === base.stretches[it] }) base else Agenda(day, list)
     }
+
+    /**
+     * Market day's green for one of the grown folk ([GREEN]): its hours, in steady times (and with the times off); in worse times only if
+     * the day's dice for them fall under the crowd's share, and in better ones until later.
+     */
+    private fun green(list: MutableList<Stretch>, life: Life, day: Long) {
+        val key = life.places.centre.asLong()
+        val busy = ServerLifecycleHooks.getCurrentServer()?.overworld()?.let { VillageTimes.busy(it, key) } ?: 1.0
+        if (busy < 1.0 && dice(key, life.resident.id, day) >= busy) return
+        val to = if (busy > 1.0) GREEN_TO + (busy - 1.0) * GREEN_LONGER else GREEN_TO
+        interrupt(list, GREEN_FROM, to, Doing.MARKET, GREEN)
+    }
+
+    /** The same number in 0..1 for the same village, resident and day. */
+    private fun dice(key: Long, id: Int, day: Long): Double =
+        (Spread.mix(key * 31L + id * 0x9E3779B9L + day * 0x632BE59BD9B4E019L) ushr 11).toDouble() / (1L shl 53).toDouble()
 
     /** A builder's day ([BUILD]): the site from [BUILD_FROM] to noon and from one to [BUILD_TO], their dinner between (laid first, so the morning can end on it). */
     private fun build(list: MutableList<Stretch>) {

@@ -21,6 +21,7 @@ import io.github.vaspyyy.guildmark.economy.VillageMarkets
 import io.github.vaspyyy.guildmark.economy.fortune.FortuneData
 import io.github.vaspyyy.guildmark.economy.fortune.FortuneReasons
 import io.github.vaspyyy.guildmark.economy.fortune.Fortunes
+import io.github.vaspyyy.guildmark.economy.fortune.Noted
 import io.github.vaspyyy.guildmark.economy.fortune.Reason
 import io.github.vaspyyy.guildmark.economy.fortune.Times
 import io.github.vaspyyy.guildmark.guild.GuildNews
@@ -473,8 +474,13 @@ object VillageCry {
         data.setDirty()
     }
 
-    /** From VillageBuilds, where a project is finished: the bellman cries it at the next noon. */
-    fun built(level: ServerLevel, key: Long, project: Advance) {
+    /**
+     * From VillageBuilds, where the village [key]'s site [site] finishes [project]: the village's fortunes take it as RAISED (+2 for a
+     * week, while Village Fortunes is on; no patron is named, for the board keeps no record of who paid for it), and the bellman cries
+     * it at the next noon (Village Bellman).
+     */
+    fun built(level: ServerLevel, key: Long, project: Advance, site: Int) {
+        Fortunes.note(level, key, Noted.RAISED, listOf("village.${project.id}", ""), null, site)
         if (!enabled()) return
         val data = VillageCryData.get(level)
         val kept = data.of(key)

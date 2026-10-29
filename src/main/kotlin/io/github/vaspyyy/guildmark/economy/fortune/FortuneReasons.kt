@@ -284,12 +284,24 @@ object FortuneReasons {
         return null
     }
 
-    /** +1 while a works of the town's is going up (a stall of a player's own is theirs, not the town's). */
+    /** +1 while a works of the town's is going up (a stall of a player's own is theirs, not the town's); a village's, its building site's. */
     private fun building(level: ServerLevel, capital: Long): Reason? {
+        if (Villages.byKey(level, capital) != null) return villageBuilding(level, capital)
         if (!Works.enabled()) return null
         val going = Works.all(level, capital).filter { it.state == WorksState.BUILDING && it.kind.per != WorksKind.Per.PLAYER }
         if (going.isEmpty()) return null
         return reason(BUILDING, 1, -1, going.map { it.kind.id }.distinct())
+    }
+
+    /**
+     * +1 while the village [key]'s building crew is at work on a project (VillageBuilds: a site funded and opened, not being finished
+     * out of sight), the project named as "village.<advance>" (fortune.guildmark.works.village.*).
+     */
+    private fun villageBuilding(level: ServerLevel, key: Long): Reason? {
+        val b = io.github.vaspyyy.guildmark.village.live.build.VillageBuilds.recFor(level, key) ?: return null
+        if (b.opens != Long.MIN_VALUE && b.opens > level.overworldClockTime) return null
+        val project = io.github.vaspyyy.guildmark.advance.Advance.entries.getOrNull(b.project) ?: return null
+        return reason(BUILDING, 1, -1, listOf("village.${project.id}"))
     }
 
     private fun reason(kind: String, points: Int, until: Long, args: List<String> = listOf()): Reason = Reason(kind, points, until, args, listOf(), -1)
