@@ -69,6 +69,15 @@ EVENTS = {
     "watch_three": (64, "watch"),
     "watch_four": (64, "watch"),
     "watch_five": (64, "watch"),
+    # A village (ambience/village.py): its beds, and what the village layer scatters far off across the fields
+    "village_day": (None, None),
+    "village_night": (None, None),
+    "village_market": (None, None),
+    "village_birds": (None, None),
+    "village_crickets": (None, None),
+    "dog_far": (96, "dog_far"),
+    "hammer_far": (80, "hammer_far"),
+    "child_far": (80, "child_far"),
 }
 
 
