@@ -12,6 +12,7 @@ import io.github.vaspyyy.guildmark.economy.MarketBoards
 import io.github.vaspyyy.guildmark.economy.Markets
 import io.github.vaspyyy.guildmark.economy.Run
 import io.github.vaspyyy.guildmark.economy.Trading
+import io.github.vaspyyy.guildmark.economy.VillageMarkets
 import io.github.vaspyyy.guildmark.economy.works.Works
 import io.github.vaspyyy.guildmark.economy.works.WorksKind
 import io.github.vaspyyy.guildmark.economy.works.WorksView
@@ -21,6 +22,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Crier
 import io.github.vaspyyy.guildmark.townsfolk.Furnish
 import io.github.vaspyyy.guildmark.townsfolk.Household
 import io.github.vaspyyy.guildmark.townsfolk.Residents
+import io.github.vaspyyy.guildmark.village.live.Villages
 import net.minecraft.ChatFormatting
 import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
@@ -118,7 +120,8 @@ object Fortunes {
     /**
      * Something weighs on [capital]: [kind] for [points] over [days] market days (counted at the next [days] closes),
      * with its words' [args], the player it's [about] and the works it's of. Nothing while the fortunes are off, nor
-     * for a place with no market open (a village, or a capital nobody has been to yet: it has no fortunes to weigh).
+     * for a capital nobody has been to yet (no market open: it has no fortunes to weigh). A village's bell is a key as a
+     * capital's heart is, once its market is open ([Markets.find]) and while Village Fortunes is on.
      *
      * A kind of section 4's table is added up by its rule (see [FortuneReasons.noted]). "supplied" is a player's
      * each: `note(level, capital, "supplied", 1, 3, about = player.uuid)` is all it takes (their name is looked up
@@ -129,7 +132,7 @@ object Fortunes {
         args: List<String> = listOf(), about: UUID? = null, works: Int = -1,
     ) {
         if (!enabled() || points == 0 || days <= 0) return
-        if (Markets.get(level)[BlockPos.of(capital)] == null) return
+        if (market(level, capital) == null) return
         val words = if (kind == FortuneReasons.SUPPLIED && args.isEmpty() && about != null) listOfNotNull(name(level, about)) else args
         val day = today(level, capital)
         add(level, capital, FortuneData.Note(kind, points, day, day + days, words, about, works, false))
@@ -139,12 +142,25 @@ object Fortunes {
     fun note(level: ServerLevel, capital: Long, noted: Noted, args: List<String> = listOf(), about: UUID? = null, works: Int = -1) =
         note(level, capital, noted.kind, noted.points, noted.days, listOfNotNull(noted.what) + args, about, works)
 
-    /** As [note], in whichever capital takes in [pos] (found from loaded chunks only); nothing outside one. */
+    /**
+     * As [note], in whichever capital takes in [pos] (found from loaded chunks only), or else the village whose ground it
+     * is ([Villages.at], with Village Fortunes on); nothing outside both.
+     */
     fun noteAt(level: ServerLevel, pos: BlockPos, noted: Noted, args: List<String> = listOf(), about: UUID? = null) {
         if (!enabled() || level.dimension() != Level.OVERWORLD) return
-        val capital = Furnish.capitalAt(level, pos) ?: return
-        note(level, capital.center.asLong(), noted, args, about)
+        val capital = Furnish.capitalAt(level, pos)?.center?.asLong() ?: villageAt(level, pos) ?: return
+        note(level, capital, noted, args, about)
     }
+
+    /** The bell of the village whose ground takes in [pos], while the villages' fortunes are worked out; null outside one. */
+    private fun villageAt(level: ServerLevel, pos: BlockPos): Long? = if (VillageMarkets.fortunes()) Villages.at(level, pos)?.key else null
+
+    /**
+     * The market whose books [key] keeps: a capital's, or a village's ([Markets.find]) while Village Fortunes is on; null for
+     * a place with no market open.
+     */
+    private fun market(level: ServerLevel, key: Long): Markets.Entry? =
+        Markets.get(level)[BlockPos.of(key)] ?: if (VillageMarkets.fortunes()) Markets.find(level, key) else null
 
     /** [player] sold [entry]'s market [good] at a keeper's stall (from Witness.dealt, as Stalls tells of a sale): supplied, if the town was short of it. */
     fun sold(level: ServerLevel, entry: Markets.Entry, good: Good, player: ServerPlayer) {
@@ -214,8 +230,12 @@ object Fortunes {
 
     // ---- The close ----
 
-    /** [capital]'s record while the fortunes are on. */
-    private fun record(level: ServerLevel, capital: Long): FortuneData.Town? = if (enabled()) FortuneData.get(level)[capital] else null
+    /** [capital]'s record while the fortunes are on (a village's while Village Fortunes is on too: off, every village reads steady). */
+    private fun record(level: ServerLevel, capital: Long): FortuneData.Town? = if (enabled()) FortuneData.get(level)[capital]?.takeIf { kept(level, capital) } else null
+
+    /** Whether the record of [key] counts: always a capital's; a village's only while Village Fortunes is on. */
+    private fun kept(level: ServerLevel, key: Long): Boolean =
+        VillageMarkets.fortunes() || Markets.get(level)[BlockPos.of(key)] != null || Villages.byKey(level, key) == null
 
     /**
      * From Markets.step, after the hour is worked out: at the close (two in the morning) [entry]'s capital's
@@ -318,9 +338,9 @@ object Fortunes {
         data.changed()
     }
 
-    /** The hour [capital]'s market has got to (the clock's, with no market). */
+    /** The hour [capital]'s market (or a village's, see [market]) has got to (the clock's, with no market). */
     private fun hourOf(level: ServerLevel, capital: Long): Long =
-        Markets.get(level)[BlockPos.of(capital)]?.market?.hour?.takeIf { it != Long.MIN_VALUE } ?: Markets.hourOf(level)
+        market(level, capital)?.market?.hour?.takeIf { it != Long.MIN_VALUE } ?: Markets.hourOf(level)
 
     /**
      * The day the fortunes of [capital] stand at, which a note, a hold and `fortune step` go by: its market's day, or
