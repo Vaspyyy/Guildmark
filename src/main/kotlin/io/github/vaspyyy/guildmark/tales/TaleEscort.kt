@@ -50,6 +50,8 @@ class TaleEscort(
     private val leads: Boolean = false,
     /** The child's variant (the child tale, living-world/stories/design.md 8.4): a child's pace at the player's side, no stoop, no rests, and a cower when a hostile mob is near. */
     private val child: Boolean = false,
+    /** The family a frightened walker cries out with when a hostile mob is near, cowering where they stand (the brother's, Tales T5, 8.12); null: only the child cowers. */
+    private val scared: String? = null,
 ) : Director {
     private enum class Mode { FOLLOW, TO_BENCH, SIT_DOWN, SITTING, STAND_UP, BREATH }
 
@@ -95,7 +97,7 @@ class TaleEscort(
             stop(p)
             return
         }
-        if (child && cower(level, p, who, now)) return
+        if ((child || scared != null) && cower(level, p, who, now)) return
         last?.let { from ->
             val d = sqrt((p.x - from.x) * (p.x - from.x) + (p.z - from.z) * (p.z - from.z))
             if (d < 3.0) walked += d
@@ -270,7 +272,7 @@ class TaleEscort(
                 p.act(Activity.COWER)
                 if (now - scaredAt >= SCARED_EVERY) {
                     scaredAt = now
-                    Words.sayWith(p, "tale.child.scared", why = "a frightened child", force = true)
+                    Words.sayWith(p, scared ?: "tale.child.scared", why = if (scared != null) "a frightened walker" else "a frightened child", force = true)
                 }
             }
             return true
@@ -449,12 +451,13 @@ class TaleEscort(
          * [target], following [player]. The tale hears [Event.Arrived] when they get there. [prop] is what they carry on the way (the
          * lantern), [until] the game time to let go at (0: not before they arrive). With [leads] and a [target] they walk the way there
          * themselves with the player beside them, rather than following (see the class); [child] is the child's variant (a child's pace,
-         * afraid of the night's mobs). False if they cannot be taken just now.
+         * afraid of the night's mobs); with [scared] a grown walker cowers too, and cries out with that family. False if they cannot be taken just now.
          */
         fun start(
             level: ServerLevel, t: Tale?, slot: String, who: Townsperson, player: ServerPlayer, target: BlockPos?, prop: ItemStack? = null, until: Long = 0L,
             leads: Boolean = false,
             child: Boolean = false,
+            scared: String? = null,
         ): Boolean {
             if (t != null) {
                 if (who.tale != t.id) TaleBodies.hold(level, t, slot, null, null)
@@ -468,7 +471,7 @@ class TaleEscort(
                 who.routine.interrupt()
                 who.standUp()
             }
-            val escort = TaleEscort(player.uuid, target, t?.id ?: -1, slot, prop, until, leads, child)
+            val escort = TaleEscort(player.uuid, target, t?.id ?: -1, slot, prop, until, leads, child, scared)
             who.director = escort
             who.navigation.stop()
             // Only a tale's walk is kept by the tidy (given back after a talk, ended with the switch); the command's is its own
