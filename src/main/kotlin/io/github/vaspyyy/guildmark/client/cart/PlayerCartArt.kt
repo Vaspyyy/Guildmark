@@ -7,6 +7,7 @@ import net.minecraft.client.model.geom.builders.LayerDefinition
 import net.minecraft.client.model.geom.builders.MeshDefinition
 import net.minecraft.resources.Identifier
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.client.trade.PlayerCartMesh
 
 /**
  * Where the Chapman's Cart gets its dressing (living-world/trader/design.md, Part 3; build parts D2 and X2): the pole with the pennant on it and the
@@ -41,16 +42,44 @@ internal object PlayerCartArt {
         val folds: List<Hinge>,
         /** The pennant's hinges (x, z) from the pole outward, one for each segment. */
         val ripples: List<Hinge>,
+        /** The texture the cart itself is drawn with (its livery, on the handcart's own UVs), or null for the carters' own. */
+        val body: Identifier? = null,
+        /** The canvas's wet look, drawn over each strip translucent with the alpha of how wet it is, or null for none. */
+        val wet: Identifier? = null,
+        /** Px the canvas's top face lies over the highest point under it. */
+        val lift: Float = 2.4f,
+        /** Each of HandcartMesh.PIECES' highest point over its foot (px; its handle, its knot, the goods shown on it), or null for its stacking height. */
+        val tops: FloatArray? = null,
+        /**
+         * The canvas's front edge when it is over (px): with it a piece lifts the canvas only once the canvas is laid over that piece's back edge,
+         * [reach] px toward the tail from its place (folded, the canvas covers the tail strip, back from [folds]' first hinge); null: every piece does.
+         */
+        val front: Float? = null,
+        val reach: Float = 0f,
     )
 
     /**
-     * THE ONE CALL (stream X2): the dressing drawn from X2's `PlayerCartMesh` (the handcart's model with the pennant on its pole and the canvas as a second
-     * part that folds in three steps), or null while that table has not landed on main. With null the stand-in below is drawn: the carters' handcart with
-     * a pole, a pennant of white wool tinted with the cart's colour and a canvas of four plain strips. When it lands this is the one line to change, to
-     * `Table(PlayerCartMesh::dressing, Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "textures/entity/cart/player_cart.png"), -1, -1, <its canvas top>,
-     * <its hinges>, <its ripples>)`.
+     * THE ONE CALL (stream X2): the dressing drawn from X2's [PlayerCartMesh] (the handcart's model in the Chapman's livery, the pennant on its pole and
+     * the canvas as a second part that folds in three steps, its wet look for rain), or null for the stand-in below: the carters' handcart with a pole, a
+     * pennant of white wool tinted with the cart's colour and a canvas of four plain strips.
      */
-    fun table(): Table? = null
+    fun table(): Table? = x2
+
+    private val x2: Table by lazy {
+        val texture = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, PlayerCartMesh.TEXTURE)
+        Table(
+            PlayerCartMesh::dressing, texture, -1, -1, PlayerCartMesh.CANVAS_TOP, hinges(PlayerCartMesh.FOLDS), hinges(PlayerCartMesh.RIPPLES),
+            body = texture,
+            wet = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, PlayerCartMesh.WET),
+            lift = PlayerCartMesh.CANVAS_LIFT,
+            tops = PlayerCartMesh.TOPS,
+            front = PlayerCartMesh.CANVAS_FRONT,
+            reach = PlayerCartMesh.PIECE_REACH,
+        )
+    }
+
+    /** (a, b) pairs as hinges. */
+    private fun hinges(pairs: FloatArray): List<Hinge> = (0 until pairs.size / 2).map { Hinge(pairs[2 * it], pairs[2 * it + 1]) }
 
     /** The dressing in use: X2's, or the stand-in. */
     fun active(): Table = table() ?: STAND_IN

@@ -15,6 +15,9 @@ class PlayerCartRenderState : HandcartRenderState() {
     var wind = 0f
     var flutter = 0f
 
+    /** 0 dry to 1 beaded with rain: how much of the canvas's wet look is drawn over it. */
+    var wet = 0f
+
     /** Degrees the load rocks sideways (roll) and fore and aft (pitch) about the middle of the bed. */
     var swayRoll = 0f
     var swayPitch = 0f

@@ -11,6 +11,8 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider
 import net.minecraft.client.renderer.rendertype.RenderType
 import net.minecraft.client.renderer.rendertype.RenderTypes
 import net.minecraft.client.renderer.texture.OverlayTexture
+import net.minecraft.resources.Identifier
+import net.minecraft.util.ARGB
 import net.minecraft.util.Mth
 import net.minecraft.world.phys.Vec3
 import kotlin.math.hypot
@@ -23,7 +25,8 @@ import kotlin.math.sin
  * the puller's hands, all [HandcartRenderer]'s) with what is a trader's own on it:
  * - **A pennant** in the colour the cart was bought in, on a short pole at the rear, rippling more the faster it goes ([PlayerCartArt]).
  * - **The canvas**, in four strips, over the load: it folds back onto the tail one strip at a time (the front one first) and unfolds the other way, lifted
- *   to clear what is under it.
+ *   to clear what is under it; beaded and darkened as rain falls on it, drying off after ([PlayerCartRenderState.wet]).
+ * - **The cart in its livery** where the dressing has one ([PlayerCartArt.Table.body]).
  * - **The load rocks** on rough ground and as the cart turns or starts, and the cart **tips onto its shafts** with a small bounce when it is set down
  *   (both worked out by [PlayerCartClient] each tick; the cart's own lean is the handcart's).
  * - **The owner's own client puts the cart where their hands say** ([getRenderOffset]): the server places the cart, and the picture of it arrives a
@@ -34,6 +37,7 @@ class PlayerCartRenderer(context: EntityRendererProvider.Context) : HandcartRend
     private val table = PlayerCartArt.active()
     private val dressing: ModelPart = context.bakeLayer(PlayerCartArt.LAYER)
     private val type: RenderType = RenderTypes.entityCutout(table.texture)
+    private val wetType: RenderType? = table.wet?.let { RenderTypes.entityTranslucent(it) }
     private val pole: ModelPart? = part("pole")
     private val flag: List<ModelPart> = (0 until table.ripples.size).mapNotNull { part("flag_$it") }
     private val canvas: List<ModelPart> = (0..table.folds.size).mapNotNull { part("canvas_$it") }
@@ -42,6 +46,8 @@ class PlayerCartRenderer(context: EntityRendererProvider.Context) : HandcartRend
     private fun part(name: String): ModelPart? = if (dressing.hasChild(name)) dressing.getChild(name) else null
 
     override fun createRenderState(): HandcartRenderState = PlayerCartRenderState()
+
+    override fun texture(state: HandcartRenderState): Identifier = table.body ?: super.texture(state)
 
     override fun extractRenderState(cart: Handcart, state: HandcartRenderState, partialTicks: Float) {
         super.extractRenderState(cart, state, partialTicks)
@@ -53,6 +59,7 @@ class PlayerCartRenderer(context: EntityRendererProvider.Context) : HandcartRend
         s.cover = Mth.lerp(partialTicks, feel.coverO, feel.cover)
         s.wind = Mth.lerp(partialTicks, feel.windO, feel.wind)
         s.flutter = feel.flutter
+        s.wet = Mth.lerp(partialTicks, feel.wetO, feel.wet)
         s.swayRoll = Mth.lerp(partialTicks, feel.swayRO, feel.swayR)
         s.swayPitch = Mth.lerp(partialTicks, feel.swayPO, feel.swayP)
         val lift = CartClient.ease(Mth.lerp(partialTicks, look.liftO, look.lift))
@@ -143,17 +150,40 @@ class PlayerCartRenderer(context: EntityRendererProvider.Context) : HandcartRend
                 poseStack.translate(0f, -hinge.a / 16f, -hinge.b / 16f)
             }
             collector.submitModelPart(strip, poseStack, type, light, OverlayTexture.NO_OVERLAY, null, table.canvasTint, outline)
+            // The wet look over it, as wet as it is, drawn after it on the same faces
+            if (wetType != null && s.wet > WET_SHOWN) {
+                collector.order(1).submitModelPart(strip, poseStack, wetType, light, OverlayTexture.NO_OVERLAY, null, ARGB.white(s.wet), 0)
+            }
         }
         repeat(pushed) { poseStack.popPose() }
         poseStack.popPose()
     }
 
-    /** Where the canvas's top face lies (px, y down): [LIFT] over the highest piece of the load, or over the posts if there is little or none. */
+    /**
+     * Where the canvas's top face lies (px, y down): [PlayerCartArt.Table.lift] over the highest point of the load under it, or over the posts if there
+     * is little or none. With the canvas's front edge known ([PlayerCartArt.Table.front]) a piece counts as the canvas comes over it: fully once the
+     * folded canvas lies over its back edge, otherwise from [LEAD] of the cover before the canvas reaches it, eased over at least [RAMP_MIN], so the folded
+     * canvas rests on what is at the tail and is up before the strip that lands over the heap comes down. Without it every piece counts.
+     */
     private fun clearance(s: PlayerCartRenderState): Float {
         var top = table.canvasTop
+        val front = table.front
+        val tail = table.folds.firstOrNull()?.b
         for (i in 0 until s.pieces) {
-            val height = HandcartMesh.PIECES[s.kind[i]].height * s.size[i]
-            top = min(top, s.py[i] - height - LIFT)
+            val kind = s.kind[i]
+            val height = (table.tops?.getOrNull(kind) ?: HandcartMesh.PIECES[kind].height) * s.size[i]
+            val need = s.py[i] - height - table.lift
+            var w = 1f
+            if (front != null && tail != null && tail > front) {
+                val back = s.pz[i] + table.reach
+                if (back < tail) {
+                    val at = (tail - back) / (tail - front)
+                    val lo = max(0f, at - LEAD)
+                    val hi = max(at, lo + RAMP_MIN)
+                    w = CartClient.ease((s.cover - lo) / (hi - lo))
+                }
+            }
+            top = min(top, Mth.lerp(w, table.canvasTop, need))
         }
         return top
     }
@@ -167,7 +197,11 @@ class PlayerCartRenderer(context: EntityRendererProvider.Context) : HandcartRend
         private const val RIPPLE_LAG = 1.1f
         private const val SLACK = 0.05f
 
-        /** Px the canvas hangs clear over the load's highest piece. */
-        private const val LIFT = 2.4f
+        /** How much of the cover before the canvas reaches a piece it begins to lift for it, and the least of the cover it takes to (see [clearance]). */
+        private const val LEAD = 1f / 6f
+        private const val RAMP_MIN = 0.1f
+
+        /** How wet the canvas must be for its wet look to be drawn at all. */
+        private const val WET_SHOWN = 0.004f
     }
 }

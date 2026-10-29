@@ -133,7 +133,7 @@ open class HandcartRenderer(context: EntityRendererProvider.Context) : EntityRen
             poseStack.translate(-HandcartModel.PIVOT_X, -HandcartModel.PIVOT_Y, 0.0)
         }
         poseStack.scale(-1f, -1f, 1f)
-        collector.submitModel(model, state, poseStack, TEXTURE, state.lightCoords, OverlayTexture.NO_OVERLAY, state.outlineColor)
+        collector.submitModel(model, state, poseStack, texture(state), state.lightCoords, OverlayTexture.NO_OVERLAY, state.outlineColor)
         poseStack.pushPose()
         shake(state, poseStack)
         for (i in 0 until state.pieces) {
@@ -194,6 +194,9 @@ open class HandcartRenderer(context: EntityRendererProvider.Context) : EntityRen
         if (was[0] <= 0f && want <= 0f) mending.remove(cart)
         return was[0]
     }
+
+    /** The texture the cart itself (not its load) is drawn with: the carters' own; the Chapman's Cart has its livery (PlayerCartArt). */
+    protected open fun texture(state: HandcartRenderState): Identifier = TEXTURE
 
     /** Moves the load before it is drawn, in the cart's own space (px, y down): nothing for a carter's cart; the Chapman's Cart's load rocks. */
     protected open fun shake(state: HandcartRenderState, poseStack: PoseStack) {}

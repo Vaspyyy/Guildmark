@@ -41,6 +41,7 @@ import net.neoforged.neoforge.common.NeoForge
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.hypot
+import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
 
@@ -112,6 +113,11 @@ object PlayerCartClient {
         var windO = 0f
         var flutter = 0.1f
 
+        /** 0 dry to 1 beaded with rain: how wet the canvas is, and last tick's; and whether rain fell on it at the last look. */
+        var wet = 0f
+        var wetO = 0f
+        var rained = false
+
         /** Blocks a second last tick, and its vertical step. */
         var speed = 0.0
         var rise = 0.0
@@ -182,6 +188,7 @@ object PlayerCartClient {
         f.flutter += (0.1f + min(speed / 3.7, 1.0).toFloat() * 0.45f - f.flutter) * 0.15f
 
         creak(cart, look, f, speed)
+        wetness(cart, f, first)
         rain(cart, f)
     }
 
@@ -248,6 +255,24 @@ object PlayerCartClient {
         }
 
         fun end() = stop()
+    }
+
+    /**
+     * How wet the canvas is: it beads up over [WET_TICKS] while rain falls on the cart (looked at every [RAIN_LOOK] ticks: raining in the world and on
+     * the cart's own spot, so not under a roof or in a dry land) and dries over [DRY_TICKS] once it stops. A cart first seen in the rain is wet already.
+     */
+    private fun wetness(cart: PlayerCart, f: Feel, first: Boolean) {
+        f.wetO = f.wet
+        if (first || cart.tickCount % RAIN_LOOK == 0) {
+            val level = cart.level()
+            f.rained = level.isRaining && level.isRainingAt(cart.blockPosition().above(2))
+        }
+        f.wet = when {
+            first -> if (f.rained) 1f else 0f
+            f.rained -> min(1f, f.wet + 1f / WET_TICKS)
+            else -> max(0f, f.wet - 1f / DRY_TICKS)
+        }
+        if (first) f.wetO = f.wet
     }
 
     /** Beads of rain on a canvas that is over the load: a splash now and then, where it is raining on it. */
@@ -380,6 +405,11 @@ object PlayerCartClient {
     private const val CREAK_QUIET = 0.35f
     private const val CREAK_LOUD = 0.8f
     private const val CREAK_LINGER = 40
+
+    /** The canvas's wet look: ticks it takes to bead up in the rain and to dry after, and how often the rain on it is looked at. */
+    private const val WET_TICKS = 60f
+    private const val DRY_TICKS = 1200f
+    private const val RAIN_LOOK = 10
 
     /** Rain: one tick in this many a bead, and how far above its position the canvas is (blocks). */
     private const val RAIN_ONE_IN = 12
