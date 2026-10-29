@@ -332,6 +332,15 @@ class WagonRenderer(context: EntityRendererProvider.Context) : EntityRenderer<Wa
                 s.strapTo[i * 2 + 1].set(touch.x + fx * LAID_LENGTH + rx * side * LAID_IN, ROAD_Y, touch.z + fz * LAID_LENGTH + rz * side * LAID_IN)
             }
             s.straps = 4
+            if (w.has(Wagon.FLAG_TRACE_UP)) {
+                // The right one's end in the hand of whoever hooks it on: from its hook up to where HITCH's trace_end takes it on to the hand
+                s.strapTo[0].set(DRAWN_UP)
+                s.strapFrom[1].set(s.strapFrom[2])
+                s.strapTo[1].set(s.strapTo[2])
+                s.strapFrom[2].set(s.strapFrom[3])
+                s.strapTo[2].set(s.strapTo[3])
+                s.straps = 3
+            }
         }
         val down = smooth(Mth.lerp(partial, look.downO, look.down))
         s.shafts = Mth.lerp(down, look.follow, SHAFTS_DOWN)
@@ -569,6 +578,16 @@ class WagonRenderer(context: EntityRendererProvider.Context) : EntityRenderer<Wa
         private const val LAID_IN = 3.5f
         private const val ROAD_Y = -0.35f
         private val SIDES = floatArrayOf(-1f, 1f)
+
+        /**
+         * The right trace's end drawn up to be hooked on ([Wagon.FLAG_TRACE_UP]): 12 px back from the hame hook of a horse standing
+         * straight in the shafts, along the line the hooked trace runs to its swingletree hook (trade_clips.py's HT_ANCHOR, where the
+         * HITCH clip's trace_end is rooted).
+         */
+        private val DRAWN_UP: Vector3f = run {
+            val hame = Vector3f(-WagonMesh.HAMES[0], -WagonMesh.HAMES[1], WagonMesh.HAMES[2] - WagonMesh.WHEELBASE - WagonMesh.HORSE_AHEAD)
+            Vector3f(-WagonMesh.SWINGLE_HALF, WagonMesh.SWINGLE[1], WagonMesh.SWINGLE[2]).sub(hame).normalize().mul(12f).add(hame)
+        }
 
         /** A strap's own length (WagonMesh.straps(): 16 px along +y). */
         private const val STRAP_LENGTH = 16f

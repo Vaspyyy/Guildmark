@@ -668,6 +668,7 @@ internal object WagonBill {
                 // Beside its shoulder on its right, facing it
                 put(sh, p, Vec3(h.x - fz * 1.0 + fx * 0.3, h.y, h.z + fx * 1.0 + fz * 0.3), Mth.wrapDegrees(h.yRot - 90f))
             }
+            if (age == TRACE_UP_AT && !hitched && !w.isRemoved) w.flag(Wagon.FLAG_TRACE_UP, true)
             if (age == HITCH_AT) harness(sh)
             if (age >= HITCH_TICKS) next(Stage.DONE)
         }
@@ -676,6 +677,7 @@ internal object WagonBill {
         private fun harness(sh: LedShow.Shown) {
             if (hitched) return
             val w = sh.wagon
+            if (!w.isRemoved) w.flag(Wagon.FLAG_TRACE_UP, false)
             val h = sh.horse ?: return
             hitched = true
             if (!w.isRemoved && !h.isRemoved) {
@@ -828,4 +830,7 @@ internal object WagonBill {
     private const val HITCH_AT = 25
     private const val LEAVE_TICKS = 110
     private const val SAMPLES = 16
+
+    /** The hitch's tick the right trace is taken up in the hand (HITCH's grab, twelve before its clip at [HITCH_AT]): the wagon draws it drawn up from then. */
+    private const val TRACE_UP_AT = 13
 }

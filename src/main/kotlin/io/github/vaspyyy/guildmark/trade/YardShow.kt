@@ -105,9 +105,13 @@ object YardShow {
     private const val BASKETS = 4
     private const val PER_BASKET = 4
 
-    /** Ticks: the horse led round and backed into the shafts; into the HITCH clip that the traces are clipped (its `clip`, the hook on the hame). */
+    /**
+     * Ticks: the horse led round and backed into the shafts; into the HITCH clip that the right trace is taken up in the hand (its `grab`:
+     * the wagon draws it drawn up to the horse's shoulder from then, [Wagon.FLAG_TRACE_UP]) and that the traces are clipped (its `clip`).
+     */
     private const val LEAD = 30
     private const val BACK = 30
+    private const val TRACE_UP = 13
     private const val CLIPPED = 25
 
     /** Where a loader stands to heave a basket onto the let-down tailboard (LOAD_PACK's spot): on the wagon's middle line, this many px behind its back axle. */
@@ -732,6 +736,7 @@ object YardShow {
                         // Held at its shoulder, square to it, as the horse stands (as the Bill's yard hand is)
                         val at = shoulder()
                         StoreLife.Stand.put(p, at.x, at.z, atShoulder())
+                        if (t == TRACE_UP && !hitched) wagon.flag(Wagon.FLAG_TRACE_UP, true)
                         if (t == CLIPPED) harness()
                         return t < Activity.HITCH.ticks
                     }
@@ -753,6 +758,7 @@ object YardShow {
             hitched = true
             wagon.horse(horse)
             horse.wagon(wagon)
+            wagon.flag(Wagon.FLAG_TRACE_UP, false)
             horse.flag(DraughtHorse.FLAG_NOSEBAG, false)
             horse.flag(DraughtHorse.FLAG_REINS_TIED, true)
             horse.move(DraughtHorse.Move.IDLE)

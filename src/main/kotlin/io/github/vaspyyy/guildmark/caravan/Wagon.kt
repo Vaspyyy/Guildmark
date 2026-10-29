@@ -282,6 +282,9 @@ class Wagon(type: EntityType<out Wagon>, level: Level) : Entity(type, level) {
         const val FLAG_MIRROR = 16
         const val FLAG_NOSEBAG = 32
 
+        /** Its right trace's end is in a hand at the horse's shoulder, drawn up to be hooked on (HITCH, from its grab to its clip): drawn so, not lying on the road. */
+        const val FLAG_TRACE_UP = 64
+
         /** The arrows in its boards are flag bits from here, six of them. */
         const val ARROWS = 8
 
