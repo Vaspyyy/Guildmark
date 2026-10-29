@@ -1,0 +1,22 @@
+{
+  "festival.guildmark.harvest_table": "Harvest Table",
+  "festival.guildmark.harvest_table.inn_cook": "the inn's cook",
+  "festival.guildmark.harvest_table.baker": "the baker",
+  "message.guildmark.festival.hint.sheafmoot_cook": "Or show me a dish you cooked yourself, fresh, for the Harvest Table: your three best kinds count, and a cook who beats the inn's and the bakery's wins the Gilded Ladle.",
+  "message.guildmark.festival.hint.sheafmoot_cook_leading": "At the Harvest Table you lead with %s.",
+  "message.guildmark.festival.hint.sheafmoot_cook_standing": "At the Harvest Table you have %s so far, and %s leads with %s.",
+  "message.guildmark.feast.off": "I only look at the harvest.",
+  "message.guildmark.feast.not_dish": "That's not a dish for the table.",
+  "message.guildmark.feast.not_yours": "I can only judge what you cooked yourself.",
+  "message.guildmark.feast.stale": "This %s is past its best. I can only judge a dish while it's fresh.",
+  "message.guildmark.feast.gone": "This %s has gone off! Bring me a fresh one.",
+  "message.guildmark.feast.seen": "I've marked your %s already, at %s points. Bring a better one to do better.",
+  "message.guildmark.feast.judged": "Your %1$s: %2$s points (%3$s). At the Harvest Table you stand at %4$s (%5$s of %6$s kinds count).",
+  "message.guildmark.feast.working": "%s %s × %s %s",
+  "message.guildmark.feast.working.autumn": "%s %s × %s %s × autumn 1.2",
+  "message.guildmark.feast.plate": "%s: %s, %s points",
+  "message.guildmark.feast.next": "Yours next, once I've finished with this one.",
+  "message.guildmark.feast.town_only": "No visiting cook brought a dish this year, so the Harvest Table stays in town: well done, %s, with %s!",
+  "message.guildmark.feast.town_won": "So it stays in town, with %s! Nobody takes the Gilded Ladle home this year.",
+  "commands.guildmark.festival.info.cook": "%s: %s"
+}
