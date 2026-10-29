@@ -27,7 +27,7 @@ object Templates {
         io.github.vaspyyy.guildmark.tales.templates.Lantern, // 9  lantern   size 1  T2
         io.github.vaspyyy.guildmark.tales.templates.Informer, // 10 informer  size 3  T3
         io.github.vaspyyy.guildmark.tales.templates.Locket, // 11 locket    size 2  T1
-        // Brother,   // 12 brother   size 3  T5
+        io.github.vaspyyy.guildmark.tales.templates.Brother, // 12 brother   size 3  T5
     )
 
     /** The built template with this id, or null (not one of the twelve, or not built yet). */
