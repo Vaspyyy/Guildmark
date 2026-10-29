@@ -3,7 +3,11 @@ package io.github.vaspyyy.guildmark.village.live.trouble
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.GuildmarkConfig
 import io.github.vaspyyy.guildmark.block.VillageBoards
+import io.github.vaspyyy.guildmark.homestead.BuilderCrew
+import io.github.vaspyyy.guildmark.townsfolk.Activity
 import io.github.vaspyyy.guildmark.townsfolk.Days
+import io.github.vaspyyy.guildmark.townsfolk.Director
+import io.github.vaspyyy.guildmark.townsfolk.Lamplighter
 import io.github.vaspyyy.guildmark.townsfolk.Resident
 import io.github.vaspyyy.guildmark.townsfolk.Residents
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
@@ -14,6 +18,7 @@ import io.github.vaspyyy.guildmark.village.live.Live
 import io.github.vaspyyy.guildmark.village.live.VillageInfoCommand
 import io.github.vaspyyy.guildmark.village.live.VillageRec
 import io.github.vaspyyy.guildmark.village.live.Villages
+import io.github.vaspyyy.guildmark.village.live.links.Greeter
 import io.github.vaspyyy.guildmark.village.live.talk.VillageCry
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
@@ -75,6 +80,7 @@ object Trouble {
     fun register() {
         NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { tick(it.server) }
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> forget() }
+        Memorial.register()
         VillageInfoCommand.section(VillageInfoCommand.Section { level, rec -> Deaths.lines(level, rec) })
     }
 
@@ -82,6 +88,7 @@ object Trouble {
         Shelter.forget()
         SiegeHorde.forget()
         RaidWatch.forget()
+        Memorial.forget()
         bells.clear()
         logs.clear()
         looked = 0L
@@ -94,6 +101,7 @@ object Trouble {
         if (!on()) {
             // Turned off: whoever is sheltering comes out now
             if (Shelter.any()) Shelter.endAll(level)
+            if (Memorial.any()) Memorial.endAll()
             return
         }
         guarded("the shelter") { Shelter.tick(level) }
@@ -105,6 +113,7 @@ object Trouble {
         val day = VillageBoards.day(level)
         for (rec in Villages.awake(level)) {
             guarded("the day of ${rec.name}") { if (TroubleData.peek(level)?.peek(rec.key)?.day != day) daily(level, rec, day) }
+            guarded("the memorial of ${rec.name}") { Memorial.look(level, rec, day) }
         }
     }
 
@@ -123,6 +132,7 @@ object Trouble {
      */
     internal fun daily(level: ServerLevel, rec: VillageRec, day: Long) {
         RaidWatch.daily(level, rec, day)
+        Memorial.daily(level, rec, day)
         val kept = TroubleData.peek(level)?.peek(rec.key) ?: return
         kept.day = day
         TroubleData.get(level).setDirty()
@@ -193,6 +203,38 @@ object Trouble {
     fun folkOf(level: ServerLevel, p: Townsperson, key: Long): Boolean {
         if (p.resident >= 0) return residentOf(level, p, key) != null
         return p.town?.center?.asLong() == key
+    }
+
+    /**
+     * Whether [p] can be lent to one of trouble's scenes that is not the shelter (the candle, the mend, the wall): about and well, not a
+     * captive, a faction's own, a tale's, a passenger or in a festival's crowd, and under no director but a lamplighter's, a greeter's or
+     * a builder's (who are let go: [borrow]).
+     */
+    internal fun free(p: Townsperson): Boolean {
+        if (!p.isAlive || p.isRemoved || p.captiveOf >= 0 || p.isLeader || p.isPassenger || p.tale >= 0 || p.crowd || p.watcher || p.hurtTime > 0) return false
+        val d = p.director
+        return d == null || d is Lamplighter || d is Greeter || d is BuilderCrew.Builder
+    }
+
+    /** [p] off their day for one of trouble's scenes: the greeter or the builder they were let go, awake, on their feet. */
+    internal fun borrow(p: Townsperson) {
+        when (val d = p.director) {
+            is Greeter -> d.release()
+            is BuilderCrew.Builder -> d.handBack()
+            else -> {}
+        }
+        if (p.isSleeping) p.stopSleeping()
+        p.standUp()
+        p.routine.interrupt()
+        p.navigation.stop()
+    }
+
+    /** [p] back to their day after one of trouble's scenes, if [d] still has them. */
+    internal fun giveBack(p: Townsperson, d: Director) {
+        if (p.director === d) p.director = null
+        p.act(Activity.NONE)
+        p.navigation.stop()
+        p.routine.interrupt()
     }
 
     /** The hour on the villages' clock (0 at midnight, with its fraction). */
