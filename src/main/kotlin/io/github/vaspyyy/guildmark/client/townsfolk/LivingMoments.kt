@@ -97,6 +97,9 @@ internal object LivingMoments {
     }
 
     /** Whether [tick] (or a lap of it) lies in (from, to]. */
+    /** Whether [p] is a village's pedlar: a merchant in one of the looks kept for pedlars (TownRole's reserved ones). */
+    private fun pedlar(p: Townsperson): Boolean = p.role == TownRole.MERCHANT && p.look >= TownRole.MERCHANT.common
+
     private fun passed(tick: Float, from: Float, to: Float, length: Float): Boolean =
         tick > from && tick <= to || tick + length > from && tick + length <= to
 
@@ -110,8 +113,9 @@ internal object LivingMoments {
     private fun fire(p: Townsperson, clip: String, m: LivingSchedule.Moment) {
         val level = p.level()
         val at = at(p, m)
-        // A works' master builder's handbell is the server's (works.handbell): no crier's bell on top of it
-        if (clip == "ring_bell" && WorksClient.master(p)) return
+        // A works' master builder's handbell is the server's (works.handbell), and so is a village pedlar's (village.pedlar_bell):
+        // no crier's bell on top of either
+        if (clip == "ring_bell" && (WorksClient.master(p) || pedlar(p))) return
         when (clip) {
             "sit_down" -> if (m.name == "down") sound(level, at, mod("seat"), 0.45f)
             "stand_up" -> if (m.name == "up") sound(level, at, mod("seat"), 0.3f, 1.1f)

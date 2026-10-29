@@ -9,6 +9,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Jobs
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import io.github.vaspyyy.guildmark.townsfolk.Trades
 import io.github.vaspyyy.guildmark.townsfolk.Walker
+import io.github.vaspyyy.guildmark.village.live.VillageSounds
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
@@ -192,6 +193,8 @@ class Pedlar(
                 Pedlars.openStall(level, bell, p)
                 faceBed(p)
                 p.act(Activity.RING_BELL)
+                // The pedlar's own small brass bell, from the server for everyone near (the client rings no crier's bell for them)
+                VillageSounds.play(level, p.position(), VillageSounds.PEDLAR_BELL)
                 p.say("pedlar_arrive", force = true, hearing = SPEAK, ticks = 70)
                 wait = 2 * Activity.RING_BELL.ticks + 10
                 stage = Stage.UNPACK
