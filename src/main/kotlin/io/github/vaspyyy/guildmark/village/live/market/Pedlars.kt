@@ -20,6 +20,7 @@ import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import io.github.vaspyyy.guildmark.townsfolk.Townsfolk
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import io.github.vaspyyy.guildmark.village.live.Live
+import io.github.vaspyyy.guildmark.village.live.VillagePerf
 import io.github.vaspyyy.guildmark.village.live.VillagePlaces
 import io.github.vaspyyy.guildmark.village.live.VillageRec
 import io.github.vaspyyy.guildmark.village.live.Villages
@@ -96,7 +97,7 @@ object Pedlars {
     private const val VIEW = 0.35
 
     fun register() {
-        NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { tick(it.server) }
+        NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { VillagePerf.timed(VillagePerf.Piece.PEDLARS) { tick(it.server) } }
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ ->
             bodies.clear()
             cooling.clear()

@@ -17,6 +17,7 @@ import io.github.vaspyyy.guildmark.townsfolk.talk.TalkLines
 import io.github.vaspyyy.guildmark.townsfolk.talk.sources.Say
 import io.github.vaspyyy.guildmark.village.live.Live
 import io.github.vaspyyy.guildmark.village.live.VillageInfoCommand
+import io.github.vaspyyy.guildmark.village.live.VillagePerf
 import io.github.vaspyyy.guildmark.village.live.VillageRec
 import io.github.vaspyyy.guildmark.village.live.Villages
 import io.github.vaspyyy.guildmark.village.live.links.Greeter
@@ -79,7 +80,7 @@ object Trouble {
 
     /** At setup (from [Villages.register]): the tick, the lines for `village info`. */
     fun register() {
-        NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { tick(it.server) }
+        NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { VillagePerf.timed(VillagePerf.Piece.TROUBLE) { tick(it.server) } }
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> forget() }
         Memorial.register()
         VillageTroubleCommand.init()

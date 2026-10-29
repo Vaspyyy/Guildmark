@@ -69,7 +69,7 @@ object VillageVisits {
     private val crowed = HashMap<Long, Long>()
 
     fun register() {
-        NeoForge.EVENT_BUS.addListener(PlayerTickEvent.Post::class.java) { event -> (event.entity as? ServerPlayer)?.let(::tick) }
+        NeoForge.EVENT_BUS.addListener(PlayerTickEvent.Post::class.java) { event -> (event.entity as? ServerPlayer)?.let { VillagePerf.timed(VillagePerf.Piece.VISITS) { tick(it) } } }
         // A new world on the player's side, or a new player entity, starts from nothing told
         NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerLoggedOutEvent::class.java) { visits.remove(it.entity.uuid) }
         NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerChangedDimensionEvent::class.java) { visits.remove(it.entity.uuid) }

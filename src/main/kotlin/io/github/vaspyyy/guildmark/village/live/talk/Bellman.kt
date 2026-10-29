@@ -14,6 +14,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Task
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import io.github.vaspyyy.guildmark.townsfolk.Trades
 import io.github.vaspyyy.guildmark.townsfolk.talk.TalkLines
+import io.github.vaspyyy.guildmark.village.live.VillagePerf
 import io.github.vaspyyy.guildmark.village.live.VillagePlaces
 import io.github.vaspyyy.guildmark.village.live.VillageRec
 import io.github.vaspyyy.guildmark.village.live.Villages
@@ -67,7 +68,7 @@ object Bellman {
         if (started) return
         started = true
         VillageCryCommand.init()
-        NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { tick(it.server) }
+        NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { VillagePerf.timed(VillagePerf.Piece.BELLMAN) { tick(it.server) } }
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> forget() }
     }
 

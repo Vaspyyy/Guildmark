@@ -7,8 +7,13 @@ import net.minecraft.server.level.ServerLevel
  * design.md section 13.5): the hour steps the capitals' run leaves, the columns the census may read, whether one more
  * villager may be taken in, and whether a unit of work of so many microseconds fits. The numbers are worked out afresh at
  * the start of every server tick ([begin]), and the work that spends them says what it spent ([spent], [usedColumns],
- * [usedSteps]); work that doesn't fit waits for the next tick and nothing is dropped. Part V1 gives it enough for the census
- * and part V11 completes it.
+ * [usedSteps]); work that doesn't fit waits for the next tick and nothing is dropped. Part V1 gave it enough for the census
+ * and part V11 completed it: every loop that works for the villages takes from it in one line, the census (V1's columns and
+ * share), the adoption (V2's tickets and its slow units), the market's hour (V4's steps, each one only if a step still fits) and
+ * the rest through [VillagePerf.timed], which charges each loop what it took, so that what is left is what the tick has left.
+ *
+ * What it put off and its worst tick are shown by `village perf` with the rest of [VillagePerf]'s figures, and are forgotten with
+ * them by `village perf reset` ([clearReadout]) and when the server stops ([forget]).
  */
 object VillageBudget {
     /** All the villages may spend in a tick: 1.5 milliseconds (design section 13.5, rule 2). */
@@ -24,9 +29,16 @@ object VillageBudget {
     const val COLUMNS = 1000
 
     /** Adoption (design section 13.2): two a second for a village, eight a second in all. */
-    private const val ADOPT_WINDOW = 20L
-    private const val ADOPT_VILLAGE = 2
-    private const val ADOPT_ALL = 8
+    const val ADOPT_WINDOW = 20L
+    const val ADOPT_VILLAGE = 2
+    const val ADOPT_ALL = 8
+
+    /**
+     * What one of the market's hour steps is reckoned to cost before it runs (design section 13.2: 0.1 to 0.25 ms, the most of
+     * that): a step is taken only while this much of the tick is left, so a run of twelve stays inside the 1.5 ms and the steps
+     * a slow tick could not take are the next run's.
+     */
+    const val STEP_MICROS = 250
 
     private var nanos = TICK_NANOS
     private var steps = STEPS
@@ -45,8 +57,17 @@ object VillageBudget {
     var putOff = 0L
         private set
 
+    /** Adoption tickets taken (each the start of one swap; since the world opened, [clearReadout] or [forget]). */
+    var tickets = 0L
+        private set
+
+    /** Hour steps not taken because the tick had no room left for one (they wait for the next run). */
+    var stepsPutOff = 0L
+        private set
+
     /** A tick begins for the villages: the numbers it may spend are worked out afresh. */
     fun begin(level: ServerLevel) {
+        VillagePerf.roll(level.gameTime)
         if (tickSpent > worstTickNanos) worstTickNanos = tickSpent
         tickSpent = 0L
         nanos = TICK_NANOS
@@ -69,6 +90,19 @@ object VillageBudget {
         steps = maxOf(0, steps - n)
     }
 
+    /**
+     * Whether one more hour step may be taken now: a step left of the twelve and room in the tick for one ([STEP_MICROS]). The
+     * first step of a tick always has the room (the market's run comes before any other village work in the tick), so a run
+     * always gets somewhere.
+     */
+    fun stepFits(): Boolean {
+        if (steps <= 0) return false
+        if (nanos >= STEP_MICROS * 1000L) return true
+        stepsPutOff++
+        putOff++
+        return false
+    }
+
     /** The columns of the world the census may still read this tick. */
     fun columns(): Int = columns
 
@@ -87,6 +121,7 @@ object VillageBudget {
             return false
         }
         adopted++
+        tickets++
         adoptedBy[key] = (adoptedBy[key] ?: 0) + 1
         return true
     }
@@ -107,6 +142,20 @@ object VillageBudget {
         tickSpent += used
     }
 
+    /** What has been charged this tick so far (for [VillagePerf.timed], which charges a loop only what it did not charge itself). */
+    fun spentThisTick(): Long = tickSpent
+
+    /** The nanoseconds left this tick. */
+    fun left(): Long = nanos
+
+    /** Forgets what is shown (`village perf reset`): the worst tick, the units put off and the tickets; the tick's own numbers stay. */
+    fun clearReadout() {
+        worstTickNanos = 0L
+        putOff = 0L
+        tickets = 0L
+        stepsPutOff = 0L
+    }
+
     /** Forgets what was counted and spent (when the server stops). */
     fun forget() {
         nanos = TICK_NANOS
@@ -116,7 +165,7 @@ object VillageBudget {
         adopted = 0
         adoptedBy.clear()
         tickSpent = 0L
-        worstTickNanos = 0L
-        putOff = 0L
+        clearReadout()
+        VillagePerf.reset()
     }
 }

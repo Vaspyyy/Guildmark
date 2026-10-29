@@ -72,7 +72,7 @@ internal object VillageTick {
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, false, ServerTickEvent.Pre::class.java) {
             if (Villages.enabled()) VillageBudget.begin(it.server.overworld())
         }
-        NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { post(it.server) }
+        NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { VillagePerf.timed(VillagePerf.Piece.REGISTRY) { post(it.server) } }
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> forget() }
     }
 

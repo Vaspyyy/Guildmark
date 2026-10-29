@@ -59,7 +59,7 @@ object VillageDressing {
 
     /** At setup: the village's dressing looked at, its command and its line of `village info`. */
     fun init() {
-        NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { tick(it.server) }
+        NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { VillagePerf.timed(VillagePerf.Piece.DRESSING) { tick(it.server) } }
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> forget() }
         VillageDressCommand.init()
     }

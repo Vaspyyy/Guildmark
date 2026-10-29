@@ -8,6 +8,7 @@ import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
 import io.github.vaspyyy.guildmark.townsfolk.Director
 import io.github.vaspyyy.guildmark.townsfolk.Furnish
 import io.github.vaspyyy.guildmark.village.live.VillageLamps
+import io.github.vaspyyy.guildmark.village.live.VillagePerf
 import io.github.vaspyyy.guildmark.village.live.VillageRec
 import io.github.vaspyyy.guildmark.village.live.Villages
 import net.minecraft.core.BlockPos
@@ -237,7 +238,7 @@ object StreetLamps {
             scan(level, time)
             scanVillages(level, time)
         }
-        for (town in towns.values.toList()) pass(level, town, time)
+        for (town in towns.values.toList()) if (town.isVillage) VillagePerf.timed(VillagePerf.Piece.LAMPS) { pass(level, town, time) } else pass(level, town, time)
     }
 
     /** Finds the capitals within [PROBE] blocks of a player and keeps them; lets go of those no player has been near a while. */

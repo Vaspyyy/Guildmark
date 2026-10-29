@@ -7,6 +7,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import io.github.vaspyyy.guildmark.townsfolk.talk.Talking
 import io.github.vaspyyy.guildmark.village.Standing
 import io.github.vaspyyy.guildmark.village.StandingTier
+import io.github.vaspyyy.guildmark.village.live.VillagePerf
 import io.github.vaspyyy.guildmark.village.live.Villages
 import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
@@ -40,7 +41,7 @@ object OldWares {
     private val sessions = HashMap<Int, Session>()
 
     fun register() {
-        NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { tick(it.server) }
+        NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { VillagePerf.timed(VillagePerf.Piece.WARES) { tick(it.server) } }
         NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerLoggedOutEvent::class.java) { gone(it.entity.uuid) }
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> sessions.clear() }
     }

@@ -11,6 +11,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Days
 import io.github.vaspyyy.guildmark.village.Festivals
 import io.github.vaspyyy.guildmark.village.live.Live
 import io.github.vaspyyy.guildmark.village.live.VillageBudget
+import io.github.vaspyyy.guildmark.village.live.VillagePerf
 import io.github.vaspyyy.guildmark.village.live.VillagePlaces
 import io.github.vaspyyy.guildmark.village.live.VillageRec
 import io.github.vaspyyy.guildmark.village.live.Villages
@@ -304,7 +305,9 @@ class VillageMarkets(private val records: MutableMap<Long, Rec> = HashMap()) : S
          * Once in a while (each 100 ticks, from [Markets]): the markets of the villages awake with a census are opened, and counted
          * again when it is time.
          */
-        fun look(level: ServerLevel) {
+        fun look(level: ServerLevel) = VillagePerf.timed(VillagePerf.Piece.MARKETS) { lookNow(level) }
+
+        private fun lookNow(level: ServerLevel) {
             if (!enabled()) return
             for (rec in Villages.all(level)) {
                 if (rec.state != Live.LIVE) continue
@@ -329,7 +332,9 @@ class VillageMarkets(private val records: MutableMap<Long, Rec> = HashMap()) : S
          * left) and what the villages' own budget allows; answers the steps left. A village's hours it cannot reach this run wait
          * for the next, as a capital's do, and an absence longer than [Markets.CATCH_UP] hours is caught up that far.
          */
-        fun run(level: ServerLevel, steps: Int): Int {
+        fun run(level: ServerLevel, steps: Int): Int = VillagePerf.timed(VillagePerf.Piece.HOURS) { runNow(level, steps) }
+
+        private fun runNow(level: ServerLevel, steps: Int): Int {
             if (!enabled() || steps <= 0) return steps
             val data = get(level)
             if (data.records.isEmpty()) return steps
@@ -344,9 +349,9 @@ class VillageMarkets(private val records: MutableMap<Long, Rec> = HashMap()) : S
                     continue
                 }
                 if (now - m.hour > Markets.CATCH_UP) m.hour = now - Markets.CATCH_UP
-                while (m.hour < now && left > 0 && VillageBudget.steps() > 0) {
+                while (m.hour < now && left > 0 && VillageBudget.stepFits()) {
                     try {
-                        step(level, v, m.hour + 1)
+                        VillagePerf.hour { step(level, v, m.hour + 1) }
                     } catch (e: RuntimeException) {
                         // A village whose hour cannot be worked out stands still for the run, not the server
                         Guildmark.LOGGER.warn("The market of the village at {} could not work out an hour", BlockPos.of(rec.key).toShortString(), e)

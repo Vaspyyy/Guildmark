@@ -21,6 +21,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Townsfolk
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import io.github.vaspyyy.guildmark.village.live.Live
 import io.github.vaspyyy.guildmark.village.live.VillageInfoCommand
+import io.github.vaspyyy.guildmark.village.live.VillagePerf
 import io.github.vaspyyy.guildmark.village.live.VillagePlaces
 import io.github.vaspyyy.guildmark.village.live.VillageRec
 import io.github.vaspyyy.guildmark.village.live.Villages
@@ -101,7 +102,7 @@ object VillageGrowth {
 
     /** Once, at setup (from `Villages.register`). */
     fun register() {
-        NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { tick(it.server) }
+        NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { VillagePerf.timed(VillagePerf.Piece.GROWTH) { tick(it.server) } }
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> forget() }
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, false, EntityJoinLevelEvent::class.java) { joined(it) }
         Villages.onDay { level, rec, day -> close(level, rec, day - 1, day) }

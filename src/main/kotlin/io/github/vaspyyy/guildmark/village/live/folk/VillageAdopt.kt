@@ -20,6 +20,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import io.github.vaspyyy.guildmark.village.live.Live
 import io.github.vaspyyy.guildmark.village.live.VillageBudget
 import io.github.vaspyyy.guildmark.village.live.VillageInfoCommand
+import io.github.vaspyyy.guildmark.village.live.VillagePerf
 import io.github.vaspyyy.guildmark.village.live.VillagePlaces
 import io.github.vaspyyy.guildmark.village.live.VillageRec
 import io.github.vaspyyy.guildmark.village.live.Villages
@@ -178,7 +179,7 @@ object VillageAdopt {
 
     /** Called once at setup (from `Villages.register`). */
     fun register() {
-        NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { tick(it.server) }
+        NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { VillagePerf.timed(VillagePerf.Piece.ADOPT) { tick(it.server) } }
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> forget() }
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, false, EntityJoinLevelEvent::class.java) { joined(it) }
         Villages.listen(object : Villages.Listener {

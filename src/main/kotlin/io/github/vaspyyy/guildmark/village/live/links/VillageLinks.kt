@@ -10,6 +10,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Days
 import io.github.vaspyyy.guildmark.village.live.Link
 import io.github.vaspyyy.guildmark.village.live.Live
 import io.github.vaspyyy.guildmark.village.live.VillageData
+import io.github.vaspyyy.guildmark.village.live.VillagePerf
 import io.github.vaspyyy.guildmark.village.live.VillageRec
 import io.github.vaspyyy.guildmark.village.live.Villages
 import net.minecraft.core.BlockPos
@@ -65,7 +66,7 @@ object VillageLinks {
 
     /** At setup (from `Villages.register`): the look (and the scenes at the road ends), the registry's listener, the wagons' listener and the commands. */
     fun register() {
-        NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { tick(it.server.overworld()) }
+        NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { VillagePerf.timed(VillagePerf.Piece.LINKS) { tick(it.server.overworld()) } }
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> forget() }
         Villages.listen(object : Villages.Listener {
             override fun made(level: ServerLevel, rec: VillageRec) {
