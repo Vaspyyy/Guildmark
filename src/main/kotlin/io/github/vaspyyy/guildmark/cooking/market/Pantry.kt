@@ -2,6 +2,7 @@ package io.github.vaspyyy.guildmark.cooking.market
 
 import io.github.vaspyyy.guildmark.cooking.Cooking
 import io.github.vaspyyy.guildmark.cooking.Door
+import io.github.vaspyyy.guildmark.cooking.PerfCommand
 import io.github.vaspyyy.guildmark.cooking.ServedPayload
 import io.github.vaspyyy.guildmark.cooking.Tier
 import io.github.vaspyyy.guildmark.economy.Markets
@@ -214,6 +215,7 @@ object Pantry {
             val seen = told.getOrPut(player.uuid) { HashMap() }
             if (seen[meal.capital] == meal.window) continue
             seen[meal.capital] = meal.window
+            PerfCommand.sent(PerfCommand.Payload.SERVED)
             PacketDistributor.sendToPlayer(player, ServedPayload(meal.capital, meal.window, box, meal.counts, meal.best))
         }
     }

@@ -10,6 +10,7 @@ import io.github.vaspyyy.guildmark.cooking.CookStats
 import io.github.vaspyyy.guildmark.cooking.Cooking
 import io.github.vaspyyy.guildmark.cooking.DishKind
 import io.github.vaspyyy.guildmark.cooking.Door
+import io.github.vaspyyy.guildmark.cooking.PerfCommand
 import io.github.vaspyyy.guildmark.cooking.ServedPayload
 import io.github.vaspyyy.guildmark.cooking.Tier
 import io.github.vaspyyy.guildmark.cooking.market.Pantry
@@ -193,6 +194,7 @@ object ServedCommand {
             val dx = player.x - (centre.x + 0.5)
             val dz = player.z - (centre.z + 0.5)
             if (dx * dx + dz * dz > RANGE * RANGE) continue
+            PerfCommand.sent(PerfCommand.Payload.SERVED)
             PacketDistributor.sendToPlayer(player, ServedPayload(here.key, TEST_WINDOW, here.box, test.counts.copyOf(), test.best.copyOf()))
             told++
         }

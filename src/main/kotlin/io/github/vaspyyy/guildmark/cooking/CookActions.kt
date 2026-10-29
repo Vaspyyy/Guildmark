@@ -79,6 +79,7 @@ object CookActions {
         mine.ticks[mine.next] = now
         mine.next = (mine.next + 1) % PER_SECOND
         sent++
+        PerfCommand.sent(PerfCommand.Payload.ACTION)
         PacketDistributor.sendToPlayersTrackingEntityAndSelf(player, CookActionPayload(player.id, action, pos.immutable(), player.level().gameTime))
     }
 
