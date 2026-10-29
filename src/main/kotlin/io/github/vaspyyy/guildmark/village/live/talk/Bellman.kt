@@ -66,6 +66,7 @@ object Bellman {
     fun register() {
         if (started) return
         started = true
+        VillageCryCommand.init()
         NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { tick(it.server) }
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> forget() }
     }

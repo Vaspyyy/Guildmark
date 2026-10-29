@@ -509,7 +509,7 @@ object VillageCry {
     /** The ids of what the village [key]'s bellman has told, and the day each was. */
     fun toldAt(level: ServerLevel, key: Long): Map<String, Long> = VillageCryData.get(level).peek(key)?.told.orEmpty()
 
-    /** `village cry clear`: what the village [key] has told and cried is forgotten. */
+    /** `village news clear`: what the village [key] has told, and that it cried today, is forgotten. */
     fun forget(level: ServerLevel, key: Long) {
         val data = VillageCryData.get(level)
         val kept = data.peek(key) ?: return
