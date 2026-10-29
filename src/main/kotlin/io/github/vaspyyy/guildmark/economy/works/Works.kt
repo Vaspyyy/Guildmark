@@ -773,11 +773,16 @@ object Works {
 
     // ---- For the commands (WorksCommand) ----
 
-    /** `works propose`: [kind] wanted now in [capital], whatever the need; for [road] (a tower) or [owner] (a stall). */
-    internal fun proposeNow(level: ServerLevel, capital: Long, kind: WorksKind, road: Int, owner: UUID?): WorksRec? {
+    /**
+     * `works propose`: [kind] wanted now in [capital], whatever the need; for [road] (a tower) or [owner] (a stall). [why] is the lang key of
+     * what asked for it: the command's by default (Tales T4: the Bell Moot passes its own, `gui.guildmark.works.why.moot`).
+     */
+    internal fun proposeNow(
+        level: ServerLevel, capital: Long, kind: WorksKind, road: Int, owner: UUID?, why: String = "gui.guildmark.works.why.proposed",
+    ): WorksRec? {
         val data = data(level)
         if (data.find(capital, kind, road, owner) != null) return null
-        return propose(level, data, capital, kind, road, owner, "gui.guildmark.works.why.proposed", today(level, capital))
+        return propose(level, data, capital, kind, road, owner, why, today(level, capital))
     }
 
     /** `works fund`: an op's free pledge of [marks] toward [w] (the rest of its price if null), marked as one: it took no Marks and is never paid back. */
@@ -792,6 +797,25 @@ object Works {
         w.pledges.add(PledgeRec(player.uuid, player.name.string, n, today(level, w.capital), true))
         data.changed()
         pledged(level, data, w, player.uuid, n)
+        return n
+    }
+
+    /** Whose a town's own gift is: no player's (Tales T4). */
+    internal val TOWN: UUID = UUID(0L, 0L)
+
+    /**
+     * Tales T4 (the Bell Moot, living-world/stories/design.md 6.3): the town's own gift of [marks] toward [w], a free pledge under the nil uuid
+     * and the name "the town", which counts toward the price and is never paid back. Once a works: none if the town has given to it already,
+     * or it is paid for. The Marks taken (no more than it still wants), 0 if none.
+     */
+    internal fun fundTown(level: ServerLevel, w: WorksRec, marks: Int): Int {
+        if (w.paid || marks <= 0 || w.pledges.any { it.player == TOWN }) return 0
+        val data = data(level)
+        val n = minOf(marks, w.price - w.pledged)
+        if (n <= 0) return 0
+        w.pledges.add(PledgeRec(TOWN, "the town", n, today(level, w.capital), true))
+        data.changed()
+        pledged(level, data, w, TOWN, n)
         return n
     }
 
