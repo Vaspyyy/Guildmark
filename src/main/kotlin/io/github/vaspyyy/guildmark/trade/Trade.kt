@@ -43,6 +43,7 @@ object Trade {
         Laden.hauled = { player, good -> Ledger.count(player.level(), player.uuid, good, player.blockPosition()) }
 
         // E: the Hunt and the hired guard
+        io.github.vaspyyy.guildmark.trade.hunt.Hunt.register(modBus)
 
         // F: the ladder, the Carriers' Store and the Counting House
         Rungs.register()
