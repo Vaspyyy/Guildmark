@@ -1,0 +1,209 @@
+{
+  "village.door_bolt": {
+    "sounds": [
+      {
+        "name": "guildmark:village/door_bolt1",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "guildmark:village/door_bolt2",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "guildmark:village/door_bolt3",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "guildmark:village/door_bolt4",
+        "attenuation_distance": 16
+      }
+    ],
+    "subtitle": "subtitles.guildmark.village.door_bolt"
+  },
+  "village.hush": {
+    "sounds": [
+      {
+        "name": "guildmark:village/hush1",
+        "stream": false,
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:village/hush2",
+        "stream": false,
+        "attenuation_distance": 12
+      }
+    ],
+    "subtitle": "subtitles.guildmark.village.hush"
+  },
+  "village.cheer": {
+    "sounds": [
+      {
+        "name": "guildmark:village/cheer1",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:village/cheer2",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "guildmark:village/cheer3",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "subtitles.guildmark.village.cheer"
+  },
+  "village.candle_lay": {
+    "sounds": [
+      {
+        "name": "guildmark:village/candle_lay1",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "guildmark:village/candle_lay2",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "guildmark:village/candle_lay3",
+        "attenuation_distance": 16
+      }
+    ],
+    "subtitle": "subtitles.guildmark.village.candle_lay"
+  },
+  "village.pedlar_bell": {
+    "sounds": [
+      {
+        "name": "guildmark:village/pedlar_bell1",
+        "attenuation_distance": 40
+      },
+      {
+        "name": "guildmark:village/pedlar_bell2",
+        "attenuation_distance": 40
+      },
+      {
+        "name": "guildmark:village/pedlar_bell3",
+        "attenuation_distance": 40
+      }
+    ],
+    "subtitle": "subtitles.guildmark.village.pedlar_bell"
+  },
+  "village.baby": {
+    "sounds": [
+      {
+        "name": "guildmark:village/baby1",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:village/baby2",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:village/baby3",
+        "attenuation_distance": 12
+      },
+      {
+        "name": "guildmark:village/baby4",
+        "attenuation_distance": 12
+      }
+    ],
+    "subtitle": "subtitles.guildmark.village.baby"
+  },
+  "village.rooster": {
+    "sounds": [
+      {
+        "name": "guildmark:village/rooster1",
+        "attenuation_distance": 56
+      },
+      {
+        "name": "guildmark:village/rooster2",
+        "attenuation_distance": 56
+      },
+      {
+        "name": "guildmark:village/rooster3",
+        "attenuation_distance": 56
+      },
+      {
+        "name": "guildmark:village/rooster4",
+        "attenuation_distance": 56
+      }
+    ],
+    "subtitle": "subtitles.guildmark.village.rooster"
+  },
+  "ambience.village_day": {
+    "sounds": [
+      "guildmark:ambience/village_day1",
+      "guildmark:ambience/village_day2"
+    ]
+  },
+  "ambience.village_night": {
+    "sounds": [
+      "guildmark:ambience/village_night1",
+      "guildmark:ambience/village_night2"
+    ]
+  },
+  "ambience.village_market": {
+    "sounds": [
+      "guildmark:ambience/village_market1"
+    ]
+  },
+  "ambience.village_birds": {
+    "sounds": [
+      "guildmark:ambience/village_birds1"
+    ]
+  },
+  "ambience.village_crickets": {
+    "sounds": [
+      "guildmark:ambience/village_crickets1"
+    ]
+  },
+  "ambience.dog_far": {
+    "sounds": [
+      {
+        "name": "guildmark:ambience/dog_far1",
+        "attenuation_distance": 96
+      },
+      {
+        "name": "guildmark:ambience/dog_far2",
+        "attenuation_distance": 96
+      },
+      {
+        "name": "guildmark:ambience/dog_far3",
+        "attenuation_distance": 96
+      }
+    ],
+    "subtitle": "subtitles.guildmark.ambience.dog_far"
+  },
+  "ambience.hammer_far": {
+    "sounds": [
+      {
+        "name": "guildmark:ambience/hammer_far1",
+        "attenuation_distance": 80
+      },
+      {
+        "name": "guildmark:ambience/hammer_far2",
+        "attenuation_distance": 80
+      },
+      {
+        "name": "guildmark:ambience/hammer_far3",
+        "attenuation_distance": 80
+      }
+    ],
+    "subtitle": "subtitles.guildmark.ambience.hammer_far"
+  },
+  "ambience.child_far": {
+    "sounds": [
+      {
+        "name": "guildmark:ambience/child_far1",
+        "attenuation_distance": 80
+      },
+      {
+        "name": "guildmark:ambience/child_far2",
+        "attenuation_distance": 80
+      },
+      {
+        "name": "guildmark:ambience/child_far3",
+        "attenuation_distance": 80
+      }
+    ],
+    "subtitle": "subtitles.guildmark.ambience.child_far"
+  }
+}

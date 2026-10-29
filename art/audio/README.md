@@ -124,7 +124,13 @@ Kokoro voices of their own, and the renegade Silvan Marrow made cold and a littl
 - `make_ambience.py`: the city ambience (`ambience/`), one recipe module per part of town in
   `ambience/`: `bells.py`, `workshops.py`, `harbour.py`, `wind.py` and `voices.py` (the crowds, criers
   and watch). The four background beds are stereo loops that play unpositioned; everything else is a
-  mono one-shot the game places in the world.
+  mono one-shot the game places in the world. `village.py` is a village's (`client/ambience/VillageAmbience.kt`): five
+  beds, `village_day` (two 40 s loops: the breeze in dry stalks, hens, sparrows, a far cart, a cow or sheep and rooks),
+  `village_night` (two of 40 s: the air over the thatch, an owl), `village_birds` (40 s, the morning's and the evening's
+  birdsong: blackbird, robin, wren, song thrush, chaffinch, a far wood pigeon and a far chorus), `village_crickets` (30
+  s) and `village_market` (30 s, the townsfolk's own talk from `sounds/townsfolk/voice` handed out as the city's crowds
+  hand out theirs, so it needs no `--raw`), each sound that stands out kept clear of its loop's join; and three far
+  one-shots, `dog_far`, `hammer_far` and `child_far` (3 each, 1 to 2 s, carrying 80 to 96 blocks).
 - `make_city_voices.py`: the raw Kokoro takes behind the crowds, criers and night watch.
 - `make_mill_audio.py`: the capitals' mills, three seamless mono loops (`mill/`) the game plays by a mill while it
   turns, louder and a little higher the faster it goes (`client/mill/MillSounds.kt`): `sails` (8 s, one turn: four
@@ -198,6 +204,22 @@ Kokoro voices of their own, and the renegade Silvan Marrow made cold and a littl
   moments (the tongue's click, the reins, the knife on the traces, a slap, a crate lifted and handed down, gasps,
   pants and huffs). Levelled as the townsfolk's are; it writes `caravan_sounds.json` and `caravan_lang.json` here,
   merged into `sounds.json` and `en_us.json` by hand.
+- `make_village_audio.py`: the living villages' own sounds (`village/`, 7 events and 23 mono files,
+  `guildmark:village.<name>` in the order of the villages design's table 17.3, which `village/live/VillageSounds.kt` keeps):
+  `door_bolt` (an iron bolt shot home, the door's clack), `hush` (two seamless loops of people whispering behind a
+  bolted door: the townsfolk's own talk with the voice taken out, cut into syllables, heard through the planks), `cheer` (a
+  village's cheer, 6 to 12 voices with children among them, and clapping), `candle_lay` (wax on stone, a match, the wick
+  catching), `pedlar_bell` (a small brass handbell, brighter than `works.handbell`), `baby` (a baby cooing, one take
+  fretful) and `rooster` (four birds crowing from a coop across a yard). Synthesised with `sfxkit.py`, the townsfolk's
+  helpers, the homestead's crowd and the cog's parts, seeded by event and file, levelled as the cook's are (a one-shot's
+  loudest 100 ms from -14 to -23 LUFS, true peak under -1 dBFS; the loops at -30 dBFS RMS, peaks under -10, built in a
+  circle and read back after the encoder). Each recipe carries its files, lengths, reach, subtitle and `when=`. A full
+  run writes `villages_sounds.json` and `villages_lang.json` here (the seven events' `sounds.json` entries and subtitles,
+  and those of the village ambience that `ambience/village.py` makes), merged by `art/lang/merge_lang.py`. `--mp3 <file>`
+  joins the files on disk into one listen-through MP3 (the seven, then each village bed for a minute and the far
+  one-shots) and writes `village_what_plays_when.txt` beside it; `--audit` renders nothing and reads every file back
+  against the table (length, level, true peak, a loop's or a bed's join, the reaches against `VillageSounds.kt`, the
+  fragments against the files and `sounds.json`), exiting 1 on a problem.
 
 All randomness is seeded, so a rerun gives bit-identical files. Only `make_cast_voices.py sounds` and
 `make_ambience.py --sounds` touch `sounds.json`, each rewriting only its own entries. For everything
@@ -233,6 +255,7 @@ python3 -B art/audio/make_lamp_sfx.py src/main/resources/assets/guildmark [--wav
 python3 -B art/audio/make_cook_audio.py src/main/resources/assets/guildmark [--wav <dir>] [--only stir,plop,loops] [--mp3 <file>] [--audit]
 python3 -B art/audio/make_trade_sfx.py src/main/resources/assets/guildmark [--wav <dir>] [--only knock,bell_step,loops] [--mp3 <file>] [--audit]
 python3 -B art/audio/make_caravan_sfx.py src/main/resources/assets/guildmark [--wav <dir>] [--only roll,whistle] [--mp3 <file>]
+python3 -B art/audio/make_village_audio.py src/main/resources/assets/guildmark [--wav <dir>] [--only rooster,hush] [--mp3 <file>] [--audit]
 python3 -B art/audio/make_festival_music.py src/main/resources/assets/guildmark [--work <tmp-dir>] [--only ribbonwake,stings,fanfare] [--mp3 <dir>]
 ```
 
@@ -251,7 +274,8 @@ sound's waveform and spectrogram, the quickest check of a loop's seam or a bell'
 folder of speech takes from `make_city_voices.py` (below); without it the crowds, criers and watch are
 skipped and keep their files. The second command rewrites the `ambience.*` entries of `sounds.json`
 from the files on disk: `EVENTS` in the script sets how far each sound carries and its subtitle. Run it
-after adding or removing a sound or a variant.
+after adding or removing a sound or a variant. A village's sounds need no `--raw`
+(`--modules village`, about forty seconds); their entries also go through `make_village_audio.py`'s fragment.
 
 The city's speech uses the same virtualenv, model files and `--espeak-data` as the voice lines below:
 

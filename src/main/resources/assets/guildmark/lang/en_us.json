@@ -9590,5 +9590,15 @@
   "say.guildmark.village_done_trade_road": "That's the road done.",
   "message.guildmark.village_build.progress": "%1$s going up: %2$s, %3$s%% done",
   "message.guildmark.village_build.planned": "Builders will come to %2$s at sunrise to put up the %1$s.",
-  "message.guildmark.village_build.done": "The crew has finished the %1$s at %2$s!"
+  "message.guildmark.village_build.done": "The crew has finished the %1$s at %2$s!",
+  "subtitles.guildmark.village.door_bolt": "Bolt shoots home",
+  "subtitles.guildmark.village.hush": "People whisper",
+  "subtitles.guildmark.village.cheer": "Villagers cheer",
+  "subtitles.guildmark.village.candle_lay": "Candle set on stone",
+  "subtitles.guildmark.village.pedlar_bell": "Hand bell rings",
+  "subtitles.guildmark.village.baby": "A baby coos",
+  "subtitles.guildmark.village.rooster": "A rooster crows",
+  "subtitles.guildmark.ambience.dog_far": "Dog barks far off",
+  "subtitles.guildmark.ambience.hammer_far": "Hammering far off",
+  "subtitles.guildmark.ambience.child_far": "Child calls far off"
 }
