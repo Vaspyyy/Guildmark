@@ -1,5 +1,13 @@
 package io.github.vaspyyy.guildmark.festival
 
+import io.github.vaspyyy.guildmark.cooking.Cooking
+import io.github.vaspyyy.guildmark.cooking.DishData
+import io.github.vaspyyy.guildmark.cooking.DishKind
+import io.github.vaspyyy.guildmark.cooking.Stage
+import io.github.vaspyyy.guildmark.cooking.Tier
+import io.github.vaspyyy.guildmark.cooking.dish.DishItem
+import io.github.vaspyyy.guildmark.cooking.dish.Dishes
+import io.github.vaspyyy.guildmark.cooking.feast.HarvestTable
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.network.chat.Component
@@ -27,11 +35,16 @@ import kotlin.math.sqrt
  * - The Lantern Riddles (Lanternrise): each lantern on the posts has a riddle; read one, then show the host its
  *   answer (again, only to look at). Every riddle solved counts.
  *
- * Every player who took part gets something at the prize-giving (see [Festivities.award]).
+ * A capital's Sheafmoot has a second table beside its Produce Show, the Harvest Table (living-world/cook/design.md 6.8;
+ * [taste], [cookResults]): a cook shows the host a dish they cooked themselves, fresh, and their three best kinds make
+ * their score; the town's inn and bakery enter a dish each ([addTown]). [capital] says whether it can be held here.
+ *
+ * Every player who took part gets something at the prize-giving (see [Festivities.award]). Every entry, the Harvest
+ * Table's too, is kept in memory only, for the day: a restart in the middle of the fair loses them.
  */
-class FestivalContest(val kind: FestivalKind, private val riddleSeed: Long) {
-    /** Someone's standing: their score and when they reached it (the earlier wins a tie). */
-    class Entry(val id: UUID, var name: String, var score: Int = 0, var at: Long = 0L)
+class FestivalContest(val kind: FestivalKind, private val riddleSeed: Long, val capital: Boolean = false) {
+    /** Someone's standing: their score and when they reached it (the earlier wins a tie); [npc] for the town's own entries at the Harvest Table. */
+    class Entry(val id: UUID, var name: String, var score: Int = 0, var at: Long = 0L, val npc: Boolean = false)
 
     private val entries = LinkedHashMap<UUID, Entry>()
     private val ribbonsFound = HashMap<UUID, MutableSet<Int>>()
@@ -39,6 +52,9 @@ class FestivalContest(val kind: FestivalKind, private val riddleSeed: Long) {
     private val shown = HashMap<UUID, MutableMap<Item, Int>>()
     private val solved = HashMap<UUID, MutableSet<Int>>()
     private val reading = HashMap<UUID, Int>()
+    /** The Harvest Table's: the best points of each kind each cook showed, and the cooks' standings (the town's among them). */
+    private val dishes = HashMap<UUID, MutableMap<DishKind, Int>>()
+    private val cooks = LinkedHashMap<UUID, Entry>()
 
     /** Whether entries are taken now. */
     var open = false
@@ -146,6 +162,104 @@ class FestivalContest(val kind: FestivalKind, private val riddleSeed: Long) {
         return true
     }
 
+    // ---- The Harvest Table ----
+
+    /**
+     * What the host made of a dish shown for the Harvest Table: judged, its [dish] at [tier] worth [points] ([before], what that
+     * kind had scored already; [total], the cook's score now, of their best [counted] kinds), or refused with the line [refusal]
+     * (a language key) and its [args]. A refusal changes nothing.
+     */
+    class Tasted(
+        val dish: DishKind?, val tier: Tier, val points: Int, val before: Int, val total: Int, val counted: Int,
+        val refusal: String?, val args: List<Any> = listOf(),
+    ) {
+        val judged: Boolean get() = refusal == null
+    }
+
+    /** "Harvest Table". */
+    val cookTitle: Component get() = Component.translatable(HarvestTable.TITLE)
+
+    /** Whether the Harvest Table is held here today: a capital's Sheafmoot, with the switch on. */
+    fun cooking(): Boolean = kind == FestivalKind.SHEAFMOOT && capital && Cooking.cookOff()
+
+    /**
+     * [player] shows the host [stack] for the Harvest Table, and the host judges it now, saying nothing yet (the host's tasting
+     * says it: cooking/feast/HarvestTable): null when it is not a dish here (not a capital's Sheafmoot, or not a dish at all), so
+     * the Produce Show looks at it; else what the host made of it, the entry made if it was judged. Nothing is taken.
+     */
+    fun taste(level: ServerLevel, player: ServerPlayer, stack: ItemStack): Tasted? {
+        val item = stack.item as? DishItem ?: return null
+        if (kind != FestivalKind.SHEAFMOOT || !capital) return null
+        if (!Cooking.cookOff()) return refused("message.guildmark.feast.off")
+        if (!open) return refused("message.guildmark.festival.contest_closed", cookTitle)
+        val dish = Dishes.kindOf(stack)
+        val data = Dishes.dataOf(stack) ?: DishData.PLAIN
+        if (dish == null || item.scorched || data.tier == Tier.SPOILT) return refused("message.guildmark.feast.not_dish")
+        if (data.cookId != player.uuid) return refused("message.guildmark.feast.not_yours")
+        when (Dishes.stage(level, stack)) {
+            Stage.STALE -> return refused("message.guildmark.feast.stale", HarvestTable.dishName(dish))
+            Stage.GONE -> return refused("message.guildmark.feast.gone", HarvestTable.dishName(dish))
+            Stage.FRESH -> {}
+        }
+        val points = HarvestTable.score(dish, data.tier)
+        val before = dishes[player.uuid]?.get(dish) ?: 0
+        if (points <= before) return refused("message.guildmark.feast.seen", HarvestTable.dishName(dish), before)
+        val mine = dishes.getOrPut(player.uuid) { HashMap() }
+        mine[dish] = points
+        val total = mine.values.sortedDescending().take(BEST_DISHES).sum()
+        val e = cooks.getOrPut(player.uuid) { Entry(player.uuid, player.name.string) }.also { it.name = player.name.string }
+        if (total != e.score) {
+            e.score = total
+            e.at = level.gameTime
+        }
+        return Tasted(dish, data.tier, points, before, total, min(mine.size, BEST_DISHES), null)
+    }
+
+    private fun refused(line: String, vararg args: Any): Tasted = Tasted(null, Tier.SPOILT, 0, 0, 0, 0, line, args.toList())
+
+    /**
+     * [player] shows the host [stack] for the Harvest Table, judged and told at once: false if it is not a dish here (the
+     * Produce Show then looks at it), true when it was judged or refused.
+     */
+    fun dish(level: ServerLevel, player: ServerPlayer, stack: ItemStack): Boolean {
+        val tasted = taste(level, player, stack) ?: return false
+        tell(player, tasted, Component.translatable("festival.guildmark.host"))
+        return true
+    }
+
+    /** Tells [player] what [host] made of their dish: its points and how they were reached, or why it is not judged. */
+    fun tell(player: ServerPlayer, tasted: Tasted, host: Component) {
+        val dish = tasted.dish
+        val line = if (dish != null && tasted.judged) {
+            Component.translatable(
+                "message.guildmark.feast.judged", HarvestTable.dishName(dish), tasted.points, HarvestTable.working(dish, tasted.tier),
+                tasted.total, tasted.counted, BEST_DISHES,
+            )
+        } else {
+            Component.translatable(tasted.refusal ?: "message.guildmark.feast.not_dish", *tasted.args.toTypedArray())
+        }
+        player.sendSystemMessage(Component.translatable("message.guildmark.festival.host", host, line).withColor(kind.color))
+    }
+
+    /** The Harvest Table's standings, the best first (the town's entries among them), in the same order as [results]. */
+    fun cookResults(): List<Entry> = cooks.values.filter { it.score > 0 }.sortedWith(compareByDescending<Entry> { it.score }.thenBy { it.at })
+
+    /** One of the town's own entries at the Harvest Table ([name] may be a language key after a "#"): placed, never paid. */
+    fun addTown(id: UUID, name: String, points: Int) {
+        cooks[id] = Entry(id, name, points, 0L, npc = true)
+    }
+
+    /** Takes the town's entries off the Harvest Table (to enter them again). */
+    fun clearTown() {
+        cooks.values.removeIf { it.npc }
+    }
+
+    /** The best points of each kind the cook [id] has shown at the Harvest Table. */
+    fun dishesOf(id: UUID): Map<DishKind, Int> = dishes[id] ?: mapOf()
+
+    /** The cook [id]'s standing at the Harvest Table, if they have one. */
+    fun cook(id: UUID): Entry? = cooks[id]
+
     // ---- The Lantern Riddles ----
 
     /** Which of the riddles the [index]th lantern carries. */
@@ -190,12 +304,22 @@ class FestivalContest(val kind: FestivalKind, private val riddleSeed: Long) {
         val e = entries[player.uuid]
         val mine = e?.score ?: 0
         val best = results().firstOrNull()
-        return when {
+        val word = when {
             !open -> Component.translatable("message.guildmark.festival.contest_closed", title)
             best == null -> Component.translatable("message.guildmark.festival.hint.${kind.id}")
             best.id == player.uuid -> Component.translatable("message.guildmark.festival.leading", title, mine)
             else -> Component.translatable("message.guildmark.festival.standing", title, mine, best.name, best.score)
         }
+        if (!open || !cooking()) return word
+        // A capital's Sheafmoot: a word on the Harvest Table too
+        val cooked = cooks[player.uuid]?.score ?: 0
+        val top = cookResults().firstOrNull()
+        val table = when {
+            cooked <= 0 -> Component.translatable("message.guildmark.festival.hint.sheafmoot_cook")
+            top == null || top.id == player.uuid -> Component.translatable("message.guildmark.festival.hint.sheafmoot_cook_leading", cooked)
+            else -> Component.translatable("message.guildmark.festival.hint.sheafmoot_cook_standing", cooked, named(top.name), top.score)
+        }
+        return Component.empty().append(word).append(" ").append(table)
     }
 
     companion object {
@@ -204,6 +328,11 @@ class FestivalContest(val kind: FestivalKind, private val riddleSeed: Long) {
         const val BEST_ARROWS = 5
         /** How many kinds of produce count. */
         const val BEST_KINDS = 6
+        /** How many kinds of dish count at the Harvest Table. */
+        const val BEST_DISHES = 3
+
+        /** An entry's name as it is shown: a language key after a "#" (a town's cook whose name is not known), else the name itself. */
+        fun named(name: String): Component = if (name.startsWith("#")) Component.translatable(name.substring(1)) else Component.literal(name)
 
         /** What the judge thinks of each kind of produce (before counting how much of it there is). */
         val PRODUCE: Map<Item, Int> = mapOf(
