@@ -13,8 +13,6 @@ import net.minecraft.core.Direction
 import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.level.block.state.BlockState
 import java.util.Arrays
-import java.util.stream.IntStream
-import java.util.stream.LongStream
 
 /**
  * One project of a village on its way up (living-world/villages/design.md section 12.5): the village it is for (the key of its bell),
@@ -106,6 +104,10 @@ class VillageBuild(
 
         fun meta(kind: Int, swap: Boolean, palette: Int): Int = kind or (if (swap) SWAP else 0) or (palette shl 8)
 
+        /** Whole arrays of numbers as saved (a codec's default must not be a stream, which can be read only once). */
+        private val INTS: Codec<IntArray> = Codec.INT_STREAM.xmap({ it.toArray() }, { Arrays.stream(it) })
+        private val LONGS: Codec<LongArray> = Codec.LONG_STREAM.xmap({ it.toArray() }, { Arrays.stream(it) })
+
         /** A block state read leniently: one that can't be read is [UNKNOWN] and the rest of the site is kept. */
         private val STATE: Codec<BlockState> = Codec.of(
             BlockState.CODEC,
@@ -124,22 +126,22 @@ class VillageBuild(
                 Codec.INT.fieldOf("project").forGetter(VillageBuild::project),
                 Codec.LONG.optionalFieldOf("born", 0L).forGetter(VillageBuild::born),
                 Codec.LONG.optionalFieldOf("opens", Long.MIN_VALUE).forGetter(VillageBuild::opens),
-                Codec.LONG_STREAM.optionalFieldOf("pos", LongStream.empty()).forGetter { Arrays.stream(it.pos) },
-                Codec.INT_STREAM.optionalFieldOf("meta", IntStream.empty()).forGetter { Arrays.stream(it.meta) },
+                LONGS.optionalFieldOf("pos", LongArray(0)).forGetter(VillageBuild::pos),
+                INTS.optionalFieldOf("meta", IntArray(0)).forGetter(VillageBuild::meta),
                 STATE.listOf().optionalFieldOf("palette", listOf()).forGetter(VillageBuild::palette),
-                Codec.INT_STREAM.optionalFieldOf("stages", IntStream.empty()).forGetter { Arrays.stream(it.stageStarts) },
+                INTS.optionalFieldOf("stages", IntArray(0)).forGetter(VillageBuild::stageStarts),
                 Build.CODEC.optionalFieldOf("build", Build()).forGetter(VillageBuild::build),
                 Yard.CODEC.fieldOf("yard").forGetter(VillageBuild::yard),
                 BuildSink.After.CODEC.listOf().optionalFieldOf("after", listOf()).forGetter(VillageBuild::after),
                 Codec.BOOL.optionalFieldOf("rushing", false).forGetter(VillageBuild::rushing),
                 Codec.LONG.optionalFieldOf("accrued", 0L).forGetter(VillageBuild::accrued),
-                Codec.INT_STREAM.optionalFieldOf("deps", IntStream.empty()).forGetter { Arrays.stream(it.deps) },
+                INTS.optionalFieldOf("deps", IntArray(0)).forGetter(VillageBuild::deps),
             ).apply(i) { id, village, project, born, opens, pos, meta, palette, stages, build, yard, after, rushing, accrued, deps ->
-                val p = pos.toArray()
-                val m = meta.toArray().let { if (it.size == p.size) it else IntArray(p.size) { k -> it.getOrElse(k) { 0 } } }
-                val s = stages.toArray().let { if (it.size == STAGES + 1) it else IntArray(STAGES + 1) { k -> if (k == STAGES) p.size else 0 } }
+                val p = pos.copyOf()
+                val m = if (meta.size == p.size) meta.copyOf() else IntArray(p.size) { k -> meta.getOrElse(k) { 0 } }
+                val s = if (stages.size == STAGES + 1) stages.copyOf() else IntArray(STAGES + 1) { k -> if (k == STAGES) p.size else 0 }
                 // A step held up by one laid after it (a file from elsewhere) is held up by nothing
-                val d = deps.toArray().let { if (it.size == p.size) it else IntArray(p.size) { -1 } }
+                val d = if (deps.size == p.size) deps.copyOf() else IntArray(p.size) { -1 }
                 for (k in d.indices) if (d[k] >= k) d[k] = -1
                 VillageBuild(id, village, project, born, opens, p, m, palette, s, build, yard, after.toMutableList(), rushing, accrued, d)
             }
