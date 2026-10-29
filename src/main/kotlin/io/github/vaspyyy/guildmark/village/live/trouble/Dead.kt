@@ -9,6 +9,7 @@ import io.github.vaspyyy.guildmark.village.live.Chron
 import io.github.vaspyyy.guildmark.village.live.Dead
 import io.github.vaspyyy.guildmark.village.live.VillageData
 import io.github.vaspyyy.guildmark.village.live.VillageRec
+import io.github.vaspyyy.guildmark.village.live.folk.VillageAdopt
 import net.minecraft.ChatFormatting
 import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
@@ -157,6 +158,7 @@ object Deaths {
             for (c in rec.chronicle.asReversed()) out.add(Component.literal("  ").append(chron(c)))
         }
         Watch.line(level, rec)?.let { out.add(label("Watch: ").append(plain(it))) }
+        if (VillageAdopt.adopting(rec)) out.add(label("Golems: ").append(plain(Golems.line(level, rec))))
         val broken = kept?.damage?.size ?: 0
         if (broken > 0) {
             val from = kept?.mendFrom ?: TroubleData.NONE

@@ -127,6 +127,7 @@ object Trouble {
             guarded("the memorial of ${rec.name}") { Memorial.look(level, rec, day) }
             guarded("the watch of ${rec.name}") { Watch.look(level, rec, day) }
             guarded("the mend of ${rec.name}") { Mend.look(level, rec, day) }
+            guarded("the golems of ${rec.name}") { Golems.look(level, rec, day) }
         }
     }
 
