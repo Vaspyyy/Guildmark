@@ -155,6 +155,8 @@ object Tales : Comings.Listener {
         io.github.vaspyyy.guildmark.tales.templates.MootSquare.register()
         // T4: the chair's `tale chair` and its scenes, and the open chairs seen to each second
         io.github.vaspyyy.guildmark.tales.templates.ChairWatch.register()
+        // T3: the wagon's `tale wagon` and its scenes, the open wagons seen to each second, and the band's hand kept from harm
+        io.github.vaspyyy.guildmark.tales.templates.WagonWatch.register()
     }
 
     // ---- The clock ----
