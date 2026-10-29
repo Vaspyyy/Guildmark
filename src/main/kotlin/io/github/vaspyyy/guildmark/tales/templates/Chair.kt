@@ -589,7 +589,8 @@ object Chair : Template, TaleVoice, TaleWords.Names {
         val t = turn.tale
         val name = TaleLines.lit(dead(t))
         val r = deadOf(turn.level, t)
-        val days = if (r != null) (VillageBoards.day(turn.level) - residents(turn.level).diedOn(r)).coerceAtLeast(0L) else return TaleLines.facts("talk.detail.tale.chair.ask.n", name, (turn.today - t.d0).toInt())
+        // No record of the death left to count from: the line goes without its grey words
+        val days = if (r != null) (VillageBoards.day(turn.level) - residents(turn.level).diedOn(r)).coerceAtLeast(0L) else return null
         return when (days) {
             0L -> TaleLines.facts("talk.detail.tale.chair.ask.0", name)
             1L -> TaleLines.facts("talk.detail.tale.chair.ask.1", name)

@@ -64,6 +64,9 @@ internal object ChairScenes {
     private const val NEAR_STONE = 40.0
     private const val AT_STONE = 12.0
 
+    /** How far off a friend who comes may be when the laying begins: they walk up to it from there (about thirty seconds at the most). */
+    private const val FRIENDS_REACH = 64.0
+
     /** How near the stone a player must be for the ending's laying to be played (`TaleLook.queueEnding`'s reach). */
     private const val SEEN = TaleLook.NEAR
 
@@ -164,10 +167,11 @@ internal object ChairScenes {
     ): Stage? {
         val level = c.level
         val at = Vec3.atCenterOf(stone)
-        fun near(slot: String): Townsperson? =
-            TaleBodies.body(level, t, slot)?.takeIf { it !== mourner && it.distanceToSqr(at) <= NEAR_STONE * NEAR_STONE }
-        val priest = near(Chair.PRIEST)
-        val friends = Chair.attending(t, letter).mapNotNull { near(it) }
+        fun near(slot: String, r: Double): Townsperson? =
+            TaleBodies.body(level, t, slot)?.takeIf { it !== mourner && it.distanceToSqr(at) <= r * r }
+        val priest = near(Chair.PRIEST, NEAR_STONE)
+        // Only one friend is held by the stone (a tale holds three): the others come from wherever they are, at their own pace
+        val friends = Chair.attending(t, letter).mapNotNull { near(it, FRIENDS_REACH) }
         val candles = if (letter == Ending.A) Chair.ALL else t.n[Chair.N_CANDLES]
         val player = level.getNearestPlayer(at.x, at.y, at.z, 24.0, false)
         val id = t.id
@@ -269,7 +273,7 @@ internal object ChairScenes {
         return listOf(
             Hold(ItemStack(Items.CANDLE)),
             Wait({ _, tick -> tick >= 14 * i }, most = 14 * i + 1),
-            GoTo({ spot }, Jobs.WALK, near = 0.7, most = 500),
+            GoTo({ spot }, Jobs.WALK, near = 0.7, most = 700),
             Turn({ top }),
             Beat(Activity.PUT_DOWN, at = { top }) { p, tick ->
                 if (tick == 10) {
