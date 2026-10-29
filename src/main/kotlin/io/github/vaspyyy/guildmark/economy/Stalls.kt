@@ -911,6 +911,12 @@ class Serving : Director {
         next(p, Beat(Activity.NONE, ItemStack.EMPTY, PAUSE), Beat(cheer, ItemStack.EMPTY, cheer.ticks, StallTalk.rank(rank)), Beat(Activity.TALK, ItemStack.EMPTY, AFTER_WORD))
     }
 
+    /** A village they keep a counter of thanks the player they're serving for its supply (VillageSupply): marked as a supplier's rise is, saying [line]. */
+    fun thanked(p: Townsperson, line: String) {
+        val cheer = cheer(p)
+        next(p, Beat(Activity.NONE, ItemStack.EMPTY, PAUSE), Beat(cheer, ItemStack.EMPTY, cheer.ticks, line), Beat(Activity.TALK, ItemStack.EMPTY, AFTER_WORD))
+    }
+
     /** Once what's under way is through, they say [line] (a standing order offered, after a fill). */
     fun after(p: Townsperson, line: String) = next(p, Beat(Activity.TALK, ItemStack.EMPTY, AFTER_WORD, line))
 

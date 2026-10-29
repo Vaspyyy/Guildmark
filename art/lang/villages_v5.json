@@ -20,5 +20,17 @@
   "fortune.guildmark.reason.newcomers.many.village": "%s households have come to live in the village.",
   "fortune.guildmark.reason.leaving.family.village": "The %s family have left the village.",
   "fortune.guildmark.reason.leaving.one.village": "A household has left the village.",
-  "fortune.guildmark.reason.leaving.many.village": "%s households have left the village."
+  "fortune.guildmark.reason.leaving.many.village": "%s households have left the village.",
+  "message.guildmark.village.thanks": "%1$s thanks you for what it was short of (%2$s): %3$s standing with it (%4$s, %5$s).",
+  "message.guildmark.village.thanks.lean": "In lean times %1$s thanks you twice over for what it was short of (%2$s): %3$s standing with it (%4$s, %5$s).",
+  "message.guildmark.village.thanks.hard": "In hard times %1$s thanks you twice over for what it was short of (%2$s): %3$s standing with it (%4$s, %5$s).",
+  "message.guildmark.village.thanks.no_board": "%1$s thanks you for what it was short of (%2$s). It has no board of its own to keep your standing.",
+  "say.guildmark.village_thanks_0": "That's just what we were short of. Thank you!",
+  "say.guildmark.village_thanks_1": "Bless you for bringing it. We'll not forget.",
+  "say.guildmark.village_thanks_2": "The whole village will be glad of this.",
+  "say.guildmark.village_thanks_hard_0": "In times like these? You've no idea what this means to us.",
+  "say.guildmark.village_thanks_hard_1": "We were near the end of it. Thank you, truly.",
+  "say.guildmark.village_thanks_folk_0": "Well done, traveller!",
+  "say.guildmark.village_thanks_folk_1": "Bless you!",
+  "say.guildmark.village_thanks_folk_2": "That'll see us through!"
 }

@@ -31,6 +31,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import io.github.vaspyyy.guildmark.trade.Haul
 import io.github.vaspyyy.guildmark.trade.HaulKind
 import io.github.vaspyyy.guildmark.trade.Word
+import io.github.vaspyyy.guildmark.village.live.market.VillageSupply
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
@@ -462,6 +463,8 @@ object Witness {
      */
     fun dealt(level: ServerLevel, keeper: Townsperson, player: ServerPlayer, entry: Markets.Entry, good: Good, buying: Boolean, lots: Int) {
         if (lots <= 0) return
+        // A village thanks the day's first supply (read from its books before this sale is noted)
+        if (!buying) VillageSupply.sold(level, keeper, player, entry, good)
         if (!buying) Fortunes.sold(level, entry, good, player)
         val r = Residents.get(level).of(keeper)?.takeIf { it.alive } ?: return
         val quote = Trading.quote(entry, good)
