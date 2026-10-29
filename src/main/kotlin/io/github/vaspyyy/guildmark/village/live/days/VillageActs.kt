@@ -6,6 +6,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Activity
 import io.github.vaspyyy.guildmark.townsfolk.Acts
 import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
 import io.github.vaspyyy.guildmark.townsfolk.Claims
+import io.github.vaspyyy.guildmark.townsfolk.Crier
 import io.github.vaspyyy.guildmark.townsfolk.Days
 import io.github.vaspyyy.guildmark.townsfolk.Doing
 import io.github.vaspyyy.guildmark.townsfolk.Idle
@@ -103,6 +104,8 @@ object VillageActs {
             // The round walked (or the lamplighter not yet fetched): at home of an evening; breakfast after the morning's
             VillageDays.LAMPS -> return Acts.filler(p, life, Doing.EVENING)
             VillageDays.SNUFF -> return Acts.filler(p, life, Doing.BREAKFAST)
+            // The word cried (or not to be): back to the green on market day, else home
+            VillageDays.CRY -> return Crier.round(p, life) ?: if (life.market) gather(p, life) else Acts.filler(p, life, Doing.EVENING)
         }
         if (life.home == null) {
             when (stretch.doing) {

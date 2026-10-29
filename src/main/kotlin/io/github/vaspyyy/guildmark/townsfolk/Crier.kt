@@ -28,6 +28,8 @@ import io.github.vaspyyy.guildmark.guild.NewsItem
 import io.github.vaspyyy.guildmark.outlaw.Outlaws
 import io.github.vaspyyy.guildmark.season.Seasons
 import io.github.vaspyyy.guildmark.townsfolk.talk.TownCry
+import io.github.vaspyyy.guildmark.village.live.talk.Bellman
+import io.github.vaspyyy.guildmark.village.live.talk.VillageCry
 import net.minecraft.ChatFormatting
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
@@ -148,6 +150,8 @@ object Crier {
      * noon round; null once that's done for the day. [now]: the noon round at once, for testing, not waiting for noon.
      */
     fun round(p: Townsperson, life: Life, now: Boolean = false): Task? {
+        // A village's: its bellman's round, at its great bell (living-world/villages/design.md 8.2)
+        if (life.places.kind == TownKind.VILLAGE) return Bellman.round(p, life, now)
         val level = level(p)
         val places = life.places as? CityPlaces ?: return null
         val c = conditions(level)
@@ -337,9 +341,11 @@ object Crier {
         }))
     }
 
-    /** What [places]' crier cries at [c]'s noon: the same each time it's asked that day (see [news]). */
-    fun today(level: ServerLevel, places: TownPlaces, entry: Markets.Entry?, c: Conditions): List<Cry> =
-        news(level, entry, c, Random(c.day * 0x2545F4914F6CDD1DL + places.centre.asLong()))
+    /** What [places]' crier cries at [c]'s noon: the same each time it's asked that day (see [news]); a village's bellman's word ([VillageCry]). */
+    fun today(level: ServerLevel, places: TownPlaces, entry: Markets.Entry?, c: Conditions): List<Cry> {
+        if (places.kind == TownKind.VILLAGE) return VillageCry.word(level, places, entry, c).cries
+        return news(level, entry, c, Random(c.day * 0x2545F4914F6CDD1DL + places.centre.asLong()))
+    }
 
     /** The folk about the square who are free to stop come over to hear the news. */
     internal fun gather(crier: Townsperson) {

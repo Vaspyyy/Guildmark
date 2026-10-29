@@ -119,7 +119,7 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
     /**
      * Ringing a great bell, not a handbell (a village's bell, by its bellman; a bell a tale's scene rings): the bell's own strokes are
      * its sound, so the client rings no handbell and draws none with the clip. Set by whoever has them ring it, as the ringing starts;
-     * any other activity begun ([act]) clears it.
+     * any other activity begun ([act]) clears it, but for the cry a bellman goes on to (ANNOUNCE, with no handbell either).
      */
     var greatBell: Boolean
         get() = entityData.get(FLAGS).toInt() and FLAG_GREAT_BELL != 0
@@ -335,7 +335,7 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
     /** Starts [what]; a loop that's already playing carries on where it is. */
     fun act(what: Activity) {
         if (what == activity && what.loop) return
-        if (what != Activity.RING_BELL && greatBell) greatBell = false
+        if (what != Activity.RING_BELL && what != Activity.ANNOUNCE && greatBell) greatBell = false
         serial = (serial + 1) and 0xFFFFFF
         entityData.set(ACTION, (serial shl 8) or what.ordinal)
         activityStart = tickCount

@@ -102,7 +102,7 @@ object BellKeeper {
     }
 
     /** Where to stand to ring the bell at [bell]: a block beside it (under it, if it hangs high), the nearest to [from] of the nearest. */
-    private fun standAt(level: ServerLevel, bell: BlockPos, from: BlockPos, who: Entity): Spot? {
+    internal fun standAt(level: ServerLevel, bell: BlockPos, from: BlockPos, who: Entity): Spot? {
         var best: Spot? = null
         var bestScore = Double.MAX_VALUE
         for (dy in 0 downTo -5) for (dx in -2..2) for (dz in -2..2) {

@@ -6,6 +6,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Doing
 import io.github.vaspyyy.guildmark.townsfolk.Life
 import io.github.vaspyyy.guildmark.townsfolk.Stretch
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
+import io.github.vaspyyy.guildmark.village.live.talk.Bellman
 
 /**
  * A village's people's days (living-world/villages/design.md 5.4): the capital's own day for who they are ([Days.plan], a pure
@@ -22,6 +23,8 @@ import io.github.vaspyyy.guildmark.townsfolk.TownRole
  *   quarter past five to a quarter to seven to put them out (cutting their sleep short), every day of the week.
  * - [BUILD]: one lent to the village's building site works there from seven to noon and from one to a quarter to six, with their
  *   dinner at home between, on any day but the rest day (townsfolk/Labour hands them to the crew).
+ * - [CRY]: the holder of the bell goes to it at half past eleven on a day the noon cry is due (market day, or news: [Bellman]) and
+ *   cries the word at noon; they are free again at half past one.
  *
  * The rest day keeps its own shape (the service, the market, visits); the stalls rest and market day gives way to it. The guards'
  * stretches and the children's lessons are the capital's as they are, played on the village's places ([VillageActs]).
@@ -34,6 +37,7 @@ object VillageDays {
     const val LAMPS = "lamps"
     const val SNUFF = "snuff"
     const val BUILD = "build"
+    const val CRY = "cry"
 
     /** The hour a keeper is at the stall from, on a working day and on a market day, and until. */
     private const val STALL_FROM = 10.0
@@ -47,6 +51,10 @@ object VillageDays {
     /** The bellman's errand: from five, to be at the bell and to wait for the hour ([BellKeeper.DUSK]); at ten to six they are let go. */
     private const val BELL_FROM = 17.0
     private const val BELL_TO = 17.9
+
+    /** The bellman's noon cry ([Bellman]): from half past eleven, to be at the bell and wait for noon, to half past one. */
+    private const val CRY_FROM = Bellman.FROM
+    private const val CRY_TO = 13.5
 
     /** The lamp keeper's evening, free for the round, and their morning, up to put the lamps out. */
     private const val LAMPS_FROM = 17.0
@@ -75,6 +83,8 @@ object VillageDays {
                 life.market && r.role.adult && r.role != TownRole.GUARD && !life.carter -> interrupt(list, GREEN_FROM, GREEN_TO, Doing.MARKET, GREEN)
             }
         }
+        // The noon cry, on market day and any day with news worth the telling (Village Bellman)
+        if (life.bellman && Bellman.dueOn(life.places.centre, day)) interrupt(list, CRY_FROM, CRY_TO, Doing.CRY, CRY)
         // The rounds of the lamps, every evening and morning of the week: the keeper's evening is free of other things, their morning up early
         if (life.lamps) {
             interrupt(list, LAMPS_FROM, LAMPS_TO, Doing.ERRAND, LAMPS)

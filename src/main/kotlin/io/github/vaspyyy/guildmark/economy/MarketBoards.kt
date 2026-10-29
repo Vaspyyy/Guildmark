@@ -123,6 +123,8 @@ object MarketBoards {
         val capital = Furnish.capitalAt(level, anchor)
         val village = if (capital == null) Villages.at(level, anchor) else null
         val entry = (if (capital != null) Markets.of(level, capital) else village?.let { VillageMarkets.find(level, it.key) }) ?: return
+        // The board at a village's Hall door is its bellman's to chalk at noon (Village Bellman)
+        if (village != null) io.github.vaspyyy.guildmark.village.live.talk.Bellman.board(village.key, anchor, level.getBlockState(anchor))
         val centre = capital?.center ?: BlockPos.of(village!!.key)
         val name: Component = capital?.let(::town) ?: Component.literal(village!!.name)
         val c = Conditions(Markets.hourOf(level))

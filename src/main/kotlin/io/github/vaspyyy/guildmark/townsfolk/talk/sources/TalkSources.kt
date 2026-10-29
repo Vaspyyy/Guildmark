@@ -51,6 +51,8 @@ object TalkSources {
         if (started) return
         started = true
         ALL.forEach(Topics::register)
+        // Villages (V6): the bellmen's word, looked at as the day goes
+        io.github.vaspyyy.guildmark.village.live.talk.Bellman.register()
         NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { tick(it.server) }
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { forget() }
     }

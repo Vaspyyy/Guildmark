@@ -116,6 +116,8 @@ internal object LivingMoments {
         // A works' master builder's handbell is the server's (works.handbell), and so is a village pedlar's (village.pedlar_bell):
         // no crier's bell on top of either; nor on a great bell's strokes (Townsperson.greatBell: a village's bell, a tale's)
         if (clip == "ring_bell" && (WorksClient.master(p) || pedlar(p) || p.greatBell)) return
+        // A bellman crying the word after the great bell has no handbell to knock
+        if (clip == "announce" && p.greatBell) return
         when (clip) {
             "sit_down" -> if (m.name == "down") sound(level, at, mod("seat"), 0.45f)
             "stand_up" -> if (m.name == "up") sound(level, at, mod("seat"), 0.3f, 1.1f)

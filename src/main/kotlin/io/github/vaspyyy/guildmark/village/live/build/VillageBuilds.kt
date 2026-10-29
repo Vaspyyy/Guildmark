@@ -555,6 +555,8 @@ object VillageBuilds {
         loaded.remove(b.id)
         watched.remove(b.id)
         Villages.recount(level, b.village)
+        // The bellman cries it at the next noon (Village Bellman)
+        io.github.vaspyyy.guildmark.village.live.talk.VillageCry.built(level, b.village, site.project)
         val rec = Villages.byKey(level, b.village)
         val bell = BlockPos.of(b.village)
         Advances.announce(level, bell, Component.translatable("message.guildmark.village_build.done", site.project.title, nameOf(rec)))
