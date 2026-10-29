@@ -325,11 +325,11 @@ object TownPlates {
         if (!on || !ServedState.any || p.shownActivity != Activity.SIT_DRINK) return false
         val plate = plateOf(p, Activity.SIT_DRINK, p.tickCount.toFloat()) ?: return false
         if (plate.ended >= 0f) return false
-        val share = TownKitchen.soundShare()
-        if (share > 0.01f) {
+        // Played at its own volume: CookSoundGate turns it down to the cookSounds share
+        if (TownKitchen.soundShare() > 0.01f) {
             val voice = 0.92f + Math.floorMod(p.uuid.leastSignificantBits, 17L) / 100f
             val spot = plate.spot
-            p.level().playLocalSound(spot.x, spot.y + 0.08, spot.z, CookSounds.get("cook.eat.clink"), SoundSource.NEUTRAL, 0.55f * share, voice, false)
+            p.level().playLocalSound(spot.x, spot.y + 0.08, spot.z, CookSounds.get("cook.eat.clink"), SoundSource.NEUTRAL, 0.55f, voice, false)
         }
         return true
     }

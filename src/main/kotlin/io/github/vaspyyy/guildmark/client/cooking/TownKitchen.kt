@@ -160,11 +160,10 @@ object TownKitchen {
     internal fun particlesOn(): Boolean =
         (!GuildmarkClientConfig.SPEC.isLoaded || GuildmarkClientConfig.COOK_PARTICLES.get()) && Minecraft.getInstance().options.particles().get() != ParticleStatus.MINIMAL
 
-    /** Plays the cook sound [name] at [at], [volume] of the option's share, a little different each time. */
+    /** Plays the cook sound [name] at [at] at [volume], a little different each time; [CookSoundGate] turns it down to the option's share. */
     internal fun play(level: Level, at: Vec3, name: String, volume: Float) {
-        val share = soundShare()
-        if (share <= 0.01f) return
-        level.playLocalSound(at.x, at.y, at.z, CookSounds.get(name), SoundSource.NEUTRAL, volume * share, 0.95f + level.random.nextFloat() * 0.1f, false)
+        if (soundShare() <= 0.01f) return
+        level.playLocalSound(at.x, at.y, at.z, CookSounds.get(name), SoundSource.NEUTRAL, volume, 0.95f + level.random.nextFloat() * 0.1f, false)
     }
 
     /**
