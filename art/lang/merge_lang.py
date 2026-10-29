@@ -104,6 +104,8 @@ OVERRIDES = {
     "fortune.guildmark.reason.tale.chair.alone",
     "fortune.guildmark.reason.tale.chair.empty",
     "item.guildmark.keepsake.chair.alone",
+    # Tales T3, the Sergeant's Friend: B is hushed, so the town's word of it names nobody (8.10; by the lead)
+    "fortune.guildmark.reason.tale.informer.hushed",
 }
 
 

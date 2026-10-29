@@ -9417,7 +9417,7 @@
   "gui.guildmark.tale.informer.end.watch": "The leak is over",
   "gui.guildmark.tale.informer.end.eyes": "The leak goes on",
   "fortune.guildmark.reason.tale.informer.named": "%1$s was named for selling the wagons to %2$s.",
-  "fortune.guildmark.reason.tale.informer.hushed": "%1$s stopped selling the wagons and owned up to %2$s.",
+  "fortune.guildmark.reason.tale.informer.hushed": "Whoever was selling the wagons owned up to %2$s, and it stopped.",
   "fortune.guildmark.reason.tale.informer.watch": "The leak on the %1$s road stopped.",
   "fortune.guildmark.reason.tale.informer.eyes": "The %1$s road stayed unsafe, for someone in town was still talking.",
   "fortune.guildmark.reason.tale.why.informer.start": "%1$s wagons were waylaid on the %2$s road in %3$s days, and each time the band knew the day.",
