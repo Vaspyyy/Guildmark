@@ -88,6 +88,7 @@ data class StoreTown(
  * Store holds. The live word ([wordOn]: the Word switched on, and the [towns]). The wagon yard ([wagonOn], [yard]: where a wagon called
  * comes to, or null), the guards hired ([guardsOn], [guards]) at [guardWage] tenths of a Mark a day. The tables the owner rents
  * ([tables]), what a week of them costs now ([keepNow]) and would without the Store ([keepFull]), and whether the half rent is on ([half]).
+ * The owner's Carrier's Wagon for the Wagon tab ([wagon], build part D3; null from a server without it).
  */
 data class StoreView(
     val place: String,
@@ -115,6 +116,7 @@ data class StoreView(
     val keepNow: Int,
     val keepFull: Int,
     val half: Boolean,
+    val wagon: StoreWagon? = null,
 ) {
     companion object {
         val STREAM_CODEC: StreamCodec<RegistryFriendlyByteBuf, StoreView> = StreamCodec.of(
@@ -147,6 +149,8 @@ data class StoreView(
                 buf.writeVarInt(v.keepNow)
                 buf.writeVarInt(v.keepFull)
                 buf.writeBoolean(v.half)
+                buf.writeBoolean(v.wagon != null)
+                v.wagon?.write(buf)
             },
             { buf ->
                 StoreView(
@@ -154,7 +158,7 @@ data class StoreView(
                     buf.readVarInt(), buf.readUtf(), buf.readBoolean(), List(buf.readVarInt().coerceIn(0, 64)) { StoreGood.read(buf) }, buf.readVarInt(),
                     buf.readVarInt(), buf.readBoolean(), List(buf.readVarInt().coerceIn(0, 32)) { StoreTown.read(buf) }, buf.readBoolean(),
                     if (buf.readBoolean()) buf.readBlockPos() else null, buf.readBoolean(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(),
-                    buf.readVarInt(), buf.readVarInt(), buf.readBoolean(),
+                    buf.readVarInt(), buf.readVarInt(), buf.readBoolean(), if (buf.readBoolean()) StoreWagon.read(buf) else null,
                 )
             },
         )

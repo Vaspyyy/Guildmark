@@ -11,10 +11,12 @@ import io.github.vaspyyy.guildmark.network.StoreGood
 import io.github.vaspyyy.guildmark.network.StoreRefreshPayload
 import io.github.vaspyyy.guildmark.network.StoreTown
 import io.github.vaspyyy.guildmark.network.StoreView
+import io.github.vaspyyy.guildmark.network.StoreWagon
 import io.github.vaspyyy.guildmark.registry.ModItems
 import io.github.vaspyyy.guildmark.trade.Ledger
 import io.github.vaspyyy.guildmark.trade.StoreDesk
 import io.github.vaspyyy.guildmark.trade.TradeSounds
+import io.github.vaspyyy.guildmark.trade.carry.WagonBill
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.Screen
@@ -334,9 +336,10 @@ class StoreScreen(private var view: StoreView) : Screen(Component.translatable("
         return ((mx - innerX) / (innerWidth.toDouble() / TABS)).toInt().coerceIn(0, TABS - 1)
     }
 
-    /** The Account's button: a week of the clerk's wage. */
+    /** The Account's button (a week of the clerk's wage), and the Wagon tab's ([layWagon]). */
     private fun layDesk() {
         val out = ArrayList<Desk>()
+        if (tab == WAGON) layWagon(out)
         if (tab == ACCOUNT) {
             val why = view.payRefusal.takeIf { it.isNotEmpty() }?.let { Component.translatable(it, view.place, view.wage) }
             out.add(Desk(StoreDesk.PAY, innerX, stripY() + 22, min(innerWidth, 170), Component.translatable("gui.guildmark.trade.store.account.pay", marks(view.wage)), why == null, why))
@@ -414,7 +417,7 @@ class StoreScreen(private var view: StoreView) : Screen(Component.translatable("
         when (tab) {
             BONDED -> drawBonded(graphics, k, mouseX, mouseY, t, a)
             WORD -> drawWord(graphics, k, t, a)
-            WAGON -> drawWagon(graphics, k, t, a)
+            WAGON -> drawWagon(graphics, k, mouseX, mouseY, t, a)
             GUARDS -> drawGuards(graphics, k, t)
             else -> drawAccount(graphics, k, mouseX, mouseY, t, a)
         }
@@ -795,46 +798,176 @@ class StoreScreen(private var view: StoreView) : Screen(Component.translatable("
 
     // ---- Wagon ----
 
-    /** The wagon's yard, with a pointer turning to it from where the player stands and faces. */
-    private fun drawWagon(graphics: GuiGraphicsExtractor, k: Float, t: Float, a: Float) {
+    /** The room the Wagon tab's words have beside the pointer. */
+    private fun wagonTextWidth(): Int = innerWidth - 44
+
+    /** What the Wagon tab says above its buttons, each line with its colour: the wagon's state, its horse and its hold, or the Bill's offer. */
+    private fun wagonLines(): List<Pair<Component, Int>> {
+        val w = view.wagon ?: return listOf()
+        val out = ArrayList<Pair<Component, Int>>()
+        if (w.state == StoreWagon.NONE) {
+            out.add(Component.translatable("gui.guildmark.trade.store.wagon.state.none") to Ui.TEXT)
+            out.add(Component.translatable("gui.guildmark.trade.store.wagon.offer", WAGON_SLOTS) to Ui.TEXT_SOFT)
+            if (!w.factor) out.add(Component.translatable("gui.guildmark.trade.store.wagon.factor_only") to Ui.RED)
+            return out
+        }
+        val state = when (w.state) {
+            StoreWagon.COMING -> if (w.place.isEmpty()) Component.translatable("gui.guildmark.trade.store.wagon.state.coming_any", duration(w.dueSecs))
+            else Component.translatable("gui.guildmark.trade.store.wagon.state.coming", w.place, duration(w.dueSecs))
+            StoreWagon.HERE -> Component.translatable("gui.guildmark.trade.store.wagon.state.here")
+            StoreWagon.YARD -> if (w.place.isEmpty()) Component.translatable("gui.guildmark.trade.store.wagon.state.yard_any")
+            else Component.translatable("gui.guildmark.trade.store.wagon.state.yard", w.place)
+            StoreWagon.PARKED -> if (w.far >= 0) Component.translatable("gui.guildmark.trade.store.wagon.state.parked", w.x, w.y, w.z)
+            else Component.translatable("gui.guildmark.trade.store.wagon.state.away")
+            else -> Component.translatable("gui.guildmark.trade.store.wagon.state.led")
+        }
+        out.add(state to if (w.state == StoreWagon.HERE) Ui.GREEN else Ui.GOLD)
+        out.add(
+            if (w.horse) Component.translatable("gui.guildmark.trade.store.wagon.horse", w.horseName) to Ui.TEXT_SOFT
+            else Component.translatable("gui.guildmark.trade.store.wagon.no_horse") to Ui.RED,
+        )
+        out.add(Component.translatable("gui.guildmark.trade.store.wagon.hold", w.used, WAGON_SLOTS) to Ui.TEXT_SOFT)
+        return out
+    }
+
+    /** How long until the wagon is in its yard. */
+    private fun duration(secs: Int): Component =
+        if (secs >= 60) Component.translatable("gui.guildmark.trade.store.wagon.minutes", (secs + 30) / 60) else Component.translatable("gui.guildmark.trade.store.wagon.moment")
+
+    /** Where the Wagon tab's buttons start: under its words, and under the pointer. */
+    private fun wagonButtonsY(): Int {
+        var y = listTop + 4
+        for ((text, _) in wagonLines()) y += font.split(text, wagonTextWidth()).size * 10
+        return max(y + 4, listTop + 42)
+    }
+
+    /** The Wagon tab's buttons: the Bill with no wagon; else a horse (with none), the wagon called here, a new copy of the Bill. */
+    private fun layWagon(out: MutableList<Desk>) {
+        val w = view.wagon ?: return
+        val y = wagonButtonsY()
+        val purse = view.marks
+        val off = Component.translatable("gui.guildmark.trade.store.wagon.why.off")
+        if (w.state == StoreWagon.NONE) {
+            val why = when {
+                !w.on -> off
+                !w.factor -> Component.translatable("gui.guildmark.trade.store.wagon.why.factor")
+                purse < w.billPrice -> Component.translatable("gui.guildmark.trade.store.wagon.why.short", w.billPrice)
+                else -> null
+            }
+            val label = Component.translatable("gui.guildmark.trade.store.wagon.buy_bill", marks(w.billPrice))
+            out.add(Desk(StoreDesk.WAGON_BILL, innerX, y, min(innerWidth, 200), label, why == null, why ?: Component.translatable("gui.guildmark.trade.store.wagon.tip.bill")))
+            return
+        }
+        val half = (innerWidth - 4) / 2
+        var n = 0
+        fun put(action: Int, label: Component, why: Component?, tip: Component) {
+            out.add(Desk(action, innerX + (n % 2) * (half + 4), y + (n / 2) * 16, half, label, why == null, why ?: tip))
+            n++
+        }
+        if (!w.horse) {
+            val why = when {
+                !w.on -> off
+                purse < w.horsePrice -> Component.translatable("gui.guildmark.trade.store.wagon.why.short", w.horsePrice)
+                else -> null
+            }
+            put(StoreDesk.WAGON_HORSE, Component.translatable("gui.guildmark.trade.store.wagon.buy_horse", marks(w.horsePrice)), why, Component.translatable("gui.guildmark.trade.store.wagon.tip.horse"))
+        }
+        put(
+            StoreDesk.WAGON_RECALL,
+            if (w.fee == 0) Component.translatable("gui.guildmark.trade.store.wagon.recall_free") else Component.translatable("gui.guildmark.trade.store.wagon.recall", marks(w.fee)),
+            if (w.state == StoreWagon.HERE) Component.translatable("gui.guildmark.trade.store.wagon.why.here") else null,
+            Component.translatable("gui.guildmark.trade.store.wagon.tip.recall", marks(WagonBill.RECALL_FEE)),
+        )
+        put(
+            StoreDesk.WAGON_COPY, Component.translatable("gui.guildmark.trade.store.wagon.copy"),
+            if (w.hasBill) Component.translatable("gui.guildmark.trade.store.wagon.why.has_bill") else null, Component.translatable("gui.guildmark.trade.store.wagon.tip.copy"),
+        )
+    }
+
+    /**
+     * The Carrier's Wagon (build part D3): where it is, its horse and its hold, the Bill and the horse for sale and the wagon called to this yard;
+     * a pointer turning to the wagon (or, while it is in a yard, to this one) from where the player stands and faces; the yard under them.
+     */
+    private fun drawWagon(graphics: GuiGraphicsExtractor, k: Float, mouseX: Int, mouseY: Int, t: Float, a: Float) {
         val y0 = panelY + TABS_TOP + TAB_H + 6
         graphics.text(font, Component.translatable("gui.guildmark.trade.store.wagon.head"), innerX + 2, y0, fade(Ui.TEXT, k), false)
         if (!view.wagonOn) {
             graphics.text(font, Component.translatable("gui.guildmark.trade.store.wagon.off"), innerX + 2, y0 + 11, fade(Ui.TEXT_FAINT, k), false)
         }
+        val w = view.wagon
         val yard = view.yard
-        val player = minecraft.player
+        val player = minecraft.player ?: return
+        // The wagon's state, its horse and its hold, each line easing in after the last
         var y = listTop + 4
-        if (yard == null || player == null) {
+        for ((i, line) in wagonLines().withIndex()) {
+            val lk = k * ease(Mth.clamp((t - tabAt - 2f - i * 2f) / 6f, 0f, 1f))
+            for (part in font.split(line.first, wagonTextWidth())) {
+                graphics.text(font, part, innerX + 2, y, fade(line.second, lk), false)
+                y += 10
+            }
+        }
+        // The pointer: the bearing to the wagon out on the road in this land, else to the yard, against where the player looks
+        val out = w != null && (w.state == StoreWagon.PARKED || w.state == StoreWagon.LED) && w.far >= 0
+        val tx = if (out && w != null) w.x + 0.5 else yard?.let { it.x + 0.5 }
+        val tz = if (out && w != null) w.z + 0.5 else yard?.let { it.z + 0.5 }
+        if (tx != null && tz != null) {
+            val px = Mth.lerp(a.toDouble(), player.xo, player.x)
+            val pz = Mth.lerp(a.toDouble(), player.zo, player.z)
+            val dx = tx - px
+            val dz = tz - pz
+            val far = hypot(dx, dz).roundToInt()
+            val cx = innerX + innerWidth - 22
+            val cy = listTop + 16
+            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, Ui.SOCKET, cx - 14, cy - 14, 28, 28, ARGB.white(k))
+            val bearing = Math.toDegrees(atan2(-dx, dz)).toFloat()
+            val turn = Math.toRadians((bearing - Mth.lerp(a, player.yRotO, player.yRot)).toDouble()).toFloat()
+            val pose = graphics.pose()
+            pose.pushMatrix()
+            pose.translate(cx.toFloat(), cy.toFloat())
+            pose.rotate(turn)
+            for (i in 0 until 9) {
+                val half = (i / 2).coerceAtMost(3)
+                graphics.fill(-half, -9 + i, half + 1, -8 + i, fade(if (far < 4) Ui.GREEN else Ui.GOLD_BRIGHT, k))
+            }
+            graphics.fill(0, 0, 1, 7, fade(Ui.GOLD, k))
+            pose.popMatrix()
+            graphics.centeredText(font, Component.translatable("gui.guildmark.trade.store.wagon.blocks", far), cx, cy + 16, fade(Ui.TEXT_FAINT, k))
+        }
+        // Its buttons
+        drawDesk(graphics, k, mouseX, mouseY, t)
+        y = (desk.maxOfOrNull { it.y + 13 } ?: wagonButtonsY()) + 8
+        // The yard a wagon called here comes to
+        Ui.divider(graphics, innerX, y - 3, innerWidth, gem = false)
+        y += 4
+        if (yard == null) {
             graphics.text(font, Component.translatable("gui.guildmark.trade.store.wagon.none"), innerX + 2, y, fade(Ui.TEXT_FAINT, k), false)
-            return
+            y += 12
+        } else {
+            for (part in font.split(Component.translatable("gui.guildmark.trade.store.wagon.yard"), innerWidth - 4)) {
+                graphics.text(font, part, innerX + 2, y, fade(Ui.TEXT_SOFT, k), false)
+                y += 10
+            }
+            val far = hypot(yard.x + 0.5 - player.x, yard.z + 0.5 - player.z).roundToInt()
+            graphics.text(font, Component.translatable("gui.guildmark.trade.store.wagon.at", yard.x, yard.y, yard.z, far), innerX + 2, y, fade(Ui.TEXT_SOFT, k), false)
+            y += 12
         }
-        graphics.text(font, Component.translatable("gui.guildmark.trade.store.wagon.yard"), innerX + 2, y, fade(Ui.TEXT_SOFT, k), false)
-        y += 12
-        val px = Mth.lerp(a.toDouble(), player.xo, player.x)
-        val pz = Mth.lerp(a.toDouble(), player.zo, player.z)
-        val dx = yard.x + 0.5 - px
-        val dz = yard.z + 0.5 - pz
-        val far = hypot(dx, dz).roundToInt()
-        graphics.text(font, Component.translatable("gui.guildmark.trade.store.wagon.at", yard.x, yard.y, yard.z, far), innerX + 2, y, fade(Ui.TEXT_SOFT, k), false)
-        // The pointer: the bearing to the yard against where the player looks, up the screen being straight ahead
-        val cx = innerX + innerWidth - 30
-        val cy = listTop + 22
-        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, Ui.SOCKET, cx - 14, cy - 14, 28, 28, ARGB.white(k))
-        val bearing = Math.toDegrees(atan2(-dx, dz)).toFloat()
-        val turn = Math.toRadians((bearing - Mth.lerp(a, player.yRotO, player.yRot)).toDouble()).toFloat()
-        val pose = graphics.pose()
-        pose.pushMatrix()
-        pose.translate(cx.toFloat(), cy.toFloat())
-        pose.rotate(turn)
-        for (i in 0 until 9) {
-            val half = (i / 2).coerceAtMost(3)
-            graphics.fill(-half, -9 + i, half + 1, -8 + i, fade(if (far < 4) Ui.GREEN else Ui.GOLD_BRIGHT, k))
+        if (w != null && w.state != StoreWagon.NONE) {
+            for (part in font.split(Component.translatable("gui.guildmark.trade.store.wagon.note"), innerWidth - 4)) {
+                if (y + 10 > listBottom) break
+                graphics.text(font, part, innerX + 2, y, fade(Ui.TEXT_FAINT, k), false)
+                y += 10
+            }
         }
-        graphics.fill(0, 0, 1, 7, fade(Ui.GOLD, k))
-        pose.popMatrix()
-        y += 22
-        graphics.text(font, Component.translatable("gui.guildmark.trade.store.wagon.bill"), innerX + 2, y, fade(Ui.TEXT_FAINT, k), false)
+    }
+
+    /** The buttons laid on this tab ([desk]), lit under the cursor and pressed down a moment when clicked. */
+    private fun drawDesk(graphics: GuiGraphicsExtractor, k: Float, mouseX: Int, mouseY: Int, t: Float) {
+        for (d in desk) {
+            val lit = d.ok && mouseX >= d.x && mouseX < d.x + d.w && mouseY >= d.y && mouseY < d.y + 13
+            val down = pressedDesk == d.action && t - pressedDeskAt < 3f
+            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, Ui.BUTTON.get(d.ok, lit), d.x, d.y + if (down) 1 else 0, d.w, 13, ARGB.white(k))
+            graphics.centeredText(font, d.label, d.x + d.w / 2, d.y + 3 + if (down) 1 else 0, fade(if (!d.ok) Ui.TEXT_FAINT else if (lit) Ui.GOLD_BRIGHT else Ui.TEXT, k))
+        }
     }
 
     // ---- Guards ----
@@ -900,12 +1033,7 @@ class StoreScreen(private var view: StoreView) : Screen(Component.translatable("
                 if (days <= 0 && view.open) graphics.fill(x, sy + 5, x + cw - 1, sy + 7, fade(Ui.RED, k * (0.6f + 0.4f * sin(t * 0.15f))))
             }
         }
-        for (d in desk) {
-            val lit = d.ok && mouseX >= d.x && mouseX < d.x + d.w && mouseY >= d.y && mouseY < d.y + 13
-            val down = pressedDesk == d.action && t - pressedDeskAt < 3f
-            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, Ui.BUTTON.get(d.ok, lit), d.x, d.y + if (down) 1 else 0, d.w, 13, ARGB.white(k))
-            graphics.centeredText(font, d.label, d.x + d.w / 2, d.y + 3 + if (down) 1 else 0, fade(if (!d.ok) Ui.TEXT_FAINT else if (lit) Ui.GOLD_BRIGHT else Ui.TEXT, k))
-        }
+        drawDesk(graphics, k, mouseX, mouseY, t)
 
         // The half rent: what the tables rented cost a week with the Store, and what they would without
         var y = stripY() + 46
@@ -1050,6 +1178,9 @@ class StoreScreen(private var view: StoreView) : Screen(Component.translatable("
         const val GUARDS = 3
         const val ACCOUNT = 4
         const val TABS = 5
+
+        /** The slots a Carrier's Wagon holds. */
+        const val WAGON_SLOTS = 54
         val TAB_KEYS = arrayOf(
             "gui.guildmark.trade.store.tab.bonded", "gui.guildmark.trade.store.tab.word", "gui.guildmark.trade.store.tab.wagon",
             "gui.guildmark.trade.store.tab.guards", "gui.guildmark.trade.store.tab.account",

@@ -31,6 +31,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Days
 import io.github.vaspyyy.guildmark.townsfolk.Residents
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
+import io.github.vaspyyy.guildmark.trade.carry.WagonBill
 import net.minecraft.ChatFormatting
 import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
@@ -61,7 +62,8 @@ import kotlin.math.roundToInt
  * The Carriers' Store's desk (living-world/trader/design.md, Part 5; build part F2): the screen its owner opens by using the clerk, the
  * scale on the counter or the writing desk behind it, on the pattern of a market hall table's ([StallDesk]). Five tabs: *Bonded goods*
  * (bond from the pack, take back, each hauled parcel with the days its name has left), *Word* (the live word of the Store's town and of
- * the towns where the owner keeps a stall), *Wagon* (the yard a wagon comes to), *Guards* (who is hired) and *Account* (the clerk's wage
+ * the towns where the owner keeps a stall), *Wagon* (the Carrier's Wagon: its Bill and horse sold, where it is, called to the yard; build part
+ * D3's [WagonBill.desk]), *Guards* (who is hired) and *Account* (the clerk's wage
  * and the half rent). Only the Store's owner may use it; anyone else using the clerk talks with them as with anyone.
  *
  * What the screen asks, the server checks: the player at the Store, the Store theirs, the goods in their pack and the Marks. A move is
@@ -74,6 +76,12 @@ object StoreDesk {
     const val BOND = 0
     const val TAKE = 1
     const val PAY = 2
+
+    /** The Wagon tab's (build part D3, [WagonBill.desk]): the Wagon Bill, a horse, the wagon called to this yard, a new copy of the Bill. */
+    const val WAGON_BILL = 3
+    const val WAGON_HORSE = 4
+    const val WAGON_RECALL = 5
+    const val WAGON_COPY = 6
 
     /** How many a click moves (a shift-click: [Stores.MOST], all of them). */
     const val BATCH = 16
@@ -362,6 +370,10 @@ object StoreDesk {
             BOND -> bond(level, player, s, w, rec, Good.byId(id), count, clerk)
             TAKE -> take(level, player, s, w, rec, Good.byId(id), count, clerk)
             PAY -> pay(level, player, rec, clerk)
+            in WAGON_BILL..WAGON_COPY -> {
+                WagonBill.desk(player, action - WAGON_BILL, s.capital, s.owner, clerk)?.let { player.sendOverlayMessage(it.copy().withStyle(ChatFormatting.RED)) }
+                null
+            }
             else -> null
         }
         if (why != null) player.sendOverlayMessage(Component.translatable(why, s.place, Stores.WAGE).withStyle(ChatFormatting.RED))
@@ -517,7 +529,7 @@ object StoreDesk {
             rec?.let { Stores.payRefusal(level, player, it) } ?: "", w != null && clerkOf(level, w) != null,
             goods, Stores.KINDS, Stores.MOST, TradeConfig.word(), s.towns,
             TradeConfig.wagon(), Stores.yard(player, s.capital), TradeConfig.hunt(), book?.guards?.size ?: 0, (TradeConfig.guardWage() * 10).roundToInt(),
-            tables, keepNow, keepFull, Stores.halves(player),
+            tables, keepNow, keepFull, Stores.halves(player), WagonBill.view(player, s.capital),
         )
     }
 
