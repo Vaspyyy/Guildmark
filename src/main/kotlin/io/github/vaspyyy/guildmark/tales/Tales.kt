@@ -226,10 +226,10 @@ object Tales : Comings.Listener {
     fun lairCleared(level: ServerLevel, lair: Lair, heroes: List<ServerPlayer>) {}
 
     /** From `Captives.homecoming` (T3 places the call): captive [p] is home. */
-    fun captiveHome(level: ServerLevel, p: Townsperson) {}
+    fun captiveHome(level: ServerLevel, p: Townsperson) = io.github.vaspyyy.guildmark.tales.templates.WagonCamp.home(level, p)
 
     /** From `Captives.onDeath` (T3 places the call): captive [p] died. */
-    fun captiveDied(level: ServerLevel, p: Townsperson) {}
+    fun captiveDied(level: ServerLevel, p: Townsperson) = io.github.vaspyyy.guildmark.tales.templates.WagonCamp.died(level, p)
 
     /** From `FestivalSite.lanterns` (T2 places the call): the Lanternrise's lanterns are about to go, at the festival's [centre]. */
     fun lanternStart(level: ServerLevel, centre: Vec3) = io.github.vaspyyy.guildmark.tales.templates.LanternFestival.start(level, centre)

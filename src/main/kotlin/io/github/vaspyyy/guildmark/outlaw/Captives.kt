@@ -50,6 +50,8 @@ class Captive(
     var placed: Boolean = false,
     /** Cut loose and on their way home. */
     var freed: Boolean = false,
+    /** The resident they are, if they're one of a town's people (a tale's hand taken with a wagon), else -1: their body in the camp is that resident. */
+    val resident: Int = -1,
 ) {
     companion object {
         val CODEC: Codec<Captive> = RecordCodecBuilder.create { i ->
@@ -61,6 +63,7 @@ class Captive(
                 Codec.INT.optionalFieldOf("look", 0).forGetter(Captive::look),
                 Codec.BOOL.optionalFieldOf("placed", false).forGetter(Captive::placed),
                 Codec.BOOL.optionalFieldOf("freed", false).forGetter(Captive::freed),
+                Codec.INT.optionalFieldOf("resident", -1).forGetter(Captive::resident),
             ).apply(i, ::Captive)
         }
     }
@@ -105,9 +108,12 @@ object Captives {
 
     // ---- Being taken ----
 
-    /** [band] carries off [name] from the village at [home]; they're kept in its camp until someone frees them. */
-    fun take(level: ServerLevel, band: OutlawBand, name: String, home: BlockPos, role: TownRole, look: Int): Captive {
-        val captive = Captive(UUID.randomUUID(), name, home, role.ordinal, look)
+    /**
+     * [band] carries off [name] from the village at [home]; they're kept in its camp until someone frees them. A [resident] (a town's
+     * own, -1 for none) is that resident in the camp: their body there carries their record.
+     */
+    fun take(level: ServerLevel, band: OutlawBand, name: String, home: BlockPos, role: TownRole, look: Int, resident: Int = -1): Captive {
+        val captive = Captive(UUID.randomUUID(), name, home, role.ordinal, look, resident = resident)
         band.captives.add(captive)
         OutlawCamps.get(level).setDirty()
         if (band.built && level.isPositionEntityTicking(band.pos)) place(level, band, captive)
@@ -153,6 +159,17 @@ object Captives {
         person.post = spot
         person.postFacing = toFire
         person.customName = Component.literal(captive.name)
+        // A town's own resident is that resident in the camp, their record's body (so their memory and talk come with them)
+        if (captive.resident >= 0) {
+            person.resident = captive.resident
+            val residents = io.github.vaspyyy.guildmark.townsfolk.Residents.get(level)
+            residents[captive.resident]?.let { r ->
+                if (r.uuid != captive.id) {
+                    r.uuid = captive.id
+                    residents.add(r)
+                }
+            }
+        }
         if (!level.addFreshEntity(person)) return false
         person.act(Activity.BOUND)
         captive.placed = true
@@ -288,6 +305,7 @@ object Captives {
             }
         if (rescuer != null && level.getBlockState(home).block is QuestBoardBlock) Standing.add(level, home, rescuer, STANDING_GAIN)
         io.github.vaspyyy.guildmark.townsfolk.talk.Witness.rescued(level, p)
+        io.github.vaspyyy.guildmark.tales.Tales.captiveHome(level, p)
         GuildNews.add(level, "news.guildmark.outlaw.rescued", p.name.string, villageName(level, home).string)
     }
 
@@ -303,6 +321,7 @@ object Captives {
     /** A captive died: the band no longer holds them, and anyone sent for them hears of it. */
     fun onDeath(level: ServerLevel, p: Townsperson) {
         forget(level, p)
+        io.github.vaspyyy.guildmark.tales.Tales.captiveDied(level, p)
         for (player in level.players()) {
             if (contracts(player, p.uuid).isNotEmpty()) player.sendSystemMessage(Component.translatable("message.guildmark.captive_lost", p.name))
         }
