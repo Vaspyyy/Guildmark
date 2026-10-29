@@ -403,6 +403,8 @@ class Residents(
             Tales.died(level, r)
             // A village's dead list (living-world/villages/design.md section 11.4); a capital's people are in none
             io.github.vaspyyy.guildmark.village.live.Villages.died(level, r, cause)
+            // On the disk in a second or so, not at the next autosave (m7 leftovers item 3: a killed game kept them alive with no body)
+            DeathSaves.due(level)
         }
     }
 }

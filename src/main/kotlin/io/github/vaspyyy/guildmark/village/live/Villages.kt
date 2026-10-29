@@ -63,6 +63,8 @@ object Villages {
         io.github.vaspyyy.guildmark.village.live.trouble.Trouble.register()
         // What the villages cost (village perf) and whether nothing can stick (village check) (V11)
         VillageSafetyCommand.init()
+        // A death saved a second after it happens, a capital's and a tale's too (V11, m7 leftovers item 3: everyone's, set up here)
+        io.github.vaspyyy.guildmark.townsfolk.DeathSaves.register()
     }
 
     /**
