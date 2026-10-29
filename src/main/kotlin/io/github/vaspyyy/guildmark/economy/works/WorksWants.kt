@@ -19,13 +19,15 @@ import io.github.vaspyyy.guildmark.economy.Tally
 import io.github.vaspyyy.guildmark.economy.Town
 import io.github.vaspyyy.guildmark.progression.Skill
 import io.github.vaspyyy.guildmark.progression.Skills
+import io.github.vaspyyy.guildmark.trade.TradeBooks
+import io.github.vaspyyy.guildmark.trade.TradeConfig
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel
 import java.util.UUID
 import kotlin.math.floor
 import kotlin.math.roundToInt
 
-/** A works the day's close found wanted: its kind, its road (a tower's) or owner (a stall's or a cookshop's), and why (a lang key). */
+/** A works the day's close found wanted: its kind, its road (a tower's) or owner (a stall's, a cookshop's, a Store's or a House's), and why (a lang key). */
 internal class Want(val kind: WorksKind, val road: Int, val owner: UUID?, val why: String)
 
 /**
@@ -61,9 +63,29 @@ internal object WorksWants {
     /** Whether the day [m] just closed was a hungry one: a twentieth of the town's meals or more went without. */
     fun hungry(m: Market, town: Town): Boolean = (m.hungry.lastOrNull() ?: 0.0) >= maxOf(HUNGRY_LEAST, town.people * Economy.MEALS * HUNGRY_SHARE)
 
-    /** Whether [capital] has asked for [kind] (for [road], or for [owner]) already, or can't yet because what it follows on from doesn't stand. */
+    /**
+     * Whether [capital] has asked for [kind] (for [road], or for [owner]) already, or can't yet because what it follows on from doesn't
+     * stand: for a works of each player's, that player's own (a House waits on one's own Store, not on any Store of the town's).
+     */
     private fun taken(data: WorksData, capital: Long, kind: WorksKind, road: Int = -1, owner: UUID? = null): Boolean =
-        data.find(capital, kind, road, owner) != null || kind.after != null && data.done(capital, kind.after) == null
+        data.find(capital, kind, road, owner) != null || kind.after != null && data.done(capital, kind.after, owner) == null
+
+    /** The most Carriers' Stores a capital takes, and the most a player has in the world (a Store in each of three towns). */
+    const val STORES_A_TOWN = 2
+    const val STORES_A_PLAYER = 3
+
+    /** The most Counting Houses a player has in the world. */
+    const val HOUSES_A_PLAYER = 1
+
+    /** Whether [player] holds the Carrier's Warrant (the book's; with the ladder off, every gate passes and so does this). */
+    fun warranted(level: ServerLevel, player: UUID): Boolean = !TradeConfig.rungs() || TradeBooks.peek(level)?.get(player)?.warrant == true
+
+    /** Whether [capital] and [player] can take a Store more: two a capital, three a player in the world (a Store they have in [capital] already is the other rule's). */
+    fun storeRoom(data: WorksData, capital: Long, player: UUID): Boolean =
+        data.held(capital, WorksKind.STORE) < STORES_A_TOWN && data.owned(WorksKind.STORE, player) < STORES_A_PLAYER
+
+    /** Whether [player] can take a Counting House more: one in the world. */
+    fun houseRoom(data: WorksData, player: UUID): Boolean = data.owned(WorksKind.COUNTING_HOUSE, player) < HOUSES_A_PLAYER
 
     /** What [entry]'s town asks for at the close of the day [rec] kept. */
     fun wants(level: ServerLevel, entry: Markets.Entry, data: WorksData, rec: TownRec): List<Want> {
@@ -94,6 +116,16 @@ internal object WorksWants {
             if (taken(data, capital, WorksKind.COOKSHOP, owner = player.uuid) || !trusted(level, capital, player.uuid)) continue
             if (Skills.level(player, Skill.COOKING) < CookShops.LEVEL) continue
             out.add(Want(WorksKind.COOKSHOP, -1, player.uuid, "gui.guildmark.works.why.cookshop"))
+        }
+        // A Carriers' Store to a Trusted Supplier who holds the Warrant (Trade F2), and a Counting House once a Store of theirs stands here
+        if (Suppliers.enabled() && TradeConfig.stores()) for (player in level.server.playerList.players) {
+            if (!warranted(level, player.uuid)) continue
+            if (trusted(level, capital, player.uuid) && !taken(data, capital, WorksKind.STORE, owner = player.uuid) && storeRoom(data, capital, player.uuid)) {
+                out.add(Want(WorksKind.STORE, -1, player.uuid, "gui.guildmark.works.why.store"))
+            }
+            if (!taken(data, capital, WorksKind.COUNTING_HOUSE, owner = player.uuid) && houseRoom(data, player.uuid)) {
+                out.add(Want(WorksKind.COUNTING_HOUSE, -1, player.uuid, "gui.guildmark.works.why.counting_house"))
+            }
         }
         return out
     }
@@ -193,6 +225,34 @@ internal object WorksWants {
                     else -> NotYet(WorksKind.COOKSHOP, -1, "gui.guildmark.works.not_yet.cookshop.close", listOf())
                 },
             )
+        }
+        if (player != null && TradeConfig.stores()) {
+            val warrant = warranted(level, player)
+            if (!taken(data, capital, WorksKind.STORE, owner = player)) {
+                out.add(
+                    when {
+                        !Suppliers.enabled() -> NotYet(WorksKind.STORE, -1, "gui.guildmark.works.not_yet.store.standing", listOf())
+                        !warrant -> NotYet(WorksKind.STORE, -1, "gui.guildmark.works.not_yet.store.warrant", listOf())
+                        !trusted(level, capital, player) -> {
+                            val points = Suppliers.get(level)[BlockPos.of(capital), player]?.points ?: 0.0
+                            NotYet(WorksKind.STORE, -1, "gui.guildmark.works.not_yet.store", listOf(floor(points).toInt().toString(), SupplierRank.TRUSTED.points.toString()))
+                        }
+                        data.held(capital, WorksKind.STORE) >= STORES_A_TOWN -> NotYet(WorksKind.STORE, -1, "gui.guildmark.works.not_yet.store.town", listOf())
+                        data.owned(WorksKind.STORE, player) >= STORES_A_PLAYER -> NotYet(WorksKind.STORE, -1, "gui.guildmark.works.not_yet.store.world", listOf())
+                        else -> NotYet(WorksKind.STORE, -1, "gui.guildmark.works.not_yet.store.close", listOf())
+                    },
+                )
+            }
+            // The House is asked about once its owner has the Warrant, which is when they are on the ladder it is the top of
+            if (warrant && data.find(capital, WorksKind.COUNTING_HOUSE, owner = player) == null) {
+                out.add(
+                    when {
+                        data.done(capital, WorksKind.STORE, player) == null -> NotYet(WorksKind.COUNTING_HOUSE, -1, "gui.guildmark.works.not_yet.counting_house", listOf())
+                        !houseRoom(data, player) -> NotYet(WorksKind.COUNTING_HOUSE, -1, "gui.guildmark.works.not_yet.counting_house.world", listOf())
+                        else -> NotYet(WorksKind.COUNTING_HOUSE, -1, "gui.guildmark.works.not_yet.counting_house.close", listOf())
+                    },
+                )
+            }
         }
         return out
     }

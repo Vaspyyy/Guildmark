@@ -48,6 +48,8 @@ import io.github.vaspyyy.guildmark.townsfolk.talk.Familiarity
 import io.github.vaspyyy.guildmark.townsfolk.talk.Favour
 import io.github.vaspyyy.guildmark.townsfolk.talk.Memory
 import io.github.vaspyyy.guildmark.townsfolk.talk.TownTalk
+import io.github.vaspyyy.guildmark.trade.Houses
+import io.github.vaspyyy.guildmark.trade.Stores
 import io.github.vaspyyy.guildmark.village.StandingTier
 import io.github.vaspyyy.guildmark.village.VillageNames
 import net.minecraft.ChatFormatting
@@ -556,6 +558,8 @@ object WorksLedger {
                 Component.translatable("gui.guildmark.works.doing.stall", s.goods().size, s.till.roundToInt())
             }
             WorksKind.COOKSHOP -> CookShops.doing(level, v.capital, v.owner)
+            WorksKind.STORE -> Stores.doing(level, v.capital, v.owner)
+            WorksKind.COUNTING_HOUSE -> Houses.doing(level, v.capital, v.owner)
         }
     }
 

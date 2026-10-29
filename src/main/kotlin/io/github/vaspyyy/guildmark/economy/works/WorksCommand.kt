@@ -28,6 +28,8 @@ import io.github.vaspyyy.guildmark.homestead.plan.Stage
 import io.github.vaspyyy.guildmark.homestead.plan.Stuff
 import io.github.vaspyyy.guildmark.townsfolk.CityPlaces
 import io.github.vaspyyy.guildmark.townsfolk.Comings
+import io.github.vaspyyy.guildmark.trade.Houses
+import io.github.vaspyyy.guildmark.trade.Stores
 import io.github.vaspyyy.guildmark.village.VillageNames
 import net.minecraft.ChatFormatting
 import net.minecraft.commands.CommandSourceStack
@@ -304,6 +306,8 @@ object WorksCommand {
                 "sells for ${s.name}: $goods; %.1f Marks in its till".format(s.till) + if (s.wages > 1e-6) ", its keeper owed %.2f".format(s.wages) else ""
             }
             WorksKind.COOKSHOP -> CookShops.describe(level, w)
+            WorksKind.STORE -> Stores.describe(level, w)
+            WorksKind.COUNTING_HOUSE -> Houses.describe(level, w)
         }
     }
 
@@ -326,12 +330,21 @@ object WorksCommand {
         } else if (roadName != null) {
             return fail(source, "Only a watchtower is for a road.")
         }
+        val owner = if (kind.per == WorksKind.Per.PLAYER) player.uuid else null
         kind.after?.let { first ->
-            if (Works.records(level, here.capital).none { it.kind == first && it.state == WorksState.DONE }) {
-                return fail(source, "The ${kind.id} follows on from the ${first.id}: propose and finish that first.")
+            // For a works of each player's, the one it follows on from is theirs too (a House needs one's own Store)
+            if (Works.records(level, here.capital).none { it.kind == first && it.state == WorksState.DONE && (kind.per != WorksKind.Per.PLAYER || it.owner == owner) }) {
+                return fail(source, "The ${kind.id} follows on from ${if (kind.per == WorksKind.Per.PLAYER) "your own " else "the "}${first.id}: propose and finish that first.")
             }
         }
-        val owner = if (kind.per == WorksKind.Per.PLAYER) player.uuid else null
+        // The most of each a capital or a player takes (one they have here already is answered below, as any works' is)
+        val data = WorksData.get(level)
+        if (kind == WorksKind.STORE && data.find(here.capital, kind, owner = player.uuid) == null && !WorksWants.storeRoom(data, here.capital, player.uuid)) {
+            return fail(source, "A capital takes ${WorksWants.STORES_A_TOWN} Carriers' Stores and a player has ${WorksWants.STORES_A_PLAYER} in all the world.")
+        }
+        if (kind == WorksKind.COUNTING_HOUSE && data.find(here.capital, kind, owner = player.uuid) == null && !WorksWants.houseRoom(data, player.uuid)) {
+            return fail(source, "A player has ${WorksWants.HOUSES_A_PLAYER} Counting House in all the world.")
+        }
         val w = Works.proposeNow(level, here.capital, kind, road, owner)
         if (w == null) {
             val had = Works.records(level, here.capital).firstOrNull {

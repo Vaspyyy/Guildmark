@@ -61,6 +61,7 @@ PREFIXES = {
         "title.guildmark.trading_house", "guildmark.configuration.trade",
         "say.guildmark.trade_", "say.guildmark.talk.trade.", "say.guildmark.talk.detail.trade.",
         "fortune.guildmark.kind.hauled", "fortune.guildmark.reason.hauled",
+        "gui.guildmark.works.why.store", "gui.guildmark.works.why.counting_house", "gui.guildmark.works.not_yet.store", "gui.guildmark.works.not_yet.counting_house", "gui.guildmark.works.doing.store", "gui.guildmark.works.doing.counting_house", "gui.guildmark.works.stage_of.store", "gui.guildmark.works.stage_of.counting_house", "gui.guildmark.works.kind.store", "gui.guildmark.works.kind.counting_house", "gui.guildmark.works.pledges.none_store", "gui.guildmark.works.pledges.none_counting_house", "board.guildmark.slip.works.kind.store", "board.guildmark.slip.works.kind.counting_house", "fortune.guildmark.works.store", "fortune.guildmark.works.counting_house", "say.guildmark.talk.detail.works.raised.store", "say.guildmark.talk.detail.works.raised.counting_house", "block.guildmark.store_", "block.guildmark.strongbox", "block.guildmark.counting_frame", "block.guildmark.house_",
     ),
     "tales": (
         "say.guildmark.talk.tale.", "say.guildmark.talk.detail.tale.", "talk.guildmark.choice.tale.",

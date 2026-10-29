@@ -124,8 +124,16 @@ internal class WorksData(
             (kind.per != WorksKind.Per.ROAD || it.road == road) && (kind.per != WorksKind.Per.PLAYER || it.owner == owner)
     }
 
-    /** [capital]'s works of [kind] that stands done, if there is one. */
-    fun done(capital: Long, kind: WorksKind): WorksRec? = works.values.firstOrNull { it.capital == capital && it.kind == kind && it.state == WorksState.DONE }
+    /** [capital]'s works of [kind] that stands done, if there is one: [owner]'s own, if it is one of each player's (a House follows on from one's own Store). */
+    fun done(capital: Long, kind: WorksKind, owner: UUID? = null): WorksRec? = works.values.firstOrNull {
+        it.capital == capital && it.kind == kind && it.state == WorksState.DONE && (kind.per != WorksKind.Per.PLAYER || it.owner == owner)
+    }
+
+    /** How many of [kind] [owner] has in all the world, in any state (a Store: three at most; a House: one). */
+    fun owned(kind: WorksKind, owner: UUID): Int = works.values.count { it.kind == kind && it.owner == owner }
+
+    /** How many of [kind] [capital] has, whoever's, in any state (a capital takes two Stores). */
+    fun held(capital: Long, kind: WorksKind): Int = works.values.count { it.capital == capital && it.kind == kind }
 
     companion object {
         /** Units of each paid material by [Stuff.PAID], kept by their keys. */

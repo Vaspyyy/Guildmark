@@ -71,7 +71,7 @@ internal object WorksSiting {
     private val FREE_USES = setOf(Use.FREE, Use.GARDEN, Use.YARD, Use.CLEARING)
 
     /** The works whose siting reads the city's plan at every look. */
-    private val ON_PLAN = setOf(WorksKind.OVEN, WorksKind.GRANARY, WorksKind.STALL, WorksKind.COOKSHOP)
+    private val ON_PLAN = setOf(WorksKind.OVEN, WorksKind.GRANARY, WorksKind.STALL, WorksKind.COOKSHOP, WorksKind.STORE, WorksKind.COUNTING_HOUSE)
 
     /** A lot to try: the drawing's (0, 0) at [ox], [oz] in the city's frame, its front toward [front]. */
     private class Cand(val ox: Int, val oz: Int, val front: Dir)
@@ -147,6 +147,8 @@ internal object WorksSiting {
             WorksKind.TOWER -> tower(level, w, rec, capital)
             WorksKind.STALL -> stall(level, w, rec, capital)
             WorksKind.COOKSHOP -> cookshop(level, w, rec, capital)
+            WorksKind.STORE -> byHall(level, w, rec, capital, Store.LOT, Store.DOOR)
+            WorksKind.COUNTING_HOUSE -> byHall(level, w, rec, capital, CountingHouse.LOT, CountingHouse.DOOR)
         } ?: return
         if (found) {
             forget(w.id)
@@ -284,6 +286,21 @@ internal object WorksSiting {
             level, w, rec, capital, search, Cookshop.LOT, Cookshop.DOOR, street = true, uses = setOf(Use.SQUARE),
             walks = Cookshop.FRONT + Cookshop.FLANK, stalls = true,
         )
+    }
+
+    // ---- The Carriers' Store and the Counting House ----
+
+    /**
+     * Free ground out from the market hall, as the granary's is looked for there: a clear [lot] (nine by eight) of free ground at one
+     * height within [NEAR_HALL] of the hall, nearest first, its front on a street, and no market stall's keeper walled in by it.
+     */
+    private fun byHall(level: ServerLevel, w: WorksRec, rec: BuildRec, capital: CapitalPiece, lot: Rect, door: Pin): Boolean? {
+        val plan = capital.plan
+        val search = searches.getOrPut(w.id) {
+            val hall = plan.buildings.firstOrNull { it.kind == Kind.MARKET_HALL }?.lot ?: plan.market
+            Search(around(listOf(CityPlan.Pos((hall.x0 + hall.x1) / 2, (hall.z0 + hall.z1) / 2) to NEAR_HALL), lot))
+        }
+        return find(level, w, rec, capital, search, lot, door, street = true, stalls = true)
     }
 
     /** How far from the middle of the avenue its own ground goes: the row before a cookshop's counter may reach the cell just beyond. */

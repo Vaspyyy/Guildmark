@@ -26,6 +26,8 @@ import io.github.vaspyyy.guildmark.townsfolk.Director
 import io.github.vaspyyy.guildmark.townsfolk.Residents
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
+import io.github.vaspyyy.guildmark.trade.Houses
+import io.github.vaspyyy.guildmark.trade.Stores
 import io.github.vaspyyy.guildmark.village.VillageNames
 import net.minecraft.ChatFormatting
 import net.minecraft.core.BlockPos
@@ -42,8 +44,9 @@ import java.util.UUID
 
 /**
  * What players' Marks can have built in a capital (living-world/design-influence.md section 1): a second oven, a
- * granary and then a great one, a watchtower on a road in, a stall of one's own and a cookshop. [per]: one for the town, one for
- * each road in, or one for each player; [after]: the works it follows on from.
+ * granary and then a great one, a watchtower on a road in, a stall of one's own, a cookshop, and a trader's Carriers' Store and then
+ * Counting House. [per]: one for the town, one for each road in, or one for each player; [after]: the works it follows on from (for a
+ * works of each player, the player's own: a House follows on from one's own Store).
  */
 enum class WorksKind(val id: String, val per: Per, val grade: Int, val after: WorksKind?) {
     OVEN("oven", Per.TOWN, 1, null),
@@ -51,7 +54,9 @@ enum class WorksKind(val id: String, val per: Per, val grade: Int, val after: Wo
     GREAT_GRANARY("great_granary", Per.TOWN, 2, GRANARY),
     TOWER("tower", Per.ROAD, 1, null),
     STALL("stall", Per.PLAYER, 1, null),
-    COOKSHOP("cookshop", Per.PLAYER, 1, null);
+    COOKSHOP("cookshop", Per.PLAYER, 1, null),
+    STORE("store", Per.PLAYER, 1, null),
+    COUNTING_HOUSE("counting_house", Per.PLAYER, 2, STORE);
 
     enum class Per { TOWN, ROAD, PLAYER }
 
@@ -366,6 +371,18 @@ object Works {
         return data(level).find(capital, WorksKind.COOKSHOP, owner = player)?.takeIf { it.state == WorksState.DONE }?.site
     }
 
+    /** Where [player]'s own Carriers' Store stands in [capital], if they have one built (the Store's yard, for the trader's carts and wagons). */
+    fun store(level: ServerLevel, capital: Long, player: UUID): WorksSite? {
+        if (!READY) return null
+        return data(level).find(capital, WorksKind.STORE, owner = player)?.takeIf { it.state == WorksState.DONE }?.site
+    }
+
+    /** Where [player]'s own Counting House stands in [capital], if they have one built. */
+    fun house(level: ServerLevel, capital: Long, player: UUID): WorksSite? {
+        if (!READY) return null
+        return data(level).find(capital, WorksKind.COUNTING_HOUSE, owner = player)?.takeIf { it.state == WorksState.DONE }?.site
+    }
+
     /**
      * Where the carters fetch from [capital]'s works of [kind] (the granary's grain): its first door as it was built
      * (the granary's), or its ovens' mouths (the oven's); else the middle of its lot's front, on the side it faces, at
@@ -626,6 +643,10 @@ object Works {
         tell(v, "begun") { it.begun(level, v) }
     }
 
+    /** [owner]'s name as [w]'s pledges knew them, else as they are on now, else none: what a Store or a House is known by. */
+    private fun ownerName(level: ServerLevel, w: WorksRec, owner: UUID): String =
+        w.pledges.lastOrNull { it.player == owner }?.name ?: level.server.playerList.getPlayer(owner)?.name?.string ?: ""
+
     /** [w] stands: from now it does its work. */
     private fun open(level: ServerLevel, data: WorksData, w: WorksRec) {
         val entry = Markets.get(level)[BlockPos.of(w.capital)]
@@ -640,6 +661,14 @@ object Works {
             }
             WorksKind.TOWER -> {}
             WorksKind.COOKSHOP -> CookShops.open(level, w)
+            WorksKind.STORE -> w.owner?.let { owner ->
+                val site = w.site
+                Stores.opening(level, w.capital, owner, ownerName(level, w, owner), StallDesk.colorOf(level, owner), site?.origin ?: BlockPos.of(w.capital), site?.facing ?: Direction.NORTH)
+            }
+            WorksKind.COUNTING_HOUSE -> w.owner?.let { owner ->
+                val site = w.site
+                Houses.opening(level, w.capital, owner, ownerName(level, w, owner), StallDesk.colorOf(level, owner), site?.origin ?: BlockPos.of(w.capital), site?.facing ?: Direction.NORTH)
+            }
             WorksKind.STALL -> w.owner?.let { owner ->
                 val site = w.site
                 val name = w.pledges.lastOrNull { it.player == owner }?.name ?: level.server.playerList.getPlayer(owner)?.name?.string ?: ""
@@ -670,6 +699,8 @@ object Works {
             }
             WorksKind.TOWER -> {}
             WorksKind.COOKSHOP -> CookShops.close(level, w)
+            WorksKind.STORE -> w.owner?.let { Stores.closing(level, w.capital, it) }
+            WorksKind.COUNTING_HOUSE -> w.owner?.let { Houses.closing(level, w.capital, it) }
             WorksKind.STALL -> w.owner?.let { OwnStalls.closing(level, w.capital, it) }
         }
         Markets.get(level).changed()
@@ -684,7 +715,7 @@ object Works {
         if (w.hired >= 0 && Residents.get(level)[w.hired]?.alive == true) return
         val role = when (w.kind) {
             WorksKind.OVEN -> TownRole.BAKER
-            WorksKind.STALL, WorksKind.COOKSHOP -> TownRole.MERCHANT
+            WorksKind.STALL, WorksKind.COOKSHOP, WorksKind.STORE, WorksKind.COUNTING_HOUSE -> TownRole.MERCHANT
             else -> return
         }
         val id = Comings.hire(level, w.capital, role, w.id)
@@ -795,6 +826,7 @@ object Works {
             WorksKind.TOWER -> 5 to 5
             WorksKind.STALL -> 3 to 3
             WorksKind.COOKSHOP -> 5 to 4
+            WorksKind.STORE, WorksKind.COUNTING_HOUSE -> 9 to 8
         }
         val lot = BoundingBox(pos.x - sx / 2, pos.y, pos.z - sz / 2, pos.x - sx / 2 + sx - 1, pos.y + 7, pos.z - sz / 2 + sz - 1)
         val front = pos.relative(facing, maxOf(sx, sz) / 2 + 1)

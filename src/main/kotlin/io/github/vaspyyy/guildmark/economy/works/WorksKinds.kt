@@ -44,6 +44,8 @@ internal object WorksKinds {
         WorksKind.TOWER -> intArrayOf(160, 300, 4, 12, 0)
         WorksKind.STALL -> intArrayOf(40, 0, 0, 2, 6)
         WorksKind.COOKSHOP -> intArrayOf(60, 80, 4, 6, 4)
+        WorksKind.STORE -> intArrayOf(150, 90, 4, 6, 0)
+        WorksKind.COUNTING_HOUSE -> intArrayOf(260, 220, 10, 10, 8)
     }
 
     /** The labourers [kind] takes, the master builder besides. */
@@ -54,6 +56,8 @@ internal object WorksKinds {
         WorksKind.TOWER -> 2
         WorksKind.STALL -> 1
         WorksKind.COOKSHOP -> 2
+        WorksKind.STORE -> 2
+        WorksKind.COUNTING_HOUSE -> 3
     }
 
     /** Days of daylight work [kind] takes at `townWorksBuildSpeed` 1. */
@@ -64,6 +68,8 @@ internal object WorksKinds {
         WorksKind.TOWER -> 2.0
         WorksKind.STALL -> 0.5
         WorksKind.COOKSHOP -> 1.0
+        WorksKind.STORE -> 2.0
+        WorksKind.COUNTING_HOUSE -> 2.5
     }
 
     /**
@@ -80,7 +86,8 @@ internal object WorksKinds {
             val filling = filling(kind, town)
             out[FILLING] = fives(Good.entries.sumOf { filling[it.ordinal] * it.base })
         }
-        if (kind.per == WorksKind.Per.PLAYER) out[PLACE] = PITCH
+        // A Store and a House stand on free ground by the hall, not in the square: the town sells no place there
+        if (kind.per == WorksKind.Per.PLAYER && kind != WorksKind.STORE && kind != WorksKind.COUNTING_HOUSE) out[PLACE] = PITCH
         return out
     }
 

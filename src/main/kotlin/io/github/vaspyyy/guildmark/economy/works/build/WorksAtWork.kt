@@ -365,6 +365,7 @@ internal object WorksAtWork {
             WorksKind.GRANARY, WorksKind.GREAT_GRANARY -> doors(level, w, site, f, near)
             WorksKind.TOWER -> beacon(level, w, f, hour)
             WorksKind.STALL, WorksKind.COOKSHOP -> awning(level, w, site, f, hour, near)
+            WorksKind.STORE, WorksKind.COUNTING_HOUSE -> {}
         }
         if (w.kind == WorksKind.COOKSHOP) CookShops.second(level, w, site, capital, hour)
         if (!rec.firstUse) firstUse(level, w, rec, site, f, hour, near)
@@ -561,6 +562,7 @@ internal object WorksAtWork {
             WorksKind.GRANARY, WorksKind.GREAT_GRANARY -> if (w.fill.all { it <= 1e-6 }) done()
             // Its watch is posted as soon as it stands (the lookouts' own)
             WorksKind.TOWER -> done()
+            WorksKind.STORE, WorksKind.COUNTING_HOUSE -> done()
             WorksKind.OVEN -> {
                 val k = key(w.id, FIRST_USE)
                 val e = errands[k]

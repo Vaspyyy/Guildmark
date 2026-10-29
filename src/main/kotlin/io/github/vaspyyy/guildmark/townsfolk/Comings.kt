@@ -794,6 +794,11 @@ object Comings {
             val behind = Works.record(c.level, works)?.let { CookShops.post(c.level, it) }
             if (behind != null) return ComingsData.Post(r.id, null, behind, w.site?.facing, null)
         }
+        // A Store's clerk and a House's scribe stand at the works' heart, behind the counter or the desk, facing the front
+        if (w.kind == WorksKind.STORE || w.kind == WorksKind.COUNTING_HOUSE) {
+            val at = w.site ?: return null
+            return ComingsData.Post(r.id, null, at.origin, at.facing, null)
+        }
         val site = w.site ?: return null
         return ComingsData.Post(r.id, site.origin, null, null, null)
     }

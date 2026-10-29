@@ -672,6 +672,8 @@ object WorksPlans {
         WorksKind.TOWER -> Tower(rec.y0, rec.palette, rec.path)
         WorksKind.STALL -> Stall(rec.y0, Dye.entries[rec.color.coerceIn(0, Dye.entries.size - 1)])
         WorksKind.COOKSHOP -> Cookshop(rec.y0, Dye.entries[rec.color.coerceIn(0, Dye.entries.size - 1)])
+        WorksKind.STORE -> Store(rec.y0, rec.palette, Dye.entries[rec.color.coerceIn(0, Dye.entries.size - 1)])
+        WorksKind.COUNTING_HOUSE -> CountingHouse(rec.y0, rec.palette, Dye.entries[rec.color.coerceIn(0, Dye.entries.size - 1)])
     }
 
     /** [rec]'s drawing and build: the same every time it's asked while its record says the same. */
