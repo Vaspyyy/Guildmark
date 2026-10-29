@@ -16,7 +16,7 @@ import kotlin.math.abs
  * section 4). The names and signatures here are the contract of design section 19.3, which every part of the villages
  * builds against. Part V1 fills in the registry: a record is made the first time a player comes within 64 blocks of a bell
  * ([sight]), its census runs a little each tick ([VillageTick]) and its state follows the players ([Live]). [died] and [note]
- * are V10's, and answer nothing until it fills them.
+ * are V10's: the dead list (with Village Trouble on) and the chronicle.
  *
  * Everything here is the overworld's, as the markets and the folk are; a bell in another dimension is not counted. With Living
  * Villages off ([enabled]) nothing is counted, nothing is written and no zone stands: the records are kept as they were for when
@@ -59,6 +59,8 @@ object Villages {
         io.github.vaspyyy.guildmark.village.live.links.VillageLinks.register()
         // Births, children growing up, newcomers off the road and households leaving (V13)
         io.github.vaspyyy.guildmark.village.live.grow.VillageGrowth.register()
+        // Trouble: the shelter, the watch, the dead and the memorial, the mend, the golems, the raids (V10)
+        io.github.vaspyyy.guildmark.village.live.trouble.Trouble.register()
     }
 
     /**
@@ -252,10 +254,19 @@ object Villages {
      * village, they go in its dead list, with the [cause] if it is known ("" if it isn't). Does nothing for a capital's
      * people.
      */
-    fun died(level: ServerLevel, r: Resident, cause: String) {}
+    fun died(level: ServerLevel, r: Resident, cause: String) {
+        if (!enabled() || level.dimension() != Level.OVERWORLD) return
+        val rec = byKey(level, r.capital.asLong()) ?: return
+        io.github.vaspyyy.guildmark.village.live.trouble.Deaths.died(level, rec, r, cause)
+    }
 
     /** A line in the chronicle of the village [key]: [kind] (built, siege, raid, rescued, born, arrived, died, mended) and what it was about; anyone may call. */
-    fun note(level: ServerLevel, key: Long, kind: String, arg: String = "") {}
+    fun note(level: ServerLevel, key: Long, kind: String, arg: String = "") {
+        if (!enabled()) return
+        val rec = byKey(level, key) ?: return
+        rec.note(io.github.vaspyyy.guildmark.block.VillageBoards.day(level), kind, arg)
+        VillageData.get(level).setDirty()
+    }
 }
 
 /** Something that keeps a daily rhythm in a village: called at its close of the day (see [Villages.onDay]). */

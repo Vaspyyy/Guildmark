@@ -207,13 +207,29 @@ class Residents(
     fun changed() = setDirty()
 
     /**
-     * [id] is put away from [day] on, as a captive of a raid is (living-world/villages/design.md part V10): no body, no
-     * bed kept, not dead. Does nothing yet; the part that takes residents captive fills it in.
+     * [id] is put away from [day] on, as a captive of a raid is (living-world/villages/design.md 11.3, part V10): not alive and
+     * not dead, [Resident.left] the day, their home and bed kept for them (as a household away in hard times), so no second body
+     * of them is made at home and nobody new is brought in to their place. Their body in the outlaws' camp is still theirs.
      */
-    fun away(id: Int, day: Long) {}
+    fun away(id: Int, day: Long) {
+        val r = people[id] ?: return
+        if (!r.alive) return
+        r.alive = false
+        r.left = day
+        setDirty()
+    }
 
-    /** [id], put away (see [away]), is given back with [p] for a body. Does nothing yet. */
-    fun restore(id: Int, p: Townsperson) {}
+    /** [id], put away (see [away]), is given back with [p] for a body: alive again, [p] their body, by their own name. */
+    fun restore(id: Int, p: Townsperson) {
+        val r = people[id] ?: return
+        if (r.alive || r.died >= 0) return
+        r.alive = true
+        r.left = -1L
+        r.uuid = p.uuid
+        p.resident = id
+        add(r)
+        named(p, r)
+    }
 
     /**
      * The day [r] died on, as the town's talk counts it: [Resident.died], but for a death a clock set back took before
@@ -352,7 +368,8 @@ class Residents(
                 p.customName = null
                 return
             }
-            val away = !r.alive && r.died < 0 && r.left >= 0
+            // Away, but not their body in an outlaws' camp (a raid's captive is away from home and still theirs: Captives, V10)
+            val away = !r.alive && r.died < 0 && r.left >= 0 && p.captiveOf < 0
             val dead = !r.alive && r.died >= 0
             val stale = r.alive && r.uuid != p.uuid && Comings.renewed(level, r)
             // A tale that holds their day makes its own body for them, so this one goes too (tales/)
@@ -363,7 +380,8 @@ class Residents(
         /** [p] died: their life here ends (and their home and trade wait for someone new). */
         fun died(level: ServerLevel, p: Townsperson) {
             val r = get(level).of(p) ?: return
-            pass(level, r, p)
+            // How, for a village's dead list (living-world/villages/design.md 11.4)
+            pass(level, r, p, io.github.vaspyyy.guildmark.village.live.trouble.Deaths.cause(level, p))
         }
 
         /**
