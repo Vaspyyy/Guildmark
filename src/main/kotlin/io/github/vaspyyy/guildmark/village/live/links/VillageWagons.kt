@@ -18,6 +18,7 @@ import io.github.vaspyyy.guildmark.economy.fortune.Fortunes
 import io.github.vaspyyy.guildmark.economy.fortune.Noted
 import io.github.vaspyyy.guildmark.townsfolk.Resident
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
+import io.github.vaspyyy.guildmark.village.live.Link
 import io.github.vaspyyy.guildmark.village.live.Live
 import io.github.vaspyyy.guildmark.village.live.VillageBudget
 import io.github.vaspyyy.guildmark.village.live.VillageRec
@@ -294,22 +295,75 @@ object VillageWagons {
         if (end == WAYLAID || end == WITHDRAWN) return
         // A village lost or dropped since, or whose market is gone: nobody to bring it to
         if (rec == null || rec.state == Live.LOST || v == null) return
-        val m = v.entry.market
         val stamp = if (c.phase == Phase.LEAVING) min(Math.floorDiv(c.until, HOUR), now) else now
+        bring(level, key, book, v, trip, stamp, c.capital, c.exports)
+    }
+
+    /**
+     * What a wagon from [capital] brings the village [key] at market hour [stamp]: one caravan's share for each eight hours since the
+     * village's last call ([RELIEF_TIMES] with a relief owed), of which the capital's surplus it carried ([exports]) is the first; with
+     * the capital's news. Kept on [trip].
+     */
+    private fun bring(level: ServerLevel, key: Long, book: Book, v: VillageMarkets.Rec, trip: Trip?, stamp: Long, capital: Long, exports: DoubleArray) {
+        val m = v.entry.market
         val last = min(max(v.cart.lastHour, book.lastIn), stamp)
         val hours = if (last <= NONE) 24L else (stamp - last).coerceAtLeast(1L)
         var times = Economy.callTimes(hours)
         if (book.relief) times = max(times, RELIEF_TIMES)
         val inn = Economy.bring(m, v.entry.town, first = true, coming = pending(v, out = false), times = times)
         val n = Good.entries.size
-        val own = DoubleArray(n) { min(inn[it], c.exports.getOrElse(it) { 0.0 }).coerceAtLeast(0.0) }
+        val own = DoubleArray(n) { min(inn[it], exports.getOrElse(it) { 0.0 }).coerceAtLeast(0.0) }
         post(level, key, VillageMarkets.Mail(stamp, DoubleArray(n), inn))
         book.lastIn = max(book.lastIn, stamp)
         book.relief = false
         trip?.brought = byId(inn)
         trip?.fromCapital = byId(own)
-        store.changed()
-        VillageNews.carried(level, key, c.capital)
+        store(level).changed()
+        VillageNews.carried(level, key, capital)
+    }
+
+    // ---- `village cart wagon` ----
+
+    /** The caravan a trip made by `village cart wagon` is kept under. */
+    const val TRIAL = -1L
+
+    /**
+     * The village's wagon [c] (setting out, at the capital or on its way back) brings the village its goods now, as one called back
+     * does (its trip ends [CALLED]; on its way back, [HOME]); its record goes on for the capital alone, and brings the village nothing
+     * more when it ends. Null if it is not the village's.
+     */
+    fun bringIn(level: ServerLevel, c: CaravanRec): Trip? {
+        if (c.village < 0L || !enabled()) return null
+        val key = c.village
+        back(level, c)
+        c.village = -1L
+        CaravanData.get(level).setDirty()
+        return book(level, key)?.trips?.lastOrNull { it.caravan == c.id }
+    }
+
+    /**
+     * A wagon's round trip for [rec] by [link] now, in the record (none of its wagons being out): the village's glut goes as a wagon
+     * takes it (all of it, less what the mail is taking already: there is no capital's load to bound it), and the capital's goods
+     * come back as a wagon brings them, with its news. Kept as a trip of caravan [TRIAL]; no capital's record is touched. Null with
+     * the switch off or no market.
+     */
+    fun trial(level: ServerLevel, rec: VillageRec, link: Link): Trip? {
+        if (!enabled()) return null
+        val v = VillageMarkets.rec(level, rec.key) ?: return null
+        val hour = Markets.hourOf(level)
+        runTo(level, v, hour)
+        val n = Good.entries.size
+        val give = DoubleArray(n)
+        val taken = pending(v, out = true)
+        for ((g, glut) in Economy.exports(v.entry.market, v.entry.town)) give[g.ordinal] = (glut - taken[g.ordinal]).coerceAtLeast(0.0)
+        if (give.any { it > 0.0 }) post(level, rec.key, VillageMarkets.Mail(hour, give, DoubleArray(n)))
+        val book = book(level, rec.key, make = true)!!
+        val trip = Trip(TRIAL, link.capital, link.road, hour, hour, byId(give), mapOf(), mapOf(), HOME, "")
+        book.trips.add(trip)
+        while (book.trips.size > TRIPS) book.trips.removeAt(0)
+        bring(level, rec.key, book, v, trip, hour, link.capital, DoubleArray(n))
+        VillageMarkets.get(level).changed()
+        return trip
     }
 
     // ---- What the pedlar's rule asks ----
