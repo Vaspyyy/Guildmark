@@ -125,16 +125,22 @@ internal object LanternWalk {
         return true
     }
 
-    /** Whether [t]'s walk was lost on the way (a restart, the switch off and on): the record says they are on the way and no walk has them. */
-    fun lost(t: Tale): Boolean = t.n[Lantern.N_WALK] == 1 && walks[t.id]?.done != false
+    /**
+     * Whether [t]'s walk was lost on the way: the record says they are on the way and no walk has them (a restart, the switch off and
+     * on), or the one they set out with has left the world (the walk would wait for them for ever).
+     */
+    fun lost(level: ServerLevel, t: Tale): Boolean =
+        t.n[Lantern.N_WALK] == 1 && (walks[t.id]?.done != false || walker(t)?.let { level.getPlayerByUUID(it) } == null)
 
     /**
      * "Shall we walk to the square?" said to them again where a walk was lost: they go on from where they stand with [player], to the
      * same place. False if they cannot be taken just now.
      */
     fun resume(c: Ctx, t: Tale, player: ServerPlayer, old: Townsperson): Boolean {
-        if (!Tales.scenes() || t.step != Lantern.AT_WALK || !lost(t)) return false
+        if (!Tales.scenes() || t.step != Lantern.AT_WALK || !lost(c.level, t)) return false
         val target = square(t) ?: place(c, t, LanternClock.door(t)?.let { Vec3.atBottomCenterOf(it) } ?: old.position()) ?: return false
+        // A walk still waiting for one who has gone is ended where it stands; the new one goes on from there
+        walks.remove(t.id)?.let { if (!it.done) it.cancel(old) }
         if (!walk(c.level, t, old, player, target)) return false
         t.setS(Lantern.S_WALKER, player.uuid.toString())
         t.setS(Lantern.S_SQUARE, target.asLong().toString())
@@ -360,8 +366,10 @@ internal object LanternWalk {
             c.hold(t, Lantern.OLD, old.blockPosition(), null)
             marks[t.id] = old.blockPosition().asLong()
         }
-        if (!lost(t) || old.attending != null || old.director !is io.github.vaspyyy.guildmark.tales.TaleHold) return
-        // The walk was lost (a restart, the switch): taken up again from here by whoever walked with them, or anyone in the tale beside them
+        val d = old.director
+        if (!lost(c.level, t) || old.attending != null || d !is io.github.vaspyyy.guildmark.tales.TaleHold && d !is TaleEscort) return
+        // The walk was lost (a restart, the switch, the one they set out with gone): taken up again from here by whoever walked with
+        // them, or by anyone in the tale beside them
         val walker = walker(t)?.let { c.level.getPlayerByUUID(it) as? ServerPlayer }?.takeIf { it.distanceToSqr(old) <= RESUME * RESUME }
         val other = t.parts.filter { it.status == Part.Status.IN || it.status == Part.Status.DONE }
             .mapNotNull { c.level.getPlayerByUUID(it.player) as? ServerPlayer }.firstOrNull { it.distanceToSqr(old) <= RESUME_OTHER * RESUME_OTHER }

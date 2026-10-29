@@ -244,7 +244,7 @@ internal object LanternScenes {
         override fun tick(p: Townsperson, a: io.github.vaspyyy.guildmark.townsfolk.scenes.Aside, t: Int): Boolean = t < most && !done(p)
     }
 
-    /** [p]'s part: one sitting on the doorstep or a bench is taken where they sit (and [Rise]s for the lantern). */
+    /** [p]'s part: one sitting on the doorstep or a bench is taken where they sit (and [Rise]s for the lantern), one at a post where they stand. */
     private fun seatedPart(slot: String, p: Townsperson, moves: List<Move>): Stage.Part =
-        Stage.Part(slot, p, true, moves, station = p.seat != null, seated = p.seat != null)
+        Stage.Part(slot, p, true, moves, station = p.seat != null || p.routine.anchored, seated = p.seat != null)
 }

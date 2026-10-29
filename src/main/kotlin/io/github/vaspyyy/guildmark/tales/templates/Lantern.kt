@@ -466,7 +466,7 @@ object Lantern : Template, TaleVoice, TaleWords.Names {
                 LanternClock.Walk.OPEN, LanternClock.Walk.LATE -> listOf(walkOption())
                 else -> listOf()
             }
-            1 -> if (LanternWalk.lost(t)) listOf(walkOption()) else listOf()
+            1 -> if (LanternWalk.lost(turn.level, t)) listOf(walkOption()) else listOf()
             else -> listOf()
         }
     }
