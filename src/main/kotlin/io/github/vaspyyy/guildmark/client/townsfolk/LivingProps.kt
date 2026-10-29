@@ -180,9 +180,10 @@ internal object LivingProps {
     /**
      * Whether [p] is carrying a swaddled baby: their CARRY plays carry_swaddle (the bundle across their forearms, tucked in now and then)
      * in place of carry and its goods (TownsfolkClient.clipName). Set by whatever gives someone a baby to carry; null, and no one does.
+     * V13: the server's own word, the synced [Townsperson.swaddled] flag.
      */
     @Volatile
-    var swaddled: ((Townsperson) -> Boolean)? = null
+    var swaddled: ((Townsperson) -> Boolean)? = { it.swaddled }
     // ---- end Villages (V12a) ----
 
     /**

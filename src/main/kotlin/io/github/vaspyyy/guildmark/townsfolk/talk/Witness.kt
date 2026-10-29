@@ -355,6 +355,24 @@ object Witness {
         )
     }
 
+    /** The kind of rumour a birth in a village is ([born]): a household's, told only by the households' own sources. */
+    const val BORN = "household.born"
+
+    /**
+     * [r] has just been born in their village (from VillageGrowth, part V13 of living-world/villages/design.md): the household
+     * knows it, and the street round the home hears it first, glad of it [=family, =given name]. The village's talk of a birth is
+     * the village's own (its topic `village.born`, from its chronicle); this is who knew it first, for the talk's memory.
+     */
+    fun born(level: ServerLevel, r: Resident) {
+        if (r.id < 0) return
+        val knowers = (household(level, r).map { it.id to Venue.HOUSEHOLD } + neighbours(level, r).map { it.id to Venue.STREET }).distinctBy { it.first }
+        if (knowers.isEmpty()) return
+        TownTalk.begin(
+            level, r.capital, BORN, null, r.id, listOf(named(r.family), named(r.given)),
+            0.5f, Fade.SMALL, Scope.TOWN, 1, homeDoor(r), Rumours.TOWN, knowers,
+        )
+    }
+
     /** A visitor [p] has come into the capital at [capital] (from `Visitors.next`): of an evening, they bring word from elsewhere to the tavern. */
     fun visitor(level: ServerLevel, capital: BlockPos, p: Townsperson) {
         // The priest and the noble come for the temple and the sights, not the tavern

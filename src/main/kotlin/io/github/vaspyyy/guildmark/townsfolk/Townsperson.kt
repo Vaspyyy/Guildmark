@@ -128,6 +128,17 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
             entityData.set(FLAGS, (if (value) flags or FLAG_GREAT_BELL else flags and FLAG_GREAT_BELL.inv()).toByte())
         }
 
+    /**
+     * Carrying a swaddled baby (a village's newborn carried out to be seen, part V13): their CARRY plays carry_swaddle on the client
+     * (client/townsfolk/LivingProps.swaddled reads it). Set and cleared by whoever has them carry it; never kept when saved.
+     */
+    var swaddled: Boolean
+        get() = entityData.get(FLAGS).toInt() and FLAG_SWADDLED != 0
+        set(value) {
+            val flags = entityData.get(FLAGS).toInt()
+            entityData.set(FLAGS, (if (value) flags or FLAG_SWADDLED else flags and FLAG_SWADDLED.inv()).toByte())
+        }
+
     /** A watcher set to keep an eye on a heist's building while it's on (see Heists); never kept when saved. */
     var watcher = false
 
@@ -706,6 +717,7 @@ class Townsperson(type: EntityType<out Townsperson>, level: Level) : PathfinderM
         private const val FLAG_LANTERN = 1
         private const val FLAG_LEADER = 2
         private const val FLAG_GREAT_BELL = 4
+        private const val FLAG_SWADDLED = 8
 
         /** How long a leader keeps their eyes on someone talking to them before giving up on them. */
         private const val LISTEN_TICKS = 2400

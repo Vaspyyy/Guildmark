@@ -173,6 +173,21 @@ class Residents(
     /** The plan's resident [planned] of the capital at [capital], if they've been taken in already. */
     fun planned(capital: BlockPos, planned: Int): Resident? = byPlan[capital to planned]
 
+    /**
+     * [r], a child, come of age (living-world/villages/design.md 5.6, part V13): the same person under the same id, in the place
+     * [r] had, now with [role] for a trade and [look] for its look, and no body until one is made for them (the child's body is
+     * nobody's from now on). The new record, which is in [r]'s place.
+     */
+    fun grownUp(r: Resident, role: TownRole, look: Int): Resident {
+        val grown = Resident(
+            r.id, null, r.capital, r.planned, r.given, r.family, role, look, r.home, r.bed, r.furnished, r.traits, r.alive, r.died, r.since,
+            r.left, r.craft, r.pinned,
+        )
+        r.uuid?.let { if (byUuid[it] === r) byUuid.remove(it) }
+        add(grown)
+        return grown
+    }
+
     fun add(r: Resident) {
         val old = people.put(r.id, r)
         if (old !== r) {
