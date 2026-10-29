@@ -116,9 +116,10 @@ internal object WagonWatch {
 
     private val memos = HashMap<Int, Memo>()
 
-    /** One line in `Tales.register`: the commands and scenes, the open wagons seen to once a second, and the hand's guard. */
+    /** One line in `Tales.register`: the commands and scenes, the open wagons seen to once a second, and the hand's guard; and the informer's ([InformerWatch]). */
     fun register() {
         WagonCommands.register()
+        InformerWatch.register()
         NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { tick(it.server) }
         NeoForge.EVENT_BUS.addListener(LivingIncomingDamageEvent::class.java) { WagonCamp.guard(it) }
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> forgetAll() }
