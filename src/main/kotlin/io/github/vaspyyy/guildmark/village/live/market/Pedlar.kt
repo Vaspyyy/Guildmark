@@ -10,6 +10,8 @@ import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import io.github.vaspyyy.guildmark.townsfolk.Trades
 import io.github.vaspyyy.guildmark.townsfolk.Walker
 import io.github.vaspyyy.guildmark.village.live.VillageSounds
+import io.github.vaspyyy.guildmark.village.live.links.GreetWhy
+import io.github.vaspyyy.guildmark.village.live.links.Greeters
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
@@ -165,6 +167,7 @@ class Pedlar(
                 if (carts()) Handcarts.load(p, shown)
                 p.act(Handcarts.PULL)
                 stage = Stage.WALK_IN
+                Greeters.call(level, bell, exit, GreetWhy.PEDLAR)
                 go(p, bay, Trades.LADEN, near = 1.0)
             }
             Stage.WALK_IN -> {
