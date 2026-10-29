@@ -31,6 +31,12 @@ import kotlin.math.sqrt
  * - If the player gets more than 24 blocks ahead in sight it waves as it walks and calls (`tale.set.wait`); out of sight it waits
  *   where it is; far behind and out of sight a while it catches up, to a few steps behind the player (as `Captives.catchUp`).
  * - A player's word comes first: it steps aside for the talk, and [TaleBodies.tend] gives the walk back, from where it had got to.
+ *
+ * With [leads] (Tales T2b, the lantern's walk to the square) they know the way to the [target] and walk it themselves at the same pace,
+ * the player beside them, rather than following: if the player falls more than [WAIT_FOR] blocks behind they stop and turn to wait
+ * for them; a player a dozen blocks ahead in sight is called after as they go (`tale.set.wait`), and one gone on out of their
+ * reach is waited for where they stand, waved to and called while in sight. They rest as above but not in the last dozen blocks,
+ * and are never caught up or put anywhere: the way on is always walked.
  */
 class TaleEscort(
     private val player: UUID,
@@ -39,6 +45,7 @@ class TaleEscort(
     private val slot: String,
     private val prop: ItemStack? = null,
     private val until: Long = 0L,
+    private val leads: Boolean = false,
 ) : Director {
     private enum class Mode { FOLLOW, TO_BENCH, SIT_DOWN, SITTING, STAND_UP, BREATH }
 
@@ -51,6 +58,10 @@ class TaleEscort(
     private var bench: BlockPos? = null
     private var walker: Walker? = null
     private var started = false
+
+    /** With [leads]: the walk to the target, and the game time before which a way that could not be found is not looked for again. */
+    private var way: Walker? = null
+    private var wayAfter = 0L
 
     /** Whether the walk is over (arrived, let go or broken off). */
     var done = false
@@ -84,7 +95,7 @@ class TaleEscort(
         }
         last = p.position()
         when (mode) {
-            Mode.FOLLOW -> follow(level, p, who, now)
+            Mode.FOLLOW -> if (leads && target != null) lead(level, p, who, now, target) else follow(level, p, who, now)
             Mode.TO_BENCH -> toBench(level, p, who, now)
             Mode.SIT_DOWN -> if (now - modeAt >= Activity.SIT_DOWN.ticks) {
                 p.act(Activity.SIT)
@@ -149,6 +160,81 @@ class TaleEscort(
                 p.face(Mth.approachDegrees(p.yBodyRot, p.yawTo(who.position()), 10f))
             }
         }
+    }
+
+    /**
+     * The walk led ([leads]): on the way to [to] at their own pace with [who] beside them; stopped and turned to wait while [who] is
+     * behind, called after while [who] is ahead, waited for where they stand once [who] is out of reach. Never hurried, never put
+     * anywhere: no catching up, and the walk to the bench and on to [to] is always walked.
+     */
+    private fun lead(level: ServerLevel, p: Townsperson, who: ServerPlayer, now: Long, to: BlockPos) {
+        val dist = p.distanceTo(who)
+        val sees = p.hasLineOfSight(who)
+        val left = flat(p, to)
+        // A rest, while the player is near enough to wait for it, and not with the square in sight
+        if (dist < NEAR_REST && left > LAST_STRETCH) {
+            if (walked >= EVERY) return rest(level, p, null, now)
+            if (walked >= BENCH_AFTER) {
+                val seat = benchNear(level, p)
+                if (seat != null) return rest(level, p, seat, now)
+            }
+        }
+        val behind = flat(who, to) > left + 1.5
+        when {
+            dist > AHEAD -> {
+                // Gone on out of reach: they wait where they are, and wave and call after them while they can see them
+                halt(p)
+                if (sees) {
+                    p.lookAt(who)
+                    p.face(Mth.approachDegrees(p.yBodyRot, p.yawTo(who.position()), 10f))
+                    if (now - calledAt >= CALL_EVERY) {
+                        calledAt = now
+                        p.act(Activity.WAVE)
+                        Words.sayWith(p, "tale.set.wait", why = "a slow walk")
+                    }
+                }
+            }
+            behind && dist > WAIT_FOR -> {
+                // Fallen behind: they stop and turn to wait for them
+                halt(p)
+                p.lookAt(who)
+                p.face(Mth.approachDegrees(p.yBodyRot, p.yawTo(who.position()), 10f))
+            }
+            else -> {
+                if (!behind && dist > CALL_AHEAD && sees && now - calledAt >= CALL_EVERY) {
+                    // A little way ahead of them: a word after them, as they keep on
+                    calledAt = now
+                    p.act(Activity.WAVE_WALK)
+                    Words.sayWith(p, "tale.set.wait", why = "a slow walk")
+                }
+                onTo(p, to, now)
+            }
+        }
+    }
+
+    /** On along the way to [to] at the walk's pace, stooped; a way not found is looked for again in two seconds, standing. */
+    private fun onTo(p: Townsperson, to: BlockPos, now: Long) {
+        if (now < wayAfter) return
+        val w = way ?: Walker(p).also {
+            way = it
+            it.go(to, PACE, near = 1.5)
+        }
+        when (w.tick()) {
+            Walker.State.WALKING -> if (p.activity != Activity.HOBBLE && (p.activity.loop || p.actDone)) p.act(Activity.HOBBLE)
+            Walker.State.ARRIVED -> way = null
+            Walker.State.FAILED -> {
+                way = null
+                wayAfter = now + 40
+                stop(p)
+            }
+        }
+    }
+
+    /** Stopped where they are (the way on is found afresh when they go on). */
+    private fun halt(p: Townsperson) {
+        way?.stop()
+        way = null
+        stop(p)
     }
 
     /** At the pace of a stoop towards the player. */
@@ -242,7 +328,7 @@ class TaleEscort(
         return p.tickCount % 10 == 0 && p.threat() != null
     }
 
-    private fun flat(p: Townsperson, at: BlockPos): Double {
+    private fun flat(p: net.minecraft.world.entity.Entity, at: BlockPos): Double {
         val dx = at.x + 0.5 - p.x
         val dz = at.z + 0.5 - p.z
         return sqrt(dx * dx + dz * dz)
@@ -253,6 +339,7 @@ class TaleEscort(
         if (done) return
         done = true
         walker?.stop()
+        way?.stop()
         val level = p.level() as? ServerLevel
         if (level != null && (mode == Mode.SITTING || mode == Mode.SIT_DOWN || mode == Mode.STAND_UP)) rise(level, p)
         val seat = bench
@@ -278,6 +365,8 @@ class TaleEscort(
         // A player's word comes first: the talk takes them, and the tidy gives the walk back from where it had got to
         if (p.director === this) p.director = null
         walker?.stop()
+        way?.stop()
+        way = null
         stop(p)
         return false
     }
@@ -304,12 +393,21 @@ class TaleEscort(
         const val BREATH_FOR = 80L
         const val CALL_EVERY = 240L
 
+        /** With [leads]: blocks behind that they stop to wait at, blocks ahead in sight that they call after, and the last stretch before the place with no rest. */
+        const val WAIT_FOR = 7.0
+        const val CALL_AHEAD = 12.0
+        const val LAST_STRETCH = 12.0
+
         /**
          * Starts [who] (the body in [slot] of [t], held in place first if it is not yet; with [t] null, any free adult) on the walk to
          * [target], following [player]. The tale hears [Event.Arrived] when they get there. [prop] is what they carry on the way (the
-         * lantern), [until] the game time to let go at (0: not before they arrive). False if they cannot be taken just now.
+         * lantern), [until] the game time to let go at (0: not before they arrive). With [leads] and a [target] they walk the way there
+         * themselves with the player beside them, rather than following (see the class). False if they cannot be taken just now.
          */
-        fun start(level: ServerLevel, t: Tale?, slot: String, who: Townsperson, player: ServerPlayer, target: BlockPos?, prop: ItemStack? = null, until: Long = 0L): Boolean {
+        fun start(
+            level: ServerLevel, t: Tale?, slot: String, who: Townsperson, player: ServerPlayer, target: BlockPos?, prop: ItemStack? = null, until: Long = 0L,
+            leads: Boolean = false,
+        ): Boolean {
             if (t != null) {
                 if (who.tale != t.id) TaleBodies.hold(level, t, slot, null, null)
                 if (who.tale != t.id) return false
@@ -322,7 +420,7 @@ class TaleEscort(
                 who.routine.interrupt()
                 who.standUp()
             }
-            val escort = TaleEscort(player.uuid, target, t?.id ?: -1, slot, prop, until)
+            val escort = TaleEscort(player.uuid, target, t?.id ?: -1, slot, prop, until, leads)
             who.director = escort
             who.navigation.stop()
             // Only a tale's walk is kept by the tidy (given back after a talk, ended with the switch); the command's is its own
