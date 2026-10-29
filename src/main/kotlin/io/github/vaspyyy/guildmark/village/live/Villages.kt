@@ -55,6 +55,8 @@ object Villages {
         io.github.vaspyyy.guildmark.village.live.build.VillageBuilds.register()
         // Which village each player is in, and whether it is its market day, for the village sounds (client/ambience/VillageAmbience)
         VillageVisits.register()
+        // Which capitals' wagon roads end at which village, and the wagons' calls (V7)
+        io.github.vaspyyy.guildmark.village.live.links.VillageLinks.register()
     }
 
     /**
