@@ -173,8 +173,6 @@ object HouseCommand {
         val h = house(source) ?: return 0
         val c = h.carter(id) ?: return fail(source, "The House has no carter #$id.")
         if (Houses.dismiss(source.level, h, c)) return say(source, plain("${c.name} is let go."))
-        c.unpaid = Houses.UNPAID_LEAVE
-        TradeHouses.peek(source.level)?.changed()
         return say(source, plain("${c.name} is out with a wagon: they go when they are back."))
     }
 

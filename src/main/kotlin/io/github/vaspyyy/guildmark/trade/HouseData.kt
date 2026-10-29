@@ -36,8 +36,12 @@ class Carter(val id: Int, var name: String, val look: Long, val hired: Long) {
     var trips = 0
     var earned = 0
 
+    /** Let go while out with a wagon: they leave when they are back. Whether their last trip was waylaid. */
+    var leaving = false
+    var robbed = false
+
     /** Whether they are at the yard and free to be sent (not loading, on the road, or waiting for their wage). */
-    val free: Boolean get() = state == State.IDLE
+    val free: Boolean get() = state == State.IDLE && !leaving
 }
 
 /** A ticket a trip carries goods for: [units] of [good] booked on ticket [ticket], holding [deposit] Marks of the purse until they are in. */
@@ -202,7 +206,9 @@ class TradeHouses(val houses: ArrayList<HouseRec> = ArrayList()) : SavedData() {
                 Codec.INT.optionalFieldOf("guards", 0).forGetter(Carter::guards),
                 Codec.INT.optionalFieldOf("trips", 0).forGetter(Carter::trips),
                 Codec.INT.optionalFieldOf("earned", 0).forGetter(Carter::earned),
-            ).apply(i) { id, name, look, hired, state, trip, unpaid, guards, trips, earned ->
+                Codec.BOOL.optionalFieldOf("leaving", false).forGetter(Carter::leaving),
+                Codec.BOOL.optionalFieldOf("robbed", false).forGetter(Carter::robbed),
+            ).apply(i) { id, name, look, hired, state, trip, unpaid, guards, trips, earned, leaving, robbed ->
                 Carter(id, name, look, hired).also { c ->
                     c.state = Carter.State.of(state)
                     c.trip = trip
@@ -210,6 +216,8 @@ class TradeHouses(val houses: ArrayList<HouseRec> = ArrayList()) : SavedData() {
                     c.guards = guards.coerceIn(0, Houses.EXTRA_GUARDS)
                     c.trips = trips
                     c.earned = earned
+                    c.leaving = leaving
+                    c.robbed = robbed
                 }
             }
         }

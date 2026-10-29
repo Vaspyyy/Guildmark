@@ -11,6 +11,7 @@ import io.github.vaspyyy.guildmark.economy.Lot
 import io.github.vaspyyy.guildmark.economy.Lots
 import io.github.vaspyyy.guildmark.economy.Markets
 import io.github.vaspyyy.guildmark.economy.Run
+import io.github.vaspyyy.guildmark.economy.StallDesk
 import io.github.vaspyyy.guildmark.economy.Suppliers
 import io.github.vaspyyy.guildmark.economy.Tally
 import io.github.vaspyyy.guildmark.economy.Trading
@@ -116,9 +117,9 @@ object Houses {
     /**
      * [owner]'s Counting House in the capital whose heart is [capital] has opened (its works finished): known as [name] in their [colour], its door
      * at [origin] facing [facing]. Its record is made (or, for one taken down and raised again, opened again with what it had), the House goes in
-     * the owner's book, the ladder looks again, and the guild hears a trading house has opened.
+     * the owner's book, the ladder looks again, and the guild hears a trading house has opened (unless [quiet]: one that stood before it kept books).
      */
-    fun opening(level: ServerLevel, capital: Long, owner: UUID, name: String, colour: Int, origin: BlockPos, facing: Direction) {
+    fun opening(level: ServerLevel, capital: Long, owner: UUID, name: String, colour: Int, origin: BlockPos, facing: Direction, quiet: Boolean = false) {
         val books = TradeBooks.get(level)
         books.of(owner).addHouse(BlockPos.of(capital))
         books.changed()
@@ -137,8 +138,17 @@ object Houses {
         if (h.lastOn == Long.MIN_VALUE) h.lastOn = hour
         if (h.totals.since == Long.MIN_VALUE) h.totals.since = hour
         data.changed()
-        if (fresh) GuildNews.add(level, NEWS_OPENED, placeOf(level, capital).ifEmpty { "?" })
+        if (fresh && !quiet) GuildNews.add(level, NEWS_OPENED, placeOf(level, capital).ifEmpty { "?" })
         level.server.playerList.getPlayer(owner)?.let { Rungs.check(level, it) }
+    }
+
+    /** A Counting House [w] that stood before the House kept books (finished under build part F2): its record is made now, quietly, when its owner first opens its desk. */
+    internal fun adopt(level: ServerLevel, w: WorksRec): HouseRec? {
+        val owner = w.owner ?: return null
+        TradeHouses.peek(level)?.find(w.capital, owner)?.let { return it }
+        val site = w.site
+        opening(level, w.capital, owner, StoreLife.name(level, w, owner), StallDesk.colorOf(level, owner), site?.origin ?: BlockPos.of(w.capital), site?.facing ?: Direction.NORTH, quiet = true)
+        return TradeHouses.peek(level)?.find(w.capital, owner)
     }
 
     /** [owner]'s Counting House in [capital] is gone (its works taken down): struck out of their book; its carters leave, and it winds up once its wagons are in. */
@@ -248,7 +258,11 @@ object Houses {
 
     /** [h] lets carter [c] go: at once if they are at the yard (false if they are out with a wagon, who go when they are back). */
     fun dismiss(level: ServerLevel, h: HouseRec, c: Carter): Boolean {
-        if (c.state == Carter.State.LOADING || c.state == Carter.State.ROLLING) return false
+        if (c.state == Carter.State.LOADING || c.state == Carter.State.ROLLING) {
+            c.leaving = true
+            TradeHouses.peek(level)?.changed()
+            return false
+        }
         h.carters.remove(c)
         TradeHouses.peek(level)?.changed()
         YardShow.left(level, h, c)
@@ -686,6 +700,7 @@ object Houses {
         if (c != null) {
             c.trips++
             c.earned += trip.net
+            c.robbed = trip.waylaid
         }
         h.note(BookLine(Math.floorDiv(at, HOUR), c?.name ?: "", trip.destName, trip.bought.copyOf(), trip.cost + trip.deposit, trip.pay + trip.refund + trip.sold, trip.waylaid, trip.lost, trip.repair))
         trip.stage = Trip.Stage.BACK
@@ -734,7 +749,7 @@ object Houses {
         if (c != null) {
             c.trip = -1
             c.state = if (c.unpaid > 0) Carter.State.UNPAID else Carter.State.IDLE
-            if (h.closed || c.unpaid >= UNPAID_LEAVE) {
+            if (h.closed || c.leaving || c.unpaid >= UNPAID_LEAVE) {
                 h.carters.remove(c)
                 YardShow.left(level, h, c)
             }
