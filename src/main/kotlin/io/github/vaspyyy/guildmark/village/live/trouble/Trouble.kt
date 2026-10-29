@@ -82,6 +82,7 @@ object Trouble {
         NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { tick(it.server) }
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> forget() }
         Memorial.register()
+        VillageTroubleCommand.init()
         VillageInfoCommand.section(VillageInfoCommand.Section { level, rec -> Deaths.lines(level, rec) })
     }
 
