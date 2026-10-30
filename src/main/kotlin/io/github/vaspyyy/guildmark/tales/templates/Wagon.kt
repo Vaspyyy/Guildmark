@@ -889,7 +889,7 @@ object Wagon : Template, TaleVoice, TaleWords.Names {
         val player = turn.player ?: return@TaleOption null
         if (!goFor(c, t, player)) return@TaleOption null
         giveNote(turn)
-        TaleReply(listOf(turn.say("stand", stand(turn.level, t))), Activity.NOD, toward = band(turn.level, t)?.pos)
+        TaleReply(listOf(turn.say("go", stand(turn.level, t))), Activity.NOD, toward = band(turn.level, t)?.pos)
     }
 
     /** "I'll pay what they ask.": the price, to the rider who waits by the camp on the town's side. */
@@ -898,7 +898,7 @@ object Wagon : Template, TaleVoice, TaleWords.Names {
         val c = turn.ctx() ?: return@TaleOption think()
         val player = turn.player ?: return@TaleOption null
         if (!payWay(c, t, player)) return@TaleOption null
-        TaleReply(listOf(turn.say("stand", stand(turn.level, t))), Activity.NOD, toward = band(turn.level, t)?.let { parley(t, it) })
+        TaleReply(listOf(turn.say("pay", stand(turn.level, t))), Activity.NOD, toward = band(turn.level, t)?.let { parley(t, it) })
     }
 
     /** "Can the watch go?": the one who asks says who to ask, and what the watch rides on. Nothing is changed. */
@@ -908,7 +908,7 @@ object Wagon : Template, TaleVoice, TaleWords.Names {
         val captain = TaleLines.lit(given(t.cast(CAPTAIN)?.name.orEmpty()))
         val c = turn.ctx()
         TaleReply(
-            listOf(turn.say("stand", TaleLines.facts("talk.detail.tale.wagon.watch", captain, StandingTier.KNOWN.threshold))),
+            listOf(turn.say("watch", TaleLines.facts("talk.detail.tale.wagon.watch", captain, StandingTier.KNOWN.threshold))),
             Activity.SHRUG, toward = c?.let { front(it, t) },
         )
     }
@@ -933,7 +933,7 @@ object Wagon : Template, TaleVoice, TaleWords.Names {
         val c = turn.ctx() ?: return@TaleOption think()
         val player = turn.player ?: return@TaleOption null
         if (!tellCamp(c, t, player)) return@TaleOption null
-        TaleReply(listOf(turn.say("driver_hand", priceDetail(turn.level, t))), Activity.EXPLAIN, toward = band(turn.level, t)?.pos)
+        TaleReply(listOf(turn.say("camp", priceDetail(turn.level, t))), Activity.EXPLAIN, toward = band(turn.level, t)?.pos)
     }
 
     /** The captain's "Send the watch.": for a player the town knows (25 or more) the watch rides at the next close; for any other, not on their word. */

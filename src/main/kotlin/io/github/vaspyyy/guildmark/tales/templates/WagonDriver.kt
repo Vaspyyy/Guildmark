@@ -58,7 +58,7 @@ internal object WagonDriver {
             else -> {
                 val player = ask.player ?: return null
                 Tales.join(level, t, player)
-                val part = TaleLines.part(ask, "tale.wagon.stand", Wagon.stand(level, t)) ?: Utterance.Part("driver_next")
+                val part = TaleLines.part(ask, "tale.wagon.driver_thanks", Wagon.stand(level, t)) ?: Utterance.Part("driver_next")
                 Utterance(listOf(part), toward = Wagon.band(level, t)?.pos) to false
             }
         }
