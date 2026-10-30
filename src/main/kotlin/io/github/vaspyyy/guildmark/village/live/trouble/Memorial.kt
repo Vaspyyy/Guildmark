@@ -51,8 +51,9 @@ import kotlin.math.sin
  * record is the truth), so using the stone reads the list ([Deaths.reading]).
  *
  * For each death a candle is laid at the next dawn by the one who knew them best: one of their household, else the nearest
- * neighbour. They walk to the stone, kneel with its middle 1.4 blocks ahead (`LAY_CANDLE`: the candle is set at 24 and caught at 26,
- * `village.candle_lay` with it), say a line, bow, and the devout stay on their knees a while (`PRAY`). The stone holds the last four
+ * neighbour. They walk to the stone, kneel with its middle 1.4 blocks ahead (`LAY_CANDLE`: the candle carried lit is set burning at
+ * 24, `village.candle_lay` with it, and the hand cupped round its flame is drawn off it at 34, the candle's light heard then), say a
+ * line, bow, and the devout stay on their knees a while (`PRAY`). The stone holds the last four
  * candles, the oldest taken away when a fifth is laid; each burns a week and is gone on the seventh dawn. With no player within
  * [WATCHED] of the stone the candle is set by the record, as the lamps are; nobody is ever made to come out for it.
  */
@@ -74,9 +75,12 @@ object Memorial {
     /** Where the stone stands from the middle of the green: the nearest ring first. */
     private val RINGS = intArrayOf(6, 5, 7, 8, 4)
 
-    /** The ticks of `LAY_CANDLE` at which the candle is set on the stone and caught (V12a). */
+    /**
+     * The ticks of `LAY_CANDLE` at which the candle is set on the stone (burning: it was carried lit) and the hand cupped round its
+     * flame is drawn off it, the flame standing (the clip's `set` and `lit`, art/scripts/village_clips.py): the two sounds apart.
+     */
     private const val SET = 24
-    private const val LIT = 26
+    private const val LIT = 34
 
     /** How far the stone's middle is from the mourner as they kneel (V12a). */
     private const val KNEEL = 1.4
@@ -390,13 +394,15 @@ object Memorial {
                     at = p.tickCount
                 }
                 1 -> {
-                    // Down on a knee: the candle set at 24, caught at 26
+                    // Down on a knee: the candle set burning at 24 (its flame carried on, no sound but the laying's), the hand
+                    // drawn off the flame at 34 and the light heard
                     p.face(p.yawTo(middle))
                     val t = p.tickCount - at
                     if (t >= SET && !set) {
                         set = true
                         val rec = Villages.byKey(level, key) ?: return finish()
                         if (!lay(level, rec, stone, m, seen = true, by = p)) return finish()
+                        light(level, rec, stone, seen = false)
                     }
                     if (t >= LIT && set && !lit) {
                         lit = true
@@ -427,8 +433,7 @@ object Memorial {
         fun finish() {
             if (done) return
             done = true
-            // A candle set and not yet caught is caught now; one never set waits for the next look
-            if (set && !lit) (p.level() as? ServerLevel)?.let { level -> Villages.byKey(level, key)?.let { light(level, it, stone, seen = true) } }
+            // A candle set burns from the set (one never set waits for the next look)
             Trouble.giveBack(p, this)
         }
 
