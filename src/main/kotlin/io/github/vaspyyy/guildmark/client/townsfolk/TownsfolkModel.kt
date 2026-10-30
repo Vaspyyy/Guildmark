@@ -198,6 +198,8 @@ object Props {
         // telling of it, the folded arms. (wounded, an overlay, keeps the right hand's)
         Activity.DRIVE, Activity.DRIVE_URGE, Activity.DRIVE_BRAKE, Activity.RIDE_TAIL, Activity.JUMP_DOWN, Activity.CLIMB_UP,
         Activity.CUT_LOOSE, Activity.COWER, Activity.HAND_DOWN, Activity.CATCH_BREATH, Activity.RECOUNT, Activity.GRUMBLE,
+        // Villages: the run for the doors at the horn (the arms flung up), and a wall mended (a block in both hands, carried and set)
+        Activity.FLEE, Activity.CARRY_BLOCK, Activity.LAY, Activity.LAY_LOW, Activity.LAY_HIGH,
     )
 
     /** Work for the right hand only (waving, a mug, the sack on the shoulder). */
