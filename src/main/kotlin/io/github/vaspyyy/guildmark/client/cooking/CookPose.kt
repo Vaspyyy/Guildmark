@@ -14,12 +14,14 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.entity.ClientAvatarEntity
 import net.minecraft.client.model.HumanoidModel
 import net.minecraft.client.renderer.entity.state.AvatarRenderState
+import net.minecraft.core.component.DataComponents
 import net.minecraft.util.Mth
 import net.minecraft.world.entity.Avatar
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.item.ItemDisplayContext
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
+import net.minecraft.world.item.component.CustomModelData
 import net.minecraft.world.phys.Vec3
 import net.neoforged.neoforge.client.renderstate.AvatarRenderStateModifier
 import kotlin.math.asin
@@ -70,6 +72,11 @@ object CookPose {
     private val bowl: ItemStack by lazy { ItemStack(Items.BOWL) }
     private val bread: ItemStack by lazy { ItemStack(Items.BREAD) }
     private val spoon: ItemStack by lazy { ItemStack(CookRegistry.WOODEN_SPOON.get()) }
+
+    /** The plate lifted off a Plate's board: the Plate's item with the first flag of its custom model data set (its model is then the plate alone). */
+    private val plate: ItemStack by lazy {
+        ItemStack(CookRegistry.PLATE_ITEM.get()).also { it.set(DataComponents.CUSTOM_MODEL_DATA, CustomModelData(listOf(), listOf(true), listOf(), listOf())) }
+    }
 
     val AVATAR: AvatarRenderStateModifier = object : AvatarRenderStateModifier() {
         override fun <T> accept(entity: T, state: AvatarRenderState) where T : Avatar, T : ClientAvatarEntity {
@@ -205,7 +212,7 @@ object CookPose {
             CookAction.FEED -> if (time < FEED_RELEASE && !ItemStack.matches(play.held, real)) play.held else null
             CookAction.EAT_SPOON -> spoon
             CookAction.DRINK -> if (real.item is DishItem) null else bowl
-            CookAction.EAT_BITE -> if (real.item is DishItem) null else bread
+            CookAction.EAT_BITE, CookAction.EAT_PLATE -> if (real.item is DishItem) null else bread
             CookAction.SHIVER -> ItemStack.EMPTY
             CookAction.EASE, CookAction.TURN -> null
         }
@@ -214,11 +221,13 @@ object CookPose {
     /**
      * What the other hand shows during [play], or null for what it really holds: the bowl a serve fills, the dish a meal is
      * spooned from (the one in the working hand, which shows the spoon; a bowl stands in when that hand has none, as at a
-     * Plate), and nothing while the clip has that hand busy (on the chain, the crank or the food, round the bowl, hugging).
+     * Plate), the plate a meal at a Plate is eaten off, and nothing while the clip has that hand busy (on the chain, the
+     * crank or the food, round the bowl, hugging).
      */
     fun other(player: Player, play: CookActionHandler.Play): ItemStack? = when (play.action) {
         CookAction.SERVE -> bowl
         CookAction.EAT_SPOON -> player.getItemInHand(play.hand).takeIf { it.item is DishItem } ?: bowl
+        CookAction.EAT_PLATE -> plate
         CookAction.EASE, CookAction.CHOP, CookAction.CARVE, CookAction.SLICE, CookAction.TURN, CookAction.DRINK, CookAction.SHIVER -> ItemStack.EMPTY
         else -> null
     }

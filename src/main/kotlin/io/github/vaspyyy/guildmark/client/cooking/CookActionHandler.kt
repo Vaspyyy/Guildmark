@@ -376,6 +376,10 @@ object CookActionHandler {
         val entity = level.getEntity(payload.player) as? Player ?: return
         val action = payload.action
         val body = bodies[entity.id]
+        if (action == CookAction.EAT_PLATE) {
+            atPlate(entity, body, payload.pos)
+            return
+        }
         // A meal the use state already times needs nothing more
         if (isEating(action) && body?.play?.let { it.action == action && it.eating && !it.fading } == true) return
         // The local player's own meal is timed by their own use, which began on the click; a late word changes nothing
@@ -395,6 +399,26 @@ object CookActionHandler {
             }
         }
         arrive(entity, action, payload.pos, null)
+    }
+
+    /**
+     * A meal at a Plate ([CookAction.EAT_PLATE]): the server's word may come before the use state reaches this client or
+     * after it. Before, the plate's clip starts now and [eating] times it once the use arrives; after, the bite the use
+     * began is turned into the plate's clip at the same point of the meal (it eases in over the bite).
+     */
+    private fun atPlate(entity: Player, body: Body?, pos: BlockPos) {
+        val now = stamp()
+        val play = body?.play?.takeIf { it.eating && !it.fading && !it.over(now) }
+        if (body == null || play == null) {
+            arrive(entity, CookAction.EAT_PLATE, pos, null)
+            return
+        }
+        if (play.action != CookAction.EAT_BITE) return
+        val clip = clip(CookAction.EAT_PLATE) ?: return
+        val plate = Play(CookAction.EAT_PLATE, clip, play.start, pos, null, ItemStack.EMPTY, play.hand)
+        plate.rate = play.rate
+        plate.eating = true
+        begin(body, plate, now)
     }
 
     /** The server never confirmed [guess]: the clip it started eases away, and the follow-on it asked for is dropped. */
@@ -421,7 +445,11 @@ object CookActionHandler {
                 continue
             }
             if (player === Minecraft.getInstance().player) ateAt = ticks
-            val action = DishEating.action(item.kind)
+            // A bite at a Plate is the plate's clip, which the server's word started (atPlate)
+            val shown = body?.play
+            val action = DishEating.action(item.kind).let {
+                if (it == CookAction.EAT_BITE && shown != null && shown.action == CookAction.EAT_PLATE && !shown.fading && !shown.over(now)) CookAction.EAT_PLATE else it
+            }
             val clip = clip(action) ?: continue
             val duration = stack.getUseDuration(player).coerceAtLeast(1)
             // The clip over the use's whole length: as made for most dishes (their use is the clip's length), slower for a longer meal (Gruel)
@@ -611,7 +639,8 @@ object CookActionHandler {
 
     // ---- Where the body turns ----
 
-    fun isEating(action: CookAction): Boolean = action == CookAction.EAT_SPOON || action == CookAction.EAT_BITE || action == CookAction.DRINK
+    fun isEating(action: CookAction): Boolean =
+        action == CookAction.EAT_SPOON || action == CookAction.EAT_BITE || action == CookAction.DRINK || action == CookAction.EAT_PLATE
 
     /**
      * The point of the station at [pos] that [action] works at, in the world: the vessel's middle, the firebox for a feed, the

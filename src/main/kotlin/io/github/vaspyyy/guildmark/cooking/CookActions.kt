@@ -26,6 +26,7 @@ object CookActions {
     fun clip(action: CookAction): String = when (action) {
         CookAction.EAT_SPOON -> "eat_spoon"
         CookAction.EAT_BITE -> "eat_bite"
+        CookAction.EAT_PLATE -> "eat_plate"
         CookAction.DRINK -> "drink_bowl"
         else -> "cook_" + action.name.lowercase()
     }
@@ -49,6 +50,7 @@ object CookActions {
         CookAction.EAT_SPOON -> 32
         CookAction.EAT_BITE -> 24
         CookAction.DRINK -> 32
+        CookAction.EAT_PLATE -> 24
     }
 
     /** The action whose clip is called [name], or null. */

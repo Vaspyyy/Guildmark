@@ -24,6 +24,8 @@ import net.minecraft.world.level.block.SoundType
 import net.minecraft.world.level.block.entity.BlockEntity
 import net.minecraft.world.level.block.state.BlockBehaviour
 import net.minecraft.world.level.block.state.BlockState
+import net.minecraft.world.level.block.state.StateDefinition
+import net.minecraft.world.level.block.state.properties.BooleanProperty
 import net.minecraft.world.level.material.MapColor
 import net.minecraft.world.phys.BlockHitResult
 import net.minecraft.world.phys.shapes.CollisionContext
@@ -35,9 +37,23 @@ import java.util.function.UnaryOperator
  * eat. With a dish in hand, using it lays the dish; with an empty hand, using it eats what is on it (the game's own
  * eating, so it is held down for a second and a half, and let go of early the dish goes back); sneaking with an empty
  * hand takes the dish back into the pack. A plate a part of the town dresses (the cookshop's counter) shows its dish
- * and nothing more. The dish and the rest are [PlateBlockEntity]'s.
+ * and nothing more. The dish and the rest are [PlateBlockEntity]'s. While a meal is eaten off it, the plate is lifted
+ * off its board into the eater's other hand ([LIFTED]: the board alone is drawn; [PlateEating] puts it back).
  */
 class PlateBlock(properties: Properties) : Block(properties), EntityBlock {
+    init {
+        registerDefaultState(stateDefinition.any().setValue(LIFTED, false))
+    }
+
+    override fun createBlockStateDefinition(builder: StateDefinition.Builder<Block, BlockState>) {
+        builder.add(LIFTED)
+    }
+
+    /** The lift's last word: a plate still lifted [LIFT_MOST] ticks after it was lifted goes back on its board. */
+    override fun tick(state: BlockState, level: ServerLevel, pos: BlockPos, random: RandomSource) {
+        if (state.getValue(LIFTED)) level.setBlock(pos, state.setValue(LIFTED, false), UPDATE_CLIENTS)
+    }
+
     override fun getShape(state: BlockState, level: BlockGetter, pos: BlockPos, context: CollisionContext): VoxelShape = SHAPE
 
     override fun newBlockEntity(pos: BlockPos, state: BlockState): BlockEntity = PlateBlockEntity(pos, state)
@@ -61,7 +77,7 @@ class PlateBlock(properties: Properties) : Block(properties), EntityBlock {
         val refusal = when {
             item.scorched -> "message.guildmark.cook.plate_ruined"
             plate.forShow -> "message.guildmark.cook.plate_show"
-            !plate.dish.isEmpty -> "message.guildmark.cook.plate_occupied"
+            !plate.dish.isEmpty || state.getValue(LIFTED) -> "message.guildmark.cook.plate_occupied"
             else -> null
         }
         if (refusal != null) {
@@ -110,7 +126,7 @@ class PlateBlock(properties: Properties) : Block(properties), EntityBlock {
         val portion = plate.take(level)
         if (portion.isEmpty) return InteractionResult.PASS
         player.setItemInHand(InteractionHand.MAIN_HAND, portion)
-        portion.use(level, player, InteractionHand.MAIN_HAND)
+        PlateEating.lifting(player, pos) { portion.use(level, player, InteractionHand.MAIN_HAND) }
         if (!player.isUsingItem) {
             player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY)
             plate.lay(portion)
@@ -128,6 +144,27 @@ class PlateBlock(properties: Properties) : Block(properties), EntityBlock {
 
     companion object {
         private val SHAPE: VoxelShape = Block.box(2.0, 0.0, 2.0, 14.0, 2.0, 14.0)
+
+        /** Whether the plate is off its board, in the hand of whoever eats from it (the board alone is drawn). A world from before it reads false. */
+        val LIFTED: BooleanProperty = BooleanProperty.create("lifted")
+
+        /** Ticks a lifted plate waits, at most, to be put back: the longest meal eaten off it takes 24, and a let-go puts it back at once. */
+        private const val LIFT_MOST = 60
+
+        /** Lifts the plate at [pos] off its board (a meal is begun off it): true if it was there to lift. */
+        fun lift(level: ServerLevel, pos: BlockPos): Boolean {
+            val state = level.getBlockState(pos)
+            if (state.block !is PlateBlock || state.getValue(LIFTED)) return false
+            level.setBlock(pos, state.setValue(LIFTED, true), UPDATE_CLIENTS)
+            level.scheduleTick(pos, state.block, LIFT_MOST)
+            return true
+        }
+
+        /** Puts the plate at [pos] back on its board, if it is lifted. */
+        fun putDown(level: ServerLevel, pos: BlockPos) {
+            val state = level.getBlockState(pos)
+            if (state.block is PlateBlock && state.getValue(LIFTED)) level.setBlock(pos, state.setValue(LIFTED, false), UPDATE_CLIENTS)
+        }
 
         /** How the block is made (hardness, sound, light...): the owner's to tune, so the registry never needs to change. */
         val PROPERTIES: UnaryOperator<BlockBehaviour.Properties> = UnaryOperator { it.mapColor(MapColor.TERRACOTTA_WHITE).strength(0.5f).sound(SoundType.STONE).noOcclusion() }

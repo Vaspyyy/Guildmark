@@ -66,7 +66,9 @@ WHERE THINGS ARE DRAWN (px, model space, facing north):
   spit        fat drips fall from y 7.8 to the tray's rim at y 1.9 (x 3.2 to 12, z 6.4 to 9.6); a flare leaps from the coal beds (x 3 to 12,
               z 4.6 to 6 and 10 to 11.4) at y 2.
   prep_board  the heap of up to 16 items lies in the box (4.2, 10.2, 4.6) to (11.8, 14.4, 12.2), on the chopping board (its top is y 10.2).
-  plate       the dish lies flat at (8, 1.55, 8) on the plate (4.4 px apothem).
+  plate       the dish lies flat at (8, 1.55, 8) on the plate (4.4 px apothem). While a meal is eaten from it the plate is lifted
+              (lifted=true: the board alone), and the Plate's item with the first custom model data flag set is the plate held as a flat item
+              is (item/plate_held).
   larder      the three dishes seen through the slats stand at (5.6, 2.7, 8) (8, 7.0, 8) (10.4, 11.3, 8): x, y, z of each middle.
   menu_board  the chalking area is x 1.9 to 14.1, y 6.7 to 14.3 on the plane z 7.05 (it looks toward -z); on the wall variant x 1.9 to 14.1,
               y 3.3 to 12.7 on z 14.75.
@@ -205,7 +207,7 @@ def blockstates():
             parts.append({'when': {'facing': facing, 'lit': lit}, 'apply': _apply('spit_lit' if lit == 'true' else 'spit', y)})
     out['spit'] = {'multipart': parts}
     out['prep_board'] = {'variants': {'': _apply('prep_board')}}
-    out['plate'] = {'variants': {'': _apply('plate')}}
+    out['plate'] = {'variants': {'lifted=false': _apply('plate'), 'lifted=true': _apply('plate_lifted')}}
     out['larder'] = {'variants': {'open=false': _apply('larder'), 'open=true': _apply('larder_open')}}
     out['menu_board'] = {'variants': {'facing=%s' % f: _apply('menu_board', y) for f, y in FACING_Y.items()}}
     out['herb'] = {'variants': {'age=%d' % a: _apply('herb_stage%d' % a) for a in range(cook_helpers.HERB_AGES)}}
@@ -218,7 +220,7 @@ def model_item(model):
     return {'model': {'type': 'minecraft:model', 'model': model}}
 
 
-SIMPLE_BLOCK_ITEMS = {'prep_board': 'guildmark:block/prep_board', 'plate': 'guildmark:block/plate', 'larder': 'guildmark:block/larder',
+SIMPLE_BLOCK_ITEMS = {'prep_board': 'guildmark:block/prep_board', 'larder': 'guildmark:block/larder',
                       'menu_board': 'guildmark:block/menu_board'}
 
 
@@ -242,6 +244,13 @@ def write_states_and_items(assets):
         G.write_json(os.path.join(assets, 'items', block + '.json'), model_item('guildmark:item/' + block))
     for block, model in SIMPLE_BLOCK_ITEMS.items():
         G.write_json(os.path.join(assets, 'items', block + '.json'), model_item(model))
+    # The Plate: the block's model, or, with the first flag of its custom model data set, the plate alone held as a flat item (Part E's)
+    G.write_json(os.path.join(assets, 'models/item', 'plate_held.json'),
+                 G.model(cook_helpers.plate_held(), 'stoneware', True, display=cook_helpers.PLATE_HELD_DISPLAY))
+    G.write_json(os.path.join(assets, 'items', 'plate.json'), {'model': {
+        'type': 'minecraft:condition', 'property': 'minecraft:custom_model_data', 'index': 0,
+        'on_true': {'type': 'minecraft:model', 'model': 'guildmark:item/plate_held'},
+        'on_false': {'type': 'minecraft:model', 'model': 'guildmark:block/plate'}}})
 
 
 def main(argv):

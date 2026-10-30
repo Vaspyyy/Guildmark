@@ -31,6 +31,9 @@ object DishEating {
         else -> "cook.eat.bite"
     }
 
+    /** Whether a portion of [kind] eaten at a Plate is eaten off the plate lifted into the other hand (3.5): what is eaten in a bite, not from a bowl. */
+    fun offThePlate(kind: DishKind?): Boolean = action(kind) == CookAction.EAT_BITE
+
     /** The pose of eating a portion of [kind] (3.3): Part E draws it on the player and on whoever sees them. */
     fun action(kind: DishKind?): CookAction = when {
         kind == DishKind.BROTH -> CookAction.DRINK
@@ -43,7 +46,9 @@ object DishEating {
      * ticks, and a dish's is one long recording), so the mouthful is played here, once, for everyone near, and the pose
      * is asked for. A dish is food whether or not Hearthcraft is on, so its sound is always played; the pose is the
      * cook's, and is asked for only while it is on. A meal that takes longer than a bowl's (Gruel) has its recording
-     * played that much slower, and lower, so its clinks keep to the slower spoonfuls.
+     * played that much slower, and lower, so its clinks keep to the slower spoonfuls. A meal begun at a Plate
+     * ([PlateEating.liftingFrom]) that is eaten off the plate lifts the plate off its board into the other hand: the
+     * block shows the board alone until the meal ends, and the pose is the plate's own (EAT_PLATE).
      */
     fun begin(player: ServerPlayer, kind: DishKind?) {
         val level = player.level()
@@ -52,7 +57,9 @@ object DishEating {
             null, player.x, player.y, player.z, CookSounds.get(soundName(kind)), SoundSource.PLAYERS,
             VOLUME, (0.96f + level.random.nextFloat() * 0.08f) * if (DishFood.bowl(kind)) slow else 1f,
         )
-        if (Cooking.enabled()) CookActions.play(player, action(kind), player.blockPosition())
+        if (!Cooking.enabled()) return
+        val plate = PlateEating.liftingFrom(player)?.takeIf { offThePlate(kind) && PlateBlock.lift(level, it) }
+        if (plate != null) CookActions.play(player, CookAction.EAT_PLATE, plate) else CookActions.play(player, action(kind), player.blockPosition())
     }
 
     /**

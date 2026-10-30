@@ -1,13 +1,13 @@
 """
-The cook's own clips: the seventeen the player plays in third person at the cook's stations and when she eats, the ten that move the item in her
-hand in first person, and the generated client/cooking/CookGrips.kt those ten turn it about. Same kit and skeleton as the combat and ship clips
+The cook's own clips: the eighteen the player plays in third person at the cook's stations and when she eats, the eleven that move the item in her
+hand in first person, and the generated client/cooking/CookGrips.kt those eleven turn it about. Same kit and skeleton as the combat and ship clips
 (animkit.py; the third-person ones are solved in the manner of ship_anims.py, the first-person ones are an item moved about a grip as the weapon
 scripts' are), read by the game's CombatAnimator and FirstPersonCombat; Hearthcraft Part E plays them (living-world/cook/design.md 11.3). Run from
 the repo root:
 
     python3 -B art/scripts/cook_anims.py src/main/resources/assets/guildmark [preview-dir [steve.png]]
 
-Writes assets/guildmark/animations/player/ (17 clips), assets/guildmark/animations/first_person/ (10) and
+Writes assets/guildmark/animations/player/ (18 clips), assets/guildmark/animations/first_person/ (11) and
 src/main/kotlin/io/github/vaspyyy/guildmark/client/cooking/CookGrips.kt. With a preview dir it also writes five GIFs there (player_pot, player_fire,
 player_board, player_oven_cold, player_eating): every clip played again and again in three-quarter view, over what she sees in first person where the
 clip has a first-person side and over her from the other side where it has not; steve.png dresses the model, else it is a plain cook; the tools'
@@ -35,6 +35,7 @@ board draws just that GIF; COOK_ANIMS_TEX=<dir:dir> adds folders of item texture
     eat_spoon                   32    2  2/4      the bowl at her breastbone in the left hand, the wooden spoon in the right dipped and raised to her lips three times
     drink_bowl                  32    2  2/4      both hands raise the bowl, her head going back, a long drink with two swallows, lowered on a breath out
     eat_bite                    24    4  1.5/3    the food raised to her mouth in the right hand, a bite, lowered while she chews, raised, a second bite
+    eat_plate                   24    4  1.5/3    eat_bite at a Plate: the plate in her left hand, flat under the food and raised under her chin to each bite
 
     first person (first_person/) ticks rate blend   bones             what moves
     cook_stir                   24    4  1.5/4     item              the ladle's bowl carried round the stew in two slow circles
@@ -46,6 +47,7 @@ board draws just that GIF; COOK_ANIMS_TEX=<dir:dir> adds folders of item texture
     cook_carve                  20    4  1/4       item              the knife across the roast twice, a slice falling at each cut, flicked away
     eat_spoon                   32    2  2/4       item, offhand     the spoon dipped in the bowl and raised to the screen's foot three times; the offhand is the bowl
     eat_bite                    24    4  1.5/3     item              the food up to the face, a bite, lowered while she chews, a second bite
+    eat_plate                   24    4  1.5/3     item, offhand     eat_bite's food over the plate, which lies in the lower left and rises to each bite
     drink_bowl                  32    2  2/4       item              the bowl rises and tips toward the eye, two swallows, lowered
 
 The ticks things happen at (the clips' `marks`; the JSON has no room for them, so Part E's sounds and puffs take them from here). Third person: cook_add
@@ -2541,10 +2543,12 @@ SPECS['drink_bowl'] = spec_drink_bowl
 
 # ---------------------------------------------------------------- eat_bite
 
-def spec_eat_bite():
+def spec_eat_bite(name='eat_bite', plate=False):
     """eat_bite (24): the food raised in her right hand to her mouth, a bite (her head goes in and tugs back), the hand lowered to her chest
-    while she chews (her head bobbing), raised again for a second bite, chewed, and lowered."""
-    sp = Spec('eat_bite', 24, rate=4, blend=(1.5, 3.0))
+    while she chews (her head bobbing), raised again for a second bite, chewed, and lowered. eat_plate ([plate]: a meal eaten at a Plate, the
+    design's 3.3 and 3.5): the same, with the plate lifted off its board in her left hand, held flat under the food at her chest and raised
+    under her chin to each bite to catch what falls."""
+    sp = Spec(name, 24, rate=4, blend=(1.5, 3.0))
     BITES = (5.0, 13.5)
     lift = lambda t: pulse(t, 0.0, 3.4, 21.0, 24.0)
     near = lambda t: max(pulse(t, b - 2.6, b - 1.2, b + 0.5, b + 1.9) for b in BITES)         # the food is at her mouth
@@ -2557,19 +2561,36 @@ def spec_eat_bite():
     sp.pen_w = 1.5
     sp.style.update(pitch=lambda t: 4.0 * lift(t) + 3.0 * push(t), yaw=lambda t: -2.0 * lift(t))
     sp.head = lambda t: (3.0 * lift(t) + 8.0 * push(t) - 4.0 * tug(t) + 1.8 * chew(t), 0.0, 1.2 * chew(t))
-    sp.items = {RIGHT: lambda t: (FOOD, 'bread'), LEFT: lambda t: None}
+    sp.items = {RIGHT: lambda t: (FOOD, 'bread'), LEFT: (lambda t: (FOOD, 'stoneware')) if plate else (lambda t: None)}
     want = vec_path([(0.0, UP * 0.7 + FWD * 0.5), (24.0, UP * 0.7 + FWD * 0.5)])
     kR = lambda t: lift(t) * (0.55 + 0.45 * near(t))
 
     def food_pt(t):
         return lambda ctx: reach_on(RIGHT, PLATE[RIGHT], ctx.head_pt(MOUTH) + np.array([-0.2, 3.2, -1.6]))(ctx)
-    sp.arms = {RIGHT: lambda t, ctx: item_plan(RIGHT, RFREE, food_pt(t), kR(t), want(t), work=PLATE[RIGHT], sphere=True), LEFT: lambda t, ctx: Plan(free=LFREE)}
+    left = lambda t, ctx: Plan(free=LFREE)
+    if plate:
+        P = np.array([1.6, 7.4, -6.6])                                                     # the plate's middle: at her chest, a little to her left
+        lift_l = lambda t: pulse(t, 0.0, 3.0, 21.4, 24.0)
+        want_l = vec_path([(0.0, UP * 0.9 + FWD * 0.3 + RIGHTWARD * 0.1), (24.0, UP * 0.9 + FWD * 0.3 + RIGHTWARD * 0.1)])     # its face up, a little to the front
+
+        def plate_pt(t):
+            p = P + np.array([-0.4, -1.1, -0.5]) * near(t)                                  # raised under her chin to each bite
+            return reach_on(LEFT, PLATE[LEFT], lambda ctx: ctx.body.torso_point(p))
+        left = lambda t, ctx: item_plan(LEFT, LFREE, plate_pt(t), lift_l(t), want_l(t), work=PLATE[LEFT])
+    sp.arms = {RIGHT: lambda t, ctx: item_plan(RIGHT, RFREE, food_pt(t), kR(t), want(t), work=PLATE[RIGHT], sphere=True), LEFT: left}
     sp.marks = {'bite1': BITES[0], 'bite2': BITES[1]}
 
     def checks(rep, clip, spec):
         times = [t for t in ticks_of(clip) if any(abs(t - b) < 0.01 for b in BITES)]
         gaps = [(plate_gap(pose_full(spec, clip, t), RIGHT, lips_of(pose_full(spec, clip, t)))[0], t) for t in times]
         rep.line(f"the food's card from her lips at the two bites: {min(gaps)[0]:.1f} to {max(gaps)[0]:.1f} px (held to 4.2)", max(gaps)[0] <= 4.2)
+        if plate:
+            under = [(part_pt(pose_full(spec, clip, t), LEFT, PLATE[LEFT])[1] - part_pt(pose_full(spec, clip, t), RIGHT, PLATE[RIGHT])[1], t)
+                     for t in ticks_of(clip) if 4.0 <= t <= 20.0]
+            rep.line(f"the plate under the food while she eats: its middle {min(under)[0]:.1f} to {max(under)[0]:.1f} px below the food's (held to 1.5 or more)",
+                     min(under)[0] >= 1.5)
+            held = [(plate_gap(pose_full(spec, clip, t), LEFT, lips_of(pose_full(spec, clip, t)))[0], t) for t in times]
+            rep.line(f"the plate's card from her lips at the bites: {min(held)[0]:.1f} px at the nearest (held to 0.8 or more)", min(held)[0] >= 0.8)
         self_clear(rep, spec, clip, 'arms clear of the body, the head and each other', tol=2.0, arm_tol=1.5)
         feet_planted(rep, spec, clip, 'feet', tol=0.7)
     sp.checks.append(checks)
@@ -2577,6 +2598,7 @@ def spec_eat_bite():
 
 
 SPECS['eat_bite'] = spec_eat_bite
+SPECS['eat_plate'] = lambda: spec_eat_bite('eat_plate', plate=True)
 # ================================================================== the first-person clips
 # A first-person clip moves the held item (the `item` bone; the `offhand` bone for what the other hand holds) about its grip, in camera space
 # (x right, y up, -z ahead; blocks) from where vanilla holds it (FP_BASE): the clips are authored for a right hand and the game mirrors the
@@ -2922,13 +2944,15 @@ def flat_path(geo, env, hands, blades, tilts, extra=None):
 
 MOUTH_FP = np.array([0.02, -0.27, -0.82])            # where a dish is held to be eaten from: the lower middle of the screen, the face just behind it
 HELD_FP = np.array([0.24, -0.45, -0.88])             # and where it is held between bites: lower and to the right, a little farther off
+PLATE_FP = np.array([-0.20, -0.47, -1.00])           # the plate a meal at a Plate is eaten over: the lower left
 
 
-def fp_eat_bite():
+def fp_eat_bite(name='eat_bite', plate=False):
     """eat_bite (24): the food comes up to the lower middle of the screen, leaning in to the face; a bite at 5 and 13.5 (a thrust at the face and
-    a pull back), then it is lowered to the lower right while she chews (a small bob), raised again for the second bite, chewed, and lowered."""
-    sp = FpSpec('eat_bite', 24, rate=4, blend=(1.5, 3.0), geo=FLAT)
-    sp.tex = {'item': 'bread'}
+    a pull back), then it is lowered to the lower right while she chews (a small bob), raised again for the second bite, chewed, and lowered.
+    eat_plate ([plate]): the same over the plate, which lies in the lower left (the other hand's, seen from above) and rises to each bite."""
+    sp = FpSpec(name, 24, rate=4, blend=(1.5, 3.0), geo=FLAT, off_geo=FLAT if plate else None)
+    sp.tex = {'item': 'bread', 'offhand': 'stoneware'} if plate else {'item': 'bread'}
     BITES = (5.0, 13.5)
     lift = lambda t: pulse(t, 0.0, 3.4, 21.0, 24.0)
     near = lambda t: max(pulse(t, b - 2.6, b - 1.2, b + 0.5, b + 1.9) for b in BITES)          # the food is at her mouth (the TP clip's own timing)
@@ -2945,12 +2969,17 @@ def fp_eat_bite():
     blade = vc(f=-0.22, u=0.97, r=0.05)
     ts = [i * 0.25 for i in range(97)]
     sp.item = flat_path(FLAT, lift, [(t, pos(t)) for t in ts], [(0.0, blade), (24.0, blade)], [(0.0, 0.0), (24.0, 0.0)], extra)
+    if plate:
+        lift_l = lambda t: pulse(t, 0.0, 3.0, 21.4, 24.0)
+        up = vc(f=1.0, u=0.15, r=0.0)                                                        # its far edge ahead and a little up: it lies flat, tipped to the eye
+        sp.off = off_path(FLAT, lift_l, lambda t: (PLATE_FP + np.array([0.03, 0.05, 0.02]) * near(t), up, 0.35))
     sp.marks = {'bite1': BITES[0], 'bite2': BITES[1]}
-    sp.checks += [fp_checks(sp, 'the food')]
+    sp.checks += [fp_checks(sp, {'item': 'the food', 'offhand': 'the plate'} if plate else 'the food')]
     return sp
 
 
 FP_SPECS['eat_bite'] = fp_eat_bite
+FP_SPECS['eat_plate'] = lambda: fp_eat_bite('eat_plate', plate=True)
 def off_path(geo, env, fn):
     """The offhand's track from a path as the screen shows it: fn(t) -> (grip, blade, tilt) (the item turned to face the eye, [tilt] more), written the way
     the clip stores it ([env] of the way from where the offhand rests)."""
@@ -3516,9 +3545,10 @@ GIF_GROUPS = {                                    # key: (file name, [(clip, lab
     'fire': ('player_fire', [('cook_add', 'Add to the pot'), ('cook_feed', 'Feed the fire'), ('cook_ease', 'Ease the chain'), ('cook_turn', 'Turn the crank')]),
     'board': ('player_board', [('cook_chop', 'Chop'), ('cook_slice', 'Slice a pie'), ('cook_flip', 'Flip'), ('cook_carve', 'Carve')]),
     'oven': ('player_oven_cold', [('cook_serve_peel', 'Serve from the oven'), ('cook_shiver', 'Chilled (a loop)')]),
-    'eating': ('player_eating', [('eat_spoon', 'Eat with a spoon'), ('drink_bowl', 'Drink from a bowl'), ('eat_bite', 'Eat a bite'), None]),
+    'eating': ('player_eating', [('eat_spoon', 'Eat with a spoon'), ('drink_bowl', 'Drink from a bowl'), ('eat_bite', 'Eat a bite'), ('eat_plate', 'Eat at a Plate')]),
 }
-GIF_CARD = {'eating': ('Eating', 'The dish is the item her main hand holds; for the spoonfuls the game draws it in her left hand and the wooden spoon in her right.')}
+GIF_CARD = {'eating': ('Eating', 'The dish is the item her main hand holds; for the spoonfuls the game draws it in her left hand and the wooden spoon in '
+                                  'her right; at a Plate the plate comes up in her left hand.')}
 _CTX = {}
 
 
@@ -3667,7 +3697,8 @@ def main(argv):
             f.write(cook_grips_kt())
         print(f'wrote {COOK_GRIPS_PATH}')
     if previews:
-        tex = [os.path.join(assets, 'textures', 'item')] + [d for d in os.environ.get('COOK_ANIMS_TEX', '').split(':') if d]
+        tex = [os.path.join(assets, 'textures', 'item'), os.path.join(assets, 'textures', 'block', 'cook')] + [
+            d for d in os.environ.get('COOK_ANIMS_TEX', '').split(':') if d]
         groups = set(os.environ['COOK_ANIMS_GROUPS'].split(',')) if os.environ.get('COOK_ANIMS_GROUPS') else None
         make_gifs(tp, fp_, previews, skin, tex, groups)
     print(f'{len(tp)} third-person and {len(fp_)} first-person clips written; ' + (f'{bad} checks are off' if bad else 'every check holds'))

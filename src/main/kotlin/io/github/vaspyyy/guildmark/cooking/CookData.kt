@@ -130,5 +130,8 @@ data class DishData(val tier: Tier, val day: Long, val cook: String, val cookId:
  */
 class Verdict(val role: Role, val over: Boolean, val items: Double, val close: Int)
 
-/** What a cook is doing, sent to the players who see it so their body plays the motion (1.8, Appendix C.2). */
-enum class CookAction { ADD, FEED, STIR, TASTE, EASE, SKIM, SERVE, SERVE_PEEL, CHOP, FLIP, TURN, CARVE, SLICE, SHIVER, EAT_SPOON, EAT_BITE, DRINK }
+/**
+ * What a cook is doing, sent to the players who see it so their body plays the motion (1.8, Appendix C.2). EAT_PLATE is
+ * EAT_BITE at a Plate, the plate lifted into the other hand (3.3, 3.5). On the wire by ordinal: a new one goes last.
+ */
+enum class CookAction { ADD, FEED, STIR, TASTE, EASE, SKIM, SERVE, SERVE_PEEL, CHOP, FLIP, TURN, CARVE, SLICE, SHIVER, EAT_SPOON, EAT_BITE, DRINK, EAT_PLATE }

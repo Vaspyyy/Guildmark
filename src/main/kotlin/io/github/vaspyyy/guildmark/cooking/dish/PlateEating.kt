@@ -17,7 +17,9 @@ import java.util.UUID
  * Eating at a Plate (living-world/cook/design.md 3.3, 3.5): the dish is lifted into the hand and eaten as any food is
  * eaten, which is by holding the use key down for the second and a half it takes. Let go early, and the game stops the
  * meal; this puts the dish back on its plate (if the player is still beside it and it is still bare) rather than leaving
- * it in their hand. If the plate is out of reach, the dish simply stays in the hand: it is never lost.
+ * it in their hand. If the plate is out of reach, the dish simply stays in the hand: it is never lost. A meal eaten off
+ * the plate has the plate lifted off its board ([PlateBlock.lift]); it is put back on the board when the meal ends, is
+ * let go of, or the player leaves (and by the block's own tick, if none of those comes).
  */
 object PlateEating {
     /** How long after lifting a dish an early stop still sends it back: the longest meal (Gruel's) takes 48 ticks. */
@@ -31,6 +33,22 @@ object PlateEating {
     /** Who is eating from which plate; at most one entry a player, and gone when the meal ends. */
     private val eating = HashMap<UUID, Spot>()
 
+    /** The player and the plate of a dish being lifted at this moment, while the game begins the meal ([lifting]). */
+    private var lifting: Pair<UUID, BlockPos>? = null
+
+    /** Runs [use], the game's own start of the meal, with [pos] known as the plate [player] lifts the dish from. */
+    fun <T> lifting(player: ServerPlayer, pos: BlockPos, use: () -> T): T {
+        lifting = player.uuid to pos
+        try {
+            return use()
+        } finally {
+            lifting = null
+        }
+    }
+
+    /** The plate [player] is lifting a dish from at this moment (the meal is being begun at it), or null. */
+    fun liftingFrom(player: ServerPlayer): BlockPos? = lifting?.takeIf { it.first == player.uuid }?.second
+
     /** [player] has lifted the dish off the plate at [pos] and begun to eat it. */
     fun begin(player: ServerPlayer, level: ServerLevel, pos: BlockPos) {
         eating[player.uuid] = Spot(level.dimension(), pos.immutable(), level.gameTime + WINDOW)
@@ -38,14 +56,26 @@ object PlateEating {
 
     fun register() {
         NeoForge.EVENT_BUS.addListener(LivingEntityUseItemEvent.Stop::class.java) { event -> stopped(event) }
-        NeoForge.EVENT_BUS.addListener(LivingEntityUseItemEvent.Finish::class.java) { event -> (event.entity as? ServerPlayer)?.let { eating.remove(it.uuid) } }
-        NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerLoggedOutEvent::class.java) { event -> eating.remove(event.entity.uuid) }
+        NeoForge.EVENT_BUS.addListener(LivingEntityUseItemEvent.Finish::class.java) { event -> (event.entity as? ServerPlayer)?.let { ended(it) } }
+        NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerLoggedOutEvent::class.java) { event -> (event.entity as? ServerPlayer)?.let { ended(it) } }
         Cooking.onForget { eating.clear() }
+    }
+
+    /** [player]'s meal at a plate is over: the plate goes back on its board (if it was lifted). */
+    private fun ended(player: ServerPlayer) {
+        val spot = eating.remove(player.uuid) ?: return
+        putDown(player, spot)
+    }
+
+    private fun putDown(player: ServerPlayer, spot: Spot) {
+        val level = player.level() as? ServerLevel ?: return
+        if (level.dimension() == spot.dimension && level.isLoaded(spot.pos)) PlateBlock.putDown(level, spot.pos)
     }
 
     private fun stopped(event: LivingEntityUseItemEvent.Stop) {
         val player = event.entity as? ServerPlayer ?: return
         val spot = eating.remove(player.uuid) ?: return
+        putDown(player, spot)
         val level = player.level() as? ServerLevel ?: return
         if (level.dimension() != spot.dimension || level.gameTime > spot.until || !level.isLoaded(spot.pos)) return
         val hand = player.usedItemHand

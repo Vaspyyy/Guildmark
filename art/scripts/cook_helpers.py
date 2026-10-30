@@ -14,6 +14,7 @@ HEAP_BOX = (4.2, 10.2, 4.6, 11.8, 14.4, 12.2)            # x0, y0, z0, x1, y1, z
 PLATE_TOP = 1.55                                         # the Plate: the top of the plate's floor (a dish laid flat sits here)
 PLATE_AT = (8.0, PLATE_TOP, 8.0)                         # the middle of the dish
 PLATE_R = 4.4                                            # the plate's apothem
+RIM_GREY = (0.75, 7.25, 1.75, 8.75)                      # a uv of the stoneware texture all in the rim's grey (the held plate's underside)
 # The Larder
 LARDER_BODY = (2.0, 1.5, 3.4, 14.0, 15.2, 12.6)          # x0, y0, z0, x1, y1, z1 of the cupboard (the door is on the front, z0)
 LARDER_SHELVES = (2.7, 7.0, 11.3)                        # the shelf tops (y)
@@ -57,7 +58,17 @@ def prep_board():
 def plate():
     """A trencher of pale wood with a stoneware plate on it: the board 13 x 9.6 and 1 px thick, the plate (a dark-rimmed round of eight sides)
     a hair over half a pixel on it. A dish laid flat sits at PLATE_AT."""
-    els = [cube((1.6, 0, 3.2), (14.4, 1.0, 12.8), {'up': 'board', '*': 'board'}, uv={'up': (1.6, 3.2, 14.4, 12.8)})]
+    return trencher() + stoneware()
+
+
+def trencher():
+    """The Plate's board alone: what stays on the table while the plate is lifted off it for a meal (the blockstate's lifted=true)."""
+    return [cube((1.6, 0, 3.2), (14.4, 1.0, 12.8), {'up': 'board', '*': 'board'}, uv={'up': (1.6, 3.2, 14.4, 12.8)})]
+
+
+def stoneware():
+    """The plate on the board: a round of eight sides a hair over half a pixel thick, its top the stoneware texture."""
+    els = []
     r = PLATE_R
     y0, y1 = 1.0, 1.0 + 0.55
     # The plate: the round of eight sides, its top the stoneware texture laid so the plate's circle fills it, a low raised rim ring
@@ -70,6 +81,35 @@ def plate():
         els.append(cube((8 - r, y0, 8 - s / 2), (8 + r, yt, 8 + s / 2), {'up': 'stoneware', '*': 'stoneware'}, ('up', 'west', 'east'),
                         uv={'up': (u0, v0, u1, v1), 'west': (0, 5, 2, 6), 'east': (0, 5, 2, 6)}, rot=(0.0, ang, 0.0), origin=(8, y0, 8)))
     return els
+
+
+def plate_held():
+    """The plate lifted off its board and held (`item/plate_held`, which the Plate's item shows when the first flag of its custom model data is
+    set: Part E's plate in the hand of a meal eaten at a Plate): the same round stood up as a flat item stands, in the plane z 7.5 to 8.5 with
+    its glazed top facing south, as wide as the 16 px card (an apothem of 8), so that held as a flat item is held (scale 0.55) it is the plate's
+    own 8.8 px across and 0.55 thick. Its underside and its edge are the rim's grey (RIM_GREY, a patch of the texture's rim)."""
+    els = []
+    r = 8.0
+    s = 2.0 * r * math.tan(math.pi / 8)
+    k = 8.0 / (r * 1.06)
+    u0, u1 = 8.0 - r * k, 8.0 + r * k
+    v0, v1 = 8.0 - s / 2 * k, 8.0 + s / 2 * k
+    for i, ang in enumerate((0.0, 45.0, 90.0, 135.0)):
+        d = 0.006 * i
+        els.append(cube((8 - r, 8 - s / 2, 7.5 + d), (8 + r, 8 + s / 2, 8.5 - d), {'*': 'stoneware'}, ('south', 'north', 'west', 'east'),
+                        uv={'south': (u0, v0, u1, v1), '*': RIM_GREY}, rot=(0.0, 0.0, ang), origin=(8, 8, 8)))
+    return els
+
+
+# a flat item's hold (vanilla's `item/generated`, whose left hands are its right hands' numbers), so the held plate is where the clips put a dish
+PLATE_HELD_DISPLAY = {
+    'thirdperson_righthand': {'rotation': [0, 0, 0], 'translation': [0, 3, 1], 'scale': [0.55, 0.55, 0.55]},
+    'thirdperson_lefthand': {'rotation': [0, 0, 0], 'translation': [0, 3, 1], 'scale': [0.55, 0.55, 0.55]},
+    'firstperson_righthand': {'rotation': [0, -90, 25], 'translation': [1.13, 3.2, 1.13], 'scale': [0.68, 0.68, 0.68]},
+    'firstperson_lefthand': {'rotation': [0, -90, 25], 'translation': [1.13, 3.2, 1.13], 'scale': [0.68, 0.68, 0.68]},
+    'ground': {'rotation': [0, 0, 0], 'translation': [0, 2, 0], 'scale': [0.5, 0.5, 0.5]},
+    'fixed': {'rotation': [0, 180, 0], 'scale': [1, 1, 1]},
+}
 
 
 # ================================================================ the Larder
@@ -208,6 +248,7 @@ def models():
     out = {
         'prep_board': (prep_board(), 'planks', True),
         'plate': (plate(), 'board', True),
+        'plate_lifted': (trencher(), 'board', True),
         'larder': (larder(False), 'darkwood', True),
         'larder_open': (larder(True), 'darkwood', True),
         'cook_larder_door': (larder_door(), 'darkwood', True),

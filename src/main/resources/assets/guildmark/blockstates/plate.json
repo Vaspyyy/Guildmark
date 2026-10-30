@@ -1,7 +1,10 @@
 {
   "variants": {
-    "": {
+    "lifted=false": {
       "model": "guildmark:block/plate"
+    },
+    "lifted=true": {
+      "model": "guildmark:block/plate_lifted"
     }
   }
 }
