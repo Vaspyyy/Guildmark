@@ -50,7 +50,7 @@ class TownsfolkRenderer(context: EntityRendererProvider.Context) :
         state.texture = look?.let { texture(it.texture) } ?: FALLBACK
         state.pieces = look?.parts ?: emptySet()
         state.child = role == TownRole.CHILD
-        state.held = Props.held(role, entity.shownActivity, entity.lantern, state.pieces)
+        state.held = Props.held(role, entity.shownActivity, entity.lantern, state.pieces, entity.atTavern)
         // The Lanternrise: the lantern leaves their hands at the let-go, as its sky lantern rises from there
         if (entity.shownActivity == Activity.RELEASE && entity.tickCount - entity.shownStart >= FestivalSite.RELEASE_TICK) state.held -= "lantern"
         state.glows = "hot_iron" in state.held || "lantern" in state.held

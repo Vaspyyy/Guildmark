@@ -212,17 +212,19 @@ object Props {
      */
     private val heldFor = Int2ObjectOpenHashMap<Set<String>>()
 
-    fun held(role: TownRole, activity: Activity, lantern: Boolean, pieces: Set<String>): Set<String> {
-        var key = (role.ordinal shl 16) or (activity.ordinal shl 4) or (if (lantern) 8 else 0)
+    /** [tavern]: among a tavern's drinkers, whose cheer raises a mug (a cheer anywhere else is empty-handed: Townsperson.atTavern). */
+    fun held(role: TownRole, activity: Activity, lantern: Boolean, pieces: Set<String>, tavern: Boolean = true): Set<String> {
+        val dry = activity == Activity.CHEER && !tavern
+        var key = (role.ordinal shl 16) or (activity.ordinal shl 4) or (if (lantern) 8 else 0) or (if (dry) 1 shl 30 else 0)
         for (k in CARRIED_LOOKS.indices) if (CARRIED_LOOKS[k] in pieces) key = key or (1 shl k)
         heldFor.get(key)?.let { return it }
-        val out = Collections.unmodifiableSet(workOut(role, activity, lantern, pieces))
+        val out = Collections.unmodifiableSet(workOut(role, activity, lantern, pieces, dry))
         heldFor.put(key, out)
         return out
     }
 
-    private fun workOut(role: TownRole, activity: Activity, lantern: Boolean, pieces: Set<String>): Set<String> {
-        val out = HashSet<String>(OWN[activity] ?: emptySet())
+    private fun workOut(role: TownRole, activity: Activity, lantern: Boolean, pieces: Set<String>, dry: Boolean): Set<String> {
+        val out = HashSet<String>(if (dry) emptySet() else OWN[activity] ?: emptySet())
         val both = activity in BOTH_HANDS
         val rightBusy = both || activity in RIGHT_HAND || out.any { it in RIGHT }
         val leftBusy = both || out.any { it in LEFT }

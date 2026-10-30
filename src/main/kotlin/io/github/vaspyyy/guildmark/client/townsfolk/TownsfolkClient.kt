@@ -145,7 +145,8 @@ object TownsfolkClient {
             Activity.CLAP -> if (t == 6 || t == 12 || t == 18) sound(p, "clap", 0.6f)
             // A diner at the inn's table (TownPlates.kt) clinks the spoon on the bowl in place of the mug's sip
             Activity.DRINK, Activity.SIT_DRINK -> if (t == 38 && !TownPlates.sip(p)) sound(p, "tavern.sip", 0.45f, voicePitch(p))
-            Activity.CHEER -> if (t == 12) sound(p, "tavern.clink", 0.7f)
+            // The mug clinked at the tavern; a cheer anywhere else is with an empty hand (Townsperson.atTavern)
+            Activity.CHEER -> if (t == 12 && p.atTavern) sound(p, "tavern.clink", 0.7f)
             Activity.POUR -> if (t == 14) sound(p, "tavern.pour", 0.6f)
             Activity.SWEEP -> if (t == 8 || t == 23) {
                 sound(p, "sweep", 0.45f)

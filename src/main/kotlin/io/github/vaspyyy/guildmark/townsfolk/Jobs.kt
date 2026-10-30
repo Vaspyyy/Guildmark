@@ -561,6 +561,8 @@ class Mingle(p: Townsperson, private val ticks: Int, private val moods: List<Act
 
     override fun start() {
         p.navigation.stop()
+        // Their cheers here are a mug raised (Townsperson.atTavern)
+        if (tavern) p.atTavern = true
     }
 
     override fun run(): Boolean {
@@ -586,6 +588,7 @@ class Mingle(p: Townsperson, private val ticks: Int, private val moods: List<Act
 
     override fun stop() {
         p.act(Activity.NONE)
+        p.atTavern = false
     }
 }
 
