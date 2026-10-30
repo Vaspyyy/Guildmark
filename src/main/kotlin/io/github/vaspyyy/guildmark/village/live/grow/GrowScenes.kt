@@ -817,9 +817,10 @@ internal object GrowScenes {
      * it is linked to), the first grown-up pulling a handcart heaped with the household's goods ([Handcarts.household]) and the
      * rest alongside, they walk in to their empty home; at its door they stop and take the place in (LOOK_ABOUT, "So this is
      * the place"), the door is opened, and the neighbours come over: a wave and "Welcome to the village." (INTRODUCE,
-     * welcome_1), the next with welcome_2, the third a bow and welcome_3, the household's first bowing back with welcome_reply.
-     * Then the goods are carried in off the cart a piece at a time, what is on top first (the children the bundles), the door is
-     * shut behind them, and the empty cart goes once nobody is looking.
+     * welcome_1), the household's first bowing back with welcome_reply once it is heard out, the next with welcome_2, the third a
+     * bow and welcome_3, each word in its turn. Once the last bow is made and its word heard out, the goods are carried in off the
+     * cart a piece at a time, what is on top first (the children the bundles), the door is shut behind them, and the empty cart
+     * goes once nobody is looking.
      */
     class Arrival(
         level: ServerLevel, key: Long, private val home: CityPlaces.Lodging, private val door: CityPlaces.Door, private val back: Boolean,
@@ -925,7 +926,8 @@ internal object GrowScenes {
                     }
                 }
                 Stage.WELCOME -> {
-                    if (!replied && welcomed >= 1 && puller.waiting) {
+                    // The reply once the first welcome is heard out (by the bow's moment)
+                    if (!replied && welcomed >= 1 && puller.waiting && Turns.freeBy(puller.p, 8)) {
                         replied = true
                         val first = crowd.firstOrNull()?.p
                         puller.set(
@@ -933,7 +935,9 @@ internal object GrowScenes {
                             Stand(-1, { first?.let { eye(it) } ?: front() }),
                         )
                     }
-                    val done = crowd.isEmpty() && t >= NOBODY || crowd.isNotEmpty() && welcomed >= crowd.size && replied && t >= 120 && puller.waiting
+                    // Every word said and heard out, and every neighbour's move played to its end
+                    val done = crowd.isEmpty() && t >= NOBODY || crowd.isNotEmpty() && welcomed >= crowd.size && replied && t >= 120 && puller.waiting &&
+                        crowd.all { it.waiting } && Turns.freeBy(puller.p)
                     if (done || t > WELCOME) {
                         // Their welcome said (or the time up), the neighbours wave and go back to their day
                         for (h in crowd.toList()) h.set(Play(Activity.WAVE, { lead?.p?.let { eye(it) } }))
@@ -981,9 +985,10 @@ internal object GrowScenes {
                 h.set(
                     Play(Activity.WAVE, faceThem),
                     Go({ spot }, io.github.vaspyyy.guildmark.townsfolk.Jobs.WALK, 0.9),
-                    // In turn, the household's reply after the first
+                    // In turn, the household's reply after the first, each word once the one before is heard out
                     Until({ welcomed >= k && (k == 0 || replied) }, faceThem, 500),
                     Stand(10 + 45 * minOf(k, 1), faceThem),
+                    Until({ Turns.freeBy(it.p, 8) }, faceThem, 200),
                     word,
                     Stand(-1, faceThem),
                 )
