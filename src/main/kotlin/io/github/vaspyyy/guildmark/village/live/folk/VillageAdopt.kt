@@ -19,6 +19,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Townsfolk
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import io.github.vaspyyy.guildmark.village.live.Live
 import io.github.vaspyyy.guildmark.village.live.VillageBudget
+import io.github.vaspyyy.guildmark.village.live.VillageData
 import io.github.vaspyyy.guildmark.village.live.VillageInfoCommand
 import io.github.vaspyyy.guildmark.village.live.VillagePerf
 import io.github.vaspyyy.guildmark.village.live.VillagePlaces
@@ -239,12 +240,9 @@ object VillageAdopt {
 
     /** Looks at the next village in turn (a lost one too: its folk are given back, design 14.5, as a released village's are). */
     private fun look(level: ServerLevel) {
-        val all = Villages.all(level)
-        if (all.isEmpty()) return
-        val rec = all.firstOrNull { it.key > cursor } ?: all.first()
+        val rec = next(level) ?: return
         cursor = rec.key
         val adopt = adopting(rec) && rec.state != Live.LOST
-        if (adopt && rec.state != Live.LIVE) return
         reap(level, rec)
         if (!scanning(level)) return
         val started = System.nanoTime()
@@ -253,6 +251,23 @@ object VillageAdopt {
         } finally {
             VillageBudget.spent(System.nanoTime() - started)
         }
+    }
+
+    /**
+     * The village after [cursor] in the keys' order that a look has work in: a LIVE one taking folk in, or one giving them back (released,
+     * lost, or with the switches off); null if none has. One pass over the records and no sort, so that with hundreds of villages
+     * explored the few a player is near get a look every few seconds, as the design's rate (2 a second a village, 13.2) needs, and not
+     * once in hundreds of looks.
+     */
+    private fun next(level: ServerLevel): VillageRec? {
+        var after: VillageRec? = null
+        var first: VillageRec? = null
+        for (rec in VillageData.get(level).records.values) {
+            if (adopting(rec) && rec.state != Live.LOST && rec.state != Live.LIVE) continue
+            if (first == null || rec.key < first.key) first = rec
+            if (rec.key > cursor && (after == null || rec.key < after.key)) after = rec
+        }
+        return after ?: first
     }
 
     /** Whether it is the hours when folk are looked for: from dusk (villagers go to bed at 12000) to just after dawn. */
