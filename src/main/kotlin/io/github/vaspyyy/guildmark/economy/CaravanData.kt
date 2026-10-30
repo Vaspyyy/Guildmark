@@ -3,6 +3,7 @@ package io.github.vaspyyy.guildmark.economy
 import com.mojang.serialization.Codec
 import com.mojang.serialization.codecs.RecordCodecBuilder
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.village.live.keptField
 import net.minecraft.core.BlockPos
 import net.minecraft.core.UUIDUtil
 import net.minecraft.resources.Identifier
@@ -227,10 +228,10 @@ class CaravanRec(
                 GoodsCodec.CODEC.optionalFieldOf("exports", DoubleArray(Good.entries.size)).forGetter(CaravanRec::exports),
                 Codec.INT.optionalFieldOf("guards", 2).forGetter(CaravanRec::guards),
                 Codec.INT.optionalFieldOf("wagons", 1).forGetter(CaravanRec::wagons),
-                ROLL.fieldOf("roll").forGetter {
+                ROLL.keptField("roll") { Roll(-1, -1.0, 0.0, 0, 0L, false, false, false, "road", 0.0, 0.0, 0.0, 0f, 0L, false, listOf()) }.forGetter {
                     Roll(it.band, it.strike, it.reach, it.struck, it.struckAt, it.waylaid, it.horseDead, it.fought, it.place, it.wx, it.wy, it.wz, it.wyaw, it.gate, it.watched, it.freight)
                 },
-                ESCORT.fieldOf("escort").forGetter { Escort(it.job, it.holder, it.met, it.kills, it.escortOnly, it.slots, it.tint, it.label, it.village, it.fromVillage) },
+                ESCORT.keptField("escort") { Escort(null, null, false, 0, false, listOf()) }.forGetter { Escort(it.job, it.holder, it.met, it.kills, it.escortOnly, it.slots, it.tint, it.label, it.village, it.fromVillage) },
             ).apply(i) { id, capital, bell, road, hour, run, seed, phase, times, length, load, exports, guards, wagons, roll, escort ->
                 CaravanRec(
                     id, capital, bell, road, hour, Run.of(run), seed, Phase.of(phase), times.setOut, times.held, times.until, length,
@@ -586,7 +587,7 @@ class CaravanData(
             i.group(
                 Codec.LONG.optionalFieldOf("next", 1L).forGetter(CaravanData::next),
                 CaravanRec.CODEC.listOf().optionalFieldOf("caravans", listOf()).forGetter { it.caravans },
-                RECORDS.fieldOf("records").forGetter { Records(it.wrecks, it.drivers, it.takes) },
+                RECORDS.keptField("records") { Records(listOf(), listOf(), listOf()) }.forGetter { Records(it.wrecks, it.drivers, it.takes) },
                 RoadRec.CODEC.listOf().optionalFieldOf("roads", listOf()).forGetter { it.roads },
                 CapitalRec.CODEC.listOf().optionalFieldOf("capitals", listOf()).forGetter { it.capitals },
                 BandRec.CODEC.listOf().optionalFieldOf("bands", listOf()).forGetter { it.bands },

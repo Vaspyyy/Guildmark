@@ -6,7 +6,10 @@ import com.mojang.serialization.DataResult
 import com.mojang.serialization.Decoder
 import com.mojang.serialization.DynamicOps
 import com.mojang.serialization.MapCodec
+import com.mojang.serialization.MapDecoder
+import com.mojang.serialization.MapLike
 import com.mojang.serialization.codecs.RecordCodecBuilder
+import java.util.stream.Stream
 
 /**
  * A list read element by element: one that can't be read is left out and the rest are kept, so a bad element drops only
@@ -24,6 +27,24 @@ fun <A : Any> keptList(element: Codec<A>): Codec<List<A>> = Codec.of(
                 Pair.of<List<A>, T>(kept, input)
             }
     },
+)
+
+/**
+ * A field written as [Codec.fieldOf] writes it (always, so an older build reads it as before), read the way a [keptList]
+ * reads its elements: left out, or of no use at all, it takes a [default] made fresh for it, and read only in part it is
+ * kept as far as it reads. For the field a store or a record can't do without but has a plain empty or blank form for
+ * (a store's lists, a record's part whose own fields all have defaults), so that one bad field never loses the store
+ * or the record round it.
+ */
+fun <A : Any> Codec<A>.keptField(name: String, default: () -> A): MapCodec<A> = MapCodec.of(
+    fieldOf(name),
+    object : MapDecoder.Implementation<A>() {
+        override fun <T> decode(ops: DynamicOps<T>, input: MapLike<T>): DataResult<A> =
+            DataResult.success(input.get(name)?.let { parse(ops, it).resultOrPartial { }.orElse(null) } ?: default())
+
+        override fun <T> keys(ops: DynamicOps<T>): Stream<T> = Stream.of(ops.createString(name))
+    },
+    { "KeptField[$name]" },
 )
 
 /** An enum written by its lower-case name; a name it doesn't know reads as [fallback]. */
