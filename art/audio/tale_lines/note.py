@@ -3,7 +3,7 @@ wordings in the form of make_talk_voices.GROUPS. A family is one meaning said tw
 says when it is said, and what follows it in grey (the detail, never voiced) where one does. The tier of each
 family is read from its beat (tale_lines.tier).
 """
-from . import GREETING, MW, TALK, TIRED, WARM
+from . import GREETING, MW, RELIEF, TALK, TIRED, WARM, WORRY
 
 GROUPS = [
     ("The Marlow Note", MW, TALK, {
@@ -93,6 +93,41 @@ GROUPS = [
             "Then it's settled between us.",
         ],
     }),
+    # Villages V12d: the lines Tales T1 typed (art/lang/tales_t1a.json) and nobody had recorded, in T1's words but where
+    # those could be untrue when they are said
+    ("The Marlow Note: the lines first typed", MW, TALK, {
+        # the debtor, when a player offers to cover some of the sum (step 1) and does not carry that many Marks
+        "tale.note.short": [
+            "You haven't that many Marks. Keep them.",
+            # T1's "Not with an empty purse. Another day.": the purse may hold some Marks, only not enough
+            "That's more than you carry. Another day.",
+        ],
+        # the lender, when a player brings a second faction's word (step 1): only one takes Marks off
+        "tale.note.mended": [
+            "It's been mended already.",
+            "Already done. The sum's been cut.",
+        ],
+        # the debtor, when a player says they will go to the lender (step 1), pointing to the lender's door; where the
+        # lender lives follows in grey
+        "tale.note.where": [
+            "Go and ask. It can do no harm.",
+            # T1's "Try the house, or the square at midday.": the lender keeps the square from one till five, and the
+            # grey says the house
+            "Knock at their door, and ask.",
+        ],
+        # the debtor, when a player who is in asks "How does it stand?" once the sum is met (step 2): the lender comes
+        # in the morning, which follows in grey
+        "tale.note.stand_2": [
+            "It's paid, all of it. Now we wait.",
+            "Paid. One more night, and it's done.",
+        ],
+        # the debtor, asked "How does it stand?" on the ending's day (step 3); met or not, and the lender, follow in
+        # grey
+        "tale.note.stand_3": [
+            "Any moment now.",
+            "We'll know today.",
+        ],
+    }),
 ]
 
 # This tale's delivery, where a family wants one other than the plain reading (see make_talk_voices.py: DELIVERY
@@ -107,6 +142,9 @@ DELIVERY = {
     "tale.note.lender_hard": dict(speed=0.97, level=0.5),  # the lender, firm
     "tale.note.lender_law": TIRED,  # the lender, giving way to the Order's law
     "tale.note.lender_word": dict(level=-1.5),  # a quiet word, answered quietly
+    "tale.note.short": dict(speed=0.97, level=-0.5),  # turning the offer down kindly
+    "tale.note.stand_2": RELIEF,  # paid, and waiting for the morning
+    "tale.note.stand_3": WORRY,  # the day it is settled
 }
 SPEED_FOR = {}
 SAY_AS = {}
@@ -123,4 +161,7 @@ PHONEMES = {
     ("talk.tale.note.lender_sums_1", "woman"): "ˈaɪ, mɪskˈaʊntɪd. aɪl mˈɛnd ɪt.",  # heard "I'm discounted, I'll mend it."
     ("talk.tale.note.lender_word_1", "man"): "hˈɜːd. wˈiːl sˈA nˈəʊmˌɔːɹ ɒv ɪt.",  # heard "Heard we'll see no more of it."
     ("talk.tale.note.lender_hard_0", "man"): "ɐ dˈɛtt ɪz ɐ dˈɛtt.",  # heard "A dad is a dad."
+    # Villages V12d's
+    "talk.tale.note.mended_1": "ɔːlɹˌɛdi dˈʌn. ðə sˈʌmz bɪn kˈʌt.",  # heard "the sums being cut", in both voices
+    "talk.tale.note.stand_3_1": "wiːl nˈəʊ tədˈeɪ.",  # heard "We all know today.", in both voices
 }

@@ -64,6 +64,15 @@ GROUPS = [
             "That was needed. Thank you.",
         ],
     }),
+    # Villages V12d: the answer Tales T4 gave the stand's words, with a line of its own
+    ("The Bell Moot: the pledge", MW, TALK, {
+        # the crier, when a player says "I'll put in <the pledge> first." (step 2) and does not carry the Marks; the sum
+        # follows in grey
+        "tale.moot.purse": [
+            "Bring the coin, and pledge it then.",
+            "A pledge wants the coin in hand.",
+        ],
+    }),
 ]
 
 # This tale's delivery, where a family wants one other than the plain reading (see make_talk_voices.py: DELIVERY
@@ -78,6 +87,7 @@ DELIVERY = {
     "tale.moot.deferred": dict(speed=0.97, level=0.5),  # the chair, tired of it
     "tale.moot.broke": dict(speed=1.04, level=2.0),  # the chair, angry
     "tale.moot.call": dict(level=1.5),  # the chair, asking the room
+    "tale.moot.purse": dict(speed=0.97),  # a rule kindly told
 }
 SPEED_FOR = {
     ("talk.tale.moot.ask_1", "man"): 0.95,  # with its phonemes, below

@@ -1,7 +1,10 @@
 """The tales' voices (living-world/stories/design.md 13.5): every family of wordings the twelve tales' people say, in the
 form of make_talk_voices.GROUPS, one module for each tale and a shared one (shared.py: the lines every tale uses; note.py,
 chair.py, wagon.py, child.py, fence.py, lute.py, moot.py, cart.py, lantern.py, informer.py, locket.py, brother.py: one
-tale each, in the order of the design's section 8). 189 families, 380 wordings, 774 takes.
+tale each, in the order of the design's section 8). 220 families, 443 wordings, 903 takes: the design's 189, 380 and 774
+(13.5.1), and the 31 families Villages V12d added, the lines the tales first had as typed text only (the general `tale.yes`,
+the note's, the fence's, the lute's and the locket's) and the replies that stood in with another family's words (the
+informer's, the wagon's, the moot's, the chair's and the brother's), each in a group of its own at the end of its module.
 
 A module holds `GROUPS`, a list of (label, timbres, limit, {family: [wording, ...]}) as make_talk_voices.GROUPS does, with
 a comment over each family saying when it is said and what follows it in grey; and optionally `DELIVERY`, `SPEED_FOR`,
@@ -14,7 +17,8 @@ Tiers. `table` (make_talk_voices.py) is all or nothing: it refuses to run while 
 missing. So a family enters make_talk_voices.GROUPS (through `groups()`) only when its takes are made, and `RECORDED` names
 the tiers that are. The tier is read from the family's beat, so there is no list to keep:
 
-    1  the shared families, and each tale's ask, stand and thanks: what every player hears at every step
+    1  the shared families (and the general tale.yes), and each tale's ask, stand (stand_<step> too) and thanks: what
+       every player hears at every step
     2  each tale's passing and rumour: what the street says
     3  everything else: the lines inside the set pieces and the endings
 
@@ -101,9 +105,13 @@ def families():
 
 def tier(family):
     """1, 2 or 3: read from the beat in the family's name (tale.<id>.<beat>; the shared families are tale.set.*,
-    tale.ask.*, tale.why.* and tale.after.*, all tier 1)"""
-    _, tale, beat = family.split(".")
-    if tale in SHARED_IDS or beat in ("ask", "stand", "thanks"):
+    tale.ask.*, tale.why.* and tale.after.*, all tier 1, and so is the general tale.yes; a step's own stand_<step> is a
+    stand)"""
+    parts = family.split(".")
+    if len(parts) == 2:
+        return 1
+    _, tale, beat = parts
+    if tale in SHARED_IDS or re.sub(r"_[0-9]$", "", beat) in ("ask", "stand", "thanks"):
         return 1
     return 2 if beat in ("passing", "rumour") else 3
 
@@ -138,18 +146,19 @@ def words_of(text):
 
 def check():
     """Raises ValueError listing everything wrong with the table; else returns a one-line summary. What it holds to is
-    the design's: one to four wordings a family (two, but three in the child's found and agree), 7 words in a 2.5 s
-    family and 11 in a 4.0 s one, no brace, no percent sign, no name, unique names, the four recorded timbre sets, and
-    the totals of 13.5.1 (189 families, 380 wordings, 774 takes; 50, 21 and 118 families in the three tiers)."""
+    the design's: one to four wordings a family (two, but three in the child's found and agree and in the general
+    tale.yes), 7 words in a 2.5 s family and 11 in a 4.0 s one, no brace, no percent sign, no name, unique names, the four
+    recorded timbre sets, and the totals of 13.5.1 with Villages V12d's 31 families (220 families, 443 wordings, 903
+    takes; 55, 21 and 144 families in the three tiers)."""
     bad = []
     fams = families()
     limits = {GREETING: 7, TALK: 11}
     seen = {}
     for family, (timbres, limit, words) in fams.items():
-        if not re.fullmatch(r"tale\.[a-z]+\.[a-z_]+", family):
+        # tale.<id>.<beat>, a step's own stand_<step>, or the one family of no tale, the general tale.yes
+        if not re.fullmatch(r"tale\.yes|tale\.[a-z]+\.[a-z][a-z_]*(_[0-9])?", family):
             bad.append(f"{family}: not tale.<id>.<beat>")
             continue
-        _, tale, beat = family.split(".")
         if timbres not in SET_NAMES:
             bad.append(f"{family}: timbres {timbres} are not one of the four recorded sets")
         if limit not in limits:
@@ -157,8 +166,9 @@ def check():
             continue
         if not 1 <= len(words) <= 4:
             bad.append(f"{family}: {len(words)} wordings, not one to four")
-        elif len(words) != (3 if family in ("tale.child.found", "tale.child.agree") else 2):
-            bad.append(f"{family}: {len(words)} wordings; the design has two (three in the child's found and agree)")
+        elif len(words) != (3 if family in ("tale.child.found", "tale.child.agree", "tale.yes") else 2):
+            bad.append(f"{family}: {len(words)} wordings; the design has two (three in the child's found and agree, and "
+                       "the three Tales C typed for tale.yes)")
         for n, w in enumerate(words):
             where = f"{family}_{n}"
             if not isinstance(w, str) or not w:
@@ -173,11 +183,12 @@ def check():
             n_words = words_of(w)
             if n_words > limits[limit]:
                 bad.append(f"{where}: {n_words} words, over the {limits[limit]} of a {limit} s line: {w!r}")
-            # no name in a take: a capital inside a sentence is only ever I, the Order or Lanternrise
+            # no name in a take: a capital inside a sentence is only ever I, the Order, Lanternrise or the Marks (the coin,
+            # which the game always writes with a capital: the note's "You haven't that many Marks.", Tales T1's)
             for m in re.finditer(r"\b[A-Z][A-Za-z']*", w):
                 if m.start() == 0 or re.search(r"[.!?]\s+$", w[:m.start()]):
                     continue
-                if m.group(0).split("'")[0] not in ("I", "Order", "Lanternrise"):
+                if m.group(0).split("'")[0] not in ("I", "Order", "Lanternrise", "Marks"):
                     bad.append(f"{where}: {m.group(0)!r} looks like a name, and no take holds one: {w!r}")
             if w in seen:
                 bad.append(f"{where}: the same wording as {seen[w]}")
@@ -202,14 +213,16 @@ def check():
             bad.append(f"DELIVERY[{k!r}]: {v} has something other than speed, pitch and level")
     if set(RECORDED) - {1, 2, 3}:
         bad.append(f"RECORDED {RECORDED} names a tier there is not")
-    # the totals of 13.5.1 and 13.5.4
+    # the totals of 13.5.1 and 13.5.4 (189 families, 380 wordings, 774 takes; tiers (50, 208), (21, 86) and (118, 480);
+    # man 368, woman 368, old 28, child 10), with Villages V12d's 31 families, 63 wordings and 129 takes (5 families and
+    # 25 takes in tier 1, 26 and 104 in tier 3; 63 wordings in the man's and the woman's, 3 in the old man's)
     wordings = sum(len(w) for _, _, w in fams.values())
     takes = sum(len(w) * len(t) for t, _, w in fams.values())
     per_tier = {n: (sum(1 for f in fams if tier(f) == n),
                     sum(len(w) * len(t) for f, (t, _, w) in fams.items() if tier(f) == n)) for n in (1, 2, 3)}
     by_timbre = {t: sum(len(w) for ts, _, w in fams.values() if t in ts) for t in ("man", "woman", "old", "child")}
-    want = {"families": 189, "wordings": 380, "takes": 774, "tiers": {1: (50, 208), 2: (21, 86), 3: (118, 480)},
-            "timbres": {"man": 368, "woman": 368, "old": 28, "child": 10}}
+    want = {"families": 220, "wordings": 443, "takes": 903, "tiers": {1: (55, 233), 2: (21, 86), 3: (144, 584)},
+            "timbres": {"man": 431, "woman": 431, "old": 31, "child": 10}}
     have = {"families": len(fams), "wordings": wordings, "takes": takes, "tiers": per_tier, "timbres": by_timbre}
     if have != want:
         bad.append(f"the totals are not the design's (13.5.1): {have}, not {want}")

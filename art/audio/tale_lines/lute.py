@@ -68,6 +68,26 @@ GROUPS = [
             "Thank you for the evening.",
         ],
     }),
+    # Villages V12d: the lines Tales T1 typed (art/lang/tales_t1b.json) and nobody had recorded, in T1's words
+    ("The Silent Lute: the lines first typed", MW, TALK, {
+        # the keeper, to a player the town does not know well enough (under 25) who says "Lend it for one night on my
+        # word." (route C); that the keeper lends only on such a word follows in grey
+        "tale.lute.refused": [
+            "I lend on the word of folk I know.",
+            "The town doesn't know you yet. I'm sorry.",
+        ],
+        # the keeper, to a player who would pay (step 2) and does not carry the Marks; the sum wanted follows in grey
+        "tale.lute.short": [
+            "That's not enough. Come back when you have it.",
+            "Not with that purse. Another day.",
+        ],
+        # the keeper, as a player pays (step 2): the whole, the half or the rest; what is paid and what is left follow
+        # in grey
+        "tale.lute.paid": [
+            "I'll mark it down. Thank you.",
+            "Paid, and noted. That's fair.",
+        ],
+    }),
 ]
 
 # This tale's delivery, where a family wants one other than the plain reading (see make_talk_voices.py: DELIVERY
@@ -80,6 +100,8 @@ DELIVERY = {
     "tale.lute.intro": dict(speed=0.97, level=1.5),  # a song announced to the square
     "tale.lute.glum": TIRED,  # giving up on the song
     "tale.lute.returned": WARM,  # the lute handed back
+    "tale.lute.refused": dict(speed=0.97, level=-0.5),  # a refusal, not unkind
+    "tale.lute.paid": dict(level=0.5),  # business done
 }
 # Each fix says what Whisper heard without it
 SPEED_FOR = {
@@ -91,4 +113,8 @@ SAY_AS = {}
 # Each fix says what Whisper heard without it
 PHONEMES = {
     ("talk.tale.lute.keeper_1", "man"): "Im nˌɒtə tʃˈaɹɪti. Im ɐn ˈɪn.",  # heard "I'm not a charity, I'm an N."
+    # Villages V12d's: the man says a short vowel a step lower than written ("lend" written "lind"), and the American a
+    # of a stressed "and"
+    ("talk.tale.lute.refused_0", "man"): "aɪ lˈɪnd ɒnðə wˈɜːd ɒv fˈəʊk aɪ nˈəʊ.",  # heard "I land on the word"
+    ("talk.tale.lute.paid_1", "man"): "pˈeɪd, ˈænd nˈəʊtɪd. ðats fˈɛɹ.",  # heard "Paiden noted, that's fair."
 }

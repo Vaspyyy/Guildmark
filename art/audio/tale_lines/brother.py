@@ -3,7 +3,7 @@ wordings in the form of make_talk_voices.GROUPS. A family is one meaning said tw
 says when it is said, and what follows it in grey (the detail, never voiced) where one does. The tier of each
 family is read from its beat (tale_lines.tier).
 """
-from . import GENTLE, GREETING, GRIEF, MW, RELIEF, TALK, TIRED, WORRY
+from . import CALL, GENTLE, GREETING, GRIEF, MW, RELIEF, TALK, TIRED, WORRY
 
 GROUPS = [
     ("The Brother Under the Hill", MW, TALK, {
@@ -109,6 +109,31 @@ GROUPS = [
             "Never again. I swear it.",
         ],
     }),
+    # Villages V12d: the brother's own words on the way up, for the two answers Tales T5 typed (art/lang/tales_t5.json) and
+    # for the slow walk's call and rest, which took the old walker's shared lines ("Don't leave me behind, dear!", "A
+    # moment, dear. These legs.") until TaleEscort took them from the tale
+    ("The Brother Under the Hill: on the way up", MW, TALK, {
+        # the brother, when the player says "Wait here." on the way up: they stay where they stand
+        "tale.brother.wait": [
+            "I'll stay put. Don't be long.",
+            "Here, then. Come back for me.",
+        ],
+        # the brother, when the player asks "Can you find your way?" out of the mine: they walk home by themselves
+        "tale.brother.alone": [
+            "I know the way from here.",
+            "Go on. I can manage now.",
+        ],
+        # the brother on the slow walk (S8), calling after the player once they are more than 24 blocks ahead in sight
+        "tale.brother.behind": [
+            "Not so fast! I can't keep up.",
+            "Wait for me! Don't leave me here!",
+        ],
+        # the brother on the slow walk, resting on a bench or stopped to catch their breath
+        "tale.brother.rest": [
+            "A moment. I need to rest.",
+            "Just a breath. It hurts to walk.",
+        ],
+    }),
 ]
 
 # This tale's delivery, where a family wants one other than the plain reading (see make_talk_voices.py: DELIVERY
@@ -128,6 +153,10 @@ DELIVERY = {
     "tale.brother.freed": dict(level=-0.5),  # hushed wonder
     "tale.brother.delver_back": dict(speed=0.97, level=0.5),  # found alive
     "tale.brother.home": dict(speed=0.95, level=0.5),  # home at last
+    "tale.brother.wait": dict(level=-1.5),  # kept low in the dark, as the following is
+    "tale.brother.alone": dict(speed=0.97),  # tired, but sure of the way
+    "tale.brother.behind": CALL,  # calling after the player
+    "tale.brother.rest": TIRED,  # hurt, and out of breath
 }
 SPEED_FOR = {
     ("talk.tale.brother.ask_1", "man"): 0.9,  # slower, so the "n" of "mine" is heard
@@ -143,4 +172,6 @@ PHONEMES = {
     ("talk.tale.brother.rise_1", "man"): "jˈɔːɹ fˈaɪɚ. ˈaɪd ˈɔːlməʊst ɡˈɪvən ˈʌp.",  # heard "You're fire at almost given up."
     ("talk.tale.brother.passing_0", "man"): "ðə fˈɔːɹdʒ fˈiːlz ˈɛmpti. nˈQ wˈɜːd at ˈɔːl.",  # heard "The forage feels empty, no word at all."
     ("talk.tale.brother.rumour_0", "woman"): "sˈʌmwɒn wɛnt dˌWn ðɪ ˈQld mˈIn. nˈQ sˈIn. . sˈɪns.",  # heard "Someone went down the old mine, no signsense."
+    # Villages V12d's: the broad a of "can't"
+    ("talk.tale.brother.behind_0", "woman"): "nˌɒt sˌəʊ fˈast! aɪ kˈɑːnt kˈiːp ˈʌp.",  # heard "I can keep up."
 }

@@ -76,6 +76,39 @@ GROUPS = [
             "My leg. Mind my leg.",
         ],
     }),
+    # Villages V12d: the answers Tales T3 gave the driver's and the stand's words, each with a line of its own
+    ("The Fourth Wagon: the answers to the ways", MW, TALK, {
+        # the one who asks (`kin`, or the captain where the wagon had no household to ask), when the player says
+        # "I'll go for them." (step 2, route A); where the hand is held and what is left to do follow in grey
+        "tale.wagon.go": [
+            "Bless you. Go carefully out there.",
+            "Bring them home. Mind yourself.",
+        ],
+        # the one who asks, when the player says "I'll pay what they ask." (route B); the price, the band and until
+        # when it stands follow in grey
+        "tale.wagon.pay": [
+            "Thank you. Let them have their coin.",
+            "Their coin, then. Anything to have them back.",
+        ],
+        # the one who asks, when the player asks "Can the watch go?" (step 2): who to ask, and the standing the watch
+        # rides for, follow in grey
+        "tale.wagon.watch": [
+            "The watch rides only on a trusted word.",
+            "Only for someone the town already knows.",
+        ],
+        # the captain at the gate, when the player asks "What do you know of the camp?": the camp goes on the player's
+        # map, and the price and until when follow in grey
+        "tale.wagon.camp": [
+            "I know where they camp. I'll mark it for you.",
+            "That band's camp? I'll put it on your map.",
+        ],
+        # the driver at the gate, when the player says "I'll see them home." (and is in); where the hand is held
+        # follows in grey
+        "tale.wagon.driver_thanks": [
+            "Thank you. Bring them back to us.",
+            "Bless you for it. Mind the road.",
+        ],
+    }),
 ]
 
 # This tale's delivery, where a family wants one other than the plain reading (see make_talk_voices.py: DELIVERY
@@ -90,6 +123,11 @@ DELIVERY = {
     "tale.wagon.parley": dict(speed=0.96, pitch=-20),  # the band's price, hard
     "tale.wagon.released": dict(speed=0.96, pitch=-20),  # the band letting go, with no love
     "tale.wagon.found": GENTLE,  # weak and glad
+    "tale.wagon.go": WORRY,  # sending someone after the band
+    "tale.wagon.pay": TIRED,  # the price given in to
+    "tale.wagon.watch": dict(speed=0.97, level=-0.5),  # not the answer hoped for
+    "tale.wagon.camp": dict(level=0.5),  # a captain's word, firm
+    "tale.wagon.driver_thanks": WARM,  # someone will see them home
 }
 # Each fix says what Whisper heard without it
 SPEED_FOR = {
@@ -107,4 +145,6 @@ PHONEMES = {
     ("talk.tale.wagon.driver_hand_0", "man"): "ðA tˈʊk wˈʌn ɐlˈIv. ɐ ɹˈId ɚ kˈAm ɐbˌWt ɐ pɹˈIs.",  # heard "They took one alive, a writer came about a price."
     ("talk.tale.wagon.driver_hand_0", "woman"): "ðA tˈʊk wˈʌn ɐlˈIv. ɐ ɹˈId ɚ kˈAm ɐbˌWt ɐ pɹˈIs.",  # heard "They took one alive, a writer came about a price."
     ("talk.tale.wagon.found_0", "man"): "juː kˈAm. I hˈQpt… sˈʌmwɒn wˈʊd.",  # heard "You came, I hope someone would."
+    # Villages V12d's
+    ("talk.tale.wagon.camp_0", "man"): "aɪ nˈəʊ wˌɛɹ ðeɪ kˈamp. aɪl mˈɑːɹk ɪt, fɔːɹ juː.",  # heard "I'll market for you."
 }

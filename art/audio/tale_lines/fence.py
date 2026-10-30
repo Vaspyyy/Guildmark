@@ -80,6 +80,42 @@ GROUPS = [
             "Maybe if someone asked.",
         ],
     }),
+    # Villages V12d: the lines Tales T1 typed (art/lang/tales_t1a.json) and nobody had recorded, in T1's words but where
+    # those could be untrue when they are said (no count is voiced: the loaves still wanted follow in grey)
+    ("The Fence Between: the lines first typed", MW, TALK, {
+        # `a`, when a player says "Here, bread for the well." (step 2) and carries no loaves; the loaves still wanted
+        # follow in grey
+        "tale.fence.bread_short": [
+            # T1's "Bread, then. Two loaves, for the well.": one may be given already ("Bread, then. Bring some for the
+            # well." was heard "brings some" in every reading of the man's)
+            "Bread, then. Loaves, for the well.",
+            # T1's "They'll sit for bread. Bring two loaves."
+            "They'll sit for bread. Bring some along.",
+        ],
+        # `a`, as a player gives the first of the loaves (step 2); the loaves still wanted follow in grey
+        "tale.fence.bread_one": [
+            # T1's "Good bread. Now one more."
+            "Good bread. A little more yet.",
+            # T1's "That's one. Thank you."
+            "Thank you. That's a start.",
+        ],
+        # `a`, as a player gives the last of the loaves (step 2): the two sit down at the well at dusk
+        "tale.fence.bread_both": [
+            "That's both. Dusk, at the well.",
+            "That will do it. Thank you.",
+        ],
+        # `a`, asked "How does it stand?" while the bread is wanted (step 2); the loaves still wanted follow in grey
+        "tale.fence.stand_2": [
+            "They'll sit together if there's bread.",
+            # T1's "Two loaves, and they'll come.": one may be given already
+            "Bread, and they'll come.",
+        ],
+        # `a`, asked "How does it stand?" once the bread is in (step 3): dusk at the well, which follows in grey
+        "tale.fence.stand_3": [
+            "Dusk, at the well.",
+            "Now it's for the evening to say.",
+        ],
+    }),
 ]
 
 # This tale's delivery, where a family wants one other than the plain reading (see make_talk_voices.py: DELIVERY
@@ -94,10 +130,17 @@ DELIVERY = {
     "tale.fence.sorry": GENTLE,  # an apology
     "tale.fence.same": WARM,  # and the same back
     "tale.fence.glum": TIRED,  # giving the friendship up
+    "tale.fence.bread_one": WARM,  # a loaf for the well
+    "tale.fence.bread_both": WARM,  # the bread in, and the pair to sit down
+    # a step's own stand is not flat, as the silence's is: bread will mend it, then the evening will say
+    "tale.fence.stand_2": dict(speed=1.0, level=0.0),
+    "tale.fence.stand_3": dict(speed=0.97, level=0.0),
 }
 # Each fix says what Whisper heard without it
 SPEED_FOR = {
     ("talk.tale.fence.arranged_0", "man"): 0.92,  # heard "At the welled desk, I'll come."
+    ("talk.tale.fence.bread_both_0", "man"): 0.9,  # with its phonemes
+    ("talk.tale.fence.stand_3_0", "man"): 0.9,  # with its phonemes
 }
 SAY_AS = {}
 # Each fix says what Whisper heard without it
@@ -106,4 +149,7 @@ PHONEMES = {
     ("talk.tale.fence.shout_a_1", "man"): "ˈaɪl nˌɒt biː tˈəʊld baɪ juː!",  # heard "I'm not be told by you."
     ("talk.tale.fence.third_1", "man"): "nˈɒt ɪnðə lˈeɪn, plˈiːz.",  # heard "None in the lane please."
     ("talk.tale.fence.arranged_1", "man"): "dˈʌsk. ðˈɛn. aɪl bɹˈɪŋ maɪ ˈəʊn kˈʌp.",  # heard "Dust then I'll bring my own cup."
+    # Villages V12d's: the man's "Dusk" with a stop after it and the American a of "at", a little slower
+    ("talk.tale.fence.bread_both_0", "man"): "ðats bˈəʊθ. dˈʌsk. ˈæt ðə wˈɛl.",  # heard "That's both, duscan the well."
+    ("talk.tale.fence.stand_3_0", "man"): "dˈʌsk. ˈæt ðə wˈɛl.",  # heard "Desk it the well."
 }

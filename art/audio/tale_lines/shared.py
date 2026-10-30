@@ -105,6 +105,17 @@ GROUPS = [
             "That's a story the town still tells.",
         ],
     }),
+    # Villages V12d: the talk's general thanks at the yes, typed in Tales C (art/lang/tales_c.json) and recorded here in the
+    # same three wordings
+    ("Tales: the lines every tale shares: the yes", MWO, TALK, {
+        # the one who asks, the moment a player says yes (TaleScript.GENERAL_YES): every tale's asker but the note's and
+        # the informer's, which have their own (the lantern's old asker among them); nothing follows in grey
+        "tale.yes": [
+            "Thank you. That means a great deal.",
+            "I'm glad of it. Truly.",
+            "Bless you for it.",
+        ],
+    }),
 ]
 
 # This tale's delivery, where a family wants one other than the plain reading (see make_talk_voices.py: DELIVERY
@@ -122,6 +133,7 @@ DELIVERY = {
     "tale.set.wait": dict(speed=1.02, level=1.5),  # an old walker calling after the one who leads them
     "tale.set.rest": dict(speed=0.93, level=-0.5),  # an old walker out of breath
     "tale.after.old": dict(speed=0.96, pitch=-10, level=-0.5),  # an elder remembering
+    "tale.yes": WARM,  # glad someone will help
 }
 SPEED_FOR = {}
 SAY_AS = {}

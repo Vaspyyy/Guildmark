@@ -110,6 +110,24 @@ GROUPS = [
             "I only want it back. No one hurt.",
         ],
     }),
+    # Villages V12d: the lines Tales T1 typed (art/lang/tales_t1b.json) and nobody had recorded, in T1's words but where
+    # those could be untrue when they are said
+    ("The Locket: the lines first typed", MW, TALK, {
+        # the culprit, when a player says "Here is bread. Take it back yourself." (step 3) and does not carry the
+        # loaves; how many are wanted follows in grey
+        "tale.locket.short": [
+            # T1's "You've no bread on you. Don't promise it.": the player may carry a loaf or two, only too few
+            "You've not the bread for it. Don't promise it.",
+            # T1's "Bread? You've none to give." ("Bread? You've not enough to give." was heard "Brad," in every reading)
+            "You've too few loaves for that.",
+        ],
+        # the culprit, when a player says "You'll give it back before the street." (step 3, route C): the return is
+        # made at the well before the watchers, which follows in grey
+        "tale.locket.street": [
+            "Before the whole street? Very well. I've earned it.",
+            "At the well, then. I'll not hide from it.",
+        ],
+    }),
 ]
 
 # This tale's delivery, where a family wants one other than the plain reading (see make_talk_voices.py: DELIVERY
@@ -130,6 +148,8 @@ DELIVERY = {
     "tale.locket.found": WARM,  # thanks, however it came back
     "tale.locket.shame": TIRED,  # sorry for the shame
     "tale.locket.lost": GRIEF,  # given up for lost
+    "tale.locket.short": dict(speed=0.97, level=-0.5),  # a hungry one, not taken in
+    "tale.locket.street": dict(speed=0.93, pitch=-15, level=-1.0),  # ashamed, and taking it
 }
 SPEED_FOR = {
     ("talk.tale.locket.stand_1", "man"): 1.1,  # "No one hurt": slower, the last "t" came out as "hurts"
@@ -145,4 +165,6 @@ PHONEMES = {
     ("talk.tale.locket.sight_side_1", "man"): "sˈʌmwɒn hˈʌɹid ˈɒf ˈat dˈʌsk. aɪ sˈɔː wˌɪtʃ wˈeɪ.",  # heard "Someone hurried off a desk, I saw which way."
     ("talk.tale.locket.quiet_0", "man"): "tˈeɪk ɪt. sˈA nˈʌθɪŋ, aɪ bˈɛɡ juː.",  # heard "Take it, see nothing I beg you."
     ("talk.tale.locket.returned_0", "woman"): "mI lˈɒkɪt. ˈQ, jɔːɹ hˈQm ɐɡˈɛn.",  # heard "My luck at \"oh, you're home again.\""
+    # Villages V12d's: "few" stressed
+    ("talk.tale.locket.short_1", "man"): "juːv tˈuː fjˈuː lˈəʊvz fɔːɹ ðˈat.",  # heard "You've two fuel-oaves for that."
 }

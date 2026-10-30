@@ -129,6 +129,33 @@ GROUPS = [
             "They said no one would be hurt.",
         ],
     }),
+    # Villages V12d: the answers at the choice (step 3) that Tales T3 gave the shared families' words ("It's been decided.",
+    # "Another time, then.") and the friend's gate-yard apology, each with a line of its own
+    ("The Sergeant's Friend: the answers at the choice", MW, TALK, {
+        # the sergeant, when the player says "It was <the friend>. Take it to the watch." (route A); the friend named,
+        # and the gate yard by day, follow in grey
+        "tale.informer.to_watch": [
+            "Then it goes before the watch, in the open.",
+            "It breaks my heart. But so be it.",
+        ],
+        # the sergeant, when the player says "Let me speak to <the friend> first." (route B); the friend's door follows
+        # in grey
+        "tale.informer.let_speak": [
+            "Speak to them, then. Better it comes from them.",
+            "Go on, then. I'll wait to hear it.",
+        ],
+        # the friend, when the player who came to speak to them first says "Tell the sergeant yourself." (route B)
+        "tale.informer.own": [
+            "Thank you. I'll tell it all.",
+            "I will. Every word of it.",
+        ],
+        # the friend, when that player says "No: the gate, now." instead (route A), recoiling
+        "tale.informer.gate": [
+            "The gate? Then so be it.",
+            # not "You'd do that to me?", which the man's voice said as "you do" in every reading
+            "Before the watch? You would do that to me?",
+        ],
+    }),
 ]
 
 # This tale's delivery, where a family wants one other than the plain reading (see make_talk_voices.py: DELIVERY
@@ -150,6 +177,10 @@ DELIVERY = {
     "tale.informer.slip_ok": dict(level=-0.5),  # a sly answer
     "tale.informer.caught": dict(speed=1.06, level=1.0),  # caught out
     "tale.informer.sorry": dict(speed=0.93, pitch=-15, level=-1.0),  # contrite
+    "tale.informer.to_watch": GRIEF,  # an old friend given up to the watch
+    "tale.informer.let_speak": dict(speed=0.96, level=-1.0),  # letting the friend have the night
+    "tale.informer.own": dict(speed=0.94, pitch=-10, level=-1.0),  # owning up, and glad of the chance
+    "tale.informer.gate": dict(speed=1.04, level=1.0),  # caught out, and frightened
 }
 # Each fix says what Whisper heard without it
 SPEED_FOR = {

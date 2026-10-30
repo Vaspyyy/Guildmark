@@ -76,6 +76,15 @@ GROUPS = [
             "Three lights, then. That's right.",
         ],
     }),
+    # Villages V12d: the answer Tales T4 gave the stand's words, with a line of its own
+    ("The Empty Chair: the place", MW, TALK, {
+        # the mourner, when the player chooses where the stone will stand (by the temple, the well or the mourner's door);
+        # the words, the candles and the place so far follow in grey
+        "tale.chair.place": [
+            "Yes. They'd have liked that.",
+            "That's the place, then. Thank you.",
+        ],
+    }),
 ]
 
 # This tale's delivery, where a family wants one other than the plain reading (see make_talk_voices.py: DELIVERY
@@ -93,6 +102,7 @@ DELIVERY = {
     "tale.chair.laying": dict(speed=0.9, pitch=-15, level=-0.5),  # the stone laid: solemn
     "tale.chair.leave": GRIEF,  # no heart to stay
     "tale.chair.candles": GENTLE,  # three lights
+    "tale.chair.place": GENTLE,  # where the stone will stand
 }
 # Each fix says what Whisper heard without it
 SPEED_FOR = {
