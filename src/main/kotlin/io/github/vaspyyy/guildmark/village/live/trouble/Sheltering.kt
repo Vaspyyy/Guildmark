@@ -30,8 +30,8 @@ import net.minecraft.world.phys.Vec3
  * One of a village's folk sheltering (living-world/villages/design.md 11.2): the director of their townsperson while it lasts, as
  * a lamplighter's is. In turn:
  *
- * - ALERT: they stop, set down what they carry ([drop]), turn to the trouble; the first two to hear shout (10 to 30 ticks, the
- *   farther the later), the second once the first is heard out ([Turns]);
+ * - ALERT: they stop, set down what they carry ([drop]), turn to the trouble (10 to 30 ticks, the farther the later); the first
+ *   two to hear with their hands free shout, at once, the second only if the first is heard out by then ([Turns]);
  * - RUN: to their door ([Shelter.havenFor]) at 0.75 (a child at 1.0, to the door their household's grown-up runs for), at most 400
  *   ticks; with no door within reach they cower where they stand, back to a wall;
  * - IN: the first in steps inside and turns to the door ([Shelter.Haven.stand]: its inner face half a block ahead), waiting a moment
@@ -51,7 +51,7 @@ import net.minecraft.world.phys.Vec3
  * puts on a rope is let go (the door they are behind forced open) and not taken again while they are on it, crying out once as
  * they are dragged off ("No! Let me go!").
  */
-class Sheltering internal constructor(internal val called: Shelter.Called, val p: Townsperson, private val alert: Int, private val shout: Boolean) : Director {
+class Sheltering internal constructor(internal val called: Shelter.Called, val p: Townsperson, private val alert: Int, private val shout: String?) : Director {
     enum class S { ALERT, RUN, IN, BOLT, KNOCK, WAIT, OPEN, COWER, EMERGE }
 
     internal var stage = S.ALERT
@@ -82,6 +82,9 @@ class Sheltering internal constructor(internal val called: Shelter.Called, val p
     private var hugBy: Sheltering? = null
     /** A child already held behind the door: once is enough. */
     private var comforted = false
+    /** A line of what they are doing now, waiting for the floor ([timely]), and the stages it still belongs to. */
+    private var pending: String? = null
+    private var pendingWhile: Set<S> = emptySet()
     /** Cowering where they stood: the way their back is to (a wall). */
     private var wall: Direction? = null
     /** The stand at the door, as the bolter or the opener. */
@@ -123,6 +126,7 @@ class Sheltering internal constructor(internal val called: Shelter.Called, val p
             return finish()
         }
         lastTick = p.tickCount
+        if (pending != null) timely()
         if (emergeAt >= 0 && stage != S.EMERGE && p.tickCount >= emergeAt) emerge(level)
         when (stage) {
             S.ALERT -> alerted(level)
@@ -171,14 +175,15 @@ class Sheltering internal constructor(internal val called: Shelter.Called, val p
             p.carried = ItemStack.EMPTY
             p.act(Activity.NONE)
         }
-        // The shout, in its turn: the second of the two once the first one's is heard out (or not at all, if it never is in time)
-        if (shout && shoutAt < 0 && t < SHOUT_WAIT && Turns.freeBy(p)) {
+        // The shout, at once: the second of the two only if the first one's is heard out while they take the alarm in (else the
+        // first is cry enough, and the two never talk over each other)
+        if (shout != null && shoutAt < 0 && t < alert && Turns.freeBy(p)) {
             shoutAt = t
             p.act(Activity.SHOUT)
-            Trouble.say(p, Shelter.alertLine(called, p), Trouble.SHOUT)
+            Trouble.say(p, shout, Trouble.SHOUT)
         }
-        // Off once the alert is taken in and the shout given (the arms down from it)
-        if (t >= alert && (!shout || shoutAt >= 0 && t >= shoutAt + SHOUTED || t >= SHOUT_WAIT)) run(level)
+        // Off once the alert is taken in and any shout given (the arms down from it)
+        if (t >= alert && (shoutAt < 0 || t >= shoutAt + SHOUTED)) run(level)
     }
 
     /**
@@ -205,10 +210,31 @@ class Sheltering internal constructor(internal val called: Shelter.Called, val p
         // A grown-up with a child of their home near them calls them along; a child cries out
         val kin = Shelter.household(level, this)
         when {
-            p.role == TownRole.CHILD -> if (p.random.nextInt(3) == 0) Trouble.say(p, "shelter_run_1")
-            kin.any { it.p.role == TownRole.CHILD && it.p.distanceToSqr(p) < CALL_ALONG * CALL_ALONG } -> Trouble.say(p, "shelter_run_2")
-            p.random.nextInt(6) == 0 -> Trouble.say(p, "shelter_run_1")
+            p.role == TownRole.CHILD -> if (p.random.nextInt(3) == 0) timely("shelter_run_1", S.RUN)
+            kin.any { it.p.role == TownRole.CHILD && it.p.distanceToSqr(p) < CALL_ALONG * CALL_ALONG } -> timely("shelter_run_2", S.RUN)
+            p.random.nextInt(6) == 0 -> timely("shelter_run_1", S.RUN)
         }
+    }
+
+    /**
+     * [key], a line of what they are doing now (the call at the run, the knock, the "Quick, in!"), said as soon as the floor round
+     * them is free ([Turns]) while they are still at it ([stages]), and let go unsaid once they are past it: never said late.
+     */
+    private fun timely(key: String, vararg stages: S) {
+        pending = key
+        pendingWhile = stages.toSet()
+        timely()
+    }
+
+    private fun timely() {
+        val key = pending ?: return
+        if (stage !in pendingWhile) {
+            pending = null
+            return
+        }
+        if (!Turns.freeBy(p)) return
+        pending = null
+        Trouble.say(p, key)
     }
 
     private fun running(level: ServerLevel) {
@@ -333,7 +359,7 @@ class Sheltering internal constructor(internal val called: Shelter.Called, val p
             p.navigation.stop()
             p.face(h.door.inward)
             p.act(Activity.KNOCK)
-            Trouble.say(p, "shelter_knock")
+            timely("shelter_knock", S.KNOCK, S.WAIT)
             return
         }
         p.navigation.stop()
@@ -351,7 +377,7 @@ class Sheltering internal constructor(internal val called: Shelter.Called, val p
         // Knocking again, louder; and nobody coming, they let themselves in (there is no real bolt on a door)
         if (t == KNOCK_AGAIN) {
             p.act(Activity.KNOCK)
-            Trouble.say(p, "shelter_knock")
+            timely("shelter_knock", S.WAIT)
         }
         if (t >= LET_SELF_IN) {
             swing(level, h, true)
@@ -381,7 +407,7 @@ class Sheltering internal constructor(internal val called: Shelter.Called, val p
             since = p.tickCount
             p.face(h.door.inward.opposite)
             swing(level, h, true)
-            Trouble.say(p, "shelter_open")
+            timely("shelter_open", S.OPEN)
             p.act(Activity.BECKON)
         }
         p.face(h.door.inward.opposite)
@@ -718,8 +744,7 @@ class Sheltering internal constructor(internal val called: Shelter.Called, val p
         private const val CLEAR_MOST = 60
         /** How near a child of their home must be for a grown-up to call them along. */
         private const val CALL_ALONG = 8.0
-        /** The longest a shouter waits for their turn to shout (then they run without), and how long the shout holds them. */
-        private const val SHOUT_WAIT = 80
+        /** How long the shout holds a shouter before they run. */
         private val SHOUTED = Activity.SHOUT.ticks - 6
 
         /** The whispers behind each door, every 8 to 14 seconds: a grown-up's hush, a child's fear. Every 20 ticks, from [Shelter.tick]. */
@@ -862,7 +887,7 @@ internal object Ringer {
             p.navigation.stop()
             p.routine.interrupt()
             if (shelter && c.ending == null && !c.over && p.isAlive) {
-                val s = Sheltering(c, p, 0, false)
+                val s = Sheltering(c, p, 0, null)
                 c.folk[p.id] = s
                 p.director = s
             }

@@ -343,14 +343,18 @@ object Shelter {
         p.navigation.stop()
         val far = p.distanceToSqr(c.toward()).let { kotlin.math.sqrt(it) }
         val alert = (10 + far / maxOf(1.0, c.reach.toDouble() + 18.0) * 20).toInt().coerceIn(10, 30)
-        val shout = c.shouts < 2 && Trouble.fits(p, alertLine(c, p)) && p.role != TownRole.CHILD
-        if (shout) c.shouts++
+        // The first two to hear with their hands free raise the cry, each with their own line (one carrying something sets it down)
+        val shout = if (c.shouts < 2 && p.role != TownRole.CHILD && p.carried.isEmpty) alertLine(c, p).takeIf { Trouble.fits(p, it) } else null
+        if (shout != null) c.shouts++
         val s = Sheltering(c, p, alert, shout)
         c.folk[p.id] = s
         p.director = s
     }
 
-    /** The line [p] shouts at the horn: a raid's "Raiders! Get in!" where they have the voice for it, else the shelter's. */
+    /**
+     * The line [p] shouts at the horn, chosen as they are taken: a raid's "Raiders! Get in!" where they have the voice for it, else the
+     * shelter's, the first shouter's "To your houses!".
+     */
     internal fun alertLine(c: Called, p: Townsperson): String {
         val first = if (c.why == Why.RAID) "shelter_alert_3" else "shelter_alert_1"
         return if (Trouble.fits(p, first) && (c.shouts == 0 || c.why == Why.RAID)) first else "shelter_alert_2"
