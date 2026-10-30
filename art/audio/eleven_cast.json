@@ -1,0 +1,21 @@
+{
+  "tobin": {
+    "voice": "Gravel Midnight (ElevenLabs voice library)",
+    "voice_id": "M5E055lOUxMi0kJpGyE9",
+    "model": "eleven_v4",
+    "style": {"pitch": 0, "rt60": 0.6, "wet": 0.07, "grit": 0.0, "ghost": false},
+    "lines": {
+      "intro": {"take": "a", "prompt": "[gruff] [unimpressed] Hmph. Another badge-polisher. Name's Tobin. [proudly] I carried a Warden's shield before your grandmother was born... [scornful] and I've watched every guild since go soft."},
+      "step0": {"take": "a", "prompt": "[stern] Prove you're not soft. [grimly] The dead are walking the old charter road again. Put down a dozen of them, and we'll talk."},
+      "step1": {"take": "a", "prompt": "[grudgingly] Not bad. [thoughtful] I mean to forge a Warden's blade one last time, but my forge is cold and my stock is empty. [gruff] Sixteen iron ingots. Good ones."},
+      "step2": {"take": "a", "prompt": "[low voice] [serious] The blade's ready, but it needs a purpose. There's a barrow where my old master was laid to rest... and something wearing his armour rules it now. [softly] Lay him to rest properly."},
+      "waiting": {"take": "a", "prompt": "[impatient] [gruff] Standing around won't get it done. Off with you."},
+      "finale": {"take": "a", "prompt": "[quietly] [moved] So it's done. He can rest. [clears throat] [gruff] Here, a Warden's blade is no use hanging on my wall. [solemn] The oath goes: 'The road is the only home we keep.' [gruff] Don't make me regret it."},
+      "done": {"take": "a", "prompt": "[warmly] [gruff] The road is long, adventurer. Keep it clear."},
+      "topic.wardens.0": {"take": "a", "prompt": "[proudly] [remembering] The best of the Old Guild. No village to call home, no crown, no coin worth counting. [softly] We walked the roads between the bells, and kept the beasts off the carts."},
+      "topic.wardens.1": {"take": "a", "prompt": "[wistful] That's all it was. [pause] That was everything. [bitter] When the Wardens went, the roads went with them. [sighs] Look around you."},
+      "topic.halvard.0": {"take": "a", "prompt": "[quietly, remembering] One, maybe. Halvard. Best sword I ever carried a shield for. When the King fell, Halvard stayed at his post... and they tell me he's standing there still."},
+      "topic.halvard.1": {"take": "a", "prompt": "[dark] Dead men don't keep oaths. Something else is keeping his for him. [warning] If you ever meet him, don't stop to listen. Hit him, and keep hitting him. [sad] [softly] It's the only kindness left."}
+    }
+  }
+}

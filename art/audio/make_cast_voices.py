@@ -11,6 +11,11 @@ waiting" and "all done" lines, the goodbyes when a story ends, the topics, Maren
 line they have but the written notes: meeting, joining, waiting and parting, their stories, gifts, how the two
 of you stand, and every bark they call out on the road.
 
+A character listed in eleven_cast.json is read by ElevenLabs instead, through its claude.ai connector rather than by
+this script. That file keeps the voice, the processing and, for every line, the prompt sent (the delivery in [tags])
+and which take was kept. Stage 1 skips those characters and stage 2 leaves them alone; their takes, downloaded as
+<dir>/<character>/<line>_<take>.mp3, go through the same processing with stage 2b.
+
 Stages (run from the repo root):
 
 1) TTS with Kokoro (kokoro-onnx, Apache-2.0) -> raw 24 kHz WAVs, one folder per character
@@ -21,6 +26,10 @@ Stages (run from the repo root):
 2) Processing (numpy/scipy + sox) -> mono 32 kHz Ogg Vorbis in the mod's assets
    python3 -B art/audio/make_cast_voices.py process --raw <raw_dir> \\
        --assets src/main/resources/assets/guildmark [--only ...] [--wav <dir>]
+
+2b) ElevenLabs takes -> the same mono 32 kHz Ogg Vorbis (a prompt whose words differ from the language file is refused)
+   python3 -B art/audio/make_cast_voices.py eleven --mp3 <dir> \\
+       --assets src/main/resources/assets/guildmark [--only tobin] [--keys ...] [--wav <dir>]
 
 3) sounds.json: adds (or refreshes) a voice.<character>.<line> event for every voiced line
    python3 -B art/audio/make_cast_voices.py sounds --assets src/main/resources/assets/guildmark
@@ -142,6 +151,9 @@ OUT_SR = 32000
 
 LANG = "src/main/resources/assets/guildmark/lang/en_us.json"
 
+# The characters ElevenLabs reads: voice, model, processing, and each line's prompt and kept take
+ELEVEN = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "eleven_cast.json"), encoding="utf-8"))
+
 
 def lines(only=None, keys=None):
     """{character: {line key: text}} for every voiced line in the language file ([keys]: a regex to narrow them)."""
@@ -188,6 +200,9 @@ def cmd_tts(a):
                        data_path=a.espeak_data or espeakng_loader.get_data_path())
     k = Kokoro(a.model, a.voices, espeak_config=cfg)
     for cid, keys in lines(a.only, a.keys).items():
+        if cid in ELEVEN:
+            print(f"{cid}: read by ElevenLabs (eleven_cast.json), skipped", flush=True)
+            continue
         cast = CAST[cid]
         voice = parse_voice(k, cast["voice"])
         folder = os.path.join(a.out, cid)
@@ -291,6 +306,9 @@ def cmd_process(a):
     from scipy.io import wavfile
     from sfxkit import SR, write_ogg, write_wav
     for cid, keys in lines(a.only, a.keys).items():
+        if cid in ELEVEN:
+            print(f"{cid}: read by ElevenLabs, processed with the eleven stage, skipped", flush=True)
+            continue
         for key in keys:
             sr, x = wavfile.read(os.path.join(a.raw, cid, file_name(key) + ".wav"))
             if np.issubdtype(x.dtype, np.integer):
@@ -305,6 +323,35 @@ def cmd_process(a):
             if a.wav:
                 write_wav(os.path.join(a.wav, cid, file_name(key) + ".wav"), y, sr=OUT_SR)
             print(f"{out}  {len(y) / OUT_SR:.2f}s", flush=True)
+
+
+def words(text):
+    """A line's words, to hold a prompt to the language file: [tags] dropped, case and punctuation ignored."""
+    found = re.findall(r"[a-z0-9']+", re.sub(r"\[[^\]]*\]", " ", text.replace("\u2019", "'")).lower())
+    return [w.strip("'") for w in found if w.strip("'")]
+
+
+def cmd_eleven(a):
+    from sfxkit import SR, read_audio, write_ogg, write_wav
+    only = set(ELEVEN) & a.only if a.only else set(ELEVEN)
+    if not only:
+        sys.exit("none of those characters is read by ElevenLabs")
+    for cid, keys in lines(only, a.keys).items():
+        cast = ELEVEN[cid]
+        for key, text in keys.items():
+            line = cast["lines"].get(key)
+            if line is None:
+                sys.exit(f"{cid}.{key}: no prompt in eleven_cast.json")
+            if words(line["prompt"]) != words(text):
+                sys.exit(f"{cid}.{key}: the prompt's words differ from the language file")
+            x = read_audio(os.path.join(a.mp3, cid, f"{file_name(key)}_{line['take']}.mp3"), sr=SR).mean(axis=0)
+            y = process_line(x, SR, cast["style"], (cid, key))
+            y = sox(y, SR, out_sr=OUT_SR)
+            out = os.path.join(a.assets, "sounds", "voice", cid, file_name(key) + ".ogg")
+            write_ogg(out, y, sr=OUT_SR, quality=3)
+            if a.wav:
+                write_wav(os.path.join(a.wav, cid, file_name(key) + ".wav"), y, sr=OUT_SR)
+            print(f"{out}  {len(y) / OUT_SR:.2f}s  (take {line['take']})", flush=True)
 
 
 # ------------------------------------------------------------------ stage 3: sounds.json
@@ -345,10 +392,16 @@ def main():
     p.add_argument("--only", type=lambda s: set(s.split(",")), default=None)
     p.add_argument("--keys", default=None, help="only lines whose key matches this regex")
     p.add_argument("--wav", default=None)
+    e = sub.add_parser("eleven")
+    e.add_argument("--mp3", required=True, help="the downloaded takes, <dir>/<character>/<line>_<take>.mp3")
+    e.add_argument("--assets", required=True)
+    e.add_argument("--only", type=lambda s: set(s.split(",")), default=None)
+    e.add_argument("--keys", default=None, help="only lines whose key matches this regex")
+    e.add_argument("--wav", default=None)
     s = sub.add_parser("sounds")
     s.add_argument("--assets", required=True)
     a = ap.parse_args()
-    {"tts": cmd_tts, "process": cmd_process, "sounds": cmd_sounds}[a.cmd](a)
+    {"tts": cmd_tts, "process": cmd_process, "eleven": cmd_eleven, "sounds": cmd_sounds}[a.cmd](a)
 
 
 if __name__ == "__main__":
