@@ -38,6 +38,7 @@ import io.github.vaspyyy.guildmark.village.live.keptList
 import io.github.vaspyyy.guildmark.village.live.links.VillageLinks
 import io.github.vaspyyy.guildmark.village.live.links.VillageNews
 import io.github.vaspyyy.guildmark.village.live.market.PedlarRoster
+import io.github.vaspyyy.guildmark.village.live.trouble.TroubleData
 import net.minecraft.ChatFormatting
 import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
@@ -182,7 +183,11 @@ object VillageCry {
             for ((won, d) in sieges) {
                 val id = "siege.${if (won) "held" else "lost"}.$d"
                 if (!untold(id)) continue
-                val line = "bellman_siege_${if (won) "held" else "lost"}" + if (walled) "" else "_nowall"
+                // "The wall is broken. Mourn our own, and mend!" only while the siege's breach waits for its mend and one of the village
+                // died in it; else (the night ran out on them, or the wall is mended already) "We could not hold them. Take heart, neighbours!"
+                val breached = won || walled && TroubleData.peek(level)?.peek(rec.key)?.damage?.isNotEmpty() == true &&
+                    Residents.get(level).byCentre(bell).any { !it.alive && it.died >= d }
+                val line = "bellman_siege_${if (won) "held" else "lost"}" + if (walled && breached) "" else "_nowall"
                 val headline = Component.translatable("board.guildmark.slip.word.siege_${if (won) "won" else "lost"}")
                 out.add(Item(listOf(Cry(line, said(line), Crier.slip(if (won) Slip.Kind.GOOD else Slip.Kind.TROUBLE, headline, said(line), at), if (won) 1 else -1)), listOf(id)))
             }
@@ -191,7 +196,8 @@ object VillageCry {
         val dead = Residents.get(level).byCentre(bell).filter { !it.alive && it.died >= 0 && fresh(today, it.died) && untold("dead.${it.id}") }.sortedBy { it.died }
         if (dead.isNotEmpty()) {
             val candle = dead.any { kept?.candles?.containsKey(it.name) == true }
-            val line = if (candle) "bellman_buried" else "bellman_died"
+            // "We have lost one of our own. A candle by the bell tonight." is for one death alone; several are "We mourn our own."
+            val line = if (candle && dead.size == 1) "bellman_buried" else "bellman_died"
             val names = Component.literal(dead.joinToString(", ") { it.name })
             val slip = Crier.slip(Slip.Kind.TROUBLE, Component.translatable("board.guildmark.slip.village.dead"), names, at)
             out.add(Item(listOf(Cry(line, detailed(line, names), slip, -1)), dead.map { "dead.${it.id}" }))
