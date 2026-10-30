@@ -8,6 +8,8 @@ import io.github.vaspyyy.guildmark.progression.Progression
 import io.github.vaspyyy.guildmark.quest.Contracts
 import io.github.vaspyyy.guildmark.registry.ModAttachments
 import io.github.vaspyyy.guildmark.registry.ModItems
+import io.github.vaspyyy.guildmark.village.live.keptField
+import io.github.vaspyyy.guildmark.village.live.keptList
 import net.minecraft.core.UUIDUtil
 import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.Component
@@ -53,7 +55,7 @@ class Parties(val parties: MutableList<Party> = mutableListOf()) : SavedData() {
         const val PAY_SHARE = 4
 
         private val CODEC: Codec<Parties> = RecordCodecBuilder.create { i ->
-            i.group(Party.CODEC.listOf().fieldOf("parties").forGetter { it.parties }).apply(i) { Parties(it.toMutableList()) }
+            i.group(keptList(Party.CODEC).keptField("parties") { listOf() }.forGetter { it.parties }).apply(i) { Parties(it.toMutableList()) }
         }
         private val TYPE = SavedDataType(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "parties"), Supplier { Parties() }, CODEC)
 

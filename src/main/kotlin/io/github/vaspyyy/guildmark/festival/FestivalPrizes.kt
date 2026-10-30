@@ -6,6 +6,8 @@ import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.guild.GuildNews
 import io.github.vaspyyy.guildmark.registry.ModItems
 import io.github.vaspyyy.guildmark.season.Seasons
+import io.github.vaspyyy.guildmark.village.live.keptField
+import io.github.vaspyyy.guildmark.village.live.keptList
 import net.minecraft.ChatFormatting
 import net.minecraft.core.UUIDUtil
 import net.minecraft.core.component.DataComponents
@@ -52,7 +54,7 @@ class FestivalPrizes(val pending: MutableList<Award> = mutableListOf()) : SavedD
         }
 
         private val CODEC: Codec<FestivalPrizes> = RecordCodecBuilder.create { i ->
-            i.group(AWARD.listOf().fieldOf("pending").forGetter { it.pending })
+            i.group(keptList(AWARD).keptField("pending") { listOf() }.forGetter { it.pending })
                 .apply(i) { list -> FestivalPrizes(list.toMutableList()) }
         }
 

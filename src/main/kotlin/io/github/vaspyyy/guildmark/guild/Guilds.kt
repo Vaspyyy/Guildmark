@@ -3,6 +3,8 @@ package io.github.vaspyyy.guildmark.guild
 import com.mojang.serialization.Codec
 import com.mojang.serialization.codecs.RecordCodecBuilder
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.village.live.keptField
+import io.github.vaspyyy.guildmark.village.live.keptList
 import net.minecraft.core.UUIDUtil
 import net.minecraft.resources.Identifier
 import net.minecraft.server.level.ServerLevel
@@ -60,7 +62,7 @@ class Guilds(val guilds: MutableList<Guild> = mutableListOf()) : SavedData() {
         fun memberCap(rank: Int): Int = 1 + rank
 
         private val CODEC: Codec<Guilds> = RecordCodecBuilder.create { i ->
-            i.group(Guild.CODEC.listOf().fieldOf("guilds").forGetter { it.guilds })
+            i.group(keptList(Guild.CODEC).keptField("guilds") { listOf() }.forGetter { it.guilds })
                 .apply(i) { guilds -> Guilds(guilds.toMutableList()) }
         }
 

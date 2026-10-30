@@ -3,6 +3,8 @@ package io.github.vaspyyy.guildmark.guild
 import com.mojang.serialization.Codec
 import com.mojang.serialization.codecs.RecordCodecBuilder
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.village.live.keptField
+import io.github.vaspyyy.guildmark.village.live.keptList
 import net.minecraft.core.BlockPos
 import net.minecraft.resources.Identifier
 import net.minecraft.server.level.ServerLevel
@@ -80,7 +82,7 @@ class Holdings(
     companion object {
         private val CODEC: Codec<Holdings> = RecordCodecBuilder.create { i ->
             i.group(
-                Holding.CODEC.listOf().fieldOf("holdings").forGetter { it.holdings },
+                keptList(Holding.CODEC).keptField("holdings") { listOf() }.forGetter { it.holdings },
                 Codec.LONG.optionalFieldOf("last_day", -1L).forGetter { it.lastDay },
                 BlockPos.CODEC.listOf().optionalFieldOf("known", listOf()).forGetter { it.known.toList() },
                 BlockPos.CODEC.listOf().optionalFieldOf("stale_banners", listOf()).forGetter { it.staleBanners.toList() },

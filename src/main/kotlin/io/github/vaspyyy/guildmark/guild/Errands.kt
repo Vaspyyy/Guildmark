@@ -12,6 +12,8 @@ import io.github.vaspyyy.guildmark.loot.Relics
 import io.github.vaspyyy.guildmark.registry.ModEntities
 import io.github.vaspyyy.guildmark.registry.ModItems
 import io.github.vaspyyy.guildmark.trade.TradeConfig
+import io.github.vaspyyy.guildmark.village.live.keptField
+import io.github.vaspyyy.guildmark.village.live.keptList
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands
 import net.minecraft.core.UUIDUtil
@@ -93,7 +95,7 @@ class Errands(val errands: MutableList<Errand> = mutableListOf()) : SavedData() 
         private const val SEND_RANGE = 32.0
 
         private val CODEC: Codec<Errands> = RecordCodecBuilder.create { i ->
-            i.group(Errand.CODEC.listOf().fieldOf("errands").forGetter { it.errands }).apply(i) { Errands(it.toMutableList()) }
+            i.group(keptList(Errand.CODEC).keptField("errands") { listOf() }.forGetter { it.errands }).apply(i) { Errands(it.toMutableList()) }
         }
         private val TYPE = SavedDataType(Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "errands"), Supplier { Errands() }, CODEC)
 

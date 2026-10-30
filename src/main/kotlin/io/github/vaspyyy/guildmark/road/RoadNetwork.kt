@@ -10,6 +10,8 @@ import com.mojang.serialization.codecs.RecordCodecBuilder
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.city.Capitals
 import io.github.vaspyyy.guildmark.guild.GuildNews
+import io.github.vaspyyy.guildmark.village.live.keptField
+import io.github.vaspyyy.guildmark.village.live.keptList
 import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
@@ -208,7 +210,7 @@ class RoadNetwork(val roads: MutableList<Road> = mutableListOf()) : SavedData() 
         private const val BUILD_AT = 10L
 
         private val CODEC: Codec<RoadNetwork> = RecordCodecBuilder.create { i ->
-            i.group(Road.CODEC.listOf().fieldOf("roads").forGetter { it.roads })
+            i.group(keptList(Road.CODEC).keptField("roads") { listOf() }.forGetter { it.roads })
                 .apply(i) { roads -> RoadNetwork(roads.toMutableList()) }
         }
 

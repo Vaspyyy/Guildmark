@@ -20,6 +20,8 @@ import io.github.vaspyyy.guildmark.registry.ModDataComponents
 import io.github.vaspyyy.guildmark.registry.ModEntities
 import io.github.vaspyyy.guildmark.village.Standing
 import io.github.vaspyyy.guildmark.village.StandingTier
+import io.github.vaspyyy.guildmark.village.live.keptField
+import io.github.vaspyyy.guildmark.village.live.keptList
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.core.UUIDUtil
@@ -85,7 +87,7 @@ class Characters(val placements: MutableList<Placement> = mutableListOf()) : Sav
         private const val INTERACT_RANGE = 8.0
 
         private val CODEC: Codec<Characters> = RecordCodecBuilder.create { i ->
-            i.group(Placement.CODEC.listOf().fieldOf("placements").forGetter { it.placements })
+            i.group(keptList(Placement.CODEC).keptField("placements") { listOf() }.forGetter { it.placements })
                 .apply(i) { placements -> Characters(placements.toMutableList()) }
         }
 

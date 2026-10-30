@@ -3,6 +3,7 @@ package io.github.vaspyyy.guildmark.lair
 import io.github.vaspyyy.guildmark.homestead.Homesteads
 import io.github.vaspyyy.guildmark.progression.Milestones
 import com.mojang.serialization.Codec
+import com.mojang.serialization.DataResult
 import com.mojang.serialization.codecs.RecordCodecBuilder
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.GuildmarkConfig
@@ -18,6 +19,8 @@ import io.github.vaspyyy.guildmark.story.Courtier
 import io.github.vaspyyy.guildmark.story.MainQuest
 import io.github.vaspyyy.guildmark.tales.Tales
 import io.github.vaspyyy.guildmark.wardfire.WardfireSites
+import io.github.vaspyyy.guildmark.village.live.keptField
+import io.github.vaspyyy.guildmark.village.live.keptList
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.core.particles.ParticleTypes
@@ -78,7 +81,11 @@ data class Lair(
     val courtier: Courtier? get() = Courtier.forShard(shard)
 
     companion object {
-        private val THEME_CODEC: Codec<LairTheme> = Codec.STRING.xmap({ id -> LairTheme.entries.first { it.id == id } }, LairTheme::id)
+        // A theme this build doesn't know leaves its lair out alone (looked up with first, it threw, and every lair was lost)
+        private val THEME_CODEC: Codec<LairTheme> = Codec.STRING.comapFlatMap(
+            { id -> LairTheme.entries.firstOrNull { it.id == id }?.let { DataResult.success(it) } ?: DataResult.error { "No lair theme $id" } },
+            LairTheme::id,
+        )
 
         val CODEC: Codec<Lair> = RecordCodecBuilder.create { i ->
             i.group(
@@ -600,7 +607,7 @@ class Lairs(val lairs: MutableList<Lair> = mutableListOf()) : SavedData() {
         private val VAULT_HEALTH = Identifier.fromNamespaceAndPath(Guildmark.MOD_ID, "vault_boss_health")
 
         private val CODEC: Codec<Lairs> = RecordCodecBuilder.create { i ->
-            i.group(Lair.CODEC.listOf().fieldOf("lairs").forGetter { it.lairs })
+            i.group(keptList(Lair.CODEC).keptField("lairs") { listOf() }.forGetter { it.lairs })
                 .apply(i) { lairs -> Lairs(lairs.toMutableList()) }
         }
 
