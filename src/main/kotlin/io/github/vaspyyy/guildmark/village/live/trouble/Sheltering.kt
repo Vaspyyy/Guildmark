@@ -446,9 +446,13 @@ class Sheltering internal constructor(internal val called: Shelter.Called, val p
         if (holding()) return
         p.navigation.stop()
         val h = haven
-        // Someone knocking: the bolter, or the first grown-up behind the door, goes to let them in
+        // Someone knocking: the bolter, or the first grown-up behind the door not in a child's arms (that is played out first), goes
+        // to let them in
         if (h != null && h.knocking.any { !it.done } && p.role != TownRole.CHILD) {
-            val opener = h.folk.firstOrNull { !it.done && it.stage == S.COWER && it.p.role != TownRole.CHILD }
+            val opener = h.folk.firstOrNull {
+                !it.done && it.stage == S.COWER && it.p.role != TownRole.CHILD && it.hugging == null && it.hugBy == null &&
+                    it.p.activity != Activity.EMBRACE
+            }
             if (opener === this) return opener(level)
         }
         if (p.activity != Activity.COWER && (p.actDone || p.activity == Activity.NONE)) {
