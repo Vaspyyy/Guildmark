@@ -31,7 +31,7 @@ internal object LivingSchedule {
     class Moment(val name: String, val tick: Float, val x: Float, val y: Float, val z: Float)
 
     /** The clips these are for. */
-    val CLIPS: Set<String> = setOf("sit_down", "stand_up", "nod", "shrug", "point", "bow", "yawn", "stretch", "knock", "climb", "climb_top", "eat", "sit_eat", "wash", "pick_up", "put_down", "hand_over", "receive", "pay", "browse", "set_up", "sow", "carry_basket", "gather", "scythe", "grind", "chop", "pour_sack", "ring_bell", "announce", "draw_water", "explain", "gossip", "shush", "wave_off", "sigh", "think", "tip_hat", "introduce", "arms_folded", "recoil", "wave_walk", "nod_walk", "sit_gossip", "sit_laugh", "pause_work", "carry_pole", "light_lamp", "snuff_lamp", "drive", "drive_urge", "drive_brake", "ride_tail", "jump_down", "climb_up", "cut_loose", "hand_down", "cower", "catch_breath", "recount", "wounded", "grumble", "mix_mortar", "trowel", "hoist", "carry_beam", "chisel", "plumb", "survey", "unveil", "toast", "lookout", "light_beacon", "sound_horn", "queue", "shiver", "empty_basket", "haggle", "ladle", "hold_out", "eat_bowl", "take_bowl", "pack", "embrace", "look_about", "show_in", "shut_stall", "stir", "taste", "flip", "turn_spit", "slice", "carve", "peel", "stamp", "check_load", "load_pack", "hitch", "weigh", "halt", "rummage", "bolt_door", "lay_candle", "cradle", "carry_swaddle", "grieve", "wring_hands", "shake_hands", "feed_fire", "hobble", "lay_posy")
+    val CLIPS: Set<String> = setOf("sit_down", "stand_up", "nod", "shrug", "point", "bow", "yawn", "stretch", "knock", "climb", "climb_top", "eat", "sit_eat", "wash", "pick_up", "put_down", "hand_over", "receive", "pay", "browse", "set_up", "sow", "carry_basket", "gather", "scythe", "grind", "chop", "pour_sack", "ring_bell", "announce", "draw_water", "explain", "gossip", "shush", "wave_off", "sigh", "think", "tip_hat", "introduce", "arms_folded", "recoil", "wave_walk", "nod_walk", "sit_gossip", "sit_laugh", "pause_work", "carry_pole", "light_lamp", "snuff_lamp", "drive", "drive_urge", "drive_brake", "ride_tail", "jump_down", "climb_up", "cut_loose", "hand_down", "cower", "catch_breath", "recount", "wounded", "grumble", "mix_mortar", "trowel", "hoist", "carry_beam", "chisel", "plumb", "survey", "unveil", "toast", "lookout", "light_beacon", "sound_horn", "queue", "shiver", "empty_basket", "haggle", "ladle", "hold_out", "eat_bowl", "take_bowl", "pack", "embrace", "look_about", "show_in", "shut_stall", "stir", "taste", "flip", "turn_spit", "slice", "carve", "peel", "stamp", "check_load", "load_pack", "hitch", "weigh", "halt", "rummage", "bolt_door", "lay_candle", "cradle", "carry_swaddle", "ring_great_bell", "ring_great_bell_high", "ring_alarm", "ring_alarm_high", "read_scroll", "grieve", "wring_hands", "shake_hands", "feed_fire", "hobble", "lay_posy")
 
     /** Each prop's own part, and the part it hangs on. */
     val PARENT: Map<String, String> = mapOf(
@@ -350,6 +350,9 @@ internal object LivingSchedule {
         ),
         "carry_swaddle" to listOf(
             Shown("swaddle", 0f, END),
+        ),
+        "read_scroll" to listOf(
+            Shown("scroll", 0f, END),
         ),
     )
 
@@ -933,11 +936,23 @@ internal object LivingSchedule {
         ),
         "lay_candle" to listOf(
             Moment("set", 24f, 0.6f, 18.1f, -16.5f),
-            Moment("lit", 26f, 0.6f, 13.1f, -16.5f),
+            Moment("lit", 34f, 0.6f, 13.1f, -16.5f),
         ),
         "cradle" to listOf(
             Moment("coo", 16f, 3.061f, 3.843f, -11.391f),
             Moment("coo", 46f, 2.389f, 3.732f, -11.688f),
+        ),
+        "ring_great_bell" to listOf(
+            Moment("strike", 6f, -1f, 13.8f, -10.32f),
+        ),
+        "ring_great_bell_high" to listOf(
+            Moment("strike", 6f, -2.6f, -1.8f, -11.963f),
+        ),
+        "ring_alarm" to listOf(
+            Moment("strike", 6f, -1f, 13.8f, -10.32f),
+        ),
+        "ring_alarm_high" to listOf(
+            Moment("strike", 6f, -2.6f, -1.8f, -11.963f),
         ),
     )
 }

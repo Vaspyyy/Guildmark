@@ -1,13 +1,19 @@
 """
-The villages' three moves (living-world/villages/design.md, 17.1), on the Living World's kit:
+The villages' moves (living-world/villages/design.md, 17.1), on the Living World's kit:
 
     BOLT_DOOR  50 once   shutting a door against the dark: a step in, the left hand on the frame, a shove that slams the door
                          (the task closes it at tick 10), a fumble for the bolt, the bolt shot home (tick 30), a tug to try
                          it, the long breath out, a step back and a look round the room
     LAY_CANDLE 60 once   a candle carried cupped to a memorial, the right knee down, the candle set on the ledge (24), the
-                         hand drawn back, the head bowed, up again with a hand to the chest
+                         hand cupped round its flame and drawn off as it stands (34), the head bowed, up again with a hand to
+                         the chest
     CRADLE     60 loop   a baby held in the crook of the left arm and rocked: the body sways, the head follows the bundle, a
                          coo (16, 46) and the free hand tucks the cloth with a nod after it (20, 50)
+    READ_SCROLL 180 loop the crier's news read over from the scroll before the cry, a look about the square between whiles
+    RING_ALARM 10 loop   the great bell struck by hand, hard and quick, a stroke on each strike (6): the alarm (and its
+                         ring_alarm_high, at a bell hung a block up)
+and, for RING_BELL at a great bell (Townsperson.greatBell), ring_great_bell and ring_great_bell_high: a stroke a loop (6 of
+30), struck low (a bell in its frame on the ground) or at the height of the shoulder (one hung a block up).
 
 Their names, lengths and loop flags are TownRole.kt's (Activity); living_anims.py imports this module at its end and calls
 build(), which makes the clips, so its verify() and writer take them like the rest. `python3 -B village_clips.py <out dir>`
@@ -25,7 +31,7 @@ if HERE not in sys.path:
     sys.path.insert(0, HERE)
 import townsfolk_anims as ta
 from townsfolk_anims import (qeuler, qmat, qmul, unit, F, U, D, R, L, B, F_, bend, key_frame, check, seal, smooth, bump, GRIP,
-                             PIVOTS, torso_to_world, sink_for)
+                             PIVOTS, torso_to_world, sink_for, head_at)
 from works_clips import rest_arm, mix, lifted, set_arm, reach_arm, stand, joins_idle, stepping, FEET, grip_of, tools_when
 import tale_clips as tcl
 import works_clips as wc
@@ -268,13 +274,15 @@ def bolt_door():
 # is put beside it. The candle (candle_lit, its flame candle_flame) rides upright in the right fist, cupped at the waist,
 # the left hand shielding the flame; a settling half step; down on the right knee (the left foot forward, the right knee
 # back) with the left hand to the left knee; the right hand leaning out over the ledge and setting the candle on it where
-# the stone's first candle stands (LC_SET: 'set', the task shows the stone's candle there and the carried one goes); the
-# fingers held on it a moment and drawn back ('lit': the task lights it); both hands on the knee, the head bowed, the
-# breath moving the shoulders; up again over the left foot, the right hand to the chest, and down, standing on idle.
+# the stone's first candle stands (LC_SET: 'set', the task shows the stone's candle there, burning, and the carried one goes);
+# the fingers held on it a moment, then the hand cupped round the flame to keep it as it settles on the wick, the eyes on it,
+# and drawn off it once it stands ('lit': the candle_light heard, its own moment apart from the candle_lay of the set); both
+# hands on the knee, the head bowed, the breath moving the shoulders; up again over the left foot, the right hand to the chest,
+# and down, standing on idle.
 LC_LEN = 60
 LC_D = 14.9                                     # the plinth's face ahead: the stone's middle 22.4 px (1.4 blocks) off
 LC_SET = 24.0
-LC_LIT = 26.0
+LC_LIT = 34.0
 LC_DX = 2.6                                     # the kneeler's hips shifted this far to their left: the right hand comes down in front of the candle's place
 # the stone's first candle (Tales G's memorial_stone_candle_1: wax x 7.6..9.6, z 1.1..3.1, its foot at 5.9 on its puddle)
 LC_FOOT = np.array([8.6 - 8.0, 24.0 - 5.9, -(LC_D - 0.5) - 2.1])
@@ -285,25 +293,26 @@ LC_STEPS = [(1.0, 6.0, 'left_leg', (2.0, -1.4)), (4.0, 9.0, 'right_leg', (-1.8, 
             (12.0, 16.0, 'left_leg', (LC_DX + 4.4, -10.8)), (14.5, 20.0, 'right_leg', (LC_DX - 2.4, 9.6)),  # down on the right knee
             (48.0, 53.5, 'right_leg', (-1.4, -1.6)), (52.5, 57.5, 'left_leg', (1.9, 0.0)), (55.0, 59.0, 'right_leg', (-1.9, 0.0))]
 LC_PITCH = [(0, 0.0), (3.0, 5.0), (9.0, 4.0), (12.0, 8.0), (16.0, 20.0), (19.5, 30.0), (22.0, 41.0), (LC_SET, 44.0),
-            (LC_LIT, 43.0), (29.0, 30.0), (32.0, 22.0), (38.0, 21.0), (42.0, 19.0), (46.0, 22.0), (49.0, 26.0), (53.0, 16.0),
+            (30.0, 44.0), (LC_LIT, 42.0), (37.0, 30.0), (40.0, 22.0), (43.0, 20.0), (46.0, 22.0), (49.0, 26.0), (53.0, 16.0),
             (57.0, 3.0), (60, 0.0)]
-LC_YAW = [(0, 0.0), (19.0, 0.0), (22.0, -8.0), (LC_LIT, -8.0), (31.0, 0.0), (60, 0.0)]       # the right shoulder forward to set it
-LC_HEAD = [(0, 0.0), (3.0, 18.0), (9.0, 14.0), (12.0, 4.0), (16.0, 0.0), (20.0, 4.0), (LC_SET, 6.0), (LC_LIT, 8.0), (28.0, 2.0),
-           (31.0, 10.0), (35.0, 22.0), (40.0, 20.0), (42.0, 10.0), (44.0, 12.0), (47.0, 20.0), (50.0, 6.0), (54.0, -2.0),
+LC_YAW = [(0, 0.0), (19.0, 0.0), (22.0, -8.0), (LC_LIT, -8.0), (39.0, 0.0), (60, 0.0)]       # the right shoulder forward to set it
+LC_HEAD = [(0, 0.0), (3.0, 18.0), (9.0, 14.0), (12.0, 4.0), (16.0, 0.0), (20.0, 4.0), (LC_SET, 6.0), (29.0, 10.0), (LC_LIT, 8.0),
+           (36.0, 2.0), (39.0, 12.0), (42.0, 22.0), (45.0, 20.0), (46.5, 14.0), (48.0, 18.0), (50.0, 6.0), (54.0, -2.0),
            (60, 0.0)]       # the head's pitch off the torso: down to the flame, up to the stone, bowed (once looking up to it)
-LC_HROLL = [(0, 0.0), (30.0, 0.0), (35.0, 5.0), (46.0, 5.0), (50.0, 0.0), (60, 0.0)]
+LC_HROLL = [(0, 0.0), (37.0, 0.0), (41.0, 5.0), (46.0, 5.0), (50.0, 0.0), (60, 0.0)]
 # the hands' places (anchors, worked out frame by frame from the body and legs) and the ticks they are at each
-LC_RIGHT = [(0, 'rest'), (2.0, 'cup'), (4.0, 'carry'), (19.0, 'carry'), (22.0, 'hover'), (LC_SET, 'set'), (LC_LIT, 'set'), (28.0, 'lift'),
-            (32.0, 'lap'), (48.0, 'lap'), (51.5, 'chest'), (54.0, 'chest'), (56.5, 'cup'), (59.5, 'rest'),
-            (60, 'rest')]
+LC_RIGHT = [(0, 'rest'), (2.0, 'cup'), (4.0, 'carry'), (19.0, 'carry'), (22.0, 'hover'), (LC_SET, 'set'), (26.0, 'set'),
+            (28.5, 'shelter'), (32.0, 'shelter'), (LC_LIT, 'lift'), (35.5, 'lift'), (39.0, 'lap'), (48.0, 'lap'), (51.5, 'chest'),
+            (54.0, 'chest'), (56.5, 'cup'), (59.5, 'rest'), (60, 'rest')]
 LC_LEFT = [(0, 'rest'), (2.0, 'cup'), (4.5, 'shield'), (12.0, 'shield'), (16.5, 'knee'), (50.5, 'knee'), (53.0, 'off'), (56.5, 'rest'),
            (60, 'rest')]
-LC_KNEE = [(0, 0.72), (19.0, 0.72), (22.0, 0.82), (27.0, 0.82), (30.0, 0.72), (60, 0.72)]    # how far down the leg it rests (on the shin while leaning out)
+LC_KNEE = [(0, 0.72), (19.0, 0.72), (22.0, 0.82), (35.0, 0.82), (38.0, 0.72), (60, 0.72)]    # how far down the leg it rests (on the shin while leaning out)
 LC_CARRY = np.array([-1.5, 8.4, -6.9])          # torso space: the fist cupped at the waist, the candle up from it
 LC_CUP = {'right_arm': np.array([-4.4, 9.2, -7.2]), 'left_arm': np.array([4.6, 8.4, -7.4])}  # torso space: a hand brought up before its hip on the way in
 LC_OFF = np.array([6.6, 9.0, -4.6])             # torso space: the left hand coming off the knee out by the left hip
 LC_SHIELD = np.array([0.6, 4.6, -8.6])          # torso space: the left hand before the flame, its palm to it
 LC_CHEST = np.array([-0.6, 6.0, -7.6])          # torso space: the right hand to the breast
+LC_SHELTER = np.array([-2.6, -1.6, 1.0])        # from the wick: the right hand cupped round the new flame
 
 
 def lc_memorial():
@@ -319,14 +328,14 @@ def lc_memorial():
 
 
 def lc_station():
-    """The stone, and from LC_SET its first candle on the ledge (the task sets it: Tales G's candle and, once lit, its flame)."""
+    """The stone, and from LC_SET its first candle on the ledge and its flame (the task sets it, burning: Tales G's candle lit)."""
     t = la._CUR[1] if la._CUR[1] is not None else 0.0
     b = lc_memorial()
     if t >= LC_SET:
         x, y, z = LC_FOOT
         b.append(((x - 1.5, y - 0.05, z - 1.45), (x + 1.5, y + 0.4, z + 1.45), (226, 214, 186), True))     # its puddle
         b.append(((x - 1.0, y - 4.1, z - 1.0), (x + 1.0, y, z + 1.0), (226, 214, 186), True))
-    if t >= LC_LIT:
+    if t >= LC_SET:
         w = LC_WICK
         b.append(((w[0] - 0.6, w[1] - 3.0, w[2] - 0.6), (w[0] + 0.6, w[1] + 0.2, w[2] + 0.6), (255, 200, 90), True))
     return b
@@ -361,6 +370,8 @@ def lc_anchor(name, side, t, fr, feet, rest):
         return LC_GRIP_SET, unit(F * 0.4 + inward)
     if name == 'lift':
         return LC_GRIP_SET + np.array([-0.2, -1.2, 1.6]), unit(F * 0.2 + inward + D * 0.3)
+    if name == 'shelter':
+        return LC_WICK + LC_SHELTER, unit(L * 0.9 + B * 0.25)     # round the flame on its right, the palm to it
     if name == 'shield':
         return torso_to_world(fr, LC_SHIELD), unit(B * 0.8 + L * 0.5)
     if name == 'chest':
@@ -435,8 +446,8 @@ def lay_candle():
         dx = lc_dx(t)
         rz = 0.5 * (feet['right_leg'][1] + feet['left_leg'][1])
         pitch = K(LC_PITCH, t)
-        bowed = smooth((t - 30.0) / 4.0) * (1.0 - smooth((t - 47.0) / 3.0))
-        breath = bowed * math.sin(2 * math.pi * (t - 30.0) / 9.0)          # slow and deep while it is held
+        bowed = smooth((t - 38.0) / 4.0) * (1.0 - smooth((t - 47.0) / 3.0))
+        breath = bowed * math.sin(2 * math.pi * (t - 38.0) / 9.0)          # slow and deep while it is held
         root = la.root_for(feet, x=dx, z=rz)
         fr = F_(qt=bend(pitch + 1.2 * breath, K(LC_YAW, t), 0.0), vt=(0.0, sink_for(pitch) - 0.5 * breath, 0.0), pr=root)
         key_frame(c, t, fr, ease='linear')
@@ -649,13 +660,298 @@ def carry_swaddle():
     return c
 
 
+# ================================================================== the great bell, struck by hand
+
+# A village's bell (vanilla's bell block: its body 6 px across and 4 to 13 px up its block, the lip 8 px across under it) is
+# struck as a player strikes one: the hand driven against its side. The ringer stands in the next block off the side it is
+# struck from (BellKeeper.standAt: between a floor bell's posts, straight off its open face), so the bell's middle is GB_D px
+# ahead; it stands on their own floor (a bell in its frame on the ground: struck low, bent over it with the knees given and
+# the free hand on the knee) or hangs a block up (from a beam: struck at the height of the shoulder, up on the toes of the
+# reach). The client picks which for the bell nearest them (TownsfolkClient.clipName): RING_BELL at a great bell plays
+# ring_great_bell(_high), a stroke a loop; RING_ALARM plays ring_alarm(_high), the alarm's quick strokes.
+#
+#    ring_great_bell(_high)  30 loop   the arm drawn up and back (to 4.5), the strike (6: the stroke, Crier's and BellKeeper's
+#                                      ticks 6 and 36), the hand off the ringing bell, the body easing as it hums, still to 30
+#    ring_alarm(_high)       10 loop   the strike at 6 again and again, the arm hardly let down between: the Ringer's strokes
+GB_D = 16.0
+GB_RING = (30, 6.0)
+GB_ALARM = (10, 6.0)
+GB_REACH = {False: 8.6, True: 9.6}                                 # how far the shoulder is from the hand's mark at the strike: the arm all but straight
+
+
+def gb_y(h, high):
+    """The clip's y of a point [h] px up the bell's block (a block up for a bell hung [high])."""
+    return 24.0 - h - (16.0 if high else 0.0)
+
+
+def gb_bell(high):
+    """The bell's body and its lip ((lo, hi) in the clip's space)."""
+    body = (np.array([-3.0, gb_y(13.0, high), -GB_D - 3.0]), np.array([3.0, gb_y(6.0, high), -GB_D + 3.0]))
+    lip = (np.array([-4.0, gb_y(6.0, high), -GB_D - 4.0]), np.array([4.0, gb_y(4.0, high), -GB_D + 4.0]))
+    return body, lip
+
+
+GB_MARK = {high: np.array([-2.6 if high else -1.0, gb_y(9.8 if high else 10.2, high), -GB_D + 3.0]) for high in (False, True)}   # the hand's mark on the body
+GB_TURN = {False: -12.0, True: -17.0}           # the torso's turn at the strike: the right shoulder into it
+GB_OFF = {False: np.array([-2.5, -0.8, 2.4]), True: np.array([-2.4, 2.4, 2.6])}     # where the hand comes back to off the bell, from its mark
+
+
+def gb_station(high):
+    """The bell and what holds it: a floor bell's two posts and its bar (vanilla's bell_floor, struck between the posts), or the rod
+    and the beam a bell hung up hangs from."""
+    def boxes():
+        body, lip = gb_bell(high)
+        out = [(tuple(body[0]), tuple(body[1]), (214, 170, 62), True), (tuple(lip[0]), tuple(lip[1]), (186, 142, 44), True)]
+        z0, z1 = -GB_D - 2.0, -GB_D + 2.0
+        if high:
+            out.append(((-1.0, gb_y(16.0, True), -GB_D - 1.0), (1.0, gb_y(13.0, True), -GB_D + 1.0), (72, 72, 80), True))
+            out.append(((-8.0, gb_y(32.0, True), -GB_D - 8.0), (8.0, gb_y(16.0, True), -GB_D + 8.0), (122, 92, 58), True))
+        else:
+            for x0 in (-8.0, 6.0):
+                out.append(((x0, gb_y(16.0, False), z0), (x0 + 2.0, gb_y(0.0, False), z1), (128, 128, 134), True))
+            out.append(((-6.0, gb_y(15.0, False), -GB_D - 1.0), (6.0, gb_y(13.0, False), -GB_D + 1.0), (96, 70, 44), True))
+        return out
+    return boxes
+
+
+GB_FEET = {False: {'right_leg': (-2.4, 1.8), 'left_leg': (2.6, -4.0)},       # the left foot forward, the weight on it
+           True: {'right_leg': (-2.2, 1.6), 'left_leg': (2.2, -3.2)}}
+GB_ROOT = {False: (0.6, -1.4, 1.4), True: (0.3, -1.8, 0.3)}                   # the hips' shift across and forward, the knees' give
+
+
+def gb_frame(high, pitch, yaw, dz=0.0, dip=0.0):
+    x, z, d = GB_ROOT[high]
+    root = la.root_for(GB_FEET[high], x=x, z=z + dz, dip=d + dip)
+    return F_(qt=bend(pitch, yaw, 0.0), vt=(0.0, sink_for(pitch), 0.0), pr=root)
+
+
+def gb_strike_pitch(high, yaw, mark):
+    """The torso's bend at the strike that puts the right shoulder GB_REACH from the hand's [mark]."""
+    lo, hi = 0.0, (40.0 if high else 70.0)
+    for _ in range(40):
+        mid = 0.5 * (lo + hi)
+        _, joint = ta.chain_frame('right_arm', **gb_frame(high, mid, yaw))
+        if float(np.linalg.norm(mark - joint)) > GB_REACH[high]:
+            lo = mid
+        else:
+            hi = mid
+    return 0.5 * (lo + hi)
+
+
+def gb_hand_points(c, t, side):
+    """The hand of [side] (the arm's last 4 px) as points of the clip's space at [t]."""
+    look = ta.look_for(ta.INFO[c.name]['look'])
+    mats = ta.part_matrices(look, ta.pose_at(c, t, ta.walk_base(t, speed=0.0, age=t)))
+    lo, hi = tcl.BOXES[side]
+    pts = [np.array([lo[0] + (hi[0] - lo[0]) * i / 4, lo[1] + (hi[1] - lo[1]) * j / 4, lo[2] + (hi[2] - lo[2]) * k / 4])
+           for i in range(5) for j in range(5) for k in range(5)]
+    return [mats[side][:3, :3] @ p + mats[side][:3, 3] for p in pts]
+
+
+def gb_touch(c, t, box):
+    """How the right hand meets [box] at [t]: how deep it goes in (px), or (negative) how far it is short of it."""
+    lo, hi = box
+    deepest, nearest = 0.0, 1e9
+    for w in gb_hand_points(c, t, 'right_arm'):
+        inside = min(float(np.min(w - lo)), float(np.min(hi - w)))
+        if inside > 0.0:
+            deepest = max(deepest, inside)
+        nearest = min(nearest, float(np.linalg.norm(np.maximum(np.maximum(lo - w, 0.0), w - hi))))
+    return deepest if deepest > 0.0 else -nearest
+
+
+# The beats of a stroke, as (tick, pose) through the loop: 'rest' the arm let down before the thigh (the great bell: the bell
+# left to hum), 'wind' drawn up and back, 'hit' on the mark, 'off' the hand come back off the bell; the strike from the wind
+# to the hit is quickening (the hand driven at it), every other move eased.
+GB_BEATS = {'ring': [(0.0, 'rest'), (3.4, 'wind'), (4.5, 'wind'), (6.0, 'hit'), (8.0, 'off'), (15.0, 'rest'), (30.0, 'rest')],
+            'alarm': [(0.0, 'mid'), (2.8, 'wind'), (4.4, 'wind'), (6.0, 'hit'), (7.6, 'off'), (10.0, 'mid')]}
+# the arm's swing up from hanging (degrees forward, degrees out) at rest, half up between the alarm's strokes, and drawn back
+GB_SWING = {(False, 'rest'): (24.0, 7.0), (False, 'wind'): (112.0, 24.0), (False, 'alarm_wind'): (40.0, 72.0),
+            (True, 'rest'): (22.0, 8.0), (True, 'wind'): (150.0, 42.0), (True, 'alarm_wind'): (140.0, 36.0)}
+
+
+def gb_curve(keys, t, length):
+    """A number through [keys] (t, value) round the loop: eased between keys, quickening into the strike (6)."""
+    for (t0, a), (t1, b) in zip(keys, keys[1:]):
+        if t0 <= t <= t1:
+            u = (t - t0) / (t1 - t0) if t1 > t0 else 1.0
+            u = u * u if abs(t1 - 6.0) < 1e-6 and t0 < 6.0 else smooth(u)
+            return a + (b - a) * u
+    return keys[-1][1]
+
+
+def gb_clip(name, high, kind):
+    length, hit = GB_RING if kind == 'ring' else GB_ALARM
+    beats = GB_BEATS[kind]
+    mark = GB_MARK[high].copy()
+    station = gb_station(high)
+    body, lip = gb_bell(high)
+    middle = np.array([0.0, gb_y(9.5, high), -GB_D])
+    # the body's sway through a stroke: back with the arm drawn, into the strike, eased off after it (yaw: + the right shoulder back)
+    if kind == 'ring':
+        yaw_keys = [(0.0, -3.0), (3.4, 9.0), (4.5, 10.0), (6.0, GB_TURN[high]), (8.0, GB_TURN[high] + 3.0), (15.0, -3.0), (30.0, -3.0)]
+        bend_keys = [(0.0, -3.0), (3.4, -6.0), (4.5, -6.0), (6.0, 0.0), (8.0, -0.5), (15.0, -3.0), (30.0, -3.0)]
+        dz_keys = [(0.0, 0.0), (3.4, 0.5), (4.5, 0.5), (6.0, -0.5), (8.0, -0.4), (15.0, 0.0), (30.0, 0.0)]
+    else:
+        yaw_keys = [(0.0, -4.0), (2.8, 7.0), (4.4, 8.0), (6.0, GB_TURN[high]), (7.6, GB_TURN[high] + 3.0), (10.0, -4.0)]
+        bend_keys = [(0.0, -1.5), (2.8, -3.5), (4.4, -3.5), (6.0, 0.0), (7.6, -0.5), (10.0, -1.5)]
+        dz_keys = [(0.0, 0.0), (2.8, 0.3), (4.4, 0.3), (6.0, -0.5), (7.6, -0.4), (10.0, 0.0)]
+    strike = gb_strike_pitch(high, GB_TURN[high], mark)
+    c = la.clip(name, length, True, look=('citizen', 6 if high else 4), station_=name, events=[('strike', hit)],
+                traces=[('right_arm', GRIP['right_arm'], (255, 200, 120))], views=((-50, -6), (95, -2), (30, -10)),
+                pan=(0.0, -4.0 if high else 4.0, -GB_D / 2))
+    holds = {'right_arm': la.Holds(), 'left_arm': la.Holds(), 'off': la.Holds()}
+    for t in la.every(length):
+        yaw = gb_curve(yaw_keys, t, length)
+        pitch = strike + gb_curve(bend_keys, t, length)
+        breath = 0.0 if kind == 'alarm' else math.sin(2 * math.pi * t / length)
+        fr = gb_frame(high, pitch + 0.6 * breath, yaw, dz=gb_curve(dz_keys, t, length))
+        key_frame(c, t, fr, ease='linear')
+        stand(c, t, fr, feet=GB_FEET[high])
+        # the right arm, from beat to beat
+        _, joint = ta.chain_frame('right_arm', **fr)
+        d = unit(mark - joint)
+        palm = unit(U - float(np.dot(U, d)) * d)
+        hitp = reach_arm(holds['right_arm'], 'right_arm', fr, mark, palm=palm, palm_w=0.3, slack=0.8, limit=1.6)
+        offp = reach_arm(holds['off'], 'right_arm', fr, mark + GB_OFF[high], palm=palm, palm_w=0.3, slack=0.8, limit=1.6)
+
+        def pose(what):
+            if what == 'hit':
+                return hitp
+            if what == 'off':
+                return offp
+            if what == 'mid':
+                return mix(offp, pose('wind'), 0.45)
+            key = (high, 'alarm_wind' if kind == 'alarm' and what == 'wind' else what)
+            fwd, out = GB_SWING[key]
+            return la.arm_at(fr, 'right_arm', fwd, out), np.zeros(3)
+        i = max(k for k in range(len(beats)) if beats[k][0] <= t + 1e-9)
+        j = min(i + 1, len(beats) - 1)
+        (t0, a), (t1, b) = beats[i], beats[j]
+        u = 0.0 if t1 <= t0 else (t - t0) / (t1 - t0)
+        u = u * u if b == 'hit' else smooth(u)
+        set_arm(c, 'right_arm', t, mix(pose(a), pose(b), u))
+        # the left arm hanging out from the side, swung against the strike
+        back = gb_curve(bend_keys, t, length) / 6.0
+        set_arm(c, 'left_arm', t, (la.hang('left_arm', fr, out=12.0 if high else 9.0, fwd=(6.0 if high else 14.0) - 9.0 * back), np.zeros(3)))
+        c.key('head', t, head_at(fr, middle + np.array([3.0 if high else 0.5, 0.0, 0.0])), ease='linear')
+    c.mode('head', 'set')
+    seal(c)
+    if name != 'ring_alarm':
+        la.EXTRA[name] = (length, True)         # RING_BELL's variants at a great bell, and RING_ALARM's for a bell hung up
+    return c, body, station, strike
+
+
+def gb_make(name, high, kind):
+    """Builds [name], the hand's mark moved until it just meets the bell's body at the strike, and checks it."""
+    length, hit = GB_RING if kind == 'ring' else GB_ALARM
+    shift = 0.0
+    for _ in range(4):
+        GB_MARK[high][2] = -GB_D + 3.0 + shift
+        c, body, station, strike = gb_clip(name, high, kind)
+        touch = gb_touch(c, hit, body)
+        if abs(touch - 0.05) < 0.08:
+            break
+        shift += touch - 0.05
+    print(f'   {name}: bent {strike:.1f} degrees at the strike, the hand\'s mark {GB_MARK[high][2] + GB_D:.2f} px off the bell\'s middle')
+    check(c, f'the hand meets the bell at the strike (t={hit:g}: how deep, or short)', (gb_touch(c, hit, body),), (0.1,), tol=0.25)
+    times = [i * 0.5 for i in range(2 * length + 1)]
+    boxes = station()
+    keep_out(c, times, boxes, 'bell and its frame', parts=('head', 'body', 'left_arm', 'right_leg', 'left_leg'), tol=0.6)
+    keep_out(c, [t for t in times if abs(t - hit) > 0.6], boxes, 'bell but at the strike', parts=('right_arm',), tol=0.6)
+    below_ground(c, times)
+    clear_hands(c, times)
+    for k in (0.0, hit, length / 2.0):
+        for side, (x, z) in GB_FEET[high].items():
+            check(c, f'{side.replace("_", " ")} foot planted (t={k:g})', la.leg_end(c, k, side), (x, 24.0, z), tol=0.4)
+    return c
+
+
+def ring_great_bell():
+    return gb_make('ring_great_bell', False, 'ring')
+
+
+def ring_great_bell_high():
+    return gb_make('ring_great_bell_high', True, 'ring')
+
+
+def ring_alarm():
+    return gb_make('ring_alarm', False, 'alarm')
+
+
+def ring_alarm_high():
+    return gb_make('ring_alarm_high', True, 'alarm')
+
+
+# ================================================================== the crier's scroll read over
+
+# ---- read_scroll (180, loop): the crier reading the news over to themselves from the scroll before the cry (Crier: until the
+# hour), as announce holds it up: the scroll in the left hand, the head bowed to it, the eyes going along a line and back to the
+# next (five lines, RS_LINE ticks each), a look up from it about the square with the lips going over a line, the right hand
+# beating it out twice, a nod to it; back down to the scroll and three lines more; the scroll lifted a little to read the foot of
+# it, and round again. The right hand otherwise hangs; the scroll shows all the while (tools_: the scroll), as it does in announce
+# after it.
+RS_LEN = 180
+RS_LINE = 14.0
+RS_READ = [(0.0, 5), (122.0, 3)]                # the reading spells: from, lines
+RS_UP = [(0, 0.0), (70.0, 0.0), (77.0, 1.0), (110.0, 1.0), (117.0, 0.0), (180, 0.0)]       # 1: looking up from the scroll
+RS_HY = [(0, 0.0), (72.0, 0.0), (80.0, -16.0), (88.0, -10.0), (96.0, 14.0), (104.0, 18.0), (110.0, 4.0), (117.0, 0.0), (180, 0.0)]
+RS_BEATS = (90.0, 97.0)                         # the right hand's beats as the line is gone over
+RS_NOD = 105.0
+RS_LIFT = [(0, 0.0), (164.0, 0.0), (169.0, 1.0), (176.0, 1.0), (180, 0.0)]     # the scroll lifted to read its foot
+
+
+def rs_scan(t):
+    """The eyes along the lines: (yaw, pitch) off the reading look, a line read left to right and the eyes back to the next."""
+    for start, lines in RS_READ:
+        if start <= t < start + lines * RS_LINE:
+            k = int((t - start) // RS_LINE)
+            u = (t - start - k * RS_LINE) / RS_LINE
+            along = smooth(u / 0.82) if u < 0.82 else 1.0 - smooth((u - 0.82) / 0.18)
+            down = k + (smooth((u - 0.82) / 0.18) if u >= 0.82 else 0.0)
+            w = smooth((t - start) / 5.0) * smooth((start + lines * RS_LINE - t) / 5.0)     # in from the look and out to it
+            return w * (-7.0 + 12.0 * along), w * (1.4 * down - 2.0)
+    return 0.0, 0.0
+
+
+def read_scroll():
+    c = la.clip('read_scroll', RS_LEN, True, look=('citizen', 2), tools_=('scroll',),
+                traces=[('right_arm', GRIP['right_arm'], (255, 200, 120))], views=((32, -12), (90, -2), (-30, -8)))
+    for t in la.every(RS_LEN):
+        up = smooth(K(RS_UP, t))
+        lift = smooth(K(RS_LIFT, t))
+        sy, sp = rs_scan(t)
+        sy, sp = sy * (1.0 - up), sp * (1.0 - up)
+        hy = K(RS_HY, t) * up
+        nod = bump(t, RS_NOD - 3.0, RS_NOD + 4.0)
+        fr = F_(qt=bend(3.0 - 1.0 * up + 0.8 * nod, 0.15 * hy, 0.0))
+        key_frame(c, t, fr, root=False, ease='linear')
+        c.key('left_arm', t, qmul(la.Q_READ, qeuler(x=-2.0 * up - 4.0 * lift)), ease='linear')
+        beat = sum(bump(t, b - 3.0, b + 3.0) for b in RS_BEATS)
+        set_arm(c, 'right_arm', t, (la.hang('right_arm', fr, out=6.0, fwd=3.0 + 4.0 * up + 22.0 * beat), np.zeros(3)))
+        # reading: the head bowed to the scroll, along its lines; looking up: over the square, and a nod
+        c.key('head', t, qeuler(x=24.0 * (1.0 - up) - 4.0 * up + sp - 4.0 * lift + 9.0 * nod, y=-12.0 * (1.0 - up) + sy + hy),
+              ease='linear')
+    c.mode('head', 'add')
+    seal(c)
+    # the scroll hangs upright, its writing to the reader, as announce has it
+    for k in (6.0, 90.0, 140.0, 172.0):
+        sheet_down = ta.fk(c, k, 'scroll', (0.0, 8.0, 0.0)) - ta.fk(c, k, 'scroll', (0.0, 0.0, 0.0))
+        check(c, f'scroll hanging straight (t={k:g}, the sheet\'s bottom under its top)', sheet_down / 8.0, D, tol=0.12)
+    clear_hands(c, [i * 0.5 for i in range(2 * RS_LEN)])
+    return c
+
+
 # ================================================================== the registry
 
-VILLAGE_CLIPS = ['bolt_door', 'lay_candle', 'cradle']
-MAKERS = [('bolt_door', bolt_door), ('lay_candle', lay_candle), ('cradle', cradle), ('carry_swaddle', carry_swaddle)]
+VILLAGE_CLIPS = ['bolt_door', 'lay_candle', 'cradle', 'read_scroll', 'ring_alarm']
+MAKERS = [('bolt_door', bolt_door), ('lay_candle', lay_candle), ('cradle', cradle), ('carry_swaddle', carry_swaddle),
+          ('ring_great_bell', ring_great_bell), ('ring_great_bell_high', ring_great_bell_high), ('ring_alarm', ring_alarm),
+          ('ring_alarm_high', ring_alarm_high), ('read_scroll', read_scroll)]
 NEEDS = {}
 BUILT = {}
-STATION_BOXES = {'bolt_door': bd_station, 'lay_candle': lc_station}
+STATION_BOXES = {'bolt_door': bd_station, 'lay_candle': lc_station, 'ring_great_bell': gb_station(False),
+                 'ring_great_bell_high': gb_station(True), 'ring_alarm': gb_station(False), 'ring_alarm_high': gb_station(True)}
 VILLAGE_GLOW = ['candle_flame']
 BD_KEEPER = (-8.6, BD_KNOB_Y, BD_Z + 0.4)       # the keeper on the frame, where the bolt goes home: 1 px off the door's edge
 
@@ -666,6 +962,11 @@ def village_moment_specs():
         'bolt_door': {'bolt': ('point', BD_KEEPER)},
         'lay_candle': {'set': ('point', tuple(float(v) for v in LC_FOOT)), 'lit': ('point', tuple(float(v) for v in LC_WICK))},
         'cradle': {'coo': ('part', 'swaddle', tuple(lp.SWADDLE_FACE))},
+        # the strike: on the bell's near face, where the hand meets it (the bell's own stroke is the server's)
+        'ring_great_bell': {'strike': ('point', tuple(float(v) for v in GB_MARK[False]))},
+        'ring_great_bell_high': {'strike': ('point', tuple(float(v) for v in GB_MARK[True]))},
+        'ring_alarm': {'strike': ('point', tuple(float(v) for v in GB_MARK[False]))},
+        'ring_alarm_high': {'strike': ('point', tuple(float(v) for v in GB_MARK[True]))},
     }
 
 
@@ -712,16 +1013,23 @@ def build(living, only=None):
 GIF_GROUPS = {
     'bolt_door_lay_candle': ['bolt_door', 'lay_candle'],
     'cradle_carry_swaddle': ['cradle', 'carry_swaddle'],
+    'great_bell': ['ring_great_bell', 'ring_great_bell_high'],
+    'alarm': ['ring_alarm', 'ring_alarm_high'],
+    'read_scroll': ['read_scroll'],
 }
 GIF_CELL = (240, 300)
 GIF_REST = 10
 GIF_SS = 2                                      # drawn at twice the size and scaled down: smooth edges
 GIF_VIEWS = {'bolt_door': ((150, -8), (100, -4)), 'lay_candle': ((-55, 8), (115, 8)), 'cradle': ((25, -14), (-35, -10)),
-             'carry_swaddle': ((30, -12), (90, -4))}
-GIF_FRAME = {'bolt_door': (4.8, 7.0), 'lay_candle': (4.7, 9.0), 'cradle': (7.0, 6.0), 'carry_swaddle': (5.6, 8.0)}  # zoom, the figure's middle
+             'carry_swaddle': ((30, -12), (90, -4)), 'ring_great_bell': ((-30, 25), (-95, -4)), 'ring_great_bell_high': ((-30, 10), (-95, -4)),
+             'ring_alarm': ((-30, 25), (-95, -4)), 'ring_alarm_high': ((-30, 10), (-95, -4)), 'read_scroll': ((32, -12), (-30, -8))}
+GIF_FRAME = {'bolt_door': (4.8, 7.0), 'lay_candle': (4.7, 9.0), 'cradle': (7.0, 6.0), 'carry_swaddle': (5.6, 8.0),
+             'ring_great_bell': (4.6, 8.0), 'ring_great_bell_high': (4.2, 6.0), 'ring_alarm': (4.6, 8.0), 'ring_alarm_high': (4.2, 6.0)}  # zoom, the figure's middle
 GIF_PACE = {}
 GIF_MARKS = {'bolt_door': [('the door shuts', BD_SLAM), ('bolted', BD_BOLT_T)], 'lay_candle': [('set', LC_SET), ('lit', LC_LIT)],
-             'cradle': [('coo', CR_COO[0]), ('coo', CR_COO[1])]}
+             'cradle': [('coo', CR_COO[0]), ('coo', CR_COO[1])], 'ring_great_bell': [('strike', GB_RING[1])],
+             'ring_great_bell_high': [('strike', GB_RING[1])], 'ring_alarm': [('strike', GB_ALARM[1])],
+             'ring_alarm_high': [('strike', GB_ALARM[1])], 'read_scroll': [('beat', RS_BEATS[0]), ('beat', RS_BEATS[1])]}
 
 
 def gif_cell(c, t, view):

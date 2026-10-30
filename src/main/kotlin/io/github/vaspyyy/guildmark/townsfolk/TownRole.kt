@@ -279,6 +279,10 @@ enum class Activity(val clip: String, val ticks: Int, val loop: Boolean, val ove
     BOLT_DOOR("bolt_door", 50, false),
     LAY_CANDLE("lay_candle", 60, false),
     CRADLE("cradle", 60, true),
+    // The villages' great bell struck by hand at an alarm, and a crier's scroll read over before the cry (village_clips.py too;
+    // the strikes of RING_BELL at a great bell are its variant clips, TownsfolkClient.clipName)
+    READ_SCROLL("read_scroll", 180, true),
+    RING_ALARM("ring_alarm", 10, true),
     ;
 
     /** Seated activities keep the townsperson on their seat (a wagon's bench and tailboard among them). */
