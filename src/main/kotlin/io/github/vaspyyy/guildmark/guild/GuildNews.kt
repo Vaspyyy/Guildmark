@@ -4,6 +4,8 @@ import com.mojang.serialization.Codec
 import com.mojang.serialization.codecs.RecordCodecBuilder
 import io.github.vaspyyy.guildmark.Guildmark
 import io.github.vaspyyy.guildmark.block.VillageBoards
+import io.github.vaspyyy.guildmark.village.live.keptField
+import io.github.vaspyyy.guildmark.village.live.keptList
 import io.netty.buffer.ByteBuf
 import net.minecraft.network.chat.Component
 import net.minecraft.network.codec.ByteBufCodecs
@@ -27,7 +29,7 @@ data class NewsItem(val day: Long, val key: String, val args: List<String>) {
             i.group(
                 Codec.LONG.fieldOf("day").forGetter(NewsItem::day),
                 Codec.STRING.fieldOf("key").forGetter(NewsItem::key),
-                Codec.STRING.listOf().fieldOf("args").forGetter(NewsItem::args),
+                Codec.STRING.listOf().keptField("args") { listOf() }.forGetter(NewsItem::args),
             ).apply(i, ::NewsItem)
         }
         val STREAM_CODEC: StreamCodec<ByteBuf, NewsItem> = ByteBufCodecs.fromCodec(CODEC)
@@ -43,7 +45,7 @@ class GuildNews(val items: MutableList<NewsItem> = mutableListOf()) : SavedData(
         private const val KEEP = 8
 
         private val CODEC: Codec<GuildNews> = RecordCodecBuilder.create { i ->
-            i.group(NewsItem.CODEC.listOf().fieldOf("items").forGetter { it.items })
+            i.group(keptList(NewsItem.CODEC).keptField("items") { listOf() }.forGetter { it.items })
                 .apply(i) { items -> GuildNews(items.toMutableList()) }
         }
 
