@@ -14,6 +14,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Walker
 import io.github.vaspyyy.guildmark.townsfolk.scenes.Aside
 import io.github.vaspyyy.guildmark.townsfolk.scenes.Words
 import io.github.vaspyyy.guildmark.townsfolk.talk.TalkLines
+import io.github.vaspyyy.guildmark.village.live.Turns
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.server.level.ServerLevel
@@ -180,8 +181,17 @@ internal object GrowScenes {
             .take(most)
             .toList()
 
-    /** Says the voiced line [key] (one of the single lines, such as `welcome_1`) now if a player is in hearing; true if said. */
-    fun line(p: Townsperson, key: String): Boolean = Words.on() && p.isAlive && p.say(key, force = true, ticks = TalkLines.ticks(key) + 20L)
+    /**
+     * Says the voiced line [key] (one of the single lines, such as `welcome_1`) now if a player is in hearing; true if said. It holds
+     * the floor round them while it is said ([Turns]): a scene's next line waits for it ([Turns.freeBy] before the move it comes with).
+     */
+    fun line(p: Townsperson, key: String): Boolean {
+        if (!Words.on() || !p.isAlive) return false
+        val ticks = TalkLines.ticks(key)
+        if (!p.say(key, force = true, ticks = ticks + 20L)) return false
+        Turns.hold(p, ticks)
+        return true
+    }
 
     // ---- Where ----
 
@@ -620,8 +630,9 @@ internal object GrowScenes {
      * The morning after a birth, with a player near: a parent fetches the baby from its cot (PICK_UP), carries it swaddled out
      * into the lane before the house (CARRY, the client's carry_swaddle) and holds it up for the street to see (CRADLE, three
      * times over, its coos heard at the clip's moments), "Meet our newest." (born_proud), the green sparks of a glad thing once;
-     * the other parent stands by admiring; up to three neighbours come over in turn: one with a word (INTRODUCE, born_cheer_1),
-     * one with a cheer (CHEER, born_cheer_2, the village's cheer heard), one clapping; then they admire it a while, wave, and go
+     * the other parent comes to stand at their side (round behind them, never across in front of the baby) admiring; up to three
+     * neighbours come over in turn, each word once the one before is heard out: one with a word (INTRODUCE, born_cheer_1), one
+     * with a cheer (CHEER, born_cheer_2, the village's cheer heard), one clapping; then they admire it a while, wave, and go
      * back to their day, and the baby is carried in and laid down again.
      */
     class Birth(
@@ -679,9 +690,15 @@ internal object GrowScenes {
             val p = parent?.p ?: return
             level.sendParticles(net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER, p.x, p.y + 1.4, p.z, 7, 0.45, 0.3, 0.45, 0.02)
             other?.let { o ->
-                val beside = arc(level, p.position(), street(), 0, 1, 1.4).let { stand(level, it.relative(door.inward.clockWise)) ?: it }
+                // At their side, the side the other parent is on; coming from the house's side, by way of the corner behind them
+                val across = door.inward.clockWise
+                val side = if ((o.p.x - p.x) * across.stepX + (o.p.z - p.z) * across.stepZ >= 0.0) across else across.opposite
+                val beside = stand(level, lane.relative(side)) ?: lane.relative(side)
+                val behind = (o.p.x - p.x) * door.inward.stepX + (o.p.z - p.z) * door.inward.stepZ > 0.0
+                val corner = if (behind) stand(level, lane.relative(door.inward).relative(side)) else null
                 o.set(
-                    Go({ beside }, io.github.vaspyyy.guildmark.townsfolk.Jobs.WALK, 0.8),
+                    Go({ corner ?: beside }, io.github.vaspyyy.guildmark.townsfolk.Jobs.WALK, 0.8),
+                    Go({ beside }, io.github.vaspyyy.guildmark.townsfolk.Jobs.WALK, 0.6),
                     Until({ back }, { parent?.p?.let { eye(it).subtract(0.0, 0.4, 0.0) } }, 900, Activity.ADMIRE),
                     Play(Activity.NOD, { parent?.p?.let { eye(it) } }),
                     Go({ door.inside }, io.github.vaspyyy.guildmark.townsfolk.Jobs.STROLL, 0.8),
@@ -701,21 +718,27 @@ internal object GrowScenes {
                 crowd += h
                 val spot = arc(level, p.position(), street, k, came.size)
                 val face = { _: Hand -> parent?.p?.let { eye(it).subtract(0.0, 0.4, 0.0) } }
+                // Each in their turn, a word once the one before it is heard out (by the word's moment in its move)
+                val moment = when (k) {
+                    0 -> 8
+                    1 -> 6
+                    else -> 4
+                }
                 val part: Act = when (k) {
-                    0 -> Play(Activity.INTRODUCE, face, 8) {
+                    0 -> Play(Activity.INTRODUCE, face, moment) {
                         line(it.p, "born_cheer_1")
                         cheers++
                     }
-                    1 -> Play(Activity.CHEER, face, 6) {
+                    1 -> Play(Activity.CHEER, face, moment) {
                         line(it.p, "born_cheer_2")
                         io.github.vaspyyy.guildmark.village.live.VillageSounds.play(level, eye(it.p), io.github.vaspyyy.guildmark.village.live.VillageSounds.CHEER, 0.9f)
                         cheers++
                     }
-                    else -> Play(Activity.CLAP, face, 4) { cheers++ }
+                    else -> Play(Activity.CLAP, face, moment) { cheers++ }
                 }
                 h.set(
                     Go({ spot }, io.github.vaspyyy.guildmark.townsfolk.Jobs.WALK, 0.9),
-                    Until({ cheers >= k }, face, 600),
+                    Until({ cheers >= k && (k >= 2 || Turns.freeBy(it.p, moment)) }, face, 600),
                     part,
                     Until({ back }, face, 900, Activity.ADMIRE),
                     Play(Activity.WAVE, face),
@@ -728,7 +751,7 @@ internal object GrowScenes {
         override fun step(): Boolean {
             val p = parent ?: return false
             if (p !in crew) return false
-            if (shown > 0 && !said && t % 20 == 2 && t < 200) said = line(p.p, "born_proud")
+            if (shown > 0 && !said && t % 20 == 2 && t < 200 && Turns.freeBy(p.p)) said = line(p.p, "born_proud")
             if (shown > 0 && !called && t >= 30) call()
             for (h in crowd.toList()) if (h.idle) {
                 crowd.remove(h)
