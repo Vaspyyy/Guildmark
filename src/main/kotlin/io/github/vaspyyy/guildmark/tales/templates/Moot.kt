@@ -696,7 +696,7 @@ object Moot : Template, TaleVoice, TaleWords.Names {
                 "tale.moot.thanks", TaleLines.facts("talk.detail.tale.moot.pledged", PLEDGE, TaleLines.lit(word(t))), Activity.NOD,
             )
             refused.key == "gui.guildmark.works.why.purse" ->
-                TaleReply("tale.moot.stand", TaleLines.facts("talk.detail.tale.moot.purse", PLEDGE), Activity.SHRUG)
+                TaleReply("tale.moot.purse", TaleLines.facts("talk.detail.tale.moot.purse", PLEDGE), Activity.SHRUG)
             else -> TaleReply("tale.moot.stand", TaleLines.pass(Component.translatable(refused.key, *refused.args.toTypedArray())), Activity.SHRUG)
         }
     }
