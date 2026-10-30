@@ -74,8 +74,9 @@ object VillageBudget {
         steps = STEPS
         columns = COLUMNS
         val now = level.gameTime
-        // A clock behind the window's (another world's) starts a new one
-        if (now - window >= ADOPT_WINDOW || now < window) {
+        // The first tick starts the first window (`now - window` from the unset one would overflow, and no window would ever start), and
+        // a clock behind the window's (another world's) starts a new one
+        if (window == Long.MIN_VALUE || now - window >= ADOPT_WINDOW || now < window) {
             window = now
             adopted = 0
             adoptedBy.clear()
