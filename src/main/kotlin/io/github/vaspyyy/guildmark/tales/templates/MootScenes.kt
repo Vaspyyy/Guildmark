@@ -23,6 +23,7 @@ import io.github.vaspyyy.guildmark.townsfolk.scenes.Stage.Fx
 import io.github.vaspyyy.guildmark.townsfolk.scenes.Stage.Say
 import io.github.vaspyyy.guildmark.townsfolk.scenes.Turn
 import io.github.vaspyyy.guildmark.townsfolk.scenes.Wait
+import io.github.vaspyyy.guildmark.village.live.days.BellKeeper
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.server.level.ServerLevel
@@ -315,7 +316,9 @@ internal object MootScenes {
         if (ringer != null && bell != null) {
             val bellAt = Vec3.atCenterOf(bell)
             val r = ArrayList<Move>()
-            Sets.beside(level, bellAt, ringer.position(), 1.4)?.let { stand -> r += GoTo({ stand }, Jobs.BRISK, near = 0.8, most = 400) }
+            // Where a village's bellman stands to strike it: off a side the hand rings it from, under it if it hangs high
+            (BellKeeper.standAt(level, bell, ringer.blockPosition(), ringer)?.pos ?: Sets.beside(level, bellAt, ringer.position(), 1.4))
+                ?.let { stand -> r += GoTo({ stand }, Jobs.BRISK, near = 0.4, most = 400) }
             r += Turn({ bellAt })
             r += Barrier("said", most = 900, at = { bellAt })
             r += Beat(Activity.RING_BELL, 60, at = { bellAt }) { p, tick ->

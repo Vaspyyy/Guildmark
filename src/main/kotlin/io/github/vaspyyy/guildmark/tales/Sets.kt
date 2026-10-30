@@ -29,6 +29,7 @@ import io.github.vaspyyy.guildmark.townsfolk.scenes.Turn
 import io.github.vaspyyy.guildmark.townsfolk.scenes.Wait
 import io.github.vaspyyy.guildmark.townsfolk.scenes.Words
 import io.github.vaspyyy.guildmark.townsfolk.streets.Streets
+import io.github.vaspyyy.guildmark.village.live.days.BellKeeper
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.server.level.ServerLevel
@@ -425,8 +426,9 @@ object Sets {
             val m = ArrayList<Move>()
             if (o === ringer && bell != null) {
                 val bellAt = Vec3.atCenterOf(bell)
-                val stand = beside(level, bellAt, o.position(), 1.4)
-                if (stand != null) m += GoTo({ stand }, Jobs.WALK, near = 0.8, most = 400)
+                // Where a village's bellman stands to strike it: off a side the hand rings it from, under it if it hangs high
+                val stand = BellKeeper.standAt(level, bell, o.blockPosition(), o)?.pos ?: beside(level, bellAt, o.position(), 1.4)
+                if (stand != null) m += GoTo({ stand }, Jobs.WALK, near = 0.4, most = 400)
                 m += Turn({ bellAt })
                 m += Barrier("ring", most = 400, at = { bellAt })
                 m += Barrier("toasted", most = 300, pose = Activity.NONE, at = { bellAt })
