@@ -905,8 +905,8 @@ object Informer : Template, TaleVoice, TaleWords.Names {
         val c = turn.ctx() ?: return@TaleOption think()
         val player = turn.player ?: return@TaleOption null
         if (!nameFriend(c, turn.tale, player)) return@TaleOption null
-        // The sergeant's word has no family of its own: the talk's "It's been decided.", the gate yard in grey
-        TaleReply(listOf(TaleSay("tale.ask.decided", stand(turn.tale))), Activity.SIGH, toward = yard(c, turn.tale)).handingBack()
+        // The sergeant's word (Villages V12d's family, where the talk's "It's been decided." stood in), the gate yard in grey
+        TaleReply(listOf(turn.say("to_watch", stand(turn.tale))), Activity.SIGH, toward = yard(c, turn.tale)).handingBack()
     }
 
     /** "Let me speak to Garth first.": the sergeant lets them, and the friend's door is next. */
@@ -914,9 +914,9 @@ object Informer : Template, TaleVoice, TaleWords.Names {
         val c = turn.ctx() ?: return@TaleOption think()
         val player = turn.player ?: return@TaleOption null
         if (!hushFirst(c, turn.tale, player)) return@TaleOption null
-        // The sergeant's word has no family of its own: the talk's "Another time, then.", the friend's door in grey
+        // The sergeant's word (Villages V12d's family, where the talk's "Another time, then." stood in), the friend's door in grey
         val detail = TaleLines.facts("talk.detail.tale.informer.hush_go", TaleLines.lit(givenOf(turn.tale, FRIEND)))
-        TaleReply(listOf(TaleSay("tale.ask.later", detail)), Activity.SIGH, toward = doorOf(c, turn.tale, FRIEND)).handingBack()
+        TaleReply(listOf(turn.say("let_speak", detail)), Activity.SIGH, toward = doorOf(c, turn.tale, FRIEND)).handingBack()
     }
 
     /** "Only the road: the band is listening.": the second pair at the gate, and the leak stops with nobody named. */
@@ -937,7 +937,7 @@ object Informer : Template, TaleVoice, TaleWords.Names {
         val c = turn.ctx() ?: return@TaleOption think()
         val player = turn.player ?: return@TaleOption null
         if (!owns(c, turn.tale, player)) return@TaleOption null
-        TaleReply(listOf(turn.say("sorry")), Activity.SIGH, ends = true)
+        TaleReply(listOf(turn.say("own")), Activity.SIGH, ends = true)
     }
 
     /** "No: the gate, now." (A). */
@@ -945,7 +945,7 @@ object Informer : Template, TaleVoice, TaleWords.Names {
         val c = turn.ctx() ?: return@TaleOption think()
         val player = turn.player ?: return@TaleOption null
         if (!nameFriend(c, turn.tale, player)) return@TaleOption null
-        TaleReply(listOf(turn.say("sorry")), Activity.RECOIL, ends = true)
+        TaleReply(listOf(turn.say("gate")), Activity.RECOIL, ends = true)
     }
 
     // ---- The sergeant's answers, the three's tells, and the friend caught at the drop ----
