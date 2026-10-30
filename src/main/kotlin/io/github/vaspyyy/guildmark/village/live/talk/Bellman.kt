@@ -14,6 +14,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Task
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import io.github.vaspyyy.guildmark.townsfolk.Trades
 import io.github.vaspyyy.guildmark.townsfolk.talk.TalkLines
+import io.github.vaspyyy.guildmark.village.live.VillageBudget
 import io.github.vaspyyy.guildmark.village.live.VillagePerf
 import io.github.vaspyyy.guildmark.village.live.VillagePlaces
 import io.github.vaspyyy.guildmark.village.live.VillageRec
@@ -98,7 +99,7 @@ object Bellman {
         // The hours after midnight are the evening's day still (the day begins at two)
         val clock = hour(level).let { if (it < 2.0) it + 24.0 else it }
         if (clock >= LATEST) return
-        for (rec in Villages.awake(level)) {
+        for (rec in VillageBudget.within("bellman", Villages.awake(level), 150)) {
             val places = Villages.places(level, rec.key) ?: continue
             if (due[rec.key] == c.day) continue
             val word = word(level, rec, places, c)
