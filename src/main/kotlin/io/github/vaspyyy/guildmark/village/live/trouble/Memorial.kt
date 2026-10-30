@@ -348,6 +348,8 @@ object Memorial {
         private var lastTick = -1
         private var set = false
         private var lit = false
+        /** The tick the last steps onto the kneel began, or -1 while they walk to the stone. */
+        private var stepping = -1
 
         override fun tick(p: Townsperson) {
             if (done) return
@@ -363,11 +365,24 @@ object Memorial {
                         at = p.tickCount.coerceAtLeast(1)
                         walker.go(front, Jobs.WALK, near = 0.7)
                     }
-                    val state = walker.tick()
-                    if (state == Walker.State.WALKING && p.tickCount - at < WALK_MOST) return
                     val kneel = Vec3(middle.x + facing.stepX * KNEEL, p.y, middle.z + facing.stepZ * KNEEL)
-                    if (p.position().distanceToSqr(kneel) > 2.0 * 2.0) return finish()
-                    p.navigation.stop()
+                    if (stepping < 0) {
+                        val state = walker.tick()
+                        if (state == Walker.State.WALKING && p.tickCount - at < WALK_MOST) return
+                        if (p.position().distanceToSqr(kneel) > 2.0 * 2.0) return finish()
+                        p.navigation.stop()
+                        stepping = p.tickCount
+                    }
+                    // The last steps onto the kneel, walked, the stone ahead (something in the way: they give it up)
+                    val dx = kneel.x - p.x
+                    val dz = kneel.z - p.z
+                    val off = dx * dx + dz * dz
+                    if (off > ON_SPOT * ON_SPOT && p.tickCount - stepping < STEP_MOST) {
+                        p.moveControl.setWantedPosition(kneel.x, p.y, kneel.z, Jobs.WALK)
+                        p.lookAt(middle)
+                        return
+                    }
+                    if (off > NEAR_ENOUGH * NEAR_ENOUGH) return finish()
                     p.setPos(kneel.x, p.y, kneel.z)
                     p.face(p.yawTo(middle))
                     p.act(Activity.LAY_CANDLE)
@@ -420,6 +435,10 @@ object Memorial {
         companion object {
             const val WALK_MOST = 900
             const val PRAY_TICKS = 200
+            /** The last steps onto the kneel: on it within [ON_SPOT], and given up after [STEP_MOST] ticks if not within [NEAR_ENOUGH]. */
+            const val ON_SPOT = 0.12
+            const val STEP_MOST = 40
+            const val NEAR_ENOUGH = 0.25
         }
     }
 
