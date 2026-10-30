@@ -567,6 +567,29 @@ BELLMAN = {
     "bellman_from_capital": "News from the city, by the wagon!",
     "bellman_from_road": "News from the road, by the pedlar!",
     "bellman_festival_today": "The feast is today! All to the green!",
+    # Villages V12d: the ten cries Villages V6 added (village/live/talk/VillageCry.kt; art/lang/villages_v6.json), in V6's
+    # words but for three that could be untrue when cried
+    # the dead of the last days, where no candle was laid for any of them (their names follow in grey); V6's "We have lost
+    # one of our own.", untrue when two or more are cried together
+    "bellman_died": "We mourn our own.",
+    # a siege, where the village has no wall standing
+    "bellman_siege_held_nowall": "They came at us, and we held! We stand!",
+    # V6's "The horde broke in. Mourn our own, and mend!": a siege is lost when the night runs out with the horde still
+    # about as well as when too many fall, so it may have taken nobody and broken nothing
+    "bellman_siege_lost_nowall": "We could not hold them. Take heart, neighbours!",
+    # the road built while it reaches no capital yet
+    "bellman_built_road_open": "The new road is open!",
+    # the market's news, in the village's own words where the capital's crier names the town or the quay
+    "bellman_fever": "A fever is going round the village! Keep warm, and rest!",
+    "bellman_good_catch": "The boats are coming in full! Fish is cheap!",
+    "bellman_hungry": "The village went hungry yesterday! Food is short!",
+    # the pedlar's day with no pedlar (why follows in grey)
+    "bellman_no_pedlar": "No pedlar this time!",
+    # the village's times back to steady
+    "bellman_times_steady": "Steady times in the village! Neither feast nor famine!",
+    # market day with nothing else to cry; V6's "It's market day! The stalls are out on the green!": a village may have no
+    # stalls (design 7.7, "the stalls, if there are any")
+    "bellman_market_day": "It's market day! Come to the green!",
 }
 CRIER.update(BELLMAN)
 
@@ -680,6 +703,18 @@ VILLAGE = {
     "village_done_stone_walls": "Walls are done. Good stone, to stand a hundred years!",
     "village_done_keep": "The keep's finished! Hurrah for the village!",
     "village_done_trade_road": "That's the road done.",
+    # Villages V12d: the thanks Villages V5 added (village/live/market/VillageSupply.kt; art/lang/villages_v5.json), in V5's
+    # words. The keeper the goods are given to, as a supply is handed over; the hard ones while the village's times are
+    # hard or lean
+    "village_thanks_0": "That's just what we were short of. Thank you!",
+    "village_thanks_1": "Bless you for bringing it. We'll not forget.",
+    "village_thanks_2": "The whole village will be glad of this.",
+    "village_thanks_hard_0": "In times like these? You've no idea what this means to us.",
+    "village_thanks_hard_1": "We were near the end of it. Thank you, truly.",
+    # and one of the grown folk nearby (never a child), calling out as they gather round
+    "village_thanks_folk_0": "Well done, traveller!",
+    "village_thanks_folk_1": "Bless you!",
+    "village_thanks_folk_2": "That'll see us through!",
 }
 
 # Every village line said as talk is (not the bellman's), and the timbres that say it
@@ -928,6 +963,12 @@ VILLAGE_FIXES_FOR = {
     ("village_done_guild_hall", "woman"): [("mˈeɪ ɪt sˈiː", "mˈeɪ ɪtʰ sˈiː")],
     ("village_done_archer_tower", "man"): [("ˈʌp. lˈɛt", "ˈʌp! lˈɛt")],
     ("welcome_3", "man"): [("bˈɛd", "bˈed")],  # "bed", not "bad": the man says a short vowel a step lower than written
+    # Villages V12d's: "could" and "not" both stressed (else "We cannot hold them"), a breath before "round" (else "going
+    # around", in both voices) and the man's "That'll" stressed and set off (else "LCS through")
+    ("bellman_siege_lost_nowall", "man"): [("kʊd nˌɒt", "kˈʊd nˈɒt")],
+    ("bellman_fever", "man"): [("ɡˌəʊɪŋ ɹˈaʊnd", "ɡˌəʊɪŋ, ɹˈaʊnd")],
+    ("bellman_fever", "woman"): [("ɡˌəʊɪŋ ɹˈaʊnd", "ɡˌəʊɪŋ, ɹˈaʊnd")],
+    ("village_thanks_folk_2", "man"): [("ðˌatəl sˈiː", "ðˈatəl, sˈiː")],
 }
 # Written out: "wagon" with the American a and a breath before "again" (else "No wagging again" in every voice), "Pass"
 # with its American a and "would you" run together (else "Pass the bread with you"), "Glad" with the American a (else
@@ -983,6 +1024,10 @@ VILLAGE_DELIVERY = {
     "village_build_mind": dict(level=1.5),
     "village_build_dinner": dict(speed=0.97, level=-1.0),
     "village_done": dict(level=1.5),
+    # the supply's thanks (Villages V12d): the keeper's warm, the hard times' warmer and slower, the folk calling out
+    "village_thanks": dict(speed=0.96, level=0.5),
+    "village_thanks_hard": dict(speed=0.92, pitch=-10, level=0.5),
+    "village_thanks_folk": dict(speed=1.04, pitch=20, level=2.0, wet=0.06),
 }
 VILLAGE_SPEED_FOR = {  # each the man's, misheard at his delivery's speed and right at this
     ("shelter_alert_2", "man"): 1.0,  # "Bolt", not "both"
@@ -993,6 +1038,9 @@ VILLAGE_SPEED_FOR = {  # each the man's, misheard at his delivery's speed and ri
     ("watch_quiet_1", "man"): 0.9,  # "All quiet", not "I'll quiet"
     ("welcome_2", "man"): 0.9,  # "Glad", not "Glide"
     ("village_build_dinner_1", "man"): 0.9,  # "would you", not "with you"
+    # and one for its length (Villages V12d): the old man's hard-times thanks ran 4.66 s at its delivery's 0.92, over the
+    # talk's 4.0 (3.91 s at this, heard right)
+    ("village_thanks_hard_0", "old"): 1.0,
 }
 # How far a line carries (blocks, its sounds.json attenuation_distance) where the default sixteen would leave it quiet:
 # the pedlar's 24 (design 17.4), and what is shouted at the horn, on the wall and to the wagon at the road end

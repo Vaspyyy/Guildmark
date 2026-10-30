@@ -106,6 +106,12 @@ OVERRIDES = {
     "item.guildmark.keepsake.chair.alone",
     # Tales T3, the Sergeant's Friend: B is hushed, so the town's word of it names nobody (8.10; by the lead)
     "fortune.guildmark.reason.tale.informer.hushed",
+    # Villages V12d, the voice pass: reworded as they were recorded, where the typed words could be untrue when said
+    # (several dead, a siege lost with nobody taken, a village with no stalls). The new words are in the fragment that
+    # first gave these lines, and the old ones in the voice table's comments
+    "say.guildmark.bellman_died",
+    "say.guildmark.bellman_siege_lost_nowall",
+    "say.guildmark.bellman_market_day",
 }
 
 

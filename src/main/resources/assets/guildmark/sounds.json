@@ -40228,5 +40228,329 @@
       "guildmark:townsfolk/voice/old/talk.village.shelter.after_0"
     ],
     "subtitle": "say.guildmark.talk.village.shelter.after_0"
+  },
+  "townsfolk.voice.man.bellman_died": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/bellman_died",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.bellman_died"
+  },
+  "townsfolk.voice.man.bellman_siege_held_nowall": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/bellman_siege_held_nowall",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.bellman_siege_held_nowall"
+  },
+  "townsfolk.voice.man.bellman_siege_lost_nowall": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/bellman_siege_lost_nowall",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.bellman_siege_lost_nowall"
+  },
+  "townsfolk.voice.man.bellman_built_road_open": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/bellman_built_road_open",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.bellman_built_road_open"
+  },
+  "townsfolk.voice.man.bellman_fever": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/bellman_fever",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.bellman_fever"
+  },
+  "townsfolk.voice.man.bellman_good_catch": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/bellman_good_catch",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.bellman_good_catch"
+  },
+  "townsfolk.voice.man.bellman_hungry": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/bellman_hungry",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.bellman_hungry"
+  },
+  "townsfolk.voice.man.bellman_no_pedlar": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/bellman_no_pedlar",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.bellman_no_pedlar"
+  },
+  "townsfolk.voice.man.bellman_times_steady": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/bellman_times_steady",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.bellman_times_steady"
+  },
+  "townsfolk.voice.man.bellman_market_day": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/bellman_market_day",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.bellman_market_day"
+  },
+  "townsfolk.voice.man.village_thanks_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/village_thanks_0"
+    ],
+    "subtitle": "say.guildmark.village_thanks_0"
+  },
+  "townsfolk.voice.man.village_thanks_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/village_thanks_1"
+    ],
+    "subtitle": "say.guildmark.village_thanks_1"
+  },
+  "townsfolk.voice.man.village_thanks_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/village_thanks_2"
+    ],
+    "subtitle": "say.guildmark.village_thanks_2"
+  },
+  "townsfolk.voice.man.village_thanks_hard_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/village_thanks_hard_0"
+    ],
+    "subtitle": "say.guildmark.village_thanks_hard_0"
+  },
+  "townsfolk.voice.man.village_thanks_hard_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/village_thanks_hard_1"
+    ],
+    "subtitle": "say.guildmark.village_thanks_hard_1"
+  },
+  "townsfolk.voice.man.village_thanks_folk_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/village_thanks_folk_0"
+    ],
+    "subtitle": "say.guildmark.village_thanks_folk_0"
+  },
+  "townsfolk.voice.man.village_thanks_folk_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/village_thanks_folk_1"
+    ],
+    "subtitle": "say.guildmark.village_thanks_folk_1"
+  },
+  "townsfolk.voice.man.village_thanks_folk_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/village_thanks_folk_2"
+    ],
+    "subtitle": "say.guildmark.village_thanks_folk_2"
+  },
+  "townsfolk.voice.woman.bellman_died": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/bellman_died",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.bellman_died"
+  },
+  "townsfolk.voice.woman.bellman_siege_held_nowall": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/bellman_siege_held_nowall",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.bellman_siege_held_nowall"
+  },
+  "townsfolk.voice.woman.bellman_siege_lost_nowall": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/bellman_siege_lost_nowall",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.bellman_siege_lost_nowall"
+  },
+  "townsfolk.voice.woman.bellman_built_road_open": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/bellman_built_road_open",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.bellman_built_road_open"
+  },
+  "townsfolk.voice.woman.bellman_fever": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/bellman_fever",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.bellman_fever"
+  },
+  "townsfolk.voice.woman.bellman_good_catch": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/bellman_good_catch",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.bellman_good_catch"
+  },
+  "townsfolk.voice.woman.bellman_hungry": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/bellman_hungry",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.bellman_hungry"
+  },
+  "townsfolk.voice.woman.bellman_no_pedlar": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/bellman_no_pedlar",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.bellman_no_pedlar"
+  },
+  "townsfolk.voice.woman.bellman_times_steady": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/bellman_times_steady",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.bellman_times_steady"
+  },
+  "townsfolk.voice.woman.bellman_market_day": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/bellman_market_day",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "say.guildmark.bellman_market_day"
+  },
+  "townsfolk.voice.woman.village_thanks_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/village_thanks_0"
+    ],
+    "subtitle": "say.guildmark.village_thanks_0"
+  },
+  "townsfolk.voice.woman.village_thanks_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/village_thanks_1"
+    ],
+    "subtitle": "say.guildmark.village_thanks_1"
+  },
+  "townsfolk.voice.woman.village_thanks_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/village_thanks_2"
+    ],
+    "subtitle": "say.guildmark.village_thanks_2"
+  },
+  "townsfolk.voice.woman.village_thanks_hard_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/village_thanks_hard_0"
+    ],
+    "subtitle": "say.guildmark.village_thanks_hard_0"
+  },
+  "townsfolk.voice.woman.village_thanks_hard_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/village_thanks_hard_1"
+    ],
+    "subtitle": "say.guildmark.village_thanks_hard_1"
+  },
+  "townsfolk.voice.woman.village_thanks_folk_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/village_thanks_folk_0"
+    ],
+    "subtitle": "say.guildmark.village_thanks_folk_0"
+  },
+  "townsfolk.voice.woman.village_thanks_folk_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/village_thanks_folk_1"
+    ],
+    "subtitle": "say.guildmark.village_thanks_folk_1"
+  },
+  "townsfolk.voice.woman.village_thanks_folk_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/village_thanks_folk_2"
+    ],
+    "subtitle": "say.guildmark.village_thanks_folk_2"
+  },
+  "townsfolk.voice.old.village_thanks_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/village_thanks_0"
+    ],
+    "subtitle": "say.guildmark.village_thanks_0"
+  },
+  "townsfolk.voice.old.village_thanks_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/village_thanks_1"
+    ],
+    "subtitle": "say.guildmark.village_thanks_1"
+  },
+  "townsfolk.voice.old.village_thanks_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/village_thanks_2"
+    ],
+    "subtitle": "say.guildmark.village_thanks_2"
+  },
+  "townsfolk.voice.old.village_thanks_hard_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/village_thanks_hard_0"
+    ],
+    "subtitle": "say.guildmark.village_thanks_hard_0"
+  },
+  "townsfolk.voice.old.village_thanks_hard_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/village_thanks_hard_1"
+    ],
+    "subtitle": "say.guildmark.village_thanks_hard_1"
+  },
+  "townsfolk.voice.old.village_thanks_folk_0": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/village_thanks_folk_0"
+    ],
+    "subtitle": "say.guildmark.village_thanks_folk_0"
+  },
+  "townsfolk.voice.old.village_thanks_folk_1": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/village_thanks_folk_1"
+    ],
+    "subtitle": "say.guildmark.village_thanks_folk_1"
+  },
+  "townsfolk.voice.old.village_thanks_folk_2": {
+    "sounds": [
+      "guildmark:townsfolk/voice/old/village_thanks_folk_2"
+    ],
+    "subtitle": "say.guildmark.village_thanks_folk_2"
   }
 }
