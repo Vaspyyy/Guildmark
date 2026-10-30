@@ -17,5 +17,81 @@
       "topic.halvard.0": {"take": "a", "prompt": "[quietly, remembering] One, maybe. Halvard. Best sword I ever carried a shield for. When the King fell, Halvard stayed at his post... and they tell me he's standing there still."},
       "topic.halvard.1": {"take": "a", "prompt": "[dark] Dead men don't keep oaths. Something else is keeping his for him. [warning] If you ever meet him, don't stop to listen. Hit him, and keep hitting him. [sad] [softly] It's the only kindness left."}
     }
+  },
+  "wren": {
+    "voice": "Zibby (ElevenLabs voice library)",
+    "voice_id": "wIzYfKZE8c87XZD7bDLH",
+    "model": "eleven_v4",
+    "style": {"pitch": 0, "rt60": 0.45, "wet": 0.06, "grit": 0.0, "ghost": false},
+    "lines": {
+      "intro": {"take": "a", "prompt": "[surprised] Oh! [excited] You're the one with the guild contracts, aren't you? Wren Ashdown, cartographer. [sheepish] Well, I will be, once I finish a map anyone believes."},
+      "step0": {"take": "a", "prompt": "[eager] I'm charting where the Old Guild hid things. [sheepish] Problem is, I've drawn so many maps I've run out of paper. [conspiratorial] Bring me twelve sheets and I'll tell you what I'm really after."},
+      "step1": {"take": "a", "prompt": "[whispers] Right, the secret: [excited] the Hollow King's crown broke into seven shards, and I think one is buried in a spider den near here. [annoyed] The spiders keep eating my survey stakes, though. [hopeful] Thin them out?"},
+      "step2": {"take": "a", "prompt": "[nervous] Found the den. It goes deep, and something big lives at the bottom. [quickly] You go first. I'll take notes. [laughs nervously] Very brave notes."},
+      "waiting": {"take": "a", "prompt": "[cheerful] Still at it? Take your time. [impatient] Actually, don't. I'm terribly impatient."},
+      "finale": {"take": "a", "prompt": "[excited] You found it! A real shard of the crown. [nervous] Seven of these together and the Hollow King wakes, so let's never put them together, yes? [warmly] Keep it. You'll mind it better than I would."},
+      "done": {"take": "a", "prompt": "[determined] Six shards left out there. I'm marking every rumour on my map. [warmly] When you're ready, the world will be waiting."},
+      "topic.maps.0": {"take": "a", "prompt": "[defensive] Every map I've ever sold was wrong. Not my fault! [exasperated] The villages stay put, but the roads wander off, and a map is mostly roads."},
+      "topic.maps.1": {"take": "a", "prompt": "[dreamy] The Old Guild had perfect maps, apparently. Nobody's seen one in three hundred years. [proudly] So I'm drawing my own, and mine will be better, because mine will have notes in the margins."},
+      "topic.king.0": {"take": "a", "prompt": "[storytelling] Everyone knows the song. A Warden so afraid of dying that he carved out his own heart and set a crown in its place. [sarcastic] Lovely bedtime story."},
+      "topic.king.1": {"take": "a", "prompt": "[curious] The trouble is, the song stops too early. Something happened to that crown after they beat him, and nobody ever wrote down what. [mischievously] I have a theory. I always have a theory."}
+    }
+  },
+  "ilsa": {
+    "voice": "Blondie - Gentle & Kind (ElevenLabs voice library)",
+    "voice_id": "gmv0PPPs8m6FEf03PImj",
+    "model": "eleven_v4",
+    "style": {"pitch": 0, "rt60": 1.6, "wet": 0.13, "grit": 0.0, "ghost": false},
+    "lines": {
+      "intro": {"take": "a", "prompt": "[apologetic] Ah, forgive me, I didn't hear you come in. [softly] I'm Ilsa. I study the things most clerics pray never to hear of. [hushed] Chiefly, the Hollow King."},
+      "step0": {"take": "a", "prompt": "[uneasy] The skeletons around here have started humming, all on the same note. [gently] Bring down ten of them and I'll listen to what's left."},
+      "step1": {"take": "a", "prompt": "[worried] It's a summons. Something is calling the old court back together. [thoughtful] Amethyst holds a sound for a long time, so with eight shards I can catch the echo and learn where it comes from."},
+      "step2": {"take": "a", "prompt": "[serious] The echo leads to a hollow where a crone keeps the King's old rites. She was one of his courtiers. [quietly] If she falls, the call goes quiet. [pause] For now."},
+      "waiting": {"take": "a", "prompt": "[anxious] The bones are still humming. [softly] Please hurry, if you can."},
+      "finale": {"take": "a", "prompt": "[relieved] The humming has stopped. [warmly] Thank you. I've copied out what I learned about the King and his court, and you should have it. [gently] And take this. I'd feel better knowing you carry it."},
+      "done": {"take": "a", "prompt": "[thoughtful] The court is quiet, but quiet is not gone. [softly] I'll keep listening."},
+      "topic.bell.0": {"take": "a", "prompt": "[earnest] My order rings a bell that makes no sound. [embarrassed] Please don't laugh. [gently] A bell can be heard without being loud, if you know how to listen."},
+      "topic.bell.1": {"take": "a", "prompt": "[softly] The dead have very good ears. When we ring it, the restless ones lie down again. [pause] Usually. [troubled] The Hollow King's court has never once listened."},
+      "topic.court.0": {"take": "a", "prompt": "[reciting] Six courtiers, each given a den to rule: the Broodmother, the Barrow Lord, the Drowned Herald, the Hollow Crone, the Frost Regent and the Ash Warden."},
+      "topic.court.1": {"take": "a", "prompt": "[wry] I've read everything ever written about them. It isn't much, [dryly] and most of it was written by people who were running at the time."}
+    }
+  },
+  "pip": {
+    "voice": "James - Energetic, Charismatic, British Male Narrator (ElevenLabs voice library)",
+    "voice_id": "yBXjgyIwt8fF3slvxWZi",
+    "model": "eleven_v4",
+    "style": {"pitch": 0, "rt60": 0.5, "wet": 0.06, "grit": 0.0, "ghost": false},
+    "lines": {
+      "intro": {"take": "a", "prompt": "[delighted] Ah! An adventurer! An actual one, with dents! [grandly] I'm Pip Larkspur, bard of the high roads, [sheepish] and I've sung the same three songs for a year. I need new material. [charming] You need someone to make you famous. We're perfect for each other."},
+      "step0": {"take": "a", "prompt": "[dramatic] First, the small matter of my lute. [indignant] Some brute sat on it and every string snapped. [pleading] A dozen strings, please. Spider silk if you can, they're the only ones that hold a tune."},
+      "step1": {"take": "a", "prompt": "[theatrical] Now, a ballad needs a monster. [ominous] Something green, silent and horribly sudden. [cheerful] Go and blow up, [catches himself] ah, no, stop half a dozen creepers, and remember what it felt like. [eager] I'll need details."},
+      "step2": {"take": "a", "prompt": "[grandly] Every great ballad ends in a barrow. There's a dead lord in one out past the hills, and no one's ever written a verse about him that wasn't a lament. [passionate] Give me a triumph instead."},
+      "waiting": {"take": "a", "prompt": "[exasperated] The song can't finish itself! [shooing] Off you go, and do something worth rhyming."},
+      "finale": {"take": "a", "prompt": "[triumphant] There it is. Strings, a monster, and a barrow. That's a ballad! [excited] Here, I wrote it all down, every deed you've done. I'll sing it in every tavern from here to the coast. [warmly] Come back when you've done something new and I'll write you another verse."},
+      "done": {"take": "a", "prompt": "[cheerful] Back for another verse? [playful] Do something worth singing about, and I'll be here."},
+      "topic.songs.0": {"take": "a", "prompt": "[proudly] Three! The one about the miller's daughter, [pause] the one about the other miller's daughter, [pause] and the one about the goat."},
+      "topic.songs.1": {"take": "a", "prompt": "[proudly] The goat one is my finest work. [wincing] Audiences disagree, loudly, and sometimes with vegetables. [sheepish] Which is why I need you."},
+      "topic.fame.0": {"take": "a", "prompt": "[conspiratorial] Here's how fame works. You do something brave. I make it rhyme. A hundred taverns sing it, [knowing] and in ten years nobody remembers what really happened, only the song."},
+      "topic.fame.1": {"take": "a", "prompt": "[cheerful] So you do the brave part, and leave the truth to me. Everybody wins. [smug] Especially me."}
+    }
+  },
+  "maren": {
+    "voice": "Beatrice - Mature Female Storyteller (ElevenLabs voice library)",
+    "voice_id": "kkPJzQOWz2Oz9cUaEaQd",
+    "model": "eleven_v4",
+    "style": {"pitch": 0, "rt60": 3.2, "wet": 0.28, "grit": 0.0, "ghost": true},
+    "lines": {
+      "scene0.p0": {"take": "a", "prompt": "[calm] [hollow] Don't reach for your sword. I'm not one of his."},
+      "scene0.p1": {"take": "a", "prompt": "[weary] My name is Maren. The old ledgers call me the Last Warden. [solemn] I tore the last page out of the Ledger of Names so the King could never read the names of those who broke him, and that page has kept me here ever since. [whispers] Not alive. Not gone."},
+      "scene0.p2": {"take": "a", "prompt": "[grave] You carry three shards of his crown. Every one you take weakens his court, [warning] but it wakes him a little more too. [solemn] The shards can only be broken where he was crowned: the Hollow Throne."},
+      "scene0.p3": {"take": "a", "prompt": "[resolute] Find all seven. When you have them, I'll be waiting at the throne, and we'll finish what my Wardens started."},
+      "scene1.p0": {"take": "a", "prompt": "[relieved] [softly] You came. All seven. I can feel them from here."},
+      "scene1.p1": {"take": "a", "prompt": "[urgent] When you set them on the Shattering Stone, he'll rise to take them back. He'll call his knights and the echoes of every courtier you've killed, [grim] and when the crown starts to burn, so will the sky."},
+      "scene1.p2": {"take": "a", "prompt": "[weary] I can't hold a sword anymore, but I can still draw a bow. [commanding] Stand your ground and break his crown."},
+      "scene2.p0": {"take": "a", "prompt": "[exhausted] [relieved] It's done. The crown is dust, [softly] and the page is finally quiet."},
+      "scene2.p1": {"take": "a", "prompt": "[warmly] Your name is written on it now, under mine. [solemn] Keep the roads, Warden. [softly] The road is the only home we keep."},
+      "topic.oath.0": {"take": "a", "prompt": "[softly] The road is the only home we keep. [wistful] That's the line everyone remembers."},
+      "topic.oath.1": {"take": "a", "prompt": "[reciting] The rest goes: and when the road is dark, we are the light upon it, and when the light goes out, we are the road. [wistful] We were very young when we wrote it. [quietly] We meant every word."}
+    }
   }
 }
