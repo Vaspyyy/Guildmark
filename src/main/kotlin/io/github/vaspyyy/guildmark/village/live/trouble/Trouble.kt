@@ -314,12 +314,16 @@ object Trouble {
     /**
      * [p] says [line] (a key under say.guildmark.) for as long as its take lasts, to players within [hearing] (32 or more for the horn's
      * and the wall's shouts, which carry); false if they have no voice for it or nobody is near enough to hear. With another's line
-     * being said near them it waits its turn ([Turns]: said once that one is heard out), and counts as said.
+     * being said near them it waits its turn ([Turns]: said once that one is heard out), and counts as said; a line said only to a
+     * player in hearing (not [force]d) never waits, where it might go unheard: with the floor taken it is unsaid, for the caller to
+     * try again.
      */
     fun say(p: Townsperson, line: String, hearing: Double = HEARD, force: Boolean = true): Boolean {
         if (!fits(p, line)) return false
         val ticks = TalkLines.ticks(line).toLong().takeIf { it > 0 } ?: Townsperson.SPEECH_TICKS
-        return Turns.say(p, ticks.toInt()) { p.isAlive && p.say(line, force = force, hearing = hearing, ticks = ticks + 10L) }
+        val said = { p.isAlive && p.say(line, force = force, hearing = hearing, ticks = ticks + 10L) }
+        if (!force) return Turns.freeBy(p) && said().also { if (it) Turns.hold(p, ticks.toInt()) }
+        return Turns.say(p, ticks.toInt(), said)
     }
 
     /** How far the trouble's ordinary lines are heard; the shouts carry [SHOUT]. */
