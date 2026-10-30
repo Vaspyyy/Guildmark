@@ -46,20 +46,25 @@ object Golems {
         return level.getEntities(EntityTypes.IRON_GOLEM, AABB(bell).inflate(r, 16.0, r)) { it.isAlive }.size
     }
 
-    /** [rec] on town day [day]: at night, once, a golem made if it has too few and nobody would see it come. */
-    internal fun look(level: ServerLevel, rec: VillageRec, day: Long) {
-        if (!Trouble.golemsOn() || !Trouble.night(level) || !VillageAdopt.adopting(rec)) return
+    /**
+     * [rec] on town day [day]: at night, once, a golem made if it has too few and nobody would see it come; whether one was. The look
+     * makes one a look at most, for all the villages (the search for open ground and the golem set down are a millisecond or so),
+     * so a night with many villages short of one sets them down a look apart, not several in one tick.
+     */
+    internal fun look(level: ServerLevel, rec: VillageRec, day: Long): Boolean {
+        if (!Trouble.golemsOn() || !Trouble.night(level) || !VillageAdopt.adopting(rec)) return false
         val kept = TroubleData.peek(level)?.peek(rec.key)
-        if (kept?.golemNight == day) return
+        if (kept?.golemNight == day) return false
         val bell = BlockPos.of(rec.key)
-        if (!level.isPositionEntityTicking(bell)) return
-        if (count(level, rec) >= wanted(level, rec)) return
-        val at = spot(level, rec, unseen = true) ?: return
-        if (!make(level, at)) return
+        if (!level.isPositionEntityTicking(bell)) return false
+        if (count(level, rec) >= wanted(level, rec)) return false
+        val at = spot(level, rec, unseen = true) ?: return false
+        if (!make(level, at)) return false
         val data = TroubleData.get(level)
         data.of(rec.key).golemNight = day
         data.setDirty()
         Trouble.log(level, rec, "an iron golem made at ${at.toShortString()} (by the record, at night)")
+        return true
     }
 
     /** `village golem`: the top-up now, whatever the hour or the night: the golem made, or why not. */

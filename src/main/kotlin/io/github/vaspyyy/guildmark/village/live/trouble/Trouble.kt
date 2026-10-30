@@ -135,13 +135,14 @@ object Trouble {
         if (now - looked < LOOK && now >= looked) return
         looked = now
         val day = VillageBoards.day(level)
+        var golem = false
         for (rec in VillageBudget.within("trouble", Villages.awake(level), 100)) {
             guarded("the day of ${rec.name}") { if ((TroubleData.peek(level)?.peek(rec.key)?.day ?: closed[rec.key]) != day) daily(level, rec, day) }
             guarded("the chronicle of ${rec.name}") { built(level, rec, day) }
             guarded("the memorial of ${rec.name}") { Memorial.look(level, rec, day) }
             guarded("the watch of ${rec.name}") { Watch.look(level, rec, day) }
             guarded("the mend of ${rec.name}") { Mend.look(level, rec, day) }
-            guarded("the golems of ${rec.name}") { Golems.look(level, rec, day) }
+            guarded("the golems of ${rec.name}") { if (!golem) golem = Golems.look(level, rec, day) }
         }
     }
 
