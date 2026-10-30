@@ -18,12 +18,9 @@ import io.github.vaspyyy.guildmark.village.live.links.Greeter
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.core.particles.BlockParticleOption
-import net.minecraft.core.particles.ItemParticleOption
 import net.minecraft.core.particles.ParticleTypes
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
-import net.minecraft.sounds.SoundEvents
-import net.minecraft.sounds.SoundSource
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.block.BellBlock
 import net.minecraft.world.level.block.DoorBlock
@@ -33,8 +30,8 @@ import net.minecraft.world.phys.Vec3
  * One of a village's folk sheltering (living-world/villages/design.md 11.2): the director of their townsperson while it lasts, as
  * a lamplighter's is. In turn:
  *
- * - ALERT: they stop, drop what they carry, turn to the trouble; the first two to hear shout (10 to 30 ticks, the farther the later),
- *   the second once the first is heard out ([Turns]);
+ * - ALERT: they stop, set down what they carry ([drop]), turn to the trouble; the first two to hear shout (10 to 30 ticks, the
+ *   farther the later), the second once the first is heard out ([Turns]);
  * - RUN: to their door ([Shelter.havenFor]) at 0.75 (a child at 1.0, to the door their household's grown-up runs for), at most 400
  *   ticks; with no door within reach they cower where they stand, back to a wall;
  * - IN: the first in steps inside and turns to the door ([Shelter.Haven.stand]: its inner face half a block ahead), waiting a moment
@@ -74,6 +71,8 @@ class Sheltering internal constructor(internal val called: Shelter.Called, val p
     private var phase = 0
     /** The tick of ALERT they shouted on, or -1 before they have. */
     private var shoutAt = -1
+    /** Setting down what they carried, at the alert (PUT_DOWN). */
+    private var settingDown = false
     /** Cowering where they stood: the way their back is to (a wall). */
     private var wall: Direction? = null
     /** The stand at the door, as the bolter or the opener. */
@@ -154,7 +153,13 @@ class Sheltering internal constructor(internal val called: Shelter.Called, val p
             since = p.tickCount
             p.navigation.stop()
             p.face(p.yawTo(called.toward()))
-            drop(level)
+            settingDown = drop()
+            if (!settingDown) p.act(Activity.NONE)
+        }
+        if (settingDown) {
+            if (t < Activity.PUT_DOWN.ticks) return
+            settingDown = false
+            p.carried = ItemStack.EMPTY
             p.act(Activity.NONE)
         }
         // The shout, in its turn: the second of the two once the first one's is heard out (or not at all, if it never is in time)
@@ -167,13 +172,16 @@ class Sheltering internal constructor(internal val called: Shelter.Called, val p
         if (t >= alert && (!shout || shoutAt >= 0 && t >= shoutAt + SHOUTED || t >= SHOUT_WAIT)) run(level)
     }
 
-    /** What they carried set down where they stand (a basket, a sack): the goods' crumbs scattered, the hands free to run. */
-    private fun drop(level: ServerLevel) {
-        val held = p.carried
-        if (held.isEmpty) return
-        level.sendParticles(ItemParticleOption(ParticleTypes.ITEM, held.item), p.x, p.y + 0.4, p.z, 6, 0.2, 0.1, 0.2, 0.05)
-        level.playSound(null, p.x, p.y, p.z, SoundEvents.ITEM_PICKUP, SoundSource.NEUTRAL, 0.3f, 0.6f)
-        p.carried = ItemStack.EMPTY
+    /**
+     * What they carry (a basket, a sack) set down where they stand: PUT_DOWN, the goods on the ground from its moment (the client's
+     * thud and dust), the hands free to run; true if they had anything. It is not left lying once they go: what townsfolk carry is
+     * drawn in the hands and on the ground by the clip, not an item in the world, and a real item set down would be goods no store
+     * gave up, there for a player or a hopper to take.
+     */
+    private fun drop(): Boolean {
+        if (p.carried.isEmpty) return false
+        p.act(Activity.PUT_DOWN)
+        return true
     }
 
     private fun run(level: ServerLevel) {
@@ -185,11 +193,11 @@ class Sheltering internal constructor(internal val called: Shelter.Called, val p
         p.act(Activity.FLEE)
         if (h.contains(p.blockPosition())) return enter(level)
         walker().go(h.door.outside, if (p.role == TownRole.CHILD) CHILD_PACE else Jobs.RUN, near = 1.0)
-        // A grown-up with a child of their home calls them along; a child cries out
+        // A grown-up with a child of their home near them calls them along; a child cries out
         val kin = Shelter.household(level, this)
         when {
             p.role == TownRole.CHILD -> if (p.random.nextInt(3) == 0) Trouble.say(p, "shelter_run_1")
-            kin.any { it.p.role == TownRole.CHILD } -> Trouble.say(p, "shelter_run_2")
+            kin.any { it.p.role == TownRole.CHILD && it.p.distanceToSqr(p) < CALL_ALONG * CALL_ALONG } -> Trouble.say(p, "shelter_run_2")
             p.random.nextInt(6) == 0 -> Trouble.say(p, "shelter_run_1")
         }
     }
@@ -606,6 +614,8 @@ class Sheltering internal constructor(internal val called: Shelter.Called, val p
         private const val WAIT_BEHIND = 60
         private const val KNOCK_AGAIN = 30
         private const val LET_SELF_IN = 60
+        /** How near a child of their home must be for a grown-up to call them along. */
+        private const val CALL_ALONG = 8.0
         /** The longest a shouter waits for their turn to shout (then they run without), and how long the shout holds them. */
         private const val SHOUT_WAIT = 80
         private val SHOUTED = Activity.SHOUT.ticks - 6
