@@ -73,6 +73,27 @@ class TroubleData(val villages: MutableMap<Long, Kept> = HashMap()) : SavedData(
     /** [key]'s, if there is one. */
     fun peek(key: Long): Kept? = villages[key]
 
+    /**
+     * The clock set back [days] days (from `Comings.setBack`, by way of [Trouble]): every town day kept here goes back with it, none
+     * below zero, so a candle burns its week, a mend sets out within its three days and a guard comes on their night, all from the
+     * clock's day and not from the day it was before.
+     */
+    fun back(days: Long) {
+        if (days <= 0L || villages.isEmpty()) return
+        fun b(d: Long): Long = if (d == NONE) NONE else maxOf(0L, d - days)
+        for (k in villages.values) {
+            k.candles.replaceAll { Candle(it.name, b(it.day)) }
+            k.waiting.replaceAll { Mourned(it.name, it.id, it.home, b(it.day)) }
+            k.mendFrom = b(k.mendFrom)
+            k.mendBegun = b(k.mendBegun)
+            k.golemNight = b(k.golemNight)
+            k.due.replaceAll { Due(b(it.day), it.why) }
+            k.taken.replaceAll { Taken(it.id, it.name, b(it.day), it.band) }
+            k.day = b(k.day)
+        }
+        setDirty()
+    }
+
     companion object {
         const val NONE = Long.MIN_VALUE
 

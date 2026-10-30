@@ -6,6 +6,7 @@ import io.github.vaspyyy.guildmark.advance.Advance
 import io.github.vaspyyy.guildmark.block.VillageBoards
 import io.github.vaspyyy.guildmark.homestead.BuilderCrew
 import io.github.vaspyyy.guildmark.townsfolk.Activity
+import io.github.vaspyyy.guildmark.townsfolk.Comings
 import io.github.vaspyyy.guildmark.townsfolk.Days
 import io.github.vaspyyy.guildmark.townsfolk.Director
 import io.github.vaspyyy.guildmark.townsfolk.Lamplighter
@@ -86,6 +87,16 @@ object Trouble {
         Memorial.register()
         VillageTroubleCommand.init()
         VillageInfoCommand.section(VillageInfoCommand.Section { level, rec -> Deaths.lines(level, rec) })
+        Comings.listen(object : Comings.Listener {
+            override fun back(level: ServerLevel, days: Long) = takeBack(level, days)
+        })
+    }
+
+    /** The clock set back [days] days (`Comings.setBack`): the days kept ([TroubleData.back]) and the days closed with nothing kept go back with it. */
+    private fun takeBack(level: ServerLevel, days: Long) {
+        if (days <= 0L || !on()) return
+        TroubleData.peek(level)?.back(days)
+        closed.replaceAll { _, d -> maxOf(0L, d - days) }
     }
 
     private fun forget() {
