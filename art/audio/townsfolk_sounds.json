@@ -3596,6 +3596,21 @@
     ],
     "subtitle": "say.guildmark.watch_quiet_2"
   },
+  "townsfolk.voice.man.watch_arrive": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/watch_arrive"
+    ],
+    "subtitle": "say.guildmark.watch_arrive"
+  },
+  "townsfolk.voice.man.shelter_taken": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/shelter_taken",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "say.guildmark.shelter_taken"
+  },
   "townsfolk.voice.man.village_stage_posts": {
     "sounds": [
       "guildmark:townsfolk/voice/man/village_stage_posts"
@@ -7103,6 +7118,21 @@
     ],
     "subtitle": "say.guildmark.watch_quiet_2"
   },
+  "townsfolk.voice.woman.watch_arrive": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/watch_arrive"
+    ],
+    "subtitle": "say.guildmark.watch_arrive"
+  },
+  "townsfolk.voice.woman.shelter_taken": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/shelter_taken",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "say.guildmark.shelter_taken"
+  },
   "townsfolk.voice.woman.village_stage_posts": {
     "sounds": [
       "guildmark:townsfolk/voice/woman/village_stage_posts"
@@ -8341,6 +8371,15 @@
       "guildmark:townsfolk/voice/old/shelter_lost"
     ],
     "subtitle": "say.guildmark.shelter_lost"
+  },
+  "townsfolk.voice.old.shelter_taken": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/old/shelter_taken",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "say.guildmark.shelter_taken"
   },
   "townsfolk.voice.old.village_stage_posts": {
     "sounds": [

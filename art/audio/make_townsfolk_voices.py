@@ -647,6 +647,11 @@ SHELTER = {
     # every reading of the man's
     "watch_quiet_1": "All quiet on this wall.",
     "watch_quiet_2": "Nothing stirring.",
+    # The two lines Villages V10 left for a voice part (village/live/trouble/; the loose ends' part): a new guard walking in
+    # off the road to keep the watch, once, as they come in among the houses; and one of the folk a raiding band puts on a
+    # rope as it makes off, crying out as they are dragged from the shelter (never a child: the band takes none)
+    "watch_arrive": "I'm here for the watch.",
+    "shelter_taken": "No! Let me go!",
 }
 SHELTER_TIMBRES = {
     "shelter_alert_1": ("man", "woman"), "shelter_alert_2": ("man", "woman", "old"), "shelter_alert_3": ("man", "woman"),
@@ -655,6 +660,7 @@ SHELTER_TIMBRES = {
     "shelter_hush_3": ("woman", "old"), "shelter_hush_4": ("man", "old"), "shelter_child_1": ("child",),
     "shelter_child_2": ("child",), "shelter_allclear_1": ("man", "woman", "old"), "shelter_allclear_2": ("man", "woman", "old"),
     "shelter_lost": ("man", "woman", "old"),
+    "shelter_taken": ("man", "woman", "old"),
 }  # the watch's are the man's and the woman's
 
 # The crews, the carters and the neighbours, in the man's, the woman's and the old man's voices: a crew's stage lines for
@@ -969,6 +975,9 @@ VILLAGE_FIXES_FOR = {
     ("bellman_fever", "man"): [("ɡˌəʊɪŋ ɹˈaʊnd", "ɡˌəʊɪŋ, ɹˈaʊnd")],
     ("bellman_fever", "woman"): [("ɡˌəʊɪŋ ɹˈaʊnd", "ɡˌəʊɪŋ, ɹˈaʊnd")],
     ("village_thanks_folk_2", "man"): [("ðˌatəl sˈiː", "ðˈatəl, sˈiː")],
+    # the loose ends': the hostage's "No!" with the American o and a breath after it (else "Now let me go", in both voices)
+    ("shelter_taken", "man"): [("nˈəʊ! lˈɛt", "nˈoʊ!  lˈɛt")],
+    ("shelter_taken", "woman"): [("nˈəʊ! lˈɛt", "nˈoʊ!  lˈɛt")],
 }
 # Written out: "wagon" with the American a and a breath before "again" (else "No wagging again" in every voice), "Pass"
 # with its American a and "would you" run together (else "Pass the bread with you"), "Glad" with the American a (else
@@ -1028,6 +1037,10 @@ VILLAGE_DELIVERY = {
     "village_thanks": dict(speed=0.96, level=0.5),
     "village_thanks_hard": dict(speed=0.92, pitch=-10, level=0.5),
     "village_thanks_folk": dict(speed=1.04, pitch=20, level=2.0, wet=0.06),
+    # the loose ends': the new guard's word at the level of the watch's own spoken lines (the salute's), plainly; the
+    # hostage's cry shouted as the knock at a bolted door is, a little higher
+    "watch_arrive": dict(level=0.5),
+    "shelter_taken": dict(speed=1.06, pitch=40, level=3.0, wet=0.08),
 }
 VILLAGE_SPEED_FOR = {  # each the man's, misheard at his delivery's speed and right at this
     ("shelter_alert_2", "man"): 1.0,  # "Bolt", not "both"
@@ -1048,6 +1061,7 @@ VILLAGE_REACH = dict({k: 24 for k in PEDLAR},
                      **{k: 32 for k in SHELTER if k.startswith(("shelter_alert", "shelter_run", "shelter_knock", "watch_wall",
                                                                  "watch_cheer"))},
                      **{k: 24 for k in VILLAGE if k.startswith("cart_greet")})
+VILLAGE_REACH["shelter_taken"] = 32  # the hostage's cry carries as the shouts at the horn do (the loose ends')
 
 
 def village_delivery(key):

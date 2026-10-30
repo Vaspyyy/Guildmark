@@ -468,6 +468,8 @@
   "say.guildmark.watch_salute": "Well fought.",
   "say.guildmark.watch_quiet_1": "All quiet on this wall.",
   "say.guildmark.watch_quiet_2": "Nothing stirring.",
+  "say.guildmark.watch_arrive": "I'm here for the watch.",
+  "say.guildmark.shelter_taken": "No! Let me go!",
   "say.guildmark.village_stage_posts": "Posts are in! Hurrah!",
   "say.guildmark.village_stage_rails": "Rails are on!",
   "say.guildmark.village_stage_mended": "That's mended. Good as new.",

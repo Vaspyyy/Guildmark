@@ -826,6 +826,18 @@ crier's -19.1 LUFS, the thanks at -20.2 and the tales' lines at -20.6 to -22.9 a
 # then process each with the same --keys, fragments, merge_lang, table and merge_lang again, as above
 ```
 
+The villages' loose ends added the two lines Villages V10 left for a voice part, at the end of `SHELTER` (5 takes): a
+new guard's "I'm here for the watch." (`watch_arrive`, the watch's man and woman, at the salute's level) and a
+hostage's "No! Let me go!" (`shelter_taken`, the man's, the woman's and the old man's, shouted as the knock at a bolted
+door is and heard 32 blocks off). Heard back right with Whisper base.en once the man's and the woman's "No!" had the
+American o and a breath after it (else "Now let me go"); the guard's -21.1 and -21.6 LUFS against the salute's -21.4 and
+-21.8, the hostage's -18.4 to -18.1 against the knock's -18.1 and -18.9; none over -1.0 dBTP or 1.7 s.
+
+```
+<venv>/bin/python -I -B art/audio/make_townsfolk_voices.py tts --model <dl>/kokoro-v1.0.onnx --voices <dl>/voices-v1.0.bin --out <raw-dir> --keys '^(watch_arrive|shelter_taken)$'
+# then process with the same --keys, fragments, merge_lang, table and merge_lang again, as above
+```
+
 ### Kitchen voices
 
 `kitchen_lines.py` holds Hearthcraft's talk families (living-world/cook/design.md sections 8.5 and 11.5): what the

@@ -41326,5 +41326,44 @@
       "guildmark:townsfolk/voice/old/talk.tale.yes_2"
     ],
     "subtitle": "say.guildmark.talk.tale.yes_2"
+  },
+  "townsfolk.voice.man.watch_arrive": {
+    "sounds": [
+      "guildmark:townsfolk/voice/man/watch_arrive"
+    ],
+    "subtitle": "say.guildmark.watch_arrive"
+  },
+  "townsfolk.voice.man.shelter_taken": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/man/shelter_taken",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "say.guildmark.shelter_taken"
+  },
+  "townsfolk.voice.woman.watch_arrive": {
+    "sounds": [
+      "guildmark:townsfolk/voice/woman/watch_arrive"
+    ],
+    "subtitle": "say.guildmark.watch_arrive"
+  },
+  "townsfolk.voice.woman.shelter_taken": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/woman/shelter_taken",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "say.guildmark.shelter_taken"
+  },
+  "townsfolk.voice.old.shelter_taken": {
+    "sounds": [
+      {
+        "name": "guildmark:townsfolk/voice/old/shelter_taken",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "say.guildmark.shelter_taken"
   }
 }

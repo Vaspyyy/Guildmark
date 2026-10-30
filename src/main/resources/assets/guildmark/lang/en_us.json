@@ -9851,5 +9851,7 @@
   "say.guildmark.talk.tale.brother.behind_0": "Not so fast! I can't keep up.",
   "say.guildmark.talk.tale.brother.behind_1": "Wait for me! Don't leave me here!",
   "say.guildmark.talk.tale.brother.rest_0": "A moment. I need to rest.",
-  "say.guildmark.talk.tale.brother.rest_1": "Just a breath. It hurts to walk."
+  "say.guildmark.talk.tale.brother.rest_1": "Just a breath. It hurts to walk.",
+  "say.guildmark.watch_arrive": "I'm here for the watch.",
+  "say.guildmark.shelter_taken": "No! Let me go!"
 }
