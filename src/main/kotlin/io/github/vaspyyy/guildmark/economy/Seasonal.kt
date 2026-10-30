@@ -59,6 +59,9 @@ object Seasonal {
     /** How much each capital feels the seasons, by its heart: biomes don't change, so it's worked out once. */
     private val feels = ConcurrentHashMap<Long, Float>()
 
+    /** Forgets every land's feel, at server stop: the next world's hearts and bells are its own. */
+    fun forget() = feels.clear()
+
     /** The world in [hour] as the capital whose heart is [at] feels it (fully, if there's none). */
     fun conditions(level: ServerLevel, hour: Long, at: BlockPos?): Conditions {
         val seasons = Seasons.enabled()

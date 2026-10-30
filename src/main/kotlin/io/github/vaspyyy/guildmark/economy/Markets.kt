@@ -24,6 +24,7 @@ import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.level.saveddata.SavedData
 import net.minecraft.world.level.saveddata.SavedDataType
 import net.neoforged.neoforge.common.NeoForge
+import net.neoforged.neoforge.event.server.ServerStoppedEvent
 import net.neoforged.neoforge.event.tick.ServerTickEvent
 import net.neoforged.neoforge.server.ServerLifecycleHooks
 import java.util.function.Supplier
@@ -105,6 +106,8 @@ class Markets(private val entries: MutableMap<Long, Entry> = HashMap()) : SavedD
 
         fun register() {
             NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post::class.java) { tick(it.server) }
+            // A second world opened the same game feels the seasons by its own capitals' and villages' lands
+            NeoForge.EVENT_BUS.addListener(ServerStoppedEvent::class.java) { _ -> Seasonal.forget() }
             VillageMarkets.register()
         }
 
