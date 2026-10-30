@@ -11,7 +11,8 @@ import com.mojang.serialization.codecs.RecordCodecBuilder
 /**
  * A list read element by element: one that can't be read is left out and the rest are kept, so a bad element drops only
  * itself and a village's record, or the store of them, is never lost to one line of it (living-world/villages/design.md
- * section 14.1). Written as [Codec.listOf] writes it.
+ * section 14.1). An element read only in part (a bad line in a list of its own, a village's market with one bad price in
+ * it) is kept as far as it reads, as the game keeps a store read in part. Written as [Codec.listOf] writes it.
  */
 fun <A : Any> keptList(element: Codec<A>): Codec<List<A>> = Codec.of(
     element.listOf(),
@@ -19,7 +20,7 @@ fun <A : Any> keptList(element: Codec<A>): Codec<List<A>> = Codec.of(
         override fun <T> decode(ops: DynamicOps<T>, input: T): DataResult<Pair<List<A>, T>> =
             ops.getStream(input).map { stream ->
                 val kept: MutableList<A> = ArrayList()
-                stream.forEach { item -> element.parse(ops, item).result().ifPresent { kept.add(it) } }
+                stream.forEach { item -> element.parse(ops, item).resultOrPartial { }.ifPresent { kept.add(it) } }
                 Pair.of<List<A>, T>(kept, input)
             }
     },
