@@ -26,5 +26,8 @@ class VillageData(val records: MutableMap<Long, VillageRec> = HashMap()) : Saved
 
         /** The overworld's villages, whichever level asks. */
         fun get(level: ServerLevel): VillageData = level.server.overworld().dataStorage.computeIfAbsent(TYPE)
+
+        /** The overworld's villages if the store has been made (read for a command with Living Villages off, which must write nothing). */
+        fun peek(level: ServerLevel): VillageData? = level.server.overworld().dataStorage.get(TYPE)
     }
 }
