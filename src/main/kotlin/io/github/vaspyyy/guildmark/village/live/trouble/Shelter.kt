@@ -125,6 +125,19 @@ object Shelter {
             return Vec3(c.x + inward.stepX * d, c.y, c.z + inward.stepZ * d)
         }
 
+        /**
+         * Where a latecomer stands outside to knock: the shut leaf's outer face half a block ahead (KNOCK's reach), in the doorway's middle:
+         * in the doorway itself for a leaf on the inside face, a block out for one on the outside face.
+         */
+        fun knockAt(level: ServerLevel): Vec3 {
+            val c = Vec3.atBottomCenterOf(door.pos)
+            val inward = door.inward
+            val state = level.getBlockState(door.pos)
+            val leaf = if (state.block is DoorBlock) state.getValue(DoorBlock.FACING).opposite else null
+            val d = if (leaf == inward) 5.0 / 16.0 - 0.5 else -1.0
+            return Vec3(c.x + inward.stepX * d, c.y, c.z + inward.stepZ * d)
+        }
+
         /** The spot inside for [s], held for them: the farthest from the door and the windows still free; null if none (they stand by the door). */
         fun spotFor(level: ServerLevel, s: Sheltering, nextTo: BlockPos? = null): BlockPos? {
             val all = spots ?: inside(level).also { spots = it }

@@ -37,8 +37,9 @@ import net.minecraft.world.phys.Vec3
  * - IN: the first in steps inside and turns to the door ([Shelter.Haven.stand]: its inner face half a block ahead), waiting a moment
  *   for those just behind; the rest go to their corners;
  * - BOLT: BOLT_DOOR, the door swung to at tick 10 and the bolt shot at 30 (`village.door_bolt`, a puff of dust from the frame);
- * - KNOCK and WAIT: a latecomer at a bolted door knocks and calls; someone inside comes to open it (OPEN: "Quick, in!") and bolts it
- *   again behind them; nobody coming, they let themselves in;
+ * - KNOCK and WAIT: a latecomer at a bolted door steps up to its leaf ([Shelter.Haven.knockAt]), knocks and calls; someone inside
+ *   comes to open it (OPEN: "Quick, in!", the beckon played out) and bolts it again once they are in and clear of the doorway;
+ *   nobody coming, they let themselves in;
  * - COWER: in the spot farthest from the door and the windows, facing the door; a child beside a grown-up of their home, the two
  *   holding each other (EMBRACE) first; a whisper now and then ([whispers]);
  * - EMERGE: at the all-clear, each in their turn: the door opened, out into the lane, a look about, then the end's own beat (a cheer
@@ -215,11 +216,9 @@ class Sheltering internal constructor(internal val called: Shelter.Called, val p
 
     private fun atDoor(level: ServerLevel, h: Shelter.Haven) {
         if (h.bolted && !open(level, h)) {
+            // Up to the leaf to knock ([knocking])
             to(S.KNOCK)
             p.navigation.stop()
-            p.face(p.yawTo(Vec3.atCenterOf(h.door.pos)))
-            p.act(Activity.KNOCK)
-            Trouble.say(p, "shelter_knock")
             h.knocking += this
             return
         }
@@ -237,7 +236,7 @@ class Sheltering internal constructor(internal val called: Shelter.Called, val p
         if (bolter == null || bolter.done || bolter === this) {
             h.bolter = this
             standing = true
-            walker().go(BlockPos.containing(h.stand(level)), Jobs.RUN, exact = true)
+            walker().go(BlockPos.containing(h.stand(level)), Jobs.RUN, near = 0.6)
         } else {
             standing = false
             spot = h.spotFor(level, this, nextTo = kinSpot(level))
@@ -250,18 +249,29 @@ class Sheltering internal constructor(internal val called: Shelter.Called, val p
         if (!at) {
             val state = walker().tick()
             if (state == Walker.State.WALKING && t < 200) return
+            // The last steps onto the stand, walked (the door's inner face half a block ahead)
+            if (standing && !stepOnto(h.stand(level)) && t < 200 + STEP_MOST) return
             at = true
             since = p.tickCount
             if (!standing) return cower(level)
             p.navigation.stop()
-            snapTo(h.stand(level))
             p.face(h.door.inward.opposite)
         }
         p.face(h.door.inward.opposite)
-        // A moment for those just behind them to come in
+        // A moment for those just behind them to come in, and for those just in to be clear of the doorway
         val coming = h.folk.any { it !== this && !it.done && it.stage == S.RUN && it.p.distanceToSqr(Vec3.atCenterOf(h.door.pos)) < 64.0 }
         if (coming && t < WAIT_BEHIND) return
+        if (doorway(h) && t < WAIT_BEHIND + CLEAR_MOST) return
         bolt(level)
+    }
+
+    /** Whether any of [h]'s folk on their way in is still in its doorway or outside it: the door is not pushed to on them. */
+    private fun doorway(h: Shelter.Haven): Boolean {
+        val c = Vec3.atBottomCenterOf(h.door.pos)
+        return h.folk.any {
+            it !== this && !it.done && it.stage == S.IN && !it.at &&
+                (it.p.position().distanceToSqr(c.x, it.p.y, c.z) < DOORWAY * DOORWAY || !h.contains(it.p.blockPosition()))
+        }
     }
 
     private fun bolt(level: ServerLevel) {
@@ -306,18 +316,29 @@ class Sheltering internal constructor(internal val called: Shelter.Called, val p
 
     private fun knocking(level: ServerLevel) {
         val h = haven ?: return inPlace(level)
+        if (open(level, h)) return enter(level)
+        if (!at) {
+            // The last steps up to the leaf, walked, and the knock on it
+            p.face(p.yawTo(Vec3.atCenterOf(h.door.pos)))
+            if (!stepOnto(h.knockAt(level)) && t < STEP_MOST) return
+            at = true
+            p.navigation.stop()
+            p.face(h.door.inward)
+            p.act(Activity.KNOCK)
+            Trouble.say(p, "shelter_knock")
+            return
+        }
         p.navigation.stop()
-        if (!open(level, h) && p.actDone) {
+        if (p.actDone) {
             to(S.WAIT)
             p.act(Activity.NONE)
         }
-        if (open(level, h)) enter(level)
     }
 
     private fun waiting(level: ServerLevel) {
         val h = haven ?: return inPlace(level)
         p.navigation.stop()
-        p.face(p.yawTo(Vec3.atCenterOf(h.door.pos)))
+        p.face(h.door.inward)
         if (open(level, h)) return enter(level)
         // Knocking again, louder; and nobody coming, they let themselves in (there is no real bolt on a door)
         if (t == KNOCK_AGAIN) {
@@ -339,7 +360,7 @@ class Sheltering internal constructor(internal val called: Shelter.Called, val p
         standing = true
         h.bolter = this
         p.act(Activity.NONE)
-        walker().go(BlockPos.containing(h.stand(level)), Jobs.RUN, exact = true)
+        walker().go(BlockPos.containing(h.stand(level)), Jobs.RUN, near = 0.6)
     }
 
     private fun opening(level: ServerLevel) {
@@ -347,9 +368,9 @@ class Sheltering internal constructor(internal val called: Shelter.Called, val p
         if (!at) {
             val state = walker().tick()
             if (state == Walker.State.WALKING && t < 160) return
+            if (!stepOnto(h.stand(level)) && t < 160 + STEP_MOST) return
             at = true
             since = p.tickCount
-            snapTo(h.stand(level))
             p.face(h.door.inward.opposite)
             swing(level, h, true)
             Trouble.say(p, "shelter_open")
@@ -358,6 +379,8 @@ class Sheltering internal constructor(internal val called: Shelter.Called, val p
         p.face(h.door.inward.opposite)
         val left = h.knocking.filter { !it.done }
         if (left.isNotEmpty() && t < 80) return
+        // The beckon played out, and the door pushed to only once those let in are in and clear of the doorway
+        if (t < Activity.BECKON.ticks || doorway(h) && t < 80 + CLEAR_MOST) return
         h.knocking.clear()
         bolt(level)
     }
@@ -584,8 +607,16 @@ class Sheltering internal constructor(internal val called: Shelter.Called, val p
 
     // ---- Helpers ----
 
-    private fun snapTo(v: Vec3) {
-        if (p.position().distanceToSqr(v) < 1.5 * 1.5) p.setPos(v.x, p.y, v.z)
+    /** The last steps straight onto [v] (a point off a block's middle, a walk to its block having brought them near), walked: true once on it. */
+    private fun stepOnto(v: Vec3): Boolean {
+        val dx = v.x - p.x
+        val dz = v.z - p.z
+        if (dx * dx + dz * dz <= ON_SPOT * ON_SPOT) {
+            p.setPos(v.x, p.y, v.z)
+            return true
+        }
+        p.moveControl.setWantedPosition(v.x, p.y, v.z, Jobs.WALK)
+        return false
     }
 
     private fun open(level: ServerLevel, h: Shelter.Haven): Boolean {
@@ -614,6 +645,12 @@ class Sheltering internal constructor(internal val called: Shelter.Called, val p
         private const val WAIT_BEHIND = 60
         private const val KNOCK_AGAIN = 30
         private const val LET_SELF_IN = 60
+        /** The last steps onto a stand or up to a door: done within [ON_SPOT] of it, given up after [STEP_MOST] ticks (something in the way). */
+        private const val ON_SPOT = 0.12
+        private const val STEP_MOST = 40
+        /** How near a door's middle someone counts as in its doorway, and the longest the door waits for them to be clear of it. */
+        private const val DOORWAY = 1.1
+        private const val CLEAR_MOST = 60
         /** How near a child of their home must be for a grown-up to call them along. */
         private const val CALL_ALONG = 8.0
         /** The longest a shouter waits for their turn to shout (then they run without), and how long the shout holds them. */
