@@ -11,6 +11,8 @@ import io.github.vaspyyy.guildmark.homestead.plan.StepKind
 import io.github.vaspyyy.guildmark.homestead.plan.TierPlan
 import io.github.vaspyyy.guildmark.party.Parties
 import io.github.vaspyyy.guildmark.registry.ModCreativeTabs
+import io.github.vaspyyy.guildmark.village.live.keptField
+import io.github.vaspyyy.guildmark.village.live.keptList
 import net.minecraft.core.BlockPos
 import net.minecraft.resources.Identifier
 import net.minecraft.server.level.ServerLevel
@@ -98,7 +100,7 @@ class Homesteads(
     companion object {
         private val CODEC: Codec<Homesteads> = RecordCodecBuilder.create { i ->
             i.group(
-                Homestead.CODEC.listOf().fieldOf("homesteads").forGetter { it.homesteads },
+                keptList(Homestead.CODEC).keptField("homesteads") { listOf() }.forGetter { it.homesteads },
                 Codec.INT.optionalFieldOf("next_id", 1).forGetter { it.nextId },
                 BlockPos.CODEC.listOf().optionalFieldOf("stale", listOf()).forGetter { it.stale },
             ).apply(i) { list, next, stale -> Homesteads(list.toMutableList(), next, stale.toMutableList()) }

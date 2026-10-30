@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.homestead
 
 import com.mojang.serialization.Codec
+import com.mojang.serialization.DataResult
 import com.mojang.serialization.codecs.RecordCodecBuilder
 import io.github.vaspyyy.guildmark.city.CityStyle
 import io.github.vaspyyy.guildmark.city.plan.Dir
@@ -19,7 +20,6 @@ import net.minecraft.world.phys.Vec3
 import java.util.Arrays
 import java.util.BitSet
 import java.util.UUID
-import java.util.stream.LongStream
 import kotlin.math.max
 import kotlin.math.min
 
@@ -180,12 +180,13 @@ class Build(
                 Codec.LONG.optionalFieldOf("clock", -1L).forGetter(Build::clock),
                 Codec.LONG.optionalFieldOf("day_time", 0L).forGetter(Build::dayTime),
                 Codec.INT.optionalFieldOf("cheered", -1).forGetter(Build::cheered),
-                Codec.LONG_STREAM.optionalFieldOf("done", LongStream.empty()).forGetter { Arrays.stream(it.done.toLongArray()) },
+                // Always written; read with a fresh empty set when it isn't there (a stream given as the default is one stream, spent by the first build read without it)
+                Codec.LONG_STREAM.optionalFieldOf("done").forGetter { java.util.Optional.of(Arrays.stream(it.done.toLongArray())) },
                 Codec.INT.optionalFieldOf("reach", 0).forGetter(Build::reach),
             ).apply(i) { tier, step, work, credit, clock, dayTime, cheered, done, reach ->
                 Build(
                     tier, step, work, DoubleArray(Stuff.PAID.size) { credit.getOrElse(it) { 0.0 } }, clock, dayTime, cheered,
-                    BitSet.valueOf(done.toArray()), reach,
+                    done.map { BitSet.valueOf(it.toArray()) }.orElseGet { BitSet() }, reach,
                 )
             }
         }
@@ -237,11 +238,17 @@ class Homestead(
     val crate: BlockPos get() = frame.world(PlotShape.CRATE_X, land.height(PlotShape.CRATE_X, 0), 0)
 
     companion object {
+        /** The land's heights, a whole plot's worth: of another size they can't be this plot's, and its homestead is left out alone (the land would throw, and lose every homestead). */
+        private val HEIGHTS: Codec<IntArray> = Codec.INT_STREAM.comapFlatMap(
+            { s -> s.toArray().let { if (it.size == PlotLand.SIZE * PlotLand.SIZE) DataResult.success(it) else DataResult.error { "${it.size} heights, not a plot's" } } },
+            { java.util.Arrays.stream(it) },
+        )
+
         private val LAND_CODEC: Codec<PlotLand> = RecordCodecBuilder.create { i ->
             i.group(
-                Codec.INT_STREAM.fieldOf("heights").forGetter { java.util.Arrays.stream(it.heights) },
+                HEIGHTS.fieldOf("heights").forGetter { it.heights },
                 Codec.LONG_STREAM.fieldOf("wet").forGetter { java.util.Arrays.stream(packBits(it.wets)) },
-            ).apply(i) { heights, wet -> PlotLand(heights.toArray(), unpackBits(wet.toArray(), PlotLand.SIZE * PlotLand.SIZE)) }
+            ).apply(i) { heights, wet -> PlotLand(heights, unpackBits(wet.toArray(), PlotLand.SIZE * PlotLand.SIZE)) }
         }
 
         val CODEC: Codec<Homestead> = RecordCodecBuilder.create { i ->
