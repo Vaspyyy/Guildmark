@@ -5,6 +5,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import io.github.vaspyyy.guildmark.townsfolk.scenes.Words
 import io.github.vaspyyy.guildmark.townsfolk.talk.Ask
 import io.github.vaspyyy.guildmark.townsfolk.talk.Street
+import io.github.vaspyyy.guildmark.townsfolk.talk.Talk
 import io.github.vaspyyy.guildmark.townsfolk.talk.TalkLines
 import io.github.vaspyyy.guildmark.townsfolk.talk.Topics
 import io.github.vaspyyy.guildmark.townsfolk.talk.Utterance
@@ -75,12 +76,21 @@ object KitchenLines {
      * Has [p] say [family] now, because of [why] ("back door", a scene's name...): a take over their head when the family is recorded
      * (as the scenes say theirs), else a wording as words in the same place, which no sound goes with. [force] says it even if they said
      * something just now or others near are talking. Whether it was said: not with Kitchen Talk or the street talk off, with no
-     * player in hearing, or (for a take) when every take has been heard lately, so the caller's own words may follow.
+     * player in hearing, or (for a take) when every take has been heard lately, so the caller's own words may follow; with [always]
+     * (a scene's line, which belongs to the moment and has no words of its own to fall back on) the take heard longest ago then.
      */
-    fun say(p: Townsperson, family: String, why: String, force: Boolean = false): Boolean {
+    fun say(p: Townsperson, family: String, why: String, force: Boolean = false, always: Boolean = false): Boolean {
         if (!Cooking.talk() || !Words.on()) return false
         val player = Words.hearer(p) ?: return false
-        val line = if (recorded(family)) Words.of(p, player, family) else wording(p, player, family)?.let { Street.Line(it, it, TEXT_TICKS) }
+        val line = if (!recorded(family)) wording(p, player, family)?.let { Street.Line(it, it, TEXT_TICKS) }
+        else Words.of(p, player, family) ?: if (always) stalest(p, player, family) else null
         return line != null && Words.say(p, player, line, why, force)
+    }
+
+    /** The take of recorded [family] said by [p] or heard by [player] longest ago, as a line (see [Topics.stalest]). */
+    private fun stalest(p: Townsperson, player: ServerPlayer, family: String): Street.Line? {
+        val count = TalkLines.FAMILIES[family]?.count ?: 0
+        val key = Topics.stalest(p, player, (0 until count).map { "talk.${family}_$it" }) ?: return null
+        return Street.Line(key, key, Talk.ticks(p, key))
     }
 }

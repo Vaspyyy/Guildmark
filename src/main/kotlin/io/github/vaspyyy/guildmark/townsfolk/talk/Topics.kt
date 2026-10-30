@@ -294,6 +294,17 @@ object Topics {
         return out
     }
 
+    /**
+     * Of [keys], the one last said by [speaker] or heard by [player] longest ago (one neither has had lately comes first), for a
+     * line that is said even when every take of it has been had lately (a kitchen scene's: KitchenLines.say). Changes nothing.
+     */
+    fun stalest(speaker: Townsperson, player: ServerPlayer?, keys: List<String>): String? {
+        val last = HashMap<String, Long>()
+        takes[speaker]?.forEach { (key, at) -> last[key] = maxOf(last[key] ?: at, at) }
+        if (player != null) rings[player.uuid]?.forEach { (key, at) -> last[key] = maxOf(last[key] ?: at, at) }
+        return keys.minByOrNull { last[it] ?: Long.MIN_VALUE }
+    }
+
     /** [speaker] said take [key], to [player] if a player heard it. */
     fun spoke(speaker: Townsperson, player: ServerPlayer?, key: String) {
         val now = speaker.level().gameTime

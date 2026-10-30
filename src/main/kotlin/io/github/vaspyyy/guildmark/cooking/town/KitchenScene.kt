@@ -115,36 +115,14 @@ internal object Stands {
 }
 
 /**
- * What a keeper says in a kitchen scene (living-world/cook/design.md 7.3, 7.5, 11.5): a family of Part J's, said as a take
- * (or as the wording's own text, over the keeper's head) through [KitchenLines.say]; while that says nothing (it is a stub until J
- * lands) the scene's own wording of the same family, kept in the language file, so the scene reads in full whatever else is built.
+ * What a keeper says in a kitchen scene (living-world/cook/design.md 7.3, 7.5, 11.5): a family of Part J's, said through
+ * [KitchenLines.say] as a take, always voiced: when every take of it has been heard lately, the one heard longest ago (a scene's line
+ * belongs to its moment, so it is said again rather than shown as words). It is Kitchen Talk, so with Kitchen Talk off the keeper
+ * cooks without a word (J: "`cookTalk` off silences all of it"); the scene itself is Town Kitchens', and plays.
  */
 internal object SceneLines {
-    private const val SAY = "say.guildmark."
-
-    /** The scene's own wordings of each family, as complete language keys. */
-    private val OWN: Map<String, List<String>> = mapOf(
-        "kitchen.scene.salt" to listOf("say.guildmark.talk.kitchen.scene_own.salt_0", "say.guildmark.talk.kitchen.scene_own.salt_1"),
-        "kitchen.scene.right" to listOf(
-            "say.guildmark.talk.kitchen.scene_own.right_0", "say.guildmark.talk.kitchen.scene_own.right_1", "say.guildmark.talk.kitchen.scene_own.right_2",
-        ),
-        "kitchen.scene.hot" to listOf(
-            "say.guildmark.talk.kitchen.scene_own.hot_0", "say.guildmark.talk.kitchen.scene_own.hot_1", "say.guildmark.talk.kitchen.scene_own.hot_2",
-        ),
-        "kitchen.scene.bread" to listOf(
-            "say.guildmark.talk.kitchen.scene_own.bread_0", "say.guildmark.talk.kitchen.scene_own.bread_1", "say.guildmark.talk.kitchen.scene_own.bread_2",
-        ),
-        "kitchen.scene.roast" to listOf(
-            "say.guildmark.talk.kitchen.scene_own.roast_0", "say.guildmark.talk.kitchen.scene_own.roast_1", "say.guildmark.talk.kitchen.scene_own.roast_2",
-        ),
-    )
-
     /** Has [p] say [family] now because of [why]; whether anyone was near enough to hear. */
-    fun say(p: Townsperson, family: String, why: String): Boolean {
-        if (KitchenLines.say(p, family, why, force = true)) return true
-        val words = OWN[family] ?: return false
-        return p.say(words[p.random.nextInt(words.size)].removePrefix(SAY), force = true)
-    }
+    fun say(p: Townsperson, family: String, why: String): Boolean = KitchenLines.say(p, family, why, force = true, always = true)
 }
 
 /**
