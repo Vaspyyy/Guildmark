@@ -176,14 +176,16 @@ object VillageCheck {
         if (VillageCry.enabled() && markets) {
             val talk = TownTalkData.get(level)
             val paused = all.filter { it.state == Live.PAUSED }
+            // The talk is stepped only up to the market's hour, which stands still while paused: a story begun past it is talk
+            // that went on (the talk's own hour may be past it, moved up to the last day's hours with nothing stepped)
             val running = paused.count { rec ->
                 val e = talk[rec.key] ?: return@count false
                 val m = VillageMarkets.rec(level, rec.key) ?: return@count false
-                e.hour != Long.MIN_VALUE && e.hour > m.entry.market.hour
+                e.rumours.values.any { it.at > m.entry.market.hour }
             }
             row(
                 "Talk", if (running > 0) Status.LATE else Status.OK,
-                "${paused.size} paused villages; their talk stands at their market's hour" + if (running > 0) " but for $running" else "",
+                "${paused.size} paused villages; nothing is told in them past their market's hour" + if (running > 0) " but in $running" else "",
                 "none needed: the minds keep their acquaintances",
             )
         } else {
