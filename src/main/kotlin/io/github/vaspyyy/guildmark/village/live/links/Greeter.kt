@@ -204,7 +204,7 @@ class PedlarWatch(private val at: BlockPos, private val since: Long) : Watch {
         val now = level.gameTime
         if (sighted != Long.MIN_VALUE) return if (now - sighted > PASSED) What.OFF else What.SIGHT
         if (now - since > WAIT) return What.NONE
-        if (now - looked >= 10L) {
+        if (looked == Long.MIN_VALUE || now - looked >= 10L) {
             looked = now
             body = level.getEntitiesOfClass(Townsperson::class.java, AABB(at).inflate(SEEN, 6.0, SEEN)) { it.isAlive && it.director is Pedlar }.firstOrNull()
             if (body != null) sighted = now
