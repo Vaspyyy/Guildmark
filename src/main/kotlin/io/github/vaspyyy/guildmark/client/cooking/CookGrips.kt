@@ -6,7 +6,7 @@ import org.joml.Vector3f
 
 /**
  * Where a first-person cooking clip turns a held tool about (living-world/cook/design.md 11.3, 12.3): the grip point of the
- * ladle, the bowl, the knife and the turner, as `FirstPersonCombat`'s `HOLDS` gives one for a weapon. A clip's `item` and `offhand`
+ * ladle, the bowl, the knife, the turner and the wooden spoon, as `FirstPersonCombat`'s `HOLDS` gives one for a weapon. A clip's `item` and `offhand`
  * tracks (assets/guildmark/animations/first_person/) are an offset of the grip from vanilla's hand position and a turn about the
  * grip, so Part E turns the held thing about the point this gives and the clips land where they were drawn.
  *
@@ -21,6 +21,7 @@ object CookGrips {
         "gilded_ladle" to Vector3f(0.0706f, -0.0542f, -0.0219f),
         "cooks_knife" to Vector3f(0.0706f, -0.0542f, -0.0219f),
         "turner" to Vector3f(0.0706f, -0.0542f, -0.0219f),
+        "wooden_spoon" to Vector3f(0.0706f, -0.0243f, -0.0110f),
         "bowl" to Vector3f(0.0706f, 0.2000f, 0.0706f),
     )
 

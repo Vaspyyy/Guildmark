@@ -133,6 +133,9 @@ object CookRegistry {
         ITEMS.registerItem(tool.id, { CookToolItem(it, tool) }, CookToolItem.properties(tool))
     }
 
+    /** The Wooden Spoon: what a meal from a bowl is eaten with (the eat_spoon clip shows it in the eating hand, the dish in the other). */
+    val WOODEN_SPOON: DeferredItem<Item> = ITEMS.registerItem("wooden_spoon", ::Item, UnaryOperator<Item.Properties> { it.stacksTo(1) })
+
     /** The Cook's Book. */
     val COOK_BOOK: DeferredItem<CookBookItem> = ITEMS.registerItem("cook_book", ::CookBookItem, CookBookItem.PROPERTIES)
 
@@ -151,7 +154,7 @@ object CookRegistry {
     /** What a burnt pot is emptied into. */
     val SCORCHED_MESS: DeferredItem<DishItem> = ITEMS.registerItem("scorched_mess", { DishItem(it, null) }, DishItem.properties(null))
 
-    /** Everything above, in the order the creative tab shows it: the stations and helpers, the tools, the book, the sprig, the dishes. */
+    /** Everything above, in the order the creative tab shows it: the stations and helpers, the tools, the spoon, the book, the sprig, the dishes. */
     val TAB: List<DeferredItem<out Item>> = buildList<DeferredItem<out Item>> {
         add(STEWPOT_ITEM)
         add(HOB_ITEM)
@@ -162,6 +165,7 @@ object CookRegistry {
         add(LARDER_ITEM)
         add(MENU_BOARD_ITEM)
         addAll(TOOLS.values)
+        add(WOODEN_SPOON)
         add(COOK_BOOK)
         add(HERB_SPRIG)
         addAll(DISHES.values)

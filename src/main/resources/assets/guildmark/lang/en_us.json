@@ -9853,5 +9853,6 @@
   "say.guildmark.talk.tale.brother.rest_0": "A moment. I need to rest.",
   "say.guildmark.talk.tale.brother.rest_1": "Just a breath. It hurts to walk.",
   "say.guildmark.watch_arrive": "I'm here for the watch.",
-  "say.guildmark.shelter_taken": "No! Let me go!"
+  "say.guildmark.shelter_taken": "No! Let me go!",
+  "item.guildmark.wooden_spoon": "Wooden Spoon"
 }

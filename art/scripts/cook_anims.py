@@ -32,7 +32,7 @@ board draws just that GIF; COOK_ANIMS_TEX=<dir:dir> adds folders of item texture
     cook_carve                  20    4  1/4      the knife drawn across the roast twice, the second cut deeper, the left hand held out to steady it
     cook_slice                  16    4  1/3      the knife down through a pie twice a wedge apart, then flat under the slice to slide it aside
     cook_shiver                 40    4  0/0      LOOP: arms hugged, shoulders drawn up, head sunk, trembling in waves; only arms, shoulders and head are keyed
-    eat_spoon                   32    2  2/4      the bowl at her breastbone in the right hand, the left fist spooning to her lips three times, her head to each
+    eat_spoon                   32    2  2/4      the bowl at her breastbone in the left hand, the wooden spoon in the right dipped and raised to her lips three times
     drink_bowl                  32    2  2/4      both hands raise the bowl, her head going back, a long drink with two swallows, lowered on a breath out
     eat_bite                    24    4  1.5/3    the food raised to her mouth in the right hand, a bite, lowered while she chews, raised, a second bite
 
@@ -44,7 +44,7 @@ board draws just that GIF; COOK_ANIMS_TEX=<dir:dir> adds folders of item texture
     cook_slice                  16    4  1/3       item              the knife down through the pie twice, then flat under the wedge to slide it aside
     cook_flip                   14    4  1/3       item              the turner under the food, a flick, the food turns over, caught, lowered
     cook_carve                  20    4  1/4       item              the knife across the roast twice, a slice falling at each cut, flicked away
-    eat_spoon                   32    2  2/4       item, offhand     the dish held up and offered to three spoonfuls; the offhand is the spoon
+    eat_spoon                   32    2  2/4       item, offhand     the spoon dipped in the bowl and raised to the screen's foot three times; the offhand is the bowl
     eat_bite                    24    4  1.5/3     item              the food up to the face, a bite, lowered while she chews, a second bite
     drink_bowl                  32    2  2/4       item              the bowl rises and tips toward the eye, two swallows, lowered
 
@@ -76,10 +76,12 @@ the working end is from its mark; how deep her arms go into her body, her head a
 touch: the tolerance is on the line); that the tool's grip is in her fist; that her planted feet stay on the ground and do not slide; for cook_shiver, that
 only her arms, shoulders and head are keyed and that the loop joins (the first and last samples differ by 0.0000).
 
-The eating clips. Part E plays them while she eats, with the dish in her main hand, so the right arm has it: eat_spoon has the bowl at her breastbone in
-the right hand and the left fist, which holds nothing (the game draws no spoon; the previews draw a stand-in), spooning to her lips three times; drink_bowl
-has both hands on the bowl, the left under its far edge; eat_bite the food in the right hand. Checked: what is to meet her lips does (the left fist and its
-5.6 px spoon at each sip, the bowl's face at the drink, the food's at each bite), and the bowl at her breastbone stays clear of her lips.
+The eating clips. Part E plays them while she eats, with the dish in her main hand. drink_bowl has both hands on the bowl, the right holding it and the
+left under its far edge, and eat_bite the food in the right hand: the right arm has the dish. eat_spoon is as the design's 3.3 has it: the bowl at her
+breastbone in the left hand and the Wooden Spoon (WOODEN_SPOON, the spoon's own model and hold: cook_tools.SPOON_DISPLAY) in the right, dipped into the bowl
+and raised to her lips three times; for this clip Part E draws the dish in the other hand and the spoon in the main one (CookPose), so a right-handed cook
+spoons with the right. Checked: what is to meet her lips does (the spoon's bowl at each sip, the bowl's face at the drink, the food's at each bite), the
+spoon's bowl is in the dish at each dip, and the bowl at her breastbone stays clear of her lips.
 
 cook_shiver has no blend (0/0): Part E eases it in and out by the frame's own weight, and it goes with any legs, for only the arms, shoulders and head are
 keyed.
@@ -90,16 +92,17 @@ where vanilla holds it (FP_BASE) and a turn about the grip, as FirstPersonCombat
 board or pan top 1.09 blocks below the eye and 0.85 ahead of it, her head pitched 35 degrees down (VIEW_PITCH): the real station is wherever the player
 looks, so how a clip lands on it depends on where she stands. cook_stir, cook_taste, cook_serve, cook_chop, cook_slice, cook_flip and cook_carve move the tool
 (a ladle, a knife, the turner); cook_serve's offhand is the bowl held out for the ladle. eat_spoon, eat_bite and drink_bowl move the dish; eat_spoon's offhand
-is the spoon (the game's offhand item, or nothing: it is the ladle's sprite and geometry in the previews). The sprites are flat, so a tool is angled across the
+is the dish, eat_spoon's item the Wooden Spoon dipped into it. The sprites are flat, so a tool is angled across the
 screen for its blade to be seen, and a flat dish is rolled to face the eye. Rates: cook_chop 10 (so that its impacts, 2.4 and 4.2, fall on a sample: the game
 interpolates linearly between them); cook_stir, cook_serve, cook_slice, cook_flip, cook_carve and eat_bite 4; cook_taste, eat_spoon and drink_bowl 2.
 Checked for every one: the first and last samples are the rest pose (no jump into or out of the game's own hold); the item's middle and working end stay on
 the screen while the clip holds the hand; the item never comes nearer the camera than 0.3 block; no turn is faster than 150 degrees a tick; and what it
 works at (the ladle's bowl in the stew, the knife's tip on the board at each chop, the turner under the food, the spoon at the lips).
 
-CookGrips.kt is the grip point of each held thing, as FirstPersonCombat's HOLDS gives one for a weapon: the ladle, the gilded ladle, the knife and the turner
-close the hand at pixel (7, 25) of their 32 px sprites (TOOL_LAYOUT, M1's cook_tools.LAYOUT) and the bowl, like anything flat, is held by its middle (FLAT).
-grip(item) gives the point for those five and null for anything else, which Part E holds as FLAT. A clip's offset is of THAT point from vanilla's hand.
+CookGrips.kt is the grip point of each held thing, as FirstPersonCombat's HOLDS gives one for a weapon: the ladle, the gilded ladle, the knife, the turner
+and the wooden spoon close the hand at pixel (7, 25) of their 32 px sprites (TOOL_LAYOUT, M1's cook_tools.LAYOUT) and the bowl, like anything flat, is held by
+its middle (FLAT). grip(item) gives the point for those six and null for anything else, which Part E holds as FLAT. A clip's offset is of THAT point from
+vanilla's hand.
 """
 import copy
 import math
@@ -116,6 +119,7 @@ if HERE not in sys.path:
     sys.path.insert(0, HERE)
 from animkit import (Clip, qeuler, qmul, qmat, qfrommat, qslerp, frame_to, unit, I, pose_clip, vanilla_pose, raster, ortho,
                      perspective, T, Rq, S, apply, PLAYER, Geo, SWORD, FP_BASE, fp, fp_rest, sprite_quads, Scene)
+import cook_tools
 
 GROUP = 'player'
 FP_GROUP = 'first_person'
@@ -370,10 +374,13 @@ def px_geo(name, grip_px, tip_px, tp=None, fp_=None, size=32.0):
 
 # the tools' layout on their 32 px sprites: cook_tools.LAYOUT (M1), where the hand closes and the working end is
 TOOL_LAYOUT = {'cooks_ladle': ((7, 25), (24, 8)), 'gilded_ladle': ((7, 25), (24, 8)), 'cooks_knife': ((7, 25), (27, 5)),
-               'turner': ((7, 25), (25, 7))}
+               'turner': ((7, 25), (25, 7)), 'wooden_spoon': ((7, 25), (22, 10))}
 LADLE = px_geo('cooks_ladle', *TOOL_LAYOUT['cooks_ladle'])
 KNIFE = px_geo('cooks_knife', *TOOL_LAYOUT['cooks_knife'])
 TURNER = px_geo('turner', *TOOL_LAYOUT['turner'])
+# the spoon has a hold of its own (cook_tools.SPOON_DISPLAY: turned nearer the arm and small, so a raised fist brings its bowl to the lips)
+SPOON = px_geo('wooden_spoon', *TOOL_LAYOUT['wooden_spoon'], tp=cook_tools.SPOON_DISPLAY['thirdperson'], fp_=cook_tools.SPOON_DISPLAY['firstperson'])
+assert all(TOOL_LAYOUT[n] == (cook_tools.LAYOUT[n]['grip'], cook_tools.LAYOUT[n]['tip']) for n in TOOL_LAYOUT), 'TOOL_LAYOUT is cook_tools.LAYOUT'
 BOWL = Geo('bowl', ITEM_TP, ITEM_FP, grip=(0.5, 0.45), tip=(0.5, 0.45))          # the 16 px bowl: held by its belly
 FOOD = Geo('food', ITEM_TP, ITEM_FP, grip=(0.5, 0.5), tip=(0.5, 0.5))              # any other flat item in a hand
 
@@ -1168,6 +1175,7 @@ def fallback_skin():
 
 # a tiny sprite for a held thing whose texture is not to hand: the tool's colours along its sprite diagonal
 FALLBACK_COLOURS = {'cooks_ladle': (170, 170, 176), 'gilded_ladle': (214, 180, 70), 'cooks_knife': (200, 204, 210), 'turner': (150, 154, 162),
+                    'wooden_spoon': (196, 156, 104),
                     'bowl': (176, 130, 90), 'mushroom_stew': (176, 130, 90), 'carrot': (232, 130, 40), 'coal': (40, 40, 44), 'bread': (196, 150, 84)}
 
 
@@ -2383,7 +2391,6 @@ SPECS['cook_shiver'] = spec_shiver
 
 PLATE = {RIGHT: np.array([-1.0, 9.0, -4.56]), LEFT: np.array([1.0, 9.0, -4.56])}      # a flat thing's middle in an arm's own space
 PLATE_HALF = 4.4                                                                       # and half its width: the 16 px item at 0.55
-STEEL = (196, 198, 204)
 
 
 def lips_of(pose):
@@ -2402,25 +2409,6 @@ def plate_gap(pose, side, p):
     return float(math.sqrt(ox * ox + (y - c[1]) ** 2 + oz * oz)), float(y - c[1])
 
 
-def spoon_quads(fist, toward_pt, length=5.6):
-    """The previews' stand-in spoon (the clip itself draws none: its hand mimes it): from the fist toward [toward_pt], [length] px long or less."""
-    d = np.asarray(toward_pt, float) - fist
-    n = float(np.linalg.norm(d))
-    if n < 1e-6:
-        return []
-    ax = d / n
-    L = min(length, n)
-    helper = np.array([0.0, 1.0, 0.0]) if abs(ax[1]) < 0.9 else np.array([1.0, 0.0, 0.0])
-    u = unit(np.cross(ax, helper))
-    v = np.cross(ax, u)
-    key = ('spoon', STEEL)
-    if key not in _TEX_CACHE:
-        _TEX_CACHE[key] = solid_tex(STEEL)
-    tex = _TEX_CACHE[key]
-    return (oriented_box(fist + ax * (L * 0.45), [u, v, ax], (0.45, 0.45, L * 0.45), tex) +
-            oriented_box(fist + ax * (L - 0.8), [u, v, ax], (1.1, 0.4, 0.9), tex))
-
-
 def lips_plate(off, side=RIGHT):
     """fn(ctx) -> where a flat thing's middle goes to be at her lips: [off] from them (px: toward her left, down, toward her front), as far from
     the shoulder as an arm holds it."""
@@ -2431,9 +2419,12 @@ def lips_plate(off, side=RIGHT):
 # ---------------------------------------------------------------- eat_spoon
 
 def spec_eat_spoon():
-    """eat_spoon (32): the bowl up at her breastbone in her right hand (the dish is the item her main hand holds, so the right arm has it), the
-    left fist with a spoon in it dipping into the bowl and rising to her lips three times, her head going down and over to each, and a long breath
-    out as the bowl is lowered. The clip draws no spoon: its hand mimes one (the previews draw a stand-in)."""
+    """eat_spoon (32): as the design's 3.3 has it, the bowl up at her breastbone in her left hand and the wooden spoon in her right, dipped into the
+    bowl and raised to her lips three times, her head going down and over to each, the bowl offered up a little to each spoonful, and a long
+    breath out as the bowl is lowered. The dish is the item her main hand holds: for this clip Part E draws it in the other hand and the spoon
+    in the main one (CookPose), so a right-handed cook spoons with the right. The spoon's bowl is ever a set reach from her shoulder (its hold,
+    cook_tools.SPOON_DISPLAY, is made for that reach to be her lips'), so the dish is held where that reach dips into it: a little to her right of
+    her middle, the left forearm across her."""
     sp = Spec('eat_spoon', 32, rate=2, blend=(2.0, 4.0))
     SIPS = (9.0, 16.0, 23.0)
     e = lambda t: pulse(t, 0.0, 4.0, 28.0, 32.0)
@@ -2444,46 +2435,46 @@ def spec_eat_spoon():
     sp.prior = dict(pitch=0.05, yaw=0.15, roll=0.15, rx=0.5, rz=0.4, hp=0.25)
     sp.bounds = ([-4, -12, -6, -3, -4], [26, 12, 6, 3, 4])
     sp.pen_w = 3.0
-    sp.style.update(pitch=lambda t: 4.0 * e(t) + 4.0 * sip(t), yaw=lambda t: -3.0 * e(t) - 3.0 * sip(t))
-    sp.head = lambda t: (4.0 * e(t) + 12.0 * sip(t) - 9.0 * breath(t), 18.0 * sip(t) - 4.0 * dip(t), -4.0 * sip(t))
+    sp.style.update(pitch=lambda t: 4.0 * e(t) + 4.0 * sip(t), yaw=lambda t: 3.0 * e(t) + 3.0 * sip(t))
+    sp.head = lambda t: (4.0 * e(t) + 12.0 * sip(t) - 9.0 * breath(t), -14.0 * sip(t) + 4.0 * dip(t), 4.0 * sip(t))
     sp.pa = {RIGHT: lambda t: np.array([0.0, -0.8 * breath(t), 0.0]), LEFT: lambda t: np.array([0.0, -0.8 * breath(t), 0.0])}
-    B = np.array([-0.5, 6.6, -7.6])                                                       # the bowl's middle: at her breastbone, 7.6 px ahead of it
-    sp.items = {RIGHT: lambda t: (BOWL, 'bowl'), LEFT: lambda t: None}
+    B = np.array([-1.4, 6.4, -7.0])                                                       # the bowl's middle: at her breastbone, a little to her right
+    sp.items = {RIGHT: lambda t: (SPOON, 'wooden_spoon'), LEFT: lambda t: (BOWL, 'bowl')}
+    TIP = tool_pt(SPOON, RIGHT, 1.0)                                                      # the spoon's bowl, in the arm's own space
 
-    def bowl_pt(t):
+    def bowl_at(t):
         p = B + np.array([0.0, -1.2, 0.8]) * sip(t)                                       # she offers the bowl up a little to each spoonful
-        return lambda ctx: reach_on(RIGHT, PLATE[RIGHT], ctx.body.torso_point(p))(ctx)
+        return reach_on(LEFT, PLATE[LEFT], lambda ctx: ctx.body.torso_point(p))
 
-    def spoon_pt(t):
+    def spoon_at(t):
         s, d = sip(t), dip(t)
 
         def fn(ctx):
-            a = ctx.hand(RIGHT, PLATE[RIGHT]) + np.array([2.4, -2.0, 2.0]) + DOWN * 1.2 * d
-            b = ctx.head_pt(MOUTH) + np.array([3.0, 0.9, 0.0])
-            return reach_on(LEFT, hand_pt(LEFT), a + (b - a) * s)(ctx)
+            a = bowl_at(t)(ctx) + np.array([-0.6, -1.4, 0.4]) + DOWN * 1.5 * d               # over the bowl, and into it at a dip
+            b = ctx.head_pt(MOUTH) + np.array([0.0, 0.4, -0.5])                           # at her lips
+            return reach_on(RIGHT, TIP, a + (b - a) * s)(ctx)
         return fn
-    want = vec_path([(0.0, UP * 0.8 + FWD * 0.4), (32.0, UP * 0.8 + FWD * 0.4)])
-    kL = lambda t: pulse(t, 0.5, 4.8, 27.0, 31.0)
-    palm_L = unit(RIGHTWARD * 0.8 + UP * 0.5)
-    sp.arms = {RIGHT: lambda t, ctx: item_plan(RIGHT, RFREE, bowl_pt(t), e(t), want(t), work=PLATE[RIGHT]),
-               LEFT: lambda t, ctx: hand_plan(LEFT, LFREE, spoon_pt(t), kL(t), palm=palm_L)}
-
-    def extras(t, pose):
-        b = lips_of(pose)
-        s = sip(t)
-        tip = part_pt(pose, RIGHT, PLATE[RIGHT]) + (b - part_pt(pose, RIGHT, PLATE[RIGHT])) * s
-        return spoon_quads(part_pts(pose, LEFT, [hand_pt(LEFT)])[0], tip) if kL(t) > 0.05 else []
-    sp.extras_pose = extras
+    w_bowl = unit(DOWN * 0.75 + LEFTWARD * 0.4 + FWD * 0.4)                               # the spoon down into the bowl, from her right
+    w_lips = unit(UP * 0.6 + LEFTWARD * 0.35 - FWD * 0.6)                                 # and up and in to her lips
+    want_spoon = lambda t: slerp_dir(w_bowl, w_lips, sip(t))
+    want_bowl = vec_path([(0.0, UP * 0.8 + FWD * 0.4), (32.0, UP * 0.8 + FWD * 0.4)])
+    kR = lambda t: pulse(t, 0.5, 4.8, 27.0, 31.0)
+    sp.arms = {RIGHT: lambda t, ctx: tool_plan(RIGHT, SPOON, 1.0, RFREE, spoon_at(t), want_spoon(t), kR(t)),
+               LEFT: lambda t, ctx: item_plan(LEFT, LFREE, bowl_at(t), e(t), want_bowl(t), work=PLATE[LEFT])}
     sp.marks = {'sip1': SIPS[0], 'sip2': SIPS[1], 'sip3': SIPS[2], 'breath': 27.0}
 
     def checks(rep, clip, spec):
-        times = [t for t in ticks_of(clip) if any(abs(t - s) < 0.01 for s in SIPS)]
-        worst = max((float(np.linalg.norm(part_pts(pose_full(spec, clip, t), LEFT, [hand_pt(LEFT)])[0] - lips_of(pose_full(spec, clip, t)))), t) for t in times)
-        best = min((float(np.linalg.norm(part_pts(pose_full(spec, clip, t), LEFT, [hand_pt(LEFT)])[0] - lips_of(pose_full(spec, clip, t)))), t) for t in times)
-        rep.line(f'the spoon hand\'s fist from her lips at the three sips: {best[0]:.1f} to {worst[0]:.1f} px (a spoon is 5.6 long: held to 6.2)', worst[0] <= 6.2)
-        gaps = [(plate_gap(pose_full(spec, clip, t), RIGHT, lips_of(pose_full(spec, clip, t)))[0], t) for t in times]
-        rep.line(f"the bowl's card from her lips at the sips: {min(gaps)[0]:.1f} px at the nearest, {max(gaps)[0]:.1f} at the farthest (held to 0.8 or more)",
-                 min(gaps)[0] >= 0.8)
+        def tip(pose):
+            return tool_pt_world(pose, RIGHT, SPOON, SPOON.tip)
+        sips = [t for t in ticks_of(clip) if any(abs(t - s) < 0.01 for s in SIPS)]
+        gaps = [(float(np.linalg.norm(tip(pose_full(spec, clip, t)) - lips_of(pose_full(spec, clip, t)))), t) for t in sips]
+        rep.line(f"the spoon's bowl from her lips at the three sips: {min(gaps)[0]:.1f} to {max(gaps)[0]:.1f} px (held to 1.5)", max(gaps)[0] <= 1.5)
+        dips = [t for t in ticks_of(clip) if any(abs(t - (s - 4.0)) < 0.01 for s in SIPS)]
+        ins = [(plate_gap(pose_full(spec, clip, t), LEFT, tip(pose_full(spec, clip, t)))[0], t) for t in dips]
+        rep.line(f"the spoon's bowl from the dish's face at the three dips: {min(ins)[0]:.1f} to {max(ins)[0]:.1f} px (held to 1.2)", max(ins)[0] <= 1.2)
+        held = [(plate_gap(pose_full(spec, clip, t), LEFT, lips_of(pose_full(spec, clip, t)))[0], t) for t in sips]
+        rep.line(f"the bowl's card from her lips at the sips: {min(held)[0]:.1f} px at the nearest, {max(held)[0]:.1f} at the farthest (held to 0.8 or more)",
+                 min(held)[0] >= 0.8)
         self_clear(rep, spec, clip, 'arms clear of the body, the head and each other', tol=2.0, arm_tol=1.5)
         feet_planted(rep, spec, clip, 'feet', tol=0.7)
     sp.checks.append(checks)
@@ -2840,7 +2831,7 @@ def tip_checks(label, sp, geo, times, target, tol, bone_fn=None):
     return checks
 
 
-FP_LENGTH = {g.name: float(np.linalg.norm(item_points(g, np.zeros(3), I, (1.0,))[0] - item_points(g, np.zeros(3), I, (0.0,))[0])) for g in (LADLE, KNIFE, TURNER)}
+FP_LENGTH = {g.name: float(np.linalg.norm(item_points(g, np.zeros(3), I, (1.0,))[0] - item_points(g, np.zeros(3), I, (0.0,))[0])) for g in (LADLE, KNIFE, TURNER, SPOON)}
 
 
 def hand_for(geo, tip, blade):
@@ -2970,48 +2961,46 @@ def off_path(geo, env, fn):
     return at
 
 
-BOWL_FP = np.array([0.20, -0.53, -0.98])            # the bowl a spoonful is taken from: the lower middle, a little to the right
-SPOON_L = FP_LENGTH['cooks_ladle']                 # the stand-in spoon is the ladle's sprite: its length grip to tip
+BOWL_FP = np.array([-0.20, -0.53, -0.98])           # the bowl a spoonful is taken from, as the screen shows it: the lower middle, a little to the left
 
 
 def fp_eat_spoon():
-    """eat_spoon (32): the bowl held up in the lower middle of the view and tipped a little to the eye; a spoon (the offhand's item; the game draws
-    none, a mod's own prop or the player's offhand item takes its place) dips into it and rises to the middle of the screen's foot three times, at
-    9, 16 and 23, the bowl offered up to each; a long breath out as the bowl is lowered."""
-    sp = FpSpec('eat_spoon', 32, rate=2, blend=(2.0, 4.0), geo=FLAT, off_geo=LADLE)
-    sp.tex = {'item': 'bowl', 'offhand': 'cooks_ladle'}
+    """eat_spoon (32): as the design's 3.3 has it, the bowl in the lower left of the view (the other hand's, tipped a little to the eye) and the wooden
+    spoon in the main hand, dipped into it and raised to the middle of the screen's foot three times, at 9, 16 and 23, the bowl offered up to each; a
+    long breath out as the bowl is lowered. The third-person clip's timing."""
+    sp = FpSpec('eat_spoon', 32, rate=2, blend=(2.0, 4.0), geo=SPOON, off_geo=FLAT)
+    sp.tex = {'item': 'wooden_spoon', 'offhand': 'bowl'}
     SIPS = (9.0, 16.0, 23.0)
     e = lambda t: pulse(t, 0.0, 4.0, 28.0, 32.0)
     sip = lambda t: max(pulse(t, s - 2.8, s - 1.0, s + 0.9, s + 2.7) for s in SIPS)            # the spoon is at her lips (the TP clip's timing)
     dip = lambda t: max(pulse(t, s - 4.9, s - 4.3, s - 3.7, s - 3.1) for s in SIPS)           # and goes down into the bowl
     breath = lambda t: pulse(t, 25.2, 26.6, 27.0, 29.6)
-    kL = lambda t: pulse(t, 0.5, 4.8, 27.0, 31.0)                                              # the spoon is there
-    blade = vc(f=-0.30, u=0.95, r=0.0)
-    ts = [i * 0.5 for i in range(65)]
+    kR = lambda t: pulse(t, 0.5, 4.8, 27.0, 31.0)                                              # the spoon is there
+    up = vc(f=-0.30, u=0.95, r=0.0)
     bowl_at = lambda t: BOWL_FP + np.array([0.0, 0.045, 0.035]) * sip(t) + np.array([0.0, -0.035, 0.0]) * breath(t)
-    sp.item = flat_path(FLAT, e, [(t, bowl_at(t)) for t in ts], [(0.0, blade), (32.0, blade)], [(0.0, 0.0), (32.0, 0.0)])
-    hover = BOWL_FP + np.array([-0.03, 0.21, 0.07])
-    dipped = BOWL_FP + np.array([-0.03, 0.06, 0.07])
+    sp.off = off_path(FLAT, e, lambda t: (bowl_at(t), up, 0.0))
+    hover = BOWL_FP + np.array([0.03, 0.21, 0.07])
+    dipped = BOWL_FP + np.array([0.03, 0.06, 0.07])
     mouth = MOUTH_FP + np.array([0.0, 0.05, 0.0])
-    b_bowl, b_mouth = vc(f=-0.05, u=-0.30, r=0.95), vc(f=-0.10, u=0.70, r=0.70)
+    b_bowl, b_mouth = vc(f=-0.05, u=-0.30, r=-0.95), vc(f=-0.10, u=0.70, r=-0.70)          # from the hand, on the right, into the bowl and up to the mouth
+    L = FP_LENGTH['wooden_spoon']
 
     def spoon(t):
         s, d = sip(t), dip(t)
         tip = (hover + (dipped - hover) * d) * (1.0 - s) + mouth * s
         b = slerp_dir(b_bowl, b_mouth, s)
-        return tip - b * SPOON_L, b, 0.0
-    sp.off = off_path(LADLE, kL, spoon)
+        hand = tip - b * L
+        return blend_rest(SPOON, kR(t), hand, b, facing_roll(SPOON, b, hand, 0.0))
+    sp.item = spoon
     sp.marks = {'sip1': SIPS[0], 'sip2': SIPS[1], 'sip3': SIPS[2], 'breath': 27.0}
 
     def spoon_checks(rep, clip, spec):
         miss = []
-        for s in SIPS:
-            q, off = clip.sample('offhand', s)
-            tip = item_points(LADLE, off, q, (1.0,))[0]
-            tip = np.array([-tip[0], tip[1], tip[2]])                 # as the screen shows it
-            miss.append(float(np.linalg.norm(tip - mouth)))
+        for s_ in SIPS:
+            q, off = clip.sample('item', s_)
+            miss.append(float(np.linalg.norm(item_points(SPOON, off, q, (1.0,))[0] - mouth)))
         rep.line(f"the spoon's bowl meets the mouth point at the three sips: off by {max(miss):.3f} block at the most (held to 0.03)", max(miss) <= 0.03)
-    sp.checks += [fp_checks(sp, {'item': 'the dish', 'offhand': "the spoon's bowl"}), spoon_checks]
+    sp.checks += [fp_checks(sp, {'item': "the spoon's bowl", 'offhand': 'the dish'}), spoon_checks]
     return sp
 
 
@@ -3406,7 +3395,7 @@ FP_SPECS['cook_carve'] = fp_carve
 # ================================================================== the files: the clips, CookGrips.kt, the previews
 
 COOK_GRIPS_PATH = 'src/main/kotlin/io/github/vaspyyy/guildmark/client/cooking/CookGrips.kt'
-GRIP_ITEMS = [('cooks_ladle', LADLE), ('gilded_ladle', LADLE), ('cooks_knife', KNIFE), ('turner', TURNER), ('bowl', FLAT)]
+GRIP_ITEMS = [('cooks_ladle', LADLE), ('gilded_ladle', LADLE), ('cooks_knife', KNIFE), ('turner', TURNER), ('wooden_spoon', SPOON), ('bowl', FLAT)]
 
 
 def kt_vec(v):
@@ -3425,7 +3414,7 @@ import org.joml.Vector3f
 
 /**
  * Where a first-person cooking clip turns a held tool about (living-world/cook/design.md 11.3, 12.3): the grip point of the
- * ladle, the bowl, the knife and the turner, as `FirstPersonCombat`'s `HOLDS` gives one for a weapon. A clip's `item` and `offhand`
+ * ladle, the bowl, the knife, the turner and the wooden spoon, as `FirstPersonCombat`'s `HOLDS` gives one for a weapon. A clip's `item` and `offhand`
  * tracks (assets/guildmark/animations/first_person/) are an offset of the grip from vanilla's hand position and a turn about the
  * grip, so Part E turns the held thing about the point this gives and the clips land where they were drawn.
  *
@@ -3458,7 +3447,7 @@ def grip_check(rep, spec, clip):
         fn = spec.items.get(side)
         for t in ticks_of(clip) if fn else ():
             held = fn(t)
-            if not held or not any(held[0] is g for g in (LADLE, KNIFE, TURNER)):
+            if not held or not any(held[0] is g for g in (LADLE, KNIFE, TURNER, SPOON)):
                 continue
             pose = pose_full(spec, clip, t)
             d = float(np.linalg.norm(tool_pt_world(pose, side, held[0], held[0].grip) - part_pts(pose, side, [hand_pt(side)])[0]))
@@ -3529,7 +3518,7 @@ GIF_GROUPS = {                                    # key: (file name, [(clip, lab
     'oven': ('player_oven_cold', [('cook_serve_peel', 'Serve from the oven'), ('cook_shiver', 'Chilled (a loop)')]),
     'eating': ('player_eating', [('eat_spoon', 'Eat with a spoon'), ('drink_bowl', 'Drink from a bowl'), ('eat_bite', 'Eat a bite'), None]),
 }
-GIF_CARD = {'eating': ('Eating', 'The dish is the item her main hand holds, so her right arm has it; her left arm mimes the spoon (the previews draw one).')}
+GIF_CARD = {'eating': ('Eating', 'The dish is the item her main hand holds; for the spoonfuls the game draws it in her left hand and the wooden spoon in her right.')}
 _CTX = {}
 
 

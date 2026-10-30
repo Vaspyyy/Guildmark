@@ -69,6 +69,7 @@ object CookPose {
     private val turner: ItemStack by lazy { ItemStack(CookRegistry.TOOLS.getValue(CookTool.TURNER).get()) }
     private val bowl: ItemStack by lazy { ItemStack(Items.BOWL) }
     private val bread: ItemStack by lazy { ItemStack(Items.BREAD) }
+    private val spoon: ItemStack by lazy { ItemStack(CookRegistry.WOODEN_SPOON.get()) }
 
     val AVATAR: AvatarRenderStateModifier = object : AvatarRenderStateModifier() {
         override fun <T> accept(entity: T, state: AvatarRenderState) where T : Avatar, T : ClientAvatarEntity {
@@ -191,7 +192,8 @@ object CookPose {
     /**
      * What the working hand shows at [time] into [play], or null for what it really holds: the tool the clip is made for (the
      * real one if it is in the hand), what an add or a feed lets go of until it does, the dish (a bowl or a loaf stands in
-     * when the hand has none yet, as at a Plate), and nothing while the cook hugs themselves.
+     * when the hand has none yet, as at a Plate), the Wooden Spoon for a meal eaten with one (the dish is in the other hand:
+     * [other]), and nothing while the cook hugs themselves.
      */
     fun working(player: Player, play: CookActionHandler.Play, time: Float): ItemStack? {
         val real = player.getItemInHand(play.hand)
@@ -201,7 +203,8 @@ object CookPose {
             CookAction.FLIP, CookAction.SERVE_PEEL -> if (isTool(real, CookTool.TURNER)) null else turner
             CookAction.ADD -> if (time < ADD_RELEASE && !ItemStack.matches(play.held, real)) play.held else null
             CookAction.FEED -> if (time < FEED_RELEASE && !ItemStack.matches(play.held, real)) play.held else null
-            CookAction.EAT_SPOON, CookAction.DRINK -> if (real.item is DishItem) null else bowl
+            CookAction.EAT_SPOON -> spoon
+            CookAction.DRINK -> if (real.item is DishItem) null else bowl
             CookAction.EAT_BITE -> if (real.item is DishItem) null else bread
             CookAction.SHIVER -> ItemStack.EMPTY
             CookAction.EASE, CookAction.TURN -> null
@@ -209,12 +212,14 @@ object CookPose {
     }
 
     /**
-     * What the other hand shows during [play], or null for what it really holds: the bowl a serve fills, and nothing while
-     * the clip has that hand busy (on the chain, the crank or the food, round the bowl, as the spoon, hugging).
+     * What the other hand shows during [play], or null for what it really holds: the bowl a serve fills, the dish a meal is
+     * spooned from (the one in the working hand, which shows the spoon; a bowl stands in when that hand has none, as at a
+     * Plate), and nothing while the clip has that hand busy (on the chain, the crank or the food, round the bowl, hugging).
      */
-    fun other(play: CookActionHandler.Play): ItemStack? = when (play.action) {
+    fun other(player: Player, play: CookActionHandler.Play): ItemStack? = when (play.action) {
         CookAction.SERVE -> bowl
-        CookAction.EASE, CookAction.CHOP, CookAction.CARVE, CookAction.SLICE, CookAction.TURN, CookAction.DRINK, CookAction.EAT_SPOON, CookAction.SHIVER -> ItemStack.EMPTY
+        CookAction.EAT_SPOON -> player.getItemInHand(play.hand).takeIf { it.item is DishItem } ?: bowl
+        CookAction.EASE, CookAction.CHOP, CookAction.CARVE, CookAction.SLICE, CookAction.TURN, CookAction.DRINK, CookAction.SHIVER -> ItemStack.EMPTY
         else -> null
     }
 
@@ -225,7 +230,7 @@ object CookPose {
 
     private fun items(player: Player, state: AvatarRenderState, play: CookActionHandler.Play, time: Float, mirror: Boolean) {
         working(player, play, time)?.let { hold(player, state, !mirror, it) }
-        other(play)?.let { hold(player, state, mirror, it) }
+        other(player, play)?.let { hold(player, state, mirror, it) }
     }
 
     /** Shows [stack] in the [right] (else left) hand for this frame. */

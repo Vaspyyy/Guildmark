@@ -1,0 +1,28 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "guildmark:item/wooden_spoon"
+  },
+  "display": {
+    "thirdperson_righthand": {
+      "rotation": [0, -90, 18],
+      "translation": [0, 1.27, 2.77],
+      "scale": [0.46, 0.46, 0.46]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [0, 90, -18],
+      "translation": [0, 1.27, 2.77],
+      "scale": [0.46, 0.46, 0.46]
+    },
+    "firstperson_righthand": {
+      "rotation": [0, -90, 25],
+      "translation": [1.13, 3.2, 1.13],
+      "scale": [0.6, 0.6, 0.6]
+    },
+    "firstperson_lefthand": {
+      "rotation": [0, 90, -25],
+      "translation": [1.13, 3.2, 1.13],
+      "scale": [0.6, 0.6, 0.6]
+    }
+  }
+}

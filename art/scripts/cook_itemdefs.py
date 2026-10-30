@@ -1,4 +1,4 @@
-"""The twenty Hearthcraft items as files (cook_art.py): their sprites, models and item definitions, with the overlays a dish wears.
+"""The twenty-one Hearthcraft items as files (cook_art.py): their sprites, models and item definitions, with the overlays a dish wears.
 
     dishes (13: the twelve kinds and the gruel)   `items/<id>.json` is a `minecraft:composite` of three layers,
         1. the dish's sprite: a `select` on `guildmark:dish_stage` (1 stale: tinted dull, 2 gone off: tinted green, anything else, or none: plain)
@@ -7,7 +7,8 @@
            when it has gone off;
         3. a stamp chosen by the tier: 3 Fine wears a silver one, 4 Hallmarked a gold one with a glint that passes over it now and then.
     scorched_mess   the sprite and a wisp of dark smoke that never stops.
-    tools, book, herb sprig   one sprite each, every one a short animation: a band of light that passes over its metal now and then.
+    tools, spoon, book, herb sprig   one sprite each, every one a short animation: a band of light that passes over its metal now and then
+                    (over the spoon's bowl, a soft sheen).
 
 A dish whose components are missing reads as a fresh dish of the middle tier (nothing is selected), as the design wants.
 """
@@ -27,7 +28,8 @@ DISHES = [
     ('dish_roast', 'steam'), ('dish_strips', 'sheen'), ('gruel', 'steam'),
 ]
 TOOLS = ('cooks_ladle', 'cooks_knife', 'turner', 'gilded_ladle')
-ITEM_IDS = [d for d, _ in DISHES] + ['scorched_mess'] + list(TOOLS) + ['cook_book', 'herb_sprig']
+SPOON = 'wooden_spoon'
+ITEM_IDS = [d for d, _ in DISHES] + ['scorched_mess'] + list(TOOLS) + [SPOON, 'cook_book', 'herb_sprig']
 
 TIER = 'guildmark:dish_tier'
 STAGE = 'guildmark:dish_stage'
@@ -56,11 +58,11 @@ def _animated(frames, times, path):
     G.write_json(path + '.mcmeta', O.mcmeta(times))
 
 
-def _model(assets, name, texture, handheld=False):
-    """A flat item model: `models/item/<name>.json` showing `guildmark:item/<texture>`."""
+def _model(assets, name, texture, handheld=False, display=None):
+    """A flat item model: `models/item/<name>.json` showing `guildmark:item/<texture>`; held as a tool ([handheld]), with [display] for its own hold."""
     obj = {'parent': 'minecraft:item/handheld' if handheld else 'minecraft:item/generated', 'textures': {'layer0': 'guildmark:item/' + texture}}
     if handheld:
-        obj['display'] = HANDHELD_DISPLAY
+        obj['display'] = display or HANDHELD_DISPLAY
     G.write_json(os.path.join(assets, 'models/item', name + '.json'), obj)
 
 
@@ -124,10 +126,10 @@ def write_items(assets):
     _model(assets, 'cook/scorched_mess_smoke', 'cook/scorched_mess_smoke')
     G.write_json(os.path.join(defs, 'scorched_mess.json'), {'model': {'type': 'minecraft:composite', 'models': [
         _leaf('scorched_mess'), _leaf('cook/scorched_mess_smoke')]}})
-    # the tools and the book: a glint over the metal
-    for name in TOOLS + ('cook_book',):
+    # the tools, the spoon and the book: a glint over the metal (a sheen over the spoon's bowl)
+    for name in TOOLS + (SPOON, 'cook_book'):
         _animated(cook_tools.glint_frames(name), _glint_times(name), os.path.join(tex, name + '.png'))
-        _model(assets, name, name, handheld=name in TOOLS)
+        _model(assets, name, name, handheld=name in TOOLS or name == SPOON, display=spoon_display() if name == SPOON else None)
         G.write_json(os.path.join(defs, name + '.json'), {'model': _leaf(name)})
     # the herb sprig: a dewdrop that catches the light
     sprig = cook_herb.sprig()
@@ -135,6 +137,17 @@ def write_items(assets):
     _animated(frames, O.loop_times(9, 2, 140), os.path.join(tex, 'herb_sprig.png'))
     _model(assets, 'herb_sprig', 'herb_sprig')
     G.write_json(os.path.join(defs, 'herb_sprig.json'), {'model': _leaf('herb_sprig')})
+
+
+def spoon_display():
+    """The spoon's `display`: its own hold in either hand (cook_tools.SPOON_DISPLAY), the left hands written as the handheld model writes them
+    (the turn mirrored, the offset as the right hand's: the game mirrors both back)."""
+    out = {}
+    for view in ('thirdperson', 'firstperson'):
+        rot, trans, scale = cook_tools.SPOON_DISPLAY[view]
+        out[view + '_righthand'] = {'rotation': list(rot), 'translation': list(trans), 'scale': list(scale)}
+        out[view + '_lefthand'] = {'rotation': [rot[0], -rot[1], -rot[2]], 'translation': list(trans), 'scale': list(scale)}
+    return out
 
 
 def _glint_times(name):

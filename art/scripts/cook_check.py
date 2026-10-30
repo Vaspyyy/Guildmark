@@ -5,7 +5,7 @@
 Python's standard library only. It does two things.
 
 What `cook_art.py` wrote (`check()`, which `cook_art.py` runs after writing and stops on if anything is found). It starts from the ids of
-Appendix C.1 (the nine blocks, the twenty items, the five effects, the seven particles, the twenty-one Book sprites, the four renderer
+Appendix C.1 (the nine blocks, the twenty items and the Wooden Spoon, the five effects, the seven particles, the twenty-one Book sprites, the four renderer
 textures) and the moving pieces (`models/block/cook_*.json` and the names in `CookPieces`), and follows what each file names: a blockstate's
 models, an item definition's models (through its composites and selects), a model's parent and textures, a particle's frames. It reports a file
 that is missing, a model the game would refuse or draw wrongly (an element outside the range the game takes, a face on the wrong side of a flat
@@ -50,7 +50,8 @@ KOTLIN = os.path.join(ROOT, 'src/main/kotlin/io/github/vaspyyy/guildmark')
 BLOCKS = ('stewpot', 'hob', 'bake_oven', 'spit', 'prep_board', 'plate', 'larder', 'menu_board', 'herb')
 BLOCK_ITEMS = BLOCKS[:-1]                                  # the herb is planted from its sprig, which is an item of its own
 ITEMS = ('dish_pottage', 'dish_stew', 'dish_broth', 'dish_roots', 'dish_chowder', 'dish_cakes', 'dish_loaf', 'dish_pie', 'dish_tart', 'dish_fish',
-         'dish_roast', 'dish_strips', 'gruel', 'scorched_mess', 'cooks_ladle', 'cooks_knife', 'turner', 'gilded_ladle', 'cook_book', 'herb_sprig')
+         'dish_roast', 'dish_strips', 'gruel', 'scorched_mess', 'cooks_ladle', 'cooks_knife', 'turner', 'gilded_ladle', 'wooden_spoon', 'cook_book',
+         'herb_sprig')
 EFFECTS = ('warmth', 'hearty', 'steady', 'provisioned', 'chilled')
 PARTICLES = {'cook_steam': 4, 'stew_bubble': 4, 'cook_smoke_dark': 4, 'cook_sizzle': 4, 'cook_crumb': 3, 'cook_call': 4, 'cook_foam': 4}   # frames each
 SPRITES = ('book_page', 'book_ribbon', 'book_lock', 'role_body', 'role_meat', 'role_sea', 'role_green', 'role_sweet', 'role_rich', 'role_savour',

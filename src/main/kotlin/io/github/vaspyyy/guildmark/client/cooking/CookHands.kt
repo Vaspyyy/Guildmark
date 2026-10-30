@@ -63,9 +63,9 @@ object CookHands {
         val bone = if (working) "item" else "offhand"
         val track = clip.bones[bone] ?: return
         val time = main.time(now)
-        val stack = (if (working) CookPose.working(player, main, time) else CookPose.other(main)) ?: event.itemStack
+        val stack = (if (working) CookPose.working(player, main, time) else CookPose.other(player, main)) ?: event.itemStack
         if (stack.isEmpty) {
-            // The spoon hand of a meal holds nothing to draw: what it really holds is put away for the clip. An empty working hand is the game's.
+            // A hand the clip has busy holds nothing to draw: what it really holds is put away for the clip. An empty working hand is the game's.
             if (!working) event.isCanceled = true
             return
         }

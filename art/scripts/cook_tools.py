@@ -1,4 +1,5 @@
-"""The Hearthcraft hand tools and the Cook's Book, 32 x 32 (cook_art.py): the Cook's Ladle, the Cook's Knife, the Turner, the Gilded Ladle and the book.
+"""The Hearthcraft hand tools and the Cook's Book, 32 x 32 (cook_art.py): the Cook's Ladle, the Cook's Knife, the Turner, the Gilded Ladle, the
+Wooden Spoon a bowl is eaten with, and the book.
 
 Each tool lies along the sprite's diagonal as the mod's swords do: the grip toward the lower left, the working end toward the upper right.
 The axis runs from `GRIP_END` = (3.6, 28.4) up and to the right at 45 degrees; `uv` gives each pixel its distance along it (u) and across
@@ -6,7 +7,13 @@ it (v, positive toward the lower right, the side away from the light). Every too
 and the point of its working end, in sprite pixels (x, y from the top left); cook_art.py holds the same numbers in `TOOL_LAYOUT`.
 
 Every one of them is also a short animation, a bright band that passes over its metal (or its gold) now and then: `glint_frames` gives the
-strip's frames, the first the plain sprite, and `GLINT` how long that first rests and how long each frame after it lasts.
+strip's frames, the first the plain sprite, and `GLINT` how long that first rests and how long each frame after it lasts (the spoon has no
+metal: its glint is the soft sheen use has put on its bowl).
+
+The spoon is held for eating, not for work: `SPOON_DISPLAY` is how its model sits in the hand. In third person its grip is where the
+swords' and the other tools' is, at the fist, but it is turned 37 degrees nearer the arm (toward the shoulder) and drawn at 0.46, so that
+a fist raised before the chin brings the bowl to the lips (art/scripts/cook_anims.py, eat_spoon, solves the reach with these numbers);
+in first person it is held as the tools are, a little smaller.
 """
 import math
 
@@ -24,9 +31,17 @@ LAYOUT = {
     'cooks_knife': {'grip': (7, 25), 'tip': (27, 5)},
     'turner': {'grip': (7, 25), 'tip': (25, 7)},
     'gilded_ladle': {'grip': (7, 25), 'tip': (24, 8)},
+    'wooden_spoon': {'grip': (7, 25), 'tip': (22, 10)},
+}
+
+# the spoon in the hand (rotation, translation, scale as in the model's `display`): see above
+SPOON_DISPLAY = {
+    'thirdperson': ((0, -90, 18), (0, 1.27, 2.77), (0.46, 0.46, 0.46)),
+    'firstperson': ((0, -90, 25), (1.13, 3.2, 1.13), (0.6, 0.6, 0.6)),
 }
 
 HANDLE = [(30, 20, 16), (58, 40, 28), (92, 66, 44), (128, 96, 62), (166, 130, 86), (204, 168, 116)]
+BEECH = [(44, 28, 18), (86, 58, 36), (128, 92, 58), (168, 128, 84), (204, 164, 112), (232, 200, 148)]
 WALNUT = [(22, 14, 12), (44, 28, 22), (70, 46, 34), (98, 68, 48), (128, 94, 66), (160, 124, 90)]
 BRASS = PAL['brass']
 CRIMSON = PAL['crimson']
@@ -188,6 +203,21 @@ def _turner():
     return cv, metal
 
 
+# ---------------------------------------------------------------- the spoon
+
+def _spoon():
+    """The wooden spoon: one piece of pale beech, a slim handle worn smooth, fuller toward the oval bowl hollowed into its end. Returns the bowl's
+    mask for the sheen."""
+    cv = Canvas(N)
+    handle(cv, 0.0, 20.6, 1.1, BEECH, 61, hole=False)
+    # the throat, fuller, where the handle widens into the bowl
+    rod(cv, 18.0, 22.4, 1.45, BEECH, 0.56, 0.95, fbm(N, N, 5, 62), 0.3)
+    bowl = ladle_bowl(cv, 25.8, BEECH, BEECH[1:] + [(248, 222, 176)], ru=5.0, rv=3.6, seed=63)      # the hollow a shade lighter than a ladle's
+    rim(cv, 0.3)
+    outline(cv, 0.8)
+    return cv, bowl
+
+
 # ---------------------------------------------------------------- the book
 
 def _book():
@@ -272,6 +302,7 @@ _BUILDERS = {
     'cooks_knife': _knife,
     'turner': _turner,
     'gilded_ladle': lambda: _ladle(True),
+    'wooden_spoon': _spoon,
     'cook_book': _book,
 }
 _CACHE = {}
@@ -290,6 +321,7 @@ GLINT = {
     'cooks_knife': dict(rest=130, frames=8, tick=2),
     'turner': dict(rest=95, frames=7, tick=2),
     'gilded_ladle': dict(rest=70, frames=9, tick=2),
+    'wooden_spoon': dict(rest=160, frames=7, tick=2, strength=0.4),
     'cook_book': dict(rest=150, frames=8, tick=2),
 }
 
@@ -313,7 +345,7 @@ def glint_frames(name):
         c = lo + (hi - lo) * (i - 0.5) / (n - 1)
         w = 2.6
         k = np.clip(1 - np.abs(pos - c) / w, 0, 1)
-        strength = np.where(k > 0.66, 0.88, np.where(k > 0.3, 0.45, 0.0)) * metal
+        strength = np.where(k > 0.66, 0.88, np.where(k > 0.3, 0.45, 0.0)) * metal * spec.get('strength', 1.0)
         fr = base.copy()
         white = np.array([255, 250, 232], float)
         fr[..., :3] = base[..., :3] + (white - base[..., :3]) * strength[..., None]
