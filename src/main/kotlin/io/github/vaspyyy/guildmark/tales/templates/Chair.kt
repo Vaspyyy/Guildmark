@@ -765,7 +765,7 @@ object Chair : Template, TaleVoice, TaleWords.Names {
         return taken.first()
     }
 
-    /** One of the places, as the player would put it; the mourner answers how it now stands, with the gesture of the choice. */
+    /** One of the places, as the player would put it; the mourner takes it (`tale.chair.place`), how it now stands in grey, with the gesture of the choice. */
     private fun placeOption(place: Int): TaleOption {
         val (word, label) = when (place) {
             TEMPLE -> "temple" to "talk.guildmark.choice.tale.chair.temple"
@@ -778,7 +778,7 @@ object Chair : Template, TaleVoice, TaleWords.Names {
             val player = turn.player ?: return@TaleOption null
             val at = choose(c, t, player, place) ?: return@TaleOption null
             val gesture = if (place == DOOR) Activity.NOD else Activity.POINT
-            TaleReply(listOf(TaleSay("tale.chair.stand", standDetail(t, turn.today))), gesture, toward = if (place == DOOR) null else at)
+            TaleReply(listOf(TaleSay("tale.chair.place", standDetail(t, turn.today))), gesture, toward = if (place == DOOR) null else at)
         }
     }
 
