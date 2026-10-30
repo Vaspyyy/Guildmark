@@ -74,12 +74,14 @@ object Crier {
 
     /**
      * Ticks of a great bell ([GreatBell]) before the news and after it, and the strokes: three before (one each [STRUCK] ticks, the
-     * first [STRIKE] in), one after, the bell left to hum out between.
+     * first [STRIKE] in), one after, the bell left to hum out between. The hand meets the bell on the strike clip's tick 6 of each
+     * 30 (ring_great_bell, art/scripts/village_clips.py), so the strokes fall on its strikes, and the ringing ends as a strike is
+     * done, before the hand would draw back for one not struck.
      */
-    private const val GREAT_BEFORE = 100
-    private const val GREAT_AFTER = 50
+    private const val GREAT_BEFORE = 90
+    private const val GREAT_AFTER = 30
     private const val STRUCK = 30
-    private const val STRIKE = 10
+    private const val STRIKE = 6
     private const val STROKES = 3
 
     /** Ticks the chalk takes over a line. */

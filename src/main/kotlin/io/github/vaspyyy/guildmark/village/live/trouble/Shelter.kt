@@ -31,8 +31,8 @@ import net.minecraft.world.phys.Vec3
  * come out at the all-clear. The names and signatures are the contract of design section 19.3, filled in by part V10.
  *
  * [call] takes every able body of the village within reach off their day (a [Sheltering] director each, as the lamplighters are
- * taken) and has the bell rung hard: by the bellman if they are near it (the bell's own strokes, `Townsperson.greatBell`), else by
- * itself. Each door they run for is a [Haven]: the first in pushes it to and bolts it, a latecomer knocks and someone inside lets
+ * taken) and has the bell rung hard: by the bellman if they are near it (the bell's own strokes, struck with the hand: RING_ALARM),
+ * else by itself. Each door they run for is a [Haven]: the first in pushes it to and bolts it, a latecomer knocks and someone inside lets
  * them in, and those inside huddle in the corners away from the door and the windows, whispering. [end] is the all-clear, with how it
  * ended ([Outcome]): the bell's slow strokes, the doors opening one by one, a cheer, or a sigh and a slow walk to the gap.
  *

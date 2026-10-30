@@ -188,7 +188,7 @@ object Trouble {
 
     /**
      * Rings the bell at [bell] [strokes] times, [every] ticks apart, the first [after] ticks from now: hard (six close together) for the
-     * alarm, slow for the all-clear. Nobody is at the rope (the bellman's own ringing is [Shelter]'s, with `greatBell`).
+     * alarm, slow for the all-clear. Nobody is at the bell (the bellman's own ringing is [Shelter]'s, struck with the hand: RING_ALARM).
      */
     fun ring(level: ServerLevel, bell: BlockPos, strokes: Int, every: Int, after: Int = 0) {
         val now = level.gameTime

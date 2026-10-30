@@ -134,7 +134,7 @@ object Street {
     private const val LOOK_ROUND = 40
 
     /** What a townsperson keeps doing while they can't stop for anyone: the cry, the bell, a song, running. */
-    private val PERFORMING = setOf(Activity.FLEE, Activity.ANNOUNCE, Activity.RING_BELL, Activity.LUTE, Activity.MINSTREL)
+    private val PERFORMING = setOf(Activity.FLEE, Activity.ANNOUNCE, Activity.RING_BELL, Activity.LUTE, Activity.MINSTREL, Activity.RING_ALARM)
 
     /** Talking with their hands: kept up while they turn to a player to say something (as Routine lets it). */
     private val TALKING = setOf(Activity.TALK, Activity.EXPLAIN, Activity.GOSSIP, Activity.RECOUNT)

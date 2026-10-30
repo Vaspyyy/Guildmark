@@ -21,6 +21,7 @@ import net.minecraft.sounds.SoundEvent
 import net.minecraft.sounds.SoundSource
 import net.minecraft.tags.FluidTags
 import net.minecraft.world.level.Level
+import net.minecraft.world.level.block.BellBlock
 import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.phys.Vec3
@@ -59,10 +60,53 @@ object TownsfolkClient {
 
     /**
      * The clip [activity] plays for [p]: half the folk talk with one set of gestures, half with another; one carrying a swaddled baby
-     * (LivingProps.swaddled, Villages V12a) carries it in the arms (carry_swaddle) and not as goods.
+     * (LivingProps.swaddled, Villages V12a) carries it in the arms (carry_swaddle) and not as goods; a great bell's ringer
+     * ([Townsperson.greatBell], and the alarm's, RING_ALARM) strikes the bell with the hand, low before them or hung overhead
+     * ([strikeAt]).
      */
     fun clipName(p: Townsperson, activity: Activity): String = if (activity == Activity.TALK && (p.id and 1) == 1) "talk_b"
-        else if (activity == Activity.CARRY && LivingProps.swaddled?.invoke(p) == true) "carry_swaddle" else activity.clip
+        else if (activity == Activity.CARRY && LivingProps.swaddled?.invoke(p) == true) "carry_swaddle"
+        else if (activity == Activity.RING_BELL || activity == Activity.RING_ALARM) strikeAt(p, activity) ?: activity.clip
+        else activity.clip
+
+    // ---- Villages: the great bell struck by hand ----
+    private class Struck(val activity: Activity, val start: Int, val clip: String)
+
+    /** By ringer: the strike their ringing plays, found once a ringing (and kept for its easing out once it is done). */
+    private val struck = WeakHashMap<Townsperson, Struck>()
+
+    /**
+     * The great bell's strike for [p]'s [activity] (RING_BELL at a great bell, or RING_ALARM): `ring_great_bell` (or `ring_alarm`)
+     * for the bell nearest them at their own height or below, the `_high` one for a bell hung a block or more up; null for a
+     * handbell's ringing.
+     */
+    private fun strikeAt(p: Townsperson, activity: Activity): String? {
+        val now = activity == p.shownActivity
+        val start = if (now) p.shownStart else p.lastStart
+        struck[p]?.let { if (it.activity == activity && it.start == start) return it.clip }
+        if (!now || activity == Activity.RING_BELL && !p.greatBell) return null
+        val base = if (activity == Activity.RING_ALARM) "ring_alarm" else "ring_great_bell"
+        val clip = if (bellOverhead(p)) "${base}_high" else base
+        struck[p] = Struck(activity, start, clip)
+        return clip
+    }
+
+    /** Whether the bell nearest [p] (two blocks about them, a block below to two above) hangs a block or more up. */
+    private fun bellOverhead(p: Townsperson): Boolean {
+        val level = p.level()
+        val at = p.blockPosition()
+        val pos = BlockPos.MutableBlockPos()
+        var best = Int.MAX_VALUE
+        var high = false
+        for (dy in -1..2) for (dx in -2..2) for (dz in -2..2) {
+            val d = dx * dx + dy * dy + dz * dz
+            if (d >= best || level.getBlockState(pos.setWithOffset(at, dx, dy, dz)).block !is BellBlock) continue
+            best = d
+            high = dy >= 1
+        }
+        return high
+    }
+    // ---- end Villages ----
 
     /** Each client tick for each townsperson. */
     fun tick(p: Townsperson) {

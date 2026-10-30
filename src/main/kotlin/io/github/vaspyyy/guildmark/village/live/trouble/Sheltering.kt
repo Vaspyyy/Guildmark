@@ -763,14 +763,15 @@ internal object GroundNear {
 
 /**
  * The alarm (design 16.1, moment 19): the village's bellman, if they are by the bell, runs to it and rings it hard, six strokes close
- * together, the bell's own (`Townsperson.greatBell`, so no handbell plays on top), and then shelters with the rest; with no bellman
- * near, or none who gets there in time, the bell rings by itself.
+ * together, the bell's own, struck with the hand (RING_ALARM: a stroke on each of its strikes, tick [STRIKE] of every [EVERY]), and
+ * then shelters with the rest; with no bellman near, or none who gets there in time, the bell rings by itself.
  */
 internal object Ringer {
     /** How near the bell the bellman must be to ring the alarm. */
     const val NEAR = 24.0
     private const val STROKES = 6
     private const val EVERY = 10
+    private const val STRIKE = 6
     private const val LATE = 160
 
     private val ringing = HashMap<Long, Ring>()
@@ -835,8 +836,7 @@ internal object Ringer {
                     Walker.State.ARRIVED -> {
                         at = p.tickCount
                         p.face(spot.facing)
-                        p.greatBell = true
-                        p.act(Activity.RING_BELL)
+                        p.act(Activity.RING_ALARM)
                     }
                     Walker.State.FAILED -> return finish(level, shelter = true)
                 }
@@ -844,11 +844,12 @@ internal object Ringer {
             }
             p.face(spot.facing)
             val into = p.tickCount - at
-            if (into % EVERY == 0 && strokes < STROKES) {
+            if (into % EVERY == STRIKE && strokes < STROKES) {
                 strokes++
                 (level.getBlockState(c.bell).block as? BellBlock)?.attemptToRing(level, c.bell, spot.facing)
             }
-            if (strokes >= STROKES && into >= STROKES * EVERY + 10) finish(level, shelter = true)
+            // Done as the last strike is: the hand is not drawn back for one more
+            if (strokes >= STROKES && into >= STROKES * EVERY) finish(level, shelter = true)
         }
 
         /** Done ringing (or never got there: the bell rings the strokes left by itself); with [shelter], into the shelter with the rest. */

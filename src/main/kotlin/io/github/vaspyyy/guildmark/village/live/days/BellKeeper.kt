@@ -20,6 +20,8 @@ import net.minecraft.core.Direction
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.level.block.BellBlock
+import net.minecraft.world.level.block.state.BlockState
+import net.minecraft.world.level.block.state.properties.BellAttachType
 import java.util.Random
 
 /**
@@ -30,10 +32,13 @@ import java.util.Random
  * turn. The holder is for the other parts too ([holder]): whoever calls from the bell, or rings it hard, is the holder.
  */
 object BellKeeper {
-    /** The hour the dusk bell rings, and the strokes of it (ticks into the ringing). */
+    /**
+     * The hour the dusk bell rings, and the strokes of it (ticks into the ringing): on the strikes of the hand at the bell, tick 6 of
+     * each 30 of the strike's clip (ring_great_bell, art/scripts/village_clips.py), two of them.
+     */
     const val DUSK = 17.5
-    private const val FIRST = 10
-    private const val SECOND = 40
+    private const val FIRST = 6
+    private const val SECOND = 36
     private const val RINGING = 60
 
     /** The grown-up folk of the village at [centre] who could hold its bell, the first on the week's list first. */
@@ -104,8 +109,13 @@ object BellKeeper {
         (level.getBlockState(bell).block as? BellBlock)?.attemptToRing(level, bell, from)
     }
 
-    /** Where to stand to ring the bell at [bell]: a block beside it (under it, if it hangs high), the nearest to [from] of the nearest. */
+    /**
+     * Where to stand to ring the bell at [bell]: a block beside it (under it, if it hangs high), the nearest to [from] of the nearest,
+     * and before any other one straight off a side the hand strikes it from as a vanilla bell is struck ([struckFrom]): not through a
+     * post of its frame or into the bar it hangs from.
+     */
     internal fun standAt(level: ServerLevel, bell: BlockPos, from: BlockPos, who: Entity): Spot? {
+        val state = level.getBlockState(bell)
         var best: Spot? = null
         var bestScore = Double.MAX_VALUE
         for (dy in 0 downTo -5) for (dx in -2..2) for (dz in -2..2) {
@@ -113,12 +123,29 @@ object BellKeeper {
             if (across == 0) continue
             val pos = bell.offset(dx, dy, dz)
             if (!Places.standable(level, pos) || !Claims.free(level, pos, who)) continue
-            val score = across * 10.0 - dy * 4.0 + pos.distSqr(from) / 100.0
+            val score = across * 10.0 - dy * 4.0 + pos.distSqr(from) / 100.0 + if (struckFrom(state, dx, dz)) 0.0 else ASIDE
             if (score < bestScore) {
                 bestScore = score
                 best = Spot(pos, Direction.getApproximateNearest(-dx.toDouble(), 0.0, -dz.toDouble()))
             }
         }
         return best
+    }
+
+    /** What a stand off a side the bell is not struck from costs, in [standAt]'s reckoning: more than a block farther off. */
+    private const val ASIDE = 25.0
+
+    /**
+     * Whether the bell [state] is struck from a block [dx], [dz] off it, as vanilla's hit rings it: one standing between its posts
+     * straight off its open face (a bell on the floor), straight off a side its bar does not run to (on a wall), from anywhere (hung
+     * from above).
+     */
+    private fun struckFrom(state: BlockState, dx: Int, dz: Int): Boolean {
+        if (state.block !is BellBlock) return true
+        val attached = state.getValue(BellBlock.ATTACHMENT)
+        if (attached == BellAttachType.CEILING) return true
+        if (dx != 0 && dz != 0) return false
+        val along = (if (dx != 0) Direction.Axis.X else Direction.Axis.Z) == state.getValue(BellBlock.FACING).axis
+        return if (attached == BellAttachType.FLOOR) along else !along
     }
 }

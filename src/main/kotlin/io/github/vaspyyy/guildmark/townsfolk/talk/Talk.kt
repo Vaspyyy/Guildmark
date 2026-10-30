@@ -784,7 +784,8 @@ object Talk {
         val walking = !p.navigation.isDone
         val wave = if (walking) Activity.NOD_WALK else Activity.WAVE_OFF
         if (!p.carried.isEmpty || p.activity in LADEN || p.routine.task is Pull) return "ask.busy" to null
-        if (p.activity == Activity.ANNOUNCE || p.activity == Activity.RING_BELL || p.activity == Activity.LUTE || p.activity == Activity.MINSTREL) return "ask.busy" to null
+        if (p.activity == Activity.ANNOUNCE || p.activity == Activity.RING_BELL || p.activity == Activity.LUTE || p.activity == Activity.MINSTREL ||
+            p.activity == Activity.RING_ALARM) return "ask.busy" to null
         val life = Days.life(p) ?: return null
         val now = level.overworldClockTime
         val stretch = Days.stretch(life, now)
