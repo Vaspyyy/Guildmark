@@ -4,6 +4,7 @@ import com.mojang.serialization.Codec
 import com.mojang.serialization.MapCodec
 import com.mojang.serialization.codecs.RecordCodecBuilder
 import io.github.vaspyyy.guildmark.Guildmark
+import io.github.vaspyyy.guildmark.village.live.keptList
 import net.minecraft.core.BlockPos
 import net.minecraft.core.UUIDUtil
 import net.minecraft.resources.Identifier
@@ -603,12 +604,12 @@ class TaleData(
                 Codec.INT.optionalFieldOf("version", TaleLimits.VERSION).forGetter { it.version },
                 Codec.INT.optionalFieldOf("next", 1).forGetter { it.next },
                 Codec.INT.optionalFieldOf("nextMemorial", 1).forGetter { it.nextMemorial },
-                Tale.CODEC.listOf().lenientOptionalFieldOf("tales", listOf()).forGetter { d -> d.tales.values.sortedBy { it.id } },
-                Town.CODEC.listOf().lenientOptionalFieldOf("towns", listOf()).forGetter { d -> d.towns.entries.sortedBy { it.key }.map { it.key to it.value } },
-                Memorial.CODEC.listOf().lenientOptionalFieldOf("memorials", listOf()).forGetter { d -> d.memorials.sortedBy { it.id } },
-                Flip.CODEC.listOf().lenientOptionalFieldOf("flips", listOf()).forGetter { it.flips },
-                Owed.CODEC.listOf().lenientOptionalFieldOf("owed", listOf()).forGetter { it.owed },
-                SEALED.listOf().lenientOptionalFieldOf("sealed", listOf()).forGetter { d -> d.sealed.entries.sortedBy { it.key }.map { it.key to it.value } },
+                keptList(Tale.CODEC).lenientOptionalFieldOf("tales", listOf()).forGetter { d -> d.tales.values.sortedBy { it.id } },
+                keptList(Town.CODEC).lenientOptionalFieldOf("towns", listOf()).forGetter { d -> d.towns.entries.sortedBy { it.key }.map { it.key to it.value } },
+                keptList(Memorial.CODEC).lenientOptionalFieldOf("memorials", listOf()).forGetter { d -> d.memorials.sortedBy { it.id } },
+                keptList(Flip.CODEC).lenientOptionalFieldOf("flips", listOf()).forGetter { it.flips },
+                keptList(Owed.CODEC).lenientOptionalFieldOf("owed", listOf()).forGetter { it.owed },
+                keptList(SEALED).lenientOptionalFieldOf("sealed", listOf()).forGetter { d -> d.sealed.entries.sortedBy { it.key }.map { it.key to it.value } },
             ).apply(i) { version, next, nextMemorial, tales, towns, memorials, flips, owed, sealed ->
                 TaleData(
                     version, next, nextMemorial,
