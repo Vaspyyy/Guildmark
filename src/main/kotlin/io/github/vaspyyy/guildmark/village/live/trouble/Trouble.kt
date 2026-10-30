@@ -16,6 +16,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import io.github.vaspyyy.guildmark.townsfolk.talk.TalkLines
 import io.github.vaspyyy.guildmark.townsfolk.talk.sources.Say
 import io.github.vaspyyy.guildmark.village.live.Live
+import io.github.vaspyyy.guildmark.village.live.VillageBudget
 import io.github.vaspyyy.guildmark.village.live.VillageInfoCommand
 import io.github.vaspyyy.guildmark.village.live.VillagePerf
 import io.github.vaspyyy.guildmark.village.live.VillageRec
@@ -123,7 +124,7 @@ object Trouble {
         if (now - looked < LOOK && now >= looked) return
         looked = now
         val day = VillageBoards.day(level)
-        for (rec in Villages.awake(level)) {
+        for (rec in VillageBudget.within("trouble", Villages.awake(level), 100)) {
             guarded("the day of ${rec.name}") { if ((TroubleData.peek(level)?.peek(rec.key)?.day ?: closed[rec.key]) != day) daily(level, rec, day) }
             guarded("the chronicle of ${rec.name}") { built(level, rec, day) }
             guarded("the memorial of ${rec.name}") { Memorial.look(level, rec, day) }
