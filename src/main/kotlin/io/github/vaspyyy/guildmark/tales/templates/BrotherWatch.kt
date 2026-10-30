@@ -382,7 +382,8 @@ internal object BrotherWatch {
 
     /**
      * "Can you walk? Come with me.": they follow [player] at their own pace (S8, [TaleEscort], their lamp in hand, cowering and crying out as a
-     * hostile comes near) to the forge door. Below, they are being led now, and it is the deed of the way down. False if they cannot walk now.
+     * hostile comes near, and calling after the player and resting in their own words, not the old walker's) to the forge door. Below, they
+     * are being led now, and it is the deed of the way down. False if they cannot walk now.
      */
     fun walk(c: Ctx, t: Tale, player: ServerPlayer): Boolean {
         val level = c.level
@@ -392,7 +393,7 @@ internal object BrotherWatch {
         val memo = memo(t)
         cancelEscort(level, t, memo)
         val lamp = Sets.prop(if (Brother.flag(t, Brother.ROSE)) "miners_lamp_lit" else "miners_lamp_dark")
-        if (!TaleEscort.start(level, t, Brother.BROTHER, b, player, Brother.forgeOr(c, t), prop = lamp, scared = "tale.brother.scared")) return false
+        if (!TaleEscort.start(level, t, Brother.BROTHER, b, player, Brother.forgeOr(c, t), prop = lamp, scared = "tale.brother.scared", wait = "tale.brother.behind", rest = "tale.brother.rest")) return false
         memo.escort = b.director as? TaleEscort
         memo.leader = player.uuid
         memo.lostSince = -1

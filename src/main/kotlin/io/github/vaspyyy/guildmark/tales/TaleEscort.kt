@@ -28,15 +28,15 @@ import kotlin.math.sqrt
  * the body is given back to its hold there. With no [target] (the command's test) it goes on until [until], and is let go.
  *
  * - Every thirty blocks, or at a bench within six blocks once a dozen blocks have gone by, it rests while the player is within
- *   twenty blocks: at a bench it walks to it, sits (SIT_DOWN, SIT), says a word (`tale.set.rest`) and gets up (STAND_UP); with none
- *   it stops and catches its breath (CATCH_BREATH). A rest is cut short if the player goes on past 28 blocks.
- * - If the player gets more than 24 blocks ahead in sight it waves as it walks and calls (`tale.set.wait`); out of sight it waits
+ *   twenty blocks: at a bench it walks to it, sits (SIT_DOWN, SIT), says a word (`tale.set.rest`, or the tale's own [restFamily]) and
+ *   gets up (STAND_UP); with none it stops and catches its breath (CATCH_BREATH). A rest is cut short if the player goes on past 28 blocks.
+ * - If the player gets more than 24 blocks ahead in sight it waves as it walks and calls (`tale.set.wait`, or [waitFamily]); out of sight it waits
  *   where it is; far behind and out of sight a while it catches up, to a few steps behind the player (as `Captives.catchUp`).
  * - A player's word comes first: it steps aside for the talk, and [TaleBodies.tend] gives the walk back, from where it had got to.
  *
  * With [leads] (Tales T2b, the lantern's walk to the square) they know the way to the [target] and walk it themselves at the same pace,
  * the player beside them, rather than following: if the player falls more than [WAIT_FOR] blocks behind they stop and turn to wait
- * for them; a player a dozen blocks ahead in sight is called after as they go (`tale.set.wait`), and one gone on out of their
+ * for them; a player a dozen blocks ahead in sight is called after as they go ([waitFamily]), and one gone on out of their
  * reach is waited for where they stand, waved to and called while in sight. They rest as above but not in the last dozen blocks,
  * and are never caught up or put anywhere: the way on is always walked.
  */
@@ -52,6 +52,9 @@ class TaleEscort(
     private val child: Boolean = false,
     /** The family a frightened walker cries out with when a hostile mob is near, cowering where they stand (the brother's, Tales T5, 8.12); null: only the child cowers. */
     private val scared: String? = null,
+    /** The families the walker calls after a player gone on ahead with, and says at a rest: the old walker's shared ones unless the tale gives its own (the brother's, Villages V12d). */
+    private val waitFamily: String = WAIT,
+    private val restFamily: String = REST,
 ) : Director {
     private enum class Mode { FOLLOW, TO_BENCH, SIT_DOWN, SITTING, STAND_UP, BREATH }
 
@@ -108,7 +111,7 @@ class TaleEscort(
             Mode.TO_BENCH -> toBench(level, p, who, now)
             Mode.SIT_DOWN -> if (now - modeAt >= Activity.SIT_DOWN.ticks) {
                 p.act(Activity.SIT)
-                Words.sayWith(p, "tale.set.rest", why = "a slow walk")
+                Words.sayWith(p, restFamily, why = "a slow walk")
                 set(Mode.SITTING, now)
             }
             Mode.SITTING -> if (now - modeAt >= SIT_FOR || p.distanceTo(who) > LEFT_BEHIND) {
@@ -123,7 +126,7 @@ class TaleEscort(
                 p.act(Activity.NONE)
                 set(Mode.FOLLOW, now)
             } else if (now - modeAt == 12L) {
-                Words.sayWith(p, "tale.set.rest", why = "a slow walk")
+                Words.sayWith(p, restFamily, why = "a slow walk")
             }
         }
     }
@@ -157,7 +160,7 @@ class TaleEscort(
                 if (now - calledAt >= CALL_EVERY) {
                     calledAt = now
                     p.act(if (child) Activity.WAVE else Activity.WAVE_WALK)
-                    if (!child) Words.sayWith(p, "tale.set.wait", why = "a slow walk")
+                    if (!child) Words.sayWith(p, waitFamily, why = "a slow walk")
                 }
                 if (child) stop(p) else go(p, who)
             }
@@ -199,7 +202,7 @@ class TaleEscort(
                     if (now - calledAt >= CALL_EVERY) {
                         calledAt = now
                         p.act(Activity.WAVE)
-                        Words.sayWith(p, "tale.set.wait", why = "a slow walk")
+                        Words.sayWith(p, waitFamily, why = "a slow walk")
                     }
                 }
             }
@@ -214,7 +217,7 @@ class TaleEscort(
                     // A little way ahead of them: a word after them, as they keep on
                     calledAt = now
                     p.act(Activity.WAVE_WALK)
-                    Words.sayWith(p, "tale.set.wait", why = "a slow walk")
+                    Words.sayWith(p, waitFamily, why = "a slow walk")
                 }
                 onTo(p, to, now)
             }
@@ -417,6 +420,10 @@ class TaleEscort(
         const val PACE = 0.45
         const val ARRIVE = 4.0
 
+        /** The old walker's call after a player gone on ahead and word at a rest, shared by every tale that gives none of its own. */
+        const val WAIT = "tale.set.wait"
+        const val REST = "tale.set.rest"
+
         /** The child's pace, how near their side they keep, how near a hostile mob frightens them, how near the player must be for it, and ticks between two cries. */
         const val CHILD_PACE = 0.6
         const val CHILD_SIDE = 2.5
@@ -451,13 +458,17 @@ class TaleEscort(
          * [target], following [player]. The tale hears [Event.Arrived] when they get there. [prop] is what they carry on the way (the
          * lantern), [until] the game time to let go at (0: not before they arrive). With [leads] and a [target] they walk the way there
          * themselves with the player beside them, rather than following (see the class); [child] is the child's variant (a child's pace,
-         * afraid of the night's mobs); with [scared] a grown walker cowers too, and cries out with that family. False if they cannot be taken just now.
+         * afraid of the night's mobs); with [scared] a grown walker cowers too, and cries out with that family; [wait] and [rest] are the
+         * families they call after the player and rest with (the old walker's shared ones unless the tale has its own). False if they cannot
+         * be taken just now.
          */
         fun start(
             level: ServerLevel, t: Tale?, slot: String, who: Townsperson, player: ServerPlayer, target: BlockPos?, prop: ItemStack? = null, until: Long = 0L,
             leads: Boolean = false,
             child: Boolean = false,
             scared: String? = null,
+            wait: String = WAIT,
+            rest: String = REST,
         ): Boolean {
             if (t != null) {
                 if (who.tale != t.id) TaleBodies.hold(level, t, slot, null, null)
@@ -471,7 +482,7 @@ class TaleEscort(
                 who.routine.interrupt()
                 who.standUp()
             }
-            val escort = TaleEscort(player.uuid, target, t?.id ?: -1, slot, prop, until, leads, child, scared)
+            val escort = TaleEscort(player.uuid, target, t?.id ?: -1, slot, prop, until, leads, child, scared, wait, rest)
             who.director = escort
             who.navigation.stop()
             // Only a tale's walk is kept by the tidy (given back after a talk, ended with the switch); the command's is its own
