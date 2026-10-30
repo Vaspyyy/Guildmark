@@ -65,6 +65,8 @@ object Villages {
         VillageSafetyCommand.init()
         // A death saved a second after it happens, a capital's and a tale's too (V11, m7 leftovers item 3: everyone's, set up here)
         io.github.vaspyyy.guildmark.townsfolk.DeathSaves.register()
+        // Whose turn it is to speak in the villages' moments: a line said near another waits for it
+        Turns.register()
     }
 
     /**

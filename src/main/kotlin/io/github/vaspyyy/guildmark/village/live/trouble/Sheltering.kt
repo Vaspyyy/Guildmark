@@ -11,6 +11,7 @@ import io.github.vaspyyy.guildmark.townsfolk.Spot
 import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import io.github.vaspyyy.guildmark.townsfolk.Walker
+import io.github.vaspyyy.guildmark.village.live.Turns
 import io.github.vaspyyy.guildmark.village.live.VillageSounds
 import io.github.vaspyyy.guildmark.village.live.days.BellKeeper
 import io.github.vaspyyy.guildmark.village.live.links.Greeter
@@ -32,7 +33,8 @@ import net.minecraft.world.phys.Vec3
  * One of a village's folk sheltering (living-world/villages/design.md 11.2): the director of their townsperson while it lasts, as
  * a lamplighter's is. In turn:
  *
- * - ALERT: they stop, drop what they carry, turn to the trouble; the first two to hear shout (10 to 30 ticks, the farther the later);
+ * - ALERT: they stop, drop what they carry, turn to the trouble; the first two to hear shout (10 to 30 ticks, the farther the later),
+ *   the second once the first is heard out ([Turns]);
  * - RUN: to their door ([Shelter.havenFor]) at 0.75 (a child at 1.0, to the door their household's grown-up runs for), at most 400
  *   ticks; with no door within reach they cower where they stand, back to a wall;
  * - IN: the first in steps inside and turns to the door ([Shelter.Haven.stand]: its inner face half a block ahead), waiting a moment
@@ -70,6 +72,8 @@ class Sheltering internal constructor(internal val called: Shelter.Called, val p
     private var said = false
     private var emergeAt = -1
     private var phase = 0
+    /** The tick of ALERT they shouted on, or -1 before they have. */
+    private var shoutAt = -1
     /** Cowering where they stood: the way their back is to (a wall). */
     private var wall: Direction? = null
     /** The stand at the door, as the bolter or the opener. */
@@ -151,14 +155,16 @@ class Sheltering internal constructor(internal val called: Shelter.Called, val p
             p.navigation.stop()
             p.face(p.yawTo(called.toward()))
             drop(level)
-            if (shout) {
-                p.act(Activity.SHOUT)
-                Trouble.say(p, Shelter.alertLine(called, p), Trouble.SHOUT)
-            } else {
-                p.act(Activity.NONE)
-            }
+            p.act(Activity.NONE)
         }
-        if (t >= alert) run(level)
+        // The shout, in its turn: the second of the two once the first one's is heard out (or not at all, if it never is in time)
+        if (shout && shoutAt < 0 && t < SHOUT_WAIT && Turns.freeBy(p)) {
+            shoutAt = t
+            p.act(Activity.SHOUT)
+            Trouble.say(p, Shelter.alertLine(called, p), Trouble.SHOUT)
+        }
+        // Off once the alert is taken in and the shout given (the arms down from it)
+        if (t >= alert && (!shout || shoutAt >= 0 && t >= shoutAt + SHOUTED || t >= SHOUT_WAIT)) run(level)
     }
 
     /** What they carried set down where they stand (a basket, a sack): the goods' crumbs scattered, the hands free to run. */
@@ -600,6 +606,9 @@ class Sheltering internal constructor(internal val called: Shelter.Called, val p
         private const val WAIT_BEHIND = 60
         private const val KNOCK_AGAIN = 30
         private const val LET_SELF_IN = 60
+        /** The longest a shouter waits for their turn to shout (then they run without), and how long the shout holds them. */
+        private const val SHOUT_WAIT = 80
+        private val SHOUTED = Activity.SHOUT.ticks - 6
 
         /** The whispers behind each door, every 8 to 14 seconds: a grown-up's hush, a child's fear. Every 20 ticks, from [Shelter.tick]. */
         internal fun whispers(level: ServerLevel, c: Shelter.Called) {
