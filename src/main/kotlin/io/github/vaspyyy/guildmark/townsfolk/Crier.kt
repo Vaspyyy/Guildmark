@@ -209,8 +209,8 @@ object Crier {
         val after = if (great != null) GREAT_AFTER else BELL_AFTER
         return Work(p, spot, crowd, plan = { i ->
             if (waiting && conditions(level).clock < MarketBoards.NOON) {
-                // Reading the news over until the hour, a look about between whiles
-                if (i % 2 == 0) Step(Activity.READ, 120) else Step(Activity.NONE, 60)
+                // Reading the news over from the scroll until the hour, a look about between whiles (the clip's own)
+                Step(Activity.READ_SCROLL, 180)
             } else {
                 if (waiting) {
                     waiting = false
@@ -228,7 +228,7 @@ object Crier {
             val mouth = p.eyePosition
             // The scroll comes out the first time it's wanted: to read it over, or (come late) to cry from; at a great bell, once it's rung
             val cue = if (great != null) Activity.ANNOUNCE else Activity.RING_BELL
-            if (t == 0 && !unrolled && (s.activity == Activity.READ || s.activity == cue)) {
+            if (t == 0 && !unrolled && (s.activity == Activity.READ_SCROLL || s.activity == cue)) {
                 unrolled = true
                 sound(level, mouth, "unroll", 0.7f)
             }
