@@ -40,10 +40,12 @@ import net.minecraft.world.phys.Vec3
  * - KNOCK and WAIT: a latecomer at a bolted door steps up to its leaf ([Shelter.Haven.knockAt]), knocks and calls; someone inside
  *   comes to open it (OPEN: "Quick, in!", the beckon played out) and bolts it again once they are in and clear of the doorway;
  *   nobody coming, they let themselves in;
- * - COWER: in the spot farthest from the door and the windows, facing the door; a child beside a grown-up of their home, the two
- *   holding each other (EMBRACE) first; a whisper now and then ([whispers]);
- * - EMERGE: at the all-clear, each in their turn: the door opened, out into the lane, a look about, then the end's own beat (a cheer
- *   and a clap for a siege held or a raid beaten off, a sigh and a slow walk to the broken wall for a siege lost), and back to the day.
+ * - COWER: in the spot farthest from the door and the windows, facing the door; a child beside a grown-up of their home, and held
+ *   once by one of their own family, the one come to the other stepping up face to face and the two holding each other (EMBRACE);
+ *   a whisper now and then ([whispers]);
+ * - EMERGE: at the all-clear, each in their turn: the door opened, out into the lane, a look about, then the end's own beat (a cheer,
+ *   a clap or one of their own family held, the two in each other's arms, for a siege held or a raid beaten off; a sigh and a slow
+ *   walk to the broken wall for a siege lost), and back to the day.
  *
  * Hurt, or had by something else for more than a few ticks (the flee), they are let go and taken again a little later; one a raider
  * puts on a rope is let go (the door they are behind forced open) and not taken again while they are on it, crying out once as
@@ -74,6 +76,12 @@ class Sheltering internal constructor(internal val called: Shelter.Called, val p
     private var shoutAt = -1
     /** Setting down what they carried, at the alert (PUT_DOWN). */
     private var settingDown = false
+    /** One of their own family they are stepping up to hold ([holding]), since [hugFrom]; and the one coming to hold them. */
+    private var hugging: Sheltering? = null
+    private var hugFrom = 0
+    private var hugBy: Sheltering? = null
+    /** A child already held behind the door: once is enough. */
+    private var comforted = false
     /** Cowering where they stood: the way their back is to (a wall). */
     private var wall: Direction? = null
     /** The stand at the door, as the bolter or the opener. */
@@ -393,15 +401,11 @@ class Sheltering internal constructor(internal val called: Shelter.Called, val p
         p.navigation.stop()
         val h = haven
         if (h != null) p.face(p.yawTo(Vec3.atCenterOf(h.door.pos))) else wall?.let { p.face(it.opposite) }
-        // A child held by a grown-up of their home, the two holding each other a moment first
+        // A child and a grown-up of their own family side by side: the one come steps up to the other and the two hold each other
         val other = embraceWith(level)
         if (other != null) {
-            p.face(p.yawTo(other.p.position()))
-            p.act(Activity.EMBRACE)
-            if (other.stage == S.COWER && other.p.activity == Activity.COWER) {
-                other.p.face(other.p.yawTo(p.position()))
-                other.p.act(Activity.EMBRACE)
-            }
+            hold(other)
+            p.act(Activity.NONE)
         } else {
             p.act(Activity.COWER)
         }
@@ -413,6 +417,7 @@ class Sheltering internal constructor(internal val called: Shelter.Called, val p
             if (state == Walker.State.WALKING && t < 200) return
             return cower(level)
         }
+        if (holding()) return
         p.navigation.stop()
         val h = haven
         // Someone knocking: the bolter, or the first grown-up behind the door, goes to let them in
@@ -426,11 +431,65 @@ class Sheltering internal constructor(internal val called: Shelter.Called, val p
         }
     }
 
-    /** A grown-up of [p]'s home cowering beside them (for a child), or the child beside them (for the grown-up): who to hold. */
+    /**
+     * A grown-up of [p]'s own family cowering beside them (for a child not yet held), or such a child beside them (for the grown-up):
+     * who to hold; none already holding or being held.
+     */
     private fun embraceWith(level: ServerLevel): Sheltering? {
         val h = haven ?: return null
-        val kin = Shelter.household(level, this).filter { it.haven === h && it.stage == S.COWER && it.p.distanceToSqr(p) < 4.0 }
-        return if (p.role == TownRole.CHILD) kin.firstOrNull { it.p.role != TownRole.CHILD } else kin.firstOrNull { it.p.role == TownRole.CHILD }
+        val kin = Shelter.family(level, this).filter {
+            it.haven === h && it.stage == S.COWER && it.at && it.hugBy == null && it.hugging == null && it.p.distanceToSqr(p) < 4.0
+        }
+        if (p.role == TownRole.CHILD) return if (comforted) null else kin.firstOrNull { it.p.role != TownRole.CHILD }
+        return kin.firstOrNull { it.p.role == TownRole.CHILD && !it.comforted }
+    }
+
+    /** Off to hold [other] ([holding] steps them up to them). */
+    private fun hold(other: Sheltering) {
+        hugging = other
+        hugFrom = p.tickCount
+        other.hugBy = this
+    }
+
+    /**
+     * On the way to hold [hugging]: a step up to a block from them, face to face as EMBRACE has it; and once there and their own move
+     * played out, the two in each other's arms. True while at it; the other gone off, or not reached in time, they give it up.
+     */
+    private fun holding(): Boolean {
+        val k = hugging ?: return false
+        val u = p.tickCount - hugFrom
+        if (k.done || k.stage != stage || k.hugBy !== this || k.p.distanceToSqr(p) > 9.0 || u > HOLD_MOST) {
+            hugging = null
+            if (k.hugBy === this) k.hugBy = null
+            return false
+        }
+        val them = k.p.position()
+        val off = Vec3(p.x - them.x, 0.0, p.z - them.z)
+        val way = if (off.lengthSqr() < 0.09) Vec3.directionFromRotation(0f, k.p.yRot) else off.normalize()
+        p.face(p.yawTo(them))
+        if (!stepOnto(them.add(way)) && u < STEP_MOST) return true
+        if (!k.p.activity.loop && !k.p.actDone) return true
+        hugging = null
+        since = p.tickCount
+        p.navigation.stop()
+        p.face(p.yawTo(them))
+        p.act(Activity.EMBRACE)
+        if (p.role == TownRole.CHILD) comforted = true
+        if (k.p.role == TownRole.CHILD) k.comforted = true
+        k.held(this)
+        return true
+    }
+
+    /** [by] has stepped up to hold them: they turn to them and the two hold each other (in the lane, that is their beat). */
+    private fun held(by: Sheltering) {
+        hugBy = null
+        p.navigation.stop()
+        p.face(p.yawTo(by.p.position()))
+        p.act(Activity.EMBRACE)
+        if (stage == S.EMERGE) {
+            phase = 3
+            since = p.tickCount
+        }
     }
 
     /** A grown-up of a child's home already in their corner: the child takes the spot beside them. */
@@ -508,10 +567,10 @@ class Sheltering internal constructor(internal val called: Shelter.Called, val p
                 since = p.tickCount
                 p.act(Activity.LOOK_ABOUT)
             }
-            // A look about
-            2 -> if (p.actDone || t > Activity.LOOK_ABOUT.ticks) after(level)
-            // The end's own beat
-            3 -> if (p.actDone || t > 60) {
+            // A look about (and, one of their family coming to hold them, a wait for them)
+            2 -> if (hugBy == null && (p.actDone || t > Activity.LOOK_ABOUT.ticks)) after(level)
+            // The end's own beat (one of their family stepped up to and held, or waited for)
+            3 -> if (!holding() && hugBy == null && (p.actDone || t > 60)) {
                 if (called.ending == Shelter.Outcome.LOST && spot != null) {
                     phase = 4
                     since = p.tickCount
@@ -544,11 +603,13 @@ class Sheltering internal constructor(internal val called: Shelter.Called, val p
         when (how) {
             Shelter.Outcome.HELD, Shelter.Outcome.BEATEN -> {
                 Shelter.cheer(level, called)
-                // Those they feared for: one of their home close by is held
-                val kin = Shelter.household(level, this).firstOrNull { it.stage == S.EMERGE && it.p.distanceToSqr(p) < 9.0 }
+                // Those they feared for: one of their own family close by in the lane is stepped up to and held, both holding each other
+                val kin = Shelter.family(level, this).firstOrNull {
+                    it.stage == S.EMERGE && it.phase in 2..3 && it.hugBy == null && it.hugging == null && it.p.distanceToSqr(p) < 9.0
+                }
                 if (kin != null && p.random.nextBoolean()) {
-                    p.face(p.yawTo(kin.p.position()))
-                    p.act(Activity.EMBRACE)
+                    hold(kin)
+                    p.act(Activity.NONE)
                 } else {
                     p.act(if (p.random.nextBoolean()) Activity.CHEER else Activity.CLAP)
                 }
@@ -593,6 +654,8 @@ class Sheltering internal constructor(internal val called: Shelter.Called, val p
     internal fun finish() {
         if (done) return
         done = true
+        hugging?.let { if (it.hugBy === this) it.hugBy = null }
+        hugBy?.let { if (it.hugging === this) it.hugging = null }
         haven?.let { h ->
             h.taken.entries.removeIf { it.value == p.id }
             h.knocking.remove(this)
@@ -648,6 +711,8 @@ class Sheltering internal constructor(internal val called: Shelter.Called, val p
         /** The last steps onto a stand or up to a door: done within [ON_SPOT] of it, given up after [STEP_MOST] ticks (something in the way). */
         private const val ON_SPOT = 0.12
         private const val STEP_MOST = 40
+        /** The longest someone waits to hold one of their own (for the other's move to be played out). */
+        private const val HOLD_MOST = 120
         /** How near a door's middle someone counts as in its doorway, and the longest the door waits for them to be clear of it. */
         private const val DOORWAY = 1.1
         private const val CLEAR_MOST = 60

@@ -415,6 +415,14 @@ object Shelter {
         return s.called.folk.values.filter { it !== s && !it.done && it.p.resident >= 0 && residents[it.p.resident]?.home == home }
     }
 
+    /** Those of [s]'s own family sheltering with them: their household's folk of the same family name. */
+    internal fun family(level: ServerLevel, s: Sheltering): List<Sheltering> {
+        if (s.p.resident < 0) return listOf()
+        val residents = Residents.get(level)
+        val name = residents[s.p.resident]?.family ?: return listOf()
+        return household(level, s).filter { residents[it.p.resident]?.family == name }
+    }
+
     /** What `village watch` says of the shelter of [key]. */
     fun describe(key: Long, now: Long): List<String> {
         val c = called[key] ?: return listOf("not sheltering")
