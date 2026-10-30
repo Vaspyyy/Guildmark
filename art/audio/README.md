@@ -798,6 +798,34 @@ python3 -B art/audio/make_townsfolk_voices.py fragments --assets src/main/resour
 python3 -B art/audio/make_talk_voices.py table --assets src/main/resources/assets/guildmark             # then art/lang/merge_lang.py again
 ```
 
+Villages V12d recorded what the game showed as text only, in the same voices and pipeline, 173 takes:
+- **The bellman's ten from V6** (the end of `BELLMAN`, 20 takes): the dead, a siege held or lost with no wall, the road
+  open, fever, a good catch, hunger, no pedlar, steady times and market day, cried as the rest are. Three are said
+  another way, the comment giving V6's words: "We mourn our own." (several may be cried at once), "We could not hold
+  them. Take heart, neighbours!" (a siege can be lost with nobody taken) and "It's market day! Come to the green!" (a
+  village may have no stalls).
+- **V5's eight thanks for a supply** (the end of `VILLAGE`, 24 takes in the man's, the woman's and the old man's): the
+  keeper's, the hard times', and the folk's calls.
+- **The tales' 31 families** (`tale_lines`, 129 takes, each in a group of its own at the end of its module): the general
+  `tale.yes` and the note's, the fence's, the lute's, the locket's and the brother's typed families, and new families for
+  the replies that said another family's words (the informer's choice, the wagon's ways, the moot's purse, the chair's
+  place, the brother's call and rest on the slow walk). Nine of T1's wordings were said another way where they named a
+  count or could be untrue (the loaves, a purse only short, the lender's hours), in the fragments that first gave them
+  and in `merge_lang`'s `OVERRIDES`.
+
+Heard back with Whisper base.en, all 173 right: 162 word for word and 11 but for a spelling or a homophone ("peddler",
+"traveler", "neighbors", "two few loaves", "the sums"). The fixes are in `VILLAGE_FIXES_FOR`, `VILLAGE_SPEED_FOR` and the
+tales' `PHONEMES`, each saying what was heard ("We cannot hold them", "going around", "duscan" for "dusk", "land" for
+"lend", "market for you", "I can keep up"); three wordings were changed where no reading would do. The cries sit at the
+crier's -19.1 LUFS, the thanks at -20.2 and the tales' lines at -20.6 to -22.9 against the everyday -21.0, none over
+-1.0 dBTP, the longest 3.91 s.
+
+```
+<venv>/bin/python -I -B art/audio/make_townsfolk_voices.py tts --model <dl>/kokoro-v1.0.onnx --voices <dl>/voices-v1.0.bin --out <raw-dir> --keys '^(bellman_(died|siege_held_nowall|siege_lost_nowall|built_road_open|fever|good_catch|hungry|no_pedlar|times_steady|market_day)|village_thanks_)'
+<venv>/bin/python -I -B art/audio/make_talk_voices.py tts --model <dl>/kokoro-v1.0.onnx --voices <dl>/voices-v1.0.bin --out <raw-dir> --keys '^talk\.tale\.(yes|note\.(short|mended|where|stand_2|stand_3)|fence\.(bread_short|bread_one|bread_both|stand_2|stand_3)|lute\.(refused|short|paid)|locket\.(short|street)|informer\.(to_watch|let_speak|own|gate)|wagon\.(go|pay|watch|camp|driver_thanks)|moot\.purse|chair\.place|brother\.(wait|alone|behind|rest))_[0-9]$'
+# then process each with the same --keys, fragments, merge_lang, table and merge_lang again, as above
+```
+
 ### Kitchen voices
 
 `kitchen_lines.py` holds Hearthcraft's talk families (living-world/cook/design.md sections 8.5 and 11.5): what the
