@@ -117,6 +117,12 @@ object CookActionHandler {
         /** Timed by the use state (a dish being eaten), which [start] follows. */
         var eating = false
 
+        /**
+         * Ticks of the clip a tick plays: 1, but for a meal that takes longer than its clip (Gruel), which plays it slower to the
+         * use's length (the eating sets it; [start] stays the tick the use began, so nothing drifts and nothing is re-synced).
+         */
+        var rate = 1f
+
         /** The fewest ticks it takes to come in: longer over another clip, so the one cut short hands over gently. */
         var ease = MIN_IN
 
@@ -127,8 +133,11 @@ object CookActionHandler {
         fun time(now: Float): Float = when {
             fading -> frozen
             loop -> (now - start).mod(clip.length)
-            else -> (now - start).coerceIn(0f, clip.length)
+            else -> ((now - start) * rate).coerceIn(0f, clip.length)
         }
+
+        /** The tick at which it is [into] ticks into the clip. */
+        fun at(into: Float): Float = start + into / rate
 
         /** How strongly it shows at [now]: in over at least [ease] ticks, out by the clip's own blend, and away by [FADE]. */
         fun weight(now: Float): Float {
@@ -145,7 +154,7 @@ object CookActionHandler {
         fun over(now: Float): Boolean = when {
             fading -> now - fadeAt >= FADE
             loop -> now >= until
-            else -> now - start >= clip.length
+            else -> (now - start) * rate >= clip.length
         }
 
         /** Begins easing away at [now], held where it is. */
@@ -338,7 +347,7 @@ object CookActionHandler {
                 current.until = maxOf(current.until, now + LOOP_HOLD)
                 return current
             }
-            val joinAt = current.start + clip.length - clip.blendOut
+            val joinAt = current.at(clip.length - clip.blendOut)
             if (now < joinAt) {
                 if (body.next == null) body.next = make(entity, action, clip, joinAt, pos).also { it.guess = guess }
                 return body.next
@@ -415,19 +424,23 @@ object CookActionHandler {
             val action = DishEating.action(item.kind)
             val clip = clip(action) ?: continue
             val duration = stack.getUseDuration(player).coerceAtLeast(1)
-            val into = player.ticksUsingItem.toFloat() * clip.length / duration
+            // The clip over the use's whole length: as made for most dishes (their use is the clip's length), slower for a longer meal (Gruel)
+            val rate = clip.length / duration
+            val into = player.ticksUsingItem.toFloat() * rate
             // A use that outlasts the clip has had all of it
             if (into >= clip.length) continue
-            val start = now - into
+            val start = now - into / rate
             val play = body?.play
             if (play != null && play.action == action && !play.fading && !play.over(now)) {
                 // Timed by the use from now on (a payload may have started it a moment before the use reached us)
-                if (!play.eating || abs(play.start - start) > 2f) play.start = start
+                if (!play.eating || play.rate != rate || abs(play.start - start) > 2f) play.start = start
+                play.rate = rate
                 play.eating = true
                 continue
             }
             val b = body ?: Body().also { bodies[player.id] = it }
             val fresh = Play(action, clip, start, player.blockPosition(), null, ItemStack.EMPTY, player.usedItemHand)
+            fresh.rate = rate
             fresh.eating = true
             begin(b, fresh, now)
         }

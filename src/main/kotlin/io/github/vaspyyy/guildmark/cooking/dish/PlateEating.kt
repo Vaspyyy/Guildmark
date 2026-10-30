@@ -20,7 +20,7 @@ import java.util.UUID
  * it in their hand. If the plate is out of reach, the dish simply stays in the hand: it is never lost.
  */
 object PlateEating {
-    /** How long after lifting a dish an early stop still sends it back: the longest meal takes 32 ticks. */
+    /** How long after lifting a dish an early stop still sends it back: the longest meal (Gruel's) takes 48 ticks. */
     private const val WINDOW = 60L
 
     /** How far from the plate (squared) the player may be for the dish to go back to it. */

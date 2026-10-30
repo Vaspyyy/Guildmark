@@ -95,6 +95,13 @@ object DishFood {
     fun bowl(kind: DishKind?): Boolean = kind == null || kind == DishKind.POTTAGE || kind == DishKind.STEW ||
         kind == DishKind.BROTH || kind == DishKind.CHOWDER
 
-    /** Seconds it takes to eat a portion (3.3): a bowl 1.6, anything else 1.2. */
-    fun seconds(kind: DishKind?): Float = if (bowl(kind)) 1.6f else 1.2f
+    /** Seconds it takes to eat a portion (3.3): a bowl 1.6, anything else 1.2, and Gruel ([kind] null), spooned slower, [GRUEL_SECONDS]. */
+    fun seconds(kind: DishKind?): Float = when {
+        kind == null -> GRUEL_SECONDS
+        bowl(kind) -> 1.6f
+        else -> 1.2f
+    }
+
+    /** Gruel's eating, half as long again as a bowl's: the same three spoonfuls (`eat_spoon`, played to its length) and the same sound, slower. */
+    const val GRUEL_SECONDS = 2.4f
 }

@@ -30,7 +30,7 @@ import java.util.function.UnaryOperator
 /**
  * A portion of a dish (living-world/cook/design.md 3.1): one item for each of the twelve [DishKind]s, and the two that
  * belong to no kind, Gruel and Scorched mess ([kind] null). One item is one portion; its tier, day and cook are the
- * component `guildmark:dish`. It is food, with a consumable of its own (a bowl takes 1.6 seconds, anything else 1.2) and,
+ * component `guildmark:dish`. It is food, with a consumable of its own (a bowl takes 1.6 seconds, Gruel 2.4, anything else 1.2) and,
  * for the pot dishes, the bowl back; its food, and the cosmetic stage its model reads, follow how it has kept (3.2).
  */
 class DishItem(properties: Properties, val kind: DishKind?) : Item(properties) {
@@ -104,7 +104,7 @@ class DishItem(properties: Properties, val kind: DishKind?) : Item(properties) {
         }
 
         /**
-         * The consumable of [kind] (3.3): 1.6 seconds for a bowl and 1.2 for a solid, drunk for Broth and eaten for the
+         * The consumable of [kind] (3.3): 1.6 seconds for a bowl (2.4 for Gruel) and 1.2 for a solid, drunk for Broth and eaten for the
          * rest. It makes no sound of its own, because the game's repeats every few ticks, and the dish's is one long
          * recording that [DishEating] plays once; a solid sends up crumbs of itself, and a bowl does not.
          */
