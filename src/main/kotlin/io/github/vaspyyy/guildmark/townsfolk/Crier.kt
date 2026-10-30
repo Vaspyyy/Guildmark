@@ -117,8 +117,12 @@ object Crier {
      */
     class Cry(val line: String, val text: Component, val slip: Slip?, val tone: Int)
 
-    /** How far a crier is through the news: the thing being cried ([index]; -1 while the bell rings first) and how it's taken. */
-    class Crying(var index: Int, var tone: Int)
+    /**
+     * How far a crier is through the news: the thing being cried ([index]; -1 while the bell rings first) and how it's taken; and
+     * the way they face to cry it ([facing], the yaw), which the folk gather in front of (a village's bellman turns to the great
+     * bell to strike it, and back to the green to cry).
+     */
+    class Crying(var index: Int, var tone: Int, val facing: Float)
 
     private val crying = WeakHashMap<Townsperson, Crying>()
 
@@ -128,6 +132,9 @@ object Crier {
         if (!crier.isAlive || crier.activity != Activity.RING_BELL && crier.activity != Activity.ANNOUNCE) return null
         return state
     }
+
+    /** The way [crier] faces to cry (where the folk gather in front of them): the crying's own, else the way they face now. */
+    internal fun facing(crier: Townsperson): Float = crying[crier]?.facing ?: crier.yRot
 
     /** A crier crying the news within earshot of [p], if there is one. */
     fun near(p: Townsperson): Townsperson? =
@@ -227,7 +234,7 @@ object Crier {
                 Activity.RING_BELL -> {
                     if (great != null) strike(p, great, t, if (said == 0) STROKES else 1)
                     if (t == 0 && said == 0) {
-                        crying[p] = Crying(-1, 0)
+                        crying[p] = Crying(-1, 0, spot.yaw)
                         gather(p)
                     } else if (said >= cries.size && t == after - 1) {
                         crying.remove(p)
@@ -238,7 +245,7 @@ object Crier {
                 }
                 Activity.ANNOUNCE -> if (t == 0 && said < cries.size) {
                     val cry = cries[said]
-                    crying.getOrPut(p) { Crying(said, cry.tone) }.also {
+                    crying.getOrPut(p) { Crying(said, cry.tone, spot.yaw) }.also {
                         it.index = said
                         it.tone = cry.tone
                     }
@@ -670,7 +677,7 @@ class Hear(p: Townsperson, private val crier: Townsperson) : Task(p) {
     private var over = false
 
     override fun start() {
-        val ahead = Vec3.directionFromRotation(0f, crier.yRot)
+        val ahead = Vec3.directionFromRotation(0f, Crier.facing(crier))
         val side = Vec3(-ahead.z, 0.0, ahead.x)
         val spot = crier.position().add(ahead.scale(3.0 + p.random.nextDouble() * 4.0)).add(side.scale(p.random.nextDouble() * 8.0 - 4.0))
         walker.go(BlockPos.containing(spot), 0.5, near = 1.2)
