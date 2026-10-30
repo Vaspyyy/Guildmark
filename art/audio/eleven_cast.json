@@ -93,5 +93,78 @@
       "topic.oath.0": {"take": "a", "prompt": "[softly] The road is the only home we keep. [wistful] That's the line everyone remembers."},
       "topic.oath.1": {"take": "a", "prompt": "[reciting] The rest goes: and when the road is dark, we are the light upon it, and when the light goes out, we are the road. [wistful] We were very young when we wrote it. [quietly] We meant every word."}
     }
+  },
+  "idris": {
+    "voice": "Alistair - Cultured and Articulate (ElevenLabs voice library)",
+    "voice_id": "UzI1NsMEV3ni5JRkRSls",
+    "model": "eleven_v4",
+    "style": {"pitch": 0, "rt60": 0.9, "wet": 0.11, "grit": 0.0, "ghost": false, "predelay": 0.014, "early_span": 0.035, "hf_damp": 0.8},
+    "lines": {
+      "intro": {"take": "a", "prompt": "[dry] Mind the lecterns, they're older than the city. [formal] I am Idris Vael, Magister of the Starwatch. We read the sky, we keep the old sorceries, [troubled] and lately we've been reading things in the sky I would rather not."},
+      "step0": {"take": "a", "prompt": "[measured] If you'd study with us, show me you can bend the weave. I've loosed five ward-lights over the plaza. Put them out, and with sorcery, mind. [dry] A blade passes straight through them."},
+      "step1": {"take": "a", "prompt": "[approving] Clean work. Welcome to the Starwatch, Candle. [wry] Now, our star charts are written in ink ground from lapis, and the last of ours went into a very long footnote. Two dozen pieces, if you would."},
+      "step2": {"take": "a", "prompt": "[exasperated] The phantoms have taken to circling the city by night, and you cannot chart a sky that keeps flapping. [brisk] Bring down half a dozen, Lamp, and we can see again."},
+      "step3": {"take": "a", "prompt": "[grave] A hedge-witch has our star-glass, the lens we read the omens through. She took it from a careless Lamp and fled to a hollow in the wilds. [warning] Fetch it back, Lantern. She has had time to prepare."},
+      "step4": {"take": "a", "prompt": "[low, troubled] Through the glass I've seen who sent her. Silvan Marrow. He was a Beacon of this order before he learned to read the forbidden chart, the one that shows where the stars go out. [heavy] He waits at the old observatory. End it, Beacon. [softly] Gently, if he lets you."},
+      "waiting": {"take": "a", "prompt": "[dry] The stars will wait. I, unfortunately, am less patient. Off you go."},
+      "finale": {"take": "a", "prompt": "[hushed] The chart. And Silvan... [quickly] no, don't tell me. [proudly] The Starwatch names you a Star, the first in thirty years. [warmly] This staff was made for the last one. It has sat on a shelf waiting for someone who earned it."},
+      "done": {"take": "a", "prompt": "[warmly] Back again? Look up tonight, Star, and tell me what you see."},
+      "work": {"take": "a", "prompt": "[mildly] There is always work in a library. Have a look at this."},
+      "woken": {"take": "a", "prompt": "[drowsy] Mm? Ah. [dry] The stars keep late hours, and so, it seems, do you."},
+      "topic.starwatch.0": {"take": "a", "prompt": "[proudly] We watch. Every night for four hundred years, a Star or a Beacon has sat at the top of this city and written down the sky. The sorceries came later. [reflective] You learn a great deal about light, looking at it that long."},
+      "topic.starwatch.1": {"take": "a", "prompt": "[wry] These days we teach whoever has the patience. The patience is rarer than the gift."},
+      "topic.omens.0": {"take": "a", "prompt": "[grave] Stars going out. Not falling, not fading: going out, one by one, in the north, [quietly] where the old King's throne stands empty."},
+      "topic.omens.1": {"take": "a", "prompt": "[uneasy] Something is drinking the light. [quietly] When I find out what, I would very much like to be wrong."}
+    }
+  },
+  "corra": {
+    "voice": "Cate - Cinematic British RP Narrator (ElevenLabs voice library)",
+    "voice_id": "J64VNrjLE6uKFBKlxfSJ",
+    "model": "eleven_v4",
+    "style": {"pitch": 0, "rt60": 1.3, "wet": 0.14, "grit": 0.0, "ghost": false, "predelay": 0.022, "early_span": 0.075, "hf_damp": 0.25},
+    "lines": {
+      "intro": {"take": "a", "prompt": "[appraising] You've the look of someone who holds a sword the right way round. [firm] I'm Corra Wystan, Knight-Commander of the Hearthsworn. We keep the Wardfires lit and the dead off the roads. [stern] The Order always needs hands, but it doesn't take them on faith."},
+      "step0": {"take": "a", "prompt": "[brisk] Step into a ring with one of my knights. A spar, nothing more: the first to give ground yields. [challenging] Show me you can take a blow and give one back."},
+      "step1": {"take": "a", "prompt": "[approving] You held. [solemn] Kneel... and rise, Squire of the Hearthsworn. [firm] Your first duty is the oldest one. Hollow soldiers walk the roads out of this city. Put ten of them back in the ground."},
+      "step2": {"take": "a", "prompt": "[serious] There's a Wardfire on the road out of the city that the Hollow have gone for three nights running. Tonight it's yours. [firm] Hold it till dawn, Sworn. [grave] If it goes out, a whole road goes dark."},
+      "step3": {"take": "a", "prompt": "[disgusted] A thieves' ring that calls itself the Quiet Hand meets somewhere in this city, under our noses. [cold] The Widow who runs it keeps a ledger of every guard she has ever bought. [firm] Bring me that ledger, Knight."},
+      "step4": {"take": "a", "prompt": "[grave] The Order has hunted the Dusk Rider for a hundred years. Every Banneret before you rode out to meet it, and every one came back on a shield. [quietly] I wouldn't ask if I thought anyone else could do it. [resolute] Bring the Rider down."},
+      "waiting": {"take": "a", "prompt": "[stern] The dead don't rest because we do. On your way, and come back with it done."},
+      "finale": {"take": "a", "prompt": "[stunned] It's over. A hundred years, and it's over. [moved] You've earned a title no one has held since my mother's day: Hearthwarden. [solemn] And this. Hearthbrand was forged in the first Wardfire. It burns for those who keep the oath."},
+      "done": {"take": "a", "prompt": "[warmly] Hearthwarden. The fires burn a little brighter with you on the road."},
+      "work": {"take": "a", "prompt": "[brisk] There's always a road that needs clearing. Here."},
+      "woken": {"take": "a", "prompt": "[startled] Hm? [gruff] I'm awake. I'm always awake. What is it?"},
+      "rival": {"take": "a", "prompt": "[cool] One more thing. Word is you've been seen with the Widow's people. I'll not ask. [warning] But bring me that ledger and they'll know who did it, and they'll never have you back."},
+      "expelled": {"take": "a", "prompt": "[furious] You stole the Ember from this house. Get out of my sight. [cold] The Hearthsworn have nothing for you, now or ever."},
+      "topic.oath.0": {"take": "a", "prompt": "[reciting] Keep the fire. Keep the road. Keep faith with those who sleep. [warmly] Three lines, and we spend our lives learning them."},
+      "topic.oath.1": {"take": "a", "prompt": "[wry] Most knights swear to a lord. We swear to a campfire. [serious] People laugh, until it's the only light for twenty miles."},
+      "topic.wardens.0": {"take": "a", "prompt": "[firm] No. The Wardens were something else: road-walkers, no home, no lord. [respectful] When they fell, the Order took up what it could. Their fires. Their roads. Not their name. [quietly] We hadn't earned it."},
+      "topic.wardens.1": {"take": "a", "prompt": "[wistful] If you ever meet one, a real one, I'd give a great deal to shake their hand."}
+    }
+  },
+  "odile": {
+    "voice": "Lady Penelope Beaufort-Smythe (ElevenLabs voice library)",
+    "voice_id": "zrqsh6pldVPsh0XysNNZ",
+    "model": "eleven_v4",
+    "style": {"pitch": 0, "rt60": 0.28, "wet": 0.05, "grit": 0.0, "ghost": false, "predelay": 0.006, "early_span": 0.02, "hf_damp": 0.65},
+    "lines": {
+      "intro": {"take": "a", "prompt": "[drily] Close the hatch, dear, there's a draught. [amused] You'll have heard of me, or you wouldn't have climbed all those stairs. Odile Fenn. Some call me the Widow, though I've never married. [wry] It discourages suitors. [smooth] We are the Quiet Hand, and we only take from those who will never miss it."},
+      "step0": {"take": "a", "prompt": "[businesslike] Light fingers first, then we talk. Lift three purses off the nobles walking this city, and don't let them see you do it. [conspiratorial] Come at them from behind, crouch low, and be quick about it."},
+      "step1": {"take": "a", "prompt": "[pleased] Not bad at all. Welcome to the Hand, Lookout. [conspiratorial] Now, House Varn keeps a ledger of debts in their manor in the noble quarter, and a great many people would sleep easier if it went missing. Walk in, take it, walk out. [amused] Their guards are poorly paid and bored. Don't let them stop being bored."},
+      "step2": {"take": "a", "prompt": "[annoyed] Some cutthroat crew is robbing caravans on the roads out of the city, and they're not ours. [cold] Robbing travellers is bad for business, Cutpurse. Our business. Thin them out."},
+      "step3": {"take": "a", "prompt": "[delighted] Now a real job. The Hearthsworn keep a relic in their chapter house, the Ember of the First Hearth, in a little gold box. I have a buyer who'll pay more for that box than the knights earn in a lifetime. [warning] Knights are sharper than house guards, Picklock. Mind them."},
+      "step4": {"take": "a", "prompt": "[hushed, intense] This is the one I've waited thirty years for. The Regent keeps the Crown's own seal in the palace vault. With it I can write any order in the city. [smooth] Bring me the seal, Shadow, and you'll never need to steal again. [amused] Not that you'll stop."},
+      "waiting": {"take": "a", "prompt": "[drily] Still here? A job doesn't do itself, dear. Not even ours."},
+      "finale": {"take": "a", "prompt": "[breathless] The Regent's seal. Oh, that is beautiful. [warmly] You've done what I never could, my dear. [softly] The Hand has had a Right Hand only once before, and she's the reason I wear black. This was hers. Widow's Kiss. [gently] Use it kindly."},
+      "done": {"take": "a", "prompt": "[warmly] My Right Hand. Sit, have a drink. [playful] Steal something on your way out, it keeps you in practice."},
+      "work": {"take": "a", "prompt": "[smooth] Always something for clever hands. Here."},
+      "woken": {"take": "a", "prompt": "[sleepy] Mm, at this hour? [amused] You're either very brave or very drunk. Sit."},
+      "rival": {"take": "a", "prompt": "[knowing] You wear the knights' colours, don't you? Under the coat, where you think no one sees. [cool] Take this job and they'll know it was you. The Order doesn't forgive. [sweetly menacing] Neither do I, as it happens. I just smile more."},
+      "expelled": {"take": "a", "prompt": "[cold fury] You brought the knights my ledger. Do you know how many people that ledger was keeping safe? [icy] Go. And don't ever climb these stairs again."},
+      "topic.hand.0": {"take": "a", "prompt": "[fond] A family, of sorts. Cutpurses, picklocks, a forger, two very good liars. [amused] Every city has a thieves' ring. This city has a polite one."},
+      "topic.hand.1": {"take": "a", "prompt": "[firm] We have rules. Nobody who can't spare it. Nobody hurt who doesn't deserve it. [cold] And nobody, ever, talks to the knights."},
+      "topic.widow.0": {"take": "a", "prompt": "[drily] Black is a practical colour. It doesn't show dirt, it doesn't show blood, [amused] and men stop asking you to dance."},
+      "topic.widow.1": {"take": "a", "prompt": "[softly] And I did lose someone, once. The best thief this city ever had. [fond] She stole the moon off the bottom of a well, or so she told it. [quietly] I keep her knife. One day I will give it away."}
+    }
   }
 }
