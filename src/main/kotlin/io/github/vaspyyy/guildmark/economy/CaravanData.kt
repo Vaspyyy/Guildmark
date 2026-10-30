@@ -198,7 +198,8 @@ class CaravanRec(
                 Codec.LONG.optionalFieldOf("village", -1L).forGetter(Escort::village),
                 GoodsCodec.CODEC.optionalFieldOf("from_village", DoubleArray(Good.entries.size)).forGetter(Escort::fromVillage),
             ).apply(i) { job, holder, met, kills, only, slots, tint, label, village, fromVillage ->
-                Escort(job.orElse(null), holder.orElse(null), met, kills, only, slots, tint, label, village, fromVillage)
+                // Its own copy: a missing field's default is one array shared by every escort read without it
+                Escort(job.orElse(null), holder.orElse(null), met, kills, only, slots, tint, label, village, fromVillage.copyOf())
             }
         }
 
@@ -235,7 +236,8 @@ class CaravanRec(
             ).apply(i) { id, capital, bell, road, hour, run, seed, phase, times, length, load, exports, guards, wagons, roll, escort ->
                 CaravanRec(
                     id, capital, bell, road, hour, Run.of(run), seed, Phase.of(phase), times.setOut, times.held, times.until, length,
-                    load, exports, guards, wagons,
+                    // Their own copies, for the same reason as the escort's
+                    load.copyOf(), exports.copyOf(), guards, wagons,
                 ).also { c ->
                     c.band = roll.band
                     c.strike = roll.strike
