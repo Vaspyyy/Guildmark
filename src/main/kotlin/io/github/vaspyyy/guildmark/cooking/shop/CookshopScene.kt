@@ -28,18 +28,23 @@ import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.sounds.SoundSource
 import net.minecraft.util.Mth
+import net.minecraft.world.entity.MoverType
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.phys.Vec3
 import net.neoforged.neoforge.common.NeoForge
 import net.neoforged.neoforge.event.tick.ServerTickEvent
 import kotlin.math.abs
+import kotlin.math.atan2
+import kotlin.math.roundToInt
+import kotlin.math.sqrt
 
 /**
  * What a cookshop's keeper does besides sell (living-world/cook/design.md 6.4): while a player is near and the shop is open, now
- * and then, they turn to the Hob and flip, to the Bake oven and draw the peel, to the Prep Board and slice, or cry their wares to the
- * square; at a counter with nothing to sell they shrug ("Sold out, I'm afraid.", the moment the last dish is fetched, or when
- * a player comes by a bare counter) and sit when there is a seat by. Each is a short part of the town's scene kind ([Aside]) played where
- * the keeper stands: they set the work down, do it, and take it up again, and a word from a player ends it. The clips the parts name
+ * and then, they step along the alley to the Hob and flip, to the Bake oven and draw the peel, to the Prep Board and slice, and back
+ * to the counter, or cry their wares to the square; at a counter with nothing to sell they shrug ("Sold out, I'm afraid.", the moment
+ * the last dish is fetched, or when a player comes by a bare counter) and sit when there is a seat by. Each is a short part of the
+ * town's scene kind ([Aside]) played from the keeper's post: they set the work down, do it, and take it up again, and a word from a
+ * player ends it (a part broken off at a station has them step back to the counter at the next look: [Glide]). The clips the parts name
  * (`FLIP`, `SLICE`, `PEEL`) are Part I3's and M3's, and their sounds and puffs of steam and crumbs are played on each client at the
  * clips' own moments (client/cooking/TownKitchen.moment). The words are [ShopLines]'.
  *
@@ -103,11 +108,17 @@ internal object CookshopScene {
             val lay = CookShops.layout(level, works.id) ?: continue
             val stand = lay.stand
             if (!level.isLoaded(stand) || !level.hasNearbyAlivePlayer(stand.x + 0.5, stand.y + 0.5, stand.z + 0.5, SEEN)) continue
-            // Portions sold and not yet fetched: the keeper is wanted at the counter for the shoppers, whose sales are the scene
-            if (CookShops.shopOf(level, works)?.waiting?.isNotEmpty() == true) continue
+            val waiting = CookShops.shopOf(level, works)?.waiting?.isNotEmpty() == true
             val keeper = CookShops.keeperOf(level, works) ?: continue
             if (keeper.isSleeping || keeper.distanceToSqr(Vec3.atCenterOf(stand)) > POST * POST || CookShoppers.serving(works.id)) continue
             if (!Aside.free(keeper, station = true)) continue
+            // Left at a station (a part broken off by a word or a fright) or pushed along the alley: back to the counter first
+            if (away(keeper, lay)) {
+                Aside.take(keeper, Aside(listOf(Glide(home(lay), lay.front.toYRot(), sight(lay.door, 1.4))), reach = SEEN + 20.0, most = 200), station = true)
+                continue
+            }
+            // Portions sold and not yet fetched: the keeper is wanted at the counter for the shoppers, whose sales are the scene
+            if (waiting) continue
             val moves = choose(level, works, lay, keeper, now) ?: continue
             if (Aside.take(keeper, Aside(moves, reach = SEEN + 20.0, most = 600), station = true)) {
                 next[works.id] = now + COOL + keeper.random.nextInt(COOL_MORE)
@@ -148,9 +159,9 @@ internal object CookshopScene {
         for (beat in order) {
             val moves = when (beat) {
                 Beat.CRY -> cry(lay, keeper)
-                Beat.FLIP -> lay.hob?.let { flip(it) }
-                Beat.PEEL -> lay.oven?.let { peel(it) }
-                Beat.SLICE -> lay.prep?.let { slice(it) }
+                Beat.FLIP -> lay.hob?.let { flip(level, lay, it) }
+                Beat.PEEL -> lay.oven?.let { peel(level, lay, it) }
+                Beat.SLICE -> lay.prep?.let { slice(level, lay, it) }
             }
             if (moves != null) return moves
         }
@@ -187,22 +198,123 @@ internal object CookshopScene {
     // (client/cooking/TownKitchen.moment): the sizzle, the oven door and its steam, the loaves set down, the knife and its
     // crumbs. The server adds none of its own, so none is heard twice or out of step with her hands.
 
-    /** A turn to the Hob and two flips of whatever is on it. */
-    private fun flip(hob: BlockPos): List<Move> {
+    /** A step along the alley to the Hob, two flips of whatever is on it, and back. */
+    private fun flip(level: ServerLevel, lay: ShopLayout, hob: BlockPos): List<Move> {
         val at = sight(hob, 1.0)
-        return listOf(Turn(at), Do(Activity.FLIP, at, emptyMap()), Do(Activity.FLIP, at, emptyMap()))
+        return there(level, lay, hob, at, listOf(Do(Activity.FLIP, at, emptyMap()), Do(Activity.FLIP, at, emptyMap())))
     }
 
-    /** A turn to the Bake oven, its door opened and the peel drawn out, and the loaves set down. */
-    private fun peel(oven: BlockPos): List<Move> {
+    /** A step to the Bake oven, its door opened and the peel drawn out, the loaves set down, and back. */
+    private fun peel(level: ServerLevel, lay: ShopLayout, oven: BlockPos): List<Move> {
         val at = sight(oven, 0.7)
-        return listOf(Turn(at), Do(Activity.PEEL, at, emptyMap()))
+        return there(level, lay, oven, at, listOf(Do(Activity.PEEL, at, emptyMap())))
     }
 
-    /** A turn to the Prep Board and two cuts. */
-    private fun slice(board: BlockPos): List<Move> {
+    /** Two steps to the Prep Board, two cuts, and back. */
+    private fun slice(level: ServerLevel, lay: ShopLayout, board: BlockPos): List<Move> {
         val at = sight(board, 1.0)
-        return listOf(Turn(at), Do(Activity.SLICE, at, emptyMap()))
+        return there(level, lay, board, at, listOf(Do(Activity.SLICE, at, emptyMap())))
+    }
+
+    /**
+     * [work] done at [station]: a walk along the alley to the cell before it, turned to it, and a walk back to the counter after
+     * (the Larder, behind the counter's middle, is only turned to); where that cell cannot be stood on, a turn to it from the counter.
+     */
+    private fun there(level: ServerLevel, lay: ShopLayout, station: BlockPos, at: () -> Vec3?, work: List<Move>): List<Move> {
+        val cell = before(level, lay, station) ?: return listOf<Move>(Turn(at)) + work
+        return listOf<Move>(Glide(spot(lay, station, cell), lay.front.opposite.toYRot(), at)) + work + Glide(home(lay), lay.front.toYRot(), sight(lay.door, 1.4))
+    }
+
+    // ---- Steps along the alley ----
+
+    /** Ticks of a walk of [d] blocks along the alley: the step off and the step in, and eight ticks a block between them. */
+    private fun walkTicks(d: Double): Int = if (d < 0.05) 0 else (6.0 + d * 8.0).roundToInt()
+
+    /** The most ticks a walk of [d] blocks takes, with the turn at the end of it. */
+    private fun walkMost(d: Double): Int = walkTicks(d) + TURN_MOST
+
+    /** How far from the end of a walk they turn from the way they go to the way they are to face. */
+    private const val TURN_IN = 0.45
+
+    private fun flat(a: Vec3, b: Vec3): Double {
+        val dx = b.x - a.x
+        val dz = b.z - a.z
+        return sqrt(dx * dx + dz * dz)
+    }
+
+    /** The keeper's place: the middle of the cell behind the counter's middle, on its floor. */
+    private fun home(lay: ShopLayout): Vec3 = Vec3.atBottomCenterOf(lay.stand)
+
+    /** Whether [p] is off their place behind the counter (and still along the alley, where a walk takes them back to it). */
+    private fun away(p: Townsperson, lay: ShopLayout): Boolean {
+        val d = flat(p.position(), home(lay))
+        return d > 0.15 && d < POST && abs(p.y - lay.stand.y) < 0.6
+    }
+
+    /**
+     * Where the keeper stands to work at [station]: the alley's cell before it (the counter's middle itself for the Larder behind
+     * it), if it and the alley's cells between it and the counter's middle can be stood on; null where not (a turn to it does).
+     */
+    private fun before(level: ServerLevel, lay: ShopLayout, station: BlockPos): BlockPos? {
+        val cell = station.relative(lay.front)
+        val stand = lay.stand
+        val dx = cell.x - stand.x
+        val dz = cell.z - stand.z
+        if (cell.y != stand.y || dx != 0 && dz != 0 || abs(dx) + abs(dz) > 2) return null
+        val steps = abs(dx) + abs(dz)
+        for (k in 1..steps) if (!Places.standable(level, stand.offset(dx / steps * k, 0, dz / steps * k))) return null
+        return cell
+    }
+
+    /** How far toward a station from the middle of the cell before it the keeper stands: Part I2's kitchens' hand's breadth (KitchenScene.Stands). */
+    private const val TOWARD = 0.12
+
+    /**
+     * Where in [cell] the keeper stands to work at [station]: [TOWARD] the station, where the clips have their work (art/scripts/cook_clips.py,
+     * NEAR), except at the Hob, whose clip is made from the middle of the cell, and at the counter's own middle (the Larder behind it).
+     */
+    private fun spot(lay: ShopLayout, station: BlockPos, cell: BlockPos): Vec3 {
+        val mid = Vec3.atBottomCenterOf(cell)
+        if (station == lay.hob || cell == lay.stand) return mid
+        val d = lay.front.opposite
+        return mid.add(d.stepX * TOWARD, 0.0, d.stepZ * TOWARD)
+    }
+
+    /**
+     * A step or two along the alley behind the counter, to [to] (the middle of a cell), and a turn to face [yaw]: eased off and in at
+     * walking pace, the body turned the way they go and then the way they are to face, the eyes on what [look] gives. They are moved
+     * as anyone is ([MoverType.SELF]), so the counter and the stations stop them: nothing is walked through. Done when there and
+     * turned, or a turn's ticks after they should have been. With nowhere to go it is only the turn.
+     */
+    private class Glide(private val to: Vec3, private val yaw: Float, private val look: () -> Vec3?) : Move() {
+        private var from = to
+        private var ticks = 0
+
+        override fun start(p: Townsperson, a: Aside) {
+            p.navigation.stop()
+            if (!p.activity.overlay) p.act(Activity.NONE)
+            from = p.position()
+            ticks = walkTicks(flat(from, to))
+        }
+
+        override fun tick(p: Townsperson, a: Aside, t: Int): Boolean {
+            if (t < ticks) {
+                val f = (t + 1).toDouble() / ticks
+                val e = f * f * (3.0 - 2.0 * f)
+                val dx = from.x + (to.x - from.x) * e - p.x
+                val dz = from.z + (to.z - from.z) * e - p.z
+                if (dx * dx + dz * dz > 1.0E-6) p.move(MoverType.SELF, Vec3(dx, 0.0, dz))
+            }
+            val left = flat(p.position(), to)
+            val heading = if (t < ticks && left > TURN_IN) (atan2(to.z - p.z, to.x - p.x) * (180.0 / Math.PI)).toFloat() - 90f else yaw
+            p.face(Mth.approachDegrees(p.yBodyRot, heading, Aside.TURN))
+            look()?.let { p.lookAt(it) }
+            if (t >= ticks && (abs(Mth.degreesDifference(p.yBodyRot, yaw)) <= 4f || t >= ticks + TURN_MOST)) {
+                p.face(yaw)
+                return false
+            }
+            return true
+        }
     }
 
     /** A sit on a seat near the post (a shop with nothing to sell), as a stall's keeper sits by theirs; false if there is none free. */
@@ -282,6 +394,15 @@ internal object CookshopScene {
     class Sale(val level: ServerLevel, val works: WorksRec, val lay: ShopLayout, val dish: ItemStack) {
         val prep: Prep = Prep.of(Dishes.kindOf(dish))
 
+        /** Where the keeper stands to prepare it: in the alley's cell before its station; null for a turn to it from the counter. */
+        internal val point: Vec3? = prep.at(lay)?.let { station -> before(level, lay, station)?.let { spot(lay, station, it) } }
+
+        /**
+         * The ticks the shopper waits while the keeper prepares it: the walk to the station and the turn to it, the clip, the walk back
+         * and the turn to the shopper, and a breath; each walk at its longest, so the keeper is back at the counter for the coin.
+         */
+        val wait: Int = 2 * walkMost(point?.let { flat(home(lay), it) } ?: 0.0) + prep.activity.ticks + 10
+
         /** The shopper, once chosen. */
         var shopper: Townsperson? = null
 
@@ -315,47 +436,50 @@ internal object CookshopScene {
             const val PAYING = 4
             const val HANDING = 5
             const val PARTING = 6
-
-            /** The ticks the shopper waits for the keeper to turn, prepare the dish and turn back: the turn, the clip and a breath. */
-            fun wait(prep: Prep): Int = TURN_MOST + prep.activity.ticks + 10
         }
     }
 
-    /** The most ticks the keeper takes to turn to a station before the clip begins. */
+    /** The most ticks the keeper takes to turn to a station (at the end of a walk to it, or from the counter) before the clip begins. */
     private const val TURN_MOST = 12
 
     /** The tick of the ladle's clip its pour is heard at: the clip's `pour` moment is 12.5 (client/townsfolk/LivingSchedule.MOMENTS). */
     private const val LADLE_POUR = 13
 
-    /** The longest the keeper's part of one sale lasts, whatever becomes of the shopper. */
+    /** The longest the keeper's part of one sale lasts, whatever becomes of the shopper; and the most it may run on after that, to walk back to the counter. */
     private const val SERVE_MOST = 1500
+    private const val HOMEWARD = 60
 
     /**
-     * The keeper's part of [sale], one move in the town's scene kind: they face the shopper, nod at their point, turn to the station and
-     * prepare the dish (the clip and its sounds and puffs), turn back, take the coin, hand the dish across and nod at the parting. They
-     * go by the stage the shopper's walk has come to, so the two stay together; when the sale is over, or the shopper has gone, or
-     * the longest has passed, the move is done and the keeper takes up their work.
+     * The keeper's part of [sale], one move in the town's scene kind: they face the shopper, nod at their point, walk along the alley to
+     * the station and prepare the dish there (the clip and its sounds and puffs), walk back, take the coin, hand the dish across and nod
+     * at the parting. They go by the stage the shopper's walk has come to, so the two stay together, and a walk under way is walked to
+     * its end before the next stage is met (nothing is handed across from a station); when the sale is over, or the shopper has gone,
+     * or the longest has passed, they walk back to the counter if a station had them and the move is done, and they take up their work.
      */
     fun serve(sale: Sale): Move = Serve(sale)
 
     private class Serve(private val sale: Sale) : Move() {
         private var seen = -1
-        private var began = 0
         private var prepAt = -1
-        private var prepOver = false
+        private var phase = READY
+        private var walk: Glide? = null
+        private var walkAt = 0
+        private var homing = false
 
         override fun start(p: Townsperson, a: Aside) {
             p.navigation.stop()
             p.act(Activity.NONE)
+            // Not at the counter's middle (a part broken off at a station): back there first, to meet the shopper
+            if (away(p, sale.lay)) walk(p, a, 0, home(sale.lay), sale.lay.front.toYRot(), sight(sale.lay.door, 1.4))
         }
 
         override fun tick(p: Townsperson, a: Aside, t: Int): Boolean {
             val shopper = sale.shopper
-            if (sale.ended || t > SERVE_MOST || shopper != null && (!shopper.isAlive || shopper.isRemoved)) return false
+            if (sale.ended || t > SERVE_MOST || shopper != null && (!shopper.isAlive || shopper.isRemoved)) return homeward(p, a, t)
+            if (walking(p, a, t)) return true
             val stage = sale.stage
             if (stage != seen) {
                 seen = stage
-                began = t
                 if (shopper != null) when (stage) {
                     Sale.POINTING -> Acts.serve(p, shopper, Activity.NOD)
                     Sale.PAYING -> Acts.serve(p, shopper, Activity.RECEIVE, ItemStack(ModItems.GUILD_MARK.get()))
@@ -364,43 +488,117 @@ internal object CookshopScene {
                     else -> {}
                 }
             }
-            val station = sale.prep.at(sale.lay)?.let { Jobs.top(it, 1.0) }
-            val there = when {
-                stage == Sale.PREPARING && !prepOver && station != null -> station
-                shopper != null -> shopper.eyePosition
-                else -> Jobs.top(sale.lay.door, 1.4)
+            if (stage == Sale.PREPARING && phase != DONE) {
+                prepare(p, a, t)
+                return true
             }
+            val there = shopper?.eyePosition ?: Jobs.top(sale.lay.door, 1.4)
             p.lookAt(there)
             p.face(Mth.approachDegrees(p.yBodyRot, p.yawTo(there), Aside.TURN))
-            if (stage == Sale.PREPARING && !prepOver) prepare(p, there, t)
             return true
         }
 
         /**
-         * Turns to the station, then plays the clip, and turns back. The slice, the carve and the flip are heard and seen at the
-         * clips' own moments (client/cooking/TownKitchen.moment); the ladle's clip has no sound of its own, so the pour is played
-         * here, at the clip's `pour` (12.5, the tick after).
+         * The walk to the station (or the turn to it), the clip there, and the walk back. The slice, the carve and the flip are heard
+         * and seen at the clips' own moments (client/cooking/TownKitchen.moment); the ladle's clip has no sound of its own, so the pour
+         * is played here, at the clip's `pour` (12.5, the tick after).
          */
-        private fun prepare(p: Townsperson, there: Vec3, t: Int) {
-            if (prepAt < 0) {
-                if (abs(Mth.degreesDifference(p.yBodyRot, p.yawTo(there))) <= 8f || t - began >= TURN_MOST) {
+        private fun prepare(p: Townsperson, a: Aside, t: Int) {
+            val lay = sale.lay
+            val station = sale.prep.at(lay)
+            val sight = station?.let { Jobs.top(it, 1.0) }
+            when (phase) {
+                READY -> {
+                    phase = OUT
+                    val point = sale.point
+                    when {
+                        point != null -> walk(p, a, t, point, lay.front.opposite.toYRot()) { sight }
+                        sight != null -> walk(p, a, t, p.position(), p.yawTo(sight)) { sight }
+                        else -> arrived(p, t)
+                    }
+                }
+                WORKING -> {
+                    sight?.let {
+                        p.lookAt(it)
+                        p.face(Mth.approachDegrees(p.yBodyRot, p.yawTo(it), Aside.TURN))
+                    }
+                    val at = station ?: lay.stand
+                    val level = sale.level
+                    if (sale.prep == Prep.LADLE && t - prepAt == LADLE_POUR) {
+                        sound(level, at, "cook.pour", 0.8f)
+                        level.sendParticles(CookParticles.STEAM.get(), at.x + 0.5, at.y + 1.0, at.z + 0.5, 3, 0.12, 0.05, 0.12, 0.01)
+                    }
+                    if (t - prepAt >= sale.prep.activity.ticks) {
+                        phase = BACK
+                        walk(p, a, t, home(lay), lay.front.toYRot()) { sale.shopper?.eyePosition ?: Jobs.top(lay.door, 1.4) }
+                    }
+                }
+                else -> {}
+            }
+        }
+
+        /** A walk along the alley begun at tick [t] (its first tick played at once); when it is over at once, it has arrived. */
+        private fun walk(p: Townsperson, a: Aside, t: Int, to: Vec3, yaw: Float, look: () -> Vec3?) {
+            val w = Glide(to, yaw, look)
+            w.start(p, a)
+            walk = w
+            walkAt = t
+            if (!w.tick(p, a, 0)) {
+                walk = null
+                arrived(p, t)
+            }
+        }
+
+        /** Whether a walk is under way (and is walked on); at its end, what follows it begins. */
+        private fun walking(p: Townsperson, a: Aside, t: Int): Boolean {
+            val w = walk ?: return false
+            if (t == walkAt) return true
+            if (w.tick(p, a, t - walkAt)) return true
+            walk = null
+            arrived(p, t)
+            return false
+        }
+
+        /** At the end of a walk: at the station the clip begins; back at the counter the dish is ready. */
+        private fun arrived(p: Townsperson, t: Int) {
+            when (phase) {
+                OUT -> {
+                    phase = WORKING
                     prepAt = t
                     p.act(sale.prep.activity)
                 }
-                return
+                BACK -> phase = DONE
+                else -> {}
             }
-            val level = sale.level
-            val at = sale.prep.at(sale.lay) ?: sale.lay.stand
-            if (sale.prep == Prep.LADLE && t - prepAt == LADLE_POUR) {
-                sound(level, at, "cook.pour", 0.8f)
-                level.sendParticles(CookParticles.STEAM.get(), at.x + 0.5, at.y + 1.0, at.z + 0.5, 3, 0.12, 0.05, 0.12, 0.01)
+        }
+
+        /** The sale is over: back to the counter's middle if a station had them (whatever walk was under way turned for it), then done. */
+        private fun homeward(p: Townsperson, a: Aside, t: Int): Boolean {
+            if (t > SERVE_MOST + HOMEWARD) return false
+            if (!homing) {
+                homing = true
+                walk = null
+                phase = DONE
+                if (!away(p, sale.lay)) return false
+                walk(p, a, t, home(sale.lay), sale.lay.front.toYRot(), sight(sale.lay.door, 1.4))
+                return walk != null
             }
-            if (t - prepAt >= sale.prep.activity.ticks) prepOver = true
+            val w = walk ?: return false
+            return w.tick(p, a, t - walkAt)
         }
 
         override fun stop(p: Townsperson) {
             p.carried = ItemStack.EMPTY
             p.carriedUntil = 0
+        }
+
+        companion object {
+            // The keeper's part of the preparation: not begun, walking to the station, at the clip, walking back, done
+            private const val READY = 0
+            private const val OUT = 1
+            private const val WORKING = 2
+            private const val BACK = 3
+            private const val DONE = 4
         }
     }
 }

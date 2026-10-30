@@ -38,7 +38,7 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent
  * The town's shoppers at a cookshop (living-world/cook/design.md 6.4), modelled on the stall's ([io.github.vaspyyy.guildmark.economy.StallShoppers]).
  * What the shop sold at a selling hour waits in its record ([ShopRec.waiting]) until it is fetched: while a player is near enough to
  * see it, one of the capital's folk about the square comes up to the counter, looks the plates over, points, the keeper prepares
- * the dish (slices, flips, ladles or carves it, turned to the station they do it at: [CookshopScene.Serve]), the shopper pays, the keeper
+ * the dish (slices, flips, ladles or carves it, at the station, a step or two along the alley: [CookshopScene.Serve]), the shopper pays, the keeper
  * hands the dish across, and the shopper takes it to a bench or stands to eat it; then the next. With nobody about to see it, or the
  * keeper not at the counter, what has been sold simply goes, and if no one comes for a long while it goes all the same. Nothing here
  * touches what the shop sells or earns: that was all settled at the selling hour.
@@ -163,7 +163,7 @@ internal object CookShoppers {
             listOf(
                 Step(Activity.BROWSE, 50 + p.random.nextInt(40)),
                 Step(Activity.POINT),
-                Step(Activity.NONE, CookshopScene.Sale.wait(sale.prep)),
+                Step(Activity.NONE, sale.wait),
                 Step(Activity.PAY),
                 Step(Activity.RECEIVE),
                 Step(Activity.NOD),
