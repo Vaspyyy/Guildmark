@@ -20,7 +20,7 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent
 import java.util.UUID
 
 /**
- * `/guildmark cook anim <clip> [loop]` (living-world/cook/design.md 10.3, Part E; operators only): plays one of the seventeen
+ * `/guildmark cook anim <clip> [loop]` (living-world/cook/design.md 10.3, Part E; operators only): plays one of the eighteen
  * clips of 11.3 on you, sent as the real action is, so everyone who sees you sees it too. Aimed at a block within reach, the
  * body turns to it as it would to a station; aimed at nothing, it plays where you stand. `loop` sends it again as each one
  * nears its end until `cook anim stop`, a log-out or the server's stop. Brigadier joins this branch to the root that
@@ -32,7 +32,7 @@ object CookAnimCommand {
 
     private val loops = HashMap<UUID, Loop>()
 
-    /** The seventeen clips' names, as `cook anim` takes them. */
+    /** The eighteen clips' names, as `cook anim` takes them. */
     private val NAMES: List<String> = CookAction.entries.map { CookActions.clip(it) }
 
     /** How many players have a clip looping now (for `cook perf`). */
