@@ -85,6 +85,8 @@ object Shelter {
         var cheered = false
         var lostSaid = false
         var allClearSaid = false
+        /** Those who cried out as a raider's rope took them, by entity id: once each in a call. */
+        val cried = HashSet<Int>()
 
         /** The direction the trouble comes from, as seen from the bell: the horde's gathering place, else nowhere in particular. */
         fun toward(): Vec3 = Vec3.atCenterOf(from ?: bell)

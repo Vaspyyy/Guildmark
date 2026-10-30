@@ -1,6 +1,7 @@
 package io.github.vaspyyy.guildmark.village.live.trouble
 
 import io.github.vaspyyy.guildmark.homestead.BuilderCrew
+import io.github.vaspyyy.guildmark.outlaw.Raids
 import io.github.vaspyyy.guildmark.townsfolk.Activity
 import io.github.vaspyyy.guildmark.townsfolk.Director
 import io.github.vaspyyy.guildmark.townsfolk.Jobs
@@ -45,7 +46,8 @@ import net.minecraft.world.phys.Vec3
  *   and a clap for a siege held or a raid beaten off, a sigh and a slow walk to the broken wall for a siege lost), and back to the day.
  *
  * Hurt, or had by something else for more than a few ticks (the flee), they are let go and taken again a little later; one a raider
- * puts on a rope is let go (the door they are behind forced open) and not taken again while they are on it.
+ * puts on a rope is let go (the door they are behind forced open) and not taken again while they are on it, crying out once as
+ * they are dragged off ("No! Let me go!").
  */
 class Sheltering internal constructor(internal val called: Shelter.Called, val p: Townsperson, private val alert: Int, private val shout: Boolean) : Director {
     enum class S { ALERT, RUN, IN, BOLT, KNOCK, WAIT, OPEN, COWER, EMERGE }
@@ -98,6 +100,8 @@ class Sheltering internal constructor(internal val called: Shelter.Called, val p
                     h.bolted = false
                 }
             }
+            // and the one taken cries out as they are dragged off: once, and only on a raider's rope
+            if (p.leashHolder?.entityTags()?.contains(Raids.TAG) == true && called.cried.add(p.id)) Trouble.say(p, "shelter_taken", hearing = Trouble.SHOUT)
             Shelter.handed(this)
             return finish()
         }

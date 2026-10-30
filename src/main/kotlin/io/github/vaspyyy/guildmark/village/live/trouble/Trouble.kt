@@ -296,7 +296,7 @@ object Trouble {
         "shelter_open" to setOf("man", "woman", "old"), "shelter_hush_1" to setOf("woman", "old"), "shelter_hush_2" to setOf("man", "woman"),
         "shelter_hush_3" to setOf("woman", "old"), "shelter_hush_4" to setOf("man", "old"), "shelter_child_1" to setOf("child"),
         "shelter_child_2" to setOf("child"), "shelter_allclear_1" to setOf("man", "woman", "old"), "shelter_allclear_2" to setOf("man", "woman", "old"),
-        "shelter_lost" to setOf("man", "woman", "old"),
+        "shelter_lost" to setOf("man", "woman", "old"), "shelter_taken" to setOf("man", "woman", "old"),
     )
 
     /** The watch's lines and the village's own (the mend, the candle) are the man's, the woman's and (for the village's) the old man's. */

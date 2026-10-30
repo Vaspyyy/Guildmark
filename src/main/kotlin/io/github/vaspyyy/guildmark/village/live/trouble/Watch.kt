@@ -40,7 +40,8 @@ import kotlin.math.sin
  * **Raised by what the village builds.** `TownRole.GUARD` is no vanilla trade, so a village raises its watch as the works that need
  * one stand: two for the palisade (one in a hamlet of under eight folk), one for an archer tower (or a tower its folk built by hand,
  * which the census names), two for the stone walls, four, the garrison, for the keep: 2, 3, 5 and 9. At dawn and at six in the
- * evening the watch is reckoned ([reckon]); a post short is filled the night after, by a guard who walks in off the road with a bundle (or is
+ * evening the watch is reckoned ([reckon]); a post short is filled the night after, by a guard who walks in off the road with a bundle
+ * ("I'm here for the watch." as they come in among the houses, to a player near enough to hear) (or is
  * at home by the record, with nobody near to see), a resident like any other, with a bed in the hall or a free one in a home. A
  * guard who fell is replaced three to seven days on. Never past the village's cap on folk, and only in a village whose folk are
  * townsfolk (one that keeps its vanilla villagers has its golems).
@@ -188,7 +189,7 @@ object Watch {
         val p = if (watched) {
             val start = Newcomers.roadEnd(level, rec, door?.pos ?: places.market, hidden = true) ?: return
             VillageGrowth.body(level, rec, places, r, start, yawTo(start, bell))?.also { b ->
-                val walk = Coming(rec.key, b, door?.outside ?: places.market)
+                val walk = Coming(rec.key, b, door?.outside ?: places.market, rec.radius)
                 Trouble.borrow(b)
                 coming += walk
                 b.director = walk
@@ -480,18 +481,27 @@ object Watch {
         }
     }
 
-    /** A new guard walking in off the road with their bundle, to the door of where they will live. */
-    private class Coming(val key: Long, val p: Townsperson, val door: BlockPos) : Director {
+    /**
+     * A new guard walking in off the road with their bundle, to the door of where they will live; once they are in among the houses
+     * (within the village's [reach] of the bell, or at the door), they say what they are here for to a player near enough to hear.
+     */
+    private class Coming(val key: Long, val p: Townsperson, val door: BlockPos, val reach: Int) : Director {
         var done = false
         private val walker = Walker(p)
         private var at = 0
         private var setDown = 0
         private var lastTick = -1
+        /** Whether they have said "I'm here for the watch.": once, the first time a player hears it. */
+        private var told = false
 
         override fun tick(p: Townsperson) {
             if (done) return
             if (lastTick >= 0 && p.tickCount - lastTick > 5 || p.hurtTime > 0) return finish()
             lastTick = p.tickCount
+            if (!told && (setDown > 0 || within(p))) {
+                told = Trouble.say(p, "watch_arrive", force = false)
+                if (told) (p.level() as? ServerLevel)?.getNearestPlayer(p, Trouble.HEARD)?.let { p.glance(it, 40) }
+            }
             if (setDown > 0) {
                 if (p.tickCount - setDown >= Activity.PUT_DOWN.ticks) finish()
                 return
@@ -508,6 +518,10 @@ object Watch {
             p.act(Activity.PUT_DOWN)
             setDown = p.tickCount
         }
+
+        /** Whether [p] is inside the village: the square of its reach round the bell, as [Villages] reckons a village's ground. */
+        private fun within(p: Townsperson): Boolean =
+            kotlin.math.abs(p.blockX - BlockPos.getX(key)) <= reach && kotlin.math.abs(p.blockZ - BlockPos.getZ(key)) <= reach
 
         fun finish() {
             if (done) return
