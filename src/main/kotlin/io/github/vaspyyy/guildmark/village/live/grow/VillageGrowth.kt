@@ -20,6 +20,7 @@ import io.github.vaspyyy.guildmark.townsfolk.TownRole
 import io.github.vaspyyy.guildmark.townsfolk.Townsfolk
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import io.github.vaspyyy.guildmark.village.live.Live
+import io.github.vaspyyy.guildmark.village.live.VillageBudget
 import io.github.vaspyyy.guildmark.village.live.VillageInfoCommand
 import io.github.vaspyyy.guildmark.village.live.VillagePerf
 import io.github.vaspyyy.guildmark.village.live.VillagePlaces
@@ -162,7 +163,7 @@ object VillageGrowth {
         val today = closing(time)
         if (time - (today * 24000L + 20000L) < 1000L) return
         val data = GrowthData.get(level)
-        for (rec in Villages.all(level)) {
+        for (rec in VillageBudget.within("growth", Villages.all(level), 150)) {
             if (!grows(rec)) continue
             val closed = data.find(rec.key)?.state?.closed ?: -1L
             if (closed >= today) continue
