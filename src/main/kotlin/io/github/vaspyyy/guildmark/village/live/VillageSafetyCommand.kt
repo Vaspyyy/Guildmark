@@ -7,8 +7,10 @@ import io.github.vaspyyy.guildmark.economy.VillageMarkets
 import io.github.vaspyyy.guildmark.townsfolk.Residents
 import io.github.vaspyyy.guildmark.townsfolk.Townsperson
 import io.github.vaspyyy.guildmark.village.live.build.VillageBuilds
+import io.github.vaspyyy.guildmark.village.live.folk.VillageAdopt
 import io.github.vaspyyy.guildmark.village.live.folk.VillageKeepsakes
 import io.github.vaspyyy.guildmark.village.live.grow.GrowthData
+import io.github.vaspyyy.guildmark.village.live.grow.VillageGrowth
 import io.github.vaspyyy.guildmark.village.live.links.VillageWagons
 import io.github.vaspyyy.guildmark.village.live.market.Pedlars
 import io.github.vaspyyy.guildmark.village.live.trouble.TroubleData
@@ -31,6 +33,12 @@ import java.util.Locale
  *   average and worst, and how many a run); the census's ticks and its worst; the adoptions a minute; the bodies LIVE and the
  *   pedlars alive; how many units the budget put off; each piece's share beside what section 13.2 allows it; and a count of the
  *   records held, store by store. `perf reset` starts the count again.
+ * - `check` walks the thirty rows of section 14.5 ([VillageCheck.rows]) and says for each what it found in the world now: ok,
+ *   waiting (under way, inside its bound), LATE (past its bound), off (its setting is off) or a note (nothing kept to look at; the
+ *   row holds by how the system is made), with the bound beside it; then what the deaths' saves have done. It answers 0 if any row
+ *   is late, so a command block or a script can tell.
+ *
+ * Neither opens a store whose setting is off, so a world with a part off gets no file for it from these.
  */
 object VillageSafetyCommand {
     /** At setup (from [Villages.register]). */
@@ -45,9 +53,39 @@ object VillageSafetyCommand {
                 .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                 .then(
                     Commands.literal("village")
-                        .then(Commands.literal("perf").executes { perf(it) }.then(Commands.literal("reset").executes { reset(it) })),
+                        .then(Commands.literal("perf").executes { perf(it) }.then(Commands.literal("reset").executes { reset(it) }))
+                        .then(Commands.literal("check").executes { check(it) }),
                 ),
         )
+    }
+
+    // ---- village check ----
+
+    private fun check(context: CommandContext<CommandSourceStack>): Int {
+        val source = context.source
+        val level = source.server.overworld()
+        val rows = VillageCheck.rows(level)
+        val late = rows.count { it.status == VillageCheck.Status.LATE }
+        val waiting = rows.count { it.status == VillageCheck.Status.WAITING }
+        say(
+            source,
+            head("Nothing stuck (design 14.5): ").append(
+                if (late > 0) Component.literal("$late rows past their bound").withStyle(ChatFormatting.RED) else plain("nothing past its bound"),
+            ).append(grey("; $waiting under way, ${rows.size} rows")),
+        )
+        if (!Villages.enabled()) say(source, grey("Living Villages is off (setting: Living Villages): most rows have nothing running to look at."))
+        for (row in rows) {
+            val mark = when (row.status) {
+                VillageCheck.Status.OK -> Component.literal("ok      ").withStyle(ChatFormatting.GREEN)
+                VillageCheck.Status.WAITING -> Component.literal("waiting ").withStyle(ChatFormatting.YELLOW)
+                VillageCheck.Status.LATE -> Component.literal("LATE    ").withStyle(ChatFormatting.RED)
+                VillageCheck.Status.OFF -> Component.literal("off     ").withStyle(ChatFormatting.DARK_GRAY)
+                VillageCheck.Status.NOTE -> Component.literal("note    ").withStyle(ChatFormatting.GRAY)
+            }
+            say(source, mark.append(label("${row.system}: ")).append(plain(row.found)).append(grey(" (bound: ${row.bound})")))
+        }
+        say(source, label("Deaths saved: ").append(plain(VillageCheck.deaths())))
+        return if (late > 0) 0 else 1
     }
 
     // ---- village perf ----
@@ -194,20 +232,29 @@ object VillageSafetyCommand {
         return n
     }
 
-    /** The records the villages' stores hold, one line a store (counted as they stand; nothing is loaded that is not). */
+    /**
+     * The records the villages' stores hold, one line a store (counted as they stand; nothing is loaded that is not, and a store
+     * whose setting is off is not opened, so the command makes no file for it).
+     */
     private fun held(level: ServerLevel, all: List<VillageRec>): List<String> {
         val out = ArrayList<String>()
         val dead = all.sumOf { it.dead.size }
         val homes = all.sumOf { it.homes.size }
         out.add("villages: ${all.size} records, ${homes} homes, ${dead} of the dead, ${all.sumOf { it.chronicle.size }} chronicle lines")
-        val markets = VillageMarkets.get(level).all()
-        out.add("village_markets: ${markets.size} markets, ${markets.sumOf { it.mail.size }} letters of mail")
+        if (VillageMarkets.enabled()) {
+            val markets = VillageMarkets.get(level).all()
+            out.add("village_markets: ${markets.size} markets, ${markets.sumOf { it.mail.size }} letters of mail")
+        }
         val keys = all.mapTo(HashSet()) { it.key }
-        val folk = Residents.get(level).all().filter { it.capital.asLong() in keys }
-        val kept = folk.count { VillageKeepsakes.has(level, it.id) }
-        out.add("residents: ${folk.size} of the villages (${folk.count { it.alive }} alive); village_keepsakes: $kept kept villagers")
-        out.add("village_builds: ${VillageBuilds.get(level).sites.size} sites going up")
-        out.add("village_growth: ${GrowthData.get(level).villages.size}; village_trouble: ${TroubleData.get(level).villages.size}; village_wagons: ${VillageWagons.store(level).books.size} books")
+        if (keys.isNotEmpty()) {
+            val folk = Residents.get(level).all().filter { it.capital.asLong() in keys }
+            val kept = if (VillageAdopt.folkOn()) folk.count { VillageKeepsakes.has(level, it.id) } else 0
+            out.add("residents: ${folk.size} of the villages (${folk.count { it.alive }} alive); village_keepsakes: $kept kept villagers")
+        }
+        out.add("village_builds: ${VillageBuilds.all(level).size} sites going up")
+        val growth = if (VillageGrowth.enabled()) "${GrowthData.get(level).villages.size}" else "off"
+        val wagons = if (VillageWagons.enabled()) "${VillageWagons.store(level).books.size} books" else "off"
+        out.add("village_growth: $growth; village_trouble: ${TroubleData.peek(level)?.villages?.size ?: 0}; village_wagons: $wagons")
         out.add("in memory: the places of ${Villages.placesHeld()} villages")
         return out
     }
