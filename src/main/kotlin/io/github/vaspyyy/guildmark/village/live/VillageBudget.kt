@@ -9,8 +9,10 @@ import net.minecraft.server.level.ServerLevel
  * the start of every server tick ([begin]), and the work that spends them says what it spent ([spent], [usedColumns],
  * [usedSteps]); work that doesn't fit waits for the next tick and nothing is dropped. Part V1 gave it enough for the census
  * and part V11 completed it: every loop that works for the villages takes from it in one line, the census (V1's columns and
- * share), the adoption (V2's tickets and its slow units), the market's hour (V4's steps, each one only if a step still fits) and
- * the rest through [VillagePerf.timed], which charges each loop what it took, so that what is left is what the tick has left.
+ * share), the adoption (V2's tickets and its slow units), the market's hour (V4's steps, each one only if a step still fits), the
+ * loops over every awake village that once did them all in one tick ([within]: the bellman's morning, the trouble's look, the
+ * growth's own close) and the rest through [VillagePerf.timed], which charges each loop what it took, so that what is left is what
+ * the tick has left.
  *
  * What it put off and its worst tick are shown by `village perf` with the rest of [VillagePerf]'s figures, and are forgotten with
  * them by `village perf reset` ([clearReadout]) and when the server stops ([forget]).
@@ -134,6 +136,35 @@ object VillageBudget {
         return false
     }
 
+    /**
+     * The villages of the loop [loop] that takes its work from the budget, one village a unit of about [micros] microseconds: of
+     * [recs] (in the loop's own order, the nearest a player first where it has one), the first, and then the rest on from where the
+     * loop's last run stopped and round, while a unit still fits in what is left of this tick less what the loop has spent since it
+     * began. Two are always given, the first and the next in turn, so the nearest is looked at every run and the rest go round
+     * however full the ticks are; those not given are the next run's (each run cut short is counted in [putOff]). A loop that runs
+     * every few seconds over every awake village writes `for (rec in VillageBudget.within("trouble", Villages.awake(level), 100))`
+     * and costs no more than the tick has left; with room for all of them it is the loop it was.
+     */
+    fun within(loop: String, recs: List<VillageRec>, micros: Int): Sequence<VillageRec> = sequence {
+        val n = recs.size
+        if (n == 0) return@sequence
+        val begun = System.nanoTime()
+        val after = stopped.remove(loop)?.let { key -> recs.indexOfFirst { it.key == key } + 1 } ?: 0
+        val start = if (after in 2 until n) after else 1
+        for (j in 0 until n) {
+            val i = if (j == 0) 0 else 1 + (start - 1 + j - 1) % (n - 1)
+            if (j >= 2 && nanos - (System.nanoTime() - begun) < micros * 1000L) {
+                stopped[loop] = recs[1 + (start - 1 + j - 2) % (n - 1)].key
+                putOff++
+                return@sequence
+            }
+            yield(recs[i])
+        }
+    }
+
+    /** Where each loop of [within] last stopped short, by its name: the key of the last village it was given. */
+    private val stopped = HashMap<String, Long>()
+
     /** The nanoseconds the census may use of this tick: its share, or what is left if less. */
     fun censusNanos(): Long = minOf(CENSUS_NANOS, nanos)
 
@@ -165,6 +196,7 @@ object VillageBudget {
         window = Long.MIN_VALUE
         adopted = 0
         adoptedBy.clear()
+        stopped.clear()
         tickSpent = 0L
         clearReadout()
         VillagePerf.reset()
