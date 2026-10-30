@@ -124,7 +124,9 @@ object CookPose {
         val crouching = state.isCrouching
         // Rising out of a crouch is more of a move than coming out of standing: it takes a little longer
         val rise = if (crouching && under <= 0.001f && !main.loop) CookActionHandler.smooth(time / CROUCH_IN) else 1f
-        val w = main.weight(now) * rise
+        // An attack's swing in the middle of the clip: the clip gives way under the game's swing for a moment, and plays on
+        val strike = CookActionHandler.strike(body, now)
+        val w = main.weight(now) * rise * (1f - strike)
         if (w <= 0.001f && under <= 0.001f) return
         val mirror = CookActionHandler.mirror(player, main)
         val fromFrame = when {
@@ -135,7 +137,8 @@ object CookPose {
         state.setRenderData(CombatAnimator.FRAME, CombatAnimator.Frame(shape(main), time, w, 0f, 0f, state.ageInTicks, fromFrame, false, mirror))
         state.rightArmPose = armPose
         state.leftArmPose = armPose
-        state.swingAnimation = 0f
+        // The station click's own swing is the clip's, never shown; an attack's is
+        if (strike <= 0f) state.swingAnimation = 0f
         // The crouch is the frame's own pose under the clip now (CROUCH), not the game's laid over it
         state.isCrouching = false
 

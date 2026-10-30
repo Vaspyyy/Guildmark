@@ -19,6 +19,7 @@ object CookClient {
         CookActionHandler.register()
         CookHands.register()
         CookPayloads.onAction = { CookActionHandler.onPayload(it) }
+        CookPayloads.onStrike = { CookActionHandler.onStrike(it) }
     }
 
     /** The cook's body, registered by GuildmarkClient after the combat animator's, the cutscenes', the ship's and the sea's. */

@@ -13,6 +13,7 @@ import io.github.vaspyyy.guildmark.client.cooking.StationAnim.Companion.STATE_SE
 import io.github.vaspyyy.guildmark.cooking.CookAction
 import io.github.vaspyyy.guildmark.cooking.CookActionPayload
 import io.github.vaspyyy.guildmark.cooking.CookActions
+import io.github.vaspyyy.guildmark.cooking.CookStrikePayload
 import io.github.vaspyyy.guildmark.cooking.Cooking
 import io.github.vaspyyy.guildmark.cooking.Station
 import io.github.vaspyyy.guildmark.cooking.dish.DishEating
@@ -46,6 +47,7 @@ import net.minecraft.world.phys.Vec3
 import net.neoforged.bus.api.EventPriority
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent
 import net.neoforged.neoforge.client.event.ClientTickEvent
+import net.neoforged.neoforge.client.event.InputEvent
 import net.neoforged.neoforge.common.NeoForge
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent
 import kotlin.math.abs
@@ -65,6 +67,10 @@ import kotlin.math.abs
  * follows on from it; a different action takes over at once, easing in over the one cut short. A station clip eases away
  * when its cook walks off, the shiver as soon as they stir. All times are this client's own ticks, counted only while a
  * world is open and the game runs, plus the frame's partial tick.
+ *
+ * A swing is told apart. The station click's own swing is the clip's, and is never shown. An attack in the middle of a
+ * clip (the local player's attack key; for anyone else, the server's [CookStrikePayload]) is the cook's [Body.struck]: the
+ * clip gives way under the game's swing for a moment ([strike]) and plays on to its end. A combat move still cuts it.
  */
 object CookActionHandler {
     /** The fewest ticks a clip takes to come in, whatever its own blend says: [MIN_IN] from rest, [CUT_IN] over another clip it cuts short. */
@@ -73,6 +79,10 @@ object CookActionHandler {
 
     /** Ticks a clip cut short (a guess the server refused, a cook who walked off) takes to ease back to the pose under it. */
     const val FADE = 5f
+
+    /** An attack's swing over a clip: ticks it lasts (the game's swing takes six), and how far the clip gives way under it at most. */
+    private const val STRIKE = 7f
+    private const val STRIKE_GIVE = 0.85f
 
     /** Ticks the server has to confirm a guessed clip before it eases away. */
     private const val CONFIRM = 15L
@@ -168,12 +178,13 @@ object CookActionHandler {
     /** What a combat move [by] cut short: [action]'s clip held where it stopped, for the move to ease out of, and the station the body was turned to. */
     class Cut(val action: CookAction, val clip: Clip, val time: Float, val weight: Float, val mirror: Boolean, val target: Vec3?, val by: CombatClient.Action?)
 
-    /** A cook's body: the clip it plays, the one it eases out of, the next of the same, and what a combat move cut short. */
+    /** A cook's body: the clip it plays, the one it eases out of, the next of the same, what a combat move cut short, and when it last struck at something. */
     class Body {
         var play: Play? = null
         var from: Play? = null
         var next: Play? = null
         var cut: Cut? = null
+        var struck = Float.NEGATIVE_INFINITY
 
         fun idle(): Boolean = play == null && from == null && next == null && cut == null
     }
@@ -214,6 +225,7 @@ object CookActionHandler {
         NeoForge.EVENT_BUS.addListener(ClientTickEvent.Pre::class.java) { _ -> tickStart() }
         NeoForge.EVENT_BUS.addListener(ClientTickEvent.Post::class.java) { _ -> tickEnd() }
         NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, PlayerInteractEvent.RightClickBlock::class.java) { onClick(it) }
+        NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, InputEvent.InteractionKeyMappingTriggered::class.java) { onKey(it) }
         NeoForge.EVENT_BUS.addListener(ClientPlayerNetworkEvent.LoggingOut::class.java) { _ -> reset() }
     }
 
@@ -419,6 +431,29 @@ object CookActionHandler {
         plate.rate = play.rate
         plate.eating = true
         begin(body, plate, now)
+    }
+
+    // ---- An attack in the middle of a clip ----
+
+    /** The local player's attack key (a combat move has cancelled it by now if it is one): their swing is an attack's. */
+    private fun onKey(event: InputEvent.InteractionKeyMappingTriggered) {
+        if (!event.isAttack || !event.shouldSwingHand() || !Cooking.enabled()) return
+        val player = Minecraft.getInstance().player ?: return
+        bodies[player.id]?.struck = stamp()
+    }
+
+    /** A [CookStrikePayload]: someone else's swing is an attack's. */
+    fun onStrike(payload: CookStrikePayload) {
+        if (!Cooking.enabled()) return
+        val entity = Minecraft.getInstance().level?.getEntity(payload.player) as? Player ?: return
+        bodies[entity.id]?.struck = stamp()
+    }
+
+    /** How far [body]'s clip gives way at [now] to the swing of an attack it made (0 none, [STRIKE_GIVE] at most): in as the swing comes round, out as it ends. */
+    fun strike(body: Body, now: Float): Float {
+        val d = now - body.struck
+        if (d < 0f || d >= STRIKE) return 0f
+        return STRIKE_GIVE * smooth(d / 1.5f) * (1f - smooth((d - 3.5f) / (STRIKE - 3.5f)))
     }
 
     /** The server never confirmed [guess]: the clip it started eases away, and the follow-on it asked for is dropped. */
