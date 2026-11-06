@@ -92,9 +92,26 @@ def rot_part(rot):
     return qeuler(*rot)
 
 
-def look_q(direction, up=U):
-    """A head rotation facing [direction] (model space), kept as upright as it goes."""
-    return frame_to(np.array([0.0, 0.0, -1.0]), np.array([0.0, -1.0, 0.0]), unit(direction), up)
+STEEP_FROM, STEEP_TO = math.sin(math.radians(50.0)), math.sin(math.radians(80.0))
+
+
+def look_q(direction, up=U, ahead=F):
+    """A head rotation facing [direction] (model space), kept as upright as it goes. Looking steeply down (more than
+    50 degrees), the crown leans to [ahead] (where the body faces) instead, all the way by 80: straight down, 'upright'
+    means nothing, and a target under the face that strays a px left or right would spin the head round (the smith's
+    tongs in the coals, a crop pulled up under the nose). [ahead] None keeps it upright all the way down."""
+    d = unit(direction)
+    s = 0.0 if ahead is None else smooth((float(np.dot(d, D)) - STEEP_FROM) / (STEEP_TO - STEEP_FROM))
+    if s > 0.0:
+        flat = np.array([ahead[0], 0.0, ahead[2]], float)
+        if np.linalg.norm(flat) > 1e-3:
+            up = unit(up) * (1.0 - s) + unit(flat) * s
+    return frame_to(np.array([0.0, 0.0, -1.0]), np.array([0.0, -1.0, 0.0]), d, up)
+
+
+def facing(qw):
+    """Where a body turned by [qw] faces (model space)."""
+    return qmat(qw) @ F
 
 
 def smooth(x):
@@ -650,9 +667,10 @@ def head_at(frame, target, mode='set', base=I, extra=I):
     vt, pr = frame.get('vt', np.zeros(3)), frame.get('pr', np.zeros(3))
     pivot = HIPS + qmat(qr) @ (HIPS + qmat(qt) @ (np.array(PIVOTS['head'], float) - HIPS) + vt - HIPS) + pr
     qw = qmul(qr, qt)
+    ahead = facing(qw)
     for _ in range(3):
         eyes = pivot + qmat(qw) @ EYES
-        qw = qmul(look_q(np.asarray(target, float) - eyes), extra)
+        qw = qmul(look_q(np.asarray(target, float) - eyes, ahead=ahead), extra)
     if mode == 'set':
         return qmul(qinv(qmul(qr, qt)), qw)
     return qmul(qinv(qmul(qr, base)), qw)
@@ -2357,16 +2375,18 @@ def hands_at(rh, lh, w=4.0, level=0.6):
     return res
 
 
-def gaze_head(fr, target, extra=I, iters=24):
+def gaze_head(fr, target, extra=I, iters=24, lean=True):
     """A 'set' head key whose eyes look at world [target] from where they really are (head_at settles in three
-    passes, which is too few for a target close under the face: a book, a coin stack). [extra] tilts it further."""
+    passes, which is too few for a target close under the face: a book, a coin stack). [extra] tilts it further.
+    [lean] False keeps it upright however steeply it looks down (look_q)."""
     qr, qt = fr.get('qr', I), fr.get('qt', I)
     vt, pr = fr.get('vt', np.zeros(3)), fr.get('pr', np.zeros(3))
     pivot = HIPS + qmat(qr) @ (HIPS + qmat(qt) @ (np.array(PIVOTS['head'], float) - HIPS) + vt - HIPS) + pr
     qw = qmul(qr, qt)
+    ahead = facing(qw) if lean else None
     for _ in range(iters):
         eyes = pivot + qmat(qw) @ EYES
-        qw = qslerp(qw, qmul(look_q(np.asarray(target, float) - eyes), extra), 0.5)
+        qw = qslerp(qw, qmul(look_q(np.asarray(target, float) - eyes, ahead=ahead), extra), 0.5)
     return qmul(qinv(qmul(qr, qt)), qw)
 
 

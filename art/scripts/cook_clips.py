@@ -1237,8 +1237,9 @@ def key_arms(c, sols, fronts, sides=('right_arm', 'left_arm')):
 
 
 def gaze_key(fr, look, w):
-    """A 'set' head key looking at the world point [look], eased by [w] (0 to 1) from the head straight."""
-    return qslerp(I, gaze_head(fr, look), w)
+    """A 'set' head key looking at the world point [look], eased by [w] (0 to 1) from the head straight. Kept upright
+    (look_q's lean off): eased, it never gets near straight down, and the prep clips' arms are solved round it."""
+    return qslerp(I, gaze_head(fr, look, lean=False), w)
 
 
 # ================================================================== slice

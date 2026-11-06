@@ -403,9 +403,101 @@ class Clip:
     def write(self, assets_dir, group):
         path = os.path.join(assets_dir, 'animations', group, self.name + '.json')
         os.makedirs(os.path.dirname(path), exist_ok=True)
+        data = self.bake()
+        if group in STEADY_GROUPS:
+            done = steady_head(data)
+            if done:
+                print('%s (%s: head steadied, %.0f -> %.0f deg a tick at most)'
+                      % ('!!' if done[1] > HEAD_CAP else '  ', self.name, *done))
         with open(path, 'w') as f:
-            json.dump(self.bake(), f, separators=(',', ':'))
+            json.dump(data, f, separators=(',', ':'))
         return path
+
+# ---------------------------------------------------------------- steady heads
+
+STEADY_GROUPS = {'townsfolk'}   # the clip groups whose heads are kept from snapping round
+HEAD_CAP = 20.0                 # deg a tick: a head turning faster than this, against its body and the world, snaps
+HEAD_AIM = 18.0                 # what a snapping head is smoothed down to (under the cap, so a second pass leaves it)
+
+
+def _track(bones, bone, n):
+    b = bones.get(bone)
+    if not b or 'rot' not in b:
+        return np.tile(I, (n, 1))
+    return np.asarray(b['rot'], float).reshape(-1, 4)
+
+
+def _turns(q, rate):
+    """Deg a tick between each sample of [q] and the next."""
+    d = np.abs(np.sum(q[1:] * q[:-1], axis=1)).clip(0.0, 1.0)
+    return np.degrees(2.0 * np.arccos(d)) * rate
+
+
+def _qmul_all(a, b):
+    return np.array([qmul(x, y) for x, y in zip(a, b)])
+
+
+def steady_head(data, cap=HEAD_CAP, aim=HEAD_AIM):
+    """Smooths a baked clip's head track (in place) when it turns faster than [cap] deg a tick, both against the body
+    it rides (the torso for a 'set' head, the look vanilla gives for an 'add' one) and in the world (the root and torso
+    turning it too): a head that only keeps still while the body swings, or only rides a fast swing, is left alone.
+    The smoothing is the least that brings it under [aim]. Returns (fastest before, fastest after), or None."""
+    bones = data.get('bones', {})
+    head = bones.get('head')
+    if not head or 'rot' not in head:
+        return None
+    rate = data['rate']
+    q = np.asarray(head['rot'], float).reshape(-1, 4)
+    n = len(q)
+    if n < 3:
+        return None
+    body = _track(bones, 'root', n)
+    if head.get('mode') != 'add':
+        body = _qmul_all(body, _track(bones, 'torso', n))
+
+    def fastest(h):
+        return float(np.max(np.minimum(_turns(h, rate), _turns(_qmul_all(body, h), rate))))
+
+    before = fastest(q)
+    if before <= cap:
+        return None
+    loop = all(np.allclose(b[k][:len(b[k]) // n], b[k][-(len(b[k]) // n):], atol=2e-3)
+               for name, b in bones.items() if name in BONES for k in ('rot', 'pos') if k in b)
+    out, after = q, before
+    for sigma in (0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 8.0):
+        out = _smooth_q(q, sigma * rate, loop)
+        after = fastest(out)
+        if after <= aim:
+            break
+    prev = None
+    rot = []
+    for s in out:
+        if prev is not None and np.dot(prev, s) < 0:
+            s = -s
+        prev = s
+        rot += [round(float(c), 4) for c in s]
+    head['rot'] = rot
+    return before, fastest(np.asarray(rot).reshape(-1, 4))
+
+
+def _smooth_q(q, sigma, loop):
+    """[q] blurred with a gaussian [sigma] samples wide: wrapping round for a loop (whose last sample is its first),
+    held at the ends otherwise."""
+    n = len(q)
+    period = n - 1 if loop else n
+    reach = int(math.ceil(3 * sigma))
+    w = np.exp(-0.5 * (np.arange(-reach, reach + 1) / sigma) ** 2)
+    out = np.empty_like(q)
+    for i in range(period):
+        acc = np.zeros(4)
+        for k, wk in zip(range(-reach, reach + 1), w):
+            j = (i + k) % period if loop else min(n - 1, max(0, i + k))
+            s = q[j] if np.dot(q[j], q[i]) >= 0 else -q[j]
+            acc += wk * s
+        out[i] = acc / np.linalg.norm(acc)
+    if loop:
+        out[n - 1] = out[0]
+    return out
 
 # ---------------------------------------------------------------- forward kinematics (as CombatAnimator)
 
