@@ -11,7 +11,15 @@ Kokoro voices of their own, and the renegade Silvan Marrow made cold and a littl
   reverb, finalising and Ogg export).
 - `make_sfx.py`: the 116 mono sound effects (`combat/`, `hollow_soldier/`, `fallen_warden/`, `hill_troll/`, `dusk_rider/`,
   `wardfire/`, `flask/`, `marks/`, `dungeon/` and the menu sounds in `ui/`). Each sound is one `@recipe(...)`
-  function that sets its variant count, length cap and fade-out.
+  function that sets its variant count, length cap and fade-out. Since 2026-11-07 the game plays ElevenLabs
+  recordings for `fallen_warden/`, `hill_troll/` and `dusk_rider/` instead (`make_eleven_sfx.py`): don't run this
+  script for those groups, or the synthesised sounds come back.
+- `make_eleven_sfx.py`: the creature sounds recorded with ElevenLabs sound effects (89 files: `dragon/`,
+  `hill_troll/`, `dusk_rider/`, `fallen_warden/`), one take each. `eleven_sfx.json` holds each sound's prompt and
+  generation, the length asked for when one was, its length cap (`max_len`), its loudness (`rms_db`, measured on the
+  synthesised sound it replaced, so the mix stays where it was) and `one_hit` for steps, hooves, bites, swipes,
+  swings and wing beats, which keep only the loudest hit when a take holds several. The script trims, levels to a
+  -3 dBFS peak and encodes the raw takes (`<group>__<name>_a.mp3`; the paid originals are kept outside the repo).
 - `make_music.py`: the four boss tracks (`music/`) and the two stingers (`ui/`). Halvard's two tracks and
   the stingers are built on his leitmotif; the field boss theme is a piece of its own in E Phrygian, and the
   Dusk Rider's is a 6/8 gallop in D minor on a horn call of its own. Each piece is a `compose_*` function, and
@@ -37,7 +45,8 @@ Kokoro voices of their own, and the renegade Silvan Marrow made cold and a littl
   loudness, and its battle theme (`music/dragon.ogg`, 3:14 in C minor, a horn call that keeps returning, its last
   chord falling back into the first bar so it loops), composed in code and played through `make_music.py`'s
   parts, stems and hall, its loudness set by measurement like the menu theme's. `make_dragon_audio.py` runs both;
-  `--only` takes effect names and/or `music`. Its variants are listed in `sounds.json` by hand.
+  `--only` takes effect names and/or `music`. Its variants are listed in `sounds.json` by hand. Since 2026-11-07 the
+  effects come from ElevenLabs (`make_eleven_sfx.py`); run it with `--only music` so they stay.
 - `make_magic_audio.py`: the two schools of magic, sorcery and prayer: its 25 effects and 40 files (`magic/`). Sorcery
   is cold and glassy (struck crystal, clumped sparks, rushing air, frost crackle), prayer warm (bells and gongs struck
   soft, a small choir humming on a vowel, fire). Synthesised with `sfxkit.py` like the dragon's effects, one-shots
@@ -244,6 +253,7 @@ python3 -B art/audio/make_menu_music.py src/main/resources/assets/guildmark --wo
 python3 -B art/audio/make_region_music.py src/main/resources/assets/guildmark --work <tmp-dir> [--wav <dir>] [--only marsh,ashen]
 python3 -B art/audio/make_land_music.py src/main/resources/assets/guildmark --work <tmp-dir> [--wav <dir>] [--only heartland,dunes]
 python3 -B art/audio/make_dragon_audio.py src/main/resources/assets/guildmark --work <tmp-dir> [--wav <dir>] [--only roar,growl,music]
+python3 -B art/audio/make_eleven_sfx.py src/main/resources/assets/guildmark <takes-dir> [--only dragon/,hill_troll/roar1] [--wav <dir>]
 python3 -B art/audio/make_magic_audio.py src/main/resources/assets/guildmark [--wav <dir>] [--only arc_bolt_cast,flare] [--mp3 <file>]
 python3 -B art/audio/make_faction_audio.py src/main/resources/assets/guildmark [--wav <dir>] [--only ward_light,heist.alarm] [--mp3 <file>]
 python3 -B art/audio/make_ship_audio.py src/main/resources/assets/guildmark [--wav <dir>] [--only creak,wake] [--mp3 <file>] [--fragments <dir>]

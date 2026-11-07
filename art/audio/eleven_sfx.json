@@ -1,0 +1,585 @@
+{
+ "about": "Creature sound effects made with ElevenLabs sound effects (eleven_text_to_sound_v2, prompt influence 0.3, one take each). seconds: the length asked for, when one was (otherwise the model chose). Processed by make_eleven_sfx.py.",
+ "sounds": {
+  "dragon/roar1": {
+   "prompt": "Enormous dragon roar, deep guttural bellow swelling into a ragged scream, cavernous chest resonance",
+   "generation": "7yv2glMt2UI8q8QkMrBc",
+   "seconds": 3.4,
+   "max_len": 4.73,
+   "rms_db": -14.25
+  },
+  "dragon/roar2": {
+   "prompt": "Colossal dragon roar, long rumbling growl bursting into a thunderous bellow, rocky echo",
+   "generation": "mKrIzyvGTlUsFNSFkL34",
+   "seconds": 3.2,
+   "max_len": 4.48,
+   "rms_db": -14.17
+  },
+  "dragon/growl1": {
+   "prompt": "Huge dragon low growl, deep rumbling throat, close",
+   "generation": "zarki5d9J4Yk7i6AzTnE",
+   "seconds": 2.0,
+   "max_len": 2.66,
+   "rms_db": -15.65
+  },
+  "dragon/growl2": {
+   "prompt": "Giant reptile menacing growl, deep rattling snarl",
+   "generation": "WsBtcfPpaYOnL8hyBhns",
+   "seconds": 2.0,
+   "max_len": 2.45,
+   "rms_db": -15.56
+  },
+  "dragon/growl3": {
+   "prompt": "Dragon threatening rumble ending in a wet hiss",
+   "generation": "LbUVmBPV7bThFBu305UG",
+   "seconds": 2.0,
+   "max_len": 2.94,
+   "rms_db": -15.66
+  },
+  "dragon/snore1": {
+   "prompt": "Sleeping dragon slow deep breath, huge lungs inhaling and a rumbling exhale, cave",
+   "generation": "QRhQkySkstmV2RqJRLiE",
+   "seconds": 3.2,
+   "max_len": 4.48,
+   "rms_db": -21.19
+  },
+  "dragon/snore2": {
+   "prompt": "Giant beast snoring in a cave, deep rumbling exhale with a faint smoky hiss",
+   "generation": "kuI63Okkzb9gxpX3dEfF",
+   "seconds": 3.2,
+   "max_len": 4.61,
+   "rms_db": -20.7
+  },
+  "dragon/hurt1": {
+   "prompt": "Huge dragon short pained snarl",
+   "generation": "uiWB5ivKVtuCbQgmVFCe",
+   "max_len": 1.05,
+   "rms_db": -14.73
+  },
+  "dragon/hurt2": {
+   "prompt": "Giant reptile yelp of pain, deep and harsh, short",
+   "generation": "r2FI2Rz7TX2Ndc1dkJU7",
+   "max_len": 1.0,
+   "rms_db": -14.07
+  },
+  "dragon/hurt3": {
+   "prompt": "Dragon pained hiss and grunt, short",
+   "generation": "KRi6qiaCUVXNCzivas8z",
+   "max_len": 1.19,
+   "rms_db": -14.58
+  },
+  "dragon/death1": {
+   "prompt": "Dying dragon, long agonized roar fading into a rattling last breath",
+   "generation": "dLIwIEU4RmCvw091yLXc",
+   "seconds": 4.0,
+   "max_len": 5.87,
+   "rms_db": -18.23
+  },
+  "dragon/wing_flap1": {
+   "prompt": "Single heavy beat of huge leathery wings, deep whoosh of air",
+   "generation": "Uq9ODE6M5iGhq1bZmO6u",
+   "max_len": 0.97,
+   "rms_db": -17.06,
+   "one_hit": true
+  },
+  "dragon/wing_flap2": {
+   "prompt": "One powerful wing flap, giant bat-like leather wings, low thump of air",
+   "generation": "7WfyPW8breLnqjhzNGsX",
+   "max_len": 1.06,
+   "rms_db": -16.48,
+   "one_hit": true
+  },
+  "dragon/wing_flap3": {
+   "prompt": "Massive wings beating once, leather snapping taut, gust",
+   "generation": "b7venW6KOQxfyEgHx22X",
+   "max_len": 0.89,
+   "rms_db": -16.86,
+   "one_hit": true
+  },
+  "dragon/step1": {
+   "prompt": "Single massive footstep of a giant creature on rock, deep thud",
+   "generation": "lpjdCHvWyNtNlgbHNo2z",
+   "max_len": 0.75,
+   "rms_db": -12.67,
+   "one_hit": true
+  },
+  "dragon/step2": {
+   "prompt": "One huge clawed foot slamming on stone, heavy thud with gravel",
+   "generation": "uYotsDm214uLH9dBke35",
+   "max_len": 0.82,
+   "rms_db": -14.47,
+   "one_hit": true
+  },
+  "dragon/step3": {
+   "prompt": "Colossal footfall, deep ground impact, short",
+   "generation": "3aV8N9wOYYP3QKsJjj0d",
+   "max_len": 0.67,
+   "rms_db": -13.22,
+   "one_hit": true
+  },
+  "dragon/bite1": {
+   "prompt": "Huge jaws snapping shut, sharp teeth clack, short",
+   "generation": "hPt4V4cWJ913GR52ST7e",
+   "max_len": 0.69,
+   "rms_db": -15.75,
+   "one_hit": true
+  },
+  "dragon/bite2": {
+   "prompt": "Giant reptile bite, heavy jaw snap, short",
+   "generation": "cli2V5ZeEWCrcqW1R75U",
+   "max_len": 0.71,
+   "rms_db": -15.0,
+   "one_hit": true
+  },
+  "dragon/swipe1": {
+   "prompt": "Huge claw swipe through the air, heavy whoosh",
+   "generation": "7rJ18rW6rxzLX06TZYgS",
+   "max_len": 0.83,
+   "rms_db": -16.89,
+   "one_hit": true
+  },
+  "dragon/swipe2": {
+   "prompt": "Giant tail sweeping through the air, low fast whoosh",
+   "generation": "djcb9Q1j9JKnsbXsfUK0",
+   "max_len": 0.89,
+   "rms_db": -16.89,
+   "one_hit": true
+  },
+  "dragon/slam1": {
+   "prompt": "Massive body slamming into the ground, deep earth-shaking boom with falling rubble",
+   "generation": "YcNWURcHuRUfpOVIOsFP",
+   "max_len": 1.75,
+   "rms_db": -12.47
+  },
+  "dragon/slam2": {
+   "prompt": "Giant creature crashing down onto rock, heavy impact and rumble",
+   "generation": "FuxJjk0CVu3t8yNOJYM4",
+   "max_len": 1.89,
+   "rms_db": -12.65
+  },
+  "dragon/inhale1": {
+   "prompt": "Dragon drawing a huge deep breath, roaring intake of air with crackling embers",
+   "generation": "XsSTYd0TmFmI8LJ4ojCW",
+   "max_len": 1.54,
+   "rms_db": -17.35
+  },
+  "dragon/breath1": {
+   "prompt": "Dragon breathing a stream of fire, roaring jet of flame",
+   "generation": "Bi6VvOpdRtxdP008X4La",
+   "seconds": 2.0,
+   "max_len": 2.66,
+   "rms_db": -15.63
+  },
+  "dragon/breath2": {
+   "prompt": "Powerful gout of fire roaring like a blowtorch, crackling flames",
+   "generation": "IaugnvZBZWUX9BNM9WlZ",
+   "seconds": 2.0,
+   "max_len": 2.59,
+   "rms_db": -16.08
+  },
+  "dragon/fireball1": {
+   "prompt": "Dragon spitting a fireball, sharp whoosh of flame launched",
+   "generation": "KLAlcmnxYpTxQnYh0pFw",
+   "max_len": 1.05,
+   "rms_db": -15.97
+  },
+  "dragon/fireball2": {
+   "prompt": "Ball of fire hurled with a quick roaring whoosh",
+   "generation": "aVnXAtxx3Ajfa95Clld9",
+   "max_len": 1.14,
+   "rms_db": -16.11
+  },
+  "dragon/fire_burst1": {
+   "prompt": "Fireball exploding, burst of flame and crackle",
+   "generation": "eK0MUMo0RiZUWFQpMp80",
+   "max_len": 1.47,
+   "rms_db": -15.91
+  },
+  "dragon/fire_burst2": {
+   "prompt": "Fire explosion with a deep whump and crackling embers",
+   "generation": "0T3wznXYOIqN9DA1uwNh",
+   "max_len": 1.61,
+   "rms_db": -16.96
+  },
+  "dragon/flyby1": {
+   "prompt": "Huge dragon flying past overhead, rushing wind and heavy wing beats, doppler",
+   "generation": "PvekNH2Rs5LZKSYCRtlS",
+   "max_len": 2.04,
+   "rms_db": -16.86
+  },
+  "dragon/flyby2": {
+   "prompt": "Giant winged creature swooping past fast, whoosh of air",
+   "generation": "vPXC9ib04f39vUBjae07",
+   "max_len": 1.8,
+   "rms_db": -16.92
+  },
+  "hill_troll/roar1": {
+   "prompt": "Huge troll roar, deep brutish bellow, guttural",
+   "generation": "hng82QnawwYLLevXu2nm",
+   "seconds": 2.56,
+   "max_len": 3.63,
+   "rms_db": -12.64
+  },
+  "hill_troll/roar2": {
+   "prompt": "Giant troll angry roar, gravelly and booming",
+   "generation": "4gznGmM6K8RAYdtrABkX",
+   "seconds": 2.56,
+   "max_len": 3.63,
+   "rms_db": -13.6
+  },
+  "hill_troll/grunt1": {
+   "prompt": "Troll short deep grunt",
+   "generation": "r4Af3fhjFJR0ri6GWSCX",
+   "max_len": 1.0,
+   "rms_db": -15.92
+  },
+  "hill_troll/grunt2": {
+   "prompt": "Giant brute grunting with effort, low and gravelly",
+   "generation": "ErecpPHucI2htTtFnrvY",
+   "max_len": 1.12,
+   "rms_db": -15.24
+  },
+  "hill_troll/grunt3": {
+   "prompt": "Large troll huffing grunt, short",
+   "generation": "t34z5Gtm7WAVIByWvoGb",
+   "max_len": 1.26,
+   "rms_db": -16.58
+  },
+  "hill_troll/hurt1": {
+   "prompt": "Troll bellowing in pain, deep short howl",
+   "generation": "UShfXM3JVT387W9NtkC5",
+   "max_len": 1.05,
+   "rms_db": -15.4
+  },
+  "hill_troll/hurt2": {
+   "prompt": "Giant brute pained roar, short and harsh",
+   "generation": "oq9BG153aE89rJLLKWuq",
+   "max_len": 1.05,
+   "rms_db": -17.25
+  },
+  "hill_troll/death1": {
+   "prompt": "Dying troll, long deep groan fading out, heavy body thud",
+   "generation": "Q2d3xtpTWnvhjkiseMfB",
+   "max_len": 3.63,
+   "rms_db": -18.02
+  },
+  "hill_troll/snore1": {
+   "prompt": "Giant troll snoring, deep rumbling snore",
+   "generation": "kZkh2HATF8C7K0fjje0M",
+   "max_len": 3.08,
+   "rms_db": -22.43
+  },
+  "hill_troll/snore2": {
+   "prompt": "Huge brute snoring loudly, phlegmy inhale and rumbling exhale",
+   "generation": "a7Mwe06AwzafJjRvfdjT",
+   "seconds": 2.2,
+   "max_len": 3.08,
+   "rms_db": -20.72
+  },
+  "hill_troll/step1": {
+   "prompt": "Single heavy giant footstep on earth, deep thud",
+   "generation": "lkTH4wxLjw5oGBB2TQgl",
+   "max_len": 0.63,
+   "rms_db": -14.23,
+   "one_hit": true
+  },
+  "hill_troll/step2": {
+   "prompt": "One huge bare foot stomping on dirt, heavy thump",
+   "generation": "8tGi2DQpbr2cnC678pFL",
+   "max_len": 0.63,
+   "rms_db": -12.95,
+   "one_hit": true
+  },
+  "hill_troll/swing1": {
+   "prompt": "Huge wooden club swung through the air, heavy whoosh",
+   "generation": "ohMDi7SeBp6dbxmPRx9Q",
+   "max_len": 1.26,
+   "rms_db": -16.67,
+   "one_hit": true
+  },
+  "hill_troll/swing2": {
+   "prompt": "Giant tree-trunk club swing, low whoosh",
+   "generation": "oySfYFPx7jG6kCq6aa6F",
+   "max_len": 1.26,
+   "rms_db": -18.25,
+   "one_hit": true
+  },
+  "hill_troll/slam1": {
+   "prompt": "Giant wooden club pounding the ground, heavy thud with rocks scattering",
+   "generation": "fSXHODIoQ7ZBOjsVjDYv",
+   "max_len": 1.68,
+   "rms_db": -12.26
+  },
+  "hill_troll/slam2": {
+   "prompt": "Huge club smashing into earth, deep boom and dirt debris",
+   "generation": "qrCXpYlksQKdBA55a8TX",
+   "max_len": 1.68,
+   "rms_db": -10.92
+  },
+  "hill_troll/throw1": {
+   "prompt": "Troll heaving a boulder, straining grunt and a heavy whoosh",
+   "generation": "pq8oiNiyvUgMWsgPgC2U",
+   "max_len": 1.4,
+   "rms_db": -14.33
+  },
+  "hill_troll/boulder1": {
+   "prompt": "Boulder smashing on the ground and shattering into rocks",
+   "generation": "y9igkxsbv4b65LL4G5XF",
+   "max_len": 1.68,
+   "rms_db": -13.11
+  },
+  "hill_troll/boulder2": {
+   "prompt": "Large rock crashing down and breaking apart, rubble scattering",
+   "generation": "C2XJBJWEUPUvI6aYlR8J",
+   "max_len": 1.68,
+   "rms_db": -12.85
+  },
+  "dusk_rider/neigh1": {
+   "prompt": "Warhorse screaming neigh, fierce and loud",
+   "generation": "a9mtb3Xy7PG4KjeLpjkv",
+   "seconds": 2.2,
+   "max_len": 3.08,
+   "rms_db": -16.56
+  },
+  "dusk_rider/neigh2": {
+   "prompt": "Angry stallion whinny, harsh and wild",
+   "generation": "Bl1S81vPUPJyUXywOyzc",
+   "max_len": 2.52,
+   "rms_db": -16.18
+  },
+  "dusk_rider/neigh3": {
+   "prompt": "Ghostly warhorse neigh with an eerie echo",
+   "generation": "w66h8fUyaFdg9ArxHJXF",
+   "seconds": 2.4,
+   "max_len": 3.36,
+   "rms_db": -18.77
+  },
+  "dusk_rider/snort1": {
+   "prompt": "Horse snorting, sharp nostril blow",
+   "generation": "qgkgFhzmZUFSkjISXP1Y",
+   "max_len": 1.26,
+   "rms_db": -21.53
+  },
+  "dusk_rider/snort2": {
+   "prompt": "Warhorse snort and huff",
+   "generation": "aBvw28tV0EpqqYQ1wxh0",
+   "max_len": 1.12,
+   "rms_db": -20.97
+  },
+  "dusk_rider/snort3": {
+   "prompt": "Horse snorting and shaking its head, tack jingle",
+   "generation": "IgBVIQGKumdD6lTSWHYM",
+   "max_len": 1.96,
+   "rms_db": -21.91
+  },
+  "dusk_rider/hoof1": {
+   "prompt": "Single heavy horseshoe striking cobblestone",
+   "generation": "0SKLytlGx1TA9vLNF1KU",
+   "max_len": 0.45,
+   "rms_db": -15.9,
+   "one_hit": true
+  },
+  "dusk_rider/hoof2": {
+   "prompt": "One hoof clop on hard ground, heavy",
+   "generation": "jL8sHlvcYVDgV2DbPq9v",
+   "max_len": 0.48,
+   "rms_db": -14.66,
+   "one_hit": true
+  },
+  "dusk_rider/hoof3": {
+   "prompt": "Single iron-shod hoof hitting stone, sharp",
+   "generation": "6JCQsc3LgZvS6X2H9IQ7",
+   "max_len": 0.45,
+   "rms_db": -15.06,
+   "one_hit": true
+  },
+  "dusk_rider/hoof4": {
+   "prompt": "A single heavy horse hoof thudding once on packed earth, one isolated dull impact, then silence, no galloping",
+   "generation": "uqXXMzXe347yvuvkaW4H",
+   "max_len": 0.48,
+   "rms_db": -13.44,
+   "one_hit": true
+  },
+  "dusk_rider/hurt1": {
+   "prompt": "Armored rider grunting in pain, metal armor clank",
+   "generation": "wV3Fd5anUsrKwRnQRWh2",
+   "max_len": 1.12,
+   "rms_db": -15.95
+  },
+  "dusk_rider/hurt2": {
+   "prompt": "Warrior pained groan with armor rattle",
+   "generation": "q60dLMYLJIemhkpgMppV",
+   "max_len": 1.12,
+   "rms_db": -15.34
+  },
+  "dusk_rider/hurt3": {
+   "prompt": "Short pained shout from an armored knight",
+   "generation": "ekzblfkfgWFCCs37nFwz",
+   "max_len": 1.12,
+   "rms_db": -15.88
+  },
+  "dusk_rider/death1": {
+   "prompt": "Armored rider falling from a horse, armor crash and a fading death groan",
+   "generation": "tTxF76AA1Bl0Ncd7eWIr",
+   "seconds": 3.0,
+   "max_len": 4.76,
+   "rms_db": -18.81
+  },
+  "dusk_rider/horn1": {
+   "prompt": "Distant war horn sounding a long low eerie call at night, echoing over hills",
+   "generation": "LkOm5eC5hjKKxAxsChAZ",
+   "seconds": 7.0,
+   "max_len": 7.0,
+   "rms_db": -16.14
+  },
+  "dusk_rider/swing1": {
+   "prompt": "Halberd swung hard through the air, heavy whoosh",
+   "generation": "k3qHLeedv2dFBdrOsm8H",
+   "max_len": 1.12,
+   "rms_db": -18.1,
+   "one_hit": true
+  },
+  "dusk_rider/swing2": {
+   "prompt": "Polearm sweeping through the air, metallic whoosh",
+   "generation": "RezcaTkxylAKYGgmfEgX",
+   "max_len": 1.12,
+   "rms_db": -18.59,
+   "one_hit": true
+  },
+  "dusk_rider/slam1": {
+   "prompt": "Warhorse rearing and slamming its hooves down on the ground, heavy impact",
+   "generation": "wk6g9VE9d4FLiXvr8g8i",
+   "max_len": 1.54,
+   "rms_db": -14.23
+  },
+  "dusk_rider/slam2": {
+   "prompt": "Horse hooves crashing down onto stone, heavy double impact",
+   "generation": "33IIHYhdjZPrw8TIJQOl",
+   "max_len": 1.54,
+   "rms_db": -15.22
+  },
+  "dusk_rider/wisp1": {
+   "prompt": "Lantern flame flaring up, magical whoosh with an eerie shimmer",
+   "generation": "ot1zeBbjygPbDoAb38da",
+   "max_len": 2.24,
+   "rms_db": -18.72
+  },
+  "dusk_rider/wisp2": {
+   "prompt": "Ghostly fire flaring in a lantern, soft roar and sparkle",
+   "generation": "pDOW6B2z8jyFmYlVSxcu",
+   "max_len": 2.24,
+   "rms_db": -19.34
+  },
+  "dusk_rider/wisp_burst1": {
+   "prompt": "Ghostly flame wisp bursting, magical pop and fizzle",
+   "generation": "emXNgPJA1cEKXW5Aufif",
+   "max_len": 1.68,
+   "rms_db": -17.42
+  },
+  "dusk_rider/wisp_burst2": {
+   "prompt": "Spirit fire bursting apart, eerie crackling pop",
+   "generation": "7JI6tUel2VtkCiQvAmwL",
+   "max_len": 1.68,
+   "rms_db": -17.02
+  },
+  "dusk_rider/ignite1": {
+   "prompt": "Cold blue magical fire roaring up all at once, eerie whoosh",
+   "generation": "o48brVCw4qGjrU8S7tyH",
+   "seconds": 3.0,
+   "max_len": 4.03,
+   "rms_db": -15.41
+  },
+  "dusk_rider/vanish1": {
+   "prompt": "Ghostly presence fading away, ethereal whoosh dissolving into wind",
+   "generation": "AKr7wq9NGg9ZpmdOhQfc",
+   "seconds": 4.0,
+   "max_len": 6.21,
+   "rms_db": -16.83
+  },
+  "fallen_warden/ambient1": {
+   "prompt": "Undead knight breathing inside a helmet, hollow raspy breath, armor creak",
+   "generation": "3s2Q4DUZCIP2UEZiL7FG",
+   "max_len": 2.17,
+   "rms_db": -15.76,
+   "one_hit": true
+  },
+  "fallen_warden/ambient2": {
+   "prompt": "Hollow wheezing breath echoing in an iron helm",
+   "generation": "AKx2WDrgZJfZ1jU7xJzD",
+   "max_len": 2.17,
+   "rms_db": -17.89
+  },
+  "fallen_warden/hurt1": {
+   "prompt": "Armored undead knight hit, metal clang and pained hollow grunt",
+   "generation": "XqPAGJi3XpYD4CQPbPCn",
+   "max_len": 0.85,
+   "rms_db": -14.71
+  },
+  "fallen_warden/hurt2": {
+   "prompt": "Sword striking plate armor with a groaning grunt",
+   "generation": "LHS49k8FgX9E9y1AlXU7",
+   "max_len": 0.85,
+   "rms_db": -15.89
+  },
+  "fallen_warden/death1": {
+   "prompt": "Armored knight collapsing to the ground, heavy plate armor crashing, final breath",
+   "generation": "45qGHE622aAopIpJhFP5",
+   "seconds": 3.0,
+   "max_len": 4.2,
+   "rms_db": -18.45
+  },
+  "fallen_warden/roar1": {
+   "prompt": "Undead knight roaring inside a helmet, hollow metallic roar",
+   "generation": "bG1FuVBnSb7nxG7gSbyj",
+   "seconds": 2.5,
+   "max_len": 3.49,
+   "rms_db": -15.07
+  },
+  "fallen_warden/slam1": {
+   "prompt": "Greatsword slamming into stone floor, heavy metallic impact and cracking stone",
+   "generation": "BWlqrRhxXet4F4Asye0d",
+   "max_len": 1.4,
+   "rms_db": -15.01
+  },
+  "fallen_warden/slam2": {
+   "prompt": "Huge sword smashing down onto rock, ringing steel and rubble",
+   "generation": "XOJkiZoqicmuclTLb7DU",
+   "max_len": 1.4,
+   "rms_db": -14.07
+  },
+  "fallen_warden/swing1": {
+   "prompt": "Greatsword swung through the air, heavy steel whoosh",
+   "generation": "uOiaA3693GhX8orzccds",
+   "max_len": 1.04,
+   "rms_db": -16.58,
+   "one_hit": true
+  },
+  "fallen_warden/swing2": {
+   "prompt": "Huge two-handed sword swing, deep whoosh",
+   "generation": "TZjIZ6g0cQQuB6k7D9o5",
+   "max_len": 1.04,
+   "rms_db": -16.9,
+   "one_hit": true
+  },
+  "fallen_warden/flame1": {
+   "prompt": "Burst of roaring fire around a crown, flames whooshing up",
+   "generation": "LmWPgi2m2fW8PvHNplQt",
+   "max_len": 1.68,
+   "rms_db": -16.2
+  },
+  "fallen_warden/step1": {
+   "prompt": "Single heavy armored footstep on stone, plate armor clank",
+   "generation": "Jmn5ccaVIl8Htgl3ZMXk",
+   "max_len": 0.48,
+   "rms_db": -13.55,
+   "one_hit": true
+  },
+  "fallen_warden/step2": {
+   "prompt": "One metal boot stomping on stone, armor rattle",
+   "generation": "76KGR4aYS3grEOQiYFqF",
+   "max_len": 0.51,
+   "rms_db": -12.9,
+   "one_hit": true
+  }
+ }
+}
