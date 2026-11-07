@@ -1,0 +1,29 @@
+{
+ "about": "The city's background beds recorded with ElevenLabs sound effects (eleven_text_to_sound_v2, 30 s, loop on, prompt influence 0.3, one take each). rms_db is the level each bed's synthesised recipe in ambience/ was made at. Processed by make_eleven_ambience.py.",
+ "beds": {
+  "crowd_day": {
+   "prompt": "Busy medieval market square crowd ambience, dozens of people chatting and haggling all around, near and far, an even indistinct murmur of voices, footsteps and shuffling on cobblestones, a cart rolling by far off, open air, no music",
+   "generation": "PKEV78inNdQFoJ9AnmSj",
+   "rms_db": -26.0,
+   "skip": 0.3
+  },
+  "crowd_light": {
+   "prompt": "Quiet medieval town street ambience, a few people passing by in twos talking softly, someone chatting on a doorstep down the street, unhurried footsteps on cobblestones, faint murmur of the town in the distance, open air, no music",
+   "generation": "JVRaPNG2NHd6UyBoJvDe",
+   "rms_db": -28.0,
+   "skip": 0.3
+  },
+  "harbour_water": {
+   "prompt": "Calm sheltered harbour water lapping against stone quay walls and wooden jetty piles, small slaps, gurgles and sucks between the stones, soft wash rising and falling with a slow swell, wide stereo, no seagulls, no voices, no boats",
+   "generation": "hkqvihA77M9GUSNczpPK",
+   "rms_db": -27.0,
+   "skip": 0.3
+  },
+  "wind_walls": {
+   "prompt": "Wind over high stone castle battlements, a broad rushing wind swelling and easing every few seconds, low buffeting, a faint whistle through gaps in the stonework now and then, wide and diffuse, no rain, no voices",
+   "generation": "s07RbOTYjZaPrkRmizHq",
+   "rms_db": -27.0,
+   "skip": 0.3
+  }
+ }
+}
