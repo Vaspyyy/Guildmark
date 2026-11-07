@@ -317,15 +317,22 @@ The game times its captions to the voice files' lengths:
 
 | File | Length |
 |---|---|
-| `halvard_intro` | 8.802 s |
-| `halvard_phase2` | 4.356 s |
-| `halvard_death` | 4.521 s |
-| `renegade_intro` | 5.478 s |
-| `renegade_phase2` | 3.234 s |
-| `renegade_death` | 2.720 s |
+| `halvard_intro` | 9.392 s |
+| `halvard_phase2` | 4.773 s |
+| `halvard_death` | 4.861 s |
+| `renegade_intro` | 7.446 s |
+| `renegade_phase2` | 4.505 s |
+| `renegade_death` | 4.052 s |
 
 A new voice, speed or text changes these lengths. Check the new lengths with `soxi -D` and update the
 caption timings in the code.
+
+Since 2026-11-07 both bosses read from ElevenLabs takes instead of the Kokoro stage (voices and prompts in
+`eleven_bosses.json`): convert each take to `<raw-dir>/<line>.wav` and run only the `process` stage. Halvard's takes
+go through it with `--speed-factor 1.1 --max-gap 0.35`, which keeps his old pitch (about 105 Hz) and fits his
+introduction to his rise; Silvan's go through as they are. Silvan's introduction clip is moved onto his longer reading
+by the retime in `art/scripts/renegade_anims.py`, and his scene and `Renegade.INTRO_SCENE` were lengthened to match: a
+new reading of that line means new retime points there as well as new caption timings.
 
 ### Character voices
 

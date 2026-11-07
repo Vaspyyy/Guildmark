@@ -243,7 +243,7 @@ object Cutscenes : GuiLayer {
         s.voice = ModSounds.WARDEN_VOICE_INTRO.get()
         s.voiceAt = 10
         // Timed to the pauses in halvard_intro.ogg (see art/audio/README.md)
-        s.lines = listOf(Line(10, 66, "halvard.intro.1"), Line(66, 112, "halvard.intro.2"), Line(112, 172, "halvard.intro.3"))
+        s.lines = listOf(Line(10, 69, "halvard.intro.1"), Line(69, 116, "halvard.intro.2"), Line(116, 174, "halvard.intro.3"))
         s.stinger = ModSounds.BOSS_APPEAR.get()
         s.stingerAt = 192
         s.title = 196
@@ -294,51 +294,52 @@ object Cutscenes : GuiLayer {
      * Renegade.INTRO_SCENE ticks, so the camera is back by then.
      */
     private fun renegadeIntro(s: Scene, camera: Boolean) {
-        s.length = 200
+        s.length = 242
         s.voice = FactionRegistry.RENEGADE_VOICE_INTRO.get()
         s.voiceAt = 6
-        // Timed to the pause in renegade_intro.ogg (2.05 to 2.35 s in)
-        s.lines = listOf(Line(6, 50, "renegade.intro.1"), Line(53, 100, "renegade.intro.2"))
+        // Timed to the pause in renegade_intro.ogg (3.22 to 3.47 s in) and its end (6.50 s)
+        s.lines = listOf(Line(6, 72, "renegade.intro.1"), Line(75, 142, "renegade.intro.2"))
         s.stinger = ModSounds.BOSS_APPEAR.get()
-        s.stingerAt = 100
-        s.title = 104
+        s.stingerAt = 142
+        s.title = 146
         if (!camera) return
         s.shots = listOf(
             // Wide and high over the ring as he turns
-            dolly(0, 36, false, 64f, 60f, Vec3(9.0, 4.5, 4.2), Vec3(7.6, 3.6, 3.4), Vec3(0.0, 0.0, 1.3), Vec3(0.0, 0.0, 1.5)),
+            dolly(0, 46, false, 64f, 60f, Vec3(9.0, 4.5, 4.2), Vec3(7.6, 3.6, 3.4), Vec3(0.0, 0.0, 1.3), Vec3(0.0, 0.0, 1.5)),
             // Close on the hood while he talks of Idris
-            dolly(36, 62, true, 50f, 46f, Vec3(2.3, 0.9, 1.75), Vec3(1.95, 0.7, 1.85), Vec3(0.2, 0.0, 1.85), Vec3(0.2, 0.0, 1.9)),
+            dolly(46, 88, true, 50f, 46f, Vec3(2.3, 0.9, 1.75), Vec3(1.95, 0.7, 1.85), Vec3(0.2, 0.0, 1.85), Vec3(0.2, 0.0, 1.9)),
             // Pulling back as his arms spread and he looks up at the dark
-            dolly(62, 84, true, 54f, 60f, Vec3(4.0, 1.6, 1.4), Vec3(5.6, 2.2, 1.6), Vec3(0.0, 0.0, 1.5), Vec3(0.0, 0.0, 1.7)),
+            dolly(88, 121, true, 54f, 60f, Vec3(4.0, 1.6, 1.4), Vec3(5.6, 2.2, 1.6), Vec3(0.0, 0.0, 1.5), Vec3(0.0, 0.0, 1.7)),
             // Low and looking up as the staff goes high and the stones answer
-            dolly(84, 96, true, 58f, 66f, Vec3(4.6, -2.4, 0.4), Vec3(6.2, -3.0, 0.7), Vec3(0.0, 0.0, 1.9), Vec3(0.0, 0.0, 2.7)),
+            dolly(121, 138, true, 58f, 66f, Vec3(4.6, -2.4, 0.4), Vec3(6.2, -3.0, 0.7), Vec3(0.0, 0.0, 1.9), Vec3(0.0, 0.0, 2.7)),
         )
-        s.returnAt = 96
-        s.shakeAt = 90
+        s.returnAt = 138
+        s.shakeAt = 132
     }
 
     /** He cries out to the sky as the stars begin to fall: only his words, since the fight goes on around them. */
     private fun renegadePhaseTwo(s: Scene) {
-        s.length = 64
+        s.length = 76
         s.voice = FactionRegistry.RENEGADE_VOICE_PHASE2.get()
         s.voiceAt = 2
-        s.lines = listOf(Line(2, 62, "renegade.phase2"))
+        s.lines = listOf(Line(2, 74, "renegade.phase2"))
     }
 
     /** He sinks to his knees among his stones with a word for Idris; then the banner. */
     private fun renegadeDeath(s: Scene, camera: Boolean) {
-        s.length = 190
+        s.length = 200
         s.voice = FactionRegistry.RENEGADE_VOICE_DEATH.get()
         s.voiceAt = 10
-        s.lines = listOf(Line(10, 62, "renegade.death"))
+        s.lines = listOf(Line(10, 74, "renegade.death"))
         s.stinger = ModSounds.FOE_VANQUISHED.get()
-        s.stingerAt = 76
-        s.banner = 76
-        silenceUntil = max(silenceUntil, ticks + 230)
+        s.stingerAt = 86
+        s.banner = 86
+        silenceUntil = max(silenceUntil, ticks + 240)
         if (!camera) return
-        // Until he's gone to motes (Renegade.DEATH_TICKS); the server shields those watching for Renegade.DEATH_SCENE
-        s.shots = listOf(orbit(0, 64, 58f, 52f, 5.0, 4.2, 20.0, 80.0, 2.0, 1.6, 1.2))
-        s.returnAt = 64
+        // Through his last word, just after he's gone to motes (Renegade.DEATH_TICKS); the server shields those watching for
+        // Renegade.DEATH_SCENE
+        s.shots = listOf(orbit(0, 74, 58f, 52f, 5.0, 4.2, 20.0, 80.0, 2.0, 1.6, 1.2))
+        s.returnAt = 74
     }
 
     /** A field boss falls: the camera circles wide as it drops to its knees and pitches over, then the banner. */

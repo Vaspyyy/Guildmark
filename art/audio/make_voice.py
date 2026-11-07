@@ -9,7 +9,11 @@ Two stages (run from the repo root):
 
 2) Processing (numpy/scipy + sox) -> mono 44.1 kHz Ogg Vorbis in the mod's assets
    python3 art/audio/make_voice.py process --raw <raw_dir> --assets src/main/resources/assets/guildmark \
-       [--wav <dir>]
+       [--wav <dir>] [--speed-factor 0.82] [--max-gap <s>]
+
+Since 2026-11-07 the shipped raw takes come from ElevenLabs instead of stage 1 (voice, prompts and the speed factor in
+eleven_bosses.json): each take converted to <raw_dir>/<line>.wav, then stage 2 with that file's speed factor (chosen
+so Halvard keeps the pitch the Kokoro voice gave him) and pause limit (so the intro still fits his scene).
 
 The processing chain: trim -> resample -> sox `speed` (tape-style slow-down, about -3.4 semitones and
 ~18% slower) -> EQ -> gentle compression -> helmet comb -> quiet chorused octave-down double ->
@@ -88,7 +92,33 @@ def sox(x, sr, *effects, out_sr=None):
     return y.astype(np.float64)
 
 
-def process_line(x, sr_in, k):
+def tighten(x, sr, max_gap):
+    """shorten every pause longer than [max_gap] seconds to [max_gap] (10 ms frames 40 dB under the peak count as
+    silence), joining the two sides with 10 ms fades"""
+    h = int(0.01 * sr)
+    n = len(x) // h
+    e = np.sqrt(np.mean(x[:n * h].reshape(n, h) ** 2, axis=1))
+    quiet = np.concatenate([e < e.max() * 10 ** (-40 / 20), [False]])
+    keep, f = int(max_gap * sr), h
+    parts, pos, start = [], 0, None
+    for j, q in enumerate(quiet):
+        if q and start is None:
+            start = j
+        elif not q and start is not None:
+            a, b = start * h, j * h
+            start = None
+            if b - a > keep:
+                seg = x[pos:a + keep // 2].copy()
+                seg[-f:] *= np.linspace(1, 0, f)
+                parts.append(seg)
+                pos = b - keep // 2
+                x = x.copy()
+                x[pos:pos + f] *= np.linspace(0, 1, f)
+    parts.append(x[pos:])
+    return np.concatenate(parts)
+
+
+def process_line(x, sr_in, k, speed=None, max_gap=None):
     from sfxkit import (SR, hp, lp, eq, compress, comb, drive, room_ir, limiter, fade, db, ns)
     from scipy import signal
     from scipy.ndimage import uniform_filter1d
@@ -96,9 +126,11 @@ def process_line(x, sr_in, k):
     a = np.abs(x)
     on = np.nonzero(a > a.max() * 10 ** (-42 / 20))[0]
     x = x[max(0, on[0] - int(0.015 * sr_in)): on[-1] + int(0.05 * sr_in)]
+    if max_gap:
+        x = tighten(x, sr_in, max_gap)
     x = 0.7 * x / (np.max(np.abs(x)) + 1e-12)
     # tape-style slow-down = pitch down + slower, then resample to 44.1 kHz
-    y = sox(x, sr_in, "speed", SPEED_FACTOR, out_sr=SR)
+    y = sox(x, sr_in, "speed", SPEED_FACTOR if speed is None else speed, out_sr=SR)
     y = hp(y, 65, order=2)
     # tone: a little chest, less boxiness, presence for intelligibility
     y = eq(y, "lowshelf", 160, 0.7, 2.0)
@@ -153,7 +185,7 @@ def cmd_process(a):
         x = x.astype(np.float64)
         if x.ndim > 1:
             x = x.mean(axis=1)
-        y = process_line(x, sr, key)
+        y = process_line(x, sr, key, a.speed_factor, a.max_gap)
         out = os.path.join(a.assets, "sounds", "voice", key + ".ogg")
         write_ogg(out, y, quality=6)
         if a.wav:
@@ -176,6 +208,10 @@ def main():
     p.add_argument("--raw", required=True)
     p.add_argument("--assets", required=True)
     p.add_argument("--wav", default=None)
+    p.add_argument("--speed-factor", type=float, default=SPEED_FACTOR,
+                   help="sox speed factor (pitch and pace together); a lower voice than Kokoro's needs less slow-down")
+    p.add_argument("--max-gap", type=float, default=None,
+                   help="shorten pauses in the raw take to this many seconds (an actor's take can pause longer than the scene allows)")
     a = ap.parse_args()
     {"tts": cmd_tts, "process": cmd_process}[a.cmd](a)
 

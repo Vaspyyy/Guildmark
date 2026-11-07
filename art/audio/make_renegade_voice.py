@@ -13,6 +13,9 @@ Two stages (run from the repo root), modelled on make_voice.py:
    python3 -B art/audio/make_renegade_voice.py process --raw <raw_dir> --assets src/main/resources/assets/guildmark \\
        [--wav <dir>]
 
+Since 2026-11-07 the shipped raw takes come from ElevenLabs instead of stage 1 (voice and prompts in eleven_bosses.json):
+each take converted to <raw_dir>/<line>.wav, then stage 2 as it is.
+
 The processing chain: trim -> sox pitch (a little per line) -> EQ (thin and cold: less chest, a hard edge, some
 air) -> gentle compression -> a touch of grit -> a faint whispered double (the voice's own band envelopes driving
 noise, formants a little higher, a hair late) -> on the phase-two line a thin glassy shimmer (the voice's high

@@ -354,6 +354,16 @@ class Clip:
         self.marks[label] = t
         return self
 
+    def retime(self, pairs):
+        """Move every key and mark by the piecewise-linear map [pairs] of (old tick, new tick), ascending, and set the length to
+        where the old length lands (a clip keyed to one recording of a line, moved onto a longer or shorter one)."""
+        old, new = [float(a) for a, _ in pairs], [float(b) for _, b in pairs]
+        f = lambda t: float(np.interp(t, old, new))
+        self.keys = {bone: [(f(k[0]),) + tuple(k[1:]) for k in keys] for bone, keys in self.keys.items()}
+        self.marks = {label: round(f(t), 1) for label, t in self.marks.items()}
+        self.length = int(round(f(self.length)))
+        return self
+
     def has_pos(self, bone):
         return any(k[2] is not None for k in self.keys.get(bone, []))
 

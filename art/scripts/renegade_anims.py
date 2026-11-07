@@ -17,7 +17,7 @@ place it by the arm: the shaft sits square to the forearm, a hand's breadth up f
     starfall 56   release 34   both hands lift the staff high 0-30, the face to the sky, the butt slammed down at 34
     strike   20   blow 9       a quick backhand swipe at someone close
     shove    24   blow 10      a palm thrust of the free left hand
-    intro    108  -            turns to the player and speaks (timed to his voice), arms wide, the staff swept up as the stones wake (90)
+    intro    150  -            turns to the player and speaks (timed to his voice), arms wide, the staff swept up as the stones wake (132)
     death    60   -            a stagger, on his knees at 20, slumped forward over the staff by 50
 
 Ranged casts face the target the whole wind-up: the body stays square to it (the torso winds, the root doesn't turn) and
@@ -473,7 +473,8 @@ pose(c, 17, **mix(BLOW, {}, 0.3), ease='inout')
 pose(c, 24)
 
 # ================================================================== intro: turning to the player, his piece, the staff raised as the stones wake
-# 108 ticks, timed to renegade_intro.ogg, which starts at tick 6 (the game plays the clip from tick 0 as he wakes, with the body
+# Keyed below in the ticks of the first reading of renegade_intro.ogg (108 ticks; moved onto the current, longer reading by the
+# retime after the keys), which starts at tick 6 (the game plays the clip from tick 0 as he wakes, with the body
 # already snapped to face the player, so the clip opens with the model turned back toward his stones and brings it round):
 #   0-16    he turns from his stones to the player, the head first, then the shoulders, then the hips; the feet step round
 #           (the left, then the right), each foot standing where it was put until it is lifted
@@ -600,6 +601,12 @@ keyed(96, OVER, ease='linear')
 READY = dict(point=REST_POINT, hang=REST_HANG, free_dir=(0, -90), ln=0.0, tw=0.0, look=(0, 0, 0), root=(0, 0, 0))
 ramped(96, OVER, 106, READY, n=6, ease='inout')
 keyed(108, READY)
+# The keys above are timed to the first (Kokoro) reading of renegade_intro.ogg. Since 2026-11-07 the line is an ElevenLabs
+# reading that takes 42 ticks longer, so the clip is moved onto it word by word (the voice still starts at tick 6): "you?"
+# ends at 30, "course" at 42, "did" at 51, the pause runs 70-75, "the dark" at 116, "himself" ends as the staff arrives at
+# 132 (the stones wake), and the clip ends at 150. The turn (0-16) is unchanged.
+c.retime([(0, 0), (16, 16), (24, 30), (32, 42), (41.5, 51), (47, 70), (53, 75), (81, 116), (90, 132), (96, 138), (106, 148),
+          (108, 150)])
 
 # ================================================================== death: a stagger, on his knees, slumped over the staff
 # The blow rocks him back with the staff flung out; his legs go and he is on his knees at 20 with the staff in both hands; as

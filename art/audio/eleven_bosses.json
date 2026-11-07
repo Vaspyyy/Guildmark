@@ -1,0 +1,23 @@
+{
+ "_about": "ElevenLabs takes for the two bosses' lines (eleven_v4, one take each, 2026-11-07); processed by make_voice.py and make_renegade_voice.py (process stage). Prompt words match en_us.json's cutscene lines.",
+ "halvard": {
+  "voice": "Declan Graves - Haunted Rasps and Old World Dread (ElevenLabs voice library)",
+  "voice_id": "1BfrkuYXmEwp8AWqSLWk",
+  "process": "make_voice.py process --speed-factor 1.1 --max-gap 0.35",
+  "lines": {
+   "halvard_intro": "[slow, hollow, weary] Another traveller... on my road. [heavy, sorrowful] The oath still holds me here. [low, menacing warning] Turn back, or be buried beside me.",
+   "halvard_phase2": "[tormented, anguished] The crown calls... [roaring in agony] and I cannot rest!",
+   "halvard_death": "[dying, fading, finally at peace] The road... is the only home... [last breath] we keep."
+  }
+ },
+ "renegade": {
+  "voice": "Matthew Schmitz - Ancient Sage Dragon Wizard (ElevenLabs voice library)",
+  "voice_id": "HAvvFKatz0uu0Fv55Riy",
+  "process": "make_renegade_voice.py process",
+  "lines": {
+   "renegade_intro": "[cold, contemptuous, amused] Idris sent you? Of course he did. [bitter, sneering] He never could bear to look at the dark himself.",
+   "renegade_phase2": "[manic, ecstatic, shouting] Look up! [unhinged] Watch them go out, one by one!",
+   "renegade_death": "[dying, breathless, desperate] Tell him... [fading whisper] the chart was true..."
+  }
+ }
+}
