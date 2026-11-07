@@ -6,21 +6,22 @@ FluidSynth, and the voices are Kokoro TTS: Halvard processed into a hollow undea
 characters (Wren, Tobin, Ilsa, Pip and Maren) given a lighter touch, the three faction leaders each in a blend of
 Kokoro voices of their own, and the renegade Silvan Marrow made cold and a little uncanny. The city ambience
 (`ambience/`) is synthesised the same way, its criers and night watch built from Kokoro takes. Since 2026-11-07 a
-few sound sets are ElevenLabs recordings instead (named characters and bosses, the creature sounds, the city's
-four background beds); the scripts that make them are named below.
+few sound sets are ElevenLabs recordings instead (named characters and bosses, the creature and combat sounds, the
+capitals' and villages' background beds); the scripts that make them are named below.
 
 - `sfxkit.py`: the shared DSP toolkit (noise, filters, modal metal, creature voice source, room
   reverb, finalising and Ogg export).
 - `make_sfx.py`: the 116 mono sound effects (`combat/`, `hollow_soldier/`, `fallen_warden/`, `hill_troll/`, `dusk_rider/`,
   `wardfire/`, `flask/`, `marks/`, `dungeon/` and the menu sounds in `ui/`). Each sound is one `@recipe(...)`
   function that sets its variant count, length cap and fade-out. Since 2026-11-07 the game plays ElevenLabs
-  recordings for `fallen_warden/`, `hill_troll/` and `dusk_rider/` instead (`make_eleven_sfx.py`): don't run this
-  script for those groups, or the synthesised sounds come back.
-- `make_eleven_sfx.py`: the creature sounds recorded with ElevenLabs sound effects (89 files: `dragon/`,
-  `hill_troll/`, `dusk_rider/`, `fallen_warden/`), one take each. `eleven_sfx.json` holds each sound's prompt and
+  recordings for `fallen_warden/`, `hill_troll/`, `dusk_rider/`, `hollow_soldier/` and all of `combat/` but
+  `lock_on` instead (`make_eleven_sfx.py`): don't run this script for those groups, or the synthesised sounds come
+  back.
+- `make_eleven_sfx.py`: the creature and combat sounds recorded with ElevenLabs sound effects (125 files: `dragon/`,
+  `hill_troll/`, `dusk_rider/`, `fallen_warden/`, `hollow_soldier/` and `combat/` but `lock_on`), one take each. `eleven_sfx.json` holds each sound's prompt and
   generation, the length asked for when one was, its length cap (`max_len`), its loudness (`rms_db`, measured on the
   synthesised sound it replaced, so the mix stays where it was) and `one_hit` for steps, hooves, bites, swipes,
-  swings and wing beats, which keep only the loudest hit when a take holds several. The script trims, levels to a
+  swings, wing beats, blade hits and blocks, which keep only the loudest hit when a take holds several. The script trims, levels to a
   -3 dBFS peak and encodes the raw takes (`<group>__<name>_a.mp3`; the paid originals are kept outside the repo).
 - `make_music.py`: the four boss tracks (`music/`) and the two stingers (`ui/`). Halvard's two tracks and
   the stingers are built on his leitmotif; the field boss theme is a piece of its own in E Phrygian, and the
@@ -142,11 +143,13 @@ four background beds); the scripts that make them are named below.
   s) and `village_market` (30 s, the townsfolk's own talk from `sounds/townsfolk/voice` handed out as the city's crowds
   hand out theirs, so it needs no `--raw`), each sound that stands out kept clear of its loop's join; and three far
   one-shots, `dog_far`, `hammer_far` and `child_far` (3 each, 1 to 2 s, carrying 80 to 96 blocks).
-- `make_eleven_ambience.py`: the city's four background beds (`crowd_day`, `crowd_light`, `harbour_water`,
-  `wind_walls`) recorded with ElevenLabs sound effects, one 30 s take each with looping on; prompts, takes and
-  levels in `eleven_ambience.json`. Each take is levelled to the level of the synthesised bed it replaced and closed
-  into a seamless stereo loop (about 26.5 s) with `ambkit.py`'s finishing. `make_ambience.py` leaves these four
-  alone unless given `--synth-beds`, which puts the synthesised beds back.
+- `make_eleven_ambience.py`: the background beds recorded with ElevenLabs sound effects, the capitals' four
+  (`crowd_day`, `crowd_light`, `harbour_water`, `wind_walls`) and the villages' seven files (`village_day` 1 and 2,
+  `village_night` 1 and 2, `village_birds`, `village_crickets`, `village_market`), one 30 s take each with looping on;
+  prompts, takes and levels per file in `eleven_ambience.json`. Each take is levelled to the level of the synthesised
+  bed it replaced and closed into a seamless stereo loop (26.6 s) with `ambkit.py`'s finishing. `make_ambience.py`
+  leaves these beds alone unless given `--synth-beds`, which puts the synthesised beds back (the village ones are
+  described above as `village.py` makes them).
 - `make_city_voices.py`: the raw Kokoro takes behind the crowds (now only behind `--synth-beds`), criers and night
   watch.
 - `make_mill_audio.py`: the capitals' mills, three seamless mono loops (`mill/`) the game plays by a mill while it

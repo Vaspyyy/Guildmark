@@ -1,5 +1,6 @@
-"""The creature sound effects recorded with ElevenLabs (dragon, Hill Troll, Dusk Rider, Halvard the Fallen Warden):
-trims, levels and encodes the raw takes into the game's sound files.
+"""The creature and combat sound effects recorded with ElevenLabs (dragon, Hill Troll, Dusk Rider, Halvard the
+Fallen Warden, the Hollow Soldier, and the swings, hits, blocks, parries and rolls of combat/): trims, levels and
+encodes the raw takes into the game's sound files.
 
 usage (from the repo root):
     python3 -B art/audio/make_eleven_sfx.py src/main/resources/assets/guildmark <takes dir> [--only dragon/,hill_troll/roar1]
@@ -11,11 +12,12 @@ length (max_len, seconds) and its loudness (rms_db: the RMS of its loud part, me
 replaced, so the mix stays where it was). Each take is made mono 44.1 kHz, high-passed at 25 Hz, trimmed of leading
 silence and of an inaudible tail, cut at max_len with a fade-out if it runs longer, brought to rms_db and held under
 a -3 dBFS peak like the other creature sounds, then written as Ogg Vorbis to <assets>/sounds/<group>/<name>.ogg.
-Sounds marked one_hit (steps, hooves, bites, swipes, swings, wing beats) keep only the loudest of the separate hits a
+Sounds marked one_hit (steps, hooves, bites, swipes, swings, wing beats, blade hits, blocks) keep only the loudest of the separate hits a
 take holds, since a take asked for one footstep sometimes comes back as several.
 
-These files replace what make_sfx.py (fallen_warden/, hill_troll/, dusk_rider/) and make_dragon_audio.py (dragon/)
-synthesise: re-running those scripts for these groups would put the synthesised sounds back.
+These files replace what make_sfx.py (fallen_warden/, hill_troll/, dusk_rider/, hollow_soldier/, and combat/ but for
+lock_on) and make_dragon_audio.py (dragon/) synthesise: re-running those scripts for these groups would put the
+synthesised sounds back.
 """
 import argparse
 import json

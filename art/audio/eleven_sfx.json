@@ -1,5 +1,5 @@
 {
- "about": "Creature sound effects made with ElevenLabs sound effects (eleven_text_to_sound_v2, prompt influence 0.3, one take each). seconds: the length asked for, when one was (otherwise the model chose). Processed by make_eleven_sfx.py.",
+ "about": "Creature and combat sound effects made with ElevenLabs sound effects (eleven_text_to_sound_v2, prompt influence 0.3, one take each). seconds: the length asked for, when one was (otherwise the model chose). Processed by make_eleven_sfx.py.",
  "sounds": {
   "dragon/roar1": {
    "prompt": "Enormous dragon roar, deep guttural bellow swelling into a ragged scream, cavernous chest resonance",
@@ -580,6 +580,272 @@
    "max_len": 0.51,
    "rms_db": -12.9,
    "one_hit": true
+  },
+  "combat/swing_light1": {
+   "prompt": "Fast light sword swing, sharp airy whoosh, close, no impact",
+   "generation": "uE5Iea87WMl2rCzpmpsx",
+   "seconds": 0.5,
+   "max_len": 0.53,
+   "rms_db": -17.68,
+   "one_hit": true
+  },
+  "combat/swing_light2": {
+   "prompt": "Quick blade slash through the air, thin whistling swish, no impact",
+   "generation": "6G92wwmlJtsgTGQjV8WS",
+   "seconds": 0.5,
+   "max_len": 0.5,
+   "rms_db": -16.95,
+   "one_hit": true
+  },
+  "combat/swing_light3": {
+   "prompt": "Light steel sword cutting the air, short swoosh, no impact",
+   "generation": "0vG9eMb0QoPxJf8523Ka",
+   "seconds": 0.5,
+   "max_len": 0.55,
+   "rms_db": -18.76,
+   "one_hit": true
+  },
+  "combat/swing_heavy1": {
+   "prompt": "Heavy greatsword swing, deep powerful whoosh, no impact",
+   "generation": "CsXOXl5Mwghl2JhGv9dP",
+   "seconds": 0.8,
+   "max_len": 0.84,
+   "rms_db": -16.59,
+   "one_hit": true
+  },
+  "combat/swing_heavy2": {
+   "prompt": "Massive two-handed blade swung hard, low heavy swoosh, no impact",
+   "generation": "7E1LJsen1TuIShsg5bqo",
+   "seconds": 0.8,
+   "max_len": 0.9,
+   "rms_db": -18.48,
+   "one_hit": true
+  },
+  "combat/whirl1": {
+   "prompt": "Sword spun in a full circle, whirling double whoosh of a blade, no impact",
+   "generation": "B4LZKvf3EHMfHr8ImB8T",
+   "seconds": 1.0,
+   "max_len": 1.23,
+   "rms_db": -19.23
+  },
+  "combat/charge1": {
+   "prompt": "Warrior gathering strength for a heavy strike, rising tense metallic ring and leather creak building up",
+   "generation": "gAemmtnxpvPX5SRo1RPw",
+   "seconds": 1.2,
+   "max_len": 1.42,
+   "rms_db": -14.23
+  },
+  "combat/hit_flesh1": {
+   "prompt": "Sword cutting into flesh, wet meaty slash impact, short",
+   "generation": "id0fBJE0uFCV9ZOrciep",
+   "seconds": 0.5,
+   "max_len": 0.47,
+   "rms_db": -15.26,
+   "one_hit": true
+  },
+  "combat/hit_flesh2": {
+   "prompt": "Blade striking a body, thick fleshy chop, short",
+   "generation": "jJZWHM9nU2wbRorMe3ki",
+   "seconds": 0.5,
+   "max_len": 0.47,
+   "rms_db": -12.99,
+   "one_hit": true
+  },
+  "combat/hit_flesh3": {
+   "prompt": "Sword hit on cloth and flesh, dull slicing thud, short",
+   "generation": "xylMQfPjnORkiRWS4Paq",
+   "seconds": 0.5,
+   "max_len": 0.47,
+   "rms_db": -15.96,
+   "one_hit": true
+  },
+  "combat/hit_armor1": {
+   "prompt": "Sword striking plate armor, sharp metallic clang, short",
+   "generation": "q0zOFObQQzh5GtWoGpue",
+   "seconds": 0.5,
+   "max_len": 0.5,
+   "rms_db": -13.86,
+   "one_hit": true
+  },
+  "combat/hit_armor2": {
+   "prompt": "Blade glancing off chainmail and steel, scraping metal hit, short",
+   "generation": "cLoD4p0sAKvekDHOaQw5",
+   "seconds": 0.5,
+   "max_len": 0.49,
+   "rms_db": -14.6,
+   "one_hit": true
+  },
+  "combat/hit_armor3": {
+   "prompt": "Steel weapon hitting a metal helmet, ringing clank, short",
+   "generation": "ArdPtf4ZeJLRGQtuydWz",
+   "seconds": 0.5,
+   "max_len": 0.54,
+   "rms_db": -13.53,
+   "one_hit": true
+  },
+  "combat/critical1": {
+   "prompt": "Brutal critical sword strike, blade driven into an armored body, metal crunch and deep thud",
+   "generation": "rV1b620oN3XnNc1uR86o",
+   "seconds": 1.0,
+   "max_len": 0.93,
+   "rms_db": -15.64
+  },
+  "combat/critical2": {
+   "prompt": "Devastating finishing blow, sword impaling through armor, crunching impact with a low boom",
+   "generation": "EXnR1DhSMtXcUaGPiZrM",
+   "seconds": 1.0,
+   "max_len": 0.93,
+   "rms_db": -15.59
+  },
+  "combat/roll1": {
+   "prompt": "Armored warrior dodge roll on dirt, cloth and leather rustle, light chainmail jingle and a soft thump",
+   "generation": "YMlI5DteDzZguyMFr6av",
+   "seconds": 0.7,
+   "max_len": 0.7,
+   "rms_db": -21.73
+  },
+  "combat/roll2": {
+   "prompt": "Quick combat roll on stone ground, armor rattle and a tumbling body thud",
+   "generation": "hmmrekfgHWTdtANcya9h",
+   "seconds": 0.7,
+   "max_len": 0.7,
+   "rms_db": -19.91
+  },
+  "combat/backstep1": {
+   "prompt": "Quick backstep, two fast light footsteps on dirt with a leather and cloth swish",
+   "generation": "tlsMI4dzRqX3NO7Yhv7m",
+   "seconds": 0.5,
+   "max_len": 0.46,
+   "rms_db": -18.66
+  },
+  "combat/parry1": {
+   "prompt": "Sword parry, bright ringing steel on steel clash with a deflecting scrape",
+   "generation": "moYxS3pWLgjjgkjXA4T0",
+   "seconds": 1.2,
+   "max_len": 1.23,
+   "rms_db": -16.9
+  },
+  "combat/parry2": {
+   "prompt": "Perfect parry with a steel shield, sharp metallic ring and deflection, resonant",
+   "generation": "o5a38TQ4qfbYkejGyF5E",
+   "seconds": 1.2,
+   "max_len": 1.23,
+   "rms_db": -16.25
+  },
+  "combat/guard1": {
+   "prompt": "Sword blow blocked by a wooden shield with an iron rim, heavy thunk",
+   "generation": "p16unAId1KNQevTZBySR",
+   "seconds": 0.6,
+   "max_len": 0.51,
+   "rms_db": -13.88,
+   "one_hit": true
+  },
+  "combat/guard2": {
+   "prompt": "Blade blocked by a steel shield, solid metallic bang",
+   "generation": "f82IFo1auzx5BmlCjjNd",
+   "seconds": 0.6,
+   "max_len": 0.51,
+   "rms_db": -13.81,
+   "one_hit": true
+  },
+  "combat/guard3": {
+   "prompt": "Weapon blocked by a raised sword, short heavy metal clank",
+   "generation": "jvbpGesfn2vC4R7B0VpW",
+   "seconds": 0.6,
+   "max_len": 0.51,
+   "rms_db": -13.24,
+   "one_hit": true
+  },
+  "combat/guard_break1": {
+   "prompt": "Shield guard broken by a heavy blow, splintering crack and metal clang",
+   "generation": "KEjnb4EelgVQUPYpeqWo",
+   "seconds": 1.0,
+   "max_len": 1.08,
+   "rms_db": -14.87
+  },
+  "combat/stance_break1": {
+   "prompt": "Knight's stance broken, heavy armor buckling with a crunch and a deep impact boom",
+   "generation": "M8TJ2eWK6IujUnCKmwZJ",
+   "seconds": 1.0,
+   "max_len": 0.93,
+   "rms_db": -12.95
+  },
+  "combat/stance_break2": {
+   "prompt": "Enemy posture broken, loud metallic crash and the heavy thud of armor",
+   "generation": "mzpEJEi0JGd3B9RMezdl",
+   "seconds": 1.0,
+   "max_len": 0.93,
+   "rms_db": -12.97
+  },
+  "combat/stagger1": {
+   "prompt": "Armored fighter staggering back from a hit, armor rattle and stumbling footsteps",
+   "generation": "QYEngaqces5uSiU7PxkV",
+   "seconds": 0.7,
+   "max_len": 0.61,
+   "rms_db": -13.33
+  },
+  "combat/out_of_stamina1": {
+   "prompt": "Exhausted warrior gasping for breath, one heavy tired pant",
+   "generation": "nuYKUbst0KGO8166AEO4",
+   "seconds": 0.8,
+   "max_len": 0.61,
+   "rms_db": -18.57
+  },
+  "hollow_soldier/ambient1": {
+   "prompt": "Undead hollow soldier breathing, dry raspy hollow groan, creepy",
+   "generation": "iAeOamSSufmsbuwrCwkk",
+   "seconds": 2.0,
+   "max_len": 1.89,
+   "rms_db": -19.72
+  },
+  "hollow_soldier/ambient2": {
+   "prompt": "Hollow undead warrior low rattling moan from a dry throat, eerie",
+   "generation": "uj5q5dRaRqv4MmZMrh3O",
+   "seconds": 2.0,
+   "max_len": 2.03,
+   "rms_db": -15.74
+  },
+  "hollow_soldier/ambient3": {
+   "prompt": "Undead soldier wheezing hiss and a creak of old armor",
+   "generation": "DHerPmouiXmCECNkyD38",
+   "seconds": 2.0,
+   "max_len": 1.89,
+   "rms_db": -16.22
+  },
+  "hollow_soldier/hurt1": {
+   "prompt": "Undead soldier hurt, short hollow raspy grunt of pain",
+   "generation": "r9KwDlNmXSkMiBo4dqLC",
+   "seconds": 0.7,
+   "max_len": 0.74,
+   "rms_db": -16.33
+  },
+  "hollow_soldier/hurt2": {
+   "prompt": "Hollow undead hit, dry croaking yelp",
+   "generation": "6A6n5eWU6Pm0Pr2kc7C3",
+   "seconds": 0.7,
+   "max_len": 0.72,
+   "rms_db": -17.36
+  },
+  "hollow_soldier/death1": {
+   "prompt": "Undead soldier dying, long fading hollow rasp and collapsing armor clatter",
+   "generation": "wd6wkezW6ocKUEjLsV7m",
+   "seconds": 2.0,
+   "max_len": 1.75,
+   "rms_db": -19.17
+  },
+  "hollow_soldier/attack1": {
+   "prompt": "Undead soldier snarling as it attacks, raspy aggressive growl",
+   "generation": "C6DzsE6kj7mtdfUZMuKY",
+   "seconds": 0.8,
+   "max_len": 0.72,
+   "rms_db": -12.64
+  },
+  "hollow_soldier/attack2": {
+   "prompt": "Hollow undead warrior attack shriek, short dry snarl",
+   "generation": "k4FprMI4wlJjLHxS165a",
+   "seconds": 0.8,
+   "max_len": 0.72,
+   "rms_db": -12.67
   }
  }
 }

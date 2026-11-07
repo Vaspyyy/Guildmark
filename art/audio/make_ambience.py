@@ -9,9 +9,10 @@ Each module in art/audio/ambience/ registers its sounds with @recipe (see ambkit
 <assets>/sounds/ambience/<name><n>.ogg. --only takes recipe names or prefixes (bell_, gull). --wav also
 writes WAV copies, --png a waveform and spectrogram picture of each file. --raw is where
 make_city_voices.py tts left the raw speech takes; without it the recipes built on speech are skipped.
---modules loads only the named modules from ambience/ (bells,harbour). The four beds (crowd_day, crowd_light,
-harbour_water, wind_walls) play ElevenLabs recordings made by make_eleven_ambience.py: their recipes here only run
-with --synth-beds, which puts the synthesised beds back.
+--modules loads only the named modules from ambience/ (bells,harbour). The beds (the capitals' crowd_day,
+crowd_light, harbour_water and wind_walls, and the villages' village_day, village_night, village_birds,
+village_crickets and village_market) play ElevenLabs recordings made by make_eleven_ambience.py: their recipes here
+only run with --synth-beds, which puts the synthesised beds back.
 
     python3 -B art/audio/make_ambience.py src/main/resources/assets/guildmark --sounds
 
@@ -29,7 +30,8 @@ import traceback
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 # beds recorded with ElevenLabs instead (make_eleven_ambience.py); their recipes run only with --synth-beds
-ELEVEN_BEDS = set(json.load(open(os.path.join(HERE, "eleven_ambience.json"), encoding="utf-8"))["beds"])
+ELEVEN_BEDS = {f.rstrip("0123456789") for f in json.load(open(os.path.join(HERE, "eleven_ambience.json"),
+                                                              encoding="utf-8"))["files"]}
 sys.path.insert(0, HERE)
 import ambkit  # noqa: E402
 from ambkit import RECIPES, SR, Skip, describe, finish, rng_for, spectrogram_png, write_ogg, write_wav  # noqa: E402
@@ -150,7 +152,7 @@ def main():
         if sel and not any(path == s or path.startswith(s) for s in sel):
             continue
         if path in ELEVEN_BEDS and not a.synth_beds:
-            print(f"ambience/{path + '1':25s} kept: an ElevenLabs recording (make_eleven_ambience.py)", flush=True)
+            print(f"ambience/{path:26s} kept: ElevenLabs recordings (make_eleven_ambience.py)", flush=True)
             continue
         for v in range(r["variants"]):
             t0 = time.time()

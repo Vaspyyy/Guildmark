@@ -1,28 +1,70 @@
 {
- "about": "The city's background beds recorded with ElevenLabs sound effects (eleven_text_to_sound_v2, 30 s, loop on, prompt influence 0.3, one take each). rms_db is the level each bed's synthesised recipe in ambience/ was made at. Processed by make_eleven_ambience.py.",
- "beds": {
-  "crowd_day": {
+ "about": "The capitals' and villages' background beds recorded with ElevenLabs sound effects (eleven_text_to_sound_v2, 30 s, loop on, prompt influence 0.3, one take each), one entry per file (sounds/ambience/<file>.ogg). rms_db is the level the bed's synthesised recipe in ambience/ was made at. Processed by make_eleven_ambience.py.",
+ "files": {
+  "crowd_day1": {
    "prompt": "Busy medieval market square crowd ambience, dozens of people chatting and haggling all around, near and far, an even indistinct murmur of voices, footsteps and shuffling on cobblestones, a cart rolling by far off, open air, no music",
    "generation": "PKEV78inNdQFoJ9AnmSj",
    "rms_db": -26.0,
    "skip": 0.3
   },
-  "crowd_light": {
+  "crowd_light1": {
    "prompt": "Quiet medieval town street ambience, a few people passing by in twos talking softly, someone chatting on a doorstep down the street, unhurried footsteps on cobblestones, faint murmur of the town in the distance, open air, no music",
    "generation": "JVRaPNG2NHd6UyBoJvDe",
    "rms_db": -28.0,
    "skip": 0.3
   },
-  "harbour_water": {
+  "harbour_water1": {
    "prompt": "Calm sheltered harbour water lapping against stone quay walls and wooden jetty piles, small slaps, gurgles and sucks between the stones, soft wash rising and falling with a slow swell, wide stereo, no seagulls, no voices, no boats",
    "generation": "hkqvihA77M9GUSNczpPK",
    "rms_db": -27.0,
    "skip": 0.3
   },
-  "wind_walls": {
+  "wind_walls1": {
    "prompt": "Wind over high stone castle battlements, a broad rushing wind swelling and easing every few seconds, low buffeting, a faint whistle through gaps in the stonework now and then, wide and diffuse, no rain, no voices",
    "generation": "s07RbOTYjZaPrkRmizHq",
    "rms_db": -27.0,
+   "skip": 0.3
+  },
+  "village_day1": {
+   "prompt": "Peaceful medieval village by day, gentle breeze in dry grass and hedges, hens clucking and scratching in the yards, sparrows chirping at the eaves, a cart creaking along a lane far off, a cow lowing once in the distance, no music, no voices",
+   "generation": "uimHqyCdIEtT91ywCtK7",
+   "rms_db": -29.0,
+   "skip": 0.3
+  },
+  "village_day2": {
+   "prompt": "Peaceful medieval village by day, gentle breeze in dry grass and hedges, hens clucking in the yards, sparrows at the eaves, sheep bleating in the next field and rooks cawing over it, a cart far off on a lane, no music, no voices",
+   "generation": "sU4Y6CLalnNWWmjoG5Re",
+   "rms_db": -29.0,
+   "skip": 0.3
+  },
+  "village_night1": {
+   "prompt": "Quiet medieval village at night, soft wind over thatched roofs and through hedges, an occasional rustle in the hedge, a tawny owl hooting from the trees beyond the houses, sparse and calm, no crickets, no voices, no music",
+   "generation": "XEtz2XYwvfmzRHn9ezt4",
+   "rms_db": -31.0,
+   "skip": 0.3
+  },
+  "village_night2": {
+   "prompt": "Quiet medieval village at night, soft air moving over thatch and hedges, a barn owl's ke-wick call answered from far off, a field gate creaking softly on its hinge, sparse and calm, no crickets, no voices, no music",
+   "generation": "rrwSFIsETbyRkR2HR6fz",
+   "rms_db": -31.0,
+   "skip": 0.3
+  },
+  "village_birds1": {
+   "prompt": "Morning birdsong around a country village, a blackbird singing from a roof ridge, a robin and a wren in the hedges, a song thrush in a tree, a chaffinch, a distant wood pigeon cooing, sparrows chirping, no wind, no voices",
+   "generation": "qTKKd90ALQLqdHkqMgyU",
+   "rms_db": -30.0,
+   "skip": 0.3
+  },
+  "village_crickets1": {
+   "prompt": "Crickets chirping in the grass on a warm summer night, a few close crickets at different pitches and many more far off in the fields, a soft shimmer, no wind, no owls, no voices",
+   "generation": "bJ0hJbW2QNV9xFi5emHL",
+   "rms_db": -32.0,
+   "skip": 0.3
+  },
+  "village_market1": {
+   "prompt": "Small medieval village market on the green, a dozen people chatting quietly around the stalls, indistinct murmur, footsteps on grass, coins clinking, a handbell rung across the green, a squeaky wheelbarrow passing, a hen clucking in a basket, no music",
+   "generation": "UVpB8nooByMom6oXTL3e",
+   "rms_db": -29.0,
    "skip": 0.3
   }
  }
