@@ -55,7 +55,7 @@ def main():
         loop = np.floor((x.shape[1] / SR - XFADE - 0.05) * 10) / 10
         y = finish(x, dict(stereo=True, loop=loop, xfade=XFADE, rms_db=s["rms_db"], ceiling_db=-1.0), 0)
         name = f"ambience/{f}"
-        write_ogg(os.path.join(a.assets, "sounds", name + ".ogg"), y, quality=5)
+        write_ogg(os.path.join(a.assets, "sounds", name + ".ogg"), y, quality=5, force=True)
         if a.wav:
             write_wav(os.path.join(a.wav, name + ".wav"), y)
         if a.png:

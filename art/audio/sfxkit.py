@@ -5,6 +5,7 @@ a glottal-pulse "creature voice" source, synthetic room impulse responses and a 
 mastering helpers. All randomness goes through a seeded numpy Generator so every file
 regenerates bit-identically.
 """
+import json
 import os
 import shutil
 import subprocess
@@ -629,8 +630,31 @@ def write_wav(path, x, sr=SR):
     wavfile.write(path, sr, (data * 32767).astype(np.int16) if data.ndim == 1 else (data.T * 32767).astype(np.int16))
 
 
-def write_ogg(path, x, sr=SR, quality=6):
-    """encode to Ogg Vorbis with ffmpeg (libvorbis); x is mono (n,) or stereo (2, n)"""
+_ELEVEN = None
+
+
+def eleven_kept(path):
+    """True for a game sound that is an ElevenLabs recording (listed in art/audio/eleven_sfx.json or
+    eleven_ambience.json): the synthesising scripts leave those files alone"""
+    global _ELEVEN
+    if _ELEVEN is None:
+        here = os.path.dirname(os.path.abspath(__file__))
+        _ELEVEN = set()
+        for name, field, folder in (("eleven_sfx.json", "sounds", ""), ("eleven_ambience.json", "files", "ambience/")):
+            p = os.path.join(here, name)
+            if os.path.exists(p):
+                _ELEVEN |= {k if "/" in k else folder + k for k in json.load(open(p, encoding="utf-8"))[field]}
+    p = os.path.abspath(path).replace(os.sep, "/")
+    i = p.rfind("/sounds/")
+    return i >= 0 and p.endswith(".ogg") and p[i + 8:-4] in _ELEVEN
+
+
+def write_ogg(path, x, sr=SR, quality=6, force=False):
+    """encode to Ogg Vorbis with ffmpeg (libvorbis); x is mono (n,) or stereo (2, n). A game sound recorded with
+    ElevenLabs (eleven_kept) is left as it is unless force is given or GUILDMARK_SYNTH_ALL=1 is set"""
+    if not force and os.environ.get("GUILDMARK_SYNTH_ALL") != "1" and eleven_kept(path):
+        print(f"  kept {path}: an ElevenLabs recording (art/audio/eleven_*.json); GUILDMARK_SYNTH_ALL=1 overwrites it")
+        return
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     with tempfile.TemporaryDirectory() as td:
         w = os.path.join(td, "tmp.wav")

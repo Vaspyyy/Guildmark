@@ -1,5 +1,5 @@
 {
- "about": "Creature and combat sound effects made with ElevenLabs sound effects (eleven_text_to_sound_v2, prompt influence 0.3, one take each). seconds: the length asked for, when one was (otherwise the model chose). Processed by make_eleven_sfx.py.",
+ "about": "Sound effects made with ElevenLabs sound effects (eleven_text_to_sound_v2, prompt influence 0.3, one take each): the creatures, combat and nearly every other effect that was synthesised. seconds: the length asked for, when one was (otherwise the model chose). loop: asked for as a seamless loop. Processed by make_eleven_sfx.py.",
  "sounds": {
   "dragon/roar1": {
    "prompt": "Enormous dragon roar, deep guttural bellow swelling into a ragged scream, cavernous chest resonance",
@@ -846,6 +846,5740 @@
    "seconds": 0.8,
    "max_len": 0.72,
    "rms_db": -12.67
+  },
+  "works/trowel1": {
+   "prompt": "Mason's steel trowel scraping wet mortar across a brick, short gritty scrape",
+   "generation": "fPM4rjiG1Adci3laRVzv",
+   "seconds": 1.3,
+   "max_len": 1.05,
+   "rms_db": -23.42,
+   "peak_db": -1.0
+  },
+  "works/trowel2": {
+   "prompt": "Mason's steel trowel scraping wet mortar across a brick, short gritty scrape",
+   "generation": "mDlTTXbirAgLHXc8VYmt",
+   "seconds": 1.3,
+   "max_len": 1.26,
+   "rms_db": -23.14,
+   "peak_db": -1.0
+  },
+  "works/trowel3": {
+   "prompt": "Mason's steel trowel scraping wet mortar across a brick, short gritty scrape",
+   "generation": "IyUIgm9BGBZLOlutpMQK",
+   "seconds": 1.3,
+   "max_len": 0.88,
+   "rms_db": -23.17,
+   "peak_db": -1.0
+  },
+  "works/trowel4": {
+   "prompt": "Mason's steel trowel scraping wet mortar across a brick, short gritty scrape",
+   "generation": "UueLffADV9xApmOiU5JV",
+   "seconds": 1.3,
+   "max_len": 1.15,
+   "rms_db": -23.32,
+   "peak_db": -1.0
+  },
+  "works/trowel5": {
+   "prompt": "Mason's steel trowel scraping wet mortar across a brick, short gritty scrape",
+   "generation": "JLxncYW0T7wcybZSajzO",
+   "seconds": 1.3,
+   "max_len": 1.1,
+   "rms_db": -23.43,
+   "peak_db": -1.0
+  },
+  "works/trowel6": {
+   "prompt": "Mason's steel trowel scraping wet mortar across a brick, short gritty scrape",
+   "generation": "pQgfYUPbL0jVhD4hyRN9",
+   "seconds": 1.3,
+   "max_len": 0.82,
+   "rms_db": -22.95,
+   "peak_db": -1.0
+  },
+  "works/chisel1": {
+   "prompt": "Steel chisel struck once by a mallet, chipping stone, one sharp chip",
+   "generation": "wRVfPtOCQkUo0FPnpHZU",
+   "seconds": 0.8,
+   "max_len": 0.68,
+   "rms_db": -19.58,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "works/chisel2": {
+   "prompt": "Steel chisel struck once by a mallet, chipping stone, one sharp chip",
+   "generation": "9r0lecREOJbOWMlUtPRE",
+   "seconds": 0.8,
+   "max_len": 0.66,
+   "rms_db": -21.15,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "works/chisel3": {
+   "prompt": "Steel chisel struck once by a mallet, chipping stone, one sharp chip",
+   "generation": "zlCozXPowMJvgSzv6WCP",
+   "seconds": 0.8,
+   "max_len": 0.77,
+   "rms_db": -21.81,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "works/chisel4": {
+   "prompt": "Steel chisel struck once by a mallet, chipping stone, one sharp chip",
+   "generation": "PxfQpK2YfrQBQiTYHkR3",
+   "seconds": 0.8,
+   "max_len": 0.69,
+   "rms_db": -21.95,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "works/chisel5": {
+   "prompt": "Steel chisel struck once by a mallet, chipping stone, one sharp chip",
+   "generation": "gt74XxjMdRRQmuAuQQBM",
+   "seconds": 0.8,
+   "max_len": 0.66,
+   "rms_db": -21.47,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "works/chisel6": {
+   "prompt": "Steel chisel struck once by a mallet, chipping stone, one sharp chip",
+   "generation": "ZZcgSh2Km8hd3BP40dPN",
+   "seconds": 0.8,
+   "max_len": 0.72,
+   "rms_db": -17.38,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "works/mortar1": {
+   "prompt": "Shovel churning thick wet mortar in a wooden trough, wet gritty slosh",
+   "generation": "OQGUhxI6Qk7OUOevh9f0",
+   "seconds": 1.6,
+   "max_len": 1.6,
+   "rms_db": -21.2,
+   "peak_db": -1.0
+  },
+  "works/mortar2": {
+   "prompt": "Shovel churning thick wet mortar in a wooden trough, wet gritty slosh",
+   "generation": "DtoJZ5QQZNno6YjJXUSh",
+   "seconds": 1.6,
+   "max_len": 1.67,
+   "rms_db": -22.36,
+   "peak_db": -1.0
+  },
+  "works/mortar3": {
+   "prompt": "Shovel churning thick wet mortar in a wooden trough, wet gritty slosh",
+   "generation": "9zBXiFjiH0xPU8mcsjJa",
+   "seconds": 1.6,
+   "max_len": 1.25,
+   "rms_db": -21.66,
+   "peak_db": -1.0
+  },
+  "works/mortar4": {
+   "prompt": "Shovel churning thick wet mortar in a wooden trough, wet gritty slosh",
+   "generation": "z8jPeFZZoMaBEQRfWPh1",
+   "seconds": 1.6,
+   "max_len": 1.62,
+   "rms_db": -22.59,
+   "peak_db": -1.0
+  },
+  "works/hoist1": {
+   "prompt": "Rope creaking through a wooden pulley block as a heavy load is hoisted",
+   "generation": "fVxovEADMcmrbisY34Yd",
+   "seconds": 1.7,
+   "max_len": 1.37,
+   "rms_db": -22.6,
+   "peak_db": -1.0
+  },
+  "works/hoist2": {
+   "prompt": "Rope creaking through a wooden pulley block as a heavy load is hoisted",
+   "generation": "tgw85R29kHhTkMSGKwsF",
+   "seconds": 1.7,
+   "max_len": 1.61,
+   "rms_db": -23.25,
+   "peak_db": -1.0
+  },
+  "works/hoist3": {
+   "prompt": "Rope creaking through a wooden pulley block as a heavy load is hoisted",
+   "generation": "7BJgQmbB5QZYh6tjzFzv",
+   "seconds": 1.7,
+   "max_len": 1.15,
+   "rms_db": -22.02,
+   "peak_db": -1.0
+  },
+  "works/hoist4": {
+   "prompt": "Rope creaking through a wooden pulley block as a heavy load is hoisted",
+   "generation": "NfLD1U2XmPakG5iJBwIo",
+   "seconds": 1.7,
+   "max_len": 1.72,
+   "rms_db": -23.73,
+   "peak_db": -1.0
+  },
+  "works/beam_down1": {
+   "prompt": "Heavy timber beam dropped onto a wooden frame, deep wooden thud",
+   "generation": "BuIL9el0esMBgfgDsGnm",
+   "seconds": 1.3,
+   "max_len": 0.91,
+   "rms_db": -15.0,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "works/beam_down2": {
+   "prompt": "Heavy timber beam dropped onto a wooden frame, deep wooden thud",
+   "generation": "t200o0mVqJRR8HWlsEI4",
+   "seconds": 1.3,
+   "max_len": 1.22,
+   "rms_db": -16.46,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "works/beam_down3": {
+   "prompt": "Heavy timber beam dropped onto a wooden frame, deep wooden thud",
+   "generation": "UT0mrCNGIURS1f4dJCDB",
+   "seconds": 1.3,
+   "max_len": 0.95,
+   "rms_db": -15.8,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "works/stone_set1": {
+   "prompt": "Heavy stone block set down onto wet mortar, dull grinding thunk",
+   "generation": "eZ1Aet5ILErzpsWG8ENm",
+   "seconds": 1.2,
+   "max_len": 1.11,
+   "rms_db": -18.68,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "works/stone_set2": {
+   "prompt": "Heavy stone block set down onto wet mortar, dull grinding thunk",
+   "generation": "lo9ecu2PnrIBPgX8SbxX",
+   "seconds": 1.2,
+   "max_len": 0.97,
+   "rms_db": -19.0,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "works/stone_set3": {
+   "prompt": "Heavy stone block set down onto wet mortar, dull grinding thunk",
+   "generation": "DA3u9zzZldCgMHejiP1l",
+   "seconds": 1.2,
+   "max_len": 1.08,
+   "rms_db": -20.01,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "works/stone_set4": {
+   "prompt": "Heavy stone block set down onto wet mortar, dull grinding thunk",
+   "generation": "vRvgs2kHqPQ0GssNOiR6",
+   "seconds": 1.2,
+   "max_len": 1.07,
+   "rms_db": -16.59,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "works/stake1": {
+   "prompt": "Wooden post knocked into the ground with a mallet, one dull thud",
+   "generation": "BLNRaIFDKqGkZJr4x9nh",
+   "seconds": 0.8,
+   "max_len": 0.76,
+   "rms_db": -14.61,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "works/stake2": {
+   "prompt": "Wooden post knocked into the ground with a mallet, one dull thud",
+   "generation": "mNhgqcLmHjT2y9Vby6qy",
+   "seconds": 0.8,
+   "max_len": 0.78,
+   "rms_db": -14.57,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "works/stake3": {
+   "prompt": "Wooden post knocked into the ground with a mallet, one dull thud",
+   "generation": "WhTmBqDrp2TkyqqJsro6",
+   "seconds": 0.8,
+   "max_len": 0.76,
+   "rms_db": -16.55,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "works/stake4": {
+   "prompt": "Wooden post knocked into the ground with a mallet, one dull thud",
+   "generation": "pVP2EG1Xm0cjmjNu65Xb",
+   "seconds": 0.8,
+   "max_len": 0.79,
+   "rms_db": -14.27,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "works/cheer1": {
+   "prompt": "Small crowd of medieval workers and townsfolk cheering and clapping, short, no words",
+   "generation": "kBKE69NAlEnQll60C6iW",
+   "seconds": 3.4,
+   "max_len": 3.17,
+   "rms_db": -17.45,
+   "peak_db": -1.0
+  },
+  "works/cheer2": {
+   "prompt": "Small crowd of medieval workers and townsfolk cheering and clapping, short, no words",
+   "generation": "QoEEc4AXDLuOpUkvJjcE",
+   "seconds": 3.4,
+   "max_len": 3.69,
+   "rms_db": -18.93,
+   "peak_db": -1.0
+  },
+  "works/cheer3": {
+   "prompt": "Small crowd of medieval workers and townsfolk cheering and clapping, short, no words",
+   "generation": "mV9XqbQ4EKJrHFFUXPoJ",
+   "seconds": 3.4,
+   "max_len": 3.32,
+   "rms_db": -18.84,
+   "peak_db": -1.0
+  },
+  "works/toast1": {
+   "prompt": "Pewter and clay cups clinking together in a toast, two or three clinks",
+   "generation": "anaZoDO4dqxGoWhjqma2",
+   "seconds": 1.0,
+   "max_len": 0.79,
+   "rms_db": -17.88,
+   "peak_db": -1.0
+  },
+  "works/toast2": {
+   "prompt": "Pewter and clay cups clinking together in a toast, two or three clinks",
+   "generation": "gRLkXm2jUkbR8ysGNHIg",
+   "seconds": 1.0,
+   "max_len": 0.86,
+   "rms_db": -18.33,
+   "peak_db": -1.0
+  },
+  "works/toast3": {
+   "prompt": "Pewter and clay cups clinking together in a toast, two or three clinks",
+   "generation": "cM2SwoRdtemVulQu3xyV",
+   "seconds": 1.0,
+   "max_len": 0.93,
+   "rms_db": -18.73,
+   "peak_db": -1.0
+  },
+  "works/toast4": {
+   "prompt": "Pewter and clay cups clinking together in a toast, two or three clinks",
+   "generation": "SlGbUfjwiin0QTd1rEkz",
+   "seconds": 1.0,
+   "max_len": 0.78,
+   "rms_db": -19.02,
+   "peak_db": -1.0
+  },
+  "works/unveil1": {
+   "prompt": "Heavy cloth sheet whisked off a stone monument, quick fabric whoosh and flap",
+   "generation": "6qzoweXJ8oCmBfwt9Ai9",
+   "seconds": 1.6,
+   "max_len": 1.38,
+   "rms_db": -22.67,
+   "peak_db": -1.0
+  },
+  "works/unveil2": {
+   "prompt": "Heavy cloth sheet whisked off a stone monument, quick fabric whoosh and flap",
+   "generation": "K0xJq9NILfCyRU5Vg1bK",
+   "seconds": 1.6,
+   "max_len": 1.48,
+   "rms_db": -23.23,
+   "peak_db": -1.0
+  },
+  "works/unveil3": {
+   "prompt": "Heavy cloth sheet whisked off a stone monument, quick fabric whoosh and flap",
+   "generation": "1hmUYkDhP2ztrrAjMbXz",
+   "seconds": 1.6,
+   "max_len": 1.65,
+   "rms_db": -23.97,
+   "peak_db": -1.0
+  },
+  "works/handbell1": {
+   "prompt": "Brass handbell rung by hand several times, bright ringing then fading",
+   "generation": "wgbeASF7aKqEtZVLYkn7",
+   "seconds": 4.4,
+   "max_len": 4.8,
+   "rms_db": -20.78,
+   "peak_db": -1.0
+  },
+  "works/handbell2": {
+   "prompt": "Brass handbell rung by hand several times, bright ringing then fading",
+   "generation": "iTGbDxctq0pFzHz3Vk4U",
+   "seconds": 4.4,
+   "max_len": 4.8,
+   "rms_db": -20.79,
+   "peak_db": -1.0
+  },
+  "works/handbell3": {
+   "prompt": "Brass handbell rung by hand several times, bright ringing then fading",
+   "generation": "gvGv1TVz82Rb6rfcLiPS",
+   "seconds": 4.4,
+   "max_len": 4.8,
+   "rms_db": -20.18,
+   "peak_db": -1.0
+  },
+  "works/horn1": {
+   "prompt": "Medieval watch horn blown from a tower, one long mournful note echoing over the land",
+   "generation": "7M9clVRNEd6wuyHlvrSs",
+   "seconds": 5.2,
+   "max_len": 5.52,
+   "rms_db": -17.21,
+   "peak_db": -1.0
+  },
+  "works/horn2": {
+   "prompt": "Medieval watch horn blown from a tower, one long mournful note echoing over the land",
+   "generation": "MxwiTAqGWRJV4mV7NroH",
+   "seconds": 5.2,
+   "max_len": 5.72,
+   "rms_db": -17.55,
+   "peak_db": -1.0
+  },
+  "works/horn3": {
+   "prompt": "Medieval watch horn blown from a tower, one long mournful note echoing over the land",
+   "generation": "CxyFu5qUpHBWaJGxmC3a",
+   "seconds": 5.2,
+   "max_len": 5.4,
+   "rms_db": -18.07,
+   "peak_db": -1.0
+  },
+  "works/beacon_flare1": {
+   "prompt": "Large signal beacon bonfire catching, whoosh of flames roaring up and crackling",
+   "generation": "VG5bEHKV7UXJIdwOqUVz",
+   "seconds": 3.6,
+   "max_len": 3.9,
+   "rms_db": -21.14,
+   "peak_db": -1.0
+  },
+  "works/beacon_flare2": {
+   "prompt": "Large signal beacon bonfire catching, whoosh of flames roaring up and crackling",
+   "generation": "JjffYCrcwcfJHpSUq5I2",
+   "seconds": 3.6,
+   "max_len": 3.9,
+   "rms_db": -20.58,
+   "peak_db": -1.0
+  },
+  "works/beacon_flare3": {
+   "prompt": "Large signal beacon bonfire catching, whoosh of flames roaring up and crackling",
+   "generation": "W7fBDX71Fg3H2WLcS2Q8",
+   "seconds": 3.6,
+   "max_len": 3.9,
+   "rms_db": -20.02,
+   "peak_db": -1.0
+  },
+  "works/beacon_loop1": {
+   "prompt": "Large beacon bonfire burning steadily on a hilltop, roaring flames and crackling logs, continuous",
+   "generation": "JN2Ul5I9SuMB6kcNs8lA",
+   "seconds": 13.3,
+   "loop": true,
+   "rms_db": -26.4
+  },
+  "works/beacon_loop2": {
+   "prompt": "Large beacon bonfire burning steadily on a hilltop, roaring flames and crackling logs, continuous",
+   "generation": "J4oueHnbIjJNGu5gNsAp",
+   "seconds": 13.3,
+   "loop": true,
+   "rms_db": -25.84
+  },
+  "works/granary_doors1": {
+   "prompt": "Large wooden granary doors creaking open on old iron hinges",
+   "generation": "LnTwMV9cNbC4zkNgi2rX",
+   "seconds": 2.7,
+   "max_len": 2.24,
+   "rms_db": -21.07,
+   "peak_db": -1.0
+  },
+  "works/granary_doors2": {
+   "prompt": "Large wooden granary doors creaking open on old iron hinges",
+   "generation": "FfxtG3LLViaXkeoH2Sg4",
+   "seconds": 2.7,
+   "max_len": 2.46,
+   "rms_db": -21.02,
+   "peak_db": -1.0
+  },
+  "works/granary_doors3": {
+   "prompt": "Large wooden granary doors creaking open on old iron hinges",
+   "generation": "12BXLmMhtPPaZy67faI9",
+   "seconds": 2.7,
+   "max_len": 2.84,
+   "rms_db": -22.0,
+   "peak_db": -1.0
+  },
+  "works/pledge1": {
+   "prompt": "A few coins dropped into a wooden box, clinking onto the coins inside",
+   "generation": "8KzACR0pm0FUjSNeFmvW",
+   "seconds": 1.1,
+   "max_len": 0.77,
+   "rms_db": -19.78,
+   "peak_db": -1.0
+  },
+  "works/pledge2": {
+   "prompt": "A few coins dropped into a wooden box, clinking onto the coins inside",
+   "generation": "KwSM5Ek2DmXVhIOX1dzF",
+   "seconds": 1.1,
+   "max_len": 0.74,
+   "rms_db": -20.84,
+   "peak_db": -1.0
+  },
+  "works/pledge3": {
+   "prompt": "A few coins dropped into a wooden box, clinking onto the coins inside",
+   "generation": "GOyRumjlqVdsuG8yw55Z",
+   "seconds": 1.1,
+   "max_len": 0.99,
+   "rms_db": -21.5,
+   "peak_db": -1.0
+  },
+  "works/pledge4": {
+   "prompt": "A few coins dropped into a wooden box, clinking onto the coins inside",
+   "generation": "ztG6gk9DjQlEJ6iUvCE1",
+   "seconds": 1.1,
+   "max_len": 0.88,
+   "rms_db": -22.45,
+   "peak_db": -1.0
+  },
+  "works/medallion1": {
+   "prompt": "Heavy bronze medallion turned in a stone socket, grinding metal rotation with ratchet clicks",
+   "generation": "hBVy0nEJFvo1rLaO4HbH",
+   "seconds": 2.5,
+   "max_len": 2.34,
+   "rms_db": -21.11,
+   "peak_db": -1.0
+  },
+  "works/medallion2": {
+   "prompt": "Heavy bronze medallion turned in a stone socket, grinding metal rotation with ratchet clicks",
+   "generation": "Fo6fx7JOFn5FmlGovuEY",
+   "seconds": 2.5,
+   "max_len": 2.38,
+   "rms_db": -21.13,
+   "peak_db": -1.0
+  },
+  "works/medallion3": {
+   "prompt": "Heavy bronze medallion turned in a stone socket, grinding metal rotation with ratchet clicks",
+   "generation": "0jLCBgVdM096fBDZ9CeP",
+   "seconds": 2.5,
+   "max_len": 2.56,
+   "rms_db": -21.42,
+   "peak_db": -1.0
+  },
+  "works/medallion4": {
+   "prompt": "Heavy bronze medallion turned in a stone socket, grinding metal rotation with ratchet clicks",
+   "generation": "lhIgAEt1jxxaDWS4xbKB",
+   "seconds": 2.5,
+   "max_len": 2.34,
+   "rms_db": -21.85,
+   "peak_db": -1.0
+  },
+  "works/medallion5": {
+   "prompt": "Heavy bronze medallion turned in a stone socket, grinding metal rotation with ratchet clicks",
+   "generation": "0Eyk2KKuhjW3ti9aXbSG",
+   "seconds": 2.5,
+   "max_len": 2.27,
+   "rms_db": -21.8,
+   "peak_db": -1.0
+  },
+  "works/medallion6": {
+   "prompt": "Heavy bronze medallion turned in a stone socket, grinding metal rotation with ratchet clicks",
+   "generation": "h2MAogrTqp6jydVfkO0J",
+   "seconds": 2.5,
+   "max_len": 2.61,
+   "rms_db": -22.08,
+   "peak_db": -1.0
+  },
+  "works/medallion_catch1": {
+   "prompt": "Metal catch locking into place, one solid mechanical knock",
+   "generation": "SQ6UOipwLrwueT45kB1q",
+   "seconds": 0.8,
+   "max_len": 0.73,
+   "rms_db": -17.06,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "works/medallion_catch2": {
+   "prompt": "Metal catch locking into place, one solid mechanical knock",
+   "generation": "rXGnInIybwPrlRj6fGPR",
+   "seconds": 0.8,
+   "max_len": 0.72,
+   "rms_db": -17.61,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "works/medallion_catch3": {
+   "prompt": "Metal catch locking into place, one solid mechanical knock",
+   "generation": "l9shD4mFMEyyExS0zEHA",
+   "seconds": 0.8,
+   "max_len": 0.69,
+   "rms_db": -16.88,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "works/medallion_catch4": {
+   "prompt": "Metal catch locking into place, one solid mechanical knock",
+   "generation": "MKuoHPOJpOIqOlMXLjr8",
+   "seconds": 0.8,
+   "max_len": 0.7,
+   "rms_db": -17.95,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "works/medallion_catch5": {
+   "prompt": "Metal catch locking into place, one solid mechanical knock",
+   "generation": "7cwxOBDy2wIRMOZsCW1A",
+   "seconds": 0.8,
+   "max_len": 0.79,
+   "rms_db": -21.55,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "works/seal1": {
+   "prompt": "Heavy lead seal dropping on its cord against wood, dull knock and cord swish",
+   "generation": "2p9J7A3ipNE8JlNj1PQx",
+   "seconds": 1.8,
+   "max_len": 1.8,
+   "rms_db": -22.07,
+   "peak_db": -1.0
+  },
+  "works/seal2": {
+   "prompt": "Heavy lead seal dropping on its cord against wood, dull knock and cord swish",
+   "generation": "e2Z3mk88mgj0btXizMZt",
+   "seconds": 1.8,
+   "max_len": 1.8,
+   "rms_db": -24.28,
+   "peak_db": -1.0
+  },
+  "works/seal3": {
+   "prompt": "Heavy lead seal dropping on its cord against wood, dull knock and cord swish",
+   "generation": "ixOSAkI6mqTePqKJ4uqM",
+   "seconds": 1.8,
+   "max_len": 1.8,
+   "rms_db": -23.69,
+   "peak_db": -1.0
+  },
+  "works/seal4": {
+   "prompt": "Heavy lead seal dropping on its cord against wood, dull knock and cord swish",
+   "generation": "l8uJm06Ep3ILWb7wOJcW",
+   "seconds": 1.8,
+   "max_len": 1.8,
+   "rms_db": -21.82,
+   "peak_db": -1.0
+  },
+  "works/seal5": {
+   "prompt": "Heavy lead seal dropping on its cord against wood, dull knock and cord swish",
+   "generation": "WXwhY9Lj1UUcdZB3jIVn",
+   "seconds": 1.8,
+   "max_len": 1.8,
+   "rms_db": -24.88,
+   "peak_db": -1.0
+  },
+  "works/seal6": {
+   "prompt": "Heavy lead seal dropping on its cord against wood, dull knock and cord swish",
+   "generation": "7KyYXDbb9xrsg4JuvbBb",
+   "seconds": 1.8,
+   "max_len": 1.8,
+   "rms_db": -22.58,
+   "peak_db": -1.0
+  },
+  "island/surf_lap_1": {
+   "prompt": "A gentle wave rolling up a sandy beach and hissing back down, one wave",
+   "generation": "GALF5SNi5rNJOSr8NS8J",
+   "seconds": 6.4,
+   "max_len": 6.0,
+   "rms_db": -26.02,
+   "peak_db": -1.0
+  },
+  "island/surf_lap_2": {
+   "prompt": "A gentle wave rolling up a sandy beach and hissing back down, one wave",
+   "generation": "d8BqkkWDje7e6F761ThL",
+   "seconds": 6.4,
+   "max_len": 4.8,
+   "rms_db": -26.12,
+   "peak_db": -1.0
+  },
+  "island/surf_lap_3": {
+   "prompt": "A gentle wave rolling up a sandy beach and hissing back down, one wave",
+   "generation": "CLe8pZ0QsOEnwvTPynKZ",
+   "seconds": 6.4,
+   "max_len": 7.2,
+   "rms_db": -26.18,
+   "peak_db": -1.0
+  },
+  "island/surf_lap_4": {
+   "prompt": "A gentle wave rolling up a sandy beach and hissing back down, one wave",
+   "generation": "xWNsuHIpImrZdqRcjMSB",
+   "seconds": 6.4,
+   "max_len": 6.3,
+   "rms_db": -25.54,
+   "peak_db": -1.0
+  },
+  "island/surf_lap_5": {
+   "prompt": "A gentle wave rolling up a sandy beach and hissing back down, one wave",
+   "generation": "ore8Gp77C8gfAQnp7LLq",
+   "seconds": 6.4,
+   "max_len": 6.9,
+   "rms_db": -26.76,
+   "peak_db": -1.0
+  },
+  "island/surf_lap_6": {
+   "prompt": "A gentle wave rolling up a sandy beach and hissing back down, one wave",
+   "generation": "z4l4n8DoLmZBpTu6momM",
+   "seconds": 6.4,
+   "max_len": 7.2,
+   "rms_db": -25.88,
+   "peak_db": -1.0
+  },
+  "island/surf_crash_1": {
+   "prompt": "An ocean wave crashing against rocks, heavy splash and spray, one wave",
+   "generation": "4u8qEDFGzgvBC9ukrzLU",
+   "seconds": 6.7,
+   "max_len": 6.9,
+   "rms_db": -23.62,
+   "peak_db": -1.0
+  },
+  "island/surf_crash_2": {
+   "prompt": "An ocean wave crashing against rocks, heavy splash and spray, one wave",
+   "generation": "R05wNdLwMVt36pmYhKoQ",
+   "seconds": 6.7,
+   "max_len": 5.1,
+   "rms_db": -25.57,
+   "peak_db": -1.0
+  },
+  "island/surf_crash_3": {
+   "prompt": "An ocean wave crashing against rocks, heavy splash and spray, one wave",
+   "generation": "SKlMMEdSfDnDu86FEdWh",
+   "seconds": 6.7,
+   "max_len": 7.5,
+   "rms_db": -19.82,
+   "peak_db": -1.0
+  },
+  "island/surf_crash_4": {
+   "prompt": "An ocean wave crashing against rocks, heavy splash and spray, one wave",
+   "generation": "Td5m0PcWP4xKleboczuK",
+   "seconds": 6.7,
+   "max_len": 6.3,
+   "rms_db": -24.08,
+   "peak_db": -1.0
+  },
+  "island/surf_crash_5": {
+   "prompt": "An ocean wave crashing against rocks, heavy splash and spray, one wave",
+   "generation": "XlLpVPoH4ptn5byxjtoJ",
+   "seconds": 6.7,
+   "max_len": 7.2,
+   "rms_db": -23.3,
+   "peak_db": -1.0
+  },
+  "island/surf_crash_6": {
+   "prompt": "An ocean wave crashing against rocks, heavy splash and spray, one wave",
+   "generation": "31Yh6iIi3ej7AIxDLXWP",
+   "seconds": 6.7,
+   "max_len": 7.5,
+   "rms_db": -23.69,
+   "peak_db": -1.0
+  },
+  "island/surf_cave_1": {
+   "prompt": "The sea surging into a rock cave, deep hollow boom and echoing slosh",
+   "generation": "v3BlibvOioHUFEqy4wcL",
+   "seconds": 7.7,
+   "max_len": 8.4,
+   "rms_db": -19.93,
+   "peak_db": -1.0
+  },
+  "island/surf_cave_2": {
+   "prompt": "The sea surging into a rock cave, deep hollow boom and echoing slosh",
+   "generation": "7cRxTrBRFc8SvKMQDFTq",
+   "seconds": 7.7,
+   "max_len": 7.5,
+   "rms_db": -19.91,
+   "peak_db": -1.0
+  },
+  "island/surf_cave_3": {
+   "prompt": "The sea surging into a rock cave, deep hollow boom and echoing slosh",
+   "generation": "MOrjbBkaYzSHMIkrzPG8",
+   "seconds": 7.7,
+   "max_len": 8.7,
+   "rms_db": -20.85,
+   "peak_db": -1.0
+  },
+  "island/surf_cave_4": {
+   "prompt": "The sea surging into a rock cave, deep hollow boom and echoing slosh",
+   "generation": "40aQaXN0fhnsKSzp0TEy",
+   "seconds": 7.7,
+   "max_len": 8.1,
+   "rms_db": -20.15,
+   "peak_db": -1.0
+  },
+  "island/wind_bed": {
+   "prompt": "Steady sea wind over a rocky island, air rushing past, faint whistle in the rocks and grass, distant surf, continuous, no gulls",
+   "generation": "wkOiyWol86670CMPpNqd",
+   "seconds": 18.0,
+   "loop": true,
+   "rms_db": -30.1,
+   "stereo": true
+  },
+  "island/wind_gust_1": {
+   "prompt": "A strong gust of sea wind sweeping over rocks and grass, rising and falling away",
+   "generation": "29gt4AGQ7hmKk61peLm3",
+   "seconds": 9.3,
+   "max_len": 7.5,
+   "rms_db": -25.78,
+   "peak_db": -1.0
+  },
+  "island/wind_gust_2": {
+   "prompt": "A strong gust of sea wind sweeping over rocks and grass, rising and falling away",
+   "generation": "1S2t57qmmyU5hG8eA00m",
+   "seconds": 9.3,
+   "max_len": 6.0,
+   "rms_db": -26.8,
+   "peak_db": -1.0
+  },
+  "island/wind_gust_3": {
+   "prompt": "A strong gust of sea wind sweeping over rocks and grass, rising and falling away",
+   "generation": "oZcHswG31LpfNDxZeQ8d",
+   "seconds": 9.3,
+   "max_len": 9.3,
+   "rms_db": -24.74,
+   "peak_db": -1.0
+  },
+  "island/wind_gust_4": {
+   "prompt": "A strong gust of sea wind sweeping over rocks and grass, rising and falling away",
+   "generation": "DlKvJzRHjPixfIO27Yn0",
+   "seconds": 9.3,
+   "max_len": 10.5,
+   "rms_db": -26.24,
+   "peak_db": -1.0
+  },
+  "island/wind_gust_5": {
+   "prompt": "A strong gust of sea wind sweeping over rocks and grass, rising and falling away",
+   "generation": "vrRsiZdR7uvZrmK2x7qs",
+   "seconds": 9.3,
+   "max_len": 9.0,
+   "rms_db": -26.75,
+   "peak_db": -1.0
+  },
+  "island/wind_gust_6": {
+   "prompt": "A strong gust of sea wind sweeping over rocks and grass, rising and falling away",
+   "generation": "rHDstVfZLQOLhmX7xp8p",
+   "seconds": 9.3,
+   "max_len": 6.9,
+   "rms_db": -25.15,
+   "peak_db": -1.0
+  },
+  "island/gull_call_1": {
+   "prompt": "Herring gull calling, long laughing cry, outdoors by the sea",
+   "generation": "p6xrw4CC9BlZ2ruFa8Co",
+   "seconds": 6.4,
+   "max_len": 7.2,
+   "rms_db": -23.26,
+   "peak_db": -1.0
+  },
+  "island/gull_call_2": {
+   "prompt": "Herring gull calling, long laughing cry, outdoors by the sea",
+   "generation": "fMSqEteSHFbXB7AGuNM1",
+   "seconds": 6.4,
+   "max_len": 5.1,
+   "rms_db": -23.32,
+   "peak_db": -1.0
+  },
+  "island/gull_call_3": {
+   "prompt": "Herring gull calling, long laughing cry, outdoors by the sea",
+   "generation": "6A129zNRukrIwFGSYJhp",
+   "seconds": 6.4,
+   "max_len": 4.19,
+   "rms_db": -22.66,
+   "peak_db": -1.0
+  },
+  "island/gull_call_4": {
+   "prompt": "Herring gull calling, long laughing cry, outdoors by the sea",
+   "generation": "1cjLwbnTl1kB1fHg3iD5",
+   "seconds": 6.4,
+   "max_len": 5.32,
+   "rms_db": -22.67,
+   "peak_db": -1.0
+  },
+  "island/gull_call_5": {
+   "prompt": "Herring gull calling, long laughing cry, outdoors by the sea",
+   "generation": "YvBPtH5AiV45nVM0C9Tg",
+   "seconds": 6.4,
+   "max_len": 5.7,
+   "rms_db": -22.08,
+   "peak_db": -1.0
+  },
+  "island/gull_call_6": {
+   "prompt": "Herring gull calling, long laughing cry, outdoors by the sea",
+   "generation": "cxd7Fi1aKnYm0I9GzaDq",
+   "seconds": 6.4,
+   "max_len": 6.25,
+   "rms_db": -22.05,
+   "peak_db": -1.0
+  },
+  "island/gull_cry_1": {
+   "prompt": "A single seagull cry, short sharp call",
+   "generation": "Af3n7xrpLyMbq36ELwLk",
+   "seconds": 2.7,
+   "max_len": 1.5,
+   "rms_db": -21.03,
+   "peak_db": -1.0
+  },
+  "island/gull_cry_2": {
+   "prompt": "A single seagull cry, short sharp call",
+   "generation": "XOKeDIs1NPSkPoIj30S4",
+   "seconds": 2.7,
+   "max_len": 2.17,
+   "rms_db": -21.0,
+   "peak_db": -1.0
+  },
+  "island/gull_cry_3": {
+   "prompt": "A single seagull cry, short sharp call",
+   "generation": "30agUuQiVhnn9ef1dNvs",
+   "seconds": 2.7,
+   "max_len": 1.2,
+   "rms_db": -23.43,
+   "peak_db": -1.0
+  },
+  "island/gull_cry_4": {
+   "prompt": "A single seagull cry, short sharp call",
+   "generation": "zEi1PMLT3cjZzGIY54kU",
+   "seconds": 2.7,
+   "max_len": 1.65,
+   "rms_db": -23.27,
+   "peak_db": -1.0
+  },
+  "island/gull_cry_5": {
+   "prompt": "A single seagull cry, short sharp call",
+   "generation": "jqMEnD2xC4gUozbih3hO",
+   "seconds": 2.7,
+   "max_len": 1.65,
+   "rms_db": -21.74,
+   "peak_db": -1.0
+  },
+  "island/gull_cry_6": {
+   "prompt": "A single seagull cry, short sharp call",
+   "generation": "bSAtC4D0urTbBxeRKzfg",
+   "seconds": 2.7,
+   "max_len": 2.85,
+   "rms_db": -21.73,
+   "peak_db": -1.0
+  },
+  "island/gull_cry_7": {
+   "prompt": "A single seagull cry, short sharp call",
+   "generation": "9HEcb9v2Dh3LyDcH99CB",
+   "seconds": 2.7,
+   "max_len": 1.35,
+   "rms_db": -20.58,
+   "peak_db": -1.0
+  },
+  "island/gull_cry_8": {
+   "prompt": "A single seagull cry, short sharp call",
+   "generation": "IekUN4c3KwXPnJBJNKuc",
+   "seconds": 2.7,
+   "max_len": 1.35,
+   "rms_db": -20.48,
+   "peak_db": -1.0
+  },
+  "island/gull_alarm_1": {
+   "prompt": "Seagull screaming in alarm, harsh repeated shrieks",
+   "generation": "8rqn11IcLXIeUKscmcvM",
+   "seconds": 2.6,
+   "max_len": 1.95,
+   "rms_db": -19.37,
+   "peak_db": -1.0
+  },
+  "island/gull_alarm_2": {
+   "prompt": "Seagull screaming in alarm, harsh repeated shrieks",
+   "generation": "HnwVZXWiJo1Ybxp3ELLl",
+   "seconds": 2.6,
+   "max_len": 2.25,
+   "rms_db": -22.1,
+   "peak_db": -1.0
+  },
+  "island/gull_alarm_3": {
+   "prompt": "Seagull screaming in alarm, harsh repeated shrieks",
+   "generation": "OivHOZygRdprJYw8gFEw",
+   "seconds": 2.6,
+   "max_len": 2.1,
+   "rms_db": -19.49,
+   "peak_db": -1.0
+  },
+  "island/gull_alarm_4": {
+   "prompt": "Seagull screaming in alarm, harsh repeated shrieks",
+   "generation": "7MMKuEnhvhoqhesw6pLG",
+   "seconds": 2.6,
+   "max_len": 2.79,
+   "rms_db": -20.8,
+   "peak_db": -1.0
+  },
+  "island/gull_flap_1": {
+   "prompt": "Large seabird flapping its wings to take off, feathery wingbeats",
+   "generation": "9VUsdPqgI8Qg2wlQAdHA",
+   "seconds": 2.5,
+   "max_len": 2.7,
+   "rms_db": -25.64,
+   "peak_db": -1.0
+  },
+  "island/gull_flap_2": {
+   "prompt": "Large seabird flapping its wings to take off, feathery wingbeats",
+   "generation": "gPIf7OIXN3APj62bBCJT",
+   "seconds": 2.5,
+   "max_len": 2.25,
+   "rms_db": -26.16,
+   "peak_db": -1.0
+  },
+  "island/gull_flap_3": {
+   "prompt": "Large seabird flapping its wings to take off, feathery wingbeats",
+   "generation": "5yiUI5ROOX6vreSRcGTT",
+   "seconds": 2.5,
+   "max_len": 2.25,
+   "rms_db": -26.0,
+   "peak_db": -1.0
+  },
+  "island/gull_flap_4": {
+   "prompt": "Large seabird flapping its wings to take off, feathery wingbeats",
+   "generation": "c3eZxanq3v3VeoEJEd3z",
+   "seconds": 2.5,
+   "max_len": 1.95,
+   "rms_db": -28.69,
+   "peak_db": -1.0
+  },
+  "island/gull_squabble_1": {
+   "prompt": "Two seagulls squabbling over food, squawking and flapping",
+   "generation": "BWIIRpNIEAV9UHcfZut2",
+   "seconds": 4.0,
+   "max_len": 4.05,
+   "rms_db": -22.37,
+   "peak_db": -1.0
+  },
+  "island/gull_squabble_2": {
+   "prompt": "Two seagulls squabbling over food, squawking and flapping",
+   "generation": "PVVizWPMlFJD8nC6N2C6",
+   "seconds": 4.0,
+   "max_len": 3.3,
+   "rms_db": -22.5,
+   "peak_db": -1.0
+  },
+  "island/gull_squabble_3": {
+   "prompt": "Two seagulls squabbling over food, squawking and flapping",
+   "generation": "xqaU79wLkXMZOFU7TR6B",
+   "seconds": 4.0,
+   "max_len": 4.35,
+   "rms_db": -26.61,
+   "peak_db": -1.0
+  },
+  "island/gull_splash_1": {
+   "prompt": "Seagull splashing down onto the water, small splash and wing flap",
+   "generation": "FRo0JJRIDuBaHBcU2MQD",
+   "seconds": 2.4,
+   "max_len": 2.4,
+   "rms_db": -25.9,
+   "peak_db": -1.0
+  },
+  "island/gull_splash_2": {
+   "prompt": "Seagull splashing down onto the water, small splash and wing flap",
+   "generation": "WooLfbM4bQte8wbJSIsB",
+   "seconds": 2.4,
+   "max_len": 2.1,
+   "rms_db": -27.98,
+   "peak_db": -1.0
+  },
+  "island/gull_splash_3": {
+   "prompt": "Seagull splashing down onto the water, small splash and wing flap",
+   "generation": "zHGrOoCAMKT0zxwxrVue",
+   "seconds": 2.4,
+   "max_len": 2.55,
+   "rms_db": -24.61,
+   "peak_db": -1.0
+  },
+  "island/gull_colony": {
+   "prompt": "Busy seabird colony on sea cliffs, many gulls calling and laughing at once, distant surf below, continuous",
+   "generation": "eYSN2hjqegDIxVXDucNp",
+   "seconds": 18.0,
+   "loop": true,
+   "rms_db": -27.21
+  },
+  "island/lighthouse_turn": {
+   "prompt": "Old clockwork mechanism turning a lighthouse lamp, steady ticking escapement and purring brass gears, continuous",
+   "generation": "QNcDgi6pdYcsKI7DI3xO",
+   "seconds": 14.0,
+   "loop": true,
+   "rms_db": -27.17
+  },
+  "island/lighthouse_horn_1": {
+   "prompt": "Deep foghorn blaring across the sea, one long low blast",
+   "generation": "7vi7ePH2oicYPGOAhq9D",
+   "seconds": 9.6,
+   "max_len": 9.0,
+   "rms_db": -15.46,
+   "peak_db": -1.0
+  },
+  "island/lighthouse_horn_2": {
+   "prompt": "Deep foghorn blaring across the sea, one long low blast",
+   "generation": "Pnmlql6cA7Jw8CuTHQp7",
+   "seconds": 9.6,
+   "max_len": 10.8,
+   "rms_db": -15.42,
+   "peak_db": -1.0
+  },
+  "island/lighthouse_bell_1": {
+   "prompt": "Iron fog bell on a rock tolling once over the sea, deep ring fading out",
+   "generation": "Ls8UUWPklDz2FwvpQKcd",
+   "seconds": 10.6,
+   "max_len": 8.4,
+   "rms_db": -19.99,
+   "peak_db": -1.0
+  },
+  "island/lighthouse_bell_2": {
+   "prompt": "Iron fog bell on a rock tolling once over the sea, deep ring fading out",
+   "generation": "0i7AxyakYaeQiz4jRBVU",
+   "seconds": 10.6,
+   "max_len": 9.6,
+   "rms_db": -19.76,
+   "peak_db": -1.0
+  },
+  "island/lighthouse_bell_3": {
+   "prompt": "Iron fog bell on a rock tolling once over the sea, deep ring fading out",
+   "generation": "4wKzIeE2HWMiqRzD7ps2",
+   "seconds": 10.6,
+   "max_len": 12.0,
+   "rms_db": -20.59,
+   "peak_db": -1.0
+  },
+  "island/wreck_creak_1": {
+   "prompt": "Wrecked wooden ship hull groaning and creaking as waves move it",
+   "generation": "0HYL2O09W7kNzYmoj9ja",
+   "seconds": 4.9,
+   "max_len": 5.4,
+   "rms_db": -21.1,
+   "peak_db": -1.0
+  },
+  "island/wreck_creak_2": {
+   "prompt": "Wrecked wooden ship hull groaning and creaking as waves move it",
+   "generation": "ZqXKUy3z6E3nxZ2hP9Bf",
+   "seconds": 4.9,
+   "max_len": 3.9,
+   "rms_db": -22.54,
+   "peak_db": -1.0
+  },
+  "island/wreck_creak_3": {
+   "prompt": "Wrecked wooden ship hull groaning and creaking as waves move it",
+   "generation": "S2CKI6j703S0YWp9R62X",
+   "seconds": 4.9,
+   "max_len": 4.05,
+   "rms_db": -22.09,
+   "peak_db": -1.0
+  },
+  "island/wreck_creak_4": {
+   "prompt": "Wrecked wooden ship hull groaning and creaking as waves move it",
+   "generation": "AkhORQj5517lVABa2tLQ",
+   "seconds": 4.9,
+   "max_len": 4.61,
+   "rms_db": -21.91,
+   "peak_db": -1.0
+  },
+  "island/wreck_creak_5": {
+   "prompt": "Wrecked wooden ship hull groaning and creaking as waves move it",
+   "generation": "UzWQwrGwbg8Dob6j9zDP",
+   "seconds": 4.9,
+   "max_len": 4.8,
+   "rms_db": -21.97,
+   "peak_db": -1.0
+  },
+  "island/wreck_creak_6": {
+   "prompt": "Wrecked wooden ship hull groaning and creaking as waves move it",
+   "generation": "XdRIYlNQg5rgdEZOXSoL",
+   "seconds": 4.9,
+   "max_len": 4.05,
+   "rms_db": -22.84,
+   "peak_db": -1.0
+  },
+  "island/wreck_sail_1": {
+   "prompt": "Torn canvas sail flapping in strong wind, ragged flutter",
+   "generation": "VltrRAmM3nxoHdacgCTd",
+   "seconds": 4.4,
+   "max_len": 4.9,
+   "rms_db": -25.52,
+   "peak_db": -1.0
+  },
+  "island/wreck_sail_2": {
+   "prompt": "Torn canvas sail flapping in strong wind, ragged flutter",
+   "generation": "iqOSBI3ENsLviZ4mh9TF",
+   "seconds": 4.4,
+   "max_len": 4.5,
+   "rms_db": -25.75,
+   "peak_db": -1.0
+  },
+  "island/wreck_sail_3": {
+   "prompt": "Torn canvas sail flapping in strong wind, ragged flutter",
+   "generation": "KjM7yAHnpD2KRLBBT6lC",
+   "seconds": 4.4,
+   "max_len": 4.8,
+   "rms_db": -28.27,
+   "peak_db": -1.0
+  },
+  "island/wreck_bell_1": {
+   "prompt": "Waterlogged ship's bell clunking dully, muffled cracked ring",
+   "generation": "TpTK4DtW2JvmihLBj0rK",
+   "seconds": 3.7,
+   "max_len": 2.54,
+   "rms_db": -22.53,
+   "peak_db": -1.0
+  },
+  "island/wreck_bell_2": {
+   "prompt": "Waterlogged ship's bell clunking dully, muffled cracked ring",
+   "generation": "YKAyYwcGnonHJD5D3M5v",
+   "seconds": 3.7,
+   "max_len": 4.0,
+   "rms_db": -23.97,
+   "peak_db": -1.0
+  },
+  "island/cove_drip_1": {
+   "prompt": "Water drops dripping into a pool in a sea cave, echoing drips",
+   "generation": "1ieLME9cBRdn44e6jX98",
+   "seconds": 4.1,
+   "max_len": 2.5,
+   "rms_db": -31.28,
+   "peak_db": -1.0
+  },
+  "island/cove_drip_2": {
+   "prompt": "Water drops dripping into a pool in a sea cave, echoing drips",
+   "generation": "3HyTX2n21pWXxiuMBGei",
+   "seconds": 4.1,
+   "max_len": 4.04,
+   "rms_db": -31.1,
+   "peak_db": -1.0
+  },
+  "island/cove_drip_3": {
+   "prompt": "Water drops dripping into a pool in a sea cave, echoing drips",
+   "generation": "3z7bsVsW5Mx51ET6VIqW",
+   "seconds": 4.1,
+   "max_len": 4.15,
+   "rms_db": -28.85,
+   "peak_db": -1.0
+  },
+  "island/cove_drip_4": {
+   "prompt": "Water drops dripping into a pool in a sea cave, echoing drips",
+   "generation": "hyNo0NmCl0mbLDsFl9Dg",
+   "seconds": 4.1,
+   "max_len": 3.43,
+   "rms_db": -30.66,
+   "peak_db": -1.0
+  },
+  "island/cove_drip_5": {
+   "prompt": "Water drops dripping into a pool in a sea cave, echoing drips",
+   "generation": "YHi9XxLoxiY3N0wFzONn",
+   "seconds": 4.1,
+   "max_len": 4.5,
+   "rms_db": -32.52,
+   "peak_db": -1.0
+  },
+  "island/cove_drip_6": {
+   "prompt": "Water drops dripping into a pool in a sea cave, echoing drips",
+   "generation": "JGXERkzKE1FpwWAkx8bR",
+   "seconds": 4.1,
+   "max_len": 3.9,
+   "rms_db": -31.94,
+   "peak_db": -1.0
+  },
+  "island/cove_signal_1": {
+   "prompt": "Smuggler's short two-note whistle signal echoing in a cave",
+   "generation": "BQlfQnlEUdAfU8UlfJQY",
+   "seconds": 3.3,
+   "max_len": 3.6,
+   "rms_db": -18.78,
+   "peak_db": -1.0
+  },
+  "island/cove_signal_2": {
+   "prompt": "Smuggler's short two-note whistle signal echoing in a cave",
+   "generation": "9buEu1X7ka1WDyAfZFpy",
+   "seconds": 3.3,
+   "max_len": 2.85,
+   "rms_db": -22.05,
+   "peak_db": -1.0
+  },
+  "island/cove_signal_3": {
+   "prompt": "Smuggler's short two-note whistle signal echoing in a cave",
+   "generation": "IwcIeYb1vv9rOgITjFA5",
+   "seconds": 3.3,
+   "max_len": 3.15,
+   "rms_db": -22.18,
+   "peak_db": -1.0
+  },
+  "island/cove_camp_1": {
+   "prompt": "Smugglers' camp in a cave stirring, a crate shifted, footsteps, a pot clinks, no voices",
+   "generation": "DkrbY9VXitPZ63hx7hAL",
+   "seconds": 3.5,
+   "max_len": 3.15,
+   "rms_db": -24.86,
+   "peak_db": -1.0
+  },
+  "island/cove_camp_2": {
+   "prompt": "Smugglers' camp in a cave stirring, a crate shifted, footsteps, a pot clinks, no voices",
+   "generation": "UFkEf7TF2T82BnLdPiJq",
+   "seconds": 3.5,
+   "max_len": 3.75,
+   "rms_db": -25.83,
+   "peak_db": -1.0
+  },
+  "island/cove_camp_3": {
+   "prompt": "Smugglers' camp in a cave stirring, a crate shifted, footsteps, a pot clinks, no voices",
+   "generation": "Q4wnmycpBFYDIA4311dG",
+   "seconds": 3.5,
+   "max_len": 2.85,
+   "rms_db": -30.04,
+   "peak_db": -1.0
+  },
+  "island/cove_camp_4": {
+   "prompt": "Smugglers' camp in a cave stirring, a crate shifted, footsteps, a pot clinks, no voices",
+   "generation": "xH01Ir5gDPXLAV6Hg5kJ",
+   "seconds": 3.5,
+   "max_len": 3.15,
+   "rms_db": -27.63,
+   "peak_db": -1.0
+  },
+  "island/shrine_drone": {
+   "prompt": "Deep slow resonant drone in a drowned stone shrine, ancient mystical chord humming, soft sea breathing through stone, continuous",
+   "generation": "2HKdLA6aQWpiNTzrsQFj",
+   "seconds": 18.0,
+   "loop": true,
+   "rms_db": -26.99
+  },
+  "island/shrine_chime_1": {
+   "prompt": "Eerie chimes ringing softly in a flooded shrine, shimmering bells",
+   "generation": "Mb2xaz3OFvITgvkbuASo",
+   "seconds": 6.5,
+   "max_len": 6.15,
+   "rms_db": -23.39,
+   "peak_db": -1.0
+  },
+  "island/shrine_chime_2": {
+   "prompt": "Eerie chimes ringing softly in a flooded shrine, shimmering bells",
+   "generation": "yS0zDWPPa84S1BYaGVTw",
+   "seconds": 6.5,
+   "max_len": 7.27,
+   "rms_db": -22.9,
+   "peak_db": -1.0
+  },
+  "island/shrine_chime_3": {
+   "prompt": "Eerie chimes ringing softly in a flooded shrine, shimmering bells",
+   "generation": "1LrbD1dwJVfSIMP1sRU2",
+   "seconds": 6.5,
+   "max_len": 6.37,
+   "rms_db": -22.34,
+   "peak_db": -1.0
+  },
+  "island/shrine_chime_4": {
+   "prompt": "Eerie chimes ringing softly in a flooded shrine, shimmering bells",
+   "generation": "HZLJMVshjR46Byy65CA2",
+   "seconds": 6.5,
+   "max_len": 7.12,
+   "rms_db": -22.96,
+   "peak_db": -1.0
+  },
+  "island/shrine_bubbles_1": {
+   "prompt": "Bubbles rising and gurgling up through water in a stone pool",
+   "generation": "u1eqQJgaaTgXn7xomOcL",
+   "seconds": 5.1,
+   "max_len": 5.1,
+   "rms_db": -27.99,
+   "peak_db": -1.0
+  },
+  "island/shrine_bubbles_2": {
+   "prompt": "Bubbles rising and gurgling up through water in a stone pool",
+   "generation": "Wv880xETM9ldNs0fjL2X",
+   "seconds": 5.1,
+   "max_len": 4.5,
+   "rms_db": -26.26,
+   "peak_db": -1.0
+  },
+  "island/shrine_bubbles_3": {
+   "prompt": "Bubbles rising and gurgling up through water in a stone pool",
+   "generation": "Zo2FggkTN62ZeRz9Hu2y",
+   "seconds": 5.1,
+   "max_len": 5.7,
+   "rms_db": -27.21,
+   "peak_db": -1.0
+  },
+  "island/shrine_whisper_1": {
+   "prompt": "Ghostly whispers murmuring in a stone chamber, unintelligible, eerie",
+   "generation": "ktb6xHvdeUx6lC5eYY40",
+   "seconds": 5.4,
+   "max_len": 5.4,
+   "rms_db": -26.88,
+   "peak_db": -1.0
+  },
+  "island/shrine_whisper_2": {
+   "prompt": "Ghostly whispers murmuring in a stone chamber, unintelligible, eerie",
+   "generation": "Vxq1bMKHdS7cRh0KXnAn",
+   "seconds": 5.4,
+   "max_len": 4.8,
+   "rms_db": -28.59,
+   "peak_db": -1.0
+  },
+  "island/shrine_whisper_3": {
+   "prompt": "Ghostly whispers murmuring in a stone chamber, unintelligible, eerie",
+   "generation": "1kw9mrWwHcNssmpEoD6s",
+   "seconds": 5.4,
+   "max_len": 6.0,
+   "rms_db": -27.17,
+   "peak_db": -1.0
+  },
+  "island/haven_boats_1": {
+   "prompt": "Small wooden boats creaking and knocking against a jetty in the water",
+   "generation": "RyHoyFFtmQikx2MYr1Ix",
+   "seconds": 4.3,
+   "max_len": 3.66,
+   "rms_db": -24.12,
+   "peak_db": -1.0
+  },
+  "island/haven_boats_2": {
+   "prompt": "Small wooden boats creaking and knocking against a jetty in the water",
+   "generation": "5zLjTTfXXmDmKOBuJ00F",
+   "seconds": 4.3,
+   "max_len": 3.67,
+   "rms_db": -21.63,
+   "peak_db": -1.0
+  },
+  "island/haven_boats_3": {
+   "prompt": "Small wooden boats creaking and knocking against a jetty in the water",
+   "generation": "FRJowMxXdhCqEPFJqnL5",
+   "seconds": 4.3,
+   "max_len": 4.72,
+   "rms_db": -23.21,
+   "peak_db": -1.0
+  },
+  "island/haven_boats_4": {
+   "prompt": "Small wooden boats creaking and knocking against a jetty in the water",
+   "generation": "yXqL7a8yvv0uo256GLB5",
+   "seconds": 4.3,
+   "max_len": 4.53,
+   "rms_db": -23.63,
+   "peak_db": -1.0
+  },
+  "island/haven_rope_1": {
+   "prompt": "Mooring rope creaking taut against a wooden post on a jetty",
+   "generation": "YiLquuB2Bjw4ODb69h0w",
+   "seconds": 3.4,
+   "max_len": 3.69,
+   "rms_db": -25.13,
+   "peak_db": -1.0
+  },
+  "island/haven_rope_2": {
+   "prompt": "Mooring rope creaking taut against a wooden post on a jetty",
+   "generation": "23RLJvzneizB9aitKwgj",
+   "seconds": 3.4,
+   "max_len": 3.0,
+   "rms_db": -24.29,
+   "peak_db": -1.0
+  },
+  "island/haven_rope_3": {
+   "prompt": "Mooring rope creaking taut against a wooden post on a jetty",
+   "generation": "qSl2f1yDsO0y52v36yyg",
+   "seconds": 3.4,
+   "max_len": 3.14,
+   "rms_db": -24.23,
+   "peak_db": -1.0
+  },
+  "caravan/roll1": {
+   "prompt": "Wooden wagon wheels rolling slowly on a dirt road, steady rumble and creak, continuous, no horse",
+   "generation": "J2IoJgbAj4Q490O368Jr",
+   "seconds": 12.0,
+   "loop": true,
+   "rms_db": -27.23
+  },
+  "caravan/roll2": {
+   "prompt": "Wooden wagon wheels rolling slowly on a dirt road, steady rumble and creak, continuous, no horse",
+   "generation": "77ROEikSGwmdax2LNJMK",
+   "seconds": 12.0,
+   "loop": true,
+   "rms_db": -26.3
+  },
+  "caravan/roll_stone1": {
+   "prompt": "Iron-rimmed wagon wheels rolling over cobblestones, steady clatter, continuous, no horse",
+   "generation": "JyCgGfgaQ46mhNH0ounQ",
+   "seconds": 12.0,
+   "loop": true,
+   "rms_db": -22.39
+  },
+  "caravan/roll_stone2": {
+   "prompt": "Iron-rimmed wagon wheels rolling over cobblestones, steady clatter, continuous, no horse",
+   "generation": "JkjvLm0vfASOiH1kCv42",
+   "seconds": 12.0,
+   "loop": true,
+   "rms_db": -22.38
+  },
+  "caravan/roll_planks1": {
+   "prompt": "Wagon rolling over a wooden plank bridge, hollow rumbling thuds, continuous, no horse",
+   "generation": "hx0TqXsXEovqtq1EGJc2",
+   "seconds": 12.0,
+   "loop": true,
+   "rms_db": -21.27
+  },
+  "caravan/roll_planks2": {
+   "prompt": "Wagon rolling over a wooden plank bridge, hollow rumbling thuds, continuous, no horse",
+   "generation": "1sZizOupDcJrGwK4mgcx",
+   "seconds": 12.0,
+   "loop": true,
+   "rms_db": -22.41
+  },
+  "caravan/creak1": {
+   "prompt": "Wooden wagon frame creaking under a heavy load, one creak",
+   "generation": "U7rlVIVCgQ1pkML0yvXP",
+   "seconds": 1.8,
+   "max_len": 1.43,
+   "rms_db": -23.6,
+   "peak_db": -1.0
+  },
+  "caravan/creak2": {
+   "prompt": "Wooden wagon frame creaking under a heavy load, one creak",
+   "generation": "BTZwdMs7jWoIrL7EDX4J",
+   "seconds": 1.8,
+   "max_len": 1.32,
+   "rms_db": -25.2,
+   "peak_db": -1.0
+  },
+  "caravan/creak3": {
+   "prompt": "Wooden wagon frame creaking under a heavy load, one creak",
+   "generation": "GGSEHvuyWA8TeeVTu13z",
+   "seconds": 1.8,
+   "max_len": 1.65,
+   "rms_db": -24.62,
+   "peak_db": -1.0
+  },
+  "caravan/creak4": {
+   "prompt": "Wooden wagon frame creaking under a heavy load, one creak",
+   "generation": "JtBDTHQYI6AVmXB8R7FD",
+   "seconds": 1.8,
+   "max_len": 1.8,
+   "rms_db": -24.87,
+   "peak_db": -1.0
+  },
+  "caravan/bells1": {
+   "prompt": "Small harness bells jingling briefly",
+   "generation": "sTcW2aLw8NjRd8Noue9W",
+   "seconds": 1.0,
+   "max_len": 0.82,
+   "rms_db": -27.52,
+   "peak_db": -1.0
+  },
+  "caravan/bells2": {
+   "prompt": "Small harness bells jingling briefly",
+   "generation": "oXWzP8Jg8LNPXxHrljT7",
+   "seconds": 1.0,
+   "max_len": 0.9,
+   "rms_db": -27.83,
+   "peak_db": -1.0
+  },
+  "caravan/bells3": {
+   "prompt": "Small harness bells jingling briefly",
+   "generation": "4dKmJKKA0vVtbahc7CVj",
+   "seconds": 1.0,
+   "max_len": 0.89,
+   "rms_db": -28.14,
+   "peak_db": -1.0
+  },
+  "caravan/bells4": {
+   "prompt": "Small harness bells jingling briefly",
+   "generation": "MlTaZn2kjVMBAhzUOsc7",
+   "seconds": 1.0,
+   "max_len": 0.81,
+   "rms_db": -27.15,
+   "peak_db": -1.0
+  },
+  "caravan/brake1": {
+   "prompt": "Wooden wagon brake block squealing against a wheel",
+   "generation": "Tw2ThHIZcezrXfEU2sGj",
+   "seconds": 2.3,
+   "max_len": 2.4,
+   "rms_db": -22.41,
+   "peak_db": -1.0
+  },
+  "caravan/brake2": {
+   "prompt": "Wooden wagon brake block squealing against a wheel",
+   "generation": "9b8BVxZR2XhKWAJOuypt",
+   "seconds": 2.3,
+   "max_len": 2.39,
+   "rms_db": -22.61,
+   "peak_db": -1.0
+  },
+  "caravan/tilt1": {
+   "prompt": "Canvas wagon cover flapping in the wind, short flap",
+   "generation": "bIk2hokdymgSMKaWzWlz",
+   "seconds": 2.3,
+   "max_len": 2.09,
+   "rms_db": -26.74,
+   "peak_db": -1.0
+  },
+  "caravan/tilt2": {
+   "prompt": "Canvas wagon cover flapping in the wind, short flap",
+   "generation": "UJnzX5N08REfTTnNjY0V",
+   "seconds": 2.3,
+   "max_len": 1.87,
+   "rms_db": -25.05,
+   "peak_db": -1.0
+  },
+  "caravan/tilt3": {
+   "prompt": "Canvas wagon cover flapping in the wind, short flap",
+   "generation": "hmgVCC1OJTe9glqsebAF",
+   "seconds": 2.3,
+   "max_len": 2.4,
+   "rms_db": -26.21,
+   "peak_db": -1.0
+  },
+  "caravan/crate_down1": {
+   "prompt": "Wooden crate set down on the ground, dull thud",
+   "generation": "vXrWZn49xlvEU5vFCYlI",
+   "seconds": 0.9,
+   "max_len": 0.86,
+   "rms_db": -16.42,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "caravan/crate_down2": {
+   "prompt": "Wooden crate set down on the ground, dull thud",
+   "generation": "HUOgtGWE3ctS2YuVwmBm",
+   "seconds": 0.9,
+   "max_len": 0.83,
+   "rms_db": -15.77,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "caravan/crate_down3": {
+   "prompt": "Wooden crate set down on the ground, dull thud",
+   "generation": "aH3kQXRteDnrfPMhe2bR",
+   "seconds": 0.9,
+   "max_len": 0.81,
+   "rms_db": -20.51,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "caravan/overturn1": {
+   "prompt": "Loaded wooden wagon crashing over onto its side, crates tumbling, wood cracking",
+   "generation": "Aay7uBUUzTuH2JlKTnfc",
+   "seconds": 4.0,
+   "max_len": 4.38,
+   "rms_db": -16.98,
+   "peak_db": -1.0
+  },
+  "caravan/overturn2": {
+   "prompt": "Loaded wooden wagon crashing over onto its side, crates tumbling, wood cracking",
+   "generation": "4XX3aDgLn1DxYu6x4Orw",
+   "seconds": 4.0,
+   "max_len": 3.85,
+   "rms_db": -16.8,
+   "peak_db": -1.0
+  },
+  "caravan/smash1": {
+   "prompt": "Wooden crate smashed open, splintering wood",
+   "generation": "MDHWWmeVwwxWgCcMswnm",
+   "seconds": 1.2,
+   "max_len": 1.15,
+   "rms_db": -14.04,
+   "peak_db": -1.0
+  },
+  "caravan/smash2": {
+   "prompt": "Wooden crate smashed open, splintering wood",
+   "generation": "uB5mMbbSWPKrX9iuhi0W",
+   "seconds": 1.2,
+   "max_len": 1.06,
+   "rms_db": -16.27,
+   "peak_db": -1.0
+  },
+  "caravan/smash3": {
+   "prompt": "Wooden crate smashed open, splintering wood",
+   "generation": "JWHLS6sgvzcDHV8aDXS0",
+   "seconds": 1.2,
+   "max_len": 1.1,
+   "rms_db": -18.41,
+   "peak_db": -1.0
+  },
+  "caravan/rip1": {
+   "prompt": "Grain sack ripped open, tearing burlap and grain spilling",
+   "generation": "pjTgq0BopMFTlrg9RadN",
+   "seconds": 1.6,
+   "max_len": 1.65,
+   "rms_db": -24.56,
+   "peak_db": -1.0
+  },
+  "caravan/rip2": {
+   "prompt": "Grain sack ripped open, tearing burlap and grain spilling",
+   "generation": "3b9V3gFuaYUlCDn4r4m2",
+   "seconds": 1.6,
+   "max_len": 1.65,
+   "rms_db": -24.52,
+   "peak_db": -1.0
+  },
+  "caravan/rip3": {
+   "prompt": "Grain sack ripped open, tearing burlap and grain spilling",
+   "generation": "fVS1F2i0PPERCVTXapxf",
+   "seconds": 1.6,
+   "max_len": 1.65,
+   "rms_db": -22.62,
+   "peak_db": -1.0
+  },
+  "caravan/bottles1": {
+   "prompt": "Glass bottles shattering on the ground",
+   "generation": "u8aEgFcPVQQqAyFIOlmq",
+   "seconds": 1.4,
+   "max_len": 1.22,
+   "rms_db": -20.29,
+   "peak_db": -1.0
+  },
+  "caravan/bottles2": {
+   "prompt": "Glass bottles shattering on the ground",
+   "generation": "aMOAfgR1UZBqIzYyvxMv",
+   "seconds": 1.4,
+   "max_len": 1.24,
+   "rms_db": -19.87,
+   "peak_db": -1.0
+  },
+  "caravan/bottles3": {
+   "prompt": "Glass bottles shattering on the ground",
+   "generation": "YvY3jZYXKKj5xZd4jlHP",
+   "seconds": 1.4,
+   "max_len": 1.35,
+   "rms_db": -19.86,
+   "peak_db": -1.0
+  },
+  "caravan/wheel_snap1": {
+   "prompt": "Wooden wagon wheel snapping, loud crack of splintering wood",
+   "generation": "M3sTac9IgsuRbUEpnEtL",
+   "seconds": 2.8,
+   "max_len": 2.95,
+   "rms_db": -17.83,
+   "peak_db": -1.0
+  },
+  "caravan/wheel_snap2": {
+   "prompt": "Wooden wagon wheel snapping, loud crack of splintering wood",
+   "generation": "xzTM01TJk0svLfqpyYvD",
+   "seconds": 2.8,
+   "max_len": 2.96,
+   "rms_db": -17.9,
+   "peak_db": -1.0
+  },
+  "caravan/whistle1": {
+   "prompt": "Shrill human whistle through fingers, a bandit's signal, sharp and loud",
+   "generation": "bhTP2Q6RXRwfcwGoC1k7",
+   "seconds": 2.3,
+   "max_len": 2.4,
+   "rms_db": -19.83,
+   "peak_db": -1.0
+  },
+  "caravan/whistle2": {
+   "prompt": "Shrill human whistle through fingers, a bandit's signal, sharp and loud",
+   "generation": "yBKhfDACwSPd5oBfg5pM",
+   "seconds": 2.3,
+   "max_len": 2.23,
+   "rms_db": -20.35,
+   "peak_db": -1.0
+  },
+  "caravan/whistle3": {
+   "prompt": "Shrill human whistle through fingers, a bandit's signal, sharp and loud",
+   "generation": "nIvdI5gaxe7AmVkUJINH",
+   "seconds": 2.3,
+   "max_len": 2.4,
+   "rms_db": -19.41,
+   "peak_db": -1.0
+  },
+  "caravan/whoop1": {
+   "prompt": "Band of outlaws whooping and hollering as they attack, wild yells, no words",
+   "generation": "py7QjcgIDQ0sAtwwV5sR",
+   "seconds": 2.8,
+   "max_len": 3.0,
+   "rms_db": -16.38,
+   "peak_db": -1.0
+  },
+  "caravan/whoop2": {
+   "prompt": "Band of outlaws whooping and hollering as they attack, wild yells, no words",
+   "generation": "kKlVo7YQSyBWvnNJ0x7j",
+   "seconds": 2.8,
+   "max_len": 3.0,
+   "rms_db": -17.81,
+   "peak_db": -1.0
+  },
+  "caravan/whoop3": {
+   "prompt": "Band of outlaws whooping and hollering as they attack, wild yells, no words",
+   "generation": "oKIxgY1bPN8cqJ3M2uS1",
+   "seconds": 2.8,
+   "max_len": 2.74,
+   "rms_db": -16.35,
+   "peak_db": -1.0
+  },
+  "caravan/hoof1": {
+   "prompt": "A single horse hoof thudding once on packed earth, one dull impact, no galloping",
+   "generation": "HHSjJv5IKDvolB4b11uD",
+   "seconds": 0.7,
+   "max_len": 0.65,
+   "rms_db": -17.84,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "caravan/hoof2": {
+   "prompt": "A single horse hoof thudding once on packed earth, one dull impact, no galloping",
+   "generation": "G9tZtL9F5PWzrpSL4hcL",
+   "seconds": 0.7,
+   "max_len": 0.65,
+   "rms_db": -17.93,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "caravan/hoof3": {
+   "prompt": "A single horse hoof thudding once on packed earth, one dull impact, no galloping",
+   "generation": "LL0sr7FlK91Ok3gvWFxp",
+   "seconds": 0.7,
+   "max_len": 0.67,
+   "rms_db": -17.95,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "caravan/hoof4": {
+   "prompt": "A single horse hoof thudding once on packed earth, one dull impact, no galloping",
+   "generation": "dUUj28VciZa69V1uWIzA",
+   "seconds": 0.7,
+   "max_len": 0.65,
+   "rms_db": -17.72,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "caravan/hoof_stone1": {
+   "prompt": "A single horse hoof clopping once on cobblestone, one sharp clop, no galloping",
+   "generation": "TyiS0Q1Yti1p6cNqYR5x",
+   "seconds": 0.7,
+   "max_len": 0.65,
+   "rms_db": -16.46,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "caravan/hoof_stone2": {
+   "prompt": "A single horse hoof clopping once on cobblestone, one sharp clop, no galloping",
+   "generation": "MSMn3sZAvyV4Tr9p3Wnu",
+   "seconds": 0.7,
+   "max_len": 0.65,
+   "rms_db": -16.76,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "caravan/hoof_stone3": {
+   "prompt": "A single horse hoof clopping once on cobblestone, one sharp clop, no galloping",
+   "generation": "3XGyWwIRdT6bdkylJIIA",
+   "seconds": 0.7,
+   "max_len": 0.65,
+   "rms_db": -16.82,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "caravan/hoof_stone4": {
+   "prompt": "A single horse hoof clopping once on cobblestone, one sharp clop, no galloping",
+   "generation": "HiXcidcijOEMqdhNe0ww",
+   "seconds": 0.7,
+   "max_len": 0.65,
+   "rms_db": -16.75,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "caravan/hoof_wood1": {
+   "prompt": "A single horse hoof knocking once on wooden planks, one hollow knock, no galloping",
+   "generation": "InoYBqJCwJLkMsimwmNF",
+   "seconds": 0.7,
+   "max_len": 0.7,
+   "rms_db": -16.18,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "caravan/hoof_wood2": {
+   "prompt": "A single horse hoof knocking once on wooden planks, one hollow knock, no galloping",
+   "generation": "hyn1YFlCySwdypjmXwmY",
+   "seconds": 0.7,
+   "max_len": 0.7,
+   "rms_db": -16.13,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "caravan/hoof_wood3": {
+   "prompt": "A single horse hoof knocking once on wooden planks, one hollow knock, no galloping",
+   "generation": "Dn77oZ9faaPNMuxqreiq",
+   "seconds": 0.7,
+   "max_len": 0.7,
+   "rms_db": -16.35,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "caravan/horse_stamp1": {
+   "prompt": "Draught horse stamping a hoof impatiently on the ground",
+   "generation": "KaQgPgBdeGcZopoM2P8A",
+   "seconds": 1.0,
+   "max_len": 0.9,
+   "rms_db": -17.51,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "caravan/horse_stamp2": {
+   "prompt": "Draught horse stamping a hoof impatiently on the ground",
+   "generation": "4KUSmEWo7eMXQjx6JLpw",
+   "seconds": 1.0,
+   "max_len": 0.9,
+   "rms_db": -17.77,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "caravan/horse_stamp3": {
+   "prompt": "Draught horse stamping a hoof impatiently on the ground",
+   "generation": "uwb0JDyaGeZx9B7qB8mI",
+   "seconds": 1.0,
+   "max_len": 0.9,
+   "rms_db": -17.72,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "caravan/horse_snort1": {
+   "prompt": "Horse snorting through its nostrils",
+   "generation": "uB8c4vb8i7VZSZmcY1BA",
+   "seconds": 1.7,
+   "max_len": 1.02,
+   "rms_db": -24.19,
+   "peak_db": -1.0
+  },
+  "caravan/horse_snort2": {
+   "prompt": "Horse snorting through its nostrils",
+   "generation": "LxTfxr1368YGgFipNg0B",
+   "seconds": 1.7,
+   "max_len": 1.29,
+   "rms_db": -24.81,
+   "peak_db": -1.0
+  },
+  "caravan/horse_snort3": {
+   "prompt": "Horse snorting through its nostrils",
+   "generation": "GdyQkuHwL4UtxQlbwdcK",
+   "seconds": 1.7,
+   "max_len": 1.71,
+   "rms_db": -25.46,
+   "peak_db": -1.0
+  },
+  "caravan/horse_neigh1": {
+   "prompt": "Horse neighing loudly",
+   "generation": "7rOyLePRNjQUihffJyip",
+   "seconds": 3.1,
+   "max_len": 3.3,
+   "rms_db": -18.34,
+   "peak_db": -1.0
+  },
+  "caravan/horse_neigh2": {
+   "prompt": "Horse neighing loudly",
+   "generation": "tGrf3sDqRWS1i2PZ3XqH",
+   "seconds": 3.1,
+   "max_len": 2.97,
+   "rms_db": -18.33,
+   "peak_db": -1.0
+  },
+  "caravan/horse_neigh3": {
+   "prompt": "Horse neighing loudly",
+   "generation": "6xS4gxtyxusCibG4SzWb",
+   "seconds": 3.1,
+   "max_len": 3.3,
+   "rms_db": -18.61,
+   "peak_db": -1.0
+  },
+  "caravan/horse_hurt1": {
+   "prompt": "Horse squealing in pain",
+   "generation": "UXwG9bKIgil6K8EDBLYf",
+   "seconds": 1.2,
+   "max_len": 1.2,
+   "rms_db": -18.58,
+   "peak_db": -1.0
+  },
+  "caravan/horse_hurt2": {
+   "prompt": "Horse squealing in pain",
+   "generation": "Rr5h2OajXMzgZzDiDoqt",
+   "seconds": 1.2,
+   "max_len": 1.2,
+   "rms_db": -18.2,
+   "peak_db": -1.0
+  },
+  "caravan/horse_hurt3": {
+   "prompt": "Horse squealing in pain",
+   "generation": "rEPZcOHDat4NLLqqD42l",
+   "seconds": 1.2,
+   "max_len": 1.2,
+   "rms_db": -18.26,
+   "peak_db": -1.0
+  },
+  "caravan/horse_thud1": {
+   "prompt": "Large horse collapsing onto the ground, heavy body thud",
+   "generation": "rZD13x8Sp4eHFFdhc9HQ",
+   "seconds": 1.5,
+   "max_len": 1.15,
+   "rms_db": -12.0,
+   "peak_db": -1.0
+  },
+  "caravan/horse_thud2": {
+   "prompt": "Large horse collapsing onto the ground, heavy body thud",
+   "generation": "N36a3mXcTYtmMuvQ0HMK",
+   "seconds": 1.5,
+   "max_len": 1.27,
+   "rms_db": -13.73,
+   "peak_db": -1.0
+  },
+  "caravan/horse_thud3": {
+   "prompt": "Large horse collapsing onto the ground, heavy body thud",
+   "generation": "SJgZU3RoeH56rBM5kKZj",
+   "seconds": 1.5,
+   "max_len": 1.5,
+   "rms_db": -14.26,
+   "peak_db": -1.0
+  },
+  "caravan/horse_tear1": {
+   "prompt": "Horse tearing grass with its teeth while grazing and munching",
+   "generation": "hQTuUT1FHgPvUylMTyrx",
+   "seconds": 1.5,
+   "max_len": 1.5,
+   "rms_db": -27.37,
+   "peak_db": -1.0
+  },
+  "caravan/horse_tear2": {
+   "prompt": "Horse tearing grass with its teeth while grazing and munching",
+   "generation": "kik7JNqZDSEtqCmdBI5x",
+   "seconds": 1.5,
+   "max_len": 1.45,
+   "rms_db": -27.64,
+   "peak_db": -1.0
+  },
+  "caravan/horse_tear3": {
+   "prompt": "Horse tearing grass with its teeth while grazing and munching",
+   "generation": "7WE5ulYpsguvYXObdiFi",
+   "seconds": 1.5,
+   "max_len": 1.43,
+   "rms_db": -28.45,
+   "peak_db": -1.0
+  },
+  "caravan/click1": {
+   "prompt": "Wagon driver clicking their tongue at a horse, two quick tongue clicks",
+   "generation": "GYnK5hmls5KtrpYsLeQj",
+   "seconds": 0.8,
+   "max_len": 0.65,
+   "rms_db": -23.27,
+   "peak_db": -1.0
+  },
+  "caravan/click2": {
+   "prompt": "Wagon driver clicking their tongue at a horse, two quick tongue clicks",
+   "generation": "mDye151pAiQjEuGtaGq4",
+   "seconds": 0.8,
+   "max_len": 0.71,
+   "rms_db": -23.32,
+   "peak_db": -1.0
+  },
+  "caravan/click3": {
+   "prompt": "Wagon driver clicking their tongue at a horse, two quick tongue clicks",
+   "generation": "fV10NGVhp5b57vecIcXk",
+   "seconds": 0.8,
+   "max_len": 0.74,
+   "rms_db": -24.4,
+   "peak_db": -1.0
+  },
+  "caravan/reins_flick1": {
+   "prompt": "Leather reins snapped against a horse, sharp slap",
+   "generation": "nebBtubgLtg5P20DppgY",
+   "seconds": 1.0,
+   "max_len": 0.9,
+   "rms_db": -19.63,
+   "peak_db": -1.0
+  },
+  "caravan/reins_flick2": {
+   "prompt": "Leather reins snapped against a horse, sharp slap",
+   "generation": "QlnkKnLq5XVsL61cy0ig",
+   "seconds": 1.0,
+   "max_len": 0.89,
+   "rms_db": -20.38,
+   "peak_db": -1.0
+  },
+  "caravan/reins_flick3": {
+   "prompt": "Leather reins snapped against a horse, sharp slap",
+   "generation": "LSFMbmyUmWqSnjUf1Hk8",
+   "seconds": 1.0,
+   "max_len": 0.9,
+   "rms_db": -19.97,
+   "peak_db": -1.0
+  },
+  "caravan/reins_haul1": {
+   "prompt": "Leather reins hauled tight, creaking leather",
+   "generation": "DD6wzMLll8SvsiFaZ9bV",
+   "seconds": 1.2,
+   "max_len": 1.2,
+   "rms_db": -25.83,
+   "peak_db": -1.0
+  },
+  "caravan/reins_haul2": {
+   "prompt": "Leather reins hauled tight, creaking leather",
+   "generation": "vyqt867puVfqAynUakLo",
+   "seconds": 1.2,
+   "max_len": 1.2,
+   "rms_db": -27.28,
+   "peak_db": -1.0
+  },
+  "caravan/land1": {
+   "prompt": "Person landing on their feet on dirt after a jump",
+   "generation": "HuI2TpDKOigNGvZ2u4kH",
+   "seconds": 1.0,
+   "max_len": 0.9,
+   "rms_db": -19.62,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "caravan/land2": {
+   "prompt": "Person landing on their feet on dirt after a jump",
+   "generation": "dndLSZWkiMf8Q6SzZMVo",
+   "seconds": 1.0,
+   "max_len": 0.9,
+   "rms_db": -19.15,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "caravan/grab1": {
+   "prompt": "Hand gripping a wooden rail, quick grab",
+   "generation": "TyJjchVzefjE2L49NEYC",
+   "seconds": 0.7,
+   "max_len": 0.63,
+   "rms_db": -18.92,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "caravan/grab2": {
+   "prompt": "Hand gripping a wooden rail, quick grab",
+   "generation": "NTDwOF4LL9dIH1xnEL6h",
+   "seconds": 0.7,
+   "max_len": 0.65,
+   "rms_db": -17.05,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "caravan/grab3": {
+   "prompt": "Hand gripping a wooden rail, quick grab",
+   "generation": "e0E2BC1CUfTS0KxuN2zf",
+   "seconds": 0.7,
+   "max_len": 0.65,
+   "rms_db": -17.51,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "caravan/knife_saw1": {
+   "prompt": "Knife sawing through a thick leather strap",
+   "generation": "6RKi3OStDdc8xjuUVL2U",
+   "seconds": 0.9,
+   "max_len": 0.8,
+   "rms_db": -22.39,
+   "peak_db": -1.0
+  },
+  "caravan/knife_saw2": {
+   "prompt": "Knife sawing through a thick leather strap",
+   "generation": "3PRaeiGqc4mAc5JzyrGd",
+   "seconds": 0.9,
+   "max_len": 0.8,
+   "rms_db": -24.47,
+   "peak_db": -1.0
+  },
+  "caravan/knife_saw3": {
+   "prompt": "Knife sawing through a thick leather strap",
+   "generation": "Nlsx0iXS6vj1HxmpQIsb",
+   "seconds": 0.9,
+   "max_len": 0.8,
+   "rms_db": -23.22,
+   "peak_db": -1.0
+  },
+  "caravan/knife_saw4": {
+   "prompt": "Knife sawing through a thick leather strap",
+   "generation": "g6UvqtEszeEnJLmSTAbg",
+   "seconds": 0.9,
+   "max_len": 0.8,
+   "rms_db": -24.32,
+   "peak_db": -1.0
+  },
+  "caravan/trace_cut1": {
+   "prompt": "Leather harness strap cut with a knife, quick slice and snap",
+   "generation": "7ehY6utxOucq9B6ugTZS",
+   "seconds": 1.1,
+   "max_len": 1.02,
+   "rms_db": -20.42,
+   "peak_db": -1.0
+  },
+  "caravan/trace_cut2": {
+   "prompt": "Leather harness strap cut with a knife, quick slice and snap",
+   "generation": "nVEZt3jEBIhWkxtb616Y",
+   "seconds": 1.1,
+   "max_len": 1.07,
+   "rms_db": -21.92,
+   "peak_db": -1.0
+  },
+  "caravan/sheathe1": {
+   "prompt": "Knife sliding into a leather sheath",
+   "generation": "nSxmfA6hWgHiIDIcFAjY",
+   "seconds": 0.8,
+   "max_len": 0.75,
+   "rms_db": -26.16,
+   "peak_db": -1.0
+  },
+  "caravan/sheathe2": {
+   "prompt": "Knife sliding into a leather sheath",
+   "generation": "ioJhHUiOZea2k7l94U6D",
+   "seconds": 0.8,
+   "max_len": 0.75,
+   "rms_db": -25.88,
+   "peak_db": -1.0
+  },
+  "caravan/slap1": {
+   "prompt": "Hand slapping a horse's rump",
+   "generation": "cm8vbkbggAuWFQSsRtET",
+   "seconds": 0.9,
+   "max_len": 0.8,
+   "rms_db": -14.24,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "caravan/slap2": {
+   "prompt": "Hand slapping a horse's rump",
+   "generation": "NBeWR3mjBExhkAl0Wg8F",
+   "seconds": 0.9,
+   "max_len": 0.8,
+   "rms_db": -14.68,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "caravan/slap3": {
+   "prompt": "Hand slapping a horse's rump",
+   "generation": "dTgq6T85MjfO1PeDamIC",
+   "seconds": 0.9,
+   "max_len": 0.8,
+   "rms_db": -16.73,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "caravan/crate_lift1": {
+   "prompt": "Wooden crate lifted off a wagon bed, wood scrape and creak",
+   "generation": "97KIqMlUPlf1UNf011KN",
+   "seconds": 1.2,
+   "max_len": 1.2,
+   "rms_db": -24.26,
+   "peak_db": -1.0
+  },
+  "caravan/crate_lift2": {
+   "prompt": "Wooden crate lifted off a wagon bed, wood scrape and creak",
+   "generation": "iekMrHvagm979TZB18V1",
+   "seconds": 1.2,
+   "max_len": 1.2,
+   "rms_db": -24.31,
+   "peak_db": -1.0
+  },
+  "caravan/handoff1": {
+   "prompt": "Wooden crate handed down and caught, soft thump",
+   "generation": "dcslJlVulFhHP7vPPBZZ",
+   "seconds": 0.9,
+   "max_len": 0.84,
+   "rms_db": -21.19,
+   "peak_db": -1.0
+  },
+  "caravan/handoff2": {
+   "prompt": "Wooden crate handed down and caught, soft thump",
+   "generation": "80tZ55xbRb07gZcVc73c",
+   "seconds": 0.9,
+   "max_len": 0.79,
+   "rms_db": -20.86,
+   "peak_db": -1.0
+  },
+  "caravan/gasp1": {
+   "prompt": "Person gasping in surprise, short sharp breath",
+   "generation": "IJzkEWN06HMKSr8tj1fj",
+   "seconds": 0.9,
+   "max_len": 0.8,
+   "rms_db": -21.49,
+   "peak_db": -1.0
+  },
+  "caravan/gasp2": {
+   "prompt": "Person gasping in surprise, short sharp breath",
+   "generation": "YKZlf6DPnljs2J4uOJ26",
+   "seconds": 0.9,
+   "max_len": 0.8,
+   "rms_db": -21.63,
+   "peak_db": -1.0
+  },
+  "caravan/gasp3": {
+   "prompt": "Person gasping in surprise, short sharp breath",
+   "generation": "Liw1AlGWyjvzy7EwjTi0",
+   "seconds": 0.9,
+   "max_len": 0.82,
+   "rms_db": -21.16,
+   "peak_db": -1.0
+  },
+  "caravan/pant1": {
+   "prompt": "Person panting from exertion, heavy breaths",
+   "generation": "TegfBUTHQ7bciDBZmQsJ",
+   "seconds": 1.5,
+   "max_len": 1.5,
+   "rms_db": -25.22,
+   "peak_db": -1.0
+  },
+  "caravan/pant2": {
+   "prompt": "Person panting from exertion, heavy breaths",
+   "generation": "Pl6AjvYpVUSameLmVLPa",
+   "seconds": 1.5,
+   "max_len": 1.49,
+   "rms_db": -25.37,
+   "peak_db": -1.0
+  },
+  "caravan/pant3": {
+   "prompt": "Person panting from exertion, heavy breaths",
+   "generation": "QnYahKWmLqOKRoGxgfAe",
+   "seconds": 1.5,
+   "max_len": 1.5,
+   "rms_db": -25.2,
+   "peak_db": -1.0
+  },
+  "caravan/cough1": {
+   "prompt": "Person coughing from dust",
+   "generation": "3uRJjYw9xxbd93NeN4Ce",
+   "seconds": 1.3,
+   "max_len": 1.12,
+   "rms_db": -20.68,
+   "peak_db": -1.0
+  },
+  "caravan/cough2": {
+   "prompt": "Person coughing from dust",
+   "generation": "NdI1lZx0D1J5Td3GHQGH",
+   "seconds": 1.3,
+   "max_len": 1.31,
+   "rms_db": -21.58,
+   "peak_db": -1.0
+  },
+  "caravan/smack1": {
+   "prompt": "Fist smacking into an open palm",
+   "generation": "Teo7bSHZlj8VnknDvLmn",
+   "seconds": 0.7,
+   "max_len": 0.65,
+   "rms_db": -14.92,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "caravan/smack2": {
+   "prompt": "Fist smacking into an open palm",
+   "generation": "cNz62fS2z5cGHXr497zj",
+   "seconds": 0.7,
+   "max_len": 0.65,
+   "rms_db": -15.25,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "caravan/smack3": {
+   "prompt": "Fist smacking into an open palm",
+   "generation": "wp9qb9Z73nOhO78MSlBx",
+   "seconds": 0.7,
+   "max_len": 0.65,
+   "rms_db": -14.59,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "caravan/swish1": {
+   "prompt": "Arm swinging fast through the air, cloth swish",
+   "generation": "YhyL8QbGwFI5n9geGdnR",
+   "seconds": 0.9,
+   "max_len": 0.8,
+   "rms_db": -28.15,
+   "peak_db": -1.0
+  },
+  "caravan/swish2": {
+   "prompt": "Arm swinging fast through the air, cloth swish",
+   "generation": "IzCytXsCogfb1SV0nguR",
+   "seconds": 0.9,
+   "max_len": 0.8,
+   "rms_db": -27.81,
+   "peak_db": -1.0
+  },
+  "caravan/swish3": {
+   "prompt": "Arm swinging fast through the air, cloth swish",
+   "generation": "ggirfhKKcJ9i0o0AYASR",
+   "seconds": 0.9,
+   "max_len": 0.8,
+   "rms_db": -28.33,
+   "peak_db": -1.0
+  },
+  "caravan/stomp1": {
+   "prompt": "Foot stamping on dirt",
+   "generation": "fggAXG70nszlXVcp0FEY",
+   "seconds": 0.8,
+   "max_len": 0.75,
+   "rms_db": -17.76,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "caravan/stomp2": {
+   "prompt": "Foot stamping on dirt",
+   "generation": "HycDGSwGY9V6q0r4GSDk",
+   "seconds": 0.8,
+   "max_len": 0.75,
+   "rms_db": -16.9,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "caravan/wince1": {
+   "prompt": "Person wincing in pain, short pained breath through teeth",
+   "generation": "Xy4RYGPrSphWqtEqUQpf",
+   "seconds": 1.1,
+   "max_len": 1.05,
+   "rms_db": -27.33,
+   "peak_db": -1.0
+  },
+  "caravan/wince2": {
+   "prompt": "Person wincing in pain, short pained breath through teeth",
+   "generation": "a6bJ1Xlp9Wq8Q7nxGbvc",
+   "seconds": 1.1,
+   "max_len": 1.08,
+   "rms_db": -26.96,
+   "peak_db": -1.0
+  },
+  "caravan/wince3": {
+   "prompt": "Person wincing in pain, short pained breath through teeth",
+   "generation": "zQZ5mDgqj5oQHLzPpLP9",
+   "seconds": 1.1,
+   "max_len": 1.05,
+   "rms_db": -25.55,
+   "peak_db": -1.0
+  },
+  "caravan/huff1": {
+   "prompt": "Person huffing in annoyance, short exhale",
+   "generation": "BXz3H6n05MMzZQPHy1sl",
+   "seconds": 1.0,
+   "max_len": 0.8,
+   "rms_db": -22.78,
+   "peak_db": -1.0
+  },
+  "caravan/huff2": {
+   "prompt": "Person huffing in annoyance, short exhale",
+   "generation": "OLywDzXdYyZvZ6uLc3Bg",
+   "seconds": 1.0,
+   "max_len": 0.93,
+   "rms_db": -24.61,
+   "peak_db": -1.0
+  },
+  "cook/place1": {
+   "prompt": "Heavy iron cooking pot set down on a stone hearth",
+   "generation": "za5VZyiuQCrKO6X9owVw",
+   "seconds": 0.9,
+   "max_len": 0.82,
+   "rms_db": -23.1,
+   "peak_db": -1.0
+  },
+  "cook/place2": {
+   "prompt": "Heavy iron cooking pot set down on a stone hearth",
+   "generation": "x925bp7IDzk3XIwIKBeC",
+   "seconds": 0.9,
+   "max_len": 0.8,
+   "rms_db": -23.52,
+   "peak_db": -1.0
+  },
+  "cook/pour1": {
+   "prompt": "Water poured from a bucket into an iron pot",
+   "generation": "PDjx8sbfsjA6jyFDuuiz",
+   "seconds": 1.5,
+   "max_len": 1.5,
+   "rms_db": -28.86,
+   "peak_db": -1.0
+  },
+  "cook/pour2": {
+   "prompt": "Water poured from a bucket into an iron pot",
+   "generation": "bpQ8nXa0G5jBNungxlS4",
+   "seconds": 1.5,
+   "max_len": 1.5,
+   "rms_db": -29.17,
+   "peak_db": -1.0
+  },
+  "cook/plop/soft1": {
+   "prompt": "Soft vegetables dropped into a pot of water, gentle plop",
+   "generation": "UO0wgiv9esxuf1KlhyeN",
+   "seconds": 0.7,
+   "max_len": 0.7,
+   "rms_db": -28.29,
+   "peak_db": -1.0
+  },
+  "cook/plop/soft2": {
+   "prompt": "Soft vegetables dropped into a pot of water, gentle plop",
+   "generation": "QPHbPeZmIf7aFsERX2Yh",
+   "seconds": 0.7,
+   "max_len": 0.7,
+   "rms_db": -27.59,
+   "peak_db": -1.0
+  },
+  "cook/plop/soft3": {
+   "prompt": "Soft vegetables dropped into a pot of water, gentle plop",
+   "generation": "BivLuaveibf8mpR5Wimk",
+   "seconds": 0.7,
+   "max_len": 0.7,
+   "rms_db": -26.67,
+   "peak_db": -1.0
+  },
+  "cook/plop/meat1": {
+   "prompt": "Chunk of meat dropped into a pot of water, heavy wet plop",
+   "generation": "3wEkfV3ssH0gb18CAkpJ",
+   "seconds": 0.7,
+   "max_len": 0.7,
+   "rms_db": -24.49,
+   "peak_db": -1.0
+  },
+  "cook/plop/meat2": {
+   "prompt": "Chunk of meat dropped into a pot of water, heavy wet plop",
+   "generation": "vZQ5hAVGTbiTpzj63Elq",
+   "seconds": 0.7,
+   "max_len": 0.72,
+   "rms_db": -26.31,
+   "peak_db": -1.0
+  },
+  "cook/plop/meat3": {
+   "prompt": "Chunk of meat dropped into a pot of water, heavy wet plop",
+   "generation": "qJDbmtE21jN4i4Z0Nk2s",
+   "seconds": 0.7,
+   "max_len": 0.7,
+   "rms_db": -26.21,
+   "peak_db": -1.0
+  },
+  "cook/plop/grain1": {
+   "prompt": "Handful of grain poured into a pot of water, pattering splash",
+   "generation": "HHy1c9kjiLyiEw64Tvjc",
+   "seconds": 0.7,
+   "max_len": 0.7,
+   "rms_db": -32.31,
+   "peak_db": -1.0
+  },
+  "cook/plop/grain2": {
+   "prompt": "Handful of grain poured into a pot of water, pattering splash",
+   "generation": "RNYIqN3wdjhT0J0yAFRW",
+   "seconds": 0.7,
+   "max_len": 0.7,
+   "rms_db": -31.21,
+   "peak_db": -1.0
+  },
+  "cook/plop/grain3": {
+   "prompt": "Handful of grain poured into a pot of water, pattering splash",
+   "generation": "KsEWuIshp0Y2l1m6olDa",
+   "seconds": 0.7,
+   "max_len": 0.7,
+   "rms_db": -32.78,
+   "peak_db": -1.0
+  },
+  "cook/fuel1": {
+   "prompt": "Log tossed onto a fire, wooden thud and crackle",
+   "generation": "pey2TQIhkSBjcKv9Lsu1",
+   "seconds": 1.0,
+   "max_len": 0.9,
+   "rms_db": -23.34,
+   "peak_db": -1.0
+  },
+  "cook/fuel2": {
+   "prompt": "Log tossed onto a fire, wooden thud and crackle",
+   "generation": "hxRCY4DVU9fJtlAcbLdP",
+   "seconds": 1.0,
+   "max_len": 0.9,
+   "rms_db": -26.11,
+   "peak_db": -1.0
+  },
+  "cook/ignite1": {
+   "prompt": "Cooking fire catching with a soft whoosh, kindling crackling",
+   "generation": "eX6SWB249H0pXQAlCVG3",
+   "seconds": 1.4,
+   "max_len": 1.35,
+   "rms_db": -26.17,
+   "peak_db": -1.0
+  },
+  "cook/ignite2": {
+   "prompt": "Cooking fire catching with a soft whoosh, kindling crackling",
+   "generation": "I0DesFHuGZsqFnz1rHyG",
+   "seconds": 1.4,
+   "max_len": 1.35,
+   "rms_db": -26.52,
+   "peak_db": -1.0
+  },
+  "cook/stir1": {
+   "prompt": "Wooden spoon stirring thick stew in an iron pot",
+   "generation": "wGx7yourPLqgXQ2E55Oc",
+   "seconds": 1.2,
+   "max_len": 1.2,
+   "rms_db": -29.06,
+   "peak_db": -1.0
+  },
+  "cook/stir2": {
+   "prompt": "Wooden spoon stirring thick stew in an iron pot",
+   "generation": "gjIbIWSetIzLPNOlVt1X",
+   "seconds": 1.2,
+   "max_len": 1.2,
+   "rms_db": -29.76,
+   "peak_db": -1.0
+  },
+  "cook/stir3": {
+   "prompt": "Wooden spoon stirring thick stew in an iron pot",
+   "generation": "XvFUMGUmIvejXD0JiwaU",
+   "seconds": 1.2,
+   "max_len": 1.2,
+   "rms_db": -30.09,
+   "peak_db": -1.0
+  },
+  "cook/taste1": {
+   "prompt": "Person blowing on a hot ladle of stew, then sipping it",
+   "generation": "SB5gSiSrS1jWpbTSoug3",
+   "seconds": 1.4,
+   "max_len": 1.35,
+   "rms_db": -32.23,
+   "peak_db": -1.0
+  },
+  "cook/taste2": {
+   "prompt": "Person blowing on a hot ladle of stew, then sipping it",
+   "generation": "gAs4z9ucBqVhmZy9WDrY",
+   "seconds": 1.4,
+   "max_len": 1.35,
+   "rms_db": -32.19,
+   "peak_db": -1.0
+  },
+  "cook/simmer1": {
+   "prompt": "Pot of stew simmering over a fire, gentle bubbling, continuous",
+   "generation": "GbpMuClbaMiyokAIO75u",
+   "seconds": 14.0,
+   "loop": true,
+   "rms_db": -27.0
+  },
+  "cook/call1": {
+   "prompt": "Two short hollow knocks of knuckles on a wooden pot handle",
+   "generation": "alGBO7Ltcc708cEIHmJI",
+   "seconds": 0.6,
+   "max_len": 0.6,
+   "rms_db": -19.29,
+   "peak_db": -1.0
+  },
+  "cook/call2": {
+   "prompt": "Two short hollow knocks of knuckles on a wooden pot handle",
+   "generation": "RCkeXMcUeaRCH9bWz9Ul",
+   "seconds": 0.6,
+   "max_len": 0.6,
+   "rms_db": -19.29,
+   "peak_db": -1.0
+  },
+  "cook/crackle1": {
+   "prompt": "Food crackling in a hot pan",
+   "generation": "QkgF7ct2yOpSQichbeKa",
+   "seconds": 2.8,
+   "max_len": 3.0,
+   "rms_db": -33.01,
+   "peak_db": -1.0
+  },
+  "cook/crackle2": {
+   "prompt": "Food crackling in a hot pan",
+   "generation": "1D3GME0GaeNpNIMmgHsi",
+   "seconds": 2.8,
+   "max_len": 3.0,
+   "rms_db": -32.15,
+   "peak_db": -1.0
+  },
+  "cook/sizzle1": {
+   "prompt": "Meat sizzling in a hot iron pan, continuous",
+   "generation": "v7B7r65QmkFMspsCjRMX",
+   "seconds": 12.0,
+   "loop": true,
+   "rms_db": -27.22
+  },
+  "cook/ease1": {
+   "prompt": "Iron chain hauled hand over hand through a hook, clanking links",
+   "generation": "kKZ5Ud9yKQQhSJVSaxAO",
+   "seconds": 1.0,
+   "max_len": 0.9,
+   "rms_db": -27.42,
+   "peak_db": -1.0
+  },
+  "cook/ease2": {
+   "prompt": "Iron chain hauled hand over hand through a hook, clanking links",
+   "generation": "q2JR21OcKq68qYSALFPP",
+   "seconds": 1.0,
+   "max_len": 0.9,
+   "rms_db": -27.78,
+   "peak_db": -1.0
+  },
+  "cook/boil_over1": {
+   "prompt": "Pot boiling over, hissing steam spitting on hot coals",
+   "generation": "WjdpYLPpPI98ZWFizNVU",
+   "seconds": 1.8,
+   "max_len": 1.8,
+   "rms_db": -29.79,
+   "peak_db": -1.0
+  },
+  "cook/boil_over2": {
+   "prompt": "Pot boiling over, hissing steam spitting on hot coals",
+   "generation": "OFRQlgYM91wnZgoOjDRg",
+   "seconds": 1.8,
+   "max_len": 1.8,
+   "rms_db": -30.52,
+   "peak_db": -1.0
+  },
+  "cook/skim1": {
+   "prompt": "Ladle skimming foam off a pot of stew, liquid scrape",
+   "generation": "mGxmtQ6NklK6N5BOjXKe",
+   "seconds": 1.0,
+   "max_len": 0.93,
+   "rms_db": -32.9,
+   "peak_db": -1.0
+  },
+  "cook/skim2": {
+   "prompt": "Ladle skimming foam off a pot of stew, liquid scrape",
+   "generation": "qfl2mxdZymRdt0oYOQNv",
+   "seconds": 1.0,
+   "max_len": 0.9,
+   "rms_db": -33.32,
+   "peak_db": -1.0
+  },
+  "cook/ready1": {
+   "prompt": "One soft low bronze bell chime, touched gently, warm hum ringing on",
+   "generation": "rdZBXbY0jGCxoEkHKJHS",
+   "seconds": 1.8,
+   "max_len": 1.8,
+   "rms_db": -27.06,
+   "peak_db": -1.0
+  },
+  "cook/ripe1": {
+   "prompt": "One small bright ting of a little steel bell",
+   "generation": "NlZK0ydbMAjCsjQZQ4wu",
+   "seconds": 0.9,
+   "max_len": 0.8,
+   "rms_db": -31.44,
+   "peak_db": -1.0
+  },
+  "cook/serve1": {
+   "prompt": "Stew ladled into a wooden bowl",
+   "generation": "QjIrV75EJEkt8foCgLoK",
+   "seconds": 1.5,
+   "max_len": 1.5,
+   "rms_db": -28.38,
+   "peak_db": -1.0
+  },
+  "cook/serve2": {
+   "prompt": "Stew ladled into a wooden bowl",
+   "generation": "5nkyMKSl6wtXOLHD8RFx",
+   "seconds": 1.5,
+   "max_len": 1.5,
+   "rms_db": -27.99,
+   "peak_db": -1.0
+  },
+  "cook/serve3": {
+   "prompt": "Stew ladled into a wooden bowl",
+   "generation": "TzO5K5w4OFJeLqNvvcth",
+   "seconds": 1.5,
+   "max_len": 1.5,
+   "rms_db": -28.13,
+   "peak_db": -1.0
+  },
+  "cook/burnt1": {
+   "prompt": "Food burning in a pot, harsh hiss and crackle",
+   "generation": "xmhCY1Pia5eKGUjrBqeZ",
+   "seconds": 1.8,
+   "max_len": 1.8,
+   "rms_db": -29.43,
+   "peak_db": -1.0
+  },
+  "cook/burnt2": {
+   "prompt": "Food burning in a pot, harsh hiss and crackle",
+   "generation": "xNB3uqtvJf6npo1z0EsD",
+   "seconds": 1.8,
+   "max_len": 1.8,
+   "rms_db": -28.19,
+   "peak_db": -1.0
+  },
+  "cook/eat/spoon1": {
+   "prompt": "Person eating stew with a wooden spoon, slurp and chewing",
+   "generation": "ZzAd2YuPNaucDp3CJ0HK",
+   "seconds": 2.3,
+   "max_len": 2.4,
+   "rms_db": -31.88,
+   "peak_db": -1.0
+  },
+  "cook/eat/spoon2": {
+   "prompt": "Person eating stew with a wooden spoon, slurp and chewing",
+   "generation": "QAaB8RXEJjh5Pz1ec19H",
+   "seconds": 2.3,
+   "max_len": 2.4,
+   "rms_db": -32.0,
+   "peak_db": -1.0
+  },
+  "cook/eat/spoon3": {
+   "prompt": "Person eating stew with a wooden spoon, slurp and chewing",
+   "generation": "ILUASFOikV51NurJ2Itd",
+   "seconds": 2.3,
+   "max_len": 2.4,
+   "rms_db": -32.12,
+   "peak_db": -1.0
+  },
+  "cook/eat/bite1": {
+   "prompt": "Person biting into bread and chewing",
+   "generation": "k0MTafxIhAbxehcwYKSx",
+   "seconds": 1.8,
+   "max_len": 1.8,
+   "rms_db": -29.24,
+   "peak_db": -1.0
+  },
+  "cook/eat/bite2": {
+   "prompt": "Person biting into bread and chewing",
+   "generation": "AljN16bhYT6blIsmfnGR",
+   "seconds": 1.8,
+   "max_len": 1.8,
+   "rms_db": -29.16,
+   "peak_db": -1.0
+  },
+  "cook/eat/bite3": {
+   "prompt": "Person biting into bread and chewing",
+   "generation": "gwIBs80nLNFGyLoE1koD",
+   "seconds": 1.8,
+   "max_len": 1.8,
+   "rms_db": -30.42,
+   "peak_db": -1.0
+  },
+  "cook/drink1": {
+   "prompt": "Person drinking broth from a bowl, gulps",
+   "generation": "5hmEZGXhyrU2GRIXCARi",
+   "seconds": 2.0,
+   "max_len": 2.1,
+   "rms_db": -31.47,
+   "peak_db": -1.0
+  },
+  "cook/drink2": {
+   "prompt": "Person drinking broth from a bowl, gulps",
+   "generation": "6sMlTmBml1T8kZrMSMwP",
+   "seconds": 2.0,
+   "max_len": 2.1,
+   "rms_db": -31.39,
+   "peak_db": -1.0
+  },
+  "cook/buff1": {
+   "prompt": "Soft warm magical chime, gentle and comforting",
+   "generation": "CzVa5tf6ltwJPmFsf5LH",
+   "seconds": 1.5,
+   "max_len": 1.5,
+   "rms_db": -22.91,
+   "peak_db": -1.0
+  },
+  "cook/oven_hum1": {
+   "prompt": "Brick bread oven with a roaring fire inside, heard through brick, low steady rumble, continuous",
+   "generation": "rQChGbA3DkHX1knP8aBR",
+   "seconds": 14.0,
+   "loop": true,
+   "rms_db": -27.02
+  },
+  "cook/oven_open1": {
+   "prompt": "Iron oven door opening with a creak",
+   "generation": "ccelF04ZgAFpPbtUfEZr",
+   "seconds": 1.4,
+   "max_len": 1.35,
+   "rms_db": -25.57,
+   "peak_db": -1.0
+  },
+  "cook/oven_open2": {
+   "prompt": "Iron oven door opening with a creak",
+   "generation": "6M8AAzMiyUVOHPFT7okT",
+   "seconds": 1.4,
+   "max_len": 1.35,
+   "rms_db": -24.51,
+   "peak_db": -1.0
+  },
+  "cook/oven_shut1": {
+   "prompt": "Iron oven door shut with a clank",
+   "generation": "jy4eQjjCnbl1a47H3KUw",
+   "seconds": 0.9,
+   "max_len": 0.8,
+   "rms_db": -22.55,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "cook/oven_shut2": {
+   "prompt": "Iron oven door shut with a clank",
+   "generation": "YWdEUsbL91ow8fJVUzU7",
+   "seconds": 0.9,
+   "max_len": 0.8,
+   "rms_db": -22.74,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "cook/spit_creak1": {
+   "prompt": "Roasting spit turning over a fire, wooden crank creaking steadily, fire crackling, continuous",
+   "generation": "B4xzSa7Jg7D5XVqUYa5X",
+   "seconds": 12.0,
+   "loop": true,
+   "rms_db": -27.11
+  },
+  "cook/crank1": {
+   "prompt": "Wooden crank turning one notch, creak and click",
+   "generation": "H3MeIdA0OHhvZHZtUXl5",
+   "seconds": 0.7,
+   "max_len": 0.7,
+   "rms_db": -30.81,
+   "peak_db": -1.0
+  },
+  "cook/crank2": {
+   "prompt": "Wooden crank turning one notch, creak and click",
+   "generation": "Mt5Ny9zWiK6V1Jv0pfiK",
+   "seconds": 0.7,
+   "max_len": 0.7,
+   "rms_db": -31.23,
+   "peak_db": -1.0
+  },
+  "cook/crank3": {
+   "prompt": "Wooden crank turning one notch, creak and click",
+   "generation": "cWCxc1ix7PJoro2G6D7n",
+   "seconds": 0.7,
+   "max_len": 0.7,
+   "rms_db": -31.82,
+   "peak_db": -1.0
+  },
+  "cook/drip1": {
+   "prompt": "A drop of fat dripping onto hot coals, short sizzle",
+   "generation": "QeYvJMyenJJSQTqWAV1g",
+   "seconds": 0.7,
+   "max_len": 0.7,
+   "rms_db": -30.95,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "cook/drip2": {
+   "prompt": "A drop of fat dripping onto hot coals, short sizzle",
+   "generation": "AcbnjeHJ44nbBRvnLXLI",
+   "seconds": 0.7,
+   "max_len": 0.7,
+   "rms_db": -33.66,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "cook/flare1": {
+   "prompt": "Fat flaring up in a fire, whoosh and sizzle",
+   "generation": "iEuZqDvudThDY8xmZZ47",
+   "seconds": 1.2,
+   "max_len": 1.2,
+   "rms_db": -32.58,
+   "peak_db": -1.0
+  },
+  "cook/flare2": {
+   "prompt": "Fat flaring up in a fire, whoosh and sizzle",
+   "generation": "rVeZ1IbCdoUgpPMrWpMF",
+   "seconds": 1.2,
+   "max_len": 1.2,
+   "rms_db": -32.39,
+   "peak_db": -1.0
+  },
+  "cook/flip1": {
+   "prompt": "Meat flipped in a hot pan, sizzle",
+   "generation": "xZN9aaR5w70ybJcg6Ijx",
+   "seconds": 1.0,
+   "max_len": 0.9,
+   "rms_db": -31.75,
+   "peak_db": -1.0
+  },
+  "cook/flip2": {
+   "prompt": "Meat flipped in a hot pan, sizzle",
+   "generation": "9enjL7uAEyGwXeM33spj",
+   "seconds": 1.0,
+   "max_len": 0.93,
+   "rms_db": -31.88,
+   "peak_db": -1.0
+  },
+  "cook/flip3": {
+   "prompt": "Meat flipped in a hot pan, sizzle",
+   "generation": "PMgX56lDTzzWw9DNURMc",
+   "seconds": 1.0,
+   "max_len": 0.9,
+   "rms_db": -31.19,
+   "peak_db": -1.0
+  },
+  "cook/chop1": {
+   "prompt": "Knife chopping a vegetable on a wooden board, one chop",
+   "generation": "wyr4iRTOmVxYdeknqWk3",
+   "seconds": 0.6,
+   "max_len": 0.6,
+   "rms_db": -21.34,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "cook/chop2": {
+   "prompt": "Knife chopping a vegetable on a wooden board, one chop",
+   "generation": "cHW2nSCvk1s06gf3aoH6",
+   "seconds": 0.6,
+   "max_len": 0.6,
+   "rms_db": -21.82,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "cook/chop3": {
+   "prompt": "Knife chopping a vegetable on a wooden board, one chop",
+   "generation": "C64iEfWdLlA25XMiolsR",
+   "seconds": 0.6,
+   "max_len": 0.6,
+   "rms_db": -24.51,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "cook/slice1": {
+   "prompt": "Knife slicing through a crusty pie",
+   "generation": "yz6UUTLGGraKfimfkaw9",
+   "seconds": 0.9,
+   "max_len": 0.8,
+   "rms_db": -30.23,
+   "peak_db": -1.0
+  },
+  "cook/slice2": {
+   "prompt": "Knife slicing through a crusty pie",
+   "generation": "IkmGGY8eiVYPyVVDkIp8",
+   "seconds": 0.9,
+   "max_len": 0.8,
+   "rms_db": -31.34,
+   "peak_db": -1.0
+  },
+  "cook/slice3": {
+   "prompt": "Knife slicing through a crusty pie",
+   "generation": "IcPFKmejjUEhVvqhuoRR",
+   "seconds": 0.9,
+   "max_len": 0.8,
+   "rms_db": -30.82,
+   "peak_db": -1.0
+  },
+  "cook/carve1": {
+   "prompt": "Knife carving a roast, slicing through meat",
+   "generation": "DNmizMwhlafK50wgC8IR",
+   "seconds": 1.0,
+   "max_len": 0.9,
+   "rms_db": -30.66,
+   "peak_db": -1.0
+  },
+  "cook/carve2": {
+   "prompt": "Knife carving a roast, slicing through meat",
+   "generation": "JbizVPZfRudijN3V8FbK",
+   "seconds": 1.0,
+   "max_len": 0.9,
+   "rms_db": -30.84,
+   "peak_db": -1.0
+  },
+  "cook/carve3": {
+   "prompt": "Knife carving a roast, slicing through meat",
+   "generation": "mbX4VsM9meVNipRkV8SL",
+   "seconds": 1.0,
+   "max_len": 0.9,
+   "rms_db": -30.45,
+   "peak_db": -1.0
+  },
+  "cook/loaf_down1": {
+   "prompt": "Bread loaves set down on a wooden table",
+   "generation": "C7YZwANY998z6644II04",
+   "seconds": 0.9,
+   "max_len": 0.8,
+   "rms_db": -23.61,
+   "peak_db": -1.0
+  },
+  "cook/loaf_down2": {
+   "prompt": "Bread loaves set down on a wooden table",
+   "generation": "kURZk4gmIs7buk7LbjH7",
+   "seconds": 0.9,
+   "max_len": 0.8,
+   "rms_db": -23.77,
+   "peak_db": -1.0
+  },
+  "cook/plate1": {
+   "prompt": "Clay plate set down on a wooden table",
+   "generation": "CRIdT08MBKHjVJ2Wll1G",
+   "seconds": 0.7,
+   "max_len": 0.7,
+   "rms_db": -27.28,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "cook/plate2": {
+   "prompt": "Clay plate set down on a wooden table",
+   "generation": "mbfDKYcJNDT5YROb1IJx",
+   "seconds": 0.7,
+   "max_len": 0.7,
+   "rms_db": -27.24,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "cook/chalk1": {
+   "prompt": "Chalk writing a short line on a slate, scratch",
+   "generation": "bZMO64OjEXGiAufvx76v",
+   "seconds": 1.5,
+   "max_len": 1.5,
+   "rms_db": -32.56,
+   "peak_db": -1.0
+  },
+  "cook/chalk2": {
+   "prompt": "Chalk writing a short line on a slate, scratch",
+   "generation": "XTbHEc6iJfbziCHS2HpX",
+   "seconds": 1.5,
+   "max_len": 1.5,
+   "rms_db": -33.14,
+   "peak_db": -1.0
+  },
+  "cook/larder1": {
+   "prompt": "Wooden larder door latch lifted and the door creaking open",
+   "generation": "rSNfGbzTjgGKc1ZLlxde",
+   "seconds": 0.9,
+   "max_len": 0.8,
+   "rms_db": -30.25,
+   "peak_db": -1.0
+  },
+  "cook/larder2": {
+   "prompt": "Wooden larder door latch lifted and the door creaking open",
+   "generation": "SMzw5RJ5LG7ahpCap47J",
+   "seconds": 0.9,
+   "max_len": 0.82,
+   "rms_db": -31.31,
+   "peak_db": -1.0
+  },
+  "cook/chill1": {
+   "prompt": "Bitter cold winter wind howling, icy and thin, continuous",
+   "generation": "V2G7kpLZsjJiEfMUrVSQ",
+   "seconds": 16.0,
+   "loop": true,
+   "rms_db": -27.19
+  },
+  "cook/eat/clink1": {
+   "prompt": "Spoon clinking once on a clay bowl",
+   "generation": "NabjWjSZ1XLNkbf2zSjt",
+   "seconds": 0.6,
+   "max_len": 0.6,
+   "rms_db": -30.41,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "cook/eat/clink2": {
+   "prompt": "Spoon clinking once on a clay bowl",
+   "generation": "flsqdtcl5ZJrIQpjVlHI",
+   "seconds": 0.6,
+   "max_len": 0.6,
+   "rms_db": -31.86,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "cook/eat/clink3": {
+   "prompt": "Spoon clinking once on a clay bowl",
+   "generation": "dgh78IWYM383ht4BGYI2",
+   "seconds": 0.6,
+   "max_len": 0.6,
+   "rms_db": -32.13,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "trade/board_stamp1": {
+   "prompt": "Wooden stamp thumped onto paper on a desk",
+   "generation": "Kav7YnhIhsft2r1B6uUJ",
+   "seconds": 0.7,
+   "max_len": 0.68,
+   "rms_db": -13.38,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "trade/board_stamp2": {
+   "prompt": "Wooden stamp thumped onto paper on a desk",
+   "generation": "cMvsWH1KyyxOoLpx2h1C",
+   "seconds": 0.7,
+   "max_len": 0.68,
+   "rms_db": -14.78,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "trade/board_stamp3": {
+   "prompt": "Wooden stamp thumped onto paper on a desk",
+   "generation": "RXesX7IvqUoWytc2gZX2",
+   "seconds": 0.7,
+   "max_len": 0.65,
+   "rms_db": -15.06,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "trade/seal_press1": {
+   "prompt": "Wax seal pressed onto parchment",
+   "generation": "v369F7QsrkR4eYPwEdIs",
+   "seconds": 1.0,
+   "max_len": 0.84,
+   "rms_db": -18.66,
+   "peak_db": -1.0
+  },
+  "trade/seal_press2": {
+   "prompt": "Wax seal pressed onto parchment",
+   "generation": "SHNq3r8fP8m0MaOghszb",
+   "seconds": 1.0,
+   "max_len": 0.91,
+   "rms_db": -19.3,
+   "peak_db": -1.0
+  },
+  "trade/ticket_peel1": {
+   "prompt": "Paper ticket peeled off a wooden notice board",
+   "generation": "Sj05NvF80CSnfiI6cqQT",
+   "seconds": 1.9,
+   "max_len": 1.75,
+   "rms_db": -25.99,
+   "peak_db": -1.0
+  },
+  "trade/ticket_peel2": {
+   "prompt": "Paper ticket peeled off a wooden notice board",
+   "generation": "LdirCSuwICcqYap29m7K",
+   "seconds": 1.9,
+   "max_len": 1.95,
+   "rms_db": -25.99,
+   "peak_db": -1.0
+  },
+  "trade/hourglass1": {
+   "prompt": "Hourglass turned over, fine sand running",
+   "generation": "2EzeSDaSLOoOgUb8OaJk",
+   "seconds": 1.6,
+   "max_len": 1.65,
+   "rms_db": -32.87,
+   "peak_db": -1.0
+  },
+  "trade/hourglass2": {
+   "prompt": "Hourglass turned over, fine sand running",
+   "generation": "2VjJfamg0aHHuBJ7Oa7M",
+   "seconds": 1.6,
+   "max_len": 1.64,
+   "rms_db": -33.25,
+   "peak_db": -1.0
+  },
+  "trade/tally_open1": {
+   "prompt": "Leather-bound ledger opened, creak and page flutter",
+   "generation": "iAMmxIgmgVJzcWYrfTWe",
+   "seconds": 1.2,
+   "max_len": 1.18,
+   "rms_db": -26.53,
+   "peak_db": -1.0
+  },
+  "trade/tally_open2": {
+   "prompt": "Leather-bound ledger opened, creak and page flutter",
+   "generation": "IJ33d2hRDKCdUSVYOCjz",
+   "seconds": 1.2,
+   "max_len": 1.03,
+   "rms_db": -25.97,
+   "peak_db": -1.0
+  },
+  "trade/tally_page1": {
+   "prompt": "Parchment page turned",
+   "generation": "LMO68XSlwLk1c7rpXkCQ",
+   "seconds": 0.8,
+   "max_len": 0.71,
+   "rms_db": -27.71,
+   "peak_db": -1.0
+  },
+  "trade/tally_page2": {
+   "prompt": "Parchment page turned",
+   "generation": "IlgmiBKwqlqWPH0mTIVO",
+   "seconds": 0.8,
+   "max_len": 0.67,
+   "rms_db": -26.62,
+   "peak_db": -1.0
+  },
+  "trade/tally_page3": {
+   "prompt": "Parchment page turned",
+   "generation": "zWn3aEonsWewEB3oAXqC",
+   "seconds": 0.8,
+   "max_len": 0.75,
+   "rms_db": -28.21,
+   "peak_db": -1.0
+  },
+  "trade/tally_notch1": {
+   "prompt": "Knife cutting a notch into a wooden tally stick",
+   "generation": "5NkWsGCQbop1bviiMeAl",
+   "seconds": 0.7,
+   "max_len": 0.6,
+   "rms_db": -26.86,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "trade/tally_notch2": {
+   "prompt": "Knife cutting a notch into a wooden tally stick",
+   "generation": "CRDI8GTlutlfivV1rxey",
+   "seconds": 0.7,
+   "max_len": 0.65,
+   "rms_db": -27.92,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "trade/tally_notch3": {
+   "prompt": "Knife cutting a notch into a wooden tally stick",
+   "generation": "zzQfSTXH1GGBLQIwyAIy",
+   "seconds": 0.7,
+   "max_len": 0.57,
+   "rms_db": -25.28,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "trade/report_file1": {
+   "prompt": "Paper slip slid into a wooden pigeonhole",
+   "generation": "IKpUczg6CgWlDEAnUCgt",
+   "seconds": 1.6,
+   "max_len": 1.42,
+   "rms_db": -25.85,
+   "peak_db": -1.0
+  },
+  "trade/report_file2": {
+   "prompt": "Paper slip slid into a wooden pigeonhole",
+   "generation": "Wr1j91MiosrIybNPYAHZ",
+   "seconds": 1.6,
+   "max_len": 1.58,
+   "rms_db": -26.0,
+   "peak_db": -1.0
+  },
+  "trade/knock1": {
+   "prompt": "Wooden tally stick knocked on a table",
+   "generation": "LuxB7PdYs9In1FtxSaIz",
+   "seconds": 0.6,
+   "max_len": 0.62,
+   "rms_db": -14.3,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "trade/knock2": {
+   "prompt": "Wooden tally stick knocked on a table",
+   "generation": "3s74e1wiTtzcBmjFpkSc",
+   "seconds": 0.6,
+   "max_len": 0.62,
+   "rms_db": -14.51,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "trade/knock3": {
+   "prompt": "Wooden tally stick knocked on a table",
+   "generation": "U3iTj229nsjAuyk3WM3o",
+   "seconds": 0.6,
+   "max_len": 0.6,
+   "rms_db": -13.86,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "trade/knock4": {
+   "prompt": "Wooden tally stick knocked on a table",
+   "generation": "A4qSNAtUvFJkjKIQ7qC0",
+   "seconds": 0.6,
+   "max_len": 0.59,
+   "rms_db": -14.32,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "trade/deliver1": {
+   "prompt": "Wooden crate set down on a wooden floor",
+   "generation": "1xnTKUoMK7uBUHGbZW3K",
+   "seconds": 0.8,
+   "max_len": 0.64,
+   "rms_db": -14.53,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "trade/deliver2": {
+   "prompt": "Wooden crate set down on a wooden floor",
+   "generation": "qb1S3qpDTrnqLzHn1Ntp",
+   "seconds": 0.8,
+   "max_len": 0.74,
+   "rms_db": -12.79,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "trade/deliver3": {
+   "prompt": "Wooden crate set down on a wooden floor",
+   "generation": "RWrwRFRJ6DtNQXYIcfsg",
+   "seconds": 0.8,
+   "max_len": 0.63,
+   "rms_db": -13.9,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "trade/bell_step1": {
+   "prompt": "Small bell on a pack mule tinkling once at a walk",
+   "generation": "AzEtrV6gmjfjvkzeMFCh",
+   "seconds": 1.1,
+   "max_len": 0.99,
+   "rms_db": -21.71,
+   "peak_db": -1.0
+  },
+  "trade/bell_step2": {
+   "prompt": "Small bell on a pack mule tinkling once at a walk",
+   "generation": "lTbP73MIX7cQVPmMeXMf",
+   "seconds": 1.1,
+   "max_len": 1.03,
+   "rms_db": -22.09,
+   "peak_db": -1.0
+  },
+  "trade/bell_step3": {
+   "prompt": "Small bell on a pack mule tinkling once at a walk",
+   "generation": "Ryz22cdEfZsSt3ixRbff",
+   "seconds": 1.1,
+   "max_len": 1.02,
+   "rms_db": -22.05,
+   "peak_db": -1.0
+  },
+  "trade/bell_trot1": {
+   "prompt": "Small bell on a pack mule jingling at a trot",
+   "generation": "8pMeGY5LDLrw4uSdVi5Z",
+   "seconds": 1.3,
+   "max_len": 1.2,
+   "rms_db": -21.5,
+   "peak_db": -1.0
+  },
+  "trade/bell_trot2": {
+   "prompt": "Small bell on a pack mule jingling at a trot",
+   "generation": "nPk0qThqumlhEsJgpj9p",
+   "seconds": 1.3,
+   "max_len": 1.3,
+   "rms_db": -22.07,
+   "peak_db": -1.0
+  },
+  "trade/bell_trot3": {
+   "prompt": "Small bell on a pack mule jingling at a trot",
+   "generation": "5gGySmKTtSdXYjgS4lIB",
+   "seconds": 1.3,
+   "max_len": 1.29,
+   "rms_db": -22.48,
+   "peak_db": -1.0
+  },
+  "trade/harness_buckle1": {
+   "prompt": "Leather harness buckled, metal buckle jingling",
+   "generation": "imdufGeIic2dlAvRh0IA",
+   "seconds": 1.2,
+   "max_len": 1.16,
+   "rms_db": -23.91,
+   "peak_db": -1.0
+  },
+  "trade/harness_buckle2": {
+   "prompt": "Leather harness buckled, metal buckle jingling",
+   "generation": "QBWyt9AJieciWvIzXG4h",
+   "seconds": 1.2,
+   "max_len": 1.2,
+   "rms_db": -23.75,
+   "peak_db": -1.0
+  },
+  "trade/whistle_come1": {
+   "prompt": "Person whistling to call an animal, two rising notes",
+   "generation": "jWDm6pjGJ5Oq66jJcPK0",
+   "seconds": 1.6,
+   "max_len": 1.65,
+   "rms_db": -17.89,
+   "peak_db": -1.0
+  },
+  "trade/whistle_come2": {
+   "prompt": "Person whistling to call an animal, two rising notes",
+   "generation": "NquOTLf4j5aNJqyi1ulW",
+   "seconds": 1.6,
+   "max_len": 1.65,
+   "rms_db": -18.17,
+   "peak_db": -1.0
+  },
+  "trade/whistle_stay1": {
+   "prompt": "Person whistling one low falling note to tell an animal to stay",
+   "generation": "4TqTMRcFgN0ULiNl73qg",
+   "seconds": 1.5,
+   "max_len": 1.5,
+   "rms_db": -17.61,
+   "peak_db": -1.0
+  },
+  "trade/whistle_stay2": {
+   "prompt": "Person whistling one low falling note to tell an animal to stay",
+   "generation": "rN0dxE1dxR3tGeXIQ2XN",
+   "seconds": 1.5,
+   "max_len": 1.5,
+   "rms_db": -17.44,
+   "peak_db": -1.0
+  },
+  "trade/cart_creak1": {
+   "prompt": "Wooden handcart creaking as it rolls, rhythmic wooden creak of the axle, continuous",
+   "generation": "JK0yxRcMXsSYO09LlB4z",
+   "seconds": 14.56,
+   "loop": true,
+   "rms_db": -25.01
+  },
+  "trade/shafts_lift1": {
+   "prompt": "Wooden cart shafts lifted, wood creak",
+   "generation": "BSEE7pl2cOeyx12yQxvY",
+   "seconds": 1.5,
+   "max_len": 1.5,
+   "rms_db": -21.48,
+   "peak_db": -1.0
+  },
+  "trade/shafts_lift2": {
+   "prompt": "Wooden cart shafts lifted, wood creak",
+   "generation": "Hkvd73Y2ql5kQT2mNBC2",
+   "seconds": 1.5,
+   "max_len": 1.5,
+   "rms_db": -22.03,
+   "peak_db": -1.0
+  },
+  "trade/shafts_drop1": {
+   "prompt": "Wooden cart shafts clattering down onto the ground",
+   "generation": "IyQAtpsTruwvUxkHm3eb",
+   "seconds": 1.3,
+   "max_len": 1.27,
+   "rms_db": -19.07,
+   "peak_db": -1.0
+  },
+  "trade/shafts_drop2": {
+   "prompt": "Wooden cart shafts clattering down onto the ground",
+   "generation": "xAoZvDkATHj60WHLIUKZ",
+   "seconds": 1.3,
+   "max_len": 1.32,
+   "rms_db": -20.09,
+   "peak_db": -1.0
+  },
+  "trade/canvas_flap1": {
+   "prompt": "Canvas cover flapping in the wind",
+   "generation": "VJhulXpcJTFA7X6HEh7n",
+   "seconds": 2.0,
+   "max_len": 2.1,
+   "rms_db": -25.82,
+   "peak_db": -1.0
+  },
+  "trade/canvas_flap2": {
+   "prompt": "Canvas cover flapping in the wind",
+   "generation": "PN4tmMS4Xs7JkydzBEny",
+   "seconds": 2.0,
+   "max_len": 2.02,
+   "rms_db": -24.95,
+   "peak_db": -1.0
+  },
+  "trade/tailboard1": {
+   "prompt": "Wooden cart tailboard falling open and caught on its chains",
+   "generation": "txBrndFIHm2H5RrrYgbr",
+   "seconds": 1.6,
+   "max_len": 1.65,
+   "rms_db": -21.55,
+   "peak_db": -1.0
+  },
+  "trade/tailboard2": {
+   "prompt": "Wooden cart tailboard falling open and caught on its chains",
+   "generation": "DPOKz96ospxck7G9zSDC",
+   "seconds": 1.6,
+   "max_len": 1.48,
+   "rms_db": -19.93,
+   "peak_db": -1.0
+  },
+  "trade/rein_slack1": {
+   "prompt": "Leather rein going slack, soft leather slap",
+   "generation": "TlAQLOzI07dV4p5khW43",
+   "seconds": 1.4,
+   "max_len": 1.35,
+   "rms_db": -26.37,
+   "peak_db": -1.0
+  },
+  "trade/rein_slack2": {
+   "prompt": "Leather rein going slack, soft leather slap",
+   "generation": "0tkCnQE9jnqtcMkumN7p",
+   "seconds": 1.4,
+   "max_len": 1.35,
+   "rms_db": -25.59,
+   "peak_db": -1.0
+  },
+  "trade/wagon_brake1": {
+   "prompt": "Wagon brake squealing",
+   "generation": "6iliyADgN2FCJVGH3KDr",
+   "seconds": 2.2,
+   "max_len": 2.16,
+   "rms_db": -23.14,
+   "peak_db": -1.0
+  },
+  "trade/wagon_brake2": {
+   "prompt": "Wagon brake squealing",
+   "generation": "EbwREJ30F34OvBscCOWH",
+   "seconds": 2.2,
+   "max_len": 2.36,
+   "rms_db": -23.26,
+   "peak_db": -1.0
+  },
+  "trade/hunt_horn1": {
+   "prompt": "Outlaw hunting horn sounding from a distant hill",
+   "generation": "HJrPXjYZxmraomkSWidY",
+   "seconds": 7.1,
+   "max_len": 7.95,
+   "rms_db": -17.48,
+   "peak_db": -1.0
+  },
+  "trade/hunt_horn2": {
+   "prompt": "Outlaw hunting horn sounding from a distant hill",
+   "generation": "9LdLbtWMexcQYSxkOmDD",
+   "seconds": 7.1,
+   "max_len": 7.95,
+   "rms_db": -17.37,
+   "peak_db": -1.0
+  },
+  "trade/sack_lift1": {
+   "prompt": "Heavy sack heaved up onto a shoulder",
+   "generation": "boijxrJnLmMN7rapyoTK",
+   "seconds": 1.4,
+   "max_len": 1.31,
+   "rms_db": -24.13,
+   "peak_db": -1.0
+  },
+  "trade/sack_lift2": {
+   "prompt": "Heavy sack heaved up onto a shoulder",
+   "generation": "MPqk268IBmylMTSK5pbX",
+   "seconds": 1.4,
+   "max_len": 1.33,
+   "rms_db": -23.79,
+   "peak_db": -1.0
+  },
+  "trade/warrant_seal1": {
+   "prompt": "Wax seal stamped onto a warrant, firm thud",
+   "generation": "oOasXSoEsmeiqgbxJpND",
+   "seconds": 1.6,
+   "max_len": 1.35,
+   "rms_db": -18.78,
+   "peak_db": -1.0
+  },
+  "trade/warrant_seal2": {
+   "prompt": "Wax seal stamped onto a warrant, firm thud",
+   "generation": "pv5SPYCrrgal4H7PpmDB",
+   "seconds": 1.6,
+   "max_len": 1.58,
+   "rms_db": -18.96,
+   "peak_db": -1.0
+  },
+  "trade/store_key1": {
+   "prompt": "Large iron key turning in an old lock, click",
+   "generation": "rwenl6YkE4PXd8vrE5R2",
+   "seconds": 2.3,
+   "max_len": 1.46,
+   "rms_db": -23.7,
+   "peak_db": -1.0
+  },
+  "trade/store_key2": {
+   "prompt": "Large iron key turning in an old lock, click",
+   "generation": "owsoiXqATVL7GhadTp9m",
+   "seconds": 2.3,
+   "max_len": 2.39,
+   "rms_db": -22.52,
+   "peak_db": -1.0
+  },
+  "trade/scale_settle1": {
+   "prompt": "Brass balance scale beam settling, its pans rattling on their chains",
+   "generation": "Wsmr7TC4mT6KiyzoU2Sy",
+   "seconds": 2.6,
+   "max_len": 1.59,
+   "rms_db": -25.27,
+   "peak_db": -1.0
+  },
+  "trade/scale_settle2": {
+   "prompt": "Brass balance scale beam settling, its pans rattling on their chains",
+   "generation": "UCM0sa7bbOuGg9wffh6Z",
+   "seconds": 2.6,
+   "max_len": 2.78,
+   "rms_db": -27.54,
+   "peak_db": -1.0
+  },
+  "trade/strongbox1": {
+   "prompt": "Iron strongbox lid opening, coins jingling inside",
+   "generation": "gKbNcQgDSbfGPttxrRX1",
+   "seconds": 2.7,
+   "max_len": 2.85,
+   "rms_db": -24.0,
+   "peak_db": -1.0
+  },
+  "trade/strongbox2": {
+   "prompt": "Iron strongbox lid opening, coins jingling inside",
+   "generation": "y81BKyGW8pVhos1l2oWs",
+   "seconds": 2.7,
+   "max_len": 2.64,
+   "rms_db": -26.38,
+   "peak_db": -1.0
+  },
+  "trade/beads1": {
+   "prompt": "Wooden counting beads sliding and clicking on an abacus",
+   "generation": "XufP7lBViEz0TxR5xqUP",
+   "seconds": 0.9,
+   "max_len": 0.64,
+   "rms_db": -25.53,
+   "peak_db": -1.0
+  },
+  "trade/beads2": {
+   "prompt": "Wooden counting beads sliding and clicking on an abacus",
+   "generation": "RpZYhCMp0tqtAt5uO4VJ",
+   "seconds": 0.9,
+   "max_len": 0.82,
+   "rms_db": -26.46,
+   "peak_db": -1.0
+  },
+  "trade/beads3": {
+   "prompt": "Wooden counting beads sliding and clicking on an abacus",
+   "generation": "Vt9RmTFTXNUWXNLO6DQ6",
+   "seconds": 0.9,
+   "max_len": 0.85,
+   "rms_db": -27.65,
+   "peak_db": -1.0
+  },
+  "trade/house_bell1": {
+   "prompt": "Shop door bell ringing over a door",
+   "generation": "Fc1IDayNOHutExn0OpuG",
+   "seconds": 4.6,
+   "max_len": 5.1,
+   "rms_db": -20.09,
+   "peak_db": -1.0
+  },
+  "trade/house_bell2": {
+   "prompt": "Shop door bell ringing over a door",
+   "generation": "wOeijcBCJ9fODLaLpZJ6",
+   "seconds": 4.6,
+   "max_len": 5.1,
+   "rms_db": -20.77,
+   "peak_db": -1.0
+  },
+  "trade/carter_hail1": {
+   "prompt": "Man calling out a loud short wordless hail to someone down a road, outdoors",
+   "generation": "QIwI13YFdGpgou4bkqcn",
+   "seconds": 1.6,
+   "max_len": 1.65,
+   "rms_db": -20.35,
+   "peak_db": -1.0
+  },
+  "trade/carter_hail2": {
+   "prompt": "Man calling out a loud short wordless hail to someone down a road, outdoors",
+   "generation": "CzfCrPeSsttKVvx677fJ",
+   "seconds": 1.6,
+   "max_len": 1.4,
+   "rms_db": -19.28,
+   "peak_db": -1.0
+  },
+  "trade/cheer1": {
+   "prompt": "Crowd of townsfolk cheering, short, no words",
+   "generation": "E9jEfJ5qlbylNI11CcbL",
+   "seconds": 2.6,
+   "max_len": 2.8,
+   "rms_db": -19.43,
+   "peak_db": -1.0
+  },
+  "trade/cheer2": {
+   "prompt": "Crowd of townsfolk cheering, short, no words",
+   "generation": "cLMHoMIqgdtSR0XpRQAU",
+   "seconds": 2.6,
+   "max_len": 2.73,
+   "rms_db": -19.41,
+   "peak_db": -1.0
+  },
+  "stall/rent1": {
+   "prompt": "Coins counted onto a wooden market counter",
+   "generation": "1BsMlE7NO6zn3ZqHAU4x",
+   "seconds": 1.9,
+   "max_len": 1.95,
+   "rms_db": -20.77,
+   "peak_db": -1.0
+  },
+  "stall/pennant1": {
+   "prompt": "Cloth pennant unfurling in the wind, flap",
+   "generation": "rCw6Vn66FF5pzBagF54D",
+   "seconds": 1.6,
+   "max_len": 1.65,
+   "rms_db": -25.39,
+   "peak_db": -1.0
+  },
+  "stall/pennant2": {
+   "prompt": "Cloth pennant unfurling in the wind, flap",
+   "generation": "whmn2Vx1iaLVJIXj1aL1",
+   "seconds": 1.6,
+   "max_len": 1.65,
+   "rms_db": -24.66,
+   "peak_db": -1.0
+  },
+  "homestead/purse1": {
+   "prompt": "Coins counted out from a leather purse",
+   "generation": "YOnipUZVhTKrSLf4q0Fu",
+   "seconds": 1.8,
+   "max_len": 1.89,
+   "rms_db": -25.25,
+   "peak_db": -1.0
+  },
+  "homestead/claim1": {
+   "prompt": "Wax seal pressed onto a parchment charter, paper rustle",
+   "generation": "egDZA9rwEQTZJh5nuOC5",
+   "seconds": 3.7,
+   "max_len": 4.09,
+   "rms_db": -21.43,
+   "peak_db": -1.0
+  },
+  "homestead/refuse1": {
+   "prompt": "Two soft wooden marimba notes stepping down, polite and quiet",
+   "generation": "mV1YkRU6kwZoPXz8qZ2L",
+   "seconds": 0.9,
+   "max_len": 0.77,
+   "rms_db": -20.49,
+   "peak_db": -1.0
+  },
+  "homestead/refuse2": {
+   "prompt": "Two soft wooden marimba notes stepping down, polite and quiet",
+   "generation": "OJdJywRKJkqHlk3qzv8B",
+   "seconds": 0.9,
+   "max_len": 0.81,
+   "rms_db": -19.96,
+   "peak_db": -1.0
+  },
+  "homestead/arrive1": {
+   "prompt": "Builders' brass handbell ringing",
+   "generation": "SLlUANnZ8CAtAOj7vSwr",
+   "seconds": 4.6,
+   "max_len": 5.1,
+   "rms_db": -21.99,
+   "peak_db": -1.0
+  },
+  "homestead/cheer1": {
+   "prompt": "Small group of builders cheering, no words",
+   "generation": "Q0etNzWCTHEj1VhTYxqI",
+   "seconds": 1.9,
+   "max_len": 1.95,
+   "rms_db": -18.2,
+   "peak_db": -1.0
+  },
+  "homestead/cheer2": {
+   "prompt": "Small group of builders cheering, no words",
+   "generation": "NY1FnNwjQZrlOS9QLWQm",
+   "seconds": 1.9,
+   "max_len": 1.97,
+   "rms_db": -19.63,
+   "peak_db": -1.0
+  },
+  "homestead/topping1": {
+   "prompt": "Builders cheering loudly at a topping-out, celebration, no words",
+   "generation": "GkRA9Y4mnuSMggh3KUrG",
+   "seconds": 5.1,
+   "max_len": 5.7,
+   "rms_db": -20.15,
+   "peak_db": -1.0
+  },
+  "homestead/ledger1": {
+   "prompt": "Leather ledger opened",
+   "generation": "g3Lf6fMgJbRiRU2ERlXI",
+   "seconds": 1.9,
+   "max_len": 1.95,
+   "rms_db": -25.17,
+   "peak_db": -1.0
+  },
+  "ui/open1": {
+   "prompt": "Parchment sheet unfolding with a soft bright chime, gentle fantasy menu sound",
+   "generation": "rQxZH9XSPSmOaagtSSwe",
+   "seconds": 1.0,
+   "max_len": 0.9,
+   "rms_db": -15.53,
+   "peak_db": -1.0
+  },
+  "ui/close1": {
+   "prompt": "Parchment folded shut with a soft wooden knock, gentle fantasy menu sound",
+   "generation": "4ENf0kj11QqlH9Tkvfx1",
+   "seconds": 0.7,
+   "max_len": 0.65,
+   "rms_db": -13.77,
+   "peak_db": -1.0
+  },
+  "ui/select1": {
+   "prompt": "Two soft bright bell chimes, rising, gentle fantasy menu confirm",
+   "generation": "G0NSsCgtOMr9jZT8ob7G",
+   "seconds": 1.4,
+   "max_len": 1.35,
+   "rms_db": -14.77,
+   "peak_db": -1.0
+  },
+  "ui/page1": {
+   "prompt": "Parchment page turned quickly",
+   "generation": "XQhUJiFgTnIcNiSCzhEr",
+   "seconds": 0.7,
+   "max_len": 0.72,
+   "rms_db": -18.17,
+   "peak_db": -1.0
+  },
+  "ui/page2": {
+   "prompt": "Parchment page turned quickly",
+   "generation": "QSGUuZuE9D6anUsH83gd",
+   "seconds": 0.7,
+   "max_len": 0.72,
+   "rms_db": -19.01,
+   "peak_db": -1.0
+  },
+  "ui/seal1": {
+   "prompt": "Wax seal pressed onto a page, soft heavy thud and sticky lift",
+   "generation": "N6B0lPlzu043B0PicXDa",
+   "seconds": 0.8,
+   "max_len": 0.76,
+   "rms_db": -15.79,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "ui/death_toll1": {
+   "prompt": "Great bell tolling once far off over a low ominous swell",
+   "generation": "jmVP2yLyocEqRkB8qAlv",
+   "seconds": 6.7,
+   "max_len": 7.5,
+   "rms_db": -20.29,
+   "peak_db": -1.0
+  },
+  "wardfire/kindle1": {
+   "prompt": "Magical bonfire kindling, flames roaring up with a warm mystical shimmer",
+   "generation": "UMfL0h1ROEoibBc6uapx",
+   "seconds": 4.1,
+   "max_len": 4.5,
+   "rms_db": -17.96,
+   "peak_db": -1.0
+  },
+  "wardfire/rest1": {
+   "prompt": "Magical bonfire flaring brightly, whoosh of flame with a warm shimmer",
+   "generation": "kqKXQh0bzqbojiePwbmn",
+   "seconds": 3.6,
+   "max_len": 3.9,
+   "rms_db": -17.36,
+   "peak_db": -1.0
+  },
+  "wardfire/travel1": {
+   "prompt": "Teleporting through magical fire, swirling whoosh of flames",
+   "generation": "2dLF6yxRFNSTaV2ZuTH0",
+   "seconds": 2.8,
+   "max_len": 3.0,
+   "rms_db": -18.52,
+   "peak_db": -1.0
+  },
+  "flask/drink1": {
+   "prompt": "Person drinking from a flask, two gulps",
+   "generation": "dacKlEm5NcGxiNDCcqiX",
+   "seconds": 1.6,
+   "max_len": 1.5,
+   "rms_db": -14.63,
+   "peak_db": -1.0
+  },
+  "flask/drink2": {
+   "prompt": "Person drinking from a flask, two gulps",
+   "generation": "ZqaBk2GkiyS95OJpmPDV",
+   "seconds": 1.6,
+   "max_len": 1.56,
+   "rms_db": -16.72,
+   "peak_db": -1.0
+  },
+  "marks/recover1": {
+   "prompt": "Ghostly coins gathered back, mystical shimmer with clinking coins",
+   "generation": "xYYlzgNhJKo1520jQTmH",
+   "seconds": 1.8,
+   "max_len": 1.85,
+   "rms_db": -18.8,
+   "peak_db": -1.0
+  },
+  "dungeon/mist_pass1": {
+   "prompt": "Magical mist parting, airy whoosh with soft shimmer",
+   "generation": "zI9qDFJyAxvC9TlPwKXJ",
+   "seconds": 2.5,
+   "max_len": 2.7,
+   "rms_db": -18.92,
+   "peak_db": -1.0
+  },
+  "dungeon/mist_deny1": {
+   "prompt": "Magical mist barrier holding fast, dull muffled thud and dark hum",
+   "generation": "MnVjyPX6Yr8TmEKkRBFF",
+   "seconds": 1.9,
+   "max_len": 1.95,
+   "rms_db": -15.43,
+   "peak_db": -1.0
+  },
+  "dungeon/stir1": {
+   "prompt": "Something large stirring deep in a dark dungeon, distant low growl and shifting stone",
+   "generation": "OESHmjFEDoUQSwLBkvW7",
+   "seconds": 3.3,
+   "max_len": 3.6,
+   "rms_db": -15.14,
+   "peak_db": -1.0
+  },
+  "dungeon/stir2": {
+   "prompt": "Something large stirring deep in a dark dungeon, distant low growl and shifting stone",
+   "generation": "yZQCJUsRpR4KXbMPMEgl",
+   "seconds": 3.3,
+   "max_len": 3.6,
+   "rms_db": -15.49,
+   "peak_db": -1.0
+  },
+  "magic/arcane_charge1": {
+   "prompt": "Arcane magic gathering, rising crackling electric hum",
+   "generation": "DYzQ7ABV7Aeiz1wxg74y",
+   "seconds": 1.8,
+   "max_len": 1.8,
+   "rms_db": -18.25,
+   "peak_db": -1.0
+  },
+  "magic/arc_bolt_impact1": {
+   "prompt": "Lightning bolt striking, electric crack burst",
+   "generation": "96puKRbcAnb1hTMACPO4",
+   "seconds": 0.9,
+   "max_len": 0.82,
+   "rms_db": -18.19,
+   "peak_db": -1.0
+  },
+  "magic/arc_bolt_impact2": {
+   "prompt": "Lightning bolt striking, electric crack burst",
+   "generation": "H7Z0EmNBHU10Q4EgWtqh",
+   "seconds": 0.9,
+   "max_len": 0.8,
+   "rms_db": -17.01,
+   "peak_db": -1.0
+  },
+  "magic/splinter_cast1": {
+   "prompt": "Magic crystal shards flying, quick sharp whoosh",
+   "generation": "SLJfFE37mTbnP4klJLPU",
+   "seconds": 0.9,
+   "max_len": 0.82,
+   "rms_db": -18.21,
+   "peak_db": -1.0
+  },
+  "magic/splinter_cast2": {
+   "prompt": "Magic crystal shards flying, quick sharp whoosh",
+   "generation": "aeBiVNYqFF4hErUwFBIU",
+   "seconds": 0.9,
+   "max_len": 0.8,
+   "rms_db": -18.96,
+   "peak_db": -1.0
+  },
+  "magic/rime_cast1": {
+   "prompt": "Ice lance spell cast, frosty crackling whoosh",
+   "generation": "wslT9HhsPuc3ywOSKrCr",
+   "seconds": 1.0,
+   "max_len": 0.93,
+   "rms_db": -18.26,
+   "peak_db": -1.0
+  },
+  "magic/rime_cast2": {
+   "prompt": "Ice lance spell cast, frosty crackling whoosh",
+   "generation": "5JV8Vv54aas13uViqmu2",
+   "seconds": 1.0,
+   "max_len": 0.9,
+   "rms_db": -18.68,
+   "peak_db": -1.0
+  },
+  "magic/rime_impact1": {
+   "prompt": "Ice shattering on impact",
+   "generation": "wGfWJhTWD1g7a0P45Q4x",
+   "seconds": 1.1,
+   "max_len": 1.08,
+   "rms_db": -16.59,
+   "peak_db": -1.0
+  },
+  "magic/rime_impact2": {
+   "prompt": "Ice shattering on impact",
+   "generation": "q1xZE4TI3Zh50drRrkOM",
+   "seconds": 1.1,
+   "max_len": 1.05,
+   "rms_db": -16.74,
+   "peak_db": -1.0
+  },
+  "magic/undertow_open1": {
+   "prompt": "Magical water vortex opening, swirling rush",
+   "generation": "8JwJAHZBuYpfJRb4rmSr",
+   "seconds": 1.3,
+   "max_len": 1.27,
+   "rms_db": -16.94,
+   "peak_db": -1.0
+  },
+  "magic/undertow_loop1": {
+   "prompt": "Magical water vortex churning and swirling",
+   "generation": "OsHcCr8wf5aHXqrzq0bg",
+   "seconds": 4.1,
+   "max_len": 4.49,
+   "rms_db": -21.12,
+   "peak_db": -1.0
+  },
+  "magic/flicker1": {
+   "prompt": "Short magical teleport blink, quick airy zip",
+   "generation": "esQbHkUOfoNSKmB1uZF7",
+   "seconds": 0.7,
+   "max_len": 0.72,
+   "rms_db": -16.34,
+   "peak_db": -1.0
+  },
+  "magic/flicker2": {
+   "prompt": "Short magical teleport blink, quick airy zip",
+   "generation": "jZXjfbSZwGh4mRExyrbJ",
+   "seconds": 0.7,
+   "max_len": 0.7,
+   "rms_db": -16.4,
+   "peak_db": -1.0
+  },
+  "magic/star_call1": {
+   "prompt": "Calling down a star, rising celestial shimmer",
+   "generation": "x79asNoKaa41UDIJdMbC",
+   "seconds": 2.2,
+   "max_len": 2.25,
+   "rms_db": -18.15,
+   "peak_db": -1.0
+  },
+  "magic/star_fall1": {
+   "prompt": "Falling star whistling down through the air",
+   "generation": "7PsB63epQ2q0C9fSjrjd",
+   "seconds": 1.1,
+   "max_len": 1.07,
+   "rms_db": -16.86,
+   "peak_db": -1.0
+  },
+  "magic/star_impact1": {
+   "prompt": "Star crashing into the ground, explosive impact with celestial shimmer",
+   "generation": "RdyBV0X6F8w0ctCuVI6s",
+   "seconds": 2.8,
+   "max_len": 3.0,
+   "rms_db": -16.62,
+   "peak_db": -1.0
+  },
+  "magic/star_impact2": {
+   "prompt": "Star crashing into the ground, explosive impact with celestial shimmer",
+   "generation": "FdyzpOzY07MKXBwkmDJo",
+   "seconds": 2.8,
+   "max_len": 3.0,
+   "rms_db": -15.41,
+   "peak_db": -1.0
+  },
+  "magic/prayer_charge1": {
+   "prompt": "Holy prayer gathering, rising angelic shimmer",
+   "generation": "qTJxoZP0Rdiyo11R1TKY",
+   "seconds": 1.8,
+   "max_len": 1.8,
+   "rms_db": -18.08,
+   "peak_db": -1.0
+  },
+  "magic/hearthlight1": {
+   "prompt": "Warm holy light glowing, soft radiant hum",
+   "generation": "gIgNdyIY9myeSZQ8aZPQ",
+   "seconds": 2.2,
+   "max_len": 2.33,
+   "rms_db": -18.88,
+   "peak_db": -1.0
+  },
+  "magic/hearthlight2": {
+   "prompt": "Warm holy light glowing, soft radiant hum",
+   "generation": "MHmfZ7n3AzHaQpkFC7Ly",
+   "seconds": 2.2,
+   "max_len": 2.25,
+   "rms_db": -17.46,
+   "peak_db": -1.0
+  },
+  "magic/flare1": {
+   "prompt": "Holy flare bursting, bright whoosh of light",
+   "generation": "KDkocJzIso65kyynS2Hs",
+   "seconds": 1.1,
+   "max_len": 1.11,
+   "rms_db": -17.33,
+   "peak_db": -1.0
+  },
+  "magic/flare2": {
+   "prompt": "Holy flare bursting, bright whoosh of light",
+   "generation": "Kjol8XZrTW4xEoKcOOQH",
+   "seconds": 1.1,
+   "max_len": 1.08,
+   "rms_db": -17.28,
+   "peak_db": -1.0
+  },
+  "magic/vigil1": {
+   "prompt": "Holy flame kindling, soft warm whoosh and shimmer",
+   "generation": "3y7L7DwqWMzl5irNnKCa",
+   "seconds": 2.3,
+   "max_len": 2.4,
+   "rms_db": -18.23,
+   "peak_db": -1.0
+  },
+  "magic/wayflame_cast1": {
+   "prompt": "Fireball spell loosed, whoosh of flame",
+   "generation": "DCI3mpw0XFsJNsYhOHqz",
+   "seconds": 0.9,
+   "max_len": 0.82,
+   "rms_db": -18.67,
+   "peak_db": -1.0
+  },
+  "magic/wayflame_cast2": {
+   "prompt": "Fireball spell loosed, whoosh of flame",
+   "generation": "b5E8zhdVK61SY9JzlHP6",
+   "seconds": 0.9,
+   "max_len": 0.8,
+   "rms_db": -18.09,
+   "peak_db": -1.0
+  },
+  "magic/wayflame_impact1": {
+   "prompt": "Fireball bursting on impact, fiery explosion",
+   "generation": "jjf9edLEXySOWR7mFq2A",
+   "seconds": 1.0,
+   "max_len": 0.96,
+   "rms_db": -19.43,
+   "peak_db": -1.0
+  },
+  "magic/wayflame_impact2": {
+   "prompt": "Fireball bursting on impact, fiery explosion",
+   "generation": "80qJykZ0cc2wXnex7vuD",
+   "seconds": 1.0,
+   "max_len": 0.9,
+   "rms_db": -18.41,
+   "peak_db": -1.0
+  },
+  "magic/hallowed_ground1": {
+   "prompt": "Ground being hallowed, deep holy resonance spreading out",
+   "generation": "fzUt0xH2UR3s8nlSNE6l",
+   "seconds": 2.8,
+   "max_len": 3.0,
+   "rms_db": -17.51,
+   "peak_db": -1.0
+  },
+  "magic/dawnburst1": {
+   "prompt": "Burst of radiant holy light, bright swelling whoosh",
+   "generation": "iw0InSCtvKYpBmoHQIur",
+   "seconds": 2.8,
+   "max_len": 3.0,
+   "rms_db": -17.73,
+   "peak_db": -1.0
+  },
+  "magic/learn1": {
+   "prompt": "Spell learned, magical sparkling chime",
+   "generation": "EjzFd22E3sF27CnNpNId",
+   "seconds": 1.5,
+   "max_len": 1.5,
+   "rms_db": -17.98,
+   "peak_db": -1.0
+  },
+  "magic/attune1": {
+   "prompt": "Spells attuned, soft magical shimmer",
+   "generation": "L2XLc1uZQZ8cAUl9GxFh",
+   "seconds": 1.5,
+   "max_len": 1.5,
+   "rms_db": -19.7,
+   "peak_db": -1.0
+  },
+  "magic/fizzle1": {
+   "prompt": "Spell fizzling out, sputtering puff",
+   "generation": "t9AXCaFABa0KbNL5n5ph",
+   "seconds": 0.7,
+   "max_len": 0.7,
+   "rms_db": -26.52,
+   "peak_db": -1.0
+  },
+  "ambience/bell_great1": {
+   "prompt": "Great cathedral bell tolling once, deep and long, heard across a city",
+   "generation": "uAFzFl0q85fDX4TfWBLO",
+   "seconds": 10.0,
+   "max_len": 11.32,
+   "rms_db": -17.86,
+   "peak_db": -1.0
+  },
+  "ambience/bell_great2": {
+   "prompt": "Great cathedral bell tolling once far away, soft and distant",
+   "generation": "HUVvEBK1pTFLbzGw3gip",
+   "seconds": 10.4,
+   "max_len": 11.77,
+   "rms_db": -18.18,
+   "peak_db": -1.0
+  },
+  "ambience/bell_chime1": {
+   "prompt": "Church bells chiming a short peal",
+   "generation": "5ICZ0gS3fozLzj9COiOA",
+   "seconds": 13.2,
+   "max_len": 15.0,
+   "rms_db": -19.02,
+   "peak_db": -1.0
+  },
+  "ambience/bell_town1": {
+   "prompt": "Town bell tolling once",
+   "generation": "TaKrftIKgpzB7XPwbw7c",
+   "seconds": 5.5,
+   "max_len": 6.06,
+   "rms_db": -19.26,
+   "peak_db": -1.0
+  },
+  "ambience/bell_town2": {
+   "prompt": "Town bell tolling once in the distance",
+   "generation": "UBDBqzDTHBm0w6FByJbd",
+   "seconds": 5.1,
+   "max_len": 5.69,
+   "rms_db": -18.99,
+   "peak_db": -1.0
+  },
+  "ambience/ship_bell1": {
+   "prompt": "Ship's bell rung twice in a harbour",
+   "generation": "ACwqmmmdy2TlUwrpIebV",
+   "seconds": 4.0,
+   "max_len": 4.39,
+   "rms_db": -17.82,
+   "peak_db": -1.0
+  },
+  "ambience/bellows1": {
+   "prompt": "Blacksmith's bellows blowing into a forge, whoosh",
+   "generation": "wIFNDHqSOJ2SrSrcT6F0",
+   "seconds": 3.3,
+   "max_len": 3.3,
+   "rms_db": -21.14,
+   "peak_db": -1.0
+  },
+  "ambience/bellows2": {
+   "prompt": "Blacksmith's bellows blowing into a forge, whoosh",
+   "generation": "PjlBiz0BpsMpqWdCUJGv",
+   "seconds": 3.3,
+   "max_len": 3.6,
+   "rms_db": -21.19,
+   "peak_db": -1.0
+  },
+  "ambience/quench1": {
+   "prompt": "Hot steel quenched in water, loud hiss and steam",
+   "generation": "I8szlCOH0vkEPbEM34HV",
+   "seconds": 4.1,
+   "max_len": 4.05,
+   "rms_db": -24.24,
+   "peak_db": -1.0
+  },
+  "ambience/quench2": {
+   "prompt": "Hot steel quenched in water, loud hiss and steam",
+   "generation": "8KQjhLPQthkU9SPz3DCY",
+   "seconds": 4.1,
+   "max_len": 4.5,
+   "rms_db": -23.26,
+   "peak_db": -1.0
+  },
+  "ambience/grindstone1": {
+   "prompt": "Blade sharpened on a turning grindstone, metallic grinding",
+   "generation": "aD4zxi6SkKke3g5ADXWf",
+   "seconds": 4.5,
+   "max_len": 4.95,
+   "rms_db": -23.86,
+   "peak_db": -1.0
+  },
+  "ambience/grindstone2": {
+   "prompt": "Blade sharpened on a turning grindstone, metallic grinding",
+   "generation": "MDajLXf0xm0xwAtAfNUP",
+   "seconds": 4.5,
+   "max_len": 4.5,
+   "rms_db": -25.93,
+   "peak_db": -1.0
+  },
+  "ambience/saw1": {
+   "prompt": "Carpenter sawing a plank by hand",
+   "generation": "5VTa47fcKDuYBQiXwxDn",
+   "seconds": 5.5,
+   "max_len": 6.16,
+   "rms_db": -28.66,
+   "peak_db": -1.0
+  },
+  "ambience/saw2": {
+   "prompt": "Carpenter sawing a plank by hand",
+   "generation": "AupC5OoKyf9B5tWjDBLO",
+   "seconds": 5.5,
+   "max_len": 5.05,
+   "rms_db": -28.99,
+   "peak_db": -1.0
+  },
+  "ambience/wood_knock1": {
+   "prompt": "Carpenter's hammer knocking on wood, a few knocks",
+   "generation": "zXyeBquDS4BKV2bAwedp",
+   "seconds": 3.4,
+   "max_len": 3.3,
+   "rms_db": -21.08,
+   "peak_db": -1.0
+  },
+  "ambience/wood_knock2": {
+   "prompt": "Carpenter's hammer knocking on wood, a few knocks",
+   "generation": "eTR6spLQlidI7gKMNuf6",
+   "seconds": 3.4,
+   "max_len": 3.65,
+   "rms_db": -19.9,
+   "peak_db": -1.0
+  },
+  "ambience/cart1": {
+   "prompt": "Wooden cart rattling past on cobblestones",
+   "generation": "eYBxMSHX6PjycHupOlGI",
+   "seconds": 7.7,
+   "max_len": 8.7,
+   "rms_db": -23.43,
+   "peak_db": -1.0
+  },
+  "ambience/cart2": {
+   "prompt": "Wooden cart rattling past on cobblestones",
+   "generation": "wuepDVA7BHes4sbe0d2y",
+   "seconds": 7.7,
+   "max_len": 7.5,
+   "rms_db": -23.34,
+   "peak_db": -1.0
+  },
+  "ambience/flag1": {
+   "prompt": "Banner flapping in the wind",
+   "generation": "Dr7Zc9Cv50lYDWHVTfk2",
+   "seconds": 3.5,
+   "max_len": 2.25,
+   "rms_db": -25.59,
+   "peak_db": -1.0
+  },
+  "ambience/flag2": {
+   "prompt": "Banner flapping in the wind",
+   "generation": "Yd66i2cMsxN26taRObvi",
+   "seconds": 3.5,
+   "max_len": 3.0,
+   "rms_db": -25.51,
+   "peak_db": -1.0
+  },
+  "ambience/flag3": {
+   "prompt": "Banner flapping in the wind",
+   "generation": "Jf9YxMhKOy6uERMBRkB0",
+   "seconds": 3.5,
+   "max_len": 3.75,
+   "rms_db": -26.29,
+   "peak_db": -1.0
+  },
+  "ambience/dog_far1": {
+   "prompt": "Dog barking far off across a village",
+   "generation": "LjLJBzpNg6EUR8fje7O4",
+   "seconds": 2.8,
+   "max_len": 3.0,
+   "rms_db": -23.43,
+   "peak_db": -1.0
+  },
+  "ambience/dog_far2": {
+   "prompt": "Dog barking far off across a village",
+   "generation": "HXlxJ0rp8goBlp4pHDgS",
+   "seconds": 2.8,
+   "max_len": 3.0,
+   "rms_db": -25.26,
+   "peak_db": -1.0
+  },
+  "ambience/dog_far3": {
+   "prompt": "Dog barking far off across a village",
+   "generation": "0PWz7DFpMHbXieKAIAT7",
+   "seconds": 2.8,
+   "max_len": 3.0,
+   "rms_db": -24.65,
+   "peak_db": -1.0
+  },
+  "ambience/hammer_far1": {
+   "prompt": "Hammering far off across a village",
+   "generation": "SJaVfkYq8FStu9TOwiQB",
+   "seconds": 2.8,
+   "max_len": 3.0,
+   "rms_db": -25.7,
+   "peak_db": -1.0
+  },
+  "ambience/hammer_far2": {
+   "prompt": "Hammering far off across a village",
+   "generation": "dKAbv9OI8tQvC7f02maB",
+   "seconds": 2.8,
+   "max_len": 3.0,
+   "rms_db": -26.63,
+   "peak_db": -1.0
+  },
+  "ambience/hammer_far3": {
+   "prompt": "Hammering far off across a village",
+   "generation": "YFRKRqCpifrws4agpkPI",
+   "seconds": 2.8,
+   "max_len": 3.0,
+   "rms_db": -26.48,
+   "peak_db": -1.0
+  },
+  "ambience/child_far1": {
+   "prompt": "Child calling out far off across a village, distant, no clear words",
+   "generation": "A2uxHDm6xLqNOkPckP5M",
+   "seconds": 2.8,
+   "max_len": 2.28,
+   "rms_db": -23.75,
+   "peak_db": -1.0
+  },
+  "ambience/child_far2": {
+   "prompt": "Child calling out far off across a village, distant, no clear words",
+   "generation": "ghABeZ2pPBNMs6mGGL5c",
+   "seconds": 2.8,
+   "max_len": 3.0,
+   "rms_db": -24.48,
+   "peak_db": -1.0
+  },
+  "ambience/child_far3": {
+   "prompt": "Child calling out far off across a village, distant, no clear words",
+   "generation": "H65WxNONCsuL1roVzw8q",
+   "seconds": 2.8,
+   "max_len": 2.7,
+   "rms_db": -24.35,
+   "peak_db": -1.0
+  },
+  "faction/ward_light/hum1": {
+   "prompt": "Magical floating light humming softly, cold eerie hum",
+   "generation": "eDJzwBgrVRgUrUrPQMhC",
+   "seconds": 3.5,
+   "max_len": 3.75,
+   "rms_db": -26.34,
+   "peak_db": -1.0
+  },
+  "faction/ward_light/hum2": {
+   "prompt": "Magical floating light humming softly, cold eerie hum",
+   "generation": "FO1YGl4Ss7hJsnZ5S2LT",
+   "seconds": 3.5,
+   "max_len": 3.75,
+   "rms_db": -26.54,
+   "peak_db": -1.0
+  },
+  "faction/ward_light/pass1": {
+   "prompt": "Magical light shimmering as something passes through it",
+   "generation": "mzab6WNLVe58YzC4JWYG",
+   "seconds": 0.7,
+   "max_len": 0.72,
+   "rms_db": -19.45,
+   "peak_db": -1.0
+  },
+  "faction/ward_light/pass2": {
+   "prompt": "Magical light shimmering as something passes through it",
+   "generation": "rTyAVLCDSALVvMyxTlb3",
+   "seconds": 0.7,
+   "max_len": 0.7,
+   "rms_db": -18.05,
+   "peak_db": -1.0
+  },
+  "faction/ward_light/break1": {
+   "prompt": "Magical light orb shattering, glassy crystalline burst",
+   "generation": "gY6SFbg0ICQfPmMem9KX",
+   "seconds": 1.4,
+   "max_len": 1.42,
+   "rms_db": -17.58,
+   "peak_db": -1.0
+  },
+  "faction/ward_light/break2": {
+   "prompt": "Magical light orb shattering, glassy crystalline burst",
+   "generation": "rk4XBc9dZa2lJbS7Defp",
+   "seconds": 1.4,
+   "max_len": 1.42,
+   "rms_db": -18.01,
+   "peak_db": -1.0
+  },
+  "faction/ward_light/break3": {
+   "prompt": "Magical light orb shattering, glassy crystalline burst",
+   "generation": "mlVcryC5kYfR0Zgyv4WE",
+   "seconds": 1.4,
+   "max_len": 1.42,
+   "rms_db": -17.32,
+   "peak_db": -1.0
+  },
+  "faction/ward_light/spawn1": {
+   "prompt": "Magical light orb appearing, soft whoosh and shimmer",
+   "generation": "en8pv8g3ncY7mdcPc4jS",
+   "seconds": 1.3,
+   "max_len": 1.27,
+   "rms_db": -18.47,
+   "peak_db": -1.0
+  },
+  "faction/ward_light/shoot1": {
+   "prompt": "Magical orb spitting a cold glowing projectile, quick zip",
+   "generation": "r0VYQ1fCGHWZA1Inpqlf",
+   "seconds": 0.6,
+   "max_len": 0.62,
+   "rms_db": -18.26,
+   "peak_db": -1.0
+  },
+  "faction/ward_light/shoot2": {
+   "prompt": "Magical orb spitting a cold glowing projectile, quick zip",
+   "generation": "nDSdXXViUuXKlOeRZgv0",
+   "seconds": 0.6,
+   "max_len": 0.62,
+   "rms_db": -18.42,
+   "peak_db": -1.0
+  },
+  "faction/pickpocket/lift1": {
+   "prompt": "Leather purse slipping free from a belt, soft rustle and faint coin jingle",
+   "generation": "NcHDIiBr8fF56WiQmTlQ",
+   "seconds": 0.7,
+   "max_len": 0.72,
+   "rms_db": -26.96,
+   "peak_db": -1.0
+  },
+  "faction/pickpocket/lift2": {
+   "prompt": "Leather purse slipping free from a belt, soft rustle and faint coin jingle",
+   "generation": "EM6RZ0fJ5OreeiHgkuWz",
+   "seconds": 0.7,
+   "max_len": 0.72,
+   "rms_db": -26.25,
+   "peak_db": -1.0
+  },
+  "faction/pickpocket/caught1": {
+   "prompt": "Wrist seized, quick grab of cloth",
+   "generation": "3rJer8cZNfaTcIl11HDM",
+   "seconds": 0.6,
+   "max_len": 0.62,
+   "rms_db": -18.68,
+   "peak_db": -1.0
+  },
+  "faction/purse/open1": {
+   "prompt": "Coins spilling from a leather purse onto a table",
+   "generation": "tDCBRYndD1hKDXcd7Xml",
+   "seconds": 1.3,
+   "max_len": 1.23,
+   "rms_db": -19.35,
+   "peak_db": -1.0
+  },
+  "faction/purse/open2": {
+   "prompt": "Coins spilling from a leather purse onto a table",
+   "generation": "6UJ8zCMUBzwBCNof0GVB",
+   "seconds": 1.3,
+   "max_len": 1.27,
+   "rms_db": -19.39,
+   "peak_db": -1.0
+  },
+  "faction/heist/suspicion1": {
+   "prompt": "Low muted bowed strings swelling tensely, then cut off short, suspense",
+   "generation": "u7v2hlpbOG1l4dG6AfIS",
+   "seconds": 1.5,
+   "max_len": 1.5,
+   "rms_db": -19.45,
+   "peak_db": -1.0
+  },
+  "faction/heist/alarm1": {
+   "prompt": "Alarm bell ringing rapidly",
+   "generation": "9LEedEgoCoQGxqwgZnWl",
+   "seconds": 3.6,
+   "max_len": 3.9,
+   "rms_db": -15.09,
+   "peak_db": -1.0
+  },
+  "faction/heist/loot1": {
+   "prompt": "Treasure taken from a wooden chest, coins and jewels clinking",
+   "generation": "4tIb1Q9b4wsyhOKenlfs",
+   "seconds": 1.5,
+   "max_len": 1.5,
+   "rms_db": -16.17,
+   "peak_db": -1.0
+  },
+  "faction/spar/salute1": {
+   "prompt": "Two swords tapping together lightly",
+   "generation": "qHq0lYehz3U0Kp0WwRA2",
+   "seconds": 1.0,
+   "max_len": 0.93,
+   "rms_db": -15.74,
+   "peak_db": -1.0
+  },
+  "faction/spar/yield1": {
+   "prompt": "Sword dropped into the dirt",
+   "generation": "7r52LhmXUkqUmXbZQpzv",
+   "seconds": 1.5,
+   "max_len": 1.45,
+   "rms_db": -17.75,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "faction/hold/horn1": {
+   "prompt": "War horn sounding in the dark, distant and ominous",
+   "generation": "4kYfZmg1CjjkUtTqd2qS",
+   "seconds": 4.2,
+   "max_len": 4.65,
+   "rms_db": -16.12,
+   "peak_db": -1.0
+  },
+  "faction/hold/drain1": {
+   "prompt": "Magical fire guttering, flames sputtering low",
+   "generation": "uWOTcV1FwK75lWO6jxpj",
+   "seconds": 1.2,
+   "max_len": 1.08,
+   "rms_db": -17.48,
+   "peak_db": -1.0
+  },
+  "faction/hold/drain2": {
+   "prompt": "Magical fire guttering, flames sputtering low",
+   "generation": "3jheJLBiHOIQInVhxvw8",
+   "seconds": 1.2,
+   "max_len": 1.14,
+   "rms_db": -19.17,
+   "peak_db": -1.0
+  },
+  "faction/hold/dawn1": {
+   "prompt": "Warm swell rising out of the dark, soft choir opening up and one bright bell stroke, dawn",
+   "generation": "XwNBKXclXFj0dMQi9Rwj",
+   "seconds": 4.2,
+   "max_len": 4.65,
+   "rms_db": -17.8,
+   "peak_db": -1.0
+  },
+  "faction/rank/starwatch1": {
+   "prompt": "Celestial chimes ringing, bright crystal bells",
+   "generation": "K1WZmV14lBo0svGYGSWg",
+   "seconds": 2.8,
+   "max_len": 3.0,
+   "rms_db": -17.95,
+   "peak_db": -1.0
+  },
+  "faction/rank/hearthsworn1": {
+   "prompt": "Warm bronze bells ringing",
+   "generation": "SzMYGkK7O9DCqQGXT06m",
+   "seconds": 2.8,
+   "max_len": 3.0,
+   "rms_db": -15.88,
+   "peak_db": -1.0
+  },
+  "faction/rank/quiet_hand1": {
+   "prompt": "Soft lute strings plucked, mysterious",
+   "generation": "jaoGccJDOzuS9RRBaZfC",
+   "seconds": 2.8,
+   "max_len": 3.0,
+   "rms_db": -18.84,
+   "peak_db": -1.0
+  },
+  "faction/expelled1": {
+   "prompt": "Heavy wooden door slammed shut, echoing",
+   "generation": "h0hC2zthuv4tzqoch8wr",
+   "seconds": 2.2,
+   "max_len": 2.33,
+   "rms_db": -19.37,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "faction/renegade/stones1": {
+   "prompt": "Ancient standing stones awakening, deep grinding rumble and magical hum",
+   "generation": "Wxeb9PtuKHGe8YM5hApF",
+   "seconds": 4.2,
+   "max_len": 4.65,
+   "rms_db": -18.61,
+   "peak_db": -1.0
+  },
+  "faction/renegade/ambient1": {
+   "prompt": "Cold ghostly breath whispering, eerie wind",
+   "generation": "4qOXM5uiL5uvM0Z518Mp",
+   "seconds": 2.9,
+   "max_len": 3.0,
+   "rms_db": -21.01,
+   "peak_db": -1.0
+  },
+  "faction/renegade/ambient2": {
+   "prompt": "Cold ghostly breath whispering, eerie wind",
+   "generation": "u06rjsq2ETX6upKRXsN2",
+   "seconds": 2.9,
+   "max_len": 3.15,
+   "rms_db": -21.25,
+   "peak_db": -1.0
+  },
+  "faction/renegade/hurt1": {
+   "prompt": "Magical ward cracking, glassy crack",
+   "generation": "c3DmXbLfliS5PI82nu0w",
+   "seconds": 0.7,
+   "max_len": 0.66,
+   "rms_db": -18.87,
+   "peak_db": -1.0
+  },
+  "faction/renegade/hurt2": {
+   "prompt": "Magical ward cracking, glassy crack",
+   "generation": "DsDoIsAPcNjnp5ZO9b0q",
+   "seconds": 0.7,
+   "max_len": 0.64,
+   "rms_db": -17.45,
+   "peak_db": -1.0
+  },
+  "faction/renegade/hurt3": {
+   "prompt": "Magical ward cracking, glassy crack",
+   "generation": "REI1jEhKBsXogTCTZYU5",
+   "seconds": 0.7,
+   "max_len": 0.68,
+   "rms_db": -18.65,
+   "peak_db": -1.0
+  },
+  "faction/renegade/shove1": {
+   "prompt": "Blast of air throwing someone back, forceful whoosh",
+   "generation": "yLsywg0yr5uo0bXPYqeg",
+   "seconds": 0.9,
+   "max_len": 0.82,
+   "rms_db": -14.98,
+   "peak_db": -1.0
+  },
+  "faction/renegade/shove2": {
+   "prompt": "Blast of air throwing someone back, forceful whoosh",
+   "generation": "NPJFjpdO6f85f7e70tvX",
+   "seconds": 0.9,
+   "max_len": 0.8,
+   "rms_db": -15.07,
+   "peak_db": -1.0
+  },
+  "faction/renegade/death1": {
+   "prompt": "Magical wards breaking apart, shattering burst and fading hum",
+   "generation": "EtcOxhVceY8OGghsBf9u",
+   "seconds": 3.7,
+   "max_len": 4.05,
+   "rms_db": -18.9,
+   "peak_db": -1.0
+  },
+  "companion/approve": {
+   "prompt": "Two soft bells rising, small and quiet, pleased",
+   "generation": "qQVPFKAPiyI8oGQ5Fyon",
+   "seconds": 1.8,
+   "max_len": 1.88,
+   "rms_db": -23.95,
+   "peak_db": -1.0
+  },
+  "companion/disapprove": {
+   "prompt": "One low dull note that sags, quiet, disappointed",
+   "generation": "yuIlzv0ijneQxGBSsaf2",
+   "seconds": 1.3,
+   "max_len": 1.27,
+   "rms_db": -25.92,
+   "peak_db": -1.0
+  },
+  "companion/downed": {
+   "prompt": "Person in armour dropping to one knee, thud of steel and leather, breath let out",
+   "generation": "lAsbQVCFBkkA64FQECAt",
+   "seconds": 1.7,
+   "max_len": 1.78,
+   "rms_db": -20.44,
+   "peak_db": -1.0
+  },
+  "companion/revive": {
+   "prompt": "Breath drawn in, a hand clasped into a hand, small warm magical swell",
+   "generation": "H7dgOtyL04VvJBuBpHBv",
+   "seconds": 2.5,
+   "max_len": 2.62,
+   "rms_db": -19.56,
+   "peak_db": -1.0
+  },
+  "companion/chapter": {
+   "prompt": "Short questioning figure of three plucked lute notes",
+   "generation": "u21Xh5WN7qfirRifg2Np",
+   "seconds": 2.3,
+   "max_len": 2.4,
+   "rms_db": -22.9,
+   "peak_db": -1.0
+  },
+  "companion/sworn": {
+   "prompt": "Warm short swell, a lute rising to a chord with low strings under it",
+   "generation": "O9ouL6r5HoT8nv5noIj1",
+   "seconds": 4.0,
+   "max_len": 4.35,
+   "rms_db": -19.57,
+   "peak_db": -1.0
+  },
+  "ship/creak_1": {
+   "prompt": "Wooden ship timbers creaking at sea",
+   "generation": "emrhwZf3rGN8qdPLz5oG",
+   "seconds": 3.5,
+   "max_len": 3.6,
+   "rms_db": -20.05,
+   "peak_db": -1.0
+  },
+  "ship/creak_2": {
+   "prompt": "Wooden ship timbers creaking at sea",
+   "generation": "0nxBsoKUwkU6l0vZ8aoF",
+   "seconds": 3.5,
+   "max_len": 2.08,
+   "rms_db": -19.99,
+   "peak_db": -1.0
+  },
+  "ship/creak_3": {
+   "prompt": "Wooden ship timbers creaking at sea",
+   "generation": "fU8OTnAmY41hjjohKDnV",
+   "seconds": 3.5,
+   "max_len": 3.15,
+   "rms_db": -23.45,
+   "peak_db": -1.0
+  },
+  "ship/creak_4": {
+   "prompt": "Wooden ship timbers creaking at sea",
+   "generation": "w8UuUX2EWAmeVYI5xKnl",
+   "seconds": 3.5,
+   "max_len": 2.55,
+   "rms_db": -19.9,
+   "peak_db": -1.0
+  },
+  "ship/creak_5": {
+   "prompt": "Wooden ship timbers creaking at sea",
+   "generation": "NxADIhn12WudVqNegtju",
+   "seconds": 3.5,
+   "max_len": 3.75,
+   "rms_db": -21.44,
+   "peak_db": -1.0
+  },
+  "ship/creak_6": {
+   "prompt": "Wooden ship timbers creaking at sea",
+   "generation": "pzjRNFaEprN0z3dryKYs",
+   "seconds": 3.5,
+   "max_len": 2.85,
+   "rms_db": -20.68,
+   "peak_db": -1.0
+  },
+  "ship/sail_fill_1": {
+   "prompt": "Sail filling with wind, canvas snapping taut",
+   "generation": "OLBehUkDBOBp9lpXTiAg",
+   "seconds": 1.8,
+   "max_len": 1.72,
+   "rms_db": -21.27,
+   "peak_db": -1.0
+  },
+  "ship/sail_fill_2": {
+   "prompt": "Sail filling with wind, canvas snapping taut",
+   "generation": "cAVmpKziw7Vckn7kUe3V",
+   "seconds": 1.8,
+   "max_len": 1.8,
+   "rms_db": -20.52,
+   "peak_db": -1.0
+  },
+  "ship/sail_fill_3": {
+   "prompt": "Sail filling with wind, canvas snapping taut",
+   "generation": "lUEqsjdrs69GOkI7efkF",
+   "seconds": 1.8,
+   "max_len": 1.72,
+   "rms_db": -23.6,
+   "peak_db": -1.0
+  },
+  "ship/hoist_1": {
+   "prompt": "Rope running fast through wooden pulley blocks on a ship",
+   "generation": "HBx5mhSimrRwG0PJ8aLy",
+   "seconds": 2.3,
+   "max_len": 2.4,
+   "rms_db": -21.71,
+   "peak_db": -1.0
+  },
+  "ship/hoist_2": {
+   "prompt": "Rope running fast through wooden pulley blocks on a ship",
+   "generation": "dKAewzVo3r0iZ0Cix1gk",
+   "seconds": 2.3,
+   "max_len": 2.33,
+   "rms_db": -19.56,
+   "peak_db": -1.0
+  },
+  "ship/hoist_3": {
+   "prompt": "Rope running fast through wooden pulley blocks on a ship",
+   "generation": "FjPaiaItDNvSJwc3msFj",
+   "seconds": 2.3,
+   "max_len": 2.33,
+   "rms_db": -20.84,
+   "peak_db": -1.0
+  },
+  "ship/wake": {
+   "prompt": "Water rushing along a wooden ship's hull, wake churning behind, continuous",
+   "generation": "5omsdnCszeQg8iIeVV6S",
+   "seconds": 14.0,
+   "loop": true,
+   "rms_db": -24.13
+  },
+  "ship/lap": {
+   "prompt": "Water lapping gently against a wooden hull, continuous",
+   "generation": "FmtbbYYQ2Tsz7YS0ctQN",
+   "seconds": 14.4,
+   "loop": true,
+   "rms_db": -28.03
+  },
+  "ship/rigging": {
+   "prompt": "Wind in a sailing ship's rigging, ropes creaking and humming, continuous",
+   "generation": "rHjyxXw7U9iYkrUq9Phl",
+   "seconds": 13.6,
+   "loop": true,
+   "rms_db": -27.04
+  },
+  "ship/anchor_drop": {
+   "prompt": "Iron anchor dropped into the sea, chain rattling out and a splash",
+   "generation": "Jj6aBOl424UBXxe1fjRI",
+   "seconds": 3.7,
+   "max_len": 4.05,
+   "rms_db": -17.8,
+   "peak_db": -1.0
+  },
+  "ship/anchor_raise": {
+   "prompt": "Anchor chain winched up, rattling chain and capstan creak",
+   "generation": "VwpN8kgoanU1iy2fem2d",
+   "seconds": 3.7,
+   "max_len": 4.05,
+   "rms_db": -20.32,
+   "peak_db": -1.0
+  },
+  "ship/bell_1": {
+   "prompt": "Ship's bell ringing",
+   "generation": "9WqwipN8a28SAeETqCHu",
+   "seconds": 4.2,
+   "max_len": 4.65,
+   "rms_db": -18.39,
+   "peak_db": -1.0
+  },
+  "ship/bell_2": {
+   "prompt": "Ship's bell ringing",
+   "generation": "hebxYUF7vqkd97sTNdaU",
+   "seconds": 4.2,
+   "max_len": 4.65,
+   "rms_db": -17.41,
+   "peak_db": -1.0
+  },
+  "ship/scrape_1": {
+   "prompt": "Wooden ship hull scraping over a sandy bottom",
+   "generation": "gsuD9pqkqJG3p7HnmIuZ",
+   "seconds": 1.9,
+   "max_len": 1.95,
+   "rms_db": -19.18,
+   "peak_db": -1.0
+  },
+  "ship/scrape_2": {
+   "prompt": "Wooden ship hull scraping over a sandy bottom",
+   "generation": "zxpzoh6eb2L7qbwpawnw",
+   "seconds": 1.9,
+   "max_len": 1.88,
+   "rms_db": -20.89,
+   "peak_db": -1.0
+  },
+  "ship/scrape_3": {
+   "prompt": "Wooden ship hull scraping over a sandy bottom",
+   "generation": "BIC2AjQV8EVBeD6ktwRt",
+   "seconds": 1.9,
+   "max_len": 1.95,
+   "rms_db": -19.74,
+   "peak_db": -1.0
+  },
+  "ship/bump_1": {
+   "prompt": "Wooden hull knocking against a dock",
+   "generation": "zI2OI5riQpzTeNOkCe53",
+   "seconds": 1.0,
+   "max_len": 0.85,
+   "rms_db": -17.59,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "ship/bump_2": {
+   "prompt": "Wooden hull knocking against a dock",
+   "generation": "wkoOxWTbAs3r5MVDGunW",
+   "seconds": 1.0,
+   "max_len": 0.8,
+   "rms_db": -19.04,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "ship/bump_3": {
+   "prompt": "Wooden hull knocking against a dock",
+   "generation": "0ZjK7dCRfdFxCn8LZbDy",
+   "seconds": 1.0,
+   "max_len": 0.9,
+   "rms_db": -18.23,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "ship/launch": {
+   "prompt": "Wooden boat splashing down into water",
+   "generation": "aHXIA6JbvpAXqvx5W9uJ",
+   "seconds": 3.0,
+   "max_len": 3.22,
+   "rms_db": -15.46,
+   "peak_db": -1.0
+  },
+  "ship/pack": {
+   "prompt": "Wooden boat packed away, wood clatter and rope",
+   "generation": "nPlE8FqZn09ZNu78HINF",
+   "seconds": 2.3,
+   "max_len": 2.4,
+   "rms_db": -20.86,
+   "peak_db": -1.0
+  },
+  "ship/wheel_1": {
+   "prompt": "Wooden ship's wheel turned one notch, ratchet click",
+   "generation": "YeAmOybrXDt3TByiMfVy",
+   "seconds": 0.7,
+   "max_len": 0.68,
+   "rms_db": -22.07,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "ship/wheel_2": {
+   "prompt": "Wooden ship's wheel turned one notch, ratchet click",
+   "generation": "2EuMS7TfO6rJDuDSksfK",
+   "seconds": 0.7,
+   "max_len": 0.64,
+   "rms_db": -21.27,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "ship/wheel_3": {
+   "prompt": "Wooden ship's wheel turned one notch, ratchet click",
+   "generation": "PiEmYjRYKQu5T6kDH2IN",
+   "seconds": 0.7,
+   "max_len": 0.64,
+   "rms_db": -25.92,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "ship/repair_1": {
+   "prompt": "Mallet driving a wooden peg into a hull",
+   "generation": "Gl0QmhH31knWLA9UJOsZ",
+   "seconds": 1.1,
+   "max_len": 0.99,
+   "rms_db": -16.91,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "ship/repair_2": {
+   "prompt": "Mallet driving a wooden peg into a hull",
+   "generation": "75w2M66I4Tz5ScKQZqVi",
+   "seconds": 1.1,
+   "max_len": 0.93,
+   "rms_db": -18.32,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "ship/repair_3": {
+   "prompt": "Mallet driving a wooden peg into a hull",
+   "generation": "s7Vvjk26S04WOjlKdqHQ",
+   "seconds": 1.1,
+   "max_len": 1.05,
+   "rms_db": -18.52,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "ship/wreck": {
+   "prompt": "Wooden ship breaking apart, cracking timbers and splashing",
+   "generation": "XAvmb9T8ZiqaraherJ1H",
+   "seconds": 4.4,
+   "max_len": 4.8,
+   "rms_db": -17.55,
+   "peak_db": -1.0
+  },
+  "ship/hold_open": {
+   "prompt": "Wooden hatch opening",
+   "generation": "thijbQDLqi3Rkmvlwpsk",
+   "seconds": 1.2,
+   "max_len": 1.12,
+   "rms_db": -18.75,
+   "peak_db": -1.0
+  },
+  "ship/hold_close": {
+   "prompt": "Wooden hatch slammed shut",
+   "generation": "22d2OdlsxkWMwmtMXaNd",
+   "seconds": 1.0,
+   "max_len": 0.91,
+   "rms_db": -18.28,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "streets/pot_loop1": {
+   "prompt": "Large pot of soup bubbling over a fire, continuous",
+   "generation": "NuD07wDnDmhKao5FfCUM",
+   "seconds": 12.7,
+   "loop": true,
+   "rms_db": -35.89
+  },
+  "streets/pot_loop2": {
+   "prompt": "Large pot of soup bubbling over a fire, continuous",
+   "generation": "WsfxBWw76eelr8DJJwPL",
+   "seconds": 12.7,
+   "loop": true,
+   "rms_db": -36.88
+  },
+  "streets/queue1": {
+   "prompt": "Group of people waiting in line grumbling and murmuring, indistinct, continuous",
+   "generation": "mxT6PjquigfRy6RGt7Gi",
+   "seconds": 16.1,
+   "loop": true,
+   "rms_db": -31.34
+  },
+  "streets/queue2": {
+   "prompt": "Group of people waiting in line grumbling and murmuring, indistinct, continuous",
+   "generation": "TWuZL2AywvwrOvWAlznn",
+   "seconds": 16.1,
+   "loop": true,
+   "rms_db": -30.92
+  },
+  "streets/awning1": {
+   "prompt": "Market awning flapping in the wind",
+   "generation": "H3FfXw41O026sjrCFKwb",
+   "seconds": 1.6,
+   "max_len": 1.23,
+   "rms_db": -20.05,
+   "peak_db": -1.0
+  },
+  "streets/awning2": {
+   "prompt": "Market awning flapping in the wind",
+   "generation": "BsaK1XAmFHTLB5e9rfQq",
+   "seconds": 1.6,
+   "max_len": 1.65,
+   "rms_db": -22.49,
+   "peak_db": -1.0
+  },
+  "streets/awning3": {
+   "prompt": "Market awning flapping in the wind",
+   "generation": "JVordsdsu6tOoYtIhpFp",
+   "seconds": 1.6,
+   "max_len": 1.48,
+   "rms_db": -21.63,
+   "peak_db": -1.0
+  },
+  "streets/basket1": {
+   "prompt": "Wicker basket shaken out",
+   "generation": "sSOIgQ8dWzxQpDZfvDwa",
+   "seconds": 1.4,
+   "max_len": 1.28,
+   "rms_db": -24.57,
+   "peak_db": -1.0
+  },
+  "streets/basket2": {
+   "prompt": "Wicker basket shaken out",
+   "generation": "CuXLCHu153SSXacFM2vw",
+   "seconds": 1.4,
+   "max_len": 1.42,
+   "rms_db": -25.22,
+   "peak_db": -1.0
+  },
+  "streets/basket3": {
+   "prompt": "Wicker basket shaken out",
+   "generation": "xgFoynTXJUGodnVzKDS7",
+   "seconds": 1.4,
+   "max_len": 1.29,
+   "rms_db": -25.2,
+   "peak_db": -1.0
+  },
+  "streets/stamp1": {
+   "prompt": "Feet stamping on cobblestones",
+   "generation": "mk6RW1ozjXwuBeOhxFky",
+   "seconds": 0.8,
+   "max_len": 0.69,
+   "rms_db": -15.44,
+   "peak_db": -1.0
+  },
+  "streets/stamp2": {
+   "prompt": "Feet stamping on cobblestones",
+   "generation": "we6DcyZJMSL7BFaXe0hj",
+   "seconds": 0.8,
+   "max_len": 0.75,
+   "rms_db": -17.41,
+   "peak_db": -1.0
+  },
+  "streets/stamp3": {
+   "prompt": "Feet stamping on cobblestones",
+   "generation": "sdlepbruEqjpB6YyaTWt",
+   "seconds": 0.8,
+   "max_len": 0.75,
+   "rms_db": -15.62,
+   "peak_db": -1.0
+  },
+  "streets/stamp4": {
+   "prompt": "Feet stamping on cobblestones",
+   "generation": "RvfuRWNUwpmaAEeyrVY4",
+   "seconds": 0.8,
+   "max_len": 0.73,
+   "rms_db": -14.83,
+   "peak_db": -1.0
+  },
+  "streets/stamp5": {
+   "prompt": "Feet stamping on cobblestones",
+   "generation": "dFq1w0PBSdCYg9Ncdyao",
+   "seconds": 0.8,
+   "max_len": 0.72,
+   "rms_db": -17.85,
+   "peak_db": -1.0
+  },
+  "streets/stamp6": {
+   "prompt": "Feet stamping on cobblestones",
+   "generation": "MKAfMPr96zbN8Jrc1p5n",
+   "seconds": 0.8,
+   "max_len": 0.71,
+   "rms_db": -15.09,
+   "peak_db": -1.0
+  },
+  "streets/handcart_goods1": {
+   "prompt": "Handcart full of goods rattling along",
+   "generation": "z3KnlPo7vfPSuSycFatK",
+   "seconds": 5.5,
+   "max_len": 5.4,
+   "rms_db": -22.31,
+   "peak_db": -1.0
+  },
+  "streets/handcart_goods2": {
+   "prompt": "Handcart full of goods rattling along",
+   "generation": "nxUYB7OHD2J8OpbGiepA",
+   "seconds": 5.5,
+   "max_len": 6.15,
+   "rms_db": -23.44,
+   "peak_db": -1.0
+  },
+  "sea/gnashfin_fin1": {
+   "prompt": "Shark fin cutting through water, swish",
+   "generation": "3niwoPzfjqkKNaEeCoBD",
+   "seconds": 1.9,
+   "max_len": 1.35,
+   "rms_db": -21.48,
+   "peak_db": -1.0
+  },
+  "sea/gnashfin_fin2": {
+   "prompt": "Shark fin cutting through water, swish",
+   "generation": "XjqBC70r3D3I9xsqoiYt",
+   "seconds": 1.9,
+   "max_len": 1.95,
+   "rms_db": -21.28,
+   "peak_db": -1.0
+  },
+  "sea/gnashfin_fin3": {
+   "prompt": "Shark fin cutting through water, swish",
+   "generation": "PaDqwWCMAbiUN5eWRSot",
+   "seconds": 1.9,
+   "max_len": 1.65,
+   "rms_db": -21.45,
+   "peak_db": -1.0
+  },
+  "sea/gnashfin_leap1": {
+   "prompt": "Large fish leaping out of the water, splash",
+   "generation": "jRVLo91Hdu70SnXlo4kA",
+   "seconds": 1.6,
+   "max_len": 1.58,
+   "rms_db": -19.71,
+   "peak_db": -1.0
+  },
+  "sea/gnashfin_leap2": {
+   "prompt": "Large fish leaping out of the water, splash",
+   "generation": "ZiORcxh20R1PaJke3TcQ",
+   "seconds": 1.6,
+   "max_len": 1.46,
+   "rms_db": -20.12,
+   "peak_db": -1.0
+  },
+  "sea/gnashfin_dive1": {
+   "prompt": "Large fish diving into the water, splash",
+   "generation": "nRRukM4E2rzj3d6Sk6Jk",
+   "seconds": 1.3,
+   "max_len": 1.22,
+   "rms_db": -20.41,
+   "peak_db": -1.0
+  },
+  "sea/gnashfin_dive2": {
+   "prompt": "Large fish diving into the water, splash",
+   "generation": "cLgHgvo8C91i58oONw89",
+   "seconds": 1.3,
+   "max_len": 1.27,
+   "rms_db": -21.64,
+   "peak_db": -1.0
+  },
+  "sea/gnashfin_snap1": {
+   "prompt": "Sharp toothed jaws snapping shut",
+   "generation": "Uw1DLoIxyUiGNecKRsTD",
+   "seconds": 0.8,
+   "max_len": 0.65,
+   "rms_db": -22.26,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "sea/gnashfin_snap2": {
+   "prompt": "Sharp toothed jaws snapping shut",
+   "generation": "Uce6BAd1wUf4M9sE6x6m",
+   "seconds": 0.8,
+   "max_len": 0.68,
+   "rms_db": -21.82,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "sea/gnashfin_snap3": {
+   "prompt": "Sharp toothed jaws snapping shut",
+   "generation": "YhFO52ksJSFF0QQK8r9Y",
+   "seconds": 0.8,
+   "max_len": 0.75,
+   "rms_db": -23.23,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "sea/gnashfin_bite1": {
+   "prompt": "Sea monster biting, wet crunch",
+   "generation": "ikVd4i15OWAEyXzmbuuz",
+   "seconds": 1.4,
+   "max_len": 0.85,
+   "rms_db": -21.05,
+   "peak_db": -1.0
+  },
+  "sea/gnashfin_bite2": {
+   "prompt": "Sea monster biting, wet crunch",
+   "generation": "Ws0J3FrMhPUyjsskUZ2J",
+   "seconds": 1.4,
+   "max_len": 1.35,
+   "rms_db": -18.73,
+   "peak_db": -1.0
+  },
+  "sea/gnashfin_gnaw1": {
+   "prompt": "Teeth gnawing on a wooden hull",
+   "generation": "lIKkugfQxeXgyJWNvqmY",
+   "seconds": 2.3,
+   "max_len": 2.1,
+   "rms_db": -19.85,
+   "peak_db": -1.0
+  },
+  "sea/gnashfin_gnaw2": {
+   "prompt": "Teeth gnawing on a wooden hull",
+   "generation": "mdiWHLB9g8eFS57y67a1",
+   "seconds": 2.3,
+   "max_len": 1.8,
+   "rms_db": -19.62,
+   "peak_db": -1.0
+  },
+  "sea/gnashfin_gnaw3": {
+   "prompt": "Teeth gnawing on a wooden hull",
+   "generation": "5RCtGSavEKKGGp8NvQqx",
+   "seconds": 2.3,
+   "max_len": 2.4,
+   "rms_db": -19.14,
+   "peak_db": -1.0
+  },
+  "sea/gnashfin_flop1": {
+   "prompt": "Large fish flopping on a wooden deck",
+   "generation": "SqU4IlmVVPl6HQLeqP1j",
+   "seconds": 2.2,
+   "max_len": 2.1,
+   "rms_db": -19.69,
+   "peak_db": -1.0
+  },
+  "sea/gnashfin_flop2": {
+   "prompt": "Large fish flopping on a wooden deck",
+   "generation": "0VTSvqq8eADQs25Phd8V",
+   "seconds": 2.2,
+   "max_len": 2.1,
+   "rms_db": -19.39,
+   "peak_db": -1.0
+  },
+  "sea/gnashfin_flop3": {
+   "prompt": "Large fish flopping on a wooden deck",
+   "generation": "AVS32zuyFFpLZJ1hcK2a",
+   "seconds": 2.2,
+   "max_len": 2.25,
+   "rms_db": -21.12,
+   "peak_db": -1.0
+  },
+  "sea/gnashfin_hurt1": {
+   "prompt": "Sea creature hissing in pain",
+   "generation": "4xevZzH859pJ7s8Xbb5W",
+   "seconds": 1.3,
+   "max_len": 1.05,
+   "rms_db": -18.09,
+   "peak_db": -1.0
+  },
+  "sea/gnashfin_hurt2": {
+   "prompt": "Sea creature hissing in pain",
+   "generation": "VuoTpDrmTPChflKTaF3n",
+   "seconds": 1.3,
+   "max_len": 1.27,
+   "rms_db": -19.01,
+   "peak_db": -1.0
+  },
+  "sea/gnashfin_death": {
+   "prompt": "Sea creature gasping its last",
+   "generation": "uS0IDVfZr3UXDSj0Ovc3",
+   "seconds": 2.7,
+   "max_len": 2.83,
+   "rms_db": -18.98,
+   "peak_db": -1.0
+  },
+  "sea/maelgrasp_omen1": {
+   "prompt": "Huge creature groaning far below the sea, deep ominous rumble",
+   "generation": "oL0LgMw5Q9evqwEQj8WI",
+   "seconds": 9.0,
+   "max_len": 6.9,
+   "rms_db": -18.63,
+   "peak_db": -1.0
+  },
+  "sea/maelgrasp_omen2": {
+   "prompt": "Huge creature groaning far below the sea, deep ominous rumble",
+   "generation": "MkBOlD5fIfMxv7q8CwUG",
+   "seconds": 9.0,
+   "max_len": 8.85,
+   "rms_db": -21.2,
+   "peak_db": -1.0
+  },
+  "sea/maelgrasp_omen3": {
+   "prompt": "Huge creature groaning far below the sea, deep ominous rumble",
+   "generation": "ncenx7n0yLeWJldGJCgr",
+   "seconds": 9.0,
+   "max_len": 10.2,
+   "rms_db": -18.41,
+   "peak_db": -1.0
+  },
+  "sea/maelgrasp_bubbles1": {
+   "prompt": "The sea boiling with large bubbles rising",
+   "generation": "7e4PNI3jMN0JFk1FeZwZ",
+   "seconds": 5.3,
+   "max_len": 5.1,
+   "rms_db": -17.78,
+   "peak_db": -1.0
+  },
+  "sea/maelgrasp_bubbles2": {
+   "prompt": "The sea boiling with large bubbles rising",
+   "generation": "W2iRbUPjFXLRglhtWHPj",
+   "seconds": 5.3,
+   "max_len": 5.85,
+   "rms_db": -18.16,
+   "peak_db": -1.0
+  },
+  "sea/maelgrasp_surge": {
+   "prompt": "The sea heaving, huge water surge",
+   "generation": "hpkD4FRthi3Z5kkjQOxz",
+   "seconds": 3.7,
+   "max_len": 4.05,
+   "rms_db": -13.46,
+   "peak_db": -1.0
+  },
+  "sea/maelgrasp_burst1": {
+   "prompt": "Giant tentacle bursting from the sea, huge splash",
+   "generation": "PnxFnQaqB1NpnyZCYKSl",
+   "seconds": 3.2,
+   "max_len": 2.85,
+   "rms_db": -15.43,
+   "peak_db": -1.0
+  },
+  "sea/maelgrasp_burst2": {
+   "prompt": "Giant tentacle bursting from the sea, huge splash",
+   "generation": "1trJ8qm85uURaKlbWqXB",
+   "seconds": 3.2,
+   "max_len": 3.45,
+   "rms_db": -13.95,
+   "peak_db": -1.0
+  },
+  "sea/maelgrasp_writhe1": {
+   "prompt": "Giant wet tentacle writhing, slimy squelch",
+   "generation": "Hd2y4l0zPIq9kXbTq2gv",
+   "seconds": 3.2,
+   "max_len": 2.7,
+   "rms_db": -23.96,
+   "peak_db": -1.0
+  },
+  "sea/maelgrasp_writhe2": {
+   "prompt": "Giant wet tentacle writhing, slimy squelch",
+   "generation": "QImXEqcr2Dd32W7hOu8c",
+   "seconds": 3.2,
+   "max_len": 3.0,
+   "rms_db": -21.64,
+   "peak_db": -1.0
+  },
+  "sea/maelgrasp_writhe3": {
+   "prompt": "Giant wet tentacle writhing, slimy squelch",
+   "generation": "P97s2eChuIx7NPGzt7Xt",
+   "seconds": 3.2,
+   "max_len": 3.45,
+   "rms_db": -22.99,
+   "peak_db": -1.0
+  },
+  "sea/maelgrasp_rear": {
+   "prompt": "Giant tentacle rearing up out of the water, streaming water",
+   "generation": "j1QvN7v4NTyWymB0xsjR",
+   "seconds": 3.5,
+   "max_len": 3.75,
+   "rms_db": -18.65,
+   "peak_db": -1.0
+  },
+  "sea/maelgrasp_slam1": {
+   "prompt": "Giant tentacle slamming a wooden deck, heavy crash",
+   "generation": "ja6uuch0dNhAKLPmehNa",
+   "seconds": 2.9,
+   "max_len": 2.7,
+   "rms_db": -15.45,
+   "peak_db": -1.0
+  },
+  "sea/maelgrasp_slam2": {
+   "prompt": "Giant tentacle slamming a wooden deck, heavy crash",
+   "generation": "vxiZAxxLMQYBz1WUGCY6",
+   "seconds": 2.9,
+   "max_len": 3.15,
+   "rms_db": -15.09,
+   "peak_db": -1.0
+  },
+  "sea/maelgrasp_sweep": {
+   "prompt": "Giant tentacle sweeping across a wooden deck, wet slide",
+   "generation": "dOizjVKpgEceZxtcZldd",
+   "seconds": 2.4,
+   "max_len": 2.55,
+   "rms_db": -17.32,
+   "peak_db": -1.0
+  },
+  "sea/maelgrasp_grab": {
+   "prompt": "Giant tentacle grabbing, wet squelch",
+   "generation": "NzhkWJM01jKPDIjsEUYj",
+   "seconds": 1.9,
+   "max_len": 1.95,
+   "rms_db": -18.05,
+   "peak_db": -1.0
+  },
+  "sea/maelgrasp_squeeze": {
+   "prompt": "Giant tentacle squeezing, wood creaking under pressure",
+   "generation": "MFrBfNk0SprUGusFy8Zz",
+   "seconds": 2.8,
+   "max_len": 3.0,
+   "rms_db": -20.28,
+   "peak_db": -1.0
+  },
+  "sea/maelgrasp_hurl": {
+   "prompt": "Giant tentacle hurling something, powerful whoosh",
+   "generation": "eoO1EYC7ircuDPwfmavE",
+   "seconds": 2.3,
+   "max_len": 2.4,
+   "rms_db": -19.88,
+   "peak_db": -1.0
+  },
+  "sea/maelgrasp_arm_hurt1": {
+   "prompt": "Giant tentacle shuddering in pain, wet quiver",
+   "generation": "2nrBhIJNS0t3dCqPEjVv",
+   "seconds": 1.8,
+   "max_len": 1.5,
+   "rms_db": -19.54,
+   "peak_db": -1.0
+  },
+  "sea/maelgrasp_arm_hurt2": {
+   "prompt": "Giant tentacle shuddering in pain, wet quiver",
+   "generation": "7o8IgfvBfa46vm2uVkFR",
+   "seconds": 1.8,
+   "max_len": 1.8,
+   "rms_db": -20.43,
+   "peak_db": -1.0
+  },
+  "sea/maelgrasp_sever1": {
+   "prompt": "Giant tentacle severed, wet slice and splash",
+   "generation": "GbkriXU2OnauECkK6LQa",
+   "seconds": 2.4,
+   "max_len": 2.1,
+   "rms_db": -18.43,
+   "peak_db": -1.0
+  },
+  "sea/maelgrasp_sever2": {
+   "prompt": "Giant tentacle severed, wet slice and splash",
+   "generation": "vZF6ZSpNaJHWqvSLeeat",
+   "seconds": 2.4,
+   "max_len": 2.55,
+   "rms_db": -16.23,
+   "peak_db": -1.0
+  },
+  "sea/maelgrasp_sink": {
+   "prompt": "Giant tentacle sliding under the water",
+   "generation": "tbWX736yyaSIydr8IQOH",
+   "seconds": 3.8,
+   "max_len": 4.2,
+   "rms_db": -20.79,
+   "peak_db": -1.0
+  },
+  "sea/maelgrasp_crush1": {
+   "prompt": "Ship's timbers groaning and cracking under huge pressure",
+   "generation": "kP0Hz8mhm9z5g0ABiFGv",
+   "seconds": 4.2,
+   "max_len": 3.45,
+   "rms_db": -18.55,
+   "peak_db": -1.0
+  },
+  "sea/maelgrasp_crush2": {
+   "prompt": "Ship's timbers groaning and cracking under huge pressure",
+   "generation": "Sw9qI0kzSvkqtCHZpHUQ",
+   "seconds": 4.2,
+   "max_len": 4.05,
+   "rms_db": -18.15,
+   "peak_db": -1.0
+  },
+  "sea/maelgrasp_crush3": {
+   "prompt": "Ship's timbers groaning and cracking under huge pressure",
+   "generation": "uFXEFeQTVyoo4FsknxNO",
+   "seconds": 4.2,
+   "max_len": 4.65,
+   "rms_db": -17.93,
+   "peak_db": -1.0
+  },
+  "sea/maelgrasp_rise": {
+   "prompt": "Colossal sea monster rising from the water, massive surge and groan",
+   "generation": "k2dGxju8S87u6LDhsF2f",
+   "seconds": 6.2,
+   "max_len": 6.9,
+   "rms_db": -15.51,
+   "peak_db": -1.0
+  },
+  "sea/maelgrasp_roar1": {
+   "prompt": "Colossal sea monster roaring, deep gurgling bellow",
+   "generation": "p3zOIRB4xNCrpm9eNfZW",
+   "seconds": 6.4,
+   "max_len": 5.85,
+   "rms_db": -12.05,
+   "peak_db": -1.0
+  },
+  "sea/maelgrasp_roar2": {
+   "prompt": "Colossal sea monster roaring, deep gurgling bellow",
+   "generation": "STUnE4DiDDWi83ivhAhN",
+   "seconds": 6.4,
+   "max_len": 7.2,
+   "rms_db": -12.99,
+   "peak_db": -1.0
+  },
+  "sea/maelgrasp_blink": {
+   "prompt": "Huge wet eyelid closing, moist squelch",
+   "generation": "gGlmB3nbXfshjnkExFg5",
+   "seconds": 1.1,
+   "max_len": 1.08,
+   "rms_db": -22.31,
+   "peak_db": -1.0
+  },
+  "sea/maelgrasp_bite": {
+   "prompt": "Huge beak biting a wooden rail, crunching wood",
+   "generation": "JK6FrEHm3PX2ex5IZhC9",
+   "seconds": 2.0,
+   "max_len": 2.1,
+   "rms_db": -16.35,
+   "peak_db": -1.0
+  },
+  "sea/maelgrasp_ink": {
+   "prompt": "Sea monster spewing ink, gushing liquid",
+   "generation": "RhiKEgcHCgMiXvwNfCKw",
+   "seconds": 2.7,
+   "max_len": 2.85,
+   "rms_db": -17.85,
+   "peak_db": -1.0
+  },
+  "sea/maelgrasp_dive": {
+   "prompt": "Colossal sea monster diving, massive splash and churn",
+   "generation": "D91Qr4c4D4QYMH1KKQzG",
+   "seconds": 4.6,
+   "max_len": 5.1,
+   "rms_db": -13.84,
+   "peak_db": -1.0
+  },
+  "sea/maelgrasp_death": {
+   "prompt": "Colossal sea monster dying, long fading groan as it sinks",
+   "generation": "yay8FNGgMGEfF6ilzdHy",
+   "seconds": 12.7,
+   "max_len": 14.4,
+   "rms_db": -19.85,
+   "peak_db": -1.0
+  },
+  "village/hush1": {
+   "prompt": "People whispering behind a door, indistinct, continuous",
+   "generation": "0QpxnpDz0JQEStJotsJD",
+   "seconds": 13.6,
+   "loop": true,
+   "rms_db": -30.17
+  },
+  "village/hush2": {
+   "prompt": "People whispering behind a door, indistinct, continuous",
+   "generation": "5AfZEmQsSzgSIUn1Fkp4",
+   "seconds": 13.6,
+   "loop": true,
+   "rms_db": -30.16
+  },
+  "village/cheer1": {
+   "prompt": "Villagers cheering, no words",
+   "generation": "ZjzS6QUrZg00gOI7muIE",
+   "seconds": 2.7,
+   "max_len": 2.4,
+   "rms_db": -19.71,
+   "peak_db": -1.0
+  },
+  "village/cheer2": {
+   "prompt": "Villagers cheering, no words",
+   "generation": "p7yco6hF1oQVnok2ey0l",
+   "seconds": 2.7,
+   "max_len": 2.85,
+   "rms_db": -18.1,
+   "peak_db": -1.0
+  },
+  "village/cheer3": {
+   "prompt": "Villagers cheering, no words",
+   "generation": "q9XlFsr4DecCVcGkHJzb",
+   "seconds": 2.7,
+   "max_len": 2.17,
+   "rms_db": -18.57,
+   "peak_db": -1.0
+  },
+  "village/candle_lay1": {
+   "prompt": "Candle set down on stone",
+   "generation": "z6vK7vKrlJbKo0gcoKI3",
+   "seconds": 1.3,
+   "max_len": 1.12,
+   "rms_db": -28.64,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "village/candle_lay2": {
+   "prompt": "Candle set down on stone",
+   "generation": "LcWtWzPh26M2rLcRkB9B",
+   "seconds": 1.3,
+   "max_len": 1.27,
+   "rms_db": -28.83,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "village/candle_lay3": {
+   "prompt": "Candle set down on stone",
+   "generation": "GUVbLtpCsci4nsQHM3cD",
+   "seconds": 1.3,
+   "max_len": 1.01,
+   "rms_db": -27.95,
+   "peak_db": -1.0,
+   "one_hit": true
+  },
+  "village/pedlar_bell1": {
+   "prompt": "Pedlar's hand bell ringing",
+   "generation": "YvFFC9dHOqj2kgdmk3Kw",
+   "seconds": 2.5,
+   "max_len": 2.25,
+   "rms_db": -21.13,
+   "peak_db": -1.0
+  },
+  "village/pedlar_bell2": {
+   "prompt": "Pedlar's hand bell ringing",
+   "generation": "dM0LmrBQUJ6Z2j2I2FBH",
+   "seconds": 2.5,
+   "max_len": 2.7,
+   "rms_db": -21.59,
+   "peak_db": -1.0
+  },
+  "village/pedlar_bell3": {
+   "prompt": "Pedlar's hand bell ringing",
+   "generation": "vuaYm6qk2dTivUUELRf3",
+   "seconds": 2.5,
+   "max_len": 1.88,
+   "rms_db": -21.46,
+   "peak_db": -1.0
   }
  }
 }

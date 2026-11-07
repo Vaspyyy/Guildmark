@@ -5,24 +5,32 @@ sampled: the effects are synthesised with numpy/scipy, the music is composed in 
 FluidSynth, and the voices are Kokoro TTS: Halvard processed into a hollow undead knight, the named
 characters (Wren, Tobin, Ilsa, Pip and Maren) given a lighter touch, the three faction leaders each in a blend of
 Kokoro voices of their own, and the renegade Silvan Marrow made cold and a little uncanny. The city ambience
-(`ambience/`) is synthesised the same way, its criers and night watch built from Kokoro takes. Since 2026-11-07 a
-few sound sets are ElevenLabs recordings instead (named characters and bosses, the creature and combat sounds, the
-capitals' and villages' background beds); the scripts that make them are named below.
+(`ambience/`) is synthesised the same way, its criers and night watch built from Kokoro takes. Since 2026-11-07 most of
+it is ElevenLabs recordings instead (named characters and bosses, nearly every sound effect, the capitals' and
+villages' background beds); the scripts that make them are named below. The synthesising scripts leave those files
+alone: `sfxkit.write_ogg` skips any file listed in `eleven_sfx.json` or `eleven_ambience.json` unless
+`GUILDMARK_SYNTH_ALL=1` is set, so re-running one rebuilds only what is still synthesised.
 
 - `sfxkit.py`: the shared DSP toolkit (noise, filters, modal metal, creature voice source, room
   reverb, finalising and Ogg export).
 - `make_sfx.py`: the 116 mono sound effects (`combat/`, `hollow_soldier/`, `fallen_warden/`, `hill_troll/`, `dusk_rider/`,
   `wardfire/`, `flask/`, `marks/`, `dungeon/` and the menu sounds in `ui/`). Each sound is one `@recipe(...)`
   function that sets its variant count, length cap and fade-out. Since 2026-11-07 the game plays ElevenLabs
-  recordings for `fallen_warden/`, `hill_troll/`, `dusk_rider/`, `hollow_soldier/` and all of `combat/` but
-  `lock_on` instead (`make_eleven_sfx.py`): don't run this script for those groups, or the synthesised sounds come
-  back.
-- `make_eleven_sfx.py`: the creature and combat sounds recorded with ElevenLabs sound effects (125 files: `dragon/`,
-  `hill_troll/`, `dusk_rider/`, `fallen_warden/`, `hollow_soldier/` and `combat/` but `lock_on`), one take each. `eleven_sfx.json` holds each sound's prompt and
-  generation, the length asked for when one was, its length cap (`max_len`), its loudness (`rms_db`, measured on the
-  synthesised sound it replaced, so the mix stays where it was) and `one_hit` for steps, hooves, bites, swipes,
-  swings, wing beats, blade hits and blocks, which keep only the loudest hit when a take holds several. The script trims, levels to a
-  -3 dBFS peak and encodes the raw takes (`<group>__<name>_a.mp3`; the paid originals are kept outside the repo).
+  recordings for nearly all of them (`make_eleven_sfx.py`); this script now only rebuilds `combat/lock_on`, the
+  menu's hover and text ticks and `ui/discover`.
+- `make_eleven_sfx.py`: the sound effects recorded with ElevenLabs sound effects, one take per file: the creatures
+  and combat (`dragon/`, `hill_troll/`, `dusk_rider/`, `fallen_warden/`, `hollow_soldier/`, `combat/` but `lock_on`)
+  and nearly everything else that was synthesised (caravans, the kitchen, trade, works, islands, ships, sea monsters,
+  magic, factions, companions, homesteads, streets, stalls, villages, the city's one-shots, wardfires, dungeons, the
+  menu). `eleven_sfx.json` holds each sound's prompt and generation, the length asked for when one was, its length
+  cap (`max_len`), its loudness (`rms_db`, measured on the synthesised sound it replaced, so the mix stays where it
+  was), its peak (`peak_db`, -3 dBFS for creatures and combat, -1 for the rest) and `one_hit` for single knocks,
+  steps, hooves, bites, swings and blade hits, which keep only the loudest hit when a take holds several. Sounds marked
+  `loop` (wagon wheels, the cooking stations, the cog's wake, lap and rigging, a beacon, the island beds, a pot, a
+  queue, a hushed room) were asked for as loops and are cut into seamless ones as long as the take allows, levelled by
+  their whole RMS. Takes are `<path with / as __>_a.mp3`; the paid originals are kept outside the repo. Still
+  synthesised on purpose: the festival band (locked bar by bar to the dances), the mills (locked to the sails and
+  wheel), the dish-quality motifs (`cook/tier/`), the tiniest menu ticks and the Kokoro criers and watchmen.
 - `make_music.py`: the four boss tracks (`music/`) and the two stingers (`ui/`). Halvard's two tracks and
   the stingers are built on his leitmotif; the field boss theme is a piece of its own in E Phrygian, and the
   Dusk Rider's is a 6/8 gallop in D minor on a horn call of its own. Each piece is a `compose_*` function, and
@@ -49,7 +57,7 @@ capitals' and villages' background beds); the scripts that make them are named b
   chord falling back into the first bar so it loops), composed in code and played through `make_music.py`'s
   parts, stems and hall, its loudness set by measurement like the menu theme's. `make_dragon_audio.py` runs both;
   `--only` takes effect names and/or `music`. Its variants are listed in `sounds.json` by hand. Since 2026-11-07 the
-  effects come from ElevenLabs (`make_eleven_sfx.py`); run it with `--only music` so they stay.
+  effects come from ElevenLabs (`make_eleven_sfx.py`), and the script leaves them alone.
 - `make_magic_audio.py`: the two schools of magic, sorcery and prayer: its 25 effects and 40 files (`magic/`). Sorcery
   is cold and glassy (struck crystal, clumped sparks, rushing air, frost crackle), prayer warm (bells and gongs struck
   soft, a small choir humming on a vowel, fire). Synthesised with `sfxkit.py` like the dragon's effects, one-shots
@@ -264,7 +272,7 @@ python3 -B art/audio/make_menu_music.py src/main/resources/assets/guildmark --wo
 python3 -B art/audio/make_region_music.py src/main/resources/assets/guildmark --work <tmp-dir> [--wav <dir>] [--only marsh,ashen]
 python3 -B art/audio/make_land_music.py src/main/resources/assets/guildmark --work <tmp-dir> [--wav <dir>] [--only heartland,dunes]
 python3 -B art/audio/make_dragon_audio.py src/main/resources/assets/guildmark --work <tmp-dir> [--wav <dir>] [--only roar,growl,music]
-python3 -B art/audio/make_eleven_sfx.py src/main/resources/assets/guildmark <takes-dir> [--only dragon/,hill_troll/roar1] [--wav <dir>]
+python3 -B art/audio/make_eleven_sfx.py src/main/resources/assets/guildmark <takes-dir> [--only dragon/,cook/simmer1] [--wav <dir>]
 python3 -B art/audio/make_magic_audio.py src/main/resources/assets/guildmark [--wav <dir>] [--only arc_bolt_cast,flare] [--mp3 <file>]
 python3 -B art/audio/make_faction_audio.py src/main/resources/assets/guildmark [--wav <dir>] [--only ward_light,heist.alarm] [--mp3 <file>]
 python3 -B art/audio/make_ship_audio.py src/main/resources/assets/guildmark [--wav <dir>] [--only creak,wake] [--mp3 <file>] [--fragments <dir>]
